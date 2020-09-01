@@ -393,9 +393,23 @@ bool OvmsNotifyCallbackEntry::Accepts(OvmsNotifyType* type, const char* subtype,
   // Check filter by config:
   if (m_configfiltered)
     {
+    // Config syntax options:
+    // a) explicit inclusion: e.g. 'ovmsv2,ovmsv3' (only enable these)
+    // b) explicit exclusion: e.g. '*,-ovmsv2,-ovmsv3' (only disable these)
+    // '-' to disable all, empty/'*' to enable all
     std::string filter = MyConfig.GetParamValue("notify", subtype);
-    if (!filter.empty() && filter.find(m_caller) == string::npos)
-      return false;
+    if (!filter.empty())
+      {
+      if (filter[0] == '*')
+        {
+        if (filter.find(std::string("-")+m_caller) != string::npos)
+          return false;
+        }
+      else if (filter.find(m_caller) == string::npos)
+        {
+        return false;
+        }
+      }
     }
   // Check filter by callback:
   if (m_filtercallback)

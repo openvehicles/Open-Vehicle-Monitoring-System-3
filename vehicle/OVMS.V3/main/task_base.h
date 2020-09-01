@@ -64,7 +64,7 @@ class Parent
 class TaskBase
   {
   public:
-    TaskBase(const char* name, int stack = DEFAULT_STACK, Parent* parent = NULL);
+    TaskBase(const char* name, int stack = DEFAULT_STACK, UBaseType_t priority = DEFAULT_PRIORITY, Parent* parent = NULL);
     Parent* parent() { return m_parent; }
 
   protected:
@@ -90,6 +90,7 @@ class TaskBase
     TaskHandle_t m_taskid;
     const char* m_name;
     int m_stack;
+    UBaseType_t m_priority;
     Parent* m_parent;
   };
 

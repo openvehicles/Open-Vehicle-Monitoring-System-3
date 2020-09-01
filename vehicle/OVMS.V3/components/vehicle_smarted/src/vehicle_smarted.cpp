@@ -65,7 +65,7 @@ OvmsVehicleSmartED* OvmsVehicleSmartED::GetInstance(OvmsWriter* writer /*=NULL*/
 /**
  * Constructor & destructor
  */
-OvmsVehicleSmartED::OvmsVehicleSmartED() {
+OvmsVehicleSmartED::OvmsVehicleSmartED() : smarted_obd_rxwait(1,1) {
   ESP_LOGI(TAG, "Start Smart ED vehicle module");
   
   //memset(m_vin, 0, sizeof(m_vin));
@@ -652,9 +652,11 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
     {
       // 7a3 8 04 61 12 64 00 00 00 00
       if (d[0] == 0x04 && d[1] == 0x61 && d[2] == 0x12) {
-        StandardMetrics.ms_v_env_cabintemp->SetValue(d[3]/10.0);
+        //StandardMetrics.ms_v_env_cabintemp->SetValue(d[3]/10.0);
+        StandardMetrics.ms_v_env_cabintemp->SetValue((float) CAN_UINT(3) / 10.0);
+        //ESP_LOGD(TAG, "%04x ", CAN_UINT(3));
       }
-      // ESP_LOGD(TAG, "%03x 8 %02x %02x %02x %02x %02x %02x %02x %02x", p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
+      ESP_LOGD(TAG, "%03x 8 %02x %02x %02x %02x %02x %02x %02x %02x", p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
       break;
     }
     default: {
@@ -757,6 +759,7 @@ void OvmsVehicleSmartED::Ticker10(uint32_t ticker) {
 
 void OvmsVehicleSmartED::Ticker60(uint32_t ticker) {
   if (StandardMetrics.ms_v_bat_soc->AsFloat(0) == 0) RestoreStatus();
+  if (mt_bus_awake->AsBool()) TempPoll();
 #ifdef CONFIG_OVMS_COMP_MAX7317
   if (m_egpio_timer > 0) {
     if (--m_egpio_timer == 0) {
@@ -766,7 +769,7 @@ void OvmsVehicleSmartED::Ticker60(uint32_t ticker) {
       MyNotify.NotifyString("info", "valet.disabled", "Ignition off");
     }
   }
-  if (StandardMetrics.ms_v_env_valet->AsBool() && StandardMetrics.ms_v_bat_soc->AsFloat(0) < 20) {
+  if (StandardMetrics.ms_v_env_valet->AsBool() && StandardMetrics.ms_v_bat_soc->AsFloat(0) < 20 && m_egpio_timer > 0) {
     MyPeripherals->m_max7317->Output(m_ignition_port, 0);
     StandardMetrics.ms_v_env_valet->SetValue(false);
     MyNotify.NotifyString("info", "valet.disabled", "Ignition off");
@@ -859,7 +862,13 @@ bool OvmsVehicleSmartED::SetFeature(int key, const char *value)
     case 4:
     {
       int bits = atoi(value);
-      MyConfig.SetParamValueBool("xse", "autosetrecu",  (bits& 1)!=0);
+      MyConfig.SetParamValueBool("xse", "autosetrecu", (bits& 1)!=0);
+      return true;
+    }
+    case 5:
+    {
+      int bits = atoi(value);
+      MyConfig.SetParamValueBool("xse", "reset.trip.charge", (bits& 1)!=0);
       return true;
     }
     case 10:
@@ -874,7 +883,7 @@ bool OvmsVehicleSmartED::SetFeature(int key, const char *value)
     case 15:
     {
       int bits = atoi(value);
-      MyConfig.SetParamValueBool("xse", "canwrite",  (bits& 1)!=0);
+      MyConfig.SetParamValueBool("xse", "canwrite", (bits& 1)!=0);
       return true;
     }
     default:
@@ -906,6 +915,13 @@ const std::string OvmsVehicleSmartED::GetFeature(int key)
     case 4:
     {
       int bits = ( MyConfig.GetParamValueBool("xse", "autosetrecu",  false) ?  1 : 0);
+      char buf[4];
+      sprintf(buf, "%d", bits);
+      return std::string(buf);
+    }
+    case 5:
+    {
+      int bits = ( MyConfig.GetParamValueBool("xse", "reset.trip.charge",  false) ?  1 : 0);
       char buf[4];
       sprintf(buf, "%d", bits);
       return std::string(buf);

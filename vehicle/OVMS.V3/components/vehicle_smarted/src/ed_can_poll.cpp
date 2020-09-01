@@ -87,29 +87,29 @@ static const char *TAG = "v-smarted";
 
 static const OvmsVehicle::poll_pid_t smarted_polls[] =
 {
-  { 0x61A, 0x483, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xF111, {  0,300,600,600 } }, // rqChargerPN_HW
-  { 0x61A, 0x483, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0226, {  0,300,0,60 } }, // rqChargerVoltages
-  { 0x61A, 0x483, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0225, {  0,300,0,60 } }, // rqChargerAmps
-  { 0x61A, 0x483, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x022A, {  0,300,0,60 } }, // rqChargerSelCurrent
-  { 0x61A, 0x483, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0223, {  0,300,0,60 } }, // rqChargerTemperatures
-  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xF190, {  0,300,600,0 } }, // rqBattVIN
-  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0208, {  0,300,600,60 } }, // rqBattVolts
-  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0310, {  0,300,600,0 } }, // rqBattCapacity
-  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0203, {  0,300,600,0 } }, // rqBattAmps
-  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0207, {  0,300,600,0 } }, // rqBattADCref
-  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0304, {  0,300,600,0 } }, // rqBattDate
-  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xF18C, {  0,300,600,0 } }, // rqBattProdDate
+  { 0x61A, 0x483, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xF111, {  0,300,600,600 }, 0 }, // rqChargerPN_HW
+  { 0x61A, 0x483, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0226, {  0,300,0,60 }, 0 }, // rqChargerVoltages
+  { 0x61A, 0x483, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0225, {  0,300,0,60 }, 0 }, // rqChargerAmps
+  { 0x61A, 0x483, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x022A, {  0,300,0,60 }, 0 }, // rqChargerSelCurrent
+  { 0x61A, 0x483, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0223, {  0,300,0,60 }, 0 }, // rqChargerTemperatures
+  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xF190, {  0,300,600,0 }, 0 }, // rqBattVIN
+  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0208, {  0,300,600,60 }, 0 }, // rqBattVolts
+  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0310, {  0,300,600,0 }, 0 }, // rqBattCapacity
+  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0203, {  0,300,600,0 }, 0 }, // rqBattAmps
+  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0207, {  0,300,600,0 }, 0 }, // rqBattADCref
+  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0304, {  0,300,600,0 }, 0 }, // rqBattDate
+  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xF18C, {  0,300,600,0 }, 0 }, // rqBattProdDate
   //getBatteryRevision
-  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xF150, {  0,300,600,0 } }, //rqBattHWrev
-  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xF151, {  0,300,600,0 } }, //rqBattSWrev
-  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0201, {  0,300,600,120 } }, // rqBattTemperatures
-  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0202, {  0,300,600,120 } }, // rqBattModuleTemperatures
-  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x030B, {  0,300,600,0 } }, // rqBattHVContactorCyclesLeft
-  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x030C, {  0,300,600,0 } }, // rqBattHVContactorMax
-  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xD000, {  0,300,600,0 } }, // rqBattHVContactorState
-  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0204, {  0,300,600,0 } }, // rqBattHVstatus
-  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0209, {  0,300,600,0 } }, // rqBattIsolation
-  { 0, 0, 0x00, 0x00, { 0, 0, 0, 0 } }
+  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xF150, {  0,300,600,0 }, 0 }, //rqBattHWrev
+  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xF151, {  0,300,600,0 }, 0 }, //rqBattSWrev
+  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0201, {  0,300,600,120 }, 0 }, // rqBattTemperatures
+  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0202, {  0,300,600,120 }, 0 }, // rqBattModuleTemperatures
+  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x030B, {  0,300,600,0 }, 0 }, // rqBattHVContactorCyclesLeft
+  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x030C, {  0,300,600,0 }, 0 }, // rqBattHVContactorMax
+  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xD000, {  0,300,600,0 }, 0 }, // rqBattHVContactorState
+  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0204, {  0,300,600,0 }, 0 }, // rqBattHVstatus
+  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0209, {  0,300,600,0 }, 0 }, // rqBattIsolation
+  { 0, 0, 0x00, 0x00, { 0, 0, 0, 0 }, 0 }
 };
 
 void OvmsVehicleSmartED::ObdInitPoll() {
@@ -198,6 +198,8 @@ void OvmsVehicleSmartED::ObdInitPoll() {
   // init poller:
   PollSetPidList(m_can1, smarted_polls);
   PollSetState(0);
+  PollSetThrottling(5);
+  PollSetResponseSeparationTime(10);
 }
 
 /**
@@ -220,33 +222,18 @@ void OvmsVehicleSmartED::IncomingPollReply(canbus* bus, uint16_t type, uint16_t 
   }
   rxbuf.append((char*)data, length);
   
-  if (pid == 0xF111 && m_poll_ml_frame == 1) {
-    remain=0;
-    //ESP_LOGD(TAG, "End pid: %04x length: %d m_poll_ml_remain: %d m_poll_ml_frame: %d", pid, length, m_poll_ml_remain, m_poll_ml_frame);
-  }
-  
-  if (pid == 0xf190 && m_poll_ml_frame == 2) {
-    remain=0;
-    //ESP_LOGD(TAG, "End pid: %04x length: %d m_poll_ml_remain: %d m_poll_ml_frame: %d", pid, length, m_poll_ml_remain, m_poll_ml_frame);
-  }
-  
-  if (pid == 0x0204 && m_poll_ml_frame == 1) {
-    remain=0;
-    //ESP_LOGD(TAG, "End pid: %04x length: %d m_poll_ml_remain: %d m_poll_ml_frame: %d", pid, length, m_poll_ml_remain, m_poll_ml_frame);
-  }
-  
-  if (pid == 0xf18c && m_poll_ml_frame == 1) {
-    remain=0;
-    //ESP_LOGD(TAG, "End pid: %04x length: %d m_poll_ml_remain: %d m_poll_ml_frame: %d", pid, length, m_poll_ml_remain, m_poll_ml_frame);
-  }
-  
-  if ((data[5] * 256 + data[6]) == 21845) {
-    remain=0;
-    //ESP_LOGD(TAG, "End pid: %04x length: %d m_poll_ml_remain: %d m_poll_ml_frame: %d", pid, length, m_poll_ml_remain, m_poll_ml_frame);
-  }
-  
   if (remain)
     return;
+  
+  // char *buf = NULL;
+  // size_t rlen = rxbuf.size(), offset = 0;
+  // do {
+    // rlen = FormatHexDump(&buf, rxbuf.data() + offset, rlen, 16);
+    // offset += 16;
+    // ESP_LOGW(TAG, "OBD2: reply [%02x %02x]: %s", type, pid, buf ? buf : "-");
+  // } while (rlen);
+  // if (buf)
+    // free(buf);
   
   // complete:
   switch (pid) {
@@ -331,18 +318,30 @@ void OvmsVehicleSmartED::IncomingPollReply(canbus* bus, uint16_t type, uint16_t 
   // single poll?
   if (!smarted_obd_rxwait.IsAvail()) {
     // yes: stop poller & signal response
-    // PollSetPidList(m_can1, NULL);
+    PollSetPidList(m_can1, NULL);
+    smarted_obd_rxerr = 0;
     smarted_obd_rxwait.Give();
   }
 }
 
-bool OvmsVehicleSmartED::ObdRequest(uint16_t txid, uint16_t rxid, uint32_t request, string& response, int timeout_ms /*=3000*/) {
+void OvmsVehicleSmartED::IncomingPollError(canbus* bus, uint16_t type, uint16_t pid, uint16_t code)
+{
+  // single poll?
+  if (!smarted_obd_rxwait.IsAvail()) {
+    // yes: stop poller & signal response
+    PollSetPidList(m_can1, NULL);
+    smarted_obd_rxerr = code;
+    smarted_obd_rxwait.Give();
+  }
+}
+
+int OvmsVehicleSmartED::ObdRequest(uint16_t txid, uint16_t rxid, uint32_t request, string& response, int timeout_ms /*=3000*/) {
   OvmsMutexLock lock(&smarted_obd_request);
 
   // prepare single poll:
   OvmsVehicle::poll_pid_t poll[] = {
-    { txid, rxid, 0, 0, { 1, 1, 1, 1 } },
-    { 0, 0, 0, 0, { 0, 0, 0, 0 } }
+    { txid, rxid, 0, 0, { 1, 1, 1, 1 }, 0 },
+    { 0, 0, 0, 0, { 0, 0, 0, 0 }, 0 }
   };
   if (request < 0x10000) {
     poll[0].type = (request & 0xff00) >> 8;
@@ -369,7 +368,7 @@ bool OvmsVehicleSmartED::ObdRequest(uint16_t txid, uint16_t rxid, uint32_t reque
   smarted_obd_rxwait.Give();
   PollSetPidList(m_can1, smarted_polls);
 
-  return (rxok == pdTRUE);
+  return (rxok == pdFALSE) ? -1 : (int)smarted_obd_rxerr;
 }
 
 void OvmsVehicleSmartED::PollReply_BMS_BattAmps(const char* reply_data, uint16_t reply_len) {
@@ -380,7 +379,7 @@ void OvmsVehicleSmartED::PollReply_BMS_BattAmps(const char* reply_data, uint16_t
 }
 
 void OvmsVehicleSmartED::PollReply_BMS_BattHVstatus(const char* reply_data, uint16_t reply_len) {
-  float value = reply_data[9] * 256 + reply_data[10];
+  float value = reply_data[8] * 256 + reply_data[9];
   if(HVcontactState != 0x02) {
     mt_myBMS_HV->SetValue((float) value/64.0);
   }
@@ -399,9 +398,9 @@ void OvmsVehicleSmartED::PollReply_BMS_BattHVContactorState(const char* reply_da
 }
 
 void OvmsVehicleSmartED::PollReply_BMS_BattADCref(const char* reply_data, uint16_t reply_len) {
-  mt_myBMS_ADCCvolts_mean->SetValue(reply_data[5] * 256 + reply_data[6]);
-  mt_myBMS_ADCCvolts_min->SetValue(reply_data[3] * 256 + reply_data[4] + 1500);
-  mt_myBMS_ADCCvolts_max->SetValue(reply_data[1] * 256 + reply_data[2] + 1500);
+  mt_myBMS_ADCCvolts_mean->SetValue(reply_data[4] * 256 + reply_data[5]);
+  mt_myBMS_ADCCvolts_min->SetValue(reply_data[2] * 256 + reply_data[3] + 1500);
+  mt_myBMS_ADCCvolts_max->SetValue(reply_data[0] * 256 + reply_data[1] + 1500);
   
   if (RAW_VOLTAGES) {
     mt_myBMS_ADCvoltsOffset->SetValue(0);
@@ -411,15 +410,15 @@ void OvmsVehicleSmartED::PollReply_BMS_BattADCref(const char* reply_data, uint16
 }
 
 void OvmsVehicleSmartED::PollReply_BMS_BattDate(const char* reply_data, uint16_t reply_len) {
-  myBMS_Year = reply_data[1];
-  myBMS_Month = reply_data[2];
-  myBMS_Day = reply_data[3];
+  myBMS_Year = reply_data[0];
+  myBMS_Month = reply_data[1];
+  myBMS_Day = reply_data[2];
 }
 
 void OvmsVehicleSmartED::PollReply_BMS_BattProdDate(const char* reply_data, uint16_t reply_len) {
-  myBMS_ProdYear = (reply_data[1] - 48) * 10 + (reply_data[2] - 48);
-  myBMS_ProdMonth = (reply_data[3] - 48) * 10 + (reply_data[4] - 48);
-  myBMS_ProdDay = (reply_data[5] - 48) * 10 + (reply_data[6] - 48);
+  myBMS_ProdYear = (reply_data[0] - 48) * 10 + (reply_data[1] - 48);
+  myBMS_ProdMonth = (reply_data[2] - 48) * 10 + (reply_data[3] - 48);
+  myBMS_ProdDay = (reply_data[4] - 48) * 10 + (reply_data[5] - 48);
 }
 
 void OvmsVehicleSmartED::PollReply_BMS_BattHWrev(const char* reply_data, uint16_t reply_len) {
@@ -429,13 +428,13 @@ void OvmsVehicleSmartED::PollReply_BMS_BattHWrev(const char* reply_data, uint16_
 }
 
 void OvmsVehicleSmartED::PollReply_BMS_BattSWrev(const char* reply_data, uint16_t reply_len) {
-  for(int n = 4; n < 7; n++) {
-    mt_myBMS_SWrev->SetElemValue(n-4, reply_data[n]);
+  for(int n = 3; n < 6; n++) {
+    mt_myBMS_SWrev->SetElemValue(n-3, reply_data[n]);
   }
 }
 
 void OvmsVehicleSmartED::PollReply_BMS_BattIsolation(const char* reply_data, uint16_t reply_len) {
-  uint16_t value = reply_data[1] * 256 + reply_data[2];//this->ReadDiagWord(&value,data,4,1);
+  uint16_t value = reply_data[0] * 256 + reply_data[1];//this->ReadDiagWord(&value,data,4,1);
   mt_myBMS_Isolation->SetValue((signed) value);
   mt_myBMS_DCfault->SetValue(reply_data[3]);
 }
@@ -444,14 +443,14 @@ void OvmsVehicleSmartED::PollReply_BMS_BattVIN(const char* reply_data, uint16_t 
   char vin[18];
   memset(vin, 0, sizeof(vin));
   for(int n = 0; n < 17; n++) {
-    vin[n] = reply_data[n + 1];
+    vin[n] = reply_data[n];
   }
   mt_myBMS_BattVIN->SetValue(vin);
 }
 
 void OvmsVehicleSmartED::PollReply_BMS_BattTemp(const char* reply_data, uint16_t reply_len) {
   for(uint16_t n = 0; n < (7 * 2); n = n + 2){
-    myBMS_Temps[n/2] = ((reply_data[n + 1] * 256 + reply_data[n + 2]));
+    myBMS_Temps[n/2] = ((reply_data[n] * 256 + reply_data[n + 1]));
   }
   //Copy max, min, mean and coolant-in temp to end of array
   for(uint16_t n = 0; n < 4; n++) {
@@ -463,14 +462,14 @@ void OvmsVehicleSmartED::PollReply_BMS_BattTemp(const char* reply_data, uint16_t
 
 void OvmsVehicleSmartED::PollReply_BMS_ModuleTemp(const char* reply_data, uint16_t reply_len) {
   for(uint16_t n = 0; n < (9 * 2); n = n + 2){
-    myBMS_Temps[n/2] = ((reply_data[n + 1] * 256 + reply_data[n + 2]));
+    myBMS_Temps[n/2] = ((reply_data[n] * 256 + reply_data[n + 1]));
     BmsSetCellTemperature(n/2, (float) myBMS_Temps[n/2]/64);
   }
 }
 
 void OvmsVehicleSmartED::PollReply_BMS_BattVolts(const char* reply_data, uint16_t reply_len) {
   for(uint16_t n = 0; n < (CELLCOUNT * 2); n = n + 2){
-    float Cells = (reply_data[n + 1] * 256 + reply_data[n + 2]);
+    float Cells = (reply_data[n] * 256 + reply_data[n + 1]);
     BmsSetCellVoltage(n/2, Cells/1000);
   }
   float min=0, max=0;
@@ -491,25 +490,25 @@ void OvmsVehicleSmartED::PollReply_BMS_BattVolts(const char* reply_data, uint16_
 
 void OvmsVehicleSmartED::PollReply_BMS_BattCapacity(const char* reply_data, uint16_t reply_len) {
   for(uint16_t n = 0; n < (CELLCOUNT * 2); n = n + 2){
-    BmsSetCellCapacity(n/2, (reply_data[n + 22] * 256 + reply_data[n + 23]));
+    BmsSetCellCapacity(n/2, (reply_data[n + 21] * 256 + reply_data[n + 22]));
   }
 /*
   myBMS->Ccap_As.min = CellCapacity.minimum(&myBMS->CAP_min_at);
   myBMS->Ccap_As.max = CellCapacity.maximum(&myBMS->CAP_max_at);
   myBMS->Ccap_As.mean = CellCapacity.mean();
 */
-  mt_v_bat_HVoff_time->SetValue( reply_data[2] * 65535 + (uint16_t) reply_data[3] * 256 + reply_data[4] );
-  mt_v_bat_HV_lowcurrent->SetValue( (unsigned long) reply_data[6] * 65535 + (uint16_t) reply_data[7] * 256 + reply_data[8] );
-  mt_v_bat_OCVtimer->SetValue( (uint16_t) reply_data[9] * 256 + reply_data[10] );
-  myBMS_SOH = reply_data[11];
-  mt_v_bat_Cap_As_min->SetValue( reply_data[18] * 256 + reply_data[19] );
-  mt_v_bat_Cap_As_avg->SetValue( reply_data[20] * 256 + reply_data[21] );
-  mt_v_bat_Cap_As_max->SetValue( reply_data[14] * 256 + reply_data[15] );
-  mt_v_bat_LastMeas_days->SetValue( reply_data[424] * 256 + reply_data[425] );
+  mt_v_bat_HVoff_time->SetValue( reply_data[1] * 65535 + (uint16_t) reply_data[2] * 256 + reply_data[3] );
+  mt_v_bat_HV_lowcurrent->SetValue( (unsigned long) reply_data[5] * 65535 + (uint16_t) reply_data[6] * 256 + reply_data[7] );
+  mt_v_bat_OCVtimer->SetValue( (uint16_t) reply_data[8] * 256 + reply_data[9] );
+  myBMS_SOH = reply_data[10];
+  mt_v_bat_Cap_As_min->SetValue( reply_data[17] * 256 + reply_data[18] );
+  mt_v_bat_Cap_As_avg->SetValue( reply_data[19] * 256 + reply_data[20] );
+  mt_v_bat_Cap_As_max->SetValue( reply_data[13] * 256 + reply_data[14] );
+  mt_v_bat_LastMeas_days->SetValue( reply_data[423] * 256 + reply_data[424] );
   uint16_t value;
-  value = reply_data[426] * 256 + reply_data[427];
+  value = reply_data[425] * 256 + reply_data[426];
   mt_v_bat_Cap_meas_quality->SetValue( value / 65535.0 );
-  value = reply_data[422] * 256 + reply_data[423];
+  value = reply_data[421] * 256 + reply_data[422];
   mt_v_bat_Cap_combined_quality->SetValue( value / 65535.0 );
   
   StandardMetrics.ms_v_bat_cac->SetValue(mt_v_bat_Cap_As_avg->AsFloat()/360.0, AmpHours);
@@ -521,9 +520,9 @@ void OvmsVehicleSmartED::PollReply_NLG6_ChargerPN_HW(const char* reply_data, uin
   char NLG6PN_HW[11];
   memset(NLG6PN_HW, 0, sizeof(NLG6PN_HW));
   
-  for (n = 1; n < 11; n++) {
-    NLG6PN_HW[n - 1] = reply_data[n];
-    if (reply_data[n] == NLG6_PN_HW[n - 1]) {
+  for (n = 0; n < 10; n++) {
+    NLG6PN_HW[n] = reply_data[n];
+    if (reply_data[n] == NLG6_PN_HW[n]) {
       comp++;
     }
   }
@@ -540,20 +539,20 @@ void OvmsVehicleSmartED::PollReply_NLG6_ChargerVoltages(const char* reply_data, 
   float NLG6MainsVoltage[3];
   
   if (mt_nlg6_present->AsBool()){
-    mt_nlg6_dc_lv->SetValue(reply_data[5]/10.0);
-    mt_nlg6_dc_hv->SetValue((reply_data[6] * 256 + reply_data[7])/10.0);
-    NLG6MainsVoltage[0] = (reply_data[8] * 256 + reply_data[9])/10.0;
-    NLG6MainsVoltage[1] = (reply_data[10] * 256 + reply_data[11])/10.0;
-    NLG6MainsVoltage[2] = (reply_data[12] * 256 + reply_data[13])/10.0;
+    mt_nlg6_dc_lv->SetValue(reply_data[4]/10.0);
+    mt_nlg6_dc_hv->SetValue((reply_data[5] * 256 + reply_data[6])/10.0);
+    NLG6MainsVoltage[0] = (reply_data[7] * 256 + reply_data[8])/10.0;
+    NLG6MainsVoltage[1] = (reply_data[9] * 256 + reply_data[10])/10.0;
+    NLG6MainsVoltage[2] = (reply_data[11] * 256 + reply_data[12])/10.0;
   } else {
-    mt_nlg6_dc_lv->SetValue(reply_data[3]/10.0);
-    if ((reply_data[6] * 256 + reply_data[7]) != 8190) {  //OBL showing only valid data while charging
-      mt_nlg6_dc_hv->SetValue((reply_data[6] * 256 + reply_data[7])/10.0);
+    mt_nlg6_dc_lv->SetValue(reply_data[2]/10.0);
+    if ((reply_data[5] * 256 + reply_data[6]) != 8190) {  //OBL showing only valid data while charging
+      mt_nlg6_dc_hv->SetValue((reply_data[5] * 256 + reply_data[6])/10.0);
     } else {
       mt_nlg6_dc_hv->SetValue(0);
     }
-    if ((reply_data[8] * 256 + reply_data[9]) != 8190) {  //OBL showing only valid data while charging
-      NLG6MainsVoltage[0] = (reply_data[8] * 256 + reply_data[9])/10.0;
+    if ((reply_data[7] * 256 + reply_data[8]) != 8190) {  //OBL showing only valid data while charging
+      NLG6MainsVoltage[0] = (reply_data[7] * 256 + reply_data[8])/10.0;
     } else {
       NLG6MainsVoltage[0] = 0;
     }
@@ -568,28 +567,28 @@ void OvmsVehicleSmartED::PollReply_NLG6_ChargerAmps(const char* reply_data, uint
   float NLG6MainsAmps[3]; 
   
   if (mt_nlg6_present->AsBool()){
-    mt_nlg6_dc_current->SetValue((reply_data[1] * 256 + reply_data[2])/10.0); 
-    NLG6MainsAmps[0] = (reply_data[3] * 256 + reply_data[4])/10.0;  
-    NLG6MainsAmps[1] = (reply_data[5] * 256 + reply_data[6])/10.0;
-    NLG6MainsAmps[2] = (reply_data[7] * 256 + reply_data[8])/10.0; 
-    mt_nlg6_amps_chargingpoint->SetValue((reply_data[13] * 256 + reply_data[14])/10.0);
-    mt_nlg6_amps_cablecode->SetValue((reply_data[15] * 256 + reply_data[16])/10.0);
+    mt_nlg6_dc_current->SetValue((reply_data[0] * 256 + reply_data[1])/10.0); 
+    NLG6MainsAmps[0] = (reply_data[2] * 256 + reply_data[3])/10.0;  
+    NLG6MainsAmps[1] = (reply_data[4] * 256 + reply_data[5])/10.0;
+    NLG6MainsAmps[2] = (reply_data[6] * 256 + reply_data[7])/10.0; 
+    mt_nlg6_amps_chargingpoint->SetValue((reply_data[12] * 256 + reply_data[13])/10.0);
+    mt_nlg6_amps_cablecode->SetValue((reply_data[14] * 256 + reply_data[15])/10.0);
   } else {
-    if ((reply_data[3] * 256 + reply_data[4]) != 2047) {  //OBL showing only valid data while charging
-      NLG6MainsAmps[0] = (reply_data[3] * 256 + reply_data[4])/10.0;
+    if ((reply_data[2] * 256 + reply_data[3]) != 2047) {  //OBL showing only valid data while charging
+      NLG6MainsAmps[0] = (reply_data[2] * 256 + reply_data[3])/10.0;
     } else {
       NLG6MainsAmps[0] = 0;
     }
     NLG6MainsAmps[1] = 0;
     NLG6MainsAmps[2] = 0;
     mt_nlg6_amps_chargingpoint->SetValue(0);
-    if ((reply_data[15] * 256 + reply_data[16]) != 2047) {  //OBL showing only valid data while charging
-      mt_nlg6_dc_current->SetValue((reply_data[15] * 256 + reply_data[16])/10.0);
+    if ((reply_data[14] * 256 + reply_data[15]) != 2047) {  //OBL showing only valid data while charging
+      mt_nlg6_dc_current->SetValue((reply_data[14] * 256 + reply_data[15])/10.0);
     } else {
       mt_nlg6_dc_current->SetValue(0);
     }
     //Usable AmpsCode from Cable seem to be also a word with OBL as with NLG6?!
-    mt_nlg6_amps_cablecode->SetValue((reply_data[5] * 256 + reply_data[6])/10.0);
+    mt_nlg6_amps_cablecode->SetValue((reply_data[4] * 256 + reply_data[5])/10.0);
     //NLG6AmpsCableCode = data[12]; //12
   }
   mt_nlg6_main_amps->SetElemValues(0, 3, NLG6MainsAmps);
@@ -598,9 +597,9 @@ void OvmsVehicleSmartED::PollReply_NLG6_ChargerAmps(const char* reply_data, uint
 
 void OvmsVehicleSmartED::PollReply_NLG6_ChargerSelCurrent(const char* reply_data, uint16_t reply_len) {
   if(mt_nlg6_present->AsBool()){
-    mt_nlg6_amps_setpoint->SetValue(reply_data[5]); //Get data for NLG6 fast charger
+    mt_nlg6_amps_setpoint->SetValue(reply_data[4]); //Get data for NLG6 fast charger
   } else {
-    mt_nlg6_amps_setpoint->SetValue(reply_data[4]); //7 //Get data for standard OBL
+    mt_nlg6_amps_setpoint->SetValue(reply_data[3]); //7 //Get data for standard OBL
   }
 }
 
@@ -609,17 +608,17 @@ void OvmsVehicleSmartED::PollReply_NLG6_ChargerTemperatures(const char* reply_da
   int n;
   
   if (mt_nlg6_present->AsBool()){
-    mt_nlg6_temp_coolingplate->SetValue((reply_data[1] < 0xFF) ? reply_data[1]-40 : 0);
+    mt_nlg6_temp_coolingplate->SetValue((reply_data[0] < 0xFF) ? reply_data[0]-40 : 0);
     for(n = 0; n < 8; n++) {
-      NLG6Temps[n] = (reply_data[n + 2] < 0xFF) ? reply_data[n + 2]-40 : 0;
+      NLG6Temps[n] = (reply_data[n + 1] < 0xFF) ? reply_data[n + 1]-40 : 0;
     }
-    mt_nlg6_temp_reported->SetValue((reply_data[9] < 0xFF) ? reply_data[9]-40 : 0);
-    mt_nlg6_temp_socket->SetValue((reply_data[10] < 0xFF) ? reply_data[10]-40 : 0);
+    mt_nlg6_temp_reported->SetValue((reply_data[8] < 0xFF) ? reply_data[8]-40 : 0);
+    mt_nlg6_temp_socket->SetValue((reply_data[9] < 0xFF) ? reply_data[9]-40 : 0);
     mt_nlg6_temps->SetElemValues(0, 8, NLG6Temps);
   } else {
-    mt_nlg6_temp_coolingplate->SetValue((reply_data[2] < 0xFF) ? reply_data[2]-40 : 0); //5
-    mt_nlg6_temp_reported->SetValue((reply_data[4] < 0xFF) ? reply_data[4]-40 : 0); //7
-    mt_nlg6_temp_socket->SetValue((reply_data[6] < 0xFF) ? reply_data[6]-40 : 0); //9
+    mt_nlg6_temp_coolingplate->SetValue((reply_data[1] < 0xFF) ? reply_data[1]-40 : 0); //5
+    mt_nlg6_temp_reported->SetValue((reply_data[3] < 0xFF) ? reply_data[3]-40 : 0); //7
+    mt_nlg6_temp_socket->SetValue((reply_data[5] < 0xFF) ? reply_data[5]-40 : 0); //9
   }
   if (mt_nlg6_temp_reported->AsFloat() != 0) StandardMetrics.ms_v_charge_temp->SetValue(mt_nlg6_temp_reported->AsFloat());
 }

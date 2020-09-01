@@ -47,6 +47,9 @@
 #include "ovms_webserver.h"
 #endif
 
+#define CAN_BYTE(b)     d[b]
+#define CAN_UINT(b)     (((UINT)CAN_BYTE(b+1) << 8) | CAN_BYTE(b))
+
 using namespace std;
 
 class OvmsVehicleSmartED : public OvmsVehicle
@@ -60,6 +63,7 @@ class OvmsVehicleSmartED : public OvmsVehicle
     void IncomingFrameCan1(CAN_frame_t* p_frame);
     void IncomingFrameCan2(CAN_frame_t* p_frame);
     void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
+    void IncomingPollError(canbus* bus, uint16_t type, uint16_t pid, uint16_t code);
     char m_vin[18];
 
   public:
@@ -111,6 +115,8 @@ class OvmsVehicleSmartED : public OvmsVehicle
     void NotifyTrip();
     void NotifyValetEnabled();
     void NotifyValetDisabled();
+    void NotifyValetHood();
+    void NotifyValetTrunk();
     void SaveStatus();
     void RestoreStatus();
     void HandleCharging();
@@ -299,12 +305,13 @@ class OvmsVehicleSmartED : public OvmsVehicle
     int m_shutdown_ticker;
   
   public:
-    bool ObdRequest(uint16_t txid, uint16_t rxid, uint32_t request, string& response, int timeout_ms=3000);
+    int ObdRequest(uint16_t txid, uint16_t rxid, uint32_t request, string& response, int timeout_ms=3000);
     static void shell_obd_request(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void shell_obd_request_volts(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
   
   protected:
     string              smarted_obd_rxbuf;
+    uint16_t            smarted_obd_rxerr;
     OvmsMutex           smarted_obd_request;
     OvmsSemaphore       smarted_obd_rxwait;
   

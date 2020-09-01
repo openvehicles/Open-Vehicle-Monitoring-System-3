@@ -52,13 +52,13 @@ static const char *TAG = "v-voltampera";
 static const OvmsVehicle::poll_pid_t va_polls[]
   =
   {
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x4369, {  0, 10,  0 } }, // On-board charger current
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x4368, {  0, 10,  0 } }, // On-board charger voltage
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x434f, {  0, 10,  0 } }, // High-voltage Battery temperature
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x1c43, {  0, 10,  0 } }, // PEM temperature
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x8334, {  0, 10,  0 } }, // SOC
-    { 0x7e1, 0x7e9, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2487, {  0,100,  0 } }, // Distance Traveled on Battery Energy This Drive Cycle
-    { 0, 0, 0x00, 0x00, { 0, 0, 0 } }
+    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x4369, {  0, 10,  0 }, 0 }, // On-board charger current
+    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x4368, {  0, 10,  0 }, 0 }, // On-board charger voltage
+    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x434f, {  0, 10,  0 }, 0 }, // High-voltage Battery temperature
+    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x1c43, {  0, 10,  0 }, 0}, // PEM temperature
+    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x8334, {  0, 10,  0 }, 0 }, // SOC
+    { 0x7e1, 0x7e9, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2487, {  0,100,  0 }, 0 }, // Distance Traveled on Battery Energy This Drive Cycle
+    { 0, 0, 0x00, 0x00, { 0, 0, 0 }, 0 }
   };
 // These are not polled anymore but instead received passively
 // { 0x7e0, 0x7e8, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x000d, {  0, 10,  0 } }, // Vehicle speed
