@@ -668,6 +668,14 @@ config OVMS_COMP_CANOPEN_WRK_STACK
         updates so can run with a smaller stack than the RX task.
         Standard stack usage for the Twizy is currently around 1000 bytes.
 
+config OVMS_COMP_PLUGINS
+    bool "Include support for PLUGINS"
+    default y
+    depends on OVMS_SC_GPL_MONGOOSE
+    help
+        Enable to include support for PLUGINS and server based
+        extension repositories.
+
 endmenu # Component Options
 
 
