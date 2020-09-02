@@ -95,7 +95,7 @@
 #include "ovms_log.h"
 static const char *TAG = "vwup.t26";
 
-#define VERSION "0.3.2"
+#define VERSION "0.3.4"
 
 #include <stdio.h>
 #include "pcp.h"
