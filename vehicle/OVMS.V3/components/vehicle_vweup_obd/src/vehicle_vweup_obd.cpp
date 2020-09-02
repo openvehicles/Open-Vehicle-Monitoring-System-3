@@ -25,7 +25,7 @@
 
 #include "ovms_log.h"
 
-static const char *TAG = "vwup.obd";
+static const char *TAG = "v-vweup-obd";
 
 #include <stdio.h>
 #include "pcp.h"
@@ -91,16 +91,16 @@ OvmsVehicleVWeUpObd::OvmsVehicleVWeUpObd()
     PollSetResponseSeparationTime(1);
     PollSetState(VWUP_OFF);
 
-    BatMgmtEnergyUsed = MyMetrics.InitFloat("vwup.batmgmt.enrg.used", SM_STALE_NONE, 0, kWh);
-    BatMgmtEnergyCharged = MyMetrics.InitFloat("vwup.batmgmt.enrg.chrgd", SM_STALE_NONE, 0, kWh);
-    BatMgmtCellDelta = MyMetrics.InitFloat("vwup.batmgmt.cell.delta", SM_STALE_NONE, 0, Volts);
+    BatMgmtEnergyUsed = MyMetrics.InitFloat("xuo.b.energy.used", SM_STALE_NONE, 0, kWh);
+    BatMgmtEnergyCharged = MyMetrics.InitFloat("xuo.b.energy.charged", SM_STALE_NONE, 0, kWh);
+    BatMgmtCellDelta = MyMetrics.InitFloat("xuo.b.cell.delta", SM_STALE_NONE, 0, Volts);
 
-    ChargerPowerEffEcu = MyMetrics.InitFloat("vwup.chrgr.eff.ecu", 100, 0, Percentage);
-    ChargerPowerLossEcu = MyMetrics.InitFloat("vwup.chrgr.loss.ecu", SM_STALE_NONE, 0, Watts);
-    ChargerPowerEffCalc = MyMetrics.InitFloat("vwup.chrgr.eff.calc", 100, 0, Percentage);
-    ChargerPowerLossCalc = MyMetrics.InitFloat("vwup.chrgr.loss.calc", SM_STALE_NONE, 0, Watts);
-    ChargerACPower = MyMetrics.InitFloat("vwup.chrgr.ac.p", SM_STALE_NONE, 0, Watts);
-    ChargerDCPower = MyMetrics.InitFloat("vwup.chrgr.dc.p", SM_STALE_NONE, 0, Watts);
+    ChargerPowerEffEcu = MyMetrics.InitFloat("xuo.c.eff.ecu", 100, 0, Percentage);
+    ChargerPowerLossEcu = MyMetrics.InitFloat("xuo.c.loss.ecu", SM_STALE_NONE, 0, Watts);
+    ChargerPowerEffCalc = MyMetrics.InitFloat("xuo.c.eff.calc", 100, 0, Percentage);
+    ChargerPowerLossCalc = MyMetrics.InitFloat("xuo.c.loss.calc", SM_STALE_NONE, 0, Watts);
+    ChargerACPower = MyMetrics.InitFloat("xuo.c.ac.p", SM_STALE_NONE, 0, Watts);
+    ChargerDCPower = MyMetrics.InitFloat("xuo.c.dc.p", SM_STALE_NONE, 0, Watts);
 
     TimeOffRequested = 0;
 }

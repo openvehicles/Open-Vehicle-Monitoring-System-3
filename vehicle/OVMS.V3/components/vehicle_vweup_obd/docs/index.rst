@@ -84,9 +84,9 @@ In addition to the standard metrics above the following custom metrics are read 
 ======================================== ======================== ============================================
 Metric name                              Example value            Description
 ======================================== ======================== ============================================
-vwup.batmgmt.enrg.used                   -540.342 kWh             Total energy taken out of the main battery
-vwup.batmgmt.enrg.chrgd                  578.323 kWh              Total energy put (by charging or recuperation) into the main battery
-vwup.batmgmt.cell.delta                  0.012 V                  Delta voltage between lowest and highest cell voltage
+xuo.b.energy.used                        -540.342 kWh             Total energy taken out of the main battery
+xuo.b.energy.charged                     578.323 kWh              Total energy put (by charging or recuperation) into the main battery
+xuo.b.cell.delta                         0.012 V                  Delta voltage between lowest and highest cell voltage
 ======================================== ======================== ============================================
 
 **Metrics updated in state "Vehicle CHARGING"**
@@ -94,12 +94,12 @@ vwup.batmgmt.cell.delta                  0.012 V                  Delta voltage 
 ======================================== ======================== ============================================
 Metric name                              Example value            Description
 ======================================== ======================== ============================================
-vwup.chrgr.eff.ecu                       92.3 %                   Charger efficiency reported by the Charger ECU
-vwup.chrgr.loss.ecu                      620 W                    Charger power loss reported by the Charger ECU
-vwup.chrgr.ac.p                          7223 W                   Current charging power on AC side (calculated by ECU's AC voltages and AC currents)
-vwup.chrgr.dc.p                          6500 W                   Current charging power on DC side (calculated by ECU's DC voltages and DC currents)
-vwup.chrgr.eff.calc                       90.0 %                  Charger efficiency calculated by AC and DC power
-vwup.chrgr.loss.calc                      733 W                   Charger power loss calculated by AC and DC power
+xuo.c.eff.ecu                            92.3 %                   Charger efficiency reported by the Charger ECU
+xuo.c.loss.ecu                           620 W                    Charger power loss reported by the Charger ECU
+xuo.c.ac.p                               7223 W                   Current charging power on AC side (calculated by ECU's AC voltages and AC currents)
+xuo.c.dc.p                               6500 W                   Current charging power on DC side (calculated by ECU's DC voltages and DC currents)
+xuo.c.eff.calc                           90.0 %                   Charger efficiency calculated by AC and DC power
+xuo.c.loss.calc                          733 W                    Charger power loss calculated by AC and DC power
 ======================================== ======================== ============================================
 
 -----------------------------
