@@ -46,19 +46,52 @@ static const char *TAG = "pluginstore";
 
 OvmsPluginStore MyPluginStore __attribute__ ((init_priority (7100)));
 
-void plugins_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+void repo_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  MyPluginStore.RepoList(writer);
+  }
+
+void repo_install(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  MyPluginStore.RepoInstall(writer,std::string(argv[0]),std::string(argv[0]));
+  }
+
+void repo_remove(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  MyPluginStore.RepoRemove(writer,std::string(argv[0]));
+  }
+
+void plugin_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   MyPluginStore.Summarise(writer);
   }
 
-void plugins_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+void plugin_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  MyPluginStore.ListPlugins(writer);
+  MyPluginStore.PluginList(writer);
   }
 
-void plugins_show(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+void plugin_show(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  MyPluginStore.ShowPlugin(writer,std::string(argv[0]));
+  MyPluginStore.PluginShow(writer,std::string(argv[0]));
+  }
+
+void plugin_install(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  MyPluginStore.PluginInstall(writer,std::string(argv[0]));
+  }
+
+void plugin_remove(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  MyPluginStore.PluginRemove(writer,std::string(argv[0]));
+  }
+
+void plugin_update(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (argc == 0)
+    { MyPluginStore.PluginUpdateAll(writer); }
+  else
+    { MyPluginStore.PluginUpdate(writer,std::string(argv[0])); }
   }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -68,13 +101,21 @@ OvmsPluginStore::OvmsPluginStore()
   {
   ESP_LOGI(TAG, "Initialising PLUGINS (7100)");
 
-  OvmsCommand* cmd_plugins = MyCommandApp.RegisterCommand("plugins","PLUGINS framework", plugins_status, "", 0, 0, false);
-  cmd_plugins->RegisterCommand("status","Show status of plugins",plugins_status,"[nocheck]",0,1);
-  cmd_plugins->RegisterCommand("list","Show list of plugins",plugins_list,"",0,0);
-  cmd_plugins->RegisterCommand("show","Show plugin details",plugins_show,"<plugin>",1,1);
+  OvmsCommand* cmd_plugin = MyCommandApp.RegisterCommand("plugin","PLUGIN framework", plugin_status, "", 0, 0, false);
+  cmd_plugin->RegisterCommand("status","Show status of plugins",plugin_status,"[nocheck]",0,1);
+  cmd_plugin->RegisterCommand("list","Show list of plugins",plugin_list,"",0,0);
+  cmd_plugin->RegisterCommand("show","Show plugin details",plugin_show,"<plugin>",1,1);
+  cmd_plugin->RegisterCommand("install","Install a plugin",plugin_install,"<plugin>",1,1);
+  cmd_plugin->RegisterCommand("remove","Remove a plugin",plugin_remove,"<plugin>",1,1);
+  cmd_plugin->RegisterCommand("update","Update all or a specific plugin",plugin_update,"[plugin]",1,1);
 
-  MyConfig.RegisterParam("plugins", "PLUGIN store setup and status", true, true);
-  // store.url: URL path for the root of the store
+  OvmsCommand* cmd_repo = cmd_plugin->RegisterCommand("repo","PLUGIN Repositories", repo_list, "", 0, 0);
+  cmd_repo->RegisterCommand("list","List repositories",repo_list,"",0,0);
+  cmd_repo->RegisterCommand("install","Install a repository",repo_install,"<repo> <path>",2,2);
+  cmd_repo->RegisterCommand("remove","Remove a repository",repo_remove,"<repo>",1,1);
+
+  MyConfig.RegisterParam("plugin", "PLUGIN store setup and status", true, true);
+  MyConfig.RegisterParam("plugin.repos", "PLUGIN repositories", false, true);
   }
 
 OvmsPluginStore::~OvmsPluginStore()
@@ -84,29 +125,55 @@ OvmsPluginStore::~OvmsPluginStore()
     delete it->second;
     }
   m_plugins.clear();
+
+  for (auto it = m_repos.begin(); it != m_repos.end(); ++it)
+    {
+    delete it->second;
+    }
+  m_repos.clear();
   }
 
 void OvmsPluginStore::Summarise(OvmsWriter* writer)
   {
-  MyPluginStore.RetrieveStore();
-  writer->printf("PLUGIN store version: %s\n", m_version.c_str());
-  writer->printf("                      %d plugin(s)\n", m_plugins.size());
+  MyPluginStore.LoadRepoPlugins();
+
+  for (auto it = m_repos.begin(); it != m_repos.end(); ++it)
+    {
+    writer->printf("Repository: %s version %s\n",
+      it->first.c_str(), it->second->m_version.c_str());
+    }
+
+  writer->printf("Plugins: %d loaded\n",m_plugins.size());
   }
 
-void OvmsPluginStore::ListPlugins(OvmsWriter* writer)
+void OvmsPluginStore::RepoList(OvmsWriter* writer)
   {
-  MyPluginStore.RetrieveStore();
+  }
 
-  writer->printf("PLUGIN store version: %s\n\n", m_version.c_str());
-  writer->puts("Plugin               Description");
+void OvmsPluginStore::RepoInstall(OvmsWriter* writer, std::string name, std::string path)
+  {
+  }
+
+void OvmsPluginStore::RepoRemove(OvmsWriter* writer, std::string name)
+  {
+  }
+
+void OvmsPluginStore::PluginList(OvmsWriter* writer)
+  {
+  MyPluginStore.LoadRepoPlugins();
+
+  writer->puts("Plugin               Repo             Description");
   for (auto it = m_plugins.begin(); it != m_plugins.end(); ++it)
     {
     OvmsPlugin *p = it->second;
-    printf("%-20.20s %s\n", p->m_name.c_str(), p->m_description.c_str());
+    printf("%-20.20s %-16.16s %s\n",
+      p->m_name.c_str(),
+      p->m_repo.c_str(),
+      p->m_description.c_str());
     }
   }
 
-void OvmsPluginStore::ShowPlugin(OvmsWriter* writer, std::string plugin)
+void OvmsPluginStore::PluginShow(OvmsWriter* writer, std::string plugin)
   {
   auto search = m_plugins.find(plugin);
   if (search == m_plugins.end())
@@ -119,118 +186,49 @@ void OvmsPluginStore::ShowPlugin(OvmsWriter* writer, std::string plugin)
   p->Summarise(writer);
   }
 
-bool OvmsPluginStore::RetrieveStore()
+void OvmsPluginStore::PluginInstall(OvmsWriter* writer, std::string plugin)
   {
-  std::string repo = MyConfig.GetParamValue("plugins","store.url","http://api.openvehicles.com/plugins");
-
-  std::string url = repo;
-  url.append("/plugins.rev");
-
-  OvmsHttpClient http(url);
-  if (!http.IsOpen())
-    {
-    ESP_LOGE(TAG, "HTTP request failed: %s",url.c_str());
-    return false;
-    }
-
-  if (!http.BodyHasLine())
-    {
-    ESP_LOGE(TAG, "HTTP response invalid");
-    return false;
-    }
-
-  std::string version = http.BodyReadLine();
-
-  if (version.compare(m_version) == 0)
-    {
-    ESP_LOGI(TAG, "Plugin store version: %s",version.c_str());
-    return true;
-    }
-
-  ESP_LOGI(TAG, "Plugin store has changed, retrieving latest version");
-  http.Disconnect();
-  url = repo;
-  url.append("/plugins.json");
-  if (!http.Request(url))
-    {
-    ESP_LOGE(TAG, "HTTP request failed: %s",url.c_str());
-    return false;
-    }
-
-  size_t bodysize = http.BodySize();
-  char* buf = new char[bodysize+1];
-  http.BodyRead(buf,bodysize);
-  buf[bodysize] = 0;
-  std::string body(buf);
-  delete [] buf;
-  ESP_LOGD(TAG, "Retrieved %d byte(s) of store metadata",bodysize);
-
-  cJSON *json = cJSON_Parse(body.c_str());
-  if (json == NULL)
-    {
-    ESP_LOGE(TAG, "Could not parse metadata");
-    return false;
-    }
-
-  for (auto it = m_plugins.begin(); it != m_plugins.end(); ++it)
-    {
-    delete it->second;
-    }
-  m_plugins.clear();
-
-  if (!LoadPlugins(json))
-    {
-    ESP_LOGE(TAG, "Could not log plugins from repository metadata");
-    return false;
-    }
-
-  // Free up the cJSON structure
-  cJSON_Delete(json);
-
-  // Update version, and quit
-  ESP_LOGI(TAG, "Plugin store version: %s",version.c_str());
-  m_version = version;
-  return true;
   }
 
-bool OvmsPluginStore::LoadPlugins(cJSON *json)
+void OvmsPluginStore::PluginRemove(OvmsWriter* writer, std::string plugin)
   {
-  // Load the plugins from the provided cJSON structure
-  if (json == NULL)
+  }
+
+void OvmsPluginStore::PluginUpdate(OvmsWriter* writer, std::string plugin)
+  {
+  }
+
+void OvmsPluginStore::PluginUpdateAll(OvmsWriter* writer)
+  {
+  }
+
+bool OvmsPluginStore::LoadRepoPlugins()
+  {
+  const ConfigParamMap *cpm = MyConfig.GetParamMap("plugin.repos");
+  if (cpm->size() == 0)
     {
-    ESP_LOGE(TAG, "Plugin metadata is not defined");
-    return false;
-    }
-  if (json->type != cJSON_Array)
-    {
-    ESP_LOGE(TAG, "Unexpected root type %d for plugin metadata",json->type);
-    return false;
-    }
-  if (json->child == NULL)
-    {
-    ESP_LOGE(TAG, "Unexpected empty list of plugins in metadata");
-    return false;
+    // Configure the default repo
+    MyConfig.SetParamValue("plugin.repos","openvehicles","http://api.openvehicles.com/plugins");
     }
 
-  cJSON* el = json->child;
-  while (el != NULL)
+  if (m_repos.size() == 0)
     {
-    // Process the given element
-    if (el->type != cJSON_Object)
+    // Load the repos from config
+    for (auto it = cpm->begin(); it != cpm->end(); ++it)
       {
-      ESP_LOGE(TAG, "Invalid plugin type %d in metadata",el->type);
-      return false;
+      OvmsRepository* r = new OvmsRepository(it->first, it->second);
+      m_repos[it->first] = r;
       }
+    }
 
-    OvmsPlugin *p = new OvmsPlugin();
-    if (!p->LoadJSON(el))
+  for (auto it = m_repos.begin(); it != m_repos.end(); ++it)
+    {
+    OvmsRepository* r = it->second;
+    if (! r->UpdateRepo())
       {
-      ESP_LOGE(TAG, "Invalid plugin in metadata");
-      delete p;
+      ESP_LOGE(TAG, "Plugin repository '%s' failed to update", it->first.c_str());
       return false;
       }
-    m_plugins[p->m_name] = p;
-    el = el->next;
     }
 
   return true;
@@ -444,6 +442,7 @@ void OvmsPlugin::Summarise(OvmsWriter* writer)
   writer->printf("  Group:       %s\n",m_group.c_str());
   writer->printf("  Info:        %s\n",m_info.c_str());
   writer->printf("  Maintainer:  %s\n",m_maintainer.c_str());
+  writer->printf("  Repository:  %s\n",m_repo.c_str());
   writer->printf("  Version:     %s\n",m_version.c_str());
 
   if (m_prerequisites.size() > 0)
@@ -465,8 +464,9 @@ void OvmsPlugin::Summarise(OvmsWriter* writer)
     }
   }
 
-bool OvmsPlugin::LoadJSON(cJSON *json)
+bool OvmsPlugin::LoadJSON(std::string repo, cJSON *json)
   {
+  m_repo = repo;
   cJSON* el = json->child;
   while (el != NULL)
     {
@@ -521,6 +521,138 @@ bool OvmsPlugin::LoadJSON(cJSON *json)
       {
       return false;
       }
+    el = el->next;
+    }
+
+  return true;
+  }
+
+////////////////////////////////////////////////////////////////////////////////
+// OvmsRepository
+
+OvmsRepository::OvmsRepository(std::string name, std::string path)
+  {
+  m_name = name;
+  m_path = path;
+  }
+
+OvmsRepository::~OvmsRepository()
+  {
+  }
+
+bool OvmsRepository::UpdateRepo()
+  {
+  std::string url = m_path;
+  url.append("/plugins.rev");
+
+  OvmsHttpClient http(url);
+  if (!http.IsOpen())
+    {
+    ESP_LOGE(TAG, "Repo %s: HTTP request failed: %s",m_name.c_str(), url.c_str());
+    return false;
+    }
+
+  if (!http.BodyHasLine())
+    {
+    ESP_LOGE(TAG, "Repo %s:  HTTP response invalid",m_name.c_str());
+    return false;
+    }
+
+  std::string version = http.BodyReadLine();
+
+  if (version.compare(m_version) == 0)
+    {
+    ESP_LOGI(TAG, "Plugin repository %s version: %s",m_name.c_str(), version.c_str());
+    return true;
+    }
+
+  ESP_LOGI(TAG, "Plugin repository %s has changed, retrieving latest version", m_name.c_str());
+  http.Disconnect();
+  url = m_path;
+  url.append("/plugins.json");
+  if (!http.Request(url))
+    {
+    ESP_LOGE(TAG, "Repo %s: HTTP request failed: %s",m_name.c_str(),url.c_str());
+    return false;
+    }
+
+  size_t bodysize = http.BodySize();
+  char* buf = new char[bodysize+1];
+  http.BodyRead(buf,bodysize);
+  buf[bodysize] = 0;
+  std::string body(buf);
+  delete [] buf;
+  ESP_LOGD(TAG, "Retrieved %d byte(s) of store metadata",bodysize);
+
+  cJSON *json = cJSON_Parse(body.c_str());
+  if (json == NULL)
+    {
+    ESP_LOGE(TAG, "Repo %s: Could not parse metadata", m_name.c_str());
+    return false;
+    }
+
+  for (auto it = MyPluginStore.m_plugins.begin(); it != MyPluginStore.m_plugins.end(); ++it)
+    {
+    if (it->second->m_repo.compare(m_name) == 0)
+      {
+      delete it->second;
+      MyPluginStore.m_plugins.erase(it);
+      }
+    }
+
+  if (!LoadPlugins(json))
+    {
+    ESP_LOGE(TAG, "Repo %s: Could not log plugins from repository metadata", m_name.c_str());
+    cJSON_Delete(json);
+    return false;
+    }
+
+  // Free up the cJSON structure
+  cJSON_Delete(json);
+
+  // Update version, and quit
+  ESP_LOGI(TAG, "Plugin repository %s version: %s",m_name.c_str(), version.c_str());
+  m_version = version;
+  return true;
+  }
+
+bool OvmsRepository::LoadPlugins(cJSON *json)
+  {
+  // Load the plugins from the provided cJSON structure
+  if (json == NULL)
+    {
+    ESP_LOGE(TAG, "Repo %s: Plugin metadata is not defined",m_name.c_str());
+    return false;
+    }
+  if (json->type != cJSON_Array)
+    {
+    ESP_LOGE(TAG, "Repo %s: Unexpected root type %d for plugin metadata",m_name.c_str(),json->type);
+    return false;
+    }
+  if (json->child == NULL)
+    {
+    ESP_LOGE(TAG, "Repo %s: Unexpected empty list of plugins in metadata",m_name.c_str());
+    return false;
+    }
+
+  cJSON* el = json->child;
+  while (el != NULL)
+    {
+    // Process the given element
+    if (el->type != cJSON_Object)
+      {
+      ESP_LOGE(TAG, "Repo %s: Invalid plugin type %d in metadata",m_name.c_str(),el->type);
+      return false;
+      }
+
+    OvmsPlugin *p = new OvmsPlugin();
+    if (!p->LoadJSON(m_name,el))
+      {
+      ESP_LOGE(TAG, "Repo %s: Invalid plugin in metadata",m_name.c_str());
+      delete p;
+      return false;
+      }
+    MyPluginStore.m_plugins[p->m_name] = p;
     el = el->next;
     }
 

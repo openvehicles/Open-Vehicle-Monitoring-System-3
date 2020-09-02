@@ -104,10 +104,11 @@ class OvmsPlugin
     ~OvmsPlugin();
 
   public:
-    bool LoadJSON(cJSON *json);
+    bool LoadJSON(std::string repo, cJSON *json);
     void Summarise(OvmsWriter* writer);
 
   public:
+    std::string m_repo;
     std::string m_name;
     std::string m_title;
     std::string m_description;
@@ -121,6 +122,24 @@ class OvmsPlugin
 
 typedef std::map<std::string, OvmsPlugin*> plugin_map_t;
 
+class OvmsRepository
+  {
+  public:
+    OvmsRepository(std::string name, std::string path);
+    ~OvmsRepository();
+
+  public:
+    bool UpdateRepo();
+    bool LoadPlugins(cJSON *json);
+
+  public:
+    std::string m_name;
+    std::string m_path;
+    std::string m_version;
+  };
+
+typedef std::map<std::string, OvmsRepository*> repo_map_t;
+
 class OvmsPluginStore
   {
   public:
@@ -128,17 +147,23 @@ class OvmsPluginStore
     ~OvmsPluginStore();
 
   public:
-    bool RetrieveStore();
-    bool LoadPlugins(cJSON *json);
+    bool LoadRepoPlugins();
 
   public:
     void Summarise(OvmsWriter* writer);
-    void ListPlugins(OvmsWriter* writer);
-    void ShowPlugin(OvmsWriter* writer, std::string plugin);
+    void RepoList(OvmsWriter* writer);
+    void RepoInstall(OvmsWriter* writer, std::string name, std::string path);
+    void RepoRemove(OvmsWriter* writer, std::string name);
+    void PluginList(OvmsWriter* writer);
+    void PluginShow(OvmsWriter* writer, std::string plugin);
+    void PluginInstall(OvmsWriter* writer, std::string plugin);
+    void PluginRemove(OvmsWriter* writer, std::string plugin);
+    void PluginUpdate(OvmsWriter* writer, std::string plugin);
+    void PluginUpdateAll(OvmsWriter* writer);
 
   public:
-    std::string m_version;
     plugin_map_t m_plugins;
+    repo_map_t m_repos;
   };
 
 extern OvmsPluginStore MyPluginStore;
