@@ -110,7 +110,7 @@ User notes (T26A)
 Climate control (T26A)
 ----------------------
 
-This is still beta. It works but expect some hickups.
+This is still beta. It works but expect some hickups. Sometimes you need to start it twice, or you need to start it again (when it is already running) to be able to stop it.
 
 Climate control works, as long as write access to the comfort can has been enabled in the app or in the OVMS webinterface (VW e-Up ... -> Features).
 
