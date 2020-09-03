@@ -256,6 +256,27 @@ void OvmsPluginStore::PluginShow(OvmsWriter* writer, std::string plugin)
 
 void OvmsPluginStore::PluginInstall(OvmsWriter* writer, std::string plugin)
   {
+  OvmsPlugin* p = FindPlugin(plugin);
+  if (p == NULL)
+    {
+    writer->printf("Error: Plugin '%s' not found\n", plugin.c_str());
+    return;
+    }
+
+  if (!p->Download())
+    {
+    writer->printf("Error: Plugin '%s' could not be downloaded\n", plugin.c_str());
+    return;
+    }
+
+  if (!p->Install())
+    {
+    writer->printf("Error: Plugin '%s' could not be installed\n", plugin.c_str());
+    return;
+    }
+
+  writer->printf("Plugin: %s installed ok\n", plugin.c_str());
+  writer->puts("(you should 'script reload', or reboot, to start it)");
   }
 
 void OvmsPluginStore::PluginRemove(OvmsWriter* writer, std::string plugin)
@@ -300,6 +321,32 @@ bool OvmsPluginStore::LoadRepoPlugins()
     }
 
   return true;
+  }
+
+std::string OvmsPluginStore::RepoPath(std::string repo)
+  {
+  auto search = m_repos.find(repo);
+  if (search == m_repos.end())
+    {
+    return std::string("");
+    }
+  else
+    {
+    return search->second->m_path;
+    }
+  }
+
+OvmsPlugin* OvmsPluginStore::FindPlugin(std::string plugin)
+  {
+  auto search = m_plugins.find(plugin);
+  if (search == m_plugins.end())
+    {
+    return NULL;
+    }
+  else
+    {
+    return search->second;
+    }
   }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -592,6 +639,90 @@ bool OvmsPlugin::LoadJSON(std::string repo, cJSON *json)
     el = el->next;
     }
 
+  return true;
+  }
+
+bool OvmsPlugin::Download()
+  {
+  std::string repopath = MyPluginStore.RepoPath(m_repo);
+  if (repopath.empty())
+    {
+    ESP_LOGE(TAG, "Error: cannot find path for repository: %s",m_repo.c_str());
+    return false;
+    }
+
+  ESP_LOGI(TAG, "Downloading plugin: %s, with %d element(s)",
+    m_name.c_str(), m_elements.size());
+
+  std::string pluginpath("/store/plugins");
+  mkdir(pluginpath.c_str(),0);
+  pluginpath.append("/");
+  pluginpath.append(m_name.c_str());
+  mkdir(pluginpath.c_str(),0);
+
+  for (OvmsPluginElement *p : m_elements)
+    {
+    std::string url(repopath);
+    url.append("/");
+    url.append(p->m_name);
+    url.append("/");
+    url.append(p->m_path);
+
+    OvmsHttpClient http(url);
+    if (!http.IsOpen())
+      {
+      ESP_LOGE(TAG, "Element %s: HTTP request failed: %s",p->m_path.c_str(), url.c_str());
+      return false;
+      }
+
+    size_t expected = http.BodySize();
+    if (expected == 0)
+      {
+      ESP_LOGE(TAG, "Element: %s: HTTP response zero sized", p->m_path.c_str());
+      return false;
+      }
+
+    char* body = new char[expected];
+    size_t downloaded = http.BodyRead(body, expected);
+    if (downloaded != expected)
+      {
+      ESP_LOGE(TAG, "Element: %s: HTTP body size %d doesn't match %d",
+        p->m_name.c_str(), downloaded, expected);
+      delete [] body;
+      return false;
+      }
+
+    std::string dest(pluginpath);
+    dest.append("/");
+    dest.append(p->m_path);
+    FILE *pf = fopen(dest.c_str(), "w");
+    size_t written = fwrite(body, 1, expected, pf);
+    fclose(pf);
+    delete [] body;
+    if (written != expected)
+      {
+      ESP_LOGE(TAG, "Element: %s: VFS body size %d doesn't match %d",
+        p->m_path.c_str(), written, expected);
+      return false;
+      }
+
+    ESP_LOGI(TAG, "Element: %s downloaded ok", p->m_path.c_str());
+    }
+
+  ESP_LOGI(TAG, "Plugin: %s downloaded ok", m_name.c_str());
+  return true;
+  }
+
+bool OvmsPlugin::Install()
+  {
+  if (MyConfig.IsDefined("plugin.disabled", m_name))
+    {
+    MyConfig.DeleteInstance("plugin.disabled", m_name);
+    }
+
+  MyConfig.SetParamValue("plugin.enabled", m_name, m_version);
+
+  // TODO: Any other operations required to complete the install
   return true;
   }
 

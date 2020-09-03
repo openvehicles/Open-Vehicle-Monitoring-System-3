@@ -106,6 +106,8 @@ class OvmsPlugin
   public:
     bool LoadJSON(std::string repo, cJSON *json);
     void Summarise(OvmsWriter* writer);
+    bool Download();
+    bool Install();
 
   public:
     std::string m_repo;
@@ -163,6 +165,10 @@ class OvmsPluginStore
     void PluginRemove(OvmsWriter* writer, std::string plugin);
     void PluginUpdate(OvmsWriter* writer, std::string plugin);
     void PluginUpdateAll(OvmsWriter* writer);
+
+  public:
+    std::string RepoPath(std::string repo);
+    OvmsPlugin* FindPlugin(std::string plugin);
 
   public:
     plugin_map_t m_plugins;
