@@ -31,7 +31,7 @@
 
 /*
 ;    Subproject:    Integration of support for the VW e-UP
-;    Date:          1st September 2020
+;    Date:          3st September 2020
 ;
 ;    Changes:
 ;    0.1.0  Initial code
@@ -87,6 +87,8 @@
 ;
 ;    0.3.4  Climate Control is now beginning to work
 :
+;    0.3.5  Stabilized Climate Control
+;
 ;    (C) 2020       Chris van der Meijden
 ;
 ;    Big thanx to sharkcow, Dimitrie78 and E-Imo.
@@ -95,7 +97,7 @@
 #include "ovms_log.h"
 static const char *TAG = "vwup.t26";
 
-#define VERSION "0.3.4"
+#define VERSION "0.3.5"
 
 #include <stdio.h>
 #include "pcp.h"
@@ -766,7 +768,7 @@ void OvmsVehicleVWeUpT26::CCCountdown()
     ocu_wait = true;
     if (cc_count == 5)
     {
-        CCOff(); // This is weird. We first need to send a Climate Contol Off before it will turn on ???
+        CCOnP(); // This is weird. We first need to send a Climate Contol Off before it will turn on ???
     }
     if (cc_count == 10)
     {
@@ -790,10 +792,6 @@ void OvmsVehicleVWeUpT26::CCOn()
     uint8_t length_s;
     length_s = 4;
 
-//    unsigned char data_t[2];
-//    uint8_t length_t;
-//    length_t = 2;
-
     canbus *comfBus;
     comfBus = m_can3;
 
@@ -808,61 +806,6 @@ void OvmsVehicleVWeUpT26::CCOn()
     if (vwup_enable_write && !dev_mode)
         comfBus->WriteStandard(0x5A7, length, data);
 
-/*
-    data_t[0] = 0x19;
-    data_t[1] = 0x52;
-    if (vwup_enable_write && !dev_mode)
-        comfBus->WriteStandard(0x69E, length_t, data_t);
-
-    data_s[0] = 0x90;
-    data_s[1] = 0x00;
-    data_s[2] = 0x19;
-    data_s[3] = 0x54;
-    if (vwup_enable_write && !dev_mode)
-        comfBus->WriteStandard(0x69E, length_s, data_s);
-
-    data_s[0] = 0x90;
-    data_s[1] = 0x00;
-    data_s[2] = 0x19;
-    data_s[3] = 0x54;
-    if (vwup_enable_write && !dev_mode)
-        comfBus->WriteStandard(0x69E, length_s, data_s);
-
-    data_t[0] = 0x14;
-    data_t[1] = 0x42;
-    if (vwup_enable_write && !dev_mode)
-        comfBus->WriteStandard(0x69E, length_t, data_t);
-
-    data_t[0] = 0x14;
-    data_t[1] = 0x43;
-    if (vwup_enable_write && !dev_mode)
-        comfBus->WriteStandard(0x69E, length_t, data_t);
-
-    data_t[0] = 0x19;
-    data_t[1] = 0x42;
-    if (vwup_enable_write && !dev_mode)
-        comfBus->WriteStandard(0x69E, length_t, data_t);
-
-    data_t[0] = 0x19;
-    data_t[1] = 0x43;
-    if (vwup_enable_write && !dev_mode)
-        comfBus->WriteStandard(0x69E, length_t, data_t);
-
-    data_t[0] = 0x14;
-    data_t[1] = 0x41;
-    if (vwup_enable_write && !dev_mode)
-        comfBus->WriteStandard(0x69E, length_t, data_t);
-
-    data_t[0] = 0x19;
-    data_t[1] = 0x41;
-    if (vwup_enable_write && !dev_mode)
-        comfBus->WriteStandard(0x69E, length_t, data_t);
-
-    data_t[0] = 0x19;
-    data_t[1] = 0x50;
-    if (vwup_enable_write && !dev_mode)
-        comfBus->WriteStandard(0x69E, length_t, data_t);
-*/
     // d5 could be a counter?
     data[0] = 0x80;
     data[1] = 0x20;
@@ -885,12 +828,7 @@ void OvmsVehicleVWeUpT26::CCOn()
     data[7] = 0x00;
     if (vwup_enable_write && !dev_mode)
         comfBus->WriteStandard(0x69E, length, data);
-/*
-    data_t[0] = 0x14;
-    data_t[1] = 0x42;
-    if (vwup_enable_write && !dev_mode)
-        comfBus->WriteStandard(0x69E, length_t, data_t);
-*/
+
     data[0] = 0xC1;
     data[1] = 0xFF;
     data[2] = 0xFF;
@@ -905,7 +843,7 @@ void OvmsVehicleVWeUpT26::CCOn()
         if (dev_mode)
             ESP_LOGI(TAG, "Cabin temperature set: 19");
     }
-    if (vwup_cc_temp_int == 5)
+    if (vwup_cc_temp_int == 20)
     {
         data[6] = 0x64;
         if (dev_mode)
@@ -933,12 +871,7 @@ void OvmsVehicleVWeUpT26::CCOn()
     data[7] = 0x00;
     if (vwup_enable_write && !dev_mode)
         comfBus->WriteStandard(0x69E, length, data);
-/*
-    data_t[0] = 0x19;
-    data_t[1] = 0x53;
-    if (vwup_enable_write && !dev_mode)
-        comfBus->WriteStandard(0x69E, length_t, data_t);
-*/
+
     data[0] = 0xC2;
     data[1] = 0x1E;
     data[2] = 0x1E;
@@ -960,26 +893,6 @@ void OvmsVehicleVWeUpT26::CCOn()
     data[7] = 0x6E;
     if (vwup_enable_write && !dev_mode)
         comfBus->WriteStandard(0x69E, length, data);
-/*
-    data_t[0] = 0x19;
-    data_t[1] = 0x42;
-    if (vwup_enable_write && !dev_mode)
-        comfBus->WriteStandard(0x69E, length_t, data_t);
-
-    data_s[0] = 0x80;
-    data_s[1] = 0x00;
-    data_s[2] = 0x19;
-    data_s[3] = 0x55;
-    if (vwup_enable_write && !dev_mode)
-        comfBus->WriteStandard(0x69E, length_s, data_s);
-
-    data_s[0] = 0x80;
-    data_s[1] = 0x00;
-    data_s[2] = 0x19;
-    data_s[3] = 0x56;
-    if (vwup_enable_write && !dev_mode)
-        comfBus->WriteStandard(0x69E, length_s, data_s);
-*/
 
     data[0] = 0x60;
     data[1] = 0x16;
@@ -999,9 +912,142 @@ void OvmsVehicleVWeUpT26::CCOn()
     if (vwup_enable_write && !dev_mode)
         comfBus->WriteStandard(0x69E, length_s, data_s);
 
-    ESP_LOGI(TAG, "Wrote Climate Control On Message to Comfort CAN.");
+    ESP_LOGI(TAG, "Wrote second stage Climate Control On Messages to Comfort CAN.");
     vweup_cc_on = true;
     vweup_cc_turning_on = false;
+}
+
+void OvmsVehicleVWeUpT26::CCOnP()
+{
+    unsigned char data[8];
+    uint8_t length;
+    length = 8;
+
+    unsigned char data_s[4];
+    uint8_t length_s;
+    length_s = 4;
+
+    canbus *comfBus;
+    comfBus = m_can3;
+
+    data[0] = 0x60;
+    data[1] = 0x16;
+    data[2] = 0x00;
+    data[3] = 0x00;
+    data[4] = 0x00;
+    data[5] = 0x00;
+    data[6] = 0x00;
+    data[7] = 0x00;
+    if (vwup_enable_write && !dev_mode)
+        comfBus->WriteStandard(0x5A7, length, data);
+
+    // d5 could be a counter
+    data[0] = 0x80;
+    data[1] = 0x20;
+    data[2] = 0x29;
+    data[3] = 0x59;
+    data[4] = 0x22;
+    data[5] = 0x00;
+    data[6] = 0x00;
+    data[7] = 0x01;
+    if (vwup_enable_write && !dev_mode)
+        comfBus->WriteStandard(0x69E, length, data);
+
+    data[0] = 0x60;
+    data[1] = 0x16;
+    data[2] = 0x00;
+    data[3] = 0x00;
+    data[4] = 0x00;
+    data[5] = 0x00;
+    data[6] = 0x00;
+    data[7] = 0x00;
+    if (vwup_enable_write && !dev_mode)
+        comfBus->WriteStandard(0x5A7, length, data);
+
+    data[0] = 0xC0;
+    data[1] = 0x06;
+    data[2] = 0x00;
+    data[3] = 0x10;
+    data[4] = 0x1E;
+    data[5] = 0xFF;
+    data[6] = 0xFF;
+    data[7] = 0x00;
+    if (vwup_enable_write && !dev_mode)
+        comfBus->WriteStandard(0x69E, length, data);
+
+    data[0] = 0xC1;
+    data[1] = 0xFF;
+    data[2] = 0xFF;
+    data[3] = 0xFF;
+    data[4] = 0xFF;
+    data[5] = 0x01;
+    data[6] = 0x6E; // This is the target temperature. T = 10 + d6/10
+
+    if (vwup_cc_temp_int == 19)
+    {
+        data[6] = 0x5A;
+        if (dev_mode)
+            ESP_LOGI(TAG, "Cabin temperature set: 19");
+    }
+    if (vwup_cc_temp_int == 20)
+    {
+        data[6] = 0x64;
+        if (dev_mode)
+            ESP_LOGI(TAG, "Cabin temperature set: 20");
+    }
+    if (vwup_cc_temp_int == 21)
+    {
+        data[6] = 0x6E;
+        if (dev_mode)
+            ESP_LOGI(TAG, "Cabin temperature set: 21");
+    }
+    if (vwup_cc_temp_int == 22)
+    {
+        data[6] = 0x78;
+        if (dev_mode)
+            ESP_LOGI(TAG, "Cabin temperature set: 22");
+    }
+    if (vwup_cc_temp_int == 23)
+    {
+        data[6] = 0x82;
+        if (dev_mode)
+            ESP_LOGI(TAG, "Cabin temperature set: 23");
+    }
+
+    data[7] = 0x00;
+    if (vwup_enable_write && !dev_mode)
+        comfBus->WriteStandard(0x69E, length, data);
+
+    data[0] = 0xC2;
+    data[1] = 0x1E;
+    data[2] = 0x1E;
+    data[3] = 0x0A;
+    data[4] = 0x00;
+    data[5] = 0x00;
+    data[6] = 0x08;
+    data[7] = 0x4F;
+    if (vwup_enable_write && !dev_mode)
+        comfBus->WriteStandard(0x69E, length, data);
+
+    data[0] = 0xC3;
+    data[1] = 0x70;
+    data[2] = 0x74;
+    data[3] = 0x69;
+    data[4] = 0x6F;
+    data[5] = 0x6E;
+    data[6] = 0x65;
+    data[7] = 0x6E;
+    if (vwup_enable_write && !dev_mode)
+        comfBus->WriteStandard(0x69E, length, data);
+
+    data_s[0] = 0x29;
+    data_s[1] = 0x58;
+    data_s[2] = 0x00;
+    data_s[3] = 0x00;
+    if (vwup_enable_write && !dev_mode)
+        comfBus->WriteStandard(0x69E, length_s, data_s);
+
+    ESP_LOGI(TAG, "Wrote first stage Climate Control On Messages to Comfort CAN.");
 }
 
 void OvmsVehicleVWeUpT26::CCOff()
@@ -1068,10 +1114,38 @@ void OvmsVehicleVWeUpT26::CCOff()
     data[3] = 0xFF;
     data[4] = 0xFF;
     data[5] = 0x01;
-    data[6] = 0x6E;
-    data[7] = 0x00;
-    if (vwup_enable_write && !dev_mode)
-        comfBus->WriteStandard(0x69E, length, data);
+    data[6] = 0x6E; // This is the target temperature. T = 10 + d6/10
+
+    if (vwup_cc_temp_int == 19)
+    {
+        data[6] = 0x5A;
+        if (dev_mode)
+            ESP_LOGI(TAG, "Cabin temperature set: 19");
+    }
+    if (vwup_cc_temp_int == 20)
+    {
+        data[6] = 0x64;
+        if (dev_mode)
+            ESP_LOGI(TAG, "Cabin temperature set: 20");
+    }
+    if (vwup_cc_temp_int == 21)
+    {
+        data[6] = 0x6E;
+        if (dev_mode)
+            ESP_LOGI(TAG, "Cabin temperature set: 21");
+    }
+    if (vwup_cc_temp_int == 22)
+    {
+        data[6] = 0x78;
+        if (dev_mode)
+            ESP_LOGI(TAG, "Cabin temperature set: 22");
+    }
+    if (vwup_cc_temp_int == 23)
+    {
+        data[6] = 0x82;
+        if (dev_mode)
+            ESP_LOGI(TAG, "Cabin temperature set: 23");
+    }
 
     data[0] = 0xC2;
     data[1] = 0x1E;

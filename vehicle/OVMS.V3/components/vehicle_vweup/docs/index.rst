@@ -110,13 +110,13 @@ User notes (T26A)
 Climate control (T26A)
 ----------------------
 
-This is still beta. It works but expect some hickups. Sometimes you need to start it twice, or you need to start it again (when it is already running) to be able to stop it.
-
 Climate control works, as long as write access to the comfort can has been enabled in the app or in the OVMS webinterface (VW e-Up ... -> Features).
 
 Once the AC is turned on by the app there will be a delay of about 15 seconds till the AC actually starts in the car. Further 10 seconds all communication from the app to the car is blocked.
 
 The communication from the app to the car is also blocked for 10 seconds after the "AC off" command from the app to the car. There is no delay between the "AC turn off" signal of the app and the actually turning off in the car.
+
+In rare cases climate off does not respond. You then need to start it again (when it is already running) to be able to stop it.
 
 The cabin target temperature can be set from the OVMS webinterface (VW e-Up ... -> Climate control).
 

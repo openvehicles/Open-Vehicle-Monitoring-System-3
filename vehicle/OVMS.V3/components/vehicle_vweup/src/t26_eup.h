@@ -105,6 +105,7 @@ class OvmsVehicleVWeUpT26 : public OvmsVehicle
     void SendOcuHeartbeat();
     void CCCountdown();
     void CCOn();
+    void CCOnP();
     void CCOff();
     static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
     static void WebCfgClimate(PageEntry_t& p, PageContext_t& c);
