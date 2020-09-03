@@ -129,6 +129,7 @@ class OvmsRepository
     ~OvmsRepository();
 
   public:
+    bool CacheRepo();
     bool UpdateRepo();
     bool LoadPlugins(cJSON *json);
 
@@ -136,6 +137,7 @@ class OvmsRepository
     std::string m_name;
     std::string m_path;
     std::string m_version;
+    uint32_t m_lastrefresh;
   };
 
 typedef std::map<std::string, OvmsRepository*> repo_map_t;
@@ -152,6 +154,7 @@ class OvmsPluginStore
   public:
     void Summarise(OvmsWriter* writer);
     void RepoList(OvmsWriter* writer);
+    void RepoRefresh(OvmsWriter* writer);
     void RepoInstall(OvmsWriter* writer, std::string name, std::string path);
     void RepoRemove(OvmsWriter* writer, std::string name);
     void PluginList(OvmsWriter* writer);

@@ -61,6 +61,11 @@ void repo_remove(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
   MyPluginStore.RepoRemove(writer,std::string(argv[0]));
   }
 
+void repo_refresh(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  MyPluginStore.RepoRefresh(writer);
+  }
+
 void plugin_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   MyPluginStore.Summarise(writer);
@@ -113,9 +118,14 @@ OvmsPluginStore::OvmsPluginStore()
   cmd_repo->RegisterCommand("list","List repositories",repo_list,"",0,0);
   cmd_repo->RegisterCommand("install","Install a repository",repo_install,"<repo> <path>",2,2);
   cmd_repo->RegisterCommand("remove","Remove a repository",repo_remove,"<repo>",1,1);
+  cmd_repo->RegisterCommand("refresh","Refresh repository metadata",repo_refresh,"",0,0);
 
   MyConfig.RegisterParam("plugin", "PLUGIN store setup and status", true, true);
   MyConfig.RegisterParam("plugin.repos", "PLUGIN repositories", false, true);
+
+  // Config Parameters:
+  //   plugin:
+  //     repo.refresh: Time (seconds) to cache repository data
   }
 
 OvmsPluginStore::~OvmsPluginStore()
@@ -137,25 +147,73 @@ void OvmsPluginStore::Summarise(OvmsWriter* writer)
   {
   MyPluginStore.LoadRepoPlugins();
 
+  writer->printf("Plugins:    %d found\n",m_plugins.size());
+
   for (auto it = m_repos.begin(); it != m_repos.end(); ++it)
     {
     writer->printf("Repository: %s version %s\n",
       it->first.c_str(), it->second->m_version.c_str());
     }
-
-  writer->printf("Plugins: %d loaded\n",m_plugins.size());
   }
 
 void OvmsPluginStore::RepoList(OvmsWriter* writer)
   {
+  MyPluginStore.LoadRepoPlugins();
+
+  writer->puts("Repository       Version");
+  for (auto it = m_repos.begin(); it != m_repos.end(); ++it)
+    {
+    writer->printf("%-16.16s %s\n",
+      it->first.c_str(), it->second->m_version.c_str());
+    }
   }
 
 void OvmsPluginStore::RepoInstall(OvmsWriter* writer, std::string name, std::string path)
   {
+  auto search = m_repos.find(name);
+  if (search != m_repos.end())
+    {
+    writer->printf("Error: Repository '%s' was already installed\n",name.c_str());
+    return;
+    }
+
+  OvmsRepository* r = new OvmsRepository(name, path);
+  m_repos[name] = r;
+  if (r->UpdateRepo())
+    {
+    writer->printf("Installed repository: %s\n", name.c_str());
+    }
+  else
+    {
+    writer->printf("Installed, but could not refresh, repository: %s\n", name.c_str());
+    }
   }
 
 void OvmsPluginStore::RepoRemove(OvmsWriter* writer, std::string name)
   {
+  auto search = m_repos.find(name);
+  if (search == m_repos.end())
+    {
+    writer->printf("Error: Repository '%s' is not installed\n",name.c_str());
+    return;
+    }
+
+  delete search->second;
+  m_repos.erase(search);
+
+  writer->printf("Removed repository: %s\n", name.c_str());
+  }
+
+void OvmsPluginStore::RepoRefresh(OvmsWriter* writer)
+  {
+  for (auto it = m_repos.begin(); it != m_repos.end(); ++it)
+    {
+    writer->printf("Refreshing repository: %s\n", it->first.c_str());
+    if (!it->second->UpdateRepo())
+      {
+      writer->printf("  Error: Failed to refresh repository: %s\n", it->first.c_str());
+      }
+    }
   }
 
 void OvmsPluginStore::PluginList(OvmsWriter* writer)
@@ -175,6 +233,8 @@ void OvmsPluginStore::PluginList(OvmsWriter* writer)
 
 void OvmsPluginStore::PluginShow(OvmsWriter* writer, std::string plugin)
   {
+  MyPluginStore.LoadRepoPlugins();
+
   auto search = m_plugins.find(plugin);
   if (search == m_plugins.end())
     {
@@ -224,9 +284,9 @@ bool OvmsPluginStore::LoadRepoPlugins()
   for (auto it = m_repos.begin(); it != m_repos.end(); ++it)
     {
     OvmsRepository* r = it->second;
-    if (! r->UpdateRepo())
+    if (! r->CacheRepo())
       {
-      ESP_LOGE(TAG, "Plugin repository '%s' failed to update", it->first.c_str());
+      ESP_LOGE(TAG, "Plugin repository '%s' failed to refresh", it->first.c_str());
       return false;
       }
     }
@@ -534,10 +594,20 @@ OvmsRepository::OvmsRepository(std::string name, std::string path)
   {
   m_name = name;
   m_path = path;
+  m_lastrefresh = 0;
   }
 
 OvmsRepository::~OvmsRepository()
   {
+  }
+
+bool OvmsRepository::CacheRepo()
+  {
+  if ((m_lastrefresh > 0) &&
+      ((m_lastrefresh + MyConfig.GetParamValueInt("plugin","repo.refresh",3600)) > monotonictime))
+    { return true; } // Repository does not need a refresh
+
+  return UpdateRepo();
   }
 
 bool OvmsRepository::UpdateRepo()
@@ -613,6 +683,7 @@ bool OvmsRepository::UpdateRepo()
   // Update version, and quit
   ESP_LOGI(TAG, "Plugin repository %s version: %s",m_name.c_str(), version.c_str());
   m_version = version;
+  m_lastrefresh = monotonictime;
   return true;
   }
 
