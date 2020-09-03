@@ -122,10 +122,18 @@ OvmsPluginStore::OvmsPluginStore()
 
   MyConfig.RegisterParam("plugin", "PLUGIN store setup and status", true, true);
   MyConfig.RegisterParam("plugin.repos", "PLUGIN repositories", false, true);
+  MyConfig.RegisterParam("plugin.enabled", "PLUGIN enabled", false, true);
+  MyConfig.RegisterParam("plugin.disabled", "PLUGIN disabled", false, true);
 
   // Config Parameters:
   //   plugin:
   //     repo.refresh: Time (seconds) to cache repository data
+  //   plugin.repos:
+  //     A list of <name>=<url> for installed repositories
+  //   plugin.enabled
+  //     A list of <name>=<version> for installed and enabled plugins
+  //   plugin.disabled
+  //     A list of <name>=<version> for installed but disabled plugins
   }
 
 OvmsPluginStore::~OvmsPluginStore()
