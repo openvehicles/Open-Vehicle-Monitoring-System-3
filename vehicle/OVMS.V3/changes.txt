@@ -18,6 +18,7 @@ Open Vehicle Monitor System v3 - Change log
   New configs:
     wifi.ssid "<ssid>.ovms.staticip" "<ip>,<subnet>,<gateway>"
 - New vehicle: VW e-Up via OBD-II Port (VWUP.OBD)
+- New standard metrics for total (life time) energy and coulomb
 
 2020-08-04 MWJ  3.2.014  OTA release
 - Renault Twizy: support VirtualBMS & eDriver BMS (3 cell temperature sensors)
