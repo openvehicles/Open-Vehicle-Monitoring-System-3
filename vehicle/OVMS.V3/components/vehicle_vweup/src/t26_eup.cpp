@@ -31,7 +31,7 @@
 
 /*
 ;    Subproject:    Integration of support for the VW e-UP
-;    Date:          3st September 2020
+;    Date:          4st September 2020
 ;
 ;    Changes:
 ;    0.1.0  Initial code
@@ -89,15 +89,17 @@
 :
 ;    0.3.5  Stabilized Climate Control
 ;
+;    0.3.6  Corrected log tag and namespaces
+;
 ;    (C) 2020       Chris van der Meijden
 ;
 ;    Big thanx to sharkcow, Dimitrie78 and E-Imo.
 */
 
 #include "ovms_log.h"
-static const char *TAG = "vwup.t26";
+static const char *TAG = "v-vweup-t26";
 
-#define VERSION "0.3.5"
+#define VERSION "0.3.6"
 
 #include <stdio.h>
 #include "pcp.h"
@@ -126,7 +128,7 @@ OvmsVehicleVWeUpT26::OvmsVehicleVWeUpT26()
 
     RegisterCanBus(3, CAN_MODE_ACTIVE, CAN_SPEED_100KBPS);
 
-    MyConfig.RegisterParam("vwup", "VW e-Up", true, true);
+    MyConfig.RegisterParam("xut", "VW e-Up", true, true);
     ConfigChanged(NULL);
     vin_part1 = false;
     vin_part2 = false;
@@ -168,7 +170,7 @@ bool OvmsVehicleVWeUpT26::SetFeature(int key, const char *value)
     case 15:
     {
         int bits = atoi(value);
-        MyConfig.SetParamValueBool("vwup", "canwrite", (bits & 1) != 0);
+        MyConfig.SetParamValueBool("xut", "canwrite", (bits & 1) != 0);
         return true;
     }
     default:
@@ -183,7 +185,7 @@ const std::string OvmsVehicleVWeUpT26::GetFeature(int key)
     case 15:
     {
         int bits =
-            (MyConfig.GetParamValueBool("vwup", "canwrite", false) ? 1 : 0);
+            (MyConfig.GetParamValueBool("xut", "canwrite", false) ? 1 : 0);
         char buf[4];
         sprintf(buf, "%d", bits);
         return std::string(buf);
@@ -197,9 +199,9 @@ void OvmsVehicleVWeUpT26::ConfigChanged(OvmsConfigParam *param)
 {
     ESP_LOGD(TAG, "VW e-Up reload configuration");
 
-    vwup_enable_write = MyConfig.GetParamValueBool("vwup", "canwrite", false);
-    vwup_modelyear = MyConfig.GetParamValueInt("vwup", "modelyear", DEFAULT_MODEL_YEAR);
-    vwup_cc_temp_int = MyConfig.GetParamValueInt("vwup", "cc_temp", 21);
+    vwup_enable_write = MyConfig.GetParamValueBool("xut", "canwrite", false);
+    vwup_modelyear = MyConfig.GetParamValueInt("xut", "modelyear", DEFAULT_MODEL_YEAR);
+    vwup_cc_temp_int = MyConfig.GetParamValueInt("xut", "cc_temp", 21);
 }
 
 // Takes care of setting all the state appropriate when the car is on

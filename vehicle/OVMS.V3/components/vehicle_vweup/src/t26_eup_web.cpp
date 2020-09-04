@@ -47,8 +47,8 @@ using namespace std;
 void OvmsVehicleVWeUpT26::WebInit()
 {
   // vehicle menu:
-  MyWebServer.RegisterPage("/vwup/features", "Features", WebCfgFeatures, PageMenu_Vehicle, PageAuth_Cookie);
-  MyWebServer.RegisterPage("/vwup/climate", "Climate control", WebCfgClimate, PageMenu_Vehicle, PageAuth_Cookie);
+  MyWebServer.RegisterPage("/xut/features", "Features", WebCfgFeatures, PageMenu_Vehicle, PageAuth_Cookie);
+  MyWebServer.RegisterPage("/xut/climate", "Climate control", WebCfgClimate, PageMenu_Vehicle, PageAuth_Cookie);
 }
 
 /**
@@ -56,12 +56,12 @@ void OvmsVehicleVWeUpT26::WebInit()
  */
 void OvmsVehicleVWeUpT26::WebDeInit()
 {
-  MyWebServer.DeregisterPage("/vwup/features");
-  MyWebServer.DeregisterPage("/vwup/climate");
+  MyWebServer.DeregisterPage("/xut/features");
+  MyWebServer.DeregisterPage("/xut/climate");
 }
 
 /**
- * WebCfgFeatures: configure general parameters (URL /vwup/config)
+ * WebCfgFeatures: configure general parameters (URL /xut/config)
  */
 void OvmsVehicleVWeUpT26::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
 {
@@ -86,8 +86,8 @@ void OvmsVehicleVWeUpT26::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
     if (error == "")
     {
       // store:
-      MyConfig.SetParamValue("vwup", "modelyear", modelyear);
-      MyConfig.SetParamValueBool("vwup", "canwrite", canwrite);
+      MyConfig.SetParamValue("xut", "modelyear", modelyear);
+      MyConfig.SetParamValueBool("xut", "canwrite", canwrite);
 
       c.head(200);
       c.alert("success", "<p class=\"lead\">VW e-Up feature configuration saved.</p>");
@@ -104,8 +104,8 @@ void OvmsVehicleVWeUpT26::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
   else
   {
     // read configuration:
-    modelyear = MyConfig.GetParamValue("vwup", "modelyear", STR(DEFAULT_MODEL_YEAR));
-    canwrite = MyConfig.GetParamValueBool("vwup", "canwrite", false);
+    modelyear = MyConfig.GetParamValue("xut", "modelyear", STR(DEFAULT_MODEL_YEAR));
+    canwrite = MyConfig.GetParamValueBool("xut", "canwrite", false);
 
     c.head(200);
   }
@@ -134,7 +134,7 @@ void OvmsVehicleVWeUpT26::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
 }
 
 /**
- * WebCfgClimate: setup how connexted to the vehicle (URL /vwup/config)
+ * WebCfgClimate: setup how connexted to the vehicle (URL /xut/config)
  */
 void OvmsVehicleVWeUpT26::WebCfgClimate(PageEntry_t &p, PageContext_t &c)
 {
@@ -149,7 +149,7 @@ void OvmsVehicleVWeUpT26::WebCfgClimate(PageEntry_t &p, PageContext_t &c)
     if (error == "")
     {
       // store:
-      MyConfig.SetParamValue("vwup", "cc_temp", cc_temp);
+      MyConfig.SetParamValue("xut", "cc_temp", cc_temp);
 
       c.head(200);
       c.alert("success", "<p class=\"lead\">VW e-Up climate control configuration saved.</p>");
@@ -165,7 +165,7 @@ void OvmsVehicleVWeUpT26::WebCfgClimate(PageEntry_t &p, PageContext_t &c)
   else
   {
     // read configuration:
-    cc_temp = MyConfig.GetParamValue("vwup", "cc_temp", "21");
+    cc_temp = MyConfig.GetParamValue("xut", "cc_temp", "21");
 
     c.head(200);
   }
