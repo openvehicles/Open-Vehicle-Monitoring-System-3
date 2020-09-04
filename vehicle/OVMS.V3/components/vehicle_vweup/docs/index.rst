@@ -55,6 +55,7 @@ Valet Mode Control          tba
 Others                      Odometer, VIN, front doors status
 =========================== ==============
 
+
 ----------------------------------------
 Pinout OCU T26A - OVMS DB9 adapter cable
 ----------------------------------------
