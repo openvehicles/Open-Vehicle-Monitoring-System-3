@@ -48,7 +48,7 @@ using namespace std;
 #define PERSISTENT_VERSION 1            /* increment when struct is changed */
 
 struct persistent_values {
-  char name[16];
+  char name[24];
   float value;
 };
 
@@ -58,7 +58,7 @@ struct persistent_metrics {
   unsigned int serial;
   size_t size;
   int used;
-  struct persistent_values values[20];
+  struct persistent_values values[30];
 };
 
 RTC_NOINIT_ATTR struct persistent_metrics pmetrics;
