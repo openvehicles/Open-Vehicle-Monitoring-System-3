@@ -51,12 +51,18 @@ Module.symvers
 Mkfile.old
 dkms.conf
 
-# Local system / IDE configuration files
-*~
+# ESP32 stuff
+build
+sdkconfig
+sdkconfig.old
 .DS_Store
-.project
-*.swp
+.atom-build.yml
 
-# Sphinx builds
-docs/build/
-.idea/
+# PlatformIO
+.pioenvs
+.piolibdeps
+.clang_complete
+.gcc-flags.json
+
+# Tmp
+tmp/*

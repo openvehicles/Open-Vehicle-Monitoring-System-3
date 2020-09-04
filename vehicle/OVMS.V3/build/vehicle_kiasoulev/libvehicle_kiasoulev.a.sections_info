@@ -692,93 +692,93 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, RELOC, READONLY, DEBUGGING
 142 .debug_abbrev 00001031  00000000  00000000  0002c21a  2**0
                   CONTENTS, READONLY, DEBUGGING
-143 .debug_loc    000035fb  00000000  00000000  0002d24b  2**0
+143 .debug_loc    000035ed  00000000  00000000  0002d24b  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
-144 .debug_aranges 00000208  00000000  00000000  00030846  2**0
+144 .debug_aranges 00000208  00000000  00000000  00030838  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
-145 .debug_ranges 00000418  00000000  00000000  00030a4e  2**0
+145 .debug_ranges 00000418  00000000  00000000  00030a40  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
-146 .debug_line   00002736  00000000  00000000  00030e66  2**0
+146 .debug_line   00002736  00000000  00000000  00030e58  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
-147 .debug_str    0004d833  00000000  00000000  0003359c  2**0
+147 .debug_str    0004d833  00000000  00000000  0003358e  2**0
                   CONTENTS, READONLY, DEBUGGING
-148 .comment      0000003b  00000000  00000000  00080dcf  2**0
+148 .comment      0000003b  00000000  00000000  00080dc1  2**0
                   CONTENTS, READONLY
-149 .xtensa.info  00000038  00000000  00000000  00080e0a  2**0
+149 .xtensa.info  00000038  00000000  00000000  00080dfc  2**0
                   CONTENTS, READONLY
-150 .xt.lit._ZNSt17_Function_handlerIFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvESt5_BindIFSt7_Mem_fnIM20OvmsVehicleKiaSoulEvFvS5_S6_EEPSA_St12_PlaceholderILi1EESF_ILi2EEEEE9_M_invokeERKSt9_Any_dataOS5_OS6_ 00000008  00000000  00000000  00080e42  2**0
+150 .xt.lit._ZNSt17_Function_handlerIFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvESt5_BindIFSt7_Mem_fnIM20OvmsVehicleKiaSoulEvFvS5_S6_EEPSA_St12_PlaceholderILi1EESF_ILi2EEEEE9_M_invokeERKSt9_Any_dataOS5_OS6_ 00000008  00000000  00000000  00080e34  2**0
                   CONTENTS, RELOC, READONLY
-151 .xt.lit._ZN10KiaVehicleD5Ev 00000008  00000000  00000000  00080e4a  2**0
+151 .xt.lit._ZN10KiaVehicleD5Ev 00000008  00000000  00000000  00080e3c  2**0
                   CONTENTS, RELOC, READONLY
-152 .xt.lit       000000f8  00000000  00000000  00080e52  2**0
+152 .xt.lit       000000f8  00000000  00000000  00080e44  2**0
                   CONTENTS, RELOC, READONLY
-153 .xt.lit._ZNSt14_Function_base13_Base_managerISt5_BindIFSt7_Mem_fnIM20OvmsVehicleKiaSoulEvFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvEEPS3_St12_PlaceholderILi1EESF_ILi2EEEEE10_M_managerERSt9_Any_dataRKSL_St18_Manager_operation 00000008  00000000  00000000  00080f4a  2**0
+153 .xt.lit._ZNSt14_Function_base13_Base_managerISt5_BindIFSt7_Mem_fnIM20OvmsVehicleKiaSoulEvFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvEEPS3_St12_PlaceholderILi1EESF_ILi2EEEEE10_M_managerERSt9_Any_dataRKSL_St18_Manager_operation 00000008  00000000  00000000  00080f3c  2**0
                   CONTENTS, RELOC, READONLY
-154 .xt.lit._Z13CreateVehicleI20OvmsVehicleKiaSoulEvEP11OvmsVehiclev 00000008  00000000  00000000  00080f52  2**0
+154 .xt.lit._Z13CreateVehicleI20OvmsVehicleKiaSoulEvEP11OvmsVehiclev 00000008  00000000  00000000  00080f44  2**0
                   CONTENTS, RELOC, READONLY
-155 .xt.prop._ZNSt17_Function_handlerIFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvESt5_BindIFSt7_Mem_fnIM20OvmsVehicleKiaSoulEvFvS5_S6_EEPSA_St12_PlaceholderILi1EESF_ILi2EEEEE9_M_invokeERKSt9_Any_dataOS5_OS6_ 0000003c  00000000  00000000  00080f5a  2**0
+155 .xt.prop._ZNSt17_Function_handlerIFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvESt5_BindIFSt7_Mem_fnIM20OvmsVehicleKiaSoulEvFvS5_S6_EEPSA_St12_PlaceholderILi1EESF_ILi2EEEEE9_M_invokeERKSt9_Any_dataOS5_OS6_ 0000003c  00000000  00000000  00080f4c  2**0
                   CONTENTS, RELOC, READONLY
-156 .xt.prop._ZN10KiaVehicleD5Ev 0000000c  00000000  00000000  00080f96  2**0
+156 .xt.prop._ZN10KiaVehicleD5Ev 0000000c  00000000  00000000  00080f88  2**0
                   CONTENTS, RELOC, READONLY
-157 .xt.prop      00000e1c  00000000  00000000  00080fa2  2**0
+157 .xt.prop      00000e1c  00000000  00000000  00080f94  2**0
                   CONTENTS, RELOC, READONLY
-158 .xt.prop._ZNSt14_Function_base13_Base_managerISt5_BindIFSt7_Mem_fnIM20OvmsVehicleKiaSoulEvFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvEEPS3_St12_PlaceholderILi1EESF_ILi2EEEEE10_M_managerERSt9_Any_dataRKSL_St18_Manager_operation 00000060  00000000  00000000  00081dbe  2**0
+158 .xt.prop._ZNSt14_Function_base13_Base_managerISt5_BindIFSt7_Mem_fnIM20OvmsVehicleKiaSoulEvFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvEEPS3_St12_PlaceholderILi1EESF_ILi2EEEEE10_M_managerERSt9_Any_dataRKSL_St18_Manager_operation 00000060  00000000  00000000  00081db0  2**0
                   CONTENTS, RELOC, READONLY
-159 .xt.prop._Z13CreateVehicleI20OvmsVehicleKiaSoulEvEP11OvmsVehiclev 00000030  00000000  00000000  00081e1e  2**0
+159 .xt.prop._Z13CreateVehicleI20OvmsVehicleKiaSoulEvEP11OvmsVehiclev 00000030  00000000  00000000  00081e10  2**0
                   CONTENTS, RELOC, READONLY
-160 .xt.prop._ZN11OvmsVehicle25GetNotifyChargeStateDelayEPKc 00000024  00000000  00000000  00081e4e  2**0
+160 .xt.prop._ZN11OvmsVehicle25GetNotifyChargeStateDelayEPKc 00000024  00000000  00000000  00081e40  2**0
                   CONTENTS, RELOC, READONLY
-161 .xt.prop._ZN11OvmsVehicle17NotifiedVehicleOnEv 00000024  00000000  00000000  00081e72  2**0
+161 .xt.prop._ZN11OvmsVehicle17NotifiedVehicleOnEv 00000024  00000000  00000000  00081e64  2**0
                   CONTENTS, RELOC, READONLY
-162 .xt.prop._ZN11OvmsVehicle18NotifiedVehicleOffEv 00000024  00000000  00000000  00081e96  2**0
+162 .xt.prop._ZN11OvmsVehicle18NotifiedVehicleOffEv 00000024  00000000  00000000  00081e88  2**0
                   CONTENTS, RELOC, READONLY
-163 .xt.prop._ZN11OvmsVehicle20NotifiedVehicleAwakeEv 00000024  00000000  00000000  00081eba  2**0
+163 .xt.prop._ZN11OvmsVehicle20NotifiedVehicleAwakeEv 00000024  00000000  00000000  00081eac  2**0
                   CONTENTS, RELOC, READONLY
-164 .xt.prop._ZN11OvmsVehicle21NotifiedVehicleAsleepEv 00000024  00000000  00000000  00081ede  2**0
+164 .xt.prop._ZN11OvmsVehicle21NotifiedVehicleAsleepEv 00000024  00000000  00000000  00081ed0  2**0
                   CONTENTS, RELOC, READONLY
-165 .xt.prop._ZN11OvmsVehicle26NotifiedVehicleChargeStartEv 00000024  00000000  00000000  00081f02  2**0
+165 .xt.prop._ZN11OvmsVehicle26NotifiedVehicleChargeStartEv 00000024  00000000  00000000  00081ef4  2**0
                   CONTENTS, RELOC, READONLY
-166 .xt.prop._ZN11OvmsVehicle25NotifiedVehicleChargeStopEv 00000024  00000000  00000000  00081f26  2**0
+166 .xt.prop._ZN11OvmsVehicle25NotifiedVehicleChargeStopEv 00000024  00000000  00000000  00081f18  2**0
                   CONTENTS, RELOC, READONLY
-167 .xt.prop._ZN11OvmsVehicle28NotifiedVehicleChargePrepareEv 00000024  00000000  00000000  00081f4a  2**0
+167 .xt.prop._ZN11OvmsVehicle28NotifiedVehicleChargePrepareEv 00000024  00000000  00000000  00081f3c  2**0
                   CONTENTS, RELOC, READONLY
-168 .xt.prop._ZN11OvmsVehicle27NotifiedVehicleChargeFinishEv 00000024  00000000  00000000  00081f6e  2**0
+168 .xt.prop._ZN11OvmsVehicle27NotifiedVehicleChargeFinishEv 00000024  00000000  00000000  00081f60  2**0
                   CONTENTS, RELOC, READONLY
-169 .xt.prop._ZN11OvmsVehicle28NotifiedVehicleChargePilotOnEv 00000024  00000000  00000000  00081f92  2**0
+169 .xt.prop._ZN11OvmsVehicle28NotifiedVehicleChargePilotOnEv 00000024  00000000  00000000  00081f84  2**0
                   CONTENTS, RELOC, READONLY
-170 .xt.prop._ZN11OvmsVehicle29NotifiedVehicleChargePilotOffEv 00000024  00000000  00000000  00081fb6  2**0
+170 .xt.prop._ZN11OvmsVehicle29NotifiedVehicleChargePilotOffEv 00000024  00000000  00000000  00081fa8  2**0
                   CONTENTS, RELOC, READONLY
-171 .xt.prop._ZN11OvmsVehicle29NotifiedVehicleCharge12vStartEv 00000024  00000000  00000000  00081fda  2**0
+171 .xt.prop._ZN11OvmsVehicle29NotifiedVehicleCharge12vStartEv 00000024  00000000  00000000  00081fcc  2**0
                   CONTENTS, RELOC, READONLY
-172 .xt.prop._ZN11OvmsVehicle28NotifiedVehicleCharge12vStopEv 00000024  00000000  00000000  00081ffe  2**0
+172 .xt.prop._ZN11OvmsVehicle28NotifiedVehicleCharge12vStopEv 00000024  00000000  00000000  00081ff0  2**0
                   CONTENTS, RELOC, READONLY
-173 .xt.prop._ZN11OvmsVehicle21NotifiedVehicleLockedEv 00000024  00000000  00000000  00082022  2**0
+173 .xt.prop._ZN11OvmsVehicle21NotifiedVehicleLockedEv 00000024  00000000  00000000  00082014  2**0
                   CONTENTS, RELOC, READONLY
-174 .xt.prop._ZN11OvmsVehicle23NotifiedVehicleUnlockedEv 00000024  00000000  00000000  00082046  2**0
+174 .xt.prop._ZN11OvmsVehicle23NotifiedVehicleUnlockedEv 00000024  00000000  00000000  00082038  2**0
                   CONTENTS, RELOC, READONLY
-175 .xt.prop._ZN11OvmsVehicle22NotifiedVehicleValetOnEv 00000024  00000000  00000000  0008206a  2**0
+175 .xt.prop._ZN11OvmsVehicle22NotifiedVehicleValetOnEv 00000024  00000000  00000000  0008205c  2**0
                   CONTENTS, RELOC, READONLY
-176 .xt.prop._ZN11OvmsVehicle23NotifiedVehicleValetOffEv 00000024  00000000  00000000  0008208e  2**0
+176 .xt.prop._ZN11OvmsVehicle23NotifiedVehicleValetOffEv 00000024  00000000  00000000  00082080  2**0
                   CONTENTS, RELOC, READONLY
-177 .xt.prop._ZN11OvmsVehicle27NotifiedVehicleHeadlightsOnEv 00000024  00000000  00000000  000820b2  2**0
+177 .xt.prop._ZN11OvmsVehicle27NotifiedVehicleHeadlightsOnEv 00000024  00000000  00000000  000820a4  2**0
                   CONTENTS, RELOC, READONLY
-178 .xt.prop._ZN11OvmsVehicle28NotifiedVehicleHeadlightsOffEv 00000024  00000000  00000000  000820d6  2**0
+178 .xt.prop._ZN11OvmsVehicle28NotifiedVehicleHeadlightsOffEv 00000024  00000000  00000000  000820c8  2**0
                   CONTENTS, RELOC, READONLY
-179 .xt.prop._ZN11OvmsVehicle22NotifiedVehicleAlarmOnEv 00000024  00000000  00000000  000820fa  2**0
+179 .xt.prop._ZN11OvmsVehicle22NotifiedVehicleAlarmOnEv 00000024  00000000  00000000  000820ec  2**0
                   CONTENTS, RELOC, READONLY
-180 .xt.prop._ZN11OvmsVehicle23NotifiedVehicleAlarmOffEv 00000024  00000000  00000000  0008211e  2**0
+180 .xt.prop._ZN11OvmsVehicle23NotifiedVehicleAlarmOffEv 00000024  00000000  00000000  00082110  2**0
                   CONTENTS, RELOC, READONLY
-181 .xt.prop._ZN11OvmsVehicle25NotifiedVehicleChargeModeEPKc 00000024  00000000  00000000  00082142  2**0
+181 .xt.prop._ZN11OvmsVehicle25NotifiedVehicleChargeModeEPKc 00000024  00000000  00000000  00082134  2**0
                   CONTENTS, RELOC, READONLY
-182 .xt.prop._ZN11OvmsVehicle26NotifiedVehicleChargeStateEPKc 00000024  00000000  00000000  00082166  2**0
+182 .xt.prop._ZN11OvmsVehicle26NotifiedVehicleChargeStateEPKc 00000024  00000000  00000000  00082158  2**0
                   CONTENTS, RELOC, READONLY
-183 .xt.prop._ZN10KiaVehicleD2Ev 00000024  00000000  00000000  0008218a  2**0
+183 .xt.prop._ZN10KiaVehicleD2Ev 00000024  00000000  00000000  0008217c  2**0
                   CONTENTS, RELOC, READONLY
-184 .xt.prop._ZN10KiaVehicleD0Ev 00000024  00000000  00000000  000821ae  2**0
+184 .xt.prop._ZN10KiaVehicleD0Ev 00000024  00000000  00000000  000821a0  2**0
                   CONTENTS, RELOC, READONLY
-185 .xt.prop._ZTV10KiaVehicle 0000000c  00000000  00000000  000821d2  2**0
+185 .xt.prop._ZTV10KiaVehicle 0000000c  00000000  00000000  000821c4  2**0
                   CONTENTS, RELOC, READONLY
-186 .xt.prop._ZTV20OvmsVehicleKiaSoulEv 0000000c  00000000  00000000  000821de  2**0
+186 .xt.prop._ZTV20OvmsVehicleKiaSoulEv 0000000c  00000000  00000000  000821d0  2**0
                   CONTENTS, RELOC, READONLY
 
 ks_incoming_c_can.o:     file format elf32-xtensa-le

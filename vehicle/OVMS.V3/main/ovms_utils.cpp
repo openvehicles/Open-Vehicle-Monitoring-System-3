@@ -502,3 +502,14 @@ double float2double(float f)
   snprintf(buf, sizeof buf, "%g", f);
   return atof(buf);
   }
+
+/**
+ * idtag: create object instance tag for registrations
+ */
+std::string idtag(const char* tag, void* instance)
+  {
+  std::ostringstream buf;
+  buf << tag << "-" << instance;
+  std::string res = buf.str();
+  return res;
+  }

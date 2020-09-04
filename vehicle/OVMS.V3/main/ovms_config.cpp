@@ -355,12 +355,6 @@ void OvmsConfig::upgrade()
       }
     }
 
-  // Migrate vehicle ID VWUP to VWUP.T26
-  if (GetParamValue("auto", "vehicle.type") == "VWUP")
-    {
-    SetParamValue("auto", "vehicle.type", "VWUP.T26");
-    }
-
   // Done, set config version:
   SetParamValueInt("module", "cfgversion", 2020053100);
   }

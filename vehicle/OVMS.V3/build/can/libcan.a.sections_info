@@ -228,123 +228,123 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
  18 .literal._ZN6canlogC2EPKcNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEN9canformat22canformat_serve_mode_tE 00000078  00000000  00000000  000002c0  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 19 .literal._ZN6canlogD2Ev 00000018  00000000  00000000  00000338  2**2
+ 19 .literal._ZN6canlogD2Ev 0000002c  00000000  00000000  00000338  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 20 .literal._ZN6canlogD0Ev 00000008  00000000  00000000  00000350  2**2
+ 20 .literal._ZN6canlogD0Ev 00000008  00000000  00000000  00000364  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 21 .literal.startup._GLOBAL__sub_I$04550__Z12can_log_stopiP10OvmsWriterP11OvmsCommandiPKPKc 00000008  00000000  00000000  00000358  2**2
+ 21 .literal.startup._GLOBAL__sub_I$04550__Z12can_log_stopiP10OvmsWriterP11OvmsCommandiPKPKc 00000008  00000000  00000000  0000036c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 22 .literal.startup._GLOBAL__sub_I__Z12can_log_stopiP10OvmsWriterP11OvmsCommandiPKPKc 00000008  00000000  00000000  00000360  2**2
+ 22 .literal.startup._GLOBAL__sub_I__Z12can_log_stopiP10OvmsWriterP11OvmsCommandiPKPKc 00000008  00000000  00000000  00000374  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 23 .literal.exit._GLOBAL__sub_D__Z12can_log_stopiP10OvmsWriterP11OvmsCommandiPKPKc 00000008  00000000  00000000  00000368  2**2
+ 23 .literal.exit._GLOBAL__sub_D__Z12can_log_stopiP10OvmsWriterP11OvmsCommandiPKPKc 00000008  00000000  00000000  0000037c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 24 .text         00000000  00000000  00000000  00000370  2**0
+ 24 .text         00000000  00000000  00000000  00000384  2**0
                   CONTENTS, ALLOC, LOAD, READONLY, CODE
- 25 .data         00000000  00000000  00000000  00000370  2**0
+ 25 .data         00000000  00000000  00000000  00000384  2**0
                   CONTENTS, ALLOC, LOAD, DATA
- 26 .bss          00000000  00000000  00000000  00000370  2**0
+ 26 .bss          00000000  00000000  00000000  00000384  2**0
                   ALLOC
- 27 .text._ZSt5fixedRSt8ios_base 00000017  00000000  00000000  00000370  2**2
+ 27 .text._ZSt5fixedRSt8ios_base 00000017  00000000  00000000  00000384  2**2
                   CONTENTS, ALLOC, LOAD, READONLY, CODE
- 28 .text._ZN6canlog9OutputMsgER17CAN_log_message_t 00000005  00000000  00000000  00000388  2**2
+ 28 .text._ZN6canlog9OutputMsgER17CAN_log_message_t 00000005  00000000  00000000  0000039c  2**2
                   CONTENTS, ALLOC, LOAD, READONLY, CODE
- 29 .text._ZN6canlog9SetFilterEP9canfilter 00000015  00000000  00000000  00000390  2**2
+ 29 .text._ZN6canlog9SetFilterEP9canfilter 00000015  00000000  00000000  000003a4  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 30 .text._ZN6canlog11ClearFilterEv 00000019  00000000  00000000  000003a8  2**2
+ 30 .text._ZN6canlog11ClearFilterEv 00000019  00000000  00000000  000003bc  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 31 .text._ZNSt17_Function_handlerIFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvESt5_BindIFSt7_Mem_fnIM6canlogFvS5_S6_EEPSA_St12_PlaceholderILi1EESF_ILi2EEEEE9_M_invokeERKSt9_Any_dataOS5_OS6_ 00000037  00000000  00000000  000003c4  2**2
+ 31 .text._ZNSt17_Function_handlerIFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvESt5_BindIFSt7_Mem_fnIM6canlogFvS5_S6_EEPSA_St12_PlaceholderILi1EESF_ILi2EEEEE9_M_invokeERKSt9_Any_dataOS5_OS6_ 00000037  00000000  00000000  000003d8  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 32 .rodata.str1.1 000002c5  00000000  00000000  000003fb  2**0
+ 32 .rodata.str1.1 000002c5  00000000  00000000  0000040f  2**0
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
- 33 .text._Z14can_log_statusiP10OvmsWriterP11OvmsCommandiPKPKc 000000f0  00000000  00000000  000006c0  2**2
+ 33 .text._Z14can_log_statusiP10OvmsWriterP11OvmsCommandiPKPKc 000000f0  00000000  00000000  000006d4  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 34 .text._ZN6canlog6RxTaskEPv 0000003f  00000000  00000000  000007b0  2**2
+ 34 .text._ZN6canlog6RxTaskEPv 0000003f  00000000  00000000  000007c4  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 35 .text._ZN6canlog7GetInfoB5cxx11Ev 000000f8  00000000  00000000  000007f0  2**2
+ 35 .text._ZN6canlog7GetInfoB5cxx11Ev 000000f8  00000000  00000000  00000804  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 36 .text._ZN6canlog8GetStatsB5cxx11Ev 000000de  00000000  00000000  000008e8  2**2
+ 36 .text._ZN6canlog8GetStatsB5cxx11Ev 000000de  00000000  00000000  000008fc  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 37 .text._ZNSt14_Function_base13_Base_managerISt5_BindIFSt7_Mem_fnIM6canlogFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvEEPS3_St12_PlaceholderILi1EESF_ILi2EEEEE10_M_managerERSt9_Any_dataRKSL_St18_Manager_operation 00000044  00000000  00000000  000009c8  2**2
+ 37 .text._ZNSt14_Function_base13_Base_managerISt5_BindIFSt7_Mem_fnIM6canlogFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvEEPS3_St12_PlaceholderILi1EESF_ILi2EEEEE10_M_managerERSt9_Any_dataRKSL_St18_Manager_operation 00000044  00000000  00000000  000009dc  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 38 .text._ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEC2EPKcRKS3_$isra$38 00000062  00000000  00000000  00000a0c  2**2
+ 38 .text._ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEC2EPKcRKS3_$isra$38 00000062  00000000  00000000  00000a20  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 39 .text._ZN6canlog9LogStatusEP6canbus14CAN_log_type_tPK12CAN_status_t 00000086  00000000  00000000  00000a70  2**2
+ 39 .text._ZN6canlog9LogStatusEP6canbus14CAN_log_type_tPK12CAN_status_t 00000086  00000000  00000000  00000a84  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 40 .text._ZN6canlog8LogFrameEP6canbus14CAN_log_type_tPK11CAN_frame_t 00000092  00000000  00000000  00000af8  2**2
+ 40 .text._ZN6canlog8LogFrameEP6canbus14CAN_log_type_tPK11CAN_frame_t 00000092  00000000  00000000  00000b0c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 41 .text._ZN6canlog13EventListenerENSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPv 00000048  00000000  00000000  00000b8c  2**2
+ 41 .text._ZN6canlog13EventListenerENSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPv 00000048  00000000  00000000  00000ba0  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 42 .text._ZN6canlog7LogInfoEP6canbus14CAN_log_type_tPKc 00000086  00000000  00000000  00000bd4  2**2
+ 42 .text._ZN6canlog7LogInfoEP6canbus14CAN_log_type_tPKc 00000086  00000000  00000000  00000be8  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 43 .text._Z12can_log_stopiP10OvmsWriterP11OvmsCommandiPKPKc 00000057  00000000  00000000  00000c5c  2**2
+ 43 .text._Z12can_log_stopiP10OvmsWriterP11OvmsCommandiPKPKc 00000057  00000000  00000000  00000c70  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 44 .text._Z12can_log_listiP10OvmsWriterP11OvmsCommandiPKPKc 00000074  00000000  00000000  00000cb4  2**2
+ 44 .text._Z12can_log_listiP10OvmsWriterP11OvmsCommandiPKPKc 00000074  00000000  00000000  00000cc8  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 45 .text._ZN14OvmsCanLogInitC2Ev 000000e3  00000000  00000000  00000d28  2**2
+ 45 .text._ZN14OvmsCanLogInitC2Ev 000000e3  00000000  00000000  00000d3c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 46 .text._ZN6canlogC2EPKcNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEN9canformat22canformat_serve_mode_tE 00000132  00000000  00000000  00000e0c  2**2
+ 46 .text._ZN6canlogC2EPKcNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEN9canformat22canformat_serve_mode_tE 00000136  00000000  00000000  00000e20  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 47 .text._ZN6canlogD2Ev 00000083  00000000  00000000  00000f40  2**2
+ 47 .text._ZN6canlogD2Ev 000000a7  00000000  00000000  00000f58  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 48 .text._ZN6canlogD0Ev 00000016  00000000  00000000  00000fc4  2**2
+ 48 .text._ZN6canlogD0Ev 00000016  00000000  00000000  00001000  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 49 .text._ZN6canlog7GetTypeEv 00000007  00000000  00000000  00000fdc  2**2
+ 49 .text._ZN6canlog7GetTypeEv 00000007  00000000  00000000  00001018  2**2
                   CONTENTS, ALLOC, LOAD, READONLY, CODE
- 50 .text._ZN6canlog9GetFormatEv 00000007  00000000  00000000  00000fe4  2**2
+ 50 .text._ZN6canlog9GetFormatEv 00000007  00000000  00000000  00001020  2**2
                   CONTENTS, ALLOC, LOAD, READONLY, CODE
- 51 .text.startup._GLOBAL__sub_I$04550__Z12can_log_stopiP10OvmsWriterP11OvmsCommandiPKPKc 0000000e  00000000  00000000  00000fec  2**2
+ 51 .text.startup._GLOBAL__sub_I$04550__Z12can_log_stopiP10OvmsWriterP11OvmsCommandiPKPKc 0000000e  00000000  00000000  00001028  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 52 .ctors.60985  00000004  00000000  00000000  00000ffc  2**2
+ 52 .ctors.60985  00000004  00000000  00000000  00001038  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, DATA
- 53 .text.startup._GLOBAL__sub_I__Z12can_log_stopiP10OvmsWriterP11OvmsCommandiPKPKc 0000000e  00000000  00000000  00001000  2**2
+ 53 .text.startup._GLOBAL__sub_I__Z12can_log_stopiP10OvmsWriterP11OvmsCommandiPKPKc 0000000e  00000000  00000000  0000103c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 54 .ctors        00000004  00000000  00000000  00001010  2**2
+ 54 .ctors        00000004  00000000  00000000  0000104c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, DATA
- 55 .text.exit._GLOBAL__sub_D__Z12can_log_stopiP10OvmsWriterP11OvmsCommandiPKPKc 0000000e  00000000  00000000  00001014  2**2
+ 55 .text.exit._GLOBAL__sub_D__Z12can_log_stopiP10OvmsWriterP11OvmsCommandiPKPKc 0000000e  00000000  00000000  00001050  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 56 .dtors        00000004  00000000  00000000  00001024  2**2
+ 56 .dtors        00000004  00000000  00000000  00001060  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, DATA
- 57 .rodata._ZTV6canlog 0000003c  00000000  00000000  00001028  2**2
+ 57 .rodata._ZTV6canlog 0000003c  00000000  00000000  00001064  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, DATA
- 58 .bss.MyOvmsCanLogInit 00000001  00000000  00000000  00001064  2**0
+ 58 .bss.MyOvmsCanLogInit 00000001  00000000  00000000  000010a0  2**0
                   ALLOC
- 59 .bss._ZStL8__ioinit 00000001  00000000  00000000  00001064  2**0
+ 59 .bss._ZStL8__ioinit 00000001  00000000  00000000  000010a0  2**0
                   ALLOC
- 60 .debug_frame  00000280  00000000  00000000  00001064  2**2
+ 60 .debug_frame  00000280  00000000  00000000  000010a0  2**2
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 61 .debug_info   0002176b  00000000  00000000  000012e4  2**0
+ 61 .debug_info   000217f3  00000000  00000000  00001320  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 62 .debug_abbrev 00000f96  00000000  00000000  00022a4f  2**0
+ 62 .debug_abbrev 00000f96  00000000  00000000  00022b13  2**0
                   CONTENTS, READONLY, DEBUGGING
- 63 .debug_loc    000011a7  00000000  00000000  000239e5  2**0
+ 63 .debug_loc    000011ef  00000000  00000000  00023aa9  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 64 .debug_aranges 000000e8  00000000  00000000  00024b8c  2**0
+ 64 .debug_aranges 000000e8  00000000  00000000  00024c98  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 65 .debug_ranges 00000258  00000000  00000000  00024c74  2**0
+ 65 .debug_ranges 00000258  00000000  00000000  00024d80  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 66 .debug_line   000014c0  00000000  00000000  00024ecc  2**0
+ 66 .debug_line   000014d2  00000000  00000000  00024fd8  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 67 .debug_str    00047071  00000000  00000000  0002638c  2**0
+ 67 .debug_str    0004708c  00000000  00000000  000264aa  2**0
                   CONTENTS, READONLY, DEBUGGING
- 68 .comment      0000003b  00000000  00000000  0006d3fd  2**0
+ 68 .comment      0000003b  00000000  00000000  0006d536  2**0
                   CONTENTS, READONLY
- 69 .xtensa.info  00000038  00000000  00000000  0006d438  2**0
+ 69 .xtensa.info  00000038  00000000  00000000  0006d571  2**0
                   CONTENTS, READONLY
- 70 .xt.lit._ZNSt17_Function_handlerIFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvESt5_BindIFSt7_Mem_fnIM6canlogFvS5_S6_EEPSA_St12_PlaceholderILi1EESF_ILi2EEEEE9_M_invokeERKSt9_Any_dataOS5_OS6_ 00000008  00000000  00000000  0006d470  2**0
+ 70 .xt.lit._ZNSt17_Function_handlerIFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvESt5_BindIFSt7_Mem_fnIM6canlogFvS5_S6_EEPSA_St12_PlaceholderILi1EESF_ILi2EEEEE9_M_invokeERKSt9_Any_dataOS5_OS6_ 00000008  00000000  00000000  0006d5a9  2**0
                   CONTENTS, RELOC, READONLY
- 71 .xt.lit       00000090  00000000  00000000  0006d478  2**0
+ 71 .xt.lit       00000090  00000000  00000000  0006d5b1  2**0
                   CONTENTS, RELOC, READONLY
- 72 .xt.lit._ZNSt14_Function_base13_Base_managerISt5_BindIFSt7_Mem_fnIM6canlogFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvEEPS3_St12_PlaceholderILi1EESF_ILi2EEEEE10_M_managerERSt9_Any_dataRKSL_St18_Manager_operation 00000008  00000000  00000000  0006d508  2**0
+ 72 .xt.lit._ZNSt14_Function_base13_Base_managerISt5_BindIFSt7_Mem_fnIM6canlogFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvEEPS3_St12_PlaceholderILi1EESF_ILi2EEEEE10_M_managerERSt9_Any_dataRKSL_St18_Manager_operation 00000008  00000000  00000000  0006d641  2**0
                   CONTENTS, RELOC, READONLY
- 73 .xt.prop._ZNSt17_Function_handlerIFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvESt5_BindIFSt7_Mem_fnIM6canlogFvS5_S6_EEPSA_St12_PlaceholderILi1EESF_ILi2EEEEE9_M_invokeERKSt9_Any_dataOS5_OS6_ 0000003c  00000000  00000000  0006d510  2**0
+ 73 .xt.prop._ZNSt17_Function_handlerIFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvESt5_BindIFSt7_Mem_fnIM6canlogFvS5_S6_EEPSA_St12_PlaceholderILi1EESF_ILi2EEEEE9_M_invokeERKSt9_Any_dataOS5_OS6_ 0000003c  00000000  00000000  0006d649  2**0
                   CONTENTS, RELOC, READONLY
- 74 .xt.prop      00000738  00000000  00000000  0006d54c  2**0
+ 74 .xt.prop      00000738  00000000  00000000  0006d685  2**0
                   CONTENTS, RELOC, READONLY
- 75 .xt.prop._ZNSt14_Function_base13_Base_managerISt5_BindIFSt7_Mem_fnIM6canlogFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvEEPS3_St12_PlaceholderILi1EESF_ILi2EEEEE10_M_managerERSt9_Any_dataRKSL_St18_Manager_operation 00000060  00000000  00000000  0006dc84  2**0
+ 75 .xt.prop._ZNSt14_Function_base13_Base_managerISt5_BindIFSt7_Mem_fnIM6canlogFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvEEPS3_St12_PlaceholderILi1EESF_ILi2EEEEE10_M_managerERSt9_Any_dataRKSL_St18_Manager_operation 00000060  00000000  00000000  0006ddbd  2**0
                   CONTENTS, RELOC, READONLY
- 76 .xt.prop._ZSt5fixedRSt8ios_base 00000024  00000000  00000000  0006dce4  2**0
+ 76 .xt.prop._ZSt5fixedRSt8ios_base 00000024  00000000  00000000  0006de1d  2**0
                   CONTENTS, RELOC, READONLY
- 77 .xt.prop._ZTV6canlog 0000000c  00000000  00000000  0006dd08  2**0
+ 77 .xt.prop._ZTV6canlog 0000000c  00000000  00000000  0006de41  2**0
                   CONTENTS, RELOC, READONLY
 
 canlog_tcpclient.o:     file format elf32-xtensa-le
@@ -823,15 +823,15 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
   7 .literal._ZN10canlog_vfs5CloseEv 00000018  00000000  00000000  000000a8  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
-  8 .literal._ZN10canlog_vfs9OutputMsgER17CAN_log_message_t 00000008  00000000  00000000  000000c0  2**2
+  8 .literal._ZN10canlog_vfsD2Ev 00000024  00000000  00000000  000000c0  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
-  9 .literal._ZNSt14_Function_base13_Base_managerISt5_BindIFSt7_Mem_fnIM10canlog_vfsFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvEEPS3_St12_PlaceholderILi1EESF_ILi2EEEEE10_M_managerERSt9_Any_dataRKSL_St18_Manager_operation 00000008  00000000  00000000  000000c8  2**2
+  9 .literal._ZN10canlog_vfsD0Ev 00000008  00000000  00000000  000000e4  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 10 .literal._ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEC2EPKcRKS3_$isra$26 00000014  00000000  00000000  000000d0  2**2
+ 10 .literal._ZN10canlog_vfs9OutputMsgER17CAN_log_message_t 00000008  00000000  00000000  000000ec  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 11 .literal._ZN10canlog_vfsD2Ev 00000024  00000000  00000000  000000e4  2**2
+ 11 .literal._ZNSt14_Function_base13_Base_managerISt5_BindIFSt7_Mem_fnIM10canlog_vfsFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvEEPS3_St12_PlaceholderILi1EESF_ILi2EEEEE10_M_managerERSt9_Any_dataRKSL_St18_Manager_operation 00000008  00000000  00000000  000000f4  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 12 .literal._ZN10canlog_vfsD0Ev 00000008  00000000  00000000  00000108  2**2
+ 12 .literal._ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEC2EPKcRKS3_$isra$26 00000014  00000000  00000000  000000fc  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
  13 .literal._ZN17OvmsCanLogVFSInitC2Ev 00000050  00000000  00000000  00000110  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
@@ -869,15 +869,15 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
  30 .text._ZN10canlog_vfs5CloseEv 00000053  00000000  00000000  000005d0  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 31 .text._ZN10canlog_vfs9OutputMsgER17CAN_log_message_t 00000033  00000000  00000000  00000624  2**2
+ 31 .text._ZN10canlog_vfsD2Ev 0000004c  00000000  00000000  00000624  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 32 .text._ZNSt14_Function_base13_Base_managerISt5_BindIFSt7_Mem_fnIM10canlog_vfsFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvEEPS3_St12_PlaceholderILi1EESF_ILi2EEEEE10_M_managerERSt9_Any_dataRKSL_St18_Manager_operation 00000044  00000000  00000000  00000658  2**2
+ 32 .text._ZN10canlog_vfsD0Ev 00000016  00000000  00000000  00000670  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 33 .text._ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEC2EPKcRKS3_$isra$26 00000062  00000000  00000000  0000069c  2**2
+ 33 .text._ZN10canlog_vfs9OutputMsgER17CAN_log_message_t 00000033  00000000  00000000  00000688  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 34 .text._ZN10canlog_vfsD2Ev 0000004b  00000000  00000000  00000700  2**2
+ 34 .text._ZNSt14_Function_base13_Base_managerISt5_BindIFSt7_Mem_fnIM10canlog_vfsFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvEEPS3_St12_PlaceholderILi1EESF_ILi2EEEEE10_M_managerERSt9_Any_dataRKSL_St18_Manager_operation 00000044  00000000  00000000  000006bc  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 35 .text._ZN10canlog_vfsD0Ev 00000016  00000000  00000000  0000074c  2**2
+ 35 .text._ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEC2EPKcRKS3_$isra$26 00000062  00000000  00000000  00000700  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
  36 .text._ZNSt14_Function_baseD2Ev 00000012  00000000  00000000  00000764  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
@@ -885,81 +885,81 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
  38 .text._ZNSt8functionIFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvEEC2ISt5_BindIFSt7_Mem_fnIM10canlog_vfsFvS5_S6_EEPSC_St12_PlaceholderILi1EESH_ILi2EEEEvEET_ 00000035  00000000  00000000  00000804  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 39 .text._ZN10canlog_vfsC2ENSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEES5_ 00000104  00000000  00000000  0000083c  2**2
+ 39 .text._ZN10canlog_vfsC2ENSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEES5_ 00000108  00000000  00000000  0000083c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 40 .text._Z17can_log_vfs_startiP10OvmsWriterP11OvmsCommandiPKPKc 00000108  00000000  00000000  00000940  2**2
+ 40 .text._Z17can_log_vfs_startiP10OvmsWriterP11OvmsCommandiPKPKc 00000108  00000000  00000000  00000944  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 41 .text._Z10startsWithINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEEbRKT_RKS5_ 00000026  00000000  00000000  00000a48  2**2
+ 41 .text._Z10startsWithINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEEbRKT_RKS5_ 00000026  00000000  00000000  00000a4c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 42 .text._ZN10canlog_vfs4OpenEv 00000128  00000000  00000000  00000a70  2**2
+ 42 .text._ZN10canlog_vfs4OpenEv 00000128  00000000  00000000  00000a74  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 43 .text._ZN10canlog_vfs13MountListenerENSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPv 0000007b  00000000  00000000  00000b98  2**2
+ 43 .text._ZN10canlog_vfs13MountListenerENSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPv 0000007b  00000000  00000000  00000b9c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 44 .text.startup._GLOBAL__sub_I$04560__Z17can_log_vfs_startiP10OvmsWriterP11OvmsCommandiPKPKc 0000000e  00000000  00000000  00000c14  2**2
+ 44 .text.startup._GLOBAL__sub_I$04560__Z17can_log_vfs_startiP10OvmsWriterP11OvmsCommandiPKPKc 0000000e  00000000  00000000  00000c18  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 45 .ctors.60975  00000004  00000000  00000000  00000c24  2**2
+ 45 .ctors.60975  00000004  00000000  00000000  00000c28  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, DATA
- 46 .text.startup._GLOBAL__sub_I__Z17can_log_vfs_startiP10OvmsWriterP11OvmsCommandiPKPKc 0000000e  00000000  00000000  00000c28  2**2
+ 46 .text.startup._GLOBAL__sub_I__Z17can_log_vfs_startiP10OvmsWriterP11OvmsCommandiPKPKc 0000000e  00000000  00000000  00000c2c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 47 .ctors        00000004  00000000  00000000  00000c38  2**2
+ 47 .ctors        00000004  00000000  00000000  00000c3c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, DATA
- 48 .text.exit._GLOBAL__sub_D__Z17can_log_vfs_startiP10OvmsWriterP11OvmsCommandiPKPKc 0000000e  00000000  00000000  00000c3c  2**2
+ 48 .text.exit._GLOBAL__sub_D__Z17can_log_vfs_startiP10OvmsWriterP11OvmsCommandiPKPKc 0000000e  00000000  00000000  00000c40  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 49 .dtors        00000004  00000000  00000000  00000c4c  2**2
+ 49 .dtors        00000004  00000000  00000000  00000c50  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, DATA
- 50 .text._ZN10canlog_vfs7GetInfoB5cxx11Ev 00000026  00000000  00000000  00000c50  2**2
+ 50 .text._ZN10canlog_vfs7GetInfoB5cxx11Ev 00000026  00000000  00000000  00000c54  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 51 .rodata._ZTV10canlog_vfs 00000040  00000000  00000000  00000c78  2**2
+ 51 .rodata._ZTV10canlog_vfs 00000040  00000000  00000000  00000c7c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, DATA
- 52 .bss.MyOvmsCanLogVFSInit 00000001  00000000  00000000  00000cb8  2**0
+ 52 .bss.MyOvmsCanLogVFSInit 00000001  00000000  00000000  00000cbc  2**0
                   ALLOC
- 53 .bss._ZStL8__ioinit 00000001  00000000  00000000  00000cb8  2**0
+ 53 .bss._ZStL8__ioinit 00000001  00000000  00000000  00000cbc  2**0
                   ALLOC
- 54 .debug_frame  000001f0  00000000  00000000  00000cb8  2**2
+ 54 .debug_frame  000001f0  00000000  00000000  00000cbc  2**2
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 55 .debug_info   000200d2  00000000  00000000  00000ea8  2**0
+ 55 .debug_info   000200f7  00000000  00000000  00000eac  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 56 .debug_abbrev 00000e66  00000000  00000000  00020f7a  2**0
+ 56 .debug_abbrev 00000e66  00000000  00000000  00020fa3  2**0
                   CONTENTS, READONLY, DEBUGGING
- 57 .debug_loc    000010a4  00000000  00000000  00021de0  2**0
+ 57 .debug_loc    000010a4  00000000  00000000  00021e09  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 58 .debug_aranges 000000b8  00000000  00000000  00022e84  2**0
+ 58 .debug_aranges 000000b8  00000000  00000000  00022ead  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 59 .debug_ranges 00000168  00000000  00000000  00022f3c  2**0
+ 59 .debug_ranges 00000168  00000000  00000000  00022f65  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 60 .debug_line   000011f6  00000000  00000000  000230a4  2**0
+ 60 .debug_line   000011f6  00000000  00000000  000230cd  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 61 .debug_str    000463ed  00000000  00000000  0002429a  2**0
+ 61 .debug_str    00046408  00000000  00000000  000242c3  2**0
                   CONTENTS, READONLY, DEBUGGING
- 62 .comment      0000003b  00000000  00000000  0006a687  2**0
+ 62 .comment      0000003b  00000000  00000000  0006a6cb  2**0
                   CONTENTS, READONLY
- 63 .xtensa.info  00000038  00000000  00000000  0006a6c2  2**0
+ 63 .xtensa.info  00000038  00000000  00000000  0006a706  2**0
                   CONTENTS, READONLY
- 64 .xt.lit._ZNSt17_Function_handlerIFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvESt5_BindIFSt7_Mem_fnIM10canlog_vfsFvS5_S6_EEPSA_St12_PlaceholderILi1EESF_ILi2EEEEE9_M_invokeERKSt9_Any_dataOS5_OS6_ 00000008  00000000  00000000  0006a6fa  2**0
+ 64 .xt.lit._ZNSt17_Function_handlerIFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvESt5_BindIFSt7_Mem_fnIM10canlog_vfsFvS5_S6_EEPSA_St12_PlaceholderILi1EESF_ILi2EEEEE9_M_invokeERKSt9_Any_dataOS5_OS6_ 00000008  00000000  00000000  0006a73e  2**0
                   CONTENTS, RELOC, READONLY
- 65 .xt.lit       00000070  00000000  00000000  0006a702  2**0
+ 65 .xt.lit       00000070  00000000  00000000  0006a746  2**0
                   CONTENTS, RELOC, READONLY
- 66 .xt.lit._ZNSt14_Function_base13_Base_managerISt5_BindIFSt7_Mem_fnIM10canlog_vfsFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvEEPS3_St12_PlaceholderILi1EESF_ILi2EEEEE10_M_managerERSt9_Any_dataRKSL_St18_Manager_operation 00000008  00000000  00000000  0006a772  2**0
+ 66 .xt.lit._ZNSt14_Function_base13_Base_managerISt5_BindIFSt7_Mem_fnIM10canlog_vfsFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvEEPS3_St12_PlaceholderILi1EESF_ILi2EEEEE10_M_managerERSt9_Any_dataRKSL_St18_Manager_operation 00000008  00000000  00000000  0006a7b6  2**0
                   CONTENTS, RELOC, READONLY
- 67 .xt.lit._ZNSt8functionIFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvEEC5ISt5_BindIFSt7_Mem_fnIM10canlog_vfsFvS5_S6_EEPSC_St12_PlaceholderILi1EESH_ILi2EEEEvEET_ 00000008  00000000  00000000  0006a77a  2**0
+ 67 .xt.lit._ZNSt8functionIFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvEEC5ISt5_BindIFSt7_Mem_fnIM10canlog_vfsFvS5_S6_EEPSC_St12_PlaceholderILi1EESH_ILi2EEEEvEET_ 00000008  00000000  00000000  0006a7be  2**0
                   CONTENTS, RELOC, READONLY
- 68 .xt.lit._Z10startsWithINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEEbRKT_RKS5_ 00000008  00000000  00000000  0006a782  2**0
+ 68 .xt.lit._Z10startsWithINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEEbRKT_RKS5_ 00000008  00000000  00000000  0006a7c6  2**0
                   CONTENTS, RELOC, READONLY
- 69 .xt.prop._ZNSt17_Function_handlerIFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvESt5_BindIFSt7_Mem_fnIM10canlog_vfsFvS5_S6_EEPSA_St12_PlaceholderILi1EESF_ILi2EEEEE9_M_invokeERKSt9_Any_dataOS5_OS6_ 0000003c  00000000  00000000  0006a78a  2**0
+ 69 .xt.prop._ZNSt17_Function_handlerIFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvESt5_BindIFSt7_Mem_fnIM10canlog_vfsFvS5_S6_EEPSA_St12_PlaceholderILi1EESF_ILi2EEEEE9_M_invokeERKSt9_Any_dataOS5_OS6_ 0000003c  00000000  00000000  0006a7ce  2**0
                   CONTENTS, RELOC, READONLY
- 70 .xt.prop      000003b4  00000000  00000000  0006a7c6  2**0
+ 70 .xt.prop      000003b4  00000000  00000000  0006a80a  2**0
                   CONTENTS, RELOC, READONLY
- 71 .xt.prop._ZNSt14_Function_base13_Base_managerISt5_BindIFSt7_Mem_fnIM10canlog_vfsFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvEEPS3_St12_PlaceholderILi1EESF_ILi2EEEEE10_M_managerERSt9_Any_dataRKSL_St18_Manager_operation 00000060  00000000  00000000  0006ab7a  2**0
+ 71 .xt.prop._ZNSt14_Function_base13_Base_managerISt5_BindIFSt7_Mem_fnIM10canlog_vfsFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvEEPS3_St12_PlaceholderILi1EESF_ILi2EEEEE10_M_managerERSt9_Any_dataRKSL_St18_Manager_operation 00000060  00000000  00000000  0006abbe  2**0
                   CONTENTS, RELOC, READONLY
- 72 .xt.prop._ZNSt8functionIFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvEEC5ISt5_BindIFSt7_Mem_fnIM10canlog_vfsFvS5_S6_EEPSC_St12_PlaceholderILi1EESH_ILi2EEEEvEET_ 0000000c  00000000  00000000  0006abda  2**0
+ 72 .xt.prop._ZNSt8functionIFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvEEC5ISt5_BindIFSt7_Mem_fnIM10canlog_vfsFvS5_S6_EEPSC_St12_PlaceholderILi1EESH_ILi2EEEEvEET_ 0000000c  00000000  00000000  0006ac1e  2**0
                   CONTENTS, RELOC, READONLY
- 73 .xt.prop._Z10startsWithINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEEbRKT_RKS5_ 00000030  00000000  00000000  0006abe6  2**0
+ 73 .xt.prop._Z10startsWithINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEEbRKT_RKS5_ 00000030  00000000  00000000  0006ac2a  2**0
                   CONTENTS, RELOC, READONLY
- 74 .xt.prop._ZNSt14_Function_baseD2Ev 00000030  00000000  00000000  0006ac16  2**0
+ 74 .xt.prop._ZNSt14_Function_baseD2Ev 00000030  00000000  00000000  0006ac5a  2**0
                   CONTENTS, RELOC, READONLY
- 75 .xt.prop._ZNSt8functionIFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvEEC2ISt5_BindIFSt7_Mem_fnIM10canlog_vfsFvS5_S6_EEPSC_St12_PlaceholderILi1EESH_ILi2EEEEvEET_ 00000024  00000000  00000000  0006ac46  2**0
+ 75 .xt.prop._ZNSt8functionIFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvEEC2ISt5_BindIFSt7_Mem_fnIM10canlog_vfsFvS5_S6_EEPSC_St12_PlaceholderILi1EESH_ILi2EEEEvEET_ 00000024  00000000  00000000  0006ac8a  2**0
                   CONTENTS, RELOC, READONLY
- 76 .xt.prop._ZTV10canlog_vfs 0000000c  00000000  00000000  0006ac6a  2**0
+ 76 .xt.prop._ZTV10canlog_vfs 0000000c  00000000  00000000  0006acae  2**0
                   CONTENTS, RELOC, READONLY
 
 canplay.o:     file format elf32-xtensa-le
@@ -1686,13 +1686,13 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
   7 .literal._ZN11canplay_vfs5CloseEv 00000018  00000000  00000000  000000a8  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
-  8 .literal._ZNSt14_Function_base13_Base_managerISt5_BindIFSt7_Mem_fnIM11canplay_vfsFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvEEPS3_St12_PlaceholderILi1EESF_ILi2EEEEE10_M_managerERSt9_Any_dataRKSL_St18_Manager_operation 00000008  00000000  00000000  000000c0  2**2
+  8 .literal._ZN11canplay_vfsD2Ev 00000024  00000000  00000000  000000c0  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
-  9 .literal._ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEC2EPKcRKS3_$isra$26 00000014  00000000  00000000  000000c8  2**2
+  9 .literal._ZN11canplay_vfsD0Ev 00000008  00000000  00000000  000000e4  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 10 .literal._ZN11canplay_vfsD2Ev 00000024  00000000  00000000  000000dc  2**2
+ 10 .literal._ZNSt14_Function_base13_Base_managerISt5_BindIFSt7_Mem_fnIM11canplay_vfsFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvEEPS3_St12_PlaceholderILi1EESF_ILi2EEEEE10_M_managerERSt9_Any_dataRKSL_St18_Manager_operation 00000008  00000000  00000000  000000ec  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 11 .literal._ZN11canplay_vfsD0Ev 00000008  00000000  00000000  00000100  2**2
+ 11 .literal._ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEC2EPKcRKS3_$isra$26 00000014  00000000  00000000  000000f4  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
  12 .literal._ZN18OvmsCanPlayVFSInitC2Ev 00000050  00000000  00000000  00000108  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
@@ -1732,13 +1732,13 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
  30 .text._ZN11canplay_vfs5CloseEv 00000053  00000000  00000000  000005d4  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 31 .text._ZNSt14_Function_base13_Base_managerISt5_BindIFSt7_Mem_fnIM11canplay_vfsFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvEEPS3_St12_PlaceholderILi1EESF_ILi2EEEEE10_M_managerERSt9_Any_dataRKSL_St18_Manager_operation 00000044  00000000  00000000  00000628  2**2
+ 31 .text._ZN11canplay_vfsD2Ev 0000004c  00000000  00000000  00000628  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 32 .text._ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEC2EPKcRKS3_$isra$26 00000062  00000000  00000000  0000066c  2**2
+ 32 .text._ZN11canplay_vfsD0Ev 00000016  00000000  00000000  00000674  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 33 .text._ZN11canplay_vfsD2Ev 0000004b  00000000  00000000  000006d0  2**2
+ 33 .text._ZNSt14_Function_base13_Base_managerISt5_BindIFSt7_Mem_fnIM11canplay_vfsFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvEEPS3_St12_PlaceholderILi1EESF_ILi2EEEEE10_M_managerERSt9_Any_dataRKSL_St18_Manager_operation 00000044  00000000  00000000  0000068c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 34 .text._ZN11canplay_vfsD0Ev 00000016  00000000  00000000  0000071c  2**2
+ 34 .text._ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEC2EPKcRKS3_$isra$26 00000062  00000000  00000000  000006d0  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
  35 .text._ZNSt14_Function_baseD2Ev 00000012  00000000  00000000  00000734  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
@@ -1746,81 +1746,81 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
  37 .text._ZNSt8functionIFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvEEC2ISt5_BindIFSt7_Mem_fnIM11canplay_vfsFvS5_S6_EEPSC_St12_PlaceholderILi1EESH_ILi2EEEEvEET_ 00000035  00000000  00000000  000007d4  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 38 .text._ZN11canplay_vfsC2ENSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEES5_ 00000100  00000000  00000000  0000080c  2**2
+ 38 .text._ZN11canplay_vfsC2ENSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEES5_ 00000108  00000000  00000000  0000080c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 39 .text._Z18can_play_vfs_startiP10OvmsWriterP11OvmsCommandiPKPKc 000000db  00000000  00000000  0000090c  2**2
+ 39 .text._Z18can_play_vfs_startiP10OvmsWriterP11OvmsCommandiPKPKc 000000db  00000000  00000000  00000914  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 40 .text._Z10startsWithINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEEbRKT_RKS5_ 00000026  00000000  00000000  000009e8  2**2
+ 40 .text._Z10startsWithINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEEbRKT_RKS5_ 00000026  00000000  00000000  000009f0  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 41 .text._ZN11canplay_vfs4OpenEv 00000102  00000000  00000000  00000a10  2**2
+ 41 .text._ZN11canplay_vfs4OpenEv 00000102  00000000  00000000  00000a18  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 42 .text._ZN11canplay_vfs13MountListenerENSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPv 0000007b  00000000  00000000  00000b14  2**2
+ 42 .text._ZN11canplay_vfs13MountListenerENSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPv 0000007b  00000000  00000000  00000b1c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 43 .text.startup._GLOBAL__sub_I$04580__Z18can_play_vfs_startiP10OvmsWriterP11OvmsCommandiPKPKc 0000000e  00000000  00000000  00000b90  2**2
+ 43 .text.startup._GLOBAL__sub_I$04580__Z18can_play_vfs_startiP10OvmsWriterP11OvmsCommandiPKPKc 0000000e  00000000  00000000  00000b98  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 44 .ctors.60955  00000004  00000000  00000000  00000ba0  2**2
+ 44 .ctors.60955  00000004  00000000  00000000  00000ba8  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, DATA
- 45 .text.startup._GLOBAL__sub_I__Z18can_play_vfs_startiP10OvmsWriterP11OvmsCommandiPKPKc 0000000e  00000000  00000000  00000ba4  2**2
+ 45 .text.startup._GLOBAL__sub_I__Z18can_play_vfs_startiP10OvmsWriterP11OvmsCommandiPKPKc 0000000e  00000000  00000000  00000bac  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 46 .ctors        00000004  00000000  00000000  00000bb4  2**2
+ 46 .ctors        00000004  00000000  00000000  00000bbc  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, DATA
- 47 .text.exit._GLOBAL__sub_D__Z18can_play_vfs_startiP10OvmsWriterP11OvmsCommandiPKPKc 0000000e  00000000  00000000  00000bb8  2**2
+ 47 .text.exit._GLOBAL__sub_D__Z18can_play_vfs_startiP10OvmsWriterP11OvmsCommandiPKPKc 0000000e  00000000  00000000  00000bc0  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 48 .dtors        00000004  00000000  00000000  00000bc8  2**2
+ 48 .dtors        00000004  00000000  00000000  00000bd0  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, DATA
- 49 .text._ZN11canplay_vfs7GetInfoB5cxx11Ev 00000026  00000000  00000000  00000bcc  2**2
+ 49 .text._ZN11canplay_vfs7GetInfoB5cxx11Ev 00000026  00000000  00000000  00000bd4  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 50 .rodata._ZTV11canplay_vfs 00000034  00000000  00000000  00000bf4  2**2
+ 50 .rodata._ZTV11canplay_vfs 00000034  00000000  00000000  00000bfc  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, DATA
- 51 .bss.MyOvmsCanPlayVFSInit 00000001  00000000  00000000  00000c28  2**0
+ 51 .bss.MyOvmsCanPlayVFSInit 00000001  00000000  00000000  00000c30  2**0
                   ALLOC
- 52 .bss._ZStL8__ioinit 00000001  00000000  00000000  00000c28  2**0
+ 52 .bss._ZStL8__ioinit 00000001  00000000  00000000  00000c30  2**0
                   ALLOC
- 53 .debug_frame  000001f0  00000000  00000000  00000c28  2**2
+ 53 .debug_frame  000001f0  00000000  00000000  00000c30  2**2
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 54 .debug_info   0001ff6b  00000000  00000000  00000e18  2**0
+ 54 .debug_info   0001ff90  00000000  00000000  00000e20  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 55 .debug_abbrev 00000e56  00000000  00000000  00020d83  2**0
+ 55 .debug_abbrev 00000e56  00000000  00000000  00020db0  2**0
                   CONTENTS, READONLY, DEBUGGING
- 56 .debug_loc    00000f3d  00000000  00000000  00021bd9  2**0
+ 56 .debug_loc    00000f3d  00000000  00000000  00021c06  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 57 .debug_aranges 000000b8  00000000  00000000  00022b16  2**0
+ 57 .debug_aranges 000000b8  00000000  00000000  00022b43  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 58 .debug_ranges 00000168  00000000  00000000  00022bce  2**0
+ 58 .debug_ranges 00000168  00000000  00000000  00022bfb  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 59 .debug_line   000011a2  00000000  00000000  00022d36  2**0
+ 59 .debug_line   000011a2  00000000  00000000  00022d63  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 60 .debug_str    00046474  00000000  00000000  00023ed8  2**0
+ 60 .debug_str    0004648f  00000000  00000000  00023f05  2**0
                   CONTENTS, READONLY, DEBUGGING
- 61 .comment      0000003b  00000000  00000000  0006a34c  2**0
+ 61 .comment      0000003b  00000000  00000000  0006a394  2**0
                   CONTENTS, READONLY
- 62 .xtensa.info  00000038  00000000  00000000  0006a387  2**0
+ 62 .xtensa.info  00000038  00000000  00000000  0006a3cf  2**0
                   CONTENTS, READONLY
- 63 .xt.lit._ZNSt17_Function_handlerIFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvESt5_BindIFSt7_Mem_fnIM11canplay_vfsFvS5_S6_EEPSA_St12_PlaceholderILi1EESF_ILi2EEEEE9_M_invokeERKSt9_Any_dataOS5_OS6_ 00000008  00000000  00000000  0006a3bf  2**0
+ 63 .xt.lit._ZNSt17_Function_handlerIFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvESt5_BindIFSt7_Mem_fnIM11canplay_vfsFvS5_S6_EEPSA_St12_PlaceholderILi1EESF_ILi2EEEEE9_M_invokeERKSt9_Any_dataOS5_OS6_ 00000008  00000000  00000000  0006a407  2**0
                   CONTENTS, RELOC, READONLY
- 64 .xt.lit       00000068  00000000  00000000  0006a3c7  2**0
+ 64 .xt.lit       00000068  00000000  00000000  0006a40f  2**0
                   CONTENTS, RELOC, READONLY
- 65 .xt.lit._ZNSt14_Function_base13_Base_managerISt5_BindIFSt7_Mem_fnIM11canplay_vfsFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvEEPS3_St12_PlaceholderILi1EESF_ILi2EEEEE10_M_managerERSt9_Any_dataRKSL_St18_Manager_operation 00000008  00000000  00000000  0006a42f  2**0
+ 65 .xt.lit._ZNSt14_Function_base13_Base_managerISt5_BindIFSt7_Mem_fnIM11canplay_vfsFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvEEPS3_St12_PlaceholderILi1EESF_ILi2EEEEE10_M_managerERSt9_Any_dataRKSL_St18_Manager_operation 00000008  00000000  00000000  0006a477  2**0
                   CONTENTS, RELOC, READONLY
- 66 .xt.lit._ZNSt8functionIFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvEEC5ISt5_BindIFSt7_Mem_fnIM11canplay_vfsFvS5_S6_EEPSC_St12_PlaceholderILi1EESH_ILi2EEEEvEET_ 00000008  00000000  00000000  0006a437  2**0
+ 66 .xt.lit._ZNSt8functionIFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvEEC5ISt5_BindIFSt7_Mem_fnIM11canplay_vfsFvS5_S6_EEPSC_St12_PlaceholderILi1EESH_ILi2EEEEvEET_ 00000008  00000000  00000000  0006a47f  2**0
                   CONTENTS, RELOC, READONLY
- 67 .xt.lit._Z10startsWithINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEEbRKT_RKS5_ 00000008  00000000  00000000  0006a43f  2**0
+ 67 .xt.lit._Z10startsWithINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEEbRKT_RKS5_ 00000008  00000000  00000000  0006a487  2**0
                   CONTENTS, RELOC, READONLY
- 68 .xt.prop._ZNSt17_Function_handlerIFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvESt5_BindIFSt7_Mem_fnIM11canplay_vfsFvS5_S6_EEPSA_St12_PlaceholderILi1EESF_ILi2EEEEE9_M_invokeERKSt9_Any_dataOS5_OS6_ 0000003c  00000000  00000000  0006a447  2**0
+ 68 .xt.prop._ZNSt17_Function_handlerIFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvESt5_BindIFSt7_Mem_fnIM11canplay_vfsFvS5_S6_EEPSA_St12_PlaceholderILi1EESF_ILi2EEEEE9_M_invokeERKSt9_Any_dataOS5_OS6_ 0000003c  00000000  00000000  0006a48f  2**0
                   CONTENTS, RELOC, READONLY
- 69 .xt.prop      0000039c  00000000  00000000  0006a483  2**0
+ 69 .xt.prop      0000039c  00000000  00000000  0006a4cb  2**0
                   CONTENTS, RELOC, READONLY
- 70 .xt.prop._ZNSt14_Function_base13_Base_managerISt5_BindIFSt7_Mem_fnIM11canplay_vfsFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvEEPS3_St12_PlaceholderILi1EESF_ILi2EEEEE10_M_managerERSt9_Any_dataRKSL_St18_Manager_operation 00000060  00000000  00000000  0006a81f  2**0
+ 70 .xt.prop._ZNSt14_Function_base13_Base_managerISt5_BindIFSt7_Mem_fnIM11canplay_vfsFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvEEPS3_St12_PlaceholderILi1EESF_ILi2EEEEE10_M_managerERSt9_Any_dataRKSL_St18_Manager_operation 00000060  00000000  00000000  0006a867  2**0
                   CONTENTS, RELOC, READONLY
- 71 .xt.prop._ZNSt8functionIFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvEEC5ISt5_BindIFSt7_Mem_fnIM11canplay_vfsFvS5_S6_EEPSC_St12_PlaceholderILi1EESH_ILi2EEEEvEET_ 0000000c  00000000  00000000  0006a87f  2**0
+ 71 .xt.prop._ZNSt8functionIFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvEEC5ISt5_BindIFSt7_Mem_fnIM11canplay_vfsFvS5_S6_EEPSC_St12_PlaceholderILi1EESH_ILi2EEEEvEET_ 0000000c  00000000  00000000  0006a8c7  2**0
                   CONTENTS, RELOC, READONLY
- 72 .xt.prop._Z10startsWithINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEEbRKT_RKS5_ 00000030  00000000  00000000  0006a88b  2**0
+ 72 .xt.prop._Z10startsWithINSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEEbRKT_RKS5_ 00000030  00000000  00000000  0006a8d3  2**0
                   CONTENTS, RELOC, READONLY
- 73 .xt.prop._ZNSt14_Function_baseD2Ev 00000030  00000000  00000000  0006a8bb  2**0
+ 73 .xt.prop._ZNSt14_Function_baseD2Ev 00000030  00000000  00000000  0006a903  2**0
                   CONTENTS, RELOC, READONLY
- 74 .xt.prop._ZNSt8functionIFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvEEC2ISt5_BindIFSt7_Mem_fnIM11canplay_vfsFvS5_S6_EEPSC_St12_PlaceholderILi1EESH_ILi2EEEEvEET_ 00000024  00000000  00000000  0006a8eb  2**0
+ 74 .xt.prop._ZNSt8functionIFvNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPvEEC2ISt5_BindIFSt7_Mem_fnIM11canplay_vfsFvS5_S6_EEPSC_St12_PlaceholderILi1EESH_ILi2EEEEvEET_ 00000024  00000000  00000000  0006a933  2**0
                   CONTENTS, RELOC, READONLY
- 75 .xt.prop._ZTV11canplay_vfs 0000000c  00000000  00000000  0006a90f  2**0
+ 75 .xt.prop._ZTV11canplay_vfs 0000000c  00000000  00000000  0006a957  2**0
                   CONTENTS, RELOC, READONLY
 
 canformat_pcap.o:     file format elf32-xtensa-le
