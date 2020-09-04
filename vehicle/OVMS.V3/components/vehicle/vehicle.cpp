@@ -957,6 +957,7 @@ OvmsVehicle::OvmsVehicle()
 
   m_poll_state = 0;
   m_poll_bus = NULL;
+  m_poll_bus_default = NULL;
   m_poll_plist = NULL;
   m_poll_plcur = NULL;
   m_poll_ticker = 0;
