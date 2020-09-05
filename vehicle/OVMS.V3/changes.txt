@@ -1,6 +1,7 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- New standard metrics for total (life time) energy and coulomb
 - Renault Twizy: support additional OBD/UDS request types & arguments on "xrt obd request"
 - VW e-UP T26A: add climate control and charging detection
 - New vehicle: VW e-Up via OBD-II Port (VWUP.OBD)

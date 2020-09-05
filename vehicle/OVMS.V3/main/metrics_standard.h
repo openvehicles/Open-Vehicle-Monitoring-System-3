@@ -81,11 +81,15 @@
 #define MS_V_BAT_VOLTAGE            "v.b.voltage"
 #define MS_V_BAT_CURRENT            "v.b.current"
 #define MS_V_BAT_COULOMB_USED       "v.b.coulomb.used"
+#define MS_V_BAT_COULOMB_USED_TOTAL "v.b.coulomb.used.total"
 #define MS_V_BAT_COULOMB_RECD       "v.b.coulomb.recd"
+#define MS_V_BAT_COULOMB_RECD_TOTAL "v.b.coulomb.recd.total"
 #define MS_V_BAT_POWER              "v.b.power"
 #define MS_V_BAT_CONSUMPTION        "v.b.consumption"
 #define MS_V_BAT_ENERGY_USED        "v.b.energy.used"
+#define MS_V_BAT_ENERGY_USED_TOTAL  "v.b.energy.used.total"
 #define MS_V_BAT_ENERGY_RECD        "v.b.energy.recd"
+#define MS_V_BAT_ENERGY_RECD_TOTAL  "v.b.energy.recd.total"
 #define MS_V_BAT_RANGE_FULL         "v.b.range.full"
 #define MS_V_BAT_RANGE_IDEAL        "v.b.range.ideal"
 #define MS_V_BAT_RANGE_EST          "v.b.range.est"
@@ -253,11 +257,15 @@ class MetricsStandard
     OvmsMetricFloat*  ms_v_bat_voltage;             // Main battery momentary voltage [V]
     OvmsMetricFloat*  ms_v_bat_current;             // Main battery momentary current [A]
     OvmsMetricFloat*  ms_v_bat_coulomb_used;        // Main battery coulomb used on trip [Ah]
+    OvmsMetricFloat*  ms_v_bat_coulomb_used_total;  // Main battery coulomb used total (life time) [Ah]
     OvmsMetricFloat*  ms_v_bat_coulomb_recd;        // Main battery coulomb recovered on trip [Ah]
+    OvmsMetricFloat*  ms_v_bat_coulomb_recd_total;  // Main battery coulomb recovered total (life time) [Ah]
     OvmsMetricFloat*  ms_v_bat_power;               // Main battery momentary power [kW]
     OvmsMetricFloat*  ms_v_bat_consumption;         // Main battery momentary consumption [Wh/km]
     OvmsMetricFloat*  ms_v_bat_energy_used;         // Main battery energy used on trip [kWh]
+    OvmsMetricFloat*  ms_v_bat_energy_used_total;   // Main battery energy used total (life time) [kWh]
     OvmsMetricFloat*  ms_v_bat_energy_recd;         // Main battery energy recovered on trip [kWh]
+    OvmsMetricFloat*  ms_v_bat_energy_recd_total;   // Main battery energy recovered total (life time) [kWh]
     OvmsMetricFloat*  ms_v_bat_range_full;          // Ideal range at 100% SOC & current conditions [km]
     OvmsMetricFloat*  ms_v_bat_range_ideal;         // Ideal range [km]
     OvmsMetricFloat*  ms_v_bat_range_est;           // Estimated range [km]
