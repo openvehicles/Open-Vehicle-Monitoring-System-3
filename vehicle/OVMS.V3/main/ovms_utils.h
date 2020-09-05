@@ -143,6 +143,17 @@ char* HexByte(char* p, uint8_t byte);
  */
 size_t FormatHexDump(char** bufferp, const char* data, size_t rlength, size_t colsize=16);
 
+/**
+ * hexencode: encode a string of bytes into hexadecimal form
+ */
+std::string hexencode(const std::string value);
+
+/**
+ * hexdecode: decode a hexadecimal encoded string of bytes
+ *  Returns empty string on error
+ */
+std::string hexdecode(const std::string encval);
+
 
 /**
  * json_encode: encode string for JSON transport (see http://www.json.org/)
