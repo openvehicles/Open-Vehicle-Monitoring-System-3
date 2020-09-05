@@ -45,7 +45,7 @@ static const char *TAG = "metrics";
 using namespace std;
 
 #define PERSISTENT_METRICS_MAGIC (('O' << 24) | ('V' << 16) | ('M' << 8) | '3')
-#define PERSISTENT_VERSION 1            /* increment when struct is changed */
+#define PERSISTENT_VERSION 2            /* increment when struct is changed */
 
 struct persistent_values {
   char name[24];
