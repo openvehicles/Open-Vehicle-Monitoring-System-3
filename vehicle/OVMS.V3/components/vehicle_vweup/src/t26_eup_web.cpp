@@ -24,7 +24,6 @@
  * THE SOFTWARE.
  */
 
-
 #include <stdio.h>
 #include <string>
 #include "ovms_metrics.h"
@@ -35,58 +34,60 @@
 #include "ovms_notify.h"
 #include "ovms_webserver.h"
 
-#include "vehicle_vweup.h"
+#include "t26_eup.h"
 
 using namespace std;
 
 #define _attr(text) (c.encode_html(text).c_str())
 #define _html(text) (c.encode_html(text).c_str())
 
-
 /**
  * WebInit: register pages
  */
-void OvmsVehicleVWeUP::WebInit()
+void OvmsVehicleVWeUpT26::WebInit()
 {
   // vehicle menu:
-  MyWebServer.RegisterPage("/vwup/hardware", "Hardware",         WebCfgHardware,                      PageMenu_Vehicle, PageAuth_Cookie);
-  MyWebServer.RegisterPage("/vwup/features", "Features",         WebCfgFeatures,                      PageMenu_Vehicle, PageAuth_Cookie);
+  MyWebServer.RegisterPage("/xut/features", "Features", WebCfgFeatures, PageMenu_Vehicle, PageAuth_Cookie);
+  MyWebServer.RegisterPage("/xut/climate", "Climate control", WebCfgClimate, PageMenu_Vehicle, PageAuth_Cookie);
 }
 
 /**
  * WebDeInit: deregister pages
  */
-void OvmsVehicleVWeUP::WebDeInit()
+void OvmsVehicleVWeUpT26::WebDeInit()
 {
-  MyWebServer.DeregisterPage("/vwup/hardware");
-  MyWebServer.DeregisterPage("/vwup/features");
+  MyWebServer.DeregisterPage("/xut/features");
+  MyWebServer.DeregisterPage("/xut/climate");
 }
 
 /**
- * WebCfgFeatures: configure general parameters (URL /vwup/config)
+ * WebCfgFeatures: configure general parameters (URL /xut/config)
  */
-void OvmsVehicleVWeUP::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
+void OvmsVehicleVWeUpT26::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
 {
   std::string error;
   bool canwrite;
   std::string modelyear;
 
-  if (c.method == "POST") {
+  if (c.method == "POST")
+  {
     // process form submission:
     modelyear = c.getvar("modelyear");
-    canwrite  = (c.getvar("canwrite") == "yes");
+    canwrite = (c.getvar("canwrite") == "yes");
 
     // check:
-    if (!modelyear.empty()) {
+    if (!modelyear.empty())
+    {
       int n = atoi(modelyear.c_str());
       if (n < 2013)
         error += "<li data-input=\"modelyear\">Model year must be &ge; 2013</li>";
     }
 
-    if (error == "") {
+    if (error == "")
+    {
       // store:
-      MyConfig.SetParamValue("vwup", "modelyear", modelyear);
-      MyConfig.SetParamValueBool("vwup", "canwrite",   canwrite);
+      MyConfig.SetParamValue("xut", "modelyear", modelyear);
+      MyConfig.SetParamValueBool("xut", "canwrite", canwrite);
 
       c.head(200);
       c.alert("success", "<p class=\"lead\">VW e-Up feature configuration saved.</p>");
@@ -100,10 +101,11 @@ void OvmsVehicleVWeUP::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     c.head(400);
     c.alert("danger", error.c_str());
   }
-  else {
+  else
+  {
     // read configuration:
-    modelyear = MyConfig.GetParamValue("vwup", "modelyear", STR(DEFAULT_MODEL_YEAR));
-    canwrite  = MyConfig.GetParamValueBool("vwup", "canwrite", false);
+    modelyear = MyConfig.GetParamValue("xut", "modelyear", STR(DEFAULT_MODEL_YEAR));
+    canwrite = MyConfig.GetParamValueBool("xut", "canwrite", false);
 
     c.head(200);
   }
@@ -115,13 +117,13 @@ void OvmsVehicleVWeUP::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 
   c.fieldset_start("Vehicle Settings");
   c.input("number", "Model year", "modelyear", modelyear.c_str(), "Default: " STR(DEFAULT_MODEL_YEAR),
-    "<p>This sets some parameters that differ for pre 2020 models. I.e. kWh of battery.</p>",
-    "min=\"2013\" step=\"1\"");
+          "<p>This sets some parameters that differ for pre 2020 models. I.e. kWh of battery.</p>",
+          "min=\"2013\" step=\"1\"");
   c.fieldset_end();
 
   c.fieldset_start("Remote Control");
   c.input_checkbox("Enable CAN writes", "canwrite", canwrite,
-    "<p>Controls overall CAN write access, climate control depends on this.</p>");
+                   "<p>Controls overall CAN write access, climate control depends on this.</p>");
   c.fieldset_end();
 
   c.print("<hr>");
@@ -132,29 +134,25 @@ void OvmsVehicleVWeUP::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 }
 
 /**
- * WebCfgHardware: setup how connexted to the vehicle (URL /vwup/config)
+ * WebCfgClimate: setup how connexted to the vehicle (URL /xut/config)
  */
-void OvmsVehicleVWeUP::WebCfgHardware(PageEntry_t& p, PageContext_t& c)
+void OvmsVehicleVWeUpT26::WebCfgClimate(PageEntry_t &p, PageContext_t &c)
 {
   std::string error;
-  std::string how_connected;
+  std::string cc_temp;
 
-
-  if (c.method == "POST") {
+  if (c.method == "POST")
+  {
     // process form submission:
-    how_connected = c.getvar("how_connected");
+    cc_temp = c.getvar("cc_temp");
 
-    // check:
-    if (how_connected != "0") {
-        error += "<li data-input=\"hw_connected\">At the moment only T26A is implemented.</li>";
-    }
-
-    if (error == "") {
+    if (error == "")
+    {
       // store:
-      MyConfig.SetParamValue("vwup", "how_connected",   how_connected);
+      MyConfig.SetParamValue("xut", "cc_temp", cc_temp);
 
       c.head(200);
-      c.alert("success", "<p class=\"lead\">VW e-Up hardware configuration saved.</p>");
+      c.alert("success", "<p class=\"lead\">VW e-Up climate control configuration saved.</p>");
       MyWebServer.OutputHome(p, c);
       c.done();
       return;
@@ -164,25 +162,31 @@ void OvmsVehicleVWeUP::WebCfgHardware(PageEntry_t& p, PageContext_t& c)
     c.head(400);
     c.alert("danger", error.c_str());
   }
-  else {
+  else
+  {
     // read configuration:
-    how_connected = MyConfig.GetParamValue("vwup", "how_connected", "0");
+    cc_temp = MyConfig.GetParamValue("xut", "cc_temp", "21");
 
     c.head(200);
   }
 
   // generate form:
 
-  c.panel_start("primary", "VW e-Up hardware configuration");
+  c.panel_start("primary", "VW e-Up climate control configuration");
   c.form_start(p.uri);
 
-  c.print("<br>This configuration page is a placeholder without function.<br>At the moment only T26A is implemented.<br><br>");
+  c.print("<br>This page offers remote climate configuration.<br>The target temperature for the cabin can be set here.<br><br>");
 
-  c.input_radiobtn_start("Connection type", "how_connected");
-  c.input_radiobtn_option("how_connected", "T26A", "0", how_connected == "0");
-  c.input_radiobtn_option("how_connected", "T26A + Bluetooth", "1", how_connected == "1");
-  c.input_radiobtn_option("how_connected", "OBD", "1", how_connected == "2");
-  c.input_radiobtn_end();
+  c.fieldset_start("Climate control");
+
+  c.input_select_start("Cabin target temperature", "cc_temp");
+  c.input_select_option("18", "18", cc_temp == "18");
+  c.input_select_option("19", "19", cc_temp == "19");
+  c.input_select_option("20", "20", cc_temp == "20");
+  c.input_select_option("21", "21", cc_temp == "21");
+  c.input_select_option("22", "22", cc_temp == "22");
+  c.input_select_option("23", "23", cc_temp == "23");
+  c.input_select_end();
 
   c.print("<hr>");
   c.input_button("default", "Save");

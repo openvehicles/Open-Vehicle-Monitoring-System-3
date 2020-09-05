@@ -57,19 +57,58 @@ struct DashboardConfig;
 // OBD2/UDS Polling types supported:
 //  (see https://en.wikipedia.org/wiki/OBD-II_PIDs
 //   and https://en.wikipedia.org/wiki/Unified_Diagnostic_Services)
+// 
+// Depending on the poll type, the response may or may not echo the PID (parameter ID / subtype).
+// If no echo is present, the poller will only validate the type.
+// 
+// Depending on the poll type, you may also need to pass additional arguments. These can be set
+// alternatively to the single PID in the poll_pid_t.args field, which extends the pid by a data
+// length and up to 6 data bytes. A common example is reading a DTC info, the service has an
+// 8 bit PID (subtype) and depending on the subtype 1-4 additional parameter bytes:
+// const OvmsVehicle::poll_pid_t twizy_poll_default[] = {
+//  { TXID, RXID, VEHICLE_POLL_TYPE_READDTC, {.args={ PID, DATALEN, DATA1, … }}, { 0, 10, 60, 0 }, 0 },
+//  …
+// See OvmsVehicleRenaultTwizy::ObdRequest() for an example on how to send dynamic requests
+// with additional arguments.
+
 
 #define VEHICLE_POLL_TYPE_NONE          0x00
 
 // OBD (ISO 15031) service identifiers supported:
-#define VEHICLE_POLL_TYPE_OBDIICURRENT  0x01 // Mode 01 "current data"
-#define VEHICLE_POLL_TYPE_OBDIIFREEZE   0x02 // Mode 02 "freeze frame data"
-#define VEHICLE_POLL_TYPE_OBDIIVEHICLE  0x09 // Mode 09 "vehicle information"
+#define VEHICLE_POLL_TYPE_OBDIICURRENT  0x01 // Mode 01 "current data" (8 bit PID)
+#define VEHICLE_POLL_TYPE_OBDIIFREEZE   0x02 // Mode 02 "freeze frame data" (8 bit PID)
+#define VEHICLE_POLL_TYPE_OBDIIVEHICLE  0x09 // Mode 09 "vehicle information" (8 bit PID)
 
-// UDS (ISO 14229) & custom service identifiers supported:
-#define VEHICLE_POLL_TYPE_OBDIISESSION  0x10 // UDS: Diagnostic Session Control
-#define VEHICLE_POLL_TYPE_OBDII_1A      0x1A // Mode 1A
-#define VEHICLE_POLL_TYPE_OBDIIGROUP    0x21 // enhanced data by 8 bit PID
-#define VEHICLE_POLL_TYPE_OBDIIEXTENDED 0x22 // enhanced data by 16 bit PID
+// UDS (ISO 14229) service identifiers supported:
+#define VEHICLE_POLL_TYPE_OBDIISESSION  0x10 // UDS: Diagnostic Session Control (8 bit PID)
+#define VEHICLE_POLL_TYPE_TESTERPRESENT 0x3E // UDS: TesterPresent (8 bit PID)
+#define VEHICLE_POLL_TYPE_SECACCESS     0x27 // UDS: SecurityAccess (8 bit PID)
+#define VEHICLE_POLL_TYPE_COMCONTROL    0x28 // UDS: CommunicationControl (8 bit PID)
+#define VEHICLE_POLL_TYPE_ECURESET      0x11 // UDS: ECUReset (8 bit PID)
+#define VEHICLE_POLL_TYPE_CLEARDTC      0x14 // UDS: ClearDiagnosticInformation (no PID)
+#define VEHICLE_POLL_TYPE_READDTC       0x19 // UDS: ReadDTCInformation (8 bit PID)
+#define VEHICLE_POLL_TYPE_OBDIIEXTENDED 0x22 // UDS: ReadDataByIdentifier (16 bit PID)
+#define VEHICLE_POLL_TYPE_READMEMORY    0x23 // UDS: ReadMemoryByAddress (no PID)
+#define VEHICLE_POLL_TYPE_READSCALING   0x24 // UDS: ReadScalingDataByIdentifier (16 bit PID)
+#define VEHICLE_POLL_TYPE_WRITEDATA     0x2E // UDS: WriteDataByIdentifier (16 bit PID)
+#define VEHICLE_POLL_TYPE_WRITEMEMORY   0x3D // UDS: WriteMemoryByAddress (8 bit PID)
+#define VEHICLE_POLL_TYPE_IOCONTROL     0x2F // UDS: InputOutputControlByIdentifier (16 bit PID)
+
+// Other service identifiers supported:
+#define VEHICLE_POLL_TYPE_OBDII_1A      0x1A // Custom: Mode 1A (8 bit PID)
+#define VEHICLE_POLL_TYPE_OBDIIGROUP    0x21 // Custom: Read data by 8 bit PID
+
+// Utils:
+#define POLL_TYPE_HAS_16BIT_PID(type) \
+  ((type) == VEHICLE_POLL_TYPE_OBDIIEXTENDED || \
+   (type) == VEHICLE_POLL_TYPE_READSCALING || \
+   (type) == VEHICLE_POLL_TYPE_WRITEDATA || \
+   (type) == VEHICLE_POLL_TYPE_IOCONTROL)
+#define POLL_TYPE_HAS_NO_PID(type) \
+  ((type) == VEHICLE_POLL_TYPE_CLEARDTC || \
+   (type) == VEHICLE_POLL_TYPE_READMEMORY)
+#define POLL_TYPE_HAS_8BIT_PID(type) \
+  (!POLL_TYPE_HAS_NO_PID(type) && !POLL_TYPE_HAS_16BIT_PID(type))
 
 // OBD/UDS Negative Response Code
 #define UDS_RESP_TYPE_NRC               0x7F  // see ISO 14229 Annex A.1
@@ -303,7 +342,16 @@ class OvmsVehicle : public InternalRamAllocated
       uint32_t txmoduleid;
       uint32_t rxmoduleid;
       uint16_t type;
-      uint16_t pid;
+      union
+        {
+        uint16_t pid;
+        struct
+          {
+          uint16_t pid;
+          uint8_t datalen;
+          uint8_t data[6];
+          } args;
+        };
       uint16_t polltime[VEHICLE_POLL_NSTATES];
       uint8_t  pollbus;
       } poll_pid_t;

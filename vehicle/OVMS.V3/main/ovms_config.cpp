@@ -355,6 +355,12 @@ void OvmsConfig::upgrade()
       }
     }
 
+  // Migrate vehicle ID VWUP to VWUP.T26
+  if (GetParamValue("auto", "vehicle.type") == "VWUP")
+    {
+    SetParamValue("auto", "vehicle.type", "VWUP.T26");
+    }
+
   // Done, set config version:
   SetParamValueInt("module", "cfgversion", 2020053100);
   }
@@ -396,7 +402,6 @@ void OvmsConfig::SetParamValue(std::string param, std::string instance, std::str
 
 void OvmsConfig::SetParamValueBinary(std::string param, std::string instance, std::string value, BinaryEncoding_t encoding /*=Encoding_HEX*/)
   {
-  size_t len = value.length();
   std::string encval;
   if (encoding == Encoding_BASE64)
     {
@@ -404,14 +409,7 @@ void OvmsConfig::SetParamValueBinary(std::string param, std::string instance, st
     }
   else // Encoding_HEX
     {
-    encval.reserve(len * 2);
-    char buf[4];
-    for (size_t i = 0; i < len; ++i)
-      {
-      unsigned char c = value.at(i);
-      snprintf(buf, sizeof(buf), "%02X", c);
-      encval += buf;
-      }
+    encval = hexencode(value);
     }
   SetParamValue(param, instance, encval);
   }
@@ -468,21 +466,12 @@ std::string OvmsConfig::GetParamValueBinary(std::string param, std::string insta
     }
   else // Encoding_HEX
     {
-    if (encval.find_first_not_of("0123456789ABCDEF", 0) != std::string::npos || (len & 1))
+    std::string value = hexdecode(encval);
+    if (value.empty())
       {
       ESP_LOGE(TAG, "Invalid non-hex value for config param %s instance %s",
         param.c_str(), instance.c_str());
       return defvalue;
-      }
-    std::string value;
-    value.reserve(len / 2);
-    char buf[4] = {0};
-    for (size_t i = 0; i < len; i += 2)
-      {
-      buf[0] = encval.at(i);
-      buf[1] = encval.at(i + 1);
-      unsigned char c = strtoul(buf, NULL, 16);
-      value += c;
       }
     return value;
     }
