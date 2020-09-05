@@ -1,7 +1,8 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
-- VW e-UP (T26A) add climate control and charging detection
+- VW e-UP T26A: add climate control and charging detection
+- New vehicle: VW e-Up via OBD-II Port (VWUP.OBD)
 
 2020-09-02 MWJ  3.2.015  OTA release
 - Notify: add explicit channel exclusion config syntax
@@ -18,7 +19,6 @@ Open Vehicle Monitor System v3 - Change log
     wifi ip dhcp
   New configs:
     wifi.ssid "<ssid>.ovms.staticip" "<ip>,<subnet>,<gateway>"
-- New vehicle: VW e-Up via OBD-II Port (VWUP.OBD)
 
 2020-08-04 MWJ  3.2.014  OTA release
 - Renault Twizy: support VirtualBMS & eDriver BMS (3 cell temperature sensors)
