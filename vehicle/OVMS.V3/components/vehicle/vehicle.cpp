@@ -2283,13 +2283,13 @@ void OvmsVehicle::PollerReceive(CAN_frame_t* frame)
       error_type = tp_data[1];
       error_code = tp_data[2];
       }
-    else if (POLL_TYPE_HAS_16BIT_PID(response_type))
+    else if (POLL_TYPE_HAS_16BIT_PID(response_type-0x40))
       {
       response_pid = tp_data[1] << 8 | tp_data[2];
       response_data = &tp_data[3];
       response_datalen = tp_datalen - 3;
       }
-    else if (POLL_TYPE_HAS_8BIT_PID(response_type))
+    else if (POLL_TYPE_HAS_8BIT_PID(response_type-0x40))
       {
       response_pid = tp_data[1];
       response_data = &tp_data[2];
