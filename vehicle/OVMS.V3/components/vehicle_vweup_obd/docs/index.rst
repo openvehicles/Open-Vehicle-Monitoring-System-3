@@ -135,12 +135,12 @@ This page plugin content shows the metrics in a compact form which can be displa
         </div>
        </div>
        <div class="clearfix">
-        <div class="metric number" data-metric="vwup.batmgmt.enrg.used" data-prec="3">
+        <div class="metric number" data-metric="v.b.energy.used.total" data-prec="3">
          <span class="label">TOTALS:&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbspDischarged</span>
          <span class="value">?</span>
          <span class="unit">kWh</span>
         </div>
-        <div class="metric number" data-metric="vwup.batmgmt.enrg.chrgd" data-prec="3">
+        <div class="metric number" data-metric="v.b.energy.recd.total" data-prec="3">
          <span class="label">Charged</span>
          <span class="value">?</span>
          <span class="unit">kWh</span>
@@ -192,7 +192,7 @@ This page plugin content shows the metrics in a compact form which can be displa
          <span class="value">?</span>
          <span class="unit">°C</span>
         </div>
-        <div class="metric number" data-metric="vwup.batmgmt.cell.delta" data-prec="3">
+        <div class="metric number" data-metric="xuo.b.cell.delta" data-prec="3">
          <span class="label">Cell delta</span>
          <span class="value">?</span>
          <span class="unit">V</span>
@@ -202,7 +202,7 @@ This page plugin content shows the metrics in a compact form which can be displa
        <h4>Charger</h4>
     
        <div class="clearfix">
-        <div class="metric progress" data-metric="vwup.chrgr.ac.p" data-prec="0">
+        <div class="metric progress" data-metric="xuo.c.ac.p" data-prec="0">
          <div class="progress-bar progress-bar-warning value-low text-left" role="progressbar"
           aria-valuenow="0" aria-valuemin="0" aria-valuemax="8000" style="width:0%">
           <div>
@@ -212,7 +212,7 @@ This page plugin content shows the metrics in a compact form which can be displa
           </div>
          </div>
         </div>
-        <div class="metric progress" data-metric="vwup.chrgr.dc.p" data-prec="0">
+        <div class="metric progress" data-metric="xuo.c.dc.p" data-prec="0">
          <div class="progress-bar progress-bar-warning value-low text-left" role="progressbar"
           aria-valuenow="0" aria-valuemin="0" aria-valuemax="8000" style="width:0%">
           <div>
@@ -224,22 +224,22 @@ This page plugin content shows the metrics in a compact form which can be displa
         </div>
        </div>   
        <div class="clearfix">
-        <div class="metric number" data-metric="vwup.chrgr.eff.calc" data-prec="1">
+        <div class="metric number" data-metric="xuo.c.eff.calc" data-prec="1">
          <span class="label">Efficiency (calc)</span>
          <span class="value">?</span>
          <span class="unit">%</span>
         </div>
-        <div class="metric number" data-metric="vwup.chrgr.eff.ecu" data-prec="1">
+        <div class="metric number" data-metric="xuo.c.eff.ecu" data-prec="1">
          <span class="label">Efficiency (ECU)</span>
          <span class="value">?</span>
          <span class="unit">%</span>
         </div>
-        <div class="metric number" data-metric="vwup.chrgr.loss.calc" data-prec="0">
+        <div class="metric number" data-metric="xuo.c.loss.calc" data-prec="0">
          <span class="label">Loss (calc)</span>
          <span class="value">?</span>
          <span class="unit">W</span>
         </div>
-        <div class="metric number" data-metric="vwup.chrgr.loss.ecu" data-prec="0">
+        <div class="metric number" data-metric="xuo.c.loss.ecu" data-prec="0">
          <span class="label">Loss (ECU)</span>
          <span class="value">?</span>
          <span class="unit">W</span>
