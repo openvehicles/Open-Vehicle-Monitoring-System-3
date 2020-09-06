@@ -68,9 +68,7 @@ class OvmsVehicleVWeUpObd : public OvmsVehicle
 public:
     OvmsVehicleVWeUpObd();
     ~OvmsVehicleVWeUpObd();
-
-    OvmsMetricFloat *BatMgmtEnergyUsed;    // Total enery usage from battery [kWh]
-    OvmsMetricFloat *BatMgmtEnergyCharged; // Total enery charged (charger + recovered) to battery [kWh]
+    
     OvmsMetricFloat *BatMgmtCellDelta;     // Highest voltage - lowest voltage of all cells [V]
 
     OvmsMetricFloat *ChargerACPower;       // AC Power

@@ -1,6 +1,6 @@
-===========
-VW e-Up OBD
-===========
+=============
+VW e-Up (OBD)
+=============
 
 Vehicle Type: **VWUP.OBD**
 
@@ -66,6 +66,8 @@ v.b.12v.voltage                          12.9 V                   Current voltag
 v.b.voltage                              320.2 V                  Current voltage of the main battery
 v.b.current                              -23.2 A                  Current current into (positive) or out of (negative) the main battery
 v.b.power                                -23.234 kW               Current power into (positive) or out of (negative) the main battery.
+v.b.energy.used.total                    540.342 kWh              Energy used total (life time) of the main battery
+v.b.energy.recd.total                    578.323 kWh              Energy recovered total (life time) of the main battery (charging and recuperation)
 v.b.soc                                  88.2 %                   Current State of Charge (SoC) of the main battery
 v.b.temp                                 22.5 °C                  Current temperature of the main battery
 v.p.odometer                             2340 km                  Total distance traveled
@@ -84,8 +86,6 @@ In addition to the standard metrics above the following custom metrics are read 
 ======================================== ======================== ============================================
 Metric name                              Example value            Description
 ======================================== ======================== ============================================
-xuo.b.energy.used                        -540.342 kWh             Total energy taken out of the main battery
-xuo.b.energy.charged                     578.323 kWh              Total energy put (by charging or recuperation) into the main battery
 xuo.b.cell.delta                         0.012 V                  Delta voltage between lowest and highest cell voltage
 ======================================== ======================== ============================================
 
