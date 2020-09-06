@@ -114,10 +114,14 @@ v.b.c.voltage.min                        3.875,3.865,…,3.88V      Cell minimum
 v.b.cac                                  90.7796Ah                Calculated battery pack capacity
 v.b.consumption                          0Wh/km                   Main battery momentary consumption
 v.b.coulomb.recd                         47.5386Ah                Main battery coulomb recovered on trip/charge
+v.b.coulomb.recd.total                   947.5386Ah               Main battery coulomb recovered total (life time)
 v.b.coulomb.used                         0.406013Ah               Main battery coulomb used on trip
+v.b.coulomb.used.total                   835.406013Ah             Main battery coulomb used total (life time)
 v.b.current                              0A                       Main battery momentary current
 v.b.energy.recd                          2.69691kWh               Main battery energy recovered on trip/charge
+v.b.energy.recd.total                    3212.69691kWh            Main battery energy recovered total (life time)
 v.b.energy.used                          0.0209496kWh             Main battery energy used on trip
+v.b.energy.used.total                    3177.0209496kWh          Main battery energy used total (life time)
 v.b.health                                                        General textual description of battery health
 v.b.p.level.avg                          95.897%                  Cell level - pack average
 v.b.p.level.max                          96.41%                   Cell level - strongest cell in pack
