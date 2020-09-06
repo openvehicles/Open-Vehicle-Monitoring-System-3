@@ -5,7 +5,6 @@ Open Vehicle Monitor System v3 - Change log
 - Renault Twizy: support additional OBD/UDS request types & arguments on "xrt obd request"
 - VW e-UP T26A: add climate control and charging detection
 - New vehicle: VW e-Up via OBD-II Port (VWUP.OBD)
-- VW e-Up OBD: Total energy counters uses Standard Metrics
 
 2020-09-02 MWJ  3.2.015  OTA release
 - Notify: add explicit channel exclusion config syntax
