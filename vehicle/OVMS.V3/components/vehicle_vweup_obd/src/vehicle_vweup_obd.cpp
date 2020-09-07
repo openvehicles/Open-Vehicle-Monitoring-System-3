@@ -233,7 +233,7 @@ void OvmsVehicleVWeUpObd::IncomingPollReply(canbus *bus, uint16_t type, uint16_t
         if (PollReply.FromInt32("VWUP_BAT_MGMT_ENERGY_COUNTERS_USED", value, 12))
         {
             // Used is negative here, standard metric is positive
-            StandardMetrics.ms_v_bat_energy_used_total->SetValue((value / (0xFFFFFFFF / 2.0f) / 250200.0f * -1.0f));
+            StandardMetrics.ms_v_bat_energy_used_total->SetValue((value * -1.0f) / ((0xFFFFFFFF / 2.0f) / 250200.0f));
             VALUE_LOG(TAG, "VWUP_BAT_MGMT_ENERGY_COUNTERS_USED=%f => %f", value, StandardMetrics.ms_v_bat_energy_used_total->AsFloat());
         }
         break;
