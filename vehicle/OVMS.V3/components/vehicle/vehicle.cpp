@@ -2134,22 +2134,29 @@ void OvmsVehicle::PollerSend(bool fromTicker)
       txframe.FIR.B.FF = CAN_frame_std;
       txframe.FIR.B.DLC = 8;
 
-      switch (m_poll_plcur->type)
+      if (POLL_TYPE_HAS_16BIT_PID(m_poll_plcur->type))
         {
-        // 16 bit PID requests:
-        case VEHICLE_POLL_TYPE_OBDIIEXTENDED:
-          txframe.data.u8[0] = (ISOTP_FT_SINGLE << 4) + 3;
-          txframe.data.u8[1] = m_poll_type;
-          txframe.data.u8[2] = m_poll_pid >> 8;
-          txframe.data.u8[3] = m_poll_pid & 0xff;
-          break;
-
-        // 8 bit PID requests:
-        default:
-          txframe.data.u8[0] = (ISOTP_FT_SINGLE << 4) + 2;
-          txframe.data.u8[1] = m_poll_type;
-          txframe.data.u8[2] = m_poll_pid;
-          break;
+        uint8_t datalen = LIMIT_MAX(m_poll_plcur->args.datalen, 4);
+        txframe.data.u8[0] = (ISOTP_FT_SINGLE << 4) + 3 + datalen;
+        txframe.data.u8[1] = m_poll_type;
+        txframe.data.u8[2] = m_poll_pid >> 8;
+        txframe.data.u8[3] = m_poll_pid & 0xff;
+        memcpy(&txframe.data.u8[4], m_poll_plcur->args.data, datalen);
+        }
+      else if (POLL_TYPE_HAS_8BIT_PID(m_poll_plcur->type))
+        {
+        uint8_t datalen = LIMIT_MAX(m_poll_plcur->args.datalen, 5);
+        txframe.data.u8[0] = (ISOTP_FT_SINGLE << 4) + 2 + datalen;
+        txframe.data.u8[1] = m_poll_type;
+        txframe.data.u8[2] = m_poll_pid;
+        memcpy(&txframe.data.u8[3], m_poll_plcur->args.data, datalen);
+        }
+      else
+        {
+        uint8_t datalen = LIMIT_MAX(m_poll_plcur->args.datalen, 6);
+        txframe.data.u8[0] = (ISOTP_FT_SINGLE << 4) + 1 + datalen;
+        txframe.data.u8[1] = m_poll_type;
+        memcpy(&txframe.data.u8[2], m_poll_plcur->args.data, datalen);
         }
 
       m_poll_bus->Write(&txframe);
@@ -2271,27 +2278,28 @@ void OvmsVehicle::PollerReceive(CAN_frame_t* frame)
   else // ISOTP_FT_FIRST || ISOTP_FT_SINGLE
     {
     response_type = tp_data[0];
-    switch (response_type)
+    if (response_type == UDS_RESP_TYPE_NRC)
       {
-      // Negative response code:
-      case UDS_RESP_TYPE_NRC:
-        error_type = tp_data[1];
-        error_code = tp_data[2];
-        break;
-
-      // 16 bit PID requests:
-      case 0x40+VEHICLE_POLL_TYPE_OBDIIEXTENDED:
-        response_pid = tp_data[1] << 8 | tp_data[2];
-        response_data = &tp_data[3];
-        response_datalen = tp_datalen - 3;
-        break;
-
-      // 8 bit PID requests:
-      default:
-        response_pid = tp_data[1];
-        response_data = &tp_data[2];
-        response_datalen = tp_datalen - 2;
-        break;
+      error_type = tp_data[1];
+      error_code = tp_data[2];
+      }
+    else if (POLL_TYPE_HAS_16BIT_PID(response_type-0x40))
+      {
+      response_pid = tp_data[1] << 8 | tp_data[2];
+      response_data = &tp_data[3];
+      response_datalen = tp_datalen - 3;
+      }
+    else if (POLL_TYPE_HAS_8BIT_PID(response_type-0x40))
+      {
+      response_pid = tp_data[1];
+      response_data = &tp_data[2];
+      response_datalen = tp_datalen - 2;
+      }
+    else
+      {
+      response_pid = m_poll_pid;
+      response_data = &tp_data[1];
+      response_datalen = tp_datalen - 1;
       }
     }
 
