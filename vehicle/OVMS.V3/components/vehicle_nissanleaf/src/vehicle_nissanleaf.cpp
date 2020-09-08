@@ -70,8 +70,8 @@ static const OvmsVehicle::poll_pid_t obdii_polls[] =
     { CHARGER_TXID, CHARGER_RXID, VEHICLE_POLL_TYPE_OBDIIEXTENDED, L1L2_COUNT_PID, {  0, 900, 0, 0 }, 2 }, // L0/L1/L2 [2]
     { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x01, {  0, 60, 0, 60 }, 1 },   // bat [39/41]
     { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x02, {  0, 60, 0, 60 }, 1 },   // battery voltages [196]
+    { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x06, {  0, 60, 0, 60 }, 1 },   // battery shunts [96]
     { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x04, {  0, 300, 0, 300 }, 1 }, // battery temperatures [14]
-    { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x06, {  0, 0, 0, 0 }, 1 },   // battery shunts [96]
     { 0, 0, 0x00, 0x00, { 0, 0, 0, 0 }, 0 }
   };
 
@@ -127,27 +127,29 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   m_soc_new_car = MyMetrics.InitFloat("xnl.v.b.soc.newcar", SM_STALE_HIGH, 0, Percentage);
   m_soc_instrument = MyMetrics.InitFloat("xnl.v.b.soc.instrument", SM_STALE_HIGH, 0, Percentage);
   m_range_instrument = MyMetrics.InitInt("xnl.v.b.range.instrument", SM_STALE_HIGH, 0, Kilometers);
-  m_bms_thermistor = new OvmsMetricVector<int>("xnl.bms.thermistor", SM_STALE_MIN, Native);
-  m_bms_temp_int = new OvmsMetricVector<int>("xnl.bms.temp_int", SM_STALE_MIN, Celcius);
+  m_bms_thermistor = MyMetrics.InitVector<int>("xnl.bms.thermistor", SM_STALE_MIN, 0, Native);
+  m_bms_temp_int = MyMetrics.InitVector<int>("xnl.bms.temp.int", SM_STALE_MIN, 0, Celcius);
   m_bms_balancing = MyMetrics.InitBitset<96>("xnl.bms.balancing", SM_STALE_HIGH, 0);
   BmsSetCellArrangementVoltage(96, 32);
   BmsSetCellArrangementTemperature(3, 1);
 
   m_soh_new_car = MyMetrics.InitFloat("xnl.v.b.soh.newcar", SM_STALE_HIGH, 0, Percentage);
   m_soh_instrument = MyMetrics.InitInt("xnl.v.b.soh.instrument", SM_STALE_HIGH, 0, Percentage);
-  m_battery_energy_capacity = new OvmsMetricFloat("xnl.v.b.e.capacity", SM_STALE_HIGH, kWh);
-  m_battery_energy_available = new OvmsMetricFloat("xnl.v.b.e.available", SM_STALE_HIGH, kWh);
-  m_battery_type = new OvmsMetricInt("xnl.v.b.type"); // auto-detect version and size by can traffic
-  m_charge_duration = new OvmsMetricVector<int>("xnl.v.c.duration", SM_STALE_HIGH, Minutes);
-  m_charge_duration_label = new OvmsMetricVector<string>("xnl.v.c.duration.label");
-  m_charge_duration_label->SetElemValue(CHARGE_DURATION_FULL_L2, "full.l2");
-  m_charge_duration_label->SetElemValue(CHARGE_DURATION_FULL_L1, "full.l1");
-  m_charge_duration_label->SetElemValue(CHARGE_DURATION_FULL_L0, "full.l0");
-  m_charge_duration_label->SetElemValue(CHARGE_DURATION_RANGE_L2, "range.l2");
-  m_charge_duration_label->SetElemValue(CHARGE_DURATION_RANGE_L1, "range.l1");
-  m_charge_duration_label->SetElemValue(CHARGE_DURATION_RANGE_L0, "range.l0");
-  m_quick_charge = new OvmsMetricInt("xnl.v.c.quick", SM_STALE_HIGH);
-  m_soc_nominal = new OvmsMetricFloat("xnl.v.b.soc.nominal", SM_STALE_HIGH, Percentage);
+  m_battery_energy_capacity = MyMetrics.InitFloat("xnl.v.b.e.capacity", SM_STALE_HIGH, 0, kWh);
+  m_battery_energy_available = MyMetrics.InitFloat("xnl.v.b.e.available", SM_STALE_HIGH, 0, kWh);
+  m_battery_type = MyMetrics.InitInt("xnl.v.b.type", SM_STALE_HIGH, 0); // auto-detect version and size by can traffic
+  m_charge_duration = MyMetrics.InitVector<int>("xnl.v.c.duration", SM_STALE_HIGH, 0, Minutes);
+  // note vector strings are not handled by ovms_metrics.h and cause web errors loading ev.data in ovms.js
+  // this will need to be resolved before reinstating metrics
+  // m_charge_duration_label = new OvmsMetricVector<string>("xnl.v.c.duration.label");
+  // m_charge_duration_label->SetElemValue(CHARGE_DURATION_FULL_L2, "full.l2");
+  // m_charge_duration_label->SetElemValue(CHARGE_DURATION_FULL_L1, "full.l1");
+  // m_charge_duration_label->SetElemValue(CHARGE_DURATION_FULL_L0, "full.l0");
+  // m_charge_duration_label->SetElemValue(CHARGE_DURATION_RANGE_L2, "range.l2");
+  // m_charge_duration_label->SetElemValue(CHARGE_DURATION_RANGE_L1, "range.l1");
+  // m_charge_duration_label->SetElemValue(CHARGE_DURATION_RANGE_L0, "range.l0");
+  m_quick_charge = MyMetrics.InitInt("xnl.v.c.quick", SM_STALE_HIGH, 0);
+  m_soc_nominal = MyMetrics.InitFloat("xnl.v.b.soc.nominal", SM_STALE_HIGH, 0, Percentage);
   m_charge_count_qc     = MyMetrics.InitInt("xnl.v.c.count.qc",     SM_STALE_NONE, 0);
   m_charge_count_l0l1l2 = MyMetrics.InitInt("xnl.v.c.count.l0l1l2", SM_STALE_NONE, 0);
   m_climate_vent = MyMetrics.InitString("v.e.cabin.vent", SM_STALE_MIN, 0);
@@ -572,7 +574,7 @@ void OvmsVehicleNissanLeaf::PollReply_BMS_Shunt(uint8_t reply_data[], uint16_t r
     if ((reply_data[i] & 0x02) == 0x02) balancing.set(i*4 + 2);
     if ((reply_data[i] & 0x01) == 0x01) balancing.set(i*4 + 3);
     }
-  m_bms_balancing->SetValue(balancing);
+  m_bms_balancing->SetValue(balancing.flip());
   }
 
 
@@ -671,7 +673,9 @@ void OvmsVehicleNissanLeaf::PollReply_VIN(uint8_t reply_data[], uint16_t reply_l
   // [17..18] 00 00
   char buf[19];
   strncpy(buf,(char*)reply_data,reply_len);
-  StandardMetrics.ms_v_vin->SetValue(buf); //(char*)reply_data
+  string strbuf(buf);
+  std::replace(strbuf.begin(), strbuf.end(), 0x1b, 0x20); // remove ESC character returned by AZE0 models
+  StandardMetrics.ms_v_vin->SetValue(strbuf); //(char*)reply_data
   }
 
 // Reassemble all pieces of a multi-frame reply.
@@ -1270,6 +1274,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
         case 5: // undefined
         case 6: // undefined
           StandardMetrics.ms_v_env_gear->SetValue(0);
+          if (m_enable_write && StandardMetrics.ms_v_env_on->AsBool()) PollSetState(POLLSTATE_ON);
           break;
         case 2: // Reverse
           StandardMetrics.ms_v_env_gear->SetValue(-1);
