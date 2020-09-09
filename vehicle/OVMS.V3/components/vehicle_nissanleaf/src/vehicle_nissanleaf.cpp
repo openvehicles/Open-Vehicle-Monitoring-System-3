@@ -854,11 +854,9 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         // can_databuffer[6] is the J1772 pilot current, 0.5A per bit
         // TODO enum?
       StandardMetrics.ms_v_charge_climit->SetValue(d[6] / 2.0f);
-      StandardMetrics.ms_v_charge_current->SetValue(d[1] / 2.0f);
       //d[3] ramps from 0 to 0xB3 (179) but can sit at 1 due to capacitance?? set >90 to ensure valid signal
       //use to set pilot signal
       //d[4] appears to be chademo charge voltage
-      StandardMetrics.ms_v_charge_voltage->SetValue(d[4] > d[3] ? d[4] : d[3]);
       if (d[3] > 90 || d[4] > 90)
         {
         StandardMetrics.ms_v_charge_pilot->SetValue(true);
@@ -875,6 +873,8 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
           vehicle_nissanleaf_charger_status(CHARGER_STATUS_IDLE);
           break;
         case 0x83:
+          StandardMetrics.ms_v_charge_voltage->SetValue(2 * d[4]);
+          StandardMetrics.ms_v_charge_current->SetValue(d[1]);
           vehicle_nissanleaf_charger_status(CHARGER_STATUS_QUICK_CHARGING);
           break;
         case 0x84:
@@ -883,6 +883,8 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         case 0x88: // on evse power loss car still reports 0x88
           if (StandardMetrics.ms_v_charge_pilot->AsBool())
             {
+            StandardMetrics.ms_v_charge_voltage->SetValue(d[3]);
+            StandardMetrics.ms_v_charge_current->SetValue(d[1] / 2.0f);
             vehicle_nissanleaf_charger_status(CHARGER_STATUS_CHARGING);
             }
           else
