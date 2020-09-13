@@ -295,6 +295,13 @@ void OvmsVehicleVWeUpObd::IncomingPollReply(canbus *bus, uint16_t type, uint16_t
             value = ChargerAC1U * ChargerAC1I + ChargerAC2U * ChargerAC2I;
             ChargerACPower->SetValue(value);
             VALUE_LOG(TAG, "VWUP_CHARGER_AC_P=%f => %f", value, ChargerACPower->AsFloat());
+
+            // Standard Charge Power and Charge Efficiency calculation as requested by the standard
+            value /= 1000.0f;
+            StandardMetrics.ms_v_charge_power->SetValue(value);
+            value = value == 0.0f ? 0.0f : ((StandardMetrics.ms_v_bat_power->AsFloat() * -1.0f) / value) * 100.0f;
+            StandardMetrics.ms_v_charge_efficiency->SetValue(value);
+            VALUE_LOG(TAG, "VWUP_CHARGER_EFF_STD=%f => %f", value, StandardMetrics.ms_v_charge_efficiency->AsFloat());
         }
         break;
 
