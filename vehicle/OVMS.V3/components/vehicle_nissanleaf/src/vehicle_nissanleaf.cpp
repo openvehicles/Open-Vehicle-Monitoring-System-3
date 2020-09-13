@@ -122,6 +122,9 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   {
   ESP_LOGI(TAG, "Nissan Leaf v3.0 vehicle module");
 
+  BmsSetCellArrangementVoltage(96, 32);
+  BmsSetCellArrangementTemperature(3, 1);
+  
   m_gids = MyMetrics.InitInt("xnl.v.b.gids", SM_STALE_HIGH, 0);
   m_hx = MyMetrics.InitFloat("xnl.v.b.hx", SM_STALE_HIGH, 0);
   m_soc_new_car = MyMetrics.InitFloat("xnl.v.b.soc.newcar", SM_STALE_HIGH, 0, Percentage);
@@ -130,15 +133,14 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   m_bms_thermistor = MyMetrics.InitVector<int>("xnl.bms.thermistor", SM_STALE_MIN, 0, Native);
   m_bms_temp_int = MyMetrics.InitVector<int>("xnl.bms.temp.int", SM_STALE_MIN, 0, Celcius);
   m_bms_balancing = MyMetrics.InitBitset<96>("xnl.bms.balancing", SM_STALE_HIGH, 0);
-  BmsSetCellArrangementVoltage(96, 32);
-  BmsSetCellArrangementTemperature(3, 1);
-
   m_soh_new_car = MyMetrics.InitFloat("xnl.v.b.soh.newcar", SM_STALE_HIGH, 0, Percentage);
   m_soh_instrument = MyMetrics.InitInt("xnl.v.b.soh.instrument", SM_STALE_HIGH, 0, Percentage);
   m_battery_energy_capacity = MyMetrics.InitFloat("xnl.v.b.e.capacity", SM_STALE_HIGH, 0, kWh);
   m_battery_energy_available = MyMetrics.InitFloat("xnl.v.b.e.available", SM_STALE_HIGH, 0, kWh);
   m_battery_type = MyMetrics.InitInt("xnl.v.b.type", SM_STALE_HIGH, 0); // auto-detect version and size by can traffic
   m_charge_duration = MyMetrics.InitVector<int>("xnl.v.c.duration", SM_STALE_HIGH, 0, Minutes);
+  m_charger_efficiency = MyMetrics.InitFloat("xnl.v.c.efficiency", SM_STALE_MIN, 0, Percentage);
+  m_charger_power = MyMetrics.InitFloat("xnl.v.c.power", SM_STALE_MIN, 0, kW);
   // note vector strings are not handled by ovms_metrics.h and cause web errors loading ev.data in ovms.js
   // this will need to be resolved before reinstating metrics
   // m_charge_duration_label = new OvmsMetricVector<string>("xnl.v.c.duration.label");
@@ -1569,6 +1571,8 @@ void OvmsVehicleNissanLeaf::HandleCharging()
   if (!StandardMetrics.ms_v_charge_pilot->AsBool()      ||
       !StandardMetrics.ms_v_charge_inprogress->AsBool() )
     {
+    m_charger_power->SetValue(0);
+    m_charger_efficiency->SetValue(0);
     return;
     }
   // Check if we have what is needed to calculate energy and remaining minutes
@@ -1609,6 +1613,16 @@ void OvmsVehicleNissanLeaf::HandleCharging()
       StandardMetrics.ms_v_charge_duration_range->SetValue(minsremaining_range, Minutes);
       ESP_LOGV(TAG, "Time remaining: %d mins for %0.0f km (%0.0f%% soc)", minsremaining_range, limit_range, range_soc);
       }
+    }
+  // calculate charger power and efficiency
+  m_charger_power->SetValue(StandardMetrics.ms_v_charge_current->AsFloat() * StandardMetrics.ms_v_charge_voltage->AsFloat() / 1000.0);
+  if (m_charger_power->AsFloat() > 0)
+    {
+    m_charger_efficiency->SetValue(StandardMetrics.ms_v_bat_power->AsFloat() / m_charger_power->AsFloat() * 100.0);
+    }
+  if (m_charger_efficiency->AsFloat() > 100) 
+    { // due to rounding precision bat power can report > charger power at low charge rates
+    m_charger_efficiency->SetValue(100);
     }
   }
 
