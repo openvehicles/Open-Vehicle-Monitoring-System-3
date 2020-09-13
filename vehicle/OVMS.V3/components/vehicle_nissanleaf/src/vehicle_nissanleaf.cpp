@@ -1360,7 +1360,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
       if ((d[2] & 0x10) == 0x10)
         {
         StandardMetrics.ms_v_env_locked->SetValue(true);
-        vehicle_nissanleaf_car_on(false);
+        // vehicle_nissanleaf_car_on(false); causes issues for cars that lock on driving
         }
       else
         {
