@@ -126,6 +126,8 @@
 
 #define MS_V_CHARGE_VOLTAGE         "v.c.voltage"
 #define MS_V_CHARGE_CURRENT         "v.c.current"
+#define MS_V_CHARGE_POWER           "v.c.power"
+#define MS_V_CHARGE_EFFICIENCY      "v.c.efficiency"
 #define MS_V_CHARGE_CLIMIT          "v.c.climit"
 #define MS_V_CHARGE_TIME            "v.c.time"
 #define MS_V_CHARGE_KWH             "v.c.kwh"
@@ -145,6 +147,8 @@
 #define MS_V_CHARGE_TEMP            "v.c.temp"
 
 #define MS_V_INV_TEMP               "v.i.temp"
+#define MS_V_INV_POWER              "v.i.power"
+#define MS_V_INV_EFFICIENCY         "v.i.efficiency"
 
 #define MS_V_MOT_RPM                "v.m.rpm"
 #define MS_V_MOT_TEMP               "v.m.temp"
@@ -255,12 +259,12 @@ class MetricsStandard
     OvmsMetricFloat*  ms_v_bat_cac;                 // Calculated capacity [Ah]
     OvmsMetricString* ms_v_bat_health;              // General textual description of battery health
     OvmsMetricFloat*  ms_v_bat_voltage;             // Main battery momentary voltage [V]
-    OvmsMetricFloat*  ms_v_bat_current;             // Main battery momentary current [A]
+    OvmsMetricFloat*  ms_v_bat_current;             // Main battery momentary current [A] (output=positive)
     OvmsMetricFloat*  ms_v_bat_coulomb_used;        // Main battery coulomb used on trip [Ah]
     OvmsMetricFloat*  ms_v_bat_coulomb_used_total;  // Main battery coulomb used total (life time) [Ah]
     OvmsMetricFloat*  ms_v_bat_coulomb_recd;        // Main battery coulomb recovered on trip [Ah]
     OvmsMetricFloat*  ms_v_bat_coulomb_recd_total;  // Main battery coulomb recovered total (life time) [Ah]
-    OvmsMetricFloat*  ms_v_bat_power;               // Main battery momentary power [kW]
+    OvmsMetricFloat*  ms_v_bat_power;               // Main battery momentary power [kW] (output=positive)
     OvmsMetricFloat*  ms_v_bat_consumption;         // Main battery momentary consumption [Wh/km]
     OvmsMetricFloat*  ms_v_bat_energy_used;         // Main battery energy used on trip [kWh]
     OvmsMetricFloat*  ms_v_bat_energy_used_total;   // Main battery energy used total (life time) [kWh]
@@ -306,6 +310,8 @@ class MetricsStandard
     OvmsMetricVector<short>* ms_v_bat_cell_talert;        // Cell temperature deviation alert level [0=normal, 1=warning, 2=alert]
 
     OvmsMetricFloat*  ms_v_charge_voltage;          // Momentary charger supply voltage [V]
+    OvmsMetricFloat*  ms_v_charge_power;            // Momentary charger input power [kW]
+    OvmsMetricFloat*  ms_v_charge_efficiency;       // Momentary charger efficiency [%]
     OvmsMetricFloat*  ms_v_charge_current;          // Momentary charger output current [A]
     OvmsMetricFloat*  ms_v_charge_climit;           // Maximum charger output current [A]
     OvmsMetricInt*    ms_v_charge_time;             // Duration of running charge [sec]
@@ -326,6 +332,8 @@ class MetricsStandard
     OvmsMetricFloat*  ms_v_charge_temp;             // Charger temperature [°C]
 
     OvmsMetricFloat*  ms_v_inv_temp;                // Inverter temperature [°C]
+    OvmsMetricFloat*  ms_v_inv_power;               // Momentary inverter motor power [kW] (output=positive)
+    OvmsMetricFloat*  ms_v_inv_efficiency;          // Momentary inverter efficiency [%]
 
     OvmsMetricInt*    ms_v_mot_rpm;                 // Motor speed (RPM)
     OvmsMetricFloat*  ms_v_mot_temp;                // Motor temperature [°C]
