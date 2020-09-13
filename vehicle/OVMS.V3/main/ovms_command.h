@@ -36,6 +36,7 @@
 #include <map>
 #include <set>
 #include <list>
+#include <functional>
 #include <limits.h>
 #include "ovms.h"
 #include "ovms_mutex.h"
@@ -179,21 +180,24 @@ class OvmsCommandMap : public std::map<const char*, OvmsCommand*, CompareCharPtr
     char** GetCompletion(OvmsWriter* writer, const char* token);
   };
 
+typedef std::function<void(int, OvmsWriter*, OvmsCommand*, int, const char* const*)> OvmsCommandExecuteCallback_t;
+typedef std::function<int(OvmsWriter*, OvmsCommand*, int, const char* const*, bool)> OvmsCommandValidateCallback_t;
+
 class OvmsCommand : public ExternalRamAllocated
   {
   public:
     OvmsCommand();
     OvmsCommand(const char* name, const char* title,
-		void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
+                OvmsCommandExecuteCallback_t execute,
                 const char *usage, int min, int max, bool secure,
-                int (*validate)(OvmsWriter*, OvmsCommand*, int, const char* const*, bool));
+                OvmsCommandValidateCallback_t validate);
     virtual ~OvmsCommand();
 
   public:
     OvmsCommand* RegisterCommand(const char* name, const char* title,
-                                 void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*) = NULL,
+                                 OvmsCommandExecuteCallback_t execute = NULL,
                                  const char *usage = "", int min = 0, int max = 0, bool secure = true,
-                                 int (*validate)(OvmsWriter*, OvmsCommand*, int, const char* const*, bool) = NULL);
+                                 OvmsCommandValidateCallback_t validate = NULL);
     bool UnregisterCommand(const char* name = NULL);
     const char* GetName();
     const char* GetTitle();
@@ -211,8 +215,8 @@ class OvmsCommand : public ExternalRamAllocated
   protected:
     const char* m_name;
     const char* m_title;
-    void (*m_execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*);
-    int (*m_validate)(OvmsWriter*, OvmsCommand*, int, const char* const*, bool);
+    OvmsCommandExecuteCallback_t m_execute;
+    OvmsCommandValidateCallback_t m_validate;
     const char* m_usage_template;
     int m_min;
     int m_max;
@@ -259,7 +263,7 @@ class OvmsCommandApp : public OvmsWriter
 
   public:
     OvmsCommand* RegisterCommand(const char* name, const char* title,
-                                 void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*) = NULL,
+                                 OvmsCommandExecuteCallback_t execute = NULL,
                                  const char *usage = "", int min = 0, int max = 0, bool secure = true);
     bool UnregisterCommand(const char* name);
     OvmsCommand* FindCommand(const char* name);

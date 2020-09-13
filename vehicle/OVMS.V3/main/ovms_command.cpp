@@ -220,9 +220,9 @@ OvmsCommand::OvmsCommand()
   m_parent = NULL;
   }
 
-OvmsCommand::OvmsCommand(const char* name, const char* title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
+OvmsCommand::OvmsCommand(const char* name, const char* title, OvmsCommandExecuteCallback_t execute,
                          const char *usage, int min, int max, bool secure,
-                         int (*validate)(OvmsWriter*, OvmsCommand*, int, const char* const*, bool))
+                         OvmsCommandValidateCallback_t validate)
   {
   m_name = name;
   m_title = title;
@@ -380,9 +380,9 @@ void OvmsCommand::ExpandUsage(const char* templ, OvmsWriter* writer, std::string
   result += usage.substr(pos);
   }
 
-OvmsCommand* OvmsCommand::RegisterCommand(const char* name, const char* title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
+OvmsCommand* OvmsCommand::RegisterCommand(const char* name, const char* title, OvmsCommandExecuteCallback_t execute,
                                           const char *usage, int min, int max, bool secure,
-                                          int (*validate)(OvmsWriter*, OvmsCommand*, int, const char* const*, bool))
+                                          OvmsCommandValidateCallback_t validate)
   {
   // Protect against duplicate registrations
   OvmsCommand* cmd = FindCommand(name);
@@ -835,7 +835,7 @@ void OvmsCommandApp::ConfigureLogging()
   ReadConfig();
   }
 
-OvmsCommand* OvmsCommandApp::RegisterCommand(const char* name, const char* title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
+OvmsCommand* OvmsCommandApp::RegisterCommand(const char* name, const char* title, OvmsCommandExecuteCallback_t execute,
                                              const char *usage, int min, int max, bool secure)
   {
   return m_root.RegisterCommand(name, title, execute, usage, min, max, secure);
