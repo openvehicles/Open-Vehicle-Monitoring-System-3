@@ -384,9 +384,11 @@ This message is sent <cartoserver> "C", or <servertoapp> "s", and transmits the 
 * Charge ETR for SOC limit (min.)
 * Max ideal range
 * Charge/plug type ID according to OpenChargeMaps.org connectiontypes (see http://api.openchargemap.io/v2/referencedata/)
-* Charge power (kWh)
+* Charge power output (kW)
 * Battery voltage (V)
 * Battery SOH (state of health) (%)
+* Charge power input (kW)
+* Charger efficiency (%)
 
 --------------------------------
 Car update time message 0x53 "T"
@@ -416,6 +418,8 @@ This message is sent <cartoserver> "C" and transmits the last known location of 
 * Battery power level (in kW, negative = charging)
 * Energy used (in Wh)
 * Energy recovered (in Wh)
+* Inverter motor power (kW) (positive = output)
+* Inverter efficiency (%)
 
 ---------------------------------
 Car Capabilities message 0x56 "V"
