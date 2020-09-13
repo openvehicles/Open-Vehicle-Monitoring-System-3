@@ -332,14 +332,8 @@ void OvmsVehicleVWeUpT26::IncomingFrameCan3(CAN_frame_t *p_frame)
         break;
 
     case 0x3E3: // Cabin temperature
-        // We should use:
-        //
-        // StandardMetrics.ms_v_env_cabintemp->SetValue((d[2]-100)/2);
-        //
-        // which is not implemented in the app.
-        //
-        // So instead we use as a quick workaround the PEM temperature:
-        //
+        StandardMetrics.ms_v_env_cabintemp->SetValue((d[2]-100)/2);
+        // Set PEM inv temp to support older app version with cabin temp workaround display
         StandardMetrics.ms_v_inv_temp->SetValue((d[2] - 100) / 2);
         break;
 
