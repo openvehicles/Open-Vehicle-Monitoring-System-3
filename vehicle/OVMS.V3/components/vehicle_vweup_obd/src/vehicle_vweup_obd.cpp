@@ -48,10 +48,12 @@ public:
 const OvmsVehicle::poll_pid_t vwup_polls[] = {
     // Note: poller ticker cycles at 3600 seconds = max period
     // { txid, rxid, type, pid, { VWUP_OFF, VWUP_ON, VWUP_CHARGING }, bus }
+
     {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_U, {0, 1, 5}, 1},
     {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_I, {30, 1, 5}, 1}, // 30 in OFF needed: Car gets started with full 12V battery
     // Same tick & order important of above 2: VWUP_BAT_MGMT_I calculates the power
-    {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_SOC, {0, 20, 20}, 1},
+
+    {VWUP_MOT_ELEC_TX, VWUP_MOT_ELEC_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MOT_ELEC_SOC_NORM, {0, 20, 20}, 1},
     {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_ENERGY_COUNTERS, {0, 20, 20}, 1},
 
     {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_CELL_MAX, {0, 20, 20}, 1},
@@ -216,11 +218,11 @@ void OvmsVehicleVWeUpObd::IncomingPollReply(canbus *bus, uint16_t type, uint16_t
         }
         break;
 
-    case VWUP_BAT_MGMT_SOC:
-        if (PollReply.FromUint8("VWUP_BAT_MGMT_SOC", value))
-        {
-            StandardMetrics.ms_v_bat_soc->SetValue(value / 2.5f);
-            VALUE_LOG(TAG, "VWUP_BAT_MGMT_SOC=%f => %f", value, StandardMetrics.ms_v_bat_soc->AsFloat());
+    case VWUP_MOT_ELEC_SOC_NORM:
+        if (PollReply.FromUint16("VWUP_MOT_ELEC_SOC_NORM", value))
+        {            
+            StandardMetrics.ms_v_bat_soc->SetValue(value / 100.0f);
+            VALUE_LOG(TAG, "VWUP_MOT_ELEC_SOC_NORM=%f => %f", value, StandardMetrics.ms_v_bat_soc->AsFloat());
         }
         break;
 
