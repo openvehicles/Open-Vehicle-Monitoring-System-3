@@ -31,7 +31,7 @@
 
 /*
 ;    Subproject:    Integration of support for the VW e-UP
-;    Date:          4st September 2020
+;    Date:          14st September 2020
 ;
 ;    Changes:
 ;    0.1.0  Initial code
@@ -91,6 +91,10 @@
 ;
 ;    0.3.6  Corrected log tag and namespaces
 ;
+;    0.3.7  Add locked detection, add climate control via Homelink for iOS
+;
+;    0.3.8  Add lights, rear doors and trunk detection
+;
 ;    (C) 2020       Chris van der Meijden
 ;
 ;    Big thanx to sharkcow, Dimitrie78 and E-Imo.
@@ -99,7 +103,7 @@
 #include "ovms_log.h"
 static const char *TAG = "v-vweup-t26";
 
-#define VERSION "0.3.6"
+#define VERSION "0.3.8"
 
 #include <stdio.h>
 #include "pcp.h"
@@ -146,6 +150,7 @@ OvmsVehicleVWeUpT26::OvmsVehicleVWeUpT26()
     signal_ok = false;
     cc_count = 0;
     cd_count = 0;
+    islocked = true;
 
     dev_mode = false; // true disables writing on the comfort CAN. For code debugging only.
 
@@ -331,6 +336,23 @@ void OvmsVehicleVWeUpT26::IncomingFrameCan3(CAN_frame_t *p_frame)
         StandardMetrics.ms_v_env_temp->SetValue((d[5] / 2) - 50);
         break;
 
+    case 0x381: // Vehicle locked
+        if (d[0] == 0x00)
+        {
+           if (islocked) {
+             StandardMetrics.ms_v_env_locked->SetValue(false);
+             islocked = false;
+           }
+        }
+        else
+        {
+           if (!islocked) {
+             StandardMetrics.ms_v_env_locked->SetValue(true);
+             islocked = true;
+           }
+        }
+        break;
+
     case 0x3E3: // Cabin temperature
         StandardMetrics.ms_v_env_cabintemp->SetValue((d[2]-100)/2);
         // Set PEM inv temp to support older app version with cabin temp workaround display
@@ -340,6 +362,27 @@ void OvmsVehicleVWeUpT26::IncomingFrameCan3(CAN_frame_t *p_frame)
     case 0x470: // Doors
         StandardMetrics.ms_v_door_fl->SetValue((d[1] & 0x01) > 0);
         StandardMetrics.ms_v_door_fr->SetValue((d[1] & 0x02) > 0);
+        StandardMetrics.ms_v_door_rl->SetValue((d[1] & 0x04) > 0);
+        StandardMetrics.ms_v_door_rr->SetValue((d[1] & 0x08) > 0);
+        StandardMetrics.ms_v_door_trunk->SetValue((d[1] & 0x20) > 0);
+        StandardMetrics.ms_v_door_hood->SetValue((d[1] & 0x10) > 0);
+        break;
+
+    case 0x531: // Head lights
+        if (d[0] == 0x00)
+        {
+           if (lightson) {
+             StandardMetrics.ms_v_env_headlights->SetValue(false);
+             lightson = false;
+           }
+        }
+        else
+        {
+           if (!lightson) {
+             StandardMetrics.ms_v_env_headlights->SetValue(true);
+             lightson = true;
+           }
+        }
         break;
 
     // Check for running hvac.
@@ -1177,10 +1220,20 @@ void OvmsVehicleVWeUpT26::CCOff()
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleVWeUpT26::CommandHomelink(int button, int durationms)
-{
-    ESP_LOGI(TAG, "CommandHomelink");
-    return NotImplemented;
-}
+  {
+  // This is needed to enable climate control via Homelink for the iOS app
+  ESP_LOGI(TAG, "CommandHomelink");
+  if (button == 0 && vwup_enable_write)
+    {
+    return RemoteCommandHandler(ENABLE_CLIMATE_CONTROL);
+    }
+  if (button == 1 && vwup_enable_write)
+    {
+    return RemoteCommandHandler(DISABLE_CLIMATE_CONTROL);
+    }
+  return NotImplemented;
+  }
+
 
 OvmsVehicle::vehicle_command_t OvmsVehicleVWeUpT26::CommandClimateControl(bool climatecontrolon)
 {

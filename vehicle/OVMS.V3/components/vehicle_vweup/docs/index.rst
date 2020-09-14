@@ -105,6 +105,8 @@ Climate control
 
 Climate control works, as long as write access to the comfort can has been enabled in the app or in the OVMS webinterface (VW e-Up (Komfort CAN) -> Features).
 
+To turn on or off the AC from within the Android app just press the "A/C" button. Within the iOS app press "Homelink 1" for AC on and "Homelink 2" for AC off.
+
 Once the AC is turned on by the app there will be a delay of about 15 seconds untill the AC actually starts in the car. Further 10 seconds all communication from the app to the car is blocked.
 
 The communication from the app to the car is also blocked for 10 seconds after the "AC off" command from the app to the car. There is no delay between the "AC off" signal of the app and the actually turning off in the car.
@@ -131,8 +133,9 @@ ID	Conversion	     Unit    Function
 65D	d3&f<<12|d2<<8|d1    km      Odometer		     	         	
 3E3	(d2-100)/2           °C      Cabin temperature      	         	
 527	(d5/2)-50	     °C      Outdoor temperature     	         	
+531	d0 00		             Headlights off
 52D	d0		     km	     Calculated range		     
-470	d1 00,01,02	     Integer Status doors		     
+470	d1 1,2,4,8,20,10     Integer Status doors, trunk, hood		     
 3E1	d4		     Integer Blower speed? (57,66,7D,98,BB,DE,FA)
 575	d0 00 to 0F 	     Integer Key position		         	
 569	b07			     "AC"-LED

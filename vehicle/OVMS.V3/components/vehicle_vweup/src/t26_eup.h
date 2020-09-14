@@ -88,6 +88,8 @@ class OvmsVehicleVWeUpT26 : public OvmsVehicle
     int fas_counter_on;
     int fas_counter_off;
     bool dev_mode;
+    bool islocked;
+    bool lightson;
 
   private:
     void SendCommand(RemoteCommand);
