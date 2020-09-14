@@ -133,8 +133,9 @@ ID	Conversion	     Unit    Function
 65D	d3&f<<12|d2<<8|d1    km      Odometer		     	         	
 3E3	(d2-100)/2           °C      Cabin temperature      	         	
 527	(d5/2)-50	     °C      Outdoor temperature     	         	
+531	d0 00		             Headlights off
 52D	d0		     km	     Calculated range		     
-470	d1 00,01,02	     Integer Status doors		     
+470	d1 1,2,4,8,20,10     Integer Status doors, trunk, hood		     
 3E1	d4		     Integer Blower speed? (57,66,7D,98,BB,DE,FA)
 575	d0 00 to 0F 	     Integer Key position		         	
 569	b07			     "AC"-LED
