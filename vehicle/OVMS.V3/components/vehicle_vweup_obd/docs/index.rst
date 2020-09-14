@@ -57,6 +57,8 @@ The car is off: It hasn't drawn (or charged) any current into the main battery f
 Supported Standard Metrics
 --------------------------
 
+**Metrics updated in state "Vehicle ON" or "Vehicle CHARGING"**
+
 ======================================== ======================== ============================================
 Metric name                              Example value            Description
 ======================================== ======================== ============================================
@@ -74,6 +76,15 @@ v.p.odometer                             2340 km                  Total distance
 ======================================== ======================== ============================================
 
 Note: In state "Vehicle OFF" only *v.b.12v.voltage* is updated.
+
+**Metrics updated in state "Vehicle CHARGING"**
+
+======================================== ======================== ============================================
+Metric name                              Example value            Description
+======================================== ======================== ============================================
+v.c.power                                7.345 kW                 Input power of charger
+v.c.efficiency                           91.3 %                   Charging efficiency calculated by v.b.power and v.c.power
+======================================== ======================== ============================================
 
 --------------
 Custom Metrics
