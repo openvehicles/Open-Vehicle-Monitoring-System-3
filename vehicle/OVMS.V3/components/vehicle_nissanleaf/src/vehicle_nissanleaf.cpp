@@ -777,12 +777,12 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       float energy = battery_power * 10 / 3600;
       if (energy < 0.0)
         {
-        m_cum_energy_used_wh -= energy;
+        m_cum_energy_recd_wh -= energy;
+        m_cum_energy_charge_wh -= energy;
         }
       else
         {
-        m_cum_energy_recd_wh += energy;
-        m_cum_energy_charge_wh += energy;
+        m_cum_energy_used_wh += energy;
         }
 
       // soc displayed on the instrument cluster
