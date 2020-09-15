@@ -150,9 +150,11 @@ OvmsVehicleVWeUpT26::OvmsVehicleVWeUpT26()
     signal_ok = false;
     cc_count = 0;
     cd_count = 0;
-    islocked = true;
 
     dev_mode = false; // true disables writing on the comfort CAN. For code debugging only.
+
+    StandardMetrics.ms_v_env_locked->SetValue(true);
+    StandardMetrics.ms_v_env_headlights->SetValue(false);
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
     WebInit();
@@ -339,17 +341,11 @@ void OvmsVehicleVWeUpT26::IncomingFrameCan3(CAN_frame_t *p_frame)
     case 0x381: // Vehicle locked
         if (d[0] == 0x00)
         {
-           if (islocked) {
              StandardMetrics.ms_v_env_locked->SetValue(false);
-             islocked = false;
-           }
         }
         else
         {
-           if (!islocked) {
              StandardMetrics.ms_v_env_locked->SetValue(true);
-             islocked = true;
-           }
         }
         break;
 
@@ -371,17 +367,11 @@ void OvmsVehicleVWeUpT26::IncomingFrameCan3(CAN_frame_t *p_frame)
     case 0x531: // Head lights
         if (d[0] == 0x00)
         {
-           if (lightson) {
              StandardMetrics.ms_v_env_headlights->SetValue(false);
-             lightson = false;
-           }
         }
         else
         {
-           if (!lightson) {
              StandardMetrics.ms_v_env_headlights->SetValue(true);
-             lightson = true;
-           }
         }
         break;
 
