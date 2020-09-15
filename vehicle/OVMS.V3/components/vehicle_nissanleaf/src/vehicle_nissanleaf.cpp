@@ -139,8 +139,6 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   m_battery_energy_available = MyMetrics.InitFloat("xnl.v.b.e.available", SM_STALE_HIGH, 0, kWh);
   m_battery_type = MyMetrics.InitInt("xnl.v.b.type", SM_STALE_HIGH, 0); // auto-detect version and size by can traffic
   m_charge_duration = MyMetrics.InitVector<int>("xnl.v.c.duration", SM_STALE_HIGH, 0, Minutes);
-  m_charger_efficiency = MyMetrics.InitFloat("xnl.v.c.efficiency", SM_STALE_MIN, 0, Percentage);
-  m_charger_power = MyMetrics.InitFloat("xnl.v.c.power", SM_STALE_MIN, 0, kW);
   // note vector strings are not handled by ovms_metrics.h and cause web errors loading ev.data in ovms.js
   // this will need to be resolved before reinstating metrics
   // m_charge_duration_label = new OvmsMetricVector<string>("xnl.v.c.duration.label");
@@ -369,7 +367,7 @@ int OvmsVehicleNissanLeaf::GetNotifyChargeStateDelay(const char* state)
   {
   if (StandardMetrics.ms_m_monotonic->AsInt() < 10)
     return 0; //avoid notify on boot triggered by setting delay
-  else return 5; //allow time for charger to handshake
+  else return 8; //allow time for charger to handshake
   }
 
 void OvmsVehicleNissanLeaf::shell_obd_request(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -762,7 +760,8 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         // negative so extend the sign bit
         nl_battery_current |= 0xf800;
         }
-      float battery_current = nl_battery_current / 2.0f;
+      // sign updated to match standard metric definition where battery output is positive
+      float battery_current = -nl_battery_current / 2.0f;
 
       // voltage is 10 bits unsigned big endian starting at bit 16
       int16_t nl_battery_voltage = ((uint16_t) d[2] << 2) | (d[3] & 0xc0) >> 6;
@@ -1571,8 +1570,9 @@ void OvmsVehicleNissanLeaf::HandleCharging()
   if (!StandardMetrics.ms_v_charge_pilot->AsBool()      ||
       !StandardMetrics.ms_v_charge_inprogress->AsBool() )
     {
-    m_charger_power->SetValue(0);
-    m_charger_efficiency->SetValue(0);
+    StandardMetrics.ms_v_charge_power->SetValue(0);
+    // default to 100% so it does not effect an overall efficiency calculation
+    StandardMetrics.ms_v_charge_efficiency->SetValue(100);
     return;
     }
   // Check if we have what is needed to calculate energy and remaining minutes
@@ -1615,14 +1615,18 @@ void OvmsVehicleNissanLeaf::HandleCharging()
       }
     }
   // calculate charger power and efficiency
-  m_charger_power->SetValue(StandardMetrics.ms_v_charge_current->AsFloat() * StandardMetrics.ms_v_charge_voltage->AsFloat() / 1000.0);
-  if (m_charger_power->AsFloat() > 0)
+  float m_charge_current = StandardMetrics.ms_v_charge_current->AsFloat();
+  float m_charge_voltage = StandardMetrics.ms_v_charge_voltage->AsFloat();
+  StandardMetrics.ms_v_charge_power->SetValue(m_charge_current * m_charge_voltage / 1000.0);
+  float m_charge_power   = StandardMetrics.ms_v_charge_power->AsFloat();
+  float m_batt_power     = StandardMetrics.ms_v_bat_power->AsFloat();
+  if (m_charge_power > 0)
     {
-    m_charger_efficiency->SetValue(StandardMetrics.ms_v_bat_power->AsFloat() / m_charger_power->AsFloat() * 100.0);
+    StandardMetrics.ms_v_charge_efficiency->SetValue(abs(m_batt_power / m_charge_power) * 100.0);
     }
-  if (m_charger_efficiency->AsFloat() > 100) 
+  if (StandardMetrics.ms_v_charge_efficiency->AsFloat() > 100) 
     { // due to rounding precision bat power can report > charger power at low charge rates
-    m_charger_efficiency->SetValue(100);
+    StandardMetrics.ms_v_charge_efficiency->SetValue(100);
     }
   }
 

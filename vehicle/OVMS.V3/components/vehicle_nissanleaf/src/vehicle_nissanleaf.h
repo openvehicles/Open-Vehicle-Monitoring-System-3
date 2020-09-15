@@ -170,8 +170,6 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     OvmsMetricFloat *m_soc_nominal;
     OvmsMetricInt *m_charge_count_qc;
     OvmsMetricInt *m_charge_count_l0l1l2;
-    OvmsMetricFloat *m_charger_efficiency;
-    OvmsMetricFloat *m_charger_power;
     OvmsMetricBool *m_climate_fan_only;
     OvmsMetricBool *m_climate_remoteheat;
     OvmsMetricBool *m_climate_remotecool;

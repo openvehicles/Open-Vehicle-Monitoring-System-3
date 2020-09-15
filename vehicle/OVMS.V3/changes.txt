@@ -1,6 +1,7 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Nissan Leaf: invert batt current sign to match standard metrics definition, populate charger power/efficiency
 - New standard metrics for total (life time) energy and coulomb
 - Renault Twizy: support additional OBD/UDS request types & arguments on "xrt obd request"
 - VW e-UP T26A: add climate control and charging detection
