@@ -84,27 +84,29 @@ void scanStart(int, OvmsWriter* writer, OvmsCommand*, int, const char* const* ar
     bool valid = true;
     if (!ReadHexString(argv[0], bus) || bus < 1 || bus > 4)
     {
-        writer->printf("Error: Invalid bus to scan %s", argv[0]);
+        writer->printf("Error: Invalid bus to scan %s\n", argv[0]);
         valid = false;
     }
     if (!ReadHexString(argv[1], ecu) || ecu <= 0 || ecu >= 0xfff)
     {
-        writer->printf("Error: Invalid ECU Id to scan %s", argv[1]);
+        writer->printf("Error: Invalid ECU Id to scan %s\n", argv[1]);
         valid = false;
     }
     if (!ReadHexString(argv[2], start) || start <= 0 || start >= 0xffff)
     {
-        writer->printf("Error: Invalid Start PID to scan %s", argv[2]);
+        writer->printf("Error: Invalid Start PID to scan %s\n", argv[2]);
         valid = false;
     }
     if (!ReadHexString(argv[3], end) || end <= 0 || end >= 0xffff)
     {
-        writer->printf("Error: Invalid End PID to scan %s", argv[3]);
+        writer->printf("Error: Invalid End PID to scan %s\n", argv[3]);
         valid = false;
     }
     if (start > end)
     {
-        writer->printf("Error: Invalid Start PID %04x is after End PID %04x", start, end);
+        writer->printf(
+            "Error: Invalid Start PID %04x is after End PID %04x\n", start, end
+        );
         valid = false;
     }
     if (!valid)
@@ -114,7 +116,7 @@ void scanStart(int, OvmsWriter* writer, OvmsCommand*, int, const char* const* ar
     canbus* can = GetCan(bus);
     if (can == nullptr)
     {
-        writer->printf("CAN not started in active mode, please start and try again");
+        writer->puts("CAN not started in active mode, please start and try again");
         valid = false;
     }
     if (valid)
@@ -136,9 +138,13 @@ void scanStatus(int, OvmsWriter* writer, OvmsCommand*, int, const char* const*)
     else
     {
         writer->printf(
-            "Scan running (%03x %04x-%04x): %04x",
+            "Scan running (%03x %04x-%04x): %04x\n",
             s_scanner->Ecu(), s_scanner->Start(), s_scanner->End(), s_scanner->Current()
         );
+    }
+    if (s_scanner != nullptr)
+    {
+        s_scanner->Output(writer);
     }
 }
 
@@ -171,7 +177,9 @@ OvmsReToolsPidScanner::OvmsReToolsPidScanner(
     m_lastFrame(0u),
     m_mfRemain(0u),
     m_task(nullptr),
-    m_rxqueue(nullptr)
+    m_rxqueue(nullptr),
+    m_found(),
+    m_foundMutex()
 {
     m_rxqueue = xQueueCreate(20,sizeof(CAN_frame_t));
     xTaskCreatePinnedToCore(
@@ -197,6 +205,20 @@ OvmsReToolsPidScanner::~OvmsReToolsPidScanner()
         MyCan.DeregisterListener(m_rxqueue);
         vQueueDelete(m_rxqueue);
         vTaskDelete(m_task);
+    }
+}
+
+void OvmsReToolsPidScanner::Output(OvmsWriter* writer) const
+{
+    OvmsMutexLock lock(&m_foundMutex);
+    for (auto& found : m_found)
+    {
+        writer->printf("%03x:%04x", m_id, found.first);
+        for (auto& byte : found.second)
+        {
+            writer->printf(" %02x", byte);
+        }
+        writer->printf("\n");
     }
 }
 
@@ -302,9 +324,7 @@ void OvmsReToolsPidScanner::IncomingPollFrame(const CAN_frame_t* frame)
     }
     else if (frameType == ISOTP_FT_CONSECUTIVE)
     {
-        // data[0] is frame, but we'll ignore that
         dataLength = (m_mfRemain > 7 ? 7 : m_mfRemain);
-        ++data;
         m_mfRemain -= dataLength;
     }
     else
@@ -316,6 +336,10 @@ void OvmsReToolsPidScanner::IncomingPollFrame(const CAN_frame_t* frame)
 
     if (frameType == ISOTP_FT_CONSECUTIVE)
     {
+        {
+            OvmsMutexLock lock(&m_foundMutex);
+            std::copy(data, &data[dataLength], std::back_inserter(m_found.back().second));
+        }
         if (m_mfRemain == 0u)
         {
             SendNextFrame();
@@ -336,7 +360,7 @@ void OvmsReToolsPidScanner::IncomingPollFrame(const CAN_frame_t* frame)
         uint16_t responsePid = data[1] << 8 | data[2];
         if (responsePid == m_currentPid)
         {
-            ESP_LOGI(
+            ESP_LOGD(
                 TAG,
                 "Success response from %x:%x length %d (0x%02x 0x%02x 0x%02x 0x%02x%s)",
                 m_id, m_currentPid, frameLength - 3, data[3], data[4], data[5], data[6],
@@ -363,6 +387,18 @@ void OvmsReToolsPidScanner::IncomingPollFrame(const CAN_frame_t* frame)
                 {
                     m_lastFrame = m_ticker;
                 }
+                std::vector<uint8_t> response;
+                response.reserve(frameLength);
+                std::copy(&data[3], &data[dataLength], std::back_inserter(response));
+                OvmsMutexLock lock(&m_foundMutex);
+                m_found.push_back(std::make_pair(responsePid, std::move(response)));
+            }
+            else
+            {
+                OvmsMutexLock lock(&m_foundMutex);
+                m_found.push_back(std::make_pair(
+                    responsePid, std::vector<uint8_t>(&data[3], &data[dataLength])
+                ));
             }
             if (m_mfRemain == 0u)
             {
