@@ -898,7 +898,10 @@ void OvmsVehicleFactory::SetVehicle(const char* type)
     m_currentvehicletype.clear();
     }
   m_currentvehicle = NewVehicle(type);
-  m_currentvehicle->m_ready = true;
+  if (m_currentvehicle)
+  {
+  	m_currentvehicle->m_ready = true;
+  }
   m_currentvehicletype = std::string(type);
   StandardMetrics.ms_v_type->SetValue(m_currentvehicle ? type : "");
   MyEvents.SignalEvent("vehicle.type.set", (void*)type, strlen(type)+1);
