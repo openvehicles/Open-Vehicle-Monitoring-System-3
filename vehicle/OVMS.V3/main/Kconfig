@@ -596,6 +596,13 @@ config OVMS_COMP_RE_TOOLS
     help
         Enable to include support for Reverse Engineering tools
 
+config OVMS_COMP_RE_TOOLS_PID
+    bool "Include support for ECU PID scanning"
+    default y
+    depends on OVMS
+    help
+        Enable to include research module for scanning an ECU for PIDs.
+
 config OVMS_COMP_EDITOR
     bool "Include support for Simple file editor"
     default y
