@@ -603,6 +603,13 @@ config OVMS_COMP_RE_TOOLS_PID
     help
         Enable to include research module for scanning an ECU for PIDs.
 
+config OVMS_COMP_RE_TOOLS_TESTERPRESENT
+    bool "Include support for ECU tester present signalling"
+    default y
+    depends on OVMS
+    help
+        Enable to include research module for sending tester present to an ECU.
+
 config OVMS_COMP_EDITOR
     bool "Include support for Simple file editor"
     default y
