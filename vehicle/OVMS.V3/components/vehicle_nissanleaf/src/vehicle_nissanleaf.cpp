@@ -163,7 +163,6 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   MyMetrics.InitBool("v.e.on", SM_STALE_MIN, false);
   MyMetrics.InitBool("v.e.awake", SM_STALE_MID, false);
   MyMetrics.InitBool("v.e.locked", SM_STALE_MID, false);
-  MyMetrics.InitBool("v.vin", SM_STALE_NONE, "");
   MyMetrics.InitString("v.c.state",SM_STALE_MID,"stopped");
   m_gen1_charger = false;
 
