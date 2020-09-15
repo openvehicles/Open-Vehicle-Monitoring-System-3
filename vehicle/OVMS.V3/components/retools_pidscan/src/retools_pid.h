@@ -38,6 +38,7 @@
 #include "freertos/queue.h"
 
 #include <functional>
+#include <vector>
 
 class OvmsReToolsPidScanner
 {
@@ -50,6 +51,8 @@ class OvmsReToolsPidScanner
     uint16_t Start() const { return m_startPid; }
     uint16_t End() const { return m_endPid; }
     uint16_t Current() const { return m_currentPid; }
+
+    void Output(OvmsWriter* writer) const;
 
   private:
     void Ticker1(std::string event, void* data);
@@ -85,6 +88,10 @@ class OvmsReToolsPidScanner
     TaskHandle_t m_task;
     /// The handle to the CAN receive queue
     QueueHandle_t m_rxqueue;
+    /// The found PIDs and the current content
+    std::vector<std::pair<uint16_t, std::vector<uint8_t>>> m_found;
+    /// A mutex over m_found
+    mutable OvmsMutex m_foundMutex;
 };
 
 #endif  // __RE_TOOLS_PID_H__
