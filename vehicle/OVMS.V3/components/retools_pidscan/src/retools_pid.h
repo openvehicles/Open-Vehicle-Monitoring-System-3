@@ -39,14 +39,16 @@
 
 #include <functional>
 #include <vector>
+#include <tuple>
 
 class OvmsReToolsPidScanner
 {
   public:
-    OvmsReToolsPidScanner(canbus* bus, uint16_t ecu, uint16_t start, uint16_t end);
+    OvmsReToolsPidScanner(canbus* bus, uint16_t ecu, uint16_t rxid_low, uint16_t rxid_high,
+                          uint8_t polltype, uint16_t start, uint16_t end, uint8_t timeout);
     ~OvmsReToolsPidScanner();
 
-    bool Complete() const { return m_currentPid == m_endPid; }
+    bool Complete() const { return m_currentPid > m_endPid; }
     uint16_t Ecu() const { return m_id; }
     uint16_t Start() const { return m_startPid; }
     uint16_t End() const { return m_endPid; }
@@ -72,6 +74,11 @@ class OvmsReToolsPidScanner
     canbus* m_bus;
     /// The ID of the ECU to scan
     uint16_t m_id;
+    /// The response ID range
+    uint16_t m_rxid_low;
+    uint16_t m_rxid_high;
+    /// The poll/service type
+    uint8_t m_pollType;
     /// The PID to start scanning from
     uint16_t m_startPid;
     /// The PID to stop scanning at
@@ -80,6 +87,8 @@ class OvmsReToolsPidScanner
     uint16_t m_currentPid;
     /// The current ticker value
     uint32_t m_ticker;
+    /// Response timeout in seconds
+    uint8_t m_timeout;
     /// When the last frame was sent
     uint32_t m_lastFrame;
     /// The number of bytes expected on a multi-frame response
@@ -89,7 +98,7 @@ class OvmsReToolsPidScanner
     /// The handle to the CAN receive queue
     QueueHandle_t m_rxqueue;
     /// The found PIDs and the current content
-    std::vector<std::pair<uint16_t, std::vector<uint8_t>>> m_found;
+    std::vector<std::tuple<uint16_t, uint16_t, std::vector<uint8_t>>> m_found;
     /// A mutex over m_found
     mutable OvmsMutex m_foundMutex;
 };
