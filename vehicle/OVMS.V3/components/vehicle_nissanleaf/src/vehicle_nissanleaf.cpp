@@ -122,6 +122,9 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   {
   ESP_LOGI(TAG, "Nissan Leaf v3.0 vehicle module");
 
+  BmsSetCellArrangementVoltage(96, 32);
+  BmsSetCellArrangementTemperature(3, 1);
+  
   m_gids = MyMetrics.InitInt("xnl.v.b.gids", SM_STALE_HIGH, 0);
   m_hx = MyMetrics.InitFloat("xnl.v.b.hx", SM_STALE_HIGH, 0);
   m_soc_new_car = MyMetrics.InitFloat("xnl.v.b.soc.newcar", SM_STALE_HIGH, 0, Percentage);
@@ -130,9 +133,6 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   m_bms_thermistor = MyMetrics.InitVector<int>("xnl.bms.thermistor", SM_STALE_MIN, 0, Native);
   m_bms_temp_int = MyMetrics.InitVector<int>("xnl.bms.temp.int", SM_STALE_MIN, 0, Celcius);
   m_bms_balancing = MyMetrics.InitBitset<96>("xnl.bms.balancing", SM_STALE_HIGH, 0);
-  BmsSetCellArrangementVoltage(96, 32);
-  BmsSetCellArrangementTemperature(3, 1);
-
   m_soh_new_car = MyMetrics.InitFloat("xnl.v.b.soh.newcar", SM_STALE_HIGH, 0, Percentage);
   m_soh_instrument = MyMetrics.InitInt("xnl.v.b.soh.instrument", SM_STALE_HIGH, 0, Percentage);
   m_battery_energy_capacity = MyMetrics.InitFloat("xnl.v.b.e.capacity", SM_STALE_HIGH, 0, kWh);
@@ -163,7 +163,6 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   MyMetrics.InitBool("v.e.on", SM_STALE_MIN, false);
   MyMetrics.InitBool("v.e.awake", SM_STALE_MID, false);
   MyMetrics.InitBool("v.e.locked", SM_STALE_MID, false);
-  MyMetrics.InitBool("v.vin", SM_STALE_NONE, "");
   MyMetrics.InitString("v.c.state",SM_STALE_MID,"stopped");
   m_gen1_charger = false;
 
@@ -367,7 +366,7 @@ int OvmsVehicleNissanLeaf::GetNotifyChargeStateDelay(const char* state)
   {
   if (StandardMetrics.ms_m_monotonic->AsInt() < 10)
     return 0; //avoid notify on boot triggered by setting delay
-  else return 5; //allow time for charger to handshake
+  else return 8; //allow time for charger to handshake
   }
 
 void OvmsVehicleNissanLeaf::shell_obd_request(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -760,7 +759,8 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         // negative so extend the sign bit
         nl_battery_current |= 0xf800;
         }
-      float battery_current = nl_battery_current / 2.0f;
+      // sign updated to match standard metric definition where battery output is positive
+      float battery_current = -nl_battery_current / 2.0f;
 
       // voltage is 10 bits unsigned big endian starting at bit 16
       int16_t nl_battery_voltage = ((uint16_t) d[2] << 2) | (d[3] & 0xc0) >> 6;
@@ -777,12 +777,12 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       float energy = battery_power * 10 / 3600;
       if (energy < 0.0)
         {
-        m_cum_energy_used_wh -= energy;
+        m_cum_energy_recd_wh -= energy;
+        m_cum_energy_charge_wh -= energy;
         }
       else
         {
-        m_cum_energy_recd_wh += energy;
-        m_cum_energy_charge_wh += energy;
+        m_cum_energy_used_wh += energy;
         }
 
       // soc displayed on the instrument cluster
@@ -1569,6 +1569,9 @@ void OvmsVehicleNissanLeaf::HandleCharging()
   if (!StandardMetrics.ms_v_charge_pilot->AsBool()      ||
       !StandardMetrics.ms_v_charge_inprogress->AsBool() )
     {
+    StandardMetrics.ms_v_charge_power->SetValue(0);
+    // default to 100% so it does not effect an overall efficiency calculation
+    StandardMetrics.ms_v_charge_efficiency->SetValue(100);
     return;
     }
   // Check if we have what is needed to calculate energy and remaining minutes
@@ -1609,6 +1612,20 @@ void OvmsVehicleNissanLeaf::HandleCharging()
       StandardMetrics.ms_v_charge_duration_range->SetValue(minsremaining_range, Minutes);
       ESP_LOGV(TAG, "Time remaining: %d mins for %0.0f km (%0.0f%% soc)", minsremaining_range, limit_range, range_soc);
       }
+    }
+  // calculate charger power and efficiency
+  float m_charge_current = StandardMetrics.ms_v_charge_current->AsFloat();
+  float m_charge_voltage = StandardMetrics.ms_v_charge_voltage->AsFloat();
+  StandardMetrics.ms_v_charge_power->SetValue(m_charge_current * m_charge_voltage / 1000.0);
+  float m_charge_power   = StandardMetrics.ms_v_charge_power->AsFloat();
+  float m_batt_power     = StandardMetrics.ms_v_bat_power->AsFloat();
+  if (m_charge_power > 0)
+    {
+    StandardMetrics.ms_v_charge_efficiency->SetValue(abs(m_batt_power / m_charge_power) * 100.0);
+    }
+  if (StandardMetrics.ms_v_charge_efficiency->AsFloat() > 100) 
+    { // due to rounding precision bat power can report > charger power at low charge rates
+    StandardMetrics.ms_v_charge_efficiency->SetValue(100);
     }
   }
 
