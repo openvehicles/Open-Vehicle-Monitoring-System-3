@@ -54,6 +54,7 @@ const OvmsVehicle::poll_pid_t vwup_polls[] = {
     // Same tick & order important of above 2: VWUP_BAT_MGMT_I calculates the power
 
     {VWUP_MOT_ELEC_TX, VWUP_MOT_ELEC_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MOT_ELEC_SOC_NORM, {0, 20, 20}, 1},
+    {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_SOC, {0, 20, 20}, 1},
     {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_ENERGY_COUNTERS, {0, 20, 20}, 1},
 
     {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_CELL_MAX, {0, 20, 20}, 1},
@@ -93,6 +94,7 @@ OvmsVehicleVWeUpObd::OvmsVehicleVWeUpObd()
     PollSetResponseSeparationTime(1);
     PollSetState(VWUP_OFF);
 
+    BatMgmtSoC = MyMetrics.InitFloat("xuo.b.soc", 100, 0, Percentage);
     BatMgmtCellDelta = MyMetrics.InitFloat("xuo.b.cell.delta", SM_STALE_NONE, 0, Volts);
 
     ChargerPowerEffEcu = MyMetrics.InitFloat("xuo.c.eff.ecu", 100, 0, Percentage);
@@ -209,7 +211,8 @@ void OvmsVehicleVWeUpObd::IncomingPollReply(canbus *bus, uint16_t type, uint16_t
     case VWUP_BAT_MGMT_I:
         if (PollReply.FromUint16("VWUP_BAT_MGMT_I", value))
         {
-            StandardMetrics.ms_v_bat_current->SetValue((value - 2044.0f) / 4.0f);
+            // ECU delivers negative current when it goes out of the battery. OVMS wants positive when the battery outputs current.
+            StandardMetrics.ms_v_bat_current->SetValue(((value - 2044.0f) / 4.0f) * -1.0f);
             VALUE_LOG(TAG, "VWUP_BAT_MGMT_I=%f => %f", value, StandardMetrics.ms_v_bat_current->AsFloat());
 
             value = StandardMetrics.ms_v_bat_voltage->AsFloat() * StandardMetrics.ms_v_bat_current->AsFloat() / 1000.0f;
@@ -223,6 +226,14 @@ void OvmsVehicleVWeUpObd::IncomingPollReply(canbus *bus, uint16_t type, uint16_t
         {            
             StandardMetrics.ms_v_bat_soc->SetValue(value / 100.0f);
             VALUE_LOG(TAG, "VWUP_MOT_ELEC_SOC_NORM=%f => %f", value, StandardMetrics.ms_v_bat_soc->AsFloat());
+        }
+        break;
+
+    case VWUP_BAT_MGMT_SOC:
+        if (PollReply.FromUint8("VWUP_BAT_MGMT_SOC", value))
+        {
+            BatMgmtSoC->SetValue(value / 2.5f);
+            VALUE_LOG(TAG, "VWUP_BAT_MGMT_SOC=%f => %f", value, BatMgmtSoC->AsFloat());
         }
         break;
 
@@ -292,12 +303,11 @@ void OvmsVehicleVWeUpObd::IncomingPollReply(canbus *bus, uint16_t type, uint16_t
             ChargerAC2I = value / 10.0f;
             VALUE_LOG(TAG, "VWUP_CHARGER_AC2_I=%f => %f", value, ChargerAC2I);
 
-            value = ChargerAC1U * ChargerAC1I + ChargerAC2U * ChargerAC2I;
+            value = (ChargerAC1U * ChargerAC1I + ChargerAC2U * ChargerAC2I) / 1000.0f;
             ChargerACPower->SetValue(value);
             VALUE_LOG(TAG, "VWUP_CHARGER_AC_P=%f => %f", value, ChargerACPower->AsFloat());
 
             // Standard Charge Power and Charge Efficiency calculation as requested by the standard
-            value /= 1000.0f;
             StandardMetrics.ms_v_charge_power->SetValue(value);
             value = value == 0.0f ? 0.0f : ((StandardMetrics.ms_v_bat_power->AsFloat() * -1.0f) / value) * 100.0f;
             StandardMetrics.ms_v_charge_efficiency->SetValue(value);
@@ -329,7 +339,7 @@ void OvmsVehicleVWeUpObd::IncomingPollReply(canbus *bus, uint16_t type, uint16_t
             ChargerDC2I = (value - 510.0f) / 5.0f;
             VALUE_LOG(TAG, "VWUP_CHARGER_DC2_I=%f => %f", value, ChargerDC2I);
 
-            value = ChargerDC1U * ChargerDC1I + ChargerDC2U * ChargerDC2I;
+            value = (ChargerDC1U * ChargerDC1I + ChargerDC2U * ChargerDC2I) / 1000.0f;
             ChargerDCPower->SetValue(value);
             VALUE_LOG(TAG, "VWUP_CHARGER_DC_P=%f => %f", value, ChargerDCPower->AsFloat());
 
@@ -356,7 +366,7 @@ void OvmsVehicleVWeUpObd::IncomingPollReply(canbus *bus, uint16_t type, uint16_t
     case VWUP_CHARGER_POWER_LOSS:
         if (PollReply.FromUint8("VWUP_CHARGER_POWER_LOSS", value))
         {
-            ChargerPowerLossEcu->SetValue(value * 20.0f);
+            ChargerPowerLossEcu->SetValue((value * 20.0f) / 1000.0f);
             VALUE_LOG(TAG, "VWUP_CHARGER_POWER_LOSS=%f => %f", value, ChargerPowerLossEcu->AsFloat());
         }
         break;
