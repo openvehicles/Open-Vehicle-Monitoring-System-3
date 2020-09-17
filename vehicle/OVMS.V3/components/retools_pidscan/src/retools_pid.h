@@ -45,14 +45,14 @@ class OvmsReToolsPidScanner
 {
   public:
     OvmsReToolsPidScanner(canbus* bus, uint16_t ecu, uint16_t rxid_low, uint16_t rxid_high,
-                          uint8_t polltype, uint16_t start, uint16_t end, uint8_t timeout);
+                          uint8_t polltype, int start, int end, uint8_t timeout);
     ~OvmsReToolsPidScanner();
 
     bool Complete() const { return m_currentPid > m_endPid; }
     uint16_t Ecu() const { return m_id; }
-    uint16_t Start() const { return m_startPid; }
-    uint16_t End() const { return m_endPid; }
-    uint16_t Current() const { return m_currentPid; }
+    int Start() const { return m_startPid; }
+    int End() const { return m_endPid; }
+    int Current() const { return m_currentPid; }
 
     void Output(OvmsWriter* writer) const;
 
@@ -80,11 +80,11 @@ class OvmsReToolsPidScanner
     /// The poll/service type
     uint8_t m_pollType;
     /// The PID to start scanning from
-    uint16_t m_startPid;
+    int m_startPid;
     /// The PID to stop scanning at
-    uint16_t m_endPid;
+    int m_endPid;
     /// The current PID being scanned
-    uint16_t m_currentPid;
+    int m_currentPid;
     /// The current ticker value
     uint32_t m_ticker;
     /// Response timeout in seconds

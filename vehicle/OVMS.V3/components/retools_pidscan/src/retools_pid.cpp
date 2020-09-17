@@ -136,7 +136,7 @@ void scanStart(int, OvmsWriter* writer, OvmsCommand*, int argc, const char* cons
                     }
                     break;
                 case 'x':
-                    timeout = atol(argv[i]+2);
+                    timeout = atoi(argv[i]+2);
                     if (timeout < 1 || timeout > 10)
                     {
                         writer->printf("Error: Invalid timeout %s\n", argv[i]+2);
@@ -168,14 +168,14 @@ void scanStart(int, OvmsWriter* writer, OvmsCommand*, int argc, const char* cons
                     }
                     break;
                 case 3:
-                    if (!ReadHexString(argv[i], start) || start <= 0 || start >= 0xffff)
+                    if (!ReadHexString(argv[i], start) || start > 0xffff)
                     {
                         writer->printf("Error: Invalid Start PID to scan %s\n", argv[i]);
                         valid = false;
                     }
                     break;
                 case 4:
-                    if (!ReadHexString(argv[i], end) || end <= 0 || end >= 0xffff)
+                    if (!ReadHexString(argv[i], end) || end > 0xffff)
                     {
                         writer->printf("Error: Invalid End PID to scan %s\n", argv[i]);
                         valid = false;
@@ -193,6 +193,11 @@ void scanStart(int, OvmsWriter* writer, OvmsCommand*, int argc, const char* cons
         writer->printf(
             "Error: Invalid Start PID %04x is after End PID %04x\n", start, end
         );
+        valid = false;
+    }
+    if (POLL_TYPE_HAS_8BIT_PID(polltype) && end > 0xff)
+    {
+        writer->printf("Error: Poll type %x PID range is 00..ff\n");
         valid = false;
     }
     if (!valid)
@@ -258,7 +263,7 @@ void scanStop(int, OvmsWriter* writer, OvmsCommand*, int, const char* const*)
 
 OvmsReToolsPidScanner::OvmsReToolsPidScanner(
         canbus* bus, uint16_t ecu, uint16_t rxid_low, uint16_t rxid_high,
-        uint8_t polltype, uint16_t start, uint16_t end, uint8_t timeout) :
+        uint8_t polltype, int start, int end, uint8_t timeout) :
     m_frameCallback(std::bind(
         &OvmsReToolsPidScanner::FrameCallback, this,
         std::placeholders::_1, std::placeholders::_2
@@ -270,7 +275,7 @@ OvmsReToolsPidScanner::OvmsReToolsPidScanner(
     m_pollType(polltype),
     m_startPid(start),
     m_endPid(end),
-    m_currentPid(end),
+    m_currentPid(end+1),
     m_ticker(0u),
     m_timeout(timeout),
     m_lastFrame(0u),
