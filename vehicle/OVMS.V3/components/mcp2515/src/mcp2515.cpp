@@ -306,25 +306,23 @@ esp_err_t mcp2515::ViewRegisters()
   return ESP_OK;
   }
 
-esp_err_t mcp2515::Write(const CAN_frame_t* p_frame, TickType_t maxqueuewait /*=0*/)
+
+/**
+ * WriteFrame: deliver a frame to the hardware for transmission (driver internal)
+ */
+esp_err_t mcp2515::WriteFrame(const CAN_frame_t* p_frame)
   {
   uint8_t buf[16];
   uint8_t id[4];
-
-  if (m_mode != CAN_MODE_ACTIVE)
-    {
-    ESP_LOGW(TAG,"Cannot write %s when not in ACTIVE mode",m_name);
-    return ESP_OK;
-    }
 
   // check for free TX buffer:
   uint8_t txbuf;
   uint8_t* p = m_spibus->spi_cmd(m_spi, buf, 1, 1, CMD_READ_STATUS);
 
-  if((p[0] & 0b01010100) == 0)  // any buffers busy?
+  if ((p[0] & 0b01010100) == 0)  // any buffers busy?
     txbuf = 0b000;  // all clear - use TxB0
   else
-    return QueueWrite(p_frame, maxqueuewait);  // otherwise, queue the frame and wait.  Single frame at a time!
+    return ESP_FAIL;
 
   if (p_frame->FIR.B.FF == CAN_frame_std)
     {
@@ -360,11 +358,41 @@ esp_err_t mcp2515::Write(const CAN_frame_t* p_frame, TickType_t maxqueuewait /*=
   // MCP2515 request to send:
   m_spibus->spi_cmd(m_spi, buf, 0, 1, CMD_RTS | (txbuf ? txbuf : 0b001));
 
-  // stats & logging:
+  return ESP_OK;
+  }
+
+
+/**
+ * Write: transmit or queue a frame for transmission (API)
+ */
+esp_err_t mcp2515::Write(const CAN_frame_t* p_frame, TickType_t maxqueuewait /*=0*/)
+  {
+  OvmsMutexLock lock(&m_write_mutex);
+
+  if (m_mode != CAN_MODE_ACTIVE)
+    {
+    ESP_LOGW(TAG,"Cannot write %s when not in ACTIVE mode",m_name);
+    return ESP_FAIL;
+    }
+
+  // if there are frames waiting in the TX queue, add the new one there as well:
+  if (uxQueueMessagesWaiting(m_txqueue))
+    {
+    return QueueWrite(p_frame, maxqueuewait);
+    }
+
+  // try to deliver the frame to the hardware:
+  if (WriteFrame(p_frame) != ESP_OK)
+    {
+    return QueueWrite(p_frame, maxqueuewait);
+    }
+
+  // OK, stats & logging:
   canbus::Write(p_frame, maxqueuewait);
 
   return ESP_OK;
   }
+
 
 // This function serves as asynchronous interrupt handler for both rx and tx tasks as well as error states
 // Returns true if this function needs to be called again (another frame may need handling or all error interrupts are not yet handled)
@@ -449,10 +477,6 @@ bool mcp2515::AsynchronousInterruptHandler(CAN_frame_t* frame, bool * frameRecei
     msg.body.frame = m_tx_frame;
     msg.body.bus = this;
     xQueueSend(MyCan.m_rxqueue,&msg,0);
-
-    if(xQueueReceive(m_txqueue, (void*)frame, 0) == pdTRUE)  { // if any queued for later?
-      Write(frame, 0);  // if so, send one
-      }
     }
 
   if (intstat & 0b11100000)
@@ -495,15 +519,22 @@ bool mcp2515::AsynchronousInterruptHandler(CAN_frame_t* frame, bool * frameRecei
     m_status.error_flags |= 0x0800;
     m_spibus->spi_cmd(m_spi, buf, 0, 4, CMD_BITMODIFY, REG_EFLG, errflag & 0b11000000, 0x00);
     }
-  if ( (intstat & 0b10100000) && (errflag & 0b00111111) )
+
+  // log bus error flags:
+  if (intstat & 0b10100000)
     {
-    ESP_LOGW(TAG, "%s EFLG: %s%s%s%s%s%s", this->GetName(),
-      (errflag & 0b00100000) ? "Bus-off " : "",
-      (errflag & 0b00010000) ? "TX_Err_Passv " : "",
-      (errflag & 0b00001000) ? "RX_Err_Passv " : "",
-      (errflag & 0b00000100) ? "TX_Err_Warn " : "",
-      (errflag & 0b00000010) ? "RX_Err_Warn " : "",
-      (errflag & 0b00000001) ? "EWARN " : "" );
+    uint8_t log_errflag = errflag & 0b00111111;
+    if (log_errflag && log_errflag != m_last_errflag)
+      {
+      ESP_LOGW(TAG, "%s EFLG: %s%s%s%s%s%s", this->GetName(),
+        (errflag & 0b00100000) ? "Bus-off " : "",
+        (errflag & 0b00010000) ? "TX_Err_Passv " : "",
+        (errflag & 0b00001000) ? "RX_Err_Passv " : "",
+        (errflag & 0b00000100) ? "TX_Err_Warn " : "",
+        (errflag & 0b00000010) ? "RX_Err_Warn " : "",
+        (errflag & 0b00000001) ? "EWARN " : "" );
+      }
+    m_last_errflag = log_errflag;
     }
 
   // clear error & wakeup interrupts:
@@ -516,6 +547,38 @@ bool mcp2515::AsynchronousInterruptHandler(CAN_frame_t* frame, bool * frameRecei
   // Read the interrupt pin status and if it's still active (low), require another interrupt handling iteration
   return !gpio_get_level((gpio_num_t)m_intpin);
   }
+
+
+void mcp2515::TxCallback(CAN_frame_t* p_frame, bool success)
+  {
+  // Application callbacks & logging:
+  canbus::TxCallback(p_frame, success);
+
+  // TX buffer has become available; send next queued frame (if any):
+    {
+    OvmsMutexLock lock(&m_write_mutex);
+    CAN_frame_t frame;
+    while (xQueueReceive(m_txqueue, (void*)&frame, 0) == pdTRUE)
+      {
+      if (WriteFrame(&frame) == ESP_FAIL)
+        {
+        // This should not happen:
+        ESP_LOGE(TAG, "TxCallback: fatal error: TX buffer not available");
+        CAN_queue_msg_t msg;
+        msg.type = CAN_txfailedcallback;
+        msg.body.frame = frame;
+        msg.body.bus = this;
+        xQueueSend(MyCan.m_rxqueue, &msg, 0);
+        }
+      else
+        {
+        canbus::Write(&frame, 0);
+        break;
+        }
+      }
+    }
+  }
+
 
 void mcp2515::SetPowerMode(PowerMode powermode)
   {
