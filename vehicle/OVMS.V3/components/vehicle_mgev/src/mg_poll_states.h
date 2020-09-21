@@ -34,10 +34,10 @@
 
 // The states that change how many seconds between polling for different values
 enum PollStates {
-    PollStateAwake = 0,  // Keep alive being sent to gateway or accessory on
+    PollStateLocked = 0,  // The car is currently locked and not charging
+    PollStateUnlocked,  // The car is currently unlocked and not charging
     PollStateRunning,  // Car is running (ignition on)
-    PollStateCharging,  // Car is charging
-    PollStateAsleep  // Might not actually be asleep, but we aren't keeping it awake
+    PollStateCharging,  // Car is charging, may be locked or unlocked
 };
 
 #endif  // MG_POLL_STATES_H_

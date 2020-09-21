@@ -35,14 +35,6 @@ static const char *TAG = "v-mgev";
 #include "vehicle_mgev.h"
 #include "mg_obd_pids.h"
 
-namespace {
-
-/// The maximum number of seconds between the asleep packets before we decide that it's
-/// no longer in zombie state
-constexpr uint32_t NOT_ZOMBIE_TIME = 5u;
-
-}  // anon namespace
-
 void OvmsVehicleMgEv::IncomingFrameCan1(CAN_frame_t* p_frame)
 {
     if (m_poll_bus_default != m_can1)
@@ -81,82 +73,113 @@ void OvmsVehicleMgEv::IncomingFrameCan4(CAN_frame_t* p_frame)
 
 void OvmsVehicleMgEv::IncomingPollFrame(CAN_frame_t* frame)
 {
-    // TODO: Should check for tester present confirmation (02 3e+40)
+    if (frame->MsgID == 0x70au)
+    {
+        ESP_LOGI(
+            TAG, "Wake up message (length %d): %02x %02x %02x %02x %02x %02x %02x",
+            frame->FIR.B.DLC, frame->data.u8[0], frame->data.u8[1], frame->data.u8[2],
+            frame->data.u8[3], frame->data.u8[4], frame->data.u8[5], frame->data.u8[6]
+        );
+    }
 
     uint8_t frameType = frame->data.u8[0] >> 4;
-    if (frameType != ISOTP_FT_SINGLE)
-    {
-        // Support for single frame types only
-        return;
-    }
     uint8_t frameLength = frame->data.u8[0] & 0x0f;
     uint8_t* data = &frame->data.u8[1];
     uint8_t dataLength = frameLength;
-    if ((data[0] & 0x40) == 0)
-    {
-        // Unsuccessful response, ignore it
-        return;
-    }
-    if ((data[0] - 0x40) == VEHICLE_POLL_TYPE_TESTERPRESENT)
-    {
-        // Tester present response, can do something else now
-        if (frame->MsgID == (bcmId | rxFlag))
-        {
-            // BCM has replied to tester present, send queries to it
-            ESP_LOGV(TAG, "Keep-alive sent, sending alarm sensitive messages");
-            SendAlarmSensitive(frame->origin);
-        }
-        else if (m_wakeState == Waking && frame->MsgID == (gwmId | rxFlag))
-        {
-            ESP_LOGV(TAG, "Got response from gateway, wake up complete");
-            m_wakeState = Zombie;
-        }
-        return;
-    }
-    if (!POLL_TYPE_HAS_16BIT_PID(data[0] - 0x40))
-    {
-        // Only support 16-bit PIDs as in SendAlarmSensitive
-        return;
-    }
-    uint16_t responsePid = data[1] << 8 | data[2];
-    data = &data[3];
-    dataLength -= 3;
-    if (frame->MsgID == (bcmId | rxFlag))
-    {
-        IncomingBcmPoll(responsePid, data, dataLength);
-    }
-    else if (m_poll_state == PollStateAsleep)
-    {
-        if (frame->MsgID == m_sleepPollsItem->rxmoduleid &&
-                m_sleepPollsItem->pid == responsePid)
-        {
-            if (monotonictime - m_sleepPacketTime <= NOT_ZOMBIE_TIME)
-            {
-                m_wakeState = Awake;
-            }
-            m_sleepPacketTime = monotonictime;
-            IncomingPollReply(
-                frame->origin, frameType, responsePid, data, dataLength, 0
-            );
-            ++m_sleepPollsItem;
-            if (m_sleepPollsItem->txmoduleid == 0)
-            {
-                m_sleepPollsItem = m_sleepPolls;
-            }
-        }
-    }
-}
 
-void OvmsVehicleMgEv::SendSleepPoll(canbus* currentBus)
-{
-    const auto pollItem = m_sleepPollsItem;
-    if (pollItem->txmoduleid == 0)
+    if (frameType == ISOTP_FT_SINGLE)
     {
-        return;
+        if ((data[0] & 0x40) == 0)
+        {
+            // Unsuccessful response, ignore it
+            return;
+        }
+        if ((data[0] - 0x40) == VEHICLE_POLL_TYPE_TESTERPRESENT)
+        {
+            // Tester present response, can do something else now
+            if (frame->MsgID == (bcmId | rxFlag))
+            {
+                // BCM has replied to tester present, send queries to it
+                ESP_LOGV(TAG, "Keep-alive sent, sending alarm sensitive messages");
+                SendAlarmSensitive(frame->origin);
+            }
+            else if (m_wakeState == Waking && frame->MsgID == (gwmId | rxFlag))
+            {
+                ESP_LOGV(TAG, "Got response from gateway, wake up complete");
+                m_wakeState = Tester;
+                // If we are currently unlocked, then send to BCM
+                if (StandardMetrics.ms_v_env_locked->AsBool() == false)
+                {
+                    SendKeepAliveTo(frame->origin, bcmId);
+                }
+            }
+            return;
+        }
     }
-    SendPollMessage(
-        currentBus, pollItem->txmoduleid, pollItem->type, pollItem->pid
-    );
+    if (frameType == ISOTP_FT_SINGLE || frameType == ISOTP_FT_FIRST)
+    {
+        if (frameType == ISOTP_FT_FIRST)
+        {
+            dataLength = (dataLength << 8) | data[0];
+            ++data;
+        }
+
+        if (!POLL_TYPE_HAS_16BIT_PID(data[0] - 0x40))
+        {
+            // Only support 16-bit PIDs as in SendAlarmSensitive
+            return;
+        }
+
+        uint16_t responsePid = data[1] << 8 | data[2];
+        data = &data[3];
+        dataLength -= 3;
+        if (frameType == ISOTP_FT_SINGLE && frame->MsgID == (bcmId | rxFlag))
+        {
+            IncomingBcmPoll(responsePid, data, dataLength);
+        }
+
+        if (responsePid == softwarePid)
+        {
+            std::vector<char> version(dataLength + 1, '0');
+            version.back() = '\0';
+            std::copy(
+                data,
+                &data[frameType == ISOTP_FT_SINGLE ? dataLength : 3],
+                version.begin()
+            );
+            if (frameType == ISOTP_FT_FIRST)
+            {
+                CAN_frame_t flowControl = {
+                    frame->origin,
+                    nullptr,
+                    { .B = { 8, 0, CAN_no_RTR, CAN_frame_std, 0 } },
+                    frame->MsgID - rxFlag,
+                    { .u8 = { 0x30, 0, 25, 0, 0, 0, 0, 0 } }
+                };
+                frame->origin->Write(&flowControl);
+            }
+            m_versions.push_back(std::make_pair(
+                frame->MsgID - rxFlag, std::move(version)
+            ));
+        }
+    }
+    // Handle multi-line version responses
+    else if (m_poll_plist == nullptr && frameType == ISOTP_FT_CONSECUTIVE)
+    {
+        auto start = ((dataLength - 1) * 7) + 3;
+        for (auto& version : m_versions)
+        {
+            if (version.first == frame->MsgID - rxFlag)
+            {
+                auto end = version.second.size() - 1;
+                std::copy(
+                    data,
+                    &data[end - start > 7 ? 7 : (end - start)],
+                    version.second.begin() + start
+                );
+            }
+        }
+    }
 }
 
 bool OvmsVehicleMgEv::SendPollMessage(
