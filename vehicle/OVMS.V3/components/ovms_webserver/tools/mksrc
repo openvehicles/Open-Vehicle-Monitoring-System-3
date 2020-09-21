@@ -1,0 +1,4 @@
+#!/bin/bash
+# convert text to C string
+# usage: mksrc file.htm [>file.cpp]
+cat $1 | grep -v '^[[:space:]]*$' | sed -e 's:\\:\\\\:g' -e 's:":\\":g' -e 's:^\( *\):    \1":' -e 's:$:\\n":'
