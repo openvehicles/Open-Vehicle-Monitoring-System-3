@@ -152,11 +152,11 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   m_soc_nominal = MyMetrics.InitFloat("xnl.v.b.soc.nominal", SM_STALE_HIGH, 0, Percentage);
   m_charge_count_qc     = MyMetrics.InitInt("xnl.v.c.count.qc",     SM_STALE_NONE, 0);
   m_charge_count_l0l1l2 = MyMetrics.InitInt("xnl.v.c.count.l0l1l2", SM_STALE_NONE, 0);
-  m_climate_vent = MyMetrics.InitString("v.e.cabin.vent", SM_STALE_MIN, 0);
-  m_climate_intake = MyMetrics.InitString("v.e.cabin.intake", SM_STALE_MIN, 0);
-  m_climate_setpoint = MyMetrics.InitFloat("v.e.cabin.setpoint", SM_STALE_HIGH, 0, Celcius);
-  m_climate_fan_speed = MyMetrics.InitInt("v.e.cabin.fan", SM_STALE_MIN, 0);
-  m_climate_fan_speed_limit = MyMetrics.InitInt("v.e.cabin.fanlimit", SM_STALE_MIN, 0);
+  m_climate_vent = MyMetrics.InitString("v.e.cabinvent", SM_STALE_MIN, 0);
+  m_climate_intake = MyMetrics.InitString("v.e.cabinintake", SM_STALE_MIN, 0);
+  m_climate_setpoint = MyMetrics.InitFloat("v.e.cabinsetpoint", SM_STALE_HIGH, 0, Celcius);
+  m_climate_fan_speed = MyMetrics.InitInt("v.e.cabinfan", SM_STALE_MIN, 0);
+  m_climate_fan_speed_limit = MyMetrics.InitInt("v.e.cabinfanlimit", SM_STALE_MIN, 0);
   m_climate_fan_only = MyMetrics.InitBool("xnl.cc.fan.only", SM_STALE_MIN, false);
   m_climate_remoteheat = MyMetrics.InitBool("xnl.cc.remoteheat", SM_STALE_MIN, false);
   m_climate_remotecool = MyMetrics.InitBool("xnl.cc.remotecool", SM_STALE_MIN, false);
@@ -1045,13 +1045,22 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       break;
     case 0x54f:
       /* Climate control's measurement of temperature inside the car.
-       * Subtracting 14 is a bit of a guess worked out by observing how
-       * auto climate control reacts when this reaches the target setting.
+       * Appears to be in Fahrenheit. Unsure why the check for 20? 
        */
       if (d[0] != 20)
         {
-        StandardMetrics.ms_v_env_cabintemp->SetValue(d[0] / 2.0 - 14);
+        StandardMetrics.ms_v_env_cabintemp->SetValue(5.0 / 9.0 * (d[0] - 32));
+        // StandardMetrics.ms_v_env_cabintemp->SetValue(d[0] / 2.0 - 14);
         }
+      break;
+    case 0x55a:
+      {
+      /* Motor, charge and inverter temperature guesses in Fahrenheit?
+       * http://productions.8dromeda.net/c55-leaf-inverter-protocol.html
+       */
+      StandardMetrics.ms_v_mot_temp->SetValue(5.0 / 9.0 * (d[1] - 32));
+      StandardMetrics.ms_v_inv_temp->SetValue(5.0 / 9.0 * (d[2] - 32));
+      }
       break;
     case 0x55b:
       {
@@ -1294,12 +1303,13 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
     case 0x510:
       /* This seems to be outside temperature with half-degree C accuracy.
        * It reacts a bit more rapidly than what we get from the battery.
+       * See msg 0x54c on EV CAN bus
        * App label: PEM
        */
-      if (d[7] != 0xff)
-        {
-        StandardMetrics.ms_v_inv_temp->SetValue(d[7] / 2.0 - 40);
-        }
+      //if (d[7] != 0xff)
+      //  {
+      //  StandardMetrics.ms_v_inv_temp->SetValue(d[7] / 2.0 - 40);
+      //  }
       break;
     case 0x5a9:
       {
