@@ -143,5 +143,44 @@ supply the password as ``apikey``:
 -  ``curl 'http://192.168.4.1/api/execute?apikey=password&type=js&command=print(Duktape.version)'``
 
 
+Web UI Development Framework
+----------------------------
+
+To simplify and speed up UI and plugin development, you can simply run a local web server from
+the ``dev`` directory of the ``ovms_webserver`` component source.
+
+Preparation: create your local git clone if you don't have one already::
+
+    > cd ~
+    > git clone https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3.git
+
+Local web server options: `List of static web servers <https://gist.github.com/willurd/5720255>`_
+
+Example::
+
+    > cd ~/Open-Vehicle-Monitoring-System-3/vehicle/OVMS.V3/components/ovms_webserver/dev
+    > python3 -m http.server 8000
+    Serving HTTP on 0.0.0.0 port 8000 (http://0.0.0.0:8000/) ...
+
+Now open the development framework in your browser at URI ``http://localhost:8000``. If that
+doesn't work, check your firewall settings for port 8000 on localhost.
+
+You should see the examples home. Edit ``index.htm`` to add custom menus, edit ``home.htm`` to
+add custom home buttons.
+
+Hint: to test your plugin for mobile devices, use the mobile emulation mode of your browser's
+development toolkit. Mobile mode allows to test small screen resolutions, rotation and touch
+events.
+
+A static local HTTP server allows to use all frontend features, but cannot emulate the backend API
+(command/script execution). If using a CGI capable HTTP server, you can also add a proxy handler
+for ``/api/execute`` that forwards the requests to your module by HTTP or SSH.
+
+If you want to add your results to a C++ module, use the tools ``mksrc`` and ``mksrcf`` to convert
+your HTML files into C++ compatible strings. ``mksrc`` is meant for static strings, ``mksrcf`` for
+strings with printf style placeholders.
+
+
+
 .. _w3schools.com: https://www.w3schools.com/
 .. _Highcharts.com: https://www.highcharts.com/
