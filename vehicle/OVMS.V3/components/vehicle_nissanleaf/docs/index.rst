@@ -43,7 +43,7 @@ Metrics
 =========================== ==============
 Item                        Support Status
 =========================== ==============
-SOC                         Yes (by default based on GIDS)
+SOC                         Yes (by default based on GIDS)[4]
 Range                       Yes (by default based on GIDS)
 GPS Location                Yes (from modem module GPS)
 Speed                       Yes (from vehicle speed PID)
@@ -66,6 +66,8 @@ Charge Interruption Alerts  Yes
 .. [2] Some HVAC Status Items have been only verified with 2013-2016 MY cars and will only work if the year is set in configuraiton. Also HVAC needs to be in ON position before powering down the vehicle for the metrics to work during pre-heat.
 
 .. [3] Lock/Unlock will work if CAR can bus is awake, this can be activated by turning on A/C
+
+.. [4] ZE0 (2011-2013) vehicles are required to choose SoC display from "relative to fixed value", "dashboard display" SoC method does not work with these vehicles. 
 ----------------------
 Remote Climate Control
 ----------------------
