@@ -92,6 +92,7 @@ User notes
 * Configure OVMS as described in the OVMS user manual.
 * Configure 'Model year' and 'Can write access' under VW e-Up (Komfort CAN) -> Features.
 * Register and connect OVMS to a server (as guided within the OVMS setup).
+* Turn the ignition in the car on and off to receive initial values (also needed after updates).
 * Install the OVMS app on your smartphone or tablet and configure it to connect to the server.
 * Enjoy :-)
 
@@ -145,7 +146,7 @@ ID	Conversion	     Unit    Function
 43D	d1 01 or 11		     TX: Working or sleeping in the ring     	
 5A7	d1 16			     TX: OCU AC blocking signal
 5A9	all 00			     TX: OCU heartbeat
-6E9	multiple msg		     TX: AC on / off signals                 	
+69E	multiple msg		     TX: AC on / off signals                 	
 	d0 C1 d6 xx	     °C      TX: set cabin temperature for 69C       	
 ======= ==================== ======= ===========================================
 

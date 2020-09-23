@@ -31,7 +31,7 @@
 
 /*
 ;    Subproject:    Integration of support for the VW e-UP
-;    Date:          14st September 2020
+;    Date:          23rd September 2020
 ;
 ;    Changes:
 ;    0.1.0  Initial code
@@ -95,15 +95,17 @@
 ;
 ;    0.3.8  Add lights, rear doors and trunk detection
 ;
+;    0.3.9  Corrected estimated range
+;
 ;    (C) 2020       Chris van der Meijden
 ;
-;    Big thanx to sharkcow, Dimitrie78 and E-Imo.
+;    Big thanx to sharkcow, Dimitrie78, E-Imo, Dexter and 'der kleine Nik'.
 */
 
 #include "ovms_log.h"
 static const char *TAG = "v-vweup-t26";
 
-#define VERSION "0.3.8"
+#define VERSION "0.3.9"
 
 #include <stdio.h>
 #include "pcp.h"
@@ -274,8 +276,12 @@ void OvmsVehicleVWeUpT26::IncomingFrameCan3(CAN_frame_t *p_frame)
         break;
 
     case 0x52D: // KM range left (estimated).
-        if (d[0] != 0xFE)
-            StandardMetrics.ms_v_bat_range_est->SetValue(d[0]);
+        if (d[0] != 0xFE) {
+           if (d[0] > 0x06) {
+              if (d[0] < 0x08) d[0] = 0x00;
+              StandardMetrics.ms_v_bat_range_est->SetValue(d[0]);
+           }
+        }
         break;
 
     case 0x65F: // VIN
@@ -339,13 +345,13 @@ void OvmsVehicleVWeUpT26::IncomingFrameCan3(CAN_frame_t *p_frame)
         break;
 
     case 0x381: // Vehicle locked
-        if (d[0] == 0x00)
+        if (d[0] > 0)
         {
-             StandardMetrics.ms_v_env_locked->SetValue(false);
+             StandardMetrics.ms_v_env_locked->SetValue(true);
         }
         else
         {
-             StandardMetrics.ms_v_env_locked->SetValue(true);
+             StandardMetrics.ms_v_env_locked->SetValue(false);
         }
         break;
 
@@ -365,13 +371,13 @@ void OvmsVehicleVWeUpT26::IncomingFrameCan3(CAN_frame_t *p_frame)
         break;
 
     case 0x531: // Head lights
-        if (d[0] == 0x00)
+        if (d[0] > 0)
         {
-             StandardMetrics.ms_v_env_headlights->SetValue(false);
+             StandardMetrics.ms_v_env_headlights->SetValue(true);
         }
         else
         {
-             StandardMetrics.ms_v_env_headlights->SetValue(true);
+             StandardMetrics.ms_v_env_headlights->SetValue(false);
         }
         break;
 
@@ -531,7 +537,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUpT26::RemoteCommandHandler(RemoteC
         signal_ok = false;
         return Success;
     }
-    return NotImplemented;
+    return Fail;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1208,6 +1214,42 @@ void OvmsVehicleVWeUpT26::CCOff()
     ESP_LOGI(TAG, "Wrote Climate Control Off Message to Comfort CAN.");
     vweup_cc_on = false;
 }
+
+OvmsVehicle::vehicle_command_t OvmsVehicleVWeUpT26::CommandLock(const char* pin)
+  {
+     ESP_LOGI(TAG, "CommandLock");
+     return NotImplemented;
+  }
+
+OvmsVehicle::vehicle_command_t OvmsVehicleVWeUpT26::CommandUnlock(const char* pin)
+  {
+     ESP_LOGI(TAG, "CommandUnlock");
+     return NotImplemented;
+  }
+
+OvmsVehicle::vehicle_command_t OvmsVehicleVWeUpT26::CommandActivateValet(const char* pin)
+  {
+     ESP_LOGI(TAG, "CommandActivateValet");
+     return NotImplemented;
+  }
+
+OvmsVehicle::vehicle_command_t OvmsVehicleVWeUpT26::CommandDeactivateValet(const char* pin)
+  {
+     ESP_LOGI(TAG, "CommandLDeactivateValet");
+     return NotImplemented;
+  }
+
+OvmsVehicle::vehicle_command_t OvmsVehicleVWeUpT26::CommandStartCharge()
+  {
+     ESP_LOGI(TAG, "CommandStartCharge");
+     return NotImplemented;
+  }
+
+OvmsVehicle::vehicle_command_t OvmsVehicleVWeUpT26::CommandStopCharge()
+  {
+     ESP_LOGI(TAG, "CommandStopCharge");
+     return NotImplemented;
+  }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleVWeUpT26::CommandHomelink(int button, int durationms)
   {
