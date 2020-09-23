@@ -38,7 +38,19 @@ void OvmsVehicleMgEv::IncomingPepsPoll(uint16_t pid, uint8_t* data, uint8_t leng
     switch (pid)
     {
         case pepsLockPid:
-            StandardMetrics.ms_v_env_locked->SetValue(!(data[3] & 1));
+            if (!(data[3] & 1))
+            {
+                StandardMetrics.ms_v_env_locked->SetValue(true);
+                // If the car is locked then all the doors must be closed
+                StandardMetrics.ms_v_door_fl->SetValue(false);
+                StandardMetrics.ms_v_door_fr->SetValue(false);
+                StandardMetrics.ms_v_door_rl->SetValue(false);
+                StandardMetrics.ms_v_door_rr->SetValue(false);
+            }
+            else
+            {
+                StandardMetrics.ms_v_env_locked->SetValue(false);
+            }
             break;
     }
 }

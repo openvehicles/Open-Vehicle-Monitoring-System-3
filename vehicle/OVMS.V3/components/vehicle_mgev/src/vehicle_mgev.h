@@ -36,6 +36,12 @@
 #include "ovms_metrics.h"
 #include "mg_poll_states.h"
 
+#include "freertos/timers.h"
+
+#include <vector>
+
+class OvmsCommand;
+
 class OvmsVehicleMgEv : public OvmsVehicle
 {
   public:
@@ -69,16 +75,22 @@ class OvmsVehicleMgEv : public OvmsVehicle
     canbus* IdToBus(int id);
     void ConfigurePollInterface(int bus);
 
+	static void ZombieTimer(TimerHandle_t timer);
+	void ZombieTimer();
+
+	static void SoftwareVersions(
+			int, OvmsWriter* writer, OvmsCommand*, int, const char* const*);
+	void SoftwareVersions(OvmsWriter* writer);
+
+	static void WakeUp(void* self);
+
     void IncomingPollFrame(CAN_frame_t* frame);
-    void SendSleepPoll(canbus* currentBus);
     bool SendPollMessage(canbus* bus, uint16_t id, uint8_t type, uint16_t pid);
 
     bool HasWoken(canbus* currentBus, uint32_t ticker);
-    void DeterminePollState(canbus* currentBus, bool wokenUp);
+    void DeterminePollState(canbus* currentBus, bool wokenUp, uint32_t ticker);
 	void SendAlarmSensitive(canbus* currentBus);
-    void SendKeepAlive(canbus* currentBus, uint32_t ticker);
     bool SendKeepAliveTo(canbus* currentBus, uint16_t id);
-    void KeepAliveCallback(const CAN_frame_t* frame, bool success);
 
     // mg_poll_bms.cpp
     void IncomingBmsPoll(uint16_t pid, uint8_t* data, uint8_t length);
@@ -111,31 +123,35 @@ class OvmsVehicleMgEv : public OvmsVehicle
 	{
 		Off,     // The CAN is off and we're not trying to wake it
 		Waking,  // Still off, but we are trying to wake it up
-		Zombie,  // The gateway is in it's weird Zombie mode
-		Awake    // CAN is functioning normally
+		Tester,  // The gateway is on, but only because we're keeping it awake with a
+		         // tester present message
+		Diagnostic,  // The gateway is on, but only because we're keeping it awake with
+		             // a diagnostic session.  This causes an error on the IPK, so best
+		             // not to keep in this state.
+		Awake    // CAN is awake because the car is on or tester present is being sent
 	};
 
     /// A temporary store for the VIN
     char m_vin[18];
-    // A callback for when the keep alive frame has been sent
-    std::function<void(const CAN_frame_t*, bool)> m_keepAliveCallback;
     /// The last ticker that we saw RX packets on
-    uint32_t m_packetTicker;
+    uint32_t m_rxPacketTicker;
     /// The last number of packets received on the CAN
     uint32_t m_rxPackets;
-    /// A count of tester present packets that have been sent
-    uint16_t m_presentSent;
-    /// Whether the car was unlocked when the keep-alive messages were started, if it
-    /// wasn't then the BCM will alarm even if we send a keep-alive
-    bool m_unlockedBeforeKeepAlive;
-    /// The head of the sleep poll list
-    const poll_pid_t* m_sleepPolls;
-    /// The current sleep poll item
-    const poll_pid_t* m_sleepPollsItem;
-    /// Whether the car seems to be in zombie mode
+    /// The last ticker that we saw a TX error on
+    uint32_t m_txErrorsTicker;
+    /// The last number of TX errors on the CAN
+    uint32_t m_txErrors;
+    /// The current state of the CAN to the gateway
     WakeState m_wakeState;
-    /// The monotonic time that the last asleep packet reply was received
-    uint32_t m_sleepPacketTime;
+    /// The ticker time the wake state was changed
+    uint32_t m_wakeTicker;
+    /// A timer used to send the zombie keep alive frame which is required every 250ms
+    TimerHandle_t m_zombieTimer;
+    /// The command registered when the car is made to query the software versions of the
+    /// different ECUs
+    OvmsCommand* m_cmdSoftver;
+    /// The responses from the software version queries
+    std::vector<std::pair<uint32_t, std::vector<char>>> m_versions;
 };
 
 #endif  // __VEHICLE_MGEV_H__

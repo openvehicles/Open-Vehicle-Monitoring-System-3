@@ -42,7 +42,11 @@ constexpr uint32_t bcmId = 0x740u;
 constexpr uint32_t gwmId = 0x710u;
 constexpr uint32_t tpmsId = 0x724u;
 constexpr uint32_t pepsId = 0x745u;
+constexpr uint32_t ipkId = 0x760u;
 constexpr uint32_t rxFlag = 0x8u;
+
+// Generic PIDs
+constexpr uint16_t softwarePid = 0xf194u;
 
 // BMS PIDs
 constexpr uint16_t batteryBusVoltagePid = 0xb041u;

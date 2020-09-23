@@ -19,15 +19,15 @@ Hardware                    Any OVMS v3 (or later) module. Vehicle support: 2019
 Vehicle Cable               Right hand OBDII cable (RHD), Left hand OBDII cable (LHD)
 GSM Antenna                 1000500 Open Vehicles OVMS GSM Antenna (or any compatible antenna)
 GPS Antenna                 1020200 Universal GPS Antenna (or any compatible antenna)
-SOC Display                 Yes (unless car woken by charger)
+SOC Display                 Yes
 Range Display               Yes
 Cabin Pre-heat/cool Control tba
 GPS Location                Yes (from modem module GPS)
 Speed Display               Yes
 Temperature Display         Yes
 BMS v+t Display             Yes
-TPMS Display                Pressure only
-Charge Status Display       Yes (unless car woken by charger)
+TPMS Display                Yes
+Charge Status Display       Yes
 Charge Interruption Alerts  Yes
 Charge Control              tba
 Lock/Unlock Vehicle         tba
@@ -65,39 +65,33 @@ The car is accessible over the OBD port when it is running (ignition on) and for
 
 The OBD port may be kept awake by using the "tester present" message to the gateway ECU.
 This keeps a lot of systems awake and draws roughly 5A on the 12V bus, so it's not a good
-idea to do.  The gateway can be woken if the car is unlocked by pinging the "tester
-present" message continuously every 100ms until it responds.  If the car is locked this
-simply causes the gateway to go into some kind of zombie proxy mode that isn't very
-useful.
+idea to do.
+
+If the car is unlocked, the gateway can be woken if the car is unlocked by pinging the
+"tester present" message continuously every 100ms until it responds.  If the car is
+locked this simply causes the gateway to go into some kind of zombie proxy mode that isn't
+very useful.  If the car is locked, the gateway may be woken by sending a session 2
+command every 250ms to the gateway.
 
 When the car is charging, the DCDC converter is active, so keeping the electronics awake
 isn't really an issue.
 
-Given all of this information it is safe to talk to the gateway:
+In addition, talking to the BCM when the car is locked will cause the car alarm to be set
+off unless it is sent the "tester present" frame while it is unlocked and continued to do
+so.
 
- - When the car is running
- - When the car is charging
+We have four different states:
 
-If the car is not running or charging we need to stop querying for the status in order to
-preserve the 12V battery.  When it is running we do not need to keep the car awake.  When
-it is charging we need to keep the car awake.  When transitioning between modes the car
-will wake up by itself, we can get a notification of this by pinging for the BMS status.
+ - Car unlocked but turned off
+ - Car unlocked and turned on
+ - Car locked
+ - Car charging (might be locked)
 
-In addition, if the BCM is queried when the car is in the locked state, then the alarm
-will be activated.  This is important, so we will only query this ECU when the car is
-running.  This can be mitigated by sending the "tester present" message which stops this
-from happening, but has the side effect of stopping the car from going to sleep.
-
-The states that we will poll in are therefore made up of:
-
- - Car is running
- - Car is charging (may be locked or unlocked)
- - Car is awake but not running or charging
- - Car is asleep
-
-We can easily transition to charging when the car states that it's charging and to running
-when it is turned on.  We need to be in the awake mode when the accessory is turned on and
-then transition from it to asleep after some time.
+In each of these states (except the car being turned on) the CAN may be off.  In the case
+of the car being locked or the car charging the gateway will turn on in a zombie state and
+it will need waking properly in order to get any useful information.  The safest mode to
+assume when we detect a CAN wake up is that the car is locked.  It can then transition to
+any of the other states depending on information gained.
 
 
 ----------------
@@ -116,6 +110,3 @@ Can we determine the charger voltage and current?
 
 Can we determine how many kWh have been delivered in the charge session?  We know when
 it starts and ends and the SoC, so we could infer it?
-
-Can we read the SoC if the car has been woken by the charger rather than starting
-immediately?
