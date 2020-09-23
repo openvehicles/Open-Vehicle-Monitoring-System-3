@@ -32,8 +32,52 @@
 #define __OVMS_HTTP_H__
 
 #include <string>
+#include "ovms_netmanager.h"
 #include "ovms_net.h"
 #include "ovms_buffer.h"
+
+class OvmsSyncHttpClient
+  {
+  public:
+    OvmsSyncHttpClient(bool buffer_body = true);
+    virtual ~OvmsSyncHttpClient();
+
+  public:
+    static void MongooseCallbackEntry(struct mg_connection *nc, int ev, void *ev_data);
+    virtual void MongooseCallback(struct mg_connection *nc, int ev, void *ev_data);
+    virtual void ConnectionLaunch();
+    virtual void ConnectionOk(struct mg_connection *nc);
+    virtual void ConnectionFailed(struct mg_connection *nc);
+    virtual void ConnectionTimeout(struct mg_connection *nc);
+    virtual void ConnectionClosed(struct mg_connection *nc);
+    virtual size_t ConnectionData(struct mg_connection *nc, uint8_t* data, size_t len);
+    virtual void ConnectionHeaders();
+    virtual void ConnectionBodyData(uint8_t* data, size_t len);
+
+  public:
+    bool Request(std::string url, const char* method = "GET");
+    std::string GetBodyAsString();
+    OvmsBuffer* GetBodyAsBuffer();
+    int GetResponseCode();
+    std::string GetError();
+    void Reset();
+
+  protected:
+    bool m_buffer_body;
+    QueueHandle_t m_waitcompletion;
+    struct mg_connection *m_mgconn;
+    OvmsBuffer* m_buf;
+    std::string m_body;
+    std::string m_url;
+    std::string m_server;
+    std::string m_path;
+    bool m_tls;
+    const char* m_method;
+    bool m_inheaders;
+    size_t m_bodysize;
+    int m_responsecode;
+    std::string m_error;
+  };
 
 class OvmsHttpClient : public OvmsNetTcpConnection
   {
