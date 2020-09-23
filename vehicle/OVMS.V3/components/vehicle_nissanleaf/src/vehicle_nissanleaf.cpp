@@ -738,15 +738,28 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
   switch (p_frame->MsgID)
     {
     case 0x1da:
-    {
+    { // Motor and inverter messages
       // Signed value, negative for reverse
       // Values 0x7fff and 0x7ffe are seen during turning on of car
-      int16_t nl_rpm = (int16_t)( d[4] << 8 | d[5] );
-      if (nl_rpm != 0x7fff &&
-          nl_rpm != 0x7ffe)
-        {
-        StandardMetrics.ms_v_mot_rpm->SetValue(nl_rpm/2);
+      // http://productions.8dromeda.net/c55-leaf-inverter-protocol.html
+      // d[2] bits[0-2] used, unclear what bits[3-7] represent
+      // d[4] bit[7] can be 0 or 1
+      int16_t nl_mot_torq = (int16_t)( (d[2] & 0x07) << 8 | d[3] ); 
+      int16_t nl_rpm =      (int16_t)( d[4] << 8 | d[5] );
+      // int16_t nl_inv_volt = (int16_t)( d[0] ) * 2; not currently used
+      if ( (d[2] & 0x04) == 0x04 ) // indicates negative value 
+        { // pad leading 1s for 2s complement signed
+        nl_mot_torq = nl_mot_torq | 0xf800;
         }
+      if ( (d[4] & 0x40) == 0x40 ) // indicates negative value 
+        { // pad leading 1s for 2s complement signed
+        nl_rpm = nl_rpm | 0x8000;
+        }
+      nl_rpm = nl_rpm / 2;
+      nl_mot_torq = nl_mot_torq / 2; // guess based on rpm
+      StandardMetrics.ms_v_mot_rpm  ->SetValue(nl_rpm);
+      // torque (Nm) to power (W) = 2 x pi / 60 * rpm * torque
+      StandardMetrics.ms_v_inv_power->SetValue(nl_rpm * nl_mot_torq * 0.10472 / 1000.0);
     }
       break;
     case 0x1db:
@@ -1533,22 +1546,27 @@ void OvmsVehicleNissanLeaf::Ticker1(uint32_t ticker)
  */
 void OvmsVehicleNissanLeaf::Ticker10(uint32_t ticker)
   {
-    // Update any derived values
-    // Range and Charging both mainly depend on SOC, which will change 1% in less than a minute when fast-charging.
-    HandleRange();
-    HandleCharging();
-    // FIXME
-    // detecting that on is stale and therefor should turn off probably shouldn't
-    // be done like this
-    // perhaps there should be a car on-off state tracker and event generator in
-    // the core framework?
-    // perhaps interested code should be able to subscribe to "onChange" and
-    // "onStale" events for each metric?
-    ESP_LOGD(TAG, "Poll state: %d", m_poll_state);
-    if (StandardMetrics.ms_v_env_awake->AsBool() && StandardMetrics.ms_v_env_awake->IsStale())
-      {
-      StandardMetrics.ms_v_env_awake->SetValue(false);
-      }
+  // Update any derived values
+  // Range and Charging both mainly depend on SOC, which will change 1% in less than a minute when fast-charging.
+  HandleRange();
+  HandleCharging();
+  if (StandardMetrics.ms_v_bat_12v_voltage->AsFloat() > 13)
+    {
+    StandardMetrics.ms_v_env_charging12v->SetValue(true);  
+    }
+  else StandardMetrics.ms_v_env_charging12v->SetValue(false);
+  // FIXME
+  // detecting that on is stale and therefor should turn off probably shouldn't
+  // be done like this
+  // perhaps there should be a car on-off state tracker and event generator in
+  // the core framework?
+  // perhaps interested code should be able to subscribe to "onChange" and
+  // "onStale" events for each metric?
+  ESP_LOGD(TAG, "Poll state: %d", m_poll_state);
+  if (StandardMetrics.ms_v_env_awake->AsBool() && StandardMetrics.ms_v_env_awake->IsStale())
+    {
+    StandardMetrics.ms_v_env_awake->SetValue(false);
+    }
   }
 
 /**
@@ -1566,8 +1584,16 @@ void OvmsVehicleNissanLeaf::HandleEnergy()
     StandardMetrics.ms_v_bat_energy_recd->SetValue( StandardMetrics.ms_v_bat_energy_recd->AsFloat() + m_cum_energy_recd_wh / 1000.0, kWh);
     m_cum_energy_used_wh = 0.0f;
     m_cum_energy_recd_wh = 0.0f;
+    // Calculate inverter efficiency
+    float m_batt_power   = StandardMetrics.ms_v_bat_power->AsFloat(0);
+    float m_inv_power    = StandardMetrics.ms_v_inv_power->AsFloat(0);
+    if (m_batt_power != 0)
+      { // Will include accessory power TODO subtract from battery power
+      StandardMetrics.ms_v_inv_efficiency->SetValue(abs(m_inv_power / m_batt_power) * 100.0);
+      }
     }
-}
+  else StandardMetrics.ms_v_inv_efficiency->SetValue(100);
+  }
 
 /**
  * Update derived metrics when charging
@@ -1629,7 +1655,7 @@ void OvmsVehicleNissanLeaf::HandleCharging()
   StandardMetrics.ms_v_charge_power->SetValue(m_charge_current * m_charge_voltage / 1000.0);
   float m_charge_power   = StandardMetrics.ms_v_charge_power->AsFloat();
   float m_batt_power     = StandardMetrics.ms_v_bat_power->AsFloat();
-  if (m_charge_power > 0)
+  if (m_charge_power != 0)
     {
     StandardMetrics.ms_v_charge_efficiency->SetValue(abs(m_batt_power / m_charge_power) * 100.0);
     }
