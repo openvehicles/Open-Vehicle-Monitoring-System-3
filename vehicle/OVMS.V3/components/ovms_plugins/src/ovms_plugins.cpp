@@ -668,41 +668,25 @@ bool OvmsPlugin::Download()
     url.append("/");
     url.append(p->m_path);
 
-    OvmsHttpClient http(url);
-    if (!http.IsOpen())
+    OvmsSyncHttpClient http;
+    if (!http.Request(url))
       {
-      ESP_LOGE(TAG, "Element %s: HTTP request failed: %s",p->m_path.c_str(), url.c_str());
+      ESP_LOGE(TAG, "Element %s: HTTP request failed: %s",p->m_path.c_str(), http.GetError().c_str());
       return false;
       }
 
-    size_t expected = http.BodySize();
-    if (expected == 0)
-      {
-      ESP_LOGE(TAG, "Element: %s: HTTP response zero sized", p->m_path.c_str());
-      return false;
-      }
-
-    char* body = new char[expected];
-    size_t downloaded = http.BodyRead(body, expected);
-    if (downloaded != expected)
-      {
-      ESP_LOGE(TAG, "Element: %s: HTTP body size %d doesn't match %d",
-        p->m_name.c_str(), downloaded, expected);
-      delete [] body;
-      return false;
-      }
+    std::string body = http.GetBodyAsString();
 
     std::string dest(pluginpath);
     dest.append("/");
     dest.append(p->m_path);
     FILE *pf = fopen(dest.c_str(), "w");
-    size_t written = fwrite(body, 1, expected, pf);
+    size_t written = fwrite(body.c_str(), 1, body.length(), pf);
     fclose(pf);
-    delete [] body;
-    if (written != expected)
+    if (written != body.length())
       {
       ESP_LOGE(TAG, "Element: %s: VFS body size %d doesn't match %d",
-        p->m_path.c_str(), written, expected);
+        p->m_path.c_str(), written, body.length());
       return false;
       }
 
@@ -754,20 +738,20 @@ bool OvmsRepository::UpdateRepo()
   std::string url = m_path;
   url.append("/plugins.rev");
 
-  OvmsHttpClient http(url);
-  if (!http.IsOpen())
+  OvmsSyncHttpClient http;
+  if (!http.Request(url))
     {
-    ESP_LOGE(TAG, "Repo %s: HTTP request failed: %s",m_name.c_str(), url.c_str());
+    ESP_LOGE(TAG, "Repo %s: HTTP request failed: %s",m_name.c_str(), http.GetError().c_str());
     return false;
     }
-
-  if (!http.BodyHasLine())
+  OvmsBuffer *result = http.GetBodyAsBuffer();
+  if (!result->HasLine())
     {
     ESP_LOGE(TAG, "Repo %s:  HTTP response invalid",m_name.c_str());
     return false;
     }
 
-  std::string version = http.BodyReadLine();
+  std::string version = result->ReadLine();
 
   if (version.compare(m_version) == 0)
     {
@@ -776,27 +760,23 @@ bool OvmsRepository::UpdateRepo()
     }
 
   ESP_LOGI(TAG, "Plugin repository %s has changed, retrieving latest version", m_name.c_str());
-  http.Disconnect();
   url = m_path;
   url.append("/plugins.json");
+  http.Reset();
   if (!http.Request(url))
     {
-    ESP_LOGE(TAG, "Repo %s: HTTP request failed: %s",m_name.c_str(),url.c_str());
+    ESP_LOGE(TAG, "Repo %s: HTTP request failed: %s",m_name.c_str(),http.GetError().c_str());
     return false;
     }
 
-  size_t bodysize = http.BodySize();
-  char* buf = new char[bodysize+1];
-  http.BodyRead(buf,bodysize);
-  buf[bodysize] = 0;
-  std::string body(buf);
-  delete [] buf;
-  ESP_LOGD(TAG, "Retrieved %d byte(s) of store metadata",bodysize);
+  std::string body = http.GetBodyAsString();
+    ESP_LOGD(TAG, "Retrieved %d byte(s) of store metadata",body.length());
 
-  cJSON *json = cJSON_Parse(body.c_str());
+  const char *bp = body.c_str();
+  cJSON *json = cJSON_Parse(bp);
   if (json == NULL)
     {
-    ESP_LOGE(TAG, "Repo %s: Could not parse metadata", m_name.c_str());
+    ESP_LOGE(TAG, "Repo %s: Could not parse metadata (%d)", m_name.c_str(), cJSON_GetErrorPtr()-bp);
     return false;
     }
 

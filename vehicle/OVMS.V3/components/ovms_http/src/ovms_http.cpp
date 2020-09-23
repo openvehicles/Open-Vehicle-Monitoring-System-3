@@ -253,12 +253,14 @@ void OvmsSyncHttpClient::ConnectionClosed(struct mg_connection *nc)
     }
   else
     {
-    if ((m_body.length() != m_bodysize)&&(m_error.empty()))
+    if ((m_buffer_body)&&(m_body.length() != m_bodysize)&&(m_error.empty()))
       {
       ESP_LOGE(TAG,"OvmsSyncHttpClient: expected %d, actual %d", m_bodysize, m_body.length());
       m_error = std::string("Premature connection close");
       }
     }
+
+  if (!m_buffer_body) ConnectionBodyFinish(nc);
 
   if (m_waitcompletion != NULL)
     {
@@ -289,7 +291,7 @@ size_t OvmsSyncHttpClient::ConnectionData(struct mg_connection *nc, uint8_t* dat
       len = 0;
       }
 
-    ConnectionHeaders();
+    ConnectionHeaders(nc);
     }
 
   if (! m_inheaders)
@@ -302,13 +304,13 @@ size_t OvmsSyncHttpClient::ConnectionData(struct mg_connection *nc, uint8_t* dat
         {
         uint8_t* buf = new uint8_t[bu];
         m_buf->Pop(bu,buf);
-        ConnectionBodyData(buf,bu);
+        ConnectionBodyData(nc,buf,bu);
         delete [] buf;
         }
       if (len > 0)
         {
         //ESP_LOGD(TAG, "OvmsSyncHttpClient:: body: append %d bytes",len);
-        ConnectionBodyData(data,len);
+        ConnectionBodyData(nc,data,len);
         consumed += len;
         }
       }
@@ -336,7 +338,7 @@ size_t OvmsSyncHttpClient::ConnectionData(struct mg_connection *nc, uint8_t* dat
   return consumed;
   }
 
-void OvmsSyncHttpClient::ConnectionHeaders()
+void OvmsSyncHttpClient::ConnectionHeaders(struct mg_connection *nc)
   {
   int k = m_buf->HasLine();
   while ((m_inheaders)&&(k >= 0))
@@ -346,6 +348,7 @@ void OvmsSyncHttpClient::ConnectionHeaders()
     if (k == 0)
       {
       m_inheaders = false;
+      if (!m_buffer_body) ConnectionBodyStart(nc);
       return;
       }
     else
@@ -368,7 +371,15 @@ void OvmsSyncHttpClient::ConnectionHeaders()
     }
   }
 
-void OvmsSyncHttpClient::ConnectionBodyData(uint8_t* data, size_t len)
+void OvmsSyncHttpClient::ConnectionBodyStart(struct mg_connection *nc)
+  {
+  }
+
+void OvmsSyncHttpClient::ConnectionBodyData(struct mg_connection *nc, uint8_t* data, size_t len)
+  {
+  }
+
+void OvmsSyncHttpClient::ConnectionBodyFinish(struct mg_connection *nc)
   {
   }
 
@@ -408,6 +419,16 @@ std::string OvmsSyncHttpClient::GetError()
   return m_error;
   }
 
+bool OvmsSyncHttpClient::HasError()
+  {
+  return (m_error.length() != 0);
+  }
+
+size_t OvmsSyncHttpClient::GetBodySize()
+  {
+  return m_bodysize;
+  }
+
 void OvmsSyncHttpClient::Reset()
   {
   if (m_buf)
@@ -418,206 +439,4 @@ void OvmsSyncHttpClient::Reset()
   m_inheaders = false;
   m_bodysize = 0;
   m_responsecode = 0;
-  }
-
-
-////////////////////////////////////////////////////////////////////////////////
-// OvmsHttpClient
-//
-// Obsolete
-
-OvmsHttpClient::OvmsHttpClient()
-  {
-  m_buf = NULL;
-  m_bodysize = 0;
-  m_responsecode = 0;
-  }
-
-OvmsHttpClient::OvmsHttpClient(std::string url, const char* method)
-  {
-  m_buf = NULL;
-  Request(url, method);
-  }
-
-OvmsHttpClient::~OvmsHttpClient()
-  {
-  if (m_buf)
-    {
-    delete m_buf;
-    m_buf = NULL;
-    }
-  }
-
-bool OvmsHttpClient::Request(std::string url, const char* method)
-  {
-  m_bodysize = 0;
-  m_responsecode = 0;
-
-  // First, split URL into server and path components
-  if (url.compare(0, 7, "http://", 7) == 0)
-    {
-    url = url.substr(7);
-    }
-  std::string server;
-  std::string path;
-  std::string service;
-  size_t delim = url.find('/');
-  if (delim==std::string::npos)
-    {
-    server = url;
-    path = std::string("");
-    }
-  else
-    {
-    server = url.substr(0,delim);
-    path = url.substr(delim);
-    }
-  delim = server.find(':');
-  if (delim==std::string::npos)
-    {
-    service = std::string("80");
-    }
-  else
-    {
-    service = server.substr(delim+1);
-    server = server.substr(0,delim);
-    }
-
-  Connect(server.c_str(), service.c_str());
-  if (!IsOpen())
-    {
-    return false;
-    }
-
-  // Now, we need to send the HTTP request...
-  // ESP_LOGI(TAG, "Server is %s, path is %s",server.c_str(),path.c_str());
-  std::string req(method);
-  req.append(" ");
-  req.append(path);
-  req.append(" HTTP/1.0\r\nHost: ");
-  req.append(server);
-  req.append("\r\nUser-Agent: ");
-  req.append(get_user_agent());
-  req.append("\r\n\r\n");
-  if (Write(req.c_str(), req.length()) < 0)
-    {
-    ESP_LOGE(TAG, "Unable to write to server connection");
-    Disconnect();
-    return false;
-    }
-
-  m_buf = new OvmsBuffer(1024);
-  bool inheaders = true;
-  // ESP_LOGI(TAG,"Reading headers...");
-  while((inheaders)&&(m_buf->PollSocket(m_sock, 10000) >= 0))
-    {
-    // ESP_LOGI(TAG, "Now buffered %d bytes",m_buf->UsedSpace());
-    int k = m_buf->HasLine();
-    while ((inheaders)&&(k >= 0))
-      {
-      if (k == 0)
-        {
-        inheaders = 0;
-        }
-      else
-        {
-        // ESP_LOGI(TAG, "Got response %s",m_buf->ReadLine().c_str());
-        std::string header = m_buf->ReadLine();
-        if (header.compare(0,15,"Content-Length:") == 0)
-          {
-          m_bodysize = atoi(header.substr(15).c_str());
-          }
-        if (header.compare(0,5,"HTTP/") == 0)
-          {
-          size_t space = header.find(' ');
-          if (space!=std::string::npos)
-            {
-            m_responsecode = atoi(header.substr(space+1).c_str());
-            }
-          }
-        k = m_buf->HasLine();
-        }
-      }
-    }
-  if (inheaders)
-    {
-    ESP_LOGE(TAG, "Error: Premature end of server response");
-    Disconnect();
-    return false;
-    }
-
-  // Process the separator line
-  // m_buf->Diagnostics();
-  m_buf->ReadLine(); // Discard the empty header/body line
-
-  return true;
-  }
-
-void OvmsHttpClient::Disconnect()
-  {
-  if (m_buf != NULL)
-    {
-    delete m_buf;
-    m_buf = NULL;
-    }
-  OvmsNetTcpConnection::Disconnect();
-  }
-
-size_t OvmsHttpClient::BodyRead(void *buf, size_t nbyte)
-  {
-  // char *x = (char*)buf;
-  if ((m_buf == NULL)||(m_buf->UsedSpace() == 0))
-    {
-    size_t n = Read(buf,nbyte);
-    // ESP_LOGI(TAG, "BodyRead got %d bytes direct (%02x %02x %02x %02x)",n,x[0],x[1],x[2],x[3]);
-    return n;
-    }
-  else
-    {
-    size_t n = m_buf->Pop(nbyte,(uint8_t*)buf);
-    // ESP_LOGI(TAG, "Body Read got %d bytes from buf (%d left) (%02x %02x %02x %02x)",n,m_buf->UsedSpace(),x[0],x[1],x[2],x[3]);
-    if (m_buf->UsedSpace() == 0)
-      {
-      delete m_buf;
-      m_buf = NULL;
-      }
-    return n;
-    }
-  }
-
-int OvmsHttpClient::BodyHasLine()
-  {
-  if (m_buf == NULL)
-    return -1;
-
-  if (m_buf->HasLine()<0)
-    {
-    m_buf->PollSocket(m_sock, 10000);
-    // m_buf->Diagnostics();
-    }
-  return m_buf->HasLine();
-  }
-
-std::string OvmsHttpClient::BodyReadLine()
-  {
-  if (m_buf == NULL)
-    return std::string("");
-
-  if (m_buf->HasLine()<0)
-    {
-    m_buf->PollSocket(m_sock, 10000);
-    // m_buf->Diagnostics();
-    }
-
-  return m_buf->ReadLine();
-  }
-
-size_t OvmsHttpClient::BodySize()
-  {
-  return m_bodysize;
-  }
-
-int OvmsHttpClient::ResponseCode()
-  {
-  return m_responsecode;
   }

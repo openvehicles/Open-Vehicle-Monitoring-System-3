@@ -33,7 +33,6 @@
 
 #include <string>
 #include "ovms_netmanager.h"
-#include "ovms_net.h"
 #include "ovms_buffer.h"
 
 class OvmsSyncHttpClient
@@ -51,8 +50,10 @@ class OvmsSyncHttpClient
     virtual void ConnectionTimeout(struct mg_connection *nc);
     virtual void ConnectionClosed(struct mg_connection *nc);
     virtual size_t ConnectionData(struct mg_connection *nc, uint8_t* data, size_t len);
-    virtual void ConnectionHeaders();
-    virtual void ConnectionBodyData(uint8_t* data, size_t len);
+    virtual void ConnectionHeaders(struct mg_connection *nc);
+    virtual void ConnectionBodyStart(struct mg_connection *nc);
+    virtual void ConnectionBodyData(struct mg_connection *nc, uint8_t* data, size_t len);
+    virtual void ConnectionBodyFinish(struct mg_connection *nc);
 
   public:
     bool Request(std::string url, const char* method = "GET");
@@ -60,6 +61,8 @@ class OvmsSyncHttpClient
     OvmsBuffer* GetBodyAsBuffer();
     int GetResponseCode();
     std::string GetError();
+    bool HasError();
+    size_t GetBodySize();
     void Reset();
 
   protected:
@@ -77,30 +80,6 @@ class OvmsSyncHttpClient
     size_t m_bodysize;
     int m_responsecode;
     std::string m_error;
-  };
-
-class OvmsHttpClient : public OvmsNetTcpConnection
-  {
-  public:
-    OvmsHttpClient();
-    OvmsHttpClient(std::string url, const char* method = "GET");
-    virtual ~OvmsHttpClient();
-
-  public:
-    virtual void Disconnect();
-
-  public:
-    bool Request(std::string url, const char* method = "GET");
-    size_t BodyRead(void *buf, size_t nbyte);
-    int BodyHasLine();
-    std::string BodyReadLine();
-    size_t BodySize();
-    int ResponseCode();
-
-  protected:
-    OvmsBuffer* m_buf;
-    size_t m_bodysize;
-    int m_responsecode;
   };
 
 #endif //#ifndef __OVMS_HTTP_H__
