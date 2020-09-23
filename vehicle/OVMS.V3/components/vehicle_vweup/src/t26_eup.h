@@ -67,6 +67,12 @@ class OvmsVehicleVWeUpT26 : public OvmsVehicle
   public:
     vehicle_command_t CommandHomelink(int button, int durationms=1000);
     vehicle_command_t CommandClimateControl(bool enable);
+    vehicle_command_t CommandLock(const char* pin);
+    vehicle_command_t CommandUnlock(const char* pin);
+    vehicle_command_t CommandStartCharge();
+    vehicle_command_t CommandStopCharge();
+    vehicle_command_t CommandActivateValet(const char* pin);
+    vehicle_command_t CommandDeactivateValet(const char* pin);
     void RemoteCommandTimer();
     void CcDisableTimer();
     bool vin_part1;
@@ -107,6 +113,7 @@ class OvmsVehicleVWeUpT26 : public OvmsVehicle
     void CCOn();
     void CCOnP();
     void CCOff();
+
     static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
     static void WebCfgClimate(PageEntry_t& p, PageContext_t& c);
     virtual vehicle_command_t CommandWakeup();
