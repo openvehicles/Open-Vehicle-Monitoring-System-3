@@ -57,7 +57,7 @@ class OvmsNetTcpClient: public OvmsMongooseWrapper
     virtual void Mongoose(struct mg_connection *nc, int ev, void *ev_data);
 
   public:
-    bool Connect(std::string dest, struct mg_connect_opts opts);
+    bool Connect(std::string dest, struct mg_connect_opts opts, double timeout = 0.0);
     void Disconnect();
     size_t SendData(uint8_t *data, size_t length);
     bool IsConnected();

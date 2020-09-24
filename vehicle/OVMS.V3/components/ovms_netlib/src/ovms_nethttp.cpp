@@ -56,7 +56,7 @@ OvmsNetHttpAsyncClient::~OvmsNetHttpAsyncClient()
     }
   }
 
-bool OvmsNetHttpAsyncClient::Request(std::string url, const char* method)
+bool OvmsNetHttpAsyncClient::Request(std::string url, const char* method, double timeout)
   {
   m_url = url;
   m_method = method;
@@ -114,7 +114,7 @@ bool OvmsNetHttpAsyncClient::Request(std::string url, const char* method)
     }
 
   m_httpstate = NetHttpConnecting;
-  return Connect(m_dest, opts);
+  return Connect(m_dest, opts, timeout);
   }
 
 int OvmsNetHttpAsyncClient::ResponseCode()

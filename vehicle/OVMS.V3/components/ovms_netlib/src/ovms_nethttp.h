@@ -54,7 +54,7 @@ class OvmsNetHttpAsyncClient: public OvmsNetTcpClient
       };
 
   public:
-    bool Request(std::string url, const char* method = "GET");
+    bool Request(std::string url, const char* method = "GET", double timeout = 0.0);
     int ResponseCode();
     size_t BodySize();
     OvmsNetHttpAsyncClient::NetHttpState GetState();
