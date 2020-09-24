@@ -49,6 +49,10 @@ static const char *TAG = "ovms-duktape";
 #include "ovms_netmanager.h"
 #include "ovms_tls.h"
 
+#ifdef CONFIG_OVMS_COMP_PLUGINS
+#include "ovms_plugins.h"
+#endif // #ifdef CONFIG_OVMS_COMP_PLUGINS
+
 OvmsDuktape MyDuktape __attribute__ ((init_priority (1000)));
 OvmsWriter* duktapewriter = NULL;
 
@@ -484,15 +488,29 @@ static duk_ret_t DukOvmsLoadModule(duk_context *ctx)
 
   ESP_LOGD(TAG,"load_cb: id:'%s', filename:'%s'", module_id, filename);
 
-  std::string path = std::string("/store/scripts/");
-  path.append(filename);
-  FILE* sf = fopen(path.c_str(), "r");
-  if (sf == NULL)
+  // Resolve the module path
+  std::string path;
+  FILE* sf;
+  if (strncmp(filename,"plugin/",7)==0)
     {
-    path = std::string("/sd/scripts/");
-    path.append(filename);
+    path = std::string("/store/plugins/");
+    path.append(filename+7);
     sf = fopen(path.c_str(), "r");
     }
+  else
+    {
+    path = std::string("/store/scripts/");
+    path.append(filename);
+    sf = fopen(path.c_str(), "r");
+    if (sf == NULL)
+      {
+      path = std::string("/sd/scripts/");
+      path.append(filename);
+      sf = fopen(path.c_str(), "r");
+      }
+    }
+
+  // Go ahead and load the module
   if (sf == NULL)
     {
     duk_error(ctx, DUK_ERR_TYPE_ERROR, "load_cb: cannot find module: %s", module_id);
@@ -1273,6 +1291,11 @@ void OvmsDuktape::DukTapeInit()
       ++itm;
       }
     }
+
+  #ifdef CONFIG_OVMS_COMP_PLUGINS
+  // Plugins
+  MyPluginStore.LoadEnabledModules();
+  #endif // #ifdef CONFIG_OVMS_COMP_PLUGINS
 
   // ovmsmain
   FILE* sf = fopen("/store/scripts/ovmsmain.js", "r");
