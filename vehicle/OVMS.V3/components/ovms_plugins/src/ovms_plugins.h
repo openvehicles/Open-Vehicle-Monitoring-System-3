@@ -53,7 +53,8 @@ typedef enum
 
 typedef enum
   {
-  EL_MODULE = 0,                // A javascript module
+  EL_JSON = 0,                  // The JSON plugin descriptor
+  EL_MODULE,                    // A javascript module
   EL_WEB_PAGE,                  // A web page
   EL_WEB_HOOK,                  // A web hook
   EL_WEB_RSC                    // Other web resources
@@ -81,6 +82,7 @@ class OvmsPluginElement
   {
   public:
     OvmsPluginElement();
+    OvmsPluginElement(plugin_element_type_t type, std::string name, std::string path);
     ~OvmsPluginElement();
 
   public:
@@ -107,7 +109,8 @@ class OvmsPlugin
     bool LoadJSON(std::string repo, cJSON *json);
     void Summarise(OvmsWriter* writer);
     bool Download();
-    bool Install();
+    bool Enable();
+    bool Disable();
 
   public:
     std::string m_repo;
@@ -154,6 +157,9 @@ class OvmsPluginStore
     bool LoadRepoPlugins();
 
   public:
+    void LoadEnabledModules();
+
+  public:
     void Summarise(OvmsWriter* writer);
     void RepoList(OvmsWriter* writer);
     void RepoRefresh(OvmsWriter* writer);
@@ -164,6 +170,8 @@ class OvmsPluginStore
     void PluginInstall(OvmsWriter* writer, std::string plugin);
     void PluginRemove(OvmsWriter* writer, std::string plugin);
     void PluginUpdate(OvmsWriter* writer, std::string plugin);
+    void PluginEnable(OvmsWriter* writer, std::string plugin);
+    void PluginDisable(OvmsWriter* writer, std::string plugin);
     void PluginUpdateAll(OvmsWriter* writer);
 
   public:

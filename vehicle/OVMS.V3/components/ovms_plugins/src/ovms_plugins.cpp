@@ -43,6 +43,7 @@ static const char *TAG = "pluginstore";
 #include "ovms_http.h"
 #include "ovms_buffer.h"
 #include "ovms_netmanager.h"
+#include "ovms_duktape.h"
 
 OvmsPluginStore MyPluginStore __attribute__ ((init_priority (7100)));
 
@@ -91,6 +92,16 @@ void plugin_remove(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
   MyPluginStore.PluginRemove(writer,std::string(argv[0]));
   }
 
+void plugin_enable(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  MyPluginStore.PluginEnable(writer,std::string(argv[0]));
+  }
+
+void plugin_disable(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  MyPluginStore.PluginDisable(writer,std::string(argv[0]));
+  }
+
 void plugin_update(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   if (argc == 0)
@@ -112,6 +123,8 @@ OvmsPluginStore::OvmsPluginStore()
   cmd_plugin->RegisterCommand("show","Show plugin details",plugin_show,"<plugin>",1,1);
   cmd_plugin->RegisterCommand("install","Install a plugin",plugin_install,"<plugin>",1,1);
   cmd_plugin->RegisterCommand("remove","Remove a plugin",plugin_remove,"<plugin>",1,1);
+  cmd_plugin->RegisterCommand("enable","Enable a plugin",plugin_enable,"<plugin>",1,1);
+  cmd_plugin->RegisterCommand("disable","Disable a plugin",plugin_disable,"<plugin>",1,1);
   cmd_plugin->RegisterCommand("update","Update all or a specific plugin",plugin_update,"[plugin]",1,1);
 
   OvmsCommand* cmd_repo = cmd_plugin->RegisterCommand("repo","PLUGIN Repositories", repo_list, "", 0, 0);
@@ -256,6 +269,8 @@ void OvmsPluginStore::PluginShow(OvmsWriter* writer, std::string plugin)
 
 void OvmsPluginStore::PluginInstall(OvmsWriter* writer, std::string plugin)
   {
+  MyPluginStore.LoadRepoPlugins();
+
   OvmsPlugin* p = FindPlugin(plugin);
   if (p == NULL)
     {
@@ -269,9 +284,9 @@ void OvmsPluginStore::PluginInstall(OvmsWriter* writer, std::string plugin)
     return;
     }
 
-  if (!p->Install())
+  if (!p->Enable())
     {
-    writer->printf("Error: Plugin '%s' could not be installed\n", plugin.c_str());
+    writer->printf("Error: Plugin '%s' could not be enabled\n", plugin.c_str());
     return;
     }
 
@@ -281,14 +296,67 @@ void OvmsPluginStore::PluginInstall(OvmsWriter* writer, std::string plugin)
 
 void OvmsPluginStore::PluginRemove(OvmsWriter* writer, std::string plugin)
   {
+  MyPluginStore.LoadRepoPlugins();
+
+  writer->puts("Error: Not yet implemented");
+  }
+
+void OvmsPluginStore::PluginEnable(OvmsWriter* writer, std::string plugin)
+  {
+  MyPluginStore.LoadRepoPlugins();
+
+  OvmsPlugin* p = FindPlugin(plugin);
+
+  if (p == NULL)
+    {
+    writer->printf("Error: Plugin '%s' not found\n", plugin.c_str());
+    return;
+    }
+
+  if (!p->Enable())
+    {
+    writer->printf("Error: Plugin '%s' could not be enabled\n", plugin.c_str());
+    return;
+    }
+
+  writer->printf("Plugin: %s enabled\n", plugin.c_str());
+  writer->puts("(you should 'script reload', or reboot, to start it)");
+  }
+
+void OvmsPluginStore::PluginDisable(OvmsWriter* writer, std::string plugin)
+  {
+  MyPluginStore.LoadRepoPlugins();
+
+  OvmsPlugin* p = FindPlugin(plugin);
+
+  if (p == NULL)
+    {
+    writer->printf("Error: Plugin '%s' not found\n", plugin.c_str());
+    return;
+    }
+
+  if (!p->Disable())
+    {
+    writer->printf("Error: Plugin '%s' could not be disabled\n", plugin.c_str());
+    return;
+    }
+
+  writer->printf("Plugin: %s disabled\n", plugin.c_str());
+  writer->puts("(you should 'script reload', or reboot, to stop it)");
   }
 
 void OvmsPluginStore::PluginUpdate(OvmsWriter* writer, std::string plugin)
   {
+  MyPluginStore.LoadRepoPlugins();
+
+  writer->puts("Error: Not yet implemented");
   }
 
 void OvmsPluginStore::PluginUpdateAll(OvmsWriter* writer)
   {
+  MyPluginStore.LoadRepoPlugins();
+
+  writer->puts("Error: Not yet implemented");
   }
 
 bool OvmsPluginStore::LoadRepoPlugins()
@@ -346,6 +414,85 @@ OvmsPlugin* OvmsPluginStore::FindPlugin(std::string plugin)
   else
     {
     return search->second;
+    }
+  }
+
+void OvmsPluginStore::LoadEnabledModules()
+  {
+  const ConfigParamMap* enabled = MyConfig.GetParamMap("plugin.enabled");
+  if (enabled != NULL)
+    {
+    ESP_LOGI(TAG, "Loading enabled plugins");
+    for (auto it=enabled->begin(); it!=enabled->end(); ++it)
+      {
+      ESP_LOGI(TAG,"  Load %s (%s)",it->first.c_str(),it->second.c_str());
+      std::string path("/store/plugins/");
+      path.append(it->first);
+      path.append("/");
+      path.append(it->first);
+      path.append(".json");
+
+      FILE *pf = fopen(path.c_str(), "r");
+      if (pf == NULL)
+        {
+        ESP_LOGE(TAG,"Plugin %s: could not be found on disk",it->first.c_str());
+        }
+      else
+        {
+        fseek(pf,0,SEEK_END);
+        long plen = ftell(pf);
+        fseek(pf,0,SEEK_SET);
+        char *pd = new char[plen+1];
+        memset(pd,0,plen+1);
+        fread(pd,1,plen,pf);
+        fclose(pf);
+
+        cJSON *json = cJSON_Parse(pd);
+        if (json == NULL)
+          {
+          ESP_LOGE(TAG, "Plugin %s: could not parse metadata", it->first.c_str());
+          }
+        else
+          {
+          OvmsPlugin p;
+          p.LoadJSON(std::string("LoadEnabledModules"), json);
+
+          // Iterate over the elements...
+          for (OvmsPluginElement* e : p.m_elements)
+            {
+            if (e->m_type == EL_MODULE)
+              {
+              const char* filename = "LoadEnabledModules";
+              duk_context* ctx = MyDuktape.DukTapeContext();
+
+              // Prepare the javascript command
+              std::string cmd(p.m_name);
+              cmd.append(" = require(\"");
+              cmd.append("plugin/");
+              cmd.append(p.m_name);
+              cmd.append("/");
+              cmd.append(e->m_path);
+              cmd.erase(cmd.length()-3,cmd.length());
+              cmd.append("\");");
+
+              // We are running within Duktape task so need to eval here
+              duk_push_string(ctx, cmd.c_str());
+              duk_push_string(ctx, filename);
+              if (duk_pcompile(ctx, DUK_COMPILE_EVAL) != 0 || duk_pcall(ctx, 0) != 0)
+                {
+                DukOvmsErrorHandler(ctx, -1, NULL, filename);
+                }
+              duk_pop(ctx);
+              }
+            }
+
+          // Clean up
+          cJSON_Delete(json);
+          }
+
+        delete [] pd;
+        }
+      }
     }
   }
 
@@ -459,6 +606,19 @@ OvmsPluginElement::OvmsPluginElement()
   {
   }
 
+OvmsPluginElement::OvmsPluginElement(plugin_element_type_t type, std::string name, std::string path)
+  {
+  m_type = type;
+  m_name = name;
+  m_path = path;
+  if ((m_path.empty())&&(m_type == EL_JSON))
+    {
+    // Helper for the JSON element
+    m_path = name;
+    m_path.append(".json");
+    }
+  }
+
 OvmsPluginElement::~OvmsPluginElement()
   {
   }
@@ -470,6 +630,8 @@ void OvmsPluginElement::Summarise(OvmsWriter* writer)
   writer->printf("      Type: ");
   switch (m_type)
     {
+    case EL_JSON:
+      writer->puts("json"); break;
     case EL_MODULE:
       writer->puts("module"); break;
     case EL_WEB_PAGE:
@@ -639,6 +801,9 @@ bool OvmsPlugin::LoadJSON(std::string repo, cJSON *json)
     el = el->next;
     }
 
+  // Add on the JSON plugin descriptor file
+  m_elements.push_back(new OvmsPluginElement(EL_JSON,m_name,std::string("")));
+
   return true;
   }
 
@@ -697,7 +862,7 @@ bool OvmsPlugin::Download()
   return true;
   }
 
-bool OvmsPlugin::Install()
+bool OvmsPlugin::Enable()
   {
   if (MyConfig.IsDefined("plugin.disabled", m_name))
     {
@@ -706,7 +871,18 @@ bool OvmsPlugin::Install()
 
   MyConfig.SetParamValue("plugin.enabled", m_name, m_version);
 
-  // TODO: Any other operations required to complete the install
+  return true;
+  }
+
+bool OvmsPlugin::Disable()
+  {
+  if (MyConfig.IsDefined("plugin.enabled", m_name))
+    {
+    MyConfig.DeleteInstance("plugin.enabled", m_name);
+    }
+
+  MyConfig.SetParamValue("plugin.disabled", m_name, m_version);
+
   return true;
   }
 
