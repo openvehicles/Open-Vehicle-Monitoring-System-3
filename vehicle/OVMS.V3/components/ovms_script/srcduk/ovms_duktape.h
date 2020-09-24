@@ -300,6 +300,7 @@ class OvmsDuktape
     void DukTapeInit();
     void DukTapeTask();
     bool DukTapeAvailable() { return m_dukctx != NULL; }
+    duk_context* DukTapeContext() { return m_dukctx; }
     void EventScript(std::string event, void* data);
 
   protected:
