@@ -56,7 +56,7 @@ const OvmsVehicle::poll_pid_t obdii_polls[] =
     { dcdcId, dcdcId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, dcdcPowerLoadPid, {  0, 60, 60, 60 }, 0 },
     { dcdcId, dcdcId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, dcdcTemperaturePid, {  0, 30, 30, 30 }, 0 },
     { vcuId, vcuId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcuVinPid, { 0, 999, 999, 0 }, 0 },
-    { vcuId, vcuId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcuIgnitionStatePid, {  2, 2, 2, 2 }, 0 },
+    { vcuId, vcuId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcuIgnitionStatePid, {  1, 1, 1, 1 }, 0 },
     { vcuId, vcuId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcu12vSupplyPid, {  0, 60, 60, 60 }, 0 },
     { vcuId, vcuId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcuCoolantTempPid, {  0, 30, 30, 30 }, 0 },
     { vcuId, vcuId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcuChargerConnectedPid, {  0, 30, 30, 30 }, 0 },
@@ -355,42 +355,21 @@ void OvmsVehicleMgEv::DeterminePollState(canbus* currentBus, bool wokenUp, uint3
             m_wakeTicker = ticker;
         }
     }
-    else if (StandardMetrics.ms_v_env_locked->AsBool())
-    {
-        StandardMetrics.ms_v_env_charging12v->SetValue(false);
-
-        PollSetState(PollStateLocked);
-
-        if ((m_wakeState == Diagnostic || m_wakeState == Tester) &&
-                ticker - m_wakeTicker > TRANSITION_TIMEOUT)
-        {
-            m_wakeState = Awake;
-            m_wakeTicker = ticker;
-        }
-    }
-    else if (StandardMetrics.ms_v_env_on->AsBool())
-    {
-        PollSetState(PollStateRunning);
-        if ((m_wakeState == Diagnostic || m_wakeState == Tester) &&
-                ticker - m_wakeTicker > TRANSITION_TIMEOUT)
-        {
-            m_wakeState = Awake;
-            m_wakeTicker = ticker;
-        }
-    }
-    else if (StandardMetrics.ms_v_env_aux12v->AsBool())
-    {
-        PollSetState(PollStateUnlocked);
-        if ((m_wakeState == Diagnostic || m_wakeState == Tester) &&
-                ticker - m_wakeTicker > TRANSITION_TIMEOUT)
-        {
-            m_wakeState = Awake;
-            m_wakeTicker = ticker;
-        }
-    }
     else
     {
-        StandardMetrics.ms_v_env_charging12v->SetValue(false);
+        if (StandardMetrics.ms_v_env_on->AsBool())
+        {
+            PollSetState(PollStateRunning);
+        }
+        else if (StandardMetrics.ms_v_env_locked->AsBool())
+        {
+            PollSetState(PollStateLocked);
+            StandardMetrics.ms_v_env_charging12v->SetValue(false);
+        }
+        else
+        {
+            PollSetState(PollStateUnlocked);
+        }
 
         if ((m_wakeState == Diagnostic || m_wakeState == Tester) &&
                 ticker - m_wakeTicker > TRANSITION_TIMEOUT)
@@ -398,8 +377,6 @@ void OvmsVehicleMgEv::DeterminePollState(canbus* currentBus, bool wokenUp, uint3
             m_wakeState = Awake;
             m_wakeTicker = ticker;
         }
-
-        PollSetState(PollStateUnlocked);
     }
 }
 
