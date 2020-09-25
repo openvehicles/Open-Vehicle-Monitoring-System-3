@@ -139,7 +139,8 @@ OvmsVehicleMgEv::OvmsVehicleMgEv()
     
     // Add command to get the software versions installed
     m_cmdSoftver = MyCommandApp.RegisterCommand(
-        "softver", "MG EV Software", &OvmsVehicleMgEv::SoftwareVersions
+        "softver", "MG EV Software",
+        PickOvmsCommandExecuteCallback(OvmsVehicleMgEv::SoftwareVersions)
     );
 }
 

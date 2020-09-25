@@ -183,6 +183,10 @@ class OvmsCommandMap : public std::map<const char*, OvmsCommand*, CompareCharPtr
 typedef std::function<void(int, OvmsWriter*, OvmsCommand*, int, const char* const*)> OvmsCommandExecuteCallback_t;
 typedef std::function<int(OvmsWriter*, OvmsCommand*, int, const char* const*, bool)> OvmsCommandValidateCallback_t;
 
+// Compiler utilities: pick the matching method overload in case of ambiguity:
+#define PickOvmsCommandExecuteCallback(method) static_cast<void(*)(int, OvmsWriter*, OvmsCommand*, int, const char* const*)>(method)
+#define PickOvmsCommandValidateCallback(method) static_cast<int(*)(OvmsWriter*, OvmsCommand*, int, const char* const*, bool)>(method)
+
 class OvmsCommand : public ExternalRamAllocated
   {
   public:
