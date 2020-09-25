@@ -175,10 +175,14 @@ void OvmsVehicleMgEv::SoftwareVersions(
 void OvmsVehicleMgEv::SoftwareVersions(OvmsWriter* writer)
 {
     constexpr uint32_t ecus[] = {
-        bmsId, dcdcId, vcuId, atcId, bcmId, gwmId, tpmsId, pepsId, 0x761u, 0x760u
+        bmsId, dcdcId, vcuId, atcId, bcmId, gwmId, tpmsId, pepsId, 0x761u, 0x760u, 0x784u,
+        0x750u, 0x776u, 0x771u, 0x782u, 0x734u, 0x733u, 0x732u, 0x730u, 0x723u, 0x721u,
+        0x720u, 0x711u
     };
     const char *names[] = {
-        "BMS", "DCDC", "VCU", "ATC", "BCM", "GWM", "TPMS", "PEPS", "ICE", "IPK"
+        "BMS", "DCDC", "VCU", "ATC", "BCM", "GWM", "TPMS", "PEPS", "ICE", "IPK", "EVCC",
+        "ATC", "PLC", "SCU", "TC", "FDR", "FVCM", "RDRA", "SRM", "EPB", "EPS",
+        "ABS", "TBOX"
     };
     constexpr uint32_t ecuCount = sizeof(ecus) / sizeof(ecus[0]);
 
