@@ -75,11 +75,15 @@ MetricsStandard::MetricsStandard()
   ms_v_bat_voltage = new OvmsMetricFloat(MS_V_BAT_VOLTAGE, SM_STALE_MID, Volts);
   ms_v_bat_current = new OvmsMetricFloat(MS_V_BAT_CURRENT, SM_STALE_MID, Amps);
   ms_v_bat_coulomb_used = new OvmsMetricFloat(MS_V_BAT_COULOMB_USED, SM_STALE_MID, AmpHours);
+  ms_v_bat_coulomb_used_total = new OvmsMetricFloat(MS_V_BAT_COULOMB_USED_TOTAL, SM_STALE_MID, AmpHours);
   ms_v_bat_coulomb_recd = new OvmsMetricFloat(MS_V_BAT_COULOMB_RECD, SM_STALE_MID, AmpHours);
+  ms_v_bat_coulomb_recd_total = new OvmsMetricFloat(MS_V_BAT_COULOMB_RECD_TOTAL, SM_STALE_MID, AmpHours);
   ms_v_bat_power = new OvmsMetricFloat(MS_V_BAT_POWER, SM_STALE_MID, kW);
   ms_v_bat_consumption = new OvmsMetricFloat(MS_V_BAT_CONSUMPTION, SM_STALE_MID, WattHoursPK);
   ms_v_bat_energy_used = new OvmsMetricFloat(MS_V_BAT_ENERGY_USED, SM_STALE_MID, kWh, true);
+  ms_v_bat_energy_used_total = new OvmsMetricFloat(MS_V_BAT_ENERGY_USED_TOTAL, SM_STALE_MID, kWh, true);
   ms_v_bat_energy_recd = new OvmsMetricFloat(MS_V_BAT_ENERGY_RECD, SM_STALE_MID, kWh, true);
+  ms_v_bat_energy_recd_total = new OvmsMetricFloat(MS_V_BAT_ENERGY_RECD_TOTAL, SM_STALE_MID, kWh, true);
   ms_v_bat_range_full = new OvmsMetricFloat(MS_V_BAT_RANGE_FULL, SM_STALE_HIGH, Kilometers);
   ms_v_bat_range_ideal = new OvmsMetricFloat(MS_V_BAT_RANGE_IDEAL, SM_STALE_HIGH, Kilometers, true);
   ms_v_bat_range_est = new OvmsMetricFloat(MS_V_BAT_RANGE_EST, SM_STALE_HIGH, Kilometers, true);
@@ -119,6 +123,8 @@ MetricsStandard::MetricsStandard()
 
   ms_v_charge_voltage = new OvmsMetricFloat(MS_V_CHARGE_VOLTAGE, SM_STALE_MID, Volts);
   ms_v_charge_current = new OvmsMetricFloat(MS_V_CHARGE_CURRENT, SM_STALE_MID, Amps);
+  ms_v_charge_power = new OvmsMetricFloat(MS_V_CHARGE_POWER, SM_STALE_MID, kW);
+  ms_v_charge_efficiency = new OvmsMetricFloat(MS_V_CHARGE_EFFICIENCY, SM_STALE_MID, Percentage);
   ms_v_charge_climit = new OvmsMetricFloat(MS_V_CHARGE_CLIMIT, SM_STALE_MID, Amps);
   ms_v_charge_time = new OvmsMetricInt(MS_V_CHARGE_TIME, SM_STALE_MID, Seconds);
   ms_v_charge_kwh = new OvmsMetricFloat(MS_V_CHARGE_KWH, SM_STALE_MID, kWh);
@@ -137,6 +143,9 @@ MetricsStandard::MetricsStandard()
   ms_v_charge_duration_soc = new OvmsMetricInt(MS_V_CHARGE_DURATION_SOC, SM_STALE_MID, Minutes);
 
   ms_v_inv_temp = new OvmsMetricFloat(MS_V_INV_TEMP, SM_STALE_MID, Celcius, true);
+  ms_v_inv_power = new OvmsMetricFloat(MS_V_INV_POWER, SM_STALE_MID, kW);
+  ms_v_inv_efficiency = new OvmsMetricFloat(MS_V_INV_EFFICIENCY, SM_STALE_MID, Percentage);
+
   ms_v_bat_temp = new OvmsMetricFloat(MS_V_BAT_TEMP, SM_STALE_MID, Celcius, true);
   ms_v_mot_rpm = new OvmsMetricInt(MS_V_MOT_RPM, SM_STALE_MID);
   ms_v_mot_temp = new OvmsMetricFloat(MS_V_MOT_TEMP, SM_STALE_MID, Celcius, true);

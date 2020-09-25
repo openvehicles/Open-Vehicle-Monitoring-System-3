@@ -60,11 +60,12 @@ using namespace std;
 
 const OvmsVehicle::poll_pid_t twizy_poll_default[] = {
   // Note: poller ticker cycles at 3600 seconds = max period
-  // { txid, rxid, type, pid, { period_off, period_drive, period_charge } }
-  { CLUSTER_TXID, CLUSTER_RXID,  VEHICLE_POLL_TYPE_OBDIISESSION, SESSION_EXTDIAG,  { 0,   10,   60 } },
-  { CLUSTER_TXID, CLUSTER_RXID,  VEHICLE_POLL_TYPE_OBDIIGROUP,   CLUSTER_PID_VIN,  { 0, 3600, 3600 } },
-  { CLUSTER_TXID, CLUSTER_RXID,  VEHICLE_POLL_TYPE_OBDIIGROUP,   CLUSTER_PID_DTC,  { 0,   10,   60 } },
-  { 0, 0, 0, 0, { 0, 0, 0 } }
+  // { txid, rxid, type, pid, { period_off, period_drive, period_charge }, bus }
+  { CLUSTER_TXID, CLUSTER_RXID,  VEHICLE_POLL_TYPE_OBDIISESSION, SESSION_EXTDIAG,  { 0,   10,   60 }, 0 },
+  { CLUSTER_TXID, CLUSTER_RXID,  VEHICLE_POLL_TYPE_OBDIIGROUP,   CLUSTER_PID_VIN,  { 0, 3600, 3600 }, 0 },
+  { CLUSTER_TXID, CLUSTER_RXID,  VEHICLE_POLL_TYPE_OBDIIGROUP,   CLUSTER_PID_DTC,  { 0,   10,   60 }, 0 },
+  //{ CLUSTER_TXID, CLUSTER_RXID,  VEHICLE_POLL_TYPE_READDTC, {.args={ 0x02, 1, 0x0F }},  { 0,   10,   60 }, 0 },
+  { 0, 0, 0, 0, { 0, 0, 0 }, 0 }
 };
 
 
@@ -215,21 +216,35 @@ void OvmsVehicleRenaultTwizy::IncomingPollError(canbus* bus, uint16_t type, uint
 }
 
 
-int OvmsVehicleRenaultTwizy::ObdRequest(uint16_t txid, uint16_t rxid, uint32_t request, string& response, int timeout_ms /*=3000*/)
+int OvmsVehicleRenaultTwizy::ObdRequest(uint16_t txid, uint16_t rxid, string request, string& response, int timeout_ms /*=3000*/)
 {
   OvmsMutexLock lock(&twizy_obd_request);
 
   // prepare single poll:
   OvmsVehicle::poll_pid_t poll[] = {
-    { txid, rxid, 0, 0, { 1, 1, 1 } },
-    { 0, 0, 0, 0, { 0, 0, 0 } }
+    { txid, rxid, 0, 0, { 1, 1, 1 }, 0 },
+    { 0, 0, 0, 0, { 0, 0, 0 }, 0 }
   };
-  if (request < 0x10000) {
-    poll[0].type = (request & 0xff00) >> 8;
-    poll[0].pid = request & 0xff;
-  } else {
-    poll[0].type = (request & 0xff0000) >> 16;
-    poll[0].pid = request & 0xffff;
+
+  assert(request.size() > 0);
+  poll[0].type = request[0];
+
+  if (POLL_TYPE_HAS_16BIT_PID(poll[0].type)) {
+    assert(request.size() >= 3);
+    poll[0].args.pid = request[1] << 8 | request[2];
+    poll[0].args.datalen = LIMIT_MAX(request.size()-3, sizeof(poll[0].args.datalen));
+    memcpy(poll[0].args.data, request.data()+3, poll[0].args.datalen);
+  }
+  else if (POLL_TYPE_HAS_8BIT_PID(poll[0].type)) {
+    assert(request.size() >= 2);
+    poll[0].args.pid = request.at(1);
+    poll[0].args.datalen = LIMIT_MAX(request.size()-2, sizeof(poll[0].args.datalen));
+    memcpy(poll[0].args.data, request.data()+2, poll[0].args.datalen);
+  }
+  else {
+    poll[0].args.pid = 0;
+    poll[0].args.datalen = LIMIT_MAX(request.size()-1, sizeof(poll[0].args.datalen));
+    memcpy(poll[0].args.data, request.data()+1, poll[0].args.datalen);
   }
 
   // stop default polling:
@@ -493,7 +508,7 @@ void OvmsVehicleRenaultTwizy::shell_obd_request(int verbosity, OvmsWriter* write
     return;
 
   uint16_t txid = 0, rxid = 0;
-  uint32_t req = 0;
+  string request;
   string response;
 
   // parse args:
@@ -505,13 +520,13 @@ void OvmsVehicleRenaultTwizy::shell_obd_request(int verbosity, OvmsWriter* write
     }
     txid = strtol(argv[0], NULL, 16);
     rxid = strtol(argv[1], NULL, 16);
-    req = strtol(argv[2], NULL, 16);
+    request = hexdecode(argv[2]);
   } else {
     if (argc < 1) {
       writer->puts("ERROR: too few args, need: request");
       return;
     }
-    req = strtol(argv[0], NULL, 16);
+    request = hexdecode(argv[0]);
     if (device == "cluster") {
       txid = CLUSTER_TXID;
       rxid = CLUSTER_RXID;
@@ -528,18 +543,20 @@ void OvmsVehicleRenaultTwizy::shell_obd_request(int verbosity, OvmsWriter* write
   }
 
   // validate request:
-  uint8_t mode = (req <= 0xffff) ? ((req & 0xff00) >> 8) : ((req & 0xff0000) >> 16);
-  if (mode != 0x01 && mode != 0x02 && mode != 0x09 &&
-      mode != 0x10 && mode != 0x1A && mode != 0x21 && mode != 0x22) {
-    writer->puts("ERROR: mode must be one of: 01, 02, 09, 10, 1A, 21 or 22");
+  if (request.size() == 0) {
+    writer->puts("ERROR: no request");
     return;
-  } else if (req > 0xffffff) {
-    writer->puts("ERROR: PID must be 8 or 16 bit");
-    return;
+  } else {
+    uint8_t type = request.at(0);
+    if ((POLL_TYPE_HAS_16BIT_PID(type) && request.size() < 3) ||
+        (POLL_TYPE_HAS_8BIT_PID(type) && request.size() < 2)) {
+      writer->printf("ERROR: request too short for type %02X\n", type);
+      return;
+    }
   }
 
   // execute request:
-  int err = twizy->ObdRequest(txid, rxid, req, response);
+  int err = twizy->ObdRequest(txid, rxid, request, response);
   if (err == -1) {
     writer->puts("ERROR: timeout waiting for response");
     return;

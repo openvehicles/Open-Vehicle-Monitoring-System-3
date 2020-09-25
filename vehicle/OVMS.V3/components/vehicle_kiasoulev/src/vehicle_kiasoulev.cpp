@@ -205,18 +205,18 @@ static const char *TAG = "v-kiasoulev";
 // Pollstate 2 - car is charging
 static const OvmsVehicle::poll_pid_t vehicle_kiasoulev_polls[] =
   {
-    { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIVEHICLE,  0x02, 		{       0,  120,   0 } }, 	// VIN
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x01, 		{       0,   10,  10 } }, 	// BMC Diag page 01 *
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x02, 		{       0,   10,  10 } }, 	// BMC Diag page 02
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x03, 		{       0,   10,  10 } }, 	// BMC Diag page 03
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x04, 		{       0,   10,  10 } }, 	// BMC Diag page 04
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x05, 		{       0,   10,  10 } },	  // BMC Diag page 05 *
-    { 0x794, 0x79c, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x02, 		{       0,   60,  10 } }, 	// OBC - On board charger
-  	  { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x00, 		{       0,   10,  10 } }, 	// VMCU Shift-stick
-    { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x02, 		{       0,   10,  30 } }, 	// VMCU Motor temp++
-    { 0x7d6, 0x7de, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x06, 		{       0,   30,  60 } }, 	// TMPS
-    { 0x7c5, 0x7cd, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x01, 		{       0,   10,  10 } }, 	// LDC - Low voltage DC-DC
-    { 0, 0, 0, 0, { 0, 0, 0 } }
+    { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIVEHICLE,  0x02, 		{       0,  120,   0 }, 0 }, 	// VIN
+    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x01, 		{       0,   10,  10 }, 0 }, 	// BMC Diag page 01 *
+    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x02, 		{       0,   10,  10 }, 0 }, 	// BMC Diag page 02
+    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x03, 		{       0,   10,  10 }, 0 }, 	// BMC Diag page 03
+    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x04, 		{       0,   10,  10 }, 0 }, 	// BMC Diag page 04
+    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x05, 		{       0,   10,  10 }, 0 },	  // BMC Diag page 05 *
+    { 0x794, 0x79c, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x02, 		{       0,   60,  10 }, 0 }, 	// OBC - On board charger
+  	  { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x00, 		{       0,   10,  10 }, 0 }, 	// VMCU Shift-stick
+    { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x02, 		{       0,   10,  30 }, 0 }, 	// VMCU Motor temp++
+    { 0x7d6, 0x7de, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x06, 		{       0,   30,  60 }, 0 }, 	// TMPS
+    { 0x7c5, 0x7cd, VEHICLE_POLL_TYPE_OBDIIGROUP,  	0x01, 		{       0,   10,  10 }, 0 }, 	// LDC - Low voltage DC-DC
+    { 0, 0, 0, 0, { 0, 0, 0 }, 0 }
   };
 
 // Charging profile

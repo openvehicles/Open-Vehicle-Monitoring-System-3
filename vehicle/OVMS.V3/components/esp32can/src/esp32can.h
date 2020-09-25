@@ -62,12 +62,16 @@ class esp32can : public canbus
     esp_err_t Write(const CAN_frame_t* p_frame, TickType_t maxqueuewait=0);
     void TxCallback(CAN_frame_t* p_frame, bool success);
 
+  protected:
+    esp_err_t WriteFrame(const CAN_frame_t* p_frame);
+
   public:
     void SetPowerMode(PowerMode powermode);
 
   public:
     gpio_num_t m_txpin;               // TX pin
     gpio_num_t m_rxpin;               // RX pin
+    OvmsMutex m_write_mutex;
   };
 
 #endif //#ifndef __ESP32CAN_H__

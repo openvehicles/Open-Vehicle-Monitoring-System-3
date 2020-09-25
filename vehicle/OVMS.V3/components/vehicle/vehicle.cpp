@@ -900,16 +900,12 @@ void OvmsVehicleFactory::SetVehicle(const char* type)
     }
   m_currentvehicle = NewVehicle(type);
   if (m_currentvehicle)
-    {
-    m_currentvehicle->m_ready = true;
-    m_currentvehicletype = std::string(type);
-    StandardMetrics.ms_v_type->SetValue(m_currentvehicle ? type : "");
-    MyEvents.SignalEvent("vehicle.type.set", (void*)type, strlen(type)+1);
-    }
-  else
-    {
-    ESP_LOGE(TAG,"Vehicle type '%s' is not valid",type);
-    }
+  {
+  	m_currentvehicle->m_ready = true;
+  }
+  m_currentvehicletype = std::string(type);
+  StandardMetrics.ms_v_type->SetValue(m_currentvehicle ? type : "");
+  MyEvents.SignalEvent("vehicle.type.set", (void*)type, strlen(type)+1);
   }
 
 void OvmsVehicleFactory::AutoInit()
@@ -965,6 +961,7 @@ OvmsVehicle::OvmsVehicle()
 
   m_poll_state = 0;
   m_poll_bus = NULL;
+  m_poll_bus_default = NULL;
   m_poll_plist = NULL;
   m_poll_plcur = NULL;
   m_poll_ticker = 0;
@@ -2028,6 +2025,7 @@ void OvmsVehicle::PollSetPidList(canbus* bus, const poll_pid_t* plist)
   {
   OvmsRecMutexLock lock(&m_poll_mutex);
   m_poll_bus = bus;
+  m_poll_bus_default = bus;
   m_poll_plist = plist;
   m_poll_ticker = 0;
   m_poll_sequence_cnt = 0;
@@ -2072,7 +2070,7 @@ void OvmsVehicle::PollerSend(bool fromTicker)
   OvmsRecMutexLock lock(&m_poll_mutex);
 
   // Don't do anything with no bus, no list or an empty list
-  if (!m_poll_bus || !m_poll_plist || m_poll_plist->txmoduleid == 0) return;
+  if (!m_poll_bus_default || !m_poll_plist || m_poll_plist->txmoduleid == 0) return;
 
   if (m_poll_plcur == NULL) m_poll_plcur = m_poll_plist;
 
@@ -2111,8 +2109,27 @@ void OvmsVehicle::PollerSend(bool fromTicker)
         m_poll_moduleid_high = 0x7ef;
         }
 
-      ESP_LOGD(TAG, "PollerSend(%d): send [type=%02X, pid=%X], expecting %03x/%03x-%03x",
-               fromTicker, m_poll_type, m_poll_pid, m_poll_moduleid_sent, m_poll_moduleid_low, m_poll_moduleid_high);
+      switch (m_poll_plcur->pollbus)
+        {
+        case 1:
+          m_poll_bus = m_can1;
+          break;
+        case 2:
+          m_poll_bus = m_can2;
+          break;
+        case 3:
+          m_poll_bus = m_can3;
+          break;
+        case 4:
+          m_poll_bus = m_can4;
+          break;
+        default:
+          m_poll_bus = m_poll_bus_default;
+        }
+
+      ESP_LOGD(TAG, "PollerSend(%d): send [bus=%d, type=%02X, pid=%X], expecting %03x/%03x-%03x",
+               fromTicker, m_poll_plcur->pollbus, m_poll_type, m_poll_pid, m_poll_moduleid_sent,
+               m_poll_moduleid_low, m_poll_moduleid_high);
 
       CAN_frame_t txframe;
       memset(&txframe,0,sizeof(txframe));
@@ -2121,22 +2138,29 @@ void OvmsVehicle::PollerSend(bool fromTicker)
       txframe.FIR.B.FF = CAN_frame_std;
       txframe.FIR.B.DLC = 8;
 
-      switch (m_poll_plcur->type)
+      if (POLL_TYPE_HAS_16BIT_PID(m_poll_plcur->type))
         {
-        // 16 bit PID requests:
-        case VEHICLE_POLL_TYPE_OBDIIEXTENDED:
-          txframe.data.u8[0] = (ISOTP_FT_SINGLE << 4) + 3;
-          txframe.data.u8[1] = m_poll_type;
-          txframe.data.u8[2] = m_poll_pid >> 8;
-          txframe.data.u8[3] = m_poll_pid & 0xff;
-          break;
-
-        // 8 bit PID requests:
-        default:
-          txframe.data.u8[0] = (ISOTP_FT_SINGLE << 4) + 2;
-          txframe.data.u8[1] = m_poll_type;
-          txframe.data.u8[2] = m_poll_pid;
-          break;
+        uint8_t datalen = LIMIT_MAX(m_poll_plcur->args.datalen, 4);
+        txframe.data.u8[0] = (ISOTP_FT_SINGLE << 4) + 3 + datalen;
+        txframe.data.u8[1] = m_poll_type;
+        txframe.data.u8[2] = m_poll_pid >> 8;
+        txframe.data.u8[3] = m_poll_pid & 0xff;
+        memcpy(&txframe.data.u8[4], m_poll_plcur->args.data, datalen);
+        }
+      else if (POLL_TYPE_HAS_8BIT_PID(m_poll_plcur->type))
+        {
+        uint8_t datalen = LIMIT_MAX(m_poll_plcur->args.datalen, 5);
+        txframe.data.u8[0] = (ISOTP_FT_SINGLE << 4) + 2 + datalen;
+        txframe.data.u8[1] = m_poll_type;
+        txframe.data.u8[2] = m_poll_pid;
+        memcpy(&txframe.data.u8[3], m_poll_plcur->args.data, datalen);
+        }
+      else
+        {
+        uint8_t datalen = LIMIT_MAX(m_poll_plcur->args.datalen, 6);
+        txframe.data.u8[0] = (ISOTP_FT_SINGLE << 4) + 1 + datalen;
+        txframe.data.u8[1] = m_poll_type;
+        memcpy(&txframe.data.u8[2], m_poll_plcur->args.data, datalen);
         }
 
       m_poll_bus->Write(&txframe);
@@ -2258,27 +2282,28 @@ void OvmsVehicle::PollerReceive(CAN_frame_t* frame)
   else // ISOTP_FT_FIRST || ISOTP_FT_SINGLE
     {
     response_type = tp_data[0];
-    switch (response_type)
+    if (response_type == UDS_RESP_TYPE_NRC)
       {
-      // Negative response code:
-      case UDS_RESP_TYPE_NRC:
-        error_type = tp_data[1];
-        error_code = tp_data[2];
-        break;
-
-      // 16 bit PID requests:
-      case 0x40+VEHICLE_POLL_TYPE_OBDIIEXTENDED:
-        response_pid = tp_data[1] << 8 | tp_data[2];
-        response_data = &tp_data[3];
-        response_datalen = tp_datalen - 3;
-        break;
-
-      // 8 bit PID requests:
-      default:
-        response_pid = tp_data[1];
-        response_data = &tp_data[2];
-        response_datalen = tp_datalen - 2;
-        break;
+      error_type = tp_data[1];
+      error_code = tp_data[2];
+      }
+    else if (POLL_TYPE_HAS_16BIT_PID(response_type-0x40))
+      {
+      response_pid = tp_data[1] << 8 | tp_data[2];
+      response_data = &tp_data[3];
+      response_datalen = tp_datalen - 3;
+      }
+    else if (POLL_TYPE_HAS_8BIT_PID(response_type-0x40))
+      {
+      response_pid = tp_data[1];
+      response_data = &tp_data[2];
+      response_datalen = tp_datalen - 2;
+      }
+    else
+      {
+      response_pid = m_poll_pid;
+      response_data = &tp_data[1];
+      response_datalen = tp_datalen - 1;
       }
     }
 

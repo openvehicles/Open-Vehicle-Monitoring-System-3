@@ -499,7 +499,7 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
     void ObdInit();
     void ObdTicker1();
     void ObdTicker10();
-    int ObdRequest(uint16_t txid, uint16_t rxid, uint32_t request, string& response, int timeout_ms=3000);
+    int ObdRequest(uint16_t txid, uint16_t rxid, string request, string& response, int timeout_ms=3000);
 
   public:
     // Shell commands:

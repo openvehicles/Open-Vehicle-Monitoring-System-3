@@ -114,10 +114,14 @@ v.b.c.voltage.min                        3.875,3.865,…,3.88V      Cell minimum
 v.b.cac                                  90.7796Ah                Calculated battery pack capacity
 v.b.consumption                          0Wh/km                   Main battery momentary consumption
 v.b.coulomb.recd                         47.5386Ah                Main battery coulomb recovered on trip/charge
+v.b.coulomb.recd.total                   947.5386Ah               Main battery coulomb recovered total (life time)
 v.b.coulomb.used                         0.406013Ah               Main battery coulomb used on trip
-v.b.current                              0A                       Main battery momentary current
+v.b.coulomb.used.total                   835.406013Ah             Main battery coulomb used total (life time)
+v.b.current                              0A                       Main battery momentary current (output=positive)
 v.b.energy.recd                          2.69691kWh               Main battery energy recovered on trip/charge
+v.b.energy.recd.total                    3212.69691kWh            Main battery energy recovered total (life time)
 v.b.energy.used                          0.0209496kWh             Main battery energy used on trip
+v.b.energy.used.total                    3177.0209496kWh          Main battery energy used total (life time)
 v.b.health                                                        General textual description of battery health
 v.b.p.level.avg                          95.897%                  Cell level - pack average
 v.b.p.level.max                          96.41%                   Cell level - strongest cell in pack
@@ -133,7 +137,7 @@ v.b.p.voltage.max                        4.105V                   Cell voltage -
 v.b.p.voltage.min                        4.09V                    Cell voltage - weakest cell in pack
 v.b.p.voltage.stddev                     0.00535V                 Cell voltage - current standard deviation
 v.b.p.voltage.stddev.max                 0.00783V                 Cell voltage - maximum standard deviation observed
-v.b.power                                0kW                      Main battery momentary power
+v.b.power                                0kW                      Main battery momentary power (output=positive)
 v.b.range.est                            99km                     Estimated range
 v.b.range.full                           50.8km                   Ideal range at 100% SOC & current conditions
 v.b.range.ideal                          48km                     Ideal range
@@ -147,11 +151,13 @@ v.c.current                              1.25A                    Momentary char
 v.c.duration.full                        25Min                    Estimated time remaing for full charge
 v.c.duration.range                       -1Min                    … for sufficient range
 v.c.duration.soc                         0Min                     … for sufficient SOC
+v.c.efficiency                           87.6%                    Momentary charger efficiency
 v.c.kwh                                  2.6969kWh                Energy sum for running charge
 v.c.limit.range                          0km                      Sufficient range limit for current charge
 v.c.limit.soc                            80%                      Sufficient SOC limit for current charge
 v.c.mode                                 standard                 standard, range, performance, storage
 v.c.pilot                                no                       Pilot signal present
+v.c.power                                125kW                    Momentary charger input power
 v.c.state                                done                     charging, topoff, done, prepare, timerwait, heating, stopped
 v.c.substate                                                      scheduledstop, scheduledstart, onrequest, timerwait, powerwait, stopped, interrupted
 v.c.temp                                 16°C                     Charger temperature
@@ -195,6 +201,8 @@ v.e.temp                                                          Ambient temper
 v.e.throttle                             0%                       Drive pedal state [%]
 v.e.valet                                                         yes = Valet mode engaged
 v.i.temp                                                          Inverter temperature
+v.i.power                                42.7kW                   Momentary inverter motor power (output=positive)
+v.i.efficiency                           98.2%                    Momentary inverter efficiency
 v.m.rpm                                                           Motor speed (RPM)
 v.m.temp                                 0°C                      Motor temperature
 v.p.acceleration                         0m/s²                    Vehicle acceleration

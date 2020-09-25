@@ -123,7 +123,7 @@ bool swcan::AsynchronousInterruptHandler(CAN_frame_t* frame, bool* frameReceived
 
 void swcan::TxCallback(CAN_frame_t* frame, bool success)
   {
-  canbus::TxCallback(frame,success);
+  mcp2515::TxCallback(frame,success);
 
   m_tx_led->Blink(LED_BLINK_TIME);
   if (!success)

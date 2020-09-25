@@ -321,6 +321,50 @@ size_t FormatHexDump(char** bufferp, const char* data, size_t rlength, size_t co
 
 
 /**
+ * hexencode: encode a string of bytes into hexadecimal form
+ */
+std::string hexencode(const std::string value)
+  {
+  std::string encval;
+  size_t len = value.length();
+  encval.reserve(len * 2);
+  char buf[3] = {0};
+  for (size_t i = 0; i < len; ++i)
+    {
+    unsigned char c = value.at(i);
+    HexByte(buf, c);
+    encval += buf;
+    }
+  return encval;
+  }
+
+
+/**
+ * hexdecode: decode a hexadecimal encoded string of bytes
+ *  Returns empty string on error
+ */
+std::string hexdecode(const std::string encval)
+  {
+  std::string value;
+  size_t len = encval.length();
+  if (len == 0)
+    return value;
+  if (encval.find_first_not_of("0123456789ABCDEFabcdef", 0) != std::string::npos || (len & 1))
+    return value;
+  value.reserve(len / 2);
+  char buf[3] = {0};
+  for (size_t i = 0; i < len; i += 2)
+    {
+    buf[0] = encval.at(i);
+    buf[1] = encval.at(i + 1);
+    unsigned char c = strtoul(buf, NULL, 16);
+    value += c;
+    }
+  return value;
+  }
+
+
+/**
  * pwgen: simple password generator
  * Note: take care to seed the pseudo random generator i.e. by
  *  srand48(StdMetrics.ms_m_monotonic->AsInt() * StdMetrics.ms_m_freeram->AsInt());

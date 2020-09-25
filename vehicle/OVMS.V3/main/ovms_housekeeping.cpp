@@ -109,6 +109,22 @@ void HousekeepingTicker1( TimerHandle_t timer )
     tick = 0;
     MyEvents.SignalEvent("ticker.3600", NULL);
     }
+
+  time_t rawtime;
+  time ( &rawtime );
+  struct tm* tmu = localtime(&rawtime);
+  if (tmu->tm_sec == 0)
+    {
+    // Start of the minute, so signal a timer event
+    char tev[16];
+    sprintf(tev,"clock.%02d%02d",tmu->tm_hour,tmu->tm_min);
+    MyEvents.SignalEvent(tev, NULL);
+    if ((tmu->tm_hour==0)&&(tmu->tm_min==0))
+      {
+      sprintf(tev,"clock.day%1d",tmu->tm_wday);
+      MyEvents.SignalEvent(tev, NULL);
+      }
+    }
   }
 
 Housekeeping::Housekeeping()

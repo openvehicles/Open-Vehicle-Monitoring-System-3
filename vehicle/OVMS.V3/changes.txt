@@ -1,7 +1,22 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Nissan Leaf: invert batt current sign to match standard metrics definition, populate charger power/efficiency
+- New standard metrics for total (life time) energy and coulomb
+- Renault Twizy: support additional OBD/UDS request types & arguments on "xrt obd request"
+- VW e-UP T26A: add climate control and charging detection
+- New vehicle: VW e-Up via OBD-II Port (VWUP.OBD)
+- New vehicle: MG ZS EV via OBD-II Port (MGEV)
+
+2020-09-02 MWJ  3.2.015  OTA release
+- Notify: add explicit channel exclusion config syntax
+    config set notify <subtype> <…>
+    <…> options are now:
+     a) explicit inclusion: e.g. 'ovmsv2,ovmsv3' (only enable these)
+     b) explicit exclusion: e.g. '*,-ovmsv2,-ovmsv3' (only disable these)
+     '-' to disable all, empty/'*' to enable all
 - Renault Twizy: add eDriver/Virtual BMS data to RT-BAT-C & RT-BAT-P logs
+- Nissan Leaf: fixes for issues related to using EV CAN bus (was CAR CAN prior to 3.2.014)
 - Wifi client: support static IP configuration, manually set or automatically applied by SSID
   New commands:
     wifi ip static [<ip> <subnet> <gateway>]
