@@ -108,7 +108,8 @@ void OvmsVehicleMgEv::IncomingPollFrame(CAN_frame_t* frame)
                 ESP_LOGV(TAG, "Got response from gateway, wake up complete");
                 m_wakeState = Tester;
                 // If we are currently unlocked, then send to BCM
-                if (StandardMetrics.ms_v_env_locked->AsBool() == false)
+                if (StandardMetrics.ms_v_env_locked->AsBool() == false &&
+                    monotonictime - StandardMetrics.ms_v_env_locked->LastModified() <= 2)
                 {
                     SendKeepAliveTo(frame->origin, bcmId);
                 }
