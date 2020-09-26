@@ -1,12 +1,12 @@
 
-==============
-VW e-Up (T26A)
-==============
+========
+VW e-Up
+========
 
-Vehicle Type: **VWUP.T26**
+Vehicle Type: **VWUP**
 
-This vehicle type supports the VW e-UP (2013-, 2020-), Skoda Citigo E IV and the Seat MII electric (2020-) directly connected to the comfort can bus through the 'T26A' socket.
-
+This vehicle type supports the VW e-UP (2013-, 2020-), Skoda Citigo E IV and the Seat MII electric (2020-).
+Connection can be made via OBD2 port to the top left of the driving pedals and/or the comfort CAN bus, e.g. below the passenger seat (instead of the VW OCU there).
 
 
 ----------------
