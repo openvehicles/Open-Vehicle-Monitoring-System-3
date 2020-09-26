@@ -235,6 +235,9 @@ void OvmsVehicleMgEv::IncomingPollReply(
         case (pepsId | rxFlag):
             IncomingPepsPoll(pid, data, length);
             break;
+        case (evccId | rxFlag):
+            IncomingEvccPoll(pid, data, length);
+            break;
         // BCM poll type handled in IncomingPollFrame
     }
 }
