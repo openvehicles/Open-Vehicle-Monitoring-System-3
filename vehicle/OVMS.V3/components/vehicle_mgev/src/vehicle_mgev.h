@@ -93,8 +93,11 @@ class OvmsVehicleMgEv : public OvmsVehicle
     bool SendKeepAliveTo(canbus* currentBus, uint16_t id);
 
     // mg_poll_bms.cpp
-    void IncomingBmsPoll(uint16_t pid, uint8_t* data, uint8_t length);
+    void IncomingBmsPoll(uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain);
     void SetBmsStatus(uint8_t status);
+    void ProcessBatteryStats(int index, uint8_t* data, uint16_t remain);
+    /// A cache of the last byte in the first message of the BMS cell voltage message
+    uint8_t m_bmsCache;
 
     // mg_poll_dcdc.cpp
     void IncomingDcdcPoll(uint16_t pid, uint8_t* data, uint8_t length);

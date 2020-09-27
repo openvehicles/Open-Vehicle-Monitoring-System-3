@@ -40,13 +40,16 @@ void OvmsVehicleMgEv::IncomingEvccPoll(uint16_t pid, uint8_t* data, uint8_t leng
     switch (pid)
     {
         case evccAmperagePid:
-            StandardMetrics.ms_v_charge_current->SetValue(value / 10.0);
+            StandardMetrics.ms_v_charge_current->SetValue(value / 10.0f);
+            StandardMetrics.ms_v_charge_power->SetValue(
+                StandardMetrics.ms_v_charge_voltage->AsFloat() * (value / 10.0f) / 1000.0f
+            );
             break;
         case evccMaxAmperagePid:
-            StandardMetrics.ms_v_charge_climit->SetValue(data[0] / 4.0);
+            StandardMetrics.ms_v_charge_climit->SetValue(data[0] / 4.0f);
             break;
         case evccVoltagePid:
-            StandardMetrics.ms_v_charge_voltage->SetValue(value / 100.0);
+            StandardMetrics.ms_v_charge_voltage->SetValue(value / 100.0f);
             break;
     }
 }

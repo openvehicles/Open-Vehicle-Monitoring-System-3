@@ -218,7 +218,7 @@ void OvmsVehicleMgEv::IncomingPollReply(
     switch (m_poll_moduleid_low)
     {
         case (bmsId | rxFlag):
-            IncomingBmsPoll(pid, data, length);
+            IncomingBmsPoll(pid, data, length, remain);
             break;
         case (dcdcId | rxFlag):
             IncomingDcdcPoll(pid, data, length);
