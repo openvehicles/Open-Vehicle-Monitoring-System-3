@@ -219,6 +219,11 @@ void OvmsVehicleMgEv::SoftwareVersions(OvmsWriter* writer)
     m_versions.clear();
     for (size_t i = 0u; i < ecuCount; ++i)
     {
+        if (ecus[i] == bcmId && StandardMetrics.ms_v_env_locked->AsBool())
+        {
+            // This will set off the alarm...
+            continue;
+        }
         ESP_LOGV(TAG, "Sending query to %03x", ecus[i]);
         SendPollMessage(
             currentBus, ecus[i], VEHICLE_POLL_TYPE_OBDIIEXTENDED, softwarePid
