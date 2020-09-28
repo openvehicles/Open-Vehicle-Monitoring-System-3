@@ -142,7 +142,7 @@ ID	Conversion	     Unit    Function
 569	b07			     "AC"-LED
 69C	d1/10+10	     °C      temperature setpoint for remote AC
 				     (only in message D2 <d1> 00 1E 1E 0A 00 00)
-61C	d2 00 or 01	     bool    Charging detection				
+61C	d2 00,01,06	     bool    Charging detection				
 43D	d1 01 or 11		     TX: Working or sleeping in the ring     	
 5A7	d1 16			     TX: OCU AC blocking signal
 5A9	all 00			     TX: OCU heartbeat
