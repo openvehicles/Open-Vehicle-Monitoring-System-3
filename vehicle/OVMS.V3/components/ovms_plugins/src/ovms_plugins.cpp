@@ -303,46 +303,34 @@ void OvmsPluginStore::PluginRemove(OvmsWriter* writer, std::string plugin)
 
 void OvmsPluginStore::PluginEnable(OvmsWriter* writer, std::string plugin)
   {
-  MyPluginStore.LoadRepoPlugins();
-
-  OvmsPlugin* p = FindPlugin(plugin);
-
-  if (p == NULL)
+  if (MyConfig.IsDefined("plugin.disabled", plugin))
     {
-    writer->printf("Error: Plugin '%s' not found\n", plugin.c_str());
-    return;
+    std::string version = MyConfig.GetParamValue("plugin.disabled", plugin);
+    MyConfig.DeleteInstance("plugin.disabled", plugin);
+    MyConfig.SetParamValue("plugin.enabled", plugin, version);
+    writer->printf("Plugin: %s enabled\n", plugin.c_str());
+    writer->puts("(you should 'script reload', or reboot, to start it)");
     }
-
-  if (!p->Enable())
+  else
     {
-    writer->printf("Error: Plugin '%s' could not be enabled\n", plugin.c_str());
-    return;
+    writer->printf("Error: Plugin '%s' is not disabled\n", plugin.c_str());
     }
-
-  writer->printf("Plugin: %s enabled\n", plugin.c_str());
-  writer->puts("(you should 'script reload', or reboot, to start it)");
   }
 
 void OvmsPluginStore::PluginDisable(OvmsWriter* writer, std::string plugin)
   {
-  MyPluginStore.LoadRepoPlugins();
-
-  OvmsPlugin* p = FindPlugin(plugin);
-
-  if (p == NULL)
+  if (MyConfig.IsDefined("plugin.enabled", plugin))
     {
-    writer->printf("Error: Plugin '%s' not found\n", plugin.c_str());
-    return;
+    std::string version = MyConfig.GetParamValue("plugin.enabled", plugin);
+    MyConfig.DeleteInstance("plugin.enabled", plugin);
+    MyConfig.SetParamValue("plugin.disabled", plugin, version);
+    writer->printf("Plugin: %s disabled\n", plugin.c_str());
+    writer->puts("(you should 'script reload', or reboot, to stop it)");
     }
-
-  if (!p->Disable())
+  else
     {
-    writer->printf("Error: Plugin '%s' could not be disabled\n", plugin.c_str());
-    return;
+    writer->printf("Error: Plugin '%s' is not enabled\n", plugin.c_str());
     }
-
-  writer->printf("Plugin: %s disabled\n", plugin.c_str());
-  writer->puts("(you should 'script reload', or reboot, to stop it)");
   }
 
 void OvmsPluginStore::PluginUpdate(OvmsWriter* writer, std::string plugin)
