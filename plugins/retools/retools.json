@@ -1,20 +1,20 @@
 {
-  name: "retools",
-  title: "REtools: Reverse Engineering UI",
-  description: "A web front-end for the RETOOLS subsystem in OVMS",
-  group: "Development",
-  info: "https://docs.openvehicles.com/en/latest/plugin/retools/README.html",
-  maintainer: "Michael Balzer <dexter@dexters-web.de>",
-  version: "0.1",
-  prerequisites: ["ovms>=3.2.010"],
-  elements: [
+  "name": "retools",
+  "title": "REtools: Reverse Engineering UI",
+  "description": "A web front-end for the RETOOLS subsystem in OVMS",
+  "group": "Development",
+  "info": "https://docs.openvehicles.com/en/latest/plugin/retools/README.html",
+  "maintainer": "Michael Balzer <dexter@dexters-web.de>",
+  "version": "0.1",
+  "prerequisites": ["ovms>=3.2.010"],
+  "elements": [
     {
-    type: "webpage",
-    path: "retools.htm",
-    page: "plugin/retools",
-    label: "RE Toolkit",
-    menu: "Tools",
-    auth: "Cookie"
+    "type": "webpage",
+    "path": "retools.htm",
+    "page": "plugin/retools",
+    "label": "RE Toolkit",
+    "menu": "Tools",
+    "auth": "Cookie"
     }
   ]
 }
