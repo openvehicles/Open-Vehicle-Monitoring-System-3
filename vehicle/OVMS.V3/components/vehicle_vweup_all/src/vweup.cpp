@@ -31,18 +31,18 @@
 
 /*
 ;    Subproject:    Integration of support for the VW e-UP
-;    Date:          26 September 2020
+;    Date:          28 September 2020
 ;
 ;    Changes:
 ;    0.1.0  Initial code
-:           Crude merge of code from Chris van der Meiden (KCAN) and SokofromNZ (OBD2)
+:           Crude merge of code from Chris van der Meijden (KCAN) and SokofromNZ (OBD2)
 ;
-;    0.1.1  make OBD code depend on car status from KCAN (on/off), no more OBD polling in off state
+;    0.1.1  make OBD code depend on car status from KCAN, no more OBD polling in off state
 ;
 ;
-;    (C) 2020       sharkcow
+;    (C) 2020       sharkcow <sharkcow@gmx.de>
 ;
-;    Biggest thanks to Chris van der Meiden, SokofromNZ, Dimitrie78, E-Imo, Dexter and 'der kleine Nik'.
+;    Biggest thanks to Chris van der Meijden, SokofromNZ, Dimitrie78, E-Imo, Dexter and 'der kleine Nik'.
 */
 
 #include "ovms_log.h"
@@ -94,7 +94,7 @@ const OvmsVehicle::poll_pid_t vwup1_polls[] = {
     {VWUP_CHG_TX, VWUP_CHG_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_CHG_POWER_LOSS, {0, 0, 10}, 1},
 
     {VWUP_MFD_TX, VWUP_MFD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MFD_ODOMETER, {0, 60, 60}, 1},
-    {0, 0, 0, 0, {0, 0, 0}, 0},//};
+//    {0, 0, 0, 0, {0, 0, 0}, 0},};
 //    }
     
 //const OvmsVehicle::poll_pid_t vwup1_polls[] = {
@@ -106,7 +106,9 @@ const OvmsVehicle::poll_pid_t vwup1_polls[] = {
     {VWUP_CHG_TX, VWUP_CHG_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP1_CHG_DC_I, {0, 0, 5}, 1},
     // Same tick & order important of above 2: VWUP_CHG_DC_I calculates the DC power
     // Same tick & order important of above 4: VWUP_CHG_DC_I calculates the power loss & efficiency
-    };
+
+    {VWUP_BRK_TX, VWUP_BRK_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BRK_TPMS, {0, 5, 5}, 1},
+    {0, 0, 0, 0, {0, 0, 0}, 0}};
 
 const OvmsVehicle::poll_pid_t vwup2_polls[] = {
     // specific codes for gen2 model (from year 2020)
@@ -126,7 +128,7 @@ OvmsVehicleVWeUpAll::OvmsVehicleVWeUpAll()
 
     RegisterCanBus(3, CAN_MODE_ACTIVE, CAN_SPEED_100KBPS);
 
-    MyConfig.RegisterParam("xut", "VW e-Up", true, true);
+    MyConfig.RegisterParam("vwup", "VW e-Up", true, true);
     ConfigChanged(NULL);
     vin_part1 = false;
     vin_part2 = false;
@@ -159,15 +161,24 @@ OvmsVehicleVWeUpAll::OvmsVehicleVWeUpAll()
     StandardMetrics.ms_v_env_locked->SetValue(true);
     StandardMetrics.ms_v_env_headlights->SetValue(false);
 
-    BatMgmtSoC = MyMetrics.InitFloat("xuo.b.soc", 100, 0, Percentage);
-    BatMgmtCellDelta = MyMetrics.InitFloat("xuo.b.cell.delta", SM_STALE_NONE, 0, Volts);
+    BatMgmtSoC = MyMetrics.InitFloat("xua.b.soc", 100, 0, Percentage);
+    BatMgmtCellDelta = MyMetrics.InitFloat("xua.b.cell.delta", SM_STALE_NONE, 0, Volts);
 
-    ChargerPowerEffEcu = MyMetrics.InitFloat("xuo.c.eff.ecu", 100, 0, Percentage);
-    ChargerPowerLossEcu = MyMetrics.InitFloat("xuo.c.loss.ecu", SM_STALE_NONE, 0, Watts);
-    ChargerPowerEffCalc = MyMetrics.InitFloat("xuo.c.eff.calc", 100, 0, Percentage);
-    ChargerPowerLossCalc = MyMetrics.InitFloat("xuo.c.loss.calc", SM_STALE_NONE, 0, Watts);
-    ChargerACPower = MyMetrics.InitFloat("xuo.c.ac.p", SM_STALE_NONE, 0, Watts);
-    ChargerDCPower = MyMetrics.InitFloat("xuo.c.dc.p", SM_STALE_NONE, 0, Watts);
+    ChargerPowerEffEcu = MyMetrics.InitFloat("xua.c.eff.ecu", 100, 0, Percentage);
+    ChargerPowerLossEcu = MyMetrics.InitFloat("xua.c.loss.ecu", SM_STALE_NONE, 0, Watts);
+    ChargerPowerEffCalc = MyMetrics.InitFloat("xua.c.eff.calc", 100, 0, Percentage);
+    ChargerPowerLossCalc = MyMetrics.InitFloat("xua.c.loss.calc", SM_STALE_NONE, 0, Watts);
+    ChargerACPower = MyMetrics.InitFloat("xua.c.ac.p", SM_STALE_NONE, 0, Watts);
+    ChargerDCPower = MyMetrics.InitFloat("xua.c.dc.p", SM_STALE_NONE, 0, Watts);
+
+    TPMSDiffusionFrontLeft = MyMetrics.InitFloat("xua.v.tp.d.fl", SM_STALE_NONE, 0, Percentage);
+    TPMSDiffusionFrontRight = MyMetrics.InitFloat("xua.v.tp.d.fr", SM_STALE_NONE, 0, Percentage);
+    TPMSDiffusionRearLeft = MyMetrics.InitFloat("xua.v.tp.d.rl", SM_STALE_NONE, 0, Percentage);
+    TPMSDiffusionRearRight = MyMetrics.InitFloat("xua.v.tp.d.rr", SM_STALE_NONE, 0, Percentage);
+    TPMSEmergencyFrontLeft = MyMetrics.InitFloat("xua.v.tp.e.fl", SM_STALE_NONE, 0, Percentage);
+    TPMSEmergencyFrontRight = MyMetrics.InitFloat("xua.v.tp.e.fr", SM_STALE_NONE, 0, Percentage);
+    TPMSEmergencyRearLeft = MyMetrics.InitFloat("xua.v.tp.e.rl", SM_STALE_NONE, 0, Percentage);
+    TPMSEmergencyRearRight = MyMetrics.InitFloat("xua.v.tp.e.rr", SM_STALE_NONE, 0, Percentage);
 
     TimeOffRequested = 0;
 
@@ -192,7 +203,7 @@ bool OvmsVehicleVWeUpAll::SetFeature(int key, const char *value)
     case 15:
     {
         int bits = atoi(value);
-        MyConfig.SetParamValueBool("xut", "canwrite", (bits & 1) != 0);
+        MyConfig.SetParamValueBool("xua", "canwrite", (bits & 1) != 0);
         return true;
     }
     default:
@@ -207,7 +218,7 @@ const std::string OvmsVehicleVWeUpAll::GetFeature(int key)
     case 15:
     {
         int bits =
-            (MyConfig.GetParamValueBool("xut", "canwrite", false) ? 1 : 0);
+            (MyConfig.GetParamValueBool("xua", "canwrite", false) ? 1 : 0);
         char buf[4];
         sprintf(buf, "%d", bits);
         return std::string(buf);
@@ -221,11 +232,11 @@ void OvmsVehicleVWeUpAll::ConfigChanged(OvmsConfigParam *param)
 {
     ESP_LOGD(TAG, "VW e-Up reload configuration");
 
-    vwup_modelyear = MyConfig.GetParamValueInt("xut", "modelyear", DEFAULT_MODEL_YEAR);
-    vwup_enable_obd = MyConfig.GetParamValueBool("xut", "con_obd", false);
-    vwup_enable_t26 = MyConfig.GetParamValueBool("xut", "con_t26", false);
-    vwup_enable_write = MyConfig.GetParamValueBool("xut", "canwrite", false);
-    vwup_cc_temp_int = MyConfig.GetParamValueInt("xut", "cc_temp", 21);
+    vwup_modelyear = MyConfig.GetParamValueInt("xua", "modelyear", DEFAULT_MODEL_YEAR);
+    vwup_enable_obd = MyConfig.GetParamValueBool("xua", "con_obd", false);
+    vwup_enable_t26 = MyConfig.GetParamValueBool("xua", "con_t26", false);
+    vwup_enable_write = MyConfig.GetParamValueBool("xua", "canwrite", false);
+    vwup_cc_temp_int = MyConfig.GetParamValueInt("xua", "cc_temp", 21);
 }
 
 // Takes care of setting all the state appropriate when the car is on
@@ -428,6 +439,7 @@ void OvmsVehicleVWeUpAll::IncomingFrameCan3(CAN_frame_t *p_frame)
           StandardMetrics.ms_v_charge_state->SetValue("charging");
           StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
           ESP_LOGI(TAG,"Car charge session started");
+          PollSetState(VWUP_CHARGING);
         } 
         if (!isCharging && cd_count == 3) {
           cd_count = 0;
@@ -438,6 +450,7 @@ void OvmsVehicleVWeUpAll::IncomingFrameCan3(CAN_frame_t *p_frame)
           StandardMetrics.ms_v_charge_state->SetValue("done");
           StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
           ESP_LOGI(TAG,"Car charge session ended");
+          PollSetState(VWUP_ON);
         } 
       } else {
           cd_count = 0;
@@ -1511,5 +1524,47 @@ void OvmsVehicleVWeUpAll::IncomingPollReply(canbus *bus, uint16_t type, uint16_t
             VALUE_LOG(TAG, "VWUP_MFD_ODOMETER=%f => %f", value, StandardMetrics.ms_v_pos_odometer->AsFloat());
         }
         break;
+
+    case VWUP_BRK_TPMS:
+        if (PollReply.FromUint8("VWUP_BRK_TPMS", value, 38))
+        {
+            TPMSDiffusionFrontLeft->SetValue(value);
+            VALUE_LOG(TAG, "VWUP_BRK_TPMSD_FL=%f => %f", value, TPMSDiffusionFrontLeft->AsFloat());
+        }
+        if (PollReply.FromUint8("VWUP_BRK_TPMS", value, 39))
+        {
+            TPMSDiffusionFrontRight->SetValue(value);
+            VALUE_LOG(TAG, "VWUP_BRK_TPMSD_FR=%f => %f", value, TPMSDiffusionFrontRight->AsFloat());
+        }
+        if (PollReply.FromUint8("VWUP_BRK_TPMS", value, 40))
+        {
+            TPMSDiffusionRearLeft->SetValue(value);
+            VALUE_LOG(TAG, "VWUP_BRK_TPMSD_RL=%f => %f", value, TPMSDiffusionRearLeft->AsFloat());
+        }
+        if (PollReply.FromUint8("VWUP_BRK_TPMS", value, 41))
+        {
+            TPMSDiffusionRearRight->SetValue(value);
+            VALUE_LOG(TAG, "VWUP_BRK_TPMSD_RR=%f => %f", value, TPMSDiffusionRearRight->AsFloat());
+        }
+        if (PollReply.FromUint8("VWUP_BRK_TPMS", value, 42))
+        {
+            TPMSEmergencyFrontLeft->SetValue(value);
+            VALUE_LOG(TAG, "VWUP_BRK_TPMSE_FL=%f => %f", value, TPMSEmergencyFrontLeft->AsFloat());
+        }
+        if (PollReply.FromUint8("VWUP_BRK_TPMS", value, 43))
+        {
+            TPMSEmergencyFrontRight->SetValue(value);
+            VALUE_LOG(TAG, "VWUP_BRK_TPMSE_FR=%f => %f", value, TPMSEmergencyFrontRight->AsFloat());
+        }
+        if (PollReply.FromUint8("VWUP_BRK_TPMS", value, 44))
+        {
+            TPMSEmergencyRearLeft->SetValue(value);
+            VALUE_LOG(TAG, "VWUP_BRK_TPMSE_RL=%f => %f", value, TPMSEmergencyRearLeft->AsFloat());
+        }
+        if (PollReply.FromUint8("VWUP_BRK_TPMS", value, 45))
+        {
+            TPMSEmergencyRearRight->SetValue(value);
+            VALUE_LOG(TAG, "VWUP_BRK_TPMSE_RR=%f => %f", value, TPMSEmergencyRearRight->AsFloat());
+        }
     }
 }

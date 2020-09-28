@@ -9,7 +9,7 @@
 ;    (C) 2011       Sonny Chen @ EPRO/DX
 ;    (C) 2020       Chris van der Meijden
 ;    (C) 2020       Soko
-;    (C) 2020       sharkcow
+;    (C) 2020       sharkcow <sharkcow@gmx.de>
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -66,6 +66,9 @@ typedef enum
 #define VWUP_CHG_RX 0x7AE
 #define VWUP_MFD_TX 0x714 //ECU 17 multi-function display
 #define VWUP_MFD_RX 0x77E
+#define VWUP_BRK_TX 0x713 //ECU 03 brake electronics
+#define VWUP_BRK_RX 0x77D
+
 
 // PIDs of ECUs
 #define VWUP_MOT_ELEC_SOC_NORM 0x1164
@@ -88,8 +91,9 @@ typedef enum
 #define VWUP2_CHG_DC_U 0x41F8
 #define VWUP2_CHG_DC_I 0x41F9
 #define VWUP_MFD_ODOMETER 0x2203
-#define VWUP_MFD_SERVICE_DATE
-#define VWUP_MFD_SERVICE_DIST
+//#define VWUP_MFD_SERVICE_DATE
+//#define VWUP_MFD_SERVICE_DIST
+#define VWUP_BRK_TPMS 0x1821
 
 class OvmsVehicleVWeUpAll : public OvmsVehicle
   {
@@ -176,6 +180,15 @@ class OvmsVehicleVWeUpAll : public OvmsVehicle
     OvmsMetricFloat *ChargerPowerLossEcu;  // Power loss of Charger [kW] (from ECU)
     OvmsMetricFloat *ChargerPowerEffCalc;  // Efficiency of the Charger [%] (calculated from U and I)
     OvmsMetricFloat *ChargerPowerLossCalc; // Power loss of Charger [kW] (calculated from U and I)
+
+    OvmsMetricFloat *TPMSDiffusionFrontLeft; // TPMS Indicator for Pressure Diffusion Front Left Tyre
+    OvmsMetricFloat *TPMSDiffusionFrontRight; // TPMS Indicator for Pressure Diffusion Front Right Tyre
+    OvmsMetricFloat *TPMSDiffusionRearLeft; // TPMS Indicator for Pressure Diffusion Rear Left Tyre
+    OvmsMetricFloat *TPMSDiffusionRearRight; // TPMS Indicator for Pressure Diffusion Rear Right Tyre
+    OvmsMetricFloat *TPMSEmergencyFrontLeft; // TPMS Indicator for Tyre Emergency Front Left Tyre
+    OvmsMetricFloat *TPMSEmergencyFrontRight; // TPMS Indicator for Tyre Emergency Front Right Tyre
+    OvmsMetricFloat *TPMSEmergencyRearLeft; // TPMS Indicator for Tyre Emergency Rear Left Tyre
+    OvmsMetricFloat *TPMSEmergencyRearRight; // TPMS Indicator for Tyre Emergency Rear Right Tyre
 
     //OBD
     void IncomingPollReply(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length, uint16_t mlremain);

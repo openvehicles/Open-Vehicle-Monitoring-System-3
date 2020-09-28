@@ -1,7 +1,8 @@
 /**
  * Project:      Open Vehicle Monitor System
- * Module:       Nissan Leaf Webserver
+ * Module:       Webserver for VW e-Up
  *
+ * (c) 2020  sharkcow <sharkcow@gmx.de>
  * (c) 2019  Anko Hanse <anko_hanse@hotmail.com>
  * (c) 2017  Michael Balzer <dexter@dexters-web.de>
  *
@@ -208,4 +209,11 @@ void OvmsVehicleVWeUpAll::WebCfgClimate(PageEntry_t &p, PageContext_t &c)
   c.form_end();
   c.panel_end();
   c.done();
+}
+
+/**
+ * WebPlugin to display standard metrics
+ */
+void OvmsVehicleVWeUpAll::WebDispStdMetrics(PageEntry_t &p, PageContext_t &c)
+{
 }
