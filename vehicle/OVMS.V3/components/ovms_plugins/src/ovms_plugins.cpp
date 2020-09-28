@@ -125,7 +125,7 @@ OvmsPluginStore::OvmsPluginStore()
   cmd_plugin->RegisterCommand("remove","Remove a plugin",plugin_remove,"<plugin>",1,1);
   cmd_plugin->RegisterCommand("enable","Enable a plugin",plugin_enable,"<plugin>",1,1);
   cmd_plugin->RegisterCommand("disable","Disable a plugin",plugin_disable,"<plugin>",1,1);
-  cmd_plugin->RegisterCommand("update","Update all or a specific plugin",plugin_update,"[plugin]",1,1);
+  cmd_plugin->RegisterCommand("update","Update all or a specific plugin",plugin_update,"[plugin]",0,1);
 
   OvmsCommand* cmd_repo = cmd_plugin->RegisterCommand("repo","PLUGIN Repositories", repo_list, "", 0, 0);
   cmd_repo->RegisterCommand("list","List repositories",repo_list,"",0,0);
@@ -241,13 +241,14 @@ void OvmsPluginStore::PluginList(OvmsWriter* writer)
   {
   MyPluginStore.LoadRepoPlugins();
 
-  writer->puts("Plugin               Repo             Description");
+  writer->puts("Plugin               Repo             Version    Description");
   for (auto it = m_plugins.begin(); it != m_plugins.end(); ++it)
     {
     OvmsPlugin *p = it->second;
-    printf("%-20.20s %-16.16s %s\n",
+    printf("%-20.20s %-16.16s %-10.10s %s\n",
       p->m_name.c_str(),
       p->m_repo.c_str(),
+      p->m_version.c_str(),
       p->m_description.c_str());
     }
   }
@@ -291,7 +292,6 @@ void OvmsPluginStore::PluginInstall(OvmsWriter* writer, std::string plugin)
     }
 
   writer->printf("Plugin: %s installed ok\n", plugin.c_str());
-  writer->puts("(you should 'script reload', or reboot, to start it)");
   }
 
 void OvmsPluginStore::PluginRemove(OvmsWriter* writer, std::string plugin)
@@ -309,7 +309,6 @@ void OvmsPluginStore::PluginEnable(OvmsWriter* writer, std::string plugin)
     MyConfig.DeleteInstance("plugin.disabled", plugin);
     MyConfig.SetParamValue("plugin.enabled", plugin, version);
     writer->printf("Plugin: %s enabled\n", plugin.c_str());
-    writer->puts("(you should 'script reload', or reboot, to start it)");
     }
   else
     {
@@ -325,7 +324,6 @@ void OvmsPluginStore::PluginDisable(OvmsWriter* writer, std::string plugin)
     MyConfig.DeleteInstance("plugin.enabled", plugin);
     MyConfig.SetParamValue("plugin.disabled", plugin, version);
     writer->printf("Plugin: %s disabled\n", plugin.c_str());
-    writer->puts("(you should 'script reload', or reboot, to stop it)");
     }
   else
     {
@@ -337,14 +335,62 @@ void OvmsPluginStore::PluginUpdate(OvmsWriter* writer, std::string plugin)
   {
   MyPluginStore.LoadRepoPlugins();
 
-  writer->puts("Error: Not yet implemented");
+  OvmsPlugin* p = FindPlugin(plugin);
+  if (p == NULL)
+    {
+    writer->printf("Error: Plugin '%s' not found\n", plugin.c_str());
+    return;
+    }
+
+  std::string version = p->InstalledVersion();
+  if (version.empty())
+      {
+      writer->printf("Error: Plugin '%s' is not installed\n", plugin.c_str());
+      return;
+      }
+
+  int cmp = strverscmp(p->m_version.c_str(), version.c_str());
+  if (cmp <= 0)
+    {
+    writer->printf("Plugin '%s' is already version %s (repo has %s)\n",
+      plugin.c_str(), version.c_str(), p->m_version.c_str());
+    return;
+    }
+
+  if (!p->Download())
+    {
+    writer->printf("Error: Plugin '%s' could not be downloaded\n", plugin.c_str());
+    return;
+    }
+
+  writer->printf("Plugin: %s updated ok\n", plugin.c_str());
   }
 
 void OvmsPluginStore::PluginUpdateAll(OvmsWriter* writer)
   {
   MyPluginStore.LoadRepoPlugins();
 
-  writer->puts("Error: Not yet implemented");
+  for (auto it = m_plugins.begin(); it != m_plugins.end(); ++it)
+    {
+    OvmsPlugin *p = it->second;
+
+    std::string version = p->InstalledVersion();
+    if (! version.empty())
+      {
+      int cmp = strverscmp(p->m_version.c_str(), version.c_str());
+      if (cmp > 0)
+        {
+        if (!p->Download())
+          {
+          writer->printf("Error: Plugin '%s' could not be downloaded\n", p->m_name.c_str());
+          }
+        else
+          {
+          writer->printf("Plugin: %s updated ok to %s\n", p->m_name.c_str(), p->m_version.c_str());
+          }
+        }
+      }
+    }
   }
 
 bool OvmsPluginStore::LoadRepoPlugins()
@@ -872,6 +918,21 @@ bool OvmsPlugin::Disable()
   MyConfig.SetParamValue("plugin.disabled", m_name, m_version);
 
   return true;
+  }
+
+std::string OvmsPlugin::InstalledVersion()
+  {
+  std::string version;
+  if (MyConfig.IsDefined("plugin.enabled", m_name))
+    {
+    version = MyConfig.GetParamValue("plugin.enabled", m_name);
+    }
+  else if (MyConfig.IsDefined("plugin.disabled", m_name))
+    {
+    version = MyConfig.GetParamValue("plugin.disabled", m_name);
+    }
+
+  return version;
   }
 
 ////////////////////////////////////////////////////////////////////////////////

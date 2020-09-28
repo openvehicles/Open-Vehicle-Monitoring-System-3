@@ -111,6 +111,7 @@ class OvmsPlugin
     bool Download();
     bool Enable();
     bool Disable();
+    std::string InstalledVersion();
 
   public:
     std::string m_repo;
