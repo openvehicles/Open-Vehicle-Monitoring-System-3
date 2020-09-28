@@ -174,6 +174,18 @@ void OvmsSyncHttpClient::ConnectionLaunch()
     }
 
   struct mg_mgr* mgr = MyNetManager.GetMongooseMgr();
+  if ( (mgr == NULL) || (!MyNetManager.MongooseRunning()) )
+    {
+    ESP_LOGE(TAG, "mg_connect(%s) failed: no connection manager", address.c_str());
+    m_error = std::string("no connection manager");
+    if (m_waitcompletion != NULL)
+      {
+      vSemaphoreDelete(m_waitcompletion);
+      m_waitcompletion = NULL;
+      }
+    return;
+    }
+
   struct mg_connect_opts opts;
   const char* err;
   memset(&opts, 0, sizeof(opts));
@@ -191,8 +203,11 @@ void OvmsSyncHttpClient::ConnectionLaunch()
     {
     ESP_LOGE(TAG, "mg_connect(%s) failed: %s", address.c_str(), err);
     m_error = std::string(err);
-    vSemaphoreDelete(m_waitcompletion);
-    m_waitcompletion = NULL;
+    if (m_waitcompletion != NULL)
+      {
+      vSemaphoreDelete(m_waitcompletion);
+      m_waitcompletion = NULL;
+      }
     return;
     }
 
