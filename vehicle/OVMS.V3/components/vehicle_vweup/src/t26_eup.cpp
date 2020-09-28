@@ -397,8 +397,7 @@ void OvmsVehicleVWeUpT26::IncomingFrameCan3(CAN_frame_t *p_frame)
 
     case 0x61C: // Charge detection
       cd_count++;
-      if ((d[2] == 0x00) || (d[2] == 0x01 || d[2] == 0x06)) {
-         // 06 is ICCB
+      if (d[2] < 0x07) {
          isCharging = true;
       } else {
          isCharging = false;
