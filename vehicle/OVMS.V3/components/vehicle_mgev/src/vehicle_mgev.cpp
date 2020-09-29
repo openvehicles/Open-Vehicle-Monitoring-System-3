@@ -102,6 +102,10 @@ constexpr uint32_t ZOMBIE_TIMEOUT = 10u;
 // zombie mode
 constexpr uint32_t TRANSITION_TIMEOUT = 25u;
 
+/// The number of seconds the car has to be unlocked for before transitioning from session
+/// keep alive to TP keep alive
+constexpr uint32_t UNLOCKED_CHARGING_TIMEOUT = 5u;
+
 }  // anon namespace
 
 OvmsVehicleMgEv::OvmsVehicleMgEv()
@@ -379,6 +383,12 @@ void OvmsVehicleMgEv::DeterminePollState(canbus* currentBus, bool wokenUp, uint3
     {
         PollSetState(PollStateCharging);
         if (m_wakeState == Off || m_wakeState == Awake)
+        {
+            m_wakeState = Tester;
+            m_wakeTicker = ticker;
+        }
+        if (m_wakeState == Diagnostic && !StandardMetrics.ms_v_env_locked->AsBool() &&
+                ticker - m_wakeTicker > UNLOCKED_CHARGING_TIMEOUT)
         {
             m_wakeState = Tester;
             m_wakeTicker = ticker;
