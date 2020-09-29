@@ -31,7 +31,7 @@
 
 /*
 ;    Subproject:    Integration of support for the VW e-UP
-;    Date:          28th September 2020
+;    Date:          29th September 2020
 ;
 ;    Changes:
 ;    0.1.0  Initial code
@@ -99,6 +99,8 @@
 ;
 ;    0.4.0  Implemnted ICCB charging detection
 ;
+;    0.4.1  Corrected estimated range
+;
 ;    (C) 2020       Chris van der Meijden
 ;
 ;    Big thanx to sharkcow, Dimitrie78, E-Imo, Dexter and 'der kleine Nik'.
@@ -107,7 +109,7 @@
 #include "ovms_log.h"
 static const char *TAG = "v-vweup-t26";
 
-#define VERSION "0.4.0"
+#define VERSION "0.4.1"
 
 #include <stdio.h>
 #include "pcp.h"
@@ -279,8 +281,9 @@ void OvmsVehicleVWeUpT26::IncomingFrameCan3(CAN_frame_t *p_frame)
 
     case 0x52D: // KM range left (estimated).
         if (d[0] != 0xFE) {
-           if (d[0] > 0x06) {
-              if (d[0] < 0x08) d[0] = 0x00;
+           if (d[1] == 0x41) {
+              StandardMetrics.ms_v_bat_range_est->SetValue(d[0] + 255);
+           } else {
               StandardMetrics.ms_v_bat_range_est->SetValue(d[0]);
            }
         }
