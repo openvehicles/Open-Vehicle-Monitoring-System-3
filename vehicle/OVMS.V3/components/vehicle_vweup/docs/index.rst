@@ -136,7 +136,8 @@ ID	Conversion	     Unit    Function
 527	(d5/2)-50	     °C      Outdoor temperature     	         	
 531	d0 00		             Headlights off
 52D	d0 +255 if d1 41     km	     Calculated range		     
-470	d1 1,2,4,8,20,10     Integer Status doors, trunk, hood		     
+381     d0 02			     Status doors locked
+470	d1 1,2,4,8,20,10     Integer Doors, trunk, hood opened or closed	
 3E1	d4		     Integer Blower speed? (57,66,7D,98,BB,DE,FA)
 575	d0 00 to 0F 	     Integer Key position		         	
 569	b07			     "AC"-LED
