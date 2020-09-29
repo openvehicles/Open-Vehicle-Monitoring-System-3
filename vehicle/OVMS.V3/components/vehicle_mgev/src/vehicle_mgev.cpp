@@ -80,9 +80,10 @@ const OvmsVehicle::poll_pid_t obdii_polls[] =
     { atcId, atcId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, atcBlowerSpeedPid, {  0, 0, 10, 0 }, 0 },
     { atcId, atcId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, atcPtcTempPid, {  0, 30, 10, 0 }, 0 },
     { pepsId, pepsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, pepsLockPid, {  1, 1, 1, 1 }, 0 },
-    // Only poll when running, BCM requests are performed manually to avoid the alarm
-    { bcmId, bcmId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bcmDoorPid, {  0, 0, 15, 0 }, 0 },
-    { bcmId, bcmId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bcmLightPid, {  0, 0, 15, 0 }, 0 },
+    // Only poll when running, BCM requests are performed manually to avoid the alarm    
+    // FIXME: Disabled until we are happy that the alarm won't go off
+    //{ bcmId, bcmId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bcmDoorPid, {  0, 0, 15, 0 }, 0 },
+    //{ bcmId, bcmId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bcmLightPid, {  0, 0, 15, 0 }, 0 },
     { tpmsId, tpmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, tyrePressurePid, {  0, 60, 60, 0 }, 0 },
     { tpmsId, tpmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, typeTemperaturePid, {  0, 60, 60, 0 }, 0 },
     { evccId, evccId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, evccVoltagePid, {  0, 0, 0, 10 }, 0 },
@@ -130,6 +131,7 @@ OvmsVehicleMgEv::OvmsVehicleMgEv()
     m_txErrors = 0u;
     // Until we know it's unlocked, say it's locked otherwise we might set off the alarm
     StandardMetrics.ms_v_env_locked->SetValue(true);
+    StandardMetrics.ms_v_env_on->SetValue(false);
 
     // Assume the CAN is off to start with
     m_wakeState = Off;
@@ -295,6 +297,14 @@ canbus* OvmsVehicleMgEv::IdToBus(int id)
             break;
     }
     return bus;
+}
+
+void OvmsVehicleMgEv::NotifyVehicleIdling()
+{
+    if (m_poll_state != PollStateCharging)
+    {
+        OvmsVehicle::NotifyVehicleIdling();
+    }
 }
 
 bool OvmsVehicleMgEv::HasWoken(canbus* currentBus, uint32_t ticker)

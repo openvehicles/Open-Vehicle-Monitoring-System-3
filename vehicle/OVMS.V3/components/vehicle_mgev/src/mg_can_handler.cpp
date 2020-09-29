@@ -111,7 +111,8 @@ void OvmsVehicleMgEv::IncomingPollFrame(CAN_frame_t* frame)
                 if (StandardMetrics.ms_v_env_locked->AsBool() == false &&
                     monotonictime - StandardMetrics.ms_v_env_locked->LastModified() <= 2)
                 {
-                    SendKeepAliveTo(frame->origin, bcmId);
+                    // FIXME: Disabled until we are happy that the alarm won't go off
+                    //SendKeepAliveTo(frame->origin, bcmId);
                 }
             }
             return;

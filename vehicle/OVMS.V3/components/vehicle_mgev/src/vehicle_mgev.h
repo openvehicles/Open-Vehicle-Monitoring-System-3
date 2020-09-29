@@ -92,6 +92,8 @@ class OvmsVehicleMgEv : public OvmsVehicle
     void SendAlarmSensitive(canbus* currentBus);
     bool SendKeepAliveTo(canbus* currentBus, uint16_t id);
 
+    void NotifyVehicleIdling() override;
+
     // mg_poll_bms.cpp
     void IncomingBmsPoll(uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain);
     void SetBmsStatus(uint8_t status);
