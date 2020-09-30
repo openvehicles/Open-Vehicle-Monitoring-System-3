@@ -111,7 +111,8 @@ void OvmsVehicleMgEv::IncomingPollFrame(CAN_frame_t* frame)
                 if (StandardMetrics.ms_v_env_locked->AsBool() == false &&
                     monotonictime - StandardMetrics.ms_v_env_locked->LastModified() <= 2)
                 {
-                    SendKeepAliveTo(frame->origin, bcmId);
+                    // FIXME: Disabled until we are happy that the alarm won't go off
+                    //SendKeepAliveTo(frame->origin, bcmId);
                 }
             }
             return;
@@ -218,7 +219,7 @@ void OvmsVehicleMgEv::IncomingPollReply(
     switch (m_poll_moduleid_low)
     {
         case (bmsId | rxFlag):
-            IncomingBmsPoll(pid, data, length);
+            IncomingBmsPoll(pid, data, length, remain);
             break;
         case (dcdcId | rxFlag):
             IncomingDcdcPoll(pid, data, length);
@@ -234,6 +235,9 @@ void OvmsVehicleMgEv::IncomingPollReply(
             break;
         case (pepsId | rxFlag):
             IncomingPepsPoll(pid, data, length);
+            break;
+        case (evccId | rxFlag):
+            IncomingEvccPoll(pid, data, length);
             break;
         // BCM poll type handled in IncomingPollFrame
     }

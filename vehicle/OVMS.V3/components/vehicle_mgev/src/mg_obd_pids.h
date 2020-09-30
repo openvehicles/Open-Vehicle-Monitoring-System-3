@@ -43,18 +43,27 @@ constexpr uint32_t gwmId = 0x710u;
 constexpr uint32_t tpmsId = 0x724u;
 constexpr uint32_t pepsId = 0x745u;
 constexpr uint32_t ipkId = 0x760u;
+constexpr uint32_t evccId = 0x784u;
 constexpr uint32_t rxFlag = 0x8u;
 
 // Generic PIDs
 constexpr uint16_t softwarePid = 0xf194u;
 
 // BMS PIDs
+constexpr uint16_t cell1StatPid = 0xb001u;
+constexpr uint16_t cell2StatPid = 0xb009u;
+constexpr uint16_t cell3StatPid = 0xb011u;
+constexpr uint16_t cell4StatPid = 0xb019u;
+constexpr uint16_t cell5StatPid = 0xb021u;
+constexpr uint16_t cell6StatPid = 0xb029u;
+constexpr uint16_t cell7StatPid = 0xb0a3u;
+constexpr uint16_t cell8StatPid = 0xb0abu;
+constexpr uint16_t cell9StatPid = 0xb0b3u;
 constexpr uint16_t batteryBusVoltagePid = 0xb041u;
 constexpr uint16_t batteryVoltagePid = 0xb042u;
 constexpr uint16_t batteryCurrentPid = 0xb043u;
 constexpr uint16_t batterySoCPid = 0xb046u;
 constexpr uint16_t bmsStatusPid = 0xb048u;
-constexpr uint16_t batteryCellMaxVPid = 0xb058u;
 constexpr uint16_t batteryCoolantTempPid = 0xb05cu;
 constexpr uint16_t batterySoHPid = 0xb061u;
 constexpr uint16_t chargeRatePid = 0xb712u;
@@ -97,5 +106,10 @@ constexpr uint16_t typeTemperaturePid = 0xb003u;
 
 // PEPS PIDs
 constexpr uint16_t pepsLockPid = 0xb013u;
+
+// EVCC PIDs
+constexpr uint16_t evccVoltagePid = 0xb010u;
+constexpr uint16_t evccAmperagePid = 0xb001u;
+constexpr uint16_t evccMaxAmperagePid = 0xb003u;
 
 #endif  // MG_OBD_PIDS_H_
