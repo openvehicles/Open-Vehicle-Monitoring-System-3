@@ -10,8 +10,9 @@
   "elements": [
     {
     "type": "webpage",
+    "name": "retools.htm",
     "path": "retools.htm",
-    "page": "plugin/retools",
+    "page": "/plugins/retools",
     "label": "RE Toolkit",
     "menu": "Tools",
     "auth": "Cookie"
