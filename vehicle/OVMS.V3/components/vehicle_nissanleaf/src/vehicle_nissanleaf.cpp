@@ -881,7 +881,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       // use battery voltage until d[3] d[4] fully understood, possibly little endian encoded d[3]=205
       float batt_volt   = StandardMetrics.ms_v_bat_voltage->AsFloat();
       float batt_curr   = abs(StandardMetrics.ms_v_bat_current->AsFloat());
-      float charge_curr = ( (d[0] & 0x01) << 8 | d[1] ) / 4.0f; // slow charge is 2x this value
+      float charge_curr = ( (d[0] & 0x01) << 8 | d[1] ) / 2.0f;
       switch (d[5])
         {
         case 0x80:
@@ -900,7 +900,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
           if (StandardMetrics.ms_v_charge_pilot->AsBool())
             { // voltage scaling to approx. evse kWh output
             StandardMetrics.ms_v_charge_voltage->SetValue(d[3] * 1.12);
-            StandardMetrics.ms_v_charge_current->SetValue(2 * charge_curr);
+            StandardMetrics.ms_v_charge_current->SetValue(charge_curr);
             vehicle_nissanleaf_charger_status(CHARGER_STATUS_CHARGING);
             }
           else
