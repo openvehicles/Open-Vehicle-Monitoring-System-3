@@ -50,7 +50,7 @@ static const char *TAG = "v-nissanleaf";
 #define CHARGER_RXID              0x79a
 #define BROADCAST_TXID            0x7df
 #define BROADCAST_RXID            0x0
-
+// other pairs 743/763 744/764 745/765 784/78C 792/793 79D/7BD
 #define VIN_PID                   0x81
 #define QC_COUNT_PID              0x1203
 #define L1L2_COUNT_PID            0x1205
@@ -878,16 +878,19 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         {
         StandardMetrics.ms_v_charge_pilot->SetValue(false);
         }
-      //  }
+      // use battery voltage until d[3] d[4] fully understood, possibly little endian encoded d[3]=205
+      float batt_volt   = StandardMetrics.ms_v_bat_voltage->AsFloat();
+      float batt_curr   = abs(StandardMetrics.ms_v_bat_current->AsFloat());
+      float charge_curr = ( (d[0] & 0x01) << 8 | d[1] ) / 2.0f;
       switch (d[5])
         {
         case 0x80:
-        case 0x82:
+        case 0x82: // V2X 
           vehicle_nissanleaf_charger_status(CHARGER_STATUS_IDLE);
           break;
         case 0x83:
-          StandardMetrics.ms_v_charge_voltage->SetValue(2 * d[4]);
-          StandardMetrics.ms_v_charge_current->SetValue(d[1]);
+          StandardMetrics.ms_v_charge_voltage->SetValue(batt_volt);
+          StandardMetrics.ms_v_charge_current->SetValue(batt_curr);
           vehicle_nissanleaf_charger_status(CHARGER_STATUS_QUICK_CHARGING);
           break;
         case 0x84:
@@ -895,9 +898,9 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
           break;
         case 0x88: // on evse power loss car still reports 0x88
           if (StandardMetrics.ms_v_charge_pilot->AsBool())
-            {
-            StandardMetrics.ms_v_charge_voltage->SetValue(d[3]);
-            StandardMetrics.ms_v_charge_current->SetValue(d[1] / 2.0f);
+            { // voltage scaling to approx. evse kWh output
+            StandardMetrics.ms_v_charge_voltage->SetValue(d[3] * 1.12);
+            StandardMetrics.ms_v_charge_current->SetValue(charge_curr);
             vehicle_nissanleaf_charger_status(CHARGER_STATUS_CHARGING);
             }
           else
@@ -1590,6 +1593,8 @@ void OvmsVehicleNissanLeaf::HandleEnergy()
     if (m_batt_power != 0)
       { // Will include accessory power TODO subtract from battery power
       StandardMetrics.ms_v_inv_efficiency->SetValue(abs(m_inv_power / m_batt_power) * 100.0);
+      // If power flow is negative, power is flowing from inverter into battery
+      if (m_batt_power < 0) StandardMetrics.ms_v_inv_efficiency->SetValue(abs(m_batt_power / m_inv_power) * 100.0);
       }
     }
   else StandardMetrics.ms_v_inv_efficiency->SetValue(100);
