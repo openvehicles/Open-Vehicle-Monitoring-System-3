@@ -1294,7 +1294,7 @@ void OvmsDuktape::DukTapeInit()
 
   #ifdef CONFIG_OVMS_COMP_PLUGINS
   // Plugins
-  MyPluginStore.LoadEnabledModules();
+  MyPluginStore.LoadEnabledModules(EL_MODULE);
   #endif // #ifdef CONFIG_OVMS_COMP_PLUGINS
 
   // ovmsmain

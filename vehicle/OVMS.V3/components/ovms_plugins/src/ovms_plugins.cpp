@@ -45,6 +45,10 @@ static const char *TAG = "pluginstore";
 #include "ovms_netmanager.h"
 #include "ovms_duktape.h"
 
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
+#include "ovms_webserver.h"
+#endif // #ifdef CONFIG_OVMS_COMP_WEBSERVER
+
 OvmsPluginStore MyPluginStore __attribute__ ((init_priority (7100)));
 
 void repo_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -451,15 +455,14 @@ OvmsPlugin* OvmsPluginStore::FindPlugin(std::string plugin)
     }
   }
 
-void OvmsPluginStore::LoadEnabledModules()
+void OvmsPluginStore::LoadEnabledModules(plugin_element_type_t type)
   {
   const ConfigParamMap* enabled = MyConfig.GetParamMap("plugin.enabled");
   if (enabled != NULL)
     {
-    ESP_LOGI(TAG, "Loading enabled plugins");
+    ESP_LOGI(TAG, "Loading enabled plugins (%d)",type);
     for (auto it=enabled->begin(); it!=enabled->end(); ++it)
       {
-      ESP_LOGI(TAG,"  Load %s (%s)",it->first.c_str(),it->second.c_str());
       std::string path("/store/plugins/");
       path.append(it->first);
       path.append("/");
@@ -482,6 +485,7 @@ void OvmsPluginStore::LoadEnabledModules()
         fclose(pf);
 
         cJSON *json = cJSON_Parse(pd);
+        delete [] pd;
         if (json == NULL)
           {
           ESP_LOGE(TAG, "Plugin %s: could not parse metadata", it->first.c_str());
@@ -494,8 +498,9 @@ void OvmsPluginStore::LoadEnabledModules()
           // Iterate over the elements...
           for (OvmsPluginElement* e : p.m_elements)
             {
-            if (e->m_type == EL_MODULE)
+            if ((type==EL_MODULE) && (e->m_type == EL_MODULE))
               {
+              // Load an enabled script module
               const char* filename = "LoadEnabledModules";
               duk_context* ctx = MyDuktape.DukTapeContext();
 
@@ -517,14 +522,47 @@ void OvmsPluginStore::LoadEnabledModules()
                 DukOvmsErrorHandler(ctx, -1, NULL, filename);
                 }
               duk_pop(ctx);
+              ESP_LOGI(TAG,"  Load %s script %s", p.m_name.c_str(), e->m_path.c_str());
               }
+            #ifdef CONFIG_OVMS_COMP_WEBSERVER
+            else if ((type==EL_WEB_PAGE) && (e->m_type == EL_WEB_PAGE))
+              {
+              // Load an enabled web page
+              MyWebServer.m_plugin_pages.insert({
+                e->GetAttribute("page"),
+                PagePluginContent(p.m_name + "/" + e->m_path, true) });
+              MyWebServer.RegisterPage(
+                e->GetAttribute("page"),
+                e->GetAttribute("label"),
+                OvmsWebServer::PluginHandler,
+                Code2PageMenu(e->GetAttribute("menu")),
+                Code2PageAuth(e->GetAttribute("auth")),
+                -1);
+              ESP_LOGI(TAG,"  Load %s web page %s",
+                p.m_name.c_str(),
+                e->GetAttribute("page").c_str());
+              }
+            else if ((type==EL_WEB_HOOK) && (e->m_type == EL_WEB_HOOK))
+              {
+              // Load an enabled web hook
+              MyWebServer.m_plugin_parts.insert({
+                e->GetAttribute("page") + ":" + e->GetAttribute("hook"),
+                PagePluginContent(p.m_name + "/" + e->m_path, true) });
+              MyWebServer.RegisterCallback(
+                "http.plugin",
+                 e->GetAttribute("page"),
+                 OvmsWebServer::PluginCallback,
+                 -1);
+              ESP_LOGI(TAG,"  Load %s web hook %s:%s",
+                p.m_name.c_str(),
+                e->GetAttribute("page").c_str(),
+                e->GetAttribute("hook").c_str());
+              }
+            #endif // #ifdef CONFIG_OVMS_COMP_WEBSERVER
             }
-
           // Clean up
           cJSON_Delete(json);
           }
-
-        delete [] pd;
         }
       }
     }
@@ -722,6 +760,19 @@ bool OvmsPluginElement::LoadJSON(cJSON *json)
   return true;
   }
 
+std::string OvmsPluginElement::GetAttribute(std::string name)
+  {
+  auto search = m_attr.find(name);
+  if (search != m_attr.end())
+    {
+    return search->second;
+    }
+  else
+    {
+    return std::string("");
+    }
+  }
+
 ////////////////////////////////////////////////////////////////////////////////
 // OvmsPlugin
 
@@ -863,7 +914,7 @@ bool OvmsPlugin::Download()
     {
     std::string url(repopath);
     url.append("/");
-    url.append(p->m_name);
+    url.append(m_name);
     url.append("/");
     url.append(p->m_path);
 

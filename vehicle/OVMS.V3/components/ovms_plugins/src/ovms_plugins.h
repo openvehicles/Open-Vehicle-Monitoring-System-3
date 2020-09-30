@@ -88,6 +88,7 @@ class OvmsPluginElement
   public:
     bool LoadJSON(cJSON *json);
     void Summarise(OvmsWriter* writer);
+    std::string GetAttribute(std::string name);
 
   public:
     plugin_element_type_t m_type;
@@ -158,7 +159,7 @@ class OvmsPluginStore
     bool LoadRepoPlugins();
 
   public:
-    void LoadEnabledModules();
+    void LoadEnabledModules(plugin_element_type_t type);
 
   public:
     void Summarise(OvmsWriter* writer);

@@ -46,6 +46,9 @@ static const char *TAG = "webserver";
 #include "buffered_shell.h"
 #include "vehicle.h"
 
+#ifdef CONFIG_OVMS_COMP_PLUGINS
+#include "ovms_plugins.h"
+#endif // #ifdef CONFIG_OVMS_COMP_PLUGINS
 
 OvmsWebServer MyWebServer __attribute__ ((init_priority (8200)));
 
@@ -349,8 +352,19 @@ PageEntry* OvmsWebServer::FindPage(std::string uri)
 
 void PagePluginContent::LoadContent()
 {
-  std::string path = "/store/plugin/" + m_path;
+  std::string path;
+  if (m_pluginstore)
+    {
+    path = "/store/plugins/" + m_path;
+    }
+  else
+    {
+    path = "/store/plugin/" + m_path;
+    }
   std::ifstream file(path, std::ios::in | std::ios::binary | std::ios::ate);
+
+  ESP_LOGD(TAG,"Plugin LoadContent: %s = %s",m_path.c_str(),path.c_str());
+
   if (!file.is_open()) {
     ESP_LOGE(TAG, "Plugin file missing: '%s'", path.c_str());
     m_content = "<!-- ERROR: Plugin file missing: '";
@@ -417,6 +431,12 @@ void OvmsWebServer::RegisterPlugins()
       ESP_LOGD(TAG, "Plugin page registered: '%s' => '%s'", page.c_str(), key.c_str());
     }
   }
+
+  #ifdef CONFIG_OVMS_COMP_PLUGINS
+  // Plugins
+  MyPluginStore.LoadEnabledModules(EL_WEB_PAGE);
+  MyPluginStore.LoadEnabledModules(EL_WEB_HOOK);
+  #endif // #ifdef CONFIG_OVMS_COMP_PLUGIN
 }
 
 void OvmsWebServer::DeregisterPlugins()
@@ -431,10 +451,14 @@ void OvmsWebServer::ReloadPlugin(std::string path)
 {
   if (startsWith(path, "/store/plugin/"))
     path = path.substr(14);
+  else if (startsWith(path, "/store/plugins/"))
+    path = path.substr(15);
+
   for (auto i = m_plugin_pages.begin(); i != m_plugin_pages.end(); i++) {
     if (i->second.m_path == path)
       i->second.LoadContent();
   }
+
   for (auto i = m_plugin_parts.begin(); i != m_plugin_parts.end(); i++) {
     if (i->second.m_path == path)
       i->second.LoadContent();

@@ -199,7 +199,7 @@ struct PageCallbackEntry
 {
   std::string       caller;
   PageCallback_t    handler;
-  
+
   PageCallbackEntry(std::string _caller, PageCallback_t _handler)
   {
     caller = _caller;
@@ -243,11 +243,13 @@ typedef std::forward_list<PageEntry> PageMap_t;
 
 struct PagePluginContent
 {
+  bool              m_pluginstore;
   std::string       m_path;
   extram::string    m_content;
 
-  PagePluginContent(std::string path) {
+  PagePluginContent(std::string path, bool pluginstore=false) {
     m_path = path;
+    m_pluginstore = pluginstore;
   }
 
   extram::string& GetContent() {
@@ -255,7 +257,7 @@ struct PagePluginContent
       LoadContent();
     return m_content;
   }
-  
+
   void LoadContent();
 };
 
