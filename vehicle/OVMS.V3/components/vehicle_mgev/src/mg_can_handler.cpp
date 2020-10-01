@@ -75,11 +75,18 @@ void OvmsVehicleMgEv::IncomingPollFrame(CAN_frame_t* frame)
 {
     if (frame->MsgID == 0x70au)
     {
-        ESP_LOGI(
+        ESP_LOGV(
             TAG, "Wake up message (length %d): %02x %02x %02x %02x %02x %02x %02x",
             frame->FIR.B.DLC, frame->data.u8[0], frame->data.u8[1], frame->data.u8[2],
             frame->data.u8[3], frame->data.u8[4], frame->data.u8[5], frame->data.u8[6]
         );
+        if (m_wakeState == Off)
+        {
+            // If we get a 70a and the CAN is off, then we'll need to wake the CAN
+            ESP_LOGI(TAG, "Wake state from %d to %d", Off, Diagnostic);
+            m_wakeState = Diagnostic;
+            m_wakeTicker = monotonictime;
+        }
     }
 
     uint8_t frameType = frame->data.u8[0] >> 4;

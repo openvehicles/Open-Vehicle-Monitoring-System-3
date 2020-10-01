@@ -65,7 +65,11 @@ void OvmsVehicleMgEv::IncomingVcuPoll(
         case vcuIgnitionStatePid:
             // Aux only is 1, but we'll say it's on when the ignition is too
             StandardMetrics.ms_v_env_aux12v->SetValue(data[0] != 0);
-            StandardMetrics.ms_v_env_on->SetValue(data[0] == 2);
+            if (StandardMetrics.ms_v_env_on->AsBool() != (data[0] == 2))
+            {
+                // Only set on change so we can see when it was turned on
+                StandardMetrics.ms_v_env_on->SetValue(data[0] == 2);
+            }
             break;
         case vcuVinPid:
             HandleVinMessage(data, length, remain);

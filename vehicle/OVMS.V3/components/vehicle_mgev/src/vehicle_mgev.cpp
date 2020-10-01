@@ -66,7 +66,7 @@ const OvmsVehicle::poll_pid_t obdii_polls[] =
     { vcuId, vcuId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcuIgnitionStatePid, {  1, 1, 1, 1 }, 0 },
     { vcuId, vcuId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcu12vSupplyPid, {  0, 60, 60, 60 }, 0 },
     { vcuId, vcuId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcuCoolantTempPid, {  0, 30, 30, 30 }, 0 },
-    { vcuId, vcuId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcuChargerConnectedPid, {  0, 30, 30, 30 }, 0 },
+    { vcuId, vcuId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcuChargerConnectedPid, {  0, 5, 30, 30 }, 0 },
     { vcuId, vcuId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcuVehicleSpeedPid, {  0, 0, 5, 0 }, 0 },
     { vcuId, vcuId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcuMotorSpeedPid, {  0, 0, 5, 0 }, 0 },
     { vcuId, vcuId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcuOdometerPid, {  0, 0, 20, 0 }, 0 },
@@ -131,8 +131,6 @@ OvmsVehicleMgEv::OvmsVehicleMgEv()
 
     m_rxPacketTicker = 0u;
     m_rxPackets = 0u;
-    m_txErrorsTicker = 0u;
-    m_txErrors = 0u;
     // Until we know it's unlocked, say it's locked otherwise we might set off the alarm
     StandardMetrics.ms_v_env_locked->SetValue(true);
     StandardMetrics.ms_v_env_on->SetValue(false);
@@ -338,39 +336,13 @@ bool OvmsVehicleMgEv::HasWoken(canbus* currentBus, uint32_t ticker)
         {
             ESP_LOGD(TAG, "Car not responding while sending TP, sending diagnostic");
             m_wakeState = Diagnostic;
-            m_wakeTicker = ticker;
+            m_wakeTicker = monotonictime;
         }
         else if (m_wakeState != Waking && m_wakeState != Off &&
-                (m_wakeState != Diagnostic || ticker - m_wakeTicker > ZOMBIE_TIMEOUT))
+                (m_wakeState != Diagnostic || monotonictime - m_wakeTicker > ZOMBIE_TIMEOUT))
         {
             m_wakeState = Off;
-            m_wakeTicker = ticker;
-        }
-    }
-
-    const auto txErrors = currentBus->m_status.errors_tx;
-    if (m_txErrors != txErrors)
-    {
-        m_txErrors = txErrors;
-        m_txErrorsTicker = ticker;
-    }
-    else
-    {
-        // If there's been no TX errors for a while and we're supposed to be off then
-        // the gateway is probably in zombie mode
-        if (m_wakeState == Off && ticker - m_txErrorsTicker >= ZOMBIE_TIMEOUT &&
-                ticker - m_wakeTicker >= TRANSITION_TIMEOUT)
-        {
-            ESP_LOGD(
-                TAG,
-                "Car appears to be in zombie mode (last error %d, last transition %d), "
-                    "sending diagnostic",
-                ticker - m_txErrorsTicker, ticker - m_wakeTicker
-            );
-            m_wakeState = Diagnostic;
-            m_wakeTicker = ticker;
-            // Set this to stop us immediately turning it back off again
-            m_rxPacketTicker = ticker;
+            m_wakeTicker = monotonictime;
         }
     }
 
@@ -385,18 +357,19 @@ void OvmsVehicleMgEv::DeterminePollState(canbus* currentBus, bool wokenUp, uint3
         if (m_wakeState == Off || m_wakeState == Awake)
         {
             m_wakeState = Tester;
-            m_wakeTicker = ticker;
+            m_wakeTicker = monotonictime;
         }
         if (m_wakeState == Diagnostic && !StandardMetrics.ms_v_env_locked->AsBool() &&
-                ticker - m_wakeTicker > UNLOCKED_CHARGING_TIMEOUT)
+                monotonictime - m_wakeTicker > UNLOCKED_CHARGING_TIMEOUT)
         {
             m_wakeState = Tester;
-            m_wakeTicker = ticker;
+            m_wakeTicker = monotonictime;
         }
     }
     else
     {
-        if (StandardMetrics.ms_v_env_on->AsBool())
+        if (StandardMetrics.ms_v_env_on->AsBool() &&
+                monotonictime - StandardMetrics.ms_v_env_on->LastModified() >= 5)
         {
             PollSetState(PollStateRunning);
         }
@@ -411,10 +384,10 @@ void OvmsVehicleMgEv::DeterminePollState(canbus* currentBus, bool wokenUp, uint3
         }
 
         if ((m_wakeState == Diagnostic || m_wakeState == Tester) &&
-                ticker - m_wakeTicker > TRANSITION_TIMEOUT)
+                monotonictime - m_wakeTicker > TRANSITION_TIMEOUT)
         {
             m_wakeState = Awake;
-            m_wakeTicker = ticker;
+            m_wakeTicker = monotonictime;
         }
     }
 }
