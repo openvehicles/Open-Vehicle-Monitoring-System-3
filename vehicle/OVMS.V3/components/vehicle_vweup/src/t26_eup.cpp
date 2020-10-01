@@ -31,7 +31,7 @@
 
 /*
 ;    Subproject:    Integration of support for the VW e-UP
-;    Date:          23rd September 2020
+;    Date:          29th September 2020
 ;
 ;    Changes:
 ;    0.1.0  Initial code
@@ -97,6 +97,12 @@
 ;
 ;    0.3.9  Corrected estimated range
 ;
+;    0.4.0  Implemnted ICCB charging detection
+;
+;    0.4.1  Corrected estimated range
+;
+;    0.4.2  Corrected locked status, cabin temperature
+:
 ;    (C) 2020       Chris van der Meijden
 ;
 ;    Big thanx to sharkcow, Dimitrie78, E-Imo, Dexter and 'der kleine Nik'.
@@ -105,7 +111,7 @@
 #include "ovms_log.h"
 static const char *TAG = "v-vweup-t26";
 
-#define VERSION "0.3.9"
+#define VERSION "0.4.2"
 
 #include <stdio.h>
 #include "pcp.h"
@@ -277,8 +283,9 @@ void OvmsVehicleVWeUpT26::IncomingFrameCan3(CAN_frame_t *p_frame)
 
     case 0x52D: // KM range left (estimated).
         if (d[0] != 0xFE) {
-           if (d[0] > 0x06) {
-              if (d[0] < 0x08) d[0] = 0x00;
+           if (d[1] == 0x41) {
+              StandardMetrics.ms_v_bat_range_est->SetValue(d[0] + 255);
+           } else {
               StandardMetrics.ms_v_bat_range_est->SetValue(d[0]);
            }
         }
@@ -345,7 +352,7 @@ void OvmsVehicleVWeUpT26::IncomingFrameCan3(CAN_frame_t *p_frame)
         break;
 
     case 0x381: // Vehicle locked
-        if (d[0] > 0)
+        if (d[0] == 0x02)
         {
              StandardMetrics.ms_v_env_locked->SetValue(true);
         }
@@ -356,9 +363,12 @@ void OvmsVehicleVWeUpT26::IncomingFrameCan3(CAN_frame_t *p_frame)
         break;
 
     case 0x3E3: // Cabin temperature
-        StandardMetrics.ms_v_env_cabintemp->SetValue((d[2]-100)/2);
-        // Set PEM inv temp to support older app version with cabin temp workaround display
-        StandardMetrics.ms_v_inv_temp->SetValue((d[2] - 100) / 2);
+        if (d[2] != 0xFF)
+        {
+           StandardMetrics.ms_v_env_cabintemp->SetValue((d[2]-100)/2);
+           // Set PEM inv temp to support older app version with cabin temp workaround display
+           StandardMetrics.ms_v_inv_temp->SetValue((d[2] - 100) / 2);
+        }
         break;
 
     case 0x470: // Doors
@@ -395,7 +405,7 @@ void OvmsVehicleVWeUpT26::IncomingFrameCan3(CAN_frame_t *p_frame)
 
     case 0x61C: // Charge detection
       cd_count++;
-      if ((d[2] == 0x00) || (d[2] == 0x01)) {
+      if (d[2] < 0x07) {
          isCharging = true;
       } else {
          isCharging = false;

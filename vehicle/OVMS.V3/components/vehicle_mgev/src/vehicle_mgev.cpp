@@ -46,12 +46,19 @@ const OvmsVehicle::poll_pid_t obdii_polls[] =
     { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, batteryCurrentPid, {  0, 0, 10, 10 }, 0 },
     { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, batteryVoltagePid, {  0, 60, 10, 10 }, 0 },
     { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, batterySoCPid, {  0, 60, 30, 30 }, 0 },
-    // Can't translate this currently, so don't bother polling
-    //{ bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, batteryCellMaxVPid, {  0, 0, 30, 30 }, 0 },
     { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, batteryCoolantTempPid, {  0, 30, 30, 30 }, 0 },
     { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, batterySoHPid, {  0, 120, 120, 120 }, 0 },
     { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, chargeRatePid, {  0, 0, 0, 60 }, 0 },
     { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmsRangePid, {  0, 60, 10, 10 }, 0 },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, cell1StatPid, {  0, 60, 10, 10 }, 0 },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, cell2StatPid, {  0, 60, 10, 10 }, 0 },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, cell3StatPid, {  0, 60, 10, 10 }, 0 },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, cell4StatPid, {  0, 60, 10, 10 }, 0 },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, cell5StatPid, {  0, 60, 10, 10 }, 0 },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, cell6StatPid, {  0, 60, 10, 10 }, 0 },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, cell7StatPid, {  0, 60, 10, 10 }, 0 },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, cell8StatPid, {  0, 60, 10, 10 }, 0 },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, cell9StatPid, {  0, 60, 10, 10 }, 0 },
     { dcdcId, dcdcId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, dcdcLvCurrentPid, {  0, 60, 60, 60 }, 0 },
     { dcdcId, dcdcId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, dcdcPowerLoadPid, {  0, 60, 60, 60 }, 0 },
     { dcdcId, dcdcId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, dcdcTemperaturePid, {  0, 30, 30, 30 }, 0 },
@@ -73,11 +80,15 @@ const OvmsVehicle::poll_pid_t obdii_polls[] =
     { atcId, atcId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, atcBlowerSpeedPid, {  0, 0, 10, 0 }, 0 },
     { atcId, atcId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, atcPtcTempPid, {  0, 30, 10, 0 }, 0 },
     { pepsId, pepsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, pepsLockPid, {  1, 1, 1, 1 }, 0 },
-    // Only poll when running, BCM requests are performed manually to avoid the alarm
-    { bcmId, bcmId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bcmDoorPid, {  0, 0, 15, 0 }, 0 },
-    { bcmId, bcmId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bcmLightPid, {  0, 0, 15, 0 }, 0 },
+    // Only poll when running, BCM requests are performed manually to avoid the alarm    
+    // FIXME: Disabled until we are happy that the alarm won't go off
+    //{ bcmId, bcmId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bcmDoorPid, {  0, 0, 15, 0 }, 0 },
+    //{ bcmId, bcmId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bcmLightPid, {  0, 0, 15, 0 }, 0 },
     { tpmsId, tpmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, tyrePressurePid, {  0, 60, 60, 0 }, 0 },
     { tpmsId, tpmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, typeTemperaturePid, {  0, 60, 60, 0 }, 0 },
+    { evccId, evccId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, evccVoltagePid, {  0, 0, 0, 10 }, 0 },
+    { evccId, evccId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, evccAmperagePid, {  0, 0, 0, 10 }, 0 },
+    { evccId, evccId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, evccMaxAmperagePid, {  0, 0, 0, 10 }, 0 },
     { 0, 0, 0x00, 0x00, { 0, 0, 0, 0 }, 0 }
 };
 
@@ -120,6 +131,7 @@ OvmsVehicleMgEv::OvmsVehicleMgEv()
     m_txErrors = 0u;
     // Until we know it's unlocked, say it's locked otherwise we might set off the alarm
     StandardMetrics.ms_v_env_locked->SetValue(true);
+    StandardMetrics.ms_v_env_on->SetValue(false);
 
     // Assume the CAN is off to start with
     m_wakeState = Off;
@@ -209,6 +221,11 @@ void OvmsVehicleMgEv::SoftwareVersions(OvmsWriter* writer)
     m_versions.clear();
     for (size_t i = 0u; i < ecuCount; ++i)
     {
+        if (ecus[i] == bcmId && StandardMetrics.ms_v_env_locked->AsBool())
+        {
+            // This will set off the alarm...
+            continue;
+        }
         ESP_LOGV(TAG, "Sending query to %03x", ecus[i]);
         SendPollMessage(
             currentBus, ecus[i], VEHICLE_POLL_TYPE_OBDIIEXTENDED, softwarePid
@@ -280,6 +297,14 @@ canbus* OvmsVehicleMgEv::IdToBus(int id)
             break;
     }
     return bus;
+}
+
+void OvmsVehicleMgEv::NotifyVehicleIdling()
+{
+    if (m_poll_state != PollStateCharging)
+    {
+        OvmsVehicle::NotifyVehicleIdling();
+    }
 }
 
 bool OvmsVehicleMgEv::HasWoken(canbus* currentBus, uint32_t ticker)

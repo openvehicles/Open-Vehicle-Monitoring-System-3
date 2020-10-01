@@ -33,6 +33,8 @@
 #include "mg_obd_pids.h"
 #include "metrics_standard.h"
 
+#include <algorithm>
+
 namespace {
 
 // Responses to the BMS Status PID
@@ -48,12 +50,91 @@ enum BmsStatus : unsigned char {
 
 }  // anon namespace
 
-void OvmsVehicleMgEv::IncomingBmsPoll(uint16_t pid, uint8_t* data, uint8_t length)
+void OvmsVehicleMgEv::ProcessBatteryStats(int index, uint8_t* data, uint16_t remain)
+{
+    // The stats are per block rather than per cell, but we'll record them in cells
+    // Rather than cache all of the data as it's split over two frames, just cache the one
+    // byte that we need
+    if (remain)
+    {
+        uint16_t vmin = (data[0] << 8 | data[1]);
+        m_bmsCache = data[2];
+
+        StandardMetrics.ms_v_bat_cell_vmin->SetElemValue(index, vmin / 1475.0f);
+        
+        {
+            auto pvmin = StandardMetrics.ms_v_bat_cell_vmin->AsVector();
+            StandardMetrics.ms_v_bat_pack_vmin->SetValue(
+                *std::min_element(pvmin.begin(), pvmin.end())
+            );
+        }
+    }
+    else
+    {
+        uint16_t vmax = (m_bmsCache << 8 | data[0]);
+        uint8_t tmin = data[1];
+        uint8_t tmax = data[2];
+        //uint8_t tpcb = data[3]; tpcb / 2.0 - 40.0;
+
+        StandardMetrics.ms_v_bat_cell_vmax->SetElemValue(index, vmax / 1475.0f);
+        StandardMetrics.ms_v_bat_cell_tmin->SetElemValue(index, tmin * 0.5f - 40.0f);
+        StandardMetrics.ms_v_bat_cell_tmax->SetElemValue(index, tmax * 0.5f - 40.0f);
+
+        {
+            auto pvmax = StandardMetrics.ms_v_bat_cell_vmax->AsVector();
+            StandardMetrics.ms_v_bat_pack_vmax->SetValue(
+                *std::max_element(pvmax.begin(), pvmax.end())
+            );
+        }
+        {
+            auto ptmin = StandardMetrics.ms_v_bat_cell_tmin->AsVector();
+            StandardMetrics.ms_v_bat_pack_tmin->SetValue(
+                *std::min_element(ptmin.begin(), ptmin.end())
+            );
+        }
+        {
+            auto ptmax = StandardMetrics.ms_v_bat_cell_tmax->AsVector();
+            StandardMetrics.ms_v_bat_pack_tmax->SetValue(
+                *std::max_element(ptmax.begin(), ptmax.end())
+            );
+        }
+    }
+}
+
+void OvmsVehicleMgEv::IncomingBmsPoll(
+        uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain)
 {
     uint16_t value = (data[0] << 8 | data[1]);
 
     switch (pid)
     {
+        case cell1StatPid:
+            ProcessBatteryStats(0, data, remain);
+            break;
+        case cell2StatPid:
+            ProcessBatteryStats(1, data, remain);
+            break;
+        case cell3StatPid:
+            ProcessBatteryStats(2, data, remain);
+            break;
+        case cell4StatPid:
+            ProcessBatteryStats(3, data, remain);
+            break;
+        case cell5StatPid:
+            ProcessBatteryStats(4, data, remain);
+            break;
+        case cell6StatPid:
+            ProcessBatteryStats(5, data, remain);
+            break;
+        case cell7StatPid:
+            ProcessBatteryStats(6, data, remain);
+            break;
+        case cell8StatPid:
+            ProcessBatteryStats(7, data, remain);
+            break;
+        case cell9StatPid:
+            ProcessBatteryStats(8, data, remain);
+            break;
         case batteryBusVoltagePid:
             // Check that the bus is not turned off
             if (value != 0xfffeu)
@@ -93,10 +174,6 @@ void OvmsVehicleMgEv::IncomingBmsPoll(uint16_t pid, uint8_t* data, uint8_t lengt
             break;
         case bmsStatusPid:
             SetBmsStatus(data[0]);
-            break;
-        case batteryCellMaxVPid:
-            // In data[0] -> data[2] where 0x0ff6ff = 4.09V, no other values known yet
-            //StandardMetrics.ms_v_bat_pack_vmax->SetValue();
             break;
         case batteryCoolantTempPid:
             // Temperature is half degrees from -40C

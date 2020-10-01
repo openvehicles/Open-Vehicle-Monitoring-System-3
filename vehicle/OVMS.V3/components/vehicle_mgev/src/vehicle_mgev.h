@@ -69,32 +69,37 @@ class OvmsVehicleMgEv : public OvmsVehicle
     void IncomingFrameCan3(CAN_frame_t* p_frame) override;
     void IncomingFrameCan4(CAN_frame_t* p_frame) override;
 
-	vehicle_command_t CommandWakeup() override;
+    vehicle_command_t CommandWakeup() override;
 
   private:
     canbus* IdToBus(int id);
     void ConfigurePollInterface(int bus);
 
-	static void ZombieTimer(TimerHandle_t timer);
-	void ZombieTimer();
+    static void ZombieTimer(TimerHandle_t timer);
+    void ZombieTimer();
 
-	static void SoftwareVersions(
-			int, OvmsWriter* writer, OvmsCommand*, int, const char* const*);
-	void SoftwareVersions(OvmsWriter* writer);
+    static void SoftwareVersions(
+            int, OvmsWriter* writer, OvmsCommand*, int, const char* const*);
+    void SoftwareVersions(OvmsWriter* writer);
 
-	static void WakeUp(void* self);
+    static void WakeUp(void* self);
 
     void IncomingPollFrame(CAN_frame_t* frame);
     bool SendPollMessage(canbus* bus, uint16_t id, uint8_t type, uint16_t pid);
 
     bool HasWoken(canbus* currentBus, uint32_t ticker);
     void DeterminePollState(canbus* currentBus, bool wokenUp, uint32_t ticker);
-	void SendAlarmSensitive(canbus* currentBus);
+    void SendAlarmSensitive(canbus* currentBus);
     bool SendKeepAliveTo(canbus* currentBus, uint16_t id);
 
+    void NotifyVehicleIdling() override;
+
     // mg_poll_bms.cpp
-    void IncomingBmsPoll(uint16_t pid, uint8_t* data, uint8_t length);
+    void IncomingBmsPoll(uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain);
     void SetBmsStatus(uint8_t status);
+    void ProcessBatteryStats(int index, uint8_t* data, uint16_t remain);
+    /// A cache of the last byte in the first message of the BMS cell voltage message
+    uint8_t m_bmsCache;
 
     // mg_poll_dcdc.cpp
     void IncomingDcdcPoll(uint16_t pid, uint8_t* data, uint8_t length);
@@ -118,18 +123,21 @@ class OvmsVehicleMgEv : public OvmsVehicle
     // mg_poll_peps.cpp
     void IncomingPepsPoll(uint16_t pid, uint8_t* data, uint8_t length);
 
-	/// The states that the gateway CAN can be in
-	enum WakeState
-	{
-		Off,     // The CAN is off and we're not trying to wake it
-		Waking,  // Still off, but we are trying to wake it up
-		Tester,  // The gateway is on, but only because we're keeping it awake with a
-		         // tester present message
-		Diagnostic,  // The gateway is on, but only because we're keeping it awake with
-		             // a diagnostic session.  This causes an error on the IPK, so best
-		             // not to keep in this state.
-		Awake    // CAN is awake because the car is on or tester present is being sent
-	};
+    // mg_poll_evcc.cpp
+    void IncomingEvccPoll(uint16_t pid, uint8_t* data, uint8_t length);
+
+    /// The states that the gateway CAN can be in
+    enum WakeState
+    {
+        Off,     // The CAN is off and we're not trying to wake it
+        Waking,  // Still off, but we are trying to wake it up
+        Tester,  // The gateway is on, but only because we're keeping it awake with a
+                 // tester present message
+        Diagnostic,  // The gateway is on, but only because we're keeping it awake with
+                     // a diagnostic session.  This causes an error on the IPK, so best
+                     // not to keep in this state.
+        Awake    // CAN is awake because the car is on or tester present is being sent
+    };
 
     /// A temporary store for the VIN
     char m_vin[18];
