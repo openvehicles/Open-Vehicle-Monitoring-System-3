@@ -48,8 +48,9 @@ using namespace std;
 void OvmsVehicleVWeUpAll::WebInit()
 {
   // vehicle menu:
-  MyWebServer.RegisterPage("/xut/features", "Features", WebCfgFeatures, PageMenu_Vehicle, PageAuth_Cookie);
-  MyWebServer.RegisterPage("/xut/climate", "Climate control", WebCfgClimate, PageMenu_Vehicle, PageAuth_Cookie);
+  MyWebServer.RegisterPage("/xua/features", "Features", WebCfgFeatures, PageMenu_Vehicle, PageAuth_Cookie);
+  MyWebServer.RegisterPage("/xua/climate", "Climate control", WebCfgClimate, PageMenu_Vehicle, PageAuth_Cookie);
+  MyWebServer.RegisterPage("/xua/metrics_std", "Standard Metrics", WebDispStdMetrics, PageMenu_Vehicle, PageAuth_Cookie);
 }
 
 /**
@@ -57,12 +58,12 @@ void OvmsVehicleVWeUpAll::WebInit()
  */
 void OvmsVehicleVWeUpAll::WebDeInit()
 {
-  MyWebServer.DeregisterPage("/xut/features");
-  MyWebServer.DeregisterPage("/xut/climate");
+  MyWebServer.DeregisterPage("/xua/features");
+  MyWebServer.DeregisterPage("/xua/climate");
 }
 
 /**
- * WebCfgFeatures: configure general parameters (URL /xut/config)
+ * WebCfgFeatures: configure general parameters (URL /xua/config)
  */
 void OvmsVehicleVWeUpAll::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
 {
@@ -91,10 +92,10 @@ void OvmsVehicleVWeUpAll::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
     if (error == "")
     {
       // store:
-      MyConfig.SetParamValue("xut", "modelyear", modelyear);
-      MyConfig.SetParamValueBool("xut", "con_obd", con_obd);
-      MyConfig.SetParamValueBool("xut", "con_t26", con_t26);
-      MyConfig.SetParamValueBool("xut", "canwrite", canwrite);
+      MyConfig.SetParamValue("xua", "modelyear", modelyear);
+      MyConfig.SetParamValueBool("xua", "con_obd", con_obd);
+      MyConfig.SetParamValueBool("xua", "con_t26", con_t26);
+      MyConfig.SetParamValueBool("xua", "canwrite", canwrite);
 
       c.head(200);
       c.alert("success", "<p class=\"lead\">VW e-Up feature configuration saved.</p>");
@@ -111,10 +112,10 @@ void OvmsVehicleVWeUpAll::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
   else
   {
     // read configuration:
-    modelyear = MyConfig.GetParamValue("xut", "modelyear", STR(DEFAULT_MODEL_YEAR));
-    con_obd = MyConfig.GetParamValueBool("xut", "con_obd", false);
-    con_t26 = MyConfig.GetParamValueBool("xut", "con_t26", false);
-    canwrite = MyConfig.GetParamValueBool("xut", "canwrite", false);
+    modelyear = MyConfig.GetParamValue("xua", "modelyear", STR(DEFAULT_MODEL_YEAR));
+    con_obd = MyConfig.GetParamValueBool("xua", "con_obd", false);
+    con_t26 = MyConfig.GetParamValueBool("xua", "con_t26", false);
+    canwrite = MyConfig.GetParamValueBool("xua", "canwrite", false);
 
     c.head(200);
   }
@@ -150,7 +151,7 @@ void OvmsVehicleVWeUpAll::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
 }
 
 /**
- * WebCfgClimate: setup how connexted to the vehicle (URL /xut/config)
+ * WebCfgClimate: setup how connexted to the vehicle (URL /xua/config)
  */
 void OvmsVehicleVWeUpAll::WebCfgClimate(PageEntry_t &p, PageContext_t &c)
 {
@@ -165,7 +166,7 @@ void OvmsVehicleVWeUpAll::WebCfgClimate(PageEntry_t &p, PageContext_t &c)
     if (error == "")
     {
       // store:
-      MyConfig.SetParamValue("xut", "cc_temp", cc_temp);
+      MyConfig.SetParamValue("xua", "cc_temp", cc_temp);
 
       c.head(200);
       c.alert("success", "<p class=\"lead\">VW e-Up climate control configuration saved.</p>");
@@ -181,7 +182,7 @@ void OvmsVehicleVWeUpAll::WebCfgClimate(PageEntry_t &p, PageContext_t &c)
   else
   {
     // read configuration:
-    cc_temp = MyConfig.GetParamValue("xut", "cc_temp", "21");
+    cc_temp = MyConfig.GetParamValue("xua", "cc_temp", "21");
 
     c.head(200);
   }
@@ -216,4 +217,179 @@ void OvmsVehicleVWeUpAll::WebCfgClimate(PageEntry_t &p, PageContext_t &c)
  */
 void OvmsVehicleVWeUpAll::WebDispStdMetrics(PageEntry_t &p, PageContext_t &c)
 {
+  std::string cmd, output;
+
+  c.head(200);
+  PAGE_HOOK("body.pre");
+
+  c.print(
+    "<div class=\"panel panel-primary\">"
+        "<div class=\"panel-heading\">VW e-Up Metrics</div>"
+        "<div class=\"panel-body\">"
+
+            "<div class=\"receiver\">"
+                "<div class=\"clearfix\">"
+                    "<div class=\"metric progress\" data-metric=\"v.b.soc\" data-prec=\"2\">"
+                        "<div class=\"progress-bar value-low text-left\" role=\"progressbar\" aria-valuenow=\"0\" aria-valuemin=\"0\""
+                            "aria-valuemax=\"100\" style=\"width:0%\">"
+                            "<div>"
+                                "<span class=\"label\">SoC</span>"
+                                "<span class=\"value\">?</span>"
+                                "<span class=\"unit\">%</span>"
+                            "</div>"
+                        "</div>"
+                    "</div>"
+                    "<div class=\"metric progress\" data-metric=\"xua.b.soc\" data-prec=\"2\">"
+                        "<div class=\"progress-bar progress-bar-info value-low text-left\" role=\"progressbar\" aria-valuenow=\"0\""
+                            "aria-valuemin=\"0\" aria-valuemax=\"100\" style=\"width:0%\">"
+                            "<div>"
+                                "<span class=\"label\">SoC (absolute)</span>"
+                                "<span class=\"value\">?</span>"
+                                "<span class=\"unit\">%</span>"
+                            "</div>"
+                        "</div>"
+                    "</div>"
+                "</div>"
+                "<div class=\"clearfix\">"
+                    "<div class=\"metric number\" data-metric=\"v.b.energy.used.total\" data-prec=\"3\">"
+                        "<span class=\"label\">TOTALS:&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbspUsed</span>"
+                        "<span class=\"value\">?</span>"
+                        "<span class=\"unit\">kWh</span>"
+                    "</div>"
+                    "<div class=\"metric number\" data-metric=\"v.b.energy.recd.total\" data-prec=\"3\">"
+                        "<span class=\"label\">Charged</span>"
+                        "<span class=\"value\">?</span>"
+                        "<span class=\"unit\">kWh</span>"
+                    "</div>"
+                    "<div class=\"metric number\" data-metric=\"v.p.odometer\" data-prec=\"1\">"
+                        "<span class=\"label\">Distance</span>"
+                        "<span class=\"value\">?</span>"
+                        "<span class=\"unit\">km</span>"
+                    "</div>"
+                    "<div class=\"metric number\" data-metric=\"v.b.range.est\" data-prec=\"0\">"
+                        "<span class=\"label\">Range</span>"
+                        "<span class=\"value\">?</span>"
+                        "<span class=\"unit\">km</span>"
+                    "</div>"
+                "</div>"
+
+                "<h4>Battery</h4>"
+
+                "<div class=\"clearfix\">"
+                    "<div class=\"metric progress\" data-metric=\"v.b.voltage\" data-prec=\"1\">"
+                        "<div class=\"progress-bar value-low text-left\" role=\"progressbar\" aria-valuenow=\"0\""
+                            "aria-valuemin=\"276\" aria-valuemax=\"418\" style=\"width:0%\">"
+                            "<div>"
+                                "<span class=\"label\">Voltage</span>"
+                                "<span class=\"value\">?</span>"
+                                "<span class=\"unit\">V</span>"
+                            "</div>"
+                        "</div>"
+                    "</div>"
+                    "<div class=\"metric progress\" data-metric=\"v.b.current\" data-prec=\"1\">"
+                        "<div class=\"progress-bar progress-bar-danger value-low text-left\" role=\"progressbar\""
+                            "aria-valuenow=\"0\" aria-valuemin=\"-200\" aria-valuemax=\"200\" style=\"width:0%\">"
+                            "<div>"
+                                "<span class=\"label\">Current</span>"
+                                "<span class=\"value\">?</span>"
+                                "<span class=\"unit\">A</span>"
+                            "</div>"
+                        "</div>"
+                    "</div>"
+                    "<div class=\"metric progress\" data-metric=\"v.b.power\" data-prec=\"3\">"
+                        "<div class=\"progress-bar progress-bar-warning value-low text-left\" role=\"progressbar\""
+                            "aria-valuenow=\"0\" aria-valuemin=\"-70\" aria-valuemax=\"70\" style=\"width:0%\">"
+                            "<div>"
+                                "<span class=\"label\">Power</span>"
+                                "<span class=\"value\">?</span>"
+                                "<span class=\"unit\">kW</span>"
+                            "</div>"
+                        "</div>"
+                    "</div>"
+                "</div>"
+                "<div class=\"clearfix\">"
+                    "<div class=\"metric number\" data-metric=\"v.b.temp\" data-prec=\"1\">"
+                        "<span class=\"label\">Temp</span>"
+                        "<span class=\"value\">?</span>"
+                        "<span class=\"unit\">°C</span>"
+                    "</div>"
+                    "<div class=\"metric number\" data-metric=\"xua.b.cell.delta\" data-prec=\"3\">"
+                        "<span class=\"label\">Cell delta</span>"
+                        "<span class=\"value\">?</span>"
+                        "<span class=\"unit\">V</span>"
+                    "</div>"
+                "</div>"
+
+                "<h4>AC Charger</h4>"
+
+                "<div class=\"clearfix\">"
+                    "<div class=\"metric progress\" data-metric=\"xua.c.ac.p\" data-prec=\"3\">"
+                        "<div class=\"progress-bar progress-bar-warning value-low text-left\" role=\"progressbar\""
+                            "aria-valuenow=\"0\" aria-valuemin=\"0\" aria-valuemax=\"8\" style=\"width:0%\">"
+                            "<div>"
+                                "<span class=\"label\">AC Power</span>"
+                                "<span class=\"value\">?</span>"
+                                "<span class=\"unit\">kW</span>"
+                            "</div>"
+                        "</div>"
+                    "</div>"
+                    "<div class=\"metric progress\" data-metric=\"xua.c.dc.p\" data-prec=\"3\">"
+                        "<div class=\"progress-bar progress-bar-warning value-low text-left\" role=\"progressbar\""
+                            "aria-valuenow=\"0\" aria-valuemin=\"0\" aria-valuemax=\"8\" style=\"width:0%\">"
+                            "<div>"
+                                "<span class=\"label\">DC Power</span>"
+                                "<span class=\"value\">?</span>"
+                                "<span class=\"unit\">kW</span>"
+                            "</div>"
+                        "</div>"
+                    "</div>"
+                "</div>"
+                "<div class=\"clearfix\">"
+                    "<div class=\"metric number\" data-metric=\"v.c.efficiency\" data-prec=\"1\">"
+                        "<span class=\"label\">Efficiency (total)</span>"
+                        "<span class=\"value\">?</span>"
+                        "<span class=\"unit\">%</span>"
+                    "</div>"
+                    "<div class=\"metric number\" data-metric=\"xua.c.eff.calc\" data-prec=\"1\">"
+                        "<span class=\"label\">Efficiency (charger)</span>"
+                        "<span class=\"value\">?</span>"
+                        "<span class=\"unit\">%</span>"
+                    "</div>"
+                    "<div class=\"metric number\" data-metric=\"xua.c.loss.calc\" data-prec=\"3\">"
+                        "<span class=\"label\">Loss (charger)</span>"
+                        "<span class=\"value\">?</span>"
+                        "<span class=\"unit\">kW</span>"
+                    "</div>"
+                "</div>"
+
+                "<h4>TPMS</h4>"
+
+                "<div class=\"clearfix\">"
+                    "<div class=\"metric number\" data-metric=\"xua.v.tp.d.fl\" data-prec=\"0\">"
+                        "<span class=\"label\">Diffusion FL</span>"
+                        "<span class=\"value\">?</span>"
+                        "<span class=\"unit\"></span>"
+                    "</div>"
+                    "<div class=\"metric number\" data-metric=\"xua.v.tp.d.fr\" data-prec=\"0\">"
+                        "<span class=\"label\">Diffusion FR</span>"
+                        "<span class=\"value\">?</span>"
+                        "<span class=\"unit\"></span>"
+                    "</div>"
+                    "<div class=\"metric number\" data-metric=\"xua.v.tp.d.rl\" data-prec=\"0\">"
+                        "<span class=\"label\">Diffusion RL</span>"
+                        "<span class=\"value\">?</span>"
+                        "<span class=\"unit\"></span>"
+                    "</div>"
+                    "<div class=\"metric number\" data-metric=\"xua.v.tp.d.rr\" data-prec=\"0\">"
+                        "<span class=\"label\">Diffusion RR</span>"
+                        "<span class=\"value\">?</span>"
+                        "<span class=\"unit\"></span>"
+                    "</div>"
+                "</div>"
+            "</div>"
+        "</div>"
+    "</div>"
+   );
+    PAGE_HOOK("body.post");
+    c.done();
 }

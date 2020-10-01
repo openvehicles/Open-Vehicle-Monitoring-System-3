@@ -94,6 +94,8 @@ typedef enum
 //#define VWUP_MFD_SERVICE_DATE
 //#define VWUP_MFD_SERVICE_DIST
 #define VWUP_BRK_TPMS 0x1821
+#define VWUP_MOT_TEMP_AMB 0xF446
+//#define VWUP__TEMP_CABIN 0x
 
 class OvmsVehicleVWeUpAll : public OvmsVehicle
   {
@@ -169,6 +171,7 @@ class OvmsVehicleVWeUpAll : public OvmsVehicle
 
     static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
     static void WebCfgClimate(PageEntry_t& p, PageContext_t& c);
+    static void WebDispStdMetrics(PageEntry_t& p, PageContext_t& c);
     virtual vehicle_command_t CommandWakeup();
 
     OvmsMetricFloat *BatMgmtSoC;           // Absolute SoC of main battery

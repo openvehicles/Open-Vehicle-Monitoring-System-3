@@ -39,6 +39,7 @@
 ;
 ;    0.1.1  make OBD code depend on car status from KCAN, no more OBD polling in off state
 ;
+;    0.1.2  common namespace, metrics webinterface
 ;
 ;    (C) 2020       sharkcow <sharkcow@gmx.de>
 ;
@@ -48,7 +49,7 @@
 #include "ovms_log.h"
 static const char *TAG = "v-vweup-all";
 
-#define VERSION "0.1.1"
+#define VERSION "0.1.2"
 
 #include <stdio.h>
 #include "pcp.h"
@@ -108,6 +109,7 @@ const OvmsVehicle::poll_pid_t vwup1_polls[] = {
     // Same tick & order important of above 4: VWUP_CHG_DC_I calculates the power loss & efficiency
 
     {VWUP_BRK_TX, VWUP_BRK_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BRK_TPMS, {0, 5, 5}, 1},
+    {VWUP_MOT_ELEC_TX, VWUP_MOT_ELEC_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MOT_TEMP_AMB, {0, 30, 30}, 1},
     {0, 0, 0, 0, {0, 0, 0}, 0}};
 
 const OvmsVehicle::poll_pid_t vwup2_polls[] = {
@@ -128,7 +130,7 @@ OvmsVehicleVWeUpAll::OvmsVehicleVWeUpAll()
 
     RegisterCanBus(3, CAN_MODE_ACTIVE, CAN_SPEED_100KBPS);
 
-    MyConfig.RegisterParam("vwup", "VW e-Up", true, true);
+    MyConfig.RegisterParam("xua", "VW e-Up", true, true);
     ConfigChanged(NULL);
     vin_part1 = false;
     vin_part2 = false;
@@ -1566,5 +1568,14 @@ void OvmsVehicleVWeUpAll::IncomingPollReply(canbus *bus, uint16_t type, uint16_t
             TPMSEmergencyRearRight->SetValue(value);
             VALUE_LOG(TAG, "VWUP_BRK_TPMSE_RR=%f => %f", value, TPMSEmergencyRearRight->AsFloat());
         }
-    }
+        break;
+
+     case VWUP_MOT_TEMP_AMB:
+        if (PollReply.FromUint8("VWUP_MOT_TEMP_AMB", value))
+        {
+//            StandardMetrics.ms_v_e_temp->SetValue(value / 8.0f);
+            VALUE_LOG(TAG, "VWUP_MOT_TEMP_AMB=%f => %f", value, StandardMetrics.ms_v_bat_temp->AsFloat());
+        }
+        break;
+   }
 }
