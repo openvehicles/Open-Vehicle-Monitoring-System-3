@@ -168,8 +168,8 @@ void OvmsVehicleMgEv::IncomingBmsPoll(
                         StandardMetrics.ms_v_charge_state->SetValue("topoff");
                     }
                 }
-                // SoC is 7% - 97%, so we need to scale it
-                StandardMetrics.ms_v_bat_soc->SetValue(((soc * 107.0) / 97.0) - 7.0);
+                // SoC is 6% - 97%, so we need to scale it
+                StandardMetrics.ms_v_bat_soc->SetValue(((soc * 106.0) / 97.0) - 6.0);
             }
             break;
         case bmsStatusPid:
