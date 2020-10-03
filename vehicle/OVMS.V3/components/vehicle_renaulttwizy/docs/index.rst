@@ -68,5 +68,6 @@ Contents
    metrics
    events
    commands
+   notifications
    brakehack
 
