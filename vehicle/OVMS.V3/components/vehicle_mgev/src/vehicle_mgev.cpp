@@ -95,8 +95,8 @@ const OvmsVehicle::poll_pid_t obdii_polls[] =
 // The number of seconds without receiving a CAN packet before assuming it's asleep
 constexpr uint32_t ASLEEP_TIMEOUT = 5u;
 
-// The number of seconds without a CAN TX error before we assume in zombie mode
-constexpr uint32_t ZOMBIE_TIMEOUT = 10u;
+// The number of seconds trying to wake from zombie before giving up
+constexpr uint32_t ZOMBIE_TIMEOUT = 30u;
 
 // The number of seconds since the last time the wake state changed before assuming
 // zombie mode
