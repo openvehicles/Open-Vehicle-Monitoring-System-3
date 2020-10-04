@@ -62,6 +62,8 @@ typedef enum
 #define VWUP_MOT_ELEC_RX 0x7E8
 #define VWUP_BAT_MGMT_TX 0x7E5  //ECU 8C hybrid battery management
 #define VWUP_BAT_MGMT_RX 0x7ED
+#define VWUP_ELD_TX 0x7E6  //ECU 51 electric drive
+#define VWUP_ELD_RX 0x7EE
 #define VWUP_CHG_TX 0x744 //ECU C6 high voltage charger
 #define VWUP_CHG_RX 0x7AE
 #define VWUP_MFD_TX 0x714 //ECU 17 multi-function display
@@ -91,10 +93,14 @@ typedef enum
 #define VWUP2_CHG_DC_U 0x41F8
 #define VWUP2_CHG_DC_I 0x41F9
 #define VWUP_MFD_ODOMETER 0x2203
-//#define VWUP_MFD_SERVICE_DATE
-//#define VWUP_MFD_SERVICE_DIST
+#define VWUP_MFD_MAINT_DIST 0x2260
+#define VWUP_MFD_MAINT_TIME 0x2261
 #define VWUP_BRK_TPMS 0x1821
 #define VWUP_MOT_TEMP_AMB 0xF446
+#define VWUP_MOT_TEMP_DCDC 0x116F
+#define VWUP_MOT_TEMP_PEM 0x1116
+#define VWUP_ELD_TEMP_PEM 0x3EB5
+#define VWUP_ELD_TEMP_MOT 0x3E94
 //#define VWUP__TEMP_CABIN 0x
 
 class OvmsVehicleVWeUpAll : public OvmsVehicle
@@ -192,6 +198,8 @@ class OvmsVehicleVWeUpAll : public OvmsVehicle
     OvmsMetricFloat *TPMSEmergencyFrontRight; // TPMS Indicator for Tyre Emergency Front Right Tyre
     OvmsMetricFloat *TPMSEmergencyRearLeft; // TPMS Indicator for Tyre Emergency Rear Left Tyre
     OvmsMetricFloat *TPMSEmergencyRearRight; // TPMS Indicator for Tyre Emergency Rear Right Tyre
+    OvmsMetricFloat *MaintenanceDist; // Distance to next maintenance
+    OvmsMetricFloat *MaintenanceTime; // Days to next maintenance
 
     //OBD
     void IncomingPollReply(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length, uint16_t mlremain);

@@ -31,7 +31,7 @@
 
 /*
 ;    Subproject:    Integration of support for the VW e-UP
-;    Date:          28 September 2020
+;    Date:          3 October 2020
 ;
 ;    Changes:
 ;    0.1.0  Initial code
@@ -41,6 +41,8 @@
 ;
 ;    0.1.2  common namespace, metrics webinterface
 ;
+;    0.1.3  bugfixes gen1/gen2, new metrics: temperatures & maintenance
+;
 ;    (C) 2020       sharkcow <sharkcow@gmx.de>
 ;
 ;    Biggest thanks to Chris van der Meijden, SokofromNZ, Dimitrie78, E-Imo, Dexter and 'der kleine Nik'.
@@ -49,7 +51,7 @@
 #include "ovms_log.h"
 static const char *TAG = "v-vweup-all";
 
-#define VERSION "0.1.2"
+#define VERSION "0.1.3"
 
 #include <stdio.h>
 #include "pcp.h"
@@ -110,6 +112,11 @@ const OvmsVehicle::poll_pid_t vwup1_polls[] = {
 
     {VWUP_BRK_TX, VWUP_BRK_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BRK_TPMS, {0, 5, 5}, 1},
     {VWUP_MOT_ELEC_TX, VWUP_MOT_ELEC_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MOT_TEMP_AMB, {0, 30, 30}, 1},
+    {VWUP_MFD_TX, VWUP_MFD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MFD_MAINT_DIST, {0, 60, 60}, 1},
+    {VWUP_MFD_TX, VWUP_MFD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MFD_MAINT_TIME, {0, 60, 60}, 1},
+    {VWUP_ELD_TX, VWUP_ELD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_ELD_TEMP_MOT, {0, 1, 10}, 1},
+    {VWUP_ELD_TX, VWUP_ELD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_ELD_TEMP_PEM, {0, 1, 10}, 1},
+    {VWUP_MOT_ELEC_TX, VWUP_MOT_ELEC_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MOT_TEMP_DCDC, {0, 1, 10}, 1},
     {0, 0, 0, 0, {0, 0, 0}, 0}};
 
 const OvmsVehicle::poll_pid_t vwup2_polls[] = {
@@ -181,6 +188,8 @@ OvmsVehicleVWeUpAll::OvmsVehicleVWeUpAll()
     TPMSEmergencyFrontRight = MyMetrics.InitFloat("xua.v.tp.e.fr", SM_STALE_NONE, 0, Percentage);
     TPMSEmergencyRearLeft = MyMetrics.InitFloat("xua.v.tp.e.rl", SM_STALE_NONE, 0, Percentage);
     TPMSEmergencyRearRight = MyMetrics.InitFloat("xua.v.tp.e.rr", SM_STALE_NONE, 0, Percentage);
+    MaintenanceDist = MyMetrics.InitFloat("xua.v.m.d", SM_STALE_NONE, 0, Kilometers);
+    MaintenanceTime = MyMetrics.InitFloat("xua.v.m.t", SM_STALE_NONE, 0);
 
     TimeOffRequested = 0;
 
@@ -372,7 +381,7 @@ void OvmsVehicleVWeUpAll::IncomingFrameCan3(CAN_frame_t *p_frame)
         break;
 
     case 0x527: // Outdoor temperature
-        StandardMetrics.ms_v_env_temp->SetValue((d[5] / 2) - 50);
+        StandardMetrics.ms_v_env_temp->SetValue((d[5] - 100) / 2);
         break;
 
     case 0x381: // Vehicle locked
@@ -389,9 +398,9 @@ void OvmsVehicleVWeUpAll::IncomingFrameCan3(CAN_frame_t *p_frame)
     case 0x3E3: // Cabin temperature
         if (d[2] != 0xFF)
         {
-           StandardMetrics.ms_v_env_cabintemp->SetValue((d[2]-100)/2);
+           StandardMetrics.ms_v_env_cabintemp->SetValue((d[2] - 100) / 2);
            // Set PEM inv temp to support older app version with cabin temp workaround display
-           StandardMetrics.ms_v_inv_temp->SetValue((d[2] - 100) / 2);
+//           StandardMetrics.ms_v_inv_temp->SetValue((d[2] - 100) / 2);
         }
         break;
 
@@ -1437,6 +1446,32 @@ void OvmsVehicleVWeUpAll::IncomingPollReply(canbus *bus, uint16_t type, uint16_t
             ChargerAC1U = value;
             VALUE_LOG(TAG, "VWUP_CHG_AC1_U=%f => %f", value, ChargerAC1U);
         }
+        break;
+
+    case VWUP1_CHG_AC_I:
+        if (PollReply.FromUint8("VWUP_CHG_AC1_I", value))
+        {
+            ChargerAC1I = value / 10.0f;
+            VALUE_LOG(TAG, "VWUP_CHG_AC1_I=%f => %f", value, ChargerAC1I);
+
+            value = (ChargerAC1U * ChargerAC1I) / 1000.0f;
+            ChargerACPower->SetValue(value);
+            VALUE_LOG(TAG, "VWUP_CHG_AC_P=%f => %f", value, ChargerACPower->AsFloat());
+
+            // Standard Charge Power and Charge Efficiency calculation as requested by the standard
+            StandardMetrics.ms_v_charge_power->SetValue(value);
+            value = value == 0.0f ? 0.0f : ((StandardMetrics.ms_v_bat_power->AsFloat() * -1.0f) / value) * 100.0f;
+            StandardMetrics.ms_v_charge_efficiency->SetValue(value);
+            VALUE_LOG(TAG, "VWUP_CHG_EFF_STD=%f => %f", value, StandardMetrics.ms_v_charge_efficiency->AsFloat());
+        }
+        break;
+
+    case VWUP2_CHG_AC_U:
+        if (PollReply.FromUint16("VWUP_CHG_AC1_U", value))
+        {
+            ChargerAC1U = value;
+            VALUE_LOG(TAG, "VWUP_CHG_AC1_U=%f => %f", value, ChargerAC1U);
+        }
         if (PollReply.FromUint16("VWUP_CHG_AC2_U", value, 2))
         {
             ChargerAC2U = value;
@@ -1444,7 +1479,7 @@ void OvmsVehicleVWeUpAll::IncomingPollReply(canbus *bus, uint16_t type, uint16_t
         }
         break;
 
-    case VWUP1_CHG_AC_I:
+    case VWUP2_CHG_AC_I:
         if (PollReply.FromUint8("VWUP_CHG_AC1_I", value))
         {
             ChargerAC1I = value / 10.0f;
@@ -1473,6 +1508,34 @@ void OvmsVehicleVWeUpAll::IncomingPollReply(canbus *bus, uint16_t type, uint16_t
             ChargerDC1U = value;
             VALUE_LOG(TAG, "VWUP_CHG_DC1_U=%f => %f", value, ChargerDC1U);
         }
+        break;
+
+    case VWUP1_CHG_DC_I:
+        if (PollReply.FromUint16("VWUP_CHG_DC1_I", value))
+        {
+            ChargerDC1I = (value - 510.0f) / 5.0f;
+            VALUE_LOG(TAG, "VWUP_CHG_DC1_I=%f => %f", value, ChargerDC1I);
+
+            value = (ChargerDC1U * ChargerDC1I) / 1000.0f;
+            ChargerDCPower->SetValue(value);
+            VALUE_LOG(TAG, "VWUP_CHG_DC_P=%f => %f", value, ChargerDCPower->AsFloat());
+
+            value = ChargerACPower->AsFloat() - ChargerDCPower->AsFloat();
+            ChargerPowerLossCalc->SetValue(value);
+            VALUE_LOG(TAG, "VWUP_CHG_LOSS_CALC=%f => %f", value, ChargerPowerLossCalc->AsFloat());
+
+            value = ChargerACPower->AsFloat() > 0 ? ChargerDCPower->AsFloat() / ChargerACPower->AsFloat() * 100.0f : 0.0f;
+            ChargerPowerEffCalc->SetValue(value);
+            VALUE_LOG(TAG, "VWUP_CHG_EFF_CALC=%f => %f", value, ChargerPowerEffCalc->AsFloat());
+        }
+        break;
+
+    case VWUP2_CHG_DC_U:
+        if (PollReply.FromUint16("VWUP_CHG_DC1_U", value))
+        {
+            ChargerDC1U = value;
+            VALUE_LOG(TAG, "VWUP_CHG_DC1_U=%f => %f", value, ChargerDC1U);
+        }
         if (PollReply.FromUint16("VWUP_CHG_DC2_U", value, 2))
         {
             ChargerDC2U = value;
@@ -1480,7 +1543,7 @@ void OvmsVehicleVWeUpAll::IncomingPollReply(canbus *bus, uint16_t type, uint16_t
         }
         break;
 
-    case VWUP1_CHG_DC_I:
+    case VWUP2_CHG_DC_I:
         if (PollReply.FromUint16("VWUP_CHG_DC1_I", value))
         {
             ChargerDC1I = (value - 510.0f) / 5.0f;
@@ -1532,7 +1595,7 @@ void OvmsVehicleVWeUpAll::IncomingPollReply(canbus *bus, uint16_t type, uint16_t
         break;
 
     case VWUP_BRK_TPMS:
-        if (PollReply.FromUint8("VWUP_BRK_TPMS", value, 38))
+        if (PollReply.FromUint8("VWUP_BRK_TPMS", value))
         {
             TPMSDiffusionFrontLeft->SetValue(value);
             VALUE_LOG(TAG, "VWUP_BRK_TPMSD_FL=%f => %f", value, TPMSDiffusionFrontLeft->AsFloat());
@@ -1574,11 +1637,48 @@ void OvmsVehicleVWeUpAll::IncomingPollReply(canbus *bus, uint16_t type, uint16_t
         }
         break;
 
-     case VWUP_MOT_TEMP_AMB:
-        if (PollReply.FromUint8("VWUP_MOT_TEMP_AMB", value))
+//     case VWUP_MOT_TEMP_AMB:
+//        if (PollReply.FromInt8("VWUP_MOT_TEMP_AMB", value))
+//        {
+//            StandardMetrics.ms_v_env_temp->SetValue(value / 8.0f);
+//            VALUE_LOG(TAG, "VWUP_MOT_TEMP_AMB=%f => %f", value, StandardMetrics.ms_v_bat_temp->AsFloat());
+//        }
+//        break;
+
+     case VWUP_MFD_MAINT_DIST:
+        if (PollReply.FromUint16("VWUP_MFD_MAINT_DIST", value))
         {
-//            StandardMetrics.ms_v_e_temp->SetValue(value / 8.0f);
-            VALUE_LOG(TAG, "VWUP_MOT_TEMP_AMB=%f => %f", value, StandardMetrics.ms_v_bat_temp->AsFloat());
+            MaintenanceDist->SetValue(value);
+            VALUE_LOG(TAG, "VWUP_MFD_MAINT_DIST=%f => %f", value, MaintenanceDist->AsFloat());
+        }
+        break;
+     case VWUP_MFD_MAINT_TIME:
+        if (PollReply.FromUint16("VWUP_MFD_MAINT_TIME", value))
+        {
+            MaintenanceTime->SetValue(value);
+            VALUE_LOG(TAG, "VWUP_MFD_MAINT_TIME=%f => %f", value, MaintenanceTime->AsFloat());
+        }
+        break;
+
+     case VWUP_ELD_TEMP_MOT:
+        if (PollReply.FromUint16("VWUP_ELD_TEMP_MOT", value))
+        {
+            StandardMetrics.ms_v_mot_temp->SetValue(value / 64.0f);
+            VALUE_LOG(TAG, "VWUP_ELD_TEMP_MOT=%f => %f", value, StandardMetrics.ms_v_mot_temp->AsFloat());
+        }
+        break;
+     case VWUP_ELD_TEMP_PEM:
+        if (PollReply.FromUint16("VWUP_ELD_TEMP_PEM", value))
+        {
+            StandardMetrics.ms_v_inv_temp->SetValue(value / 64.0f);
+            VALUE_LOG(TAG, "VWUP_ELD_TEMP_PEM=%f => %f", value, StandardMetrics.ms_v_inv_temp->AsFloat());
+        }
+        break;
+     case VWUP_MOT_TEMP_DCDC:
+        if (PollReply.FromUint16("VWUP_MOT_TEMP_DCDC", value))
+        {
+            StandardMetrics.ms_v_charge_temp->SetValue(value / 256.0f);
+            VALUE_LOG(TAG, "VWUP_MOT_TEMP_DCDC=%f => %f", value, StandardMetrics.ms_v_charge_temp->AsFloat());
         }
         break;
    }
