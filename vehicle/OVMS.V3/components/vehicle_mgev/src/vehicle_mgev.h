@@ -145,10 +145,6 @@ class OvmsVehicleMgEv : public OvmsVehicle
     uint32_t m_rxPacketTicker;
     /// The last number of packets received on the CAN
     uint32_t m_rxPackets;
-    /// The last ticker that we saw a TX error on
-    uint32_t m_txErrorsTicker;
-    /// The last number of TX errors on the CAN
-    uint32_t m_txErrors;
     /// The current state of the CAN to the gateway
     WakeState m_wakeState;
     /// The ticker time the wake state was changed
