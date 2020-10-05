@@ -113,8 +113,8 @@ void OvmsVehicleVWeUpAll::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
   {
     // read configuration:
     modelyear = MyConfig.GetParamValue("xua", "modelyear", STR(DEFAULT_MODEL_YEAR));
-    con_obd = MyConfig.GetParamValueBool("xua", "con_obd", false);
-    con_t26 = MyConfig.GetParamValueBool("xua", "con_t26", false);
+    con_obd = MyConfig.GetParamValueBool("xua", "con_obd", true);
+    con_t26 = MyConfig.GetParamValueBool("xua", "con_t26", true);
     canwrite = MyConfig.GetParamValueBool("xua", "canwrite", false);
 
     c.head(200);
@@ -362,31 +362,6 @@ void OvmsVehicleVWeUpAll::WebDispStdMetrics(PageEntry_t &p, PageContext_t &c)
                     "</div>"
                 "</div>"
 
-                "<h4>TPMS</h4>"
-
-                "<div class=\"clearfix\">"
-                    "<div class=\"metric number\" data-metric=\"xua.v.tp.d.fl\" data-prec=\"0\">"
-                        "<span class=\"label\">Diffusion FL</span>"
-                        "<span class=\"value\">?</span>"
-                        "<span class=\"unit\"></span>"
-                    "</div>"
-                    "<div class=\"metric number\" data-metric=\"xua.v.tp.d.fr\" data-prec=\"0\">"
-                        "<span class=\"label\">Diffusion FR</span>"
-                        "<span class=\"value\">?</span>"
-                        "<span class=\"unit\"></span>"
-                    "</div>"
-                    "<div class=\"metric number\" data-metric=\"xua.v.tp.d.rl\" data-prec=\"0\">"
-                        "<span class=\"label\">Diffusion RL</span>"
-                        "<span class=\"value\">?</span>"
-                        "<span class=\"unit\"></span>"
-                    "</div>"
-                    "<div class=\"metric number\" data-metric=\"xua.v.tp.d.rr\" data-prec=\"0\">"
-                        "<span class=\"label\">Diffusion RR</span>"
-                        "<span class=\"value\">?</span>"
-                        "<span class=\"unit\"></span>"
-                    "</div>"
-                "</div>"
-
                 "<h4>Next Maintenance</h4>"
 
                 "<div class=\"clearfix\">"
@@ -470,7 +445,7 @@ void OvmsVehicleVWeUpAll::WebDispStdMetrics(PageEntry_t &p, PageContext_t &c)
                             "</div>"
                         "</div>"
                     "</div>"
-                
+
             "</div>"
         "</div>"
     "</div>"

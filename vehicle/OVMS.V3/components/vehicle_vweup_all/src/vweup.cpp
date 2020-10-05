@@ -73,7 +73,7 @@ void OvmsVehicleVWeUpAll::ccCountdown(TimerHandle_t timer)
     vwup->CCCountdown();
 }
 
-const OvmsVehicle::poll_pid_t vwup1_polls[] = {
+const OvmsVehicle::poll_pid_t vwup_polls[] = {
     // Note: poller ticker cycles at 3600 seconds = max period
     // { txid, rxid, type, pid, { VWUP_OFF, VWUP_ON, VWUP_CHARGING }, bus }
 
@@ -97,10 +97,18 @@ const OvmsVehicle::poll_pid_t vwup1_polls[] = {
     {VWUP_CHG_TX, VWUP_CHG_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_CHG_POWER_LOSS, {0, 0, 10}, 1},
 
     {VWUP_MFD_TX, VWUP_MFD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MFD_ODOMETER, {0, 60, 60}, 1},
+
+    {VWUP_BRK_TX, VWUP_BRK_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BRK_TPMS, {0, 5, 5}, 1},
+    {VWUP_MOT_ELEC_TX, VWUP_MOT_ELEC_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MOT_TEMP_AMB, {0, 30, 30}, 1},
+    {VWUP_MFD_TX, VWUP_MFD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MFD_MAINT_DIST, {0, 60, 60}, 1},
+    {VWUP_MFD_TX, VWUP_MFD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MFD_MAINT_TIME, {0, 60, 60}, 1},
+    {VWUP_ELD_TX, VWUP_ELD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_ELD_TEMP_MOT, {0, 1, 10}, 1},
+    {VWUP_ELD_TX, VWUP_ELD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_ELD_TEMP_PEM, {0, 1, 10}, 1},
+    {VWUP_MOT_ELEC_TX, VWUP_MOT_ELEC_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MOT_TEMP_DCDC, {0, 1, 10}, 1}
 //    {0, 0, 0, 0, {0, 0, 0}, 0},};
-//    }
+    };
     
-//const OvmsVehicle::poll_pid_t vwup1_polls[] = {
+const OvmsVehicle::poll_pid_t vwup1_polls[] = {
     // specific codes for gen1 model (before year 2020)
     {VWUP_CHG_TX, VWUP_CHG_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP1_CHG_AC_U, {0, 0, 5}, 1},
     {VWUP_CHG_TX, VWUP_CHG_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP1_CHG_AC_I, {0, 0, 5}, 1},
@@ -109,14 +117,6 @@ const OvmsVehicle::poll_pid_t vwup1_polls[] = {
     {VWUP_CHG_TX, VWUP_CHG_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP1_CHG_DC_I, {0, 0, 5}, 1},
     // Same tick & order important of above 2: VWUP_CHG_DC_I calculates the DC power
     // Same tick & order important of above 4: VWUP_CHG_DC_I calculates the power loss & efficiency
-
-    {VWUP_BRK_TX, VWUP_BRK_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BRK_TPMS, {0, 5, 5}, 1},
-    {VWUP_MOT_ELEC_TX, VWUP_MOT_ELEC_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MOT_TEMP_AMB, {0, 30, 30}, 1},
-    {VWUP_MFD_TX, VWUP_MFD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MFD_MAINT_DIST, {0, 60, 60}, 1},
-    {VWUP_MFD_TX, VWUP_MFD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MFD_MAINT_TIME, {0, 60, 60}, 1},
-    {VWUP_ELD_TX, VWUP_ELD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_ELD_TEMP_MOT, {0, 1, 10}, 1},
-    {VWUP_ELD_TX, VWUP_ELD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_ELD_TEMP_PEM, {0, 1, 10}, 1},
-    {VWUP_MOT_ELEC_TX, VWUP_MOT_ELEC_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MOT_TEMP_DCDC, {0, 1, 10}, 1},
     {0, 0, 0, 0, {0, 0, 0}, 0}};
 
 const OvmsVehicle::poll_pid_t vwup2_polls[] = {
@@ -128,11 +128,16 @@ const OvmsVehicle::poll_pid_t vwup2_polls[] = {
     {VWUP_CHG_TX, VWUP_CHG_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP2_CHG_DC_I, {0, 0, 5}, 1},
     // Same tick & order important of above 2: VWUP_CHG_DC_I calculates the DC power
     // Same tick & order important of above 4: VWUP_CHG_DC_I calculates the power loss & efficiency
-    };
+    {0, 0, 0, 0, {0, 0, 0}, 0}};
+
+//const OvmsVehicle::int8_t vwup_polls_size = sizeof(vwup_polls)/sizeof(vwup_polls)[0];
+OvmsVehicle::poll_pid_t vwup_polls_all[sizeof(vwup_polls)/sizeof(vwup_polls)[0]+sizeof(vwup1_polls)/sizeof(vwup1_polls)[0]];
+//OvmsVehicle::poll_pid_t vwup_polls_all[sizeof(vwup_polls)/sizeof(vwup_polls)[0]+max(sizeof(vwup1_polls)/sizeof(vwup1_polls)[0],sizeof(vwup2_polls)/sizeof(vwup2_polls)[0])];
+//OvmsVehicle::poll_pid_t vwup_polls_all[10];
 
 OvmsVehicleVWeUpAll::OvmsVehicleVWeUpAll()
 {
-    ESP_LOGI(TAG, "Start VW e-Up Tvehicle module (KCAN / OBD");
+    ESP_LOGI(TAG, "Start VW e-Up vehicle module (KCAN / OBD");
     memset(m_vin, 0, sizeof(m_vin));
 
     RegisterCanBus(3, CAN_MODE_ACTIVE, CAN_SPEED_100KBPS);
@@ -162,7 +167,29 @@ OvmsVehicleVWeUpAll::OvmsVehicleVWeUpAll()
     RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
 
     // init polls:
-    PollSetPidList(m_can1, vwup1_polls);
+    if (vwup_modelyear < 2020)
+    {
+        for(int i=0; i<sizeof(vwup_polls)/sizeof(vwup_polls)[0]; i++)
+        {
+            vwup_polls_all[i] = vwup_polls[i];   
+        }
+        for(int i=sizeof(vwup_polls)/sizeof(vwup_polls)[0]; i<sizeof(vwup_polls)/sizeof(vwup_polls)[0]+sizeof(vwup1_polls)/sizeof(vwup1_polls)[0]; i++)
+        {
+            vwup_polls_all[i] = vwup1_polls[i-sizeof(vwup_polls)/sizeof(vwup_polls)[0]];  
+        }
+    }
+    else 
+    {
+        for(int i=0; i<sizeof(vwup_polls)/sizeof(vwup_polls)[0]; i++)
+        {
+            vwup_polls_all[i] = vwup_polls[i];   
+        }
+        for(int i=sizeof(vwup_polls)/sizeof(vwup_polls)[0]; i<sizeof(vwup_polls)/sizeof(vwup_polls)[0]+sizeof(vwup2_polls)/sizeof(vwup2_polls)[0]; i++)
+        {
+            vwup_polls_all[i] = vwup2_polls[i-sizeof(vwup_polls)/sizeof(vwup_polls)[0]];  
+        }
+    }
+    PollSetPidList(m_can1, vwup_polls_all);
     PollSetThrottling(0);
     PollSetResponseSeparationTime(1);
     PollSetState(VWUP_OFF);
