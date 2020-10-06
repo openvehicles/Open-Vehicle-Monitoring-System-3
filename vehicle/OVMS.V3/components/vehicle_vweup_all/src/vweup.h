@@ -56,7 +56,7 @@ typedef enum
 #define VWUP_OFF 0
 #define VWUP_ON 1
 #define VWUP_CHARGING 2
-
+/*
 // ECUs TX/RX
 #define VWUP_MOT_ELEC_TX 0x7E0  //ECU 01 motor elecronics
 #define VWUP_MOT_ELEC_RX 0x7E8
@@ -102,7 +102,7 @@ typedef enum
 #define VWUP_ELD_TEMP_PEM 0x3EB5
 #define VWUP_ELD_TEMP_MOT 0x3E94
 //#define VWUP__TEMP_CABIN 0x
-
+*/
 class OvmsVehicleVWeUpAll : public OvmsVehicle
   {
   public:
@@ -202,6 +202,7 @@ class OvmsVehicleVWeUpAll : public OvmsVehicle
     OvmsMetricFloat *MaintenanceTime; // Days to next maintenance
 
     //OBD
+    void ObdInit();
     void IncomingPollReply(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length, uint16_t mlremain);
 
 //  protected:

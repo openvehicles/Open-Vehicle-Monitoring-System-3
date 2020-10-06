@@ -31,7 +31,7 @@
 
 /*
 ;    Subproject:    Integration of support for the VW e-UP
-;    Date:          3 October 2020
+;    Date:          5 October 2020
 ;
 ;    Changes:
 ;    0.1.0  Initial code
@@ -43,15 +43,17 @@
 ;
 ;    0.1.3  bugfixes gen1/gen2, new metrics: temperatures & maintenance
 ;
+;    0.1.4  bugfixes gen1/gen2, OBD refactoring
+;
 ;    (C) 2020       sharkcow <sharkcow@gmx.de>
 ;
-;    Biggest thanks to Chris van der Meijden, SokofromNZ, Dimitrie78, E-Imo, Dexter and 'der kleine Nik'.
+;    Biggest thanks to Chris van der Meijden, Dexter, SokofromNZ, Dimitrie78, E-Imo and 'der kleine Nik'.
 */
 
 #include "ovms_log.h"
 static const char *TAG = "v-vweup-all";
 
-#define VERSION "0.1.3"
+#define VERSION "0.1.4"
 
 #include <stdio.h>
 #include "pcp.h"
@@ -72,7 +74,7 @@ void OvmsVehicleVWeUpAll::ccCountdown(TimerHandle_t timer)
     OvmsVehicleVWeUpAll *vwup = (OvmsVehicleVWeUpAll *)pvTimerGetTimerID(timer);
     vwup->CCCountdown();
 }
-
+/*
 const OvmsVehicle::poll_pid_t vwup_polls[] = {
     // Note: poller ticker cycles at 3600 seconds = max period
     // { txid, rxid, type, pid, { VWUP_OFF, VWUP_ON, VWUP_CHARGING }, bus }
@@ -111,7 +113,7 @@ const OvmsVehicle::poll_pid_t vwup_polls[] = {
 const OvmsVehicle::poll_pid_t vwup1_polls[] = {
     // specific codes for gen1 model (before year 2020)
     {VWUP_CHG_TX, VWUP_CHG_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP1_CHG_AC_U, {0, 0, 5}, 1},
-    {VWUP_CHG_TX, VWUP_CHG_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP1_CHG_AC_I, {0, 0, 5}, 1},
+    {VWUP_CHG_TX, VWUP_CHG_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDtabCarTextOdometerED, VWUP1_CHG_AC_I, {0, 0, 5}, 1},
     // Same tick & order important of above 2: VWUP_CHG_AC_I calculates the AC power
     {VWUP_CHG_TX, VWUP_CHG_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP1_CHG_DC_U, {0, 0, 5}, 1},
     {VWUP_CHG_TX, VWUP_CHG_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP1_CHG_DC_I, {0, 0, 5}, 1},
@@ -130,11 +132,8 @@ const OvmsVehicle::poll_pid_t vwup2_polls[] = {
     // Same tick & order important of above 4: VWUP_CHG_DC_I calculates the power loss & efficiency
     {0, 0, 0, 0, {0, 0, 0}, 0}};
 
-//const OvmsVehicle::int8_t vwup_polls_size = sizeof(vwup_polls)/sizeof(vwup_polls)[0];
 OvmsVehicle::poll_pid_t vwup_polls_all[sizeof(vwup_polls)/sizeof(vwup_polls)[0]+sizeof(vwup1_polls)/sizeof(vwup1_polls)[0]];
-//OvmsVehicle::poll_pid_t vwup_polls_all[sizeof(vwup_polls)/sizeof(vwup_polls)[0]+max(sizeof(vwup1_polls)/sizeof(vwup1_polls)[0],sizeof(vwup2_polls)/sizeof(vwup2_polls)[0])];
-//OvmsVehicle::poll_pid_t vwup_polls_all[10];
-
+*/
 OvmsVehicleVWeUpAll::OvmsVehicleVWeUpAll()
 {
     ESP_LOGI(TAG, "Start VW e-Up vehicle module (KCAN / OBD");
@@ -165,7 +164,10 @@ OvmsVehicleVWeUpAll::OvmsVehicleVWeUpAll()
 
     //OBD2
     RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
+    // init OBD2 poller:
+    ObdInit();
 
+/*
     // init polls:
     if (vwup_modelyear < 2020)
     {
@@ -219,7 +221,7 @@ OvmsVehicleVWeUpAll::OvmsVehicleVWeUpAll()
     MaintenanceTime = MyMetrics.InitFloat("xua.v.m.t", SM_STALE_NONE, 0);
 
     TimeOffRequested = 0;
-
+*/
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
     WebInit();
 #endif
@@ -271,10 +273,11 @@ void OvmsVehicleVWeUpAll::ConfigChanged(OvmsConfigParam *param)
     ESP_LOGD(TAG, "VW e-Up reload configuration");
 
     vwup_modelyear = MyConfig.GetParamValueInt("xua", "modelyear", DEFAULT_MODEL_YEAR);
-    vwup_enable_obd = MyConfig.GetParamValueBool("xua", "con_obd", false);
-    vwup_enable_t26 = MyConfig.GetParamValueBool("xua", "con_t26", false);
+    vwup_enable_obd = MyConfig.GetParamValueBool("xua", "con_obd", true);
+    vwup_enable_t26 = MyConfig.GetParamValueBool("xua", "con_t26", true);
     vwup_enable_write = MyConfig.GetParamValueBool("xua", "canwrite", false);
     vwup_cc_temp_int = MyConfig.GetParamValueInt("xua", "cc_temp", 21);
+    ObdInit(); // reload OBD command list in case gen1/2 was changed
 }
 
 // Takes care of setting all the state appropriate when the car is on
@@ -1367,7 +1370,7 @@ void OvmsVehicleVWeUpAll::Ticker1(uint32_t ticker)
         }
     }
 }
-
+/*
 //OBD2
 void OvmsVehicleVWeUpAll::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length, uint16_t remain)
 {
@@ -1709,4 +1712,4 @@ void OvmsVehicleVWeUpAll::IncomingPollReply(canbus *bus, uint16_t type, uint16_t
         }
         break;
    }
-}
+}*/

@@ -1,6 +1,6 @@
 /**
  * Project:      Open Vehicle Monitor System
- * Module:       Webserver for VW e-Up
+ * Module:       Webserver for VW e-Up (KCAN / OBD)
  *
  * (c) 2020  sharkcow <sharkcow@gmx.de>
  * (c) 2019  Anko Hanse <anko_hanse@hotmail.com>
@@ -446,6 +446,31 @@ void OvmsVehicleVWeUpAll::WebDispStdMetrics(PageEntry_t &p, PageContext_t &c)
                         "</div>"
                     "</div>"
 
+                "<h4>TPMS</h4>"
+
+                "<div class=\"clearfix\">"
+                    "<div class=\"metric number\" data-metric=\"xua.v.tp.d.fl\" data-prec=\"0\">"
+                        "<span class=\"label\">Diffusion FL</span>"
+                        "<span class=\"value\">?</span>"
+                        "<span class=\"unit\"></span>"
+                    "</div>"
+                    "<div class=\"metric number\" data-metric=\"xua.v.tp.d.fr\" data-prec=\"0\">"
+                        "<span class=\"label\">Diffusion FR</span>"
+                        "<span class=\"value\">?</span>"
+                        "<span class=\"unit\"></span>"
+                    "</div>"
+                    "<div class=\"metric number\" data-metric=\"xua.v.tp.d.rl\" data-prec=\"0\">"
+                        "<span class=\"label\">Diffusion RL</span>"
+                        "<span class=\"value\">?</span>"
+                        "<span class=\"unit\"></span>"
+                    "</div>"
+                    "<div class=\"metric number\" data-metric=\"xua.v.tp.d.rr\" data-prec=\"0\">"
+                        "<span class=\"label\">Diffusion RR</span>"
+                        "<span class=\"value\">?</span>"
+                        "<span class=\"unit\"></span>"
+                    "</div>"
+                "</div>"
+                
             "</div>"
         "</div>"
     "</div>"
