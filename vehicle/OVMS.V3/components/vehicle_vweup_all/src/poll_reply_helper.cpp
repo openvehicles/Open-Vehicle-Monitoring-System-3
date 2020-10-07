@@ -106,6 +106,19 @@ bool PollReplyHelperAll::FromInt16(const std::string &info, float &value, uint8_
         return false;
     }
 
-    value = static_cast<float>((int16_t)((Store[0 + bytesToSkip] << 16) + (Store[1 + bytesToSkip] << 8) + (Store[2 + bytesToSkip]) + ((uint8_t)Store[3 + bytesToSkip])));
+    value = static_cast<float>((int16_t)((Store[0 + bytesToSkip] << 16) + (Store[1 + bytesToSkip] << 8) + ((uint8_t)Store[2 + bytesToSkip])));
+    return true;
+}
+
+bool PollReplyHelperAll::FromInt8(const std::string &info, float &value, uint8_t bytesToSkip /*= 0*/)
+{
+    if (Store.size() < (1 + bytesToSkip))
+    {
+        ESP_LOGE(TAG, "%s: Data length=%d is too short for FromInt8(skippedBytes=%u)", info.c_str(), Store.size(), bytesToSkip);
+        value = NAN;
+        return false;
+    }
+
+    value = static_cast<float>((int8_t)((Store[0 + bytesToSkip] << 8) + (Store[1 + bytesToSkip])));
     return true;
 }

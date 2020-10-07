@@ -43,6 +43,7 @@ public:
     bool FromUint16(const std::string &info, float &value, uint8_t shiftLeft = 0);
     bool FromInt32(const std::string &info, float &value, uint8_t shiftLeft = 0);
     bool FromInt16(const std::string &info, float &value, uint8_t shiftLeft = 0);
+    bool FromInt8(const std::string &info, float &value, uint8_t shiftLeft = 0);
 
 private:
     string Store;

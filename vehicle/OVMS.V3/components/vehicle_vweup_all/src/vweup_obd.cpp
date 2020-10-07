@@ -48,7 +48,7 @@ const OvmsVehicle::poll_pid_t vwup_polls[] = {
     // Same tick & order important of above 2: VWUP_BAT_MGMT_I calculates the power
 
     {VWUP_MOT_ELEC_TX, VWUP_MOT_ELEC_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MOT_ELEC_SOC_NORM, {0, 20, 20}, 1},
-    {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_SOC, {0, 20, 20}, 1},
+    {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_SOC_ABS, {0, 20, 20}, 1},
     {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_ENERGY_COUNTERS, {0, 20, 20}, 1},
 
     {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_CELL_MAX, {0, 20, 20}, 1},
@@ -65,12 +65,12 @@ const OvmsVehicle::poll_pid_t vwup_polls[] = {
     {VWUP_MFD_TX, VWUP_MFD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MFD_ODOMETER, {0, 60, 60}, 1},
 
     {VWUP_BRK_TX, VWUP_BRK_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BRK_TPMS, {0, 5, 5}, 1},
-    {VWUP_MOT_ELEC_TX, VWUP_MOT_ELEC_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MOT_TEMP_AMB, {0, 30, 30}, 1},
+//    {VWUP_MOT_ELEC_TX, VWUP_MOT_ELEC_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MOT_ELEC_TEMP_AMB, {0, 5, 30}, 1},
     {VWUP_MFD_TX, VWUP_MFD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MFD_MAINT_DIST, {0, 60, 60}, 1},
     {VWUP_MFD_TX, VWUP_MFD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MFD_MAINT_TIME, {0, 60, 60}, 1},
     {VWUP_ELD_TX, VWUP_ELD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_ELD_TEMP_MOT, {0, 1, 10}, 1},
     {VWUP_ELD_TX, VWUP_ELD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_ELD_TEMP_PEM, {0, 1, 10}, 1},
-    {VWUP_MOT_ELEC_TX, VWUP_MOT_ELEC_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MOT_TEMP_DCDC, {0, 1, 10}, 1}
+    {VWUP_MOT_ELEC_TX, VWUP_MOT_ELEC_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MOT_ELEC_TEMP_DCDC, {0, 5, 10}, 1}
 //    {0, 0, 0, 0, {0, 0, 0}, 0},};
     };
     
@@ -136,10 +136,7 @@ void OvmsVehicleVWeUpAll::ObdInit()
     PollSetResponseSeparationTime(1);
     PollSetState(VWUP_OFF);
 
-    StandardMetrics.ms_v_env_locked->SetValue(true);
-    StandardMetrics.ms_v_env_headlights->SetValue(false);
-
-    BatMgmtSoC = MyMetrics.InitFloat("xua.b.soc", 100, 0, Percentage);
+    BatMgmtSoCAbs = MyMetrics.InitFloat("xua.b.soc.abs", 100, 0, Percentage);
     BatMgmtCellDelta = MyMetrics.InitFloat("xua.b.cell.delta", SM_STALE_NONE, 0, Volts);
 
     ChargerPowerEffEcu = MyMetrics.InitFloat("xua.c.eff.ecu", 100, 0, Percentage);
@@ -212,11 +209,11 @@ void OvmsVehicleVWeUpAll::IncomingPollReply(canbus *bus, uint16_t type, uint16_t
         }
         break;
 
-    case VWUP_BAT_MGMT_SOC:
-        if (PollReply.FromUint8("VWUP_BAT_MGMT_SOC", value))
+    case VWUP_BAT_MGMT_SOC_ABS:
+        if (PollReply.FromUint8("VWUP_BAT_MGMT_SOC_ABS", value))
         {
-            BatMgmtSoC->SetValue(value / 2.5f);
-            VALUE_LOG(TAG, "VWUP_BAT_MGMT_SOC=%f => %f", value, BatMgmtSoC->AsFloat());
+            BatMgmtSoCAbs->SetValue(value / 2.5f);
+            VALUE_LOG(TAG, "VWUP_BAT_MGMT_SOC_ABS=%f => %f", value, BatMgmtSoCAbs->AsFloat());
         }
         break;
 
@@ -459,11 +456,11 @@ void OvmsVehicleVWeUpAll::IncomingPollReply(canbus *bus, uint16_t type, uint16_t
         }
         break;
 
-//     case VWUP_MOT_TEMP_AMB:
-//        if (PollReply.FromInt8("VWUP_MOT_TEMP_AMB", value))
+//     case VWUP_MOT_ELEC_TEMP_AMB: // value from KCAN is more precise and always available
+//        if (PollReply.FromInt8("VWUP_MOT_ELEC_TEMP_AMB", value))
 //        {
 //            StandardMetrics.ms_v_env_temp->SetValue(value / 8.0f);
-//            VALUE_LOG(TAG, "VWUP_MOT_TEMP_AMB=%f => %f", value, StandardMetrics.ms_v_bat_temp->AsFloat());
+//            VALUE_LOG(TAG, "VWUP_MOT_ELEC_TEMP_AMB=%f => %f", value, StandardMetrics.ms_v_bat_temp->AsFloat());
 //        }
 //        break;
 
@@ -496,8 +493,8 @@ void OvmsVehicleVWeUpAll::IncomingPollReply(canbus *bus, uint16_t type, uint16_t
             VALUE_LOG(TAG, "VWUP_ELD_TEMP_PEM=%f => %f", value, StandardMetrics.ms_v_inv_temp->AsFloat());
         }
         break;
-     case VWUP_MOT_TEMP_DCDC:
-        if (PollReply.FromUint16("VWUP_MOT_TEMP_DCDC", value))
+     case VWUP_MOT_ELEC_TEMP_DCDC:
+        if (PollReply.FromUint16("VWUP_MOT_ELEC_TEMP_DCDC", value))
         {
             StandardMetrics.ms_v_charge_temp->SetValue(value / 256.0f);
             VALUE_LOG(TAG, "VWUP_MOT_TEMP_DCDC=%f => %f", value, StandardMetrics.ms_v_charge_temp->AsFloat());

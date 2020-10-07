@@ -239,7 +239,7 @@ void OvmsVehicleVWeUpAll::WebDispStdMetrics(PageEntry_t &p, PageContext_t &c)
                             "</div>"
                         "</div>"
                     "</div>"
-                    "<div class=\"metric progress\" data-metric=\"xua.b.soc\" data-prec=\"2\">"
+                    "<div class=\"metric progress\" data-metric=\"xua.b.soc.abs\" data-prec=\"2\">"
                         "<div class=\"progress-bar progress-bar-info value-low text-left\" role=\"progressbar\" aria-valuenow=\"0\""
                             "aria-valuemin=\"0\" aria-valuemax=\"100\" style=\"width:0%\">"
                             "<div>"
