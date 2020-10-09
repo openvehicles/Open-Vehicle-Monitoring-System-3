@@ -459,7 +459,7 @@ void OvmsVehicleVWeUpAll::IncomingPollReply(canbus *bus, uint16_t type, uint16_t
 //     case VWUP_MOT_ELEC_TEMP_AMB: // value from KCAN is more precise and always available
 //        if (PollReply.FromInt8("VWUP_MOT_ELEC_TEMP_AMB", value))
 //        {
-//            StandardMetrics.ms_v_env_temp->SetValue(value / 8.0f);
+//            StandardMetrics.ms_v_env_temp->SetValue(value - 40.0f);
 //            VALUE_LOG(TAG, "VWUP_MOT_ELEC_TEMP_AMB=%f => %f", value, StandardMetrics.ms_v_bat_temp->AsFloat());
 //        }
 //        break;

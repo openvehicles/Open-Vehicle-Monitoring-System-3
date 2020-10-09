@@ -78,7 +78,7 @@ using namespace std;
 #define VWUP_MFD_MAINT_DIST 0x2260
 #define VWUP_MFD_MAINT_TIME 0x2261
 #define VWUP_BRK_TPMS 0x1821
-#define VWUP_MOT_ELEC_TEMP_AMB 0xF446
+//#define VWUP_MOT_ELEC_TEMP_AMB 0xF446 //not working for some reason (value always 0)
 #define VWUP_MOT_ELEC_TEMP_DCDC 0x116F
 #define VWUP_MOT_ELEC_TEMP_PEM 0x1116
 #define VWUP_ELD_TEMP_PEM 0x3EB5
