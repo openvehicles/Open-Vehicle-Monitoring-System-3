@@ -273,7 +273,7 @@ void OvmsVehicleVWeUpAll::WebDispStdMetrics(PageEntry_t &p, PageContext_t &c)
                     "</div>"
                 "</div>"
 
-                "<h4>Battery</h4>"
+                "<h4>Battery</h4>" // ranges for Gen1 for now!
 
                 "<div class=\"clearfix\">"
                     "<div class=\"metric progress\" data-metric=\"v.b.voltage\" data-prec=\"1\">"
@@ -288,7 +288,7 @@ void OvmsVehicleVWeUpAll::WebDispStdMetrics(PageEntry_t &p, PageContext_t &c)
                     "</div>"
                     "<div class=\"metric progress\" data-metric=\"v.b.current\" data-prec=\"1\">"
                         "<div class=\"progress-bar progress-bar-danger value-low text-left\" role=\"progressbar\""
-                            "aria-valuenow=\"0\" aria-valuemin=\"-200\" aria-valuemax=\"200\" style=\"width:0%\">"
+                            "aria-valuenow=\"0\" aria-valuemin=\"-10\" aria-valuemax=\"150\" style=\"width:0%\">"
                             "<div>"
                                 "<span class=\"label\">Current</span>"
                                 "<span class=\"value\">?</span>"
@@ -298,7 +298,7 @@ void OvmsVehicleVWeUpAll::WebDispStdMetrics(PageEntry_t &p, PageContext_t &c)
                     "</div>"
                     "<div class=\"metric progress\" data-metric=\"v.b.power\" data-prec=\"3\">"
                         "<div class=\"progress-bar progress-bar-warning value-low text-left\" role=\"progressbar\""
-                            "aria-valuenow=\"0\" aria-valuemin=\"-70\" aria-valuemax=\"70\" style=\"width:0%\">"
+                            "aria-valuenow=\"0\" aria-valuemin=\"-4\" aria-valuemax=\"60\" style=\"width:0%\">"
                             "<div>"
                                 "<span class=\"label\">Power</span>"
                                 "<span class=\"value\">?</span>"
