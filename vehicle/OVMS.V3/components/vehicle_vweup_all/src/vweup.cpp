@@ -31,7 +31,7 @@
 
 /*
 ;    Subproject:    Integration of support for the VW e-UP
-;    Date:          5 October 2020
+;    Date:          9 October 2020
 ;
 ;    Changes:
 ;    0.1.0  Initial code
