@@ -291,8 +291,16 @@ void OvmsVehicleNissanLeaf::vehicle_nissanleaf_charger_status(ChargerStatus stat
     case CHARGER_STATUS_PLUGGED_IN_TIMER_WAIT:
       StandardMetrics.ms_v_door_chargeport->SetValue(true); //see 0x35d, can't use as only open signal
       StandardMetrics.ms_v_charge_inprogress->SetValue(false);
-      StandardMetrics.ms_v_charge_substate->SetValue("stopped");
-      StandardMetrics.ms_v_charge_state->SetValue("stopped");
+      if (StandardMetrics.ms_v_charge_pilot->AsBool())
+        {
+        StandardMetrics.ms_v_charge_substate->SetValue("timerwait");
+        StandardMetrics.ms_v_charge_state->SetValue("timerwait");
+        }
+      else 
+        {
+        StandardMetrics.ms_v_charge_substate->SetValue("powerwait");
+        StandardMetrics.ms_v_charge_state->SetValue("stopped");
+        }
       break;
     case CHARGER_STATUS_QUICK_CHARGING:
       fast_charge = true;
@@ -886,6 +894,8 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         {
         case 0x80:
         case 0x82: // V2X 
+          StandardMetrics.ms_v_charge_voltage->SetValue(d[3] * 1.12);
+          StandardMetrics.ms_v_charge_current->SetValue(charge_curr);
           vehicle_nissanleaf_charger_status(CHARGER_STATUS_IDLE);
           break;
         case 0x83:
@@ -910,9 +920,13 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
           break;
         case 0x90: //this state appears just before 0x88 and after evse removed (prepare/finish)
         case 0x92:
+          StandardMetrics.ms_v_charge_voltage->SetValue(d[3] * 1.12);
+          StandardMetrics.ms_v_charge_current->SetValue(charge_curr);
           vehicle_nissanleaf_charger_status(CHARGER_STATUS_IDLE);
           break;
         case 0x98:
+          StandardMetrics.ms_v_charge_voltage->SetValue(d[3] * 1.12);
+          StandardMetrics.ms_v_charge_current->SetValue(charge_curr);
           vehicle_nissanleaf_charger_status(CHARGER_STATUS_PLUGGED_IN_TIMER_WAIT);
           break;
         }
