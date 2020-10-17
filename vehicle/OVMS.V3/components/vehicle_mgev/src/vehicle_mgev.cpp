@@ -109,6 +109,9 @@ constexpr uint32_t UNLOCKED_CHARGING_TIMEOUT = 5u;
 /// Maximum number of times to try and wake the car to find it wasn't charging or on
 constexpr uint16_t DIAG_ATTEMPTS = 3u;
 
+/// Threshold for 12v where we make the assumption that it is being charged
+constexpr float CHARGING_THRESHOLD = 12.8;
+
 }  // anon namespace
 
 OvmsVehicleMgEv::OvmsVehicleMgEv()
@@ -360,6 +363,13 @@ void OvmsVehicleMgEv::AttemptDiagnostic()
         m_wakeState = Off;
         return;
     }
+    // Check against the threshold rather than ms_v_env_charging12v to catch before the
+    // ticker loop executes
+    if (StandardMetrics.ms_v_bat_12v_voltage->AsFloat() < CHARGING_THRESHOLD)
+    {
+        ESP_LOGI(TAG, "12v doesn't appear to be charging, not going to attempt to wake");
+        return;
+    }
     ++m_diagCount;
     m_wakeState = Diagnostic;
     m_wakeTicker = monotonictime;
@@ -394,7 +404,9 @@ void OvmsVehicleMgEv::DeterminePollState(canbus* currentBus, bool wokenUp, uint3
         else if (StandardMetrics.ms_v_env_locked->AsBool())
         {
             PollSetState(PollStateLocked);
-            StandardMetrics.ms_v_env_charging12v->SetValue(false);
+            StandardMetrics.ms_v_env_charging12v->SetValue(
+                StandardMetrics.ms_v_bat_12v_voltage->AsFloat() >= CHARGING_THRESHOLD
+            );
         }
         else
         {

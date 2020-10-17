@@ -40,6 +40,23 @@ size_t min(size_t a, size_t b)
     return a < b ? a : b;
 }
 
+void Calibrate12v(float voltage)
+{
+    float reading = StandardMetrics.ms_v_bat_12v_voltage->AsFloat();
+    // If the calibration is out, perform an adjustment.  The OVMS read value is smoothed
+    // for noise and jitter, so we will just tweak it a little bit at a time.
+    if (reading - voltage >= 0.1)
+    {
+        float factor = MyConfig.GetParamValueFloat("system.adc", "factor12v");
+        MyConfig.SetParamValueFloat("system.adc", "factor12v", factor + 0.1);
+    }
+    else if (reading - voltage <= -0.1)
+    {
+        float factor = MyConfig.GetParamValueFloat("system.adc", "factor12v");
+        MyConfig.SetParamValueFloat("system.adc", "factor12v", factor - 0.1);
+    }
+}
+
 }  // anon namespace
 
 void OvmsVehicleMgEv::IncomingVcuPoll(
@@ -50,7 +67,7 @@ void OvmsVehicleMgEv::IncomingVcuPoll(
     switch (pid)
     {
         case vcu12vSupplyPid:
-            StandardMetrics.ms_v_bat_12v_voltage->SetValue(data[0] / 10.0);
+            Calibrate12v(data[0] / 10.0);
             break;
         case vcuVehicleSpeedPid:
             // Speed in kph
