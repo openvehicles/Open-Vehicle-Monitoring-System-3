@@ -106,6 +106,9 @@ constexpr uint32_t TRANSITION_TIMEOUT = 25u;
 /// keep alive to TP keep alive
 constexpr uint32_t UNLOCKED_CHARGING_TIMEOUT = 5u;
 
+/// Maximum number of times to try and wake the car to find it wasn't charging or on
+constexpr uint16_t DIAG_ATTEMPTS = 3u;
+
 }  // anon namespace
 
 OvmsVehicleMgEv::OvmsVehicleMgEv()
@@ -138,6 +141,7 @@ OvmsVehicleMgEv::OvmsVehicleMgEv()
     // Assume the CAN is off to start with
     m_wakeState = Off;
     m_wakeTicker = 0u;
+    m_diagCount = 0u;
 
     // Create the timer for zombie mode, but no need to start it yet
     m_zombieTimer = xTimerCreate(
@@ -335,8 +339,7 @@ bool OvmsVehicleMgEv::HasWoken(canbus* currentBus, uint32_t ticker)
         if (m_wakeState == Tester)
         {
             ESP_LOGD(TAG, "Car not responding while sending TP, sending diagnostic");
-            m_wakeState = Diagnostic;
-            m_wakeTicker = monotonictime;
+            AttemptDiagnostic();
         }
         else if (m_wakeState != Waking && m_wakeState != Off &&
                 (m_wakeState != Diagnostic || monotonictime - m_wakeTicker > ZOMBIE_TIMEOUT))
@@ -349,10 +352,24 @@ bool OvmsVehicleMgEv::HasWoken(canbus* currentBus, uint32_t ticker)
     return wokenUp;
 }
 
+void OvmsVehicleMgEv::AttemptDiagnostic()
+{
+    if (m_diagCount > DIAG_ATTEMPTS)
+    {
+        ESP_LOGE(TAG, "Woken the car too many times without success, not trying again");
+        m_wakeState = Off;
+        return;
+    }
+    ++m_diagCount;
+    m_wakeState = Diagnostic;
+    m_wakeTicker = monotonictime;
+}
+
 void OvmsVehicleMgEv::DeterminePollState(canbus* currentBus, bool wokenUp, uint32_t ticker)
 {
     if (StandardMetrics.ms_v_charge_inprogress->AsBool())
     {
+        m_diagCount = 0u;
         PollSetState(PollStateCharging);
         if (m_wakeState == Off || m_wakeState == Awake)
         {
@@ -371,6 +388,7 @@ void OvmsVehicleMgEv::DeterminePollState(canbus* currentBus, bool wokenUp, uint3
         if (StandardMetrics.ms_v_env_on->AsBool() &&
                 monotonictime - StandardMetrics.ms_v_env_on->LastModified() >= 5)
         {
+            m_diagCount = 0u;
             PollSetState(PollStateRunning);
         }
         else if (StandardMetrics.ms_v_env_locked->AsBool())

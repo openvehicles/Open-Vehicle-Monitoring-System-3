@@ -92,6 +92,8 @@ class OvmsVehicleMgEv : public OvmsVehicle
     void SendAlarmSensitive(canbus* currentBus);
     bool SendKeepAliveTo(canbus* currentBus, uint16_t id);
 
+    void AttemptDiagnostic();
+
     void NotifyVehicleIdling() override;
 
     // mg_poll_bms.cpp
@@ -149,6 +151,8 @@ class OvmsVehicleMgEv : public OvmsVehicle
     WakeState m_wakeState;
     /// The ticker time the wake state was changed
     uint32_t m_wakeTicker;
+    /// A count of the number of times we've woken the car to find it wasn't charging
+    uint16_t m_diagCount;
     /// A timer used to send the zombie keep alive frame which is required every 250ms
     TimerHandle_t m_zombieTimer;
     /// The command registered when the car is made to query the software versions of the
