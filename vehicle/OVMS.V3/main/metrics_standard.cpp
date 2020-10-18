@@ -193,6 +193,7 @@ MetricsStandard::MetricsStandard()
   ms_v_pos_satcount= new OvmsMetricInt(MS_V_POS_SATCOUNT, SM_STALE_MID);
   ms_v_pos_latitude = new OvmsMetricFloat(MS_V_POS_LATITUDE, SM_STALE_MID);
   ms_v_pos_longitude = new OvmsMetricFloat(MS_V_POS_LONGITUDE, SM_STALE_MID);
+  ms_v_pos_location = new OvmsMetricString(MS_V_POS_LOCATION, SM_STALE_MID);
   ms_v_pos_direction = new OvmsMetricFloat(MS_V_POS_DIRECTION, SM_STALE_MID, Degrees);
   ms_v_pos_altitude = new OvmsMetricFloat(MS_V_POS_ALTITUDE, SM_STALE_MID, Meters);
   ms_v_pos_speed = new OvmsMetricFloat(MS_V_POS_SPEED, SM_STALE_MID, Kph);

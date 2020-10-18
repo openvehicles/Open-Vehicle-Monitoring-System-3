@@ -213,6 +213,7 @@ v.p.gpslock                              no                       yes = has GPS 
 v.p.gpsmode                              AA                       <GPS><GLONASS>; N/A/D/E (None/Autonomous/Differential/Estimated)
 v.p.gpsspeed                             0km/h                    GPS speed over ground
 v.p.latitude                             51.3023                  GPS latitude
+v.p.location                             Home                     Name of current location if defined
 v.p.longitude                            7.39006                  GPS longitude
 v.p.odometer                             57913.1km                Vehicle odometer
 v.p.satcount                             8                        GPS satellite count in view

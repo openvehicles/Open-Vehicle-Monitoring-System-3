@@ -196,6 +196,7 @@
 #define MS_V_POS_SATCOUNT           "v.p.satcount"
 #define MS_V_POS_LATITUDE           "v.p.latitude"
 #define MS_V_POS_LONGITUDE          "v.p.longitude"
+#define MS_V_POS_LOCATION           "v.p.location"
 #define MS_V_POS_DIRECTION          "v.p.direction"
 #define MS_V_POS_ALTITUDE           "v.p.altitude"
 #define MS_V_POS_SPEED              "v.p.speed"
@@ -380,6 +381,7 @@ class MetricsStandard
     OvmsMetricInt*    ms_v_pos_satcount;
     OvmsMetricFloat*  ms_v_pos_latitude;
     OvmsMetricFloat*  ms_v_pos_longitude;
+    OvmsMetricString* ms_v_pos_location;            // Name of current location if defined
     OvmsMetricFloat*  ms_v_pos_direction;
     OvmsMetricFloat*  ms_v_pos_altitude;
     OvmsMetricFloat*  ms_v_pos_speed;               // Vehicle speed [kph]
