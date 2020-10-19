@@ -363,13 +363,6 @@ void OvmsVehicleMgEv::AttemptDiagnostic()
         m_wakeState = Off;
         return;
     }
-    // Check against the threshold rather than ms_v_env_charging12v to catch before the
-    // ticker loop executes
-    if (StandardMetrics.ms_v_bat_12v_voltage->AsFloat() < CHARGING_THRESHOLD)
-    {
-        ESP_LOGI(TAG, "12v doesn't appear to be charging, not going to attempt to wake");
-        return;
-    }
     ++m_diagCount;
     m_wakeState = Diagnostic;
     m_wakeTicker = monotonictime;
@@ -433,6 +426,13 @@ void OvmsVehicleMgEv::ZombieTimer()
     if (currentBus == nullptr)
     {
         // Polling is disabled, so there's nothing to do here
+        return;
+    }
+    if (!StandardMetrics.ms_v_env_charging12v->AsBool())
+    {
+        // Don't wake the car if the 12v isn't charging because that can only end in a
+        // dead battery
+        ESP_LOGV(TAG, "Not sending SO as 12v is not charging.");
         return;
     }
     // Send Diagnostic Session Control (0x10, 0x02).
