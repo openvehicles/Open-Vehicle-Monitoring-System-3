@@ -92,19 +92,25 @@ const OvmsVehicle::poll_pid_t obdii_polls[] =
     { 0, 0, 0x00, 0x00, { 0, 0, 0, 0 }, 0 }
 };
 
-// The number of seconds without receiving a CAN packet before assuming it's asleep
+/// The number of seconds without receiving a CAN packet before assuming it's asleep
 constexpr uint32_t ASLEEP_TIMEOUT = 5u;
 
-// The number of seconds trying to wake from zombie before giving up
+/// The number of seconds trying to wake from zombie before giving up
 constexpr uint32_t ZOMBIE_TIMEOUT = 30u;
 
-// The number of seconds since the last time the wake state changed before assuming
-// zombie mode
-constexpr uint32_t TRANSITION_TIMEOUT = 25u;
+/// The number of seconds trying to keep awake without success before allowing it to
+/// go to sleep
+constexpr uint32_t TRANSITION_TIMEOUT = 50u;
 
 /// The number of seconds the car has to be unlocked for before transitioning from session
 /// keep alive to TP keep alive
 constexpr uint32_t UNLOCKED_CHARGING_TIMEOUT = 5u;
+
+/// Maximum number of times to try and wake the car to find it wasn't charging or on
+constexpr uint16_t DIAG_ATTEMPTS = 3u;
+
+/// Threshold for 12v where we make the assumption that it is being charged
+constexpr float CHARGING_THRESHOLD = 12.8;
 
 }  // anon namespace
 
@@ -138,6 +144,7 @@ OvmsVehicleMgEv::OvmsVehicleMgEv()
     // Assume the CAN is off to start with
     m_wakeState = Off;
     m_wakeTicker = 0u;
+    m_diagCount = 0u;
 
     // Create the timer for zombie mode, but no need to start it yet
     m_zombieTimer = xTimerCreate(
@@ -335,8 +342,7 @@ bool OvmsVehicleMgEv::HasWoken(canbus* currentBus, uint32_t ticker)
         if (m_wakeState == Tester)
         {
             ESP_LOGD(TAG, "Car not responding while sending TP, sending diagnostic");
-            m_wakeState = Diagnostic;
-            m_wakeTicker = monotonictime;
+            AttemptDiagnostic();
         }
         else if (m_wakeState != Waking && m_wakeState != Off &&
                 (m_wakeState != Diagnostic || monotonictime - m_wakeTicker > ZOMBIE_TIMEOUT))
@@ -349,10 +355,24 @@ bool OvmsVehicleMgEv::HasWoken(canbus* currentBus, uint32_t ticker)
     return wokenUp;
 }
 
+void OvmsVehicleMgEv::AttemptDiagnostic()
+{
+    if (m_diagCount > DIAG_ATTEMPTS)
+    {
+        ESP_LOGE(TAG, "Woken the car too many times without success, not trying again");
+        m_wakeState = Off;
+        return;
+    }
+    ++m_diagCount;
+    m_wakeState = Diagnostic;
+    m_wakeTicker = monotonictime;
+}
+
 void OvmsVehicleMgEv::DeterminePollState(canbus* currentBus, bool wokenUp, uint32_t ticker)
 {
     if (StandardMetrics.ms_v_charge_inprogress->AsBool())
     {
+        m_diagCount = 0u;
         PollSetState(PollStateCharging);
         if (m_wakeState == Off || m_wakeState == Awake)
         {
@@ -371,12 +391,15 @@ void OvmsVehicleMgEv::DeterminePollState(canbus* currentBus, bool wokenUp, uint3
         if (StandardMetrics.ms_v_env_on->AsBool() &&
                 monotonictime - StandardMetrics.ms_v_env_on->LastModified() >= 5)
         {
+            m_diagCount = 0u;
             PollSetState(PollStateRunning);
         }
         else if (StandardMetrics.ms_v_env_locked->AsBool())
         {
             PollSetState(PollStateLocked);
-            StandardMetrics.ms_v_env_charging12v->SetValue(false);
+            StandardMetrics.ms_v_env_charging12v->SetValue(
+                StandardMetrics.ms_v_bat_12v_voltage->AsFloat() >= CHARGING_THRESHOLD
+            );
         }
         else
         {
@@ -403,6 +426,13 @@ void OvmsVehicleMgEv::ZombieTimer()
     if (currentBus == nullptr)
     {
         // Polling is disabled, so there's nothing to do here
+        return;
+    }
+    if (!StandardMetrics.ms_v_env_charging12v->AsBool())
+    {
+        // Don't wake the car if the 12v isn't charging because that can only end in a
+        // dead battery
+        ESP_LOGV(TAG, "Not sending SO as 12v is not charging.");
         return;
     }
     // Send Diagnostic Session Control (0x10, 0x02).
