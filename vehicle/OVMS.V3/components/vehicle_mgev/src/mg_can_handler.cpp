@@ -80,12 +80,12 @@ void OvmsVehicleMgEv::IncomingPollFrame(CAN_frame_t* frame)
             frame->FIR.B.DLC, frame->data.u8[0], frame->data.u8[1], frame->data.u8[2],
             frame->data.u8[3], frame->data.u8[4], frame->data.u8[5], frame->data.u8[6]
         );
-        if (m_wakeState == Off)
+        // If we were off, or woken by this message then wake up
+        if (m_wakeState == Off || (m_wakeState == Awake && monotonictime == m_wakeTicker))
         {
             // If we get a 70a and the CAN is off, then we'll need to wake the CAN
             ESP_LOGI(TAG, "Wake state from %d to %d", Off, Diagnostic);
-            m_wakeState = Diagnostic;
-            m_wakeTicker = monotonictime;
+            AttemptDiagnostic();
         }
     }
 
