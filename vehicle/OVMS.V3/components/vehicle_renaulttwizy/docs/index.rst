@@ -70,4 +70,6 @@ Contents
    commands
    notifications
    brakehack
+   aux-charge-fan
+   aux-charger
 
