@@ -393,23 +393,20 @@ esp_err_t esp32can::Stop()
   return ESP_OK;
   }
 
-esp_err_t esp32can::Write(const CAN_frame_t* p_frame, TickType_t maxqueuewait /*=0*/)
+
+/**
+ * WriteFrame: deliver a frame to the hardware for transmission (driver internal)
+ */
+esp_err_t esp32can::WriteFrame(const CAN_frame_t* p_frame)
   {
+  ESP32CAN_ENTER_CRITICAL();
   uint8_t __byte_i; // Byte iterator
 
-  if (m_mode != CAN_MODE_ACTIVE)
-    {
-    ESP_LOGW(TAG,"Cannot write %s when not in ACTIVE mode",m_name);
-    return ESP_OK;
-    }
-
-  ESP32CAN_ENTER_CRITICAL();
-
   // check if TX buffer is available:
-  if(MODULE_ESP32CAN->SR.B.TBS == 0)
+  if (MODULE_ESP32CAN->SR.B.TBS == 0)
     {
     ESP32CAN_EXIT_CRITICAL();
-    return QueueWrite(p_frame, maxqueuewait);
+    return ESP_FAIL;
     }
 
   // copy frame information record
@@ -436,6 +433,34 @@ esp_err_t esp32can::Write(const CAN_frame_t* p_frame, TickType_t maxqueuewait /*
   MODULE_ESP32CAN->CMR.B.TR=1;
 
   ESP32CAN_EXIT_CRITICAL();
+  return ESP_OK;
+  }
+
+
+/**
+ * Write: transmit or queue a frame for transmission (API)
+ */
+esp_err_t esp32can::Write(const CAN_frame_t* p_frame, TickType_t maxqueuewait /*=0*/)
+  {
+  OvmsMutexLock lock(&m_write_mutex);
+
+  if (m_mode != CAN_MODE_ACTIVE)
+    {
+    ESP_LOGW(TAG,"Cannot write %s when not in ACTIVE mode",m_name);
+    return ESP_FAIL;
+    }
+
+  // if there are frames waiting in the TX queue, add the new one there as well:
+  if (uxQueueMessagesWaiting(m_txqueue))
+    {
+    return QueueWrite(p_frame, maxqueuewait);
+    }
+
+  // try to deliver the frame to the hardware:
+  if (WriteFrame(p_frame) != ESP_OK)
+    {
+    return QueueWrite(p_frame, maxqueuewait);
+    }
 
   // stats & logging:
   canbus::Write(p_frame, maxqueuewait);
@@ -443,14 +468,35 @@ esp_err_t esp32can::Write(const CAN_frame_t* p_frame, TickType_t maxqueuewait /*
   return ESP_OK;
   }
 
+
 void esp32can::TxCallback(CAN_frame_t* p_frame, bool success)
   {
+  // Application callbacks & logging:
   canbus::TxCallback(p_frame, success);
 
   // TX buffer has become available; send next queued frame (if any):
-  CAN_frame_t frame;
-  if (xQueueReceive(m_txqueue, (void*)&frame, 0) == pdTRUE)
-    Write(&frame, 0);
+    {
+    OvmsMutexLock lock(&m_write_mutex);
+    CAN_frame_t frame;
+    while (xQueueReceive(m_txqueue, (void*)&frame, 0) == pdTRUE)
+      {
+      if (WriteFrame(&frame) == ESP_FAIL)
+        {
+        // This should not happen:
+        ESP_LOGE(TAG, "TxCallback: fatal error: TX buffer not available");
+        CAN_queue_msg_t msg;
+        msg.type = CAN_txfailedcallback;
+        msg.body.frame = frame;
+        msg.body.bus = this;
+        xQueueSend(MyCan.m_rxqueue, &msg, 0);
+        }
+      else
+        {
+        canbus::Write(&frame, 0);
+        break;
+        }
+      }
+    }
   }
 
 void esp32can::SetPowerMode(PowerMode powermode)

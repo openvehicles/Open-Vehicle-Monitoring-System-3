@@ -35,6 +35,7 @@
 #include "freertos/queue.h"
 #include "can.h"
 #include "spi.h"
+#include "ovms_mutex.h"
 
 // MCP2515 SPI commands:
 #define CMD_RESET         0b11000000
@@ -93,6 +94,10 @@ class mcp2515 : public canbus
   public:
     esp_err_t Write(const CAN_frame_t* p_frame, TickType_t maxqueuewait=0);
     bool AsynchronousInterruptHandler(CAN_frame_t* frame, bool * frameReceived);
+    void TxCallback(CAN_frame_t* p_frame, bool success);
+
+  protected:
+    esp_err_t WriteFrame(const CAN_frame_t* p_frame);
 
   public:
     void SetPowerMode(PowerMode powermode);
@@ -107,6 +112,8 @@ class mcp2515 : public canbus
     int m_clockspeed;
     int m_cspin;
     int m_intpin;
+    uint8_t m_last_errflag = 0;
+    OvmsMutex m_write_mutex;
   };
 
 #endif //#ifndef __MCP2515_H__

@@ -400,6 +400,13 @@ config OVMS_VEHICLE_CHEVROLET_C6_CORVETTE
     help
         Enable to include support for Chevrolet C6 Corvette vehicle.
 
+config OVMS_VEHICLE_MG_EV
+    bool "Include support for MG ZS EV vehicles"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for MG ZS EV vehicles.
+
 config OVMS_VEHICLE_RXTASK_STACK
     int "Stack size for vehicle RX task"
     default 6144
@@ -595,6 +602,20 @@ config OVMS_COMP_RE_TOOLS
     depends on OVMS
     help
         Enable to include support for Reverse Engineering tools
+
+config OVMS_COMP_RE_TOOLS_PID
+    bool "Include support for ECU PID scanning"
+    default y
+    depends on OVMS
+    help
+        Enable to include research module for scanning an ECU for PIDs.
+
+config OVMS_COMP_RE_TOOLS_TESTERPRESENT
+    bool "Include support for ECU tester present signalling"
+    default y
+    depends on OVMS
+    help
+        Enable to include research module for sending tester present to an ECU.
 
 config OVMS_COMP_EDITOR
     bool "Include support for Simple file editor"

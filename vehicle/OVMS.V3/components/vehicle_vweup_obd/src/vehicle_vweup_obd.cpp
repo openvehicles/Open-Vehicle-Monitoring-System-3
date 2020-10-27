@@ -47,34 +47,37 @@ public:
 
 const OvmsVehicle::poll_pid_t vwup_polls[] = {
     // Note: poller ticker cycles at 3600 seconds = max period
-    // { txid, rxid, type, pid, { VWUP_OFF, VWUP_ON, VWUP_CHARGING } }
-    {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_U, {0, 1, 5}},
-    {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_I, {30, 1, 5}}, // 30 in OFF needed: Car gets started with full 12V battery
-    // Same tick & order important of above 2: VWUP_BAT_MGMT_I calculates the power
-    {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_SOC, {0, 20, 20}},
-    {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_ENERGY_COUNTERS, {0, 20, 20}},
+    // { txid, rxid, type, pid, { VWUP_OFF, VWUP_ON, VWUP_CHARGING }, bus }
 
-    {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_CELL_MAX, {0, 20, 20}},
-    {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_CELL_MIN, {0, 20, 20}},
+    {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_U, {0, 1, 5}, 1},
+    {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_I, {30, 1, 5}, 1}, // 30 in OFF needed: Car gets started with full 12V battery
+    // Same tick & order important of above 2: VWUP_BAT_MGMT_I calculates the power
+
+    {VWUP_MOT_ELEC_TX, VWUP_MOT_ELEC_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MOT_ELEC_SOC_NORM, {0, 20, 20}, 1},
+    {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_SOC, {0, 20, 20}, 1},
+    {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_ENERGY_COUNTERS, {0, 20, 20}, 1},
+
+    {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_CELL_MAX, {0, 20, 20}, 1},
+    {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_CELL_MIN, {0, 20, 20}, 1},
     // Same tick & order important of above 2: VWUP_BAT_MGMT_CELL_MIN calculates the delta
 
-    {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_TEMP, {0, 20, 20}},
+    {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_TEMP, {0, 20, 20}, 1},
 
-    {VWUP_CHARGER_TX, VWUP_CHARGER_RX, VEHICLE_POLL_TYPE_OBDIISESSION, VWUP_CHARGER_EXTDIAG, {0, 30, 30}},
+    {VWUP_CHARGER_TX, VWUP_CHARGER_RX, VEHICLE_POLL_TYPE_OBDIISESSION, VWUP_CHARGER_EXTDIAG, {0, 30, 30}, 1},
 
-    {VWUP_CHARGER_TX, VWUP_CHARGER_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_CHARGER_AC_U, {0, 0, 5}},
-    {VWUP_CHARGER_TX, VWUP_CHARGER_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_CHARGER_AC_I, {0, 0, 5}},
+    {VWUP_CHARGER_TX, VWUP_CHARGER_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_CHARGER_AC_U, {0, 0, 5}, 1},
+    {VWUP_CHARGER_TX, VWUP_CHARGER_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_CHARGER_AC_I, {0, 0, 5}, 1},
     // Same tick & order important of above 2: VWUP_CHARGER_AC_I calculates the AC power
-    {VWUP_CHARGER_TX, VWUP_CHARGER_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_CHARGER_DC_U, {0, 0, 5}},
-    {VWUP_CHARGER_TX, VWUP_CHARGER_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_CHARGER_DC_I, {0, 0, 5}},
+    {VWUP_CHARGER_TX, VWUP_CHARGER_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_CHARGER_DC_U, {0, 0, 5}, 1},
+    {VWUP_CHARGER_TX, VWUP_CHARGER_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_CHARGER_DC_I, {0, 0, 5}, 1},
     // Same tick & order important of above 2: VWUP_CHARGER_DC_I calculates the DC power
     // Same tick & order important of above 4: VWUP_CHARGER_DC_I calculates the power loss & efficiency
 
-    {VWUP_CHARGER_TX, VWUP_CHARGER_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_CHARGER_POWER_EFF, {0, 5, 10}}, // 5 @ VWUP_ON to detect charging
-    {VWUP_CHARGER_TX, VWUP_CHARGER_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_CHARGER_POWER_LOSS, {0, 0, 10}},
+    {VWUP_CHARGER_TX, VWUP_CHARGER_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_CHARGER_POWER_EFF, {0, 5, 10}, 1}, // 5 @ VWUP_ON to detect charging
+    {VWUP_CHARGER_TX, VWUP_CHARGER_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_CHARGER_POWER_LOSS, {0, 0, 10}, 1},
 
-    {VWUP_MFD_TX, VWUP_MFD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MFD_ODOMETER, {0, 60, 60}},
-    {0, 0, 0, 0, {0, 0, 0}}};
+    {VWUP_MFD_TX, VWUP_MFD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MFD_ODOMETER, {0, 60, 60}, 1},
+    {0, 0, 0, 0, {0, 0, 0}, 0}};
 
 OvmsVehicleVWeUpObd::OvmsVehicleVWeUpObd()
 {
@@ -91,8 +94,7 @@ OvmsVehicleVWeUpObd::OvmsVehicleVWeUpObd()
     PollSetResponseSeparationTime(1);
     PollSetState(VWUP_OFF);
 
-    BatMgmtEnergyUsed = MyMetrics.InitFloat("xuo.b.energy.used", SM_STALE_NONE, 0, kWh);
-    BatMgmtEnergyCharged = MyMetrics.InitFloat("xuo.b.energy.charged", SM_STALE_NONE, 0, kWh);
+    BatMgmtSoC = MyMetrics.InitFloat("xuo.b.soc", 100, 0, Percentage);
     BatMgmtCellDelta = MyMetrics.InitFloat("xuo.b.cell.delta", SM_STALE_NONE, 0, Volts);
 
     ChargerPowerEffEcu = MyMetrics.InitFloat("xuo.c.eff.ecu", 100, 0, Percentage);
@@ -209,7 +211,8 @@ void OvmsVehicleVWeUpObd::IncomingPollReply(canbus *bus, uint16_t type, uint16_t
     case VWUP_BAT_MGMT_I:
         if (PollReply.FromUint16("VWUP_BAT_MGMT_I", value))
         {
-            StandardMetrics.ms_v_bat_current->SetValue((value - 2044.0f) / 4.0f);
+            // ECU delivers negative current when it goes out of the battery. OVMS wants positive when the battery outputs current.
+            StandardMetrics.ms_v_bat_current->SetValue(((value - 2044.0f) / 4.0f) * -1.0f);
             VALUE_LOG(TAG, "VWUP_BAT_MGMT_I=%f => %f", value, StandardMetrics.ms_v_bat_current->AsFloat());
 
             value = StandardMetrics.ms_v_bat_voltage->AsFloat() * StandardMetrics.ms_v_bat_current->AsFloat() / 1000.0f;
@@ -218,24 +221,33 @@ void OvmsVehicleVWeUpObd::IncomingPollReply(canbus *bus, uint16_t type, uint16_t
         }
         break;
 
+    case VWUP_MOT_ELEC_SOC_NORM:
+        if (PollReply.FromUint16("VWUP_MOT_ELEC_SOC_NORM", value))
+        {            
+            StandardMetrics.ms_v_bat_soc->SetValue(value / 100.0f);
+            VALUE_LOG(TAG, "VWUP_MOT_ELEC_SOC_NORM=%f => %f", value, StandardMetrics.ms_v_bat_soc->AsFloat());
+        }
+        break;
+
     case VWUP_BAT_MGMT_SOC:
         if (PollReply.FromUint8("VWUP_BAT_MGMT_SOC", value))
         {
-            StandardMetrics.ms_v_bat_soc->SetValue(value / 2.5f);
-            VALUE_LOG(TAG, "VWUP_BAT_MGMT_SOC=%f => %f", value, StandardMetrics.ms_v_bat_soc->AsFloat());
+            BatMgmtSoC->SetValue(value / 2.5f);
+            VALUE_LOG(TAG, "VWUP_BAT_MGMT_SOC=%f => %f", value, BatMgmtSoC->AsFloat());
         }
         break;
 
     case VWUP_BAT_MGMT_ENERGY_COUNTERS:
-        if (PollReply.FromInt32("VWUP_BAT_MGMT_ENERGY_COUNTERS_CHARGED", value, 8))
+        if (PollReply.FromInt32("VWUP_BAT_MGMT_ENERGY_COUNTERS_RECD", value, 8))
         {
-            BatMgmtEnergyCharged->SetValue(value / ((0xFFFFFFFF / 2.0f) / 250200.0f));
-            VALUE_LOG(TAG, "VWUP_BAT_MGMT_ENERGY_COUNTERS_CHARGED=%f => %f", value, BatMgmtEnergyCharged->AsFloat());
+            StandardMetrics.ms_v_bat_energy_recd_total->SetValue(value / ((0xFFFFFFFF / 2.0f) / 250200.0f));
+            VALUE_LOG(TAG, "VWUP_BAT_MGMT_ENERGY_COUNTERS_RECD=%f => %f", value, StandardMetrics.ms_v_bat_energy_recd_total->AsFloat());
         }
         if (PollReply.FromInt32("VWUP_BAT_MGMT_ENERGY_COUNTERS_USED", value, 12))
         {
-            BatMgmtEnergyUsed->SetValue(value / ((0xFFFFFFFF / 2.0f) / 250200.0f));
-            VALUE_LOG(TAG, "VWUP_BAT_MGMT_ENERGY_COUNTERS_USED=%f => %f", value, BatMgmtEnergyUsed->AsFloat());
+            // Used is negative here, standard metric is positive
+            StandardMetrics.ms_v_bat_energy_used_total->SetValue((value * -1.0f) / ((0xFFFFFFFF / 2.0f) / 250200.0f));
+            VALUE_LOG(TAG, "VWUP_BAT_MGMT_ENERGY_COUNTERS_USED=%f => %f", value, StandardMetrics.ms_v_bat_energy_used_total->AsFloat());
         }
         break;
 
@@ -291,9 +303,15 @@ void OvmsVehicleVWeUpObd::IncomingPollReply(canbus *bus, uint16_t type, uint16_t
             ChargerAC2I = value / 10.0f;
             VALUE_LOG(TAG, "VWUP_CHARGER_AC2_I=%f => %f", value, ChargerAC2I);
 
-            value = ChargerAC1U * ChargerAC1I + ChargerAC2U * ChargerAC2I;
+            value = (ChargerAC1U * ChargerAC1I + ChargerAC2U * ChargerAC2I) / 1000.0f;
             ChargerACPower->SetValue(value);
             VALUE_LOG(TAG, "VWUP_CHARGER_AC_P=%f => %f", value, ChargerACPower->AsFloat());
+
+            // Standard Charge Power and Charge Efficiency calculation as requested by the standard
+            StandardMetrics.ms_v_charge_power->SetValue(value);
+            value = value == 0.0f ? 0.0f : ((StandardMetrics.ms_v_bat_power->AsFloat() * -1.0f) / value) * 100.0f;
+            StandardMetrics.ms_v_charge_efficiency->SetValue(value);
+            VALUE_LOG(TAG, "VWUP_CHARGER_EFF_STD=%f => %f", value, StandardMetrics.ms_v_charge_efficiency->AsFloat());
         }
         break;
 
@@ -321,7 +339,7 @@ void OvmsVehicleVWeUpObd::IncomingPollReply(canbus *bus, uint16_t type, uint16_t
             ChargerDC2I = (value - 510.0f) / 5.0f;
             VALUE_LOG(TAG, "VWUP_CHARGER_DC2_I=%f => %f", value, ChargerDC2I);
 
-            value = ChargerDC1U * ChargerDC1I + ChargerDC2U * ChargerDC2I;
+            value = (ChargerDC1U * ChargerDC1I + ChargerDC2U * ChargerDC2I) / 1000.0f;
             ChargerDCPower->SetValue(value);
             VALUE_LOG(TAG, "VWUP_CHARGER_DC_P=%f => %f", value, ChargerDCPower->AsFloat());
 
@@ -348,7 +366,7 @@ void OvmsVehicleVWeUpObd::IncomingPollReply(canbus *bus, uint16_t type, uint16_t
     case VWUP_CHARGER_POWER_LOSS:
         if (PollReply.FromUint8("VWUP_CHARGER_POWER_LOSS", value))
         {
-            ChargerPowerLossEcu->SetValue(value * 20.0f);
+            ChargerPowerLossEcu->SetValue((value * 20.0f) / 1000.0f);
             VALUE_LOG(TAG, "VWUP_CHARGER_POWER_LOSS=%f => %f", value, ChargerPowerLossEcu->AsFloat());
         }
         break;

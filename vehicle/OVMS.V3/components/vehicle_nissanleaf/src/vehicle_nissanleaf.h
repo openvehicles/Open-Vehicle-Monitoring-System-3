@@ -32,6 +32,8 @@
 #ifndef __VEHICLE_NISSANLEAF_H__
 #define __VEHICLE_NISSANLEAF_H__
 
+#include <iostream>
+#include <algorithm>
 #include "freertos/timers.h"
 #include "vehicle.h"
 #include "ovms_webserver.h"
@@ -116,7 +118,6 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     void WebDeInit();
     static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
     static void WebCfgBattery(PageEntry_t& p, PageContext_t& c);
-    // static void CustomBmsCellMonitor(PageEntry_t& p, PageContext_t& c);
     static void shell_obd_request(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 
   public:

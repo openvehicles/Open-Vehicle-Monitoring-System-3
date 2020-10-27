@@ -39,6 +39,8 @@
 #define VWUP_CHARGING 2
 
 // ECUs TX/RX
+#define VWUP_MOT_ELEC_TX 0x7E0
+#define VWUP_MOT_ELEC_RX 0x7E8
 #define VWUP_BAT_MGMT_TX 0x7E5
 #define VWUP_BAT_MGMT_RX 0x7ED
 #define VWUP_CHARGER_TX 0x744
@@ -47,9 +49,10 @@
 #define VWUP_MFD_RX 0x77E
 
 // PIDs of ECUs
-#define VWUP_BAT_MGMT_SOC 0x028C
+#define VWUP_MOT_ELEC_SOC_NORM 0x1164
 #define VWUP_BAT_MGMT_U 0x1E3B
 #define VWUP_BAT_MGMT_I 0x1E3D
+#define VWUP_BAT_MGMT_SOC 0x028C
 #define VWUP_BAT_MGMT_ENERGY_COUNTERS 0x1E32
 #define VWUP_BAT_MGMT_CELL_MAX 0x1E33
 #define VWUP_BAT_MGMT_CELL_MIN 0x1E34
@@ -68,17 +71,16 @@ class OvmsVehicleVWeUpObd : public OvmsVehicle
 public:
     OvmsVehicleVWeUpObd();
     ~OvmsVehicleVWeUpObd();
-
-    OvmsMetricFloat *BatMgmtEnergyUsed;    // Total enery usage from battery [kWh]
-    OvmsMetricFloat *BatMgmtEnergyCharged; // Total enery charged (charger + recovered) to battery [kWh]
+    
+    OvmsMetricFloat *BatMgmtSoC;           // Absolute SoC of main battery
     OvmsMetricFloat *BatMgmtCellDelta;     // Highest voltage - lowest voltage of all cells [V]
 
-    OvmsMetricFloat *ChargerACPower;       // AC Power
-    OvmsMetricFloat *ChargerDCPower;       // DC Power
+    OvmsMetricFloat *ChargerACPower;       // AC Power [kW]
+    OvmsMetricFloat *ChargerDCPower;       // DC Power [kW]
     OvmsMetricFloat *ChargerPowerEffEcu;   // Efficiency of the Charger [%] (from ECU)
-    OvmsMetricFloat *ChargerPowerLossEcu;  // Power loss of Charger [W] (from ECU)
+    OvmsMetricFloat *ChargerPowerLossEcu;  // Power loss of Charger [kW] (from ECU)
     OvmsMetricFloat *ChargerPowerEffCalc;  // Efficiency of the Charger [%] (calculated from U and I)
-    OvmsMetricFloat *ChargerPowerLossCalc; // Power loss of Charger [W] (calculated from U and I)
+    OvmsMetricFloat *ChargerPowerLossCalc; // Power loss of Charger [kW] (calculated from U and I)
 
     void IncomingPollReply(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length, uint16_t mlremain);
 

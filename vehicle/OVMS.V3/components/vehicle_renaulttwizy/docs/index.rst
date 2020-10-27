@@ -68,5 +68,8 @@ Contents
    metrics
    events
    commands
+   notifications
    brakehack
+   aux-charge-fan
+   aux-charger
 

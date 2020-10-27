@@ -4,8 +4,8 @@ EGPIO
 Hardware
 --------
 
-The OVMS has 10 general purpose I/O ports, provided by a MAX7317 I/O expander
-(`datasheet <https://datasheets.maximintegrated.com/en/ds/MAX7317.pdf>`_).
+The OVMS has 10 general purpose I/O ports, provided by a `MAX7317 I/O expander
+<https://datasheets.maximintegrated.com/en/ds/MAX7317.pdf>`_.
 
 The MAX7317 ports can be individually configured as either an open-drain output, or an 
 overvoltage-protected Schmitt input. Being open-drain, you need to add pull-up resistors for 
@@ -29,6 +29,13 @@ Port Signal(s)        Exp.Pin Default usage
 8    EIO_7            14      -free-
 9    EIO_8            12      -free-
 ==== ================ ======= ==========================
+
+``SW_CTL`` (port 1) controls a `BTS452R power switch 
+<https://www.infineon.com/dgdl/Infineon-BTS452R-DS-v01_01-en.pdf?fileId=db3a30431ddc9372011ddd17aba80002>`_, 
+which can deliver a nominal output of 25W or 1.8A, and up to 40W or 2.9A short term at the 
+``SW_12V`` pin. This is meant to power auxiliary devices from the OVMS, for example head-up displays. 
+Of course you can as well power a standard 12V automotive relay or fan directly from this without 
+additional hardware.
 
 The EGPIO (EIO) ports are not connected directly to the DA26 connector but are available at the internal 
 expansion port. To route an EGPIO port to the DA26 connector, connect it to one of the 

@@ -980,7 +980,9 @@ void OvmsServerV2::TransmitMsgStat(bool always)
     StandardMetrics.ms_v_bat_range_full->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_bat_power->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_bat_voltage->IsModifiedAndClear(MyOvmsServerV2Modifier) |
-    StandardMetrics.ms_v_bat_soh->IsModifiedAndClear(MyOvmsServerV2Modifier);
+    StandardMetrics.ms_v_bat_soh->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_charge_power->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_charge_efficiency->IsModifiedAndClear(MyOvmsServerV2Modifier);
 
   // Quick exit if nothing modified
   if ((!always)&&(!modified)) return;
@@ -1061,6 +1063,10 @@ void OvmsServerV2::TransmitMsgStat(bool always)
     << StandardMetrics.ms_v_bat_voltage->AsFloat()
     << ","
     << StandardMetrics.ms_v_bat_soh->AsInt()
+    << ","
+    << StandardMetrics.ms_v_charge_power->AsFloat()
+    << ","
+    << StandardMetrics.ms_v_charge_efficiency->AsFloat()
     ;
 
   Transmit(buffer.str().c_str());
@@ -1080,7 +1086,9 @@ void OvmsServerV2::TransmitMsgGPS(bool always)
     StandardMetrics.ms_v_env_drivemode->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_bat_power->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_bat_energy_used->IsModifiedAndClear(MyOvmsServerV2Modifier) |
-    StandardMetrics.ms_v_bat_energy_recd->IsModifiedAndClear(MyOvmsServerV2Modifier);
+    StandardMetrics.ms_v_bat_energy_recd->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_inv_power->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_inv_efficiency->IsModifiedAndClear(MyOvmsServerV2Modifier);
 
   // Quick exit if nothing modified
   if ((!always)&&(!modified)) return;
@@ -1118,6 +1126,10 @@ void OvmsServerV2::TransmitMsgGPS(bool always)
     << StandardMetrics.ms_v_bat_energy_used->AsString("0",Other,3)
     << ","
     << StandardMetrics.ms_v_bat_energy_recd->AsString("0",Other,3)
+    << ","
+    << StandardMetrics.ms_v_inv_power->AsFloat()
+    << ","
+    << StandardMetrics.ms_v_inv_efficiency->AsFloat()
     ;
 
   Transmit(buffer.str().c_str());

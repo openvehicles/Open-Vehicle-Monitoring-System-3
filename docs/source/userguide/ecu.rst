@@ -126,8 +126,8 @@ Should one desire to return a value not directly available by a single named met
 
 Scripts should be placed in the directory /store/obd2ecu/PID, where PID is the decimal value of the PID to be processed.  Example for creating a "kw per km" sort of metric::
 
-  ret1=OvmsMetricFloat("v.p.speed");
-  ret2=OvmsMetricFloat("v.b.power");
+  ret1=OvmsMetrics.AsFloat("v.p.speed");
+  ret2=OvmsMetrics.AsFloat("v.b.power");
   out=0.0;
   if (ret1 > 0) { out=ret2/ret1; }
   out;

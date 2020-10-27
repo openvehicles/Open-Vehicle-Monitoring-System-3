@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+  
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>OVMS Web UI Development</title>
+    <link href="/assets/style.css" rel="stylesheet">
+    <link rel="shortcut icon" sizes="192x192" href="/assets/favicon.png">
+    <link rel="apple-touch-icon" href="/assets/favicon.png">
+  </head>
+  
+  <body>
+    
+    <nav id="nav" class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container-fluid">
+        
+        <!-- BEGIN Collapsed Menu -->
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#menu" aria-expanded="false" aria-controls="menu">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <button type="button" class="navbar-toggle collapsed toggle-night">◐</button>
+          <button type="button" class="navbar-toggle collapsed toggle-fullscreen">◱</button>
+          <a class="navbar-brand" href="/home.htm" target="#main" accesskey="h" title="Home"><img alt="OVMS" src="/assets/favicon.png"></a>
+        </div>
+        <!-- END Collapsed Menu -->
+        
+        <!-- BEGIN Standard Menu -->
+        <div id="menu" class="navbar-collapse collapse">
+          
+          <ul class="nav navbar-nav">
+            <li><a href="/dashboard.htm" target="#main">Dashboard</a></li>
+            <li class="dropdown" id="menu-examples-basic">
+              <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false"
+              >Basics &amp; API <span class="caret"></span></a>
+              <ul class="dropdown-menu">
+                <li><a href="/metrics.htm" target="#main">Metrics Displays</a></li>
+                <li><a href="/commands.htm" target="#main">Command Buttons &amp; Monitors</a></li>
+                <li><a href="/notifications.htm" target="#main">Notifications</a></li>
+                <li><a href="/hooks.htm" target="#main">Hook Plugins</a></li>
+                <li><a href="/loadcmd.htm" target="#main">Command Streaming</a></li>
+              </ul>
+            </li>
+            <li class="dropdown" id="menu-examples-ui">
+              <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false"
+              >UI Widgets <span class="caret"></span></a>
+              <ul class="dropdown-menu">
+                <li><a href="/solidgauge.htm" target="#main">Solid Gauges</a></li>
+                <li><a href="/btn-longtouch.htm" target="#main">Longtouch Buttons</a></li>
+                <li><a href="/dialogtest.htm" target="#main">Basic Dialogs</a></li>
+                <li><a href="/filedialog.htm" target="#main">File Dialogs</a></li>
+                <li><a href="/filebrowser.htm" target="#main">File Browser Widget</a></li>
+                <li><a href="/input-slider.htm" target="#main">Slider Widget</a></li>
+              </ul>
+            </li>
+            <li class="dropdown" id="menu-vehicle">
+              <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false"
+              >Plugins <span class="caret"></span></a>
+              <ul class="dropdown-menu">
+                <li><a href="/regenmon.htm" target="#main" accesskey="M">Regen Brake Monitor</a></li>
+                <li><a href="/plugin-twizy/drivemode-config.htm" target="#main" accesskey="M">Twizy: Drivemode Buttons</a></li>
+                <li><a href="/plugin-twizy/profile-editor.htm" target="#main">Twizy: Profile Editor</a></li>
+              </ul>
+            </li>
+          </ul>
+          
+          <ul class="nav navbar-nav navbar-right">
+            <li class="hidden-xs"><a href="#" class="toggle-fullscreen">◱</a></li>
+            <li class="hidden-xs"><a href="#" class="toggle-night">◐</a></li>
+            <li><a href="#">Logout</a></li>
+          </ul>
+          
+        </div>
+        <!-- END Standard Menu -->
+        
+      </div>
+    </nav>
+    
+    <!-- MAIN container -->
+    <div id="main" class="container-fluid" role="main"></div>
+    
+    <!-- Scripts -->
+    <script>window.assets = { "charts_js": "/assets/charts.js", "tables_js": "/assets/tables.js" }</script>
+    <script src="/assets/script.js"></script>
+    <script>
+      window.ws_inhibit = -1; // disable WebSocket connect
+      window.loggedin = true; // emulate login
+    </script>
+    
+  </body>
+</html>
