@@ -501,7 +501,7 @@ void OvmsVehicleSmartED::WebCfgBmsCellMonitor(PageEntry_t& p, PageContext_t& c)
       "<div class=\"panel-footer\">\n"
         "<button class=\"btn btn-default\" data-toggle=\"modal\" data-target=\"#cfg-dialog\">Alert config</button>\n"
         "<button class=\"btn btn-default\" data-cmd=\"bms reset\" data-target=\"#output\" data-watchcnt=\"0\">Reset min/max</button>\n"
-        "<button class=\"btn btn-default\" data-cmd=\"xse getvolts\" data-target=\"#output\" data-watchcnt=\"0\">Get Voltages</button>\n"
+        "<button class=\"btn btn-default\" data-cmd=\"xse obd request getvolts\" data-target=\"#output\" data-watchcnt=\"0\">Get Voltages</button>\n"
         "<samp id=\"output\" class=\"samp-inline\"></samp>\n"
       "</div>\n"
     "</div>\n"
