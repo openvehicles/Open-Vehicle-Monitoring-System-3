@@ -91,6 +91,7 @@ User notes
 * Reinstall the passenger seat.
 * Configure OVMS as described in the OVMS user manual.
 * Configure 'Model year' and 'Can write access' under VW e-Up (Komfort CAN) -> Features.
+* 'Model year' and 'Can write access' can also be set from within the app (FEATURES 20 and 15).
 * Register and connect OVMS to a server (as guided within the OVMS setup).
 * Turn the ignition in the car on and off to receive initial values (also needed after updates).
 * Install the OVMS app on your smartphone or tablet and configure it to connect to the server.
@@ -114,7 +115,7 @@ The communication from the app to the car is also blocked for 10 seconds after t
 
 In rare cases 'AC off' does not respond. You then need to 'AC on' again (when it is already running) to be able to stop it.
 
-The cabin target temperature can be set from the OVMS webinterface (VW e-Up (Komfort CAN) -> Climate control).
+The cabin target temperature can be set from the OVMS webinterface (VW e-Up (Komfort CAN) -> Climate control) or via the app under FEATURES 21.
 
 .. image:: cc.png
     :width: 640px

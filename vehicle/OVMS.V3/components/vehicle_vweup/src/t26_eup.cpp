@@ -180,6 +180,8 @@ OvmsVehicleVWeUpT26::~OvmsVehicleVWeUpT26()
 
 bool OvmsVehicleVWeUpT26::SetFeature(int key, const char *value)
 {
+    int i;
+    int n;
     switch (key)
     {
     case 15:
@@ -188,6 +190,33 @@ bool OvmsVehicleVWeUpT26::SetFeature(int key, const char *value)
         MyConfig.SetParamValueBool("xut", "canwrite", (bits & 1) != 0);
         return true;
     }
+    case 20:
+        // check:
+        if (strlen(value) == 0) value = "2020";
+        for (i = 0; i < strlen(value); i++) {
+           if (isdigit(value[i]) == false) {
+             value = "2020";
+             break;
+           }
+        }
+        n = atoi(value);
+        if (n < 2013) value = "2013";
+        MyConfig.SetParamValue("xut", "modelyear", value);
+        return true;
+    case 21:
+        // check:
+        if (strlen(value) == 0) value = "21";
+        for (i = 0; i < strlen(value); i++) {
+           if (isdigit(value[i]) == false) {
+             value = "21";
+             break;
+           }
+        }
+        n = atoi(value);
+        if (n < 18) value = "18";
+        if (n > 23) value = "23";
+        MyConfig.SetParamValue("xut", "cc_temp", value);
+        return true;
     default:
         return OvmsVehicle::SetFeature(key, value);
     }
@@ -199,12 +228,15 @@ const std::string OvmsVehicleVWeUpT26::GetFeature(int key)
     {
     case 15:
     {
-        int bits =
-            (MyConfig.GetParamValueBool("xut", "canwrite", false) ? 1 : 0);
+        int bits = (MyConfig.GetParamValueBool("xut", "canwrite", false) ? 1 : 0);
         char buf[4];
         sprintf(buf, "%d", bits);
         return std::string(buf);
     }
+    case 20:
+      return MyConfig.GetParamValue("xut", "modelyear", STR(DEFAULT_MODEL_YEAR));
+    case 21:
+      return MyConfig.GetParamValue("xut", "cc_temp", STR(21));
     default:
         return OvmsVehicle::GetFeature(key);
     }
@@ -212,6 +244,9 @@ const std::string OvmsVehicleVWeUpT26::GetFeature(int key)
 
 void OvmsVehicleVWeUpT26::ConfigChanged(OvmsConfigParam *param)
 {
+    if (param && param->GetName() != "xut")
+       return;
+
     ESP_LOGD(TAG, "VW e-Up reload configuration");
 
     vwup_enable_write = MyConfig.GetParamValueBool("xut", "canwrite", false);
