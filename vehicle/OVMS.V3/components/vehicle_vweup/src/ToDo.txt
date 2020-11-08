@@ -1,0 +1,15 @@
+ToDo OVMS e-Up
+
+Fragen:
+* Wie CANs nur bei Auswahl der entspr. Verbindung starten/stoppen?
+* elegante Lösung für viele (wählbare?) OBD-Abfragen?
+
+OVMS:
+* refactoring:
+- one main file, if possible leave T26 files unchanged (so we can copy from marxx)
+- handle OBD off polling depending on connectors used
+* lift staleness only when real new data is received (OBD values when car is off)
+* wake up OBD on request
+
+Android App:
+* Charging parameters not shown in App: transmit/enable in App? Standard Metrics?

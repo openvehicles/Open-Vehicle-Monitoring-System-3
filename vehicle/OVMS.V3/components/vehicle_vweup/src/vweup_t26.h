@@ -29,7 +29,7 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 ; THE SOFTWARE.
 */
-
+/*
 #ifndef __VEHICLE_EUP_H__
 #define __VEHICLE_EUP_H__
 
@@ -53,9 +53,9 @@ typedef enum
 #define VALUE_LOG(t, d, v1, v2) (ESP_LOGD(t, d, v1, v2))
 
 // Car (poll) states
-#define VWUP_OFF 0
-#define VWUP_ON 1
-#define VWUP_CHARGING 2
+#define VWEUP_OFF 0
+#define VWEUP_ON 1
+#define VWEUP_CHARGING 2
 
 class OvmsVehicleVWeUpAll : public OvmsVehicle
   {
@@ -89,12 +89,12 @@ class OvmsVehicleVWeUpAll : public OvmsVehicle
     bool vin_part1;
     bool vin_part2;
     bool vin_part3;
-    bool vwup_enable_obd;
-    bool vwup_enable_t26;
-    bool vwup_enable_write;
-    int vwup_modelyear;
-    int vwup_remote_climate_ticker;
-    int vwup_cc_temp_int;
+    bool vweup_enable_obd;
+    bool vweup_enable_t26;
+    bool vweup_enable_write;
+    int vweup_modelyear;
+    int vweup_remote_climate_ticker;
+    int vweup_cc_temp_int;
     bool ocu_awake;
     bool ocu_working;
     bool ocu_what;
@@ -112,15 +112,15 @@ class OvmsVehicleVWeUpAll : public OvmsVehicle
     void SendCommand(RemoteCommand);
     OvmsVehicle::vehicle_command_t RemoteCommandHandler(RemoteCommand command);
 
-    RemoteCommand vwup_remote_command; // command to send, see RemoteCommandTimer()
+    RemoteCommand vweup_remote_command; // command to send, see RemoteCommandTimer()
 
     void vehicle_vweup_car_on(bool isOn);
     TimerHandle_t m_sendOcuHeartbeat;
     TimerHandle_t m_ccCountdown;
 
   public:
-    void WebInit();
-    void WebDeInit();
+//    void WebInit();
+//    void WebDeInit();
     void SendOcuHeartbeat();
     void CCCountdown();
     void CCOn();
@@ -131,10 +131,14 @@ class OvmsVehicleVWeUpAll : public OvmsVehicle
 
     static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
     static void WebCfgClimate(PageEntry_t& p, PageContext_t& c);
-    static void WebDispStdMetrics(PageEntry_t& p, PageContext_t& c);
+    static void WebDispChgMetrics(PageEntry_t& p, PageContext_t& c);
+    static void WebDispTempMetrics(PageEntry_t& p, PageContext_t& c);
     virtual vehicle_command_t CommandWakeup();
 
-    OvmsMetricFloat *BatMgmtSoCAbs;           // Absolute SoC of main battery
+    OvmsMetricFloat *MotElecSoCAbs;           // Absolute SoC of main battery from motor electrics ECU
+    OvmsMetricFloat *MotElecSoCNorm;           // Normalized SoC of main battery from motor electrics ECU
+    OvmsMetricFloat *BatMgmtSoCAbs;           // Absolute SoC of main battery from battery management ECU
+    OvmsMetricFloat *ChgMgmtSoCNorm;           // Normalized SoC of main battery from charge management ECU
     OvmsMetricFloat *BatMgmtCellDelta;     // Highest voltage - lowest voltage of all cells [V]
 
     OvmsMetricFloat *ChargerACPower;       // AC Power [kW]
@@ -154,6 +158,28 @@ class OvmsVehicleVWeUpAll : public OvmsVehicle
     OvmsMetricFloat *TPMSEmergencyRearRight; // TPMS Indicator for Tyre Emergency Rear Right Tyre
     OvmsMetricFloat *MaintenanceDist; // Distance to next maintenance
     OvmsMetricFloat *MaintenanceTime; // Days to next maintenance
+    OvmsMetricFloat *CoolantTemp1; // 
+    OvmsMetricFloat *CoolantTemp2; // 
+    OvmsMetricFloat *CoolantTemp3; // 
+    OvmsMetricFloat *CoolantTemp4; // 
+    OvmsMetricFloat *CoolantTemp5; // 
+    OvmsMetricFloat *CoolingTempBat; // 
+    OvmsMetricFloat *BrakeboostTempECU;
+    OvmsMetricFloat *BrakeboostTempAccu;
+    OvmsMetricFloat *SteeringTempPA;
+    OvmsMetricFloat *ElectricDriveCoolantTemp;
+    OvmsMetricFloat *ElectricDriveTempDCDC;
+    OvmsMetricFloat *ElectricDriveTempDCDCPCB;
+    OvmsMetricFloat *ElectricDriveTempDCDCPEM;
+    OvmsMetricFloat *ElectricDriveTempPhaseU;
+    OvmsMetricFloat *ElectricDriveTempPhaseV;
+    OvmsMetricFloat *ElectricDriveTempPhaseW;
+    OvmsMetricFloat *ElectricDriveTempStator;
+    OvmsMetricFloat *InfElecTempPCB;
+    OvmsMetricFloat *InfElecTempAudio;
+    OvmsMetricFloat *BatTempMax;
+    OvmsMetricFloat *BatTempMin;
+    OvmsMetricFloat *BrakesensTemp;
 
     //OBD
     void ObdInit();
@@ -179,13 +205,14 @@ class OvmsVehicleVWeUpAll : public OvmsVehicle
 
     void CheckCarState();
 
-    uint32_t TimeOffRequested; // For Off-Timeout: Monotonictime when the poll should have gone to VWUP_OFF
+    uint32_t TimeOffRequested; // For Off-Timeout: Monotonictime when the poll should have gone to VWEUP_OFF
                                //                  0 means no Off requested so far
 
-    bool IsOff() { return m_poll_state == VWUP_OFF; }
-    bool IsOn() { return m_poll_state == VWUP_ON; }
-    bool IsCharging() { return m_poll_state == VWUP_CHARGING; }
+    bool IsOff() { return m_poll_state == VWEUP_OFF; }
+    bool IsOn() { return m_poll_state == VWEUP_ON; }
+    bool IsCharging() { return m_poll_state == VWEUP_CHARGING; }
 
   };
 
 #endif //#ifndef __VEHICLE_EUP_H__
+*/

@@ -28,7 +28,7 @@
 
 static const char *TAG = "v-vweup-obd";
 
-bool PollReplyHelper::AddNewData(uint16_t pid, uint8_t *data, uint8_t length, uint16_t remain)
+bool PollReplyHelperOBD::AddNewData(uint16_t pid, uint8_t *data, uint8_t length, uint16_t remain)
 {
     // When I have a different PID as last time OR
     // if I'm not waiting for more data from last time...
@@ -58,7 +58,7 @@ bool PollReplyHelper::AddNewData(uint16_t pid, uint8_t *data, uint8_t length, ui
     return remain == 0;
 }
 
-bool PollReplyHelper::FromUint8(const std::string &info, float &value, uint8_t bytesToSkip /*= 0*/)
+bool PollReplyHelperOBD::FromUint8(const std::string &info, float &value, uint8_t bytesToSkip /*= 0*/)
 {
     if (Store.size() < (1 + bytesToSkip))
     {
@@ -71,7 +71,7 @@ bool PollReplyHelper::FromUint8(const std::string &info, float &value, uint8_t b
     return true;
 }
 
-bool PollReplyHelper::FromUint16(const std::string &info, float &value, uint8_t bytesToSkip /*= 0*/)
+bool PollReplyHelperOBD::FromUint16(const std::string &info, float &value, uint8_t bytesToSkip /*= 0*/)
 {
     if (Store.size() < (2 + bytesToSkip))
     {
@@ -84,7 +84,7 @@ bool PollReplyHelper::FromUint16(const std::string &info, float &value, uint8_t 
     return true;
 }
 
-bool PollReplyHelper::FromInt32(const std::string &info, float &value, uint8_t bytesToSkip /*= 0*/)
+bool PollReplyHelperOBD::FromInt32(const std::string &info, float &value, uint8_t bytesToSkip /*= 0*/)
 {
     if (Store.size() < (4 + bytesToSkip))
     {

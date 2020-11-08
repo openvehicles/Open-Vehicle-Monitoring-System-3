@@ -34,16 +34,15 @@
 
 using namespace std;
 
-class PollReplyHelperAll
+class PollReplyHelper
 {
 public:
     bool AddNewData(uint16_t pid, uint8_t *data, uint8_t length, uint16_t remain);
 
-    bool FromUint8(const std::string &info, float &value, uint8_t shiftLeft = 0);
-    bool FromUint16(const std::string &info, float &value, uint8_t shiftLeft = 0);
-    bool FromInt32(const std::string &info, float &value, uint8_t shiftLeft = 0);
-    bool FromInt16(const std::string &info, float &value, uint8_t shiftLeft = 0);
-    bool FromInt8(const std::string &info, float &value, uint8_t shiftLeft = 0);
+    bool FromUint8(const std::string &info, float &value, uint8_t bytesToSkip = 0);
+    bool FromUint16(const std::string &info, float &value, uint8_t bytesToSkip = 0);
+    bool FromInt32(const std::string &info, float &value, uint8_t bytesToSkip = 0);
+    bool FromInt16(const std::string &info, float &value, uint8_t bytesToSkip = 0);
 
 private:
     string Store;

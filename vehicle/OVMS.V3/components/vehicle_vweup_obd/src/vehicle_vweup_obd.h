@@ -88,7 +88,7 @@ protected:
     virtual void Ticker1(uint32_t ticker);
 
 private:
-    PollReplyHelper PollReply;
+    PollReplyHelperOBD PollReply;
 
     float BatMgmtCellMax; // Maximum cell voltage
     float BatMgmtCellMin; // Minimum cell voltage

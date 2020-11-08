@@ -26,29 +26,31 @@
  */
 
 #include "ovms_log.h"
-static const char *TAG = "v-vweup-all";
+static const char *TAG = "v-vweup";
 
 #define VERSION "0.1.3"
 
 #include <stdio.h>
 #include "pcp.h"
-#include "vweup.h"
+#include "vehicle_vweup.h"
 #include "vweup_obd.h"
 #include "metrics_standard.h"
 #include "ovms_events.h"
 #include "ovms_metrics.h"
 
 
-const OvmsVehicle::poll_pid_t vwup_polls[] = {
+const OvmsVehicle::poll_pid_t vweup_polls[] = {
     // Note: poller ticker cycles at 3600 seconds = max period
-    // { txid, rxid, type, pid, { VWUP_OFF, VWUP_ON, VWUP_CHARGING }, bus }
+    // { txid, rxid, type, pid, { VWEUP_OFF, VWEUP_ON, VWEUP_CHARGING }, bus }
 
     {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_U, {0, 1, 5}, 1},
     {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_I, {0, 1, 5}, 1}, // 30 in OFF needed: Car gets started with full 12V battery
     // Same tick & order important of above 2: VWUP_BAT_MGMT_I calculates the power
 
-    {VWUP_MOT_ELEC_TX, VWUP_MOT_ELEC_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MOT_ELEC_SOC_NORM, {0, 20, 20}, 1},
+    {VWUP_MOT_ELEC_TX, VWUP_MOT_ELEC_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MOT_ELEC_SOC_NORM, {0, 20, 0}, 1},
+    {VWUP_MOT_ELEC_TX, VWUP_MOT_ELEC_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MOT_ELEC_SOC_ABS, {0, 20, 20}, 1},
     {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_SOC_ABS, {0, 20, 20}, 1},
+    {VWUP_CHG_MGMT_TX, VWUP_CHG_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_CHG_MGMT_SOC_NORM, {0, 0, 20}, 1},
     {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_ENERGY_COUNTERS, {0, 20, 20}, 1},
 
     {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_CELL_MAX, {0, 20, 20}, 1},
@@ -59,7 +61,7 @@ const OvmsVehicle::poll_pid_t vwup_polls[] = {
 
     {VWUP_CHG_TX, VWUP_CHG_RX, VEHICLE_POLL_TYPE_OBDIISESSION, VWUP_CHG_EXTDIAG, {0, 30, 30}, 1},
 
-    {VWUP_CHG_TX, VWUP_CHG_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_CHG_POWER_EFF, {0, 5, 10}, 1}, // 5 @ VWUP_ON to detect charging
+    {VWUP_CHG_TX, VWUP_CHG_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_CHG_POWER_EFF, {0, 5, 10}, 1}, // 5 @ VWEUP_ON to detect charging
     {VWUP_CHG_TX, VWUP_CHG_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_CHG_POWER_LOSS, {0, 0, 10}, 1},
 
     {VWUP_MFD_TX, VWUP_MFD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MFD_ODOMETER, {0, 60, 60}, 1},
@@ -68,13 +70,36 @@ const OvmsVehicle::poll_pid_t vwup_polls[] = {
 //    {VWUP_MOT_ELEC_TX, VWUP_MOT_ELEC_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MOT_ELEC_TEMP_AMB, {0, 5, 30}, 1},
     {VWUP_MFD_TX, VWUP_MFD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MFD_MAINT_DIST, {0, 60, 60}, 1},
     {VWUP_MFD_TX, VWUP_MFD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MFD_MAINT_TIME, {0, 60, 60}, 1},
-    {VWUP_ELD_TX, VWUP_ELD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_ELD_TEMP_MOT, {0, 1, 10}, 1},
-    {VWUP_ELD_TX, VWUP_ELD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_ELD_TEMP_PEM, {0, 1, 10}, 1},
-    {VWUP_MOT_ELEC_TX, VWUP_MOT_ELEC_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MOT_ELEC_TEMP_DCDC, {0, 5, 10}, 1}
+
+    {VWUP_MOT_ELEC_TX, VWUP_MOT_ELEC_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MOT_ELEC_TEMP_DCDC, {0, 5, 10}, 1}/*,
+    {VWUP_MOT_ELEC_TX, VWUP_MOT_ELEC_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MOT_ELEC_TEMP_COOL1, {0, 20, 0}, 1},
+    {VWUP_MOT_ELEC_TX, VWUP_MOT_ELEC_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MOT_ELEC_TEMP_COOL2, {0, 20, 0}, 1},
+    {VWUP_MOT_ELEC_TX, VWUP_MOT_ELEC_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MOT_ELEC_TEMP_COOL3, {0, 20, 0}, 1},
+    {VWUP_MOT_ELEC_TX, VWUP_MOT_ELEC_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MOT_ELEC_TEMP_COOL4, {0, 20, 0}, 1},
+    {VWUP_MOT_ELEC_TX, VWUP_MOT_ELEC_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MOT_ELEC_TEMP_COOL5, {0, 20, 0}, 1},
+    {VWUP_MOT_ELEC_TX, VWUP_MOT_ELEC_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MOT_ELEC_TEMP_COOL5, {0, 20, 0}, 1},
+    {VWUP_BRKBOOST_TX, VWUP_BRKBOOST_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BRKBOOST_TEMP_ECU, {0, 20, 0}, 1},
+    {VWUP_BRKBOOST_TX, VWUP_BRKBOOST_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BRKBOOST_TEMP_ACC, {0, 20, 0}, 1},
+    {VWUP_STEER_TX, VWUP_STEER_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_STEER_TEMP, {0, 20, 0}, 1},
+    {VWUP_ELD_TX, VWUP_ELD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_ELD_TEMP_COOL, {0, 20, 0}, 1},
+    {VWUP_ELD_TX, VWUP_ELD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_ELD_TEMP_MOT, {0, 20, 0}, 1},
+    {VWUP_ELD_TX, VWUP_ELD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_ELD_TEMP_DCDC1, {0, 20, 0}, 1},
+    {VWUP_ELD_TX, VWUP_ELD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_ELD_TEMP_DCDC2, {0, 20, 0}, 1},
+    {VWUP_ELD_TX, VWUP_ELD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_ELD_TEMP_DCDC3, {0, 20, 0}, 1},
+    {VWUP_ELD_TX, VWUP_ELD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_ELD_TEMP_PEU, {0, 20, 0}, 1},
+    {VWUP_ELD_TX, VWUP_ELD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_ELD_TEMP_PEV, {0, 20, 0}, 1},
+    {VWUP_ELD_TX, VWUP_ELD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_ELD_TEMP_PEW, {0, 20, 0}, 1},
+    {VWUP_ELD_TX, VWUP_ELD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_ELD_TEMP_STAT, {0, 20, 0}, 1},
+    {VWUP_INF_TX, VWUP_INF_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_INF_TEMP_PCB, {0, 20, 0}, 1},
+    {VWUP_INF_TX, VWUP_INF_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_INF_TEMP_AUDIO, {0, 20, 0}, 1},
+    {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_TEMP_MAX, {0, 20, 0}, 1},
+    {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_TEMP_MIN, {0, 20, 0}, 1},
+    {VWUP_BRKSENS_TX, VWUP_BRKSENS_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BRKSENS_TEMP, {0, 20, 0}, 1}
+*/
 //    {0, 0, 0, 0, {0, 0, 0}, 0},};
     };
     
-const OvmsVehicle::poll_pid_t vwup1_polls[] = {
+const OvmsVehicle::poll_pid_t vweup1_polls[] = {
     // specific codes for gen1 model (before year 2020)
     {VWUP_CHG_TX, VWUP_CHG_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP1_CHG_AC_U, {0, 0, 5}, 1},
     {VWUP_CHG_TX, VWUP_CHG_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP1_CHG_AC_I, {0, 0, 5}, 1},
@@ -85,7 +110,7 @@ const OvmsVehicle::poll_pid_t vwup1_polls[] = {
     // Same tick & order important of above 4: VWUP_CHG_DC_I calculates the power loss & efficiency
     {0, 0, 0, 0, {0, 0, 0}, 0}};
 
-const OvmsVehicle::poll_pid_t vwup2_polls[] = {
+const OvmsVehicle::poll_pid_t vweup2_polls[] = {
     // specific codes for gen2 model (from year 2020)
     {VWUP_CHG_TX, VWUP_CHG_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP2_CHG_AC_U, {0, 0, 5}, 1},
     {VWUP_CHG_TX, VWUP_CHG_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP2_CHG_AC_I, {0, 0, 5}, 1},
@@ -96,72 +121,99 @@ const OvmsVehicle::poll_pid_t vwup2_polls[] = {
     // Same tick & order important of above 4: VWUP_CHG_DC_I calculates the power loss & efficiency
     {0, 0, 0, 0, {0, 0, 0}, 0}};
 
-const int vwup_polls_len = sizeof(vwup_polls)/sizeof(vwup_polls)[0];
-const int vwup1_polls_len = sizeof(vwup1_polls)/sizeof(vwup1_polls)[0];
-const int vwup2_polls_len = sizeof(vwup2_polls)/sizeof(vwup2_polls)[0];
-//if (vwup1_polls_len > vwup2_polls_len){
-OvmsVehicleVWeUpAll::poll_pid_t vwup_polls_all[vwup_polls_len+vwup1_polls_len]; // not good, length should be max of the two possible lists
+const int vweup_polls_len = sizeof(vweup_polls)/sizeof(vweup_polls)[0];
+const int vweup1_polls_len = sizeof(vweup1_polls)/sizeof(vweup1_polls)[0];
+const int vweup2_polls_len = sizeof(vweup2_polls)/sizeof(vweup2_polls)[0];
+//if (vweup1_polls_len > vweup2_polls_len){
+OvmsVehicleVWeUp::poll_pid_t vweup_polls_all[vweup_polls_len+vweup1_polls_len]; // not good, length should be max of the two possible lists
 //}
 //else {
-//OvmsVehicleVWeUpAll::poll_pid_t vwup_polls_all[vwup_polls_len+vwup2_polls_len];
+//OvmsVehicleVWeUp::poll_pid_t vweup_polls_all[vweup_polls_len+vweup2_polls_len];
 //}
 
-void OvmsVehicleVWeUpAll::ObdInit()
+void OvmsVehicleVWeUp::ObdInit()
 {
+    RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
+//    ESP_LOGD(TAG,"Starting OBD Polling...");
+
     // init polls:
-    if (vwup_modelyear < 2020)
+    if (vweup_modelyear < 2020)
     {
-        for(int i=0; i<vwup_polls_len; i++)
-        {
-            vwup_polls_all[i] = vwup_polls[i];   
-        }
-        for(int i=vwup_polls_len; i<vwup_polls_len+vwup1_polls_len; i++)
-        {
-            vwup_polls_all[i] = vwup1_polls[i-vwup_polls_len];  
-        }
+        for(int i=0; i<vweup_polls_len; i++)
+            vweup_polls_all[i] = vweup_polls[i];   
+        for(int i=vweup_polls_len; i<vweup_polls_len+vweup1_polls_len; i++)
+            vweup_polls_all[i] = vweup1_polls[i-vweup_polls_len];  
     }
     else 
     {
-        for(int i=0; i<vwup_polls_len; i++)
-        {
-            vwup_polls_all[i] = vwup_polls[i];   
-        }
-        for(int i=vwup_polls_len; i<vwup_polls_len+vwup2_polls_len; i++)
-        {
-            vwup_polls_all[i] = vwup2_polls[i-vwup_polls_len];  
-        }
+        for(int i=0; i<vweup_polls_len; i++)
+            vweup_polls_all[i] = vweup_polls[i];   
+        for(int i=vweup_polls_len; i<vweup_polls_len+vweup2_polls_len; i++)
+            vweup_polls_all[i] = vweup2_polls[i-vweup_polls_len];  
     }
-    PollSetPidList(m_can1, vwup_polls_all);
+    PollSetPidList(m_can1, vweup_polls_all);
     PollSetThrottling(0);
     PollSetResponseSeparationTime(1);
-    PollSetState(VWUP_OFF);
+    PollSetState(VWEUP_OFF);
 
-    BatMgmtSoCAbs = MyMetrics.InitFloat("xua.b.soc.abs", 100, 0, Percentage);
-    BatMgmtCellDelta = MyMetrics.InitFloat("xua.b.cell.delta", SM_STALE_NONE, 0, Volts);
+    BatMgmtSoCAbs = MyMetrics.InitFloat("xvu.b.soc.abs", 100, 0, Percentage);
+    MotElecSoCAbs = MyMetrics.InitFloat("xvu.m.soc.abs", 100, 0, Percentage);
+    MotElecSoCNorm = MyMetrics.InitFloat("xvu.m.soc.norm", 100, 0, Percentage);
+    ChgMgmtSoCNorm = MyMetrics.InitFloat("xvu.c.soc.norm", 100, 0, Percentage);
+    BatMgmtCellDelta = MyMetrics.InitFloat("xvu.b.cell.delta", SM_STALE_NONE, 0, Volts);
 
-    ChargerPowerEffEcu = MyMetrics.InitFloat("xua.c.eff.ecu", 100, 0, Percentage);
-    ChargerPowerLossEcu = MyMetrics.InitFloat("xua.c.loss.ecu", SM_STALE_NONE, 0, Watts);
-    ChargerPowerEffCalc = MyMetrics.InitFloat("xua.c.eff.calc", 100, 0, Percentage);
-    ChargerPowerLossCalc = MyMetrics.InitFloat("xua.c.loss.calc", SM_STALE_NONE, 0, Watts);
-    ChargerACPower = MyMetrics.InitFloat("xua.c.ac.p", SM_STALE_NONE, 0, Watts);
-    ChargerDCPower = MyMetrics.InitFloat("xua.c.dc.p", SM_STALE_NONE, 0, Watts);
+    ChargerPowerEffEcu = MyMetrics.InitFloat("xvu.c.eff.ecu", 100, 0, Percentage);
+    ChargerPowerLossEcu = MyMetrics.InitFloat("xvu.c.loss.ecu", SM_STALE_NONE, 0, Watts);
+    ChargerPowerEffCalc = MyMetrics.InitFloat("xvu.c.eff.calc", 100, 0, Percentage);
+    ChargerPowerLossCalc = MyMetrics.InitFloat("xvu.c.loss.calc", SM_STALE_NONE, 0, Watts);
+    ChargerACPower = MyMetrics.InitFloat("xvu.c.ac.p", SM_STALE_NONE, 0, Watts);
+    ChargerDCPower = MyMetrics.InitFloat("xvu.c.dc.p", SM_STALE_NONE, 0, Watts);
 
-    TPMSDiffusionFrontLeft = MyMetrics.InitFloat("xua.v.tp.d.fl", SM_STALE_NONE, 0, Percentage);
-    TPMSDiffusionFrontRight = MyMetrics.InitFloat("xua.v.tp.d.fr", SM_STALE_NONE, 0, Percentage);
-    TPMSDiffusionRearLeft = MyMetrics.InitFloat("xua.v.tp.d.rl", SM_STALE_NONE, 0, Percentage);
-    TPMSDiffusionRearRight = MyMetrics.InitFloat("xua.v.tp.d.rr", SM_STALE_NONE, 0, Percentage);
-    TPMSEmergencyFrontLeft = MyMetrics.InitFloat("xua.v.tp.e.fl", SM_STALE_NONE, 0, Percentage);
-    TPMSEmergencyFrontRight = MyMetrics.InitFloat("xua.v.tp.e.fr", SM_STALE_NONE, 0, Percentage);
-    TPMSEmergencyRearLeft = MyMetrics.InitFloat("xua.v.tp.e.rl", SM_STALE_NONE, 0, Percentage);
-    TPMSEmergencyRearRight = MyMetrics.InitFloat("xua.v.tp.e.rr", SM_STALE_NONE, 0, Percentage);
-    MaintenanceDist = MyMetrics.InitFloat("xua.v.m.d", SM_STALE_NONE, 0, Kilometers);
-    MaintenanceTime = MyMetrics.InitFloat("xua.v.m.t", SM_STALE_NONE, 0);
+    TPMSDiffusionFrontLeft = MyMetrics.InitFloat("xvu.v.tp.d.fl", SM_STALE_NONE, 0, Percentage);
+    TPMSDiffusionFrontRight = MyMetrics.InitFloat("xvu.v.tp.d.fr", SM_STALE_NONE, 0, Percentage);
+    TPMSDiffusionRearLeft = MyMetrics.InitFloat("xvu.v.tp.d.rl", SM_STALE_NONE, 0, Percentage);
+    TPMSDiffusionRearRight = MyMetrics.InitFloat("xvu.v.tp.d.rr", SM_STALE_NONE, 0, Percentage);
+    TPMSEmergencyFrontLeft = MyMetrics.InitFloat("xvu.v.tp.e.fl", SM_STALE_NONE, 0, Percentage);
+    TPMSEmergencyFrontRight = MyMetrics.InitFloat("xvu.v.tp.e.fr", SM_STALE_NONE, 0, Percentage);
+    TPMSEmergencyRearLeft = MyMetrics.InitFloat("xvu.v.tp.e.rl", SM_STALE_NONE, 0, Percentage);
+    TPMSEmergencyRearRight = MyMetrics.InitFloat("xvu.v.tp.e.rr", SM_STALE_NONE, 0, Percentage);
+    MaintenanceDist = MyMetrics.InitFloat("xvu.v.m.d", SM_STALE_NONE, 0, Kilometers);
+    MaintenanceTime = MyMetrics.InitFloat("xvu.v.m.t", SM_STALE_NONE, 0);
+
+    CoolantTemp1 = MyMetrics.InitFloat("xvu.v.t.c1", SM_STALE_NONE, 0, Degrees);
+    CoolantTemp2 = MyMetrics.InitFloat("xvu.v.t.c2", SM_STALE_NONE, 0, Degrees);
+    CoolantTemp3 = MyMetrics.InitFloat("xvu.v.t.c3", SM_STALE_NONE, 0, Degrees);
+    CoolantTemp4 = MyMetrics.InitFloat("xvu.v.t.c4", SM_STALE_NONE, 0, Degrees);
+    CoolantTemp5 = MyMetrics.InitFloat("xvu.v.t.c5", SM_STALE_NONE, 0, Degrees);
+    CoolingTempBat = MyMetrics.InitFloat("xvu.v.t.c.b", SM_STALE_NONE, 0, Degrees);
+    BrakeboostTempECU = MyMetrics.InitFloat("xvu.v.t.bb.e", SM_STALE_NONE, 0, Degrees);
+    BrakeboostTempAccu = MyMetrics.InitFloat("xvu.v.t.bb.a", SM_STALE_NONE, 0, Degrees);
+    SteeringTempPA = MyMetrics.InitFloat("xvu.v.t.s", SM_STALE_NONE, 0, Degrees);
+    ElectricDriveCoolantTemp = MyMetrics.InitFloat("xvu.v.t.m.c", SM_STALE_NONE, 0, Degrees);
+    ElectricDriveTempDCDC = MyMetrics.InitFloat("xvu.v.t.m.dcdc", SM_STALE_NONE, 0, Degrees);
+    ElectricDriveTempDCDCPCB = MyMetrics.InitFloat("xvu.v.t.m.pcb", SM_STALE_NONE, 0, Degrees);
+    ElectricDriveTempDCDCPEM = MyMetrics.InitFloat("xvu.v.t.m.pem", SM_STALE_NONE, 0, Degrees);
+    ElectricDriveTempPhaseU = MyMetrics.InitFloat("xvu.v.t.m.pu", SM_STALE_NONE, 0, Degrees);
+    ElectricDriveTempPhaseV = MyMetrics.InitFloat("xvu.v.t.m.pv", SM_STALE_NONE, 0, Degrees);
+    ElectricDriveTempPhaseW = MyMetrics.InitFloat("xvu.v.t.m.pw", SM_STALE_NONE, 0, Degrees);
+    ElectricDriveTempStator = MyMetrics.InitFloat("xvu.v.t.m.s", SM_STALE_NONE, 0, Degrees);
+    InfElecTempPCB = MyMetrics.InitFloat("xvu.v.t.i.pcb", SM_STALE_NONE, 0, Degrees);
+    InfElecTempAudio = MyMetrics.InitFloat("xvu.v.t.i.a", SM_STALE_NONE, 0, Degrees);
+    BatTempMax = MyMetrics.InitFloat("xvu.v.t.b.mx", SM_STALE_NONE, 0, Degrees);
+    BatTempMin = MyMetrics.InitFloat("xvu.v.t.b.mn", SM_STALE_NONE, 0, Degrees);
+    BrakesensTemp = MyMetrics.InitFloat("xvu.v.t.b", SM_STALE_NONE, 0, Degrees);
 
     TimeOffRequested = 0;
 
 }
 
-void OvmsVehicleVWeUpAll::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length, uint16_t remain)
+void OvmsVehicleVWeUp::ObdDeInit()
+{
+    PollSetPidList(m_can1, NULL);
+//    ESP_LOGD(TAG,"Stopping OBD Polling...");
+}
+
+void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length, uint16_t remain)
 {
     ESP_LOGV(TAG, "IncomingPollReply(type=%u, pid=%X, length=%u, remain=%u): called", type, pid, length, remain);
 
@@ -205,7 +257,16 @@ void OvmsVehicleVWeUpAll::IncomingPollReply(canbus *bus, uint16_t type, uint16_t
         if (PollReply.FromUint16("VWUP_MOT_ELEC_SOC_NORM", value))
         {            
             StandardMetrics.ms_v_bat_soc->SetValue(value / 100.0f);
+            MotElecSoCNorm->SetValue(value / 100.0f);
             VALUE_LOG(TAG, "VWUP_MOT_ELEC_SOC_NORM=%f => %f", value, StandardMetrics.ms_v_bat_soc->AsFloat());
+        }
+        break;
+
+    case VWUP_MOT_ELEC_SOC_ABS:
+        if (PollReply.FromUint8("VWUP_MOT_ELEC_SOC_ABS", value))
+        {            
+            MotElecSoCAbs->SetValue(value / 2.55f);
+            VALUE_LOG(TAG, "VWUP_MOT_ELEC_SOC_ABS=%f => %f", value, MotElecSoCAbs->AsFloat());
         }
         break;
 
@@ -214,6 +275,15 @@ void OvmsVehicleVWeUpAll::IncomingPollReply(canbus *bus, uint16_t type, uint16_t
         {
             BatMgmtSoCAbs->SetValue(value / 2.5f);
             VALUE_LOG(TAG, "VWUP_BAT_MGMT_SOC_ABS=%f => %f", value, BatMgmtSoCAbs->AsFloat());
+        }
+        break;
+
+    case VWUP_CHG_MGMT_SOC_NORM:
+        if (PollReply.FromUint8("VWUP_CHG_MGMT_SOC_NORM", value))
+        {
+            StandardMetrics.ms_v_bat_soc->SetValue(value / 2.0f);
+            ChgMgmtSoCNorm->SetValue(value / 2.0f);
+            VALUE_LOG(TAG, "VWUP_CHG_MGMT_SOC_NORM=%f => %f", value, StandardMetrics.ms_v_bat_soc->AsFloat());
         }
         break;
 
@@ -322,18 +392,18 @@ void OvmsVehicleVWeUpAll::IncomingPollReply(canbus *bus, uint16_t type, uint16_t
         break;
 
     case VWUP1_CHG_DC_U:
-        if (PollReply.FromUint16("VWUP_CHG_DC1_U", value))
+        if (PollReply.FromUint16("VWUP_CHG_DC_U", value))
         {
             ChargerDC1U = value;
-            VALUE_LOG(TAG, "VWUP_CHG_DC1_U=%f => %f", value, ChargerDC1U);
+            VALUE_LOG(TAG, "VWUP_CHG_DC_U=%f => %f", value, ChargerDC1U);
         }
         break;
 
     case VWUP1_CHG_DC_I:
-        if (PollReply.FromUint16("VWUP_CHG_DC1_I", value))
+        if (PollReply.FromUint16("VWUP_CHG_DC_I", value))
         {
             ChargerDC1I = (value - 510.0f) / 5.0f;
-            VALUE_LOG(TAG, "VWUP_CHG_DC1_I=%f => %f", value, ChargerDC1I);
+            VALUE_LOG(TAG, "VWUP_CHG_DC_I=%f => %f", value, ChargerDC1I);
 
             value = (ChargerDC1U * ChargerDC1I) / 1000.0f;
             ChargerDCPower->SetValue(value);
@@ -459,7 +529,7 @@ void OvmsVehicleVWeUpAll::IncomingPollReply(canbus *bus, uint16_t type, uint16_t
 //     case VWUP_MOT_ELEC_TEMP_AMB: // value from KCAN is more precise and always available
 //        if (PollReply.FromInt8("VWUP_MOT_ELEC_TEMP_AMB", value))
 //        {
-//            StandardMetrics.ms_v_env_temp->SetValue(value - 40.0f);
+//            StandardMetrics.ms_v_env_temp->SetValue(value / 10.0f - 273.1f);
 //            VALUE_LOG(TAG, "VWUP_MOT_ELEC_TEMP_AMB=%f => %f", value, StandardMetrics.ms_v_bat_temp->AsFloat());
 //        }
 //        break;
@@ -479,26 +549,103 @@ void OvmsVehicleVWeUpAll::IncomingPollReply(canbus *bus, uint16_t type, uint16_t
         }
         break;
 
-     case VWUP_ELD_TEMP_MOT:
-        if (PollReply.FromUint16("VWUP_ELD_TEMP_MOT", value))
-        {
-            StandardMetrics.ms_v_mot_temp->SetValue(value / 64.0f);
-            VALUE_LOG(TAG, "VWUP_ELD_TEMP_MOT=%f => %f", value, StandardMetrics.ms_v_mot_temp->AsFloat());
-        }
-        break;
-     case VWUP_ELD_TEMP_PEM:
-        if (PollReply.FromUint16("VWUP_ELD_TEMP_PEM", value))
-        {
-            StandardMetrics.ms_v_inv_temp->SetValue(value / 64.0f);
-            VALUE_LOG(TAG, "VWUP_ELD_TEMP_PEM=%f => %f", value, StandardMetrics.ms_v_inv_temp->AsFloat());
-        }
-        break;
+
      case VWUP_MOT_ELEC_TEMP_DCDC:
         if (PollReply.FromUint16("VWUP_MOT_ELEC_TEMP_DCDC", value))
-        {
-            StandardMetrics.ms_v_charge_temp->SetValue(value / 256.0f);
-            VALUE_LOG(TAG, "VWUP_MOT_TEMP_DCDC=%f => %f", value, StandardMetrics.ms_v_charge_temp->AsFloat());
-        }
+            StandardMetrics.ms_v_charge_temp->SetValue(value / 10.0f - 273.1f);
         break;
+/*     case VWUP_MOT_ELEC_TEMP_COOL1:
+        if (PollReply.FromUint16("VWUP_MOT_ELEC_TEMP_COOL1", value))
+            CoolantTemp1->SetValue(value / 10.0f - 273.1f);
+        break;
+     case VWUP_MOT_ELEC_TEMP_COOL2:
+        if (PollReply.FromUint16("VWUP_MOT_ELEC_TEMP_COOL2", value))
+            CoolantTemp2->SetValue(value / 10.0f - 273.1f);
+        break;
+     case VWUP_MOT_ELEC_TEMP_COOL3:
+        if (PollReply.FromUint16("VWUP_MOT_ELEC_TEMP_COOL3", value))
+            CoolantTemp3->SetValue(value / 10.0f - 273.1f);
+        break;
+     case VWUP_MOT_ELEC_TEMP_COOL4:
+        if (PollReply.FromUint16("VWUP_MOT_ELEC_TEMP_COOL4", value))
+            CoolantTemp4->SetValue(value / 10.0f - 273.1f);
+        break;
+     case VWUP_MOT_ELEC_TEMP_COOL5:
+        if (PollReply.FromUint16("VWUP_MOT_ELEC_TEMP_COOL5", value))
+            CoolantTemp5->SetValue(value / 10.0f - 273.1f);
+        break;
+     case VWUP_MOT_ELEC_TEMP_COOL_BAT:
+        if (PollReply.FromUint16("VWUP_MOT_ELEC_TEMP_COOL_BAT", value))
+            CoolingTempBat->SetValue(value / 10.0f - 273.1f);
+        break;
+     case VWUP_BRKBOOST_TEMP_ECU:
+        if (PollReply.FromUint16("VWUP_BRKBOOST_TEMP_ECU", value))
+            BrakeboostTempECU->SetValue(value / 64.0f);
+        break;
+     case VWUP_BRKBOOST_TEMP_ACC:
+        if (PollReply.FromUint8("VWUP_BRKBOOST_TEMP_ACC", value))
+            BrakeboostTempAccu->SetValue(value - 50.0f);
+        break;
+     case VWUP_STEER_TEMP:
+        if (PollReply.FromUint8("VWUP_STEER_TEMP", value))
+            SteeringTempPA->SetValue(value - 40.0f);
+        break;
+     case VWUP_ELD_TEMP_COOL:
+        if (PollReply.FromUint8("VWUP_ELD_TEMP_COOL", value))
+            ElectricDriveCoolantTemp->SetValue(value - 40.0f);
+        break;
+     case VWUP_ELD_TEMP_MOT:
+        if (PollReply.FromInt16("VWUP_ELD_TEMP_MOT", value))
+            StandardMetrics.ms_v_mot_temp->SetValue(value / 64.0f);
+        break;
+     case VWUP_ELD_TEMP_DCDC1:
+        if (PollReply.FromUint16("VWUP_ELD_TEMP_DCDC1", value))
+            ElectricDriveTempDCDC->SetValue(value / 64.0f);
+        break;
+     case VWUP_ELD_TEMP_DCDC2:
+        if (PollReply.FromInt16("VWUP_ELD_TEMP_DCDC2", value))
+            ElectricDriveTempDCDCPCB->SetValue(value / 64.0f);
+        break;
+     case VWUP_ELD_TEMP_DCDC3:
+        if (PollReply.FromInt16("VWUP_ELD_TEMP_DCDC3", value))
+            ElectricDriveTempDCDCPEM->SetValue(value / 64.0f);
+        break;
+     case VWUP_ELD_TEMP_PEU:
+        if (PollReply.FromInt16("VWUP_ELD_TEMP_PEU", value))
+            ElectricDriveTempPhaseU->SetValue(value / 64.0f);
+        break;
+     case VWUP_ELD_TEMP_PEV:
+        if (PollReply.FromInt16("VWUP_ELD_TEMP_PEV", value))
+            ElectricDriveTempPhaseV->SetValue(value / 64.0f);
+        break;
+     case VWUP_ELD_TEMP_PEW:
+        if (PollReply.FromInt16("VWUP_ELD_TEMP_PEW", value))
+            ElectricDriveTempPhaseW->SetValue(value / 64.0f);
+        break;
+     case VWUP_ELD_TEMP_STAT:
+        if (PollReply.FromInt16("VWUP_ELD_TEMP_STAT", value))
+            ElectricDriveTempStator->SetValue(value / 64.0f);
+        break;
+     case VWUP_INF_TEMP_PCB:
+        if (PollReply.FromUint8("VWUP_INF_TEMP_PCB", value, 2))
+            InfElecTempPCB->SetValue(value - 40.0f);
+        break;
+     case VWUP_INF_TEMP_AUDIO:
+        if (PollReply.FromUint8("VWUP_INF_TEMP_AUDIO", value, 2))
+            InfElecTempAudio->SetValue(value - 40.0f);
+        break;
+     case VWUP_BAT_MGMT_TEMP_MAX:
+        if (PollReply.FromUint16("VWUP_BAT_MGMT_TEMP_MAX", value, 2))
+            BatTempMax->SetValue(value / 64.0f);
+        break;
+     case VWUP_BAT_MGMT_TEMP_MIN:
+        if (PollReply.FromUint16("VWUP_BAT_MGMT_TEMP_MIN", value, 2))
+            BatTempMin->SetValue(value / 64.0f);
+        break;
+     case VWUP_BRKSENS_TEMP:
+        if (PollReply.FromUint8("VWUP_BRKSENS_TEMP", value))
+            BrakesensTemp->SetValue(value);
+        break;
+ */       
    }
 }

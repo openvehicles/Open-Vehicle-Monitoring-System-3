@@ -34,7 +34,7 @@
 
 using namespace std;
 
-class PollReplyHelper
+class PollReplyHelperOBD
 {
 public:
     bool AddNewData(uint16_t pid, uint8_t *data, uint8_t length, uint16_t remain);
