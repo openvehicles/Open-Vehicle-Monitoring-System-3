@@ -31,7 +31,7 @@
 
 /*
 ;    Subproject:    Integration of support for the VW e-UP
-;    Date:          29th September 2020
+;    Date:          9th November 2020
 ;
 ;    Changes:
 ;    0.1.0  Initial code
@@ -103,6 +103,8 @@
 ;
 ;    0.4.2  Corrected locked status, cabin temperature
 :
+;    0.4.2  Added "feature" parameters for model year and cabin temperature setting
+;
 ;    (C) 2020       Chris van der Meijden
 ;
 ;    Big thanx to sharkcow, Dimitrie78, E-Imo, Dexter and 'der kleine Nik'.
@@ -111,7 +113,7 @@
 #include "ovms_log.h"
 static const char *TAG = "v-vweup-t26";
 
-#define VERSION "0.4.2"
+#define VERSION "0.4.3"
 
 #include <stdio.h>
 #include "pcp.h"

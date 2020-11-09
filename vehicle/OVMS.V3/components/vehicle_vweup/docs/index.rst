@@ -26,13 +26,13 @@ Cabin Pre-heat/cool Control Yes
 GPS Location                Yes (from modem module GPS)
 Speed Display               Yes
 Temperature Display         Yes (outdoor, cabin)
-BMS v+t Display             tba
+BMS v+t Display             No
 TPMS Display                No
 Charge Status Display       Yes
 Charge Interruption Alerts  Yes (per notification on the charging state)
 Charge Control              tba
-Lock/Unlock Vehicle         tba
-Valet Mode Control          tba
+Lock/Unlock Vehicle         No
+Valet Mode Control          No
 Others                      Odometer, VIN, front doors status
 =========================== ==============
 
