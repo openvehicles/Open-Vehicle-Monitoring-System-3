@@ -33,7 +33,7 @@ Charge Interruption Alerts  Yes (per notification on the charging state)
 Charge Control              tba
 Lock/Unlock Vehicle         No
 Valet Mode Control          No
-Others                      Odometer, VIN, front doors status
+Others                      Odometer, VIN, status of plug, lights, doors, trunk and bonnet
 =========================== ==============
 
 
