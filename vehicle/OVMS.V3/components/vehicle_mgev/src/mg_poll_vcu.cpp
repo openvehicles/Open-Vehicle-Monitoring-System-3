@@ -40,6 +40,23 @@ size_t min(size_t a, size_t b)
     return a < b ? a : b;
 }
 
+void Calibrate12v(float voltage)
+{
+    float reading = StandardMetrics.ms_v_bat_12v_voltage->AsFloat();
+    // If the calibration is out, perform an adjustment.  The OVMS read value is smoothed
+    // for noise and jitter, so we will just tweak it a little bit at a time.
+    if (reading - voltage >= 0.1)
+    {
+        float factor = MyConfig.GetParamValueFloat("system.adc", "factor12v");
+        MyConfig.SetParamValueFloat("system.adc", "factor12v", factor + 0.1);
+    }
+    else if (reading - voltage <= -0.1)
+    {
+        float factor = MyConfig.GetParamValueFloat("system.adc", "factor12v");
+        MyConfig.SetParamValueFloat("system.adc", "factor12v", factor - 0.1);
+    }
+}
+
 }  // anon namespace
 
 void OvmsVehicleMgEv::IncomingVcuPoll(
@@ -50,7 +67,7 @@ void OvmsVehicleMgEv::IncomingVcuPoll(
     switch (pid)
     {
         case vcu12vSupplyPid:
-            StandardMetrics.ms_v_bat_12v_voltage->SetValue(data[0] / 10.0);
+            Calibrate12v(data[0] / 10.0);
             break;
         case vcuVehicleSpeedPid:
             // Speed in kph
@@ -65,7 +82,11 @@ void OvmsVehicleMgEv::IncomingVcuPoll(
         case vcuIgnitionStatePid:
             // Aux only is 1, but we'll say it's on when the ignition is too
             StandardMetrics.ms_v_env_aux12v->SetValue(data[0] != 0);
-            StandardMetrics.ms_v_env_on->SetValue(data[0] == 2);
+            if (StandardMetrics.ms_v_env_on->AsBool() != (data[0] == 2))
+            {
+                // Only set on change so we can see when it was turned on
+                StandardMetrics.ms_v_env_on->SetValue(data[0] == 2);
+            }
             break;
         case vcuVinPid:
             HandleVinMessage(data, length, remain);

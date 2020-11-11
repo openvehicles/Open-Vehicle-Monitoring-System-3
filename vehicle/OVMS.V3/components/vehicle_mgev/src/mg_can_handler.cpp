@@ -75,11 +75,18 @@ void OvmsVehicleMgEv::IncomingPollFrame(CAN_frame_t* frame)
 {
     if (frame->MsgID == 0x70au)
     {
-        ESP_LOGI(
+        ESP_LOGV(
             TAG, "Wake up message (length %d): %02x %02x %02x %02x %02x %02x %02x",
             frame->FIR.B.DLC, frame->data.u8[0], frame->data.u8[1], frame->data.u8[2],
             frame->data.u8[3], frame->data.u8[4], frame->data.u8[5], frame->data.u8[6]
         );
+        // If we were off, or woken by this message then wake up
+        if (m_wakeState == Off || (m_wakeState == Awake && monotonictime == m_wakeTicker))
+        {
+            // If we get a 70a and the CAN is off, then we'll need to wake the CAN
+            ESP_LOGI(TAG, "Wake state from %d to %d", Off, Diagnostic);
+            AttemptDiagnostic();
+        }
     }
 
     uint8_t frameType = frame->data.u8[0] >> 4;
@@ -108,9 +115,11 @@ void OvmsVehicleMgEv::IncomingPollFrame(CAN_frame_t* frame)
                 ESP_LOGV(TAG, "Got response from gateway, wake up complete");
                 m_wakeState = Tester;
                 // If we are currently unlocked, then send to BCM
-                if (StandardMetrics.ms_v_env_locked->AsBool() == false)
+                if (StandardMetrics.ms_v_env_locked->AsBool() == false &&
+                    monotonictime - StandardMetrics.ms_v_env_locked->LastModified() <= 2)
                 {
-                    SendKeepAliveTo(frame->origin, bcmId);
+                    // FIXME: Disabled until we are happy that the alarm won't go off
+                    //SendKeepAliveTo(frame->origin, bcmId);
                 }
             }
             return;
@@ -217,7 +226,7 @@ void OvmsVehicleMgEv::IncomingPollReply(
     switch (m_poll_moduleid_low)
     {
         case (bmsId | rxFlag):
-            IncomingBmsPoll(pid, data, length);
+            IncomingBmsPoll(pid, data, length, remain);
             break;
         case (dcdcId | rxFlag):
             IncomingDcdcPoll(pid, data, length);
@@ -233,6 +242,9 @@ void OvmsVehicleMgEv::IncomingPollReply(
             break;
         case (pepsId | rxFlag):
             IncomingPepsPoll(pid, data, length);
+            break;
+        case (evccId | rxFlag):
+            IncomingEvccPoll(pid, data, length);
             break;
         // BCM poll type handled in IncomingPollFrame
     }

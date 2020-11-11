@@ -115,6 +115,7 @@ bool OvmsLocation::IsInLocation(float latitude, float longitude)
     if (!m_inlocation)
       {
       m_inlocation = true;
+      StandardMetrics.ms_v_pos_location->SetValue(m_name);
       if (StandardMetrics.ms_v_env_on->AsBool())
         {
         event = std::string("location.enter.");
@@ -129,6 +130,7 @@ bool OvmsLocation::IsInLocation(float latitude, float longitude)
     if (m_inlocation)
       {
       m_inlocation = false;
+      StandardMetrics.ms_v_pos_location->SetValue("");
       if (StandardMetrics.ms_v_env_on->AsBool())
         {
         event = std::string("location.leave.");

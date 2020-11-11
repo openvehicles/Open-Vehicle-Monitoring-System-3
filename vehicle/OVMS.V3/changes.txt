@@ -1,6 +1,9 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Location: add metric for name of current location
+  New metrics:
+    v.p.location        -- Name of current location if defined
 - Nissan Leaf: invert batt current sign to match standard metrics definition, populate charger power/efficiency
 - New standard metrics for total (life time) energy and coulomb
 - Renault Twizy: support additional OBD/UDS request types & arguments on "xrt obd request"
