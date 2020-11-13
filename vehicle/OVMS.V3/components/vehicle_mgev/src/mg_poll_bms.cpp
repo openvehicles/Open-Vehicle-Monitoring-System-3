@@ -60,7 +60,7 @@ void OvmsVehicleMgEv::ProcessBatteryStats(int index, uint8_t* data, uint16_t rem
         uint16_t vmin = (data[0] << 8 | data[1]);
         m_bmsCache = data[2];
 
-        StandardMetrics.ms_v_bat_cell_vmin->SetElemValue(index, (vmax / 2000.0f) + 1.0f);
+        StandardMetrics.ms_v_bat_cell_vmin->SetElemValue(index, (vmin / 2000.0f) + 1.0f);
         
         {
             auto pvmin = StandardMetrics.ms_v_bat_cell_vmin->AsVector();
