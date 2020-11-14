@@ -66,7 +66,6 @@ constexpr uint16_t batterySoCPid = 0xb046u;
 constexpr uint16_t bmsStatusPid = 0xb048u;
 constexpr uint16_t batteryCoolantTempPid = 0xb05cu;
 constexpr uint16_t batterySoHPid = 0xb061u;
-constexpr uint16_t chargeRatePid = 0xb712u;
 constexpr uint16_t bmsRangePid = 0xb0ceu;
 
 // DCDC PIDs
@@ -87,6 +86,7 @@ constexpr uint16_t vcuHandbrakePid = 0xba40u;
 constexpr uint16_t vcuGearPid = 0xb900u;
 constexpr uint16_t vcuBreakPid = 0xb120u;
 constexpr uint16_t vcuBonnetPid = 0xbb06u;
+constexpr uint16_t chargeRatePid = 0xb712u;
 
 // ATC PIDs
 constexpr uint16_t atcAmbientTempPid = 0xe01bu;
