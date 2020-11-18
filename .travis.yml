@@ -1,0 +1,22 @@
+os: linux
+dist: focal
+env:
+  global:
+   - PATH=$HOME/esp/xtensa-esp32-elf/bin:$PATH
+   - IDF_PATH=$HOME/esp/esp-idf
+
+addons:
+  apt:
+    packages:
+      - gperf
+      - dos2unix
+
+install:
+- mkdir $HOME/esp
+- curl https://dl.espressif.com/dl/xtensa-esp32-elf-linux64-1.22.0-97-gc752ad5-5.2.0.tar.gz | tar -xvzC $HOME/esp/
+- git clone --recurse-submodules --depth 1 https://github.com/openvehicles/esp-idf.git $HOME/esp/esp-idf
+- python -m pip install --user -r $HOME/esp/esp-idf/requirements.txt
+
+script:
+- cp $TRAVIS_BUILD_DIR/vehicle/OVMS.V3/support/sdkconfig.default.hw31 $TRAVIS_BUILD_DIR/vehicle/OVMS.V3/sdkconfig
+- make -C $TRAVIS_BUILD_DIR/vehicle/OVMS.V3 -j5
