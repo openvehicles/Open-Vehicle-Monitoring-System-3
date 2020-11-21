@@ -113,7 +113,7 @@ Once the AC is turned on by the app there will be a delay of about 15 seconds un
 
 The communication from the app to the car is also blocked for 10 seconds after the "AC off" command from the app to the car. There is no delay between the "AC off" signal of the app and the actually turning off in the car.
 
-In rare cases 'AC off' does not respond. You then need to 'AC on' again (when it is already running) to be able to stop it.
+In rare cases 'AC off' does not respond. There will be a delay of 40 seconds before you can try again.
 
 The cabin target temperature can be set from the OVMS webinterface (VW e-Up (Komfort CAN) -> Climate control) or via the app under FEATURES 21.
 

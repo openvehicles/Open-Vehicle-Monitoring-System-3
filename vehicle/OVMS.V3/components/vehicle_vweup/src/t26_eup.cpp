@@ -31,7 +31,7 @@
 
 /*
 ;    Subproject:    Integration of support for the VW e-UP
-;    Date:          9th November 2020
+;    Date:          21st November 2020
 ;
 ;    Changes:
 ;    0.1.0  Initial code
@@ -104,6 +104,8 @@
 ;    0.4.2  Corrected locked status, cabin temperature
 :
 ;    0.4.2  Added "feature" parameters for model year and cabin temperature setting
+;
+;    0.4.3  Respond to vehicle turning climate control off
 ;
 ;    (C) 2020       Chris van der Meijden
 ;
@@ -1341,4 +1343,16 @@ void OvmsVehicleVWeUpT26::Ticker1(uint32_t ticker)
             SendCommand(AUTO_DISABLE_CLIMATE_CONTROL);
         }
     }
+
+    // Car disabled climate control
+    if (!StandardMetrics.ms_v_env_on->AsBool() && vwup_remote_climate_ticker < 1770 && vwup_remote_climate_ticker != 0 && !StandardMetrics.ms_v_env_hvac->AsBool())
+    {
+        vwup_remote_climate_ticker = 0;
+
+        ESP_LOGI(TAG, "Car disabled Climate Control or cc did not turn on");
+
+        vweup_cc_on = false;
+        ocu_awake = true;
+    }
+
 }
