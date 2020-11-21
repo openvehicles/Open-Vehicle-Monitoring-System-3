@@ -182,24 +182,6 @@ void OvmsVehicleMgEv::IncomingBmsPoll(
         case batterySoHPid:
             StandardMetrics.ms_v_bat_soh->SetValue(value / 100.0);
             break;
-        case chargeRatePid:
-            // The kW of the charger, crude way to determine the charge type
-            {
-                auto rate = value / 10.0;
-                if (rate < 0.1)
-                {
-                    StandardMetrics.ms_v_charge_type->SetValue("undefined");
-                }
-                else if (rate > 7.0)
-                {
-                    StandardMetrics.ms_v_charge_type->SetValue("ccs");
-                }
-                else
-                {
-                    StandardMetrics.ms_v_charge_type->SetValue("type2");
-                }
-            }
-            break;
         case bmsRangePid:
             StandardMetrics.ms_v_bat_range_est->SetValue(value / 10.0);
             break;
