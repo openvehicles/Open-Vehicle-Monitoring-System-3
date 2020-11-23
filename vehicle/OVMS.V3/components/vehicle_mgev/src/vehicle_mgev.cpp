@@ -41,54 +41,54 @@ namespace {
 
 const OvmsVehicle::poll_pid_t obdii_polls[] =
 {
-    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmsStatusPid, {  5, 5, 5, 5 }, 0 },
-    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, batteryBusVoltagePid, {  0, 60, 10, 10 }, 0 },
-    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, batteryCurrentPid, {  0, 0, 10, 10 }, 0 },
-    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, batteryVoltagePid, {  0, 60, 10, 10 }, 0 },
-    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, batterySoCPid, {  0, 60, 30, 30 }, 0 },
-    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, batteryCoolantTempPid, {  0, 30, 30, 30 }, 0 },
-    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, batterySoHPid, {  0, 120, 120, 120 }, 0 },
-    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmsRangePid, {  0, 60, 10, 10 }, 0 },
-    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, cell1StatPid, {  0, 60, 10, 10 }, 0 },
-    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, cell2StatPid, {  0, 60, 10, 10 }, 0 },
-    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, cell3StatPid, {  0, 60, 10, 10 }, 0 },
-    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, cell4StatPid, {  0, 60, 10, 10 }, 0 },
-    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, cell5StatPid, {  0, 60, 10, 10 }, 0 },
-    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, cell6StatPid, {  0, 60, 10, 10 }, 0 },
-    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, cell7StatPid, {  0, 60, 10, 10 }, 0 },
-    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, cell8StatPid, {  0, 60, 10, 10 }, 0 },
-    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, cell9StatPid, {  0, 60, 10, 10 }, 0 },
-    { dcdcId, dcdcId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, dcdcLvCurrentPid, {  0, 60, 60, 60 }, 0 },
-    { dcdcId, dcdcId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, dcdcPowerLoadPid, {  0, 60, 60, 60 }, 0 },
-    { dcdcId, dcdcId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, dcdcTemperaturePid, {  0, 30, 30, 30 }, 0 },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmsStatusPid, {  0, 5, 5, 0 }, 0 },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, batteryBusVoltagePid, {  0, 30, 30, 0 }, 0 },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, batteryCurrentPid, {  0, 30, 30, 0 }, 0 },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, batteryVoltagePid, {  0, 30, 30, 0 }, 0 },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, batterySoCPid, {  0, 30, 30, 0 }, 0 },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, batteryCoolantTempPid, {  0, 60, 60, 0 }, 0 },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, batterySoHPid, {  0, 120, 120, 0 }, 0 },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmsRangePid, {  0, 30, 30, 0 }, 0 },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, cell1StatPid, {  0, 30, 30, 0 }, 0 },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, cell2StatPid, {  0, 30, 30, 0 }, 0 },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, cell3StatPid, {  0, 30, 30, 0 }, 0 },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, cell4StatPid, {  0, 30, 30, 0 }, 0 },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, cell5StatPid, {  0, 30, 30, 0 }, 0 },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, cell6StatPid, {  0, 30, 30, 0 }, 0 },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, cell7StatPid, {  0, 30, 30, 0 }, 0 },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, cell8StatPid, {  0, 30, 30, 0 }, 0 },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, cell9StatPid, {  0, 30, 30, 0 }, 0 },
+    { dcdcId, dcdcId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, dcdcLvCurrentPid, {  0, 30, 30, 0 }, 0 },
+    { dcdcId, dcdcId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, dcdcPowerLoadPid, {  0, 30, 30, 0 }, 0 },
+    { dcdcId, dcdcId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, dcdcTemperaturePid, {  0, 60, 60, 0 }, 0 },
     { vcuId, vcuId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcuVinPid, { 0, 999, 999, 0 }, 0 },
-    { vcuId, vcuId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcuIgnitionStatePid, {  1, 1, 1, 1 }, 0 },
-    { vcuId, vcuId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcu12vSupplyPid, {  0, 60, 60, 60 }, 0 },
-    { vcuId, vcuId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcuCoolantTempPid, {  0, 30, 30, 30 }, 0 },
-    { vcuId, vcuId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcuChargerConnectedPid, {  0, 5, 30, 30 }, 0 },
-    { vcuId, vcuId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcuVehicleSpeedPid, {  0, 0, 5, 0 }, 0 },
+    { vcuId, vcuId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcuIgnitionStatePid, {  0, 5, 5, 0 }, 0 },
+    { vcuId, vcuId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcu12vSupplyPid, {  0, 60, 60, 0 }, 0 },
+    { vcuId, vcuId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcuCoolantTempPid, {  0, 60, 60, 0 }, 0 },
+    { vcuId, vcuId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcuChargerConnectedPid, {  0, 5, 5, 0 }, 0 },
+    { vcuId, vcuId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcuVehicleSpeedPid, {  0, 0, 1, 0 }, 0 },
     { vcuId, vcuId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcuMotorSpeedPid, {  0, 0, 5, 0 }, 0 },
     { vcuId, vcuId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcuOdometerPid, {  0, 0, 20, 0 }, 0 },
-    { vcuId, vcuId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcuHandbrakePid, {  0, 10, 10, 0 }, 0 },
+    { vcuId, vcuId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcuHandbrakePid, {  0, 0, 10, 0 }, 0 },
     { vcuId, vcuId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcuGearPid, {  0, 0, 10, 0 }, 0 },
-    { vcuId, vcuId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcuBreakPid, {  0, 0, 10, 0 }, 0 },
-    { vcuId, vcuId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcuBonnetPid, {  0, 30, 30, 30 }, 0 },
-    { vcuId, vcuId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, chargeRatePid, {  0, 0, 0, 60 }, 0 },
-    { atcId, atcId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, atcAmbientTempPid, {  0, 60, 60, 60 }, 0 },
-    { atcId, atcId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, atcSetTempPid, {  0, 0, 10, 0 }, 0 },
-    { atcId, atcId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, atcFaceOutletTempPid, {  0, 0, 10, 0 }, 0 },
-    { atcId, atcId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, atcBlowerSpeedPid, {  0, 0, 10, 0 }, 0 },
+    { vcuId, vcuId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcuBrakePid, {  0, 0, 10, 0 }, 0 },
+    { vcuId, vcuId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcuBonnetPid, {  0, 0, 60, 0 }, 0 },
+    { vcuId, vcuId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, chargeRatePid, {  0, 30, 0, 0 }, 0 },
+    { atcId, atcId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, atcAmbientTempPid, {  0, 60, 60, 0 }, 0 },
+    { atcId, atcId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, atcSetTempPid, {  0, 60, 60, 0 }, 0 },
+    { atcId, atcId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, atcFaceOutletTempPid, {  0, 0, 30, 0 }, 0 },
+    { atcId, atcId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, atcBlowerSpeedPid, {  0, 0, 30, 0 }, 0 },
     { atcId, atcId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, atcPtcTempPid, {  0, 30, 10, 0 }, 0 },
-    { pepsId, pepsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, pepsLockPid, {  1, 1, 1, 1 }, 0 },
+    { pepsId, pepsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, pepsLockPid, {  0, 5, 5, 0 }, 0 },
     // Only poll when running, BCM requests are performed manually to avoid the alarm    
     // FIXME: Disabled until we are happy that the alarm won't go off
     //{ bcmId, bcmId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bcmDoorPid, {  0, 0, 15, 0 }, 0 },
     //{ bcmId, bcmId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bcmLightPid, {  0, 0, 15, 0 }, 0 },
-    { tpmsId, tpmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, tyrePressurePid, {  0, 60, 60, 0 }, 0 },
-    { tpmsId, tpmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, typeTemperaturePid, {  0, 60, 60, 0 }, 0 },
-    { evccId, evccId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, evccVoltagePid, {  0, 0, 0, 10 }, 0 },
-    { evccId, evccId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, evccAmperagePid, {  0, 0, 0, 10 }, 0 },
-    { evccId, evccId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, evccMaxAmperagePid, {  0, 0, 0, 10 }, 0 },
+    { tpmsId, tpmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, tyrePressurePid, {  0, 0, 60, 0 }, 0 },
+    { tpmsId, tpmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, typeTemperaturePid, {  0, 0, 60, 0 }, 0 },
+    { evccId, evccId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, evccVoltagePid, {  0, 30, 0, 0 }, 0 },
+    { evccId, evccId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, evccAmperagePid, {  0, 30, 0, 0 }, 0 },
+    { evccId, evccId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, evccMaxAmperagePid, {  0, 30, 0, 0 }, 0 },
     { 0, 0, 0x00, 0x00, { 0, 0, 0, 0 }, 0 }
 };
 
@@ -133,7 +133,7 @@ OvmsVehicleMgEv::OvmsVehicleMgEv()
     );
     m_dcdc_load = MyMetrics.InitFloat("xmg.v.dcdc.load", 0, SM_STALE_HIGH, Percentage);
 
-    PollSetState(PollStateLocked);
+    PollSetState(PollStateListenOnly);
 
     m_rxPacketTicker = 0u;
     m_rxPackets = 0u;
@@ -142,15 +142,9 @@ OvmsVehicleMgEv::OvmsVehicleMgEv()
     StandardMetrics.ms_v_env_on->SetValue(false);
 
     // Assume the CAN is off to start with
-    m_wakeState = Off;
-    m_wakeTicker = 0u;
+    m_gwmState = Undefined;
+    m_afterRunTicker = 0u;
     m_diagCount = 0u;
-
-    // Create the timer for zombie mode, but no need to start it yet
-    m_zombieTimer = xTimerCreate(
-        "MG Zombie Timer", 250 / portTICK_PERIOD_MS, pdTRUE,
-        this, &OvmsVehicleMgEv::ZombieTimer
-    );
 
     // Allow unlimited polling per second
     PollSetThrottling(0u);
@@ -168,7 +162,7 @@ OvmsVehicleMgEv::~OvmsVehicleMgEv()
 {
     ESP_LOGI(TAG, "Shutdown MG EV vehicle module");
 
-    xTimerDelete(m_zombieTimer, 0);
+    //xTimerDelete(m_zombieTimer, 0);
 
     if (m_cmdSoftver)
     {
@@ -214,7 +208,7 @@ void OvmsVehicleMgEv::SoftwareVersions(OvmsWriter* writer)
         return;
     }
 
-    if (m_wakeState != Awake)
+    if (m_gwmState != SendTester)
     {
         writer->puts("Please turn on the ignition first");
         return;
@@ -316,111 +310,63 @@ void OvmsVehicleMgEv::NotifyVehicleIdling()
     }
 }
 
-bool OvmsVehicleMgEv::HasWoken(canbus* currentBus, uint32_t ticker)
+// This is the only place we evaluate the vehicle state to change the action of OVMS
+void OvmsVehicleMgEv::DeterminePollState(canbus* currentBus, uint32_t ticker)
 {
-    const auto rxPackets = currentBus->m_status.packets_rx;
-    bool wokenUp = false;
-    if (m_rxPackets != rxPackets)
-    {
-        if (StandardMetrics.ms_v_env_awake->AsBool() == false)
-        {
-            // If it was asleep before it's just woken up
-            wokenUp = true;
-            StandardMetrics.ms_v_env_awake->SetValue(true);
-        }
-        if (m_wakeState == Off)
-        {
-            m_wakeState = Awake;
-            m_wakeTicker = ticker;
-        }
-        m_rxPackets = rxPackets;
-        m_rxPacketTicker = ticker;
-    }
-    else if (ticker - m_rxPacketTicker > ASLEEP_TIMEOUT)
-    {
-        StandardMetrics.ms_v_env_awake->SetValue(false);
-        if (m_wakeState == Tester)
-        {
-            ESP_LOGD(TAG, "Car not responding while sending TP, sending diagnostic");
-            AttemptDiagnostic();
-        }
-        else if (m_wakeState != Waking && m_wakeState != Off &&
-                (m_wakeState != Diagnostic || monotonictime - m_wakeTicker > ZOMBIE_TIMEOUT))
-        {
-            m_wakeState = Off;
-            m_wakeTicker = monotonictime;
-        }
-    }
+    // Store last 12V charging state and re-evaluate if the 12V is charging
+    auto charging12vLast = StandardMetrics.ms_v_env_charging12v;
+    StandardMetrics.ms_v_env_charging12v->SetValue(
+                 StandardMetrics.ms_v_bat_12v_voltage->AsFloat() >= CHARGING_THRESHOLD
+             );
 
-    return wokenUp;
-}
+    if (StandardMetrics.ms_v_env_charging12v->AsBool())
+    {
+        // 12 V is charging, if this state has changed we should evaluate if the ignition is now on
+        if (charging12vLast != StandardMetrics.ms_v_env_charging12v)
+        {
+            ESP_LOGV(TAG, "12V is now charging, checking to see if ignition is now on.");
+            SendPollMessage(currentBus, vcuId, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcuIgnitionStatePid);
+            vTaskDelay(70 / portTICK_PERIOD_MS);
+        } 
 
-void OvmsVehicleMgEv::AttemptDiagnostic()
-{
-    if (m_diagCount > DIAG_ATTEMPTS)
-    {
-        ESP_LOGE(TAG, "Woken the car too many times without success, not trying again");
-        m_wakeState = Off;
-        return;
-    }
-    ++m_diagCount;
-    m_wakeState = Diagnostic;
-    m_wakeTicker = monotonictime;
-}
-
-void OvmsVehicleMgEv::DeterminePollState(canbus* currentBus, bool wokenUp, uint32_t ticker)
-{
-    if (StandardMetrics.ms_v_charge_inprogress->AsBool())
-    {
-        m_diagCount = 0u;
-        PollSetState(PollStateCharging);
-        if (m_wakeState == Off || m_wakeState == Awake)
+        // If ignition is on, we should set the car into running pollstate
+        // If car is in a charging state we should set charging pollstate
+        // If the state cannot be determined we need to consider zombie override
+        if (StandardMetrics.ms_v_env_on->AsBool())
         {
-            m_wakeState = Tester;
-            m_wakeTicker = monotonictime;
-        }
-        if (m_wakeState == Diagnostic && !StandardMetrics.ms_v_env_locked->AsBool() &&
-                monotonictime - m_wakeTicker > UNLOCKED_CHARGING_TIMEOUT)
-        {
-            m_wakeState = Tester;
-            m_wakeTicker = monotonictime;
-        }
-    }
-    else
-    {
-        if (StandardMetrics.ms_v_env_on->AsBool() &&
-                monotonictime - StandardMetrics.ms_v_env_on->LastModified() >= 5)
-        {
-            m_diagCount = 0u;
             PollSetState(PollStateRunning);
-        }
-        else if (StandardMetrics.ms_v_env_locked->AsBool())
+            m_gwmState = SendTester;
+        } 
+        else if (StandardMetrics.ms_v_charge_type->AsString() != "not charging")
         {
-            PollSetState(PollStateLocked);
-            StandardMetrics.ms_v_env_charging12v->SetValue(
-                StandardMetrics.ms_v_bat_12v_voltage->AsFloat() >= CHARGING_THRESHOLD
-            );
+            PollSetState(PollStateCharging);
         }
         else
         {
-            PollSetState(PollStateUnlocked);
+            ZombieMode();
         }
-
-        if ((m_wakeState == Diagnostic || m_wakeState == Tester) &&
-                monotonictime - m_wakeTicker > TRANSITION_TIMEOUT)
+    } 
+    else
+    {
+        // 12 V is now not charging, notify
+        if (charging12vLast != StandardMetrics.ms_v_env_charging12v)
         {
-            m_wakeState = Awake;
-            m_wakeTicker = monotonictime;
+            ESP_LOGV(TAG, "12V is not charging, remain in current state for 100 count.");
+            m_gwmState = SendTester;
+        } 
+        m_afterRunTicker ++;
+        if(m_afterRunTicker >= 100)
+        {
+            ESP_LOGV(TAG, "12V has not been charging for 100 count, stopping all CAN transmission.");
+            PollSetState(PollStateListenOnly);
+            m_gwmState = AllowToSleep;
         }
     }
+    
+    return;
 }
 
-void OvmsVehicleMgEv::ZombieTimer(TimerHandle_t timer)
-{
-    reinterpret_cast<OvmsVehicleMgEv*>(pvTimerGetTimerID(timer))->ZombieTimer();
-}
-
-void OvmsVehicleMgEv::ZombieTimer()
+void OvmsVehicleMgEv::ZombieMode()
 {
     canbus* currentBus = m_poll_bus_default;
     if (currentBus == nullptr)
@@ -428,6 +374,9 @@ void OvmsVehicleMgEv::ZombieTimer()
         // Polling is disabled, so there's nothing to do here
         return;
     }
+    ESP_LOGV(TAG, "OVMS thinks the GWM is in Zombie Mode, for now override is disabled");
+
+
     if (!StandardMetrics.ms_v_env_charging12v->AsBool())
     {
         // Don't wake the car if the 12v isn't charging because that can only end in a
@@ -438,27 +387,25 @@ void OvmsVehicleMgEv::ZombieTimer()
     // Send Diagnostic Session Control (0x10, 0x02).
     // This causes the Gateway to wake up fully even though the car is locked.
     // The major caveat is that the console say there's a motor fault...
-    CAN_frame_t diagnosticControl = {
-        currentBus,
-        nullptr,
-        { .B = { 8, 0, CAN_no_RTR, CAN_frame_std, 0 } },
-        gwmId,
-        { .u8 = {
-            (ISOTP_FT_SINGLE<<4) + 2, VEHICLE_POLL_TYPE_OBDIISESSION, 2, 0, 0, 0, 0, 0
-        } }
-    };
-    currentBus->Write(&diagnosticControl);
-    // Send to the IPK too which will stop it displaying the motor fault
-    diagnosticControl.MsgID = ipkId;
-    currentBus->Write(&diagnosticControl);
+    
+
+    // Want to wait in this state for 50s (allowing GWM to reset) then send Diagnostic Session
 }
 
 void OvmsVehicleMgEv::SendAlarmSensitive(canbus* currentBus)
 {
-    SendPollMessage(currentBus, bcmId, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bcmDoorPid);
+    // Disabled BMS queries when 12V is not charging as this can (slowly) drain the 12V 
+    // over 3 days or so as it continually wakes the GWM, wake is now going to be detected by 12V change
+    // TODO delete this?
+    if (StandardMetrics.ms_v_env_charging12v->AsBool())
+    {
+        ESP_LOGV(TAG, "12V is charging send BMS Queries.");
+        SendPollMessage(currentBus, bcmId, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bcmDoorPid);
+        return;
+    }
 }
 
-bool OvmsVehicleMgEv::SendKeepAliveTo(canbus* currentBus, uint16_t id)
+bool OvmsVehicleMgEv::SendTesterPresentTo(canbus* currentBus, uint16_t id)
 {
     CAN_frame_t testerFrame = {
         currentBus,
@@ -472,6 +419,20 @@ bool OvmsVehicleMgEv::SendKeepAliveTo(canbus* currentBus, uint16_t id)
     return currentBus->Write(&testerFrame) != ESP_FAIL;
 }
 
+bool OvmsVehicleMgEv::SendDiagSessionTo(canbus* currentBus, uint16_t id, uint8_t mode)
+{
+    CAN_frame_t diagnosticControl = {
+        currentBus,
+        nullptr,
+        { .B = { 8, 0, CAN_no_RTR, CAN_frame_std, 0 } },
+        id,
+        { .u8 = {
+            (ISOTP_FT_SINGLE<<4) + 2, VEHICLE_POLL_TYPE_OBDIISESSION, mode, 0, 0, 0, 0, 0
+        } }
+    };
+    return currentBus->Write(&diagnosticControl) != ESP_FAIL;
+}
+
 void OvmsVehicleMgEv::Ticker1(uint32_t ticker)
 {
     canbus* currentBus = m_poll_bus_default;
@@ -481,58 +442,66 @@ void OvmsVehicleMgEv::Ticker1(uint32_t ticker)
         return;
     }
 
-    if (m_wakeState == Tester)
+    if (m_gwmState == SendTester)
     {
-        SendKeepAliveTo(currentBus, gwmId);
+        SendTesterPresentTo(currentBus, gwmId);
+    }
+
+    if(m_gwmState == SendDiagnostic)
+    {
+        SendDiagSessionTo(currentBus, gwmId, 2u);
+        SendDiagSessionTo(currentBus, ipkId, 2u);
     }
 
     StandardMetrics.ms_v_env_ctrl_login->SetValue(
-        m_wakeState == Tester || m_wakeState == Diagnostic
+        m_gwmState == SendTester || m_gwmState == SendDiagnostic
     );
 
     const auto previousState = m_poll_state;
-    const auto previousWakeState = m_wakeState;
-    bool woken = HasWoken(currentBus, ticker);
-    DeterminePollState(currentBus, woken, ticker);
+    const auto previousGwmState = m_gwmState;
+    DeterminePollState(currentBus, ticker);
     if (previousState != m_poll_state)
     {
         ESP_LOGI(TAG, "Changed poll state from %d to %d", previousState, m_poll_state);
     }
-    if (previousWakeState != m_wakeState)
+    if (previousGwmState != m_gwmState)
     {
-        ESP_LOGI(TAG, "Wake state from %d to %d", previousWakeState, m_wakeState);
+        ESP_LOGI(TAG, "GWM Control state from %d to %d", previousGwmState, m_gwmState);
     }
 
-    if (xTimerIsTimerActive(m_zombieTimer))
-    {
-        if (m_wakeState != Diagnostic)
-        {
-            xTimerStop(m_zombieTimer, 0);
-        }
-    }
-    else if (m_wakeState == Diagnostic)
-    {
-        // TP seems more reliable at waking the gateway and it doesn't harm to send it
-        // We take a second out to do that before starting the session
-        xTaskCreatePinnedToCore(
-            &OvmsVehicleMgEv::WakeUp, "MG TP Wake Up", 4096, this, tskIDLE_PRIORITY,
-            nullptr, CORE(1)
-        );
-        xTimerStart(m_zombieTimer, 0);
-    }
+    // if (xTimerIsTimerActive(m_zombieTimer))
+    // {
+    //     if (m_gwmState != Diagnostic)
+    //     {
+    //         xTimerStop(m_zombieTimer, 0);
+    //     }
+    // }
+    // else if (m_gwmState == Diagnostic)
+    // {
+    //     // TP seems more reliable at waking the gateway and it doesn't harm to send it
+    //     // We take a second out to do that before starting the session
+    //     xTaskCreatePinnedToCore(
+    //         &OvmsVehicleMgEv::WakeUp, "MG TP Wake Up", 4096, this, tskIDLE_PRIORITY,
+    //         nullptr, CORE(1)
+    //     );
+    //     xTimerStart(m_zombieTimer, 0);
+    // }
 }
 
 void OvmsVehicleMgEv::WakeUp(void* self)
 {
-    auto* wakeBus = reinterpret_cast<OvmsVehicleMgEv*>(self)->m_poll_bus_default;
-    if (wakeBus)
-    {
-        for (int i = 0; i < 20; ++i)
-        {
-            reinterpret_cast<OvmsVehicleMgEv*>(self)->SendKeepAliveTo(wakeBus, gwmId);
-            vTaskDelay(70 / portTICK_PERIOD_MS);
-        }
-    }
+    // WakeUp Is not used, as OVMS cannot currently wake the car
+    ESP_LOGI(TAG, "WakeUp was called but this not yet supported on OVMS for the MG.");
+
+    // auto* wakeBus = reinterpret_cast<OvmsVehicleMgEv*>(self)->m_poll_bus_default;
+    // if (wakeBus)
+    // {
+    //     for (int i = 0; i < 20; ++i)
+    //     {
+    //         reinterpret_cast<OvmsVehicleMgEv*>(self)->SendTesterPresentTo(wakeBus, gwmId);
+    //         vTaskDelay(70 / portTICK_PERIOD_MS);
+    //     }
+    // }
     vTaskDelete(xTaskGetCurrentTaskHandle());
     // Should never be reached, but just in case
     for (;;) { }
@@ -576,32 +545,13 @@ void OvmsVehicleMgEv::ConfigurePollInterface(int bus)
 
 OvmsVehicle::vehicle_command_t OvmsVehicleMgEv::CommandWakeup()
 {
+    // Sets up the Poller Interface, cannot do anything else yet as OVMS does not wake the car
     auto wakeBus = m_poll_bus_default;
-    if (m_wakeState == Off && wakeBus)
-    {
-        // Reset the bus
-        ConfigurePollInterface(0);
-        ConfigurePollInterface(wakeBus->m_busnumber + 1);
-        m_rxPackets = 0u;
-        m_wakeState = Waking;
-    }
-    int counter = 0;
-    while (counter < 40 && m_wakeState == Waking)
-    {
-        SendKeepAliveTo(wakeBus, gwmId);
-        vTaskDelay(70 / portTICK_PERIOD_MS);
-        ++counter;
-    }
-    if (m_wakeState != Waking && m_wakeState != Off)
-    {
-        return OvmsVehicle::Success;
-    }
-    else
-    {
-        ESP_LOGD(TAG, "Wake state at completion: %d", m_wakeState);
-        m_wakeState = Off;
-        return OvmsVehicle::Fail;
-    }
+    ConfigurePollInterface(0);
+    ConfigurePollInterface(wakeBus->m_busnumber + 1);
+    m_rxPackets = 0u;
+    m_gwmState = Undefined;
+    return OvmsVehicle::Success;
 }
 
 class OvmsVehicleMgEvInit

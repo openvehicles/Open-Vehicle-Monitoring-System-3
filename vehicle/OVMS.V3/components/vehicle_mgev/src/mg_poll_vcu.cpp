@@ -121,7 +121,7 @@ void OvmsVehicleMgEv::IncomingVcuPoll(
                 StandardMetrics.ms_v_env_gear->SetValue(1);
             }
             break;
-        case vcuBreakPid:
+        case vcuBrakePid:
             StandardMetrics.ms_v_env_footbrake->SetValue(value / 10.0);
             break;
         case vcuBonnetPid:
@@ -132,9 +132,9 @@ void OvmsVehicleMgEv::IncomingVcuPoll(
             {
                 auto rate = value / 10.0;
                 StandardMetrics.ms_v_charge_climit->SetValue(rate);
-                if (rate < 0.1)
+                if (rate < 0.01)
                 {
-                    StandardMetrics.ms_v_charge_type->SetValue("undefined");
+                    StandardMetrics.ms_v_charge_type->SetValue("not charging");
                 }
                 else if (rate > 7.0)
                 {
