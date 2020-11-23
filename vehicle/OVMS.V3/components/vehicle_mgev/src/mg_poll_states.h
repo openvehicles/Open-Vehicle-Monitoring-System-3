@@ -37,7 +37,7 @@ enum PollStates {
     PollStateListenOnly = 0,  // No Polling, listen only
     PollStateCharging,  // Only Polling charging related ECUs
     PollStateRunning,  // Polling all ECUs related to running (ignition on)
-    PollStateReserved,  // Poll State is reserved for future use
+    PollStateBackup,  // Failed Zombie Mode Just Polling SoC every 60s
 };
 
 #endif  // MG_POLL_STATES_H_

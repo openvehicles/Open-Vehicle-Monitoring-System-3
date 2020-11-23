@@ -45,7 +45,7 @@ const OvmsVehicle::poll_pid_t obdii_polls[] =
     { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, batteryBusVoltagePid, {  0, 30, 30, 0 }, 0 },
     { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, batteryCurrentPid, {  0, 30, 30, 0 }, 0 },
     { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, batteryVoltagePid, {  0, 30, 30, 0 }, 0 },
-    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, batterySoCPid, {  0, 30, 30, 0 }, 0 },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, batterySoCPid, {  0, 30, 30, 60 }, 0 },
     { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, batteryCoolantTempPid, {  0, 60, 60, 0 }, 0 },
     { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, batterySoHPid, {  0, 120, 120, 0 }, 0 },
     { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmsRangePid, {  0, 30, 30, 0 }, 0 },
@@ -314,7 +314,7 @@ void OvmsVehicleMgEv::NotifyVehicleIdling()
 void OvmsVehicleMgEv::DeterminePollState(canbus* currentBus, uint32_t ticker)
 {
     // Store last 12V charging state and re-evaluate if the 12V is charging
-    auto charging12vLast = StandardMetrics.ms_v_env_charging12v;
+    const auto charging12vLast = StandardMetrics.ms_v_env_charging12v->AsBool();
     StandardMetrics.ms_v_env_charging12v->SetValue(
                  StandardMetrics.ms_v_bat_12v_voltage->AsFloat() >= CHARGING_THRESHOLD
              );
@@ -322,9 +322,10 @@ void OvmsVehicleMgEv::DeterminePollState(canbus* currentBus, uint32_t ticker)
     if (StandardMetrics.ms_v_env_charging12v->AsBool())
     {
         // 12 V is charging, if this state has changed we should evaluate if the ignition is now on
-        if (charging12vLast != StandardMetrics.ms_v_env_charging12v)
+        m_afterRunTicker = 0u;
+        if (charging12vLast != StandardMetrics.ms_v_env_charging12v->AsBool())
         {
-            ESP_LOGV(TAG, "12V is now charging, checking to see if ignition is now on.");
+            ESP_LOGI(TAG, "12V has started charging, checking to see if ignition is now on.");
             SendPollMessage(currentBus, vcuId, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcuIgnitionStatePid);
             vTaskDelay(70 / portTICK_PERIOD_MS);
         } 
@@ -332,7 +333,7 @@ void OvmsVehicleMgEv::DeterminePollState(canbus* currentBus, uint32_t ticker)
         // If ignition is on, we should set the car into running pollstate
         // If car is in a charging state we should set charging pollstate
         // If the state cannot be determined we need to consider zombie override
-        if (StandardMetrics.ms_v_env_on->AsBool())
+        if (StandardMetrics.ms_v_env_on->AsBool() == true)
         {
             PollSetState(PollStateRunning);
             m_gwmState = SendTester;
@@ -340,6 +341,7 @@ void OvmsVehicleMgEv::DeterminePollState(canbus* currentBus, uint32_t ticker)
         else if (StandardMetrics.ms_v_charge_type->AsString() != "not charging")
         {
             PollSetState(PollStateCharging);
+            // Do not want to set GWM control here as it should remain in previous state
         }
         else
         {
@@ -349,17 +351,23 @@ void OvmsVehicleMgEv::DeterminePollState(canbus* currentBus, uint32_t ticker)
     else
     {
         // 12 V is now not charging, notify
-        if (charging12vLast != StandardMetrics.ms_v_env_charging12v)
+        if (charging12vLast != StandardMetrics.ms_v_env_charging12v->AsBool())
         {
-            ESP_LOGV(TAG, "12V is not charging, remain in current state for 100 count.");
+            ESP_LOGI(TAG, "12V has stopped charging, remain in current state for 100 count.");
             m_gwmState = SendTester;
+            //StandardMetrics.ms_v_env_on->SetValue(false);
         } 
         m_afterRunTicker ++;
-        if(m_afterRunTicker >= 100)
+        if(m_afterRunTicker == 100u)
         {
-            ESP_LOGV(TAG, "12V has not been charging for 100 count, stopping all CAN transmission.");
+            ESP_LOGI(TAG, "12V has not been charging for 100 count, stopping all CAN transmission.");
             PollSetState(PollStateListenOnly);
             m_gwmState = AllowToSleep;
+        } 
+        else if(m_afterRunTicker >= 100u)
+        {
+            // Do not let afterrun ticker go crazy, peg it at 101
+            m_afterRunTicker = 101u;
         }
     }
     
@@ -368,28 +376,63 @@ void OvmsVehicleMgEv::DeterminePollState(canbus* currentBus, uint32_t ticker)
 
 void OvmsVehicleMgEv::ZombieMode()
 {
+    // This state is reached as the car is now charging the 12V but the state is not known
+
     canbus* currentBus = m_poll_bus_default;
     if (currentBus == nullptr)
     {
         // Polling is disabled, so there's nothing to do here
         return;
     }
-    ESP_LOGV(TAG, "OVMS thinks the GWM is in Zombie Mode, for now override is disabled");
+    ESP_LOGI(TAG, "OVMS thinks the GWM is in Zombie Mode, for now override is disabled, checking if GWM is still unlocked");
 
-
-    if (!StandardMetrics.ms_v_env_charging12v->AsBool())
+    for (int i = 0; i < 5; ++i)
     {
-        // Don't wake the car if the 12v isn't charging because that can only end in a
-        // dead battery
-        ESP_LOGV(TAG, "Not sending SO as 12v is not charging.");
+        SendTesterPresentTo(currentBus, gwmId);
+        vTaskDelay(70 / portTICK_PERIOD_MS);
+    }
+
+    SendPollMessage(currentBus, vcuId, VEHICLE_POLL_TYPE_OBDIIEXTENDED, chargeRatePid);
+    vTaskDelay(70 / portTICK_PERIOD_MS);
+    if (StandardMetrics.ms_v_charge_type->AsString() != "not charging")
+    {
+        PollSetState(PollStateCharging);
+        m_gwmState = SendTester;
+        ESP_LOGI(TAG, "OVMS has managed to identify car is in charging state, GWM was unlocked");
         return;
     }
-    // Send Diagnostic Session Control (0x10, 0x02).
-    // This causes the Gateway to wake up fully even though the car is locked.
-    // The major caveat is that the console say there's a motor fault...
-    
-
-    // Want to wait in this state for 50s (allowing GWM to reset) then send Diagnostic Session
+    ESP_LOGI(TAG, "OVMS has confirmed GWM is locked out in Zombie mode, waiting 50 seconds before sending Session Override");
+    for (int i = 0; i < 50; ++i)
+    {
+        if (!StandardMetrics.ms_v_env_charging12v->AsBool())
+        {
+            // Don't wake the car if the 12v isn't charging because that can only end in a
+            // dead battery
+            ESP_LOGI(TAG, "12V has stopped charging, quitting Zombie Override.");
+            return;
+        }
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
+        ESP_LOGV(TAG, "%i Seconds.", i);
+    }
+    ESP_LOGI(TAG, "Sending Session Override");
+    for (int i = 0; i < 5; ++i)
+    {
+        SendDiagSessionTo(currentBus, gwmId, 2u);
+        vTaskDelay(70 / portTICK_PERIOD_MS);
+    }
+    SendPollMessage(currentBus, vcuId, VEHICLE_POLL_TYPE_OBDIIEXTENDED, chargeRatePid);
+    vTaskDelay(70 / portTICK_PERIOD_MS);
+    if (StandardMetrics.ms_v_charge_type->AsString() != "not charging")
+    {
+        PollSetState(PollStateCharging);
+        m_gwmState = SendDiagnostic;
+        ESP_LOGI(TAG, "OVMS has managed to identify car is in charging state, GWM has been unlocked with session override");
+        return;
+    }
+    ESP_LOGI(TAG, "Zombie Mode Override has Failed, going into backup mode, SoC at 60s intervals only");
+    m_gwmState = AllowToSleep;
+    PollSetState(PollStateBackup);
+    return;
 }
 
 void OvmsVehicleMgEv::SendAlarmSensitive(canbus* currentBus)
