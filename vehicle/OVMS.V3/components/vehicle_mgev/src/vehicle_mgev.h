@@ -146,10 +146,16 @@ class OvmsVehicleMgEv : public OvmsVehicle
     uint32_t m_rxPacketTicker;
     /// The last number of packets received on the CAN
     uint32_t m_rxPackets;
+    /// The number of ticks that no packets have been recieved
+    uint32_t m_noRxCount;
     /// The current state of control commands we are sending to the gateway
     GwmState m_gwmState;
     /// The ticker time for after-run of charging and running sessions
     uint32_t m_afterRunTicker;
+    /// The ticker time for Zombie Mode Sleep Timeout before attempting to wake.
+    uint32_t m_preZombieOverrideTicker;
+    /// Boolean for Car State
+    bool carIsResponsiveToQueries;
     /// A count of the number of times we've woken the car to find it wasn't charging
     uint16_t m_diagCount;
     /// The command registered when the car is made to query the software versions of the
