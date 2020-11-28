@@ -11,7 +11,7 @@ public:
         // Example:
         //
         // MyVehicleFactory.RegisterVehicle<VWeUpObd>("VWUP.OBD", "VW e-Up (OBD2)");
-        MyVehicleFactory.RegisterVehicle<OvmsVehicleVWeUpT26>("VWUP.T26", "VW e-Up (Komfort CAN)");
+        MyVehicleFactory.RegisterVehicle<OvmsVehicleVWeUpT26>("VWUP.T26", "VW e-Up (T26)");
     }
 }
  

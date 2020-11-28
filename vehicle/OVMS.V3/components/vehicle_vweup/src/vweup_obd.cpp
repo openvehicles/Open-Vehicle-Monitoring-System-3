@@ -44,7 +44,8 @@ const OvmsVehicle::poll_pid_t vweup_polls[] = {
     // { txid, rxid, type, pid, { VWEUP_OFF, VWEUP_ON, VWEUP_CHARGING }, bus }
 
     {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_U, {0, 1, 5}, 1},
-    {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_I, {0, 1, 5}, 1}, // 30 in OFF needed: Car gets started with full 12V battery
+//  Moved to ObdInit:    
+//    {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_I, {30, 1, 5}, 1}, // 30 in OFF needed: Car gets started with full 12V battery
     // Same tick & order important of above 2: VWUP_BAT_MGMT_I calculates the power
 
     {VWUP_MOT_ELEC_TX, VWUP_MOT_ELEC_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MOT_ELEC_SOC_NORM, {0, 20, 0}, 1},
@@ -125,7 +126,7 @@ const int vweup_polls_len = sizeof(vweup_polls)/sizeof(vweup_polls)[0];
 const int vweup1_polls_len = sizeof(vweup1_polls)/sizeof(vweup1_polls)[0];
 const int vweup2_polls_len = sizeof(vweup2_polls)/sizeof(vweup2_polls)[0];
 //if (vweup1_polls_len > vweup2_polls_len){
-OvmsVehicleVWeUp::poll_pid_t vweup_polls_all[vweup_polls_len+vweup1_polls_len]; // not good, length should be max of the two possible lists
+OvmsVehicleVWeUp::poll_pid_t vweup_polls_all[1+vweup_polls_len+vweup1_polls_len]; // not good, length should be max of the two possible lists
 //}
 //else {
 //OvmsVehicleVWeUp::poll_pid_t vweup_polls_all[vweup_polls_len+vweup2_polls_len];
@@ -137,19 +138,23 @@ void OvmsVehicleVWeUp::ObdInit()
 //    ESP_LOGD(TAG,"Starting OBD Polling...");
 
     // init polls:
+    if (vweup_con == 2) // only OBD connected -> get car state by polling OBD
+        vweup_polls_all[0] = {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_I, {30, 1, 5}, 1}; // 30 in OFF needed: Car gets started with full 12V battery
+    else 
+        vweup_polls_all[0] = {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_I, {0, 1, 5}, 1}; 
     if (vweup_modelyear < 2020)
     {
         for(int i=0; i<vweup_polls_len; i++)
-            vweup_polls_all[i] = vweup_polls[i];   
+            vweup_polls_all[i+1] = vweup_polls[i];   
         for(int i=vweup_polls_len; i<vweup_polls_len+vweup1_polls_len; i++)
-            vweup_polls_all[i] = vweup1_polls[i-vweup_polls_len];  
+            vweup_polls_all[i+1] = vweup1_polls[i-vweup_polls_len];  
     }
     else 
     {
         for(int i=0; i<vweup_polls_len; i++)
-            vweup_polls_all[i] = vweup_polls[i];   
+            vweup_polls_all[i+1] = vweup_polls[i];   
         for(int i=vweup_polls_len; i<vweup_polls_len+vweup2_polls_len; i++)
-            vweup_polls_all[i] = vweup2_polls[i-vweup_polls_len];  
+            vweup_polls_all[i+1] = vweup2_polls[i-vweup_polls_len];  
     }
     PollSetPidList(m_can1, vweup_polls_all);
     PollSetThrottling(0);
@@ -211,6 +216,70 @@ void OvmsVehicleVWeUp::ObdDeInit()
 {
     PollSetPidList(m_can1, NULL);
 //    ESP_LOGD(TAG,"Stopping OBD Polling...");
+}
+
+void OvmsVehicleVWeUp::CheckCarStateOBD()
+{
+    ESP_LOGV(TAG, "CheckCarState(): 12V=%f ChargerEff=%f BatI=%f BatIModified=%u time=%u", StandardMetrics.ms_v_bat_12v_voltage->AsFloat(), ChargerPowerEffEcu->AsFloat(), StandardMetrics.ms_v_bat_current->AsFloat(), StandardMetrics.ms_v_bat_current->LastModified(), monotonictime);
+
+    // 12V Battery: if voltage >= 12.9 it is charging and the car must be on (or charging) for that
+    bool voltageSaysOn = StandardMetrics.ms_v_bat_12v_voltage->AsFloat() >= 12.9f;
+
+    // HV-Batt current: If there is a current flowing and the value is not older than 2 minutes (120 secs) we are on
+    bool currentSaysOn = StandardMetrics.ms_v_bat_current->AsFloat() != 0.0f &&
+                         (monotonictime - StandardMetrics.ms_v_bat_current->LastModified()) < 120;
+
+    // Charger ECU: When it reports an efficiency > 0 the car is charging
+    bool chargerSaysOn = ChargerPowerEffEcu->AsFloat() > 0.0f;
+
+    if (chargerSaysOn)
+    {
+        if (!IsCharging())
+        {
+            ESP_LOGI(TAG, "Setting car state to CHARGING");
+            StandardMetrics.ms_v_env_on->SetValue(false);
+            StandardMetrics.ms_v_charge_inprogress->SetValue(true);
+            PollSetState(VWUP_CHARGING);
+            TimeOffRequested = 0;
+        }
+        return;
+    }
+    
+    StandardMetrics.ms_v_charge_inprogress->SetValue(false);
+
+    if (voltageSaysOn || currentSaysOn)
+    {
+        if (!IsOn())
+        {
+            ESP_LOGI(TAG, "Setting car state to ON");
+            StandardMetrics.ms_v_env_on->SetValue(true);
+            PollSetState(VWUP_ON);
+            TimeOffRequested = 0;
+        }
+        return;
+    }
+
+    if (TimeOffRequested == 0)
+    {
+        TimeOffRequested = monotonictime;
+        if (TimeOffRequested == 0)
+        {
+            // For the small chance we are requesting exactly at 0 time
+            TimeOffRequested--;
+        }
+        ESP_LOGI(TAG, "Car state to OFF requested. Waiting for possible re-activation ...");
+    }
+
+    // When already OFF or I haven't waited for 60 seconds: return
+    if (IsOff() || (monotonictime - TimeOffRequested) < 60)
+    {
+        return;
+    }
+
+    // Set car to OFF
+    ESP_LOGI(TAG, "Wait is over: Setting car state to OFF");
+    StandardMetrics.ms_v_env_on->SetValue(false);
+    PollSetState(VWUP_OFF);
 }
 
 void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length, uint16_t remain)

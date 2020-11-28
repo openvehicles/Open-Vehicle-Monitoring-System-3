@@ -1170,23 +1170,3 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandClimateControl(bool clim
     else
         return NotImplemented;
 }
-
-void OvmsVehicleVWeUp::Ticker1(uint32_t ticker)
-{
-    // This is just to be sure that we really have an asleep message. It has delay of 120 sec.
-    // Do we still need this?
-    if (StandardMetrics.ms_v_env_awake->IsStale())
-    {
-        StandardMetrics.ms_v_env_awake->SetValue(false);
-    }
-
-    // Autodisable climate control ticker (30 min.)
-    if (vweup_remote_climate_ticker != 0)
-    {
-        vweup_remote_climate_ticker--;
-        if (vweup_remote_climate_ticker == 1)
-        {
-            SendCommand(AUTO_DISABLE_CLIMATE_CONTROL);
-        }
-    }
-}

@@ -92,7 +92,7 @@ class OvmsVehicleVWeUp : public OvmsVehicle
     bool vweup_enable_obd;
     bool vweup_enable_t26;
     bool vweup_enable_write;
-    int vweup_con;  // 0: only T26/none, 1: only OBD2; 2: both
+    int vweup_con;  // 0: none, 1: only T26, 2: only OBD2; 3: both
     int vweup_modelyear;
     int vweup_modelyear_new;
     int vweup_remote_climate_ticker;
@@ -185,7 +185,7 @@ class OvmsVehicleVWeUp : public OvmsVehicle
 
   // --------------------------------------------------------------------------
   // OBD2 subsystem
-  //  - implementation: rt_obd2.(h,cpp)
+  //  - implementation: vweup_obd.(h,cpp)
   // 
   
   public:
@@ -211,7 +211,7 @@ class OvmsVehicleVWeUp : public OvmsVehicle
     float ChargerDC1I; // DC Current 1
     float ChargerDC2I; // DC Current 2
 
-    void CheckCarState();
+    void CheckCarStateOBD();
 
     uint32_t TimeOffRequested; // For Off-Timeout: Monotonictime when the poll should have gone to VWEUP_OFF
                                //                  0 means no Off requested so far

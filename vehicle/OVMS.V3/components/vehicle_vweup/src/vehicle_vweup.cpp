@@ -31,7 +31,7 @@
 
 /*
 ;    Subproject:    Integration of support for the VW e-UP
-;    Date:          8 November 2020
+;    Date:          28 November 2020
 ;
 ;    Changes:
 ;    0.1.0  Initial code
@@ -53,6 +53,8 @@
 ;
 ;    0.2.1  SoC from OBD/KCAN depending on config & state
 ;
+;    0.3.0  car state determined depending on connection
+;
 ;    (C) 2020       sharkcow <sharkcow@gmx.de>
 ;
 ;    Biggest thanks to Chris van der Meijden, Dexter, SokofromNZ, Dimitrie78, E-Imo and 'der kleine Nik'.
@@ -62,7 +64,7 @@
 #include <string>
 static const char *TAG = "v-vweup";
 
-#define VERSION "0.2.1"
+#define VERSION "0.3.0"
 
 
 #include "vehicle_vweup.h"
@@ -84,7 +86,7 @@ OvmsVehicleVWeUpInit::OvmsVehicleVWeUpInit()
     // Example:
     //
     // MyVehicleFactory.RegisterVehicle<VWeUpObd>("VWUP.OBD", "VW e-Up (OBD2)");
-    MyVehicleFactory.RegisterVehicle<OvmsVehicleVWeUp>("VWEUP", "VW e-Up (KCAN / OBD)");
+    MyVehicleFactory.RegisterVehicle<OvmsVehicleVWeUp>("VWUP", "VW e-Up");
 }
 
 /*
@@ -109,7 +111,7 @@ OvmsVehicleVWeUp* OvmsVehicleVWeUp::GetInstance(OvmsWriter* writer)
 
 OvmsVehicleVWeUp::OvmsVehicleVWeUp()
 {
-    ESP_LOGI(TAG, "Start VW e-Up vehicle module (KCAN / OBD");
+    ESP_LOGI(TAG, "Start VW e-Up vehicle module");
     memset(m_vin, 0, sizeof(m_vin));
 
     RegisterCanBus(3, CAN_MODE_ACTIVE, CAN_SPEED_100KBPS);
@@ -150,7 +152,7 @@ OvmsVehicleVWeUp::OvmsVehicleVWeUp()
 
 OvmsVehicleVWeUp::~OvmsVehicleVWeUp()
 {
-    ESP_LOGI(TAG, "Stop VW e-Up vehicle module (KCAN / OBD)");
+    ESP_LOGI(TAG, "Stop VW e-Up vehicle module");
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
     WebDeInit();
@@ -200,15 +202,46 @@ void OvmsVehicleVWeUp::ConfigChanged(OvmsConfigParam *param)
 {
     ESP_LOGD(TAG, "VW e-Up reload configuration");
     vweup_modelyear_new = MyConfig.GetParamValueInt("xvu", "modelyear", DEFAULT_MODEL_YEAR);
-    if (vweup_enable_obd || (vweup_modelyear<2020 && vweup_modelyear_new>2019) || (vweup_modelyear_new<2020 && vweup_modelyear>2019)) // switch between generations: reload OBD poll list
-        ObdInit();
-    if (not vweup_enable_obd)
-        ObdDeInit();
-    vweup_modelyear = vweup_modelyear_new;
+    vweup_enable_obd = MyConfig.GetParamValueBool("xvu", "con_obd", true);
     vweup_enable_t26 = MyConfig.GetParamValueBool("xvu", "con_t26", true);
     vweup_enable_write = MyConfig.GetParamValueBool("xvu", "canwrite", false);
     vweup_cc_temp_int = MyConfig.GetParamValueInt("xvu", "cc_temp", 21);
-    vweup_con = vweup_enable_obd + (vweup_enable_t26 and vweup_enable_obd);
+    vweup_con = vweup_enable_obd * 2 + vweup_enable_t26;
+    ESP_LOGD(TAG,"vweup_con: %i",vweup_con);
+    if (vweup_enable_obd || (vweup_modelyear<2020 && vweup_modelyear_new>2019) || (vweup_modelyear_new<2020 && vweup_modelyear>2019)) // switch between generations: reload OBD poll list
+        ObdInit();
+    if (!vweup_enable_obd)
+        ObdDeInit();
+    vweup_modelyear = vweup_modelyear_new;
     if (!vweup_enable_obd && !vweup_enable_t26)
         ESP_LOGW(TAG,"Module will not work without any connection!");
+}
+
+void OvmsVehicleVWeUp::Ticker1(uint32_t ticker)
+{
+    if (vweup_con == 2) // only OBD connected -> get car state by polling OBD
+    {
+//        ESP_LOGI(TAG,"only OBD");
+        CheckCarStateOBD();
+    }
+    else // T26 connected 
+    {
+        // This is just to be sure that we really have an asleep message. It has delay of 120 sec.
+        // Do we still need this?
+        if (StandardMetrics.ms_v_env_awake->IsStale())
+        {
+            StandardMetrics.ms_v_env_awake->SetValue(false);
+        }
+
+        // Autodisable climate control ticker (30 min.)
+        if (vweup_remote_climate_ticker != 0)
+        {
+            vweup_remote_climate_ticker--;
+            if (vweup_remote_climate_ticker == 1)
+            {
+                SendCommand(AUTO_DISABLE_CLIMATE_CONTROL);
+            }
+        }
+    }
+    
 }

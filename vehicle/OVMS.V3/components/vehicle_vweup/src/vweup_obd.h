@@ -39,6 +39,11 @@
 
 using namespace std;
 
+// Car (poll) states
+#define VWUP_OFF 0
+#define VWUP_ON 1
+#define VWUP_CHARGING 2
+
 // ECUs TX/RX
 #define VWUP_MOT_ELEC_TX 0x7E0  //ECU 01 motor elecronics
 #define VWUP_MOT_ELEC_RX 0x7E8
