@@ -74,17 +74,19 @@ void OvmsVehicleNissanLeaf::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   bool socnewcar;
   bool sohnewcar;
   std::string modelyear;
+  std::string cabintempoffset;
   std::string maxgids;
   std::string newcarah;
 
   if (c.method == "POST") {
     // process form submission:
-    modelyear = c.getvar("modelyear");
-    maxgids   = c.getvar("maxgids");
-    newcarah  = c.getvar("newcarah");
-    socnewcar = (c.getvar("socnewcar") == "yes");
-    sohnewcar = (c.getvar("sohnewcar") == "yes");
-    canwrite  = (c.getvar("canwrite") == "yes");
+    modelyear       = c.getvar("modelyear");
+    cabintempoffset = c.getvar("cabintempoffset");
+    maxgids         = c.getvar("maxgids");
+    newcarah        = c.getvar("newcarah");
+    socnewcar       = (c.getvar("socnewcar") == "yes");
+    sohnewcar       = (c.getvar("sohnewcar") == "yes");
+    canwrite        = (c.getvar("canwrite") == "yes");
 
     // check:
     if (!modelyear.empty()) {
@@ -92,10 +94,15 @@ void OvmsVehicleNissanLeaf::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       if (n < 2011)
         error += "<li data-input=\"modelyear\">Model year must be &ge; 2011</li>";
     }
+    
+    if (cabintempoffset.empty()) {
+      error += "<li data-input=\"cabintempoffset\">Cabin Temperature Offset can not be empty</li>";
+    }
 
     if (error == "") {
       // store:
       MyConfig.SetParamValue("xnl", "modelyear", modelyear);
+      MyConfig.SetParamValue("xnl", "cabintempoffset", cabintempoffset);
       MyConfig.SetParamValue("xnl", "maxGids",   maxgids);
       MyConfig.SetParamValue("xnl", "newCarAh",  newcarah);
       MyConfig.SetParamValueBool("xnl", "soc.newcar", socnewcar);
@@ -116,12 +123,13 @@ void OvmsVehicleNissanLeaf::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   }
   else {
     // read configuration:
-    modelyear = MyConfig.GetParamValue("xnl", "modelyear", STR(DEFAULT_MODEL_YEAR));
-    maxgids   = MyConfig.GetParamValue("xnl", "maxGids", STR(GEN_1_NEW_CAR_GIDS));
-    newcarah  = MyConfig.GetParamValue("xnl", "newCarAh", STR(GEN_1_NEW_CAR_AH));
-    socnewcar = MyConfig.GetParamValueBool("xnl", "soc.newcar", false);
-    sohnewcar = MyConfig.GetParamValueBool("xnl", "soh.newcar", false);
-    canwrite  = MyConfig.GetParamValueBool("xnl", "canwrite", false);
+    modelyear       = MyConfig.GetParamValue("xnl", "modelyear", STR(DEFAULT_MODEL_YEAR));
+    cabintempoffset = MyConfig.GetParamValue("xnl", "cabintempoffset", STR(DEFAULT_CABINTEMP_OFFSET));
+    maxgids         = MyConfig.GetParamValue("xnl", "maxGids", STR(GEN_1_NEW_CAR_GIDS));
+    newcarah        = MyConfig.GetParamValue("xnl", "newCarAh", STR(GEN_1_NEW_CAR_AH));
+    socnewcar       = MyConfig.GetParamValueBool("xnl", "soc.newcar", false);
+    sohnewcar       = MyConfig.GetParamValueBool("xnl", "soh.newcar", false);
+    canwrite        = MyConfig.GetParamValueBool("xnl", "canwrite", false);
 
     c.head(200);
   }
@@ -155,6 +163,9 @@ void OvmsVehicleNissanLeaf::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   c.input("number", "Model year", "modelyear", modelyear.c_str(), "Default: " STR(DEFAULT_MODEL_YEAR),
     "<p>This determines the format of CAN write messages as it differs slightly between model years.</p>",
     "min=\"2011\" step=\"1\"", "");
+  c.input("number", "Cabin Temperature Offset", "cabintempoffset", cabintempoffset.c_str(), "Default: " STR(DEFAULT_CABINTEMP_OFFSET),
+    "<p>This allows to adjust the cabin temperature sensor readings in celcius.</p>",
+    "step=\"0.1\"", "");
   c.fieldset_end();
 
   c.print("<hr>");

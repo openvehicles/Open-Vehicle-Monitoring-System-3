@@ -42,6 +42,7 @@
 #include "nl_types.h"
 
 #define DEFAULT_MODEL_YEAR 2012
+#define DEFAULT_CABINTEMP_OFFSET .0
 #define GEN_1_NEW_CAR_GIDS 281
 #define GEN_1_NEW_CAR_AH 66
 #define GEN_1_KM_PER_KWH 7.1
@@ -164,6 +165,7 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     OvmsMetricFloat *m_battery_energy_capacity;
     OvmsMetricFloat *m_battery_energy_available;
     OvmsMetricInt *m_battery_type;
+    OvmsMetricBool *m_battery_heaterpresent;
     OvmsMetricVector<int> *m_charge_duration;
     OvmsMetricVector<string> *m_charge_duration_label;
     OvmsMetricInt *m_quick_charge;
