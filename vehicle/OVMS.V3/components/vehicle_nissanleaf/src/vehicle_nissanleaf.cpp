@@ -1264,8 +1264,10 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         {
         StandardMetrics.ms_v_bat_temp->SetValue(d[2] / 2 - 40);
         }
-      // Battery Heater existance as reported by the LBC. Frame 4, bit 0.
-      if ( d[4] )
+      /* Battery Heater existance as reported by the LBC. 
+       * Frame 4, bit 0. Note this should only work on AZE0. 
+       */
+      if ( d[4] && MyConfig.GetParamValueInt("xnl", "modelyear", DEFAULT_MODEL_YEAR) >= 2013 )
         {
         m_battery_heaterpresent->SetValue(d[4] & 0x01);
         }
