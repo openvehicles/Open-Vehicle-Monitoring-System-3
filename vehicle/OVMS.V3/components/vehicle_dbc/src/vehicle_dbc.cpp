@@ -29,7 +29,7 @@
 */
 
 #include "ovms_log.h"
-static const char *TAG = "vehicle_dbc";
+static const char *TAG = "v-dbc";
 
 #include "vehicle_dbc.h"
 #include "dbc_app.h"
