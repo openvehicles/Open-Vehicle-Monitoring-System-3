@@ -910,7 +910,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         case 0x88: // on evse power loss car still reports 0x88
           if (StandardMetrics.ms_v_charge_pilot->AsBool())
             { // voltage scaling to approx. evse kWh output
-            StandardMetrics.ms_v_charge_voltage->SetValue(d[3] * 1.12);
+            StandardMetrics.ms_v_charge_voltage->SetValue(d[3] * MyConfig.GetParamValueFloat("xnl", "acvoltagemultiplier", DEFAULT_AC_VOLTAGE_MULTIPLIER));
             StandardMetrics.ms_v_charge_current->SetValue(charge_curr);
             vehicle_nissanleaf_charger_status(CHARGER_STATUS_CHARGING);
             }

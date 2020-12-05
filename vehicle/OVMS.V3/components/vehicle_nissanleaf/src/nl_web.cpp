@@ -77,6 +77,7 @@ void OvmsVehicleNissanLeaf::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   std::string cabintempoffset;
   std::string maxgids;
   std::string newcarah;
+  std::string acvoltagemultiplier;
 
   if (c.method == "POST") {
     // process form submission:
@@ -87,6 +88,7 @@ void OvmsVehicleNissanLeaf::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     socnewcar       = (c.getvar("socnewcar") == "yes");
     sohnewcar       = (c.getvar("sohnewcar") == "yes");
     canwrite        = (c.getvar("canwrite") == "yes");
+    acvoltagemultiplier = c.getvar("acvoltagemultiplier");
 
     // check:
     if (!modelyear.empty()) {
@@ -108,6 +110,7 @@ void OvmsVehicleNissanLeaf::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValueBool("xnl", "soc.newcar", socnewcar);
       MyConfig.SetParamValueBool("xnl", "soh.newcar", sohnewcar);
       MyConfig.SetParamValueBool("xnl", "canwrite",   canwrite);
+      MyConfig.SetParamValue("xnl", "acvoltagemultiplier", acvoltagemultiplier);
 
       c.head(200);
       c.alert("success", "<p class=\"lead\">Nissan Leaf feature configuration saved.</p>");
@@ -130,6 +133,7 @@ void OvmsVehicleNissanLeaf::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     socnewcar       = MyConfig.GetParamValueBool("xnl", "soc.newcar", false);
     sohnewcar       = MyConfig.GetParamValueBool("xnl", "soh.newcar", false);
     canwrite        = MyConfig.GetParamValueBool("xnl", "canwrite", false);
+    acvoltagemultiplier = MyConfig.GetParamValue("xnl", "acvoltagemultiplier", STR(DEFAULT_AC_VOLTAGE_MULTIPLIER));
 
     c.head(200);
   }
@@ -155,6 +159,12 @@ void OvmsVehicleNissanLeaf::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   c.input("number", NULL, "newcarah", newcarah.c_str(), "Default: " STR(GEN_1_NEW_CAR_AH),
       "<p>This is the usable capacity of your battery when new. Default values are " STR(GEN_1_NEW_CAR_AH) " (24kWh) or " STR(GEN_1_30_NEW_CAR_AH) " (30kWh) or " STR(GEN_2_40_NEW_CAR_AH) " (40kWh)</p>",
       "min=\"1\" step=\"1\"", "Ah");
+  c.input("number", "Cabin Temperature Offset", "cabintempoffset", cabintempoffset.c_str(), "Default: " STR(DEFAULT_CABINTEMP_OFFSET),
+      "<p>This allows an offset adjustment to the cabin temperature sensor readings in Celcius.</p>",
+      "step=\"0.1\"", "");
+  c.input("number", "AC Charge Voltage Multiplier", "acvoltagemultiplier", acvoltagemultiplier.c_str(), "Default: " STR(DEFAULT_AC_VOLTAGE_MULTIPLIER),
+      "<p>This allows scaling of the voltage presence reading when AC charging on newer vehicles (default value scales to 220V from 179 value reported).</p>",
+      "step=\"0.001\"", "");
   c.fieldset_end();
 
   c.fieldset_start("Remote Control");
@@ -163,9 +173,6 @@ void OvmsVehicleNissanLeaf::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   c.input("number", "Model year", "modelyear", modelyear.c_str(), "Default: " STR(DEFAULT_MODEL_YEAR),
     "<p>This determines the format of CAN write messages as it differs slightly between model years.</p>",
     "min=\"2011\" step=\"1\"", "");
-  c.input("number", "Cabin Temperature Offset", "cabintempoffset", cabintempoffset.c_str(), "Default: " STR(DEFAULT_CABINTEMP_OFFSET),
-    "<p>This allows to adjust the cabin temperature sensor readings in celcius.</p>",
-    "step=\"0.1\"", "");
   c.fieldset_end();
 
   c.print("<hr>");
