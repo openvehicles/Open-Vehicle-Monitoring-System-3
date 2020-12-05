@@ -117,13 +117,13 @@ void OvmsVehicleVWeUpT26::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
 
   c.fieldset_start("Vehicle Settings");
   c.input("number", "Model year", "modelyear", modelyear.c_str(), "Default: " STR(DEFAULT_MODEL_YEAR),
-          "<p>This sets some parameters that differ for pre 2020 models. I.e. kWh of battery.</p>",
+          "<p>This sets some parameters that differ for pre 2020 models. I.e. kWh of battery.<br><br>This parameter can also be set in the app under FEATURES 20.</p>",
           "min=\"2013\" step=\"1\"");
   c.fieldset_end();
 
   c.fieldset_start("Remote Control");
   c.input_checkbox("Enable CAN writes", "canwrite", canwrite,
-                   "<p>Controls overall CAN write access, climate control depends on this.</p>");
+                   "<p>Controls overall CAN write access, climate control depends on this.<br><br>This parameter can also be set in the app under FEATURES 15.</p>");
   c.fieldset_end();
 
   c.print("<hr>");
@@ -188,7 +188,7 @@ void OvmsVehicleVWeUpT26::WebCfgClimate(PageEntry_t &p, PageContext_t &c)
   c.input_select_option("23", "23", cc_temp == "23");
   c.input_select_end();
 
-  c.print("<hr>");
+  c.print("<br><br>This parameter can also be set in the app under FEATURES 21.<hr>");
   c.input_button("default", "Save");
   c.form_end();
   c.panel_end();
