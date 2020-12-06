@@ -56,7 +56,7 @@ If no vehicle module is selected the CAN bus must be started e.g
 
 ``OVMS# can can1 start listen 500000``
   
-This will enable ``CAN1`` in ``listen`` mode (read only) at 50k baud, ``active`` can be used instead of listen to enable read-write mode. To stop a ``CAN1`` bus:
+This will enable ``CAN1`` in ``listen`` mode (read only) at 500k baud, ``active`` can be used instead of listen to enable read-write mode. To stop a ``CAN1`` bus:
 
 ``OVMS# can can1 stop``
   

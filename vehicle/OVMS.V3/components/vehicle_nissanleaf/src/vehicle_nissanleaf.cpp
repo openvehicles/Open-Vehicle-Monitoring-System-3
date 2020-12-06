@@ -138,6 +138,7 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   m_battery_energy_capacity = MyMetrics.InitFloat("xnl.v.b.e.capacity", SM_STALE_HIGH, 0, kWh);
   m_battery_energy_available = MyMetrics.InitFloat("xnl.v.b.e.available", SM_STALE_HIGH, 0, kWh);
   m_battery_type = MyMetrics.InitInt("xnl.v.b.type", SM_STALE_HIGH, 0); // auto-detect version and size by can traffic
+  m_battery_heaterpresent = MyMetrics.InitBool("xnl.v.b.heaterpresent", SM_STALE_HIGH, false);
   m_charge_duration = MyMetrics.InitVector<int>("xnl.v.c.duration", SM_STALE_HIGH, 0, Minutes);
   // note vector strings are not handled by ovms_metrics.h and cause web errors loading ev.data in ovms.js
   // this will need to be resolved before reinstating metrics
@@ -909,7 +910,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         case 0x88: // on evse power loss car still reports 0x88
           if (StandardMetrics.ms_v_charge_pilot->AsBool())
             { // voltage scaling to approx. evse kWh output
-            StandardMetrics.ms_v_charge_voltage->SetValue(d[3] * 1.12);
+            StandardMetrics.ms_v_charge_voltage->SetValue(d[3] * MyConfig.GetParamValueFloat("xnl", "acvoltagemultiplier", DEFAULT_AC_VOLTAGE_MULTIPLIER));
             StandardMetrics.ms_v_charge_current->SetValue(charge_curr);
             vehicle_nissanleaf_charger_status(CHARGER_STATUS_CHARGING);
             }
@@ -1006,9 +1007,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
 
       bool hvac_calculated = false;
 
-      int model_year = MyConfig.GetParamValueInt("xnl", "modelyear", DEFAULT_MODEL_YEAR);
-
-      if (model_year < 2013)
+      if (MyConfig.GetParamValueInt("xnl", "modelyear", DEFAULT_MODEL_YEAR) < 2013)
       // leaving this legacy (mostly) code part until someone tests the new logic in <2013 cars.
       {
         // this might be a bit field? So far these 6 values indicate HVAC on
@@ -1076,10 +1075,11 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
     case 0x54f:
       /* Climate control's measurement of temperature inside the car.
        * Appears to be in Fahrenheit. Unsure why the check for 20? 
+       * mjk: seeems like off by 6 celcius on 2013 models, so added cabintempoffset that can be set in GUI.
        */
       if (d[0] != 20)
         {
-        StandardMetrics.ms_v_env_cabintemp->SetValue(5.0 / 9.0 * (d[0] - 32));
+        StandardMetrics.ms_v_env_cabintemp->SetValue((5.0 / 9.0 * (d[0] - 32)) + MyConfig.GetParamValueFloat("xnl", "cabintempoffset", DEFAULT_CABINTEMP_OFFSET));
         // StandardMetrics.ms_v_env_cabintemp->SetValue(d[0] / 2.0 - 14);
         }
       break;
@@ -1263,6 +1263,13 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       if ( (d[0]>>6) == 1 )
         {
         StandardMetrics.ms_v_bat_temp->SetValue(d[2] / 2 - 40);
+        }
+      /* Battery Heater existance as reported by the LBC. 
+       * Frame 4, bit 0. Note this should only work on AZE0. 
+       */
+      if ( d[4] && MyConfig.GetParamValueInt("xnl", "modelyear", DEFAULT_MODEL_YEAR) >= 2013 )
+        {
+        m_battery_heaterpresent->SetValue(d[4] & 0x01);
         }
       break;
     }

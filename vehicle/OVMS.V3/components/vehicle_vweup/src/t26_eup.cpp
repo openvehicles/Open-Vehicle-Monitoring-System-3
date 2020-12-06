@@ -31,7 +31,7 @@
 
 /*
 ;    Subproject:    Integration of support for the VW e-UP
-;    Date:          29th September 2020
+;    Date:          21st November 2020
 ;
 ;    Changes:
 ;    0.1.0  Initial code
@@ -103,6 +103,10 @@
 ;
 ;    0.4.2  Corrected locked status, cabin temperature
 :
+;    0.4.2  Added "feature" parameters for model year and cabin temperature setting
+;
+;    0.4.3  Respond to vehicle turning climate control off
+;
 ;    (C) 2020       Chris van der Meijden
 ;
 ;    Big thanx to sharkcow, Dimitrie78, E-Imo, Dexter and 'der kleine Nik'.
@@ -111,7 +115,7 @@
 #include "ovms_log.h"
 static const char *TAG = "v-vweup-t26";
 
-#define VERSION "0.4.2"
+#define VERSION "0.4.3"
 
 #include <stdio.h>
 #include "pcp.h"
@@ -180,6 +184,8 @@ OvmsVehicleVWeUpT26::~OvmsVehicleVWeUpT26()
 
 bool OvmsVehicleVWeUpT26::SetFeature(int key, const char *value)
 {
+    int i;
+    int n;
     switch (key)
     {
     case 15:
@@ -188,6 +194,33 @@ bool OvmsVehicleVWeUpT26::SetFeature(int key, const char *value)
         MyConfig.SetParamValueBool("xut", "canwrite", (bits & 1) != 0);
         return true;
     }
+    case 20:
+        // check:
+        if (strlen(value) == 0) value = "2020";
+        for (i = 0; i < strlen(value); i++) {
+           if (isdigit(value[i]) == false) {
+             value = "2020";
+             break;
+           }
+        }
+        n = atoi(value);
+        if (n < 2013) value = "2013";
+        MyConfig.SetParamValue("xut", "modelyear", value);
+        return true;
+    case 21:
+        // check:
+        if (strlen(value) == 0) value = "21";
+        for (i = 0; i < strlen(value); i++) {
+           if (isdigit(value[i]) == false) {
+             value = "21";
+             break;
+           }
+        }
+        n = atoi(value);
+        if (n < 18) value = "18";
+        if (n > 23) value = "23";
+        MyConfig.SetParamValue("xut", "cc_temp", value);
+        return true;
     default:
         return OvmsVehicle::SetFeature(key, value);
     }
@@ -199,12 +232,15 @@ const std::string OvmsVehicleVWeUpT26::GetFeature(int key)
     {
     case 15:
     {
-        int bits =
-            (MyConfig.GetParamValueBool("xut", "canwrite", false) ? 1 : 0);
+        int bits = (MyConfig.GetParamValueBool("xut", "canwrite", false) ? 1 : 0);
         char buf[4];
         sprintf(buf, "%d", bits);
         return std::string(buf);
     }
+    case 20:
+      return MyConfig.GetParamValue("xut", "modelyear", STR(DEFAULT_MODEL_YEAR));
+    case 21:
+      return MyConfig.GetParamValue("xut", "cc_temp", STR(21));
     default:
         return OvmsVehicle::GetFeature(key);
     }
@@ -212,6 +248,9 @@ const std::string OvmsVehicleVWeUpT26::GetFeature(int key)
 
 void OvmsVehicleVWeUpT26::ConfigChanged(OvmsConfigParam *param)
 {
+    if (param && param->GetName() != "xut")
+       return;
+
     ESP_LOGD(TAG, "VW e-Up reload configuration");
 
     vwup_enable_write = MyConfig.GetParamValueBool("xut", "canwrite", false);
@@ -1304,4 +1343,16 @@ void OvmsVehicleVWeUpT26::Ticker1(uint32_t ticker)
             SendCommand(AUTO_DISABLE_CLIMATE_CONTROL);
         }
     }
+
+    // Car disabled climate control
+    if (!StandardMetrics.ms_v_env_on->AsBool() && vwup_remote_climate_ticker < 1770 && vwup_remote_climate_ticker != 0 && !StandardMetrics.ms_v_env_hvac->AsBool())
+    {
+        vwup_remote_climate_ticker = 0;
+
+        ESP_LOGI(TAG, "Car disabled Climate Control or cc did not turn on");
+
+        vweup_cc_on = false;
+        ocu_awake = true;
+    }
+
 }

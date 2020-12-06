@@ -26,14 +26,14 @@ Cabin Pre-heat/cool Control Yes
 GPS Location                Yes (from modem module GPS)
 Speed Display               Yes
 Temperature Display         Yes (outdoor, cabin)
-BMS v+t Display             tba
+BMS v+t Display             No
 TPMS Display                No
 Charge Status Display       Yes
 Charge Interruption Alerts  Yes (per notification on the charging state)
 Charge Control              tba
-Lock/Unlock Vehicle         tba
-Valet Mode Control          tba
-Others                      Odometer, VIN, front doors status
+Lock/Unlock Vehicle         No
+Valet Mode Control          No
+Others                      Odometer, VIN, status of lock, plug, lights, doors, trunk and bonnet
 =========================== ==============
 
 
@@ -91,6 +91,7 @@ User notes
 * Reinstall the passenger seat.
 * Configure OVMS as described in the OVMS user manual.
 * Configure 'Model year' and 'Can write access' under VW e-Up (Komfort CAN) -> Features.
+* 'Model year' and 'Can write access' can also be set from within the app (FEATURES 20 and 15).
 * Register and connect OVMS to a server (as guided within the OVMS setup).
 * Turn the ignition in the car on and off to receive initial values (also needed after updates).
 * Install the OVMS app on your smartphone or tablet and configure it to connect to the server.
@@ -112,9 +113,9 @@ Once the AC is turned on by the app there will be a delay of about 15 seconds un
 
 The communication from the app to the car is also blocked for 10 seconds after the "AC off" command from the app to the car. There is no delay between the "AC off" signal of the app and the actually turning off in the car.
 
-In rare cases 'AC off' does not respond. You then need to 'AC on' again (when it is already running) to be able to stop it.
+In rare cases 'AC off' does not respond. There will be a delay of 40 seconds before you can try again.
 
-The cabin target temperature can be set from the OVMS webinterface (VW e-Up (Komfort CAN) -> Climate control).
+The cabin target temperature can be set from the OVMS webinterface (VW e-Up (Komfort CAN) -> Climate control) or via the app under FEATURES 21.
 
 .. image:: cc.png
     :width: 640px
