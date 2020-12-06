@@ -55,6 +55,7 @@
 #define GEN_2_62_NEW_CAR_AH 176
 #define REMOTE_COMMAND_REPEAT_COUNT 24 // number of times to send the remote command after the first time
 #define ACTIVATION_REQUEST_TIME 10 // tenths of a second to hold activation request signal
+#define DEFAULT_AC_VOLTAGE_MULTIPLIER 1.23 // scales from 179 to 220V
 
 using namespace std;
 
