@@ -101,7 +101,7 @@ void OvmsVehicleSmartED::xse_chargetimer(int verbosity, OvmsWriter* writer, Ovms
     return;
   }
   if( smart->CommandSetChargeTimer(enable, hours, minutes) == OvmsVehicle::Success ) {
-    writer->printf("Charging Time set to: %d:%d\n", hours, minutes);
+    writer->printf("Charging Time set to: %02d:%02d\n", hours, minutes);
   }
   else {
     writer->puts("Error: Function need CAN-Write enable");
@@ -335,7 +335,6 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandWakeup() {
     frame.data.u8[3] = 0x00;
     m_can2->Write(&frame);
   }
-  TempPoll();
 
   return Success;
 }
@@ -378,7 +377,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandSetChargeTimer(bool ti
     if(!mt_bus_awake->AsBool()) return Fail;
   }
   
-  ESP_LOGI(TAG,"ClimaStartTime: %d:%d", hours, minutes);
+  ESP_LOGI(TAG,"ClimaStartTime: %02d:%02d", hours, minutes);
   
   CAN_frame_t frame;
   memset(&frame, 0, sizeof(frame));
