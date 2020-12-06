@@ -81,12 +81,15 @@ static const char *TAG = "v-smarted";
 #define ABS(n) (((n) < 0) ? -(n) : (n))
 #undef LIMIT_MIN
 #define LIMIT_MIN(n,lim) ((n) < (lim) ? (lim) : (n))
+#undef LIMIT_MAX
+#define LIMIT_MAX(n,lim) ((n) > (lim) ? (lim) : (n))
 
 #undef ROUNDPREC
 #define ROUNDPREC(fval,prec) (round((fval) * pow(10,(prec))) / pow(10,(prec)))
 
 static const OvmsVehicle::poll_pid_t smarted_polls[] =
 {
+  { 0x7E5, 0x7ED, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x1001, {  0,3600,3600,3600 }, 0 }, // Wippen...
   { 0x61A, 0x483, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xF111, {  0,300,600,600 }, 0 }, // rqChargerPN_HW
   { 0x61A, 0x483, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0226, {  0,300,0,60 }, 0 }, // rqChargerVoltages
   { 0x61A, 0x483, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0225, {  0,300,0,60 }, 0 }, // rqChargerAmps
@@ -113,7 +116,7 @@ static const OvmsVehicle::poll_pid_t smarted_polls[] =
 };
 
 void OvmsVehicleSmartED::ObdInitPoll() {
-  
+
   m_bms_capacitys = NULL;
   m_bms_cmins = NULL;
   m_bms_cmaxs = NULL;
@@ -144,7 +147,7 @@ void OvmsVehicleSmartED::ObdInitPoll() {
   mt_v_bat_cell_cmin = new OvmsMetricVector<float>("xse.v.b.c.capacity.min", SM_STALE_HIGH, Other);
   mt_v_bat_cell_cmax = new OvmsMetricVector<float>("xse.v.b.c.capacity.max", SM_STALE_HIGH, Other);
   mt_v_bat_cell_cdevmax = new OvmsMetricVector<float>("xse.v.b.c.capacity.dev.max", SM_STALE_HIGH, Other);
-  
+
   mt_v_bat_HVoff_time = new OvmsMetricInt("xse.v.b.p.hv.off.time", SM_STALE_HIGH, Seconds);
   mt_v_bat_HV_lowcurrent = new OvmsMetricInt("xse.v.b.p.hv.lowcurrent", SM_STALE_HIGH, Seconds);
   mt_v_bat_OCVtimer = new OvmsMetricInt("xse.v.b.p.ocv.timer", SM_STALE_HIGH, Seconds);
@@ -154,7 +157,7 @@ void OvmsVehicleSmartED::ObdInitPoll() {
   mt_v_bat_Cap_As_min = new OvmsMetricInt("xse.v.b.p.capacity.as.minimum", SM_STALE_HIGH, Other);
   mt_v_bat_Cap_As_max = new OvmsMetricInt("xse.v.b.p.capacity.as.maximum", SM_STALE_HIGH, Other);
   mt_v_bat_Cap_As_avg = new OvmsMetricInt("xse.v.b.p.capacity.as.average", SM_STALE_HIGH, Other);
-  
+
   mt_nlg6_present             = MyMetrics.InitBool("xse.v.nlg6.present", SM_STALE_MIN, false);
   mt_nlg6_main_volts          = new OvmsMetricVector<float>("xse.v.nlg6.main.volts", SM_STALE_HIGH, Volts);
   mt_nlg6_main_amps           = new OvmsMetricVector<float>("xse.v.nlg6.main.amps", SM_STALE_HIGH, Amps);
@@ -169,7 +172,7 @@ void OvmsVehicleSmartED::ObdInitPoll() {
   mt_nlg6_temp_socket         = MyMetrics.InitFloat("xse.v.nlg6.temp.socket", SM_STALE_MIN, 0, Celcius);
   mt_nlg6_temp_coolingplate   = MyMetrics.InitFloat("xse.v.nlg6.temp.coolingplate", SM_STALE_MIN, 0, Celcius);
   mt_nlg6_pn_hw               = MyMetrics.InitString("xse.v.nlg6.pn.hw", SM_STALE_MIN, 0);
-  
+
   mt_myBMS_Amps                = new OvmsMetricFloat("xse.mybms.amps", SM_STALE_HIGH, Amps);
   mt_myBMS_Amps2               = new OvmsMetricFloat("xse.mybms.amps2", SM_STALE_HIGH, Amps);
   mt_myBMS_Power               = new OvmsMetricFloat("xse.mybms.power", SM_STALE_HIGH, kW);
@@ -185,7 +188,9 @@ void OvmsVehicleSmartED::ObdInitPoll() {
   mt_myBMS_BattVIN             = new OvmsMetricString("xse.mybms.batt.vin");
   mt_myBMS_HWrev               = new OvmsMetricVector<int>("xse.mybms.HW.rev", SM_STALE_HIGH, Other);
   mt_myBMS_SWrev               = new OvmsMetricVector<int>("xse.mybms.SW.rev", SM_STALE_HIGH, Other);
-  
+
+  mt_CEPC_Wippen               = new OvmsMetricBool("xse.cepc.wippen", SM_STALE_MID);
+
   // BMS configuration:
   BmsSetCellArrangementCapacity(93, 1);
   BmsSetCellArrangementVoltage(93, 1);
@@ -194,12 +199,22 @@ void OvmsVehicleSmartED::ObdInitPoll() {
   BmsSetCellLimitsTemperature(-39, 200);
   BmsSetCellDefaultThresholdsVoltage(0.030, 0.050);
   BmsSetCellDefaultThresholdsTemperature(4.0, 5.0);
-  
+
   // init poller:
   PollSetPidList(m_can1, smarted_polls);
   PollSetState(0);
   PollSetThrottling(5);
   PollSetResponseSeparationTime(10);
+
+  // init commands:
+  OvmsCommand* cmd;
+  OvmsCommand* obd;
+  obd = cmd_xse->RegisterCommand("obd", "OBD2 tools");
+  cmd = obd->RegisterCommand("request", "Send OBD2 request, output response");
+  cmd->RegisterCommand("device", "Send OBD2 request to a device", shell_obd_request, "<txid> <rxid> <request>", 3, 3);
+  cmd->RegisterCommand("broadcast", "Send OBD2 request as broadcast", shell_obd_request, "<request>", 1, 1);
+  cmd->RegisterCommand("bms", "Send OBD2 request to BMS", shell_obd_request, "<request>", 1, 1);
+  cmd->RegisterCommand("getvolts", "Send OBD2 request to get Cell Volts", shell_obd_request);
 }
 
 /**
@@ -300,6 +315,9 @@ void OvmsVehicleSmartED::IncomingPollReply(canbus* bus, uint16_t type, uint16_t 
     case 0x0223: // rqChargerTemperatures
       PollReply_NLG6_ChargerTemperatures(rxbuf.data(), rxbuf.size());
       break;
+    case 0x1001:
+      PollReply_CEPC(rxbuf.data(), rxbuf.size());
+      break;
     // Unknown: output
     default: {
       char *buf = NULL;
@@ -335,7 +353,7 @@ void OvmsVehicleSmartED::IncomingPollError(canbus* bus, uint16_t type, uint16_t 
   }
 }
 
-int OvmsVehicleSmartED::ObdRequest(uint16_t txid, uint16_t rxid, uint32_t request, string& response, int timeout_ms /*=3000*/) {
+int OvmsVehicleSmartED::ObdRequest(uint16_t txid, uint16_t rxid, string request, string& response, int timeout_ms /*=3000*/) {
   OvmsMutexLock lock(&smarted_obd_request);
 
   // prepare single poll:
@@ -343,12 +361,26 @@ int OvmsVehicleSmartED::ObdRequest(uint16_t txid, uint16_t rxid, uint32_t reques
     { txid, rxid, 0, 0, { 1, 1, 1, 1 }, 0 },
     { 0, 0, 0, 0, { 0, 0, 0, 0 }, 0 }
   };
-  if (request < 0x10000) {
-    poll[0].type = (request & 0xff00) >> 8;
-    poll[0].pid = request & 0xff;
-  } else {
-    poll[0].type = (request & 0xff0000) >> 16;
-    poll[0].pid = request & 0xffff;
+
+  assert(request.size() > 0);
+  poll[0].type = request[0];
+
+  if (POLL_TYPE_HAS_16BIT_PID(poll[0].type)) {
+    assert(request.size() >= 3);
+    poll[0].args.pid = request[1] << 8 | request[2];
+    poll[0].args.datalen = LIMIT_MAX(request.size()-3, sizeof(poll[0].args.datalen));
+    memcpy(poll[0].args.data, request.data()+3, poll[0].args.datalen);
+  }
+  else if (POLL_TYPE_HAS_8BIT_PID(poll[0].type)) {
+    assert(request.size() >= 2);
+    poll[0].args.pid = request.at(1);
+    poll[0].args.datalen = LIMIT_MAX(request.size()-2, sizeof(poll[0].args.datalen));
+    memcpy(poll[0].args.data, request.data()+2, poll[0].args.datalen);
+  }
+  else {
+    poll[0].args.pid = 0;
+    poll[0].args.datalen = LIMIT_MAX(request.size()-1, sizeof(poll[0].args.datalen));
+    memcpy(poll[0].args.data, request.data()+1, poll[0].args.datalen);
   }
 
   // stop default polling:
@@ -435,8 +467,10 @@ void OvmsVehicleSmartED::PollReply_BMS_BattSWrev(const char* reply_data, uint16_
 
 void OvmsVehicleSmartED::PollReply_BMS_BattIsolation(const char* reply_data, uint16_t reply_len) {
   uint16_t value = reply_data[0] * 256 + reply_data[1];//this->ReadDiagWord(&value,data,4,1);
-  mt_myBMS_Isolation->SetValue((signed) value);
-  mt_myBMS_DCfault->SetValue(reply_data[3]);
+  if (value != 65535) {
+    mt_myBMS_Isolation->SetValue((signed) value);
+    mt_myBMS_DCfault->SetValue(reply_data[2]);
+  }
 }
 
 void OvmsVehicleSmartED::PollReply_BMS_BattVIN(const char* reply_data, uint16_t reply_len) {
@@ -621,6 +655,10 @@ void OvmsVehicleSmartED::PollReply_NLG6_ChargerTemperatures(const char* reply_da
     mt_nlg6_temp_socket->SetValue((reply_data[5] < 0xFF) ? reply_data[5]-40 : 0); //9
   }
   if (mt_nlg6_temp_reported->AsFloat() != 0) StandardMetrics.ms_v_charge_temp->SetValue(mt_nlg6_temp_reported->AsFloat());
+}
+
+void OvmsVehicleSmartED::PollReply_CEPC(const char* reply_data, uint16_t reply_len) {
+  mt_CEPC_Wippen->SetValue(reply_data[16]&0x04);
 }
 
 // BMS helpers

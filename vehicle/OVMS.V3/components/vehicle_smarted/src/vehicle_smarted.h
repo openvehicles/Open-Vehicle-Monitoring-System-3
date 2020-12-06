@@ -145,6 +145,7 @@ class OvmsVehicleSmartED : public OvmsVehicle
     void PollReply_NLG6_ChargerAmps(const char* reply_data, uint16_t reply_len);
     void PollReply_NLG6_ChargerSelCurrent(const char* reply_data, uint16_t reply_len);
     void PollReply_NLG6_ChargerTemperatures(const char* reply_data, uint16_t reply_len);
+    void PollReply_CEPC(const char* reply_data, uint16_t reply_len);
 
     OvmsCommand *cmd_xse;
     
@@ -235,8 +236,10 @@ class OvmsVehicleSmartED : public OvmsVehicle
     
     OvmsMetricString* mt_myBMS_BattVIN;           //!< VIN stored in BMS
     
-    OvmsMetricVector<int> *mt_myBMS_HWrev;         //!< hardware-revision
-    OvmsMetricVector<int> *mt_myBMS_SWrev;         //!< soft-revision
+    OvmsMetricVector<int> *mt_myBMS_HWrev;        //!< hardware-revision
+    OvmsMetricVector<int> *mt_myBMS_SWrev;        //!< soft-revision
+    
+    OvmsMetricBool* mt_CEPC_Wippen;               //!< Recu Wippen installed
 
     #define DEFAULT_BATTERY_CAPACITY 17600
     #define DEFAULT_BATTERY_AMPHOURS 52
@@ -298,6 +301,7 @@ class OvmsVehicleSmartED : public OvmsVehicle
   private:
     void AutoSetRecu();
     bool m_auto_set_recu;
+    bool recuSet = false;
   
   protected:
     void RestartNetwork();
@@ -305,9 +309,8 @@ class OvmsVehicleSmartED : public OvmsVehicle
     int m_shutdown_ticker;
   
   public:
-    int ObdRequest(uint16_t txid, uint16_t rxid, uint32_t request, string& response, int timeout_ms=3000);
+    int ObdRequest(uint16_t txid, uint16_t rxid, string request, string& response, int timeout_ms=3000);
     static void shell_obd_request(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
-    static void shell_obd_request_volts(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
   
   protected:
     string              smarted_obd_rxbuf;

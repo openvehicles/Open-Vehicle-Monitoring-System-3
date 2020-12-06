@@ -101,7 +101,7 @@ void OvmsVehicleSmartED::xse_chargetimer(int verbosity, OvmsWriter* writer, Ovms
     return;
   }
   if( smart->CommandSetChargeTimer(enable, hours, minutes) == OvmsVehicle::Success ) {
-    writer->printf("Charging Time set to: %d:%d\n", hours, minutes);
+    writer->printf("Charging Time set to: %02d:%02d\n", hours, minutes);
   }
   else {
     writer->puts("Error: Function need CAN-Write enable");
@@ -148,33 +148,48 @@ void OvmsVehicleSmartED::shell_obd_request(int verbosity, OvmsWriter* writer, Ov
     return;
 
   uint16_t txid = 0, rxid = 0;
-  uint32_t req = 0;
+  string request;
   string response;
 
   // parse args:
-  
-  if (argc < 3) {
-    writer->puts("ERROR: too few args, need: txid rxid request");
-    return;
+  string device = cmd->GetName();
+  if (device == "device") {
+    if (argc < 3) {
+      writer->puts("ERROR: too few args, need: txid rxid request");
+      return;
+    }
+    txid = strtol(argv[0], NULL, 16);
+    rxid = strtol(argv[1], NULL, 16);
+    request = hexdecode(argv[2]);
+  } else {
+    if (device == "getvolts")
+      request = hexdecode("220208");
+    else
+      request = hexdecode(argv[0]);
+    if (device == "bms" || device == "getvolts") {
+      txid = 0x7E7;
+      rxid = 0x7EF;
+    } else { // "broadcast"
+      txid = 0x7df;
+      rxid = 0;
+    }
   }
-  
-  txid = strtol(argv[0], NULL, 16);
-  rxid = strtol(argv[1], NULL, 16);
-  req = strtol(argv[2], NULL, 16);
 
   // validate request:
-  uint8_t mode = (req <= 0xffff) ? ((req & 0xff00) >> 8) : ((req & 0xff0000) >> 16);
-  if (mode != 0x01 && mode != 0x02 && mode != 0x09 &&
-      mode != 0x10 && mode != 0x1A && mode != 0x21 && mode != 0x22) {
-    writer->puts("ERROR: mode must be one of: 01, 02, 09, 10, 1A, 21 or 22");
+  if (request.size() == 0) {
+    writer->puts("ERROR: no request");
     return;
-  } else if (req > 0xffffff) {
-    writer->puts("ERROR: PID must be 8 or 16 bit");
-    return;
+  } else {
+    uint8_t type = request.at(0);
+    if ((POLL_TYPE_HAS_16BIT_PID(type) && request.size() < 3) ||
+        (POLL_TYPE_HAS_8BIT_PID(type) && request.size() < 2)) {
+      writer->printf("ERROR: request too short for type %02X\n", type);
+      return;
+    }
   }
 
   // execute request:
-  int err = smart->ObdRequest(txid, rxid, req, response);
+  int err = smart->ObdRequest(txid, rxid, request, response);
   if (err == -1) {
     writer->puts("ERROR: timeout waiting for response");
     return;
@@ -184,57 +199,20 @@ void OvmsVehicleSmartED::shell_obd_request(int verbosity, OvmsWriter* writer, Ov
   }
 
   // output response as hex dump:
-  writer->puts("Response:");
-  char *buf = NULL;
-  size_t rlen = response.size(), offset = 0;
-  do {
-    rlen = FormatHexDump(&buf, response.data() + offset, rlen, 16);
-    offset += 16;
-    writer->puts(buf ? buf : "-");
-  } while (rlen);
-  if (buf)
-    free(buf);
-}
-
-void OvmsVehicleSmartED::shell_obd_request_volts(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-{
-  OvmsVehicleSmartED* smart = GetInstance(writer);
-  if (!smart)
-    return;
-
-  uint16_t txid = 0, rxid = 0;
-  uint32_t req = 0;
-  string response;
-
-  // parse args:
-
-  txid = 0x7E7;
-  rxid = 0x7EF;
-  req = 0x220208;
-
-  // validate request:
-  uint8_t mode = (req <= 0xffff) ? ((req & 0xff00) >> 8) : ((req & 0xff0000) >> 16);
-  if (mode != 0x01 && mode != 0x02 && mode != 0x09 &&
-      mode != 0x10 && mode != 0x1A && mode != 0x21 && mode != 0x22) {
-    writer->puts("ERROR: mode must be one of: 01, 02, 09, 10, 1A, 21 or 22");
-    return;
-  } else if (req > 0xffffff) {
-    writer->puts("ERROR: PID must be 8 or 16 bit");
-    return;
+  if (device == "getvolts") {
+    writer->puts("OK");
+  } else {
+    writer->puts("Response:");
+    char *buf = NULL;
+    size_t rlen = response.size(), offset = 0;
+    do {
+      rlen = FormatHexDump(&buf, response.data() + offset, rlen, 16);
+      offset += 16;
+      writer->puts(buf ? buf : "-");
+    } while (rlen);
+    if (buf)
+      free(buf);
   }
-
-  // execute request:
-  int err = smart->ObdRequest(txid, rxid, req, response);
-  if (err == -1) {
-    writer->puts("ERROR: timeout waiting for response");
-    return;
-  } else if (err) {
-    writer->printf("ERROR: request failed with response error code %02X\n", err);
-    return;
-  }
-
-  // output:
-  writer->puts("OK");
 }
 
 void OvmsVehicleSmartED::TempPoll() {
@@ -357,7 +335,6 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandWakeup() {
     frame.data.u8[3] = 0x00;
     m_can2->Write(&frame);
   }
-  TempPoll();
 
   return Success;
 }
@@ -400,7 +377,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandSetChargeTimer(bool ti
     if(!mt_bus_awake->AsBool()) return Fail;
   }
   
-  ESP_LOGI(TAG,"ClimaStartTime: %d:%d", hours, minutes);
+  ESP_LOGI(TAG,"ClimaStartTime: %02d:%02d", hours, minutes);
   
   CAN_frame_t frame;
   memset(&frame, 0, sizeof(frame));
