@@ -467,8 +467,10 @@ void OvmsVehicleSmartED::PollReply_BMS_BattSWrev(const char* reply_data, uint16_
 
 void OvmsVehicleSmartED::PollReply_BMS_BattIsolation(const char* reply_data, uint16_t reply_len) {
   uint16_t value = reply_data[0] * 256 + reply_data[1];//this->ReadDiagWord(&value,data,4,1);
-  mt_myBMS_Isolation->SetValue((signed) value);
-  mt_myBMS_DCfault->SetValue(reply_data[3]);
+  if (value != 65535) {
+    mt_myBMS_Isolation->SetValue((signed) value);
+    mt_myBMS_DCfault->SetValue(reply_data[2]);
+  }
 }
 
 void OvmsVehicleSmartED::PollReply_BMS_BattVIN(const char* reply_data, uint16_t reply_len) {
