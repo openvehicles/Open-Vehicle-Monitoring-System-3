@@ -362,9 +362,12 @@ void OvmsVehicleSmartED::WebCfgCommands(PageEntry_t& p, PageContext_t& c)
   c.panel_start("primary", "Smart ED Vehicle Commands");
   c.print(
     "<div class=\"panel-body\">\n"
-      "<button class=\"btn btn-default\" data-cmd=\"xse recu up\" data-target=\"#output\" data-watchcnt=\"0\">Recu Up</button>\n"
-      "<button class=\"btn btn-default\" data-cmd=\"xse recu down\" data-target=\"#output\" data-watchcnt=\"0\">Recu Down</button>\n"
-      "<samp id=\"output\" class=\"samp-inline\"></samp>\n"
+      "<div class=\"row text-center\">\n"
+        "<p><button class=\"btn btn-default btn-lg\" style=\"font-size:50px;border-radius:18px;\" data-cmd=\"xse recu up\" data-target=\"#output\" data-watchcnt=\"0\">Recu Up</button></p>\n"
+        "<br>\n"
+        "<p><button class=\"btn btn-default btn-lg\" style=\"font-size:50px;border-radius:18px;\" data-cmd=\"xse recu down\" data-target=\"#output\" data-watchcnt=\"0\">Recu Down</button></p>\n"
+        "<samp id=\"output\" class=\"samp-inline\"></samp>\n"
+      "</div>\n"
     "</div>\n"
   );
   c.panel_end();
