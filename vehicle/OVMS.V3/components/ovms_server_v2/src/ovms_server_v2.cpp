@@ -1002,7 +1002,7 @@ void OvmsServerV2::TransmitMsgStat(bool always)
     << ","
     << StandardMetrics.ms_v_charge_voltage->AsInt()
     << ","
-    << StandardMetrics.ms_v_charge_current->AsInt()
+    << StandardMetrics.ms_v_charge_current->AsString("0", Other, 1)
     << ","
     << StandardMetrics.ms_v_charge_state->AsString("stopped")
     << ","
