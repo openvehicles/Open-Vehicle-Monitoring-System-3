@@ -1049,7 +1049,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         StandardMetrics.ms_v_env_heating->SetValue(heating);
         StandardMetrics.ms_v_env_cooling->SetValue(cooling);
 
-        hvac_calculated = (climate_on & (m_climate_fan_speed->AsInt() != 0));
+        hvac_calculated = (climate_on & (m_climate_setpoint->AsInt() != 0));
 
       }
 
