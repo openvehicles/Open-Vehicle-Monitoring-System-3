@@ -1525,6 +1525,15 @@ void OvmsVehicleNissanLeaf::SendCommand(RemoteCommand command)
 void OvmsVehicleNissanLeaf::RemoteCommandTimer()
   {
   ESP_LOGI(TAG, "RemoteCommandTimer %d", nl_remote_command_ticker);
+  // if lock or unlock is successful don't repeat command
+  if (nl_remote_command == LOCK_DOORS && StandardMetrics.ms_v_env_locked->AsBool())
+    {
+    nl_remote_command_ticker = 0;
+    }
+  if (nl_remote_command == UNLOCK_DOORS && !StandardMetrics.ms_v_env_locked->AsBool())
+    {
+    nl_remote_command_ticker = 0;
+    }
   if (nl_remote_command_ticker > 0)
     {
     nl_remote_command_ticker--;
