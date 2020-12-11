@@ -891,11 +891,12 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       float batt_volt   = StandardMetrics.ms_v_bat_voltage->AsFloat();
       float batt_curr   = abs(StandardMetrics.ms_v_bat_current->AsFloat());
       float charge_curr = ( (d[0] & 0x01) << 8 | d[1] ) / 2.0f;
+      float volt_scaling = MyConfig.GetParamValueFloat("xnl", "acvoltagemultiplier", DEFAULT_AC_VOLTAGE_MULTIPLIER);
       switch (d[5])
         {
         case 0x80:
         case 0x82: // V2X 
-          StandardMetrics.ms_v_charge_voltage->SetValue(d[3] * 1.12);
+          StandardMetrics.ms_v_charge_voltage->SetValue(d[3] * volt_scaling);
           StandardMetrics.ms_v_charge_current->SetValue(charge_curr);
           vehicle_nissanleaf_charger_status(CHARGER_STATUS_IDLE);
           break;
@@ -910,7 +911,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         case 0x88: // on evse power loss car still reports 0x88
           if (StandardMetrics.ms_v_charge_pilot->AsBool())
             { // voltage scaling to approx. evse kWh output
-            StandardMetrics.ms_v_charge_voltage->SetValue(d[3] * MyConfig.GetParamValueFloat("xnl", "acvoltagemultiplier", DEFAULT_AC_VOLTAGE_MULTIPLIER));
+            StandardMetrics.ms_v_charge_voltage->SetValue(d[3] * volt_scaling);
             StandardMetrics.ms_v_charge_current->SetValue(charge_curr);
             vehicle_nissanleaf_charger_status(CHARGER_STATUS_CHARGING);
             }
@@ -921,12 +922,12 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
           break;
         case 0x90: //this state appears just before 0x88 and after evse removed (prepare/finish)
         case 0x92:
-          StandardMetrics.ms_v_charge_voltage->SetValue(d[3] * 1.12);
+          StandardMetrics.ms_v_charge_voltage->SetValue(d[3] * volt_scaling);
           StandardMetrics.ms_v_charge_current->SetValue(charge_curr);
           vehicle_nissanleaf_charger_status(CHARGER_STATUS_IDLE);
           break;
         case 0x98:
-          StandardMetrics.ms_v_charge_voltage->SetValue(d[3] * 1.12);
+          StandardMetrics.ms_v_charge_voltage->SetValue(d[3] * volt_scaling);
           StandardMetrics.ms_v_charge_current->SetValue(charge_curr);
           vehicle_nissanleaf_charger_status(CHARGER_STATUS_PLUGGED_IN_TIMER_WAIT);
           break;
@@ -1524,6 +1525,15 @@ void OvmsVehicleNissanLeaf::SendCommand(RemoteCommand command)
 void OvmsVehicleNissanLeaf::RemoteCommandTimer()
   {
   ESP_LOGI(TAG, "RemoteCommandTimer %d", nl_remote_command_ticker);
+  // if lock or unlock is successful don't repeat command
+  if (nl_remote_command == LOCK_DOORS && StandardMetrics.ms_v_env_locked->AsBool())
+    {
+    nl_remote_command_ticker = 0;
+    }
+  if (nl_remote_command == UNLOCK_DOORS && !StandardMetrics.ms_v_env_locked->AsBool())
+    {
+    nl_remote_command_ticker = 0;
+    }
   if (nl_remote_command_ticker > 0)
     {
     nl_remote_command_ticker--;
