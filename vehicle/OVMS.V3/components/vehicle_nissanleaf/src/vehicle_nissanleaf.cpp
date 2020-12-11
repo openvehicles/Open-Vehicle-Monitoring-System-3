@@ -1053,7 +1053,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         m_climate_remoteheat->SetValue((d[1] & 0x02) && heating);
         m_climate_remotecool->SetValue((d[1] & 0x02) && cooling);
 
-        hvac_calculated = (climate_on & (m_climate_setpoint->AsInt() != 0));
+        hvac_calculated = (climate_on && (heating || cooling));
 
       }
 
