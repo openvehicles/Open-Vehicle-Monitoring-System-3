@@ -147,9 +147,28 @@ void OvmsVehicleMgEv::IncomingBmsPoll(
             }
             break;
         case batteryCurrentPid:
-            StandardMetrics.ms_v_bat_current->SetValue(
-                ((static_cast<int32_t>(value) - 40000) * 0.25) / 10.0
-            );
+            {
+                auto current = ((static_cast<int32_t>(value) - 40000) * 0.25) / 10.0;
+                StandardMetrics.ms_v_bat_current->SetValue( current );
+                auto power = StandardMetrics.ms_v_bat_voltage->AsFloat() * current;
+                power = - power / 1000;
+                StandardMetrics.ms_v_bat_power->SetValue( power );
+                if(StandardMetrics.ms_v_env_drivemode->AsFloat() == 0)
+                {
+                    if (power < 0.01)
+                    {
+                        StandardMetrics.ms_v_charge_type->SetValue("not charging");
+                    }
+                    else if (power > 7)
+                    {
+                        StandardMetrics.ms_v_charge_type->SetValue("ccs");
+                    }
+                    else
+                    {
+                        StandardMetrics.ms_v_charge_type->SetValue("type2");
+                    }
+                }
+            }
             break;
         case batteryVoltagePid:
             m_bat_pack_voltage->SetValue(value * 0.25);
@@ -196,18 +215,24 @@ void OvmsVehicleMgEv::SetBmsStatus(uint8_t status)
             StandardMetrics.ms_v_charge_inprogress->SetValue(true);
             break;
         default:
-            if (StandardMetrics.ms_v_charge_inprogress->AsBool())
+            if (StandardMetrics.ms_v_charge_inprogress->AsBool() && StandardMetrics.ms_v_bat_power->AsFloat() < 100)
             {
                 if (StandardMetrics.ms_v_bat_soc->AsFloat() >= 97.0)
                 {
                     StandardMetrics.ms_v_charge_state->SetValue("done");
+                    StandardMetrics.ms_v_charge_inprogress->SetValue(false);
                 }
                 else
                 {
                     StandardMetrics.ms_v_charge_state->SetValue("stopped");
+                    StandardMetrics.ms_v_charge_inprogress->SetValue(false);
                 }
+            } else if ( StandardMetrics.ms_v_env_drivemode->AsFloat() == 0 && StandardMetrics.ms_v_bat_power->AsFloat() > 0.1)
+            {
+                // Power into battery but car is stationary therefore assume car is charging on CCS
+                StandardMetrics.ms_v_charge_inprogress->SetValue(true);
+
             }
-            StandardMetrics.ms_v_charge_inprogress->SetValue(false);
             break;
     }
 }

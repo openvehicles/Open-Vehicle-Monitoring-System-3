@@ -105,16 +105,16 @@ void OvmsVehicleMgEv::IncomingVcuPoll(
         case vcuGearPid:
             if (data[0] == 8)
             {
-                StandardMetrics.ms_v_env_gear->SetValue(0);
+                StandardMetrics.ms_v_env_drivemode->SetValue(0);
             }
             // TODO: Get the correct value here for reverse
             else if (data[0] == 0)
             {
-                StandardMetrics.ms_v_env_gear->SetValue(-1);
+                StandardMetrics.ms_v_env_drivemode->SetValue(-1);
             }
             else
             {
-                StandardMetrics.ms_v_env_gear->SetValue(1);
+                StandardMetrics.ms_v_env_drivemode->SetValue(1);
             }
             break;
         case vcuBrakePid:
@@ -124,23 +124,11 @@ void OvmsVehicleMgEv::IncomingVcuPoll(
             StandardMetrics.ms_v_door_hood->SetValue(data[0] & 1);
             break;
         case chargeRatePid:
-            // The kW of the charger, crude way to determine the charge type
-            {
-                auto rate = value / 10.0;
-                StandardMetrics.ms_v_charge_climit->SetValue(rate);
-                if (rate < 0.01)
-                {
-                    StandardMetrics.ms_v_charge_type->SetValue("not charging");
-                }
-                else if (rate > 7.0)
-                {
-                    StandardMetrics.ms_v_charge_type->SetValue("ccs");
-                }
-                else
-                {
-                    StandardMetrics.ms_v_charge_type->SetValue("type2");
-                }
-            }
+            // The available charge rate, max power BMS will accept right now
+            
+            auto rate = value / 10.0;
+            StandardMetrics.ms_v_charge_climit->SetValue(rate);
+            
             break;
     }
 }
