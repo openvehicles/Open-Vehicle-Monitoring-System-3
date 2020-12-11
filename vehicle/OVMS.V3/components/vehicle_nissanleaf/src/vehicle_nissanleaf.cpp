@@ -952,7 +952,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         fanspeed_int = 0;
       }
 
-      m_climate_fan_speed->SetValue(fanspeed_int);
+      m_climate_fan_speed->SetValue(fanspeed_int / 7.0 * 100);
       m_climate_fan_speed_limit->SetValue(7);
 
       bool fan_only = (d[1] == 0x48 && fanspeed_int != 0);
@@ -1001,10 +1001,6 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         break;
       }
 
-      // The following 2 values work only when preheat is activated while connected to charger.
-      m_climate_remoteheat->SetValue(d[1] == 0x4b);
-      m_climate_remotecool->SetValue(d[1] == 0x71);
-
       bool hvac_calculated = false;
 
       if (MyConfig.GetParamValueInt("xnl", "modelyear", DEFAULT_MODEL_YEAR) < 2013)
@@ -1026,15 +1022,20 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         */
         StandardMetrics.ms_v_env_cooling->SetValue(d[1] & 0x10);
         StandardMetrics.ms_v_env_heating->SetValue(d[1] & 0x02);
+        // The following 2 values work only when preheat is activated while connected to charger.
+        m_climate_remoteheat->SetValue(d[1] == 0x4b);
+        m_climate_remotecool->SetValue(d[1] == 0x71);
       }
 
       else
       // More accurate climate control values for hvac, heating, cooling for 2013+ model year cars.
       {
 
-        bool cooling = d[1] == 0x78 || /* cool only */
-                       d[1] == 0x79 || /* cool + heat */
-                       d[1] == 0x76;   /* cool + auto */
+        bool cooling = (d[1] & 0x70);
+        //               d[1] == 0x7a || /* remote cool only */
+        //               d[1] == 0x78 || /* cool only */
+        //               d[1] == 0x79 || /* cool + heat */
+        //               d[1] == 0x76;   /* cool + auto */
 
         // d[1] == 0x47 : heat + auto
         // d[1] == 0x49 : heat only
@@ -1048,8 +1049,11 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
 
         StandardMetrics.ms_v_env_heating->SetValue(heating);
         StandardMetrics.ms_v_env_cooling->SetValue(cooling);
+        // The following 2 values work only when preheat is activated while connected to charger.
+        m_climate_remoteheat->SetValue((d[1] & 0x02) && heating);
+        m_climate_remotecool->SetValue((d[1] & 0x02) && cooling);
 
-        hvac_calculated = (climate_on & (m_climate_fan_speed->AsInt() != 0));
+        hvac_calculated = (climate_on && (heating || cooling));
 
       }
 
