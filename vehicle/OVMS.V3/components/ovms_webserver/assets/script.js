@@ -39,6 +39,11 @@ function encode_html(s) {
     .replace(/>/g, '&gt;');
 }
 
+function unwrapLogLine(s) {
+  return String(s)
+    .replace(/(\S)\|+(.)/g, "$1\n……: $2");
+}
+
 function fix_minheight($el) {
   if ($el.css("resize") != "none") return;
   var mh = parseInt($el.css("max-height")), h = $el.outerHeight();
