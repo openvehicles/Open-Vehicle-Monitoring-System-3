@@ -1025,9 +1025,31 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         m_climate_remoteheat->SetValue(d[1] == 0x4b);
         m_climate_remotecool->SetValue(d[1] == 0x71);
       }
+      else if (MyConfig.GetParamValueInt("xnl", "modelyear", DEFAULT_MODEL_YEAR) < 2016)
+      {
+        bool cooling = d[1] == 0x78 || /* cool only */
+                       d[1] == 0x79 || /* cool + heat */
+                       d[1] == 0x76;   /* cool + auto */
 
+        // d[1] == 0x47 : heat + auto
+        // d[1] == 0x49 : heat only
+        // d[1] == 0x79 : heat + cool
+
+        bool heating = (d[1] & 0x01);
+
+        // The following value work only when car is on, so we need to use fan/heat/cool values to indicate hvac on as described below
+        bool climate_on = (d[0] == 0x10);
+
+
+        StandardMetrics.ms_v_env_heating->SetValue(heating);
+        StandardMetrics.ms_v_env_cooling->SetValue(cooling);
+        // The following 2 values work only when preheat is activated while connected to charger.
+        m_climate_remoteheat->SetValue(d[1] == 0x4b);
+        m_climate_remotecool->SetValue(d[1] == 0x71);
+        hvac_calculated = (climate_on & (m_climate_fan_speed->AsInt() != 0));
+      }
       else
-      // More accurate climate control values for hvac, heating, cooling for 2013+ model year cars.
+      // More accurate climate control values for hvac, heating, cooling for 2016+ model year cars.
       {
         bool cooling = (d[1] & 0x30);
         //               d[1] == 0x7a || /* remote cool only */
