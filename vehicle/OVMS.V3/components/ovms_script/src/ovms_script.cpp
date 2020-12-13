@@ -572,6 +572,11 @@ static void DukGetCallInfo(duk_context *ctx, std::string *filename, int *linenum
     *filename = "";
     *function = "";
     duk_inspect_callstack_entry(ctx, i);
+    if (duk_is_undefined(ctx, -1))
+      {
+      duk_pop(ctx);
+      break;
+      }
     duk_get_prop_string(ctx, -1, "lineNumber");
     *linenumber = duk_get_number_default(ctx, -1, 0);
     duk_pop(ctx);
@@ -584,7 +589,7 @@ static void DukGetCallInfo(duk_context *ctx, std::string *filename, int *linenum
       *function = duk_get_string_default(ctx, -1, "");
       duk_pop(ctx);
       }
-    duk_pop(ctx);
+    duk_pop_2(ctx);
     // skip internal modules:
     if (!startsWith(*filename, "int/"))
       break;
@@ -2270,6 +2275,7 @@ void OvmsScripts::DukTapeTask()
           if (m_dukctx != NULL)
             {
             // Deliver the event to DUKTAPE
+            duk_require_stack(m_dukctx, 5);
             duk_get_global_string(m_dukctx, "PubSub");
             duk_get_prop_string(m_dukctx, -1, "publish");
             duk_dup(m_dukctx, -2);  /* this binding = process */
