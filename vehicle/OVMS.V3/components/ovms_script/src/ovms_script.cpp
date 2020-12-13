@@ -479,8 +479,6 @@ void DukOvmsErrorHandler(duk_context *ctx, duk_idx_t err_idx, OvmsWriter *writer
       writer->printf("ERROR: %s\n", error);
     else
       writer->printf("ERROR: %s (line %d)\n", error, linenumber);
-    if (stack)
-      writer->printf("Backtrace:\n%s\n", stack);
     }
   else
     {
