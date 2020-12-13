@@ -413,9 +413,11 @@ void DukOvmsFatalHandler(void *udata, const char *msg)
 
 void DukOvmsErrorHandler(duk_context *ctx, duk_idx_t err_idx, OvmsWriter *writer, const char *filename)
   {
-  const char *error;
+  const char *error, *stack = NULL;
   int linenumber = 0;
   if (!filename) filename = "eval";
+
+  duk_require_stack(ctx, 1);
 
   if (duk_is_error(ctx, err_idx))
     {
@@ -426,9 +428,13 @@ void DukOvmsErrorHandler(duk_context *ctx, duk_idx_t err_idx, OvmsWriter *writer
     duk_get_prop_string(ctx, err_idx, "lineNumber");
     linenumber = duk_get_number_default(ctx, -1, 0);
     duk_pop(ctx);
+    duk_get_prop_string(ctx, err_idx, "stack");
+    if (duk_is_string(ctx, -1))
+      stack = duk_get_string(ctx, -1);
+    duk_pop(ctx);
     }
 
-  error = duk_safe_to_string(ctx, err_idx);
+  error = stack ? stack : duk_safe_to_string(ctx, err_idx);
 
   if (writer)
     {
