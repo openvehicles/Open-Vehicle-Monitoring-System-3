@@ -60,12 +60,12 @@ using namespace std;
 
 const OvmsVehicle::poll_pid_t twizy_poll_default[] = {
   // Note: poller ticker cycles at 3600 seconds = max period
-  // { txid, rxid, type, pid, { period_off, period_drive, period_charge }, bus }
-  { CLUSTER_TXID, CLUSTER_RXID,  VEHICLE_POLL_TYPE_OBDIISESSION, SESSION_EXTDIAG,  { 0,   10,   60 }, 0 },
-  { CLUSTER_TXID, CLUSTER_RXID,  VEHICLE_POLL_TYPE_OBDIIGROUP,   CLUSTER_PID_VIN,  { 0, 3600, 3600 }, 0 },
-  { CLUSTER_TXID, CLUSTER_RXID,  VEHICLE_POLL_TYPE_OBDIIGROUP,   CLUSTER_PID_DTC,  { 0,   10,   60 }, 0 },
-  //{ CLUSTER_TXID, CLUSTER_RXID,  VEHICLE_POLL_TYPE_READDTC, {.args={ 0x02, 1, 0x0F }},  { 0,   10,   60 }, 0 },
-  { 0, 0, 0, 0, { 0, 0, 0 }, 0 }
+  // { txid, rxid, type, pid, { period_off, period_drive, period_charge }, bus, protocol }
+  { CLUSTER_TXID, CLUSTER_RXID,  VEHICLE_POLL_TYPE_OBDIISESSION, SESSION_EXTDIAG,  { 0,   10,   60 }, 0, ISOTP_STD },
+  { CLUSTER_TXID, CLUSTER_RXID,  VEHICLE_POLL_TYPE_OBDIIGROUP,   CLUSTER_PID_VIN,  { 0, 3600, 3600 }, 0, ISOTP_STD },
+  { CLUSTER_TXID, CLUSTER_RXID,  VEHICLE_POLL_TYPE_OBDIIGROUP,   CLUSTER_PID_DTC,  { 0,   10,   60 }, 0, ISOTP_STD },
+  //{ CLUSTER_TXID, CLUSTER_RXID,  VEHICLE_POLL_TYPE_READDTC, {.args={ 0x02, 1, 0x0F }},  { 0,   10,   60 }, 0, ISOTP_STD },
+  POLL_LIST_END
 };
 
 
@@ -222,8 +222,8 @@ int OvmsVehicleRenaultTwizy::ObdRequest(uint16_t txid, uint16_t rxid, string req
 
   // prepare single poll:
   OvmsVehicle::poll_pid_t poll[] = {
-    { txid, rxid, 0, 0, { 1, 1, 1 }, 0 },
-    { 0, 0, 0, 0, { 0, 0, 0 }, 0 }
+    { txid, rxid, 0, 0, { 1, 1, 1 }, 0, ISOTP_STD },
+    POLL_LIST_END
   };
 
   assert(request.size() > 0);

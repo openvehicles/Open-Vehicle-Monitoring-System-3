@@ -54,6 +54,10 @@ struct DashboardConfig;
 #define ISOTP_FT_CONSECUTIVE            2
 #define ISOTP_FT_FLOWCTRL               3
 
+// Protocol variant:
+#define ISOTP_STD                       0     // standard addressing (11 bit IDs)
+#define ISOTP_EXTADR                    1     // extended addressing (19 bit IDs)
+
 // OBD2/UDS Polling types supported:
 //  (see https://en.wikipedia.org/wiki/OBD-II_PIDs
 //   and https://en.wikipedia.org/wiki/Unified_Diagnostic_Services)
@@ -116,6 +120,9 @@ struct DashboardConfig;
 
 // Number of polling states supported
 #define VEHICLE_POLL_NSTATES            4
+
+// Macro for poll_pid_t termination
+#define POLL_LIST_END                   { 0, 0, 0x00, 0x00, { 0, 0, 0 }, 0, 0 }
 
 
 // Standard MSG protocol commands:
@@ -182,7 +189,7 @@ class OvmsVehicle : public InternalRamAllocated
     void VehicleTicker1(std::string event, void* data);
     void VehicleConfigChanged(std::string event, void* data);
     void PollerSend(bool fromTicker);
-    void PollerReceive(CAN_frame_t* frame);
+    void PollerReceive(CAN_frame_t* frame, uint32_t msgid);
 
   protected:
     virtual void IncomingFrameCan1(CAN_frame_t* p_frame);
@@ -339,21 +346,22 @@ class OvmsVehicle : public InternalRamAllocated
   public:
     typedef struct
       {
-      uint32_t txmoduleid;
-      uint32_t rxmoduleid;
-      uint16_t type;
+      uint32_t txmoduleid;                      // transmission CAN ID (address), 0x7df = OBD2 broadcast
+      uint32_t rxmoduleid;                      // expected response CAN ID or 0 for broadcasts
+      uint16_t type;                            // UDS poll type / OBD2 "mode", see VEHICLE_POLL_TYPE_…
       union
         {
-        uint16_t pid;
+        uint16_t pid;                           // PID (shortcut for requests w/o payload)
         struct
           {
-          uint16_t pid;
-          uint8_t datalen;
-          uint8_t data[6];
+          uint16_t pid;                         // PID for requests with additional payload
+          uint8_t datalen;                      // payload length
+          uint8_t data[6];                      // payload data
           } args;
         };
-      uint16_t polltime[VEHICLE_POLL_NSTATES];
-      uint8_t  pollbus;
+      uint16_t polltime[VEHICLE_POLL_NSTATES];  // poll intervals in seconds for used poll states
+      uint8_t  pollbus;                         // 0 = default CAN bus from PollSetPidList(), 1…4 = specific
+      uint8_t  protocol;                        // ISOTP_STD / ISOTP_EXTADR
       } poll_pid_t;
 
   protected:
@@ -364,6 +372,7 @@ class OvmsVehicle : public InternalRamAllocated
     const poll_pid_t* m_poll_plist;           // Head of poll list
     const poll_pid_t* m_poll_plcur;           // Current position in poll list
     uint32_t          m_poll_ticker;          // Polling ticker
+    uint8_t           m_poll_protocol;        // ISOTP_STD / ISOTP_EXTADR
     uint32_t          m_poll_moduleid_sent;   // ModuleID last sent
     uint32_t          m_poll_moduleid_low;    // Expected response moduleid low mark
     uint32_t          m_poll_moduleid_high;   // Expected response moduleid high mark
