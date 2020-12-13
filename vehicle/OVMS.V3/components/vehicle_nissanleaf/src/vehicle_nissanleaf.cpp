@@ -1067,8 +1067,8 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         StandardMetrics.ms_v_env_heating->SetValue(heating);
         StandardMetrics.ms_v_env_cooling->SetValue(cooling);
         // The following 2 values work only when climate control is activated while connected to charger.
-        m_climate_remoteheat->SetValue((d[1] & 0x0B) && heating); // needs confirming
-        m_climate_remotecool->SetValue((d[1] & 0x0A) && cooling);
+        m_climate_remoteheat->SetValue((d[1] & 0x0B) == 0x0B && heating); // needs confirming
+        m_climate_remotecool->SetValue((d[1] & 0x0A) == 0x0A && cooling);
         m_climate_auto->SetValue(d[1] & 0x02);
         
         hvac_calculated =  (d[1] != 0x08); 
