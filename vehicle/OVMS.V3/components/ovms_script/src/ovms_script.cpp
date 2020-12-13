@@ -2248,9 +2248,11 @@ void OvmsScripts::DukTapeTask()
           // Compact DUKTAPE memory
           if (m_dukctx != NULL)
             {
-            ESP_LOGD(TAG,"Duktape: Compacting DukTape memory");
+            ESP_LOGV(TAG, "Duktape: Compacting DukTape memory");
+            uint32_t ts = esp_log_timestamp();
             duk_gc(m_dukctx, 0);
             duk_gc(m_dukctx, 0);
+            ESP_LOGD(TAG, "Duktape: Compacting DukTape memory done in %u ms", esp_log_timestamp()-ts);
             }
           }
           break;
