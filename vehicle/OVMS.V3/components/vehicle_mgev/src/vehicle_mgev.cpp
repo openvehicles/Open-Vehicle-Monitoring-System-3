@@ -319,12 +319,15 @@ void OvmsVehicleMgEv::NotifyVehicleIdling()
 void OvmsVehicleMgEv::DeterminePollState(canbus* currentBus, uint32_t ticker)
 {
     // Store last 12V charging state and re-evaluate if the 12V is charging
+    
     const auto charging12vLast = StandardMetrics.ms_v_env_charging12v->AsBool();
+    /// Current Number of packets recieved on CAN
     const auto rxPackets = currentBus->m_status.packets_rx;
-    m_rxPackets = rxPackets;
+    
     // Evaluate if Ignition has just switched on
     const auto carIgnitionOn = StandardMetrics.ms_v_env_on->AsBool();
     const auto carIsCharging = StandardMetrics.ms_v_charge_inprogress->AsBool();
+    const auto voltage12V = StandardMetrics.ms_v_bat_12v_voltage->AsFloat();
     StandardMetrics.ms_v_env_charging12v->SetValue(
                  StandardMetrics.ms_v_bat_12v_voltage->AsFloat() >= CHARGING_THRESHOLD
              );
@@ -337,13 +340,11 @@ void OvmsVehicleMgEv::DeterminePollState(canbus* currentBus, uint32_t ticker)
         if (charging12vLast != StandardMetrics.ms_v_env_charging12v->AsBool())
         {
             PollSetState(PollStateRunning);
-            ESP_LOGI(TAG, "12V has just started charging, setting to running poll mode.");
+            ESP_LOGI(TAG, "12V has just started charging, setting to running poll mode. Reading");
         } 
 
-        // If ignition is on, we should set the car into running pollstate
-        // If car is in a charging state we should set charging pollstate
-        // If the state cannot be determined we need to consider zombie override
-        if ( carIgnitionOn && m_gwmState !=SendDiagnostic)
+        
+        if ( carIgnitionOn && m_gwmState !=SendDiagnostic) // If ignition is on, we should set the car into running pollstate
         {
             if( m_gwmState != SendTester )
             {
@@ -365,7 +366,7 @@ void OvmsVehicleMgEv::DeterminePollState(canbus* currentBus, uint32_t ticker)
             
             
         } 
-        else if (carIsCharging)
+        else if (carIsCharging) // If car is in a charging state we should set charging pollstate
         {
             if(m_poll_state != PollStateCharging)
             {
@@ -384,20 +385,34 @@ void OvmsVehicleMgEv::DeterminePollState(canbus* currentBus, uint32_t ticker)
             m_diagCount = 0;
             m_preZombieOverrideTicker = 0; 
             
-        }
-        else
+        } else if (StandardMetrics.ms_v_bat_soc->AsFloat() >= 97.0) // Car has completed charge, topping off 12V
         {
-            ESP_LOGV(TAG, "Vehicle State is Unknown, not running and not charging");
-            ESP_LOGV(TAG, "No RX Frames Recieved, rx %i and m_rx %i and count %i ", rxPackets, m_rxPackets, m_noRxCount);
-            m_noRxCount ++;
-            if( m_noRxCount >= ZOMBIE_DETECT_TIMEOUT)
-            {
-                carIsResponsiveToQueries = false;
-                ZombieMode();
-            }
-           
+            ESP_LOGV(TAG, "Vehicle is topping of the 12V and is fully charged");
         }
-
+        else // State is not known
+        {
+            ESP_LOGV(TAG, "Vehicle State is Unknown, checking if responsive");
+            if (m_rxPackets != rxPackets)
+            {
+                ESP_LOGV(TAG, "RX Frames Recieved, rx %i and m_rx %i and count %i ", rxPackets, m_rxPackets, m_noRxCount);
+                m_rxPackets = rxPackets;
+                if( m_noRxCount != 0)
+                {
+                    m_noRxCount --;
+                }
+                
+            }
+            else
+            {
+                ESP_LOGV(TAG, "No RX Frames Recieved, rx %i and m_rx %i and count %i ", rxPackets, m_rxPackets, m_noRxCount);
+                m_noRxCount ++;
+                if( m_noRxCount >= ZOMBIE_DETECT_TIMEOUT)
+                {
+                    carIsResponsiveToQueries = false;
+                    ZombieMode();
+                }
+            }
+        }
     } 
     else
     {
@@ -434,10 +449,8 @@ void OvmsVehicleMgEv::DeterminePollState(canbus* currentBus, uint32_t ticker)
 
     if( m_afterRunTicker != (TRANSITION_TIMEOUT +1))
     {
-        ESP_LOGV(TAG, "Pollstate %i , GWM State %i .", m_poll_state, m_gwmState);
+        ESP_LOGV(TAG, "Pollstate: %i , GWM State: %i , Rx Packet Count: %i , 12V level: %.2f.", m_poll_state, m_gwmState, rxPackets, voltage12V);
     }
-    
-    
     return;
 }
 
