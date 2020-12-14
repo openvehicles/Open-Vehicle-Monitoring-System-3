@@ -43,6 +43,7 @@ enum BmsStatus : unsigned char {
     Idle = 0x1,  // When the car does not have the ignition on
     Running = 0x3,  // When the ignition is on aux or running
     Charging = 0x6,  // When charging normally
+    CcsCharging = 0x7,  // When charging on a rapid CCS charger
     AboutToSleep = 0x8,  // Seen just before going to sleep
     Connected = 0xa,  // Connected but not charging
     StartingCharge = 0xc  // Seen when the charge was about to start
@@ -147,9 +148,14 @@ void OvmsVehicleMgEv::IncomingBmsPoll(
             }
             break;
         case batteryCurrentPid:
-            StandardMetrics.ms_v_bat_current->SetValue(
-                ((static_cast<int32_t>(value) - 40000) * 0.25) / 10.0
-            );
+            {
+                auto current = ((static_cast<int32_t>(value) - 40000) * 0.25) / 10.0;
+                StandardMetrics.ms_v_bat_current->SetValue( current );
+                auto power = StandardMetrics.ms_v_bat_voltage->AsFloat() * current;
+                power = - power / 1000;
+                StandardMetrics.ms_v_bat_power->SetValue( power );
+                
+            }
             break;
         case batteryVoltagePid:
             m_bat_pack_voltage->SetValue(value * 0.25);
@@ -194,20 +200,27 @@ void OvmsVehicleMgEv::SetBmsStatus(uint8_t status)
         case StartingCharge:
         case Charging:
             StandardMetrics.ms_v_charge_inprogress->SetValue(true);
+            StandardMetrics.ms_v_charge_type->SetValue("type2");
+            break;
+        case CcsCharging:
+            StandardMetrics.ms_v_charge_inprogress->SetValue(true);
+            StandardMetrics.ms_v_charge_type->SetValue("ccs");
             break;
         default:
-            if (StandardMetrics.ms_v_charge_inprogress->AsBool())
+            if (StandardMetrics.ms_v_charge_inprogress->AsBool() )
             {
+                StandardMetrics.ms_v_charge_type->SetValue("not charging");
                 if (StandardMetrics.ms_v_bat_soc->AsFloat() >= 97.0)
                 {
                     StandardMetrics.ms_v_charge_state->SetValue("done");
+                    StandardMetrics.ms_v_charge_inprogress->SetValue(false);
                 }
                 else
                 {
                     StandardMetrics.ms_v_charge_state->SetValue("stopped");
+                    StandardMetrics.ms_v_charge_inprogress->SetValue(false);
                 }
-            }
-            StandardMetrics.ms_v_charge_inprogress->SetValue(false);
+            } 
             break;
     }
 }
