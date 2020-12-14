@@ -1,6 +1,9 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Renault Twizy: new metrics to reflect extended lock & valet modes:
+    xrt.v.e.locked.speed    -- Speed limit [kph] set for Twizy lock mode
+    xrt.v.e.valet.odo       -- Odometer limit [km] set for Twizy valet mode
 - Location: add metric for name of current location
   New metrics:
     v.p.location        -- Name of current location if defined

@@ -86,10 +86,6 @@ OvmsVehicleRenaultTwizy::OvmsVehicleRenaultTwizy()
 
   memset(&twizy_flags, 0, sizeof twizy_flags);
 
-  // init configs:
-  MyConfig.RegisterParam("xrt", "Renault Twizy", true, true);
-  ConfigChanged(NULL);
-
   // init metrics:
   if (m_modifier == 0) {
     m_modifier = MyMetrics.RegisterModifier();
@@ -104,6 +100,13 @@ OvmsVehicleRenaultTwizy::OvmsVehicleRenaultTwizy()
   mt_bms_alert_12v  = MyMetrics.InitBool("xrt.v.b.alert.12v", SM_STALE_MIN, false);
   mt_bms_alert_batt = MyMetrics.InitBool("xrt.v.b.alert.batt", SM_STALE_MIN, false);
   mt_bms_alert_temp = MyMetrics.InitBool("xrt.v.b.alert.temp", SM_STALE_MIN, false);
+
+  m_lock_speed      = MyMetrics.InitInt("xrt.v.e.locked.speed", SM_STALE_HIGH, 0, Kph);
+  m_valet_odo       = MyMetrics.InitFloat("xrt.v.e.valet.odo", SM_STALE_HIGH, 0, Kilometers);
+
+  // init configs:
+  MyConfig.RegisterParam("xrt", "Renault Twizy", true, true);
+  ConfigChanged(NULL);
 
   // init commands:
   cmd_xrt = MyCommandApp.RegisterCommand("xrt", "Renault Twizy");
@@ -229,11 +232,11 @@ void OvmsVehicleRenaultTwizy::ConfigChanged(OvmsConfigParam* param)
 
   if (MyConfig.IsDefined("xrt", "lock_on") && !CarLocked()) {
     twizy_lock_speed = MyConfig.GetParamValueInt("xrt", "lock_on", 6);
-    SetCarLocked(true);
+    SetCarLocked(true, twizy_lock_speed);
   }
   if (MyConfig.IsDefined("xrt", "valet_on") && !ValetMode()) {
-    twizy_valet_odo = MyConfig.GetParamValueInt("xrt", "valet_on");
-    SetValetMode(true);
+    twizy_valet_odo = MyConfig.GetParamValueFloat("xrt", "valet_on") * 100;
+    SetValetMode(true, twizy_valet_odo);
   }
 
   cfg_aux_fan_port = MyConfig.GetParamValueInt("xrt", "aux_fan_port");
@@ -471,7 +474,7 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::MsgCommandRe
       res = m_sevcon->CfgLock(pval);
       if (res == COR_OK) {
         twizy_lock_speed = pval;
-        SetCarLocked(true);
+        SetCarLocked(true, twizy_lock_speed);
         MyConfig.SetParamValueInt("xrt", "lock_on", pval);
       }
       break;
@@ -480,13 +483,13 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::MsgCommandRe
       // switch on valet mode:
       pval = (args && *args) ? atoi(args) : 1;
       twizy_valet_odo = twizy_odometer + (pval * 100);
-      SetValetMode(true);
-      MyConfig.SetParamValueInt("xrt", "valet_on", pval);
+      SetValetMode(true, twizy_valet_odo);
+      MyConfig.SetParamValueFloat("xrt", "valet_on", twizy_valet_odo / 100.0f);
       break;
 
     case CMD_ValetOff:
       // switch off valet mode:
-      SetValetMode(false);
+      SetValetMode(false, 0);
       MyConfig.DeleteInstance("xrt", "valet_on");
       if (!CarLocked())
         break;
@@ -498,12 +501,13 @@ OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::MsgCommandRe
     case CMD_UnLock:
       res = m_sevcon->CfgUnlock();
       if (res == COR_OK) {
-        SetCarLocked(false);
+        SetCarLocked(false, 0);
         MyConfig.DeleteInstance("xrt", "lock_on");
         // if in valet mode, allow 1 more km:
         if (ValetMode()) {
           twizy_valet_odo = twizy_odometer + 100;
-          MyConfig.SetParamValueInt("xrt", "valet_on", twizy_valet_odo);
+          SetValetMode(true, twizy_valet_odo);
+          MyConfig.SetParamValueFloat("xrt", "valet_on", twizy_valet_odo / 100.0f);
         }
       }
       break;
