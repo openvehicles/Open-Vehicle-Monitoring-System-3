@@ -1,7 +1,7 @@
 <!--
   Web UI page plugin:
     command
-    Version 0.2  Matthias Greiling <matthias@greiling.de>
+    Version 0.4  Matthias Greiling <matthias@greiling.de>
   
   Dependencies:
     - /xrt/drivemode
@@ -14,38 +14,85 @@
     - Auth:    Cookie
 -->
 
-
-
 <script>
 $(function() {
+
+	// c- command tile
 	$(".ctile").click(function(){
-	
+		var failed = false;
+		
 		if ($(this).hasClass("active")) {
-			$(".ctile").removeClass("active");
-			$(".master").toggleClass("active");
-			$.post("/xrt/drivemode", {name: "load", value: "0" });
-		}	else {
-			$(".ctile").removeClass("active");
-			$(this).toggleClass("active");
-			$.post("/xrt/drivemode", {name: "load", value: $(this).data("load")});
+
+			$.post("/xrt/drivemode", {"load": "0"}, function(data){ failed = data.includes("Failed");});
+			
+			if (!failed) {
+				$(".ctile").removeClass("active");
+				$(".master").toggleClass("active");
+			} else {
+				window.location.reload(true);
+			}	
+		} else {
+		
+			$.post("/xrt/drivemode", {"load": $(this).data("load")}, function(data){ failed = data.includes("Failed");});
+
+			if (!failed) {
+				$(".ctile").removeClass("active");
+				$(this).toggleClass("active");
+			} else {
+				window.location.reload(true);
+			}
 		}	
 	});
 
+	// l - limit tile
 	$(".ltile").click(function(){
-	
+		var failed = false;
+
 		if ($(this).hasClass("active")) {
-			$(".ltile").removeClass("active");
-			loadcmd('unlock 0', '#output');
-		}	else {
-			$(".ltile").removeClass("active");
-			$(this).toggleClass("active");
+			loadcmd('unlock 0').then(function(output) {
+				failed = output.includes("Error");
+			});
+
+			if (!failed) {
+				$(".ltile").removeClass("active");
+			} else {
+				window.location.reload(true);
+			}
+		} else {
 			var cmd = "lock " + $(this).data("limit");
-			loadcmd(cmd, '#output');
+			loadcmd(cmd, '#output').then(function(output) {
+				failed = output.includes("Error");
+			});
+
+			if (!failed) {
+				$(".ltile").removeClass("active");
+				$(this).toggleClass("active");
+			} else {
+				window.location.reload(true);
+			}
 		}	
+	});
+
+	// opens websocket - highlights chosen drive mode and limitation
+	$('#mainControl').on("msg:metrics", function(ev, update) {
+		
+		var drivemode = update["xrt.cfg.user"];
+
+		if (drivemode !== null) {
+			$("#mainControl .ctile").filter("[data-load=" + drivemode + "]").addClass("active");
+		}	
+			
+		var limitation = update["xrt.v.e.locked.speed"];
+		
+		if (limitation !== null) {
+			$("#mainControl .ltile").filter("[data-limit=" + limitation + "]").addClass("active");
+		}
+
 	});
 });
 </script>
 <style>
+
 #main .container-fluid {
 	margin:0;
 }
@@ -137,24 +184,24 @@ $(function() {
 	.portrait{ display:none}
 }
 </style>
-<div class="mainControl">
+<div id="mainControl" class="receiver" >
 	<div class="landscape">
 		<div class="row">
-			<div data-load="0" class="col-md-1 h-50 w-25 tile ctile renault master active"></div>
+			<div data-load="0" class="col-md-1 h-50 w-25 tile ctile renault master"></div>
 			<div data-load="1" class="col-md-1 h-50 w-25 tile ctile speed"></div>
 			<div data-load="2" class="col-md-1 h-50 w-25 tile ctile green"></div>
 			<div data-load="3" class="col-md-1 h-50 w-25 tile ctile snowflake"></div>
 		</div>
 		<div class="row limit">
 			<div data-limit="20" class="col-md-1 h-50 w-25 tile ltile t20"></div>
-			<div data-limit="33" class="col-md-1 h-50 w-25 tile ltile t30"></div>
-			<div data-limit="56" class="col-md-1 h-50 w-25 tile ltile t50"></div>
-			<div data-limit="77" class="col-md-1 h-50 w-25 tile ltile t70"></div>
+			<div data-limit="30" class="col-md-1 h-50 w-25 tile ltile t30"></div>
+			<div data-limit="50" class="col-md-1 h-50 w-25 tile ltile t50"></div>
+			<div data-limit="70" class="col-md-1 h-50 w-25 tile ltile t70"></div>
 		</div>
 	</div>
 	<div class="portrait"> 
 		<div class="row">
-			<div data-load="0" class="col-sm-1 h-50 w-25 tile ctile renault master active"></div>
+			<div data-load="0" class="col-sm-1 h-50 w-25 tile ctile renault master"></div>
 			<div data-load="1" class="col-sm-1 h-50 w-25 tile ctile speed"></div>
 		</div>
 		<div class="row">
@@ -164,11 +211,11 @@ $(function() {
 		<div class="limit">
 			<div class="row ">
 				<div data-limit="20" class="col-sm-1 h-50 w-25 tile ltile t20"></div>
-				<div data-limit="33" class="col-sm-1 h-50 w-25 tile ltile t30"></div>
+				<div data-limit="30" class="col-sm-1 h-50 w-25 tile ltile t30"></div>
 			</div>
 			<div class="row ">
-				<div data-limit="56" class="col-sm-1 h-50 w-25 tile ltile t50"></div>
-				<div data-limit="77" class="col-sm-1 h-50 w-25 tile ltile t70"></div>
+				<div data-limit="50" class="col-sm-1 h-50 w-25 tile ltile t50"></div>
+				<div data-limit="70" class="col-sm-1 h-50 w-25 tile ltile t70"></div>
 			</div>
 		</div>
 	</div>
