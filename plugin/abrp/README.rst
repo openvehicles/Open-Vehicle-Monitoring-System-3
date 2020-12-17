@@ -43,6 +43,7 @@ If using the **ABRP 4 UI**:
   * Add your car (if ABRP has no live support for your car model, it will display "Live data not available")
   * Click "Link Torque", click "Next" 3 times
   * Set the "Webserver URL" by ``config set usr abrp.url "…"``
+    * Note: according to Iternio, the URL ``http://api.iternio.com/1/tlm/send`` should generally be used here instead of the Torque specific one displayed
   * Set the "User Email Address" (API token) by ``config set usr abrp.user_token "…"``
 
 If using **ABRP classic UI**:
