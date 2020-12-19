@@ -1071,7 +1071,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         m_climate_remotecool->SetValue((d[1] & 0x0A) == 0x0A && cooling);
         m_climate_auto->SetValue(d[1] & 0x02);
         
-        hvac_calculated =  (d[1] != 0x08); 
+        hvac_calculated =  (d[1] != 0x08 && d[1] != 0x04); 
         // if climate control is off set fan speed to 0 as can bus value seems to be fan speed setpoint
         if (!hvac_calculated) m_climate_fan_speed->SetValue(0);
       }
