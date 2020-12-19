@@ -160,7 +160,8 @@ int NameStringMap::Validate(OvmsWriter* writer, int argc, const char* token, boo
     {
     if (FindUniquePrefix(token).empty())
       {
-      writer->printf("Error: %s is not defined\n", token);
+      if (strcmp(token, "?") != 0)
+        writer->printf("Error: %s is not defined\n", token);
       return -1;
       }
     }

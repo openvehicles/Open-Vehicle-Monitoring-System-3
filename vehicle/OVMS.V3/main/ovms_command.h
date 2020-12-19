@@ -146,7 +146,8 @@ class NameMap : public std::map<std::string, T>
 	{
 	if (FindUniquePrefix(token) == NULL)
 	  {
-	  writer->printf("Error: %s is not defined\n", token);
+          if (strcmp(token, "?") != 0)
+            writer->printf("Error: %s is not defined\n", token);
 	  return -1;
 	  }
 	}
