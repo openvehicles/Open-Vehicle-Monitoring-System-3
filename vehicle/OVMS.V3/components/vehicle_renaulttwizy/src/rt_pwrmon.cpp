@@ -93,6 +93,25 @@ void OvmsVehicleRenaultTwizy::PowerInit()
 
 
 /**
+ * PowerShutdown:
+ */
+void OvmsVehicleRenaultTwizy::PowerShutdown()
+{
+  ESP_LOGI(TAG, "pwrmon subsystem shutdown");
+  
+  // commands
+  cmd_xrt->UnregisterCommand("power");
+  
+  // metrics
+  twizy_speedpwr[0].DeleteMetrics();
+  twizy_speedpwr[1].DeleteMetrics();
+  twizy_speedpwr[2].DeleteMetrics();
+  twizy_levelpwr[0].DeleteMetrics();
+  twizy_levelpwr[1].DeleteMetrics();
+}
+
+
+/**
  * PowerUpdateMetrics: publish metrics
  */
 void OvmsVehicleRenaultTwizy::PowerUpdateMetrics()
@@ -281,6 +300,14 @@ void speedpwr::InitMetrics(int i, metric_unit_t spdunit)
   m_spdunit = spdunit;
 }
 
+void speedpwr::DeleteMetrics()
+{
+  MyMetrics.DeregisterMetric(m_dist);
+  MyMetrics.DeregisterMetric(m_used);
+  MyMetrics.DeregisterMetric(m_recd);
+  MyMetrics.DeregisterMetric(m_spdavg);
+}
+
 void speedpwr::UpdateMetrics()
 {
   *m_dist = (float) dist / 10000;
@@ -309,6 +336,14 @@ void levelpwr::InitMetrics(int i)
   m_hsum = MyMetrics.InitFloat(x_rt_p_stats_level_hsum[i], SM_STALE_HIGH, 0, Meters);
   m_used = MyMetrics.InitFloat(x_rt_p_stats_level_used[i], SM_STALE_HIGH, 0, kWh);
   m_recd = MyMetrics.InitFloat(x_rt_p_stats_level_recd[i], SM_STALE_HIGH, 0, kWh);
+}
+
+void levelpwr::DeleteMetrics()
+{
+  MyMetrics.DeregisterMetric(m_dist);
+  MyMetrics.DeregisterMetric(m_hsum);
+  MyMetrics.DeregisterMetric(m_used);
+  MyMetrics.DeregisterMetric(m_recd);
 }
 
 void levelpwr::UpdateMetrics()

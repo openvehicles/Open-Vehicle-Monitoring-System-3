@@ -71,6 +71,8 @@ const OvmsVehicle::poll_pid_t twizy_poll_default[] = {
 
 void OvmsVehicleRenaultTwizy::ObdInit()
 {
+  ESP_LOGI(TAG, "obd subsystem init");
+
   // init poller:
   PollSetPidList(m_can1, twizy_poll_default);
   PollSetState(0);
@@ -111,6 +113,18 @@ void OvmsVehicleRenaultTwizy::ObdInit()
   twizy_cluster_dtc_updated = true;
   twizy_cluster_dtc_inhibit_alert = false;
 #endif
+}
+
+
+void OvmsVehicleRenaultTwizy::ObdShutdown()
+{
+  ESP_LOGI(TAG, "obd subsystem shutdown");
+
+  cmd_xrt->UnregisterCommand("obd");
+
+  twizy_obd_rxwait.Take(portMAX_DELAY);
+  PollSetPidList(m_can1, NULL);
+  twizy_obd_rxwait.Give();
 }
 
 
