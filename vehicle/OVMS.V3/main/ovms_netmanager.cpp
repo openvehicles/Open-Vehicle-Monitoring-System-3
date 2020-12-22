@@ -414,7 +414,15 @@ void OvmsNetManager::WifiStaBad(std::string event, void* data)
     {
     ESP_LOGI(TAG, "WIFI client has bad signal quality (%.1f dBm); disconnect",
              StdMetrics.ms_m_net_wifi_sq->AsFloat());
+    // Stop using the Wifi network:
     WifiDisconnect();
+    // If enabled, start reconnecting immediately (for fast transition to next best
+    //  AP instead of trying to reassociate to current AP):
+    if (MyPeripherals && MyPeripherals->m_esp32wifi &&
+        MyConfig.GetParamValueBool("network", "wifi.bad.reconnect") == true)
+      {
+      MyPeripherals->m_esp32wifi->Reconnect(NULL);
+      }
     }
   }
 

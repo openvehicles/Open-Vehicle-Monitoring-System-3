@@ -1628,12 +1628,36 @@ void OvmsWebServer::HandleCfgWebServer(PageEntry_t& p, PageContext_t& c)
 
 void OvmsWebServer::HandleCfgWifi(PageEntry_t& p, PageContext_t& c)
 {
+  bool cfg_bad_reconnect;
+  float cfg_sq_good, cfg_sq_bad;
+  
   if (c.method == "POST") {
     std::string warn, error;
 
     // process form submission:
     UpdateWifiTable(p, c, "ap", "wifi.ap", warn, error, 8);
     UpdateWifiTable(p, c, "client", "wifi.ssid", warn, error, 0);
+
+    cfg_sq_good = atof(c.getvar("cfg_sq_good").c_str());
+    cfg_sq_bad = atof(c.getvar("cfg_sq_bad").c_str());
+    cfg_bad_reconnect = (c.getvar("cfg_bad_reconnect") == "yes");
+
+    if (cfg_sq_bad >= cfg_sq_good) {
+      error += "<li data-input=\"cfg_sq_bad\">'Bad' signal level must be lower than 'good' level.</li>";
+    } else {
+      if (cfg_sq_good == -87)
+        MyConfig.DeleteInstance("network", "wifi.sq.good");
+      else
+        MyConfig.SetParamValueFloat("network", "wifi.sq.good", cfg_sq_good);
+      if (cfg_sq_bad == -89)
+        MyConfig.DeleteInstance("network", "wifi.sq.bad");
+      else
+        MyConfig.SetParamValueFloat("network", "wifi.sq.bad", cfg_sq_bad);
+      if (!cfg_bad_reconnect)
+        MyConfig.DeleteInstance("network", "wifi.bad.reconnect");
+      else
+        MyConfig.SetParamValueBool("network", "wifi.bad.reconnect", cfg_bad_reconnect);
+    }
 
     if (error == "") {
       c.head(200);
@@ -1653,6 +1677,10 @@ void OvmsWebServer::HandleCfgWifi(PageEntry_t& p, PageContext_t& c)
     c.alert("danger", error.c_str());
   }
   else {
+    cfg_sq_good = MyConfig.GetParamValueFloat("network", "wifi.sq.good", -87);
+    cfg_sq_bad = MyConfig.GetParamValueFloat("network", "wifi.sq.bad", -89);
+    cfg_bad_reconnect = MyConfig.GetParamValueBool("network", "wifi.bad.reconnect", false);
+    
     c.head(200);
   }
 
@@ -1668,6 +1696,16 @@ void OvmsWebServer::HandleCfgWifi(PageEntry_t& p, PageContext_t& c)
 
   c.fieldset_start("Wifi client networks");
   OutputWifiTable(p, c, "client", "wifi.ssid", MyConfig.GetParamValue("auto", "wifi.ssid.client"));
+  c.fieldset_end();
+
+  c.fieldset_start("Wifi client options");
+  c.input_slider("Good signal level", "cfg_sq_good", 3, "dBm", -1, cfg_sq_good, -87.0, -128.0, 0.0, 0.1,
+    "<p>Threshold for usable wifi signal strength</p>");
+  c.input_slider("Bad signal level", "cfg_sq_bad", 3, "dBm", -1, cfg_sq_bad, -89.0, -128.0, 0.0, 0.1,
+    "<p>Threshold for unusable wifi signal strength</p>");
+  c.input_checkbox("Immediate disconnect/reconnect", "cfg_bad_reconnect", cfg_bad_reconnect,
+    "<p>Check to immediately look for better access points when signal level gets bad."
+    " Default is to stay with the current AP as long as possible.</p>");
   c.fieldset_end();
 
   c.print(
@@ -1769,7 +1807,9 @@ void OvmsWebServer::HandleCfgWifi(PageEntry_t& p, PageContext_t& c)
     "});\n"
     "</script>");
 
-  c.panel_end();
+  c.panel_end(
+    "<p>Note: set the Wifi mode and default networks on the"
+    " <a href=\"/cfg/autostart\" target=\"#main\">Autostart configuration page</a>.</p>");
   c.done();
 }
 

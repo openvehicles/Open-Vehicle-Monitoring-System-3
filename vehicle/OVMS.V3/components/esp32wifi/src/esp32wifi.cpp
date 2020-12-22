@@ -705,11 +705,17 @@ void esp32wifi::Reconnect(OvmsWriter* writer)
   {
   if (m_mode != ESP32WIFI_MODE_CLIENT && m_mode != ESP32WIFI_MODE_APCLIENT)
     {
-    writer->puts("ERROR: wifi not in client or apclient mode");
+    if (writer)
+      writer->puts("ERROR: wifi not in client or apclient mode");
+    else
+      ESP_LOGE(TAG, "Reconnect: wifi not in client or apclient mode");
     return;
     }
 
-  writer->puts("Starting Wifi client reconnect.");
+  if (writer)
+    writer->puts("Starting Wifi client reconnect.");
+  else
+    ESP_LOGE(TAG, "Reconnect: starting Wifi client reconnect");
   if (!m_sta_connected)
     {
     m_sta_reconnect = monotonictime + 1;
@@ -718,7 +724,12 @@ void esp32wifi::Reconnect(OvmsWriter* writer)
     {
     esp_err_t res = esp_wifi_disconnect();
     if (res != ESP_OK)
-      writer->printf("ERROR: Wifi disconnect failed, error=0x%x\n", res);
+      {
+      if (writer)
+        writer->printf("ERROR: Wifi disconnect failed, error=0x%x\n", res);
+      else
+        ESP_LOGE(TAG, "Reconnect: Wifi disconnect failed, error=0x%x\n", res);
+      }
     }
   }
 

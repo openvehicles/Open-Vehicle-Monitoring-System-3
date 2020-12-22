@@ -1,6 +1,9 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Wifi: option to immediately disconnect/reconnect on bad signal level
+  New config:
+    [network] wifi.bad.reconnect [bool], default no
 - Renault Twizy: new metrics to reflect extended lock & valet modes:
     xrt.v.e.locked.speed    -- Speed limit [kph] set for Twizy lock mode
     xrt.v.e.valet.odo       -- Odometer limit [km] set for Twizy valet mode
