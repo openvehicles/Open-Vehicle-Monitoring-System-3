@@ -35,7 +35,7 @@
 #include "ovms_notify.h"
 #include "ovms_webserver.h"
 
-#include "vehicle_vweup.h"
+#include "vehicle_vweup_all.h"
 
 using namespace std;
 
@@ -274,18 +274,18 @@ void OvmsVehicleVWeUp::WebDispChgMetrics(PageEntry_t &p, PageContext_t &c)
                     "</div>"
                 "</div>"
                 "<div class=\"clearfix\">"
-                    "<div class=\"metric number\" data-metric=\"v.b.energy.used.total\" data-prec=\"3\">"
+                    "<div class=\"metric number\" data-metric=\"v.b.energy.used.total\" data-prec=\"2\">"
                         "<span class=\"label\">TOTALS:&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbspUsed</span>"
                         "<span class=\"value\">?</span>"
                         "<span class=\"unit\">kWh</span>"
                     "</div>"
-                    "<div class=\"metric number\" data-metric=\"v.b.energy.recd.total\" data-prec=\"3\">"
+                    "<div class=\"metric number\" data-metric=\"v.b.energy.recd.total\" data-prec=\"2\">"
                         "<span class=\"label\">Charged</span>"
                         "<span class=\"value\">?</span>"
                         "<span class=\"unit\">kWh</span>"
                     "</div>"
-                    "<div class=\"metric number\" data-metric=\"v.p.odometer\" data-prec=\"1\">"
-                        "<span class=\"label\">Distance</span>"
+                    "<div class=\"metric number\" data-metric=\"v.p.odometer\" data-prec=\"0\">"
+                        "<span class=\"label\">Odometer</span>"
                         "<span class=\"value\">?</span>"
                         "<span class=\"unit\">km</span>"
                     "</div>"
@@ -346,13 +346,53 @@ void OvmsVehicleVWeUp::WebDispChgMetrics(PageEntry_t &p, PageContext_t &c)
                 "<h4>AC Charger</h4>"
 
                 "<div class=\"clearfix\">"
-                    "<div class=\"metric progress\" data-metric=\"xvu.c.ac.p\" data-prec=\"3\">"
+                    "<div class=\"metric progress\" data-metric=\"v.c.voltage\" data-prec=\"0\">"
+                        "<div class=\"progress-bar value-low text-left\" role=\"progressbar\""
+                            "aria-valuenow=\"0\" aria-valuemin=\"0\" aria-valuemax=\"240\" style=\"width:0%\">"
+                            "<div>"
+                                "<span class=\"label\">AC Voltage</span>"
+                                "<span class=\"value\">?</span>"
+                                "<span class=\"unit\">V</span>"
+                            "</div>"
+                        "</div>"
+                    "</div>"
+                    "<div class=\"metric progress\" data-metric=\"v.c.current\" data-prec=\"1\">"
+                        "<div class=\"progress-bar progress-bar-danger value-low text-left\" role=\"progressbar\""
+                            "aria-valuenow=\"0\" aria-valuemin=\"0\" aria-valuemax=\"16\" style=\"width:0%\">"
+                            "<div>"
+                                "<span class=\"label\">AC Current</span>"
+                                "<span class=\"value\">?</span>"
+                                "<span class=\"unit\">A</span>"
+                            "</div>"
+                        "</div>"
+                    "</div>"
+                    "<div class=\"metric progress\" data-metric=\"v.c.power\" data-prec=\"3\">"
                         "<div class=\"progress-bar progress-bar-warning value-low text-left\" role=\"progressbar\""
                             "aria-valuenow=\"0\" aria-valuemin=\"0\" aria-valuemax=\"8\" style=\"width:0%\">"
                             "<div>"
                                 "<span class=\"label\">AC Power</span>"
                                 "<span class=\"value\">?</span>"
                                 "<span class=\"unit\">kW</span>"
+                            "</div>"
+                        "</div>"
+                    "</div>"
+                    "<div class=\"metric progress\" data-metric=\"xvu.c.dc.u1\" data-prec=\"0\">"
+                        "<div class=\"progress-bar value-low text-left\" role=\"progressbar\""
+                            "aria-valuenow=\"0\" aria-valuemin=\"0\" aria-valuemax=\"420\" style=\"width:0%\">"
+                            "<div>"
+                                "<span class=\"label\">DC Voltage</span>"
+                                "<span class=\"value\">?</span>"
+                                "<span class=\"unit\">V</span>"
+                            "</div>"
+                        "</div>"
+                    "</div>"
+                    "<div class=\"metric progress\" data-metric=\"xvu.c.dc.i1\" data-prec=\"1\">"
+                        "<div class=\"progress-bar progress-bar-danger value-low text-left\" role=\"progressbar\""
+                            "aria-valuenow=\"0\" aria-valuemin=\"0\" aria-valuemax=\"9\" style=\"width:0%\">"
+                            "<div>"
+                                "<span class=\"label\">DC Current</span>"
+                                "<span class=\"value\">?</span>"
+                                "<span class=\"unit\">A</span>"
                             "</div>"
                         "</div>"
                     "</div>"
@@ -367,6 +407,7 @@ void OvmsVehicleVWeUp::WebDispChgMetrics(PageEntry_t &p, PageContext_t &c)
                         "</div>"
                     "</div>"
                 "</div>"
+
                 "<div class=\"clearfix\">"
                     "<div class=\"metric number\" data-metric=\"v.c.efficiency\" data-prec=\"1\">"
                         "<span class=\"label\">Efficiency (total)</span>"
@@ -384,8 +425,9 @@ void OvmsVehicleVWeUp::WebDispChgMetrics(PageEntry_t &p, PageContext_t &c)
                         "<span class=\"unit\">kW</span>"
                     "</div>"
                 "</div>"
-                                
+
             "</div>"
+                                
         "</div>"
     "</div>"
    );
@@ -394,7 +436,7 @@ void OvmsVehicleVWeUp::WebDispChgMetrics(PageEntry_t &p, PageContext_t &c)
 }
 
 /**
- * WebPlugin to display temperaure metrics
+ * WebPlugin to display temperature metrics
  */
 void OvmsVehicleVWeUp::WebDispTempMetrics(PageEntry_t &p, PageContext_t &c)
 {
@@ -413,12 +455,12 @@ void OvmsVehicleVWeUp::WebDispTempMetrics(PageEntry_t &p, PageContext_t &c)
                 "<h4>Next Maintenance</h4>"
 
                 "<div class=\"clearfix\">"
-                    "<div class=\"metric number\" data-metric=\"xvu.v.m.d\" data-prec=\"0\">"
-                        "<span class=\"label\">Distance</span>"
+                    "<div class=\"metric number\" data-metric=\"v.e.serv.range\" data-prec=\"0\">"
+                        "<span class=\"label\">Range</span>"
                         "<span class=\"value\">?</span>"
                         "<span class=\"unit\">km</span>"
                     "</div>"
-                    "<div class=\"metric number\" data-metric=\"xvu.v.m.t\" data-prec=\"0\">"
+                    "<div class=\"metric number\" data-metric=\"v.e.serv.days\" data-prec=\"0\">"
                         "<span class=\"label\">Time</span>"
                         "<span class=\"value\">?</span>"
                         "<span class=\"unit\">d</span>"

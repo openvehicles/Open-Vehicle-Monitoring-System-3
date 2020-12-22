@@ -104,6 +104,8 @@ using namespace std;
 #define VWUP_ELD_TEMP_PEV 0x4663 // power electronics IGBT temperature phase V
 #define VWUP_ELD_TEMP_PEU 0x4664 // power electronics IGBT temperature phase U
 #define VWUP_ELD_TEMP_STAT 0x4672 // e-machine stator temperature
+#define VWUP_ELD_DCDC_U 0x465C // DCDC converter output voltage
+#define VWUP_ELD_DCDC_I 0x465B // DCDC converter output current
 
 #define VWUP_INF_TEMP_PCB 0x1863 // temperature processor PCB
 //#define VWUP_INF_TEMP_OPT 0x // temperature optical drive

@@ -1002,7 +1002,7 @@ void OvmsServerV2::TransmitMsgStat(bool always)
     << ","
     << StandardMetrics.ms_v_charge_voltage->AsInt()
     << ","
-    << StandardMetrics.ms_v_charge_current->AsInt()
+    << StandardMetrics.ms_v_charge_current->AsFloat()
     << ","
     << StandardMetrics.ms_v_charge_state->AsString("stopped")
     << ","
@@ -1067,6 +1067,10 @@ void OvmsServerV2::TransmitMsgStat(bool always)
     << StandardMetrics.ms_v_charge_power->AsFloat()
     << ","
     << StandardMetrics.ms_v_charge_efficiency->AsFloat()
+    << ","
+    << StandardMetrics.ms_v_env_service_range->AsInt()
+    << ","
+    << StandardMetrics.ms_v_env_service_days->AsInt()
     ;
 
   Transmit(buffer.str().c_str());

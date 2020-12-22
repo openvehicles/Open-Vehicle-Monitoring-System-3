@@ -34,7 +34,7 @@ static const char *TAG = "v-vweup";
 
 #include <stdio.h>
 #include "pcp.h"
-#include "vehicle_vweup.h"
+#include "vehicle_vweup_all.h"
 #include "vweup_t26.h"
 #include "metrics_standard.h"
 #include "ovms_webserver.h"
@@ -51,6 +51,37 @@ void OvmsVehicleVWeUp::ccCountdown(TimerHandle_t timer)
 {
     OvmsVehicleVWeUp *vweup = (OvmsVehicleVWeUp *)pvTimerGetTimerID(timer);
     vweup->CCCountdown();
+}
+
+void OvmsVehicleVWeUp::T26Init()
+{
+    ESP_LOGI(TAG, "Starting connection: T26A (Comfort CAN)");
+    memset(m_vin, 0, sizeof(m_vin));
+
+    RegisterCanBus(3, CAN_MODE_ACTIVE, CAN_SPEED_100KBPS);
+
+    MyConfig.RegisterParam("xvu", "VW e-Up", true, true);
+    vin_part1 = false;
+    vin_part2 = false;
+    vin_part3 = false;
+    vweup_remote_climate_ticker = 0;
+    ocu_awake = false;
+    ocu_working = false;
+    ocu_what = false;
+    ocu_wait = false;
+    vweup_cc_on = false;
+    vweup_cc_turning_on = false;
+    vweup_cc_temp_int = 21;
+    fas_counter_on = 0;
+    fas_counter_off = 0;
+    signal_ok = false;
+    cc_count = 0;
+    cd_count = 0;
+
+    dev_mode = false; // true disables writing on the comfort CAN. For code debugging only.
+
+    StandardMetrics.ms_v_env_locked->SetValue(true);
+    StandardMetrics.ms_v_env_headlights->SetValue(false);
 }
 
 /*
@@ -102,14 +133,19 @@ void OvmsVehicleVWeUp::ConfigChanged(OvmsConfigParam *param)
 // Takes care of setting all the state appropriate when the car is on
 // or off.
 //
-void OvmsVehicleVWeUp::vehicle_vweup_car_on(bool isOn)
+void OvmsVehicleVWeUp::vehicle_vweup_car_on(bool turnOn)
 {
-    if (isOn && !StandardMetrics.ms_v_env_on->AsBool())
+    if (turnOn && !StandardMetrics.ms_v_env_on->AsBool())
     {
         // Log once that car is being turned on
         ESP_LOGI(TAG, "CAR IS ON");
         StandardMetrics.ms_v_env_on->SetValue(true);
         PollSetState(VWEUP_ON);
+//        TimeOffRequested = 0;
+        OdoStart = StandardMetrics.ms_v_pos_odometer->AsFloat();
+        EnergyRecdStart = StandardMetrics.ms_v_bat_energy_recd_total->AsFloat();
+        EnergyUsedStart = StandardMetrics.ms_v_bat_energy_used_total->AsFloat();
+        ESP_LOGI(TAG,"Start Counters: %f, %f, %f",OdoStart,EnergyRecdStart,EnergyUsedStart);
         // Turn off possibly running climate control timer
         if (ocu_awake)
         {
@@ -129,13 +165,17 @@ void OvmsVehicleVWeUp::vehicle_vweup_car_on(bool isOn)
         fas_counter_on = 0;
         fas_counter_off = 0;
     }
-    else if (!isOn && StandardMetrics.ms_v_env_on->AsBool())
+    else if (!turnOn && StandardMetrics.ms_v_env_on->AsBool())
     {
         // Log once that car is being turned off
         ESP_LOGI(TAG, "CAR IS OFF");
         StandardMetrics.ms_v_env_on->SetValue(false);
+        StandardMetrics.ms_v_charge_voltage->SetValue(0);
+        StandardMetrics.ms_v_charge_current->SetValue(0);
         PollSetState(VWEUP_OFF);
     }
+//    else if (turnOn)
+//        PollSetState(VWEUP_ON);
 }
 
 void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
@@ -219,6 +259,8 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
 
     case 0x65D: // ODO
         StandardMetrics.ms_v_pos_odometer->SetValue(((uint32_t)(d[3] & 0xf) << 12) | ((UINT)d[2] << 8) | d[1]);
+        StandardMetrics.ms_v_pos_trip->SetValue(StandardMetrics.ms_v_pos_odometer->AsFloat()-OdoStart); // so far we don't know where to get trip distance directly...
+//        ESP_LOGI(TAG,"Odo Counter: %f",StandardMetrics.ms_v_pos_trip->AsFloat());
         break;
 
     case 0x320: // Speed
@@ -290,8 +332,10 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
       cd_count++;
       if (d[2] < 0x07) {
          isCharging = true;
+         PollSetState(VWEUP_CHARGING);
       } else {
          isCharging = false;
+         PollSetState(VWEUP_OFF);
       }
       if (isCharging != lastCharging) { 
         // count till 3 messages in a row to stop ghost triggering
@@ -315,7 +359,7 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
           StandardMetrics.ms_v_charge_state->SetValue("done");
           StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
           ESP_LOGI(TAG,"Car charge session ended");
-          PollSetState(VWEUP_ON);
+          PollSetState(VWEUP_OFF);
         } 
       } else {
           cd_count = 0;
@@ -607,6 +651,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandWakeup()
         xTimerStart(m_sendOcuHeartbeat, 0);
 
         ESP_LOGI(TAG, "Sent Wakeup Command - stage 2");
+//        OvmsVehicleVWeUp::vehicle_vweup_car_on(true); // make sure OBD knows that car is on
     }
     // This can be done better. Gives always success, even when already awake.
     return Success;
