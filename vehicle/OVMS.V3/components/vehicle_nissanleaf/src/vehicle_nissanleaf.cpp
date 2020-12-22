@@ -65,14 +65,14 @@ enum poll_states
 
 static const OvmsVehicle::poll_pid_t obdii_polls[] =
   {
-    { CHARGER_TXID, CHARGER_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, VIN_PID, {  0, 900, 0, 0 }, 2 },           // VIN [19]
-    { CHARGER_TXID, CHARGER_RXID, VEHICLE_POLL_TYPE_OBDIIEXTENDED, QC_COUNT_PID, {  0, 900, 0, 0 }, 2 },   // QC [2]
-    { CHARGER_TXID, CHARGER_RXID, VEHICLE_POLL_TYPE_OBDIIEXTENDED, L1L2_COUNT_PID, {  0, 900, 0, 0 }, 2 }, // L0/L1/L2 [2]
-    { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x01, {  0, 60, 0, 60 }, 1 },   // bat [39/41]
-    { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x02, {  0, 60, 0, 60 }, 1 },   // battery voltages [196]
-    { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x06, {  0, 60, 0, 60 }, 1 },   // battery shunts [96]
-    { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x04, {  0, 300, 0, 300 }, 1 }, // battery temperatures [14]
-    { 0, 0, 0x00, 0x00, { 0, 0, 0, 0 }, 0 }
+    { CHARGER_TXID, CHARGER_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, VIN_PID, {  0, 900, 0, 0 }, 2, ISOTP_STD },           // VIN [19]
+    { CHARGER_TXID, CHARGER_RXID, VEHICLE_POLL_TYPE_OBDIIEXTENDED, QC_COUNT_PID, {  0, 900, 0, 0 }, 2, ISOTP_STD },   // QC [2]
+    { CHARGER_TXID, CHARGER_RXID, VEHICLE_POLL_TYPE_OBDIIEXTENDED, L1L2_COUNT_PID, {  0, 900, 0, 0 }, 2, ISOTP_STD }, // L0/L1/L2 [2]
+    { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x01, {  0, 60, 0, 60 }, 1, ISOTP_STD },   // bat [39/41]
+    { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x02, {  0, 60, 0, 60 }, 1, ISOTP_STD },   // battery voltages [196]
+    { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x06, {  0, 60, 0, 60 }, 1, ISOTP_STD },   // battery shunts [96]
+    { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x04, {  0, 300, 0, 300 }, 1, ISOTP_STD }, // battery temperatures [14]
+    POLL_LIST_END
   };
 
 void remoteCommandTimer(TimerHandle_t timer)
@@ -138,6 +138,7 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   m_battery_energy_capacity = MyMetrics.InitFloat("xnl.v.b.e.capacity", SM_STALE_HIGH, 0, kWh);
   m_battery_energy_available = MyMetrics.InitFloat("xnl.v.b.e.available", SM_STALE_HIGH, 0, kWh);
   m_battery_type = MyMetrics.InitInt("xnl.v.b.type", SM_STALE_HIGH, 0); // auto-detect version and size by can traffic
+  m_battery_heaterpresent = MyMetrics.InitBool("xnl.v.b.heaterpresent", SM_STALE_HIGH, false);
   m_charge_duration = MyMetrics.InitVector<int>("xnl.v.c.duration", SM_STALE_HIGH, 0, Minutes);
   // note vector strings are not handled by ovms_metrics.h and cause web errors loading ev.data in ovms.js
   // this will need to be resolved before reinstating metrics
@@ -452,8 +453,8 @@ bool OvmsVehicleNissanLeaf::ObdRequest(uint16_t txid, uint16_t rxid, uint32_t re
   OvmsMutexLock lock(&nl_obd_request);
   // prepare single poll:
   OvmsVehicle::poll_pid_t poll[] = {
-    { txid, rxid, 0, 0, { 1, 1, 1, 1 }, 0 },
-    { 0, 0, 0, 0, { 0, 0, 0, 0 }, 0 }
+    { txid, rxid, 0, 0, { 1, 1, 1, 1 }, 0, ISOTP_STD },
+    POLL_LIST_END
   };
   if (request < 0x10000) {
     poll[0].type = (request & 0xff00) >> 8;
@@ -890,11 +891,12 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       float batt_volt   = StandardMetrics.ms_v_bat_voltage->AsFloat();
       float batt_curr   = abs(StandardMetrics.ms_v_bat_current->AsFloat());
       float charge_curr = ( (d[0] & 0x01) << 8 | d[1] ) / 2.0f;
+      float volt_scaling = MyConfig.GetParamValueFloat("xnl", "acvoltagemultiplier", DEFAULT_AC_VOLTAGE_MULTIPLIER);
       switch (d[5])
         {
         case 0x80:
         case 0x82: // V2X 
-          StandardMetrics.ms_v_charge_voltage->SetValue(d[3] * 1.12);
+          StandardMetrics.ms_v_charge_voltage->SetValue(d[3] * volt_scaling);
           StandardMetrics.ms_v_charge_current->SetValue(charge_curr);
           vehicle_nissanleaf_charger_status(CHARGER_STATUS_IDLE);
           break;
@@ -909,7 +911,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         case 0x88: // on evse power loss car still reports 0x88
           if (StandardMetrics.ms_v_charge_pilot->AsBool())
             { // voltage scaling to approx. evse kWh output
-            StandardMetrics.ms_v_charge_voltage->SetValue(d[3] * 1.12);
+            StandardMetrics.ms_v_charge_voltage->SetValue(d[3] * volt_scaling);
             StandardMetrics.ms_v_charge_current->SetValue(charge_curr);
             vehicle_nissanleaf_charger_status(CHARGER_STATUS_CHARGING);
             }
@@ -920,12 +922,12 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
           break;
         case 0x90: //this state appears just before 0x88 and after evse removed (prepare/finish)
         case 0x92:
-          StandardMetrics.ms_v_charge_voltage->SetValue(d[3] * 1.12);
+          StandardMetrics.ms_v_charge_voltage->SetValue(d[3] * volt_scaling);
           StandardMetrics.ms_v_charge_current->SetValue(charge_curr);
           vehicle_nissanleaf_charger_status(CHARGER_STATUS_IDLE);
           break;
         case 0x98:
-          StandardMetrics.ms_v_charge_voltage->SetValue(d[3] * 1.12);
+          StandardMetrics.ms_v_charge_voltage->SetValue(d[3] * volt_scaling);
           StandardMetrics.ms_v_charge_current->SetValue(charge_curr);
           vehicle_nissanleaf_charger_status(CHARGER_STATUS_PLUGGED_IN_TIMER_WAIT);
           break;
@@ -951,7 +953,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         fanspeed_int = 0;
       }
 
-      m_climate_fan_speed->SetValue(fanspeed_int);
+      m_climate_fan_speed->SetValue(fanspeed_int / 7.0 * 100);
       m_climate_fan_speed_limit->SetValue(7);
 
       bool fan_only = (d[1] == 0x48 && fanspeed_int != 0);
@@ -1000,15 +1002,9 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         break;
       }
 
-      // The following 2 values work only when preheat is activated while connected to charger.
-      m_climate_remoteheat->SetValue(d[1] == 0x4b);
-      m_climate_remotecool->SetValue(d[1] == 0x71);
-
       bool hvac_calculated = false;
 
-      int model_year = MyConfig.GetParamValueInt("xnl", "modelyear", DEFAULT_MODEL_YEAR);
-
-      if (model_year < 2013)
+      if (MyConfig.GetParamValueInt("xnl", "modelyear", DEFAULT_MODEL_YEAR) < 2013)
       // leaving this legacy (mostly) code part until someone tests the new logic in <2013 cars.
       {
         // this might be a bit field? So far these 6 values indicate HVAC on
@@ -1027,15 +1023,20 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         */
         StandardMetrics.ms_v_env_cooling->SetValue(d[1] & 0x10);
         StandardMetrics.ms_v_env_heating->SetValue(d[1] & 0x02);
+        // The following 2 values work only when preheat is activated while connected to charger.
+        m_climate_remoteheat->SetValue(d[1] == 0x4b);
+        m_climate_remotecool->SetValue(d[1] == 0x71);
       }
 
       else
       // More accurate climate control values for hvac, heating, cooling for 2013+ model year cars.
       {
 
-        bool cooling = d[1] == 0x78 || /* cool only */
-                       d[1] == 0x79 || /* cool + heat */
-                       d[1] == 0x76;   /* cool + auto */
+        bool cooling = (d[1] & 0x70);
+        //               d[1] == 0x7a || /* remote cool only */
+        //               d[1] == 0x78 || /* cool only */
+        //               d[1] == 0x79 || /* cool + heat */
+        //               d[1] == 0x76;   /* cool + auto */
 
         // d[1] == 0x47 : heat + auto
         // d[1] == 0x49 : heat only
@@ -1049,8 +1050,11 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
 
         StandardMetrics.ms_v_env_heating->SetValue(heating);
         StandardMetrics.ms_v_env_cooling->SetValue(cooling);
+        // The following 2 values work only when preheat is activated while connected to charger.
+        m_climate_remoteheat->SetValue((d[1] & 0x02) && heating);
+        m_climate_remotecool->SetValue((d[1] & 0x02) && cooling);
 
-        hvac_calculated = (climate_on & (m_climate_fan_speed->AsInt() != 0));
+        hvac_calculated = (climate_on && (heating || cooling));
 
       }
 
@@ -1076,10 +1080,11 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
     case 0x54f:
       /* Climate control's measurement of temperature inside the car.
        * Appears to be in Fahrenheit. Unsure why the check for 20? 
+       * mjk: seeems like off by 6 celcius on 2013 models, so added cabintempoffset that can be set in GUI.
        */
       if (d[0] != 20)
         {
-        StandardMetrics.ms_v_env_cabintemp->SetValue(5.0 / 9.0 * (d[0] - 32));
+        StandardMetrics.ms_v_env_cabintemp->SetValue((5.0 / 9.0 * (d[0] - 32)) + MyConfig.GetParamValueFloat("xnl", "cabintempoffset", DEFAULT_CABINTEMP_OFFSET));
         // StandardMetrics.ms_v_env_cabintemp->SetValue(d[0] / 2.0 - 14);
         }
       break;
@@ -1263,6 +1268,13 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       if ( (d[0]>>6) == 1 )
         {
         StandardMetrics.ms_v_bat_temp->SetValue(d[2] / 2 - 40);
+        }
+      /* Battery Heater existance as reported by the LBC. 
+       * Frame 4, bit 0. Note this should only work on AZE0. 
+       */
+      if ( d[4] && MyConfig.GetParamValueInt("xnl", "modelyear", DEFAULT_MODEL_YEAR) >= 2013 )
+        {
+        m_battery_heaterpresent->SetValue(d[4] & 0x01);
         }
       break;
     }
@@ -1513,6 +1525,15 @@ void OvmsVehicleNissanLeaf::SendCommand(RemoteCommand command)
 void OvmsVehicleNissanLeaf::RemoteCommandTimer()
   {
   ESP_LOGI(TAG, "RemoteCommandTimer %d", nl_remote_command_ticker);
+  // if lock or unlock is successful don't repeat command
+  if (nl_remote_command == LOCK_DOORS && StandardMetrics.ms_v_env_locked->AsBool())
+    {
+    nl_remote_command_ticker = 0;
+    }
+  if (nl_remote_command == UNLOCK_DOORS && !StandardMetrics.ms_v_env_locked->AsBool())
+    {
+    nl_remote_command_ticker = 0;
+    }
   if (nl_remote_command_ticker > 0)
     {
     nl_remote_command_ticker--;

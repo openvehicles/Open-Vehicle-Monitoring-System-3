@@ -1406,6 +1406,10 @@ button.toggle-night, button.toggle-fullscreen {
 
 /* Dialogs */
 
+.modal pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
 .modal-title span.lead {
   text-transform: capitalize;
 }

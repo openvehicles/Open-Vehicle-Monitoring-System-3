@@ -350,7 +350,7 @@ void OvmsNetManager::WifiStaGotIP(std::string event, void* data)
     ScheduleCleanup();
   #endif
 
-  WifiStaCheckSQ(NULL);
+  WifiStaCheckSQ(StdMetrics.ms_m_net_wifi_sq);
   }
 
 void OvmsNetManager::WifiStaLostIP(std::string event, void* data)
@@ -377,6 +377,7 @@ void OvmsNetManager::WifiStaConnected(std::string event, void* data)
 
 void OvmsNetManager::WifiStaStop(std::string event, void* data)
   {
+  WifiStaSetSQ(false);
   if (m_wifi_sta)
     {
     m_wifi_sta = false;
@@ -413,7 +414,15 @@ void OvmsNetManager::WifiStaBad(std::string event, void* data)
     {
     ESP_LOGI(TAG, "WIFI client has bad signal quality (%.1f dBm); disconnect",
              StdMetrics.ms_m_net_wifi_sq->AsFloat());
+    // Stop using the Wifi network:
     WifiDisconnect();
+    // If enabled, start reconnecting immediately (for fast transition to next best
+    //  AP instead of trying to reassociate to current AP):
+    if (MyPeripherals && MyPeripherals->m_esp32wifi &&
+        MyConfig.GetParamValueBool("network", "wifi.bad.reconnect") == true)
+      {
+      MyPeripherals->m_esp32wifi->Reconnect(NULL);
+      }
     }
   }
 
@@ -432,6 +441,15 @@ void OvmsNetManager::WifiStaCheckSQ(OvmsMetric* metric)
       m_wifi_good = false;
       MyEvents.SignalEvent("network.wifi.sta.bad", NULL);
       }
+    }
+  }
+
+void OvmsNetManager::WifiStaSetSQ(bool good)
+  {
+  if (m_wifi_sta && m_wifi_good != good)
+    {
+    m_wifi_good = good;
+    MyEvents.SignalEvent(good ? "network.wifi.sta.good" : "network.wifi.sta.bad", NULL);
     }
   }
 

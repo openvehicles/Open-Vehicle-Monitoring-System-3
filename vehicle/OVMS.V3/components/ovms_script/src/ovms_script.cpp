@@ -449,9 +449,11 @@ void DukOvmsFatalHandler(void *udata, const char *msg)
 
 void DukOvmsErrorHandler(duk_context *ctx, duk_idx_t err_idx, OvmsWriter *writer=NULL, const char *filename=NULL)
   {
-  const char *error;
+  const char *error, *stack = NULL;
   int linenumber = 0;
   if (!filename) filename = "eval";
+
+  duk_require_stack(ctx, 1);
 
   if (duk_is_error(ctx, err_idx))
     {
@@ -462,9 +464,13 @@ void DukOvmsErrorHandler(duk_context *ctx, duk_idx_t err_idx, OvmsWriter *writer
     duk_get_prop_string(ctx, err_idx, "lineNumber");
     linenumber = duk_get_number_default(ctx, -1, 0);
     duk_pop(ctx);
+    duk_get_prop_string(ctx, err_idx, "stack");
+    if (duk_is_string(ctx, -1))
+      stack = duk_get_string(ctx, -1);
+    duk_pop(ctx);
     }
 
-  error = duk_safe_to_string(ctx, err_idx);
+  error = stack ? stack : duk_safe_to_string(ctx, err_idx);
 
   if (writer)
     {
@@ -564,6 +570,11 @@ static void DukGetCallInfo(duk_context *ctx, std::string *filename, int *linenum
     *filename = "";
     *function = "";
     duk_inspect_callstack_entry(ctx, i);
+    if (duk_is_undefined(ctx, -1))
+      {
+      duk_pop(ctx);
+      break;
+      }
     duk_get_prop_string(ctx, -1, "lineNumber");
     *linenumber = duk_get_number_default(ctx, -1, 0);
     duk_pop(ctx);
@@ -576,7 +587,7 @@ static void DukGetCallInfo(duk_context *ctx, std::string *filename, int *linenum
       *function = duk_get_string_default(ctx, -1, "");
       duk_pop(ctx);
       }
-    duk_pop(ctx);
+    duk_pop_2(ctx);
     // skip internal modules:
     if (!startsWith(*filename, "int/"))
       break;
@@ -2248,9 +2259,11 @@ void OvmsScripts::DukTapeTask()
           // Compact DUKTAPE memory
           if (m_dukctx != NULL)
             {
-            ESP_LOGD(TAG,"Duktape: Compacting DukTape memory");
+            ESP_LOGV(TAG, "Duktape: Compacting DukTape memory");
+            uint32_t ts = esp_log_timestamp();
             duk_gc(m_dukctx, 0);
             duk_gc(m_dukctx, 0);
+            ESP_LOGD(TAG, "Duktape: Compacting DukTape memory done in %u ms", esp_log_timestamp()-ts);
             }
           }
           break;
@@ -2260,6 +2273,7 @@ void OvmsScripts::DukTapeTask()
           if (m_dukctx != NULL)
             {
             // Deliver the event to DUKTAPE
+            duk_require_stack(m_dukctx, 5);
             duk_get_global_string(m_dukctx, "PubSub");
             duk_get_prop_string(m_dukctx, -1, "publish");
             duk_dup(m_dukctx, -2);  /* this binding = process */

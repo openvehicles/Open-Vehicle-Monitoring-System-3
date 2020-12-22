@@ -160,7 +160,8 @@ int NameStringMap::Validate(OvmsWriter* writer, int argc, const char* token, boo
     {
     if (FindUniquePrefix(token).empty())
       {
-      writer->printf("Error: %s is not defined\n", token);
+      if (strcmp(token, "?") != 0)
+        writer->printf("Error: %s is not defined\n", token);
       return -1;
       }
     }
@@ -423,6 +424,7 @@ bool OvmsCommand::UnregisterCommand(const char* name)
 
 char ** OvmsCommand::Complete(OvmsWriter* writer, int argc, const char * const * argv)
   {
+  writer->SetCompletion(0, NULL);       // Start with no completion tokens
   if (m_validate)
     {
     int used = -1;

@@ -71,8 +71,14 @@ using namespace std;
 
 #define SetCtrlLoggedIn(b)    (StdMetrics.ms_v_env_ctrl_login->SetValue(b))
 #define SetCtrlCfgMode(b)     (StdMetrics.ms_v_env_ctrl_config->SetValue(b))
-#define SetCarLocked(b)       (StdMetrics.ms_v_env_locked->SetValue(b))
-#define SetValetMode(b)       (StdMetrics.ms_v_env_valet->SetValue(b))
+#define SetCarLocked(b, kph)  { \
+  m_lock_speed->SetValue(kph); \
+  StdMetrics.ms_v_env_locked->SetValue(b); \
+}
+#define SetValetMode(b, odo)  { \
+  m_valet_odo->SetValue(odo / 100.0f); \
+  StdMetrics.ms_v_env_valet->SetValue(b); \
+}
 
 
 class OvmsVehicleRenaultTwizy : public OvmsVehicle
@@ -309,6 +315,7 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
   
   public:
     void PowerInit();
+    void PowerShutdown();
     void PowerUpdateMetrics();
     void PowerUpdate();
     void PowerReset();
@@ -359,6 +366,7 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
   
   public:
     void BatteryInit();
+    void BatteryShutdown();
     bool BatteryLock(int maxwait_ms);
     void BatteryUnlock();
     void BatteryUpdateMetrics();
@@ -442,6 +450,7 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
   
   public:
     void ChargeInit();
+    void ChargeShutdown();
     vehicle_command_t CommandCA(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     vehicle_command_t MsgCommandCA(std::string &result, int command, const char* args);
     vehicle_command_t CommandSetChargeMode(vehicle_mode_t mode);
@@ -484,6 +493,8 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
   public:
     int               twizy_lock_speed = 6;     // if Lock mode: fix speed to this (kph)
     uint32_t          twizy_valet_odo = 0;      // if Valet mode: reduce speed if twizy_odometer > this
+    OvmsMetricInt     *m_lock_speed;
+    OvmsMetricFloat   *m_valet_odo;
 
   protected:
     SevconClient *m_sevcon = NULL;
@@ -497,6 +508,7 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
   
   public:
     void ObdInit();
+    void ObdShutdown();
     void ObdTicker1();
     void ObdTicker10();
     int ObdRequest(uint16_t txid, uint16_t rxid, string request, string& response, int timeout_ms=3000);
@@ -536,6 +548,7 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
   
   public:
     void WebInit();
+    void WebShutdown();
     static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
     static void WebCfgBattery(PageEntry_t& p, PageContext_t& c);
     static void WebConsole(PageEntry_t& p, PageContext_t& c);

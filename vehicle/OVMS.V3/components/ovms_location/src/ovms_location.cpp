@@ -311,6 +311,11 @@ void location_set(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
   float latitude, longitude;
   int radius = LOCATION_DEFRADIUS;
 
+  if (strcmp(name, "?") == 0)
+    {
+    writer->printf("Error: ? is not a valid name\n");
+    return;
+    }
   if (argc >= 3)
     {
     latitude = atof(argv[1]);

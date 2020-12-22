@@ -12,5 +12,7 @@ COMPONENT_ADD_INCLUDEDIRS := src
 COMPONENT_ADD_LDFLAGS = -Wl,--whole-archive -l$(COMPONENT_NAME) -Wl,--no-whole-archive
 
 ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+# To get line numbers of internal modules in stack traces, embed the uncompressed sources:
+#COMPONENT_EMBED_FILES := jsmodsrc/pubsub.js jsmodsrc/json.js
 COMPONENT_EMBED_FILES := jsmodembed/pubsub.js jsmodembed/json.js
 endif

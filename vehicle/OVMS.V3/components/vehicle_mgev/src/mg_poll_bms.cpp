@@ -60,7 +60,7 @@ void OvmsVehicleMgEv::ProcessBatteryStats(int index, uint8_t* data, uint16_t rem
         uint16_t vmin = (data[0] << 8 | data[1]);
         m_bmsCache = data[2];
 
-        StandardMetrics.ms_v_bat_cell_vmin->SetElemValue(index, vmin / 1475.0f);
+        StandardMetrics.ms_v_bat_cell_vmin->SetElemValue(index, (vmin / 2000.0f) + 1.0f);
         
         {
             auto pvmin = StandardMetrics.ms_v_bat_cell_vmin->AsVector();
@@ -76,7 +76,7 @@ void OvmsVehicleMgEv::ProcessBatteryStats(int index, uint8_t* data, uint16_t rem
         uint8_t tmax = data[2];
         //uint8_t tpcb = data[3]; tpcb / 2.0 - 40.0;
 
-        StandardMetrics.ms_v_bat_cell_vmax->SetElemValue(index, vmax / 1475.0f);
+        StandardMetrics.ms_v_bat_cell_vmax->SetElemValue(index, (vmax / 2000.0f) + 1.0f);
         StandardMetrics.ms_v_bat_cell_tmin->SetElemValue(index, tmin * 0.5f - 40.0f);
         StandardMetrics.ms_v_bat_cell_tmax->SetElemValue(index, tmax * 0.5f - 40.0f);
 
@@ -181,24 +181,6 @@ void OvmsVehicleMgEv::IncomingBmsPoll(
             break;
         case batterySoHPid:
             StandardMetrics.ms_v_bat_soh->SetValue(value / 100.0);
-            break;
-        case chargeRatePid:
-            // The kW of the charger, crude way to determine the charge type
-            {
-                auto rate = value / 10.0;
-                if (rate < 0.1)
-                {
-                    StandardMetrics.ms_v_charge_type->SetValue("undefined");
-                }
-                else if (rate > 7.0)
-                {
-                    StandardMetrics.ms_v_charge_type->SetValue("ccs");
-                }
-                else
-                {
-                    StandardMetrics.ms_v_charge_type->SetValue("type2");
-                }
-            }
             break;
         case bmsRangePid:
             StandardMetrics.ms_v_bat_range_est->SetValue(value / 10.0);
