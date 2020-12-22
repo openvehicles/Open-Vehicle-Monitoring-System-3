@@ -65,14 +65,14 @@ enum poll_states
 
 static const OvmsVehicle::poll_pid_t obdii_polls[] =
   {
-    { CHARGER_TXID, CHARGER_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, VIN_PID, {  0, 900, 0, 0 }, 2 },           // VIN [19]
-    { CHARGER_TXID, CHARGER_RXID, VEHICLE_POLL_TYPE_OBDIIEXTENDED, QC_COUNT_PID, {  0, 900, 0, 0 }, 2 },   // QC [2]
-    { CHARGER_TXID, CHARGER_RXID, VEHICLE_POLL_TYPE_OBDIIEXTENDED, L1L2_COUNT_PID, {  0, 900, 0, 0 }, 2 }, // L0/L1/L2 [2]
-    { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x01, {  0, 60, 0, 60 }, 1 },   // bat [39/41]
-    { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x02, {  0, 60, 0, 60 }, 1 },   // battery voltages [196]
-    { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x06, {  0, 60, 0, 60 }, 1 },   // battery shunts [96]
-    { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x04, {  0, 300, 0, 300 }, 1 }, // battery temperatures [14]
-    { 0, 0, 0x00, 0x00, { 0, 0, 0, 0 }, 0 }
+    { CHARGER_TXID, CHARGER_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, VIN_PID, {  0, 900, 0, 0 }, 2, ISOTP_STD },           // VIN [19]
+    { CHARGER_TXID, CHARGER_RXID, VEHICLE_POLL_TYPE_OBDIIEXTENDED, QC_COUNT_PID, {  0, 900, 0, 0 }, 2, ISOTP_STD },   // QC [2]
+    { CHARGER_TXID, CHARGER_RXID, VEHICLE_POLL_TYPE_OBDIIEXTENDED, L1L2_COUNT_PID, {  0, 900, 0, 0 }, 2, ISOTP_STD }, // L0/L1/L2 [2]
+    { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x01, {  0, 60, 0, 60 }, 1, ISOTP_STD },   // bat [39/41]
+    { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x02, {  0, 60, 0, 60 }, 1, ISOTP_STD },   // battery voltages [196]
+    { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x06, {  0, 60, 0, 60 }, 1, ISOTP_STD },   // battery shunts [96]
+    { BMS_TXID, BMS_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x04, {  0, 300, 0, 300 }, 1, ISOTP_STD }, // battery temperatures [14]
+    POLL_LIST_END
   };
 
 void remoteCommandTimer(TimerHandle_t timer)
@@ -453,8 +453,8 @@ bool OvmsVehicleNissanLeaf::ObdRequest(uint16_t txid, uint16_t rxid, uint32_t re
   OvmsMutexLock lock(&nl_obd_request);
   // prepare single poll:
   OvmsVehicle::poll_pid_t poll[] = {
-    { txid, rxid, 0, 0, { 1, 1, 1, 1 }, 0 },
-    { 0, 0, 0, 0, { 0, 0, 0, 0 }, 0 }
+    { txid, rxid, 0, 0, { 1, 1, 1, 1 }, 0, ISOTP_STD },
+    POLL_LIST_END
   };
   if (request < 0x10000) {
     poll[0].type = (request & 0xff00) >> 8;

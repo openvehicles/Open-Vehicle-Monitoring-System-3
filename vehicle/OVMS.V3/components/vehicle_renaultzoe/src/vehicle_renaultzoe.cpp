@@ -56,7 +56,7 @@ static const OvmsVehicle::poll_pid_t vehicle_renaultzoe_polls[] = {
   //{ 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2002, { 0, 10, 10, 10 } },  // SOC
   //{ 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2006, { 0, 10, 10, 10 } },  // Odometer
   //{ 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3203, { 0, 10, 10, 10 } },  // Battery Voltage
-  { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3204, { 0, 30, 1, 2 }, 0 },  // Battery Current
+  { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3204, { 0, 30, 1, 2 }, 0, ISOTP_STD },  // Battery Current
   //{ 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3028, { 0, 10, 10, 10 } },  // 12Battery Current
   // 7ec,24,39,.005,0,0,kwh,22320C,62320C,ff,Available discharge Energy
   //{ 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x320C, { 0, 10, 10, 10 } },  // Available discharge Energy
@@ -75,7 +75,7 @@ static const OvmsVehicle::poll_pid_t vehicle_renaultzoe_polls[] = {
   //{ 0x79c, 0x7bc, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x04, { 0, 120, 1, 120 } }, // Braking Pedal
   //{ 0x742, 0x762, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x012D, { 0, 0, 10, 10 } }, // Motor temperature (nope)
   // -END-
-  { 0, 0, 0x00, 0x00, { 0, 0, 0, 0 }, 0 }
+  POLL_LIST_END
 };
 
 OvmsVehicleRenaultZoe* OvmsVehicleRenaultZoe::GetInstance(OvmsWriter* writer /*=NULL*/)
