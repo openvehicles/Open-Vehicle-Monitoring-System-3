@@ -64,6 +64,14 @@ static const char *TAG = "vehicle";
 
 OvmsVehicleFactory MyVehicleFactory __attribute__ ((init_priority (2000)));
 
+
+int vehicle_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool complete)
+  {
+  if (argc == 1)
+    return MyVehicleFactory.m_vmap.Validate(writer, argc, argv[0], complete);
+  return -1;
+  }
+
 void vehicle_module(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   if (argc == 0)
@@ -156,26 +164,11 @@ void vehicle_homelink(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int a
     }
   }
 
-void vehicle_climatecontrol(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+void vehicle_climatecontrol(int verbosity, OvmsWriter* writer, bool on)
   {
   if (MyVehicleFactory.m_currentvehicle==NULL)
     {
     writer->puts("Error: No vehicle module selected");
-    return;
-    }
-
-  bool on;
-  if (strcmp("on", argv[0]) == 0)
-    {
-    on = true;
-    }
-  else if (strcmp("off", argv[0]) == 0)
-    {
-    on = false;
-    }
-  else
-    {
-    writer->puts("Error: argument must be 'on' or 'off'");
     return;
     }
 
@@ -192,6 +185,16 @@ void vehicle_climatecontrol(int verbosity, OvmsWriter* writer, OvmsCommand* cmd,
       writer->puts("Error: Climate Control functionality not available");
       break;
     }
+  }
+
+void vehicle_climatecontrol_on(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  vehicle_climatecontrol(verbosity, writer, true);
+  }
+
+void vehicle_climatecontrol_off(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  vehicle_climatecontrol(verbosity, writer, false);
   }
 
 void vehicle_lock(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -803,13 +806,15 @@ OvmsVehicleFactory::OvmsVehicleFactory()
   m_currentvehicletype.clear();
 
   OvmsCommand* cmd_vehicle = MyCommandApp.RegisterCommand("vehicle","Vehicle framework");
-  cmd_vehicle->RegisterCommand("module","Set (or clear) vehicle module",vehicle_module,"<type>",0,1);
+  cmd_vehicle->RegisterCommand("module","Set (or clear) vehicle module",vehicle_module,"<type>",0,1,true,vehicle_validate);
   cmd_vehicle->RegisterCommand("list","Show list of available vehicle modules",vehicle_list);
   cmd_vehicle->RegisterCommand("status","Show vehicle module status",vehicle_status);
 
   MyCommandApp.RegisterCommand("wakeup","Wake up vehicle",vehicle_wakeup);
-  MyCommandApp.RegisterCommand("homelink","Activate specified homelink button",vehicle_homelink,"<homelink><durationms>",1,2);
-  MyCommandApp.RegisterCommand("climatecontrol","(De)Activate Climate Control",vehicle_climatecontrol,"<on|off>",1,1);
+  MyCommandApp.RegisterCommand("homelink","Activate specified homelink button",vehicle_homelink,"<homelink> [<duration=100ms>]",1,2);
+  OvmsCommand* cmd_climate = MyCommandApp.RegisterCommand("climatecontrol","(De)Activate Climate Control");
+  cmd_climate->RegisterCommand("on","Activate Climate Control",vehicle_climatecontrol_on);
+  cmd_climate->RegisterCommand("off","Deactivate Climate Control",vehicle_climatecontrol_off);
   MyCommandApp.RegisterCommand("lock","Lock vehicle",vehicle_lock,"<pin>",1,1);
   MyCommandApp.RegisterCommand("unlock","Unlock vehicle",vehicle_unlock,"<pin>",1,1);
   MyCommandApp.RegisterCommand("valet","Activate valet mode",vehicle_valet,"<pin>",1,1);
@@ -1180,7 +1185,7 @@ void OvmsVehicle::IncomingPollError(canbus* bus, uint16_t type, uint16_t pid, ui
 
 void OvmsVehicle::Status(int verbosity, OvmsWriter* writer)
   {
-  writer->puts("Vehicle module loaded and running");
+  writer->printf("Vehicle module %s loaded and running\n", VehicleShortName());
   }
 
 void OvmsVehicle::RegisterCanBus(int bus, CAN_mode_t mode, CAN_speed_t speed, dbcfile* dbcfile)

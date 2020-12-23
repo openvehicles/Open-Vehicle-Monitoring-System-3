@@ -478,7 +478,7 @@ class OvmsVehicleFactory
       FactoryFuncPtr construct;
       const char* name;
       } vehicle_t;
-    typedef map<const char*, vehicle_t, CmpStrOp> map_vehicle_t;
+    typedef CNameMap<vehicle_t> map_vehicle_t;
 
     OvmsVehicle *m_currentvehicle;
     std::string m_currentvehicletype;
