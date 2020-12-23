@@ -6,7 +6,7 @@ class OvmsVehicleVWeUpInit
 public:
     OvmsVehicleVWeUpInit()
     {
-        ESP_LOGI("vwup", "Registering Vehicle: VW e-Up (9000)");
+        ESP_LOGI("v-vwup-t26", "Registering Vehicle: VW e-Up T26A (9000)");
         // Preparing for different VWUP classes.
         // Example:
         //
