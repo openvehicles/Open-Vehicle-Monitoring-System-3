@@ -399,7 +399,7 @@ class OvmsVehicle : public InternalRamAllocated
   protected:
     void PollSetPidList(canbus* bus, const poll_pid_t* plist);
     void PollSetState(uint8_t state);
-    void PollSetThrottling(uint8_t sequence_max) { m_poll_sequence_max = sequence_max; }
+    void PollSetThrottling(uint8_t sequence_max);
     void PollSetResponseSeparationTime(uint8_t septime);
 
   // BMS helpers
@@ -500,6 +500,50 @@ class OvmsVehicleFactory
     const char* ActiveVehicleType();
     const char* ActiveVehicleName();
     const char* ActiveVehicleShortName();
+
+  // Shell commands:
+  protected:
+    static int vehicle_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool complete);
+    static void vehicle_module(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void vehicle_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void vehicle_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void vehicle_wakeup(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void vehicle_homelink(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void vehicle_climatecontrol(int verbosity, OvmsWriter* writer, bool on);
+    static void vehicle_climatecontrol_on(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void vehicle_climatecontrol_off(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void vehicle_lock(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void vehicle_unlock(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void vehicle_valet(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void vehicle_unvalet(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void vehicle_charge_mode(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void vehicle_charge_current(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void vehicle_charge_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void vehicle_charge_stop(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void vehicle_charge_cooldown(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void vehicle_stat(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void bms_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void bms_reset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void bms_alerts(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  protected:
+    static duk_ret_t DukOvmsVehicleType(duk_context *ctx);
+    static duk_ret_t DukOvmsVehicleWakeup(duk_context *ctx);
+    static duk_ret_t DukOvmsVehicleHomelink(duk_context *ctx);
+    static duk_ret_t DukOvmsVehicleClimateControl(duk_context *ctx);
+    static duk_ret_t DukOvmsVehicleLock(duk_context *ctx);
+    static duk_ret_t DukOvmsVehicleUnlock(duk_context *ctx);
+    static duk_ret_t DukOvmsVehicleValet(duk_context *ctx);
+    static duk_ret_t DukOvmsVehicleUnvalet(duk_context *ctx);
+    static duk_ret_t DukOvmsVehicleSetChargeMode(duk_context *ctx);
+    static duk_ret_t DukOvmsVehicleSetChargeCurrent(duk_context *ctx);
+    static duk_ret_t DukOvmsVehicleSetChargeTimer(duk_context *ctx);
+    static duk_ret_t DukOvmsVehicleStartCharge(duk_context *ctx);
+    static duk_ret_t DukOvmsVehicleStopCharge(duk_context *ctx);
+    static duk_ret_t DukOvmsVehicleStartCooldown(duk_context *ctx);
+    static duk_ret_t DukOvmsVehicleStopCooldown(duk_context *ctx);
+#endif // CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   };
 
 extern OvmsVehicleFactory MyVehicleFactory;
