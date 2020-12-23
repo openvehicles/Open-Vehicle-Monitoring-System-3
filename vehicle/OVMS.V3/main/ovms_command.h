@@ -37,6 +37,7 @@
 #include <set>
 #include <limits.h>
 #include "ovms.h"
+#include "ovms_utils.h"
 #include "ovms_mutex.h"
 #include "task_base.h"
 #include "freertos/FreeRTOS.h"
@@ -96,20 +97,20 @@ template <typename T>
 class NameMap : public std::map<std::string, T>
   {
   public:
-    T FindUniquePrefix(const char* token) const
+    const T* FindUniquePrefix(const char* token) const
       {
       size_t len = strlen(token);
-      T found = NULL;
+      const T* found = NULL;
       for (typename NameMap<T>::const_iterator it = NameMap<T>::begin(); it != NameMap<T>::end(); ++it)
 	{
 	if (it->first.compare(0, len, token) == 0)
 	  {
 	  if (len == it->first.length())
-	    return it->second;
+	    return &it->second;
 	  if (found)
 	    return NULL;
 	  else
-	    found = it->second;
+	    found = &it->second;
 	  }
 	}
       return found;
@@ -155,15 +156,67 @@ class NameMap : public std::map<std::string, T>
       }
   };
 
-class NameStringMap : public std::map<std::string, std::string>
+template <typename T>
+class CNameMap : public std::map<const char*, T, CmpStrOp>
   {
   public:
-    const std::string& FindUniquePrefix(const char* token) const;
-    bool GetCompletion(OvmsWriter* writer, const char* token) const;
-    int Validate(OvmsWriter* writer, int argc, const char* token, bool complete) const;
+    const T* FindUniquePrefix(const char* token) const
+      {
+      size_t len = strlen(token);
+      const T* found = NULL;
+      for (typename CNameMap<T>::const_iterator it = CNameMap<T>::begin(); it != CNameMap<T>::end(); ++it)
+	{
+	if (strncmp(it->first, token, len) == 0)
+	  {
+	  if (len == strlen(it->first))
+	    return &it->second;
+	  if (found)
+	    return NULL;
+	  else
+	    found = &it->second;
+	  }
+	}
+      return found;
+      }
 
-  protected:
-    static const std::string m_null;
+    bool GetCompletion(OvmsWriter* writer, const char* token) const
+      {
+      unsigned int index = 0;
+      bool match = false;
+      writer->SetCompletion(index, NULL);
+      if (token)
+        {
+        size_t len = strlen(token);
+        for (typename CNameMap<T>::const_iterator it = CNameMap<T>::begin(); it != CNameMap<T>::end(); ++it)
+          {
+          if (strncmp(it->first, token, len) == 0)
+            {
+            writer->SetCompletion(index++, it->first);
+            match = true;
+            }
+          }
+        }
+      return match;
+      }
+
+    int Validate(OvmsWriter* writer, int argc, const char* token, bool complete) const
+      {
+      if (complete)
+	{
+	if (!GetCompletion(writer, token))
+	  return -1;
+	}
+      else
+	{
+	if (FindUniquePrefix(token) == NULL)
+	  {
+          if (strcmp(token, "?") != 0)
+            writer->printf("Error: %s is not defined\n", token);
+	  return -1;
+	  }
+	}
+      return argc;
+      }
   };
 
 struct CompareCharPtr

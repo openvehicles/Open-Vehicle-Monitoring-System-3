@@ -338,15 +338,16 @@ void location_set(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
 void location_radius(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   const char *name = argv[0];
-  OvmsLocation* loc = MyLocations.m_locations.FindUniquePrefix(name);
+  OvmsLocation* const* locp = MyLocations.m_locations.FindUniquePrefix(name);
 
-  if (loc == NULL)
+  if (locp == NULL)
     {
     writer->printf("Error: No location %s defined\n",name);
     return;
     }
 
   std::string buf;
+  OvmsLocation* loc = *locp;
   loc->m_radius = atoi(argv[1]);
   loc->Store(buf);
   writer->puts("Location radius set");
@@ -355,15 +356,15 @@ void location_radius(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
 void location_rm(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   const char *name = argv[0];
-  OvmsLocation* loc = MyLocations.m_locations.FindUniquePrefix(name);
+  OvmsLocation* const* locp = MyLocations.m_locations.FindUniquePrefix(name);
 
-  if (loc == NULL)
+  if (locp == NULL)
     {
     writer->printf("Error: No location %s defined\n",name);
     return;
     }
 
-  MyConfig.DeleteInstance(LOCATIONS_PARAM,loc->m_name);
+  MyConfig.DeleteInstance(LOCATIONS_PARAM,(*locp)->m_name);
   writer->puts("Location removed");
   }
 
@@ -414,12 +415,13 @@ void location_action(int verbosity, OvmsWriter* writer, enum LocationAction act,
   int remove = *rargv[2] == 'r' ? 1 : 0;
   bool enter = *rargv[2+remove] == 'e';
   const char* name = rargv[3+remove];
-  OvmsLocation* loc = MyLocations.m_locations.FindUniquePrefix(name);
-  if (loc == NULL)
+  OvmsLocation* const* locp = MyLocations.m_locations.FindUniquePrefix(name);
+  if (locp == NULL)
     {
     writer->printf("Error: No location %s defined\n",name);
     return;
     }
+  OvmsLocation* loc = *locp;
   if (!remove)
     {
     loc->m_actions.push_back(new OvmsLocationAction(enter, act, params.c_str(), params.length()));
