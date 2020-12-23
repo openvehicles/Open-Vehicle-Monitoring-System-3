@@ -146,6 +146,11 @@
 #define MS_V_CHARGE_DURATION_SOC    "v.c.duration.soc"
 #define MS_V_CHARGE_TEMP            "v.c.temp"
 
+#define MS_V_CHARGE_12V_CURRENT     "v.c.12v.current"
+#define MS_V_CHARGE_12V_POWER       "v.c.12v.power"
+#define MS_V_CHARGE_12V_TEMP        "v.c.12v.temp"
+#define MS_V_CHARGE_12V_VOLTAGE     "v.c.12v.voltage"
+
 #define MS_V_INV_TEMP               "v.i.temp"
 #define MS_V_INV_POWER              "v.i.power"
 #define MS_V_INV_EFFICIENCY         "v.i.efficiency"
@@ -188,6 +193,8 @@
 #define MS_V_ENV_CABINSETPOINT      "v.e.cabinsetpoint"
 #define MS_V_ENV_CABININTAKE        "v.e.cabinintake"
 #define MS_V_ENV_CABINVENT          "v.e.cabinvent"
+#define MS_V_ENV_SERV_RANGE         "v.e.serv.range"
+#define MS_V_ENV_SERV_DAYS          "v.e.serv.days"
 
 #define MS_V_POS_GPSLOCK            "v.p.gpslock"
 #define MS_V_POS_GPSSTALE           "v.p.gpsstale"
@@ -331,6 +338,10 @@ class MetricsStandard
     OvmsMetricInt*    ms_v_charge_duration_range;   // … for sufficient range [min]
     OvmsMetricInt*    ms_v_charge_duration_soc;     // … for sufficient SOC [min]
     OvmsMetricFloat*  ms_v_charge_temp;             // Charger temperature [°C]
+    OvmsMetricFloat*  ms_v_charge_12v_current;      // Output current of DC/DC-converter [A]
+    OvmsMetricFloat*  ms_v_charge_12v_power;        // Output power of DC/DC-converter [kW]
+    OvmsMetricFloat*  ms_v_charge_12v_temp;         // Temperature of DC/DC-converter [°C]
+    OvmsMetricFloat*  ms_v_charge_12v_voltage;      // Output voltage of DC/DC-converter [V]
 
     OvmsMetricFloat*  ms_v_inv_temp;                // Inverter temperature [°C]
     OvmsMetricFloat*  ms_v_inv_power;               // Momentary inverter motor power [kW] (output=positive)
@@ -374,6 +385,8 @@ class MetricsStandard
     OvmsMetricFloat*  ms_v_env_cabinsetpoint;       // Cabin setpoint temperature [°C]
     OvmsMetricString* ms_v_env_cabinintake;         // Cabin intake type (fresh, recirc, etc)
     OvmsMetricString* ms_v_env_cabinvent;           // Cabin vent type (comma-separated list of feet, face, screen, etc)
+    OvmsMetricInt*    ms_v_env_service_range;       // Distance to next scheduled maintenance/service [km]
+    OvmsMetricInt*    ms_v_env_service_days;        // Time to next scheduled maintenance/service [days]
 
     OvmsMetricBool*   ms_v_pos_gpslock;
     OvmsMetricString* ms_v_pos_gpsmode;             // <GPS><GLONASS>; N/A/D/E (None/Autonomous/Differential/Estimated)

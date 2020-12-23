@@ -231,8 +231,6 @@ void OvmsVehicleVWeUp::OBDInit()
     OdoStart = StandardMetrics.ms_v_pos_odometer->AsFloat();
     EnergyRecdStart = StandardMetrics.ms_v_bat_energy_recd_total->AsFloat();
     EnergyUsedStart = StandardMetrics.ms_v_bat_energy_used_total->AsFloat();
-
-    MaintenanceNotified = false;
 }
 
 void OvmsVehicleVWeUp::OBDDeInit()
@@ -647,10 +645,6 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
         {
             StandardMetrics.ms_v_env_service_range->SetValue(value);
             VALUE_LOG(TAG, "VWUP_MFD_MAINT_DIST=%f => %f", value, MaintenanceDist->AsFloat());
-            if (!MaintenanceNotified && MaintenanceDist->AsFloat() < 10000){
-                MyNotify.NotifyCommand("alert", "usr.maint.dist", "Maintenance Range below 10Mm!");
-                MaintenanceNotified = true;
-            }
         }
         break;
      case VWUP_MFD_MAINT_TIME:
@@ -658,10 +652,6 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
         {
             StandardMetrics.ms_v_env_service_days->SetValue(value);
             VALUE_LOG(TAG, "VWUP_MFD_MAINT_TIME=%f => %f", value, MaintenanceTime->AsFloat());
-            if (!MaintenanceNotified && MaintenanceTime->AsFloat() < 90){
-                MyNotify.NotifyCommand("alert", "usr.maint.time", "Maintenance Range below 30 days!");
-                MaintenanceNotified = true;
-            }
         }
         break;
 
