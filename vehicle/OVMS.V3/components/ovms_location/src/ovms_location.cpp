@@ -514,10 +514,10 @@ void location_all(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
 static duk_ret_t DukOvmsLocationStatus(duk_context *ctx)
   {
   const char *mn = duk_to_string(ctx,0);
-  OvmsLocation *loc = MyLocations.m_locations.FindUniquePrefix(mn);
-  if (loc)
+  OvmsLocation* const* locp = MyLocations.m_locations.FindUniquePrefix(mn);
+  if (locp && *locp)
     {
-    duk_push_boolean(ctx, loc->m_inlocation);
+    duk_push_boolean(ctx, (*locp)->m_inlocation);
     return 1;  /* one return value */
     }
   else
