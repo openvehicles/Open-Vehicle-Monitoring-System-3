@@ -484,6 +484,48 @@ OvmsCommand* OvmsCommand::FindCommand(const char* name)
   return m_children.FindCommand(name);
   }
 
+// List all OvmsCommand objects in the tree as a tab-separated CSV-format table
+// (which requires doubling " marks).
+void OvmsCommand::Display(OvmsWriter* writer, int level)
+  {
+  static const char* const spaces = "                                        ";
+  static const int len = strlen(spaces);
+  static const char* const end = spaces + len;
+  if (level >= 0)
+    {
+    const char* usage = m_usage_template;
+    if (!usage)
+	usage = "NULL";
+    const char* p = usage;
+    int quotes = 0;
+    for ( ; *p; ++p)
+      if (*p == '"')
+        ++quotes;
+    char* m = (char*)malloc(p - m_usage_template + quotes + 1);
+    if (m)
+      {
+      char* q = m;
+      for (p = usage; *p; )
+        {
+        if (*p == '"')
+          *q++ = '"';
+        *q++ = *p++;
+        }
+      *q = '\0';
+      usage = m;
+      }
+    if (2*level > len)
+      level = 0;
+    writer->printf("\"%s%s\"\t\"%s\"\t\"%s\"\t%d\t%d\t%s\t%s\t%s\t%s\n",
+      end-2*level, m_name, m_title, usage, m_min, m_max, m_children.empty() ? "--" : "children",
+      m_execute ? "execute" : "--", m_secure ? "secure" : "--", m_validate ? "validate" : "--");
+    if (m)
+      free(m);
+    }
+  for (OvmsCommandMap::iterator it=m_children.begin(); it!=m_children.end(); ++it)
+    it->second->Display(writer, level + 1);
+  }
+
 void help(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   writer->puts("Enter a single \"?\" to get the root command list.");
@@ -1450,6 +1492,11 @@ void OvmsCommandApp::ReadConfig()
   m_logfile_maxsize = MyConfig.GetParamValueInt("log", "file.maxsize", 1024);
   if (MyConfig.GetParamValueBool("log", "file.enable", false) == true)
     SetLogfile(MyConfig.GetParamValue("log", "file.path"));
+  }
+
+void OvmsCommandApp::Display(OvmsWriter* writer)
+  {
+  m_root.Display(writer, -1);
   }
 
 

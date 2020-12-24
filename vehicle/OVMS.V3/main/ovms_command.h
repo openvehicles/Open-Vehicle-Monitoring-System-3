@@ -256,6 +256,7 @@ class OvmsCommand : public ExternalRamAllocated
     OvmsCommand* GetParent();
     OvmsCommand* FindCommand(const char* name);
     bool IsSecure() { return m_secure; }
+    void Display(OvmsWriter* writer, int level);
 
   private:
     void PutUsage(OvmsWriter* writer);
@@ -323,6 +324,7 @@ class OvmsCommandApp : public OvmsWriter
     int Log(const char* fmt, va_list args);
     int LogPartial(const char* fmt, ...);
     int HexDump(const char* tag, const char* prefix, const char* data, size_t length, size_t colsize=16);
+    void Display(OvmsWriter* writer);
 
   public:
     char ** Complete(OvmsWriter* writer, int argc, const char * const * argv);
