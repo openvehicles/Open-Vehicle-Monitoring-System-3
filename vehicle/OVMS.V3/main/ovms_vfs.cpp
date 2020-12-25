@@ -83,7 +83,11 @@ void vfs_ls(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const
   while ((dp = readdir (dir)) != NULL)
     {
     snprintf(path, sizeof(path), "%s/%s", (argc==0) ? "." : argv[0], dp->d_name);
-    stat(path, &st);
+    bzero(&st, sizeof(st));
+    if (stat(path, &st) < 0)
+      {
+      writer->printf("stat(%s) failed, errno = %u\n", path, errno);
+      }
 
     int64_t fsize = st.st_size;
     int is_dir = S_ISDIR(st.st_mode);
@@ -485,7 +489,7 @@ VfsInit::VfsInit()
   {
   ESP_LOGI(TAG, "Initialising VFS (5200)");
 
-  OvmsCommand* cmd_vfs = MyCommandApp.RegisterCommand("vfs","Virtual File System framework",NULL,"$C <file(s)>");
+  OvmsCommand* cmd_vfs = MyCommandApp.RegisterCommand("vfs","Virtual File System framework");
   cmd_vfs->RegisterCommand("ls","VFS Directory Listing",vfs_ls, "[<file>]", 0, 1);
   cmd_vfs->RegisterCommand("cat","VFS Display a file",vfs_cat, "<file>", 1, 1);
   cmd_vfs->RegisterCommand("head","VFS Display first 20 lines of a file",vfs_head, "[-nrlines] <file>", 1, 2);
