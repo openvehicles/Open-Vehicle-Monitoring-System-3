@@ -553,25 +553,25 @@ OvmsLocations::OvmsLocations()
   OvmsCommand* cmd_rm_enter = cmd_rm_action->RegisterCommand("enter","Remove an action from entering a location", location_all, "<location> [$C]", 1, 1, true, location_validate);
   OvmsCommand* cmd_rm_leave = cmd_rm_action->RegisterCommand("leave","Remove an action from leaving a location", location_all, "<location> [$C]", 1, 1, true, location_validate);
 
-  OvmsCommand* enter_homelink = cmd_enter->RegisterCommand("homelink","Transmit Homelink signal",NULL,"1|2|3");
+  OvmsCommand* enter_homelink = cmd_enter->RegisterCommand("homelink","Transmit Homelink signal");
   enter_homelink->RegisterCommand("1","Homelink 1 signal",location_homelink,"", 0, 0, true);
   enter_homelink->RegisterCommand("2","Homelink 2 signal",location_homelink,"", 0, 0, true);
   enter_homelink->RegisterCommand("3","Homelink 3 signal",location_homelink,"", 0, 0, true);
   cmd_enter->RegisterCommand("acc","ACC profile",location_acc,"<profile>", 1, 1, true);
   cmd_enter->RegisterCommand("notify","Text notification",location_notify,"<text>", 1, INT_MAX, true);
-  OvmsCommand* leave_homelink = cmd_leave->RegisterCommand("homelink","Transmit Homelink signal",NULL,"1|2|3");
+  OvmsCommand* leave_homelink = cmd_leave->RegisterCommand("homelink","Transmit Homelink signal");
   leave_homelink->RegisterCommand("1","Homelink 1 signal",location_homelink,"", 0, 0, true);
   leave_homelink->RegisterCommand("2","Homelink 2 signal",location_homelink,"", 0, 0, true);
   leave_homelink->RegisterCommand("3","Homelink 3 signal",location_homelink,"", 0, 0, true);
   cmd_leave->RegisterCommand("notify","Text notification",location_notify,"<text>", 1, INT_MAX, true);
 
-  OvmsCommand* rm_enter_homelink = cmd_rm_enter->RegisterCommand("homelink","Remove Homelink signal",location_homelink_any,"[1|2|3]");
+  OvmsCommand* rm_enter_homelink = cmd_rm_enter->RegisterCommand("homelink","Remove Homelink signal",location_homelink_any);
   rm_enter_homelink->RegisterCommand("1","Homelink 1 signal",location_homelink,"", 0, 0, true);
   rm_enter_homelink->RegisterCommand("2","Homelink 2 signal",location_homelink,"", 0, 0, true);
   rm_enter_homelink->RegisterCommand("3","Homelink 3 signal",location_homelink,"", 0, 0, true);
   cmd_rm_enter->RegisterCommand("acc","Remove ACC profile",location_acc,"[<profile>]", 0, 1, true);
   cmd_rm_enter->RegisterCommand("notify","Remove text notification",location_notify,"[<text>]", 0, INT_MAX, true);
-  OvmsCommand* rm_leave_homelink = cmd_rm_leave->RegisterCommand("homelink","Remove Homelink signal",location_homelink_any,"[1|2|3]");
+  OvmsCommand* rm_leave_homelink = cmd_rm_leave->RegisterCommand("homelink","Remove Homelink signal",location_homelink_any);
   rm_leave_homelink->RegisterCommand("1","Homelink 1 signal",location_homelink,"", 0, 0, true);
   rm_leave_homelink->RegisterCommand("2","Homelink 2 signal",location_homelink,"", 0, 0, true);
   rm_leave_homelink->RegisterCommand("3","Homelink 3 signal",location_homelink,"", 0, 0, true);

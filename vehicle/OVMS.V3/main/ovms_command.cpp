@@ -161,7 +161,9 @@ char ** OvmsCommandMap::GetCompletion(OvmsWriter* writer, const char* token)
 
 OvmsCommand::OvmsCommand()
   {
+  m_execute = NULL;
   m_parent = NULL;
+  m_validate = NULL;
   }
 
 OvmsCommand::OvmsCommand(const char* name, const char* title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
@@ -171,7 +173,7 @@ OvmsCommand::OvmsCommand(const char* name, const char* title, void (*execute)(in
   m_name = name;
   m_title = title;
   m_execute = execute;
-  m_usage_template= usage;
+  m_usage_template= !usage ? "" : usage;
   m_min = min;
   m_max = max;
   m_parent = NULL;
@@ -210,7 +212,6 @@ const char* OvmsCommand::GetTitle()
 // - Empty usage template "" defaults to "$C" for non-terminal OvmsCommand
 void OvmsCommand::PutUsage(OvmsWriter* writer)
   {
-  const char* usage = !m_usage_template ? "" : (!*m_usage_template && !m_execute) ? "$C" : m_usage_template;
   std::string result ="Usage: ";
   size_t pos = result.size();
   for (OvmsCommand* parent = m_parent; parent && parent->m_parent; parent = parent->m_parent)
@@ -234,13 +235,13 @@ void OvmsCommand::PutUsage(OvmsWriter* writer)
     }
   result += m_name;
   result += " ";
-  ExpandUsage(usage, writer, result);
+  ExpandUsage(m_usage_template, writer, result);
   writer->puts(result.c_str());
   }
 
 void OvmsCommand::ExpandUsage(const char* templ, OvmsWriter* writer, std::string& result)
   {
-  std::string usage = templ;
+  std::string usage = (*templ || m_children.empty()) ? templ : m_execute ? "[$C]" : "$C";
   size_t pos;
   if ((pos = usage.find("$L")) != std::string::npos)
     {
@@ -421,8 +422,7 @@ void OvmsCommand::Execute(int verbosity, OvmsWriter* writer, int argc, const cha
         {
         if (argc > 0 && strcmp(argv[argc-1],"?") != 0)
           writer->puts("Unrecognised command");
-        if (m_usage_template && *m_usage_template)
-          PutUsage(writer);
+	PutUsage(writer);
         return;
         }
       argc -= used;
@@ -445,7 +445,8 @@ void OvmsCommand::Execute(int verbosity, OvmsWriter* writer, int argc, const cha
       }
     if (strcmp(argv[0],"?")==0)
       {
-      if (m_usage_template && *m_usage_template && m_execute)
+      // Skip usage line if it's just the one-line list of children.
+      if (*m_usage_template || m_execute)
         PutUsage(writer);
       // Show available commands
       int avail = 0;
@@ -466,7 +467,7 @@ void OvmsCommand::Execute(int verbosity, OvmsWriter* writer, int argc, const cha
     if (!cmd)
       {
       writer->puts("Unrecognised command");
-      if (m_usage_template && *m_usage_template)
+      if (GetParent())    // No usage line for root command
         PutUsage(writer);
       return;
       }
@@ -814,7 +815,7 @@ OvmsCommandApp::OvmsCommandApp()
   level_cmd->RegisterCommand("warn", "Log at the WARN level (2)", log_level , "[<tag>]", 0, 1, false);
   level_cmd->RegisterCommand("error", "Log at the ERROR level (1)", log_level , "[<tag>]", 0, 1, false);
   level_cmd->RegisterCommand("none", "No logging (0)", log_level , "[<tag>]", 0, 1, false);
-  monitor = cmd_log->RegisterCommand("monitor", "Monitor log on this console", log_monitor , "[$C]");
+  monitor = cmd_log->RegisterCommand("monitor", "Monitor log on this console", log_monitor);
   monitor_yes = monitor->RegisterCommand("yes", "Monitor log", log_monitor);
   monitor->RegisterCommand("no", "Don't monitor log", log_monitor);
   m_root.RegisterCommand("enable","Enter secure mode (enable access to all commands)", enable, "[<password>]", 0, 1, false);
