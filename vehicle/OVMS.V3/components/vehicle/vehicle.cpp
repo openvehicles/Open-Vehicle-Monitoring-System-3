@@ -78,7 +78,7 @@ OvmsVehicleFactory::OvmsVehicleFactory()
   cmd_vehicle->RegisterCommand("status","Show vehicle module status",vehicle_status);
 
   MyCommandApp.RegisterCommand("wakeup","Wake up vehicle",vehicle_wakeup);
-  MyCommandApp.RegisterCommand("homelink","Activate specified homelink button",vehicle_homelink,"<homelink> [<duration=100ms>]",1,2);
+  MyCommandApp.RegisterCommand("homelink","Activate specified homelink button",vehicle_homelink,"<homelink> [<duration=1000ms>]",1,2);
   OvmsCommand* cmd_climate = MyCommandApp.RegisterCommand("climatecontrol","(De)Activate Climate Control");
   cmd_climate->RegisterCommand("on","Activate Climate Control",vehicle_climatecontrol_on);
   cmd_climate->RegisterCommand("off","Deactivate Climate Control",vehicle_climatecontrol_off);
