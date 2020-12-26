@@ -105,6 +105,34 @@ OvmsVehicleFactory::OvmsVehicleFactory()
   cmd_bms->RegisterCommand("reset","Reset BMS statistics",bms_reset);
   cmd_bms->RegisterCommand("alerts","Show BMS alerts",bms_alerts);
 
+  OvmsCommand* cmd_obdii = MyCommandApp.RegisterCommand("obdii", "OBDII framework");
+  for (int k=1; k <= 4; k++)
+    {
+    static const char* name[4] = { "can1", "can2", "can3", "can4" };
+    OvmsCommand* cmd_canx = cmd_obdii->RegisterCommand(name[k-1], "select bus");
+
+    OvmsCommand* cmd_obdreq = cmd_canx->RegisterCommand(
+      "request", "Send OBD2/UDS request, output response");
+    cmd_obdreq->RegisterCommand(
+      "device", "Send OBD2/ISOTP request to a device", obdii_request,
+      "[-e] [-t<timeout_ms>] <txid> <rxid> <request>\n"
+      "Give <txid> and <rxid> as hexadecimal CAN IDs,"
+      " add -e to use ISO-TP extended addressing (19 bit IDs).\n"
+      "<request> is the hex string of the request type + arguments,"
+      " e.g. '223a4b' = read data from PID 0x3a4b.\n"
+      "Default timeout is 3000 ms.",
+      3, 5);
+    cmd_obdreq->RegisterCommand(
+      "broadcast", "Send OBD2/UDS request as broadcast", obdii_request,
+      "[-t<timeout_ms>] <request>\n"
+      "Sends the request to broadcast ID 7df, listens on IDs 7e8-7ef.\n"
+      "Note: only the first response will be shown, enable CAN log to check for more.\n"
+      "<request> is the hex string of the request type + arguments,"
+      " e.g. '223a4b' = read data from PID 0x3a4b.\n"
+      "Default timeout is 3000 ms.",
+      1, 2);
+    }
+
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   DuktapeObjectRegistration* dto = new DuktapeObjectRegistration("OvmsVehicle");
   dto->RegisterDuktapeFunction(DukOvmsVehicleType, 0, "Type");
@@ -236,6 +264,8 @@ OvmsVehicle::OvmsVehicle()
   m_poll_plist = NULL;
   m_poll_plcur = NULL;
   m_poll_ticker = 0;
+  m_poll_single_rxbuf = NULL;
+  m_poll_single_rxerr = 0;
   m_poll_moduleid_sent = 0;
   m_poll_moduleid_low = 0;
   m_poll_moduleid_high = 0;

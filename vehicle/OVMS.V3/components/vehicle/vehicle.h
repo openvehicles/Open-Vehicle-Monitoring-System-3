@@ -41,6 +41,7 @@
 #include "ovms_command.h"
 #include "metrics_standard.h"
 #include "ovms_mutex.h"
+#include "ovms_semaphore.h"
 
 using namespace std;
 struct DashboardConfig;
@@ -409,11 +410,20 @@ class OvmsVehicle : public InternalRamAllocated
     uint8_t           m_poll_sequence_cnt;    // Polls already sent in the current time tick (second)
     uint8_t           m_poll_fc_septime;      // Flow control separation time for multi frame responses
 
+  private:
+    OvmsMutex         m_poll_single_mutex;    // PollSingleRequest() concurrency protection
+    std::string*      m_poll_single_rxbuf;    // … response buffer
+    uint16_t          m_poll_single_rxerr;    // … response error code (NRC)
+    OvmsSemaphore     m_poll_single_rxdone;   // … response done (ok/error)
+
   protected:
     void PollSetPidList(canbus* bus, const poll_pid_t* plist);
     void PollSetState(uint8_t state);
     void PollSetThrottling(uint8_t sequence_max);
     void PollSetResponseSeparationTime(uint8_t septime);
+    int PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
+                      std::string request, std::string& response,
+                      int timeout_ms /*=3000*/, uint8_t protocol /*=ISOTP_STD*/);
 
   // BMS helpers
   protected:
@@ -538,6 +548,7 @@ class OvmsVehicleFactory
     static void bms_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void bms_reset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void bms_alerts(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void obdii_request(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   protected:

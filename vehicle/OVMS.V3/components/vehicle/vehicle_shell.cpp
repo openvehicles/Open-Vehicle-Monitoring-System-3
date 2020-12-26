@@ -444,3 +444,171 @@ void OvmsVehicleFactory::bms_alerts(int verbosity, OvmsWriter* writer, OvmsComma
     writer->puts("No vehicle module selected");
     }
   }
+
+
+void OvmsVehicleFactory::obdii_request(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (!MyVehicleFactory.m_currentvehicle)
+    {
+    writer->puts("ERROR: no vehicle module selected");
+    return;
+    }
+
+  const char* busname = cmd->GetParent()->GetParent()->GetName();
+  canbus* bus = (canbus*) MyPcpApp.FindDeviceByName(busname);
+  if (!bus)
+    {
+    writer->printf("ERROR: CAN bus %s not available\n", busname);
+    return;
+    }
+  else if (bus->m_mode != CAN_MODE_ACTIVE)
+    {
+    writer->printf("ERROR: CAN bus %s not in active mode\n", busname);
+    return;
+    }
+
+  uint32_t txid = 0, rxid = 0;
+  uint8_t protocol = ISOTP_STD;
+  int timeout_ms = 3000;
+  std::string request;
+  std::string response;
+
+  // parse args:
+  const char* target = cmd->GetName();
+  if (strcmp(target, "device") == 0)
+    {
+    // device: [-e] [-t<timeout_ms>] txid rxid request
+    int argpos = 0;
+    for (int i = 0; i < argc; i++)
+      {
+      if (argv[i][0] == '-')
+        {
+        switch (argv[i][1])
+          {
+          case 'e':
+            protocol = ISOTP_EXTADR;
+            break;
+          case 't':
+            timeout_ms = atoi(argv[i]+2);
+            break;
+          default:
+            writer->printf("ERROR: unknown option '%s'\n", argv[i]);
+            return;
+          }
+        }
+      else
+        {
+        switch (++argpos)
+          {
+          case 1:
+            txid = strtol(argv[i], NULL, 16);
+            break;
+          case 2:
+            rxid = strtol(argv[i], NULL, 16);
+            break;
+          case 3:
+            request = hexdecode(argv[i]);
+            break;
+          default:
+            writer->puts("ERROR: too many args");
+            return;
+          }
+        }
+      }
+    if (argpos < 3)
+      {
+      writer->puts("ERROR: too few args, need: txid rxid request");
+      return;
+      }
+    }
+  else
+    {
+    // broadcast: [-t<timeout_ms>] request
+    int argpos = 0;
+    for (int i = 0; i < argc; i++)
+      {
+      if (argv[i][0] == '-')
+        {
+        switch (argv[i][1])
+          {
+          case 't':
+            timeout_ms = atoi(argv[i]+2);
+            break;
+          default:
+            writer->printf("ERROR: unknown option '%s'\n", argv[i]);
+            return;
+          }
+        }
+      else
+        {
+        switch (++argpos)
+          {
+          case 1:
+            request = hexdecode(argv[i]);
+            break;
+          default:
+            writer->puts("ERROR: too many args");
+            return;
+          }
+        }
+      }
+    if (argpos < 1)
+      {
+      writer->puts("ERROR: too few args, need: request");
+      return;
+      }
+    txid = 0x7df;
+    rxid = 0;
+    }
+
+  // validate request:
+  if (timeout_ms <= 0)
+    {
+    writer->puts("ERROR: invalid timeout (must be > 0)");
+    return;
+    }
+  if (request.size() == 0)
+    {
+    writer->puts("ERROR: no request");
+    return;
+    }
+  else
+    {
+    uint8_t type = request.at(0);
+    if ((POLL_TYPE_HAS_16BIT_PID(type) && request.size() < 3) ||
+        (POLL_TYPE_HAS_8BIT_PID(type) && request.size() < 2))
+      {
+      writer->printf("ERROR: request too short for type %02X\n", type);
+      return;
+      }
+    }
+
+  // execute request:
+  int err = MyVehicleFactory.m_currentvehicle->PollSingleRequest(bus, txid, rxid,
+    request, response, timeout_ms, protocol);
+  if (err < 0)
+    {
+    writer->puts("ERROR: timeout waiting for poller/response");
+    return;
+    }
+  else if (err)
+    {
+    writer->printf("ERROR: request failed with response error code %02X\n", err);
+    return;
+    }
+
+  // output response as hex dump:
+  writer->puts("Response:");
+  char *buf = NULL;
+  size_t rlen = response.size(), offset = 0;
+  do
+    {
+    rlen = FormatHexDump(&buf, response.data() + offset, rlen, 16);
+    offset += 16;
+    writer->puts(buf ? buf : "-");
+    }
+  while (rlen);
+
+  if (buf)
+    free(buf);
+  }
