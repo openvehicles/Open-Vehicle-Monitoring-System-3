@@ -162,6 +162,7 @@ char ** OvmsCommandMap::GetCompletion(OvmsWriter* writer, const char* token)
 OvmsCommand::OvmsCommand()
   {
   m_execute = NULL;
+  m_usage_template= "";
   m_parent = NULL;
   m_validate = NULL;
   }
