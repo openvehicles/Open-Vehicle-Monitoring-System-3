@@ -83,11 +83,7 @@ void vfs_ls(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const
   while ((dp = readdir (dir)) != NULL)
     {
     snprintf(path, sizeof(path), "%s/%s", (argc==0) ? "." : argv[0], dp->d_name);
-    bzero(&st, sizeof(st));
-    if (stat(path, &st) < 0)
-      {
-      writer->printf("stat(%s) failed, errno = %u\n", path, errno);
-      }
+    stat(path, &st);
 
     int64_t fsize = st.st_size;
     int is_dir = S_ISDIR(st.st_mode);
