@@ -11,7 +11,7 @@
  * Enable:
  *  - install at above path
  *  - add to /store/scripts/ovmsmain.js:
- *                 abrp = require("sendlivedata2arbp");
+ *                 abrp = require("sendlivedata2abrp");
  *  - script reload
  *
  * Usage:
