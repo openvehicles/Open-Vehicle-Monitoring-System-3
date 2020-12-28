@@ -41,6 +41,7 @@
 #include "ovms_command.h"
 #include "metrics_standard.h"
 #include "ovms_mutex.h"
+#include "ovms_semaphore.h"
 
 using namespace std;
 struct DashboardConfig;
@@ -81,7 +82,14 @@ struct DashboardConfig;
 // OBD (ISO 15031) service identifiers supported:
 #define VEHICLE_POLL_TYPE_OBDIICURRENT  0x01 // Mode 01 "current data" (8 bit PID)
 #define VEHICLE_POLL_TYPE_OBDIIFREEZE   0x02 // Mode 02 "freeze frame data" (8 bit PID)
+#define VEHICLE_POLL_TYPE_READ_ERDTC    0x03 // Mode 03 read emission-related DTC (no PID)
+#define VEHICLE_POLL_TYPE_CLEAR_ERDTC   0x04 // Mode 04 clear/reset emission-related DTC (no PID)
+#define VEHICLE_POLL_TYPE_READOXSTEST   0x05 // Mode 05 read oxygen sensor monitoring test results (16 bit PID)
+#define VEHICLE_POLL_TYPE_READOBMTEST   0x06 // Mode 06 read on-board monitoring test results (8 bit PID)
+#define VEHICLE_POLL_TYPE_READ_DCERDTC  0x07 // Mode 07 read driving cycle emission-related DTC (no PID)
+#define VEHICLE_POLL_TYPE_REQOBUCTRL    0x08 // Mode 08 request on-board unit control (8 bit PID)
 #define VEHICLE_POLL_TYPE_OBDIIVEHICLE  0x09 // Mode 09 "vehicle information" (8 bit PID)
+#define VEHICLE_POLL_TYPE_READ_PERMDTC  0x0A // Mode 0A read permanent (cleared) DTC (no PID)
 
 // UDS (ISO 14229) service identifiers supported:
 #define VEHICLE_POLL_TYPE_OBDIISESSION  0x10 // UDS: Diagnostic Session Control (8 bit PID)
@@ -91,7 +99,8 @@ struct DashboardConfig;
 #define VEHICLE_POLL_TYPE_ECURESET      0x11 // UDS: ECUReset (8 bit PID)
 #define VEHICLE_POLL_TYPE_CLEARDTC      0x14 // UDS: ClearDiagnosticInformation (no PID)
 #define VEHICLE_POLL_TYPE_READDTC       0x19 // UDS: ReadDTCInformation (8 bit PID)
-#define VEHICLE_POLL_TYPE_OBDIIEXTENDED 0x22 // UDS: ReadDataByIdentifier (16 bit PID)
+#define VEHICLE_POLL_TYPE_OBDIIEXTENDED 0x22 // UDS: ReadDataByIdentifier (16 bit PID) (legacy alias for READDATA)
+#define VEHICLE_POLL_TYPE_READDATA      0x22 // UDS: ReadDataByIdentifier (16 bit PID)
 #define VEHICLE_POLL_TYPE_READMEMORY    0x23 // UDS: ReadMemoryByAddress (no PID)
 #define VEHICLE_POLL_TYPE_READSCALING   0x24 // UDS: ReadScalingDataByIdentifier (16 bit PID)
 #define VEHICLE_POLL_TYPE_WRITEDATA     0x2E // UDS: WriteDataByIdentifier (16 bit PID)
@@ -104,13 +113,18 @@ struct DashboardConfig;
 
 // Utils:
 #define POLL_TYPE_HAS_16BIT_PID(type) \
-  ((type) == VEHICLE_POLL_TYPE_OBDIIEXTENDED || \
+  ((type) == VEHICLE_POLL_TYPE_READDATA || \
    (type) == VEHICLE_POLL_TYPE_READSCALING || \
    (type) == VEHICLE_POLL_TYPE_WRITEDATA || \
-   (type) == VEHICLE_POLL_TYPE_IOCONTROL)
+   (type) == VEHICLE_POLL_TYPE_IOCONTROL || \
+   (type) == VEHICLE_POLL_TYPE_READOXSTEST)
 #define POLL_TYPE_HAS_NO_PID(type) \
   ((type) == VEHICLE_POLL_TYPE_CLEARDTC || \
-   (type) == VEHICLE_POLL_TYPE_READMEMORY)
+   (type) == VEHICLE_POLL_TYPE_READMEMORY || \
+   (type) == VEHICLE_POLL_TYPE_READ_ERDTC || \
+   (type) == VEHICLE_POLL_TYPE_CLEAR_ERDTC || \
+   (type) == VEHICLE_POLL_TYPE_READ_DCERDTC || \
+   (type) == VEHICLE_POLL_TYPE_READ_PERMDTC)
 #define POLL_TYPE_HAS_8BIT_PID(type) \
   (!POLL_TYPE_HAS_NO_PID(type) && !POLL_TYPE_HAS_16BIT_PID(type))
 
@@ -396,11 +410,20 @@ class OvmsVehicle : public InternalRamAllocated
     uint8_t           m_poll_sequence_cnt;    // Polls already sent in the current time tick (second)
     uint8_t           m_poll_fc_septime;      // Flow control separation time for multi frame responses
 
+  private:
+    OvmsMutex         m_poll_single_mutex;    // PollSingleRequest() concurrency protection
+    std::string*      m_poll_single_rxbuf;    // … response buffer
+    uint16_t          m_poll_single_rxerr;    // … response error code (NRC)
+    OvmsSemaphore     m_poll_single_rxdone;   // … response done (ok/error)
+
   protected:
     void PollSetPidList(canbus* bus, const poll_pid_t* plist);
     void PollSetState(uint8_t state);
-    void PollSetThrottling(uint8_t sequence_max) { m_poll_sequence_max = sequence_max; }
+    void PollSetThrottling(uint8_t sequence_max);
     void PollSetResponseSeparationTime(uint8_t septime);
+    int PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
+                      std::string request, std::string& response,
+                      int timeout_ms /*=3000*/, uint8_t protocol /*=ISOTP_STD*/);
 
   // BMS helpers
   protected:
@@ -478,7 +501,7 @@ class OvmsVehicleFactory
       FactoryFuncPtr construct;
       const char* name;
       } vehicle_t;
-    typedef map<const char*, vehicle_t, CmpStrOp> map_vehicle_t;
+    typedef CNameMap<vehicle_t> map_vehicle_t;
 
     OvmsVehicle *m_currentvehicle;
     std::string m_currentvehicletype;
@@ -500,6 +523,51 @@ class OvmsVehicleFactory
     const char* ActiveVehicleType();
     const char* ActiveVehicleName();
     const char* ActiveVehicleShortName();
+
+  // Shell commands:
+  protected:
+    static int vehicle_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool complete);
+    static void vehicle_module(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void vehicle_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void vehicle_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void vehicle_wakeup(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void vehicle_homelink(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void vehicle_climatecontrol(int verbosity, OvmsWriter* writer, bool on);
+    static void vehicle_climatecontrol_on(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void vehicle_climatecontrol_off(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void vehicle_lock(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void vehicle_unlock(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void vehicle_valet(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void vehicle_unvalet(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void vehicle_charge_mode(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void vehicle_charge_current(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void vehicle_charge_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void vehicle_charge_stop(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void vehicle_charge_cooldown(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void vehicle_stat(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void bms_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void bms_reset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void bms_alerts(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void obdii_request(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  protected:
+    static duk_ret_t DukOvmsVehicleType(duk_context *ctx);
+    static duk_ret_t DukOvmsVehicleWakeup(duk_context *ctx);
+    static duk_ret_t DukOvmsVehicleHomelink(duk_context *ctx);
+    static duk_ret_t DukOvmsVehicleClimateControl(duk_context *ctx);
+    static duk_ret_t DukOvmsVehicleLock(duk_context *ctx);
+    static duk_ret_t DukOvmsVehicleUnlock(duk_context *ctx);
+    static duk_ret_t DukOvmsVehicleValet(duk_context *ctx);
+    static duk_ret_t DukOvmsVehicleUnvalet(duk_context *ctx);
+    static duk_ret_t DukOvmsVehicleSetChargeMode(duk_context *ctx);
+    static duk_ret_t DukOvmsVehicleSetChargeCurrent(duk_context *ctx);
+    static duk_ret_t DukOvmsVehicleSetChargeTimer(duk_context *ctx);
+    static duk_ret_t DukOvmsVehicleStartCharge(duk_context *ctx);
+    static duk_ret_t DukOvmsVehicleStopCharge(duk_context *ctx);
+    static duk_ret_t DukOvmsVehicleStartCooldown(duk_context *ctx);
+    static duk_ret_t DukOvmsVehicleStopCooldown(duk_context *ctx);
+#endif // CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   };
 
 extern OvmsVehicleFactory MyVehicleFactory;

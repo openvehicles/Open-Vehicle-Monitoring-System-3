@@ -39,7 +39,7 @@
 #include "ovms_mutex.h"
 #include "ovms_command.h"
 
-typedef NameStringMap ConfigParamMap;
+typedef NameMap<std::string> ConfigParamMap;
 
 class OvmsConfigParam
   {

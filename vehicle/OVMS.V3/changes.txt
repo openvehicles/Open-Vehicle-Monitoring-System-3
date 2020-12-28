@@ -1,6 +1,10 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Vehicle framework: generic single OBD2/UDS request shell command & API call
+  New commands:
+    obdii can[1-4] request device [-t<timeout_ms>] [-e] txid rxid request
+    obdii can[1-4] request broadcast [-t<timeout_ms>] request
 - Wifi: option to immediately disconnect/reconnect on bad signal level
   New config:
     [network] wifi.bad.reconnect [bool], default no

@@ -53,6 +53,6 @@ OvmsVehicleNoneInit::OvmsVehicleNoneInit()
   {
   ESP_LOGI(TAG, "Registering Vehicle: NONE (9000)");
 
-  MyVehicleFactory.RegisterVehicle<OvmsVehicleNone>("NONE","Empty vehicle");
+  MyVehicleFactory.RegisterVehicle<OvmsVehicleNone>("NONE","Empty Vehicle");
   }
 

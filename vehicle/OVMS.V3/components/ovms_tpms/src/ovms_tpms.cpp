@@ -204,7 +204,7 @@ OvmsTPMS::OvmsTPMS()
   cmd_tpms->RegisterCommand("list","Show TPMS tyre sets",tpms_list);
   cmd_tpms->RegisterCommand("read","Read TPMS IDs to sepecified tyre set",tpms_read,"<set>",0,1);
   cmd_tpms->RegisterCommand("write","Write TPMS IDs from sepecified tyre set",tpms_write,"<set>",1,1);
-  cmd_tpms->RegisterCommand("set","Manually configure IDs in a tyre set",tpms_set,"<set> {<id>}",1,9);
+  cmd_tpms->RegisterCommand("set","Manually configure IDs in a tyre set",tpms_set,"<set> <id(s)>",1,9);
   cmd_tpms->RegisterCommand("delete","Delete the specified TPMS tyre set configuration",tpms_delete,"<set>",1,1);
 
   // Register our parameters

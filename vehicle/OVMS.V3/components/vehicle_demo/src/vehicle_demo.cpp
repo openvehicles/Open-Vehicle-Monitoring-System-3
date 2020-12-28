@@ -301,5 +301,5 @@ OvmsVehicleDemoInit::OvmsVehicleDemoInit()
   {
   ESP_LOGI(TAG, "Registering Vehicle: DEMO (9000)");
 
-  MyVehicleFactory.RegisterVehicle<OvmsVehicleDemo>("DEMO","Demonstration vehicle");
+  MyVehicleFactory.RegisterVehicle<OvmsVehicleDemo>("DEMO","Demonstration Vehicle");
   }

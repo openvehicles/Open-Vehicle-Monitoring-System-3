@@ -388,21 +388,38 @@ void OvmsVehicleVoltAmpera::IncomingFrameCan4(CAN_frame_t* p_frame)
     // Door lock command
     case 0x0C414040: 
       {
-      bool with_fob = false;
-      if (d[3]==5)
-        with_fob = true;  // d[3] == 1 -> with console panel button
-      switch (d[1]) {
-        case 0x05: {
-          ESP_LOGI(TAG,"Car locked via %s", with_fob ? "fob" : "panel");
-          StandardMetrics.ms_v_env_locked->SetValue(1); 
-          break;
-          }
-        case 0x04: 
-          {
-          ESP_LOGI(TAG,"Car unlocked via %s", with_fob ? "fob" : "panel");
+        const char *lock_src;
+        switch(d[3]){
+          case 0x01:
+            lock_src = "panel"; //with console panel button
+            break;
+          case 0x05:
+            lock_src = "fob";
+            break;
+          case 0x06:
+            lock_src = "keyless"; 
+            break;
+          case 0x07:
+            lock_src = "OnStar"; 
+            break;
+          case 0x0A:
+            lock_src = "auto"; //door is open when lock command activated, etc
+            break;
+          default:
+            lock_src = "unknown";
+            break;
+        }
+
+        // d[1]=0x05/0x04; for Volt MY14 d[1]=0x01/0x00
+        if(d[1] & 1) {
+            ESP_LOGI(TAG,"Car locked via %s(%u)", lock_src, d[3]);
+            StandardMetrics.ms_v_env_locked->SetValue(1); 
+            break;
+        }
+        else{
+          ESP_LOGI(TAG,"Car unlocked via %s(%u)", lock_src, d[3]);
           StandardMetrics.ms_v_env_locked->SetValue(0); 
           break;
-          }
         }
       break;
       }
@@ -510,6 +527,55 @@ void OvmsVehicleVoltAmpera::IncomingFrameCan4(CAN_frame_t* p_frame)
           break;
           }
         }
+      break;
+      } 
+    
+    // Door status FR
+    case 0x0C2F6040: 
+      {
+      StdMetrics.ms_v_door_fr->SetValue(d[0] & 1<<0);
+      break;
+      } 
+
+    // Door status RL
+    case 0x0C2F8040: 
+      {
+      StdMetrics.ms_v_door_rl->SetValue(d[0] & 1<<0);
+      break;
+      } 
+
+    // Door status RR
+    case 0x0C2FA040: 
+      {
+      StdMetrics.ms_v_door_rr->SetValue(d[0] & 1<<0);
+      break;
+      } 
+
+    // Door status FL
+    case 0x0C630040: 
+      {
+      StdMetrics.ms_v_door_fl->SetValue(d[0] & 1<<0);
+      break;
+      } 
+
+    // Hood
+    case 0x10728040: 
+      {
+      StdMetrics.ms_v_door_hood->SetValue(d[0] & 1<<1);
+      break;
+      } 
+
+    // Trunk
+    case 0x0C6AA040: 
+      {
+      StdMetrics.ms_v_door_trunk->SetValue(d[0] & 1<<0);
+      break;
+      } 
+
+    // External Lighting
+    case 0x1020C040: 
+      {
+      StdMetrics.ms_v_env_headlights->SetValue(d[2] & 1<<2); // Parking Light
       break;
       } 
 

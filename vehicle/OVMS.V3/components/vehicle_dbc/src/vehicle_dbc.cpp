@@ -167,5 +167,5 @@ OvmsVehiclePureDBCInit::OvmsVehiclePureDBCInit()
   {
   ESP_LOGI(TAG, "Registering Vehicle: DBC based vehicle (9000)");
 
-  MyVehicleFactory.RegisterVehicle<OvmsVehiclePureDBC>("DBC","DBC based vehicle");
+  MyVehicleFactory.RegisterVehicle<OvmsVehiclePureDBC>("DBC","DBC-based Vehicle");
   }

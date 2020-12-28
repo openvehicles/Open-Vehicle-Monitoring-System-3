@@ -2160,6 +2160,7 @@ void OvmsWebServer::HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c)
   c.input_select_option("can1", "can1", obd2ecu == "can1");
   c.input_select_option("can2", "can2", obd2ecu == "can2");
   c.input_select_option("can3", "can3", obd2ecu == "can3");
+  c.input_select_option("can4", "can4", obd2ecu == "can4");
   c.input_select_end(
     "<p>OBD2ECU translates OVMS to OBD2 metrics, i.e. to drive standard ECU displays</p>");
 

@@ -485,7 +485,7 @@ VfsInit::VfsInit()
   {
   ESP_LOGI(TAG, "Initialising VFS (5200)");
 
-  OvmsCommand* cmd_vfs = MyCommandApp.RegisterCommand("vfs","Virtual File System framework",NULL,"$C <file(s)>");
+  OvmsCommand* cmd_vfs = MyCommandApp.RegisterCommand("vfs","Virtual File System framework");
   cmd_vfs->RegisterCommand("ls","VFS Directory Listing",vfs_ls, "[<file>]", 0, 1);
   cmd_vfs->RegisterCommand("cat","VFS Display a file",vfs_cat, "<file>", 1, 1);
   cmd_vfs->RegisterCommand("head","VFS Display first 20 lines of a file",vfs_head, "[-nrlines] <file>", 1, 2);

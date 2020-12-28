@@ -359,6 +359,11 @@ void test_string(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
   writer->puts("finished");
   }
 
+void test_command(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  MyCommandApp.Display(writer);
+  }
+
 class TestFrameworkInit
   {
   public: TestFrameworkInit();
@@ -385,4 +390,5 @@ TestFrameworkInit::TestFrameworkInit()
   cmd_test->RegisterCommand("mkstemp", "Test mkstemp function", test_mkstemp, "<file>", 1, 1);
   cmd_test->RegisterCommand("string", "Test std::string memory corruption", test_string, "<loopcnt> <mode>\n"
     "mode: 1=m.AsJSON, 2=m.AsString, 3=m.name, 4=const cfg string, 5=const local cstr, 6=const local string", 2, 2);
+  cmd_test->RegisterCommand("commands", "List command tree", test_command);
   }
