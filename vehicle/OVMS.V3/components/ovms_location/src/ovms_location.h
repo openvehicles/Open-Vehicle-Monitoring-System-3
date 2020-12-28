@@ -47,6 +47,7 @@ class OvmsLocationAction
   public:
     OvmsLocationAction(bool enter, enum LocationAction action, const char* params, int len);
     const char* ActionString();
+    void Execute(bool enter);
 
   public:
     bool m_enter;
