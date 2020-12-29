@@ -50,38 +50,38 @@ const OvmsVehicle::poll_pid_t vweup_polls[] = {
     // Note: poller ticker cycles at 3600 seconds = max period
     // { txid, rxid, type, pid, { VWEUP_OFF, VWEUP_ON, VWEUP_CHARGING }, bus }
 
-    {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_U, {0, 1, 5}, 1},
+    {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_U, {0, 1, 5}, 1, ISOTP_STD},
 //  Moved to ObdInit:    
 //    {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_I, {30, 1, 5}, 1}, // 30 in OFF needed: Car gets started with full 12V battery
     // Same tick & order important of above 2: VWUP_BAT_MGMT_I calculates the power
 
-    {VWUP_MOT_ELEC_TX, VWUP_MOT_ELEC_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MOT_ELEC_SOC_NORM, {0, 20, 0}, 1},
-    {VWUP_MOT_ELEC_TX, VWUP_MOT_ELEC_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MOT_ELEC_SOC_ABS, {0, 20, 20}, 1},
-    {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_SOC_ABS, {0, 20, 20}, 1},
-    {VWUP_CHG_MGMT_TX, VWUP_CHG_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_CHG_MGMT_SOC_NORM, {0, 0, 20}, 1},
-    {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_ENERGY_COUNTERS, {0, 20, 20}, 1},
+    {VWUP_MOT_ELEC_TX, VWUP_MOT_ELEC_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MOT_ELEC_SOC_NORM, {0, 20, 0}, 1, ISOTP_STD},
+    {VWUP_MOT_ELEC_TX, VWUP_MOT_ELEC_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MOT_ELEC_SOC_ABS, {0, 20, 0}, 1, ISOTP_STD},
+    {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_SOC_ABS, {0, 20, 20}, 1, ISOTP_STD},
+    {VWUP_CHG_MGMT_TX, VWUP_CHG_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_CHG_MGMT_SOC_NORM, {0, 0, 20}, 1, ISOTP_STD},
+    {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_ENERGY_COUNTERS, {0, 20, 20}, 1, ISOTP_STD},
 
-    {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_CELL_MAX, {0, 20, 20}, 1},
-    {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_CELL_MIN, {0, 20, 20}, 1},
+    {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_CELL_MAX, {0, 20, 20}, 1, ISOTP_STD},
+    {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_CELL_MIN, {0, 20, 20}, 1, ISOTP_STD},
     // Same tick & order important of above 2: VWUP_BAT_MGMT_CELL_MIN calculates the delta
 
-    {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_TEMP, {0, 20, 20}, 1},
+    {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_TEMP, {0, 20, 20}, 1, ISOTP_STD},
 
-    {VWUP_CHG_TX, VWUP_CHG_RX, VEHICLE_POLL_TYPE_OBDIISESSION, VWUP_CHG_EXTDIAG, {0, 30, 30}, 1},
+    {VWUP_CHG_TX, VWUP_CHG_RX, VEHICLE_POLL_TYPE_OBDIISESSION, VWUP_CHG_EXTDIAG, {0, 30, 30}, 1, ISOTP_STD},
 
-    {VWUP_CHG_TX, VWUP_CHG_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_CHG_POWER_EFF, {0, 5, 10}, 1}, // 5 @ VWEUP_ON to detect charging
-    {VWUP_CHG_TX, VWUP_CHG_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_CHG_POWER_LOSS, {0, 0, 10}, 1},
+    {VWUP_CHG_TX, VWUP_CHG_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_CHG_POWER_EFF, {0, 5, 10}, 1, ISOTP_STD}, // 5 @ VWEUP_ON to detect charging
+    {VWUP_CHG_TX, VWUP_CHG_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_CHG_POWER_LOSS, {0, 0, 10}, 1, ISOTP_STD},
 
-    {VWUP_MFD_TX, VWUP_MFD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MFD_ODOMETER, {0, 60, 60}, 1},
+    {VWUP_MFD_TX, VWUP_MFD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MFD_ODOMETER, {0, 60, 60}, 1, ISOTP_STD},
 
 //    {VWUP_BRK_TX, VWUP_BRK_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BRK_TPMS, {0, 5, 5}, 1},
-//    {VWUP_MOT_ELEC_TX, VWUP_MOT_ELEC_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MOT_ELEC_TEMP_AMB, {0, 5, 30}, 1},
-    {VWUP_MFD_TX, VWUP_MFD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MFD_MAINT_DIST, {0, 60, 60}, 1},
-    {VWUP_MFD_TX, VWUP_MFD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MFD_MAINT_TIME, {0, 60, 60}, 1},
+//    {VWUP_MOT_ELEC_TX, VWUP_MOT_ELEC_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MOT_ELEC_TEMP_AMB, {0, 5, 0}, 1},
+    {VWUP_MFD_TX, VWUP_MFD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MFD_MAINT_DIST, {0, 60, 60}, 1, ISOTP_STD},
+    {VWUP_MFD_TX, VWUP_MFD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MFD_MAINT_TIME, {0, 60, 60}, 1, ISOTP_STD},
 
-    {VWUP_MOT_ELEC_TX, VWUP_MOT_ELEC_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MOT_ELEC_TEMP_DCDC, {0, 5, 10}, 1},
-    {VWUP_ELD_TX, VWUP_ELD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_ELD_DCDC_U, {0, 5, 10}, 1},
-    {VWUP_ELD_TX, VWUP_ELD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_ELD_DCDC_I, {0, 5, 10}, 1}/*,
+    {VWUP_MOT_ELEC_TX, VWUP_MOT_ELEC_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MOT_ELEC_TEMP_DCDC, {0, 5, 0}, 1, ISOTP_STD},
+    {VWUP_ELD_TX, VWUP_ELD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_ELD_DCDC_U, {0, 5, 10}, 1, ISOTP_STD},
+    {VWUP_ELD_TX, VWUP_ELD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_ELD_DCDC_I, {0, 5, 10}, 1, ISOTP_STD}/*,
     {VWUP_MOT_ELEC_TX, VWUP_MOT_ELEC_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MOT_ELEC_TEMP_COOL1, {0, 20, 0}, 1},
     {VWUP_MOT_ELEC_TX, VWUP_MOT_ELEC_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MOT_ELEC_TEMP_COOL2, {0, 20, 0}, 1},
     {VWUP_MOT_ELEC_TX, VWUP_MOT_ELEC_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MOT_ELEC_TEMP_COOL3, {0, 20, 0}, 1},
@@ -111,25 +111,25 @@ const OvmsVehicle::poll_pid_t vweup_polls[] = {
     
 const OvmsVehicle::poll_pid_t vweup1_polls[] = {
     // specific codes for gen1 model (before year 2020)
-    {VWUP_CHG_TX, VWUP_CHG_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP1_CHG_AC_U, {0, 0, 5}, 1},
-    {VWUP_CHG_TX, VWUP_CHG_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP1_CHG_AC_I, {0, 0, 5}, 1},
+    {VWUP_CHG_TX, VWUP_CHG_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP1_CHG_AC_U, {0, 0, 5}, 1, ISOTP_STD},
+    {VWUP_CHG_TX, VWUP_CHG_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP1_CHG_AC_I, {0, 0, 5}, 1, ISOTP_STD},
     // Same tick & order important of above 2: VWUP_CHG_AC_I calculates the AC power
-    {VWUP_CHG_TX, VWUP_CHG_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP1_CHG_DC_U, {0, 0, 5}, 1},
-    {VWUP_CHG_TX, VWUP_CHG_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP1_CHG_DC_I, {0, 0, 5}, 1},
+    {VWUP_CHG_TX, VWUP_CHG_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP1_CHG_DC_U, {0, 0, 5}, 1, ISOTP_STD},
+    {VWUP_CHG_TX, VWUP_CHG_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP1_CHG_DC_I, {0, 0, 5}, 1, ISOTP_STD},
     // Same tick & order important of above 2: VWUP_CHG_DC_I calculates the DC power
     // Same tick & order important of above 4: VWUP_CHG_DC_I calculates the power loss & efficiency
-    {0, 0, 0, 0, {0, 0, 0}, 0}};
+    {0, 0, 0, 0, {0, 0, 0}, 0, ISOTP_STD}};
 
 const OvmsVehicle::poll_pid_t vweup2_polls[] = {
     // specific codes for gen2 model (from year 2020)
-    {VWUP_CHG_TX, VWUP_CHG_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP2_CHG_AC_U, {0, 0, 5}, 1},
-    {VWUP_CHG_TX, VWUP_CHG_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP2_CHG_AC_I, {0, 0, 5}, 1},
+    {VWUP_CHG_TX, VWUP_CHG_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP2_CHG_AC_U, {0, 0, 5}, 1, ISOTP_STD},
+    {VWUP_CHG_TX, VWUP_CHG_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP2_CHG_AC_I, {0, 0, 5}, 1, ISOTP_STD},
     // Same tick & order important of above 2: VWUP_CHG_AC_I calculates the AC power
-    {VWUP_CHG_TX, VWUP_CHG_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP2_CHG_DC_U, {0, 0, 5}, 1},
-    {VWUP_CHG_TX, VWUP_CHG_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP2_CHG_DC_I, {0, 0, 5}, 1},
+    {VWUP_CHG_TX, VWUP_CHG_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP2_CHG_DC_U, {0, 0, 5}, 1, ISOTP_STD},
+    {VWUP_CHG_TX, VWUP_CHG_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP2_CHG_DC_I, {0, 0, 5}, 1, ISOTP_STD},
     // Same tick & order important of above 2: VWUP_CHG_DC_I calculates the DC power
     // Same tick & order important of above 4: VWUP_CHG_DC_I calculates the power loss & efficiency
-    {0, 0, 0, 0, {0, 0, 0}, 0}};
+    {0, 0, 0, 0, {0, 0, 0}, 0, ISOTP_STD}};
 
 const int vweup_polls_len = sizeof(vweup_polls)/sizeof(vweup_polls)[0];
 const int vweup1_polls_len = sizeof(vweup1_polls)/sizeof(vweup1_polls)[0];
@@ -149,9 +149,9 @@ void OvmsVehicleVWeUp::OBDInit()
 
     // init polls:
     if (vweup_con == 2) // only OBD connected -> get car state by polling OBD
-        vweup_polls_all[0] = {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_I, {30, 1, 5}, 1}; // 30 in OFF needed: Car gets started with full 12V battery
+        vweup_polls_all[0] = {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_I, {30, 1, 5}, 1, ISOTP_STD}; // 30 in OFF needed: Car gets started with full 12V battery
     else 
-        vweup_polls_all[0] = {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_I, {0, 1, 5}, 1}; 
+        vweup_polls_all[0] = {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_I, {0, 1, 5}, 1, ISOTP_STD}; 
     if (vweup_modelyear < 2020)
     {
         for(int i=0; i<vweup_polls_len; i++)
@@ -200,8 +200,8 @@ void OvmsVehicleVWeUp::OBDInit()
     TPMSEmergencyFrontRight = MyMetrics.InitFloat("xvu.v.tp.e.fr", SM_STALE_NONE, 0, Percentage);
     TPMSEmergencyRearLeft = MyMetrics.InitFloat("xvu.v.tp.e.rl", SM_STALE_NONE, 0, Percentage);
     TPMSEmergencyRearRight = MyMetrics.InitFloat("xvu.v.tp.e.rr", SM_STALE_NONE, 0, Percentage);
-    MaintenanceDist = MyMetrics.InitFloat("xvu.v.m.d", SM_STALE_NONE, 0, Kilometers);
-    MaintenanceTime = MyMetrics.InitFloat("xvu.v.m.t", SM_STALE_NONE, 0);
+//    MaintenanceDist = MyMetrics.InitFloat("xvu.v.m.d", SM_STALE_NONE, 0, Kilometers);
+//    MaintenanceTime = MyMetrics.InitFloat("xvu.v.m.t", SM_STALE_NONE, 0);
 
     CoolantTemp1 = MyMetrics.InitFloat("xvu.v.t.c1", SM_STALE_NONE, 0, Degrees);
     CoolantTemp2 = MyMetrics.InitFloat("xvu.v.t.c2", SM_STALE_NONE, 0, Degrees);
@@ -632,14 +632,6 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
         }
         break;
 
-//     case VWUP_MOT_ELEC_TEMP_AMB: // value from KCAN is more precise and always available
-//        if (PollReply.FromInt8("VWUP_MOT_ELEC_TEMP_AMB", value))
-//        {
-//            StandardMetrics.ms_v_env_temp->SetValue(value / 10.0f - 273.1f);
-//            VALUE_LOG(TAG, "VWUP_MOT_ELEC_TEMP_AMB=%f => %f", value, StandardMetrics.ms_v_bat_temp->AsFloat());
-//        }
-//        break;
-
      case VWUP_MFD_MAINT_DIST:
         if (PollReply.FromUint16("VWUP_MFD_MAINT_DIST", value))
         {
@@ -658,21 +650,22 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
 
      case VWUP_MOT_ELEC_TEMP_DCDC:
         if (PollReply.FromUint16("VWUP_MOT_ELEC_TEMP_DCDC", value)){
-            StandardMetrics.ms_v_charge_temp->SetValue(value / 10.0f - 273.1f);
-            VALUE_LOG(TAG, "VWUP_MOT_ELEC_TEMP_DCDC=%f => %f", value, StandardMetrics.ms_v_charge_temp->AsFloat());
+            StandardMetrics.ms_v_charge_12v_temp->SetValue(value / 10.0f - 273.1f);
+            VALUE_LOG(TAG, "VWUP_MOT_ELEC_TEMP_DCDC=%f => %f", value, StandardMetrics.ms_v_charge_12v_temp->AsFloat());
         }
         break;
      case VWUP_ELD_DCDC_U:
         if (PollReply.FromUint16("VWUP_ELD_DCDC_U", value)){
-//            StandardMetrics.ms_v_->SetValue(value / 512.0f);
-            VALUE_LOG(TAG, "VWUP_ELD_DCDC_U=%f => %f", value, value / 512.0f);
+            StandardMetrics.ms_v_charge_12v_voltage->SetValue(value / 512.0f);
+            VALUE_LOG(TAG, "VWUP_ELD_DCDC_U=%f => %f", value, StandardMetrics.ms_v_charge_12v_voltage->AsFloat());
         }
         break;
      case VWUP_ELD_DCDC_I:
         if (PollReply.FromUint16("VWUP_ELD_DCDC_I", value)){
-//            StandardMetrics.ms_v_->SetValue(value / 16.0f);
-            VALUE_LOG(TAG, "VWUP_ELD_DCDC_I=%f => %f", value, value / 16.0f);
-//            StandardMetrics.ms_v_->SetValue(StandardMetrics.ms_v_->AsFloat() * StandardMetrics.ms_v_->AsFloat());
+            StandardMetrics.ms_v_charge_12v_current->SetValue(value / 16.0f);
+            VALUE_LOG(TAG, "VWUP_ELD_DCDC_I=%f => %f", value, StandardMetrics.ms_v_charge_12v_current->AsFloat());
+            StandardMetrics.ms_v_charge_12v_power->SetValue(StandardMetrics.ms_v_charge_12v_voltage->AsFloat() * StandardMetrics.ms_v_charge_12v_current->AsFloat());
+            VALUE_LOG(TAG, "VWUP_ELD_DCDC_P=%f => %f", StandardMetrics.ms_v_charge_12v_power->AsFloat(), StandardMetrics.ms_v_charge_12v_power->AsFloat());
         }
         break;
    }

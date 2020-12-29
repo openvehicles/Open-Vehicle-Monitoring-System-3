@@ -31,11 +31,11 @@
 
 /*
 ;    Subproject:    Integration of support for the VW e-UP
-;    Date:          28 November 2020
+;    Date:          29 December 2020
 ;
 ;    Changes:
 ;    0.1.0  Initial code
-:           Crude merge of code from Chris van der Meijden (KCAN) and SokofromNZ (OBD2)
+:           Crude merge of code from Chris van der Meijden (KCAN) and SokoFromNZ (OBD2)
 ;
 ;    0.1.1  make OBD code depend on car status from KCAN, no more OBD polling in off state
 ;
@@ -57,11 +57,13 @@
 ;
 ;    0.3.1  added charger standard metrics
 ;
-;    0.3.2  refactoring; init/de-init CAN buses depending on connection; transmit charge current as float (server V2)
+;    0.3.2  refactoring; init CAN buses depending on connection; transmit charge current as float (server V2)
 ;
 ;    0.3.3  new standard metrics for maintenance range & days; added trip distance & energies as deltas
 ;
-;    (C) 2020 sharkcow <sharkcow@gmx.de> / Chris van der Meijden / SokofromNZ
+;    0.3.4  update changes in t26 code by devmarxx, update docs
+;
+;    (C) 2020 sharkcow <sharkcow@gmx.de> / Chris van der Meijden / SokoFromNZ
 ;
 ;    Biggest thanks to Dexter, Dimitrie78, E-Imo and 'der kleine Nik'.
 */
@@ -70,7 +72,7 @@
 #include <string>
 static const char *TAG = "v-vweup";
 
-#define VERSION "0.3.3"
+#define VERSION "0.3.4"
 
 #include <stdio.h>
 #include <string>
@@ -159,6 +161,8 @@ const char* OvmsVehicleVWeUp::VehicleShortName()
 
 bool OvmsVehicleVWeUp::SetFeature(int key, const char *value)
 {
+    int i;
+    int n;
     switch (key)
     {
     case 15:
@@ -167,6 +171,33 @@ bool OvmsVehicleVWeUp::SetFeature(int key, const char *value)
         MyConfig.SetParamValueBool("xvu", "canwrite", (bits & 1) != 0);
         return true;
     }
+    case 20:
+        // check:
+        if (strlen(value) == 0) value = "2020";
+        for (i = 0; i < strlen(value); i++) {
+           if (isdigit(value[i]) == false) {
+             value = "2020";
+             break;
+           }
+        }
+        n = atoi(value);
+        if (n < 2013) value = "2013";
+        MyConfig.SetParamValue("xvu", "modelyear", value);
+        return true;
+    case 21:
+        // check:
+        if (strlen(value) == 0) value = "21";
+        for (i = 0; i < strlen(value); i++) {
+           if (isdigit(value[i]) == false) {
+             value = "21";
+             break;
+           }
+        }
+        n = atoi(value);
+        if (n < 18) value = "18";
+        if (n > 23) value = "23";
+        MyConfig.SetParamValue("xvu", "cc_temp", value);
+        return true;
     default:
         return OvmsVehicle::SetFeature(key, value);
     }
@@ -178,12 +209,15 @@ const std::string OvmsVehicleVWeUp::GetFeature(int key)
     {
     case 15:
     {
-        int bits =
-            (MyConfig.GetParamValueBool("xvu", "canwrite", false) ? 1 : 0);
+        int bits = (MyConfig.GetParamValueBool("xvu", "canwrite", false) ? 1 : 0);
         char buf[4];
         sprintf(buf, "%d", bits);
         return std::string(buf);
     }
+    case 20:
+      return MyConfig.GetParamValue("xvu", "modelyear", STR(DEFAULT_MODEL_YEAR));
+    case 21:
+      return MyConfig.GetParamValue("xvu", "cc_temp", STR(21));
     default:
         return OvmsVehicle::GetFeature(key);
     }
@@ -191,6 +225,9 @@ const std::string OvmsVehicleVWeUp::GetFeature(int key)
 
 void OvmsVehicleVWeUp::ConfigChanged(OvmsConfigParam *param)
 {
+    if (param && param->GetName() != "xvu")
+       return;
+
     ESP_LOGD(TAG, "VW e-Up reload configuration");
     vweup_modelyear_new = MyConfig.GetParamValueInt("xvu", "modelyear", DEFAULT_MODEL_YEAR);
     vweup_enable_obd = MyConfig.GetParamValueBool("xvu", "con_obd", true);
@@ -243,6 +280,17 @@ void OvmsVehicleVWeUp::Ticker1(uint32_t ticker)
                 SendCommand(AUTO_DISABLE_CLIMATE_CONTROL);
             }
         }
+        // Car disabled climate control
+        if (!StandardMetrics.ms_v_env_on->AsBool() && vweup_remote_climate_ticker < 1770 && vweup_remote_climate_ticker != 0 && !StandardMetrics.ms_v_env_hvac->AsBool())
+        {
+            vweup_remote_climate_ticker = 0;
+
+            ESP_LOGI(TAG, "Car disabled Climate Control or cc did not turn on");
+
+            vweup_cc_on = false;
+            ocu_awake = true;
+        }
+        
     }
     
 }

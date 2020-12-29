@@ -6,14 +6,23 @@ VW e-Up
 Vehicle Type: **VWUP**
 
 This vehicle type supports the VW e-UP (2013-, 2020-), Skoda Citigo E IV and the Seat MII electric (2020-).
-Connection can be made via the OBD2 port to the top left of the driving pedals and/or the Comfort CAN bus, e.g. below the passenger seat (instead of the VW OCU there).
+Connection can be made via the OBD2 port to the top left of the driving pedals and/or the Comfort CAN bus, e.g. below the passenger seat (T26 connector, instead of the VW OCU there).
 
-The code is shamelessly copied from the original projects for the Comfort CAN by Chris van der Meijden and for the OBD2 port by Soko. Additional metrics and displays were added mainly for OBD2.
+The main difference currently is that the OBD connection enables access to way more metrics (e.g. down to cell voltages), while the Comfort CAN connection is necessary if write access is needed, e.g. for remote climate control.
+The Comfort CAN also provides data in more cases without turning on the car or charging, as the bus wakes on many events, e.g. opening of doors and can be woken via OVMS.
+For the full experience, making both connections is recommended.
+
+After selecting the VW e-Up vehicle module, the corresponding settings have to be made in the web interface via the "VW e-Up" menu under "Features". By default, both connections are activated.
 
 For details on the two connection types, please see the corresponding projects:
-Comfort CAN: `https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3/blob/master/vehicle/OVMS.V3/components/vehicle_vweup/docs/index.rst <https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3/blob/master/vehicle/OVMS.V3/components/vehicle_vweup/docs/index.rst>`_
-OBD2: `https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3/blob/master/vehicle/OVMS.V3/components/vehicle_vweup_obd/docs/index.rst <https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3/blob/master/vehicle/OVMS.V3/components/vehicle_vweup_obd/docs/index.rst>`_
 
+Comfort CAN (T26): `https://github.com/devmarxx/Open-Vehicle-Monitoring-System-3/blob/master/vehicle/OVMS.V3/components/vehicle_vweup/docs/index.rst <https://github.com/devmarxx/Open-Vehicle-Monitoring-System-3/blob/master/vehicle/OVMS.V3/components/vehicle_vweup/docs/index.rst>`_ 
+
+OBD2: `https://github.com/SokoFromNZ/Open-Vehicle-Monitoring-System-3/blob/master/vehicle/OVMS.V3/components/vehicle_vweup_obd/docs/index.rst <https://github.com/SokoFromNZ/Open-Vehicle-Monitoring-System-3/blob/master/vehicle/OVMS.V3/components/vehicle_vweup_obd/docs/index.rst>`_ 
+
+The initial code is shamelessly copied from the original projects for the Comfort CAN by Chris van der Meijden and for the OBD2 port by SokoFromNZ.
+
+List of (possible) metrics via OBD2: `https://www.goingelectric.de/wiki/Liste-der-OBD2-Codes/ <https://www.goingelectric.de/wiki/Liste-der-OBD2-Codes/>`_
 
 ----------------
 Support Overview
@@ -22,7 +31,7 @@ Support Overview
 =========================== ==============
 Function                    Support Status
 =========================== ==============
-Hardware                    Any OVMS v3 (or later) module. Vehicle support: 2020- (2013- VW e-Up as well)
+Hardware                    Any OVMS v3 (or later) module. Vehicle support: 2013- 
 Vehicle Cable               Comfort CAN T26A (OCU connector cable, located under front passenger seat) to DB9 Data Cable for OVMS using pin 6 and 8 for can3 _AND_ OBD-II to DB9 Data Cable for OVMS (1441200 right, or 1139300 left) for can1
 GSM Antenna                 T4AC - R205 with fakra_sma adapter cable or 1000500 Open Vehicles OVMS GSM Antenna (or any compatible antenna)
 GPS Antenna                 T4AC - R50 with fakra_sma adapter cable or 1020200 Universal GPS Antenna (or any compatible antenna)
@@ -37,8 +46,8 @@ TPMS Display                tba
 Charge Status Display       Yes
 Charge Interruption Alerts  Yes (per notification on the charging state)
 Charge Control              tba
-Lock/Unlock Vehicle         tba
-Valet Mode Control          tba
+Lock/Unlock Vehicle         No 
+Valet Mode Control          No 
 Others                      **See list of metrics below**
 =========================== ==============
 
@@ -64,6 +73,10 @@ v.b.range.ideal               T26        48km                     Ideal range
 v.b.soc                       OBD, T26   88.2 %                   Current usable State of Charge (SoC) of the main battery
 v.b.temp                      OBD        22.5 °C                  Current temperature of the main battery
 v.b.voltage                   OBD        320.2 V                  Current voltage of the main battery
+v.c.12v.current               OBD        7.8A                     Output current of DC/DC-converter
+v.c.12v.power                 OBD        0.123kW                  Output power of DC/DC-converter
+v.c.12v.temp                  OBD        34.5°C                   Temperature of DC/DC-converter
+v.c.12v.voltage               OBD        12.3V                    Output voltage of DC/DC-converter
 v.c.charging                  T26        true                     Is vehicle charging (true = "Vehicle CHARGING" state. v.e.on=false if this is true)
 v.c.current 	              OBD        1.25A 	                  Momentary charger output current
 v.c.efficiency                OBD        91.3 %                   Charging efficiency calculated by v.b.power and v.c.power
@@ -90,15 +103,16 @@ v.e.hvac                      T26                                 yes = HVAC act
 v.e.locked                    T26                                 yes = Vehicle locked
 v.e.on                        T26        true                     Is ignition on and drivable (true = "Vehicle ON", false = "Vehicle OFF" state)
 v.e.parktime                  T26        49608Sec                 Seconds parking (turned off)
+v.e.serv.range                OBD        12345km                  distance to next scheduled maintenance/service [km]
+v.e.serv.days                 OBD        123days                  time to next scheduled maintenance/service [days]
 v.e.temp                      OBD, T26                            Ambient temperature
 v.i.temp                      OBD                                 Inverter temperature
 v.m.temp                      OBD        0°C                      Motor temperature
-v.p.odometer                  T26        2340 km                  Total distance traveled
+v.p.odometer                  OBD, T26   2340 km                  Total distance traveled
 v.p.speed                     T26        0km/h                    Vehicle speed
 v.vin                         T26        VF1ACVYB012345678        Vehicle identification number
 ============================= ========== ======================== ============================================
 
-*) Also updated in state "Vehicle OFF"
 
 
 --------------
@@ -112,12 +126,23 @@ Metric name                   bus        Example value            Description
 ============================= ========== ======================== ============================================
 xvu.b.cell.delta              OBD        0.012 V                  Delta voltage between lowest and highest cell voltage
 xvu.b.soc.abs                 OBD        85.3 %                   Current absolute State of Charge (SoC) of the main battery
+xvu.c.soc.norm                OBD        80.5 %                   Current normalized State of Charge (SoC) of the main battery as reported by charge management ECU
+xvu.c.ac.i1                   OBD        5.9 A                    AC current of AC charger phase 1
+xvu.c.ac.i2                   OBD        7.0 A                    AC current of AC charger phase 2 (only for model 2020+)
 xvu.c.ac.p                    OBD        7.223 kW                 Current charging power on AC side (calculated by ECU's AC voltages and AC currents)
+xvu.c.ac.u1                   OBD        223 V                    AC voltage of AC charger phase 1
+xvu.c.ac.u2                   OBD        233 V                    AC voltage of AC charger phase 2 (only for model 2020+)
+xvu.c.dc.i1                   OBD        1.2 A                    DC current of AC charger 1
+xvu.c.dc.i2                   OBD        1.2 A                    AC current of AC charger 2 (only for model 2020+)
 xvu.c.dc.p                    OBD        6.500 kW                 Current charging power on DC side (calculated by ECU's DC voltages and DC currents)
+xvu.c.dc.u1                   OBD        380 V                    DC voltage of AC charger 1
+xvu.c.dc.u2                   OBD        375 V                    DC voltage of AC charger 2 (only for model 2020+)
 xvu.c.eff.calc                OBD        90.0 %                   Charger efficiency calculated by AC and DC power
 xvu.c.eff.ecu*                OBD        92.3 %                   Charger efficiency reported by the Charger ECU
 xvu.c.loss.calc               OBD        0.733 kW                 Charger power loss calculated by AC and DC power
 xvu.c.loss.ecu*               OBD        0.620 kW                 Charger power loss reported by the Charger ECU
+xvu.m.soc.abs                 OBD        85.3 %                   Current absolute State of Charge (SoC) of the main battery as reported by motor electronics ECU
+xvu.m.soc.norm                OBD        80.5 %                   Current normalized State of Charge (SoC) of the main battery as reported by motor electronics ECU
 xvu.v.m.d                     OBD        12500 km                 Distance to next scheduled maintenance
 xvu.v.m.t                     OBD        123 days                 Time to next scheduled maintenance
 ============================= ========== ======================== ============================================
