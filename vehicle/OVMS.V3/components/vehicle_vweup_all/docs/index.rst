@@ -9,12 +9,54 @@ This vehicle type supports the VW e-UP (2013-, 2020-), Skoda Citigo E IV and the
 Connection can be made via the OBD2 port to the top left of the driving pedals and/or the Comfort CAN bus, e.g. below the passenger seat (T26 connector, instead of the VW OCU there).
 
 The main difference currently is that the OBD connection enables access to way more metrics (e.g. down to cell voltages), while the Comfort CAN connection is necessary if write access is needed, e.g. for remote climate control.
-The Comfort CAN also provides data in more cases without turning on the car or charging, as the bus wakes on many events, e.g. opening of doors and can be woken via OVMS.
+The Comfort CAN also provides data in more cases without turning on the car or charging, as the bus wakes on many events (e.g. opening of doors) and can also be woken via OVMS.
+
 For the full experience, making both connections is recommended.
 
-After selecting the VW e-Up vehicle module, the corresponding settings have to be made in the web interface via the "VW e-Up" menu under "Features". By default, both connections are activated.
+Connection to OBD2 is done with the standard OVMS OBD2-cable just below the fuses left of the driving pedals:
 
-For details on the two connection types, please see the corresponding projects:
+.. image:: 1441200-3.jpeg
+    :width: 480px
+.. image:: DSC00369_1024.JPG
+    :width: 480px
+
+Connection to Comfort CAN can be done by removing the OCU below the passenger seat (advantage: the connections for the GSM & GPS-antennas of the car can be used):
+
+.. image:: location.png
+    :width: 480px
+.. image:: grinded_ribbon.png
+    :height: 200px
+.. image:: fakra_sma.png
+    :height: 200px    
+
+(The passenger seat doesn't have to be removed, it can also be done by fiddling around a bit :))
+
+If both connections are to be made simultaneously, an adapter cable has to be made with the following connections:
+
+.. image:: DSC00373_1024.JPG
+    :width: 480px
+
+=== === ===== ===========================
+T26 OBD DB9-F Signal
+=== === ===== ===========================
+26  .   3	  Chassis / Power GND
+.   14  2	  can1 L (Can Low)
+.   6   7	  can1 H (Can High)
+.   .   4	  can2 L (Can Low, not used)
+.   .   5	  can2 H (Can High, not used)
+2   .   6	  can3 L (Comfort-can Low)
+14  .   8	  can3 H (Comfort-can High)
+1   .   9	  +12V Vehicle Power
+=== === ===== ===========================
+
+After selecting the VW e-Up vehicle module, the corresponding settings have to be made in the web interface via the "VW e-Up" menu under "Features":
+
+.. image:: Features.png
+    :width: 480px
+
+By default, both connections are activated.
+
+For more details on the two connection types, please see the corresponding projects:
 
 Comfort CAN (T26): `https://github.com/devmarxx/Open-Vehicle-Monitoring-System-3/blob/master/vehicle/OVMS.V3/components/vehicle_vweup/docs/index.rst <https://github.com/devmarxx/Open-Vehicle-Monitoring-System-3/blob/master/vehicle/OVMS.V3/components/vehicle_vweup/docs/index.rst>`_ 
 
@@ -23,6 +65,15 @@ OBD2: `https://github.com/SokoFromNZ/Open-Vehicle-Monitoring-System-3/blob/maste
 The initial code is shamelessly copied from the original projects for the Comfort CAN by Chris van der Meijden and for the OBD2 port by SokoFromNZ.
 
 List of (possible) metrics via OBD2: `https://www.goingelectric.de/wiki/Liste-der-OBD2-Codes/ <https://www.goingelectric.de/wiki/Liste-der-OBD2-Codes/>`_
+
+If OBD is selected, a sample page with some charging metrics is shown in the web interface:
+
+.. image:: Charging_Metrics.png
+    :width: 480px
+
+Beware: obviously, these values have great uncertainties (in my car, the DC output voltage of the charger is always lower than the voltage of the battery...)
+But e.g. the internal energy counters are very informative :)
+Additional custom web pages can be defined as described here: https://docs.openvehicles.com/en/latest/plugin/README.html?highlight=web%20plugin#installing-web-plugins
 
 ----------------
 Support Overview
@@ -103,8 +154,8 @@ v.e.hvac                      T26                                 yes = HVAC act
 v.e.locked                    T26                                 yes = Vehicle locked
 v.e.on                        T26        true                     Is ignition on and drivable (true = "Vehicle ON", false = "Vehicle OFF" state)
 v.e.parktime                  T26        49608Sec                 Seconds parking (turned off)
-v.e.serv.range                OBD        12345km                  distance to next scheduled maintenance/service [km]
-v.e.serv.days                 OBD        123days                  time to next scheduled maintenance/service [days]
+v.e.serv.range                OBD        12345km                  Distance to next scheduled maintenance/service [km]
+v.e.serv.time                 OBD        1572590910Sec            Time of next scheduled maintenance/service [UTC]
 v.e.temp                      OBD, T26                            Ambient temperature
 v.i.temp                      OBD                                 Inverter temperature
 v.m.temp                      OBD        0°C                      Motor temperature
@@ -138,15 +189,15 @@ xvu.c.dc.p                    OBD        6.500 kW                 Current chargi
 xvu.c.dc.u1                   OBD        380 V                    DC voltage of AC charger 1
 xvu.c.dc.u2                   OBD        375 V                    DC voltage of AC charger 2 (only for model 2020+)
 xvu.c.eff.calc                OBD        90.0 %                   Charger efficiency calculated by AC and DC power
-xvu.c.eff.ecu*                OBD        92.3 %                   Charger efficiency reported by the Charger ECU
+xvu.c.eff.ecu                 OBD        92.3 %                   Charger efficiency reported by the Charger ECU
 xvu.c.loss.calc               OBD        0.733 kW                 Charger power loss calculated by AC and DC power
-xvu.c.loss.ecu*               OBD        0.620 kW                 Charger power loss reported by the Charger ECU
+xvu.c.loss.ecu                OBD        0.620 kW                 Charger power loss reported by the Charger ECU
+xvu.e.serv.days               OBD        78 days                  Time to next scheduled maintenance/service [days]
 xvu.m.soc.abs                 OBD        85.3 %                   Current absolute State of Charge (SoC) of the main battery as reported by motor electronics ECU
 xvu.m.soc.norm                OBD        80.5 %                   Current normalized State of Charge (SoC) of the main battery as reported by motor electronics ECU
 xvu.v.m.d                     OBD        12500 km                 Distance to next scheduled maintenance
 xvu.v.m.t                     OBD        123 days                 Time to next scheduled maintenance
 ============================= ========== ======================== ============================================
 
-*) Only supplied by ECU when the car ignition is on during charging.
 
 

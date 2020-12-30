@@ -85,8 +85,8 @@ using namespace std;
 #define VWUP_BRK_TPMS 0x1821
 
 #define VWUP_MFD_ODOMETER 0x2203
-#define VWUP_MFD_MAINT_DIST 0x2260
-#define VWUP_MFD_MAINT_TIME 0x2261
+#define VWUP_MFD_SERV_RANGE 0x2260
+#define VWUP_MFD_SERV_TIME 0x2261
 //#define VWUP_MFD_TEMP_COOL 0x // coolant temperature
 
 #define VWUP_BRKBOOST_TEMP_ECU 0x028D // control unit temperature

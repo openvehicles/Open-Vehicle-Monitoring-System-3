@@ -29,6 +29,89 @@
 ; THE SOFTWARE.
 */
 
+/*
+;    Subproject:    Integration of support for the VW e-UP
+;    Date:          21st November 2020
+;
+;    Changes:
+;    0.1.0  Initial code
+:           Code frame with correct TAG and vehicle/can registration
+;
+;    0.1.1  Started with some SOC capture demo code
+;
+;    0.1.2  Added VIN, speed, 12 volt battery detection
+;
+;    0.1.3  Added ODO (Dimitrie78), fixed speed
+;
+;    0.1.4  Added WLTP based ideal range, uncertain outdoor temperature
+;
+;    0.1.5  Finalized SOC calculation (sharkcow), added estimated range
+;
+;    0.1.6  Created a climate control first try, removed 12 volt battery status
+;
+;    0.1.7  Added status of doors
+;
+;    0.1.8  Added config page for the webfrontend. Features canwrite and modelyear.
+;           Differentiation between model years is now possible.
+;
+;    0.1.9  "Fixed" crash on climate control. Added A/C indicator.
+;           First shot on battery temperatur.
+;
+;    0.2.0  Added key detection and car_on / pollingstate routine
+;
+;    0.2.1  Removed battery temperature, corrected outdoor temperature
+;
+;    0.2.2  Collect VIN only once
+;
+;    0.2.3  Redesign climate control, removed bluetooth template
+;
+;    0.2.4  First implementation of the ringbus and ocu heartbeat
+;
+;    0.2.5  Fixed heartbeat
+;
+;    0.2.6  Refined climate control template
+;
+;    0.2.7  Implemented dev_mode, 5A7, 69E climate control messages
+
+;    0.2.8  Refactoring for T26A <-> OBD source separation (by SokoFromNZ)
+;
+;    0.2.9  Fixed climate control
+;
+;    0.3.0  Added upgrade policy for pre vehicle id splitting versions
+;
+;    0.3.1  Removed alpha OBD source, corrected class name
+;
+;    0.3.2  First implementation of charging detection
+;
+;    0.3.3  Buffer 0x61C ghost messages
+;
+;    0.3.4  Climate Control is now beginning to work
+:
+;    0.3.5  Stabilized Climate Control
+;
+;    0.3.6  Corrected log tag and namespaces
+;
+;    0.3.7  Add locked detection, add climate control via Homelink for iOS
+;
+;    0.3.8  Add lights, rear doors and trunk detection
+;
+;    0.3.9  Corrected estimated range
+;
+;    0.4.0  Implemnted ICCB charging detection
+;
+;    0.4.1  Corrected estimated range
+;
+;    0.4.2  Corrected locked status, cabin temperature
+:
+;    0.4.2  Added "feature" parameters for model year and cabin temperature setting
+;
+;    0.4.3  Respond to vehicle turning climate control off
+;
+;    (C) 2020       Chris van der Meijden
+;
+;    Big thanx to sharkcow, Dimitrie78, E-Imo, Dexter and 'der kleine Nik'.
+*/
+
 #include "ovms_log.h"
 static const char *TAG = "v-vweup";
 

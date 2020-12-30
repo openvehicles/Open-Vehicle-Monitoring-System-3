@@ -156,7 +156,6 @@ class OvmsVehicleVWeUp : public OvmsVehicle
     static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
     static void WebCfgClimate(PageEntry_t& p, PageContext_t& c);
     static void WebDispChgMetrics(PageEntry_t& p, PageContext_t& c);
-    static void WebDispTempMetrics(PageEntry_t& p, PageContext_t& c);
     virtual vehicle_command_t CommandWakeup();
 
     OvmsMetricFloat *MotElecSoCAbs;           // Absolute SoC of main battery from motor electrics ECU
@@ -179,7 +178,9 @@ class OvmsVehicleVWeUp : public OvmsVehicle
     OvmsMetricFloat *ChargerPowerLossEcu;  // Power loss of Charger [kW] (from ECU)
     OvmsMetricFloat *ChargerPowerEffCalc;  // Efficiency of the Charger [%] (calculated from U and I)
     OvmsMetricFloat *ChargerPowerLossCalc; // Power loss of Charger [kW] (calculated from U and I)
+    OvmsMetricInt *ServiceDays;            // Days until next scheduled maintenance/service
 
+/*
     OvmsMetricFloat *TPMSDiffusionFrontLeft; // TPMS Indicator for Pressure Diffusion Front Left Tyre
     OvmsMetricFloat *TPMSDiffusionFrontRight; // TPMS Indicator for Pressure Diffusion Front Right Tyre
     OvmsMetricFloat *TPMSDiffusionRearLeft; // TPMS Indicator for Pressure Diffusion Rear Left Tyre
@@ -188,30 +189,9 @@ class OvmsVehicleVWeUp : public OvmsVehicle
     OvmsMetricFloat *TPMSEmergencyFrontRight; // TPMS Indicator for Tyre Emergency Front Right Tyre
     OvmsMetricFloat *TPMSEmergencyRearLeft; // TPMS Indicator for Tyre Emergency Rear Left Tyre
     OvmsMetricFloat *TPMSEmergencyRearRight; // TPMS Indicator for Tyre Emergency Rear Right Tyre
-    OvmsMetricFloat *MaintenanceDist; // Distance to next maintenance
-    OvmsMetricFloat *MaintenanceTime; // Days to next maintenance
-    OvmsMetricFloat *CoolantTemp1; // 
-    OvmsMetricFloat *CoolantTemp2; // 
-    OvmsMetricFloat *CoolantTemp3; // 
-    OvmsMetricFloat *CoolantTemp4; // 
-    OvmsMetricFloat *CoolantTemp5; // 
-    OvmsMetricFloat *CoolingTempBat; // 
-    OvmsMetricFloat *BrakeboostTempECU;
-    OvmsMetricFloat *BrakeboostTempAccu;
-    OvmsMetricFloat *SteeringTempPA;
-    OvmsMetricFloat *ElectricDriveCoolantTemp;
-    OvmsMetricFloat *ElectricDriveTempDCDC;
-    OvmsMetricFloat *ElectricDriveTempDCDCPCB;
-    OvmsMetricFloat *ElectricDriveTempDCDCPEM;
-    OvmsMetricFloat *ElectricDriveTempPhaseU;
-    OvmsMetricFloat *ElectricDriveTempPhaseV;
-    OvmsMetricFloat *ElectricDriveTempPhaseW;
-    OvmsMetricFloat *ElectricDriveTempStator;
-    OvmsMetricFloat *InfElecTempPCB;
-    OvmsMetricFloat *InfElecTempAudio;
+*/    
     OvmsMetricFloat *BatTempMax;
     OvmsMetricFloat *BatTempMin;
-    OvmsMetricFloat *BrakesensTemp;
 
   private:
     float OdoStart;

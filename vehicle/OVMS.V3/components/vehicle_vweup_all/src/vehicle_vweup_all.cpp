@@ -31,7 +31,7 @@
 
 /*
 ;    Subproject:    Integration of support for the VW e-UP
-;    Date:          29 December 2020
+;    Date:          30 December 2020
 ;
 ;    Changes:
 ;    0.1.0  Initial code
@@ -61,7 +61,7 @@
 ;
 ;    0.3.3  new standard metrics for maintenance range & days; added trip distance & energies as deltas
 ;
-;    0.3.4  update changes in t26 code by devmarxx, update docs
+;    0.4.0  update changes in t26 code by devmarxx, update docs
 ;
 ;    (C) 2020 sharkcow <sharkcow@gmx.de> / Chris van der Meijden / SokoFromNZ
 ;
@@ -72,7 +72,7 @@
 #include <string>
 static const char *TAG = "v-vweup";
 
-#define VERSION "0.3.4"
+#define VERSION "0.4.0"
 
 #include <stdio.h>
 #include <string>
@@ -248,9 +248,17 @@ void OvmsVehicleVWeUp::ConfigChanged(OvmsConfigParam *param)
             StandardMetrics.ms_v_bat_range_ideal->SetValue((160 * StandardMetrics.ms_v_bat_soc->AsFloat()) / 100.0); // This is dirty. Based on WLTP only. Should be based on SOH.
         }
         OBDInit();
+        #ifdef CONFIG_OVMS_COMP_WEBSERVER
+            WebDeInit();    // this can probably be done more elegantly... :-/
+            WebInit();
+        #endif
     }
     if (!vweup_enable_obd)
         OBDDeInit();
+        #ifdef CONFIG_OVMS_COMP_WEBSERVER
+            WebDeInit();    // this can probably be done more elegantly... :-/
+            WebInit();
+        #endif
     vweup_modelyear = vweup_modelyear_new;
     if (!vweup_con)
         ESP_LOGW(TAG,"Module will not work without any connection!");
