@@ -194,7 +194,7 @@
 #define MS_V_ENV_CABININTAKE        "v.e.cabinintake"
 #define MS_V_ENV_CABINVENT          "v.e.cabinvent"
 #define MS_V_ENV_SERV_RANGE         "v.e.serv.range"
-#define MS_V_ENV_SERV_DAYS          "v.e.serv.days"
+#define MS_V_ENV_SERV_TIME          "v.e.serv.time"
 
 #define MS_V_POS_GPSLOCK            "v.p.gpslock"
 #define MS_V_POS_GPSSTALE           "v.p.gpsstale"
@@ -386,7 +386,7 @@ class MetricsStandard
     OvmsMetricString* ms_v_env_cabinintake;         // Cabin intake type (fresh, recirc, etc)
     OvmsMetricString* ms_v_env_cabinvent;           // Cabin vent type (comma-separated list of feet, face, screen, etc)
     OvmsMetricInt*    ms_v_env_service_range;       // Distance to next scheduled maintenance/service [km]
-    OvmsMetricInt*    ms_v_env_service_days;        // Time to next scheduled maintenance/service [days]
+    OvmsMetricInt*    ms_v_env_service_time;        // Time to next scheduled maintenance/service [UTC]
 
     OvmsMetricBool*   ms_v_pos_gpslock;
     OvmsMetricString* ms_v_pos_gpsmode;             // <GPS><GLONASS>; N/A/D/E (None/Autonomous/Differential/Estimated)

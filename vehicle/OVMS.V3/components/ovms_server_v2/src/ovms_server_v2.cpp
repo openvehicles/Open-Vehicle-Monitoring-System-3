@@ -1067,10 +1067,6 @@ void OvmsServerV2::TransmitMsgStat(bool always)
     << StandardMetrics.ms_v_charge_power->AsFloat()
     << ","
     << StandardMetrics.ms_v_charge_efficiency->AsFloat()
-    << ","
-    << StandardMetrics.ms_v_env_service_range->AsInt()
-    << ","
-    << StandardMetrics.ms_v_env_service_days->AsInt()
     ;
 
   Transmit(buffer.str().c_str());
@@ -1216,7 +1212,7 @@ void OvmsServerV2::TransmitMsgFirmware(bool always)
     StandardMetrics.ms_v_type->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_m_net_provider->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_env_service_range->IsModifiedAndClear(MyOvmsServerV2Modifier) |
-    StandardMetrics.ms_v_env_service_days->IsModifiedAndClear(MyOvmsServerV2Modifier);
+    StandardMetrics.ms_v_env_service_time->IsModifiedAndClear(MyOvmsServerV2Modifier);
 
   // Quick exit if nothing modified
   if ((!always)&&(!modified)) return;
@@ -1234,9 +1230,9 @@ void OvmsServerV2::TransmitMsgFirmware(bool always)
     << ","
     << StandardMetrics.ms_m_net_provider->AsString("")
     << ","
-    << StandardMetrics.ms_v_env_service_range->AsInt()
+    << StandardMetrics.ms_v_env_service_range->AsString("-1", Kilometers, 0)
     << ","
-    << StandardMetrics.ms_v_env_service_days->AsInt()
+    << StandardMetrics.ms_v_env_service_time->AsString("-1", Other, 0)
     ;
 
   Transmit(buffer.str().c_str());
