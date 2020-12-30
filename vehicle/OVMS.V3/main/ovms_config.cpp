@@ -363,13 +363,13 @@ void OvmsConfig::upgrade()
       DeleteInstance("server.v2","password");
       }
     }
-/*
-  // Migrate vehicle ID VWUP to VWUP.T26
-  if (GetParamValue("auto", "vehicle.type") == "VWUP")
+
+  // Migrate vehicle ID VWUP.T26 back to VWUP
+  if (GetParamValue("auto", "vehicle.type") == "VWUP.T26")
     {
-    SetParamValue("auto", "vehicle.type", "VWUP.T26");
+    SetParamValue("auto", "vehicle.type", "VWUP");
     }
-*/
+
   // Done, set config version:
   SetParamValueInt("module", "cfgversion", 2020053100);
   }
