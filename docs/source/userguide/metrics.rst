@@ -197,6 +197,8 @@ v.e.locked                                                        yes = Vehicle 
 v.e.on                                   no                       yes = "Ignition" state (drivable)
 v.e.parktime                             49608Sec                 Seconds parking (turned off)
 v.e.regenbrake                                                    yes = Regenerative braking active
+v.e.serv.range                           12345km                  Distance to next scheduled maintenance/service [km]
+v.e.serv.time                            1572590910Sec            Time of next scheduled maintenance/service [UTC]
 v.e.temp                                                          Ambient temperature
 v.e.throttle                             0%                       Drive pedal state [%]
 v.e.valet                                                         yes = Valet mode engaged
