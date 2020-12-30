@@ -46,8 +46,10 @@ object.  New commands are added to the root of the tree using the
 global ``MyCommandApp.RegisterCommand()``.  Subcommands are added as
 children of a command by calling ``RegisterCommand()`` using the
 ``OvmsCommand*`` pointer to the parent object, thus building the tree.
-For example::
+For example:
 
+.. code-block:: C++
+  
  OvmsCommand* cmd_wifi = MyCommandApp.RegisterCommand("wifi","WIFI framework", wifi_status);
  cmd_wifi->RegisterCommand("status","Show wifi status",wifi_status);
  cmd_wifi->RegisterCommand("reconnect","Reconnect wifi client",wifi_reconnect);
@@ -63,8 +65,22 @@ The ``RegisterCommand()`` function takes the following arguments:
 * ``bool secure`` – true for commands permitted only after *enable*
 * ``int (*validate)(...)`` – validates parameters as explained later
 
-It's important to note that many of these arguments can and should be
-defaulted.  The default values are as follows::
+The ``RegisterCommand()`` function tolerates duplicate registrations
+of the same ``name`` at the same node of the tree by assuming that the
+other arguments are also the same and returning the existing object.
+This allows mulitple modules that can be configured independently to
+share the same top-level command.  For example, the *obdii* command is
+shared by the **vehicle** and **obd2ecu** modules.
+
+Modules that can be dynamically loaded and unloaded must remove their
+commands from the tree using ``UnregisterCommand(const char* name)``
+before unloading.
+
+It's important to note that many of the arguments to
+``RegisterCommand()`` can and should be defaulted.  The default values
+are as follows:
+
+.. code-block:: C++
 
  execute = NULL
  usage = ""
@@ -93,7 +109,9 @@ subcommands.
 
 Any command with required or optional parameters should provide a
 "usage" string hinting about the parameters in addition to
-specifying the minimum and maximum number of parameters allowed::
+specifying the minimum and maximum number of parameters allowed:
+
+.. code-block:: C++
 
  RegisterCommand("name", "Title", execute, "usage", min, max);
 
@@ -108,8 +126,8 @@ entered next, as specified by the ``usage`` string.
 
 .. note:: The usage message is *not* resricted to a single line; the
   ``usage`` string can include additional lines of explanatory text,
-  separated by ``\n`` (newline) characters, to help convey the purpose
-  of the command.
+  separated by ``\n`` (newline) characters, to help convey the meaning
+  of the paramters and the purpose of the command.
 
 The ``usage`` string syntax conventions for specifying alternative and
 optional parameters are similar to those of usage messages in
@@ -144,7 +162,7 @@ explicit text to list the parameters:
   brackets, like ``<id> <name> [<value>]``.
 * When there are alternative forms or meanings for a parameter, the
   alternatives are separated by vertical bar as in ``<task names or
-  ids>|\*|=`` which indicates that the parameter can be either of the
+  ids>|*|=`` which indicates that the parameter can be either of the
   characters ``*`` or ``=`` instead of a list of task names or ids.  A
   variant form encloses the alternatives in curly braces as in
   ``<param> {<instance> | *}``.
@@ -163,7 +181,9 @@ Execute Function
 ^^^^^^^^^^^^^^^^
 
 The ``execute`` function performs whatever work is required for the
-command.  Its signature is as follows::
+command.  Its signature is as follows:
+
+.. code-block:: C++
 
   void (*execute)(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
 
@@ -188,8 +208,10 @@ However, if parameters are expected then their values must be validated.
 
 Validate Function
 ^^^^^^^^^^^^^^^^^
+
 Most commands do not need to specify a ``validate`` function.  It
-supports two extensions of the original command parser design:
+supports extensions of the original command parser design for two use
+cases:
 
 1. For commands that store the possible values of a parameter in a
    ``NameMap<T>`` or ``CNameMap<T>``, the ``validate`` function
@@ -200,13 +222,15 @@ supports two extensions of the original command parser design:
    commands.  The ``validate`` function enables non-terminal
    subcommands to take one or more parameters followed by multiple
    levels of children subcommands.  The parameters may be strings
-   looked up in ``NameMap<T>`` or ``CNameMap<T>`` or they could be
+   looked up in a ``NameMap<T>`` or ``CNameMap<T>`` or they could be
    something else like a number that can be validated by value.  The
    ``validate`` function must indicate success for parsing to continue
    to the children subcommands.  The return value is the number of
    parameters validated if successful or -1 if not.
 
-The signature of the ``validate`` function is as follows::
+The signature of the ``validate`` function is as follows:
+
+.. code-block:: C++
 
  int (*validate)(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool complete)
 
@@ -219,7 +243,7 @@ The signature of the ``validate`` function is as follows::
 
 * ``const char* const* argv`` – the parameter list
 
-* ``bool complete`` – true for TAB completion of the last argument
+* ``bool complete`` – true for TAB completion of the last parameter
   (case 1), false when validating intermediate parameters before
   calling ``execute`` on the terminal descendant command (case 2)
 
@@ -233,7 +257,7 @@ far.  The TAB auto-completion is performed on the last parameter
 entered after validating any preceding parameters.  If ``min`` and
 ``max`` are both 1 then it is not necessary to check ``argc``.
 
-If the acceptable values of a parameter are stored in ``NameMap<T>``
+If the acceptable values of a parameter are stored in a ``NameMap<T>``
 or ``CNameMap<T>``, those maps implement a ``Validate()`` function
 that will perform the validation needed for the ``validate``
 function covering both the true and false cases of ``complete``.
@@ -241,24 +265,65 @@ Those maps also implement a ``FindUniquePrefix()`` function that may
 be used to validate preceding parameters for commands that take
 multiple parameters.
 
-For an example of a command taking multiple parameters with TAB
-auto-completion, see the *config* command in ``main/ovms_config.cpp``.
+The ``config_validate()`` function for the *config* command in
+``main/ovms_config.cpp`` is an example implementation of use case 1
+for a command taking three parameters with TAB auto-completion on the
+first two:
 
-The *location* command is an example that includes an intermediate
-parameter and also utilizes the ``$L`` form of the usage string::
+.. code-block:: C++
+
+ int config_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool complete)
+   {
+   if (!MyConfig.ismounted())
+     return -1;
+   // argv[0] is the <param>
+   if (argc == 1)
+     return MyConfig.m_map.Validate(writer, argc, argv[0], complete);
+   // argv[1] is the <instance>
+   if (argc == 2)
+     {
+     OvmsConfigParam* const* p = MyConfig.m_map.FindUniquePrefix(argv[0]);
+     if (!p)	// <param> was not valid, so can't check <instance>
+       return -1;
+     return (*p)->m_map.Validate(writer, argc, argv[1], complete);
+     }
+   // argv[2] is the value, which we can't validate
+   return -1;
+   }
+
+The *location* command in
+``components/ovms_location/src/ovms_location.cpp`` is an example of
+use case 2 as it includes an intermediate parameter and also utilizes
+the ``$L`` form of the usage string::
 
  OVMS# location action enter ?
  Usage: location action enter <location> acc <profile>
  Usage: location action enter <location> homelink 1|2|3
  Usage: location action enter <location> notify <text>
 
-See ``components/ovms_location/src/ovms_location.cpp`` for the
-implementation of the ``location_validate()`` function and the
-``RegisterCommand()`` calls to build the command subtree.  Note that
-The ``location_validate()`` function does check ``argc`` because it is
-used for multiple subcommand objects taking 1 or 2 parameters.
+The following excerpt shows the implementation of the
+``location_validate()`` function and a subset of the
+``RegisterCommand()`` calls to build the command subtree.  This
+example shows how simple the validation code can be -- sometimes just
+one line to call ``Validate()``.  In this case the code does need to
+check ``argc`` because the function is shared by multiple subcommand
+objects taking 1 or 2 parameters.
 
-Registering Commands in Scripts
--------------------------------
+.. code-block:: C++
 
-TBA
+ int location_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool complete)
+   {
+   if (argc == 1)
+     return MyLocations.m_locations.Validate(writer, argc, argv[0], complete);
+   return -1;
+   }
+
+   OvmsCommand* cmd_location = MyCommandApp.RegisterCommand("location","LOCATION framework");
+   OvmsCommand* cmd_action = cmd_location->RegisterCommand("action","Set an action for a location");
+   OvmsCommand* cmd_enter = cmd_action->RegisterCommand("enter","Set an action upon entering a location", NULL, "<location> $L", 1, 1, true, location_validate);
+   OvmsCommand* enter_homelink = cmd_enter->RegisterCommand("homelink","Transmit Homelink signal");
+   enter_homelink->RegisterCommand("1","Homelink 1 signal",location_homelink,"", 0, 0, true);
+   enter_homelink->RegisterCommand("2","Homelink 2 signal",location_homelink,"", 0, 0, true);
+   enter_homelink->RegisterCommand("3","Homelink 3 signal",location_homelink,"", 0, 0, true);
+   cmd_enter->RegisterCommand("acc","ACC profile",location_acc,"<profile>", 1, 1, true);
+   cmd_enter->RegisterCommand("notify","Text notification",location_notify,"<text>", 1, INT_MAX, true);
