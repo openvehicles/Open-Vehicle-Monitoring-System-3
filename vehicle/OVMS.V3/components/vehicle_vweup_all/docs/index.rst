@@ -58,6 +58,12 @@ By default, both connections are activated.
 
 For more details on the two connection types, please see the corresponding projects:
 
+.. toctree::
+   :maxdepth: 1
+
+   index_obd
+   index_t26
+
 Comfort CAN (T26): `https://github.com/devmarxx/Open-Vehicle-Monitoring-System-3/blob/master/vehicle/OVMS.V3/components/vehicle_vweup/docs/index.rst <https://github.com/devmarxx/Open-Vehicle-Monitoring-System-3/blob/master/vehicle/OVMS.V3/components/vehicle_vweup/docs/index.rst>`_ 
 
 OBD2: `https://github.com/SokoFromNZ/Open-Vehicle-Monitoring-System-3/blob/master/vehicle/OVMS.V3/components/vehicle_vweup_obd/docs/index.rst <https://github.com/SokoFromNZ/Open-Vehicle-Monitoring-System-3/blob/master/vehicle/OVMS.V3/components/vehicle_vweup_obd/docs/index.rst>`_ 
@@ -70,10 +76,15 @@ If OBD is selected, a sample page with some charging metrics is shown in the web
 
 .. image:: Charging_Metrics.png
     :width: 480px
+.. image:: Custom_Metrics.png
+    :width: 480px
 
 Beware: obviously, these values have great uncertainties (in my car, the DC output voltage of the charger is always lower than the voltage of the battery...)
 But e.g. the internal energy counters are very informative :)
-Additional custom web pages can be defined as described here: https://docs.openvehicles.com/en/latest/plugin/README.html?highlight=web%20plugin#installing-web-plugins
+
+Additional custom web pages (code for the example above is below) can be defined as described here: https://docs.openvehicles.com/en/latest/plugin/README.html?highlight=web%20plugin#installing-web-plugins
+
+:ref:`columns-inline`
 
 ----------------
 Support Overview
@@ -200,4 +211,8 @@ xvu.v.m.t                     OBD        123 days                 Time to next s
 ============================= ========== ======================== ============================================
 
 
+-----------------------------------------------------
+Example Code for Web Plugin with some custom metrics:
+-----------------------------------------------------
+.. _columns-inline:
 
