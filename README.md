@@ -180,7 +180,7 @@ apply, see component sources for details.
 
 The project itself is published under the MIT license:
 
-Copyright (c) 2011-2019 Open Vehicles
+Copyright (c) 2011-2020 Open Vehicles
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
