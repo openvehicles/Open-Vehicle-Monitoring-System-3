@@ -339,7 +339,7 @@ class MetricsStandard
     OvmsMetricInt*    ms_v_charge_duration_soc;     // … for sufficient SOC [min]
     OvmsMetricFloat*  ms_v_charge_temp;             // Charger temperature [°C]
     OvmsMetricFloat*  ms_v_charge_12v_current;      // Output current of DC/DC-converter [A]
-    OvmsMetricFloat*  ms_v_charge_12v_power;        // Output power of DC/DC-converter [kW]
+    OvmsMetricFloat*  ms_v_charge_12v_power;        // Output power of DC/DC-converter [W]
     OvmsMetricFloat*  ms_v_charge_12v_temp;         // Temperature of DC/DC-converter [°C]
     OvmsMetricFloat*  ms_v_charge_12v_voltage;      // Output voltage of DC/DC-converter [V]
 

@@ -142,7 +142,7 @@ MetricsStandard::MetricsStandard()
   ms_v_charge_duration_range = new OvmsMetricInt(MS_V_CHARGE_DURATION_RANGE, SM_STALE_MID, Minutes);
   ms_v_charge_duration_soc = new OvmsMetricInt(MS_V_CHARGE_DURATION_SOC, SM_STALE_MID, Minutes);
   ms_v_charge_12v_current = new OvmsMetricFloat(MS_V_CHARGE_12V_CURRENT, SM_STALE_MID, Amps);
-  ms_v_charge_12v_power = new OvmsMetricFloat(MS_V_CHARGE_12V_POWER, SM_STALE_MID, kW);
+  ms_v_charge_12v_power = new OvmsMetricFloat(MS_V_CHARGE_12V_POWER, SM_STALE_MID, Watts);
   ms_v_charge_12v_temp = new OvmsMetricFloat(MS_V_CHARGE_12V_TEMP, SM_STALE_MID, Celcius);
   ms_v_charge_12v_voltage = new OvmsMetricFloat(MS_V_CHARGE_12V_VOLTAGE, SM_STALE_MID, Volts);
 

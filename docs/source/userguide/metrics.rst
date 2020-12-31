@@ -146,7 +146,7 @@ v.b.soh                                  85%                      State of healt
 v.b.temp                                 13°C                     Main battery momentary temperature
 v.b.voltage                              57.4V                    Main battery momentary voltage
 v.c.12v.current                          7.8A                     Output current of DC/DC-converter
-v.c.12v.power                            0.123kW                  Output power of DC/DC-converter
+v.c.12v.power                            123W                     Output power of DC/DC-converter
 v.c.12v.temp                             34.5°C                   Temperature of DC/DC-converter
 v.c.12v.voltage                          12.3V                    Output voltage of DC/DC-converter
 v.c.charging                             no                       yes = currently charging
