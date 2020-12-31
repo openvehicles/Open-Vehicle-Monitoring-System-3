@@ -191,7 +191,7 @@ MetricsStandard::MetricsStandard()
   ms_v_env_ctrl_login = new OvmsMetricBool(MS_V_ENV_CTRL_LOGIN, SM_STALE_MID);
   ms_v_env_ctrl_config = new OvmsMetricBool(MS_V_ENV_CTRL_CONFIG, SM_STALE_MID);
   ms_v_env_service_range = new OvmsMetricInt(MS_V_ENV_SERV_RANGE, SM_STALE_MID, Kilometers);
-  ms_v_env_service_time = new OvmsMetricInt(MS_V_ENV_SERV_TIME, SM_STALE_MID, TimeUTC);
+  ms_v_env_service_time = new OvmsMetricInt(MS_V_ENV_SERV_TIME, SM_STALE_MID, Seconds);
 
   ms_v_pos_gpslock = new OvmsMetricBool(MS_V_POS_GPSLOCK, SM_STALE_MID);
   ms_v_pos_gpsmode = new OvmsMetricString(MS_V_POS_GPSMODE, SM_STALE_MID);

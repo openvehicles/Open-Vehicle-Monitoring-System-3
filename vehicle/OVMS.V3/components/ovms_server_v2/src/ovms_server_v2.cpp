@@ -1232,7 +1232,7 @@ void OvmsServerV2::TransmitMsgFirmware(bool always)
     << ","
     << StandardMetrics.ms_v_env_service_range->AsString("-1", Kilometers, 0)
     << ","
-    << StandardMetrics.ms_v_env_service_time->AsString("-1", Other, 0)
+    << StandardMetrics.ms_v_env_service_time->AsString("-1", Seconds, 0)
     ;
 
   Transmit(buffer.str().c_str());
