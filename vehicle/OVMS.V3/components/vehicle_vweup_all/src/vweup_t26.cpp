@@ -30,7 +30,7 @@
 */
 
 /*
-;    Subproject:    Integration of support for the VW e-UP
+;    Subproject:    Integration of support for the VW e-UP via Comfort CAN
 ;    Date:          21st November 2020
 ;
 ;    Changes:
@@ -167,52 +167,6 @@ void OvmsVehicleVWeUp::T26Init()
     StandardMetrics.ms_v_env_headlights->SetValue(false);
 }
 
-/*
-bool OvmsVehicleVWeUp::SetFeature(int key, const char *value)
-{
-    switch (key)
-    {
-    case 15:
-    {
-        int bits = atoi(value);
-        MyConfig.SetParamValueBool("xvu", "canwrite", (bits & 1) != 0);
-        return true;
-    }
-    default:
-        return OvmsVehicle::SetFeature(key, value);
-    }
-}
-
-const std::string OvmsVehicleVWeUp::GetFeature(int key)
-{
-    switch (key)
-    {
-    case 15:
-    {
-        int bits =
-            (MyConfig.GetParamValueBool("xvu", "canwrite", false) ? 1 : 0);
-        char buf[4];
-        sprintf(buf, "%d", bits);
-        return std::string(buf);
-    }
-    default:
-        return OvmsVehicle::GetFeature(key);
-    }
-}
-
-void OvmsVehicleVWeUp::ConfigChanged(OvmsConfigParam *param)
-{
-    ESP_LOGD(TAG, "VW e-Up reload configuration");
-
-    vweup_modelyear = MyConfig.GetParamValueInt("xvu", "modelyear", DEFAULT_MODEL_YEAR);
-    vweup_enable_obd = MyConfig.GetParamValueBool("xvu", "con_obd", true);
-    vweup_enable_t26 = MyConfig.GetParamValueBool("xvu", "con_t26", true);
-    vweup_enable_write = MyConfig.GetParamValueBool("xvu", "canwrite", false);
-    vweup_cc_temp_int = MyConfig.GetParamValueInt("xvu", "cc_temp", 21);
-    ObdInit(); // reload OBD command list in case gen1/2 was changed
-}
-*/
-
 // Takes care of setting all the state appropriate when the car is on
 // or off.
 //
@@ -257,8 +211,6 @@ void OvmsVehicleVWeUp::vehicle_vweup_car_on(bool turnOn)
         StandardMetrics.ms_v_charge_current->SetValue(0);
         PollSetState(VWEUP_OFF);
     }
-//    else if (turnOn)
-//        PollSetState(VWEUP_ON);
 }
 
 void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
@@ -343,7 +295,6 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
     case 0x65D: // ODO
         StandardMetrics.ms_v_pos_odometer->SetValue(((uint32_t)(d[3] & 0xf) << 12) | ((UINT)d[2] << 8) | d[1]);
         StandardMetrics.ms_v_pos_trip->SetValue(StandardMetrics.ms_v_pos_odometer->AsFloat()-OdoStart); // so far we don't know where to get trip distance directly...
-//        ESP_LOGI(TAG,"Odo Counter: %f",StandardMetrics.ms_v_pos_trip->AsFloat());
         break;
 
     case 0x320: // Speed
@@ -734,7 +685,6 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandWakeup()
         xTimerStart(m_sendOcuHeartbeat, 0);
 
         ESP_LOGI(TAG, "Sent Wakeup Command - stage 2");
-//        OvmsVehicleVWeUp::vehicle_vweup_car_on(true); // make sure OBD knows that car is on
     }
     // This can be done better. Gives always success, even when already awake.
     return Success;

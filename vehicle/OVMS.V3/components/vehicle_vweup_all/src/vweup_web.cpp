@@ -388,6 +388,11 @@ void OvmsVehicleVWeUp::WebDispChgMetrics(PageEntry_t &p, PageContext_t &c)
                 "</div>"
 
                 "<div class=\"clearfix\">"
+                    "<div class=\"metric number\" data-metric=\"v.c.temp\" data-prec=\"1\">"
+                        "<span class=\"label\">Temp</span>"
+                        "<span class=\"value\">?</span>"
+                        "<span class=\"unit\">°C</span>"
+                    "</div>"
                     "<div class=\"metric number\" data-metric=\"v.c.efficiency\" data-prec=\"1\">"
                         "<span class=\"label\">Efficiency (total)</span>"
                         "<span class=\"value\">?</span>"

@@ -1,21 +1,19 @@
 /**
  * Project:      Open Vehicle Monitor System
- * Module:       OBD for VW e-Up
- *
- * (c) 2020  sharkcow <sharkcow@gmx.de>
- * (c) 2019  Anko Hanse <anko_hanse@hotmail.com>
- * (c) 2017  Michael Balzer <dexter@dexters-web.de>
- *
+ * Module:       VW e-Up via OBD Port
+ * 
+ * (c) 2020 Soko
+ * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- *
+ * 
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- *
+ * 
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -116,18 +114,13 @@ const OvmsVehicle::poll_pid_t vweup2_polls[] = {
 const int vweup_polls_len = sizeof(vweup_polls)/sizeof(vweup_polls)[0];
 const int vweup1_polls_len = sizeof(vweup1_polls)/sizeof(vweup1_polls)[0];
 const int vweup2_polls_len = sizeof(vweup2_polls)/sizeof(vweup2_polls)[0];
-//if (vweup1_polls_len > vweup2_polls_len){
+
 OvmsVehicleVWeUp::poll_pid_t vweup_polls_all[1+vweup_polls_len+vweup1_polls_len]; // not good, length should be max of the two possible lists
-//}
-//else {
-//OvmsVehicleVWeUp::poll_pid_t vweup_polls_all[vweup_polls_len+vweup2_polls_len];
-//}
 
 void OvmsVehicleVWeUp::OBDInit()
 {
     ESP_LOGI(TAG, "Starting connection: OBDII");
     RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
-//    ESP_LOGD(TAG,"Starting OBD Polling...");
 
     // init polls:
     if (vweup_con == 2) // only OBD connected -> get car state by polling OBD

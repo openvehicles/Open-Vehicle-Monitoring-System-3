@@ -20,7 +20,7 @@ Connection to OBD2 is done with the standard OVMS OBD2-cable just below the fuse
 .. image:: DSC00369_1024.JPG
     :width: 480px
 
-Connection to Comfort CAN can be done by removing the OCU below the passenger seat (advantage: the connections for the GSM & GPS-antennas of the car can be used):
+Connection to Comfort CAN can be done by removing the OCU below the passenger seat using a custom 26-pin adapter cable to the T26A plug (advantage: the connections for the GSM & GPS-antennas of the car can be used using a Fakra-SMA adapter):
 
 .. image:: location.png
     :width: 480px
@@ -58,12 +58,6 @@ By default, both connections are activated.
 
 For more details on the two connection types, please see the corresponding projects:
 
-.. toctree::
-   :maxdepth: 1
-
-   index_obd
-   index_t26
-
 Comfort CAN (T26): `https://github.com/devmarxx/Open-Vehicle-Monitoring-System-3/blob/master/vehicle/OVMS.V3/components/vehicle_vweup/docs/index.rst <https://github.com/devmarxx/Open-Vehicle-Monitoring-System-3/blob/master/vehicle/OVMS.V3/components/vehicle_vweup/docs/index.rst>`_ 
 
 OBD2: `https://github.com/SokoFromNZ/Open-Vehicle-Monitoring-System-3/blob/master/vehicle/OVMS.V3/components/vehicle_vweup_obd/docs/index.rst <https://github.com/SokoFromNZ/Open-Vehicle-Monitoring-System-3/blob/master/vehicle/OVMS.V3/components/vehicle_vweup_obd/docs/index.rst>`_ 
@@ -83,8 +77,6 @@ Beware: obviously, these values have great uncertainties (in my car, the DC outp
 But e.g. the internal energy counters are very informative :)
 
 Additional custom web pages (code for the example above is below) can be defined as described here: https://docs.openvehicles.com/en/latest/plugin/README.html?highlight=web%20plugin#installing-web-plugins
-
-:ref:`columns-inline`
 
 ----------------
 Support Overview
@@ -214,5 +206,187 @@ xvu.v.m.t                     OBD        123 days                 Time to next s
 -----------------------------------------------------
 Example Code for Web Plugin with some custom metrics:
 -----------------------------------------------------
-.. _columns-inline:
 
+.. code-block::
+
+  <div class="panel panel-primary">
+   <div class="panel-heading">Custom Metrics</div>
+   <div class="panel-body">
+
+    <hr/>
+
+    <div class="receiver">
+     <div class="clearfix">
+      <div class="metric progress" data-metric="v.b.soc" data-prec="1">
+       <div class="progress-bar value-low text-left" role="progressbar"
+        aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width:0%">
+        <div>
+         <span class="label">SoC</span>
+         <span class="value">?</span>
+         <span class="unit">%</span>
+        </div>
+       </div>
+      </div>
+      <div class="metric progress" data-metric="xvu.b.soc.abs" data-prec="1">
+       <div class="progress-bar progress-bar-info value-low text-left" role="progressbar"
+        aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width:0%">
+        <div>
+         <span class="label">SoC (absolute)</span>
+         <span class="value">?</span>
+         <span class="unit">%</span>
+        </div>
+       </div>
+      </div>
+     </div>
+     <div class="clearfix">
+      <div class="metric number" data-metric="v.b.energy.used.total" data-prec="2">
+       <span class="label">TOTALS:&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbspUsed</span>
+       <span class="value">?</span>
+       <span class="unit">kWh</span>
+      </div>
+      <div class="metric number" data-metric="v.b.energy.recd.total" data-prec="2">
+       <span class="label">Charged</span>
+       <span class="value">?</span>
+       <span class="unit">kWh</span>
+      </div>
+      <div class="metric number" data-metric="v.p.odometer" data-prec="0">
+       <span class="label">Odo</span>
+       <span class="value">?</span>
+       <span class="unit">km</span>
+      </div>
+      <div class="metric number" data-metric="v.e.serv.range" data-prec="0">
+       <span class="label">SERVICE:&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbspRange</span>
+       <span class="value">?</span>
+       <span class="unit">km</span>
+      </div>
+      <div class="metric number" data-metric="xvu.e.serv.days" data-prec="0">
+       <span class="label">Days</span>
+       <span class="value">?</span>
+       <span class="unit"></span>
+      </div>
+     </div>
+
+     <h4>Battery</h4>
+
+     <div class="clearfix">
+      <div class="metric progress" data-metric="v.b.voltage" data-prec="1">
+       <div class="progress-bar value-low text-left" role="progressbar"
+        aria-valuenow="0" aria-valuemin="300" aria-valuemax="420" style="width:0%">
+        <div>
+         <span class="label">Voltage</span>
+         <span class="value">?</span>
+         <span class="unit">V</span>
+        </div>
+       </div>
+      </div>
+      <div class="metric progress" data-metric="v.b.current" data-prec="1">
+       <div class="progress-bar progress-bar-danger value-low text-left" role="progressbar"
+        aria-valuenow="0" aria-valuemin="-200" aria-valuemax="200" style="width:0%">
+        <div>
+         <span class="label">Current</span>
+         <span class="value">?</span>
+         <span class="unit">A</span>
+        </div>
+       </div>
+      </div>
+      <div class="metric progress" data-metric="v.b.power" data-prec="3">
+       <div class="progress-bar progress-bar-warning value-low text-left" role="progressbar"
+        aria-valuenow="0" aria-valuemin="-70" aria-valuemax="70" style="width:0%">
+        <div>
+         <span class="label">Power</span>
+         <span class="value">?</span>
+         <span class="unit">kW</span>
+        </div>
+       </div>
+      </div>
+     </div>
+     <div class="clearfix">
+      <div class="metric number" data-metric="v.b.temp" data-prec="1">
+       <span class="label">Temp</span>
+       <span class="value">?</span>
+       <span class="unit">°C</span>
+      </div>
+      <div class="metric number" data-metric="xvu.b.cell.delta" data-prec="3">
+       <span class="label">Cell delta</span>
+       <span class="value">?</span>
+       <span class="unit">V</span>
+      </div>
+     </div>
+
+     <h4>Temperatures</h4>
+
+     <div class="clearfix">
+      <div class="metric progress" data-metric="v.e.temp" data-prec="1">
+       <div class="progress-bar progress-bar-warning value-low text-left" role="progressbar"
+        aria-valuenow="0" aria-valuemin="-10" aria-valuemax="40" style="width:0%">
+        <div>
+         <span class="label">Ambient</span>
+         <span class="value">?</span>
+         <span class="unit">°C</span>
+        </div>
+       </div>
+      </div>
+      <div class="metric progress" data-metric="v.e.cabintemp" data-prec="1">
+       <div class="progress-bar progress-bar-warning value-low text-left" role="progressbar"
+        aria-valuenow="0" aria-valuemin="-10" aria-valuemax="40" style="width:0%">
+        <div>
+         <span class="label">Cabin</span>
+         <span class="value">?</span>
+         <span class="unit">°C</span>
+        </div>
+       </div>
+      </div>
+      <div class="metric progress" data-metric="v.b.temp" data-prec="1">
+       <div class="progress-bar progress-bar-warning value-low text-left" role="progressbar"
+        aria-valuenow="0" aria-valuemin="-10" aria-valuemax="40" style="width:0%">
+        <div>
+         <span class="label">Battery</span>
+         <span class="value">?</span>
+         <span class="unit">°C</span>
+        </div>
+       </div>
+      </div>
+      <div class="metric progress" data-metric="v.c.temp" data-prec="1">
+       <div class="progress-bar progress-bar-warning value-low text-left" role="progressbar"
+        aria-valuenow="0" aria-valuemin="-10" aria-valuemax="40" style="width:0%">
+        <div>
+         <span class="label">Charger</span>
+         <span class="value">?</span>
+         <span class="unit">°C</span>
+        </div>
+       </div>
+      </div>
+      <div class="metric progress" data-metric="v.c.12v.temp" data-prec="1">
+       <div class="progress-bar progress-bar-warning value-low text-left" role="progressbar"
+        aria-valuenow="0" aria-valuemin="-10" aria-valuemax="40" style="width:0%">
+        <div>
+         <span class="label">DC/DC-Converter</span>
+         <span class="value">?</span>
+         <span class="unit">°C</span>
+        </div>
+       </div>
+      </div>
+      <div class="metric progress" data-metric="v.i.temp" data-prec="1">
+       <div class="progress-bar progress-bar-warning value-low text-left" role="progressbar"
+        aria-valuenow="0" aria-valuemin="-10" aria-valuemax="40" style="width:0%">
+        <div>
+         <span class="label">Inverter</span>
+         <span class="value">?</span>
+         <span class="unit">°C</span>
+        </div>
+       </div>
+      </div>
+      <div class="metric progress" data-metric="v.m.temp" data-prec="1">
+       <div class="progress-bar progress-bar-warning value-low text-left" role="progressbar"
+        aria-valuenow="0" aria-valuemin="-10" aria-valuemax="40" style="width:0%">
+        <div>
+         <span class="label">Motor</span>
+         <span class="value">?</span>
+         <span class="unit">°C</span>
+        </div>
+       </div>
+      </div>
+     </div>
+    </div>
+   </div>
+  </div>
