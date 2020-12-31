@@ -146,6 +146,11 @@
 #define MS_V_CHARGE_DURATION_SOC    "v.c.duration.soc"
 #define MS_V_CHARGE_TEMP            "v.c.temp"
 
+#define MS_V_CHARGE_12V_CURRENT     "v.c.12v.current"
+#define MS_V_CHARGE_12V_POWER       "v.c.12v.power"
+#define MS_V_CHARGE_12V_TEMP        "v.c.12v.temp"
+#define MS_V_CHARGE_12V_VOLTAGE     "v.c.12v.voltage"
+
 #define MS_V_INV_TEMP               "v.i.temp"
 #define MS_V_INV_POWER              "v.i.power"
 #define MS_V_INV_EFFICIENCY         "v.i.efficiency"
@@ -331,6 +336,10 @@ class MetricsStandard
     OvmsMetricInt*    ms_v_charge_duration_range;   // … for sufficient range [min]
     OvmsMetricInt*    ms_v_charge_duration_soc;     // … for sufficient SOC [min]
     OvmsMetricFloat*  ms_v_charge_temp;             // Charger temperature [°C]
+    OvmsMetricFloat*  ms_v_charge_12v_current;      // Output current of DC/DC-converter [A]
+    OvmsMetricFloat*  ms_v_charge_12v_power;        // Output power of DC/DC-converter [W]
+    OvmsMetricFloat*  ms_v_charge_12v_temp;         // Temperature of DC/DC-converter [°C]
+    OvmsMetricFloat*  ms_v_charge_12v_voltage;      // Output voltage of DC/DC-converter [V]
 
     OvmsMetricFloat*  ms_v_inv_temp;                // Inverter temperature [°C]
     OvmsMetricFloat*  ms_v_inv_power;               // Momentary inverter motor power [kW] (output=positive)
