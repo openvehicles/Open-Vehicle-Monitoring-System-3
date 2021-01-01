@@ -85,7 +85,7 @@ static const char *TAG = "v-vweup";
 #include "metrics_standard.h"
 #include "ovms_notify.h"
 
-#include "vehicle_vweup_all.h"
+#include "vehicle_vweup.h"
 
 using namespace std;
 
@@ -101,10 +101,6 @@ public: OvmsVehicleVWeUpInit();
 OvmsVehicleVWeUpInit::OvmsVehicleVWeUpInit()
 {
     ESP_LOGI(TAG, "Registering Vehicle: VW e-Up (9000)");
-    // Preparing for different VWEUP classes.
-    // Example:
-    //
-    // MyVehicleFactory.RegisterVehicle<VWeUpObd>("VWUP.OBD", "VW e-Up (OBD2)");
     MyVehicleFactory.RegisterVehicle<OvmsVehicleVWeUp>("VWUP", "VW e-Up");
 }
 

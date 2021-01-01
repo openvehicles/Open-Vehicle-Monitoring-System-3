@@ -41,7 +41,7 @@ static const char *TAG = "v-vweup";
 #include "ovms_notify.h"
 #include "ovms_utils.h"
 
-#include "vehicle_vweup_all.h"
+#include "vehicle_vweup.h"
 #include "vweup_obd.h"
 
 const OvmsVehicle::poll_pid_t vweup_polls[] = {
@@ -260,11 +260,6 @@ void OvmsVehicleVWeUp::OBDCheckCarState()
     PollSetState(VWUP_OFF);
 }
 
-//void OvmsVehicleVweUp::DiagnosticTest()
-//{
-
-//}
-
 void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length, uint16_t mlremain)
 {
     ESP_LOGV(TAG, "IncomingPollReply(type=%u, pid=%X, length=%u, mlremain=%u): called", type, pid, length, mlremain);
@@ -376,7 +371,7 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
         break;
 
     case VWUP_BAT_MGMT_TEMP:
-        if (PollReply.FromUint16("VWUP_BAT_MGMT_TEMP", value))
+        if (PollReply.FromInt16("VWUP_BAT_MGMT_TEMP", value))
         {
             StandardMetrics.ms_v_bat_temp->SetValue(value / 64.0f);
             VALUE_LOG(TAG, "VWUP_BAT_MGMT_TEMP=%f => %f", value, StandardMetrics.ms_v_bat_temp->AsFloat());
@@ -626,7 +621,7 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
             VALUE_LOG(TAG, "VWUP_ELD_TEMP_MOT=%f => %f", value, StandardMetrics.ms_v_mot_temp->AsFloat());
         break;
      case VWUP_MOT_ELEC_TEMP_PEM:
-        if (PollReply.FromInt16("VWUP_MOT_ELEC_TEMP_PEM", value))
+        if (PollReply.FromUint16("VWUP_MOT_ELEC_TEMP_PEM", value))
             StandardMetrics.ms_v_inv_temp->SetValue(value / 10.0f - 273.1);
             VALUE_LOG(TAG, "VWUP_MOT_ELEC_TEMP_PEM=%f => %f", value, StandardMetrics.ms_v_inv_temp->AsFloat());
         break;

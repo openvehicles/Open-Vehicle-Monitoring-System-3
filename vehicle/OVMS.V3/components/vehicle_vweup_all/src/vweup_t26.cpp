@@ -117,7 +117,7 @@ static const char *TAG = "v-vweup";
 
 #include <stdio.h>
 #include "pcp.h"
-#include "vehicle_vweup_all.h"
+#include "vehicle_vweup.h"
 #include "vweup_t26.h"
 #include "metrics_standard.h"
 #include "ovms_webserver.h"
@@ -182,7 +182,6 @@ void OvmsVehicleVWeUp::vehicle_vweup_car_on(bool turnOn)
         OdoStart = StandardMetrics.ms_v_pos_odometer->AsFloat();
         EnergyRecdStart = StandardMetrics.ms_v_bat_energy_recd_total->AsFloat();
         EnergyUsedStart = StandardMetrics.ms_v_bat_energy_used_total->AsFloat();
-        ESP_LOGI(TAG,"Start Counters: %f, %f, %f",OdoStart,EnergyRecdStart,EnergyUsedStart);
         // Turn off possibly running climate control timer
         if (ocu_awake)
         {

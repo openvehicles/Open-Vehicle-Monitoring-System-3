@@ -35,7 +35,7 @@
 #include "ovms_notify.h"
 #include "ovms_webserver.h"
 
-#include "vehicle_vweup_all.h"
+#include "vehicle_vweup.h"
 
 using namespace std;
 
@@ -275,12 +275,12 @@ void OvmsVehicleVWeUp::WebDispChgMetrics(PageEntry_t &p, PageContext_t &c)
                     "</div>"
                 "</div>"
 
-                "<h4>Battery</h4>" // ranges for Gen1 for now!
+                "<h4>Battery</h4>" // voltage ranges span values for both generations for now (ToDo: switch dynamically)
 
                 "<div class=\"clearfix\">"
                     "<div class=\"metric progress\" data-metric=\"v.b.voltage\" data-prec=\"1\">"
                         "<div class=\"progress-bar value-low text-left\" role=\"progressbar\" aria-valuenow=\"0\""
-                            "aria-valuemin=\"276\" aria-valuemax=\"418\" style=\"width:0%\">"
+                            "aria-valuemin=\"275\" aria-valuemax=\"420\" style=\"width:0%\">"
                             "<div>"
                                 "<span class=\"label\">Voltage</span>"
                                 "<span class=\"value\">?</span>"
@@ -357,7 +357,7 @@ void OvmsVehicleVWeUp::WebDispChgMetrics(PageEntry_t &p, PageContext_t &c)
                     "</div>"
                     "<div class=\"metric progress\" data-metric=\"xvu.c.dc.u1\" data-prec=\"0\">"
                         "<div class=\"progress-bar value-low text-left\" role=\"progressbar\""
-                            "aria-valuenow=\"0\" aria-valuemin=\"0\" aria-valuemax=\"420\" style=\"width:0%\">"
+                            "aria-valuenow=\"0\" aria-valuemin=\"275\" aria-valuemax=\"420\" style=\"width:0%\">"
                             "<div>"
                                 "<span class=\"label\">DC Voltage</span>"
                                 "<span class=\"value\">?</span>"
