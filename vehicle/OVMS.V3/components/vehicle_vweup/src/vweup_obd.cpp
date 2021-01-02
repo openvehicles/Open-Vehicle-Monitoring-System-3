@@ -204,7 +204,7 @@ void OvmsVehicleVWeUp::OBDCheckCarState()
             StandardMetrics.ms_v_charge_inprogress->SetValue(true);
             EnergyChargedStart = StandardMetrics.ms_v_bat_energy_recd_total->AsFloat();
             ESP_LOGD(TAG,"Charge Start Counter: %f",EnergyChargedStart);
-            PollSetState(VWUP_CHARGING);
+            PollSetState(VWEUP_CHARGING);
             TimeOffRequested = 0;
         }
         return;
@@ -218,7 +218,7 @@ void OvmsVehicleVWeUp::OBDCheckCarState()
         {
             ESP_LOGI(TAG, "Setting car state to ON");
             StandardMetrics.ms_v_env_on->SetValue(true);
-            PollSetState(VWUP_ON);
+            PollSetState(VWEUP_ON);
             TimeOffRequested = 0;
             OdoStart = StandardMetrics.ms_v_pos_odometer->AsFloat();
             EnergyRecdStart = StandardMetrics.ms_v_bat_energy_recd_total->AsFloat();
@@ -250,7 +250,7 @@ void OvmsVehicleVWeUp::OBDCheckCarState()
     StandardMetrics.ms_v_env_on->SetValue(false);
 //    StandardMetrics.ms_v_charge_voltage->SetValue(0);
 //    StandardMetrics.ms_v_charge_current->SetValue(0);
-    PollSetState(VWUP_OFF);
+    PollSetState(VWEUP_OFF);
 }
 
 void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length, uint16_t mlremain)
