@@ -132,6 +132,7 @@ v.c.12v.power                 OBD        0.123kW                  Output power o
 v.c.12v.temp                  OBD        34.5°C                   Temperature of DC/DC-converter
 v.c.12v.voltage               OBD        12.3V                    Output voltage of DC/DC-converter
 v.c.charging                  T26        true                     Is vehicle charging (true = "Vehicle CHARGING" state. v.e.on=false if this is true)
+v.c.climit                    fixed      16/32A                   Maximum charger output current
 v.c.current 	              OBD        1.25A 	                  Momentary charger output current
 v.c.efficiency                OBD        91.3 %                   Charging efficiency calculated by v.b.power and v.c.power
 v.c.kwh                       OBD        2.6969kWh                Energy sum for running charge
