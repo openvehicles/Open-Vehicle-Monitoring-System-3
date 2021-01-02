@@ -366,18 +366,11 @@ config OVMS_VEHICLE_FIAT500
         Enable to include support for FIAT 500 vehicle.
 
 config OVMS_VEHICLE_VWEUP
-    bool "Include support for VW e-Up vehicle"
+    bool "Include support for VW e-up! vehicle"
     default y
     depends on OVMS
     help
-        Enable to include support for VW e-Up vehicle.
-
-config OVMS_VEHICLE_VWEUP_OBD
-    bool "Include support for VW e-Up vehicle via OBD2"
-    default y
-    depends on OVMS
-    help
-        Enable to include support for VW e-Up vehicle via OBD2.
+        Enable to include support for vehicles VW e-up! (all model years), Seat Mii electric, and Skoda Citigo-e iV.
 
 config OVMS_VEHICLE_MERCEDESB250E
     bool "Include support for Mercedes-Benz B250E (W242) vehicle"

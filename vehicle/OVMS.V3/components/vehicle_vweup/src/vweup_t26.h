@@ -29,25 +29,12 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 ; THE SOFTWARE.
 */
-
+/*
 #ifndef __VEHICLE_EUP_H__
 #define __VEHICLE_EUP_H__
 
-#include <atomic>
-
-#include "can.h"
 #include "vehicle.h"
-
-#include "ovms_log.h"
-#include "ovms_config.h"
-#include "ovms_metrics.h"
-#include "ovms_command.h"
-
 #include "ovms_webserver.h"
-
-#include "ovms_mutex.h"
-#include "ovms_semaphore.h"
-
 #include "poll_reply_helper.h"
 
 #define DEFAULT_MODEL_YEAR 2020
@@ -70,22 +57,16 @@ typedef enum
 #define VWEUP_ON 1
 #define VWEUP_CHARGING 2
 
-class OvmsVehicleVWeUp : public OvmsVehicle
+class OvmsVehicleVWeUpAll : public OvmsVehicle
   {
   public:
-    OvmsVehicleVWeUp();
-    ~OvmsVehicleVWeUp();
-    static OvmsVehicleVWeUp* GetInstance(OvmsWriter* writer=NULL);
+    OvmsVehicleVWeUpAll();
+    ~OvmsVehicleVWeUpAll();
 
   public:
     void ConfigChanged(OvmsConfigParam* param);
     bool SetFeature(int key, const char* value);
     const std::string GetFeature(int key);
-
-  protected:
-    static size_t m_modifier;
-    OvmsMetricString *m_version;
-    OvmsCommand *cmd_xvu;
 
   public:
     void IncomingFrameCan3(CAN_frame_t* p_frame);
@@ -109,13 +90,9 @@ class OvmsVehicleVWeUp : public OvmsVehicle
     bool vin_part2;
     bool vin_part3;
     bool vweup_enable_obd;
-    bool vweup_enable_obd_new;
     bool vweup_enable_t26;
-    bool vweup_enable_t26_new;
     bool vweup_enable_write;
-    int vweup_con;  // 0: none, 1: only T26, 2: only OBD2; 3: both
     int vweup_modelyear;
-    int vweup_modelyear_new;
     int vweup_remote_climate_ticker;
     int vweup_cc_temp_int;
     bool ocu_awake;
@@ -137,14 +114,13 @@ class OvmsVehicleVWeUp : public OvmsVehicle
 
     RemoteCommand vweup_remote_command; // command to send, see RemoteCommandTimer()
 
-    void vehicle_vweup_car_on(bool turnOn);
+    void vehicle_vweup_car_on(bool isOn);
     TimerHandle_t m_sendOcuHeartbeat;
     TimerHandle_t m_ccCountdown;
 
   public:
-    void T26Init();
-    void WebInit();
-    void WebDeInit();
+//    void WebInit();
+//    void WebDeInit();
     void SendOcuHeartbeat();
     void CCCountdown();
     void CCOn();
@@ -156,6 +132,7 @@ class OvmsVehicleVWeUp : public OvmsVehicle
     static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
     static void WebCfgClimate(PageEntry_t& p, PageContext_t& c);
     static void WebDispChgMetrics(PageEntry_t& p, PageContext_t& c);
+    static void WebDispTempMetrics(PageEntry_t& p, PageContext_t& c);
     virtual vehicle_command_t CommandWakeup();
 
     OvmsMetricFloat *MotElecSoCAbs;           // Absolute SoC of main battery from motor electrics ECU
@@ -165,55 +142,68 @@ class OvmsVehicleVWeUp : public OvmsVehicle
     OvmsMetricFloat *BatMgmtCellDelta;     // Highest voltage - lowest voltage of all cells [V]
 
     OvmsMetricFloat *ChargerACPower;       // AC Power [kW]
-    OvmsMetricFloat *ChargerAC1U;          // AC Voltage Phase 1 [V]
-    OvmsMetricFloat *ChargerAC2U;          // AC Voltage Phase 2 [V]
-    OvmsMetricFloat *ChargerAC1I;          // AC Current Phase 1 [A]
-    OvmsMetricFloat *ChargerAC2I;          // AC Current Phase 2 [A]
-    OvmsMetricFloat *ChargerDC1U;          // DC Voltage 1 [V]
-    OvmsMetricFloat *ChargerDC2U;          // DC Voltage 2 [V]
-    OvmsMetricFloat *ChargerDC1I;          // DC Current 1 [A]
-    OvmsMetricFloat *ChargerDC2I;          // DC Current 2 [A]
     OvmsMetricFloat *ChargerDCPower;       // DC Power [kW]
     OvmsMetricFloat *ChargerPowerEffEcu;   // Efficiency of the Charger [%] (from ECU)
     OvmsMetricFloat *ChargerPowerLossEcu;  // Power loss of Charger [kW] (from ECU)
     OvmsMetricFloat *ChargerPowerEffCalc;  // Efficiency of the Charger [%] (calculated from U and I)
     OvmsMetricFloat *ChargerPowerLossCalc; // Power loss of Charger [kW] (calculated from U and I)
-    OvmsMetricInt *ServiceDays;            // Days until next scheduled maintenance/service
 
+    OvmsMetricFloat *TPMSDiffusionFrontLeft; // TPMS Indicator for Pressure Diffusion Front Left Tyre
+    OvmsMetricFloat *TPMSDiffusionFrontRight; // TPMS Indicator for Pressure Diffusion Front Right Tyre
+    OvmsMetricFloat *TPMSDiffusionRearLeft; // TPMS Indicator for Pressure Diffusion Rear Left Tyre
+    OvmsMetricFloat *TPMSDiffusionRearRight; // TPMS Indicator for Pressure Diffusion Rear Right Tyre
+    OvmsMetricFloat *TPMSEmergencyFrontLeft; // TPMS Indicator for Tyre Emergency Front Left Tyre
+    OvmsMetricFloat *TPMSEmergencyFrontRight; // TPMS Indicator for Tyre Emergency Front Right Tyre
+    OvmsMetricFloat *TPMSEmergencyRearLeft; // TPMS Indicator for Tyre Emergency Rear Left Tyre
+    OvmsMetricFloat *TPMSEmergencyRearRight; // TPMS Indicator for Tyre Emergency Rear Right Tyre
+    OvmsMetricFloat *MaintenanceDist; // Distance to next maintenance
+    OvmsMetricFloat *MaintenanceTime; // Days to next maintenance
+    OvmsMetricFloat *CoolantTemp1; // 
+    OvmsMetricFloat *CoolantTemp2; // 
+    OvmsMetricFloat *CoolantTemp3; // 
+    OvmsMetricFloat *CoolantTemp4; // 
+    OvmsMetricFloat *CoolantTemp5; // 
+    OvmsMetricFloat *CoolingTempBat; // 
+    OvmsMetricFloat *BrakeboostTempECU;
+    OvmsMetricFloat *BrakeboostTempAccu;
+    OvmsMetricFloat *SteeringTempPA;
+    OvmsMetricFloat *ElectricDriveCoolantTemp;
+    OvmsMetricFloat *ElectricDriveTempDCDC;
+    OvmsMetricFloat *ElectricDriveTempDCDCPCB;
+    OvmsMetricFloat *ElectricDriveTempDCDCPEM;
+    OvmsMetricFloat *ElectricDriveTempPhaseU;
+    OvmsMetricFloat *ElectricDriveTempPhaseV;
+    OvmsMetricFloat *ElectricDriveTempPhaseW;
+    OvmsMetricFloat *ElectricDriveTempStator;
+    OvmsMetricFloat *InfElecTempPCB;
+    OvmsMetricFloat *InfElecTempAudio;
     OvmsMetricFloat *BatTempMax;
     OvmsMetricFloat *BatTempMin;
+    OvmsMetricFloat *BrakesensTemp;
 
-  private:
-    float OdoStart;
-    float EnergyRecdStart;
-    float EnergyUsedStart;
-
-  // --------------------------------------------------------------------------
-  // OBD2 subsystem
-  //  - implementation: vweup_obd.(h,cpp)
-  // 
-  
-  public:
-    void OBDInit();
-    void OBDDeInit();
+    //OBD
+    void ObdInit();
     void IncomingPollReply(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length, uint16_t mlremain);
-
-  protected:
-    string              eup_obd_rxbuf;
-    uint16_t            eup_obd_rxerr;
-    OvmsMutex           eup_obd_request;
-    OvmsSemaphore       eup_obd_rxwait;
 
 //  protected:
 //    virtual void Ticker1(uint32_t ticker);
 
   private:
-    PollReplyHelper PollReply;
+    PollReplyHelperAll PollReply;
 
     float BatMgmtCellMax; // Maximum cell voltage
     float BatMgmtCellMin; // Minimum cell voltage
 
-    void OBDCheckCarState();
+    float ChargerAC1U; // AC Voltage Phase 1
+    float ChargerAC2U; // AC Voltage Phase 2
+    float ChargerAC1I; // AC Current Phase 1
+    float ChargerAC2I; // AC Current Phase 2
+    float ChargerDC1U; // DC Voltage 1
+    float ChargerDC2U; // DC Voltage 2
+    float ChargerDC1I; // DC Current 1
+    float ChargerDC2I; // DC Current 2
+
+    void CheckCarState();
 
     uint32_t TimeOffRequested; // For Off-Timeout: Monotonictime when the poll should have gone to VWEUP_OFF
                                //                  0 means no Off requested so far
@@ -225,3 +215,4 @@ class OvmsVehicleVWeUp : public OvmsVehicle
   };
 
 #endif //#ifndef __VEHICLE_EUP_H__
+*/

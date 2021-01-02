@@ -6,7 +6,9 @@ Vehicle Type: **VWUP.OBD**
 
 This vehicle type supports the VW e-UP (new model from year 2020 onwards). Untested (so far) but probably working: The older models of the e-Up as well as Skoda Citigo E IV and Seat MII electric.
 
-Connection is via the standard OBD-II port (above the drivers left foot). All communication with the car is read-only. For changing values (i.e. climate control) see the other VW e-Up vehicle type.
+Connection is via the standard OBD-II port (above the drivers left foot):
+
+All communication with the car is read-only. For changing values (i.e. climate control) see the T26A connection to the Comfort CAN bus.
 
 ----------------
 Support Overview

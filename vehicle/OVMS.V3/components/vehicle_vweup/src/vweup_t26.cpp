@@ -30,7 +30,7 @@
 */
 
 /*
-;    Subproject:    Integration of support for the VW e-UP
+;    Subproject:    Integration of support for the VW e-UP via Comfort CAN
 ;    Date:          21st November 2020
 ;
 ;    Changes:
@@ -113,50 +113,48 @@
 */
 
 #include "ovms_log.h"
-static const char *TAG = "v-vweup-t26";
-
-#define VERSION "0.4.3"
+static const char *TAG = "v-vweup";
 
 #include <stdio.h>
 #include "pcp.h"
-#include "t26_eup.h"
+#include "vehicle_vweup.h"
+#include "vweup_t26.h"
 #include "metrics_standard.h"
 #include "ovms_webserver.h"
 #include "ovms_events.h"
 #include "ovms_metrics.h"
 
-void sendOcuHeartbeat(TimerHandle_t timer)
+void OvmsVehicleVWeUp::sendOcuHeartbeat(TimerHandle_t timer)
 {
-    OvmsVehicleVWeUpT26 *vwup = (OvmsVehicleVWeUpT26 *)pvTimerGetTimerID(timer);
-    vwup->SendOcuHeartbeat();
+    OvmsVehicleVWeUp *vweup = (OvmsVehicleVWeUp *)pvTimerGetTimerID(timer);
+    vweup->SendOcuHeartbeat();
 }
 
-void ccCountdown(TimerHandle_t timer)
+void OvmsVehicleVWeUp::ccCountdown(TimerHandle_t timer)
 {
-    OvmsVehicleVWeUpT26 *vwup = (OvmsVehicleVWeUpT26 *)pvTimerGetTimerID(timer);
-    vwup->CCCountdown();
+    OvmsVehicleVWeUp *vweup = (OvmsVehicleVWeUp *)pvTimerGetTimerID(timer);
+    vweup->CCCountdown();
 }
 
-OvmsVehicleVWeUpT26::OvmsVehicleVWeUpT26()
+void OvmsVehicleVWeUp::T26Init()
 {
-    ESP_LOGI(TAG, "Start VW e-Up T26A vehicle module");
+    ESP_LOGI(TAG, "Starting connection: T26A (Comfort CAN)");
     memset(m_vin, 0, sizeof(m_vin));
 
     RegisterCanBus(3, CAN_MODE_ACTIVE, CAN_SPEED_100KBPS);
 
-    MyConfig.RegisterParam("xut", "VW e-Up", true, true);
-    ConfigChanged(NULL);
+    MyConfig.RegisterParam("xvu", "VW e-Up", true, true);
     vin_part1 = false;
     vin_part2 = false;
     vin_part3 = false;
-    vwup_remote_climate_ticker = 0;
+    vweup_remote_climate_ticker = 0;
     ocu_awake = false;
     ocu_working = false;
     ocu_what = false;
     ocu_wait = false;
     vweup_cc_on = false;
     vweup_cc_turning_on = false;
-    vwup_cc_temp_int = 21;
+    vweup_cc_temp_int = 21;
     fas_counter_on = 0;
     fas_counter_off = 0;
     signal_ok = false;
@@ -167,108 +165,25 @@ OvmsVehicleVWeUpT26::OvmsVehicleVWeUpT26()
 
     StandardMetrics.ms_v_env_locked->SetValue(true);
     StandardMetrics.ms_v_env_headlights->SetValue(false);
-
-#ifdef CONFIG_OVMS_COMP_WEBSERVER
-    WebInit();
-#endif
-}
-
-OvmsVehicleVWeUpT26::~OvmsVehicleVWeUpT26()
-{
-    ESP_LOGI(TAG, "Stop VW e-Up T26A vehicle module");
-
-#ifdef CONFIG_OVMS_COMP_WEBSERVER
-    WebDeInit();
-#endif
-}
-
-bool OvmsVehicleVWeUpT26::SetFeature(int key, const char *value)
-{
-    int i;
-    int n;
-    switch (key)
-    {
-    case 15:
-    {
-        int bits = atoi(value);
-        MyConfig.SetParamValueBool("xut", "canwrite", (bits & 1) != 0);
-        return true;
-    }
-    case 20:
-        // check:
-        if (strlen(value) == 0) value = "2020";
-        for (i = 0; i < strlen(value); i++) {
-           if (isdigit(value[i]) == false) {
-             value = "2020";
-             break;
-           }
-        }
-        n = atoi(value);
-        if (n < 2013) value = "2013";
-        MyConfig.SetParamValue("xut", "modelyear", value);
-        return true;
-    case 21:
-        // check:
-        if (strlen(value) == 0) value = "21";
-        for (i = 0; i < strlen(value); i++) {
-           if (isdigit(value[i]) == false) {
-             value = "21";
-             break;
-           }
-        }
-        n = atoi(value);
-        if (n < 18) value = "18";
-        if (n > 23) value = "23";
-        MyConfig.SetParamValue("xut", "cc_temp", value);
-        return true;
-    default:
-        return OvmsVehicle::SetFeature(key, value);
-    }
-}
-
-const std::string OvmsVehicleVWeUpT26::GetFeature(int key)
-{
-    switch (key)
-    {
-    case 15:
-    {
-        int bits = (MyConfig.GetParamValueBool("xut", "canwrite", false) ? 1 : 0);
-        char buf[4];
-        sprintf(buf, "%d", bits);
-        return std::string(buf);
-    }
-    case 20:
-      return MyConfig.GetParamValue("xut", "modelyear", STR(DEFAULT_MODEL_YEAR));
-    case 21:
-      return MyConfig.GetParamValue("xut", "cc_temp", STR(21));
-    default:
-        return OvmsVehicle::GetFeature(key);
-    }
-}
-
-void OvmsVehicleVWeUpT26::ConfigChanged(OvmsConfigParam *param)
-{
-    if (param && param->GetName() != "xut")
-       return;
-
-    ESP_LOGD(TAG, "VW e-Up reload configuration");
-
-    vwup_enable_write = MyConfig.GetParamValueBool("xut", "canwrite", false);
-    vwup_modelyear = MyConfig.GetParamValueInt("xut", "modelyear", DEFAULT_MODEL_YEAR);
-    vwup_cc_temp_int = MyConfig.GetParamValueInt("xut", "cc_temp", 21);
 }
 
 // Takes care of setting all the state appropriate when the car is on
 // or off.
 //
-void OvmsVehicleVWeUpT26::vehicle_vweup_car_on(bool isOn)
+void OvmsVehicleVWeUp::vehicle_vweup_car_on(bool turnOn)
 {
-    if (isOn && !StandardMetrics.ms_v_env_on->AsBool())
+    if (turnOn && !StandardMetrics.ms_v_env_on->AsBool())
     {
         // Log once that car is being turned on
         ESP_LOGI(TAG, "CAR IS ON");
         StandardMetrics.ms_v_env_on->SetValue(true);
-        // Turn off eventually running climate control timer
+        PollSetState(VWEUP_ON);
+//        TimeOffRequested = 0;
+        OdoStart = StandardMetrics.ms_v_pos_odometer->AsFloat();
+        EnergyRecdStart = StandardMetrics.ms_v_bat_energy_recd_total->AsFloat();
+        EnergyUsedStart = StandardMetrics.ms_v_bat_energy_used_total->AsFloat();
+        ESP_LOGD(TAG,"Start Counters: %f, %f, %f",OdoStart,EnergyRecdStart,EnergyUsedStart);
+        // Turn off possibly running climate control timer
         if (ocu_awake)
         {
             xTimerStop(m_sendOcuHeartbeat, 0);
@@ -283,19 +198,22 @@ void OvmsVehicleVWeUpT26::vehicle_vweup_car_on(bool isOn)
         }
         ocu_awake = false;
         ocu_working = false;
-        vwup_remote_climate_ticker = 0;
+        vweup_remote_climate_ticker = 0;
         fas_counter_on = 0;
         fas_counter_off = 0;
     }
-    else if (!isOn && StandardMetrics.ms_v_env_on->AsBool())
+    else if (!turnOn && StandardMetrics.ms_v_env_on->AsBool())
     {
         // Log once that car is being turned off
         ESP_LOGI(TAG, "CAR IS OFF");
         StandardMetrics.ms_v_env_on->SetValue(false);
+//        StandardMetrics.ms_v_charge_voltage->SetValue(0);
+//        StandardMetrics.ms_v_charge_current->SetValue(0);
+        PollSetState(VWEUP_OFF);
     }
 }
 
-void OvmsVehicleVWeUpT26::IncomingFrameCan3(CAN_frame_t *p_frame)
+void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
 {
     uint8_t *d = p_frame->data.u8;
 
@@ -309,16 +227,17 @@ void OvmsVehicleVWeUpT26::IncomingFrameCan3(CAN_frame_t *p_frame)
     {
 
     case 0x61A: // SOC.
-        StandardMetrics.ms_v_bat_soc->SetValue(d[7] / 2.0);
-        if (vwup_modelyear >= 2020)
-        {
-            StandardMetrics.ms_v_bat_range_ideal->SetValue((260 * (d[7] / 2.0)) / 100.0); // This is dirty. Based on WLTP only. Should be based on SOH.
-        }
-        else
-        {
-            StandardMetrics.ms_v_bat_range_ideal->SetValue((160 * (d[7] / 2.0)) / 100.0); // This is dirty. Based on WLTP only. Should be based on SOH.
-        }
-        break;
+        if ((!StandardMetrics.ms_v_env_on->AsBool()) || (vweup_con == 0))
+            StandardMetrics.ms_v_bat_soc->SetValue(d[7] / 2.0);
+            if (vweup_modelyear >= 2020)
+            {
+                StandardMetrics.ms_v_bat_range_ideal->SetValue((260 * (d[7] / 2.0)) / 100.0); // This is dirty. Based on WLTP only. Should be based on SOH.
+            }
+            else
+            {
+                StandardMetrics.ms_v_bat_range_ideal->SetValue((160 * (d[7] / 2.0)) / 100.0); // This is dirty. Based on WLTP only. Should be based on SOH.
+            }
+            break;
 
     case 0x52D: // KM range left (estimated).
         if (d[0] != 0xFE) {
@@ -375,6 +294,7 @@ void OvmsVehicleVWeUpT26::IncomingFrameCan3(CAN_frame_t *p_frame)
 
     case 0x65D: // ODO
         StandardMetrics.ms_v_pos_odometer->SetValue(((uint32_t)(d[3] & 0xf) << 12) | ((UINT)d[2] << 8) | d[1]);
+        StandardMetrics.ms_v_pos_trip->SetValue(StandardMetrics.ms_v_pos_odometer->AsFloat()-OdoStart); // so far we don't know where to get trip distance directly...
         break;
 
     case 0x320: // Speed
@@ -387,7 +307,7 @@ void OvmsVehicleVWeUpT26::IncomingFrameCan3(CAN_frame_t *p_frame)
         break;
 
     case 0x527: // Outdoor temperature
-        StandardMetrics.ms_v_env_temp->SetValue((d[5] / 2) - 50);
+        StandardMetrics.ms_v_env_temp->SetValue((d[5] - 100) / 2);
         break;
 
     case 0x381: // Vehicle locked
@@ -404,9 +324,9 @@ void OvmsVehicleVWeUpT26::IncomingFrameCan3(CAN_frame_t *p_frame)
     case 0x3E3: // Cabin temperature
         if (d[2] != 0xFF)
         {
-           StandardMetrics.ms_v_env_cabintemp->SetValue((d[2]-100)/2);
+           StandardMetrics.ms_v_env_cabintemp->SetValue((d[2] - 100) / 2);
            // Set PEM inv temp to support older app version with cabin temp workaround display
-           StandardMetrics.ms_v_inv_temp->SetValue((d[2] - 100) / 2);
+//           StandardMetrics.ms_v_inv_temp->SetValue((d[2] - 100) / 2);
         }
         break;
 
@@ -446,8 +366,10 @@ void OvmsVehicleVWeUpT26::IncomingFrameCan3(CAN_frame_t *p_frame)
       cd_count++;
       if (d[2] < 0x07) {
          isCharging = true;
+         PollSetState(VWEUP_CHARGING);
       } else {
          isCharging = false;
+         PollSetState(VWEUP_OFF);
       }
       if (isCharging != lastCharging) { 
         // count till 3 messages in a row to stop ghost triggering
@@ -460,6 +382,7 @@ void OvmsVehicleVWeUpT26::IncomingFrameCan3(CAN_frame_t *p_frame)
           StandardMetrics.ms_v_charge_state->SetValue("charging");
           StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
           ESP_LOGI(TAG,"Car charge session started");
+          PollSetState(VWEUP_CHARGING);
         } 
         if (!isCharging && cd_count == 3) {
           cd_count = 0;
@@ -470,6 +393,7 @@ void OvmsVehicleVWeUpT26::IncomingFrameCan3(CAN_frame_t *p_frame)
           StandardMetrics.ms_v_charge_state->SetValue("done");
           StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
           ESP_LOGI(TAG,"Car charge session ended");
+          PollSetState(VWEUP_OFF);
         } 
       } else {
           cd_count = 0;
@@ -518,7 +442,7 @@ void OvmsVehicleVWeUpT26::IncomingFrameCan3(CAN_frame_t *p_frame)
             }
             ocu_awake = false;
             ocu_working = false;
-            vwup_remote_climate_ticker = 0;
+            vweup_remote_climate_ticker = 0;
             fas_counter_on = 0;
             fas_counter_off = 0;
             break;
@@ -560,7 +484,7 @@ void OvmsVehicleVWeUpT26::IncomingFrameCan3(CAN_frame_t *p_frame)
             data[6] = 0x00;
             data[7] = 0x00;
             vTaskDelay(50 / portTICK_PERIOD_MS);
-            if (vwup_enable_write && !dev_mode)
+            if (vweup_enable_write && !dev_mode)
                 comfBus->WriteStandard(0x43D, length, data); // We answer
 
             ocu_awake = true;
@@ -575,12 +499,12 @@ void OvmsVehicleVWeUpT26::IncomingFrameCan3(CAN_frame_t *p_frame)
     }
 }
 
-OvmsVehicle::vehicle_command_t OvmsVehicleVWeUpT26::RemoteCommandHandler(RemoteCommand command)
+OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::RemoteCommandHandler(RemoteCommand command)
 {
     ESP_LOGI(TAG, "RemoteCommandHandler");
 
-    vwup_remote_command = command;
-    SendCommand(vwup_remote_command);
+    vweup_remote_command = command;
+    SendCommand(vweup_remote_command);
     if (signal_ok)
     {
         signal_ok = false;
@@ -594,7 +518,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUpT26::RemoteCommandHandler(RemoteC
 //
 // Does nothing if @command is out of range
 //
-void OvmsVehicleVWeUpT26::SendCommand(RemoteCommand command)
+void OvmsVehicleVWeUp::SendCommand(RemoteCommand command)
 {
 
     switch (command)
@@ -612,9 +536,9 @@ void OvmsVehicleVWeUpT26::SendCommand(RemoteCommand command)
             break;
         }
 
-        if (vwup_remote_climate_ticker == 0)
+        if (vweup_remote_climate_ticker == 0)
         {
-            vwup_remote_climate_ticker = 1800;
+            vweup_remote_climate_ticker = 1800;
         }
         else
         {
@@ -652,7 +576,7 @@ void OvmsVehicleVWeUpT26::SendCommand(RemoteCommand command)
             break;
         }
 
-        if (vwup_remote_climate_ticker == 0)
+        if (vweup_remote_climate_ticker == 0)
         {
             ESP_LOGI(TAG, "Disable Climate Control - already disabled");
             break;
@@ -660,7 +584,7 @@ void OvmsVehicleVWeUpT26::SendCommand(RemoteCommand command)
 
         ESP_LOGI(TAG, "Disable Climate Control");
 
-        vwup_remote_climate_ticker = 0;
+        vweup_remote_climate_ticker = 0;
 
         CCOff();
 
@@ -676,7 +600,7 @@ void OvmsVehicleVWeUpT26::SendCommand(RemoteCommand command)
             break;
         }
 
-        vwup_remote_climate_ticker = 0;
+        vweup_remote_climate_ticker = 0;
 
         ESP_LOGI(TAG, "Auto Disable Climate Control");
 
@@ -694,10 +618,10 @@ void OvmsVehicleVWeUpT26::SendCommand(RemoteCommand command)
 // Wakeup implentation over the VW ring commands
 // We need to register in the ring with a call to our self from 43D with 0x1D in the first byte
 //
-OvmsVehicle::vehicle_command_t OvmsVehicleVWeUpT26::CommandWakeup()
+OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandWakeup()
 {
 
-    if (!vwup_enable_write)
+    if (!vweup_enable_write)
         return Fail;
 
     if (!ocu_awake)
@@ -721,7 +645,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUpT26::CommandWakeup()
 
         data[0] = 0x14;
         data[1] = 0x42;
-        if (vwup_enable_write && !dev_mode)
+        if (vweup_enable_write && !dev_mode)
             comfBus->WriteStandard(0x69E, length2, data2);
 
         vTaskDelay(2000 / portTICK_PERIOD_MS);
@@ -736,7 +660,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUpT26::CommandWakeup()
         data[5] = 0x14; // What does this do?
         data[6] = 0x00;
         data[7] = 0x00;
-        if (vwup_enable_write && !dev_mode)
+        if (vweup_enable_write && !dev_mode)
             comfBus->WriteStandard(0x43D, length, data);
 
         vTaskDelay(50 / portTICK_PERIOD_MS);
@@ -749,7 +673,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUpT26::CommandWakeup()
         data[5] = 0x14; // What does this do?
         data[6] = 0x00;
         data[7] = 0x00;
-        if (vwup_enable_write && !dev_mode)
+        if (vweup_enable_write && !dev_mode)
             comfBus->WriteStandard(0x43D, length, data);
 
         ocu_working = true;
@@ -766,7 +690,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUpT26::CommandWakeup()
     return Success;
 }
 
-void OvmsVehicleVWeUpT26::SendOcuHeartbeat()
+void OvmsVehicleVWeUp::SendOcuHeartbeat()
 {
 
     if (!vweup_cc_on)
@@ -820,7 +744,7 @@ void OvmsVehicleVWeUpT26::SendOcuHeartbeat()
     data[5] = 0x00;
     data[6] = 0x00;
     data[7] = 0x00;
-    if (vwup_enable_write && !dev_mode)
+    if (vweup_enable_write && !dev_mode)
         comfBus->WriteStandard(0x5A9, length, data);
 
     if ((fas_counter_on > 0 && fas_counter_on < 10) || (fas_counter_off > 0 && fas_counter_off < 10))
@@ -842,11 +766,11 @@ void OvmsVehicleVWeUpT26::SendOcuHeartbeat()
     data[5] = 0x00;
     data[6] = 0x00;
     data[7] = 0x00;
-    if (vwup_enable_write && !dev_mode)
+    if (vweup_enable_write && !dev_mode)
         comfBus->WriteStandard(0x5A7, length, data);
 }
 
-void OvmsVehicleVWeUpT26::CCCountdown()
+void OvmsVehicleVWeUp::CCCountdown()
 {
     cc_count++;
     ocu_wait = true;
@@ -866,7 +790,7 @@ void OvmsVehicleVWeUpT26::CCCountdown()
     }
 }
 
-void OvmsVehicleVWeUpT26::CCOn()
+void OvmsVehicleVWeUp::CCOn()
 {
     unsigned char data[8];
     uint8_t length;
@@ -887,7 +811,7 @@ void OvmsVehicleVWeUpT26::CCOn()
     data[5] = 0x00;
     data[6] = 0x00;
     data[7] = 0x00;
-    if (vwup_enable_write && !dev_mode)
+    if (vweup_enable_write && !dev_mode)
         comfBus->WriteStandard(0x5A7, length, data);
 
     // d5 could be a counter?
@@ -899,7 +823,7 @@ void OvmsVehicleVWeUpT26::CCOn()
     data[5] = 0x00;
     data[6] = 0x00;
     data[7] = 0x01;
-    if (vwup_enable_write && !dev_mode)
+    if (vweup_enable_write && !dev_mode)
         comfBus->WriteStandard(0x69E, length, data);
 
     data[0] = 0xC0;
@@ -910,7 +834,7 @@ void OvmsVehicleVWeUpT26::CCOn()
     data[5] = 0xFF;
     data[6] = 0xFF;
     data[7] = 0x00;
-    if (vwup_enable_write && !dev_mode)
+    if (vweup_enable_write && !dev_mode)
         comfBus->WriteStandard(0x69E, length, data);
 
     data[0] = 0xC1;
@@ -921,31 +845,31 @@ void OvmsVehicleVWeUpT26::CCOn()
     data[5] = 0x01;
     data[6] = 0x6E; // This is the target temperature. T = 10 + d6/10
 
-    if (vwup_cc_temp_int == 19)
+    if (vweup_cc_temp_int == 19)
     {
         data[6] = 0x5A;
         if (dev_mode)
             ESP_LOGI(TAG, "Cabin temperature set: 19");
     }
-    if (vwup_cc_temp_int == 20)
+    if (vweup_cc_temp_int == 20)
     {
         data[6] = 0x64;
         if (dev_mode)
             ESP_LOGI(TAG, "Cabin temperature set: 20");
     }
-    if (vwup_cc_temp_int == 21)
+    if (vweup_cc_temp_int == 21)
     {
         data[6] = 0x6E;
         if (dev_mode)
             ESP_LOGI(TAG, "Cabin temperature set: 21");
     }
-    if (vwup_cc_temp_int == 22)
+    if (vweup_cc_temp_int == 22)
     {
         data[6] = 0x78;
         if (dev_mode)
             ESP_LOGI(TAG, "Cabin temperature set: 22");
     }
-    if (vwup_cc_temp_int == 23)
+    if (vweup_cc_temp_int == 23)
     {
         data[6] = 0x82;
         if (dev_mode)
@@ -953,7 +877,7 @@ void OvmsVehicleVWeUpT26::CCOn()
     }
 
     data[7] = 0x00;
-    if (vwup_enable_write && !dev_mode)
+    if (vweup_enable_write && !dev_mode)
         comfBus->WriteStandard(0x69E, length, data);
 
     data[0] = 0xC2;
@@ -964,7 +888,7 @@ void OvmsVehicleVWeUpT26::CCOn()
     data[5] = 0x00;
     data[6] = 0x08;
     data[7] = 0x4F;
-    if (vwup_enable_write && !dev_mode)
+    if (vweup_enable_write && !dev_mode)
         comfBus->WriteStandard(0x69E, length, data);
 
     data[0] = 0xC3;
@@ -975,7 +899,7 @@ void OvmsVehicleVWeUpT26::CCOn()
     data[5] = 0x6E;
     data[6] = 0x65;
     data[7] = 0x6E;
-    if (vwup_enable_write && !dev_mode)
+    if (vweup_enable_write && !dev_mode)
         comfBus->WriteStandard(0x69E, length, data);
 
     data[0] = 0x60;
@@ -986,14 +910,14 @@ void OvmsVehicleVWeUpT26::CCOn()
     data[5] = 0x00;
     data[6] = 0x00;
     data[7] = 0x00;
-    if (vwup_enable_write && !dev_mode)
+    if (vweup_enable_write && !dev_mode)
         comfBus->WriteStandard(0x5A7, length, data);
 
     data_s[0] = 0x29;
     data_s[1] = 0x58;
     data_s[2] = 0x00;
     data_s[3] = 0x01;
-    if (vwup_enable_write && !dev_mode)
+    if (vweup_enable_write && !dev_mode)
         comfBus->WriteStandard(0x69E, length_s, data_s);
 
     ESP_LOGI(TAG, "Wrote second stage Climate Control On Messages to Comfort CAN.");
@@ -1001,7 +925,7 @@ void OvmsVehicleVWeUpT26::CCOn()
     vweup_cc_turning_on = false;
 }
 
-void OvmsVehicleVWeUpT26::CCOnP()
+void OvmsVehicleVWeUp::CCOnP()
 {
     unsigned char data[8];
     uint8_t length;
@@ -1022,7 +946,7 @@ void OvmsVehicleVWeUpT26::CCOnP()
     data[5] = 0x00;
     data[6] = 0x00;
     data[7] = 0x00;
-    if (vwup_enable_write && !dev_mode)
+    if (vweup_enable_write && !dev_mode)
         comfBus->WriteStandard(0x5A7, length, data);
 
     // d5 could be a counter
@@ -1034,7 +958,7 @@ void OvmsVehicleVWeUpT26::CCOnP()
     data[5] = 0x00;
     data[6] = 0x00;
     data[7] = 0x01;
-    if (vwup_enable_write && !dev_mode)
+    if (vweup_enable_write && !dev_mode)
         comfBus->WriteStandard(0x69E, length, data);
 
     data[0] = 0x60;
@@ -1045,7 +969,7 @@ void OvmsVehicleVWeUpT26::CCOnP()
     data[5] = 0x00;
     data[6] = 0x00;
     data[7] = 0x00;
-    if (vwup_enable_write && !dev_mode)
+    if (vweup_enable_write && !dev_mode)
         comfBus->WriteStandard(0x5A7, length, data);
 
     data[0] = 0xC0;
@@ -1056,7 +980,7 @@ void OvmsVehicleVWeUpT26::CCOnP()
     data[5] = 0xFF;
     data[6] = 0xFF;
     data[7] = 0x00;
-    if (vwup_enable_write && !dev_mode)
+    if (vweup_enable_write && !dev_mode)
         comfBus->WriteStandard(0x69E, length, data);
 
     data[0] = 0xC1;
@@ -1067,31 +991,31 @@ void OvmsVehicleVWeUpT26::CCOnP()
     data[5] = 0x01;
     data[6] = 0x6E; // This is the target temperature. T = 10 + d6/10
 
-    if (vwup_cc_temp_int == 19)
+    if (vweup_cc_temp_int == 19)
     {
         data[6] = 0x5A;
         if (dev_mode)
             ESP_LOGI(TAG, "Cabin temperature set: 19");
     }
-    if (vwup_cc_temp_int == 20)
+    if (vweup_cc_temp_int == 20)
     {
         data[6] = 0x64;
         if (dev_mode)
             ESP_LOGI(TAG, "Cabin temperature set: 20");
     }
-    if (vwup_cc_temp_int == 21)
+    if (vweup_cc_temp_int == 21)
     {
         data[6] = 0x6E;
         if (dev_mode)
             ESP_LOGI(TAG, "Cabin temperature set: 21");
     }
-    if (vwup_cc_temp_int == 22)
+    if (vweup_cc_temp_int == 22)
     {
         data[6] = 0x78;
         if (dev_mode)
             ESP_LOGI(TAG, "Cabin temperature set: 22");
     }
-    if (vwup_cc_temp_int == 23)
+    if (vweup_cc_temp_int == 23)
     {
         data[6] = 0x82;
         if (dev_mode)
@@ -1099,7 +1023,7 @@ void OvmsVehicleVWeUpT26::CCOnP()
     }
 
     data[7] = 0x00;
-    if (vwup_enable_write && !dev_mode)
+    if (vweup_enable_write && !dev_mode)
         comfBus->WriteStandard(0x69E, length, data);
 
     data[0] = 0xC2;
@@ -1110,7 +1034,7 @@ void OvmsVehicleVWeUpT26::CCOnP()
     data[5] = 0x00;
     data[6] = 0x08;
     data[7] = 0x4F;
-    if (vwup_enable_write && !dev_mode)
+    if (vweup_enable_write && !dev_mode)
         comfBus->WriteStandard(0x69E, length, data);
 
     data[0] = 0xC3;
@@ -1121,20 +1045,20 @@ void OvmsVehicleVWeUpT26::CCOnP()
     data[5] = 0x6E;
     data[6] = 0x65;
     data[7] = 0x6E;
-    if (vwup_enable_write && !dev_mode)
+    if (vweup_enable_write && !dev_mode)
         comfBus->WriteStandard(0x69E, length, data);
 
     data_s[0] = 0x29;
     data_s[1] = 0x58;
     data_s[2] = 0x00;
     data_s[3] = 0x00;
-    if (vwup_enable_write && !dev_mode)
+    if (vweup_enable_write && !dev_mode)
         comfBus->WriteStandard(0x69E, length_s, data_s);
 
     ESP_LOGI(TAG, "Wrote first stage Climate Control On Messages to Comfort CAN.");
 }
 
-void OvmsVehicleVWeUpT26::CCOff()
+void OvmsVehicleVWeUp::CCOff()
 {
     unsigned char data[8];
     uint8_t length;
@@ -1155,7 +1079,7 @@ void OvmsVehicleVWeUpT26::CCOff()
     data[5] = 0x00;
     data[6] = 0x00;
     data[7] = 0x00;
-    if (vwup_enable_write && !dev_mode)
+    if (vweup_enable_write && !dev_mode)
         comfBus->WriteStandard(0x5A7, length, data);
 
     // d5 could be a counter
@@ -1167,7 +1091,7 @@ void OvmsVehicleVWeUpT26::CCOff()
     data[5] = 0x00;
     data[6] = 0x00;
     data[7] = 0x01;
-    if (vwup_enable_write && !dev_mode)
+    if (vweup_enable_write && !dev_mode)
         comfBus->WriteStandard(0x69E, length, data);
 
     data[0] = 0x60;
@@ -1178,7 +1102,7 @@ void OvmsVehicleVWeUpT26::CCOff()
     data[5] = 0x00;
     data[6] = 0x00;
     data[7] = 0x00;
-    if (vwup_enable_write && !dev_mode)
+    if (vweup_enable_write && !dev_mode)
         comfBus->WriteStandard(0x5A7, length, data);
 
     data[0] = 0xC0;
@@ -1189,7 +1113,7 @@ void OvmsVehicleVWeUpT26::CCOff()
     data[5] = 0xFF;
     data[6] = 0xFF;
     data[7] = 0x00;
-    if (vwup_enable_write && !dev_mode)
+    if (vweup_enable_write && !dev_mode)
         comfBus->WriteStandard(0x69E, length, data);
 
     data[0] = 0xC1;
@@ -1200,31 +1124,31 @@ void OvmsVehicleVWeUpT26::CCOff()
     data[5] = 0x01;
     data[6] = 0x6E; // This is the target temperature. T = 10 + d6/10
 
-    if (vwup_cc_temp_int == 19)
+    if (vweup_cc_temp_int == 19)
     {
         data[6] = 0x5A;
         if (dev_mode)
             ESP_LOGI(TAG, "Cabin temperature set: 19");
     }
-    if (vwup_cc_temp_int == 20)
+    if (vweup_cc_temp_int == 20)
     {
         data[6] = 0x64;
         if (dev_mode)
             ESP_LOGI(TAG, "Cabin temperature set: 20");
     }
-    if (vwup_cc_temp_int == 21)
+    if (vweup_cc_temp_int == 21)
     {
         data[6] = 0x6E;
         if (dev_mode)
             ESP_LOGI(TAG, "Cabin temperature set: 21");
     }
-    if (vwup_cc_temp_int == 22)
+    if (vweup_cc_temp_int == 22)
     {
         data[6] = 0x78;
         if (dev_mode)
             ESP_LOGI(TAG, "Cabin temperature set: 22");
     }
-    if (vwup_cc_temp_int == 23)
+    if (vweup_cc_temp_int == 23)
     {
         data[6] = 0x82;
         if (dev_mode)
@@ -1239,7 +1163,7 @@ void OvmsVehicleVWeUpT26::CCOff()
     data[5] = 0x00;
     data[6] = 0x08;
     data[7] = 0x4F;
-    if (vwup_enable_write && !dev_mode)
+    if (vweup_enable_write && !dev_mode)
         comfBus->WriteStandard(0x69E, length, data);
 
     data[0] = 0xC3;
@@ -1250,65 +1174,65 @@ void OvmsVehicleVWeUpT26::CCOff()
     data[5] = 0x6E;
     data[6] = 0x65;
     data[7] = 0x6E;
-    if (vwup_enable_write && !dev_mode)
+    if (vweup_enable_write && !dev_mode)
         comfBus->WriteStandard(0x69E, length, data);
 
     data_s[0] = 0x29;
     data_s[1] = 0x58;
     data_s[2] = 0x00;
     data_s[3] = 0x00;
-    if (vwup_enable_write && !dev_mode)
+    if (vweup_enable_write && !dev_mode)
         comfBus->WriteStandard(0x69E, length_s, data_s);
 
     ESP_LOGI(TAG, "Wrote Climate Control Off Message to Comfort CAN.");
     vweup_cc_on = false;
 }
 
-OvmsVehicle::vehicle_command_t OvmsVehicleVWeUpT26::CommandLock(const char* pin)
+OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandLock(const char* pin)
   {
      ESP_LOGI(TAG, "CommandLock");
      return NotImplemented;
   }
 
-OvmsVehicle::vehicle_command_t OvmsVehicleVWeUpT26::CommandUnlock(const char* pin)
+OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandUnlock(const char* pin)
   {
      ESP_LOGI(TAG, "CommandUnlock");
      return NotImplemented;
   }
 
-OvmsVehicle::vehicle_command_t OvmsVehicleVWeUpT26::CommandActivateValet(const char* pin)
+OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandActivateValet(const char* pin)
   {
      ESP_LOGI(TAG, "CommandActivateValet");
      return NotImplemented;
   }
 
-OvmsVehicle::vehicle_command_t OvmsVehicleVWeUpT26::CommandDeactivateValet(const char* pin)
+OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandDeactivateValet(const char* pin)
   {
      ESP_LOGI(TAG, "CommandLDeactivateValet");
      return NotImplemented;
   }
 
-OvmsVehicle::vehicle_command_t OvmsVehicleVWeUpT26::CommandStartCharge()
+OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandStartCharge()
   {
      ESP_LOGI(TAG, "CommandStartCharge");
      return NotImplemented;
   }
 
-OvmsVehicle::vehicle_command_t OvmsVehicleVWeUpT26::CommandStopCharge()
+OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandStopCharge()
   {
      ESP_LOGI(TAG, "CommandStopCharge");
      return NotImplemented;
   }
 
-OvmsVehicle::vehicle_command_t OvmsVehicleVWeUpT26::CommandHomelink(int button, int durationms)
+OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandHomelink(int button, int durationms)
   {
   // This is needed to enable climate control via Homelink for the iOS app
   ESP_LOGI(TAG, "CommandHomelink");
-  if (button == 0 && vwup_enable_write)
+  if (button == 0 && vweup_enable_write)
     {
     return RemoteCommandHandler(ENABLE_CLIMATE_CONTROL);
     }
-  if (button == 1 && vwup_enable_write)
+  if (button == 1 && vweup_enable_write)
     {
     return RemoteCommandHandler(DISABLE_CLIMATE_CONTROL);
     }
@@ -1316,43 +1240,11 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUpT26::CommandHomelink(int button, 
   }
 
 
-OvmsVehicle::vehicle_command_t OvmsVehicleVWeUpT26::CommandClimateControl(bool climatecontrolon)
+OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandClimateControl(bool climatecontrolon)
 {
     ESP_LOGI(TAG, "CommandClimateControl");
-    if (vwup_enable_write)
+    if (vweup_enable_write)
         return RemoteCommandHandler(climatecontrolon ? ENABLE_CLIMATE_CONTROL : DISABLE_CLIMATE_CONTROL);
     else
         return NotImplemented;
-}
-
-void OvmsVehicleVWeUpT26::Ticker1(uint32_t ticker)
-{
-    // This is just to be sure that we really have an asleep message. It has delay of 120 sec.
-    // Do we still need this?
-    if (StandardMetrics.ms_v_env_awake->IsStale())
-    {
-        StandardMetrics.ms_v_env_awake->SetValue(false);
-    }
-
-    // Autodisable climate control ticker (30 min.)
-    if (vwup_remote_climate_ticker != 0)
-    {
-        vwup_remote_climate_ticker--;
-        if (vwup_remote_climate_ticker == 1)
-        {
-            SendCommand(AUTO_DISABLE_CLIMATE_CONTROL);
-        }
-    }
-
-    // Car disabled climate control
-    if (!StandardMetrics.ms_v_env_on->AsBool() && vwup_remote_climate_ticker < 1770 && vwup_remote_climate_ticker != 0 && !StandardMetrics.ms_v_env_hvac->AsBool())
-    {
-        vwup_remote_climate_ticker = 0;
-
-        ESP_LOGI(TAG, "Car disabled Climate Control or cc did not turn on");
-
-        vweup_cc_on = false;
-        ocu_awake = true;
-    }
-
 }

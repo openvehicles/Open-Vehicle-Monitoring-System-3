@@ -364,10 +364,11 @@ void OvmsConfig::upgrade()
       }
     }
 
-  // Migrate vehicle ID VWUP to VWUP.T26
-  if (GetParamValue("auto", "vehicle.type") == "VWUP")
+  // Migrate vehicle IDs VWUP.T26/.OBD back to VWUP
+  std::string vt = GetParamValue("auto", "vehicle.type");
+  if (vt == "VWUP.T26" || vt == "VWUP.OBD")
     {
-    SetParamValue("auto", "vehicle.type", "VWUP.T26");
+    SetParamValue("auto", "vehicle.type", "VWUP");
     }
 
   // Done, set config version:

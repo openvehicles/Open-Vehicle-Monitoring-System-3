@@ -1,0 +1,23 @@
+ToDo OVMS e-Up
+
+Bugs:
+OK * Reichweite bei Änderung Modelljahr anpassen
+* Daten in App: Kapazität etc
+OK * Crash in OvmsWriter mit Twizy CAN-Framework
+OK * U,I-Messung Batterie abgleichen zw. T26 und OBD
+
+Fragen:
+* Wie CANs nur bei Auswahl der entspr. Verbindung starten/stoppen?
+* elegante Lösung für viele (wählbare?) OBD-Abfragen?
+
+OVMS:
+* refactoring:
+- one main file, if possible leave T26 files unchanged (so we can copy from marxx)
+- handle OBD off polling depending on connectors used
+* lift staleness only when real new data is received (OBD values when car is off)
+* wake up OBD on request
+* customizable notifications (e.g. SoC 90%)
+* notification for maintenance (eg days<30 and <10)
+
+Android App:
+OK * Charging parameters not shown in App: transmit/enable in App? Standard Metrics?
