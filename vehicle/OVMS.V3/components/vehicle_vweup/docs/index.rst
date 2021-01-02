@@ -199,8 +199,6 @@ xvu.c.loss.ecu                OBD        0.620 kW                 Charger power 
 xvu.e.serv.days               OBD        78 days                  Time to next scheduled maintenance/service [days]
 xvu.m.soc.abs                 OBD        85.3 %                   Current absolute State of Charge (SoC) of the main battery as reported by motor electronics ECU
 xvu.m.soc.norm                OBD        80.5 %                   Current normalized State of Charge (SoC) of the main battery as reported by motor electronics ECU
-xvu.v.m.d                     OBD        12500 km                 Distance to next scheduled maintenance
-xvu.v.m.t                     OBD        123 days                 Time to next scheduled maintenance
 ============================= ========== ======================== ============================================
 
 
