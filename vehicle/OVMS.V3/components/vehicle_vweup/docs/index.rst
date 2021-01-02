@@ -58,9 +58,9 @@ By default, both connections are activated.
 
 For more details on the two connection types, please see the corresponding projects:
 
-Comfort CAN (T26): `https://github.com/devmarxx/Open-Vehicle-Monitoring-System-3/blob/master/vehicle/OVMS.V3/components/vehicle_vweup/docs/index.rst <https://github.com/devmarxx/Open-Vehicle-Monitoring-System-3/blob/master/vehicle/OVMS.V3/components/vehicle_vweup/docs/index_t26.rst>`_ 
+Comfort CAN (T26): `https://github.com/devmarxx/Open-Vehicle-Monitoring-System-3/blob/master/vehicle/OVMS.V3/components/vehicle_vweup/docs/index_t26.rst <https://github.com/devmarxx/Open-Vehicle-Monitoring-System-3/blob/master/vehicle/OVMS.V3/components/vehicle_vweup/docs/index_t26.rst>`_ 
 
-OBD2: `https://github.com/SokoFromNZ/Open-Vehicle-Monitoring-System-3/blob/master/vehicle/OVMS.V3/components/vehicle_vweup_obd/docs/index.rst <https://github.com/SokoFromNZ/Open-Vehicle-Monitoring-System-3/blob/master/vehicle/OVMS.V3/components/vehicle_vweup_obd/docs/index_obd.rst>`_ 
+OBD2: `https://github.com/SokoFromNZ/Open-Vehicle-Monitoring-System-3/blob/master/vehicle/OVMS.V3/components/vehicle_vweup_obd/docs/index_obd.rst <https://github.com/SokoFromNZ/Open-Vehicle-Monitoring-System-3/blob/master/vehicle/OVMS.V3/components/vehicle_vweup_obd/docs/index_obd.rst>`_ 
 
 The initial code is shamelessly copied from the original projects for the Comfort CAN by Chris van der Meijden and for the OBD2 port by SokoFromNZ.
 
@@ -134,6 +134,7 @@ v.c.12v.voltage               OBD        12.3V                    Output voltage
 v.c.charging                  T26        true                     Is vehicle charging (true = "Vehicle CHARGING" state. v.e.on=false if this is true)
 v.c.current 	              OBD        1.25A 	                  Momentary charger output current
 v.c.efficiency                OBD        91.3 %                   Charging efficiency calculated by v.b.power and v.c.power
+v.c.kwh                       OBD        2.6969kWh                Energy sum for running charge
 v.c.mode                      T26        standard                 standard, range, performance, storage
 v.c.pilot                     T26        no                       Pilot signal present
 v.c.power                     OBD        7.345 kW                 Input power of charger

@@ -46,7 +46,7 @@ static const char *TAG = "v-vweup";
 
 const OvmsVehicle::poll_pid_t vweup_polls[] = {
     // Note: poller ticker cycles at 3600 seconds = max period
-    // { txid, rxid, type, pid, { period_off, period_drive, period_charge }, bus, protocol }
+    // { txid, rxid, type, pid, { VWEUP_OFF, VWEUP_ON, VWEUP_CHARGING }, bus, protocol }
 
     {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_U, {0, 1, 5}, 1, ISOTP_STD},
 //  Moved to ObdInit:    
@@ -72,6 +72,7 @@ const OvmsVehicle::poll_pid_t vweup_polls[] = {
 
     {VWUP_MFD_TX, VWUP_MFD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MFD_ODOMETER, {0, 60, 60}, 1, ISOTP_STD},
 
+//    {VWUP_BRK_TX, VWUP_BRK_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BRK_TPMS, {0, 5, 5}, 1, ISOTP_STD},
 //    {VWUP_MOT_ELEC_TX, VWUP_MOT_ELEC_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MOT_ELEC_TEMP_AMB, {0, 5, 0}, 1, ISOTP_STD},
     {VWUP_MFD_TX, VWUP_MFD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MFD_SERV_RANGE, {0, 60, 60}, 1, ISOTP_STD},
     {VWUP_MFD_TX, VWUP_MFD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MFD_SERV_TIME, {0, 60, 60}, 1, ISOTP_STD},
@@ -201,7 +202,9 @@ void OvmsVehicleVWeUp::OBDCheckCarState()
             ESP_LOGI(TAG, "Setting car state to CHARGING");
             StandardMetrics.ms_v_env_on->SetValue(false);
             StandardMetrics.ms_v_charge_inprogress->SetValue(true);
-            PollSetState(VWUP_CHARGING);
+            EnergyChargedStart = StandardMetrics.ms_v_bat_energy_recd_total->AsFloat();
+            ESP_LOGD(TAG,"Charge Start Counter: %f",EnergyChargedStart);
+            PollSetState(VWEUP_CHARGING);
             TimeOffRequested = 0;
         }
         return;
@@ -215,7 +218,7 @@ void OvmsVehicleVWeUp::OBDCheckCarState()
         {
             ESP_LOGI(TAG, "Setting car state to ON");
             StandardMetrics.ms_v_env_on->SetValue(true);
-            PollSetState(VWUP_ON);
+            PollSetState(VWEUP_ON);
             TimeOffRequested = 0;
             OdoStart = StandardMetrics.ms_v_pos_odometer->AsFloat();
             EnergyRecdStart = StandardMetrics.ms_v_bat_energy_recd_total->AsFloat();
@@ -247,7 +250,7 @@ void OvmsVehicleVWeUp::OBDCheckCarState()
     StandardMetrics.ms_v_env_on->SetValue(false);
 //    StandardMetrics.ms_v_charge_voltage->SetValue(0);
 //    StandardMetrics.ms_v_charge_current->SetValue(0);
-    PollSetState(VWUP_OFF);
+    PollSetState(VWEUP_OFF);
 }
 
 void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length, uint16_t mlremain)
@@ -328,7 +331,10 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
         if (PollReply.FromInt32("VWUP_BAT_MGMT_ENERGY_COUNTERS_RECD", value, 8))
         {
             StandardMetrics.ms_v_bat_energy_recd_total->SetValue(value / ((0xFFFFFFFF / 2.0f) / 250200.0f));
-            StandardMetrics.ms_v_bat_energy_recd->SetValue(StandardMetrics.ms_v_bat_energy_recd_total->AsFloat()-EnergyRecdStart); // so far we don't know where to get energy recovered on trip directly...
+            if (StandardMetrics.ms_v_env_on)
+                StandardMetrics.ms_v_bat_energy_recd->SetValue(StandardMetrics.ms_v_bat_energy_recd_total->AsFloat()-EnergyRecdStart); // so far we don't know where to get energy recovered on trip directly...
+            else
+                StandardMetrics.ms_v_charge_kwh->SetValue(StandardMetrics.ms_v_bat_energy_recd_total->AsFloat()-EnergyChargedStart); 
             VALUE_LOG(TAG, "VWUP_BAT_MGMT_ENERGY_COUNTERS_RECD=%f => %f", value, StandardMetrics.ms_v_bat_energy_recd_total->AsFloat());
         }
         if (PollReply.FromInt32("VWUP_BAT_MGMT_ENERGY_COUNTERS_USED", value, 12))
