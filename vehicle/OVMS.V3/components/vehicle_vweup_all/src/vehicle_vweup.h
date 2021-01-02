@@ -180,16 +180,6 @@ class OvmsVehicleVWeUp : public OvmsVehicle
     OvmsMetricFloat *ChargerPowerLossCalc; // Power loss of Charger [kW] (calculated from U and I)
     OvmsMetricInt *ServiceDays;            // Days until next scheduled maintenance/service
 
-/*
-    OvmsMetricFloat *TPMSDiffusionFrontLeft; // TPMS Indicator for Pressure Diffusion Front Left Tyre
-    OvmsMetricFloat *TPMSDiffusionFrontRight; // TPMS Indicator for Pressure Diffusion Front Right Tyre
-    OvmsMetricFloat *TPMSDiffusionRearLeft; // TPMS Indicator for Pressure Diffusion Rear Left Tyre
-    OvmsMetricFloat *TPMSDiffusionRearRight; // TPMS Indicator for Pressure Diffusion Rear Right Tyre
-    OvmsMetricFloat *TPMSEmergencyFrontLeft; // TPMS Indicator for Tyre Emergency Front Left Tyre
-    OvmsMetricFloat *TPMSEmergencyFrontRight; // TPMS Indicator for Tyre Emergency Front Right Tyre
-    OvmsMetricFloat *TPMSEmergencyRearLeft; // TPMS Indicator for Tyre Emergency Rear Left Tyre
-    OvmsMetricFloat *TPMSEmergencyRearRight; // TPMS Indicator for Tyre Emergency Rear Right Tyre
-*/    
     OvmsMetricFloat *BatTempMax;
     OvmsMetricFloat *BatTempMin;
 

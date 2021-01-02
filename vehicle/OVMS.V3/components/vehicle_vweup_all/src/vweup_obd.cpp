@@ -46,7 +46,7 @@ static const char *TAG = "v-vweup";
 
 const OvmsVehicle::poll_pid_t vweup_polls[] = {
     // Note: poller ticker cycles at 3600 seconds = max period
-    // { txid, rxid, type, pid, { VWEUP_OFF, VWEUP_ON, VWEUP_CHARGING }, bus }
+    // { txid, rxid, type, pid, { period_off, period_drive, period_charge }, bus, protocol }
 
     {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_U, {0, 1, 5}, 1, ISOTP_STD},
 //  Moved to ObdInit:    
@@ -72,7 +72,6 @@ const OvmsVehicle::poll_pid_t vweup_polls[] = {
 
     {VWUP_MFD_TX, VWUP_MFD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MFD_ODOMETER, {0, 60, 60}, 1, ISOTP_STD},
 
-//    {VWUP_BRK_TX, VWUP_BRK_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BRK_TPMS, {0, 5, 5}, 1, ISOTP_STD},
 //    {VWUP_MOT_ELEC_TX, VWUP_MOT_ELEC_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MOT_ELEC_TEMP_AMB, {0, 5, 0}, 1, ISOTP_STD},
     {VWUP_MFD_TX, VWUP_MFD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MFD_SERV_RANGE, {0, 60, 60}, 1, ISOTP_STD},
     {VWUP_MFD_TX, VWUP_MFD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MFD_SERV_TIME, {0, 60, 60}, 1, ISOTP_STD},
@@ -167,16 +166,7 @@ void OvmsVehicleVWeUp::OBDInit()
     ChargerDC2I = MyMetrics.InitFloat("xvu.c.dc.i2", SM_STALE_NONE, 0, Amps);
     ChargerDCPower = MyMetrics.InitFloat("xvu.c.dc.p", SM_STALE_NONE, 0, Watts);
     ServiceDays =  MyMetrics.InitInt("xvu.e.serv.days", SM_STALE_NONE, 0);
-/*
-    TPMSDiffusionFrontLeft = MyMetrics.InitFloat("xvu.v.tp.d.fl", SM_STALE_NONE, 0, Percentage);
-    TPMSDiffusionFrontRight = MyMetrics.InitFloat("xvu.v.tp.d.fr", SM_STALE_NONE, 0, Percentage);
-    TPMSDiffusionRearLeft = MyMetrics.InitFloat("xvu.v.tp.d.rl", SM_STALE_NONE, 0, Percentage);
-    TPMSDiffusionRearRight = MyMetrics.InitFloat("xvu.v.tp.d.rr", SM_STALE_NONE, 0, Percentage);
-    TPMSEmergencyFrontLeft = MyMetrics.InitFloat("xvu.v.tp.e.fl", SM_STALE_NONE, 0, Percentage);
-    TPMSEmergencyFrontRight = MyMetrics.InitFloat("xvu.v.tp.e.fr", SM_STALE_NONE, 0, Percentage);
-    TPMSEmergencyRearLeft = MyMetrics.InitFloat("xvu.v.tp.e.rl", SM_STALE_NONE, 0, Percentage);
-    TPMSEmergencyRearRight = MyMetrics.InitFloat("xvu.v.tp.e.rr", SM_STALE_NONE, 0, Percentage);
-*/
+
     TimeOffRequested = 0;
 
     OdoStart = StandardMetrics.ms_v_pos_odometer->AsFloat();
@@ -230,7 +220,7 @@ void OvmsVehicleVWeUp::OBDCheckCarState()
             OdoStart = StandardMetrics.ms_v_pos_odometer->AsFloat();
             EnergyRecdStart = StandardMetrics.ms_v_bat_energy_recd_total->AsFloat();
             EnergyUsedStart = StandardMetrics.ms_v_bat_energy_used_total->AsFloat();
-            ESP_LOGI(TAG,"Start Counters: %f, %f, %f",OdoStart,EnergyRecdStart,EnergyUsedStart);
+            ESP_LOGD(TAG,"Start Counters: %f, %f, %f",OdoStart,EnergyRecdStart,EnergyUsedStart);
         }
         return;
     }
@@ -255,8 +245,8 @@ void OvmsVehicleVWeUp::OBDCheckCarState()
     // Set car to OFF
     ESP_LOGI(TAG, "Wait is over: Setting car state to OFF");
     StandardMetrics.ms_v_env_on->SetValue(false);
-    StandardMetrics.ms_v_charge_voltage->SetValue(0);
-    StandardMetrics.ms_v_charge_current->SetValue(0);
+//    StandardMetrics.ms_v_charge_voltage->SetValue(0);
+//    StandardMetrics.ms_v_charge_current->SetValue(0);
     PollSetState(VWUP_OFF);
 }
 
@@ -534,50 +524,7 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
             VALUE_LOG(TAG, "VWUP_MFD_ODOMETER=%f => %f", value, StandardMetrics.ms_v_pos_odometer->AsFloat());
         }
         break;
-/*
-    case VWUP_BRK_TPMS:
-        if (PollReply.FromUint8("VWUP_BRK_TPMS", value))
-        {
-            TPMSDiffusionFrontLeft->SetValue(value);
-            VALUE_LOG(TAG, "VWUP_BRK_TPMSD_FL=%f => %f", value, TPMSDiffusionFrontLeft->AsFloat());
-        }
-        if (PollReply.FromUint8("VWUP_BRK_TPMS", value, 39))
-        {
-            TPMSDiffusionFrontRight->SetValue(value);
-            VALUE_LOG(TAG, "VWUP_BRK_TPMSD_FR=%f => %f", value, TPMSDiffusionFrontRight->AsFloat());
-        }
-        if (PollReply.FromUint8("VWUP_BRK_TPMS", value, 40))
-        {
-            TPMSDiffusionRearLeft->SetValue(value);
-            VALUE_LOG(TAG, "VWUP_BRK_TPMSD_RL=%f => %f", value, TPMSDiffusionRearLeft->AsFloat());
-        }
-        if (PollReply.FromUint8("VWUP_BRK_TPMS", value, 41))
-        {
-            TPMSDiffusionRearRight->SetValue(value);
-            VALUE_LOG(TAG, "VWUP_BRK_TPMSD_RR=%f => %f", value, TPMSDiffusionRearRight->AsFloat());
-        }
-        if (PollReply.FromUint8("VWUP_BRK_TPMS", value, 42))
-        {
-            TPMSEmergencyFrontLeft->SetValue(value);
-            VALUE_LOG(TAG, "VWUP_BRK_TPMSE_FL=%f => %f", value, TPMSEmergencyFrontLeft->AsFloat());
-        }
-        if (PollReply.FromUint8("VWUP_BRK_TPMS", value, 43))
-        {
-            TPMSEmergencyFrontRight->SetValue(value);
-            VALUE_LOG(TAG, "VWUP_BRK_TPMSE_FR=%f => %f", value, TPMSEmergencyFrontRight->AsFloat());
-        }
-        if (PollReply.FromUint8("VWUP_BRK_TPMS", value, 44))
-        {
-            TPMSEmergencyRearLeft->SetValue(value);
-            VALUE_LOG(TAG, "VWUP_BRK_TPMSE_RL=%f => %f", value, TPMSEmergencyRearLeft->AsFloat());
-        }
-        if (PollReply.FromUint8("VWUP_BRK_TPMS", value, 45))
-        {
-            TPMSEmergencyRearRight->SetValue(value);
-            VALUE_LOG(TAG, "VWUP_BRK_TPMSE_RR=%f => %f", value, TPMSEmergencyRearRight->AsFloat());
-        }
-        break;
-*/
+
      case VWUP_MFD_SERV_RANGE:
         if (PollReply.FromUint16("VWUP_MFD_SERV_RANGE", value))
         {
