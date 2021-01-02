@@ -686,7 +686,7 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
       //Pid index 0-3
       int pid_index = (p_frame->MsgID) - 1761;
       //cmu index 1-12
-      int cmu_id = d[0];
+      int cmu_id = d[0] & 0x0f;
       //
       double temp1 = d[1] - 50.0;
       double temp2 = d[2] - 50.0;
