@@ -187,6 +187,7 @@ class OvmsVehicleVWeUp : public OvmsVehicle
     float OdoStart;
     float EnergyRecdStart;
     float EnergyUsedStart;
+    float EnergyChargedStart;
 
   // --------------------------------------------------------------------------
   // OBD2 subsystem
