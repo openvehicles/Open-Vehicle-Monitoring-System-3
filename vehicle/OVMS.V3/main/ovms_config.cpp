@@ -370,6 +370,22 @@ void OvmsConfig::upgrade()
     {
     SetParamValue("auto", "vehicle.type", "VWUP");
     }
+  // Move obsolete VWUP "xut" instances to "xvu":
+  if (CachedParam("xut"))
+    {
+    RegisterParam("xvu", "VW e-Up", true, true);
+    for (const auto& instance : { "canwrite", "modelyear", "cc_temp" })
+      {
+      if (!IsDefined("xvu", instance) && IsDefined("xut", instance))
+        SetParamValue("xvu", instance, GetParamValue("xut", instance));
+      }
+    DeregisterParam("xut");
+    }
+  // Remove obsolete VWUP "vwup" param:
+  if (CachedParam("vwup"))
+    {
+    DeregisterParam("vwup");
+    }
 
   // Done, set config version:
   SetParamValueInt("module", "cfgversion", 2020053100);
