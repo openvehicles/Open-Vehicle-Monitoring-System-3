@@ -26,7 +26,7 @@
 #include "ovms_log.h"
 #include "poll_reply_helper.h"
 
-static const char *TAG = "v-vweup-obd";
+static const char *TAG = "v-vweup";
 
 bool PollReplyHelper::AddNewData(uint16_t pid, uint8_t *data, uint8_t length, uint16_t remain)
 {
