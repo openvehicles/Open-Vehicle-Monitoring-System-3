@@ -375,23 +375,23 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
         // count till 3 messages in a row to stop ghost triggering
         if (isCharging && cd_count == 3) {
           cd_count = 0;
+          StandardMetrics.ms_v_charge_mode->SetValue("standard");
+          StandardMetrics.ms_v_door_chargeport->SetValue(true);
           StandardMetrics.ms_v_charge_pilot->SetValue(true);
           StandardMetrics.ms_v_charge_inprogress->SetValue(true);
-          StandardMetrics.ms_v_door_chargeport->SetValue(true);
-          StandardMetrics.ms_v_charge_mode->SetValue("standard");
-          StandardMetrics.ms_v_charge_state->SetValue("charging");
           StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
+          StandardMetrics.ms_v_charge_state->SetValue("charging");
           ESP_LOGI(TAG,"Car charge session started");
           PollSetState(VWEUP_CHARGING);
         } 
         if (!isCharging && cd_count == 3) {
           cd_count = 0;
-          StandardMetrics.ms_v_charge_pilot->SetValue(false);
-          StandardMetrics.ms_v_charge_inprogress->SetValue(false);
-          StandardMetrics.ms_v_door_chargeport->SetValue(false);
           StandardMetrics.ms_v_charge_mode->SetValue("standard");
-          StandardMetrics.ms_v_charge_state->SetValue("done");
+          StandardMetrics.ms_v_charge_inprogress->SetValue(false);
+          StandardMetrics.ms_v_charge_pilot->SetValue(false);
+          StandardMetrics.ms_v_door_chargeport->SetValue(false);
           StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
+          StandardMetrics.ms_v_charge_state->SetValue("done");
           ESP_LOGI(TAG,"Car charge session ended");
           PollSetState(VWEUP_OFF);
         } 
