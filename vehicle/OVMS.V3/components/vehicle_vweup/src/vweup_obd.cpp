@@ -111,9 +111,9 @@ const OvmsVehicle::poll_pid_t vweup2_polls[] = {
     // Same tick & order important of above 4: VWUP_CHG_DC_I calculates the power loss & efficiency
     {0, 0, 0, 0, {0, 0, 0}, 0, ISOTP_STD}};
 
-const int vweup_polls_len = sizeof(vweup_polls)/sizeof(vweup_polls)[0];
-const int vweup1_polls_len = sizeof(vweup1_polls)/sizeof(vweup1_polls)[0];
-const int vweup2_polls_len = sizeof(vweup2_polls)/sizeof(vweup2_polls)[0];
+const int vweup_polls_len = sizeof_array(vweup_polls);
+const int vweup1_polls_len = sizeof_array(vweup1_polls);
+const int vweup2_polls_len = sizeof_array(vweup2_polls);
 
 OvmsVehicleVWeUp::poll_pid_t vweup_polls_all[1+vweup_polls_len+vweup1_polls_len]; // not good, length should be max of the two possible lists
 
