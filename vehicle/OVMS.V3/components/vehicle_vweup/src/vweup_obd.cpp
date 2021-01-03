@@ -187,6 +187,7 @@ void OvmsVehicleVWeUp::OBDCheckCarState()
 
     // 12V Battery: if voltage >= 12.9 it is charging and the car must be on (or charging) for that
     bool voltageSaysOn = StandardMetrics.ms_v_bat_12v_voltage->AsFloat() >= 12.9f;
+    StdMetrics.ms_v_env_charging12v->SetValue(voltageSaysOn);
 
     // HV-Batt current: If there is a current flowing and the value is not older than 2 minutes (120 secs) we are on
     bool currentSaysOn = StandardMetrics.ms_v_bat_current->AsFloat() != 0.0f &&
