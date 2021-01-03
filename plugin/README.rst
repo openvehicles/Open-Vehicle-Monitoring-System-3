@@ -32,6 +32,8 @@ containing your plugin directory. Organize your files and include a ``README.rst
    v-*/README
 
 
+.. _installing-module-plugins:
+
 -------------------------
 Installing Module Plugins
 -------------------------
@@ -60,6 +62,8 @@ To deactivate a plugin, comment out the ``require()`` call by prefixing the line
 and do another JS engine reload. To remove a plugin, remove the ``require()`` call and delete
 the file using ``vfs rm /store/scripts/lib/…``.
 
+
+.. _installing-web-plugins:
 
 ----------------------
 Installing Web Plugins

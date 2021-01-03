@@ -372,6 +372,7 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
         {
             BatMgmtCellMax = value / 4096.0f;
             VALUE_LOG(TAG, "VWUP_BAT_MGMT_CELL_MAX=%f => %f", value, BatMgmtCellMax);
+            StdMetrics.ms_v_bat_pack_vmax->SetValue(BatMgmtCellMax);
         }
         break;
 
@@ -380,6 +381,7 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
         {
             BatMgmtCellMin = value / 4096.0f;
             VALUE_LOG(TAG, "VWUP_BAT_MGMT_CELL_MIN=%f => %f", value, BatMgmtCellMin);
+            StdMetrics.ms_v_bat_pack_vmin->SetValue(BatMgmtCellMin);
 
             value = BatMgmtCellMax - BatMgmtCellMin;
             BatMgmtCellDelta->SetValue(value);
