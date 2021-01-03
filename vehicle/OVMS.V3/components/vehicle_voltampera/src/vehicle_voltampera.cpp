@@ -579,6 +579,19 @@ void OvmsVehicleVoltAmpera::IncomingFrameCan4(CAN_frame_t* p_frame)
       break;
       } 
 
+    // This Charge miles statistic
+    case 0x1044A0CB: 
+      {
+      StdMetrics.ms_v_pos_trip->SetValue((float)((d[4]<<8 | d[5]) & 0x3fff)/8, Kilometers); // total km this charge
+      break;
+      } 
+
+    // This Charge kWh statistic
+    case 0x102820CB: 
+      {
+      StdMetrics.ms_v_bat_energy_used->SetValue((float)((d[2]<<8 | d[3]) & 0x3fff)/10, kWh);
+      break;
+      } 
     default:
       break;
     }
