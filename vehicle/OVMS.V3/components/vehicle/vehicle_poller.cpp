@@ -294,13 +294,13 @@ void OvmsVehicle::PollerSend(bool fromTicker)
         memcpy(&txdata[2], m_poll_plcur->args.data, datalen);
         }
 
-      m_poll_bus->Write(&txframe);
       m_poll_ml_frame = 0;
       m_poll_ml_offset = 0;
       m_poll_ml_remain = 0;
       m_poll_wait = 2;
       m_poll_plcur++;
       m_poll_sequence_cnt++;
+      m_poll_bus->Write(&txframe);
 
       return;
       }
@@ -675,8 +675,9 @@ int OvmsVehicle::PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
   uint32_t          p_ticker = m_poll_ticker;
 
   // start single poll:
-  m_poll_single_rxbuf = &response;
   PollSetPidList(bus, poll);
+  m_poll_single_rxdone.Take(0);
+  m_poll_single_rxbuf = &response;
   PollerSend(true);
   m_poll_mutex.Unlock();
 
@@ -688,6 +689,7 @@ int OvmsVehicle::PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
   PollSetPidList(p_bus, p_list);
   m_poll_plcur = p_plcur;
   m_poll_ticker = p_ticker;
+  m_poll_single_rxbuf = NULL;
   m_poll_mutex.Unlock();
 
   return (rxok == pdFALSE) ? -1 : (int)m_poll_single_rxerr;
