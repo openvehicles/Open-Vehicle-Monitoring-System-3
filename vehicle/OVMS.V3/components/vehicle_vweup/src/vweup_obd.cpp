@@ -401,18 +401,33 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
         break;
 
     case VWUP2_CHG_AC_U:
+    {
+        int phasecnt = 0;
+        float voltagesum = 0;
+
         if (PollReply.FromUint16("VWUP_CHG_AC1_U", value))
         {
             ChargerAC1U->SetValue(value);
             VALUE_LOG(TAG, "VWUP_CHG_AC1_U=%f => %f", value, ChargerAC1U->AsFloat());
+            if (value > 90) {
+                phasecnt++;
+                voltagesum += value;
+            }
         }
         if (PollReply.FromUint16("VWUP_CHG_AC2_U", value, 2))
         {
             ChargerAC2U->SetValue(value);
             VALUE_LOG(TAG, "VWUP_CHG_AC2_U=%f => %f", value, ChargerAC2U->AsFloat());
-            StandardMetrics.ms_v_charge_voltage->SetValue((ChargerAC1U->AsFloat()+ChargerAC2U->AsFloat())/2);
+            if (value > 90) {
+                phasecnt++;
+                voltagesum += value;
+            }
         }
+        if (phasecnt > 1)
+            voltagesum /= phasecnt;
+        StandardMetrics.ms_v_charge_voltage->SetValue(voltagesum);
         break;
+    }
 
     case VWUP2_CHG_AC_I:
         if (PollReply.FromUint8("VWUP_CHG_AC1_I", value))
