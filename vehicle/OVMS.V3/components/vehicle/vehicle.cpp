@@ -1149,15 +1149,17 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
     }
   else if (metric == StandardMetrics.ms_v_charge_mode)
     {
-    const char* m = metric->AsString().c_str();
-    MyEvents.SignalEvent("vehicle.charge.mode",(void*)m, strlen(m)+1);
-    NotifiedVehicleChargeMode(m);
+    std::string m = metric->AsString();
+    const char* mc = m.c_str();
+    MyEvents.SignalEvent("vehicle.charge.mode",(void*)mc, strlen(mc)+1);
+    NotifiedVehicleChargeMode(mc);
     }
   else if (metric == StandardMetrics.ms_v_charge_state)
     {
-    const char* m = metric->AsString().c_str();
-    MyEvents.SignalEvent("vehicle.charge.state",(void*)m, strlen(m)+1);
-    if (strcmp(m,"done")==0)
+    std::string m = metric->AsString();
+    const char* mc = m.c_str();
+    MyEvents.SignalEvent("vehicle.charge.state",(void*)mc, strlen(mc)+1);
+    if (m == "done")
       {
       StandardMetrics.ms_v_charge_duration_full->SetValue(0);
       StandardMetrics.ms_v_charge_duration_range->SetValue(0);
@@ -1165,11 +1167,11 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
       }
     if (m_autonotifications)
       {
-      m_chargestate_ticker = GetNotifyChargeStateDelay(m);
+      m_chargestate_ticker = GetNotifyChargeStateDelay(mc);
       if (m_chargestate_ticker == 0)
         NotifyChargeState();
       }
-    NotifiedVehicleChargeState(m);
+    NotifiedVehicleChargeState(mc);
     }
   else if (metric == StandardMetrics.ms_v_pos_acceleration)
     {
@@ -1295,16 +1297,16 @@ bool OvmsVehicle::SetBrakelight(int on)
 
 void OvmsVehicle::NotifyChargeState()
   {
-  const char* m = StandardMetrics.ms_v_charge_state->AsString().c_str();
-  if (strcmp(m,"done")==0)
+  std::string m = StandardMetrics.ms_v_charge_state->AsString();
+  if (m == "done")
     NotifyChargeDone();
-  else if (strcmp(m,"stopped")==0)
+  else if (m == "stopped")
     NotifyChargeStopped();
-  else if (strcmp(m,"charging")==0)
+  else if (m == "charging")
     NotifyChargeStart();
-  else if (strcmp(m,"topoff")==0)
+  else if (m == "topoff")
     NotifyChargeStart();
-  else if (strcmp(m,"heating")==0)
+  else if (m == "heating")
     NotifyHeatingStart();
   }
 

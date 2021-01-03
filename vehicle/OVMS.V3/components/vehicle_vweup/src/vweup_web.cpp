@@ -194,17 +194,26 @@ void OvmsVehicleVWeUp::WebCfgClimate(PageEntry_t &p, PageContext_t &c)
   c.panel_start("primary", "VW e-Up climate control configuration");
   c.form_start(p.uri);
 
-  c.print("<br>This page offers remote climate configuration.<br>The target temperature for the cabin can be set here.<br><br>");
+  c.print("<br>This page offers remote climate configuration.<br><br>The target temperature for the cabin can be set here (16 to 30 degrees Celcius).<br><br><br>");
 
   c.fieldset_start("Climate control");
 
   c.input_select_start("Cabin target temperature", "cc_temp");
+  c.input_select_option("16", "16", cc_temp == "16");
+  c.input_select_option("17", "17", cc_temp == "17");
   c.input_select_option("18", "18", cc_temp == "18");
   c.input_select_option("19", "19", cc_temp == "19");
   c.input_select_option("20", "20", cc_temp == "20");
   c.input_select_option("21", "21", cc_temp == "21");
   c.input_select_option("22", "22", cc_temp == "22");
   c.input_select_option("23", "23", cc_temp == "23");
+  c.input_select_option("24", "24", cc_temp == "24");
+  c.input_select_option("25", "25", cc_temp == "25");
+  c.input_select_option("26", "26", cc_temp == "26");
+  c.input_select_option("27", "27", cc_temp == "27");
+  c.input_select_option("28", "28", cc_temp == "28");
+  c.input_select_option("29", "29", cc_temp == "29");
+  c.input_select_option("30", "30", cc_temp == "30");
   c.input_select_end();
 
   c.print("<br><br>This parameter can also be set in the app under FEATURES 21.<hr>");
@@ -317,6 +326,16 @@ void OvmsVehicleVWeUp::WebDispChgMetrics(PageEntry_t &p, PageContext_t &c)
                     "</div>"
                     "<div class=\"metric number\" data-metric=\"xvu.b.cell.delta\" data-prec=\"3\">"
                         "<span class=\"label\">Cell delta</span>"
+                        "<span class=\"value\">?</span>"
+                        "<span class=\"unit\">V</span>"
+                    "</div>"
+                    "<div class=\"metric number\" data-metric=\"v.b.p.voltage.min\" data-prec=\"3\">"
+                        "<span class=\"label\">Cell min</span>"
+                        "<span class=\"value\">?</span>"
+                        "<span class=\"unit\">V</span>"
+                    "</div>"
+                    "<div class=\"metric number\" data-metric=\"v.b.p.voltage.max\" data-prec=\"3\">"
+                        "<span class=\"label\">Cell max</span>"
                         "<span class=\"value\">?</span>"
                         "<span class=\"unit\">V</span>"
                     "</div>"

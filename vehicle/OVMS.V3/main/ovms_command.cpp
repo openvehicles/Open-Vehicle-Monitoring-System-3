@@ -556,11 +556,11 @@ void log_level(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
 
 void log_file(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  const char* path;
+  std::string path;
   if (argc == 1)
     path = argv[0];
   else
-    path = MyConfig.GetParamValue("log", "file.path").c_str();
+    path = MyConfig.GetParamValue("log", "file.path");
   if (MyConfig.ProtectedPath(path))
     {
     writer->puts("Error: protected path");
@@ -571,7 +571,7 @@ void log_file(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
     writer->puts("Error: VFS file cannot be opened for append");
     return;
     }
-  writer->printf("Logging to file: %s\n", path);
+  writer->printf("Logging to file: %s\n", path.c_str());
   }
 
 void log_close(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)

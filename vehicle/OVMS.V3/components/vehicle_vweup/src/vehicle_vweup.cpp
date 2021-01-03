@@ -182,16 +182,16 @@ bool OvmsVehicleVWeUp::SetFeature(int key, const char *value)
         return true;
     case 21:
         // check:
-        if (strlen(value) == 0) value = "21";
+        if (strlen(value) == 0) value = "22";
         for (i = 0; i < strlen(value); i++) {
            if (isdigit(value[i]) == false) {
-             value = "21";
+             value = "22";
              break;
            }
         }
         n = atoi(value);
-        if (n < 18) value = "18";
-        if (n > 23) value = "23";
+        if (n < 16) value = "16";
+        if (n > 30) value = "30";
         MyConfig.SetParamValue("xvu", "cc_temp", value);
         return true;
     default:
@@ -299,4 +299,17 @@ void OvmsVehicleVWeUp::Ticker1(uint32_t ticker)
         
     }
     
+}
+
+
+/**
+ * GetNotifyChargeStateDelay: framework hook
+ */
+int OvmsVehicleVWeUp::GetNotifyChargeStateDelay(const char* state)
+{
+  // With OBD data, wait for first voltage & current when starting the charge:
+  if (vweup_con == 2 && strcmp(state, "charging") == 0)
+    return 5;
+  else
+    return 3;
 }

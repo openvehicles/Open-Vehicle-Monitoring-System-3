@@ -111,9 +111,9 @@ const OvmsVehicle::poll_pid_t vweup2_polls[] = {
     // Same tick & order important of above 4: VWUP_CHG_DC_I calculates the power loss & efficiency
     {0, 0, 0, 0, {0, 0, 0}, 0, ISOTP_STD}};
 
-const int vweup_polls_len = sizeof(vweup_polls)/sizeof(vweup_polls)[0];
-const int vweup1_polls_len = sizeof(vweup1_polls)/sizeof(vweup1_polls)[0];
-const int vweup2_polls_len = sizeof(vweup2_polls)/sizeof(vweup2_polls)[0];
+const int vweup_polls_len = sizeof_array(vweup_polls);
+const int vweup1_polls_len = sizeof_array(vweup1_polls);
+const int vweup2_polls_len = sizeof_array(vweup2_polls);
 
 OvmsVehicleVWeUp::poll_pid_t vweup_polls_all[1+vweup_polls_len+vweup1_polls_len]; // not good, length should be max of the two possible lists
 
@@ -187,6 +187,7 @@ void OvmsVehicleVWeUp::OBDCheckCarState()
 
     // 12V Battery: if voltage >= 12.9 it is charging and the car must be on (or charging) for that
     bool voltageSaysOn = StandardMetrics.ms_v_bat_12v_voltage->AsFloat() >= 12.9f;
+    StdMetrics.ms_v_env_charging12v->SetValue(voltageSaysOn);
 
     // HV-Batt current: If there is a current flowing and the value is not older than 2 minutes (120 secs) we are on
     bool currentSaysOn = StandardMetrics.ms_v_bat_current->AsFloat() != 0.0f &&
@@ -201,7 +202,12 @@ void OvmsVehicleVWeUp::OBDCheckCarState()
         {
             ESP_LOGI(TAG, "Setting car state to CHARGING");
             StandardMetrics.ms_v_env_on->SetValue(false);
+            // TODO: get real charge mode, port & pilot states, fake for now:
+            StandardMetrics.ms_v_charge_mode->SetValue("standard");
+            StandardMetrics.ms_v_door_chargeport->SetValue(true);
+            StandardMetrics.ms_v_charge_pilot->SetValue(true);
             StandardMetrics.ms_v_charge_inprogress->SetValue(true);
+            StandardMetrics.ms_v_charge_state->SetValue("charging");
             EnergyChargedStart = StandardMetrics.ms_v_bat_energy_recd_total->AsFloat();
             ESP_LOGD(TAG,"Charge Start Counter: %f",EnergyChargedStart);
             PollSetState(VWEUP_CHARGING);
@@ -210,13 +216,28 @@ void OvmsVehicleVWeUp::OBDCheckCarState()
         return;
     }
     
-    StandardMetrics.ms_v_charge_inprogress->SetValue(false);
+    if (IsCharging())
+    {
+        // TODO: get real charge port & pilot states, fake for now:
+        StandardMetrics.ms_v_charge_inprogress->SetValue(false);
+        StandardMetrics.ms_v_charge_pilot->SetValue(false);
+        StandardMetrics.ms_v_door_chargeport->SetValue(false);
+        // Determine type of charge end by the SOC reached;
+        //  tolerate SOC not reaching 100%
+        //  TODO: read user defined destination SOC, read actual charge stop reason
+        if (StandardMetrics.ms_v_bat_soc->AsFloat() > 99)
+            StandardMetrics.ms_v_charge_state->SetValue("done");
+        else
+            StandardMetrics.ms_v_charge_state->SetValue("stopped");
+    }
 
     if (voltageSaysOn || currentSaysOn)
     {
         if (!IsOn())
         {
             ESP_LOGI(TAG, "Setting car state to ON");
+            StandardMetrics.ms_v_env_awake->SetValue(true);
+            // TODO: get real "ignition" state, assume on for now:
             StandardMetrics.ms_v_env_on->SetValue(true);
             PollSetState(VWEUP_ON);
             TimeOffRequested = 0;
@@ -248,6 +269,7 @@ void OvmsVehicleVWeUp::OBDCheckCarState()
     // Set car to OFF
     ESP_LOGI(TAG, "Wait is over: Setting car state to OFF");
     StandardMetrics.ms_v_env_on->SetValue(false);
+    StandardMetrics.ms_v_env_awake->SetValue(false);
 //    StandardMetrics.ms_v_charge_voltage->SetValue(0);
 //    StandardMetrics.ms_v_charge_current->SetValue(0);
     PollSetState(VWEUP_OFF);
@@ -351,6 +373,7 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
         {
             BatMgmtCellMax = value / 4096.0f;
             VALUE_LOG(TAG, "VWUP_BAT_MGMT_CELL_MAX=%f => %f", value, BatMgmtCellMax);
+            StdMetrics.ms_v_bat_pack_vmax->SetValue(BatMgmtCellMax);
         }
         break;
 
@@ -359,6 +382,7 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
         {
             BatMgmtCellMin = value / 4096.0f;
             VALUE_LOG(TAG, "VWUP_BAT_MGMT_CELL_MIN=%f => %f", value, BatMgmtCellMin);
+            StdMetrics.ms_v_bat_pack_vmin->SetValue(BatMgmtCellMin);
 
             value = BatMgmtCellMax - BatMgmtCellMin;
             BatMgmtCellDelta->SetValue(value);
@@ -401,18 +425,33 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
         break;
 
     case VWUP2_CHG_AC_U:
+    {
+        int phasecnt = 0;
+        float voltagesum = 0;
+
         if (PollReply.FromUint16("VWUP_CHG_AC1_U", value))
         {
             ChargerAC1U->SetValue(value);
             VALUE_LOG(TAG, "VWUP_CHG_AC1_U=%f => %f", value, ChargerAC1U->AsFloat());
+            if (value > 90) {
+                phasecnt++;
+                voltagesum += value;
+            }
         }
         if (PollReply.FromUint16("VWUP_CHG_AC2_U", value, 2))
         {
             ChargerAC2U->SetValue(value);
             VALUE_LOG(TAG, "VWUP_CHG_AC2_U=%f => %f", value, ChargerAC2U->AsFloat());
-            StandardMetrics.ms_v_charge_voltage->SetValue((ChargerAC1U->AsFloat()+ChargerAC2U->AsFloat())/2);
+            if (value > 90) {
+                phasecnt++;
+                voltagesum += value;
+            }
         }
+        if (phasecnt > 1)
+            voltagesum /= phasecnt;
+        StandardMetrics.ms_v_charge_voltage->SetValue(voltagesum);
         break;
+    }
 
     case VWUP2_CHG_AC_I:
         if (PollReply.FromUint8("VWUP_CHG_AC1_I", value))

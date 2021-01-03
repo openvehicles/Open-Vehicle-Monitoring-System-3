@@ -45,6 +45,18 @@
 #define STR(x)    STRX(x)
 #endif
 
+// Standard array size (number of elements):
+#if __cplusplus < 201703L
+  template <class T, std::size_t N>
+  constexpr std::size_t sizeof_array(const T (&array)[N]) noexcept
+    {
+    return N;
+    }
+#else
+  #define sizeof_array(array) (std::size(array))
+#endif
+
+// C string sorting for std::map et al:
 struct CmpStrOp
   {
   bool operator()(char const *a, char const *b)
@@ -53,6 +65,7 @@ struct CmpStrOp
     }
   };
 
+// Tolerant boolean string analyzer:
 inline bool strtobool(const std::string& str)
   {
   return (str == "yes" || str == "1" || str == "true");
