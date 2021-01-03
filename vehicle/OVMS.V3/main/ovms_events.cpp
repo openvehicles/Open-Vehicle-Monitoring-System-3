@@ -109,7 +109,12 @@ void event_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
 
 int event_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool complete)
   {
-  return MyEvents.Map().Validate(writer, argc, argv[0], complete);
+  int argpos = 0;
+  for (int i=0; i < argc; i++)
+    argpos += (argv[i][0] != '-') ? 1 : 0;
+  if (argpos == 1)
+    return MyEvents.Map().Validate(writer, argc, argv[argc-1], complete);
+  return -1;
   }
 
 void event_raise(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -127,12 +132,12 @@ void event_raise(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
 
   if (delay_ms)
     {
-    writer->printf("Raising event in %u ms: %s\n", delay_ms, argv[0]);
+    writer->printf("Raising event in %u ms: %s\n", delay_ms, event.c_str());
     MyEvents.SignalEvent(event, NULL, (size_t)0, delay_ms);
     }
   else
     {
-    writer->printf("Raising event: %s\n", argv[0]);
+    writer->printf("Raising event: %s\n", event.c_str());
     MyEvents.SignalEvent(event, NULL);
     }
   }
