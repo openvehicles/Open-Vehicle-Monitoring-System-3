@@ -298,3 +298,16 @@ void OvmsVehicleVWeUp::Ticker1(uint32_t ticker)
     }
     
 }
+
+
+/**
+ * GetNotifyChargeStateDelay: framework hook
+ */
+int OvmsVehicleVWeUp::GetNotifyChargeStateDelay(const char* state)
+{
+  // With OBD data, wait for first voltage & current when starting the charge:
+  if (vweup_con == 2 && strcmp(state, "charging") == 0)
+    return 5;
+  else
+    return 3;
+}

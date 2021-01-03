@@ -201,7 +201,12 @@ void OvmsVehicleVWeUp::OBDCheckCarState()
         {
             ESP_LOGI(TAG, "Setting car state to CHARGING");
             StandardMetrics.ms_v_env_on->SetValue(false);
+            // TODO: get real charge mode, port & pilot states, fake for now:
+            StandardMetrics.ms_v_charge_mode->SetValue("standard");
+            StandardMetrics.ms_v_door_chargeport->SetValue(true);
+            StandardMetrics.ms_v_charge_pilot->SetValue(true);
             StandardMetrics.ms_v_charge_inprogress->SetValue(true);
+            StandardMetrics.ms_v_charge_state->SetValue("charging");
             EnergyChargedStart = StandardMetrics.ms_v_bat_energy_recd_total->AsFloat();
             ESP_LOGD(TAG,"Charge Start Counter: %f",EnergyChargedStart);
             PollSetState(VWEUP_CHARGING);
@@ -210,13 +215,28 @@ void OvmsVehicleVWeUp::OBDCheckCarState()
         return;
     }
     
-    StandardMetrics.ms_v_charge_inprogress->SetValue(false);
+    if (IsCharging())
+    {
+        // TODO: get real charge port & pilot states, fake for now:
+        StandardMetrics.ms_v_charge_inprogress->SetValue(false);
+        StandardMetrics.ms_v_charge_pilot->SetValue(false);
+        StandardMetrics.ms_v_door_chargeport->SetValue(false);
+        // Determine type of charge end by the SOC reached;
+        //  tolerate SOC not reaching 100%
+        //  TODO: read user defined destination SOC, read actual charge stop reason
+        if (StandardMetrics.ms_v_bat_soc->AsFloat() > 99)
+            StandardMetrics.ms_v_charge_state->SetValue("done");
+        else
+            StandardMetrics.ms_v_charge_state->SetValue("stopped");
+    }
 
     if (voltageSaysOn || currentSaysOn)
     {
         if (!IsOn())
         {
             ESP_LOGI(TAG, "Setting car state to ON");
+            StandardMetrics.ms_v_env_awake->SetValue(true);
+            // TODO: get real "ignition" state, assume on for now:
             StandardMetrics.ms_v_env_on->SetValue(true);
             PollSetState(VWEUP_ON);
             TimeOffRequested = 0;
@@ -248,6 +268,7 @@ void OvmsVehicleVWeUp::OBDCheckCarState()
     // Set car to OFF
     ESP_LOGI(TAG, "Wait is over: Setting car state to OFF");
     StandardMetrics.ms_v_env_on->SetValue(false);
+    StandardMetrics.ms_v_env_awake->SetValue(false);
 //    StandardMetrics.ms_v_charge_voltage->SetValue(0);
 //    StandardMetrics.ms_v_charge_current->SetValue(0);
     PollSetState(VWEUP_OFF);
