@@ -110,7 +110,6 @@ class OvmsVehicleVoltAmpera : public OvmsVehicle
     unsigned int m_charge_wm;
     unsigned int m_candata_timer;
     unsigned int m_range_rated_km;
-    unsigned int m_range_estimated_km;
 
 
     canbus* p_swcan;    // Either "can4" or "can3" bus, depending on which is connected to slow speed GMLAN bus

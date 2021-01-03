@@ -57,13 +57,13 @@ static const OvmsVehicle::poll_pid_t va_polls[]
     { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x434f, {  0, 10,  0 }, 0, ISOTP_STD }, // High-voltage Battery temperature
     { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x1c43, {  0, 10,  0 }, 0, ISOTP_STD }, // PEM temperature
     { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x8334, {  0, 10,  0 }, 0, ISOTP_STD }, // SOC
-    { 0x7e1, 0x7e9, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2487, {  0,100,  0 }, 0, ISOTP_STD }, // Distance Traveled on Battery Energy This Drive Cycle
     POLL_LIST_END
   };
 // These are not polled anymore but instead received passively
 // { 0x7e0, 0x7e8, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x000d, {  0, 10,  0 } }, // Vehicle speed
 //  { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x801f, {  0, 10,  0 } }, // Outside temperature (filtered)
 //  { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x801e, {  0, 10,  0 } }, // Outside temperature (raw)
+// { 0x7e1, 0x7e9, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2487, {  0, 100,  100 }, 0, ISOTP_STD }, // Distance Traveled on Battery Energy This Drive Cycle
 
 OvmsVehicleVoltAmpera::OvmsVehicleVoltAmpera()
   {
@@ -80,7 +80,6 @@ OvmsVehicleVoltAmpera::OvmsVehicleVoltAmpera()
   m_charge_timer = 0;
   m_charge_wm = 0;
   m_candata_timer = VA_CANDATA_TIMEOUT;
-  m_range_estimated_km = 0;
   m_tx_retry_counter = 0;
   m_tester_present_timer = 0;
   m_controlled_lights = 0;
@@ -150,7 +149,7 @@ void OvmsVehicleVoltAmpera::Status(int verbosity, OvmsWriter* writer)
   writer->printf("VIN:      %s\n",m_vin);
   writer->puts("");
   writer->printf("Ranges:   %dkm (rated) %dkm (estimated)\n",
-    m_range_rated_km, m_range_estimated_km);
+    m_range_rated_km, StandardMetrics.ms_v_bat_range_est->AsInt());
   writer->printf("Charge:   Timer %d (%d wm)\n", m_charge_timer, m_charge_wm);
   writer->printf("Can Data: Timer %d (poll state %d)\n",m_candata_timer,m_poll_state);
   ClimateControlPrintStatus(verbosity,writer);
@@ -592,6 +591,14 @@ void OvmsVehicleVoltAmpera::IncomingFrameCan4(CAN_frame_t* p_frame)
       StdMetrics.ms_v_bat_energy_used->SetValue((float)((d[2]<<8 | d[3]) & 0x3fff)/10, kWh);
       break;
       } 
+
+    // Battery range estimated (value on cluster)
+    case 0x102EC0CB: 
+      {
+      StandardMetrics.ms_v_bat_range_est->SetValue(((d[2] & 1)<<2 | d[1]<<1 | d[2]>>7), Kilometers); 
+      break;
+      } 
+ 
     default:
       break;
     }
@@ -630,13 +637,13 @@ void OvmsVehicleVoltAmpera::IncomingPollReply(canbus* bus, uint16_t type, uint16
       StandardMetrics.ms_v_bat_soc->SetValue(soc);
       if (m_range_rated_km != 0)
         StandardMetrics.ms_v_bat_range_ideal->SetValue((soc * m_range_rated_km)/100, Kilometers);
-      if (m_range_estimated_km != 0)
-        StandardMetrics.ms_v_bat_range_est->SetValue((soc * m_range_estimated_km)/100, Kilometers);
       break;
       }
     case 0x000d:  // Vehicle speed
       StandardMetrics.ms_v_pos_speed->SetValue(value,Kilometers);
       break;
+    /* 
+    //ms_v_bat_range_est set from swcan message
     case 0x2487:  //Distance Traveled on Battery Energy This Drive Cycle
       {
       unsigned int edriven = (((int)data[4])<<8) + data[5];
@@ -645,6 +652,7 @@ void OvmsVehicleVoltAmpera::IncomingPollReply(canbus* bus, uint16_t type, uint16
         m_range_estimated_km = edriven;
       break;
       }
+    */
     default:
       break;
     }
