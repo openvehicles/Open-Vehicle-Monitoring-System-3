@@ -182,16 +182,16 @@ bool OvmsVehicleVWeUp::SetFeature(int key, const char *value)
         return true;
     case 21:
         // check:
-        if (strlen(value) == 0) value = "21";
+        if (strlen(value) == 0) value = "22";
         for (i = 0; i < strlen(value); i++) {
            if (isdigit(value[i]) == false) {
-             value = "21";
+             value = "22";
              break;
            }
         }
         n = atoi(value);
-        if (n < 18) value = "18";
-        if (n > 23) value = "23";
+        if (n < 16) value = "16";
+        if (n > 30) value = "30";
         MyConfig.SetParamValue("xvu", "cc_temp", value);
         return true;
     default:
