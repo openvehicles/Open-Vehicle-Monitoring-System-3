@@ -771,10 +771,12 @@ void OvmsVehicle::NotifyBmsAlerts()
 // Override if your vehicle provides more detail.
 void OvmsVehicle::CalculateEfficiency()
   {
-  float consumption = 0;
+  float consumption = 0, efficiency;;
   if (StdMetrics.ms_v_pos_speed->AsFloat() >= 5)
     consumption = StdMetrics.ms_v_bat_power->AsFloat(0, Watts) / StdMetrics.ms_v_pos_speed->AsFloat();
-  StdMetrics.ms_v_bat_consumption->SetValue((StdMetrics.ms_v_bat_consumption->AsFloat() * 4 + consumption) / 5);
+  efficiency = (StdMetrics.ms_v_bat_consumption->AsFloat() * 4 + consumption) / 5;
+  if (efficiency < 1.0) efficiency = 0;     // Avoid the very tiny numbers we get after being stopped for a while
+  StdMetrics.ms_v_bat_consumption->SetValue(efficiency);
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicle::CommandSetChargeMode(vehicle_mode_t mode)
