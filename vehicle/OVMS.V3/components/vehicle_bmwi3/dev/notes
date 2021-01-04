@@ -1,0 +1,9 @@
+
+
+What does this mean?
+
+    130 00 f0 fc ff ff
+
+cf what we send to request a pid:
+
+    6F1 60 03 22 d1 07 00 00 00
