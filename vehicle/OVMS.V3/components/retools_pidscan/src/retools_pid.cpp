@@ -279,6 +279,8 @@ OvmsReToolsPidScanner::OvmsReToolsPidScanner(
     m_ticker(0u),
     m_timeout(timeout),
     m_lastFrame(0u),
+    m_startTime(0u),
+    m_lastResponseTime(0u),
     m_mfRemain(0u),
     m_task(nullptr),
     m_rxqueue(nullptr),
@@ -298,6 +300,8 @@ OvmsReToolsPidScanner::OvmsReToolsPidScanner(
             std::placeholders::_1, std::placeholders::_2
         )
     );
+    MyEvents.SignalEvent("retools.pidscan.start", NULL);
+    time(&m_startTime);
     SendNextFrame();
 }
 
@@ -309,23 +313,41 @@ OvmsReToolsPidScanner::~OvmsReToolsPidScanner()
         MyCan.DeregisterListener(m_rxqueue);
         vQueueDelete(m_rxqueue);
         vTaskDelete(m_task);
+        MyEvents.SignalEvent("retools.pidscan.stop", NULL);
     }
 }
 
 void OvmsReToolsPidScanner::Output(OvmsWriter* writer) const
 {
     OvmsMutexLock lock(&m_foundMutex);
-    for (auto& found : m_found)
+    struct tm tmu;
+    char tb[64];
+
+    localtime_r(&m_startTime, &tmu);
+    strftime(tb, sizeof(tb), "%Y-%m-%d %H:%M:%S %Z", &tmu);
+    writer->printf("Scan started : %s\n", tb);
+
+    if (m_found.size() == 0)
     {
-        uint16_t rxid, pid;
-        std::vector<uint8_t> data;
-        std::tie(rxid, pid, data) = found;
-        writer->printf("%03x[%03x]:%04x", m_id, rxid, pid);
-        for (auto& byte : data)
+        writer->puts("No valid responses received.");
+    }
+    else
+    {
+        localtime_r(&m_lastResponseTime, &tmu);
+        strftime(tb, sizeof(tb), "%Y-%m-%d %H:%M:%S %Z", &tmu);
+        writer->printf("Last response: %s\n", tb);
+        for (auto& found : m_found)
         {
-            writer->printf(" %02x", byte);
+            uint16_t rxid, pid;
+            std::vector<uint8_t> data;
+            std::tie(rxid, pid, data) = found;
+            writer->printf("%03x[%03x]:%04x", m_id, rxid, pid);
+            for (auto& byte : data)
+            {
+                writer->printf(" %02x", byte);
+            }
+            writer->printf("\n");
         }
-        writer->printf("\n");
     }
 }
 
@@ -376,6 +398,7 @@ void OvmsReToolsPidScanner::SendNextFrame()
     {
         ++m_currentPid;
         ESP_LOGI(TAG, "Scan of %x complete", m_id);
+        MyEvents.SignalEvent("retools.pidscan.done", NULL);
         return;
     }
     ++m_currentPid;
@@ -499,6 +522,7 @@ void OvmsReToolsPidScanner::IncomingPollFrame(const CAN_frame_t* frame)
                 m_id, frame->MsgID, m_currentPid, frameLength - 3, data[3], data[4], data[5], data[6],
                 (frameType == 0 ? "" : " ...")
             );
+            time(&m_lastResponseTime);
             if (frameType == ISOTP_FT_FIRST)
             {
                 CAN_frame_t flowControl = {

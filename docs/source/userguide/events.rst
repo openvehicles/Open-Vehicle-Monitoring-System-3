@@ -82,6 +82,9 @@ retools.mode.analyse                          RE switched to analysis mode
 retools.mode.discover                         RE switched to discovery mode
 retools.started                               RE (reverse engineering) toolkit started
 retools.stopped                               RE toolkit stopped
+retools.pidscan.start                         RE OBD2 PID scan started
+retools.pidscan.stop                          RE OBD2 PID scan stopped
+retools.pidscan.done                          RE OBD2 PID scan completed
 sd.insert                                     The SD card has just been inserted
 sd.mounted                                    The SD card is mounted and ready to use
 sd.remove                                     The SD card has just been removed
