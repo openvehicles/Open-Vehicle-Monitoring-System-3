@@ -20,6 +20,7 @@
 ;                               3) Read-only - no sending of commands.
 ;                               4) Detection of DC charging is only slightly tested
 ;                               5) Would like to find a way to stop the OBD gateway going to sleep on us, eg when charging.
+;    2020-01-04               Ready to merge as a first version
 ;
 ;
 ;    Note that if you leave the OVMS box connected to the OBD-II port and lock the car then the alarm will go off.
