@@ -16,7 +16,7 @@
         // Battery voltage
 
     #define I3_RES_EDM_STAT_I_BATT_WERT                               (RXBUF_UINT(4)/12.5f-200.0f)
-    #define I3_RES_EDM_STAT_I_BATT_WERT_UNIT                          'V'
+    #define I3_RES_EDM_STAT_I_BATT_WERT_UNIT                          'A'
     #define I3_RES_EDM_STAT_I_BATT_WERT_TYPE                          float
         // Battery current
 
