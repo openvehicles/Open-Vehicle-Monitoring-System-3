@@ -238,10 +238,12 @@ void OvmsVehicleVWeUp::ConfigChanged(OvmsConfigParam *param)
         if (vweup_modelyear_new>2019) // set battery capacity & init calculated range
         {
             StandardMetrics.ms_v_bat_range_ideal->SetValue((260 * StandardMetrics.ms_v_bat_soc->AsFloat()) / 100.0); // This is dirty. Based on WLTP only. Should be based on SOH.
+            StandardMetrics.ms_v_charge_climit->SetValue(32); // set max charge current to max possible for now
         }
         else
         {
             StandardMetrics.ms_v_bat_range_ideal->SetValue((160 * StandardMetrics.ms_v_bat_soc->AsFloat()) / 100.0); // This is dirty. Based on WLTP only. Should be based on SOH.
+            StandardMetrics.ms_v_charge_climit->SetValue(16); // set max charge current to max possible for now
         }
         OBDInit();
         #ifdef CONFIG_OVMS_COMP_WEBSERVER

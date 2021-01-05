@@ -82,10 +82,11 @@ const OvmsVehicle::poll_pid_t vweup_polls[] = {
     {VWUP_ELD_TX, VWUP_ELD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_ELD_DCDC_I, {0, 5, 10}, 1, ISOTP_STD},
     {VWUP_ELD_TX, VWUP_ELD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_ELD_TEMP_MOT, {0, 20, 0}, 1, ISOTP_STD},
     {VWUP_MOT_ELEC_TX, VWUP_MOT_ELEC_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MOT_ELEC_TEMP_PEM, {0, 20, 0}, 1, ISOTP_STD},
-    {VWUP_CHG_TX, VWUP_CHG_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_CHG_TEMP_BRD, {0, 20, 20}, 1, ISOTP_STD}/*,
-    {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_TEMP_MAX, {0, 20, 0}, 1, ISOTP_STD},
-    {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_TEMP_MIN, {0, 20, 0}, 1, ISOTP_STD},
-*/
+    {VWUP_CHG_TX, VWUP_CHG_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_CHG_TEMP_BRD, {0, 20, 20}, 1, ISOTP_STD},
+//    {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_TEMP_MAX, {0, 20, 0}, 1, ISOTP_STD},
+//    {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_TEMP_MIN, {0, 20, 0}, 1, ISOTP_STD},
+
+    {VWUP_CHG_MGMT_TX, VWUP_CHG_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_CHG_MGMT_REM, {0, 0, 30}, 1, ISOTP_STD}
 //    {0, 0, 0, 0, {0, 0, 0}, 0, ISOTP_STD}};
     };
     
@@ -245,6 +246,7 @@ void OvmsVehicleVWeUp::OBDCheckCarState()
             EnergyRecdStart = StandardMetrics.ms_v_bat_energy_recd_total->AsFloat();
             EnergyUsedStart = StandardMetrics.ms_v_bat_energy_used_total->AsFloat();
             ESP_LOGD(TAG,"Start Counters: %f, %f, %f",OdoStart,EnergyRecdStart,EnergyUsedStart);
+            StandardMetrics.ms_v_charge_duration_full->SetValue(0);
         }
         return;
     }
@@ -272,6 +274,7 @@ void OvmsVehicleVWeUp::OBDCheckCarState()
     StandardMetrics.ms_v_env_awake->SetValue(false);
 //    StandardMetrics.ms_v_charge_voltage->SetValue(0);
 //    StandardMetrics.ms_v_charge_current->SetValue(0);
+    StandardMetrics.ms_v_charge_duration_full->SetValue(0);
     PollSetState(VWEUP_OFF);
 }
 
@@ -353,10 +356,10 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
         if (PollReply.FromInt32("VWUP_BAT_MGMT_ENERGY_COUNTERS_RECD", value, 8))
         {
             StandardMetrics.ms_v_bat_energy_recd_total->SetValue(value / ((0xFFFFFFFF / 2.0f) / 250200.0f));
-            if (StandardMetrics.ms_v_env_on)
-                StandardMetrics.ms_v_bat_energy_recd->SetValue(StandardMetrics.ms_v_bat_energy_recd_total->AsFloat()-EnergyRecdStart); // so far we don't know where to get energy recovered on trip directly...
-            else
+            if (StandardMetrics.ms_v_charge_inprogress)
                 StandardMetrics.ms_v_charge_kwh->SetValue(StandardMetrics.ms_v_bat_energy_recd_total->AsFloat()-EnergyChargedStart); 
+            else
+                StandardMetrics.ms_v_bat_energy_recd->SetValue(StandardMetrics.ms_v_bat_energy_recd_total->AsFloat()-EnergyRecdStart); // so far we don't know where to get energy recovered on trip directly...
             VALUE_LOG(TAG, "VWUP_BAT_MGMT_ENERGY_COUNTERS_RECD=%f => %f", value, StandardMetrics.ms_v_bat_energy_recd_total->AsFloat());
         }
         if (PollReply.FromInt32("VWUP_BAT_MGMT_ENERGY_COUNTERS_USED", value, 12))
@@ -621,6 +624,12 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
         if (PollReply.FromUint8("VWUP_CHG_TEMP_BRD", value))
             StandardMetrics.ms_v_charge_temp->SetValue(value - 40.0f);
             VALUE_LOG(TAG, "VWUP_CHG_TEMP_BRD=%f => %f", value, StandardMetrics.ms_v_charge_temp->AsFloat());
+        break;
+
+     case VWUP_CHG_MGMT_REM:
+        if (PollReply.FromUint8("VWUP_CHG_MGMT_REM", value))
+            StandardMetrics.ms_v_charge_duration_full->SetValue(value * 5.0f);
+            VALUE_LOG(TAG, "VWUP_CHG_MGMT_REM=%f => %f", value, StandardMetrics.ms_v_charge_duration_full->AsFloat());
         break;
 
    }

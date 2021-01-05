@@ -606,7 +606,7 @@ static void microrl_get_complite (microrl_t * pThis)
 
 		if (len) {
 			microrl_insert_text (pThis, compl_token[0] + strlen(tkn_arr[status-1]),
-																	len - strlen(tkn_arr[status-1]));
+			                     len - strlen(tkn_arr[status-1]));
 			if (compl_token[1] == NULL)
 				microrl_insert_text (pThis, " ", 1);
 		}

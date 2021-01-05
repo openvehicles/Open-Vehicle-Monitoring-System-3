@@ -97,6 +97,7 @@ OvmsWebServer::OvmsWebServer()
 
   // register standard API calls:
   RegisterPage("/api/execute", "Execute command", HandleCommand, PageMenu_None, PageAuth_Cookie);
+  RegisterPage("/api/file", "Load/Save file", HandleFile, PageMenu_None, PageAuth_Cookie);
 
   // register standard public pages:
   RegisterPage("/dashboard", "Dashboard", HandleDashboard, PageMenu_Main, PageAuth_None);
