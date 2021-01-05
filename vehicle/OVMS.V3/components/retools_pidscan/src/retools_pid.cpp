@@ -387,8 +387,9 @@ void OvmsReToolsPidScanner::FrameCallback(const CAN_frame_t* frame, bool success
 {
     if (success == false)
     {
-        ESP_LOGE(TAG, "Error sending the frame");
+        ESP_LOGE(TAG, "Error sending the frame, terminating scan");
         m_currentPid = m_endPid + 1;
+        MyEvents.SignalEvent("retools.pidscan.done", NULL);
     }
 }
 
