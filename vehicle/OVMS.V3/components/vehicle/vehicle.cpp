@@ -423,6 +423,11 @@ const char* OvmsVehicle::VehicleShortName()
   return MyVehicleFactory.ActiveVehicleName();
   }
 
+const char* OvmsVehicle::VehicleType()
+  {
+  return MyVehicleFactory.ActiveVehicleType();
+  }
+
 void OvmsVehicle::RxTask()
   {
   CAN_frame_t frame;
@@ -474,7 +479,7 @@ void OvmsVehicle::IncomingFrameCan4(CAN_frame_t* p_frame)
 
 void OvmsVehicle::Status(int verbosity, OvmsWriter* writer)
   {
-  writer->printf("Vehicle module %s loaded and running\n", VehicleShortName());
+  writer->printf("Vehicle module '%s' (code %s) loaded and running\n", VehicleShortName(), VehicleType());
   }
 
 void OvmsVehicle::RegisterCanBus(int bus, CAN_mode_t mode, CAN_speed_t speed, dbcfile* dbcfile)

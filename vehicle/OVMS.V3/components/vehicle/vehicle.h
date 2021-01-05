@@ -185,6 +185,7 @@ class OvmsVehicle : public InternalRamAllocated
     OvmsVehicle();
     virtual ~OvmsVehicle();
     virtual const char* VehicleShortName();
+    virtual const char* VehicleType();
 
   protected:
     QueueHandle_t m_rxqueue;

@@ -63,6 +63,15 @@ void OvmsVehicleFactory::vehicle_module(int verbosity, OvmsWriter* writer, OvmsC
     {
     MyVehicleFactory.SetVehicle(argv[0]);
     }
+  // output new status:
+  if (MyVehicleFactory.m_currentvehicle != NULL)
+    {
+    MyVehicleFactory.m_currentvehicle->Status(verbosity, writer);
+    }
+  else
+    {
+    writer->puts("No vehicle module selected");
+    }
   }
 
 void OvmsVehicleFactory::vehicle_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
