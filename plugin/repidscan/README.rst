@@ -4,9 +4,11 @@ REPIDScan: OBD2 PID Scanner UI
 
 **Web UI for the OVMS3 RE toolkit's OBD2 PID scanner**
 
-Version 2.0 by Michael Balzer <dexter@dexters-web.de>
+Version 2.1 by Michael Balzer <dexter@dexters-web.de>
 
-**New in 2.0: Highlight differences between scan results**
+- ``1.0``: Initial release
+- ``2.0``: Highlight differences between scan results
+- ``2.1``: PID step support
 
 .. image:: repidscan-screenshot.png
 

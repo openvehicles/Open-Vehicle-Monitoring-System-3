@@ -46,7 +46,7 @@ class OvmsReToolsPidScanner
 {
   public:
     OvmsReToolsPidScanner(canbus* bus, uint16_t ecu, uint16_t rxid_low, uint16_t rxid_high,
-                          uint8_t polltype, int start, int end, uint8_t timeout);
+                          uint8_t polltype, int start, int end, int step, uint8_t timeout);
     ~OvmsReToolsPidScanner();
 
     bool Complete() const { return m_currentPid > m_endPid; }
@@ -84,6 +84,8 @@ class OvmsReToolsPidScanner
     int m_startPid;
     /// The PID to stop scanning at
     int m_endPid;
+    /// The PID step size
+    int m_pidStep;
     /// The current PID being scanned
     int m_currentPid;
     /// The current ticker value

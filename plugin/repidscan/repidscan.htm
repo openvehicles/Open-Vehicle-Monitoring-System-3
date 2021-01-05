@@ -1,9 +1,10 @@
 <!--
   Web UI page plugin:
     Reverse Engineering OBD2 PID Scanner
-    Version 2.0  Michael Balzer <dexter@dexters-web.de>
+    Version 2.1  Michael Balzer <dexter@dexters-web.de>
   
   History:
+    - 2.1   PID step support
     - 2.0   Highlight differences between scan results
     - 1.0   Initial release
   
@@ -132,11 +133,12 @@
                 <input type="text" class="form-control font-monospace" size="8" maxlength="7" placeholder="RX[-RX]" id="input-rxid" value="">
               </div>
               
-              <div>Poll type &amp; PID range:</div>
+              <div>Poll type, PID range &amp; step:</div>
               <div>
                 <input type="text" class="form-control font-monospace" size="2" maxlength="2" placeholder="22" id="input-type" value="">
                 <input type="text" class="form-control font-monospace" size="5" maxlength="4" placeholder="Start" id="input-start" value="">
                 <input type="text" class="form-control font-monospace" size="5" maxlength="4" placeholder="End" id="input-end" value="">
+                <input type="text" class="form-control font-monospace" size="5" maxlength="4" placeholder="0001" id="input-step" value="">
               </div>
               
               <div>Request timeout:</div>
@@ -325,6 +327,7 @@
       // Start new scan:
       var cmd = "re obdii scan start " + data['input-bus'] + " " +
         data['input-txid'] + " " + data['input-start'] + " " + data['input-end'] +
+        (data['input-step'] ? " -s" + data['input-step'] : "") +
         (data['input-rxid'] ? " -r" + data['input-rxid'] : "") +
         (data['input-type'] ? " -t" + data['input-type'] : "") +
         (data['input-timeout'] ? " -x" + data['input-timeout'] : "");
