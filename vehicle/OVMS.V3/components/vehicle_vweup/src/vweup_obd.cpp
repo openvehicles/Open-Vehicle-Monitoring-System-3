@@ -356,10 +356,10 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
         if (PollReply.FromInt32("VWUP_BAT_MGMT_ENERGY_COUNTERS_RECD", value, 8))
         {
             StandardMetrics.ms_v_bat_energy_recd_total->SetValue(value / ((0xFFFFFFFF / 2.0f) / 250200.0f));
-            if (StandardMetrics.ms_v_env_on)
-                StandardMetrics.ms_v_bat_energy_recd->SetValue(StandardMetrics.ms_v_bat_energy_recd_total->AsFloat()-EnergyRecdStart); // so far we don't know where to get energy recovered on trip directly...
-            else
+            if (StandardMetrics.ms_v_charge_inprogress)
                 StandardMetrics.ms_v_charge_kwh->SetValue(StandardMetrics.ms_v_bat_energy_recd_total->AsFloat()-EnergyChargedStart); 
+            else
+                StandardMetrics.ms_v_bat_energy_recd->SetValue(StandardMetrics.ms_v_bat_energy_recd_total->AsFloat()-EnergyRecdStart); // so far we don't know where to get energy recovered on trip directly...
             VALUE_LOG(TAG, "VWUP_BAT_MGMT_ENERGY_COUNTERS_RECD=%f => %f", value, StandardMetrics.ms_v_bat_energy_recd_total->AsFloat());
         }
         if (PollReply.FromInt32("VWUP_BAT_MGMT_ENERGY_COUNTERS_USED", value, 12))
