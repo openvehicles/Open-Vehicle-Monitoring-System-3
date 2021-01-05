@@ -2984,7 +2984,7 @@ void OvmsWebServer::HandleCfgBackup(PageEntry_t& p, PageContext_t& c)
     "\n"
     "<script>\n"
     "(function(){\n"
-      "var suggest = '/sd/backup/cfg-' + new Date().toISOString().substr(0,10) + '.zip';\n"
+      "var suggest = '/sd/backup/cfg-' + new Date().toISOString().substr(2,8).replaceAll('-','') + '.zip';\n"
       "var zip = { exists: false, iszip: false };\n"
       "var $panel = $('.panel-body');\n"
     "\n"
