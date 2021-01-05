@@ -370,10 +370,8 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
       cd_count++;
       if (d[2] < 0x07) {
          isCharging = true;
-         PollSetState(VWEUP_CHARGING);
       } else {
          isCharging = false;
-         PollSetState(VWEUP_OFF);
       }
       if (isCharging != lastCharging) { 
         // count till 3 messages in a row to stop ghost triggering
@@ -386,6 +384,8 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
           StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
           StandardMetrics.ms_v_charge_state->SetValue("charging");
           ESP_LOGI(TAG,"Car charge session started");
+          EnergyChargedStart = StandardMetrics.ms_v_bat_energy_recd_total->AsFloat();
+          ESP_LOGD(TAG,"Charge Start Counter: %f",EnergyChargedStart);
           PollSetState(VWEUP_CHARGING);
         } 
         if (!isCharging && cd_count == 3) {
