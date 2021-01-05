@@ -3812,3 +3812,112 @@ void OvmsWebServer::HandleEditor(PageEntry_t& p, PageContext_t& c)
 
   c.done();
 }
+
+
+/**
+ * HandleFile: file load/save API
+ *  
+ *  URL: /api/file
+ *  
+ *  @param method
+ *    GET   = load content from path
+ *    POST  = save content to path
+ *  @param path
+ *    Full path to file
+ *  @param content
+ *    File content for POST
+ *  
+ *  @return
+ *    Status: 200 (OK) / 400 (Error)
+ *    Body: GET: file content or error message, POST: empty or error message
+ */
+void OvmsWebServer::HandleFile(PageEntry_t& p, PageContext_t& c)
+{
+  std::string error;
+  std::string path = c.getvar("path");
+  extram::string content;
+
+  std::string headers =
+    "Content-Type: application/octet-stream; charset=utf-8\r\n"
+    "Cache-Control: no-cache";
+
+  if (MyConfig.ProtectedPath(path)) {
+    c.head(400, headers.c_str());
+    c.print("ERROR: Protected path\n");
+    c.done();
+    return;
+  }
+
+  if (c.method == "POST")
+  {
+    bool got_content = c.getvar("content", content);
+
+    if (path == "" || path.front() != '/' || path.back() == '/') {
+      error += "; Missing or invalid path";
+    }
+    else if (!got_content) {
+      error += "; Missing content";
+    }
+    else {
+      // create path:
+      size_t n = path.rfind('/');
+      if (n != 0 && n != std::string::npos) {
+        std::string dir = path.substr(0, n);
+        if (!path_exists(dir)) {
+          if (mkpath(dir) != 0) {
+            error += "; Error creating path: ";
+            error += strerror(errno);
+          }
+        }
+      }
+      // write file:
+      if (error == "") {
+        std::ofstream file(path, std::ios::out | std::ios::binary | std::ios::trunc);
+        if (file.is_open())
+          file.write(content.data(), content.size());
+        if (file.fail()) {
+          error += "; Error writing to path: ";
+          error += strerror(errno);
+        } else {
+          MyEvents.SignalEvent("system.vfs.file.changed", (void*)path.c_str(), path.size()+1);
+        }
+      }
+    }
+  }
+  else
+  {
+    if (path == "") {
+      path = "/store/";
+    } else if (path.back() != '/') {
+      // read file:
+      std::ifstream file(path, std::ios::in | std::ios::binary | std::ios::ate);
+      if (file.is_open()) {
+        auto size = file.tellg();
+        if (size > 0) {
+          content.resize(size, '\0');
+          file.seekg(0);
+          file.read(&content[0], size);
+        }
+      }
+      if (file.fail()) {
+        error += "; Error reading from path: ";
+        error += strerror(errno);
+      }
+    }
+  }
+
+  // output:
+  if (!error.empty()) {
+    c.head(400, headers.c_str());
+    c.print("ERROR: ");
+    c.print(error.substr(2)); // skip "; " intro
+    c.print("\n");
+  } else {
+    c.head(200);
+    if (c.method == "GET") {
+      c.print(content);
+    }
+  }
+
+  c.done();
+}

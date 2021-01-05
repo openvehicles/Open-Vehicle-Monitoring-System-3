@@ -57,7 +57,12 @@ class EventCallbackEntry
   };
 
 typedef std::list<EventCallbackEntry*> EventCallbackList;
-typedef NameMap<EventCallbackList*> EventMap;
+
+class EventMap : public  std::map<std::string, EventCallbackList*>
+  {
+  public:
+    bool GetCompletion(OvmsWriter* writer, const char* token) const;
+  };
 
 typedef void (*event_signal_done_fn)(const char* event, void* data);
 

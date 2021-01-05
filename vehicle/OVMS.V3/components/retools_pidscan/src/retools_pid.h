@@ -40,6 +40,7 @@
 #include <functional>
 #include <vector>
 #include <tuple>
+#include <time.h>
 
 class OvmsReToolsPidScanner
 {
@@ -91,6 +92,9 @@ class OvmsReToolsPidScanner
     uint8_t m_timeout;
     /// When the last frame was sent
     uint32_t m_lastFrame;
+    /// Scan start & last response time
+    time_t m_startTime;
+    time_t m_lastResponseTime;
     /// The number of bytes expected on a multi-frame response
     uint16_t m_mfRemain;
     /// The handle to the CAN task handler

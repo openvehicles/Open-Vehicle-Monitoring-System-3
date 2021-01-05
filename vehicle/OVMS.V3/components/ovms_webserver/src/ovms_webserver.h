@@ -534,6 +534,7 @@ class OvmsWebServer : public ExternalRamAllocated
   public:
     static void HandleStatus(PageEntry_t& p, PageContext_t& c);
     static void HandleCommand(PageEntry_t& p, PageContext_t& c);
+    static void HandleFile(PageEntry_t& p, PageContext_t& c);
     static void HandleShell(PageEntry_t& p, PageContext_t& c);
     static void HandleDashboard(PageEntry_t& p, PageContext_t& c);
     static void HandleBmsCellMonitor(PageEntry_t& p, PageContext_t& c);
