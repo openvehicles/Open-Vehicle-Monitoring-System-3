@@ -1,7 +1,11 @@
 <!--
   Web UI page plugin:
     Reverse Engineering OBD2 PID Scanner
-    Version 1.0  Michael Balzer <dexter@dexters-web.de>
+    Version 2.0  Michael Balzer <dexter@dexters-web.de>
+  
+  History:
+    - 2.0   Highlight differences between scan results
+    - 1.0   Initial release
   
   Dependencies:
     - OVMS firmware version 3.2.015-324 or higher
@@ -63,6 +67,20 @@
   height: 180px;
   font-size: 13px;
 }
+.scan-result b {
+  color: #00aa00;
+}
+.night .scan-result b {
+  color: #dddd00;
+}
+.scan-result u {
+  color: #aa0000;
+  font-weight: bold;
+  text-decoration: none;
+}
+.night .scan-result u {
+  color: #ee0000;
+}
 </style>
 
 <div class="filedialog" id="fileselect"/>
@@ -84,6 +102,7 @@
                 <button type="button" class="btn btn-default" data-target="#output-current" data-cmd="vehicle module NONE">
                   Set vehicle module <code>NONE</code>
                 </button>
+                <hr>
               </div>
 
               <div>
@@ -127,7 +146,7 @@
               
               <div class="action-menu">
                 <button type="button" class="btn btn-default action-start" accesskey="S"><u>S</u>tart</button>
-                <button type="button" class="btn btn-default action-status" data-target="#output-current" data-cmd="re obdii scan status">Status</button>
+                <button type="button" class="btn btn-default action-status" accesskey="U">Stat<u>u</u>s</button>
                 <button type="button" class="btn btn-default action-stop" data-target="#output-current" data-cmd="re obdii scan stop">Stop</button>
               </div>
               
@@ -164,12 +183,10 @@
           </ul>
           <div class="tab-content">
             <div id="tab-current" class="tab-pane section-vehicle active in">
-              <samp id="output-current" class="monitor autoselect"
-                data-updcmd="re obdii scan status" data-updcnt="1"
-                data-events="retools.pidscan.done" />
+              <samp id="output-current" class="monitor scan-result" />
             </div>
             <div id="tab-previous" class="tab-pane section-vehicle">
-              <samp id="output-previous" class="monitor autoselect" />
+              <samp id="output-previous" class="monitor scan-result" />
             </div>
           </div>
           
@@ -251,8 +268,48 @@
       else if (key.substr(0,7) == "output-")
         $('#'+key).html(data[key]);
     }
+    showDiff();
   }
 
+  // Get and split scan result (for showDiff):
+  function getResult(sel) {
+    var text = $(sel).text();
+    var lines = text.split('\n');
+    var info = [], pids = [];
+    lines.forEach(ln => ln && (ln.indexOf(']:') < 0 ? info : pids).push(ln));
+    var data = pids.map(el => el.split(' '));
+    return {
+      "info": info,
+      "data": data,
+    };
+  }
+  
+  // Get line & byte differences of r2 compared with r1 (for showDiff):
+  function getDiff(r1, r2) {
+    var lref = r2.data.map(e2 => r1.data.findIndex(e1 => e1[0] == e2[0]));
+    if (lref.findIndex(el => el != -1) == -1)
+      return r2.data;
+    return r2.data.map((e2, l2) => {
+      let l1 = lref[l2];
+      if (l1 < 0)
+        return e2.map((val, idx) => (idx == 0) ? '<b>'+val+'</b>' : val);
+      else
+        return e2.map((val, idx) => (val != r1.data[l1][idx]) ? '<u>'+val+'</u>' : val);
+    });
+  }
+  
+  // Highlight differences:
+  function showDiff() {
+    var r1 = getResult('#output-previous'),
+        r2 = getResult('#output-current');
+    var d1 = getDiff(r2, r1),
+        d2 = getDiff(r1, r2);
+    var h1 = r1.info.join('\n') + '\n' + d1.map(ln => ln.join(' ')).join('\n'),
+        h2 = r2.info.join('\n') + '\n' + d2.map(ln => ln.join(' ')).join('\n');
+    $('#output-previous').html(h1);
+    $('#output-current').html(h2);
+  }
+  
   // Start button:
   $('.action-start').on('click', function() {
     var data = getData();
@@ -273,6 +330,16 @@
         (data['input-timeout'] ? " -x" + data['input-timeout'] : "");
       loadcmd(cmd, "#output-current");
     }
+  });
+
+  // Show scan result:
+  $('#repidscan').on('msg:event', function(e, event) {
+    if (event == "retools.pidscan.done") {
+      loadcmd("re obdii scan status", "#output-current").then(showDiff);
+    }
+  });
+  $('.action-status').on('click', function() {
+    loadcmd("re obdii scan status", "#output-current").then(showDiff);
   });
 
   // Save:

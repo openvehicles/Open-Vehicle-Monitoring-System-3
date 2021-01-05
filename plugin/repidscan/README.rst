@@ -4,7 +4,9 @@ REPIDScan: OBD2 PID Scanner UI
 
 **Web UI for the OVMS3 RE toolkit's OBD2 PID scanner**
 
-Version 1.0 by Michael Balzer <dexter@dexters-web.de>
+Version 2.0 by Michael Balzer <dexter@dexters-web.de>
+
+**New in 2.0: Highlight differences between scan results**
 
 .. image:: repidscan-screenshot.png
 
@@ -62,6 +64,10 @@ a scan to start another run.
 Scan results will be shown automatically when the scan has been completed. Scanning a large range of 
 PIDs may take some time, to get intermediate results, click "Status". You can also start the scan, 
 do something else and return to the tool later.
+
+Differences between two scans are highlighted in both result tabs, with added PIDs being marked 
+green (yellow in night mode), and byte value changes being marked red. No highlighting is applied 
+if the scans don't share any PIDs.
 
 On the next scanner start, the previous results (if any) will be copied to the "Previous" tab. You 
 can switch tabs by the mouse or keyboard to compare them and look for differences, e.g. after having 
