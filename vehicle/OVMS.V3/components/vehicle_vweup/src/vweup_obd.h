@@ -81,6 +81,7 @@ using namespace std;
 #define VWUP_MOT_ELEC_TEMP_COOL4 0x1614 // coolant temperature before PTC current value
 #define VWUP_MOT_ELEC_TEMP_COOL5 0x1615 // coolant temperature before power electronics current value
 #define VWUP_MOT_ELEC_TEMP_COOL_BAT 0x1169 // cooling temperature of hybrid battery
+#define VWUP_MOT_ELEC_SPEED 0xF40D // vehicle speed
 
 #define VWUP_BRK_TPMS 0x1821
 

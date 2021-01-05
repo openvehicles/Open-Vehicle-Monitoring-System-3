@@ -55,6 +55,7 @@ const OvmsVehicle::poll_pid_t vweup_polls[] = {
 
     {VWUP_MOT_ELEC_TX, VWUP_MOT_ELEC_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MOT_ELEC_SOC_NORM, {0, 20, 0}, 1, ISOTP_STD},
     {VWUP_MOT_ELEC_TX, VWUP_MOT_ELEC_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MOT_ELEC_SOC_ABS, {0, 20, 0}, 1, ISOTP_STD},
+    {VWUP_MOT_ELEC_TX, VWUP_MOT_ELEC_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_MOT_ELEC_SPEED, {0, 20, 0}, 1, ISOTP_STD},
     {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_SOC_ABS, {0, 20, 20}, 1, ISOTP_STD},
     {VWUP_CHG_MGMT_TX, VWUP_CHG_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_CHG_MGMT_SOC_NORM, {0, 0, 20}, 1, ISOTP_STD},
     {VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, VWUP_BAT_MGMT_ENERGY_COUNTERS, {0, 20, 20}, 1, ISOTP_STD},
@@ -630,6 +631,13 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
         if (PollReply.FromUint8("VWUP_CHG_MGMT_REM", value))
             StandardMetrics.ms_v_charge_duration_full->SetValue(value * 5.0f);
             VALUE_LOG(TAG, "VWUP_CHG_MGMT_REM=%f => %f", value, StandardMetrics.ms_v_charge_duration_full->AsFloat());
+        break;
+
+     case VWUP_MOT_ELEC_SPEED:
+        if (PollReply.FromUint8("VWUP_MOT_ELEC_SPEED", value))
+            if (vweup_con == 2)
+                StandardMetrics.ms_v_pos_speed->SetValue(value);
+            VALUE_LOG(TAG, "VWUP_CHG_MGMT_REM=%f => %f", value, value);
         break;
 
    }
