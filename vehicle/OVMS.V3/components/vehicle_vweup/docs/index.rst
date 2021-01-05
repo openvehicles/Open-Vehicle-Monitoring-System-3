@@ -39,7 +39,7 @@ If both connections are to be made simultaneously, an adapter cable has to be ma
 === === ===== ===========================
 T26 OBD DB9-F Signal
 === === ===== ===========================
-26  .   3	  Chassis / Power GND
+26  4   3	  Chassis / Power GND
 .   14  2	  can1 L (Can Low)
 .   6   7	  can1 H (Can High)
 .   .   4	  can2 L (Can Low, not used)
@@ -132,6 +132,7 @@ v.c.12v.power                 OBD        0.123kW                  Output power o
 v.c.12v.temp                  OBD        34.5°C                   Temperature of DC/DC-converter
 v.c.12v.voltage               OBD        12.3V                    Output voltage of DC/DC-converter
 v.c.charging                  T26        true                     Is vehicle charging (true = "Vehicle CHARGING" state. v.e.on=false if this is true)
+v.c.climit                    fixed      16/32A                   Maximum charger output current
 v.c.current 	              OBD        1.25A 	                  Momentary charger output current
 v.c.efficiency                OBD        91.3 %                   Charging efficiency calculated by v.b.power and v.c.power
 v.c.kwh                       OBD        2.6969kWh                Energy sum for running charge
@@ -199,8 +200,6 @@ xvu.c.loss.ecu                OBD        0.620 kW                 Charger power 
 xvu.e.serv.days               OBD        78 days                  Time to next scheduled maintenance/service [days]
 xvu.m.soc.abs                 OBD        85.3 %                   Current absolute State of Charge (SoC) of the main battery as reported by motor electronics ECU
 xvu.m.soc.norm                OBD        80.5 %                   Current normalized State of Charge (SoC) of the main battery as reported by motor electronics ECU
-xvu.v.m.d                     OBD        12500 km                 Distance to next scheduled maintenance
-xvu.v.m.t                     OBD        123 days                 Time to next scheduled maintenance
 ============================= ========== ======================== ============================================
 
 
