@@ -108,6 +108,7 @@ void scanStart(int, OvmsWriter* writer, OvmsCommand*, int argc, const char* cons
     unsigned long bus = 0, ecu = 0, rxid_low = 0, rxid_high = 0, start = 0, end = 0;
     int timeout = 3;
     unsigned long polltype = VEHICLE_POLL_TYPE_OBDIIEXTENDED;
+    unsigned long step = 1;
     bool valid = true, have_rxid = false;
     int argpos = 0;
     for (int i = 0; i < argc; i++)
@@ -126,6 +127,13 @@ void scanStart(int, OvmsWriter* writer, OvmsCommand*, int argc, const char* cons
                     else
                     {
                         have_rxid = true;
+                    }
+                    break;
+                case 's':
+                    if (!ReadHexString(argv[i]+2, step) || step < 1 || step > 0xffff)
+                    {
+                        writer->printf("Error: Invalid step size %s\n", argv[i]+2);
+                        valid = false;
                     }
                     break;
                 case 't':
@@ -195,6 +203,10 @@ void scanStart(int, OvmsWriter* writer, OvmsCommand*, int argc, const char* cons
         );
         valid = false;
     }
+    else if (step > 1)
+    {
+        end = start + ((end - start) / step) * step;
+    }
     if (POLL_TYPE_HAS_8BIT_PID(polltype) && end > 0xff)
     {
         writer->printf("Error: Poll type %x PID range is 00..ff\n");
@@ -216,9 +228,9 @@ void scanStart(int, OvmsWriter* writer, OvmsCommand*, int argc, const char* cons
     }
     if (valid)
     {
-        s_scanner = new OvmsReToolsPidScanner(can, ecu, rxid_low, rxid_high, polltype, start, end, timeout);
-        writer->printf("Scan started: bus %d, ecu %x, rxid %x-%x, polltype %x, PID %x-%x, timeout %d seconds\n",
-                       bus, ecu, rxid_low, rxid_high, polltype, start, end, timeout);
+        s_scanner = new OvmsReToolsPidScanner(can, ecu, rxid_low, rxid_high, polltype, start, end, step, timeout);
+        writer->printf("Scan started: bus %d, ecu %x, rxid %x-%x, polltype %x, PID %x-%x (step %x), timeout %d seconds\n",
+                       bus, ecu, rxid_low, rxid_high, polltype, start, end, step, timeout);
     }
 }
 
@@ -263,7 +275,7 @@ void scanStop(int, OvmsWriter* writer, OvmsCommand*, int, const char* const*)
 
 OvmsReToolsPidScanner::OvmsReToolsPidScanner(
         canbus* bus, uint16_t ecu, uint16_t rxid_low, uint16_t rxid_high,
-        uint8_t polltype, int start, int end, uint8_t timeout) :
+        uint8_t polltype, int start, int end, int step, uint8_t timeout) :
     m_frameCallback(std::bind(
         &OvmsReToolsPidScanner::FrameCallback, this,
         std::placeholders::_1, std::placeholders::_2
@@ -275,6 +287,7 @@ OvmsReToolsPidScanner::OvmsReToolsPidScanner(
     m_pollType(polltype),
     m_startPid(start),
     m_endPid(end),
+    m_pidStep(step),
     m_currentPid(end+1),
     m_ticker(0u),
     m_timeout(timeout),
@@ -292,7 +305,7 @@ OvmsReToolsPidScanner::OvmsReToolsPidScanner(
         &OvmsReToolsPidScanner::Task, "OVMS RE PID", 4096, this, 5, &m_task, CORE(1)
     );
     MyCan.RegisterListener(m_rxqueue, true);
-    m_currentPid = m_startPid - 1;
+    m_currentPid = m_startPid - m_pidStep;
     MyEvents.RegisterEvent(
         TAG, "ticker.1",
         std::bind(
@@ -397,12 +410,12 @@ void OvmsReToolsPidScanner::SendNextFrame()
 {
     if (m_currentPid == m_endPid)
     {
-        ++m_currentPid;
+        m_currentPid = m_endPid + 1;
         ESP_LOGI(TAG, "Scan of %x complete", m_id);
         MyEvents.SignalEvent("retools.pidscan.done", NULL);
         return;
     }
-    ++m_currentPid;
+    m_currentPid += m_pidStep;
 
     CAN_frame_t sendFrame = {
         m_bus,
@@ -583,12 +596,13 @@ OvmsReToolsPidScannerInit::OvmsReToolsPidScannerInit()
     OvmsCommand* cmd_scan = cmd_reobdii->RegisterCommand("scan", "ECU PID scanning tool");
     cmd_scan->RegisterCommand(
         "start", "Scan PIDs on an ECU in a given range", &scanStart,
-        "<bus> <ecu> <start_pid> <end_pid> [-r<rxid>[-<rxid>]] [-t<poll_type>] [-x<timeout>]\n"
+        "<bus> <ecu> <start_pid> <end_pid> [-s<pid_step>] [-r<rxid>[-<rxid>]] [-t<poll_type>] [-x<timeout>]\n"
         "Give all values except bus and timeout hexadecimal. Options can be positioned anywhere.\n"
         "Default <rxid> is <ecu>+8, try 0-7ff if you don't know the responding ID.\n"
         "Default <poll_type> is 22 (ReadDataByIdentifier, 16 bit PID).\n"
+        "Default <pid_step> is 1.\n"
         "Default <timeout> is 3 seconds.",
-        4, 7
+        4, 8
     );
     cmd_scan->RegisterCommand("status", "The status of the PID scan", &scanStatus);
     cmd_scan->RegisterCommand("stop", "Stop the current scan", &scanStop);
