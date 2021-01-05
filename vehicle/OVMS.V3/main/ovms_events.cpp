@@ -46,6 +46,28 @@ OvmsEvents MyEvents __attribute__ ((init_priority (1200)));
 
 typedef void (*event_signal_done_fn)(const char* event, void* data);
 
+bool EventMap::GetCompletion(OvmsWriter* writer, const char* token) const
+  {
+  unsigned int index = 0;
+  bool match = false;
+  writer->SetCompletion(index, NULL);
+  if (token)
+    {
+    size_t len = strlen(token);
+    for (const_iterator it = begin(); it != end(); ++it)
+      {
+      if (it->first.compare("*") == 0)
+        continue;
+      if (it->first.compare(0, len, token) == 0)
+        {
+        writer->SetCompletion(index++, it->first.c_str());
+        match = true;
+        }
+      }
+    }
+  return match;
+  }
+
 void EventStdFree(const char* event, void* data)
   {
   free(data);
@@ -112,8 +134,8 @@ int event_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* c
   int argpos = 0;
   for (int i=0; i < argc; i++)
     argpos += (argv[i][0] != '-') ? 1 : 0;
-  if (argpos == 1)
-    return MyEvents.Map().Validate(writer, argc, argv[argc-1], complete);
+  if (argpos == 1 && MyEvents.Map().GetCompletion(writer, argv[argc-1]))
+    return argc;
   return -1;
   }
 
