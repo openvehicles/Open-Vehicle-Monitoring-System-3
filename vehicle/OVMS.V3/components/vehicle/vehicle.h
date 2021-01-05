@@ -411,7 +411,7 @@ class OvmsVehicle : public InternalRamAllocated
     uint8_t           m_poll_fc_septime;      // Flow control separation time for multi frame responses
 
   private:
-    OvmsMutex         m_poll_single_mutex;    // PollSingleRequest() concurrency protection
+    OvmsRecMutex      m_poll_single_mutex;    // PollSingleRequest() concurrency protection
     std::string*      m_poll_single_rxbuf;    // … response buffer
     uint16_t          m_poll_single_rxerr;    // … response error code (NRC)
     OvmsSemaphore     m_poll_single_rxdone;   // … response done (ok/error)

@@ -450,7 +450,7 @@ void OvmsVehicleFactory::obdii_request(int verbosity, OvmsWriter* writer, OvmsCo
   {
   if (!MyVehicleFactory.m_currentvehicle)
     {
-    writer->puts("ERROR: no vehicle module selected");
+    writer->puts("ERROR: no vehicle module selected\nHint: use module 'NONE' (empty vehicle)");
     return;
     }
 
