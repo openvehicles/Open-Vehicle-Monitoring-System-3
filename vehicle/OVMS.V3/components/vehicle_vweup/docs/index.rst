@@ -39,7 +39,7 @@ If both connections are to be made simultaneously, an adapter cable has to be ma
 === === ===== ===========================
 T26 OBD DB9-F Signal
 === === ===== ===========================
-26  .   3	  Chassis / Power GND
+26  4   3	  Chassis / Power GND
 .   14  2	  can1 L (Can Low)
 .   6   7	  can1 H (Can High)
 .   .   4	  can2 L (Can Low, not used)
