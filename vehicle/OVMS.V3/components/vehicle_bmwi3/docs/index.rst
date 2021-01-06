@@ -55,7 +55,7 @@ As standard, the i3 will sound the alarm if anything is left connected to the OB
 port when the car is locked.
 
 A tool like Bimmercode will allow you to disable this. Alternatively
-you will need to discconnect the OVMS unit before locking the car.
+you will need to disconnect the OVMS unit before locking the car.
 
 A future version may add a command to allow you to disable this alarm directly
 from your OVMS shell.
