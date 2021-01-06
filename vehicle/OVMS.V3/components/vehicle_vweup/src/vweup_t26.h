@@ -158,12 +158,12 @@ class OvmsVehicleVWeUpAll : public OvmsVehicle
     OvmsMetricFloat *TPMSEmergencyRearRight; // TPMS Indicator for Tyre Emergency Rear Right Tyre
     OvmsMetricFloat *MaintenanceDist; // Distance to next maintenance
     OvmsMetricFloat *MaintenanceTime; // Days to next maintenance
-    OvmsMetricFloat *CoolantTemp1; // 
-    OvmsMetricFloat *CoolantTemp2; // 
-    OvmsMetricFloat *CoolantTemp3; // 
-    OvmsMetricFloat *CoolantTemp4; // 
-    OvmsMetricFloat *CoolantTemp5; // 
-    OvmsMetricFloat *CoolingTempBat; // 
+    OvmsMetricFloat *CoolantTemp1; //
+    OvmsMetricFloat *CoolantTemp2; //
+    OvmsMetricFloat *CoolantTemp3; //
+    OvmsMetricFloat *CoolantTemp4; //
+    OvmsMetricFloat *CoolantTemp5; //
+    OvmsMetricFloat *CoolingTempBat; //
     OvmsMetricFloat *BrakeboostTempECU;
     OvmsMetricFloat *BrakeboostTempAccu;
     OvmsMetricFloat *SteeringTempPA;
