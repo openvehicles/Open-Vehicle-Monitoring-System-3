@@ -73,9 +73,13 @@ our $usedfunctionnames = {};
 our $usedresultnames = {};
 
 
-binmode(STDOUT, ":utf8");
 open (CODE, ">&=3") || die "Can't fdopen 3";
 open (POLLLIST, ">&=4") || die "Can't fdopen 4";
+
+binmode(STDOUT, ":utf8");
+binmode(STDERR, ":utf8");
+binmode(CODE, ":utf8");
+binmode(POLLLIST, ":utf8");
 
 # Read ECU definition json as created by parseecu.pl
 my $tables;

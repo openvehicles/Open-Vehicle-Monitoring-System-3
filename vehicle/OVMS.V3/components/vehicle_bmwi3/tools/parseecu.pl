@@ -85,6 +85,6 @@ print STDERR Dumper($tables->{"SG_FUNKTIONEN"});
 
 my $json = JSON::PP->new->pretty->utf8;
 
-
+binmode(STDOUT, ":utf8");
 
 print $json->encode( { tables => $tables } );
