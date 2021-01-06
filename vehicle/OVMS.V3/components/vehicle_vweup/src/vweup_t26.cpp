@@ -450,7 +450,6 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
             fas_counter_on = 0;
             fas_counter_off = 0;
   
-            StandardMetrics.ms_v_env_on->SetValue(false);
             PollSetState(VWEUP_OFF);
 
             break;
