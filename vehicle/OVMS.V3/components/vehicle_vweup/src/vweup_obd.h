@@ -68,8 +68,8 @@ using namespace std;
 //
 // ECU diagnostic session(s)
 //
-#define VWUP_START_EXTDIAG              0x03
-#define VWUP_STOP_EXTDIAG               0x01
+#define VWUP_EXTDIAG_START              0x03
+#define VWUP_EXTDIAG_STOP               0x01
 
 //
 // PIDs of ECUs
