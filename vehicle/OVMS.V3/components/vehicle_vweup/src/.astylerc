@@ -1,0 +1,19 @@
+#
+# astyle source code formatting configuration for VW e-Up module
+# see http://astyle.sourceforge.net/astyle.html
+# 
+# Usage: astyle --project srcfile [srcfile …]
+# (Backup: srcfile~)
+#
+--suffix=~
+--style=1tbs
+--indent=spaces=2
+--convert-tabs
+--break-closing-braces
+--indent-switches
+--indent-after-parens
+--pad-oper
+--pad-header
+--align-pointer=name
+--align-reference=name
+--break-one-line-headers
