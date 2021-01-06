@@ -1,6 +1,7 @@
-=============
-VW e-Up (OBD)
-=============
+.. _index_obd:
+================
+VW e-Up via OBD2
+================
 
 Vehicle Type: **VWUP.OBD**
 
