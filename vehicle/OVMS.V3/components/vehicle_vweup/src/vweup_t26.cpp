@@ -833,7 +833,12 @@ void OvmsVehicleVWeUp::CCOn()
   data[5] = 0x01;
   data[6] = 0x6E; // This is the target temperature. T = 10 + d6/10
 
-
+  if (vweup_cc_temp_int == 15) {
+    data[6] = 0x32;
+    if (dev_mode) {
+      ESP_LOGI(TAG, "Cabin temperature set: 15");
+    }
+  }
   if (vweup_cc_temp_int == 16) {
     data[6] = 0x3C;
     if (dev_mode) {

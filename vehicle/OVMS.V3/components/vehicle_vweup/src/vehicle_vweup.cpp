@@ -190,7 +190,7 @@ bool OvmsVehicleVWeUp::SetFeature(int key, const char *value)
            }
         }
         n = atoi(value);
-        if (n < 16) value = "16";
+        if (n < 15) value = "15";
         if (n > 30) value = "30";
         MyConfig.SetParamValue("xvu", "cc_temp", value);
         return true;
@@ -229,7 +229,7 @@ void OvmsVehicleVWeUp::ConfigChanged(OvmsConfigParam *param)
     vweup_enable_obd = MyConfig.GetParamValueBool("xvu", "con_obd", true);
     vweup_enable_t26 = MyConfig.GetParamValueBool("xvu", "con_t26", true);
     vweup_enable_write = MyConfig.GetParamValueBool("xvu", "canwrite", false);
-    vweup_cc_temp_int = MyConfig.GetParamValueInt("xvu", "cc_temp", 21);
+    vweup_cc_temp_int = MyConfig.GetParamValueInt("xvu", "cc_temp", 22);
     if (vweup_enable_t26)
         T26Init();    
     vweup_con = vweup_enable_obd * 2 + vweup_enable_t26;
