@@ -146,7 +146,12 @@ void OvmsVehicleVWeUp::OBDInit()
     PollSetPidList(m_can1, vweup_polls_all);
     PollSetThrottling(0);
     PollSetResponseSeparationTime(1);
-    PollSetState(VWEUP_OFF);
+    if (StandardMetrics.ms_v_charge_inprogress)
+        PollSetState(VWEUP_CHARGING);
+    else if (StandardMetrics.ms_v_env_on)
+        PollSetState(VWEUP_ON);
+    else
+        PollSetState(VWEUP_OFF);
 
     BatMgmtSoCAbs = MyMetrics.InitFloat("xvu.b.soc.abs", 100, 0, Percentage);
     MotElecSoCAbs = MyMetrics.InitFloat("xvu.m.soc.abs", 100, 0, Percentage);
