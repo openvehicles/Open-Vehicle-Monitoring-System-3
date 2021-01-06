@@ -449,6 +449,9 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
             vweup_remote_climate_ticker = 0;
             fas_counter_on = 0;
             fas_counter_off = 0;
+  
+            PollSetState(VWEUP_OFF);
+
             break;
         }
         if (d[0] == 0x1D)
@@ -689,6 +692,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandWakeup()
         xTimerStart(m_sendOcuHeartbeat, 0);
 
         ESP_LOGI(TAG, "Sent Wakeup Command - stage 2");
+        PollSetState(VWEUP_ON);
     }
     // This can be done better. Gives always success, even when already awake.
     return Success;
