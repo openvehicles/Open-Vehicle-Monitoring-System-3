@@ -59,11 +59,13 @@ static const char *TAG = "v-voltampera";
 static const OvmsVehicle::poll_pid_t va_polls[]
   =
   {
+    { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x1940, {  0, 60,   60 },  0, ISOTP_STD }, // Transmission temperature
     { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x4369, {  0, 10,   10 },  0, ISOTP_STD }, // On-board charger current
     { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x4368, {  0, 10,   10 },  0, ISOTP_STD }, // On-board charger voltage
     { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x434f, {  0, 10,   10 },  0, ISOTP_STD }, // High-voltage Battery temperature
     { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x1c43, {  0, 10,   10 },  0, ISOTP_STD }, // PEM temperature
     { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x8334, {  0, 10,   10 },  0, ISOTP_STD }, // SOC
+    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x41a3, {  0, 600,  0 },   0, ISOTP_STD }, // High-voltage Battery capacity
     { 0x7e7, 0x7ef, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x40d7, {  0, 60,   60 },  0, ISOTP_STD }, // High-voltage Battery Section 1 temperature
     { 0x7e7, 0x7ef, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x40d9, {  0, 60,   60 },  0, ISOTP_STD }, // High-voltage Battery Section 2 temperature
     { 0x7e7, 0x7ef, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x40db, {  0, 60,   60 },  0, ISOTP_STD }, // High-voltage Battery Section 3 temperature
@@ -715,6 +717,9 @@ void OvmsVehicleVoltAmpera::IncomingPollReply(canbus* bus, uint16_t type, uint16
       break;
       }
     */
+    case 0x41a3:  // High-voltage Battery Capacity  
+      StandardMetrics.ms_v_bat_cac->SetValue((float)(data[0]<<8 | data[1]) / 10, AmpHours);
+      break;
     case 0x40d7:  // High-voltage Battery Section 1 temperature  
       BmsSetCellTemperature(0, data[0] - 40);
       break;
@@ -732,6 +737,9 @@ void OvmsVehicleVoltAmpera::IncomingPollReply(canbus* bus, uint16_t type, uint16
       break;
     case 0x40e1:  // High-voltage Battery Section 6 temperature  
       BmsSetCellTemperature(5, data[0] - 40);
+      break;   
+    case 0x1940:  // Transmission temperature
+      StandardMetrics.ms_v_mot_temp->SetValue((int)value - 0x28);
       break;   
     default:
       break;
