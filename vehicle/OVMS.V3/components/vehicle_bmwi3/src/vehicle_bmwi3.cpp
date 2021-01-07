@@ -2559,6 +2559,6 @@ OvmsVehicleBMWi3Init::OvmsVehicleBMWi3Init()
 {
   ESP_LOGI(TAG, "Registering Vehicle: BMW i3 (9000)");
 
-  MyVehicleFactory.RegisterVehicle<OvmsVehicleBMWi3>("I3", "BMW i3, i3s");
+  MyVehicleFactory.RegisterVehicle<OvmsVehicleBMWi3>("BMWI3", "BMW i3, i3s");
 }
 

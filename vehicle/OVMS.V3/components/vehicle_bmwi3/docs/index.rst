@@ -3,7 +3,7 @@
 BMW i3 / i3s
 =============
 
-Vehicle Type: **I3**
+Vehicle Type: **BMWI3**
 
 This vehicle type supports the BMW i3 and i3s models. All model years should be supported.
 
