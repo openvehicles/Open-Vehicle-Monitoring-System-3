@@ -76,6 +76,25 @@
 #define EFLG_RXWAR              0b00000010    // Receive Error Warning (REC >= 96)
 #define EFLG_EWARN              0b00000001    // Error Warning (TXWAR or RXWAR set)
 
+// TXBnCTRL (Transmission Buffer Control) register flags
+#define TXBCTRL_ABTF            0b01000000    // Message Aborted
+#define TXBCTRL_MLOA            0b00100000    // Message Lost Arbitration
+#define TXBCTRL_TXERR           0b00010000    // Transmission Error (bus error)
+#define TXBCTRL_TXREQ           0b00001000    // Message Transmit Request (TX pending)
+
+// CMD_READ_STATUS flags
+#define STATUS_TX2IF            0b10000000    // CANINTF.TX2IF
+#define STATUS_TX2REQ           0b01000000    // TXB2CNTRL.TXREQ
+#define STATUS_TX1IF            0b00100000    // CANINTF.TX1IF
+#define STATUS_TX1REQ           0b00010000    // TXB1CNTRL.TXREQ
+#define STATUS_TX0IF            0b00001000    // CANINTF.TX0IF
+#define STATUS_TX0REQ           0b00000100    // TXB0CNTRL.TXREQ
+#define STATUS_RX1IF            0b00000010    // CANINTF.RX1IF
+#define STATUS_RX0IF            0b00000001    // CANINTF.RX0IF
+#define STATUS_TX012IF          0b10101000    // Mask: any/all TXnIF
+#define STATUS_TX012REQ         0b01010100    // Mask: any/all TXnREQ
+#define STATUS_RX01IF           0b00000011    // Mask: any/all RXnIF
+
 // Register addresses
 #define REG_CANSTAT             0x0E
 #define REG_CANCTRL             0x0F
