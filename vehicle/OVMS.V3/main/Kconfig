@@ -402,7 +402,7 @@ config OVMS_VEHICLE_MG_EV
 
 config OVMS_VEHICLE_BMWI3
     bool "Include support for BMW i3/i3s"
-    default n
+    default y
     depends on OVMS
     help
         Enable to include support for BMW i3 or i3s vehicles
