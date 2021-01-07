@@ -286,17 +286,19 @@ esp_err_t mcp2515::Stop()
 
 esp_err_t mcp2515::ViewRegisters()
   {
-  uint8_t buf[16];
+  uint8_t buf[20];
   uint8_t cnf[3];
   // fetch configuration registers
-  uint8_t * rcvbuf = m_spibus->spi_cmd(m_spi, buf, 8, 2, CMD_READ, REG_CNF3);
+  uint8_t * rcvbuf = m_spibus->spi_cmd(m_spi, buf, 9, 2, CMD_READ, REG_CNF3);
   cnf[0] = rcvbuf[2];
   cnf[1] = rcvbuf[1];
   cnf[2] = rcvbuf[0];
-  ESP_LOGI(TAG, "%s: configuration registers: CNF 0x%02x 0x%02x 0x%02x", this->GetName(),
-      cnf[0], cnf[1], cnf[2]);
-  ESP_LOGI(TAG, "%s: CANINTE 0x%02x CANINTF 0x%02x EFLG 0x%02x CANSTAT 0x%02x CANCTRL 0x%02x", this->GetName(),
-      rcvbuf[3], rcvbuf[4], rcvbuf[5], rcvbuf[6], rcvbuf[7]);
+  ESP_LOGI(TAG,
+    "%s: configuration registers: CNF 0x%02x 0x%02x 0x%02x",
+    this->GetName(), cnf[0], cnf[1], cnf[2]);
+  ESP_LOGI(TAG,
+    "%s: CANINTE 0x%02x CANINTF 0x%02x EFLG 0x%02x CANSTAT 0x%02x CANCTRL 0x%02x TXB0CTRL 0x%02x",
+    this->GetName(), rcvbuf[3], rcvbuf[4], rcvbuf[5], rcvbuf[6], rcvbuf[7], rcvbuf[8]);
   // read error counters
   rcvbuf = m_spibus->spi_cmd(m_spi, buf, 2, 2, CMD_READ, REG_TEC);
   uint8_t errors_tx = rcvbuf[0];
@@ -403,11 +405,13 @@ bool mcp2515::AsynchronousInterruptHandler(CAN_frame_t* frame, bool * frameRecei
   uint8_t buf[16];
 
   *frameReceived = false;
+  CAN_log_type_t log_status = CAN_LogNone;
 
-  // read interrupts (CANINTF 0x2c) and errors (EFLG 0x2d):
-  uint8_t *p = m_spibus->spi_cmd(m_spi, buf, 2, 2, CMD_READ, REG_CANINTF);
+  // read interrupts (CANINTF 0x2c), errors (EFLG 0x2d) and transmission status (TXB0CTRL 0x30):
+  uint8_t *p = m_spibus->spi_cmd(m_spi, buf, 5, 2, CMD_READ, REG_CANINTF);
   uint8_t intstat = p[0];
   uint8_t errflag = p[1];
+  uint8_t txb0ctrl = p[4];
 
   if (intstat == 0)
     {
@@ -469,16 +473,17 @@ bool mcp2515::AsynchronousInterruptHandler(CAN_frame_t* frame, bool * frameRecei
 
   if (intstat & CANINTF_TX012IF)
     {
-    // some TX buffers have become available; clear IRQs and fill up:
+    // TX buffer(s) have become available; clear IRQs and fill up:
     m_spibus->spi_cmd(m_spi, buf, 0, 4, CMD_BITMODIFY, REG_CANINTF, intstat & CANINTF_TX012IF, 0);
     m_status.error_flags |= 0x0100;
 
-    // send "tx success" callback request to main CAN processor task
+    // Note: the TXnIF bits only get set on successful transmission (see TX flowchart)
+    // Queue "tx success" callback:
     CAN_queue_msg_t msg;
     msg.type = CAN_txcallback;
     msg.body.frame = m_tx_frame;
     msg.body.bus = this;
-    xQueueSend(MyCan.m_rxqueue,&msg,0);
+    xQueueSend(MyCan.m_rxqueue, &msg, 0);
     }
 
   if (intstat & (CANINTF_MERRF | CANINTF_WAKIF | CANINTF_ERRIF))
@@ -488,11 +493,13 @@ bool mcp2515::AsynchronousInterruptHandler(CAN_frame_t* frame, bool * frameRecei
     //  WAKIF = wakeup
     //  ERRIF = overflow / error state change (details in errflag)
 
+    // Check for RX overflow:
     if (errflag & EFLG_RX1OVR) // RXB1 overflow
       {
       m_status.rxbuf_overflow++;
       m_status.error_flags |= 0x0200;
-      ESP_LOGW(TAG, "CAN Bus 2/3 receive overflow; Frame lost.");
+      //ESP_LOGW(TAG, "CAN Bus 2/3 receive overflow; Frame lost.");
+      log_status = CAN_LogStatus_Error;
       }
     if (errflag & EFLG_RX0OVR) // RXB0 overflow.  No data lost in this case (it went into RXB1)
       {
@@ -500,27 +507,61 @@ bool mcp2515::AsynchronousInterruptHandler(CAN_frame_t* frame, bool * frameRecei
       }
 
     // Read error counters:
-    uint8_t *p = m_spibus->spi_cmd(m_spi, buf, 2, 2, CMD_READ, REG_TEC);
-    uint8_t txerr = p[0];
-    uint8_t rxerr = p[1];
+    p = m_spibus->spi_cmd(m_spi, buf, 2, 2, CMD_READ, REG_TEC);
+    m_status.errors_tx = p[0];
+    m_status.errors_rx = p[1];
 
     // Check for TX failure:
-    if ((intstat & CANINTF_MERRF) && (txerr > m_status.errors_tx))
+    //  We consider the TX to have failed if a bus error is detected during the
+    //  transmission attempt and the controller gave up on retrying (= entered
+    //  passive mode, txerr >= 128).
+    if ((intstat & CANINTF_MERRF) != 0 &&
+        (txb0ctrl & TXBCTRL_TXREQ) != 0 &&
+        m_status.errors_tx >= 128)
       {
-      ESP_LOGE(TAG, "AsynchronousInterruptHandler: error while sending frame. msgId 0x%x", m_tx_frame.MsgID);
-      // send "tx failed" callback request to main CAN processor task
+      //ESP_LOGE(TAG, "AsynchronousInterruptHandler: error while sending frame. msgId 0x%x", m_tx_frame.MsgID);
+
+      // Abort TX to cancel further retransmission attempts:
+      // … set ABAT, poll for TXREQ to become clear, clear ABAT:
+      m_spibus->spi_cmd(m_spi, buf, 0, 4, CMD_BITMODIFY, REG_CANCTRL, CANCTRL_ABAT, CANCTRL_ABAT);
+      do
+        p = m_spibus->spi_cmd(m_spi, buf, 1, 1, CMD_READ_STATUS);
+      while (p[0] & STATUS_TX012REQ);
+      m_spibus->spi_cmd(m_spi, buf, 0, 4, CMD_BITMODIFY, REG_CANCTRL, CANCTRL_ABAT, 0);
+
+      // … get TXERR & ABTF flags:
+      p = m_spibus->spi_cmd(m_spi, buf, 1, 2, CMD_READ, REG_TXB0CTRL);
+      bool tx_aborted = ((p[0] & (TXBCTRL_ABTF | TXBCTRL_TXERR)) != 0);
+
+      // … and clear TX IRQs in case the abort request came too late:
+      m_spibus->spi_cmd(m_spi, buf, 0, 4, CMD_BITMODIFY, REG_CANINTF, CANINTF_TX012IF, 0);
+
+      // Queue TX callback:
       CAN_queue_msg_t msg;
-      msg.type = CAN_txfailedcallback;
+      msg.type = tx_aborted ? CAN_txfailedcallback : CAN_txcallback;
       msg.body.frame = m_tx_frame;
       msg.body.bus = this;
-      xQueueSend(MyCan.m_rxqueue,&msg,0);
+      xQueueSend(MyCan.m_rxqueue, &msg, 0);
+      // …which will log the error as well
       }
-
-    m_status.errors_tx = txerr;
-    m_status.errors_rx = rxerr;
-
-    // log:
-    LogStatus(CAN_LogStatus_Error);
+    else
+      {
+      // Request log entry for other errors:
+      log_status = CAN_LogStatus_Error;
+      }
+    }
+  else
+    {
+    // No error interrupt signaled, but we want to follow the error recovery:
+    if (m_status.errors_tx || m_status.errors_rx)
+      {
+      // Read error counters:
+      p = m_spibus->spi_cmd(m_spi, buf, 2, 2, CMD_READ, REG_TEC);
+      m_status.errors_tx = p[0];
+      m_status.errors_rx = p[1];
+      if (!m_status.errors_tx && !m_status.errors_rx)
+        m_status.error_flags = 0;
+      }
     }
 
   // clear RX buffer overflow flags:
@@ -530,22 +571,24 @@ bool mcp2515::AsynchronousInterruptHandler(CAN_frame_t* frame, bool * frameRecei
     m_spibus->spi_cmd(m_spi, buf, 0, 4, CMD_BITMODIFY, REG_EFLG, errflag & EFLG_RX01OVR, 0);
     }
 
-  // log bus error state change:
-  if (intstat & CANINTF_ERRIF)
+  // Log bus error state change:
+  uint8_t log_errflag = errflag & ~EFLG_RX01OVR;
+  if (log_errflag && log_errflag != m_last_errflag)
     {
-    uint8_t log_errflag = errflag & ~EFLG_RX01OVR;
-    if (log_errflag && log_errflag != m_last_errflag)
-      {
-      ESP_LOGW(TAG, "%s EFLG: %s%s%s%s%s%s", this->GetName(),
-        (errflag & EFLG_TXBO)  ? "Bus-off " : "",
-        (errflag & EFLG_TXEP)  ? "TX_Err_Passv " : "",
-        (errflag & EFLG_RXEP)  ? "RX_Err_Passv " : "",
-        (errflag & EFLG_TXWAR) ? "TX_Err_Warn " : "",
-        (errflag & EFLG_RXWAR) ? "RX_Err_Warn " : "",
-        (errflag & EFLG_EWARN) ? "EWARN " : "" );
-      }
-    m_last_errflag = log_errflag;
+    ESP_LOGW(TAG, "%s EFLG: %s%s%s%s%s%s", this->GetName(),
+      (errflag & EFLG_TXBO)  ? "Bus-off " : "",
+      (errflag & EFLG_TXEP)  ? "TX_Err_Passv " : "",
+      (errflag & EFLG_RXEP)  ? "RX_Err_Passv " : "",
+      (errflag & EFLG_TXWAR) ? "TX_Err_Warn " : "",
+      (errflag & EFLG_RXWAR) ? "RX_Err_Warn " : "",
+      (errflag & EFLG_EWARN) ? "EWARN " : "" );
     }
+  if (log_errflag == 0 && (m_last_errflag & ~EFLG_RX01OVR) != 0)
+    {
+    // Recovered:
+    log_status = CAN_LogStatus_Statistics;
+    }
+  m_last_errflag = log_errflag;
 
   // clear error & wakeup interrupts:
   if (intstat & (CANINTF_MERRF | CANINTF_WAKIF | CANINTF_ERRIF))
@@ -553,6 +596,11 @@ bool mcp2515::AsynchronousInterruptHandler(CAN_frame_t* frame, bool * frameRecei
     m_status.error_flags |= 0x1000;
     m_spibus->spi_cmd(m_spi, buf, 0, 4, CMD_BITMODIFY, REG_CANINTF,
       intstat & (CANINTF_MERRF | CANINTF_WAKIF | CANINTF_ERRIF), 0);
+    }
+
+  if (log_status != CAN_LogNone)
+    {
+    LogStatus(log_status);
     }
 
   // Read the interrupt pin status and if it's still active (low), require another interrupt handling iteration
