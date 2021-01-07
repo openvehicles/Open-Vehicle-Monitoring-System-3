@@ -85,7 +85,7 @@ You may also refer to metric xi3.s.pollermode as follows:
 ==== ================================================
 Mode Meaning
 ==== ================================================
- 0   Car is not asleep - no OBD-II data traffic
+ 0   Car is asleep - no OBD-II data traffic
  1   Car OBD-II is awake - we are seeing data traffic
  2   Car is ready to drive or driving
  3   Car is charging
