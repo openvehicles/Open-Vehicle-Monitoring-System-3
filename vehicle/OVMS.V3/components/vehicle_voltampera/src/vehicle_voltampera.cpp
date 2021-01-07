@@ -292,7 +292,7 @@ void OvmsVehicleVoltAmpera::IncomingFrameCan1(CAN_frame_t* p_frame)
 
     case 0x3e9:
       {
-      StandardMetrics.ms_v_pos_speed->SetValue(GET16(p_frame, 0)/100, Miles);
+      StandardMetrics.ms_v_pos_speed->SetValue(GET16(p_frame, 0)/100, Mph);
       break;
       } 
 
