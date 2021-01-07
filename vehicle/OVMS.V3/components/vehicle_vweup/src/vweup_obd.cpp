@@ -709,20 +709,20 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
     case VWUP_ELD_TEMP_MOT:
       if (PollReply.FromInt16("VWUP_ELD_TEMP_MOT", value)) {
         StdMetrics.ms_v_mot_temp->SetValue(value / 64.0f);
+        VALUE_LOG(TAG, "VWUP_ELD_TEMP_MOT=%f => %f", value, StdMetrics.ms_v_mot_temp->AsFloat());
       }
-      VALUE_LOG(TAG, "VWUP_ELD_TEMP_MOT=%f => %f", value, StdMetrics.ms_v_mot_temp->AsFloat());
       break;
     case VWUP_MOT_ELEC_TEMP_PEM:
       if (PollReply.FromUint16("VWUP_MOT_ELEC_TEMP_PEM", value)) {
         StdMetrics.ms_v_inv_temp->SetValue(value / 10.0f - 273.1);
+        VALUE_LOG(TAG, "VWUP_MOT_ELEC_TEMP_PEM=%f => %f", value, StdMetrics.ms_v_inv_temp->AsFloat());
       }
-      VALUE_LOG(TAG, "VWUP_MOT_ELEC_TEMP_PEM=%f => %f", value, StdMetrics.ms_v_inv_temp->AsFloat());
       break;
     case VWUP_CHG_TEMP_BRD:
       if (PollReply.FromUint8("VWUP_CHG_TEMP_BRD", value)) {
         StdMetrics.ms_v_charge_temp->SetValue(value - 40.0f);
+        VALUE_LOG(TAG, "VWUP_CHG_TEMP_BRD=%f => %f", value, StdMetrics.ms_v_charge_temp->AsFloat());
       }
-      VALUE_LOG(TAG, "VWUP_CHG_TEMP_BRD=%f => %f", value, StdMetrics.ms_v_charge_temp->AsFloat());
       break;
     case VWUP_MOT_ELEC_TEMP_AMB:
       if (PollReply.FromUint8("VWUP_MOT_ELEC_TEMP_AMB", value) && value > 0 && value < 255) {
@@ -734,8 +734,8 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
     case VWUP_CHG_MGMT_REM:
       if (PollReply.FromUint8("VWUP_CHG_MGMT_REM", value)) {
         StdMetrics.ms_v_charge_duration_full->SetValue(value * 5.0f);
+        VALUE_LOG(TAG, "VWUP_CHG_MGMT_REM=%f => %f", value, StdMetrics.ms_v_charge_duration_full->AsFloat());
       }
-      VALUE_LOG(TAG, "VWUP_CHG_MGMT_REM=%f => %f", value, StdMetrics.ms_v_charge_duration_full->AsFloat());
       break;
 
   }
