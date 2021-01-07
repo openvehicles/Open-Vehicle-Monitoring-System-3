@@ -156,7 +156,12 @@ void OvmsVehicleVWeUp::OBDInit()
   PollSetPidList(m_can1, NULL);
   PollSetThrottling(0);
   PollSetResponseSeparationTime(1);
-  PollSetState(VWEUP_OFF);
+  if (StandardMetrics.ms_v_charge_inprogress->AsBool())
+    PollSetState(VWEUP_CHARGING);
+  else if (StandardMetrics.ms_v_env_on->AsBool())
+    PollSetState(VWEUP_ON);
+  else
+    PollSetState(VWEUP_OFF);
 
   m_poll_vector.clear();
 
