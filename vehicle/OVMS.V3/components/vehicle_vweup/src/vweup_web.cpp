@@ -194,11 +194,13 @@ void OvmsVehicleVWeUp::WebCfgClimate(PageEntry_t &p, PageContext_t &c)
   c.panel_start("primary", "VW e-Up climate control configuration");
   c.form_start(p.uri);
 
-  c.print("<br>This page offers remote climate configuration.<br><br>The target temperature for the cabin can be set here (16 to 30 degrees Celcius).<br><br><br>");
+  c.print("<br>This page offers remote climate configuration.<br><br>The target temperature for the cabin can be set here (15 to 30 degrees Celcius).<br><br><br>");
 
   c.fieldset_start("Climate control");
 
   c.input_select_start("Cabin target temperature", "cc_temp");
+
+  c.input_select_option("15", "15", cc_temp == "15");
   c.input_select_option("16", "16", cc_temp == "16");
   c.input_select_option("17", "17", cc_temp == "17");
   c.input_select_option("18", "18", cc_temp == "18");
