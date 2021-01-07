@@ -831,7 +831,7 @@ void OvmsVehicleVWeUp::CCOn()
   data[3] = 0xFF;
   data[4] = 0xFF;
   data[5] = 0x01;
-  data[6] = 0x6E; // This is the target temperature. T = 10 + d6/10
+  data[6] = 0x78; // This is the target temperature. T = 10 + d6/10
 
   if (vweup_cc_temp_int == 15) {
     data[6] = 0x32;
