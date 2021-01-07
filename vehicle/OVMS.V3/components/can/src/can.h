@@ -143,10 +143,11 @@ typedef struct
   {
   uint32_t interrupts;              // interrupts
   uint32_t packets_rx;              // frames reveiced
-  uint32_t packets_tx;              // frames loaded into TX buffers (not necessarily sent)
+  uint32_t packets_tx;              // frames sent successfully
   uint32_t txbuf_delay;             // frames routed through TX queue
   uint16_t rxbuf_overflow;          // frames lost due to RX buffers full
   uint16_t txbuf_overflow;          // TX queue overflows
+  uint32_t tx_fails;                // TX failures/aborts
   uint32_t error_flags;             // driver specific bitset
   uint16_t errors_rx;               // RX error counter
   uint16_t errors_tx;               // TX error counter
@@ -167,7 +168,8 @@ typedef enum
   CAN_asyncinterrupthandler, // used for asynchronous handling of rx and other interrupts from MCP2515
   CAN_txcallback,
   CAN_txfailedcallback,
-  CAN_logerror
+  CAN_logerror,
+  CAN_logstatus
 } CAN_queue_type_t;
 
 // CAN message
@@ -225,7 +227,8 @@ class canfilter
 // Log entry types:
 typedef enum
   {
-  CAN_LogFrame_RX = 0,        // frame received
+  CAN_LogNone = 0,            // init placeholder
+  CAN_LogFrame_RX,            // frame received
   CAN_LogFrame_TX,            // frame transmitted
   CAN_LogFrame_TX_Queue,      // frame delayed
   CAN_LogFrame_TX_Fail,       // frame transmission failure
