@@ -28,7 +28,7 @@
     }
 
     float STAT_LADESTECKDOSE_TEMP_WERT = (RXBUF_UINT(0)/10.0f-40.0);
-        // Temperature of the DC charging connection in � C (China) / Temperatur der DC-Ladeanschluss in 째C (China)
+        // Temperature of the DC charging connection in 째 C (China) / Temperatur der DC-Ladeanschluss in 째C (China)
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "LIM", "LADESTECKDOSE_TEMPERATUR", "STAT_LADESTECKDOSE_TEMP_WERT", STAT_LADESTECKDOSE_TEMP_WERT, "\"째C\"");
 
     // ==========  Add your processing here ==========

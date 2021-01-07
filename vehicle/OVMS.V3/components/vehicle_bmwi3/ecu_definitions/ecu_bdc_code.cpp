@@ -170,7 +170,7 @@
     }
 
     unsigned char STAT_ELV_ANLIEFERZUSTAND = (RXBUF_UCHAR(0));
-        // The result indicates whether resetting the ELV to the delivery state was successful or not. 0: successful 1:
+        // The result indicates whether resetting the ELV to the delivery state was successful or not 0: successful 1:
         // not successful / Das Result gibt an ob das Rücksetzen der ELV in den Anlieferzustand erfolgreich war oder
         // nicht 0: erfolgreich 1: nicht erfolgreich
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "ELV_ANLIEFERZUSTAND", "STAT_ELV_ANLIEFERZUSTAND", STAT_ELV_ANLIEFERZUSTAND, "\"0-n\"");
@@ -208,64 +208,64 @@
         // The result contains the key number (0-19) of the key no. 1 found. Notes: - 0-19 = number of the key in the
         // transponder table. - 255 = no further key found. - ATTENTION: not to be confused with CA number (0-7). / Das
         // Result enthält die Schlüssel-Nummer (0-19) des gefundenen Schlüssels Nr. 1. Hinweise: - 0-19= Nummer des
-        // Schlüssels in der Transpondertabelle. - 255= kein weiterer Schlüssel gefunden. - ACHTUNG: nicht zu
-        // verwechseln mit CA-Nummer (0-7).
+        // Schlüssels in der Transpondertabelle. - 255= kein weiterer Schlüssel gefunden. - ACHTUNG: nicht zu verwechseln
+        // mit CA-Nummer (0-7).
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "STEUERN_CA_BROADCAST", "STAT_CA_SCHL_NUM1", STAT_CA_SCHL_NUM1, "\"0-n\"");
 
     unsigned char STAT_CA_SCHL_NUM2 = (RXBUF_UCHAR(1));
         // The result contains the key number (0-19) of the key no. 2 found. Notes: - 0-19 = number of the key in the
         // transponder table. - 255 = no further key found. - ATTENTION: not to be confused with CA number (0-7). / Das
         // Result enthält die Schlüssel-Nummer (0-19) des gefundenen Schlüssels Nr. 2. Hinweise: - 0-19= Nummer des
-        // Schlüssels in der Transpondertabelle. - 255= kein weiterer Schlüssel gefunden. - ACHTUNG: nicht zu
-        // verwechseln mit CA-Nummer (0-7).
+        // Schlüssels in der Transpondertabelle. - 255= kein weiterer Schlüssel gefunden. - ACHTUNG: nicht zu verwechseln
+        // mit CA-Nummer (0-7).
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "STEUERN_CA_BROADCAST", "STAT_CA_SCHL_NUM2", STAT_CA_SCHL_NUM2, "\"0-n\"");
 
     unsigned char STAT_CA_SCHL_NUM3 = (RXBUF_UCHAR(2));
         // The result contains the key number (0-19) of the key no. 3 found. Notes: - 0-19 = number of the key in the
         // transponder table. - 255 = no further key found. - ATTENTION: not to be confused with CA number (0-7). / Das
         // Result enthält die Schlüssel-Nummer (0-19) des gefundenen Schlüssels Nr. 3. Hinweise: - 0-19= Nummer des
-        // Schlüssels in der Transpondertabelle. - 255= kein weiterer Schlüssel gefunden. - ACHTUNG: nicht zu
-        // verwechseln mit CA-Nummer (0-7).
+        // Schlüssels in der Transpondertabelle. - 255= kein weiterer Schlüssel gefunden. - ACHTUNG: nicht zu verwechseln
+        // mit CA-Nummer (0-7).
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "STEUERN_CA_BROADCAST", "STAT_CA_SCHL_NUM3", STAT_CA_SCHL_NUM3, "\"0-n\"");
 
     unsigned char STAT_CA_SCHL_NUM4 = (RXBUF_UCHAR(3));
         // The result contains the key number (0-19) of the key no. 4 found. Notes: - 0-19 = number of the key in the
         // transponder table. - 255 = no further key found. - ATTENTION: not to be confused with CA number (0-7). / Das
         // Result enthält die Schlüssel-Nummer (0-19) des gefundenen Schlüssels Nr. 4. Hinweise: - 0-19= Nummer des
-        // Schlüssels in der Transpondertabelle. - 255= kein weiterer Schlüssel gefunden. - ACHTUNG: nicht zu
-        // verwechseln mit CA-Nummer (0-7).
+        // Schlüssels in der Transpondertabelle. - 255= kein weiterer Schlüssel gefunden. - ACHTUNG: nicht zu verwechseln
+        // mit CA-Nummer (0-7).
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "STEUERN_CA_BROADCAST", "STAT_CA_SCHL_NUM4", STAT_CA_SCHL_NUM4, "\"0-n\"");
 
     unsigned char STAT_CA_SCHL_NUM5 = (RXBUF_UCHAR(4));
         // The result contains the key number (0-19) of the key no. 5 found. Notes: - 0-19 = number of the key in the
         // transponder table. - 255 = no further key found. - ATTENTION: not to be confused with CA number (0-7). / Das
         // Result enthält die Schlüssel-Nummer (0-19) des gefundenen Schlüssels Nr. 5. Hinweise: - 0-19= Nummer des
-        // Schlüssels in der Transpondertabelle. - 255= kein weiterer Schlüssel gefunden. - ACHTUNG: nicht zu
-        // verwechseln mit CA-Nummer (0-7).
+        // Schlüssels in der Transpondertabelle. - 255= kein weiterer Schlüssel gefunden. - ACHTUNG: nicht zu verwechseln
+        // mit CA-Nummer (0-7).
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "STEUERN_CA_BROADCAST", "STAT_CA_SCHL_NUM5", STAT_CA_SCHL_NUM5, "\"0-n\"");
 
     unsigned char STAT_CA_SCHL_NUM6 = (RXBUF_UCHAR(5));
         // The result contains the key number (0-19) of the key no. 6 found. Notes: - 0-19 = number of the key in the
         // transponder table. - 255 = no further key found. - ATTENTION: not to be confused with CA number (0-7). / Das
         // Result enthält die Schlüssel-Nummer (0-19) des gefundenen Schlüssels Nr. 6. Hinweise: - 0-19= Nummer des
-        // Schlüssels in der Transpondertabelle. - 255= kein weiterer Schlüssel gefunden. - ACHTUNG: nicht zu
-        // verwechseln mit CA-Nummer (0-7).
+        // Schlüssels in der Transpondertabelle. - 255= kein weiterer Schlüssel gefunden. - ACHTUNG: nicht zu verwechseln
+        // mit CA-Nummer (0-7).
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "STEUERN_CA_BROADCAST", "STAT_CA_SCHL_NUM6", STAT_CA_SCHL_NUM6, "\"0-n\"");
 
     unsigned char STAT_CA_SCHL_NUM7 = (RXBUF_UCHAR(6));
-        // The result contains the key number (0-19) of the key no. 7 found. Notes: - 0-19 = number of the key in the
+        // The result contains the key number (0-19) of the key no. 7. Notes: - 0-19 = number of the key in the
         // transponder table. - 255 = no further key found. - ATTENTION: not to be confused with CA number (0-7). / Das
         // Result enthält die Schlüssel-Nummer (0-19) des gefundenen Schlüssels Nr. 7. Hinweise: - 0-19= Nummer des
-        // Schlüssels in der Transpondertabelle. - 255= kein weiterer Schlüssel gefunden. - ACHTUNG: nicht zu
-        // verwechseln mit CA-Nummer (0-7).
+        // Schlüssels in der Transpondertabelle. - 255= kein weiterer Schlüssel gefunden. - ACHTUNG: nicht zu verwechseln
+        // mit CA-Nummer (0-7).
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "STEUERN_CA_BROADCAST", "STAT_CA_SCHL_NUM7", STAT_CA_SCHL_NUM7, "\"0-n\"");
 
     unsigned char STAT_CA_SCHL_NUM8 = (RXBUF_UCHAR(7));
-        // The result contains the key number (0-19) of the key no. 8. Notes: - 0-19 = number of the key in the
+        // The result contains the key number (0-19) of the key no. 8 found. Notes: - 0-19 = number of the key in the
         // transponder table. - 255 = no further key found. - ATTENTION: not to be confused with CA number (0-7). / Das
         // Result enthält die Schlüssel-Nummer (0-19) des gefundenen Schlüssels Nr. 8. Hinweise: - 0-19= Nummer des
-        // Schlüssels in der Transpondertabelle. - 255= kein weiterer Schlüssel gefunden. - ACHTUNG: nicht zu
-        // verwechseln mit CA-Nummer (0-7).
+        // Schlüssels in der Transpondertabelle. - 255= kein weiterer Schlüssel gefunden. - ACHTUNG: nicht zu verwechseln
+        // mit CA-Nummer (0-7).
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "STEUERN_CA_BROADCAST", "STAT_CA_SCHL_NUM8", STAT_CA_SCHL_NUM8, "\"0-n\"");
 
     // ==========  Add your processing here ==========
@@ -281,7 +281,7 @@
     }
 
     unsigned char STAT_CA_ANTENNEN_TEST_OKAY = (RXBUF_UCHAR(0));
-        // The result contains the result of the antenna test. Notes: - Allocation takes place in accordance with table
+        // The result contains the result of the antenna test. Notes: - Allocation takes place according to table
         // TAB_CAS_CA_ANTENNEN_TEST. / Das Result enthält das Ergebnis des Antennentests. Hinweise: - Zuordnung erfolgt
         // gemäß Tabelle TAB_CAS_CA_ANTENNEN_TEST.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "STEUERN_CA_ANTENNEN_TEST", "STAT_CA_ANTENNEN_TEST_OKAY", STAT_CA_ANTENNEN_TEST_OKAY, "\"0-n\"");
@@ -409,8 +409,8 @@
     unsigned char STAT_FEHLER_X = (RXBUF_UCHAR(0));
         // The result contains the currently recognized errors in the FBD receiver. Note: For each error, a result is
         // generated dynamically from the bit-coded signal of the FBD receiver. / Das Result enthält die aktuell
-        // erkannten Fehler  im FBD-Empfänger.  Hinweis: Pro Fehler wird ein Result dynamisch aus dem bitcodiertem
-        // Signal des FBD-Empfängers generiert. 
+        // erkannten Fehler  im FBD-Empfänger.  Hinweis: Pro Fehler wird ein Result dynamisch aus dem bitcodiertem Signal
+        // des FBD-Empfängers generiert. 
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "FBD_FEHLER", "STAT_FEHLER_X", STAT_FEHLER_X, "\"0-n\"");
 
     unsigned char STAT_ANZAHL_RESETS_WERT = (RXBUF_UCHAR(1));
@@ -520,13 +520,13 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "ELSV_TASTER", "STAT_TASTER_ELSV_HINTEN_EIN", STAT_TASTER_ELSV_HINTEN_EIN, "\"0/1\"");
 
     char STAT_TASTER_ELSV_OBEN_EIN = (RXBUF_SCHAR(1));
-        // 0: Push-button eLSV upwards not actuated 1: Push-button eLSV upwards actuated / 0: Taster eLSV nach oben nicht
+        // 0: Push button eLSV upwards not actuated 1: Push button eLSV upwards actuated / 0: Taster eLSV nach oben nicht
         // betätigt 1: Taster eLSV nach oben betätigt
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "ELSV_TASTER", "STAT_TASTER_ELSV_OBEN_EIN", STAT_TASTER_ELSV_OBEN_EIN, "\"0/1\"");
 
     char STAT_TASTER_ELSV_UNTEN_EIN = (RXBUF_SCHAR(2));
-        // 0: Push button eLSV down not actuated 1: Push button eLSV down actuated / 0: Taster eLSV nach unten nicht
-        // betätigt 1: Taster eLSV nach unten betätigt
+        // 0: Down button eLSV not pressed 1: eLSV button down pressed / 0: Taster eLSV nach unten nicht betätigt 1:
+        // Taster eLSV nach unten betätigt
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "ELSV_TASTER", "STAT_TASTER_ELSV_UNTEN_EIN", STAT_TASTER_ELSV_UNTEN_EIN, "\"0/1\"");
 
     char STAT_TASTER_ELSV_VORNE_EIN = (RXBUF_SCHAR(3));
@@ -537,8 +537,8 @@
     char STAT_TASTER_ELSV_NR = (RXBUF_SCHAR(4));
         // 0: eLSV button not pressed 1: eLSV button pressed backwards 2: eLSV button pressed upwards 3: eLSV button
         // pressed forward 4: eLSV button pressed downwards 5: signal invalid / 0: Taster eLSV nicht betätigt 1: Taster
-        // eLSV nach hinten betätigt 2: Taster eLSV nach oben betätigt 3: Taster eLSV nach vorne betätigt 4: Taster
-        // eLSV nach unten betätigt 5: Signal ungültig
+        // eLSV nach hinten betätigt 2: Taster eLSV nach oben betätigt 3: Taster eLSV nach vorne betätigt 4: Taster eLSV
+        // nach unten betätigt 5: Signal ungültig
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "ELSV_TASTER", "STAT_TASTER_ELSV_NR", STAT_TASTER_ELSV_NR, "\"0-n\"");
 
     // ==========  Add your processing here ==========
@@ -587,8 +587,8 @@
     }
 
     short STAT_VORHANDEN_ELSV_EIN = (RXBUF_SINT(0));
-        // Electric steering column adjustment 0: not available 1: available / Elektrische Lenksäulenverstellung 0:
-        // nicht vorhanden 1: vorhanden
+        // Electric steering column adjustment 0: not available 1: available / Elektrische Lenksäulenverstellung 0: nicht
+        // vorhanden 1: vorhanden
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%d%s\n", "BDC", "ELSV_VORHANDEN", "STAT_VORHANDEN_ELSV_EIN", STAT_VORHANDEN_ELSV_EIN, "\"0/1\"");
 
     // ==========  Add your processing here ==========
@@ -609,8 +609,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "LENKRAD_MFL", "STAT_TASTER_LENKRAD_MFL_FGR_SET_EIN", STAT_TASTER_LENKRAD_MFL_FGR_SET_EIN, "\"0-n\"");
 
     char STAT_TASTER_LENKRAD_MFL_FGR_TIPPRAENDEL_NR = (RXBUF_SCHAR(1));
-        // 0: no operation 1: knurl at level 2 below 2: knurl at level 1 below 3: knurl at level 1 above 4: knurl at
-        // level 2 above 5: invalid position / 0: Keine Betätigung  1: Rändel auf Stufe 2 unten 2: Rändel auf Stufe 1
+        // 0: No operation 1: Knurl on level 2 below 2: Knurl on level 1 below 3: Knurl on level 1 above 4: Knurl on
+        // level 2 above 5: Invalid position / 0: Keine Betätigung  1: Rändel auf Stufe 2 unten 2: Rändel auf Stufe 1
         // unten 3: Rändel auf Stufe 1 oben 4: Rändel auf Stufe 2 oben 5: ungültige Position
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "LENKRAD_MFL", "STAT_TASTER_LENKRAD_MFL_FGR_TIPPRAENDEL_NR", STAT_TASTER_LENKRAD_MFL_FGR_TIPPRAENDEL_NR, "\"0-n\"");
 
@@ -620,8 +620,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "LENKRAD_MFL", "STAT_TASTER_LENKRAD_MFL_FGR_RES_EIN", STAT_TASTER_LENKRAD_MFL_FGR_RES_EIN, "\"0-n\"");
 
     char STAT_TASTER_LENKRAD_MFL_UMSCHALT_TASTE_EIN = (RXBUF_SCHAR(3));
-        // 0: ACC / DCC toggle key not pressed 1: ACC / DCC toggle key pressed / 0: Umschalttaste ACC/ DCC nicht
-        // betätigt  1: Umschalttaste ACC/ DCC betätigt
+        // 0: ACC / DCC toggle key not pressed 1: ACC / DCC toggle key pressed / 0: Umschalttaste ACC/ DCC nicht betätigt
+        // 1: Umschalttaste ACC/ DCC betätigt
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "LENKRAD_MFL", "STAT_TASTER_LENKRAD_MFL_UMSCHALT_TASTE_EIN", STAT_TASTER_LENKRAD_MFL_UMSCHALT_TASTE_EIN, "\"0-n\"");
 
     char STAT_TASTER_LENKRAD_MFL_ACC_ABSTAND_EIN = (RXBUF_SCHAR(4));
@@ -640,8 +640,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "LENKRAD_MFL", "STAT_TASTER_LENKRAD_MFL_PUSH_TO_TALK_EIN", STAT_TASTER_LENKRAD_MFL_PUSH_TO_TALK_EIN, "\"0-n\"");
 
     char STAT_TASTER_LENKRAD_MFL_MODE_TASTE = (RXBUF_SCHAR(7));
-        // 0: Source / Mode button not pressed 1: Source / Mode button pressed / 0: Taste Source / Mode nicht betätigt
-        // 1: Taste Source / Mode betätigt
+        // 0: Source / Mode button not pressed 1: Source / Mode button pressed / 0: Taste Source / Mode nicht betätigt 1:
+        // Taste Source / Mode betätigt
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "LENKRAD_MFL", "STAT_TASTER_LENKRAD_MFL_MODE_TASTE", STAT_TASTER_LENKRAD_MFL_MODE_TASTE, "\"0-n\"");
 
     char STAT_TASTER_LENKRAD_MFL_TIPPRAENDEL_BC_NR = (RXBUF_SCHAR(8));
@@ -661,8 +661,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "LENKRAD_MFL", "STAT_TASTER_LENKRAD_MFL_VOL_MINUS_EIN", STAT_TASTER_LENKRAD_MFL_VOL_MINUS_EIN, "\"0-n\"");
 
     char STAT_TASTER_LENKRAD_MFL_VOL_PLUS_EIN = (RXBUF_SCHAR(11));
-        // 0: Volume / volume plus button not pressed 1: Volume / volume plus button pressed / 0: Taste
-        // Volume/Lautstärke plus nicht betätigt 1: Taste Volume/Lautstärke plus betätigt
+        // 0: Volume / volume plus button not pressed 1: Volume / volume plus button pressed / 0: Taste Volume/Lautstärke
+        // plus nicht betätigt 1: Taste Volume/Lautstärke plus betätigt
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "LENKRAD_MFL", "STAT_TASTER_LENKRAD_MFL_VOL_PLUS_EIN", STAT_TASTER_LENKRAD_MFL_VOL_PLUS_EIN, "\"0-n\"");
 
     char STAT_TASTER_LENKRAD_MFL1_NR = (RXBUF_SCHAR(12));
@@ -706,8 +706,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "ELSV_POS_STATUS", "STAT_ELSV_BEWEGUNG_UNTEN_EIN", STAT_ELSV_BEWEGUNG_UNTEN_EIN, "\"0/1\"");
 
     char STAT_ELSV_BEWEGUNG_EINGEFAHREN_EIN = (RXBUF_SCHAR(6));
-        // 0: ELSV does not retract (front) 1: ELSV retracts (front) / 0: ELSV fährt nicht ein (vorne)  1: ELSV fährt
-        // ein (vorne)
+        // 0: ELSV does not retract (front) 1: ELSV retracts (front) / 0: ELSV fährt nicht ein (vorne)  1: ELSV fährt ein
+        // (vorne)
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "ELSV_POS_STATUS", "STAT_ELSV_BEWEGUNG_EINGEFAHREN_EIN", STAT_ELSV_BEWEGUNG_EINGEFAHREN_EIN, "\"0/1\"");
 
     char STAT_ELSV_BEWEGUNG_AUSGEFAHREN_EIN = (RXBUF_SCHAR(7));
@@ -825,15 +825,15 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "ZUSATZINFO_LICHT", "STAT_LICHT_1_NR", STAT_LICHT_1_NR, "\"0-n\"");
 
     unsigned char STAT_ABSCHALTUNG_LICHT_1_WERT = (RXBUF_UCHAR(9));
-        // Switch-off light at SFG (it was switched off after 12 hours had elapsed and the start capability limit was
-        // reached). / Abschaltung Licht bei SFG (fand eine Abschaltung nach Ablauf 12h und Erreichen der
-        // Startfähigkeitsgrenze statt).
+        // Switch off light at SFG (it was switched off after 12 hours and the start capability limit was reached). /
+        // Abschaltung Licht bei SFG (fand eine Abschaltung nach Ablauf 12h und Erreichen der Startfähigkeitsgrenze
+        // statt).
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "ZUSATZINFO_LICHT", "STAT_ABSCHALTUNG_LICHT_1_WERT", STAT_ABSCHALTUNG_LICHT_1_WERT, "");
 
     unsigned char STAT_ABSCHALTVERHINDERER_1_WERT = (RXBUF_UCHAR(10));
-        // Shutdown prevention reason light (reaching upper start capability limit and 12h timer not expired, no opening
-        // of the driver's door, further tbd). / Abschaltverhinderergrund Licht (Erreichen obere Startfähigkeitsgrenze
-        // und 12h Timer nicht abgelaufen, kein Öffnen der Fahrertür, weitere tbd).
+        // Shutdown prevention reason light (reaching upper start capability limit and 12h timer not expired, driver's
+        // door not opened, further tbd). / Abschaltverhinderergrund Licht (Erreichen obere Startfähigkeitsgrenze und 12h
+        // Timer nicht abgelaufen, kein Öffnen der Fahrertür, weitere tbd).
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "ZUSATZINFO_LICHT", "STAT_ABSCHALTVERHINDERER_1_WERT", STAT_ABSCHALTVERHINDERER_1_WERT, "");
 
     unsigned char STAT_KLEMMENSTATUS_1_WERT = (RXBUF_UCHAR(11));
@@ -861,15 +861,15 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "ZUSATZINFO_LICHT", "STAT_LICHT_2_NR", STAT_LICHT_2_NR, "\"0-n\"");
 
     unsigned char STAT_ABSCHALTUNG_LICHT_2_WERT = (RXBUF_UCHAR(21));
-        // Switch-off light at SFG (it was switched off after 12 hours had elapsed and the start capability limit was
-        // reached). / Abschaltung Licht bei SFG (fand eine Abschaltung nach Ablauf 12h und Erreichen der
-        // Startfähigkeitsgrenze statt).
+        // Switch off light at SFG (it was switched off after 12 hours and the start capability limit was reached). /
+        // Abschaltung Licht bei SFG (fand eine Abschaltung nach Ablauf 12h und Erreichen der Startfähigkeitsgrenze
+        // statt).
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "ZUSATZINFO_LICHT", "STAT_ABSCHALTUNG_LICHT_2_WERT", STAT_ABSCHALTUNG_LICHT_2_WERT, "");
 
     unsigned char STAT_ABSCHALTVERHINDERER_2_WERT = (RXBUF_UCHAR(22));
-        // Shutdown prevention reason light (reaching upper start capability limit and 12h timer not expired, no opening
-        // of the driver's door, further tbd). / Abschaltverhinderergrund Licht (Erreichen obere Startfähigkeitsgrenze
-        // und 12h Timer nicht abgelaufen, kein Öffnen der Fahrertür, weitere tbd).
+        // Shutdown prevention reason light (reaching upper start capability limit and 12h timer not expired, driver's
+        // door not opened, further tbd). / Abschaltverhinderergrund Licht (Erreichen obere Startfähigkeitsgrenze und 12h
+        // Timer nicht abgelaufen, kein Öffnen der Fahrertür, weitere tbd).
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "ZUSATZINFO_LICHT", "STAT_ABSCHALTVERHINDERER_2_WERT", STAT_ABSCHALTVERHINDERER_2_WERT, "");
 
     unsigned char STAT_KLEMMENSTATUS_2_WERT = (RXBUF_UCHAR(23));
@@ -956,7 +956,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "FH_FA_TASTER", "STAT_TASTER_FA_BFH_NR", STAT_TASTER_FA_BFH_NR, "\"0-n\"");
 
     unsigned char STAT_TASTER_FA_HS_NR = (RXBUF_UCHAR(4));
-        // Driver side (keypad): button H rear window see table / Fahrerseite (Tastenblock): Taster HEckscheibe siehe
+        // Driver's side (keypad): button H rear window see table / Fahrerseite (Tastenblock): Taster HEckscheibe siehe
         // Tabelle
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "FH_FA_TASTER", "STAT_TASTER_FA_HS_NR", STAT_TASTER_FA_HS_NR, "\"0-n\"");
 
@@ -1367,8 +1367,7 @@
     }
 
     unsigned char STAT_HALL_A_SCHALTZUSTAND_EIN = (RXBUF_UCHAR(0));
-        // The function is carried out by the BSW. 0: off 1: on / Die Funktion wird von der BSW ausgeführt. 0: aus 1:
-        // ein
+        // The function is carried out by the BSW. 0: off 1: on / Die Funktion wird von der BSW ausgeführt. 0: aus 1: ein
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "FH_BFH_HALLSENSOREN", "STAT_HALL_A_SCHALTZUSTAND_EIN", STAT_HALL_A_SCHALTZUSTAND_EIN, "\"0/1\"");
 
     unsigned char STAT_HALL_A_VERSORGUNG_EIN = (RXBUF_UCHAR(1));
@@ -1380,8 +1379,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "FH_BFH_HALLSENSOREN", "STAT_HALL_A_FEHLERZUSZTAND_NR", STAT_HALL_A_FEHLERZUSZTAND_NR, "\"0-n\"");
 
     unsigned char STAT_HALL_B_SCHALTZUSTAND_EIN = (RXBUF_UCHAR(3));
-        // The function is carried out by the BSW. 0: off 1: on / Die Funktion wird von der BSW ausgeführt. 0: aus 1:
-        // ein
+        // The function is carried out by the BSW. 0: off 1: on / Die Funktion wird von der BSW ausgeführt. 0: aus 1: ein
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "FH_BFH_HALLSENSOREN", "STAT_HALL_B_SCHALTZUSTAND_EIN", STAT_HALL_B_SCHALTZUSTAND_EIN, "\"0/1\"");
 
     unsigned char STAT_HALL_B_VERSORGUNG_EIN = (RXBUF_UCHAR(4));
@@ -1449,8 +1447,7 @@
     }
 
     unsigned char STAT_HALL_A_SCHALTZUSTAND_EIN_0XD1B0 = (RXBUF_UCHAR(0));
-        // The function is carried out by the BSW. 0: off 1: on / Die Funktion wird von der BSW ausgeführt. 0: aus 1:
-        // ein
+        // The function is carried out by the BSW. 0: off 1: on / Die Funktion wird von der BSW ausgeführt. 0: aus 1: ein
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "FH_FAH_HALLSENSOREN", "STAT_HALL_A_SCHALTZUSTAND_EIN_0XD1B0", STAT_HALL_A_SCHALTZUSTAND_EIN_0XD1B0, "\"0/1\"");
 
     unsigned char STAT_HALL_A_VERSORGUNG_EIN_0XD1B0 = (RXBUF_UCHAR(1));
@@ -1462,8 +1459,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "FH_FAH_HALLSENSOREN", "STAT_HALL_A_FEHLERZUSZTAND_NR_0XD1B0", STAT_HALL_A_FEHLERZUSZTAND_NR_0XD1B0, "\"0-n\"");
 
     unsigned char STAT_HALL_B_SCHALTZUSTAND_EIN_0XD1B0 = (RXBUF_UCHAR(3));
-        // The function is carried out by the BSW. 0: off 1: on / Die Funktion wird von der BSW ausgeführt. 0: aus 1:
-        // ein
+        // The function is carried out by the BSW. 0: off 1: on / Die Funktion wird von der BSW ausgeführt. 0: aus 1: ein
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "FH_FAH_HALLSENSOREN", "STAT_HALL_B_SCHALTZUSTAND_EIN_0XD1B0", STAT_HALL_B_SCHALTZUSTAND_EIN_0XD1B0, "\"0/1\"");
 
     unsigned char STAT_HALL_B_VERSORGUNG_EIN_1 = (RXBUF_UCHAR(4));
@@ -1531,8 +1527,7 @@
     }
 
     unsigned char STAT_HALL_A_SCHALTZUSTAND_EIN_0XD1B2 = (RXBUF_UCHAR(0));
-        // The function is carried out by the BSW. 0: off 1: on / Die Funktion wird von der BSW ausgeführt. 0: aus 1:
-        // ein
+        // The function is carried out by the BSW. 0: off 1: on / Die Funktion wird von der BSW ausgeführt. 0: aus 1: ein
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "FH_FA_HALLSENSOREN", "STAT_HALL_A_SCHALTZUSTAND_EIN_0XD1B2", STAT_HALL_A_SCHALTZUSTAND_EIN_0XD1B2, "\"0/1\"");
 
     unsigned char STAT_HALL_A_VERSORGUNG_EIN_0XD1B2 = (RXBUF_UCHAR(1));
@@ -1544,8 +1539,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "FH_FA_HALLSENSOREN", "STAT_HALL_A_FEHLERZUSTAND_NR", STAT_HALL_A_FEHLERZUSTAND_NR, "\"0-n\"");
 
     unsigned char STAT_HALL_B_SCHALTZUSTAND_EIN_0XD1B2 = (RXBUF_UCHAR(3));
-        // The function is carried out by the BSW. 0: off 1: on / Die Funktion wird von der BSW ausgeführt. 0: aus 1:
-        // ein
+        // The function is carried out by the BSW. 0: off 1: on / Die Funktion wird von der BSW ausgeführt. 0: aus 1: ein
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "FH_FA_HALLSENSOREN", "STAT_HALL_B_SCHALTZUSTAND_EIN_0XD1B2", STAT_HALL_B_SCHALTZUSTAND_EIN_0XD1B2, "\"0/1\"");
 
     unsigned char STAT_HALL_B_VERSORGUNG_EIN_0XD1B2 = (RXBUF_UCHAR(4));
@@ -1613,8 +1607,7 @@
     }
 
     unsigned char STAT_HALL_A_SCHALTZUSTAND_EIN_0XD1B4 = (RXBUF_UCHAR(0));
-        // The function is carried out by the BSW. 0: off 1: on / Die Funktion wird von der BSW ausgeführt. 0: aus 1:
-        // ein
+        // The function is carried out by the BSW. 0: off 1: on / Die Funktion wird von der BSW ausgeführt. 0: aus 1: ein
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "FH_BF_HALLSENSOREN", "STAT_HALL_A_SCHALTZUSTAND_EIN_0XD1B4", STAT_HALL_A_SCHALTZUSTAND_EIN_0XD1B4, "\"0/1\"");
 
     unsigned char STAT_HALL_A_VERSORGUNG_EIN_0XD1B4 = (RXBUF_UCHAR(1));
@@ -1626,8 +1619,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "FH_BF_HALLSENSOREN", "STAT_HALL_A_FEHLERZUSTAND_NR_0XD1B4", STAT_HALL_A_FEHLERZUSTAND_NR_0XD1B4, "\"0-n\"");
 
     unsigned char STAT_HALL_B_SCHALTZUSTAND_EIN_0XD1B4 = (RXBUF_UCHAR(3));
-        // The function is carried out by the BSW. 0: off 1: on / Die Funktion wird von der BSW ausgeführt. 0: aus 1:
-        // ein
+        // The function is carried out by the BSW. 0: off 1: on / Die Funktion wird von der BSW ausgeführt. 0: aus 1: ein
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "FH_BF_HALLSENSOREN", "STAT_HALL_B_SCHALTZUSTAND_EIN_0XD1B4", STAT_HALL_B_SCHALTZUSTAND_EIN_0XD1B4, "\"0/1\"");
 
     unsigned char STAT_HALL_B_VERSORGUNG_EIN_0XD1B4 = (RXBUF_UCHAR(4));
@@ -1964,8 +1956,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "STATUS_SITZEXT_TASTEN", "STAT_RESET_TASTE_BF", STAT_RESET_TASTE_BF, "\"0-n\"");
 
     unsigned char STAT_SCHLAFPOSITION_TASTE_BFTH = (RXBUF_UCHAR(10));
-        // Signal value of the sleep position button on the rear passenger door / Signalwert der Taste Schlafposition an
-        // der Beifahrertür Fond
+        // Signal value of the sleeping position button on the rear passenger door / Signalwert der Taste Schlafposition
+        // an der Beifahrertür Fond
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "STATUS_SITZEXT_TASTEN", "STAT_SCHLAFPOSITION_TASTE_BFTH", STAT_SCHLAFPOSITION_TASTE_BFTH, "\"0-n\"");
 
     unsigned char STAT_SITZPOSITION_TASTE_BFTH = (RXBUF_UCHAR(11));
@@ -2007,8 +1999,8 @@
 
     unsigned short STAT_FUELLSTAND_TANK_LI_WERT = (RXBUF_UINT(0));
         // Returns the level value of the left tank sensor. The work area and IO area must be filled by the developer. /
-        // Rückgabe des Füllstandwerts des linken Tanksensor. Arbeitsbereich und IO-Bereich muss vom Entwickler
-        // befüllt werden.
+        // Rückgabe des Füllstandwerts des linken Tanksensor. Arbeitsbereich und IO-Bereich muss vom Entwickler befüllt
+        // werden.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "BDC", "TANK_FUELLSTAND_LINKS", "STAT_FUELLSTAND_TANK_LI_WERT", STAT_FUELLSTAND_TANK_LI_WERT, "\"Ohm\"");
 
     // ==========  Add your processing here ==========
@@ -2042,8 +2034,7 @@
     }
 
     char STAT_TASTER_HUPE_EIN = (RXBUF_SCHAR(0));
-        // 0 = horn button not actuated 1 = horn button actuated / 0= Taster Hupe nicht betätigt  1= Taster Hupe
-        // betätigt
+        // 0 = horn button not actuated 1 = horn button actuated / 0= Taster Hupe nicht betätigt  1= Taster Hupe betätigt
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "HUPE_TASTER", "STAT_TASTER_HUPE_EIN", STAT_TASTER_HUPE_EIN, "\"0/1\"");
 
     // ==========  Add your processing here ==========
@@ -2489,9 +2480,9 @@
         // VS-Result steering column wiper; 0 = wiper knurled wheel level 1; 1 = wiper knurled wheel level 2; 2 = wiper
         // knurled wheel level 3; 3 = wiper knurled wheel level 4; 4 = wiper knurled wheel invalid position; Note:
         // Numbering is retained even if one or more functions are omitted / VS-Result Lenkstock Wischer;  0= Wischer
-        // Rändelrad Stufe 1;  1= Wischer Rändelrad Stufe 2;  2= Wischer Rändelrad Stufe 3;  3= Wischer Rändelrad
-        // Stufe 4;  4= Wischer Rändelrad ungültige Position; Hinweis: Numerierung bleibt erhalten, auch bei Entfall
-        // einer oder mehrerer Funktionen
+        // Rändelrad Stufe 1;  1= Wischer Rändelrad Stufe 2;  2= Wischer Rändelrad Stufe 3;  3= Wischer Rändelrad Stufe
+        // 4;  4= Wischer Rändelrad ungültige Position; Hinweis: Numerierung bleibt erhalten, auch bei Entfall einer oder
+        // mehrerer Funktionen
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "LENKSTOCK_WISCHER", "STAT_LENKSTOCK_WISCHER_RAENDEL_NR", STAT_LENKSTOCK_WISCHER_RAENDEL_NR, "\"0-n\"");
 
     char STAT_LENKSTOCK_WISCHER_TIPPWISCHEN = (RXBUF_SCHAR(9));
@@ -2587,12 +2578,12 @@
     }
 
     float STAT_FRONTLICHT_WERT = (RXBUF_UINT(0)*6.7f);
-        // unfiltered front light value. Is between 0 and 1701.8 mW / m� / ungefilterter Frontlichtwert. Liegt zwischen 0
+        // unfiltered front light value. Is between 0 and 1701.8 mW / m² / ungefilterter Frontlichtwert. Liegt zwischen 0
         // und 1701,8 mW/m²
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "BDC", "FAHRLICHTSENSOR", "STAT_FRONTLICHT_WERT", STAT_FRONTLICHT_WERT, "\"mW/m²\"");
 
     float STAT_FRONTLICHT_GEMITTELT_WERT = (RXBUF_UINT(2)*6.7f);
-        // averaged front light value. Is between 0 and 1701.7 mW / m� / gemittelter Frontlichtwert. Liegt zwischen 0 und
+        // averaged front light value. Is between 0 and 1701.7 mW / m² / gemittelter Frontlichtwert. Liegt zwischen 0 und
         // 1701,7  mW/m²
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "BDC", "FAHRLICHTSENSOR", "STAT_FRONTLICHT_GEMITTELT_WERT", STAT_FRONTLICHT_GEMITTELT_WERT, "\"mW/m²\"");
 
@@ -2715,37 +2706,37 @@
     }
 
     unsigned char STAT_INNENLICHT = (RXBUF_UCHAR(0));
-        // LIN status feedback ILE �status interior light Values: 0 - off, 1 - on / LIN Status-Rückmeldung ILE ¿ Status
+        // LIN status feedback ILE ¿status interior light Values: 0 - off, 1 - on / LIN Status-Rückmeldung ILE ¿ Status
         // Innenlicht Werte: 0 - Aus, 1 - Ein
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "INNENLICHTEINHEIT_DRITTE_SITZREIHE", "STAT_INNENLICHT", STAT_INNENLICHT, "\"0/1\"");
 
     unsigned char STAT_LESELICHT_LINKS = (RXBUF_UCHAR(1));
-        // LIN status feedback ILE �status reading light left Values: 0 - off, 1 - on / LIN Status-Rückmeldung ILE ¿
+        // LIN status feedback ILE ¿status reading light left Values: 0 - off, 1 - on / LIN Status-Rückmeldung ILE ¿
         // Status Leselicht links Werte: 0 - Aus, 1 - Ein
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "INNENLICHTEINHEIT_DRITTE_SITZREIHE", "STAT_LESELICHT_LINKS", STAT_LESELICHT_LINKS, "\"0/1\"");
 
     unsigned char STAT_LESELICHT_RECHTS = (RXBUF_UCHAR(2));
-        // LIN status feedback ILE �status reading light right Values: 0 - off, 1 - on / LIN Status-Rückmeldung ILE ¿
+        // LIN status feedback ILE ¿status reading light right Values: 0 - off, 1 - on / LIN Status-Rückmeldung ILE ¿
         // Status Leselicht rechts Werte: 0 - Aus, 1 - Ein
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "INNENLICHTEINHEIT_DRITTE_SITZREIHE", "STAT_LESELICHT_RECHTS", STAT_LESELICHT_RECHTS, "\"0/1\"");
 
     unsigned char STAT_WELCOMELIGHT = (RXBUF_UCHAR(3));
-        // LIN status feedback ILE �status welcome light Values: 0 - off, 1 - on / LIN Status-Rückmeldung ILE ¿ Status
+        // LIN status feedback ILE ¿status welcome light Values: 0 - off, 1 - on / LIN Status-Rückmeldung ILE ¿ Status
         // Welcomelight Werte: 0 - Aus, 1 - Ein
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "INNENLICHTEINHEIT_DRITTE_SITZREIHE", "STAT_WELCOMELIGHT", STAT_WELCOMELIGHT, "\"0/1\"");
 
     unsigned char STAT_AMBIENTELICHT = (RXBUF_UCHAR(4));
-        // LIN status feedback ILE �Ambient light status Values: 0 - Off, 1 - On / LIN Status-Rückmeldung ILE ¿ Status
+        // LIN status feedback ILE ¿Ambient light status Values: 0 - Off, 1 - On / LIN Status-Rückmeldung ILE ¿ Status
         // Ambientelicht Werte: 0 - Aus, 1 - Ein
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "INNENLICHTEINHEIT_DRITTE_SITZREIHE", "STAT_AMBIENTELICHT", STAT_AMBIENTELICHT, "\"0/1\"");
 
     unsigned char STAT_TASTER_LESELICHT_LINKS = (RXBUF_UCHAR(5));
-        // LIN status feedback ILE �Status button reading light left Values: 0 - not activated, 1 - activated / LIN
+        // LIN status feedback ILE ¿Status button reading light left Values: 0 - not activated, 1 - activated / LIN
         // Status-Rückmeldung ILE ¿ Status Taster Leselicht links Werte: 0 - nicht betätigt, 1 - betätigt
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "INNENLICHTEINHEIT_DRITTE_SITZREIHE", "STAT_TASTER_LESELICHT_LINKS", STAT_TASTER_LESELICHT_LINKS, "\"0/1\"");
 
     unsigned char STAT_TASTER_LESELICHT_RECHTS = (RXBUF_UCHAR(6));
-        // LIN status feedback ILE �status button reading light right Values: 0 - not activated, 1 - activated / LIN
+        // LIN status feedback ILE ¿Status button reading light right Values: 0 - not activated, 1 - activated / LIN
         // Status-Rückmeldung ILE ¿ Status Taster Leselicht rechts Werte: 0 - nicht betätigt, 1 - betätigt
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "INNENLICHTEINHEIT_DRITTE_SITZREIHE", "STAT_TASTER_LESELICHT_RECHTS", STAT_TASTER_LESELICHT_RECHTS, "\"0/1\"");
 
@@ -3087,7 +3078,7 @@
     }
 
     unsigned char STAT_PIA_ABBIEGELICHT_PIA_EIN = (RXBUF_UCHAR(0));
-        // 0: PIA: cornering light currently not active 1: PIA: cornering light currently active / 0: PIA: Abbiegelicht
+        // 0: PIA: turning light currently not active 1: PIA: turning light currently active / 0: PIA: Abbiegelicht
         // momentan nicht aktiv 1: PIA: Abbiegelicht momentan aktiv
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "PIA_ABBIEGELICHT", "STAT_PIA_ABBIEGELICHT_PIA_EIN", STAT_PIA_ABBIEGELICHT_PIA_EIN, "\"0/1\"");
 
@@ -3335,8 +3326,8 @@
 
     char STAT_LENKSTOCK_BLINKER_LICHTHUPE_BETAETIGT = (RXBUF_SCHAR(1));
         // 0: Steering column turn signal button headlight flasher not actuated; 1: Steering column turn signal button
-        // headlight flasher actuated / 0: Lenkstock Blinker Taster Lichthupe nicht betätigt; 1: Lenkstock Blinker
-        // Taster Lichthupe betätigt
+        // headlight flasher actuated / 0: Lenkstock Blinker Taster Lichthupe nicht betätigt; 1: Lenkstock Blinker Taster
+        // Lichthupe betätigt
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "LENKSTOCK_BLINKER_LICHTHUPE_FERNLICHT", "STAT_LENKSTOCK_BLINKER_LICHTHUPE_BETAETIGT", STAT_LENKSTOCK_BLINKER_LICHTHUPE_BETAETIGT, "\"0/1\"");
 
     // ==========  Add your processing here ==========
@@ -3357,7 +3348,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "LENKSTOCK_BLINKER_WIPPE", "STAT_LENKSTOCK_BLINKER_WIPPE_NACH_OBEN", STAT_LENKSTOCK_BLINKER_WIPPE_NACH_OBEN, "\"0/1\"");
 
     unsigned char STAT_LENKSTOCK_BLINKER_WIPPE_NACH_UNTEN = (RXBUF_UCHAR(1));
-        // 0: steering column turn signal rocker down not actuated; 1: Steering column turn signal rocker operated
+        // 0: Steering column turn signal rocker down not activated; 1: Steering column turn signal rocker operated
         // downwards / 0: Lenkstock Blinker Wippe nach unten nicht betätigt; 1: Lenkstock Blinker Wippe nach unten
         // betätigt
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "LENKSTOCK_BLINKER_WIPPE", "STAT_LENKSTOCK_BLINKER_WIPPE_NACH_UNTEN", STAT_LENKSTOCK_BLINKER_WIPPE_NACH_UNTEN, "\"0/1\"");
@@ -3434,8 +3425,8 @@
     }
 
     unsigned char STAT_LWR_POSITION_MAX_EIN = (RXBUF_UCHAR(0));
-        // 0: Knurled wheel not in MAX position 1: Knurled wheel in MAX position / 0: Rändelrad nicht in Stellung MAX 
-        // 1: Rändelrad in Stellung MAX
+        // 0: Knurled wheel not in MAX position 1: Knurled wheel in MAX position / 0: Rändelrad nicht in Stellung MAX  1:
+        // Rändelrad in Stellung MAX
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "LWR_POSITION_MIN_MAX", "STAT_LWR_POSITION_MAX_EIN", STAT_LWR_POSITION_MAX_EIN, "\"0/1\"");
 
     unsigned char STAT_LWR_POSITION_MIN_EIN = (RXBUF_UCHAR(1));
@@ -3456,8 +3447,8 @@
     }
 
     unsigned char STAT_TASTER_NSW_EIN = (RXBUF_UCHAR(0));
-        // 0: Fog light button not actuated; 1: Fog light button pressed / 0: Taster Nebelscheinwerfer nicht betätigt;
-        // 1: Taster Nebelscheinwerfer betätigt
+        // 0: Fog light button not actuated; 1: Fog light button pressed / 0: Taster Nebelscheinwerfer nicht betätigt; 1:
+        // Taster Nebelscheinwerfer betätigt
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "LICHTSCHALTER_NSW_TASTER", "STAT_TASTER_NSW_EIN", STAT_TASTER_NSW_EIN, "\"0/1\"");
 
     // ==========  Add your processing here ==========
@@ -4357,7 +4348,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "BDC", "BESCHLAGSENSOR", "STAT_BESCHLAGSENSOR_WERT", STAT_BESCHLAGSENSOR_WERT, "\"%\"");
 
     float STAT_BESCHLAGSENSOR_TEMP_WERT = (RXBUF_UCHAR(2)/2.0f-40.0);
-        // Measured temperature in � C -40 ... 85 � C / Gemessene Temperatur in °C -40 ... 85 °C
+        // Measured temperature in ° C -40 ... 85 ° C / Gemessene Temperatur in °C -40 ... 85 °C
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "BDC", "BESCHLAGSENSOR", "STAT_BESCHLAGSENSOR_TEMP_WERT", STAT_BESCHLAGSENSOR_TEMP_WERT, "\"°C\"");
 
     // ==========  Add your processing here ==========
@@ -4373,7 +4364,7 @@
     }
 
     unsigned char STAT_VORHANDEN_BESCHLAGSENSOR = (RXBUF_UCHAR(0));
-        // 0: condensation sensor not available / coded 1: condensation sensor available / coded / 0: Beschlagsensor
+        // 0: Condensation sensor not available / coded 1: Condensation sensor available / coded / 0: Beschlagsensor
         // nicht vorhanden / codiert   1: Beschlagsensor vorhanden / codiert
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "BESCHLAGSENSOR_VORHANDEN", "STAT_VORHANDEN_BESCHLAGSENSOR", STAT_VORHANDEN_BESCHLAGSENSOR, "\"0/1\"");
 
@@ -4409,10 +4400,10 @@
     float STAT_DRUCK_WERT = (RXBUF_UINT(0)/100.0f);
         // High-resolution refrigerant pressure output: 0.00 - 40.89 bar; 40.90 = short circuit to ground; 40.91 = open
         // circuit or short circuit to battery; 40.92 = not installed; 40.93 = function interface not available; 40.94 =
-        // function reporting error; 40.95 = signal unfilled / Ausgabe Kältemitteldruck hochauflösend: 0,00 - 40,89 bar
-        // ;  40,90 = Kurzschluss nach Masse;  40,91 = Leitungsunterbrechung oder Kurzschluss nach Batterie;  40,92 =
-        // Nicht verbaut;  40,93 = Funktionsschnittstelle nicht verfügbar;  40,94 = Funktion melder Fehler;  40,95 =
-        // Signal unbefüllt
+        // function reporting error; 40.95 = signal unfilled / Ausgabe Kältemitteldruck hochauflösend: 0,00 - 40,89 bar ;
+        // 40,90 = Kurzschluss nach Masse;  40,91 = Leitungsunterbrechung oder Kurzschluss nach Batterie;  40,92 = Nicht
+        // verbaut;  40,93 = Funktionsschnittstelle nicht verfügbar;  40,94 = Funktion melder Fehler;  40,95 = Signal
+        // unbefüllt
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "BDC", "DRUCKSENSOR_HOCHAUFLOESEND", "STAT_DRUCK_WERT", STAT_DRUCK_WERT, "\"bar\"");
 
     // ==========  Add your processing here ==========
@@ -5603,8 +5594,8 @@
     unsigned char STAT_TUERKONTAKT_FA_OBEN = (RXBUF_UCHAR(0));
         // The result contains the current state of the HW input, door contact, driver's door top rear. Note: For value 8
         // = contact not installed, the coding value CLI_REAR_DOOR_CONTACT_TOP_ASSEMBLED must be evaluated. / Das Result
-        // enthält den aktuellen Zustand des HW-Eingang Türkontakt Fahrertür hinten oben. Hinweis: Für Wert  8 =
-        // Kontakt nicht verbaut  muss der Codierwert CLI_REAR_DOOR_CONTACT_TOP_ASSEMBLED ausgewertet werden.
+        // enthält den aktuellen Zustand des HW-Eingang Türkontakt Fahrertür hinten oben. Hinweis: Für Wert  8 = Kontakt
+        // nicht verbaut  muss der Codierwert CLI_REAR_DOOR_CONTACT_TOP_ASSEMBLED ausgewertet werden.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "TUERKONTAKT_FAH_OBEN", "STAT_TUERKONTAKT_FA_OBEN", STAT_TUERKONTAKT_FA_OBEN, "\"0-n\"");
 
     // ==========  Add your processing here ==========
@@ -5778,8 +5769,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "ZV_GESAMT", "STAT_ZV_FA_NR", STAT_ZV_FA_NR, "\"0-n\"");
 
     unsigned char STAT_ZV_BF_NR = (RXBUF_UCHAR(1));
-        // The result contains the current ZV status of the passenger door. / Das Result enthält den aktuellen
-        // ZV-Zustand der Beifahrertüre.
+        // The result contains the current ZV status of the passenger door. / Das Result enthält den aktuellen ZV-Zustand
+        // der Beifahrertüre.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "ZV_GESAMT", "STAT_ZV_BF_NR", STAT_ZV_BF_NR, "\"0-n\"");
 
     unsigned char STAT_ZV_FAH_NR = (RXBUF_UCHAR(2));
@@ -5840,8 +5831,8 @@
 
     unsigned short STAT_SPANNUNG_KLEMME_15WUP = (RXBUF_UINT(6));
         // The result contains the voltage value of terminal 15_WUP at the FEM output. Possible values: 1 = active, 0 =
-        // not active / Das Result enthält den Spannungswert Klemme 15_WUP am FEM Ausgang. Mögliche Werte: 1 = Aktiv, 0
-        // = nicht aktiv
+        // not active / Das Result enthält den Spannungswert Klemme 15_WUP am FEM Ausgang. Mögliche Werte: 1 = Aktiv, 0 =
+        // nicht aktiv
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "BDC", "SPANNUNG_KLEMMEN", "STAT_SPANNUNG_KLEMME_15WUP", STAT_SPANNUNG_KLEMME_15WUP, "\"0/1\"");
 
     float STAT_SPANNUNG_KLEMME_15N1_WERT = (RXBUF_UINT(8)/1000.0f);
@@ -5855,8 +5846,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "BDC", "SPANNUNG_KLEMMEN", "STAT_SPANNUNG_KLEMME_15N2_WERT", STAT_SPANNUNG_KLEMME_15N2_WERT, "\"V\"");
 
     float STAT_SPANNUNG_KLEMME_15_WERT = (RXBUF_UINT(12)/1000.0f);
-        // The result contains the voltage value at terminal 15 at the FEM output. / Das Result enthält den
-        // Spannungswert Klemme 15 am FEM Ausgang.
+        // The result contains the voltage value at terminal 15 at the FEM output. / Das Result enthält den Spannungswert
+        // Klemme 15 am FEM Ausgang.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "BDC", "SPANNUNG_KLEMMEN", "STAT_SPANNUNG_KLEMME_15_WERT", STAT_SPANNUNG_KLEMME_15_WERT, "\"V\"");
 
     float STAT_STROM_KLEMME_15_50_WERT = (RXBUF_UINT(14)/1000.0f);
@@ -5865,8 +5856,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "BDC", "SPANNUNG_KLEMMEN", "STAT_STROM_KLEMME_15_50_WERT", STAT_STROM_KLEMME_15_50_WERT, "\"A\"");
 
     float STAT_SPANNUNG_KLEMME_50_WERT = (RXBUF_UINT(16)/1000.0f);
-        // The result contains the voltage value at terminal 50 at the FEM output. / Das Result enthält den
-        // Spannungswert Klemme 50  am FEM Ausgang.
+        // The result contains the voltage value at terminal 50 at the FEM output. / Das Result enthält den Spannungswert
+        // Klemme 50  am FEM Ausgang.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "BDC", "SPANNUNG_KLEMMEN", "STAT_SPANNUNG_KLEMME_50_WERT", STAT_SPANNUNG_KLEMME_50_WERT, "\"V\"");
 
     float STAT_SPANNUNG_KLEMME_50MSA_WERT = (RXBUF_UINT(18)/1000.0f);
@@ -5932,22 +5923,20 @@
 
     unsigned char STAT_TAGE_ER_FT = (RXBUF_UCHAR(0));
         // The result contains the status of the line between the ZSG and the CA button / TAGE in the driver's door.
-        // Notes: - Assignment via table TAB_CAS_CA_TAGE_ER_LEITUNG. / Das Result enthält den Status der Leitung
-        // zwischen ZSG und CA-Taster/TAGE in der  Fahrertür. Hinweise: - Zuordnung über Tabelle
-        // TAB_CAS_CA_TAGE_ER_LEITUNG.
+        // Notes: - Assignment via table TAB_CAS_CA_TAGE_ER_LEITUNG. / Das Result enthält den Status der Leitung zwischen
+        // ZSG und CA-Taster/TAGE in der  Fahrertür. Hinweise: - Zuordnung über Tabelle TAB_CAS_CA_TAGE_ER_LEITUNG.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "CA_TAGE_ER_LEITUNG", "STAT_TAGE_ER_FT", STAT_TAGE_ER_FT, "\"0-n\"");
 
     unsigned char STAT_TAGE_ER_BFT = (RXBUF_UCHAR(1));
         // The result contains the status of the line between the ZSG and the CA button / TAGE in the passenger door.
-        // Notes: - Assignment via table TAB_CAS_CA_TAGE_ER_LEITUNG. / Das Result enthält den Status der Leitung
-        // zwischen ZSG und CA-Taster/TAGE in der  Beifahrertür.. Hinweise: - Zuordnung über Tabelle
-        // TAB_CAS_CA_TAGE_ER_LEITUNG.
+        // Notes: - Allocation via table TAB_CAS_CA_TAGE_ER_LEITUNG. / Das Result enthält den Status der Leitung zwischen
+        // ZSG und CA-Taster/TAGE in der  Beifahrertür.. Hinweise: - Zuordnung über Tabelle TAB_CAS_CA_TAGE_ER_LEITUNG.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "CA_TAGE_ER_LEITUNG", "STAT_TAGE_ER_BFT", STAT_TAGE_ER_BFT, "\"0-n\"");
 
     unsigned char STAT_TAGE_ER_FTH = (RXBUF_UCHAR(2));
         // The result contains the status of the line between the ZSG and the CA button / TAGE in the rear driver's door.
-        // Notes: - Assignment via table TAB_CAS_CA_TAGE_ER_LEITUNG. / Das Result enthält den Status der Leitung
-        // zwischen ZSG und CA-Taster/TAGE in der  Fahrertür hinten. Hinweise: - Zuordnung über Tabelle
+        // Notes: - Assignment via table TAB_CAS_CA_TAGE_ER_LEITUNG. / Das Result enthält den Status der Leitung zwischen
+        // ZSG und CA-Taster/TAGE in der  Fahrertür hinten. Hinweise: - Zuordnung über Tabelle
         // TAB_CAS_CA_TAGE_ER_LEITUNG.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "CA_TAGE_ER_LEITUNG", "STAT_TAGE_ER_FTH", STAT_TAGE_ER_FTH, "\"0-n\"");
 
@@ -5992,15 +5981,15 @@
         // KL15 is requested via the StartStop button (SST) or via diagnosis. Notes: - Allocation takes place in
         // accordance with table 0 = No obstacle present 1 = Current key not valid 14 = ELV locked / Das Result enthält
         // die Ursache, die momentan ein Einschalten der KL15 verhindert, wenn eine Klemmenänderung zu KL15 über
-        // StartStop-Taster (SST) oder über Diagnose angefordert würde. Hinweise: - Zuordnung erfolgt gemäß Tabelle 0
-        // = Kein Hinderungsgrund vorliegend  1 = Aktueller Schlüssel nicht gültig 14 = ELV verriegelt  
+        // StartStop-Taster (SST) oder über Diagnose angefordert würde. Hinweise: - Zuordnung erfolgt gemäß Tabelle 0 =
+        // Kein Hinderungsgrund vorliegend  1 = Aktueller Schlüssel nicht gültig 14 = ELV verriegelt  
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "STATUS_KLEMMEN_VERHINDERER", "STAT_KL15_EIN_VERHINDERER", STAT_KL15_EIN_VERHINDERER, "\"0-n\"");
 
     unsigned char STAT_KL15_AUS_VERHINDERER = (RXBUF_UCHAR(1));
         // The result contains the cause that currently prevents the KL15 from switching off if a terminal change is
-        // requested via the StartStop button (SST) or via diagnosis. Notes: - Allocation takes place in accordance with
-        // table 0 = No obstacle present 3 = Speed of travel detected 4 = Speed signal invalid / Das Result enthält die
-        // Ursache, die momentan ein Ausschalten der KL15 verhindert, wenn eine Klemmenänderung über StartStop-Taster
+        // requested via the StartStop button (SST) or via diagnosis. Notes: - Allocation takes place according to table
+        // 0 = No reason for hindrance present 3 = Speed of travel detected 4 = Speed signal invalid / Das Result enthält
+        // die Ursache, die momentan ein Ausschalten der KL15 verhindert, wenn eine Klemmenänderung über StartStop-Taster
         // (SST) oder über Diagnose angefordert würde. Hinweise: - Zuordnung erfolgt gemäß Tabelle 0 = Kein
         // Hinderungsgrund vorliegend  3 = Geschwindigkeit Fahrt erkannt  4 = Geschwindigkeitsignal ungültig 
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "STATUS_KLEMMEN_VERHINDERER", "STAT_KL15_AUS_VERHINDERER", STAT_KL15_AUS_VERHINDERER, "\"0-n\"");
@@ -6013,10 +6002,10 @@
         // allowed via CAN ) 10 = frictional connection detected (P or N not inserted) 13 = assembly mode KL50 14 = ELV
         // locked / Das Result enthält die Ursache, die momentan ein Ansteuern der KL50 verhindert, wenn eine
         // Klemmenänderung über StartStop-Taster (SST), Telestarthandsender oder über Diagnose angefordert würde.
-        // Hinweise: - Zuordnung erfolgt gemäß Tabelle 0 = Kein Hinderungsgrund vorliegend  1 = Kein gültiger
-        // Schlüssel  5 = Bremse nicht gedrückt  6 = Bremse unplausibel 7 = Kupplung nicht gedrückt  8 = Kupplung
-        // unplausibel  9 = Abbruch DME/DDE (Motorlauf erkannt/Kein Motorstart erlaubt über CAN) 10 = Kraftschluss
-        // erkannt (P oder N nicht eingelegt) 13 = Montagmodus KL50  14 = ELV verriegelt  
+        // Hinweise: - Zuordnung erfolgt gemäß Tabelle 0 = Kein Hinderungsgrund vorliegend  1 = Kein gültiger Schlüssel 
+        // 5 = Bremse nicht gedrückt  6 = Bremse unplausibel 7 = Kupplung nicht gedrückt  8 = Kupplung unplausibel  9 =
+        // Abbruch DME/DDE (Motorlauf erkannt/Kein Motorstart erlaubt über CAN) 10 = Kraftschluss erkannt (P oder N nicht
+        // eingelegt) 13 = Montagmodus KL50  14 = ELV verriegelt  
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "STATUS_KLEMMEN_VERHINDERER", "STAT_KL50_EIN_VERHINDERER", STAT_KL50_EIN_VERHINDERER, "\"0-n\"");
 
     // ==========  Add your processing here ==========
@@ -6100,26 +6089,25 @@
     unsigned char STAT_BUS_IN_ANLASSER_SPERRE = (RXBUF_UCHAR(3));
         // The result contains the current value (received via CAN) for the starter lock. Note: - The value is determined
         // from the CAN signal ST_ILK_STRT_DRV. - Allocation takes place according to table TAB_CAS_MOTOR_ANLASSERSPERRE
-        // / Das Result enthält den aktuellen Wert (über CAN empfangen) für die Anlassersperre. Hinweis: - Der Wert
-        // wird ermittelt aus CAN-Signal ST_ILK_STRT_DRV. - Zuordnung erfolgt gemäß Tabelle
-        // TAB_CAS_MOTOR_ANLASSERSPERRE
+        // / Das Result enthält den aktuellen Wert (über CAN empfangen) für die Anlassersperre. Hinweis: - Der Wert wird
+        // ermittelt aus CAN-Signal ST_ILK_STRT_DRV. - Zuordnung erfolgt gemäß Tabelle TAB_CAS_MOTOR_ANLASSERSPERRE
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "BUS_IN_DME1", "STAT_BUS_IN_ANLASSER_SPERRE", STAT_BUS_IN_ANLASSER_SPERRE, "\"0-n\"");
 
     unsigned char STAT_BUS_IN_KUPPLUNG = (RXBUF_UCHAR(4));
         // The result contains the current value (received via CAN) for the clutch. Notes: - The value is determined from
         // the CAN signal ST_SW_CLT_DRV. - Allocation takes place according to table TAB_CAS_DIGITAL_EINGANG. Only the
         // values 0, 1 and 255 are returned. / Das Result enthält den aktuellen Wert (über CAN empfangen) für die
-        // Kupplung. Hinweise: - Der Wert wird ermittelt aus CAN-Signal ST_SW_CLT_DRV. - Zuordnung erfolgt gemäß
-        // Tabelle TAB_CAS_DIGITAL_EINGANG. Nur die Werte 0, 1 und 255 werden zurückgeliefert.
+        // Kupplung. Hinweise: - Der Wert wird ermittelt aus CAN-Signal ST_SW_CLT_DRV. - Zuordnung erfolgt gemäß Tabelle
+        // TAB_CAS_DIGITAL_EINGANG. Nur die Werte 0, 1 und 255 werden zurückgeliefert.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "BUS_IN_DME1", "STAT_BUS_IN_KUPPLUNG", STAT_BUS_IN_KUPPLUNG, "\"0-n\"");
 
     float STAT_BUS_IN_DREHZAHL_WERT = (RXBUF_UINT(5)/4.0f);
         // The result contains the current value (received via CAN) for the speed. Notes: - The value is determined from
         // the CAN signal AVL_RPM_ENG_CRSH. - The SGBD divides the value from the telegram by 4, since the
-        // AVL_RPM_ENG_CRSH signal is accurate to a quarter of a turn. / Das Result enthält den aktuellen Wert (über
-        // CAN empfangen) für die Drehzahl. Hinweise: - Der Wert wird ermittelt aus CAN-Signal AVL_RPM_ENG_CRSH. - Der
-        // Wert aus dem Telegramm wird von der SGBD durch 4 geteilt, da das Signal AVL_RPM_ENG_CRSH
-        // Viertel-Umdrehungs-genau ist.
+        // AVL_RPM_ENG_CRSH signal is accurate to a quarter of a turn. / Das Result enthält den aktuellen Wert (über CAN
+        // empfangen) für die Drehzahl. Hinweise: - Der Wert wird ermittelt aus CAN-Signal AVL_RPM_ENG_CRSH. - Der Wert
+        // aus dem Telegramm wird von der SGBD durch 4 geteilt, da das Signal AVL_RPM_ENG_CRSH Viertel-Umdrehungs-genau
+        // ist.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "BDC", "BUS_IN_DME1", "STAT_BUS_IN_DREHZAHL_WERT", STAT_BUS_IN_DREHZAHL_WERT, "\"1/min\"");
 
     // ==========  Add your processing here ==========
@@ -6137,9 +6125,9 @@
     float STAT_BUS_IN_GESCHW_WERT = (RXBUF_UINT(0)/64.0f);
         // The result contains the current value (received via CAN) for the speed. Notes: - The value is determined from
         // the signal V_VEH_COG. - Value range 0-350, Invalid 1023 - The raw value is divided by 64 by the SGBD, since
-        // the V_VEH_COG signal is accurate to 64. / Das Result enthält den aktuellen Wert (über CAN empfangen) für
-        // die Geschwindigkeit. Hinweise: - Der Wert wird ermittelt aus dem Signal V_VEH_COG. - Wertebereich 0-350,
-        // Ungültig 1023 - Der Rohwert wird von der SGBD durch 64 geteilt, da das Signal V_VEH_COG 64-tel-genau ist.
+        // the V_VEH_COG signal is accurate to 64. / Das Result enthält den aktuellen Wert (über CAN empfangen) für die
+        // Geschwindigkeit. Hinweise: - Der Wert wird ermittelt aus dem Signal V_VEH_COG. - Wertebereich 0-350, Ungültig
+        // 1023 - Der Rohwert wird von der SGBD durch 64 geteilt, da das Signal V_VEH_COG 64-tel-genau ist.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "BDC", "BUS_IN_DSC", "STAT_BUS_IN_GESCHW_WERT", STAT_BUS_IN_GESCHW_WERT, "\"km/h\"");
 
     unsigned char STAT_BUS_IN_GESCHW_STATUS = (RXBUF_UCHAR(2));
@@ -6218,8 +6206,8 @@
 
     unsigned char STAT_TAGE_BFT = (RXBUF_UCHAR(1));
         // The result contains the status of the CA button or the TAGE passenger door. Notes: - The assignment is made
-        // via table TAB_CAS_CA_TAGE_STATUS / Das Result enthält den Status des CA-Tasters oder der TAGE
-        // Beifahrertüre.. Hinweise: - Die Zuordnung erfolgt über Tabelle TAB_CAS_CA_TAGE_STATUS
+        // via table TAB_CAS_CA_TAGE_STATUS / Das Result enthält den Status des CA-Tasters oder der TAGE Beifahrertüre..
+        // Hinweise: - Die Zuordnung erfolgt über Tabelle TAB_CAS_CA_TAGE_STATUS
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "CA_TAGE_STATUS", "STAT_TAGE_BFT", STAT_TAGE_BFT, "\"0-n\"");
 
     unsigned char STAT_TAGE_FTH = (RXBUF_UCHAR(2));
@@ -6247,10 +6235,10 @@
     }
 
     float STAT_SPANNUNG_KLEMME_30L1_WERT = (RXBUF_SINT(0)/10.0f);
-        // Voltage value at the control unit at terminal 30L (exactly to one decimal place) Notes: - The SGBD divides the
-        // value supplied by the control unit by 10 (one decimal place). / Spannungswert am Steuergerät an Klemme 30L
-        // (auf eine Nachkommastelle genau) Hinweise: - Der vom Steuergerät gelieferte Wert wird von der SGBD durch 10
-        // geteilt (eine Nachkommastelle).
+        // Voltage value at the control unit at terminal 30L (to one decimal place) Notes: - The SGBD divides the value
+        // supplied by the control unit by 10 (one decimal place). / Spannungswert am Steuergerät an Klemme 30L (auf eine
+        // Nachkommastelle genau) Hinweise: - Der vom Steuergerät gelieferte Wert wird von der SGBD durch 10 geteilt
+        // (eine Nachkommastelle).
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "BDC", "SPANNUNG_KLEMME_30L1", "STAT_SPANNUNG_KLEMME_30L1_WERT", STAT_SPANNUNG_KLEMME_30L1_WERT, "\"V\"");
 
     // ==========  Add your processing here ==========
@@ -6266,10 +6254,10 @@
     }
 
     float STAT_SPANNUNG_KLEMME_30L2_WERT = (RXBUF_SINT(0)/10.0f);
-        // Voltage value at the control unit at terminal 30L (exactly to one decimal place) Notes: - The SGBD divides the
-        // value supplied by the control unit by 10 (one decimal place). / Spannungswert am Steuergerät an Klemme 30L
-        // (auf eine Nachkommastelle genau) Hinweise: - Der vom Steuergerät gelieferte Wert wird von der SGBD durch 10
-        // geteilt (eine Nachkommastelle).
+        // Voltage value at the control unit at terminal 30L (to one decimal place) Notes: - The SGBD divides the value
+        // supplied by the control unit by 10 (one decimal place). / Spannungswert am Steuergerät an Klemme 30L (auf eine
+        // Nachkommastelle genau) Hinweise: - Der vom Steuergerät gelieferte Wert wird von der SGBD durch 10 geteilt
+        // (eine Nachkommastelle).
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "BDC", "SPANNUNG_KLEMME_30L2", "STAT_SPANNUNG_KLEMME_30L2_WERT", STAT_SPANNUNG_KLEMME_30L2_WERT, "\"V\"");
 
     // ==========  Add your processing here ==========
@@ -6420,8 +6408,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "STATUS_KL15_ABSCHALTUNG", "STAT_ABSCHALTVERHINDERER_KUPPLUNG_AKTIV", STAT_ABSCHALTVERHINDERER_KUPPLUNG_AKTIV, "\"0/1\"");
 
     unsigned char STAT_ABSCHALTVERHINDERER_ENERGIESPARMODE_AKTIV = (RXBUF_UCHAR(5));
-        // The result indicates whether the switch-off preventer energy mode (FETRAFLA) is currently active. Note: The
-        // KL15 shutdown is deactivated here due to the energy manager in the FEM. / Das Result gibt an, ob der
+        // The result indicates whether the switch-off preventer energy mode active (FETRAFLA) is currently active. Note:
+        // The KL15 shutdown is deactivated here due to the energy manager in the FEM. / Das Result gibt an, ob der
         // Abschaltverhinderer Energiemode aktiv(FETRAFLA) gerade aktiv ist. Hinweis: Die KL15-Abschaltung ist hier
         // aufgrund des Energymanager im FEM deaktiviert.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "STATUS_KL15_ABSCHALTUNG", "STAT_ABSCHALTVERHINDERER_ENERGIESPARMODE_AKTIV", STAT_ABSCHALTVERHINDERER_ENERGIESPARMODE_AKTIV, "\"0/1\"");
@@ -6433,9 +6421,9 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "STATUS_KL15_ABSCHALTUNG", "STAT_ABSCHALTVERHINDERER_GESCHWINDIGKEIT_AKTIV", STAT_ABSCHALTVERHINDERER_GESCHWINDIGKEIT_AKTIV, "\"0/1\"");
 
     unsigned char STAT_ABSCHALTVERHINDERER_MSA_AKTIV = (RXBUF_UCHAR(7));
-        // MSA is currently (L6, L7) not a switch-off preventer for the KL15. This result is only available as a lead and
-        // is always filled with �0�. / MSA ist aktuell (L6,L7) kein Abschaltverhinderer für die KL15. Dieses Result ist
-        // nur als Vorhalt vorhanden und wird immer mit ¿0¿ befüllt.
+        // MSA is currently (L6, L7) no switch-off preventer for the KL15. This result is only available as a lead and is
+        // always filled with ¿0¿. / MSA ist aktuell (L6,L7) kein Abschaltverhinderer für die KL15. Dieses Result ist nur
+        // als Vorhalt vorhanden und wird immer mit ¿0¿ befüllt.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "STATUS_KL15_ABSCHALTUNG", "STAT_ABSCHALTVERHINDERER_MSA_AKTIV", STAT_ABSCHALTVERHINDERER_MSA_AKTIV, "\"0/1\"");
 
     unsigned char STAT_ABSCHALTVERHINDERER_ABBLENDLICHT_AKTIV = (RXBUF_UCHAR(8));
@@ -6446,8 +6434,8 @@
 
     unsigned char STAT_ABSCHALTVERHINDERER_WAEHLHEBEL_IN_N_AKTIV = (RXBUF_UCHAR(9));
         // The result indicates whether the switch-off preventer selector lever in N is currently active (car wash
-        // function). Notes: - 0 = not active, 1 = active / Das Result gibt an, ob der Abschaltverhinderer Wählhebel in
-        // N gerade aktiv ist (Waschstrassen-Funktion). Hinweise: - 0=nicht aktiv, 1=aktiv
+        // function). Notes: - 0 = not active, 1 = active / Das Result gibt an, ob der Abschaltverhinderer Wählhebel in N
+        // gerade aktiv ist (Waschstrassen-Funktion). Hinweise: - 0=nicht aktiv, 1=aktiv
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "STATUS_KL15_ABSCHALTUNG", "STAT_ABSCHALTVERHINDERER_WAEHLHEBEL_IN_N_AKTIV", STAT_ABSCHALTVERHINDERER_WAEHLHEBEL_IN_N_AKTIV, "\"0/1\"");
 
     unsigned char STAT_ABSCHALTVERHINDERER_DIAGNOSE_AKTIV = (RXBUF_UCHAR(10));
@@ -6474,9 +6462,9 @@
         // as soon as a non-automatic KL15 switch-off (e.g. via SST) has been carried out. 0 = automatic KL15 switch-off
         // was not carried out 1 = automatic KL15 switch-off was carried out / Das Result gibt an, ob die letzte
         // KL15-Abschaltung  eine automatische KL15-Abschaltung war oder nicht. Hinweise: - Der Wert wird auf aktiv
-        // gesetzt, sobald eine autom. KL15-Abschaltung durchgeführt wurde. - Der Wert wird auf nicht aktiv
-        // rückgesetzt, sobald eine nicht-automatische KL15-Abschaltung (z.B. per SST) durchgeführt wurde. 0 =
-        // automatische KL15-Abschaltung wurde nicht durchgeführt 1 = automatische KL15-Abschaltung wurde durchgeführt
+        // gesetzt, sobald eine autom. KL15-Abschaltung durchgeführt wurde. - Der Wert wird auf nicht aktiv rückgesetzt,
+        // sobald eine nicht-automatische KL15-Abschaltung (z.B. per SST) durchgeführt wurde. 0 = automatische
+        // KL15-Abschaltung wurde nicht durchgeführt 1 = automatische KL15-Abschaltung wurde durchgeführt
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "STATUS_KL15_ABSCHALTUNG", "STAT_AUTOMATISCHE_ABSCHALTUNG_DURCHGEFUEHRT", STAT_AUTOMATISCHE_ABSCHALTUNG_DURCHGEFUEHRT, "\"0/1\"");
 
     unsigned char STAT_ABSCHALTVERHINDERER_PRAESENTATIONSMODUS_AKTIV = (RXBUF_UCHAR(14));
@@ -6493,7 +6481,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "STATUS_KL15_ABSCHALTUNG", "STAT_ABSCHALTVERHINDERER_GESCHWINDIGKEIT_UNPLAUSIBEL_AKTIV", STAT_ABSCHALTVERHINDERER_GESCHWINDIGKEIT_UNPLAUSIBEL_AKTIV, "\"0/1\"");
 
     unsigned char STAT_ABSCHALTVERHINDERER_FREMDLADUNG_HYBRID_AKTIV = (RXBUF_UCHAR(16));
-        // The result indicates whether the switch-off preventer external charging is currently active in hybrid
+        // The result indicates whether the switch-off preventer for external charging is currently active in hybrid
         // vehicles. Notes: - 0 = not active, 1 = active / Das Result gibt an, ob der Abschaltverhinderer Fremdladung bei
         // Hybridfahrzeugen gerade aktiv ist. Hinweise: - 0=nicht aktiv, 1=aktiv
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "STATUS_KL15_ABSCHALTUNG", "STAT_ABSCHALTVERHINDERER_FREMDLADUNG_HYBRID_AKTIV", STAT_ABSCHALTVERHINDERER_FREMDLADUNG_HYBRID_AKTIV, "\"0/1\"");
@@ -6505,7 +6493,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "STATUS_KL15_ABSCHALTUNG", "STAT_ABSCHALTVERHINDERER_GURT_FAHRER_GESTECKT_AKTIV", STAT_ABSCHALTVERHINDERER_GURT_FAHRER_GESTECKT_AKTIV, "\"0/1\"");
 
     unsigned char STAT_CODIERUNG_KL15_ABSCHALTUNG_GURT_AKTIV = (RXBUF_UCHAR(18));
-        // The result indicates whether the KL15 is switched off by opening the driver's seat belt via coding. / Das
+        // The result indicates whether the KL15 is switched off by opening the driver's seat belt by coding. / Das
         // Result gibt an, ob Abschaltung der KL15 durch Öffnen Fahrergurt per Codierung freigeschaltet ist.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "STATUS_KL15_ABSCHALTUNG", "STAT_CODIERUNG_KL15_ABSCHALTUNG_GURT_AKTIV", STAT_CODIERUNG_KL15_ABSCHALTUNG_GURT_AKTIV, "\"0/1\"");
 
@@ -6584,9 +6572,9 @@
 
     unsigned char STAT_SCHALTER_KUPPL_PN_AKTIV = (RXBUF_UCHAR(0));
         // The result contains the current status of the clutch switch (manual gearbox) or PN signal (automatic gearbox)
-        // from the EGS. Notes: - Allocation takes place in accordance with table TAB_CAS_DIGITAL_EINGANG. / Das Result
-        // enthält den aktuellen Zustand des Kupplungsschalters (Manuelles Getriebe) oder PN-Signal (Automatikgetriebe)
-        // vom EGS. Hinweise: - Zuordnung erfolgt gemäß Tabelle TAB_CAS_DIGITAL_EINGANG.
+        // from the EGS. Notes: - Allocation takes place according to table TAB_CAS_DIGITAL_EINGANG. / Das Result enthält
+        // den aktuellen Zustand des Kupplungsschalters (Manuelles Getriebe) oder PN-Signal (Automatikgetriebe) vom EGS.
+        // Hinweise: - Zuordnung erfolgt gemäß Tabelle TAB_CAS_DIGITAL_EINGANG.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "KUPPL_PN_SCHALTER", "STAT_SCHALTER_KUPPL_PN_AKTIV", STAT_SCHALTER_KUPPL_PN_AKTIV, "\"0-n\"");
 
     // ==========  Add your processing here ==========
@@ -6602,8 +6590,8 @@
     }
 
     unsigned char STAT_SCHALTER_MOTORHAUBE_AKTIV = (RXBUF_UCHAR(0));
-        // The result contains the current status of the engine hood contact input. Notes: - Allocation takes place in
-        // accordance with table TAB_CAS_DIGITAL_EINGANG. / Das Result enthält den aktuellen Zustand des Eingangs
+        // The result contains the current status of the engine hood contact input. Notes: - Allocation takes place
+        // according to table TAB_CAS_DIGITAL_EINGANG. / Das Result enthält den aktuellen Zustand des Eingangs
         // Motorhaubenkontakt. Hinweise: - Zuordnung erfolgt gemäß Tabelle TAB_CAS_DIGITAL_EINGANG.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "MOTORHAUBE_SCHALTER", "STAT_SCHALTER_MOTORHAUBE_AKTIV", STAT_SCHALTER_MOTORHAUBE_AKTIV, "\"0-n\"");
 
@@ -6686,7 +6674,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "BDC", "LWR_STATISTIK", "STAT_BETRIEBSMINUTEN_1010_WERT", STAT_BETRIEBSMINUTEN_1010_WERT, "");
 
     unsigned short STAT_BETRIEBSMINUTEN_1100_WERT = (RXBUF_UINT(14));
-        // Driver, front passenger, 2 people in the rear + low beam / Fahrer, Beifahrer, 2 Pers in Fond + Ablendlicht
+        // Driver, passenger, 2 people in the rear + low beam / Fahrer, Beifahrer, 2 Pers in Fond + Ablendlicht
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "BDC", "LWR_STATISTIK", "STAT_BETRIEBSMINUTEN_1100_WERT", STAT_BETRIEBSMINUTEN_1100_WERT, "");
 
     unsigned short STAT_BETRIEBSMINUTEN_1110_WERT = (RXBUF_UINT(16));
@@ -6809,8 +6797,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "_LWR_DIAG", "STAT_LWR_SPUL_ERR_STOP", STAT_LWR_SPUL_ERR_STOP, "\"0/1\"");
 
     unsigned char STAT_LWR_SPUL_EINTR = (RXBUF_UCHAR(2));
-        // no error entry in case of problems with the coil test / kein Fehlereintrag bei Problemen mit der
-        // Spulenprüfung
+        // no error entry in case of problems with the coil test / kein Fehlereintrag bei Problemen mit der Spulenprüfung
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "_LWR_DIAG", "STAT_LWR_SPUL_EINTR", STAT_LWR_SPUL_EINTR, "\"0/1\"");
 
     unsigned char STAT_SP_PRUEF_AKTIV = (RXBUF_UCHAR(3));
@@ -6886,56 +6873,55 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "BDC", "_ZV_KURZSCHLUSSABSCHALTUNG_ZAEHLER", "STAT_HECKKLAPPE_ZAEHLER_COUNT_MAX_WERT", STAT_HECKKLAPPE_ZAEHLER_COUNT_MAX_WERT, "");
 
     unsigned char STAT_HECKKLAPPE_ZAEHLER_KS_RESTARTS_WERT = (RXBUF_UCHAR(4));
-        // The result contains the number of reclosing attempts carried out so far in cycle KL15 on -> KL15 off Valid
+        // The result contains the number of reconnection attempts carried out so far in cycle KL15 on -> KL15 off Valid
         // values: 0 - 254 = current counter value for reclosing attempts 255 = signal invalid / implausible / Das Result
         // enthält die Anzahl der bisher durchgeführten Wiedereinschaltversuche im Zyklus KL15 ein -> KL15 aus Gültige
         // Werte: 0 - 254 = Aktueller Zählerwert für die Wiedereinschaltversuche 255 = Signal ungültig / unplausibel
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "_ZV_KURZSCHLUSSABSCHALTUNG_ZAEHLER", "STAT_HECKKLAPPE_ZAEHLER_KS_RESTARTS_WERT", STAT_HECKKLAPPE_ZAEHLER_KS_RESTARTS_WERT, "");
 
     unsigned char STAT_HECKKLAPPE_ZAEHLER_KS_KL15_CYCLES_WERT = (RXBUF_UCHAR(5));
-        // The result contains the current number of resets that have already been carried out for short-circuit
-        // disconnection by KL15. Valid values: 0 - 254 = current counter value for the number of short-circuit shutdown
-        // resets that have already been carried out. 255 = signal invalid / implausible / Das Result enthält den
-        // aktuelle Anzahl an bereits durchgeführten Resets des Kurzschlussabschaltung durch KL15 ein. Gültige Werte: 0
-        // - 254 = Aktueller Zählerwert für die Anzahl an bereits durchgeführten Resets der Kurzschlussabschaltung 255
-        // = Signal ungültig / unplausibel
+        // The result contains the current number of resets that have already been carried out for short-circuit shutdown
+        // by KL15. Valid values: 0 - 254 = current counter value for the number of resets already carried out for
+        // short-circuit shutdown 255 = signal invalid / implausible / Das Result enthält den aktuelle Anzahl an bereits
+        // durchgeführten Resets des Kurzschlussabschaltung durch KL15 ein. Gültige Werte: 0 - 254 = Aktueller Zählerwert
+        // für die Anzahl an bereits durchgeführten Resets der Kurzschlussabschaltung 255 = Signal ungültig / unplausibel
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "_ZV_KURZSCHLUSSABSCHALTUNG_ZAEHLER", "STAT_HECKKLAPPE_ZAEHLER_KS_KL15_CYCLES_WERT", STAT_HECKKLAPPE_ZAEHLER_KS_KL15_CYCLES_WERT, "");
 
     unsigned long STAT_HECKSCHEIBE_ZAEHLER_COUNT_MAX_WERT = (RXBUF_UINT32(6));
-        // The result contains the current count for the short-circuits to ground detected so far. Valid values: �0 -
+        // The result contains the current count for the short-circuits to ground detected so far. Valid values: ¿0 -
         // 100000 = current counter value for the restart attempts FFFFFFFFh = signal invalid / implausible / Das Result
-        // enthält den aktuellen Zählerstand für die  bisher erkannten Kurzschlüsse gegen Masse. Gültige Werte: ¿ 
-        // 0 - 100000 =Aktueller Zählerwert für die Wiedereinschaltversuche FFFFFFFFh = Signal ungültig / unplausibel
+        // enthält den aktuellen Zählerstand für die  bisher erkannten Kurzschlüsse gegen Masse. Gültige Werte: ¿  0 -
+        // 100000 =Aktueller Zählerwert für die Wiedereinschaltversuche FFFFFFFFh = Signal ungültig / unplausibel
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "BDC", "_ZV_KURZSCHLUSSABSCHALTUNG_ZAEHLER", "STAT_HECKSCHEIBE_ZAEHLER_COUNT_MAX_WERT", STAT_HECKSCHEIBE_ZAEHLER_COUNT_MAX_WERT, "");
 
     unsigned char STAT_HECKSCHEIBE_ZAEHLER_KS_RESTARTS_WERT = (RXBUF_UCHAR(10));
-        // The result contains the number of reclosing attempts carried out so far in cycle KL15 on -> KL15 off Valid
+        // The result contains the number of reconnection attempts carried out so far in cycle KL15 on -> KL15 off Valid
         // values: 0 - 254 = current counter value for reclosing attempts 255 = signal invalid / implausible / Das Result
         // enthält die Anzahl der bisher durchgeführten Wiedereinschaltversuche im Zyklus KL15 ein -> KL15 aus Gültige
         // Werte: 0 - 254 = Aktueller Zählerwert für die Wiedereinschaltversuche 255 = Signal ungültig / unplausibel
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "_ZV_KURZSCHLUSSABSCHALTUNG_ZAEHLER", "STAT_HECKSCHEIBE_ZAEHLER_KS_RESTARTS_WERT", STAT_HECKSCHEIBE_ZAEHLER_KS_RESTARTS_WERT, "");
 
     unsigned char STAT_HECKSCHEIBE_ZAEHLER_KS_KL15_CYCLES_WERT = (RXBUF_UCHAR(11));
-        // The result contains the current number of resets that have already been carried out for short-circuit
-        // disconnection by KL15. Valid values: 0 - 254 = current counter value for the number of short-circuit shutdown
-        // resets that have already been carried out. 255 = signal invalid / implausible / Das Result enthält den
-        // aktuelle Anzahl an bereits durchgeführten Resets des Kurzschlussabschaltung durch KL15 ein. Gültige Werte: 0
-        // - 254 = Aktueller Zählerwert für die Anzahl an bereits durchgeführten Resets der Kurzschlussabschaltung 255
-        // = Signal ungültig / unplausibel
+        // The result contains the current number of resets that have already been carried out for short-circuit shutdown
+        // by KL15. Valid values: 0 - 254 = current counter value for the number of resets already carried out for
+        // short-circuit shutdown 255 = signal invalid / implausible / Das Result enthält den aktuelle Anzahl an bereits
+        // durchgeführten Resets des Kurzschlussabschaltung durch KL15 ein. Gültige Werte: 0 - 254 = Aktueller Zählerwert
+        // für die Anzahl an bereits durchgeführten Resets der Kurzschlussabschaltung 255 = Signal ungültig / unplausibel
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "_ZV_KURZSCHLUSSABSCHALTUNG_ZAEHLER", "STAT_HECKSCHEIBE_ZAEHLER_KS_KL15_CYCLES_WERT", STAT_HECKSCHEIBE_ZAEHLER_KS_KL15_CYCLES_WERT, "");
 
     unsigned char STAT_KODIERUNG_RESTARTS_WERT = (RXBUF_UCHAR(12));
-        // The result contains the codable maximum value of restart attempts in cycle KL15 on -> KL15 off -> KL15 on.
-        // Valid values: 0 - 254 = maximum value for the restart attempts 255 = signal invalid / implausible / Das Result
-        // enthält den codierbaren maximalen Wert an Wiedereinschaltversuche im Zyklus KL15 ein -> KL15 aus -> KL15 ein.
-        // Gültige Werte: 0 - 254 = maximaler Wert für die Wiedereinschaltversuche 255 = Signal ungültig / unplausibel
+        // The result contains the maximum value that can be coded for restart attempts in cycle KL15 on -> KL15 off ->
+        // KL15 on. Valid values: 0 - 254 = maximum value for the restart attempts 255 = signal invalid / implausible /
+        // Das Result enthält den codierbaren maximalen Wert an Wiedereinschaltversuche im Zyklus KL15 ein -> KL15 aus ->
+        // KL15 ein. Gültige Werte: 0 - 254 = maximaler Wert für die Wiedereinschaltversuche 255 = Signal ungültig /
+        // unplausibel
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "_ZV_KURZSCHLUSSABSCHALTUNG_ZAEHLER", "STAT_KODIERUNG_RESTARTS_WERT", STAT_KODIERUNG_RESTARTS_WERT, "");
 
     unsigned char STAT_KODIERUNG_KL15_CYCLES_WERT = (RXBUF_UCHAR(13));
         // The result contains the codable maximum value of resets of the short-circuit shutdown by KL15. Valid values: 0
-        // - 254 = maximum value for the resets of the short-circuit switch-off 255 = invalid / implausible / Das Result
-        // enthält den codierbaren maximalen Wert an Resets des Kurzschlussabschaltung durch KL15 ein. Gültige Werte: 0
-        // - 254 = maximaler Wert für die Resets der Kurzschlussabschaltung 255 = Ungültig / unplausibel
+        // - 254 = maximum value for the resets of the short-circuit disconnection 255 = invalid / implausible / Das
+        // Result enthält den codierbaren maximalen Wert an Resets des Kurzschlussabschaltung durch KL15 ein. Gültige
+        // Werte: 0 - 254 = maximaler Wert für die Resets der Kurzschlussabschaltung 255 = Ungültig / unplausibel
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "_ZV_KURZSCHLUSSABSCHALTUNG_ZAEHLER", "STAT_KODIERUNG_KL15_CYCLES_WERT", STAT_KODIERUNG_KL15_CYCLES_WERT, "");
 
     // ==========  Add your processing here ==========
@@ -7037,7 +7023,7 @@
     }
 
     unsigned char STAT_IBS_WAKEUP = (RXBUF_UCHAR(0));
-        // The result contains the last wakeup reason from IBS stored in the FEM. / Das Result enthält den im FEM
+        // The result contains the last wake-up reason from the IBS stored in the FEM. / Das Result enthält den im FEM
         // gespeicherten letzten Wakeupgrund vom IBS.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "IBS_WAKEUP_GRUND", "STAT_IBS_WAKEUP", STAT_IBS_WAKEUP, "\"0-n\"");
 
@@ -7084,15 +7070,15 @@
 
     unsigned long STAT_TREIBER_15N1_ZAEHLER_COUNT_MAX_WERT = (RXBUF_UINT32(0));
         // The result contains the current count for the previously detected short circuits to ground of the KL15N1
-        // driver. Note: �The start value is 100000 and is decremented by 1 for each SW or HW-related short circuit
+        // driver. Note: ¿The start value is 100000 and is decremented by 1 for each SW or HW-related short circuit
         // detected (see also request ZSG_BF_13075). If the value 0 is reached, the output is permanently deactivated and
         // cannot be reset using terminal switching or a diagnostic job. -> SG exchange necessary. 0 - 100000 = current
         // counter value for the restart attempts FFFFFFFFh = signal invalid / implausible / Das Result enthält den
-        // aktuellen Zählerstand für die  bisher erkannten Kurzschlüsse gegen Masse des Treibers KL15N1. Hinweis:  ¿ 
+        // aktuellen Zählerstand für die  bisher erkannten Kurzschlüsse gegen Masse des Treibers KL15N1. Hinweis:  ¿  
         // Startwert ist 100000 und wird pro SW- oder HW-mäßigem erkanntem Kurzschluss um 1 dekrementiert (Siehe hierzu
         // auch Anforderung ZSG_BF_13075).Wird der Wert 0 erreicht, so wird der Ausgang dauerhaft deaktiviert kann weder
-        // mittels Klemmenschalten noch per Diagnosejob zurückgesetzt werden. -> SG-Tausch nötig.  0 - 100000
-        // =Aktueller Zählerwert für die Wiedereinschaltversuche FFFFFFFFh = Signal ungültig / unplausibel
+        // mittels Klemmenschalten noch per Diagnosejob zurückgesetzt werden. -> SG-Tausch nötig.  0 - 100000 =Aktueller
+        // Zählerwert für die Wiedereinschaltversuche FFFFFFFFh = Signal ungültig / unplausibel
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "BDC", "_KLEMMENSTEUERUNG_KURZSCHLUSSABSCHALTUNG_ZAEHLER", "STAT_TREIBER_15N1_ZAEHLER_COUNT_MAX_WERT", STAT_TREIBER_15N1_ZAEHLER_COUNT_MAX_WERT, "");
 
     unsigned char STAT_TREIBER_15N1_ZAEHLER_KS_RESTARTS_WERT = (RXBUF_UCHAR(4));
@@ -7125,7 +7111,7 @@
         // detected (see also requirement ZSG_BF_13075). If the value 0 is reached, the output is permanently deactivated
         // and cannot be reset using terminal switching or a diagnostic job. -> SG exchange necessary. 0 - 100000 =
         // current counter value for the restart attempts FFFFFFFFh = signal invalid / implausible / Das Result enthält
-        // den aktuellen Zählerstand für die  bisher erkannten Kurzschlüsse gegen Masse des Treibers KL15N2. Hinweis: 
+        // den aktuellen Zählerstand für die  bisher erkannten Kurzschlüsse gegen Masse des Treibers KL15N2. Hinweis:  
         // Startwert ist 100000 und wird pro SW- oder HW-mäßigem erkanntem Kurzschluss um 1 dekrementiert (Siehe hierzu
         // auch Anforderung ZSG_BF_13075).Wird der Wert 0 erreicht, so wird der Ausgang dauerhaft deaktiviert kann weder
         // mittels Klemmenschalten noch per Diagnosejob zurückgesetzt werden. -> SG-Tausch nötig. 0 - 100000 =Aktueller
@@ -7158,45 +7144,43 @@
 
     unsigned long STAT_TREIBER_KL30BACSM_ZAEHLER_COUNT_MAX_WERT = (RXBUF_UINT32(12));
         // The result contains the current counter status for the previously detected short circuits to ground of the
-        // KL30B-ACSM driver. Note: �The start value is 100000 and is decremented by 1 for each SW or HW-related short
+        // KL30B-ACSM driver. Note: ¿The start value is 100000 and is decremented by 1 for each SW or HW-related short
         // circuit detected (see also request ZSG_BF_13075). If the value 0 is reached, the output is permanently
         // deactivated and cannot be reset using terminal switching or a diagnostic job. -> SG exchange necessary. 0 -
         // 100000 = current counter value for the restart attempts FFFFFFFFh = signal invalid / implausible / Das Result
-        // enthält den aktuellen Zählerstand für die bisher erkannten Kurzschlüsse gegen Masse des Treibers
-        // KL30B-ACSM. Hinweis:  ¿   Startwert ist 100000 und wird pro SW- oder HW-mäßigem erkanntem Kurzschluss um 1
-        // dekrementiert (Siehe hierzu auch Anforderung ZSG_BF_13075).Wird der Wert 0 erreicht, so wird der Ausgang
-        // dauerhaft deaktiviert kann weder mittels Klemmenschalten noch per Diagnosejob zurückgesetzt werden. ->
-        // SG-Tausch nötig. 0 - 100000 =Aktueller Zählerwert für die Wiedereinschaltversuche FFFFFFFFh = Signal
-        // ungültig / unplausibel
+        // enthält den aktuellen Zählerstand für die bisher erkannten Kurzschlüsse gegen Masse des Treibers KL30B-ACSM.
+        // Hinweis:  ¿   Startwert ist 100000 und wird pro SW- oder HW-mäßigem erkanntem Kurzschluss um 1 dekrementiert
+        // (Siehe hierzu auch Anforderung ZSG_BF_13075).Wird der Wert 0 erreicht, so wird der Ausgang dauerhaft
+        // deaktiviert kann weder mittels Klemmenschalten noch per Diagnosejob zurückgesetzt werden. -> SG-Tausch nötig.
+        // 0 - 100000 =Aktueller Zählerwert für die Wiedereinschaltversuche FFFFFFFFh = Signal ungültig / unplausibel
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "BDC", "_KLEMMENSTEUERUNG_KURZSCHLUSSABSCHALTUNG_ZAEHLER", "STAT_TREIBER_KL30BACSM_ZAEHLER_COUNT_MAX_WERT", STAT_TREIBER_KL30BACSM_ZAEHLER_COUNT_MAX_WERT, "");
 
     unsigned char STAT_TREIBER_KL30BACSM_ZAEHLER_KS_RESTARTS_WERT = (RXBUF_UCHAR(16));
-        // The result contains the number of reconnection attempts made so far in cycle KL15 on -> KL15 off of the
+        // The result contains the number of reconnection attempts carried out so far in cycle KL15 on -> KL15 off of the
         // KL30B-ACSM driver. Note: After a short circuit is detected (on the software or hardware side), the driver is
         // reactivated as often as the maximum defined by the coding. Afterwards, a terminal change KL15 off -> KL15 on
-        // is necessary in order to start the restart attempts again (see requirements ZSG_BF_13096 and ZSG_BF_13097). 0
-        // - 254 = current counter value for the restart attempts 255 = signal invalid / implausible / Das Result
-        // enthält die Anzahl der bisher durchgeführten Wiedereinschaltversuche im Zyklus KL15 ein -> KL15 aus des
-        // Treibers KL30B-ACSM.  Hinweis:  Nach erkanntem Kurzschluss (SW- oder HW-seitig) wird der Treiber so oft wieder
+        // is necessary in order to restart the restart attempts (see requirements ZSG_BF_13096 and ZSG_BF_13097). 0 -
+        // 254 = current counter value for the restart attempts 255 = signal invalid / implausible / Das Result enthält
+        // die Anzahl der bisher durchgeführten Wiedereinschaltversuche im Zyklus KL15 ein -> KL15 aus des Treibers
+        // KL30B-ACSM.  Hinweis:  Nach erkanntem Kurzschluss (SW- oder HW-seitig) wird der Treiber so oft wieder
         // aktiviert, wie maximal per Codierung definiert. Danach ist ein Klemmenwechsel KL15 aus -> KL15 ein nötig, um
         // die Wiedereinschaltversuche erneut zu starten (Siehe hierzu Anfoderungen ZSG_BF_13096 und ZSG_BF_13097). 0 -
         // 254 = Aktueller Zählerwert für die Wiedereinschaltversuche 255 = Signal ungültig / unplausibel
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "_KLEMMENSTEUERUNG_KURZSCHLUSSABSCHALTUNG_ZAEHLER", "STAT_TREIBER_KL30BACSM_ZAEHLER_KS_RESTARTS_WERT", STAT_TREIBER_KL30BACSM_ZAEHLER_KS_RESTARTS_WERT, "");
 
     unsigned char STAT_TREIBER_KL30BACSM_ZAEHLER_KS_KL15_CYCLES_WERT = (RXBUF_UCHAR(17));
-        // The result contains the current number of already performed resets of the short-circuit shutdown by KL15 on of
+        // The result contains the current number of already performed resets of the short-circuit shutdown by KL15 on
         // the KL30B-ACSM driver. Note: The coding defines how often the short-circuit switch-off can be reset by
         // switching terminal 15. (See requirements ZSG_BF_13098) 0 - 254 = Current counter value for the number of
         // resets already carried out for short-circuit shutdown 255 = Signal invalid / implausible / Das Result enthält
         // den aktuelle Anzahl an bereits durchgeführten Resets des Kurzschlussabschaltung durch KL15 ein des Treibers
         // KL30B-ACSM.  Hinweis:  Per Kodierung ist festgelegt wie oft die Kurzschlussabschaltung durch Schalten der
         // Klemme 15 zurückgesetzt werden kann. (Siehe hierzu Anfoderungen ZSG_BF_13098) 0 - 254 = Aktueller Zählerwert
-        // für die Anzahl an bereits durchgeführten Resets der Kurzschlussabschaltung 255 = Signal ungültig /
-        // unplausibel
+        // für die Anzahl an bereits durchgeführten Resets der Kurzschlussabschaltung 255 = Signal ungültig / unplausibel
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "_KLEMMENSTEUERUNG_KURZSCHLUSSABSCHALTUNG_ZAEHLER", "STAT_TREIBER_KL30BACSM_ZAEHLER_KS_KL15_CYCLES_WERT", STAT_TREIBER_KL30BACSM_ZAEHLER_KS_KL15_CYCLES_WERT, "");
 
     unsigned long STAT_TREIBER_KL30B1_ZAEHLER_COUNT_MAX_WERT = (RXBUF_UINT32(18));
-        // The result contains the current counter status for the previously detected short circuits to ground of the
+        // The result contains the current counter status for the previously recognized short circuits to ground of the
         // KL30B-1 driver. Note: The start value is 100000 and is decremented by 1 for each SW or HW-related short
         // circuit detected (see also requirement ZSG_BF_13075). If the value 0 is reached, the output is permanently
         // deactivated and cannot be reset using terminal switching or a diagnostic job. -> SG exchange necessary. 0 -
@@ -7204,9 +7188,8 @@
         // enthält den aktuellen Zählerstand für die  bisher erkannten Kurzschlüsse gegen Masse des Treibers KL30B-1.
         // Hinweis:   Startwert ist 100000 und wird pro SW- oder HW-mäßigem erkanntem Kurzschluss um 1 dekrementiert
         // (Siehe hierzu auch Anforderung ZSG_BF_13075).Wird der Wert 0 erreicht, so wird der Ausgang dauerhaft
-        // deaktiviert kann weder mittels Klemmenschalten noch per Diagnosejob zurückgesetzt werden. -> SG-Tausch
-        // nötig. 0 - 100000 =Aktueller Zählerwert für die Wiedereinschaltversuche FFFFFFFFh = Signal ungültig /
-        // unplausibel
+        // deaktiviert kann weder mittels Klemmenschalten noch per Diagnosejob zurückgesetzt werden. -> SG-Tausch nötig.
+        // 0 - 100000 =Aktueller Zählerwert für die Wiedereinschaltversuche FFFFFFFFh = Signal ungültig / unplausibel
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "BDC", "_KLEMMENSTEUERUNG_KURZSCHLUSSABSCHALTUNG_ZAEHLER", "STAT_TREIBER_KL30B1_ZAEHLER_COUNT_MAX_WERT", STAT_TREIBER_KL30B1_ZAEHLER_COUNT_MAX_WERT, "");
 
     unsigned char STAT_TREIBER_KL30B1_ZAEHLER_KS_RESTARTS_WERT = (RXBUF_UCHAR(22));
@@ -7215,7 +7198,7 @@
         // reactivated as often as the maximum defined by the coding. Afterwards, a terminal change KL15 off -> KL15 on
         // is necessary in order to restart the restart attempts (see requirements ZSG_BF_13096 and ZSG_BF_13097) 0 - 254
         // = current counter value for the restart attempts 255 = signal invalid / implausible / Das Result enthält die
-        // Anzahl der bisher durchgeführten Wiedereinschaltversuche im Zyklus KL15 ein -> KL15 aus des Treibers KL30B-1.
+        // Anzahl der bisher durchgeführten Wiedereinschaltversuche im Zyklus KL15 ein -> KL15 aus des Treibers KL30B-1. 
         // Hinweis:  Nach erkanntem Kurzschluss (SW- oder HW-seitig) wird der Treiber so oft wieder aktiviert, wie
         // maximal per Codierung definiert. Danach ist ein Klemmenwechsel KL15 aus -> KL15 ein nötig, um die
         // Wiedereinschaltversuche erneut zu starten (Siehe hierzu Anfoderungen ZSG_BF_13096 und ZSG_BF_13097) 0 - 254 =
@@ -7223,45 +7206,44 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "_KLEMMENSTEUERUNG_KURZSCHLUSSABSCHALTUNG_ZAEHLER", "STAT_TREIBER_KL30B1_ZAEHLER_KS_RESTARTS_WERT", STAT_TREIBER_KL30B1_ZAEHLER_KS_RESTARTS_WERT, "");
 
     unsigned char STAT_TREIBER_KL30B1_ZAEHLER_KS_KL15_CYCLES_WERT = (RXBUF_UCHAR(23));
-        // The result contains the current number of resets that have already been carried out for short-circuit
-        // disconnection by KL15 on of the KL30B-1 driver. Note: The coding defines how often the short-circuit
-        // switch-off can be reset by switching terminal 15. (See requirements ZSG_BF_13098) 0 - 254 = Current counter
-        // value for the number of resets already carried out for short-circuit shutdown 255 = Signal invalid /
-        // implausible / Das Result enthält den aktuelle Anzahl an bereits durchgeführten Resets des
-        // Kurzschlussabschaltung durch KL15 ein des Treibers KL30B-1.  Hinweis:  Per Kodierung ist festgelegt wie oft
-        // die Kurzschlussabschaltung durch Schalten der Klemme 15 zurückgesetzt werden kann. (Siehe hierzu Anfoderungen
-        // ZSG_BF_13098) 0 - 254 = Aktueller Zählerwert für die Anzahl an bereits durchgeführten Resets der
-        // Kurzschlussabschaltung 255 = Signal ungültig / unplausibel
+        // The result contains the current number of already performed resets of the short-circuit shutdown by KL15 on of
+        // the KL30B-1 driver. Note: The coding defines how often the short-circuit switch-off can be reset by switching
+        // terminal 15. (See requirements ZSG_BF_13098) 0 - 254 = Current counter value for the number of resets already
+        // carried out for short-circuit shutdown 255 = Signal invalid / implausible / Das Result enthält den aktuelle
+        // Anzahl an bereits durchgeführten Resets des Kurzschlussabschaltung durch KL15 ein des Treibers KL30B-1. 
+        // Hinweis:  Per Kodierung ist festgelegt wie oft die Kurzschlussabschaltung durch Schalten der Klemme 15
+        // zurückgesetzt werden kann. (Siehe hierzu Anfoderungen ZSG_BF_13098) 0 - 254 = Aktueller Zählerwert für die
+        // Anzahl an bereits durchgeführten Resets der Kurzschlussabschaltung 255 = Signal ungültig / unplausibel
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "_KLEMMENSTEUERUNG_KURZSCHLUSSABSCHALTUNG_ZAEHLER", "STAT_TREIBER_KL30B1_ZAEHLER_KS_KL15_CYCLES_WERT", STAT_TREIBER_KL30B1_ZAEHLER_KS_KL15_CYCLES_WERT, "");
 
     unsigned long STAT_TREIBER_KL30B2_ZAEHLER_COUNT_MAX_WERT = (RXBUF_UINT32(24));
-        // The result contains the current count for the previously detected short circuits to ground of the KL30B-2
-        // driver. Note: The start value is 100000 and is decremented by 1 for each SW or HW-related short circuit
-        // detected (see also requirement ZSG_BF_13075). If the value 0 is reached, the output is permanently deactivated
-        // and cannot be reset using terminal switching or a diagnostic job. -> SG exchange necessary. 0 - 100000 =
-        // current counter value for the restart attempts FFFFFFFFh = signal invalid / implausible / Das Result enthält
-        // den aktuellen Zählerstand für die  bisher erkannten Kurzschlüsse gegen Masse des Treibers KL30B-2. Hinweis:
-        // Startwert ist 100000 und wird pro SW- oder HW-mäßigem erkanntem Kurzschluss um 1 dekrementiert (Siehe hierzu
-        // auch Anforderung ZSG_BF_13075).Wird der Wert 0 erreicht, so wird der Ausgang dauerhaft deaktiviert kann weder
-        // mittels Klemmenschalten noch per Diagnosejob zurückgesetzt werden. -> SG-Tausch nötig. 0 - 100000 =Aktueller
-        // Zählerwert für die Wiedereinschaltversuche FFFFFFFFh = Signal ungültig / unplausibel
+        // The result contains the current counter status for the previously recognized short circuits to ground of the
+        // KL30B-2 driver. Note: The start value is 100000 and is decremented by 1 for each SW or HW-related short
+        // circuit detected (see also requirement ZSG_BF_13075). If the value 0 is reached, the output is permanently
+        // deactivated and cannot be reset using terminal switching or a diagnostic job. -> SG exchange necessary. 0 -
+        // 100000 = current counter value for the restart attempts FFFFFFFFh = signal invalid / implausible / Das Result
+        // enthält den aktuellen Zählerstand für die  bisher erkannten Kurzschlüsse gegen Masse des Treibers KL30B-2.
+        // Hinweis:   Startwert ist 100000 und wird pro SW- oder HW-mäßigem erkanntem Kurzschluss um 1 dekrementiert
+        // (Siehe hierzu auch Anforderung ZSG_BF_13075).Wird der Wert 0 erreicht, so wird der Ausgang dauerhaft
+        // deaktiviert kann weder mittels Klemmenschalten noch per Diagnosejob zurückgesetzt werden. -> SG-Tausch nötig.
+        // 0 - 100000 =Aktueller Zählerwert für die Wiedereinschaltversuche FFFFFFFFh = Signal ungültig / unplausibel
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "BDC", "_KLEMMENSTEUERUNG_KURZSCHLUSSABSCHALTUNG_ZAEHLER", "STAT_TREIBER_KL30B2_ZAEHLER_COUNT_MAX_WERT", STAT_TREIBER_KL30B2_ZAEHLER_COUNT_MAX_WERT, "");
 
     unsigned char STAT_TREIBER_KL30B2_ZAEHLER_KS_RESTARTS_WERT = (RXBUF_UCHAR(28));
-        // The result contains the number of reconnection attempts carried out so far in cycle KL15 on -> KL15 off of
-        // driver KL30B-2. Note: After a short circuit is detected (on the software or hardware side), the driver is
-        // reactivated as often as the maximum defined by the coding. Afterwards, a terminal change KL15 off -> KL15 on
-        // is necessary in order to restart the restart attempts (see requirements ZSG_BF_13096 and ZSG_BF_13097) 0 - 254
-        // = current counter value for the restart attempts 255 = signal invalid / implausible / Das Result enthält die
-        // Anzahl der bisher durchgeführten Wiedereinschaltversuche im Zyklus KL15 ein -> KL15 aus des Treibers KL30B-2.
-        // Hinweis:  Nach erkanntem Kurzschluss (SW- oder HW-seitig) wird der Treiber so oft wieder aktiviert, wie
-        // maximal per Codierung definiert. Danach ist ein Klemmenwechsel KL15 aus -> KL15 ein nötig, um die
-        // Wiedereinschaltversuche erneut zu starten (Siehe hierzu Anfoderungen ZSG_BF_13096 und ZSG_BF_13097) 0 - 254 =
-        // Aktueller Zählerwert für die Wiedereinschaltversuche 255 = Signal ungültig / unplausibel
+        // The result contains the number of reconnection attempts carried out in cycle KL15 on -> KL15 off of driver
+        // KL30B-2. Note: After a short circuit is detected (on the software or hardware side), the driver is reactivated
+        // as often as the maximum defined by the coding. Afterwards, a terminal change KL15 off -> KL15 on is necessary
+        // in order to restart the restart attempts (see requirements ZSG_BF_13096 and ZSG_BF_13097) 0 - 254 = current
+        // counter value for the restart attempts 255 = signal invalid / implausible / Das Result enthält die Anzahl der
+        // bisher durchgeführten Wiedereinschaltversuche im Zyklus KL15 ein -> KL15 aus des Treibers KL30B-2.  Hinweis: 
+        // Nach erkanntem Kurzschluss (SW- oder HW-seitig) wird der Treiber so oft wieder aktiviert, wie maximal per
+        // Codierung definiert. Danach ist ein Klemmenwechsel KL15 aus -> KL15 ein nötig, um die Wiedereinschaltversuche
+        // erneut zu starten (Siehe hierzu Anfoderungen ZSG_BF_13096 und ZSG_BF_13097) 0 - 254 = Aktueller Zählerwert für
+        // die Wiedereinschaltversuche 255 = Signal ungültig / unplausibel
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "_KLEMMENSTEUERUNG_KURZSCHLUSSABSCHALTUNG_ZAEHLER", "STAT_TREIBER_KL30B2_ZAEHLER_KS_RESTARTS_WERT", STAT_TREIBER_KL30B2_ZAEHLER_KS_RESTARTS_WERT, "");
 
     unsigned char STAT_TREIBER_KL30B2_ZAEHLER_KS_KL15_CYCLES_WERT = (RXBUF_UCHAR(29));
-        // The result contains the current number of already performed resets of the short-circuit shutdown by KL15 on of
+        // The result contains the current number of already performed resets of the short-circuit shutdown by KL15 on
         // the KL30B-2 driver. Note: The coding defines how often the short-circuit switch-off can be reset by switching
         // terminal 15. (See requirements ZSG_BF_13098) 0 - 254 = Current counter value for the number of resets already
         // carried out for short-circuit shutdown 255 = Signal invalid / implausible / Das Result enthält den aktuelle
@@ -7272,12 +7254,12 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "_KLEMMENSTEUERUNG_KURZSCHLUSSABSCHALTUNG_ZAEHLER", "STAT_TREIBER_KL30B2_ZAEHLER_KS_KL15_CYCLES_WERT", STAT_TREIBER_KL30B2_ZAEHLER_KS_KL15_CYCLES_WERT, "");
 
     unsigned char STAT_KODIERUNG_RESTARTS_WERT_0X5020 = (RXBUF_UCHAR(30));
-        // The result contains the codable maximum value of restart attempts in cycle KL15 on -> KL15 off -> KL15 on.
-        // Note: The content corresponds to the coding SCD_RESTART (see requirements ZSG_BF_13073) 0 - 254 = maximum
-        // value for the restart attempts 255 = signal invalid / implausible / Das Result enthält den codierbaren
+        // The result contains the maximum value that can be coded for restart attempts in cycle KL15 on -> KL15 off ->
+        // KL15 on. Note: The content corresponds to the coding SCD_RESTART (see requirements ZSG_BF_13073) 0 - 254 =
+        // maximum value for the restart attempts 255 = signal invalid / implausible / Das Result enthält den codierbaren
         // maximalen Wert an Wiedereinschaltversuche im Zyklus KL15 ein -> KL15 aus -> KL15 ein.  Hinweis: Inhalt
-        // entspricht der Codierung SCD_RESTART (Siehe hierzu Anfoderungen ZSG_BF_13073) 0 - 254 = maximaler Wert für
-        // die Wiedereinschaltversuche 255 = Signal ungültig / unplausibel
+        // entspricht der Codierung SCD_RESTART (Siehe hierzu Anfoderungen ZSG_BF_13073) 0 - 254 = maximaler Wert für die
+        // Wiedereinschaltversuche 255 = Signal ungültig / unplausibel
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "_KLEMMENSTEUERUNG_KURZSCHLUSSABSCHALTUNG_ZAEHLER", "STAT_KODIERUNG_RESTARTS_WERT_0X5020", STAT_KODIERUNG_RESTARTS_WERT_0X5020, "");
 
     unsigned char STAT_KODIERUNG_KL15_CYCLES_WERT_0X5020 = (RXBUF_UCHAR(31));
@@ -7370,12 +7352,12 @@
     }
 
     unsigned char STAT_NORMAL_LOCK_STATE = (RXBUF_UCHAR(0));
-        // Jtag normal lock status. (0x00 �jtag is unlocked; 0x01 �jtag is locked) / Jtag normal lock status. (0x00 ¿
+        // Jtag normal lock status. (0x00 ¿jtag is unlocked; 0x01 ¿jtag is locked) / Jtag normal lock status. (0x00 ¿
         // jtag is unlocked; 0x01 ¿ jtag is locked)
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "_JTAGLOCK", "STAT_NORMAL_LOCK_STATE", STAT_NORMAL_LOCK_STATE, "\"0/1\"");
 
     unsigned char STAT_PERMANENT_LOCK_STATE = (RXBUF_UCHAR(1));
-        // Jtag permanent lock status. (0x00 �permanent lock not done; 0x01 �permanent lock done) / Jtag permanent lock
+        // Jtag permanent lock status. (0x00 ¿permanent lock not done; 0x01 ¿permanent lock done) / Jtag permanent lock
         // status. (0x00 ¿ permanent lock not done; 0x01 ¿ permanent lock done)
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "BDC", "_JTAGLOCK", "STAT_PERMANENT_LOCK_STATE", STAT_PERMANENT_LOCK_STATE, "\"0/1\"");
 

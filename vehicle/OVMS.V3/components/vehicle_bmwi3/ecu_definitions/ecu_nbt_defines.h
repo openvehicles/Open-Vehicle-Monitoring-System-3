@@ -12,7 +12,7 @@
 
 #define I3_PID_NBT_ETH_PHY_SWITCH_ENGINE_RESET                       0x1044
         // Is used to reset a PHY or switch / es and optionally to keep it in the reset state. / Wird verwendet, um einen
-        // PHY oder Switch/es zurÃ¼ckzusetzen und optional im Zustand Reset zu halten.
+        // PHY oder Switch/es zurückzusetzen und optional im Zustand Reset zu halten.
 
     #define I3_RES_NBT_STAT_PHY_STOPPED_FOR_T_WERT                   (RXBUF_UCHAR(0))
     #define I3_RES_NBT_STAT_PHY_STOPPED_FOR_T_WERT_UNIT              's'
@@ -32,12 +32,12 @@
 #define I3_PID_NBT_ETH_RESET_PORT_CONFIGURATION                      0x104A
         // Resets the saved port configuration. Implementation is mandatory for ECUs with more than 1 port. For ECUs with
         // 1 port: Must be implemented for SP2018 control units, optional for SP2015 control units. / Setzt die
-        // gespeicherte Portkonfiguration zurÃ¼ck. FÃ¼r ECUs mit mehr als 1 Port verpflichtend umzusetzen. FÃ¼r ECUs mit
-        // 1 Port: Verpflichtend umzusetzen fÃ¼r SP2018 SteuergerÃ¤te, optional fÃ¼r SP2015 SteuergerÃ¤te. 
+        // gespeicherte Portkonfiguration zurück. Für ECUs mit mehr als 1 Port verpflichtend umzusetzen. Für ECUs mit 1
+        // Port: Verpflichtend umzusetzen für SP2018 Steuergeräte, optional für SP2015 Steuergeräte. 
 
 #define I3_PID_NBT_ETH_RESET_PORT_TX_RX_STATS                        0x104B
-        // Resets the receive and transmit counters of a switch. / Setzt die Receive- und TransmitzÃ¤hler eines Switchs
-        // zurÃ¼ck.
+        // Resets the receive and transmit counters of a switch. / Setzt die Receive- und Transmitzähler eines Switchs
+        // zurück.
 
 // Skipping ETH_ENABLE_TEST_MODE on 0x104C which takes arguments
 
@@ -58,7 +58,7 @@
 
 #define I3_PID_NBT_ETH_PHY_LINK_STATE                                0x1802
         // Returns the current link status of all physically available ports. / Gibt den aktuellen Link-Status aller
-        // physikalisch vorhandenen Ports zurÃ¼ck.
+        // physikalisch vorhandenen Ports zurück.
 
     #define I3_RES_NBT_STAT_NUM_OF_PORTS_WERT                        (RXBUF_UCHAR(0))
     #define I3_RES_NBT_STAT_NUM_OF_PORTS_WERT_TYPE                   unsigned char
@@ -90,8 +90,8 @@
 #define I3_PID_NBT_ETH_LEARN_PORT_CONFIGURATION                      0x1803
         // Returns the learned port configuration of the SG. Implementation is mandatory for ECUs with more than 1 port.
         // For ECUs with 1 port: Must be implemented for SP2018 control units, optional for SP2015 control units. / Gibt
-        // die gelernte Port-Konfiguration des SGs zurÃ¼ck.  FÃ¼r ECUs mit mehr als 1 Port verpflichtend umzusetzen. FÃ¼r
-        // ECUs mit 1 Port: Verpflichtend umzusetzen fÃ¼r SP2018 SteuergerÃ¤te, optional fÃ¼r SP2015 SteuergerÃ¤te.
+        // die gelernte Port-Konfiguration des SGs zurück.  Für ECUs mit mehr als 1 Port verpflichtend umzusetzen. Für
+        // ECUs mit 1 Port: Verpflichtend umzusetzen für SP2018 Steuergeräte, optional für SP2015 Steuergeräte.
 
     #define I3_RES_NBT_STAT_LEARN_PORT_CONFIGURATION                 (RXBUF_UCHAR(0))
     #define I3_RES_NBT_STAT_LEARN_PORT_CONFIGURATION_UNIT            '0-n'
@@ -129,12 +129,12 @@
 // Skipping SINUSGENERATOR on 0xA001 which takes arguments
 
 #define I3_PID_NBT_STEUERN_VOLUMEAUDIO_DEFAULT                       0xA002
-        // Reset of all volume values to default values / ZurÃ¼cksetzen aller LautstÃ¤rkewerte auf Default-Werte
+        // Reset of all volume values to default values / Zurücksetzen aller Lautstärkewerte auf Default-Werte
 
 // Skipping STEUERN_PDC_SIGNAL on 0xA003 which takes arguments
 
 #define I3_PID_NBT_STEUERN_LINEAR                                    0xA004
-        // Resetting the faders and volume to default values / ZurÃ¼cksetzen der Fader und LautstÃ¤rke auf Default-Werte
+        // Resetting the faders and volume to default values / Zurücksetzen der Fader und Lautstärke auf Default-Werte
 
 // Skipping STEUERN_EJECT on 0xA006 which takes arguments
 
@@ -206,7 +206,7 @@
     #define I3_RES_NBT_STAT_PROVISIONING_UNIT                        '0-n'
     #define I3_RES_NBT_STAT_PROVISIONING_TYPE                        unsigned char
         // Status of the provisioning process, values according to table TProvisioningStatus / Status des
-        // Provisionierungsprozess, Werte gemÃ¤Ã Tabelle TProvisioningStatus
+        // Provisionierungsprozess, Werte gemäß Tabelle TProvisioningStatus
 
 #define I3_PID_NBT_STEUERN_DELETE_COOKIES                            0xA030
         // not defined in diagnosis database / not defined in diagnosis database
@@ -280,17 +280,17 @@
 // Skipping BT_ERKENNUNGSMODUS on 0xA049 which takes arguments
 
 #define I3_PID_NBT_STEUERN_BT_DELETE_ALL_PHONE_ID                    0xA04B
-        // Deleting connected Bluetooth devices / LÃ¶schen angekoppelter Bluetooth Devices
+        // Deleting connected Bluetooth devices / Löschen angekoppelter Bluetooth Devices
 
 #define I3_PID_NBT_INITIALISATION_COUNTER_REGION_CODE_DVD            0xA04D
-        // Value of the change count for the DVD country code / Wert des ÃnderungszÃ¤hles fÃ¼r den DVD LÃ¤ndercode
+        // Value of the change count for the DVD country code / Wert des Änderungszähles für den DVD Ländercode
 
     #define I3_RES_NBT_STAT_INITIALISATION_COUNTER_REGION_CODE_DVD_WERT (RXBUF_UCHAR(0))
     #define I3_RES_NBT_STAT_INITIALISATION_COUNTER_REGION_CODE_DVD_WERT_TYPE unsigned char
-        // Value change counter DVD country code / Wert ÃnderugszÃ¤hlerDVDLÃ¤ndercode
+        // Value change counter DVD country code / Wert ÄnderugszählerDVDLändercode
 
 #define I3_PID_NBT_SWUP_REMOVE_CUSTOMER_UPDATES                      0xA05A
-        // Removes all updates of the user I-level status without restoring KISU / Entfernt alle Updates des Benutzers
+        // Removes all updates of the user I-level status restore without KISU / Entfernt alle Updates des Benutzers
         // I-Stufenstand ohne KISU wiederherstellen
 
     #define I3_RES_NBT_STAT_REMOVE_CUSTOMER_UPDATES                  (RXBUF_UCHAR(0))
@@ -309,7 +309,7 @@
 // Skipping RESET_PIA_SETTINGS on 0xA083 which takes arguments
 
 #define I3_PID_NBT_STEUERN_CLEAR_FAULT_TRACKING                      0xA085
-        // Deletes the extended error evaluation data / LÃ¶scht die erweiterten Fehlerauswertungsdaten
+        // Deletes the extended error evaluation data / Löscht die erweiterten Fehlerauswertungsdaten
 
 // Skipping TOUCH_COMMAND_ID on 0xA09B which takes arguments
 
@@ -325,7 +325,7 @@
         // Trigger the activation of the BMW TeleServices / Trigger die Aktivierung des BMW TeleServices
 
 #define I3_PID_NBT_UPDATE_ZERTIFIKATE                                0xA0A9
-        // Triggers the update of the certificate list / LÃ¶st die Aktualisierung der Zertifikatliste aus
+        // Triggers the update of the certificate list / Löst die Aktualisierung der Zertifikatliste aus
 
 // Skipping SDARS_ACTIVATION on 0xA0AA which takes arguments
 
@@ -361,13 +361,13 @@
 
     #define I3_RES_NBT_STAT_HU_FSC_REFURBISH_UI_WERT                 (RXBUF_UINT(0))
     #define I3_RES_NBT_STAT_HU_FSC_REFURBISH_UI_WERT_TYPE            unsigned short
-        // Value of the required index that is stored in the HU / Wert des nÃ¶tigen Index, der in der HU gespeichert ist
+        // Value of the required index that is stored in the HU / Wert des nötigen Index, der in der HU gespeichert ist
 
 #define I3_PID_NBT_HU_FSC_REFURBISH_VIN                              0xA0FB
-        // Protected VIN value / Wert der geschÃ¼tzten VIN
+        // Protected VIN value / Wert der geschützten VIN
 
     // Can't yet generate code for STAT_HU_FSC_REFURBISH_VIN_TEXT of type string[7], at offset 0. But we account for the 7 bytes
-        // Value of the protected VIN that is stored in the HU / Wert der geschÃ¼tzten VIN, die in der HU gespeichert ist
+        // Value of the protected VIN that is stored in the HU / Wert der geschützten VIN, die in der HU gespeichert ist
 
 #define I3_PID_NBT_HU_VIN_PROTECTION_ENFORCE_CYCLIC                  0xA109
         // This diagnosis job starts a cyclic phase inclusive debouncing within the current life cycle for the internal
@@ -580,8 +580,8 @@
 
 #define I3_PID_NBT_STATUS_VERSION_ID_LESEN                           0xD00B
         // Read out chassis number, hardware delivery ID, software delivery ID and control unit software update version
-        // ID. / Auslesen Fahrgestellnummer, Hardware Lieferung ID, Software Lieferung ID und SteuergerÃ¤te
-        // Softwareupdate Version ID.
+        // ID. / Auslesen Fahrgestellnummer, Hardware Lieferung ID, Software Lieferung ID und Steuergeräte Softwareupdate
+        // Version ID.
 
     // Can't process STAT_VIN_TEXT - don't know type string (*** this will mean all the following offsets are wrong!!! ****)
 
@@ -652,18 +652,18 @@
 // Skipping RDS on 0xD00E which takes arguments
 
 #define I3_PID_NBT_STATUS_ANT_QFS                                    0xD010
-        // Measure the field strength currently applied to the tuner. / Messen der FeldstÃ¤rke, die aktuell am Tuner
+        // Measure the field strength currently applied to the tuner. / Messen der Feldstärke, die aktuell am Tuner
         // anliegt.
 
     #define I3_RES_NBT_STAT_QUALITY_WERT_0XD010                      (RXBUF_UCHAR(0))
     #define I3_RES_NBT_STAT_QUALITY_WERT_0XD010_TYPE                 unsigned char
         // Values between 0..15 This is the value used for AF tracking, where 15 corresponds to the best quality. / Werte
-        // zwischen 0..15 Dies ist der fÃ¼r AF-Tracking verwendete Wert, wobei 15 bester QualitÃ¤t entspricht.
+        // zwischen 0..15 Dies ist der für AF-Tracking verwendete Wert, wobei 15 bester Qualität entspricht.
 
     #define I3_RES_NBT_STAT_FIELDSTRENGTH_WERT_0XD010                (RXBUF_UCHAR(1))
     #define I3_RES_NBT_STAT_FIELDSTRENGTH_WERT_0XD010_TYPE           unsigned char
         // Values between 0..15 This corresponds to 0..60 dBµV in steps of 4dB. / Werte zwischen 0..15 Dies entspricht
-        // 0..60 dBÂµV in Schritten von 4dB.
+        // 0..60 dBµV in Schritten von 4dB.
 
     #define I3_RES_NBT_STAT_ANT_PW                                   (RXBUF_UCHAR(2))
     #define I3_RES_NBT_STAT_ANT_PW_UNIT                              '0-n'
@@ -671,11 +671,11 @@
         // indicates the status of the antenna power supply. / gibt den Status der Antennenstromversorgung wieder.
 
     #define I3_RES_NBT_STAT_FIELDSTRENGTH_EXACT_WERT                 (RXBUF_UCHAR(3))
-    #define I3_RES_NBT_STAT_FIELDSTRENGTH_EXACT_WERT_UNIT            'dBÂµV'
+    #define I3_RES_NBT_STAT_FIELDSTRENGTH_EXACT_WERT_UNIT            'dBµV'
     #define I3_RES_NBT_STAT_FIELDSTRENGTH_EXACT_WERT_TYPE            unsigned char
         // Values between 0..60 This corresponds to 0..60 dBµV in steps of 1dB. Return of 255 if no measurement possible.
-        // / Werte zwischen 0..60 Dies entspricht 0..60 dBÂµV in Schritten von 1dB. RÃ¼ckgabe von 255, wenn keine Messung
-        // mÃ¶glich.
+        // / Werte zwischen 0..60 Dies entspricht 0..60 dBµV in Schritten von 1dB. Rückgabe von 255, wenn keine Messung
+        // möglich.
 
     #define I3_RES_NBT_STAT_FREQUENZ_WERT                            (RXBUF_UINT32(4))
     #define I3_RES_NBT_STAT_FREQUENZ_WERT_UNIT                       'kHz'
@@ -702,11 +702,11 @@
 // Skipping DEMUTE on 0xD014 which takes arguments
 
 #define I3_PID_NBT_SER_NR_DOM_LESEN                                  0xD019
-        // Leaves the serial number with 14 characters (DIN ISO 10 486) / LieÃt die Seriennummer mit 14 Zeichen (DIN ISO
+        // Leaves the serial number with 14 characters (DIN ISO 10 486) / Ließt die Seriennummer mit 14 Zeichen (DIN ISO
         // 10 486)
 
     // Can't yet generate code for STAT_SER_NR_DOM_TEXT of type string[14], at offset 0. But we account for the 14 bytes
-        // Leaves the serial number with 14 characters (DIN ISO 10 486) / LieÃt die Seriennummer mit 14 Zeichen (DIN ISO
+        // Leaves the serial number with 14 characters (DIN ISO 10 486) / Ließt die Seriennummer mit 14 Zeichen (DIN ISO
         // 10 486)
 
 // Skipping BT_GERAETEADRESSE on 0xD01A which takes arguments
@@ -714,31 +714,31 @@
 // Skipping BT_GERAETENAME on 0xD01C which takes arguments
 
 #define I3_PID_NBT_STATUS_BT_GEKOPPELTE_GERAETE_LESEN                0xD01D
-        // Reads the device address of the last four paired Bluetooth devices / Liest die GerÃ¤te-Adresse der letzten
-        // vier gekoppelten Bluetooth GerÃ¤te
+        // Reads the device address of the last four paired Bluetooth devices / Liest die Geräte-Adresse der letzten vier
+        // gekoppelten Bluetooth Geräte
 
     // Can't yet generate code for STAT_BT_ADR_DEV_1_DATA of type data[6] at offset 0. But we account for the 6 bytes
-        // Device address of device 1 / GerÃ¤teadresse von GerÃ¤t 1
+        // Device address of device 1 / Geräteadresse von Gerät 1
 
     // Can't yet generate code for STAT_BT_ADR_DEV_2_DATA of type data[6] at offset 6. But we account for the 6 bytes
-        // Device address of device 2 / GerÃ¤teadresse von GerÃ¤t 2
+        // Device address of device 2 / Geräteadresse von Gerät 2
 
     // Can't yet generate code for STAT_BT_ADR_DEV_3_DATA of type data[6] at offset 12. But we account for the 6 bytes
-        // Device address of device 3 / GerÃ¤teadresse von GerÃ¤t 3
+        // Device address of device 3 / Geräteadresse von Gerät 3
 
     // Can't yet generate code for STAT_BT_ADR_DEV_4_DATA of type data[6] at offset 18. But we account for the 6 bytes
-        // Device address of device 4 / GerÃ¤teadresse von GerÃ¤t 4
+        // Device address of device 4 / Geräteadresse von Gerät 4
 
 #define I3_PID_NBT_STATUS_SWUP_INSTALLATION_HISTORY                  0xD01E
         // Read out the last software update installations. The time, operation type, SWIP ID, ECU SW VID and operation
-        // code are saved for each entry. / Auslesen der letzten Software Update Installationen. FÃ¼r jeden Eintrag
-        // werden Zeit, Operationtype, SWIP ID, ECU SW VID und Operationcode gespeichert.
+        // code are saved for each entry. / Auslesen der letzten Software Update Installationen. Für jeden Eintrag werden
+        // Zeit, Operationtype, SWIP ID, ECU SW VID und Operationcode gespeichert.
 
     #define I3_RES_NBT_STAT_HISTORY_1_KILOMETER_WERT                 (RXBUF_UINT32(0))
     #define I3_RES_NBT_STAT_HISTORY_1_KILOMETER_WERT_UNIT            'km'
     #define I3_RES_NBT_STAT_HISTORY_1_KILOMETER_WERT_TYPE            unsigned long
         // Mileage in operation 1. History entry 0xFFFFFFFF is invalid / Kilometerstand bei der Operation 1.
-        // Historyeintrag  0xFFFFFFFF fÃ¼r ungÃ¼ltig
+        // Historyeintrag  0xFFFFFFFF für ungültig
 
     // Can't process STAT_HISTORY_1_ZEIT_TEXT - don't know type string (*** this will mean all the following offsets are wrong!!! ****)
 
@@ -757,7 +757,7 @@
     #define I3_RES_NBT_STAT_HISTORY_1_FLASHSPEICHER_WERT_UNIT        'kBytes'
     #define I3_RES_NBT_STAT_HISTORY_1_FLASHSPEICHER_WERT_TYPE        unsigned long
         // Free flash memory that is available for updates after the update (0xff ff ff ff if unknown) 1. History entry
-        // Unit: kBytes / Freier Flashspeicher, der fÃ¼r Updates nach dem Update zur VerfÃ¼gung steht (0xff ff ff ff wenn
+        // Unit: kBytes / Freier Flashspeicher, der für Updates nach dem Update zur Verfügung steht (0xff ff ff ff wenn
         // unbekannt) 1. Historyeintrag  Einheit: kBytes
 
     #define I3_RES_NBT_STAT_HISTORY_1_ERROR_CODE                     (RXBUF_UCHAR(9))
@@ -769,7 +769,7 @@
     #define I3_RES_NBT_STAT_HISTORY_2_KILOMETER_WERT_UNIT            'km'
     #define I3_RES_NBT_STAT_HISTORY_2_KILOMETER_WERT_TYPE            unsigned long
         // Mileage in operation 2. History entry 0xFFFFFFFF is invalid / Kilometerstand bei der Operation 2.
-        // Historyeintrag  0xFFFFFFFF fÃ¼r ungÃ¼ltig
+        // Historyeintrag  0xFFFFFFFF für ungültig
 
     // Can't process STAT_HISTORY_2_ZEIT_TEXT - don't know type string (*** this will mean all the following offsets are wrong!!! ****)
 
@@ -788,7 +788,7 @@
     #define I3_RES_NBT_STAT_HISTORY_2_FLASHSPEICHER_WERT_UNIT        'kBytes'
     #define I3_RES_NBT_STAT_HISTORY_2_FLASHSPEICHER_WERT_TYPE        unsigned long
         // Free flash memory which is available for updates after the update (0xff ff ff ff if unknown) 2. History entry
-        // Unit: kBytes / Freier Flashspeicher, der fÃ¼r Updates nach dem Update zur VerfÃ¼gung steht (0xff ff ff ff wenn
+        // Unit: kBytes / Freier Flashspeicher, der für Updates nach dem Update zur Verfügung steht (0xff ff ff ff wenn
         // unbekannt) 2. Historyeintrag  Einheit: kBytes
 
     #define I3_RES_NBT_STAT_HISTORY_2_ERROR_CODE                     (RXBUF_UCHAR(19))
@@ -800,7 +800,7 @@
     #define I3_RES_NBT_STAT_HISTORY_3_KILOMETER_WERT_UNIT            'km'
     #define I3_RES_NBT_STAT_HISTORY_3_KILOMETER_WERT_TYPE            unsigned long
         // Mileage in operation 3. History entry 0xFFFFFFFF is invalid / Kilometerstand bei der Operation 3.
-        // Historyeintrag  0xFFFFFFFF fÃ¼r ungÃ¼ltig
+        // Historyeintrag  0xFFFFFFFF für ungültig
 
     // Can't process STAT_HISTORY_3_ZEIT_TEXT - don't know type string (*** this will mean all the following offsets are wrong!!! ****)
 
@@ -819,7 +819,7 @@
     #define I3_RES_NBT_STAT_HISTORY_3_FLASHSPEICHER_WERT_UNIT        'kBytes'
     #define I3_RES_NBT_STAT_HISTORY_3_FLASHSPEICHER_WERT_TYPE        unsigned long
         // Free flash memory that is available for updates after the update (0xff ff ff ff if unknown) 3. History entry
-        // Unit: kBytes / Freier Flashspeicher, der fÃ¼r Updates nach dem Update zur VerfÃ¼gung steht (0xff ff ff ff wenn
+        // Unit: kBytes / Freier Flashspeicher, der für Updates nach dem Update zur Verfügung steht (0xff ff ff ff wenn
         // unbekannt) 3. Historyeintrag  Einheit: kBytes
 
     #define I3_RES_NBT_STAT_HISTORY_3_ERROR_CODE                     (RXBUF_UCHAR(29))
@@ -830,8 +830,8 @@
     #define I3_RES_NBT_STAT_HISTORY_4_KILOMETER_WERT                 (RXBUF_UINT32(30))
     #define I3_RES_NBT_STAT_HISTORY_4_KILOMETER_WERT_UNIT            'km'
     #define I3_RES_NBT_STAT_HISTORY_4_KILOMETER_WERT_TYPE            unsigned long
-        // Mileage in operation 4. History entry 0xFFFFFFFF is invalid / Kilometerstand bei der Operation 4.
-        // Historyeintrag  0xFFFFFFFF fÃ¼r ungÃ¼ltig
+        // Mileage during operation 4. History entry 0xFFFFFFFF is invalid / Kilometerstand bei der Operation 4.
+        // Historyeintrag  0xFFFFFFFF für ungültig
 
     // Can't process STAT_HISTORY_4_ZEIT_TEXT - don't know type string (*** this will mean all the following offsets are wrong!!! ****)
 
@@ -850,7 +850,7 @@
     #define I3_RES_NBT_STAT_HISTORY_4_FLASHSPEICHER_WERT_UNIT        'kBytes'
     #define I3_RES_NBT_STAT_HISTORY_4_FLASHSPEICHER_WERT_TYPE        unsigned long
         // Free flash memory that is available for updates after the update (0xff ff ff ff if unknown) 4. History entry
-        // Unit: kBytes / Freier Flashspeicher, der fÃ¼r Updates nach dem Update zur VerfÃ¼gung steht (0xff ff ff ff wenn
+        // Unit: kBytes / Freier Flashspeicher, der für Updates nach dem Update zur Verfügung steht (0xff ff ff ff wenn
         // unbekannt) 4. Historyeintrag  Einheit: kBytes
 
     #define I3_RES_NBT_STAT_HISTORY_4_ERROR_CODE                     (RXBUF_UCHAR(39))
@@ -862,7 +862,7 @@
     #define I3_RES_NBT_STAT_HISTORY_5_KILOMETER_WERT_UNIT            'km'
     #define I3_RES_NBT_STAT_HISTORY_5_KILOMETER_WERT_TYPE            unsigned long
         // Mileage in operation 5. History entry 0xFFFFFFFF is invalid / Kilometerstand bei der Operation 5.
-        // Historyeintrag  0xFFFFFFFF fÃ¼r ungÃ¼ltig
+        // Historyeintrag  0xFFFFFFFF für ungültig
 
     // Can't process STAT_HISTORY_5_ZEIT_TEXT - don't know type string (*** this will mean all the following offsets are wrong!!! ****)
 
@@ -881,7 +881,7 @@
     #define I3_RES_NBT_STAT_HISTORY_5_FLASHSPEICHER_WERT_UNIT        'kBytes'
     #define I3_RES_NBT_STAT_HISTORY_5_FLASHSPEICHER_WERT_TYPE        unsigned long
         // Free flash memory that is available for updates after the update (0xff ff ff ff if unknown) 5. History entry
-        // Unit: kBytes / Freier Flashspeicher, der fÃ¼r Updates nach dem Update zur VerfÃ¼gung steht (0xff ff ff ff wenn
+        // Unit: kBytes / Freier Flashspeicher, der für Updates nach dem Update zur Verfügung steht (0xff ff ff ff wenn
         // unbekannt) 5. Historyeintrag  Einheit: kBytes
 
     #define I3_RES_NBT_STAT_HISTORY_5_ERROR_CODE                     (RXBUF_UCHAR(49))
@@ -893,7 +893,7 @@
     #define I3_RES_NBT_STAT_HISTORY_6_KILOMETER_WERT_UNIT            'km'
     #define I3_RES_NBT_STAT_HISTORY_6_KILOMETER_WERT_TYPE            unsigned long
         // Mileage in operation 6. History entry 0xFFFFFFFF is invalid / Kilometerstand bei der Operation 6.
-        // Historyeintrag  0xFFFFFFFF fÃ¼r ungÃ¼ltig
+        // Historyeintrag  0xFFFFFFFF für ungültig
 
     // Can't process STAT_HISTORY_6_ZEIT_TEXT - don't know type string (*** this will mean all the following offsets are wrong!!! ****)
 
@@ -911,8 +911,8 @@
     #define I3_RES_NBT_STAT_HISTORY_6_FLASHSPEICHER_WERT             (RXBUF_UINT32(55))
     #define I3_RES_NBT_STAT_HISTORY_6_FLASHSPEICHER_WERT_UNIT        'kBytes'
     #define I3_RES_NBT_STAT_HISTORY_6_FLASHSPEICHER_WERT_TYPE        unsigned long
-        // Free flash memory which is available for updates after the update (0xff ff ff ff if unknown) 6. History entry
-        // Unit: kBytes / Freier Flashspeicher, der fÃ¼r Updates nach dem Update zur VerfÃ¼gung steht (0xff ff ff ff wenn
+        // Free flash memory that is available for updates after the update (0xff ff ff ff if unknown) 6. History entry
+        // Unit: kBytes / Freier Flashspeicher, der für Updates nach dem Update zur Verfügung steht (0xff ff ff ff wenn
         // unbekannt) 6. Historyeintrag  Einheit: kBytes
 
     #define I3_RES_NBT_STAT_HISTORY_6_ERROR_CODE                     (RXBUF_UCHAR(59))
@@ -924,7 +924,7 @@
     #define I3_RES_NBT_STAT_HISTORY_7_KILOMETER_WERT_UNIT            'km'
     #define I3_RES_NBT_STAT_HISTORY_7_KILOMETER_WERT_TYPE            unsigned long
         // Mileage in operation 7. History entry 0xFFFFFFFF is invalid / Kilometerstand bei der Operation 7.
-        // Historyeintrag  0xFFFFFFFF fÃ¼r ungÃ¼ltig
+        // Historyeintrag  0xFFFFFFFF für ungültig
 
     // Can't process STAT_HISTORY_7_ZEIT_TEXT - don't know type string (*** this will mean all the following offsets are wrong!!! ****)
 
@@ -943,7 +943,7 @@
     #define I3_RES_NBT_STAT_HISTORY_7_FLASHSPEICHER_WERT_UNIT        'kBytes'
     #define I3_RES_NBT_STAT_HISTORY_7_FLASHSPEICHER_WERT_TYPE        unsigned long
         // Free flash memory that is available for updates after the update (0xff ff ff ff if unknown) 7. History entry
-        // Unit: kBytes / Freier Flashspeicher, der fÃ¼r Updates nach dem Update zur VerfÃ¼gung steht (0xff ff ff ff wenn
+        // Unit: kBytes / Freier Flashspeicher, der für Updates nach dem Update zur Verfügung steht (0xff ff ff ff wenn
         // unbekannt) 7. Historyeintrag  Einheit: kBytes
 
     #define I3_RES_NBT_STAT_HISTORY_7_ERROR_CODE                     (RXBUF_UCHAR(69))
@@ -955,7 +955,7 @@
     #define I3_RES_NBT_STAT_HISTORY_8_KILOMETER_WERT_UNIT            'km'
     #define I3_RES_NBT_STAT_HISTORY_8_KILOMETER_WERT_TYPE            unsigned long
         // Mileage in operation 8. History entry 0xFFFFFFFF is invalid / Kilometerstand bei der Operation 8.
-        // Historyeintrag  0xFFFFFFFF fÃ¼r ungÃ¼ltig
+        // Historyeintrag  0xFFFFFFFF für ungültig
 
     // Can't process STAT_HISTORY_8_ZEIT_TEXT - don't know type string (*** this will mean all the following offsets are wrong!!! ****)
 
@@ -974,7 +974,7 @@
     #define I3_RES_NBT_STAT_HISTORY_8_FLASHSPEICHER_WERT_UNIT        'kBytes'
     #define I3_RES_NBT_STAT_HISTORY_8_FLASHSPEICHER_WERT_TYPE        unsigned long
         // Free flash memory which is available for updates after the update (0xff ff ff ff if unknown) 8. History entry
-        // Unit: kBytes / Freier Flashspeicher, der fÃ¼r Updates nach dem Update zur VerfÃ¼gung steht (0xff ff ff ff wenn
+        // Unit: kBytes / Freier Flashspeicher, der für Updates nach dem Update zur Verfügung steht (0xff ff ff ff wenn
         // unbekannt) 8. Historyeintrag  Einheit: kBytes
 
     #define I3_RES_NBT_STAT_HISTORY_8_ERROR_CODE                     (RXBUF_UCHAR(79))
@@ -997,362 +997,362 @@
     #define I3_RES_NBT_STAT_APPL_1                                   (RXBUF_UCHAR(0))
     #define I3_RES_NBT_STAT_APPL_1_UNIT                              '0-n'
     #define I3_RES_NBT_STAT_APPL_1_TYPE                              unsigned char
-        // returns the names of each application X from the TApplication table. / gibt fÃ¼r jede Applikation X deren
-        // Namen aus der Tabelle TApplication wieder.
+        // returns the names of each application X from the TApplication table. / gibt für jede Applikation X deren Namen
+        // aus der Tabelle TApplication wieder.
 
     #define I3_RES_NBT_STAT_APPL_ENABLED_1                           (RXBUF_UCHAR(1))
     #define I3_RES_NBT_STAT_APPL_ENABLED_1_UNIT                      '0-n'
     #define I3_RES_NBT_STAT_APPL_ENABLED_1_TYPE                      unsigned char
-        // shows for each application X whether it is currently running. / gibt fÃ¼r jede Applikation X wieder, ob sie
-        // gerade lÃ¤uft.
+        // shows for each application X whether it is currently running. / gibt für jede Applikation X wieder, ob sie
+        // gerade läuft.
 
     #define I3_RES_NBT_STAT_APPL_CODED_1                             (RXBUF_UCHAR(2))
     #define I3_RES_NBT_STAT_APPL_CODED_1_UNIT                        '0-n'
     #define I3_RES_NBT_STAT_APPL_CODED_1_TYPE                        unsigned char
-        // indicates for each application X whether it is activated. / gibt fÃ¼r jede Applikation X wieder, ob sie
+        // indicates for each application X whether it is activated. / gibt für jede Applikation X wieder, ob sie
         // aktiviert ist.
 
     #define I3_RES_NBT_STAT_APPL_2                                   (RXBUF_UCHAR(3))
     #define I3_RES_NBT_STAT_APPL_2_UNIT                              '0-n'
     #define I3_RES_NBT_STAT_APPL_2_TYPE                              unsigned char
-        // Output for each application X: Name from the TApplication table. / Ausgabe fÃ¼r jede Applikation X: Name aus
+        // Output for each application X: Name from the TApplication table. / Ausgabe für jede Applikation X: Name aus
         // der Tabelle TApplication.
 
     #define I3_RES_NBT_STAT_APPL_ENABLED_2                           (RXBUF_UCHAR(4))
     #define I3_RES_NBT_STAT_APPL_ENABLED_2_UNIT                      '0-n'
     #define I3_RES_NBT_STAT_APPL_ENABLED_2_TYPE                      unsigned char
-        // shows for each application X whether it is currently running. / gibt fÃ¼r jede Applikation X wieder, ob sie
-        // gerade lÃ¤uft.
+        // shows for each application X whether it is currently running. / gibt für jede Applikation X wieder, ob sie
+        // gerade läuft.
 
     #define I3_RES_NBT_STAT_APPL_CODED_2                             (RXBUF_UCHAR(5))
     #define I3_RES_NBT_STAT_APPL_CODED_2_UNIT                        '0-n'
     #define I3_RES_NBT_STAT_APPL_CODED_2_TYPE                        unsigned char
-        // indicates for each application X whether it is activated. / gibt fÃ¼r jede Applikation X wieder, ob sie
+        // indicates for each application X whether it is activated. / gibt für jede Applikation X wieder, ob sie
         // aktiviert ist.
 
     #define I3_RES_NBT_STAT_APPL_3                                   (RXBUF_UCHAR(6))
     #define I3_RES_NBT_STAT_APPL_3_UNIT                              '0-n'
     #define I3_RES_NBT_STAT_APPL_3_TYPE                              unsigned char
-        // returns the names of each application X from the TApplication table. / gibt fÃ¼r jede Applikation X deren
-        // Namen aus der Tabelle TApplication wieder.
+        // returns the names of each application X from the TApplication table. / gibt für jede Applikation X deren Namen
+        // aus der Tabelle TApplication wieder.
 
     #define I3_RES_NBT_STAT_APPL_ENABLED_3                           (RXBUF_UCHAR(7))
     #define I3_RES_NBT_STAT_APPL_ENABLED_3_UNIT                      '0-n'
     #define I3_RES_NBT_STAT_APPL_ENABLED_3_TYPE                      unsigned char
-        // shows for each application X whether it is currently running. / gibt fÃ¼r jede Applikation X wieder, ob sie
-        // gerade lÃ¤uft.
+        // shows for each application X whether it is currently running. / gibt für jede Applikation X wieder, ob sie
+        // gerade läuft.
 
     #define I3_RES_NBT_STAT_APPL_CODED_3                             (RXBUF_UCHAR(8))
     #define I3_RES_NBT_STAT_APPL_CODED_3_UNIT                        '0-n'
     #define I3_RES_NBT_STAT_APPL_CODED_3_TYPE                        unsigned char
-        // indicates for each application X whether it is activated. / gibt fÃ¼r jede Applikation X wieder, ob sie
+        // indicates for each application X whether it is activated. / gibt für jede Applikation X wieder, ob sie
         // aktiviert ist.
 
     #define I3_RES_NBT_STAT_APPL_4                                   (RXBUF_UCHAR(9))
     #define I3_RES_NBT_STAT_APPL_4_UNIT                              '0-n'
     #define I3_RES_NBT_STAT_APPL_4_TYPE                              unsigned char
-        // returns the names of each application X from the TApplication table. / gibt fÃ¼r jede Applikation X deren
-        // Namen aus der Tabelle TApplication wieder.
+        // returns the names of each application X from the TApplication table. / gibt für jede Applikation X deren Namen
+        // aus der Tabelle TApplication wieder.
 
     #define I3_RES_NBT_STAT_APPL_ENABLED_4                           (RXBUF_UCHAR(10))
     #define I3_RES_NBT_STAT_APPL_ENABLED_4_UNIT                      '0-n'
     #define I3_RES_NBT_STAT_APPL_ENABLED_4_TYPE                      unsigned char
-        // shows for each application X whether it is currently running. / gibt fÃ¼r jede Applikation X wieder, ob sie
-        // gerade lÃ¤uft.
+        // shows for each application X whether it is currently running. / gibt für jede Applikation X wieder, ob sie
+        // gerade läuft.
 
     #define I3_RES_NBT_STAT_APPL_CODED_4                             (RXBUF_UCHAR(11))
     #define I3_RES_NBT_STAT_APPL_CODED_4_UNIT                        '0-n'
     #define I3_RES_NBT_STAT_APPL_CODED_4_TYPE                        unsigned char
-        // indicates for each application X whether it is activated. / gibt fÃ¼r jede Applikation X wieder, ob sie
+        // indicates for each application X whether it is activated. / gibt für jede Applikation X wieder, ob sie
         // aktiviert ist.
 
     #define I3_RES_NBT_STAT_APPL_5                                   (RXBUF_UCHAR(12))
     #define I3_RES_NBT_STAT_APPL_5_UNIT                              '0-n'
     #define I3_RES_NBT_STAT_APPL_5_TYPE                              unsigned char
-        // returns the names of each application X from the TApplication table. / gibt fÃ¼r jede Applikation X deren
-        // Namen aus der Tabelle TApplication wieder.
+        // returns the names of each application X from the TApplication table. / gibt für jede Applikation X deren Namen
+        // aus der Tabelle TApplication wieder.
 
     #define I3_RES_NBT_STAT_APPL_ENABLED_5                           (RXBUF_UCHAR(13))
     #define I3_RES_NBT_STAT_APPL_ENABLED_5_UNIT                      '0-n'
     #define I3_RES_NBT_STAT_APPL_ENABLED_5_TYPE                      unsigned char
-        // shows for each application X whether it is currently running. / gibt fÃ¼r jede Applikation X wieder, ob sie
-        // gerade lÃ¤uft.
+        // shows for each application X whether it is currently running. / gibt für jede Applikation X wieder, ob sie
+        // gerade läuft.
 
     #define I3_RES_NBT_STAT_APPL_CODED_5                             (RXBUF_UCHAR(14))
     #define I3_RES_NBT_STAT_APPL_CODED_5_UNIT                        '0-n'
     #define I3_RES_NBT_STAT_APPL_CODED_5_TYPE                        unsigned char
-        // v indicates for each application X whether it is activated. / vgibt fÃ¼r jede Applikation X wieder, ob sie
+        // v indicates for each application X whether it is activated. / vgibt für jede Applikation X wieder, ob sie
         // aktiviert ist.
 
     #define I3_RES_NBT_STAT_APPL_6                                   (RXBUF_UCHAR(15))
     #define I3_RES_NBT_STAT_APPL_6_UNIT                              '0-n'
     #define I3_RES_NBT_STAT_APPL_6_TYPE                              unsigned char
-        // returns the names of each application X from the TApplication table. / gibt fÃ¼r jede Applikation X deren
-        // Namen aus der Tabelle TApplication wieder.
+        // returns the names of each application X from the TApplication table. / gibt für jede Applikation X deren Namen
+        // aus der Tabelle TApplication wieder.
 
     #define I3_RES_NBT_STAT_APPL_ENABLED_6                           (RXBUF_UCHAR(16))
     #define I3_RES_NBT_STAT_APPL_ENABLED_6_UNIT                      '0-n'
     #define I3_RES_NBT_STAT_APPL_ENABLED_6_TYPE                      unsigned char
-        // shows for each application X whether it is currently running. / gibt fÃ¼r jede Applikation X wieder, ob sie
-        // gerade lÃ¤uft.
+        // shows for each application X whether it is currently running. / gibt für jede Applikation X wieder, ob sie
+        // gerade läuft.
 
     #define I3_RES_NBT_STAT_APPL_CODED_6                             (RXBUF_UCHAR(17))
     #define I3_RES_NBT_STAT_APPL_CODED_6_UNIT                        '0-n'
     #define I3_RES_NBT_STAT_APPL_CODED_6_TYPE                        unsigned char
-        // indicates for each application X whether it is activated. / gibt fÃ¼r jede Applikation X wieder, ob sie
+        // indicates for each application X whether it is activated. / gibt für jede Applikation X wieder, ob sie
         // aktiviert ist.
 
     #define I3_RES_NBT_STAT_APPL_7                                   (RXBUF_UCHAR(18))
     #define I3_RES_NBT_STAT_APPL_7_UNIT                              '0-n'
     #define I3_RES_NBT_STAT_APPL_7_TYPE                              unsigned char
-        // returns the names of each application X from the TApplication table. / gibt fÃ¼r jede Applikation X deren
-        // Namen aus der Tabelle TApplication wieder.
+        // returns the names of each application X from the TApplication table. / gibt für jede Applikation X deren Namen
+        // aus der Tabelle TApplication wieder.
 
     #define I3_RES_NBT_STAT_APPL_ENABLED_7                           (RXBUF_UCHAR(19))
     #define I3_RES_NBT_STAT_APPL_ENABLED_7_UNIT                      '0-n'
     #define I3_RES_NBT_STAT_APPL_ENABLED_7_TYPE                      unsigned char
-        // shows for each application X whether it is currently running. / gibt fÃ¼r jede Applikation X wieder, ob sie
-        // gerade lÃ¤uft.
+        // shows for each application X whether it is currently running. / gibt für jede Applikation X wieder, ob sie
+        // gerade läuft.
 
     #define I3_RES_NBT_STAT_APPL_CODED_7                             (RXBUF_UCHAR(20))
     #define I3_RES_NBT_STAT_APPL_CODED_7_UNIT                        '0-n'
     #define I3_RES_NBT_STAT_APPL_CODED_7_TYPE                        unsigned char
-        // indicates for each application X whether it is activated. / gibt fÃ¼r jede Applikation X wieder, ob sie
+        // indicates for each application X whether it is activated. / gibt für jede Applikation X wieder, ob sie
         // aktiviert ist.
 
     #define I3_RES_NBT_STAT_APPL_8                                   (RXBUF_UCHAR(21))
     #define I3_RES_NBT_STAT_APPL_8_UNIT                              '0-n'
     #define I3_RES_NBT_STAT_APPL_8_TYPE                              unsigned char
-        // returns the names of each application X from the TApplication table. / gibt fÃ¼r jede Applikation X deren
-        // Namen aus der Tabelle TApplication wieder.
+        // returns the names of each application X from the TApplication table. / gibt für jede Applikation X deren Namen
+        // aus der Tabelle TApplication wieder.
 
     #define I3_RES_NBT_STAT_APPL_ENABLED_8                           (RXBUF_UCHAR(22))
     #define I3_RES_NBT_STAT_APPL_ENABLED_8_UNIT                      '0-n'
     #define I3_RES_NBT_STAT_APPL_ENABLED_8_TYPE                      unsigned char
-        // shows for each application X whether it is currently running. / gibt fÃ¼r jede Applikation X wieder, ob sie
-        // gerade lÃ¤uft.
+        // shows for each application X whether it is currently running. / gibt für jede Applikation X wieder, ob sie
+        // gerade läuft.
 
     #define I3_RES_NBT_STAT_APPL_CODED_8                             (RXBUF_UCHAR(23))
     #define I3_RES_NBT_STAT_APPL_CODED_8_UNIT                        '0-n'
     #define I3_RES_NBT_STAT_APPL_CODED_8_TYPE                        unsigned char
-        // indicates for each application X whether it is activated. / gibt fÃ¼r jede Applikation X wieder, ob sie
+        // indicates for each application X whether it is activated. / gibt für jede Applikation X wieder, ob sie
         // aktiviert ist.
 
     #define I3_RES_NBT_STAT_APPL_9                                   (RXBUF_UCHAR(24))
     #define I3_RES_NBT_STAT_APPL_9_UNIT                              '0-n'
     #define I3_RES_NBT_STAT_APPL_9_TYPE                              unsigned char
-        // returns the names of each application X from the TApplication table. / gibt fÃ¼r jede Applikation X deren
-        // Namen aus der Tabelle TApplication wieder.
+        // returns the names of each application X from the TApplication table. / gibt für jede Applikation X deren Namen
+        // aus der Tabelle TApplication wieder.
 
     #define I3_RES_NBT_STAT_APPL_ENABLED_9                           (RXBUF_UCHAR(25))
     #define I3_RES_NBT_STAT_APPL_ENABLED_9_UNIT                      '0-n'
     #define I3_RES_NBT_STAT_APPL_ENABLED_9_TYPE                      unsigned char
-        // shows for each application X whether it is currently running. / gibt fÃ¼r jede Applikation X wieder, ob sie
-        // gerade lÃ¤uft.
+        // shows for each application X whether it is currently running. / gibt für jede Applikation X wieder, ob sie
+        // gerade läuft.
 
     #define I3_RES_NBT_STAT_APPL_CODED_9                             (RXBUF_UCHAR(26))
     #define I3_RES_NBT_STAT_APPL_CODED_9_UNIT                        '0-n'
     #define I3_RES_NBT_STAT_APPL_CODED_9_TYPE                        unsigned char
-        // indicates for each application X whether it is activated. / gibt fÃ¼r jede Applikation X wieder, ob sie
+        // indicates for each application X whether it is activated. / gibt für jede Applikation X wieder, ob sie
         // aktiviert ist.
 
     #define I3_RES_NBT_STAT_APPL_10                                  (RXBUF_UCHAR(27))
     #define I3_RES_NBT_STAT_APPL_10_UNIT                             '0-n'
     #define I3_RES_NBT_STAT_APPL_10_TYPE                             unsigned char
-        // returns the names of each application X from the TApplication table. / gibt fÃ¼r jede Applikation X deren
-        // Namen aus der Tabelle TApplication wieder.
+        // returns the names of each application X from the TApplication table. / gibt für jede Applikation X deren Namen
+        // aus der Tabelle TApplication wieder.
 
     #define I3_RES_NBT_STAT_APPL_ENABLED_10                          (RXBUF_UCHAR(28))
     #define I3_RES_NBT_STAT_APPL_ENABLED_10_UNIT                     '0-n'
     #define I3_RES_NBT_STAT_APPL_ENABLED_10_TYPE                     unsigned char
-        // shows for each application X whether it is currently running. / gibt fÃ¼r jede Applikation X wieder, ob sie
-        // gerade lÃ¤uft.
+        // shows for each application X whether it is currently running. / gibt für jede Applikation X wieder, ob sie
+        // gerade läuft.
 
     #define I3_RES_NBT_STAT_APPL_CODED_10                            (RXBUF_UCHAR(29))
     #define I3_RES_NBT_STAT_APPL_CODED_10_UNIT                       '0-n'
     #define I3_RES_NBT_STAT_APPL_CODED_10_TYPE                       unsigned char
-        // indicates for each application X whether it is activated. / gibt fÃ¼r jede Applikation X wieder, ob sie
+        // indicates for each application X whether it is activated. / gibt für jede Applikation X wieder, ob sie
         // aktiviert ist.
 
     #define I3_RES_NBT_STAT_APPL_11                                  (RXBUF_UCHAR(30))
     #define I3_RES_NBT_STAT_APPL_11_UNIT                             '0-n'
     #define I3_RES_NBT_STAT_APPL_11_TYPE                             unsigned char
-        // returns the names of each application X from the TApplication table. / gibt fÃ¼r jede Applikation X deren
-        // Namen aus der Tabelle TApplication wieder.
+        // returns the names of each application X from the TApplication table. / gibt für jede Applikation X deren Namen
+        // aus der Tabelle TApplication wieder.
 
     #define I3_RES_NBT_STAT_APPL_ENABLED_11                          (RXBUF_UCHAR(31))
     #define I3_RES_NBT_STAT_APPL_ENABLED_11_UNIT                     '0-n'
     #define I3_RES_NBT_STAT_APPL_ENABLED_11_TYPE                     unsigned char
-        // shows for each application X whether it is currently running. / gibt fÃ¼r jede Applikation X wieder, ob sie
-        // gerade lÃ¤uft.
+        // shows for each application X whether it is currently running. / gibt für jede Applikation X wieder, ob sie
+        // gerade läuft.
 
     #define I3_RES_NBT_STAT_APPL_CODED_11                            (RXBUF_UCHAR(32))
     #define I3_RES_NBT_STAT_APPL_CODED_11_UNIT                       '0-n'
     #define I3_RES_NBT_STAT_APPL_CODED_11_TYPE                       unsigned char
-        // indicates for each application X whether it is activated. / gibt fÃ¼r jede Applikation X wieder, ob sie
+        // indicates for each application X whether it is activated. / gibt für jede Applikation X wieder, ob sie
         // aktiviert ist.
 
     #define I3_RES_NBT_STAT_APPL_12                                  (RXBUF_UCHAR(33))
     #define I3_RES_NBT_STAT_APPL_12_UNIT                             '0-n'
     #define I3_RES_NBT_STAT_APPL_12_TYPE                             unsigned char
-        // returns the names of each application X from the TApplication table. / gibt fÃ¼r jede Applikation X deren
-        // Namen aus der Tabelle TApplication wieder.
+        // returns the names of each application X from the TApplication table. / gibt für jede Applikation X deren Namen
+        // aus der Tabelle TApplication wieder.
 
     #define I3_RES_NBT_STAT_APPL_ENABLED_12                          (RXBUF_UCHAR(34))
     #define I3_RES_NBT_STAT_APPL_ENABLED_12_UNIT                     '0-n'
     #define I3_RES_NBT_STAT_APPL_ENABLED_12_TYPE                     unsigned char
-        // shows for each application X whether it is currently running. / gibt fÃ¼r jede Applikation X wieder, ob sie
-        // gerade lÃ¤uft.
+        // shows for each application X whether it is currently running. / gibt für jede Applikation X wieder, ob sie
+        // gerade läuft.
 
     #define I3_RES_NBT_STAT_APPL_CODED_12                            (RXBUF_UCHAR(35))
     #define I3_RES_NBT_STAT_APPL_CODED_12_UNIT                       '0-n'
     #define I3_RES_NBT_STAT_APPL_CODED_12_TYPE                       unsigned char
-        // indicates for each application X whether it is activated. / gibt fÃ¼r jede Applikation X wieder, ob sie
+        // indicates for each application X whether it is activated. / gibt für jede Applikation X wieder, ob sie
         // aktiviert ist.
 
     #define I3_RES_NBT_STAT_APPL_13                                  (RXBUF_UCHAR(36))
     #define I3_RES_NBT_STAT_APPL_13_UNIT                             '0-n'
     #define I3_RES_NBT_STAT_APPL_13_TYPE                             unsigned char
-        // returns the names of each application X from the TApplication table. / gibt fÃ¼r jede Applikation X deren
-        // Namen aus der Tabelle TApplication wieder.
+        // returns the names of each application X from the TApplication table. / gibt für jede Applikation X deren Namen
+        // aus der Tabelle TApplication wieder.
 
     #define I3_RES_NBT_STAT_APPL_ENABLED_13                          (RXBUF_UCHAR(37))
     #define I3_RES_NBT_STAT_APPL_ENABLED_13_UNIT                     '0-n'
     #define I3_RES_NBT_STAT_APPL_ENABLED_13_TYPE                     unsigned char
-        // shows for each application X whether it is currently running. / gibt fÃ¼r jede Applikation X wieder, ob sie
-        // gerade lÃ¤uft.
+        // shows for each application X whether it is currently running. / gibt für jede Applikation X wieder, ob sie
+        // gerade läuft.
 
     #define I3_RES_NBT_STAT_APPL_CODED_13                            (RXBUF_UCHAR(38))
     #define I3_RES_NBT_STAT_APPL_CODED_13_UNIT                       '0-n'
     #define I3_RES_NBT_STAT_APPL_CODED_13_TYPE                       unsigned char
-        // indicates for each application X whether it is activated. / gibt fÃ¼r jede Applikation X wieder, ob sie
+        // indicates for each application X whether it is activated. / gibt für jede Applikation X wieder, ob sie
         // aktiviert ist.
 
     #define I3_RES_NBT_STAT_APPL_14                                  (RXBUF_UCHAR(39))
     #define I3_RES_NBT_STAT_APPL_14_UNIT                             '0-n'
     #define I3_RES_NBT_STAT_APPL_14_TYPE                             unsigned char
-        // returns the names of each application X from the TApplication table. / gibt fÃ¼r jede Applikation X deren
-        // Namen aus der Tabelle TApplication wieder.
+        // returns the names of each application X from the TApplication table. / gibt für jede Applikation X deren Namen
+        // aus der Tabelle TApplication wieder.
 
     #define I3_RES_NBT_STAT_APPL_ENABLED_14                          (RXBUF_UCHAR(40))
     #define I3_RES_NBT_STAT_APPL_ENABLED_14_UNIT                     '0-n'
     #define I3_RES_NBT_STAT_APPL_ENABLED_14_TYPE                     unsigned char
-        // shows for each application X whether it is currently running. / gibt fÃ¼r jede Applikation X wieder, ob sie
-        // gerade lÃ¤uft.
+        // shows for each application X whether it is currently running. / gibt für jede Applikation X wieder, ob sie
+        // gerade läuft.
 
     #define I3_RES_NBT_STAT_APPL_CODED_14                            (RXBUF_UCHAR(41))
     #define I3_RES_NBT_STAT_APPL_CODED_14_UNIT                       '0-n'
     #define I3_RES_NBT_STAT_APPL_CODED_14_TYPE                       unsigned char
-        // indicates for each application X whether it is activated. / gibt fÃ¼r jede Applikation X wieder, ob sie
+        // indicates for each application X whether it is activated. / gibt für jede Applikation X wieder, ob sie
         // aktiviert ist.
 
     #define I3_RES_NBT_STAT_APPL_15                                  (RXBUF_UCHAR(42))
     #define I3_RES_NBT_STAT_APPL_15_UNIT                             '0-n'
     #define I3_RES_NBT_STAT_APPL_15_TYPE                             unsigned char
-        // returns the names of each application X from the TApplication table. / gibt fÃ¼r jede Applikation X deren
-        // Namen aus der Tabelle TApplication wieder.
+        // returns the names of each application X from the TApplication table. / gibt für jede Applikation X deren Namen
+        // aus der Tabelle TApplication wieder.
 
     #define I3_RES_NBT_STAT_APPL_ENABLED_15                          (RXBUF_UCHAR(43))
     #define I3_RES_NBT_STAT_APPL_ENABLED_15_UNIT                     '0-n'
     #define I3_RES_NBT_STAT_APPL_ENABLED_15_TYPE                     unsigned char
-        // shows for each application X whether it is currently running. / gibt fÃ¼r jede Applikation X wieder, ob sie
-        // gerade lÃ¤uft.
+        // shows for each application X whether it is currently running. / gibt für jede Applikation X wieder, ob sie
+        // gerade läuft.
 
     #define I3_RES_NBT_STAT_APPL_CODED_15                            (RXBUF_UCHAR(44))
     #define I3_RES_NBT_STAT_APPL_CODED_15_UNIT                       '0-n'
     #define I3_RES_NBT_STAT_APPL_CODED_15_TYPE                       unsigned char
-        // indicates for each application X whether it is activated. / gibt fÃ¼r jede Applikation X wieder, ob sie
+        // indicates for each application X whether it is activated. / gibt für jede Applikation X wieder, ob sie
         // aktiviert ist.
 
     #define I3_RES_NBT_STAT_APPL_16                                  (RXBUF_UCHAR(45))
     #define I3_RES_NBT_STAT_APPL_16_UNIT                             '0-n'
     #define I3_RES_NBT_STAT_APPL_16_TYPE                             unsigned char
-        // returns the names of each application X from the TApplication table. / gibt fÃ¼r jede Applikation X deren
-        // Namen aus der Tabelle TApplication wieder.
+        // returns the names of each application X from the TApplication table. / gibt für jede Applikation X deren Namen
+        // aus der Tabelle TApplication wieder.
 
     #define I3_RES_NBT_STAT_APPL_ENABLED_16                          (RXBUF_UCHAR(46))
     #define I3_RES_NBT_STAT_APPL_ENABLED_16_UNIT                     '0-n'
     #define I3_RES_NBT_STAT_APPL_ENABLED_16_TYPE                     unsigned char
-        // shows for each application X whether it is currently running. / gibt fÃ¼r jede Applikation X wieder, ob sie
-        // gerade lÃ¤uft.
+        // shows for each application X whether it is currently running. / gibt für jede Applikation X wieder, ob sie
+        // gerade läuft.
 
     #define I3_RES_NBT_STAT_APPL_CODED_16                            (RXBUF_UCHAR(47))
     #define I3_RES_NBT_STAT_APPL_CODED_16_UNIT                       '0-n'
     #define I3_RES_NBT_STAT_APPL_CODED_16_TYPE                       unsigned char
-        // indicates for each application X whether it is activated. / gibt fÃ¼r jede Applikation X wieder, ob sie
+        // indicates for each application X whether it is activated. / gibt für jede Applikation X wieder, ob sie
         // aktiviert ist.
 
     #define I3_RES_NBT_STAT_APPL_17                                  (RXBUF_UCHAR(48))
     #define I3_RES_NBT_STAT_APPL_17_UNIT                             '0-n'
     #define I3_RES_NBT_STAT_APPL_17_TYPE                             unsigned char
-        // returns the names of each application X from the TApplication table. / gibt fÃ¼r jede Applikation X deren
-        // Namen aus der Tabelle TApplication wieder.
+        // returns the names of each application X from the TApplication table. / gibt für jede Applikation X deren Namen
+        // aus der Tabelle TApplication wieder.
 
     #define I3_RES_NBT_STAT_APPL_ENABLED_17                          (RXBUF_UCHAR(49))
     #define I3_RES_NBT_STAT_APPL_ENABLED_17_UNIT                     '0-n'
     #define I3_RES_NBT_STAT_APPL_ENABLED_17_TYPE                     unsigned char
-        // shows for each application X whether it is currently running. / gibt fÃ¼r jede Applikation X wieder, ob sie
-        // gerade lÃ¤uft.
+        // shows for each application X whether it is currently running. / gibt für jede Applikation X wieder, ob sie
+        // gerade läuft.
 
     #define I3_RES_NBT_STAT_APPL_CODED_17                            (RXBUF_UCHAR(50))
     #define I3_RES_NBT_STAT_APPL_CODED_17_UNIT                       '0-n'
     #define I3_RES_NBT_STAT_APPL_CODED_17_TYPE                       unsigned char
-        // indicates for each application X whether it is activated. / gibt fÃ¼r jede Applikation X wieder, ob sie
+        // indicates for each application X whether it is activated. / gibt für jede Applikation X wieder, ob sie
         // aktiviert ist.
 
     #define I3_RES_NBT_STAT_APPL_18                                  (RXBUF_UCHAR(51))
     #define I3_RES_NBT_STAT_APPL_18_UNIT                             '0-n'
     #define I3_RES_NBT_STAT_APPL_18_TYPE                             unsigned char
-        // returns the names of each application X from the TApplication table. / gibt fÃ¼r jede Applikation X deren
-        // Namen aus der Tabelle TApplication wieder.
+        // returns the names of each application X from the TApplication table. / gibt für jede Applikation X deren Namen
+        // aus der Tabelle TApplication wieder.
 
     #define I3_RES_NBT_STAT_APPL_ENABLED_18                          (RXBUF_UCHAR(52))
     #define I3_RES_NBT_STAT_APPL_ENABLED_18_UNIT                     '0-n'
     #define I3_RES_NBT_STAT_APPL_ENABLED_18_TYPE                     unsigned char
-        // shows for each application X whether it is currently running. / gibt fÃ¼r jede Applikation X wieder, ob sie
-        // gerade lÃ¤uft.
+        // shows for each application X whether it is currently running. / gibt für jede Applikation X wieder, ob sie
+        // gerade läuft.
 
     #define I3_RES_NBT_STAT_APPL_CODED_18                            (RXBUF_UCHAR(53))
     #define I3_RES_NBT_STAT_APPL_CODED_18_UNIT                       '0-n'
     #define I3_RES_NBT_STAT_APPL_CODED_18_TYPE                       unsigned char
-        // indicates for each application X whether it is activated. / gibt fÃ¼r jede Applikation X wieder, ob sie
+        // indicates for each application X whether it is activated. / gibt für jede Applikation X wieder, ob sie
         // aktiviert ist.
 
 #define I3_PID_NBT_STATUS_ANALOG_TEMPERATUR                          0xD026
-        // Query the temperatures of the control unit. / Abfrage der Temperaturen des SteuergerÃ¤tes.
+        // Query the temperatures of the control unit. / Abfrage der Temperaturen des Steuergerätes.
 
     #define I3_RES_NBT_STAT_TEMP_FOT_WERT                            (RXBUF_SCHAR(0))
-    #define I3_RES_NBT_STAT_TEMP_FOT_WERT_UNIT                       'Â°C'
+    #define I3_RES_NBT_STAT_TEMP_FOT_WERT_UNIT                       '°C'
     #define I3_RES_NBT_STAT_TEMP_FOT_WERT_TYPE                       char
         // provides the temperature of the Fiber Optical Transceiver (FOT). Range: -127, &, 127 / liefert die Temperatur
         // des Fibre Optical Transceivers (FOT). Bereich: -127,&,127
 
     #define I3_RES_NBT_STAT_TEMP_ENDSTU_WERT                         (RXBUF_SINT(1))
-    #define I3_RES_NBT_STAT_TEMP_ENDSTU_WERT_UNIT                    'Â°C'
+    #define I3_RES_NBT_STAT_TEMP_ENDSTU_WERT_UNIT                    '°C'
     #define I3_RES_NBT_STAT_TEMP_ENDSTU_WERT_TYPE                    short
         // supplies the temperature of the output stage. Range: -32767, &, 32767 / liefert die Temperatur der Endstufe.
         // Bereich: -32767,&, 32767
 
     #define I3_RES_NBT_STAT_TEMP_GYRO_WERT                           (RXBUF_SCHAR(3))
-    #define I3_RES_NBT_STAT_TEMP_GYRO_WERT_UNIT                      'Â°C'
+    #define I3_RES_NBT_STAT_TEMP_GYRO_WERT_UNIT                      '°C'
     #define I3_RES_NBT_STAT_TEMP_GYRO_WERT_TYPE                      char
         // provides the temperature of the gyro. Range: -127, &, 127 / liefert die Temperatur des Gyro. Bereich:
         // -127,&,127
 
     #define I3_RES_NBT_STAT_TEMP_MOD_WERT                            (RXBUF_SCHAR(4))
-    #define I3_RES_NBT_STAT_TEMP_MOD_WERT_UNIT                       'Â°C'
+    #define I3_RES_NBT_STAT_TEMP_MOD_WERT_UNIT                       '°C'
     #define I3_RES_NBT_STAT_TEMP_MOD_WERT_TYPE                       char
         // supplies the temperature of the module (usually close to the processor). Range: -127, &, 127 / liefert die
         // Temperatur des Moduls (normalerweise prozessornah). Bereich: -127,&,127
 
     #define I3_RES_NBT_STAT_TEMP_HDD_WERT                            (RXBUF_SCHAR(5))
-    #define I3_RES_NBT_STAT_TEMP_HDD_WERT_UNIT                       'Â°C'
+    #define I3_RES_NBT_STAT_TEMP_HDD_WERT_UNIT                       '°C'
     #define I3_RES_NBT_STAT_TEMP_HDD_WERT_TYPE                       char
         // provides the temperature of the HDD drive. Range: -127, &, 127 / liefert die Temperatur des HDD-Laufwerks.
         // Bereich: -127,&,127
 
     #define I3_RES_NBT_STAT_TEMP_DVD_WERT                            (RXBUF_SCHAR(6))
-    #define I3_RES_NBT_STAT_TEMP_DVD_WERT_UNIT                       'Â°C'
+    #define I3_RES_NBT_STAT_TEMP_DVD_WERT_UNIT                       '°C'
     #define I3_RES_NBT_STAT_TEMP_DVD_WERT_TYPE                       char
         // provides the temperature of the DVD drive. Range: -127, &, 127 / liefert die Temperatur des DVD-Laufwerks.
         // Bereich: -127,&,127
@@ -1361,7 +1361,7 @@
 
 #define I3_PID_NBT_STATUS_CD_MD_CDC                                  0xD02C
         // Reads out the identifier of the medium and the quality level of the digital recording. / Liest den Identifier
-        // des Mediums und das QualitÃ¤tslevel der digitalen Aufnahme aus.
+        // des Mediums und das Qualitätslevel der digitalen Aufnahme aus.
 
     // Can't process STAT_DISC_IDENT_TEXT - don't know type string (*** this will mean all the following offsets are wrong!!! ****)
 
@@ -1369,9 +1369,9 @@
     #define I3_RES_NBT_STAT_DIGITAL_PLAYBACK_QUALITY_WERT_TYPE       unsigned char
         // Quality of the digital recording: Range: 0-15 0-1: Medium not readable (drive not ok) 2-8: Distortion / mute
         // parts audible (drive not ok) 9-14: Medium readable, no distortion audible (drive ok) 15: Medium quality 100%,
-        // e.g. BLER 0 (drive ok) / QualitÃ¤t der digitalen Aufnahme: Bereich: 0-15 0-1: Medium nicht lesbar (drive not
-        // ok) 2-8: Verzerrung / Stumm Stellen hÃ¶rbar (drive not ok) 9-14: Medium lesbar, keine Verzerrung hÃ¶rbar
-        // (drive ok) 15: Medium QualitÃ¤t 100%, z.B. BLER 0 (drive ok)
+        // e.g. BLER 0 (drive ok) / Qualität der digitalen Aufnahme: Bereich: 0-15 0-1: Medium nicht lesbar (drive not
+        // ok) 2-8: Verzerrung / Stumm Stellen hörbar (drive not ok) 9-14: Medium lesbar, keine Verzerrung hörbar (drive
+        // ok) 15: Medium Qualität 100%, z.B. BLER 0 (drive ok)
 
 // Skipping FREQUENZ_DAB on 0xD02D which takes arguments
 
@@ -1379,7 +1379,7 @@
 
 #define I3_PID_NBT_STATUS_SPEED                                      0xD030
         // Reads the speed signals from the bus and from the GPS receiver. / Liest die die Geschwindigkeitssignale vom
-        // Bus und vom GPS EmpÃ¤nger.
+        // Bus und vom GPS Empänger.
 
     #define I3_RES_NBT_STAT_WHEEL1_SENSOR_SPEED_WERT                 (RXBUF_SINT(0))
     #define I3_RES_NBT_STAT_WHEEL1_SENSOR_SPEED_WERT_UNIT            'km/h'
@@ -1414,8 +1414,8 @@
     #define I3_RES_NBT_STAT_SPEED_DIFFERENCE_PERCENT_WERT            (RXBUF_UINT(12))
     #define I3_RES_NBT_STAT_SPEED_DIFFERENCE_PERCENT_WERT_UNIT       '%'
     #define I3_RES_NBT_STAT_SPEED_DIFFERENCE_PERCENT_WERT_TYPE       unsigned short
-        // Difference in percent between the speeds that were recorded with the wheel sensors or GPS / Abweichung in
-        // Prozent zwischen den Geschwindigkeiten, die mit den Radsensoren bzw. mittels GPS erfasst wurden
+        // Difference in percent between the speeds recorded with the wheel sensors or GPS / Abweichung in Prozent
+        // zwischen den Geschwindigkeiten, die mit den Radsensoren bzw. mittels GPS erfasst wurden
 
 #define I3_PID_NBT_STATUS_DIRECTION                                  0xD031
         // Output of the current gear position / Ausgabe der aktuellen Gang-Position
@@ -1431,7 +1431,7 @@
         // see table TDirectionSource / siehe Tabelle TDirectionSource
 
 #define I3_PID_NBT_STATUS_GPS_DILUTION_OF_POSITION                   0xD032
-        // Reads the GPS resolution / accuracy / Liest die GPS AuflÃ¶sung/Genauigkeit aus
+        // Reads the GPS resolution / accuracy / Liest die GPS Auflösung/Genauigkeit aus
 
     #define I3_RES_NBT_STAT_GPS_PDOP_WERT                            (RXBUF_UCHAR(0))
     #define I3_RES_NBT_STAT_GPS_PDOP_WERT_TYPE                       unsigned char
@@ -1776,7 +1776,7 @@
     // Can't process STAT_GPS_RECEIVER_SW_VERSION_TEXT - don't know type string (*** this will mean all the following offsets are wrong!!! ****)
 
 #define I3_PID_NBT_STATUS_MAPMATERIAL_VERSION                        0xD03C
-        // returns the navigation DB / gibt die Navigations DB zurÃ¼ck
+        // returns the navigation DB / gibt die Navigations DB zurück
 
     // Can't process STAT_MAPMATERIAL_VERSION_TEXT - don't know type string (*** this will mean all the following offsets are wrong!!! ****)
 
@@ -1828,18 +1828,18 @@
 // Skipping AKTIVE_ANTENNE_DAB on 0xD044 which takes arguments
 
 #define I3_PID_NBT_STATUS_ANT_QFS_FM2                                0xD045
-        // Measure the field strength currently applied to the tuner. / Messen der FeldstÃ¤rke, die aktuell am Tuner
+        // Measure the field strength currently applied to the tuner. / Messen der Feldstärke, die aktuell am Tuner
         // anliegt.
 
     #define I3_RES_NBT_STAT_QUALITY_WERT_0XD045                      (RXBUF_UCHAR(0))
     #define I3_RES_NBT_STAT_QUALITY_WERT_0XD045_TYPE                 unsigned char
         // Values between 0..15 This is the value used for AF tracking, where 15 corresponds to the best quality. / Werte
-        // zwischen 0..15 Dies ist der fÃ¼r AF-Tracking verwendete Wert, wobei 15 bester QualitÃ¤t entspricht.
+        // zwischen 0..15 Dies ist der für AF-Tracking verwendete Wert, wobei 15 bester Qualität entspricht.
 
     #define I3_RES_NBT_STAT_FIELDSTRENGTH_WERT_0XD045                (RXBUF_UCHAR(1))
     #define I3_RES_NBT_STAT_FIELDSTRENGTH_WERT_0XD045_TYPE           unsigned char
         // Values between 0..15 This corresponds to 0..60 dBµV in steps of 4dB. / Werte zwischen 0..15 Dies entspricht
-        // 0..60 dBÂµV in Schritten von 4dB.
+        // 0..60 dBµV in Schritten von 4dB.
 
     #define I3_RES_NBT_STAT_ANT_PW_0XD045                            (RXBUF_UCHAR(2))
     #define I3_RES_NBT_STAT_ANT_PW_0XD045_UNIT                       '0-n'
@@ -1847,11 +1847,11 @@
         // indicates the status of the antenna power supply. / gibt den Status der Antennenstromversorgung wieder.
 
     #define I3_RES_NBT_STAT_FIELDSTRENGTH_EXACT_WERT_0XD045          (RXBUF_UCHAR(3))
-    #define I3_RES_NBT_STAT_FIELDSTRENGTH_EXACT_WERT_0XD045_UNIT     'dBÂµV'
+    #define I3_RES_NBT_STAT_FIELDSTRENGTH_EXACT_WERT_0XD045_UNIT     'dBµV'
     #define I3_RES_NBT_STAT_FIELDSTRENGTH_EXACT_WERT_0XD045_TYPE     unsigned char
         // Values between 0..60 This corresponds to 0..60 dBµV in steps of 1dB. Return of 255 if no measurement possible.
-        // / Werte zwischen 0..60 Dies entspricht 0..60 dBÂµV in Schritten von 1dB. RÃ¼ckgabe von 255, wenn keine Messung
-        // mÃ¶glich.
+        // / Werte zwischen 0..60 Dies entspricht 0..60 dBµV in Schritten von 1dB. Rückgabe von 255, wenn keine Messung
+        // möglich.
 
     #define I3_RES_NBT_STAT_FREQUENZ_WERT_0XD045                     (RXBUF_UINT32(4))
     #define I3_RES_NBT_STAT_FREQUENZ_WERT_0XD045_UNIT                'kHz'
@@ -1895,7 +1895,7 @@
 
     #define I3_RES_NBT_STAT_AVAILABLE_DATASETS_WERT                  (RXBUF_UINT(2))
     #define I3_RES_NBT_STAT_AVAILABLE_DATASETS_WERT_TYPE             unsigned short
-        // Number of available records / Anzahl verfÃ¼gbarer DatensÃ¤tze
+        // Number of available records / Anzahl verfügbarer Datensätze
 
 #define I3_PID_NBT_STATUS_ADAS                                       0xD067
         // Reads out from the navigation system how many resyncs from which client the navigation system has received and
@@ -1999,18 +1999,18 @@
     #define I3_RES_NBT_STAT_TIME_AFTER_POWER_DOWN_AVAILABLE_WERT_TYPE char
         // Values from 0-127 [s], which indicate how much time has passed since the internal traffic jam was reached, to
         // execute a powerdown immediately. -1 means 'not yet reached' / Werte von 0-127 [s], die angeben, wie viel Zeit
-        // vergangen ist, seit dem intern der Staus erreicht wurde, sofort einen Powerdown auszufÃ¼hren. -1 bedeutet
-        // 'noch nicht erreicht'
+        // vergangen ist, seit dem intern der Staus erreicht wurde, sofort einen Powerdown auszuführen. -1 bedeutet 'noch
+        // nicht erreicht'
 
     #define I3_RES_NBT_STAT_TIME_AFTER_FULLY_OPERATIONAL_WERT        (RXBUF_SCHAR(2))
     #define I3_RES_NBT_STAT_TIME_AFTER_FULLY_OPERATIONAL_WERT_UNIT   's'
     #define I3_RES_NBT_STAT_TIME_AFTER_FULLY_OPERATIONAL_WERT_TYPE   char
         // Values from 0-127 [s], which indicate how much time has passed since the internal traffic jam 'fully started'
         // was reached. -1 means 'not yet reached' / Werte von 0-127 [s], die angeben, wie viel Zeit vergangen ist, seit
-        // dem intern der Staus 'vollstÃ¤ndig aufgestartet' erreicht wurde. -1 bedeutet 'noch nicht erreicht'
+        // dem intern der Staus 'vollständig aufgestartet' erreicht wurde. -1 bedeutet 'noch nicht erreicht'
 
 #define I3_PID_NBT_STATUS_FM_PHASDIV_ANTENNA                         0xD093
-        // Performs an impedance measurement of the FM antennas from the phase diversity. / FÃ¼hrt eine Impedanzmessung
+        // Performs an impedance measurement of the FM antennas from the phase diversity. / Führt eine Impedanzmessung
         // der FM Antennen von der Phasen diversity aus.
 
     #define I3_RES_NBT_STAT_FM_PHASEDIV_ANTENNA1                     (RXBUF_UCHAR(0))
@@ -2026,7 +2026,7 @@
         // Phasendiversity Antenne. Ergebnis siehe Tabelle TAB_stateFMPhasAntenna
 
 #define I3_PID_NBT_STATUS_BT_FIRMWARE                                0xD095
-        // Returns the BT firmware / Gibt die BT Firmware zurÃ¼ck
+        // Returns the BT firmware / Gibt die BT Firmware zurück
 
     // Can't process STAT_BT_FIRMWARE_TEXT - don't know type string (*** this will mean all the following offsets are wrong!!! ****)
 
@@ -2038,13 +2038,13 @@
 
 #define I3_PID_NBT_HD_DECODER_FIRMWARE                               0xD0B8
         // Returns the different firmware versions of the HD module / Gibt die verschiedenen Firmware-Versionen des
-        // HD-Moduls zurÃ¼ck
+        // HD-Moduls zurück
 
     // Can't process STAT_HD_DECODER_FIRMWARE_TEXT - don't know type string (*** this will mean all the following offsets are wrong!!! ****)
 
 #define I3_PID_NBT_ABLAUF_ZERTIFIKAT                                 0xD0B9
         // Send the certificate that will expire next and the date on which it will expire / Senden das Zertifikat das
-        // als nÃ¤chstes ablÃ¤uft und das Datum an dem es ablÃ¤uft
+        // als nächstes abläuft und das Datum an dem es abläuft
 
     // Can't process STAT_ISSUER_TEXT - don't know type string (*** this will mean all the following offsets are wrong!!! ****)
 
@@ -2076,7 +2076,7 @@
 
 #define I3_PID_NBT_ZIN_CENTRAL_INSTRUMENT                            0xD0C9
         // Returns the status information of the central instrument. / Gibt die Statusinformationen des
-        // Zentralinstruments zurÃ¼ck.
+        // Zentralinstruments zurück.
 
     #define I3_RES_NBT_STAT_HW_INDEX_WERT                            (RXBUF_UCHAR(0))
     #define I3_RES_NBT_STAT_HW_INDEX_WERT_TYPE                       unsigned char
@@ -2098,7 +2098,7 @@
     #define I3_RES_NBT_STAT_DIAGNOSTIC_FLAGS_UNIT                    '0-n'
     #define I3_RES_NBT_STAT_DIAGNOSTIC_FLAGS_TYPE                    unsigned char
         // Returns the status of the central instrument. Values from the table TAB_ZIN_DIAGNOSTIC_FLAG / Gibt den Status
-        // des Zentralinstruments zurÃ¼ck Werte aus der Tabelle TAB_ZIN_DIAGNOSTIC_FLAG
+        // des Zentralinstruments zurück Werte aus der Tabelle TAB_ZIN_DIAGNOSTIC_FLAG
 
     #define I3_RES_NBT_STAT_ZIN_VARIANT                              (RXBUF_UCHAR(8))
     #define I3_RES_NBT_STAT_ZIN_VARIANT_UNIT                         '0-n'
@@ -2107,7 +2107,7 @@
 
 #define I3_PID_NBT_ZIN_EVENT_QUEUE                                   0xD0CA
         // Returns the status information of the central instrument. / Gibt die Statusinformationen des
-        // Zentralinstruments zurÃ¼ck.
+        // Zentralinstruments zurück.
 
     #define I3_RES_NBT_STAT_EVENT_ID_0_WERT                          (RXBUF_UCHAR(0))
     #define I3_RES_NBT_STAT_EVENT_ID_0_WERT_TYPE                     unsigned char
@@ -2127,7 +2127,7 @@
 
     #define I3_RES_NBT_STAT_EVENT_ID_4_WERT                          (RXBUF_UCHAR(4))
     #define I3_RES_NBT_STAT_EVENT_ID_4_WERT_TYPE                     unsigned char
-        // fifth event ID / fÃ¼nfte Event ID
+        // fifth event ID / fünfte Event ID
 
     #define I3_RES_NBT_STAT_EVENT_ID_5_WERT                          (RXBUF_UCHAR(5))
     #define I3_RES_NBT_STAT_EVENT_ID_5_WERT_TYPE                     unsigned char
@@ -2139,7 +2139,7 @@
 
 #define I3_PID_NBT_ZIN_INTERNAL_STATES                               0xD0CB
         // Returns the status information of the central instrument. / Gibt die Statusinformationen des
-        // Zentralinstruments zurÃ¼ck.
+        // Zentralinstruments zurück.
 
     #define I3_RES_NBT_STAT_CURRENT_WIDGET_ID_WERT                   (RXBUF_UCHAR(0))
     #define I3_RES_NBT_STAT_CURRENT_WIDGET_ID_WERT_TYPE              unsigned char
@@ -2225,7 +2225,7 @@
     // Can't process STAT_VERSION_TEXT - don't know type string (*** this will mean all the following offsets are wrong!!! ****)
 
     // Can't yet generate code for STAT_SMCC_TEXT of type string[3], at offset 0. But we account for the 3 bytes
-        // SIM Mobile country code / SIM Mobile LÃ¤nderkode
+        // SIM Mobile country code / SIM Mobile Länderkode
 
     // Can't yet generate code for STAT_SMNC_TEXT of type string[3], at offset 3. But we account for the 3 bytes
         // SIM mobile network code / SIM Mobile Netzwerkkode
@@ -2241,7 +2241,7 @@
         // Cause value The value indicates the trigger for the provisioning. 0: Required access data is missing in the
         // DASAS data 1: A required OTAAS is expired 2: Update request by user via the HMI 3: Application trigger 4: The
         // PINGUIN triggered the provisioning 5: ACM triggered provisioning on DPAS Mode 6: Provisioning via Diagnosis /
-        // Cause Wert Der Wert gibt den AuslÃ¶ser der Provisionierung an. 0: Required access data is missing in the DASAS
+        // Cause Wert Der Wert gibt den Auslöser der Provisionierung an. 0: Required access data is missing in the DASAS
         // data 1: A required OTAAS is expired 2: Update request by user via the HMI  3: Application trigger 4: The
         // PINGUIN triggered the provisioning  5: ACM triggered provisioning on DPAS Mode 6: Provisioning via Diagnosis
 
@@ -2317,311 +2317,311 @@
 
 #define I3_PID_NBT_STATUS_LAST_DESTINATIONS_FIRST_DATA_SET           0xD0D6
         // Returns the last 16 destinations for which route guidance was activated in the navigation system. / Gibt die
-        // letzten 16 Ziele zurÃ¼ck, fÃ¼r die im Navigationssystem die ZielfÃ¼hrung aktiviert wurden.
+        // letzten 16 Ziele zurück, für die im Navigationssystem die Zielführung aktiviert wurden.
 
     // Can't yet generate code for STAT_DESTINATION_TYPE_1_DATA of type data[1] at offset 0. But we account for the 1 bytes
         // Returns the type of destination Bit-0, Bit-1: 00 = no destination (remaining data can be skipped) 01 = user
         // destination 10 = optional destination (not activated, for BMW Routes) 11 = activated optional destination (BMW
         // Routes) Bit-2: 0 = not current destination 1 = current destination Bit-3: Future use Bit-4: Future use Bit-5:
-        // Future use Bit-6 to Bit-7: Future use / gibt den Typ des Ziels zurÃ¼ck  Bit-0,Bit-1: 00 = no destination
+        // Future use Bit-6 to Bit-7: Future use / gibt den Typ des Ziels zurück  Bit-0,Bit-1: 00 = no destination
         // (remaining data can be skipped) 01 = user destination 10 = optional destination (not activated, for BMW
         // Routes) 11 = activated optional destination (BMW Routes)  Bit-2: 0 = not current destination 1 = current
         // destination  Bit-3: Future use  Bit-4: Future use  Bit-5: Future use  Bit-6 to Bit-7: Future use
 
     // Can't yet generate code for STAT_GPS_POSITION_LATITUDE_1_DATA of type data[5] at offset 1. But we account for the 5 bytes
         // returns the latitude LL east / west with 0x00 east, 0x01 west GG degree [0-180] MM minute [0-59] SS second
-        // [0-59] HH 100th second [0-99] / gibt die Latitude zurÃ¼ck  LL    Ost/ West mit 0x00 Ost, 0x01 West GG   Grad
+        // [0-59] HH 100th second [0-99] / gibt die Latitude zurück  LL    Ost/ West mit 0x00 Ost, 0x01 West GG   Grad
         // [0-180] MM  Minute  [0-59]  SS    Sekunde [0-59] HH   100stel Sekunde [0-99]
 
     // Can't yet generate code for STAT_GPS_POSITION_LONGITUDE_1_DATA of type data[5] at offset 6. But we account for the 5 bytes
         // returns the longitude bb north / south with 0x00 north, 0x01 south gg degrees [0-90] mm minute [0-59] ss
-        // second [0-59] hh 100th of a second [0-99] / gibt die Longitude zurÃ¼ck  bb nord/sÃ¼d mit 0x00 Nord, 0x01 SÃ¼d
-        // gg    Grad [0-90]   mm Minute  [0-59]  ss    Sekunde [0-59]  hh   100stel Sekunde [0-99]
+        // second [0-59] hh 100th of a second [0-99] / gibt die Longitude zurück  bb nord/süd mit 0x00 Nord, 0x01 Süd gg 
+        // Grad [0-90]   mm Minute  [0-59]  ss    Sekunde [0-59]  hh   100stel Sekunde [0-99]
 
     // Can't yet generate code for STAT_DESTINATION_TYPE_2_DATA of type data[1] at offset 11. But we account for the 1 bytes
         // Returns the type of destination Bit-0, Bit-1: 00 = no destination (remaining data can be skipped) 01 = user
         // destination 10 = optional destination (not activated, for BMW Routes) 11 = activated optional destination (BMW
         // Routes) Bit-2: 0 = not current destination 1 = current destination Bit-3: Future use Bit-4: Future use Bit-5:
-        // Future use Bit-6 to Bit-7: Future use / gibt den Typ des Ziels zurÃ¼ck  Bit-0,Bit-1: 00 = no destination
+        // Future use Bit-6 to Bit-7: Future use / gibt den Typ des Ziels zurück  Bit-0,Bit-1: 00 = no destination
         // (remaining data can be skipped) 01 = user destination 10 = optional destination (not activated, for BMW
         // Routes) 11 = activated optional destination (BMW Routes)  Bit-2: 0 = not current destination 1 = current
         // destination  Bit-3: Future use  Bit-4: Future use  Bit-5: Future use  Bit-6 to Bit-7: Future use
 
     // Can't yet generate code for STAT_GPS_POSITION_LATITUDE_2_DATA of type data[5] at offset 12. But we account for the 5 bytes
         // returns the latitude LL east / west with 0x00 east, 0x01 west GG degree [0-180] MM minute [0-59] SS second
-        // [0-59] HH 100th second [0-99] / gibt die Latitude zurÃ¼ck  LL    Ost/ West mit 0x00 Ost, 0x01 West GG   Grad
+        // [0-59] HH 100th second [0-99] / gibt die Latitude zurück  LL    Ost/ West mit 0x00 Ost, 0x01 West GG   Grad
         // [0-180] MM  Minute  [0-59]  SS    Sekunde [0-59] HH   100stel Sekunde [0-99]
 
     // Can't yet generate code for STAT_GPS_POSITION_LONGITUDE_2_DATA of type data[5] at offset 17. But we account for the 5 bytes
         // returns the longitude bb north / south with 0x00 north, 0x01 south gg degrees [0-90] mm minute [0-59] ss
-        // second [0-59] hh 100th of a second [0-99] / gibt die Longitude zurÃ¼ck  bb nord/sÃ¼d mit 0x00 Nord, 0x01 SÃ¼d
-        // gg   Grad [0-90]   mm Minute  [0-59]  ss    Sekunde [0-59]  hh   100stel Sekunde [0-99]
+        // second [0-59] hh 100th of a second [0-99] / gibt die Longitude zurück  bb nord/süd mit 0x00 Nord, 0x01 Süd gg 
+        // Grad [0-90]   mm Minute  [0-59]  ss    Sekunde [0-59]  hh   100stel Sekunde [0-99]
 
     // Can't yet generate code for STAT_DESTINATION_TYPE_3_DATA of type data[1] at offset 22. But we account for the 1 bytes
         // Returns the type of destination Bit-0, Bit-1: 00 = no destination (remaining data can be skipped) 01 = user
         // destination 10 = optional destination (not activated, for BMW Routes) 11 = activated optional destination (BMW
         // Routes) Bit-2: 0 = not current destination 1 = current destination Bit-3: Future use Bit-4: Future use Bit-5:
-        // Future use Bit-6 to Bit-7: Future use / gibt den Typ des Ziels zurÃ¼ck  Bit-0,Bit-1: 00 = no destination
+        // Future use Bit-6 to Bit-7: Future use / gibt den Typ des Ziels zurück  Bit-0,Bit-1: 00 = no destination
         // (remaining data can be skipped) 01 = user destination 10 = optional destination (not activated, for BMW
         // Routes) 11 = activated optional destination (BMW Routes)  Bit-2: 0 = not current destination 1 = current
         // destination  Bit-3: Future use  Bit-4: Future use  Bit-5: Future use  Bit-6 to Bit-7: Future use
 
     // Can't yet generate code for STAT_GPS_POSITION_LATITUDE_3_DATA of type data[5] at offset 23. But we account for the 5 bytes
         // returns the latitude LL east / west with 0x00 east, 0x01 west GG degree [0-180] MM minute [0-59] SS second
-        // [0-59] HH 100th second [0-99] / gibt die Latitude zurÃ¼ck  LL    Ost/ West mit 0x00 Ost, 0x01 West GG   Grad
+        // [0-59] HH 100th second [0-99] / gibt die Latitude zurück  LL    Ost/ West mit 0x00 Ost, 0x01 West GG   Grad
         // [0-180] MM  Minute  [0-59]  SS    Sekunde [0-59] HH   100stel Sekunde [0-99]
 
     // Can't yet generate code for STAT_GPS_POSITION_LONGITUDE_3_DATA of type data[5] at offset 28. But we account for the 5 bytes
         // returns the longitude bb north / south with 0x00 north, 0x01 south gg degrees [0-90] mm minute [0-59] ss
-        // second [0-59] hh 100th of a second [0-99] / gibt die Longitude zurÃ¼ck  bb nord/sÃ¼d mit 0x00 Nord, 0x01 SÃ¼d
-        // gg    Grad [0-90]   mm   Minute  [0-59]  ss    Sekunde [0-59]  hh   100stel Sekunde [0-99]
+        // second [0-59] hh 100th of a second [0-99] / gibt die Longitude zurück  bb nord/süd mit 0x00 Nord, 0x01 Süd gg 
+        // Grad [0-90]   mm   Minute  [0-59]  ss    Sekunde [0-59]  hh   100stel Sekunde [0-99]
 
     // Can't yet generate code for STAT_DESTINATION_TYPE_4_DATA of type data[1] at offset 33. But we account for the 1 bytes
         // Returns the type of destination Bit-0, Bit-1: 00 = no destination (remaining data can be skipped) 01 = user
         // destination 10 = optional destination (not activated, for BMW Routes) 11 = activated optional destination (BMW
         // Routes) Bit-2: 0 = not current destination 1 = current destination Bit-3: Future use Bit-4: Future use Bit-5:
-        // Future use Bit-6 to Bit-7: Future use / gibt den Typ des Ziels zurÃ¼ck  Bit-0,Bit-1: 00 = no destination
+        // Future use Bit-6 to Bit-7: Future use / gibt den Typ des Ziels zurück  Bit-0,Bit-1: 00 = no destination
         // (remaining data can be skipped) 01 = user destination 10 = optional destination (not activated, for BMW
         // Routes) 11 = activated optional destination (BMW Routes)  Bit-2: 0 = not current destination 1 = current
         // destination  Bit-3: Future use  Bit-4: Future use  Bit-5: Future use  Bit-6 to Bit-7: Future use
 
     // Can't yet generate code for STAT_GPS_POSITION_LATITUDE_4_DATA of type data[5] at offset 34. But we account for the 5 bytes
         // returns the latitude LL east / west with 0x00 east, 0x01 west GG degree [0-180] MM minute [0-59] SS second
-        // [0-59] HH 100th second [0-99] / gibt die Latitude zurÃ¼ck  LL    Ost/ West mit 0x00 Ost, 0x01 West GG   Grad
+        // [0-59] HH 100th second [0-99] / gibt die Latitude zurück  LL    Ost/ West mit 0x00 Ost, 0x01 West GG   Grad
         // [0-180] MM  Minute  [0-59]  SS    Sekunde [0-59] HH   100stel Sekunde [0-99]
 
     // Can't yet generate code for STAT_GPS_POSITION_LONGITUDE_4_DATA of type data[5] at offset 39. But we account for the 5 bytes
         // returns the longitude bb north / south with 0x00 north, 0x01 south gg degrees [0-90] mm minute [0-59] ss
-        // second [0-59] hh 100th of a second [0-99] / gibt die Longitude zurÃ¼ck  bb nord/sÃ¼d mit 0x00 Nord, 0x01 SÃ¼d
-        // gg    Grad [0-90]   mm   Minute  [0-59]  ss    Sekunde [0-59]  hh   100stel Sekunde [0-99]
+        // second [0-59] hh 100th of a second [0-99] / gibt die Longitude zurück  bb nord/süd mit 0x00 Nord, 0x01 Süd gg 
+        // Grad [0-90]   mm   Minute  [0-59]  ss    Sekunde [0-59]  hh   100stel Sekunde [0-99]
 
     // Can't yet generate code for STAT_DESTINATION_TYPE_5_DATA of type data[1] at offset 44. But we account for the 1 bytes
         // Returns the type of destination Bit-0, Bit-1: 00 = no destination (remaining data can be skipped) 01 = user
         // destination 10 = optional destination (not activated, for BMW Routes) 11 = activated optional destination (BMW
         // Routes) Bit-2: 0 = not current destination 1 = current destination Bit-3: Future use Bit-4: Future use Bit-5:
-        // Future use Bit-6 to Bit-7: Future use / gibt den Typ des Ziels zurÃ¼ck  Bit-0,Bit-1: 00 = no destination
+        // Future use Bit-6 to Bit-7: Future use / gibt den Typ des Ziels zurück  Bit-0,Bit-1: 00 = no destination
         // (remaining data can be skipped) 01 = user destination 10 = optional destination (not activated, for BMW
         // Routes) 11 = activated optional destination (BMW Routes)  Bit-2: 0 = not current destination 1 = current
         // destination  Bit-3: Future use  Bit-4: Future use  Bit-5: Future use  Bit-6 to Bit-7: Future use
 
     // Can't yet generate code for STAT_GPS_POSITION_LATITUDE_5_DATA of type data[5] at offset 45. But we account for the 5 bytes
         // returns the latitude LL east / west with 0x00 east, 0x01 west GG degree [0-180] MM minute [0-59] SS second
-        // [0-59] HH 100th second [0-99] / gibt die Latitude zurÃ¼ck  LL    Ost/ West mit 0x00 Ost, 0x01 West GG   Grad
+        // [0-59] HH 100th second [0-99] / gibt die Latitude zurück  LL    Ost/ West mit 0x00 Ost, 0x01 West GG   Grad
         // [0-180] MM   Minute  [0-59]  SS    Sekunde [0-59] HH   100stel Sekunde [0-99]
 
     // Can't yet generate code for STAT_GPS_POSITION_LONGITUDE_5_DATA of type data[5] at offset 50. But we account for the 5 bytes
         // returns the longitude bb north / south with 0x00 north, 0x01 south gg degrees [0-90] mm minute [0-59] ss
-        // second [0-59] hh 100th of a second [0-99] / gibt die Longitude zurÃ¼ck  bb nord/sÃ¼d mit 0x00 Nord, 0x01 SÃ¼d
-        // gg    Grad [0-90]   mm   Minute  [0-59]  ss    Sekunde [0-59]  hh   100stel Sekunde [0-99]
+        // second [0-59] hh 100th of a second [0-99] / gibt die Longitude zurück  bb nord/süd mit 0x00 Nord, 0x01 Süd gg 
+        // Grad [0-90]   mm   Minute  [0-59]  ss    Sekunde [0-59]  hh   100stel Sekunde [0-99]
 
     // Can't yet generate code for STAT_DESTINATION_TYPE_6_DATA of type data[1] at offset 55. But we account for the 1 bytes
         // Returns the type of destination Bit-0, Bit-1: 00 = no destination (remaining data can be skipped) 01 = user
         // destination 10 = optional destination (not activated, for BMW Routes) 11 = activated optional destination (BMW
         // Routes) Bit-2: 0 = not current destination 1 = current destination Bit-3: Future use Bit-4: Future use Bit-5:
-        // Future use Bit-6 to Bit-7: Future use / gibt den Typ des Ziels zurÃ¼ck  Bit-0,Bit-1: 00 = no destination
+        // Future use Bit-6 to Bit-7: Future use / gibt den Typ des Ziels zurück  Bit-0,Bit-1: 00 = no destination
         // (remaining data can be skipped) 01 = user destination 10 = optional destination (not activated, for BMW
         // Routes) 11 = activated optional destination (BMW Routes)  Bit-2: 0 = not current destination 1 = current
         // destination  Bit-3: Future use  Bit-4: Future use  Bit-5: Future use  Bit-6 to Bit-7: Future use
 
     // Can't yet generate code for STAT_GPS_POSITION_LATITUDE_6_DATA of type data[5] at offset 56. But we account for the 5 bytes
         // returns the latitude LL east / west with 0x00 east, 0x01 west GG degree [0-180] MM minute [0-59] SS second
-        // [0-59] HH 100th second [0-99] / gibt die Latitude zurÃ¼ck  LL    Ost/ West mit 0x00 Ost, 0x01 West GG   Grad
+        // [0-59] HH 100th second [0-99] / gibt die Latitude zurück  LL    Ost/ West mit 0x00 Ost, 0x01 West GG   Grad
         // [0-180] MM  Minute  [0-59]  SS    Sekunde [0-59] HH   100stel Sekunde [0-99]
 
     // Can't yet generate code for STAT_GPS_POSITION_LONGITUDE_6_DATA of type data[5] at offset 61. But we account for the 5 bytes
         // returns the longitude bb north / south with 0x00 north, 0x01 south gg degrees [0-90] mm minute [0-59] ss
-        // second [0-59] hh 100th of a second [0-99] / gibt die Longitude zurÃ¼ck  bb nord/sÃ¼d mit 0x00 Nord, 0x01 SÃ¼d
-        // gg    Grad [0-90]   mm   Minute  [0-59]  ss    Sekunde [0-59]  hh   100stel Sekunde [0-99]
+        // second [0-59] hh 100th of a second [0-99] / gibt die Longitude zurück  bb nord/süd mit 0x00 Nord, 0x01 Süd gg 
+        // Grad [0-90]   mm   Minute  [0-59]  ss    Sekunde [0-59]  hh   100stel Sekunde [0-99]
 
     // Can't yet generate code for STAT_DESTINATION_TYPE_7_DATA of type data[1] at offset 66. But we account for the 1 bytes
         // Returns the type of destination Bit-0, Bit-1: 00 = no destination (remaining data can be skipped) 01 = user
         // destination 10 = optional destination (not activated, for BMW Routes) 11 = activated optional destination (BMW
         // Routes) Bit-2: 0 = not current destination 1 = current destination Bit-3: Future use Bit-4: Future use Bit-5:
-        // Future use Bit-6 to Bit-7: Future use / gibt den Typ des Ziels zurÃ¼ck  Bit-0,Bit-1: 00 = no destination
+        // Future use Bit-6 to Bit-7: Future use / gibt den Typ des Ziels zurück  Bit-0,Bit-1: 00 = no destination
         // (remaining data can be skipped) 01 = user destination 10 = optional destination (not activated, for BMW
         // Routes) 11 = activated optional destination (BMW Routes)  Bit-2: 0 = not current destination 1 = current
         // destination  Bit-3: Future use  Bit-4: Future use  Bit-5: Future use  Bit-6 to Bit-7: Future use
 
     // Can't yet generate code for STAT_GPS_POSITION_LATITUDE_7_DATA of type data[5] at offset 67. But we account for the 5 bytes
         // returns the latitude LL east / west with 0x00 east, 0x01 west GG degree [0-180] MM minute [0-59] SS second
-        // [0-59] HH 100th second [0-99] / gibt die Latitude zurÃ¼ck  LL    Ost/ West mit 0x00 Ost, 0x01 West GG   Grad
+        // [0-59] HH 100th second [0-99] / gibt die Latitude zurück  LL    Ost/ West mit 0x00 Ost, 0x01 West GG   Grad
         // [0-180] MM  Minute  [0-59]  SS    Sekunde [0-59] HH   100stel Sekunde [0-99]
 
     // Can't yet generate code for STAT_GPS_POSITION_LONGITUDE_7_DATA of type data[5] at offset 72. But we account for the 5 bytes
         // returns the longitude bb north / south with 0x00 north, 0x01 south gg degrees [0-90] mm minute [0-59] ss
-        // second [0-59] hh 100th of a second [0-99] / gibt die Longitude zurÃ¼ck  bb nord/sÃ¼d mit 0x00 Nord, 0x01 SÃ¼d
-        // gg    Grad [0-90]   mm   Minute  [0-59]  ss    Sekunde [0-59]  hh   100stel Sekunde [0-99]
+        // second [0-59] hh 100th of a second [0-99] / gibt die Longitude zurück  bb nord/süd mit 0x00 Nord, 0x01 Süd gg 
+        // Grad [0-90]   mm   Minute  [0-59]  ss    Sekunde [0-59]  hh   100stel Sekunde [0-99]
 
     // Can't yet generate code for STAT_DESTINATION_TYPE_8_DATA of type data[1] at offset 77. But we account for the 1 bytes
         // Returns the type of destination Bit-0, Bit-1: 00 = no destination (remaining data can be skipped) 01 = user
         // destination 10 = optional destination (not activated, for BMW Routes) 11 = activated optional destination (BMW
         // Routes) Bit-2: 0 = not current destination 1 = current destination Bit-3: Future use Bit-4: Future use Bit-5:
-        // Future use Bit-6 to Bit-7: Future use / gibt den Typ des Ziels zurÃ¼ck  Bit-0,Bit-1: 00 = no destination
+        // Future use Bit-6 to Bit-7: Future use / gibt den Typ des Ziels zurück  Bit-0,Bit-1: 00 = no destination
         // (remaining data can be skipped) 01 = user destination 10 = optional destination (not activated, for BMW
         // Routes) 11 = activated optional destination (BMW Routes)  Bit-2: 0 = not current destination 1 = current
         // destination  Bit-3: Future use  Bit-4: Future use  Bit-5: Future use  Bit-6 to Bit-7: Future use
 
     // Can't yet generate code for STAT_GPS_POSITION_LATITUDE_8_DATA of type data[5] at offset 78. But we account for the 5 bytes
         // returns the latitude LL east / west with 0x00 east, 0x01 west GG degree [0-180] MM minute [0-59] SS second
-        // [0-59] HH 100th second [0-99] / gibt die Latitude zurÃ¼ck  LL    Ost/ West mit 0x00 Ost, 0x01 West GG   Grad
+        // [0-59] HH 100th second [0-99] / gibt die Latitude zurück  LL    Ost/ West mit 0x00 Ost, 0x01 West GG   Grad
         // [0-180] MM  Minute  [0-59]  SS    Sekunde [0-59] HH   100stel Sekunde [0-99]
 
     // Can't yet generate code for STAT_GPS_POSITION_LONGITUDE_8_DATA of type data[5] at offset 83. But we account for the 5 bytes
         // returns the longitude bb north / south with 0x00 north, 0x01 south gg Gra [0-90] mm minute [0-59] ss second
-        // [0-59] hh 100th of a second [0-99] / gibt die Longitude zurÃ¼ck  bb nord/sÃ¼d mit 0x00 Nord, 0x01 SÃ¼d gg   
-        // Gra [0-90]   mm  Minute  [0-59]  ss    Sekunde [0-59]  hh   100stel Sekunde [0-99]
+        // [0-59] hh 100th of a second [0-99] / gibt die Longitude zurück  bb nord/süd mit 0x00 Nord, 0x01 Süd gg    Gra
+        // [0-90]   mm  Minute  [0-59]  ss    Sekunde [0-59]  hh   100stel Sekunde [0-99]
 
     // Can't yet generate code for STAT_DESTINATION_TYPE_9_DATA of type data[1] at offset 88. But we account for the 1 bytes
         // Returns the type of destination Bit-0, Bit-1: 00 = no destination (remaining data can be skipped) 01 = user
         // destination 10 = optional destination (not activated, for BMW Routes) 11 = activated optional destination (BMW
         // Routes) Bit-2: 0 = not current destination 1 = current destination Bit-3: Future use Bit-4: Future use Bit-5:
-        // Future use Bit-6 to Bit-7: Future use / gibt den Typ des Ziels zurÃ¼ck  Bit-0,Bit-1: 00 = no destination
+        // Future use Bit-6 to Bit-7: Future use / gibt den Typ des Ziels zurück  Bit-0,Bit-1: 00 = no destination
         // (remaining data can be skipped) 01 = user destination 10 = optional destination (not activated, for BMW
         // Routes) 11 = activated optional destination (BMW Routes)  Bit-2: 0 = not current destination 1 = current
         // destination  Bit-3: Future use  Bit-4: Future use  Bit-5: Future use  Bit-6 to Bit-7: Future use
 
     // Can't yet generate code for STAT_GPS_POSITION_LATITUDE_9_DATA of type data[5] at offset 89. But we account for the 5 bytes
         // returns the latitude LL east / west with 0x00 east, 0x01 west GG degree [0-180] MM minute [0-59] SS second
-        // [0-59] HH 100th second [0-99] / gibt die Latitude zurÃ¼ck  LL    Ost/ West mit 0x00 Ost, 0x01 West GG   Grad
+        // [0-59] HH 100th second [0-99] / gibt die Latitude zurück  LL    Ost/ West mit 0x00 Ost, 0x01 West GG   Grad
         // [0-180] MM  Minute  [0-59]  SS    Sekunde [0-59] HH   100stel Sekunde [0-99]
 
     // Can't yet generate code for STAT_GPS_POSITION_LONGITUDE_9_DATA of type data[5] at offset 94. But we account for the 5 bytes
         // returns the longitude bb north / south with 0x00 north, 0x01 south gg degrees [0-90] mm minute [0-59] ss
-        // second [0-59] hh 100th of a second [0-99] / gibt die Longitude zurÃ¼ck  bb nord/sÃ¼d mit 0x00 Nord, 0x01 SÃ¼d
-        // gg    Grad [0-90]   mm   Minute  [0-59]  ss    Sekunde [0-59]  hh   100stel Sekunde [0-99]
+        // second [0-59] hh 100th of a second [0-99] / gibt die Longitude zurück  bb nord/süd mit 0x00 Nord, 0x01 Süd gg 
+        // Grad [0-90]   mm   Minute  [0-59]  ss    Sekunde [0-59]  hh   100stel Sekunde [0-99]
 
     // Can't yet generate code for STAT_DESTINATION_TYPE_10_DATA of type data[1] at offset 99. But we account for the 1 bytes
         // Returns the type of destination Bit-0, Bit-1: 00 = no destination (remaining data can be skipped) 01 = user
         // destination 10 = optional destination (not activated, for BMW Routes) 11 = activated optional destination (BMW
         // Routes) Bit-2: 0 = not current destination 1 = current destination Bit-3: Future use Bit-4: Future use Bit-5:
-        // Future use Bit-6 to Bit-7: Future use / gibt den Typ des Ziels zurÃ¼ck  Bit-0,Bit-1: 00 = no destination
+        // Future use Bit-6 to Bit-7: Future use / gibt den Typ des Ziels zurück  Bit-0,Bit-1: 00 = no destination
         // (remaining data can be skipped) 01 = user destination 10 = optional destination (not activated, for BMW
         // Routes) 11 = activated optional destination (BMW Routes)  Bit-2: 0 = not current destination 1 = current
         // destination  Bit-3: Future use  Bit-4: Future use  Bit-5: Future use  Bit-6 to Bit-7: Future use
 
     // Can't yet generate code for STAT_GPS_POSITION_LATITUDE_10_DATA of type data[5] at offset 100. But we account for the 5 bytes
         // returns the latitude LL east / west with 0x00 east, 0x01 west GG degree [0-180] MM minute [0-59] SS second
-        // [0-59] HH 100th second [0-99] / gibt die Latitude zurÃ¼ck  LL    Ost/ West mit 0x00 Ost, 0x01 West GG   Grad
+        // [0-59] HH 100th second [0-99] / gibt die Latitude zurück  LL    Ost/ West mit 0x00 Ost, 0x01 West GG   Grad
         // [0-180] MM  Minute  [0-59]  SS    Sekunde [0-59] HH   100stel Sekunde [0-99]
 
     // Can't yet generate code for STAT_GPS_POSITION_LONGITUDE_10_DATA of type data[5] at offset 105. But we account for the 5 bytes
         // returns the longitude bb north / south with 0x00 north, 0x01 south gg degrees [0-90] mm minute [0-59] ss
-        // second [0-59] hh 100th of a second [0-99] / gibt die Longitude zurÃ¼ck  bb nord/sÃ¼d mit 0x00 Nord, 0x01 SÃ¼d
-        // gg    Grad [0-90]   mm  Minute  [0-59]  ss    Sekunde [0-59]  hh   100stel Sekunde [0-99]
+        // second [0-59] hh 100th of a second [0-99] / gibt die Longitude zurück  bb nord/süd mit 0x00 Nord, 0x01 Süd gg 
+        // Grad [0-90]   mm  Minute  [0-59]  ss    Sekunde [0-59]  hh   100stel Sekunde [0-99]
 
     // Can't yet generate code for STAT_DESTINATION_TYPE_11_DATA of type data[1] at offset 110. But we account for the 1 bytes
         // Returns the type of destination Bit-0, Bit-1: 00 = no destination (remaining data can be skipped) 01 = user
         // destination 10 = optional destination (not activated, for BMW Routes) 11 = activated optional destination (BMW
         // Routes) Bit-2: 0 = not current destination 1 = current destination Bit-3: Future use Bit-4: Future use Bit-5:
-        // Future use Bit-6 to Bit-7: Future use / gibt den Typ des Ziels zurÃ¼ck  Bit-0,Bit-1: 00 = no destination
+        // Future use Bit-6 to Bit-7: Future use / gibt den Typ des Ziels zurück  Bit-0,Bit-1: 00 = no destination
         // (remaining data can be skipped) 01 = user destination 10 = optional destination (not activated, for BMW
         // Routes) 11 = activated optional destination (BMW Routes)  Bit-2: 0 = not current destination 1 = current
         // destination  Bit-3: Future use  Bit-4: Future use  Bit-5: Future use  Bit-6 to Bit-7: Future use
 
     // Can't yet generate code for STAT_GPS_POSITION_LATITUDE_11_DATA of type data[5] at offset 111. But we account for the 5 bytes
         // returns the latitude LL east / west with 0x00 east, 0x01 west GG degree [0-180] MM minute [0-59] SS second
-        // [0-59] HH 100th second [0-99] / gibt die Latitude zurÃ¼ck  LL    Ost/ West mit 0x00 Ost, 0x01 West GG   Grad
+        // [0-59] HH 100th second [0-99] / gibt die Latitude zurück  LL    Ost/ West mit 0x00 Ost, 0x01 West GG   Grad
         // [0-180] MM  Minute  [0-59]  SS    Sekunde [0-59] HH   100stel Sekunde [0-99]
 
     // Can't yet generate code for STAT_GPS_POSITION_LONGITUDE_11_DATA of type data[5] at offset 116. But we account for the 5 bytes
         // returns the longitude bb north / south with 0x00 north, 0x01 south gg degrees [0-90] mm minute [0-59] ss
-        // second [0-59] hh 100th of a second [0-99] / gibt die Longitude zurÃ¼ck  bb nord/sÃ¼d mit 0x00 Nord, 0x01 SÃ¼d
-        // gg    Grad [0-90]   mm  Minute  [0-59]  ss    Sekunde [0-59]  hh   100stel Sekunde [0-99]
+        // second [0-59] hh 100th of a second [0-99] / gibt die Longitude zurück  bb nord/süd mit 0x00 Nord, 0x01 Süd gg 
+        // Grad [0-90]   mm  Minute  [0-59]  ss    Sekunde [0-59]  hh   100stel Sekunde [0-99]
 
     // Can't yet generate code for STAT_DESTINATION_TYPE_12_DATA of type data[1] at offset 121. But we account for the 1 bytes
         // Returns the type of destination Bit-0, Bit-1: 00 = no destination (remaining data can be skipped) 01 = user
         // destination 10 = optional destination (not activated, for BMW Routes) 11 = activated optional destination (BMW
         // Routes) Bit-2: 0 = not current destination 1 = current destination Bit-3: Future use Bit-4: Future use Bit-5:
-        // Future use Bit-6 to Bit-7: Future use / gibt den Typ des Ziels zurÃ¼ck  Bit-0,Bit-1: 00 = no destination
+        // Future use Bit-6 to Bit-7: Future use / gibt den Typ des Ziels zurück  Bit-0,Bit-1: 00 = no destination
         // (remaining data can be skipped) 01 = user destination 10 = optional destination (not activated, for BMW
         // Routes) 11 = activated optional destination (BMW Routes)  Bit-2: 0 = not current destination 1 = current
         // destination  Bit-3: Future use  Bit-4: Future use  Bit-5: Future use  Bit-6 to Bit-7: Future use
 
     // Can't yet generate code for STAT_GPS_POSITION_LATITUDE_12_DATA of type data[5] at offset 122. But we account for the 5 bytes
         // returns the latitude LL east / west with 0x00 east, 0x01 west GG degree [0-180] MM minute [0-59] SS second
-        // [0-59] HH 100th second [0-99] / gibt die Latitude zurÃ¼ck  LL    Ost/ West mit 0x00 Ost, 0x01 West GG   Grad
+        // [0-59] HH 100th second [0-99] / gibt die Latitude zurück  LL    Ost/ West mit 0x00 Ost, 0x01 West GG   Grad
         // [0-180] MM  Minute  [0-59]  SS    Sekunde [0-59] HH   100stel Sekunde [0-99]
 
     // Can't yet generate code for STAT_GPS_POSITION_LONGITUDE_12_DATA of type data[5] at offset 127. But we account for the 5 bytes
         // returns the longitude bb north / south with 0x00 north, 0x01 south gg degrees [0-90] mm minute [0-59] ss
-        // second [0-59] hh 100th of a second [0-99] / gibt die Longitude zurÃ¼ck  bb nord/sÃ¼d mit 0x00 Nord, 0x01 SÃ¼d
-        // gg    Grad [0-90]   mm  Minute  [0-59]  ss    Sekunde [0-59]  hh   100stel Sekunde [0-99]
+        // second [0-59] hh 100th of a second [0-99] / gibt die Longitude zurück  bb nord/süd mit 0x00 Nord, 0x01 Süd gg 
+        // Grad [0-90]   mm  Minute  [0-59]  ss    Sekunde [0-59]  hh   100stel Sekunde [0-99]
 
     // Can't yet generate code for STAT_DESTINATION_TYPE_13_DATA of type data[1] at offset 132. But we account for the 1 bytes
         // Returns the type of destination Bit-0, Bit-1: 00 = no destination (remaining data can be skipped) 01 = user
         // destination 10 = optional destination (not activated, for BMW Routes) 11 = activated optional destination (BMW
         // Routes) Bit-2: 0 = not current destination 1 = current destination Bit-3: Future use Bit-4: Future use Bit-5:
-        // Future use Bit-6 to Bit-7: Future use / gibt den Typ des Ziels zurÃ¼ck  Bit-0,Bit-1: 00 = no destination
+        // Future use Bit-6 to Bit-7: Future use / gibt den Typ des Ziels zurück  Bit-0,Bit-1: 00 = no destination
         // (remaining data can be skipped) 01 = user destination 10 = optional destination (not activated, for BMW
         // Routes) 11 = activated optional destination (BMW Routes)  Bit-2: 0 = not current destination 1 = current
         // destination  Bit-3: Future use  Bit-4: Future use  Bit-5: Future use  Bit-6 to Bit-7: Future use
 
     // Can't yet generate code for STAT_GPS_POSITION_LATITUDE_13_DATA of type data[5] at offset 133. But we account for the 5 bytes
         // returns the latitude LL east / west with 0x00 east, 0x01 west GG degree [0-180] MM minute [0-59] SS second
-        // [0-59] HH 100th second [0-99] / gibt die Latitude zurÃ¼ck  LL    Ost/ West mit  0x00 Ost, 0x01 West GG   Grad
+        // [0-59] HH 100th second [0-99] / gibt die Latitude zurück  LL    Ost/ West mit  0x00 Ost, 0x01 West GG   Grad
         // [0-180] MM   Minute  [0-59]  SS    Sekunde [0-59] HH   100stel Sekunde [0-99]
 
     // Can't yet generate code for STAT_GPS_POSITION_LONGITUDE_13_DATA of type data[5] at offset 138. But we account for the 5 bytes
-        // returns the longitude bb north / south with 0x00 north, 0x01 south gg degrees [0-90] mm minute [0-59] ss
-        // second [0-59] hh 100th of a second [0-99] / gibt die longitude zurÃ¼ck  bb nord/sÃ¼d mit 0x00 Nord, 0x01 SÃ¼d
-        // gg    Grad [0-90]   mm  Minute  [0-59]  ss    Sekunde [0-59]  hh   100stel Sekunde [0-99]
+        // returns the longitude bb north / south with 0x00 north, 0x01 south gg degree [0-90] mm minute [0-59] ss second
+        // [0-59] hh 100th of a second [0-99] / gibt die longitude zurück  bb nord/süd mit 0x00 Nord, 0x01 Süd gg    Grad
+        // [0-90]   mm  Minute  [0-59]  ss    Sekunde [0-59]  hh   100stel Sekunde [0-99]
 
     // Can't yet generate code for STAT_DESTINATION_TYPE_14_DATA of type data[1] at offset 143. But we account for the 1 bytes
         // Returns the type of destination Bit-0, Bit-1: 00 = no destination (remaining data can be skipped) 01 = user
         // destination 10 = optional destination (not activated, for BMW Routes) 11 = activated optional destination (BMW
         // Routes) Bit-2: 0 = not current destination 1 = current destination Bit-3: Future use Bit-4: Future use Bit-5:
-        // Future use Bit-6 to Bit-7: Future use / gibt den Typ des Ziels zurÃ¼ck  Bit-0,Bit-1: 00 = no destination
+        // Future use Bit-6 to Bit-7: Future use / gibt den Typ des Ziels zurück  Bit-0,Bit-1: 00 = no destination
         // (remaining data can be skipped) 01 = user destination 10 = optional destination (not activated, for BMW
         // Routes) 11 = activated optional destination (BMW Routes)  Bit-2: 0 = not current destination 1 = current
         // destination  Bit-3: Future use  Bit-4: Future use  Bit-5: Future use  Bit-6 to Bit-7: Future use
 
     // Can't yet generate code for STAT_GPS_POSITION_LATITUDE_14_DATA of type data[5] at offset 144. But we account for the 5 bytes
         // returns the latitude LL east / west with 0x00 east, 0x01 west GG degree [0-180] MM minute [0-59] SS second
-        // [0-59] HH 100th second [0-99] / gibt die Latitude zurÃ¼ck  LL    Ost/ West mit 0x00 Ost, 0x01 West GG   Grad
+        // [0-59] HH 100th second [0-99] / gibt die Latitude zurück  LL    Ost/ West mit 0x00 Ost, 0x01 West GG   Grad
         // [0-180] MM   Minute  [0-59]  SS    Sekunde [0-59] HH   100stel Sekunde [0-99]
 
     // Can't yet generate code for STAT_GPS_POSITION_LONGITUDE_14_DATA of type data[5] at offset 149. But we account for the 5 bytes
         // returns the longitude bb north / south with 0x00 north, 0x01 south gg degrees [0-90] mm minute [0-59] ss
-        // second [0-59] hh 100th of a second [0-99] / gibt die Longitude zurÃ¼ck  bb nord/sÃ¼d mit 0x00 Nord, 0x01 SÃ¼d
-        // gg    Grad [0-90]   mm   Minute  [0-59]  ss    Sekunde [0-59]  hh   100stel Sekunde [0-99]
+        // second [0-59] hh 100th of a second [0-99] / gibt die Longitude zurück  bb nord/süd mit 0x00 Nord, 0x01 Süd gg 
+        // Grad [0-90]   mm   Minute  [0-59]  ss    Sekunde [0-59]  hh   100stel Sekunde [0-99]
 
     // Can't yet generate code for STAT_DESTINATION_TYPE_15_DATA of type data[1] at offset 154. But we account for the 1 bytes
         // Returns the type of destination Bit-0, Bit-1: 00 = no destination (remaining data can be skipped) 01 = user
         // destination 10 = optional destination (not activated, for BMW Routes) 11 = activated optional destination (BMW
         // Routes) Bit-2: 0 = not current destination 1 = current destination Bit-3: Future use Bit-4: Future use Bit-5:
-        // Future use Bit-6 to Bit-7: Future use / gibt den Typ des Ziels zurÃ¼ck  Bit-0,Bit-1: 00 = no destination
+        // Future use Bit-6 to Bit-7: Future use / gibt den Typ des Ziels zurück  Bit-0,Bit-1: 00 = no destination
         // (remaining data can be skipped) 01 = user destination 10 = optional destination (not activated, for BMW
         // Routes) 11 = activated optional destination (BMW Routes)  Bit-2: 0 = not current destination 1 = current
         // destination  Bit-3: Future use  Bit-4: Future use  Bit-5: Future use  Bit-6 to Bit-7: Future use
 
     // Can't yet generate code for STAT_GPS_POSITION_LATITUDE_15_DATA of type data[5] at offset 155. But we account for the 5 bytes
         // returns the latitude LL east / west with 0x00 east, 0x01 west GG degree [0-180] MM minute [0-59] SS second
-        // [0-59] HH 100th second [0-99] / gibt die Latitude zurÃ¼ck  LL    Ost/ West mit 0x00 Ost, 0x01 West GG   Grad
+        // [0-59] HH 100th second [0-99] / gibt die Latitude zurück  LL    Ost/ West mit 0x00 Ost, 0x01 West GG   Grad
         // [0-180] MM  Minute  [0-59]  SS    Sekunde [0-59] HH   100stel Sekunde [0-99]
 
     // Can't yet generate code for STAT_GPS_POSITION_LONGITUDE_15_DATA of type data[5] at offset 160. But we account for the 5 bytes
         // returns the longitude bb north / south with 0x00 north, 0x01 south gg degrees [0-90] mm minute [0-59] ss
-        // second [0-59] hh 100th of a second [0-99] / gibt die Longitude zurÃ¼ck  bb nord/sÃ¼d mit 0x00 Nord, 0x01 SÃ¼d
-        // gg    Grad [0-90]   mm  Minute  [0-59]  ss    Sekunde [0-59]  hh   100stel Sekunde [0-99]
+        // second [0-59] hh 100th of a second [0-99] / gibt die Longitude zurück  bb nord/süd mit 0x00 Nord, 0x01 Süd gg 
+        // Grad [0-90]   mm  Minute  [0-59]  ss    Sekunde [0-59]  hh   100stel Sekunde [0-99]
 
     // Can't yet generate code for STAT_DESTINATION_TYPE_16_DATA of type data[1] at offset 165. But we account for the 1 bytes
         // Returns the type of destination Bit-0, Bit-1: 00 = no destination (remaining data can be skipped) 01 = user
         // destination 10 = optional destination (not activated, for BMW Routes) 11 = activated optional destination (BMW
         // Routes) Bit-2: 0 = not current destination 1 = current destination Bit-3: Future use Bit-4: Future use Bit-5:
-        // Future use Bit-6 to Bit-7: Future use / gibt den Typ des Ziels zurÃ¼ck  Bit-0,Bit-1: 00 = no destination
+        // Future use Bit-6 to Bit-7: Future use / gibt den Typ des Ziels zurück  Bit-0,Bit-1: 00 = no destination
         // (remaining data can be skipped) 01 = user destination 10 = optional destination (not activated, for BMW
         // Routes) 11 = activated optional destination (BMW Routes)  Bit-2: 0 = not current destination 1 = current
         // destination  Bit-3: Future use  Bit-4: Future use  Bit-5: Future use  Bit-6 to Bit-7: Future use
 
     // Can't yet generate code for STAT_GPS_POSITION_LATITUDE_16_DATA of type data[5] at offset 166. But we account for the 5 bytes
         // returns the latitude LL east / west with 0x00 east, 0x01 west GG degree [0-180] MM minute [0-59] SS second
-        // [0-59] HH 100th second [0-99] / gibt die Latitude zurÃ¼ck  LL    Ost/ West mit 0x00 Ost, 0x01 West GG   Grad
+        // [0-59] HH 100th second [0-99] / gibt die Latitude zurück  LL    Ost/ West mit 0x00 Ost, 0x01 West GG   Grad
         // [0-180] MM  Minute  [0-59]  SS    Sekunde [0-59] HH   100stel Sekunde [0-99]
 
     // Can't yet generate code for STAT_GPS_POSITION_LONGITUDE_16_DATA of type data[5] at offset 171. But we account for the 5 bytes
         // returns the longitude bb north / south with 0x00 north, 0x01 south gg degrees [0-90] mm minute [0-59] ss
-        // second [0-59] hh 100th of a second [0-99] / gibt die Longitude zurÃ¼ck  bb nord/sÃ¼d mit 0x00 Nord, 0x01 SÃ¼d
-        // gg    Grad [0-90]   mm  Minute  [0-59]  ss    Sekunde [0-59]  hh   100stel Sekunde [0-99]
+        // second [0-59] hh 100th of a second [0-99] / gibt die Longitude zurück  bb nord/süd mit 0x00 Nord, 0x01 Süd gg 
+        // Grad [0-90]   mm  Minute  [0-59]  ss    Sekunde [0-59]  hh   100stel Sekunde [0-99]
 
 #define I3_PID_NBT_STATUS_SDARS_RADIO_ID                             0xD0DA
         // Returns the 12 digits Radio ID of the SDARS tuner (SXM) / Returns the 12 digits Radio ID of the SDARS tuner
@@ -2666,7 +2666,7 @@
 
 #define I3_PID_NBT_STATUS_LAST_DESTINATIONS_SECOND_DATA_SET          0xD0E0
         // Returns the last 16 destinations for which route guidance was activated in the navigation system. / Gibt die
-        // letzten 16 Ziele zurÃ¼ck, fÃ¼r die im Navigationssystem die ZielfÃ¼hrung aktiviert wurden.
+        // letzten 16 Ziele zurück, für die im Navigationssystem die Zielführung aktiviert wurden.
 
     // Can't yet generate code for STAT__PREFERRED_CHARGING_STATION_POSITION_LATITUDE_DATA of type data[5] at offset 0. But we account for the 5 bytes
         // Returns the latitude LL east / west with 0x00 east, 0x01 west GG degree [0-180] MM minute (s) [0-59] SS second
@@ -2798,13 +2798,13 @@
         // returns the ISO 3166 country code of the car position as three characters (e.g. Deutschland; DEU) 0x0 default
         // (Initialization value) - ¿default¿ means standard view from first Navigation Database compilation / returns
         // the ISO 3166 country code of the car position as three characters (e.g. Deutschland; DEU)  0x0 default
-        // (Initialization value) - Â¿defaultÂ¿ means standard view from first Navigation Database compilation
+        // (Initialization value) - ¿default¿ means standard view from first Navigation Database compilation
 
     // Can't yet generate code for STAT_BORDERLINE_SETTING_DATA of type data[3] at offset 0. But we account for the 3 bytes
         // returns the ISO 3166 country code of the car position as three characters (e.g. Deutschland; DEU) 0x0 default
         // (Initialization value) - ¿default¿ means standard view from first Navigation Database compilation / returns
         // the ISO 3166 country code of the car position as three characters (e.g. Deutschland; DEU)  0x0 default
-        // (Initialization value) - Â¿defaultÂ¿ means standard view from first Navigation Database compilation
+        // (Initialization value) - ¿default¿ means standard view from first Navigation Database compilation
 
 // Skipping STEUERN_BORDERLINE_CHANGE_MODE on 0xD0E7 which takes arguments
 
@@ -2837,7 +2837,7 @@
 // Skipping WLAN_PAIRABLE on 0xD1F8 which takes arguments
 
 #define I3_PID_NBT_WLAN_AUSSTATTUNG                                  0xD1FA
-        // Presence of the different WiFi modes / PrÃ¤senz der verschiedenen WLAN-Modi
+        // Presence of the different WiFi modes / Präsenz der verschiedenen WLAN-Modi
 
     #define I3_RES_NBT_STAT_WLAN_CODED                               (RXBUF_UCHAR(0))
     #define I3_RES_NBT_STAT_WLAN_CODED_UNIT                          '0-n'
@@ -2864,40 +2864,40 @@
 // Skipping WLAN_DEVICELIST_AP on 0xD1FB which takes arguments
 
 #define I3_PID_NBT_WLAN_DEVICELIST_WIFI_DIRECT                       0xD1FC
-        // Device list in Wifi Direct mode / GerÃ¤teliste im Wifi Direct Modus
+        // Device list in Wifi Direct mode / Geräteliste im Wifi Direct Modus
 
     // Can't yet generate code for STAT_WLAN_DEVICELIST_DIRECT_1_DATA of type data[6] at offset 0. But we account for the 6 bytes
-        // MAC address of the device 1 / MAC Adresse des GerÃ¤t 1
+        // MAC address of the device 1 / MAC Adresse des Gerät 1
 
     // Can't yet generate code for STAT_WLAN_DEVICELIST_DIRECT_2_DATA of type data[6] at offset 6. But we account for the 6 bytes
-        // MAC address of the device 2 / MAC Adresse des GerÃ¤t 2
+        // MAC address of the device 2 / MAC Adresse des Gerät 2
 
     // Can't yet generate code for STAT_WLAN_DEVICELIST_DIRECT_3_DATA of type data[6] at offset 12. But we account for the 6 bytes
-        // MAC address of the device 3 / MAC Adresse des GerÃ¤t 3
+        // MAC address of the device 3 / MAC Adresse des Gerät 3
 
     // Can't yet generate code for STAT_WLAN_DEVICELIST_DIRECT_4_DATA of type data[6] at offset 18. But we account for the 6 bytes
-        // MAC address of the device 4 / MAC Adresse des GerÃ¤t 4
+        // MAC address of the device 4 / MAC Adresse des Gerät 4
 
     // Can't yet generate code for STAT_WLAN_DEVICELIST_DIRECT_5_DATA of type data[6] at offset 24. But we account for the 6 bytes
-        // MAC address of the device 5 / MAC Adresse des GerÃ¤t 5
+        // MAC address of the device 5 / MAC Adresse des Gerät 5
 
     // Can't yet generate code for STAT_WLAN_DEVICELIST_DIRECT_6_DATA of type data[6] at offset 30. But we account for the 6 bytes
-        // MAC address of the device 6 / MAC Adresse des GerÃ¤t 6
+        // MAC address of the device 6 / MAC Adresse des Gerät 6
 
     // Can't yet generate code for STAT_WLAN_DEVICELIST_DIRECT_7_DATA of type data[6] at offset 36. But we account for the 6 bytes
-        // MAC address of the device 7 / MAC Adresse des GerÃ¤t 7
+        // MAC address of the device 7 / MAC Adresse des Gerät 7
 
     // Can't yet generate code for STAT_WLAN_DEVICELIST_DIRECT_8_DATA of type data[6] at offset 42. But we account for the 6 bytes
-        // MAC address of the device 8 / MAC Adresse des GerÃ¤t 8
+        // MAC address of the device 8 / MAC Adresse des Gerät 8
 
 #define I3_PID_NBT_USB_TEST                                          0xD207
-        // connected USB devices at the HU / verbundene USB GerÃ¤te an der HU
+        // connected USB devices at the HU / verbundene USB Geräte an der HU
 
     #define I3_RES_NBT_STAT_USB_HUB_KDZ_CODING                       (RXBUF_UCHAR(0))
     #define I3_RES_NBT_STAT_USB_HUB_KDZ_CODING_UNIT                  '0-n'
     #define I3_RES_NBT_STAT_USB_HUB_KDZ_CODING_TYPE                  unsigned char
         // Status of whether a USB HUB is installed between HU and KDZ; depends on the coding test / Status, ob ein
-        // USB-HUB zwischen HU und KDZ installiert ist; hÃ¤ngt von der CodierprÃ¼fung ab
+        // USB-HUB zwischen HU und KDZ installiert ist; hängt von der Codierprüfung ab
 
     #define I3_RES_NBT_STAT_USB_TEST_HUB                             (RXBUF_UCHAR(1))
     #define I3_RES_NBT_STAT_USB_TEST_HUB_UNIT                        '0-n'
@@ -2912,8 +2912,8 @@
     #define I3_RES_NBT_STAT_PRODUCTID_HUB_WERT                       (RXBUF_UINT(4))
     #define I3_RES_NBT_STAT_PRODUCTID_HUB_WERT_UNIT                  'HEX'
     #define I3_RES_NBT_STAT_PRODUCTID_HUB_WERT_TYPE                  unsigned short
-        // Predefined ProductID that is output for the device from the USB interface / vorgegebene ProductID, die fÃ¼r
-        // das GerÃ¤t von der USB Schnittstelle ausgegeben wird
+        // Predefined ProductID that is output for the device from the USB interface / vorgegebene ProductID, die für das
+        // Gerät von der USB Schnittstelle ausgegeben wird
 
     // Can't process STAT_VENDORSTRING_HUB_TEXT - don't know type string (*** this will mean all the following offsets are wrong!!! ****)
 
@@ -2930,8 +2930,8 @@
     #define I3_RES_NBT_STAT_PRODUCTID_KDZ1_WERT                      (RXBUF_UINT(9))
     #define I3_RES_NBT_STAT_PRODUCTID_KDZ1_WERT_UNIT                 'HEX'
     #define I3_RES_NBT_STAT_PRODUCTID_KDZ1_WERT_TYPE                 unsigned short
-        // Predefined ProductID that is output for the device from the USB interface / vorgegebene ProductID, die fÃ¼r
-        // das GerÃ¤t von der USB Schnittstelle ausgegeben wird
+        // Predefined ProductID that is output for the device from the USB interface / vorgegebene ProductID, die für das
+        // Gerät von der USB Schnittstelle ausgegeben wird
 
     // Can't process STAT_VENDORSTRING_KDZ1_TEXT - don't know type string (*** this will mean all the following offsets are wrong!!! ****)
 
@@ -2948,8 +2948,8 @@
     #define I3_RES_NBT_STAT_PRODUCTID_KDZ2_WERT                      (RXBUF_UINT(14))
     #define I3_RES_NBT_STAT_PRODUCTID_KDZ2_WERT_UNIT                 'HEX'
     #define I3_RES_NBT_STAT_PRODUCTID_KDZ2_WERT_TYPE                 unsigned short
-        // Predefined ProductID that is output for the device from the USB interface / vorgegebene ProductID, die fÃ¼r
-        // das GerÃ¤t von der USB Schnittstelle ausgegeben wird
+        // Predefined ProductID that is output for the device from the USB interface / vorgegebene ProductID, die für das
+        // Gerät von der USB Schnittstelle ausgegeben wird
 
     // Can't process STAT_VENDORSTRING_KDZ2_TEXT - don't know type string (*** this will mean all the following offsets are wrong!!! ****)
 
@@ -2961,14 +2961,14 @@
     #define I3_RES_NBT_STAT_VENDORID_SIA_WERT                        (RXBUF_UINT(17))
     #define I3_RES_NBT_STAT_VENDORID_SIA_WERT_UNIT                   'HEX'
     #define I3_RES_NBT_STAT_VENDORID_SIA_WERT_TYPE                   unsigned short
-        // recognized VendorID of the device from the USB interface is output / erkannte VendorID des GerÃ¤tes von der
-        // USB Schnittstelle wird ausgegeben
+        // recognized VendorID of the device from the USB interface is output / erkannte VendorID des Gerätes von der USB
+        // Schnittstelle wird ausgegeben
 
     #define I3_RES_NBT_STAT_PRODUCTID_SIA_WERT                       (RXBUF_UINT(19))
     #define I3_RES_NBT_STAT_PRODUCTID_SIA_WERT_UNIT                  'HEX'
     #define I3_RES_NBT_STAT_PRODUCTID_SIA_WERT_TYPE                  unsigned short
-        //  recognized ProductID of the device from the USB interface is output /  erkannte ProductID des GerÃ¤tes von
-        // der USB Schnittstelle wird ausgegeben
+        //  recognized ProductID of the device from the USB interface is output /  erkannte ProductID des Gerätes von der
+        // USB Schnittstelle wird ausgegeben
 
     // Can't process STAT_VENDORSTRING_SIA_TEXT - don't know type string (*** this will mean all the following offsets are wrong!!! ****)
 
@@ -2981,20 +2981,20 @@
     #define I3_RES_NBT_STAT_WLAN_AP_ENCRYPTION                       (RXBUF_UCHAR(32))
     #define I3_RES_NBT_STAT_WLAN_AP_ENCRYPTION_UNIT                  '0-n'
     #define I3_RES_NBT_STAT_WLAN_AP_ENCRYPTION_TYPE                  unsigned char
-        // Type of encryption from the AP network / Typ der VerschlÃ¼sselung vom AP Netzwerk
+        // Type of encryption from the AP network / Typ der Verschlüsselung vom AP Netzwerk
 
     // Can't yet generate code for STAT_WLAN_AP_NETWORK_KEY_TEXT of type string[64], at offset 33. But we account for the 64 bytes
-        // Key of the AP network / SchlÃ¼ssel des AP Netzwerk
+        // Key of the AP network / Schlüssel des AP Netzwerk
 
 // Skipping CID_TOUCHINDICATOR on 0xD25B which takes arguments
 
 #define I3_PID_NBT_TOUCH_COMMAND_NUMBER                              0xD26A
-        // Returns the number of connected Touch Command devices / Gibt die Anzahl der verbundenen Touch Command GerÃ¤ten
-        // zurÃ¼ck
+        // Returns the number of connected Touch Command devices / Gibt die Anzahl der verbundenen Touch Command Geräten
+        // zurück
 
     // Can't yet generate code for STAT_CONNECTED_TOUCH_COMMAND_TEXT of type string[2], at offset 0. But we account for the 2 bytes
-        // Returns the number of connected Touch Command devices / Gibt die Anzahl der verbundenen Touch Command GerÃ¤ten
-        // zurÃ¼ck
+        // Returns the number of connected Touch Command devices / Gibt die Anzahl der verbundenen Touch Command Geräten
+        // zurück
 
 // Skipping HU_VIN_PROTECTION_PARAMETER on 0xD3E2 which takes arguments
 
@@ -3018,7 +3018,7 @@
         // Temperature backlight / Temperatur Hintergrundbeleuchtung
 
     #define I3_RES_NBT_STAT_TEMP_BACKLIGHT_WERT                      (RXBUF_SCHAR(0))
-    #define I3_RES_NBT_STAT_TEMP_BACKLIGHT_WERT_UNIT                 'Â°C'
+    #define I3_RES_NBT_STAT_TEMP_BACKLIGHT_WERT_UNIT                 '°C'
     #define I3_RES_NBT_STAT_TEMP_BACKLIGHT_WERT_TYPE                 char
         // Temperature backlight / Temperatur Hintergrundbeleuchtung
 
@@ -3050,33 +3050,33 @@
     #define I3_RES_NBT_STAT_OFFSET_HELLIGKEIT_WERT                   (RXBUF_SCHAR(1))
     #define I3_RES_NBT_STAT_OFFSET_HELLIGKEIT_WERT_TYPE              char
         // Offset brightness [sint8, -127 .. + 127 = -100 .. + 100%, 128 = invalid, error value] (signal OFFS_BRIG_FRT
-        // from head unit) / Offset Helligkeit [sint8, -127..+127 = -100..+100%, 128 = UngÃ¼ltig, Fehlerwert]  (Signal
+        // from head unit) / Offset Helligkeit [sint8, -127..+127 = -100..+100%, 128 = Ungültig, Fehlerwert]  (Signal
         // OFFS_BRIG_FRT von Head Unit)
 
     #define I3_RES_NBT_STAT_DIMMRAD_WERT                             (RXBUF_UCHAR(2))
     #define I3_RES_NBT_STAT_DIMMRAD_WERT_TYPE                        unsigned char
         // Dimming wheel position [uint8, 0..254 = 0-100%, 255 = FF = invalid, error value] (signal CTR_ILUM_SW) /
-        // Dimmrad-Stellung [uint8, 0..254 = 0-100%, 255 = FF = UngÃ¼ltig, Fehlerwert]  (Signal CTR_ILUM_SW)
+        // Dimmrad-Stellung [uint8, 0..254 = 0-100%, 255 = FF = Ungültig, Fehlerwert]  (Signal CTR_ILUM_SW)
 
     #define I3_RES_NBT_STAT_HELLIGKEIT_KOMBI_WERT                    (RXBUF_UCHAR(3))
     #define I3_RES_NBT_STAT_HELLIGKEIT_KOMBI_WERT_TYPE               unsigned char
         // Brightness value I-combination brightness sensor [uint8, 0..254 = 0-100%, 255 = FF = invalid, error value]
         // (signal DSTN_LCD_LUM) / Helligkeitswert I-Kombi-Helligkeits-Sensor [uint8, 0..254  = 0-100%, 255 = FF =
-        // UngÃ¼ltig, Fehlerwert]  (Signal DSTN_LCD_LUM)
+        // Ungültig, Fehlerwert]  (Signal DSTN_LCD_LUM)
 
     #define I3_RES_NBT_STAT_DAEMPFUNG_LCD_WERT                       (RXBUF_UCHAR(4))
     #define I3_RES_NBT_STAT_DAEMPFUNG_LCD_WERT_TYPE                  unsigned char
         // Attenuation of LCD luminance [uint8, 0..240 = fast..slow, 241..254 = erratic, 255 = FF = invalid, error
-        // value], speed of the brightness control. (Signal DMPNG_LCD_LUM) / DÃ¤mpfung LCD Leuchtdichte [uint8, 0..240 =
-        // schnell..langsam, 241..254 = sprunghaft, 255 = FF = UngÃ¼ltig, Fehlerwert], Geschwindigkeit der
+        // value], speed of the brightness control. (Signal DMPNG_LCD_LUM) / Dämpfung LCD Leuchtdichte [uint8, 0..240 =
+        // schnell..langsam, 241..254 = sprunghaft, 255 = FF = Ungültig, Fehlerwert], Geschwindigkeit der
         // Helligkeitsregelung. (Signal DMPNG_LCD_LUM)
 
 #define I3_PID_NBT_CID_VERBINDUNG                                    0xD5D0
         // Status of the CID connection: 0 = CID connection OK, image is displayed 1 = No activation of image output 2 =
         // Display device not ready for display 3 = No communication with display device 4 = Invalid image data 255 =
         // Invalid value (default after RESET) / Status der CID-Verbindung: 0 = CID-Verbindung in Ordnung, Bild wird
-        // angezeigt 1 = Keine Aktivierung der Bildausgabe 2 = AnzeigegerÃ¤t nicht anzeigebereit 3 = Keine Kommunikation
-        // mit AnzeigegerÃ¤t 4 = Bilddaten ungÃ¼ltig 255 = UngÃ¼ltigkeitswert (Default nach RESET)
+        // angezeigt 1 = Keine Aktivierung der Bildausgabe 2 = Anzeigegerät nicht anzeigebereit 3 = Keine Kommunikation
+        // mit Anzeigegerät 4 = Bilddaten ungültig 255 = Ungültigkeitswert (Default nach RESET)
 
     #define I3_RES_NBT_STAT_CID_VERBINDUNG                           (RXBUF_UCHAR(0))
     #define I3_RES_NBT_STAT_CID_VERBINDUNG_UNIT                      '0-n'
@@ -3084,8 +3084,8 @@
         // Status of the CID connection: 0 = CID connection OK, image is displayed 1 = No activation of image output 2 =
         // Display device not ready for display 3 = No communication with display device 4 = Invalid image data 255 =
         // Invalid value (default after RESET) / Status der CID-Verbindung: 0 = CID-Verbindung in Ordnung, Bild wird
-        // angezeigt 1 = Keine Aktivierung der Bildausgabe 2 = AnzeigegerÃ¤t nicht anzeigebereit 3 = Keine Kommunikation
-        // mit AnzeigegerÃ¤t 4 = Bilddaten ungÃ¼ltig 255 = UngÃ¼ltigkeitswert (Default nach RESET)
+        // angezeigt 1 = Keine Aktivierung der Bildausgabe 2 = Anzeigegerät nicht anzeigebereit 3 = Keine Kommunikation
+        // mit Anzeigegerät 4 = Bilddaten ungültig 255 = Ungültigkeitswert (Default nach RESET)
 
 #define I3_PID_NBT_CID_DETAIL_INFORMATIONEN                          0xD5D4
         // Logistics information CID / Logistikinformationen CID
@@ -3109,30 +3109,30 @@
     #define I3_RES_NBT_STAT_AMB_SENSOR_WERT_UNIT                     'lx'
     #define I3_RES_NBT_STAT_AMB_SENSOR_WERT_TYPE                     unsigned short
         // Ambient brightness of the local CID sensor (Lux). Range: [0x0000¿0x03E8] 0¿1000 Lux 0xFFFF invalid or sensor
-        // not implemented / Ambient brightness of the local CID sensor (Lux). Range: [0x0000Â¿0x03E8] 0Â¿1000 Lux 0xFFFF
+        // not implemented / Ambient brightness of the local CID sensor (Lux). Range: [0x0000¿0x03E8] 0¿1000 Lux 0xFFFF
         // invalid or sensor not implemented
 
     #define I3_RES_NBT_STAT_BL_TEMP_WERT                             (RXBUF_SCHAR(2))
-    #define I3_RES_NBT_STAT_BL_TEMP_WERT_UNIT                        'Â°C'
+    #define I3_RES_NBT_STAT_BL_TEMP_WERT_UNIT                        '°C'
     #define I3_RES_NBT_STAT_BL_TEMP_WERT_TYPE                        char
         // Currently measured temperature of the backlight temperature sensor. Range: [0xD8¿0x78] -40 ° C to 120 ° C 0x80
         // -128 ° C Sensor Failure / Currently measured temperature of the backlight temperature sensor. Range:
-        // [0xD8Â¿0x78] -40Â°C bis  120Â°C 0x80 -128Â°C  Sensor Failure
+        // [0xD8¿0x78] -40°C bis  120°C 0x80 -128°C  Sensor Failure
 
     #define I3_RES_NBT_STAT_VCC_VOLTAGE_WERT                         (RXBUF_UINT(3))
     #define I3_RES_NBT_STAT_VCC_VOLTAGE_WERT_TYPE                    unsigned short
         // Vcc voltage of the CID in steps of 1/10 V Range: [0x0000¿0xFFFE] 0xFFFF invalid / Vcc voltage of the CID in
-        // steps of 1/10 V Range: [0x0000Â¿0xFFFE]  0xFFFF invalid
+        // steps of 1/10 V Range: [0x0000¿0xFFFE]  0xFFFF invalid
 
     #define I3_RES_NBT_STAT_BACKLIGT_DRIVER_WERT                     (RXBUF_UCHAR(5))
     #define I3_RES_NBT_STAT_BACKLIGT_DRIVER_WERT_TYPE                unsigned char
         // Error status output pins of the backlight LED. Range: [0x00¿0x03] 0xFF invalid / Error status output pins of
-        // the backlight LED. Range: [0x00Â¿0x03] 0xFF invalid
+        // the backlight LED. Range: [0x00¿0x03] 0xFF invalid
 
     #define I3_RES_NBT_STAT_INT_STATUS_WERT                          (RXBUF_UINT(6))
     #define I3_RES_NBT_STAT_INT_STATUS_WERT_TYPE                     unsigned short
         // Contents of the Indigo register ¿IntStatus' Range: [0x0000¿0xFFFF] / Contents of the Indigo register
-        // Â¿IntStatus' Range: [0x0000Â¿0xFFFF]
+        // ¿IntStatus' Range: [0x0000¿0xFFFF]
 
 // Skipping STEUERN_TESTBILD_ERWEITERT on 0x400B which takes arguments
 
@@ -3168,7 +3168,7 @@
     #define I3_RES_NBT_STAT_ERROR_FLAGS_WERT                         (RXBUF_UINT(1))
     #define I3_RES_NBT_STAT_ERROR_FLAGS_WERT_TYPE                    unsigned short
         // Indicates which internal error are active.Range: [0x0000¿0xFFFF] / Indicates which internal error are
-        // active.Range: [0x0000Â¿0xFFFF]
+        // active.Range: [0x0000¿0xFFFF]
 
     #define I3_RES_NBT_STAT_MAIN_STATE                               (RXBUF_UCHAR(3))
     #define I3_RES_NBT_STAT_MAIN_STATE_UNIT                          '0-n'
@@ -3195,7 +3195,7 @@
     #define I3_RES_NBT_STAT_SCHEDULE_ID_UNIT                         '0-n'
     #define I3_RES_NBT_STAT_SCHEDULE_ID_TYPE                         unsigned char
         // Schedule ID of communication stack. Range: [0x00¿0x04] 0xFF invalid / Schedule ID of communication stack.
-        // Range: [0x00Â¿0x04] 0xFF invalid
+        // Range: [0x00¿0x04] 0xFF invalid
 
     #define I3_RES_NBT_STAT_FADE_STATE                               (RXBUF_UCHAR(8))
     #define I3_RES_NBT_STAT_FADE_STATE_UNIT                          '0-n'
@@ -3303,27 +3303,27 @@
     #define I3_RES_NBT_STAT_DIM_FADE_TIME_T0_WERT                    (RXBUF_UCHAR(22))
     #define I3_RES_NBT_STAT_DIM_FADE_TIME_T0_WERT_TYPE               unsigned char
         // Death time before fading starts (resolution 100ms). Range: [0x00¿0xFF] / Death time before fading starts
-        // (resolution 100ms). Range: [0x00Â¿0xFF]
+        // (resolution 100ms). Range: [0x00¿0xFF]
 
     #define I3_RES_NBT_STAT_DIM_FADE_TIME_T1_WERT                    (RXBUF_UCHAR(23))
     #define I3_RES_NBT_STAT_DIM_FADE_TIME_T1_WERT_TYPE               unsigned char
         // Time to fade to current luminous density (resolution 100ms). Range: [0x00¿0x3F] / Time to fade to current
-        // luminous density (resolution 100ms). Range: [0x00Â¿0x3F]
+        // luminous density (resolution 100ms). Range: [0x00¿0x3F]
 
     #define I3_RES_NBT_STAT_DIM_FADE_TIME_T2_WERT                    (RXBUF_UCHAR(24))
     #define I3_RES_NBT_STAT_DIM_FADE_TIME_T2_WERT_TYPE               unsigned char
         // Time to fade out (resolution 100ms). Range: [0x00¿0x3F] / Time to fade out (resolution 100ms). Range:
-        // [0x00Â¿0x3F]
+        // [0x00¿0x3F]
 
     #define I3_RES_NBT_STAT_DIM_FADE_EXPO_T1_WERT                    (RXBUF_UCHAR(25))
     #define I3_RES_NBT_STAT_DIM_FADE_EXPO_T1_WERT_TYPE               unsigned char
         //  Fade in ramp curve exponent. 0 = linear, 1 = square, ... Range: [0x00¿0x04] /  Fade in ramp curve exponent.
-        // 0=linear, 1=square, ... Range: [0x00Â¿0x04] 
+        // 0=linear, 1=square, ... Range: [0x00¿0x04] 
 
     #define I3_RES_NBT_STAT_DIM_FADE_EXPO_T2_WERT                    (RXBUF_UCHAR(26))
     #define I3_RES_NBT_STAT_DIM_FADE_EXPO_T2_WERT_TYPE               unsigned char
         //  Fade out ramp curve exponent. 0 = linear, 1 = square, ... Range: [0x00¿0x04] /  Fade out ramp curve exponent.
-        // 0=linear, 1=square, ... Range: [0x00Â¿0x04] 
+        // 0=linear, 1=square, ... Range: [0x00¿0x04] 
 
     #define I3_RES_NBT_STAT_DIM_FILT_CHANGE_SENSITIVITY_WERT         (RXBUF_UINT(27))
     #define I3_RES_NBT_STAT_DIM_FILT_CHANGE_SENSITIVITY_WERT_TYPE    unsigned short
@@ -3331,7 +3331,7 @@
         // adjustment (old filter algorithm) 1-65535 = number of dim cycles the input value has to be stable Range:
         // [0x0000¿0xFFFF] / Adjusts the reaction on  strong signal changes depending on the time the input value is
         // stable. 0 = no adjustment (old filter algorithm) 1-65535 = number of dim cycles the input value has to be
-        // stable Range: [0x0000Â¿0xFFFF]
+        // stable Range: [0x0000¿0xFFFF]
 
     #define I3_RES_NBT_STAT_DIM_MIN_OFFSET_BRIG_WERT                 (RXBUF_UCHAR(29))
     #define I3_RES_NBT_STAT_DIM_MIN_OFFSET_BRIG_WERT_TYPE            unsigned char
@@ -3357,7 +3357,7 @@
 
     // Can't yet generate code for STAT_PART_NR_DATA_0X4011 of type data[6] at offset 2. But we account for the 6 bytes
         // Value of the BMW part number. Byte 0¿1 = 0 Byte 2¿5 = BMW part number / Value of the BMW part number. Byte
-        // 0Â¿1=0 Byte 2Â¿5=BMW Teilenummer
+        // 0¿1=0 Byte 2¿5=BMW Teilenummer
 
     #define I3_RES_NBT_STAT_SUPPLIER_NR_WERT                         (RXBUF_UCHAR(8))
     #define I3_RES_NBT_STAT_SUPPLIER_NR_WERT_TYPE                    unsigned char
@@ -3401,219 +3401,219 @@
 // Skipping STEUERN_WLAN_AP_NETWORK on 0x4043 which takes arguments
 
 #define I3_PID_NBT_WLAN_SIGNAL_TEST_AP                               0x4044
-        // Statistics about WLAN connections in AP mode / Statistiken Ã¼ber WLAN Verbindungen im AP Modus
+        // Statistics about WLAN connections in AP mode / Statistiken über WLAN Verbindungen im AP Modus
 
     // Can't yet generate code for STAT_WLAN_ADDRESS_AP_1_TEXT of type string[6], at offset 0. But we account for the 6 bytes
-        // MAC address of the connected device 1 / MAC Adresse des verbundenen GerÃ¤t 1
+        // MAC address of the connected device 1 / MAC Adresse des verbundenen Gerät 1
 
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_AP_1_WERT                 (RXBUF_UCHAR(6))
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_AP_1_WERT_UNIT            '%'
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_AP_1_WERT_TYPE            unsigned char
-        // Error rate (0-100%) of the connected device 1 / Fehlerrate (0-100%) des verbundenen GerÃ¤t 1
+        // Error rate (0-100%) of the connected device 1 / Fehlerrate (0-100%) des verbundenen Gerät 1
 
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DBM_AP_1_WERT             (RXBUF_UCHAR(7)-255.0)
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DBM_AP_1_WERT_UNIT        'dBm'
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DBM_AP_1_WERT_TYPE        unsigned char
-        // Power of the connected device 1 / Power des verbundenen GerÃ¤t 1
+        // Power of the connected device 1 / Power des verbundenen Gerät 1
 
     // Can't yet generate code for STAT_WLAN_ADDRESS_AP_2_TEXT of type string[6], at offset 8. But we account for the 6 bytes
-        // MAC address of the connected device 2 / MAC Adresse des verbundenen GerÃ¤t 2
+        // MAC address of the connected device 2 / MAC Adresse des verbundenen Gerät 2
 
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_AP_2_WERT                 (RXBUF_UCHAR(14))
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_AP_2_WERT_UNIT            '%'
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_AP_2_WERT_TYPE            unsigned char
-        // Error rate (0-100%) of the connected device 2 / Fehlerrate (0-100%) des verbundenen GerÃ¤t 2
+        // Error rate (0-100%) of the connected device 2 / Fehlerrate (0-100%) des verbundenen Gerät 2
 
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DBM_AP_2_WERT             (RXBUF_UCHAR(15)-255.0)
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DBM_AP_2_WERT_UNIT        'dBm'
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DBM_AP_2_WERT_TYPE        unsigned char
-        // Power of the connected device 2 / Power des verbundenen GerÃ¤t 2
+        // Power of the connected device 2 / Power des verbundenen Gerät 2
 
     // Can't yet generate code for STAT_WLAN_ADDRESS_AP_3_TEXT of type string[6], at offset 16. But we account for the 6 bytes
-        // MAC address of the connected device 3 / MAC Adresse des verbundenen GerÃ¤t 3
+        // MAC address of the connected device 3 / MAC Adresse des verbundenen Gerät 3
 
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_AP_3_WERT                 (RXBUF_UCHAR(22))
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_AP_3_WERT_UNIT            '%'
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_AP_3_WERT_TYPE            unsigned char
-        // Error rate (0-100%) of the connected device 3 / Fehlerrate (0-100%) des verbundenen GerÃ¤t 3
+        // Error rate (0-100%) of the connected device 3 / Fehlerrate (0-100%) des verbundenen Gerät 3
 
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DBM_AP_3_WERT             (RXBUF_UCHAR(23)-255.0)
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DBM_AP_3_WERT_UNIT        'dBm'
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DBM_AP_3_WERT_TYPE        unsigned char
-        // Power of the connected device 3 / Power des verbundenen GerÃ¤t 3
+        // Power of the connected device 3 / Power des verbundenen Gerät 3
 
     // Can't yet generate code for STAT_WLAN_ADDRESS_AP_4_TEXT of type string[6], at offset 24. But we account for the 6 bytes
-        // MAC address of the connected device 4 / MAC Adresse des verbundenen GerÃ¤t 4
+        // MAC address of the connected device 4 / MAC Adresse des verbundenen Gerät 4
 
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_AP_4_WERT                 (RXBUF_UCHAR(30))
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_AP_4_WERT_UNIT            '%'
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_AP_4_WERT_TYPE            unsigned char
-        // Error rate (0-100%) of the connected device 4 / Fehlerrate (0-100%) des verbundenen GerÃ¤t 4
+        // Error rate (0-100%) of the connected device 4 / Fehlerrate (0-100%) des verbundenen Gerät 4
 
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DBM_AP_4_WERT             (RXBUF_UCHAR(31)-255.0)
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DBM_AP_4_WERT_UNIT        'dBm'
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DBM_AP_4_WERT_TYPE        unsigned char
-        // Power of the connected device 4 / Power des verbundenen GerÃ¤t 4
+        // Power of the connected device 4 / Power des verbundenen Gerät 4
 
     // Can't yet generate code for STAT_WLAN_ADDRESS_AP_5_TEXT of type string[6], at offset 32. But we account for the 6 bytes
-        // MAC address of the connected device 5 / MAC Adresse des verbundenen GerÃ¤t 5
+        // MAC address of the connected device 5 / MAC Adresse des verbundenen Gerät 5
 
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_AP_5_WERT                 (RXBUF_UCHAR(38))
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_AP_5_WERT_UNIT            '%'
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_AP_5_WERT_TYPE            unsigned char
-        // Error rate (0-100%) of the connected device 5 / Fehlerrate (0-100%) des verbundenen GerÃ¤t 5
+        // Error rate (0-100%) of the connected device 5 / Fehlerrate (0-100%) des verbundenen Gerät 5
 
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DBM_AP_5_WERT             (RXBUF_UCHAR(39)-255.0)
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DBM_AP_5_WERT_UNIT        'dBm'
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DBM_AP_5_WERT_TYPE        unsigned char
-        // Power of the connected device 5 / Power des verbundenen GerÃ¤t 5
+        // Power of the connected device 5 / Power des verbundenen Gerät 5
 
     // Can't yet generate code for STAT_WLAN_ADDRESS_AP_6_TEXT of type string[6], at offset 40. But we account for the 6 bytes
-        // MAC address of the connected device 6 / MAC Adresse des verbundenen GerÃ¤t 6
+        // MAC address of the connected device 6 / MAC Adresse des verbundenen Gerät 6
 
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_AP_6_WERT                 (RXBUF_UCHAR(46))
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_AP_6_WERT_UNIT            '%'
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_AP_6_WERT_TYPE            unsigned char
-        // Error rate (0-100%) of the connected device 6 / Fehlerrate (0-100%) des verbundenen GerÃ¤t 6
+        // Error rate (0-100%) of the connected device 6 / Fehlerrate (0-100%) des verbundenen Gerät 6
 
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DBM_AP_6_WERT             (RXBUF_UCHAR(47)-255.0)
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DBM_AP_6_WERT_UNIT        'dBm'
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DBM_AP_6_WERT_TYPE        unsigned char
-        // Power of the connected device 6 / Power des verbundenen GerÃ¤t 6
+        // Power of the connected device 6 / Power des verbundenen Gerät 6
 
     // Can't yet generate code for STAT_WLAN_ADDRESS_AP_7_TEXT of type string[6], at offset 48. But we account for the 6 bytes
-        // MAC address of the connected device 7 / MAC Adresse des verbundenen GerÃ¤t 7
+        // MAC address of the connected device 7 / MAC Adresse des verbundenen Gerät 7
 
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_AP_7_WERT                 (RXBUF_UCHAR(54))
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_AP_7_WERT_UNIT            '%'
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_AP_7_WERT_TYPE            unsigned char
-        // Error rate (0-100%) of the connected device 7 / Fehlerrate (0-100%) des verbundenen GerÃ¤t 7
+        // Error rate (0-100%) of the connected device 7 / Fehlerrate (0-100%) des verbundenen Gerät 7
 
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DBM_AP_7_WERT             (RXBUF_UCHAR(55)-255.0)
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DBM_AP_7_WERT_UNIT        'dBm'
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DBM_AP_7_WERT_TYPE        unsigned char
-        // Power of the connected device 7 / Power des verbundenen GerÃ¤t 7
+        // Power of the connected device 7 / Power des verbundenen Gerät 7
 
     // Can't yet generate code for STAT_WLAN_ADDRESS_AP_8_TEXT of type string[6], at offset 56. But we account for the 6 bytes
-        // MAC address of the connected device 8 / MAC Adresse des verbundenen GerÃ¤t 8
+        // MAC address of the connected device 8 / MAC Adresse des verbundenen Gerät 8
 
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_AP_8_WERT                 (RXBUF_UCHAR(62))
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_AP_8_WERT_UNIT            '%'
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_AP_8_WERT_TYPE            unsigned char
-        // Error rate (0-100%) of the connected device 8 / Fehlerrate (0-100%) des verbundenen GerÃ¤t 8
+        // Error rate (0-100%) of the connected device 8 / Fehlerrate (0-100%) des verbundenen Gerät 8
 
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DBM_AP_8_WERT             (RXBUF_UCHAR(63)-255.0)
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DBM_AP_8_WERT_UNIT        'dBm'
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DBM_AP_8_WERT_TYPE        unsigned char
-        // Power of the connected device 8 / Power des verbundenen GerÃ¤t 8
+        // Power of the connected device 8 / Power des verbundenen Gerät 8
 
 #define I3_PID_NBT_WLAN_SIGNAL_TEST_WIFI_DIRECT                      0x4045
-        // Statistics about WLAN connections in Wifi Direct mode / Statistiken Ã¼ber WLAN Verbindungen im Wifi Direct
+        // Statistics about WLAN connections in Wifi Direct mode / Statistiken über WLAN Verbindungen im Wifi Direct
         // Modus
 
     // Can't yet generate code for STAT_WLAN_ADDRESS_DIRECT_1_TEXT of type string[6], at offset 0. But we account for the 6 bytes
-        // MAC address of the connected device 1 / MAC Adresse des verbundenen GerÃ¤t 1
+        // MAC address of the connected device 1 / MAC Adresse des verbundenen Gerät 1
 
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DIRECT_1_WERT             (RXBUF_UCHAR(6))
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DIRECT_1_WERT_UNIT        '%'
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DIRECT_1_WERT_TYPE        unsigned char
-        // Error rate (0-100%) of the connected device 1 / Fehlerrate (0-100%) des verbundenen GerÃ¤t 1
+        // Error rate (0-100%) of the connected device 1 / Fehlerrate (0-100%) des verbundenen Gerät 1
 
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DBM_DIRECT_1_WERT         (RXBUF_UCHAR(7)-255.0)
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DBM_DIRECT_1_WERT_UNIT    'dBm'
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DBM_DIRECT_1_WERT_TYPE    unsigned char
-        // Power of the connected device 1 / Power des verbundenen GerÃ¤t 1
+        // Power of the connected device 1 / Power des verbundenen Gerät 1
 
     // Can't yet generate code for STAT_WLAN_ADDRESS_DIRECT_2_TEXT of type string[6], at offset 8. But we account for the 6 bytes
-        // MAC address of the connected device 2 / MAC Adresse des verbundenen GerÃ¤t 2
+        // MAC address of the connected device 2 / MAC Adresse des verbundenen Gerät 2
 
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DIRECT_2_WERT             (RXBUF_UCHAR(14))
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DIRECT_2_WERT_UNIT        '%'
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DIRECT_2_WERT_TYPE        unsigned char
-        // Error rate (0-100%) of the connected device 2 / Fehlerrate (0-100%) des verbundenen GerÃ¤t 2
+        // Error rate (0-100%) of the connected device 2 / Fehlerrate (0-100%) des verbundenen Gerät 2
 
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DBM_DIRECT_2_WERT         (RXBUF_UCHAR(15)-255.0)
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DBM_DIRECT_2_WERT_UNIT    'dBm'
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DBM_DIRECT_2_WERT_TYPE    unsigned char
-        // Power of the connected device 2 / Power des verbundenen GerÃ¤t 2
+        // Power of the connected device 2 / Power des verbundenen Gerät 2
 
     // Can't yet generate code for STAT_WLAN_ADDRESS_DIRECT_3_TEXT of type string[6], at offset 16. But we account for the 6 bytes
-        // MAC address of the connected device 3 / MAC Adresse des verbundenen GerÃ¤t 3
+        // MAC address of the connected device 3 / MAC Adresse des verbundenen Gerät 3
 
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DIRECT_3_WERT             (RXBUF_UCHAR(22))
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DIRECT_3_WERT_UNIT        '%'
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DIRECT_3_WERT_TYPE        unsigned char
-        // Error rate (0-100%) of the connected device 3 / Fehlerrate (0-100%) des verbundenen GerÃ¤t 3
+        // Error rate (0-100%) of the connected device 3 / Fehlerrate (0-100%) des verbundenen Gerät 3
 
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DBM_DIRECT_3_WERT         (RXBUF_UCHAR(23)-255.0)
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DBM_DIRECT_3_WERT_UNIT    'dBm'
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DBM_DIRECT_3_WERT_TYPE    unsigned char
-        // Power of the connected device 3 / Power des verbundenen GerÃ¤t 3
+        // Power of the connected device 3 / Power des verbundenen Gerät 3
 
     // Can't yet generate code for STAT_WLAN_ADDRESS_DIRECT_4_TEXT of type string[6], at offset 24. But we account for the 6 bytes
-        // MAC address of the connected device 4 / MAC Adresse des verbundenen GerÃ¤t 4
+        // MAC address of the connected device 4 / MAC Adresse des verbundenen Gerät 4
 
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DIRECT_4_WERT             (RXBUF_UCHAR(30))
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DIRECT_4_WERT_UNIT        '%'
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DIRECT_4_WERT_TYPE        unsigned char
-        // Error rate (0-100%) of the connected device 4 / Fehlerrate (0-100%) des verbundenen GerÃ¤t 4
+        // Error rate (0-100%) of the connected device 4 / Fehlerrate (0-100%) des verbundenen Gerät 4
 
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DBM_DIRECT_4_WERT         (RXBUF_UCHAR(31)-255.0)
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DBM_DIRECT_4_WERT_UNIT    'dBm'
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DBM_DIRECT_4_WERT_TYPE    unsigned char
-        // Power of the connected device 4 / Power des verbundenen GerÃ¤t 4
+        // Power of the connected device 4 / Power des verbundenen Gerät 4
 
     // Can't yet generate code for STAT_WLAN_ADDRESS_DIRECT_5_TEXT of type string[6], at offset 32. But we account for the 6 bytes
-        // MAC address of the connected device 5 / MAC Adresse des verbundenen GerÃ¤t 5
+        // MAC address of the connected device 5 / MAC Adresse des verbundenen Gerät 5
 
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DIRECT_5_WERT             (RXBUF_UCHAR(38))
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DIRECT_5_WERT_UNIT        '%'
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DIRECT_5_WERT_TYPE        unsigned char
-        // Error rate (0-100%) of the connected device 5 / Fehlerrate (0-100%) des verbundenen GerÃ¤t 5
+        // Error rate (0-100%) of the connected device 5 / Fehlerrate (0-100%) des verbundenen Gerät 5
 
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DBM_DIRECT_5_WERT         (RXBUF_UCHAR(39)-255.0)
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DBM_DIRECT_5_WERT_UNIT    'dBm'
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DBM_DIRECT_5_WERT_TYPE    unsigned char
-        // Power of the connected device 5 / Power des verbundenen GerÃ¤t 5
+        // Power of the connected device 5 / Power des verbundenen Gerät 5
 
     // Can't yet generate code for STAT_WLAN_ADDRESS_DIRECT_6_TEXT of type string[6], at offset 40. But we account for the 6 bytes
-        // MAC address of the connected device 6 / MAC Adresse des verbundenen GerÃ¤t 6
+        // MAC address of the connected device 6 / MAC Adresse des verbundenen Gerät 6
 
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DIRECT_6_WERT             (RXBUF_UCHAR(46))
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DIRECT_6_WERT_UNIT        '%'
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DIRECT_6_WERT_TYPE        unsigned char
-        // Error rate (0-100%) of the connected device 6 / Fehlerrate (0-100%) des verbundenen GerÃ¤t 6
+        // Error rate (0-100%) of the connected device 6 / Fehlerrate (0-100%) des verbundenen Gerät 6
 
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DBM_DIRECT_6_WERT         (RXBUF_UCHAR(47)-255.0)
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DBM_DIRECT_6_WERT_UNIT    'dBm'
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DBM_DIRECT_6_WERT_TYPE    unsigned char
-        // Power of the connected device 6 / Power des verbundenen GerÃ¤t 6
+        // Power of the connected device 6 / Power des verbundenen Gerät 6
 
     // Can't yet generate code for STAT_WLAN_ADDRESS_DIRECT_7_TEXT of type string[6], at offset 48. But we account for the 6 bytes
-        // MAC address of the connected device 7 / MAC Adresse des verbundenen GerÃ¤t 7
+        // MAC address of the connected device 7 / MAC Adresse des verbundenen Gerät 7
 
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DIRECT_7_WERT             (RXBUF_UCHAR(54))
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DIRECT_7_WERT_UNIT        '%'
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DIRECT_7_WERT_TYPE        unsigned char
-        // Error rate (0-100%) of the connected device 7 / Fehlerrate (0-100%) des verbundenen GerÃ¤t 7
+        // Error rate (0-100%) of the connected device 7 / Fehlerrate (0-100%) des verbundenen Gerät 7
 
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DBM_DIRECT_7_WERT         (RXBUF_UCHAR(55)-255.0)
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DBM_DIRECT_7_WERT_UNIT    'dBm'
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DBM_DIRECT_7_WERT_TYPE    unsigned char
-        // Power of the connected device 7 / Power des verbundenen GerÃ¤t 7
+        // Power of the connected device 7 / Power des verbundenen Gerät 7
 
     // Can't yet generate code for STAT_WLAN_ADDRESS_DIRECT_8_TEXT of type string[6], at offset 56. But we account for the 6 bytes
-        // MAC address of the connected device 8 / MAC Adresse des verbundenen GerÃ¤t 8
+        // MAC address of the connected device 8 / MAC Adresse des verbundenen Gerät 8
 
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DIRECT_8_WERT             (RXBUF_UCHAR(62))
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DIRECT_8_WERT_UNIT        '%'
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DIRECT_8_WERT_TYPE        unsigned char
-        // Error rate (0-100%) of the connected device 8 / Fehlerrate (0-100%) des verbundenen GerÃ¤t 8
+        // Error rate (0-100%) of the connected device 8 / Fehlerrate (0-100%) des verbundenen Gerät 8
 
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DBM_DIRECT_8_WERT         (RXBUF_UCHAR(63)-255.0)
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DBM_DIRECT_8_WERT_UNIT    'dBm'
     #define I3_RES_NBT_STAT_WLAN_ERRORRATE_DBM_DIRECT_8_WERT_TYPE    unsigned char
-        // Power of the connected device 8 / Power des verbundenen GerÃ¤t 8
+        // Power of the connected device 8 / Power des verbundenen Gerät 8
 
 // Skipping STEUERN_PERSISTENZ on 0xF003 which takes arguments
 

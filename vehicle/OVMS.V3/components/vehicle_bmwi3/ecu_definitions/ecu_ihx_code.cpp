@@ -32,8 +32,8 @@
     }
 
     unsigned char STAT_WP_BEFUELLUNG = (RXBUF_UCHAR(0));
-        // 0x00 diagnostic job is not running; 0x01 Daignose job started / 0x00 Diagnosejob läuft nicht; 0x01
-        // Daignosejob gestartet
+        // 0x00 diagnostic job is not running; 0x01 Daignose job started / 0x00 Diagnosejob läuft nicht; 0x01 Daignosejob
+        // gestartet
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "IHX", "WP_BEFUELLUNG", "STAT_WP_BEFUELLUNG", STAT_WP_BEFUELLUNG, "\"0/1\"");
 
     // ==========  Add your processing here ==========
@@ -476,7 +476,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "IHX", "EDH_STATUS", "STAT_STROM_WERT", STAT_STROM_WERT, "\"A\"");
 
     float STAT_HOCHVOLTSPANNUNG_WERT = (RXBUF_UINT(4)*2.0f);
-        // High-voltage voltage measured on the electric water heater. Invalid Value = 510 volts. / Hochvoltspannung
+        // High-voltage voltage measured on the electrical water heater. Invalid Value = 510 volts. / Hochvoltspannung
         // gemessen am elektrischen Durchlauferhitzers. Ungültigkeitswert = 510 Volt.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "IHX", "EDH_STATUS", "STAT_HOCHVOLTSPANNUNG_WERT", STAT_HOCHVOLTSPANNUNG_WERT, "\"V\"");
 
@@ -497,8 +497,8 @@
     }
 
     unsigned char STAT_KLIMA_PRODUKTLINIE = (RXBUF_UCHAR(0));
-        // Outputs the product line coded in the control unit. See table TAB_KLIMA_PRODUKTLINIE / Gibt die im
-        // Steuergerät codierte Produktlinie aus. Siehe Tabelle TAB_KLIMA_PRODUKTLINIE
+        // Outputs the product line coded in the control unit. See table TAB_KLIMA_PRODUKTLINIE / Gibt die im Steuergerät
+        // codierte Produktlinie aus. Siehe Tabelle TAB_KLIMA_PRODUKTLINIE
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "IHX", "KONFIGURATION_KLIMA_PRODUKTLINIE", "STAT_KLIMA_PRODUKTLINIE", STAT_KLIMA_PRODUKTLINIE, "\"0-n\"");
 
     // ==========  Add your processing here ==========
@@ -1190,7 +1190,7 @@
     }
 
     unsigned char STAT_SELBSTTEST_SCHRITTMOTORE_NR = (RXBUF_UCHAR(0));
-        // Stepper motor self-test status: 0 = not started / not requested, 1 = test is currently running, 2 = test
+        // Status of stepper motor self-tests: 0 = not started / not requested, 1 = test is currently running, 2 = test
         // successfully completed, 3 = test not completed successfully / Status Schrittmotorenselbsttests: 0 = nicht
         // gestartet/nicht angefordert, 1 = Test läuft gerade, 2 = Test erfolgreich abgeschlossen, 3 = Test nicht
         // erfolgreich abgeschlossen
@@ -1398,7 +1398,7 @@
     }
 
     unsigned char STAT_VORHANDEN_BESCHLAGSENSOR = (RXBUF_UCHAR(0));
-        // 0: condensation sensor not available / coded 1: condensation sensor available / coded / 0: Beschlagsensor
+        // 0: Condensation sensor not available / coded 1: Condensation sensor available / coded / 0: Beschlagsensor
         // nicht vorhanden / codiert   1: Beschlagsensor vorhanden / codiert
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "IHX", "BESCHLAGSENSOR_VORHANDEN", "STAT_VORHANDEN_BESCHLAGSENSOR", STAT_VORHANDEN_BESCHLAGSENSOR, "\"0/1\"");
 
@@ -1644,8 +1644,8 @@
 
     unsigned char STAT_KLP_ISTPOS_MISCHLUFT_WERT = (RXBUF_UCHAR(0));
         // Actual value flap opening; 0 ... 100 (127 = read value invalid, 255 = flap not available) 0 = cold 100 = warm
-        // / Istwert Klappenöffnung; 0...100  (127 = gelesener Wert ungültig, 255 = Klappe nicht vorhanden) 0 = Kalt
-        // 100 = Warm
+        // / Istwert Klappenöffnung; 0...100  (127 = gelesener Wert ungültig, 255 = Klappe nicht vorhanden) 0 = Kalt 100
+        // = Warm
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "IHX", "KLP_POS_MISCHLUFT_WERT", "STAT_KLP_ISTPOS_MISCHLUFT_WERT", STAT_KLP_ISTPOS_MISCHLUFT_WERT, "\"%\"");
 
     unsigned char STAT_KLP_SOLLPOS_MISCHLUFT_WERT = (RXBUF_UCHAR(1));
@@ -1670,9 +1670,9 @@
         // footwell IHKA-VA02 IHKS: pos_ist = position according to stepper motor driver pos_function = position
         // according to board structure, KFL - if pos_ist is less than or equal to 100 : pos_function = 100 - pos_ist -
         // otherwise: pos_function = 460 - pos_ist / Istwert Kulissenstellung: 0...360 Grad IHKA: 0 = 100% Defrost 120 =
-        // 100% Belüftung 242 = 100% Fussraum  IHKA-VA02 IHKS: pos_ist = Position laut Schrittmotortreiber pos_function
-        // = Position laut Brettaufbau, KFL  - falls pos_ist kleiner oder gleich 100: pos_function = 100 - pos_ist -
-        // sonst: pos_function = 460 - pos_ist
+        // 100% Belüftung 242 = 100% Fussraum  IHKA-VA02 IHKS: pos_ist = Position laut Schrittmotortreiber pos_function =
+        // Position laut Brettaufbau, KFL  - falls pos_ist kleiner oder gleich 100: pos_function = 100 - pos_ist - sonst:
+        // pos_function = 460 - pos_ist
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "IHX", "KLP_POS_ZENTRALANTRIEB_WERT", "STAT_MOT_ISTPOS_ZENTRALANTRIEB_WERT", STAT_MOT_ISTPOS_ZENTRALANTRIEB_WERT, "\"°\"");
 
     unsigned short STAT_MOT_SOLLPOS_ZENTRALANTRIEB_WERT = (RXBUF_UINT(2));
@@ -1699,8 +1699,8 @@
 
     unsigned char STAT_KLP_ISTPOS_MISCHLUFT_LINKS_WERT = (RXBUF_UCHAR(0));
         // Actual value flap opening; 0 ... 100 (127 = read value invalid, 255 = flap not available) 0 = cold 100 = warm
-        // / Istwert Klappenöffnung; 0...100  (127 = gelesener Wert ungültig, 255 = Klappe nicht vorhanden) 0 = Kalt
-        // 100 = Warm
+        // / Istwert Klappenöffnung; 0...100  (127 = gelesener Wert ungültig, 255 = Klappe nicht vorhanden) 0 = Kalt 100
+        // = Warm
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "IHX", "KLP_POS_MISCHLUFT_LINKS_WERT", "STAT_KLP_ISTPOS_MISCHLUFT_LINKS_WERT", STAT_KLP_ISTPOS_MISCHLUFT_LINKS_WERT, "\"%\"");
 
     unsigned char STAT_KLP_SOLLPOS_MISCHLUFT_LINKS_WERT = (RXBUF_UCHAR(1));
@@ -1722,8 +1722,8 @@
 
     unsigned char STAT_KLP_ISTPOS_MISCHLUFT_RECHTS_WERT = (RXBUF_UCHAR(0));
         // Actual value flap opening; 0 ... 100 (127 = read value invalid, 255 = flap not available) 0 = cold 100 = warm
-        // / Istwert Klappenöffnung; 0...100  (127 = gelesener Wert ungültig, 255 = Klappe nicht vorhanden) 0 = Kalt
-        // 100 = Warm
+        // / Istwert Klappenöffnung; 0...100  (127 = gelesener Wert ungültig, 255 = Klappe nicht vorhanden) 0 = Kalt 100
+        // = Warm
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "IHX", "KLP_POS_MISCHLUFT_RECHTS_WERT", "STAT_KLP_ISTPOS_MISCHLUFT_RECHTS_WERT", STAT_KLP_ISTPOS_MISCHLUFT_RECHTS_WERT, "\"%\"");
 
     unsigned char STAT_KLP_SOLLPOS_MISCHLUFT_RECHTS_WERT = (RXBUF_UCHAR(1));
@@ -1874,8 +1874,8 @@
     }
 
     unsigned char STAT_BUS_OUT_KOMPRESSORKUPPLUNG_EIN = (RXBUF_UCHAR(0));
-        // Signal for the request to the compressor clutch 0 = clutch open 1 = clutch closed / Signal für die
-        // Anforderung an die Kompressorkupplung 0 = Kupplung offen 1 = Kupplung geschlossen
+        // Signal for the request to the compressor clutch 0 = clutch open 1 = clutch closed / Signal für die Anforderung
+        // an die Kompressorkupplung 0 = Kupplung offen 1 = Kupplung geschlossen
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "IHX", "BUS_OUT_KOMPRESSORKUPPLUNG_EIN", "STAT_BUS_OUT_KOMPRESSORKUPPLUNG_EIN", STAT_BUS_OUT_KOMPRESSORKUPPLUNG_EIN, "\"0/1\"");
 
     // ==========  Add your processing here ==========
@@ -1941,8 +1941,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "IHX", "WAERMEPUMPE_SENSOREN", "STAT_WP_PT_FUEHLER_1_DRUCK_WERT", STAT_WP_PT_FUEHLER_1_DRUCK_WERT, "\"bar\"");
 
     float STAT_WP_PT_FUEHLER_1_TEMP_WERT = (RXBUF_UINT(8)*0.2f-20.0);
-        // Heat pump: temperature from pressure temperature sensor 1 / Wärmepumpe: Temperatur vom
-        // Druck-Temperaturfühler 1
+        // Heat pump: temperature from pressure temperature sensor 1 / Wärmepumpe: Temperatur vom Druck-Temperaturfühler
+        // 1
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "IHX", "WAERMEPUMPE_SENSOREN", "STAT_WP_PT_FUEHLER_1_TEMP_WERT", STAT_WP_PT_FUEHLER_1_TEMP_WERT, "\"°C\"");
 
     float STAT_WP_PT_FUEHLER_2_DRUCK_WERT = (RXBUF_UINT(10)/10.0f);
@@ -1950,8 +1950,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "IHX", "WAERMEPUMPE_SENSOREN", "STAT_WP_PT_FUEHLER_2_DRUCK_WERT", STAT_WP_PT_FUEHLER_2_DRUCK_WERT, "\"bar\"");
 
     float STAT_WP_PT_FUEHLER_2_TEMP_WERT = (RXBUF_UINT(12)*0.2f-20.0);
-        // Heat pump: temperature from pressure temperature sensor 2 / Wärmepumpe: Temperatur vom
-        // Druck-Temperaturfühler 2
+        // Heat pump: temperature from pressure temperature sensor 2 / Wärmepumpe: Temperatur vom Druck-Temperaturfühler
+        // 2
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "IHX", "WAERMEPUMPE_SENSOREN", "STAT_WP_PT_FUEHLER_2_TEMP_WERT", STAT_WP_PT_FUEHLER_2_TEMP_WERT, "\"°C\"");
 
     // ==========  Add your processing here ==========
@@ -2125,12 +2125,12 @@
     break;
   }
 
-  //case I3_PID_IHX_UWB_CPD_DIAGINFO: {                                             // 0x4001
-  //  // ==========  Add your processing here ==========
-  //  hexdump(rxbuf, type, pid);
-  //
-  //  break;
-  //}
+  case I3_PID_IHX_UWB_CPD_DIAGINFO: {                                             // 0x4001
+    // ==========  Add your processing here ==========
+    hexdump(rxbuf, type, pid);
+
+    break;
+  }
 
   case I3_PID_IHX_UWB_HKLUSV_DIAGINFO: {                                          // 0x4002
     if (datalen < 10) {
@@ -2161,11 +2161,13 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "IHX", "UWB_HKLUSV_DIAGINFO", "STAT_AUTOADR_MOTOR_4_5_6_7", STAT_AUTOADR_MOTOR_4_5_6_7, "\"0-n\"");
 
     unsigned char STAT_AUTOADR_MOTOR_8_9_10_11 = (RXBUF_UCHAR(4));
-        // Lin Motorr: Motor 8 to Motor 11. (01111111 11111111) / Lin Motorenr: Motor 8 to Motor 11. (01111111 11111111)
+        // Lin Motorenr: Motor 8 to Motor 11. (01111111 11111111) / Lin Motorenr: Motor 8 to Motor 11. (01111111
+        // 11111111)
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "IHX", "UWB_HKLUSV_DIAGINFO", "STAT_AUTOADR_MOTOR_8_9_10_11", STAT_AUTOADR_MOTOR_8_9_10_11, "\"0-n\"");
 
     unsigned char STAT_AUTOADR_MOTOR_12_13_14 = (RXBUF_UCHAR(5));
-        // Lin Motorr: Motor 8 to Motor 11. (01111111 11111111) / Lin Motorenr: Motor 8 to Motor 11. (01111111 11111111)
+        // Lin Motorenr: Motor 8 to Motor 11. (01111111 11111111) / Lin Motorenr: Motor 8 to Motor 11. (01111111
+        // 11111111)
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "IHX", "UWB_HKLUSV_DIAGINFO", "STAT_AUTOADR_MOTOR_12_13_14", STAT_AUTOADR_MOTOR_12_13_14, "\"0-n\"");
 
     unsigned char STAT_PROGRAMM_MOTOR_0_1_2_3 = (RXBUF_UCHAR(6));

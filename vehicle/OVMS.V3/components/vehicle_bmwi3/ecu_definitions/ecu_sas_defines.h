@@ -19,12 +19,12 @@
 
 #define I3_PID_SAS_LERNDATEN_RUECKSETZEN                             0xABC9
         // Learning data (of the learning infrastructure) are reset to default values. / Lerndaten (der Infrastruktur
-        // Lernen) werden auf Standardwerte zurÃ¼ckgesetzt.
+        // Lernen) werden auf Standardwerte zurückgesetzt.
 
 #define I3_PID_SAS_VDC0_LESEN                                        0xD817
         // Reading out the current status of each VDC0 valve (status, actual current, target current) and environmental
         // data (terminal, wheel speeds, ¿). / Auslesen des aktuellen Status jedes VDC0-Ventils (Status, Ist-Strom,
-        // Soll-Strom) und Umgebungsdaten (Klemme, Radgeschwindigkeiten,Â¿).
+        // Soll-Strom) und Umgebungsdaten (Klemme, Radgeschwindigkeiten,¿).
 
     #define I3_RES_SAS_STAT_VDC_SOLLSTROM_VL_WERT                    (RXBUF_UINT(0))
     #define I3_RES_SAS_STAT_VDC_SOLLSTROM_VL_WERT_UNIT               'mA'
@@ -115,7 +115,7 @@
 #define I3_PID_SAS_VDC0_LESEN_0XD817                                 0xD817
         // Reading out the current status of each VDC0 valve (status, actual current, target current) and environmental
         // data (terminal, wheel speeds, ¿). / Auslesen des aktuellen Status jedes VDC0-Ventils (Status, Ist-Strom,
-        // Soll-Strom) und Umgebungsdaten (Klemme, Radgeschwindigkeiten,Â¿).
+        // Soll-Strom) und Umgebungsdaten (Klemme, Radgeschwindigkeiten,¿).
 
     #define I3_RES_SAS_STAT_VDC_SOLLSTROM_VL_WERT_0XD817             (RXBUF_UINT(0))
     #define I3_RES_SAS_STAT_VDC_SOLLSTROM_VL_WERT_0XD817_UNIT        'mA'
@@ -217,5 +217,5 @@
         // Developer data for analyzing exceptions / Entwicklerdaten zur Analyse von Exceptions
 
 #define I3_PID_SAS_CLEAR_EXCEPTION_DATA                              0xF000
-        // Deletion of the additional data to support the debugging of occurring exceptions / LÃ¶schen der zusÃ¤tzlichen
-        // Daten zur UnterstÃ¼tzung des Debuggens auftretender Exceptions
+        // Deletion of the additional data to support the debugging of occurring exceptions / Löschen der zusätzlichen
+        // Daten zur Unterstützung des Debuggens auftretender Exceptions

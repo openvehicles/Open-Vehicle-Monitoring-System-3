@@ -67,8 +67,8 @@
         // even if the control unit has not planned a bootloader update. A value of 0x0000 is prohibited. /
         // BootloaderInstallationTime Die Zeit, die nach dem Reset benötigt wird, damit der Hilfsbootloader gestartet
         // wird, den Bootloader löscht, den neuen Bootloader kopiert, dessen Signatur prüf und der neue Bootloader
-        // gestartet wird bis er wieder diagnosefähig ist. Angabe ist verpflichtend für alle Steuergeräte, auch wenn
-        // das Steuergerät keinen Bootloader Update geplant hat. Ein Wert von 0x0000 ist verboten.
+        // gestartet wird bis er wieder diagnosefähig ist. Angabe ist verpflichtend für alle Steuergeräte, auch wenn das
+        // Steuergerät keinen Bootloader Update geplant hat. Ein Wert von 0x0000 ist verboten.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "ZBE", "FLASH_TIMING_PARAMETER", "STAT_BOOTLOADER_INSTALLATION_TIME_WERT", STAT_BOOTLOADER_INSTALLATION_TIME_WERT, "\"s\"");
 
     unsigned short STAT_AUTHENTICATION_TIME_WERT = (RXBUF_UINT(6));
@@ -81,9 +81,9 @@
         // ResetTime The time refers to the transition from the ApplicationExtendedSession to the ProgrammingSession or
         // to the transition from the ProgrammingSession to the DefaultSession. The maximum value is to be output. After
         // the reset time has elapsed, the control unit can be addressed by diagnosis. / ResetTime Die Zeitangabe bezieht
-        // sich auf den Übergang von der ApplicationExtendedSesssion in die ProgrammingSession bzw. bei Übergang von
-        // der ProgrammingSession in die DefaultSession. Es ist der Maximalwert auszugeben. Nach Ablauf der ResetTime ist
-        // das Steuergerät durch Diagnose ansprechbar.
+        // sich auf den Übergang von der ApplicationExtendedSesssion in die ProgrammingSession bzw. bei Übergang von der
+        // ProgrammingSession in die DefaultSession. Es ist der Maximalwert auszugeben. Nach Ablauf der ResetTime ist das
+        // Steuergerät durch Diagnose ansprechbar.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "ZBE", "FLASH_TIMING_PARAMETER", "STAT_RESET_TIME_WERT", STAT_RESET_TIME_WERT, "\"s\"");
 
     unsigned short STAT_TRANSFER_DATA_TIME_WERT = (RXBUF_UINT(10));
@@ -91,9 +91,8 @@
         // from the complete reception of the data in the control unit via the possibly necessary decompression and the
         // complete storage in the non-volatile memory up to and including the sending of the positive response. /
         // TransferDataTime Die Angabe hat sich zu beziehen auf einen TransferData mit maximaler Blocklänge auf die
-        // Zeitspanne vom vollständigen Empfang der Daten im Steuergerät über das ggf. erforderliche Dekomprimieren
-        // und dem vollständigen Speichern im nichtflüchtigen Speicher bis einschließlich dem Senden der positiven
-        // Response.
+        // Zeitspanne vom vollständigen Empfang der Daten im Steuergerät über das ggf. erforderliche Dekomprimieren und
+        // dem vollständigen Speichern im nichtflüchtigen Speicher bis einschließlich dem Senden der positiven Response.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "ZBE", "FLASH_TIMING_PARAMETER", "STAT_TRANSFER_DATA_TIME_WERT", STAT_TRANSFER_DATA_TIME_WERT, "\"s\"");
 
     // ==========  Add your processing here ==========

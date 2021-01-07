@@ -24,11 +24,11 @@
         // ProgrammingCounter / ProgrammingCounter
 
 #define I3_PID_ZBE_PROGRAMMING_COUNTER_MAX_VALUE                     0x2503
-        // maximum number of programming processes / maximalen Anzahl von ProgrammiervorgÃ¤ngen
+        // maximum number of programming processes / maximalen Anzahl von Programmiervorgängen
 
     #define I3_RES_ZBE_STAT_PROG_MAX_WERT                            (RXBUF_UINT(0))
     #define I3_RES_ZBE_STAT_PROG_MAX_WERT_TYPE                       unsigned short
-        // maximum number of programming processes / maximalen Anzahl von ProgrammiervorgÃ¤ngen
+        // maximum number of programming processes / maximalen Anzahl von Programmiervorgängen
 
 #define I3_PID_ZBE_FLASH_TIMING_PARAMETER                            0x2504
         // Programming specific timing parameters / Programmierspezifische Timing Parameter
@@ -37,13 +37,13 @@
     #define I3_RES_ZBE_STAT_ERASE_MEMORY_TIME_WERT_UNIT              's'
     #define I3_RES_ZBE_STAT_ERASE_MEMORY_TIME_WERT_TYPE              unsigned short
         // EraseMemoryTime, maximum SWE deletion time with process control in the control unit. / EraseMemoryTime,
-        // maximale SWE-LÃ¶schzeit mit Ablaufkontrolle im SteuergerÃ¤t.
+        // maximale SWE-Löschzeit mit Ablaufkontrolle im Steuergerät.
 
     #define I3_RES_ZBE_STAT_CHECK_MEMORY_TIME_WERT                   (RXBUF_UINT(2))
     #define I3_RES_ZBE_STAT_CHECK_MEMORY_TIME_WERT_UNIT              's'
     #define I3_RES_ZBE_STAT_CHECK_MEMORY_TIME_WERT_TYPE              unsigned short
         // CheckMemoryTime (e.g. signature check), maximum memory check time with process control in the control unit. /
-        // CheckMemoryTime (Bsp.: SignaturprÃ¼fung), maximale SpeicherprÃ¼fzeit mit Ablaufkontrolle im SteuergerÃ¤t.
+        // CheckMemoryTime (Bsp.: Signaturprüfung), maximale Speicherprüfzeit mit Ablaufkontrolle im Steuergerät.
 
     #define I3_RES_ZBE_STAT_BOOTLOADER_INSTALLATION_TIME_WERT        (RXBUF_UINT(4))
     #define I3_RES_ZBE_STAT_BOOTLOADER_INSTALLATION_TIME_WERT_UNIT   's'
@@ -52,17 +52,17 @@
         // started, the bootloader is deleted, the new bootloader is copied, its signature is checked and the new
         // bootloader is started until it can be diagnosed again. This information is mandatory for all control units,
         // even if the control unit has not planned a bootloader update. A value of 0x0000 is prohibited. /
-        // BootloaderInstallationTime Die Zeit, die nach dem Reset benÃ¶tigt wird, damit der Hilfsbootloader gestartet
-        // wird, den Bootloader lÃ¶scht, den neuen Bootloader kopiert, dessen Signatur prÃ¼f und der neue Bootloader
-        // gestartet wird bis er wieder diagnosefÃ¤hig ist. Angabe ist verpflichtend fÃ¼r alle SteuergerÃ¤te, auch wenn
-        // das SteuergerÃ¤t keinen Bootloader Update geplant hat. Ein Wert von 0x0000 ist verboten.
+        // BootloaderInstallationTime Die Zeit, die nach dem Reset benötigt wird, damit der Hilfsbootloader gestartet
+        // wird, den Bootloader löscht, den neuen Bootloader kopiert, dessen Signatur prüf und der neue Bootloader
+        // gestartet wird bis er wieder diagnosefähig ist. Angabe ist verpflichtend für alle Steuergeräte, auch wenn das
+        // Steuergerät keinen Bootloader Update geplant hat. Ein Wert von 0x0000 ist verboten.
 
     #define I3_RES_ZBE_STAT_AUTHENTICATION_TIME_WERT                 (RXBUF_UINT(6))
     #define I3_RES_ZBE_STAT_AUTHENTICATION_TIME_WERT_UNIT            's'
     #define I3_RES_ZBE_STAT_AUTHENTICATION_TIME_WERT_TYPE            unsigned short
         // AuthenticationTime, the maximum time that the control device needs to check the authentication (sendKey) with
-        // flow control in the control device. / AuthenticationTime, die maximale Zeit, die das SteuergerÃ¤t zur PrÃ¼fung
-        // der Authentisierung (sendKey) benÃ¶tigt mit Ablaufkontrolle im SteuergerÃ¤t.
+        // flow control in the control device. / AuthenticationTime, die maximale Zeit, die das Steuergerät zur Prüfung
+        // der Authentisierung (sendKey) benötigt mit Ablaufkontrolle im Steuergerät.
 
     #define I3_RES_ZBE_STAT_RESET_TIME_WERT                          (RXBUF_UINT(8))
     #define I3_RES_ZBE_STAT_RESET_TIME_WERT_UNIT                     's'
@@ -70,9 +70,9 @@
         // ResetTime The time refers to the transition from the ApplicationExtendedSession to the ProgrammingSession or
         // to the transition from the ProgrammingSession to the DefaultSession. The maximum value is to be output. After
         // the reset time has elapsed, the control unit can be addressed by diagnosis. / ResetTime Die Zeitangabe bezieht
-        // sich auf den Ãbergang von der ApplicationExtendedSesssion in die ProgrammingSession bzw. bei Ãbergang von
-        // der ProgrammingSession in die DefaultSession. Es ist der Maximalwert auszugeben. Nach Ablauf der ResetTime ist
-        // das SteuergerÃ¤t durch Diagnose ansprechbar.
+        // sich auf den Übergang von der ApplicationExtendedSesssion in die ProgrammingSession bzw. bei Übergang von der
+        // ProgrammingSession in die DefaultSession. Es ist der Maximalwert auszugeben. Nach Ablauf der ResetTime ist das
+        // Steuergerät durch Diagnose ansprechbar.
 
     #define I3_RES_ZBE_STAT_TRANSFER_DATA_TIME_WERT                  (RXBUF_UINT(10))
     #define I3_RES_ZBE_STAT_TRANSFER_DATA_TIME_WERT_UNIT             's'
@@ -80,10 +80,9 @@
         // TransferDataTime The specification has to refer to a TransferData with a maximum block length to the time span
         // from the complete reception of the data in the control unit via the possibly necessary decompression and the
         // complete storage in the non-volatile memory up to and including the sending of the positive response. /
-        // TransferDataTime Die Angabe hat sich zu beziehen auf einen TransferData mit maximaler BlocklÃ¤nge auf die
-        // Zeitspanne vom vollstÃ¤ndigen Empfang der Daten im SteuergerÃ¤t Ã¼ber das ggf. erforderliche Dekomprimieren
-        // und dem vollstÃ¤ndigen Speichern im nichtflÃ¼chtigen Speicher bis einschlieÃlich dem Senden der positiven
-        // Response.
+        // TransferDataTime Die Angabe hat sich zu beziehen auf einen TransferData mit maximaler Blocklänge auf die
+        // Zeitspanne vom vollständigen Empfang der Daten im Steuergerät über das ggf. erforderliche Dekomprimieren und
+        // dem vollständigen Speichern im nichtflüchtigen Speicher bis einschließlich dem Senden der positiven Response.
 
 #define I3_PID_ZBE_MILE_KM_EEPROM                                    0x2540
         // Mileage stored in the EEPROM. / Im EEPROM abgelegter Kilometerstand.
@@ -96,26 +95,26 @@
 #define I3_PID_ZBE_VARIANTE_ZBE                                      0xD137
         // Variant ZBE: 0 = standard variant 1 = Asian variant 2 = standard variant with touchpad 3 = Asian variant with
         // touchpad 255 = invalid value or ZBE not coded / Variante ZBE: 0 = Standardvariante 1 = Asiavariante 2 =
-        // Standardvariante mit Touchpad 3 = Asiavariante mit Touchpad 255 = UngÃ¼ltiger Wert oder ZBE nicht codiert
+        // Standardvariante mit Touchpad 3 = Asiavariante mit Touchpad 255 = Ungültiger Wert oder ZBE nicht codiert
 
     #define I3_RES_ZBE_STAT_ZBE_VARIANTE_NR                          (RXBUF_UCHAR(0))
     #define I3_RES_ZBE_STAT_ZBE_VARIANTE_NR_UNIT                     '0-n'
     #define I3_RES_ZBE_STAT_ZBE_VARIANTE_NR_TYPE                     unsigned char
         // Variant ZBE: 0 = standard variant 1 = Asian variant 2 = standard variant with touchpad 3 = Asian variant with
         // touchpad 255 = invalid value or ZBE not coded / Variante ZBE: 0 = Standardvariante 1 = Asiavariante 2 =
-        // Standardvariante mit Touchpad 3 = Asiavariante mit Touchpad 255 = UngÃ¼ltiger Wert oder ZBE nicht codiert
+        // Standardvariante mit Touchpad 3 = Asiavariante mit Touchpad 255 = Ungültiger Wert oder ZBE nicht codiert
 
 // Skipping ZBE_TASTEN on 0xD14D which takes arguments
 
 #define I3_PID_ZBE_SCHRITTE_ROTRAD                                   0xD14E
         // Output of the current value for the position of the rotating wheel. Value 0 if the encoder has not been
-        // configured / Ausgabe vom aktuellen Wert fÃ¼r die Stellung des Rotationsrad. Wert 0, wenn Drehgeber nicht
+        // configured / Ausgabe vom aktuellen Wert für die Stellung des Rotationsrad. Wert 0, wenn Drehgeber nicht
         // konfiguriert wurde
 
     #define I3_RES_ZBE_STAT_REGISTER_ROTRAD_WERT                     (RXBUF_UINT(0))
     #define I3_RES_ZBE_STAT_REGISTER_ROTRAD_WERT_TYPE                unsigned short
         // Output of the current value for the position of the rotating wheel. Value 0 if the encoder has not been
-        // configured / Ausgabe vom aktuellen Wert fÃ¼r die Stellung des Rotationsrad. Wert 0, wenn Drehgeber nicht
+        // configured / Ausgabe vom aktuellen Wert für die Stellung des Rotationsrad. Wert 0, wenn Drehgeber nicht
         // konfiguriert wurde
 
 #define I3_PID_ZBE_LOGGING_TASTE1                                    0xD213
@@ -137,13 +136,13 @@
 
     #define I3_RES_ZBE_STAT_ANZAHL_HAENGER_WERT                      (RXBUF_UINT32(16))
     #define I3_RES_ZBE_STAT_ANZAHL_HAENGER_WERT_TYPE                 unsigned long
-        // Number of hangers / Anzahl HÃ¤nger
+        // Number of hangers / Anzahl Hänger
 
     // Can't yet generate code for STAT_RELATIVZEIT_HAENGER_DATA of type data[4] at offset 20. But we account for the 4 bytes
-        // Relative time of the last trailer / Relativzeit letzter HÃ¤nger
+        // Relative time of the last trailer / Relativzeit letzter Hänger
 
     // Can't yet generate code for STAT_KM_DRUCK_DATA of type data[4] at offset 24. But we account for the 4 bytes
-        // KM status last print, long print or hanger / KM-Stand letzter Druck, Langdruck oder HÃ¤nger
+        // KM status last print, long print or hanger / KM-Stand letzter Druck, Langdruck oder Hänger
 
 #define I3_PID_ZBE_LOGGING_TASTE2                                    0xD214
         // Logging data of the keys. / Loggingdaten der Tasten.
@@ -164,13 +163,13 @@
 
     #define I3_RES_ZBE_STAT_ANZAHL_HAENGER_WERT_0XD214               (RXBUF_UINT32(16))
     #define I3_RES_ZBE_STAT_ANZAHL_HAENGER_WERT_0XD214_TYPE          unsigned long
-        // Number of hangers / Anzahl HÃ¤nger
+        // Number of hangers / Anzahl Hänger
 
     // Can't yet generate code for STAT_RELATIVZEIT_HAENGER_DATA_0XD214 of type data[4] at offset 20. But we account for the 4 bytes
-        // Relative time of the last trailer / Relativzeit letzter HÃ¤nger
+        // Relative time of the last trailer / Relativzeit letzter Hänger
 
     // Can't yet generate code for STAT_KM_DRUCK_DATA_0XD214 of type data[4] at offset 24. But we account for the 4 bytes
-        // KM status last print, long print or hanger / KM-Stand letzter Druck, Langdruck oder HÃ¤nger
+        // KM status last print, long print or hanger / KM-Stand letzter Druck, Langdruck oder Hänger
 
 #define I3_PID_ZBE_LOGGING_TASTE3                                    0xD215
         // Logging data of the keys. / Loggingdaten der Tasten.
@@ -191,13 +190,13 @@
 
     #define I3_RES_ZBE_STAT_ANZAHL_HAENGER_WERT_0XD215               (RXBUF_UINT32(16))
     #define I3_RES_ZBE_STAT_ANZAHL_HAENGER_WERT_0XD215_TYPE          unsigned long
-        // Number of hangers / Anzahl HÃ¤nger
+        // Number of hangers / Anzahl Hänger
 
     // Can't yet generate code for STAT_RELATIVZEIT_HAENGER_DATA_0XD215 of type data[4] at offset 20. But we account for the 4 bytes
-        // Relative time of the last trailer / Relativzeit letzter HÃ¤nger
+        // Relative time of the last trailer / Relativzeit letzter Hänger
 
     // Can't yet generate code for STAT_KM_DRUCK_DATA_0XD215 of type data[4] at offset 24. But we account for the 4 bytes
-        // KM status last print, long print or hanger / KM-Stand letzter Druck, Langdruck oder HÃ¤nger
+        // KM status last print, long print or hanger / KM-Stand letzter Druck, Langdruck oder Hänger
 
 #define I3_PID_ZBE_LOGGING_TASTE4                                    0xD216
         // Logging data of the keys. / Loggingdaten der Tasten.
@@ -218,13 +217,13 @@
 
     #define I3_RES_ZBE_STAT_ANZAHL_HAENGER_WERT_0XD216               (RXBUF_UINT32(16))
     #define I3_RES_ZBE_STAT_ANZAHL_HAENGER_WERT_0XD216_TYPE          unsigned long
-        // Number of hangers / Anzahl HÃ¤nger
+        // Number of hangers / Anzahl Hänger
 
     // Can't yet generate code for STAT_RELATIVZEIT_HAENGER_DATA_0XD216 of type data[4] at offset 20. But we account for the 4 bytes
-        // Relative time of the last trailer / Relativzeit letzter HÃ¤nger
+        // Relative time of the last trailer / Relativzeit letzter Hänger
 
     // Can't yet generate code for STAT_KM_DRUCK_DATA_0XD216 of type data[4] at offset 24. But we account for the 4 bytes
-        // KM status last print, long print or hanger / KM-Stand letzter Druck, Langdruck oder HÃ¤nger
+        // KM status last print, long print or hanger / KM-Stand letzter Druck, Langdruck oder Hänger
 
 #define I3_PID_ZBE_LOGGING_TASTE5                                    0xD217
         // Logging data of the keys. / Loggingdaten der Tasten.
@@ -245,13 +244,13 @@
 
     #define I3_RES_ZBE_STAT_ANZAHL_HAENGER_WERT_0XD217               (RXBUF_UINT32(16))
     #define I3_RES_ZBE_STAT_ANZAHL_HAENGER_WERT_0XD217_TYPE          unsigned long
-        // Number of hangers / Anzahl HÃ¤nger
+        // Number of hangers / Anzahl Hänger
 
     // Can't yet generate code for STAT_RELATIVZEIT_HAENGER_DATA_0XD217 of type data[4] at offset 20. But we account for the 4 bytes
-        // Relative time of the last trailer / Relativzeit letzter HÃ¤nger
+        // Relative time of the last trailer / Relativzeit letzter Hänger
 
     // Can't yet generate code for STAT_KM_DRUCK_DATA_0XD217 of type data[4] at offset 24. But we account for the 4 bytes
-        // KM status last print, long print or hanger / KM-Stand letzter Druck, Langdruck oder HÃ¤nger
+        // KM status last print, long print or hanger / KM-Stand letzter Druck, Langdruck oder Hänger
 
 #define I3_PID_ZBE_LOGGING_TASTE6                                    0xD218
         // Logging data of the keys. / Loggingdaten der Tasten.
@@ -272,13 +271,13 @@
 
     #define I3_RES_ZBE_STAT_ANZAHL_HAENGER_WERT_0XD218               (RXBUF_UINT32(16))
     #define I3_RES_ZBE_STAT_ANZAHL_HAENGER_WERT_0XD218_TYPE          unsigned long
-        // Number of hangers / Anzahl HÃ¤nger
+        // Number of hangers / Anzahl Hänger
 
     // Can't yet generate code for STAT_RELATIVZEIT_HAENGER_DATA_0XD218 of type data[4] at offset 20. But we account for the 4 bytes
-        // Relative time of the last trailer / Relativzeit letzter HÃ¤nger
+        // Relative time of the last trailer / Relativzeit letzter Hänger
 
     // Can't yet generate code for STAT_KM_DRUCK_DATA_0XD218 of type data[4] at offset 24. But we account for the 4 bytes
-        // KM status last print, long print or hanger / KM-Stand letzter Druck, Langdruck oder HÃ¤nger
+        // KM status last print, long print or hanger / KM-Stand letzter Druck, Langdruck oder Hänger
 
 #define I3_PID_ZBE_LOGGING_TASTE7                                    0xD219
         // Logging data of the keys. / Loggingdaten der Tasten.
@@ -299,13 +298,13 @@
 
     #define I3_RES_ZBE_STAT_ANZAHL_HAENGER_WERT_0XD219               (RXBUF_UINT32(16))
     #define I3_RES_ZBE_STAT_ANZAHL_HAENGER_WERT_0XD219_TYPE          unsigned long
-        // Number of hangers / Anzahl HÃ¤nger
+        // Number of hangers / Anzahl Hänger
 
     // Can't yet generate code for STAT_RELATIVZEIT_HAENGER_DATA_0XD219 of type data[4] at offset 20. But we account for the 4 bytes
-        // Relative time of the last trailer / Relativzeit letzter HÃ¤nger
+        // Relative time of the last trailer / Relativzeit letzter Hänger
 
     // Can't yet generate code for STAT_KM_DRUCK_DATA_0XD219 of type data[4] at offset 24. But we account for the 4 bytes
-        // KM status last print, long print or hanger / KM-Stand letzter Druck, Langdruck oder HÃ¤nger
+        // KM status last print, long print or hanger / KM-Stand letzter Druck, Langdruck oder Hänger
 
 #define I3_PID_ZBE_LOGGING_TASTE8                                    0xD21A
         // Logging data of the keys. / Loggingdaten der Tasten.
@@ -326,13 +325,13 @@
 
     #define I3_RES_ZBE_STAT_ANZAHL_HAENGER_WERT_0XD21A               (RXBUF_UINT32(16))
     #define I3_RES_ZBE_STAT_ANZAHL_HAENGER_WERT_0XD21A_TYPE          unsigned long
-        // Number of hangers / Anzahl HÃ¤nger
+        // Number of hangers / Anzahl Hänger
 
     // Can't yet generate code for STAT_RELATIVZEIT_HAENGER_DATA_0XD21A of type data[4] at offset 20. But we account for the 4 bytes
-        // Relative time of the last trailer / Relativzeit letzter HÃ¤nger
+        // Relative time of the last trailer / Relativzeit letzter Hänger
 
     // Can't yet generate code for STAT_KM_DRUCK_DATA_0XD21A of type data[4] at offset 24. But we account for the 4 bytes
-        // KM status last print, long print or hanger / KM-Stand letzter Druck, Langdruck oder HÃ¤nger
+        // KM status last print, long print or hanger / KM-Stand letzter Druck, Langdruck oder Hänger
 
 #define I3_PID_ZBE_LOGGING_DREHSTELLER                               0xD21B
         // Logging of the rotary actuator (turning, tilting) / Logging des Drehstellers (Drehen, Kippen)
@@ -349,7 +348,7 @@
         // Number of notches counterclockwise / Anzahl Rasten gegen Uhrzeigersinn
 
     // Can't yet generate code for STAT_RELATIVZEIT_GEGEN_UHRZEIGERSINN_DATA of type data[4] at offset 12. But we account for the 4 bytes
-        // Relative time of last rotation counterclockwise / Relativzeit letzte Drehung gegen den Uhrzeigersinn
+        // Relative time of the last counter-clockwise rotation / Relativzeit letzte Drehung gegen den Uhrzeigersinn
 
     #define I3_RES_ZBE_STAT_UNDERFLOW_WERT                           (RXBUF_UINT32(16))
     #define I3_RES_ZBE_STAT_UNDERFLOW_WERT_TYPE                      unsigned long
@@ -387,13 +386,13 @@
 
     #define I3_RES_ZBE_STAT_ANZAHL_HAENGER_WERT_0XD21C               (RXBUF_UINT32(16))
     #define I3_RES_ZBE_STAT_ANZAHL_HAENGER_WERT_0XD21C_TYPE          unsigned long
-        // Number of hangers / Anzahl HÃ¤nger
+        // Number of hangers / Anzahl Hänger
 
     // Can't yet generate code for STAT_RELATIVZEIT_HAENGER_DATA_0XD21C of type data[4] at offset 20. But we account for the 4 bytes
-        // Relative time of the last trailer / Relativzeit letzter HÃ¤nger
+        // Relative time of the last trailer / Relativzeit letzter Hänger
 
     // Can't yet generate code for STAT_KM_DRUCK_DATA_0XD21C of type data[4] at offset 24. But we account for the 4 bytes
-        // KM status last print, long print or hanger / KM-Stand letzter Druck, Langdruck oder HÃ¤nger
+        // KM status last print, long print or hanger / KM-Stand letzter Druck, Langdruck oder Hänger
 
 #define I3_PID_ZBE_LOGGING_DREHSTELLER_OST                           0xD21D
         // Logging the keys / Logging der Tasten
@@ -414,13 +413,13 @@
 
     #define I3_RES_ZBE_STAT_ANZAHL_HAENGER_WERT_0XD21D               (RXBUF_UINT32(16))
     #define I3_RES_ZBE_STAT_ANZAHL_HAENGER_WERT_0XD21D_TYPE          unsigned long
-        // Number of hangers / Anzahl HÃ¤nger
+        // Number of hangers / Anzahl Hänger
 
     // Can't yet generate code for STAT_RELATIVZEIT_HAENGER_DATA_0XD21D of type data[4] at offset 20. But we account for the 4 bytes
-        // Relative time of the last trailer / Relativzeit letzter HÃ¤nger
+        // Relative time of the last trailer / Relativzeit letzter Hänger
 
     // Can't yet generate code for STAT_KM_DRUCK_DATA_0XD21D of type data[4] at offset 24. But we account for the 4 bytes
-        // KM status last print, long print or hanger / KM-Stand letzter Druck, Langdruck oder HÃ¤nger
+        // KM status last print, long print or hanger / KM-Stand letzter Druck, Langdruck oder Hänger
 
 #define I3_PID_ZBE_LOGGING_DREHSTELLER_SUED                          0xD21E
         // Logging the keys / Logging der Tasten
@@ -441,13 +440,13 @@
 
     #define I3_RES_ZBE_STAT_ANZAHL_HAENGER_WERT_0XD21E               (RXBUF_UINT32(16))
     #define I3_RES_ZBE_STAT_ANZAHL_HAENGER_WERT_0XD21E_TYPE          unsigned long
-        // Number of hangers / Anzahl HÃ¤nger
+        // Number of hangers / Anzahl Hänger
 
     // Can't yet generate code for STAT_RELATIVZEIT_HAENGER_DATA_0XD21E of type data[4] at offset 20. But we account for the 4 bytes
-        // Relative time of the last trailer / Relativzeit letzter HÃ¤nger
+        // Relative time of the last trailer / Relativzeit letzter Hänger
 
     // Can't yet generate code for STAT_KM_DRUCK_DATA_0XD21E of type data[4] at offset 24. But we account for the 4 bytes
-        // KM status last print, long print or hanger / KM-Stand letzter Druck, Langdruck oder HÃ¤nger
+        // KM status last print, long print or hanger / KM-Stand letzter Druck, Langdruck oder Hänger
 
 #define I3_PID_ZBE_LOGGING_DREHSTELLER_WEST                          0xD21F
         // Logging the keys / Logging der Tasten
@@ -468,13 +467,13 @@
 
     #define I3_RES_ZBE_STAT_ANZAHL_HAENGER_WERT_0XD21F               (RXBUF_UINT32(16))
     #define I3_RES_ZBE_STAT_ANZAHL_HAENGER_WERT_0XD21F_TYPE          unsigned long
-        // Number of hangers / Anzahl HÃ¤nger
+        // Number of hangers / Anzahl Hänger
 
     // Can't yet generate code for STAT_RELATIVZEIT_HAENGER_DATA_0XD21F of type data[4] at offset 20. But we account for the 4 bytes
-        // Relative time of the last trailer / Relativzeit letzter HÃ¤nger
+        // Relative time of the last trailer / Relativzeit letzter Hänger
 
     // Can't yet generate code for STAT_KM_DRUCK_DATA_0XD21F of type data[4] at offset 24. But we account for the 4 bytes
-        // KM status last print, long print or hanger / KM-Stand letzter Druck, Langdruck oder HÃ¤nger
+        // KM status last print, long print or hanger / KM-Stand letzter Druck, Langdruck oder Hänger
 
 #define I3_PID_ZBE_LOGGING_VERBAU                                    0xD228
         // Read out when the component was installed / Auslesen, wann die Komponente verbaut wurde
@@ -500,36 +499,36 @@
 // Skipping STEUERN_SIGNALMODE on 0xD598 which takes arguments
 
 #define I3_PID_ZBE_TOUCHPAD_BERUEHRUNG                               0xD60D
-        // Touch detection Touchpad: 0x00 = no touch detected 0x01 = touch detected / BerÃ¼hrungserkennung Touchpad: 0x00
-        // = keine BerÃ¼hrung erkannt 0x01 = BerÃ¼hrung erkannt
+        // Touch detection Touchpad: 0x00 = no touch detected 0x01 = touch detected / Berührungserkennung Touchpad: 0x00
+        // = keine Berührung erkannt 0x01 = Berührung erkannt
 
     #define I3_RES_ZBE_STAT_TOUCHPAD_BERUEHRUNG                      (RXBUF_UCHAR(0))
     #define I3_RES_ZBE_STAT_TOUCHPAD_BERUEHRUNG_UNIT                 '0/1'
     #define I3_RES_ZBE_STAT_TOUCHPAD_BERUEHRUNG_TYPE                 unsigned char
-        // Touch detection Touchpad: 0x00 = no touch detected 0x01 = touch detected / BerÃ¼hrungserkennung Touchpad: 0x00
-        // = keine BerÃ¼hrung erkannt 0x01 = BerÃ¼hrung erkannt
+        // Touch detection Touchpad: 0x00 = no touch detected 0x01 = touch detected / Berührungserkennung Touchpad: 0x00
+        // = keine Berührung erkannt 0x01 = Berührung erkannt
 
 // Skipping TOUCHPAD_AKTIVIERUNG on 0xD60E which takes arguments
 
 #define I3_PID_ZBE_TOUCHPAD_ANNAEHERUNG                              0xD68D
-        // Proximity detection touchpad: 0x00 = no proximity detected 0x01 = proximity detected / AnnÃ¤herungsserkennung
-        // Touchpad: 0x00 = keine AnnÃ¤herung erkannt 0x01 = AnnÃ¤herung erkannt
+        // Proximity detection touchpad: 0x00 = no proximity detected 0x01 = proximity detected / Annäherungsserkennung
+        // Touchpad: 0x00 = keine Annäherung erkannt 0x01 = Annäherung erkannt
 
     #define I3_RES_ZBE_STAT_TOUCHPAD_ANNAEHERUNG                     (RXBUF_UCHAR(0))
     #define I3_RES_ZBE_STAT_TOUCHPAD_ANNAEHERUNG_UNIT                '0/1'
     #define I3_RES_ZBE_STAT_TOUCHPAD_ANNAEHERUNG_TYPE                unsigned char
-        // Proximity detection touchpad: 0x00 = no proximity detected 0x01 = proximity detected / AnnÃ¤herungsserkennung
-        // Touchpad: 0x00 = keine AnnÃ¤herung erkannt 0x01 = AnnÃ¤herung erkannt
+        // Proximity detection touchpad: 0x00 = no proximity detected 0x01 = proximity detected / Annäherungsserkennung
+        // Touchpad: 0x00 = keine Annäherung erkannt 0x01 = Annäherung erkannt
 
 #define I3_PID_ZBE_SPANNUNG_KLEMME_30B_WERT                          0xDAD9
         // Voltage value on the control unit at terminal 30B (accurate to one decimal place) / Spannungswert am
-        // SteuergerÃ¤t an Klemme 30B (auf eine Nachkommastelle genau)
+        // Steuergerät an Klemme 30B (auf eine Nachkommastelle genau)
 
     #define I3_RES_ZBE_STAT_SPANNUNG_KLEMME_30B_WERT                 (RXBUF_UINT(0)/10.0f)
     #define I3_RES_ZBE_STAT_SPANNUNG_KLEMME_30B_WERT_UNIT            'V'
     #define I3_RES_ZBE_STAT_SPANNUNG_KLEMME_30B_WERT_TYPE            float
         // Voltage value on the control unit at terminal 30B (accurate to one decimal place) / Spannungswert am
-        // SteuergerÃ¤t an Klemme 30B (auf eine Nachkommastelle genau)
+        // Steuergerät an Klemme 30B (auf eine Nachkommastelle genau)
 
 #define I3_PID_ZBE_ACTIVE_DIAGNOSTIC_SESSION                         0xF186
         // activeDiagnosticSession / activeDiagnosticSession

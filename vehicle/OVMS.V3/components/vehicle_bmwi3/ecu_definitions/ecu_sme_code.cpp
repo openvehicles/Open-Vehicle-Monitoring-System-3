@@ -667,8 +667,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "RB_SOC_REKALIBRIERUNG", "STAT_HVOFFTIME_REKAL_5_WERT", STAT_HVOFFTIME_REKAL_5_WERT, "\"s\"");
 
     char STAT_TEMP_MESS_MEAN_VOR_5_WERT = (RXBUF_SCHAR(213));
-        // Average measurement temperature at HVS level BEFORE recalibration-5 / Mittlere Messtemperatur auf HVS-Ebene
-        // VOR Rekalibrierung-5
+        // Average measuring temperature at HVS level BEFORE recalibration-5 / Mittlere Messtemperatur auf HVS-Ebene VOR
+        // Rekalibrierung-5
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "SME", "RB_SOC_REKALIBRIERUNG", "STAT_TEMP_MESS_MEAN_VOR_5_WERT", STAT_TEMP_MESS_MEAN_VOR_5_WERT, "\"°C\"");
 
     char STAT_TEMP_MESS_MEAN_NACH_5_WERT = (RXBUF_SCHAR(214));
@@ -1232,7 +1232,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "RB_ISO_MESS_STD_IO_NIO", "STAT_STD_KM_ISO_01_WERT", STAT_STD_KM_ISO_01_WERT, "\"km\"");
 
     unsigned short STAT_STD_R_ISO_01_WERT = (RXBUF_UINT(4));
-        // R_iso_Value when the error threshold of the R_iso standard measurement is below / exceeded [kOhm] 01 /
+        // R_iso_Value when the error threshold is below / exceeded in the R_iso standard measurement [kOhm] 01 /
         // R_iso_Wert bei Fehlerschwellenunter-/-überschreitung der R_iso Standardmessung [kOhm] 01
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "SME", "RB_ISO_MESS_STD_IO_NIO", "STAT_STD_R_ISO_01_WERT", STAT_STD_R_ISO_01_WERT, "\"kOhm\"");
 
@@ -1262,8 +1262,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "RB_ISO_MESS_STD_IO_NIO", "STAT_STD_KM_ISO_03_WERT", STAT_STD_KM_ISO_03_WERT, "\"km\"");
 
     unsigned short STAT_STD_R_ISO_03_WERT = (RXBUF_UINT(18));
-        // R_iso_Value when the error threshold of the R_iso standard measurement is below / exceeded [kOhm] 03 /
-        // R_iso_Wert bei Fehlerschwellenunter-/-überschreitung der R_iso Standardmessung [kOhm] 03
+        // R_iso_Wert if the R_iso standard measurement falls below / exceeds the error threshold [kOhm] 03 / R_iso_Wert
+        // bei Fehlerschwellenunter-/-überschreitung der R_iso Standardmessung [kOhm] 03
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "SME", "RB_ISO_MESS_STD_IO_NIO", "STAT_STD_R_ISO_03_WERT", STAT_STD_R_ISO_03_WERT, "\"kOhm\"");
 
     unsigned char STAT_STD_R_ISO_QAL_03_WERT = (RXBUF_UCHAR(20));
@@ -1272,7 +1272,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "SME", "RB_ISO_MESS_STD_IO_NIO", "STAT_STD_R_ISO_QAL_03_WERT", STAT_STD_R_ISO_QAL_03_WERT, "");
 
     unsigned long STAT_STD_KM_ISO_04_WERT = (RXBUF_UINT32(21));
-        // Mileage in case of error threshold under / overrun of the R_iso standard measurement [km] 04 / km-Stand bei
+        // Mileage when the error threshold is below / exceeded in the R_iso standard measurement [km] 04 / km-Stand bei
         // Fehlerschwellenunter-/-überschreitung der R_iso Standardmessung [km] 04
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "RB_ISO_MESS_STD_IO_NIO", "STAT_STD_KM_ISO_04_WERT", STAT_STD_KM_ISO_04_WERT, "\"km\"");
 
@@ -1292,7 +1292,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "RB_ISO_MESS_STD_IO_NIO", "STAT_STD_KM_ISO_05_WERT", STAT_STD_KM_ISO_05_WERT, "\"km\"");
 
     unsigned short STAT_STD_R_ISO_05_WERT = (RXBUF_UINT(32));
-        // R_iso_Wert if the R_iso standard measurement falls below / exceeds the error threshold [kOhm] 05 / R_iso_Wert
+        // R_iso_Value if the R_iso standard measurement falls below / exceeds the error threshold [kOhm] 05 / R_iso_Wert
         // bei Fehlerschwellenunter-/-überschreitung der R_iso Standardmessung [kOhm] 05
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "SME", "RB_ISO_MESS_STD_IO_NIO", "STAT_STD_R_ISO_05_WERT", STAT_STD_R_ISO_05_WERT, "\"kOhm\"");
 
@@ -1352,8 +1352,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "RB_ISO_MESS_STD_IO_NIO", "STAT_STD_KM_ISO_09_WERT", STAT_STD_KM_ISO_09_WERT, "\"km\"");
 
     unsigned short STAT_STD_R_ISO_09_WERT = (RXBUF_UINT(60));
-        // R_iso_Wert if the R_iso standard measurement falls below / exceeds the error threshold [kOhm] 09 / R_iso_Wert
-        // bei Fehlerschwellenunter-/-überschreitung der R_iso Standardmessung [kOhm] 09
+        // R_iso_Value when the error threshold of the R_iso standard measurement is below / exceeded [kOhm] 09 /
+        // R_iso_Wert bei Fehlerschwellenunter-/-überschreitung der R_iso Standardmessung [kOhm] 09
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "SME", "RB_ISO_MESS_STD_IO_NIO", "STAT_STD_R_ISO_09_WERT", STAT_STD_R_ISO_09_WERT, "\"kOhm\"");
 
     unsigned char STAT_STD_R_ISO_QAL_09_WERT = (RXBUF_UCHAR(62));
@@ -1409,7 +1409,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "RB_ISO_MESS_TRG_IO_NIO", "STAT_TRG_KM_ISO_02_WERT", STAT_TRG_KM_ISO_02_WERT, "\"km\"");
 
     unsigned short STAT_TRG_R_ISO_02_WERT = (RXBUF_UINT(11));
-        // R_iso_Value if the R_iso lag measurement falls below / exceeds the error threshold [kOhm] 02 / R_iso_Wert bei
+        // R_iso_Wert if the R_iso lag measurement falls below / exceeds the error threshold [kOhm] 02 / R_iso_Wert bei
         // Fehlerschwellenunter-/-überschreitung der R_iso Nachlaufmessung [kOhm] 02
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "SME", "RB_ISO_MESS_TRG_IO_NIO", "STAT_TRG_R_ISO_02_WERT", STAT_TRG_R_ISO_02_WERT, "\"kOhm\"");
 
@@ -1424,8 +1424,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "RB_ISO_MESS_TRG_IO_NIO", "STAT_TRG_KM_ISO_03_WERT", STAT_TRG_KM_ISO_03_WERT, "\"km\"");
 
     unsigned short STAT_TRG_R_ISO_03_WERT = (RXBUF_UINT(18));
-        // R_iso_Wert if the R_iso lag measurement falls below / exceeds the error threshold [kOhm] 03 / R_iso_Wert bei
-        // Fehlerschwellenunter-/-überschreitung der R_iso Nachlaufmessung [kOhm] 03
+        // R_iso_Value when the R_iso lag measurement falls below / exceeds the error threshold [kOhm] 03 / R_iso_Wert
+        // bei Fehlerschwellenunter-/-überschreitung der R_iso Nachlaufmessung [kOhm] 03
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "SME", "RB_ISO_MESS_TRG_IO_NIO", "STAT_TRG_R_ISO_03_WERT", STAT_TRG_R_ISO_03_WERT, "\"kOhm\"");
 
     unsigned char STAT_TRG_R_ISO_QAL_03_WERT = (RXBUF_UCHAR(20));
@@ -1434,7 +1434,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "SME", "RB_ISO_MESS_TRG_IO_NIO", "STAT_TRG_R_ISO_QAL_03_WERT", STAT_TRG_R_ISO_QAL_03_WERT, "");
 
     unsigned long STAT_TRG_KM_ISO_04_WERT = (RXBUF_UINT32(21));
-        // Mileage when the error threshold is below / exceeded in the R_iso lag measurement [km] 04 / km-Stand bei
+        // Mileage in case of error threshold under / overrun of the R_iso lag measurement [km] 04 / km-Stand bei
         // Fehlerschwellenunter-/-überschreitung der R_iso Nachlaufmessung [km] 04
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "RB_ISO_MESS_TRG_IO_NIO", "STAT_TRG_KM_ISO_04_WERT", STAT_TRG_KM_ISO_04_WERT, "\"km\"");
 
@@ -1454,7 +1454,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "RB_ISO_MESS_TRG_IO_NIO", "STAT_TRG_KM_ISO_05_WERT", STAT_TRG_KM_ISO_05_WERT, "\"km\"");
 
     unsigned short STAT_TRG_R_ISO_05_WERT = (RXBUF_UINT(32));
-        // R_iso_Value if the R_iso lag measurement falls below / exceeds the error threshold [kOhm] 05 / R_iso_Wert bei
+        // R_iso_Wert if the R_iso lag measurement falls below / exceeds the error threshold [kOhm] 05 / R_iso_Wert bei
         // Fehlerschwellenunter-/-überschreitung der R_iso Nachlaufmessung [kOhm] 05
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "SME", "RB_ISO_MESS_TRG_IO_NIO", "STAT_TRG_R_ISO_05_WERT", STAT_TRG_R_ISO_05_WERT, "\"kOhm\"");
 
@@ -1479,13 +1479,13 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "SME", "RB_ISO_MESS_TRG_IO_NIO", "STAT_TRG_R_ISO_QAL_06_WERT", STAT_TRG_R_ISO_QAL_06_WERT, "");
 
     unsigned long STAT_TRG_KM_ISO_07_WERT = (RXBUF_UINT32(42));
-        // Mileage in case of failure threshold of the R_iso follow-up measurement [km] 07 / km-Stand bei
+        // Mileage in case of error threshold under / overrun of the R_iso follow-up measurement [km] 07 / km-Stand bei
         // Fehlerschwellenunter-/-überschreitung der R_iso Nachlaufmessung [km] 07
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "RB_ISO_MESS_TRG_IO_NIO", "STAT_TRG_KM_ISO_07_WERT", STAT_TRG_KM_ISO_07_WERT, "\"km\"");
 
     unsigned short STAT_TRG_R_ISO_07_WERT = (RXBUF_UINT(46));
-        // R_iso_Value when the R_iso lag measurement falls below / exceeds the error threshold [kOhm] 07 / R_iso_Wert
-        // bei Fehlerschwellenunter-/-überschreitung der R_iso Nachlaufmessung [kOhm] 07
+        // R_iso_Wert when the R_iso lag measurement falls below / exceeds the error threshold [kOhm] 07 / R_iso_Wert bei
+        // Fehlerschwellenunter-/-überschreitung der R_iso Nachlaufmessung [kOhm] 07
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "SME", "RB_ISO_MESS_TRG_IO_NIO", "STAT_TRG_R_ISO_07_WERT", STAT_TRG_R_ISO_07_WERT, "\"kOhm\"");
 
     unsigned char STAT_TRG_R_ISO_QAL_07_WERT = (RXBUF_UCHAR(48));
@@ -1494,7 +1494,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "SME", "RB_ISO_MESS_TRG_IO_NIO", "STAT_TRG_R_ISO_QAL_07_WERT", STAT_TRG_R_ISO_QAL_07_WERT, "");
 
     unsigned long STAT_TRG_KM_ISO_08_WERT = (RXBUF_UINT32(49));
-        // Mileage in case of error threshold under / overrun of the R_iso follow-up measurement [km] 08 / km-Stand bei
+        // Mileage when the error threshold is below / exceeded in the R_iso follow-up measurement [km] 08 / km-Stand bei
         // Fehlerschwellenunter-/-überschreitung der R_iso Nachlaufmessung [km] 08
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "RB_ISO_MESS_TRG_IO_NIO", "STAT_TRG_KM_ISO_08_WERT", STAT_TRG_KM_ISO_08_WERT, "\"km\"");
 
@@ -1524,12 +1524,12 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "SME", "RB_ISO_MESS_TRG_IO_NIO", "STAT_TRG_R_ISO_QAL_09_WERT", STAT_TRG_R_ISO_QAL_09_WERT, "");
 
     unsigned long STAT_TRG_KM_ISO_10_WERT = (RXBUF_UINT32(63));
-        // Mileage in case of error threshold under / overrun of the R_iso follow-up measurement [km] 10 / km-Stand bei
+        // Mileage in case of failure threshold of the R_iso follow-up measurement [km] 10 / km-Stand bei
         // Fehlerschwellenunter-/-überschreitung der R_iso Nachlaufmessung [km] 10
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "RB_ISO_MESS_TRG_IO_NIO", "STAT_TRG_KM_ISO_10_WERT", STAT_TRG_KM_ISO_10_WERT, "\"km\"");
 
     unsigned short STAT_TRG_R_ISO_10_WERT = (RXBUF_UINT(67));
-        // R_iso_Wert if the R_iso lag measurement falls below / exceeds the error threshold [kOhm] 10 / R_iso_Wert bei
+        // R_iso_Value if the R_iso lag measurement falls below / exceeds the error threshold [kOhm] 10 / R_iso_Wert bei
         // Fehlerschwellenunter-/-überschreitung der R_iso Nachlaufmessung [kOhm] 10
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "SME", "RB_ISO_MESS_TRG_IO_NIO", "STAT_TRG_R_ISO_10_WERT", STAT_TRG_R_ISO_10_WERT, "\"kOhm\"");
 
@@ -1696,7 +1696,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "SME", "ISO_ERR_STD_FZ1_2", "STAT_INPUT_ISO_STD_FZ2_06_WERT", STAT_INPUT_ISO_STD_FZ2_06_WERT, "");
 
     float STAT_INPUT_ISO_STD_FZ2_07_WERT = (RXBUF_UINT(37)/100.0f);
-        // LI: last time the error occurred Uiso02 [V] / LI: letztmaliger Fehlerzeitpunkt Uiso02 [V]
+        // LI: last error time Uiso02 [V] / LI: letztmaliger Fehlerzeitpunkt Uiso02 [V]
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "ISO_ERR_STD_FZ1_2", "STAT_INPUT_ISO_STD_FZ2_07_WERT", STAT_INPUT_ISO_STD_FZ2_07_WERT, "\"V\"");
 
     unsigned char STAT_INPUT_ISO_STD_FZ2_08_WERT = (RXBUF_UCHAR(39));
@@ -1772,10 +1772,10 @@
     float STAT_MAX_DELTA_U_CELL_1_WERT = (RXBUF_UINT(9)/1000.0f);
         // Maximum voltage delta of the cells BEFORE the first capacity test From I levels I15 / SP15: 18-03-i420; I01 /
         // SE09: 17-11-i400; F56 / SE14: 19-11-i310 the following applies: Asymmetry potential as the voltage difference
-        // between the cell that was most deeply discharged during the first capacity test and Ucel_max when fully
-        // charged / Maximales Spannungsdelta der Zellen VOR erstem Kapazitätstest  Ab den I-Stufen I15/SP15:
-        // 18-03-i420; I01/SE09: 17-11-i400; F56/SE14: 19-11-i310 gilt: Asymmetrie-Potential als Spannungsdifferenz der
-        // während des ersten Kapazitätstests am tiefsten entladenen Zelle zu Ucel_max im Volllademoment
+        // between the cell that was most deeply discharged during the first capacity test and Ucel_max at full charge /
+        // Maximales Spannungsdelta der Zellen VOR erstem Kapazitätstest  Ab den I-Stufen I15/SP15: 18-03-i420; I01/SE09:
+        // 17-11-i400; F56/SE14: 19-11-i310 gilt: Asymmetrie-Potential als Spannungsdifferenz der während des ersten
+        // Kapazitätstests am tiefsten entladenen Zelle zu Ucel_max im Volllademoment
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "RB_SOH_KAPATEST", "STAT_MAX_DELTA_U_CELL_1_WERT", STAT_MAX_DELTA_U_CELL_1_WERT, "\"V\"");
 
     float STAT_MAX_DELTA_SOC_NENN_1_WERT = (RXBUF_UINT(11)/100.0f);
@@ -1825,8 +1825,8 @@
     float STAT_MAX_DELTA_SOC_NENN_2_WERT = (RXBUF_UINT(28)/100.0f);
         // Maximum SoC delta of the cells BEFORE the second capacity test From I levels I15 / SP15: 18-03-i420; I01 /
         // SE09: 17-11-i400; F56 / SE14: 19-11-i310 applies: Asymmetry potential as SoC_Nenn-Percent value, which was
-        // determined during the second capacity test. / Maximales SoC-Delta der Zellen VOR zweitem Kapazitätstest Ab
-        // den I-Stufen I15/SP15: 18-03-i420; I01/SE09: 17-11-i400; F56/SE14: 19-11-i310 gilt: Asymmetrie-Potential als
+        // determined during the second capacity test. / Maximales SoC-Delta der Zellen VOR zweitem Kapazitätstest Ab den
+        // I-Stufen I15/SP15: 18-03-i420; I01/SE09: 17-11-i400; F56/SE14: 19-11-i310 gilt: Asymmetrie-Potential als
         // SoC_Nenn-Prozent-Wert, der während des zweiten Kapazitätstests ermittelt wurde.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "RB_SOH_KAPATEST", "STAT_MAX_DELTA_SOC_NENN_2_WERT", STAT_MAX_DELTA_SOC_NENN_2_WERT, "\"%\"");
 
@@ -1893,8 +1893,8 @@
 
     unsigned short STAT_ANZAHL_REKU_VOLT_LIFT_WERT = (RXBUF_UINT(0));
         // Return of the number in which the increased recuperation capacity is made available when the HVS is almost
-        // full / Rückgabe der Anzahl, in der erhöhte Rekuperationsleistung zur Verfügung gestellt wird bei fast
-        // vollem HVS
+        // full / Rückgabe der Anzahl, in der erhöhte Rekuperationsleistung zur Verfügung gestellt wird bei fast vollem
+        // HVS
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "SME", "REKU_VOLTAGE_LIFT", "STAT_ANZAHL_REKU_VOLT_LIFT_WERT", STAT_ANZAHL_REKU_VOLT_LIFT_WERT, "");
 
     float STAT_DAUER_REKU_VOLT_LIFT_WERT = (RXBUF_UINT32(2)/10.0f);
@@ -2047,8 +2047,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "RB_ALTERUNG_KAPA", "STAT_AH_INTEGRAL_2_WERT", STAT_AH_INTEGRAL_2_WERT, "\"Ah\"");
 
     unsigned short STAT_HVOFFTIME_ADAP_2_WERT = (RXBUF_UINT(62));
-        // Duration that the shooter was open during the 2nd adaptation / Dauer, die die Schütze während der 2.
-        // Adaption geöffnet war
+        // Duration that the shooter was open during the 2nd adaptation / Dauer, die die Schütze während der 2. Adaption
+        // geöffnet war
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "SME", "RB_ALTERUNG_KAPA", "STAT_HVOFFTIME_ADAP_2_WERT", STAT_HVOFFTIME_ADAP_2_WERT, "\"s\"");
 
     char STAT_TEMP_MEAN1_2_WERT = (RXBUF_SCHAR(64));
@@ -2062,10 +2062,9 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "SME", "RB_ALTERUNG_KAPA", "STAT_TEMP_MEAN2_2_WERT", STAT_TEMP_MEAN2_2_WERT, "\"°C\"");
 
     float STAT_UCEL_MIN_INIT1_2_WERT = (RXBUF_UINT(66)/1000.0f);
-        // Minimum measured open-circuit voltage of the cells at the beginning of the 2nd adaptation (if adaptation
-        // reason = KapaTest: minimum measured open-circuit voltage when waking up) / Minimale gemessene Ruhespannung der
-        // Zellen zu Beginn der 2. Adaption (Wenn Adaptionsgrund = KapaTest: Minimale gemessene Ruhespannung beim
-        // Aufwachen)
+        // Minimum measured resting voltage of the cells at the beginning of the 2nd adaptation (if adaptation reason =
+        // KapaTest: minimum measured resting voltage when waking up) / Minimale gemessene Ruhespannung der Zellen zu
+        // Beginn der 2. Adaption (Wenn Adaptionsgrund = KapaTest: Minimale gemessene Ruhespannung beim Aufwachen)
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "RB_ALTERUNG_KAPA", "STAT_UCEL_MIN_INIT1_2_WERT", STAT_UCEL_MIN_INIT1_2_WERT, "\"V\"");
 
     float STAT_UCEL_MAX_INIT1_2_WERT = (RXBUF_UINT(68)/1000.0f);
@@ -2075,9 +2074,9 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "RB_ALTERUNG_KAPA", "STAT_UCEL_MAX_INIT1_2_WERT", STAT_UCEL_MAX_INIT1_2_WERT, "\"V\"");
 
     float STAT_UCEL_MEAN_INIT1_2_WERT = (RXBUF_UINT(70)/1000.0f);
-        // Average measured open-circuit voltage of the cells at the beginning of the 2nd adaptation (if adaptation
-        // reason = KapaTest: average measured open-circuit voltage when waking up) / Mittlere gemessene Ruhespannung der
-        // Zellen zu Beginn der 2. Adaption (Wenn Adaptionsgrund = KapaTest: Mittlere gemessene Ruhespannung beim
+        // Mean measured open-circuit voltage of the cells at the beginning of the 2nd adaptation (if reason for
+        // adaptation = KapaTest: mean measured open-circuit voltage when waking up) / Mittlere gemessene Ruhespannung
+        // der Zellen zu Beginn der 2. Adaption (Wenn Adaptionsgrund = KapaTest: Mittlere gemessene Ruhespannung beim
         // Aufwachen)
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "RB_ALTERUNG_KAPA", "STAT_UCEL_MEAN_INIT1_2_WERT", STAT_UCEL_MEAN_INIT1_2_WERT, "\"V\"");
 
@@ -2154,8 +2153,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "RB_ALTERUNG_KAPA", "STAT_AH_INTEGRAL_3_WERT", STAT_AH_INTEGRAL_3_WERT, "\"Ah\"");
 
     unsigned short STAT_HVOFFTIME_ADAP_3_WERT = (RXBUF_UINT(109));
-        // Duration that the shooter was open during the 3rd adaptation / Dauer, die die Schütze während der 3.
-        // Adaption geöffnet war
+        // Duration that the shooter was open during the 3rd adaptation / Dauer, die die Schütze während der 3. Adaption
+        // geöffnet war
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "SME", "RB_ALTERUNG_KAPA", "STAT_HVOFFTIME_ADAP_3_WERT", STAT_HVOFFTIME_ADAP_3_WERT, "\"s\"");
 
     char STAT_TEMP_MEAN1_3_WERT = (RXBUF_SCHAR(111));
@@ -2181,9 +2180,9 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "RB_ALTERUNG_KAPA", "STAT_UCEL_MAX_INIT1_3_WERT", STAT_UCEL_MAX_INIT1_3_WERT, "\"V\"");
 
     float STAT_UCEL_MEAN_INIT1_3_WERT = (RXBUF_UINT(117)/1000.0f);
-        // Average measured open-circuit voltage of the cells at the beginning of the 3rd adaptation (if adaptation
-        // reason = KapaTest: average measured open-circuit voltage when waking up) / Mittlere gemessene Ruhespannung der
-        // Zellen zu Beginn der 3. Adaption (Wenn Adaptionsgrund = KapaTest: Mittlere gemessene Ruhespannung beim
+        // Mean measured open-circuit voltage of the cells at the beginning of the 3rd adaptation (if reason for
+        // adaptation = KapaTest: mean measured open-circuit voltage when waking up) / Mittlere gemessene Ruhespannung
+        // der Zellen zu Beginn der 3. Adaption (Wenn Adaptionsgrund = KapaTest: Mittlere gemessene Ruhespannung beim
         // Aufwachen)
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "RB_ALTERUNG_KAPA", "STAT_UCEL_MEAN_INIT1_3_WERT", STAT_UCEL_MEAN_INIT1_3_WERT, "\"V\"");
 
@@ -2275,9 +2274,9 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "SME", "RB_ALTERUNG_KAPA", "STAT_TEMP_MEAN2_4_WERT", STAT_TEMP_MEAN2_4_WERT, "\"°C\"");
 
     float STAT_UCEL_MIN_INIT1_4_WERT = (RXBUF_UINT(160)/1000.0f);
-        // Minimum measured open-circuit voltage of the cells at the beginning of the 4th adaptation (if the reason for
-        // adaptation = KapaTest: minimum measured open-circuit voltage when waking up) / Minimale gemessene Ruhespannung
-        // der Zellen zu Beginn der 4. Adaption (Wenn Adaptionsgrund = KapaTest: Minimale gemessene Ruhespannung beim
+        // Minimum measured open-circuit voltage of the cells at the beginning of the 4th adaptation (if adaptation
+        // reason = KapaTest: minimum measured open-circuit voltage when waking up) / Minimale gemessene Ruhespannung der
+        // Zellen zu Beginn der 4. Adaption (Wenn Adaptionsgrund = KapaTest: Minimale gemessene Ruhespannung beim
         // Aufwachen)
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "RB_ALTERUNG_KAPA", "STAT_UCEL_MIN_INIT1_4_WERT", STAT_UCEL_MIN_INIT1_4_WERT, "\"V\"");
 
@@ -2367,8 +2366,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "RB_ALTERUNG_KAPA", "STAT_AH_INTEGRAL_5_WERT", STAT_AH_INTEGRAL_5_WERT, "\"Ah\"");
 
     unsigned short STAT_HVOFFTIME_ADAP_5_WERT = (RXBUF_UINT(203));
-        // Duration that the shooter was open during the 5th adaptation / Dauer, die die Schütze während der 5.
-        // Adaption geöffnet war
+        // Duration that the shooter was open during the 5th adaptation / Dauer, die die Schütze während der 5. Adaption
+        // geöffnet war
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "SME", "RB_ALTERUNG_KAPA", "STAT_HVOFFTIME_ADAP_5_WERT", STAT_HVOFFTIME_ADAP_5_WERT, "\"s\"");
 
     char STAT_TEMP_MEAN1_5_WERT = (RXBUF_SCHAR(205));
@@ -2697,7 +2696,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "SME", "ISO_ERR_TRG_FZ1_2", "STAT_INPUT_ISO_TRG_FZ2_06_WERT", STAT_INPUT_ISO_TRG_FZ2_06_WERT, "");
 
     float STAT_INPUT_ISO_TRG_FZ2_07_WERT = (RXBUF_UINT(37)/100.0f);
-        // LI: last time the error occurred Uiso02 [V] / LI: letztmaliger Fehlerzeitpunkt Uiso02 [V]
+        // LI: last error time Uiso02 [V] / LI: letztmaliger Fehlerzeitpunkt Uiso02 [V]
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "ISO_ERR_TRG_FZ1_2", "STAT_INPUT_ISO_TRG_FZ2_07_WERT", STAT_INPUT_ISO_TRG_FZ2_07_WERT, "\"V\"");
 
     unsigned char STAT_INPUT_ISO_TRG_FZ2_08_WERT = (RXBUF_UCHAR(39));
@@ -2772,8 +2771,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "SCHUETZSCHALTUNGEN_ANZAHL", "STAT_ANZAHL_SCHALTUNGEN_WERT", STAT_ANZAHL_SCHALTUNGEN_WERT, "");
 
     unsigned long STAT_ANZAHL_SCHALTUNGEN_LAST_WERT = (RXBUF_UINT32(4));
-        // Number of switchings of the contactor switch under load / Anzahl der Schaltungen der Schützschalter unter
-        // Last
+        // Number of switchings of the contactor switch under load / Anzahl der Schaltungen der Schützschalter unter Last
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "SCHUETZSCHALTUNGEN_ANZAHL", "STAT_ANZAHL_SCHALTUNGEN_LAST_WERT", STAT_ANZAHL_SCHALTUNGEN_LAST_WERT, "");
 
     // ==========  Add your processing here ==========
@@ -2888,7 +2886,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "SME", "ISOLATIONSWIDERSTAND", "STAT_ISOWIDERSTAND_INT_WERT", STAT_ISOWIDERSTAND_INT_WERT, "\"kOhm\"");
 
     unsigned char STAT_ISOWIDERSTAND_EXT_TRG_PLAUS = (RXBUF_UCHAR(6));
-        // Entire system after-run: 0 = insulation resistance not plausible, 1 = insulation resistance plausible /
+        // Entire system after-run: 0 = insulation resistance implausible, 1 = insulation resistance plausible /
         // Gesamtsystem im Nachlauf: 0 = Isolationswiderstand nicht plausibel, 1 = Isolationswiderstand plausibel
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "SME", "ISOLATIONSWIDERSTAND", "STAT_ISOWIDERSTAND_EXT_TRG_PLAUS", STAT_ISOWIDERSTAND_EXT_TRG_PLAUS, "\"0/1\"");
 
@@ -2917,7 +2915,7 @@
     }
 
     float STAT_TEMP_KUEHLKREISLAUF_WERT = (RXBUF_SINT(0)/100.0f);
-        // Temperature of the cooling medium in � C (327.67 = implausible) / Temperatur des Kühlmediums in °C (327,67 =
+        // Temperature of the cooling medium in ° C (327.67 = implausible) / Temperatur des Kühlmediums in °C (327,67 =
         // unplausibel)
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "KUEHLKREISLAUF_TEMP", "STAT_TEMP_KUEHLKREISLAUF_WERT", STAT_TEMP_KUEHLKREISLAUF_WERT, "\"°C\"");
 
@@ -3014,7 +3012,7 @@
     }
 
     float STAT_LEISTUNG_MAX_WERT = (RXBUF_UINT(0)*1000.0f);
-        // Predefined maximum power value in watts (project-specific, on the total storage level) / Vordefinierter
+        // Predefined maximum power value in watts (project-specific, on the overall storage level) / Vordefinierter
         // maximaler Leistungswert in Watt (projektspezifisch, auf Gesamtspeicherebene)
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "GW_INFO", "STAT_LEISTUNG_MAX_WERT", STAT_LEISTUNG_MAX_WERT, "\"W\"");
 
@@ -3024,8 +3022,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "GW_INFO", "STAT_ZEIT_POWER_DCHG_1_WERT", STAT_ZEIT_POWER_DCHG_1_WERT, "\"min\"");
 
     unsigned long STAT_ZEIT_POWER_DCHG_2_WERT = (RXBUF_UINT32(6));
-        // Duration in performance class in the discharge process (on total storage level): Pmax * 0.16 <P <= Pmax * 0.33
-        // / Dauer in Leistungsklasse im Entladevorgang (auf Gesamtspeicherebene):  Pmax*0.16 < P <= Pmax*0.33
+        // Duration in performance class in the discharge process (on the total storage level): Pmax * 0.16 <P <= Pmax *
+        // 0.33 / Dauer in Leistungsklasse im Entladevorgang (auf Gesamtspeicherebene):  Pmax*0.16 < P <= Pmax*0.33
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "GW_INFO", "STAT_ZEIT_POWER_DCHG_2_WERT", STAT_ZEIT_POWER_DCHG_2_WERT, "\"min\"");
 
     unsigned long STAT_ZEIT_POWER_DCHG_3_WERT = (RXBUF_UINT32(10));
@@ -3350,142 +3348,142 @@
     }
 
     unsigned long STAT_ZEIT_TEMP_TOTAL_1_WERT = (RXBUF_UINT32(0));
-        // Time in temperature class T <= - 25 � C with the control unit awake and asleep / Zeit in Temperaturklasse
+        // Time in temperature class T <= - 25 ° C with the control unit awake and asleep / Zeit in Temperaturklasse
         // T<=-25°C bei wachem und schlafenden Steuergerät
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "ZEIT_TEMP_HISTOGRAMM", "STAT_ZEIT_TEMP_TOTAL_1_WERT", STAT_ZEIT_TEMP_TOTAL_1_WERT, "\"min\"");
 
     unsigned long STAT_ZEIT_TEMP_TOTAL_2_WERT = (RXBUF_UINT32(4));
-        // Time in temperature class -25 � C <T <= - 10 � C with the control unit awake and asleep / Zeit in
+        // Time in temperature class -25 ° C <T <= - 10 ° C with the control unit awake and asleep / Zeit in
         // Temperaturklasse -25°C<T<=-10°C bei wachem und schlafenden Steuergerät
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "ZEIT_TEMP_HISTOGRAMM", "STAT_ZEIT_TEMP_TOTAL_2_WERT", STAT_ZEIT_TEMP_TOTAL_2_WERT, "\"min\"");
 
     unsigned long STAT_ZEIT_TEMP_TOTAL_3_WERT = (RXBUF_UINT32(8));
-        // Time in temperature class -10 � C <T <= 0 � C with the control unit awake and sleeping / Zeit in
+        // Time in temperature class -10 ° C <T <= 0 ° C with the control unit awake and asleep / Zeit in
         // Temperaturklasse -10°C<T<=0°C bei wachem und schlafenden Steuergerät
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "ZEIT_TEMP_HISTOGRAMM", "STAT_ZEIT_TEMP_TOTAL_3_WERT", STAT_ZEIT_TEMP_TOTAL_3_WERT, "\"min\"");
 
     unsigned long STAT_ZEIT_TEMP_TOTAL_4_WERT = (RXBUF_UINT32(12));
-        // Time in temperature class 0 � C <T <= 10 � C with the control unit awake and asleep / Zeit in Temperaturklasse
+        // Time in temperature class 0 ° C <T <= 10 ° C with the control unit awake and asleep / Zeit in Temperaturklasse
         // 0°C<T<=10°C bei wachem und schlafenden Steuergerät
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "ZEIT_TEMP_HISTOGRAMM", "STAT_ZEIT_TEMP_TOTAL_4_WERT", STAT_ZEIT_TEMP_TOTAL_4_WERT, "\"min\"");
 
     unsigned long STAT_ZEIT_TEMP_TOTAL_5_WERT = (RXBUF_UINT32(16));
-        // Time in temperature class 10 � C <T <= 20 � C with the control unit awake and asleep / Zeit in
+        // Time in temperature class 10 ° C <T <= 20 ° C with the control unit awake and asleep / Zeit in
         // Temperaturklasse 10°C<T<=20°C bei wachem und schlafenden Steuergerät
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "ZEIT_TEMP_HISTOGRAMM", "STAT_ZEIT_TEMP_TOTAL_5_WERT", STAT_ZEIT_TEMP_TOTAL_5_WERT, "\"min\"");
 
     unsigned long STAT_ZEIT_TEMP_TOTAL_6_WERT = (RXBUF_UINT32(20));
-        // Time in temperature class 20 � C <T <= 25 � C with the control unit awake and asleep / Zeit in
+        // Time in temperature class 20 ° C <T <= 25 ° C with the control unit awake and asleep / Zeit in
         // Temperaturklasse 20°C<T<=25°C bei wachem und schlafenden Steuergerät
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "ZEIT_TEMP_HISTOGRAMM", "STAT_ZEIT_TEMP_TOTAL_6_WERT", STAT_ZEIT_TEMP_TOTAL_6_WERT, "\"min\"");
 
     unsigned long STAT_ZEIT_TEMP_TOTAL_7_WERT = (RXBUF_UINT32(24));
-        // Time in temperature class 25 � C <T <= 30 � C with the control unit awake and asleep / Zeit in
+        // Time in temperature class 25 ° C <T <= 30 ° C with the control unit awake and asleep / Zeit in
         // Temperaturklasse 25°C<T<=30°C bei wachem und schlafenden Steuergerät
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "ZEIT_TEMP_HISTOGRAMM", "STAT_ZEIT_TEMP_TOTAL_7_WERT", STAT_ZEIT_TEMP_TOTAL_7_WERT, "\"min\"");
 
     unsigned long STAT_ZEIT_TEMP_TOTAL_8_WERT = (RXBUF_UINT32(28));
-        // Time in temperature class 30 � C <T <= 35 � C with the control unit awake and asleep / Zeit in
+        // Time in temperature class 30 ° C <T <= 35 ° C with the control unit awake and asleep / Zeit in
         // Temperaturklasse 30°C<T<=35°C bei wachem und schlafenden Steuergerät
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "ZEIT_TEMP_HISTOGRAMM", "STAT_ZEIT_TEMP_TOTAL_8_WERT", STAT_ZEIT_TEMP_TOTAL_8_WERT, "\"min\"");
 
     unsigned long STAT_ZEIT_TEMP_TOTAL_9_WERT = (RXBUF_UINT32(32));
-        // Time in temperature class 35 � C <T <= 40 � C with the control unit awake and asleep / Zeit in
+        // Time in temperature class 35 ° C <T <= 40 ° C with the control unit awake and asleep / Zeit in
         // Temperaturklasse 35°C<T<=40°C bei wachem und schlafenden Steuergerät
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "ZEIT_TEMP_HISTOGRAMM", "STAT_ZEIT_TEMP_TOTAL_9_WERT", STAT_ZEIT_TEMP_TOTAL_9_WERT, "\"min\"");
 
     unsigned long STAT_ZEIT_TEMP_TOTAL_10_WERT = (RXBUF_UINT32(36));
-        // Time in temperature class 40 � C <T <= 45 � C with the control unit awake and asleep / Zeit in
+        // Time in temperature class 40 ° C <T <= 45 ° C with the control unit awake and asleep / Zeit in
         // Temperaturklasse 40°C<T<=45°C bei wachem und schlafenden Steuergerät
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "ZEIT_TEMP_HISTOGRAMM", "STAT_ZEIT_TEMP_TOTAL_10_WERT", STAT_ZEIT_TEMP_TOTAL_10_WERT, "\"min\"");
 
     unsigned long STAT_ZEIT_TEMP_TOTAL_11_WERT = (RXBUF_UINT32(40));
-        // Time in temperature class 45 � C <T <= 50 � C with the control unit awake and asleep / Zeit in
+        // Time in temperature class 45 ° C <T <= 50 ° C with the control unit awake and asleep / Zeit in
         // Temperaturklasse 45°C<T<=50°C bei wachem und schlafenden Steuergerät
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "ZEIT_TEMP_HISTOGRAMM", "STAT_ZEIT_TEMP_TOTAL_11_WERT", STAT_ZEIT_TEMP_TOTAL_11_WERT, "\"min\"");
 
     unsigned long STAT_ZEIT_TEMP_TOTAL_12_WERT = (RXBUF_UINT32(44));
-        // Time in temperature class 50 � C <T <= 55 � C with the control unit awake and asleep / Zeit in
+        // Time in temperature class 50 ° C <T <= 55 ° C with the control unit awake and asleep / Zeit in
         // Temperaturklasse 50°C<T<=55°C bei wachem und schlafenden Steuergerät
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "ZEIT_TEMP_HISTOGRAMM", "STAT_ZEIT_TEMP_TOTAL_12_WERT", STAT_ZEIT_TEMP_TOTAL_12_WERT, "\"min\"");
 
     unsigned long STAT_ZEIT_TEMP_TOTAL_13_WERT = (RXBUF_UINT32(48));
-        // Time in temperature class 55 � C <T <= 60 � C with the control unit awake and asleep / Zeit in
+        // Time in temperature class 55 ° C <T <= 60 ° C with the control unit awake and asleep / Zeit in
         // Temperaturklasse 55°C<T<=60°C bei wachem und schlafenden Steuergerät
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "ZEIT_TEMP_HISTOGRAMM", "STAT_ZEIT_TEMP_TOTAL_13_WERT", STAT_ZEIT_TEMP_TOTAL_13_WERT, "\"min\"");
 
     unsigned long STAT_ZEIT_TEMP_TOTAL_14_WERT = (RXBUF_UINT32(52));
-        // Time in temperature class T> 60 � C with the control unit awake and asleep / Zeit in Temperaturklasse T>60°C
+        // Time in temperature class T> 60 ° C with the control unit awake and asleep / Zeit in Temperaturklasse T>60°C
         // bei wachem und schlafenden Steuergerät
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "ZEIT_TEMP_HISTOGRAMM", "STAT_ZEIT_TEMP_TOTAL_14_WERT", STAT_ZEIT_TEMP_TOTAL_14_WERT, "\"min\"");
 
     unsigned long STAT_ZEIT_TEMP_NO_OP_1_WERT = (RXBUF_UINT32(56));
-        // Time in temperature class T <-25 � C with the control unit asleep / Zeit in Temperaturklasse T<-25°C bei
+        // Time in temperature class T <-25 ° C with the control unit asleep / Zeit in Temperaturklasse T<-25°C bei
         // schlafendem Steuergerät
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "ZEIT_TEMP_HISTOGRAMM", "STAT_ZEIT_TEMP_NO_OP_1_WERT", STAT_ZEIT_TEMP_NO_OP_1_WERT, "\"min\"");
 
     unsigned long STAT_ZEIT_TEMP_NO_OP_2_WERT = (RXBUF_UINT32(60));
-        // Time in temperature class -25 � C <T <= - 10 � C with the control unit asleep / Zeit in Temperaturklasse
+        // Time in temperature class -25 ° C <T <= - 10 ° C with the control unit asleep / Zeit in Temperaturklasse
         // -25°C<T<=-10°C bei schlafendem Steuergerät
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "ZEIT_TEMP_HISTOGRAMM", "STAT_ZEIT_TEMP_NO_OP_2_WERT", STAT_ZEIT_TEMP_NO_OP_2_WERT, "\"min\"");
 
     unsigned long STAT_ZEIT_TEMP_NO_OP_3_WERT = (RXBUF_UINT32(64));
-        // Time in temperature class -10 � C <T <= 0 � C with the control unit sleeping / Zeit in Temperaturklasse
+        // Time in temperature class -10 ° C <T <= 0 ° C with the control unit sleeping / Zeit in Temperaturklasse
         // -10°C<T<=0°C bei schlafendem Steuergerät
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "ZEIT_TEMP_HISTOGRAMM", "STAT_ZEIT_TEMP_NO_OP_3_WERT", STAT_ZEIT_TEMP_NO_OP_3_WERT, "\"min\"");
 
     unsigned long STAT_ZEIT_TEMP_NO_OP_4_WERT = (RXBUF_UINT32(68));
-        // Time in temperature class 0 � C <T <= 10 � C with the control unit asleep / Zeit in Temperaturklasse
+        // Time in temperature class 0 ° C <T <= 10 ° C with the control unit asleep / Zeit in Temperaturklasse
         // 0°C<T<=10°C bei schlafendem Steuergerät
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "ZEIT_TEMP_HISTOGRAMM", "STAT_ZEIT_TEMP_NO_OP_4_WERT", STAT_ZEIT_TEMP_NO_OP_4_WERT, "\"min\"");
 
     unsigned long STAT_ZEIT_TEMP_NO_OP_5_WERT = (RXBUF_UINT32(72));
-        // Time in temperature class 10 � C <T <= 20 � C with the control unit sleeping / Zeit in Temperaturklasse
+        // Time in temperature class 10 ° C <T <= 20 ° C with the control unit sleeping / Zeit in Temperaturklasse
         // 10°C<T<=20°C bei schlafendem Steuergerät
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "ZEIT_TEMP_HISTOGRAMM", "STAT_ZEIT_TEMP_NO_OP_5_WERT", STAT_ZEIT_TEMP_NO_OP_5_WERT, "\"min\"");
 
     unsigned long STAT_ZEIT_TEMP_NO_OP_6_WERT = (RXBUF_UINT32(76));
-        // Time in temperature class 20 � C less than T less than or equal to 25 � C with the control unit asleep / Zeit
+        // Time in temperature class 20 ° C less than T less than or equal to 25 ° C with the control unit asleep / Zeit
         // in Temperaturklasse 20°C kleiner T kleiner gleich 25°C bei schlafendem Steuergerät
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "ZEIT_TEMP_HISTOGRAMM", "STAT_ZEIT_TEMP_NO_OP_6_WERT", STAT_ZEIT_TEMP_NO_OP_6_WERT, "\"min\"");
 
     unsigned long STAT_ZEIT_TEMP_NO_OP_7_WERT = (RXBUF_UINT32(80));
-        // Time in temperature class 25 � C less than T less than or equal to 30 � C with the control unit asleep / Zeit
+        // Time in temperature class 25 ° C less than T less than or equal to 30 ° C with the control unit asleep / Zeit
         // in Temperaturklasse 25°C kleiner T kleiner gleich 30°C bei schlafendem Steuergerät
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "ZEIT_TEMP_HISTOGRAMM", "STAT_ZEIT_TEMP_NO_OP_7_WERT", STAT_ZEIT_TEMP_NO_OP_7_WERT, "\"min\"");
 
     unsigned long STAT_ZEIT_TEMP_NO_OP_8_WERT = (RXBUF_UINT32(84));
-        // Time in temperature class 30 � C less than T less than or equal to 35 � C with the control unit asleep / Zeit
+        // Time in temperature class 30 ° C less than T less than or equal to 35 ° C with the control unit asleep / Zeit
         // in Temperaturklasse 30°C kleiner T kleiner gleich 35°C bei schlafendem Steuergerät
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "ZEIT_TEMP_HISTOGRAMM", "STAT_ZEIT_TEMP_NO_OP_8_WERT", STAT_ZEIT_TEMP_NO_OP_8_WERT, "\"min\"");
 
     unsigned long STAT_ZEIT_TEMP_NO_OP_9_WERT = (RXBUF_UINT32(88));
-        // Time in temperature class 35 � C less than T less than or equal to 40 � C with the control unit asleep / Zeit
-        // in Temperaturklasse 35°C kleiner T kleiner gleich 40°C bei schlafendem Steuergerät
+        // Time in temperature class 35 ° C less than T less than or equal to 40 ° C with the control unit sleeping /
+        // Zeit in Temperaturklasse 35°C kleiner T kleiner gleich 40°C bei schlafendem Steuergerät
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "ZEIT_TEMP_HISTOGRAMM", "STAT_ZEIT_TEMP_NO_OP_9_WERT", STAT_ZEIT_TEMP_NO_OP_9_WERT, "\"min\"");
 
     unsigned long STAT_ZEIT_TEMP_NO_OP_10_WERT = (RXBUF_UINT32(92));
-        // Time in temperature class 40 � C less than T less than or equal to 45 � C with the control unit asleep / Zeit
+        // Time in temperature class 40 ° C less than T less than or equal to 45 ° C with the control unit asleep / Zeit
         // in Temperaturklasse 40°C kleiner T kleiner gleich 45°C bei schlafendem Steuergerät
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "ZEIT_TEMP_HISTOGRAMM", "STAT_ZEIT_TEMP_NO_OP_10_WERT", STAT_ZEIT_TEMP_NO_OP_10_WERT, "\"min\"");
 
     unsigned long STAT_ZEIT_TEMP_NO_OP_11_WERT = (RXBUF_UINT32(96));
-        // Time in temperature class 45 � C <T <= 50 � C with the control unit asleep / Zeit in Temperaturklasse
+        // Time in temperature class 45 ° C <T <= 50 ° C with the control unit asleep / Zeit in Temperaturklasse
         // 45°C<T<=50°C bei schlafendem Steuergerät
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "ZEIT_TEMP_HISTOGRAMM", "STAT_ZEIT_TEMP_NO_OP_11_WERT", STAT_ZEIT_TEMP_NO_OP_11_WERT, "\"min\"");
 
     unsigned long STAT_ZEIT_TEMP_NO_OP_12_WERT = (RXBUF_UINT32(100));
-        // Time in temperature class 50 � C <T <= 55 � C with the control unit asleep / Zeit in Temperaturklasse
+        // Time in temperature class 50 ° C <T <= 55 ° C with the control unit asleep / Zeit in Temperaturklasse
         // 50°C<T<=55°C bei schlafendem Steuergerät
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "ZEIT_TEMP_HISTOGRAMM", "STAT_ZEIT_TEMP_NO_OP_12_WERT", STAT_ZEIT_TEMP_NO_OP_12_WERT, "\"min\"");
 
     unsigned long STAT_ZEIT_TEMP_NO_OP_13_WERT = (RXBUF_UINT32(104));
-        // Time in temperature class 55 � C <T <= 60 � C with the control unit asleep / Zeit in Temperaturklasse
+        // Time in temperature class 55 ° C <T <= 60 ° C with the control unit asleep / Zeit in Temperaturklasse
         // 55°C<T<=60°C bei schlafendem Steuergerät
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "ZEIT_TEMP_HISTOGRAMM", "STAT_ZEIT_TEMP_NO_OP_13_WERT", STAT_ZEIT_TEMP_NO_OP_13_WERT, "\"min\"");
 
     unsigned long STAT_ZEIT_TEMP_NO_OP_14_WERT = (RXBUF_UINT32(108));
-        // Time in temperature class T> 60 � C with the control unit asleep / Zeit in Temperaturklasse T>60°C bei
+        // Time in temperature class T> 60 ° C with the control unit asleep / Zeit in Temperaturklasse T>60°C bei
         // schlafendem Steuergerät
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "ZEIT_TEMP_HISTOGRAMM", "STAT_ZEIT_TEMP_NO_OP_14_WERT", STAT_ZEIT_TEMP_NO_OP_14_WERT, "\"min\"");
 
@@ -3562,226 +3560,226 @@
     }
 
     float STAT_HV_BATT_HIST_SOC1_T1_I1_WERT = (RXBUF_UINT32(0)/10.0f);
-        // Duration with SoC less than 10%. Temperature less than 0 � C. Current less than -2.5xC A / Dauer bei SoC
+        // Duration with SoC less than 10%. Temperature less than 0 ° C. Current less than -2.5xC A / Dauer bei SoC
         // kleiner als 10 %. Temperatur kleiner als 0 °C. Strom kleiner als -2.5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_1", "STAT_HV_BATT_HIST_SOC1_T1_I1_WERT", STAT_HV_BATT_HIST_SOC1_T1_I1_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T1_I2_WERT = (RXBUF_UINT32(4)/10.0f);
-        // Duration with SoC less than 10%. Temperature less than 0 � C. -2.5xC A less than current less than -2.0xC A /
+        // Duration with SoC less than 10%. Temperature less than 0 ° C. -2.5xC A less than current less than -2.0xC A /
         // Dauer bei SoC kleiner als 10 %. Temperatur kleiner als 0 °C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_1", "STAT_HV_BATT_HIST_SOC1_T1_I2_WERT", STAT_HV_BATT_HIST_SOC1_T1_I2_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T1_I3_WERT = (RXBUF_UINT32(8)/10.0f);
-        // Duration with SoC less than 10%. Temperature less than 0 � C. -2.0xC A less than current less than -1.5xC A /
+        // Duration with SoC less than 10%. Temperature less than 0 ° C. -2.0xC A less than current less than -1.5xC A /
         // Dauer bei SoC kleiner als 10 %. Temperatur kleiner als 0 °C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_1", "STAT_HV_BATT_HIST_SOC1_T1_I3_WERT", STAT_HV_BATT_HIST_SOC1_T1_I3_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T1_I4_WERT = (RXBUF_UINT32(12)/10.0f);
-        // Duration with SoC less than 10%. Temperature less than 0 � C. -1.5xC A less than current less than -1.0xC A /
+        // Duration with SoC less than 10%. Temperature less than 0 ° C. -1.5xC A less than current less than -1.0xC A /
         // Dauer bei SoC kleiner als 10 %. Temperatur kleiner als 0 °C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_1", "STAT_HV_BATT_HIST_SOC1_T1_I4_WERT", STAT_HV_BATT_HIST_SOC1_T1_I4_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T1_I5_WERT = (RXBUF_UINT32(16)/10.0f);
-        // Duration with SoC less than 10%. Temperature less than 0 � C. -1.0xC A less than current less than -0.5xC A /
+        // Duration with SoC less than 10%. Temperature less than 0 ° C. -1.0xC A less than current less than -0.5xC A /
         // Dauer bei SoC kleiner als 10 %. Temperatur kleiner als 0 °C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_1", "STAT_HV_BATT_HIST_SOC1_T1_I5_WERT", STAT_HV_BATT_HIST_SOC1_T1_I5_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T1_I6_WERT = (RXBUF_UINT32(20)/10.0f);
-        // Duration with SoC less than 10%. Temperature less than 0 � C. -0.5xC A less than current less than -0.0xC A /
+        // Duration with SoC less than 10%. Temperature less than 0 ° C. -0.5xC A less than current less than -0.0xC A /
         // Dauer bei SoC kleiner als 10 %. Temperatur kleiner als 0 °C. -0,5xC A kleiner als Strom kleiner als -0,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_1", "STAT_HV_BATT_HIST_SOC1_T1_I6_WERT", STAT_HV_BATT_HIST_SOC1_T1_I6_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T1_I7_WERT = (RXBUF_UINT32(24)/10.0f);
-        // Duration with SoC less than 10%. Temperature less than 0 � C. 0.0xC A less than current less than 0.5xC A /
+        // Duration with SoC less than 10%. Temperature less than 0 ° C. 0.0xC A less than current less than 0.5xC A /
         // Dauer bei SoC kleiner als 10 %. Temperatur kleiner als 0 °C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_1", "STAT_HV_BATT_HIST_SOC1_T1_I7_WERT", STAT_HV_BATT_HIST_SOC1_T1_I7_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T1_I8_WERT = (RXBUF_UINT32(28)/10.0f);
-        // Duration with SoC less than 10%. Temperature less than 0 � C. 0.5xC A less than current less than 1.0xC A /
+        // Duration with SoC less than 10%. Temperature less than 0 ° C. 0.5xC A less than current less than 1.0xC A /
         // Dauer bei SoC kleiner als 10 %. Temperatur kleiner als 0 °C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_1", "STAT_HV_BATT_HIST_SOC1_T1_I8_WERT", STAT_HV_BATT_HIST_SOC1_T1_I8_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T1_I9_WERT = (RXBUF_UINT32(32)/10.0f);
-        // Duration with SoC less than 10%. Temperature less than 0 � C. 1.0xC A less than current less than 1.5xC A /
+        // Duration with SoC less than 10%. Temperature less than 0 ° C. 1.0xC A less than current less than 1.5xC A /
         // Dauer bei SoC kleiner als 10 %. Temperatur kleiner als 0 °C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_1", "STAT_HV_BATT_HIST_SOC1_T1_I9_WERT", STAT_HV_BATT_HIST_SOC1_T1_I9_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T1_I10_WERT = (RXBUF_UINT32(36)/10.0f);
-        // Duration with SoC less than 10%. Temperature less than 0 � C. 1.5xC A less than current / Dauer bei SoC
+        // Duration with SoC less than 10%. Temperature less than 0 ° C. 1.5xC A less than current / Dauer bei SoC
         // kleiner als 10 %. Temperatur kleiner als 0 °C. 1,5xC A kleiner als Strom
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_1", "STAT_HV_BATT_HIST_SOC1_T1_I10_WERT", STAT_HV_BATT_HIST_SOC1_T1_I10_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T1_I1_WERT = (RXBUF_UINT32(40)/10.0f);
-        // Duration at 10% less than SoC less than 30%. Temperature less than 0 � C. Current less than -2.5xC A / Dauer
+        // Duration at 10% less than SoC less than 30%. Temperature less than 0 ° C. Current less than -2.5xC A / Dauer
         // bei 10 % kleiner als SoC kleiner als 30 %. Temperatur kleiner als 0 °C. Strom kleiner als -2,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_1", "STAT_HV_BATT_HIST_SOC2_T1_I1_WERT", STAT_HV_BATT_HIST_SOC2_T1_I1_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T1_I2_WERT = (RXBUF_UINT32(44)/10.0f);
-        // Duration at 10% less than SoC less than 30%. Temperature less than 0 � C. -2.5xC A less than current less than
-        // -2.0xC A / Dauer bei 10 % kleiner als SoC kleiner als 30 %. Temperatur kleiner als 0 °C.  -2,5xC A kleiner
-        // als Strom kleiner als -2,0xC A
+        // Duration at 10% less than SoC less than 30%. Temperature less than 0 ° C. -2.5xC A less than current less than
+        // -2.0xC A / Dauer bei 10 % kleiner als SoC kleiner als 30 %. Temperatur kleiner als 0 °C.  -2,5xC A kleiner als
+        // Strom kleiner als -2,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_1", "STAT_HV_BATT_HIST_SOC2_T1_I2_WERT", STAT_HV_BATT_HIST_SOC2_T1_I2_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T1_I3_WERT = (RXBUF_UINT32(48)/10.0f);
-        // Duration at 10% less than SoC less than 30%. Temperature less than 0 � C. -2.0xC A less than current less than
-        // -1.5xC A / Dauer bei 10 % kleiner als SoC kleiner als 30 %. Temperatur kleiner als 0 °C.  -2,0xC A kleiner
-        // als Strom kleiner als -1,5xC A
+        // Duration at 10% less than SoC less than 30%. Temperature less than 0 ° C. -2.0xC A less than current less than
+        // -1.5xC A / Dauer bei 10 % kleiner als SoC kleiner als 30 %. Temperatur kleiner als 0 °C.  -2,0xC A kleiner als
+        // Strom kleiner als -1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_1", "STAT_HV_BATT_HIST_SOC2_T1_I3_WERT", STAT_HV_BATT_HIST_SOC2_T1_I3_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T1_I4_WERT = (RXBUF_UINT32(52)/10.0f);
-        // Duration at 10% less than SoC less than 30%. Temperature less than 0 � C. -1.5xC A less than current less than
-        // -1.0xC A / Dauer bei 10 % kleiner als SoC kleiner als 30 %. Temperatur kleiner als 0 °C.  -1,5xC A kleiner
-        // als Strom kleiner als -1,0xC A
+        // Duration at 10% less than SoC less than 30%. Temperature less than 0 ° C. -1.5xC A less than current less than
+        // -1.0xC A / Dauer bei 10 % kleiner als SoC kleiner als 30 %. Temperatur kleiner als 0 °C.  -1,5xC A kleiner als
+        // Strom kleiner als -1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_1", "STAT_HV_BATT_HIST_SOC2_T1_I4_WERT", STAT_HV_BATT_HIST_SOC2_T1_I4_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T1_I5_WERT = (RXBUF_UINT32(56)/10.0f);
-        // Duration at 10% less than SoC less than 30%. Temperature less than 0 � C. -1.0xC A less than current less than
-        // -0.5xC A / Dauer bei 10 % kleiner als SoC kleiner als 30 %. Temperatur kleiner als 0 °C.  -1,0xC A kleiner
-        // als Strom kleiner als -0,5xC A
+        // Duration at 10% less than SoC less than 30%. Temperature less than 0 ° C. -1.0xC A less than current less than
+        // -0.5xC A / Dauer bei 10 % kleiner als SoC kleiner als 30 %. Temperatur kleiner als 0 °C.  -1,0xC A kleiner als
+        // Strom kleiner als -0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_1", "STAT_HV_BATT_HIST_SOC2_T1_I5_WERT", STAT_HV_BATT_HIST_SOC2_T1_I5_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T1_I6_WERT = (RXBUF_UINT32(60)/10.0f);
-        // Duration at 10% less than SoC less than 30%. Temperature less than 0 � C. -0.5xC A less than current less than
+        // Duration at 10% less than SoC less than 30%. Temperature less than 0 ° C. -0.5xC A less than current less than
         // 0.0xC A / Dauer bei 10 % kleiner als SoC kleiner als 30 %. Temperatur kleiner als 0 °C.  -0,5xC A kleiner als
         // Strom kleiner als 0,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_1", "STAT_HV_BATT_HIST_SOC2_T1_I6_WERT", STAT_HV_BATT_HIST_SOC2_T1_I6_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T1_I7_WERT = (RXBUF_UINT32(64)/10.0f);
-        // Duration at 10% less than SoC less than 30%. Temperature less than 0 � C. 0.0xC A less than current less than
+        // Duration at 10% less than SoC less than 30%. Temperature less than 0 ° C. 0.0xC A less than current less than
         // 0.5xC A / Dauer bei 10 % kleiner als SoC kleiner als 30 %. Temperatur kleiner als 0 °C.  0,0xC A kleiner als
         // Strom kleiner als 0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_1", "STAT_HV_BATT_HIST_SOC2_T1_I7_WERT", STAT_HV_BATT_HIST_SOC2_T1_I7_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T1_I8_WERT = (RXBUF_UINT32(68)/10.0f);
-        // Duration at 10% less than SoC less than 30%. Temperature less than 0 � C. 0.5xC A less than current less than
+        // Duration at 10% less than SoC less than 30%. Temperature less than 0 ° C. 0.5xC A less than current less than
         // 1.0xC A / Dauer bei 10 % kleiner als SoC kleiner als 30 %. Temperatur kleiner als 0 °C.  0,5xC A kleiner als
         // Strom kleiner als 1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_1", "STAT_HV_BATT_HIST_SOC2_T1_I8_WERT", STAT_HV_BATT_HIST_SOC2_T1_I8_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T1_I9_WERT = (RXBUF_UINT32(72)/10.0f);
-        // Duration at 10% less than SoC less than 30%. Temperature less than 0 � C. 1.0xC A less than current less than
+        // Duration at 10% less than SoC less than 30%. Temperature less than 0 ° C. 1.0xC A less than current less than
         // 1.5xC A / Dauer bei 10 % kleiner als SoC kleiner als 30 %. Temperatur kleiner als 0 °C.  1,0xC A kleiner als
         // Strom kleiner als 1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_1", "STAT_HV_BATT_HIST_SOC2_T1_I9_WERT", STAT_HV_BATT_HIST_SOC2_T1_I9_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T1_I10_WERT = (RXBUF_UINT32(76)/10.0f);
-        // Duration at 10% less than SoC less than 30%. Temperature less than 0 � C. 1.5xC A less than current / Dauer
+        // Duration at 10% less than SoC less than 30%. Temperature less than 0 ° C. 1.5xC A less than current / Dauer
         // bei 10 % kleiner als SoC kleiner als 30 %. Temperatur kleiner als 0 °C.  1,5xC A kleiner als Strom
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_1", "STAT_HV_BATT_HIST_SOC2_T1_I10_WERT", STAT_HV_BATT_HIST_SOC2_T1_I10_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T1_I1_WERT = (RXBUF_UINT32(80)/10.0f);
-        // Duration at 30% less than SoC less than 50%. Temperature less than 0 � C. Current less than -2.5xC A / Dauer
+        // Duration at 30% less than SoC less than 50%. Temperature less than 0 ° C. Current less than -2.5xC A / Dauer
         // bei 30 % kleiner als SoC kleiner als 50 %. Temperatur kleiner als 0 °C. Strom kleiner als -2,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_1", "STAT_HV_BATT_HIST_SOC3_T1_I1_WERT", STAT_HV_BATT_HIST_SOC3_T1_I1_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T1_I2_WERT = (RXBUF_UINT32(84)/10.0f);
-        // Duration at 30% less than SoC less than 50%. Temperature less than 0 � C. -2.5xC A less than current less than
-        // -2.0xC A / Dauer bei 30 % kleiner als SoC kleiner als 50 %. Temperatur kleiner als 0 °C.  -2,5xC A kleiner
-        // als Strom kleiner als -2,0xC A
+        // Duration at 30% less than SoC less than 50%. Temperature less than 0 ° C. -2.5xC A less than current less than
+        // -2.0xC A / Dauer bei 30 % kleiner als SoC kleiner als 50 %. Temperatur kleiner als 0 °C.  -2,5xC A kleiner als
+        // Strom kleiner als -2,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_1", "STAT_HV_BATT_HIST_SOC3_T1_I2_WERT", STAT_HV_BATT_HIST_SOC3_T1_I2_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T1_I3_WERT = (RXBUF_UINT32(88)/10.0f);
-        // Duration at 30% less than SoC less than 50%. Temperature less than 0 � C. -2.0xC A less than current less than
-        // -1.5xC A / Dauer bei 30 % kleiner als SoC kleiner als 50 %. Temperatur kleiner als 0 °C.  -2,0xC A kleiner
-        // als Strom kleiner als -1,5xC A
+        // Duration at 30% less than SoC less than 50%. Temperature less than 0 ° C. -2.0xC A less than current less than
+        // -1.5xC A / Dauer bei 30 % kleiner als SoC kleiner als 50 %. Temperatur kleiner als 0 °C.  -2,0xC A kleiner als
+        // Strom kleiner als -1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_1", "STAT_HV_BATT_HIST_SOC3_T1_I3_WERT", STAT_HV_BATT_HIST_SOC3_T1_I3_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T1_I4_WERT = (RXBUF_UINT32(92)/10.0f);
-        // Duration at 30% less than SoC less than 50%. Temperature less than 0 � C. -1.5xC A less than current less than
-        // -1.0xC A / Dauer bei 30 % kleiner als SoC kleiner als 50 %. Temperatur kleiner als 0 °C.  -1,5xC A kleiner
-        // als Strom kleiner als -1,0xC A
+        // Duration at 30% less than SoC less than 50%. Temperature less than 0 ° C. -1.5xC A less than current less than
+        // -1.0xC A / Dauer bei 30 % kleiner als SoC kleiner als 50 %. Temperatur kleiner als 0 °C.  -1,5xC A kleiner als
+        // Strom kleiner als -1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_1", "STAT_HV_BATT_HIST_SOC3_T1_I4_WERT", STAT_HV_BATT_HIST_SOC3_T1_I4_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T1_I5_WERT = (RXBUF_UINT32(96)/10.0f);
-        // Duration at 30% less than SoC less than 50%. Temperature less than 0 � C. -1.0xC A less than current less than
-        // -0.5xC A / Dauer bei 30 % kleiner als SoC kleiner als 50 %. Temperatur kleiner als 0 °C.  -1,0xC A kleiner
-        // als Strom kleiner als -0,5xC A
+        // Duration at 30% less than SoC less than 50%. Temperature less than 0 ° C. -1.0xC A less than current less than
+        // -0.5xC A / Dauer bei 30 % kleiner als SoC kleiner als 50 %. Temperatur kleiner als 0 °C.  -1,0xC A kleiner als
+        // Strom kleiner als -0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_1", "STAT_HV_BATT_HIST_SOC3_T1_I5_WERT", STAT_HV_BATT_HIST_SOC3_T1_I5_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T1_I6_WERT = (RXBUF_UINT32(100)/10.0f);
-        // Duration at 30% less than SoC less than 50%. Temperature less than 0 � C. -0.5xC A less than current less than
+        // Duration at 30% less than SoC less than 50%. Temperature less than 0 ° C. -0.5xC A less than current less than
         // 0.0xC A / Dauer bei 30 % kleiner als SoC kleiner als 50 %. Temperatur kleiner als 0 °C.  -0,5xC A kleiner als
         // Strom kleiner als 0,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_1", "STAT_HV_BATT_HIST_SOC3_T1_I6_WERT", STAT_HV_BATT_HIST_SOC3_T1_I6_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T1_I7_WERT = (RXBUF_UINT32(104)/10.0f);
-        // Duration at 30% less than SoC less than 50%. Temperature less than 0 � C. 0.0xC A less than current less than
+        // Duration at 30% less than SoC less than 50%. Temperature less than 0 ° C. 0.0xC A less than current less than
         // 0.5xC A / Dauer bei 30 % kleiner als SoC kleiner als 50 %. Temperatur kleiner als 0 °C.  0,0xC A kleiner als
         // Strom kleiner als 0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_1", "STAT_HV_BATT_HIST_SOC3_T1_I7_WERT", STAT_HV_BATT_HIST_SOC3_T1_I7_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T1_I8_WERT = (RXBUF_UINT32(108)/10.0f);
-        // Duration at 30% less than SoC less than 50%. Temperature less than 0 � C. 0.5xC A less than current less than
+        // Duration at 30% less than SoC less than 50%. Temperature less than 0 ° C. 0.5xC A less than current less than
         // 1.0xC A / Dauer bei 30 % kleiner als SoC kleiner als 50 %. Temperatur kleiner als 0 °C.  0,5xC A kleiner als
         // Strom kleiner als 1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_1", "STAT_HV_BATT_HIST_SOC3_T1_I8_WERT", STAT_HV_BATT_HIST_SOC3_T1_I8_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T1_I9_WERT = (RXBUF_UINT32(112)/10.0f);
-        // Duration at 30% less than SoC less than 50%. Temperature less than 0 � C. 1.0xC A less than current less than
+        // Duration at 30% less than SoC less than 50%. Temperature less than 0 ° C. 1.0xC A less than current less than
         // 1.5xC A / Dauer bei 30 % kleiner als SoC kleiner als 50 %. Temperatur kleiner als 0 °C.  1,0xC A kleiner als
         // Strom kleiner als 1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_1", "STAT_HV_BATT_HIST_SOC3_T1_I9_WERT", STAT_HV_BATT_HIST_SOC3_T1_I9_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T1_I10_WERT = (RXBUF_UINT32(116)/10.0f);
-        // Duration at 30% less than SoC less than 50%. Temperature less than 0 � C. 1.5xC A less than current / Dauer
+        // Duration at 30% less than SoC less than 50%. Temperature less than 0 ° C. 1.5xC A less than current / Dauer
         // bei 30 % kleiner als SoC kleiner als 50 %. Temperatur kleiner als 0 °C.  1,5xC A kleiner als Strom
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_1", "STAT_HV_BATT_HIST_SOC3_T1_I10_WERT", STAT_HV_BATT_HIST_SOC3_T1_I10_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T1_I1_WERT = (RXBUF_UINT32(120)/10.0f);
-        // Duration at 50% less than SoC less than 70%. Temperature less than 0 � C. Current less than -2.5xC A / Dauer
+        // Duration at 50% less than SoC less than 70%. Temperature less than 0 ° C. Current less than -2.5xC A / Dauer
         // bei 50 % kleiner als SoC kleiner als 70 %. Temperatur kleiner als 0 °C. Strom kleiner als -2,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_1", "STAT_HV_BATT_HIST_SOC4_T1_I1_WERT", STAT_HV_BATT_HIST_SOC4_T1_I1_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T1_I2_WERT = (RXBUF_UINT32(124)/10.0f);
-        // Duration at 50% less than SoC less than 70%. Temperature less than 0 � C. -2.5xC A less than current less than
-        // -2.0xC A / Dauer bei 50 % kleiner als SoC kleiner als 70 %. Temperatur kleiner als 0 °C.  -2,5xC A kleiner
-        // als Strom kleiner als -2,0xC A
+        // Duration at 50% less than SoC less than 70%. Temperature less than 0 ° C. -2.5xC A less than current less than
+        // -2.0xC A / Dauer bei 50 % kleiner als SoC kleiner als 70 %. Temperatur kleiner als 0 °C.  -2,5xC A kleiner als
+        // Strom kleiner als -2,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_1", "STAT_HV_BATT_HIST_SOC4_T1_I2_WERT", STAT_HV_BATT_HIST_SOC4_T1_I2_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T1_I3_WERT = (RXBUF_UINT32(128)/10.0f);
-        // Duration at 50% less than SoC less than 70%. Temperature less than 0 � C. -2.0xC A less than current less than
-        // -1.5xC A / Dauer bei 50 % kleiner als SoC kleiner als 70 %. Temperatur kleiner als 0 °C.  -2,0xC A kleiner
-        // als Strom kleiner als -1,5xC A
+        // Duration at 50% less than SoC less than 70%. Temperature less than 0 ° C. -2.0xC A less than current less than
+        // -1.5xC A / Dauer bei 50 % kleiner als SoC kleiner als 70 %. Temperatur kleiner als 0 °C.  -2,0xC A kleiner als
+        // Strom kleiner als -1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_1", "STAT_HV_BATT_HIST_SOC4_T1_I3_WERT", STAT_HV_BATT_HIST_SOC4_T1_I3_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T1_I4_WERT = (RXBUF_UINT32(132)/10.0f);
-        // Duration at 50% less than SoC less than 70%. Temperature less than 0 � C. -1.5xC A less than current less than
-        // -1.0xC A / Dauer bei 50 % kleiner als SoC kleiner als 70 %. Temperatur kleiner als 0 °C.  -1,5xC A kleiner
-        // als Strom kleiner als -1,0xC A
+        // Duration at 50% less than SoC less than 70%. Temperature less than 0 ° C. -1.5xC A less than current less than
+        // -1.0xC A / Dauer bei 50 % kleiner als SoC kleiner als 70 %. Temperatur kleiner als 0 °C.  -1,5xC A kleiner als
+        // Strom kleiner als -1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_1", "STAT_HV_BATT_HIST_SOC4_T1_I4_WERT", STAT_HV_BATT_HIST_SOC4_T1_I4_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T1_I5_WERT = (RXBUF_UINT32(136)/10.0f);
-        // Duration at 50% less than SoC less than 70%. Temperature less than 0 � C. -1.0xC A less than current less than
-        // -0.5xC A / Dauer bei 50 % kleiner als SoC kleiner als 70 %. Temperatur kleiner als 0 °C.  -1,0xC A kleiner
-        // als Strom kleiner als -0,5xC A
+        // Duration at 50% less than SoC less than 70%. Temperature less than 0 ° C. -1.0xC A less than current less than
+        // -0.5xC A / Dauer bei 50 % kleiner als SoC kleiner als 70 %. Temperatur kleiner als 0 °C.  -1,0xC A kleiner als
+        // Strom kleiner als -0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_1", "STAT_HV_BATT_HIST_SOC4_T1_I5_WERT", STAT_HV_BATT_HIST_SOC4_T1_I5_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T1_I6_WERT = (RXBUF_UINT32(140)/10.0f);
-        // Duration at 50% less than SoC less than 70%. Temperature less than 0 � C. -0.5xC A less than current less than
+        // Duration at 50% less than SoC less than 70%. Temperature less than 0 ° C. -0.5xC A less than current less than
         // 0.0xC A / Dauer bei 50 % kleiner als SoC kleiner als 70 %. Temperatur kleiner als 0 °C.  -0,5xC A kleiner als
         // Strom kleiner als 0,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_1", "STAT_HV_BATT_HIST_SOC4_T1_I6_WERT", STAT_HV_BATT_HIST_SOC4_T1_I6_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T1_I7_WERT = (RXBUF_UINT32(144)/10.0f);
-        // Duration at 50% less than SoC less than 70%. Temperature less than 0 � C. 0.0xC A less than current less than
+        // Duration at 50% less than SoC less than 70%. Temperature less than 0 ° C. 0.0xC A less than current less than
         // 0.5xC A / Dauer bei 50 % kleiner als SoC kleiner als 70 %. Temperatur kleiner als 0 °C.  0,0xC A kleiner als
         // Strom kleiner als 0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_1", "STAT_HV_BATT_HIST_SOC4_T1_I7_WERT", STAT_HV_BATT_HIST_SOC4_T1_I7_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T1_I8_WERT = (RXBUF_UINT32(148)/10.0f);
-        // Duration at 50% less than SoC less than 70%. Temperature less than 0 � C. 0.5xC A less than current less than
+        // Duration at 50% less than SoC less than 70%. Temperature less than 0 ° C. 0.5xC A less than current less than
         // 1.0xC A / Dauer bei 50 % kleiner als SoC kleiner als 70 %. Temperatur kleiner als 0 °C.  0,5xC A kleiner als
         // Strom kleiner als 1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_1", "STAT_HV_BATT_HIST_SOC4_T1_I8_WERT", STAT_HV_BATT_HIST_SOC4_T1_I8_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T1_I9_WERT = (RXBUF_UINT32(152)/10.0f);
-        // Duration at 50% less than SoC less than 70%. Temperature less than 0 � C. 1.0xC A less than current less than
+        // Duration at 50% less than SoC less than 70%. Temperature less than 0 ° C. 1.0xC A less than current less than
         // 1.5xC A / Dauer bei 50 % kleiner als SoC kleiner als 70 %. Temperatur kleiner als 0 °C.  1,0xC A kleiner als
         // Strom kleiner als 1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_1", "STAT_HV_BATT_HIST_SOC4_T1_I9_WERT", STAT_HV_BATT_HIST_SOC4_T1_I9_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T1_I10_WERT = (RXBUF_UINT32(156)/10.0f);
-        // Duration at 50% less than SoC less than 70%. Temperature less than 0 � C. 1.5xC A less than current / Dauer
+        // Duration at 50% less than SoC less than 70%. Temperature less than 0 ° C. 1.5xC A less than current / Dauer
         // bei 50 % kleiner als SoC kleiner als 70 %. Temperatur kleiner als 0 °C.  1,5xC A kleiner als Strom
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_1", "STAT_HV_BATT_HIST_SOC4_T1_I10_WERT", STAT_HV_BATT_HIST_SOC4_T1_I10_WERT, "\"s\"");
 
@@ -3798,239 +3796,239 @@
     }
 
     float STAT_HV_BATT_HIST_SOC1_T2_I1_WERT = (RXBUF_UINT32(0)/10.0f);
-        // Duration with SoC less than 10%. 0 � C less than temperature less than 10 � C. Current less than -2.5xC A /
+        // Duration with SoC less than 10%. 0 ° C less than temperature less than 10 ° C. Current less than -2.5xC A /
         // Dauer bei SoC kleiner als 10 %. 0°C kleiner als Temperatur kleiner als 10 °C. Strom kleiner als -2,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_1", "STAT_HV_BATT_HIST_SOC1_T2_I1_WERT", STAT_HV_BATT_HIST_SOC1_T2_I1_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T2_I2_WERT = (RXBUF_UINT32(4)/10.0f);
-        // Duration with SoC less than 10%. 0 � C less than temperature less than 10 � C. -2.5xC A less than current less
+        // Duration with SoC less than 10%. 0 ° C less than temperature less than 10 ° C. -2.5xC A less than current less
         // than -2.0xC A / Dauer bei SoC kleiner als 10 %. 0°C kleiner als Temperatur kleiner als 10 °C.  -2,5xC A
         // kleiner als Strom kleiner als -2,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_1", "STAT_HV_BATT_HIST_SOC1_T2_I2_WERT", STAT_HV_BATT_HIST_SOC1_T2_I2_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T2_I3_WERT = (RXBUF_UINT32(8)/10.0f);
-        // Duration with SoC less than 10%. 0 � C less than temperature less than 10 � C. -2.0xC A less than current less
+        // Duration with SoC less than 10%. 0 ° C less than temperature less than 10 ° C. -2.0xC A less than current less
         // than -1.5xC A / Dauer bei SoC kleiner als 10 %. 0°C kleiner als Temperatur kleiner als 10 °C.  -2,0xC A
         // kleiner als Strom kleiner als -1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_1", "STAT_HV_BATT_HIST_SOC1_T2_I3_WERT", STAT_HV_BATT_HIST_SOC1_T2_I3_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T2_I4_WERT = (RXBUF_UINT32(12)/10.0f);
-        // Duration with SoC less than 10%. 0 � C less than temperature less than 10 � C. -1.5xC A less than current less
+        // Duration with SoC less than 10%. 0 ° C less than temperature less than 10 ° C. -1.5xC A less than current less
         // than -1.0xC A / Dauer bei SoC kleiner als 10 %. 0°C kleiner als Temperatur kleiner als 10 °C.  -1,5xC A
         // kleiner als Strom kleiner als -1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_1", "STAT_HV_BATT_HIST_SOC1_T2_I4_WERT", STAT_HV_BATT_HIST_SOC1_T2_I4_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T2_I5_WERT = (RXBUF_UINT32(16)/10.0f);
-        // Duration with SoC less than 10%. 0 � C less than temperature less than 10 � C. -1.0xC A less than current less
+        // Duration with SoC less than 10%. 0 ° C less than temperature less than 10 ° C. -1.0xC A less than current less
         // than -0.5xC A / Dauer bei SoC kleiner als 10 %. 0°C kleiner als Temperatur kleiner als 10 °C.  -1,0xC A
         // kleiner als Strom kleiner als -0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_1", "STAT_HV_BATT_HIST_SOC1_T2_I5_WERT", STAT_HV_BATT_HIST_SOC1_T2_I5_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T2_I6_WERT = (RXBUF_UINT32(20)/10.0f);
-        // Duration with SoC less than 10%. 0 � C less than temperature less than 10 � C. -0.5xC A less than current less
-        // than 0.0xC A / Dauer bei SoC kleiner als 10 %. 0°C kleiner als Temperatur kleiner als 10 °C.  -0,5xC A
-        // kleiner als Strom kleiner als 0,0xC A
+        // Duration with SoC less than 10%. 0 ° C less than temperature less than 10 ° C. -0.5xC A less than current less
+        // than 0.0xC A / Dauer bei SoC kleiner als 10 %. 0°C kleiner als Temperatur kleiner als 10 °C.  -0,5xC A kleiner
+        // als Strom kleiner als 0,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_1", "STAT_HV_BATT_HIST_SOC1_T2_I6_WERT", STAT_HV_BATT_HIST_SOC1_T2_I6_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T2_I7_WERT = (RXBUF_UINT32(24)/10.0f);
-        // Duration with SoC less than 10%. 0 � C less than temperature less than 10 � C. 0.0xC A less than current less
-        // than 0.5xC A / Dauer bei SoC kleiner als 10 %. 0°C kleiner als Temperatur kleiner als 10 °C.  0,0xC A
-        // kleiner als Strom kleiner als 0,5xC A
+        // Duration with SoC less than 10%. 0 ° C less than temperature less than 10 ° C. 0.0xC A less than current less
+        // than 0.5xC A / Dauer bei SoC kleiner als 10 %. 0°C kleiner als Temperatur kleiner als 10 °C.  0,0xC A kleiner
+        // als Strom kleiner als 0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_1", "STAT_HV_BATT_HIST_SOC1_T2_I7_WERT", STAT_HV_BATT_HIST_SOC1_T2_I7_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T2_I8_WERT = (RXBUF_UINT32(28)/10.0f);
-        // Duration with SoC less than 10%. 0 � C less than temperature less than 10 � C. 0.5xC A less than current less
-        // than 1.0xC A / Dauer bei SoC kleiner als 10 %. 0°C kleiner als Temperatur kleiner als 10 °C.  0,5xC A
-        // kleiner als Strom kleiner als 1,0xC A
+        // Duration with SoC less than 10%. 0 ° C less than temperature less than 10 ° C. 0.5xC A less than current less
+        // than 1.0xC A / Dauer bei SoC kleiner als 10 %. 0°C kleiner als Temperatur kleiner als 10 °C.  0,5xC A kleiner
+        // als Strom kleiner als 1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_1", "STAT_HV_BATT_HIST_SOC1_T2_I8_WERT", STAT_HV_BATT_HIST_SOC1_T2_I8_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T2_I9_WERT = (RXBUF_UINT32(32)/10.0f);
-        // Duration with SoC less than 10%. 0 � C less than temperature less than 10 � C. 1.0xC A less than current less
-        // than 1.5xC A / Dauer bei SoC kleiner als 10 %. 0°C kleiner als Temperatur kleiner als 10 °C.  1,0xC A
-        // kleiner als Strom kleiner als 1,5xC A
+        // Duration with SoC less than 10%. 0 ° C less than temperature less than 10 ° C. 1.0xC A less than current less
+        // than 1.5xC A / Dauer bei SoC kleiner als 10 %. 0°C kleiner als Temperatur kleiner als 10 °C.  1,0xC A kleiner
+        // als Strom kleiner als 1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_1", "STAT_HV_BATT_HIST_SOC1_T2_I9_WERT", STAT_HV_BATT_HIST_SOC1_T2_I9_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T2_I10_WERT = (RXBUF_UINT32(36)/10.0f);
-        // Duration with SoC less than 10%. 0 � C less than temperature less than 10 � C. 1.5xC A less than current /
+        // Duration with SoC less than 10%. 0 ° C less than temperature less than 10 ° C. 1.5xC A less than current /
         // Dauer bei SoC kleiner als 10 %. 0°C kleiner als Temperatur kleiner als 10 °C.  1,5xC A kleiner als Strom
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_1", "STAT_HV_BATT_HIST_SOC1_T2_I10_WERT", STAT_HV_BATT_HIST_SOC1_T2_I10_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T2_I1_WERT = (RXBUF_UINT32(40)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 0 � C less than temperature less than 10 � C. Current less than
+        // Duration at 10% less than SoC less than 30%. 0 ° C less than temperature less than 10 ° C. Current less than
         // -2.5xC A / Dauer bei 10 % kleiner als SoC kleiner als 30 %. 0°C kleiner als Temperatur kleiner als 10 °C.
         // Strom kleiner als -2,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_1", "STAT_HV_BATT_HIST_SOC2_T2_I1_WERT", STAT_HV_BATT_HIST_SOC2_T2_I1_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T2_I2_WERT = (RXBUF_UINT32(44)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 0 � C less than temperature less than 10 � C. -2.5xC A less than
+        // Duration at 10% less than SoC less than 30%. 0 ° C less than temperature less than 10 ° C. -2.5xC A less than
         // current less than -2.0xC A / Dauer bei 10 % kleiner als SoC kleiner als 30 %. 0°C kleiner als Temperatur
         // kleiner als 10 °C.  -2,5xC A kleiner als Strom kleiner als -2,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_1", "STAT_HV_BATT_HIST_SOC2_T2_I2_WERT", STAT_HV_BATT_HIST_SOC2_T2_I2_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T2_I3_WERT = (RXBUF_UINT32(48)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 0 � C less than temperature less than 10 � C. -2.0xC A less than
+        // Duration at 10% less than SoC less than 30%. 0 ° C less than temperature less than 10 ° C. -2.0xC A less than
         // current less than -1.5xC A / Dauer bei 10 % kleiner als SoC kleiner als 30 %. 0°C kleiner als Temperatur
         // kleiner als 10 °C.  -2,0xC A kleiner als Strom kleiner als -1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_1", "STAT_HV_BATT_HIST_SOC2_T2_I3_WERT", STAT_HV_BATT_HIST_SOC2_T2_I3_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T2_I4_WERT = (RXBUF_UINT32(52)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 0 � C less than temperature less than 10 � C. -1.5xC A less than
+        // Duration at 10% less than SoC less than 30%. 0 ° C less than temperature less than 10 ° C. -1.5xC A less than
         // current less than -1.0xC A / Dauer bei 10 % kleiner als SoC kleiner als 30 %. 0°C kleiner als Temperatur
         // kleiner als 10 °C.  -1,5xC A kleiner als Strom kleiner als -1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_1", "STAT_HV_BATT_HIST_SOC2_T2_I4_WERT", STAT_HV_BATT_HIST_SOC2_T2_I4_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T2_I5_WERT = (RXBUF_UINT32(56)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 0 � C less than temperature less than 10 � C. -1.0xC A less than
+        // Duration at 10% less than SoC less than 30%. 0 ° C less than temperature less than 10 ° C. -1.0xC A less than
         // current less than -0.5xC A / Dauer bei 10 % kleiner als SoC kleiner als 30 %. 0°C kleiner als Temperatur
         // kleiner als 10 °C.  -1,0xC A kleiner als Strom kleiner als -0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_1", "STAT_HV_BATT_HIST_SOC2_T2_I5_WERT", STAT_HV_BATT_HIST_SOC2_T2_I5_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T2_I6_WERT = (RXBUF_UINT32(60)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 0 � C less than temperature less than 10 � C. -0.5xC A less than
+        // Duration at 10% less than SoC less than 30%. 0 ° C less than temperature less than 10 ° C. -0.5xC A less than
         // current less than 0.0xC A / Dauer bei 10 % kleiner als SoC kleiner als 30 %. 0°C kleiner als Temperatur
         // kleiner als 10 °C.  -0,5xC A kleiner als Strom kleiner als 0,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_1", "STAT_HV_BATT_HIST_SOC2_T2_I6_WERT", STAT_HV_BATT_HIST_SOC2_T2_I6_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T2_I7_WERT = (RXBUF_UINT32(64)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 0 � C less than temperature less than 10 � C. 0.0xC A less than
+        // Duration at 10% less than SoC less than 30%. 0 ° C less than temperature less than 10 ° C. 0.0xC A less than
         // current less than 0.5xC A / Dauer bei 10 % kleiner als SoC kleiner als 30 %. 0°C kleiner als Temperatur
         // kleiner als 10 °C.  0,0xC A kleiner als Strom kleiner als 0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_1", "STAT_HV_BATT_HIST_SOC2_T2_I7_WERT", STAT_HV_BATT_HIST_SOC2_T2_I7_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T2_I8_WERT = (RXBUF_UINT32(68)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 0 � C less than temperature less than 10 � C. 0.5xC A less than
+        // Duration at 10% less than SoC less than 30%. 0 ° C less than temperature less than 10 ° C. 0.5xC A less than
         // current less than 1.0xC A / Dauer bei 10 % kleiner als SoC kleiner als 30 %. 0°C kleiner als Temperatur
         // kleiner als 10 °C.  0,5xC A kleiner als Strom kleiner als 1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_1", "STAT_HV_BATT_HIST_SOC2_T2_I8_WERT", STAT_HV_BATT_HIST_SOC2_T2_I8_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T2_I9_WERT = (RXBUF_UINT32(72)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 0 � C less than temperature less than 10 � C. 1.0xC A less than
+        // Duration at 10% less than SoC less than 30%. 0 ° C less than temperature less than 10 ° C. 1.0xC A less than
         // current less than 1.5xC A / Dauer bei 10 % kleiner als SoC kleiner als 30 %. 0°C kleiner als Temperatur
         // kleiner als 10 °C.  1,0xC A kleiner als Strom kleiner als 1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_1", "STAT_HV_BATT_HIST_SOC2_T2_I9_WERT", STAT_HV_BATT_HIST_SOC2_T2_I9_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T2_I10_WERT = (RXBUF_UINT32(76)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 0 � C less than temperature less than 10 � C. 1.5xC A less than
+        // Duration at 10% less than SoC less than 30%. 0 ° C less than temperature less than 10 ° C. 1.5xC A less than
         // current / Dauer bei 10 % kleiner als SoC kleiner als 30 %. 0°C kleiner als Temperatur kleiner als 10 °C. 
         // 1,5xC A kleiner als Strom
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_1", "STAT_HV_BATT_HIST_SOC2_T2_I10_WERT", STAT_HV_BATT_HIST_SOC2_T2_I10_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T2_I1_WERT = (RXBUF_UINT32(80)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 0 � C less than temperature less than 10 � C. Current less than
+        // Duration at 30% less than SoC less than 50%. 0 ° C less than temperature less than 10 ° C. Current less than
         // -2.5xC A / Dauer bei 30 % kleiner als SoC kleiner als 50 %. 0°C kleiner als Temperatur kleiner als 10 °C.
         // Strom kleiner als -2,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_1", "STAT_HV_BATT_HIST_SOC3_T2_I1_WERT", STAT_HV_BATT_HIST_SOC3_T2_I1_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T2_I2_WERT = (RXBUF_UINT32(84)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 0 � C less than temperature less than 10 � C. -2.5xC A less than
+        // Duration at 30% less than SoC less than 50%. 0 ° C less than temperature less than 10 ° C. -2.5xC A less than
         // current less than -2.0xC A / Dauer bei 30 % kleiner als SoC kleiner als 50 %. 0°C kleiner als Temperatur
         // kleiner als 10 °C.  -2,5xC A kleiner als Strom kleiner als -2,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_1", "STAT_HV_BATT_HIST_SOC3_T2_I2_WERT", STAT_HV_BATT_HIST_SOC3_T2_I2_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T2_I3_WERT = (RXBUF_UINT32(88)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 0 � C less than temperature less than 10 � C. -2.0xC A less than
+        // Duration at 30% less than SoC less than 50%. 0 ° C less than temperature less than 10 ° C. -2.0xC A less than
         // current less than -1.5xC A / Dauer bei 30 % kleiner als SoC kleiner als 50 %. 0°C kleiner als Temperatur
         // kleiner als 10 °C.  -2,0xC A kleiner als Strom kleiner als -1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_1", "STAT_HV_BATT_HIST_SOC3_T2_I3_WERT", STAT_HV_BATT_HIST_SOC3_T2_I3_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T2_I4_WERT = (RXBUF_UINT32(92)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 0 � C less than temperature less than 10 � C. -1.5xC A less than
+        // Duration at 30% less than SoC less than 50%. 0 ° C less than temperature less than 10 ° C. -1.5xC A less than
         // current less than -1.0xC A / Dauer bei 30 % kleiner als SoC kleiner als 50 %. 0°C kleiner als Temperatur
         // kleiner als 10 °C.  -1,5xC A kleiner als Strom kleiner als -1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_1", "STAT_HV_BATT_HIST_SOC3_T2_I4_WERT", STAT_HV_BATT_HIST_SOC3_T2_I4_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T2_I5_WERT = (RXBUF_UINT32(96)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 0 � C less than temperature less than 10 � C. -1.0xC A less than
+        // Duration at 30% less than SoC less than 50%. 0 ° C less than temperature less than 10 ° C. -1.0xC A less than
         // current less than -0.5xC A / Dauer bei 30 % kleiner als SoC kleiner als 50 %. 0°C kleiner als Temperatur
         // kleiner als 10 °C.  -1,0xC A kleiner als Strom kleiner als -0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_1", "STAT_HV_BATT_HIST_SOC3_T2_I5_WERT", STAT_HV_BATT_HIST_SOC3_T2_I5_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T2_I6_WERT = (RXBUF_UINT32(100)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 0 � C less than temperature less than 10 � C. -0.5xC A less than
+        // Duration at 30% less than SoC less than 50%. 0 ° C less than temperature less than 10 ° C. -0.5xC A less than
         // current less than 0.0xC A / Dauer bei 30 % kleiner als SoC kleiner als 50 %. 0°C kleiner als Temperatur
         // kleiner als 10 °C.  -0,5xC A kleiner als Strom kleiner als 0,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_1", "STAT_HV_BATT_HIST_SOC3_T2_I6_WERT", STAT_HV_BATT_HIST_SOC3_T2_I6_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T2_I7_WERT = (RXBUF_UINT32(104)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 0 � C less than temperature less than 10 � C. 0.0xC A less than
+        // Duration at 30% less than SoC less than 50%. 0 ° C less than temperature less than 10 ° C. 0.0xC A less than
         // current less than 0.5xC A / Dauer bei 30 % kleiner als SoC kleiner als 50 %. 0°C kleiner als Temperatur
         // kleiner als 10 °C.  0,0xC A kleiner als Strom kleiner als 0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_1", "STAT_HV_BATT_HIST_SOC3_T2_I7_WERT", STAT_HV_BATT_HIST_SOC3_T2_I7_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T2_I8_WERT = (RXBUF_UINT32(108)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 0 � C less than temperature less than 10 � C. 0.5xC A less than
+        // Duration at 30% less than SoC less than 50%. 0 ° C less than temperature less than 10 ° C. 0.5xC A less than
         // current less than 1.0xC A / Dauer bei 30 % kleiner als SoC kleiner als 50 %. 0°C kleiner als Temperatur
         // kleiner als 10 °C.  0,5xC A kleiner als Strom kleiner als 1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_1", "STAT_HV_BATT_HIST_SOC3_T2_I8_WERT", STAT_HV_BATT_HIST_SOC3_T2_I8_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T2_I9_WERT = (RXBUF_UINT32(112)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 0 � C less than temperature less than 10 � C. 1.0xC A less than
+        // Duration at 30% less than SoC less than 50%. 0 ° C less than temperature less than 10 ° C. 1.0xC A less than
         // current less than 1.5xC A / Dauer bei 30 % kleiner als SoC kleiner als 50 %. 0°C kleiner als Temperatur
         // kleiner als 10 °C.  1,0xC A kleiner als Strom kleiner als 1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_1", "STAT_HV_BATT_HIST_SOC3_T2_I9_WERT", STAT_HV_BATT_HIST_SOC3_T2_I9_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T2_I10_WERT = (RXBUF_UINT32(116)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 0 � C less than temperature less than 10 � C. 1.5xC A less than
+        // Duration at 30% less than SoC less than 50%. 0 ° C less than temperature less than 10 ° C. 1.5xC A less than
         // current / Dauer bei 30 % kleiner als SoC kleiner als 50 %. 0°C kleiner als Temperatur kleiner als 10 °C. 
         // 1,5xC A kleiner als Strom
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_1", "STAT_HV_BATT_HIST_SOC3_T2_I10_WERT", STAT_HV_BATT_HIST_SOC3_T2_I10_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T2_I1_WERT = (RXBUF_UINT32(120)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 0 � C less than temperature less than 10 � C. Current less than
+        // Duration at 50% less than SoC less than 70%. 0 ° C less than temperature less than 10 ° C. Current less than
         // -2.5xC A / Dauer bei 50 % kleiner als SoC kleiner als 70 %. 0°C kleiner als Temperatur kleiner als 10 °C.
         // Strom kleiner als -2,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_1", "STAT_HV_BATT_HIST_SOC4_T2_I1_WERT", STAT_HV_BATT_HIST_SOC4_T2_I1_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T2_I2_WERT = (RXBUF_UINT32(124)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 0 � C less than temperature less than 10 � C. -2.5xC A less than
+        // Duration at 50% less than SoC less than 70%. 0 ° C less than temperature less than 10 ° C. -2.5xC A less than
         // current less than -2.0xC A / Dauer bei 50 % kleiner als SoC kleiner als 70 %. 0°C kleiner als Temperatur
         // kleiner als 10 °C.  -2,5xC A kleiner als Strom kleiner als -2,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_1", "STAT_HV_BATT_HIST_SOC4_T2_I2_WERT", STAT_HV_BATT_HIST_SOC4_T2_I2_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T2_I3_WERT = (RXBUF_UINT32(128)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 0 � C less than temperature less than 10 � C. -2.0xC A less than
+        // Duration at 50% less than SoC less than 70%. 0 ° C less than temperature less than 10 ° C. -2.0xC A less than
         // current less than -1.5xC A / Dauer bei 50 % kleiner als SoC kleiner als 70 %. 0°C kleiner als Temperatur
         // kleiner als 10 °C.  -2,0xC A kleiner als Strom kleiner als -1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_1", "STAT_HV_BATT_HIST_SOC4_T2_I3_WERT", STAT_HV_BATT_HIST_SOC4_T2_I3_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T2_I4_WERT = (RXBUF_UINT32(132)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 0 � C less than temperature less than 10 � C. -1.5xC A less than
+        // Duration at 50% less than SoC less than 70%. 0 ° C less than temperature less than 10 ° C. -1.5xC A less than
         // current less than -1.0xC A / Dauer bei 50 % kleiner als SoC kleiner als 70 %. 0°C kleiner als Temperatur
         // kleiner als 10 °C.  -1,5xC A kleiner als Strom kleiner als -1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_1", "STAT_HV_BATT_HIST_SOC4_T2_I4_WERT", STAT_HV_BATT_HIST_SOC4_T2_I4_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T2_I5_WERT = (RXBUF_UINT32(136)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 0 � C less than temperature less than 10 � C. -1.0xC A less than
+        // Duration at 50% less than SoC less than 70%. 0 ° C less than temperature less than 10 ° C. -1.0xC A less than
         // current less than -0.5xC A / Dauer bei 50 % kleiner als SoC kleiner als 70 %. 0°C kleiner als Temperatur
         // kleiner als 10 °C.  -1,0xC A kleiner als Strom kleiner als -0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_1", "STAT_HV_BATT_HIST_SOC4_T2_I5_WERT", STAT_HV_BATT_HIST_SOC4_T2_I5_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T2_I6_WERT = (RXBUF_UINT32(140)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 0 � C less than temperature less than 10 � C. -0.5xC A less than
+        // Duration at 50% less than SoC less than 70%. 0 ° C less than temperature less than 10 ° C. -0.5xC A less than
         // current less than 0.0xC A / Dauer bei 50 % kleiner als SoC kleiner als 70 %. 0°C kleiner als Temperatur
         // kleiner als 10 °C.  -0,5xC A kleiner als Strom kleiner als 0,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_1", "STAT_HV_BATT_HIST_SOC4_T2_I6_WERT", STAT_HV_BATT_HIST_SOC4_T2_I6_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T2_I7_WERT = (RXBUF_UINT32(144)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 0 � C less than temperature less than 10 � C. 0.0xC A less than
+        // Duration at 50% less than SoC less than 70%. 0 ° C less than temperature less than 10 ° C. 0.0xC A less than
         // current less than 0.5xC A / Dauer bei 50 % kleiner als SoC kleiner als 70 %. 0°C kleiner als Temperatur
         // kleiner als 10 °C.  0,0xC A kleiner als Strom kleiner als 0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_1", "STAT_HV_BATT_HIST_SOC4_T2_I7_WERT", STAT_HV_BATT_HIST_SOC4_T2_I7_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T2_I8_WERT = (RXBUF_UINT32(148)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 0 � C less than temperature less than 10 � C. 0.5xC A less than
+        // Duration at 50% less than SoC less than 70%. 0 ° C less than temperature less than 10 ° C. 0.5xC A less than
         // current less than 1.0xC A / Dauer bei 50 % kleiner als SoC kleiner als 70 %. 0°C kleiner als Temperatur
         // kleiner als 10 °C.  0,5xC A kleiner als Strom kleiner als 1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_1", "STAT_HV_BATT_HIST_SOC4_T2_I8_WERT", STAT_HV_BATT_HIST_SOC4_T2_I8_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T2_I9_WERT = (RXBUF_UINT32(152)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 0 � C less than temperature less than 10 � C. 1.0xC A less than
+        // Duration at 50% less than SoC less than 70%. 0 ° C less than temperature less than 10 ° C. 1.0xC A less than
         // current less than 1.5xC A / Dauer bei 50 % kleiner als SoC kleiner als 70 %. 0°C kleiner als Temperatur
         // kleiner als 10 °C.  1,0xC A kleiner als Strom kleiner als 1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_1", "STAT_HV_BATT_HIST_SOC4_T2_I9_WERT", STAT_HV_BATT_HIST_SOC4_T2_I9_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T2_I10_WERT = (RXBUF_UINT32(156)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 0 � C less than temperature less than 10 � C. 1.5xC A less than
+        // Duration at 50% less than SoC less than 70%. 0 ° C less than temperature less than 10 ° C. 1.5xC A less than
         // current / Dauer bei 50 % kleiner als SoC kleiner als 70 %. 0°C kleiner als Temperatur kleiner als 10 °C. 
         // 1,5xC A kleiner als Strom
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_1", "STAT_HV_BATT_HIST_SOC4_T2_I10_WERT", STAT_HV_BATT_HIST_SOC4_T2_I10_WERT, "\"s\"");
@@ -4048,241 +4046,241 @@
     }
 
     float STAT_HV_BATT_HIST_SOC1_T3_I1_WERT = (RXBUF_UINT32(0)/10.0f);
-        // Duration with SoC less than 10%. 10 � C less than temperature less than 20 � C. Current less than -2.5xC A /
+        // Duration with SoC less than 10%. 10 ° C less than temperature less than 20 ° C. Current less than -2.5xC A /
         // Dauer bei SoC kleiner als 10%. 10°C kleiner als Temperatur kleiner als 20°C. Strom kleiner als -2,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_1", "STAT_HV_BATT_HIST_SOC1_T3_I1_WERT", STAT_HV_BATT_HIST_SOC1_T3_I1_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T3_I2_WERT = (RXBUF_UINT32(4)/10.0f);
-        // Duration with SoC less than 10%. 10 � C less than temperature less than 20 � C. -2.5xC A less than current
+        // Duration with SoC less than 10%. 10 ° C less than temperature less than 20 ° C. -2.5xC A less than current
         // less than -2.0xC A / Dauer bei SoC kleiner als 10%. 10°C kleiner als Temperatur kleiner als 20°C. -2,5xC A
         // kleiner als Strom kleiner als -2,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_1", "STAT_HV_BATT_HIST_SOC1_T3_I2_WERT", STAT_HV_BATT_HIST_SOC1_T3_I2_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T3_I3_WERT = (RXBUF_UINT32(8)/10.0f);
-        // Duration with SoC less than 10%. 10 � C less than temperature less than 20 � C. -2.0xC A less than current
+        // Duration with SoC less than 10%. 10 ° C less than temperature less than 20 ° C. -2.0xC A less than current
         // less than -1.5xC A / Dauer bei SoC kleiner als 10%. 10°C kleiner als Temperatur kleiner als 20°C. -2,0xC A
         // kleiner als Strom kleiner als -1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_1", "STAT_HV_BATT_HIST_SOC1_T3_I3_WERT", STAT_HV_BATT_HIST_SOC1_T3_I3_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T3_I4_WERT = (RXBUF_UINT32(12)/10.0f);
-        // Duration with SoC less than 10%. 10 � C less than temperature less than 20 � C. -1.5xC A less than current
+        // Duration with SoC less than 10%. 10 ° C less than temperature less than 20 ° C. -1.5xC A less than current
         // less than -1.0xC A / Dauer bei SoC kleiner als 10%. 10°C kleiner als Temperatur kleiner als 20°C. -1,5xC A
         // kleiner als Strom kleiner als -1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_1", "STAT_HV_BATT_HIST_SOC1_T3_I4_WERT", STAT_HV_BATT_HIST_SOC1_T3_I4_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T3_I5_WERT = (RXBUF_UINT32(16)/10.0f);
-        // Duration with SoC less than 10%. 10 � C less than temperature less than 20 � C. -1.0xC A less than current
+        // Duration with SoC less than 10%. 10 ° C less than temperature less than 20 ° C. -1.0xC A less than current
         // less than -0.5xC A / Dauer bei SoC kleiner als 10%. 10°C kleiner als Temperatur kleiner als 20°C. -1,0xC A
         // kleiner als Strom kleiner als -0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_1", "STAT_HV_BATT_HIST_SOC1_T3_I5_WERT", STAT_HV_BATT_HIST_SOC1_T3_I5_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T3_I6_WERT = (RXBUF_UINT32(20)/10.0f);
-        // Duration with SoC less than 10%. 10 � C less than temperature less than 20 � C. -0.5xC A less than current
+        // Duration with SoC less than 10%. 10 ° C less than temperature less than 20 ° C. -0.5xC A less than current
         // less than 0.0xC A / Dauer bei SoC kleiner als 10%. 10°C kleiner als Temperatur kleiner als 20°C. -0,5xC A
         // kleiner als Strom kleiner als 0,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_1", "STAT_HV_BATT_HIST_SOC1_T3_I6_WERT", STAT_HV_BATT_HIST_SOC1_T3_I6_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T3_I7_WERT = (RXBUF_UINT32(24)/10.0f);
-        // Duration with SoC less than 10%. 10 � C less than temperature less than 20 � C. 0.0xC A less than current less
+        // Duration with SoC less than 10%. 10 ° C less than temperature less than 20 ° C. 0.0xC A less than current less
         // than 0.5xC A / Dauer bei SoC kleiner als 10%. 10°C kleiner als Temperatur kleiner als 20°C. 0,0xC A kleiner
         // als Strom kleiner als 0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_1", "STAT_HV_BATT_HIST_SOC1_T3_I7_WERT", STAT_HV_BATT_HIST_SOC1_T3_I7_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T3_I8_WERT = (RXBUF_UINT32(28)/10.0f);
-        // Duration with SoC less than 10%. 10 � C less than temperature less than 20 � C. 0.5xC A less than current less
+        // Duration with SoC less than 10%. 10 ° C less than temperature less than 20 ° C. 0.5xC A less than current less
         // than 1.0xC A / Dauer bei SoC kleiner als 10%. 10°C kleiner als Temperatur kleiner als 20°C. 0,5xC A kleiner
         // als Strom kleiner als 1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_1", "STAT_HV_BATT_HIST_SOC1_T3_I8_WERT", STAT_HV_BATT_HIST_SOC1_T3_I8_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T3_I9_WERT = (RXBUF_UINT32(32)/10.0f);
-        // Duration with SoC less than 10%. 10 � C less than temperature less than 20 � C. 1.0xC A less than current less
+        // Duration with SoC less than 10%. 10 ° C less than temperature less than 20 ° C. 1.0xC A less than current less
         // than 1.5xC A / Dauer bei SoC kleiner als 10%. 10°C kleiner als Temperatur kleiner als 20°C. 1,0xC A kleiner
         // als Strom kleiner als 1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_1", "STAT_HV_BATT_HIST_SOC1_T3_I9_WERT", STAT_HV_BATT_HIST_SOC1_T3_I9_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T3_I10_WERT = (RXBUF_UINT32(36)/10.0f);
-        // Duration with SoC less than 10%. 10 � C less than temperature less than 20 � C. 1.5xC A less than current /
+        // Duration with SoC less than 10%. 10 ° C less than temperature less than 20 ° C. 1.5xC A less than current /
         // Dauer bei SoC kleiner als 10%. 10°C kleiner als Temperatur kleiner als 20°C. 1,5xC A kleiner als Strom
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_1", "STAT_HV_BATT_HIST_SOC1_T3_I10_WERT", STAT_HV_BATT_HIST_SOC1_T3_I10_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T3_I1_WERT = (RXBUF_UINT32(40)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 10 � C less than temperature less than 20 � C. Current less than
-        // -2.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 10°C kleiner als Temperatur kleiner als 20°C.
-        // Strom kleiner als -2,5xC A
+        // Duration at 10% less than SoC less than 30%. 10 ° C less than temperature less than 20 ° C. Current less than
+        // -2.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 10°C kleiner als Temperatur kleiner als 20°C. Strom
+        // kleiner als -2,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_1", "STAT_HV_BATT_HIST_SOC2_T3_I1_WERT", STAT_HV_BATT_HIST_SOC2_T3_I1_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T3_I2_WERT = (RXBUF_UINT32(44)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 10 � C less than temperature less than 20 � C. -2.5xC A less than
+        // Duration at 10% less than SoC less than 30%. 10 ° C less than temperature less than 20 ° C. -2.5xC A less than
         // current less than -2.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 10°C kleiner als Temperatur
         // kleiner als 20°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_1", "STAT_HV_BATT_HIST_SOC2_T3_I2_WERT", STAT_HV_BATT_HIST_SOC2_T3_I2_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T3_I3_WERT = (RXBUF_UINT32(48)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 10 � C less than temperature less than 20 � C. -2.0xC A less than
+        // Duration at 10% less than SoC less than 30%. 10 ° C less than temperature less than 20 ° C. -2.0xC A less than
         // current less than -1.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 10°C kleiner als Temperatur
         // kleiner als 20°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_1", "STAT_HV_BATT_HIST_SOC2_T3_I3_WERT", STAT_HV_BATT_HIST_SOC2_T3_I3_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T3_I4_WERT = (RXBUF_UINT32(52)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 10 � C less than temperature less than 20 � C. -1.5xC A less than
+        // Duration at 10% less than SoC less than 30%. 10 ° C less than temperature less than 20 ° C. -1.5xC A less than
         // current less than -1.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 10°C kleiner als Temperatur
         // kleiner als 20°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_1", "STAT_HV_BATT_HIST_SOC2_T3_I4_WERT", STAT_HV_BATT_HIST_SOC2_T3_I4_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T3_I5_WERT = (RXBUF_UINT32(56)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 10 � C less than temperature less than 20 � C. -1.0xC A less than
+        // Duration at 10% less than SoC less than 30%. 10 ° C less than temperature less than 20 ° C. -1.0xC A less than
         // current less than -0.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 10°C kleiner als Temperatur
         // kleiner als 20°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_1", "STAT_HV_BATT_HIST_SOC2_T3_I5_WERT", STAT_HV_BATT_HIST_SOC2_T3_I5_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T3_I6_WERT = (RXBUF_UINT32(60)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 10 � C less than temperature less than 20 � C. -0.5xC A less than
-        // current less than 0.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 10°C kleiner als Temperatur
-        // kleiner als 20°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
+        // Duration at 10% less than SoC less than 30%. 10 ° C less than temperature less than 20 ° C. -0.5xC A less than
+        // current less than 0.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 10°C kleiner als Temperatur kleiner
+        // als 20°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_1", "STAT_HV_BATT_HIST_SOC2_T3_I6_WERT", STAT_HV_BATT_HIST_SOC2_T3_I6_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T3_I7_WERT = (RXBUF_UINT32(64)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 10 � C less than temperature less than 20 � C. 0.0xC A less than
-        // current less than 0.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 10°C kleiner als Temperatur
-        // kleiner als 20°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
+        // Duration at 10% less than SoC less than 30%. 10 ° C less than temperature less than 20 ° C. 0.0xC A less than
+        // current less than 0.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 10°C kleiner als Temperatur kleiner
+        // als 20°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_1", "STAT_HV_BATT_HIST_SOC2_T3_I7_WERT", STAT_HV_BATT_HIST_SOC2_T3_I7_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T3_I8_WERT = (RXBUF_UINT32(68)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 10 � C less than temperature less than 20 � C. 0.5xC A less than
-        // current less than 1.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 10°C kleiner als Temperatur
-        // kleiner als 20°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
+        // Duration at 10% less than SoC less than 30%. 10 ° C less than temperature less than 20 ° C. 0.5xC A less than
+        // current less than 1.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 10°C kleiner als Temperatur kleiner
+        // als 20°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_1", "STAT_HV_BATT_HIST_SOC2_T3_I8_WERT", STAT_HV_BATT_HIST_SOC2_T3_I8_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T3_I9_WERT = (RXBUF_UINT32(72)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 10 � C less than temperature less than 20 � C. 1.0xC A less than
-        // current less than 1.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 10°C kleiner als Temperatur
-        // kleiner als 20°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
+        // Duration at 10% less than SoC less than 30%. 10 ° C less than temperature less than 20 ° C. 1.0xC A less than
+        // current less than 1.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 10°C kleiner als Temperatur kleiner
+        // als 20°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_1", "STAT_HV_BATT_HIST_SOC2_T3_I9_WERT", STAT_HV_BATT_HIST_SOC2_T3_I9_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T3_I10_WERT = (RXBUF_UINT32(76)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 10 � C less than temperature less than 20 � C. 1.5xC A less than
-        // current / Dauer bei 10% kleiner als SoC kleiner als 30%. 10°C kleiner als Temperatur kleiner als 20°C. 1,5xC
-        // A kleiner als Strom
+        // Duration at 10% less than SoC less than 30%. 10 ° C less than temperature less than 20 ° C. 1.5xC A less than
+        // current / Dauer bei 10% kleiner als SoC kleiner als 30%. 10°C kleiner als Temperatur kleiner als 20°C. 1,5xC A
+        // kleiner als Strom
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_1", "STAT_HV_BATT_HIST_SOC2_T3_I10_WERT", STAT_HV_BATT_HIST_SOC2_T3_I10_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T3_I1_WERT = (RXBUF_UINT32(80)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 10 � C less than temperature less than 20 � C. Current less than
-        // -2.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 10°C kleiner als Temperatur kleiner als 20°C.
-        // Strom kleiner als -2,5xC A
+        // Duration at 30% less than SoC less than 50%. 10 ° C less than temperature less than 20 ° C. Current less than
+        // -2.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 10°C kleiner als Temperatur kleiner als 20°C. Strom
+        // kleiner als -2,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_1", "STAT_HV_BATT_HIST_SOC3_T3_I1_WERT", STAT_HV_BATT_HIST_SOC3_T3_I1_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T3_I2_WERT = (RXBUF_UINT32(84)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 10 � C less than temperature less than 20 � C. -2.5xC A less than
+        // Duration at 30% less than SoC less than 50%. 10 ° C less than temperature less than 20 ° C. -2.5xC A less than
         // current less than -2.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 10°C kleiner als Temperatur
         // kleiner als 20°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_1", "STAT_HV_BATT_HIST_SOC3_T3_I2_WERT", STAT_HV_BATT_HIST_SOC3_T3_I2_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T3_I3_WERT = (RXBUF_UINT32(88)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 10 � C less than temperature less than 20 � C. -2.0xC A less than
+        // Duration at 30% less than SoC less than 50%. 10 ° C less than temperature less than 20 ° C. -2.0xC A less than
         // current less than -1.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 10°C kleiner als Temperatur
         // kleiner als 20°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_1", "STAT_HV_BATT_HIST_SOC3_T3_I3_WERT", STAT_HV_BATT_HIST_SOC3_T3_I3_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T3_I4_WERT = (RXBUF_UINT32(92)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 10 � C less than temperature less than 20 � C. -1.5xC A less than
+        // Duration at 30% less than SoC less than 50%. 10 ° C less than temperature less than 20 ° C. -1.5xC A less than
         // current less than -1.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 10°C kleiner als Temperatur
         // kleiner als 20°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_1", "STAT_HV_BATT_HIST_SOC3_T3_I4_WERT", STAT_HV_BATT_HIST_SOC3_T3_I4_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T3_I5_WERT = (RXBUF_UINT32(96)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 10 � C less than temperature less than 20 � C. -1.0xC A less than
+        // Duration at 30% less than SoC less than 50%. 10 ° C less than temperature less than 20 ° C. -1.0xC A less than
         // current less than -0.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 10°C kleiner als Temperatur
         // kleiner als 20°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_1", "STAT_HV_BATT_HIST_SOC3_T3_I5_WERT", STAT_HV_BATT_HIST_SOC3_T3_I5_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T3_I6_WERT = (RXBUF_UINT32(100)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 10 � C less than temperature less than 20 � C. -0.5xC A less than
-        // current less than 0.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 10°C kleiner als Temperatur
-        // kleiner als 20°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
+        // Duration at 30% less than SoC less than 50%. 10 ° C less than temperature less than 20 ° C. -0.5xC A less than
+        // current less than 0.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 10°C kleiner als Temperatur kleiner
+        // als 20°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_1", "STAT_HV_BATT_HIST_SOC3_T3_I6_WERT", STAT_HV_BATT_HIST_SOC3_T3_I6_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T3_I7_WERT = (RXBUF_UINT32(104)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 10 � C less than temperature less than 20 � C. 0.0xC A less than
-        // current less than 0.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 10°C kleiner als Temperatur
-        // kleiner als 20°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
+        // Duration at 30% less than SoC less than 50%. 10 ° C less than temperature less than 20 ° C. 0.0xC A less than
+        // current less than 0.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 10°C kleiner als Temperatur kleiner
+        // als 20°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_1", "STAT_HV_BATT_HIST_SOC3_T3_I7_WERT", STAT_HV_BATT_HIST_SOC3_T3_I7_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T3_I8_WERT = (RXBUF_UINT32(108)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 10 � C less than temperature less than 20 � C. 0.5xC A less than
-        // current less than 1.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 10°C kleiner als Temperatur
-        // kleiner als 20°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
+        // Duration at 30% less than SoC less than 50%. 10 ° C less than temperature less than 20 ° C. 0.5xC A less than
+        // current less than 1.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 10°C kleiner als Temperatur kleiner
+        // als 20°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_1", "STAT_HV_BATT_HIST_SOC3_T3_I8_WERT", STAT_HV_BATT_HIST_SOC3_T3_I8_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T3_I9_WERT = (RXBUF_UINT32(112)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 10 � C less than temperature less than 20 � C. 1.0xC A less than
-        // current less than 1.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 10°C kleiner als Temperatur
-        // kleiner als 20°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
+        // Duration at 30% less than SoC less than 50%. 10 ° C less than temperature less than 20 ° C. 1.0xC A less than
+        // current less than 1.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 10°C kleiner als Temperatur kleiner
+        // als 20°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_1", "STAT_HV_BATT_HIST_SOC3_T3_I9_WERT", STAT_HV_BATT_HIST_SOC3_T3_I9_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T3_I10_WERT = (RXBUF_UINT32(116)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 10 � C less than temperature less than 20 � C. 1.5xC A less than
-        // current / Dauer bei 30% kleiner als SoC kleiner als 50%. 10°C kleiner als Temperatur kleiner als 20°C. 1,5xC
-        // A kleiner als Strom
+        // Duration at 30% less than SoC less than 50%. 10 ° C less than temperature less than 20 ° C. 1.5xC A less than
+        // current / Dauer bei 30% kleiner als SoC kleiner als 50%. 10°C kleiner als Temperatur kleiner als 20°C. 1,5xC A
+        // kleiner als Strom
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_1", "STAT_HV_BATT_HIST_SOC3_T3_I10_WERT", STAT_HV_BATT_HIST_SOC3_T3_I10_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T3_I1_WERT = (RXBUF_UINT32(120)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 10 � C less than temperature less than 20 � C. Current less than
-        // -2.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 10°C kleiner als Temperatur kleiner als 20°C.
-        // Strom kleiner als -2,5xC A
+        // Duration at 50% less than SoC less than 70%. 10 ° C less than temperature less than 20 ° C. Current less than
+        // -2.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 10°C kleiner als Temperatur kleiner als 20°C. Strom
+        // kleiner als -2,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_1", "STAT_HV_BATT_HIST_SOC4_T3_I1_WERT", STAT_HV_BATT_HIST_SOC4_T3_I1_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T3_I2_WERT = (RXBUF_UINT32(124)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 10 � C less than temperature less than 20 � C. -2.5xC A less than
+        // Duration at 50% less than SoC less than 70%. 10 ° C less than temperature less than 20 ° C. -2.5xC A less than
         // current less than -2.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 10°C kleiner als Temperatur
         // kleiner als 20°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_1", "STAT_HV_BATT_HIST_SOC4_T3_I2_WERT", STAT_HV_BATT_HIST_SOC4_T3_I2_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T3_I3_WERT = (RXBUF_UINT32(128)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 10 � C less than temperature less than 20 � C. -2.0xC A less than
+        // Duration at 50% less than SoC less than 70%. 10 ° C less than temperature less than 20 ° C. -2.0xC A less than
         // current less than -1.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 10°C kleiner als Temperatur
         // kleiner als 20°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_1", "STAT_HV_BATT_HIST_SOC4_T3_I3_WERT", STAT_HV_BATT_HIST_SOC4_T3_I3_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T3_I4_WERT = (RXBUF_UINT32(132)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 10 � C less than temperature less than 20 � C. -1.5xC A less than
+        // Duration at 50% less than SoC less than 70%. 10 ° C less than temperature less than 20 ° C. -1.5xC A less than
         // current less than -1.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 10°C kleiner als Temperatur
         // kleiner als 20°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_1", "STAT_HV_BATT_HIST_SOC4_T3_I4_WERT", STAT_HV_BATT_HIST_SOC4_T3_I4_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T3_I5_WERT = (RXBUF_UINT32(136)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 10 � C less than temperature less than 20 � C. -1.0xC A less than
+        // Duration at 50% less than SoC less than 70%. 10 ° C less than temperature less than 20 ° C. -1.0xC A less than
         // current less than -0.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 10°C kleiner als Temperatur
         // kleiner als 20°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_1", "STAT_HV_BATT_HIST_SOC4_T3_I5_WERT", STAT_HV_BATT_HIST_SOC4_T3_I5_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T3_I6_WERT = (RXBUF_UINT32(140)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 10 � C less than temperature less than 20 � C. -0.5xC A less than
-        // current less than 0.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 10°C kleiner als Temperatur
-        // kleiner als 20°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
+        // Duration at 50% less than SoC less than 70%. 10 ° C less than temperature less than 20 ° C. -0.5xC A less than
+        // current less than 0.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 10°C kleiner als Temperatur kleiner
+        // als 20°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_1", "STAT_HV_BATT_HIST_SOC4_T3_I6_WERT", STAT_HV_BATT_HIST_SOC4_T3_I6_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T3_I7_WERT = (RXBUF_UINT32(144)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 10 � C less than temperature less than 20 � C. 0.0xC A less than
-        // current less than 0.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 10°C kleiner als Temperatur
-        // kleiner als 20°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
+        // Duration at 50% less than SoC less than 70%. 10 ° C less than temperature less than 20 ° C. 0.0xC A less than
+        // current less than 0.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 10°C kleiner als Temperatur kleiner
+        // als 20°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_1", "STAT_HV_BATT_HIST_SOC4_T3_I7_WERT", STAT_HV_BATT_HIST_SOC4_T3_I7_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T3_I8_WERT = (RXBUF_UINT32(148)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 10 � C less than temperature less than 20 � C. 0.5xC A less than
-        // current less than 1.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 10°C kleiner als Temperatur
-        // kleiner als 20°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
+        // Duration at 50% less than SoC less than 70%. 10 ° C less than temperature less than 20 ° C. 0.5xC A less than
+        // current less than 1.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 10°C kleiner als Temperatur kleiner
+        // als 20°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_1", "STAT_HV_BATT_HIST_SOC4_T3_I8_WERT", STAT_HV_BATT_HIST_SOC4_T3_I8_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T3_I9_WERT = (RXBUF_UINT32(152)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 10 � C less than temperature less than 20 � C. 1.0xC A less than
-        // current less than 1.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 10°C kleiner als Temperatur
-        // kleiner als 20°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
+        // Duration at 50% less than SoC less than 70%. 10 ° C less than temperature less than 20 ° C. 1.0xC A less than
+        // current less than 1.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 10°C kleiner als Temperatur kleiner
+        // als 20°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_1", "STAT_HV_BATT_HIST_SOC4_T3_I9_WERT", STAT_HV_BATT_HIST_SOC4_T3_I9_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T3_I10_WERT = (RXBUF_UINT32(156)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 10 � C less than temperature less than 20 � C. 1.5xC A less than
-        // current / Dauer bei 50% kleiner als SoC kleiner als 70%. 10°C kleiner als Temperatur kleiner als 20°C. 1,5xC
-        // A kleiner als Strom
+        // Duration at 50% less than SoC less than 70%. 10 ° C less than temperature less than 20 ° C. 1.5xC A less than
+        // current / Dauer bei 50% kleiner als SoC kleiner als 70%. 10°C kleiner als Temperatur kleiner als 20°C. 1,5xC A
+        // kleiner als Strom
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_1", "STAT_HV_BATT_HIST_SOC4_T3_I10_WERT", STAT_HV_BATT_HIST_SOC4_T3_I10_WERT, "\"s\"");
 
     // ==========  Add your processing here ==========
@@ -4298,241 +4296,241 @@
     }
 
     float STAT_HV_BATT_HIST_SOC1_T4_I1_WERT = (RXBUF_UINT32(0)/10.0f);
-        // Duration with SoC less than 10%. 20 � C less than temperature less than 27.5 � C. Current less than -2.5xC A /
+        // Duration with SoC less than 10%. 20 ° C less than temperature less than 27.5 ° C. Current less than -2.5xC A /
         // Dauer bei SoC kleiner als 10%. 20°C kleiner als Temperatur kleiner als 27,5°C. Strom kleiner als -2,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_1", "STAT_HV_BATT_HIST_SOC1_T4_I1_WERT", STAT_HV_BATT_HIST_SOC1_T4_I1_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T4_I2_WERT = (RXBUF_UINT32(4)/10.0f);
-        // Duration with SoC less than 10%. 20 � C less than temperature less than 27.5 � C. -2.5xC A less than current
+        // Duration with SoC less than 10%. 20 ° C less than temperature less than 27.5 ° C. -2.5xC A less than current
         // less than -2.0xC A / Dauer bei SoC kleiner als 10%. 20°C kleiner als Temperatur kleiner als 27,5°C. -2,5xC A
         // kleiner als Strom kleiner als -2,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_1", "STAT_HV_BATT_HIST_SOC1_T4_I2_WERT", STAT_HV_BATT_HIST_SOC1_T4_I2_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T4_I3_WERT = (RXBUF_UINT32(8)/10.0f);
-        // Duration with SoC less than 10%. 20 � C less than temperature less than 27.5 � C. -2.0xC A less than current
+        // Duration with SoC less than 10%. 20 ° C less than temperature less than 27.5 ° C. -2.0xC A less than current
         // less than -1.5xC A / Dauer bei SoC kleiner als 10%. 20°C kleiner als Temperatur kleiner als 27,5°C. -2,0xC A
         // kleiner als Strom kleiner als -1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_1", "STAT_HV_BATT_HIST_SOC1_T4_I3_WERT", STAT_HV_BATT_HIST_SOC1_T4_I3_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T4_I4_WERT = (RXBUF_UINT32(12)/10.0f);
-        // Duration with SoC less than 10%. 20 � C less than temperature less than 27.5 � C. -1.5xC A less than current
+        // Duration with SoC less than 10%. 20 ° C less than temperature less than 27.5 ° C. -1.5xC A less than current
         // less than -1.0xC A / Dauer bei SoC kleiner als 10%. 20°C kleiner als Temperatur kleiner als 27,5°C. -1,5xC A
         // kleiner als Strom kleiner als -1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_1", "STAT_HV_BATT_HIST_SOC1_T4_I4_WERT", STAT_HV_BATT_HIST_SOC1_T4_I4_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T4_I5_WERT = (RXBUF_UINT32(16)/10.0f);
-        // Duration with SoC less than 10%. 20 � C less than temperature less than 27.5 � C. -1.0xC A less than current
+        // Duration with SoC less than 10%. 20 ° C less than temperature less than 27.5 ° C. -1.0xC A less than current
         // less than -0.5xC A / Dauer bei SoC kleiner als 10%. 20°C kleiner als Temperatur kleiner als 27,5°C. -1,0xC A
         // kleiner als Strom kleiner als -0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_1", "STAT_HV_BATT_HIST_SOC1_T4_I5_WERT", STAT_HV_BATT_HIST_SOC1_T4_I5_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T4_I6_WERT = (RXBUF_UINT32(20)/10.0f);
-        // Duration with SoC less than 10%. 20 � C less than temperature less than 27.5 � C. -0.5xC A less than current
+        // Duration with SoC less than 10%. 20 ° C less than temperature less than 27.5 ° C. -0.5xC A less than current
         // less than 0.0xC A / Dauer bei SoC kleiner als 10%. 20°C kleiner als Temperatur kleiner als 27,5°C. -0,5xC A
         // kleiner als Strom kleiner als 0,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_1", "STAT_HV_BATT_HIST_SOC1_T4_I6_WERT", STAT_HV_BATT_HIST_SOC1_T4_I6_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T4_I7_WERT = (RXBUF_UINT32(24)/10.0f);
-        // Duration with SoC less than 10%. 20 � C less than temperature less than 27.5 � C. 0.0xC A less than current
+        // Duration with SoC less than 10%. 20 ° C less than temperature less than 27.5 ° C. 0.0xC A less than current
         // less than 0.5xC A / Dauer bei SoC kleiner als 10%. 20°C kleiner als Temperatur kleiner als 27,5°C. 0,0xC A
         // kleiner als Strom kleiner als 0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_1", "STAT_HV_BATT_HIST_SOC1_T4_I7_WERT", STAT_HV_BATT_HIST_SOC1_T4_I7_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T4_I8_WERT = (RXBUF_UINT32(28)/10.0f);
-        // Duration with SoC less than 10%. 20 � C less than temperature less than 27.5 � C. 0.5xC A less than current
+        // Duration with SoC less than 10%. 20 ° C less than temperature less than 27.5 ° C. 0.5xC A less than current
         // less than 1.0xC A / Dauer bei SoC kleiner als 10%. 20°C kleiner als Temperatur kleiner als 27,5°C. 0,5xC A
         // kleiner als Strom kleiner als 1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_1", "STAT_HV_BATT_HIST_SOC1_T4_I8_WERT", STAT_HV_BATT_HIST_SOC1_T4_I8_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T4_I9_WERT = (RXBUF_UINT32(32)/10.0f);
-        // Duration with SoC less than 10%. 20 � C less than temperature less than 27.5 � C. 1.0xC A less than current
+        // Duration with SoC less than 10%. 20 ° C less than temperature less than 27.5 ° C. 1.0xC A less than current
         // less than 1.5xC A / Dauer bei SoC kleiner als 10%. 20°C kleiner als Temperatur kleiner als 27,5°C. 1,0xC A
         // kleiner als Strom kleiner als 1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_1", "STAT_HV_BATT_HIST_SOC1_T4_I9_WERT", STAT_HV_BATT_HIST_SOC1_T4_I9_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T4_I10_WERT = (RXBUF_UINT32(36)/10.0f);
-        // Duration with SoC less than 10%. 20 � C less than temperature less than 27.5 � C. 1.5xC A less than current /
+        // Duration with SoC less than 10%. 20 ° C less than temperature less than 27.5 ° C. 1.5xC A less than current /
         // Dauer bei SoC kleiner als 10%. 20°C kleiner als Temperatur kleiner als 27,5°C. 1,5xC A kleiner als Strom
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_1", "STAT_HV_BATT_HIST_SOC1_T4_I10_WERT", STAT_HV_BATT_HIST_SOC1_T4_I10_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T4_I1_WERT = (RXBUF_UINT32(40)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 20 � C less than temperature less than 27.5 � C. Current less
-        // than -2.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 20°C kleiner als Temperatur kleiner als
-        // 27,5°C. Strom kleiner als -2,5xC A
+        // Duration at 10% less than SoC less than 30%. 20 ° C less than temperature less than 27.5 ° C. Current less
+        // than -2.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 20°C kleiner als Temperatur kleiner als 27,5°C.
+        // Strom kleiner als -2,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_1", "STAT_HV_BATT_HIST_SOC2_T4_I1_WERT", STAT_HV_BATT_HIST_SOC2_T4_I1_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T4_I2_WERT = (RXBUF_UINT32(44)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 20 � C less than temperature less than 27.5 � C. -2.5xC A less
+        // Duration at 10% less than SoC less than 30%. 20 ° C less than temperature less than 27.5 ° C. -2.5xC A less
         // than current less than -2.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 20°C kleiner als Temperatur
         // kleiner als 27,5°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_1", "STAT_HV_BATT_HIST_SOC2_T4_I2_WERT", STAT_HV_BATT_HIST_SOC2_T4_I2_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T4_I3_WERT = (RXBUF_UINT32(48)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 20 � C less than temperature less than 27.5 � C. -2.0xC A less
+        // Duration at 10% less than SoC less than 30%. 20 ° C less than temperature less than 27.5 ° C. -2.0xC A less
         // than current less than -1.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 20°C kleiner als Temperatur
         // kleiner als 27,5°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_1", "STAT_HV_BATT_HIST_SOC2_T4_I3_WERT", STAT_HV_BATT_HIST_SOC2_T4_I3_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T4_I4_WERT = (RXBUF_UINT32(52)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 20 � C less than temperature less than 27.5 � C. -1.5xC A less
+        // Duration at 10% less than SoC less than 30%. 20 ° C less than temperature less than 27.5 ° C. -1.5xC A less
         // than current less than -1.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 20°C kleiner als Temperatur
         // kleiner als 27,5°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_1", "STAT_HV_BATT_HIST_SOC2_T4_I4_WERT", STAT_HV_BATT_HIST_SOC2_T4_I4_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T4_I5_WERT = (RXBUF_UINT32(56)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 20 � C less than temperature less than 27.5 � C. -1.0xC A less
+        // Duration at 10% less than SoC less than 30%. 20 ° C less than temperature less than 27.5 ° C. -1.0xC A less
         // than current less than -0.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 20°C kleiner als Temperatur
         // kleiner als 27,5°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_1", "STAT_HV_BATT_HIST_SOC2_T4_I5_WERT", STAT_HV_BATT_HIST_SOC2_T4_I5_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T4_I6_WERT = (RXBUF_UINT32(60)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 20 � C less than temperature less than 27.5 � C. -0.5xC A less
+        // Duration at 10% less than SoC less than 30%. 20 ° C less than temperature less than 27.5 ° C. -0.5xC A less
         // than current less than 0.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 20°C kleiner als Temperatur
         // kleiner als 27,5°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_1", "STAT_HV_BATT_HIST_SOC2_T4_I6_WERT", STAT_HV_BATT_HIST_SOC2_T4_I6_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T4_I7_WERT = (RXBUF_UINT32(64)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 20 � C less than temperature less than 27.5 � C. 0.0xC A less
+        // Duration at 10% less than SoC less than 30%. 20 ° C less than temperature less than 27.5 ° C. 0.0xC A less
         // than current less than 0.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 20°C kleiner als Temperatur
         // kleiner als 27,5°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_1", "STAT_HV_BATT_HIST_SOC2_T4_I7_WERT", STAT_HV_BATT_HIST_SOC2_T4_I7_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T4_I8_WERT = (RXBUF_UINT32(68)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 20 � C less than temperature less than 27.5 � C. 0.5xC A less
+        // Duration at 10% less than SoC less than 30%. 20 ° C less than temperature less than 27.5 ° C. 0.5xC A less
         // than current less than 1.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 20°C kleiner als Temperatur
         // kleiner als 27,5°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_1", "STAT_HV_BATT_HIST_SOC2_T4_I8_WERT", STAT_HV_BATT_HIST_SOC2_T4_I8_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T4_I9_WERT = (RXBUF_UINT32(72)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 20 � C less than temperature less than 27.5 � C. 1.0xC A less
+        // Duration at 10% less than SoC less than 30%. 20 ° C less than temperature less than 27.5 ° C. 1.0xC A less
         // than current less than 1.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 20°C kleiner als Temperatur
         // kleiner als 27,5°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_1", "STAT_HV_BATT_HIST_SOC2_T4_I9_WERT", STAT_HV_BATT_HIST_SOC2_T4_I9_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T4_I10_WERT = (RXBUF_UINT32(76)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 20 � C less than temperature less than 27.5 � C. 1.5xC A less
-        // than current / Dauer bei 10% kleiner als SoC kleiner als 30%. 20°C kleiner als Temperatur kleiner als
-        // 27,5°C. 1,5xC A kleiner als Strom
+        // Duration at 10% less than SoC less than 30%. 20 ° C less than temperature less than 27.5 ° C. 1.5xC A less
+        // than current / Dauer bei 10% kleiner als SoC kleiner als 30%. 20°C kleiner als Temperatur kleiner als 27,5°C.
+        // 1,5xC A kleiner als Strom
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_1", "STAT_HV_BATT_HIST_SOC2_T4_I10_WERT", STAT_HV_BATT_HIST_SOC2_T4_I10_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T4_I1_WERT = (RXBUF_UINT32(80)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 20 � C less than temperature less than 27.5 � C. Current less
-        // than -2.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 20°C kleiner als Temperatur kleiner als
-        // 27,5°C. Strom kleiner als -2,5xC A
+        // Duration at 30% less than SoC less than 50%. 20 ° C less than temperature less than 27.5 ° C. Current less
+        // than -2.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 20°C kleiner als Temperatur kleiner als 27,5°C.
+        // Strom kleiner als -2,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_1", "STAT_HV_BATT_HIST_SOC3_T4_I1_WERT", STAT_HV_BATT_HIST_SOC3_T4_I1_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T4_I2_WERT = (RXBUF_UINT32(84)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 20 � C less than temperature less than 27.5 � C. -2.5xC A less
+        // Duration at 30% less than SoC less than 50%. 20 ° C less than temperature less than 27.5 ° C. -2.5xC A less
         // than current less than -2.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 20°C kleiner als Temperatur
         // kleiner als 27,5°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_1", "STAT_HV_BATT_HIST_SOC3_T4_I2_WERT", STAT_HV_BATT_HIST_SOC3_T4_I2_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T4_I3_WERT = (RXBUF_UINT32(88)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 20 � C less than temperature less than 27.5 � C. -2.0xC A less
+        // Duration at 30% less than SoC less than 50%. 20 ° C less than temperature less than 27.5 ° C. -2.0xC A less
         // than current less than -1.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 20°C kleiner als Temperatur
         // kleiner als 27,5°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_1", "STAT_HV_BATT_HIST_SOC3_T4_I3_WERT", STAT_HV_BATT_HIST_SOC3_T4_I3_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T4_I4_WERT = (RXBUF_UINT32(92)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 20 � C less than temperature less than 27.5 � C. -1.5xC A less
+        // Duration at 30% less than SoC less than 50%. 20 ° C less than temperature less than 27.5 ° C. -1.5xC A less
         // than current less than -1.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 20°C kleiner als Temperatur
         // kleiner als 27,5°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_1", "STAT_HV_BATT_HIST_SOC3_T4_I4_WERT", STAT_HV_BATT_HIST_SOC3_T4_I4_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T4_I5_WERT = (RXBUF_UINT32(96)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 20 � C less than temperature less than 27.5 � C. -1.0xC A less
+        // Duration at 30% less than SoC less than 50%. 20 ° C less than temperature less than 27.5 ° C. -1.0xC A less
         // than current less than -0.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 20°C kleiner als Temperatur
         // kleiner als 27,5°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_1", "STAT_HV_BATT_HIST_SOC3_T4_I5_WERT", STAT_HV_BATT_HIST_SOC3_T4_I5_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T4_I6_WERT = (RXBUF_UINT32(100)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 20 � C less than temperature less than 27.5 � C. -0.5xC A less
+        // Duration at 30% less than SoC less than 50%. 20 ° C less than temperature less than 27.5 ° C. -0.5xC A less
         // than current less than 0.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 20°C kleiner als Temperatur
         // kleiner als 27,5°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_1", "STAT_HV_BATT_HIST_SOC3_T4_I6_WERT", STAT_HV_BATT_HIST_SOC3_T4_I6_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T4_I7_WERT = (RXBUF_UINT32(104)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 20 � C less than temperature less than 27.5 � C. 0.0xC A less
+        // Duration at 30% less than SoC less than 50%. 20 ° C less than temperature less than 27.5 ° C. 0.0xC A less
         // than current less than 0.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 20°C kleiner als Temperatur
         // kleiner als 27,5°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_1", "STAT_HV_BATT_HIST_SOC3_T4_I7_WERT", STAT_HV_BATT_HIST_SOC3_T4_I7_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T4_I8_WERT = (RXBUF_UINT32(108)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 20 � C less than temperature less than 27.5 � C. 0.5xC A less
+        // Duration at 30% less than SoC less than 50%. 20 ° C less than temperature less than 27.5 ° C. 0.5xC A less
         // than current less than 1.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 20°C kleiner als Temperatur
         // kleiner als 27,5°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_1", "STAT_HV_BATT_HIST_SOC3_T4_I8_WERT", STAT_HV_BATT_HIST_SOC3_T4_I8_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T4_I9_WERT = (RXBUF_UINT32(112)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 20 � C less than temperature less than 27.5 � C. 1.0xC A less
+        // Duration at 30% less than SoC less than 50%. 20 ° C less than temperature less than 27.5 ° C. 1.0xC A less
         // than current less than 1.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 20°C kleiner als Temperatur
         // kleiner als 27,5°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_1", "STAT_HV_BATT_HIST_SOC3_T4_I9_WERT", STAT_HV_BATT_HIST_SOC3_T4_I9_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T4_I10_WERT = (RXBUF_UINT32(116)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 20 � C less than temperature less than 27.5 � C. 1.5xC A less
-        // than current / Dauer bei 30% kleiner als SoC kleiner als 50%. 20°C kleiner als Temperatur kleiner als
-        // 27,5°C. 1,5xC A kleiner als Strom
+        // Duration at 30% less than SoC less than 50%. 20 ° C less than temperature less than 27.5 ° C. 1.5xC A less
+        // than current / Dauer bei 30% kleiner als SoC kleiner als 50%. 20°C kleiner als Temperatur kleiner als 27,5°C.
+        // 1,5xC A kleiner als Strom
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_1", "STAT_HV_BATT_HIST_SOC3_T4_I10_WERT", STAT_HV_BATT_HIST_SOC3_T4_I10_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T4_I1_WERT = (RXBUF_UINT32(120)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 20 � C less than temperature less than 27.5 � C. Current less
-        // than -2.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 20°C kleiner als Temperatur kleiner als
-        // 27,5°C. Strom kleiner als -2,5xC A
+        // Duration at 50% less than SoC less than 70%. 20 ° C less than temperature less than 27.5 ° C. Current less
+        // than -2.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 20°C kleiner als Temperatur kleiner als 27,5°C.
+        // Strom kleiner als -2,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_1", "STAT_HV_BATT_HIST_SOC4_T4_I1_WERT", STAT_HV_BATT_HIST_SOC4_T4_I1_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T4_I2_WERT = (RXBUF_UINT32(124)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 20 � C less than temperature less than 27.5 � C. -2.5xC A less
+        // Duration at 50% less than SoC less than 70%. 20 ° C less than temperature less than 27.5 ° C. -2.5xC A less
         // than current less than -2.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 20°C kleiner als Temperatur
         // kleiner als 27,5°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_1", "STAT_HV_BATT_HIST_SOC4_T4_I2_WERT", STAT_HV_BATT_HIST_SOC4_T4_I2_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T4_I3_WERT = (RXBUF_UINT32(128)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 20 � C less than temperature less than 27.5 � C. -2.0xC A less
+        // Duration at 50% less than SoC less than 70%. 20 ° C less than temperature less than 27.5 ° C. -2.0xC A less
         // than current less than -1.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 20°C kleiner als Temperatur
         // kleiner als 27,5°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_1", "STAT_HV_BATT_HIST_SOC4_T4_I3_WERT", STAT_HV_BATT_HIST_SOC4_T4_I3_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T4_I4_WERT = (RXBUF_UINT32(132)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 20 � C less than temperature less than 27.5 � C. -1.5xC A less
+        // Duration at 50% less than SoC less than 70%. 20 ° C less than temperature less than 27.5 ° C. -1.5xC A less
         // than current less than -1.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 20°C kleiner als Temperatur
         // kleiner als 27,5°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_1", "STAT_HV_BATT_HIST_SOC4_T4_I4_WERT", STAT_HV_BATT_HIST_SOC4_T4_I4_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T4_I5_WERT = (RXBUF_UINT32(136)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 20 � C less than temperature less than 27.5 � C. -1.0xC A less
+        // Duration at 50% less than SoC less than 70%. 20 ° C less than temperature less than 27.5 ° C. -1.0xC A less
         // than current less than -0.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 20°C kleiner als Temperatur
         // kleiner als 27,5°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_1", "STAT_HV_BATT_HIST_SOC4_T4_I5_WERT", STAT_HV_BATT_HIST_SOC4_T4_I5_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T4_I6_WERT = (RXBUF_UINT32(140)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 20 � C less than temperature less than 27.5 � C. -0.5xC A less
+        // Duration at 50% less than SoC less than 70%. 20 ° C less than temperature less than 27.5 ° C. -0.5xC A less
         // than current less than 0.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 20°C kleiner als Temperatur
         // kleiner als 27,5°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_1", "STAT_HV_BATT_HIST_SOC4_T4_I6_WERT", STAT_HV_BATT_HIST_SOC4_T4_I6_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T4_I7_WERT = (RXBUF_UINT32(144)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 20 � C less than temperature less than 27.5 � C. 0.0xC A less
+        // Duration at 50% less than SoC less than 70%. 20 ° C less than temperature less than 27.5 ° C. 0.0xC A less
         // than current less than 0.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 20°C kleiner als Temperatur
         // kleiner als 27,5°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_1", "STAT_HV_BATT_HIST_SOC4_T4_I7_WERT", STAT_HV_BATT_HIST_SOC4_T4_I7_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T4_I8_WERT = (RXBUF_UINT32(148)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 20 � C less than temperature less than 27.5 � C. 0.5xC A less
+        // Duration at 50% less than SoC less than 70%. 20 ° C less than temperature less than 27.5 ° C. 0.5xC A less
         // than current less than 1.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 20°C kleiner als Temperatur
         // kleiner als 27,5°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_1", "STAT_HV_BATT_HIST_SOC4_T4_I8_WERT", STAT_HV_BATT_HIST_SOC4_T4_I8_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T4_I9_WERT = (RXBUF_UINT32(152)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 20 � C less than temperature less than 27.5 � C. 1.0xC A less
+        // Duration at 50% less than SoC less than 70%. 20 ° C less than temperature less than 27.5 ° C. 1.0xC A less
         // than current less than 1.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 20°C kleiner als Temperatur
         // kleiner als 27,5°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_1", "STAT_HV_BATT_HIST_SOC4_T4_I9_WERT", STAT_HV_BATT_HIST_SOC4_T4_I9_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T4_I10_WERT = (RXBUF_UINT32(156)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 20 � C less than temperature less than 27.5 � C. 1.5xC A less
-        // than current / Dauer bei 50% kleiner als SoC kleiner als 70%. 20°C kleiner als Temperatur kleiner als
-        // 27,5°C. 1,5xC A kleiner als Strom
+        // Duration at 50% less than SoC less than 70%. 20 ° C less than temperature less than 27.5 ° C. 1.5xC A less
+        // than current / Dauer bei 50% kleiner als SoC kleiner als 70%. 20°C kleiner als Temperatur kleiner als 27,5°C.
+        // 1,5xC A kleiner als Strom
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_1", "STAT_HV_BATT_HIST_SOC4_T4_I10_WERT", STAT_HV_BATT_HIST_SOC4_T4_I10_WERT, "\"s\"");
 
     // ==========  Add your processing here ==========
@@ -4548,240 +4546,240 @@
     }
 
     float STAT_HV_BATT_HIST_SOC1_T5_I1_WERT = (RXBUF_UINT32(0)/10.0f);
-        // Duration with SoC less than 10%. 27.5 � C less than temperature less than 32.5 � C. Current less than -2.5xC
-        // A. / Dauer bei SoC kleiner als 10%. 27,5°C kleiner als Temperatur kleiner als 32,5°C. Strom kleiner als
-        // -2,5xC A.
+        // Duration with SoC less than 10%. 27.5 ° C less than temperature less than 32.5 ° C. Current less than -2.5xC
+        // A. / Dauer bei SoC kleiner als 10%. 27,5°C kleiner als Temperatur kleiner als 32,5°C. Strom kleiner als -2,5xC
+        // A.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_1", "STAT_HV_BATT_HIST_SOC1_T5_I1_WERT", STAT_HV_BATT_HIST_SOC1_T5_I1_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T5_I2_WERT = (RXBUF_UINT32(4)/10.0f);
-        // Duration with SoC less than 10%. 27.5 � C less than temperature less than 32.5 � C. -2.5xC A less than current
-        // less than -2.0xC A. / Dauer bei SoC kleiner als 10%. 27,5°C kleiner als Temperatur kleiner als 32,5°C.
-        // -2,5xC A kleiner als Strom kleiner als -2,0xC A.
+        // Duration with SoC less than 10%. 27.5 ° C less than temperature less than 32.5 ° C. -2.5xC A less than current
+        // less than -2.0xC A. / Dauer bei SoC kleiner als 10%. 27,5°C kleiner als Temperatur kleiner als 32,5°C. -2,5xC
+        // A kleiner als Strom kleiner als -2,0xC A.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_1", "STAT_HV_BATT_HIST_SOC1_T5_I2_WERT", STAT_HV_BATT_HIST_SOC1_T5_I2_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T5_I3_WERT = (RXBUF_UINT32(8)/10.0f);
-        // Duration with SoC less than 10%. 27.5 � C less than temperature less than 32.5 � C. -2.0xC A less than current
-        // less than -1.5xC A. / Dauer bei SoC kleiner als 10%. 27,5°C kleiner als Temperatur kleiner als 32,5°C.
-        // -2,0xC A kleiner als Strom kleiner als -1,5xC A.
+        // Duration with SoC less than 10%. 27.5 ° C less than temperature less than 32.5 ° C. -2.0xC A less than current
+        // less than -1.5xC A. / Dauer bei SoC kleiner als 10%. 27,5°C kleiner als Temperatur kleiner als 32,5°C. -2,0xC
+        // A kleiner als Strom kleiner als -1,5xC A.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_1", "STAT_HV_BATT_HIST_SOC1_T5_I3_WERT", STAT_HV_BATT_HIST_SOC1_T5_I3_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T5_I4_WERT = (RXBUF_UINT32(12)/10.0f);
-        // Duration with SoC less than 10%. 27.5 � C less than temperature less than 32.5 � C. -1.5xC A less than current
-        // less than -1.0xC A. / Dauer bei SoC kleiner als 10%. 27,5°C kleiner als Temperatur kleiner als 32,5°C.
-        // -1,5xC A kleiner als Strom kleiner als -1,0xC A.
+        // Duration with SoC less than 10%. 27.5 ° C less than temperature less than 32.5 ° C. -1.5xC A less than current
+        // less than -1.0xC A. / Dauer bei SoC kleiner als 10%. 27,5°C kleiner als Temperatur kleiner als 32,5°C. -1,5xC
+        // A kleiner als Strom kleiner als -1,0xC A.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_1", "STAT_HV_BATT_HIST_SOC1_T5_I4_WERT", STAT_HV_BATT_HIST_SOC1_T5_I4_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T5_I5_WERT = (RXBUF_UINT32(16)/10.0f);
-        // Duration with SoC less than 10%. 27.5 � C less than temperature less than 32.5 � C. -1.0xC A less than current
-        // less than -0.5xC A. / Dauer bei SoC kleiner als 10%. 27,5°C kleiner als Temperatur kleiner als 32,5°C.
-        // -1,0xC A kleiner als Strom kleiner als -0,5xC A.
+        // Duration with SoC less than 10%. 27.5 ° C less than temperature less than 32.5 ° C. -1.0xC A less than current
+        // less than -0.5xC A. / Dauer bei SoC kleiner als 10%. 27,5°C kleiner als Temperatur kleiner als 32,5°C. -1,0xC
+        // A kleiner als Strom kleiner als -0,5xC A.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_1", "STAT_HV_BATT_HIST_SOC1_T5_I5_WERT", STAT_HV_BATT_HIST_SOC1_T5_I5_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T5_I6_WERT = (RXBUF_UINT32(20)/10.0f);
-        // Duration with SoC less than 10%. 27.5 � C less than temperature less than 32.5 � C. -0.5xC A less than current
-        // less than 0.0xC A. / Dauer bei SoC kleiner als 10%. 27,5°C kleiner als Temperatur kleiner als 32,5°C. -0,5xC
-        // A kleiner als Strom kleiner als 0,0xC A.
+        // Duration with SoC less than 10%. 27.5 ° C less than temperature less than 32.5 ° C. -0.5xC A less than current
+        // less than 0.0xC A. / Dauer bei SoC kleiner als 10%. 27,5°C kleiner als Temperatur kleiner als 32,5°C. -0,5xC A
+        // kleiner als Strom kleiner als 0,0xC A.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_1", "STAT_HV_BATT_HIST_SOC1_T5_I6_WERT", STAT_HV_BATT_HIST_SOC1_T5_I6_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T5_I7_WERT = (RXBUF_UINT32(24)/10.0f);
-        // Duration with SoC less than 10%. 27.5 � C less than temperature less than 32.5 � C. 0.0xC A less than current
-        // less than 0.5xC A. / Dauer bei SoC kleiner als 10%. 27,5°C kleiner als Temperatur kleiner als 32,5°C. 0,0xC
-        // A kleiner als Strom kleiner als 0,5xC A.
+        // Duration with SoC less than 10%. 27.5 ° C less than temperature less than 32.5 ° C. 0.0xC A less than current
+        // less than 0.5xC A. / Dauer bei SoC kleiner als 10%. 27,5°C kleiner als Temperatur kleiner als 32,5°C. 0,0xC A
+        // kleiner als Strom kleiner als 0,5xC A.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_1", "STAT_HV_BATT_HIST_SOC1_T5_I7_WERT", STAT_HV_BATT_HIST_SOC1_T5_I7_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T5_I8_WERT = (RXBUF_UINT32(28)/10.0f);
-        // Duration with SoC less than 10%. 27.5 � C less than temperature less than 32.5 � C. 0.5xC A less than current
-        // less than 1.0xC A. / Dauer bei SoC kleiner als 10%. 27,5°C kleiner als Temperatur kleiner als 32,5°C. 0,5xC
-        // A kleiner als Strom kleiner als 1,0xC A.
+        // Duration with SoC less than 10%. 27.5 ° C less than temperature less than 32.5 ° C. 0.5xC A less than current
+        // less than 1.0xC A. / Dauer bei SoC kleiner als 10%. 27,5°C kleiner als Temperatur kleiner als 32,5°C. 0,5xC A
+        // kleiner als Strom kleiner als 1,0xC A.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_1", "STAT_HV_BATT_HIST_SOC1_T5_I8_WERT", STAT_HV_BATT_HIST_SOC1_T5_I8_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T5_I9_WERT = (RXBUF_UINT32(32)/10.0f);
-        // Duration with SoC less than 10%. 27.5 � C less than temperature less than 32.5 � C. 1.0xC A less than current
-        // less than 1.5xC A. / Dauer bei SoC kleiner als 10%. 27,5°C kleiner als Temperatur kleiner als 32,5°C. 1,0xC
-        // A kleiner als Strom kleiner als 1,5xC A.
+        // Duration with SoC less than 10%. 27.5 ° C less than temperature less than 32.5 ° C. 1.0xC A less than current
+        // less than 1.5xC A. / Dauer bei SoC kleiner als 10%. 27,5°C kleiner als Temperatur kleiner als 32,5°C. 1,0xC A
+        // kleiner als Strom kleiner als 1,5xC A.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_1", "STAT_HV_BATT_HIST_SOC1_T5_I9_WERT", STAT_HV_BATT_HIST_SOC1_T5_I9_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T5_I10_WERT = (RXBUF_UINT32(36)/10.0f);
-        // Duration with SoC less than 10%. 27.5 � C less than temperature less than 32.5 � C. 1.5xC A less than current
+        // Duration with SoC less than 10%. 27.5 ° C less than temperature less than 32.5 ° C. 1.5xC A less than current
         // / Dauer bei SoC kleiner als 10%. 27,5°C kleiner als Temperatur kleiner als 32,5°C. 1,5xC A kleiner als Strom
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_1", "STAT_HV_BATT_HIST_SOC1_T5_I10_WERT", STAT_HV_BATT_HIST_SOC1_T5_I10_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T5_I1_WERT = (RXBUF_UINT32(40)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 27.5 � C less than temperature less than 32.5 � C. Current less
+        // Duration at 10% less than SoC less than 30%. 27.5 ° C less than temperature less than 32.5 ° C. Current less
         // than -2.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 27,5°C kleiner als Temperatur kleiner als
         // 32,5°C. Strom kleiner als -2,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_1", "STAT_HV_BATT_HIST_SOC2_T5_I1_WERT", STAT_HV_BATT_HIST_SOC2_T5_I1_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T5_I2_WERT = (RXBUF_UINT32(44)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 27.5 � C less than temperature less than 32.5 � C. -2.5xC A less
-        // than current less than -2.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 27,5°C kleiner als
-        // Temperatur kleiner als 32,5°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
+        // Duration at 10% less than SoC less than 30%. 27.5 ° C less than temperature less than 32.5 ° C. -2.5xC A less
+        // than current less than -2.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_1", "STAT_HV_BATT_HIST_SOC2_T5_I2_WERT", STAT_HV_BATT_HIST_SOC2_T5_I2_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T5_I3_WERT = (RXBUF_UINT32(48)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 27.5 � C less than temperature less than 32.5 � C. -2.0xC A less
-        // than current less than -1.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 27,5°C kleiner als
-        // Temperatur kleiner als 32,5°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
+        // Duration at 10% less than SoC less than 30%. 27.5 ° C less than temperature less than 32.5 ° C. -2.0xC A less
+        // than current less than -1.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_1", "STAT_HV_BATT_HIST_SOC2_T5_I3_WERT", STAT_HV_BATT_HIST_SOC2_T5_I3_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T5_I4_WERT = (RXBUF_UINT32(52)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 27.5 � C less than temperature less than 32.5 � C. -1.5xC A less
-        // than current less than -1.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 27,5°C kleiner als
-        // Temperatur kleiner als 32,5°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
+        // Duration at 10% less than SoC less than 30%. 27.5 ° C less than temperature less than 32.5 ° C. -1.5xC A less
+        // than current less than -1.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_1", "STAT_HV_BATT_HIST_SOC2_T5_I4_WERT", STAT_HV_BATT_HIST_SOC2_T5_I4_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T5_I5_WERT = (RXBUF_UINT32(56)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 27.5 � C less than temperature less than 32.5 � C. -1.0xC A less
-        // than current less than -0.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 27,5°C kleiner als
-        // Temperatur kleiner als 32,5°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
+        // Duration at 10% less than SoC less than 30%. 27.5 ° C less than temperature less than 32.5 ° C. -1.0xC A less
+        // than current less than -0.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_1", "STAT_HV_BATT_HIST_SOC2_T5_I5_WERT", STAT_HV_BATT_HIST_SOC2_T5_I5_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T5_I6_WERT = (RXBUF_UINT32(60)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 27.5 � C less than temperature less than 32.5 � C. -0.5xC A less
+        // Duration at 10% less than SoC less than 30%. 27.5 ° C less than temperature less than 32.5 ° C. -0.5xC A less
         // than current less than 0.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 27,5°C kleiner als Temperatur
         // kleiner als 32,5°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_1", "STAT_HV_BATT_HIST_SOC2_T5_I6_WERT", STAT_HV_BATT_HIST_SOC2_T5_I6_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T5_I7_WERT = (RXBUF_UINT32(64)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 27.5 � C less than temperature less than 32.5 � C. 0.0xC A less
+        // Duration at 10% less than SoC less than 30%. 27.5 ° C less than temperature less than 32.5 ° C. 0.0xC A less
         // than current less than 0.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 27,5°C kleiner als Temperatur
         // kleiner als 32,5°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_1", "STAT_HV_BATT_HIST_SOC2_T5_I7_WERT", STAT_HV_BATT_HIST_SOC2_T5_I7_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T5_I8_WERT = (RXBUF_UINT32(68)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 27.5 � C less than temperature less than 32.5 � C. 0.5xC A less
+        // Duration at 10% less than SoC less than 30%. 27.5 ° C less than temperature less than 32.5 ° C. 0.5xC A less
         // than current less than 1.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 27,5°C kleiner als Temperatur
         // kleiner als 32,5°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_1", "STAT_HV_BATT_HIST_SOC2_T5_I8_WERT", STAT_HV_BATT_HIST_SOC2_T5_I8_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T5_I9_WERT = (RXBUF_UINT32(72)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 27.5 � C less than temperature less than 32.5 � C. 1.0xC A less
+        // Duration at 10% less than SoC less than 30%. 27.5 ° C less than temperature less than 32.5 ° C. 1.0xC A less
         // than current less than 1.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 27,5°C kleiner als Temperatur
         // kleiner als 32,5°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_1", "STAT_HV_BATT_HIST_SOC2_T5_I9_WERT", STAT_HV_BATT_HIST_SOC2_T5_I9_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T5_I10_WERT = (RXBUF_UINT32(76)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 27.5 � C less than temperature less than 32.5 � C. 1.5xC A less
+        // Duration at 10% less than SoC less than 30%. 27.5 ° C less than temperature less than 32.5 ° C. 1.5xC A less
         // than current / Dauer bei 10% kleiner als SoC kleiner als 30%. 27,5°C kleiner als Temperatur kleiner als
         // 32,5°C. 1,5xC A kleiner als Strom
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_1", "STAT_HV_BATT_HIST_SOC2_T5_I10_WERT", STAT_HV_BATT_HIST_SOC2_T5_I10_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T5_I1_WERT = (RXBUF_UINT32(80)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 27.5 � C less than temperature less than 32.5 � C. Current less
+        // Duration at 30% less than SoC less than 50%. 27.5 ° C less than temperature less than 32.5 ° C. Current less
         // than -2.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 27,5°C kleiner als Temperatur kleiner als
         // 32,5°C. Strom kleiner als -2,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_1", "STAT_HV_BATT_HIST_SOC3_T5_I1_WERT", STAT_HV_BATT_HIST_SOC3_T5_I1_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T5_I2_WERT = (RXBUF_UINT32(84)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 27.5 � C less than temperature less than 32.5 � C. -2.5xC A less
-        // than current less than -2.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 27,5°C kleiner als
-        // Temperatur kleiner als 32,5°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
+        // Duration at 30% less than SoC less than 50%. 27.5 ° C less than temperature less than 32.5 ° C. -2.5xC A less
+        // than current less than -2.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_1", "STAT_HV_BATT_HIST_SOC3_T5_I2_WERT", STAT_HV_BATT_HIST_SOC3_T5_I2_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T5_I3_WERT = (RXBUF_UINT32(88)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 27.5 � C less than temperature less than 32.5 � C. -2.0xC A less
-        // than current less than -1.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 27,5°C kleiner als
-        // Temperatur kleiner als 32,5°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
+        // Duration at 30% less than SoC less than 50%. 27.5 ° C less than temperature less than 32.5 ° C. -2.0xC A less
+        // than current less than -1.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_1", "STAT_HV_BATT_HIST_SOC3_T5_I3_WERT", STAT_HV_BATT_HIST_SOC3_T5_I3_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T5_I4_WERT = (RXBUF_UINT32(92)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 27.5 � C less than temperature less than 32.5 � C. -1.5xC A less
-        // than current less than -1.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 27,5°C kleiner als
-        // Temperatur kleiner als 32,5°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
+        // Duration at 30% less than SoC less than 50%. 27.5 ° C less than temperature less than 32.5 ° C. -1.5xC A less
+        // than current less than -1.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_1", "STAT_HV_BATT_HIST_SOC3_T5_I4_WERT", STAT_HV_BATT_HIST_SOC3_T5_I4_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T5_I5_WERT = (RXBUF_UINT32(96)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 27.5 � C less than temperature less than 32.5 � C. -1.0xC A less
-        // than current less than -0.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 27,5°C kleiner als
-        // Temperatur kleiner als 32,5°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
+        // Duration at 30% less than SoC less than 50%. 27.5 ° C less than temperature less than 32.5 ° C. -1.0xC A less
+        // than current less than -0.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_1", "STAT_HV_BATT_HIST_SOC3_T5_I5_WERT", STAT_HV_BATT_HIST_SOC3_T5_I5_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T5_I6_WERT = (RXBUF_UINT32(100)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 27.5 � C less than temperature less than 32.5 � C. -0.5xC A less
+        // Duration at 30% less than SoC less than 50%. 27.5 ° C less than temperature less than 32.5 ° C. -0.5xC A less
         // than current less than 0.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 27,5°C kleiner als Temperatur
         // kleiner als 32,5°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_1", "STAT_HV_BATT_HIST_SOC3_T5_I6_WERT", STAT_HV_BATT_HIST_SOC3_T5_I6_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T5_I7_WERT = (RXBUF_UINT32(104)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 27.5 � C less than temperature less than 32.5 � C. 0.0xC A less
+        // Duration at 30% less than SoC less than 50%. 27.5 ° C less than temperature less than 32.5 ° C. 0.0xC A less
         // than current less than 0.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 27,5°C kleiner als Temperatur
         // kleiner als 32,5°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_1", "STAT_HV_BATT_HIST_SOC3_T5_I7_WERT", STAT_HV_BATT_HIST_SOC3_T5_I7_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T5_I8_WERT = (RXBUF_UINT32(108)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 27.5 � C less than temperature less than 32.5 � C. 0.5xC A less
+        // Duration at 30% less than SoC less than 50%. 27.5 ° C less than temperature less than 32.5 ° C. 0.5xC A less
         // than current less than 1.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 27,5°C kleiner als Temperatur
         // kleiner als 32,5°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_1", "STAT_HV_BATT_HIST_SOC3_T5_I8_WERT", STAT_HV_BATT_HIST_SOC3_T5_I8_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T5_I9_WERT = (RXBUF_UINT32(112)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 27.5 � C less than temperature less than 32.5 � C. 1.0xC A less
+        // Duration at 30% less than SoC less than 50%. 27.5 ° C less than temperature less than 32.5 ° C. 1.0xC A less
         // than current less than 1.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 27,5°C kleiner als Temperatur
         // kleiner als 32,5°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_1", "STAT_HV_BATT_HIST_SOC3_T5_I9_WERT", STAT_HV_BATT_HIST_SOC3_T5_I9_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T5_I10_WERT = (RXBUF_UINT32(116)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 27.5 � C less than temperature less than 32.5 � C. 1.5xC A less
+        // Duration at 30% less than SoC less than 50%. 27.5 ° C less than temperature less than 32.5 ° C. 1.5xC A less
         // than current / Dauer bei 30% kleiner als SoC kleiner als 50%. 27,5°C kleiner als Temperatur kleiner als
         // 32,5°C. 1,5xC A kleiner als Strom
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_1", "STAT_HV_BATT_HIST_SOC3_T5_I10_WERT", STAT_HV_BATT_HIST_SOC3_T5_I10_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T5_I1_WERT = (RXBUF_UINT32(120)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 27.5 � C less than temperature less than 32.5 � C. Current less
+        // Duration at 50% less than SoC less than 70%. 27.5 ° C less than temperature less than 32.5 ° C. Current less
         // than -2.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 27,5°C kleiner als Temperatur kleiner als
         // 32,5°C. Strom kleiner als -2,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_1", "STAT_HV_BATT_HIST_SOC4_T5_I1_WERT", STAT_HV_BATT_HIST_SOC4_T5_I1_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T5_I2_WERT = (RXBUF_UINT32(124)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 27.5 � C less than temperature less than 32.5 � C. -2.5xC A less
-        // than current less than -2.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 27,5°C kleiner als
-        // Temperatur kleiner als 32,5°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
+        // Duration at 50% less than SoC less than 70%. 27.5 ° C less than temperature less than 32.5 ° C. -2.5xC A less
+        // than current less than -2.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_1", "STAT_HV_BATT_HIST_SOC4_T5_I2_WERT", STAT_HV_BATT_HIST_SOC4_T5_I2_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T5_I3_WERT = (RXBUF_UINT32(128)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 27.5 � C less than temperature less than 32.5 � C. -2.0xC A less
-        // than current less than -1.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 27,5°C kleiner als
-        // Temperatur kleiner als 32,5°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
+        // Duration at 50% less than SoC less than 70%. 27.5 ° C less than temperature less than 32.5 ° C. -2.0xC A less
+        // than current less than -1.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_1", "STAT_HV_BATT_HIST_SOC4_T5_I3_WERT", STAT_HV_BATT_HIST_SOC4_T5_I3_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T5_I4_WERT = (RXBUF_UINT32(132)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 27.5 � C less than temperature less than 32.5 � C. -1.5xC A less
-        // than current less than -1.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 27,5°C kleiner als
-        // Temperatur kleiner als 32,5°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
+        // Duration at 50% less than SoC less than 70%. 27.5 ° C less than temperature less than 32.5 ° C. -1.5xC A less
+        // than current less than -1.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_1", "STAT_HV_BATT_HIST_SOC4_T5_I4_WERT", STAT_HV_BATT_HIST_SOC4_T5_I4_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T5_I5_WERT = (RXBUF_UINT32(136)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 27.5 � C less than temperature less than 32.5 � C. -1.0xC A less
-        // than current less than -0.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 27,5°C kleiner als
-        // Temperatur kleiner als 32,5°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
+        // Duration at 50% less than SoC less than 70%. 27.5 ° C less than temperature less than 32.5 ° C. -1.0xC A less
+        // than current less than -0.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_1", "STAT_HV_BATT_HIST_SOC4_T5_I5_WERT", STAT_HV_BATT_HIST_SOC4_T5_I5_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T5_I6_WERT = (RXBUF_UINT32(140)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 27.5 � C less than temperature less than 32.5 � C. -0.5xC A less
+        // Duration at 50% less than SoC less than 70%. 27.5 ° C less than temperature less than 32.5 ° C. -0.5xC A less
         // than current less than 0.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 27,5°C kleiner als Temperatur
         // kleiner als 32,5°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_1", "STAT_HV_BATT_HIST_SOC4_T5_I6_WERT", STAT_HV_BATT_HIST_SOC4_T5_I6_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T5_I7_WERT = (RXBUF_UINT32(144)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 27.5 � C less than temperature less than 32.5 � C. 0.0xC A less
+        // Duration at 50% less than SoC less than 70%. 27.5 ° C less than temperature less than 32.5 ° C. 0.0xC A less
         // than current less than 0.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 27,5°C kleiner als Temperatur
         // kleiner als 32,5°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_1", "STAT_HV_BATT_HIST_SOC4_T5_I7_WERT", STAT_HV_BATT_HIST_SOC4_T5_I7_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T5_I8_WERT = (RXBUF_UINT32(148)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 27.5 � C less than temperature less than 32.5 � C. 0.5xC A less
+        // Duration at 50% less than SoC less than 70%. 27.5 ° C less than temperature less than 32.5 ° C. 0.5xC A less
         // than current less than 1.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 27,5°C kleiner als Temperatur
         // kleiner als 32,5°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_1", "STAT_HV_BATT_HIST_SOC4_T5_I8_WERT", STAT_HV_BATT_HIST_SOC4_T5_I8_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T5_I9_WERT = (RXBUF_UINT32(152)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 27.5 � C less than temperature less than 32.5 � C. 1.0xC A less
+        // Duration at 50% less than SoC less than 70%. 27.5 ° C less than temperature less than 32.5 ° C. 1.0xC A less
         // than current less than 1.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 27,5°C kleiner als Temperatur
         // kleiner als 32,5°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_1", "STAT_HV_BATT_HIST_SOC4_T5_I9_WERT", STAT_HV_BATT_HIST_SOC4_T5_I9_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T5_I10_WERT = (RXBUF_UINT32(156)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 27.5 � C less than temperature less than 32.5 � C. 1.5xC A less
+        // Duration at 50% less than SoC less than 70%. 27.5 ° C less than temperature less than 32.5 ° C. 1.5xC A less
         // than current / Dauer bei 50% kleiner als SoC kleiner als 70%. 27,5°C kleiner als Temperatur kleiner als
         // 32,5°C. 1,5xC A kleiner als Strom
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_1", "STAT_HV_BATT_HIST_SOC4_T5_I10_WERT", STAT_HV_BATT_HIST_SOC4_T5_I10_WERT, "\"s\"");
@@ -4799,241 +4797,241 @@
     }
 
     float STAT_HV_BATT_HIST_SOC1_T6_I1_WERT = (RXBUF_UINT32(0)/10.0f);
-        // Duration with SoC less than 10%. 32.5 � C less than temperature less than 40 � C. Current less than -2.5xC A /
+        // Duration with SoC less than 10%. 32.5 ° C less than temperature less than 40 ° C. Current less than -2.5xC A /
         // Dauer bei SoC kleiner als 10%. 32,5°C kleiner als Temperatur kleiner als 40°C. Strom kleiner als -2,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_1", "STAT_HV_BATT_HIST_SOC1_T6_I1_WERT", STAT_HV_BATT_HIST_SOC1_T6_I1_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T6_I2_WERT = (RXBUF_UINT32(4)/10.0f);
-        // Duration with SoC less than 10%. 32.5 � C less than temperature less than 40 � C. -2.5xC A less than current
+        // Duration with SoC less than 10%. 32.5 ° C less than temperature less than 40 ° C. -2.5xC A less than current
         // less than -2.0xC A / Dauer bei SoC kleiner als 10%. 32,5°C kleiner als Temperatur kleiner als 40°C. -2,5xC A
         // kleiner als Strom kleiner als -2,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_1", "STAT_HV_BATT_HIST_SOC1_T6_I2_WERT", STAT_HV_BATT_HIST_SOC1_T6_I2_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T6_I3_WERT = (RXBUF_UINT32(8)/10.0f);
-        // Duration with SoC less than 10%. 32.5 � C less than temperature less than 40 � C. -2.0xC A less than current
+        // Duration with SoC less than 10%. 32.5 ° C less than temperature less than 40 ° C. -2.0xC A less than current
         // less than -1.5xC A / Dauer bei SoC kleiner als 10%. 32,5°C kleiner als Temperatur kleiner als 40°C. -2,0xC A
         // kleiner als Strom kleiner als -1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_1", "STAT_HV_BATT_HIST_SOC1_T6_I3_WERT", STAT_HV_BATT_HIST_SOC1_T6_I3_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T6_I4_WERT = (RXBUF_UINT32(12)/10.0f);
-        // Duration with SoC less than 10%. 32.5 � C less than temperature less than 40 � C. -1.5xC A less than current
+        // Duration with SoC less than 10%. 32.5 ° C less than temperature less than 40 ° C. -1.5xC A less than current
         // less than -1.0xC A / Dauer bei SoC kleiner als 10%. 32,5°C kleiner als Temperatur kleiner als 40°C. -1,5xC A
         // kleiner als Strom kleiner als -1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_1", "STAT_HV_BATT_HIST_SOC1_T6_I4_WERT", STAT_HV_BATT_HIST_SOC1_T6_I4_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T6_I5_WERT = (RXBUF_UINT32(16)/10.0f);
-        // Duration with SoC less than 10%. 32.5 � C less than temperature less than 40 � C. -1.0xC A less than current
+        // Duration with SoC less than 10%. 32.5 ° C less than temperature less than 40 ° C. -1.0xC A less than current
         // less than -0.5xC A / Dauer bei SoC kleiner als 10%. 32,5°C kleiner als Temperatur kleiner als 40°C. -1,0xC A
         // kleiner als Strom kleiner als -0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_1", "STAT_HV_BATT_HIST_SOC1_T6_I5_WERT", STAT_HV_BATT_HIST_SOC1_T6_I5_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T6_I6_WERT = (RXBUF_UINT32(20)/10.0f);
-        // Duration with SoC less than 10%. 32.5 � C less than temperature less than 40 � C. -0.5xC A less than current
+        // Duration with SoC less than 10%. 32.5 ° C less than temperature less than 40 ° C. -0.5xC A less than current
         // less than 0.0xC A / Dauer bei SoC kleiner als 10%. 32,5°C kleiner als Temperatur kleiner als 40°C. -0,5xC A
         // kleiner als Strom kleiner als 0,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_1", "STAT_HV_BATT_HIST_SOC1_T6_I6_WERT", STAT_HV_BATT_HIST_SOC1_T6_I6_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T6_I7_WERT = (RXBUF_UINT32(24)/10.0f);
-        // Duration with SoC less than 10%. 32.5 � C less than temperature less than 40 � C. 0.0xC A less than current
+        // Duration with SoC less than 10%. 32.5 ° C less than temperature less than 40 ° C. 0.0xC A less than current
         // less than 0.5xC A / Dauer bei SoC kleiner als 10%. 32,5°C kleiner als Temperatur kleiner als 40°C. 0,0xC A
         // kleiner als Strom kleiner als 0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_1", "STAT_HV_BATT_HIST_SOC1_T6_I7_WERT", STAT_HV_BATT_HIST_SOC1_T6_I7_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T6_I8_WERT = (RXBUF_UINT32(28)/10.0f);
-        // Duration with SoC less than 10%. 32.5 � C less than temperature less than 40 � C. 0.5xC A less than current
+        // Duration with SoC less than 10%. 32.5 ° C less than temperature less than 40 ° C. 0.5xC A less than current
         // less than 1.0xC A / Dauer bei SoC kleiner als 10%. 32,5°C kleiner als Temperatur kleiner als 40°C. 0,5xC A
         // kleiner als Strom kleiner als 1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_1", "STAT_HV_BATT_HIST_SOC1_T6_I8_WERT", STAT_HV_BATT_HIST_SOC1_T6_I8_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T6_I9_WERT = (RXBUF_UINT32(32)/10.0f);
-        // Duration with SoC less than 10%. 32.5 � C less than temperature less than 40 � C. 1.0xC A less than current
+        // Duration with SoC less than 10%. 32.5 ° C less than temperature less than 40 ° C. 1.0xC A less than current
         // less than 1.5xC A / Dauer bei SoC kleiner als 10%. 32,5°C kleiner als Temperatur kleiner als 40°C. 1,0xC A
         // kleiner als Strom kleiner als 1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_1", "STAT_HV_BATT_HIST_SOC1_T6_I9_WERT", STAT_HV_BATT_HIST_SOC1_T6_I9_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T6_I10_WERT = (RXBUF_UINT32(36)/10.0f);
-        // Duration with SoC less than 10%. 32.5 � C less than temperature less than 40 � C. 1.5xC A less than current /
+        // Duration with SoC less than 10%. 32.5 ° C less than temperature less than 40 ° C. 1.5xC A less than current /
         // Dauer bei SoC kleiner als 10%. 32,5°C kleiner als Temperatur kleiner als 40°C. 1,5xC A kleiner als Strom
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_1", "STAT_HV_BATT_HIST_SOC1_T6_I10_WERT", STAT_HV_BATT_HIST_SOC1_T6_I10_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T6_I1_WERT = (RXBUF_UINT32(40)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 32.5 � C less than temperature less than 40 � C. Current less
-        // than -2.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 32,5°C kleiner als Temperatur kleiner als
-        // 40°C. Strom kleiner als -2,5xC A
+        // Duration at 10% less than SoC less than 30%. 32.5 ° C less than temperature less than 40 ° C. Current less
+        // than -2.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 32,5°C kleiner als Temperatur kleiner als 40°C.
+        // Strom kleiner als -2,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_1", "STAT_HV_BATT_HIST_SOC2_T6_I1_WERT", STAT_HV_BATT_HIST_SOC2_T6_I1_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T6_I2_WERT = (RXBUF_UINT32(44)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 32.5 � C less than temperature less than 40 � C. -2.5xC A less
-        // than current less than -2.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 32,5°C kleiner als
-        // Temperatur kleiner als 40°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
+        // Duration at 10% less than SoC less than 30%. 32.5 ° C less than temperature less than 40 ° C. -2.5xC A less
+        // than current less than -2.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_1", "STAT_HV_BATT_HIST_SOC2_T6_I2_WERT", STAT_HV_BATT_HIST_SOC2_T6_I2_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T6_I3_WERT = (RXBUF_UINT32(48)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 32.5 � C less than temperature less than 40 � C. -2.0xC A less
-        // than current less than -1.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 32,5°C kleiner als
-        // Temperatur kleiner als 40°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
+        // Duration at 10% less than SoC less than 30%. 32.5 ° C less than temperature less than 40 ° C. -2.0xC A less
+        // than current less than -1.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_1", "STAT_HV_BATT_HIST_SOC2_T6_I3_WERT", STAT_HV_BATT_HIST_SOC2_T6_I3_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T6_I4_WERT = (RXBUF_UINT32(52)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 32.5 � C less than temperature less than 40 � C. -1.5xC A less
-        // than current less than -1.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 32,5°C kleiner als
-        // Temperatur kleiner als 40°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
+        // Duration at 10% less than SoC less than 30%. 32.5 ° C less than temperature less than 40 ° C. -1.5xC A less
+        // than current less than -1.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_1", "STAT_HV_BATT_HIST_SOC2_T6_I4_WERT", STAT_HV_BATT_HIST_SOC2_T6_I4_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T6_I5_WERT = (RXBUF_UINT32(56)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 32.5 � C less than temperature less than 40 � C. -1.0xC A less
-        // than current less than -0.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 32,5°C kleiner als
-        // Temperatur kleiner als 40°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
+        // Duration at 10% less than SoC less than 30%. 32.5 ° C less than temperature less than 40 ° C. -1.0xC A less
+        // than current less than -0.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_1", "STAT_HV_BATT_HIST_SOC2_T6_I5_WERT", STAT_HV_BATT_HIST_SOC2_T6_I5_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T6_I6_WERT = (RXBUF_UINT32(60)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 32.5 � C less than temperature less than 40 � C. -0.5xC A less
+        // Duration at 10% less than SoC less than 30%. 32.5 ° C less than temperature less than 40 ° C. -0.5xC A less
         // than current less than 0.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 32,5°C kleiner als Temperatur
         // kleiner als 40°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_1", "STAT_HV_BATT_HIST_SOC2_T6_I6_WERT", STAT_HV_BATT_HIST_SOC2_T6_I6_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T6_I7_WERT = (RXBUF_UINT32(64)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 32.5 � C less than temperature less than 40 � C. 0.0xC A less
+        // Duration at 10% less than SoC less than 30%. 32.5 ° C less than temperature less than 40 ° C. 0.0xC A less
         // than current less than 0.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 32,5°C kleiner als Temperatur
         // kleiner als 40°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_1", "STAT_HV_BATT_HIST_SOC2_T6_I7_WERT", STAT_HV_BATT_HIST_SOC2_T6_I7_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T6_I8_WERT = (RXBUF_UINT32(68)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 32.5 � C less than temperature less than 40 � C. 0.5xC A less
+        // Duration at 10% less than SoC less than 30%. 32.5 ° C less than temperature less than 40 ° C. 0.5xC A less
         // than current less than 1.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 32,5°C kleiner als Temperatur
         // kleiner als 40°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_1", "STAT_HV_BATT_HIST_SOC2_T6_I8_WERT", STAT_HV_BATT_HIST_SOC2_T6_I8_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T6_I9_WERT = (RXBUF_UINT32(72)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 32.5 � C less than temperature less than 40 � C. 1.0xC A less
+        // Duration at 10% less than SoC less than 30%. 32.5 ° C less than temperature less than 40 ° C. 1.0xC A less
         // than current less than 1.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 32,5°C kleiner als Temperatur
         // kleiner als 40°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_1", "STAT_HV_BATT_HIST_SOC2_T6_I9_WERT", STAT_HV_BATT_HIST_SOC2_T6_I9_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T6_I10_WERT = (RXBUF_UINT32(76)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 32.5 � C less than temperature less than 40 � C. 1.5xC A less
-        // than current / Dauer bei 10% kleiner als SoC kleiner als 30%. 32,5°C kleiner als Temperatur kleiner als
-        // 40°C. 1,5xC A kleiner als Strom
+        // Duration at 10% less than SoC less than 30%. 32.5 ° C less than temperature less than 40 ° C. 1.5xC A less
+        // than current / Dauer bei 10% kleiner als SoC kleiner als 30%. 32,5°C kleiner als Temperatur kleiner als 40°C.
+        // 1,5xC A kleiner als Strom
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_1", "STAT_HV_BATT_HIST_SOC2_T6_I10_WERT", STAT_HV_BATT_HIST_SOC2_T6_I10_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T6_I1_WERT = (RXBUF_UINT32(80)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 32.5 � C less than temperature less than 40 � C. Current less
-        // than -2.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 32,5°C kleiner als Temperatur kleiner als
-        // 40°C. Strom kleiner als -2,5xC A
+        // Duration at 30% less than SoC less than 50%. 32.5 ° C less than temperature less than 40 ° C. Current less
+        // than -2.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 32,5°C kleiner als Temperatur kleiner als 40°C.
+        // Strom kleiner als -2,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_1", "STAT_HV_BATT_HIST_SOC3_T6_I1_WERT", STAT_HV_BATT_HIST_SOC3_T6_I1_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T6_I2_WERT = (RXBUF_UINT32(84)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 32.5 � C less than temperature less than 40 � C. -2.5xC A less
-        // than current less than -2.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 32,5°C kleiner als
-        // Temperatur kleiner als 40°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
+        // Duration at 30% less than SoC less than 50%. 32.5 ° C less than temperature less than 40 ° C. -2.5xC A less
+        // than current less than -2.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_1", "STAT_HV_BATT_HIST_SOC3_T6_I2_WERT", STAT_HV_BATT_HIST_SOC3_T6_I2_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T6_I3_WERT = (RXBUF_UINT32(88)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 32.5 � C less than temperature less than 40 � C. -2.0xC A less
-        // than current less than -1.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 32,5°C kleiner als
-        // Temperatur kleiner als 40°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
+        // Duration at 30% less than SoC less than 50%. 32.5 ° C less than temperature less than 40 ° C. -2.0xC A less
+        // than current less than -1.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_1", "STAT_HV_BATT_HIST_SOC3_T6_I3_WERT", STAT_HV_BATT_HIST_SOC3_T6_I3_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T6_I4_WERT = (RXBUF_UINT32(92)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 32.5 � C less than temperature less than 40 � C. -1.5xC A less
-        // than current less than -1.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 32,5°C kleiner als
-        // Temperatur kleiner als 40°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
+        // Duration at 30% less than SoC less than 50%. 32.5 ° C less than temperature less than 40 ° C. -1.5xC A less
+        // than current less than -1.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_1", "STAT_HV_BATT_HIST_SOC3_T6_I4_WERT", STAT_HV_BATT_HIST_SOC3_T6_I4_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T6_I5_WERT = (RXBUF_UINT32(96)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 32.5 � C less than temperature less than 40 � C. -1.0xC A less
-        // than current less than -0.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 32,5°C kleiner als
-        // Temperatur kleiner als 40°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
+        // Duration at 30% less than SoC less than 50%. 32.5 ° C less than temperature less than 40 ° C. -1.0xC A less
+        // than current less than -0.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_1", "STAT_HV_BATT_HIST_SOC3_T6_I5_WERT", STAT_HV_BATT_HIST_SOC3_T6_I5_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T6_I6_WERT = (RXBUF_UINT32(100)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 32.5 � C less than temperature less than 40 � C. -0.5xC A less
+        // Duration at 30% less than SoC less than 50%. 32.5 ° C less than temperature less than 40 ° C. -0.5xC A less
         // than current less than 0.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 32,5°C kleiner als Temperatur
         // kleiner als 40°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_1", "STAT_HV_BATT_HIST_SOC3_T6_I6_WERT", STAT_HV_BATT_HIST_SOC3_T6_I6_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T6_I7_WERT = (RXBUF_UINT32(104)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 32.5 � C less than temperature less than 40 � C. 0.0xC A less
+        // Duration at 30% less than SoC less than 50%. 32.5 ° C less than temperature less than 40 ° C. 0.0xC A less
         // than current less than 0.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 32,5°C kleiner als Temperatur
         // kleiner als 40°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_1", "STAT_HV_BATT_HIST_SOC3_T6_I7_WERT", STAT_HV_BATT_HIST_SOC3_T6_I7_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T6_I8_WERT = (RXBUF_UINT32(108)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 32.5 � C less than temperature less than 40 � C. 0.5xC A less
+        // Duration at 30% less than SoC less than 50%. 32.5 ° C less than temperature less than 40 ° C. 0.5xC A less
         // than current less than 1.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 32,5°C kleiner als Temperatur
         // kleiner als 40°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_1", "STAT_HV_BATT_HIST_SOC3_T6_I8_WERT", STAT_HV_BATT_HIST_SOC3_T6_I8_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T6_I9_WERT = (RXBUF_UINT32(112)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 32.5 � C less than temperature less than 40 � C. 1.0xC A less
+        // Duration at 30% less than SoC less than 50%. 32.5 ° C less than temperature less than 40 ° C. 1.0xC A less
         // than current less than 1.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 32,5°C kleiner als Temperatur
         // kleiner als 40°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_1", "STAT_HV_BATT_HIST_SOC3_T6_I9_WERT", STAT_HV_BATT_HIST_SOC3_T6_I9_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T6_I10_WERT = (RXBUF_UINT32(116)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 32.5 � C less than temperature less than 40 � C. 1.5xC A less
-        // than current / Dauer bei 30% kleiner als SoC kleiner als 50%. 32,5°C kleiner als Temperatur kleiner als
-        // 40°C. 1,5xC A kleiner als Strom
+        // Duration at 30% less than SoC less than 50%. 32.5 ° C less than temperature less than 40 ° C. 1.5xC A less
+        // than current / Dauer bei 30% kleiner als SoC kleiner als 50%. 32,5°C kleiner als Temperatur kleiner als 40°C.
+        // 1,5xC A kleiner als Strom
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_1", "STAT_HV_BATT_HIST_SOC3_T6_I10_WERT", STAT_HV_BATT_HIST_SOC3_T6_I10_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T6_I1_WERT = (RXBUF_UINT32(120)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 32.5 � C less than temperature less than 40 � C. Current less
-        // than -2.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 32,5°C kleiner als Temperatur kleiner als
-        // 40°C. Strom kleiner als -2,5xC A
+        // Duration at 50% less than SoC less than 70%. 32.5 ° C less than temperature less than 40 ° C. Current less
+        // than -2.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 32,5°C kleiner als Temperatur kleiner als 40°C.
+        // Strom kleiner als -2,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_1", "STAT_HV_BATT_HIST_SOC4_T6_I1_WERT", STAT_HV_BATT_HIST_SOC4_T6_I1_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T6_I2_WERT = (RXBUF_UINT32(124)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 32.5 � C less than temperature less than 40 � C. -2.5xC A less
-        // than current less than -2.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 32,5°C kleiner als
-        // Temperatur kleiner als 40°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
+        // Duration at 50% less than SoC less than 70%. 32.5 ° C less than temperature less than 40 ° C. -2.5xC A less
+        // than current less than -2.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_1", "STAT_HV_BATT_HIST_SOC4_T6_I2_WERT", STAT_HV_BATT_HIST_SOC4_T6_I2_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T6_I3_WERT = (RXBUF_UINT32(128)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 32.5 � C less than temperature less than 40 � C. -2.0xC A less
-        // than current less than -1.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 32,5°C kleiner als
-        // Temperatur kleiner als 40°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
+        // Duration at 50% less than SoC less than 70%. 32.5 ° C less than temperature less than 40 ° C. -2.0xC A less
+        // than current less than -1.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_1", "STAT_HV_BATT_HIST_SOC4_T6_I3_WERT", STAT_HV_BATT_HIST_SOC4_T6_I3_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T6_I4_WERT = (RXBUF_UINT32(132)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 32.5 � C less than temperature less than 40 � C. -1.5xC A less
-        // than current less than -1.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 32,5°C kleiner als
-        // Temperatur kleiner als 40°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
+        // Duration at 50% less than SoC less than 70%. 32.5 ° C less than temperature less than 40 ° C. -1.5xC A less
+        // than current less than -1.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_1", "STAT_HV_BATT_HIST_SOC4_T6_I4_WERT", STAT_HV_BATT_HIST_SOC4_T6_I4_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T6_I5_WERT = (RXBUF_UINT32(136)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 32.5 � C less than temperature less than 40 � C. -1.0xC A less
-        // than current less than -0.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 32,5°C kleiner als
-        // Temperatur kleiner als 40°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
+        // Duration at 50% less than SoC less than 70%. 32.5 ° C less than temperature less than 40 ° C. -1.0xC A less
+        // than current less than -0.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_1", "STAT_HV_BATT_HIST_SOC4_T6_I5_WERT", STAT_HV_BATT_HIST_SOC4_T6_I5_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T6_I6_WERT = (RXBUF_UINT32(140)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 32.5 � C less than temperature less than 40 � C. -0.5xC A less
+        // Duration at 50% less than SoC less than 70%. 32.5 ° C less than temperature less than 40 ° C. -0.5xC A less
         // than current less than 0.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 32,5°C kleiner als Temperatur
         // kleiner als 40°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_1", "STAT_HV_BATT_HIST_SOC4_T6_I6_WERT", STAT_HV_BATT_HIST_SOC4_T6_I6_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T6_I7_WERT = (RXBUF_UINT32(144)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 32.5 � C less than temperature less than 40 � C. 0.0xC A less
+        // Duration at 50% less than SoC less than 70%. 32.5 ° C less than temperature less than 40 ° C. 0.0xC A less
         // than current less than 0.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 32,5°C kleiner als Temperatur
         // kleiner als 40°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_1", "STAT_HV_BATT_HIST_SOC4_T6_I7_WERT", STAT_HV_BATT_HIST_SOC4_T6_I7_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T6_I8_WERT = (RXBUF_UINT32(148)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 32.5 � C less than temperature less than 40 � C. 0.5xC A less
+        // Duration at 50% less than SoC less than 70%. 32.5 ° C less than temperature less than 40 ° C. 0.5xC A less
         // than current less than 1.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 32,5°C kleiner als Temperatur
         // kleiner als 40°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_1", "STAT_HV_BATT_HIST_SOC4_T6_I8_WERT", STAT_HV_BATT_HIST_SOC4_T6_I8_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T6_I9_WERT = (RXBUF_UINT32(152)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 32.5 � C less than temperature less than 40 � C. 1.0xC A less
+        // Duration at 50% less than SoC less than 70%. 32.5 ° C less than temperature less than 40 ° C. 1.0xC A less
         // than current less than 1.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 32,5°C kleiner als Temperatur
         // kleiner als 40°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_1", "STAT_HV_BATT_HIST_SOC4_T6_I9_WERT", STAT_HV_BATT_HIST_SOC4_T6_I9_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T6_I10_WERT = (RXBUF_UINT32(156)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 32.5 � C less than temperature less than 40 � C. 1.5xC A less
-        // than current / Dauer bei 50% kleiner als SoC kleiner als 70%. 32,5°C kleiner als Temperatur kleiner als
-        // 40°C. 1,5xC A kleiner als Strom
+        // Duration at 50% less than SoC less than 70%. 32.5 ° C less than temperature less than 40 ° C. 1.5xC A less
+        // than current / Dauer bei 50% kleiner als SoC kleiner als 70%. 32,5°C kleiner als Temperatur kleiner als 40°C.
+        // 1,5xC A kleiner als Strom
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_1", "STAT_HV_BATT_HIST_SOC4_T6_I10_WERT", STAT_HV_BATT_HIST_SOC4_T6_I10_WERT, "\"s\"");
 
     // ==========  Add your processing here ==========
@@ -5049,226 +5047,226 @@
     }
 
     float STAT_HV_BATT_HIST_SOC1_T7_I1_WERT = (RXBUF_UINT32(0)/10.0f);
-        // Duration with SoC less than 10%. 40 � C less than temperature. Current less than -2.5xC A / Dauer bei SoC
+        // Duration with SoC less than 10%. 40 ° C less than temperature. Current less than -2.5xC A / Dauer bei SoC
         // kleiner als 10%. 40°C kleiner als Temperatur. Strom kleiner als -2,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_1", "STAT_HV_BATT_HIST_SOC1_T7_I1_WERT", STAT_HV_BATT_HIST_SOC1_T7_I1_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T7_I2_WERT = (RXBUF_UINT32(4)/10.0f);
-        // Duration with SoC less than 10%. 40 � C less than temperature. -2.5xC A less than current less than -2.0xC A /
+        // Duration with SoC less than 10%. 40 ° C less than temperature. -2.5xC A less than current less than -2.0xC A /
         // Dauer bei SoC kleiner als 10%. 40°C kleiner als Temperatur. -2,5xC A kleiner als Strom kleiner als -2,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_1", "STAT_HV_BATT_HIST_SOC1_T7_I2_WERT", STAT_HV_BATT_HIST_SOC1_T7_I2_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T7_I3_WERT = (RXBUF_UINT32(8)/10.0f);
-        // Duration with SoC less than 10%. 40 � C less than temperature. -2.0xC A less than current less than -1.5xC A /
+        // Duration with SoC less than 10%. 40 ° C less than temperature. -2.0xC A less than current less than -1.5xC A /
         // Dauer bei SoC kleiner als 10%. 40°C kleiner als Temperatur. -2,0xC A kleiner als Strom kleiner als -1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_1", "STAT_HV_BATT_HIST_SOC1_T7_I3_WERT", STAT_HV_BATT_HIST_SOC1_T7_I3_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T7_I4_WERT = (RXBUF_UINT32(12)/10.0f);
-        // Duration with SoC less than 10%. 40 � C less than temperature. -1.5xC A less than current less than -1.0xC A /
+        // Duration with SoC less than 10%. 40 ° C less than temperature. -1.5xC A less than current less than -1.0xC A /
         // Dauer bei SoC kleiner als 10%. 40°C kleiner als Temperatur. -1,5xC A kleiner als Strom kleiner als -1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_1", "STAT_HV_BATT_HIST_SOC1_T7_I4_WERT", STAT_HV_BATT_HIST_SOC1_T7_I4_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T7_I5_WERT = (RXBUF_UINT32(16)/10.0f);
-        // Duration with SoC less than 10%. 40 � C less than temperature. -1.0xC A less than current less than -0.5xC A /
+        // Duration with SoC less than 10%. 40 ° C less than temperature. -1.0xC A less than current less than -0.5xC A /
         // Dauer bei SoC kleiner als 10%. 40°C kleiner als Temperatur. -1,0xC A kleiner als Strom kleiner als -0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_1", "STAT_HV_BATT_HIST_SOC1_T7_I5_WERT", STAT_HV_BATT_HIST_SOC1_T7_I5_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T7_I6_WERT = (RXBUF_UINT32(20)/10.0f);
-        // Duration with SoC less than 10%. 40 � C less than temperature. -0.5xC A less than current less than 0.0xC A /
+        // Duration with SoC less than 10%. 40 ° C less than temperature. -0.5xC A less than current less than 0.0xC A /
         // Dauer bei SoC kleiner als 10%. 40°C kleiner als Temperatur. -0,5xC A kleiner als Strom kleiner als 0,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_1", "STAT_HV_BATT_HIST_SOC1_T7_I6_WERT", STAT_HV_BATT_HIST_SOC1_T7_I6_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T7_I7_WERT = (RXBUF_UINT32(24)/10.0f);
-        // Duration with SoC less than 10%. 40 � C less than temperature. 0.0xC A less than current less than 0.5xC A /
+        // Duration with SoC less than 10%. 40 ° C less than temperature. 0.0xC A less than current less than 0.5xC A /
         // Dauer bei SoC kleiner als 10%. 40°C kleiner als Temperatur. 0,0xC A kleiner als Strom kleiner als 0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_1", "STAT_HV_BATT_HIST_SOC1_T7_I7_WERT", STAT_HV_BATT_HIST_SOC1_T7_I7_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T7_I8_WERT = (RXBUF_UINT32(28)/10.0f);
-        // Duration with SoC less than 10%. 40 � C less than temperature. 0.5xC A less than current less than 1.0xC A /
+        // Duration with SoC less than 10%. 40 ° C less than temperature. 0.5xC A less than current less than 1.0xC A /
         // Dauer bei SoC kleiner als 10%. 40°C kleiner als Temperatur. 0,5xC A kleiner als Strom kleiner als 1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_1", "STAT_HV_BATT_HIST_SOC1_T7_I8_WERT", STAT_HV_BATT_HIST_SOC1_T7_I8_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T7_I9_WERT = (RXBUF_UINT32(32)/10.0f);
-        // Duration with SoC less than 10%. 40 � C less than temperature. 1.0xC A less than current less than 1.5xC A /
+        // Duration with SoC less than 10%. 40 ° C less than temperature. 1.0xC A less than current less than 1.5xC A /
         // Dauer bei SoC kleiner als 10%. 40°C kleiner als Temperatur. 1,0xC A kleiner als Strom kleiner als 1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_1", "STAT_HV_BATT_HIST_SOC1_T7_I9_WERT", STAT_HV_BATT_HIST_SOC1_T7_I9_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC1_T7_I10_WERT = (RXBUF_UINT32(36)/10.0f);
-        // Duration with SoC less than 10%. 40 � C less than temperature. 1.5xC A less than current / Dauer bei SoC
+        // Duration with SoC less than 10%. 40 ° C less than temperature. 1.5xC A less than current / Dauer bei SoC
         // kleiner als 10%. 40°C kleiner als Temperatur. 1,5xC A kleiner als Strom
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_1", "STAT_HV_BATT_HIST_SOC1_T7_I10_WERT", STAT_HV_BATT_HIST_SOC1_T7_I10_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T7_I1_WERT = (RXBUF_UINT32(40)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 40 � C less than temperature. Current less than -2.5xC A / Dauer
+        // Duration at 10% less than SoC less than 30%. 40 ° C less than temperature. Current less than -2.5xC A / Dauer
         // bei 10% kleiner als SoC kleiner als 30%. 40°C kleiner als Temperatur. Strom kleiner als -2,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_1", "STAT_HV_BATT_HIST_SOC2_T7_I1_WERT", STAT_HV_BATT_HIST_SOC2_T7_I1_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T7_I2_WERT = (RXBUF_UINT32(44)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 40 � C less than temperature. -2.5xC A less than current less
+        // Duration at 10% less than SoC less than 30%. 40 ° C less than temperature. -2.5xC A less than current less
         // than -2.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 40°C kleiner als Temperatur. -2,5xC A kleiner
         // als Strom kleiner als -2,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_1", "STAT_HV_BATT_HIST_SOC2_T7_I2_WERT", STAT_HV_BATT_HIST_SOC2_T7_I2_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T7_I3_WERT = (RXBUF_UINT32(48)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 40 � C less than temperature. -2.0xC A less than current less
+        // Duration at 10% less than SoC less than 30%. 40 ° C less than temperature. -2.0xC A less than current less
         // than -1.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 40°C kleiner als Temperatur. -2,0xC A kleiner
         // als Strom kleiner als -1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_1", "STAT_HV_BATT_HIST_SOC2_T7_I3_WERT", STAT_HV_BATT_HIST_SOC2_T7_I3_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T7_I4_WERT = (RXBUF_UINT32(52)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 40 � C less than temperature. -1.5xC A less than current less
+        // Duration at 10% less than SoC less than 30%. 40 ° C less than temperature. -1.5xC A less than current less
         // than -1.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 40°C kleiner als Temperatur. -1,5xC A kleiner
         // als Strom kleiner als -1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_1", "STAT_HV_BATT_HIST_SOC2_T7_I4_WERT", STAT_HV_BATT_HIST_SOC2_T7_I4_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T7_I5_WERT = (RXBUF_UINT32(56)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 40 � C less than temperature. -1.0xC A less than current less
+        // Duration at 10% less than SoC less than 30%. 40 ° C less than temperature. -1.0xC A less than current less
         // than -0.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 40°C kleiner als Temperatur. -1,0xC A kleiner
         // als Strom kleiner als -0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_1", "STAT_HV_BATT_HIST_SOC2_T7_I5_WERT", STAT_HV_BATT_HIST_SOC2_T7_I5_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T7_I6_WERT = (RXBUF_UINT32(60)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 40 � C less than temperature. -0.5xC A less than current less
+        // Duration at 10% less than SoC less than 30%. 40 ° C less than temperature. -0.5xC A less than current less
         // than 0.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 40°C kleiner als Temperatur. -0,5xC A kleiner
         // als Strom kleiner als 0,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_1", "STAT_HV_BATT_HIST_SOC2_T7_I6_WERT", STAT_HV_BATT_HIST_SOC2_T7_I6_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T7_I7_WERT = (RXBUF_UINT32(64)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 40 � C less than temperature. 0.0xC A less than current less than
+        // Duration at 10% less than SoC less than 30%. 40 ° C less than temperature. 0.0xC A less than current less than
         // 0.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 40°C kleiner als Temperatur. 0,0xC A kleiner als
         // Strom kleiner als 0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_1", "STAT_HV_BATT_HIST_SOC2_T7_I7_WERT", STAT_HV_BATT_HIST_SOC2_T7_I7_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T7_I8_WERT = (RXBUF_UINT32(68)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 40 � C less than temperature. 0.5xC A less than current less than
+        // Duration at 10% less than SoC less than 30%. 40 ° C less than temperature. 0.5xC A less than current less than
         // 1.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 40°C kleiner als Temperatur. 0,5xC A kleiner als
         // Strom kleiner als 1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_1", "STAT_HV_BATT_HIST_SOC2_T7_I8_WERT", STAT_HV_BATT_HIST_SOC2_T7_I8_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T7_I9_WERT = (RXBUF_UINT32(72)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 40 � C less than temperature. 1.0xC A less than current less than
+        // Duration at 10% less than SoC less than 30%. 40 ° C less than temperature. 1.0xC A less than current less than
         // 1.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 40°C kleiner als Temperatur. 1,0xC A kleiner als
         // Strom kleiner als 1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_1", "STAT_HV_BATT_HIST_SOC2_T7_I9_WERT", STAT_HV_BATT_HIST_SOC2_T7_I9_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC2_T7_I10_WERT = (RXBUF_UINT32(76)/10.0f);
-        // Duration at 10% less than SoC less than 30%. 40 � C less than temperature. 1.5xC A less than current / Dauer
+        // Duration at 10% less than SoC less than 30%. 40 ° C less than temperature. 1.5xC A less than current / Dauer
         // bei 10% kleiner als SoC kleiner als 30%. 40°C kleiner als Temperatur. 1,5xC A kleiner als Strom
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_1", "STAT_HV_BATT_HIST_SOC2_T7_I10_WERT", STAT_HV_BATT_HIST_SOC2_T7_I10_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T7_I1_WERT = (RXBUF_UINT32(80)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 40 � C less than temperature. Current less than -2.5xC A / Dauer
+        // Duration at 30% less than SoC less than 50%. 40 ° C less than temperature. Current less than -2.5xC A / Dauer
         // bei 30% kleiner als SoC kleiner als 50%. 40°C kleiner als Temperatur. Strom kleiner als -2,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_1", "STAT_HV_BATT_HIST_SOC3_T7_I1_WERT", STAT_HV_BATT_HIST_SOC3_T7_I1_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T7_I2_WERT = (RXBUF_UINT32(84)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 40 � C less than temperature. -2.5xC A less than current less
+        // Duration at 30% less than SoC less than 50%. 40 ° C less than temperature. -2.5xC A less than current less
         // than -2.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 40°C kleiner als Temperatur. -2,5xC A kleiner
         // als Strom kleiner als -2,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_1", "STAT_HV_BATT_HIST_SOC3_T7_I2_WERT", STAT_HV_BATT_HIST_SOC3_T7_I2_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T7_I3_WERT = (RXBUF_UINT32(88)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 40 � C less than temperature. -2.0xC A less than current less
+        // Duration at 30% less than SoC less than 50%. 40 ° C less than temperature. -2.0xC A less than current less
         // than -1.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 40°C kleiner als Temperatur. -2,0xC A kleiner
         // als Strom kleiner als -1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_1", "STAT_HV_BATT_HIST_SOC3_T7_I3_WERT", STAT_HV_BATT_HIST_SOC3_T7_I3_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T7_I4_WERT = (RXBUF_UINT32(92)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 40 � C less than temperature. -1.5xC A less than current less
+        // Duration at 30% less than SoC less than 50%. 40 ° C less than temperature. -1.5xC A less than current less
         // than -1.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 40°C kleiner als Temperatur. -1,5xC A kleiner
         // als Strom kleiner als -1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_1", "STAT_HV_BATT_HIST_SOC3_T7_I4_WERT", STAT_HV_BATT_HIST_SOC3_T7_I4_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T7_I5_WERT = (RXBUF_UINT32(96)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 40 � C less than temperature. -1.0xC A less than current less
+        // Duration at 30% less than SoC less than 50%. 40 ° C less than temperature. -1.0xC A less than current less
         // than -0.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 40°C kleiner als Temperatur. -1,0xC A kleiner
         // als Strom kleiner als -0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_1", "STAT_HV_BATT_HIST_SOC3_T7_I5_WERT", STAT_HV_BATT_HIST_SOC3_T7_I5_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T7_I6_WERT = (RXBUF_UINT32(100)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 40 � C less than temperature. -0.5xC A less than current less
+        // Duration at 30% less than SoC less than 50%. 40 ° C less than temperature. -0.5xC A less than current less
         // than 0.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 40°C kleiner als Temperatur. -0,5xC A kleiner
         // als Strom kleiner als 0,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_1", "STAT_HV_BATT_HIST_SOC3_T7_I6_WERT", STAT_HV_BATT_HIST_SOC3_T7_I6_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T7_I7_WERT = (RXBUF_UINT32(104)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 40 � C less than temperature. 0.0xC A less than current less than
+        // Duration at 30% less than SoC less than 50%. 40 ° C less than temperature. 0.0xC A less than current less than
         // 0.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 40°C kleiner als Temperatur. 0,0xC A kleiner als
         // Strom kleiner als 0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_1", "STAT_HV_BATT_HIST_SOC3_T7_I7_WERT", STAT_HV_BATT_HIST_SOC3_T7_I7_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T7_I8_WERT = (RXBUF_UINT32(108)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 40 � C less than temperature. 0.5xC A less than current less than
+        // Duration at 30% less than SoC less than 50%. 40 ° C less than temperature. 0.5xC A less than current less than
         // 1.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 40°C kleiner als Temperatur. 0,5xC A kleiner als
         // Strom kleiner als 1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_1", "STAT_HV_BATT_HIST_SOC3_T7_I8_WERT", STAT_HV_BATT_HIST_SOC3_T7_I8_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T7_I9_WERT = (RXBUF_UINT32(112)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 40 � C less than temperature. 1.0xC A less than current less than
+        // Duration at 30% less than SoC less than 50%. 40 ° C less than temperature. 1.0xC A less than current less than
         // 1.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 40°C kleiner als Temperatur. 1,0xC A kleiner als
         // Strom kleiner als 1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_1", "STAT_HV_BATT_HIST_SOC3_T7_I9_WERT", STAT_HV_BATT_HIST_SOC3_T7_I9_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC3_T7_I10_WERT = (RXBUF_UINT32(116)/10.0f);
-        // Duration at 30% less than SoC less than 50%. 40 � C less than temperature. 1.5xC A less than current / Dauer
+        // Duration at 30% less than SoC less than 50%. 40 ° C less than temperature. 1.5xC A less than current / Dauer
         // bei 30% kleiner als SoC kleiner als 50%. 40°C kleiner als Temperatur. 1,5xC A kleiner als Strom
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_1", "STAT_HV_BATT_HIST_SOC3_T7_I10_WERT", STAT_HV_BATT_HIST_SOC3_T7_I10_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T7_I1_WERT = (RXBUF_UINT32(120)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 40 � C less than temperature. Current less than -2.5xC A / Dauer
+        // Duration at 50% less than SoC less than 70%. 40 ° C less than temperature. Current less than -2.5xC A / Dauer
         // bei 50% kleiner als SoC kleiner als 70%. 40°C kleiner als Temperatur. Strom kleiner als -2,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_1", "STAT_HV_BATT_HIST_SOC4_T7_I1_WERT", STAT_HV_BATT_HIST_SOC4_T7_I1_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T7_I2_WERT = (RXBUF_UINT32(124)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 40 � C less than temperature. -2.5xC A less than current less
+        // Duration at 50% less than SoC less than 70%. 40 ° C less than temperature. -2.5xC A less than current less
         // than -2.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 40°C kleiner als Temperatur. -2,5xC A kleiner
         // als Strom kleiner als -2,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_1", "STAT_HV_BATT_HIST_SOC4_T7_I2_WERT", STAT_HV_BATT_HIST_SOC4_T7_I2_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T7_I3_WERT = (RXBUF_UINT32(128)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 40 � C less than temperature. -2.0xC A less than current less
+        // Duration at 50% less than SoC less than 70%. 40 ° C less than temperature. -2.0xC A less than current less
         // than -1.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 40°C kleiner als Temperatur. -2,0xC A kleiner
         // als Strom kleiner als -1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_1", "STAT_HV_BATT_HIST_SOC4_T7_I3_WERT", STAT_HV_BATT_HIST_SOC4_T7_I3_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T7_I4_WERT = (RXBUF_UINT32(132)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 40 � C less than temperature. -1.5xC A less than current less
+        // Duration at 50% less than SoC less than 70%. 40 ° C less than temperature. -1.5xC A less than current less
         // than -1.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 40°C kleiner als Temperatur. -1,5xC A kleiner
         // als Strom kleiner als -1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_1", "STAT_HV_BATT_HIST_SOC4_T7_I4_WERT", STAT_HV_BATT_HIST_SOC4_T7_I4_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T7_I5_WERT = (RXBUF_UINT32(136)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 40 � C less than temperature. -1.0xC A less than current less
+        // Duration at 50% less than SoC less than 70%. 40 ° C less than temperature. -1.0xC A less than current less
         // than -0.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 40°C kleiner als Temperatur. -1,0xC A kleiner
         // als Strom kleiner als -0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_1", "STAT_HV_BATT_HIST_SOC4_T7_I5_WERT", STAT_HV_BATT_HIST_SOC4_T7_I5_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T7_I6_WERT = (RXBUF_UINT32(140)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 40 � C less than temperature. -0.5xC A less than current less
+        // Duration at 50% less than SoC less than 70%. 40 ° C less than temperature. -0.5xC A less than current less
         // than 0.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 40°C kleiner als Temperatur. -0,5xC A kleiner
         // als Strom kleiner als 0,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_1", "STAT_HV_BATT_HIST_SOC4_T7_I6_WERT", STAT_HV_BATT_HIST_SOC4_T7_I6_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T7_I7_WERT = (RXBUF_UINT32(144)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 40 � C less than temperature. 0.0xC A less than current less than
+        // Duration at 50% less than SoC less than 70%. 40 ° C less than temperature. 0.0xC A less than current less than
         // 0.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 40°C kleiner als Temperatur. 0,0xC A kleiner als
         // Strom kleiner als 0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_1", "STAT_HV_BATT_HIST_SOC4_T7_I7_WERT", STAT_HV_BATT_HIST_SOC4_T7_I7_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T7_I8_WERT = (RXBUF_UINT32(148)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 40 � C less than temperature. 0.5xC A less than current less than
+        // Duration at 50% less than SoC less than 70%. 40 ° C less than temperature. 0.5xC A less than current less than
         // 1.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 40°C kleiner als Temperatur. 0,5xC A kleiner als
         // Strom kleiner als 1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_1", "STAT_HV_BATT_HIST_SOC4_T7_I8_WERT", STAT_HV_BATT_HIST_SOC4_T7_I8_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T7_I9_WERT = (RXBUF_UINT32(152)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 40 � C less than temperature. 1.0xC A less than current less than
+        // Duration at 50% less than SoC less than 70%. 40 ° C less than temperature. 1.0xC A less than current less than
         // 1.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 40°C kleiner als Temperatur. 1,0xC A kleiner als
         // Strom kleiner als 1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_1", "STAT_HV_BATT_HIST_SOC4_T7_I9_WERT", STAT_HV_BATT_HIST_SOC4_T7_I9_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC4_T7_I10_WERT = (RXBUF_UINT32(156)/10.0f);
-        // Duration at 50% less than SoC less than 70%. 40 � C less than temperature. 1.5xC A less than current / Dauer
+        // Duration at 50% less than SoC less than 70%. 40 ° C less than temperature. 1.5xC A less than current / Dauer
         // bei 50% kleiner als SoC kleiner als 70%. 40°C kleiner als Temperatur. 1,5xC A kleiner als Strom
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_1", "STAT_HV_BATT_HIST_SOC4_T7_I10_WERT", STAT_HV_BATT_HIST_SOC4_T7_I10_WERT, "\"s\"");
 
@@ -5285,7 +5283,7 @@
     }
 
     float STAT_LADEZIELSPANNUNG_WERT = (RXBUF_UINT(0)/100.0f);
-        // Output of the target charge voltage for module replacement before installing the module in the vehicle /
+        // Output of the charging target voltage for module replacement before installing the module in the vehicle /
         // Ausgabe der Ladezielspannung für Modultausch vor Einbau des Moduls ins Fahrzeug
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "LADEZIELSPANNUNG_TAUSCH", "STAT_LADEZIELSPANNUNG_WERT", STAT_LADEZIELSPANNUNG_WERT, "\"V\"");
 
@@ -5649,8 +5647,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "SME", "MAX_SYM_DAUER", "STAT_BAL_COMPL_1_NR", STAT_BAL_COMPL_1_NR, "\"0-n\"");
 
     unsigned long STAT_MAX_SYM_DAUER_2_WERT = (RXBUF_UINT32(9));
-        // Maximum duration of the symmetrization process before 1 trip / Maximale Symmetrierdauer des Symmetriervorgangs
-        // vor 1 Fahrt
+        // Maximum symmetrization duration of the symmetrization process before 1 trip / Maximale Symmetrierdauer des
+        // Symmetriervorgangs vor 1 Fahrt
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "MAX_SYM_DAUER", "STAT_MAX_SYM_DAUER_2_WERT", STAT_MAX_SYM_DAUER_2_WERT, "\"s\"");
 
     unsigned long STAT_MAX_SYM_ZEIT_2_WERT = (RXBUF_UINT32(13));
@@ -5801,7 +5799,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "SME", "ALTERUNG_KAPAZITAET_HISTOGRAMM_SOC_HUB", "STAT_HFK_GESAMT_SOC_HUB_65_80_WERT", STAT_HFK_GESAMT_SOC_HUB_65_80_WERT, "");
 
     unsigned short STAT_HFK_GESAMT_SOC_HUB_80_85_WERT = (RXBUF_UINT(4));
-        // Frequency with SoC hub between 80% and 85%, total of last year and current year / Häufigkeit bei SoC-Hub
+        // Frequency with SoC hub between 80% and 85%, sum of last year and current year / Häufigkeit bei SoC-Hub
         // zwischen 80% und 85%, Summe letztes Jahr und laufendes Jahr
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "SME", "ALTERUNG_KAPAZITAET_HISTOGRAMM_SOC_HUB", "STAT_HFK_GESAMT_SOC_HUB_80_85_WERT", STAT_HFK_GESAMT_SOC_HUB_80_85_WERT, "");
 
@@ -5816,7 +5814,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "SME", "ALTERUNG_KAPAZITAET_HISTOGRAMM_SOC_HUB", "STAT_HFK_GESAMT_SOC_HUB_90_95_WERT", STAT_HFK_GESAMT_SOC_HUB_90_95_WERT, "");
 
     unsigned short STAT_HFK_GESAMT_SOC_HUB_95_100_WERT = (RXBUF_UINT(10));
-        // Frequency for SoC hub between 95% and 100%, sum of last year and current year / Häufigkeit bei SoC-Hub
+        // Frequency with SoC hub between 95% and 100%, sum of last year and current year / Häufigkeit bei SoC-Hub
         // zwischen 95% und 100%, Summe letztes Jahr und laufendes Jahr
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "SME", "ALTERUNG_KAPAZITAET_HISTOGRAMM_SOC_HUB", "STAT_HFK_GESAMT_SOC_HUB_95_100_WERT", STAT_HFK_GESAMT_SOC_HUB_95_100_WERT, "");
 
@@ -5831,7 +5829,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "SME", "ALTERUNG_KAPAZITAET_HISTOGRAMM_SOC_HUB", "STAT_HFK_LAUFENDES_JAHR_SOC_HUB_65_80_WERT", STAT_HFK_LAUFENDES_JAHR_SOC_HUB_65_80_WERT, "");
 
     unsigned short STAT_HFK_LAUFENDES_JAHR_SOC_HUB_80_85_WERT = (RXBUF_UINT(16));
-        // Frequency with SoC hub between 80% and 85%, total of last year and current year / Häufigkeit bei SoC-Hub
+        // Frequency with SoC hub between 80% and 85%, sum of last year and current year / Häufigkeit bei SoC-Hub
         // zwischen 80% und 85%, Summe letztes Jahr und laufendes Jahr
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "SME", "ALTERUNG_KAPAZITAET_HISTOGRAMM_SOC_HUB", "STAT_HFK_LAUFENDES_JAHR_SOC_HUB_80_85_WERT", STAT_HFK_LAUFENDES_JAHR_SOC_HUB_80_85_WERT, "");
 
@@ -5846,7 +5844,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "SME", "ALTERUNG_KAPAZITAET_HISTOGRAMM_SOC_HUB", "STAT_HFK_LAUFENDES_JAHR_SOC_HUB_90_95_WERT", STAT_HFK_LAUFENDES_JAHR_SOC_HUB_90_95_WERT, "");
 
     unsigned short STAT_HFK_LAUFENDES_JAHR_SOC_HUB_95_100_WERT = (RXBUF_UINT(22));
-        // Frequency for SoC hub between 95% and 100%, sum of last year and current year / Häufigkeit bei SoC-Hub
+        // Frequency with SoC hub between 95% and 100%, sum of last year and current year / Häufigkeit bei SoC-Hub
         // zwischen 95% und 100%, Summe letztes Jahr und laufendes Jahr
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "SME", "ALTERUNG_KAPAZITAET_HISTOGRAMM_SOC_HUB", "STAT_HFK_LAUFENDES_JAHR_SOC_HUB_95_100_WERT", STAT_HFK_LAUFENDES_JAHR_SOC_HUB_95_100_WERT, "");
 
@@ -5948,8 +5946,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "SME", "RINGPUFFER_LADEVORGAENGE", "STAT_START_SOC_5_WERT", STAT_START_SOC_5_WERT, "\"%\"");
 
     unsigned char STAT_VERF_P_LADEN_1_WERT = (RXBUF_UCHAR(5));
-        // Value (from HVPM) of the available charging power at the start of charging -1 (255 = implausible). The output
-        // 'available charging power' must be divided by 5 in order to obtain a real value. / Wert (aus HVPM) der
+        // Value (from HVPM) of the available charging power at the beginning of charging-1 (255 = implausible). The
+        // output 'available charging power' must be divided by 5 in order to obtain a real value. / Wert (aus HVPM) der
         // verfügbaren Ladeleistung zu Ladebeginn-1 (255 = unplausibel). Die ausgegebene 'verfügbare Ladeleistung' muss
         // mit 5 dividiert werden um realen Wert zu erhalten.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "SME", "RINGPUFFER_LADEVORGAENGE", "STAT_VERF_P_LADEN_1_WERT", STAT_VERF_P_LADEN_1_WERT, "\"kW\"");
@@ -6083,8 +6081,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "SME", "RINGPUFFER_LADEVORGAENGE", "STAT_END_TEMP_5_WERT", STAT_END_TEMP_5_WERT, "\"°C\"");
 
     float STAT_BEGINN_PROG_LADEZEIT_1_WERT = (RXBUF_UCHAR(30)*5.0f);
-        // At the beginning forecast charging time after the completion of the charging process-1 / Zu Beginn
-        // prognostizierte Ladezeit nach Abschluss des Ladevorgang-1
+        // Charging time forecast at the beginning after completion of the charging process-1 / Zu Beginn prognostizierte
+        // Ladezeit nach Abschluss des Ladevorgang-1
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "RINGPUFFER_LADEVORGAENGE", "STAT_BEGINN_PROG_LADEZEIT_1_WERT", STAT_BEGINN_PROG_LADEZEIT_1_WERT, "\"min\"");
 
     float STAT_BEGINN_PROG_LADEZEIT_2_WERT = (RXBUF_UCHAR(31)*5.0f);
@@ -6145,8 +6143,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "RINGPUFFER_LADEVORGAENGE", "STAT_RELATIVZEIT_2_WERT", STAT_RELATIVZEIT_2_WERT, "\"s\"");
 
     unsigned long STAT_RELATIVZEIT_3_WERT = (RXBUF_UINT32(48));
-        // Relative time at the beginning of charging process 3 (continuous combination system time from ACAN with start
-        // in the factory) / Relativzeit zu Beginn des Ladevorgang-3 (fortlaufende Kombi-System-Zeit v. ACAN mit Start im
+        // Relative time at the beginning of the charging process-3 (continuous combi system time from ACAN with start in
+        // the factory) / Relativzeit zu Beginn des Ladevorgang-3 (fortlaufende Kombi-System-Zeit v. ACAN mit Start im
         // Werk)
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "RINGPUFFER_LADEVORGAENGE", "STAT_RELATIVZEIT_3_WERT", STAT_RELATIVZEIT_3_WERT, "\"s\"");
 
@@ -6252,7 +6250,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "BETRIEBSSTUNDEN", "STAT_TIME_HV_ON_WERT", STAT_TIME_HV_ON_WERT, "\"h\"");
 
     unsigned long STAT_TIME_TOTAL_WERT = (RXBUF_UINT32(4));
-        // The total battery life (total time with closed and open main switches) / Die gesamte Batterielebensdauer
+        // The total battery life (total time with main switches closed and open) / Die gesamte Batterielebensdauer
         // (Gesamtzeit bei geschlossenen und geöffneten Hauptschaltern)
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "BETRIEBSSTUNDEN", "STAT_TIME_TOTAL_WERT", STAT_TIME_TOTAL_WERT, "\"h\"");
 
@@ -6344,22 +6342,22 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "TEMP_SPREIZUNG_SYSTEM", "STAT_TEMP_SPREIZUNG_SYS_1_WERT", STAT_TEMP_SPREIZUNG_SYS_1_WERT, "\"min\"");
 
     unsigned long STAT_TEMP_SPREIZUNG_SYS_2_WERT = (RXBUF_UINT32(6));
-        // Time in minutes for cooling on class 2: dTmax * 0.2 <dT <= dTmax * 0.4 / Zeit in Minuten bei Kühlung an
-        // Klasse 2: dTmax*0.2 < dT <= dTmax*0.4
+        // Time in minutes for cooling on class 2: dTmax * 0.2 <dT <= dTmax * 0.4 / Zeit in Minuten bei Kühlung an Klasse
+        // 2: dTmax*0.2 < dT <= dTmax*0.4
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "TEMP_SPREIZUNG_SYSTEM", "STAT_TEMP_SPREIZUNG_SYS_2_WERT", STAT_TEMP_SPREIZUNG_SYS_2_WERT, "\"min\"");
 
     unsigned long STAT_TEMP_SPREIZUNG_SYS_3_WERT = (RXBUF_UINT32(10));
-        // Time in minutes for cooling on class 3: dTmax * 0.4 <dT <= dTmax * 0.6 / Zeit in Minuten bei Kühlung an
-        // Klasse 3: dTmax*0.4 < dT <= dTmax*0.6
+        // Time in minutes for cooling on class 3: dTmax * 0.4 <dT <= dTmax * 0.6 / Zeit in Minuten bei Kühlung an Klasse
+        // 3: dTmax*0.4 < dT <= dTmax*0.6
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "TEMP_SPREIZUNG_SYSTEM", "STAT_TEMP_SPREIZUNG_SYS_3_WERT", STAT_TEMP_SPREIZUNG_SYS_3_WERT, "\"min\"");
 
     unsigned long STAT_TEMP_SPREIZUNG_SYS_4_WERT = (RXBUF_UINT32(14));
-        // Time in minutes for cooling on class 4: dTmax * 0.6 <dT <= dTmax * 0.8 / Zeit in Minuten bei Kühlung an
-        // Klasse 4: dTmax*0.6 < dT <= dTmax*0.8
+        // Time in minutes for cooling on class 4: dTmax * 0.6 <dT <= dTmax * 0.8 / Zeit in Minuten bei Kühlung an Klasse
+        // 4: dTmax*0.6 < dT <= dTmax*0.8
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "TEMP_SPREIZUNG_SYSTEM", "STAT_TEMP_SPREIZUNG_SYS_4_WERT", STAT_TEMP_SPREIZUNG_SYS_4_WERT, "\"min\"");
 
     unsigned long STAT_TEMP_SPREIZUNG_SYS_5_WERT = (RXBUF_UINT32(18));
-        // Time in minutes for cooling on class 5: dTmax * 0.8 <dT <= dTmax / Zeit in Minuten bei Kühlung an Klasse 5:
+        // Time in minutes with cooling on class 5: dTmax * 0.8 <dT <= dTmax / Zeit in Minuten bei Kühlung an Klasse 5:
         // dTmax*0.8 < dT <= dTmax
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "TEMP_SPREIZUNG_SYSTEM", "STAT_TEMP_SPREIZUNG_SYS_5_WERT", STAT_TEMP_SPREIZUNG_SYS_5_WERT, "\"min\"");
 
@@ -6443,168 +6441,168 @@
     }
 
     float STAT_HV_BATT_HIST_SOC5_T1_I1_WERT = (RXBUF_UINT32(0)/10.0f);
-        // Duration at 70% less than SoC less than 90%. Temperature less than 0 � C. Current less than -2.5xC A / Dauer
+        // Duration at 70% less than SoC less than 90%. Temperature less than 0 ° C. Current less than -2.5xC A / Dauer
         // bei 70 % kleiner als SoC kleiner als 90 %. Temperatur kleiner als 0 °C. Strom kleiner als -2,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_2", "STAT_HV_BATT_HIST_SOC5_T1_I1_WERT", STAT_HV_BATT_HIST_SOC5_T1_I1_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T1_I2_WERT = (RXBUF_UINT32(4)/10.0f);
-        // Duration at 70% less than SoC less than 90%. Temperature less than 0 � C. -2.5xC A less than current less than
-        // -2.0xC A / Dauer bei 70 % kleiner als SoC kleiner als 90 %. Temperatur kleiner als 0 °C.  -2,5xC A kleiner
-        // als Strom kleiner als -2,0xC A
+        // Duration at 70% less than SoC less than 90%. Temperature less than 0 ° C. -2.5xC A less than current less than
+        // -2.0xC A / Dauer bei 70 % kleiner als SoC kleiner als 90 %. Temperatur kleiner als 0 °C.  -2,5xC A kleiner als
+        // Strom kleiner als -2,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_2", "STAT_HV_BATT_HIST_SOC5_T1_I2_WERT", STAT_HV_BATT_HIST_SOC5_T1_I2_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T1_I3_WERT = (RXBUF_UINT32(8)/10.0f);
-        // Duration at 70% less than SoC less than 90%. Temperature less than 0 � C. -2.0xC A less than current less than
-        // -1.5xC A / Dauer bei 70 % kleiner als SoC kleiner als 90 %. Temperatur kleiner als 0 °C.  -2,0xC A kleiner
-        // als Strom kleiner als -1,5xC A
+        // Duration at 70% less than SoC less than 90%. Temperature less than 0 ° C. -2.0xC A less than current less than
+        // -1.5xC A / Dauer bei 70 % kleiner als SoC kleiner als 90 %. Temperatur kleiner als 0 °C.  -2,0xC A kleiner als
+        // Strom kleiner als -1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_2", "STAT_HV_BATT_HIST_SOC5_T1_I3_WERT", STAT_HV_BATT_HIST_SOC5_T1_I3_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T1_I4_WERT = (RXBUF_UINT32(12)/10.0f);
-        // Duration at 70% less than SoC less than 90%. Temperature less than 0 � C. -1.5xC A less than current less than
-        // -1.0xC A / Dauer bei 70 % kleiner als SoC kleiner als 90 %. Temperatur kleiner als 0 °C.  -1,5xC A kleiner
-        // als Strom kleiner als -1,0xC A
+        // Duration at 70% less than SoC less than 90%. Temperature less than 0 ° C. -1.5xC A less than current less than
+        // -1.0xC A / Dauer bei 70 % kleiner als SoC kleiner als 90 %. Temperatur kleiner als 0 °C.  -1,5xC A kleiner als
+        // Strom kleiner als -1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_2", "STAT_HV_BATT_HIST_SOC5_T1_I4_WERT", STAT_HV_BATT_HIST_SOC5_T1_I4_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T1_I5_WERT = (RXBUF_UINT32(16)/10.0f);
-        // Duration at 70% less than SoC less than 90%. Temperature less than 0 � C. -1.0xC A less than current less than
-        // -0.5xC A / Dauer bei 70 % kleiner als SoC kleiner als 90 %. Temperatur kleiner als 0 °C.  -1,0xC A kleiner
-        // als Strom kleiner als -0,5xC A
+        // Duration at 70% less than SoC less than 90%. Temperature less than 0 ° C. -1.0xC A less than current less than
+        // -0.5xC A / Dauer bei 70 % kleiner als SoC kleiner als 90 %. Temperatur kleiner als 0 °C.  -1,0xC A kleiner als
+        // Strom kleiner als -0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_2", "STAT_HV_BATT_HIST_SOC5_T1_I5_WERT", STAT_HV_BATT_HIST_SOC5_T1_I5_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T1_I6_WERT = (RXBUF_UINT32(20)/10.0f);
-        // Duration at 70% less than SoC less than 90%. Temperature less than 0 � C. -0.5xC A less than current less than
+        // Duration at 70% less than SoC less than 90%. Temperature less than 0 ° C. -0.5xC A less than current less than
         // 0.0xC A / Dauer bei 70 % kleiner als SoC kleiner als 90 %. Temperatur kleiner als 0 °C.  -0,5xC A kleiner als
         // Strom kleiner als 0,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_2", "STAT_HV_BATT_HIST_SOC5_T1_I6_WERT", STAT_HV_BATT_HIST_SOC5_T1_I6_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T1_I7_WERT = (RXBUF_UINT32(24)/10.0f);
-        // Duration at 70% less than SoC less than 90%. Temperature less than 0 � C. 0.0xC A less than current less than
+        // Duration at 70% less than SoC less than 90%. Temperature less than 0 ° C. 0.0xC A less than current less than
         // 0.5xC A / Dauer bei 70 % kleiner als SoC kleiner als 90 %. Temperatur kleiner als 0 °C.  0,0xC A kleiner als
         // Strom kleiner als 0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_2", "STAT_HV_BATT_HIST_SOC5_T1_I7_WERT", STAT_HV_BATT_HIST_SOC5_T1_I7_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T1_I8_WERT = (RXBUF_UINT32(28)/10.0f);
-        // Duration at 70% less than SoC less than 90%. Temperature less than 0 � C. 0.5xC A less than current less than
+        // Duration at 70% less than SoC less than 90%. Temperature less than 0 ° C. 0.5xC A less than current less than
         // 1.0xC A / Dauer bei 70 % kleiner als SoC kleiner als 90 %. Temperatur kleiner als 0 °C.  0,5xC A kleiner als
         // Strom kleiner als 1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_2", "STAT_HV_BATT_HIST_SOC5_T1_I8_WERT", STAT_HV_BATT_HIST_SOC5_T1_I8_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T1_I9_WERT = (RXBUF_UINT32(32)/10.0f);
-        // Duration at 70% less than SoC less than 90%. Temperature less than 0 � C. 1.0xC A less than current less than
+        // Duration at 70% less than SoC less than 90%. Temperature less than 0 ° C. 1.0xC A less than current less than
         // 1.5xC A / Dauer bei 70 % kleiner als SoC kleiner als 90 %. Temperatur kleiner als 0 °C.  1,0xC A kleiner als
         // Strom kleiner als 1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_2", "STAT_HV_BATT_HIST_SOC5_T1_I9_WERT", STAT_HV_BATT_HIST_SOC5_T1_I9_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T1_I10_WERT = (RXBUF_UINT32(36)/10.0f);
-        // Duration at 70% less than SoC less than 90%. Temperature less than 0 � C. 1.5xC A less than current / Dauer
+        // Duration at 70% less than SoC less than 90%. Temperature less than 0 ° C. 1.5xC A less than current / Dauer
         // bei 70 % kleiner als SoC kleiner als 90 %. Temperatur kleiner als 0 °C.  1,5xC A kleiner als Strom
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_2", "STAT_HV_BATT_HIST_SOC5_T1_I10_WERT", STAT_HV_BATT_HIST_SOC5_T1_I10_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T1_I1_WERT = (RXBUF_UINT32(40)/10.0f);
-        // Duration at 90% less than SoC less than 95%. Temperature less than 0 � C. Current less than -2.5xC A / Dauer
+        // Duration at 90% less than SoC less than 95%. Temperature less than 0 ° C. Current less than -2.5xC A / Dauer
         // bei 90 % kleiner als SoC kleiner als 95 %. Temperatur kleiner als 0 °C. Strom kleiner als -2,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_2", "STAT_HV_BATT_HIST_SOC6_T1_I1_WERT", STAT_HV_BATT_HIST_SOC6_T1_I1_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T1_I2_WERT = (RXBUF_UINT32(44)/10.0f);
-        // Duration at 90% less than SoC less than 95%. Temperature less than 0 � C. -2.5xC A less than current less than
-        // -2.0xC A / Dauer bei 90 % kleiner als SoC kleiner als 95 %. Temperatur kleiner als 0 °C.  -2,5xC A kleiner
-        // als Strom kleiner als -2,0xC A
+        // Duration at 90% less than SoC less than 95%. Temperature less than 0 ° C. -2.5xC A less than current less than
+        // -2.0xC A / Dauer bei 90 % kleiner als SoC kleiner als 95 %. Temperatur kleiner als 0 °C.  -2,5xC A kleiner als
+        // Strom kleiner als -2,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_2", "STAT_HV_BATT_HIST_SOC6_T1_I2_WERT", STAT_HV_BATT_HIST_SOC6_T1_I2_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T1_I3_WERT = (RXBUF_UINT32(48)/10.0f);
-        // Duration at 90% less than SoC less than 95%. Temperature less than 0 � C. -2.0xC A less than current less than
-        // -1.5xC A / Dauer bei 90 % kleiner als SoC kleiner als 95 %. Temperatur kleiner als 0 °C.  -2,0xC A kleiner
-        // als Strom kleiner als -1,5xC A
+        // Duration at 90% less than SoC less than 95%. Temperature less than 0 ° C. -2.0xC A less than current less than
+        // -1.5xC A / Dauer bei 90 % kleiner als SoC kleiner als 95 %. Temperatur kleiner als 0 °C.  -2,0xC A kleiner als
+        // Strom kleiner als -1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_2", "STAT_HV_BATT_HIST_SOC6_T1_I3_WERT", STAT_HV_BATT_HIST_SOC6_T1_I3_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T1_I4_WERT = (RXBUF_UINT32(52)/10.0f);
-        // Duration at 90% less than SoC less than 95%. Temperature less than 0 � C. -1.5xC A less than current less than
-        // -1.0xC A / Dauer bei 90 % kleiner als SoC kleiner als 95 %. Temperatur kleiner als 0 °C.  -1,5xC A kleiner
-        // als Strom kleiner als -1,0xC A
+        // Duration at 90% less than SoC less than 95%. Temperature less than 0 ° C. -1.5xC A less than current less than
+        // -1.0xC A / Dauer bei 90 % kleiner als SoC kleiner als 95 %. Temperatur kleiner als 0 °C.  -1,5xC A kleiner als
+        // Strom kleiner als -1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_2", "STAT_HV_BATT_HIST_SOC6_T1_I4_WERT", STAT_HV_BATT_HIST_SOC6_T1_I4_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T1_I5_WERT = (RXBUF_UINT32(56)/10.0f);
-        // Duration at 90% less than SoC less than 95%. Temperature less than 0 � C. -1.0xC A less than current less than
-        // -0.5xC A / Dauer bei 90 % kleiner als SoC kleiner als 95 %. Temperatur kleiner als 0 °C.  -1,0xC A kleiner
-        // als Strom kleiner als -0,5xC A
+        // Duration at 90% less than SoC less than 95%. Temperature less than 0 ° C. -1.0xC A less than current less than
+        // -0.5xC A / Dauer bei 90 % kleiner als SoC kleiner als 95 %. Temperatur kleiner als 0 °C.  -1,0xC A kleiner als
+        // Strom kleiner als -0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_2", "STAT_HV_BATT_HIST_SOC6_T1_I5_WERT", STAT_HV_BATT_HIST_SOC6_T1_I5_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T1_I6_WERT = (RXBUF_UINT32(60)/10.0f);
-        // Duration at 90% less than SoC less than 95%. Temperature less than 0 � C. -0.5xC A less than current less than
+        // Duration at 90% less than SoC less than 95%. Temperature less than 0 ° C. -0.5xC A less than current less than
         // 0.0xC A / Dauer bei 90 % kleiner als SoC kleiner als 95 %. Temperatur kleiner als 0 °C.  -0,5xC A kleiner als
         // Strom kleiner als 0,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_2", "STAT_HV_BATT_HIST_SOC6_T1_I6_WERT", STAT_HV_BATT_HIST_SOC6_T1_I6_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T1_I7_WERT = (RXBUF_UINT32(64)/10.0f);
-        // Duration at 90% less than SoC less than 95%. Temperature less than 0 � C. 0.0xC A less than current less than
+        // Duration at 90% less than SoC less than 95%. Temperature less than 0 ° C. 0.0xC A less than current less than
         // 0.5xC A / Dauer bei 90 % kleiner als SoC kleiner als 95 %. Temperatur kleiner als 0 °C.  0,0xC A kleiner als
         // Strom kleiner als 0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_2", "STAT_HV_BATT_HIST_SOC6_T1_I7_WERT", STAT_HV_BATT_HIST_SOC6_T1_I7_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T1_I8_WERT = (RXBUF_UINT32(68)/10.0f);
-        // Duration at 90% less than SoC less than 95%. Temperature less than 0 � C. 0.5xC A less than current less than
+        // Duration at 90% less than SoC less than 95%. Temperature less than 0 ° C. 0.5xC A less than current less than
         // 1.0xC A / Dauer bei 90 % kleiner als SoC kleiner als 95 %. Temperatur kleiner als 0 °C.  0,5xC A kleiner als
         // Strom kleiner als 1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_2", "STAT_HV_BATT_HIST_SOC6_T1_I8_WERT", STAT_HV_BATT_HIST_SOC6_T1_I8_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T1_I9_WERT = (RXBUF_UINT32(72)/10.0f);
-        // Duration at 90% less than SoC less than 95%. Temperature less than 0 � C. 1.0xC A less than current less than
+        // Duration at 90% less than SoC less than 95%. Temperature less than 0 ° C. 1.0xC A less than current less than
         // 1.5xC A / Dauer bei 90 % kleiner als SoC kleiner als 95 %. Temperatur kleiner als 0 °C.  1,0xC A kleiner als
         // Strom kleiner als 1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_2", "STAT_HV_BATT_HIST_SOC6_T1_I9_WERT", STAT_HV_BATT_HIST_SOC6_T1_I9_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T1_I10_WERT = (RXBUF_UINT32(76)/10.0f);
-        // Duration at 90% less than SoC less than 95%. Temperature less than 0 � C. 1.5xC A less than current / Dauer
+        // Duration at 90% less than SoC less than 95%. Temperature less than 0 ° C. 1.5xC A less than current / Dauer
         // bei 90 % kleiner als SoC kleiner als 95 %. Temperatur kleiner als 0 °C.  1,5xC A kleiner als Strom
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_2", "STAT_HV_BATT_HIST_SOC6_T1_I10_WERT", STAT_HV_BATT_HIST_SOC6_T1_I10_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T1_I1_WERT = (RXBUF_UINT32(80)/10.0f);
-        // Duration at 95% smaller than SoC. Temperature less than 0 � C. Current less than -2.5xC A / Dauer bei 95 %
+        // Duration at 95% smaller than SoC. Temperature less than 0 ° C. Current less than -2.5xC A / Dauer bei 95 %
         // kleiner als SoC. Temperatur kleiner als 0 °C. Strom kleiner als -2,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_2", "STAT_HV_BATT_HIST_SOC7_T1_I1_WERT", STAT_HV_BATT_HIST_SOC7_T1_I1_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T1_I2_WERT = (RXBUF_UINT32(84)/10.0f);
-        // Duration at 95% smaller than SoC. Temperature less than 0 � C. -2.5xC A less than current less than -2.0xC A /
+        // Duration at 95% smaller than SoC. Temperature less than 0 ° C. -2.5xC A less than current less than -2.0xC A /
         // Dauer bei 95 % kleiner als SoC. Temperatur kleiner als 0 °C.  -2,5xC A kleiner als Strom kleiner als -2,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_2", "STAT_HV_BATT_HIST_SOC7_T1_I2_WERT", STAT_HV_BATT_HIST_SOC7_T1_I2_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T1_I3_WERT = (RXBUF_UINT32(88)/10.0f);
-        // Duration at 95% smaller than SoC. Temperature less than 0 � C. -2.0xC A less than current less than -1.5xC A /
+        // Duration at 95% smaller than SoC. Temperature less than 0 ° C. -2.0xC A less than current less than -1.5xC A /
         // Dauer bei 95 % kleiner als SoC. Temperatur kleiner als 0 °C.  -2,0xC A kleiner als Strom kleiner als -1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_2", "STAT_HV_BATT_HIST_SOC7_T1_I3_WERT", STAT_HV_BATT_HIST_SOC7_T1_I3_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T1_I4_WERT = (RXBUF_UINT32(92)/10.0f);
-        // Duration at 95% smaller than SoC. Temperature less than 0 � C. -1.5xC A less than current less than -1.0xC A /
+        // Duration at 95% smaller than SoC. Temperature less than 0 ° C. -1.5xC A less than current less than -1.0xC A /
         // Dauer bei 95 % kleiner als SoC. Temperatur kleiner als 0 °C.  -1,5xC A kleiner als Strom kleiner als -1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_2", "STAT_HV_BATT_HIST_SOC7_T1_I4_WERT", STAT_HV_BATT_HIST_SOC7_T1_I4_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T1_I5_WERT = (RXBUF_UINT32(96)/10.0f);
-        // Duration at 95% smaller than SoC. Temperature less than 0 � C. -1.0xC A less than current less than -0.5xC A /
+        // Duration at 95% smaller than SoC. Temperature less than 0 ° C. -1.0xC A less than current less than -0.5xC A /
         // Dauer bei 95 % kleiner als SoC. Temperatur kleiner als 0 °C.  -1,0xC A kleiner als Strom kleiner als -0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_2", "STAT_HV_BATT_HIST_SOC7_T1_I5_WERT", STAT_HV_BATT_HIST_SOC7_T1_I5_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T1_I6_WERT = (RXBUF_UINT32(100)/10.0f);
-        // Duration at 95% smaller than SoC. Temperature less than 0 � C. -0.5xC A less than current less than 0.0xC A /
+        // Duration at 95% smaller than SoC. Temperature less than 0 ° C. -0.5xC A less than current less than 0.0xC A /
         // Dauer bei 95 % kleiner als SoC. Temperatur kleiner als 0 °C.  -0,5xC A kleiner als Strom kleiner als 0,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_2", "STAT_HV_BATT_HIST_SOC7_T1_I6_WERT", STAT_HV_BATT_HIST_SOC7_T1_I6_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T1_I7_WERT = (RXBUF_UINT32(104)/10.0f);
-        // Duration at 95% smaller than SoC. Temperature less than 0 � C. 0.0xC A less than current less than 0.5xC A /
+        // Duration at 95% smaller than SoC. Temperature less than 0 ° C. 0.0xC A less than current less than 0.5xC A /
         // Dauer bei 95 % kleiner als SoC. Temperatur kleiner als 0 °C.  0,0xC A kleiner als Strom kleiner als 0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_2", "STAT_HV_BATT_HIST_SOC7_T1_I7_WERT", STAT_HV_BATT_HIST_SOC7_T1_I7_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T1_I8_WERT = (RXBUF_UINT32(108)/10.0f);
-        // Duration at 95% smaller than SoC. Temperature less than 0 � C. 0.5xC A less than current less than 1.0xC A /
+        // Duration at 95% smaller than SoC. Temperature less than 0 ° C. 0.5xC A less than current less than 1.0xC A /
         // Dauer bei 95 % kleiner als SoC. Temperatur kleiner als 0 °C.  0,5xC A kleiner als Strom kleiner als 1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_2", "STAT_HV_BATT_HIST_SOC7_T1_I8_WERT", STAT_HV_BATT_HIST_SOC7_T1_I8_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T1_I9_WERT = (RXBUF_UINT32(112)/10.0f);
-        // Duration at 95% smaller than SoC. Temperature less than 0 � C. 1.0xC A less than current less than 1.5xC A /
+        // Duration at 95% smaller than SoC. Temperature less than 0 ° C. 1.0xC A less than current less than 1.5xC A /
         // Dauer bei 95 % kleiner als SoC. Temperatur kleiner als 0 °C.  1,0xC A kleiner als Strom kleiner als 1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_2", "STAT_HV_BATT_HIST_SOC7_T1_I9_WERT", STAT_HV_BATT_HIST_SOC7_T1_I9_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T1_I10_WERT = (RXBUF_UINT32(116)/10.0f);
-        // Duration at 95% smaller than SoC. Temperature less than 0 � C. 1.5xC A less than current / Dauer bei 95 %
+        // Duration at 95% smaller than SoC. Temperature less than 0 ° C. 1.5xC A less than current / Dauer bei 95 %
         // kleiner als SoC. Temperatur kleiner als 0 °C.  1,5xC A kleiner als Strom
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T1_2", "STAT_HV_BATT_HIST_SOC7_T1_I10_WERT", STAT_HV_BATT_HIST_SOC7_T1_I10_WERT, "\"s\"");
 
@@ -6621,180 +6619,180 @@
     }
 
     float STAT_HV_BATT_HIST_SOC5_T4_I1_WERT = (RXBUF_UINT32(0)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 20 � C less than temperature less than 27.5 � C. Current less
-        // than -2.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 20°C kleiner als Temperatur kleiner als
-        // 27,5°C. Strom kleiner als -2,5xC A
+        // Duration at 70% less than SoC less than 90%. 20 ° C less than temperature less than 27.5 ° C. Current less
+        // than -2.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 20°C kleiner als Temperatur kleiner als 27,5°C.
+        // Strom kleiner als -2,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_2", "STAT_HV_BATT_HIST_SOC5_T4_I1_WERT", STAT_HV_BATT_HIST_SOC5_T4_I1_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T4_I2_WERT = (RXBUF_UINT32(4)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 20 � C less than temperature less than 27.5 � C. -2.5xC A less
+        // Duration at 70% less than SoC less than 90%. 20 ° C less than temperature less than 27.5 ° C. -2.5xC A less
         // than current less than -2.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 20°C kleiner als Temperatur
         // kleiner als 27,5°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_2", "STAT_HV_BATT_HIST_SOC5_T4_I2_WERT", STAT_HV_BATT_HIST_SOC5_T4_I2_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T4_I3_WERT = (RXBUF_UINT32(8)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 20 � C less than temperature less than 27.5 � C. -2.0xC A less
+        // Duration at 70% less than SoC less than 90%. 20 ° C less than temperature less than 27.5 ° C. -2.0xC A less
         // than current less than -1.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 20°C kleiner als Temperatur
         // kleiner als 27,5°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_2", "STAT_HV_BATT_HIST_SOC5_T4_I3_WERT", STAT_HV_BATT_HIST_SOC5_T4_I3_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T4_I4_WERT = (RXBUF_UINT32(12)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 20 � C less than temperature less than 27.5 � C. -1.5xC A less
+        // Duration at 70% less than SoC less than 90%. 20 ° C less than temperature less than 27.5 ° C. -1.5xC A less
         // than current less than -1.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 20°C kleiner als Temperatur
         // kleiner als 27,5°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_2", "STAT_HV_BATT_HIST_SOC5_T4_I4_WERT", STAT_HV_BATT_HIST_SOC5_T4_I4_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T4_I5_WERT = (RXBUF_UINT32(16)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 20 � C less than temperature less than 27.5 � C. -1.0xC A less
+        // Duration at 70% less than SoC less than 90%. 20 ° C less than temperature less than 27.5 ° C. -1.0xC A less
         // than current less than -0.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 20°C kleiner als Temperatur
         // kleiner als 27,5°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_2", "STAT_HV_BATT_HIST_SOC5_T4_I5_WERT", STAT_HV_BATT_HIST_SOC5_T4_I5_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T4_I6_WERT = (RXBUF_UINT32(20)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 20 � C less than temperature less than 27.5 � C. -0.5xC A less
+        // Duration at 70% less than SoC less than 90%. 20 ° C less than temperature less than 27.5 ° C. -0.5xC A less
         // than current less than 0.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 20°C kleiner als Temperatur
         // kleiner als 27,5°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_2", "STAT_HV_BATT_HIST_SOC5_T4_I6_WERT", STAT_HV_BATT_HIST_SOC5_T4_I6_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T4_I7_WERT = (RXBUF_UINT32(24)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 20 � C less than temperature less than 27.5 � C. 0.0xC A less
+        // Duration at 70% less than SoC less than 90%. 20 ° C less than temperature less than 27.5 ° C. 0.0xC A less
         // than current less than 0.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 20°C kleiner als Temperatur
         // kleiner als 27,5°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_2", "STAT_HV_BATT_HIST_SOC5_T4_I7_WERT", STAT_HV_BATT_HIST_SOC5_T4_I7_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T4_I8_WERT = (RXBUF_UINT32(28)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 20 � C less than temperature less than 27.5 � C. 0.5xC A less
+        // Duration at 70% less than SoC less than 90%. 20 ° C less than temperature less than 27.5 ° C. 0.5xC A less
         // than current less than 1.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 20°C kleiner als Temperatur
         // kleiner als 27,5°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_2", "STAT_HV_BATT_HIST_SOC5_T4_I8_WERT", STAT_HV_BATT_HIST_SOC5_T4_I8_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T4_I9_WERT = (RXBUF_UINT32(32)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 20 � C less than temperature less than 27.5 � C. 1.0xC A less
+        // Duration at 70% less than SoC less than 90%. 20 ° C less than temperature less than 27.5 ° C. 1.0xC A less
         // than current less than 1.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 20°C kleiner als Temperatur
         // kleiner als 27,5°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_2", "STAT_HV_BATT_HIST_SOC5_T4_I9_WERT", STAT_HV_BATT_HIST_SOC5_T4_I9_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T4_I10_WERT = (RXBUF_UINT32(36)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 20 � C less than temperature less than 27.5 � C. 1.5xC A less
-        // than current / Dauer bei 70% kleiner als SoC kleiner als 90%. 20°C kleiner als Temperatur kleiner als
-        // 27,5°C. 1,5xC A kleiner als Strom
+        // Duration at 70% less than SoC less than 90%. 20 ° C less than temperature less than 27.5 ° C. 1.5xC A less
+        // than current / Dauer bei 70% kleiner als SoC kleiner als 90%. 20°C kleiner als Temperatur kleiner als 27,5°C.
+        // 1,5xC A kleiner als Strom
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_2", "STAT_HV_BATT_HIST_SOC5_T4_I10_WERT", STAT_HV_BATT_HIST_SOC5_T4_I10_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T4_I1_WERT = (RXBUF_UINT32(40)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 20 � C less than temperature less than 27.5 � C. Current less
-        // than -2.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 20°C kleiner als Temperatur kleiner als
-        // 27,5°C. Strom kleiner als -2,5xC A
+        // Duration at 90% less than SoC less than 95%. 20 ° C less than temperature less than 27.5 ° C. Current less
+        // than -2.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 20°C kleiner als Temperatur kleiner als 27,5°C.
+        // Strom kleiner als -2,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_2", "STAT_HV_BATT_HIST_SOC6_T4_I1_WERT", STAT_HV_BATT_HIST_SOC6_T4_I1_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T4_I2_WERT = (RXBUF_UINT32(44)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 20 � C less than temperature less than 27.5 � C. -2.5xC A less
+        // Duration at 90% less than SoC less than 95%. 20 ° C less than temperature less than 27.5 ° C. -2.5xC A less
         // than current less than -2.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 20°C kleiner als Temperatur
         // kleiner als 27,5°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_2", "STAT_HV_BATT_HIST_SOC6_T4_I2_WERT", STAT_HV_BATT_HIST_SOC6_T4_I2_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T4_I3_WERT = (RXBUF_UINT32(48)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 20 � C less than temperature less than 27.5 � C. -2.0xC A less
+        // Duration at 90% less than SoC less than 95%. 20 ° C less than temperature less than 27.5 ° C. -2.0xC A less
         // than current less than -1.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 20°C kleiner als Temperatur
         // kleiner als 27,5°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_2", "STAT_HV_BATT_HIST_SOC6_T4_I3_WERT", STAT_HV_BATT_HIST_SOC6_T4_I3_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T4_I4_WERT = (RXBUF_UINT32(52)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 20 � C less than temperature less than 27.5 � C. -1.5xC A less
+        // Duration at 90% less than SoC less than 95%. 20 ° C less than temperature less than 27.5 ° C. -1.5xC A less
         // than current less than -1.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 20°C kleiner als Temperatur
         // kleiner als 27,5°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_2", "STAT_HV_BATT_HIST_SOC6_T4_I4_WERT", STAT_HV_BATT_HIST_SOC6_T4_I4_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T4_I5_WERT = (RXBUF_UINT32(56)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 20 � C less than temperature less than 27.5 � C. -1.0xC A less
+        // Duration at 90% less than SoC less than 95%. 20 ° C less than temperature less than 27.5 ° C. -1.0xC A less
         // than current less than -0.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 20°C kleiner als Temperatur
         // kleiner als 27,5°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_2", "STAT_HV_BATT_HIST_SOC6_T4_I5_WERT", STAT_HV_BATT_HIST_SOC6_T4_I5_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T4_I6_WERT = (RXBUF_UINT32(60)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 20 � C less than temperature less than 27.5 � C. -0.5xC A less
+        // Duration at 90% less than SoC less than 95%. 20 ° C less than temperature less than 27.5 ° C. -0.5xC A less
         // than current less than 0.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 20°C kleiner als Temperatur
         // kleiner als 27,5°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_2", "STAT_HV_BATT_HIST_SOC6_T4_I6_WERT", STAT_HV_BATT_HIST_SOC6_T4_I6_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T4_I7_WERT = (RXBUF_UINT32(64)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 20 � C less than temperature less than 27.5 � C. 0.0xC A less
+        // Duration at 90% less than SoC less than 95%. 20 ° C less than temperature less than 27.5 ° C. 0.0xC A less
         // than current less than 0.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 20°C kleiner als Temperatur
         // kleiner als 27,5°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_2", "STAT_HV_BATT_HIST_SOC6_T4_I7_WERT", STAT_HV_BATT_HIST_SOC6_T4_I7_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T4_I8_WERT = (RXBUF_UINT32(68)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 20 � C less than temperature less than 27.5 � C. 0.5xC A less
+        // Duration at 90% less than SoC less than 95%. 20 ° C less than temperature less than 27.5 ° C. 0.5xC A less
         // than current less than 1.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 20°C kleiner als Temperatur
         // kleiner als 27,5°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_2", "STAT_HV_BATT_HIST_SOC6_T4_I8_WERT", STAT_HV_BATT_HIST_SOC6_T4_I8_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T4_I9_WERT = (RXBUF_UINT32(72)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 20 � C less than temperature less than 27.5 � C. 1.0xC A less
+        // Duration at 90% less than SoC less than 95%. 20 ° C less than temperature less than 27.5 ° C. 1.0xC A less
         // than current less than 1.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 20°C kleiner als Temperatur
         // kleiner als 27,5°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_2", "STAT_HV_BATT_HIST_SOC6_T4_I9_WERT", STAT_HV_BATT_HIST_SOC6_T4_I9_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T4_I10_WERT = (RXBUF_UINT32(76)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 20 � C less than temperature less than 27.5 � C. 1.5xC A less
-        // than current / Dauer bei 90% kleiner als SoC kleiner als 95%. 20°C kleiner als Temperatur kleiner als
-        // 27,5°C. 1,5xC A kleiner als Strom
+        // Duration at 90% less than SoC less than 95%. 20 ° C less than temperature less than 27.5 ° C. 1.5xC A less
+        // than current / Dauer bei 90% kleiner als SoC kleiner als 95%. 20°C kleiner als Temperatur kleiner als 27,5°C.
+        // 1,5xC A kleiner als Strom
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_2", "STAT_HV_BATT_HIST_SOC6_T4_I10_WERT", STAT_HV_BATT_HIST_SOC6_T4_I10_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T4_I1_WERT = (RXBUF_UINT32(80)/10.0f);
-        // Duration at 95% smaller than SoC. 20 � C less than temperature less than 27.5 � C. Current less than -2.5xC A
+        // Duration at 95% smaller than SoC. 20 ° C less than temperature less than 27.5 ° C. Current less than -2.5xC A
         // / Dauer bei 95% kleiner als SoC. 20°C kleiner als Temperatur kleiner als 27,5°C. Strom kleiner als -2,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_2", "STAT_HV_BATT_HIST_SOC7_T4_I1_WERT", STAT_HV_BATT_HIST_SOC7_T4_I1_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T4_I2_WERT = (RXBUF_UINT32(84)/10.0f);
-        // Duration at 95% smaller than SoC. 20 � C less than temperature less than 27.5 � C. -2.5xC A less than current
+        // Duration at 95% smaller than SoC. 20 ° C less than temperature less than 27.5 ° C. -2.5xC A less than current
         // less than -2.0xC A / Dauer bei 95% kleiner als SoC. 20°C kleiner als Temperatur kleiner als 27,5°C. -2,5xC A
         // kleiner als Strom kleiner als -2,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_2", "STAT_HV_BATT_HIST_SOC7_T4_I2_WERT", STAT_HV_BATT_HIST_SOC7_T4_I2_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T4_I3_WERT = (RXBUF_UINT32(88)/10.0f);
-        // Duration at 95% smaller than SoC. 20 � C less than temperature less than 27.5 � C. -2.0xC A less than current
+        // Duration at 95% smaller than SoC. 20 ° C less than temperature less than 27.5 ° C. -2.0xC A less than current
         // less than -1.5xC A / Dauer bei 95% kleiner als SoC. 20°C kleiner als Temperatur kleiner als 27,5°C. -2,0xC A
         // kleiner als Strom kleiner als -1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_2", "STAT_HV_BATT_HIST_SOC7_T4_I3_WERT", STAT_HV_BATT_HIST_SOC7_T4_I3_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T4_I4_WERT = (RXBUF_UINT32(92)/10.0f);
-        // Duration at 95% smaller than SoC. 20 � C less than temperature less than 27.5 � C. -1.5xC A less than current
+        // Duration at 95% smaller than SoC. 20 ° C less than temperature less than 27.5 ° C. -1.5xC A less than current
         // less than -1.0xC A / Dauer bei 95% kleiner als SoC. 20°C kleiner als Temperatur kleiner als 27,5°C. -1,5xC A
         // kleiner als Strom kleiner als -1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_2", "STAT_HV_BATT_HIST_SOC7_T4_I4_WERT", STAT_HV_BATT_HIST_SOC7_T4_I4_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T4_I5_WERT = (RXBUF_UINT32(96)/10.0f);
-        // Duration at 95% smaller than SoC. 20 � C less than temperature less than 27.5 � C. -1.0xC A less than current
+        // Duration at 95% smaller than SoC. 20 ° C less than temperature less than 27.5 ° C. -1.0xC A less than current
         // less than -0.5xC A / Dauer bei 95% kleiner als SoC. 20°C kleiner als Temperatur kleiner als 27,5°C. -1,0xC A
         // kleiner als Strom kleiner als -0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_2", "STAT_HV_BATT_HIST_SOC7_T4_I5_WERT", STAT_HV_BATT_HIST_SOC7_T4_I5_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T4_I6_WERT = (RXBUF_UINT32(100)/10.0f);
-        // Duration at 95% smaller than SoC. 20 � C less than temperature less than 27.5 � C. -0.5xC A less than current
+        // Duration at 95% smaller than SoC. 20 ° C less than temperature less than 27.5 ° C. -0.5xC A less than current
         // less than 0.0xC A / Dauer bei 95% kleiner als SoC. 20°C kleiner als Temperatur kleiner als 27,5°C. -0,5xC A
         // kleiner als Strom kleiner als 0,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_2", "STAT_HV_BATT_HIST_SOC7_T4_I6_WERT", STAT_HV_BATT_HIST_SOC7_T4_I6_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T4_I7_WERT = (RXBUF_UINT32(104)/10.0f);
-        // Duration at 95% smaller than SoC. 20 � C less than temperature less than 27.5 � C. 0.0xC A less than current
+        // Duration at 95% smaller than SoC. 20 ° C less than temperature less than 27.5 ° C. 0.0xC A less than current
         // less than 0.5xC A / Dauer bei 95% kleiner als SoC. 20°C kleiner als Temperatur kleiner als 27,5°C. 0,0xC A
         // kleiner als Strom kleiner als 0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_2", "STAT_HV_BATT_HIST_SOC7_T4_I7_WERT", STAT_HV_BATT_HIST_SOC7_T4_I7_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T4_I8_WERT = (RXBUF_UINT32(108)/10.0f);
-        // Duration at 95% smaller than SoC. 20 � C less than temperature less than 27.5 � C. 0.5xC A less than current
+        // Duration at 95% smaller than SoC. 20 ° C less than temperature less than 27.5 ° C. 0.5xC A less than current
         // less than 1.0xC A / Dauer bei 95% kleiner als SoC. 20°C kleiner als Temperatur kleiner als 27,5°C. 0,5xC A
         // kleiner als Strom kleiner als 1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_2", "STAT_HV_BATT_HIST_SOC7_T4_I8_WERT", STAT_HV_BATT_HIST_SOC7_T4_I8_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T4_I9_WERT = (RXBUF_UINT32(112)/10.0f);
-        // Duration at 95% smaller than SoC. 20 � C less than temperature less than 27.5 � C. 1.0xC A less than current
+        // Duration at 95% smaller than SoC. 20 ° C less than temperature less than 27.5 ° C. 1.0xC A less than current
         // less than 1.5xC A / Dauer bei 95% kleiner als SoC. 20°C kleiner als Temperatur kleiner als 27,5°C. 1,0xC A
         // kleiner als Strom kleiner als 1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_2", "STAT_HV_BATT_HIST_SOC7_T4_I9_WERT", STAT_HV_BATT_HIST_SOC7_T4_I9_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T4_I10_WERT = (RXBUF_UINT32(116)/10.0f);
-        // Duration at 95% smaller than SoC. 20 � C less than temperature less than 27.5 � C. 1.5xC A less than current /
+        // Duration at 95% smaller than SoC. 20 ° C less than temperature less than 27.5 ° C. 1.5xC A less than current /
         // Dauer bei 95% kleiner als SoC. 20°C kleiner als Temperatur kleiner als 27,5°C. 1,5xC A kleiner als Strom
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T4_2", "STAT_HV_BATT_HIST_SOC7_T4_I10_WERT", STAT_HV_BATT_HIST_SOC7_T4_I10_WERT, "\"s\"");
 
@@ -6811,180 +6809,180 @@
     }
 
     float STAT_HV_BATT_HIST_SOC5_T3_I1_WERT = (RXBUF_UINT32(0)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 10 � C less than temperature less than 20 � C. Current less than
-        // -2.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 10°C kleiner als Temperatur kleiner als 20°C.
-        // Strom kleiner als -2,5xC A
+        // Duration at 70% less than SoC less than 90%. 10 ° C less than temperature less than 20 ° C. Current less than
+        // -2.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 10°C kleiner als Temperatur kleiner als 20°C. Strom
+        // kleiner als -2,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_2", "STAT_HV_BATT_HIST_SOC5_T3_I1_WERT", STAT_HV_BATT_HIST_SOC5_T3_I1_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T3_I2_WERT = (RXBUF_UINT32(4)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 10 � C less than temperature less than 20 � C. -2.5xC A less than
+        // Duration at 70% less than SoC less than 90%. 10 ° C less than temperature less than 20 ° C. -2.5xC A less than
         // current less than -2.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 10°C kleiner als Temperatur
         // kleiner als 20°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_2", "STAT_HV_BATT_HIST_SOC5_T3_I2_WERT", STAT_HV_BATT_HIST_SOC5_T3_I2_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T3_I3_WERT = (RXBUF_UINT32(8)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 10 � C less than temperature less than 20 � C. -2.0xC A less than
+        // Duration at 70% less than SoC less than 90%. 10 ° C less than temperature less than 20 ° C. -2.0xC A less than
         // current less than -1.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 10°C kleiner als Temperatur
         // kleiner als 20°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_2", "STAT_HV_BATT_HIST_SOC5_T3_I3_WERT", STAT_HV_BATT_HIST_SOC5_T3_I3_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T3_I4_WERT = (RXBUF_UINT32(12)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 10 � C less than temperature less than 20 � C. -1.5xC A less than
+        // Duration at 70% less than SoC less than 90%. 10 ° C less than temperature less than 20 ° C. -1.5xC A less than
         // current less than -1.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 10°C kleiner als Temperatur
         // kleiner als 20°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_2", "STAT_HV_BATT_HIST_SOC5_T3_I4_WERT", STAT_HV_BATT_HIST_SOC5_T3_I4_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T3_I5_WERT = (RXBUF_UINT32(16)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 10 � C less than temperature less than 20 � C. -1.0xC A less than
+        // Duration at 70% less than SoC less than 90%. 10 ° C less than temperature less than 20 ° C. -1.0xC A less than
         // current less than -0.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 10°C kleiner als Temperatur
         // kleiner als 20°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_2", "STAT_HV_BATT_HIST_SOC5_T3_I5_WERT", STAT_HV_BATT_HIST_SOC5_T3_I5_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T3_I6_WERT = (RXBUF_UINT32(20)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 10 � C less than temperature less than 20 � C. -0.5xC A less than
-        // current less than 0.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 10°C kleiner als Temperatur
-        // kleiner als 20°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
+        // Duration at 70% less than SoC less than 90%. 10 ° C less than temperature less than 20 ° C. -0.5xC A less than
+        // current less than 0.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 10°C kleiner als Temperatur kleiner
+        // als 20°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_2", "STAT_HV_BATT_HIST_SOC5_T3_I6_WERT", STAT_HV_BATT_HIST_SOC5_T3_I6_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T3_I7_WERT = (RXBUF_UINT32(24)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 10 � C less than temperature less than 20 � C. 0.0xC A less than
-        // current less than 0.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 10°C kleiner als Temperatur
-        // kleiner als 20°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
+        // Duration at 70% less than SoC less than 90%. 10 ° C less than temperature less than 20 ° C. 0.0xC A less than
+        // current less than 0.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 10°C kleiner als Temperatur kleiner
+        // als 20°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_2", "STAT_HV_BATT_HIST_SOC5_T3_I7_WERT", STAT_HV_BATT_HIST_SOC5_T3_I7_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T3_I8_WERT = (RXBUF_UINT32(28)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 10 � C less than temperature less than 20 � C. 0.5xC A less than
-        // current less than 1.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 10°C kleiner als Temperatur
-        // kleiner als 20°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
+        // Duration at 70% less than SoC less than 90%. 10 ° C less than temperature less than 20 ° C. 0.5xC A less than
+        // current less than 1.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 10°C kleiner als Temperatur kleiner
+        // als 20°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_2", "STAT_HV_BATT_HIST_SOC5_T3_I8_WERT", STAT_HV_BATT_HIST_SOC5_T3_I8_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T3_I9_WERT = (RXBUF_UINT32(32)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 10 � C less than temperature less than 20 � C. 1.0xC A less than
-        // current less than 1.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 10°C kleiner als Temperatur
-        // kleiner als 20°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
+        // Duration at 70% less than SoC less than 90%. 10 ° C less than temperature less than 20 ° C. 1.0xC A less than
+        // current less than 1.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 10°C kleiner als Temperatur kleiner
+        // als 20°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_2", "STAT_HV_BATT_HIST_SOC5_T3_I9_WERT", STAT_HV_BATT_HIST_SOC5_T3_I9_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T3_I10_WERT = (RXBUF_UINT32(36)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 10 � C less than temperature less than 20 � C. 1.5xC A less than
-        // current / Dauer bei 70% kleiner als SoC kleiner als 90%. 10°C kleiner als Temperatur kleiner als 20°C. 1,5xC
-        // A kleiner als Strom
+        // Duration at 70% less than SoC less than 90%. 10 ° C less than temperature less than 20 ° C. 1.5xC A less than
+        // current / Dauer bei 70% kleiner als SoC kleiner als 90%. 10°C kleiner als Temperatur kleiner als 20°C. 1,5xC A
+        // kleiner als Strom
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_2", "STAT_HV_BATT_HIST_SOC5_T3_I10_WERT", STAT_HV_BATT_HIST_SOC5_T3_I10_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T3_I1_WERT = (RXBUF_UINT32(40)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 10 � C less than temperature less than 20 � C. Current less than
-        // -2.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 10°C kleiner als Temperatur kleiner als 20°C.
-        // Strom kleiner als -2,5xC A
+        // Duration at 90% less than SoC less than 95%. 10 ° C less than temperature less than 20 ° C. Current less than
+        // -2.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 10°C kleiner als Temperatur kleiner als 20°C. Strom
+        // kleiner als -2,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_2", "STAT_HV_BATT_HIST_SOC6_T3_I1_WERT", STAT_HV_BATT_HIST_SOC6_T3_I1_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T3_I2_WERT = (RXBUF_UINT32(44)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 10 � C less than temperature less than 20 � C. -2.5xC A less than
+        // Duration at 90% less than SoC less than 95%. 10 ° C less than temperature less than 20 ° C. -2.5xC A less than
         // current less than -2.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 10°C kleiner als Temperatur
         // kleiner als 20°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_2", "STAT_HV_BATT_HIST_SOC6_T3_I2_WERT", STAT_HV_BATT_HIST_SOC6_T3_I2_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T3_I3_WERT = (RXBUF_UINT32(48)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 10 � C less than temperature less than 20 � C. -2.0xC A less than
+        // Duration at 90% less than SoC less than 95%. 10 ° C less than temperature less than 20 ° C. -2.0xC A less than
         // current less than -1.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 10°C kleiner als Temperatur
         // kleiner als 20°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_2", "STAT_HV_BATT_HIST_SOC6_T3_I3_WERT", STAT_HV_BATT_HIST_SOC6_T3_I3_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T3_I4_WERT = (RXBUF_UINT32(52)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 10 � C less than temperature less than 20 � C. -1.5xC A less than
+        // Duration at 90% less than SoC less than 95%. 10 ° C less than temperature less than 20 ° C. -1.5xC A less than
         // current less than -1.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 10°C kleiner als Temperatur
         // kleiner als 20°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_2", "STAT_HV_BATT_HIST_SOC6_T3_I4_WERT", STAT_HV_BATT_HIST_SOC6_T3_I4_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T3_I5_WERT = (RXBUF_UINT32(56)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 10 � C less than temperature less than 20 � C. -1.0xC A less than
+        // Duration at 90% less than SoC less than 95%. 10 ° C less than temperature less than 20 ° C. -1.0xC A less than
         // current less than -0.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 10°C kleiner als Temperatur
         // kleiner als 20°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_2", "STAT_HV_BATT_HIST_SOC6_T3_I5_WERT", STAT_HV_BATT_HIST_SOC6_T3_I5_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T3_I6_WERT = (RXBUF_UINT32(60)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 10 � C less than temperature less than 20 � C. -0.5xC A less than
-        // current less than 0.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 10°C kleiner als Temperatur
-        // kleiner als 20°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
+        // Duration at 90% less than SoC less than 95%. 10 ° C less than temperature less than 20 ° C. -0.5xC A less than
+        // current less than 0.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 10°C kleiner als Temperatur kleiner
+        // als 20°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_2", "STAT_HV_BATT_HIST_SOC6_T3_I6_WERT", STAT_HV_BATT_HIST_SOC6_T3_I6_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T3_I7_WERT = (RXBUF_UINT32(64)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 10 � C less than temperature less than 20 � C. 0.0xC A less than
-        // current less than 0.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 10°C kleiner als Temperatur
-        // kleiner als 20°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
+        // Duration at 90% less than SoC less than 95%. 10 ° C less than temperature less than 20 ° C. 0.0xC A less than
+        // current less than 0.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 10°C kleiner als Temperatur kleiner
+        // als 20°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_2", "STAT_HV_BATT_HIST_SOC6_T3_I7_WERT", STAT_HV_BATT_HIST_SOC6_T3_I7_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T3_I8_WERT = (RXBUF_UINT32(68)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 10 � C less than temperature less than 20 � C. 0.5xC A less than
-        // current less than 1.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 10°C kleiner als Temperatur
-        // kleiner als 20°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
+        // Duration at 90% less than SoC less than 95%. 10 ° C less than temperature less than 20 ° C. 0.5xC A less than
+        // current less than 1.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 10°C kleiner als Temperatur kleiner
+        // als 20°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_2", "STAT_HV_BATT_HIST_SOC6_T3_I8_WERT", STAT_HV_BATT_HIST_SOC6_T3_I8_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T3_I9_WERT = (RXBUF_UINT32(72)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 10 � C less than temperature less than 20 � C. 1.0xC A less than
-        // current less than 1.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 10°C kleiner als Temperatur
-        // kleiner als 20°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
+        // Duration at 90% less than SoC less than 95%. 10 ° C less than temperature less than 20 ° C. 1.0xC A less than
+        // current less than 1.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 10°C kleiner als Temperatur kleiner
+        // als 20°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_2", "STAT_HV_BATT_HIST_SOC6_T3_I9_WERT", STAT_HV_BATT_HIST_SOC6_T3_I9_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T3_I10_WERT = (RXBUF_UINT32(76)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 10 � C less than temperature less than 20 � C. 1.5xC A less than
-        // current / Dauer bei 90% kleiner als SoC kleiner als 95%. 10°C kleiner als Temperatur kleiner als 20°C. 1,5xC
-        // A kleiner als Strom
+        // Duration at 90% less than SoC less than 95%. 10 ° C less than temperature less than 20 ° C. 1.5xC A less than
+        // current / Dauer bei 90% kleiner als SoC kleiner als 95%. 10°C kleiner als Temperatur kleiner als 20°C. 1,5xC A
+        // kleiner als Strom
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_2", "STAT_HV_BATT_HIST_SOC6_T3_I10_WERT", STAT_HV_BATT_HIST_SOC6_T3_I10_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T3_I1_WERT = (RXBUF_UINT32(80)/10.0f);
-        // Duration at 95% smaller than SoC. 10 � C less than temperature less than 20 � C. Current less than -2.5xC A /
+        // Duration at 95% smaller than SoC. 10 ° C less than temperature less than 20 ° C. Current less than -2.5xC A /
         // Dauer bei 95% kleiner als SoC. 10°C kleiner als Temperatur kleiner als 20°C. Strom kleiner als -2,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_2", "STAT_HV_BATT_HIST_SOC7_T3_I1_WERT", STAT_HV_BATT_HIST_SOC7_T3_I1_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T3_I2_WERT = (RXBUF_UINT32(84)/10.0f);
-        // Duration at 95% smaller than SoC. 10 � C less than temperature less than 20 � C. -2.5xC A less than current
+        // Duration at 95% smaller than SoC. 10 ° C less than temperature less than 20 ° C. -2.5xC A less than current
         // less than -2.0xC A / Dauer bei 95% kleiner als SoC. 10°C kleiner als Temperatur kleiner als 20°C. -2,5xC A
         // kleiner als Strom kleiner als -2,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_2", "STAT_HV_BATT_HIST_SOC7_T3_I2_WERT", STAT_HV_BATT_HIST_SOC7_T3_I2_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T3_I3_WERT = (RXBUF_UINT32(88)/10.0f);
-        // Duration at 95% smaller than SoC. 10 � C less than temperature less than 20 � C. -2.0xC A less than current
+        // Duration at 95% smaller than SoC. 10 ° C less than temperature less than 20 ° C. -2.0xC A less than current
         // less than -1.5xC A / Dauer bei 95% kleiner als SoC. 10°C kleiner als Temperatur kleiner als 20°C. -2,0xC A
         // kleiner als Strom kleiner als -1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_2", "STAT_HV_BATT_HIST_SOC7_T3_I3_WERT", STAT_HV_BATT_HIST_SOC7_T3_I3_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T3_I4_WERT = (RXBUF_UINT32(92)/10.0f);
-        // Duration at 95% smaller than SoC. 10 � C less than temperature less than 20 � C. -1.5xC A less than current
+        // Duration at 95% smaller than SoC. 10 ° C less than temperature less than 20 ° C. -1.5xC A less than current
         // less than -1.0xC A / Dauer bei 95% kleiner als SoC. 10°C kleiner als Temperatur kleiner als 20°C. -1,5xC A
         // kleiner als Strom kleiner als -1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_2", "STAT_HV_BATT_HIST_SOC7_T3_I4_WERT", STAT_HV_BATT_HIST_SOC7_T3_I4_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T3_I5_WERT = (RXBUF_UINT32(96)/10.0f);
-        // Duration at 95% smaller than SoC. 10 � C less than temperature less than 20 � C. -1.0xC A less than current
+        // Duration at 95% smaller than SoC. 10 ° C less than temperature less than 20 ° C. -1.0xC A less than current
         // less than -0.5xC A / Dauer bei 95% kleiner als SoC. 10°C kleiner als Temperatur kleiner als 20°C. -1,0xC A
         // kleiner als Strom kleiner als -0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_2", "STAT_HV_BATT_HIST_SOC7_T3_I5_WERT", STAT_HV_BATT_HIST_SOC7_T3_I5_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T3_I6_WERT = (RXBUF_UINT32(100)/10.0f);
-        // Duration at 95% smaller than SoC. 10 � C less than temperature less than 20 � C. -0.5xC A less than current
+        // Duration at 95% smaller than SoC. 10 ° C less than temperature less than 20 ° C. -0.5xC A less than current
         // less than 0.0xC A / Dauer bei 95% kleiner als SoC. 10°C kleiner als Temperatur kleiner als 20°C. -0,5xC A
         // kleiner als Strom kleiner als 0,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_2", "STAT_HV_BATT_HIST_SOC7_T3_I6_WERT", STAT_HV_BATT_HIST_SOC7_T3_I6_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T3_I7_WERT = (RXBUF_UINT32(104)/10.0f);
-        // Duration at 95% smaller than SoC. 10 � C less than temperature less than 20 � C. 0.0xC A less than current
+        // Duration at 95% smaller than SoC. 10 ° C less than temperature less than 20 ° C. 0.0xC A less than current
         // less than 0.5xC A / Dauer bei 95% kleiner als SoC. 10°C kleiner als Temperatur kleiner als 20°C. 0,0xC A
         // kleiner als Strom kleiner als 0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_2", "STAT_HV_BATT_HIST_SOC7_T3_I7_WERT", STAT_HV_BATT_HIST_SOC7_T3_I7_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T3_I8_WERT = (RXBUF_UINT32(108)/10.0f);
-        // Duration at 95% smaller than SoC. 10 � C less than temperature less than 20 � C. 0.5xC A less than current
+        // Duration at 95% smaller than SoC. 10 ° C less than temperature less than 20 ° C. 0.5xC A less than current
         // less than 1.0xC A / Dauer bei 95% kleiner als SoC. 10°C kleiner als Temperatur kleiner als 20°C. 0,5xC A
         // kleiner als Strom kleiner als 1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_2", "STAT_HV_BATT_HIST_SOC7_T3_I8_WERT", STAT_HV_BATT_HIST_SOC7_T3_I8_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T3_I9_WERT = (RXBUF_UINT32(112)/10.0f);
-        // Duration at 95% smaller than SoC. 10 � C less than temperature less than 20 � C. 1.0xC A less than current
+        // Duration at 95% smaller than SoC. 10 ° C less than temperature less than 20 ° C. 1.0xC A less than current
         // less than 1.5xC A / Dauer bei 95% kleiner als SoC. 10°C kleiner als Temperatur kleiner als 20°C. 1,0xC A
         // kleiner als Strom kleiner als 1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_2", "STAT_HV_BATT_HIST_SOC7_T3_I9_WERT", STAT_HV_BATT_HIST_SOC7_T3_I9_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T3_I10_WERT = (RXBUF_UINT32(116)/10.0f);
-        // Duration at 95% smaller than SoC. 10 � C less than temperature less than 20 � C. 1.5xC A less than current /
+        // Duration at 95% smaller than SoC. 10 ° C less than temperature less than 20 ° C. 1.5xC A less than current /
         // Dauer bei 95% kleiner als SoC. 10°C kleiner als Temperatur kleiner als 20°C. 1,5xC A kleiner als Strom
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T3_2", "STAT_HV_BATT_HIST_SOC7_T3_I10_WERT", STAT_HV_BATT_HIST_SOC7_T3_I10_WERT, "\"s\"");
 
@@ -7001,181 +6999,181 @@
     }
 
     float STAT_HV_BATT_HIST_SOC5_T5_I1_WERT = (RXBUF_UINT32(0)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 27.5 � C less than temperature less than 32.5 � C. Current less
+        // Duration at 70% less than SoC less than 90%. 27.5 ° C less than temperature less than 32.5 ° C. Current less
         // than -2.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 27,5°C kleiner als Temperatur kleiner als
         // 32,5°C. Strom kleiner als -2,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_2", "STAT_HV_BATT_HIST_SOC5_T5_I1_WERT", STAT_HV_BATT_HIST_SOC5_T5_I1_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T5_I2_WERT = (RXBUF_UINT32(4)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 27.5 � C less than temperature less than 32.5 � C. -2.5xC A less
-        // than current less than -2.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 27,5°C kleiner als
-        // Temperatur kleiner als 32,5°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
+        // Duration at 70% less than SoC less than 90%. 27.5 ° C less than temperature less than 32.5 ° C. -2.5xC A less
+        // than current less than -2.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_2", "STAT_HV_BATT_HIST_SOC5_T5_I2_WERT", STAT_HV_BATT_HIST_SOC5_T5_I2_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T5_I3_WERT = (RXBUF_UINT32(8)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 27.5 � C less than temperature less than 32.5 � C. -2.0xC A less
-        // than current less than -1.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 27,5°C kleiner als
-        // Temperatur kleiner als 32,5°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
+        // Duration at 70% less than SoC less than 90%. 27.5 ° C less than temperature less than 32.5 ° C. -2.0xC A less
+        // than current less than -1.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_2", "STAT_HV_BATT_HIST_SOC5_T5_I3_WERT", STAT_HV_BATT_HIST_SOC5_T5_I3_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T5_I4_WERT = (RXBUF_UINT32(12)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 27.5 � C less than temperature less than 32.5 � C. -1.5xC A less
-        // than current less than -1.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 27,5°C kleiner als
-        // Temperatur kleiner als 32,5°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
+        // Duration at 70% less than SoC less than 90%. 27.5 ° C less than temperature less than 32.5 ° C. -1.5xC A less
+        // than current less than -1.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_2", "STAT_HV_BATT_HIST_SOC5_T5_I4_WERT", STAT_HV_BATT_HIST_SOC5_T5_I4_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T5_I5_WERT = (RXBUF_UINT32(16)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 27.5 � C less than temperature less than 32.5 � C. -1.0xC A less
-        // than current less than -0.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 27,5°C kleiner als
-        // Temperatur kleiner als 32,5°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
+        // Duration at 70% less than SoC less than 90%. 27.5 ° C less than temperature less than 32.5 ° C. -1.0xC A less
+        // than current less than -0.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_2", "STAT_HV_BATT_HIST_SOC5_T5_I5_WERT", STAT_HV_BATT_HIST_SOC5_T5_I5_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T5_I6_WERT = (RXBUF_UINT32(20)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 27.5 � C less than temperature less than 32.5 � C. -0.5xC A less
+        // Duration at 70% less than SoC less than 90%. 27.5 ° C less than temperature less than 32.5 ° C. -0.5xC A less
         // than current less than 0.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 27,5°C kleiner als Temperatur
         // kleiner als 32,5°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_2", "STAT_HV_BATT_HIST_SOC5_T5_I6_WERT", STAT_HV_BATT_HIST_SOC5_T5_I6_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T5_I7_WERT = (RXBUF_UINT32(24)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 27.5 � C less than temperature less than 32.5 � C. 0.0xC A less
+        // Duration at 70% less than SoC less than 90%. 27.5 ° C less than temperature less than 32.5 ° C. 0.0xC A less
         // than current less than 0.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 27,5°C kleiner als Temperatur
         // kleiner als 32,5°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_2", "STAT_HV_BATT_HIST_SOC5_T5_I7_WERT", STAT_HV_BATT_HIST_SOC5_T5_I7_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T5_I8_WERT = (RXBUF_UINT32(28)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 27.5 � C less than temperature less than 32.5 � C. 0.5xC A less
+        // Duration at 70% less than SoC less than 90%. 27.5 ° C less than temperature less than 32.5 ° C. 0.5xC A less
         // than current less than 1.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 27,5°C kleiner als Temperatur
         // kleiner als 32,5°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_2", "STAT_HV_BATT_HIST_SOC5_T5_I8_WERT", STAT_HV_BATT_HIST_SOC5_T5_I8_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T5_I9_WERT = (RXBUF_UINT32(32)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 27.5 � C less than temperature less than 32.5 � C. 1.0xC A less
+        // Duration at 70% less than SoC less than 90%. 27.5 ° C less than temperature less than 32.5 ° C. 1.0xC A less
         // than current less than 1.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 27,5°C kleiner als Temperatur
         // kleiner als 32,5°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_2", "STAT_HV_BATT_HIST_SOC5_T5_I9_WERT", STAT_HV_BATT_HIST_SOC5_T5_I9_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T5_I10_WERT = (RXBUF_UINT32(36)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 27.5 � C less than temperature less than 32.5 � C. 1.5xC A less
+        // Duration at 70% less than SoC less than 90%. 27.5 ° C less than temperature less than 32.5 ° C. 1.5xC A less
         // than current / Dauer bei 70% kleiner als SoC kleiner als 90%. 27,5°C kleiner als Temperatur kleiner als
         // 32,5°C. 1,5xC A kleiner als Strom
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_2", "STAT_HV_BATT_HIST_SOC5_T5_I10_WERT", STAT_HV_BATT_HIST_SOC5_T5_I10_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T5_I1_WERT = (RXBUF_UINT32(40)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 27.5 � C less than temperature less than 32.5 � C. Current less
+        // Duration at 90% less than SoC less than 95%. 27.5 ° C less than temperature less than 32.5 ° C. Current less
         // than -2.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 27,5°C kleiner als Temperatur kleiner als
         // 32,5°C. Strom kleiner als -2,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_2", "STAT_HV_BATT_HIST_SOC6_T5_I1_WERT", STAT_HV_BATT_HIST_SOC6_T5_I1_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T5_I2_WERT = (RXBUF_UINT32(44)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 27.5 � C less than temperature less than 32.5 � C. -2.5xC A less
-        // than current less than -2.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 27,5°C kleiner als
-        // Temperatur kleiner als 32,5°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
+        // Duration at 90% less than SoC less than 95%. 27.5 ° C less than temperature less than 32.5 ° C. -2.5xC A less
+        // than current less than -2.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_2", "STAT_HV_BATT_HIST_SOC6_T5_I2_WERT", STAT_HV_BATT_HIST_SOC6_T5_I2_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T5_I3_WERT = (RXBUF_UINT32(48)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 27.5 � C less than temperature less than 32.5 � C. -2.0xC A less
-        // than current less than -1.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 27,5°C kleiner als
-        // Temperatur kleiner als 32,5°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
+        // Duration at 90% less than SoC less than 95%. 27.5 ° C less than temperature less than 32.5 ° C. -2.0xC A less
+        // than current less than -1.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_2", "STAT_HV_BATT_HIST_SOC6_T5_I3_WERT", STAT_HV_BATT_HIST_SOC6_T5_I3_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T5_I4_WERT = (RXBUF_UINT32(52)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 27.5 � C less than temperature less than 32.5 � C. -1.5xC A less
-        // than current less than -1.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 27,5°C kleiner als
-        // Temperatur kleiner als 32,5°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
+        // Duration at 90% less than SoC less than 95%. 27.5 ° C less than temperature less than 32.5 ° C. -1.5xC A less
+        // than current less than -1.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_2", "STAT_HV_BATT_HIST_SOC6_T5_I4_WERT", STAT_HV_BATT_HIST_SOC6_T5_I4_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T5_I5_WERT = (RXBUF_UINT32(56)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 27.5 � C less than temperature less than 32.5 � C. -1.0xC A less
-        // than current less than -0.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 27,5°C kleiner als
-        // Temperatur kleiner als 32,5°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
+        // Duration at 90% less than SoC less than 95%. 27.5 ° C less than temperature less than 32.5 ° C. -1.0xC A less
+        // than current less than -0.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_2", "STAT_HV_BATT_HIST_SOC6_T5_I5_WERT", STAT_HV_BATT_HIST_SOC6_T5_I5_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T5_I6_WERT = (RXBUF_UINT32(60)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 27.5 � C less than temperature less than 32.5 � C. -0.5xC A less
+        // Duration at 90% less than SoC less than 95%. 27.5 ° C less than temperature less than 32.5 ° C. -0.5xC A less
         // than current less than 0.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 27,5°C kleiner als Temperatur
         // kleiner als 32,5°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_2", "STAT_HV_BATT_HIST_SOC6_T5_I6_WERT", STAT_HV_BATT_HIST_SOC6_T5_I6_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T5_I7_WERT = (RXBUF_UINT32(64)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 27.5 � C less than temperature less than 32.5 � C. 0.0xC A less
+        // Duration at 90% less than SoC less than 95%. 27.5 ° C less than temperature less than 32.5 ° C. 0.0xC A less
         // than current less than 0.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 27,5°C kleiner als Temperatur
         // kleiner als 32,5°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_2", "STAT_HV_BATT_HIST_SOC6_T5_I7_WERT", STAT_HV_BATT_HIST_SOC6_T5_I7_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T5_I8_WERT = (RXBUF_UINT32(68)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 27.5 � C less than temperature less than 32.5 � C. 0.5xC A less
+        // Duration at 90% less than SoC less than 95%. 27.5 ° C less than temperature less than 32.5 ° C. 0.5xC A less
         // than current less than 1.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 27,5°C kleiner als Temperatur
         // kleiner als 32,5°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_2", "STAT_HV_BATT_HIST_SOC6_T5_I8_WERT", STAT_HV_BATT_HIST_SOC6_T5_I8_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T5_I9_WERT = (RXBUF_UINT32(72)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 27.5 � C less than temperature less than 32.5 � C. 1.0xC A less
+        // Duration at 90% less than SoC less than 95%. 27.5 ° C less than temperature less than 32.5 ° C. 1.0xC A less
         // than current less than 1.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 27,5°C kleiner als Temperatur
         // kleiner als 32,5°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_2", "STAT_HV_BATT_HIST_SOC6_T5_I9_WERT", STAT_HV_BATT_HIST_SOC6_T5_I9_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T5_I10_WERT = (RXBUF_UINT32(76)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 27.5 � C less than temperature less than 32.5 � C. 1.5xC A less
+        // Duration at 90% less than SoC less than 95%. 27.5 ° C less than temperature less than 32.5 ° C. 1.5xC A less
         // than current / Dauer bei 90% kleiner als SoC kleiner als 95%. 27,5°C kleiner als Temperatur kleiner als
         // 32,5°C. 1,5xC A kleiner als Strom
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_2", "STAT_HV_BATT_HIST_SOC6_T5_I10_WERT", STAT_HV_BATT_HIST_SOC6_T5_I10_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T5_I1_WERT = (RXBUF_UINT32(80)/10.0f);
-        // Duration at 95% smaller than SoC. 27.5 � C less than temperature less than 32.5 � C. Current less than -2.5xC
-        // A / Dauer bei 95% kleiner als SoC. 27,5°C kleiner als Temperatur kleiner als 32,5°C. Strom kleiner als
-        // -2,5xC A
+        // Duration at 95% smaller than SoC. 27.5 ° C less than temperature less than 32.5 ° C. Current less than -2.5xC
+        // A / Dauer bei 95% kleiner als SoC. 27,5°C kleiner als Temperatur kleiner als 32,5°C. Strom kleiner als -2,5xC
+        // A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_2", "STAT_HV_BATT_HIST_SOC7_T5_I1_WERT", STAT_HV_BATT_HIST_SOC7_T5_I1_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T5_I2_WERT = (RXBUF_UINT32(84)/10.0f);
-        // Duration at 95% smaller than SoC. 27.5 � C less than temperature less than 32.5 � C. -2.5xC A less than
-        // current less than -2.0xC A / Dauer bei 95% kleiner als SoC. 27,5°C kleiner als Temperatur kleiner als
-        // 32,5°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
+        // Duration at 95% smaller than SoC. 27.5 ° C less than temperature less than 32.5 ° C. -2.5xC A less than
+        // current less than -2.0xC A / Dauer bei 95% kleiner als SoC. 27,5°C kleiner als Temperatur kleiner als 32,5°C.
+        // -2,5xC A kleiner als Strom kleiner als -2,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_2", "STAT_HV_BATT_HIST_SOC7_T5_I2_WERT", STAT_HV_BATT_HIST_SOC7_T5_I2_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T5_I3_WERT = (RXBUF_UINT32(88)/10.0f);
-        // Duration at 95% smaller than SoC. 27.5 � C less than temperature less than 32.5 � C. -2.0xC A less than
-        // current less than -1.5xC A / Dauer bei 95% kleiner als SoC. 27,5°C kleiner als Temperatur kleiner als
-        // 32,5°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
+        // Duration at 95% smaller than SoC. 27.5 ° C less than temperature less than 32.5 ° C. -2.0xC A less than
+        // current less than -1.5xC A / Dauer bei 95% kleiner als SoC. 27,5°C kleiner als Temperatur kleiner als 32,5°C.
+        // -2,0xC A kleiner als Strom kleiner als -1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_2", "STAT_HV_BATT_HIST_SOC7_T5_I3_WERT", STAT_HV_BATT_HIST_SOC7_T5_I3_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T5_I4_WERT = (RXBUF_UINT32(92)/10.0f);
-        // Duration at 95% smaller than SoC. 27.5 � C less than temperature less than 32.5 � C. -1.5xC A less than
-        // current less than -1.0xC A / Dauer bei 95% kleiner als SoC. 27,5°C kleiner als Temperatur kleiner als
-        // 32,5°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
+        // Duration at 95% smaller than SoC. 27.5 ° C less than temperature less than 32.5 ° C. -1.5xC A less than
+        // current less than -1.0xC A / Dauer bei 95% kleiner als SoC. 27,5°C kleiner als Temperatur kleiner als 32,5°C.
+        // -1,5xC A kleiner als Strom kleiner als -1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_2", "STAT_HV_BATT_HIST_SOC7_T5_I4_WERT", STAT_HV_BATT_HIST_SOC7_T5_I4_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T5_I5_WERT = (RXBUF_UINT32(96)/10.0f);
-        // Duration at 95% smaller than SoC. 27.5 � C less than temperature less than 32.5 � C. -1.0xC A less than
-        // current less than -0.5xC A / Dauer bei 95% kleiner als SoC. 27,5°C kleiner als Temperatur kleiner als
-        // 32,5°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
+        // Duration at 95% smaller than SoC. 27.5 ° C less than temperature less than 32.5 ° C. -1.0xC A less than
+        // current less than -0.5xC A / Dauer bei 95% kleiner als SoC. 27,5°C kleiner als Temperatur kleiner als 32,5°C.
+        // -1,0xC A kleiner als Strom kleiner als -0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_2", "STAT_HV_BATT_HIST_SOC7_T5_I5_WERT", STAT_HV_BATT_HIST_SOC7_T5_I5_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T5_I6_WERT = (RXBUF_UINT32(100)/10.0f);
-        // Duration at 95% smaller than SoC. 27.5 � C less than temperature less than 32.5 � C. -0.5xC A less than
+        // Duration at 95% smaller than SoC. 27.5 ° C less than temperature less than 32.5 ° C. -0.5xC A less than
         // current less than 0.0xC A / Dauer bei 95% kleiner als SoC. 27,5°C kleiner als Temperatur kleiner als 32,5°C.
         // -0,5xC A kleiner als Strom kleiner als 0,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_2", "STAT_HV_BATT_HIST_SOC7_T5_I6_WERT", STAT_HV_BATT_HIST_SOC7_T5_I6_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T5_I7_WERT = (RXBUF_UINT32(104)/10.0f);
-        // Duration at 95% smaller than SoC. 27.5 � C less than temperature less than 32.5 � C. 0.0xC A less than current
+        // Duration at 95% smaller than SoC. 27.5 ° C less than temperature less than 32.5 ° C. 0.0xC A less than current
         // less than 0.5xC A / Dauer bei 95% kleiner als SoC. 27,5°C kleiner als Temperatur kleiner als 32,5°C. 0,0xC A
         // kleiner als Strom kleiner als 0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_2", "STAT_HV_BATT_HIST_SOC7_T5_I7_WERT", STAT_HV_BATT_HIST_SOC7_T5_I7_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T5_I8_WERT = (RXBUF_UINT32(108)/10.0f);
-        // Duration at 95% smaller than SoC. 27.5 � C less than temperature less than 32.5 � C. 0.5xC A less than current
+        // Duration at 95% smaller than SoC. 27.5 ° C less than temperature less than 32.5 ° C. 0.5xC A less than current
         // less than 1.0xC A / Dauer bei 95% kleiner als SoC. 27,5°C kleiner als Temperatur kleiner als 32,5°C. 0,5xC A
         // kleiner als Strom kleiner als 1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_2", "STAT_HV_BATT_HIST_SOC7_T5_I8_WERT", STAT_HV_BATT_HIST_SOC7_T5_I8_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T5_I9_WERT = (RXBUF_UINT32(112)/10.0f);
-        // Duration at 95% smaller than SoC. 27.5 � C less than temperature less than 32.5 � C. 1.0xC A less than current
+        // Duration at 95% smaller than SoC. 27.5 ° C less than temperature less than 32.5 ° C. 1.0xC A less than current
         // less than 1.5xC A / Dauer bei 95% kleiner als SoC. 27,5°C kleiner als Temperatur kleiner als 32,5°C. 1,0xC A
         // kleiner als Strom kleiner als 1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_2", "STAT_HV_BATT_HIST_SOC7_T5_I9_WERT", STAT_HV_BATT_HIST_SOC7_T5_I9_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T5_I10_WERT = (RXBUF_UINT32(116)/10.0f);
-        // Duration at 95% smaller than SoC. 27.5 � C less than temperature less than 32.5 � C. 1.5xC A less than current
+        // Duration at 95% smaller than SoC. 27.5 ° C less than temperature less than 32.5 ° C. 1.5xC A less than current
         // / Dauer bei 95% kleiner als SoC. 27,5°C kleiner als Temperatur kleiner als 32,5°C. 1,5xC A kleiner als Strom
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T5_2", "STAT_HV_BATT_HIST_SOC7_T5_I10_WERT", STAT_HV_BATT_HIST_SOC7_T5_I10_WERT, "\"s\"");
 
@@ -7192,180 +7190,180 @@
     }
 
     float STAT_HV_BATT_HIST_SOC5_T2_I1_WERT = (RXBUF_UINT32(0)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 0 � C less than temperature less than 10 � C. Current less than
+        // Duration at 70% less than SoC less than 90%. 0 ° C less than temperature less than 10 ° C. Current less than
         // -2.5xC A / Dauer bei 70 % kleiner als SoC kleiner als 90 %. 0°C kleiner als Temperatur kleiner als 10 °C.
         // Strom kleiner als -2,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_2", "STAT_HV_BATT_HIST_SOC5_T2_I1_WERT", STAT_HV_BATT_HIST_SOC5_T2_I1_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T2_I2_WERT = (RXBUF_UINT32(4)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 0 � C less than temperature less than 10 � C. -2.5xC A less than
+        // Duration at 70% less than SoC less than 90%. 0 ° C less than temperature less than 10 ° C. -2.5xC A less than
         // current less than -2.0xC A / Dauer bei 70 % kleiner als SoC kleiner als 90 %. 0°C kleiner als Temperatur
         // kleiner als 10 °C.  -2,5xC A kleiner als Strom kleiner als -2,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_2", "STAT_HV_BATT_HIST_SOC5_T2_I2_WERT", STAT_HV_BATT_HIST_SOC5_T2_I2_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T2_I3_WERT = (RXBUF_UINT32(8)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 0 � C less than temperature less than 10 � C. -2.0xC A less than
+        // Duration at 70% less than SoC less than 90%. 0 ° C less than temperature less than 10 ° C. -2.0xC A less than
         // current less than -1.5xC A / Dauer bei 70 % kleiner als SoC kleiner als 90 %. 0°C kleiner als Temperatur
         // kleiner als 10 °C.  -2,0xC A kleiner als Strom kleiner als -1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_2", "STAT_HV_BATT_HIST_SOC5_T2_I3_WERT", STAT_HV_BATT_HIST_SOC5_T2_I3_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T2_I4_WERT = (RXBUF_UINT32(12)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 0 � C less than temperature less than 10 � C. -1.5xC A less than
+        // Duration at 70% less than SoC less than 90%. 0 ° C less than temperature less than 10 ° C. -1.5xC A less than
         // current less than -1.0xC A / Dauer bei 70 % kleiner als SoC kleiner als 90 %. 0°C kleiner als Temperatur
         // kleiner als 10 °C.  -1,5xC A kleiner als Strom kleiner als -1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_2", "STAT_HV_BATT_HIST_SOC5_T2_I4_WERT", STAT_HV_BATT_HIST_SOC5_T2_I4_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T2_I5_WERT = (RXBUF_UINT32(16)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 0 � C less than temperature less than 10 � C. -1.0xC A less than
+        // Duration at 70% less than SoC less than 90%. 0 ° C less than temperature less than 10 ° C. -1.0xC A less than
         // current less than -0.5xC A / Dauer bei 70 % kleiner als SoC kleiner als 90 %. 0°C kleiner als Temperatur
         // kleiner als 10 °C.  -1,0xC A kleiner als Strom kleiner als -0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_2", "STAT_HV_BATT_HIST_SOC5_T2_I5_WERT", STAT_HV_BATT_HIST_SOC5_T2_I5_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T2_I6_WERT = (RXBUF_UINT32(20)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 0 � C less than temperature less than 10 � C. -0.5xC A less than
+        // Duration at 70% less than SoC less than 90%. 0 ° C less than temperature less than 10 ° C. -0.5xC A less than
         // current less than 0.0xC A / Dauer bei 70 % kleiner als SoC kleiner als 90 %. 0°C kleiner als Temperatur
         // kleiner als 10 °C.  -0,5xC A kleiner als Strom kleiner als 0,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_2", "STAT_HV_BATT_HIST_SOC5_T2_I6_WERT", STAT_HV_BATT_HIST_SOC5_T2_I6_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T2_I7_WERT = (RXBUF_UINT32(24)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 0 � C less than temperature less than 10 � C. 0.0xC A less than
+        // Duration at 70% less than SoC less than 90%. 0 ° C less than temperature less than 10 ° C. 0.0xC A less than
         // current less than 0.5xC A / Dauer bei 70 % kleiner als SoC kleiner als 90 %. 0°C kleiner als Temperatur
         // kleiner als 10 °C.  0,0xC A kleiner als Strom kleiner als 0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_2", "STAT_HV_BATT_HIST_SOC5_T2_I7_WERT", STAT_HV_BATT_HIST_SOC5_T2_I7_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T2_I8_WERT = (RXBUF_UINT32(28)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 0 � C less than temperature less than 10 � C. 0.5xC A less than
+        // Duration at 70% less than SoC less than 90%. 0 ° C less than temperature less than 10 ° C. 0.5xC A less than
         // current less than 1.0xC A / Dauer bei 70 % kleiner als SoC kleiner als 90 %. 0°C kleiner als Temperatur
         // kleiner als 10 °C.  0,5xC A kleiner als Strom kleiner als 1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_2", "STAT_HV_BATT_HIST_SOC5_T2_I8_WERT", STAT_HV_BATT_HIST_SOC5_T2_I8_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T2_I9_WERT = (RXBUF_UINT32(32)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 0 � C less than temperature less than 10 � C. 1.0xC A less than
+        // Duration at 70% less than SoC less than 90%. 0 ° C less than temperature less than 10 ° C. 1.0xC A less than
         // current less than 1.5xC A / Dauer bei 70 % kleiner als SoC kleiner als 90 %. 0°C kleiner als Temperatur
         // kleiner als 10 °C.  1,0xC A kleiner als Strom kleiner als 1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_2", "STAT_HV_BATT_HIST_SOC5_T2_I9_WERT", STAT_HV_BATT_HIST_SOC5_T2_I9_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T2_I10_WERT = (RXBUF_UINT32(36)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 0 � C less than temperature less than 10 � C. 1.5xC A less than
+        // Duration at 70% less than SoC less than 90%. 0 ° C less than temperature less than 10 ° C. 1.5xC A less than
         // current / Dauer bei 70 % kleiner als SoC kleiner als 90 %. 0°C kleiner als Temperatur kleiner als 10 °C. 
         // 1,5xC A kleiner als Strom
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_2", "STAT_HV_BATT_HIST_SOC5_T2_I10_WERT", STAT_HV_BATT_HIST_SOC5_T2_I10_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T2_I1_WERT = (RXBUF_UINT32(40)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 0 � C less than temperature less than 10 � C. Current less than
+        // Duration at 90% less than SoC less than 95%. 0 ° C less than temperature less than 10 ° C. Current less than
         // -2.5xC A / Dauer bei 90 % kleiner als SoC kleiner als 95 %. 0°C kleiner als Temperatur kleiner als 10 °C.
         // Strom kleiner als -2,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_2", "STAT_HV_BATT_HIST_SOC6_T2_I1_WERT", STAT_HV_BATT_HIST_SOC6_T2_I1_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T2_I2_WERT = (RXBUF_UINT32(44)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 0 � C less than temperature less than 10 � C. -2.5xC A less than
+        // Duration at 90% less than SoC less than 95%. 0 ° C less than temperature less than 10 ° C. -2.5xC A less than
         // current less than -2.0xC A / Dauer bei 90 % kleiner als SoC kleiner als 95 %. 0°C kleiner als Temperatur
         // kleiner als 10 °C.  -2,5xC A kleiner als Strom kleiner als -2,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_2", "STAT_HV_BATT_HIST_SOC6_T2_I2_WERT", STAT_HV_BATT_HIST_SOC6_T2_I2_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T2_I3_WERT = (RXBUF_UINT32(48)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 0 � C less than temperature less than 10 � C. -2.0xC A less than
+        // Duration at 90% less than SoC less than 95%. 0 ° C less than temperature less than 10 ° C. -2.0xC A less than
         // current less than -1.5xC A / Dauer bei 90 % kleiner als SoC kleiner als 95 %. 0°C kleiner als Temperatur
         // kleiner als 10 °C.  -2,0xC A kleiner als Strom kleiner als -1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_2", "STAT_HV_BATT_HIST_SOC6_T2_I3_WERT", STAT_HV_BATT_HIST_SOC6_T2_I3_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T2_I4_WERT = (RXBUF_UINT32(52)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 0 � C less than temperature less than 10 � C. -1.5xC A less than
+        // Duration at 90% less than SoC less than 95%. 0 ° C less than temperature less than 10 ° C. -1.5xC A less than
         // current less than -1.0xC A / Dauer bei 90 % kleiner als SoC kleiner als 95 %. 0°C kleiner als Temperatur
         // kleiner als 10 °C.  -1,5xC A kleiner als Strom kleiner als -1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_2", "STAT_HV_BATT_HIST_SOC6_T2_I4_WERT", STAT_HV_BATT_HIST_SOC6_T2_I4_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T2_I5_WERT = (RXBUF_UINT32(56)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 0 � C less than temperature less than 10 � C. -1.0xC A less than
+        // Duration at 90% less than SoC less than 95%. 0 ° C less than temperature less than 10 ° C. -1.0xC A less than
         // current less than -0.5xC A / Dauer bei 90 % kleiner als SoC kleiner als 95 %. 0°C kleiner als Temperatur
         // kleiner als 10 °C.  -1,0xC A kleiner als Strom kleiner als -0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_2", "STAT_HV_BATT_HIST_SOC6_T2_I5_WERT", STAT_HV_BATT_HIST_SOC6_T2_I5_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T2_I6_WERT = (RXBUF_UINT32(60)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 0 � C less than temperature less than 10 � C. -0.5xC A less than
+        // Duration at 90% less than SoC less than 95%. 0 ° C less than temperature less than 10 ° C. -0.5xC A less than
         // current less than 0.0xC A / Dauer bei 90 % kleiner als SoC kleiner als 95 %. 0°C kleiner als Temperatur
         // kleiner als 10 °C.  -0,5xC A kleiner als Strom kleiner als 0,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_2", "STAT_HV_BATT_HIST_SOC6_T2_I6_WERT", STAT_HV_BATT_HIST_SOC6_T2_I6_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T2_I7_WERT = (RXBUF_UINT32(64)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 0 � C less than temperature less than 10 � C. 0.0xC A less than
+        // Duration at 90% less than SoC less than 95%. 0 ° C less than temperature less than 10 ° C. 0.0xC A less than
         // current less than 0.5xC A / Dauer bei 90 % kleiner als SoC kleiner als 95 %. 0°C kleiner als Temperatur
         // kleiner als 10 °C.  0,0xC A kleiner als Strom kleiner als 0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_2", "STAT_HV_BATT_HIST_SOC6_T2_I7_WERT", STAT_HV_BATT_HIST_SOC6_T2_I7_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T2_I8_WERT = (RXBUF_UINT32(68)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 0 � C less than temperature less than 10 � C. 0.5xC A less than
+        // Duration at 90% less than SoC less than 95%. 0 ° C less than temperature less than 10 ° C. 0.5xC A less than
         // current less than 1.0xC A / Dauer bei 90 % kleiner als SoC kleiner als 95 %. 0°C kleiner als Temperatur
         // kleiner als 10 °C.  0,5xC A kleiner als Strom kleiner als 1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_2", "STAT_HV_BATT_HIST_SOC6_T2_I8_WERT", STAT_HV_BATT_HIST_SOC6_T2_I8_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T2_I9_WERT = (RXBUF_UINT32(72)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 0 � C less than temperature less than 10 � C. 1.0xC A less than
+        // Duration at 90% less than SoC less than 95%. 0 ° C less than temperature less than 10 ° C. 1.0xC A less than
         // current less than 1.5xC A / Dauer bei 90 % kleiner als SoC kleiner als 95 %. 0°C kleiner als Temperatur
         // kleiner als 10 °C.  1,0xC A kleiner als Strom kleiner als 1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_2", "STAT_HV_BATT_HIST_SOC6_T2_I9_WERT", STAT_HV_BATT_HIST_SOC6_T2_I9_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T2_I10_WERT = (RXBUF_UINT32(76)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 0 � C less than temperature less than 10 � C. 1.5xC A less than
+        // Duration at 90% less than SoC less than 95%. 0 ° C less than temperature less than 10 ° C. 1.5xC A less than
         // current / Dauer bei 90 % kleiner als SoC kleiner als 95 %. 0°C kleiner als Temperatur kleiner als 10 °C. 
         // 1,5xC A kleiner als Strom
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_2", "STAT_HV_BATT_HIST_SOC6_T2_I10_WERT", STAT_HV_BATT_HIST_SOC6_T2_I10_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T2_I1_WERT = (RXBUF_UINT32(80)/10.0f);
-        // Duration at 95% smaller than SoC. 0 � C less than temperature less than 10 � C. Current less than -2.5xC A /
+        // Duration at 95% smaller than SoC. 0 ° C less than temperature less than 10 ° C. Current less than -2.5xC A /
         // Dauer bei 95 % kleiner als SoC. 0°C kleiner als Temperatur kleiner als 10 °C. Strom kleiner als -2,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_2", "STAT_HV_BATT_HIST_SOC7_T2_I1_WERT", STAT_HV_BATT_HIST_SOC7_T2_I1_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T2_I2_WERT = (RXBUF_UINT32(84)/10.0f);
-        // Duration at 95% smaller than SoC. 0 � C less than temperature less than 10 � C. -2.5xC A less than current
+        // Duration at 95% smaller than SoC. 0 ° C less than temperature less than 10 ° C. -2.5xC A less than current
         // less than -2.0xC A / Dauer bei 95 % kleiner als SoC. 0°C kleiner als Temperatur kleiner als 10 °C.  -2,5xC A
         // kleiner als Strom kleiner als -2,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_2", "STAT_HV_BATT_HIST_SOC7_T2_I2_WERT", STAT_HV_BATT_HIST_SOC7_T2_I2_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T2_I3_WERT = (RXBUF_UINT32(88)/10.0f);
-        // Duration at 95% smaller than SoC. 0 � C less than temperature less than 10 � C. -2.0xC A less than current
+        // Duration at 95% smaller than SoC. 0 ° C less than temperature less than 10 ° C. -2.0xC A less than current
         // less than -1.5xC A / Dauer bei 95 % kleiner als SoC. 0°C kleiner als Temperatur kleiner als 10 °C.  -2,0xC A
         // kleiner als Strom kleiner als -1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_2", "STAT_HV_BATT_HIST_SOC7_T2_I3_WERT", STAT_HV_BATT_HIST_SOC7_T2_I3_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T2_I4_WERT = (RXBUF_UINT32(92)/10.0f);
-        // Duration at 95% smaller than SoC. 0 � C less than temperature less than 10 � C. -1.5xC A less than current
+        // Duration at 95% smaller than SoC. 0 ° C less than temperature less than 10 ° C. -1.5xC A less than current
         // less than -1.0xC A / Dauer bei 95 % kleiner als SoC. 0°C kleiner als Temperatur kleiner als 10 °C.  -1,5xC A
         // kleiner als Strom kleiner als -1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_2", "STAT_HV_BATT_HIST_SOC7_T2_I4_WERT", STAT_HV_BATT_HIST_SOC7_T2_I4_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T2_I5_WERT = (RXBUF_UINT32(96)/10.0f);
-        // Duration at 95% smaller than SoC. 0 � C less than temperature less than 10 � C. -1.0xC A less than current
+        // Duration at 95% smaller than SoC. 0 ° C less than temperature less than 10 ° C. -1.0xC A less than current
         // less than -0.5xC A / Dauer bei 95 % kleiner als SoC. 0°C kleiner als Temperatur kleiner als 10 °C.  -1,0xC A
         // kleiner als Strom kleiner als -0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_2", "STAT_HV_BATT_HIST_SOC7_T2_I5_WERT", STAT_HV_BATT_HIST_SOC7_T2_I5_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T2_I6_WERT = (RXBUF_UINT32(100)/10.0f);
-        // Duration at 95% smaller than SoC. 0 � C less than temperature less than 10 � C. -0.5xC A less than current
+        // Duration at 95% smaller than SoC. 0 ° C less than temperature less than 10 ° C. -0.5xC A less than current
         // less than 0.0xC A / Dauer bei 95 % kleiner als SoC. 0°C kleiner als Temperatur kleiner als 10 °C.  -0,5xC A
         // kleiner als Strom kleiner als 0,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_2", "STAT_HV_BATT_HIST_SOC7_T2_I6_WERT", STAT_HV_BATT_HIST_SOC7_T2_I6_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T2_I7_WERT = (RXBUF_UINT32(104)/10.0f);
-        // Duration at 95% smaller than SoC. 0 � C less than temperature less than 10 � C. 0.0xC A less than current less
-        // than 0.5xC A / Dauer bei 95 % kleiner als SoC. 0°C kleiner als Temperatur kleiner als 10 °C.  0,0xC A
-        // kleiner als Strom kleiner als 0,5xC A
+        // Duration at 95% smaller than SoC. 0 ° C less than temperature less than 10 ° C. 0.0xC A less than current less
+        // than 0.5xC A / Dauer bei 95 % kleiner als SoC. 0°C kleiner als Temperatur kleiner als 10 °C.  0,0xC A kleiner
+        // als Strom kleiner als 0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_2", "STAT_HV_BATT_HIST_SOC7_T2_I7_WERT", STAT_HV_BATT_HIST_SOC7_T2_I7_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T2_I8_WERT = (RXBUF_UINT32(108)/10.0f);
-        // Duration at 95% smaller than SoC. 0 � C less than temperature less than 10 � C. 0.5xC A less than current less
-        // than 1.0xC A / Dauer bei 95 % kleiner als SoC. 0°C kleiner als Temperatur kleiner als 10 °C.  0,5xC A
-        // kleiner als Strom kleiner als 1,0xC A
+        // Duration at 95% smaller than SoC. 0 ° C less than temperature less than 10 ° C. 0.5xC A less than current less
+        // than 1.0xC A / Dauer bei 95 % kleiner als SoC. 0°C kleiner als Temperatur kleiner als 10 °C.  0,5xC A kleiner
+        // als Strom kleiner als 1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_2", "STAT_HV_BATT_HIST_SOC7_T2_I8_WERT", STAT_HV_BATT_HIST_SOC7_T2_I8_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T2_I9_WERT = (RXBUF_UINT32(112)/10.0f);
-        // Duration at 95% smaller than SoC. 0 � C less than temperature less than 10 � C. 1.0xC A less than current less
-        // than 1.5xC A / Dauer bei 95 % kleiner als SoC. 0°C kleiner als Temperatur kleiner als 10 °C.  1,0xC A
-        // kleiner als Strom kleiner als 1,5xC A
+        // Duration at 95% smaller than SoC. 0 ° C less than temperature less than 10 ° C. 1.0xC A less than current less
+        // than 1.5xC A / Dauer bei 95 % kleiner als SoC. 0°C kleiner als Temperatur kleiner als 10 °C.  1,0xC A kleiner
+        // als Strom kleiner als 1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_2", "STAT_HV_BATT_HIST_SOC7_T2_I9_WERT", STAT_HV_BATT_HIST_SOC7_T2_I9_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T2_I10_WERT = (RXBUF_UINT32(116)/10.0f);
-        // Duration at 95% smaller than SoC. 0 � C less than temperature less than 10 � C. 1.5xC A less than current /
+        // Duration at 95% smaller than SoC. 0 ° C less than temperature less than 10 ° C. 1.5xC A less than current /
         // Dauer bei 95 % kleiner als SoC. 0°C kleiner als Temperatur kleiner als 10 °C.  1,5xC A kleiner als Strom
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T2_2", "STAT_HV_BATT_HIST_SOC7_T2_I10_WERT", STAT_HV_BATT_HIST_SOC7_T2_I10_WERT, "\"s\"");
 
@@ -7382,168 +7380,168 @@
     }
 
     float STAT_HV_BATT_HIST_SOC5_T7_I1_WERT = (RXBUF_UINT32(0)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 40 � C less than temperature. Current less than -2.5xC A / Dauer
+        // Duration at 70% less than SoC less than 90%. 40 ° C less than temperature. Current less than -2.5xC A / Dauer
         // bei 70% kleiner als SoC kleiner als 90%. 40°C kleiner als Temperatur. Strom kleiner als -2,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_2", "STAT_HV_BATT_HIST_SOC5_T7_I1_WERT", STAT_HV_BATT_HIST_SOC5_T7_I1_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T7_I2_WERT = (RXBUF_UINT32(4)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 40 � C less than temperature. -2.5xC A less than current less
+        // Duration at 70% less than SoC less than 90%. 40 ° C less than temperature. -2.5xC A less than current less
         // than -2.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 40°C kleiner als Temperatur. -2,5xC A kleiner
         // als Strom kleiner als -2,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_2", "STAT_HV_BATT_HIST_SOC5_T7_I2_WERT", STAT_HV_BATT_HIST_SOC5_T7_I2_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T7_I3_WERT = (RXBUF_UINT32(8)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 40 � C less than temperature. -2.0xC A less than current less
+        // Duration at 70% less than SoC less than 90%. 40 ° C less than temperature. -2.0xC A less than current less
         // than -1.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 40°C kleiner als Temperatur. -2,0xC A kleiner
         // als Strom kleiner als -1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_2", "STAT_HV_BATT_HIST_SOC5_T7_I3_WERT", STAT_HV_BATT_HIST_SOC5_T7_I3_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T7_I4_WERT = (RXBUF_UINT32(12)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 40 � C less than temperature. -1.5xC A less than current less
+        // Duration at 70% less than SoC less than 90%. 40 ° C less than temperature. -1.5xC A less than current less
         // than -1.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 40°C kleiner als Temperatur. -1,5xC A kleiner
         // als Strom kleiner als -1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_2", "STAT_HV_BATT_HIST_SOC5_T7_I4_WERT", STAT_HV_BATT_HIST_SOC5_T7_I4_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T7_I5_WERT = (RXBUF_UINT32(16)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 40 � C less than temperature. -1.0xC A less than current less
+        // Duration at 70% less than SoC less than 90%. 40 ° C less than temperature. -1.0xC A less than current less
         // than -0.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 40°C kleiner als Temperatur. -1,0xC A kleiner
         // als Strom kleiner als -0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_2", "STAT_HV_BATT_HIST_SOC5_T7_I5_WERT", STAT_HV_BATT_HIST_SOC5_T7_I5_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T7_I6_WERT = (RXBUF_UINT32(20)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 40 � C less than temperature. -0.5xC A less than current less
+        // Duration at 70% less than SoC less than 90%. 40 ° C less than temperature. -0.5xC A less than current less
         // than 0.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 40°C kleiner als Temperatur. -0,5xC A kleiner
         // als Strom kleiner als 0,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_2", "STAT_HV_BATT_HIST_SOC5_T7_I6_WERT", STAT_HV_BATT_HIST_SOC5_T7_I6_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T7_I7_WERT = (RXBUF_UINT32(24)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 40 � C less than temperature. 0.0xC A less than current less than
+        // Duration at 70% less than SoC less than 90%. 40 ° C less than temperature. 0.0xC A less than current less than
         // 0.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 40°C kleiner als Temperatur. 0,0xC A kleiner als
         // Strom kleiner als 0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_2", "STAT_HV_BATT_HIST_SOC5_T7_I7_WERT", STAT_HV_BATT_HIST_SOC5_T7_I7_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T7_I8_WERT = (RXBUF_UINT32(28)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 40 � C less than temperature. 0.5xC A less than current less than
+        // Duration at 70% less than SoC less than 90%. 40 ° C less than temperature. 0.5xC A less than current less than
         // 1.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 40°C kleiner als Temperatur. 0,5xC A kleiner als
         // Strom kleiner als 1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_2", "STAT_HV_BATT_HIST_SOC5_T7_I8_WERT", STAT_HV_BATT_HIST_SOC5_T7_I8_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T7_I9_WERT = (RXBUF_UINT32(32)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 40 � C less than temperature. 1.0xC A less than current less than
+        // Duration at 70% less than SoC less than 90%. 40 ° C less than temperature. 1.0xC A less than current less than
         // 1.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 40°C kleiner als Temperatur. 1,0xC A kleiner als
         // Strom kleiner als 1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_2", "STAT_HV_BATT_HIST_SOC5_T7_I9_WERT", STAT_HV_BATT_HIST_SOC5_T7_I9_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T7_I10_WERT = (RXBUF_UINT32(36)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 40 � C less than temperature. 1.5xC A less than current / Dauer
+        // Duration at 70% less than SoC less than 90%. 40 ° C less than temperature. 1.5xC A less than current / Dauer
         // bei 70% kleiner als SoC kleiner als 90%. 40°C kleiner als Temperatur. 1,5xC A kleiner als Strom
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_2", "STAT_HV_BATT_HIST_SOC5_T7_I10_WERT", STAT_HV_BATT_HIST_SOC5_T7_I10_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T7_I1_WERT = (RXBUF_UINT32(40)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 40 � C less than temperature. Current less than -2.5xC A / Dauer
+        // Duration at 90% less than SoC less than 95%. 40 ° C less than temperature. Current less than -2.5xC A / Dauer
         // bei 90% kleiner als SoC kleiner als 95%. 40°C kleiner als Temperatur. Strom kleiner als -2,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_2", "STAT_HV_BATT_HIST_SOC6_T7_I1_WERT", STAT_HV_BATT_HIST_SOC6_T7_I1_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T7_I2_WERT = (RXBUF_UINT32(44)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 40 � C less than temperature. -2.5xC A less than current less
+        // Duration at 90% less than SoC less than 95%. 40 ° C less than temperature. -2.5xC A less than current less
         // than -2.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 40°C kleiner als Temperatur. -2,5xC A kleiner
         // als Strom kleiner als -2,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_2", "STAT_HV_BATT_HIST_SOC6_T7_I2_WERT", STAT_HV_BATT_HIST_SOC6_T7_I2_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T7_I3_WERT = (RXBUF_UINT32(48)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 40 � C less than temperature. -2.0xC A less than current less
+        // Duration at 90% less than SoC less than 95%. 40 ° C less than temperature. -2.0xC A less than current less
         // than -1.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 40°C kleiner als Temperatur. -2,0xC A kleiner
         // als Strom kleiner als -1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_2", "STAT_HV_BATT_HIST_SOC6_T7_I3_WERT", STAT_HV_BATT_HIST_SOC6_T7_I3_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T7_I4_WERT = (RXBUF_UINT32(52)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 40 � C less than temperature. -1.5xC A less than current less
+        // Duration at 90% less than SoC less than 95%. 40 ° C less than temperature. -1.5xC A less than current less
         // than -1.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 40°C kleiner als Temperatur. -1,5xC A kleiner
         // als Strom kleiner als -1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_2", "STAT_HV_BATT_HIST_SOC6_T7_I4_WERT", STAT_HV_BATT_HIST_SOC6_T7_I4_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T7_I5_WERT = (RXBUF_UINT32(56)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 40 � C less than temperature. -1.0xC A less than current less
+        // Duration at 90% less than SoC less than 95%. 40 ° C less than temperature. -1.0xC A less than current less
         // than -0.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 40°C kleiner als Temperatur. -1,0xC A kleiner
         // als Strom kleiner als -0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_2", "STAT_HV_BATT_HIST_SOC6_T7_I5_WERT", STAT_HV_BATT_HIST_SOC6_T7_I5_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T7_I6_WERT = (RXBUF_UINT32(60)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 40 � C less than temperature. -0.5xC A less than current less
+        // Duration at 90% less than SoC less than 95%. 40 ° C less than temperature. -0.5xC A less than current less
         // than 0.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 40°C kleiner als Temperatur. -0,5xC A kleiner
         // als Strom kleiner als 0,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_2", "STAT_HV_BATT_HIST_SOC6_T7_I6_WERT", STAT_HV_BATT_HIST_SOC6_T7_I6_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T7_I7_WERT = (RXBUF_UINT32(64)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 40 � C less than temperature. 0.0xC A less than current less than
+        // Duration at 90% less than SoC less than 95%. 40 ° C less than temperature. 0.0xC A less than current less than
         // 0.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 40°C kleiner als Temperatur. 0,0xC A kleiner als
         // Strom kleiner als 0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_2", "STAT_HV_BATT_HIST_SOC6_T7_I7_WERT", STAT_HV_BATT_HIST_SOC6_T7_I7_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T7_I8_WERT = (RXBUF_UINT32(68)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 40 � C less than temperature. 0.5xC A less than current less than
+        // Duration at 90% less than SoC less than 95%. 40 ° C less than temperature. 0.5xC A less than current less than
         // 1.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 40°C kleiner als Temperatur. 0,5xC A kleiner als
         // Strom kleiner als 1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_2", "STAT_HV_BATT_HIST_SOC6_T7_I8_WERT", STAT_HV_BATT_HIST_SOC6_T7_I8_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T7_I9_WERT = (RXBUF_UINT32(72)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 40 � C less than temperature. 1.0xC A less than current less than
+        // Duration at 90% less than SoC less than 95%. 40 ° C less than temperature. 1.0xC A less than current less than
         // 1.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 40°C kleiner als Temperatur. 1,0xC A kleiner als
         // Strom kleiner als 1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_2", "STAT_HV_BATT_HIST_SOC6_T7_I9_WERT", STAT_HV_BATT_HIST_SOC6_T7_I9_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T7_I10_WERT = (RXBUF_UINT32(76)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 40 � C less than temperature. 1.5xC A less than current / Dauer
+        // Duration at 90% less than SoC less than 95%. 40 ° C less than temperature. 1.5xC A less than current / Dauer
         // bei 90% kleiner als SoC kleiner als 95%. 40°C kleiner als Temperatur. 1,5xC A kleiner als Strom
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_2", "STAT_HV_BATT_HIST_SOC6_T7_I10_WERT", STAT_HV_BATT_HIST_SOC6_T7_I10_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T7_I1_WERT = (RXBUF_UINT32(80)/10.0f);
-        // Duration at 95% smaller than SoC. 40 � C less than temperature. Current less than -2.5xC A / Dauer bei 95%
+        // Duration at 95% smaller than SoC. 40 ° C less than temperature. Current less than -2.5xC A / Dauer bei 95%
         // kleiner als SoC. 40°C kleiner als Temperatur. Strom kleiner als -2,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_2", "STAT_HV_BATT_HIST_SOC7_T7_I1_WERT", STAT_HV_BATT_HIST_SOC7_T7_I1_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T7_I2_WERT = (RXBUF_UINT32(84)/10.0f);
-        // Duration at 95% smaller than SoC. 40 � C less than temperature. -2.5xC A less than current less than -2.0xC A
+        // Duration at 95% smaller than SoC. 40 ° C less than temperature. -2.5xC A less than current less than -2.0xC A
         // / Dauer bei 95% kleiner als SoC. 40°C kleiner als Temperatur. -2,5xC A kleiner als Strom kleiner als -2,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_2", "STAT_HV_BATT_HIST_SOC7_T7_I2_WERT", STAT_HV_BATT_HIST_SOC7_T7_I2_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T7_I3_WERT = (RXBUF_UINT32(88)/10.0f);
-        // Duration at 95% smaller than SoC. 40 � C less than temperature. -2.0xC A less than current less than -1.5xC A
+        // Duration at 95% smaller than SoC. 40 ° C less than temperature. -2.0xC A less than current less than -1.5xC A
         // / Dauer bei 95% kleiner als SoC. 40°C kleiner als Temperatur. -2,0xC A kleiner als Strom kleiner als -1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_2", "STAT_HV_BATT_HIST_SOC7_T7_I3_WERT", STAT_HV_BATT_HIST_SOC7_T7_I3_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T7_I4_WERT = (RXBUF_UINT32(92)/10.0f);
-        // Duration at 95% smaller than SoC. 40 � C less than temperature. -1.5xC A less than current less than -1.0xC A
+        // Duration at 95% smaller than SoC. 40 ° C less than temperature. -1.5xC A less than current less than -1.0xC A
         // / Dauer bei 95% kleiner als SoC. 40°C kleiner als Temperatur. -1,5xC A kleiner als Strom kleiner als -1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_2", "STAT_HV_BATT_HIST_SOC7_T7_I4_WERT", STAT_HV_BATT_HIST_SOC7_T7_I4_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T7_I5_WERT = (RXBUF_UINT32(96)/10.0f);
-        // Duration at 95% smaller than SoC. 40 � C less than temperature. -1.0xC A less than current less than -0.5xC A
+        // Duration at 95% smaller than SoC. 40 ° C less than temperature. -1.0xC A less than current less than -0.5xC A
         // / Dauer bei 95% kleiner als SoC. 40°C kleiner als Temperatur. -1,0xC A kleiner als Strom kleiner als -0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_2", "STAT_HV_BATT_HIST_SOC7_T7_I5_WERT", STAT_HV_BATT_HIST_SOC7_T7_I5_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T7_I6_WERT = (RXBUF_UINT32(100)/10.0f);
-        // Duration at 95% smaller than SoC. 40 � C less than temperature. -0.5xC A less than current less than 0.0xC A /
+        // Duration at 95% smaller than SoC. 40 ° C less than temperature. -0.5xC A less than current less than 0.0xC A /
         // Dauer bei 95% kleiner als SoC. 40°C kleiner als Temperatur. -0,5xC A kleiner als Strom kleiner als 0,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_2", "STAT_HV_BATT_HIST_SOC7_T7_I6_WERT", STAT_HV_BATT_HIST_SOC7_T7_I6_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T7_I7_WERT = (RXBUF_UINT32(104)/10.0f);
-        // Duration at 95% smaller than SoC. 40 � C less than temperature. 0.0xC A less than current less than 0.5xC A /
+        // Duration at 95% smaller than SoC. 40 ° C less than temperature. 0.0xC A less than current less than 0.5xC A /
         // Dauer bei 95% kleiner als SoC. 40°C kleiner als Temperatur. 0,0xC A kleiner als Strom kleiner als 0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_2", "STAT_HV_BATT_HIST_SOC7_T7_I7_WERT", STAT_HV_BATT_HIST_SOC7_T7_I7_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T7_I8_WERT = (RXBUF_UINT32(108)/10.0f);
-        // Duration at 95% smaller than SoC. 40 � C less than temperature. 0.5xC A less than current less than 1.0xC A /
+        // Duration at 95% smaller than SoC. 40 ° C less than temperature. 0.5xC A less than current less than 1.0xC A /
         // Dauer bei 95% kleiner als SoC. 40°C kleiner als Temperatur. 0,5xC A kleiner als Strom kleiner als 1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_2", "STAT_HV_BATT_HIST_SOC7_T7_I8_WERT", STAT_HV_BATT_HIST_SOC7_T7_I8_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T7_I9_WERT = (RXBUF_UINT32(112)/10.0f);
-        // Duration at 95% smaller than SoC. 40 � C less than temperature. 1.0xC A less than current less than 1.5xC A /
+        // Duration at 95% smaller than SoC. 40 ° C less than temperature. 1.0xC A less than current less than 1.5xC A /
         // Dauer bei 95% kleiner als SoC. 40°C kleiner als Temperatur. 1,0xC A kleiner als Strom kleiner als 1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_2", "STAT_HV_BATT_HIST_SOC7_T7_I9_WERT", STAT_HV_BATT_HIST_SOC7_T7_I9_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T7_I10_WERT = (RXBUF_UINT32(116)/10.0f);
-        // Duration at 95% smaller than SoC. 40 � C less than temperature. 1.5xC A less than current / Dauer bei 95%
+        // Duration at 95% smaller than SoC. 40 ° C less than temperature. 1.5xC A less than current / Dauer bei 95%
         // kleiner als SoC. 40°C kleiner als Temperatur. 1,5xC A kleiner als Strom
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T7_2", "STAT_HV_BATT_HIST_SOC7_T7_I10_WERT", STAT_HV_BATT_HIST_SOC7_T7_I10_WERT, "\"s\"");
 
@@ -7560,180 +7558,180 @@
     }
 
     float STAT_HV_BATT_HIST_SOC5_T6_I1_WERT = (RXBUF_UINT32(0)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 32.5 � C less than temperature less than 40 � C. Current less
-        // than -2.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 32,5°C kleiner als Temperatur kleiner als
-        // 40°C. Strom kleiner als -2,5xC A
+        // Duration at 70% less than SoC less than 90%. 32.5 ° C less than temperature less than 40 ° C. Current less
+        // than -2.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 32,5°C kleiner als Temperatur kleiner als 40°C.
+        // Strom kleiner als -2,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_2", "STAT_HV_BATT_HIST_SOC5_T6_I1_WERT", STAT_HV_BATT_HIST_SOC5_T6_I1_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T6_I2_WERT = (RXBUF_UINT32(4)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 32.5 � C less than temperature less than 40 � C. -2.5xC A less
-        // than current less than -2.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 32,5°C kleiner als
-        // Temperatur kleiner als 40°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
+        // Duration at 70% less than SoC less than 90%. 32.5 ° C less than temperature less than 40 ° C. -2.5xC A less
+        // than current less than -2.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_2", "STAT_HV_BATT_HIST_SOC5_T6_I2_WERT", STAT_HV_BATT_HIST_SOC5_T6_I2_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T6_I3_WERT = (RXBUF_UINT32(8)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 32.5 � C less than temperature less than 40 � C. -2.0xC A less
-        // than current less than -1.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 32,5°C kleiner als
-        // Temperatur kleiner als 40°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
+        // Duration at 70% less than SoC less than 90%. 32.5 ° C less than temperature less than 40 ° C. -2.0xC A less
+        // than current less than -1.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_2", "STAT_HV_BATT_HIST_SOC5_T6_I3_WERT", STAT_HV_BATT_HIST_SOC5_T6_I3_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T6_I4_WERT = (RXBUF_UINT32(12)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 32.5 � C less than temperature less than 40 � C. -1.5xC A less
-        // than current less than -1.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 32,5°C kleiner als
-        // Temperatur kleiner als 40°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
+        // Duration at 70% less than SoC less than 90%. 32.5 ° C less than temperature less than 40 ° C. -1.5xC A less
+        // than current less than -1.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_2", "STAT_HV_BATT_HIST_SOC5_T6_I4_WERT", STAT_HV_BATT_HIST_SOC5_T6_I4_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T6_I5_WERT = (RXBUF_UINT32(16)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 32.5 � C less than temperature less than 40 � C. -1.0xC A less
-        // than current less than -0.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 32,5°C kleiner als
-        // Temperatur kleiner als 40°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
+        // Duration at 70% less than SoC less than 90%. 32.5 ° C less than temperature less than 40 ° C. -1.0xC A less
+        // than current less than -0.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_2", "STAT_HV_BATT_HIST_SOC5_T6_I5_WERT", STAT_HV_BATT_HIST_SOC5_T6_I5_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T6_I6_WERT = (RXBUF_UINT32(20)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 32.5 � C less than temperature less than 40 � C. -0.5xC A less
+        // Duration at 70% less than SoC less than 90%. 32.5 ° C less than temperature less than 40 ° C. -0.5xC A less
         // than current less than 0.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 32,5°C kleiner als Temperatur
         // kleiner als 40°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_2", "STAT_HV_BATT_HIST_SOC5_T6_I6_WERT", STAT_HV_BATT_HIST_SOC5_T6_I6_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T6_I7_WERT = (RXBUF_UINT32(24)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 32.5 � C less than temperature less than 40 � C. 0.0xC A less
+        // Duration at 70% less than SoC less than 90%. 32.5 ° C less than temperature less than 40 ° C. 0.0xC A less
         // than current less than 0.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 32,5°C kleiner als Temperatur
         // kleiner als 40°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_2", "STAT_HV_BATT_HIST_SOC5_T6_I7_WERT", STAT_HV_BATT_HIST_SOC5_T6_I7_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T6_I8_WERT = (RXBUF_UINT32(28)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 32.5 � C less than temperature less than 40 � C. 0.5xC A less
+        // Duration at 70% less than SoC less than 90%. 32.5 ° C less than temperature less than 40 ° C. 0.5xC A less
         // than current less than 1.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 32,5°C kleiner als Temperatur
         // kleiner als 40°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_2", "STAT_HV_BATT_HIST_SOC5_T6_I8_WERT", STAT_HV_BATT_HIST_SOC5_T6_I8_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T6_I9_WERT = (RXBUF_UINT32(32)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 32.5 � C less than temperature less than 40 � C. 1.0xC A less
+        // Duration at 70% less than SoC less than 90%. 32.5 ° C less than temperature less than 40 ° C. 1.0xC A less
         // than current less than 1.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 32,5°C kleiner als Temperatur
         // kleiner als 40°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_2", "STAT_HV_BATT_HIST_SOC5_T6_I9_WERT", STAT_HV_BATT_HIST_SOC5_T6_I9_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC5_T6_I10_WERT = (RXBUF_UINT32(36)/10.0f);
-        // Duration at 70% less than SoC less than 90%. 32.5 � C less than temperature less than 40 � C. 1.5xC A less
-        // than current / Dauer bei 70% kleiner als SoC kleiner als 90%. 32,5°C kleiner als Temperatur kleiner als
-        // 40°C. 1,5xC A kleiner als Strom
+        // Duration at 70% less than SoC less than 90%. 32.5 ° C less than temperature less than 40 ° C. 1.5xC A less
+        // than current / Dauer bei 70% kleiner als SoC kleiner als 90%. 32,5°C kleiner als Temperatur kleiner als 40°C.
+        // 1,5xC A kleiner als Strom
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_2", "STAT_HV_BATT_HIST_SOC5_T6_I10_WERT", STAT_HV_BATT_HIST_SOC5_T6_I10_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T6_I1_WERT = (RXBUF_UINT32(40)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 32.5 � C less than temperature less than 40 � C. Current less
-        // than -2.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 32,5°C kleiner als Temperatur kleiner als
-        // 40°C. Strom kleiner als -2,5xC A
+        // Duration at 90% less than SoC less than 95%. 32.5 ° C less than temperature less than 40 ° C. Current less
+        // than -2.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 32,5°C kleiner als Temperatur kleiner als 40°C.
+        // Strom kleiner als -2,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_2", "STAT_HV_BATT_HIST_SOC6_T6_I1_WERT", STAT_HV_BATT_HIST_SOC6_T6_I1_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T6_I2_WERT = (RXBUF_UINT32(44)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 32.5 � C less than temperature less than 40 � C. -2.5xC A less
-        // than current less than -2.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 32,5°C kleiner als
-        // Temperatur kleiner als 40°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
+        // Duration at 90% less than SoC less than 95%. 32.5 ° C less than temperature less than 40 ° C. -2.5xC A less
+        // than current less than -2.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_2", "STAT_HV_BATT_HIST_SOC6_T6_I2_WERT", STAT_HV_BATT_HIST_SOC6_T6_I2_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T6_I3_WERT = (RXBUF_UINT32(48)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 32.5 � C less than temperature less than 40 � C. -2.0xC A less
-        // than current less than -1.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 32,5°C kleiner als
-        // Temperatur kleiner als 40°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
+        // Duration at 90% less than SoC less than 95%. 32.5 ° C less than temperature less than 40 ° C. -2.0xC A less
+        // than current less than -1.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_2", "STAT_HV_BATT_HIST_SOC6_T6_I3_WERT", STAT_HV_BATT_HIST_SOC6_T6_I3_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T6_I4_WERT = (RXBUF_UINT32(52)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 32.5 � C less than temperature less than 40 � C. -1.5xC A less
-        // than current less than -1.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 32,5°C kleiner als
-        // Temperatur kleiner als 40°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
+        // Duration at 90% less than SoC less than 95%. 32.5 ° C less than temperature less than 40 ° C. -1.5xC A less
+        // than current less than -1.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_2", "STAT_HV_BATT_HIST_SOC6_T6_I4_WERT", STAT_HV_BATT_HIST_SOC6_T6_I4_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T6_I5_WERT = (RXBUF_UINT32(56)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 32.5 � C less than temperature less than 40 � C. -1.0xC A less
-        // than current less than -0.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 32,5°C kleiner als
-        // Temperatur kleiner als 40°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
+        // Duration at 90% less than SoC less than 95%. 32.5 ° C less than temperature less than 40 ° C. -1.0xC A less
+        // than current less than -0.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_2", "STAT_HV_BATT_HIST_SOC6_T6_I5_WERT", STAT_HV_BATT_HIST_SOC6_T6_I5_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T6_I6_WERT = (RXBUF_UINT32(60)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 32.5 � C less than temperature less than 40 � C. -0.5xC A less
+        // Duration at 90% less than SoC less than 95%. 32.5 ° C less than temperature less than 40 ° C. -0.5xC A less
         // than current less than 0.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 32,5°C kleiner als Temperatur
         // kleiner als 40°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_2", "STAT_HV_BATT_HIST_SOC6_T6_I6_WERT", STAT_HV_BATT_HIST_SOC6_T6_I6_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T6_I7_WERT = (RXBUF_UINT32(64)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 32.5 � C less than temperature less than 40 � C. 0.0xC A less
+        // Duration at 90% less than SoC less than 95%. 32.5 ° C less than temperature less than 40 ° C. 0.0xC A less
         // than current less than 0.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 32,5°C kleiner als Temperatur
         // kleiner als 40°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_2", "STAT_HV_BATT_HIST_SOC6_T6_I7_WERT", STAT_HV_BATT_HIST_SOC6_T6_I7_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T6_I8_WERT = (RXBUF_UINT32(68)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 32.5 � C less than temperature less than 40 � C. 0.5xC A less
+        // Duration at 90% less than SoC less than 95%. 32.5 ° C less than temperature less than 40 ° C. 0.5xC A less
         // than current less than 1.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 32,5°C kleiner als Temperatur
         // kleiner als 40°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_2", "STAT_HV_BATT_HIST_SOC6_T6_I8_WERT", STAT_HV_BATT_HIST_SOC6_T6_I8_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T6_I9_WERT = (RXBUF_UINT32(72)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 32.5 � C less than temperature less than 40 � C. 1.0xC A less
+        // Duration at 90% less than SoC less than 95%. 32.5 ° C less than temperature less than 40 ° C. 1.0xC A less
         // than current less than 1.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 32,5°C kleiner als Temperatur
         // kleiner als 40°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_2", "STAT_HV_BATT_HIST_SOC6_T6_I9_WERT", STAT_HV_BATT_HIST_SOC6_T6_I9_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC6_T6_I10_WERT = (RXBUF_UINT32(76)/10.0f);
-        // Duration at 90% less than SoC less than 95%. 32.5 � C less than temperature less than 40 � C. 1.5xC A less
-        // than current / Dauer bei 90% kleiner als SoC kleiner als 95%. 32,5°C kleiner als Temperatur kleiner als
-        // 40°C. 1,5xC A kleiner als Strom
+        // Duration at 90% less than SoC less than 95%. 32.5 ° C less than temperature less than 40 ° C. 1.5xC A less
+        // than current / Dauer bei 90% kleiner als SoC kleiner als 95%. 32,5°C kleiner als Temperatur kleiner als 40°C.
+        // 1,5xC A kleiner als Strom
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_2", "STAT_HV_BATT_HIST_SOC6_T6_I10_WERT", STAT_HV_BATT_HIST_SOC6_T6_I10_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T6_I1_WERT = (RXBUF_UINT32(80)/10.0f);
-        // Duration at 95% smaller than SoC. 32.5 � C less than temperature less than 40 � C. Current less than -2.5xC A
+        // Duration at 95% smaller than SoC. 32.5 ° C less than temperature less than 40 ° C. Current less than -2.5xC A
         // / Dauer bei 95% kleiner als SoC. 32,5°C kleiner als Temperatur kleiner als 40°C. Strom kleiner als -2,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_2", "STAT_HV_BATT_HIST_SOC7_T6_I1_WERT", STAT_HV_BATT_HIST_SOC7_T6_I1_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T6_I2_WERT = (RXBUF_UINT32(84)/10.0f);
-        // Duration at 95% smaller than SoC. 32.5 � C less than temperature less than 40 � C. -2.5xC A less than current
+        // Duration at 95% smaller than SoC. 32.5 ° C less than temperature less than 40 ° C. -2.5xC A less than current
         // less than -2.0xC A / Dauer bei 95% kleiner als SoC. 32,5°C kleiner als Temperatur kleiner als 40°C. -2,5xC A
         // kleiner als Strom kleiner als -2,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_2", "STAT_HV_BATT_HIST_SOC7_T6_I2_WERT", STAT_HV_BATT_HIST_SOC7_T6_I2_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T6_I3_WERT = (RXBUF_UINT32(88)/10.0f);
-        // Duration at 95% smaller than SoC. 32.5 � C less than temperature less than 40 � C. -2.0xC A less than current
+        // Duration at 95% smaller than SoC. 32.5 ° C less than temperature less than 40 ° C. -2.0xC A less than current
         // less than -1.5xC A / Dauer bei 95% kleiner als SoC. 32,5°C kleiner als Temperatur kleiner als 40°C. -2,0xC A
         // kleiner als Strom kleiner als -1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_2", "STAT_HV_BATT_HIST_SOC7_T6_I3_WERT", STAT_HV_BATT_HIST_SOC7_T6_I3_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T6_I4_WERT = (RXBUF_UINT32(92)/10.0f);
-        // Duration at 95% smaller than SoC. 32.5 � C less than temperature less than 40 � C. -1.5xC A less than current
+        // Duration at 95% smaller than SoC. 32.5 ° C less than temperature less than 40 ° C. -1.5xC A less than current
         // less than -1.0xC A / Dauer bei 95% kleiner als SoC. 32,5°C kleiner als Temperatur kleiner als 40°C. -1,5xC A
         // kleiner als Strom kleiner als -1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_2", "STAT_HV_BATT_HIST_SOC7_T6_I4_WERT", STAT_HV_BATT_HIST_SOC7_T6_I4_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T6_I5_WERT = (RXBUF_UINT32(96)/10.0f);
-        // Duration at 95% smaller than SoC. 32.5 � C less than temperature less than 40 � C. -1.0xC A less than current
+        // Duration at 95% smaller than SoC. 32.5 ° C less than temperature less than 40 ° C. -1.0xC A less than current
         // less than -0.5xC A / Dauer bei 95% kleiner als SoC. 32,5°C kleiner als Temperatur kleiner als 40°C. -1,0xC A
         // kleiner als Strom kleiner als -0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_2", "STAT_HV_BATT_HIST_SOC7_T6_I5_WERT", STAT_HV_BATT_HIST_SOC7_T6_I5_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T6_I6_WERT = (RXBUF_UINT32(100)/10.0f);
-        // Duration at 95% smaller than SoC. 32.5 � C less than temperature less than 40 � C. -0.5xC A less than current
+        // Duration at 95% smaller than SoC. 32.5 ° C less than temperature less than 40 ° C. -0.5xC A less than current
         // less than 0.0xC A / Dauer bei 95% kleiner als SoC. 32,5°C kleiner als Temperatur kleiner als 40°C. -0,5xC A
         // kleiner als Strom kleiner als 0,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_2", "STAT_HV_BATT_HIST_SOC7_T6_I6_WERT", STAT_HV_BATT_HIST_SOC7_T6_I6_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T6_I7_WERT = (RXBUF_UINT32(104)/10.0f);
-        // Duration at 95% smaller than SoC. 32.5 � C less than temperature less than 40 � C. 0.0xC A less than current
+        // Duration at 95% smaller than SoC. 32.5 ° C less than temperature less than 40 ° C. 0.0xC A less than current
         // less than 0.5xC A / Dauer bei 95% kleiner als SoC. 32,5°C kleiner als Temperatur kleiner als 40°C. 0,0xC A
         // kleiner als Strom kleiner als 0,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_2", "STAT_HV_BATT_HIST_SOC7_T6_I7_WERT", STAT_HV_BATT_HIST_SOC7_T6_I7_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T6_I8_WERT = (RXBUF_UINT32(108)/10.0f);
-        // Duration at 95% smaller than SoC. 32.5 � C less than temperature less than 40 � C. 0.5xC A less than current
+        // Duration at 95% smaller than SoC. 32.5 ° C less than temperature less than 40 ° C. 0.5xC A less than current
         // less than 1.0xC A / Dauer bei 95% kleiner als SoC. 32,5°C kleiner als Temperatur kleiner als 40°C. 0,5xC A
         // kleiner als Strom kleiner als 1,0xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_2", "STAT_HV_BATT_HIST_SOC7_T6_I8_WERT", STAT_HV_BATT_HIST_SOC7_T6_I8_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T6_I9_WERT = (RXBUF_UINT32(112)/10.0f);
-        // Duration at 95% smaller than SoC. 32.5 � C less than temperature less than 40 � C. 1.0xC A less than current
+        // Duration at 95% smaller than SoC. 32.5 ° C less than temperature less than 40 ° C. 1.0xC A less than current
         // less than 1.5xC A / Dauer bei 95% kleiner als SoC. 32,5°C kleiner als Temperatur kleiner als 40°C. 1,0xC A
         // kleiner als Strom kleiner als 1,5xC A
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_2", "STAT_HV_BATT_HIST_SOC7_T6_I9_WERT", STAT_HV_BATT_HIST_SOC7_T6_I9_WERT, "\"s\"");
 
     float STAT_HV_BATT_HIST_SOC7_T6_I10_WERT = (RXBUF_UINT32(116)/10.0f);
-        // Duration at 95% smaller than SoC. 32.5 � C less than temperature less than 40 � C. 1.5xC A less than current /
+        // Duration at 95% smaller than SoC. 32.5 ° C less than temperature less than 40 ° C. 1.5xC A less than current /
         // Dauer bei 95% kleiner als SoC. 32,5°C kleiner als Temperatur kleiner als 40°C. 1,5xC A kleiner als Strom
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HV_BATT_HIST_SOC_T6_2", "STAT_HV_BATT_HIST_SOC7_T6_I10_WERT", STAT_HV_BATT_HIST_SOC7_T6_I10_WERT, "\"s\"");
 
@@ -7835,9 +7833,9 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "HIS_EFF_STROM", "STAT_HIS_EFF_CURR_CHG_4_WERT", STAT_HIS_EFF_CURR_CHG_4_WERT, "\"min\"");
 
     unsigned long STAT_HIS_EFF_CURR_ABS_1_WERT = (RXBUF_UINT32(32));
-        // Duration in minutes of the rms value of the current during charging and discharging in the class: 0 <= Irms
-        // <0.7 * Irms_abs (% 100) / Dauer in Minuten des Effektivwerts des Stroms beim Laden und Entladen in der Klasse:
-        // 0 <= Irms < 0,7 * Irms_abs(%100)
+        // Duration in minutes of the effective value of the current when charging and discharging in the class: 0 <=
+        // Irms <0.7 * Irms_abs (% 100) / Dauer in Minuten des Effektivwerts des Stroms beim Laden und Entladen in der
+        // Klasse: 0 <= Irms < 0,7 * Irms_abs(%100)
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "HIS_EFF_STROM", "STAT_HIS_EFF_CURR_ABS_1_WERT", STAT_HIS_EFF_CURR_ABS_1_WERT, "\"min\"");
 
     unsigned long STAT_HIS_EFF_CURR_ABS_2_WERT = (RXBUF_UINT32(36));
@@ -8311,9 +8309,9 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "HIS_EFF_STROM_TMIN", "STAT_HIS_EFF_CURR_CHG_3_TMIN_WERT", STAT_HIS_EFF_CURR_CHG_3_TMIN_WERT, "\"min\"");
 
     unsigned long STAT_HIS_EFF_CURR_CHG_4_TMIN_WERT = (RXBUF_UINT32(28));
-        // For T <-10: Duration in minutes of the relative value of Irms_cha / Irms_cha_lim when loading in the class:
-        // 140 <Irel_cha / Bei T < -10: Dauer in Minuten des Relativwerts von Irms_cha/Irms_cha_lim beim Laden in der
-        // Klasse: 140 < Irel_cha
+        // If T <-10: Duration in minutes of the relative value of Irms_cha / Irms_cha_lim when loading in the class: 140
+        // <Irel_cha / Bei T < -10: Dauer in Minuten des Relativwerts von Irms_cha/Irms_cha_lim beim Laden in der Klasse:
+        // 140 < Irel_cha
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "HIS_EFF_STROM_TMIN", "STAT_HIS_EFF_CURR_CHG_4_TMIN_WERT", STAT_HIS_EFF_CURR_CHG_4_TMIN_WERT, "\"min\"");
 
     unsigned long STAT_HIS_EFF_CURR_ABS_1_TMIN_WERT = (RXBUF_UINT32(32));
@@ -8367,7 +8365,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "HIS_EFF_STROM_TLOW", "STAT_CHA_EFF_CURR_LIM_3_PERC_TLOW_WERT", STAT_CHA_EFF_CURR_LIM_3_PERC_TLOW_WERT, "\"A\"");
 
     unsigned long STAT_ABS_EFF_CURR_LIM_100_PERC_TLOW_WERT = (RXBUF_UINT32(8));
-        // At -10 &lt;= T &lt;5: RMS value of the current limit when charging and discharging (absolute) to 100% life
+        // At -10 &lt;= T &lt;5: RMS value of the current limit during charging and discharging (absolute) to 100% life
         // [Irms_abs (% 100)] &gt;&gt; This status output is no longer required and is set to zero. / Bei -10 <= T< 5:
         // Effektivwert der Stromgrenze beim Laden und Entladen (Absolut) auf 100% Leben [Irms_abs(%100)] >> Dieses
         // Statusausgabe wird nicht mehr benötigt und ist mit Null bedatet.
@@ -8511,8 +8509,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "HIS_EFF_STROM_TMID", "STAT_HIS_EFF_CURR_ABS_3_TMID_WERT", STAT_HIS_EFF_CURR_ABS_3_TMID_WERT, "\"min\"");
 
     unsigned long STAT_HIS_EFF_CURR_ABS_4_TMID_WERT = (RXBUF_UINT32(44));
-        // With 5 <= T <25 (40 SP01): Duration in minutes of the relative value of Irms_abs / Irms_dch_lim when loading
-        // and unloading in the class: 140 <Irel_abs / Bei 5 <= T < 25 (40 SP01): Dauer in Minuten des Relativwerts von
+        // If 5 <= T <25 (40 SP01): Duration in minutes of the relative value of Irms_abs / Irms_dch_lim when loading and
+        // unloading in the class: 140 <Irel_abs / Bei 5 <= T < 25 (40 SP01): Dauer in Minuten des Relativwerts von
         // Irms_abs/Irms_dch_lim beim Laden und Entladen in der Klasse: 140 < Irel_abs
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "HIS_EFF_STROM_TMID", "STAT_HIS_EFF_CURR_ABS_4_TMID_WERT", STAT_HIS_EFF_CURR_ABS_4_TMID_WERT, "\"min\"");
 
@@ -8529,8 +8527,8 @@
     }
 
     unsigned long STAT_CHA_EFF_CURR_LIM_100_PERC_THIGH_WERT = (RXBUF_UINT32(0));
-        // ONLY SE03 !!! At 25 &lt;= T &lt;40: rms value of the current limit when loading to 100% life [Irms_cha (%
-        // 100)] &gt;&gt; This status output is no longer required and is set to zero. / NUR SE03!!! Bei 25 <= T< 40:
+        // ONLY SE03 !!! At 25 &lt;= T &lt;40: effective value of the current limit when loading to 100% life [Irms_cha
+        // (% 100)] &gt;&gt; This status output is no longer required and is set to zero. / NUR SE03!!! Bei 25 <= T< 40:
         // Effektivwert der Stromgrenze beim Laden auf 100% Leben [Irms_cha(%100)] >> Dieses Statusausgabe wird nicht
         // mehr benötigt und ist mit Null bedatet.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "HIS_EFF_STROM_THIGH", "STAT_CHA_EFF_CURR_LIM_100_PERC_THIGH_WERT", STAT_CHA_EFF_CURR_LIM_100_PERC_THIGH_WERT, "\"A\"");
@@ -8543,17 +8541,17 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "HIS_EFF_STROM_THIGH", "STAT_CHA_EFF_CURR_LIM_3_PERC_THIGH_WERT", STAT_CHA_EFF_CURR_LIM_3_PERC_THIGH_WERT, "\"A\"");
 
     unsigned long STAT_ABS_EFF_CURR_LIM_100_PERC_THIGH_WERT = (RXBUF_UINT32(8));
-        // ONLY SE03 !!! At 25 &lt;= T &lt;40: RMS value of the current limit when charging and discharging (absolute) to
-        // 100% life [Irms_abs (% 100)] &gt;&gt; This status output is no longer required and is set to zero. / NUR
+        // ONLY SE03 !!! At 25 &lt;= T &lt;40: RMS value of the current limit during charging and discharging (absolute)
+        // to 100% life [Irms_abs (% 100)] &gt;&gt; This status output is no longer required and is set to zero. / NUR
         // SE03!!! Bei 25 <= T< 40: Effektivwert der Stromgrenze beim Laden und Entladen (Absolut) auf 100% Leben
         // [Irms_abs(%100)] >> Dieses Statusausgabe wird nicht mehr benötigt und ist mit Null bedatet.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "HIS_EFF_STROM_THIGH", "STAT_ABS_EFF_CURR_LIM_100_PERC_THIGH_WERT", STAT_ABS_EFF_CURR_LIM_100_PERC_THIGH_WERT, "\"A\"");
 
     unsigned long STAT_ABS_EFF_CURR_LIM_3_PERC_THIGH_WERT = (RXBUF_UINT32(12));
-        // ONLY SE03 !!! At 25 &lt;= T &lt;40: rms value of the current limit during charging and discharging (absolute)
-        // to 3% life [Irms_abs (% 3)] &gt;&gt; This status output is no longer required and is set to zero. / NUR
-        // SE03!!! Bei 25 <= T< 40: Effektivwert der Stromgrenze beim Laden und Entladen (Absolut) auf 3% Leben
-        // [Irms_abs(%3)] >> Dieses Statusausgabe wird nicht mehr benötigt und ist mit Null bedatet.
+        // ONLY SE03 !!! At 25 &lt;= T &lt;40: RMS value of the current limit when charging and discharging (absolute) to
+        // 3% life [Irms_abs (% 3)] &gt;&gt; This status output is no longer required and is set to zero. / NUR SE03!!!
+        // Bei 25 <= T< 40: Effektivwert der Stromgrenze beim Laden und Entladen (Absolut) auf 3% Leben [Irms_abs(%3)] >>
+        // Dieses Statusausgabe wird nicht mehr benötigt und ist mit Null bedatet.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "HIS_EFF_STROM_THIGH", "STAT_ABS_EFF_CURR_LIM_3_PERC_THIGH_WERT", STAT_ABS_EFF_CURR_LIM_3_PERC_THIGH_WERT, "\"A\"");
 
     unsigned long STAT_HIS_EFF_CURR_CHG_1_THIGH_WERT = (RXBUF_UINT32(16));
@@ -8563,13 +8561,13 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "HIS_EFF_STROM_THIGH", "STAT_HIS_EFF_CURR_CHG_1_THIGH_WERT", STAT_HIS_EFF_CURR_CHG_1_THIGH_WERT, "\"min\"");
 
     unsigned long STAT_HIS_EFF_CURR_CHG_2_THIGH_WERT = (RXBUF_UINT32(20));
-        // ONLY SE03 !!! With 25 <= T <40: Duration in minutes of the relative value of Irms_cha / Irms_cha_lim when
+        // ONLY SE03 !!! If 25 <= T <40: Duration in minutes of the relative value of Irms_cha / Irms_cha_lim when
         // loading in the class: 70 <Irel_cha <= 100 / NUR SE03!!! Bei 25 <= T < 40: Dauer in Minuten des Relativwerts
         // von Irms_cha/Irms_cha_lim beim Laden in der Klasse: 70 < Irel_cha <= 100
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "HIS_EFF_STROM_THIGH", "STAT_HIS_EFF_CURR_CHG_2_THIGH_WERT", STAT_HIS_EFF_CURR_CHG_2_THIGH_WERT, "\"min\"");
 
     unsigned long STAT_HIS_EFF_CURR_CHG_3_THIGH_WERT = (RXBUF_UINT32(24));
-        // ONLY SE03 !!! If 25 <= T <40: Duration in minutes of the relative value of Irms_cha / Irms_cha_lim when
+        // ONLY SE03 !!! With 25 <= T <40: Duration in minutes of the relative value of Irms_cha / Irms_cha_lim when
         // loading in the class: 100 <Irel_cha <= 140 / NUR SE03!!! Bei 25 <= T < 40: Dauer in Minuten des Relativwerts
         // von Irms_cha/Irms_cha_lim beim Laden in der Klasse: 100 < Irel_cha <= 140
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "HIS_EFF_STROM_THIGH", "STAT_HIS_EFF_CURR_CHG_3_THIGH_WERT", STAT_HIS_EFF_CURR_CHG_3_THIGH_WERT, "\"min\"");
@@ -8599,7 +8597,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "HIS_EFF_STROM_THIGH", "STAT_HIS_EFF_CURR_ABS_3_THIGH_WERT", STAT_HIS_EFF_CURR_ABS_3_THIGH_WERT, "\"min\"");
 
     unsigned long STAT_HIS_EFF_CURR_ABS_4_THIGH_WERT = (RXBUF_UINT32(44));
-        // ONLY SE03 !!! With 25 <= T <40: Duration in minutes of the relative value of Irms_abs / Irms_dch_lim when
+        // ONLY SE03 !!! If 25 <= T <40: Duration in minutes of the relative value of Irms_abs / Irms_dch_lim when
         // loading and unloading in the class: 140 <Irel_abs / NUR SE03!!! Bei 25 <= T < 40: Dauer in Minuten des
         // Relativwerts von Irms_abs/Irms_dch_lim beim Laden und Entladen in der Klasse: 140 < Irel_abs
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "HIS_EFF_STROM_THIGH", "STAT_HIS_EFF_CURR_ABS_4_THIGH_WERT", STAT_HIS_EFF_CURR_ABS_4_THIGH_WERT, "\"min\"");
@@ -8629,10 +8627,10 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "HIS_EFF_STROM_TMAX", "STAT_CHA_EFF_CURR_LIM_3_PERC_TMAX_WERT", STAT_CHA_EFF_CURR_LIM_3_PERC_TMAX_WERT, "\"A\"");
 
     unsigned long STAT_ABS_EFF_CURR_LIM_100_PERC_TMAX_WERT = (RXBUF_UINT32(8));
-        // At 40 &lt;= T: rms value of the current limit during charging and discharging (absolute) to 100% life
-        // [Irms_abs (% 100)] &gt;&gt; This status output is no longer required and is set to zero. / Bei 40 <= T:
-        // Effektivwert der Stromgrenze beim Laden und Entladen (Absolut) auf 100% Leben [Irms_abs(%100)] >> Dieses
-        // Statusausgabe wird nicht mehr benötigt und ist mit Null bedatet.
+        // At 40 &lt;= T: RMS value of the current limit when charging and discharging (absolute) to 100% life [Irms_abs
+        // (% 100)] &gt;&gt; This status output is no longer required and is set to zero. / Bei 40 <= T: Effektivwert der
+        // Stromgrenze beim Laden und Entladen (Absolut) auf 100% Leben [Irms_abs(%100)] >> Dieses Statusausgabe wird
+        // nicht mehr benötigt und ist mit Null bedatet.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "HIS_EFF_STROM_TMAX", "STAT_ABS_EFF_CURR_LIM_100_PERC_TMAX_WERT", STAT_ABS_EFF_CURR_LIM_100_PERC_TMAX_WERT, "\"A\"");
 
     unsigned long STAT_ABS_EFF_CURR_LIM_3_PERC_TMAX_WERT = (RXBUF_UINT32(12));
@@ -8661,7 +8659,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "HIS_EFF_STROM_TMAX", "STAT_HIS_EFF_CURR_CHG_3_TMAX_WERT", STAT_HIS_EFF_CURR_CHG_3_TMAX_WERT, "\"min\"");
 
     unsigned long STAT_HIS_EFF_CURR_CHG_4_TMAX_WERT = (RXBUF_UINT32(28));
-        // With 40 <= T: Duration in minutes of the relative value of Irms_cha / Irms_cha_lim when loading in the class:
+        // At 40 <= T: Duration in minutes of the relative value of Irms_cha / Irms_cha_lim when loading in the class:
         // 140 <Irel_cha / Bei 40 <= T: Dauer in Minuten des Relativwerts von Irms_cha/Irms_cha_lim beim Laden in der
         // Klasse: 140 < Irel_cha
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "HIS_EFF_STROM_TMAX", "STAT_HIS_EFF_CURR_CHG_4_TMAX_WERT", STAT_HIS_EFF_CURR_CHG_4_TMAX_WERT, "\"min\"");
@@ -8708,7 +8706,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HIS_ERR_LIM_STROM_TMIN", "STAT_CHA_CURR_ERR_INT_LIM_TMIN_WERT", STAT_CHA_CURR_ERR_INT_LIM_TMIN_WERT, "\"As\"");
 
     float STAT_DCH_CURR_ERR_INT_LIM_TMIN_WERT = (RXBUF_UINT32(4)/100.0f);
-        // At T <= -10: threshold value of the error integral of the current during discharge [IerrIntLim_dch] / Bei T <=
+        // At T <= -10: threshold value of the error integral of the current when discharging [IerrIntLim_dch] / Bei T <=
         // -10: Schwellwert des Fehlerintegrals des Stroms beim Entladen [IerrIntLim_dch]
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HIS_ERR_LIM_STROM_TMIN", "STAT_DCH_CURR_ERR_INT_LIM_TMIN_WERT", STAT_DCH_CURR_ERR_INT_LIM_TMIN_WERT, "\"As\"");
 
@@ -8723,7 +8721,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "HIS_ERR_LIM_STROM_TMIN", "STAT_HIS_CHG_ERR_LIM_STROM_2_TMIN_WERT", STAT_HIS_CHG_ERR_LIM_STROM_2_TMIN_WERT, "\"min\"");
 
     unsigned long STAT_HIS_DCH_ERR_LIM_STROM_1_TMIN_WERT = (RXBUF_UINT32(16));
-        // With T <= -10: Duration in minutes when loading in the class: 0 <= IerrInt_dch <IerrIntLim_dch / Bei T <= -10:
+        // If T <= -10: Duration in minutes when loading in the class: 0 <= IerrInt_dch <IerrIntLim_dch / Bei T <= -10:
         // Dauer in Minuten beim  Laden in der  Klasse: 0 <= IerrInt_dch < IerrIntLim_dch
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "SME", "HIS_ERR_LIM_STROM_TMIN", "STAT_HIS_DCH_ERR_LIM_STROM_1_TMIN_WERT", STAT_HIS_DCH_ERR_LIM_STROM_1_TMIN_WERT, "\"min\"");
 
@@ -8787,12 +8785,12 @@
     }
 
     float STAT_CHA_CURR_ERR_INT_LIM_THIGH_WERT = (RXBUF_UINT32(0)/100.0f);
-        // If 5 <T <= 25: Threshold value of the error integral of the current during loading [IerrIntLim_cha] / Bei 5 <
-        // T <= 25: Schwellwert des Fehlerintegrals des Stroms beim Laden [IerrIntLim_cha]
+        // If 5 <T <= 25: Threshold value of the error integral of the current when loading [IerrIntLim_cha] / Bei 5 < T
+        // <= 25: Schwellwert des Fehlerintegrals des Stroms beim Laden [IerrIntLim_cha]
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HIS_ERR_LIM_STROM_THIGH", "STAT_CHA_CURR_ERR_INT_LIM_THIGH_WERT", STAT_CHA_CURR_ERR_INT_LIM_THIGH_WERT, "\"As\"");
 
     float STAT_DCH_CURR_ERR_INT_LIM_THIGH_WERT = (RXBUF_UINT32(4)/100.0f);
-        // If 5 <T <= 25: Threshold value of the error integral of the current during discharge [IerrIntLim_dch] / Bei 5
+        // If 5 <T <= 25: threshold value of the error integral of the current during discharge [IerrIntLim_dch] / Bei 5
         // < T <= 25: Schwellwert des Fehlerintegrals des Stroms beim Entladen [IerrIntLim_dch]
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HIS_ERR_LIM_STROM_THIGH", "STAT_DCH_CURR_ERR_INT_LIM_THIGH_WERT", STAT_DCH_CURR_ERR_INT_LIM_THIGH_WERT, "\"As\"");
 
@@ -9134,17 +9132,17 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "ZUSTAND_SPEICHER", "STAT_ZELLSPANNUNG_MEAN_WERT", STAT_ZELLSPANNUNG_MEAN_WERT, "\"V\"");
 
     float STAT_ZELLTEMPERATUR_MIN_WERT = (RXBUF_SINT(12)/100.0f);
-        // Output of the current minimum measured cell temperature of all cells in � C / Ausgabe der aktuellen minimalen
+        // Output of the current minimum measured cell temperature of all cells in ° C / Ausgabe der aktuellen minimalen
         // gemessenen Zelltemperatur aller Zellen in °C
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "ZUSTAND_SPEICHER", "STAT_ZELLTEMPERATUR_MIN_WERT", STAT_ZELLTEMPERATUR_MIN_WERT, "\"°C\"");
 
     float STAT_ZELLTEMPERATUR_MAX_WERT = (RXBUF_SINT(14)/100.0f);
-        // Output of the current maximum measured cell temperature of all cells in � C / Ausgabe der aktuellen maximalen
+        // Output of the current maximum measured cell temperature of all cells in ° C / Ausgabe der aktuellen maximalen
         // gemessenen Zelltemperatur aller Zellen in °C
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "ZUSTAND_SPEICHER", "STAT_ZELLTEMPERATUR_MAX_WERT", STAT_ZELLTEMPERATUR_MAX_WERT, "\"°C\"");
 
     float STAT_ZELLTEMPERATUR_MEAN_WERT = (RXBUF_SINT(16)/100.0f);
-        // Output of the current mean measured cell temperature of all cells in � C / Ausgabe der aktuellen mittleren
+        // Output of the current mean measured cell temperature of all cells in ° C / Ausgabe der aktuellen mittleren
         // gemessenen Zelltemperatur aller Zellen in °C
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "ZUSTAND_SPEICHER", "STAT_ZELLTEMPERATUR_MEAN_WERT", STAT_ZELLTEMPERATUR_MEAN_WERT, "\"°C\"");
 
@@ -9213,20 +9211,20 @@
     }
 
     float STAT_OVER_VOLT_INT_LIM_WERT = (RXBUF_UINT(0)/1000.0f);
-        // [UerrIntLim_over] Error threshold of the OVERVOLTAGE integral (at temperatures <-10 � C the error threshold
+        // [UerrIntLim_over] Error threshold of the OVERVOLTAGE integral (at temperatures <-10 ° C the error threshold
         // changes depending on the temperature.) / [UerrIntLim_over] Fehlerschwellwert des ÜBERspannungsintegrals (Bei
         // Temperaturen < -10°C verändert sich der Fehlerschellwert temperaturabhängig.) 
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HIS_ERR_LIM_SPANNUNG", "STAT_OVER_VOLT_INT_LIM_WERT", STAT_OVER_VOLT_INT_LIM_WERT, "");
 
     float STAT_UNDER_VOLT_INT_LIM_WERT = (RXBUF_UINT(2)/1000.0f);
-        // [UerrIntLim_under] Error threshold of the UNDERVOLTAGE integral (at temperatures <-10 � C, the error threshold
-        // changes depending on the temperature.) / [UerrIntLim_under] Fehlerschwellwert des UNTERspannungsintegrals (Bei
-        // Temperaturen < -10°C verändert sich der Fehlerschellwert temperaturabhängig.)
+        // [UerrIntLim_under] Error threshold value of the UNDERVOLTAGE integral (at temperatures <-10 ° C the error
+        // threshold value changes depending on the temperature.) / [UerrIntLim_under] Fehlerschwellwert des
+        // UNTERspannungsintegrals (Bei Temperaturen < -10°C verändert sich der Fehlerschellwert temperaturabhängig.)
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "HIS_ERR_LIM_SPANNUNG", "STAT_UNDER_VOLT_INT_LIM_WERT", STAT_UNDER_VOLT_INT_LIM_WERT, "");
 
     unsigned short STAT_HIS_ERR_LIM_SPANNUNG_MODSMAX_UNDER_1_WERT = (RXBUF_UINT(4));
-        // Maximum duration in minutes over all modules when loading in the class: 0 <UerrInt_under <= UerrIntLim_under /
-        // Maximum der Dauer in Minuten über alle Module beim  Laden in der  Klasse: 0 <UerrInt_under <=
+        // Maximum duration in minutes across all modules when loading in the class: 0 <UerrInt_under <= UerrIntLim_under
+        // / Maximum der Dauer in Minuten über alle Module beim  Laden in der  Klasse: 0 <UerrInt_under <=
         // UerrIntLim_under
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "SME", "HIS_ERR_LIM_SPANNUNG", "STAT_HIS_ERR_LIM_SPANNUNG_MODSMAX_UNDER_1_WERT", STAT_HIS_ERR_LIM_SPANNUNG_MODSMAX_UNDER_1_WERT, "\"min\"");
 
@@ -9241,7 +9239,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "SME", "HIS_ERR_LIM_SPANNUNG", "STAT_HIS_ERR_LIM_SPANNUNG_MODSMAX_OVER_1_WERT", STAT_HIS_ERR_LIM_SPANNUNG_MODSMAX_OVER_1_WERT, "\"min\"");
 
     unsigned short STAT_HIS_ERR_LIM_SPANNUNG_MODSMAX_OVER_2_WERT = (RXBUF_UINT(10));
-        // Maximum of the duration in minutes over all modules when loading in the class: UerrInt_over> UerrIntLim_over /
+        // Maximum duration in minutes across all modules when loading in the class: UerrInt_over> UerrIntLim_over /
         // Maximum der Dauer in Minuten über alle Module beim  Laden in der  Klasse: UerrInt_over > UerrIntLim_over
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "SME", "HIS_ERR_LIM_SPANNUNG", "STAT_HIS_ERR_LIM_SPANNUNG_MODSMAX_OVER_2_WERT", STAT_HIS_ERR_LIM_SPANNUNG_MODSMAX_OVER_2_WERT, "\"min\"");
 
@@ -9568,23 +9566,19 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "SME", "HVOFF_VOLTAGES", "STAT_HVOFF_VOLTAGES_STAT_SYM_RB1_4", STAT_HVOFF_VOLTAGES_STAT_SYM_RB1_4, "\"0/1\"");
 
     unsigned char STAT_HVOFF_VOLTAGES_INFO_SYM_RB1_1 = (RXBUF_UCHAR(61));
-        // Info about the number of cells in symmetry (n) / Info über die Anzahl in Symmetrierung befindlicher Zellen
-        // (n)
+        // Info about the number of cells in symmetry (n) / Info über die Anzahl in Symmetrierung befindlicher Zellen (n)
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "SME", "HVOFF_VOLTAGES", "STAT_HVOFF_VOLTAGES_INFO_SYM_RB1_1", STAT_HVOFF_VOLTAGES_INFO_SYM_RB1_1, "\"0-n\"");
 
     unsigned char STAT_HVOFF_VOLTAGES_INFO_SYM_RB1_2 = (RXBUF_UCHAR(62));
-        // Info about the number of cells in symmetry (n) / Info über die Anzahl in Symmetrierung befindlicher Zellen
-        // (n)
+        // Info about the number of cells in symmetry (n) / Info über die Anzahl in Symmetrierung befindlicher Zellen (n)
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "SME", "HVOFF_VOLTAGES", "STAT_HVOFF_VOLTAGES_INFO_SYM_RB1_2", STAT_HVOFF_VOLTAGES_INFO_SYM_RB1_2, "\"0-n\"");
 
     unsigned char STAT_HVOFF_VOLTAGES_INFO_SYM_RB1_3 = (RXBUF_UCHAR(63));
-        // Info about the number of cells in symmetry (n) / Info über die Anzahl in Symmetrierung befindlicher Zellen
-        // (n)
+        // Info about the number of cells in symmetry (n) / Info über die Anzahl in Symmetrierung befindlicher Zellen (n)
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "SME", "HVOFF_VOLTAGES", "STAT_HVOFF_VOLTAGES_INFO_SYM_RB1_3", STAT_HVOFF_VOLTAGES_INFO_SYM_RB1_3, "\"0-n\"");
 
     unsigned char STAT_HVOFF_VOLTAGES_INFO_SYM_RB1_4 = (RXBUF_UCHAR(64));
-        // Info about the number of cells in symmetry (n) / Info über die Anzahl in Symmetrierung befindlicher Zellen
-        // (n)
+        // Info about the number of cells in symmetry (n) / Info über die Anzahl in Symmetrierung befindlicher Zellen (n)
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "SME", "HVOFF_VOLTAGES", "STAT_HVOFF_VOLTAGES_INFO_SYM_RB1_4", STAT_HVOFF_VOLTAGES_INFO_SYM_RB1_4, "\"0-n\"");
 
     char STAT_HVOFF_VOLTAGES_T_CORE_AVG_RB1_1_WERT = (RXBUF_SCHAR(65));
@@ -9772,8 +9766,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "SME", "HVOFF_VOLTAGES", "STAT_HVOFF_VOLTAGES_T_CORE_AVG_RB2_4_WERT", STAT_HVOFF_VOLTAGES_T_CORE_AVG_RB2_4_WERT, "\"°C\"");
 
     unsigned char STAT_HVOFF_VOLTAGES_COUNTER_SCORE_WERT = (RXBUF_UCHAR(138));
-        // Counter for evaluating the voltage drop over the lifetime / Zähler zur Bewertung des Spannungsabfalls über
-        // die Lebenszeit
+        // Counter for evaluating the voltage drop over the lifetime / Zähler zur Bewertung des Spannungsabfalls über die
+        // Lebenszeit
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "SME", "HVOFF_VOLTAGES", "STAT_HVOFF_VOLTAGES_COUNTER_SCORE_WERT", STAT_HVOFF_VOLTAGES_COUNTER_SCORE_WERT, "");
 
     // ==========  Add your processing here ==========
@@ -9884,7 +9878,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "SME", "RB_SOH_KAPATEST_ERW", "STAT_TEMP_MEAN_DCH_END_TEST_3_WERT", STAT_TEMP_MEAN_DCH_END_TEST_3_WERT, "\"°C\"");
 
     unsigned char STAT_TEMP_MIN_DCH_END_TEST_3_WERT = (RXBUF_UCHAR(19));
-        // Minimum simulated temperature at HVS level at the end of discharge of the third capacity test / Minimale
+        // Minimum simulated temperature at HVS level at the end of the discharge of the third capacity test / Minimale
         // simulierte Temperatur auf HVS-Ebene bei Entladeende des dritten Kapazitätstests
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "SME", "RB_SOH_KAPATEST_ERW", "STAT_TEMP_MIN_DCH_END_TEST_3_WERT", STAT_TEMP_MIN_DCH_END_TEST_3_WERT, "\"°C\"");
 
@@ -9959,8 +9953,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "SME", "CPI_ANALYSE", "STAT_CPI_TEMP_UMGEBUNG_WERT", STAT_CPI_TEMP_UMGEBUNG_WERT, "\"°C\"");
 
     unsigned char STAT_CPI_FRT_AC = (RXBUF_UCHAR(12));
-        // Status of the interior air conditioning during the CPI diagnosis / Status der Innenraum-Klimatisierung
-        // während der CPI-Diagnose
+        // Status of the interior air conditioning during the CPI diagnosis / Status der Innenraum-Klimatisierung während
+        // der CPI-Diagnose
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "SME", "CPI_ANALYSE", "STAT_CPI_FRT_AC", STAT_CPI_FRT_AC, "\"0-n\"");
 
     unsigned long STAT_CPI_LIFE_TIME_WERT = (RXBUF_UINT32(13));
@@ -10005,8 +9999,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "SME", "KAPAZITAETSTEST_ASYMMETRIE_POTENTIAL", "STAT_KAPATEST_ASYM_MOD_ID_WERT", STAT_KAPATEST_ASYM_MOD_ID_WERT, "");
 
     float STAT_KAPATEST_ASYM_POT_WERT = (RXBUF_UINT(2)/10.0f);
-        // Capacity area that can potentially be made usable by balancing. / Kapazitätsbereich, der potenziell durch
-        // eine Symmetrierung nutzbar gemacht werden kann.
+        // Capacity area that can potentially be made usable by balancing. / Kapazitätsbereich, der potenziell durch eine
+        // Symmetrierung nutzbar gemacht werden kann.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "KAPAZITAETSTEST_ASYMMETRIE_POTENTIAL", "STAT_KAPATEST_ASYM_POT_WERT", STAT_KAPATEST_ASYM_POT_WERT, "\"%\"");
 
     // ==========  Add your processing here ==========

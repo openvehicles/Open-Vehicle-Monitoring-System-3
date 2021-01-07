@@ -8,10 +8,10 @@
 #define I3_ECU_EME_RX                                                0x061AF1
 
 #define I3_PID_EME_FS_LOESCHEN_PERMANENT                             0x1060
-        // Job to delete the permanent DTCs / Job zum LÃ¶schen der Permanent-DTCs
+        // Job to delete the permanent DTCs / Job zum Löschen der Permanent-DTCs
 
 #define I3_PID_EME_FEHLERSPEICHER_ENDE_WERKSABLAUF                   0x1061
-        // Deletion of individual errors and permanent DTCs prevented / LÃ¶schen von Einzelfehlern und Permanent-DTCs
+        // Deletion of individual errors and permanent DTCs prevented / Löschen von Einzelfehlern und Permanent-DTCs
         // unterbindet
 
     #define I3_RES_EME_STAT_FS_ENDE_WABL                             (RXBUF_UCHAR(0))
@@ -98,8 +98,8 @@
     #define I3_RES_EME_STAT_FRM_WHY_WERT                             (RXBUF_UINT32(41))
     #define I3_RES_EME_STAT_FRM_WHY_WERT_UNIT                        'HEX'
     #define I3_RES_EME_STAT_FRM_WHY_WERT_TYPE                        unsigned long
-        // FRM: Why word Attention: The value can only be interpreted in connection with the associated software version!
-        // / FRM: Why-Wort Achtung: Wert kann nur m Zusammenhang mit dem zugehÃ¶rigen Softwarestand interpretiert werden!
+        // FRM: Why word Attention: Value can only be interpreted in connection with the associated software version! /
+        // FRM: Why-Wort Achtung: Wert kann nur m Zusammenhang mit dem zugehörigen Softwarestand interpretiert werden!
 
     #define I3_RES_EME_STAT_FRM_EM2_WERT                             (RXBUF_UINT32(45))
     #define I3_RES_EME_STAT_FRM_EM2_WERT_UNIT                        'HEX'
@@ -155,7 +155,7 @@
         // DCDC converter: ACTUAL current LV side at the B + bolt / DCDC Wandler: IST-Strom LV-Seite am B+ Bolzen
 
 #define I3_PID_EME_EME_HVPM_DCDC_ANSTEUERUNG                         0xDE00
-        // Return values from the HVPM for DCDC control / RÃ¼ckgabewerte vom HVPM fÃ¼r DCDC Ansteuerung
+        // Return values from the HVPM for DCDC control / Rückgabewerte vom HVPM für DCDC Ansteuerung
 
     #define I3_RES_EME_STAT_SOC_HVB_WERT                             (RXBUF_UINT(0)*0.1f)
     #define I3_RES_EME_STAT_SOC_HVB_WERT_UNIT                        '%'
@@ -165,13 +165,12 @@
     #define I3_RES_EME_STAT_SOC_HVB_MIN_WERT                         (RXBUF_UCHAR(2)*0.5f)
     #define I3_RES_EME_STAT_SOC_HVB_MIN_WERT_UNIT                    '%'
     #define I3_RES_EME_STAT_SOC_HVB_MIN_WERT_TYPE                    float
-        // Startability limit, state of charge HV battery / StartfÃ¤higkeitsgrenze Ladezustand HV Batterie
+        // Startability limit, state of charge HV battery / Startfähigkeitsgrenze Ladezustand HV Batterie
 
     #define I3_RES_EME_STAT_LADEGERAET                               (RXBUF_UCHAR(3))
     #define I3_RES_EME_STAT_LADEGERAET_UNIT                          '0/1'
     #define I3_RES_EME_STAT_LADEGERAET_TYPE                          unsigned char
-        // Charger recognized (1 = recognized / 0 = not recognized) / LadegerÃ¤t erkannt (1 = erkannt / 0 = nicht
-        // erkannt)
+        // Charger recognized (1 = recognized / 0 = not recognized) / Ladegerät erkannt (1 = erkannt / 0 = nicht erkannt)
 
     #define I3_RES_EME_STAT_FREMDLADUNG                              (RXBUF_UCHAR(4))
     #define I3_RES_EME_STAT_FREMDLADUNG_UNIT                         '0/1'
@@ -254,7 +253,7 @@
     #define I3_RES_EME_STAT_HDCAC_EREQ                               (RXBUF_UCHAR(3))
     #define I3_RES_EME_STAT_HDCAC_EREQ_UNIT                          '0/1'
     #define I3_RES_EME_STAT_HDCAC_EREQ_TYPE                          unsigned char
-        // Request to close contactors HV battery / Anforderung SchlieÃen SchÃ¼tze HV-Batterie
+        // Request to close contactors HV battery / Anforderung Schließen Schütze HV-Batterie
 
     #define I3_RES_EME_STAT_I0ANF_HVB                                (RXBUF_UCHAR(4))
     #define I3_RES_EME_STAT_I0ANF_HVB_UNIT                           '0-n'
@@ -264,7 +263,7 @@
     #define I3_RES_EME_STAT_ANF_ENTL_ZK                              (RXBUF_UCHAR(5))
     #define I3_RES_EME_STAT_ANF_ENTL_ZK_UNIT                         '0/1'
     #define I3_RES_EME_STAT_ANF_ENTL_ZK_TYPE                         unsigned char
-        // Requirement for discharge of the HV intermediate circuit through a DCDC converter / Anforderung Entladung
+        // Requirement for discharge of the HV intermediate circuit through DCDC converter / Anforderung Entladung
         // HV-Zwischenkreis durch DCDC-Wandler
 
     #define I3_RES_EME_STAT_HVSTART_KOMM                             (RXBUF_UCHAR(6))
@@ -344,236 +343,236 @@
     #define I3_RES_EME_STAT_T_P_WUNSCH_ID_0_WERT                     (RXBUF_UINT(0))
     #define I3_RES_EME_STAT_T_P_WUNSCH_ID_0_WERT_UNIT                's'
     #define I3_RES_EME_STAT_T_P_WUNSCH_ID_0_WERT_TYPE                unsigned short
-        // Heat Up - Time during which the function was requested. / Heat Up - Zeit, wÃ¤hrend der Funktion angefordert
+        // Heat Up - Time during which the function was requested. / Heat Up - Zeit, während der Funktion angefordert
         // war.
 
     #define I3_RES_EME_STAT_T_P_WUNSCH_ID_1_WERT                     (RXBUF_UINT(2))
     #define I3_RES_EME_STAT_T_P_WUNSCH_ID_1_WERT_UNIT                's'
     #define I3_RES_EME_STAT_T_P_WUNSCH_ID_1_WERT_TYPE                unsigned short
-        // Electric heating - time during which the function was requested. / E-Heizen - Zeit, wÃ¤hrend der Funktion
+        // Electric heating - time during which the function was requested. / E-Heizen - Zeit, während der Funktion
         // angefordert war.
 
     #define I3_RES_EME_STAT_T_P_WUNSCH_ID_2_WERT                     (RXBUF_UINT(4))
     #define I3_RES_EME_STAT_T_P_WUNSCH_ID_2_WERT_UNIT                's'
     #define I3_RES_EME_STAT_T_P_WUNSCH_ID_2_WERT_TYPE                unsigned short
-        // Cool-Down - Time during which the function was requested. / Cool-Down - Zeit, wÃ¤hrend der Funktion
-        // angefordert war.
+        // Cool-Down - Time during which the function was requested. / Cool-Down - Zeit, während der Funktion angefordert
+        // war.
 
     #define I3_RES_EME_STAT_T_P_WUNSCH_ID_3_WERT                     (RXBUF_UINT(6))
     #define I3_RES_EME_STAT_T_P_WUNSCH_ID_3_WERT_UNIT                's'
     #define I3_RES_EME_STAT_T_P_WUNSCH_ID_3_WERT_TYPE                unsigned short
-        // Electric cooling - time during which the function was requested. / E-KÃ¼hlen - Zeit, wÃ¤hrend der Funktion
+        // Electric cooling - time during which the function was requested. / E-Kühlen - Zeit, während der Funktion
         // angefordert war.
 
     #define I3_RES_EME_STAT_T_P_WUNSCH_ID_4_WERT                     (RXBUF_UINT(8))
     #define I3_RES_EME_STAT_T_P_WUNSCH_ID_4_WERT_UNIT                's'
     #define I3_RES_EME_STAT_T_P_WUNSCH_ID_4_WERT_TYPE                unsigned short
-        // Fogging - time during which the function was requested. / Beschlag - Zeit, wÃ¤hrend der Funktion angefordert
+        // Fogging - time during which the function was requested. / Beschlag - Zeit, während der Funktion angefordert
         // war.
 
     #define I3_RES_EME_STAT_T_P_WUNSCH_ID_5_WERT                     (RXBUF_UINT(10))
     #define I3_RES_EME_STAT_T_P_WUNSCH_ID_5_WERT_UNIT                's'
     #define I3_RES_EME_STAT_T_P_WUNSCH_ID_5_WERT_TYPE                unsigned short
-        // Defrost - Time during which the function was requested. / Defrost - Zeit, wÃ¤hrend der Funktion angefordert
+        // Defrost - Time during which the function was requested. / Defrost - Zeit, während der Funktion angefordert
         // war.
 
     #define I3_RES_EME_STAT_T_P_WUNSCH_ID_6_WERT                     (RXBUF_UINT(12))
     #define I3_RES_EME_STAT_T_P_WUNSCH_ID_6_WERT_UNIT                's'
     #define I3_RES_EME_STAT_T_P_WUNSCH_ID_6_WERT_TYPE                unsigned short
-        // Battery cooling - time during which the function was requested. / Batterie KÃ¼hlung - Zeit, wÃ¤hrend der
+        // Battery cooling - time during which the function was requested. / Batterie Kühlung - Zeit, während der
         // Funktion angefordert war.
 
     #define I3_RES_EME_STAT_T_P_WUNSCH_ID_7_WERT                     (RXBUF_UINT(14))
     #define I3_RES_EME_STAT_T_P_WUNSCH_ID_7_WERT_UNIT                's'
     #define I3_RES_EME_STAT_T_P_WUNSCH_ID_7_WERT_TYPE                unsigned short
-        // Battery cooling urgent - time during which the function was requested. / Batterie KÃ¼hlung dringend - Zeit,
-        // wÃ¤hrend der Funktion angefordert war.
+        // Battery cooling urgent - time during which the function was requested. / Batterie Kühlung dringend - Zeit,
+        // während der Funktion angefordert war.
 
     #define I3_RES_EME_STAT_T_P_WUNSCH_ID_8_WERT                     (RXBUF_UINT(16))
     #define I3_RES_EME_STAT_T_P_WUNSCH_ID_8_WERT_UNIT                's'
     #define I3_RES_EME_STAT_T_P_WUNSCH_ID_8_WERT_TYPE                unsigned short
-        // Battery heating - time during which the function was requested. / Batterieheizung - Zeit, wÃ¤hrend der
-        // Funktion angefordert war.
+        // Battery heating - time during which the function was requested. / Batterieheizung - Zeit, während der Funktion
+        // angefordert war.
 
     #define I3_RES_EME_STAT_T_P_WUNSCH_ID_9_WERT                     (RXBUF_UINT(18))
     #define I3_RES_EME_STAT_T_P_WUNSCH_ID_9_WERT_UNIT                's'
     #define I3_RES_EME_STAT_T_P_WUNSCH_ID_9_WERT_TYPE                unsigned short
-        // DC / DC converter - time during which the function was requested. / DC/DC-Wandler - Zeit, wÃ¤hrend der
-        // Funktion angefordert war.
+        // DC / DC converter - time during which the function was requested. / DC/DC-Wandler - Zeit, während der Funktion
+        // angefordert war.
 
     #define I3_RES_EME_STAT_T_P_WUNSCH_ID_10_WERT                    (RXBUF_UINT(20))
     #define I3_RES_EME_STAT_T_P_WUNSCH_ID_10_WERT_UNIT               's'
     #define I3_RES_EME_STAT_T_P_WUNSCH_ID_10_WERT_TYPE               unsigned short
-        // Drive 1 - Time during which the function was requested. / Antrieb 1 - Zeit, wÃ¤hrend der Funktion angefordert
+        // Drive 1 - Time during which the function was requested. / Antrieb 1 - Zeit, während der Funktion angefordert
         // war.
 
     #define I3_RES_EME_STAT_T_P_WUNSCH_ID_11_WERT                    (RXBUF_UINT(22))
     #define I3_RES_EME_STAT_T_P_WUNSCH_ID_11_WERT_UNIT               's'
     #define I3_RES_EME_STAT_T_P_WUNSCH_ID_11_WERT_TYPE               unsigned short
-        // Drive 2 - Time during which the function was requested. / Antrieb 2 - Zeit, wÃ¤hrend der Funktion angefordert
+        // Drive 2 - Time during which the function was requested. / Antrieb 2 - Zeit, während der Funktion angefordert
         // war.
 
     #define I3_RES_EME_STAT_T_P_WUNSCH_ID_12_WERT                    (RXBUF_UINT(24))
     #define I3_RES_EME_STAT_T_P_WUNSCH_ID_12_WERT_UNIT               's'
     #define I3_RES_EME_STAT_T_P_WUNSCH_ID_12_WERT_TYPE               unsigned short
-        // Drive 3 - Time during which the function was requested. / Antrieb 3 - Zeit, wÃ¤hrend der Funktion angefordert
+        // Drive 3 - Time during which the function was requested. / Antrieb 3 - Zeit, während der Funktion angefordert
         // war.
 
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE1_ID_0_WERT         (RXBUF_UINT(26))
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE1_ID_0_WERT_UNIT    's'
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE1_ID_0_WERT_TYPE    unsigned short
-        // Heat Up - Time during which the function was not fully enabled, SOC area 1. / Heat Up - Zeit, wÃ¤hrend der
-        // Funktion nicht vollstÃ¤ndig freigegeben war, SOC-Bereich 1.
+        // Heat Up - Time during which the function was not fully enabled, SOC area 1. / Heat Up - Zeit, während der
+        // Funktion nicht vollständig freigegeben war, SOC-Bereich 1.
 
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE1_ID_1_WERT         (RXBUF_UINT(28))
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE1_ID_1_WERT_UNIT    's'
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE1_ID_1_WERT_TYPE    unsigned short
         // Electric heating - time during which the function was not fully enabled, SOC area 1. / E-Heizen - Zeit,
-        // wÃ¤hrend der Funktion nicht vollstÃ¤ndig freigegeben war, SOC-Bereich 1.
+        // während der Funktion nicht vollständig freigegeben war, SOC-Bereich 1.
 
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE1_ID_2_WERT         (RXBUF_UINT(30))
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE1_ID_2_WERT_UNIT    's'
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE1_ID_2_WERT_TYPE    unsigned short
-        // Cool-Down - Time during which the function was not fully enabled, SOC area 1. / Cool-Down - Zeit, wÃ¤hrend der
-        // Funktion nicht vollstÃ¤ndig freigegeben war, SOC-Bereich 1.
+        // Cool-Down - Time during which the function was not fully enabled, SOC area 1. / Cool-Down - Zeit, während der
+        // Funktion nicht vollständig freigegeben war, SOC-Bereich 1.
 
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE1_ID_3_WERT         (RXBUF_UINT(32))
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE1_ID_3_WERT_UNIT    's'
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE1_ID_3_WERT_TYPE    unsigned short
-        // Electric cooling - time during which the function was not fully enabled, SOC area 1. / E-KÃ¼hlen - Zeit,
-        // wÃ¤hrend der Funktion nicht vollstÃ¤ndig freigegeben war, SOC-Bereich 1.
+        // Electric cooling - time during which the function was not fully enabled, SOC area 1. / E-Kühlen - Zeit,
+        // während der Funktion nicht vollständig freigegeben war, SOC-Bereich 1.
 
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE1_ID_4_WERT         (RXBUF_UINT(34))
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE1_ID_4_WERT_UNIT    's'
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE1_ID_4_WERT_TYPE    unsigned short
-        // Fogging - time during which the function was not fully enabled, SOC area 1. / Beschlag - Zeit, wÃ¤hrend der
-        // Funktion nicht vollstÃ¤ndig freigegeben war, SOC-Bereich 1.
+        // Fogging - time during which the function was not fully enabled, SOC area 1. / Beschlag - Zeit, während der
+        // Funktion nicht vollständig freigegeben war, SOC-Bereich 1.
 
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE1_ID_5_WERT         (RXBUF_UINT(36))
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE1_ID_5_WERT_UNIT    's'
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE1_ID_5_WERT_TYPE    unsigned short
-        // Defrost - time during which the function was not fully enabled, SOC area 1. / Defrost - Zeit, wÃ¤hrend der
-        // Funktion nicht vollstÃ¤ndig freigegeben war, SOC-Bereich 1.
+        // Defrost - time during which the function was not fully enabled, SOC area 1. / Defrost - Zeit, während der
+        // Funktion nicht vollständig freigegeben war, SOC-Bereich 1.
 
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE1_ID_6_WERT         (RXBUF_UINT(38))
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE1_ID_6_WERT_UNIT    's'
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE1_ID_6_WERT_TYPE    unsigned short
-        // Battery cooling - time during which the function was not fully enabled, SOC area 1. / Batterie KÃ¼hlung -
-        // Zeit, wÃ¤hrend der Funktion nicht vollstÃ¤ndig freigegeben war, SOC-Bereich 1.
+        // Battery cooling - time during which the function was not fully enabled, SOC area 1. / Batterie Kühlung - Zeit,
+        // während der Funktion nicht vollständig freigegeben war, SOC-Bereich 1.
 
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE1_ID_7_WERT         (RXBUF_UINT(40))
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE1_ID_7_WERT_UNIT    's'
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE1_ID_7_WERT_TYPE    unsigned short
-        // Battery cooling urgent - time during which the function was not fully enabled, SOC area 1. / Batterie KÃ¼hlung
-        // dringend - Zeit, wÃ¤hrend der Funktion nicht vollstÃ¤ndig freigegeben war, SOC-Bereich 1.
+        // Battery cooling urgent - time during which the function was not fully enabled, SOC area 1. / Batterie Kühlung
+        // dringend - Zeit, während der Funktion nicht vollständig freigegeben war, SOC-Bereich 1.
 
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE1_ID_8_WERT         (RXBUF_UINT(42))
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE1_ID_8_WERT_UNIT    's'
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE1_ID_8_WERT_TYPE    unsigned short
         // Battery heating - time during which the function was not fully enabled, SOC area 1. / Batterieheizung - Zeit,
-        // wÃ¤hrend der Funktion nicht vollstÃ¤ndig freigegeben war, SOC-Bereich 1.
+        // während der Funktion nicht vollständig freigegeben war, SOC-Bereich 1.
 
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE1_ID_9_WERT         (RXBUF_UINT(44))
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE1_ID_9_WERT_UNIT    's'
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE1_ID_9_WERT_TYPE    unsigned short
         // DC / DC converter - time during which the function was not fully enabled, SOC area 1. / DC/DC-Wandler - Zeit,
-        // wÃ¤hrend der Funktion nicht vollstÃ¤ndig freigegeben war, SOC-Bereich 1.
+        // während der Funktion nicht vollständig freigegeben war, SOC-Bereich 1.
 
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE1_ID_10_WERT        (RXBUF_UINT(46))
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE1_ID_10_WERT_UNIT   's'
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE1_ID_10_WERT_TYPE   unsigned short
-        // Drive 1 - Time during which the function was not fully enabled, SOC area 1. / Antrieb 1 - Zeit, wÃ¤hrend der
-        // Funktion nicht vollstÃ¤ndig freigegeben war, SOC-Bereich 1.
+        // Drive 1 - Time during which the function was not fully enabled, SOC area 1. / Antrieb 1 - Zeit, während der
+        // Funktion nicht vollständig freigegeben war, SOC-Bereich 1.
 
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE1_ID_11_WERT        (RXBUF_UINT(48))
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE1_ID_11_WERT_UNIT   's'
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE1_ID_11_WERT_TYPE   unsigned short
-        // Drive 2 - Time during which the function was not fully enabled, SOC area 1. / Antrieb 2 - Zeit, wÃ¤hrend der
-        // Funktion nicht vollstÃ¤ndig freigegeben war, SOC-Bereich 1.
+        // Drive 2 - Time during which the function was not fully enabled, SOC area 1. / Antrieb 2 - Zeit, während der
+        // Funktion nicht vollständig freigegeben war, SOC-Bereich 1.
 
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE1_ID_12_WERT        (RXBUF_UINT(50))
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE1_ID_12_WERT_UNIT   's'
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE1_ID_12_WERT_TYPE   unsigned short
-        // Drive 3 - Time during which the function was not fully enabled, SOC area 1. / Antrieb 3 - Zeit, wÃ¤hrend der
-        // Funktion nicht vollstÃ¤ndig freigegeben war, SOC-Bereich 1.
+        // Drive 3 - Time during which the function was not fully enabled, SOC area 1. / Antrieb 3 - Zeit, während der
+        // Funktion nicht vollständig freigegeben war, SOC-Bereich 1.
 
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE2_ID_0_WERT         (RXBUF_UINT(52))
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE2_ID_0_WERT_UNIT    's'
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE2_ID_0_WERT_TYPE    unsigned short
-        // Heat Up - Time during which the function was not fully enabled, SOC area 2. / Heat Up - Zeit, wÃ¤hrend der
-        // Funktion nicht vollstÃ¤ndig freigegeben war, SOC-Bereich 2.
+        // Heat Up - Time during which the function was not fully enabled, SOC area 2. / Heat Up - Zeit, während der
+        // Funktion nicht vollständig freigegeben war, SOC-Bereich 2.
 
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE2_ID_1_WERT         (RXBUF_UINT(54))
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE2_ID_1_WERT_UNIT    's'
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE2_ID_1_WERT_TYPE    unsigned short
         // Electric heating - time during which the function was not fully enabled, SOC area 2. / E-Heizen - Zeit,
-        // wÃ¤hrend der Funktion nicht vollstÃ¤ndig freigegeben war, SOC-Bereich 2.
+        // während der Funktion nicht vollständig freigegeben war, SOC-Bereich 2.
 
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE2_ID_2_WERT         (RXBUF_UINT(56))
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE2_ID_2_WERT_UNIT    's'
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE2_ID_2_WERT_TYPE    unsigned short
-        // Cool-Down - Time during which the function was not fully enabled, SOC area 2. / Cool-Down - Zeit, wÃ¤hrend der
-        // Funktion nicht vollstÃ¤ndig freigegeben war, SOC-Bereich 2.
+        // Cool-Down - Time during which the function was not fully enabled, SOC area 2. / Cool-Down - Zeit, während der
+        // Funktion nicht vollständig freigegeben war, SOC-Bereich 2.
 
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE2_ID_3_WERT         (RXBUF_UINT(58))
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE2_ID_3_WERT_UNIT    's'
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE2_ID_3_WERT_TYPE    unsigned short
-        // Electric cooling - time during which the function was not fully enabled, SOC area 2. / E-KÃ¼hlen - Zeit,
-        // wÃ¤hrend der Funktion nicht vollstÃ¤ndig freigegeben war, SOC-Bereich 2.
+        // Electric cooling - time during which the function was not fully enabled, SOC area 2. / E-Kühlen - Zeit,
+        // während der Funktion nicht vollständig freigegeben war, SOC-Bereich 2.
 
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE2_ID_4_WERT         (RXBUF_UINT(60))
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE2_ID_4_WERT_UNIT    's'
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE2_ID_4_WERT_TYPE    unsigned short
-        // Fogging - time during which the function was not fully enabled, SOC area 2. / Beschlag - Zeit, wÃ¤hrend der
-        // Funktion nicht vollstÃ¤ndig freigegeben war, SOC-Bereich 2.
+        // Fogging - time during which the function was not fully enabled, SOC area 2. / Beschlag - Zeit, während der
+        // Funktion nicht vollständig freigegeben war, SOC-Bereich 2.
 
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE2_ID_5_WERT         (RXBUF_UINT(62))
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE2_ID_5_WERT_UNIT    's'
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE2_ID_5_WERT_TYPE    unsigned short
-        // Defrost - time during which the function was not fully enabled, SOC area 2. / Defrost - Zeit, wÃ¤hrend der
-        // Funktion nicht vollstÃ¤ndig freigegeben war, SOC-Bereich 2.
+        // Defrost - time during which the function was not fully enabled, SOC area 2. / Defrost - Zeit, während der
+        // Funktion nicht vollständig freigegeben war, SOC-Bereich 2.
 
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE2_ID_6_WERT         (RXBUF_UINT(64))
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE2_ID_6_WERT_UNIT    's'
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE2_ID_6_WERT_TYPE    unsigned short
-        // Battery cooling - time during which the function was not fully enabled, SOC area 2. / Batterie KÃ¼hlung -
-        // Zeit, wÃ¤hrend der Funktion nicht vollstÃ¤ndig freigegeben war, SOC-Bereich 2.
+        // Battery cooling - time during which the function was not fully enabled, SOC area 2. / Batterie Kühlung - Zeit,
+        // während der Funktion nicht vollständig freigegeben war, SOC-Bereich 2.
 
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE2_ID_7_WERT         (RXBUF_UINT(66))
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE2_ID_7_WERT_UNIT    's'
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE2_ID_7_WERT_TYPE    unsigned short
-        // Battery cooling urgent - time during which the function was not fully enabled, SOC area 2. / Batterie KÃ¼hlung
-        // dringend - Zeit, wÃ¤hrend der Funktion nicht vollstÃ¤ndig freigegeben war, SOC-Bereich 2.
+        // Battery cooling urgent - time during which the function was not fully enabled, SOC area 2. / Batterie Kühlung
+        // dringend - Zeit, während der Funktion nicht vollständig freigegeben war, SOC-Bereich 2.
 
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE2_ID_8_WERT         (RXBUF_UINT(68))
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE2_ID_8_WERT_UNIT    's'
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE2_ID_8_WERT_TYPE    unsigned short
         // Battery heating - time during which the function was not fully enabled, SOC area 2. / Batterieheizung - Zeit,
-        // wÃ¤hrend der Funktion nicht vollstÃ¤ndig freigegeben war, SOC-Bereich 2.
+        // während der Funktion nicht vollständig freigegeben war, SOC-Bereich 2.
 
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE2_ID_9_WERT         (RXBUF_UINT(70))
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE2_ID_9_WERT_UNIT    's'
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE2_ID_9_WERT_TYPE    unsigned short
         // DC / DC converter - time during which the function was not fully enabled, SOC area 2. / DC/DC-Wandler - Zeit,
-        // wÃ¤hrend der Funktion nicht vollstÃ¤ndig freigegeben war, SOC-Bereich 2.
+        // während der Funktion nicht vollständig freigegeben war, SOC-Bereich 2.
 
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE2_ID_10_WERT        (RXBUF_UINT(72))
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE2_ID_10_WERT_UNIT   's'
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE2_ID_10_WERT_TYPE   unsigned short
-        // Drive 1 - Time during which the function was not fully enabled, SOC area 2. / Antrieb 1 - Zeit, wÃ¤hrend der
-        // Funktion nicht vollstÃ¤ndig freigegeben war, SOC-Bereich 2.
+        // Drive 1 - Time during which the function was not fully enabled, SOC area 2. / Antrieb 1 - Zeit, während der
+        // Funktion nicht vollständig freigegeben war, SOC-Bereich 2.
 
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE2_ID_11_WERT        (RXBUF_UINT(74))
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE2_ID_11_WERT_UNIT   's'
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE2_ID_11_WERT_TYPE   unsigned short
-        // Drive 2 - Time during which the function was not fully enabled, SOC area 2. / Antrieb 2 - Zeit, wÃ¤hrend der
-        // Funktion nicht vollstÃ¤ndig freigegeben war, SOC-Bereich 2.
+        // Drive 2 - Time during which the function was not fully enabled, SOC area 2. / Antrieb 2 - Zeit, während der
+        // Funktion nicht vollständig freigegeben war, SOC-Bereich 2.
 
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE2_ID_12_WERT        (RXBUF_UINT(76))
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE2_ID_12_WERT_UNIT   's'
     #define I3_RES_EME_STAT_T_P_SOLL_WUNSCH_RANGE2_ID_12_WERT_TYPE   unsigned short
-        // Drive 3 - Time during which the function was not fully enabled, SOC area 2. / Antrieb 3 - Zeit, wÃ¤hrend der
-        // Funktion nicht vollstÃ¤ndig freigegeben war, SOC-Bereich 2.
+        // Drive 3 - Time during which the function was not fully enabled, SOC area 2. / Antrieb 3 - Zeit, während der
+        // Funktion nicht vollständig freigegeben war, SOC-Bereich 2.
 
     #define I3_RES_EME_STAT_P_HVPM_DCDC_MITTEL_30MIN_0_WERT          (RXBUF_UINT(78))
     #define I3_RES_EME_STAT_P_HVPM_DCDC_MITTEL_30MIN_0_WERT_UNIT     'W'
@@ -762,27 +761,27 @@
         // Error status EM / Fehler Status EM
 
     #define I3_RES_EME_STAT_AVL_TEMP_MOT_TRCT_WERT                   (RXBUF_UCHAR(2)-48.0)
-    #define I3_RES_EME_STAT_AVL_TEMP_MOT_TRCT_WERT_UNIT              'Â°C'
+    #define I3_RES_EME_STAT_AVL_TEMP_MOT_TRCT_WERT_UNIT              '°C'
     #define I3_RES_EME_STAT_AVL_TEMP_MOT_TRCT_WERT_TYPE              unsigned char
         // NTC temperature EM calculated / NTC Temperatur EM gerechnet
 
     #define I3_RES_EME_STAT_T_EM2TMODROT_WERT                        (RXBUF_SINT(3))
-    #define I3_RES_EME_STAT_T_EM2TMODROT_WERT_UNIT                   'Â°C'
+    #define I3_RES_EME_STAT_T_EM2TMODROT_WERT_UNIT                   '°C'
     #define I3_RES_EME_STAT_T_EM2TMODROT_WERT_TYPE                   short
         // Rotor temperature calculated / Rotor Temperatur gerechnet
 
     #define I3_RES_EME_STAT_AVL_COL_TEMP_ENGMG_EL_WERT               (RXBUF_UCHAR(5)-48.0)
-    #define I3_RES_EME_STAT_AVL_COL_TEMP_ENGMG_EL_WERT_UNIT          'Â°C'
+    #define I3_RES_EME_STAT_AVL_COL_TEMP_ENGMG_EL_WERT_UNIT          '°C'
     #define I3_RES_EME_STAT_AVL_COL_TEMP_ENGMG_EL_WERT_TYPE          unsigned char
-        // Coolant temperature input calculated / KÃ¼hlmittel Temperatur Eingang gerechnet
+        // Coolant temperature input calculated / Kühlmittel Temperatur Eingang gerechnet
 
     #define I3_RES_EME_STAT_TMOD_V_T_LE2_COOLANT_EXIT_EST_WERT       (RXBUF_SCHAR(6))
-    #define I3_RES_EME_STAT_TMOD_V_T_LE2_COOLANT_EXIT_EST_WERT_UNIT  'Â°C'
+    #define I3_RES_EME_STAT_TMOD_V_T_LE2_COOLANT_EXIT_EST_WERT_UNIT  '°C'
     #define I3_RES_EME_STAT_TMOD_V_T_LE2_COOLANT_EXIT_EST_WERT_TYPE  char
-        // Coolant temperature output calculated / KÃ¼hlmittel Temperatur Ausgang gerechnet
+        // Coolant temperature output calculated / Kühlmittel Temperatur Ausgang gerechnet
 
     #define I3_RES_EME_STAT_AVL_TEMP_INVE_IGBT_MAX_WERT              (RXBUF_UCHAR(7))
-    #define I3_RES_EME_STAT_AVL_TEMP_INVE_IGBT_MAX_WERT_UNIT         'Â°C'
+    #define I3_RES_EME_STAT_AVL_TEMP_INVE_IGBT_MAX_WERT_UNIT         '°C'
     #define I3_RES_EME_STAT_AVL_TEMP_INVE_IGBT_MAX_WERT_TYPE         unsigned char
         // Temperature diode / Temperatur Diode
 
@@ -900,14 +899,14 @@
     #define I3_RES_EME_STAT_V_LIM_TQP_MD_EM2_GEN_MAX_WERT            (RXBUF_UINT(26))
     #define I3_RES_EME_STAT_V_LIM_TQP_MD_EM2_GEN_MAX_WERT_UNIT       'Nm'
     #define I3_RES_EME_STAT_V_LIM_TQP_MD_EM2_GEN_MAX_WERT_TYPE       unsigned short
-        // Maximum regenerative moment that the system consisting of LE + EM could provide for the next second /
-        // Maximales generatorisches Moment, welches das System aus LE + EM fÃ¼r die naechste Sekunde stellen koennte
+        // Maximum regenerative moment that the LE + EM system could provide for the next second / Maximales
+        // generatorisches Moment, welches das System aus LE + EM für die naechste Sekunde stellen koennte
 
     #define I3_RES_EME_STAT_V_LIM_TQP_MD_EM2_MOT_MAX_WERT            (RXBUF_UINT(28))
     #define I3_RES_EME_STAT_V_LIM_TQP_MD_EM2_MOT_MAX_WERT_UNIT       'Nm'
     #define I3_RES_EME_STAT_V_LIM_TQP_MD_EM2_MOT_MAX_WERT_TYPE       unsigned short
         // Maximum motor moment that the system of LE + EM could provide for the next second / Maximales motorisches
-        // Moment, welches das System aus LE + EM fÃ¼r die naechste Sekunde stellen koennte
+        // Moment, welches das System aus LE + EM für die naechste Sekunde stellen koennte
 
     #define I3_RES_EME_STAT_V_U_INVEM2_UQ_WERT                       (RXBUF_SINT(30))
     #define I3_RES_EME_STAT_V_U_INVEM2_UQ_WERT_UNIT                  'V'
@@ -960,12 +959,12 @@
         // Resolver offset Fusi / Resolveroffset Fusi
 
     // BF_STAT_V_ST_RLS_FUSI_MC0 is a BITFIELD of size unsigned char.  We don't yet generate definitions for each bit, we treat as the host data type
-        // Status resolverdiag for Fusi / Status Resolverdiag fÃ¼r Fusi
+        // Status resolverdiag for Fusi / Status Resolverdiag für Fusi
             // STAT_V_ST_RLS_FUSI_MC0_BIT0: Mask: 0x01 - Resolver not OK
     #define I3_RES_EME_BF_STAT_V_ST_RLS_FUSI_MC0                     (RXBUF_UCHAR(47))
     #define I3_RES_EME_BF_STAT_V_ST_RLS_FUSI_MC0_UNIT                'Bit'
     #define I3_RES_EME_BF_STAT_V_ST_RLS_FUSI_MC0_TYPE                unsigned char
-        // Status resolverdiag for Fusi / Status Resolverdiag fÃ¼r Fusi
+        // Status resolverdiag for Fusi / Status Resolverdiag für Fusi
 
     #define I3_RES_EME_STAT_V_I_INV1_U_RMS_WERT                      (RXBUF_SINT(48))
     #define I3_RES_EME_STAT_V_I_INV1_U_RMS_WERT_UNIT                 'A'
@@ -988,7 +987,7 @@
 
 #define I3_PID_EME_AE_LSC_LADEN_2                                    0xDE6E
         // Last State Call Load (Extended) Feedback on the charging process / Last State Call Laden (Erweitert)
-        // RÃ¼ckmeldung zum Ladeverfahren
+        // Rückmeldung zum Ladeverfahren
 
     #define I3_RES_EME_STAT_LADEMODUS                                (RXBUF_UCHAR(0))
     #define I3_RES_EME_STAT_LADEMODUS_UNIT                           '0-n'
@@ -1047,12 +1046,12 @@
 
     #define I3_RES_EME_STAT_HV_BATTERY_SIZE_WERT                     (RXBUF_UINT(9))
     #define I3_RES_EME_STAT_HV_BATTERY_SIZE_WERT_TYPE                unsigned short
-        // Maximum memory size / Maximale SpeichergrÃ¶Ãe
+        // Maximum memory size / Maximale Speichergröße
 
     #define I3_RES_EME_STAT_ENERGIEDELTA_VOLL_WERT                   (RXBUF_UINT(11)*0.02f)
     #define I3_RES_EME_STAT_ENERGIEDELTA_VOLL_WERT_UNIT              'kWh'
     #define I3_RES_EME_STAT_ENERGIEDELTA_VOLL_WERT_TYPE              float
-        // Energy required to fully charge / Zum Volladen benÃ¶tigte Energie
+        // Energy required to fully charge / Zum Volladen benötigte Energie
 
     #define I3_RES_EME_STAT_LADEENDE_URSACHE                         (RXBUF_UCHAR(13))
     #define I3_RES_EME_STAT_LADEENDE_URSACHE_UNIT                    '0-n'
@@ -1072,105 +1071,105 @@
     #define I3_RES_EME_STAT_BEGINN_FENSTER_STD_WERT                  (RXBUF_UCHAR(16))
     #define I3_RES_EME_STAT_BEGINN_FENSTER_STD_WERT_UNIT             'h'
     #define I3_RES_EME_STAT_BEGINN_FENSTER_STD_WERT_TYPE             unsigned char
-        // Only with AC charging: Start of the favorable charging window (hours) / Nur bei AC-Laden: Beginn des
-        // gÃ¼nstigen Ladefensters (Stunden)
+        // Only with AC charging: Start of the favorable charging window (hours) / Nur bei AC-Laden: Beginn des günstigen
+        // Ladefensters (Stunden)
 
     #define I3_RES_EME_STAT_BEGINN_FENSTER_MIN_WERT                  (RXBUF_UCHAR(17))
     #define I3_RES_EME_STAT_BEGINN_FENSTER_MIN_WERT_UNIT             'min'
     #define I3_RES_EME_STAT_BEGINN_FENSTER_MIN_WERT_TYPE             unsigned char
         // Only with AC charging: Start of the favorable charging window (minutes) / Nur bei AC-Laden: Beginn des
-        // gÃ¼nstigen Ladefensters (Minuten)
+        // günstigen Ladefensters (Minuten)
 
     #define I3_RES_EME_STAT_ENDE_FENSTER_STD_WERT                    (RXBUF_UCHAR(18))
     #define I3_RES_EME_STAT_ENDE_FENSTER_STD_WERT_UNIT               'h'
     #define I3_RES_EME_STAT_ENDE_FENSTER_STD_WERT_TYPE               unsigned char
-        // Only with AC charging: End of the favorable charging window (hours) / Nur bei AC-Laden: Ende des gÃ¼nstigen
+        // Only with AC charging: End of the favorable charging window (hours) / Nur bei AC-Laden: Ende des günstigen
         // Ladefensters (Stunden)
 
     #define I3_RES_EME_STAT_ENDE_FENSTER_MIN_WERT                    (RXBUF_UCHAR(19))
     #define I3_RES_EME_STAT_ENDE_FENSTER_MIN_WERT_UNIT               'min'
     #define I3_RES_EME_STAT_ENDE_FENSTER_MIN_WERT_TYPE               unsigned char
-        // Only with AC charging: End of the favorable charging window (minutes) / Nur bei AC-Laden: Ende des gÃ¼nstigen
+        // Only with AC charging: End of the favorable charging window (minutes) / Nur bei AC-Laden: Ende des günstigen
         // Ladefensters (Minuten)
 
     #define I3_RES_EME_STAT_LADEFENSTER1_AUSWAHL_NR                  (RXBUF_UCHAR(20))
     #define I3_RES_EME_STAT_LADEFENSTER1_AUSWAHL_NR_UNIT             '0-n'
     #define I3_RES_EME_STAT_LADEFENSTER1_AUSWAHL_NR_TYPE             unsigned char
         // Only with AC charging, two-time alarm clock: selection of the favorable charging window / Nur bei AC-Laden,
-        // Zwei Zeit Wecker: Auswahl des gÃ¼nstigen Ladefensters
+        // Zwei Zeit Wecker: Auswahl des günstigen Ladefensters
 
     #define I3_RES_EME_STAT_LADEFENSTER2_AUSWAHL_NR                  (RXBUF_UCHAR(21))
     #define I3_RES_EME_STAT_LADEFENSTER2_AUSWAHL_NR_UNIT             '0-n'
     #define I3_RES_EME_STAT_LADEFENSTER2_AUSWAHL_NR_TYPE             unsigned char
         // Only with AC charging, two-time alarm clock: selection of the favorable charging window / Nur bei AC-Laden,
-        // Zwei Zeit Wecker: Auswahl des gÃ¼nstigen Ladefensters
+        // Zwei Zeit Wecker: Auswahl des günstigen Ladefensters
 
     #define I3_RES_EME_STAT_FAKTOR_STROMBEGRENZUNG_NR                (RXBUF_UCHAR(22))
     #define I3_RES_EME_STAT_FAKTOR_STROMBEGRENZUNG_NR_UNIT           '0-n'
     #define I3_RES_EME_STAT_FAKTOR_STROMBEGRENZUNG_NR_TYPE           unsigned char
-        // Only with AC charging: Acknowledgment of the current limitation / Nur bei AC-Laden: RÃ¼ckmeldung der
+        // Only with AC charging: Acknowledgment of the current limitation / Nur bei AC-Laden: Rückmeldung der
         // Strombegrenzung
 
     #define I3_RES_EME_STAT_STROMBEGRENZUNG_AUSWAHL_NR               (RXBUF_UCHAR(23))
     #define I3_RES_EME_STAT_STROMBEGRENZUNG_AUSWAHL_NR_UNIT          '0-n'
     #define I3_RES_EME_STAT_STROMBEGRENZUNG_AUSWAHL_NR_TYPE          unsigned char
-        // Acknowledgment of the AC current limitation selection: Only with AC charging / RÃ¼ckmeldung der AC-
+        // Acknowledgment of the AC current limitation selection: Only with AC charging / Rückmeldung der AC-
         // Strombegrenzungauswahl: Nur bei AC-Laden
 
     #define I3_RES_EME_STAT_POLY_TIM_1_WERT                          (RXBUF_UCHAR(24)*0.01f)
     #define I3_RES_EME_STAT_POLY_TIM_1_WERT_TYPE                     float
-        // Feedback from the SOC support points: time (standardized) of the first support point / RÃ¼ckmeldung der SOC
-        // UnterstÃ¼tzpunkte: Zeit(normiert) des ersten StÃ¼tzpunktes
+        // Feedback from the SOC support points: time (standardized) of the first support point / Rückmeldung der SOC
+        // Unterstützpunkte: Zeit(normiert) des ersten Stützpunktes
 
     #define I3_RES_EME_STAT_POLY_SOC_1_WERT                          (RXBUF_UINT(25)*0.01f)
     #define I3_RES_EME_STAT_POLY_SOC_1_WERT_UNIT                     '%'
     #define I3_RES_EME_STAT_POLY_SOC_1_WERT_TYPE                     float
-        // Feedback from the SOC support points: SOC of the first support point / RÃ¼ckmeldung der SOC UnterstÃ¼tzpunkte:
-        // SOC des ersten StÃ¼tzpunktes
+        // Feedback from the SOC support points: SOC of the first support point / Rückmeldung der SOC Unterstützpunkte:
+        // SOC des ersten Stützpunktes
 
     #define I3_RES_EME_STAT_POLY_TIM_2_WERT                          (RXBUF_UCHAR(27)*0.01f)
     #define I3_RES_EME_STAT_POLY_TIM_2_WERT_TYPE                     float
-        // Feedback from the SOC support points: time (normalized) of the second support point / RÃ¼ckmeldung der SOC
-        // UnterstÃ¼tzpunkte: Zeit(normiert) des zweiten StÃ¼tzpunktes
+        // Feedback from the SOC support points: time (normalized) of the second support point / Rückmeldung der SOC
+        // Unterstützpunkte: Zeit(normiert) des zweiten Stützpunktes
 
     #define I3_RES_EME_STAT_POLY_SOC_2_WERT                          (RXBUF_UINT(28)*0.01f)
     #define I3_RES_EME_STAT_POLY_SOC_2_WERT_UNIT                     '%'
     #define I3_RES_EME_STAT_POLY_SOC_2_WERT_TYPE                     float
-        // Feedback from the SOC support points: SOC of the second support point / RÃ¼ckmeldung der SOC
-        // UnterstÃ¼tzpunkte: SOC des zweiten StÃ¼tzpunktes
+        // Feedback from the SOC support points: SOC of the second support point / Rückmeldung der SOC Unterstützpunkte:
+        // SOC des zweiten Stützpunktes
 
     #define I3_RES_EME_STAT_POLY_TIM_3_WERT                          (RXBUF_UCHAR(30)*0.01f)
     #define I3_RES_EME_STAT_POLY_TIM_3_WERT_TYPE                     float
-        // Feedback from the SOC support points: time (standardized) of the third support point / RÃ¼ckmeldung der SOC
-        // UnterstÃ¼tzpunkte: Zeit(normiert) des dritten StÃ¼tzpunktes
+        // Feedback from the SOC support points: time (standardized) of the third support point / Rückmeldung der SOC
+        // Unterstützpunkte: Zeit(normiert) des dritten Stützpunktes
 
     #define I3_RES_EME_STAT_POLY_SOC_3_WERT                          (RXBUF_UINT(31)*0.01f)
     #define I3_RES_EME_STAT_POLY_SOC_3_WERT_UNIT                     '%'
     #define I3_RES_EME_STAT_POLY_SOC_3_WERT_TYPE                     float
-        // Feedback from the SOC support points: SOC of the third support point / RÃ¼ckmeldung der SOC UnterstÃ¼tzpunkte:
-        // SOC des dritten StÃ¼tzpunktes
+        // Feedback from the SOC support points: SOC of the third support point / Rückmeldung der SOC Unterstützpunkte:
+        // SOC des dritten Stützpunktes
 
     #define I3_RES_EME_STAT_POLY_TIM_4_WERT                          (RXBUF_UCHAR(33)*0.01f)
     #define I3_RES_EME_STAT_POLY_TIM_4_WERT_TYPE                     float
-        // Feedback from the SOC support points: time (standardized) of the fourth support point / RÃ¼ckmeldung der SOC
-        // UnterstÃ¼tzpunkte: Zeit(normiert) des vierten StÃ¼tzpunktes
+        // Feedback from the SOC support points: time (standardized) of the fourth support point / Rückmeldung der SOC
+        // Unterstützpunkte: Zeit(normiert) des vierten Stützpunktes
 
     #define I3_RES_EME_STAT_POLY_SOC_4_WERT                          (RXBUF_UINT(34)*0.01f)
     #define I3_RES_EME_STAT_POLY_SOC_4_WERT_UNIT                     '%'
     #define I3_RES_EME_STAT_POLY_SOC_4_WERT_TYPE                     float
-        // Feedback from the SOC support points: SOC of the fifth support point / RÃ¼ckmeldung der SOC UnterstÃ¼tzpunkte:
-        // SOC des fÃ¼nften StÃ¼tzpunktes
+        // Feedback from the SOC support points: SOC of the fifth support point / Rückmeldung der SOC Unterstützpunkte:
+        // SOC des fünften Stützpunktes
 
     #define I3_RES_EME_STAT_POLY_TIM_5_WERT                          (RXBUF_UCHAR(36)*0.01f)
     #define I3_RES_EME_STAT_POLY_TIM_5_WERT_TYPE                     float
-        // Feedback from the SOC support points: time (standardized) of the fifth support point / RÃ¼ckmeldung der SOC
-        // UnterstÃ¼tzpunkte: Zeit(normiert) des fÃ¼nften StÃ¼tzpunktes
+        // Feedback from the SOC support points: time (standardized) of the fifth support point / Rückmeldung der SOC
+        // Unterstützpunkte: Zeit(normiert) des fünften Stützpunktes
 
     #define I3_RES_EME_STAT_POLY_SOC_5_WERT                          (RXBUF_UINT(37)*0.01f)
     #define I3_RES_EME_STAT_POLY_SOC_5_WERT_UNIT                     '%'
     #define I3_RES_EME_STAT_POLY_SOC_5_WERT_TYPE                     float
-        // Feedback from the SOC support points: SOC of the fifth support point / RÃ¼ckmeldung der SOC UnterstÃ¼tzpunkte:
-        // SOC des fÃ¼nften StÃ¼tzpunktes
+        // Feedback from the SOC support points: SOC of the fifth support point / Rückmeldung der SOC Unterstützpunkte:
+        // SOC des fünften Stützpunktes
 
     #define I3_RES_EME_STAT_HV_SOC_IST_WERT                          (RXBUF_UINT(39)*0.01f)
     #define I3_RES_EME_STAT_HV_SOC_IST_WERT_UNIT                     '%'
@@ -1196,7 +1195,7 @@
     #define I3_RES_EME_STAT_ENERGIEINHALT_IST_WERT_UNIT              'Ws'
     #define I3_RES_EME_STAT_ENERGIEINHALT_IST_WERT_TYPE              float
         // Predicted energy content depending on the state of charge and on-board power consumption / Prognostizierte
-        // Energieinhalt in AbhÃ¤ngigkeit des Ladezustands und des Bordnetzverbrauches
+        // Energieinhalt in Abhängigkeit des Ladezustands und des Bordnetzverbrauches
 
     #define I3_RES_EME_STAT_LSC_TRIGGER_INHALT_NR                    (RXBUF_UCHAR(49))
     #define I3_RES_EME_STAT_LSC_TRIGGER_INHALT_NR_UNIT               '0-n'
@@ -1206,7 +1205,7 @@
     #define I3_RES_EME_STAT_ENERGIEINHALT_MAX_WERT                   (RXBUF_UINT32(50))
     #define I3_RES_EME_STAT_ENERGIEINHALT_MAX_WERT_UNIT              'Ws'
     #define I3_RES_EME_STAT_ENERGIEINHALT_MAX_WERT_TYPE              unsigned long
-        // Maximum possible energy content of the high-voltage storage system / Maximal mÃ¶glicher Energieinhalt des
+        // Maximum possible energy content of the high-voltage storage system / Maximal möglicher Energieinhalt des
         // Hochvoltspeichers
 
     #define I3_RES_EME_STAT_LADEN_PROGNOSE_REST_WERT                 (RXBUF_UINT(54))
@@ -1214,7 +1213,7 @@
     #define I3_RES_EME_STAT_LADEN_PROGNOSE_REST_WERT_TYPE            unsigned short
         // Predicted remaining charging time: 0-65531 = value range; 65533 = Not available; 65532 = initialization; 65534
         // = error; 65535 = signal valid / Prognostizierte Restladedauer: 0-65531 = Wertebereich; 65533 = Nicht
-        // verfÃ¼gbar; 65532 = Initialisierung; 65534  = Fehler; 65535 = Signal ugÃ¼ltig
+        // verfügbar; 65532 = Initialisierung; 65534  = Fehler; 65535 = Signal ugültig
 
     #define I3_RES_EME_STAT_LADESTECKER_NR                           (RXBUF_UCHAR(56))
     #define I3_RES_EME_STAT_LADESTECKER_NR_UNIT                      '0-n'
@@ -1227,12 +1226,12 @@
         // Load one-time setting immediately / Einstellung einmalig sofort Laden
 
 #define I3_PID_EME_AE_CHARGE_ENABLE                                  0xDE71
-        // Statement about the granting of loading clearance / Aussage Ã¼ber die Erteilung der Ladefreigabe
+        // Statement about the granting of loading clearance / Aussage über die Erteilung der Ladefreigabe
 
     #define I3_RES_EME_STAT_CHARGE_ENABLE_NR                         (RXBUF_UCHAR(0))
     #define I3_RES_EME_STAT_CHARGE_ENABLE_NR_UNIT                    '0-n'
     #define I3_RES_EME_STAT_CHARGE_ENABLE_NR_TYPE                    unsigned char
-        // Statement about the granting of loading clearance / Aussage Ã¼ber die Erteilung der Ladefreigabe
+        // Statement about the granting of loading clearance / Aussage über die Erteilung der Ladefreigabe
 
 #define I3_PID_EME_AE_PARKSPERRE_SENSOREN                            0xDE74
         // Parking lock status sensors / Status Sensoren der Parksperre
@@ -1311,7 +1310,7 @@
     #define I3_RES_EME_STAT_PS_SPG_HBRUECKE_WERT                     (RXBUF_UINT(0))
     #define I3_RES_EME_STAT_PS_SPG_HBRUECKE_WERT_UNIT                'mV'
     #define I3_RES_EME_STAT_PS_SPG_HBRUECKE_WERT_TYPE                unsigned short
-        // Tension of the H-bridge / Spannung der H-BrÃ¼cke
+        // Tension of the H-bridge / Spannung der H-Brücke
 
     #define I3_RES_EME_STAT_PS_POSITION_OFFEN_WERT                   (RXBUF_UINT(2))
     #define I3_RES_EME_STAT_PS_POSITION_OFFEN_WERT_UNIT              'mV'
@@ -1349,7 +1348,7 @@
     #define I3_RES_EME_STAT_ROHSIGNAL_TEMP_ENDSTUFE_ELUP_WERT        (RXBUF_UINT32(0)*0.001f)
     #define I3_RES_EME_STAT_ROHSIGNAL_TEMP_ENDSTUFE_ELUP_WERT_UNIT   'V'
     #define I3_RES_EME_STAT_ROHSIGNAL_TEMP_ENDSTUFE_ELUP_WERT_TYPE   float
-        // Raw signal temperature measurement output stage for ELUP. / Rohsignal Temperaturmessung Endstufe fÃ¼r ELUP.
+        // Raw signal temperature measurement output stage for ELUP. / Rohsignal Temperaturmessung Endstufe für ELUP.
 
     #define I3_RES_EME_STAT_ROHSIGNAL_BUDS_WERT                      (RXBUF_UINT32(4)*0.001f)
     #define I3_RES_EME_STAT_ROHSIGNAL_BUDS_WERT_UNIT                 'V'
@@ -1357,7 +1356,7 @@
         // Raw signal BUDS. / Rohsignal BUDS.
 
 #define I3_PID_EME_AE_ROHSIG_EINGANG_SENS_EM_INV                     0xDE7F
-        // Raw signals sensors / inputs for e-machines / converters / Rohsignale Sensoren/EingÃ¤nge fÃ¼r
+        // Raw signals sensors / inputs for e-machines / converters / Rohsignale Sensoren/Eingänge für
         // E-Maschine/Umrichter
 
     #define I3_RES_EME_STAT_ROHSIGNAL_TEMP_EMASCHINE_STATOR_WERT     (RXBUF_UINT32(0)*0.001f)
@@ -1412,7 +1411,7 @@
         // Winkelposition (Radian)
 
 #define I3_PID_EME_AE_ROHSIG_EINGANG_SENS_PARKSPERRE                 0xDE80
-        // Raw signals sensors / inputs parking lock / Rohsignale Sensoren/EingÃ¤nge Parksperre
+        // Raw signals sensors / inputs parking lock / Rohsignale Sensoren/Eingänge Parksperre
 
     #define I3_RES_EME_STAT_ROHSIGNAL_STROM_PARKSPERRE_WERT          (RXBUF_SINT32(0)*0.001f)
     #define I3_RES_EME_STAT_ROHSIGNAL_STROM_PARKSPERRE_WERT_UNIT     'A'
@@ -1430,7 +1429,7 @@
         // Positionsmessung Parksperre (0-1000=0-100%; 2000=ungueltig)
 
 #define I3_PID_EME_AE_ROHSIG_EINGANG_SENS_SG                         0xDE81
-        // Raw signals sensors / inputs control unit / Rohsignale Sensoren/EingÃ¤nge SteuergerÃ¤t
+        // Raw signals sensors / inputs control unit / Rohsignale Sensoren/Eingänge Steuergerät
 
     #define I3_RES_EME_STAT_ROHSIGNAL_KL30B_WERT                     (RXBUF_UINT32(0)*0.001f)
     #define I3_RES_EME_STAT_ROHSIGNAL_KL30B_WERT_UNIT                'V'
@@ -1449,30 +1448,30 @@
         // Crashsignal elektrisch ( 0 = nicht aktiv; 1 = aktiv )
 
 #define I3_PID_EME_AE_ROHSIG_EINGANG_SENS_SLE                        0xDE82
-        // Raw signals sensors / inputs SLE / Rohsignale Sensoren/EingÃ¤nge SLE
+        // Raw signals sensors / inputs SLE / Rohsignale Sensoren/Eingänge SLE
 
     #define I3_RES_EME_STAT_ROHSIGNAL_SPANNUNG_AC_NETZ_L1_WERT       (RXBUF_UINT(0))
     #define I3_RES_EME_STAT_ROHSIGNAL_SPANNUNG_AC_NETZ_L1_WERT_UNIT  'V'
     #define I3_RES_EME_STAT_ROHSIGNAL_SPANNUNG_AC_NETZ_L1_WERT_TYPE  unsigned short
         // Raw signal voltage measurement phase L1 in the AC network; Resolution, quantization, range etc. as used in
-        // SG-internal function. / Rohsignal Spannungsmessung Phase L1 im AC Netz; AuflÃ¶sung, Quantisierung, Range etc.
+        // SG-internal function. / Rohsignal Spannungsmessung Phase L1 im AC Netz; Auflösung, Quantisierung, Range etc.
         // wie in SG-interner Funktion verwendet wird.
 
     #define I3_RES_EME_STAT_ROHSIGNAL_STROM_PFC_EFF_WERT             (RXBUF_UINT(2))
     #define I3_RES_EME_STAT_ROHSIGNAL_STROM_PFC_EFF_WERT_UNIT        'A'
     #define I3_RES_EME_STAT_ROHSIGNAL_STROM_PFC_EFF_WERT_TYPE        unsigned short
         // Raw signal current measurement phase L1 in the AC network; Resolution, quantization, range etc. as used in
-        // SG-internal function. / Rohsignal Strommessung Phase L1 im AC Netz; AuflÃ¶sung, Quantisierung, Range etc. wie
+        // SG-internal function. / Rohsignal Strommessung Phase L1 im AC Netz; Auflösung, Quantisierung, Range etc. wie
         // in SG-interner Funktion verwendet wird.
 
     #define I3_RES_EME_STAT_ROHSIGNAL_E_S_CHARGE_EN_WERT             (RXBUF_UINT(4))
     #define I3_RES_EME_STAT_ROHSIGNAL_E_S_CHARGE_EN_WERT_TYPE        unsigned short
         // Raw signal charge enable line; Resolution, quantization, range etc. as used in SG-internal function. /
-        // Rohsignal Charge Enable Leitung; AuflÃ¶sung, Quantisierung, Range etc. wie in SG-interner Funktion verwendet
+        // Rohsignal Charge Enable Leitung; Auflösung, Quantisierung, Range etc. wie in SG-interner Funktion verwendet
         // wird.
 
 #define I3_PID_EME_AE_ROHSIG_EINGANG_SENS_DCDC                       0xDE83
-        // Raw signals sensors / inputs DC / DC converter / Rohsignale Sensoren/EingÃ¤nge DC/DC Wandler
+        // Raw signals sensors / inputs DC / DC converter / Rohsignale Sensoren/Eingänge DC/DC Wandler
 
     #define I3_RES_EME_STAT_ROHSIGNAL_SPANNUNG_LV_DCDC_WERT          (RXBUF_UINT32(0)*0.001f)
     #define I3_RES_EME_STAT_ROHSIGNAL_SPANNUNG_LV_DCDC_WERT_UNIT     'V'
@@ -1499,15 +1498,15 @@
     #define I3_RES_EME_STAT_LADEDAUER_WERT                           (RXBUF_UINT(2))
     #define I3_RES_EME_STAT_LADEDAUER_WERT_UNIT                      's'
     #define I3_RES_EME_STAT_LADEDAUER_WERT_TYPE                      unsigned short
-        // Returns the charging time that has elapsed in the current charging cycle / RÃ¼ckgabe der im aktuellen
+        // Returns the charging time that has elapsed in the current charging cycle / Rückgabe der im aktuellen
         // Ladezyklus verstrichenen Ladezeit
 
     #define I3_RES_EME_STAT_FEHLERZUSTAND_NR                         (RXBUF_UCHAR(4))
     #define I3_RES_EME_STAT_FEHLERZUSTAND_NR_UNIT                    '0-n'
     #define I3_RES_EME_STAT_FEHLERZUSTAND_NR_TYPE                    unsigned char
         // SLE error states: 0 = derating 1 = charging interruption 2 = emergency operation 3 = communication failure 4 =
-        // reserved 255 signal invalid / SLE FehlerzustÃ¤nde: 0=Derating 1=Ladeunterbrechung 2=Notlauf
-        // 3=Kommunikationsausfall 4=Reserviert 255 Signal ungÃ¼ltig
+        // reserved 255 signal invalid / SLE Fehlerzustände: 0=Derating 1=Ladeunterbrechung 2=Notlauf
+        // 3=Kommunikationsausfall 4=Reserviert 255 Signal ungültig
 
     #define I3_RES_EME_STAT_SLE_DERATING_WERT                        (RXBUF_UCHAR(5))
     #define I3_RES_EME_STAT_SLE_DERATING_WERT_UNIT                   '%'
@@ -1578,7 +1577,7 @@
         // current voltage at KL30B / aktuelle Spannung an KL30B
 
 #define I3_PID_EME_AE_STROM_DCDC                                     0xDE89
-        // DC / DC converter currents / StrÃ¶me DC/DC Wandler
+        // DC / DC converter currents / Ströme DC/DC Wandler
 
     #define I3_RES_EME_STAT_STROM_DCDC_WANDLER_HV_WERT               (RXBUF_UINT(0)*0.05f-100.0)
     #define I3_RES_EME_STAT_STROM_DCDC_WANDLER_HV_WERT_UNIT          'A'
@@ -1606,7 +1605,7 @@
         // DC / DC transformer current 1 / DC/DC Trafostrom 1
 
 #define I3_PID_EME_AE_STROM_EMASCHINE                                0xDE8A
-        // E-machine / converter currents / StrÃ¶me E-Maschine / Umrichter
+        // E-machine / converter currents / Ströme E-Maschine / Umrichter
 
     #define I3_RES_EME_STAT_STROM_AC_EFF_W_WERT                      (RXBUF_SINT(0)*0.0625f)
     #define I3_RES_EME_STAT_STROM_AC_EFF_W_WERT_UNIT                 'A'
@@ -1631,84 +1630,84 @@
     #define I3_RES_EME_STAT_STROM_DC_HV_UMRICHTER_EM_WERT            (RXBUF_SINT(8)*0.1f)
     #define I3_RES_EME_STAT_STROM_DC_HV_UMRICHTER_EM_WERT_UNIT       'A'
     #define I3_RES_EME_STAT_STROM_DC_HV_UMRICHTER_EM_WERT_TYPE       float
-        // HV-DC current of the converter for the EM stator / HV-DC Strom des Umrichters fÃ¼r den EM-Stator
+        // HV-DC current of the converter for the EM stator / HV-DC Strom des Umrichters für den EM-Stator
 
 #define I3_PID_EME_AE_TEMP_LE                                        0xDE8C
-        // Temperatures control unit drive electronics / Temperaturen SteuergerÃ¤t Antriebselektronik
+        // Temperatures control unit drive electronics / Temperaturen Steuergerät Antriebselektronik
 
     #define I3_RES_EME_STAT_TEMP_UMRICHTER_PHASE_U_WERT              (RXBUF_SINT(0)*0.0156f)
-    #define I3_RES_EME_STAT_TEMP_UMRICHTER_PHASE_U_WERT_UNIT         'Â°C'
+    #define I3_RES_EME_STAT_TEMP_UMRICHTER_PHASE_U_WERT_UNIT         '°C'
     #define I3_RES_EME_STAT_TEMP_UMRICHTER_PHASE_U_WERT_TYPE         float
         // Temperature converter phase U / Temperatur Umrichter Phase U
 
     #define I3_RES_EME_STAT_TEMP_UMRICHTER_PHASE_V_WERT              (RXBUF_SINT(2)*0.0156f)
-    #define I3_RES_EME_STAT_TEMP_UMRICHTER_PHASE_V_WERT_UNIT         'Â°C'
+    #define I3_RES_EME_STAT_TEMP_UMRICHTER_PHASE_V_WERT_UNIT         '°C'
     #define I3_RES_EME_STAT_TEMP_UMRICHTER_PHASE_V_WERT_TYPE         float
         // Temperature converter phase V / Temperatur Umrichter Phase V
 
     #define I3_RES_EME_STAT_TEMP_UMRICHTER_PHASE_W_WERT              (RXBUF_SINT(4)*0.0156f)
-    #define I3_RES_EME_STAT_TEMP_UMRICHTER_PHASE_W_WERT_UNIT         'Â°C'
+    #define I3_RES_EME_STAT_TEMP_UMRICHTER_PHASE_W_WERT_UNIT         '°C'
     #define I3_RES_EME_STAT_TEMP_UMRICHTER_PHASE_W_WERT_TYPE         float
         // Temperature converter phase W / Temperatur Umrichter Phase W
 
     #define I3_RES_EME_STAT_TEMP_UMRICHTER_GT_WERT                   (RXBUF_SINT(6)*0.0156f)
-    #define I3_RES_EME_STAT_TEMP_UMRICHTER_GT_WERT_UNIT              'Â°C'
+    #define I3_RES_EME_STAT_TEMP_UMRICHTER_GT_WERT_UNIT              '°C'
     #define I3_RES_EME_STAT_TEMP_UMRICHTER_GT_WERT_TYPE              float
         // Temperature inverter gate driver / Temperatur Inverter Gatedriver
 
     #define I3_RES_EME_STAT_TEMP_DCDC_BO_WERT                        (RXBUF_SINT(8)*0.0156f)
-    #define I3_RES_EME_STAT_TEMP_DCDC_BO_WERT_UNIT                   'Â°C'
+    #define I3_RES_EME_STAT_TEMP_DCDC_BO_WERT_UNIT                   '°C'
     #define I3_RES_EME_STAT_TEMP_DCDC_BO_WERT_TYPE                   float
         // Temperature of the DCDC board / Temperatur des DCDC Boards
 
     #define I3_RES_EME_STAT_TEMP_DCDC_GTW_WERT                       (RXBUF_SINT(10)*0.0156f)
-    #define I3_RES_EME_STAT_TEMP_DCDC_GTW_WERT_UNIT                  'Â°C'
+    #define I3_RES_EME_STAT_TEMP_DCDC_GTW_WERT_UNIT                  '°C'
     #define I3_RES_EME_STAT_TEMP_DCDC_GTW_WERT_TYPE                  float
         // Temperature DC / DC push-pull converter / Temperatur DC/DC-Gegentaktwandler
 
     #define I3_RES_EME_STAT_TEMP_DCDC_TS_WERT                        (RXBUF_SINT(12)*0.0156f)
-    #define I3_RES_EME_STAT_TEMP_DCDC_TS_WERT_UNIT                   'Â°C'
+    #define I3_RES_EME_STAT_TEMP_DCDC_TS_WERT_UNIT                   '°C'
     #define I3_RES_EME_STAT_TEMP_DCDC_TS_WERT_TYPE                   float
         // Temperature DC / DC buck converter / Temperatur DC/DC-Tiefsetzer
 
     #define I3_RES_EME_STAT_TEMP_DCDC_GR_WERT                        (RXBUF_SINT(14)*0.0156f)
-    #define I3_RES_EME_STAT_TEMP_DCDC_GR_WERT_UNIT                   'Â°C'
+    #define I3_RES_EME_STAT_TEMP_DCDC_GR_WERT_UNIT                   '°C'
     #define I3_RES_EME_STAT_TEMP_DCDC_GR_WERT_TYPE                   float
         // Temperature of the DCDC board / Temperatur des DCDC Boards
 
     #define I3_RES_EME_STAT_TEMP_SLE_PFC_WERT                        (RXBUF_SINT(16)*0.0156f)
-    #define I3_RES_EME_STAT_TEMP_SLE_PFC_WERT_UNIT                   'Â°C'
+    #define I3_RES_EME_STAT_TEMP_SLE_PFC_WERT_UNIT                   '°C'
     #define I3_RES_EME_STAT_TEMP_SLE_PFC_WERT_TYPE                   float
         // Temperature SLE-PowerFactorCorrection / Temperatur SLE-PowerFactorCorrection
 
     #define I3_RES_EME_STAT_TEMP_SLE_GR_WERT                         (RXBUF_SINT(18)*0.0156f)
-    #define I3_RES_EME_STAT_TEMP_SLE_GR_WERT_UNIT                    'Â°C'
+    #define I3_RES_EME_STAT_TEMP_SLE_GR_WERT_UNIT                    '°C'
     #define I3_RES_EME_STAT_TEMP_SLE_GR_WERT_TYPE                    float
         // Temperature SLE rectifier / Temperatur SLE-Gleichrichter
 
     #define I3_RES_EME_STAT_TEMP_SLE_GTW_WERT                        (RXBUF_SINT(20)*0.0156f)
-    #define I3_RES_EME_STAT_TEMP_SLE_GTW_WERT_UNIT                   'Â°C'
+    #define I3_RES_EME_STAT_TEMP_SLE_GTW_WERT_UNIT                   '°C'
     #define I3_RES_EME_STAT_TEMP_SLE_GTW_WERT_TYPE                   float
         // Temperature SLE push-pull converter / Temperatur SLE-Gegentaktwandler
 
     #define I3_RES_EME_STAT_TEMP_SLE_BO_WERT                         (RXBUF_SINT(22)*0.0156f)
-    #define I3_RES_EME_STAT_TEMP_SLE_BO_WERT_UNIT                    'Â°C'
+    #define I3_RES_EME_STAT_TEMP_SLE_BO_WERT_UNIT                    '°C'
     #define I3_RES_EME_STAT_TEMP_SLE_BO_WERT_TYPE                    float
         // Temperature of the SLE board / Temperatur des SLE Boards
 
     #define I3_RES_EME_STAT_TEMP_ELUP_LE_WERT                        (RXBUF_SINT(24)*0.0156f)
-    #define I3_RES_EME_STAT_TEMP_ELUP_LE_WERT_UNIT                   'Â°C'
+    #define I3_RES_EME_STAT_TEMP_ELUP_LE_WERT_UNIT                   '°C'
     #define I3_RES_EME_STAT_TEMP_ELUP_LE_WERT_TYPE                   float
         // Temperature on the power board - measuring point ELUP power output stage / Temperatur auf dem Powerbord -
         // Messstelle ELUP Leistungsendstufe
 
     #define I3_RES_EME_STAT_TEMP_PROZESSOR_MC0_WERT                  (RXBUF_SINT(26)*0.0156f)
-    #define I3_RES_EME_STAT_TEMP_PROZESSOR_MC0_WERT_UNIT             'Â°C'
+    #define I3_RES_EME_STAT_TEMP_PROZESSOR_MC0_WERT_UNIT             '°C'
     #define I3_RES_EME_STAT_TEMP_PROZESSOR_MC0_WERT_TYPE             float
         // Temperature processor MC0 / Temperatur Prozessor MC0
 
     #define I3_RES_EME_STAT_TEMP_PROZESSOR_MC2_WERT                  (RXBUF_SINT(28)*0.0156f)
-    #define I3_RES_EME_STAT_TEMP_PROZESSOR_MC2_WERT_UNIT             'Â°C'
+    #define I3_RES_EME_STAT_TEMP_PROZESSOR_MC2_WERT_UNIT             '°C'
     #define I3_RES_EME_STAT_TEMP_PROZESSOR_MC2_WERT_TYPE             float
         // Temperature processor MC2 / Temperatur Prozessor MC2
 
@@ -1735,22 +1734,22 @@
 // Skipping AE_PARKSPERRE_NVRAM_LOESCHEN on 0xDE95 which takes arguments
 
 #define I3_PID_EME_AE_ZUSTAND_DCDC_FEHLERBILD                        0xDE96
-        // Return of active / inactive errors DC / DC converter / RÃ¼ckgabe aktiver/inaktiver Fehler DC/DC-Wandler
+        // Return of active / inactive errors DC / DC converter / Rückgabe aktiver/inaktiver Fehler DC/DC-Wandler
 
     // RES_0xDE96_D is a BITFIELD of unknown size.  We don't have definitions for each bit, and we GUESSED it is one byte ***
-        // Return of active / inactive errors DC / DC converter / RÃ¼ckgabe aktiver/inaktiver Fehler DC/DC-Wandler
+        // Return of active / inactive errors DC / DC converter / Rückgabe aktiver/inaktiver Fehler DC/DC-Wandler
     #define I3_RES_EME_RES_0xDE96_D                                  (RXBUF_UCHAR(0))
     #define I3_RES_EME_RES_0xDE96_D_UNIT                             'Bit'
     #define I3_RES_EME_RES_0xDE96_D_TYPE                             unsigned char
-        // Return of active / inactive errors DC / DC converter / RÃ¼ckgabe aktiver/inaktiver Fehler DC/DC-Wandler
+        // Return of active / inactive errors DC / DC converter / Rückgabe aktiver/inaktiver Fehler DC/DC-Wandler
 
 #define I3_PID_EME_STATUS_CONNECTED_DRIVE                            0xDE9E
-        // Information about Connected Drive / Informationen Ã¼ber Connected Drive
+        // Information about Connected Drive / Informationen über Connected Drive
 
     #define I3_RES_EME_STAT_LADEN_NR                                 (RXBUF_UCHAR(0))
     #define I3_RES_EME_STAT_LADEN_NR_UNIT                            '0-n'
     #define I3_RES_EME_STAT_LADEN_NR_TYPE                            unsigned char
-        // Information about the current status of the loading (see TAB_EDME_STATUS_LADEN) / Information Ã¼ber den
+        // Information about the current status of the loading (see TAB_EDME_STATUS_LADEN) / Information über den
         // aktuellen Status des Ladens (siehe TAB_EDME_STATUS_LADEN)
 
     #define I3_RES_EME_STAT_REMOTE_LADEN_NR                          (RXBUF_UCHAR(1))
@@ -1778,12 +1777,12 @@
     #define I3_RES_EME_STAT_MAX_LADESTROM_LADEGERAET_WERT            (RXBUF_UCHAR(6))
     #define I3_RES_EME_STAT_MAX_LADESTROM_LADEGERAET_WERT_UNIT       'A'
     #define I3_RES_EME_STAT_MAX_LADESTROM_LADEGERAET_WERT_TYPE       unsigned char
-        // Maximum AC charging current charger / Maximaler AC-Ladestrom LadegerÃ¤t
+        // Maximum AC charging current charger / Maximaler AC-Ladestrom Ladegerät
 
     #define I3_RES_EME_STAT_IST_AC_SPANNUNG_LADEGERAET_WERT          (RXBUF_UCHAR(7))
     #define I3_RES_EME_STAT_IST_AC_SPANNUNG_LADEGERAET_WERT_UNIT     'V'
     #define I3_RES_EME_STAT_IST_AC_SPANNUNG_LADEGERAET_WERT_TYPE     unsigned char
-        // Actual AC voltage charger / Ist-AC-Spannung LadegerÃ¤t
+        // Actual AC voltage charger / Ist-AC-Spannung Ladegerät
 
     #define I3_RES_EME_STAT_REICHWEITE_WERT                          (RXBUF_UINT(8))
     #define I3_RES_EME_STAT_REICHWEITE_WERT_UNIT                     'km'
@@ -1791,13 +1790,13 @@
         // Range / Reichweite
 
     #define I3_RES_EME_STAT_HVB_TEMP_WERT                            (RXBUF_SINT(10)*0.1f)
-    #define I3_RES_EME_STAT_HVB_TEMP_WERT_UNIT                       'Â°'
+    #define I3_RES_EME_STAT_HVB_TEMP_WERT_UNIT                       '°'
     #define I3_RES_EME_STAT_HVB_TEMP_WERT_TYPE                       float
         // HV battery temperature / Temperatur der HV-Batterie
 
     #define I3_RES_EME_STAT_TRIGGER_SEGMENTSPEICHER_WERT             (RXBUF_UCHAR(12))
     #define I3_RES_EME_STAT_TRIGGER_SEGMENTSPEICHER_WERT_TYPE        unsigned char
-        // Trigger condition for reading the segment memory / AuslÃ¶sebedingung fÃ¼r das Lesen des Segmentspeichers
+        // Trigger condition for reading the segment memory / Auslösebedingung für das Lesen des Segmentspeichers
 
 // Skipping LADEHISTORIE on 0xDEA1 which takes arguments
 
@@ -1814,12 +1813,12 @@
         // E-Maschine in Grad Celsius
 
     #define I3_RES_EME_STAT_TEMP1_E_MOTOR_WERT                       (RXBUF_SINT(0)*0.0156f)
-    #define I3_RES_EME_STAT_TEMP1_E_MOTOR_WERT_UNIT                  'Â°C'
+    #define I3_RES_EME_STAT_TEMP1_E_MOTOR_WERT_UNIT                  '°C'
     #define I3_RES_EME_STAT_TEMP1_E_MOTOR_WERT_TYPE                  float
         // E-motor temperature 1 / E-Motor Temperatur 1
 
     #define I3_RES_EME_STAT_TEMP2_E_MOTOR_WERT                       (RXBUF_SINT(2)*0.0156f)
-    #define I3_RES_EME_STAT_TEMP2_E_MOTOR_WERT_UNIT                  'Â°C'
+    #define I3_RES_EME_STAT_TEMP2_E_MOTOR_WERT_UNIT                  '°C'
     #define I3_RES_EME_STAT_TEMP2_E_MOTOR_WERT_TYPE                  float
         // E-motor temperature 2 / E-Motor Temperatur 2
 
@@ -1848,20 +1847,19 @@
         // current operating mode of the e-machine / aktuelle Betriebsart der E-Maschine
 
 #define I3_PID_EME_AE_ZUSTAND_2_DCDC                                 0xDEA9
-        // Various statuses returned from the DCDC converter / RÃ¼ckgabe verschiederer Status vom DCDC-Wandler
+        // Various statuses returned from the DCDC converter / Rückgabe verschiederer Status vom DCDC-Wandler
 
     // RES_0xDEA9_D is a BITFIELD of unknown size.  We don't have definitions for each bit, and we GUESSED it is one byte ***
-        // Various statuses returned from the DCDC converter / RÃ¼ckgabe verschiederer Status vom DCDC-Wandler
+        // Various statuses returned from the DCDC converter / Rückgabe verschiederer Status vom DCDC-Wandler
     #define I3_RES_EME_RES_0xDEA9_D                                  (RXBUF_UCHAR(0))
     #define I3_RES_EME_RES_0xDEA9_D_UNIT                             'Bit'
     #define I3_RES_EME_RES_0xDEA9_D_TYPE                             unsigned char
-        // Various statuses returned from the DCDC converter / RÃ¼ckgabe verschiederer Status vom DCDC-Wandler
+        // Various statuses returned from the DCDC converter / Rückgabe verschiederer Status vom DCDC-Wandler
 
 // Skipping LADEHISTOGRAMM on 0xDEAE which takes arguments
 
 #define I3_PID_EME_AE_PARKSPERRE_VERSION                             0xDEB0
-        // Return of the current version of the parking lock software / RÃ¼ckgabe der aktuellen Version der
-        // Parksperren-SW
+        // Return of the current version of the parking lock software / Rückgabe der aktuellen Version der Parksperren-SW
 
     #define I3_RES_EME_STAT_PS_VERSION_MAIN_WERT                     (RXBUF_UCHAR(0))
     #define I3_RES_EME_STAT_PS_VERSION_MAIN_WERT_TYPE                unsigned char
@@ -1904,40 +1902,40 @@
     #define I3_RES_EME_STAT_SPANNUNG_CY0_5V0_WERT                    (RXBUF_UINT(0)*0.001f)
     #define I3_RES_EME_STAT_SPANNUNG_CY0_5V0_WERT_UNIT               'V'
     #define I3_RES_EME_STAT_SPANNUNG_CY0_5V0_WERT_TYPE               float
-        // Voltage monitoring of the internal 5V of CY320_MC0 / SpannungsÃ¼berwachung der internen 5V von CY320_MC0
+        // Voltage monitoring of the internal 5V of CY320_MC0 / Spannungsüberwachung der internen 5V von CY320_MC0
 
     #define I3_RES_EME_STAT_SPANNUNG_CY2_5V0_WERT                    (RXBUF_UINT(2)*0.001f)
     #define I3_RES_EME_STAT_SPANNUNG_CY2_5V0_WERT_UNIT               'V'
     #define I3_RES_EME_STAT_SPANNUNG_CY2_5V0_WERT_TYPE               float
-        // Voltage monitoring of the internal 5V of CY320_MC2 / SpannungsÃ¼berwachung der internen 5V von CY320_MC2
+        // Voltage monitoring of the internal 5V of CY320_MC2 / Spannungsüberwachung der internen 5V von CY320_MC2
 
     #define I3_RES_EME_STAT_SPANNUNG_CY0_3V3_WERT                    (RXBUF_UINT(4)*0.001f)
     #define I3_RES_EME_STAT_SPANNUNG_CY0_3V3_WERT_UNIT               'V'
     #define I3_RES_EME_STAT_SPANNUNG_CY0_3V3_WERT_TYPE               float
-        // Voltage monitoring of the internal 3.3V of CY320_MC0 / SpannungsÃ¼berwachung der internen 3,3V von CY320_MC0
+        // Voltage monitoring of the internal 3.3V of CY320_MC0 / Spannungsüberwachung der internen 3,3V von CY320_MC0
 
     #define I3_RES_EME_STAT_SPANNUNG_CY2_3V3_WERT                    (RXBUF_UINT(6)*0.001f)
     #define I3_RES_EME_STAT_SPANNUNG_CY2_3V3_WERT_UNIT               'V'
     #define I3_RES_EME_STAT_SPANNUNG_CY2_3V3_WERT_TYPE               float
-        // Voltage monitoring of the internal 3.3V of CY320_MC2 / SpannungsÃ¼berwachung der internen 3,3V von CY320_MC2
+        // Voltage monitoring of the internal 3.3V of CY320_MC2 / Spannungsüberwachung der internen 3,3V von CY320_MC2
 
     #define I3_RES_EME_STAT_SPANNUNG_CY0_1V5_WERT                    (RXBUF_UINT(8)*0.001f)
     #define I3_RES_EME_STAT_SPANNUNG_CY0_1V5_WERT_UNIT               'V'
     #define I3_RES_EME_STAT_SPANNUNG_CY0_1V5_WERT_TYPE               float
-        // Voltage monitoring of the internal 1.5V of CY320_MC0 / SpannungsÃ¼berwachung der internen 1,5V von CY320_MC0
+        // Voltage monitoring of the internal 1.5V of CY320_MC0 / Spannungsüberwachung der internen 1,5V von CY320_MC0
 
     #define I3_RES_EME_STAT_SPANNUNG_CY2_1V5_WERT                    (RXBUF_UINT(10)*0.001f)
     #define I3_RES_EME_STAT_SPANNUNG_CY2_1V5_WERT_UNIT               'V'
     #define I3_RES_EME_STAT_SPANNUNG_CY2_1V5_WERT_TYPE               float
-        // Voltage monitoring of the internal 1.5V of CY320_MC2 / SpannungsÃ¼berwachung der internen 1,5V von CY320_MC2
+        // Voltage monitoring of the internal 1.5V of CY320_MC2 / Spannungsüberwachung der internen 1,5V von CY320_MC2
 
     #define I3_RES_EME_STAT_SPANNUNG_32V_WERT                        (RXBUF_UINT(12)*0.001f)
     #define I3_RES_EME_STAT_SPANNUNG_32V_WERT_UNIT                   'V'
     #define I3_RES_EME_STAT_SPANNUNG_32V_WERT_TYPE                   float
-        // Back measurement of the internal 32 V. / RÃ¼ckmessung der internen 32 V
+        // Back measurement of the internal 32 V. / Rückmessung der internen 32 V
 
 #define I3_PID_EME_AE_SYSSTATE                                       0xDEBF
-        // Internal status states of the control unit / Interne StatuszustÃ¤nde des SteuergerÃ¤t
+        // Internal status states of the control unit / Interne Statuszustände des Steuergerät
 
     #define I3_RES_EME_STAT_SYSSTATE_DPR                             (RXBUF_UCHAR(0))
     #define I3_RES_EME_STAT_SYSSTATE_DPR_UNIT                        '0/1'
@@ -1991,7 +1989,7 @@
         // current actual position of the drive train (PRND) / aktuelle Ist-Position des Antriebsstrangs (PRND)
 
 #define I3_PID_EME_AE_LSC_LADEN                                      0xDEDE
-        // Feedback on the charging process / RÃ¼ckmeldung zum Ladeverfahrens
+        // Feedback on the charging process / Rückmeldung zum Ladeverfahrens
 
     #define I3_RES_EME_STAT_LADEVERFAHREN_NR_0XDEDE                  (RXBUF_UCHAR(0))
     #define I3_RES_EME_STAT_LADEVERFAHREN_NR_0XDEDE_UNIT             '0-n'
@@ -2006,105 +2004,105 @@
     #define I3_RES_EME_STAT_BEGINN_FENSTER_STD_WERT_0XDEDE           (RXBUF_UCHAR(2))
     #define I3_RES_EME_STAT_BEGINN_FENSTER_STD_WERT_0XDEDE_UNIT      'h'
     #define I3_RES_EME_STAT_BEGINN_FENSTER_STD_WERT_0XDEDE_TYPE      unsigned char
-        // Only with AC charging: Start of the favorable charging window (hours) / Nur bei AC-Laden: Beginn des
-        // gÃ¼nstigen Ladefensters (Stunden)
+        // Only with AC charging: Start of the favorable charging window (hours) / Nur bei AC-Laden: Beginn des günstigen
+        // Ladefensters (Stunden)
 
     #define I3_RES_EME_STAT_BEGINN_FENSTER_MIN_WERT_0XDEDE           (RXBUF_UCHAR(3))
     #define I3_RES_EME_STAT_BEGINN_FENSTER_MIN_WERT_0XDEDE_UNIT      'min'
     #define I3_RES_EME_STAT_BEGINN_FENSTER_MIN_WERT_0XDEDE_TYPE      unsigned char
         // Only with AC charging: Start of the favorable charging window (minutes) / Nur bei AC-Laden: Beginn des
-        // gÃ¼nstigen Ladefensters (Minuten)
+        // günstigen Ladefensters (Minuten)
 
     #define I3_RES_EME_STAT_ENDE_FENSTER_STD_WERT_0XDEDE             (RXBUF_UCHAR(4))
     #define I3_RES_EME_STAT_ENDE_FENSTER_STD_WERT_0XDEDE_UNIT        'h'
     #define I3_RES_EME_STAT_ENDE_FENSTER_STD_WERT_0XDEDE_TYPE        unsigned char
-        // Only with AC charging: End of the favorable charging window (hours) / Nur bei AC-Laden: Ende des gÃ¼nstigen
+        // Only with AC charging: End of the favorable charging window (hours) / Nur bei AC-Laden: Ende des günstigen
         // Ladefensters (Stunden)
 
     #define I3_RES_EME_STAT_ENDE_FENSTER_MIN_WERT_0XDEDE             (RXBUF_UCHAR(5))
     #define I3_RES_EME_STAT_ENDE_FENSTER_MIN_WERT_0XDEDE_UNIT        'min'
     #define I3_RES_EME_STAT_ENDE_FENSTER_MIN_WERT_0XDEDE_TYPE        unsigned char
-        // Only with AC charging: End of the favorable charging window (minutes) / Nur bei AC-Laden: Ende des gÃ¼nstigen
+        // Only with AC charging: End of the favorable charging window (minutes) / Nur bei AC-Laden: Ende des günstigen
         // Ladefensters (Minuten)
 
     #define I3_RES_EME_STAT_LADEFENSTER1_AUSWAHL_NR_0XDEDE           (RXBUF_UCHAR(6))
     #define I3_RES_EME_STAT_LADEFENSTER1_AUSWAHL_NR_0XDEDE_UNIT      '0-n'
     #define I3_RES_EME_STAT_LADEFENSTER1_AUSWAHL_NR_0XDEDE_TYPE      unsigned char
         // Only with AC charging, two-time alarm clock: selection of the favorable charging window / Nur bei AC-Laden,
-        // Zwei Zeit Wecker: Auswahl des gÃ¼nstigen Ladefensters
+        // Zwei Zeit Wecker: Auswahl des günstigen Ladefensters
 
     #define I3_RES_EME_STAT_LADEFENSTER2_AUSWAHL_NR_0XDEDE           (RXBUF_UCHAR(7))
     #define I3_RES_EME_STAT_LADEFENSTER2_AUSWAHL_NR_0XDEDE_UNIT      '0-n'
     #define I3_RES_EME_STAT_LADEFENSTER2_AUSWAHL_NR_0XDEDE_TYPE      unsigned char
         // Only with AC charging, two-time alarm clock: selection of the favorable charging window / Nur bei AC-Laden,
-        // Zwei Zeit Wecker: Auswahl des gÃ¼nstigen Ladefensters
+        // Zwei Zeit Wecker: Auswahl des günstigen Ladefensters
 
     #define I3_RES_EME_STAT_FAKTOR_STROMBEGRENZUNG_NR_0XDEDE         (RXBUF_UCHAR(8))
     #define I3_RES_EME_STAT_FAKTOR_STROMBEGRENZUNG_NR_0XDEDE_UNIT    '0-n'
     #define I3_RES_EME_STAT_FAKTOR_STROMBEGRENZUNG_NR_0XDEDE_TYPE    unsigned char
-        // Only with AC charging: Acknowledgment of the current limitation / Nur bei AC-Laden: RÃ¼ckmeldung der
+        // Only with AC charging: Acknowledgment of the current limitation / Nur bei AC-Laden: Rückmeldung der
         // Strombegrenzung
 
     #define I3_RES_EME_STAT_STROMBEGRENZUNG_AUSWAHL_NR_0XDEDE        (RXBUF_UCHAR(9))
     #define I3_RES_EME_STAT_STROMBEGRENZUNG_AUSWAHL_NR_0XDEDE_UNIT   '0-n'
     #define I3_RES_EME_STAT_STROMBEGRENZUNG_AUSWAHL_NR_0XDEDE_TYPE   unsigned char
-        // Acknowledgment of the AC current limitation selection: Only with AC charging / RÃ¼ckmeldung der AC-
+        // Acknowledgment of the AC current limitation selection: Only with AC charging / Rückmeldung der AC-
         // Strombegrenzungauswahl: Nur bei AC-Laden
 
     #define I3_RES_EME_STAT_POLY_TIM_1_WERT_0XDEDE                   (RXBUF_UCHAR(10)*0.01f)
     #define I3_RES_EME_STAT_POLY_TIM_1_WERT_0XDEDE_TYPE              float
-        // Feedback from the SOC support points: time (standardized) of the first support point / RÃ¼ckmeldung der SOC
-        // UnterstÃ¼tzpunkte: Zeit(normiert) des ersten StÃ¼tzpunktes
+        // Feedback from the SOC support points: time (standardized) of the first support point / Rückmeldung der SOC
+        // Unterstützpunkte: Zeit(normiert) des ersten Stützpunktes
 
     #define I3_RES_EME_STAT_POLY_SOC_1_WERT_0XDEDE                   (RXBUF_UINT(11)*0.01f)
     #define I3_RES_EME_STAT_POLY_SOC_1_WERT_0XDEDE_UNIT              '%'
     #define I3_RES_EME_STAT_POLY_SOC_1_WERT_0XDEDE_TYPE              float
-        // Feedback from the SOC support points: SOC of the first support point / RÃ¼ckmeldung der SOC UnterstÃ¼tzpunkte:
-        // SOC des ersten StÃ¼tzpunktes
+        // Feedback from the SOC support points: SOC of the first support point / Rückmeldung der SOC Unterstützpunkte:
+        // SOC des ersten Stützpunktes
 
     #define I3_RES_EME_STAT_POLY_TIM_2_WERT_0XDEDE                   (RXBUF_UCHAR(13)*0.01f)
     #define I3_RES_EME_STAT_POLY_TIM_2_WERT_0XDEDE_TYPE              float
-        // Feedback from the SOC support points: time (normalized) of the second support point / RÃ¼ckmeldung der SOC
-        // UnterstÃ¼tzpunkte: Zeit(normiert) des zweiten StÃ¼tzpunktes
+        // Feedback from the SOC support points: time (normalized) of the second support point / Rückmeldung der SOC
+        // Unterstützpunkte: Zeit(normiert) des zweiten Stützpunktes
 
     #define I3_RES_EME_STAT_POLY_SOC_2_WERT_0XDEDE                   (RXBUF_UINT(14)*0.01f)
     #define I3_RES_EME_STAT_POLY_SOC_2_WERT_0XDEDE_UNIT              '%'
     #define I3_RES_EME_STAT_POLY_SOC_2_WERT_0XDEDE_TYPE              float
-        // Feedback from the SOC support points: SOC of the second support point / RÃ¼ckmeldung der SOC
-        // UnterstÃ¼tzpunkte: SOC des zweiten StÃ¼tzpunktes
+        // Feedback from the SOC support points: SOC of the second support point / Rückmeldung der SOC Unterstützpunkte:
+        // SOC des zweiten Stützpunktes
 
     #define I3_RES_EME_STAT_POLY_TIM_3_WERT_0XDEDE                   (RXBUF_UCHAR(16)*0.01f)
     #define I3_RES_EME_STAT_POLY_TIM_3_WERT_0XDEDE_TYPE              float
-        // Feedback from the SOC support points: time (standardized) of the third support point / RÃ¼ckmeldung der SOC
-        // UnterstÃ¼tzpunkte: Zeit(normiert) des dritten StÃ¼tzpunktes
+        // Feedback from the SOC support points: time (standardized) of the third support point / Rückmeldung der SOC
+        // Unterstützpunkte: Zeit(normiert) des dritten Stützpunktes
 
     #define I3_RES_EME_STAT_POLY_SOC_3_WERT_0XDEDE                   (RXBUF_UINT(17)*0.01f)
     #define I3_RES_EME_STAT_POLY_SOC_3_WERT_0XDEDE_UNIT              '%'
     #define I3_RES_EME_STAT_POLY_SOC_3_WERT_0XDEDE_TYPE              float
-        // Feedback from the SOC support points: SOC of the third support point / RÃ¼ckmeldung der SOC UnterstÃ¼tzpunkte:
-        // SOC des dritten StÃ¼tzpunktes
+        // Feedback from the SOC support points: SOC of the third support point / Rückmeldung der SOC Unterstützpunkte:
+        // SOC des dritten Stützpunktes
 
     #define I3_RES_EME_STAT_POLY_TIM_4_WERT_0XDEDE                   (RXBUF_UCHAR(19)*0.01f)
     #define I3_RES_EME_STAT_POLY_TIM_4_WERT_0XDEDE_TYPE              float
-        // Feedback from the SOC support points: time (standardized) of the fourth support point / RÃ¼ckmeldung der SOC
-        // UnterstÃ¼tzpunkte: Zeit(normiert) des vierten StÃ¼tzpunktes
+        // Feedback from the SOC support points: time (standardized) of the fourth support point / Rückmeldung der SOC
+        // Unterstützpunkte: Zeit(normiert) des vierten Stützpunktes
 
     #define I3_RES_EME_STAT_POLY_SOC_4_WERT_0XDEDE                   (RXBUF_UINT(20)*0.01f)
     #define I3_RES_EME_STAT_POLY_SOC_4_WERT_0XDEDE_UNIT              '%'
     #define I3_RES_EME_STAT_POLY_SOC_4_WERT_0XDEDE_TYPE              float
-        // Feedback from the SOC support points: SOC of the fifth support point / RÃ¼ckmeldung der SOC UnterstÃ¼tzpunkte:
-        // SOC des fÃ¼nften StÃ¼tzpunktes
+        // Feedback from the SOC support points: SOC of the fifth support point / Rückmeldung der SOC Unterstützpunkte:
+        // SOC des fünften Stützpunktes
 
     #define I3_RES_EME_STAT_POLY_TIM_5_WERT_0XDEDE                   (RXBUF_UCHAR(22)*0.01f)
     #define I3_RES_EME_STAT_POLY_TIM_5_WERT_0XDEDE_TYPE              float
-        // Feedback from the SOC support points: time (standardized) of the fifth support point / RÃ¼ckmeldung der SOC
-        // UnterstÃ¼tzpunkte: Zeit(normiert) des fÃ¼nften StÃ¼tzpunktes
+        // Feedback from the SOC support points: time (standardized) of the fifth support point / Rückmeldung der SOC
+        // Unterstützpunkte: Zeit(normiert) des fünften Stützpunktes
 
     #define I3_RES_EME_STAT_POLY_SOC_5_WERT_0XDEDE                   (RXBUF_UINT(23)*0.01f)
     #define I3_RES_EME_STAT_POLY_SOC_5_WERT_0XDEDE_UNIT              '%'
     #define I3_RES_EME_STAT_POLY_SOC_5_WERT_0XDEDE_TYPE              float
-        // Feedback from the SOC support points: SOC of the fifth support point / RÃ¼ckmeldung der SOC UnterstÃ¼tzpunkte:
-        // SOC des fÃ¼nften StÃ¼tzpunktes
+        // Feedback from the SOC support points: SOC of the fifth support point / Rückmeldung der SOC Unterstützpunkte:
+        // SOC des fünften Stützpunktes
 
     #define I3_RES_EME_STAT_HV_SOC_IST_WERT_0XDEDE                   (RXBUF_UINT(25)*0.01f)
     #define I3_RES_EME_STAT_HV_SOC_IST_WERT_0XDEDE_UNIT              '%'
@@ -2130,7 +2128,7 @@
     #define I3_RES_EME_STAT_ENERGIEINHALT_IST_WERT_0XDEDE_UNIT       'Ws'
     #define I3_RES_EME_STAT_ENERGIEINHALT_IST_WERT_0XDEDE_TYPE       float
         // Predicted energy content depending on the state of charge and on-board power consumption / Prognostizierte
-        // Energieinhalt in AbhÃ¤ngigkeit des Ladezustands und des Bordnetzverbrauches
+        // Energieinhalt in Abhängigkeit des Ladezustands und des Bordnetzverbrauches
 
     #define I3_RES_EME_STAT_LSC_TRIGGER_INHALT_NR_0XDEDE             (RXBUF_UCHAR(34))
     #define I3_RES_EME_STAT_LSC_TRIGGER_INHALT_NR_0XDEDE_UNIT        '0-n'
@@ -2140,7 +2138,7 @@
     #define I3_RES_EME_STAT_ENERGIEINHALT_MAX_WERT_0XDEDE            (RXBUF_UINT32(35))
     #define I3_RES_EME_STAT_ENERGIEINHALT_MAX_WERT_0XDEDE_UNIT       'Ws'
     #define I3_RES_EME_STAT_ENERGIEINHALT_MAX_WERT_0XDEDE_TYPE       unsigned long
-        // Maximum possible energy content of the high-voltage storage system / Maximal mÃ¶glicher Energieinhalt des
+        // Maximum possible energy content of the high-voltage storage system / Maximal möglicher Energieinhalt des
         // Hochvoltspeichers
 
     #define I3_RES_EME_STAT_LADEN_PROGNOSE_REST_WERT_0XDEDE          (RXBUF_UINT(39))
@@ -2148,7 +2146,7 @@
     #define I3_RES_EME_STAT_LADEN_PROGNOSE_REST_WERT_0XDEDE_TYPE     unsigned short
         // Predicted remaining charging time: 0-65531 = value range; 65533 = Not available; 65532 = initialization; 65534
         // = error; 65535 = signal valid / Prognostizierte Restladedauer: 0-65531 = Wertebereich; 65533 = Nicht
-        // verfÃ¼gbar; 65532 = Initialisierung; 65534  = Fehler; 65535 = Signal ugÃ¼ltig
+        // verfügbar; 65532 = Initialisierung; 65534  = Fehler; 65535 = Signal ugültig
 
     #define I3_RES_EME_STAT_LADESTECKER_NR_0XDEDE                    (RXBUF_UCHAR(41))
     #define I3_RES_EME_STAT_LADESTECKER_NR_0XDEDE_UNIT               '0-n'
@@ -2162,7 +2160,7 @@
 // Skipping KLASSIERUNG_ZUG_SCHUB_LOESCHEN on 0xDEE5 which takes arguments
 
 #define I3_PID_EME_HISTOGRAMM_ANTRIEB                                0xDEED
-        // History values for drive / Historienwerte fÃ¼r Antrieb
+        // History values for drive / Historienwerte für Antrieb
 
     #define I3_RES_EME_STAT_ANTR_HIST_010_WERT                       (RXBUF_UINT32(0))
     #define I3_RES_EME_STAT_ANTR_HIST_010_WERT_TYPE                  unsigned long
@@ -2510,42 +2508,41 @@
         // History value ANTR_HIST_3277 / Historienwert ANTR_HIST_3277
 
 #define I3_PID_EME_AUTOP_SBW                                         0xDEFB
-        // Frequency counter for the reasons for Auto-P and SW version shift-by-wire / HÃ¤ufigkeitszÃ¤hler fÃ¼r die
-        // GrÃ¼nde von Auto-P und SW Version Shift-by-Wire
+        // Frequency counter for the reasons for Auto-P and SW version shift-by-wire / Häufigkeitszähler für die Gründe
+        // von Auto-P und SW Version Shift-by-Wire
 
     #define I3_RES_EME_STAT_COUNT_AUTOP_LVEH_WERT                    (RXBUF_UINT(0))
     #define I3_RES_EME_STAT_COUNT_AUTOP_LVEH_WERT_TYPE               unsigned short
-        // Exit frequency counter for Auto-P on vehicle / HÃ¤ufigkeitszÃ¤hler fÃ¼r Auto-P bei Fahrzeug verlassen
+        // Exit frequency counter for Auto-P on vehicle / Häufigkeitszähler für Auto-P bei Fahrzeug verlassen
 
     #define I3_RES_EME_STAT_COUNT_AUTOP_EMF_N_WERT                   (RXBUF_UINT(2))
     #define I3_RES_EME_STAT_COUNT_AUTOP_EMF_N_WERT_TYPE              unsigned short
-        // Frequency counter for Auto-P by EMF call for help in N / HÃ¤ufigkeitszÃ¤hler fÃ¼r Auto-P durch EMF-Hilferuf in
-        // N
+        // Frequency counter for Auto-P by EMF call for help in N / Häufigkeitszähler für Auto-P durch EMF-Hilferuf in N
 
     #define I3_RES_EME_STAT_COUNT_AUTOP_EMF_DR_WERT                  (RXBUF_UINT(4))
     #define I3_RES_EME_STAT_COUNT_AUTOP_EMF_DR_WERT_TYPE             unsigned short
-        // Frequency counter for Auto-P by EMF call for help in D or R / HÃ¤ufigkeitszÃ¤hler fÃ¼r Auto-P durch
-        // EMF-Hilferuf in D oder R
+        // Frequency counter for Auto-P by EMF call for help in D or R / Häufigkeitszähler für Auto-P durch EMF-Hilferuf
+        // in D oder R
 
     #define I3_RES_EME_STAT_COUNT_AUTOP_FB_WERT                      (RXBUF_UINT(6))
     #define I3_RES_EME_STAT_COUNT_AUTOP_FB_WERT_TYPE                 unsigned short
-        // Frequency counter for Auto-P in the event of loss of driving readiness / HÃ¤ufigkeitszÃ¤hler fÃ¼r Auto-P bei
+        // Frequency counter for Auto-P in the event of loss of driving readiness / Häufigkeitszähler für Auto-P bei
         // Fahrbereitschaftsverlust
 
     #define I3_RES_EME_STAT_COUNT_AUTOP_KL15_WERT                    (RXBUF_UINT(8))
     #define I3_RES_EME_STAT_COUNT_AUTOP_KL15_WERT_TYPE               unsigned short
-        // Frequency counter for Auto-P when terminal 15 is switched off / HÃ¤ufigkeitszÃ¤hler fÃ¼r Auto-P bei Klemme15
+        // Frequency counter for Auto-P when terminal 15 is switched off / Häufigkeitszähler für Auto-P bei Klemme15
         // Abschaltung
 
     #define I3_RES_EME_STAT_COUNT_AUTOP_CHRGWIRE_WERT                (RXBUF_UINT(10))
     #define I3_RES_EME_STAT_COUNT_AUTOP_CHRGWIRE_WERT_TYPE           unsigned short
-        // Frequency counter for Auto-P when the charging cable is plugged in / HÃ¤ufigkeitszÃ¤hler fÃ¼r Auto-P bei
+        // Frequency counter for Auto-P when the charging cable is plugged in / Häufigkeitszähler für Auto-P bei
         // gestecktem Ladekabel
 
     // Can't process STAT_SW_VERSION_SBW_WERT - don't know type motorola float (*** this will mean all the following offsets are wrong!!! ****)
 
 #define I3_PID_EME_FAHRSTUFEN_ZAEHLER_SBW                            0xDEFF
-        // Frequency counter of speed step changes / HÃ¤ufigkeitszÃ¤hler von Fahrstufenwechsel
+        // Frequency counter of speed step changes / Häufigkeitszähler von Fahrstufenwechsel
 
     #define I3_RES_EME_STAT_ZAEHLER_WECHSEL_P_NACH_R_WERT            (RXBUF_UINT32(0))
     #define I3_RES_EME_STAT_ZAEHLER_WECHSEL_P_NACH_R_WERT_TYPE       unsigned long
@@ -2604,99 +2601,99 @@
 
     #define I3_RES_EME_STAT_LEISTUNG_HIST_INT_1_WERT                 (RXBUF_UINT32(0))
     #define I3_RES_EME_STAT_LEISTUNG_HIST_INT_1_WERT_TYPE            unsigned long
-        // Power histrogram value 1 from internal charger / Leistungshistrogramm Wert 1 vom internen LadegerÃ¤t
+        // Power histrogram value 1 from internal charger / Leistungshistrogramm Wert 1 vom internen Ladegerät
 
     #define I3_RES_EME_STAT_LEISTUNG_HIST_INT_2_WERT                 (RXBUF_UINT32(4))
     #define I3_RES_EME_STAT_LEISTUNG_HIST_INT_2_WERT_TYPE            unsigned long
-        // Power histrogram value 2 from the internal charger / Leistungshistrogramm Wert 2 vom internen LadegerÃ¤t
+        // Power histrogram value 2 from the internal charger / Leistungshistrogramm Wert 2 vom internen Ladegerät
 
     #define I3_RES_EME_STAT_LEISTUNG_HIST_INT_3_WERT                 (RXBUF_UINT32(8))
     #define I3_RES_EME_STAT_LEISTUNG_HIST_INT_3_WERT_TYPE            unsigned long
-        // Power histrogram value 3 from the internal charger / Leistungshistrogramm Wert 3 vom internen LadegerÃ¤t
+        // Power histrogram value 3 from the internal charger / Leistungshistrogramm Wert 3 vom internen Ladegerät
 
     #define I3_RES_EME_STAT_LEISTUNG_HIST_INT_4_WERT                 (RXBUF_UINT32(12))
     #define I3_RES_EME_STAT_LEISTUNG_HIST_INT_4_WERT_TYPE            unsigned long
-        // Power histrogram value 4 from the internal charger / Leistungshistrogramm Wert 4 vom internen LadegerÃ¤t
+        // Power histrogram value 4 from the internal charger / Leistungshistrogramm Wert 4 vom internen Ladegerät
 
     #define I3_RES_EME_STAT_LEISTUNG_HIST_INT_5_WERT                 (RXBUF_UINT32(16))
     #define I3_RES_EME_STAT_LEISTUNG_HIST_INT_5_WERT_TYPE            unsigned long
-        // Power histrogram value 5 from the internal charger / Leistungshistrogramm Wert 5 vom internen LadegerÃ¤t
+        // Power histrogram value 5 from the internal charger / Leistungshistrogramm Wert 5 vom internen Ladegerät
 
     #define I3_RES_EME_STAT_LEISTUNG_HIST_INT_6_WERT                 (RXBUF_UINT32(20))
     #define I3_RES_EME_STAT_LEISTUNG_HIST_INT_6_WERT_TYPE            unsigned long
-        // Power histrogram value 6 from internal charger / Leistungshistrogramm Wert 6 vom internen LadegerÃ¤t
+        // Power histrogram value 6 from internal charger / Leistungshistrogramm Wert 6 vom internen Ladegerät
 
     #define I3_RES_EME_STAT_TEMP_HIST_INT_1_WERT                     (RXBUF_UINT32(24))
     #define I3_RES_EME_STAT_TEMP_HIST_INT_1_WERT_TYPE                unsigned long
-        // Temperature histogram value 1 from the internal charger / Temperaturhistogramm Wert 1 vom internen LadegerÃ¤t
+        // Temperature histogram value 1 from the internal charger / Temperaturhistogramm Wert 1 vom internen Ladegerät
 
     #define I3_RES_EME_STAT_TEMP_HIST_INT_2_WERT                     (RXBUF_UINT32(28))
     #define I3_RES_EME_STAT_TEMP_HIST_INT_2_WERT_TYPE                unsigned long
-        // Temperature histogram value 2 from the internal charger / Temperaturhistogramm Wert 2 vom internen LadegerÃ¤t
+        // Temperature histogram value 2 from the internal charger / Temperaturhistogramm Wert 2 vom internen Ladegerät
 
     #define I3_RES_EME_STAT_TEMP_HIST_INT_3_WERT                     (RXBUF_UINT32(32))
     #define I3_RES_EME_STAT_TEMP_HIST_INT_3_WERT_TYPE                unsigned long
-        // Temperature histogram value 3 from the internal charger / Temperaturhistogramm Wert 3 vom internen LadegerÃ¤t
+        // Temperature histogram value 3 from the internal charger / Temperaturhistogramm Wert 3 vom internen Ladegerät
 
     #define I3_RES_EME_STAT_TEMP_HIST_INT_4_WERT                     (RXBUF_UINT32(36))
     #define I3_RES_EME_STAT_TEMP_HIST_INT_4_WERT_TYPE                unsigned long
-        // Temperature histogram value 4 from the internal charger / Temperaturhistogramm Wert 4 vom internen LadegerÃ¤t
+        // Temperature histogram value 4 from the internal charger / Temperaturhistogramm Wert 4 vom internen Ladegerät
 
     #define I3_RES_EME_STAT_TEMP_HIST_INT_5_WERT                     (RXBUF_UINT32(40))
     #define I3_RES_EME_STAT_TEMP_HIST_INT_5_WERT_TYPE                unsigned long
-        // Temperature histogram value 5 from the internal charger / Temperaturhistogramm Wert 5 vom internen LadegerÃ¤t
+        // Temperature histogram value 5 from the internal charger / Temperaturhistogramm Wert 5 vom internen Ladegerät
 
     #define I3_RES_EME_STAT_TEMP_HIST_INT_6_WERT                     (RXBUF_UINT32(44))
     #define I3_RES_EME_STAT_TEMP_HIST_INT_6_WERT_TYPE                unsigned long
-        // Temperature histogram value 6 from the internal charger / Temperaturhistogramm Wert 6 vom internen LadegerÃ¤t
+        // Temperature histogram value 6 from the internal charger / Temperaturhistogramm Wert 6 vom internen Ladegerät
 
     #define I3_RES_EME_STAT_LEISTUNG_HIST_EXT_1_WERT                 (RXBUF_UINT32(48))
     #define I3_RES_EME_STAT_LEISTUNG_HIST_EXT_1_WERT_TYPE            unsigned long
-        // Power histrogram value 1 from external charger / Leistungshistrogramm Wert 1 vom externen LadegerÃ¤t
+        // Power histrogram value 1 from external charger / Leistungshistrogramm Wert 1 vom externen Ladegerät
 
     #define I3_RES_EME_STAT_LEISTUNG_HIST_EXT_2_WERT                 (RXBUF_UINT32(52))
     #define I3_RES_EME_STAT_LEISTUNG_HIST_EXT_2_WERT_TYPE            unsigned long
-        // Power histrogram value 2 from external charger / Leistungshistrogramm Wert 2 vom externen LadegerÃ¤t
+        // Power histrogram value 2 from external charger / Leistungshistrogramm Wert 2 vom externen Ladegerät
 
     #define I3_RES_EME_STAT_LEISTUNG_HIST_EXT_3_WERT                 (RXBUF_UINT32(56))
     #define I3_RES_EME_STAT_LEISTUNG_HIST_EXT_3_WERT_TYPE            unsigned long
-        // Power histrogram value 3 from external charger / Leistungshistrogramm Wert 3 vom externen LadegerÃ¤t
+        // Power histrogram value 3 from external charger / Leistungshistrogramm Wert 3 vom externen Ladegerät
 
     #define I3_RES_EME_STAT_LEISTUNG_HIST_EXT_4_WERT                 (RXBUF_UINT32(60))
     #define I3_RES_EME_STAT_LEISTUNG_HIST_EXT_4_WERT_TYPE            unsigned long
-        // Power histrogram value 4 from external charger / Leistungshistrogramm Wert 4 vom externen LadegerÃ¤t
+        // Power histrogram value 4 from external charger / Leistungshistrogramm Wert 4 vom externen Ladegerät
 
     #define I3_RES_EME_STAT_LEISTUNG_HIST_EXT_5_WERT                 (RXBUF_UINT32(64))
     #define I3_RES_EME_STAT_LEISTUNG_HIST_EXT_5_WERT_TYPE            unsigned long
-        // Power histrogram value 5 from external charger / Leistungshistrogramm Wert 5 vom externen LadegerÃ¤t
+        // Power histrogram value 5 from external charger / Leistungshistrogramm Wert 5 vom externen Ladegerät
 
     #define I3_RES_EME_STAT_LEISTUNG_HIST_EXT_6_WERT                 (RXBUF_UINT32(68))
     #define I3_RES_EME_STAT_LEISTUNG_HIST_EXT_6_WERT_TYPE            unsigned long
-        // Power histrogram value 6 from external charger / Leistungshistrogramm Wert 6 vom externen LadegerÃ¤t
+        // Power histrogram value 6 from external charger / Leistungshistrogramm Wert 6 vom externen Ladegerät
 
     #define I3_RES_EME_STAT_TEMP_HIST_EXT_1_WERT                     (RXBUF_UINT32(72))
     #define I3_RES_EME_STAT_TEMP_HIST_EXT_1_WERT_TYPE                unsigned long
-        // Temperature histogram value 1 from external charger / Temperaturhistogramm Wert 1 vom externen LadegerÃ¤t
+        // Temperature histogram value 1 from external charger / Temperaturhistogramm Wert 1 vom externen Ladegerät
 
     #define I3_RES_EME_STAT_TEMP_HIST_EXT_2_WERT                     (RXBUF_UINT32(76))
     #define I3_RES_EME_STAT_TEMP_HIST_EXT_2_WERT_TYPE                unsigned long
-        // Temperature histogram value 2 from the external charger / Temperaturhistogramm Wert 2 vom externen LadegerÃ¤t
+        // Temperature histogram value 2 from the external charger / Temperaturhistogramm Wert 2 vom externen Ladegerät
 
     #define I3_RES_EME_STAT_TEMP_HIST_EXT_3_WERT                     (RXBUF_UINT32(80))
     #define I3_RES_EME_STAT_TEMP_HIST_EXT_3_WERT_TYPE                unsigned long
-        // Temperature histogram value 3 from the external charger / Temperaturhistogramm Wert 3 vom externen LadegerÃ¤t
+        // Temperature histogram value 3 from the external charger / Temperaturhistogramm Wert 3 vom externen Ladegerät
 
     #define I3_RES_EME_STAT_TEMP_HIST_EXT_4_WERT                     (RXBUF_UINT32(84))
     #define I3_RES_EME_STAT_TEMP_HIST_EXT_4_WERT_TYPE                unsigned long
-        // Temperature histogram value 4 from the external charger / Temperaturhistogramm Wert 4 vom externen LadegerÃ¤t
+        // Temperature histogram value 4 from the external charger / Temperaturhistogramm Wert 4 vom externen Ladegerät
 
     #define I3_RES_EME_STAT_TEMP_HIST_EXT_5_WERT                     (RXBUF_UINT32(88))
     #define I3_RES_EME_STAT_TEMP_HIST_EXT_5_WERT_TYPE                unsigned long
-        // Temperature histogram value 5 from the external charger / Temperaturhistogramm Wert 5 vom externen LadegerÃ¤t
+        // Temperature histogram value 5 from the external charger / Temperaturhistogramm Wert 5 vom externen Ladegerät
 
     #define I3_RES_EME_STAT_TEMP_HIST_EXT_6_WERT                     (RXBUF_UINT32(92))
     #define I3_RES_EME_STAT_TEMP_HIST_EXT_6_WERT_TYPE                unsigned long
-        // Temperature histogram value 6 from the external charger / Temperaturhistogramm Wert 6 vom externen LadegerÃ¤t
+        // Temperature histogram value 6 from the external charger / Temperaturhistogramm Wert 6 vom externen Ladegerät
 
 #define I3_PID_EME_INVERTER_HISTOGRAMM                               0xDF4D
         // Reading out the calculated lifetime data of the inverter / Auslesen der berechneten Lebenszeitdaten des
@@ -2711,7 +2708,7 @@
     #define I3_RES_EME_STAT_INVERTER_IGBT_LEBENSZEIT_KONST_KUEHLUNG_WERT_UNIT '%'
     #define I3_RES_EME_STAT_INVERTER_IGBT_LEBENSZEIT_KONST_KUEHLUNG_WERT_TYPE unsigned char
         // Total IGBT service life consumption for a constant coolant temperature of 70 ° C / Summierter
-        // Lebensdauerverbrauch IGBT fÃ¼r konstante KÃ¼hlmitteltemperatur von 70Â°C
+        // Lebensdauerverbrauch IGBT für konstante Kühlmitteltemperatur von 70°C
 
     #define I3_RES_EME_STAT_INVERTER_DIODE_LEBENSZEIT_WERT           (RXBUF_UCHAR(2)-10.0)
     #define I3_RES_EME_STAT_INVERTER_DIODE_LEBENSZEIT_WERT_UNIT      '%'
@@ -2722,11 +2719,11 @@
     #define I3_RES_EME_STAT_INVERTER_DIODE_LEBENSZEIT_KONST_KUEHLUNG_WERT_UNIT '%'
     #define I3_RES_EME_STAT_INVERTER_DIODE_LEBENSZEIT_KONST_KUEHLUNG_WERT_TYPE unsigned char
         // Total service life consumption diode for constant coolant temperature of 70 ° C / Summierter
-        // Lebensdauerverbrauch Diode fÃ¼r konstante KÃ¼hlmitteltemperatur von 70Â°C
+        // Lebensdauerverbrauch Diode für konstante Kühlmitteltemperatur von 70°C
 
     #define I3_RES_EME_STAT_INVERTER_RESET_LEBENSZEIT_WERT           (RXBUF_UCHAR(4))
     #define I3_RES_EME_STAT_INVERTER_RESET_LEBENSZEIT_WERT_TYPE      unsigned char
-        // Number of residual overflows that occurred / Anzahl der aufgetretenen ÃberlÃ¤ufe des Residuums
+        // Number of residual overflows that occurred / Anzahl der aufgetretenen Überläufe des Residuums
 
 // Skipping LADEMODUS_WERK on 0xDF50 which takes arguments
 
@@ -2735,7 +2732,7 @@
 // Skipping ROTORLAGESENSOR_WINKELCODE on 0xDF52 which takes arguments
 
 #define I3_PID_EME_INVERTER_RBM_INFO                                 0xDF58
-        // RBM information for the non-running inverter diagnosis in I01 and I12 / RBM Information fÃ¼r die nicht
+        // RBM information for the non-running inverter diagnosis in I01 and I12 / RBM Information für die nicht
         // durchlaufende Umrichter Diagnose im I01 und I12
 
     #define I3_RES_EME_STAT_SAE_DTC1_WERT                            (RXBUF_UINT32(0))
@@ -2745,11 +2742,11 @@
 
     #define I3_RES_EME_STAT_SAE_DTC_NUM1_WERT                        (RXBUF_UINT(4))
     #define I3_RES_EME_STAT_SAE_DTC_NUM1_WERT_TYPE                   unsigned short
-        // Counter for the SAE DTC 1 / ZÃ¤hler fÃ¼r den SAE DTC 1
+        // Counter for the SAE DTC 1 / Zähler für den SAE DTC 1
 
     #define I3_RES_EME_STAT_SAE_DTC_DEN1_WERT                        (RXBUF_UINT(6))
     #define I3_RES_EME_STAT_SAE_DTC_DEN1_WERT_TYPE                   unsigned short
-        // Denominator for the SAE DTC 1 / Nenner fÃ¼r den SAE DTC 1
+        // Denominator for the SAE DTC 1 / Nenner für den SAE DTC 1
 
     #define I3_RES_EME_STAT_SAE_DTC2_WERT                            (RXBUF_UINT32(8))
     #define I3_RES_EME_STAT_SAE_DTC2_WERT_UNIT                       'HEX'
@@ -2758,11 +2755,11 @@
 
     #define I3_RES_EME_STAT_SAE_DTC_NUM2_WERT                        (RXBUF_UINT(12))
     #define I3_RES_EME_STAT_SAE_DTC_NUM2_WERT_TYPE                   unsigned short
-        // Counter for the SAE DTC 2 / ZÃ¤hler fÃ¼r den SAE DTC 2
+        // Counter for the SAE DTC 2 / Zähler für den SAE DTC 2
 
     #define I3_RES_EME_STAT_SAE_DTC_DEN2_WERT                        (RXBUF_UINT(14))
     #define I3_RES_EME_STAT_SAE_DTC_DEN2_WERT_TYPE                   unsigned short
-        // Denominator for the SAE DTC 2 / Nenner fÃ¼r den SAE DTC 2
+        // Denominator for the SAE DTC 2 / Nenner für den SAE DTC 2
 
     #define I3_RES_EME_STAT_SAE_DTC3_WERT                            (RXBUF_UINT32(16))
     #define I3_RES_EME_STAT_SAE_DTC3_WERT_UNIT                       'HEX'
@@ -2771,11 +2768,11 @@
 
     #define I3_RES_EME_STAT_SAE_DTC_NUM3_WERT                        (RXBUF_UINT(20))
     #define I3_RES_EME_STAT_SAE_DTC_NUM3_WERT_TYPE                   unsigned short
-        // Counter for the SAE DTC 3 / ZÃ¤hler fÃ¼r den SAE DTC 3
+        // Counter for the SAE DTC 3 / Zähler für den SAE DTC 3
 
     #define I3_RES_EME_STAT_SAE_DTC_DEN3_WERT                        (RXBUF_UINT(22))
     #define I3_RES_EME_STAT_SAE_DTC_DEN3_WERT_TYPE                   unsigned short
-        // Denominator for the SAE DTC 3 / Nenner fÃ¼r den SAE DTC 3
+        // Denominator for the SAE DTC 3 / Nenner für den SAE DTC 3
 
     #define I3_RES_EME_STAT_SAE_DTC4_WERT                            (RXBUF_UINT32(24))
     #define I3_RES_EME_STAT_SAE_DTC4_WERT_UNIT                       'HEX'
@@ -2784,11 +2781,11 @@
 
     #define I3_RES_EME_STAT_SAE_DTC_NUM4_WERT                        (RXBUF_UINT(28))
     #define I3_RES_EME_STAT_SAE_DTC_NUM4_WERT_TYPE                   unsigned short
-        // Counter for the SAE DTC 4 / ZÃ¤hler fÃ¼r den SAE DTC 4
+        // Counter for the SAE DTC 4 / Zähler für den SAE DTC 4
 
     #define I3_RES_EME_STAT_SAE_DTC_DEN4_WERT                        (RXBUF_UINT(30))
     #define I3_RES_EME_STAT_SAE_DTC_DEN4_WERT_TYPE                   unsigned short
-        // Denominator for the SAE DTC 4 / Nenner fÃ¼r den SAE DTC 4
+        // Denominator for the SAE DTC 4 / Nenner für den SAE DTC 4
 
     #define I3_RES_EME_STAT_SAE_DTC5_WERT                            (RXBUF_UINT32(32))
     #define I3_RES_EME_STAT_SAE_DTC5_WERT_UNIT                       'HEX'
@@ -2797,11 +2794,11 @@
 
     #define I3_RES_EME_STAT_SAE_DTC_NUM5_WERT                        (RXBUF_UINT(36))
     #define I3_RES_EME_STAT_SAE_DTC_NUM5_WERT_TYPE                   unsigned short
-        // Counter for the SAE DTC 5 / ZÃ¤hler fÃ¼r den SAE DTC 5
+        // Counter for the SAE DTC 5 / Zähler für den SAE DTC 5
 
     #define I3_RES_EME_STAT_SAE_DTC_DEN5_WERT                        (RXBUF_UINT(38))
     #define I3_RES_EME_STAT_SAE_DTC_DEN5_WERT_TYPE                   unsigned short
-        // Denominator for the SAE DTC 5 / Nenner fÃ¼r den SAE DTC 5
+        // Denominator for the SAE DTC 5 / Nenner für den SAE DTC 5
 
     #define I3_RES_EME_STAT_SAE_DTC6_WERT                            (RXBUF_UINT32(40))
     #define I3_RES_EME_STAT_SAE_DTC6_WERT_UNIT                       'HEX'
@@ -2810,14 +2807,14 @@
 
     #define I3_RES_EME_STAT_SAE_DTC_NUM6_WERT                        (RXBUF_UINT(44))
     #define I3_RES_EME_STAT_SAE_DTC_NUM6_WERT_TYPE                   unsigned short
-        // Counter for the SAE DTC 6 / ZÃ¤hler fÃ¼r den SAE DTC 6
+        // Counter for the SAE DTC 6 / Zähler für den SAE DTC 6
 
     #define I3_RES_EME_STAT_SAE_DTC_DEN6_WERT                        (RXBUF_UINT(46))
     #define I3_RES_EME_STAT_SAE_DTC_DEN6_WERT_TYPE                   unsigned short
-        // Denominator for the SAE DTC 6 / Nenner fÃ¼r den SAE DTC 6
+        // Denominator for the SAE DTC 6 / Nenner für den SAE DTC 6
 
 #define I3_PID_EME_DCDC_RBM_INFO                                     0xDF59
-        // RBM information for the discontinuous DC / DC converter diagnosis in I01 and I12 / RBM Information fÃ¼r die
+        // RBM information for the discontinuous DC / DC converter diagnosis in I01 and I12 / RBM Information für die
         // nicht kontinuierliche DC/DC-Wandler Diagnose in I01 und I12
 
     #define I3_RES_EME_STAT_SAE_DTC1_WERT_0XDF59                     (RXBUF_UINT32(0))
@@ -2827,11 +2824,11 @@
 
     #define I3_RES_EME_STAT_SAE_DTC_NUM1_WERT_0XDF59                 (RXBUF_UINT(4))
     #define I3_RES_EME_STAT_SAE_DTC_NUM1_WERT_0XDF59_TYPE            unsigned short
-        // Counter for the SAE DTC 1 / ZÃ¤hler fÃ¼r den SAE DTC 1
+        // Counter for the SAE DTC 1 / Zähler für den SAE DTC 1
 
     #define I3_RES_EME_STAT_SAE_DTC_DEN1_WERT_0XDF59                 (RXBUF_UINT(6))
     #define I3_RES_EME_STAT_SAE_DTC_DEN1_WERT_0XDF59_TYPE            unsigned short
-        // Denominator for the SAE DTC 1 / Nenner fÃ¼r den SAE DTC 1
+        // Denominator for the SAE DTC 1 / Nenner für den SAE DTC 1
 
     #define I3_RES_EME_STAT_SAE_DTC2_WERT_0XDF59                     (RXBUF_UINT32(8))
     #define I3_RES_EME_STAT_SAE_DTC2_WERT_0XDF59_UNIT                'HEX'
@@ -2840,11 +2837,11 @@
 
     #define I3_RES_EME_STAT_SAE_DTC_NUM2_WERT_0XDF59                 (RXBUF_UINT(12))
     #define I3_RES_EME_STAT_SAE_DTC_NUM2_WERT_0XDF59_TYPE            unsigned short
-        // Counter for the SAE DTC 2 / ZÃ¤hler fÃ¼r den SAE DTC 2
+        // Counter for the SAE DTC 2 / Zähler für den SAE DTC 2
 
     #define I3_RES_EME_STAT_SAE_DTC_DEN2_WERT_0XDF59                 (RXBUF_UINT(14))
     #define I3_RES_EME_STAT_SAE_DTC_DEN2_WERT_0XDF59_TYPE            unsigned short
-        // Denominator for the SAE DTC 2 / Nenner fÃ¼r den SAE DTC 2
+        // Denominator for the SAE DTC 2 / Nenner für den SAE DTC 2
 
     #define I3_RES_EME_STAT_SAE_DTC3_WERT_0XDF59                     (RXBUF_UINT32(16))
     #define I3_RES_EME_STAT_SAE_DTC3_WERT_0XDF59_UNIT                'HEX'
@@ -2853,11 +2850,11 @@
 
     #define I3_RES_EME_STAT_SAE_DTC_NUM3_WERT_0XDF59                 (RXBUF_UINT(20))
     #define I3_RES_EME_STAT_SAE_DTC_NUM3_WERT_0XDF59_TYPE            unsigned short
-        // Counter for the SAE DTC 3 / ZÃ¤hler fÃ¼r den SAE DTC 3
+        // Counter for the SAE DTC 3 / Zähler für den SAE DTC 3
 
     #define I3_RES_EME_STAT_SAE_DTC_DEN3_WERT_0XDF59                 (RXBUF_UINT(22))
     #define I3_RES_EME_STAT_SAE_DTC_DEN3_WERT_0XDF59_TYPE            unsigned short
-        // Denominator for the SAE DTC 3 / Nenner fÃ¼r den SAE DTC 3
+        // Denominator for the SAE DTC 3 / Nenner für den SAE DTC 3
 
     #define I3_RES_EME_STAT_SAE_DTC4_WERT_0XDF59                     (RXBUF_UINT32(24))
     #define I3_RES_EME_STAT_SAE_DTC4_WERT_0XDF59_UNIT                'HEX'
@@ -2866,11 +2863,11 @@
 
     #define I3_RES_EME_STAT_SAE_DTC_NUM4_WERT_0XDF59                 (RXBUF_UINT(28))
     #define I3_RES_EME_STAT_SAE_DTC_NUM4_WERT_0XDF59_TYPE            unsigned short
-        // Counter for the SAE DTC 4 / ZÃ¤hler fÃ¼r den SAE DTC 4
+        // Counter for the SAE DTC 4 / Zähler für den SAE DTC 4
 
     #define I3_RES_EME_STAT_SAE_DTC_DEN4_WERT_0XDF59                 (RXBUF_UINT(30))
     #define I3_RES_EME_STAT_SAE_DTC_DEN4_WERT_0XDF59_TYPE            unsigned short
-        // Denominator for the SAE DTC 4 / Nenner fÃ¼r den SAE DTC 4
+        // Denominator for the SAE DTC 4 / Nenner für den SAE DTC 4
 
     #define I3_RES_EME_STAT_SAE_DTC5_WERT_0XDF59                     (RXBUF_UINT32(32))
     #define I3_RES_EME_STAT_SAE_DTC5_WERT_0XDF59_UNIT                'HEX'
@@ -2879,11 +2876,11 @@
 
     #define I3_RES_EME_STAT_SAE_DTC_NUM5_WERT_0XDF59                 (RXBUF_UINT(36))
     #define I3_RES_EME_STAT_SAE_DTC_NUM5_WERT_0XDF59_TYPE            unsigned short
-        // Counter for the SAE DTC 5 / ZÃ¤hler fÃ¼r den SAE DTC 5
+        // Counter for the SAE DTC 5 / Zähler für den SAE DTC 5
 
     #define I3_RES_EME_STAT_SAE_DTC_DEN5_WERT_0XDF59                 (RXBUF_UINT(38))
     #define I3_RES_EME_STAT_SAE_DTC_DEN5_WERT_0XDF59_TYPE            unsigned short
-        // Denominator for the SAE DTC 5 / Nenner fÃ¼r den SAE DTC 5
+        // Denominator for the SAE DTC 5 / Nenner für den SAE DTC 5
 
     #define I3_RES_EME_STAT_SAE_DTC6_WERT_0XDF59                     (RXBUF_UINT32(40))
     #define I3_RES_EME_STAT_SAE_DTC6_WERT_0XDF59_UNIT                'HEX'
@@ -2892,11 +2889,11 @@
 
     #define I3_RES_EME_STAT_SAE_DTC_NUM6_WERT_0XDF59                 (RXBUF_UINT(44))
     #define I3_RES_EME_STAT_SAE_DTC_NUM6_WERT_0XDF59_TYPE            unsigned short
-        // Counter for the SAE DTC 6 / ZÃ¤hler fÃ¼r den SAE DTC 6
+        // Counter for the SAE DTC 6 / Zähler für den SAE DTC 6
 
     #define I3_RES_EME_STAT_SAE_DTC_DEN6_WERT_0XDF59                 (RXBUF_UINT(46))
     #define I3_RES_EME_STAT_SAE_DTC_DEN6_WERT_0XDF59_TYPE            unsigned short
-        // Denominator for the SAE DTC 6 / Nenner fÃ¼r den SAE DTC 6
+        // Denominator for the SAE DTC 6 / Nenner für den SAE DTC 6
 
     #define I3_RES_EME_STAT_SAE_DTC7_WERT                            (RXBUF_UINT32(48))
     #define I3_RES_EME_STAT_SAE_DTC7_WERT_UNIT                       'HEX'
@@ -2905,11 +2902,11 @@
 
     #define I3_RES_EME_STAT_SAE_DTC_NUM7_WERT                        (RXBUF_UINT(52))
     #define I3_RES_EME_STAT_SAE_DTC_NUM7_WERT_TYPE                   unsigned short
-        // Counter for the SAE DTC 7 / ZÃ¤hler fÃ¼r den SAE DTC 7
+        // Counter for the SAE DTC 7 / Zähler für den SAE DTC 7
 
     #define I3_RES_EME_STAT_SAE_DTC_DEN7_WERT                        (RXBUF_UINT(54))
     #define I3_RES_EME_STAT_SAE_DTC_DEN7_WERT_TYPE                   unsigned short
-        // Denominator for the SAE DTC 7 / Nenner fÃ¼r den SAE DTC 7
+        // Denominator for the SAE DTC 7 / Nenner für den SAE DTC 7
 
     #define I3_RES_EME_STAT_SAE_DTC8_WERT                            (RXBUF_UINT32(56))
     #define I3_RES_EME_STAT_SAE_DTC8_WERT_UNIT                       'HEX'
@@ -2918,15 +2915,15 @@
 
     #define I3_RES_EME_STAT_SAE_DTC_NUM8_WERT                        (RXBUF_UINT(60))
     #define I3_RES_EME_STAT_SAE_DTC_NUM8_WERT_TYPE                   unsigned short
-        // Counter for the SAE DTC 8 / ZÃ¤hler fÃ¼r den SAE DTC 8
+        // Counter for the SAE DTC 8 / Zähler für den SAE DTC 8
 
     #define I3_RES_EME_STAT_SAE_DTC_DEN8_WERT                        (RXBUF_UINT(62))
     #define I3_RES_EME_STAT_SAE_DTC_DEN8_WERT_TYPE                   unsigned short
-        // Denominator for the SAE DTC 8 / Nenner fÃ¼r den SAE DTC 8
+        // Denominator for the SAE DTC 8 / Nenner für den SAE DTC 8
 
 #define I3_PID_EME_LADEGERAET_RBM_INFO                               0xDF5A
-        // RBM information for the discontinuous charger diagnosis at I01 and I12 / RBM Information fÃ¼r die nicht
-        // kontinuierliche LadegerÃ¤t Diagnose bei I01 und I12
+        // RBM information for the discontinuous charger diagnosis at I01 and I12 / RBM Information für die nicht
+        // kontinuierliche Ladegerät Diagnose bei I01 und I12
 
     #define I3_RES_EME_STAT_SAE_DTC1_WERT_0XDF5A                     (RXBUF_UINT32(0))
     #define I3_RES_EME_STAT_SAE_DTC1_WERT_0XDF5A_UNIT                'HEX'
@@ -2935,11 +2932,11 @@
 
     #define I3_RES_EME_STAT_SAE_DTC_NUM1_WERT_0XDF5A                 (RXBUF_UINT(4))
     #define I3_RES_EME_STAT_SAE_DTC_NUM1_WERT_0XDF5A_TYPE            unsigned short
-        // Counter for the SAE DTC 1 / ZÃ¤hler fÃ¼r den SAE DTC 1
+        // Counter for the SAE DTC 1 / Zähler für den SAE DTC 1
 
     #define I3_RES_EME_STAT_SAE_DTC_DEN1_WERT_0XDF5A                 (RXBUF_UINT(6))
     #define I3_RES_EME_STAT_SAE_DTC_DEN1_WERT_0XDF5A_TYPE            unsigned short
-        // Denominator for the SAE DTC 1 / Nenner fÃ¼r den SAE DTC 1
+        // Denominator for the SAE DTC 1 / Nenner für den SAE DTC 1
 
     #define I3_RES_EME_STAT_SAE_DTC2_WERT_0XDF5A                     (RXBUF_UINT32(8))
     #define I3_RES_EME_STAT_SAE_DTC2_WERT_0XDF5A_UNIT                'HEX'
@@ -2948,11 +2945,11 @@
 
     #define I3_RES_EME_STAT_SAE_DTC_NUM2_WERT_0XDF5A                 (RXBUF_UINT(12))
     #define I3_RES_EME_STAT_SAE_DTC_NUM2_WERT_0XDF5A_TYPE            unsigned short
-        // Counter for the SAE DTC 2 / ZÃ¤hler fÃ¼r den SAE DTC 2
+        // Counter for the SAE DTC 2 / Zähler für den SAE DTC 2
 
     #define I3_RES_EME_STAT_SAE_DTC_DEN2_WERT_0XDF5A                 (RXBUF_UINT(14))
     #define I3_RES_EME_STAT_SAE_DTC_DEN2_WERT_0XDF5A_TYPE            unsigned short
-        // Denominator for the SAE DTC 2 / Nenner fÃ¼r den SAE DTC 2
+        // Denominator for the SAE DTC 2 / Nenner für den SAE DTC 2
 
     #define I3_RES_EME_STAT_SAE_DTC3_WERT_0XDF5A                     (RXBUF_UINT32(16))
     #define I3_RES_EME_STAT_SAE_DTC3_WERT_0XDF5A_UNIT                'HEX'
@@ -2961,11 +2958,11 @@
 
     #define I3_RES_EME_STAT_SAE_DTC_NUM3_WERT_0XDF5A                 (RXBUF_UINT(20))
     #define I3_RES_EME_STAT_SAE_DTC_NUM3_WERT_0XDF5A_TYPE            unsigned short
-        // Counter for the SAE DTC 3 / ZÃ¤hler fÃ¼r den SAE DTC 3
+        // Counter for the SAE DTC 3 / Zähler für den SAE DTC 3
 
     #define I3_RES_EME_STAT_SAE_DTC_DEN3_WERT_0XDF5A                 (RXBUF_UINT(22))
     #define I3_RES_EME_STAT_SAE_DTC_DEN3_WERT_0XDF5A_TYPE            unsigned short
-        // Denominator for the SAE DTC 3 / Nenner fÃ¼r den SAE DTC 3
+        // Denominator for the SAE DTC 3 / Nenner für den SAE DTC 3
 
     #define I3_RES_EME_STAT_SAE_DTC4_WERT_0XDF5A                     (RXBUF_UINT32(24))
     #define I3_RES_EME_STAT_SAE_DTC4_WERT_0XDF5A_UNIT                'HEX'
@@ -2974,11 +2971,11 @@
 
     #define I3_RES_EME_STAT_SAE_DTC_NUM4_WERT_0XDF5A                 (RXBUF_UINT(28))
     #define I3_RES_EME_STAT_SAE_DTC_NUM4_WERT_0XDF5A_TYPE            unsigned short
-        // Counter for the SAE DTC 4 / ZÃ¤hler fÃ¼r den SAE DTC 4
+        // Counter for the SAE DTC 4 / Zähler für den SAE DTC 4
 
     #define I3_RES_EME_STAT_SAE_DTC_DEN4_WERT_0XDF5A                 (RXBUF_UINT(30))
     #define I3_RES_EME_STAT_SAE_DTC_DEN4_WERT_0XDF5A_TYPE            unsigned short
-        // Denominator for the SAE DTC 4 / Nenner fÃ¼r den SAE DTC 4
+        // Denominator for the SAE DTC 4 / Nenner für den SAE DTC 4
 
     #define I3_RES_EME_STAT_SAE_DTC5_WERT_0XDF5A                     (RXBUF_UINT32(32))
     #define I3_RES_EME_STAT_SAE_DTC5_WERT_0XDF5A_UNIT                'HEX'
@@ -2987,11 +2984,11 @@
 
     #define I3_RES_EME_STAT_SAE_DTC_NUM5_WERT_0XDF5A                 (RXBUF_UINT(36))
     #define I3_RES_EME_STAT_SAE_DTC_NUM5_WERT_0XDF5A_TYPE            unsigned short
-        // Counter for the SAE DTC 5 / ZÃ¤hler fÃ¼r den SAE DTC 5
+        // Counter for the SAE DTC 5 / Zähler für den SAE DTC 5
 
     #define I3_RES_EME_STAT_SAE_DTC_DEN5_WERT_0XDF5A                 (RXBUF_UINT(38))
     #define I3_RES_EME_STAT_SAE_DTC_DEN5_WERT_0XDF5A_TYPE            unsigned short
-        // Denominator for the SAE DTC 5 / Nenner fÃ¼r den SAE DTC 5
+        // Denominator for the SAE DTC 5 / Nenner für den SAE DTC 5
 
     #define I3_RES_EME_STAT_SAE_DTC6_WERT_0XDF5A                     (RXBUF_UINT32(40))
     #define I3_RES_EME_STAT_SAE_DTC6_WERT_0XDF5A_UNIT                'HEX'
@@ -3000,11 +2997,11 @@
 
     #define I3_RES_EME_STAT_SAE_DTC_NUM6_WERT_0XDF5A                 (RXBUF_UINT(44))
     #define I3_RES_EME_STAT_SAE_DTC_NUM6_WERT_0XDF5A_TYPE            unsigned short
-        // Counter for the SAE DTC 6 / ZÃ¤hler fÃ¼r den SAE DTC 6
+        // Counter for the SAE DTC 6 / Zähler für den SAE DTC 6
 
     #define I3_RES_EME_STAT_SAE_DTC_DEN6_WERT_0XDF5A                 (RXBUF_UINT(46))
     #define I3_RES_EME_STAT_SAE_DTC_DEN6_WERT_0XDF5A_TYPE            unsigned short
-        // Denominator for the SAE DTC 6 / Nenner fÃ¼r den SAE DTC 6
+        // Denominator for the SAE DTC 6 / Nenner für den SAE DTC 6
 
     #define I3_RES_EME_STAT_SAE_DTC7_WERT_0XDF5A                     (RXBUF_UINT32(48))
     #define I3_RES_EME_STAT_SAE_DTC7_WERT_0XDF5A_UNIT                'HEX'
@@ -3013,11 +3010,11 @@
 
     #define I3_RES_EME_STAT_SAE_DTC_NUM7_WERT_0XDF5A                 (RXBUF_UINT(52))
     #define I3_RES_EME_STAT_SAE_DTC_NUM7_WERT_0XDF5A_TYPE            unsigned short
-        // Counter for the SAE DTC 7 / ZÃ¤hler fÃ¼r den SAE DTC 7
+        // Counter for the SAE DTC 7 / Zähler für den SAE DTC 7
 
     #define I3_RES_EME_STAT_SAE_DTC_DEN7_WERT_0XDF5A                 (RXBUF_UINT(54))
     #define I3_RES_EME_STAT_SAE_DTC_DEN7_WERT_0XDF5A_TYPE            unsigned short
-        // Denominator for the SAE DTC 7 / Nenner fÃ¼r den SAE DTC 7
+        // Denominator for the SAE DTC 7 / Nenner für den SAE DTC 7
 
     #define I3_RES_EME_STAT_SAE_DTC8_WERT_0XDF5A                     (RXBUF_UINT32(56))
     #define I3_RES_EME_STAT_SAE_DTC8_WERT_0XDF5A_UNIT                'HEX'
@@ -3026,11 +3023,11 @@
 
     #define I3_RES_EME_STAT_SAE_DTC_NUM8_WERT_0XDF5A                 (RXBUF_UINT(60))
     #define I3_RES_EME_STAT_SAE_DTC_NUM8_WERT_0XDF5A_TYPE            unsigned short
-        // Counter for the SAE DTC 8 / ZÃ¤hler fÃ¼r den SAE DTC 8
+        // Counter for the SAE DTC 8 / Zähler für den SAE DTC 8
 
     #define I3_RES_EME_STAT_SAE_DTC_DEN8_WERT_0XDF5A                 (RXBUF_UINT(62))
     #define I3_RES_EME_STAT_SAE_DTC_DEN8_WERT_0XDF5A_TYPE            unsigned short
-        // Denominator for the SAE DTC 8 / Nenner fÃ¼r den SAE DTC 8
+        // Denominator for the SAE DTC 8 / Nenner für den SAE DTC 8
 
     #define I3_RES_EME_STAT_SAE_DTC9_WERT                            (RXBUF_UINT32(64))
     #define I3_RES_EME_STAT_SAE_DTC9_WERT_UNIT                       'HEX'
@@ -3039,11 +3036,11 @@
 
     #define I3_RES_EME_STAT_SAE_DTC_NUM9_WERT                        (RXBUF_UINT(68))
     #define I3_RES_EME_STAT_SAE_DTC_NUM9_WERT_TYPE                   unsigned short
-        // Counter for the SAE DTC 9 / ZÃ¤hler fÃ¼r den SAE DTC 9
+        // Counter for the SAE DTC 9 / Zähler für den SAE DTC 9
 
     #define I3_RES_EME_STAT_SAE_DTC_DEN9_WERT                        (RXBUF_UINT(70))
     #define I3_RES_EME_STAT_SAE_DTC_DEN9_WERT_TYPE                   unsigned short
-        // Denominator for the SAE DTC 9 / Nenner fÃ¼r den SAE DTC 9
+        // Denominator for the SAE DTC 9 / Nenner für den SAE DTC 9
 
     #define I3_RES_EME_STAT_SAE_DTC10_WERT                           (RXBUF_UINT32(72))
     #define I3_RES_EME_STAT_SAE_DTC10_WERT_UNIT                      'HEX'
@@ -3052,11 +3049,11 @@
 
     #define I3_RES_EME_STAT_SAE_DTC_NUM10_WERT                       (RXBUF_UINT(76))
     #define I3_RES_EME_STAT_SAE_DTC_NUM10_WERT_TYPE                  unsigned short
-        // Counter for the SAE DTC 10 / ZÃ¤hler fÃ¼r den SAE DTC 10
+        // Counter for the SAE DTC 10 / Zähler für den SAE DTC 10
 
     #define I3_RES_EME_STAT_SAE_DTC_DEN10_WERT                       (RXBUF_UINT(78))
     #define I3_RES_EME_STAT_SAE_DTC_DEN10_WERT_TYPE                  unsigned short
-        // Denominator for the SAE DTC 10 / Nenner fÃ¼r den SAE DTC 10
+        // Denominator for the SAE DTC 10 / Nenner für den SAE DTC 10
 
     #define I3_RES_EME_STAT_SAE_DTC11_WERT                           (RXBUF_UINT32(80))
     #define I3_RES_EME_STAT_SAE_DTC11_WERT_UNIT                      'HEX'
@@ -3065,11 +3062,11 @@
 
     #define I3_RES_EME_STAT_SAE_DTC_NUM11_WERT                       (RXBUF_UINT(84))
     #define I3_RES_EME_STAT_SAE_DTC_NUM11_WERT_TYPE                  unsigned short
-        // Counter for the SAE DTC 11 / ZÃ¤hler fÃ¼r den SAE DTC 11
+        // Counter for the SAE DTC 11 / Zähler für den SAE DTC 11
 
     #define I3_RES_EME_STAT_SAE_DTC_DEN11_WERT                       (RXBUF_UINT(86))
     #define I3_RES_EME_STAT_SAE_DTC_DEN11_WERT_TYPE                  unsigned short
-        // Denominator for the SAE DTC 11 / Nenner fÃ¼r den SAE DTC 11
+        // Denominator for the SAE DTC 11 / Nenner für den SAE DTC 11
 
     #define I3_RES_EME_STAT_SAE_DTC12_WERT                           (RXBUF_UINT32(88))
     #define I3_RES_EME_STAT_SAE_DTC12_WERT_UNIT                      'HEX'
@@ -3078,11 +3075,11 @@
 
     #define I3_RES_EME_STAT_SAE_DTC_NUM12_WERT                       (RXBUF_UINT(92))
     #define I3_RES_EME_STAT_SAE_DTC_NUM12_WERT_TYPE                  unsigned short
-        // Counter for the SAE DTC 12 / ZÃ¤hler fÃ¼r den SAE DTC 12
+        // Counter for the SAE DTC 12 / Zähler für den SAE DTC 12
 
     #define I3_RES_EME_STAT_SAE_DTC_DEN12_WERT                       (RXBUF_UINT(94))
     #define I3_RES_EME_STAT_SAE_DTC_DEN12_WERT_TYPE                  unsigned short
-        // Denominator for the SAE DTC 12 / Nenner fÃ¼r den SAE DTC 12
+        // Denominator for the SAE DTC 12 / Nenner für den SAE DTC 12
 
     #define I3_RES_EME_STAT_SAE_DTC13_WERT                           (RXBUF_UINT32(96))
     #define I3_RES_EME_STAT_SAE_DTC13_WERT_UNIT                      'HEX'
@@ -3091,11 +3088,11 @@
 
     #define I3_RES_EME_STAT_SAE_DTC_NUM13_WERT                       (RXBUF_UINT(100))
     #define I3_RES_EME_STAT_SAE_DTC_NUM13_WERT_TYPE                  unsigned short
-        // Counter for the SAE DTC 13 / ZÃ¤hler fÃ¼r den SAE DTC 13
+        // Counter for the SAE DTC 13 / Zähler für den SAE DTC 13
 
     #define I3_RES_EME_STAT_SAE_DTC_DEN13_WERT                       (RXBUF_UINT(102))
     #define I3_RES_EME_STAT_SAE_DTC_DEN13_WERT_TYPE                  unsigned short
-        // Denominator for the SAE DTC 13 / Nenner fÃ¼r den SAE DTC 13
+        // Denominator for the SAE DTC 13 / Nenner für den SAE DTC 13
 
     #define I3_RES_EME_STAT_SAE_DTC14_WERT                           (RXBUF_UINT32(104))
     #define I3_RES_EME_STAT_SAE_DTC14_WERT_UNIT                      'HEX'
@@ -3104,11 +3101,11 @@
 
     #define I3_RES_EME_STAT_SAE_DTC_NUM14_WERT                       (RXBUF_UINT(108))
     #define I3_RES_EME_STAT_SAE_DTC_NUM14_WERT_TYPE                  unsigned short
-        // Counter for the SAE DTC 14 / ZÃ¤hler fÃ¼r den SAE DTC 14
+        // Counter for the SAE DTC 14 / Zähler für den SAE DTC 14
 
     #define I3_RES_EME_STAT_SAE_DTC_DEN14_WERT                       (RXBUF_UINT(110))
     #define I3_RES_EME_STAT_SAE_DTC_DEN14_WERT_TYPE                  unsigned short
-        // Denominator for the SAE DTC 14 / Nenner fÃ¼r den SAE DTC 14
+        // Denominator for the SAE DTC 14 / Nenner für den SAE DTC 14
 
     #define I3_RES_EME_STAT_SAE_DTC15_WERT                           (RXBUF_UINT32(112))
     #define I3_RES_EME_STAT_SAE_DTC15_WERT_UNIT                      'HEX'
@@ -3117,11 +3114,11 @@
 
     #define I3_RES_EME_STAT_SAE_DTC_NUM15_WERT                       (RXBUF_UINT(116))
     #define I3_RES_EME_STAT_SAE_DTC_NUM15_WERT_TYPE                  unsigned short
-        // Counter for the SAE DTC 15 / ZÃ¤hler fÃ¼r den SAE DTC 15
+        // Counter for the SAE DTC 15 / Zähler für den SAE DTC 15
 
     #define I3_RES_EME_STAT_SAE_DTC_DEN15_WERT                       (RXBUF_UINT(118))
     #define I3_RES_EME_STAT_SAE_DTC_DEN15_WERT_TYPE                  unsigned short
-        // Denominator for the SAE DTC 15 / Nenner fÃ¼r den SAE DTC 15
+        // Denominator for the SAE DTC 15 / Nenner für den SAE DTC 15
 
     #define I3_RES_EME_STAT_SAE_DTC16_WERT                           (RXBUF_UINT32(120))
     #define I3_RES_EME_STAT_SAE_DTC16_WERT_UNIT                      'HEX'
@@ -3130,11 +3127,11 @@
 
     #define I3_RES_EME_STAT_SAE_DTC_NUM16_WERT                       (RXBUF_UINT(124))
     #define I3_RES_EME_STAT_SAE_DTC_NUM16_WERT_TYPE                  unsigned short
-        // Counter for the SAE DTC 16 / ZÃ¤hler fÃ¼r den SAE DTC 16
+        // Counter for the SAE DTC 16 / Zähler für den SAE DTC 16
 
     #define I3_RES_EME_STAT_SAE_DTC_DEN16_WERT                       (RXBUF_UINT(126))
     #define I3_RES_EME_STAT_SAE_DTC_DEN16_WERT_TYPE                  unsigned short
-        // Denominator for the SAE DTC 16 / Nenner fÃ¼r den SAE DTC 16
+        // Denominator for the SAE DTC 16 / Nenner für den SAE DTC 16
 
     #define I3_RES_EME_STAT_SAE_DTC17_WERT                           (RXBUF_UINT32(128))
     #define I3_RES_EME_STAT_SAE_DTC17_WERT_UNIT                      'HEX'
@@ -3143,11 +3140,11 @@
 
     #define I3_RES_EME_STAT_SAE_DTC_NUM17_WERT                       (RXBUF_UINT(132))
     #define I3_RES_EME_STAT_SAE_DTC_NUM17_WERT_TYPE                  unsigned short
-        // Counter for the SAE DTC 17 / ZÃ¤hler fÃ¼r den SAE DTC 17
+        // Counter for the SAE DTC 17 / Zähler für den SAE DTC 17
 
     #define I3_RES_EME_STAT_SAE_DTC_DEN17_WERT                       (RXBUF_UINT(134))
     #define I3_RES_EME_STAT_SAE_DTC_DEN17_WERT_TYPE                  unsigned short
-        // Denominator for the SAE DTC 17 / Nenner fÃ¼r den SAE DTC 17
+        // Denominator for the SAE DTC 17 / Nenner für den SAE DTC 17
 
     #define I3_RES_EME_STAT_SAE_DTC18_WERT                           (RXBUF_UINT32(136))
     #define I3_RES_EME_STAT_SAE_DTC18_WERT_UNIT                      'HEX'
@@ -3156,11 +3153,11 @@
 
     #define I3_RES_EME_STAT_SAE_DTC_NUM18_WERT                       (RXBUF_UINT(140))
     #define I3_RES_EME_STAT_SAE_DTC_NUM18_WERT_TYPE                  unsigned short
-        // Counter for the SAE DTC 18 / ZÃ¤hler fÃ¼r den SAE DTC 18
+        // Counter for the SAE DTC 18 / Zähler für den SAE DTC 18
 
     #define I3_RES_EME_STAT_SAE_DTC_DEN18_WERT                       (RXBUF_UINT(142))
     #define I3_RES_EME_STAT_SAE_DTC_DEN18_WERT_TYPE                  unsigned short
-        // Denominator for the SAE DTC 18 / Nenner fÃ¼r den SAE DTC 18
+        // Denominator for the SAE DTC 18 / Nenner für den SAE DTC 18
 
     #define I3_RES_EME_STAT_SAE_DTC19_WERT                           (RXBUF_UINT32(144))
     #define I3_RES_EME_STAT_SAE_DTC19_WERT_UNIT                      'HEX'
@@ -3169,11 +3166,11 @@
 
     #define I3_RES_EME_STAT_SAE_DTC_NUM19_WERT                       (RXBUF_UINT(148))
     #define I3_RES_EME_STAT_SAE_DTC_NUM19_WERT_TYPE                  unsigned short
-        // Counter for the SAE DTC 19 / ZÃ¤hler fÃ¼r den SAE DTC 19
+        // Counter for the SAE DTC 19 / Zähler für den SAE DTC 19
 
     #define I3_RES_EME_STAT_SAE_DTC_DEN19_WERT                       (RXBUF_UINT(150))
     #define I3_RES_EME_STAT_SAE_DTC_DEN19_WERT_TYPE                  unsigned short
-        // Denominator for the SAE DTC 19 / Nenner fÃ¼r den SAE DTC 19
+        // Denominator for the SAE DTC 19 / Nenner für den SAE DTC 19
 
     #define I3_RES_EME_STAT_SAE_DTC20_WERT                           (RXBUF_UINT32(152))
     #define I3_RES_EME_STAT_SAE_DTC20_WERT_UNIT                      'HEX'
@@ -3182,11 +3179,11 @@
 
     #define I3_RES_EME_STAT_SAE_DTC_NUM20_WERT                       (RXBUF_UINT(156))
     #define I3_RES_EME_STAT_SAE_DTC_NUM20_WERT_TYPE                  unsigned short
-        // Counter for the SAE DTC 20 / ZÃ¤hler fÃ¼r den SAE DTC 20
+        // Counter for the SAE DTC 20 / Zähler für den SAE DTC 20
 
     #define I3_RES_EME_STAT_SAE_DTC_DEN20_WERT                       (RXBUF_UINT(158))
     #define I3_RES_EME_STAT_SAE_DTC_DEN20_WERT_TYPE                  unsigned short
-        // Denominator for the SAE DTC 20 / Nenner fÃ¼r den SAE DTC 20
+        // Denominator for the SAE DTC 20 / Nenner für den SAE DTC 20
 
     #define I3_RES_EME_STAT_SAE_DTC21_WERT                           (RXBUF_UINT32(160))
     #define I3_RES_EME_STAT_SAE_DTC21_WERT_UNIT                      'HEX'
@@ -3195,11 +3192,11 @@
 
     #define I3_RES_EME_STAT_SAE_DTC_NUM21_WERT                       (RXBUF_UINT(164))
     #define I3_RES_EME_STAT_SAE_DTC_NUM21_WERT_TYPE                  unsigned short
-        // Counter for the SAE DTC 21 / ZÃ¤hler fÃ¼r den SAE DTC 21
+        // Counter for the SAE DTC 21 / Zähler für den SAE DTC 21
 
     #define I3_RES_EME_STAT_SAE_DTC_DEN21_WERT                       (RXBUF_UINT(166))
     #define I3_RES_EME_STAT_SAE_DTC_DEN21_WERT_TYPE                  unsigned short
-        // Denominator for the SAE DTC 21 / Nenner fÃ¼r den SAE DTC 21
+        // Denominator for the SAE DTC 21 / Nenner für den SAE DTC 21
 
     #define I3_RES_EME_STAT_SAE_DTC22_WERT                           (RXBUF_UINT32(168))
     #define I3_RES_EME_STAT_SAE_DTC22_WERT_UNIT                      'HEX'
@@ -3208,11 +3205,11 @@
 
     #define I3_RES_EME_STAT_SAE_DTC_NUM22_WERT                       (RXBUF_UINT(172))
     #define I3_RES_EME_STAT_SAE_DTC_NUM22_WERT_TYPE                  unsigned short
-        // Counter for the SAE DTC 22 / ZÃ¤hler fÃ¼r den SAE DTC 22
+        // Counter for the SAE DTC 22 / Zähler für den SAE DTC 22
 
     #define I3_RES_EME_STAT_SAE_DTC_DEN22_WERT                       (RXBUF_UINT(174))
     #define I3_RES_EME_STAT_SAE_DTC_DEN22_WERT_TYPE                  unsigned short
-        // Denominator for the SAE DTC 22 / Nenner fÃ¼r den SAE DTC 22
+        // Denominator for the SAE DTC 22 / Nenner für den SAE DTC 22
 
     #define I3_RES_EME_STAT_SAE_DTC23_WERT                           (RXBUF_UINT32(176))
     #define I3_RES_EME_STAT_SAE_DTC23_WERT_UNIT                      'HEX'
@@ -3221,11 +3218,11 @@
 
     #define I3_RES_EME_STAT_SAE_DTC_NUM23_WERT                       (RXBUF_UINT(180))
     #define I3_RES_EME_STAT_SAE_DTC_NUM23_WERT_TYPE                  unsigned short
-        // Counter for the SAE DTC 23 / ZÃ¤hler fÃ¼r den SAE DTC 23
+        // Counter for the SAE DTC 23 / Zähler für den SAE DTC 23
 
     #define I3_RES_EME_STAT_SAE_DTC_DEN23_WERT                       (RXBUF_UINT(182))
     #define I3_RES_EME_STAT_SAE_DTC_DEN23_WERT_TYPE                  unsigned short
-        // Denominator for the SAE DTC 23 / Nenner fÃ¼r den SAE DTC 23
+        // Denominator for the SAE DTC 23 / Nenner für den SAE DTC 23
 
     #define I3_RES_EME_STAT_SAE_DTC24_WERT                           (RXBUF_UINT32(184))
     #define I3_RES_EME_STAT_SAE_DTC24_WERT_UNIT                      'HEX'
@@ -3234,11 +3231,11 @@
 
     #define I3_RES_EME_STAT_SAE_DTC_NUM24_WERT                       (RXBUF_UINT(188))
     #define I3_RES_EME_STAT_SAE_DTC_NUM24_WERT_TYPE                  unsigned short
-        // Counter for the SAE DTC 24 / ZÃ¤hler fÃ¼r den SAE DTC 24
+        // Counter for the SAE DTC 24 / Zähler für den SAE DTC 24
 
     #define I3_RES_EME_STAT_SAE_DTC_DEN24_WERT                       (RXBUF_UINT(190))
     #define I3_RES_EME_STAT_SAE_DTC_DEN24_WERT_TYPE                  unsigned short
-        // Denominator for the SAE DTC 24 / Nenner fÃ¼r den SAE DTC 24
+        // Denominator for the SAE DTC 24 / Nenner für den SAE DTC 24
 
 #define I3_PID_EME_LIEFERANT_TRACE_NUMMER                            0xDF5B
         // 29 bytes SG manufacturer trace number / 29 Byte SG-Hersteller Tracenummer
@@ -3329,12 +3326,12 @@
         // Temperature histogram from LLCZKFIL sensor value 6 / Temperaturhistogramm von LLCZKFIL-Sensor Wert 6
 
 #define I3_PID_EME_LADEGERAET_HV_UEBERSTROM                          0xDFB7
-        // Charger overcurrent meter based on HV DC current sensor raw value / LadegerÃ¤t ÃberstromzÃ¤hler auf Basis HV
+        // Charger overcurrent meter based on HV DC current sensor raw value / Ladegerät Überstromzähler auf Basis HV
         // DC-Stromsensorrohwert
 
     #define I3_RES_EME_STAT_ZAEHLER_HV_UEBERSTROM_WERT               (RXBUF_UINT32(0))
     #define I3_RES_EME_STAT_ZAEHLER_HV_UEBERSTROM_WERT_TYPE          unsigned long
-        // Charger overcurrent meter based on HV DC current sensor raw value / LadegerÃ¤t ÃberstromzÃ¤hler auf Basis HV
+        // Charger overcurrent meter based on HV DC current sensor raw value / Ladegerät Überstromzähler auf Basis HV
         // DC-Stromsensorrohwert
 
 #define I3_PID_EME_EMASCHINE_MAX_DREHZAHL                            0xDFCE
@@ -5594,58 +5591,57 @@
     #define I3_RES_EME_STAT_SPEC_I_MAX_ALTC_CHGE_WERT                (RXBUF_UINT32(28)*0.1f)
     #define I3_RES_EME_STAT_SPEC_I_MAX_ALTC_CHGE_WERT_UNIT           'A'
     #define I3_RES_EME_STAT_SPEC_I_MAX_ALTC_CHGE_WERT_TYPE           float
-        // HVPM specification of the maximum permissible AC conductor current (effective value) for all available grid
-        // phases / HVPM-Vorgabe des maximal zulÃ¤ssigen AC-Leiterstromes (Effektivwert) fÃ¼r alle verfÃ¼gbaren
-        // Netzphasen
+        // HVPM specification of the maximum permissible AC conductor current (effective value) for all available network
+        // phases / HVPM-Vorgabe des maximal zulässigen AC-Leiterstromes (Effektivwert) für alle verfügbaren Netzphasen
 
     #define I3_RES_EME_STAT_SPEC_I_MAX_ALTC_CF_CHGE_WERT             (RXBUF_UINT(32)*0.1f)
     #define I3_RES_EME_STAT_SPEC_I_MAX_ALTC_CF_CHGE_WERT_UNIT        'A'
     #define I3_RES_EME_STAT_SPEC_I_MAX_ALTC_CF_CHGE_WERT_TYPE        float
         // Specification of the maximum permissible AC conductor current (effective value) for all available mains phases
-        // - external charger. / Vorgabe des maximal zulÃ¤ssigen AC-Leiterstromes (Effektivwert) fÃ¼r alle verfÃ¼gbaren
+        // - external charger. / Vorgabe des maximal zulässigen AC-Leiterstromes (Effektivwert) für alle verfügbaren
         // Netzphasen - Externer Lader.
 
     #define I3_RES_EME_STAT_SPEC_I_MAX_DC_CHGE_WERT                  (RXBUF_UINT32(34)*0.1f)
     #define I3_RES_EME_STAT_SPEC_I_MAX_DC_CHGE_WERT_UNIT             'A'
     #define I3_RES_EME_STAT_SPEC_I_MAX_DC_CHGE_WERT_TYPE             float
-        // HVPM specification of the maximum permissible DC-HV current upper limit / HVPM-Vorgabe der maximal zulÃ¤ssigen
+        // HVPM specification of the maximum permissible DC-HV current upper limit / HVPM-Vorgabe der maximal zulässigen
         // DC-HV-Stromobergrenze
 
     #define I3_RES_EME_STAT_AVL_I_CHGE_WERT                          (RXBUF_SINT(38)*0.1f-204.7)
     #define I3_RES_EME_STAT_AVL_I_CHGE_WERT_UNIT                     'A'
     #define I3_RES_EME_STAT_AVL_I_CHGE_WERT_TYPE                     float
-        // Information about the current DC-HV current supplied by the LDK / Information Ã¼ber den aktuell von der LDK
+        // Information about the current DC-HV current supplied by the LDK / Information über den aktuell von der LDK
         // abgegebenen DC-HV-Strom
 
     #define I3_RES_EME_STAT_SPEC_I_MAX_DC_INTLE_WERT                 (RXBUF_UINT32(40)*0.1f)
     #define I3_RES_EME_STAT_SPEC_I_MAX_DC_INTLE_WERT_UNIT            'A'
     #define I3_RES_EME_STAT_SPEC_I_MAX_DC_INTLE_WERT_TYPE            float
         // Specification of the maximum permissible DC-HV current upper limit - internal charger. / Vorgabe der maximal
-        // zulÃ¤ssigen DC-HV-Stromobergrenze - Interner Lader.
+        // zulässigen DC-HV-Stromobergrenze - Interner Lader.
 
     #define I3_RES_EME_STAT_AVL_I_INTLE_WERT                         (RXBUF_UINT32(44)*0.1f)
     #define I3_RES_EME_STAT_AVL_I_INTLE_WERT_UNIT                    'A'
     #define I3_RES_EME_STAT_AVL_I_INTLE_WERT_TYPE                    float
-        // Information about the DC-HV current currently being delivered by the KLE - internal charger / Information
-        // Ã¼ber den aktuell von der KLE abgegebenen DC-HV-Strom - Interner Lader
+        // Information about the DC-HV current currently being supplied by the KLE - internal charger / Information über
+        // den aktuell von der KLE abgegebenen DC-HV-Strom - Interner Lader
 
     #define I3_RES_EME_STAT_SPEC_I_MAX_DC_CF_CHGE_WERT               (RXBUF_UINT(48)*0.1f)
     #define I3_RES_EME_STAT_SPEC_I_MAX_DC_CF_CHGE_WERT_UNIT          'A'
     #define I3_RES_EME_STAT_SPEC_I_MAX_DC_CF_CHGE_WERT_TYPE          float
         // Specification of the maximum permissible DC-HV current upper limit - external charger. / Vorgabe der maximal
-        // zulÃ¤ssigen DC-HV-Stromobergrenze - Externer Lader.
+        // zulässigen DC-HV-Stromobergrenze - Externer Lader.
 
     #define I3_RES_EME_STAT_AVL_I_CF_CHGE_WERT                       (RXBUF_SINT(50)*0.1f-204.7)
     #define I3_RES_EME_STAT_AVL_I_CF_CHGE_WERT_UNIT                  'A'
     #define I3_RES_EME_STAT_AVL_I_CF_CHGE_WERT_TYPE                  float
-        // Information about the current DC-HV current output by the KLE - external charger / Information Ã¼ber den
-        // aktuell von der KLE abgegebenen DC-HV-Strom - Externer Lader
+        // Information about the DC-HV current currently being supplied by the KLE - external charger / Information über
+        // den aktuell von der KLE abgegebenen DC-HV-Strom - Externer Lader
 
     #define I3_RES_EME_STAT_SPEC_U_MAX_CHG_CHGE_WERT                 (RXBUF_UINT(52)*0.1f)
     #define I3_RES_EME_STAT_SPEC_U_MAX_CHG_CHGE_WERT_UNIT            'V'
     #define I3_RES_EME_STAT_SPEC_U_MAX_CHG_CHGE_WERT_TYPE            float
         // HVPM specification of the maximum permissible DC-HV voltage upper limit of the charging electronics. /
-        // HVPM-Vorgabe der maximal zulÃ¤ssigen DC-HV-Spannungsobergrenze der Ladeelektronik.
+        // HVPM-Vorgabe der maximal zulässigen DC-HV-Spannungsobergrenze der Ladeelektronik.
 
     #define I3_RES_EME_STAT_AVL_U_CHGE_WERT                          (RXBUF_UINT(54)*0.1f)
     #define I3_RES_EME_STAT_AVL_U_CHGE_WERT_UNIT                     'V'
@@ -5657,7 +5653,7 @@
     #define I3_RES_EME_STAT_SPEC_U_MAX_INTLE_WERT_UNIT               'V'
     #define I3_RES_EME_STAT_SPEC_U_MAX_INTLE_WERT_TYPE               unsigned long
         // Specification of the maximum permissible DC-HV voltage limit - internal charger. / Vorgabe der maximal
-        // zulÃ¤ssigen DC-HV-Spannungsgrenze - Interner Lader.
+        // zulässigen DC-HV-Spannungsgrenze - Interner Lader.
 
     #define I3_RES_EME_STAT_AVL_U_INTLE_WERT                         (RXBUF_UINT32(60)*0.1f)
     #define I3_RES_EME_STAT_AVL_U_INTLE_WERT_UNIT                    'V'
@@ -5668,7 +5664,7 @@
     #define I3_RES_EME_STAT_SPEC_U_MAX_CF_CHGE_WERT_UNIT             'V'
     #define I3_RES_EME_STAT_SPEC_U_MAX_CF_CHGE_WERT_TYPE             float
         // Specification of the maximum permissible DC-HV voltage limit - external charger. / Vorgabe der maximal
-        // zulÃ¤ssigen DC-HV-Spannungsgrenze - Externer Lader.
+        // zulässigen DC-HV-Spannungsgrenze - Externer Lader.
 
     #define I3_RES_EME_STAT_AVL_U_CF_CHGE_WERT                       (RXBUF_SINT(66)*0.1f)
     #define I3_RES_EME_STAT_AVL_U_CF_CHGE_WERT_UNIT                  'V'
@@ -5679,35 +5675,35 @@
     #define I3_RES_EME_STAT_AVL_U_CHGE_ALTC_WR_1_WERT_UNIT           'V'
     #define I3_RES_EME_STAT_AVL_U_CHGE_ALTC_WR_1_WERT_TYPE           unsigned char
         // Smoothed and filtered AC voltage rms actual value between conductor 1 and neutral conductor (internal charger)
-        // / GeglÃ¤tteter und gefilterter AC-Spannungseffektiv-Istwert zwischen Leiter 1 und Nullleiter (Internes
+        // / Geglätteter und gefilterter AC-Spannungseffektiv-Istwert zwischen Leiter 1 und Nullleiter (Internes
         // Ladegeraet)
 
     #define I3_RES_EME_STAT_AVL_U_1_CF_CHGE_ALTC_WERT                (RXBUF_UCHAR(69))
     #define I3_RES_EME_STAT_AVL_U_1_CF_CHGE_ALTC_WERT_UNIT           'V'
     #define I3_RES_EME_STAT_AVL_U_1_CF_CHGE_ALTC_WERT_TYPE           unsigned char
         // Smoothed and filtered AC voltage rms actual value between conductor 1 and neutral conductor (external charger)
-        // / GeglÃ¤tteter und gefilterter AC-Spannungseffektiv-Istwert zwischen Leiter 1 und Nullleiter (externes
+        // / Geglätteter und gefilterter AC-Spannungseffektiv-Istwert zwischen Leiter 1 und Nullleiter (externes
         // Ladegeraet)
 
     #define I3_RES_EME_STAT_AVL_U_2_CF_CHGE_ALTC_WERT                (RXBUF_UCHAR(70))
     #define I3_RES_EME_STAT_AVL_U_2_CF_CHGE_ALTC_WERT_UNIT           'V'
     #define I3_RES_EME_STAT_AVL_U_2_CF_CHGE_ALTC_WERT_TYPE           unsigned char
         // Smoothed and filtered AC voltage rms actual value between conductor 2 and neutral conductor (external charger)
-        // / GeglÃ¤tteter und gefilterter AC-Spannungseffektiv-Istwert zwischen Leiter 2 und Nullleiter (externes
+        // / Geglätteter und gefilterter AC-Spannungseffektiv-Istwert zwischen Leiter 2 und Nullleiter (externes
         // Ladegeraet)
 
     #define I3_RES_EME_STAT_AVL_TEMP_CHGE_WERT                       (RXBUF_SINT(71)-48.0)
-    #define I3_RES_EME_STAT_AVL_TEMP_CHGE_WERT_UNIT                  'Â°C'
+    #define I3_RES_EME_STAT_AVL_TEMP_CHGE_WERT_UNIT                  '°C'
     #define I3_RES_EME_STAT_AVL_TEMP_CHGE_WERT_TYPE                  short
         // Current temperature of the charging electronics. / Aktuelle Temperatur der Ladeelektronik.
 
     #define I3_RES_EME_STAT_AVL_TEMP_INTLE_WERT                      (RXBUF_SINT(73))
-    #define I3_RES_EME_STAT_AVL_TEMP_INTLE_WERT_UNIT                 'Â°C'
+    #define I3_RES_EME_STAT_AVL_TEMP_INTLE_WERT_UNIT                 '°C'
     #define I3_RES_EME_STAT_AVL_TEMP_INTLE_WERT_TYPE                 short
         // Current temperature of the internal charger. / Aktuelle Temperatur des internen Laders.
 
     #define I3_RES_EME_STAT_AVL_TEMP_CF_CHGE_WERT                    (RXBUF_SINT(75)-48.0)
-    #define I3_RES_EME_STAT_AVL_TEMP_CF_CHGE_WERT_UNIT               'Â°C'
+    #define I3_RES_EME_STAT_AVL_TEMP_CF_CHGE_WERT_UNIT               '°C'
     #define I3_RES_EME_STAT_AVL_TEMP_CF_CHGE_WERT_TYPE               short
         // Current temperature of the external charger. / Aktuelle Temperatur des externenLaders.
 
@@ -5728,46 +5724,45 @@
 
     #define I3_RES_EME_STAT_REAS_FAILSAFE_CHGNG_WERT                 (RXBUF_UINT(89))
     #define I3_RES_EME_STAT_REAS_FAILSAFE_CHGNG_WERT_TYPE            unsigned short
-        // Information about the trigger for the Failsafe state / Information Ã¼ber den AuslÃ¶ser fÃ¼r den Zustand
-        // Failsafe
+        // Information about the trigger for the Failsafe state / Information über den Auslöser für den Zustand Failsafe
 
     #define I3_RES_EME_STAT_REAS_FAILSAFE_INTLE_WERT                 (RXBUF_UINT(91))
     #define I3_RES_EME_STAT_REAS_FAILSAFE_INTLE_WERT_TYPE            unsigned short
-        // Information about the trigger for the failsafe state of the internal loader / Information Ã¼ber den AuslÃ¶ser
-        // fÃ¼r den Zustand Failsafe des internen Laders
+        // Information about the trigger for the failsafe state of the internal loader / Information über den Auslöser
+        // für den Zustand Failsafe des internen Laders
 
     #define I3_RES_EME_STAT_REAS_CON_VRFD_CF_CHGE_WERT               (RXBUF_UINT(93))
     #define I3_RES_EME_STAT_REAS_CON_VRFD_CF_CHGE_WERT_TYPE          unsigned short
-        // Information about the trigger for the Failsafe state in the external loader. / Information Ã¼ber den AuslÃ¶ser
-        // fÃ¼r den Zustand Failsafe im externen Lader.
+        // Information about the trigger for the Failsafe state in the external loader. / Information über den Auslöser
+        // für den Zustand Failsafe im externen Lader.
 
     #define I3_RES_EME_STAT_REAS_DER_CHGNG_WERT                      (RXBUF_UCHAR(95))
     #define I3_RES_EME_STAT_REAS_DER_CHGNG_WERT_TYPE                 unsigned char
-        // Information about the cause of the derating of the charging electronics / Information Ã¼ber die
-        // Deratingursache der Ladeelektronik
+        // Information about the cause of the derating of the charging electronics / Information über die Deratingursache
+        // der Ladeelektronik
 
     #define I3_RES_EME_STAT_REAS_DER_INTLE_WERT                      (RXBUF_UCHAR(96))
     #define I3_RES_EME_STAT_REAS_DER_INTLE_WERT_TYPE                 unsigned char
-        // Information about the cause of the derating of the internal charger / Information Ã¼ber die Deratingursache
-        // des internen Laders
+        // Information about the cause of the derating of the internal charger / Information über die Deratingursache des
+        // internen Laders
 
     #define I3_RES_EME_STAT_REAS_DER_CF_CHGNG_WERT                   (RXBUF_UCHAR(97))
     #define I3_RES_EME_STAT_REAS_DER_CF_CHGNG_WERT_TYPE              unsigned char
-        // Information about the cause of the derating of the external charger / Information Ã¼ber die Deratingursache
-        // des externen Laders
+        // Information about the cause of the derating of the external charger / Information über die Deratingursache des
+        // externen Laders
 
     #define I3_RES_EME_STAT_ST_ERR_CHGNG_WERT                        (RXBUF_UCHAR(98))
     #define I3_RES_EME_STAT_ST_ERR_CHGNG_WERT_TYPE                   unsigned char
-        // Information about error states of the charging electronics / Information Ã¼ber FehlerzustÃ¤nde der
+        // Information about error states of the charging electronics / Information über Fehlerzustände der
         // Ladeelektronik
 
     #define I3_RES_EME_STAT_ST_ERR_INTLE_WERT                        (RXBUF_UCHAR(99))
     #define I3_RES_EME_STAT_ST_ERR_INTLE_WERT_TYPE                   unsigned char
-        // Information about error states of the internal loader / Information Ã¼ber FehlerzustÃ¤nde des internen Laders
+        // Information about error states of the internal loader / Information über Fehlerzustände des internen Laders
 
     #define I3_RES_EME_STAT_ST_ERR_CF_CHGE_WERT                      (RXBUF_UCHAR(100))
     #define I3_RES_EME_STAT_ST_ERR_CF_CHGE_WERT_TYPE                 unsigned char
-        // Information about error states of the external charger / Information Ã¼ber FehlerzustÃ¤nde des externer Laders
+        // Information about error states of the external charger / Information über Fehlerzustände des externer Laders
 
     #define I3_RES_EME_STAT_FREQWR_CHGNG_WERT                        (RXBUF_UINT32(101))
     #define I3_RES_EME_STAT_FREQWR_CHGNG_WERT_UNIT                   'Hz'
@@ -5782,13 +5777,13 @@
     #define I3_RES_EME_STAT_FREQWR_1_CF_CHGE_ALTC_WERT               (RXBUF_UINT32(109)*0.25f)
     #define I3_RES_EME_STAT_FREQWR_1_CF_CHGE_ALTC_WERT_UNIT          'Hz'
     #define I3_RES_EME_STAT_FREQWR_1_CF_CHGE_ALTC_WERT_TYPE          float
-        // Smoothed and filtered AC grid frequency between conductor 1 and neutral of the external charger. / GeglÃ¤ttete
+        // Smoothed and filtered AC grid frequency between conductor 1 and neutral of the external charger. / Geglättete
         // und gefilterte AC-Netzfrequenz zwischen Leiter 1 und Nulleiter des externen Laders.
 
     #define I3_RES_EME_STAT_FREQWR_2_CF_CHGE_ALTC_WERT               (RXBUF_UINT32(113)*0.25f)
     #define I3_RES_EME_STAT_FREQWR_2_CF_CHGE_ALTC_WERT_UNIT          'Hz'
     #define I3_RES_EME_STAT_FREQWR_2_CF_CHGE_ALTC_WERT_TYPE          float
-        // Smoothed and filtered AC grid frequency between conductor 2 and neutral of the external charger. / GeglÃ¤ttete
+        // Smoothed and filtered AC grid frequency between conductor 2 and neutral of the external charger. / Geglättete
         // und gefilterte AC-Netzfrequenz zwischen Leiter 2 und Nulleiter des externen Laders.
 
     #define I3_RES_EME_STAT_AVL_EFFY_CHGNG_CYC_WERT                  (RXBUF_UINT32(117))
@@ -5812,12 +5807,12 @@
 
     #define I3_RES_EME_STAT_AVL_CHGNG_TYP_WERT                       (RXBUF_UCHAR(124))
     #define I3_RES_EME_STAT_AVL_CHGNG_TYP_WERT_TYPE                  unsigned char
-        // Actual charging type feedback through LDK (conductive, inductive) / Ist-Ladetyp RÃ¼ckmeldung durch LDK
+        // Actual charging type feedback through LDK (conductive, inductive) / Ist-Ladetyp Rückmeldung durch LDK
         // (konduktiv, induktiv)
 
 #define I3_PID_EME_DCDC_MESSGROESSEN_KOMPLETT                        0xE5FF
-        // Status of all available DCDC measured values for both PKR2 and non-PKR2 software / Status aller verfÃ¼gbaren
-        // DCDC MessgrÃ¶ssen fÃ¼r beide PKR2 und nicht-PKR2 Software
+        // Status of all available DCDC measured values for both PKR2 and non-PKR2 software / Status aller verfügbaren
+        // DCDC Messgrössen für beide PKR2 und nicht-PKR2 Software
 
     #define I3_RES_EME_STAT_AVL_CUTIL_DCDC_CNV_WERT                  (RXBUF_UINT32(0))
     #define I3_RES_EME_STAT_AVL_CUTIL_DCDC_CNV_WERT_UNIT             '%'
@@ -5860,7 +5855,7 @@
 
     #define I3_RES_EME_STAT_ST_ERR_DCDC_CNV_WERT                     (RXBUF_UINT(29))
     #define I3_RES_EME_STAT_ST_ERR_DCDC_CNV_WERT_TYPE                unsigned short
-        // Return of the active / inactive errors of the DC / DC converter - bit-coded / RÃ¼ckgabe der aktiven/inaktiven
+        // Return of the active / inactive errors of the DC / DC converter - bit-coded / Rückgabe der aktiven/inaktiven
         // Fehler des DC/DC Wandlers - bitcodiert
 
     #define I3_RES_EME_STAT_TAR_OPMO_DCDC_CNV_WERT                   (RXBUF_UCHAR(31))
@@ -5877,7 +5872,7 @@
     #define I3_RES_EME_STAT_U_DCDC_CNV_HV_MIN_WERT                   (RXBUF_UINT32(36))
     #define I3_RES_EME_STAT_U_DCDC_CNV_HV_MIN_WERT_UNIT              'V'
     #define I3_RES_EME_STAT_U_DCDC_CNV_HV_MIN_WERT_TYPE              unsigned long
-        // Minimum permissible HV voltage limit / Minimal zulÃ¤ssige HV-Spannungsgrenze
+        // Minimum permissible HV voltage limit / Minimal zulässige HV-Spannungsgrenze
 
     #define I3_RES_EME_STAT_V_B_DCDC_HI_ENABLE_WERT                  (RXBUF_UCHAR(40))
     #define I3_RES_EME_STAT_V_B_DCDC_HI_ENABLE_WERT_TYPE             unsigned char
@@ -5896,15 +5891,15 @@
 
     #define I3_RES_EME_STAT_V_E_DCDC_HI_ST_OUT_WERT                  (RXBUF_UINT32(45))
     #define I3_RES_EME_STAT_V_E_DCDC_HI_ST_OUT_WERT_TYPE             unsigned long
-        // The reason for the limit values of the DC / DC converter. / Die Ursache fÃ¼r die BegrenzungsgrÃ¶Ãen des
+        // The reason for the limit values of the DC / DC converter. / Die Ursache für die Begrenzungsgrößen des
         // DC/DC-Wandlers.
 
     #define I3_RES_EME_STAT_V_E_DCDC_MC0_CTRL_WERT                   (RXBUF_UINT32(49))
     #define I3_RES_EME_STAT_V_E_DCDC_MC0_CTRL_WERT_TYPE              unsigned long
         // Status and control bits for the DCDC: Bit 0: Release signal (at 1) for frequency modulation operation in DCDC
         // Bit 1: KL15 status Bit 2: Status ELUP startup (1: active) (Bit 2 - only for PKR2!) / Status und Steuerungsbits
-        // fÃ¼r den DCDC: Bit 0:   Freigabesignal (bei 1) fÃ¼r den Frequenzmodulation-Betrieb im DCDC Bit 1:  
-        // KL15-Status Bit 2: Status ELUP Anlauf (1: aktiv) (Bit 2 - nur fÃ¼r PKR2!)
+        // für den DCDC: Bit 0:   Freigabesignal (bei 1) für den Frequenzmodulation-Betrieb im DCDC Bit 1:   KL15-Status
+        // Bit 2: Status ELUP Anlauf (1: aktiv) (Bit 2 - nur für PKR2!)
 
     #define I3_RES_EME_STAT_V_H_SPI_DCDC_0_SPI_DATA_E_STATUS_WERT    (RXBUF_UINT(53))
     #define I3_RES_EME_STAT_V_H_SPI_DCDC_0_SPI_DATA_E_STATUS_WERT_TYPE unsigned short
@@ -5932,30 +5927,30 @@
     #define I3_RES_EME_STAT_V_S_DCDC_PWM_HTS1_WERT                   (RXBUF_UINT(69))
     #define I3_RES_EME_STAT_V_S_DCDC_PWM_HTS1_WERT_TYPE              unsigned short
         // Duty cycle buck converter 1 (only for non-PKR2 software!) Push-pull converter phase shift between HSS1 and
-        // HSS2 (only PKR2!) / Einschaltdauer Tiefsetzsteller 1 (nur fÃ¼r non-PKR2 Software!)  Gegentaktwandler
+        // HSS2 (only PKR2!) / Einschaltdauer Tiefsetzsteller 1 (nur für non-PKR2 Software!)  Gegentaktwandler
         // Phasenverschiebung zwischen HSS1 und HSS2 (nur PKR2!)
 
     #define I3_RES_EME_STAT_V_S_DCDC_PWM_HTS2_WERT                   (RXBUF_UINT(71))
     #define I3_RES_EME_STAT_V_S_DCDC_PWM_HTS2_WERT_TYPE              unsigned short
         // Switch-on time buck converter 2 (only for non-PKR2 software!) Switch-on time rectifier (only PKR2!) /
-        // Einschaltzeit Tiefsetzsteller 2 (nur fÃ¼r non-PKR2 Software!)  Einschaltzeit Gleichrichter (nur PKR2!)
+        // Einschaltzeit Tiefsetzsteller 2 (nur für non-PKR2 Software!)  Einschaltzeit Gleichrichter (nur PKR2!)
 
     #define I3_RES_EME_STAT_V_S_DCDC_SW_VERSION_WERT                 (RXBUF_UINT(73))
     #define I3_RES_EME_STAT_V_S_DCDC_SW_VERSION_WERT_TYPE            unsigned short
         // DCDC SW version / DCDC SW-Version
 
     #define I3_RES_EME_STAT_V_T_DCDC_BO_WERT                         (RXBUF_UINT32(75))
-    #define I3_RES_EME_STAT_V_T_DCDC_BO_WERT_UNIT                    'Â°C'
+    #define I3_RES_EME_STAT_V_T_DCDC_BO_WERT_UNIT                    '°C'
     #define I3_RES_EME_STAT_V_T_DCDC_BO_WERT_TYPE                    unsigned long
         // Temperature DCDC board / Temperatur DCDC Board
 
     #define I3_RES_EME_STAT_V_T_DCDC_GR_MC6_WERT                     (RXBUF_UINT32(79))
-    #define I3_RES_EME_STAT_V_T_DCDC_GR_MC6_WERT_UNIT                'Â°C'
+    #define I3_RES_EME_STAT_V_T_DCDC_GR_MC6_WERT_UNIT                '°C'
     #define I3_RES_EME_STAT_V_T_DCDC_GR_MC6_WERT_TYPE                unsigned long
         // Temperature rectifier / Temperatur Gleichrichter
 
     #define I3_RES_EME_STAT_V_T_DCDC_GTW_MC6_WERT                    (RXBUF_UINT32(83))
-    #define I3_RES_EME_STAT_V_T_DCDC_GTW_MC6_WERT_UNIT               'Â°C'
+    #define I3_RES_EME_STAT_V_T_DCDC_GTW_MC6_WERT_UNIT               '°C'
     #define I3_RES_EME_STAT_V_T_DCDC_GTW_MC6_WERT_TYPE               unsigned long
         // Temperature push-pull converter / Temperatur Gegentaktwandler
 
@@ -5982,19 +5977,19 @@
     #define I3_RES_EME_STAT_V_I_DCDC_TS1_MC6_RUKO_WERT               (RXBUF_UINT32(103))
     #define I3_RES_EME_STAT_V_I_DCDC_TS1_MC6_RUKO_WERT_UNIT          'A'
     #define I3_RES_EME_STAT_V_I_DCDC_TS1_MC6_RUKO_WERT_TYPE          unsigned long
-        // Buck converter phase 1 current (only for non-PKR2 software!) / Tiefsetzsteller Phase1 Strom (nur fÃ¼r non-PKR2
+        // Buck converter phase 1 current (only for non-PKR2 software!) / Tiefsetzsteller Phase1 Strom (nur für non-PKR2
         // Software!)
 
     #define I3_RES_EME_STAT_V_I_DCDC_TS2_MC6_RUKO_WERT               (RXBUF_UINT32(107))
     #define I3_RES_EME_STAT_V_I_DCDC_TS2_MC6_RUKO_WERT_UNIT          'A'
     #define I3_RES_EME_STAT_V_I_DCDC_TS2_MC6_RUKO_WERT_TYPE          unsigned long
-        // Buck converter phase 2 current (only for non-PKR2 software!) / Tiefsetzsteller Phase 2 Strom (nur fÃ¼r
-        // non-PKR2 Software!)
+        // Buck converter phase 2 current (only for non-PKR2 software!) / Tiefsetzsteller Phase 2 Strom (nur für non-PKR2
+        // Software!)
 
     #define I3_RES_EME_STAT_V_T_DCDC_TS_MC6_RUKO_WERT                (RXBUF_UINT32(111))
-    #define I3_RES_EME_STAT_V_T_DCDC_TS_MC6_RUKO_WERT_UNIT           'Â°C'
+    #define I3_RES_EME_STAT_V_T_DCDC_TS_MC6_RUKO_WERT_UNIT           '°C'
     #define I3_RES_EME_STAT_V_T_DCDC_TS_MC6_RUKO_WERT_TYPE           unsigned long
-        // Step-down converter temperature (only for non-PKR2 software!) / Tiefsetzsteller Temperatur (nur fÃ¼r non-PKR2
+        // Step-down converter temperature (only for non-PKR2 software!) / Tiefsetzsteller Temperatur (nur für non-PKR2
         // Software!)
 
 // Skipping NV_FLASH_PRUEFEN on 0xF000 which takes arguments

@@ -23,17 +23,17 @@
         // aufgetretenen Schutzverriegelungen an.
 
 #define I3_PID_IHX_WP_BEFUELLUNG                                     0xA11C
-        // Switching of the valves for filling the heat pump circuit / Schaltung der Ventile zur BefÃ¼llung
-        // WÃ¤rmepumpenkreislauf
+        // Switching of the valves for filling the heat pump circuit / Schaltung der Ventile zur Befüllung
+        // Wärmepumpenkreislauf
 
     #define I3_RES_IHX_STAT_WP_BEFUELLUNG                            (RXBUF_UCHAR(0))
     #define I3_RES_IHX_STAT_WP_BEFUELLUNG_UNIT                       '0/1'
     #define I3_RES_IHX_STAT_WP_BEFUELLUNG_TYPE                       unsigned char
-        // 0x00 diagnostic job is not running; 0x01 Daignose job started / 0x00 Diagnosejob lÃ¤uft nicht; 0x01
-        // Daignosejob gestartet
+        // 0x00 diagnostic job is not running; 0x01 Daignose job started / 0x00 Diagnosejob läuft nicht; 0x01 Daignosejob
+        // gestartet
 
 #define I3_PID_IHX_WP_EXP_VENTIL_KALIBRIEREN                         0xA11D
-        // Calibrate the expansion valves / Kalibrierung der Expansionsventile durchfÃ¼hren
+        // Calibrate the expansion valves / Kalibrierung der Expansionsventile durchführen
 
     #define I3_RES_IHX_STAT_KALIBRIERUNG                             (RXBUF_UCHAR(0))
     #define I3_RES_IHX_STAT_KALIBRIERUNG_UNIT                        '0/1'
@@ -42,20 +42,20 @@
         // Kalibrierung nicht aktiv 0x01 = Kalibrierung aktiv
 
 #define I3_PID_IHX_SITZHEIZUNG_VORNE_TASTER_LINKS                    0xD15D
-        // 0 = button not pressed, 1 = button pressed / 0 = Taste nicht betÃ¤tigt, 1 = Taste betÃ¤tigt
+        // 0 = button not pressed, 1 = button pressed / 0 = Taste nicht betätigt, 1 = Taste betätigt
 
     #define I3_RES_IHX_STAT_TASTER_SITZHEIZUNG_VORNE_LINKS_EIN       (RXBUF_UCHAR(0))
     #define I3_RES_IHX_STAT_TASTER_SITZHEIZUNG_VORNE_LINKS_EIN_UNIT  '0/1'
     #define I3_RES_IHX_STAT_TASTER_SITZHEIZUNG_VORNE_LINKS_EIN_TYPE  unsigned char
-        // 0 = button not pressed, 1 = button pressed / 0 = Taste nicht betÃ¤tigt, 1 = Taste betÃ¤tigt
+        // 0 = button not pressed, 1 = button pressed / 0 = Taste nicht betätigt, 1 = Taste betätigt
 
 #define I3_PID_IHX_SITZHEIZUNG_VORNE_TASTER_RECHTS                   0xD15E
-        // 0 = button not pressed, 1 = button pressed / 0 = Taste nicht betÃ¤tigt, 1 = Taste betÃ¤tigt
+        // 0 = button not pressed, 1 = button pressed / 0 = Taste nicht betätigt, 1 = Taste betätigt
 
     #define I3_RES_IHX_STAT_TASTER_SITZHEIZUNG_VORNE_RECHTS_EIN      (RXBUF_UCHAR(0))
     #define I3_RES_IHX_STAT_TASTER_SITZHEIZUNG_VORNE_RECHTS_EIN_UNIT '0/1'
     #define I3_RES_IHX_STAT_TASTER_SITZHEIZUNG_VORNE_RECHTS_EIN_TYPE unsigned char
-        // 0 = button not pressed, 1 = button pressed / 0 = Taste nicht betÃ¤tigt, 1 = Taste betÃ¤tigt
+        // 0 = button not pressed, 1 = button pressed / 0 = Taste nicht betätigt, 1 = Taste betätigt
 
 #define I3_PID_IHX_SITZHEIZUNG_VORNE_LED_RECHTS                      0xD15F
         // Status LED display seat heating, front right / Status LED-Anzeige Sitzheizung vorne rechts
@@ -128,26 +128,26 @@
 // Skipping STEUERN_SH_TASTEN on 0xD5A0 which takes arguments
 
 #define I3_PID_IHX_TEMP_FUSSRAUM_LINKS_WERT                          0xD859
-        // Temperature sensor / TemperaturfÃ¼hler
+        // Temperature sensor / Temperaturfühler
 
     #define I3_RES_IHX_STAT_TEMP_FUSSRAUM_LINKS_WERT                 (RXBUF_SCHAR(0))
-    #define I3_RES_IHX_STAT_TEMP_FUSSRAUM_LINKS_WERT_UNIT            'Â°C'
+    #define I3_RES_IHX_STAT_TEMP_FUSSRAUM_LINKS_WERT_UNIT            '°C'
     #define I3_RES_IHX_STAT_TEMP_FUSSRAUM_LINKS_WERT_TYPE            char
-        // Temperature sensor / TemperaturfÃ¼hler
+        // Temperature sensor / Temperaturfühler
 
 #define I3_PID_IHX_TEMP_FUSSRAUM_RECHTS_WERT                         0xD85A
-        // Temperature sensor / TemperaturfÃ¼hler
+        // Temperature sensor / Temperaturfühler
 
     #define I3_RES_IHX_STAT_TEMP_FUSSRAUM_RECHTS_WERT                (RXBUF_SCHAR(0))
-    #define I3_RES_IHX_STAT_TEMP_FUSSRAUM_RECHTS_WERT_UNIT           'Â°C'
+    #define I3_RES_IHX_STAT_TEMP_FUSSRAUM_RECHTS_WERT_UNIT           '°C'
     #define I3_RES_IHX_STAT_TEMP_FUSSRAUM_RECHTS_WERT_TYPE           char
-        // Temperature sensor / TemperaturfÃ¼hler
+        // Temperature sensor / Temperaturfühler
 
 #define I3_PID_IHX_TEMP_INNEN_UNBELUEFTET                            0xD85C
         // Calculated internal temperature / Errechnete Innentemperatur
 
     #define I3_RES_IHX_STAT_TEMP_INNEN_WERT                          (RXBUF_SCHAR(0))
-    #define I3_RES_IHX_STAT_TEMP_INNEN_WERT_UNIT                     'Â°C'
+    #define I3_RES_IHX_STAT_TEMP_INNEN_WERT_UNIT                     '°C'
     #define I3_RES_IHX_STAT_TEMP_INNEN_WERT_TYPE                     char
         // Calculated internal temperature / Errechnete Innentemperatur
 
@@ -199,12 +199,12 @@
         // 0 = not available, 1 = available / 0=nicht vorhanden, 1=vorhanden
 
 #define I3_PID_IHX_KAELTEMITTEL_MEDIUM                               0xD868
-        // Cooling medium: 0 = R134a, 1 = CO2 / KÃ¼hlmedium: 0 = R134a, 1 = CO2
+        // Cooling medium: 0 = R134a, 1 = CO2 / Kühlmedium: 0 = R134a, 1 = CO2
 
     #define I3_RES_IHX_STAT_KAELTEMITTEL_MEDIUM_NR                   (RXBUF_UCHAR(0))
     #define I3_RES_IHX_STAT_KAELTEMITTEL_MEDIUM_NR_UNIT              '0-n'
     #define I3_RES_IHX_STAT_KAELTEMITTEL_MEDIUM_NR_TYPE              unsigned char
-        // Cooling medium: 0 = R134a, 1 = CO2 / KÃ¼hlmedium: 0 = R134a, 1 = CO2
+        // Cooling medium: 0 = R134a, 1 = CO2 / Kühlmedium: 0 = R134a, 1 = CO2
 
 // Skipping STEUERN_KLAPPENMOTOR_VORN on 0xD86E which takes arguments
 
@@ -224,30 +224,30 @@
     #define I3_RES_IHX_STAT_SCHRITTMOTOR_BLOCKIERUNG_WERT_UNIT       'Fehler'
     #define I3_RES_IHX_STAT_SCHRITTMOTOR_BLOCKIERUNG_WERT_TYPE       unsigned short
         // Output of the status of the stepper motor activated last: Error counter blocking stepper motor / Ausgabe des
-        // Status des zuletzt angesteuerten Schrittmotors: FehlerzÃ¤hler Blockierung Schrittmotor
+        // Status des zuletzt angesteuerten Schrittmotors: Fehlerzähler Blockierung Schrittmotor
 
     #define I3_RES_IHX_STAT_SCHRITTMOTOR_ANTWORT_FEHLT_WERT          (RXBUF_UINT(2))
     #define I3_RES_IHX_STAT_SCHRITTMOTOR_ANTWORT_FEHLT_WERT_UNIT     'Fehler'
     #define I3_RES_IHX_STAT_SCHRITTMOTOR_ANTWORT_FEHLT_WERT_TYPE     unsigned short
         // Output of the status of the last activated stepper motor: Error counter response stepper motor / Ausgabe des
-        // Status des zuletzt angesteuerten Schrittmotors: FehlerzÃ¤hler Antwort Schrittmotor
+        // Status des zuletzt angesteuerten Schrittmotors: Fehlerzähler Antwort Schrittmotor
 
     #define I3_RES_IHX_STAT_SCHRITTMOTOR_INTERNER_FEHLER_WERT        (RXBUF_UINT(4))
     #define I3_RES_IHX_STAT_SCHRITTMOTOR_INTERNER_FEHLER_WERT_UNIT   'Fehler'
     #define I3_RES_IHX_STAT_SCHRITTMOTOR_INTERNER_FEHLER_WERT_TYPE   unsigned short
         // Output of the status of the stepper motor activated last: Error counter for internal motor errors / Ausgabe
-        // des Status des zuletzt angesteuerten Schrittmotors: FehlerzÃ¤hler interner Motorfehler
+        // des Status des zuletzt angesteuerten Schrittmotors: Fehlerzähler interner Motorfehler
 
     #define I3_RES_IHX_STAT_SCHRITTMOTOR_INITIALISIERUNG_FEHLER_WERT (RXBUF_UINT(6))
     #define I3_RES_IHX_STAT_SCHRITTMOTOR_INITIALISIERUNG_FEHLER_WERT_UNIT 'Fehler'
     #define I3_RES_IHX_STAT_SCHRITTMOTOR_INITIALISIERUNG_FEHLER_WERT_TYPE unsigned short
         // Output of the status of the stepper motor activated last: Error counter initialization error / Ausgabe des
-        // Status des zuletzt angesteuerten Schrittmotors: FehlerzÃ¤hler Initialisierungsfehler
+        // Status des zuletzt angesteuerten Schrittmotors: Fehlerzähler Initialisierungsfehler
 
 #define I3_PID_IHX_STEUERN_SELBSTTEST_SCHRITTMOTOREN                 0xD88F
         // Call starts the self-test of the stepper motors. All motors are approached to 50% and then checked whether the
         // position has been reached. The result can be queried with the SELFTEST_STRITTMOTOREN service. / Aufruf startet
-        // den Selbsttest der Schrittmotoren. Alle Motore werden auf 50% angefahren und anschlieÃend geprÃ¼ft, ob die
+        // den Selbsttest der Schrittmotoren. Alle Motore werden auf 50% angefahren und anschließend geprüft, ob die
         // Position ereicht worden ist. Das Ergebnis kann mit dem Service SELBSTTEST_SCHRITTMOTOREN abgefragt werden.
 
 // Skipping STEUERN_DISPLAY_TESTEN on 0xD89A which takes arguments
@@ -287,17 +287,17 @@
 // Skipping LEDS_KLIMA_VORN on 0xD8C1 which takes arguments
 
 #define I3_PID_IHX_EKK_DREHZAHLERHOEHUNG                             0xD8C2
-        // Speed increase EKK 0 = OFF, 1 = ON / DrehzahlerhÃ¶hung EKK 0=AUS, 1=EIN
+        // Speed increase EKK 0 = OFF, 1 = ON / Drehzahlerhöhung EKK 0=AUS, 1=EIN
 
     #define I3_RES_IHX_STAT_EKK_DREHZAHLERHOEHUNG_EIN                (RXBUF_UCHAR(0))
     #define I3_RES_IHX_STAT_EKK_DREHZAHLERHOEHUNG_EIN_UNIT           '0/1'
     #define I3_RES_IHX_STAT_EKK_DREHZAHLERHOEHUNG_EIN_TYPE           unsigned char
-        // Speed increase EKK 0 = OFF, 1 = ON / DrehzahlerhÃ¶hung EKK 0=AUS, 1=EIN
+        // Speed increase EKK 0 = OFF, 1 = ON / Drehzahlerhöhung EKK 0=AUS, 1=EIN
 
 // Skipping EKMV_DREHZAHL_GEN20 on 0xD8C3 which takes arguments
 
 #define I3_PID_IHX_EKMV_ANALOGWERTE_GEN20                            0xD8C4
-        // Analog values from refrigerant compressor Gen. 2.0 / Analogwertewerte von KÃ¤ltemittelverdichter Gen. 2.0
+        // Analog values from refrigerant compressor Gen. 2.0 / Analogwertewerte von Kältemittelverdichter Gen. 2.0
 
     #define I3_RES_IHX_STAT_DREHZAHL_WERT                            (RXBUF_UCHAR(0)/2.0f)
     #define I3_RES_IHX_STAT_DREHZAHL_WERT_UNIT                       '%'
@@ -320,13 +320,13 @@
     #define I3_RES_IHX_STAT_HOCHSPANNUNG_WERT_UNIT                   'V'
     #define I3_RES_IHX_STAT_HOCHSPANNUNG_WERT_TYPE                   float
         // Output of the high voltage in volts. Invalid Value = 510 volts / Ausgabe der Hochspannung in Volt.
-        // UngÃ¼ltigkeitswert = 510 Volt
+        // Ungültigkeitswert = 510 Volt
 
     #define I3_RES_IHX_STAT_TEMPERATUR_WERT                          (RXBUF_UCHAR(4)-50.0)
-    #define I3_RES_IHX_STAT_TEMPERATUR_WERT_UNIT                     'Â°C'
+    #define I3_RES_IHX_STAT_TEMPERATUR_WERT_UNIT                     '°C'
     #define I3_RES_IHX_STAT_TEMPERATUR_WERT_TYPE                     unsigned char
         // Output of the temperature in degrees Celsius. The control unit delivers the value with offset 50. SGBD
-        // subtracts 50. / Ausgabe der Temperatur in Grad Celsius. Das SteuergerÃ¤t liefert den Wert mit Offset 50. SGBD
+        // subtracts 50. / Ausgabe der Temperatur in Grad Celsius. Das Steuergerät liefert den Wert mit Offset 50. SGBD
         // subtrahiert 50.
 
     #define I3_RES_IHX_STAT_STROM_AC_WERT                            (RXBUF_UCHAR(5))
@@ -335,14 +335,14 @@
         // Output of the stream. / Ausgabe des Stroms.
 
 #define I3_PID_IHX_EKMV_BETRIEBSZUSTAND_GEN20                        0xD8C5
-        // Operating states of refrigerant compressor Gen. 2.0 / BetriebszustÃ¤nde von KÃ¤ltemittelverdichter Gen. 2.0
+        // Operating states of refrigerant compressor Gen. 2.0 / Betriebszustände von Kältemittelverdichter Gen. 2.0
 
     // RES_0xD8C5_D is a BITFIELD of unknown size.  We don't have definitions for each bit, and we GUESSED it is one byte ***
-        // Operating states of refrigerant compressor Gen. 2.0 / BetriebszustÃ¤nde von KÃ¤ltemittelverdichter Gen. 2.0
+        // Operating states of refrigerant compressor Gen. 2.0 / Betriebszustände von Kältemittelverdichter Gen. 2.0
     #define I3_RES_IHX_RES_0xD8C5_D                                  (RXBUF_UCHAR(0))
     #define I3_RES_IHX_RES_0xD8C5_D_UNIT                             'Bit'
     #define I3_RES_IHX_RES_0xD8C5_D_TYPE                             unsigned char
-        // Operating states of refrigerant compressor Gen. 2.0 / BetriebszustÃ¤nde von KÃ¤ltemittelverdichter Gen. 2.0
+        // Operating states of refrigerant compressor Gen. 2.0 / Betriebszustände von Kältemittelverdichter Gen. 2.0
 
 // Skipping EKMV_RESET_GEN20 on 0xD8C6 which takes arguments
 
@@ -354,7 +354,7 @@
         // Status values of electrical instantaneous water heaters / Statuswerte elektrischer Durchlauferhitzer
 
     #define I3_RES_IHX_STAT_TEMPERATUR_WASSERAUSTRITT_WERT           (RXBUF_UINT(0)-40.0)
-    #define I3_RES_IHX_STAT_TEMPERATUR_WASSERAUSTRITT_WERT_UNIT      'Â°C'
+    #define I3_RES_IHX_STAT_TEMPERATUR_WASSERAUSTRITT_WERT_UNIT      '°C'
     #define I3_RES_IHX_STAT_TEMPERATUR_WASSERAUSTRITT_WERT_TYPE      unsigned short
         // Temperature of the heating water at the water outlet of the electric instantaneous water heater. / Temperatur
         // des Heizwassers am Wasseraustritt des elektrischen Durchlauferhitzers.
@@ -368,60 +368,60 @@
     #define I3_RES_IHX_STAT_HOCHVOLTSPANNUNG_WERT                    (RXBUF_UINT(4)*2.0f)
     #define I3_RES_IHX_STAT_HOCHVOLTSPANNUNG_WERT_UNIT               'V'
     #define I3_RES_IHX_STAT_HOCHVOLTSPANNUNG_WERT_TYPE               float
-        // High-voltage voltage measured on the electric water heater. Invalid Value = 510 volts. / Hochvoltspannung
-        // gemessen am elektrischen Durchlauferhitzers. UngÃ¼ltigkeitswert = 510 Volt.
+        // High-voltage voltage measured on the electrical water heater. Invalid Value = 510 volts. / Hochvoltspannung
+        // gemessen am elektrischen Durchlauferhitzers. Ungültigkeitswert = 510 Volt.
 
     #define I3_RES_IHX_STAT_ZAEHLER_VERRIEGELUNG_WERT                (RXBUF_UINT(6))
     #define I3_RES_IHX_STAT_ZAEHLER_VERRIEGELUNG_WERT_TYPE           unsigned short
-        // Interlocking counter of the electric water heater. / VerriegelungszÃ¤hler des elektrischen Durchlauferhitzers.
+        // Interlocking counter of the electric water heater. / Verriegelungszähler des elektrischen Durchlauferhitzers.
 
 #define I3_PID_IHX_KONFIGURATION_KLIMA_PRODUKTLINIE                  0xD8CE
-        // Outputs the product line coded in the control unit. See table TAB_KLIMA_PRODUKTLINIE / Gibt die im
-        // SteuergerÃ¤t codierte Produktlinie aus. Siehe Tabelle TAB_KLIMA_PRODUKTLINIE
+        // Outputs the product line coded in the control unit. See table TAB_KLIMA_PRODUKTLINIE / Gibt die im Steuergerät
+        // codierte Produktlinie aus. Siehe Tabelle TAB_KLIMA_PRODUKTLINIE
 
     #define I3_RES_IHX_STAT_KLIMA_PRODUKTLINIE                       (RXBUF_UCHAR(0))
     #define I3_RES_IHX_STAT_KLIMA_PRODUKTLINIE_UNIT                  '0-n'
     #define I3_RES_IHX_STAT_KLIMA_PRODUKTLINIE_TYPE                  unsigned char
-        // Outputs the product line coded in the control unit. See table TAB_KLIMA_PRODUKTLINIE / Gibt die im
-        // SteuergerÃ¤t codierte Produktlinie aus. Siehe Tabelle TAB_KLIMA_PRODUKTLINIE
+        // Outputs the product line coded in the control unit. See table TAB_KLIMA_PRODUKTLINIE / Gibt die im Steuergerät
+        // codierte Produktlinie aus. Siehe Tabelle TAB_KLIMA_PRODUKTLINIE
 
 #define I3_PID_IHX_BUS_IN_HV_POWERMANAGEMENT                         0xD8D2
-        // The maximum power provided by the HV-PM for the air conditioning. / Die maximal vom HV-PM fÃ¼r die Klima
+        // The maximum power provided by the HV-PM for the air conditioning. / Die maximal vom HV-PM für die Klima
         // bereitgestellten Leistungen.
 
     #define I3_RES_IHX_STAT_FREIGABE_KLIMAKOMPRESSOR                 (RXBUF_UCHAR(0))
     #define I3_RES_IHX_STAT_FREIGABE_KLIMAKOMPRESSOR_UNIT            '0/1'
     #define I3_RES_IHX_STAT_FREIGABE_KLIMAKOMPRESSOR_TYPE            unsigned char
-        // HV release for eKMV: 0x00 = no release 0x01 = release / HV-Freigabe fÃ¼r eKMV: 0x00 = keine Freigabe 0x01 =
+        // HV release for eKMV: 0x00 = no release 0x01 = release / HV-Freigabe für eKMV: 0x00 = keine Freigabe 0x01 =
         // Freigabe
 
     #define I3_RES_IHX_STAT_LEISTUNG_KLIMAKOMPRESSOR_MAXIMAL_WERT    (RXBUF_UINT(1)/1000.0f)
     #define I3_RES_IHX_STAT_LEISTUNG_KLIMAKOMPRESSOR_MAXIMAL_WERT_UNIT 'kW'
     #define I3_RES_IHX_STAT_LEISTUNG_KLIMAKOMPRESSOR_MAXIMAL_WERT_TYPE float
-        // Maximum power provided by the HV-PM for the eKMV. / Maximal vom HV-PM fÃ¼r den eKMV bereitgestellte Leistung.
+        // Maximum power provided by the HV-PM for the eKMV. / Maximal vom HV-PM für den eKMV bereitgestellte Leistung.
 
 #define I3_PID_IHX_BUS_IN_HV_PM_EDH                                  0xD8D3
-        // The maximum power provided by the HV-PM for the EDH. / Die maximal vom HV-PM fÃ¼r den EDH bereitgestellte
+        // The maximum power provided by the HV-PM for the EDH. / Die maximal vom HV-PM für den EDH bereitgestellte
         // Leistung.
 
     #define I3_RES_IHX_STAT_FREIGABE_EDH                             (RXBUF_UCHAR(0))
     #define I3_RES_IHX_STAT_FREIGABE_EDH_UNIT                        '0/1'
     #define I3_RES_IHX_STAT_FREIGABE_EDH_TYPE                        unsigned char
-        // HV release for EDH: 0x00 = no release 0x01 = release / HV-Freigabe fÃ¼r EDH: 0x00 = keine Freigabe 0x01 =
+        // HV release for EDH: 0x00 = no release 0x01 = release / HV-Freigabe für EDH: 0x00 = keine Freigabe 0x01 =
         // Freigabe
 
     #define I3_RES_IHX_STAT_LEISTUNG_EDH_MAXIMAL_WERT                (RXBUF_UINT(1)/1000.0f)
     #define I3_RES_IHX_STAT_LEISTUNG_EDH_MAXIMAL_WERT_UNIT           'kW'
     #define I3_RES_IHX_STAT_LEISTUNG_EDH_MAXIMAL_WERT_TYPE           float
-        // Maximum power provided by the HV-PM for the EDH. / Maximal vom HV-PM fÃ¼r den EDH bereitgestellte Leistung.
+        // Maximum power provided by the HV-PM for the EDH. / Maximal vom HV-PM für den EDH bereitgestellte Leistung.
 
 #define I3_PID_IHX_BUS_IN_KUEHLMITTELTEMPERATUR                      0xD8D4
-        // Engine coolant temperature / KÃ¼hlmitteltemperatur Motor
+        // Engine coolant temperature / Kühlmitteltemperatur Motor
 
     #define I3_RES_IHX_STAT_BUS_IN_KUEHLMITTEL_MOTOR_TEMP_WERT       (RXBUF_SINT(0))
-    #define I3_RES_IHX_STAT_BUS_IN_KUEHLMITTEL_MOTOR_TEMP_WERT_UNIT  'Â°C'
+    #define I3_RES_IHX_STAT_BUS_IN_KUEHLMITTEL_MOTOR_TEMP_WERT_UNIT  '°C'
     #define I3_RES_IHX_STAT_BUS_IN_KUEHLMITTEL_MOTOR_TEMP_WERT_TYPE  short
-        // Engine coolant temperature / KÃ¼hlmitteltemperatur Motor
+        // Engine coolant temperature / Kühlmitteltemperatur Motor
 
 #define I3_PID_IHX_SOLLWERT_ELEKTRISCHER_ZUHEIZER_VORN               0xD902
         // Electrical auxiliary heater (PTC or EDH) setpoint in percent 0 - 100% / Elektrischer Zuheizer (PTC oder EDH)
@@ -453,7 +453,7 @@
     #define I3_RES_IHX_STAT_TIMER_START_WERT                         (RXBUF_UCHAR(1))
     #define I3_RES_IHX_STAT_TIMER_START_WERT_UNIT                    's'
     #define I3_RES_IHX_STAT_TIMER_START_WERT_TYPE                    unsigned char
-        // Start value from the timer for inlet protection / Startwert vom Timer fÃ¼r Einlaufschutz
+        // Start value from the timer for inlet protection / Startwert vom Timer für Einlaufschutz
 
 #define I3_PID_IHX_SITZHEIZUNG_VORNE_TASTER_VORHANDEN                0xD90E
         // 0 = not available 1 = available / 0=nicht vorhanden 1=vorhanden
@@ -495,12 +495,12 @@
         // 40=SONDERPROGRAMM; 255=UNGUELTIG (BASIS);
 
 #define I3_PID_IHX_BUS_OUT_KLIMAKOMPRESSOR_PWM_WERT                  0xD91D
-        // Signal for requesting the compressor power in PWM / Signal fÃ¼r die Anforderung der Kompressorleistung in PWM
+        // Signal for requesting the compressor power in PWM / Signal für die Anforderung der Kompressorleistung in PWM
 
     #define I3_RES_IHX_STAT_BUS_OUT_KLIMAKOMPRESSOR_PWM_WERT         (RXBUF_UCHAR(0))
     #define I3_RES_IHX_STAT_BUS_OUT_KLIMAKOMPRESSOR_PWM_WERT_UNIT    '%'
     #define I3_RES_IHX_STAT_BUS_OUT_KLIMAKOMPRESSOR_PWM_WERT_TYPE    unsigned char
-        // Signal for requesting the compressor power in PWM / Signal fÃ¼r die Anforderung der Kompressorleistung in PWM
+        // Signal for requesting the compressor power in PWM / Signal für die Anforderung der Kompressorleistung in PWM
 
 // Skipping STEUERN_DIAGNOSE_ENDE on 0xD927 which takes arguments
 
@@ -515,12 +515,12 @@
         // AUS = Manuelle Einstellung, 1 = EIN = AUTO eingeschaltet
 
 #define I3_PID_IHX_KLIMA_VORN_GEBLAESESTUFE_ANZ                      0xD92B
-        // Outputs the display of the current fan speed. / Gibt die Anzeige der aktuellen GeblÃ¤sestufe aus.
+        // Outputs the display of the current fan speed. / Gibt die Anzeige der aktuellen Gebläsestufe aus.
 
     #define I3_RES_IHX_STAT_KLIMA_VORN_GEBLAESESTUFE_ANZ_WERT        (RXBUF_UCHAR(0))
     #define I3_RES_IHX_STAT_KLIMA_VORN_GEBLAESESTUFE_ANZ_WERT_UNIT   'Stufe'
     #define I3_RES_IHX_STAT_KLIMA_VORN_GEBLAESESTUFE_ANZ_WERT_TYPE   unsigned char
-        // Outputs the display of the current fan speed. / Gibt die Anzeige der aktuellen GeblÃ¤sestufe aus.
+        // Outputs the display of the current fan speed. / Gibt die Anzeige der aktuellen Gebläsestufe aus.
 
 #define I3_PID_IHX_KLIMA_VORN_OFF_EIN                                0xD92C
         // Function status air conditioning OFF: 0 = OFF = air conditioning is switched on, LED is off 1 = ON = air
@@ -543,12 +543,12 @@
         // Defrost program: 0 = OFF, 1 = ON / Defrost-Programm: 0 = AUS, 1 = EIN
 
 #define I3_PID_IHX_KLIMA_VORN_PRG_MAX_AC_EIN                         0xD92E
-        // Maximum cooling program: 0 = OFF, 1 = ON / Programm maximal KÃ¼hlen: 0 = AUS, 1 = EIN
+        // Maximum cooling program: 0 = OFF, 1 = ON / Programm maximal Kühlen: 0 = AUS, 1 = EIN
 
     #define I3_RES_IHX_STAT_KLIMA_VORN_PRG_MAX_AC_EIN                (RXBUF_UCHAR(0))
     #define I3_RES_IHX_STAT_KLIMA_VORN_PRG_MAX_AC_EIN_UNIT           '0/1'
     #define I3_RES_IHX_STAT_KLIMA_VORN_PRG_MAX_AC_EIN_TYPE           unsigned char
-        // Maximum cooling program: 0 = OFF, 1 = ON / Programm maximal KÃ¼hlen: 0 = AUS, 1 = EIN
+        // Maximum cooling program: 0 = OFF, 1 = ON / Programm maximal Kühlen: 0 = AUS, 1 = EIN
 
 #define I3_PID_IHX_KLIMA_VORN_PRG_AUC_EIN                            0xD930
         // Automatic air circulation control: 0 = OFF, 1 = ON / Automatische Umluft Control: 0 = AUS, 1 = EIN
@@ -593,20 +593,20 @@
         // Stufen: 1 - 7
 
 #define I3_PID_IHX_KLIMA_VORN_PRG_STANDLUEFTEN_EIN                   0xD939
-        // Independent ventilation program: 0 = OFF, 1 = ON / Programm StandlÃ¼ften: 0 = AUS, 1 = EIN
+        // Independent ventilation program: 0 = OFF, 1 = ON / Programm Standlüften: 0 = AUS, 1 = EIN
 
     #define I3_RES_IHX_STAT_KLIMA_VORN_PRG_STANDLUEFTEN_EIN          (RXBUF_UCHAR(0))
     #define I3_RES_IHX_STAT_KLIMA_VORN_PRG_STANDLUEFTEN_EIN_UNIT     '0/1'
     #define I3_RES_IHX_STAT_KLIMA_VORN_PRG_STANDLUEFTEN_EIN_TYPE     unsigned char
-        // Independent ventilation program: 0 = OFF, 1 = ON / Programm StandlÃ¼ften: 0 = AUS, 1 = EIN
+        // Independent ventilation program: 0 = OFF, 1 = ON / Programm Standlüften: 0 = AUS, 1 = EIN
 
 #define I3_PID_IHX_KLIMA_VORN_GEBLAESELEISTUNG_WERT                  0xD93F
-        // Fan output of the IHKA fan output stage in%. / GeblÃ¤seleistung der GeblÃ¤seendstufe IHKA in %.
+        // Fan output of the IHKA fan output stage in%. / Gebläseleistung der Gebläseendstufe IHKA in %.
 
     #define I3_RES_IHX_STAT_KLIMA_VORN_GEBLAESELEISTUNG_WERT         (RXBUF_UCHAR(0))
     #define I3_RES_IHX_STAT_KLIMA_VORN_GEBLAESELEISTUNG_WERT_UNIT    '%'
     #define I3_RES_IHX_STAT_KLIMA_VORN_GEBLAESELEISTUNG_WERT_TYPE    unsigned char
-        // Fan output of the IHKA fan output stage in%. / GeblÃ¤seleistung der GeblÃ¤seendstufe IHKA in %.
+        // Fan output of the IHKA fan output stage in%. / Gebläseleistung der Gebläseendstufe IHKA in %.
 
 #define I3_PID_IHX_KLP_POS_DEFROST_WERT                              0xD941
         // Reading out the setpoint and actual value of the flap position of the flap motor. / Auslesen des Soll- und
@@ -616,7 +616,7 @@
     #define I3_RES_IHX_STAT_KLP_ISTPOS_DEFROST_WERT_UNIT             '%'
     #define I3_RES_IHX_STAT_KLP_ISTPOS_DEFROST_WERT_TYPE             unsigned char
         // Actual value flap opening; 0 ... 100 (127 = read value invalid, 255 = flap not available) / Istwert
-        // KlappenÃ¶ffnung; 0...100  (127 = gelesener Wert ungÃ¼ltig, 255 = Klappe nicht vorhanden)
+        // Klappenöffnung; 0...100  (127 = gelesener Wert ungültig, 255 = Klappe nicht vorhanden)
 
     #define I3_RES_IHX_STAT_KLP_SOLLPOS_DEFROST_WERT                 (RXBUF_UCHAR(1))
     #define I3_RES_IHX_STAT_KLP_SOLLPOS_DEFROST_WERT_UNIT            '%'
@@ -631,7 +631,7 @@
     #define I3_RES_IHX_STAT_KLP_ISTPOS_BELUEFTUNG_WERT_UNIT          '%'
     #define I3_RES_IHX_STAT_KLP_ISTPOS_BELUEFTUNG_WERT_TYPE          unsigned char
         // Actual value flap opening; 0..100% (127 = read value invalid, 255 = flap not available) / Istwert
-        // KlappenÃ¶ffnung; 0..100% (127 = gelesener Wert ungÃ¼ltig, 255=Klappe nicht vorhanden)
+        // Klappenöffnung; 0..100% (127 = gelesener Wert ungültig, 255=Klappe nicht vorhanden)
 
     #define I3_RES_IHX_STAT_KLP_SOLLPOS_BELUEFTUNG_WERT              (RXBUF_UCHAR(1))
     #define I3_RES_IHX_STAT_KLP_SOLLPOS_BELUEFTUNG_WERT_UNIT         '%'
@@ -646,7 +646,7 @@
     #define I3_RES_IHX_STAT_KLP_ISTPOS_FUSSRAUM_WERT_UNIT            '%'
     #define I3_RES_IHX_STAT_KLP_ISTPOS_FUSSRAUM_WERT_TYPE            unsigned char
         // Actual value flap opening: 0 ... 100 (127 = read value invalid, 255 = flap not available) / Istwert
-        // KlappenÃ¶ffnung: 0...100  (127 = gelesener Wert ungÃ¼ltig, 255 = Klappe nicht vorhanden)
+        // Klappenöffnung: 0...100  (127 = gelesener Wert ungültig, 255 = Klappe nicht vorhanden)
 
     #define I3_RES_IHX_STAT_KLP_SOLLPOS_FUSSRAUM_WERT                (RXBUF_UCHAR(1))
     #define I3_RES_IHX_STAT_KLP_SOLLPOS_FUSSRAUM_WERT_UNIT           '%'
@@ -661,7 +661,7 @@
     #define I3_RES_IHX_STAT_KLP_ISTPOS_SCHICHTUNG_WERT_UNIT          '%'
     #define I3_RES_IHX_STAT_KLP_ISTPOS_SCHICHTUNG_WERT_TYPE          unsigned char
         // Actual value flap opening; 0 ... 100 (127 = read value invalid, 255 = flap not available) / Istwert
-        // KlappenÃ¶ffnung; 0...100  (127 = gelesener Wert ungÃ¼ltig, 255 = Klappe nicht vorhanden)
+        // Klappenöffnung; 0...100  (127 = gelesener Wert ungültig, 255 = Klappe nicht vorhanden)
 
     #define I3_RES_IHX_STAT_KLP_SOLLPOS_SCHICHTUNG_WERT              (RXBUF_UCHAR(1))
     #define I3_RES_IHX_STAT_KLP_SOLLPOS_SCHICHTUNG_WERT_UNIT         '%'
@@ -676,7 +676,7 @@
     #define I3_RES_IHX_STAT_KLP_ISTPOS_SCHICHTUNG_LI_WERT_UNIT       '%'
     #define I3_RES_IHX_STAT_KLP_ISTPOS_SCHICHTUNG_LI_WERT_TYPE       unsigned char
         // Actual value flap opening; 0 ... 100 (127 = read value invalid, 255 = flap not available) / Istwert
-        // KlappenÃ¶ffnung; 0...100  (127 = gelesener Wert ungÃ¼ltig, 255 = Klappe nicht vorhanden)
+        // Klappenöffnung; 0...100  (127 = gelesener Wert ungültig, 255 = Klappe nicht vorhanden)
 
     #define I3_RES_IHX_STAT_KLP_SOLLPOS_SCHICHTUNG_LI_WERT           (RXBUF_UCHAR(1))
     #define I3_RES_IHX_STAT_KLP_SOLLPOS_SCHICHTUNG_LI_WERT_UNIT      '%'
@@ -691,7 +691,7 @@
     #define I3_RES_IHX_STAT_KLP_ISTPOS_SCHICHTUNG_RE_WERT_UNIT       '%'
     #define I3_RES_IHX_STAT_KLP_ISTPOS_SCHICHTUNG_RE_WERT_TYPE       unsigned char
         // Actual value flap opening; 0 ... 100 (127 = read value invalid, 255 = flap not available) / Istwert
-        // KlappenÃ¶ffnung; 0...100  (127 = gelesener Wert ungÃ¼ltig, 255 = Klappe nicht vorhanden)
+        // Klappenöffnung; 0...100  (127 = gelesener Wert ungültig, 255 = Klappe nicht vorhanden)
 
     #define I3_RES_IHX_STAT_KLP_SOLLPOS_SCHICHTUNG_RE_WERT           (RXBUF_UCHAR(1))
     #define I3_RES_IHX_STAT_KLP_SOLLPOS_SCHICHTUNG_RE_WERT_UNIT      '%'
@@ -706,7 +706,7 @@
     #define I3_RES_IHX_STAT_KLP_ISTPOS_UMLUFT_WERT_UNIT              '%'
     #define I3_RES_IHX_STAT_KLP_ISTPOS_UMLUFT_WERT_TYPE              unsigned char
         // Actual value flap opening; 0 ... 100 (127 = read value invalid, 255 = flap not available) / Istwert
-        // KlappenÃ¶ffnung; 0...100  (127 = gelesener Wert ungÃ¼ltig, 255 = Klappe nicht vorhanden)
+        // Klappenöffnung; 0...100  (127 = gelesener Wert ungültig, 255 = Klappe nicht vorhanden)
 
     #define I3_RES_IHX_STAT_KLP_SOLLPOS_UMLUFT_WERT                  (RXBUF_UCHAR(1))
     #define I3_RES_IHX_STAT_KLP_SOLLPOS_UMLUFT_WERT_UNIT             '%'
@@ -721,7 +721,7 @@
     #define I3_RES_IHX_STAT_KLP_ISTPOS_TEMP_LUFT_FOND_WERT_UNIT      '%'
     #define I3_RES_IHX_STAT_KLP_ISTPOS_TEMP_LUFT_FOND_WERT_TYPE      unsigned char
         // Actual value flap opening; 0 ... 100 (127 = read value invalid, 255 = flap not available) / Istwert
-        // KlappenÃ¶ffnung; 0...100  (127 = gelesener Wert ungÃ¼ltig, 255 = Klappe nicht vorhanden)
+        // Klappenöffnung; 0...100  (127 = gelesener Wert ungültig, 255 = Klappe nicht vorhanden)
 
     #define I3_RES_IHX_STAT_KLP_SOLLPOS_TEMP_LUFT_FOND_WERT          (RXBUF_UCHAR(1))
     #define I3_RES_IHX_STAT_KLP_SOLLPOS_TEMP_LUFT_FOND_WERT_UNIT     '%'
@@ -736,7 +736,7 @@
     #define I3_RES_IHX_STAT_KALIBRIERLAUF_NR_UNIT                    '0-n'
     #define I3_RES_IHX_STAT_KALIBRIERLAUF_NR_TYPE                    unsigned char
         // 0 = not yet started in this terminal cycle, 1 = calibration run is currently running, 2 = calibration run
-        // completed / 0 = in diesem Klemmenzyklus noch nicht gestartet, 1 = Kalibrierlauf lÃ¤uft gerade, 2 =
+        // completed / 0 = in diesem Klemmenzyklus noch nicht gestartet, 1 = Kalibrierlauf läuft gerade, 2 =
         // Kalibrierlauf abgeschlossen
 
     #define I3_RES_IHX_STAT_KALIBRIERLAUF_ERGEBNIS                   (RXBUF_UCHAR(1))
@@ -745,8 +745,8 @@
         // 0 = calibration run completed NOK, 1 = calibration run completed OK and data saved; The result relates to the
         // last calibration run carried out. The result may only be saved after a completely completed calibration run. /
         // 0 = Kalibrierlauf abgeschlossen NIO, 1 = Kalibierlauf abgeschlossen IO und Daten gespeichert; Das Ergebnis
-        // bezieht sich auf den zuletzt durchgefÃ¼hrten Kalibrierlauf. Das Ergebnis darf nur im Anschluss eines
-        // vollstÃ¤ndig durchlaufenen Kalibrierlaufs abgespeichert werden.
+        // bezieht sich auf den zuletzt durchgeführten Kalibrierlauf. Das Ergebnis darf nur im Anschluss eines
+        // vollständig durchlaufenen Kalibrierlaufs abgespeichert werden.
 
     #define I3_RES_IHX_STAT_MOTOR_1_NR                               (RXBUF_UCHAR(2))
     #define I3_RES_IHX_STAT_MOTOR_1_NR_UNIT                          '0-n'
@@ -869,48 +869,48 @@
         // = Klappe nicht verbaut
 
 #define I3_PID_IHX_SELBSTTEST_SCHRITTMOTORE                          0xD954
-        // Stepper motor self-test status: 0 = not started / not requested, 1 = test is currently running, 2 = test
+        // Status of stepper motor self-tests: 0 = not started / not requested, 1 = test is currently running, 2 = test
         // successfully completed, 3 = test not completed successfully / Status Schrittmotorenselbsttests: 0 = nicht
-        // gestartet/nicht angefordert, 1 = Test lÃ¤uft gerade, 2 = Test erfolgreich abgeschlossen, 3 = Test nicht
+        // gestartet/nicht angefordert, 1 = Test läuft gerade, 2 = Test erfolgreich abgeschlossen, 3 = Test nicht
         // erfolgreich abgeschlossen
 
     #define I3_RES_IHX_STAT_SELBSTTEST_SCHRITTMOTORE_NR              (RXBUF_UCHAR(0))
     #define I3_RES_IHX_STAT_SELBSTTEST_SCHRITTMOTORE_NR_UNIT         '0-n'
     #define I3_RES_IHX_STAT_SELBSTTEST_SCHRITTMOTORE_NR_TYPE         unsigned char
-        // Stepper motor self-test status: 0 = not started / not requested, 1 = test is currently running, 2 = test
+        // Status of stepper motor self-tests: 0 = not started / not requested, 1 = test is currently running, 2 = test
         // successfully completed, 3 = test not completed successfully / Status Schrittmotorenselbsttests: 0 = nicht
-        // gestartet/nicht angefordert, 1 = Test lÃ¤uft gerade, 2 = Test erfolgreich abgeschlossen, 3 = Test nicht
+        // gestartet/nicht angefordert, 1 = Test läuft gerade, 2 = Test erfolgreich abgeschlossen, 3 = Test nicht
         // erfolgreich abgeschlossen
 
 #define I3_PID_IHX_TEMP_BELUEFTUNG_LINKS_WERT                        0xD957
         // Left ventilation flap temperature If the sensor is defective or unplugged, the value 127 is returned /
-        // Temperatur BelÃ¼ftungsklappe links Bei defektem oder abgesteckten Sensor wird der Wert 127 zurÃ¼ck geliefert
+        // Temperatur Belüftungsklappe links Bei defektem oder abgesteckten Sensor wird der Wert 127 zurück geliefert
 
     #define I3_RES_IHX_STAT_TEMP_BELUEFTUNG_LINKS_WERT               (RXBUF_SCHAR(0))
-    #define I3_RES_IHX_STAT_TEMP_BELUEFTUNG_LINKS_WERT_UNIT          'Â°C'
+    #define I3_RES_IHX_STAT_TEMP_BELUEFTUNG_LINKS_WERT_UNIT          '°C'
     #define I3_RES_IHX_STAT_TEMP_BELUEFTUNG_LINKS_WERT_TYPE          char
         // Left ventilation flap temperature If the sensor is defective or unplugged, the value 127 is returned /
-        // Temperatur BelÃ¼ftungsklappe links Bei defektem oder abgesteckten Sensor wird der Wert 127 zurÃ¼ck geliefert
+        // Temperatur Belüftungsklappe links Bei defektem oder abgesteckten Sensor wird der Wert 127 zurück geliefert
 
 #define I3_PID_IHX_TEMP_BELUEFTUNG_RECHTS_WERT                       0xD958
         // Right ventilation flap temperature If the sensor is defective or unplugged, the value 127 is returned /
-        // Temperatur BelÃ¼ftungsklappe rechts Bei defektem oder abgesteckten Sensor wird der Wert 127 zurÃ¼ck geliefert
+        // Temperatur Belüftungsklappe rechts Bei defektem oder abgesteckten Sensor wird der Wert 127 zurück geliefert
 
     #define I3_RES_IHX_STAT_TEMP_BELUEFTUNG_RECHTS_WERT              (RXBUF_SCHAR(0))
-    #define I3_RES_IHX_STAT_TEMP_BELUEFTUNG_RECHTS_WERT_UNIT         'Â°C'
+    #define I3_RES_IHX_STAT_TEMP_BELUEFTUNG_RECHTS_WERT_UNIT         '°C'
     #define I3_RES_IHX_STAT_TEMP_BELUEFTUNG_RECHTS_WERT_TYPE         char
         // Right ventilation flap temperature If the sensor is defective or unplugged, the value 127 is returned /
-        // Temperatur BelÃ¼ftungsklappe rechts Bei defektem oder abgesteckten Sensor wird der Wert 127 zurÃ¼ck geliefert
+        // Temperatur Belüftungsklappe rechts Bei defektem oder abgesteckten Sensor wird der Wert 127 zurück geliefert
 
 #define I3_PID_IHX_DRUCKSENSOR_VORHANDEN                             0xD959
         // Indicates whether a pressure sensor is installed for R134A: 0 = not available, 1 = available / Gibt aus, ob
-        // ein Drucksensor fÃ¼r R134A verbaut ist: 0 = nicht vorhanden, 1 = vorhanden
+        // ein Drucksensor für R134A verbaut ist: 0 = nicht vorhanden, 1 = vorhanden
 
     #define I3_RES_IHX_STAT_DRUCKSENSOR_VORHANDEN                    (RXBUF_UCHAR(0))
     #define I3_RES_IHX_STAT_DRUCKSENSOR_VORHANDEN_UNIT               '0/1'
     #define I3_RES_IHX_STAT_DRUCKSENSOR_VORHANDEN_TYPE               unsigned char
         // Indicates whether a pressure sensor is installed for R134A: 0 = not available, 1 = available / Gibt aus, ob
-        // ein Drucksensor fÃ¼r R134A verbaut ist: 0 = nicht vorhanden, 1 = vorhanden
+        // ein Drucksensor für R134A verbaut ist: 0 = nicht vorhanden, 1 = vorhanden
 
 #define I3_PID_IHX_VORHANDEN_WASSERVENTIL                            0xD95A
         // Water valve available / Wasserventil vorhanden
@@ -927,13 +927,13 @@
 
 #define I3_PID_IHX_TEMP_VERDAMPFER_WERT                              0xD95C
         // Temperature sensor evaporator If the sensor is defective or unplugged, the value 127 is returned /
-        // TemperaturfÃ¼hler Verdampfer Bei defektem oder abgesteckten Sensor wird der Wert 127 zurÃ¼ck geliefert
+        // Temperaturfühler Verdampfer Bei defektem oder abgesteckten Sensor wird der Wert 127 zurück geliefert
 
     #define I3_RES_IHX_STAT_TEMP_VERDAMPFER_WERT                     (RXBUF_SCHAR(0))
-    #define I3_RES_IHX_STAT_TEMP_VERDAMPFER_WERT_UNIT                'Â°C'
+    #define I3_RES_IHX_STAT_TEMP_VERDAMPFER_WERT_UNIT                '°C'
     #define I3_RES_IHX_STAT_TEMP_VERDAMPFER_WERT_TYPE                char
         // Temperature sensor evaporator If the sensor is defective or unplugged, the value 127 is returned /
-        // TemperaturfÃ¼hler Verdampfer Bei defektem oder abgesteckten Sensor wird der Wert 127 zurÃ¼ck geliefert
+        // Temperaturfühler Verdampfer Bei defektem oder abgesteckten Sensor wird der Wert 127 zurück geliefert
 
 #define I3_PID_IHX_BUS_IN_KOMPRESSORFREIGABE                         0xD960
         // Air conditioning compressor release from the engine electronics: 0 = not released, 1 = released /
@@ -949,12 +949,12 @@
         // BUS signal solar sensor / BUS-Signal Solarsensor
 
     #define I3_RES_IHX_STAT_BUS_IN_SOLARSENSOR_LINKS_WERT            (RXBUF_SINT(0))
-    #define I3_RES_IHX_STAT_BUS_IN_SOLARSENSOR_LINKS_WERT_UNIT       'W/mÂ²'
+    #define I3_RES_IHX_STAT_BUS_IN_SOLARSENSOR_LINKS_WERT_UNIT       'W/m²'
     #define I3_RES_IHX_STAT_BUS_IN_SOLARSENSOR_LINKS_WERT_TYPE       short
         // Solar sensor / Solarsensor
 
     #define I3_RES_IHX_STAT_BUS_IN_SOLARSENSOR_RECHTS_WERT           (RXBUF_SINT(2))
-    #define I3_RES_IHX_STAT_BUS_IN_SOLARSENSOR_RECHTS_WERT_UNIT      'W/mÂ²'
+    #define I3_RES_IHX_STAT_BUS_IN_SOLARSENSOR_RECHTS_WERT_UNIT      'W/m²'
     #define I3_RES_IHX_STAT_BUS_IN_SOLARSENSOR_RECHTS_WERT_TYPE      short
         // Solar sensor / Solarsensor
 
@@ -975,29 +975,29 @@
         // PMW signal condensation sensor / PMW-Signal Beschlagssensor
 
 #define I3_PID_IHX_BUS_IN_KAELTEMITTELDRUCK_WERT                     0xD968
-        // Refrigerant pressure for R134A / KÃ¤ltemitteldruck fÃ¼r R134A
+        // Refrigerant pressure for R134A / Kältemitteldruck für R134A
 
     #define I3_RES_IHX_STAT_BUS_IN_R134A_DRUCK_WERT                  (RXBUF_UCHAR(0))
     #define I3_RES_IHX_STAT_BUS_IN_R134A_DRUCK_WERT_UNIT             'bar'
     #define I3_RES_IHX_STAT_BUS_IN_R134A_DRUCK_WERT_TYPE             unsigned char
-        // Refrigerant pressure for R134A / KÃ¤ltemitteldruck fÃ¼r R134A
+        // Refrigerant pressure for R134A / Kältemitteldruck für R134A
 
 #define I3_PID_IHX_BUS_IN_TEMP_AUSSEN_WERT                           0xD96B
-        // Outside temperature / AuÃentemperatur
+        // Outside temperature / Außentemperatur
 
     #define I3_RES_IHX_STAT_BUS_IN_TEMP_AUSSEN_WERT                  (RXBUF_SINT(0)/2.0f-40.0)
-    #define I3_RES_IHX_STAT_BUS_IN_TEMP_AUSSEN_WERT_UNIT             'Â°C'
+    #define I3_RES_IHX_STAT_BUS_IN_TEMP_AUSSEN_WERT_UNIT             '°C'
     #define I3_RES_IHX_STAT_BUS_IN_TEMP_AUSSEN_WERT_TYPE             float
-        // Outside temperature / AuÃentemperatur
+        // Outside temperature / Außentemperatur
 
 #define I3_PID_IHX_BESCHLAGSENSOR_VORHANDEN                          0xD96D
-        // 0: condensation sensor not available / coded 1: condensation sensor available / coded / 0: Beschlagsensor
+        // 0: Condensation sensor not available / coded 1: Condensation sensor available / coded / 0: Beschlagsensor
         // nicht vorhanden / codiert   1: Beschlagsensor vorhanden / codiert
 
     #define I3_RES_IHX_STAT_VORHANDEN_BESCHLAGSENSOR                 (RXBUF_UCHAR(0))
     #define I3_RES_IHX_STAT_VORHANDEN_BESCHLAGSENSOR_UNIT            '0/1'
     #define I3_RES_IHX_STAT_VORHANDEN_BESCHLAGSENSOR_TYPE            unsigned char
-        // 0: condensation sensor not available / coded 1: condensation sensor available / coded / 0: Beschlagsensor
+        // 0: Condensation sensor not available / coded 1: Condensation sensor available / coded / 0: Beschlagsensor
         // nicht vorhanden / codiert   1: Beschlagsensor vorhanden / codiert
 
 // Skipping FRONTSCHEIBENHEIZUNG on 0xD96F which takes arguments
@@ -1007,12 +1007,12 @@
         // eingestellten Sollwert-Temperatur (links und rechts) der Klimaanlage.
 
     #define I3_RES_IHX_STAT_KLIMA_VORNE_SOLLTEMP_LINKS_WERT          (RXBUF_UCHAR(0)/2.0f)
-    #define I3_RES_IHX_STAT_KLIMA_VORNE_SOLLTEMP_LINKS_WERT_UNIT     'Â°C'
+    #define I3_RES_IHX_STAT_KLIMA_VORNE_SOLLTEMP_LINKS_WERT_UNIT     '°C'
     #define I3_RES_IHX_STAT_KLIMA_VORNE_SOLLTEMP_LINKS_WERT_TYPE     float
         // Output of the set target temperature on the left. / Ausgabe der eingestellten Sollwert-Temperatur links.
 
     #define I3_RES_IHX_STAT_KLIMA_VORNE_SOLLTEMP_RECHTS_WERT         (RXBUF_UCHAR(1)/2.0f)
-    #define I3_RES_IHX_STAT_KLIMA_VORNE_SOLLTEMP_RECHTS_WERT_UNIT    'Â°C'
+    #define I3_RES_IHX_STAT_KLIMA_VORNE_SOLLTEMP_RECHTS_WERT_UNIT    '°C'
     #define I3_RES_IHX_STAT_KLIMA_VORNE_SOLLTEMP_RECHTS_WERT_TYPE    float
         // Output of the set target temperature on the right. / Ausgabe der eingestellten Sollwert-Temperatur rechts.
 
@@ -1089,7 +1089,7 @@
     #define I3_RES_IHX_STAT_MOT_0X3F_WERT                            (RXBUF_SINT(32))
     #define I3_RES_IHX_STAT_MOT_0X3F_WERT_TYPE                       short
         // Availability of the slave with address 0x3F (63 dec): 0x00 = slave with address 0x3F installed, 0xFF = slave
-        // with address 0x3F not installed / VerfÃ¼gbarkeit des Slaves mit der Adresse 0x3F (63 dez): 0x00 = Slave mit
+        // with address 0x3F not installed / Verfügbarkeit des Slaves mit der Adresse 0x3F (63 dez): 0x00 = Slave mit
         // Adresse 0x3F verbaut, 0xFF = Slave mit Adresse 0x3F nicht verbaut
 
     #define I3_RES_IHX_STAT_FEHLERSTATUS_WERT                        (RXBUF_SINT(34))
@@ -1097,12 +1097,12 @@
         // 0 = no error, 255 = unknown error / 0 = kein Fehler, 255 = unbekannter Fehler
 
 #define I3_PID_IHX_STEUERN_RESET_LIN                                 0xD97C
-        // Resetting the LIN bus with switching off the LIN supply voltage. / RÃ¼cksetzen des LIN-Bus mit Wegschalten der
+        // Resetting the LIN bus with switching off the LIN supply voltage. / Rücksetzen des LIN-Bus mit Wegschalten der
         // LIN-Versorgungsspannung.
 
 #define I3_PID_IHX_KLAPPEN_VERSTELLBEREICH                           0xD980
         // Reading out the adjustment range of the individual flaps as increments that could be determined via the
-        // calibration run. / Auslesen des Verstellbereichs der einzelnen Klappen als Inkremente, die Ã¼ber den Eichlauf
+        // calibration run. / Auslesen des Verstellbereichs der einzelnen Klappen als Inkremente, die über den Eichlauf
         // ermittelt werden konnten.
 
     #define I3_RES_IHX_STAT_VERSTELLBEREICH_KLAPPE1_WERT             (RXBUF_SINT(0))
@@ -1206,15 +1206,15 @@
         // Specification of the adjustment range in increments. / Angabe des Verstellbereiches in Inkrementen.
 
 #define I3_PID_IHX_STEUERN_AUTOADR_KLAPPENMOTOREN                    0xD981
-        // Starts auto addressing to assign the motor addresses in the system based on the sequence of the connections on
-        // the wiring harness. / Startet die Autoadressierung zur Vergabe der Motoradressen im System anhand der
-        // Reihenfolge der AnschlÃ¼sse am Kabelbaum.
+        // Starts the auto addressing to assign the motor addresses in the system based on the sequence of the
+        // connections on the wiring harness. / Startet die Autoadressierung zur Vergabe der Motoradressen im System
+        // anhand der Reihenfolge der Anschlüsse am Kabelbaum.
 
 #define I3_PID_IHX_KLIMA_TEMPERATUR_MITTE_SOLLWERT                   0xD988
         // Output of the set target temperature / Ausgabe der eingestellten Sollwert-Temperatur
 
     #define I3_RES_IHX_STAT_KLIMA_SOLLTEMP_MITTE_WERT                (RXBUF_UCHAR(0)/2.0f)
-    #define I3_RES_IHX_STAT_KLIMA_SOLLTEMP_MITTE_WERT_UNIT           'Â°C'
+    #define I3_RES_IHX_STAT_KLIMA_SOLLTEMP_MITTE_WERT_UNIT           '°C'
     #define I3_RES_IHX_STAT_KLIMA_SOLLTEMP_MITTE_WERT_TYPE           float
         // Output of the set target temperature / Ausgabe der eingestellten Sollwert-Temperatur
 
@@ -1226,8 +1226,8 @@
     #define I3_RES_IHX_STAT_KLP_ISTPOS_MISCHLUFT_WERT_UNIT           '%'
     #define I3_RES_IHX_STAT_KLP_ISTPOS_MISCHLUFT_WERT_TYPE           unsigned char
         // Actual value flap opening; 0 ... 100 (127 = read value invalid, 255 = flap not available) 0 = cold 100 = warm
-        // / Istwert KlappenÃ¶ffnung; 0...100  (127 = gelesener Wert ungÃ¼ltig, 255 = Klappe nicht vorhanden) 0 = Kalt
-        // 100 = Warm
+        // / Istwert Klappenöffnung; 0...100  (127 = gelesener Wert ungültig, 255 = Klappe nicht vorhanden) 0 = Kalt 100
+        // = Warm
 
     #define I3_RES_IHX_STAT_KLP_SOLLPOS_MISCHLUFT_WERT               (RXBUF_UCHAR(1))
     #define I3_RES_IHX_STAT_KLP_SOLLPOS_MISCHLUFT_WERT_UNIT          '%'
@@ -1237,27 +1237,27 @@
 
 #define I3_PID_IHX_KLP_POS_ZENTRALANTRIEB_WERT                       0xD98B
         // Reading out the setpoint and actual value of the motor for the central drive with link plate. / Auslesen des
-        // Soll- und Ist-Werts des Motors fÃ¼r den Zentralantrieb mit Kulissenscheibe.
+        // Soll- und Ist-Werts des Motors für den Zentralantrieb mit Kulissenscheibe.
 
     #define I3_RES_IHX_STAT_MOT_ISTPOS_ZENTRALANTRIEB_WERT           (RXBUF_UINT(0))
-    #define I3_RES_IHX_STAT_MOT_ISTPOS_ZENTRALANTRIEB_WERT_UNIT      'Â°'
+    #define I3_RES_IHX_STAT_MOT_ISTPOS_ZENTRALANTRIEB_WERT_UNIT      '°'
     #define I3_RES_IHX_STAT_MOT_ISTPOS_ZENTRALANTRIEB_WERT_TYPE      unsigned short
         // Actual value of gate position: 0 ... 360 degrees IHKA: 0 = 100% defrost 120 = 100% ventilation 242 = 100%
         // footwell IHKA-VA02 IHKS: pos_ist = position according to stepper motor driver pos_function = position
         // according to board structure, KFL - if pos_ist is less than or equal to 100 : pos_function = 100 - pos_ist -
         // otherwise: pos_function = 460 - pos_ist / Istwert Kulissenstellung: 0...360 Grad IHKA: 0 = 100% Defrost 120 =
-        // 100% BelÃ¼ftung 242 = 100% Fussraum  IHKA-VA02 IHKS: pos_ist = Position laut Schrittmotortreiber pos_function
-        // = Position laut Brettaufbau, KFL  - falls pos_ist kleiner oder gleich 100: pos_function = 100 - pos_ist -
-        // sonst: pos_function = 460 - pos_ist
+        // 100% Belüftung 242 = 100% Fussraum  IHKA-VA02 IHKS: pos_ist = Position laut Schrittmotortreiber pos_function =
+        // Position laut Brettaufbau, KFL  - falls pos_ist kleiner oder gleich 100: pos_function = 100 - pos_ist - sonst:
+        // pos_function = 460 - pos_ist
 
     #define I3_RES_IHX_STAT_MOT_SOLLPOS_ZENTRALANTRIEB_WERT          (RXBUF_UINT(2))
-    #define I3_RES_IHX_STAT_MOT_SOLLPOS_ZENTRALANTRIEB_WERT_UNIT     'Â°'
+    #define I3_RES_IHX_STAT_MOT_SOLLPOS_ZENTRALANTRIEB_WERT_UNIT     '°'
     #define I3_RES_IHX_STAT_MOT_SOLLPOS_ZENTRALANTRIEB_WERT_TYPE     unsigned short
         // Setpoint gate position: 0 ... 360 degrees IHKA: 0 = 100% defrost 120 = 100% ventilation 242 = 100% footwell
         // IHKA-VA02 IHKS: pos_ist = position according to stepper motor driver pos_function = position according to
         // board structure, KFL - if pos_ist is less than or equal to 100 : pos_function = 100 - pos_ist - otherwise:
         // pos_function = 460 - pos_ist / Sollwert Kulissenstellung: 0...360 Grad IHKA: 0 = 100% Defrost 120 = 100%
-        // BelÃ¼ftung 242 = 100% Fussraum   IHKA-VA02 IHKS: pos_ist = Position laut Schrittmotortreiber pos_function =
+        // Belüftung 242 = 100% Fussraum   IHKA-VA02 IHKS: pos_ist = Position laut Schrittmotortreiber pos_function =
         // Position laut Brettaufbau, KFL  - falls pos_ist kleiner oder gleich 100: pos_function = 100 - pos_ist - sonst:
         // pos_function = 460 - pos_ist
 
@@ -1269,8 +1269,8 @@
     #define I3_RES_IHX_STAT_KLP_ISTPOS_MISCHLUFT_LINKS_WERT_UNIT     '%'
     #define I3_RES_IHX_STAT_KLP_ISTPOS_MISCHLUFT_LINKS_WERT_TYPE     unsigned char
         // Actual value flap opening; 0 ... 100 (127 = read value invalid, 255 = flap not available) 0 = cold 100 = warm
-        // / Istwert KlappenÃ¶ffnung; 0...100  (127 = gelesener Wert ungÃ¼ltig, 255 = Klappe nicht vorhanden) 0 = Kalt
-        // 100 = Warm
+        // / Istwert Klappenöffnung; 0...100  (127 = gelesener Wert ungültig, 255 = Klappe nicht vorhanden) 0 = Kalt 100
+        // = Warm
 
     #define I3_RES_IHX_STAT_KLP_SOLLPOS_MISCHLUFT_LINKS_WERT         (RXBUF_UCHAR(1))
     #define I3_RES_IHX_STAT_KLP_SOLLPOS_MISCHLUFT_LINKS_WERT_UNIT    '%'
@@ -1286,8 +1286,8 @@
     #define I3_RES_IHX_STAT_KLP_ISTPOS_MISCHLUFT_RECHTS_WERT_UNIT    '%'
     #define I3_RES_IHX_STAT_KLP_ISTPOS_MISCHLUFT_RECHTS_WERT_TYPE    unsigned char
         // Actual value flap opening; 0 ... 100 (127 = read value invalid, 255 = flap not available) 0 = cold 100 = warm
-        // / Istwert KlappenÃ¶ffnung; 0...100  (127 = gelesener Wert ungÃ¼ltig, 255 = Klappe nicht vorhanden) 0 = Kalt
-        // 100 = Warm
+        // / Istwert Klappenöffnung; 0...100  (127 = gelesener Wert ungültig, 255 = Klappe nicht vorhanden) 0 = Kalt 100
+        // = Warm
 
     #define I3_RES_IHX_STAT_KLP_SOLLPOS_MISCHLUFT_RECHTS_WERT        (RXBUF_UCHAR(1))
     #define I3_RES_IHX_STAT_KLP_SOLLPOS_MISCHLUFT_RECHTS_WERT_UNIT   '%'
@@ -1306,20 +1306,20 @@
         // Mikroschalters am Zentralantrieb:  0 = AUS, 1 = EIN
 
 #define I3_PID_IHX_TEMP_BELUEFTUNG_WERT                              0xD990
-        // Ventilation temperature sensor / TemperaturfÃ¼hler BelÃ¼ftung
+        // Ventilation temperature sensor / Temperaturfühler Belüftung
 
     #define I3_RES_IHX_STAT_TEMP_BELUEFTUNG_WERT                     (RXBUF_SCHAR(0))
-    #define I3_RES_IHX_STAT_TEMP_BELUEFTUNG_WERT_UNIT                'Â°C'
+    #define I3_RES_IHX_STAT_TEMP_BELUEFTUNG_WERT_UNIT                '°C'
     #define I3_RES_IHX_STAT_TEMP_BELUEFTUNG_WERT_TYPE                char
-        // Ventilation temperature sensor / TemperaturfÃ¼hler BelÃ¼ftung
+        // Ventilation temperature sensor / Temperaturfühler Belüftung
 
 #define I3_PID_IHX_TEMP_FUSSRAUM_WERT                                0xD991
-        // Footwell temperature sensor / TemperaturfÃ¼hler Fussraum
+        // Footwell temperature sensor / Temperaturfühler Fussraum
 
     #define I3_RES_IHX_STAT_TEMP_FUSSRAUM_WERT                       (RXBUF_SCHAR(0))
-    #define I3_RES_IHX_STAT_TEMP_FUSSRAUM_WERT_UNIT                  'Â°C'
+    #define I3_RES_IHX_STAT_TEMP_FUSSRAUM_WERT_UNIT                  '°C'
     #define I3_RES_IHX_STAT_TEMP_FUSSRAUM_WERT_TYPE                  char
-        // Footwell temperature sensor / TemperaturfÃ¼hler Fussraum
+        // Footwell temperature sensor / Temperaturfühler Fussraum
 
 #define I3_PID_IHX_VORHANDEN_AUDIOBEDIENTEIL                         0xD995
         // 0 = not available 1 = available / 0=nicht vorhanden 1=vorhanden
@@ -1330,39 +1330,39 @@
         // 0 = not available 1 = available / 0=nicht vorhanden 1=vorhanden
 
 #define I3_PID_IHX_POTI_SCHICHTUNG_MITTE_WERT                        0xD998
-        // Potentiometer stratification ventilation: 0 ... 100% / Potentiometer Schichtung BelÃ¼ftung: 0 ... 100%
+        // Potentiometer stratification ventilation: 0 ... 100% / Potentiometer Schichtung Belüftung: 0 ... 100%
 
     #define I3_RES_IHX_STAT_POTI_SCHICHTUNG_MITTE_WERT               (RXBUF_UCHAR(0))
     #define I3_RES_IHX_STAT_POTI_SCHICHTUNG_MITTE_WERT_UNIT          '%'
     #define I3_RES_IHX_STAT_POTI_SCHICHTUNG_MITTE_WERT_TYPE          unsigned char
-        // Potentiometer stratification ventilation: 0 ... 100% / Potentiometer Schichtung BelÃ¼ftung: 0 ... 100%
+        // Potentiometer stratification ventilation: 0 ... 100% / Potentiometer Schichtung Belüftung: 0 ... 100%
 
 #define I3_PID_IHX_MOT_POS_BEL_FUSS_LI_RE_WERT                       0xD99C
         // Reading out the setpoint and actual values for the central drive for ventilation and footwell. / Auslesen der
-        // Soll- und Ist-Werte fÃ¼r den Zentralantrieb fÃ¼r BelÃ¼ftung und Fussraum.
+        // Soll- und Ist-Werte für den Zentralantrieb für Belüftung und Fussraum.
 
     #define I3_RES_IHX_STAT_MOT_ISTPOS_BEL_FUSS_LINKS_WERT           (RXBUF_UCHAR(0))
     #define I3_RES_IHX_STAT_MOT_ISTPOS_BEL_FUSS_LINKS_WERT_UNIT      '%'
     #define I3_RES_IHX_STAT_MOT_ISTPOS_BEL_FUSS_LINKS_WERT_TYPE      unsigned char
-        // Actual value central drive ventilation footwell: 0 ... 100% / Istwert Zentralantrieb BelÃ¼ftung Fussraum:
+        // Actual value central drive ventilation footwell: 0 ... 100% / Istwert Zentralantrieb Belüftung Fussraum:
         // 0...100 %
 
     #define I3_RES_IHX_STAT_MOT_ISTPOS_BEL_FUSS_RECHTS_WERT          (RXBUF_UCHAR(1))
     #define I3_RES_IHX_STAT_MOT_ISTPOS_BEL_FUSS_RECHTS_WERT_UNIT     '%'
     #define I3_RES_IHX_STAT_MOT_ISTPOS_BEL_FUSS_RECHTS_WERT_TYPE     unsigned char
-        // Actual value central drive ventilation footwell: 0 ... 100% / Istwert Zentralantrieb BelÃ¼ftung Fussraum:
+        // Actual value central drive ventilation footwell: 0 ... 100% / Istwert Zentralantrieb Belüftung Fussraum:
         // 0...100 %
 
     #define I3_RES_IHX_STAT_MOT_SOLLPOS_BEL_FUSS_LINKS_WERT          (RXBUF_UCHAR(2))
     #define I3_RES_IHX_STAT_MOT_SOLLPOS_BEL_FUSS_LINKS_WERT_UNIT     '%'
     #define I3_RES_IHX_STAT_MOT_SOLLPOS_BEL_FUSS_LINKS_WERT_TYPE     unsigned char
-        // Setpoint central drive ventilation footwell: 0 ... 100% / Sollwert Zentralantrieb BelÃ¼ftung Fussraum: 0...100
+        // Setpoint central drive ventilation footwell: 0 ... 100% / Sollwert Zentralantrieb Belüftung Fussraum: 0...100
         // %
 
     #define I3_RES_IHX_STAT_MOT_SOLLPOS_BEL_FUSS_RECHTS_WERT         (RXBUF_UCHAR(3))
     #define I3_RES_IHX_STAT_MOT_SOLLPOS_BEL_FUSS_RECHTS_WERT_UNIT    '%'
     #define I3_RES_IHX_STAT_MOT_SOLLPOS_BEL_FUSS_RECHTS_WERT_TYPE    unsigned char
-        // Setpoint central drive ventilation footwell: 0 ... 100% / Sollwert Zentralantrieb BelÃ¼ftung Fussraum: 0...100
+        // Setpoint central drive ventilation footwell: 0 ... 100% / Sollwert Zentralantrieb Belüftung Fussraum: 0...100
         // %
 
 #define I3_PID_IHX_VARIANTE_AUDIOBEDIENTEIL                          0xD9A0
@@ -1376,23 +1376,23 @@
         // TAB_VARIANTE_AUDIOBEDIENTEIL
 
 #define I3_PID_IHX_BUS_OUT_KOMPRESSORKUPPLUNG_EIN                    0xD9A1
-        // Signal for the request to the compressor clutch 0 = clutch open 1 = clutch closed / Signal fÃ¼r die
-        // Anforderung an die Kompressorkupplung 0 = Kupplung offen 1 = Kupplung geschlossen
+        // Signal for the request to the compressor clutch 0 = clutch open 1 = clutch closed / Signal für die Anforderung
+        // an die Kompressorkupplung 0 = Kupplung offen 1 = Kupplung geschlossen
 
     #define I3_RES_IHX_STAT_BUS_OUT_KOMPRESSORKUPPLUNG_EIN           (RXBUF_UCHAR(0))
     #define I3_RES_IHX_STAT_BUS_OUT_KOMPRESSORKUPPLUNG_EIN_UNIT      '0/1'
     #define I3_RES_IHX_STAT_BUS_OUT_KOMPRESSORKUPPLUNG_EIN_TYPE      unsigned char
-        // Signal for the request to the compressor clutch 0 = clutch open 1 = clutch closed / Signal fÃ¼r die
-        // Anforderung an die Kompressorkupplung 0 = Kupplung offen 1 = Kupplung geschlossen
+        // Signal for the request to the compressor clutch 0 = clutch open 1 = clutch closed / Signal für die Anforderung
+        // an die Kompressorkupplung 0 = Kupplung offen 1 = Kupplung geschlossen
 
 #define I3_PID_IHX_VORHANDEN_EKMV                                    0xD9A4
-        // Electric refrigerant compressor: see table TAB_KMV_HYBRID_GENERATION / Elektrischer KÃ¤ltemittelverdichter:
+        // Electric refrigerant compressor: see table TAB_KMV_HYBRID_GENERATION / Elektrischer Kältemittelverdichter:
         // siehe Tabelle TAB_KMV_HYBRID_GENERATION
 
     #define I3_RES_IHX_STAT_VORHANDEN_EKMV                           (RXBUF_UCHAR(0))
     #define I3_RES_IHX_STAT_VORHANDEN_EKMV_UNIT                      '0-n'
     #define I3_RES_IHX_STAT_VORHANDEN_EKMV_TYPE                      unsigned char
-        // Electric refrigerant compressor: see table TAB_KMV_HYBRID_GENERATION / Elektrischer KÃ¤ltemittelverdichter:
+        // Electric refrigerant compressor: see table TAB_KMV_HYBRID_GENERATION / Elektrischer Kältemittelverdichter:
         // siehe Tabelle TAB_KMV_HYBRID_GENERATION
 
 // Skipping STEUERN_ZENTRALANTRIEB on 0xD9A6 which takes arguments
@@ -1410,44 +1410,44 @@
         // EIN
 
 #define I3_PID_IHX_WAERMEPUMPE_SENSOREN                              0xD9AC
-        // Heat pump sensors / Sensoren der WÃ¤rmepumpe
+        // Heat pump sensors / Sensoren der Wärmepumpe
 
     #define I3_RES_IHX_STAT_WP_TEMPERATURFUEHLER_1_WERT              (RXBUF_UINT(0)*0.2f-20.0)
-    #define I3_RES_IHX_STAT_WP_TEMPERATURFUEHLER_1_WERT_UNIT         'Â°C'
+    #define I3_RES_IHX_STAT_WP_TEMPERATURFUEHLER_1_WERT_UNIT         '°C'
     #define I3_RES_IHX_STAT_WP_TEMPERATURFUEHLER_1_WERT_TYPE         float
-        // Heat pump temperature sensor 1 / WÃ¤rmepumpe TemperaturfÃ¼hler 1
+        // Heat pump temperature sensor 1 / Wärmepumpe Temperaturfühler 1
 
     #define I3_RES_IHX_STAT_WP_TEMPERATURFUEHLER_2_WERT              (RXBUF_UINT(2)*0.2f-20.0)
-    #define I3_RES_IHX_STAT_WP_TEMPERATURFUEHLER_2_WERT_UNIT         'Â°C'
+    #define I3_RES_IHX_STAT_WP_TEMPERATURFUEHLER_2_WERT_UNIT         '°C'
     #define I3_RES_IHX_STAT_WP_TEMPERATURFUEHLER_2_WERT_TYPE         float
-        // Heat pump temperature sensor 2 / WÃ¤rmepumpe TemperaturfÃ¼hler 2
+        // Heat pump temperature sensor 2 / Wärmepumpe Temperaturfühler 2
 
     #define I3_RES_IHX_STAT_WP_TEMPERATURFUEHLER_3_WERT              (RXBUF_UINT(4)*0.2f-20.0)
-    #define I3_RES_IHX_STAT_WP_TEMPERATURFUEHLER_3_WERT_UNIT         'Â°C'
+    #define I3_RES_IHX_STAT_WP_TEMPERATURFUEHLER_3_WERT_UNIT         '°C'
     #define I3_RES_IHX_STAT_WP_TEMPERATURFUEHLER_3_WERT_TYPE         float
-        // Heat pump temperature sensor 3 / WÃ¤rmepumpe TemperaturfÃ¼hler 3
+        // Heat pump temperature sensor 3 / Wärmepumpe Temperaturfühler 3
 
     #define I3_RES_IHX_STAT_WP_PT_FUEHLER_1_DRUCK_WERT               (RXBUF_UINT(6)/10.0f)
     #define I3_RES_IHX_STAT_WP_PT_FUEHLER_1_DRUCK_WERT_UNIT          'bar'
     #define I3_RES_IHX_STAT_WP_PT_FUEHLER_1_DRUCK_WERT_TYPE          float
-        // Heat pump: pressure from pressure temperature sensor 1 / WÃ¤rmepumpe: Druck vom Druck-TemperaturfÃ¼hler 1
+        // Heat pump: pressure from pressure temperature sensor 1 / Wärmepumpe: Druck vom Druck-Temperaturfühler 1
 
     #define I3_RES_IHX_STAT_WP_PT_FUEHLER_1_TEMP_WERT                (RXBUF_UINT(8)*0.2f-20.0)
-    #define I3_RES_IHX_STAT_WP_PT_FUEHLER_1_TEMP_WERT_UNIT           'Â°C'
+    #define I3_RES_IHX_STAT_WP_PT_FUEHLER_1_TEMP_WERT_UNIT           '°C'
     #define I3_RES_IHX_STAT_WP_PT_FUEHLER_1_TEMP_WERT_TYPE           float
-        // Heat pump: temperature from pressure temperature sensor 1 / WÃ¤rmepumpe: Temperatur vom
-        // Druck-TemperaturfÃ¼hler 1
+        // Heat pump: temperature from pressure temperature sensor 1 / Wärmepumpe: Temperatur vom Druck-Temperaturfühler
+        // 1
 
     #define I3_RES_IHX_STAT_WP_PT_FUEHLER_2_DRUCK_WERT               (RXBUF_UINT(10)/10.0f)
     #define I3_RES_IHX_STAT_WP_PT_FUEHLER_2_DRUCK_WERT_UNIT          'bar'
     #define I3_RES_IHX_STAT_WP_PT_FUEHLER_2_DRUCK_WERT_TYPE          float
-        // Heat pump: pressure from pressure / temperature sensor 2 / WÃ¤rmepumpe: Druck vom Druck-TemperaturfÃ¼hler 2
+        // Heat pump: pressure from pressure / temperature sensor 2 / Wärmepumpe: Druck vom Druck-Temperaturfühler 2
 
     #define I3_RES_IHX_STAT_WP_PT_FUEHLER_2_TEMP_WERT                (RXBUF_UINT(12)*0.2f-20.0)
-    #define I3_RES_IHX_STAT_WP_PT_FUEHLER_2_TEMP_WERT_UNIT           'Â°C'
+    #define I3_RES_IHX_STAT_WP_PT_FUEHLER_2_TEMP_WERT_UNIT           '°C'
     #define I3_RES_IHX_STAT_WP_PT_FUEHLER_2_TEMP_WERT_TYPE           float
-        // Heat pump: temperature from pressure temperature sensor 2 / WÃ¤rmepumpe: Temperatur vom
-        // Druck-TemperaturfÃ¼hler 2
+        // Heat pump: temperature from pressure temperature sensor 2 / Wärmepumpe: Temperatur vom Druck-Temperaturfühler
+        // 2
 
 // Skipping WAERMEPUMPE_VENTILE on 0xD9AD which takes arguments
 
@@ -1460,14 +1460,14 @@
         // 0x00 = eDH not available 0x01 = eDH available / 0x00 = eDH nicht vorhanden 0x01 = eDH vorhanden
 
 #define I3_PID_IHX_VORHANDEN_WAERMEPUMPE                             0xD9AF
-        // 0x00 = heat pump not available 0x01 = heat pump available / 0x00 = WÃ¤rmepumpe nicht vorhanden 0x01 =
-        // WÃ¤rmepumpe vorhanden
+        // 0x00 = heat pump not available 0x01 = heat pump available / 0x00 = Wärmepumpe nicht vorhanden 0x01 =
+        // Wärmepumpe vorhanden
 
     #define I3_RES_IHX_STAT_VORHANDEN_WAERMEPUMPE                    (RXBUF_UCHAR(0))
     #define I3_RES_IHX_STAT_VORHANDEN_WAERMEPUMPE_UNIT               '0/1'
     #define I3_RES_IHX_STAT_VORHANDEN_WAERMEPUMPE_TYPE               unsigned char
-        // 0x00 = heat pump not available 0x01 = heat pump available / 0x00 = WÃ¤rmepumpe nicht vorhanden 0x01 =
-        // WÃ¤rmepumpe vorhanden
+        // 0x00 = heat pump not available 0x01 = heat pump available / 0x00 = Wärmepumpe nicht vorhanden 0x01 =
+        // Wärmepumpe vorhanden
 
 #define I3_PID_IHX_VORHANDEN_FSH                                     0xD9B1
         // 0x00 = front window heating not available 0x01 = front window heating available / 0x00 = Frontscheibenheizung
@@ -1485,45 +1485,45 @@
 
 #define I3_PID_IHX_SPANNUNG_KLEMME_30_WERT                           0xDAD8
         // Voltage value on the control unit at terminal 30 (accurate to one decimal place) / Spannungswert am
-        // SteuergerÃ¤t an Klemme 30 (auf eine Nachkommastelle genau)
+        // Steuergerät an Klemme 30 (auf eine Nachkommastelle genau)
 
     #define I3_RES_IHX_STAT_SPANNUNG_KLEMME_30_WERT                  (RXBUF_SINT(0)/10.0f)
     #define I3_RES_IHX_STAT_SPANNUNG_KLEMME_30_WERT_UNIT             'V'
     #define I3_RES_IHX_STAT_SPANNUNG_KLEMME_30_WERT_TYPE             float
         // Voltage value on the control unit at terminal 30 (accurate to one decimal place) / Spannungswert am
-        // SteuergerÃ¤t an Klemme 30 (auf eine Nachkommastelle genau)
+        // Steuergerät an Klemme 30 (auf eine Nachkommastelle genau)
 
 #define I3_PID_IHX_STATUS_KLEMME_R_EIN                               0xDAFD
-        // Status of terminal R in the control unit: 0 = OFF, 1 = ON / Status Klemme R im SteuergerÃ¤t: 0=AUS, 1=EIN
+        // Status of terminal R in the control unit: 0 = OFF, 1 = ON / Status Klemme R im Steuergerät: 0=AUS, 1=EIN
 
     #define I3_RES_IHX_STAT_STATUS_KLEMME_R_EIN                      (RXBUF_SINT(0))
     #define I3_RES_IHX_STAT_STATUS_KLEMME_R_EIN_UNIT                 '0/1'
     #define I3_RES_IHX_STAT_STATUS_KLEMME_R_EIN_TYPE                 short
-        // Status of terminal R in the control unit: 0 = OFF, 1 = ON / Status Klemme R im SteuergerÃ¤t: 0=AUS, 1=EIN
+        // Status of terminal R in the control unit: 0 = OFF, 1 = ON / Status Klemme R im Steuergerät: 0=AUS, 1=EIN
 
 #define I3_PID_IHX_STATUS_KLEMME_15_EIN                              0xDAFE
-        // Status of terminal 15 in the control unit: 0 = OFF; 1 = ON / Status Klemme 15 im SteuergerÃ¤t: 0=AUS; 1=EIN
+        // Status of terminal 15 in the control unit: 0 = OFF; 1 = ON / Status Klemme 15 im Steuergerät: 0=AUS; 1=EIN
 
     #define I3_RES_IHX_STAT_STATUS_KLEMME_15_EIN                     (RXBUF_SINT(0))
     #define I3_RES_IHX_STAT_STATUS_KLEMME_15_EIN_UNIT                '0/1'
     #define I3_RES_IHX_STAT_STATUS_KLEMME_15_EIN_TYPE                short
-        // Status of terminal 15 in the control unit: 0 = OFF; 1 = ON / Status Klemme 15 im SteuergerÃ¤t: 0=AUS; 1=EIN
+        // Status of terminal 15 in the control unit: 0 = OFF; 1 = ON / Status Klemme 15 im Steuergerät: 0=AUS; 1=EIN
 
 #define I3_PID_IHX_STATUS_KLEMME_30B_EIN                             0xDB06
-        // Status of terminal 30B in the control unit: 0 = OFF; 1 = ON / Status Klemme 30B im SteuergerÃ¤t: 0=AUS; 1=EIN
+        // Status of terminal 30B in the control unit: 0 = OFF; 1 = ON / Status Klemme 30B im Steuergerät: 0=AUS; 1=EIN
 
     #define I3_RES_IHX_STAT_STATUS_KLEMME_30B_EIN                    (RXBUF_SINT(0))
     #define I3_RES_IHX_STAT_STATUS_KLEMME_30B_EIN_UNIT               '0/1'
     #define I3_RES_IHX_STAT_STATUS_KLEMME_30B_EIN_TYPE               short
-        // Status of terminal 30B in the control unit: 0 = OFF; 1 = ON / Status Klemme 30B im SteuergerÃ¤t: 0=AUS; 1=EIN
+        // Status of terminal 30B in the control unit: 0 = OFF; 1 = ON / Status Klemme 30B im Steuergerät: 0=AUS; 1=EIN
 
 #define I3_PID_IHX_STATUS_KLEMME_50_EIN                              0xDB10
-        // Status of terminal 50 in the control unit: 0 = OFF; 1 = ON / Status Klemme 50 im SteuergerÃ¤t: 0=AUS; 1=EIN
+        // Status of terminal 50 in the control unit: 0 = OFF; 1 = ON / Status Klemme 50 im Steuergerät: 0=AUS; 1=EIN
 
     #define I3_RES_IHX_STAT_STATUS_KLEMME_50_EIN                     (RXBUF_SINT(0))
     #define I3_RES_IHX_STAT_STATUS_KLEMME_50_EIN_UNIT                '0/1'
     #define I3_RES_IHX_STAT_STATUS_KLEMME_50_EIN_TYPE                short
-        // Status of terminal 50 in the control unit: 0 = OFF; 1 = ON / Status Klemme 50 im SteuergerÃ¤t: 0=AUS; 1=EIN
+        // Status of terminal 50 in the control unit: 0 = OFF; 1 = ON / Status Klemme 50 im Steuergerät: 0=AUS; 1=EIN
 
 #define I3_PID_IHX_HV_EDH_STECKVERBINDUNG                            0xDFC0
         // Status high-voltage plug connection: See table TAB_HV_STECKVERBINDUNG / Status Hochvolt-Steckverbindung: Siehe
@@ -1547,7 +1547,7 @@
 
 #define I3_PID_IHX_UWB_CPD_DIAGINFO                                  0x4001
         // Environmental conditions for HV battery cooling performance / Umweltbedingungen zum HV-Batterie
-        // KÃ¼hlperformance
+        // Kühlperformance
 
 #define I3_PID_IHX_UWB_HKLUSV_DIAGINFO                               0x4002
         // Diagnostic status of the heating circuit switching valve. Distinction stuck open / closed. / Diagnosezustand
@@ -1582,12 +1582,14 @@
     #define I3_RES_IHX_STAT_AUTOADR_MOTOR_8_9_10_11                  (RXBUF_UCHAR(4))
     #define I3_RES_IHX_STAT_AUTOADR_MOTOR_8_9_10_11_UNIT             '0-n'
     #define I3_RES_IHX_STAT_AUTOADR_MOTOR_8_9_10_11_TYPE             unsigned char
-        // Lin Motorr: Motor 8 to Motor 11. (01111111 11111111) / Lin Motorenr: Motor 8 to Motor 11. (01111111 11111111)
+        // Lin Motorenr: Motor 8 to Motor 11. (01111111 11111111) / Lin Motorenr: Motor 8 to Motor 11. (01111111
+        // 11111111)
 
     #define I3_RES_IHX_STAT_AUTOADR_MOTOR_12_13_14                   (RXBUF_UCHAR(5))
     #define I3_RES_IHX_STAT_AUTOADR_MOTOR_12_13_14_UNIT              '0-n'
     #define I3_RES_IHX_STAT_AUTOADR_MOTOR_12_13_14_TYPE              unsigned char
-        // Lin Motorr: Motor 8 to Motor 11. (01111111 11111111) / Lin Motorenr: Motor 8 to Motor 11. (01111111 11111111)
+        // Lin Motorenr: Motor 8 to Motor 11. (01111111 11111111) / Lin Motorenr: Motor 8 to Motor 11. (01111111
+        // 11111111)
 
     #define I3_RES_IHX_STAT_PROGRAMM_MOTOR_0_1_2_3                   (RXBUF_UCHAR(6))
     #define I3_RES_IHX_STAT_PROGRAMM_MOTOR_0_1_2_3_UNIT              '0-n'
@@ -1620,42 +1622,42 @@
     #define I3_RES_IHX_STAT_ADC_VERDAMPFER                           (RXBUF_UINT(0))
     #define I3_RES_IHX_STAT_ADC_VERDAMPFER_UNIT                      '0-n'
     #define I3_RES_IHX_STAT_ADC_VERDAMPFER_TYPE                      unsigned short
-        // Temperature sensor / TemperaturfÃ¼hler
+        // Temperature sensor / Temperaturfühler
 
     #define I3_RES_IHX_STAT_ADC_ZWEITE_VERDAMPFER                    (RXBUF_UINT(2))
     #define I3_RES_IHX_STAT_ADC_ZWEITE_VERDAMPFER_UNIT               '0-n'
     #define I3_RES_IHX_STAT_ADC_ZWEITE_VERDAMPFER_TYPE               unsigned short
-        // Temperature sensor / TemperaturfÃ¼hler
+        // Temperature sensor / Temperaturfühler
 
     #define I3_RES_IHX_STAT_ADC_BELUEFTUNG_LINKS                     (RXBUF_UINT(4))
     #define I3_RES_IHX_STAT_ADC_BELUEFTUNG_LINKS_UNIT                '0-n'
     #define I3_RES_IHX_STAT_ADC_BELUEFTUNG_LINKS_TYPE                unsigned short
-        // Temperature sensor / TemperaturfÃ¼hler
+        // Temperature sensor / Temperaturfühler
 
     #define I3_RES_IHX_STAT_ADC_BELEUFTUNG_RECHTS                    (RXBUF_UINT(6))
     #define I3_RES_IHX_STAT_ADC_BELEUFTUNG_RECHTS_UNIT               '0-n'
     #define I3_RES_IHX_STAT_ADC_BELEUFTUNG_RECHTS_TYPE               unsigned short
-        // Temperature sensor / TemperaturfÃ¼hler
+        // Temperature sensor / Temperaturfühler
 
     #define I3_RES_IHX_STAT_ADC_FUSSRAUM_LINKS                       (RXBUF_UINT(8))
     #define I3_RES_IHX_STAT_ADC_FUSSRAUM_LINKS_UNIT                  '0-n'
     #define I3_RES_IHX_STAT_ADC_FUSSRAUM_LINKS_TYPE                  unsigned short
-        // Temperature sensor / TemperaturfÃ¼hler
+        // Temperature sensor / Temperaturfühler
 
     #define I3_RES_IHX_STAT_ADC_FUSSRAUM_RECHTS                      (RXBUF_UINT(10))
     #define I3_RES_IHX_STAT_ADC_FUSSRAUM_RECHTS_UNIT                 '0-n'
     #define I3_RES_IHX_STAT_ADC_FUSSRAUM_RECHTS_TYPE                 unsigned short
-        // Temperature sensor / TemperaturfÃ¼hler
+        // Temperature sensor / Temperaturfühler
 
     #define I3_RES_IHX_STAT_ADC_SCHICHTUNG_POTI                      (RXBUF_UINT(12))
     #define I3_RES_IHX_STAT_ADC_SCHICHTUNG_POTI_UNIT                 '0-n'
     #define I3_RES_IHX_STAT_ADC_SCHICHTUNG_POTI_TYPE                 unsigned short
-        // Temperature sensor / TemperaturfÃ¼hler
+        // Temperature sensor / Temperaturfühler
 
     #define I3_RES_IHX_STAT_ADC_KLEMME_30                            (RXBUF_UINT(14))
     #define I3_RES_IHX_STAT_ADC_KLEMME_30_UNIT                       '0-n'
     #define I3_RES_IHX_STAT_ADC_KLEMME_30_TYPE                       unsigned short
-        // Voltage value on the control unit at terminal 30 / Spannungswert am SteuergerÃ¤t an Klemme 30
+        // Voltage value on the control unit at terminal 30 / Spannungswert am Steuergerät an Klemme 30
 
     #define I3_RES_IHX_STAT_EXT_SUPPLY_DIAG                          (RXBUF_UINT(16))
     #define I3_RES_IHX_STAT_EXT_SUPPLY_DIAG_UNIT                     '0-n'

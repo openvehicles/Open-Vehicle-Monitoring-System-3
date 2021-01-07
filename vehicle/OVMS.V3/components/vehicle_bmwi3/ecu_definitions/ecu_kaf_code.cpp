@@ -187,18 +187,18 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "KAF", "KAFAS_FCW_DATA", "STAT_FCW_AMNT_ACUTE_WERT", STAT_FCW_AMNT_ACUTE_WERT, "\"Counts\"");
 
     unsigned short STAT_FCW_AMNT_ACUTE_45_WERT = (RXBUF_UINT(28));
-        // Number of acute warnings in the range 0 km / h� 45 km / h / Anzahl der Akutwarnungen im Bereich 0 km/h¿ 45
+        // Number of acute warnings in the range 0 km / h¿ 45 km / h / Anzahl der Akutwarnungen im Bereich 0 km/h¿ 45
         // km/h
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "KAF", "KAFAS_FCW_DATA", "STAT_FCW_AMNT_ACUTE_45_WERT", STAT_FCW_AMNT_ACUTE_45_WERT, "\"Counts\"");
 
     unsigned short STAT_FCW_AMNT_ACUTE_90_WERT = (RXBUF_UINT(30));
-        // Number of acute warnings in the range 45 km / h� 90 km / h / Anzahl der Akutwarnungen im Bereich 45 km/h¿ 90
+        // Number of acute warnings in the range 45 km / h¿ 90 km / h / Anzahl der Akutwarnungen im Bereich 45 km/h¿ 90
         // km/h
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "KAF", "KAFAS_FCW_DATA", "STAT_FCW_AMNT_ACUTE_90_WERT", STAT_FCW_AMNT_ACUTE_90_WERT, "\"Counts\"");
 
     unsigned short STAT_FCW_AMNT_ACUTE_135_WERT = (RXBUF_UINT(32));
-        // Number of acute warnings in the range 90 km / h� 135 km / h / Anzahl der Akutwarnungen im Bereich 90 km/h¿
-        // 135 km/h
+        // Number of acute warnings in the range 90 km / h¿ 135 km / h / Anzahl der Akutwarnungen im Bereich 90 km/h¿ 135
+        // km/h
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "KAF", "KAFAS_FCW_DATA", "STAT_FCW_AMNT_ACUTE_135_WERT", STAT_FCW_AMNT_ACUTE_135_WERT, "\"Counts\"");
 
     unsigned short STAT_FCW_PREFILLS_WERT = (RXBUF_UINT(34));
@@ -235,9 +235,9 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "KAF", "_KAFAS_SLI_DATA", "STAT_SLI_AMT_CAM_DET_WERT", STAT_SLI_AMT_CAM_DET_WERT, "\"Counts\"");
 
     char STAT_SLI_MATCH_URBAN_WERT = (RXBUF_UCHAR(4));
-        // Proportion of camera detection that match the explicit speed limits on the street type Urban or Residential
-        // Area / Anteil der  Kameradetektion die mit den expliziten Speed Limits auf dem Straßentyp Urban oder
-        // Residential Area übereinstimmen
+        // Share of camera detection that match the explicit speed limits on the street type Urban or Residential Area /
+        // Anteil der  Kameradetektion die mit den expliziten Speed Limits auf dem Straßentyp Urban oder Residential Area
+        // übereinstimmen
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "KAF", "_KAFAS_SLI_DATA", "STAT_SLI_MATCH_URBAN_WERT", STAT_SLI_MATCH_URBAN_WERT, "\"Counts\"");
 
     char STAT_SLI_MATCH_RURAL_WERT = (RXBUF_UCHAR(5));
@@ -247,13 +247,13 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "KAF", "_KAFAS_SLI_DATA", "STAT_SLI_MATCH_RURAL_WERT", STAT_SLI_MATCH_RURAL_WERT, "\"Counts\"");
 
     char STAT_SLI_MATCH_MOWAY_WERT = (RXBUF_UCHAR(6));
-        // Proportion of camera detection that corresponds to the explicit speed limits on the road type Motorway /
+        // Percentage of camera detection that corresponds to the explicit speed limits on the road type Motorway /
         // Anteil der  Kameradetektion die mit den expliziten Speed Limits auf dem Straßentyp Motorway übereinstimmen
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "KAF", "_KAFAS_SLI_DATA", "STAT_SLI_MATCH_MOWAY_WERT", STAT_SLI_MATCH_MOWAY_WERT, "\"Counts\"");
 
     unsigned short STAT_SLI_REP_URBAN_WERT = (RXBUF_UINT(7));
-        // Average distance at which signs repeat themselves on the street type Urban or Residential Area /
-        // Durschnittlich Enfernung in welcher sich Schilder auf dem Straßentyp Urbanoder Residential Area wiederholen
+        // Average distance at which signs repeat on the street type Urban or Residential Area / Durschnittlich Enfernung
+        // in welcher sich Schilder auf dem Straßentyp Urbanoder Residential Area wiederholen
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "KAF", "_KAFAS_SLI_DATA", "STAT_SLI_REP_URBAN_WERT", STAT_SLI_REP_URBAN_WERT, "\"m\"");
 
     unsigned short STAT_SLI_REP_RURAL_WERT = (RXBUF_UINT(9));
@@ -267,8 +267,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "KAF", "_KAFAS_SLI_DATA", "STAT_SLI_REP_MOWAY_WERT", STAT_SLI_REP_MOWAY_WERT, "\"m\"");
 
     unsigned long STAT_SLI_OVER_SLI_WERT = (RXBUF_UINT32(13));
-        // Distance traveled with at least 20 km / h above the recognized speed limit / Gefahrene Entfernung mit
-        // mindestens 20 km/h über dem erkannten Speed Limit
+        // Distance driven at least 20 km / h above the detected speed limit / Gefahrene Entfernung mit mindestens 20
+        // km/h über dem erkannten Speed Limit
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "KAF", "_KAFAS_SLI_DATA", "STAT_SLI_OVER_SLI_WERT", STAT_SLI_OVER_SLI_WERT, "\"km\"");
 
     unsigned short STAT_SLI_SSS_TIME_WERT = (RXBUF_UINT(17));
@@ -398,18 +398,18 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "KAF", "FASTA_PPP_DATA", "STAT_PPP_AMNT_DZ_EVENTS_0_TO_20_WERT", STAT_PPP_AMNT_DZ_EVENTS_0_TO_20_WERT, "\"Counts\"");
 
     unsigned short STAT_PPP_AMNT_DZ_EVENTS_20_TO_40_WERT = (RXBUF_UINT(4));
-        // The parameter is determined by counting the number of DZ events in the range 20 <x <40 km / h / Die
-        // Kenngröße wird bestimmt, indem die Anzahl der DZ-Events im Bereich 20 < x < 40 km/h gezählt wird
+        // The parameter is determined by counting the number of DZ events in the range 20 <x <40 km / h / Die Kenngröße
+        // wird bestimmt, indem die Anzahl der DZ-Events im Bereich 20 < x < 40 km/h gezählt wird
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "KAF", "FASTA_PPP_DATA", "STAT_PPP_AMNT_DZ_EVENTS_20_TO_40_WERT", STAT_PPP_AMNT_DZ_EVENTS_20_TO_40_WERT, "\"Counts\"");
 
     unsigned short STAT_PPP_AMNT_DZ_EVENTS_40_TO_60_WERT = (RXBUF_UINT(6));
-        // The parameter is determined by counting the number of DZ events in the range 40 <x <60 km / h / Die
-        // Kenngröße wird bestimmt, indem die Anzahl der DZ-Events im Bereich 40 < x < 60 km/h gezählt wird
+        // The parameter is determined by counting the number of DZ events in the range 40 <x <60 km / h / Die Kenngröße
+        // wird bestimmt, indem die Anzahl der DZ-Events im Bereich 40 < x < 60 km/h gezählt wird
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "KAF", "FASTA_PPP_DATA", "STAT_PPP_AMNT_DZ_EVENTS_40_TO_60_WERT", STAT_PPP_AMNT_DZ_EVENTS_40_TO_60_WERT, "\"Counts\"");
 
     unsigned short STAT_PPP_AMNT_PDZ1_EVENTS_0_TO_20_WERT = (RXBUF_UINT(8));
-        // The parameter is determined by counting the number of PDZ1 events in the range 0 <x <20 km / h / Die
-        // Kenngröße wird bestimmt, indem die Anzahl der PDZ1-Events im Bereich 0 < x < 20 km/h gezählt wird
+        // The parameter is determined by counting the number of PDZ1 events in the range 0 <x <20 km / h / Die Kenngröße
+        // wird bestimmt, indem die Anzahl der PDZ1-Events im Bereich 0 < x < 20 km/h gezählt wird
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "KAF", "FASTA_PPP_DATA", "STAT_PPP_AMNT_PDZ1_EVENTS_0_TO_20_WERT", STAT_PPP_AMNT_PDZ1_EVENTS_0_TO_20_WERT, "\"Counts\"");
 
     unsigned short STAT_PPP_AMNT_PDZ1_EVENTS_20_TO_40_WERT = (RXBUF_UINT(10));
@@ -423,8 +423,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "KAF", "FASTA_PPP_DATA", "STAT_PPP_AMNT_PDZ1_EVENTS_40_TO_60_WERT", STAT_PPP_AMNT_PDZ1_EVENTS_40_TO_60_WERT, "\"Counts\"");
 
     unsigned short STAT_PPP_AMNT_PDZ2_EVENTS_0_TO_20_WERT = (RXBUF_UINT(14));
-        // The parameter is determined by counting the number of PDZ2 events in the range 0 <x <20 km / h / Die
-        // Kenngröße wird bestimmt, indem die Anzahl der PDZ2-Events im Bereich 0 < x < 20 km/h gezählt wird
+        // The parameter is determined by counting the number of PDZ2 events in the range 0 <x <20 km / h / Die Kenngröße
+        // wird bestimmt, indem die Anzahl der PDZ2-Events im Bereich 0 < x < 20 km/h gezählt wird
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "KAF", "FASTA_PPP_DATA", "STAT_PPP_AMNT_PDZ2_EVENTS_0_TO_20_WERT", STAT_PPP_AMNT_PDZ2_EVENTS_0_TO_20_WERT, "\"Counts\"");
 
     unsigned short STAT_PPP_AMNT_PDZ2_EVENTS_20_TO_40_WERT = (RXBUF_UINT(16));
@@ -458,8 +458,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "KAF", "FASTA_PPP_DATA", "STAT_PPP_AMNT_PREFILL_REQUESTS_WERT", STAT_PPP_AMNT_PREFILL_REQUESTS_WERT, "\"Counts\"");
 
     unsigned short STAT_PPP_AMNT_BRAKE_REQUESTS_WERT = (RXBUF_UINT(28));
-        // The parameter is determined by counting the number of brake requests. / Die Kenngröße wird bestimmt, indem
-        // die Anzahl der Brake-Requests gezählt wird.
+        // The parameter is determined by counting the number of brake requests. / Die Kenngröße wird bestimmt, indem die
+        // Anzahl der Brake-Requests gezählt wird.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "KAF", "FASTA_PPP_DATA", "STAT_PPP_AMNT_BRAKE_REQUESTS_WERT", STAT_PPP_AMNT_BRAKE_REQUESTS_WERT, "\"Counts\"");
 
     unsigned short STAT_PPP_DEACT_DRIVER_WERT = (RXBUF_UINT(30));
@@ -472,8 +472,8 @@
     unsigned short STAT_PPP_DEACT_AVAILABILITY_WERT = (RXBUF_UINT(32));
         // The parameter is determined by counting the number of times the pFGS function was switched off by the KAFAS
         // system based on the availability concept (e.g. recognition qualifier, degradation concept, ...). / Die
-        // Kenngröße wird bestimmt, indem die Anzahl der Abschaltungen der Funktion pFGS durch das KAFAS System
-        // aufgrund des Verfügbarkeitskonzeptes (z.B. Erkennungsqualifier, Degradationskonzept,...) gezählt wird.
+        // Kenngröße wird bestimmt, indem die Anzahl der Abschaltungen der Funktion pFGS durch das KAFAS System aufgrund
+        // des Verfügbarkeitskonzeptes (z.B. Erkennungsqualifier, Degradationskonzept,...) gezählt wird.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "KAF", "FASTA_PPP_DATA", "STAT_PPP_DEACT_AVAILABILITY_WERT", STAT_PPP_DEACT_AVAILABILITY_WERT, "\"Counts\"");
 
     unsigned short STAT_PPP_DEACT_WARNING_CHAIN_WERT = (RXBUF_UINT(34));
@@ -483,8 +483,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "KAF", "FASTA_PPP_DATA", "STAT_PPP_DEACT_WARNING_CHAIN_WERT", STAT_PPP_DEACT_WARNING_CHAIN_WERT, "\"Counts\"");
 
     unsigned long STAT_PPP_OPERATION_TIME_CL50_WERT = (RXBUF_UINT32(36));
-        // The parameter is determined by always counting the operating time in seconds from terminal 50. / Die
-        // Kenngröße wird bestimmt, indem immer ab Kl 50 die Betriebszeit in Sekunden gezählt wird.
+        // The parameter is determined by always counting the operating time in seconds from terminal 50. / Die Kenngröße
+        // wird bestimmt, indem immer ab Kl 50 die Betriebszeit in Sekunden gezählt wird.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "KAF", "FASTA_PPP_DATA", "STAT_PPP_OPERATION_TIME_CL50_WERT", STAT_PPP_OPERATION_TIME_CL50_WERT, "\"s\"");
 
     unsigned long STAT_PPP_OPERATION_TIME_ACTIVE_WERT = (RXBUF_UINT32(40));
@@ -519,23 +519,23 @@
 
     unsigned short STAT_CCM_AMNT_BRAKE_20_WERT = (RXBUF_UINT(0));
         // The parameter is determined by counting the number of CCM brakes in which the speed of the host vehicle at the
-        // start of braking is greater than or equal to 0 km / h and less than 20 km / h. / Die Kenngröße wird
-        // bestimmt, indem die Anzahl der CCM-Bremsungen gezählt wird, bei denen die Geschwindigkeit des Egofahrzeugs zu
+        // start of braking is greater than or equal to 0 km / h and less than 20 km / h. / Die Kenngröße wird bestimmt,
+        // indem die Anzahl der CCM-Bremsungen gezählt wird, bei denen die Geschwindigkeit des Egofahrzeugs zu
         // Bremsbeginn größer gleich 0 km/h und kleiner 20 km/h ist.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "KAF", "FASTA_CCM_DATA", "STAT_CCM_AMNT_BRAKE_20_WERT", STAT_CCM_AMNT_BRAKE_20_WERT, "\"Counts\"");
 
     unsigned short STAT_CCM_AMNT_BRAKE_40_WERT = (RXBUF_UINT(2));
         // The parameter is determined by counting the number of CCM brakes in which the speed of the host vehicle at the
-        // start of braking is greater than or equal to 20 km / h and less than 40 km / h. / Die Kenngröße wird
-        // bestimmt, indem die Anzahl der CCM-Bremsungen gezählt wird, bei denen die Geschwindigkeit des Egofahrzeugs zu
+        // start of braking is greater than or equal to 20 km / h and less than 40 km / h. / Die Kenngröße wird bestimmt,
+        // indem die Anzahl der CCM-Bremsungen gezählt wird, bei denen die Geschwindigkeit des Egofahrzeugs zu
         // Bremsbeginn größer gleich 20 km/h und kleiner 40 km/h ist.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "KAF", "FASTA_CCM_DATA", "STAT_CCM_AMNT_BRAKE_40_WERT", STAT_CCM_AMNT_BRAKE_40_WERT, "\"Counts\"");
 
     unsigned short STAT_CCM_AMNT_BRAKE_GEQ40_WERT = (RXBUF_UINT(4));
         // The parameter is determined by counting the number of CCM brakes in which the speed of the host vehicle is
         // greater than or equal to 40 km / h at the beginning of the braking / Die Kenngröße wird bestimmt, indem die
-        // Anzahl der CCM-Bremsungen gezählt wird, bei denen die Geschwindigkeit des Egofahrzeugs zu Bremsbeginn
-        // größer gleich 40 km/h ist
+        // Anzahl der CCM-Bremsungen gezählt wird, bei denen die Geschwindigkeit des Egofahrzeugs zu Bremsbeginn größer
+        // gleich 40 km/h ist
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "KAF", "FASTA_CCM_DATA", "STAT_CCM_AMNT_BRAKE_GEQ40_WERT", STAT_CCM_AMNT_BRAKE_GEQ40_WERT, "\"Counts\"");
 
     // ==========  Add your processing here ==========
@@ -701,8 +701,8 @@
 
     unsigned char STAT_FLA_VERZOEGERUNGSZEIT = (RXBUF_UCHAR(7));
         // Indicates whether the high beam is not switched on due to a time delay: 0 = no time delay, 1 = time delay /
-        // Gibt aus, ob wegen einer Zeiterzögerung das Fernlicht nicht eingeschaltet wird:  0 = keine Zeitverzögerung, 
-        // 1 = Zeitverzögerung
+        // Gibt aus, ob wegen einer Zeiterzögerung das Fernlicht nicht eingeschaltet wird:  0 = keine Zeitverzögerung,  1
+        // = Zeitverzögerung
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "KAF", "ABSCHALTGRUND_FERNLICHT", "STAT_FLA_VERZOEGERUNGSZEIT", STAT_FLA_VERZOEGERUNGSZEIT, "\"0/1\"");
 
     // ==========  Add your processing here ==========
@@ -718,7 +718,7 @@
     }
 
     unsigned char STAT_VORHANDEN_TLC = (RXBUF_UCHAR(0));
-        // Indicates whether the Time-to-Line Crossing function is available: 0 = not available; 1 = present / Gibt an,
+        // Indicates whether the time-to-line crossing function is available: 0 = not available; 1 = present / Gibt an,
         // ob die Funktion Time-to-Line Crossing vorhanden ist: 0= nicht vorhanden; 1= vorhanden
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "KAF", "KONFIGURATION_KAFAS", "STAT_VORHANDEN_TLC", STAT_VORHANDEN_TLC, "\"0/1\"");
 
@@ -728,7 +728,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "KAF", "KONFIGURATION_KAFAS", "STAT_VORHANDEN_FLA", STAT_VORHANDEN_FLA, "\"0/1\"");
 
     unsigned char STAT_VORHANDEN_SLI = (RXBUF_UCHAR(2));
-        // Indicates whether the function speed limit info is available: 0 = not available; 1 = present / Gibt an, ob die
+        // Indicates whether the Speed-Limit-Info function is available: 0 = not available; 1 = present / Gibt an, ob die
         // Funktion Speed-Limit-Info vorhanden ist: 0= nicht vorhanden; 1= vorhanden
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "KAF", "KONFIGURATION_KAFAS", "STAT_VORHANDEN_SLI", STAT_VORHANDEN_SLI, "\"0/1\"");
 
@@ -868,9 +868,9 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "KAF", "ERGEBNIS_SLI", "STAT_FUSIONIERT_ZEICHEN_NR", STAT_FUSIONIERT_ZEICHEN_NR, "\"0-n\"");
 
     unsigned char STAT_FUSIONIERT_GESCHWINDIGKEIT_WERT = (RXBUF_UCHAR(5));
-        // Outputs the speed that is output from the merged recognition result: 0 = cancel everything, 5 to 150 in steps
-        // of 5 / Gibt aus, welche Geschwindigkeit aus dem fusionierten Erkennungsergebnis ausgegeben wird: 0 = Aufhebung
-        // alles, 5 bis 150 in 5-er Schritten
+        // Outputs the speed from the merged recognition result: 0 = cancel everything, 5 to 150 in steps of 5 / Gibt
+        // aus, welche Geschwindigkeit aus dem fusionierten Erkennungsergebnis ausgegeben wird: 0 = Aufhebung alles, 5
+        // bis 150 in 5-er Schritten
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "KAF", "ERGEBNIS_SLI", "STAT_FUSIONIERT_GESCHWINDIGKEIT_WERT", STAT_FUSIONIERT_GESCHWINDIGKEIT_WERT, "");
 
     unsigned char STAT_GUETE_KAM_SLI_GESCHW_WERT = (RXBUF_UCHAR(6));

@@ -92,7 +92,6 @@
     break;
   }
 
-#ifdef SKIP
   case I3_PID_SAS_VDC0_LESEN_0XD817: {                                            // 0xD817
     if (datalen < 29) {
         ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_SAS_VDC0_LESEN_0XD817", 29);
@@ -173,7 +172,6 @@
 
     break;
   }
-#endif
 
   case I3_PID_SAS_STATUS_SWC_VERSIONEN_LESEN_ANZAHL_DATENSAETZE: {                // 0xDD33
     if (datalen < 2) {
@@ -203,11 +201,9 @@
     break;
   }
 
-#ifdef SKIP
   case I3_PID_SAS_CLEAR_EXCEPTION_DATA: {                                         // 0xF000
     // ==========  Add your processing here ==========
     hexdump(rxbuf, type, pid);
 
     break;
   }
-#endif

@@ -26,11 +26,11 @@
 
 #define I3_PID_KOM_STATUS_AKT_AUSFALL_CCMS                           0x2521
         // Returns a list of the currently active failure CC messages / Gibt eine Liste der aktuell aktiven
-        // Ausfall-CCMeldungen zurÃ¼ck
+        // Ausfall-CCMeldungen zurück
 
     // Can't yet generate code for STAT_AKT_CCMS_WERT of type data[90] at offset 0. But we account for the 90 bytes
         // Returns a list of the currently active failure CC messages / Gibt eine Liste der aktuell aktiven
-        // Ausfall-CCMeldungen zurÃ¼ck
+        // Ausfall-CCMeldungen zurück
 
 // Skipping KOMBI_TESTBITMAP_HUD on 0xA102 which takes arguments
 
@@ -41,7 +41,7 @@
 #define I3_PID_KOM_SELBSTTEST_HUD                                    0xA104
         // Start and stop the function test of the HUD. Functions of height adjustment, image rotation and backlighting
         // with gradual lowering are controlled. / Starten und stoppen des Funktionstests des HUD. Funktionen
-        // HÃ¶henverstellung, Bildrotation und Hinterleuchtung mit stufenweisem Absenken werden angesteuert.
+        // Höhenverstellung, Bildrotation und Hinterleuchtung mit stufenweisem Absenken werden angesteuert.
 
 // Skipping KOMBI_BLINKER on 0xA105 which takes arguments
 
@@ -50,13 +50,13 @@
 // Skipping STEUERN_HUD_BILDPOSITION_RELATIV on 0xA107 which takes arguments
 
 #define I3_PID_KOM_AO_TOTAL_TIME_RESET                               0xA108
-        // Always Open Counter reset to zero / Always Open ZÃ¤hler Reset auf Null
+        // Always Open Counter reset to zero / Always Open Zähler Reset auf Null
 
 #define I3_PID_KOM_HUD_SHOWMODE                                      0xAA00
         // starts HUD display sequence / startet HUD Anzeigesequenz
 
 #define I3_PID_KOM_HUD_LOGBUCH_RESET                                 0xAA01
-        // Reset logbook data to 0 / Logbuchdaten auf 0 zurÃ¼cksetzen
+        // Reset logbook data to 0 / Logbuchdaten auf 0 zurücksetzen
 
 // Skipping HUD_BILDHOEHE on 0xD08D which takes arguments
 
@@ -75,37 +75,36 @@
         // Output of the engine speed. / Ausgabe der Motordrehzahl.
 
 #define I3_PID_KOM_TACHO_WERT                                        0xD107
-        // Returns the display speed. / RÃ¼ckgabe der Anzeigegeschwindigkeit.
+        // Returns the display speed. / Rückgabe der Anzeigegeschwindigkeit.
 
     #define I3_RES_KOM_STAT_GESCHWINDIGKEIT_WERT                     (RXBUF_UINT(0)/10.0f)
     #define I3_RES_KOM_STAT_GESCHWINDIGKEIT_WERT_UNIT                'km/h'
     #define I3_RES_KOM_STAT_GESCHWINDIGKEIT_WERT_TYPE                float
-        // Returns the display speed. / RÃ¼ckgabe der Anzeigegeschwindigkeit.
+        // Returns the display speed. / Rückgabe der Anzeigegeschwindigkeit.
 
 // Skipping CBS_KM_PRO_JAHR on 0xD10A which takes arguments
 
 #define I3_PID_KOM_GWSZ_ABSOLUT_WERT                                 0xD10D
-        // Call provides the displayed total odometer / Aufruf liefert den angezeigeten GesamtwegstreckenzÃ¤hler
+        // Call provides the displayed total odometer / Aufruf liefert den angezeigeten Gesamtwegstreckenzähler
 
     #define I3_RES_KOM_STAT_ABSOLUT_GWSZ_RAM_WERT                    (RXBUF_SINT32(0))
     #define I3_RES_KOM_STAT_ABSOLUT_GWSZ_RAM_WERT_UNIT               'km'
     #define I3_RES_KOM_STAT_ABSOLUT_GWSZ_RAM_WERT_TYPE               long
-        // Returns the absolute total odometer from the RAM. / Liefert den absoluten GesamtwegstreckenzÃ¤hler aus dem
-        // RAM.
+        // Returns the absolute total odometer from the RAM. / Liefert den absoluten Gesamtwegstreckenzähler aus dem RAM.
 
     #define I3_RES_KOM_STAT_ABSOLUT_GWSZ_EEP_WERT                    (RXBUF_SINT32(4))
     #define I3_RES_KOM_STAT_ABSOLUT_GWSZ_EEP_WERT_UNIT               'km'
     #define I3_RES_KOM_STAT_ABSOLUT_GWSZ_EEP_WERT_TYPE               long
-        // Supplies the absolute total odometer from the EEPROM. / Liefert den absoluten GesamtwegstreckenzÃ¤hler aus dem
+        // Supplies the absolute total odometer from the EEPROM. / Liefert den absoluten Gesamtwegstreckenzähler aus dem
         // EEPROM.
 
 #define I3_PID_KOM_LSS_TASTE                                         0xD10E
-        // Return of the status of the steering column button. / RÃ¼ckgabe des Status der Lenkstocktaste.
+        // Return of the status of the steering column button. / Rückgabe des Status der Lenkstocktaste.
 
     #define I3_RES_KOM_STAT_KOMBI_LSS_TASTE_GEDRUECKT                (RXBUF_UCHAR(0))
     #define I3_RES_KOM_STAT_KOMBI_LSS_TASTE_GEDRUECKT_UNIT           '0-n'
     #define I3_RES_KOM_STAT_KOMBI_LSS_TASTE_GEDRUECKT_TYPE           unsigned char
-        // Return of the status of the steering column button. / RÃ¼ckgabe des Status der Lenkstocktaste.
+        // Return of the status of the steering column button. / Rückgabe des Status der Lenkstocktaste.
 
 #define I3_PID_KOM_KOMBI_REICHWEITE_BEV_PHEV                         0xD111
         // Range display from the instrument cluster / Reichweitenanzeige aus Kombiinstrument
@@ -149,57 +148,57 @@
         // 0xFFFF if not used)
 
 #define I3_PID_KOM_A_TEMP_WERT                                       0xD112
-        // Returns the outside temperature in degrees Celsius. / Liefert die AuÃentemperatur in Grad Celsius.
+        // Returns the outside temperature in degrees Celsius. / Liefert die Außentemperatur in Grad Celsius.
 
     #define I3_RES_KOM_STAT_A_TEMP_ANZEIGE_WERT                      (RXBUF_UCHAR(0)/2.0f-40.0)
-    #define I3_RES_KOM_STAT_A_TEMP_ANZEIGE_WERT_UNIT                 'Â°C'
+    #define I3_RES_KOM_STAT_A_TEMP_ANZEIGE_WERT_UNIT                 '°C'
     #define I3_RES_KOM_STAT_A_TEMP_ANZEIGE_WERT_TYPE                 float
-        // Display value outside temperature / Anzeigewert AuÃentemperatur
+        // Display value outside temperature / Anzeigewert Außentemperatur
 
     #define I3_RES_KOM_STAT_A_TEMP_ROHWERT_WERT                      (RXBUF_UCHAR(1)/2.0f-40.0)
-    #define I3_RES_KOM_STAT_A_TEMP_ROHWERT_WERT_UNIT                 'Â°C'
+    #define I3_RES_KOM_STAT_A_TEMP_ROHWERT_WERT_UNIT                 '°C'
     #define I3_RES_KOM_STAT_A_TEMP_ROHWERT_WERT_TYPE                 float
-        // Raw value outside temperature / Rohwert AuÃentemperatur
+        // Raw value outside temperature / Rohwert Außentemperatur
 
 #define I3_PID_KOM_KOMBI_UHRZEIT_DATUM                               0xD113
-        // Call returns the time and date. / Aufruf liefert die Uhrzeit und das Datum zurÃ¼ck.
+        // Call returns the time and date. / Aufruf liefert die Uhrzeit und das Datum zurück.
 
     #define I3_RES_KOM_STAT_KOMBI_STUNDE_WERT                        (RXBUF_UCHAR(0))
     #define I3_RES_KOM_STAT_KOMBI_STUNDE_WERT_TYPE                   unsigned char
-        // Returns the current hour. / RÃ¼ckgabe der aktuellen Stunde.
+        // Returns the current hour. / Rückgabe der aktuellen Stunde.
 
     #define I3_RES_KOM_STAT_KOMBI_MINUTE_WERT                        (RXBUF_UCHAR(1))
     #define I3_RES_KOM_STAT_KOMBI_MINUTE_WERT_TYPE                   unsigned char
-        // Returns the current minute. / RÃ¼ckgabe der aktuellen Minute.
+        // Returns the current minute. / Rückgabe der aktuellen Minute.
 
     #define I3_RES_KOM_STAT_KOMBI_SEKUNDE_WERT                       (RXBUF_UCHAR(2))
     #define I3_RES_KOM_STAT_KOMBI_SEKUNDE_WERT_TYPE                  unsigned char
-        // Returns the current second. / RÃ¼ckgabe der aktuellen Sekunde.
+        // Returns the current second. / Rückgabe der aktuellen Sekunde.
 
     #define I3_RES_KOM_STAT_KOMBI_TAG_WERT                           (RXBUF_UCHAR(3))
     #define I3_RES_KOM_STAT_KOMBI_TAG_WERT_TYPE                      unsigned char
-        // Returns the current day. / RÃ¼ckgabe des aktuellen Tag.
+        // Returns the current day. / Rückgabe des aktuellen Tag.
 
     #define I3_RES_KOM_STAT_KOMBI_MONAT_WERT                         (RXBUF_UCHAR(4))
     #define I3_RES_KOM_STAT_KOMBI_MONAT_WERT_TYPE                    unsigned char
-        // Returns the current month. / RÃ¼ckgabe des aktuellen Monat.
+        // Returns the current month. / Rückgabe des aktuellen Monat.
 
     #define I3_RES_KOM_STAT_KOMBI_JAHR_WERT                          (RXBUF_UINT(5))
     #define I3_RES_KOM_STAT_KOMBI_JAHR_WERT_TYPE                     unsigned short
-        // Returns the current year. / RÃ¼ckgabe des aktuellen Jahr.
+        // Returns the current year. / Rückgabe des aktuellen Jahr.
 
     #define I3_RES_KOM_STAT_KOMBI_ZEIT_FORMAT                        (RXBUF_UCHAR(7))
     #define I3_RES_KOM_STAT_KOMBI_ZEIT_FORMAT_UNIT                   '0-n'
     #define I3_RES_KOM_STAT_KOMBI_ZEIT_FORMAT_TYPE                   unsigned char
-        // Returns the current display format. / RÃ¼ckgabe des aktuellen Anzeigeformat.
+        // Returns the current display format. / Rückgabe des aktuellen Anzeigeformat.
 
 #define I3_PID_KOM_GWSZ_RESET                                        0xD114
-        // Total odometer offset. / Offset GesamtwegstreckenzÃ¤hler.
+        // Total odometer offset. / Offset Gesamtwegstreckenzähler.
 
     #define I3_RES_KOM_STAT_GWSZ_OFFSET_WERT                         (RXBUF_UCHAR(0))
     #define I3_RES_KOM_STAT_GWSZ_OFFSET_WERT_UNIT                    'km'
     #define I3_RES_KOM_STAT_GWSZ_OFFSET_WERT_TYPE                    unsigned char
-        // Total odometer offset. / Offset GesamtwegstreckenzÃ¤hler.
+        // Total odometer offset. / Offset Gesamtwegstreckenzähler.
 
 // Skipping KOMBI_ACC_ZEIGER on 0xD115 which takes arguments
 
@@ -217,72 +216,72 @@
     #define I3_RES_KOM_STAT_STARTZEIT_ANFANG_1_WERT                  (RXBUF_UCHAR(1)*15.0f)
     #define I3_RES_KOM_STAT_STARTZEIT_ANFANG_1_WERT_TYPE             float
         // Start time start [display in hours and minutes, resolution 15 minutes, 05hex = 01:15 am] / Startzeit Anfang
-        // [Anzeige in Stunden und Minuten, AuflÃ¶sung 15 Minuten, 05hex = 01:15Uhr]
+        // [Anzeige in Stunden und Minuten, Auflösung 15 Minuten, 05hex = 01:15Uhr]
 
     #define I3_RES_KOM_STAT_STARTZEIT_ANFANG_2_WERT                  (RXBUF_UCHAR(2)*15.0f)
     #define I3_RES_KOM_STAT_STARTZEIT_ANFANG_2_WERT_TYPE             float
         // Start time start [display in hours and minutes, resolution 15 minutes, 05hex = 01:15 am] / Startzeit Anfang
-        // [Anzeige in Stunden und Minuten, AuflÃ¶sung 15 Minuten, 05hex = 01:15Uhr]
+        // [Anzeige in Stunden und Minuten, Auflösung 15 Minuten, 05hex = 01:15Uhr]
 
     #define I3_RES_KOM_STAT_STARTZEIT_ANFANG_3_WERT                  (RXBUF_UCHAR(3)*15.0f)
     #define I3_RES_KOM_STAT_STARTZEIT_ANFANG_3_WERT_TYPE             float
         // Start time start [display in hours and minutes, resolution 15 minutes, 05hex = 01:15 am] / Startzeit Anfang
-        // [Anzeige in Stunden und Minuten, AuflÃ¶sung 15 Minuten, 05hex = 01:15Uhr]
+        // [Anzeige in Stunden und Minuten, Auflösung 15 Minuten, 05hex = 01:15Uhr]
 
     #define I3_RES_KOM_STAT_STARTZEIT_ANFANG_4_WERT                  (RXBUF_UCHAR(4)*15.0f)
     #define I3_RES_KOM_STAT_STARTZEIT_ANFANG_4_WERT_TYPE             float
         // Start time start [display in hours and minutes, resolution 15 minutes, 05hex = 01:15 am] / Startzeit Anfang
-        // [Anzeige in Stunden und Minuten, AuflÃ¶sung 15 Minuten, 05hex = 01:15Uhr]
+        // [Anzeige in Stunden und Minuten, Auflösung 15 Minuten, 05hex = 01:15Uhr]
 
     #define I3_RES_KOM_STAT_STARTZEIT_ANFANG_5_WERT                  (RXBUF_UCHAR(5)*15.0f)
     #define I3_RES_KOM_STAT_STARTZEIT_ANFANG_5_WERT_TYPE             float
         // Start time start [display in hours and minutes, resolution 15 minutes, 05hex = 01:15 am] / Startzeit Anfang
-        // [Anzeige in Stunden und Minuten, AuflÃ¶sung 15 Minuten, 05hex = 01:15Uhr]
+        // [Anzeige in Stunden und Minuten, Auflösung 15 Minuten, 05hex = 01:15Uhr]
 
     #define I3_RES_KOM_STAT_STARTZEIT_ANFANG_6_WERT                  (RXBUF_UCHAR(6)*15.0f)
     #define I3_RES_KOM_STAT_STARTZEIT_ANFANG_6_WERT_TYPE             float
         // Start time start [display in hours and minutes, resolution 15 minutes, 05hex = 01:15 am] / Startzeit Anfang
-        // [Anzeige in Stunden und Minuten, AuflÃ¶sung 15 Minuten, 05hex = 01:15Uhr]
+        // [Anzeige in Stunden und Minuten, Auflösung 15 Minuten, 05hex = 01:15Uhr]
 
     #define I3_RES_KOM_STAT_STARTZEIT_ANFANG_7_WERT                  (RXBUF_UCHAR(7)*15.0f)
     #define I3_RES_KOM_STAT_STARTZEIT_ANFANG_7_WERT_TYPE             float
         // Start time start [display in hours and minutes, resolution 15 minutes, 05hex = 01:15 am] / Startzeit Anfang
-        // [Anzeige in Stunden und Minuten, AuflÃ¶sung 15 Minuten, 05hex = 01:15Uhr]
+        // [Anzeige in Stunden und Minuten, Auflösung 15 Minuten, 05hex = 01:15Uhr]
 
     #define I3_RES_KOM_STAT_STARTZEIT_ENDE_1_WERT                    (RXBUF_UCHAR(8)*15.0f)
     #define I3_RES_KOM_STAT_STARTZEIT_ENDE_1_WERT_TYPE               float
         // Start time end [display in hours and minutes, resolution 15 minutes, 05hex = 01:15] / Startzeit Ende [Anzeige
-        // in Stunden und Minuten, AuflÃ¶sung 15 Minuten, 05hex = 01:15Uhr]
+        // in Stunden und Minuten, Auflösung 15 Minuten, 05hex = 01:15Uhr]
 
     #define I3_RES_KOM_STAT_STARTZEIT_ENDE_2_WERT                    (RXBUF_UCHAR(9)*15.0f)
     #define I3_RES_KOM_STAT_STARTZEIT_ENDE_2_WERT_TYPE               float
         // Start time end [display in hours and minutes, resolution 15 minutes, 05hex = 01:15] / Startzeit Ende [Anzeige
-        // in Stunden und Minuten, AuflÃ¶sung 15 Minuten, 05hex = 01:15Uhr]
+        // in Stunden und Minuten, Auflösung 15 Minuten, 05hex = 01:15Uhr]
 
     #define I3_RES_KOM_STAT_STARTZEIT_ENDE_3_WERT                    (RXBUF_UCHAR(10)*15.0f)
     #define I3_RES_KOM_STAT_STARTZEIT_ENDE_3_WERT_TYPE               float
         // Start time end [display in hours and minutes, resolution 15 minutes, 05hex = 01:15] / Startzeit Ende [Anzeige
-        // in Stunden und Minuten, AuflÃ¶sung 15 Minuten, 05hex = 01:15Uhr]
+        // in Stunden und Minuten, Auflösung 15 Minuten, 05hex = 01:15Uhr]
 
     #define I3_RES_KOM_STAT_STARTZEIT_ENDE_4_WERT                    (RXBUF_UCHAR(11)*15.0f)
     #define I3_RES_KOM_STAT_STARTZEIT_ENDE_4_WERT_TYPE               float
         // Start time end [display in hours and minutes, resolution 15 minutes, 05hex = 01:15] / Startzeit Ende [Anzeige
-        // in Stunden und Minuten, AuflÃ¶sung 15 Minuten, 05hex = 01:15Uhr]
+        // in Stunden und Minuten, Auflösung 15 Minuten, 05hex = 01:15Uhr]
 
     #define I3_RES_KOM_STAT_STARTZEIT_ENDE_5_WERT                    (RXBUF_UCHAR(12)*15.0f)
     #define I3_RES_KOM_STAT_STARTZEIT_ENDE_5_WERT_TYPE               float
         // Start time end [display in hours and minutes, resolution 15 minutes, 05hex = 01:15] / Startzeit Ende [Anzeige
-        // in Stunden und Minuten, AuflÃ¶sung 15 Minuten, 05hex = 01:15Uhr]
+        // in Stunden und Minuten, Auflösung 15 Minuten, 05hex = 01:15Uhr]
 
     #define I3_RES_KOM_STAT_STARTZEIT_ENDE_6_WERT                    (RXBUF_UCHAR(13)*15.0f)
     #define I3_RES_KOM_STAT_STARTZEIT_ENDE_6_WERT_TYPE               float
         // Start time end [display in hours and minutes, resolution 15 minutes, 05hex = 01:15] / Startzeit Ende [Anzeige
-        // in Stunden und Minuten, AuflÃ¶sung 15 Minuten, 05hex = 01:15Uhr]
+        // in Stunden und Minuten, Auflösung 15 Minuten, 05hex = 01:15Uhr]
 
     #define I3_RES_KOM_STAT_STARTZEIT_ENDE_7_WERT                    (RXBUF_UCHAR(14)*15.0f)
     #define I3_RES_KOM_STAT_STARTZEIT_ENDE_7_WERT_TYPE               float
         // Start time end [display in hours and minutes, resolution 15 minutes, 05hex = 01:15] / Startzeit Ende [Anzeige
-        // in Stunden und Minuten, AuflÃ¶sung 15 Minuten, 05hex = 01:15Uhr]
+        // in Stunden und Minuten, Auflösung 15 Minuten, 05hex = 01:15Uhr]
 
 // Skipping KOMBI_OELTEMPERATUR on 0xD119 which takes arguments
 
@@ -294,7 +293,7 @@
 
 #define I3_PID_KOM_TANKINHALT                                        0xD11F
         // Return of the liter values of the tank lever sensors 1 and 2, total value undamped and damped as well as the
-        // tank phase. / RÃ¼ckgabe der Literwerte der Tank-Hebelgeber 1 und 2, Summenwert ungedÃ¤mpft und gedÃ¤mpft sowie
+        // tank phase. / Rückgabe der Literwerte der Tank-Hebelgeber 1 und 2, Summenwert ungedämpft und gedämpft sowie
         // Tankphase.
 
     #define I3_RES_KOM_STAT_TANKKAMMER_RECHTS_WERT                   (RXBUF_UINT(0)/128.0f)
@@ -310,13 +309,13 @@
     #define I3_RES_KOM_STAT_SUMMENWERT_WERT                          (RXBUF_UINT(4)/128.0f)
     #define I3_RES_KOM_STAT_SUMMENWERT_WERT_UNIT                     'l'
     #define I3_RES_KOM_STAT_SUMMENWERT_WERT_TYPE                     float
-        // Undamped sum of the liter values of the tank lever sensors on the right and left in liters / UngedÃ¤mpfte
-        // Summe der Literwerte der Tank-Hebelgeber rechts und links in Liter
+        // Undamped sum of the liter values of the tank lever sensors right and left in liters / Ungedämpfte Summe der
+        // Literwerte der Tank-Hebelgeber rechts und links in Liter
 
     #define I3_RES_KOM_STAT_GEDAEMPFT_ANZ_WERT                       (RXBUF_UINT(6)/128.0f)
     #define I3_RES_KOM_STAT_GEDAEMPFT_ANZ_WERT_UNIT                  'l'
     #define I3_RES_KOM_STAT_GEDAEMPFT_ANZ_WERT_TYPE                  float
-        // Numerical value of damped total value from lever sensor left and right in liters / Zahlenwert gedÃ¤mpfter
+        // Numerical value of damped total value from lever sensor left and right in liters / Zahlenwert gedämpfter
         // Summenwert aus Hebelgeber links und rechts in Liter
 
     #define I3_RES_KOM_STAT_TANKPHASE                                (RXBUF_UCHAR(8))
@@ -326,13 +325,13 @@
         // Tankphase:  1= i.O;  2= mind. 1 Hebelgeber n.i.O.; 3= wie 2 und zusaetzlich kein Verbrauchssignal
 
 #define I3_PID_KOM_TIMER_KLIMATISIERUNG                              0xD121
-        // Set timer for air conditioning / Eingestellter Timer fÃ¼r Klimatisierung
+        // Set timer for air conditioning / Eingestellter Timer für Klimatisierung
 
     #define I3_RES_KOM_STAT_T1_ID_FUNKTION_BEDIENUNG_TIMER_WERT      (RXBUF_UINT(0))
     #define I3_RES_KOM_STAT_T1_ID_FUNKTION_BEDIENUNG_TIMER_WERT_TYPE unsigned short
         // ID_Ffunktion_Bedienung_Timer (ID_FN_OP_TIM) Information about EventID (auxiliary heating, auxiliary
-        // ventilation or auxiliary heating / ventilation) / ID_Funktion_Bedienung_Timer (ID_FN_OP_TIM) Information Ã¼ber
-        // EventID (Standheizen, StandlÃ¼ften oder Standheizen/-lÃ¼ften)
+        // ventilation or auxiliary heating / ventilation) / ID_Funktion_Bedienung_Timer (ID_FN_OP_TIM) Information über
+        // EventID (Standheizen, Standlüften oder Standheizen/-lüften)
 
     #define I3_RES_KOM_STAT_T1_ID_BEDIENUNG_TIMER_WERT               (RXBUF_UCHAR(2))
     #define I3_RES_KOM_STAT_T1_ID_BEDIENUNG_TIMER_WERT_TYPE          unsigned char
@@ -364,8 +363,8 @@
     #define I3_RES_KOM_STAT_T2_ID_FUNKTION_BEDIENUNG_TIMER_WERT      (RXBUF_UINT(8))
     #define I3_RES_KOM_STAT_T2_ID_FUNKTION_BEDIENUNG_TIMER_WERT_TYPE unsigned short
         // ID_Ffunktion_Bedienung_Timer (ID_FN_OP_TIM) Information about EventID (auxiliary heating, auxiliary
-        // ventilation or auxiliary heating / ventilation) / ID_Funktion_Bedienung_Timer (ID_FN_OP_TIM) Information Ã¼ber
-        // EventID (Standheizen, StandlÃ¼ften oder Standheizen/-lÃ¼ften)
+        // ventilation or auxiliary heating / ventilation) / ID_Funktion_Bedienung_Timer (ID_FN_OP_TIM) Information über
+        // EventID (Standheizen, Standlüften oder Standheizen/-lüften)
 
     #define I3_RES_KOM_STAT_T2_ID_BEDIENUNG_TIMER_WERT               (RXBUF_UCHAR(10))
     #define I3_RES_KOM_STAT_T2_ID_BEDIENUNG_TIMER_WERT_TYPE          unsigned char
@@ -397,8 +396,8 @@
     #define I3_RES_KOM_STAT_T3_ID_FUNKTION_BEDIENUNG_TIMER_WERT      (RXBUF_UINT(16))
     #define I3_RES_KOM_STAT_T3_ID_FUNKTION_BEDIENUNG_TIMER_WERT_TYPE unsigned short
         // ID_Ffunktion_Bedienung_Timer (ID_FN_OP_TIM) Information about EventID (auxiliary heating, auxiliary
-        // ventilation or auxiliary heating / ventilation) / ID_Funktion_Bedienung_Timer (ID_FN_OP_TIM) Information Ã¼ber
-        // EventID (Standheizen, StandlÃ¼ften oder Standheizen/-lÃ¼ften)
+        // ventilation or auxiliary heating / ventilation) / ID_Funktion_Bedienung_Timer (ID_FN_OP_TIM) Information über
+        // EventID (Standheizen, Standlüften oder Standheizen/-lüften)
 
     #define I3_RES_KOM_STAT_T3_ID_BEDIENUNG_TIMER_WERT               (RXBUF_UCHAR(18))
     #define I3_RES_KOM_STAT_T3_ID_BEDIENUNG_TIMER_WERT_TYPE          unsigned char
@@ -430,8 +429,8 @@
     #define I3_RES_KOM_STAT_T4_ID_FUNKTION_BEDIENUNG_TIMER_WERT      (RXBUF_UINT(24))
     #define I3_RES_KOM_STAT_T4_ID_FUNKTION_BEDIENUNG_TIMER_WERT_TYPE unsigned short
         // ID_Ffunktion_Bedienung_Timer (ID_FN_OP_TIM) Information about EventID (auxiliary heating, auxiliary
-        // ventilation or auxiliary heating / ventilation) / ID_Funktion_Bedienung_Timer (ID_FN_OP_TIM) Information Ã¼ber
-        // EventID (Standheizen, StandlÃ¼ften oder Standheizen/-lÃ¼ften)
+        // ventilation or auxiliary heating / ventilation) / ID_Funktion_Bedienung_Timer (ID_FN_OP_TIM) Information über
+        // EventID (Standheizen, Standlüften oder Standheizen/-lüften)
 
     #define I3_RES_KOM_STAT_T4_ID_BEDIENUNG_TIMER_WERT               (RXBUF_UCHAR(26))
     #define I3_RES_KOM_STAT_T4_ID_BEDIENUNG_TIMER_WERT_TYPE          unsigned char
@@ -463,8 +462,8 @@
     #define I3_RES_KOM_STAT_T5_ID_FUNKTION_BEDIENUNG_TIMER_WERT      (RXBUF_UINT(32))
     #define I3_RES_KOM_STAT_T5_ID_FUNKTION_BEDIENUNG_TIMER_WERT_TYPE unsigned short
         // ID_Ffunktion_Bedienung_Timer (ID_FN_OP_TIM) Information about EventID (auxiliary heating, auxiliary
-        // ventilation or auxiliary heating / ventilation) / ID_Funktion_Bedienung_Timer (ID_FN_OP_TIM) Information Ã¼ber
-        // EventID (Standheizen, StandlÃ¼ften oder Standheizen/-lÃ¼ften)
+        // ventilation or auxiliary heating / ventilation) / ID_Funktion_Bedienung_Timer (ID_FN_OP_TIM) Information über
+        // EventID (Standheizen, Standlüften oder Standheizen/-lüften)
 
     #define I3_RES_KOM_STAT_T5_ID_BEDIENUNG_TIMER_WERT               (RXBUF_UCHAR(34))
     #define I3_RES_KOM_STAT_T5_ID_BEDIENUNG_TIMER_WERT_TYPE          unsigned char
@@ -496,8 +495,8 @@
     #define I3_RES_KOM_STAT_T6_ID_FUNKTION_BEDIENUNG_TIMER_WERT      (RXBUF_UINT(40))
     #define I3_RES_KOM_STAT_T6_ID_FUNKTION_BEDIENUNG_TIMER_WERT_TYPE unsigned short
         // ID_Ffunktion_Bedienung_Timer (ID_FN_OP_TIM) Information about EventID (auxiliary heating, auxiliary
-        // ventilation or auxiliary heating / ventilation) / ID_Funktion_Bedienung_Timer (ID_FN_OP_TIM) Information Ã¼ber
-        // EventID (Standheizen, StandlÃ¼ften oder Standheizen/-lÃ¼ften)
+        // ventilation or auxiliary heating / ventilation) / ID_Funktion_Bedienung_Timer (ID_FN_OP_TIM) Information über
+        // EventID (Standheizen, Standlüften oder Standheizen/-lüften)
 
     #define I3_RES_KOM_STAT_T6_ID_BEDIENUNG_TIMER_WERT               (RXBUF_UCHAR(42))
     #define I3_RES_KOM_STAT_T6_ID_BEDIENUNG_TIMER_WERT_TYPE          unsigned char
@@ -529,8 +528,8 @@
     #define I3_RES_KOM_STAT_T7_ID_FUNKTION_BEDIENUNG_TIMER_WERT      (RXBUF_UINT(48))
     #define I3_RES_KOM_STAT_T7_ID_FUNKTION_BEDIENUNG_TIMER_WERT_TYPE unsigned short
         // ID_Ffunktion_Bedienung_Timer (ID_FN_OP_TIM) Information about EventID (auxiliary heating, auxiliary
-        // ventilation or auxiliary heating / ventilation) / ID_Funktion_Bedienung_Timer (ID_FN_OP_TIM) Information Ã¼ber
-        // EventID (Standheizen, StandlÃ¼ften oder Standheizen/-lÃ¼ften)
+        // ventilation or auxiliary heating / ventilation) / ID_Funktion_Bedienung_Timer (ID_FN_OP_TIM) Information über
+        // EventID (Standheizen, Standlüften oder Standheizen/-lüften)
 
     #define I3_RES_KOM_STAT_T7_ID_BEDIENUNG_TIMER_WERT               (RXBUF_UCHAR(50))
     #define I3_RES_KOM_STAT_T7_ID_BEDIENUNG_TIMER_WERT_TYPE          unsigned char
@@ -567,7 +566,7 @@
     #define I3_RES_KOM_STAT_SEKUNDENZAEHLER_WERT                     (RXBUF_UINT32(0))
     #define I3_RES_KOM_STAT_SEKUNDENZAEHLER_WERT_UNIT                's'
     #define I3_RES_KOM_STAT_SEKUNDENZAEHLER_WERT_TYPE                unsigned long
-        // Second counter [1 second] / SekundenzÃ¤hler [1 Sekunde]
+        // Second counter [1 second] / Sekundenzähler [1 Sekunde]
 
     // Can't yet generate code for STAT_GWSZ_TEXT of type string[3], at offset 4. But we account for the 3 bytes
         // GWSZ [1 km] / GWSZ [1 km]
@@ -623,9 +622,9 @@
         // Mile / Mile
 
     #define I3_RES_KOM_STAT_BLOCK_01_A_TEMP_WERT                     (RXBUF_UCHAR(9)*0.5f-40.0)
-    #define I3_RES_KOM_STAT_BLOCK_01_A_TEMP_WERT_UNIT                'Â°C'
+    #define I3_RES_KOM_STAT_BLOCK_01_A_TEMP_WERT_UNIT                '°C'
     #define I3_RES_KOM_STAT_BLOCK_01_A_TEMP_WERT_TYPE                float
-        // Outside temperature [-40 to + 50 ° C] / AuÃentemperatur [-40 bis +50Â°C]
+        // Outside temperature [-40 to + 50 ° C] / Außentemperatur [-40 bis +50°C]
 
     #define I3_RES_KOM_STAT_BLOCK_01_AKT_DAUER_ECO_WERT              (RXBUF_UCHAR(10)/2.0f)
     #define I3_RES_KOM_STAT_BLOCK_01_AKT_DAUER_ECO_WERT_UNIT         '%'
@@ -659,14 +658,14 @@
         // Consumed fuel [0-102.2 L] / Verbrauchter Kraftstoff [0-102,2 L]
 
     // BF_BLOCK_01_STERNE is a BITFIELD of size unsigned char.  We don't yet generate definitions for each bit, we treat as the host data type
-        // Bitfield 1: stars for acceleration, stars for braking / Bitfield 1: Sterne fÃ¼r Beschleunigung, Sterne fÃ¼r
+        // Bitfield 1: stars for acceleration, stars for braking / Bitfield 1: Sterne für Beschleunigung, Sterne für
         // Bremsen
             // STAT_BLOCK_01_STERNE_BESCHLEUNIGUNG: Mask: 0x05 - Stars for acceleration
             // STAT_BLOCK_01_STERNE_BREMSEN: Mask: 0x38 - Stars for brakes
     #define I3_RES_KOM_BF_BLOCK_01_STERNE                            (RXBUF_UCHAR(20))
     #define I3_RES_KOM_BF_BLOCK_01_STERNE_UNIT                       'Bit'
     #define I3_RES_KOM_BF_BLOCK_01_STERNE_TYPE                       unsigned char
-        // Bitfield 1: stars for acceleration, stars for braking / Bitfield 1: Sterne fÃ¼r Beschleunigung, Sterne fÃ¼r
+        // Bitfield 1: stars for acceleration, stars for braking / Bitfield 1: Sterne für Beschleunigung, Sterne für
         // Bremsen
 
     #define I3_RES_KOM_STAT_BLOCK_02_SEGMENT_ID_WERT                 (RXBUF_UCHAR(21))
@@ -699,9 +698,9 @@
         // Mile / Mile
 
     #define I3_RES_KOM_STAT_BLOCK_02_A_TEMP_WERT                     (RXBUF_UCHAR(30)*0.5f-40.0)
-    #define I3_RES_KOM_STAT_BLOCK_02_A_TEMP_WERT_UNIT                'Â°C'
+    #define I3_RES_KOM_STAT_BLOCK_02_A_TEMP_WERT_UNIT                '°C'
     #define I3_RES_KOM_STAT_BLOCK_02_A_TEMP_WERT_TYPE                float
-        // Outside temperature [-40 to + 50 ° C] / AuÃentemperatur [-40 bis +50Â°C]
+        // Outside temperature [-40 to + 50 ° C] / Außentemperatur [-40 bis +50°C]
 
     #define I3_RES_KOM_STAT_BLOCK_02_AKT_DAUER_ECO_WERT              (RXBUF_UCHAR(31)/2.0f)
     #define I3_RES_KOM_STAT_BLOCK_02_AKT_DAUER_ECO_WERT_UNIT         '%'
@@ -735,14 +734,14 @@
         // Consumed fuel [0-102.2 L] / Verbrauchter Kraftstoff [0-102,2 L]
 
     // BF_BLOCK_02_STERNE is a BITFIELD of size unsigned char.  We don't yet generate definitions for each bit, we treat as the host data type
-        // Bitfield 1: stars for acceleration, stars for braking / Bitfield 1: Sterne fÃ¼r Beschleunigung, Sterne fÃ¼r
+        // Bitfield 1: stars for acceleration, stars for braking / Bitfield 1: Sterne für Beschleunigung, Sterne für
         // Bremsen
             // STAT_BLOCK_02_STERNE_BESCHLEUNIGUNG: Mask: 0x05 - Stars for acceleration
             // STAT_BLOCK_02_STERNE_BREMSEN: Mask: 0x38 - Stars for brakes
     #define I3_RES_KOM_BF_BLOCK_02_STERNE                            (RXBUF_UCHAR(41))
     #define I3_RES_KOM_BF_BLOCK_02_STERNE_UNIT                       'Bit'
     #define I3_RES_KOM_BF_BLOCK_02_STERNE_TYPE                       unsigned char
-        // Bitfield 1: stars for acceleration, stars for braking / Bitfield 1: Sterne fÃ¼r Beschleunigung, Sterne fÃ¼r
+        // Bitfield 1: stars for acceleration, stars for braking / Bitfield 1: Sterne für Beschleunigung, Sterne für
         // Bremsen
 
     #define I3_RES_KOM_STAT_BLOCK_03_SEGMENT_ID_WERT                 (RXBUF_UCHAR(42))
@@ -775,9 +774,9 @@
         // Mile / Mile
 
     #define I3_RES_KOM_STAT_BLOCK_03_A_TEMP_WERT                     (RXBUF_UCHAR(51)*0.5f-40.0)
-    #define I3_RES_KOM_STAT_BLOCK_03_A_TEMP_WERT_UNIT                'Â°C'
+    #define I3_RES_KOM_STAT_BLOCK_03_A_TEMP_WERT_UNIT                '°C'
     #define I3_RES_KOM_STAT_BLOCK_03_A_TEMP_WERT_TYPE                float
-        // Outside temperature [-40 to + 50 ° C] / AuÃentemperatur [-40 bis +50Â°C]
+        // Outside temperature [-40 to + 50 ° C] / Außentemperatur [-40 bis +50°C]
 
     #define I3_RES_KOM_STAT_BLOCK_03_AKT_DAUER_ECO_WERT              (RXBUF_UCHAR(52)/2.0f)
     #define I3_RES_KOM_STAT_BLOCK_03_AKT_DAUER_ECO_WERT_UNIT         '%'
@@ -811,14 +810,14 @@
         // Consumed fuel [0-102.2 L] / Verbrauchter Kraftstoff [0-102,2 L]
 
     // BF_BLOCK_03_STERNE is a BITFIELD of size unsigned char.  We don't yet generate definitions for each bit, we treat as the host data type
-        // Bitfield 1: stars for acceleration, stars for braking / Bitfield 1: Sterne fÃ¼r Beschleunigung, Sterne fÃ¼r
+        // Bitfield 1: stars for acceleration, stars for braking / Bitfield 1: Sterne für Beschleunigung, Sterne für
         // Bremsen
             // STAT_BLOCK_03_STERNE_BESCHLEUNIGUNG: Mask: 0x05 - Stars for acceleration
             // STAT_BLOCK_03_STERNE_BREMSEN: Mask: 0x38 - Stars for brakes
     #define I3_RES_KOM_BF_BLOCK_03_STERNE                            (RXBUF_UCHAR(62))
     #define I3_RES_KOM_BF_BLOCK_03_STERNE_UNIT                       'Bit'
     #define I3_RES_KOM_BF_BLOCK_03_STERNE_TYPE                       unsigned char
-        // Bitfield 1: stars for acceleration, stars for braking / Bitfield 1: Sterne fÃ¼r Beschleunigung, Sterne fÃ¼r
+        // Bitfield 1: stars for acceleration, stars for braking / Bitfield 1: Sterne für Beschleunigung, Sterne für
         // Bremsen
 
     #define I3_RES_KOM_STAT_BLOCK_04_SEGMENT_ID_WERT                 (RXBUF_UCHAR(63))
@@ -851,9 +850,9 @@
         // Mile / Mile
 
     #define I3_RES_KOM_STAT_BLOCK_04_A_TEMP_WERT                     (RXBUF_UCHAR(72)*0.5f-40.0)
-    #define I3_RES_KOM_STAT_BLOCK_04_A_TEMP_WERT_UNIT                'Â°C'
+    #define I3_RES_KOM_STAT_BLOCK_04_A_TEMP_WERT_UNIT                '°C'
     #define I3_RES_KOM_STAT_BLOCK_04_A_TEMP_WERT_TYPE                float
-        // Outside temperature [-40 to + 50 ° C] / AuÃentemperatur [-40 bis +50Â°C]
+        // Outside temperature [-40 to + 50 ° C] / Außentemperatur [-40 bis +50°C]
 
     #define I3_RES_KOM_STAT_BLOCK_04_AKT_DAUER_ECO_WERT              (RXBUF_UCHAR(73)/2.0f)
     #define I3_RES_KOM_STAT_BLOCK_04_AKT_DAUER_ECO_WERT_UNIT         '%'
@@ -887,14 +886,14 @@
         // Consumed fuel [0-102.2 L] / Verbrauchter Kraftstoff [0-102,2 L]
 
     // BF_BLOCK_04_STERNE is a BITFIELD of size unsigned char.  We don't yet generate definitions for each bit, we treat as the host data type
-        // Bitfield 1: stars for acceleration, stars for braking / Bitfield 1: Sterne fÃ¼r Beschleunigung, Sterne fÃ¼r
+        // Bitfield 1: stars for acceleration, stars for braking / Bitfield 1: Sterne für Beschleunigung, Sterne für
         // Bremsen
             // STAT_BLOCK_04_STERNE_BESCHLEUNIGUNG: Mask: 0x05 - Stars for acceleration
             // STAT_BLOCK_04_STERNE_BREMSEN: Mask: 0x38 - Stars for brakes
     #define I3_RES_KOM_BF_BLOCK_04_STERNE                            (RXBUF_UCHAR(83))
     #define I3_RES_KOM_BF_BLOCK_04_STERNE_UNIT                       'Bit'
     #define I3_RES_KOM_BF_BLOCK_04_STERNE_TYPE                       unsigned char
-        // Bitfield 1: stars for acceleration, stars for braking / Bitfield 1: Sterne fÃ¼r Beschleunigung, Sterne fÃ¼r
+        // Bitfield 1: stars for acceleration, stars for braking / Bitfield 1: Sterne für Beschleunigung, Sterne für
         // Bremsen
 
     #define I3_RES_KOM_STAT_BLOCK_05_SEGMENT_ID_WERT                 (RXBUF_UCHAR(84))
@@ -927,9 +926,9 @@
         // Mile / Mile
 
     #define I3_RES_KOM_STAT_BLOCK_05_A_TEMP_WERT                     (RXBUF_UCHAR(93)*0.5f-40.0)
-    #define I3_RES_KOM_STAT_BLOCK_05_A_TEMP_WERT_UNIT                'Â°C'
+    #define I3_RES_KOM_STAT_BLOCK_05_A_TEMP_WERT_UNIT                '°C'
     #define I3_RES_KOM_STAT_BLOCK_05_A_TEMP_WERT_TYPE                float
-        // Outside temperature [-40 to + 50 ° C] / AuÃentemperatur [-40 bis +50Â°C]
+        // Outside temperature [-40 to + 50 ° C] / Außentemperatur [-40 bis +50°C]
 
     #define I3_RES_KOM_STAT_BLOCK_05_AKT_DAUER_ECO_WERT              (RXBUF_UCHAR(94)/2.0f)
     #define I3_RES_KOM_STAT_BLOCK_05_AKT_DAUER_ECO_WERT_UNIT         '%'
@@ -963,14 +962,14 @@
         // Consumed fuel [0-102.2 L] / Verbrauchter Kraftstoff [0-102,2 L]
 
     // BF_BLOCK_05_STERNE is a BITFIELD of size unsigned char.  We don't yet generate definitions for each bit, we treat as the host data type
-        // Bitfield 1: stars for acceleration, stars for braking / Bitfield 1: Sterne fÃ¼r Beschleunigung, Sterne fÃ¼r
+        // Bitfield 1: stars for acceleration, stars for braking / Bitfield 1: Sterne für Beschleunigung, Sterne für
         // Bremsen
             // STAT_BLOCK_05_STERNE_BESCHLEUNIGUNG: Mask: 0x05 - Stars for acceleration
             // STAT_BLOCK_05_STERNE_BREMSEN: Mask: 0x38 - Stars for brakes
     #define I3_RES_KOM_BF_BLOCK_05_STERNE                            (RXBUF_UCHAR(104))
     #define I3_RES_KOM_BF_BLOCK_05_STERNE_UNIT                       'Bit'
     #define I3_RES_KOM_BF_BLOCK_05_STERNE_TYPE                       unsigned char
-        // Bitfield 1: stars for acceleration, stars for braking / Bitfield 1: Sterne fÃ¼r Beschleunigung, Sterne fÃ¼r
+        // Bitfield 1: stars for acceleration, stars for braking / Bitfield 1: Sterne für Beschleunigung, Sterne für
         // Bremsen
 
     #define I3_RES_KOM_STAT_BLOCK_06_SEGMENT_ID_WERT                 (RXBUF_UCHAR(105))
@@ -1003,9 +1002,9 @@
         // Mile / Mile
 
     #define I3_RES_KOM_STAT_BLOCK_06_A_TEMP_WERT                     (RXBUF_UCHAR(114)*0.5f-40.0)
-    #define I3_RES_KOM_STAT_BLOCK_06_A_TEMP_WERT_UNIT                'Â°C'
+    #define I3_RES_KOM_STAT_BLOCK_06_A_TEMP_WERT_UNIT                '°C'
     #define I3_RES_KOM_STAT_BLOCK_06_A_TEMP_WERT_TYPE                float
-        // Outside temperature [-40 to + 50 ° C] / AuÃentemperatur [-40 bis +50Â°C]
+        // Outside temperature [-40 to + 50 ° C] / Außentemperatur [-40 bis +50°C]
 
     #define I3_RES_KOM_STAT_BLOCK_06_AKT_DAUER_ECO_WERT              (RXBUF_UCHAR(115)/2.0f)
     #define I3_RES_KOM_STAT_BLOCK_06_AKT_DAUER_ECO_WERT_UNIT         '%'
@@ -1039,14 +1038,14 @@
         // Consumed fuel [0-102.2 L] / Verbrauchter Kraftstoff [0-102,2 L]
 
     // BF_BLOCK_06_STERNE is a BITFIELD of size unsigned char.  We don't yet generate definitions for each bit, we treat as the host data type
-        // Bitfield 1: stars for acceleration, stars for braking / Bitfield 1: Sterne fÃ¼r Beschleunigung, Sterne fÃ¼r
+        // Bitfield 1: stars for acceleration, stars for braking / Bitfield 1: Sterne für Beschleunigung, Sterne für
         // Bremsen
             // STAT_BLOCK_06_STERNE_BESCHLEUNIGUNG: Mask: 0x05 - Stars for acceleration
             // STAT_BLOCK_06_STERNE_BREMSEN: Mask: 0x38 - Stars for brakes
     #define I3_RES_KOM_BF_BLOCK_06_STERNE                            (RXBUF_UCHAR(125))
     #define I3_RES_KOM_BF_BLOCK_06_STERNE_UNIT                       'Bit'
     #define I3_RES_KOM_BF_BLOCK_06_STERNE_TYPE                       unsigned char
-        // Bitfield 1: stars for acceleration, stars for braking / Bitfield 1: Sterne fÃ¼r Beschleunigung, Sterne fÃ¼r
+        // Bitfield 1: stars for acceleration, stars for braking / Bitfield 1: Sterne für Beschleunigung, Sterne für
         // Bremsen
 
     #define I3_RES_KOM_STAT_BLOCK_07_SEGMENT_ID_WERT                 (RXBUF_UCHAR(126))
@@ -1079,9 +1078,9 @@
         // Mile / Mile
 
     #define I3_RES_KOM_STAT_BLOCK_07_A_TEMP_WERT                     (RXBUF_UCHAR(135)*0.5f-40.0)
-    #define I3_RES_KOM_STAT_BLOCK_07_A_TEMP_WERT_UNIT                'Â°C'
+    #define I3_RES_KOM_STAT_BLOCK_07_A_TEMP_WERT_UNIT                '°C'
     #define I3_RES_KOM_STAT_BLOCK_07_A_TEMP_WERT_TYPE                float
-        // Outside temperature [-40 to + 50 ° C] / AuÃentemperatur [-40 bis +50Â°C]
+        // Outside temperature [-40 to + 50 ° C] / Außentemperatur [-40 bis +50°C]
 
     #define I3_RES_KOM_STAT_BLOCK_07_AKT_DAUER_ECO_WERT              (RXBUF_UCHAR(136)/2.0f)
     #define I3_RES_KOM_STAT_BLOCK_07_AKT_DAUER_ECO_WERT_UNIT         '%'
@@ -1115,14 +1114,14 @@
         // Consumed fuel [0-102.2 L] / Verbrauchter Kraftstoff [0-102,2 L]
 
     // BF_BLOCK_07_STERNE is a BITFIELD of size unsigned char.  We don't yet generate definitions for each bit, we treat as the host data type
-        // Bitfield 1: stars for acceleration, stars for braking / Bitfield 1: Sterne fÃ¼r Beschleunigung, Sterne fÃ¼r
+        // Bitfield 1: stars for acceleration, stars for braking / Bitfield 1: Sterne für Beschleunigung, Sterne für
         // Bremsen
             // STAT_BLOCK_07_STERNE_BESCHLEUNIGUNG: Mask: 0x05 - Stars for acceleration
             // STAT_BLOCK_07_STERNE_BREMSEN: Mask: 0x38 - Stars for brakes
     #define I3_RES_KOM_BF_BLOCK_07_STERNE                            (RXBUF_UCHAR(146))
     #define I3_RES_KOM_BF_BLOCK_07_STERNE_UNIT                       'Bit'
     #define I3_RES_KOM_BF_BLOCK_07_STERNE_TYPE                       unsigned char
-        // Bitfield 1: stars for acceleration, stars for braking / Bitfield 1: Sterne fÃ¼r Beschleunigung, Sterne fÃ¼r
+        // Bitfield 1: stars for acceleration, stars for braking / Bitfield 1: Sterne für Beschleunigung, Sterne für
         // Bremsen
 
     #define I3_RES_KOM_STAT_BLOCK_08_SEGMENT_ID_WERT                 (RXBUF_UCHAR(147))
@@ -1155,9 +1154,9 @@
         // Mile / Mile
 
     #define I3_RES_KOM_STAT_BLOCK_08_A_TEMP_WERT                     (RXBUF_UCHAR(156)*0.5f-40.0)
-    #define I3_RES_KOM_STAT_BLOCK_08_A_TEMP_WERT_UNIT                'Â°C'
+    #define I3_RES_KOM_STAT_BLOCK_08_A_TEMP_WERT_UNIT                '°C'
     #define I3_RES_KOM_STAT_BLOCK_08_A_TEMP_WERT_TYPE                float
-        // Outside temperature [-40 to + 50 ° C] / AuÃentemperatur [-40 bis +50Â°C]
+        // Outside temperature [-40 to + 50 ° C] / Außentemperatur [-40 bis +50°C]
 
     #define I3_RES_KOM_STAT_BLOCK_08_AKT_DAUER_ECO_WERT              (RXBUF_UCHAR(157)/2.0f)
     #define I3_RES_KOM_STAT_BLOCK_08_AKT_DAUER_ECO_WERT_UNIT         '%'
@@ -1191,14 +1190,14 @@
         // Consumed fuel [0-102.2 L] / Verbrauchter Kraftstoff [0-102,2 L]
 
     // BF_BLOCK_08_STERNE is a BITFIELD of size unsigned char.  We don't yet generate definitions for each bit, we treat as the host data type
-        // Bitfield 1: stars for acceleration, stars for braking / Bitfield 1: Sterne fÃ¼r Beschleunigung, Sterne fÃ¼r
+        // Bitfield 1: stars for acceleration, stars for braking / Bitfield 1: Sterne für Beschleunigung, Sterne für
         // Bremsen
             // STAT_BLOCK_08_STERNE_BESCHLEUNIGUNG: Mask: 0x05 - Stars for acceleration
             // STAT_BLOCK_08_STERNE_BREMSEN: Mask: 0x38 - Stars for brakes
     #define I3_RES_KOM_BF_BLOCK_08_STERNE                            (RXBUF_UCHAR(167))
     #define I3_RES_KOM_BF_BLOCK_08_STERNE_UNIT                       'Bit'
     #define I3_RES_KOM_BF_BLOCK_08_STERNE_TYPE                       unsigned char
-        // Bitfield 1: stars for acceleration, stars for braking / Bitfield 1: Sterne fÃ¼r Beschleunigung, Sterne fÃ¼r
+        // Bitfield 1: stars for acceleration, stars for braking / Bitfield 1: Sterne für Beschleunigung, Sterne für
         // Bremsen
 
     #define I3_RES_KOM_STAT_BLOCK_09_SEGMENT_ID_WERT                 (RXBUF_UCHAR(168))
@@ -1231,9 +1230,9 @@
         // Mile / Mile
 
     #define I3_RES_KOM_STAT_BLOCK_09_A_TEMP_WERT                     (RXBUF_UCHAR(177)*0.5f-40.0)
-    #define I3_RES_KOM_STAT_BLOCK_09_A_TEMP_WERT_UNIT                'Â°C'
+    #define I3_RES_KOM_STAT_BLOCK_09_A_TEMP_WERT_UNIT                '°C'
     #define I3_RES_KOM_STAT_BLOCK_09_A_TEMP_WERT_TYPE                float
-        // Outside temperature [-40 to + 50 ° C] / AuÃentemperatur [-40 bis +50Â°C]
+        // Outside temperature [-40 to + 50 ° C] / Außentemperatur [-40 bis +50°C]
 
     #define I3_RES_KOM_STAT_BLOCK_09_AKT_DAUER_ECO_WERT              (RXBUF_UCHAR(178)/2.0f)
     #define I3_RES_KOM_STAT_BLOCK_09_AKT_DAUER_ECO_WERT_UNIT         '%'
@@ -1267,14 +1266,14 @@
         // Consumed fuel [0-102.2 L] / Verbrauchter Kraftstoff [0-102,2 L]
 
     // BF_BLOCK_09_STERNE is a BITFIELD of size unsigned char.  We don't yet generate definitions for each bit, we treat as the host data type
-        // Bitfield 1: stars for acceleration, stars for braking / Bitfield 1: Sterne fÃ¼r Beschleunigung, Sterne fÃ¼r
+        // Bitfield 1: stars for acceleration, stars for braking / Bitfield 1: Sterne für Beschleunigung, Sterne für
         // Bremsen
             // STAT_BLOCK_09_STERNE_BESCHLEUNIGUNG: Mask: 0x05 - Stars for acceleration
             // STAT_BLOCK_09_STERNE_BREMSEN: Mask: 0x38 - Stars for brakes
     #define I3_RES_KOM_BF_BLOCK_09_STERNE                            (RXBUF_UCHAR(188))
     #define I3_RES_KOM_BF_BLOCK_09_STERNE_UNIT                       'Bit'
     #define I3_RES_KOM_BF_BLOCK_09_STERNE_TYPE                       unsigned char
-        // Bitfield 1: stars for acceleration, stars for braking / Bitfield 1: Sterne fÃ¼r Beschleunigung, Sterne fÃ¼r
+        // Bitfield 1: stars for acceleration, stars for braking / Bitfield 1: Sterne für Beschleunigung, Sterne für
         // Bremsen
 
     #define I3_RES_KOM_STAT_BLOCK_10_SEGMENT_ID_WERT                 (RXBUF_UCHAR(189))
@@ -1307,9 +1306,9 @@
         // Mile / Mile
 
     #define I3_RES_KOM_STAT_BLOCK_10_A_TEMP_WERT                     (RXBUF_UCHAR(198)*0.5f-40.0)
-    #define I3_RES_KOM_STAT_BLOCK_10_A_TEMP_WERT_UNIT                'Â°C'
+    #define I3_RES_KOM_STAT_BLOCK_10_A_TEMP_WERT_UNIT                '°C'
     #define I3_RES_KOM_STAT_BLOCK_10_A_TEMP_WERT_TYPE                float
-        // Outside temperature [-40 to + 50 ° C] / AuÃentemperatur [-40 bis +50Â°C]
+        // Outside temperature [-40 to + 50 ° C] / Außentemperatur [-40 bis +50°C]
 
     #define I3_RES_KOM_STAT_BLOCK_10_AKT_DAUER_ECO_WERT              (RXBUF_UCHAR(199)/2.0f)
     #define I3_RES_KOM_STAT_BLOCK_10_AKT_DAUER_ECO_WERT_UNIT         '%'
@@ -1343,14 +1342,14 @@
         // Consumed fuel [0-102.2 L] / Verbrauchter Kraftstoff [0-102,2 L]
 
     // BF_BLOCK_10_STERNE is a BITFIELD of size unsigned char.  We don't yet generate definitions for each bit, we treat as the host data type
-        // Bitfield 1: stars for acceleration, stars for braking / Bitfield 1: Sterne fÃ¼r Beschleunigung, Sterne fÃ¼r
+        // Bitfield 1: stars for acceleration, stars for braking / Bitfield 1: Sterne für Beschleunigung, Sterne für
         // Bremsen
             // STAT_BLOCK_10_STERNE_BESCHLEUNIGUNG: Mask: 0x05 - Stars for acceleration
             // STAT_BLOCK_10_STERNE_BREMSEN: Mask: 0x38 - Stars for brakes
     #define I3_RES_KOM_BF_BLOCK_10_STERNE                            (RXBUF_UCHAR(209))
     #define I3_RES_KOM_BF_BLOCK_10_STERNE_UNIT                       'Bit'
     #define I3_RES_KOM_BF_BLOCK_10_STERNE_TYPE                       unsigned char
-        // Bitfield 1: stars for acceleration, stars for braking / Bitfield 1: Sterne fÃ¼r Beschleunigung, Sterne fÃ¼r
+        // Bitfield 1: stars for acceleration, stars for braking / Bitfield 1: Sterne für Beschleunigung, Sterne für
         // Bremsen
 
 #define I3_PID_KOM_REICHWEITE_GEWONNENER_KRAFTSTOFF                  0xD1D0
@@ -1377,27 +1376,27 @@
         // Gained range (GRW) / Gewonnene Reichweite (GRW)
 
     #define I3_RES_KOM_STAT_GK_WERT                                  (RXBUF_UINT32(8)/10.0f)
-    #define I3_RES_KOM_STAT_GK_WERT_UNIT                             'Âµl'
+    #define I3_RES_KOM_STAT_GK_WERT_UNIT                             'µl'
     #define I3_RES_KOM_STAT_GK_WERT_TYPE                             float
         // recovered fuel (GK) / gewonnener Kraftstoff (GK)
 
 #define I3_PID_KOM_VERBRAUCHSERHOEHUNG_ALPHA                         0xD1D1
-        // Increase in consumption alpha / VerbrauchserhÃ¶hung alpha
+        // Increase in consumption alpha / Verbrauchserhöhung alpha
 
     #define I3_RES_KOM_STAT_AKKUM_ABS_VERBR_ERH_WERT                 (RXBUF_UINT32(0))
-    #define I3_RES_KOM_STAT_AKKUM_ABS_VERBR_ERH_WERT_UNIT            'Âµl'
+    #define I3_RES_KOM_STAT_AKKUM_ABS_VERBR_ERH_WERT_UNIT            'µl'
     #define I3_RES_KOM_STAT_AKKUM_ABS_VERBR_ERH_WERT_TYPE            unsigned long
-        // accumulated absolute consumption increase / akkumulierte absolute VerbrauchserhÃ¶hung
+        // accumulated absolute consumption increase / akkumulierte absolute Verbrauchserhöhung
 
     #define I3_RES_KOM_STAT_VERBR_ERH_VERZOEGERUNG_WERT              (RXBUF_UINT32(4))
-    #define I3_RES_KOM_STAT_VERBR_ERH_VERZOEGERUNG_WERT_UNIT         'Âµl'
+    #define I3_RES_KOM_STAT_VERBR_ERH_VERZOEGERUNG_WERT_UNIT         'µl'
     #define I3_RES_KOM_STAT_VERBR_ERH_VERZOEGERUNG_WERT_TYPE         unsigned long
-        // Increase in consumption through delay / VerbrauchserhÃ¶hung durch VerzÃ¶gerung
+        // Increase in consumption through delay / Verbrauchserhöhung durch Verzögerung
 
     #define I3_RES_KOM_STAT_VERBR_ERH_MSA_WERT                       (RXBUF_UINT32(8))
-    #define I3_RES_KOM_STAT_VERBR_ERH_MSA_WERT_UNIT                  'Âµl'
+    #define I3_RES_KOM_STAT_VERBR_ERH_MSA_WERT_UNIT                  'µl'
     #define I3_RES_KOM_STAT_VERBR_ERH_MSA_WERT_TYPE                  unsigned long
-        // Increase in consumption through MSA / VerbrauchserhÃ¶hung durch MSA
+        // Increase in consumption through MSA / Verbrauchserhöhung durch MSA
 
     #define I3_RES_KOM_STAT_V_REF_WERT                               (RXBUF_UINT(12)/10.0f)
     #define I3_RES_KOM_STAT_V_REF_WERT_UNIT                          'km/h'
@@ -1415,39 +1414,39 @@
         // FWP act / FWP akt
 
     // STAT_BLS_VERZOEGERUNG is a BITFIELD of unknown size.  We don't have definitions for each bit, and we GUESSED it is one byte ***
-        // Status_BLS / delay / Status_BLS / VerzÃ¶gerung
+        // Status_BLS / delay / Status_BLS / Verzögerung
     #define I3_RES_KOM_STAT_BLS_VERZOEGERUNG                         (RXBUF_UCHAR(18))
     #define I3_RES_KOM_STAT_BLS_VERZOEGERUNG_UNIT                    'Bit'
     #define I3_RES_KOM_STAT_BLS_VERZOEGERUNG_TYPE                    unsigned char
-        // Status_BLS / delay / Status_BLS / VerzÃ¶gerung
+        // Status_BLS / delay / Status_BLS / Verzögerung
 
 #define I3_PID_KOM_VERBRAUCHSERHOEHUNG_PI                            0xD1D2
-        // PI consumption increase / VerbrauchserhÃ¶hung PI
+        // PI consumption increase / Verbrauchserhöhung PI
 
     #define I3_RES_KOM_STAT_PI_PROZ_VERBR_ERH_WERT                   (RXBUF_UINT(0)/100.0f)
     #define I3_RES_KOM_STAT_PI_PROZ_VERBR_ERH_WERT_UNIT              '%'
     #define I3_RES_KOM_STAT_PI_PROZ_VERBR_ERH_WERT_TYPE              float
-        // PI percentage increase in consumption / PI prozentuale VerbrauchserhÃ¶hung
+        // PI percentage increase in consumption / PI prozentuale Verbrauchserhöhung
 
     #define I3_RES_KOM_STAT_PI_VERBR_ERH_GW_WERT                     (RXBUF_UINT(2)/100.0f)
     #define I3_RES_KOM_STAT_PI_VERBR_ERH_GW_WERT_UNIT                '%'
     #define I3_RES_KOM_STAT_PI_VERBR_ERH_GW_WERT_TYPE                float
-        // PI increase in consumption through gear selection / PI VerbrauchserhÃ¶hung durch Gangwahl
+        // PI increase in consumption through gear selection / PI Verbrauchserhöhung durch Gangwahl
 
     #define I3_RES_KOM_STAT_PI_VERBR_ERH_GESCHW_WERT                 (RXBUF_UINT(4)/100.0f)
     #define I3_RES_KOM_STAT_PI_VERBR_ERH_GESCHW_WERT_UNIT            '%'
     #define I3_RES_KOM_STAT_PI_VERBR_ERH_GESCHW_WERT_TYPE            float
-        // PI increase in consumption through speed / PI VerbrauchserhÃ¶hung durch Geschwindigkeit
+        // PI increase in consumption through speed / PI Verbrauchserhöhung durch Geschwindigkeit
 
     #define I3_RES_KOM_STAT_PI_VERBR_ERH_BESCHL_WERT                 (RXBUF_UINT(6)/100.0f)
     #define I3_RES_KOM_STAT_PI_VERBR_ERH_BESCHL_WERT_UNIT            '%'
     #define I3_RES_KOM_STAT_PI_VERBR_ERH_BESCHL_WERT_TYPE            float
-        // PI increase in consumption through acceleration / PI VerbrauchserhÃ¶hung durch Beschleunigung
+        // PI increase in consumption through acceleration / PI Verbrauchserhöhung durch Beschleunigung
 
     #define I3_RES_KOM_STAT_PI_VERBR_ERH_KOMF_WERT                   (RXBUF_UINT(8)/100.0f)
     #define I3_RES_KOM_STAT_PI_VERBR_ERH_KOMF_WERT_UNIT              '%'
     #define I3_RES_KOM_STAT_PI_VERBR_ERH_KOMF_WERT_TYPE              float
-        // PI increase in consumption through convenience / PI VerbrauchserhÃ¶hung durch Komfort
+        // PI increase in consumption through convenience / PI Verbrauchserhöhung durch Komfort
 
 #define I3_PID_KOM_MEHRVERBRAUCH_MV_REF                              0xD1D3
         // Additional consumption MVref / Mehrverbrauch MVref
@@ -1503,7 +1502,7 @@
         // ECO tip display / ECO Tipp Anzeige
 
 #define I3_PID_KOM_VERBRAEUCHE_SKALIERUNG_X                          0xD1D5
-        // Consumption scaling x / VerbrÃ¤uche Skalierung x
+        // Consumption scaling x / Verbräuche Skalierung x
 
     #define I3_RES_KOM_STAT_DURCHSCHNITTSWERT_8_SKAL_X_WERT          (RXBUF_UINT(0)/10.0f)
     #define I3_RES_KOM_STAT_DURCHSCHNITTSWERT_8_SKAL_X_WERT_UNIT     'l/100km'
@@ -1527,7 +1526,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG1_SKAL_X_WERT                 (RXBUF_UCHAR(7))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG1_SKAL_X_WERT_TYPE            unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG1_SKAL_X_WERT                  (RXBUF_UCHAR(8))
     #define I3_RES_KOM_STAT_FDS_FU_SEG1_SKAL_X_WERT_UNIT             'HEX'
@@ -1537,7 +1536,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG2_SKAL_X_WERT               (RXBUF_UINT(9))
@@ -1552,7 +1551,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG2_SKAL_X_WERT                 (RXBUF_UCHAR(12))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG2_SKAL_X_WERT_TYPE            unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG2_SKAL_X_WERT                  (RXBUF_UCHAR(13))
     #define I3_RES_KOM_STAT_FDS_FU_SEG2_SKAL_X_WERT_UNIT             'HEX'
@@ -1562,7 +1561,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG3_SKAL_X_WERT               (RXBUF_UINT(14))
@@ -1577,7 +1576,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG3_SKAL_X_WERT                 (RXBUF_UCHAR(17))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG3_SKAL_X_WERT_TYPE            unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG3_SKAL_X_WERT                  (RXBUF_UCHAR(18))
     #define I3_RES_KOM_STAT_FDS_FU_SEG3_SKAL_X_WERT_UNIT             'HEX'
@@ -1587,7 +1586,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG4_SKAL_X_WERT               (RXBUF_UINT(19))
@@ -1602,7 +1601,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG4_SKAL_X_WERT                 (RXBUF_UCHAR(22))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG4_SKAL_X_WERT_TYPE            unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG4_SKAL_X_WERT                  (RXBUF_UCHAR(23))
     #define I3_RES_KOM_STAT_FDS_FU_SEG4_SKAL_X_WERT_UNIT             'HEX'
@@ -1612,7 +1611,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG5_SKAL_X_WERT               (RXBUF_UINT(24))
@@ -1627,7 +1626,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG5_SKAL_X_WERT                 (RXBUF_UCHAR(27))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG5_SKAL_X_WERT_TYPE            unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG5_SKAL_X_WERT                  (RXBUF_UCHAR(28))
     #define I3_RES_KOM_STAT_FDS_FU_SEG5_SKAL_X_WERT_UNIT             'HEX'
@@ -1637,7 +1636,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG6_SKAL_X_WERT               (RXBUF_UINT(29))
@@ -1652,7 +1651,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG6_SKAL_X_WERT                 (RXBUF_UCHAR(32))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG6_SKAL_X_WERT_TYPE            unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG6_SKAL_X_WERT                  (RXBUF_UCHAR(33))
     #define I3_RES_KOM_STAT_FDS_FU_SEG6_SKAL_X_WERT_UNIT             'HEX'
@@ -1662,7 +1661,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG7_SKAL_X_WERT               (RXBUF_UINT(34))
@@ -1677,7 +1676,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG7_SKAL_X_WERT                 (RXBUF_UCHAR(37))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG7_SKAL_X_WERT_TYPE            unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG7_SKAL_X_WERT                  (RXBUF_UCHAR(38))
     #define I3_RES_KOM_STAT_FDS_FU_SEG7_SKAL_X_WERT_UNIT             'HEX'
@@ -1687,7 +1686,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG8_SKAL_X_WERT               (RXBUF_UINT(39))
@@ -1702,7 +1701,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG8_SKAL_X_WERT                 (RXBUF_UCHAR(42))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG8_SKAL_X_WERT_TYPE            unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG8_SKAL_X_WERT                  (RXBUF_UCHAR(43))
     #define I3_RES_KOM_STAT_FDS_FU_SEG8_SKAL_X_WERT_UNIT             'HEX'
@@ -1712,7 +1711,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG9_SKAL_X_WERT               (RXBUF_UINT(44))
@@ -1727,7 +1726,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG9_SKAL_X_WERT                 (RXBUF_UCHAR(47))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG9_SKAL_X_WERT_TYPE            unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG9_SKAL_X_WERT                  (RXBUF_UCHAR(48))
     #define I3_RES_KOM_STAT_FDS_FU_SEG9_SKAL_X_WERT_UNIT             'HEX'
@@ -1737,7 +1736,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG10_SKAL_X_WERT              (RXBUF_UINT(49))
@@ -1752,7 +1751,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG10_SKAL_X_WERT                (RXBUF_UCHAR(52))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG10_SKAL_X_WERT_TYPE           unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG10_SKAL_X_WERT                 (RXBUF_UCHAR(53))
     #define I3_RES_KOM_STAT_FDS_FU_SEG10_SKAL_X_WERT_UNIT            'HEX'
@@ -1762,7 +1761,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG11_SKAL_X_WERT              (RXBUF_UINT(54))
@@ -1777,7 +1776,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG11_SKAL_X_WERT                (RXBUF_UCHAR(57))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG11_SKAL_X_WERT_TYPE           unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG11_SKAL_X_WERT                 (RXBUF_UCHAR(58))
     #define I3_RES_KOM_STAT_FDS_FU_SEG11_SKAL_X_WERT_UNIT            'HEX'
@@ -1787,7 +1786,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG12_SKAL_X_WERT              (RXBUF_UINT(59))
@@ -1802,7 +1801,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG12_SKAL_X_WERT                (RXBUF_UCHAR(62))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG12_SKAL_X_WERT_TYPE           unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG12_SKAL_X_WERT                 (RXBUF_UCHAR(63))
     #define I3_RES_KOM_STAT_FDS_FU_SEG12_SKAL_X_WERT_UNIT            'HEX'
@@ -1812,7 +1811,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG13_SKAL_X_WERT              (RXBUF_UINT(64))
@@ -1827,7 +1826,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG13_SKAL_X_WERT                (RXBUF_UCHAR(67))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG13_SKAL_X_WERT_TYPE           unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG13_SKAL_X_WERT                 (RXBUF_UCHAR(68))
     #define I3_RES_KOM_STAT_FDS_FU_SEG13_SKAL_X_WERT_UNIT            'HEX'
@@ -1837,7 +1836,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG14_SKAL_X_WERT              (RXBUF_UINT(69))
@@ -1852,7 +1851,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG14_SKAL_X_WERT                (RXBUF_UCHAR(72))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG14_SKAL_X_WERT_TYPE           unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG14_SKAL_X_WERT                 (RXBUF_UCHAR(73))
     #define I3_RES_KOM_STAT_FDS_FU_SEG14_SKAL_X_WERT_UNIT            'HEX'
@@ -1862,7 +1861,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG15_SKAL_X_WERT              (RXBUF_UINT(74))
@@ -1877,7 +1876,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG15_SKAL_X_WERT                (RXBUF_UCHAR(77))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG15_SKAL_X_WERT_TYPE           unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG15_SKAL_X_WERT                 (RXBUF_UCHAR(78))
     #define I3_RES_KOM_STAT_FDS_FU_SEG15_SKAL_X_WERT_UNIT            'HEX'
@@ -1887,7 +1886,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG16_SKAL_X_WERT              (RXBUF_UINT(79))
@@ -1902,7 +1901,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG16_SKAL_X_WERT                (RXBUF_UCHAR(82))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG16_SKAL_X_WERT_TYPE           unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG16_SKAL_X_WERT                 (RXBUF_UCHAR(83))
     #define I3_RES_KOM_STAT_FDS_FU_SEG16_SKAL_X_WERT_UNIT            'HEX'
@@ -1912,11 +1911,11 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
 #define I3_PID_KOM_VERBRAEUCHE_SKALIERUNG_Y                          0xD1D6
-        // Consumption scaling y / VerbrÃ¤uche Skalierung y
+        // Consumption scaling y / Verbräuche Skalierung y
 
     #define I3_RES_KOM_STAT_DURCHSCHNITTSWERT_8_SKAL_Y_WERT          (RXBUF_UINT(0)/10.0f)
     #define I3_RES_KOM_STAT_DURCHSCHNITTSWERT_8_SKAL_Y_WERT_UNIT     'l/100km'
@@ -1940,7 +1939,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG1_SKAL_Y_WERT                 (RXBUF_UCHAR(7))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG1_SKAL_Y_WERT_TYPE            unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG1_SKAL_Y_WERT                  (RXBUF_UCHAR(8))
     #define I3_RES_KOM_STAT_FDS_FU_SEG1_SKAL_Y_WERT_UNIT             'HEX'
@@ -1950,7 +1949,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG2_SKAL_Y_WERT               (RXBUF_UINT(9))
@@ -1965,7 +1964,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG2_SKAL_Y_WERT                 (RXBUF_UCHAR(12))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG2_SKAL_Y_WERT_TYPE            unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG2_SKAL_Y_WERT                  (RXBUF_UCHAR(13))
     #define I3_RES_KOM_STAT_FDS_FU_SEG2_SKAL_Y_WERT_UNIT             'HEX'
@@ -1975,7 +1974,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG3_SKAL_Y_WERT               (RXBUF_UINT(14))
@@ -1990,7 +1989,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG3_SKAL_Y_WERT                 (RXBUF_UCHAR(17))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG3_SKAL_Y_WERT_TYPE            unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG3_SKAL_Y_WERT                  (RXBUF_UCHAR(18))
     #define I3_RES_KOM_STAT_FDS_FU_SEG3_SKAL_Y_WERT_UNIT             'HEX'
@@ -2000,7 +1999,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG4_SKAL_Y_WERT               (RXBUF_UINT(19))
@@ -2015,7 +2014,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG4_SKAL_Y_WERT                 (RXBUF_UCHAR(22))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG4_SKAL_Y_WERT_TYPE            unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG4_SKAL_Y_WERT                  (RXBUF_UCHAR(23))
     #define I3_RES_KOM_STAT_FDS_FU_SEG4_SKAL_Y_WERT_UNIT             'HEX'
@@ -2025,7 +2024,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG5_SKAL_Y_WERT               (RXBUF_UINT(24))
@@ -2040,7 +2039,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG5_SKAL_Y_WERT                 (RXBUF_UCHAR(27))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG5_SKAL_Y_WERT_TYPE            unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG5_SKAL_Y_WERT                  (RXBUF_UCHAR(28))
     #define I3_RES_KOM_STAT_FDS_FU_SEG5_SKAL_Y_WERT_UNIT             'HEX'
@@ -2050,7 +2049,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG6_SKAL_Y_WERT               (RXBUF_UINT(29))
@@ -2065,7 +2064,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG6_SKAL_Y_WERT                 (RXBUF_UCHAR(32))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG6_SKAL_Y_WERT_TYPE            unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG6_SKAL_Y_WERT                  (RXBUF_UCHAR(33))
     #define I3_RES_KOM_STAT_FDS_FU_SEG6_SKAL_Y_WERT_UNIT             'HEX'
@@ -2075,7 +2074,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG7_SKAL_Y_WERT               (RXBUF_UINT(34))
@@ -2090,7 +2089,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG7_SKAL_Y_WERT                 (RXBUF_UCHAR(37))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG7_SKAL_Y_WERT_TYPE            unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG7_SKAL_Y_WERT                  (RXBUF_UCHAR(38))
     #define I3_RES_KOM_STAT_FDS_FU_SEG7_SKAL_Y_WERT_UNIT             'HEX'
@@ -2100,7 +2099,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG8_SKAL_Y_WERT               (RXBUF_UINT(39))
@@ -2115,7 +2114,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG8_SKAL_Y_WERT                 (RXBUF_UCHAR(42))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG8_SKAL_Y_WERT_TYPE            unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG8_SKAL_Y_WERT                  (RXBUF_UCHAR(43))
     #define I3_RES_KOM_STAT_FDS_FU_SEG8_SKAL_Y_WERT_UNIT             'HEX'
@@ -2125,7 +2124,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG9_SKAL_Y_WERT               (RXBUF_UINT(44))
@@ -2140,7 +2139,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG9_SKAL_Y_WERT                 (RXBUF_UCHAR(47))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG9_SKAL_Y_WERT_TYPE            unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG9_SKAL_Y_WERT                  (RXBUF_UCHAR(48))
     #define I3_RES_KOM_STAT_FDS_FU_SEG9_SKAL_Y_WERT_UNIT             'HEX'
@@ -2150,7 +2149,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG10_SKAL_Y_WERT              (RXBUF_UINT(49))
@@ -2165,7 +2164,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG10_SKAL_Y_WERT                (RXBUF_UCHAR(52))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG10_SKAL_Y_WERT_TYPE           unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG10_SKAL_Y_WERT                 (RXBUF_UCHAR(53))
     #define I3_RES_KOM_STAT_FDS_FU_SEG10_SKAL_Y_WERT_UNIT            'HEX'
@@ -2175,7 +2174,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG11_SKAL_Y_WERT              (RXBUF_UINT(54))
@@ -2190,7 +2189,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG11_SKAL_Y_WERT                (RXBUF_UCHAR(57))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG11_SKAL_Y_WERT_TYPE           unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG11_SKAL_Y_WERT                 (RXBUF_UCHAR(58))
     #define I3_RES_KOM_STAT_FDS_FU_SEG11_SKAL_Y_WERT_UNIT            'HEX'
@@ -2200,7 +2199,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG12_SKAL_Y_WERT              (RXBUF_UINT(59))
@@ -2215,7 +2214,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG12_SKAL_Y_WERT                (RXBUF_UCHAR(62))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG12_SKAL_Y_WERT_TYPE           unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG12_SKAL_Y_WERT                 (RXBUF_UCHAR(63))
     #define I3_RES_KOM_STAT_FDS_FU_SEG12_SKAL_Y_WERT_UNIT            'HEX'
@@ -2225,7 +2224,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG13_SKAL_Y_WERT              (RXBUF_UINT(64))
@@ -2240,7 +2239,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG13_SKAL_Y_WERT                (RXBUF_UCHAR(67))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG13_SKAL_Y_WERT_TYPE           unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG13_SKAL_Y_WERT                 (RXBUF_UCHAR(68))
     #define I3_RES_KOM_STAT_FDS_FU_SEG13_SKAL_Y_WERT_UNIT            'HEX'
@@ -2250,7 +2249,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG14_SKAL_Y_WERT              (RXBUF_UINT(69))
@@ -2265,7 +2264,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG14_SKAL_Y_WERT                (RXBUF_UCHAR(72))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG14_SKAL_Y_WERT_TYPE           unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG14_SKAL_Y_WERT                 (RXBUF_UCHAR(73))
     #define I3_RES_KOM_STAT_FDS_FU_SEG14_SKAL_Y_WERT_UNIT            'HEX'
@@ -2275,7 +2274,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG15_SKAL_Y_WERT              (RXBUF_UINT(74))
@@ -2290,7 +2289,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG15_SKAL_Y_WERT                (RXBUF_UCHAR(77))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG15_SKAL_Y_WERT_TYPE           unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG15_SKAL_Y_WERT                 (RXBUF_UCHAR(78))
     #define I3_RES_KOM_STAT_FDS_FU_SEG15_SKAL_Y_WERT_UNIT            'HEX'
@@ -2300,7 +2299,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG16_SKAL_Y_WERT              (RXBUF_UINT(79))
@@ -2315,7 +2314,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG16_SKAL_Y_WERT                (RXBUF_UCHAR(82))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG16_SKAL_Y_WERT_TYPE           unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG16_SKAL_Y_WERT                 (RXBUF_UCHAR(83))
     #define I3_RES_KOM_STAT_FDS_FU_SEG16_SKAL_Y_WERT_UNIT            'HEX'
@@ -2325,11 +2324,11 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
 #define I3_PID_KOM_VERBRAEUCHE_SKALIERUNG_Z                          0xD1D7
-        // Consumption scaling e.g. / VerbrÃ¤uche Skalierung z
+        // Consumption scaling e.g. / Verbräuche Skalierung z
 
     #define I3_RES_KOM_STAT_DURCHSCHNITTSWERT_8_SKAL_Z_WERT          (RXBUF_UINT(0)/10.0f)
     #define I3_RES_KOM_STAT_DURCHSCHNITTSWERT_8_SKAL_Z_WERT_UNIT     'l/100km'
@@ -2353,7 +2352,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG1_SKAL_Z_WERT                 (RXBUF_UCHAR(7))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG1_SKAL_Z_WERT_TYPE            unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG1_SKAL_Z_WERT                  (RXBUF_UCHAR(8))
     #define I3_RES_KOM_STAT_FDS_FU_SEG1_SKAL_Z_WERT_UNIT             'HEX'
@@ -2363,7 +2362,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG2_SKAL_Z_WERT               (RXBUF_UINT(9))
@@ -2378,7 +2377,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG2_SKAL_Z_WERT                 (RXBUF_UCHAR(12))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG2_SKAL_Z_WERT_TYPE            unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG2_SKAL_Z_WERT                  (RXBUF_UCHAR(13))
     #define I3_RES_KOM_STAT_FDS_FU_SEG2_SKAL_Z_WERT_UNIT             'HEX'
@@ -2388,7 +2387,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG3_SKAL_Z_WERT               (RXBUF_UINT(14))
@@ -2403,7 +2402,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG3_SKAL_Z_WERT                 (RXBUF_UCHAR(17))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG3_SKAL_Z_WERT_TYPE            unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG3_SKAL_Z_WERT                  (RXBUF_UCHAR(18))
     #define I3_RES_KOM_STAT_FDS_FU_SEG3_SKAL_Z_WERT_UNIT             'HEX'
@@ -2413,7 +2412,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG4_SKAL_Z_WERT               (RXBUF_UINT(19))
@@ -2428,7 +2427,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG4_SKAL_Z_WERT                 (RXBUF_UCHAR(22))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG4_SKAL_Z_WERT_TYPE            unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG4_SKAL_Z_WERT                  (RXBUF_UCHAR(23))
     #define I3_RES_KOM_STAT_FDS_FU_SEG4_SKAL_Z_WERT_UNIT             'HEX'
@@ -2438,7 +2437,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG5_SKAL_Z_WERT               (RXBUF_UINT(24))
@@ -2453,7 +2452,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG5_SKAL_Z_WERT                 (RXBUF_UCHAR(27))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG5_SKAL_Z_WERT_TYPE            unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG5_SKAL_Z_WERT                  (RXBUF_UCHAR(28))
     #define I3_RES_KOM_STAT_FDS_FU_SEG5_SKAL_Z_WERT_UNIT             'HEX'
@@ -2463,7 +2462,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG6_SKAL_Z_WERT               (RXBUF_UINT(29))
@@ -2478,7 +2477,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG6_SKAL_Z_WERT                 (RXBUF_UCHAR(32))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG6_SKAL_Z_WERT_TYPE            unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG6_SKAL_Z_WERT                  (RXBUF_UCHAR(33))
     #define I3_RES_KOM_STAT_FDS_FU_SEG6_SKAL_Z_WERT_UNIT             'HEX'
@@ -2488,7 +2487,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG7_SKAL_Z_WERT               (RXBUF_UINT(34))
@@ -2503,7 +2502,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG7_SKAL_Z_WERT                 (RXBUF_UCHAR(37))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG7_SKAL_Z_WERT_TYPE            unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG7_SKAL_Z_WERT                  (RXBUF_UCHAR(38))
     #define I3_RES_KOM_STAT_FDS_FU_SEG7_SKAL_Z_WERT_UNIT             'HEX'
@@ -2513,7 +2512,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG8_SKAL_Z_WERT               (RXBUF_UINT(39))
@@ -2528,7 +2527,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG8_SKAL_Z_WERT                 (RXBUF_UCHAR(42))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG8_SKAL_Z_WERT_TYPE            unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG8_SKAL_Z_WERT                  (RXBUF_UCHAR(43))
     #define I3_RES_KOM_STAT_FDS_FU_SEG8_SKAL_Z_WERT_UNIT             'HEX'
@@ -2538,7 +2537,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG9_SKAL_Z_WERT               (RXBUF_UINT(44))
@@ -2553,7 +2552,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG9_SKAL_Z_WERT                 (RXBUF_UCHAR(47))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG9_SKAL_Z_WERT_TYPE            unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG9_SKAL_Z_WERT                  (RXBUF_UCHAR(48))
     #define I3_RES_KOM_STAT_FDS_FU_SEG9_SKAL_Z_WERT_UNIT             'HEX'
@@ -2563,7 +2562,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG10_SKAL_Z_WERT              (RXBUF_UINT(49))
@@ -2578,7 +2577,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG10_SKAL_Z_WERT                (RXBUF_UCHAR(52))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG10_SKAL_Z_WERT_TYPE           unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG10_SKAL_Z_WERT                 (RXBUF_UCHAR(53))
     #define I3_RES_KOM_STAT_FDS_FU_SEG10_SKAL_Z_WERT_UNIT            'HEX'
@@ -2588,7 +2587,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG11_SKAL_Z_WERT              (RXBUF_UINT(54))
@@ -2603,7 +2602,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG11_SKAL_Z_WERT                (RXBUF_UCHAR(57))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG11_SKAL_Z_WERT_TYPE           unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG11_SKAL_Z_WERT                 (RXBUF_UCHAR(58))
     #define I3_RES_KOM_STAT_FDS_FU_SEG11_SKAL_Z_WERT_UNIT            'HEX'
@@ -2613,7 +2612,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG12_SKAL_Z_WERT              (RXBUF_UINT(59))
@@ -2628,7 +2627,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG12_SKAL_Z_WERT                (RXBUF_UCHAR(62))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG12_SKAL_Z_WERT_TYPE           unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG12_SKAL_Z_WERT                 (RXBUF_UCHAR(63))
     #define I3_RES_KOM_STAT_FDS_FU_SEG12_SKAL_Z_WERT_UNIT            'HEX'
@@ -2638,7 +2637,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG13_SKAL_Z_WERT              (RXBUF_UINT(64))
@@ -2653,7 +2652,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG13_SKAL_Z_WERT                (RXBUF_UCHAR(67))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG13_SKAL_Z_WERT_TYPE           unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG13_SKAL_Z_WERT                 (RXBUF_UCHAR(68))
     #define I3_RES_KOM_STAT_FDS_FU_SEG13_SKAL_Z_WERT_UNIT            'HEX'
@@ -2663,7 +2662,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG14_SKAL_Z_WERT              (RXBUF_UINT(69))
@@ -2678,7 +2677,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG14_SKAL_Z_WERT                (RXBUF_UCHAR(72))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG14_SKAL_Z_WERT_TYPE           unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG14_SKAL_Z_WERT                 (RXBUF_UCHAR(73))
     #define I3_RES_KOM_STAT_FDS_FU_SEG14_SKAL_Z_WERT_UNIT            'HEX'
@@ -2688,7 +2687,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG15_SKAL_Z_WERT              (RXBUF_UINT(74))
@@ -2703,7 +2702,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG15_SKAL_Z_WERT                (RXBUF_UCHAR(77))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG15_SKAL_Z_WERT_TYPE           unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG15_SKAL_Z_WERT                 (RXBUF_UCHAR(78))
     #define I3_RES_KOM_STAT_FDS_FU_SEG15_SKAL_Z_WERT_UNIT            'HEX'
@@ -2713,7 +2712,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG16_SKAL_Z_WERT              (RXBUF_UINT(79))
@@ -2728,7 +2727,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG16_SKAL_Z_WERT                (RXBUF_UCHAR(82))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG16_SKAL_Z_WERT_TYPE           unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG16_SKAL_Z_WERT                 (RXBUF_UCHAR(83))
     #define I3_RES_KOM_STAT_FDS_FU_SEG16_SKAL_Z_WERT_UNIT            'HEX'
@@ -2738,11 +2737,11 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
 #define I3_PID_KOM_VERBRAEUCHE_SKALIERUNG_A                          0xD1D8
-        // Consumption scaling a / VerbrÃ¤uche Skalierung a
+        // Consumption scaling a / Verbräuche Skalierung a
 
     #define I3_RES_KOM_STAT_DURCHSCHNITTSWERT_8_SKAL_A_WERT          (RXBUF_UINT(0)/10.0f)
     #define I3_RES_KOM_STAT_DURCHSCHNITTSWERT_8_SKAL_A_WERT_UNIT     'l/100km'
@@ -2766,7 +2765,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG1_SKAL_A_WERT                 (RXBUF_UCHAR(7))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG1_SKAL_A_WERT_TYPE            unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG1_SKAL_A_WERT                  (RXBUF_UCHAR(8))
     #define I3_RES_KOM_STAT_FDS_FU_SEG1_SKAL_A_WERT_UNIT             'HEX'
@@ -2776,7 +2775,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG2_SKAL_A_WERT               (RXBUF_UINT(9))
@@ -2791,7 +2790,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG2_SKAL_A_WERT                 (RXBUF_UCHAR(12))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG2_SKAL_A_WERT_TYPE            unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG2_SKAL_A_WERT                  (RXBUF_UCHAR(13))
     #define I3_RES_KOM_STAT_FDS_FU_SEG2_SKAL_A_WERT_UNIT             'HEX'
@@ -2801,7 +2800,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG3_SKAL_A_WERT               (RXBUF_UINT(14))
@@ -2816,7 +2815,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG3_SKAL_A_WERT                 (RXBUF_UCHAR(17))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG3_SKAL_A_WERT_TYPE            unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG3_SKAL_A_WERT                  (RXBUF_UCHAR(18))
     #define I3_RES_KOM_STAT_FDS_FU_SEG3_SKAL_A_WERT_UNIT             'HEX'
@@ -2826,7 +2825,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG4_SKAL_A_WERT               (RXBUF_UINT(19))
@@ -2841,7 +2840,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG4_SKAL_A_WERT                 (RXBUF_UCHAR(22))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG4_SKAL_A_WERT_TYPE            unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG4_SKAL_A_WERT                  (RXBUF_UCHAR(23))
     #define I3_RES_KOM_STAT_FDS_FU_SEG4_SKAL_A_WERT_UNIT             'HEX'
@@ -2851,7 +2850,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG5_SKAL_A_WERT               (RXBUF_UINT(24))
@@ -2866,7 +2865,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG5_SKAL_A_WERT                 (RXBUF_UCHAR(27))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG5_SKAL_A_WERT_TYPE            unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG5_SKAL_A_WERT                  (RXBUF_UCHAR(28))
     #define I3_RES_KOM_STAT_FDS_FU_SEG5_SKAL_A_WERT_UNIT             'HEX'
@@ -2876,7 +2875,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG6_SKAL_A_WERT               (RXBUF_UINT(29))
@@ -2891,7 +2890,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG6_SKAL_A_WERT                 (RXBUF_UCHAR(32))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG6_SKAL_A_WERT_TYPE            unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG6_SKAL_A_WERT                  (RXBUF_UCHAR(33))
     #define I3_RES_KOM_STAT_FDS_FU_SEG6_SKAL_A_WERT_UNIT             'HEX'
@@ -2901,7 +2900,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG7_SKAL_A_WERT               (RXBUF_UINT(34))
@@ -2916,7 +2915,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG7_SKAL_A_WERT                 (RXBUF_UCHAR(37))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG7_SKAL_A_WERT_TYPE            unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG7_SKAL_A_WERT                  (RXBUF_UCHAR(38))
     #define I3_RES_KOM_STAT_FDS_FU_SEG7_SKAL_A_WERT_UNIT             'HEX'
@@ -2926,7 +2925,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG8_SKAL_A_WERT               (RXBUF_UINT(39))
@@ -2941,7 +2940,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG8_SKAL_A_WERT                 (RXBUF_UCHAR(42))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG8_SKAL_A_WERT_TYPE            unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG8_SKAL_A_WERT                  (RXBUF_UCHAR(43))
     #define I3_RES_KOM_STAT_FDS_FU_SEG8_SKAL_A_WERT_UNIT             'HEX'
@@ -2951,7 +2950,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG9_SKAL_A_WERT               (RXBUF_UINT(44))
@@ -2966,7 +2965,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG9_SKAL_A_WERT                 (RXBUF_UCHAR(47))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG9_SKAL_A_WERT_TYPE            unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG9_SKAL_A_WERT                  (RXBUF_UCHAR(48))
     #define I3_RES_KOM_STAT_FDS_FU_SEG9_SKAL_A_WERT_UNIT             'HEX'
@@ -2976,7 +2975,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG10_SKAL_A_WERT              (RXBUF_UINT(49))
@@ -2991,7 +2990,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG10_SKAL_A_WERT                (RXBUF_UCHAR(52))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG10_SKAL_A_WERT_TYPE           unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG10_SKAL_A_WERT                 (RXBUF_UCHAR(53))
     #define I3_RES_KOM_STAT_FDS_FU_SEG10_SKAL_A_WERT_UNIT            'HEX'
@@ -3001,7 +3000,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG11_SKAL_A_WERT              (RXBUF_UINT(54))
@@ -3016,7 +3015,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG11_SKAL_A_WERT                (RXBUF_UCHAR(57))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG11_SKAL_A_WERT_TYPE           unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG11_SKAL_A_WERT                 (RXBUF_UCHAR(58))
     #define I3_RES_KOM_STAT_FDS_FU_SEG11_SKAL_A_WERT_UNIT            'HEX'
@@ -3026,7 +3025,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG12_SKAL_A_WERT              (RXBUF_UINT(59))
@@ -3041,7 +3040,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG12_SKAL_A_WERT                (RXBUF_UCHAR(62))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG12_SKAL_A_WERT_TYPE           unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG12_SKAL_A_WERT                 (RXBUF_UCHAR(63))
     #define I3_RES_KOM_STAT_FDS_FU_SEG12_SKAL_A_WERT_UNIT            'HEX'
@@ -3051,7 +3050,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG13_SKAL_A_WERT              (RXBUF_UINT(64))
@@ -3066,7 +3065,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG13_SKAL_A_WERT                (RXBUF_UCHAR(67))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG13_SKAL_A_WERT_TYPE           unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG13_SKAL_A_WERT                 (RXBUF_UCHAR(68))
     #define I3_RES_KOM_STAT_FDS_FU_SEG13_SKAL_A_WERT_UNIT            'HEX'
@@ -3076,7 +3075,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG14_SKAL_A_WERT              (RXBUF_UINT(69))
@@ -3091,7 +3090,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG14_SKAL_A_WERT                (RXBUF_UCHAR(72))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG14_SKAL_A_WERT_TYPE           unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG14_SKAL_A_WERT                 (RXBUF_UCHAR(73))
     #define I3_RES_KOM_STAT_FDS_FU_SEG14_SKAL_A_WERT_UNIT            'HEX'
@@ -3101,7 +3100,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG15_SKAL_A_WERT              (RXBUF_UINT(74))
@@ -3116,7 +3115,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG15_SKAL_A_WERT                (RXBUF_UCHAR(77))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG15_SKAL_A_WERT_TYPE           unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG15_SKAL_A_WERT                 (RXBUF_UCHAR(78))
     #define I3_RES_KOM_STAT_FDS_FU_SEG15_SKAL_A_WERT_UNIT            'HEX'
@@ -3126,7 +3125,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG16_SKAL_A_WERT              (RXBUF_UINT(79))
@@ -3141,7 +3140,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG16_SKAL_A_WERT                (RXBUF_UCHAR(82))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG16_SKAL_A_WERT_TYPE           unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG16_SKAL_A_WERT                 (RXBUF_UCHAR(83))
     #define I3_RES_KOM_STAT_FDS_FU_SEG16_SKAL_A_WERT_UNIT            'HEX'
@@ -3151,7 +3150,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
 #define I3_PID_KOM_VERBRAUCHSVORTEIL_HYBRID_AKT_SEGMENT              0xD1D9
@@ -3166,7 +3165,7 @@
     #define I3_RES_KOM_STAT_DURCHSCHNITT_HYBRID_RUECKGEW_AKT_SEGM_WERT (RXBUF_UCHAR(2))
     #define I3_RES_KOM_STAT_DURCHSCHNITT_HYBRID_RUECKGEW_AKT_SEGM_WERT_UNIT '%'
     #define I3_RES_KOM_STAT_DURCHSCHNITT_HYBRID_RUECKGEW_AKT_SEGM_WERT_TYPE unsigned char
-        // Average value hybrid recovery of the act. Segments / Durchschnittswert HybridrÃ¼ckgewinnung des akt. Segments
+        // Average value hybrid recovery of the act. Segments / Durchschnittswert Hybridrückgewinnung des akt. Segments
 
 #define I3_PID_KOM_KOMBI_HUD_AKTIVE_WARPLISTE                        0xDA00
         // Query which WARLIST is currently active. For status see table: TAB_WARPLISTE / Abfrage, welche WARPLISTE
@@ -3180,30 +3179,30 @@
 
 #define I3_PID_KOM_STATUS_HUD_BILDPOSITION_SCHRITTE                  0xDA0A
         // Job supplies the position of the stepper motor for the height adjustment / Job liefert die Position des
-        // Schrittmotors fÃ¼r die HÃ¶henverstellung
+        // Schrittmotors für die Höhenverstellung
 
     #define I3_RES_KOM_STAT_HUD_BILDPOSITION_SCHRITTE_WERT           (RXBUF_UINT(0))
     #define I3_RES_KOM_STAT_HUD_BILDPOSITION_SCHRITTE_WERT_UNIT      'Schritte'
     #define I3_RES_KOM_STAT_HUD_BILDPOSITION_SCHRITTE_WERT_TYPE      unsigned short
         // Job supplies the position of the stepper motor for the height adjustment / Job liefert die Position des
-        // Schrittmotors fÃ¼r die HÃ¶henverstellung
+        // Schrittmotors für die Höhenverstellung
 
 // Skipping STEUERN_HUD_HELLIGKEIT on 0xDA0C which takes arguments
 
 #define I3_PID_KOM_STATUS_HUD_BILDROTATION_SCHRITTE                  0xDA0F
         // Job supplies the position of the stepper motor for the image rotation / Job liefert die Position des
-        // Schrittmotors fÃ¼r die Bildrotation
+        // Schrittmotors für die Bildrotation
 
     #define I3_RES_KOM_STAT_HUD_BILDROTATION_SCHRITTE_WERT           (RXBUF_UINT(0))
     #define I3_RES_KOM_STAT_HUD_BILDROTATION_SCHRITTE_WERT_TYPE      unsigned short
         // Job supplies the position of the stepper motor for the image rotation / Job liefert die Position des
-        // Schrittmotors fÃ¼r die Bildrotation
+        // Schrittmotors für die Bildrotation
 
 #define I3_PID_KOM_HUD_PORTS_LESEN                                   0xDA43
         // read internal measured values / interne Messwerte lesen
 
     #define I3_RES_KOM_STAT_HUD_AD_TEMP_BL_WERT                      (RXBUF_UCHAR(0))
-    #define I3_RES_KOM_STAT_HUD_AD_TEMP_BL_WERT_UNIT                 'Â°C'
+    #define I3_RES_KOM_STAT_HUD_AD_TEMP_BL_WERT_UNIT                 '°C'
     #define I3_RES_KOM_STAT_HUD_AD_TEMP_BL_WERT_TYPE                 char
         // Temperature LED / Temperatur LED
 
@@ -3235,7 +3234,7 @@
     #define I3_RES_KOM_STAT_HUD_LED_DRV_OV_WERT                      (RXBUF_UCHAR(6))
     #define I3_RES_KOM_STAT_HUD_LED_DRV_OV_WERT_UNIT                 'V'
     #define I3_RES_KOM_STAT_HUD_LED_DRV_OV_WERT_TYPE                 unsigned char
-        // Overload / Ãberspannung
+        // Overload / Überspannung
 
     #define I3_RES_KOM_STAT_HUD_LED_DRV_FAULT_WERT                   (RXBUF_UCHAR(7))
     #define I3_RES_KOM_STAT_HUD_LED_DRV_FAULT_WERT_TYPE              unsigned char
@@ -3372,27 +3371,27 @@
         // Gained range (GRW) / Gewonnene Reichweite (GRW)
 
     #define I3_RES_KOM_STAT_GK_WERT_0X4200                           (RXBUF_UINT32(8)/10.0f)
-    #define I3_RES_KOM_STAT_GK_WERT_0X4200_UNIT                      'Âµl'
+    #define I3_RES_KOM_STAT_GK_WERT_0X4200_UNIT                      'µl'
     #define I3_RES_KOM_STAT_GK_WERT_0X4200_TYPE                      float
         // recovered fuel (GK) / gewonnener Kraftstoff (GK)
 
 #define I3_PID_KOM_VERBRAUCHSERHOEHUNG_ALPHA_0X4201                  0x4201
-        // Increase in consumption alpha / VerbrauchserhÃ¶hung alpha
+        // Increase in consumption alpha / Verbrauchserhöhung alpha
 
     #define I3_RES_KOM_STAT_AKKUM_ABS_VERBR_ERH_WERT_0X4201          (RXBUF_UINT32(0))
-    #define I3_RES_KOM_STAT_AKKUM_ABS_VERBR_ERH_WERT_0X4201_UNIT     'Âµl'
+    #define I3_RES_KOM_STAT_AKKUM_ABS_VERBR_ERH_WERT_0X4201_UNIT     'µl'
     #define I3_RES_KOM_STAT_AKKUM_ABS_VERBR_ERH_WERT_0X4201_TYPE     unsigned long
-        // accumulated absolute consumption increase / akkumulierte absolute VerbrauchserhÃ¶hung
+        // accumulated absolute consumption increase / akkumulierte absolute Verbrauchserhöhung
 
     #define I3_RES_KOM_STAT_VERBR_ERH_VERZOEGERUNG_WERT_0X4201       (RXBUF_UINT32(4))
-    #define I3_RES_KOM_STAT_VERBR_ERH_VERZOEGERUNG_WERT_0X4201_UNIT  'Âµl'
+    #define I3_RES_KOM_STAT_VERBR_ERH_VERZOEGERUNG_WERT_0X4201_UNIT  'µl'
     #define I3_RES_KOM_STAT_VERBR_ERH_VERZOEGERUNG_WERT_0X4201_TYPE  unsigned long
-        // Increase in consumption through delay / VerbrauchserhÃ¶hung durch VerzÃ¶gerung
+        // Increase in consumption through delay / Verbrauchserhöhung durch Verzögerung
 
     #define I3_RES_KOM_STAT_VERBR_ERH_MSA_WERT_0X4201                (RXBUF_UINT32(8))
-    #define I3_RES_KOM_STAT_VERBR_ERH_MSA_WERT_0X4201_UNIT           'Âµl'
+    #define I3_RES_KOM_STAT_VERBR_ERH_MSA_WERT_0X4201_UNIT           'µl'
     #define I3_RES_KOM_STAT_VERBR_ERH_MSA_WERT_0X4201_TYPE           unsigned long
-        // Increase in consumption through MSA / VerbrauchserhÃ¶hung durch MSA
+        // Increase in consumption through MSA / Verbrauchserhöhung durch MSA
 
     #define I3_RES_KOM_STAT_V_REF_WERT_0X4201                        (RXBUF_UINT(12)/10.0f)
     #define I3_RES_KOM_STAT_V_REF_WERT_0X4201_UNIT                   'km/h'
@@ -3410,39 +3409,39 @@
         // FWP act / FWP akt
 
     // STAT_BLS_VERZOEGERUNG_0X4201 is a BITFIELD of unknown size.  We don't have definitions for each bit, and we GUESSED it is one byte ***
-        // Status_BLS / delay / Status_BLS / VerzÃ¶gerung
+        // Status_BLS / delay / Status_BLS / Verzögerung
     #define I3_RES_KOM_STAT_BLS_VERZOEGERUNG_0X4201                  (RXBUF_UCHAR(18))
     #define I3_RES_KOM_STAT_BLS_VERZOEGERUNG_0X4201_UNIT             'Bit'
     #define I3_RES_KOM_STAT_BLS_VERZOEGERUNG_0X4201_TYPE             unsigned char
-        // Status_BLS / delay / Status_BLS / VerzÃ¶gerung
+        // Status_BLS / delay / Status_BLS / Verzögerung
 
 #define I3_PID_KOM_VERBRAUCHSERHOEHUNG_PI_0X4202                     0x4202
-        // PI consumption increase / VerbrauchserhÃ¶hung PI
+        // PI consumption increase / Verbrauchserhöhung PI
 
     #define I3_RES_KOM_STAT_PI_PROZ_VERBR_ERH_WERT_0X4202            (RXBUF_UINT(0)/100.0f)
     #define I3_RES_KOM_STAT_PI_PROZ_VERBR_ERH_WERT_0X4202_UNIT       '%'
     #define I3_RES_KOM_STAT_PI_PROZ_VERBR_ERH_WERT_0X4202_TYPE       float
-        // PI percentage increase in consumption / PI prozentuale VerbrauchserhÃ¶hung
+        // PI percentage increase in consumption / PI prozentuale Verbrauchserhöhung
 
     #define I3_RES_KOM_STAT_PI_VERBR_ERH_GW_WERT_0X4202              (RXBUF_UINT(2)/100.0f)
     #define I3_RES_KOM_STAT_PI_VERBR_ERH_GW_WERT_0X4202_UNIT         '%'
     #define I3_RES_KOM_STAT_PI_VERBR_ERH_GW_WERT_0X4202_TYPE         float
-        // PI increase in consumption through gear selection / PI VerbrauchserhÃ¶hung durch Gangwahl
+        // PI increase in consumption through gear selection / PI Verbrauchserhöhung durch Gangwahl
 
     #define I3_RES_KOM_STAT_PI_VERBR_ERH_GESCHW_WERT_0X4202          (RXBUF_UINT(4)/100.0f)
     #define I3_RES_KOM_STAT_PI_VERBR_ERH_GESCHW_WERT_0X4202_UNIT     '%'
     #define I3_RES_KOM_STAT_PI_VERBR_ERH_GESCHW_WERT_0X4202_TYPE     float
-        // PI increase in consumption through speed / PI VerbrauchserhÃ¶hung durch Geschwindigkeit
+        // PI increase in consumption through speed / PI Verbrauchserhöhung durch Geschwindigkeit
 
     #define I3_RES_KOM_STAT_PI_VERBR_ERH_BESCHL_WERT_0X4202          (RXBUF_UINT(6)/100.0f)
     #define I3_RES_KOM_STAT_PI_VERBR_ERH_BESCHL_WERT_0X4202_UNIT     '%'
     #define I3_RES_KOM_STAT_PI_VERBR_ERH_BESCHL_WERT_0X4202_TYPE     float
-        // PI increase in consumption through acceleration / PI VerbrauchserhÃ¶hung durch Beschleunigung
+        // PI increase in consumption through acceleration / PI Verbrauchserhöhung durch Beschleunigung
 
     #define I3_RES_KOM_STAT_PI_VERBR_ERH_KOMF_WERT_0X4202            (RXBUF_UINT(8)/100.0f)
     #define I3_RES_KOM_STAT_PI_VERBR_ERH_KOMF_WERT_0X4202_UNIT       '%'
     #define I3_RES_KOM_STAT_PI_VERBR_ERH_KOMF_WERT_0X4202_TYPE       float
-        // PI increase in consumption through convenience / PI VerbrauchserhÃ¶hung durch Komfort
+        // PI increase in consumption through convenience / PI Verbrauchserhöhung durch Komfort
 
 #define I3_PID_KOM_MEHRVERBRAUCH_MV_REF_0X4203                       0x4203
         // Additional consumption Mvref / Mehrverbrauch Mvref
@@ -3498,7 +3497,7 @@
         // ECO tip display / ECO Tipp Anzeige
 
 #define I3_PID_KOM_VERBRAEUCHE_SKALIERUNG_X_0X4205                   0x4205
-        // Consumption scaling x / VerbrÃ¤uche Skalierung x
+        // Consumption scaling x / Verbräuche Skalierung x
 
     #define I3_RES_KOM_STAT_DURCHSCHNITTSWERT_8_SKAL_X_WERT_0X4205   (RXBUF_UINT(0)/10.0f)
     #define I3_RES_KOM_STAT_DURCHSCHNITTSWERT_8_SKAL_X_WERT_0X4205_UNIT 'l/100km'
@@ -3522,7 +3521,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG1_SKAL_X_WERT_0X4205          (RXBUF_UCHAR(7))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG1_SKAL_X_WERT_0X4205_TYPE     unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG1_SKAL_X_WERT_0X4205           (RXBUF_UCHAR(8))
     #define I3_RES_KOM_STAT_FDS_FU_SEG1_SKAL_X_WERT_0X4205_UNIT      'HEX'
@@ -3532,7 +3531,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG2_SKAL_X_WERT_0X4205        (RXBUF_UINT(9))
@@ -3547,7 +3546,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG2_SKAL_X_WERT_0X4205          (RXBUF_UCHAR(12))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG2_SKAL_X_WERT_0X4205_TYPE     unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG2_SKAL_X_WERT_0X4205           (RXBUF_UCHAR(13))
     #define I3_RES_KOM_STAT_FDS_FU_SEG2_SKAL_X_WERT_0X4205_UNIT      'HEX'
@@ -3557,7 +3556,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG3_SKAL_X_WERT_0X4205        (RXBUF_UINT(14))
@@ -3572,7 +3571,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG3_SKAL_X_WERT_0X4205          (RXBUF_UCHAR(17))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG3_SKAL_X_WERT_0X4205_TYPE     unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG3_SKAL_X_WERT_0X4205           (RXBUF_UCHAR(18))
     #define I3_RES_KOM_STAT_FDS_FU_SEG3_SKAL_X_WERT_0X4205_UNIT      'HEX'
@@ -3582,7 +3581,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG4_SKAL_X_WERT_0X4205        (RXBUF_UINT(19))
@@ -3597,7 +3596,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG4_SKAL_X_WERT_0X4205          (RXBUF_UCHAR(22))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG4_SKAL_X_WERT_0X4205_TYPE     unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG4_SKAL_X_WERT_0X4205           (RXBUF_UCHAR(23))
     #define I3_RES_KOM_STAT_FDS_FU_SEG4_SKAL_X_WERT_0X4205_UNIT      'HEX'
@@ -3607,7 +3606,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG5_SKAL_X_WERT_0X4205        (RXBUF_UINT(24))
@@ -3622,7 +3621,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG5_SKAL_X_WERT_0X4205          (RXBUF_UCHAR(27))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG5_SKAL_X_WERT_0X4205_TYPE     unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG5_SKAL_X_WERT_0X4205           (RXBUF_UCHAR(28))
     #define I3_RES_KOM_STAT_FDS_FU_SEG5_SKAL_X_WERT_0X4205_UNIT      'HEX'
@@ -3632,7 +3631,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG6_SKAL_X_WERT_0X4205        (RXBUF_UINT(29))
@@ -3647,7 +3646,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG6_SKAL_X_WERT_0X4205          (RXBUF_UCHAR(32))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG6_SKAL_X_WERT_0X4205_TYPE     unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG6_SKAL_X_WERT_0X4205           (RXBUF_UCHAR(33))
     #define I3_RES_KOM_STAT_FDS_FU_SEG6_SKAL_X_WERT_0X4205_UNIT      'HEX'
@@ -3657,7 +3656,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG7_SKAL_X_WERT_0X4205        (RXBUF_UINT(34))
@@ -3672,7 +3671,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG7_SKAL_X_WERT_0X4205          (RXBUF_UCHAR(37))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG7_SKAL_X_WERT_0X4205_TYPE     unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG7_SKAL_X_WERT_0X4205           (RXBUF_UCHAR(38))
     #define I3_RES_KOM_STAT_FDS_FU_SEG7_SKAL_X_WERT_0X4205_UNIT      'HEX'
@@ -3682,7 +3681,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG8_SKAL_X_WERT_0X4205        (RXBUF_UINT(39))
@@ -3697,7 +3696,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG8_SKAL_X_WERT_0X4205          (RXBUF_UCHAR(42))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG8_SKAL_X_WERT_0X4205_TYPE     unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG8_SKAL_X_WERT_0X4205           (RXBUF_UCHAR(43))
     #define I3_RES_KOM_STAT_FDS_FU_SEG8_SKAL_X_WERT_0X4205_UNIT      'HEX'
@@ -3707,7 +3706,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG9_SKAL_X_WERT_0X4205        (RXBUF_UINT(44))
@@ -3722,7 +3721,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG9_SKAL_X_WERT_0X4205          (RXBUF_UCHAR(47))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG9_SKAL_X_WERT_0X4205_TYPE     unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG9_SKAL_X_WERT_0X4205           (RXBUF_UCHAR(48))
     #define I3_RES_KOM_STAT_FDS_FU_SEG9_SKAL_X_WERT_0X4205_UNIT      'HEX'
@@ -3732,7 +3731,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG10_SKAL_X_WERT_0X4205       (RXBUF_UINT(49))
@@ -3747,7 +3746,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG10_SKAL_X_WERT_0X4205         (RXBUF_UCHAR(52))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG10_SKAL_X_WERT_0X4205_TYPE    unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG10_SKAL_X_WERT_0X4205          (RXBUF_UCHAR(53))
     #define I3_RES_KOM_STAT_FDS_FU_SEG10_SKAL_X_WERT_0X4205_UNIT     'HEX'
@@ -3757,7 +3756,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG11_SKAL_X_WERT_0X4205       (RXBUF_UINT(54))
@@ -3772,7 +3771,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG11_SKAL_X_WERT_0X4205         (RXBUF_UCHAR(57))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG11_SKAL_X_WERT_0X4205_TYPE    unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG11_SKAL_X_WERT_0X4205          (RXBUF_UCHAR(58))
     #define I3_RES_KOM_STAT_FDS_FU_SEG11_SKAL_X_WERT_0X4205_UNIT     'HEX'
@@ -3782,7 +3781,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG12_SKAL_X_WERT_0X4205       (RXBUF_UINT(59))
@@ -3797,7 +3796,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG12_SKAL_X_WERT_0X4205         (RXBUF_UCHAR(62))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG12_SKAL_X_WERT_0X4205_TYPE    unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG12_SKAL_X_WERT_0X4205          (RXBUF_UCHAR(63))
     #define I3_RES_KOM_STAT_FDS_FU_SEG12_SKAL_X_WERT_0X4205_UNIT     'HEX'
@@ -3807,7 +3806,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG13_SKAL_X_WERT_0X4205       (RXBUF_UINT(64))
@@ -3822,7 +3821,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG13_SKAL_X_WERT_0X4205         (RXBUF_UCHAR(67))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG13_SKAL_X_WERT_0X4205_TYPE    unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG13_SKAL_X_WERT_0X4205          (RXBUF_UCHAR(68))
     #define I3_RES_KOM_STAT_FDS_FU_SEG13_SKAL_X_WERT_0X4205_UNIT     'HEX'
@@ -3832,7 +3831,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG14_SKAL_X_WERT_0X4205       (RXBUF_UINT(69))
@@ -3847,7 +3846,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG14_SKAL_X_WERT_0X4205         (RXBUF_UCHAR(72))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG14_SKAL_X_WERT_0X4205_TYPE    unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG14_SKAL_X_WERT_0X4205          (RXBUF_UCHAR(73))
     #define I3_RES_KOM_STAT_FDS_FU_SEG14_SKAL_X_WERT_0X4205_UNIT     'HEX'
@@ -3857,7 +3856,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG15_SKAL_X_WERT_0X4205       (RXBUF_UINT(74))
@@ -3872,7 +3871,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG15_SKAL_X_WERT_0X4205         (RXBUF_UCHAR(77))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG15_SKAL_X_WERT_0X4205_TYPE    unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG15_SKAL_X_WERT_0X4205          (RXBUF_UCHAR(78))
     #define I3_RES_KOM_STAT_FDS_FU_SEG15_SKAL_X_WERT_0X4205_UNIT     'HEX'
@@ -3882,7 +3881,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG16_SKAL_X_WERT_0X4205       (RXBUF_UINT(79))
@@ -3897,7 +3896,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG16_SKAL_X_WERT_0X4205         (RXBUF_UCHAR(82))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG16_SKAL_X_WERT_0X4205_TYPE    unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG16_SKAL_X_WERT_0X4205          (RXBUF_UCHAR(83))
     #define I3_RES_KOM_STAT_FDS_FU_SEG16_SKAL_X_WERT_0X4205_UNIT     'HEX'
@@ -3907,11 +3906,11 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
 #define I3_PID_KOM_VERBRAEUCHE_SKALIERUNG_Y_0X4206                   0x4206
-        // Consumption scaling y / VerbrÃ¤uche Skalierung y
+        // Consumption scaling y / Verbräuche Skalierung y
 
     #define I3_RES_KOM_STAT_DURCHSCHNITTSWERT_8_SKAL_Y_WERT_0X4206   (RXBUF_UINT(0)/10.0f)
     #define I3_RES_KOM_STAT_DURCHSCHNITTSWERT_8_SKAL_Y_WERT_0X4206_UNIT 'l/100km'
@@ -3935,7 +3934,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG1_SKAL_Y_WERT_0X4206          (RXBUF_UCHAR(7))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG1_SKAL_Y_WERT_0X4206_TYPE     unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG1_SKAL_Y_WERT_0X4206           (RXBUF_UCHAR(8))
     #define I3_RES_KOM_STAT_FDS_FU_SEG1_SKAL_Y_WERT_0X4206_UNIT      'HEX'
@@ -3945,7 +3944,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG2_SKAL_Y_WERT_0X4206        (RXBUF_UINT(9))
@@ -3960,7 +3959,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG2_SKAL_Y_WERT_0X4206          (RXBUF_UCHAR(12))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG2_SKAL_Y_WERT_0X4206_TYPE     unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG2_SKAL_Y_WERT_0X4206           (RXBUF_UCHAR(13))
     #define I3_RES_KOM_STAT_FDS_FU_SEG2_SKAL_Y_WERT_0X4206_UNIT      'HEX'
@@ -3970,7 +3969,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG3_SKAL_Y_WERT_0X4206        (RXBUF_UINT(14))
@@ -3985,7 +3984,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG3_SKAL_Y_WERT_0X4206          (RXBUF_UCHAR(17))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG3_SKAL_Y_WERT_0X4206_TYPE     unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG3_SKAL_Y_WERT_0X4206           (RXBUF_UCHAR(18))
     #define I3_RES_KOM_STAT_FDS_FU_SEG3_SKAL_Y_WERT_0X4206_UNIT      'HEX'
@@ -3995,7 +3994,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG4_SKAL_Y_WERT_0X4206        (RXBUF_UINT(19))
@@ -4010,7 +4009,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG4_SKAL_Y_WERT_0X4206          (RXBUF_UCHAR(22))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG4_SKAL_Y_WERT_0X4206_TYPE     unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG4_SKAL_Y_WERT_0X4206           (RXBUF_UCHAR(23))
     #define I3_RES_KOM_STAT_FDS_FU_SEG4_SKAL_Y_WERT_0X4206_UNIT      'HEX'
@@ -4020,7 +4019,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG5_SKAL_Y_WERT_0X4206        (RXBUF_UINT(24))
@@ -4035,7 +4034,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG5_SKAL_Y_WERT_0X4206          (RXBUF_UCHAR(27))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG5_SKAL_Y_WERT_0X4206_TYPE     unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG5_SKAL_Y_WERT_0X4206           (RXBUF_UCHAR(28))
     #define I3_RES_KOM_STAT_FDS_FU_SEG5_SKAL_Y_WERT_0X4206_UNIT      'HEX'
@@ -4045,7 +4044,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG6_SKAL_Y_WERT_0X4206        (RXBUF_UINT(29))
@@ -4060,7 +4059,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG6_SKAL_Y_WERT_0X4206          (RXBUF_UCHAR(32))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG6_SKAL_Y_WERT_0X4206_TYPE     unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG6_SKAL_Y_WERT_0X4206           (RXBUF_UCHAR(33))
     #define I3_RES_KOM_STAT_FDS_FU_SEG6_SKAL_Y_WERT_0X4206_UNIT      'HEX'
@@ -4070,7 +4069,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG7_SKAL_Y_WERT_0X4206        (RXBUF_UINT(34))
@@ -4085,7 +4084,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG7_SKAL_Y_WERT_0X4206          (RXBUF_UCHAR(37))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG7_SKAL_Y_WERT_0X4206_TYPE     unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG7_SKAL_Y_WERT_0X4206           (RXBUF_UCHAR(38))
     #define I3_RES_KOM_STAT_FDS_FU_SEG7_SKAL_Y_WERT_0X4206_UNIT      'HEX'
@@ -4095,7 +4094,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG8_SKAL_Y_WERT_0X4206        (RXBUF_UINT(39))
@@ -4110,7 +4109,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG8_SKAL_Y_WERT_0X4206          (RXBUF_UCHAR(42))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG8_SKAL_Y_WERT_0X4206_TYPE     unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG8_SKAL_Y_WERT_0X4206           (RXBUF_UCHAR(43))
     #define I3_RES_KOM_STAT_FDS_FU_SEG8_SKAL_Y_WERT_0X4206_UNIT      'HEX'
@@ -4120,7 +4119,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG9_SKAL_Y_WERT_0X4206        (RXBUF_UINT(44))
@@ -4135,7 +4134,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG9_SKAL_Y_WERT_0X4206          (RXBUF_UCHAR(47))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG9_SKAL_Y_WERT_0X4206_TYPE     unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG9_SKAL_Y_WERT_0X4206           (RXBUF_UCHAR(48))
     #define I3_RES_KOM_STAT_FDS_FU_SEG9_SKAL_Y_WERT_0X4206_UNIT      'HEX'
@@ -4145,7 +4144,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG10_SKAL_Y_WERT_0X4206       (RXBUF_UINT(49))
@@ -4160,7 +4159,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG10_SKAL_Y_WERT_0X4206         (RXBUF_UCHAR(52))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG10_SKAL_Y_WERT_0X4206_TYPE    unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG10_SKAL_Y_WERT_0X4206          (RXBUF_UCHAR(53))
     #define I3_RES_KOM_STAT_FDS_FU_SEG10_SKAL_Y_WERT_0X4206_UNIT     'HEX'
@@ -4170,7 +4169,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG11_SKAL_Y_WERT_0X4206       (RXBUF_UINT(54))
@@ -4185,7 +4184,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG11_SKAL_Y_WERT_0X4206         (RXBUF_UCHAR(57))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG11_SKAL_Y_WERT_0X4206_TYPE    unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG11_SKAL_Y_WERT_0X4206          (RXBUF_UCHAR(58))
     #define I3_RES_KOM_STAT_FDS_FU_SEG11_SKAL_Y_WERT_0X4206_UNIT     'HEX'
@@ -4195,7 +4194,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG12_SKAL_Y_WERT_0X4206       (RXBUF_UINT(59))
@@ -4210,7 +4209,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG12_SKAL_Y_WERT_0X4206         (RXBUF_UCHAR(62))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG12_SKAL_Y_WERT_0X4206_TYPE    unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG12_SKAL_Y_WERT_0X4206          (RXBUF_UCHAR(63))
     #define I3_RES_KOM_STAT_FDS_FU_SEG12_SKAL_Y_WERT_0X4206_UNIT     'HEX'
@@ -4220,7 +4219,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG13_SKAL_Y_WERT_0X4206       (RXBUF_UINT(64))
@@ -4235,7 +4234,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG13_SKAL_Y_WERT_0X4206         (RXBUF_UCHAR(67))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG13_SKAL_Y_WERT_0X4206_TYPE    unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG13_SKAL_Y_WERT_0X4206          (RXBUF_UCHAR(68))
     #define I3_RES_KOM_STAT_FDS_FU_SEG13_SKAL_Y_WERT_0X4206_UNIT     'HEX'
@@ -4245,7 +4244,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG14_SKAL_Y_WERT_0X4206       (RXBUF_UINT(69))
@@ -4260,7 +4259,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG14_SKAL_Y_WERT_0X4206         (RXBUF_UCHAR(72))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG14_SKAL_Y_WERT_0X4206_TYPE    unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG14_SKAL_Y_WERT_0X4206          (RXBUF_UCHAR(73))
     #define I3_RES_KOM_STAT_FDS_FU_SEG14_SKAL_Y_WERT_0X4206_UNIT     'HEX'
@@ -4270,7 +4269,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG15_SKAL_Y_WERT_0X4206       (RXBUF_UINT(74))
@@ -4285,7 +4284,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG15_SKAL_Y_WERT_0X4206         (RXBUF_UCHAR(77))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG15_SKAL_Y_WERT_0X4206_TYPE    unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG15_SKAL_Y_WERT_0X4206          (RXBUF_UCHAR(78))
     #define I3_RES_KOM_STAT_FDS_FU_SEG15_SKAL_Y_WERT_0X4206_UNIT     'HEX'
@@ -4295,7 +4294,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG16_SKAL_Y_WERT_0X4206       (RXBUF_UINT(79))
@@ -4310,7 +4309,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG16_SKAL_Y_WERT_0X4206         (RXBUF_UCHAR(82))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG16_SKAL_Y_WERT_0X4206_TYPE    unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG16_SKAL_Y_WERT_0X4206          (RXBUF_UCHAR(83))
     #define I3_RES_KOM_STAT_FDS_FU_SEG16_SKAL_Y_WERT_0X4206_UNIT     'HEX'
@@ -4320,11 +4319,11 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
 #define I3_PID_KOM_VERBRAEUCHE_SKALIERUNG_Z_0X4207                   0x4207
-        // Consumption scaling e.g. / VerbrÃ¤uche Skalierung z
+        // Consumption scaling e.g. / Verbräuche Skalierung z
 
     #define I3_RES_KOM_STAT_DURCHSCHNITTSWERT_8_SKAL_Z_WERT_0X4207   (RXBUF_UINT(0)/10.0f)
     #define I3_RES_KOM_STAT_DURCHSCHNITTSWERT_8_SKAL_Z_WERT_0X4207_UNIT 'l/100km'
@@ -4348,7 +4347,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG1_SKAL_Z_WERT_0X4207          (RXBUF_UCHAR(7))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG1_SKAL_Z_WERT_0X4207_TYPE     unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG1_SKAL_Z_WERT_0X4207           (RXBUF_UCHAR(8))
     #define I3_RES_KOM_STAT_FDS_FU_SEG1_SKAL_Z_WERT_0X4207_UNIT      'HEX'
@@ -4358,7 +4357,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG2_SKAL_Z_WERT_0X4207        (RXBUF_UINT(9))
@@ -4373,7 +4372,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG2_SKAL_Z_WERT_0X4207          (RXBUF_UCHAR(12))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG2_SKAL_Z_WERT_0X4207_TYPE     unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG2_SKAL_Z_WERT_0X4207           (RXBUF_UCHAR(13))
     #define I3_RES_KOM_STAT_FDS_FU_SEG2_SKAL_Z_WERT_0X4207_UNIT      'HEX'
@@ -4383,7 +4382,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG3_SKAL_Z_WERT_0X4207        (RXBUF_UINT(14))
@@ -4398,7 +4397,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG3_SKAL_Z_WERT_0X4207          (RXBUF_UCHAR(17))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG3_SKAL_Z_WERT_0X4207_TYPE     unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG3_SKAL_Z_WERT_0X4207           (RXBUF_UCHAR(18))
     #define I3_RES_KOM_STAT_FDS_FU_SEG3_SKAL_Z_WERT_0X4207_UNIT      'HEX'
@@ -4408,7 +4407,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG4_SKAL_Z_WERT_0X4207        (RXBUF_UINT(19))
@@ -4423,7 +4422,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG4_SKAL_Z_WERT_0X4207          (RXBUF_UCHAR(22))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG4_SKAL_Z_WERT_0X4207_TYPE     unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG4_SKAL_Z_WERT_0X4207           (RXBUF_UCHAR(23))
     #define I3_RES_KOM_STAT_FDS_FU_SEG4_SKAL_Z_WERT_0X4207_UNIT      'HEX'
@@ -4433,7 +4432,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG5_SKAL_Z_WERT_0X4207        (RXBUF_UINT(24))
@@ -4448,7 +4447,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG5_SKAL_Z_WERT_0X4207          (RXBUF_UCHAR(27))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG5_SKAL_Z_WERT_0X4207_TYPE     unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG5_SKAL_Z_WERT_0X4207           (RXBUF_UCHAR(28))
     #define I3_RES_KOM_STAT_FDS_FU_SEG5_SKAL_Z_WERT_0X4207_UNIT      'HEX'
@@ -4458,7 +4457,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG6_SKAL_Z_WERT_0X4207        (RXBUF_UINT(29))
@@ -4473,7 +4472,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG6_SKAL_Z_WERT_0X4207          (RXBUF_UCHAR(32))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG6_SKAL_Z_WERT_0X4207_TYPE     unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG6_SKAL_Z_WERT_0X4207           (RXBUF_UCHAR(33))
     #define I3_RES_KOM_STAT_FDS_FU_SEG6_SKAL_Z_WERT_0X4207_UNIT      'HEX'
@@ -4483,7 +4482,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG7_SKAL_Z_WERT_0X4207        (RXBUF_UINT(34))
@@ -4498,7 +4497,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG7_SKAL_Z_WERT_0X4207          (RXBUF_UCHAR(37))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG7_SKAL_Z_WERT_0X4207_TYPE     unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG7_SKAL_Z_WERT_0X4207           (RXBUF_UCHAR(38))
     #define I3_RES_KOM_STAT_FDS_FU_SEG7_SKAL_Z_WERT_0X4207_UNIT      'HEX'
@@ -4508,7 +4507,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG8_SKAL_Z_WERT_0X4207        (RXBUF_UINT(39))
@@ -4523,7 +4522,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG8_SKAL_Z_WERT_0X4207          (RXBUF_UCHAR(42))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG8_SKAL_Z_WERT_0X4207_TYPE     unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG8_SKAL_Z_WERT_0X4207           (RXBUF_UCHAR(43))
     #define I3_RES_KOM_STAT_FDS_FU_SEG8_SKAL_Z_WERT_0X4207_UNIT      'HEX'
@@ -4533,7 +4532,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG9_SKAL_Z_WERT_0X4207        (RXBUF_UINT(44))
@@ -4548,7 +4547,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG9_SKAL_Z_WERT_0X4207          (RXBUF_UCHAR(47))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG9_SKAL_Z_WERT_0X4207_TYPE     unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG9_SKAL_Z_WERT_0X4207           (RXBUF_UCHAR(48))
     #define I3_RES_KOM_STAT_FDS_FU_SEG9_SKAL_Z_WERT_0X4207_UNIT      'HEX'
@@ -4558,7 +4557,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG10_SKAL_Z_WERT_0X4207       (RXBUF_UINT(49))
@@ -4573,7 +4572,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG10_SKAL_Z_WERT_0X4207         (RXBUF_UCHAR(52))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG10_SKAL_Z_WERT_0X4207_TYPE    unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG10_SKAL_Z_WERT_0X4207          (RXBUF_UCHAR(53))
     #define I3_RES_KOM_STAT_FDS_FU_SEG10_SKAL_Z_WERT_0X4207_UNIT     'HEX'
@@ -4583,7 +4582,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG11_SKAL_Z_WERT_0X4207       (RXBUF_UINT(54))
@@ -4598,7 +4597,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG11_SKAL_Z_WERT_0X4207         (RXBUF_UCHAR(57))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG11_SKAL_Z_WERT_0X4207_TYPE    unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG11_SKAL_Z_WERT_0X4207          (RXBUF_UCHAR(58))
     #define I3_RES_KOM_STAT_FDS_FU_SEG11_SKAL_Z_WERT_0X4207_UNIT     'HEX'
@@ -4608,7 +4607,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG12_SKAL_Z_WERT_0X4207       (RXBUF_UINT(59))
@@ -4623,7 +4622,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG12_SKAL_Z_WERT_0X4207         (RXBUF_UCHAR(62))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG12_SKAL_Z_WERT_0X4207_TYPE    unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG12_SKAL_Z_WERT_0X4207          (RXBUF_UCHAR(63))
     #define I3_RES_KOM_STAT_FDS_FU_SEG12_SKAL_Z_WERT_0X4207_UNIT     'HEX'
@@ -4633,7 +4632,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG13_SKAL_Z_WERT_0X4207       (RXBUF_UINT(64))
@@ -4648,7 +4647,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG13_SKAL_Z_WERT_0X4207         (RXBUF_UCHAR(67))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG13_SKAL_Z_WERT_0X4207_TYPE    unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG13_SKAL_Z_WERT_0X4207          (RXBUF_UCHAR(68))
     #define I3_RES_KOM_STAT_FDS_FU_SEG13_SKAL_Z_WERT_0X4207_UNIT     'HEX'
@@ -4658,7 +4657,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG14_SKAL_Z_WERT_0X4207       (RXBUF_UINT(69))
@@ -4673,7 +4672,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG14_SKAL_Z_WERT_0X4207         (RXBUF_UCHAR(72))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG14_SKAL_Z_WERT_0X4207_TYPE    unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG14_SKAL_Z_WERT_0X4207          (RXBUF_UCHAR(73))
     #define I3_RES_KOM_STAT_FDS_FU_SEG14_SKAL_Z_WERT_0X4207_UNIT     'HEX'
@@ -4683,7 +4682,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG15_SKAL_Z_WERT_0X4207       (RXBUF_UINT(74))
@@ -4698,7 +4697,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG15_SKAL_Z_WERT_0X4207         (RXBUF_UCHAR(77))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG15_SKAL_Z_WERT_0X4207_TYPE    unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG15_SKAL_Z_WERT_0X4207          (RXBUF_UCHAR(78))
     #define I3_RES_KOM_STAT_FDS_FU_SEG15_SKAL_Z_WERT_0X4207_UNIT     'HEX'
@@ -4708,7 +4707,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG16_SKAL_Z_WERT_0X4207       (RXBUF_UINT(79))
@@ -4723,7 +4722,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG16_SKAL_Z_WERT_0X4207         (RXBUF_UCHAR(82))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG16_SKAL_Z_WERT_0X4207_TYPE    unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG16_SKAL_Z_WERT_0X4207          (RXBUF_UCHAR(83))
     #define I3_RES_KOM_STAT_FDS_FU_SEG16_SKAL_Z_WERT_0X4207_UNIT     'HEX'
@@ -4733,11 +4732,11 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
 #define I3_PID_KOM_VERBRAEUCHE_SKALIERUNG_A_0X4208                   0x4208
-        // Consumption scaling a / VerbrÃ¤uche Skalierung a
+        // Consumption scaling a / Verbräuche Skalierung a
 
     #define I3_RES_KOM_STAT_DURCHSCHNITTSWERT_8_SKAL_A_WERT_0X4208   (RXBUF_UINT(0)/10.0f)
     #define I3_RES_KOM_STAT_DURCHSCHNITTSWERT_8_SKAL_A_WERT_0X4208_UNIT 'l/100km'
@@ -4761,7 +4760,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG1_SKAL_A_WERT_0X4208          (RXBUF_UCHAR(7))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG1_SKAL_A_WERT_0X4208_TYPE     unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG1_SKAL_A_WERT_0X4208           (RXBUF_UCHAR(8))
     #define I3_RES_KOM_STAT_FDS_FU_SEG1_SKAL_A_WERT_0X4208_UNIT      'HEX'
@@ -4771,7 +4770,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG2_SKAL_A_WERT_0X4208        (RXBUF_UINT(9))
@@ -4786,7 +4785,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG2_SKAL_A_WERT_0X4208          (RXBUF_UCHAR(12))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG2_SKAL_A_WERT_0X4208_TYPE     unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG2_SKAL_A_WERT_0X4208           (RXBUF_UCHAR(13))
     #define I3_RES_KOM_STAT_FDS_FU_SEG2_SKAL_A_WERT_0X4208_UNIT      'HEX'
@@ -4796,7 +4795,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG3_SKAL_A_WERT_0X4208        (RXBUF_UINT(14))
@@ -4811,7 +4810,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG3_SKAL_A_WERT_0X4208          (RXBUF_UCHAR(17))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG3_SKAL_A_WERT_0X4208_TYPE     unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG3_SKAL_A_WERT_0X4208           (RXBUF_UCHAR(18))
     #define I3_RES_KOM_STAT_FDS_FU_SEG3_SKAL_A_WERT_0X4208_UNIT      'HEX'
@@ -4821,7 +4820,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG4_SKAL_A_WERT_0X4208        (RXBUF_UINT(19))
@@ -4836,7 +4835,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG4_SKAL_A_WERT_0X4208          (RXBUF_UCHAR(22))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG4_SKAL_A_WERT_0X4208_TYPE     unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG4_SKAL_A_WERT_0X4208           (RXBUF_UCHAR(23))
     #define I3_RES_KOM_STAT_FDS_FU_SEG4_SKAL_A_WERT_0X4208_UNIT      'HEX'
@@ -4846,7 +4845,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG5_SKAL_A_WERT_0X4208        (RXBUF_UINT(24))
@@ -4861,7 +4860,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG5_SKAL_A_WERT_0X4208          (RXBUF_UCHAR(27))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG5_SKAL_A_WERT_0X4208_TYPE     unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG5_SKAL_A_WERT_0X4208           (RXBUF_UCHAR(28))
     #define I3_RES_KOM_STAT_FDS_FU_SEG5_SKAL_A_WERT_0X4208_UNIT      'HEX'
@@ -4871,7 +4870,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG6_SKAL_A_WERT_0X4208        (RXBUF_UINT(29))
@@ -4886,7 +4885,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG6_SKAL_A_WERT_0X4208          (RXBUF_UCHAR(32))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG6_SKAL_A_WERT_0X4208_TYPE     unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG6_SKAL_A_WERT_0X4208           (RXBUF_UCHAR(33))
     #define I3_RES_KOM_STAT_FDS_FU_SEG6_SKAL_A_WERT_0X4208_UNIT      'HEX'
@@ -4896,7 +4895,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG7_SKAL_A_WERT_0X4208        (RXBUF_UINT(34))
@@ -4911,7 +4910,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG7_SKAL_A_WERT_0X4208          (RXBUF_UCHAR(37))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG7_SKAL_A_WERT_0X4208_TYPE     unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG7_SKAL_A_WERT_0X4208           (RXBUF_UCHAR(38))
     #define I3_RES_KOM_STAT_FDS_FU_SEG7_SKAL_A_WERT_0X4208_UNIT      'HEX'
@@ -4921,7 +4920,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG8_SKAL_A_WERT_0X4208        (RXBUF_UINT(39))
@@ -4936,7 +4935,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG8_SKAL_A_WERT_0X4208          (RXBUF_UCHAR(42))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG8_SKAL_A_WERT_0X4208_TYPE     unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG8_SKAL_A_WERT_0X4208           (RXBUF_UCHAR(43))
     #define I3_RES_KOM_STAT_FDS_FU_SEG8_SKAL_A_WERT_0X4208_UNIT      'HEX'
@@ -4946,7 +4945,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG9_SKAL_A_WERT_0X4208        (RXBUF_UINT(44))
@@ -4961,7 +4960,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG9_SKAL_A_WERT_0X4208          (RXBUF_UCHAR(47))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG9_SKAL_A_WERT_0X4208_TYPE     unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG9_SKAL_A_WERT_0X4208           (RXBUF_UCHAR(48))
     #define I3_RES_KOM_STAT_FDS_FU_SEG9_SKAL_A_WERT_0X4208_UNIT      'HEX'
@@ -4971,7 +4970,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG10_SKAL_A_WERT_0X4208       (RXBUF_UINT(49))
@@ -4986,7 +4985,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG10_SKAL_A_WERT_0X4208         (RXBUF_UCHAR(52))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG10_SKAL_A_WERT_0X4208_TYPE    unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG10_SKAL_A_WERT_0X4208          (RXBUF_UCHAR(53))
     #define I3_RES_KOM_STAT_FDS_FU_SEG10_SKAL_A_WERT_0X4208_UNIT     'HEX'
@@ -4996,7 +4995,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG11_SKAL_A_WERT_0X4208       (RXBUF_UINT(54))
@@ -5011,7 +5010,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG11_SKAL_A_WERT_0X4208         (RXBUF_UCHAR(57))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG11_SKAL_A_WERT_0X4208_TYPE    unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG11_SKAL_A_WERT_0X4208          (RXBUF_UCHAR(58))
     #define I3_RES_KOM_STAT_FDS_FU_SEG11_SKAL_A_WERT_0X4208_UNIT     'HEX'
@@ -5021,7 +5020,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG12_SKAL_A_WERT_0X4208       (RXBUF_UINT(59))
@@ -5036,7 +5035,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG12_SKAL_A_WERT_0X4208         (RXBUF_UCHAR(62))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG12_SKAL_A_WERT_0X4208_TYPE    unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG12_SKAL_A_WERT_0X4208          (RXBUF_UCHAR(63))
     #define I3_RES_KOM_STAT_FDS_FU_SEG12_SKAL_A_WERT_0X4208_UNIT     'HEX'
@@ -5046,7 +5045,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG13_SKAL_A_WERT_0X4208       (RXBUF_UINT(64))
@@ -5061,7 +5060,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG13_SKAL_A_WERT_0X4208         (RXBUF_UCHAR(67))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG13_SKAL_A_WERT_0X4208_TYPE    unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG13_SKAL_A_WERT_0X4208          (RXBUF_UCHAR(68))
     #define I3_RES_KOM_STAT_FDS_FU_SEG13_SKAL_A_WERT_0X4208_UNIT     'HEX'
@@ -5071,7 +5070,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG14_SKAL_A_WERT_0X4208       (RXBUF_UINT(69))
@@ -5086,7 +5085,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG14_SKAL_A_WERT_0X4208         (RXBUF_UCHAR(72))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG14_SKAL_A_WERT_0X4208_TYPE    unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG14_SKAL_A_WERT_0X4208          (RXBUF_UCHAR(73))
     #define I3_RES_KOM_STAT_FDS_FU_SEG14_SKAL_A_WERT_0X4208_UNIT     'HEX'
@@ -5096,7 +5095,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG15_SKAL_A_WERT_0X4208       (RXBUF_UINT(74))
@@ -5111,7 +5110,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG15_SKAL_A_WERT_0X4208         (RXBUF_UCHAR(77))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG15_SKAL_A_WERT_0X4208_TYPE    unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG15_SKAL_A_WERT_0X4208          (RXBUF_UCHAR(78))
     #define I3_RES_KOM_STAT_FDS_FU_SEG15_SKAL_A_WERT_0X4208_UNIT     'HEX'
@@ -5121,7 +5120,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
     #define I3_RES_KOM_STAT_VERBRAUCH_SEG16_SKAL_A_WERT_0X4208       (RXBUF_UINT(79))
@@ -5136,7 +5135,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG16_SKAL_A_WERT_0X4208         (RXBUF_UCHAR(82))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG16_SKAL_A_WERT_0X4208_TYPE    unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FDS_FU_SEG16_SKAL_A_WERT_0X4208          (RXBUF_UCHAR(83))
     #define I3_RES_KOM_STAT_FDS_FU_SEG16_SKAL_A_WERT_0X4208_UNIT     'HEX'
@@ -5146,7 +5145,7 @@
         // signal invalid FU attribute: 0 travel without travel interruption (FU) 1 travel with travel interruption (FU)
         // / 00010000 = FU 00001111 = FDS  FDS Attribut: 0  Initialisierung 1  Modus Traction gesetzt 2  Modus Komfort
         // gesetzt 3  Modus Basis gesetzt 4  Modus Sport gesetzt 5  Modus Sport+ gesetzt 6  Modus Race gesetzt 7  Modus
-        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungÃ¼ltig  FU Attribut: 0  Fahrt ohne
+        // ECO gesetzt 8  Modus ECO+ gesetzt 9 - E  Reserve F  Signal ungültig  FU Attribut: 0  Fahrt ohne
         // Fahrtunterbrechung (FU) 1  Fahrt mit Fahrtunterbrechung (FU)
 
 #define I3_PID_KOM_VERBRAUCHSVORTEIL_HYBRID_AKT_SEGMENT_0X4209       0x4209
@@ -5161,10 +5160,10 @@
     #define I3_RES_KOM_STAT_DURCHSCHNITT_HYBRID_RUECKGEW_AKT_SEGM_WERT_0X4209 (RXBUF_UCHAR(2))
     #define I3_RES_KOM_STAT_DURCHSCHNITT_HYBRID_RUECKGEW_AKT_SEGM_WERT_0X4209_UNIT '%'
     #define I3_RES_KOM_STAT_DURCHSCHNITT_HYBRID_RUECKGEW_AKT_SEGM_WERT_0X4209_TYPE unsigned char
-        // Average value hybrid recovery of the act. Segments / Durchschnittswert HybridrÃ¼ckgewinnung des akt. Segments
+        // Average value hybrid recovery of the act. Segments / Durchschnittswert Hybridrückgewinnung des akt. Segments
 
 #define I3_PID_KOM_VERVRAEUCHE_SKALIERUNG_MCV                        0x420A
-        // Consumption scaling x read in 0.1 [KWh // 100km] / VerbrÃ¤uche Skalierung x lesen in 0,1 [KWh//100km]
+        // Consumption scaling x read in 0.1 [KWh // 100km] / Verbräuche Skalierung x lesen in 0,1 [KWh//100km]
 
     #define I3_RES_KOM_STAT_DURCHSCHNITTSVERBRAUCH_8_WERT            (RXBUF_UINT(0)/10.0f)
     #define I3_RES_KOM_STAT_DURCHSCHNITTSVERBRAUCH_8_WERT_UNIT       'kWh/100km'
@@ -5188,7 +5187,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG1_X_WERT                      (RXBUF_UCHAR(8))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG1_X_WERT_TYPE                 unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FU_SEG1_X_WERT                           (RXBUF_UCHAR(9))
     #define I3_RES_KOM_STAT_FU_SEG1_X_WERT_UNIT                      'HEX'
@@ -5207,7 +5206,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG2_X_WERT                      (RXBUF_UCHAR(14))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG2_X_WERT_TYPE                 unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FU_SEG2_X_WERT                           (RXBUF_UCHAR(15))
     #define I3_RES_KOM_STAT_FU_SEG2_X_WERT_UNIT                      'HEX'
@@ -5226,7 +5225,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG3_X_WERT                      (RXBUF_UCHAR(20))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG3_X_WERT_TYPE                 unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FU_SEG3_X_WERT                           (RXBUF_UCHAR(21))
     #define I3_RES_KOM_STAT_FU_SEG3_X_WERT_UNIT                      'HEX'
@@ -5245,7 +5244,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG4_X_WERT                      (RXBUF_UCHAR(26))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG4_X_WERT_TYPE                 unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FU_SEG4_X_WERT                           (RXBUF_UCHAR(27))
     #define I3_RES_KOM_STAT_FU_SEG4_X_WERT_UNIT                      'HEX'
@@ -5264,7 +5263,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG5_X_WERT                      (RXBUF_UCHAR(32))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG5_X_WERT_TYPE                 unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FU_SEG5_X_WERT                           (RXBUF_UCHAR(33))
     #define I3_RES_KOM_STAT_FU_SEG5_X_WERT_UNIT                      'HEX'
@@ -5283,7 +5282,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG6_X_WERT                      (RXBUF_UCHAR(38))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG6_X_WERT_TYPE                 unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FU_SEG6_X_WERT                           (RXBUF_UCHAR(39))
     #define I3_RES_KOM_STAT_FU_SEG6_X_WERT_UNIT                      'HEX'
@@ -5302,7 +5301,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG7_X_WERT                      (RXBUF_UCHAR(44))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG7_X_WERT_TYPE                 unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FU_SEG7_X_WERT                           (RXBUF_UCHAR(45))
     #define I3_RES_KOM_STAT_FU_SEG7_X_WERT_UNIT                      'HEX'
@@ -5321,7 +5320,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG8_X_WERT                      (RXBUF_UCHAR(50))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG8_X_WERT_TYPE                 unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FU_SEG8_X_WERT                           (RXBUF_UCHAR(51))
     #define I3_RES_KOM_STAT_FU_SEG8_X_WERT_UNIT                      'HEX'
@@ -5340,7 +5339,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG9_X_WERT                      (RXBUF_UCHAR(56))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG9_X_WERT_TYPE                 unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FU_SEG9_X_WERT                           (RXBUF_UCHAR(57))
     #define I3_RES_KOM_STAT_FU_SEG9_X_WERT_UNIT                      'HEX'
@@ -5359,7 +5358,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG10_X_WERT                     (RXBUF_UCHAR(62))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG10_X_WERT_TYPE                unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FU_SEG10_X_WERT                          (RXBUF_UCHAR(63))
     #define I3_RES_KOM_STAT_FU_SEG10_X_WERT_UNIT                     'HEX'
@@ -5378,7 +5377,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG11_X_WERT                     (RXBUF_UCHAR(68))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG11_X_WERT_TYPE                unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FU_SEG11_X_WERT                          (RXBUF_UCHAR(69))
     #define I3_RES_KOM_STAT_FU_SEG11_X_WERT_UNIT                     'HEX'
@@ -5397,7 +5396,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG12_X_WERT                     (RXBUF_UCHAR(74))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG12_X_WERT_TYPE                unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FU_SEG12_X_WERT                          (RXBUF_UCHAR(75))
     #define I3_RES_KOM_STAT_FU_SEG12_X_WERT_UNIT                     'HEX'
@@ -5416,7 +5415,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG13_X_WERT                     (RXBUF_UCHAR(80))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG13_X_WERT_TYPE                unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FU_SEG13_X_WERT                          (RXBUF_UCHAR(81))
     #define I3_RES_KOM_STAT_FU_SEG13_X_WERT_UNIT                     'HEX'
@@ -5435,7 +5434,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG14_X_WERT                     (RXBUF_UCHAR(86))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG14_X_WERT_TYPE                unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FU_SEG14_X_WERT                          (RXBUF_UCHAR(87))
     #define I3_RES_KOM_STAT_FU_SEG14_X_WERT_UNIT                     'HEX'
@@ -5454,7 +5453,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG15_X_WERT                     (RXBUF_UCHAR(92))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG15_X_WERT_TYPE                unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FU_SEG15_X_WERT                          (RXBUF_UCHAR(93))
     #define I3_RES_KOM_STAT_FU_SEG15_X_WERT_UNIT                     'HEX'
@@ -5473,7 +5472,7 @@
 
     #define I3_RES_KOM_STAT_ZAEHLER_SEG16_X_WERT                     (RXBUF_UCHAR(98))
     #define I3_RES_KOM_STAT_ZAEHLER_SEG16_X_WERT_TYPE                unsigned char
-        // counter / ZÃ¤hler
+        // counter / Zähler
 
     #define I3_RES_KOM_STAT_FU_SEG16_X_WERT                          (RXBUF_UCHAR(99))
     #define I3_RES_KOM_STAT_FU_SEG16_X_WERT_UNIT                     'HEX'
@@ -5519,17 +5518,17 @@
         // ECO Pro + range / ECO Pro+ Reichweite
 
 #define I3_PID_KOM_VERBRAUCH_ERHOEHUNG_A                             0x420D
-        // Read consumption increase a in 1 [kWh] / VerbraucherhÃ¶hung a lesen in 1 [kWh]
+        // Read consumption increase a in 1 [kWh] / Verbraucherhöhung a lesen in 1 [kWh]
 
     #define I3_RES_KOM_STAT_AKKUMULIERTE_ABS_VERBR_ERHOEHUNG_WERT    (RXBUF_UINT32(0))
     #define I3_RES_KOM_STAT_AKKUMULIERTE_ABS_VERBR_ERHOEHUNG_WERT_UNIT 'kWh'
     #define I3_RES_KOM_STAT_AKKUMULIERTE_ABS_VERBR_ERHOEHUNG_WERT_TYPE unsigned long
-        // accumulated absolute consumption increase / akkumulierte absolute VerbrauchserhÃ¶hung
+        // accumulated absolute consumption increase / akkumulierte absolute Verbrauchserhöhung
 
     #define I3_RES_KOM_STAT_VERBR_ERHOEHUNG_VERZ_WERT                (RXBUF_UINT32(4))
     #define I3_RES_KOM_STAT_VERBR_ERHOEHUNG_VERZ_WERT_UNIT           'kWh'
     #define I3_RES_KOM_STAT_VERBR_ERHOEHUNG_VERZ_WERT_TYPE           unsigned long
-        // Increase in consumption through delay / VerbrauchserhÃ¶hung durch VerzÃ¶gerung
+        // Increase in consumption through delay / Verbrauchserhöhung durch Verzögerung
 
     #define I3_RES_KOM_STAT_VERBR_REF_WERT                           (RXBUF_UINT(8))
     #define I3_RES_KOM_STAT_VERBR_REF_WERT_UNIT                      'kWh'
@@ -5549,30 +5548,30 @@
     #define I3_RES_KOM_STAT_BLS_VERZOEGERUNG_0X420D                  (RXBUF_UCHAR(14))
     #define I3_RES_KOM_STAT_BLS_VERZOEGERUNG_0X420D_UNIT             '0/1'
     #define I3_RES_KOM_STAT_BLS_VERZOEGERUNG_0X420D_TYPE             unsigned char
-        // Status_BLS / delay xxxx xx11b / Status_BLS / VerzÃ¶gerung xxxx xx11b
+        // Status_BLS / delay xxxx xx11b / Status_BLS / Verzögerung xxxx xx11b
 
 #define I3_PID_KOM_VERBRAUCH_ERHOEHUNG_TT                            0x420E
-        // Consumption increase tt read in 0.01kWh / 100km / VerbrauchserhÃ¶hing tt lesen in 0,01kWh/100km
+        // Consumption increase tt read in 0.01kWh / 100km / Verbrauchserhöhing tt lesen in 0,01kWh/100km
 
     #define I3_RES_KOM_STAT_PROZENTUALE_VERBRAUCH_ERHOEHUNG_WERT     (RXBUF_UINT(0)/100.0f)
     #define I3_RES_KOM_STAT_PROZENTUALE_VERBRAUCH_ERHOEHUNG_WERT_UNIT '%'
     #define I3_RES_KOM_STAT_PROZENTUALE_VERBRAUCH_ERHOEHUNG_WERT_TYPE float
-        // tt percentage increase in consumption / tt prozentuale VerbrauchserhÃ¶hung
+        // tt percentage increase in consumption / tt prozentuale Verbrauchserhöhung
 
     #define I3_RES_KOM_STAT_VERBRAUCH_ERHOEHUNG_GESCHW_WERT          (RXBUF_UINT(2)/100.0f)
     #define I3_RES_KOM_STAT_VERBRAUCH_ERHOEHUNG_GESCHW_WERT_UNIT     'kWh/100km'
     #define I3_RES_KOM_STAT_VERBRAUCH_ERHOEHUNG_GESCHW_WERT_TYPE     float
-        // increased consumption through speed / verbrauchserhÃ¶hung durch Geschwindigkeit
+        // increased consumption through speed / verbrauchserhöhung durch Geschwindigkeit
 
     #define I3_RES_KOM_STAT_VERBRAUCH_ERHOEHUNG_BESCHLEUN_WERT       (RXBUF_UINT(4)/100.0f)
     #define I3_RES_KOM_STAT_VERBRAUCH_ERHOEHUNG_BESCHLEUN_WERT_UNIT  'kWh/100km'
     #define I3_RES_KOM_STAT_VERBRAUCH_ERHOEHUNG_BESCHLEUN_WERT_TYPE  float
-        // Increase in consumption through acceleration / VerbrauchserhÃ¶hung durch Beschleunigung
+        // Increase in consumption through acceleration / Verbrauchserhöhung durch Beschleunigung
 
     #define I3_RES_KOM_STAT_VERBRAUCH_ERHOEHUNG_KOMFORT_WERT         (RXBUF_UINT(6)/100.0f)
     #define I3_RES_KOM_STAT_VERBRAUCH_ERHOEHUNG_KOMFORT_WERT_UNIT    'kWh/100km'
     #define I3_RES_KOM_STAT_VERBRAUCH_ERHOEHUNG_KOMFORT_WERT_TYPE    float
-        // Increased consumption through convenience / VerbrauchserhÃ¶hung durch Komfort
+        // Increased consumption through convenience / Verbrauchserhöhung durch Komfort
 
 #define I3_PID_KOM_MEHRVERBRAUCH                                     0x420F
         // Read more consumption in 0.01 [kWh / 100km] / Mehrverbrauch lesen in 0,01 [kWh/100km]
@@ -5974,8 +5973,8 @@
 
 #define I3_PID_KOM_HUD_PIA                                           0x4801
         // Job supplies the PIA data from the HUD. The MMI settings for image height, image rotation, brightness offset
-        // and function selection are returned. / Job liefert die PIA-Daten des HUD. ZurÃ¼ckgegeben werden die MMI
-        // Einstellungen fÃ¼r BildhÃ¶he, Bildrotation, Helligkeitsoffset und Funktionsauswahl.
+        // and function selection are returned. / Job liefert die PIA-Daten des HUD. Zurückgegeben werden die MMI
+        // Einstellungen für Bildhöhe, Bildrotation, Helligkeitsoffset und Funktionsauswahl.
 
     #define I3_RES_KOM_STAT_HUD_USER0_BRIGHT_WERT                    (RXBUF_UCHAR(0))
     #define I3_RES_KOM_STAT_HUD_USER0_BRIGHT_WERT_TYPE               unsigned char
@@ -6048,8 +6047,7 @@
         // HUD
 
 #define I3_PID_KOM_HUD_START_UP_SCREEN                               0x4804
-        // Job leads to the display of the start-up image in the HUD. / Job fÃ¼hrt zur Anzeige des Start-Up Bildes im
-        // HUD.
+        // Job leads to the display of the start-up image in the HUD. / Job führt zur Anzeige des Start-Up Bildes im HUD.
 
 #define I3_PID_KOM_HUD_PROCESS_VERSION_READ                          0x4805
         // - / -
@@ -6067,7 +6065,7 @@
 // Skipping KOMBI_BC_DSV_L_KM on 0xD125 which takes arguments
 
 #define I3_PID_KOM_KOMBI_BC_BCW_L_KM                                 0xD126
-        // Read on-board computer values (write not possible) / Bordcomputerwerte lesen (schreiben nicht mÃ¶glich)
+        // Read on-board computer values (write not possible) / Bordcomputerwerte lesen (schreiben nicht möglich)
 
     #define I3_RES_KOM_STAT_BC_DSV_L_KM_WERT                         (RXBUF_UINT(0)/100.0f)
     #define I3_RES_KOM_STAT_BC_DSV_L_KM_WERT_UNIT                    'l/100km'
@@ -6092,7 +6090,7 @@
 
 #define I3_PID_KOM_KOMBI_BC_RBC_L_KM                                 0xD127
         // Read trip on-board computer values (write not possible) / Reise-Bordcomputerwerte lesen (schreiben nicht
-        // mÃ¶glich)
+        // möglich)
 
     #define I3_RES_KOM_STAT_RBC_DSV_L_KM_WERT                        (RXBUF_UINT(0)/100.0f)
     #define I3_RES_KOM_STAT_RBC_DSV_L_KM_WERT_UNIT                   'l/100km'
@@ -6120,7 +6118,7 @@
 // Skipping KOMBI_BC_DSV_KWH_KM on 0xD128 which takes arguments
 
 #define I3_PID_KOM_KOMBI_BC_BCW_KWH_KM                               0xD129
-        // Read on-board computer values (write not possible) / Bordcomputerwerte lesen (schreiben nicht mÃ¶glich)
+        // Read on-board computer values (write not possible) / Bordcomputerwerte lesen (schreiben nicht möglich)
 
     #define I3_RES_KOM_STAT_BC_DSV_KWH_KM_WERT                       (RXBUF_UINT(0)/10.0f)
     #define I3_RES_KOM_STAT_BC_DSV_KWH_KM_WERT_UNIT                  'kWh/100km'
@@ -6146,7 +6144,7 @@
 
 #define I3_PID_KOM_KOMBI_BC_RBC_KWH_KM                               0xD12A
         // Read trip on-board computer values (write not possible) / Reise-Bordcomputerwerte lesen (schreiben nicht
-        // mÃ¶glich)
+        // möglich)
 
     #define I3_RES_KOM_STAT_RBC_DSV_KWH_KM_WERT                      (RXBUF_UINT(0)/10.0f)
     #define I3_RES_KOM_STAT_RBC_DSV_KWH_KM_WERT_UNIT                 'kWh/100km'
@@ -6172,7 +6170,7 @@
         // On-board computer route in 1 [km] / Reisebordcomputer Strecke in 1 [km]
 
 #define I3_PID_KOM_CC_MELDUNGSSPEICHER_LOESCHEN                      0xF010
-        // Delete the CC message memory (history memory) / CC-Meldungsspeicher (Historyspeicher) lÃ¶schen
+        // Delete the CC message memory (history memory) / CC-Meldungsspeicher (Historyspeicher) löschen
 
 #define I3_PID_KOM_HUD_M_SHOWMODE                                    0xF018
         // starts HUD display sequence in M vehicles / startet HUD Anzeigesequenz in M-Fahrzeugen

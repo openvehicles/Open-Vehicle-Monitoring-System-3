@@ -10,14 +10,14 @@
 #define I3_PID_BDC_PIA_NR_AKTUELL                                    0x0F27
         // The PIA number currently sent by the CAS on the bus. Notes: - Assignment according to table
         // TAB_CAS_PIA_NUMMER. / Das Result aktuell vom CAS auf dem Bus gesendeten PIA Nummer. Hinweise: - Zuordnung
-        // gemÃ¤Ã Tabelle TAB_CAS_PIA_NUMMER.
+        // gemäß Tabelle TAB_CAS_PIA_NUMMER.
 
     #define I3_RES_BDC_STAT_PIA_NR_AKTUELL                           (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_PIA_NR_AKTUELL_UNIT                      '0-n'
     #define I3_RES_BDC_STAT_PIA_NR_AKTUELL_TYPE                      unsigned char
         // The PIA number currently sent by the CAS on the bus. Notes: - Assignment according to table
         // TAB_CAS_PIA_NUMMER. / Das Result aktuell vom CAS auf dem Bus gesendeten PIA Nummer. Hinweise: - Zuordnung
-        // gemÃ¤Ã Tabelle TAB_CAS_PIA_NUMMER.
+        // gemäß Tabelle TAB_CAS_PIA_NUMMER.
 
 // Skipping SCHLUESSELDATEN_SERVICE on 0x1006 which takes arguments
 
@@ -32,8 +32,8 @@
 
 #define I3_PID_BDC_BATTERIEVORSCHAEDIGUNGSHISTORIE                   0xA099
         // The job is used to delete the non-persistent data record and the frequency counter of the history memory for
-        // the battery pre-damage history. / Der Job dient zum LÃ¶schen des nicht-persistenten Datensatzes und des
-        // HÃ¤ufigkeitszÃ¤hler des Historienspeichers fÃ¼r die BatterievorschÃ¤digunshistorie.
+        // the battery pre-damage history. / Der Job dient zum Löschen des nicht-persistenten Datensatzes und des
+        // Häufigkeitszähler des Historienspeichers für die Batterievorschädigunshistorie.
 
 #define I3_PID_BDC_WISCHER_LIN_EINLERNVORGANG                        0xA118
         // Controls the butterfly wiper teach-in process / Steuert den Einlernvorgang Schmetterlingswischer
@@ -41,7 +41,7 @@
     #define I3_RES_BDC_STAT_ROUTINE                                  (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_ROUTINE_UNIT                             '0-n'
     #define I3_RES_BDC_STAT_ROUTINE_TYPE                             unsigned char
-        // Execution status of the routine / AusfÃ¼hrungsstatus der Routine
+        // Execution status of the routine / Ausführungsstatus der Routine
 
     #define I3_RES_BDC_STAT_WISCHER_LIN_EINLERNVORGANG               (RXBUF_UCHAR(1))
     #define I3_RES_BDC_STAT_WISCHER_LIN_EINLERNVORGANG_UNIT          '0-n'
@@ -64,7 +64,7 @@
 
 #define I3_PID_BDC_AUSSENSPIEGEL_SELBSTTEST                          0xA322
         // Automatic mirror check is triggered. If an error occurs during the self-test, an FS entry is made. /
-        // Automatische SpiegelprÃ¼fung wird angestoÃen. Wenn ein Fehler beim Selbsttest auftritt, dann erfolgt ein
+        // Automatische Spiegelprüfung wird angestoßen. Wenn ein Fehler beim Selbsttest auftritt, dann erfolgt ein
         // FS-Eintrag.
 
     #define I3_RES_BDC_STAT_SELBSTTEST_NR                            (RXBUF_SCHAR(0))
@@ -86,7 +86,7 @@
         // Status of rain sensor initialization process / Status Initialisierungsvorgang Regensensor
 
 #define I3_PID_BDC_LEUCHTEN_KALTUEBERWACHUNG                         0xA530
-        // Cold light monitoring by diagnosis. Errors found are entered in the error memory / KaltlichtÃ¼berwachung per
+        // Cold light monitoring by diagnosis. Errors found are entered in the error memory / Kaltlichtüberwachung per
         // Diagnose. Gefundene Fehler werden im Fehlerspeicher eingetragen
 
     #define I3_RES_BDC_STAT_KALTUEBERWACHUNG_NR                      (RXBUF_UCHAR(0))
@@ -95,7 +95,7 @@
         // Result of the routine / Ergebnis der Routine
 
 #define I3_PID_BDC_LEUCHTEN_WARMUEBERWACHUNG                         0xA531
-        // Warm light monitoring by diagnosis. Errors found are entered in the error memory / WarmlichÃ¼berwachung per
+        // Warm light monitoring by diagnosis. Errors found are entered in the error memory / Warmlichüberwachung per
         // Diagnose. Gefundene Fehler werden im Fehlerspeicher eingetragen
 
     #define I3_RES_BDC_STAT_WARMUEBERWACHUNG_NR                      (RXBUF_UCHAR(0))
@@ -104,7 +104,7 @@
         // Result of the routine / Ergebnis der Routine
 
 #define I3_PID_BDC_HOEHENSTAENDE_OFFSET_RESET                        0xA532
-        // Start reset altitude offset / Starten Reset HÃ¶henstand Offset
+        // Start reset altitude offset / Starten Reset Höhenstand Offset
 
     // Can't process STAT_GRADIENT_C0_VR_WERT - don't know type motorola float (*** this will mean all the following offsets are wrong!!! ****)
 
@@ -137,17 +137,17 @@
 
 #define I3_PID_BDC_LIN_AUTOADRESSIERUNG                              0xA838
         // The LIN layering slaves are automatically addressed. / Es wird die Autoadressierung der LIN-Layering-Slaves
-        // durchgefÃ¼hrt.
+        // durchgeführt.
 
 #define I3_PID_BDC_ELV_ANLIEFERZUSTAND                               0xAA73
-        // resets the ELV to the delivery condition. (implemented from FEM) / setzt die ELV zurÃ¼ck auf den
+        // resets the ELV to the delivery condition. (implemented from FEM) / setzt die ELV zurück auf den
         // Anlieferzustand. (ab FEM umgesetzt)
 
     #define I3_RES_BDC_STAT_ELV_ANLIEFERZUSTAND                      (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_ELV_ANLIEFERZUSTAND_UNIT                 '0-n'
     #define I3_RES_BDC_STAT_ELV_ANLIEFERZUSTAND_TYPE                 unsigned char
-        // The result indicates whether resetting the ELV to the delivery state was successful or not. 0: successful 1:
-        // not successful / Das Result gibt an ob das RÃ¼cksetzen der ELV in den Anlieferzustand erfolgreich war oder
+        // The result indicates whether resetting the ELV to the delivery state was successful or not 0: successful 1:
+        // not successful / Das Result gibt an ob das Rücksetzen der ELV in den Anlieferzustand erfolgreich war oder
         // nicht 0: erfolgreich 1: nicht erfolgreich
 
 // Skipping ELV_AKTION on 0xAA7C which takes arguments
@@ -157,16 +157,16 @@
         // entire chain of effects should be triggered from the receipt of the operating request at the ZSG to the
         // physical opening of the tailgate. In this simulation there is no communication between ZSG and SMO-SG, i.e.
         // the job can also be carried out if the SMO-SG is not installed / Dieser Job dient zur Simulation einer
-        // Bedienungsanforderung (Ãffnen der Heckklappe) durch das SmartOpener-SteuergerÃ¤t. Hierbei soll die gesamte
-        // Wirkkette vom Eingang der Bedienungsanforderung beim ZSG bis zum physikalischen Ãffnen der Heckklappe
-        // ausgelÃ¶st werden. Bei dieser Simulation erfolgt keine Kommunikation zwischen ZSG und SMO-SG, d.h. der Job
-        // kann auch bei nicht verbautem SMO-SG durchgefÃ¼hrt werden
+        // Bedienungsanforderung (Öffnen der Heckklappe) durch das SmartOpener-Steuergerät. Hierbei soll die gesamte
+        // Wirkkette vom Eingang der Bedienungsanforderung beim ZSG bis zum physikalischen Öffnen der Heckklappe
+        // ausgelöst werden. Bei dieser Simulation erfolgt keine Kommunikation zwischen ZSG und SMO-SG, d.h. der Job kann
+        // auch bei nicht verbautem SMO-SG durchgeführt werden
 
     #define I3_RES_BDC_STAT_AUSFUEHRUNGSSTATUS                       (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_AUSFUEHRUNGSSTATUS_UNIT                  '0-n'
     #define I3_RES_BDC_STAT_AUSFUEHRUNGSSTATUS_TYPE                  unsigned char
         // The result indicates whether the requested action was carried out successfully or an error occurred / Das
-        // Result gibt an, ob die angeforderte Aktion erfolgreich durchgefÃ¼hrt wurde oder ein Fehler aufgetreten ist
+        // Result gibt an, ob die angeforderte Aktion erfolgreich durchgeführt wurde oder ein Fehler aufgetreten ist
 
 // Skipping ZV_KURZSCHLUSSABSCHALTUNG_RESET on 0xAA95 which takes arguments
 
@@ -178,82 +178,82 @@
         // Control of the key search via broadcast interior (antenna interior front + rear). All known keys in the
         // interior are determined (max. 8). Note: The results STAT_CA_SCHL _... x are filled up starting with x = 1 to x
         // = n (if n keys are found). The results STAT_CA_SCHL _... x for x> n are assigned 15 (no key found). / Steuern
-        // der SchlÃ¼sselsuche per Broadcast Innenraum (Antennen Innenraum Vorne + Hinten). Alle im Innenraum
-        // befindlichen bereits bekannten SchlÃ¼ssel werden ermittelt (max. 8). Hinweis: Die Results STAT_CA_SCHL_...x
-        // werden beginnend mit x=1 bis x=n (bei n gefunden SchlÃ¼sseln) aufgefÃ¼llt. Die Results STAT_CA_SCHL_...x fÃ¼r
-        // x > n werden mit 15 belegt (kein SchlÃ¼ssel gefunden).
+        // der Schlüsselsuche per Broadcast Innenraum (Antennen Innenraum Vorne + Hinten). Alle im Innenraum befindlichen
+        // bereits bekannten Schlüssel werden ermittelt (max. 8). Hinweis: Die Results STAT_CA_SCHL_...x werden beginnend
+        // mit x=1 bis x=n (bei n gefunden Schlüsseln) aufgefüllt. Die Results STAT_CA_SCHL_...x für x > n werden mit 15
+        // belegt (kein Schlüssel gefunden).
 
     #define I3_RES_BDC_STAT_CA_SCHL_NUM1                             (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_CA_SCHL_NUM1_UNIT                        '0-n'
     #define I3_RES_BDC_STAT_CA_SCHL_NUM1_TYPE                        unsigned char
         // The result contains the key number (0-19) of the key no. 1 found. Notes: - 0-19 = number of the key in the
         // transponder table. - 255 = no further key found. - ATTENTION: not to be confused with CA number (0-7). / Das
-        // Result enthÃ¤lt die SchlÃ¼ssel-Nummer (0-19) des gefundenen SchlÃ¼ssels Nr. 1. Hinweise: - 0-19= Nummer des
-        // SchlÃ¼ssels in der Transpondertabelle. - 255= kein weiterer SchlÃ¼ssel gefunden. - ACHTUNG: nicht zu
-        // verwechseln mit CA-Nummer (0-7).
+        // Result enthält die Schlüssel-Nummer (0-19) des gefundenen Schlüssels Nr. 1. Hinweise: - 0-19= Nummer des
+        // Schlüssels in der Transpondertabelle. - 255= kein weiterer Schlüssel gefunden. - ACHTUNG: nicht zu verwechseln
+        // mit CA-Nummer (0-7).
 
     #define I3_RES_BDC_STAT_CA_SCHL_NUM2                             (RXBUF_UCHAR(1))
     #define I3_RES_BDC_STAT_CA_SCHL_NUM2_UNIT                        '0-n'
     #define I3_RES_BDC_STAT_CA_SCHL_NUM2_TYPE                        unsigned char
         // The result contains the key number (0-19) of the key no. 2 found. Notes: - 0-19 = number of the key in the
         // transponder table. - 255 = no further key found. - ATTENTION: not to be confused with CA number (0-7). / Das
-        // Result enthÃ¤lt die SchlÃ¼ssel-Nummer (0-19) des gefundenen SchlÃ¼ssels Nr. 2. Hinweise: - 0-19= Nummer des
-        // SchlÃ¼ssels in der Transpondertabelle. - 255= kein weiterer SchlÃ¼ssel gefunden. - ACHTUNG: nicht zu
-        // verwechseln mit CA-Nummer (0-7).
+        // Result enthält die Schlüssel-Nummer (0-19) des gefundenen Schlüssels Nr. 2. Hinweise: - 0-19= Nummer des
+        // Schlüssels in der Transpondertabelle. - 255= kein weiterer Schlüssel gefunden. - ACHTUNG: nicht zu verwechseln
+        // mit CA-Nummer (0-7).
 
     #define I3_RES_BDC_STAT_CA_SCHL_NUM3                             (RXBUF_UCHAR(2))
     #define I3_RES_BDC_STAT_CA_SCHL_NUM3_UNIT                        '0-n'
     #define I3_RES_BDC_STAT_CA_SCHL_NUM3_TYPE                        unsigned char
         // The result contains the key number (0-19) of the key no. 3 found. Notes: - 0-19 = number of the key in the
         // transponder table. - 255 = no further key found. - ATTENTION: not to be confused with CA number (0-7). / Das
-        // Result enthÃ¤lt die SchlÃ¼ssel-Nummer (0-19) des gefundenen SchlÃ¼ssels Nr. 3. Hinweise: - 0-19= Nummer des
-        // SchlÃ¼ssels in der Transpondertabelle. - 255= kein weiterer SchlÃ¼ssel gefunden. - ACHTUNG: nicht zu
-        // verwechseln mit CA-Nummer (0-7).
+        // Result enthält die Schlüssel-Nummer (0-19) des gefundenen Schlüssels Nr. 3. Hinweise: - 0-19= Nummer des
+        // Schlüssels in der Transpondertabelle. - 255= kein weiterer Schlüssel gefunden. - ACHTUNG: nicht zu verwechseln
+        // mit CA-Nummer (0-7).
 
     #define I3_RES_BDC_STAT_CA_SCHL_NUM4                             (RXBUF_UCHAR(3))
     #define I3_RES_BDC_STAT_CA_SCHL_NUM4_UNIT                        '0-n'
     #define I3_RES_BDC_STAT_CA_SCHL_NUM4_TYPE                        unsigned char
         // The result contains the key number (0-19) of the key no. 4 found. Notes: - 0-19 = number of the key in the
         // transponder table. - 255 = no further key found. - ATTENTION: not to be confused with CA number (0-7). / Das
-        // Result enthÃ¤lt die SchlÃ¼ssel-Nummer (0-19) des gefundenen SchlÃ¼ssels Nr. 4. Hinweise: - 0-19= Nummer des
-        // SchlÃ¼ssels in der Transpondertabelle. - 255= kein weiterer SchlÃ¼ssel gefunden. - ACHTUNG: nicht zu
-        // verwechseln mit CA-Nummer (0-7).
+        // Result enthält die Schlüssel-Nummer (0-19) des gefundenen Schlüssels Nr. 4. Hinweise: - 0-19= Nummer des
+        // Schlüssels in der Transpondertabelle. - 255= kein weiterer Schlüssel gefunden. - ACHTUNG: nicht zu verwechseln
+        // mit CA-Nummer (0-7).
 
     #define I3_RES_BDC_STAT_CA_SCHL_NUM5                             (RXBUF_UCHAR(4))
     #define I3_RES_BDC_STAT_CA_SCHL_NUM5_UNIT                        '0-n'
     #define I3_RES_BDC_STAT_CA_SCHL_NUM5_TYPE                        unsigned char
         // The result contains the key number (0-19) of the key no. 5 found. Notes: - 0-19 = number of the key in the
         // transponder table. - 255 = no further key found. - ATTENTION: not to be confused with CA number (0-7). / Das
-        // Result enthÃ¤lt die SchlÃ¼ssel-Nummer (0-19) des gefundenen SchlÃ¼ssels Nr. 5. Hinweise: - 0-19= Nummer des
-        // SchlÃ¼ssels in der Transpondertabelle. - 255= kein weiterer SchlÃ¼ssel gefunden. - ACHTUNG: nicht zu
-        // verwechseln mit CA-Nummer (0-7).
+        // Result enthält die Schlüssel-Nummer (0-19) des gefundenen Schlüssels Nr. 5. Hinweise: - 0-19= Nummer des
+        // Schlüssels in der Transpondertabelle. - 255= kein weiterer Schlüssel gefunden. - ACHTUNG: nicht zu verwechseln
+        // mit CA-Nummer (0-7).
 
     #define I3_RES_BDC_STAT_CA_SCHL_NUM6                             (RXBUF_UCHAR(5))
     #define I3_RES_BDC_STAT_CA_SCHL_NUM6_UNIT                        '0-n'
     #define I3_RES_BDC_STAT_CA_SCHL_NUM6_TYPE                        unsigned char
         // The result contains the key number (0-19) of the key no. 6 found. Notes: - 0-19 = number of the key in the
         // transponder table. - 255 = no further key found. - ATTENTION: not to be confused with CA number (0-7). / Das
-        // Result enthÃ¤lt die SchlÃ¼ssel-Nummer (0-19) des gefundenen SchlÃ¼ssels Nr. 6. Hinweise: - 0-19= Nummer des
-        // SchlÃ¼ssels in der Transpondertabelle. - 255= kein weiterer SchlÃ¼ssel gefunden. - ACHTUNG: nicht zu
-        // verwechseln mit CA-Nummer (0-7).
+        // Result enthält die Schlüssel-Nummer (0-19) des gefundenen Schlüssels Nr. 6. Hinweise: - 0-19= Nummer des
+        // Schlüssels in der Transpondertabelle. - 255= kein weiterer Schlüssel gefunden. - ACHTUNG: nicht zu verwechseln
+        // mit CA-Nummer (0-7).
 
     #define I3_RES_BDC_STAT_CA_SCHL_NUM7                             (RXBUF_UCHAR(6))
     #define I3_RES_BDC_STAT_CA_SCHL_NUM7_UNIT                        '0-n'
     #define I3_RES_BDC_STAT_CA_SCHL_NUM7_TYPE                        unsigned char
-        // The result contains the key number (0-19) of the key no. 7 found. Notes: - 0-19 = number of the key in the
+        // The result contains the key number (0-19) of the key no. 7. Notes: - 0-19 = number of the key in the
         // transponder table. - 255 = no further key found. - ATTENTION: not to be confused with CA number (0-7). / Das
-        // Result enthÃ¤lt die SchlÃ¼ssel-Nummer (0-19) des gefundenen SchlÃ¼ssels Nr. 7. Hinweise: - 0-19= Nummer des
-        // SchlÃ¼ssels in der Transpondertabelle. - 255= kein weiterer SchlÃ¼ssel gefunden. - ACHTUNG: nicht zu
-        // verwechseln mit CA-Nummer (0-7).
+        // Result enthält die Schlüssel-Nummer (0-19) des gefundenen Schlüssels Nr. 7. Hinweise: - 0-19= Nummer des
+        // Schlüssels in der Transpondertabelle. - 255= kein weiterer Schlüssel gefunden. - ACHTUNG: nicht zu verwechseln
+        // mit CA-Nummer (0-7).
 
     #define I3_RES_BDC_STAT_CA_SCHL_NUM8                             (RXBUF_UCHAR(7))
     #define I3_RES_BDC_STAT_CA_SCHL_NUM8_UNIT                        '0-n'
     #define I3_RES_BDC_STAT_CA_SCHL_NUM8_TYPE                        unsigned char
-        // The result contains the key number (0-19) of the key no. 8. Notes: - 0-19 = number of the key in the
+        // The result contains the key number (0-19) of the key no. 8 found. Notes: - 0-19 = number of the key in the
         // transponder table. - 255 = no further key found. - ATTENTION: not to be confused with CA number (0-7). / Das
-        // Result enthÃ¤lt die SchlÃ¼ssel-Nummer (0-19) des gefundenen SchlÃ¼ssels Nr. 8. Hinweise: - 0-19= Nummer des
-        // SchlÃ¼ssels in der Transpondertabelle. - 255= kein weiterer SchlÃ¼ssel gefunden. - ACHTUNG: nicht zu
-        // verwechseln mit CA-Nummer (0-7).
+        // Result enthält die Schlüssel-Nummer (0-19) des gefundenen Schlüssels Nr. 8. Hinweise: - 0-19= Nummer des
+        // Schlüssels in der Transpondertabelle. - 255= kein weiterer Schlüssel gefunden. - ACHTUNG: nicht zu verwechseln
+        // mit CA-Nummer (0-7).
 
 #define I3_PID_BDC_STEUERN_CA_ANTENNEN_TEST                          0xAC55
         // Activate the CA antenna test. The internal antenna diagnosis is triggered and errors detected are entered in
@@ -261,103 +261,103 @@
         // fault memory entry due to non-fulfilled boundary conditions (e.g. undervoltage). - Only antennas that are
         // coded are tested. / Ansteuern des CA-Antennen-Test. Dabei wird die interne Antennendiagnose angestossen und
         // erkannte Fehler werden entsprechend in Fehlerspeicher eintragen. Hinweise:  - Trotz erkannter Fehler in der
-        // internen Diagnose kann u.U. kein Fehlerspeichereintrag aufgrund nichterfÃ¼llter Randbedingungen (z.B.
+        // internen Diagnose kann u.U. kein Fehlerspeichereintrag aufgrund nichterfüllter Randbedingungen (z.B.
         // Unterspannung) vorhanden sein. - Es werden nur Antennen getestet die codiert sind.
 
     #define I3_RES_BDC_STAT_CA_ANTENNEN_TEST_OKAY                    (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_CA_ANTENNEN_TEST_OKAY_UNIT               '0-n'
     #define I3_RES_BDC_STAT_CA_ANTENNEN_TEST_OKAY_TYPE               unsigned char
-        // The result contains the result of the antenna test. Notes: - Allocation takes place in accordance with table
-        // TAB_CAS_CA_ANTENNEN_TEST. / Das Result enthÃ¤lt das Ergebnis des Antennentests. Hinweise: - Zuordnung erfolgt
-        // gemÃ¤Ã Tabelle TAB_CAS_CA_ANTENNEN_TEST.
+        // The result contains the result of the antenna test. Notes: - Allocation takes place according to table
+        // TAB_CAS_CA_ANTENNEN_TEST. / Das Result enthält das Ergebnis des Antennentests. Hinweise: - Zuordnung erfolgt
+        // gemäß Tabelle TAB_CAS_CA_ANTENNEN_TEST.
 
     #define I3_RES_BDC_STAT_CA_ANTENNEN_VERBAUORT_1                  (RXBUF_UCHAR(1))
     #define I3_RES_BDC_STAT_CA_ANTENNEN_VERBAUORT_1_UNIT             '0-n'
     #define I3_RES_BDC_STAT_CA_ANTENNEN_VERBAUORT_1_TYPE             unsigned char
-        // The result contains the installation location of the 1st antenna in the table. / Das Result enthÃ¤lt das
+        // The result contains the installation location of the 1st antenna in the table. / Das Result enthält das
         // Verbauort der 1. Antenne der Tabelle.
 
     #define I3_RES_BDC_STAT_CA_ANTENNEN_VERBAUORT_2                  (RXBUF_UCHAR(2))
     #define I3_RES_BDC_STAT_CA_ANTENNEN_VERBAUORT_2_UNIT             '0-n'
     #define I3_RES_BDC_STAT_CA_ANTENNEN_VERBAUORT_2_TYPE             unsigned char
-        // The result contains the installation location of the 2nd antenna in the table. / Das Result enthÃ¤lt das
+        // The result contains the installation location of the 2nd antenna in the table. / Das Result enthält das
         // Verbauort der 2. Antenne der Tabelle.
 
     #define I3_RES_BDC_STAT_CA_ANTENNEN_VERBAUORT_3                  (RXBUF_UCHAR(3))
     #define I3_RES_BDC_STAT_CA_ANTENNEN_VERBAUORT_3_UNIT             '0-n'
     #define I3_RES_BDC_STAT_CA_ANTENNEN_VERBAUORT_3_TYPE             unsigned char
-        // The result contains the installation location of the 3rd antenna in the table. / Das Result enthÃ¤lt das
+        // The result contains the installation location of the 3rd antenna in the table. / Das Result enthält das
         // Verbauort der 3. Antenne der Tabelle.
 
     #define I3_RES_BDC_STAT_CA_ANTENNEN_VERBAUORT_4                  (RXBUF_UCHAR(4))
     #define I3_RES_BDC_STAT_CA_ANTENNEN_VERBAUORT_4_UNIT             '0-n'
     #define I3_RES_BDC_STAT_CA_ANTENNEN_VERBAUORT_4_TYPE             unsigned char
-        // The result contains the location of the 4th antenna in the table. / Das Result enthÃ¤lt das Verbauort der 4.
+        // The result contains the location of the 4th antenna in the table. / Das Result enthält das Verbauort der 4.
         // Antenne der Tabelle.
 
     #define I3_RES_BDC_STAT_CA_ANTENNEN_VERBAUORT_5                  (RXBUF_UCHAR(5))
     #define I3_RES_BDC_STAT_CA_ANTENNEN_VERBAUORT_5_UNIT             '0-n'
     #define I3_RES_BDC_STAT_CA_ANTENNEN_VERBAUORT_5_TYPE             unsigned char
-        // The result contains the installation location of the 5th antenna in the table. / Das Result enthÃ¤lt das
+        // The result contains the installation location of the 5th antenna in the table. / Das Result enthält das
         // Verbauort der 5. Antenne der Tabelle.
 
     #define I3_RES_BDC_STAT_CA_ANTENNEN_VERBAUORT_6                  (RXBUF_UCHAR(6))
     #define I3_RES_BDC_STAT_CA_ANTENNEN_VERBAUORT_6_UNIT             '0-n'
     #define I3_RES_BDC_STAT_CA_ANTENNEN_VERBAUORT_6_TYPE             unsigned char
-        // The result contains the installation location of the 6th antenna in the table. / Das Result enthÃ¤lt das
+        // The result contains the installation location of the 6th antenna in the table. / Das Result enthält das
         // Verbauort der 6. Antenne der Tabelle.
 
     #define I3_RES_BDC_STAT_CA_ANTENNEN_VERBAUORT_7                  (RXBUF_UCHAR(7))
     #define I3_RES_BDC_STAT_CA_ANTENNEN_VERBAUORT_7_UNIT             '0-n'
     #define I3_RES_BDC_STAT_CA_ANTENNEN_VERBAUORT_7_TYPE             unsigned char
-        // The result contains the location of the 7th antenna in the table. / Das Result enthÃ¤lt das Verbauort der 7.
+        // The result contains the location of the 7th antenna in the table. / Das Result enthält das Verbauort der 7.
         // Antenne der Tabelle.
 
     #define I3_RES_BDC_STAT_CA_ANTENNEN_VERBAUORT_8                  (RXBUF_UCHAR(8))
     #define I3_RES_BDC_STAT_CA_ANTENNEN_VERBAUORT_8_UNIT             '0-n'
     #define I3_RES_BDC_STAT_CA_ANTENNEN_VERBAUORT_8_TYPE             unsigned char
-        // The result contains the installation location of the 8th antenna in the table. / Das Result enthÃ¤lt das
+        // The result contains the installation location of the 8th antenna in the table. / Das Result enthält das
         // Verbauort der 8. Antenne der Tabelle.
 
     #define I3_RES_BDC_STAT_CA_ANTENNEN_STATUS_1                     (RXBUF_UCHAR(9))
     #define I3_RES_BDC_STAT_CA_ANTENNEN_STATUS_1_UNIT                '0-n'
     #define I3_RES_BDC_STAT_CA_ANTENNEN_STATUS_1_TYPE                unsigned char
-        // The result contains the result of the antenna test. / Das Result enthÃ¤lt das Ergebnis des Antennentests.
+        // The result contains the result of the antenna test. / Das Result enthält das Ergebnis des Antennentests.
 
     #define I3_RES_BDC_STAT_CA_ANTENNEN_STATUS_2                     (RXBUF_UCHAR(10))
     #define I3_RES_BDC_STAT_CA_ANTENNEN_STATUS_2_UNIT                '0-n'
     #define I3_RES_BDC_STAT_CA_ANTENNEN_STATUS_2_TYPE                unsigned char
-        // The result contains the result of the antenna test. / Das Result enthÃ¤lt das Ergebnis des Antennentests.
+        // The result contains the result of the antenna test. / Das Result enthält das Ergebnis des Antennentests.
 
     #define I3_RES_BDC_STAT_CA_ANTENNEN_STATUS_3                     (RXBUF_UCHAR(11))
     #define I3_RES_BDC_STAT_CA_ANTENNEN_STATUS_3_UNIT                '0-n'
     #define I3_RES_BDC_STAT_CA_ANTENNEN_STATUS_3_TYPE                unsigned char
-        // The result contains the result of the antenna test. / Das Result enthÃ¤lt das Ergebnis des Antennentests.
+        // The result contains the result of the antenna test. / Das Result enthält das Ergebnis des Antennentests.
 
     #define I3_RES_BDC_STAT_CA_ANTENNEN_STATUS_4                     (RXBUF_UCHAR(12))
     #define I3_RES_BDC_STAT_CA_ANTENNEN_STATUS_4_UNIT                '0-n'
     #define I3_RES_BDC_STAT_CA_ANTENNEN_STATUS_4_TYPE                unsigned char
-        // The result contains the result of the antenna test. / Das Result enthÃ¤lt das Ergebnis des Antennentests.
+        // The result contains the result of the antenna test. / Das Result enthält das Ergebnis des Antennentests.
 
     #define I3_RES_BDC_STAT_CA_ANTENNEN_STATUS_5                     (RXBUF_UCHAR(13))
     #define I3_RES_BDC_STAT_CA_ANTENNEN_STATUS_5_UNIT                '0-n'
     #define I3_RES_BDC_STAT_CA_ANTENNEN_STATUS_5_TYPE                unsigned char
-        // The result contains the result of the antenna test. / Das Result enthÃ¤lt das Ergebnis des Antennentests.
+        // The result contains the result of the antenna test. / Das Result enthält das Ergebnis des Antennentests.
 
     #define I3_RES_BDC_STAT_CA_ANTENNEN_STATUS_6                     (RXBUF_UCHAR(14))
     #define I3_RES_BDC_STAT_CA_ANTENNEN_STATUS_6_UNIT                '0-n'
     #define I3_RES_BDC_STAT_CA_ANTENNEN_STATUS_6_TYPE                unsigned char
-        // The result contains the result of the antenna test. / Das Result enthÃ¤lt das Ergebnis des Antennentests.
+        // The result contains the result of the antenna test. / Das Result enthält das Ergebnis des Antennentests.
 
     #define I3_RES_BDC_STAT_CA_ANTENNEN_STATUS_7                     (RXBUF_UCHAR(15))
     #define I3_RES_BDC_STAT_CA_ANTENNEN_STATUS_7_UNIT                '0-n'
     #define I3_RES_BDC_STAT_CA_ANTENNEN_STATUS_7_TYPE                unsigned char
-        // The result contains the result of the antenna test. / Das Result enthÃ¤lt das Ergebnis des Antennentests.
+        // The result contains the result of the antenna test. / Das Result enthält das Ergebnis des Antennentests.
 
     #define I3_RES_BDC_STAT_CA_ANTENNEN_STATUS_8                     (RXBUF_UCHAR(16))
     #define I3_RES_BDC_STAT_CA_ANTENNEN_STATUS_8_UNIT                '0-n'
     #define I3_RES_BDC_STAT_CA_ANTENNEN_STATUS_8_TYPE                unsigned char
-        // The result contains the result of the antenna test. / Das Result enthÃ¤lt das Ergebnis des Antennentests.
+        // The result contains the result of the antenna test. / Das Result enthält das Ergebnis des Antennentests.
 
 // Skipping STEUERN_ZV_MASTER on 0xAC57 which takes arguments
 
@@ -366,18 +366,18 @@
         // Check LIN message catalog and SW version 2) Check WUP in the FBD receiver and write if necessary Notes: - The
         // job is called via the standard job STEUERN_ROUTINE with argument 'ARG; STEUERN_FBD_EMPFAENGER_INIT; STR;
         // [arguments] '-Check the LIN message catalog as follows: Version of the FBD receiver> = Coding parameter
-        // RC_LIN_NK_VERSION / Dieser Job dient zum Ansteuern der FBD-Initialisierung. Dabei werden folgende AktivitÃ¤ten
-        // durch das FEM angesteuert: 1) PrÃ¼fen LIN-Nachrichtenkatalog und SW-Version 2) WUP im FBD-EmpfÃ¤nger prÃ¼fen
-        // und ggf. schreiben  Hinweise:  -Aufruf des Jobs erfolgt Ã¼ber Standardjob STEUERN_ROUTINE mit Argument 'ARG;
-        // STEUERN_FBD_EMPFAENGER_INIT;STR;[Argumente]' -PrÃ¼fung der LIN-Nachrichtenkatalog wie folgt:  Version vom
-        // FBD-EmpfÃ¤nger  >= Codierparameter RC_LIN_NK_VERSION
+        // RC_LIN_NK_VERSION / Dieser Job dient zum Ansteuern der FBD-Initialisierung. Dabei werden folgende Aktivitäten
+        // durch das FEM angesteuert: 1) Prüfen LIN-Nachrichtenkatalog und SW-Version 2) WUP im FBD-Empfänger prüfen und
+        // ggf. schreiben  Hinweise:  -Aufruf des Jobs erfolgt über Standardjob STEUERN_ROUTINE mit Argument 'ARG;
+        // STEUERN_FBD_EMPFAENGER_INIT;STR;[Argumente]' -Prüfung der LIN-Nachrichtenkatalog wie folgt:  Version vom
+        // FBD-Empfänger  >= Codierparameter RC_LIN_NK_VERSION
 
     #define I3_RES_BDC_STAT_FBD_EMPFAENGER_INIT                      (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_FBD_EMPFAENGER_INIT_UNIT                 '0-n'
     #define I3_RES_BDC_STAT_FBD_EMPFAENGER_INIT_TYPE                 unsigned char
         // Initialization status of the FBD receiver. Notes: - The assignment is made according to table
-        // TAB_CAS_FBD_EMPFAENGER_INIT_STATUS. / Initialiserungsstatus des FBD EmpfÃ¤ngers. Hinweise: - Die Zuordnung
-        // erfolgt gemÃ¤Ã Tabelle TAB_CAS_FBD_EMPFAENGER_INIT_STATUS.
+        // TAB_CAS_FBD_EMPFAENGER_INIT_STATUS. / Initialiserungsstatus des FBD Empfängers. Hinweise: - Die Zuordnung
+        // erfolgt gemäß Tabelle TAB_CAS_FBD_EMPFAENGER_INIT_STATUS.
 
 // Skipping STEUERN_TRANSPONDERSPULE on 0xAC5B which takes arguments
 
@@ -385,165 +385,165 @@
         // This job is used to activate and deactivate the FBD range measurement for (maximum) 30 minutes. After the
         // range measurement has started, a timer is started and the range measurement mode of the FBD is automatically
         // exited after 30 minutes. Alternatively, the range measurement can also be stopped using a diagnostic job. When
-        // the range measurement is activated, each actuation of any IDG button is confirmed by two acknowledgment
-        // flashes of all the vehicle's indicator lights - regardless of the terminal status. Notes: - Start of the range
+        // the range measurement is activated, each press of any IDG button is confirmed by two acknowledgment flashes of
+        // all the vehicle's indicator lights - regardless of the terminal status. Notes: - Start of the range
         // measurement: The job is called via the standard job STEUERN_ROUTINE with the argument 'ARG;
         // STEUERN_FBD_REICHWEITENMESSUNG; STR '- Stop the range measurement: The job is called via the standard job
-        // STEUERN_ROUTINE with argument' ARG; STEUERN_FBD_REICHWEITENMESSUNG; STPR ' / Dieser Job dient zum Aktiveren
-        // und Deaktivieren der FBD-Reichweitenmessung fÃ¼r (maximal) 30 Minuten.  Nach dem Start der Reichweitenmessung
-        // wird ein Timer gestartet und nach 30 Minuten automatisch der Reichweitenmess-Modus des FBD wieder verlassen.
-        // Alternativ lÃ¤sst sich die Reichweitenmessung auch per Diagnosejob stoppen.  Bei aktivierter
-        // Reichweitenmessung wird jede BetÃ¤tigung einer beliebigen IDG-Taste durch 2-maliges Quittierungblinken aller
-        // Blinkerleuchten des Fahrzeugs - unabhÃ¤ngig vom Klemmenzustand - bestÃ¤tigt.  Hinweise:  - Start der
-        // Reichweitenmessung: Aufruf des Jobs erfolgt Ã¼ber Standardjob STEUERN_ROUTINE mit Argument 'ARG;
-        // STEUERN_FBD_REICHWEITENMESSUNG;STR' - Stoppen der Reichweitenmessung: Aufruf des Jobs erfolgt Ã¼ber
-        // Standardjob STEUERN_ROUTINE mit Argument 'ARG; STEUERN_FBD_REICHWEITENMESSUNG;STPR'
+        // STEUERN_ROUTINE with the argument' ARG; STEUERN_FBD_REICHWEITENMESSUNG; STPR ' / Dieser Job dient zum
+        // Aktiveren und Deaktivieren der FBD-Reichweitenmessung für (maximal) 30 Minuten.  Nach dem Start der
+        // Reichweitenmessung wird ein Timer gestartet und nach 30 Minuten automatisch der Reichweitenmess-Modus des FBD
+        // wieder verlassen. Alternativ lässt sich die Reichweitenmessung auch per Diagnosejob stoppen.  Bei aktivierter
+        // Reichweitenmessung wird jede Betätigung einer beliebigen IDG-Taste durch 2-maliges Quittierungblinken aller
+        // Blinkerleuchten des Fahrzeugs - unabhängig vom Klemmenzustand - bestätigt.  Hinweise:  - Start der
+        // Reichweitenmessung: Aufruf des Jobs erfolgt über Standardjob STEUERN_ROUTINE mit Argument 'ARG;
+        // STEUERN_FBD_REICHWEITENMESSUNG;STR' - Stoppen der Reichweitenmessung: Aufruf des Jobs erfolgt über Standardjob
+        // STEUERN_ROUTINE mit Argument 'ARG; STEUERN_FBD_REICHWEITENMESSUNG;STPR'
 
     #define I3_RES_BDC_STAT_REICHWEITENMESSUNG_AKTIV                 (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_REICHWEITENMESSUNG_AKTIV_UNIT            '0/1'
     #define I3_RES_BDC_STAT_REICHWEITENMESSUNG_AKTIV_TYPE            unsigned char
         // The result contains the status of whether the FBD receiver is in range measurement mode: 0 = range measurement
-        // activated 1 = range measurement deactivated / Das Result enthÃ¤lt den Status, ob der FBD-EmpfÃ¤nger im
+        // activated 1 = range measurement deactivated / Das Result enthält den Status, ob der FBD-Empfänger im
         // Reichweitenmessmodus ist: 0 = Reichweitenmessung aktiviert 1 = Reichweitenmessung deaktiviert
 
 #define I3_PID_BDC_FBD_FEHLER                                        0xAC5E
         // This job is used to read out the diagnosed errors, resets and the disturbance profile of the FBD receiver
         // (which channel was disturbed for how long). / Dieser Job dient zum Auslesen der diagnostizierten Fehler,
-        // Resets und des StÃ¶rprofils des FBD-EmpfÃ¤ngers (Welcher Kanal wurde wie lange gestÃ¶rt).
+        // Resets und des Störprofils des FBD-Empfängers (Welcher Kanal wurde wie lange gestört).
 
     #define I3_RES_BDC_STAT_FEHLER_X                                 (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_FEHLER_X_UNIT                            '0-n'
     #define I3_RES_BDC_STAT_FEHLER_X_TYPE                            unsigned char
         // The result contains the currently recognized errors in the FBD receiver. Note: For each error, a result is
-        // generated dynamically from the bit-coded signal of the FBD receiver. / Das Result enthÃ¤lt die aktuell
-        // erkannten Fehler  im FBD-EmpfÃ¤nger.  Hinweis: Pro Fehler wird ein Result dynamisch aus dem bitcodiertem
-        // Signal des FBD-EmpfÃ¤ngers generiert. 
+        // generated dynamically from the bit-coded signal of the FBD receiver. / Das Result enthält die aktuell
+        // erkannten Fehler  im FBD-Empfänger.  Hinweis: Pro Fehler wird ein Result dynamisch aus dem bitcodiertem Signal
+        // des FBD-Empfängers generiert. 
 
     #define I3_RES_BDC_STAT_ANZAHL_RESETS_WERT                       (RXBUF_UCHAR(1))
     #define I3_RES_BDC_STAT_ANZAHL_RESETS_WERT_TYPE                  unsigned char
         // The result contains the number of FBD receiver resets. 0-254 = number of resets 255 = invalid / unknown / Das
-        // Result enthÃ¤lt die Anzahl an FBD-EmpfÃ¤nger Resets. 0-254 = Anzahl Resets 255 = UngÃ¼ltig/Unbekannt
+        // Result enthält die Anzahl an FBD-Empfänger Resets. 0-254 = Anzahl Resets 255 = Ungültig/Unbekannt
 
     #define I3_RES_BDC_STAT_ANZAHL_STOERUNGEN_KANAL1_PHASE1_WERT     (RXBUF_UCHAR(2))
     #define I3_RES_BDC_STAT_ANZAHL_STOERUNGEN_KANAL1_PHASE1_WERT_TYPE unsigned char
         // The result contains the number of radio interference on channel 1 in the corresponding period. Phase 1 = 1 sec
-        // to 10 sec 0 - 6 = number of radio interference 7 ... 255 = invalid / unknown / Das Result enthÃ¤lt die Anzahl
-        // der FunkstÃ¶rung auf Kanal 1 im entsprechenden Zeitraum.  Phase 1 = 1 sek bis 10 sek 0 - 6 = Anzahl der
-        // FunkstÃ¶rungen 7 ... 255 = UngÃ¼ltig/Unbekannt
+        // to 10 sec 0 - 6 = number of radio interference 7 ... 255 = invalid / unknown / Das Result enthält die Anzahl
+        // der Funkstörung auf Kanal 1 im entsprechenden Zeitraum.  Phase 1 = 1 sek bis 10 sek 0 - 6 = Anzahl der
+        // Funkstörungen 7 ... 255 = Ungültig/Unbekannt
 
     #define I3_RES_BDC_STAT_ANZAHL_STOERUNGEN_KANAL1_PHASE2_WERT     (RXBUF_UCHAR(3))
     #define I3_RES_BDC_STAT_ANZAHL_STOERUNGEN_KANAL1_PHASE2_WERT_TYPE unsigned char
         // The result contains the number of radio interference on channel 1 in the corresponding period. Phase 2 = 10
-        // sec to 1 min 0 - 6 = number of radio interference 7 ... 255 = invalid / unknown / Das Result enthÃ¤lt die
-        // Anzahl der FunkstÃ¶rung auf Kanal 1 im entsprechenden Zeitraum.  Phase 2 = 10 sek bis 1 min 0 - 6 = Anzahl der
-        // FunkstÃ¶rungen 7 ... 255 = UngÃ¼ltig/Unbekannt
+        // sec to 1 min 0 - 6 = number of radio interference 7 ... 255 = invalid / unknown / Das Result enthält die
+        // Anzahl der Funkstörung auf Kanal 1 im entsprechenden Zeitraum.  Phase 2 = 10 sek bis 1 min 0 - 6 = Anzahl der
+        // Funkstörungen 7 ... 255 = Ungültig/Unbekannt
 
     #define I3_RES_BDC_STAT_ANZAHL_STOERUNGEN_KANAL1_PHASE3_WERT     (RXBUF_UCHAR(4))
     #define I3_RES_BDC_STAT_ANZAHL_STOERUNGEN_KANAL1_PHASE3_WERT_TYPE unsigned char
         // The result contains the number of radio interference on channel 1 in the corresponding period. Phase 3 = 1 min
-        // to 10 min 0 - 6 = number of radio interference 7 ... 255 = invalid / unknown / Das Result enthÃ¤lt die Anzahl
-        // der FunkstÃ¶rung auf Kanal 1 im entsprechenden Zeitraum.  Phase 3 = 1 min bis 10 min 0 - 6 = Anzahl der
-        // FunkstÃ¶rungen 7 ... 255 = UngÃ¼ltig/Unbekannt
+        // to 10 min 0 - 6 = number of radio interference 7 ... 255 = invalid / unknown / Das Result enthält die Anzahl
+        // der Funkstörung auf Kanal 1 im entsprechenden Zeitraum.  Phase 3 = 1 min bis 10 min 0 - 6 = Anzahl der
+        // Funkstörungen 7 ... 255 = Ungültig/Unbekannt
 
     #define I3_RES_BDC_STAT_ANZAHL_STOERUNGEN_KANAL1_PHASE4_WERT     (RXBUF_UCHAR(5))
     #define I3_RES_BDC_STAT_ANZAHL_STOERUNGEN_KANAL1_PHASE4_WERT_TYPE unsigned char
         // The result contains the number of radio interference on channel 1 in the corresponding period. Phase 4 =
-        // greater than 10 min 0 - 6 = number of radio interference 7 ... 255 = invalid / unknown / Das Result enthÃ¤lt
-        // die Anzahl der FunkstÃ¶rung auf Kanal 1 im entsprechenden Zeitraum.  Phase 4 = grÃ¶sser 10 min 0 - 6 = Anzahl
-        // der FunkstÃ¶rungen 7 ... 255 = UngÃ¼ltig/Unbekannt
+        // greater than 10 min 0 - 6 = number of radio interference 7 ... 255 = invalid / unknown / Das Result enthält
+        // die Anzahl der Funkstörung auf Kanal 1 im entsprechenden Zeitraum.  Phase 4 = grösser 10 min 0 - 6 = Anzahl
+        // der Funkstörungen 7 ... 255 = Ungültig/Unbekannt
 
     #define I3_RES_BDC_STAT_ANZAHL_STOERUNGEN_KANAL2_PHASE1_WERT     (RXBUF_UCHAR(6))
     #define I3_RES_BDC_STAT_ANZAHL_STOERUNGEN_KANAL2_PHASE1_WERT_TYPE unsigned char
         // The result contains the number of radio interference on channel 2 in the corresponding period. Phase 1 = 1 sec
-        // to 10 sec 0 - 6 = number of radio interference 7 ... 255 = invalid / unknown / Das Result enthÃ¤lt die Anzahl
-        // der FunkstÃ¶rung auf Kanal 2 im entsprechenden Zeitraum.  Phase 1 = 1 sek bis 10 sek 0 - 6 = Anzahl der
-        // FunkstÃ¶rungen 7 ... 255 = UngÃ¼ltig/Unbekannt
+        // to 10 sec 0 - 6 = number of radio interference 7 ... 255 = invalid / unknown / Das Result enthält die Anzahl
+        // der Funkstörung auf Kanal 2 im entsprechenden Zeitraum.  Phase 1 = 1 sek bis 10 sek 0 - 6 = Anzahl der
+        // Funkstörungen 7 ... 255 = Ungültig/Unbekannt
 
     #define I3_RES_BDC_STAT_ANZAHL_STOERUNGEN_KANAL2_PHASE2_WERT     (RXBUF_UCHAR(7))
     #define I3_RES_BDC_STAT_ANZAHL_STOERUNGEN_KANAL2_PHASE2_WERT_TYPE unsigned char
         // The result contains the number of radio interference on channel 2 in the corresponding period. Phase 2 = 10
-        // sec to 1 min 0 - 6 = number of radio interference 7 ... 255 = invalid / unknown / Das Result enthÃ¤lt die
-        // Anzahl der FunkstÃ¶rung auf Kanal 2 im entsprechenden Zeitraum.  Phase 2 = 10 sek bis 1 min 0 - 6 = Anzahl der
-        // FunkstÃ¶rungen 7 ... 255 = UngÃ¼ltig/Unbekannt
+        // sec to 1 min 0 - 6 = number of radio interference 7 ... 255 = invalid / unknown / Das Result enthält die
+        // Anzahl der Funkstörung auf Kanal 2 im entsprechenden Zeitraum.  Phase 2 = 10 sek bis 1 min 0 - 6 = Anzahl der
+        // Funkstörungen 7 ... 255 = Ungültig/Unbekannt
 
     #define I3_RES_BDC_STAT_ANZAHL_STOERUNGEN_KANAL2_PHASE3_WERT     (RXBUF_UCHAR(8))
     #define I3_RES_BDC_STAT_ANZAHL_STOERUNGEN_KANAL2_PHASE3_WERT_TYPE unsigned char
         // The result contains the number of radio interference on channel 2 in the corresponding period. Phase 3 = 1 min
-        // to 10 min 0 - 6 = number of radio interference 7 ... 255 = invalid / unknown / Das Result enthÃ¤lt die Anzahl
-        // der FunkstÃ¶rung auf Kanal 2 im entsprechenden Zeitraum.  Phase 3 = 1 min bis 10 min 0 - 6 = Anzahl der
-        // FunkstÃ¶rungen 7 ... 255 = UngÃ¼ltig/Unbekannt
+        // to 10 min 0 - 6 = number of radio interference 7 ... 255 = invalid / unknown / Das Result enthält die Anzahl
+        // der Funkstörung auf Kanal 2 im entsprechenden Zeitraum.  Phase 3 = 1 min bis 10 min 0 - 6 = Anzahl der
+        // Funkstörungen 7 ... 255 = Ungültig/Unbekannt
 
     #define I3_RES_BDC_STAT_ANZAHL_STOERUNGEN_KANAL2_PHASE4_WERT     (RXBUF_UCHAR(9))
     #define I3_RES_BDC_STAT_ANZAHL_STOERUNGEN_KANAL2_PHASE4_WERT_TYPE unsigned char
         // The result contains the number of radio interference on channel 2 in the corresponding period. Phase 4 =
-        // greater than 10 min 0 - 6 = number of radio interference 7 ... 255 = invalid / unknown / Das Result enthÃ¤lt
-        // die Anzahl der FunkstÃ¶rung auf Kanal 2 im entsprechenden Zeitraum.  Phase 4 = grÃ¶sser 10 min 0 - 6 = Anzahl
-        // der FunkstÃ¶rungen 7 ... 255 = UngÃ¼ltig/Unbekannt
+        // greater than 10 min 0 - 6 = number of radio interference 7 ... 255 = invalid / unknown / Das Result enthält
+        // die Anzahl der Funkstörung auf Kanal 2 im entsprechenden Zeitraum.  Phase 4 = grösser 10 min 0 - 6 = Anzahl
+        // der Funkstörungen 7 ... 255 = Ungültig/Unbekannt
 
     #define I3_RES_BDC_STAT_ANZAHL_STOERUNGEN_KANAL3_PHASE1_WERT     (RXBUF_UCHAR(10))
     #define I3_RES_BDC_STAT_ANZAHL_STOERUNGEN_KANAL3_PHASE1_WERT_TYPE unsigned char
         // The result contains the number of radio interference on channel 3 in the corresponding period. Phase 1 = 1 sec
-        // to 10 sec 0 - 6 = number of radio interference 7 ... 255 = invalid / unknown / Das Result enthÃ¤lt die Anzahl
-        // der FunkstÃ¶rung auf Kanal 3 im entsprechenden Zeitraum.  Phase 1 = 1 sek bis 10 sek 0 - 6 = Anzahl der
-        // FunkstÃ¶rungen 7 ... 255 = UngÃ¼ltig/Unbekannt
+        // to 10 sec 0 - 6 = number of radio interference 7 ... 255 = invalid / unknown / Das Result enthält die Anzahl
+        // der Funkstörung auf Kanal 3 im entsprechenden Zeitraum.  Phase 1 = 1 sek bis 10 sek 0 - 6 = Anzahl der
+        // Funkstörungen 7 ... 255 = Ungültig/Unbekannt
 
     #define I3_RES_BDC_STAT_ANZAHL_STOERUNGEN_KANAL3_PHASE2_WERT     (RXBUF_UCHAR(11))
     #define I3_RES_BDC_STAT_ANZAHL_STOERUNGEN_KANAL3_PHASE2_WERT_TYPE unsigned char
         // The result contains the number of radio interference on channel 3 in the corresponding period. Phase 2 = 10
-        // sec to 1 min 0 - 6 = number of radio interference 7 ... 255 = invalid / unknown / Das Result enthÃ¤lt die
-        // Anzahl der FunkstÃ¶rung auf Kanal 3 im entsprechenden Zeitraum.  Phase 2 = 10 sek bis 1 min 0 - 6 = Anzahl der
-        // FunkstÃ¶rungen 7 ... 255 = UngÃ¼ltig/Unbekannt
+        // sec to 1 min 0 - 6 = number of radio interference 7 ... 255 = invalid / unknown / Das Result enthält die
+        // Anzahl der Funkstörung auf Kanal 3 im entsprechenden Zeitraum.  Phase 2 = 10 sek bis 1 min 0 - 6 = Anzahl der
+        // Funkstörungen 7 ... 255 = Ungültig/Unbekannt
 
     #define I3_RES_BDC_STAT_ANZAHL_STOERUNGEN_KANAL3_PHASE3_WERT     (RXBUF_UCHAR(12))
     #define I3_RES_BDC_STAT_ANZAHL_STOERUNGEN_KANAL3_PHASE3_WERT_TYPE unsigned char
         // The result contains the number of radio interference on channel 3 in the corresponding period. Phase 3 = 1 min
-        // to 10 min 0 - 6 = number of radio interference 7 ... 255 = invalid / unknown / Das Result enthÃ¤lt die Anzahl
-        // der FunkstÃ¶rung auf Kanal 3 im entsprechenden Zeitraum.  Phase 3 = 1 min bis 10 min 0 - 6 = Anzahl der
-        // FunkstÃ¶rungen 7 ... 255 = UngÃ¼ltig/Unbekannt
+        // to 10 min 0 - 6 = number of radio interference 7 ... 255 = invalid / unknown / Das Result enthält die Anzahl
+        // der Funkstörung auf Kanal 3 im entsprechenden Zeitraum.  Phase 3 = 1 min bis 10 min 0 - 6 = Anzahl der
+        // Funkstörungen 7 ... 255 = Ungültig/Unbekannt
 
     #define I3_RES_BDC_STAT_ANZAHL_STOERUNGEN_KANAL3_PHASE4_WERT     (RXBUF_UCHAR(13))
     #define I3_RES_BDC_STAT_ANZAHL_STOERUNGEN_KANAL3_PHASE4_WERT_TYPE unsigned char
         // The result contains the number of radio interference on channel 3 in the corresponding period. Phase 4 =
-        // greater than 10 min 0 - 6 = number of radio interference 7 ... 255 = invalid / unknown / Das Result enthÃ¤lt
-        // die Anzahl der FunkstÃ¶rung auf Kanal 3 im entsprechenden Zeitraum.  Phase 4 = grÃ¶sser 10 min 0 - 6 = Anzahl
-        // der FunkstÃ¶rungen 7 ... 255 = UngÃ¼ltig/Unbekannt
+        // greater than 10 min 0 - 6 = number of radio interference 7 ... 255 = invalid / unknown / Das Result enthält
+        // die Anzahl der Funkstörung auf Kanal 3 im entsprechenden Zeitraum.  Phase 4 = grösser 10 min 0 - 6 = Anzahl
+        // der Funkstörungen 7 ... 255 = Ungültig/Unbekannt
 
 // Skipping FBD_KANALEINSTELLUNG on 0xAC5F which takes arguments
 
 #define I3_PID_BDC_ELSV_TASTER                                       0xD070
-        // Status button for electric steering column adjustment / Status Taster elektrische LenksÃ¤ulenverstellung
+        // Status button for electric steering column adjustment / Status Taster elektrische Lenksäulenverstellung
 
     #define I3_RES_BDC_STAT_TASTER_ELSV_HINTEN_EIN                   (RXBUF_SCHAR(0))
     #define I3_RES_BDC_STAT_TASTER_ELSV_HINTEN_EIN_UNIT              '0/1'
     #define I3_RES_BDC_STAT_TASTER_ELSV_HINTEN_EIN_TYPE              char
         // 0: Push button eLSV backwards not actuated 1: Push button eLSV backwards actuated / 0: Taster eLSV nach hinten
-        // nicht betÃ¤tigt 1: Taster eLSV nach hinten betÃ¤tigt
+        // nicht betätigt 1: Taster eLSV nach hinten betätigt
 
     #define I3_RES_BDC_STAT_TASTER_ELSV_OBEN_EIN                     (RXBUF_SCHAR(1))
     #define I3_RES_BDC_STAT_TASTER_ELSV_OBEN_EIN_UNIT                '0/1'
     #define I3_RES_BDC_STAT_TASTER_ELSV_OBEN_EIN_TYPE                char
-        // 0: Push-button eLSV upwards not actuated 1: Push-button eLSV upwards actuated / 0: Taster eLSV nach oben nicht
-        // betÃ¤tigt 1: Taster eLSV nach oben betÃ¤tigt
+        // 0: Push button eLSV upwards not actuated 1: Push button eLSV upwards actuated / 0: Taster eLSV nach oben nicht
+        // betätigt 1: Taster eLSV nach oben betätigt
 
     #define I3_RES_BDC_STAT_TASTER_ELSV_UNTEN_EIN                    (RXBUF_SCHAR(2))
     #define I3_RES_BDC_STAT_TASTER_ELSV_UNTEN_EIN_UNIT               '0/1'
     #define I3_RES_BDC_STAT_TASTER_ELSV_UNTEN_EIN_TYPE               char
-        // 0: Push button eLSV down not actuated 1: Push button eLSV down actuated / 0: Taster eLSV nach unten nicht
-        // betÃ¤tigt 1: Taster eLSV nach unten betÃ¤tigt
+        // 0: Down button eLSV not pressed 1: eLSV button down pressed / 0: Taster eLSV nach unten nicht betätigt 1:
+        // Taster eLSV nach unten betätigt
 
     #define I3_RES_BDC_STAT_TASTER_ELSV_VORNE_EIN                    (RXBUF_SCHAR(3))
     #define I3_RES_BDC_STAT_TASTER_ELSV_VORNE_EIN_UNIT               '0/1'
     #define I3_RES_BDC_STAT_TASTER_ELSV_VORNE_EIN_TYPE               char
         // 0: Push button eLSV forward not actuated 1: Push button eLSV forward actuated / 0: Taster eLSV nach vorne
-        // nicht betÃ¤tigt 1: Taster eLSV nach vorne betÃ¤tigt
+        // nicht betätigt 1: Taster eLSV nach vorne betätigt
 
     #define I3_RES_BDC_STAT_TASTER_ELSV_NR                           (RXBUF_SCHAR(4))
     #define I3_RES_BDC_STAT_TASTER_ELSV_NR_UNIT                      '0-n'
     #define I3_RES_BDC_STAT_TASTER_ELSV_NR_TYPE                      char
         // 0: eLSV button not pressed 1: eLSV button pressed backwards 2: eLSV button pressed upwards 3: eLSV button
-        // pressed forward 4: eLSV button pressed downwards 5: signal invalid / 0: Taster eLSV nicht betÃ¤tigt 1: Taster
-        // eLSV nach hinten betÃ¤tigt 2: Taster eLSV nach oben betÃ¤tigt 3: Taster eLSV nach vorne betÃ¤tigt 4: Taster
-        // eLSV nach unten betÃ¤tigt 5: Signal ungÃ¼ltig
+        // pressed forward 4: eLSV button pressed downwards 5: signal invalid / 0: Taster eLSV nicht betätigt 1: Taster
+        // eLSV nach hinten betätigt 2: Taster eLSV nach oben betätigt 3: Taster eLSV nach vorne betätigt 4: Taster eLSV
+        // nach unten betätigt 5: Signal ungültig
 
 // Skipping LENKRADHEIZUNG_LED on 0xD071 which takes arguments
 
@@ -551,33 +551,33 @@
 
 #define I3_PID_BDC_LENKRADHEIZUNG_TASTER                             0xD073
         // 0: steering wheel heating button not pressed; 1: Steering wheel heating button pressed / 0: Lenkradheizung
-        // Taster nicht betÃ¤tigt; 1: Lenkradheizung Taster betÃ¤tigt
+        // Taster nicht betätigt; 1: Lenkradheizung Taster betätigt
 
     #define I3_RES_BDC_STAT_TASTER_LENKRADHEIZUNG_EIN                (RXBUF_SCHAR(0))
     #define I3_RES_BDC_STAT_TASTER_LENKRADHEIZUNG_EIN_UNIT           '0/1'
     #define I3_RES_BDC_STAT_TASTER_LENKRADHEIZUNG_EIN_TYPE           char
         // 0: steering wheel heating button not pressed; 1: Steering wheel heating button pressed / 0: Lenkradheizung
-        // Taster nicht betÃ¤tigt; 1: Lenkradheizung Taster betÃ¤tigt
+        // Taster nicht betätigt; 1: Lenkradheizung Taster betätigt
 
 // Skipping LENKRADHEIZUNG on 0xD074 which takes arguments
 
 #define I3_PID_BDC_ELSV_STATEMACHINE                                 0xD07B
-        // &lt;&lt;&lt; to be filled by the delivery person !!! &gt;&gt;&gt; / <<< vom Lieferanren zu befÃ¼llen !!! >>>
+        // &lt;&lt;&lt; to be filled by the delivery person !!! &gt;&gt;&gt; / <<< vom Lieferanren zu befüllen !!! >>>
 
     #define I3_RES_BDC_STAT_STATEMACHINE                             (RXBUF_SINT(0))
     #define I3_RES_BDC_STAT_STATEMACHINE_UNIT                        '0-n'
     #define I3_RES_BDC_STAT_STATEMACHINE_TYPE                        short
-        // &lt;&lt;&lt; to be filled by the delivery person !!! &gt;&gt;&gt; / <<< vom Lieferanren zu befÃ¼llen !!! >>>
+        // &lt;&lt;&lt; to be filled by the delivery person !!! &gt;&gt;&gt; / <<< vom Lieferanren zu befüllen !!! >>>
 
 #define I3_PID_BDC_ELSV_VORHANDEN                                    0xD07F
-        // Electric steering column adjustment 0: not available 1: available / Elektrische LenksÃ¤ulenverstellung 0:
-        // nicht vorhanden 1: vorhanden
+        // Electric steering column adjustment 0: not available 1: available / Elektrische Lenksäulenverstellung 0: nicht
+        // vorhanden 1: vorhanden
 
     #define I3_RES_BDC_STAT_VORHANDEN_ELSV_EIN                       (RXBUF_SINT(0))
     #define I3_RES_BDC_STAT_VORHANDEN_ELSV_EIN_UNIT                  '0/1'
     #define I3_RES_BDC_STAT_VORHANDEN_ELSV_EIN_TYPE                  short
-        // Electric steering column adjustment 0: not available 1: available / Elektrische LenksÃ¤ulenverstellung 0:
-        // nicht vorhanden 1: vorhanden
+        // Electric steering column adjustment 0: not available 1: available / Elektrische Lenksäulenverstellung 0: nicht
+        // vorhanden 1: vorhanden
 
 #define I3_PID_BDC_LENKRAD_MFL                                       0xD081
         // Status of the MFL buttons / Status der MFL-Tasten
@@ -585,76 +585,76 @@
     #define I3_RES_BDC_STAT_TASTER_LENKRAD_MFL_FGR_SET_EIN           (RXBUF_SCHAR(0))
     #define I3_RES_BDC_STAT_TASTER_LENKRAD_MFL_FGR_SET_EIN_UNIT      '0-n'
     #define I3_RES_BDC_STAT_TASTER_LENKRAD_MFL_FGR_SET_EIN_TYPE      char
-        // 0: FGR button SET not pressed 1: FGR button SET pressed / 0: FGR-Taste SET nicht betÃ¤tigt 1: FGR-Taste SET
-        // betÃ¤tigt
+        // 0: FGR button SET not pressed 1: FGR button SET pressed / 0: FGR-Taste SET nicht betätigt 1: FGR-Taste SET
+        // betätigt
 
     #define I3_RES_BDC_STAT_TASTER_LENKRAD_MFL_FGR_TIPPRAENDEL_NR    (RXBUF_SCHAR(1))
     #define I3_RES_BDC_STAT_TASTER_LENKRAD_MFL_FGR_TIPPRAENDEL_NR_UNIT '0-n'
     #define I3_RES_BDC_STAT_TASTER_LENKRAD_MFL_FGR_TIPPRAENDEL_NR_TYPE char
-        // 0: no operation 1: knurl at level 2 below 2: knurl at level 1 below 3: knurl at level 1 above 4: knurl at
-        // level 2 above 5: invalid position / 0: Keine BetÃ¤tigung  1: RÃ¤ndel auf Stufe 2 unten 2: RÃ¤ndel auf Stufe 1
-        // unten 3: RÃ¤ndel auf Stufe 1 oben 4: RÃ¤ndel auf Stufe 2 oben 5: ungÃ¼ltige Position
+        // 0: No operation 1: Knurl on level 2 below 2: Knurl on level 1 below 3: Knurl on level 1 above 4: Knurl on
+        // level 2 above 5: Invalid position / 0: Keine Betätigung  1: Rändel auf Stufe 2 unten 2: Rändel auf Stufe 1
+        // unten 3: Rändel auf Stufe 1 oben 4: Rändel auf Stufe 2 oben 5: ungültige Position
 
     #define I3_RES_BDC_STAT_TASTER_LENKRAD_MFL_FGR_RES_EIN           (RXBUF_SCHAR(2))
     #define I3_RES_BDC_STAT_TASTER_LENKRAD_MFL_FGR_RES_EIN_UNIT      '0-n'
     #define I3_RES_BDC_STAT_TASTER_LENKRAD_MFL_FGR_RES_EIN_TYPE      char
         // 0: FGR button RES (resume) not pressed 1: FGR button RES (resume) pressed / 0: FGR-Taste RES (Wiederaufnahme)
-        // nicht betÃ¤tigt  1: FGR-Taste RES (Wiederaufnahme) betÃ¤tigt
+        // nicht betätigt  1: FGR-Taste RES (Wiederaufnahme) betätigt
 
     #define I3_RES_BDC_STAT_TASTER_LENKRAD_MFL_UMSCHALT_TASTE_EIN    (RXBUF_SCHAR(3))
     #define I3_RES_BDC_STAT_TASTER_LENKRAD_MFL_UMSCHALT_TASTE_EIN_UNIT '0-n'
     #define I3_RES_BDC_STAT_TASTER_LENKRAD_MFL_UMSCHALT_TASTE_EIN_TYPE char
-        // 0: ACC / DCC toggle key not pressed 1: ACC / DCC toggle key pressed / 0: Umschalttaste ACC/ DCC nicht
-        // betÃ¤tigt  1: Umschalttaste ACC/ DCC betÃ¤tigt
+        // 0: ACC / DCC toggle key not pressed 1: ACC / DCC toggle key pressed / 0: Umschalttaste ACC/ DCC nicht betätigt
+        // 1: Umschalttaste ACC/ DCC betätigt
 
     #define I3_RES_BDC_STAT_TASTER_LENKRAD_MFL_ACC_ABSTAND_EIN       (RXBUF_SCHAR(4))
     #define I3_RES_BDC_STAT_TASTER_LENKRAD_MFL_ACC_ABSTAND_EIN_UNIT  '0-n'
     #define I3_RES_BDC_STAT_TASTER_LENKRAD_MFL_ACC_ABSTAND_EIN_TYPE  char
         // 0: FGR button ACC distance not pressed 1: FGR button ACC distance pressed / 0: FGR-Taste ACC-Abstand nicht
-        // betÃ¤tigt  1: FGR-Taste ACC-Abstand betÃ¤tigt
+        // betätigt  1: FGR-Taste ACC-Abstand betätigt
 
     #define I3_RES_BDC_STAT_TASTER_LENKRAD_MFL_FGR_OFF_EIN           (RXBUF_SCHAR(5))
     #define I3_RES_BDC_STAT_TASTER_LENKRAD_MFL_FGR_OFF_EIN_UNIT      '0-n'
     #define I3_RES_BDC_STAT_TASTER_LENKRAD_MFL_FGR_OFF_EIN_TYPE      char
-        // 0: FGR button OFF not pressed 1: FGR button OFF pressed / 0: FGR-Taste OFF nicht betÃ¤tigt 1: FGR-Taste OFF
-        // betÃ¤tigt
+        // 0: FGR button OFF not pressed 1: FGR button OFF pressed / 0: FGR-Taste OFF nicht betätigt 1: FGR-Taste OFF
+        // betätigt
 
     #define I3_RES_BDC_STAT_TASTER_LENKRAD_MFL_PUSH_TO_TALK_EIN      (RXBUF_SCHAR(6))
     #define I3_RES_BDC_STAT_TASTER_LENKRAD_MFL_PUSH_TO_TALK_EIN_UNIT '0-n'
     #define I3_RES_BDC_STAT_TASTER_LENKRAD_MFL_PUSH_TO_TALK_EIN_TYPE char
-        // 0: Push to talk not activated 1: Push to talk activated / 0: Push to talk nicht betÃ¤tigt  1: Push to talk
-        // betÃ¤tigt
+        // 0: Push to talk not activated 1: Push to talk activated / 0: Push to talk nicht betätigt  1: Push to talk
+        // betätigt
 
     #define I3_RES_BDC_STAT_TASTER_LENKRAD_MFL_MODE_TASTE            (RXBUF_SCHAR(7))
     #define I3_RES_BDC_STAT_TASTER_LENKRAD_MFL_MODE_TASTE_UNIT       '0-n'
     #define I3_RES_BDC_STAT_TASTER_LENKRAD_MFL_MODE_TASTE_TYPE       char
-        // 0: Source / Mode button not pressed 1: Source / Mode button pressed / 0: Taste Source / Mode nicht betÃ¤tigt
-        // 1: Taste Source / Mode betÃ¤tigt
+        // 0: Source / Mode button not pressed 1: Source / Mode button pressed / 0: Taste Source / Mode nicht betätigt 1:
+        // Taste Source / Mode betätigt
 
     #define I3_RES_BDC_STAT_TASTER_LENKRAD_MFL_TIPPRAENDEL_BC_NR     (RXBUF_SCHAR(8))
     #define I3_RES_BDC_STAT_TASTER_LENKRAD_MFL_TIPPRAENDEL_BC_NR_UNIT '0-n'
     #define I3_RES_BDC_STAT_TASTER_LENKRAD_MFL_TIPPRAENDEL_BC_NR_TYPE char
         // 0: On-board computer (BC) tapping knurl not activated 1: On-board computer tapping knurl pressed 2: Tipping
-        // knurl down 3: Typing knurl up 4: Invalid position / 0: TipprÃ¤ndel Bordcomputer (BC) nicht betÃ¤tigt 1:
-        // TipprÃ¤ndel Bordcomputer gedrÃ¼ckt  2: TipprÃ¤ndel nach unten 3: TipprÃ¤ndel nach oben 4: ungÃ¼ltige Position
+        // knurl down 3: Typing knurl up 4: Invalid position / 0: Tipprändel Bordcomputer (BC) nicht betätigt 1:
+        // Tipprändel Bordcomputer gedrückt  2: Tipprändel nach unten 3: Tipprändel nach oben 4: ungültige Position
 
     #define I3_RES_BDC_STAT_TASTER_LENKRAD_MFL_TEL_EIN               (RXBUF_SCHAR(9))
     #define I3_RES_BDC_STAT_TASTER_LENKRAD_MFL_TEL_EIN_UNIT          '0-n'
     #define I3_RES_BDC_STAT_TASTER_LENKRAD_MFL_TEL_EIN_TYPE          char
-        // 0: Telephone key not pressed 1: Telephone key pressed / 0: Telefontaste nicht betÃ¤tigt  1: Telefontaste
-        // betÃ¤tigt
+        // 0: Telephone key not pressed 1: Telephone key pressed / 0: Telefontaste nicht betätigt  1: Telefontaste
+        // betätigt
 
     #define I3_RES_BDC_STAT_TASTER_LENKRAD_MFL_VOL_MINUS_EIN         (RXBUF_SCHAR(10))
     #define I3_RES_BDC_STAT_TASTER_LENKRAD_MFL_VOL_MINUS_EIN_UNIT    '0-n'
     #define I3_RES_BDC_STAT_TASTER_LENKRAD_MFL_VOL_MINUS_EIN_TYPE    char
         // 0: Volume / volume minus button not pressed 1: Volume / volume minus button pressed / 0: Taste
-        // Volume/LautstÃ¤rke minus nicht betÃ¤tigt 1: Taste Volume/LautstÃ¤rke minus betÃ¤tigt
+        // Volume/Lautstärke minus nicht betätigt 1: Taste Volume/Lautstärke minus betätigt
 
     #define I3_RES_BDC_STAT_TASTER_LENKRAD_MFL_VOL_PLUS_EIN          (RXBUF_SCHAR(11))
     #define I3_RES_BDC_STAT_TASTER_LENKRAD_MFL_VOL_PLUS_EIN_UNIT     '0-n'
     #define I3_RES_BDC_STAT_TASTER_LENKRAD_MFL_VOL_PLUS_EIN_TYPE     char
-        // 0: Volume / volume plus button not pressed 1: Volume / volume plus button pressed / 0: Taste
-        // Volume/LautstÃ¤rke plus nicht betÃ¤tigt 1: Taste Volume/LautstÃ¤rke plus betÃ¤tigt
+        // 0: Volume / volume plus button not pressed 1: Volume / volume plus button pressed / 0: Taste Volume/Lautstärke
+        // plus nicht betätigt 1: Taste Volume/Lautstärke plus betätigt
 
     #define I3_RES_BDC_STAT_TASTER_LENKRAD_MFL1_NR                   (RXBUF_SCHAR(12))
     #define I3_RES_BDC_STAT_TASTER_LENKRAD_MFL1_NR_UNIT              '0-n'
@@ -688,23 +688,23 @@
     #define I3_RES_BDC_STAT_ELSV_BEWEGUNG_OBEN_EIN                   (RXBUF_SCHAR(4))
     #define I3_RES_BDC_STAT_ELSV_BEWEGUNG_OBEN_EIN_UNIT              '0/1'
     #define I3_RES_BDC_STAT_ELSV_BEWEGUNG_OBEN_EIN_TYPE              char
-        // 0: ELSV does not move upwards 1: ELSV moves upwards / 0: ELSV fÃ¤hrt nicht nach oben  1: ELSV fÃ¤hrt nach oben
+        // 0: ELSV does not move upwards 1: ELSV moves upwards / 0: ELSV fährt nicht nach oben  1: ELSV fährt nach oben
 
     #define I3_RES_BDC_STAT_ELSV_BEWEGUNG_UNTEN_EIN                  (RXBUF_SCHAR(5))
     #define I3_RES_BDC_STAT_ELSV_BEWEGUNG_UNTEN_EIN_UNIT             '0/1'
     #define I3_RES_BDC_STAT_ELSV_BEWEGUNG_UNTEN_EIN_TYPE             char
-        // 0: ELSV does not move down 1: ELSV moves down / 0: ELSV fÃ¤hrt nicht nach unten  1: ELSV fÃ¤hrt nach unten
+        // 0: ELSV does not move down 1: ELSV moves down / 0: ELSV fährt nicht nach unten  1: ELSV fährt nach unten
 
     #define I3_RES_BDC_STAT_ELSV_BEWEGUNG_EINGEFAHREN_EIN            (RXBUF_SCHAR(6))
     #define I3_RES_BDC_STAT_ELSV_BEWEGUNG_EINGEFAHREN_EIN_UNIT       '0/1'
     #define I3_RES_BDC_STAT_ELSV_BEWEGUNG_EINGEFAHREN_EIN_TYPE       char
-        // 0: ELSV does not retract (front) 1: ELSV retracts (front) / 0: ELSV fÃ¤hrt nicht ein (vorne)  1: ELSV fÃ¤hrt
-        // ein (vorne)
+        // 0: ELSV does not retract (front) 1: ELSV retracts (front) / 0: ELSV fährt nicht ein (vorne)  1: ELSV fährt ein
+        // (vorne)
 
     #define I3_RES_BDC_STAT_ELSV_BEWEGUNG_AUSGEFAHREN_EIN            (RXBUF_SCHAR(7))
     #define I3_RES_BDC_STAT_ELSV_BEWEGUNG_AUSGEFAHREN_EIN_UNIT       '0/1'
     #define I3_RES_BDC_STAT_ELSV_BEWEGUNG_AUSGEFAHREN_EIN_TYPE       char
-        // 0: ELSV does not extend (rear) 1: ELSV extends (rear) / 0: ELSV fÃ¤hrt nicht aus (hinten)  1: ELSV fÃ¤hrt nach
+        // 0: ELSV does not extend (rear) 1: ELSV extends (rear) / 0: ELSV fährt nicht aus (hinten)  1: ELSV fährt nach
         // aus (hinten)
 
     #define I3_RES_BDC_STAT_ELSV_SOFTSTOP_OBEN_EIN                   (RXBUF_SCHAR(8))
@@ -741,14 +741,14 @@
 
 #define I3_PID_BDC_SMO_SPIELSCHUTZZAEHLER                            0xD096
         // The result indicates how often the SMO sensor has detected a trip without a valid key being detected in the
-        // rear exterior / Das Result gibt an, wie oft der SMO-Sensor eine AuslÃ¶sung erkannt hat, ohne das ein gÃ¼ltiger
-        // SchlÃ¼ssel im Heck-Aussenraum erkannt wurde
+        // rear exterior / Das Result gibt an, wie oft der SMO-Sensor eine Auslösung erkannt hat, ohne das ein gültiger
+        // Schlüssel im Heck-Aussenraum erkannt wurde
 
     #define I3_RES_BDC_STAT_SPIELSCHUTZZAEHLER_WERT                  (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_SPIELSCHUTZZAEHLER_WERT_TYPE             unsigned char
         // The result indicates how often the SMO sensor has detected a trip without a valid key being detected in the
-        // rear exterior / Das Result gibt an, wie oft der SMO-Sensor eine AuslÃ¶sung erkannt hat, ohne das ein gÃ¼ltiger
-        // SchlÃ¼ssel im Heck-Aussenraum erkannt wurde
+        // rear exterior / Das Result gibt an, wie oft der SMO-Sensor eine Auslösung erkannt hat, ohne das ein gültiger
+        // Schlüssel im Heck-Aussenraum erkannt wurde
 
 #define I3_PID_BDC_SMO_VARIANTE                                      0xD098
         // The result indicates which vehicle type the SMO has just set / Das Result gibt an, welchen Fahrzeugtyp das SMO
@@ -761,17 +761,17 @@
         // gerade eingestellt hat
 
 #define I3_PID_BDC_PLOCK                                             0xD09D
-        // The result contains the current status of the HW input PLOCK / Das Result enthÃ¤lt den aktuellen Zustand des
+        // The result contains the current status of the HW input PLOCK / Das Result enthält den aktuellen Zustand des
         // HW-Eingangs PLOCK
 
     #define I3_RES_BDC_STAT_PLOCK_AKTIV                              (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_PLOCK_AKTIV_UNIT                         '0-n'
     #define I3_RES_BDC_STAT_PLOCK_AKTIV_TYPE                         unsigned char
-        // The result contains the current status of the HW input PLOCK / Das Result enthÃ¤lt den aktuellen Zustand des
+        // The result contains the current status of the HW input PLOCK / Das Result enthält den aktuellen Zustand des
         // HW-Eingangs PLOCK
 
 #define I3_PID_BDC_ZUSATZINFO_LICHT                                  0xD0F1
-        // Detailed information on the energy requirement for light / Detailinformation zum Energiebedarf fÃ¼r Licht
+        // Detailed information on the energy requirement for light / Detailinformation zum Energiebedarf für Licht
 
     #define I3_RES_BDC_STAT_KM_STAND_1_WERT                          (RXBUF_UINT32(0))
     #define I3_RES_BDC_STAT_KM_STAND_1_WERT_UNIT                     'km'
@@ -790,7 +790,7 @@
     #define I3_RES_BDC_STAT_DAUER_1_WERT                             (RXBUF_UINT(6))
     #define I3_RES_BDC_STAT_DAUER_1_WERT_UNIT                        'min'
     #define I3_RES_BDC_STAT_DAUER_1_WERT_TYPE                        unsigned short
-        // Duration of light activity while standing / Dauer der LichtaktivitÃ¤t im Stand
+        // Duration of light activity while standing / Dauer der Lichtaktivität im Stand
 
     #define I3_RES_BDC_STAT_LICHT_1_NR                               (RXBUF_UCHAR(8))
     #define I3_RES_BDC_STAT_LICHT_1_NR_UNIT                          '0-n'
@@ -799,15 +799,15 @@
 
     #define I3_RES_BDC_STAT_ABSCHALTUNG_LICHT_1_WERT                 (RXBUF_UCHAR(9))
     #define I3_RES_BDC_STAT_ABSCHALTUNG_LICHT_1_WERT_TYPE            unsigned char
-        // Switch-off light at SFG (it was switched off after 12 hours had elapsed and the start capability limit was
-        // reached). / Abschaltung Licht bei SFG (fand eine Abschaltung nach Ablauf 12h und Erreichen der
-        // StartfÃ¤higkeitsgrenze statt).
+        // Switch off light at SFG (it was switched off after 12 hours and the start capability limit was reached). /
+        // Abschaltung Licht bei SFG (fand eine Abschaltung nach Ablauf 12h und Erreichen der Startfähigkeitsgrenze
+        // statt).
 
     #define I3_RES_BDC_STAT_ABSCHALTVERHINDERER_1_WERT               (RXBUF_UCHAR(10))
     #define I3_RES_BDC_STAT_ABSCHALTVERHINDERER_1_WERT_TYPE          unsigned char
-        // Shutdown prevention reason light (reaching upper start capability limit and 12h timer not expired, no opening
-        // of the driver's door, further tbd). / Abschaltverhinderergrund Licht (Erreichen obere StartfÃ¤higkeitsgrenze
-        // und 12h Timer nicht abgelaufen, kein Ãffnen der FahrertÃ¼r, weitere tbd).
+        // Shutdown prevention reason light (reaching upper start capability limit and 12h timer not expired, driver's
+        // door not opened, further tbd). / Abschaltverhinderergrund Licht (Erreichen obere Startfähigkeitsgrenze und 12h
+        // Timer nicht abgelaufen, kein Öffnen der Fahrertür, weitere tbd).
 
     #define I3_RES_BDC_STAT_KLEMMENSTATUS_1_WERT                     (RXBUF_UCHAR(11))
     #define I3_RES_BDC_STAT_KLEMMENSTATUS_1_WERT_TYPE                unsigned char
@@ -830,7 +830,7 @@
     #define I3_RES_BDC_STAT_DAUER_2_WERT                             (RXBUF_UINT(18))
     #define I3_RES_BDC_STAT_DAUER_2_WERT_UNIT                        'min'
     #define I3_RES_BDC_STAT_DAUER_2_WERT_TYPE                        unsigned short
-        // Duration of light activity while standing / Dauer der LichtaktivitÃ¤t im Stand
+        // Duration of light activity while standing / Dauer der Lichtaktivität im Stand
 
     #define I3_RES_BDC_STAT_LICHT_2_NR                               (RXBUF_UCHAR(20))
     #define I3_RES_BDC_STAT_LICHT_2_NR_UNIT                          '0-n'
@@ -839,43 +839,43 @@
 
     #define I3_RES_BDC_STAT_ABSCHALTUNG_LICHT_2_WERT                 (RXBUF_UCHAR(21))
     #define I3_RES_BDC_STAT_ABSCHALTUNG_LICHT_2_WERT_TYPE            unsigned char
-        // Switch-off light at SFG (it was switched off after 12 hours had elapsed and the start capability limit was
-        // reached). / Abschaltung Licht bei SFG (fand eine Abschaltung nach Ablauf 12h und Erreichen der
-        // StartfÃ¤higkeitsgrenze statt).
+        // Switch off light at SFG (it was switched off after 12 hours and the start capability limit was reached). /
+        // Abschaltung Licht bei SFG (fand eine Abschaltung nach Ablauf 12h und Erreichen der Startfähigkeitsgrenze
+        // statt).
 
     #define I3_RES_BDC_STAT_ABSCHALTVERHINDERER_2_WERT               (RXBUF_UCHAR(22))
     #define I3_RES_BDC_STAT_ABSCHALTVERHINDERER_2_WERT_TYPE          unsigned char
-        // Shutdown prevention reason light (reaching upper start capability limit and 12h timer not expired, no opening
-        // of the driver's door, further tbd). / Abschaltverhinderergrund Licht (Erreichen obere StartfÃ¤higkeitsgrenze
-        // und 12h Timer nicht abgelaufen, kein Ãffnen der FahrertÃ¼r, weitere tbd).
+        // Shutdown prevention reason light (reaching upper start capability limit and 12h timer not expired, driver's
+        // door not opened, further tbd). / Abschaltverhinderergrund Licht (Erreichen obere Startfähigkeitsgrenze und 12h
+        // Timer nicht abgelaufen, kein Öffnen der Fahrertür, weitere tbd).
 
     #define I3_RES_BDC_STAT_KLEMMENSTATUS_2_WERT                     (RXBUF_UCHAR(23))
     #define I3_RES_BDC_STAT_KLEMMENSTATUS_2_WERT_TYPE                unsigned char
         // Terminal status (at the time of entry / snapshot). / Klemmenstatus (zum Zeitpunkt des Eintrags/Snapshots).
 
 #define I3_PID_BDC_HANDBREMSE_KONTAKT                                0xD130
-        // 0: handbrake released; 1: handbrake applied / 0: Handbremse gelÃ¶st; 1: Handbremse angezogen
+        // 0: handbrake released; 1: handbrake applied / 0: Handbremse gelöst; 1: Handbremse angezogen
 
     #define I3_RES_BDC_STAT_HANDBREMSE_KONTAKT_EIN                   (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_HANDBREMSE_KONTAKT_EIN_UNIT              '0/1'
     #define I3_RES_BDC_STAT_HANDBREMSE_KONTAKT_EIN_TYPE              unsigned char
-        // 0: handbrake released; 1: handbrake applied / 0: Handbremse gelÃ¶st; 1: Handbremse angezogen
+        // 0: handbrake released; 1: handbrake applied / 0: Handbremse gelöst; 1: Handbremse angezogen
 
 #define I3_PID_BDC_SITZHEIZUNG_HINTEN_TASTER_LINKS                   0xD161
-        // 0 = button not pressed, 1 = button pressed / 0 = Taste nicht betÃ¤tigt, 1 = Taste betÃ¤tigt
+        // 0 = button not pressed, 1 = button pressed / 0 = Taste nicht betätigt, 1 = Taste betätigt
 
     #define I3_RES_BDC_STAT_TASTER_SITZHEIZUNG_HINTEN_LINKS_EIN      (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_TASTER_SITZHEIZUNG_HINTEN_LINKS_EIN_UNIT '0/1'
     #define I3_RES_BDC_STAT_TASTER_SITZHEIZUNG_HINTEN_LINKS_EIN_TYPE unsigned char
-        // 0 = button not pressed, 1 = button pressed / 0 = Taste nicht betÃ¤tigt, 1 = Taste betÃ¤tigt
+        // 0 = button not pressed, 1 = button pressed / 0 = Taste nicht betätigt, 1 = Taste betätigt
 
 #define I3_PID_BDC_SITZHEIZUNG_HINTEN_TASTER_RECHTS                  0xD162
-        // 0 = button not pressed, 1 = button pressed / 0 = Taste nicht betÃ¤tigt, 1 = Taste betÃ¤tigt
+        // 0 = button not pressed, 1 = button pressed / 0 = Taste nicht betätigt, 1 = Taste betätigt
 
     #define I3_RES_BDC_STAT_TASTER_SITZHEIZUNG_HINTEN_RECHTS_EIN     (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_TASTER_SITZHEIZUNG_HINTEN_RECHTS_EIN_UNIT '0/1'
     #define I3_RES_BDC_STAT_TASTER_SITZHEIZUNG_HINTEN_RECHTS_EIN_TYPE unsigned char
-        // 0 = button not pressed, 1 = button pressed / 0 = Taste nicht betÃ¤tigt, 1 = Taste betÃ¤tigt
+        // 0 = button not pressed, 1 = button pressed / 0 = Taste nicht betätigt, 1 = Taste betätigt
 
 #define I3_PID_BDC_FH_FA_TASTER                                      0xD188
         // Status FH button driver / Status FH-Taster Fahrer
@@ -906,7 +906,7 @@
     #define I3_RES_BDC_STAT_TASTER_FA_HS_NR                          (RXBUF_UCHAR(4))
     #define I3_RES_BDC_STAT_TASTER_FA_HS_NR_UNIT                     '0-n'
     #define I3_RES_BDC_STAT_TASTER_FA_HS_NR_TYPE                     unsigned char
-        // Driver side (keypad): button H rear window see table / Fahrerseite (Tastenblock): Taster HEckscheibe siehe
+        // Driver's side (keypad): button H rear window see table / Fahrerseite (Tastenblock): Taster HEckscheibe siehe
         // Tabelle
 
     #define I3_RES_BDC_STAT_TASTER_FA_RESERVE                        (RXBUF_UINT32(5))
@@ -977,7 +977,7 @@
     #define I3_RES_BDC_STAT_FH_FA_INIT_NR_UNIT                       '0-n'
     #define I3_RES_BDC_STAT_FH_FA_INIT_NR_TYPE                       unsigned char
         // 0x01 - INIT window regulator complete IO 0x02 - 0x08 One or more errors have occurred / 0x01 - Fensterheber
-        // INIT vollstÃ¤ndig IO 0x02 - 0x08 Ein oder mehrere Fehler sind aufgetreten
+        // INIT vollständig IO 0x02 - 0x08 Ein oder mehrere Fehler sind aufgetreten
 
     #define I3_RES_BDC_STAT_FH_FA_BEWEGUNG_NR                        (RXBUF_UCHAR(1))
     #define I3_RES_BDC_STAT_FH_FA_BEWEGUNG_NR_UNIT                   '0-n'
@@ -1024,8 +1024,8 @@
     #define I3_RES_BDC_STAT_FH_FA_ZUSTAND_TUER_NR                    (RXBUF_UCHAR(13))
     #define I3_RES_BDC_STAT_FH_FA_ZUSTAND_TUER_NR_UNIT               '0-n'
     #define I3_RES_BDC_STAT_FH_FA_ZUSTAND_TUER_NR_TYPE               unsigned char
-        // Status of the door contact that is available to the motor driver. / Status TÃ¼rkontakt, der den Motortreiber
-        // zur VerfÃ¼gung steht.
+        // Status of the door contact that is available to the motor driver. / Status Türkontakt, der den Motortreiber
+        // zur Verfügung steht.
 
     #define I3_RES_BDC_STAT_FH_FA_FREIGABE_AKTIV_NR                  (RXBUF_UCHAR(14))
     #define I3_RES_BDC_STAT_FH_FA_FREIGABE_AKTIV_NR_UNIT             '0-n'
@@ -1035,7 +1035,7 @@
     #define I3_RES_BDC_STAT_FH_FA_PANIKMODUS_AKTIV_NR                (RXBUF_UCHAR(15))
     #define I3_RES_BDC_STAT_FH_FA_PANIKMODUS_AKTIV_NR_UNIT           '0-n'
     #define I3_RES_BDC_STAT_FH_FA_PANIKMODUS_AKTIV_NR_TYPE           unsigned char
-        // Status link enable panic mode / Status VerknÃ¼pfung Freigabe Panikmodus
+        // Status link enable panic mode / Status Verknüpfung Freigabe Panikmodus
 
     #define I3_RES_BDC_STAT_FH_FA_RESERVE                            (RXBUF_UINT32(16))
     #define I3_RES_BDC_STAT_FH_FA_RESERVE_UNIT                       '0/1'
@@ -1049,7 +1049,7 @@
     #define I3_RES_BDC_STAT_FH_BF_INIT_NR_UNIT                       '0-n'
     #define I3_RES_BDC_STAT_FH_BF_INIT_NR_TYPE                       unsigned char
         // 0x01 - INIT window regulator complete IO 0x02 - 0x08 One or more errors have occurred / 0x01 - Fensterheber
-        // INIT vollstÃ¤ndig IO 0x02 - 0x08 Ein oder mehrere Fehler sind aufgetreten
+        // INIT vollständig IO 0x02 - 0x08 Ein oder mehrere Fehler sind aufgetreten
 
     #define I3_RES_BDC_STAT_FH_BF_BEWEGUNG_NR                        (RXBUF_UCHAR(1))
     #define I3_RES_BDC_STAT_FH_BF_BEWEGUNG_NR_UNIT                   '0-n'
@@ -1096,8 +1096,8 @@
     #define I3_RES_BDC_STAT_FH_BF_ZUSTAND_TUER_NR                    (RXBUF_UCHAR(13))
     #define I3_RES_BDC_STAT_FH_BF_ZUSTAND_TUER_NR_UNIT               '0-n'
     #define I3_RES_BDC_STAT_FH_BF_ZUSTAND_TUER_NR_TYPE               unsigned char
-        // Status of the door contact that is available to the motor driver. / Status TÃ¼rkontakt, der den Motortreiber
-        // zur VerfÃ¼gung steht.
+        // Status of the door contact that is available to the motor driver. / Status Türkontakt, der den Motortreiber
+        // zur Verfügung steht.
 
     #define I3_RES_BDC_STAT_FH_BF_FREIGABE_AKTIV_NR                  (RXBUF_UCHAR(14))
     #define I3_RES_BDC_STAT_FH_BF_FREIGABE_AKTIV_NR_UNIT             '0-n'
@@ -1107,7 +1107,7 @@
     #define I3_RES_BDC_STAT_FH_BF_PANIKMODUS_AKTIV_NR                (RXBUF_UCHAR(15))
     #define I3_RES_BDC_STAT_FH_BF_PANIKMODUS_AKTIV_NR_UNIT           '0-n'
     #define I3_RES_BDC_STAT_FH_BF_PANIKMODUS_AKTIV_NR_TYPE           unsigned char
-        // Status link enable panic mode / Status VerknÃ¼pfung Freigabe Panikmodus
+        // Status link enable panic mode / Status Verknüpfung Freigabe Panikmodus
 
     #define I3_RES_BDC_STAT_FH_BF_RESERVE                            (RXBUF_UINT32(16))
     #define I3_RES_BDC_STAT_FH_BF_RESERVE_UNIT                       '0/1'
@@ -1121,7 +1121,7 @@
     #define I3_RES_BDC_STAT_FH_FAH_INIT_NR_UNIT                      '0-n'
     #define I3_RES_BDC_STAT_FH_FAH_INIT_NR_TYPE                      unsigned char
         // 0x01 - INIT window regulator complete IO 0x02 - 0x08 One or more errors have occurred / 0x01 - Fensterheber
-        // INIT vollstÃ¤ndig IO 0x02 - 0x08 Ein oder mehrere Fehler sind aufgetreten
+        // INIT vollständig IO 0x02 - 0x08 Ein oder mehrere Fehler sind aufgetreten
 
     #define I3_RES_BDC_STAT_FH_FAH_BEWEGUNG_NR                       (RXBUF_UCHAR(1))
     #define I3_RES_BDC_STAT_FH_FAH_BEWEGUNG_NR_UNIT                  '0-n'
@@ -1168,8 +1168,8 @@
     #define I3_RES_BDC_STAT_FH_FAH_ZUSTAND_TUER_NR                   (RXBUF_UCHAR(13))
     #define I3_RES_BDC_STAT_FH_FAH_ZUSTAND_TUER_NR_UNIT              '0-n'
     #define I3_RES_BDC_STAT_FH_FAH_ZUSTAND_TUER_NR_TYPE              unsigned char
-        // Status of the door contact that is available to the motor driver. / Status TÃ¼rkontakt, der den Motortreiber
-        // zur VerfÃ¼gung steht.
+        // Status of the door contact that is available to the motor driver. / Status Türkontakt, der den Motortreiber
+        // zur Verfügung steht.
 
     #define I3_RES_BDC_STAT_FH_FAH_FREIGABE_AKTIV_NR                 (RXBUF_UCHAR(14))
     #define I3_RES_BDC_STAT_FH_FAH_FREIGABE_AKTIV_NR_UNIT            '0-n'
@@ -1179,7 +1179,7 @@
     #define I3_RES_BDC_STAT_FH_FAH_PANIKMODUS_AKTIV_NR               (RXBUF_UCHAR(15))
     #define I3_RES_BDC_STAT_FH_FAH_PANIKMODUS_AKTIV_NR_UNIT          '0-n'
     #define I3_RES_BDC_STAT_FH_FAH_PANIKMODUS_AKTIV_NR_TYPE          unsigned char
-        // Status link enable panic mode / Status VerknÃ¼pfung Freigabe Panikmodus
+        // Status link enable panic mode / Status Verknüpfung Freigabe Panikmodus
 
     #define I3_RES_BDC_STAT_FH_FAH_RESERVE                           (RXBUF_UINT32(16))
     #define I3_RES_BDC_STAT_FH_FAH_RESERVE_UNIT                      '0/1'
@@ -1193,7 +1193,7 @@
     #define I3_RES_BDC_STAT_FH_BFH_INIT_NR_UNIT                      '0-n'
     #define I3_RES_BDC_STAT_FH_BFH_INIT_NR_TYPE                      unsigned char
         // 0x01 - INIT window regulator complete IO 0x02 - 0x08 One or more errors have occurred / 0x01 - Fensterheber
-        // INIT vollstÃ¤ndig IO 0x02 - 0x08 Ein oder mehrere Fehler sind aufgetreten
+        // INIT vollständig IO 0x02 - 0x08 Ein oder mehrere Fehler sind aufgetreten
 
     #define I3_RES_BDC_STAT_FH_BFH_BEWEGUNG_NR                       (RXBUF_UCHAR(1))
     #define I3_RES_BDC_STAT_FH_BFH_BEWEGUNG_NR_UNIT                  '0-n'
@@ -1240,8 +1240,8 @@
     #define I3_RES_BDC_STAT_FH_BFH_ZUSTAND_TUER_NR                   (RXBUF_UCHAR(13))
     #define I3_RES_BDC_STAT_FH_BFH_ZUSTAND_TUER_NR_UNIT              '0-n'
     #define I3_RES_BDC_STAT_FH_BFH_ZUSTAND_TUER_NR_TYPE              unsigned char
-        // Status of the door contact that is available to the motor driver. / Status TÃ¼rkontakt, der den Motortreiber
-        // zur VerfÃ¼gung steht.
+        // Status of the door contact that is available to the motor driver. / Status Türkontakt, der den Motortreiber
+        // zur Verfügung steht.
 
     #define I3_RES_BDC_STAT_FH_BFH_FREIGABE_AKTIV_NR                 (RXBUF_UCHAR(14))
     #define I3_RES_BDC_STAT_FH_BFH_FREIGABE_AKTIV_NR_UNIT            '0-n'
@@ -1251,7 +1251,7 @@
     #define I3_RES_BDC_STAT_FH_BFH_PANIKMODUS_AKTIV_NR               (RXBUF_UCHAR(15))
     #define I3_RES_BDC_STAT_FH_BFH_PANIKMODUS_AKTIV_NR_UNIT          '0-n'
     #define I3_RES_BDC_STAT_FH_BFH_PANIKMODUS_AKTIV_NR_TYPE          unsigned char
-        // Status link enable panic mode / Status VerknÃ¼pfung Freigabe Panikmodus
+        // Status link enable panic mode / Status Verknüpfung Freigabe Panikmodus
 
     #define I3_RES_BDC_STAT_FH_BFH_RESERVE                           (RXBUF_UINT32(16))
     #define I3_RES_BDC_STAT_FH_BFH_RESERVE_UNIT                      '0/1'
@@ -1264,7 +1264,7 @@
 
 #define I3_PID_BDC_FH_BFH_RELAIS                                     0xD1AD
         // Reads the current status of the control and readback lines. / Liest den aktuellen Status der Ansteuer- und
-        // RÃ¼ckleseleitungen.
+        // Rückleseleitungen.
 
     #define I3_RES_BDC_STAT_RELAIS_A_ANSTEUERUNG_EIN                 (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_RELAIS_A_ANSTEUERUNG_EIN_UNIT            '0/1'
@@ -1274,7 +1274,7 @@
     #define I3_RES_BDC_STAT_RELAIS_A_RUECK_EIN                       (RXBUF_UCHAR(1))
     #define I3_RES_BDC_STAT_RELAIS_A_RUECK_EIN_UNIT                  '0/1'
     #define I3_RES_BDC_STAT_RELAIS_A_RUECK_EIN_TYPE                  unsigned char
-        // Status of the read-back line relay A 0: off 1: on / Status RÃ¼ckleseleitung Relais A 0: aus 1: ein
+        // Status of the read-back line relay A 0: off 1: on / Status Rückleseleitung Relais A 0: aus 1: ein
 
     #define I3_RES_BDC_STAT_RELAIS_B_ANSTEUERUNG_EIN                 (RXBUF_UCHAR(2))
     #define I3_RES_BDC_STAT_RELAIS_B_ANSTEUERUNG_EIN_UNIT            '0/1'
@@ -1284,7 +1284,7 @@
     #define I3_RES_BDC_STAT_RELAIS_B_RUECK_EIN                       (RXBUF_UCHAR(3))
     #define I3_RES_BDC_STAT_RELAIS_B_RUECK_EIN_UNIT                  '0/1'
     #define I3_RES_BDC_STAT_RELAIS_B_RUECK_EIN_TYPE                  unsigned char
-        // Status of the readback line relay B 0: off 1: on / Status RÃ¼ckleseleitung Relais B 0: aus 1: ein
+        // Status of the readback line relay B 0: off 1: on / Status Rückleseleitung Relais B 0: aus 1: ein
 
     #define I3_RES_BDC_STAT_RELAIS_A_VERSORGUNG_WERT                 (RXBUF_UINT(4))
     #define I3_RES_BDC_STAT_RELAIS_A_VERSORGUNG_WERT_UNIT            'mV'
@@ -1292,8 +1292,8 @@
         // The input voltage at the relay is measured. This is ultimately also the terminal voltage of the motor if you
         // neglect contact resistances on relays and plugs as well as line resistances. The function is carried out by
         // the BSW. / Es wird die Eingangsspannung am Relais gemessen. Dies ist dann letztendlich auch die
-        // Klemmenspannung des Motors, wenn man KontaktwiderstÃ¤nde an Relais und Stecker sowie LeitungswiderstÃ¤nde
-        // vernachlÃ¤ssigt. Die Funktion wird von der BSW ausgefÃ¼hrt.
+        // Klemmenspannung des Motors, wenn man Kontaktwiderstände an Relais und Stecker sowie Leitungswiderstände
+        // vernachlässigt. Die Funktion wird von der BSW ausgeführt.
 
     #define I3_RES_BDC_STAT_RELAIS_B_VERSORGUNG_WERT                 (RXBUF_UINT(6))
     #define I3_RES_BDC_STAT_RELAIS_B_VERSORGUNG_WERT_UNIT            'mV'
@@ -1301,8 +1301,8 @@
         // The input voltage at the relay is measured. This is ultimately also the terminal voltage of the motor if you
         // neglect contact resistances on relays and plugs as well as line resistances. The function is carried out by
         // the BSW. / Es wird die Eingangsspannung am Relais gemessen. Dies ist dann letztendlich auch die
-        // Klemmenspannung des Motors, wenn man KontaktwiderstÃ¤nde an Relais und Stecker sowie LeitungswiderstÃ¤nde
-        // vernachlÃ¤ssigt. Die Funktion wird von der BSW ausgefÃ¼hrt.
+        // Klemmenspannung des Motors, wenn man Kontaktwiderstände an Relais und Stecker sowie Leitungswiderstände
+        // vernachlässigt. Die Funktion wird von der BSW ausgeführt.
 
 #define I3_PID_BDC_FH_BFH_HALLSENSOREN                               0xD1AE
         // Reads out the current status of both Hall sensors / Liest den aktuellen Status beider Hallsensoren aus
@@ -1310,8 +1310,7 @@
     #define I3_RES_BDC_STAT_HALL_A_SCHALTZUSTAND_EIN                 (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_HALL_A_SCHALTZUSTAND_EIN_UNIT            '0/1'
     #define I3_RES_BDC_STAT_HALL_A_SCHALTZUSTAND_EIN_TYPE            unsigned char
-        // The function is carried out by the BSW. 0: off 1: on / Die Funktion wird von der BSW ausgefÃ¼hrt. 0: aus 1:
-        // ein
+        // The function is carried out by the BSW. 0: off 1: on / Die Funktion wird von der BSW ausgeführt. 0: aus 1: ein
 
     #define I3_RES_BDC_STAT_HALL_A_VERSORGUNG_EIN                    (RXBUF_UCHAR(1))
     #define I3_RES_BDC_STAT_HALL_A_VERSORGUNG_EIN_UNIT               '0/1'
@@ -1326,8 +1325,7 @@
     #define I3_RES_BDC_STAT_HALL_B_SCHALTZUSTAND_EIN                 (RXBUF_UCHAR(3))
     #define I3_RES_BDC_STAT_HALL_B_SCHALTZUSTAND_EIN_UNIT            '0/1'
     #define I3_RES_BDC_STAT_HALL_B_SCHALTZUSTAND_EIN_TYPE            unsigned char
-        // The function is carried out by the BSW. 0: off 1: on / Die Funktion wird von der BSW ausgefÃ¼hrt. 0: aus 1:
-        // ein
+        // The function is carried out by the BSW. 0: off 1: on / Die Funktion wird von der BSW ausgeführt. 0: aus 1: ein
 
     #define I3_RES_BDC_STAT_HALL_B_VERSORGUNG_EIN                    (RXBUF_UCHAR(4))
     #define I3_RES_BDC_STAT_HALL_B_VERSORGUNG_EIN_UNIT               '0/1'
@@ -1341,7 +1339,7 @@
 
 #define I3_PID_BDC_FH_FAH_RELAIS                                     0xD1AF
         // Reads the current status of the control and readback lines. / Liest den aktuellen Status der Ansteuer- und
-        // RÃ¼ckleseleitungen.
+        // Rückleseleitungen.
 
     #define I3_RES_BDC_STAT_RELAIS_A_ANSTEUERUNG_EIN_0XD1AF          (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_RELAIS_A_ANSTEUERUNG_EIN_0XD1AF_UNIT     '0/1'
@@ -1351,7 +1349,7 @@
     #define I3_RES_BDC_STAT_RELAIS_A_RUECK_EIN_0XD1AF                (RXBUF_UCHAR(1))
     #define I3_RES_BDC_STAT_RELAIS_A_RUECK_EIN_0XD1AF_UNIT           '0/1'
     #define I3_RES_BDC_STAT_RELAIS_A_RUECK_EIN_0XD1AF_TYPE           unsigned char
-        // Status of the read-back line relay A 0: off 1: on / Status RÃ¼ckleseleitung Relais A 0: aus 1: ein
+        // Status of the read-back line relay A 0: off 1: on / Status Rückleseleitung Relais A 0: aus 1: ein
 
     #define I3_RES_BDC_STAT_RELAIS_B_ANSTEUERUNG_EIN_0XD1AF          (RXBUF_UCHAR(2))
     #define I3_RES_BDC_STAT_RELAIS_B_ANSTEUERUNG_EIN_0XD1AF_UNIT     '0/1'
@@ -1361,7 +1359,7 @@
     #define I3_RES_BDC_STAT_RELAIS_B_RUECK_EIN_0XD1AF                (RXBUF_UCHAR(3))
     #define I3_RES_BDC_STAT_RELAIS_B_RUECK_EIN_0XD1AF_UNIT           '0/1'
     #define I3_RES_BDC_STAT_RELAIS_B_RUECK_EIN_0XD1AF_TYPE           unsigned char
-        // Status of the readback line relay B 0: off 1: on / Status RÃ¼ckleseleitung Relais B 0: aus 1: ein
+        // Status of the readback line relay B 0: off 1: on / Status Rückleseleitung Relais B 0: aus 1: ein
 
     #define I3_RES_BDC_STAT_RELAIS_A_VERSORGUNG_WERT_0XD1AF          (RXBUF_UINT(4))
     #define I3_RES_BDC_STAT_RELAIS_A_VERSORGUNG_WERT_0XD1AF_UNIT     'mV'
@@ -1369,8 +1367,8 @@
         // The input voltage at the relay is measured. This is ultimately also the terminal voltage of the motor if you
         // neglect contact resistances on relays and plugs as well as line resistances. The function is carried out by
         // the BSW. / Es wird die Eingangsspannung am Relais gemessen. Dies ist dann letztendlich auch die
-        // Klemmenspannung des Motors, wenn man KontaktwiderstÃ¤nde an Relais und Stecker sowie LeitungswiderstÃ¤nde
-        // vernachlÃ¤ssigt. Die Funktion wird von der BSW ausgefÃ¼hrt.
+        // Klemmenspannung des Motors, wenn man Kontaktwiderstände an Relais und Stecker sowie Leitungswiderstände
+        // vernachlässigt. Die Funktion wird von der BSW ausgeführt.
 
     #define I3_RES_BDC_STAT_RELAIS_B_VERSORGUNG_WERT_0XD1AF          (RXBUF_UINT(6))
     #define I3_RES_BDC_STAT_RELAIS_B_VERSORGUNG_WERT_0XD1AF_UNIT     'mV'
@@ -1378,8 +1376,8 @@
         // The input voltage at the relay is measured. This is ultimately also the terminal voltage of the motor if you
         // neglect contact resistances on relays and plugs as well as line resistances. The function is carried out by
         // the BSW. / Es wird die Eingangsspannung am Relais gemessen. Dies ist dann letztendlich auch die
-        // Klemmenspannung des Motors, wenn man KontaktwiderstÃ¤nde an Relais und Stecker sowie LeitungswiderstÃ¤nde
-        // vernachlÃ¤ssigt. Die Funktion wird von der BSW ausgefÃ¼hrt.
+        // Klemmenspannung des Motors, wenn man Kontaktwiderstände an Relais und Stecker sowie Leitungswiderstände
+        // vernachlässigt. Die Funktion wird von der BSW ausgeführt.
 
 #define I3_PID_BDC_FH_FAH_HALLSENSOREN                               0xD1B0
         // Status of hall sensors / Status Hallsensoren
@@ -1387,8 +1385,7 @@
     #define I3_RES_BDC_STAT_HALL_A_SCHALTZUSTAND_EIN_0XD1B0          (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_HALL_A_SCHALTZUSTAND_EIN_0XD1B0_UNIT     '0/1'
     #define I3_RES_BDC_STAT_HALL_A_SCHALTZUSTAND_EIN_0XD1B0_TYPE     unsigned char
-        // The function is carried out by the BSW. 0: off 1: on / Die Funktion wird von der BSW ausgefÃ¼hrt. 0: aus 1:
-        // ein
+        // The function is carried out by the BSW. 0: off 1: on / Die Funktion wird von der BSW ausgeführt. 0: aus 1: ein
 
     #define I3_RES_BDC_STAT_HALL_A_VERSORGUNG_EIN_0XD1B0             (RXBUF_UCHAR(1))
     #define I3_RES_BDC_STAT_HALL_A_VERSORGUNG_EIN_0XD1B0_UNIT        '0/1'
@@ -1403,8 +1400,7 @@
     #define I3_RES_BDC_STAT_HALL_B_SCHALTZUSTAND_EIN_0XD1B0          (RXBUF_UCHAR(3))
     #define I3_RES_BDC_STAT_HALL_B_SCHALTZUSTAND_EIN_0XD1B0_UNIT     '0/1'
     #define I3_RES_BDC_STAT_HALL_B_SCHALTZUSTAND_EIN_0XD1B0_TYPE     unsigned char
-        // The function is carried out by the BSW. 0: off 1: on / Die Funktion wird von der BSW ausgefÃ¼hrt. 0: aus 1:
-        // ein
+        // The function is carried out by the BSW. 0: off 1: on / Die Funktion wird von der BSW ausgeführt. 0: aus 1: ein
 
     #define I3_RES_BDC_STAT_HALL_B_VERSORGUNG_EIN_1                  (RXBUF_UCHAR(4))
     #define I3_RES_BDC_STAT_HALL_B_VERSORGUNG_EIN_1_UNIT             '0/1'
@@ -1418,7 +1414,7 @@
 
 #define I3_PID_BDC_FH_FA_RELAIS                                      0xD1B1
         // Reads the current status of the control and readback lines. / Liest den aktuellen Status der Ansteuer- und
-        // RÃ¼ckleseleitungen.
+        // Rückleseleitungen.
 
     #define I3_RES_BDC_STAT_RELAIS_A_ANSTEUERUNG_EIN_0XD1B1          (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_RELAIS_A_ANSTEUERUNG_EIN_0XD1B1_UNIT     '0/1'
@@ -1428,7 +1424,7 @@
     #define I3_RES_BDC_STAT_RELAIS_A_RUECK_EIN_0XD1B1                (RXBUF_UCHAR(1))
     #define I3_RES_BDC_STAT_RELAIS_A_RUECK_EIN_0XD1B1_UNIT           '0/1'
     #define I3_RES_BDC_STAT_RELAIS_A_RUECK_EIN_0XD1B1_TYPE           unsigned char
-        // Status of the read-back line relay A 0: off 1: on / Status RÃ¼ckleseleitung Relais A 0: aus 1: ein
+        // Status of the read-back line relay A 0: off 1: on / Status Rückleseleitung Relais A 0: aus 1: ein
 
     #define I3_RES_BDC_STAT_RELAIS_B_ANSTEUERUNG_EIN_0XD1B1          (RXBUF_UCHAR(2))
     #define I3_RES_BDC_STAT_RELAIS_B_ANSTEUERUNG_EIN_0XD1B1_UNIT     '0/1'
@@ -1438,7 +1434,7 @@
     #define I3_RES_BDC_STAT_RELAIS_B_RUECK_EIN_0XD1B1                (RXBUF_UCHAR(3))
     #define I3_RES_BDC_STAT_RELAIS_B_RUECK_EIN_0XD1B1_UNIT           '0/1'
     #define I3_RES_BDC_STAT_RELAIS_B_RUECK_EIN_0XD1B1_TYPE           unsigned char
-        // Status of the readback line relay B 0: off 1: on / Status RÃ¼ckleseleitung Relais B 0: aus 1: ein
+        // Status of the readback line relay B 0: off 1: on / Status Rückleseleitung Relais B 0: aus 1: ein
 
     #define I3_RES_BDC_STAT_RELAIS_A_VERSORGUNG_WERT_0XD1B1          (RXBUF_UINT(4))
     #define I3_RES_BDC_STAT_RELAIS_A_VERSORGUNG_WERT_0XD1B1_UNIT     'mV'
@@ -1446,8 +1442,8 @@
         // The input voltage at the relay is measured. This is ultimately also the terminal voltage of the motor if you
         // neglect contact resistances on relays and plugs as well as line resistances. The function is carried out by
         // the BSW. / Es wird die Eingangsspannung am Relais gemessen. Dies ist dann letztendlich auch die
-        // Klemmenspannung des Motors, wenn man KontaktwiderstÃ¤nde an Relais und Stecker sowie LeitungswiderstÃ¤nde
-        // vernachlÃ¤ssigt. Die Funktion wird von der BSW ausgefÃ¼hrt.
+        // Klemmenspannung des Motors, wenn man Kontaktwiderstände an Relais und Stecker sowie Leitungswiderstände
+        // vernachlässigt. Die Funktion wird von der BSW ausgeführt.
 
     #define I3_RES_BDC_STAT_RELAIS_B_VERSORGUNG_WERT_0XD1B1          (RXBUF_UINT(6))
     #define I3_RES_BDC_STAT_RELAIS_B_VERSORGUNG_WERT_0XD1B1_UNIT     'mV'
@@ -1455,8 +1451,8 @@
         // The input voltage at the relay is measured. This is ultimately also the terminal voltage of the motor if you
         // neglect contact resistances on relays and plugs as well as line resistances. The function is carried out by
         // the BSW. / Es wird die Eingangsspannung am Relais gemessen. Dies ist dann letztendlich auch die
-        // Klemmenspannung des Motors, wenn man KontaktwiderstÃ¤nde an Relais und Stecker sowie LeitungswiderstÃ¤nde
-        // vernachlÃ¤ssigt. Die Funktion wird von der BSW ausgefÃ¼hrt.
+        // Klemmenspannung des Motors, wenn man Kontaktwiderstände an Relais und Stecker sowie Leitungswiderstände
+        // vernachlässigt. Die Funktion wird von der BSW ausgeführt.
 
 #define I3_PID_BDC_FH_FA_HALLSENSOREN                                0xD1B2
         // Status of hall sensors / Status Hallsensoren
@@ -1464,8 +1460,7 @@
     #define I3_RES_BDC_STAT_HALL_A_SCHALTZUSTAND_EIN_0XD1B2          (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_HALL_A_SCHALTZUSTAND_EIN_0XD1B2_UNIT     '0/1'
     #define I3_RES_BDC_STAT_HALL_A_SCHALTZUSTAND_EIN_0XD1B2_TYPE     unsigned char
-        // The function is carried out by the BSW. 0: off 1: on / Die Funktion wird von der BSW ausgefÃ¼hrt. 0: aus 1:
-        // ein
+        // The function is carried out by the BSW. 0: off 1: on / Die Funktion wird von der BSW ausgeführt. 0: aus 1: ein
 
     #define I3_RES_BDC_STAT_HALL_A_VERSORGUNG_EIN_0XD1B2             (RXBUF_UCHAR(1))
     #define I3_RES_BDC_STAT_HALL_A_VERSORGUNG_EIN_0XD1B2_UNIT        '0/1'
@@ -1480,8 +1475,7 @@
     #define I3_RES_BDC_STAT_HALL_B_SCHALTZUSTAND_EIN_0XD1B2          (RXBUF_UCHAR(3))
     #define I3_RES_BDC_STAT_HALL_B_SCHALTZUSTAND_EIN_0XD1B2_UNIT     '0/1'
     #define I3_RES_BDC_STAT_HALL_B_SCHALTZUSTAND_EIN_0XD1B2_TYPE     unsigned char
-        // The function is carried out by the BSW. 0: off 1: on / Die Funktion wird von der BSW ausgefÃ¼hrt. 0: aus 1:
-        // ein
+        // The function is carried out by the BSW. 0: off 1: on / Die Funktion wird von der BSW ausgeführt. 0: aus 1: ein
 
     #define I3_RES_BDC_STAT_HALL_B_VERSORGUNG_EIN_0XD1B2             (RXBUF_UCHAR(4))
     #define I3_RES_BDC_STAT_HALL_B_VERSORGUNG_EIN_0XD1B2_UNIT        '0/1'
@@ -1495,7 +1489,7 @@
 
 #define I3_PID_BDC_FH_BF_RELAIS                                      0xD1B3
         // Reads the current status of the control and readback lines. / Liest den aktuellen Status der Ansteuer- und
-        // RÃ¼ckleseleitungen.
+        // Rückleseleitungen.
 
     #define I3_RES_BDC_STAT_RELAIS_A_ANSTEUERUNG_EIN_0XD1B3          (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_RELAIS_A_ANSTEUERUNG_EIN_0XD1B3_UNIT     '0/1'
@@ -1505,7 +1499,7 @@
     #define I3_RES_BDC_STAT_RELAIS_A_RUECK_EIN_0XD1B3                (RXBUF_UCHAR(1))
     #define I3_RES_BDC_STAT_RELAIS_A_RUECK_EIN_0XD1B3_UNIT           '0/1'
     #define I3_RES_BDC_STAT_RELAIS_A_RUECK_EIN_0XD1B3_TYPE           unsigned char
-        // Status of the read-back line relay A 0: off 1: on / Status RÃ¼ckleseleitung Relais A 0: aus 1: ein
+        // Status of the read-back line relay A 0: off 1: on / Status Rückleseleitung Relais A 0: aus 1: ein
 
     #define I3_RES_BDC_STAT_RELAIS_B_ANSTEUERUNG_EIN_0XD1B3          (RXBUF_UCHAR(2))
     #define I3_RES_BDC_STAT_RELAIS_B_ANSTEUERUNG_EIN_0XD1B3_UNIT     '0/1'
@@ -1515,7 +1509,7 @@
     #define I3_RES_BDC_STAT_RELAIS_B_RUECK_EIN_0XD1B3                (RXBUF_UCHAR(3))
     #define I3_RES_BDC_STAT_RELAIS_B_RUECK_EIN_0XD1B3_UNIT           '0/1'
     #define I3_RES_BDC_STAT_RELAIS_B_RUECK_EIN_0XD1B3_TYPE           unsigned char
-        // Status of the readback line relay B 0: off 1: on / Status RÃ¼ckleseleitung Relais B 0: aus 1: ein
+        // Status of the readback line relay B 0: off 1: on / Status Rückleseleitung Relais B 0: aus 1: ein
 
     #define I3_RES_BDC_STAT_RELAIS_A_VERSORGUNG_WERT_0XD1B3          (RXBUF_UINT(4))
     #define I3_RES_BDC_STAT_RELAIS_A_VERSORGUNG_WERT_0XD1B3_UNIT     'mV'
@@ -1523,8 +1517,8 @@
         // The input voltage at the relay is measured. This is ultimately also the terminal voltage of the motor if you
         // neglect contact resistances on relays and plugs as well as line resistances. The function is carried out by
         // the BSW. / Es wird die Eingangsspannung am Relais gemessen. Dies ist dann letztendlich auch die
-        // Klemmenspannung des Motors, wenn man KontaktwiderstÃ¤nde an Relais und Stecker sowie LeitungswiderstÃ¤nde
-        // vernachlÃ¤ssigt. Die Funktion wird von der BSW ausgefÃ¼hrt.
+        // Klemmenspannung des Motors, wenn man Kontaktwiderstände an Relais und Stecker sowie Leitungswiderstände
+        // vernachlässigt. Die Funktion wird von der BSW ausgeführt.
 
     #define I3_RES_BDC_STAT_RELAIS_B_VERSORGUNG_WERT_0XD1B3          (RXBUF_UINT(6))
     #define I3_RES_BDC_STAT_RELAIS_B_VERSORGUNG_WERT_0XD1B3_UNIT     'mV'
@@ -1532,8 +1526,8 @@
         // The input voltage at the relay is measured. This is ultimately also the terminal voltage of the motor if you
         // neglect contact resistances on relays and plugs as well as line resistances. The function is carried out by
         // the BSW. / Es wird die Eingangsspannung am Relais gemessen. Dies ist dann letztendlich auch die
-        // Klemmenspannung des Motors, wenn man KontaktwiderstÃ¤nde an Relais und Stecker sowie LeitungswiderstÃ¤nde
-        // vernachlÃ¤ssigt. Die Funktion wird von der BSW ausgefÃ¼hrt.
+        // Klemmenspannung des Motors, wenn man Kontaktwiderstände an Relais und Stecker sowie Leitungswiderstände
+        // vernachlässigt. Die Funktion wird von der BSW ausgeführt.
 
 #define I3_PID_BDC_FH_BF_HALLSENSOREN                                0xD1B4
         // Status of hall sensors / Status Hallsensoren
@@ -1541,8 +1535,7 @@
     #define I3_RES_BDC_STAT_HALL_A_SCHALTZUSTAND_EIN_0XD1B4          (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_HALL_A_SCHALTZUSTAND_EIN_0XD1B4_UNIT     '0/1'
     #define I3_RES_BDC_STAT_HALL_A_SCHALTZUSTAND_EIN_0XD1B4_TYPE     unsigned char
-        // The function is carried out by the BSW. 0: off 1: on / Die Funktion wird von der BSW ausgefÃ¼hrt. 0: aus 1:
-        // ein
+        // The function is carried out by the BSW. 0: off 1: on / Die Funktion wird von der BSW ausgeführt. 0: aus 1: ein
 
     #define I3_RES_BDC_STAT_HALL_A_VERSORGUNG_EIN_0XD1B4             (RXBUF_UCHAR(1))
     #define I3_RES_BDC_STAT_HALL_A_VERSORGUNG_EIN_0XD1B4_UNIT        '0/1'
@@ -1557,8 +1550,7 @@
     #define I3_RES_BDC_STAT_HALL_B_SCHALTZUSTAND_EIN_0XD1B4          (RXBUF_UCHAR(3))
     #define I3_RES_BDC_STAT_HALL_B_SCHALTZUSTAND_EIN_0XD1B4_UNIT     '0/1'
     #define I3_RES_BDC_STAT_HALL_B_SCHALTZUSTAND_EIN_0XD1B4_TYPE     unsigned char
-        // The function is carried out by the BSW. 0: off 1: on / Die Funktion wird von der BSW ausgefÃ¼hrt. 0: aus 1:
-        // ein
+        // The function is carried out by the BSW. 0: off 1: on / Die Funktion wird von der BSW ausgeführt. 0: aus 1: ein
 
     #define I3_RES_BDC_STAT_HALL_B_VERSORGUNG_EIN_0XD1B4             (RXBUF_UCHAR(4))
     #define I3_RES_BDC_STAT_HALL_B_VERSORGUNG_EIN_0XD1B4_UNIT        '0/1'
@@ -1584,9 +1576,9 @@
         // Motor temperature status / Status Motortemperatur
 
     #define I3_RES_BDC_STAT_FH_FA_AUSSENTEMPERATUR_WERT              (RXBUF_UCHAR(2)/2.0f-40.0)
-    #define I3_RES_BDC_STAT_FH_FA_AUSSENTEMPERATUR_WERT_UNIT         'Â°C'
+    #define I3_RES_BDC_STAT_FH_FA_AUSSENTEMPERATUR_WERT_UNIT         '°C'
     #define I3_RES_BDC_STAT_FH_FA_AUSSENTEMPERATUR_WERT_TYPE         float
-        // Vehicle outside temperature (via CAN) / Fahrzeugaussentemperatur (Ã¼ber CAN)
+        // Vehicle outside temperature (via CAN) / Fahrzeugaussentemperatur (über CAN)
 
     #define I3_RES_BDC_STAT_FH_FA_MT_LIEFERANT_NR                    (RXBUF_UCHAR(3))
     #define I3_RES_BDC_STAT_FH_FA_MT_LIEFERANT_NR_UNIT               '0-n'
@@ -1621,7 +1613,7 @@
     #define I3_RES_BDC_STAT_FH_FA_FZG_GESCHWINDIGKEIT_WERT           (RXBUF_UCHAR(15))
     #define I3_RES_BDC_STAT_FH_FA_FZG_GESCHWINDIGKEIT_WERT_UNIT      'km/h'
     #define I3_RES_BDC_STAT_FH_FA_FZG_GESCHWINDIGKEIT_WERT_TYPE      unsigned char
-        // Vehicle speed via CAN / Fahrzeuggeschwindigkeit Ã¼ber CAN
+        // Vehicle speed via CAN / Fahrzeuggeschwindigkeit über CAN
 
     #define I3_RES_BDC_STAT_FH_FA_RELATIVZEIT_WERT                   (RXBUF_UINT32(16))
     #define I3_RES_BDC_STAT_FH_FA_RELATIVZEIT_WERT_UNIT              's'
@@ -1631,7 +1623,7 @@
     #define I3_RES_BDC_STAT_FH_FA_TEMPERATUR_UEBERWACHUNG            (RXBUF_UCHAR(20))
     #define I3_RES_BDC_STAT_FH_FA_TEMPERATUR_UEBERWACHUNG_UNIT       '0/1'
     #define I3_RES_BDC_STAT_FH_FA_TEMPERATUR_UEBERWACHUNG_TYPE       unsigned char
-        // Status activation temperature monitoring / Status Aktivierung TemperaturÃ¼berwachung
+        // Status activation temperature monitoring / Status Aktivierung Temperaturüberwachung
 
     #define I3_RES_BDC_STAT_FH_FA_EKS_AKTIV                          (RXBUF_UCHAR(21))
     #define I3_RES_BDC_STAT_FH_FA_EKS_AKTIV_UNIT                     '0/1'
@@ -1641,10 +1633,10 @@
     #define I3_RES_BDC_STAT_FH_FA_SYSTEMTYP                          (RXBUF_UCHAR(22))
     #define I3_RES_BDC_STAT_FH_FA_SYSTEMTYP_UNIT                     '0-n'
     #define I3_RES_BDC_STAT_FH_FA_SYSTEMTYP_TYPE                     unsigned char
-        // Placeholder for live system / Platzhalter fÃ¼r StromgefÃ¼hrtes System
+        // Placeholder for live system / Platzhalter für Stromgeführtes System
 
     // Can't yet generate code for STAT_FH_FA_RESERVE_DATA of type data[3] at offset 23. But we account for the 3 bytes
-        // Reserve for extensions / Reserve fÃ¼r Erweiterungen
+        // Reserve for extensions / Reserve für Erweiterungen
 
 #define I3_PID_BDC_FH_BF_STATUS_DETAIL                               0xD1B6
         // Reading out the detailed information / Auslesen der Detailinformationen
@@ -1660,9 +1652,9 @@
         // Motor temperature status / Status Motortemperatur
 
     #define I3_RES_BDC_STAT_FH_BF_AUSSENTEMPERATUR_WERT              (RXBUF_UCHAR(2)/2.0f-40.0)
-    #define I3_RES_BDC_STAT_FH_BF_AUSSENTEMPERATUR_WERT_UNIT         'Â°C'
+    #define I3_RES_BDC_STAT_FH_BF_AUSSENTEMPERATUR_WERT_UNIT         '°C'
     #define I3_RES_BDC_STAT_FH_BF_AUSSENTEMPERATUR_WERT_TYPE         float
-        // Vehicle outside temperature (via CAN) / Fahrzeugaussentemperatur (Ã¼ber CAN)
+        // Vehicle outside temperature (via CAN) / Fahrzeugaussentemperatur (über CAN)
 
     #define I3_RES_BDC_STAT_FH_BF_MT_LIEFERANT                       (RXBUF_UCHAR(3))
     #define I3_RES_BDC_STAT_FH_BF_MT_LIEFERANT_UNIT                  '0-n'
@@ -1697,7 +1689,7 @@
     #define I3_RES_BDC_STAT_FH_BF_FZG_GESCHWINDIGKEIT_WERT           (RXBUF_UCHAR(15))
     #define I3_RES_BDC_STAT_FH_BF_FZG_GESCHWINDIGKEIT_WERT_UNIT      'km/h'
     #define I3_RES_BDC_STAT_FH_BF_FZG_GESCHWINDIGKEIT_WERT_TYPE      unsigned char
-        // Vehicle speed via CAN / Fahrzeuggeschwindigkeit Ã¼ber CAN
+        // Vehicle speed via CAN / Fahrzeuggeschwindigkeit über CAN
 
     #define I3_RES_BDC_STAT_FH_BF_RELATIVZEIT_WERT                   (RXBUF_UINT32(16))
     #define I3_RES_BDC_STAT_FH_BF_RELATIVZEIT_WERT_UNIT              's'
@@ -1707,7 +1699,7 @@
     #define I3_RES_BDC_STAT_FH_BF_TEMPERATUR_UEBERWACHUNG            (RXBUF_UCHAR(20))
     #define I3_RES_BDC_STAT_FH_BF_TEMPERATUR_UEBERWACHUNG_UNIT       '0/1'
     #define I3_RES_BDC_STAT_FH_BF_TEMPERATUR_UEBERWACHUNG_TYPE       unsigned char
-        // Status activation temperature monitoring / Status Aktivierung TemperaturÃ¼berwachung
+        // Status activation temperature monitoring / Status Aktivierung Temperaturüberwachung
 
     #define I3_RES_BDC_STAT_FH_BF_EKS_AKTIV                          (RXBUF_UCHAR(21))
     #define I3_RES_BDC_STAT_FH_BF_EKS_AKTIV_UNIT                     '0/1'
@@ -1717,10 +1709,10 @@
     #define I3_RES_BDC_STAT_FH_BF_SYSTEMTYP                          (RXBUF_UCHAR(22))
     #define I3_RES_BDC_STAT_FH_BF_SYSTEMTYP_UNIT                     '0-n'
     #define I3_RES_BDC_STAT_FH_BF_SYSTEMTYP_TYPE                     unsigned char
-        // Placeholder for live system / Platzhalter fÃ¼r StromgefÃ¼hrtes System
+        // Placeholder for live system / Platzhalter für Stromgeführtes System
 
     // Can't yet generate code for STAT_FH_BF_RESERVE_WERT_DATA of type data[3] at offset 23. But we account for the 3 bytes
-        // Reserve for extensions / Reserve fÃ¼r Erweiterungen
+        // Reserve for extensions / Reserve für Erweiterungen
 
 #define I3_PID_BDC_FH_FAH_STATUS_DETAIL                              0xD1B7
         // Reading out the detailed information / Auslesen der Detailinformationen
@@ -1736,9 +1728,9 @@
         // Motor temperature status / Status Motortemperatur
 
     #define I3_RES_BDC_STAT_FH_FAH_AUSSENTEMPERATUR_WERT             (RXBUF_UCHAR(2)/2.0f-40.0)
-    #define I3_RES_BDC_STAT_FH_FAH_AUSSENTEMPERATUR_WERT_UNIT        'Â°C'
+    #define I3_RES_BDC_STAT_FH_FAH_AUSSENTEMPERATUR_WERT_UNIT        '°C'
     #define I3_RES_BDC_STAT_FH_FAH_AUSSENTEMPERATUR_WERT_TYPE        float
-        // Vehicle outside temperature (via CAN) / Fahrzeugaussentemperatur (Ã¼ber CAN)
+        // Vehicle outside temperature (via CAN) / Fahrzeugaussentemperatur (über CAN)
 
     #define I3_RES_BDC_STAT_FH_FAH_MT_LIEFERANT                      (RXBUF_UCHAR(3))
     #define I3_RES_BDC_STAT_FH_FAH_MT_LIEFERANT_UNIT                 '0-n'
@@ -1773,7 +1765,7 @@
     #define I3_RES_BDC_STAT_FH_FAH_FZG_GESCHWINDIGKEIT_WERT          (RXBUF_UCHAR(15))
     #define I3_RES_BDC_STAT_FH_FAH_FZG_GESCHWINDIGKEIT_WERT_UNIT     'km/h'
     #define I3_RES_BDC_STAT_FH_FAH_FZG_GESCHWINDIGKEIT_WERT_TYPE     unsigned char
-        // Vehicle speed via CAN / Fahrzeuggeschwindigkeit Ã¼ber CAN
+        // Vehicle speed via CAN / Fahrzeuggeschwindigkeit über CAN
 
     #define I3_RES_BDC_STAT_FH_FAH_RELATIVZEIT_WERT                  (RXBUF_UINT32(16))
     #define I3_RES_BDC_STAT_FH_FAH_RELATIVZEIT_WERT_UNIT             's'
@@ -1783,7 +1775,7 @@
     #define I3_RES_BDC_STAT_FH_FAH_TEMPERATUR_UEBERWACHUNG           (RXBUF_UCHAR(20))
     #define I3_RES_BDC_STAT_FH_FAH_TEMPERATUR_UEBERWACHUNG_UNIT      '0/1'
     #define I3_RES_BDC_STAT_FH_FAH_TEMPERATUR_UEBERWACHUNG_TYPE      unsigned char
-        // Status activation temperature monitoring / Status Aktivierung TemperaturÃ¼berwachung
+        // Status activation temperature monitoring / Status Aktivierung Temperaturüberwachung
 
     #define I3_RES_BDC_STAT_FH_FAH_EKS_AKTIV                         (RXBUF_UCHAR(21))
     #define I3_RES_BDC_STAT_FH_FAH_EKS_AKTIV_UNIT                    '0/1'
@@ -1793,10 +1785,10 @@
     #define I3_RES_BDC_STAT_FH_FAH_SYSTEMTYP                         (RXBUF_UCHAR(22))
     #define I3_RES_BDC_STAT_FH_FAH_SYSTEMTYP_UNIT                    '0-n'
     #define I3_RES_BDC_STAT_FH_FAH_SYSTEMTYP_TYPE                    unsigned char
-        // Placeholder for live system / Platzhalter fÃ¼r StromgefÃ¼hrtes System
+        // Placeholder for live system / Platzhalter für Stromgeführtes System
 
     // Can't yet generate code for STAT_FH_FAH_RESERVE_DATA of type data[3] at offset 23. But we account for the 3 bytes
-        // Reserve for extensions / Reserve fÃ¼r Erweiterungen
+        // Reserve for extensions / Reserve für Erweiterungen
 
 #define I3_PID_BDC_FH_BFH_STATUS_DETAIL                              0xD1B8
         // Reading out the detailed information / Auslesen der Detailinformationen
@@ -1812,9 +1804,9 @@
         // Motor temperature status / Status Motortemperatur
 
     #define I3_RES_BDC_STAT_FH_BFH_AUSSENTEMPERATUR_WERT             (RXBUF_UCHAR(2)/2.0f-40.0)
-    #define I3_RES_BDC_STAT_FH_BFH_AUSSENTEMPERATUR_WERT_UNIT        'Â°C'
+    #define I3_RES_BDC_STAT_FH_BFH_AUSSENTEMPERATUR_WERT_UNIT        '°C'
     #define I3_RES_BDC_STAT_FH_BFH_AUSSENTEMPERATUR_WERT_TYPE        float
-        // Vehicle outside temperature (via CAN) / Fahrzeugaussentemperatur (Ã¼ber CAN)
+        // Vehicle outside temperature (via CAN) / Fahrzeugaussentemperatur (über CAN)
 
     #define I3_RES_BDC_STAT_FH_BFH_MT_LIEFERANT                      (RXBUF_UCHAR(3))
     #define I3_RES_BDC_STAT_FH_BFH_MT_LIEFERANT_UNIT                 '0-n'
@@ -1849,7 +1841,7 @@
     #define I3_RES_BDC_STAT_FH_BFH_FZG_GESCHWINDIGKEIT_WERT          (RXBUF_UCHAR(15))
     #define I3_RES_BDC_STAT_FH_BFH_FZG_GESCHWINDIGKEIT_WERT_UNIT     'km/h'
     #define I3_RES_BDC_STAT_FH_BFH_FZG_GESCHWINDIGKEIT_WERT_TYPE     unsigned char
-        // Vehicle speed via CAN / Fahrzeuggeschwindigkeit Ã¼ber CAN
+        // Vehicle speed via CAN / Fahrzeuggeschwindigkeit über CAN
 
     #define I3_RES_BDC_STAT_FH_BFH_RELATIVZEIT_WERT                  (RXBUF_UINT32(16))
     #define I3_RES_BDC_STAT_FH_BFH_RELATIVZEIT_WERT_UNIT             's'
@@ -1859,7 +1851,7 @@
     #define I3_RES_BDC_STAT_FH_BFH_TEMPERATUR_UEBERWACHUNG           (RXBUF_UCHAR(20))
     #define I3_RES_BDC_STAT_FH_BFH_TEMPERATUR_UEBERWACHUNG_UNIT      '0/1'
     #define I3_RES_BDC_STAT_FH_BFH_TEMPERATUR_UEBERWACHUNG_TYPE      unsigned char
-        // Status activation temperature monitoring / Status Aktivierung TemperaturÃ¼berwachung
+        // Status activation temperature monitoring / Status Aktivierung Temperaturüberwachung
 
     #define I3_RES_BDC_STAT_FH_BFH_EKS_AKTIV                         (RXBUF_UCHAR(21))
     #define I3_RES_BDC_STAT_FH_BFH_EKS_AKTIV_UNIT                    '0/1'
@@ -1869,10 +1861,10 @@
     #define I3_RES_BDC_STAT_FH_BFH_SYSTEMTYP                         (RXBUF_UCHAR(22))
     #define I3_RES_BDC_STAT_FH_BFH_SYSTEMTYP_UNIT                    '0-n'
     #define I3_RES_BDC_STAT_FH_BFH_SYSTEMTYP_TYPE                    unsigned char
-        // Placeholder for live system / Platzhalter fÃ¼r StromgefÃ¼hrtes System
+        // Placeholder for live system / Platzhalter für Stromgeführtes System
 
     // Can't yet generate code for STAT_FH_BFH_RESERVE_DATA of type data[3] at offset 23. But we account for the 3 bytes
-        // Reserve for extensions / Reserve fÃ¼r Erweiterungen
+        // Reserve for extensions / Reserve für Erweiterungen
 
 // Skipping FH_TASTER_ALLE_FH on 0xD1C2 which takes arguments
 
@@ -1882,65 +1874,65 @@
     #define I3_RES_BDC_STAT_SITZMEMORY_FA                            (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_SITZMEMORY_FA_UNIT                       '0-n'
     #define I3_RES_BDC_STAT_SITZMEMORY_FA_TYPE                       unsigned char
-        // Transmitted signal value for memory button / Ãbermittelter Signalwert fÃ¼r Memory-Taster
+        // Transmitted signal value for memory button / Übermittelter Signalwert für Memory-Taster
 
     #define I3_RES_BDC_STAT_SITZMEMORY_BF                            (RXBUF_UCHAR(1))
     #define I3_RES_BDC_STAT_SITZMEMORY_BF_UNIT                       '0-n'
     #define I3_RES_BDC_STAT_SITZMEMORY_BF_TYPE                       unsigned char
-        // Transmitted signal value for memory button / Ãbermittelter Signalwert fÃ¼r Memory-Taster
+        // Transmitted signal value for memory button / Übermittelter Signalwert für Memory-Taster
 
     #define I3_RES_BDC_STAT_SITZMEMORY_FAH                           (RXBUF_UCHAR(2))
     #define I3_RES_BDC_STAT_SITZMEMORY_FAH_UNIT                      '0-n'
     #define I3_RES_BDC_STAT_SITZMEMORY_FAH_TYPE                      unsigned char
-        // Transmitted signal value for memory button / Ãbermittelter Signalwert fÃ¼r Memory-Taster
+        // Transmitted signal value for memory button / Übermittelter Signalwert für Memory-Taster
 
     #define I3_RES_BDC_STAT_SITZMEMORY_BFH                           (RXBUF_UCHAR(3))
     #define I3_RES_BDC_STAT_SITZMEMORY_BFH_UNIT                      '0-n'
     #define I3_RES_BDC_STAT_SITZMEMORY_BFH_TYPE                      unsigned char
-        // Transmitted signal value for memory button / Ãbermittelter Signalwert fÃ¼r Memory-Taster
+        // Transmitted signal value for memory button / Übermittelter Signalwert für Memory-Taster
 
     #define I3_RES_BDC_STAT_MASSAGE_FA                               (RXBUF_UCHAR(4))
     #define I3_RES_BDC_STAT_MASSAGE_FA_UNIT                          '0-n'
     #define I3_RES_BDC_STAT_MASSAGE_FA_TYPE                          unsigned char
-        // Transmitted signal value for MASSAGE button / Ãbermittelter Signalwert fÃ¼r MASSAGE-Taster
+        // Transmitted signal value for MASSAGE button / Übermittelter Signalwert für MASSAGE-Taster
 
     #define I3_RES_BDC_STAT_MASSAGE_BF                               (RXBUF_UCHAR(5))
     #define I3_RES_BDC_STAT_MASSAGE_BF_UNIT                          '0-n'
     #define I3_RES_BDC_STAT_MASSAGE_BF_TYPE                          unsigned char
-        // Transmitted signal value for MASSAGE button / Ãbermittelter Signalwert fÃ¼r MASSAGE-Taster
+        // Transmitted signal value for MASSAGE button / Übermittelter Signalwert für MASSAGE-Taster
 
     #define I3_RES_BDC_STAT_MASSAGE_FAH                              (RXBUF_UCHAR(6))
     #define I3_RES_BDC_STAT_MASSAGE_FAH_UNIT                         '0-n'
     #define I3_RES_BDC_STAT_MASSAGE_FAH_TYPE                         unsigned char
-        // Transmitted signal value for MASSAGE button / Ãbermittelter Signalwert fÃ¼r MASSAGE-Taster
+        // Transmitted signal value for MASSAGE button / Übermittelter Signalwert für MASSAGE-Taster
 
     #define I3_RES_BDC_STAT_MASSAGE_BFH                              (RXBUF_UCHAR(7))
     #define I3_RES_BDC_STAT_MASSAGE_BFH_UNIT                         '0-n'
     #define I3_RES_BDC_STAT_MASSAGE_BFH_TYPE                         unsigned char
-        // Transmitted signal value for MASSAGE button / Ãbermittelter Signalwert fÃ¼r MASSAGE-Taster
+        // Transmitted signal value for MASSAGE button / Übermittelter Signalwert für MASSAGE-Taster
 
     #define I3_RES_BDC_STAT_FERNBEDIENUNG_FA                         (RXBUF_UCHAR(8))
     #define I3_RES_BDC_STAT_FERNBEDIENUNG_FA_UNIT                    '0-n'
     #define I3_RES_BDC_STAT_FERNBEDIENUNG_FA_TYPE                    unsigned char
-        // Signal value for remote control button button on driver's door / Signalwert fÃ¼r Fernbedienungstaste-Taste an
-        // der FahrertÃ¼r
+        // Signal value for remote control button button on driver's door / Signalwert für Fernbedienungstaste-Taste an
+        // der Fahrertür
 
     #define I3_RES_BDC_STAT_RESET_TASTE_BF                           (RXBUF_UCHAR(9))
     #define I3_RES_BDC_STAT_RESET_TASTE_BF_UNIT                      '0-n'
     #define I3_RES_BDC_STAT_RESET_TASTE_BF_TYPE                      unsigned char
-        // Signal value for reset button on BFT / Signalwert fÃ¼r Reset-Taste an BFT
+        // Signal value for reset button on BFT / Signalwert für Reset-Taste an BFT
 
     #define I3_RES_BDC_STAT_SCHLAFPOSITION_TASTE_BFTH                (RXBUF_UCHAR(10))
     #define I3_RES_BDC_STAT_SCHLAFPOSITION_TASTE_BFTH_UNIT           '0-n'
     #define I3_RES_BDC_STAT_SCHLAFPOSITION_TASTE_BFTH_TYPE           unsigned char
-        // Signal value of the sleep position button on the rear passenger door / Signalwert der Taste Schlafposition an
-        // der BeifahrertÃ¼r Fond
+        // Signal value of the sleeping position button on the rear passenger door / Signalwert der Taste Schlafposition
+        // an der Beifahrertür Fond
 
     #define I3_RES_BDC_STAT_SITZPOSITION_TASTE_BFTH                  (RXBUF_UCHAR(11))
     #define I3_RES_BDC_STAT_SITZPOSITION_TASTE_BFTH_UNIT             '0-n'
     #define I3_RES_BDC_STAT_SITZPOSITION_TASTE_BFTH_TYPE             unsigned char
-        // Signal value for remote control button button on driver's door / Signalwert fÃ¼r Fernbedienungstaste-Taste an
-        // der FahrertÃ¼r
+        // Signal value for remote control button button on driver's door / Signalwert für Fernbedienungstaste-Taste an
+        // der Fahrertür
 
 #define I3_PID_BDC_STATUS_SITZEXT_VORHANDEN                          0xD1CB
         // Read out whether SitzExt-SB is available / Auslesen ob SitzExt-SB vorhanden
@@ -1948,12 +1940,12 @@
     #define I3_RES_BDC_STAT_VORHANDEN_SITZEXT_VORNE                  (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_VORHANDEN_SITZEXT_VORNE_UNIT             '0-n'
     #define I3_RES_BDC_STAT_VORHANDEN_SITZEXT_VORNE_TYPE             unsigned char
-        // SB_SitzExt available for FA, BF / SB_SitzExt vorhanden fÃ¼r FA,BF 
+        // SB_SitzExt available for FA, BF / SB_SitzExt vorhanden für FA,BF 
 
     #define I3_RES_BDC_STAT_VORHANDEN_SITZEXT_HINTEN                 (RXBUF_UCHAR(1))
     #define I3_RES_BDC_STAT_VORHANDEN_SITZEXT_HINTEN_UNIT            '0-n'
     #define I3_RES_BDC_STAT_VORHANDEN_SITZEXT_HINTEN_TYPE            unsigned char
-        // SB_SitzExt available for FA, BF / SB_SitzExt vorhanden fÃ¼r FA,BF 
+        // SB_SitzExt available for FA, BF / SB_SitzExt vorhanden für FA,BF 
 
 // Skipping STEUERN_SITZEXT_LED on 0xD1CC which takes arguments
 
@@ -1961,37 +1953,35 @@
 
 #define I3_PID_BDC_TANK_FUELLSTAND_LINKS                             0xD258
         // Returns the level value of the left tank sensor. The work area and IO area must be filled by the developer. /
-        // RÃ¼ckgabe des FÃ¼llstandwerts des linken Tanksensor. Arbeitsbereich und IO-Bereich muss vom Entwickler
-        // befÃ¼llt werden.
+        // Rückgabe des Füllstandwerts des linken Tanksensor. Arbeitsbereich und IO-Bereich muss vom Entwickler befüllt
+        // werden.
 
     #define I3_RES_BDC_STAT_FUELLSTAND_TANK_LI_WERT                  (RXBUF_UINT(0))
     #define I3_RES_BDC_STAT_FUELLSTAND_TANK_LI_WERT_UNIT             'Ohm'
     #define I3_RES_BDC_STAT_FUELLSTAND_TANK_LI_WERT_TYPE             unsigned short
         // Returns the level value of the left tank sensor. The work area and IO area must be filled by the developer. /
-        // RÃ¼ckgabe des FÃ¼llstandwerts des linken Tanksensor. Arbeitsbereich und IO-Bereich muss vom Entwickler
-        // befÃ¼llt werden.
+        // Rückgabe des Füllstandwerts des linken Tanksensor. Arbeitsbereich und IO-Bereich muss vom Entwickler befüllt
+        // werden.
 
 #define I3_PID_BDC_TANK_FUELLSTAND_RECHTS                            0xD259
         // Returns the fill level of the right tank sensor. The work area and IO area must be filled by the developer. /
-        // RÃ¼ckgabe des FÃ¼llstands des rechten Tanksensors. Arbeitsbereich und IO-Bereich muss vom Entwickler befÃ¼llt
+        // Rückgabe des Füllstands des rechten Tanksensors. Arbeitsbereich und IO-Bereich muss vom Entwickler befüllt
         // werden.
 
     #define I3_RES_BDC_STAT_FUELLSTAND_TANK_RE_WERT                  (RXBUF_UINT(0))
     #define I3_RES_BDC_STAT_FUELLSTAND_TANK_RE_WERT_UNIT             'Ohm'
     #define I3_RES_BDC_STAT_FUELLSTAND_TANK_RE_WERT_TYPE             unsigned short
         // Returns the fill level of the right tank sensor. The work area and IO area must be filled by the developer. /
-        // RÃ¼ckgabe des FÃ¼llstands des rechten Tanksensors. Arbeitsbereich und IO-Bereich muss vom Entwickler befÃ¼llt
+        // Rückgabe des Füllstands des rechten Tanksensors. Arbeitsbereich und IO-Bereich muss vom Entwickler befüllt
         // werden.
 
 #define I3_PID_BDC_HUPE_TASTER                                       0xD297
-        // 0 = horn button not actuated 1 = horn button actuated / 0= Taster Hupe nicht betÃ¤tigt  1= Taster Hupe
-        // betÃ¤tigt
+        // 0 = horn button not actuated 1 = horn button actuated / 0= Taster Hupe nicht betätigt  1= Taster Hupe betätigt
 
     #define I3_RES_BDC_STAT_TASTER_HUPE_EIN                          (RXBUF_SCHAR(0))
     #define I3_RES_BDC_STAT_TASTER_HUPE_EIN_UNIT                     '0/1'
     #define I3_RES_BDC_STAT_TASTER_HUPE_EIN_TYPE                     char
-        // 0 = horn button not actuated 1 = horn button actuated / 0= Taster Hupe nicht betÃ¤tigt  1= Taster Hupe
-        // betÃ¤tigt
+        // 0 = horn button not actuated 1 = horn button actuated / 0= Taster Hupe nicht betätigt  1= Taster Hupe betätigt
 
 // Skipping HUPE on 0xD298 which takes arguments
 
@@ -2060,7 +2050,7 @@
     #define I3_RES_BDC_STAT_SPIEGEL_BEIKLAPPEN_EIN_UNIT              '0/1'
     #define I3_RES_BDC_STAT_SPIEGEL_BEIKLAPPEN_EIN_TYPE              short
         // 0: Fold-in mirror button not pressed 1: Fold-in mirror button pressed / 0: Taster Spiegel Beiklappen nicht
-        // gedrÃ¼ckt  1: Taster Spiegel Beiklappen gedrÃ¼ckt
+        // gedrückt  1: Taster Spiegel Beiklappen gedrückt
 
     #define I3_RES_BDC_STAT_SPIEGEL_SCHALTER_FA_EIN                  (RXBUF_SINT(2))
     #define I3_RES_BDC_STAT_SPIEGEL_SCHALTER_FA_EIN_UNIT             '0/1'
@@ -2071,22 +2061,22 @@
     #define I3_RES_BDC_STAT_SPIEGEL_TASTER_LINKS_EIN                 (RXBUF_SINT(4))
     #define I3_RES_BDC_STAT_SPIEGEL_TASTER_LINKS_EIN_UNIT            '0/1'
     #define I3_RES_BDC_STAT_SPIEGEL_TASTER_LINKS_EIN_TYPE            short
-        // 0: button not pressed 1: button pressed / 0: Taster nicht gedrÃ¼ckt  1: Taster gedrÃ¼ckt
+        // 0: button not pressed 1: button pressed / 0: Taster nicht gedrückt  1: Taster gedrückt
 
     #define I3_RES_BDC_STAT_SPIEGEL_TASTER_OBEN_EIN                  (RXBUF_SINT(6))
     #define I3_RES_BDC_STAT_SPIEGEL_TASTER_OBEN_EIN_UNIT             '0/1'
     #define I3_RES_BDC_STAT_SPIEGEL_TASTER_OBEN_EIN_TYPE             short
-        // 0: button not pressed 1: button pressed / 0: Taster nicht gedrÃ¼ckt  1: Taster gedrÃ¼ckt
+        // 0: button not pressed 1: button pressed / 0: Taster nicht gedrückt  1: Taster gedrückt
 
     #define I3_RES_BDC_STAT_SPIEGEL_TASTER_RECHTS_EIN                (RXBUF_SINT(8))
     #define I3_RES_BDC_STAT_SPIEGEL_TASTER_RECHTS_EIN_UNIT           '0/1'
     #define I3_RES_BDC_STAT_SPIEGEL_TASTER_RECHTS_EIN_TYPE           short
-        // 0: button not pressed 1: button pressed / 0: Taster nicht gedrÃ¼ckt  1: Taster gedrÃ¼ckt
+        // 0: button not pressed 1: button pressed / 0: Taster nicht gedrückt  1: Taster gedrückt
 
     #define I3_RES_BDC_STAT_SPIEGEL_TASTER_UNTEN_EIN                 (RXBUF_SINT(10))
     #define I3_RES_BDC_STAT_SPIEGEL_TASTER_UNTEN_EIN_UNIT            '0/1'
     #define I3_RES_BDC_STAT_SPIEGEL_TASTER_UNTEN_EIN_TYPE            short
-        // 0: button not pressed 1: button pressed / 0: Taster nicht gedrÃ¼ckt  1: Taster gedrÃ¼ckt
+        // 0: button not pressed 1: button pressed / 0: Taster nicht gedrückt  1: Taster gedrückt
 
     #define I3_RES_BDC_STAT_SPIEGEL_TASTER_NR                        (RXBUF_SINT(12))
     #define I3_RES_BDC_STAT_SPIEGEL_TASTER_NR_UNIT                   '0-n'
@@ -2094,12 +2084,12 @@
         // VS result, see table / VS-Result, siehe Tabelle
 
 #define I3_PID_BDC_AUSSENSPIEGEL_KLAPPEN_VORHANDEN                   0xD332
-        // 0: No folding in possible 1: Folding in possible / 0: Kein Beiklappen mÃ¶glich  1: Beiklappne mÃ¶glich
+        // 0: No folding in possible 1: Folding in possible / 0: Kein Beiklappen möglich  1: Beiklappne möglich
 
     #define I3_RES_BDC_STAT_VORHANDEN_SPIEGEL_BEIKLAPPEN_EIN         (RXBUF_SINT(0))
     #define I3_RES_BDC_STAT_VORHANDEN_SPIEGEL_BEIKLAPPEN_EIN_UNIT    '0/1'
     #define I3_RES_BDC_STAT_VORHANDEN_SPIEGEL_BEIKLAPPEN_EIN_TYPE    short
-        // 0: No folding in possible 1: Folding in possible / 0: Kein Beiklappen mÃ¶glich  1: Beiklappne mÃ¶glich
+        // 0: No folding in possible 1: Folding in possible / 0: Kein Beiklappen möglich  1: Beiklappne möglich
 
 // Skipping AUSSENSPIEGEL_RECHTS_POS on 0xD333 which takes arguments
 
@@ -2117,13 +2107,13 @@
 
 #define I3_PID_BDC_AUSSENSPIEGEL_ABBLENDEN_VORHANDEN                 0xD33C
         // Returns whether the exterior mirrors can be dimmed and which ones. See table TAB_AUSSENSPIEGEL_ABBLENDEN /
-        // Liefert zurÃ¼ck ob die AuÃenspiegel abblendbar sind und welche. Siehe Table TAB_AUSSENSPIEGEL_ABBLENDEN
+        // Liefert zurück ob die Außenspiegel abblendbar sind und welche. Siehe Table TAB_AUSSENSPIEGEL_ABBLENDEN
 
     #define I3_RES_BDC_STAT_VORHANDEN_SPIEGEL_ABBLENDEN_EIN          (RXBUF_SINT(0))
     #define I3_RES_BDC_STAT_VORHANDEN_SPIEGEL_ABBLENDEN_EIN_UNIT     '0-n'
     #define I3_RES_BDC_STAT_VORHANDEN_SPIEGEL_ABBLENDEN_EIN_TYPE     short
         // Returns whether the exterior mirrors can be dimmed and which ones. See table TAB_AUSSENSPIEGEL_ABBLENDEN /
-        // Liefert zurÃ¼ck ob die AuÃenspiegel abblendbar sind und welche. Siehe Table TAB_AUSSENSPIEGEL_ABBLENDEN
+        // Liefert zurück ob die Außenspiegel abblendbar sind und welche. Siehe Table TAB_AUSSENSPIEGEL_ABBLENDEN
 
 #define I3_PID_BDC_UGDO_LAND                                         0xD33D
         // Set country / Eingestelltes Land
@@ -2232,21 +2222,21 @@
 // Skipping WISCHER_HECK_RSK on 0xD356 which takes arguments
 
 #define I3_PID_BDC_WASCHWASSERSTAND                                  0xD357
-        // _ON: 1 wash water tank sufficiently filled _VALUE: level in mV / _EIN: 1 WaschwasserbehÃ¤lter ausreichend
-        // befÃ¼llt _WERT: Pegel in mV
+        // _ON: 1 wash water tank sufficiently filled _VALUE: level in mV / _EIN: 1 Waschwasserbehälter ausreichend
+        // befüllt _WERT: Pegel in mV
 
     #define I3_RES_BDC_STAT_WASCHWASSERSTAND_EIN                     (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_WASCHWASSERSTAND_EIN_UNIT                '0/1'
     #define I3_RES_BDC_STAT_WASCHWASSERSTAND_EIN_TYPE                unsigned char
         // Filling status of the washing water tank: 0 = washing water tank not sufficiently filled; 1 = washing water
-        // tank sufficiently filled / BefÃ¼llungszustand des  WaschwasserbehÃ¤lters:  0= WaschwasserbehÃ¤lter nicht
-        // ausreichend befÃ¼llt; 1= WaschwasserbehÃ¤lter ausreichend befÃ¼llt
+        // tank sufficiently filled / Befüllungszustand des  Waschwasserbehälters:  0= Waschwasserbehälter nicht
+        // ausreichend befüllt; 1= Waschwasserbehälter ausreichend befüllt
 
     #define I3_RES_BDC_STAT_WASCHWASSERSTAND_WERT                    (RXBUF_UINT(1))
     #define I3_RES_BDC_STAT_WASCHWASSERSTAND_WERT_UNIT               'mV'
     #define I3_RES_BDC_STAT_WASCHWASSERSTAND_WERT_TYPE               unsigned short
         // Specification of the level value in mv. 0xFFFF: invalid value or value not supported / Angabe des Pegelwerts
-        // in mv. 0xFFFF: ungÃ¼ltiger Wert oder Wert nicht unterstÃ¼tzt
+        // in mv. 0xFFFF: ungültiger Wert oder Wert nicht unterstützt
 
 #define I3_PID_BDC_WISCHER_HECK_VORHANDEN                            0xD358
         // 0: rear wiper not coded; 1: Coded rear wiper / 0: Heckwischer nicht codiert;  1: Heckwischer codiert
@@ -2329,9 +2319,9 @@
         // VS-Result steering column wiper; 0 = wiper knurled wheel level 1; 1 = wiper knurled wheel level 2; 2 = wiper
         // knurled wheel level 3; 3 = wiper knurled wheel level 4; 4 = wiper knurled wheel invalid position; Note:
         // Numbering is retained even if one or more functions are omitted / VS-Result Lenkstock Wischer;  0= Wischer
-        // RÃ¤ndelrad Stufe 1;  1= Wischer RÃ¤ndelrad Stufe 2;  2= Wischer RÃ¤ndelrad Stufe 3;  3= Wischer RÃ¤ndelrad
-        // Stufe 4;  4= Wischer RÃ¤ndelrad ungÃ¼ltige Position; Hinweis: Numerierung bleibt erhalten, auch bei Entfall
-        // einer oder mehrerer Funktionen
+        // Rändelrad Stufe 1;  1= Wischer Rändelrad Stufe 2;  2= Wischer Rändelrad Stufe 3;  3= Wischer Rändelrad Stufe
+        // 4;  4= Wischer Rändelrad ungültige Position; Hinweis: Numerierung bleibt erhalten, auch bei Entfall einer oder
+        // mehrerer Funktionen
 
     #define I3_RES_BDC_STAT_LENKSTOCK_WISCHER_TIPPWISCHEN            (RXBUF_SCHAR(9))
     #define I3_RES_BDC_STAT_LENKSTOCK_WISCHER_TIPPWISCHEN_UNIT       '0/1'
@@ -2393,16 +2383,16 @@
         // eingemessen
 
 #define I3_PID_BDC_REGENSENSOR_INT_WERT                              0xD376
-        // Return rain intensity / RÃ¼ckgabe RegenintensitÃ¤t
+        // Return rain intensity / Rückgabe Regenintensität
 
     #define I3_RES_BDC_STAT_REGEN_INT_WERT                           (RXBUF_SINT(0)/2.0f)
     #define I3_RES_BDC_STAT_REGEN_INT_WERT_UNIT                      '%'
     #define I3_RES_BDC_STAT_REGEN_INT_WERT_TYPE                      float
-        // Rain intensity in 0 .. 75% / RegenintensitÃ¤t in 0 .. 75 %
+        // Rain intensity in 0 .. 75% / Regenintensität in 0 .. 75 %
 
     #define I3_RES_BDC_STAT_RESERVE_WERT                             (RXBUF_UINT32(2))
     #define I3_RES_BDC_STAT_RESERVE_WERT_TYPE                        unsigned long
-        // Reserve for future changes / Reserve fÃ¼r zukÃ¼nftige Ãnderungen
+        // Reserve for future changes / Reserve für zukünftige Änderungen
 
 // Skipping NIGHTVISION_TASTER on 0xD389 which takes arguments
 
@@ -2416,16 +2406,16 @@
         // Reading out the values of the driving light sensor / Auslesen der Werte des Fahrlichtsensors
 
     #define I3_RES_BDC_STAT_FRONTLICHT_WERT                          (RXBUF_UINT(0)*6.7f)
-    #define I3_RES_BDC_STAT_FRONTLICHT_WERT_UNIT                     'mW/mÂ²'
+    #define I3_RES_BDC_STAT_FRONTLICHT_WERT_UNIT                     'mW/m²'
     #define I3_RES_BDC_STAT_FRONTLICHT_WERT_TYPE                     float
         // unfiltered front light value. Is between 0 and 1701.8 mW / m² / ungefilterter Frontlichtwert. Liegt zwischen 0
-        // und 1701,8 mW/mÂ²
+        // und 1701,8 mW/m²
 
     #define I3_RES_BDC_STAT_FRONTLICHT_GEMITTELT_WERT                (RXBUF_UINT(2)*6.7f)
-    #define I3_RES_BDC_STAT_FRONTLICHT_GEMITTELT_WERT_UNIT           'mW/mÂ²'
+    #define I3_RES_BDC_STAT_FRONTLICHT_GEMITTELT_WERT_UNIT           'mW/m²'
     #define I3_RES_BDC_STAT_FRONTLICHT_GEMITTELT_WERT_TYPE           float
         // averaged front light value. Is between 0 and 1701.7 mW / m² / gemittelter Frontlichtwert. Liegt zwischen 0 und
-        // 1701,7  mW/mÂ²
+        // 1701,7  mW/m²
 
     #define I3_RES_BDC_STAT_UMGEBUNGSLICHT_WERT                      (RXBUF_SINT(4)*100.0f)
     #define I3_RES_BDC_STAT_UMGEBUNGSLICHT_WERT_UNIT                 'Lux'
@@ -2446,7 +2436,7 @@
 
     #define I3_RES_BDC_STAT_RESERVE_WERT_0XD3BE                      (RXBUF_UINT32(10))
     #define I3_RES_BDC_STAT_RESERVE_WERT_0XD3BE_TYPE                 unsigned long
-        // Reserve for future changes / Reserve fÃ¼r zukÃ¼nftige Ãnderungen
+        // Reserve for future changes / Reserve für zukünftige Änderungen
 
 #define I3_PID_BDC_FAHRLICHTSENSOR_VORHANDEN                         0xD3BF
         // 1: Driving light sensor available / coded / 1:Fahrlichtsensor vorhanden/codiert
@@ -2466,12 +2456,12 @@
 
 #define I3_PID_BDC_HOD_ZUSTAND_GAP                                   0xD3F1
         // Raw value measured by the A / D converter for the distance or the contact area between hand and steering wheel
-        // / Vom A/D-Wandler gemessener Rohwert des Abstands bzw. der BerÃ¼hrungsflÃ¤che zwischen Hand und Lenkrad
+        // / Vom A/D-Wandler gemessener Rohwert des Abstands bzw. der Berührungsfläche zwischen Hand und Lenkrad
 
     #define I3_RES_BDC_STAT_ADC_ROHWERT_WERT                         (RXBUF_SCHAR(0))
     #define I3_RES_BDC_STAT_ADC_ROHWERT_WERT_TYPE                    char
         // Raw value measured by the A / D converter for the distance or the contact area between hand and steering wheel
-        // / Vom A/D-Wandler gemessener Rohwert des Abstands bzw. der BerÃ¼hrungsflÃ¤che zwischen Hand und Lenkrad
+        // / Vom A/D-Wandler gemessener Rohwert des Abstands bzw. der Berührungsfläche zwischen Hand und Lenkrad
 
 // Skipping HOD_AKTIVIERUNG on 0xD3F3 which takes arguments
 
@@ -2505,49 +2495,49 @@
 
 #define I3_PID_BDC_INNENLICHTEINHEIT_DRITTE_SITZREIHE                0xD52C
         // Current status of the ITU 3rd row of seats Status feedback on the LIN / Aktueller Status der ILE 3. Sitzreihe
-        // StatusrÃ¼ckmeldungen auf dem LIN
+        // Statusrückmeldungen auf dem LIN
 
     #define I3_RES_BDC_STAT_INNENLICHT                               (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_INNENLICHT_UNIT                          '0/1'
     #define I3_RES_BDC_STAT_INNENLICHT_TYPE                          unsigned char
-        // LIN status feedback ILE ¿status interior light Values: 0 - off, 1 - on / LIN Status-RÃ¼ckmeldung ILE Â¿ Status
+        // LIN status feedback ILE ¿status interior light Values: 0 - off, 1 - on / LIN Status-Rückmeldung ILE ¿ Status
         // Innenlicht Werte: 0 - Aus, 1 - Ein
 
     #define I3_RES_BDC_STAT_LESELICHT_LINKS                          (RXBUF_UCHAR(1))
     #define I3_RES_BDC_STAT_LESELICHT_LINKS_UNIT                     '0/1'
     #define I3_RES_BDC_STAT_LESELICHT_LINKS_TYPE                     unsigned char
-        // LIN status feedback ILE ¿status reading light left Values: 0 - off, 1 - on / LIN Status-RÃ¼ckmeldung ILE Â¿
+        // LIN status feedback ILE ¿status reading light left Values: 0 - off, 1 - on / LIN Status-Rückmeldung ILE ¿
         // Status Leselicht links Werte: 0 - Aus, 1 - Ein
 
     #define I3_RES_BDC_STAT_LESELICHT_RECHTS                         (RXBUF_UCHAR(2))
     #define I3_RES_BDC_STAT_LESELICHT_RECHTS_UNIT                    '0/1'
     #define I3_RES_BDC_STAT_LESELICHT_RECHTS_TYPE                    unsigned char
-        // LIN status feedback ILE ¿status reading light right Values: 0 - off, 1 - on / LIN Status-RÃ¼ckmeldung ILE Â¿
+        // LIN status feedback ILE ¿status reading light right Values: 0 - off, 1 - on / LIN Status-Rückmeldung ILE ¿
         // Status Leselicht rechts Werte: 0 - Aus, 1 - Ein
 
     #define I3_RES_BDC_STAT_WELCOMELIGHT                             (RXBUF_UCHAR(3))
     #define I3_RES_BDC_STAT_WELCOMELIGHT_UNIT                        '0/1'
     #define I3_RES_BDC_STAT_WELCOMELIGHT_TYPE                        unsigned char
-        // LIN status feedback ILE ¿status welcome light Values: 0 - off, 1 - on / LIN Status-RÃ¼ckmeldung ILE Â¿ Status
+        // LIN status feedback ILE ¿status welcome light Values: 0 - off, 1 - on / LIN Status-Rückmeldung ILE ¿ Status
         // Welcomelight Werte: 0 - Aus, 1 - Ein
 
     #define I3_RES_BDC_STAT_AMBIENTELICHT                            (RXBUF_UCHAR(4))
     #define I3_RES_BDC_STAT_AMBIENTELICHT_UNIT                       '0/1'
     #define I3_RES_BDC_STAT_AMBIENTELICHT_TYPE                       unsigned char
-        // LIN status feedback ILE ¿Ambient light status Values: 0 - Off, 1 - On / LIN Status-RÃ¼ckmeldung ILE Â¿ Status
+        // LIN status feedback ILE ¿Ambient light status Values: 0 - Off, 1 - On / LIN Status-Rückmeldung ILE ¿ Status
         // Ambientelicht Werte: 0 - Aus, 1 - Ein
 
     #define I3_RES_BDC_STAT_TASTER_LESELICHT_LINKS                   (RXBUF_UCHAR(5))
     #define I3_RES_BDC_STAT_TASTER_LESELICHT_LINKS_UNIT              '0/1'
     #define I3_RES_BDC_STAT_TASTER_LESELICHT_LINKS_TYPE              unsigned char
         // LIN status feedback ILE ¿Status button reading light left Values: 0 - not activated, 1 - activated / LIN
-        // Status-RÃ¼ckmeldung ILE Â¿ Status Taster Leselicht links Werte: 0 - nicht betÃ¤tigt, 1 - betÃ¤tigt
+        // Status-Rückmeldung ILE ¿ Status Taster Leselicht links Werte: 0 - nicht betätigt, 1 - betätigt
 
     #define I3_RES_BDC_STAT_TASTER_LESELICHT_RECHTS                  (RXBUF_UCHAR(6))
     #define I3_RES_BDC_STAT_TASTER_LESELICHT_RECHTS_UNIT             '0/1'
     #define I3_RES_BDC_STAT_TASTER_LESELICHT_RECHTS_TYPE             unsigned char
-        // LIN status feedback ILE ¿status button reading light right Values: 0 - not activated, 1 - activated / LIN
-        // Status-RÃ¼ckmeldung ILE Â¿ Status Taster Leselicht rechts Werte: 0 - nicht betÃ¤tigt, 1 - betÃ¤tigt
+        // LIN status feedback ILE ¿Status button reading light right Values: 0 - not activated, 1 - activated / LIN
+        // Status-Rückmeldung ILE ¿ Status Taster Leselicht rechts Werte: 0 - nicht betätigt, 1 - betätigt
 
 // Skipping AHL_LWR_TMS_BESTROMEN on 0xD531 which takes arguments
 
@@ -2589,18 +2579,18 @@
 #define I3_PID_BDC_SCHEINWERFER_GRUNDSTELLUNG_STATUS                 0xD541
         // 0: Headlight reacts to normal mechanism (manual LWR: reaction to small wheel automatic / dynamic LWR: reaction
         // to the height sensors 1: Headlights stay in their basic position (can only be canceled by diagnosis or
-        // changing clamps) / 0: Scheinwerfer reagiert auf  normalen  Mechanismus (manuelle LWR: Reaktion auf RÃ¤dchen
-        // automatische / dynamische LWR: Reaktion auf die HÃ¶henstndssenoren  1: Scheinwerfer bleiben in Grundstellung
-        // (aufheben nur per Diagnose oder Klemmenwechsel mÃ¶glich)
+        // changing clamps) / 0: Scheinwerfer reagiert auf  normalen  Mechanismus (manuelle LWR: Reaktion auf Rädchen
+        // automatische / dynamische LWR: Reaktion auf die Höhenstndssenoren  1: Scheinwerfer bleiben in Grundstellung
+        // (aufheben nur per Diagnose oder Klemmenwechsel möglich)
 
     #define I3_RES_BDC_STAT_GRUNDSTELLUNG_SCHEINWERFER_EIN           (RXBUF_SINT(0))
     #define I3_RES_BDC_STAT_GRUNDSTELLUNG_SCHEINWERFER_EIN_UNIT      '0/1'
     #define I3_RES_BDC_STAT_GRUNDSTELLUNG_SCHEINWERFER_EIN_TYPE      short
         // 0: Headlight reacts to normal mechanism (manual LWR: reaction to small wheel automatic / dynamic LWR: reaction
         // to the height sensors 1: Headlights stay in their basic position (can only be canceled by diagnosis or
-        // changing clamps) / 0: Scheinwerfer reagiert auf  normalen  Mechanismus (manuelle LWR: Reaktion auf RÃ¤dchen
-        // automatische / dynamische LWR: Reaktion auf die HÃ¶henstndssenoren  1: Scheinwerfer bleiben in Grundstellung
-        // (aufheben nur per Diagnose oder Klemmenwechsel mÃ¶glich)
+        // changing clamps) / 0: Scheinwerfer reagiert auf  normalen  Mechanismus (manuelle LWR: Reaktion auf Rädchen
+        // automatische / dynamische LWR: Reaktion auf die Höhenstndssenoren  1: Scheinwerfer bleiben in Grundstellung
+        // (aufheben nur per Diagnose oder Klemmenwechsel möglich)
 
 // Skipping LEUCHTEN_FUNKTION on 0xD542 which takes arguments
 
@@ -2637,12 +2627,12 @@
         // Leuchtweitenregelung
 
 #define I3_PID_BDC_INNENLICHT_HINTEN_TASTER                          0xD54B
-        // 0: button not pressed 1: button pressed / 0: Taster nicht betÃ¤tigt 1: Taster betaetigt
+        // 0: button not pressed 1: button pressed / 0: Taster nicht betätigt 1: Taster betaetigt
 
     #define I3_RES_BDC_STAT_INNENLICHT_TASTER_HINTEN_EIN             (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_INNENLICHT_TASTER_HINTEN_EIN_UNIT        '0/1'
     #define I3_RES_BDC_STAT_INNENLICHT_TASTER_HINTEN_EIN_TYPE        unsigned char
-        // 0: button not pressed 1: button pressed / 0: Taster nicht betÃ¤tigt 1: Taster betaetigt
+        // 0: button not pressed 1: button pressed / 0: Taster nicht betätigt 1: Taster betaetigt
 
 #define I3_PID_BDC_INNENLICHT_VORNE_TASTER                           0xD54C
         // Status button interior light / interior light permanently off / Status Taster Innenlicht / Innenlicht Daueraus
@@ -2650,7 +2640,7 @@
     #define I3_RES_BDC_STAT_INNENLICHT_TASTER_VORNE_EIN              (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_INNENLICHT_TASTER_VORNE_EIN_UNIT         '0/1'
     #define I3_RES_BDC_STAT_INNENLICHT_TASTER_VORNE_EIN_TYPE         unsigned char
-        // 0: button not pressed 1: button pressed / 0: Taster nicht betÃ¤tigt 1: Taster betaetigt
+        // 0: button not pressed 1: button pressed / 0: Taster nicht betätigt 1: Taster betaetigt
 
     #define I3_RES_BDC_STAT_INNENLICHT_VORNE_DAUER_AUS_AKTIV         (RXBUF_UCHAR(1))
     #define I3_RES_BDC_STAT_INNENLICHT_VORNE_DAUER_AUS_AKTIV_UNIT    '0/1'
@@ -2658,7 +2648,7 @@
         // 0: permanently off not active 1: permanently off active / 0: Daueraus nicht aktiv 1: Daueraus aktiv
 
 #define I3_PID_BDC_BUS_IN_BELADUNGSSENSOR                            0xD54D
-        // Bus message for the load sensors in mm / Busnachricht fÃ¼r die Beladungssensoren in mm
+        // Bus message for the load sensors in mm / Busnachricht für die Beladungssensoren in mm
 
     #define I3_RES_BDC_STAT_BUS_IN_BELADUNGSSENSOR_VORNE_WERT        (RXBUF_SINT(0))
     #define I3_RES_BDC_STAT_BUS_IN_BELADUNGSSENSOR_VORNE_WERT_UNIT   'mm'
@@ -2671,22 +2661,22 @@
         // Bus message rear load sensor in mm / Busnachricht Beladungssensor hinten in mm
 
 #define I3_PID_BDC_LESELICHT_HINTEN_RECHTS_TASTER                    0xD54E
-        // 0: button not pressed 1: button pressed / 0: Taster nicht betÃ¤tigt 1: Taster betÃ¤tigt
+        // 0: button not pressed 1: button pressed / 0: Taster nicht betätigt 1: Taster betätigt
 
     #define I3_RES_BDC_STAT_TASTER_LESELICHT_HINTEN_RECHTS_EIN       (RXBUF_SINT(0))
     #define I3_RES_BDC_STAT_TASTER_LESELICHT_HINTEN_RECHTS_EIN_UNIT  '0/1'
     #define I3_RES_BDC_STAT_TASTER_LESELICHT_HINTEN_RECHTS_EIN_TYPE  short
-        // 0: button not pressed 1: button pressed / 0: Taster nicht betÃ¤tigt 1: Taster betÃ¤tigt
+        // 0: button not pressed 1: button pressed / 0: Taster nicht betätigt 1: Taster betätigt
 
 #define I3_PID_BDC_LWR_MANUELL_POTI                                  0xD54F
-        // Value of the knurled wheel of the manual LWR 0 - 254 valid value range 255 invalid / Wert des RÃ¤ndelsrads der
-        // manuellen LWR 0 - 254 gÃ¼ltiger Wertebereich  255 ungÃ¼ltig
+        // Value of the knurled wheel of the manual LWR 0 - 254 valid value range 255 invalid / Wert des Rändelsrads der
+        // manuellen LWR 0 - 254 gültiger Wertebereich  255 ungültig
 
     #define I3_RES_BDC_STAT_POTI_MAN_LWR_WERT                        (RXBUF_SINT(0))
     #define I3_RES_BDC_STAT_POTI_MAN_LWR_WERT_UNIT                   'Ink'
     #define I3_RES_BDC_STAT_POTI_MAN_LWR_WERT_TYPE                   short
-        // Value of the knurled wheel of the manual LWR 0 - 254 valid value range 255 invalid / Wert des RÃ¤ndelsrads der
-        // manuellen LWR 0 - 254 gÃ¼ltiger Wertebereich  255 ungÃ¼ltig
+        // Value of the knurled wheel of the manual LWR 0 - 254 valid value range 255 invalid / Wert des Rändelsrads der
+        // manuellen LWR 0 - 254 gültiger Wertebereich  255 ungültig
 
 #define I3_PID_BDC_LICHTSCHALTEREINHEIT                              0xD550
         // Status light switch unit / Status Lichtschaltereinheit
@@ -2721,12 +2711,12 @@
         // VS result, meaning see table / VS-Result, Bedeutung siehe Tabelle
 
 #define I3_PID_BDC_LICHTSCHALTER_WBL_TASTER                          0xD552
-        // 0: button not pressed 1: button pressed / 0: Taster nicht betÃ¤tigt  1: Taster betÃ¤tigt
+        // 0: button not pressed 1: button pressed / 0: Taster nicht betätigt  1: Taster betätigt
 
     #define I3_RES_BDC_STAT_TASTER_WBL_EIN                           (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_TASTER_WBL_EIN_UNIT                      '0/1'
     #define I3_RES_BDC_STAT_TASTER_WBL_EIN_TYPE                      unsigned char
-        // 0: button not pressed 1: button pressed / 0: Taster nicht betÃ¤tigt  1: Taster betÃ¤tigt
+        // 0: button not pressed 1: button pressed / 0: Taster nicht betätigt  1: Taster betätigt
 
 #define I3_PID_BDC_LESELICHT_HINTEN                                  0xD553
         // Rear reading light status / Status Leselicht hinten
@@ -2752,7 +2742,7 @@
     #define I3_RES_BDC_STAT_PIA_FOLLOW_ME_HOME_ZEIT_WERT             (RXBUF_UCHAR(1))
     #define I3_RES_BDC_STAT_PIA_FOLLOW_ME_HOME_ZEIT_WERT_UNIT        's'
     #define I3_RES_BDC_STAT_PIA_FOLLOW_ME_HOME_ZEIT_WERT_TYPE        unsigned char
-        // Set time for Follow Me Home / Eingestellte Zeit fÃ¼r Follow Me Home
+        // Set time for Follow Me Home / Eingestellte Zeit für Follow Me Home
 
     #define I3_RES_BDC_STAT_PIA_WELCOMELIGHT_EIN                     (RXBUF_UCHAR(2))
     #define I3_RES_BDC_STAT_PIA_WELCOMELIGHT_EIN_UNIT                '0/1'
@@ -2760,23 +2750,23 @@
         // PIA Welcomelight 0: Off 1: On / PIA Welcomelight  0: Aus  1: Ein
 
 #define I3_PID_BDC_SCHALTERBELEUCHTUNG_RAENDELRAD                    0xD557
-        // 0 - 254: valid value range 255 invalid / 0 - 254: gÃ¼ltiger Wertebereich  255 ungÃ¼ltig
+        // 0 - 254: valid value range 255 invalid / 0 - 254: gültiger Wertebereich  255 ungültig
 
     #define I3_RES_BDC_STAT_POTI_DIMMUNG_WERT                        (RXBUF_SINT(0))
     #define I3_RES_BDC_STAT_POTI_DIMMUNG_WERT_UNIT                   'Ink'
     #define I3_RES_BDC_STAT_POTI_DIMMUNG_WERT_TYPE                   short
-        // 0 - 254: valid value range 255 invalid / 0 - 254: gÃ¼ltiger Wertebereich  255 ungÃ¼ltig
+        // 0 - 254: valid value range 255 invalid / 0 - 254: gültiger Wertebereich  255 ungültig
 
 // Skipping AHL_LWR_POSITION on 0xD558 which takes arguments
 
 #define I3_PID_BDC_PIA_ABBIEGELICHT                                  0xD559
-        // 0: PIA: cornering light currently not active 1: PIA: cornering light currently active / 0: PIA: Abbiegelicht
+        // 0: PIA: turning light currently not active 1: PIA: turning light currently active / 0: PIA: Abbiegelicht
         // momentan nicht aktiv 1: PIA: Abbiegelicht momentan aktiv
 
     #define I3_RES_BDC_STAT_PIA_ABBIEGELICHT_PIA_EIN                 (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_PIA_ABBIEGELICHT_PIA_EIN_UNIT            '0/1'
     #define I3_RES_BDC_STAT_PIA_ABBIEGELICHT_PIA_EIN_TYPE            unsigned char
-        // 0: PIA: cornering light currently not active 1: PIA: cornering light currently active / 0: PIA: Abbiegelicht
+        // 0: PIA: turning light currently not active 1: PIA: turning light currently active / 0: PIA: Abbiegelicht
         // momentan nicht aktiv 1: PIA: Abbiegelicht momentan aktiv
 
 #define I3_PID_BDC_PIA_TIPPBLINKEN                                   0xD55E
@@ -2805,24 +2795,24 @@
         // Leuchtweitenregulierung (MIN, MAX, aktuell)
 
     #define I3_RES_BDC_STAT_MAN_LWR_MAXPOS_WERT                      (RXBUF_SINT(0))
-    #define I3_RES_BDC_STAT_MAN_LWR_MAXPOS_WERT_UNIT                 'Â°'
+    #define I3_RES_BDC_STAT_MAN_LWR_MAXPOS_WERT_UNIT                 '°'
     #define I3_RES_BDC_STAT_MAN_LWR_MAXPOS_WERT_TYPE                 short
         // Controlled angle value when the LWR knurled wheel is in the MAX position / Angesteuerter Winkelwert bei
-        // MAX-Stellung des LWR-RÃ¤ndelrads
+        // MAX-Stellung des LWR-Rändelrads
 
     #define I3_RES_BDC_STAT_MAN_LWR_MINPOS_WERT                      (RXBUF_SINT(2))
-    #define I3_RES_BDC_STAT_MAN_LWR_MINPOS_WERT_UNIT                 'Â°'
+    #define I3_RES_BDC_STAT_MAN_LWR_MINPOS_WERT_UNIT                 '°'
     #define I3_RES_BDC_STAT_MAN_LWR_MINPOS_WERT_TYPE                 short
         // Controlled angle value with the MIN position of the LWR knurled wheel / Angesteuerter Winkelwert bei
-        // MIN-Stellung des LWR-RÃ¤ndelrads
+        // MIN-Stellung des LWR-Rändelrads
 
     #define I3_RES_BDC_STAT_MAN_LWR_LINKS_WERT                       (RXBUF_SINT(4))
-    #define I3_RES_BDC_STAT_MAN_LWR_LINKS_WERT_UNIT                  'Â°'
+    #define I3_RES_BDC_STAT_MAN_LWR_LINKS_WERT_UNIT                  '°'
     #define I3_RES_BDC_STAT_MAN_LWR_LINKS_WERT_TYPE                  short
         // Current angle value LWR left / Aktueller Winkelwert LWR links
 
     #define I3_RES_BDC_STAT_MAN_LWR_RECHTS_WERT                      (RXBUF_SINT(6))
-    #define I3_RES_BDC_STAT_MAN_LWR_RECHTS_WERT_UNIT                 'Â°'
+    #define I3_RES_BDC_STAT_MAN_LWR_RECHTS_WERT_UNIT                 '°'
     #define I3_RES_BDC_STAT_MAN_LWR_RECHTS_WERT_TYPE                 short
         // Current LWR angle value right / Aktueller Winkelwert LWR rechts
 
@@ -2890,26 +2880,26 @@
 #define I3_PID_BDC_LENKSTOCK_BLINKER_TASTER_FLA                      0xD580
         // 0: steering column indicator, axial button high beam assistant not actuated; 1: Steering column indicator,
         // axial button high beam assistant actuated / 0: Lenkstock Blinker axialer Taster Fernlichtassistent nicht
-        // betÃ¤tigt; 1: Lenkstock Blinker axialer Taster Fernlichtassistent betÃ¤tigt
+        // betätigt; 1: Lenkstock Blinker axialer Taster Fernlichtassistent betätigt
 
     #define I3_RES_BDC_STAT_LENKSTOCK_BLINKER_TASTER_FLA_EIN         (RXBUF_SCHAR(0))
     #define I3_RES_BDC_STAT_LENKSTOCK_BLINKER_TASTER_FLA_EIN_UNIT    '0/1'
     #define I3_RES_BDC_STAT_LENKSTOCK_BLINKER_TASTER_FLA_EIN_TYPE    char
         // 0: steering column indicator, axial button high beam assistant not actuated; 1: Steering column indicator,
         // axial button high beam assistant actuated / 0: Lenkstock Blinker axialer Taster Fernlichtassistent nicht
-        // betÃ¤tigt; 1: Lenkstock Blinker axialer Taster Fernlichtassistent betÃ¤tigt
+        // betätigt; 1: Lenkstock Blinker axialer Taster Fernlichtassistent betätigt
 
 #define I3_PID_BDC_LENKSTOCK_BLINKER_TASTER_BC                       0xD581
         // 0: steering column indicator, axial button on-board computer not activated; 1: Steering column indicator,
-        // axial button on-board computer actuated / 0: Lenkstock Blinker axialer Taster Bordcomputer nicht betÃ¤tigt; 1:
-        // Lenkstock Blinker axialer Taster Bordcomputer betÃ¤tigt
+        // axial button on-board computer actuated / 0: Lenkstock Blinker axialer Taster Bordcomputer nicht betätigt; 1:
+        // Lenkstock Blinker axialer Taster Bordcomputer betätigt
 
     #define I3_RES_BDC_STAT_LENKSTOCK_BLINKER_TASTER_BC_EIN          (RXBUF_SCHAR(0))
     #define I3_RES_BDC_STAT_LENKSTOCK_BLINKER_TASTER_BC_EIN_UNIT     '0/1'
     #define I3_RES_BDC_STAT_LENKSTOCK_BLINKER_TASTER_BC_EIN_TYPE     char
         // 0: steering column indicator, axial button on-board computer not activated; 1: Steering column indicator,
-        // axial button on-board computer actuated / 0: Lenkstock Blinker axialer Taster Bordcomputer nicht betÃ¤tigt; 1:
-        // Lenkstock Blinker axialer Taster Bordcomputer betÃ¤tigt
+        // axial button on-board computer actuated / 0: Lenkstock Blinker axialer Taster Bordcomputer nicht betätigt; 1:
+        // Lenkstock Blinker axialer Taster Bordcomputer betätigt
 
 #define I3_PID_BDC_LENKSTOCK_BLINKER_FRA                             0xD582
         // Status button for direction indicator. Result description in the sub-table / Status Taster
@@ -2962,15 +2952,15 @@
     #define I3_RES_BDC_STAT_LENKSTOCK_BLINKER_FERNLICHT_BETAETIGT_UNIT '0/1'
     #define I3_RES_BDC_STAT_LENKSTOCK_BLINKER_FERNLICHT_BETAETIGT_TYPE char
         // 0: Steering column turn signal button high beam not actuated; 1: Steering column turn signal button high beam
-        // not actuated / 0: Lenkstock Blinker Taster Fernlicht nicht betÃ¤tigt; 1: Lenkstock Blinker Taster Fernlicht
-        // nicht betÃ¤tigt
+        // not actuated / 0: Lenkstock Blinker Taster Fernlicht nicht betätigt; 1: Lenkstock Blinker Taster Fernlicht
+        // nicht betätigt
 
     #define I3_RES_BDC_STAT_LENKSTOCK_BLINKER_LICHTHUPE_BETAETIGT    (RXBUF_SCHAR(1))
     #define I3_RES_BDC_STAT_LENKSTOCK_BLINKER_LICHTHUPE_BETAETIGT_UNIT '0/1'
     #define I3_RES_BDC_STAT_LENKSTOCK_BLINKER_LICHTHUPE_BETAETIGT_TYPE char
         // 0: Steering column turn signal button headlight flasher not actuated; 1: Steering column turn signal button
-        // headlight flasher actuated / 0: Lenkstock Blinker Taster Lichthupe nicht betÃ¤tigt; 1: Lenkstock Blinker
-        // Taster Lichthupe betÃ¤tigt
+        // headlight flasher actuated / 0: Lenkstock Blinker Taster Lichthupe nicht betätigt; 1: Lenkstock Blinker Taster
+        // Lichthupe betätigt
 
 #define I3_PID_BDC_LENKSTOCK_BLINKER_WIPPE                           0xD585
         // Status of the flasher rocker on the steering column. Details in the sub-table / Status der Blinkerswippe am
@@ -2980,14 +2970,14 @@
     #define I3_RES_BDC_STAT_LENKSTOCK_BLINKER_WIPPE_NACH_OBEN_UNIT   '0/1'
     #define I3_RES_BDC_STAT_LENKSTOCK_BLINKER_WIPPE_NACH_OBEN_TYPE   unsigned char
         // 0: Steering column turn signal rocker up not actuated; 1: Steering column turn signal rocker operated upwards
-        // / 0: Lenkstock Blinker Wippe nach oben nicht betÃ¤tigt; 1: Lenkstock Blinker Wippe nach oben betÃ¤tigt
+        // / 0: Lenkstock Blinker Wippe nach oben nicht betätigt; 1: Lenkstock Blinker Wippe nach oben betätigt
 
     #define I3_RES_BDC_STAT_LENKSTOCK_BLINKER_WIPPE_NACH_UNTEN       (RXBUF_UCHAR(1))
     #define I3_RES_BDC_STAT_LENKSTOCK_BLINKER_WIPPE_NACH_UNTEN_UNIT  '0/1'
     #define I3_RES_BDC_STAT_LENKSTOCK_BLINKER_WIPPE_NACH_UNTEN_TYPE  unsigned char
-        // 0: steering column turn signal rocker down not actuated; 1: Steering column turn signal rocker operated
-        // downwards / 0: Lenkstock Blinker Wippe nach unten nicht betÃ¤tigt; 1: Lenkstock Blinker Wippe nach unten
-        // betÃ¤tigt
+        // 0: Steering column turn signal rocker down not activated; 1: Steering column turn signal rocker operated
+        // downwards / 0: Lenkstock Blinker Wippe nach unten nicht betätigt; 1: Lenkstock Blinker Wippe nach unten
+        // betätigt
 
     #define I3_RES_BDC_STAT_LENKSTOCK_BLINKER_WIPPE_NULLSTELLUNG     (RXBUF_UCHAR(2))
     #define I3_RES_BDC_STAT_LENKSTOCK_BLINKER_WIPPE_NULLSTELLUNG_UNIT '0/1'
@@ -3000,66 +2990,66 @@
     #define I3_RES_BDC_STAT_LENKSTOCK_BLINKER_TASTER_WIPPE_NR_TYPE   unsigned char
         // VS-Result 0: Steering column indicator rocker not actuated; 1: Steering column turn signal rocker operated
         // upwards; 2: Steering column turn signal rocker operated downwards / VS-Result 0: Lenkstock Blinker Wippe nicht
-        // betÃ¤tigt; 1: Lenkstock Blinker Wippe nach oben betÃ¤tigt;  2: Lenkstock Blinker Wippe nach unten betÃ¤tigt
+        // betätigt; 1: Lenkstock Blinker Wippe nach oben betätigt;  2: Lenkstock Blinker Wippe nach unten betätigt
 
 #define I3_PID_BDC_LESELICHT_HINTEN_LINKS_TASTER                     0xD587
-        // 0: button not pressed 1: button pressed / 0: Taster nicht betÃ¤tigt 1: Taster betÃ¤tigt
+        // 0: button not pressed 1: button pressed / 0: Taster nicht betätigt 1: Taster betätigt
 
     #define I3_RES_BDC_STAT_TASTER_LESELICHT_HINTEN_LINKS_EIN        (RXBUF_SINT(0))
     #define I3_RES_BDC_STAT_TASTER_LESELICHT_HINTEN_LINKS_EIN_UNIT   '0/1'
     #define I3_RES_BDC_STAT_TASTER_LESELICHT_HINTEN_LINKS_EIN_TYPE   short
-        // 0: button not pressed 1: button pressed / 0: Taster nicht betÃ¤tigt 1: Taster betÃ¤tigt
+        // 0: button not pressed 1: button pressed / 0: Taster nicht betätigt 1: Taster betätigt
 
 #define I3_PID_BDC_LESELICHT_VORNE_RECHTS_TASTER                     0xD588
-        // 0: button not pressed 1: button pressed / 0: Taster nicht betÃ¤tigt 1: Taster betÃ¤tigt
+        // 0: button not pressed 1: button pressed / 0: Taster nicht betätigt 1: Taster betätigt
 
     #define I3_RES_BDC_STAT_TASTER_LESELICHT_VORNE_RECHTS_EIN        (RXBUF_SINT(0))
     #define I3_RES_BDC_STAT_TASTER_LESELICHT_VORNE_RECHTS_EIN_UNIT   '0/1'
     #define I3_RES_BDC_STAT_TASTER_LESELICHT_VORNE_RECHTS_EIN_TYPE   short
-        // 0: button not pressed 1: button pressed / 0: Taster nicht betÃ¤tigt 1: Taster betÃ¤tigt
+        // 0: button not pressed 1: button pressed / 0: Taster nicht betätigt 1: Taster betätigt
 
 #define I3_PID_BDC_LESELICHT_VORNE_LINKS_TASTER                      0xD589
-        // 0: button not pressed 1: button pressed / 0: Taster nicht betÃ¤tigt 1: Taster betÃ¤tigt
+        // 0: button not pressed 1: button pressed / 0: Taster nicht betätigt 1: Taster betätigt
 
     #define I3_RES_BDC_STAT_TASTER_LESELICHT_VORNE_LINKS_EIN         (RXBUF_SINT(0))
     #define I3_RES_BDC_STAT_TASTER_LESELICHT_VORNE_LINKS_EIN_UNIT    '0/1'
     #define I3_RES_BDC_STAT_TASTER_LESELICHT_VORNE_LINKS_EIN_TYPE    short
-        // 0: button not pressed 1: button pressed / 0: Taster nicht betÃ¤tigt 1: Taster betÃ¤tigt
+        // 0: button not pressed 1: button pressed / 0: Taster nicht betätigt 1: Taster betätigt
 
 #define I3_PID_BDC_LWR_POSITION_MIN_MAX                              0xD58A
-        // Status end stop knurling wheel manual LWR / Status Endanschlag RÃ¤ndelrad manuelle LWR
+        // Status end stop knurling wheel manual LWR / Status Endanschlag Rändelrad manuelle LWR
 
     #define I3_RES_BDC_STAT_LWR_POSITION_MAX_EIN                     (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_LWR_POSITION_MAX_EIN_UNIT                '0/1'
     #define I3_RES_BDC_STAT_LWR_POSITION_MAX_EIN_TYPE                unsigned char
-        // 0: Knurled wheel not in MAX position 1: Knurled wheel in MAX position / 0: RÃ¤ndelrad nicht in Stellung MAX 
-        // 1: RÃ¤ndelrad in Stellung MAX
+        // 0: Knurled wheel not in MAX position 1: Knurled wheel in MAX position / 0: Rändelrad nicht in Stellung MAX  1:
+        // Rändelrad in Stellung MAX
 
     #define I3_RES_BDC_STAT_LWR_POSITION_MIN_EIN                     (RXBUF_UCHAR(1))
     #define I3_RES_BDC_STAT_LWR_POSITION_MIN_EIN_UNIT                '0/1'
     #define I3_RES_BDC_STAT_LWR_POSITION_MIN_EIN_TYPE                unsigned char
-        // 0: Knurled wheel not in MIN position 1: Knurled wheel in MIN position / 0: RÃ¤ndelrad nicht in Stellung MIN 1:
-        // RÃ¤ndelrad in Stellung MIN
+        // 0: Knurled wheel not in MIN position 1: Knurled wheel in MIN position / 0: Rändelrad nicht in Stellung MIN 1:
+        // Rändelrad in Stellung MIN
 
 #define I3_PID_BDC_LICHTSCHALTER_NSW_TASTER                          0xD58B
-        // 0: Fog light button not actuated; 1: Fog light button pressed / 0: Taster Nebelscheinwerfer nicht betÃ¤tigt;
-        // 1: Taster Nebelscheinwerfer betÃ¤tigt
+        // 0: Fog light button not actuated; 1: Fog light button pressed / 0: Taster Nebelscheinwerfer nicht betätigt; 1:
+        // Taster Nebelscheinwerfer betätigt
 
     #define I3_RES_BDC_STAT_TASTER_NSW_EIN                           (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_TASTER_NSW_EIN_UNIT                      '0/1'
     #define I3_RES_BDC_STAT_TASTER_NSW_EIN_TYPE                      unsigned char
-        // 0: Fog light button not actuated; 1: Fog light button pressed / 0: Taster Nebelscheinwerfer nicht betÃ¤tigt;
-        // 1: Taster Nebelscheinwerfer betÃ¤tigt
+        // 0: Fog light button not actuated; 1: Fog light button pressed / 0: Taster Nebelscheinwerfer nicht betätigt; 1:
+        // Taster Nebelscheinwerfer betätigt
 
 #define I3_PID_BDC_LICHTSCHALTER_NSL_TASTER                          0xD58C
         // 0: Rear fog light button not actuated 1: Rear fog light button actuated / 0: Taster Nebelschlussleuchte nicht
-        // betÃ¤tigt 1: Taster Nebelschlussleuchte betÃ¤tigt
+        // betätigt 1: Taster Nebelschlussleuchte betätigt
 
     #define I3_RES_BDC_STAT_TASTER_NSL_EIN                           (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_TASTER_NSL_EIN_UNIT                      '0/1'
     #define I3_RES_BDC_STAT_TASTER_NSL_EIN_TYPE                      unsigned char
         // 0: Rear fog light button not actuated 1: Rear fog light button actuated / 0: Taster Nebelschlussleuchte nicht
-        // betÃ¤tigt 1: Taster Nebelschlussleuchte betÃ¤tigt
+        // betätigt 1: Taster Nebelschlussleuchte betätigt
 
 // Skipping SCHEINWERFER_GRUNDSTELLUNG on 0xD58E which takes arguments
 
@@ -3137,18 +3127,18 @@
     #define I3_RES_BDC_STAT_TMS_ID_LINKS_WERT_UNIT                   'HEX'
     #define I3_RES_BDC_STAT_TMS_ID_LINKS_WERT_TYPE                   unsigned short
         // Coding ID TMS left &lt;&lt;&lt; Details to be filled in by the supplier !!! &gt;&gt;&gt; / Codierkennung TMS
-        // links  <<< Details sind vom Lieferanten zu befÃ¼llen !!! >>>
+        // links  <<< Details sind vom Lieferanten zu befüllen !!! >>>
 
     #define I3_RES_BDC_STAT_TMS_ID_RECHTS_WERT                       (RXBUF_UINT(2))
     #define I3_RES_BDC_STAT_TMS_ID_RECHTS_WERT_UNIT                  'HEX'
     #define I3_RES_BDC_STAT_TMS_ID_RECHTS_WERT_TYPE                  unsigned short
         // Coding ID TMS right &lt;&lt;&lt; Details to be filled in by the supplier !!! &gt;&gt;&gt; / Codierkennung TMS
-        // rechts <<< Details sind vom Lieferanten zu befÃ¼llen !!! >>>
+        // rechts <<< Details sind vom Lieferanten zu befüllen !!! >>>
 
 // Skipping AHL_LWR_FAHRSITUATION on 0xD5E6 which takes arguments
 
 #define I3_PID_BDC_HOEHENSTAENDE_SENSOREN                            0xD601
-        // Evaluation / status detection of the level sensors. / Auswertung / Zustandserkennung der HÃ¶henstandssensoren.
+        // Evaluation / status detection of the level sensors. / Auswertung / Zustandserkennung der Höhenstandssensoren.
 
     // Can't process STAT_HOEHENSTAND_VR_WERT - don't know type motorola float (*** this will mean all the following offsets are wrong!!! ****)
 
@@ -3157,61 +3147,61 @@
     #define I3_RES_BDC_STAT_HOEHENSTAND_ROHWERT_VR_WERT              (RXBUF_SINT(0)/1000.0f)
     #define I3_RES_BDC_STAT_HOEHENSTAND_ROHWERT_VR_WERT_UNIT         'V'
     #define I3_RES_BDC_STAT_HOEHENSTAND_ROHWERT_VR_WERT_TYPE         float
-        // Raw signal from the front height sensor. / Rohsignal Sensor HÃ¶henstand vorn.
+        // Raw signal from the front height sensor. / Rohsignal Sensor Höhenstand vorn.
 
     #define I3_RES_BDC_STAT_HOEHENSTAND_ROHWERT_HR_WERT              (RXBUF_SINT(2)/1000.0f)
     #define I3_RES_BDC_STAT_HOEHENSTAND_ROHWERT_HR_WERT_UNIT         'V'
     #define I3_RES_BDC_STAT_HOEHENSTAND_ROHWERT_HR_WERT_TYPE         float
-        // Raw signal from the rear height sensor. / Rohsignal Sensor HÃ¶henstand hinten.
+        // Raw signal from the rear height sensor. / Rohsignal Sensor Höhenstand hinten.
 
     #define I3_RES_BDC_STAT_HOEHENSTAND_SENSOR_VR_NR                 (RXBUF_SINT(4))
     #define I3_RES_BDC_STAT_HOEHENSTAND_SENSOR_VR_NR_UNIT            '0-n'
     #define I3_RES_BDC_STAT_HOEHENSTAND_SENSOR_VR_NR_TYPE            short
-        // Status query of the front height level sensor. / Zustandsabfrage HÃ¶henstandssensor vorn.
+        // Status query of the front height level sensor. / Zustandsabfrage Höhenstandssensor vorn.
 
     #define I3_RES_BDC_STAT_HOEHENSTAND_SENSOR_HR_NR                 (RXBUF_SINT(6))
     #define I3_RES_BDC_STAT_HOEHENSTAND_SENSOR_HR_NR_UNIT            '0-n'
     #define I3_RES_BDC_STAT_HOEHENSTAND_SENSOR_HR_NR_TYPE            short
-        // Status query of the rear height level sensor. / Zustandsabfrage HÃ¶henstandssensor hinten.
+        // Status query of the rear height level sensor. / Zustandsabfrage Höhenstandssensor hinten.
 
     #define I3_RES_BDC_STAT_HOEHENSTAND_VR_NR                        (RXBUF_UCHAR(8))
     #define I3_RES_BDC_STAT_HOEHENSTAND_VR_NR_UNIT                   '0-n'
     #define I3_RES_BDC_STAT_HOEHENSTAND_VR_NR_TYPE                   unsigned char
-        // Plausibility level offset. / Plausiblilisierung HÃ¶henstandsoffset.
+        // Plausibility level offset. / Plausiblilisierung Höhenstandsoffset.
 
     #define I3_RES_BDC_STAT_HOEHENSTAND_HR_NR                        (RXBUF_UCHAR(9))
     #define I3_RES_BDC_STAT_HOEHENSTAND_HR_NR_UNIT                   '0-n'
     #define I3_RES_BDC_STAT_HOEHENSTAND_HR_NR_TYPE                   unsigned char
-        // Plausibility level offset. / Plausiblilisierung HÃ¶henstandsoffset.
+        // Plausibility level offset. / Plausiblilisierung Höhenstandsoffset.
 
     #define I3_RES_BDC_STAT_HOEHENSTAND_VR_NR_1                      (RXBUF_UCHAR(10))
     #define I3_RES_BDC_STAT_HOEHENSTAND_VR_NR_1_UNIT                 '0-n'
     #define I3_RES_BDC_STAT_HOEHENSTAND_VR_NR_1_TYPE                 unsigned char
-        // Plausibility check of altitude gradient / Plausiblilisierung HÃ¶henstandssteigung
+        // Plausibility check of altitude gradient / Plausiblilisierung Höhenstandssteigung
 
     #define I3_RES_BDC_STAT_HOEHENSTAND_HR_NR_1                      (RXBUF_UCHAR(11))
     #define I3_RES_BDC_STAT_HOEHENSTAND_HR_NR_1_UNIT                 '0-n'
     #define I3_RES_BDC_STAT_HOEHENSTAND_HR_NR_1_TYPE                 unsigned char
-        // Plausibility check of altitude gradient / Plausiblilisierung HÃ¶henstandssteigung
+        // Plausibility check of altitude gradient / Plausiblilisierung Höhenstandssteigung
 
     // Can't process STAT_OFFSET_S0_VR_WERT_0XD601 - don't know type motorola float (*** this will mean all the following offsets are wrong!!! ****)
 
     // Can't process STAT_OFFSET_S0_HR_WERT_0XD601 - don't know type motorola float (*** this will mean all the following offsets are wrong!!! ****)
 
 #define I3_PID_BDC_HOEHENSTAENDE_VERSORGUNG                          0xD603
-        // Supply voltage for level sensors / Versorgungsspannung HÃ¶henstandssensoren
+        // Supply voltage for level sensors / Versorgungsspannung Höhenstandssensoren
 
     #define I3_RES_BDC_STAT_HOEHENSTAND_VERSORGUNG_VR_WERT           (RXBUF_SINT(0)/1000.0f)
     #define I3_RES_BDC_STAT_HOEHENSTAND_VERSORGUNG_VR_WERT_UNIT      'V'
     #define I3_RES_BDC_STAT_HOEHENSTAND_VERSORGUNG_VR_WERT_TYPE      float
         // Output of the supply voltage of the front height sensor in mV. / Ausgabe der Versorgungsspannung des Sensor
-        // HÃ¶henstand vorn  in mV.
+        // Höhenstand vorn  in mV.
 
     #define I3_RES_BDC_STAT_HOEHENSTAND_VERSORGUNG_HR_WERT           (RXBUF_SINT(2)/1000.0f)
     #define I3_RES_BDC_STAT_HOEHENSTAND_VERSORGUNG_HR_WERT_UNIT      'V'
     #define I3_RES_BDC_STAT_HOEHENSTAND_VERSORGUNG_HR_WERT_TYPE      float
         // Output of the supply voltage of the rear height sensor in mV. / Ausgabe der Versorgungsspannung des Sensor
-        // HÃ¶henstand hinten in mV.
+        // Höhenstand hinten in mV.
 
 #define I3_PID_BDC_HOEHENSTAENDE_KALIBRIERUNG_LESEN                  0xD604
         // Read out zero point height sensors / Auslesen Nullpunkt Hoehenstandssensoren
@@ -3356,20 +3346,20 @@
         // Switchboard-Tasten
 
 #define I3_PID_BDC_KUEHLMITTELSTAND                                  0xD672
-        // _ON: 1 coolant tank sufficiently filled _VALUE: level in mV / _EIN: 1 KÃ¼hlmittelbehÃ¤lter ausreichend
-        // befÃ¼llt _WERT: Pegel in mV
+        // _ON: 1 coolant tank sufficiently filled _VALUE: level in mV / _EIN: 1 Kühlmittelbehälter ausreichend befüllt
+        // _WERT: Pegel in mV
 
     #define I3_RES_BDC_STAT_KUEHLMITTELSTAND_EIN                     (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_KUEHLMITTELSTAND_EIN_UNIT                '0/1'
     #define I3_RES_BDC_STAT_KUEHLMITTELSTAND_EIN_TYPE                unsigned char
-        // 0 = coolant tank not sufficiently filled; 1 = coolant tank sufficiently filled / 0= KÃ¼hlmittelbehaelter nicht
-        // ausreichend befÃ¼llt; 1= KÃ¼hlmittelbehÃ¤llter ausreichend befÃ¼llt
+        // 0 = coolant tank not sufficiently filled; 1 = coolant tank sufficiently filled / 0= Kühlmittelbehaelter nicht
+        // ausreichend befüllt; 1= Kühlmittelbehällter ausreichend befüllt
 
     #define I3_RES_BDC_STAT_KUEHLMITTELSTAND_WERT                    (RXBUF_UINT(1))
     #define I3_RES_BDC_STAT_KUEHLMITTELSTAND_WERT_UNIT               'mV'
     #define I3_RES_BDC_STAT_KUEHLMITTELSTAND_WERT_TYPE               unsigned short
         // Specification of the level value in mv. 0xFFFF: invalid value or value not supported / Angabe des Pegelwerts
-        // in mv. 0xFFFF: ungÃ¼ltiger Wert oder Wert nicht unterstÃ¼tzt
+        // in mv. 0xFFFF: ungültiger Wert oder Wert nicht unterstützt
 
 #define I3_PID_BDC_GURTZUBRINGER_FA                                  0xD71A
         // Driver belt feeder status / Status Gurtzubringer Fahrer
@@ -3456,7 +3446,7 @@
 // Skipping SITZHEIZUNG_BF_TEMP on 0xD72F which takes arguments
 
 #define I3_PID_BDC_SITZHEIZUNG_BF                                    0xD730
-        // Operating status of the passenger seat heating / Betriebszustand Sitzheizung Beifahrer
+        // Operating condition of the passenger seat heating / Betriebszustand Sitzheizung Beifahrer
 
     #define I3_RES_BDC_STAT_SITZHEIZUNG_BF_EIN                       (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_SITZHEIZUNG_BF_EIN_UNIT                  '0/1'
@@ -3669,28 +3659,28 @@
 #define I3_PID_BDC_VORHANDEN_KOMPRESSORKUPPLUNG                      0xD916
         // Read out whether a compressor clutch is available. In the case of PHEV vehicles, the job returns whether a
         // switching valve is present. / Auslesen ob eine Kompressorkupplung vorhanden ist. Bei PHEV-Fahrzeugen gibt der
-        // Job zurÃ¼ck, ob ein Umschaltventil vorhanden ist. 
+        // Job zurück, ob ein Umschaltventil vorhanden ist. 
 
     // RES_0xD916_D is a BITFIELD of unknown size.  We don't have definitions for each bit, and we GUESSED it is one byte ***
         // Read out whether a compressor clutch is available. In the case of PHEV vehicles, the job returns whether a
         // switching valve is present. / Auslesen ob eine Kompressorkupplung vorhanden ist. Bei PHEV-Fahrzeugen gibt der
-        // Job zurÃ¼ck, ob ein Umschaltventil vorhanden ist. 
+        // Job zurück, ob ein Umschaltventil vorhanden ist. 
     #define I3_RES_BDC_RES_0xD916_D                                  (RXBUF_UCHAR(0))
     #define I3_RES_BDC_RES_0xD916_D_UNIT                             'bit'
     #define I3_RES_BDC_RES_0xD916_D_TYPE                             unsigned char
         // Read out whether a compressor clutch is available. In the case of PHEV vehicles, the job returns whether a
         // switching valve is present. / Auslesen ob eine Kompressorkupplung vorhanden ist. Bei PHEV-Fahrzeugen gibt der
-        // Job zurÃ¼ck, ob ein Umschaltventil vorhanden ist. 
+        // Job zurück, ob ein Umschaltventil vorhanden ist. 
 
 #define I3_PID_BDC_DRUCKSENSOR_VORHANDEN                             0xD959
         // Indicates whether a pressure sensor is installed for R134A: 0 = not available, 1 = available / Gibt aus, ob
-        // ein Drucksensor fÃ¼r R134A verbaut ist: 0 = nicht vorhanden, 1 = vorhanden
+        // ein Drucksensor für R134A verbaut ist: 0 = nicht vorhanden, 1 = vorhanden
 
     #define I3_RES_BDC_STAT_DRUCKSENSOR_VORHANDEN                    (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_DRUCKSENSOR_VORHANDEN_UNIT               '0/1'
     #define I3_RES_BDC_STAT_DRUCKSENSOR_VORHANDEN_TYPE               unsigned char
         // Indicates whether a pressure sensor is installed for R134A: 0 = not available, 1 = available / Gibt aus, ob
-        // ein Drucksensor fÃ¼r R134A verbaut ist: 0 = nicht vorhanden, 1 = vorhanden
+        // ein Drucksensor für R134A verbaut ist: 0 = nicht vorhanden, 1 = vorhanden
 
 #define I3_PID_BDC_VORHANDEN_WASSERVENTIL                            0xD95A
         // Water valve available / Wasserventil vorhanden
@@ -3709,12 +3699,12 @@
         // Status solar sensor left and right / Status Solarsensor Links und Rechts
 
     #define I3_RES_BDC_STAT_SOLARSENSOR_FA_WERT                      (RXBUF_UINT(0)*4.0158f)
-    #define I3_RES_BDC_STAT_SOLARSENSOR_FA_WERT_UNIT                 'W/mÂ²'
+    #define I3_RES_BDC_STAT_SOLARSENSOR_FA_WERT_UNIT                 'W/m²'
     #define I3_RES_BDC_STAT_SOLARSENSOR_FA_WERT_TYPE                 float
         // Solar sensor, solar value FA. Range 0 to 1020 W / m2 / Solarsensor, Solarwert FA. Bereich 0 bis 1020 W/m2
 
     #define I3_RES_BDC_STAT_SOLARSENSOR_BF_WERT                      (RXBUF_UINT(2)*4.0158f)
-    #define I3_RES_BDC_STAT_SOLARSENSOR_BF_WERT_UNIT                 'W/mÂ²'
+    #define I3_RES_BDC_STAT_SOLARSENSOR_BF_WERT_UNIT                 'W/m²'
     #define I3_RES_BDC_STAT_SOLARSENSOR_BF_WERT_TYPE                 float
         // Solar sensor, solar value BF. Range 0 to 1020 W / m2 / Solarsensor, Solarwert BF. Bereich 0 bis 1020 W/m2
 
@@ -3729,12 +3719,12 @@
         // AUC-Sensor ermittelt hat.
 
 #define I3_PID_BDC_DRUCKSENSOR                                       0xD967
-        // Output refrigerant pressure in bar. / Ausgabe KÃ¤ltemitteldruck in bar.
+        // Output refrigerant pressure in bar. / Ausgabe Kältemitteldruck in bar.
 
     #define I3_RES_BDC_STAT_R134A_DRUCK_WERT                         (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_R134A_DRUCK_WERT_UNIT                    'bar'
     #define I3_RES_BDC_STAT_R134A_DRUCK_WERT_TYPE                    unsigned char
-        // Output refrigerant pressure in bar. / Ausgabe KÃ¤ltemitteldruck in bar.
+        // Output refrigerant pressure in bar. / Ausgabe Kältemitteldruck in bar.
 
 #define I3_PID_BDC_BESCHLAGSENSOR                                    0xD96C
         // Relative humidity and temperature / Relative Feuchte und Temperatur
@@ -3745,29 +3735,29 @@
         // Indication of relative humidity in percent 0 ... 100% / Angabe relative Feuchte in Prozent 0 ... 100 %
 
     #define I3_RES_BDC_STAT_BESCHLAGSENSOR_TEMP_WERT                 (RXBUF_UCHAR(2)/2.0f-40.0)
-    #define I3_RES_BDC_STAT_BESCHLAGSENSOR_TEMP_WERT_UNIT            'Â°C'
+    #define I3_RES_BDC_STAT_BESCHLAGSENSOR_TEMP_WERT_UNIT            '°C'
     #define I3_RES_BDC_STAT_BESCHLAGSENSOR_TEMP_WERT_TYPE            float
-        // Measured temperature in ° C -40 ... 85 ° C / Gemessene Temperatur in Â°C -40 ... 85 Â°C
+        // Measured temperature in ° C -40 ... 85 ° C / Gemessene Temperatur in °C -40 ... 85 °C
 
 #define I3_PID_BDC_BESCHLAGSENSOR_VORHANDEN                          0xD96D
-        // 0: condensation sensor not available / coded 1: condensation sensor available / coded / 0: Beschlagsensor
+        // 0: Condensation sensor not available / coded 1: Condensation sensor available / coded / 0: Beschlagsensor
         // nicht vorhanden / codiert   1: Beschlagsensor vorhanden / codiert
 
     #define I3_RES_BDC_STAT_VORHANDEN_BESCHLAGSENSOR                 (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_VORHANDEN_BESCHLAGSENSOR_UNIT            '0/1'
     #define I3_RES_BDC_STAT_VORHANDEN_BESCHLAGSENSOR_TYPE            unsigned char
-        // 0: condensation sensor not available / coded 1: condensation sensor available / coded / 0: Beschlagsensor
+        // 0: Condensation sensor not available / coded 1: Condensation sensor available / coded / 0: Beschlagsensor
         // nicht vorhanden / codiert   1: Beschlagsensor vorhanden / codiert
 
 #define I3_PID_BDC_FONDSCHICHTUNGS_POTI                              0xD96E
         // Output of the setting of the rear stratification potentiometer: 0-100%, 0xFF: value invalid / Ausgabe der
-        // Einstellung des Fond-Schichtungspotentiometer: 0-100 %, 0xFF: Wert ungÃ¼ltig
+        // Einstellung des Fond-Schichtungspotentiometer: 0-100 %, 0xFF: Wert ungültig
 
     #define I3_RES_BDC_STAT_FONDSCHICHTUNGS_POTI_WERT                (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_FONDSCHICHTUNGS_POTI_WERT_UNIT           '%'
     #define I3_RES_BDC_STAT_FONDSCHICHTUNGS_POTI_WERT_TYPE           unsigned char
         // Output of the setting of the rear stratification potentiometer: 0-100%, 0xFF: value invalid / Ausgabe der
-        // Einstellung des Fond-Schichtungspotentiometer: 0-100 %, 0xFF: Wert ungÃ¼ltig
+        // Einstellung des Fond-Schichtungspotentiometer: 0-100 %, 0xFF: Wert ungültig
 
 // Skipping HECKSCHEIBENHEIZUNG on 0xD970 which takes arguments
 
@@ -3776,20 +3766,20 @@
 #define I3_PID_BDC_DRUCKSENSOR_HOCHAUFLOESEND                        0xD9B8
         // High-resolution refrigerant pressure output: 0.00 - 40.89 bar; 40.90 = short circuit to ground; 40.91 = open
         // circuit or short circuit to battery; 40.92 = not installed; 40.93 = function interface not available; 40.94 =
-        // function reporting error; 40.95 = signal unfilled / Ausgabe KÃ¤ltemitteldruck hochauflÃ¶send: 0,00 - 40,89 bar
-        // ;  40,90 = Kurzschluss nach Masse;  40,91 = Leitungsunterbrechung oder Kurzschluss nach Batterie;  40,92 =
-        // Nicht verbaut;  40,93 = Funktionsschnittstelle nicht verfÃ¼gbar;  40,94 = Funktion melder Fehler;  40,95 =
-        // Signal unbefÃ¼llt
+        // function reporting error; 40.95 = signal unfilled / Ausgabe Kältemitteldruck hochauflösend: 0,00 - 40,89 bar ;
+        // 40,90 = Kurzschluss nach Masse;  40,91 = Leitungsunterbrechung oder Kurzschluss nach Batterie;  40,92 = Nicht
+        // verbaut;  40,93 = Funktionsschnittstelle nicht verfügbar;  40,94 = Funktion melder Fehler;  40,95 = Signal
+        // unbefüllt
 
     #define I3_RES_BDC_STAT_DRUCK_WERT                               (RXBUF_UINT(0)/100.0f)
     #define I3_RES_BDC_STAT_DRUCK_WERT_UNIT                          'bar'
     #define I3_RES_BDC_STAT_DRUCK_WERT_TYPE                          float
         // High-resolution refrigerant pressure output: 0.00 - 40.89 bar; 40.90 = short circuit to ground; 40.91 = open
         // circuit or short circuit to battery; 40.92 = not installed; 40.93 = function interface not available; 40.94 =
-        // function reporting error; 40.95 = signal unfilled / Ausgabe KÃ¤ltemitteldruck hochauflÃ¶send: 0,00 - 40,89 bar
-        // ;  40,90 = Kurzschluss nach Masse;  40,91 = Leitungsunterbrechung oder Kurzschluss nach Batterie;  40,92 =
-        // Nicht verbaut;  40,93 = Funktionsschnittstelle nicht verfÃ¼gbar;  40,94 = Funktion melder Fehler;  40,95 =
-        // Signal unbefÃ¼llt
+        // function reporting error; 40.95 = signal unfilled / Ausgabe Kältemitteldruck hochauflösend: 0,00 - 40,89 bar ;
+        // 40,90 = Kurzschluss nach Masse;  40,91 = Leitungsunterbrechung oder Kurzschluss nach Batterie;  40,92 = Nicht
+        // verbaut;  40,93 = Funktionsschnittstelle nicht verfügbar;  40,94 = Funktion melder Fehler;  40,95 = Signal
+        // unbefüllt
 
 // Skipping HUD_TASTER on 0xDA0D which takes arguments
 
@@ -3846,15 +3836,15 @@
 
     #define I3_RES_BDC_STAT_LED_BLUE_1_WERT                          (RXBUF_UCHAR(1))
     #define I3_RES_BDC_STAT_LED_BLUE_1_WERT_TYPE                     unsigned char
-        // Reported status of the blue LED of the LIN slave / RÃ¼ckgemeldeter Status der Blauen  LED des LIN-Slaves
+        // Reported status of the blue LED of the LIN slave / Rückgemeldeter Status der Blauen  LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_LED_GREEN_1_WERT                         (RXBUF_UCHAR(2))
     #define I3_RES_BDC_STAT_LED_GREEN_1_WERT_TYPE                    unsigned char
-        // Reported status of the green LED of the LIN slave / RÃ¼ckgemeldeter Status der grÃ¼nen LED des LIN-Slaves
+        // Reported status of the green LED of the LIN slave / Rückgemeldeter Status der grünen LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_LED_RED_1_WERT                           (RXBUF_UCHAR(3))
     #define I3_RES_BDC_STAT_LED_RED_1_WERT_TYPE                      unsigned char
-        // Reported status of the red LED of the LIN slave / RÃ¼ckgemeldeter Status der roten LED des LIN-Slaves
+        // Reported status of the red LED of the LIN slave / Rückgemeldeter Status der roten LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_BRIGHTNESS_1_WERT                        (RXBUF_UCHAR(4))
     #define I3_RES_BDC_STAT_BRIGHTNESS_1_WERT_TYPE                   unsigned char
@@ -3862,7 +3852,7 @@
 
     #define I3_RES_BDC_STAT_LED_WHITE_1_WERT                         (RXBUF_UCHAR(5))
     #define I3_RES_BDC_STAT_LED_WHITE_1_WERT_TYPE                    unsigned char
-        // Status of the white footwell LED / Status der weiÃen Fussraum LED
+        // Status of the white footwell LED / Status der weißen Fussraum LED
 
     #define I3_RES_BDC_STAT_FEHLER_KURZSCHLUSS_1_WERT                (RXBUF_UCHAR(6))
     #define I3_RES_BDC_STAT_FEHLER_KURZSCHLUSS_1_WERT_TYPE           unsigned char
@@ -3870,7 +3860,7 @@
 
     #define I3_RES_BDC_STAT_FEHLER_OVERTEMP_1_WERT                   (RXBUF_UCHAR(7))
     #define I3_RES_BDC_STAT_FEHLER_OVERTEMP_1_WERT_TYPE              unsigned char
-        // Reported overtemperature error / Gemeldeter Ãbertemperaturfehler
+        // Reported overtemperature error / Gemeldeter Übertemperaturfehler
 
     #define I3_RES_BDC_STAT_FEHLER_OPEN_LOAD_1_WERT                  (RXBUF_UCHAR(8))
     #define I3_RES_BDC_STAT_FEHLER_OPEN_LOAD_1_WERT_TYPE             unsigned char
@@ -3887,15 +3877,15 @@
 
     #define I3_RES_BDC_STAT_LED_BLUE_2_WERT                          (RXBUF_UCHAR(11))
     #define I3_RES_BDC_STAT_LED_BLUE_2_WERT_TYPE                     unsigned char
-        // Reported status of the blue LED of the LIN slave / RÃ¼ckgemeldeter Status der Blauen  LED des LIN-Slaves
+        // Reported status of the blue LED of the LIN slave / Rückgemeldeter Status der Blauen  LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_LED_GREEN_2_WERT                         (RXBUF_UCHAR(12))
     #define I3_RES_BDC_STAT_LED_GREEN_2_WERT_TYPE                    unsigned char
-        // Reported status of the green LED of the LIN slave / RÃ¼ckgemeldeter Status der grÃ¼nen LED des LIN-Slaves
+        // Reported status of the green LED of the LIN slave / Rückgemeldeter Status der grünen LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_LED_RED_2_WERT                           (RXBUF_UCHAR(13))
     #define I3_RES_BDC_STAT_LED_RED_2_WERT_TYPE                      unsigned char
-        // Reported status of the red LED of the LIN slave / RÃ¼ckgemeldeter Status der roten LED des LIN-Slaves
+        // Reported status of the red LED of the LIN slave / Rückgemeldeter Status der roten LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_BRIGHTNESS_2_WERT                        (RXBUF_UCHAR(14))
     #define I3_RES_BDC_STAT_BRIGHTNESS_2_WERT_TYPE                   unsigned char
@@ -3903,7 +3893,7 @@
 
     #define I3_RES_BDC_STAT_LED_WHITE_2_WERT                         (RXBUF_UCHAR(15))
     #define I3_RES_BDC_STAT_LED_WHITE_2_WERT_TYPE                    unsigned char
-        // Status of the white footwell LED / Status der weiÃen Fussraum LED
+        // Status of the white footwell LED / Status der weißen Fussraum LED
 
     #define I3_RES_BDC_STAT_FEHLER_KURZSCHLUSS_2_WERT                (RXBUF_UCHAR(16))
     #define I3_RES_BDC_STAT_FEHLER_KURZSCHLUSS_2_WERT_TYPE           unsigned char
@@ -3911,7 +3901,7 @@
 
     #define I3_RES_BDC_STAT_FEHLER_OVERTEMP_2_WERT                   (RXBUF_UCHAR(17))
     #define I3_RES_BDC_STAT_FEHLER_OVERTEMP_2_WERT_TYPE              unsigned char
-        // Reported overtemperature error / Gemeldeter Ãbertemperaturfehler
+        // Reported overtemperature error / Gemeldeter Übertemperaturfehler
 
     #define I3_RES_BDC_STAT_FEHLER_OPEN_LOAD_2_WERT                  (RXBUF_UCHAR(18))
     #define I3_RES_BDC_STAT_FEHLER_OPEN_LOAD_2_WERT_TYPE             unsigned char
@@ -3928,15 +3918,15 @@
 
     #define I3_RES_BDC_STAT_LED_BLUE_3_WERT                          (RXBUF_UCHAR(21))
     #define I3_RES_BDC_STAT_LED_BLUE_3_WERT_TYPE                     unsigned char
-        // Reported status of the blue LED of the LIN slave / RÃ¼ckgemeldeter Status der Blauen  LED des LIN-Slaves
+        // Reported status of the blue LED of the LIN slave / Rückgemeldeter Status der Blauen  LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_LED_GREEN_3_WERT                         (RXBUF_UCHAR(22))
     #define I3_RES_BDC_STAT_LED_GREEN_3_WERT_TYPE                    unsigned char
-        // Reported status of the green LED of the LIN slave / RÃ¼ckgemeldeter Status der grÃ¼nen LED des LIN-Slaves
+        // Reported status of the green LED of the LIN slave / Rückgemeldeter Status der grünen LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_LED_RED_3_WERT                           (RXBUF_UCHAR(23))
     #define I3_RES_BDC_STAT_LED_RED_3_WERT_TYPE                      unsigned char
-        // Reported status of the red LED of the LIN slave / RÃ¼ckgemeldeter Status der roten LED des LIN-Slaves
+        // Reported status of the red LED of the LIN slave / Rückgemeldeter Status der roten LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_BRIGHTNESS_3_WERT                        (RXBUF_UCHAR(24))
     #define I3_RES_BDC_STAT_BRIGHTNESS_3_WERT_TYPE                   unsigned char
@@ -3944,7 +3934,7 @@
 
     #define I3_RES_BDC_STAT_LED_WHITE_3_WERT                         (RXBUF_UCHAR(25))
     #define I3_RES_BDC_STAT_LED_WHITE_3_WERT_TYPE                    unsigned char
-        // Status of the white footwell LED / Status der weiÃen Fussraum LED
+        // Status of the white footwell LED / Status der weißen Fussraum LED
 
     #define I3_RES_BDC_STAT_FEHLER_KURZSCHLUSS_3_WERT                (RXBUF_UCHAR(26))
     #define I3_RES_BDC_STAT_FEHLER_KURZSCHLUSS_3_WERT_TYPE           unsigned char
@@ -3952,7 +3942,7 @@
 
     #define I3_RES_BDC_STAT_FEHLER_OVERTEMP_3_WERT                   (RXBUF_UCHAR(27))
     #define I3_RES_BDC_STAT_FEHLER_OVERTEMP_3_WERT_TYPE              unsigned char
-        // Reported overtemperature error / Gemeldeter Ãbertemperaturfehler
+        // Reported overtemperature error / Gemeldeter Übertemperaturfehler
 
     #define I3_RES_BDC_STAT_FEHLER_OPEN_LOAD_3_WERT                  (RXBUF_UCHAR(28))
     #define I3_RES_BDC_STAT_FEHLER_OPEN_LOAD_3_WERT_TYPE             unsigned char
@@ -3969,15 +3959,15 @@
 
     #define I3_RES_BDC_STAT_LED_BLUE_4_WERT                          (RXBUF_UCHAR(31))
     #define I3_RES_BDC_STAT_LED_BLUE_4_WERT_TYPE                     unsigned char
-        // Reported status of the blue LED of the LIN slave / RÃ¼ckgemeldeter Status der Blauen  LED des LIN-Slaves
+        // Reported status of the blue LED of the LIN slave / Rückgemeldeter Status der Blauen  LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_LED_GREEN_4_WERT                         (RXBUF_UCHAR(32))
     #define I3_RES_BDC_STAT_LED_GREEN_4_WERT_TYPE                    unsigned char
-        // Reported status of the green LED of the LIN slave / RÃ¼ckgemeldeter Status der grÃ¼nen LED des LIN-Slaves
+        // Reported status of the green LED of the LIN slave / Rückgemeldeter Status der grünen LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_LED_RED_4_WERT                           (RXBUF_UCHAR(33))
     #define I3_RES_BDC_STAT_LED_RED_4_WERT_TYPE                      unsigned char
-        // Reported status of the red LED of the LIN slave / RÃ¼ckgemeldeter Status der roten LED des LIN-Slaves
+        // Reported status of the red LED of the LIN slave / Rückgemeldeter Status der roten LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_BRIGHTNESS_4_WERT                        (RXBUF_UCHAR(34))
     #define I3_RES_BDC_STAT_BRIGHTNESS_4_WERT_TYPE                   unsigned char
@@ -3985,7 +3975,7 @@
 
     #define I3_RES_BDC_STAT_LED_WHITE_4_WERT                         (RXBUF_UCHAR(35))
     #define I3_RES_BDC_STAT_LED_WHITE_4_WERT_TYPE                    unsigned char
-        // Status of the white footwell LED / Status der weiÃen Fussraum LED
+        // Status of the white footwell LED / Status der weißen Fussraum LED
 
     #define I3_RES_BDC_STAT_FEHLER_KURZSCHLUSS_4_WERT                (RXBUF_UCHAR(36))
     #define I3_RES_BDC_STAT_FEHLER_KURZSCHLUSS_4_WERT_TYPE           unsigned char
@@ -3993,7 +3983,7 @@
 
     #define I3_RES_BDC_STAT_FEHLER_OVERTEMP_4_WERT                   (RXBUF_UCHAR(37))
     #define I3_RES_BDC_STAT_FEHLER_OVERTEMP_4_WERT_TYPE              unsigned char
-        // Reported overtemperature error / Gemeldeter Ãbertemperaturfehler
+        // Reported overtemperature error / Gemeldeter Übertemperaturfehler
 
     #define I3_RES_BDC_STAT_FEHLER_OPEN_LOAD_4_WERT                  (RXBUF_UCHAR(38))
     #define I3_RES_BDC_STAT_FEHLER_OPEN_LOAD_4_WERT_TYPE             unsigned char
@@ -4010,15 +4000,15 @@
 
     #define I3_RES_BDC_STAT_LED_BLUE_5_WERT                          (RXBUF_UCHAR(41))
     #define I3_RES_BDC_STAT_LED_BLUE_5_WERT_TYPE                     unsigned char
-        // Reported status of the blue LED of the LIN slave / RÃ¼ckgemeldeter Status der Blauen  LED des LIN-Slaves
+        // Reported status of the blue LED of the LIN slave / Rückgemeldeter Status der Blauen  LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_LED_GREEN_5_WERT                         (RXBUF_UCHAR(42))
     #define I3_RES_BDC_STAT_LED_GREEN_5_WERT_TYPE                    unsigned char
-        // Reported status of the green LED of the LIN slave / RÃ¼ckgemeldeter Status der grÃ¼nen LED des LIN-Slaves
+        // Reported status of the green LED of the LIN slave / Rückgemeldeter Status der grünen LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_LED_RED_5_WERT                           (RXBUF_UCHAR(43))
     #define I3_RES_BDC_STAT_LED_RED_5_WERT_TYPE                      unsigned char
-        // Reported status of the red LED of the LIN slave / RÃ¼ckgemeldeter Status der roten LED des LIN-Slaves
+        // Reported status of the red LED of the LIN slave / Rückgemeldeter Status der roten LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_BRIGHTNESS_5_WERT                        (RXBUF_UCHAR(44))
     #define I3_RES_BDC_STAT_BRIGHTNESS_5_WERT_TYPE                   unsigned char
@@ -4026,7 +4016,7 @@
 
     #define I3_RES_BDC_STAT_LED_WHITE_5_WERT                         (RXBUF_UCHAR(45))
     #define I3_RES_BDC_STAT_LED_WHITE_5_WERT_TYPE                    unsigned char
-        // Status of the white footwell LED / Status der weiÃen Fussraum LED
+        // Status of the white footwell LED / Status der weißen Fussraum LED
 
     #define I3_RES_BDC_STAT_FEHLER_KURZSCHLUSS_5_WERT                (RXBUF_UCHAR(46))
     #define I3_RES_BDC_STAT_FEHLER_KURZSCHLUSS_5_WERT_TYPE           unsigned char
@@ -4034,7 +4024,7 @@
 
     #define I3_RES_BDC_STAT_FEHLER_OVERTEMP_5_WERT                   (RXBUF_UCHAR(47))
     #define I3_RES_BDC_STAT_FEHLER_OVERTEMP_5_WERT_TYPE              unsigned char
-        // Reported overtemperature error / Gemeldeter Ãbertemperaturfehler
+        // Reported overtemperature error / Gemeldeter Übertemperaturfehler
 
     #define I3_RES_BDC_STAT_FEHLER_OPEN_LOAD_5_WERT                  (RXBUF_UCHAR(48))
     #define I3_RES_BDC_STAT_FEHLER_OPEN_LOAD_5_WERT_TYPE             unsigned char
@@ -4051,15 +4041,15 @@
 
     #define I3_RES_BDC_STAT_LED_BLUE_6_WERT                          (RXBUF_UCHAR(51))
     #define I3_RES_BDC_STAT_LED_BLUE_6_WERT_TYPE                     unsigned char
-        // Reported status of the blue LED of the LIN slave / RÃ¼ckgemeldeter Status der Blauen  LED des LIN-Slaves
+        // Reported status of the blue LED of the LIN slave / Rückgemeldeter Status der Blauen  LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_LED_GREEN_6_WERT                         (RXBUF_UCHAR(52))
     #define I3_RES_BDC_STAT_LED_GREEN_6_WERT_TYPE                    unsigned char
-        // Reported status of the green LED of the LIN slave / RÃ¼ckgemeldeter Status der grÃ¼nen LED des LIN-Slaves
+        // Reported status of the green LED of the LIN slave / Rückgemeldeter Status der grünen LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_LED_RED_6_WERT                           (RXBUF_UCHAR(53))
     #define I3_RES_BDC_STAT_LED_RED_6_WERT_TYPE                      unsigned char
-        // Reported status of the red LED of the LIN slave / RÃ¼ckgemeldeter Status der roten LED des LIN-Slaves
+        // Reported status of the red LED of the LIN slave / Rückgemeldeter Status der roten LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_BRIGHTNESS_6_WERT                        (RXBUF_UCHAR(54))
     #define I3_RES_BDC_STAT_BRIGHTNESS_6_WERT_TYPE                   unsigned char
@@ -4067,7 +4057,7 @@
 
     #define I3_RES_BDC_STAT_LED_WHITE_6_WERT                         (RXBUF_UCHAR(55))
     #define I3_RES_BDC_STAT_LED_WHITE_6_WERT_TYPE                    unsigned char
-        // Status of the white footwell LED / Status der weiÃen Fussraum LED
+        // Status of the white footwell LED / Status der weißen Fussraum LED
 
     #define I3_RES_BDC_STAT_FEHLER_KURZSCHLUSS_6_WERT                (RXBUF_UCHAR(56))
     #define I3_RES_BDC_STAT_FEHLER_KURZSCHLUSS_6_WERT_TYPE           unsigned char
@@ -4075,7 +4065,7 @@
 
     #define I3_RES_BDC_STAT_FEHLER_OVERTEMP_6_WERT                   (RXBUF_UCHAR(57))
     #define I3_RES_BDC_STAT_FEHLER_OVERTEMP_6_WERT_TYPE              unsigned char
-        // Reported overtemperature error / Gemeldeter Ãbertemperaturfehler
+        // Reported overtemperature error / Gemeldeter Übertemperaturfehler
 
     #define I3_RES_BDC_STAT_FEHLER_OPEN_LOAD_6_WERT                  (RXBUF_UCHAR(58))
     #define I3_RES_BDC_STAT_FEHLER_OPEN_LOAD_6_WERT_TYPE             unsigned char
@@ -4092,15 +4082,15 @@
 
     #define I3_RES_BDC_STAT_LED_BLUE_7_WERT                          (RXBUF_UCHAR(61))
     #define I3_RES_BDC_STAT_LED_BLUE_7_WERT_TYPE                     unsigned char
-        // Reported status of the blue LED of the LIN slave / RÃ¼ckgemeldeter Status der Blauen  LED des LIN-Slaves
+        // Reported status of the blue LED of the LIN slave / Rückgemeldeter Status der Blauen  LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_LED_GREEN_7_WERT                         (RXBUF_UCHAR(62))
     #define I3_RES_BDC_STAT_LED_GREEN_7_WERT_TYPE                    unsigned char
-        // Reported status of the green LED of the LIN slave / RÃ¼ckgemeldeter Status der grÃ¼nen LED des LIN-Slaves
+        // Reported status of the green LED of the LIN slave / Rückgemeldeter Status der grünen LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_LED_RED_7_WERT                           (RXBUF_UCHAR(63))
     #define I3_RES_BDC_STAT_LED_RED_7_WERT_TYPE                      unsigned char
-        // Reported status of the red LED of the LIN slave / RÃ¼ckgemeldeter Status der roten LED des LIN-Slaves
+        // Reported status of the red LED of the LIN slave / Rückgemeldeter Status der roten LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_BRIGHTNESS_7_WERT                        (RXBUF_UCHAR(64))
     #define I3_RES_BDC_STAT_BRIGHTNESS_7_WERT_TYPE                   unsigned char
@@ -4108,7 +4098,7 @@
 
     #define I3_RES_BDC_STAT_LED_WHITE_7_WERT                         (RXBUF_UCHAR(65))
     #define I3_RES_BDC_STAT_LED_WHITE_7_WERT_TYPE                    unsigned char
-        // Status of the white footwell LED / Status der weiÃen Fussraum LED
+        // Status of the white footwell LED / Status der weißen Fussraum LED
 
     #define I3_RES_BDC_STAT_FEHLER_KURZSCHLUSS_7_WERT                (RXBUF_UCHAR(66))
     #define I3_RES_BDC_STAT_FEHLER_KURZSCHLUSS_7_WERT_TYPE           unsigned char
@@ -4116,7 +4106,7 @@
 
     #define I3_RES_BDC_STAT_FEHLER_OVERTEMP_7_WERT                   (RXBUF_UCHAR(67))
     #define I3_RES_BDC_STAT_FEHLER_OVERTEMP_7_WERT_TYPE              unsigned char
-        // Reported overtemperature error / Gemeldeter Ãbertemperaturfehler
+        // Reported overtemperature error / Gemeldeter Übertemperaturfehler
 
     #define I3_RES_BDC_STAT_FEHLER_OPEN_LOAD_7_WERT                  (RXBUF_UCHAR(68))
     #define I3_RES_BDC_STAT_FEHLER_OPEN_LOAD_7_WERT_TYPE             unsigned char
@@ -4133,15 +4123,15 @@
 
     #define I3_RES_BDC_STAT_LED_BLUE_8_WERT                          (RXBUF_UCHAR(71))
     #define I3_RES_BDC_STAT_LED_BLUE_8_WERT_TYPE                     unsigned char
-        // Reported status of the blue LED of the LIN slave / RÃ¼ckgemeldeter Status der Blauen  LED des LIN-Slaves
+        // Reported status of the blue LED of the LIN slave / Rückgemeldeter Status der Blauen  LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_LED_GREEN_8_WERT                         (RXBUF_UCHAR(72))
     #define I3_RES_BDC_STAT_LED_GREEN_8_WERT_TYPE                    unsigned char
-        // Reported status of the green LED of the LIN slave / RÃ¼ckgemeldeter Status der grÃ¼nen LED des LIN-Slaves
+        // Reported status of the green LED of the LIN slave / Rückgemeldeter Status der grünen LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_LED_RED_8_WERT                           (RXBUF_UCHAR(73))
     #define I3_RES_BDC_STAT_LED_RED_8_WERT_TYPE                      unsigned char
-        // Reported status of the red LED of the LIN slave / RÃ¼ckgemeldeter Status der roten LED des LIN-Slaves
+        // Reported status of the red LED of the LIN slave / Rückgemeldeter Status der roten LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_BRIGHTNESS_8_WERT                        (RXBUF_UCHAR(74))
     #define I3_RES_BDC_STAT_BRIGHTNESS_8_WERT_TYPE                   unsigned char
@@ -4149,7 +4139,7 @@
 
     #define I3_RES_BDC_STAT_LED_WHITE_8_WERT                         (RXBUF_UCHAR(75))
     #define I3_RES_BDC_STAT_LED_WHITE_8_WERT_TYPE                    unsigned char
-        // Status of the white footwell LED / Status der weiÃen Fussraum LED
+        // Status of the white footwell LED / Status der weißen Fussraum LED
 
     #define I3_RES_BDC_STAT_FEHLER_KURZSCHLUSS_8_WERT                (RXBUF_UCHAR(76))
     #define I3_RES_BDC_STAT_FEHLER_KURZSCHLUSS_8_WERT_TYPE           unsigned char
@@ -4157,7 +4147,7 @@
 
     #define I3_RES_BDC_STAT_FEHLER_OVERTEMP_8_WERT                   (RXBUF_UCHAR(77))
     #define I3_RES_BDC_STAT_FEHLER_OVERTEMP_8_WERT_TYPE              unsigned char
-        // Reported overtemperature error / Gemeldeter Ãbertemperaturfehler
+        // Reported overtemperature error / Gemeldeter Übertemperaturfehler
 
     #define I3_RES_BDC_STAT_FEHLER_OPEN_LOAD_8_WERT                  (RXBUF_UCHAR(78))
     #define I3_RES_BDC_STAT_FEHLER_OPEN_LOAD_8_WERT_TYPE             unsigned char
@@ -4174,15 +4164,15 @@
 
     #define I3_RES_BDC_STAT_LED_BLUE_9_WERT                          (RXBUF_UCHAR(81))
     #define I3_RES_BDC_STAT_LED_BLUE_9_WERT_TYPE                     unsigned char
-        // Reported status of the blue LED of the LIN slave / RÃ¼ckgemeldeter Status der Blauen  LED des LIN-Slaves
+        // Reported status of the blue LED of the LIN slave / Rückgemeldeter Status der Blauen  LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_LED_GREEN_9_WERT                         (RXBUF_UCHAR(82))
     #define I3_RES_BDC_STAT_LED_GREEN_9_WERT_TYPE                    unsigned char
-        // Reported status of the green LED of the LIN slave / RÃ¼ckgemeldeter Status der grÃ¼nen LED des LIN-Slaves
+        // Reported status of the green LED of the LIN slave / Rückgemeldeter Status der grünen LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_LED_RED_9_WERT                           (RXBUF_UCHAR(83))
     #define I3_RES_BDC_STAT_LED_RED_9_WERT_TYPE                      unsigned char
-        // Reported status of the red LED of the LIN slave / RÃ¼ckgemeldeter Status der roten LED des LIN-Slaves
+        // Reported status of the red LED of the LIN slave / Rückgemeldeter Status der roten LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_BRIGHTNESS_9_WERT                        (RXBUF_UCHAR(84))
     #define I3_RES_BDC_STAT_BRIGHTNESS_9_WERT_TYPE                   unsigned char
@@ -4190,7 +4180,7 @@
 
     #define I3_RES_BDC_STAT_LED_WHITE_9_WERT                         (RXBUF_UCHAR(85))
     #define I3_RES_BDC_STAT_LED_WHITE_9_WERT_TYPE                    unsigned char
-        // Status of the white footwell LED / Status der weiÃen Fussraum LED
+        // Status of the white footwell LED / Status der weißen Fussraum LED
 
     #define I3_RES_BDC_STAT_FEHLER_KURZSCHLUSS_9_WERT                (RXBUF_UCHAR(86))
     #define I3_RES_BDC_STAT_FEHLER_KURZSCHLUSS_9_WERT_TYPE           unsigned char
@@ -4198,7 +4188,7 @@
 
     #define I3_RES_BDC_STAT_FEHLER_OVERTEMP_9_WERT                   (RXBUF_UCHAR(87))
     #define I3_RES_BDC_STAT_FEHLER_OVERTEMP_9_WERT_TYPE              unsigned char
-        // Reported overtemperature error / Gemeldeter Ãbertemperaturfehler
+        // Reported overtemperature error / Gemeldeter Übertemperaturfehler
 
     #define I3_RES_BDC_STAT_FEHLER_OPEN_LOAD_9_WERT                  (RXBUF_UCHAR(88))
     #define I3_RES_BDC_STAT_FEHLER_OPEN_LOAD_9_WERT_TYPE             unsigned char
@@ -4215,15 +4205,15 @@
 
     #define I3_RES_BDC_STAT_LED_BLUE_10_WERT                         (RXBUF_UCHAR(91))
     #define I3_RES_BDC_STAT_LED_BLUE_10_WERT_TYPE                    unsigned char
-        // Reported status of the blue LED of the LIN slave / RÃ¼ckgemeldeter Status der Blauen  LED des LIN-Slaves
+        // Reported status of the blue LED of the LIN slave / Rückgemeldeter Status der Blauen  LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_LED_GREEN_10_WERT                        (RXBUF_UCHAR(92))
     #define I3_RES_BDC_STAT_LED_GREEN_10_WERT_TYPE                   unsigned char
-        // Reported status of the green LED of the LIN slave / RÃ¼ckgemeldeter Status der grÃ¼nen LED des LIN-Slaves
+        // Reported status of the green LED of the LIN slave / Rückgemeldeter Status der grünen LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_LED_RED_10_WERT                          (RXBUF_UCHAR(93))
     #define I3_RES_BDC_STAT_LED_RED_10_WERT_TYPE                     unsigned char
-        // Reported status of the red LED of the LIN slave / RÃ¼ckgemeldeter Status der roten LED des LIN-Slaves
+        // Reported status of the red LED of the LIN slave / Rückgemeldeter Status der roten LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_BRIGHTNESS_10_WERT                       (RXBUF_UCHAR(94))
     #define I3_RES_BDC_STAT_BRIGHTNESS_10_WERT_TYPE                  unsigned char
@@ -4231,7 +4221,7 @@
 
     #define I3_RES_BDC_STAT_LED_WHITE_10_WERT                        (RXBUF_UCHAR(95))
     #define I3_RES_BDC_STAT_LED_WHITE_10_WERT_TYPE                   unsigned char
-        // Status of the white footwell LED / Status der weiÃen Fussraum LED
+        // Status of the white footwell LED / Status der weißen Fussraum LED
 
     #define I3_RES_BDC_STAT_FEHLER_KURZSCHLUSS_10_WERT               (RXBUF_UCHAR(96))
     #define I3_RES_BDC_STAT_FEHLER_KURZSCHLUSS_10_WERT_TYPE          unsigned char
@@ -4239,7 +4229,7 @@
 
     #define I3_RES_BDC_STAT_FEHLER_OVERTEMP_10_WERT                  (RXBUF_UCHAR(97))
     #define I3_RES_BDC_STAT_FEHLER_OVERTEMP_10_WERT_TYPE             unsigned char
-        // Reported overtemperature error / Gemeldeter Ãbertemperaturfehler
+        // Reported overtemperature error / Gemeldeter Übertemperaturfehler
 
     #define I3_RES_BDC_STAT_FEHLER_OPEN_LOAD_10_WERT                 (RXBUF_UCHAR(98))
     #define I3_RES_BDC_STAT_FEHLER_OPEN_LOAD_10_WERT_TYPE            unsigned char
@@ -4256,15 +4246,15 @@
 
     #define I3_RES_BDC_STAT_LED_BLUE_11_WERT                         (RXBUF_UCHAR(101))
     #define I3_RES_BDC_STAT_LED_BLUE_11_WERT_TYPE                    unsigned char
-        // Reported status of the blue LED of the LIN slave / RÃ¼ckgemeldeter Status der Blauen  LED des LIN-Slaves
+        // Reported status of the blue LED of the LIN slave / Rückgemeldeter Status der Blauen  LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_LED_GREEN_11_WERT                        (RXBUF_UCHAR(102))
     #define I3_RES_BDC_STAT_LED_GREEN_11_WERT_TYPE                   unsigned char
-        // Reported status of the green LED of the LIN slave / RÃ¼ckgemeldeter Status der grÃ¼nen LED des LIN-Slaves
+        // Reported status of the green LED of the LIN slave / Rückgemeldeter Status der grünen LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_LED_RED_11_WERT                          (RXBUF_UCHAR(103))
     #define I3_RES_BDC_STAT_LED_RED_11_WERT_TYPE                     unsigned char
-        // Reported status of the red LED of the LIN slave / RÃ¼ckgemeldeter Status der roten LED des LIN-Slaves
+        // Reported status of the red LED of the LIN slave / Rückgemeldeter Status der roten LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_BRIGHTNESS_11_WERT                       (RXBUF_UCHAR(104))
     #define I3_RES_BDC_STAT_BRIGHTNESS_11_WERT_TYPE                  unsigned char
@@ -4272,7 +4262,7 @@
 
     #define I3_RES_BDC_STAT_LED_WHITE_11_WERT                        (RXBUF_UCHAR(105))
     #define I3_RES_BDC_STAT_LED_WHITE_11_WERT_TYPE                   unsigned char
-        // Status of the white footwell LED / Status der weiÃen Fussraum LED
+        // Status of the white footwell LED / Status der weißen Fussraum LED
 
     #define I3_RES_BDC_STAT_FEHLER_KURZSCHLUSS_11_WERT               (RXBUF_UCHAR(106))
     #define I3_RES_BDC_STAT_FEHLER_KURZSCHLUSS_11_WERT_TYPE          unsigned char
@@ -4280,7 +4270,7 @@
 
     #define I3_RES_BDC_STAT_FEHLER_OVERTEMP_11_WERT                  (RXBUF_UCHAR(107))
     #define I3_RES_BDC_STAT_FEHLER_OVERTEMP_11_WERT_TYPE             unsigned char
-        // Reported overtemperature error / Gemeldeter Ãbertemperaturfehler
+        // Reported overtemperature error / Gemeldeter Übertemperaturfehler
 
     #define I3_RES_BDC_STAT_FEHLER_OPEN_LOAD_11_WERT                 (RXBUF_UCHAR(108))
     #define I3_RES_BDC_STAT_FEHLER_OPEN_LOAD_11_WERT_TYPE            unsigned char
@@ -4297,15 +4287,15 @@
 
     #define I3_RES_BDC_STAT_LED_BLUE_12_WERT                         (RXBUF_UCHAR(111))
     #define I3_RES_BDC_STAT_LED_BLUE_12_WERT_TYPE                    unsigned char
-        // Reported status of the blue LED of the LIN slave / RÃ¼ckgemeldeter Status der Blauen  LED des LIN-Slaves
+        // Reported status of the blue LED of the LIN slave / Rückgemeldeter Status der Blauen  LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_LED_GREEN_12_WERT                        (RXBUF_UCHAR(112))
     #define I3_RES_BDC_STAT_LED_GREEN_12_WERT_TYPE                   unsigned char
-        // Reported status of the green LED of the LIN slave / RÃ¼ckgemeldeter Status der grÃ¼nen LED des LIN-Slaves
+        // Reported status of the green LED of the LIN slave / Rückgemeldeter Status der grünen LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_LED_RED_12_WERT                          (RXBUF_UCHAR(113))
     #define I3_RES_BDC_STAT_LED_RED_12_WERT_TYPE                     unsigned char
-        // Reported status of the red LED of the LIN slave / RÃ¼ckgemeldeter Status der roten LED des LIN-Slaves
+        // Reported status of the red LED of the LIN slave / Rückgemeldeter Status der roten LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_BRIGHTNESS_12_WERT                       (RXBUF_UCHAR(114))
     #define I3_RES_BDC_STAT_BRIGHTNESS_12_WERT_TYPE                  unsigned char
@@ -4313,7 +4303,7 @@
 
     #define I3_RES_BDC_STAT_LED_WHITE_12_WERT                        (RXBUF_UCHAR(115))
     #define I3_RES_BDC_STAT_LED_WHITE_12_WERT_TYPE                   unsigned char
-        // Status of the white footwell LED / Status der weiÃen Fussraum LED
+        // Status of the white footwell LED / Status der weißen Fussraum LED
 
     #define I3_RES_BDC_STAT_FEHLER_KURZSCHLUSS_12_WERT               (RXBUF_UCHAR(116))
     #define I3_RES_BDC_STAT_FEHLER_KURZSCHLUSS_12_WERT_TYPE          unsigned char
@@ -4321,7 +4311,7 @@
 
     #define I3_RES_BDC_STAT_FEHLER_OVERTEMP_12_WERT                  (RXBUF_UCHAR(117))
     #define I3_RES_BDC_STAT_FEHLER_OVERTEMP_12_WERT_TYPE             unsigned char
-        // Reported overtemperature error / Gemeldeter Ãbertemperaturfehler
+        // Reported overtemperature error / Gemeldeter Übertemperaturfehler
 
     #define I3_RES_BDC_STAT_FEHLER_OPEN_LOAD_12_WERT                 (RXBUF_UCHAR(118))
     #define I3_RES_BDC_STAT_FEHLER_OPEN_LOAD_12_WERT_TYPE            unsigned char
@@ -4338,15 +4328,15 @@
 
     #define I3_RES_BDC_STAT_LED_BLUE_13_WERT                         (RXBUF_UCHAR(121))
     #define I3_RES_BDC_STAT_LED_BLUE_13_WERT_TYPE                    unsigned char
-        // Reported status of the blue LED of the LIN slave / RÃ¼ckgemeldeter Status der Blauen  LED des LIN-Slaves
+        // Reported status of the blue LED of the LIN slave / Rückgemeldeter Status der Blauen  LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_LED_GREEN_13_WERT                        (RXBUF_UCHAR(122))
     #define I3_RES_BDC_STAT_LED_GREEN_13_WERT_TYPE                   unsigned char
-        // Reported status of the green LED of the LIN slave / RÃ¼ckgemeldeter Status der grÃ¼nen LED des LIN-Slaves
+        // Reported status of the green LED of the LIN slave / Rückgemeldeter Status der grünen LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_LED_RED_13_WERT                          (RXBUF_UCHAR(123))
     #define I3_RES_BDC_STAT_LED_RED_13_WERT_TYPE                     unsigned char
-        // Reported status of the red LED of the LIN slave / RÃ¼ckgemeldeter Status der roten LED des LIN-Slaves
+        // Reported status of the red LED of the LIN slave / Rückgemeldeter Status der roten LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_BRIGHTNESS_13_WERT                       (RXBUF_UCHAR(124))
     #define I3_RES_BDC_STAT_BRIGHTNESS_13_WERT_TYPE                  unsigned char
@@ -4354,7 +4344,7 @@
 
     #define I3_RES_BDC_STAT_LED_WHITE_13_WERT                        (RXBUF_UCHAR(125))
     #define I3_RES_BDC_STAT_LED_WHITE_13_WERT_TYPE                   unsigned char
-        // Status of the white footwell LED / Status der weiÃen Fussraum LED
+        // Status of the white footwell LED / Status der weißen Fussraum LED
 
     #define I3_RES_BDC_STAT_FEHLER_KURZSCHLUSS_13_WERT               (RXBUF_UCHAR(126))
     #define I3_RES_BDC_STAT_FEHLER_KURZSCHLUSS_13_WERT_TYPE          unsigned char
@@ -4362,7 +4352,7 @@
 
     #define I3_RES_BDC_STAT_FEHLER_OVERTEMP_13_WERT                  (RXBUF_UCHAR(127))
     #define I3_RES_BDC_STAT_FEHLER_OVERTEMP_13_WERT_TYPE             unsigned char
-        // Reported overtemperature error / Gemeldeter Ãbertemperaturfehler
+        // Reported overtemperature error / Gemeldeter Übertemperaturfehler
 
     #define I3_RES_BDC_STAT_FEHLER_OPEN_LOAD_13_WERT                 (RXBUF_UCHAR(128))
     #define I3_RES_BDC_STAT_FEHLER_OPEN_LOAD_13_WERT_TYPE            unsigned char
@@ -4379,15 +4369,15 @@
 
     #define I3_RES_BDC_STAT_LED_BLUE_14_WERT                         (RXBUF_UCHAR(131))
     #define I3_RES_BDC_STAT_LED_BLUE_14_WERT_TYPE                    unsigned char
-        // Reported status of the blue LED of the LIN slave / RÃ¼ckgemeldeter Status der Blauen  LED des LIN-Slaves
+        // Reported status of the blue LED of the LIN slave / Rückgemeldeter Status der Blauen  LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_LED_GREEN_14_WERT                        (RXBUF_UCHAR(132))
     #define I3_RES_BDC_STAT_LED_GREEN_14_WERT_TYPE                   unsigned char
-        // Reported status of the green LED of the LIN slave / RÃ¼ckgemeldeter Status der grÃ¼nen LED des LIN-Slaves
+        // Reported status of the green LED of the LIN slave / Rückgemeldeter Status der grünen LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_LED_RED_14_WERT                          (RXBUF_UCHAR(133))
     #define I3_RES_BDC_STAT_LED_RED_14_WERT_TYPE                     unsigned char
-        // Reported status of the red LED of the LIN slave / RÃ¼ckgemeldeter Status der roten LED des LIN-Slaves
+        // Reported status of the red LED of the LIN slave / Rückgemeldeter Status der roten LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_BRIGHTNESS_14_WERT                       (RXBUF_UCHAR(134))
     #define I3_RES_BDC_STAT_BRIGHTNESS_14_WERT_TYPE                  unsigned char
@@ -4395,7 +4385,7 @@
 
     #define I3_RES_BDC_STAT_LED_WHITE_14_WERT                        (RXBUF_UCHAR(135))
     #define I3_RES_BDC_STAT_LED_WHITE_14_WERT_TYPE                   unsigned char
-        // Status of the white footwell LED / Status der weiÃen Fussraum LED
+        // Status of the white footwell LED / Status der weißen Fussraum LED
 
     #define I3_RES_BDC_STAT_FEHLER_KURZSCHLUSS_14_WERT               (RXBUF_UCHAR(136))
     #define I3_RES_BDC_STAT_FEHLER_KURZSCHLUSS_14_WERT_TYPE          unsigned char
@@ -4403,7 +4393,7 @@
 
     #define I3_RES_BDC_STAT_FEHLER_OVERTEMP_14_WERT                  (RXBUF_UCHAR(137))
     #define I3_RES_BDC_STAT_FEHLER_OVERTEMP_14_WERT_TYPE             unsigned char
-        // Reported overtemperature error / Gemeldeter Ãbertemperaturfehler
+        // Reported overtemperature error / Gemeldeter Übertemperaturfehler
 
     #define I3_RES_BDC_STAT_FEHLER_OPEN_LOAD_14_WERT                 (RXBUF_UCHAR(138))
     #define I3_RES_BDC_STAT_FEHLER_OPEN_LOAD_14_WERT_TYPE            unsigned char
@@ -4420,15 +4410,15 @@
 
     #define I3_RES_BDC_STAT_LED_BLUE_15_WERT                         (RXBUF_UCHAR(141))
     #define I3_RES_BDC_STAT_LED_BLUE_15_WERT_TYPE                    unsigned char
-        // Reported status of the blue LED of the LIN slave / RÃ¼ckgemeldeter Status der Blauen  LED des LIN-Slaves
+        // Reported status of the blue LED of the LIN slave / Rückgemeldeter Status der Blauen  LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_LED_GREEN_15_WERT                        (RXBUF_UCHAR(142))
     #define I3_RES_BDC_STAT_LED_GREEN_15_WERT_TYPE                   unsigned char
-        // Reported status of the green LED of the LIN slave / RÃ¼ckgemeldeter Status der grÃ¼nen LED des LIN-Slaves
+        // Reported status of the green LED of the LIN slave / Rückgemeldeter Status der grünen LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_LED_RED_15_WERT                          (RXBUF_UCHAR(143))
     #define I3_RES_BDC_STAT_LED_RED_15_WERT_TYPE                     unsigned char
-        // Reported status of the red LED of the LIN slave / RÃ¼ckgemeldeter Status der roten LED des LIN-Slaves
+        // Reported status of the red LED of the LIN slave / Rückgemeldeter Status der roten LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_BRIGHTNESS_15_WERT                       (RXBUF_UCHAR(144))
     #define I3_RES_BDC_STAT_BRIGHTNESS_15_WERT_TYPE                  unsigned char
@@ -4436,7 +4426,7 @@
 
     #define I3_RES_BDC_STAT_LED_WHITE_15_WERT                        (RXBUF_UCHAR(145))
     #define I3_RES_BDC_STAT_LED_WHITE_15_WERT_TYPE                   unsigned char
-        // Status of the white footwell LED / Status der weiÃen Fussraum LED
+        // Status of the white footwell LED / Status der weißen Fussraum LED
 
     #define I3_RES_BDC_STAT_FEHLER_KURZSCHLUSS_15_WERT               (RXBUF_UCHAR(146))
     #define I3_RES_BDC_STAT_FEHLER_KURZSCHLUSS_15_WERT_TYPE          unsigned char
@@ -4444,7 +4434,7 @@
 
     #define I3_RES_BDC_STAT_FEHLER_OVERTEMP_15_WERT                  (RXBUF_UCHAR(147))
     #define I3_RES_BDC_STAT_FEHLER_OVERTEMP_15_WERT_TYPE             unsigned char
-        // Reported overtemperature error / Gemeldeter Ãbertemperaturfehler
+        // Reported overtemperature error / Gemeldeter Übertemperaturfehler
 
     #define I3_RES_BDC_STAT_FEHLER_OPEN_LOAD_15_WERT                 (RXBUF_UCHAR(148))
     #define I3_RES_BDC_STAT_FEHLER_OPEN_LOAD_15_WERT_TYPE            unsigned char
@@ -4461,15 +4451,15 @@
 
     #define I3_RES_BDC_STAT_LED_BLUE_16_WERT                         (RXBUF_UCHAR(151))
     #define I3_RES_BDC_STAT_LED_BLUE_16_WERT_TYPE                    unsigned char
-        // Reported status of the blue LED of the LIN slave / RÃ¼ckgemeldeter Status der Blauen  LED des LIN-Slaves
+        // Reported status of the blue LED of the LIN slave / Rückgemeldeter Status der Blauen  LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_LED_GREEN_16_WERT                        (RXBUF_UCHAR(152))
     #define I3_RES_BDC_STAT_LED_GREEN_16_WERT_TYPE                   unsigned char
-        // Reported status of the green LED of the LIN slave / RÃ¼ckgemeldeter Status der grÃ¼nen LED des LIN-Slaves
+        // Reported status of the green LED of the LIN slave / Rückgemeldeter Status der grünen LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_LED_RED_16_WERT                          (RXBUF_UCHAR(153))
     #define I3_RES_BDC_STAT_LED_RED_16_WERT_TYPE                     unsigned char
-        // Reported status of the red LED of the LIN slave / RÃ¼ckgemeldeter Status der roten LED des LIN-Slaves
+        // Reported status of the red LED of the LIN slave / Rückgemeldeter Status der roten LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_BRIGHTNESS_16_WERT                       (RXBUF_UCHAR(154))
     #define I3_RES_BDC_STAT_BRIGHTNESS_16_WERT_TYPE                  unsigned char
@@ -4477,7 +4467,7 @@
 
     #define I3_RES_BDC_STAT_LED_WHITE_16_WERT                        (RXBUF_UCHAR(155))
     #define I3_RES_BDC_STAT_LED_WHITE_16_WERT_TYPE                   unsigned char
-        // Status of the white footwell LED / Status der weiÃen Fussraum LED
+        // Status of the white footwell LED / Status der weißen Fussraum LED
 
     #define I3_RES_BDC_STAT_FEHLER_KURZSCHLUSS_16_WERT               (RXBUF_UCHAR(156))
     #define I3_RES_BDC_STAT_FEHLER_KURZSCHLUSS_16_WERT_TYPE          unsigned char
@@ -4485,7 +4475,7 @@
 
     #define I3_RES_BDC_STAT_FEHLER_OVERTEMP_16_WERT                  (RXBUF_UCHAR(157))
     #define I3_RES_BDC_STAT_FEHLER_OVERTEMP_16_WERT_TYPE             unsigned char
-        // Reported overtemperature error / Gemeldeter Ãbertemperaturfehler
+        // Reported overtemperature error / Gemeldeter Übertemperaturfehler
 
     #define I3_RES_BDC_STAT_FEHLER_OPEN_LOAD_16_WERT                 (RXBUF_UCHAR(158))
     #define I3_RES_BDC_STAT_FEHLER_OPEN_LOAD_16_WERT_TYPE            unsigned char
@@ -4502,15 +4492,15 @@
 
     #define I3_RES_BDC_STAT_LED_BLUE_17_WERT                         (RXBUF_UCHAR(161))
     #define I3_RES_BDC_STAT_LED_BLUE_17_WERT_TYPE                    unsigned char
-        // Reported status of the blue LED of the LIN slave / RÃ¼ckgemeldeter Status der Blauen  LED des LIN-Slaves
+        // Reported status of the blue LED of the LIN slave / Rückgemeldeter Status der Blauen  LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_LED_GREEN_17_WERT                        (RXBUF_UCHAR(162))
     #define I3_RES_BDC_STAT_LED_GREEN_17_WERT_TYPE                   unsigned char
-        // Reported status of the green LED of the LIN slave / RÃ¼ckgemeldeter Status der grÃ¼nen LED des LIN-Slaves
+        // Reported status of the green LED of the LIN slave / Rückgemeldeter Status der grünen LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_LED_RED_17_WERT                          (RXBUF_UCHAR(163))
     #define I3_RES_BDC_STAT_LED_RED_17_WERT_TYPE                     unsigned char
-        // Reported status of the red LED of the LIN slave / RÃ¼ckgemeldeter Status der roten LED des LIN-Slaves
+        // Reported status of the red LED of the LIN slave / Rückgemeldeter Status der roten LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_BRIGHTNESS_17_WERT                       (RXBUF_UCHAR(164))
     #define I3_RES_BDC_STAT_BRIGHTNESS_17_WERT_TYPE                  unsigned char
@@ -4518,7 +4508,7 @@
 
     #define I3_RES_BDC_STAT_LED_WHITE_17_WERT                        (RXBUF_UCHAR(165))
     #define I3_RES_BDC_STAT_LED_WHITE_17_WERT_TYPE                   unsigned char
-        // Status of the white footwell LED / Status der weiÃen Fussraum LED
+        // Status of the white footwell LED / Status der weißen Fussraum LED
 
     #define I3_RES_BDC_STAT_FEHLER_KURZSCHLUSS_17_WERT               (RXBUF_UCHAR(166))
     #define I3_RES_BDC_STAT_FEHLER_KURZSCHLUSS_17_WERT_TYPE          unsigned char
@@ -4526,7 +4516,7 @@
 
     #define I3_RES_BDC_STAT_FEHLER_OVERTEMP_17_WERT                  (RXBUF_UCHAR(167))
     #define I3_RES_BDC_STAT_FEHLER_OVERTEMP_17_WERT_TYPE             unsigned char
-        // Reported overtemperature error / Gemeldeter Ãbertemperaturfehler
+        // Reported overtemperature error / Gemeldeter Übertemperaturfehler
 
     #define I3_RES_BDC_STAT_FEHLER_OPEN_LOAD_17_WERT                 (RXBUF_UCHAR(168))
     #define I3_RES_BDC_STAT_FEHLER_OPEN_LOAD_17_WERT_TYPE            unsigned char
@@ -4543,15 +4533,15 @@
 
     #define I3_RES_BDC_STAT_LED_BLUE_18_WERT                         (RXBUF_UCHAR(171))
     #define I3_RES_BDC_STAT_LED_BLUE_18_WERT_TYPE                    unsigned char
-        // Reported status of the blue LED of the LIN slave / RÃ¼ckgemeldeter Status der Blauen  LED des LIN-Slaves
+        // Reported status of the blue LED of the LIN slave / Rückgemeldeter Status der Blauen  LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_LED_GREEN_18_WERT                        (RXBUF_UCHAR(172))
     #define I3_RES_BDC_STAT_LED_GREEN_18_WERT_TYPE                   unsigned char
-        // Reported status of the green LED of the LIN slave / RÃ¼ckgemeldeter Status der grÃ¼nen LED des LIN-Slaves
+        // Reported status of the green LED of the LIN slave / Rückgemeldeter Status der grünen LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_LED_RED_18_WERT                          (RXBUF_UCHAR(173))
     #define I3_RES_BDC_STAT_LED_RED_18_WERT_TYPE                     unsigned char
-        // Reported status of the red LED of the LIN slave / RÃ¼ckgemeldeter Status der roten LED des LIN-Slaves
+        // Reported status of the red LED of the LIN slave / Rückgemeldeter Status der roten LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_BRIGHTNESS_18_WERT                       (RXBUF_UCHAR(174))
     #define I3_RES_BDC_STAT_BRIGHTNESS_18_WERT_TYPE                  unsigned char
@@ -4559,7 +4549,7 @@
 
     #define I3_RES_BDC_STAT_LED_WHITE_18_WERT                        (RXBUF_UCHAR(175))
     #define I3_RES_BDC_STAT_LED_WHITE_18_WERT_TYPE                   unsigned char
-        // Status of the white footwell LED / Status der weiÃen Fussraum LED
+        // Status of the white footwell LED / Status der weißen Fussraum LED
 
     #define I3_RES_BDC_STAT_FEHLER_KURZSCHLUSS_18_WERT               (RXBUF_UCHAR(176))
     #define I3_RES_BDC_STAT_FEHLER_KURZSCHLUSS_18_WERT_TYPE          unsigned char
@@ -4567,7 +4557,7 @@
 
     #define I3_RES_BDC_STAT_FEHLER_OVERTEMP_18_WERT                  (RXBUF_UCHAR(177))
     #define I3_RES_BDC_STAT_FEHLER_OVERTEMP_18_WERT_TYPE             unsigned char
-        // Reported overtemperature error / Gemeldeter Ãbertemperaturfehler
+        // Reported overtemperature error / Gemeldeter Übertemperaturfehler
 
     #define I3_RES_BDC_STAT_FEHLER_OPEN_LOAD_18_WERT                 (RXBUF_UCHAR(178))
     #define I3_RES_BDC_STAT_FEHLER_OPEN_LOAD_18_WERT_TYPE            unsigned char
@@ -4584,15 +4574,15 @@
 
     #define I3_RES_BDC_STAT_LED_BLUE_19_WERT                         (RXBUF_UCHAR(181))
     #define I3_RES_BDC_STAT_LED_BLUE_19_WERT_TYPE                    unsigned char
-        // Reported status of the blue LED of the LIN slave / RÃ¼ckgemeldeter Status der Blauen  LED des LIN-Slaves
+        // Reported status of the blue LED of the LIN slave / Rückgemeldeter Status der Blauen  LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_LED_GREEN_19_WERT                        (RXBUF_UCHAR(182))
     #define I3_RES_BDC_STAT_LED_GREEN_19_WERT_TYPE                   unsigned char
-        // Reported status of the green LED of the LIN slave / RÃ¼ckgemeldeter Status der grÃ¼nen LED des LIN-Slaves
+        // Reported status of the green LED of the LIN slave / Rückgemeldeter Status der grünen LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_LED_RED_19_WERT                          (RXBUF_UCHAR(183))
     #define I3_RES_BDC_STAT_LED_RED_19_WERT_TYPE                     unsigned char
-        // Reported status of the red LED of the LIN slave / RÃ¼ckgemeldeter Status der roten LED des LIN-Slaves
+        // Reported status of the red LED of the LIN slave / Rückgemeldeter Status der roten LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_BRIGHTNESS_19_WERT                       (RXBUF_UCHAR(184))
     #define I3_RES_BDC_STAT_BRIGHTNESS_19_WERT_TYPE                  unsigned char
@@ -4600,7 +4590,7 @@
 
     #define I3_RES_BDC_STAT_LED_WHITE_19_WERT                        (RXBUF_UCHAR(185))
     #define I3_RES_BDC_STAT_LED_WHITE_19_WERT_TYPE                   unsigned char
-        // Status of the white footwell LED / Status der weiÃen Fussraum LED
+        // Status of the white footwell LED / Status der weißen Fussraum LED
 
     #define I3_RES_BDC_STAT_FEHLER_KURZSCHLUSS_19_WERT               (RXBUF_UCHAR(186))
     #define I3_RES_BDC_STAT_FEHLER_KURZSCHLUSS_19_WERT_TYPE          unsigned char
@@ -4608,7 +4598,7 @@
 
     #define I3_RES_BDC_STAT_FEHLER_OVERTEMP_19_WERT                  (RXBUF_UCHAR(187))
     #define I3_RES_BDC_STAT_FEHLER_OVERTEMP_19_WERT_TYPE             unsigned char
-        // Reported overtemperature error / Gemeldeter Ãbertemperaturfehler
+        // Reported overtemperature error / Gemeldeter Übertemperaturfehler
 
     #define I3_RES_BDC_STAT_FEHLER_OPEN_LOAD_19_WERT                 (RXBUF_UCHAR(188))
     #define I3_RES_BDC_STAT_FEHLER_OPEN_LOAD_19_WERT_TYPE            unsigned char
@@ -4625,15 +4615,15 @@
 
     #define I3_RES_BDC_STAT_LED_BLUE_20_WERT                         (RXBUF_UCHAR(191))
     #define I3_RES_BDC_STAT_LED_BLUE_20_WERT_TYPE                    unsigned char
-        // Reported status of the blue LED of the LIN slave / RÃ¼ckgemeldeter Status der Blauen  LED des LIN-Slaves
+        // Reported status of the blue LED of the LIN slave / Rückgemeldeter Status der Blauen  LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_LED_GREEN_20_WERT                        (RXBUF_UCHAR(192))
     #define I3_RES_BDC_STAT_LED_GREEN_20_WERT_TYPE                   unsigned char
-        // Reported status of the green LED of the LIN slave / RÃ¼ckgemeldeter Status der grÃ¼nen LED des LIN-Slaves
+        // Reported status of the green LED of the LIN slave / Rückgemeldeter Status der grünen LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_LED_RED_20_WERT                          (RXBUF_UCHAR(193))
     #define I3_RES_BDC_STAT_LED_RED_20_WERT_TYPE                     unsigned char
-        // Reported status of the red LED of the LIN slave / RÃ¼ckgemeldeter Status der roten LED des LIN-Slaves
+        // Reported status of the red LED of the LIN slave / Rückgemeldeter Status der roten LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_BRIGHTNESS_20_WERT                       (RXBUF_UCHAR(194))
     #define I3_RES_BDC_STAT_BRIGHTNESS_20_WERT_TYPE                  unsigned char
@@ -4641,7 +4631,7 @@
 
     #define I3_RES_BDC_STAT_LED_WHITE_20_WERT                        (RXBUF_UCHAR(195))
     #define I3_RES_BDC_STAT_LED_WHITE_20_WERT_TYPE                   unsigned char
-        // Status of the white footwell LED / Status der weiÃen Fussraum LED
+        // Status of the white footwell LED / Status der weißen Fussraum LED
 
     #define I3_RES_BDC_STAT_FEHLER_KURZSCHLUSS_20_WERT               (RXBUF_UCHAR(196))
     #define I3_RES_BDC_STAT_FEHLER_KURZSCHLUSS_20_WERT_TYPE          unsigned char
@@ -4649,7 +4639,7 @@
 
     #define I3_RES_BDC_STAT_FEHLER_OVERTEMP_20_WERT                  (RXBUF_UCHAR(197))
     #define I3_RES_BDC_STAT_FEHLER_OVERTEMP_20_WERT_TYPE             unsigned char
-        // Reported overtemperature error / Gemeldeter Ãbertemperaturfehler
+        // Reported overtemperature error / Gemeldeter Übertemperaturfehler
 
     #define I3_RES_BDC_STAT_FEHLER_OPEN_LOAD_20_WERT                 (RXBUF_UCHAR(198))
     #define I3_RES_BDC_STAT_FEHLER_OPEN_LOAD_20_WERT_TYPE            unsigned char
@@ -4666,15 +4656,15 @@
 
     #define I3_RES_BDC_STAT_LED_BLUE_21_WERT                         (RXBUF_UCHAR(201))
     #define I3_RES_BDC_STAT_LED_BLUE_21_WERT_TYPE                    unsigned char
-        // Reported status of the blue LED of the LIN slave / RÃ¼ckgemeldeter Status der Blauen  LED des LIN-Slaves
+        // Reported status of the blue LED of the LIN slave / Rückgemeldeter Status der Blauen  LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_LED_GREEN_21_WERT                        (RXBUF_UCHAR(202))
     #define I3_RES_BDC_STAT_LED_GREEN_21_WERT_TYPE                   unsigned char
-        // Reported status of the green LED of the LIN slave / RÃ¼ckgemeldeter Status der grÃ¼nen LED des LIN-Slaves
+        // Reported status of the green LED of the LIN slave / Rückgemeldeter Status der grünen LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_LED_RED_21_WERT                          (RXBUF_UCHAR(203))
     #define I3_RES_BDC_STAT_LED_RED_21_WERT_TYPE                     unsigned char
-        // Reported status of the red LED of the LIN slave / RÃ¼ckgemeldeter Status der roten LED des LIN-Slaves
+        // Reported status of the red LED of the LIN slave / Rückgemeldeter Status der roten LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_BRIGHTNESS_21_WERT                       (RXBUF_UCHAR(204))
     #define I3_RES_BDC_STAT_BRIGHTNESS_21_WERT_TYPE                  unsigned char
@@ -4682,7 +4672,7 @@
 
     #define I3_RES_BDC_STAT_LED_WHITE_21_WERT                        (RXBUF_UCHAR(205))
     #define I3_RES_BDC_STAT_LED_WHITE_21_WERT_TYPE                   unsigned char
-        // Status of the white footwell LED / Status der weiÃen Fussraum LED
+        // Status of the white footwell LED / Status der weißen Fussraum LED
 
     #define I3_RES_BDC_STAT_FEHLER_KURZSCHLUSS_21_WERT               (RXBUF_UCHAR(206))
     #define I3_RES_BDC_STAT_FEHLER_KURZSCHLUSS_21_WERT_TYPE          unsigned char
@@ -4690,7 +4680,7 @@
 
     #define I3_RES_BDC_STAT_FEHLER_OVERTEMP_21_WERT                  (RXBUF_UCHAR(207))
     #define I3_RES_BDC_STAT_FEHLER_OVERTEMP_21_WERT_TYPE             unsigned char
-        // Reported overtemperature error / Gemeldeter Ãbertemperaturfehler
+        // Reported overtemperature error / Gemeldeter Übertemperaturfehler
 
     #define I3_RES_BDC_STAT_FEHLER_OPEN_LOAD_21_WERT                 (RXBUF_UCHAR(208))
     #define I3_RES_BDC_STAT_FEHLER_OPEN_LOAD_21_WERT_TYPE            unsigned char
@@ -4707,15 +4697,15 @@
 
     #define I3_RES_BDC_STAT_LED_BLUE_22_WERT                         (RXBUF_UCHAR(211))
     #define I3_RES_BDC_STAT_LED_BLUE_22_WERT_TYPE                    unsigned char
-        // Reported status of the blue LED of the LIN slave / RÃ¼ckgemeldeter Status der Blauen  LED des LIN-Slaves
+        // Reported status of the blue LED of the LIN slave / Rückgemeldeter Status der Blauen  LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_LED_GREEN_22_WERT                        (RXBUF_UCHAR(212))
     #define I3_RES_BDC_STAT_LED_GREEN_22_WERT_TYPE                   unsigned char
-        // Reported status of the green LED of the LIN slave / RÃ¼ckgemeldeter Status der grÃ¼nen LED des LIN-Slaves
+        // Reported status of the green LED of the LIN slave / Rückgemeldeter Status der grünen LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_LED_RED_22_WERT                          (RXBUF_UCHAR(213))
     #define I3_RES_BDC_STAT_LED_RED_22_WERT_TYPE                     unsigned char
-        // Reported status of the red LED of the LIN slave / RÃ¼ckgemeldeter Status der roten LED des LIN-Slaves
+        // Reported status of the red LED of the LIN slave / Rückgemeldeter Status der roten LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_BRIGHTNESS_22_WERT                       (RXBUF_UCHAR(214))
     #define I3_RES_BDC_STAT_BRIGHTNESS_22_WERT_TYPE                  unsigned char
@@ -4723,7 +4713,7 @@
 
     #define I3_RES_BDC_STAT_LED_WHITE_22_WERT                        (RXBUF_UCHAR(215))
     #define I3_RES_BDC_STAT_LED_WHITE_22_WERT_TYPE                   unsigned char
-        // Status of the white footwell LED / Status der weiÃen Fussraum LED
+        // Status of the white footwell LED / Status der weißen Fussraum LED
 
     #define I3_RES_BDC_STAT_FEHLER_KURZSCHLUSS_22_WERT               (RXBUF_UCHAR(216))
     #define I3_RES_BDC_STAT_FEHLER_KURZSCHLUSS_22_WERT_TYPE          unsigned char
@@ -4731,7 +4721,7 @@
 
     #define I3_RES_BDC_STAT_FEHLER_OVERTEMP_22_WERT                  (RXBUF_UCHAR(217))
     #define I3_RES_BDC_STAT_FEHLER_OVERTEMP_22_WERT_TYPE             unsigned char
-        // Reported overtemperature error / Gemeldeter Ãbertemperaturfehler
+        // Reported overtemperature error / Gemeldeter Übertemperaturfehler
 
     #define I3_RES_BDC_STAT_FEHLER_OPEN_LOAD_22_WERT                 (RXBUF_UCHAR(218))
     #define I3_RES_BDC_STAT_FEHLER_OPEN_LOAD_22_WERT_TYPE            unsigned char
@@ -4748,15 +4738,15 @@
 
     #define I3_RES_BDC_STAT_LED_BLUE_23_WERT                         (RXBUF_UCHAR(221))
     #define I3_RES_BDC_STAT_LED_BLUE_23_WERT_TYPE                    unsigned char
-        // Reported status of the blue LED of the LIN slave / RÃ¼ckgemeldeter Status der Blauen  LED des LIN-Slaves
+        // Reported status of the blue LED of the LIN slave / Rückgemeldeter Status der Blauen  LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_LED_GREEN_23_WERT                        (RXBUF_UCHAR(222))
     #define I3_RES_BDC_STAT_LED_GREEN_23_WERT_TYPE                   unsigned char
-        // Reported status of the green LED of the LIN slave / RÃ¼ckgemeldeter Status der grÃ¼nen LED des LIN-Slaves
+        // Reported status of the green LED of the LIN slave / Rückgemeldeter Status der grünen LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_LED_RED_23_WERT                          (RXBUF_UCHAR(223))
     #define I3_RES_BDC_STAT_LED_RED_23_WERT_TYPE                     unsigned char
-        // Reported status of the red LED of the LIN slave / RÃ¼ckgemeldeter Status der roten LED des LIN-Slaves
+        // Reported status of the red LED of the LIN slave / Rückgemeldeter Status der roten LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_BRIGHTNESS_23_WERT                       (RXBUF_UCHAR(224))
     #define I3_RES_BDC_STAT_BRIGHTNESS_23_WERT_TYPE                  unsigned char
@@ -4764,7 +4754,7 @@
 
     #define I3_RES_BDC_STAT_LED_WHITE_23_WERT                        (RXBUF_UCHAR(225))
     #define I3_RES_BDC_STAT_LED_WHITE_23_WERT_TYPE                   unsigned char
-        // Status of the white footwell LED / Status der weiÃen Fussraum LED
+        // Status of the white footwell LED / Status der weißen Fussraum LED
 
     #define I3_RES_BDC_STAT_FEHLER_KURZSCHLUSS_23_WERT               (RXBUF_UCHAR(226))
     #define I3_RES_BDC_STAT_FEHLER_KURZSCHLUSS_23_WERT_TYPE          unsigned char
@@ -4772,7 +4762,7 @@
 
     #define I3_RES_BDC_STAT_FEHLER_OVERTEMP_23_WERT                  (RXBUF_UCHAR(227))
     #define I3_RES_BDC_STAT_FEHLER_OVERTEMP_23_WERT_TYPE             unsigned char
-        // Reported overtemperature error / Gemeldeter Ãbertemperaturfehler
+        // Reported overtemperature error / Gemeldeter Übertemperaturfehler
 
     #define I3_RES_BDC_STAT_FEHLER_OPEN_LOAD_23_WERT                 (RXBUF_UCHAR(228))
     #define I3_RES_BDC_STAT_FEHLER_OPEN_LOAD_23_WERT_TYPE            unsigned char
@@ -4789,15 +4779,15 @@
 
     #define I3_RES_BDC_STAT_LED_BLUE_24_WERT                         (RXBUF_UCHAR(231))
     #define I3_RES_BDC_STAT_LED_BLUE_24_WERT_TYPE                    unsigned char
-        // Reported status of the blue LED of the LIN slave / RÃ¼ckgemeldeter Status der Blauen  LED des LIN-Slaves
+        // Reported status of the blue LED of the LIN slave / Rückgemeldeter Status der Blauen  LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_LED_GREEN_24_WERT                        (RXBUF_UCHAR(232))
     #define I3_RES_BDC_STAT_LED_GREEN_24_WERT_TYPE                   unsigned char
-        // Reported status of the green LED of the LIN slave / RÃ¼ckgemeldeter Status der grÃ¼nen LED des LIN-Slaves
+        // Reported status of the green LED of the LIN slave / Rückgemeldeter Status der grünen LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_LED_RED_24_WERT                          (RXBUF_UCHAR(233))
     #define I3_RES_BDC_STAT_LED_RED_24_WERT_TYPE                     unsigned char
-        // Reported status of the red LED of the LIN slave / RÃ¼ckgemeldeter Status der roten LED des LIN-Slaves
+        // Reported status of the red LED of the LIN slave / Rückgemeldeter Status der roten LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_BRIGHTNESS_24_WERT                       (RXBUF_UCHAR(234))
     #define I3_RES_BDC_STAT_BRIGHTNESS_24_WERT_TYPE                  unsigned char
@@ -4805,7 +4795,7 @@
 
     #define I3_RES_BDC_STAT_LED_WHITE_24_WERT                        (RXBUF_UCHAR(235))
     #define I3_RES_BDC_STAT_LED_WHITE_24_WERT_TYPE                   unsigned char
-        // Status of the white footwell LED / Status der weiÃen Fussraum LED
+        // Status of the white footwell LED / Status der weißen Fussraum LED
 
     #define I3_RES_BDC_STAT_FEHLER_KURZSCHLUSS_24_WERT               (RXBUF_UCHAR(236))
     #define I3_RES_BDC_STAT_FEHLER_KURZSCHLUSS_24_WERT_TYPE          unsigned char
@@ -4813,7 +4803,7 @@
 
     #define I3_RES_BDC_STAT_FEHLER_OVERTEMP_24_WERT                  (RXBUF_UCHAR(237))
     #define I3_RES_BDC_STAT_FEHLER_OVERTEMP_24_WERT_TYPE             unsigned char
-        // Reported overtemperature error / Gemeldeter Ãbertemperaturfehler
+        // Reported overtemperature error / Gemeldeter Übertemperaturfehler
 
     #define I3_RES_BDC_STAT_FEHLER_OPEN_LOAD_24_WERT                 (RXBUF_UCHAR(238))
     #define I3_RES_BDC_STAT_FEHLER_OPEN_LOAD_24_WERT_TYPE            unsigned char
@@ -4830,15 +4820,15 @@
 
     #define I3_RES_BDC_STAT_LED_BLUE_25_WERT                         (RXBUF_UCHAR(241))
     #define I3_RES_BDC_STAT_LED_BLUE_25_WERT_TYPE                    unsigned char
-        // Reported status of the blue LED of the LIN slave / RÃ¼ckgemeldeter Status der Blauen  LED des LIN-Slaves
+        // Reported status of the blue LED of the LIN slave / Rückgemeldeter Status der Blauen  LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_LED_GREEN_25_WERT                        (RXBUF_UCHAR(242))
     #define I3_RES_BDC_STAT_LED_GREEN_25_WERT_TYPE                   unsigned char
-        // Reported status of the green LED of the LIN slave / RÃ¼ckgemeldeter Status der grÃ¼nen LED des LIN-Slaves
+        // Reported status of the green LED of the LIN slave / Rückgemeldeter Status der grünen LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_LED_RED_25_WERT                          (RXBUF_UCHAR(243))
     #define I3_RES_BDC_STAT_LED_RED_25_WERT_TYPE                     unsigned char
-        // Reported status of the red LED of the LIN slave / RÃ¼ckgemeldeter Status der roten LED des LIN-Slaves
+        // Reported status of the red LED of the LIN slave / Rückgemeldeter Status der roten LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_BRIGHTNESS_25_WERT                       (RXBUF_UCHAR(244))
     #define I3_RES_BDC_STAT_BRIGHTNESS_25_WERT_TYPE                  unsigned char
@@ -4846,7 +4836,7 @@
 
     #define I3_RES_BDC_STAT_LED_WHITE_25_WERT                        (RXBUF_UCHAR(245))
     #define I3_RES_BDC_STAT_LED_WHITE_25_WERT_TYPE                   unsigned char
-        // Status of the white footwell LED / Status der weiÃen Fussraum LED
+        // Status of the white footwell LED / Status der weißen Fussraum LED
 
     #define I3_RES_BDC_STAT_FEHLER_KURZSCHLUSS_25_WERT               (RXBUF_UCHAR(246))
     #define I3_RES_BDC_STAT_FEHLER_KURZSCHLUSS_25_WERT_TYPE          unsigned char
@@ -4854,7 +4844,7 @@
 
     #define I3_RES_BDC_STAT_FEHLER_OVERTEMP_25_WERT                  (RXBUF_UCHAR(247))
     #define I3_RES_BDC_STAT_FEHLER_OVERTEMP_25_WERT_TYPE             unsigned char
-        // Reported overtemperature error / Gemeldeter Ãbertemperaturfehler
+        // Reported overtemperature error / Gemeldeter Übertemperaturfehler
 
     #define I3_RES_BDC_STAT_FEHLER_OPEN_LOAD_25_WERT                 (RXBUF_UCHAR(248))
     #define I3_RES_BDC_STAT_FEHLER_OPEN_LOAD_25_WERT_TYPE            unsigned char
@@ -4871,15 +4861,15 @@
 
     #define I3_RES_BDC_STAT_LED_BLUE_26_WERT                         (RXBUF_UCHAR(251))
     #define I3_RES_BDC_STAT_LED_BLUE_26_WERT_TYPE                    unsigned char
-        // Reported status of the blue LED of the LIN slave / RÃ¼ckgemeldeter Status der Blauen  LED des LIN-Slaves
+        // Reported status of the blue LED of the LIN slave / Rückgemeldeter Status der Blauen  LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_LED_GREEN_26_WERT                        (RXBUF_UCHAR(252))
     #define I3_RES_BDC_STAT_LED_GREEN_26_WERT_TYPE                   unsigned char
-        // Reported status of the green LED of the LIN slave / RÃ¼ckgemeldeter Status der grÃ¼nen LED des LIN-Slaves
+        // Reported status of the green LED of the LIN slave / Rückgemeldeter Status der grünen LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_LED_RED_26_WERT                          (RXBUF_UCHAR(253))
     #define I3_RES_BDC_STAT_LED_RED_26_WERT_TYPE                     unsigned char
-        // Reported status of the red LED of the LIN slave / RÃ¼ckgemeldeter Status der roten LED des LIN-Slaves
+        // Reported status of the red LED of the LIN slave / Rückgemeldeter Status der roten LED des LIN-Slaves
 
     #define I3_RES_BDC_STAT_BRIGHTNESS_26_WERT                       (RXBUF_UCHAR(254))
     #define I3_RES_BDC_STAT_BRIGHTNESS_26_WERT_TYPE                  unsigned char
@@ -4887,7 +4877,7 @@
 
     #define I3_RES_BDC_STAT_LED_WHITE_26_WERT                        (RXBUF_UCHAR(255))
     #define I3_RES_BDC_STAT_LED_WHITE_26_WERT_TYPE                   unsigned char
-        // Status of the white footwell LED / Status der weiÃen Fussraum LED
+        // Status of the white footwell LED / Status der weißen Fussraum LED
 
     #define I3_RES_BDC_STAT_FEHLER_KURZSCHLUSS_26_WERT               (RXBUF_UCHAR(256))
     #define I3_RES_BDC_STAT_FEHLER_KURZSCHLUSS_26_WERT_TYPE          unsigned char
@@ -4895,7 +4885,7 @@
 
     #define I3_RES_BDC_STAT_FEHLER_OVERTEMP_26_WERT                  (RXBUF_UCHAR(257))
     #define I3_RES_BDC_STAT_FEHLER_OVERTEMP_26_WERT_TYPE             unsigned char
-        // Reported overtemperature error / Gemeldeter Ãbertemperaturfehler
+        // Reported overtemperature error / Gemeldeter Übertemperaturfehler
 
     #define I3_RES_BDC_STAT_FEHLER_OPEN_LOAD_26_WERT                 (RXBUF_UCHAR(258))
     #define I3_RES_BDC_STAT_FEHLER_OPEN_LOAD_26_WERT_TYPE            unsigned char
@@ -4913,31 +4903,31 @@
     #define I3_RES_BDC_STAT_CODIERUNG_FRONTKLAPPE_UNIT               '0/1'
     #define I3_RES_BDC_STAT_CODIERUNG_FRONTKLAPPE_TYPE               unsigned char
         // The result returns whether the front flap is activated in the coding. 0 = not active 1 = active / Das Ergebnis
-        // gibt zurÃ¼ck ob die Frontklappe in den Codierung aktiviert ist. 0 = Nicht aktiv 1 = Aktiv
+        // gibt zurück ob die Frontklappe in den Codierung aktiviert ist. 0 = Nicht aktiv 1 = Aktiv
 
     #define I3_RES_BDC_STAT_CODIERUNG_HECKKLAPPE                     (RXBUF_UCHAR(1))
     #define I3_RES_BDC_STAT_CODIERUNG_HECKKLAPPE_UNIT                '0/1'
     #define I3_RES_BDC_STAT_CODIERUNG_HECKKLAPPE_TYPE                unsigned char
         // The result returns whether the tailgate is activated in the coding. 0 = not active 1 = active / Das Ergebnis
-        // gibt zurÃ¼ck ob die Heckklappe in den Codierung aktiviert ist. 0 = Nicht aktiv 1 = Aktiv
+        // gibt zurück ob die Heckklappe in den Codierung aktiviert ist. 0 = Nicht aktiv 1 = Aktiv
 
     #define I3_RES_BDC_STAT_CODIERUNG_HECKSCHEIBE                    (RXBUF_UCHAR(2))
     #define I3_RES_BDC_STAT_CODIERUNG_HECKSCHEIBE_UNIT               '0/1'
     #define I3_RES_BDC_STAT_CODIERUNG_HECKSCHEIBE_TYPE               unsigned char
         // The result returns whether the rear window is activated in the coding. 0 = not active 1 = active / Das
-        // Ergebnis gibt zurÃ¼ck ob die Heckscheibe in den Codierung aktiviert ist. 0 = Nicht aktiv 1 = Aktiv
+        // Ergebnis gibt zurück ob die Heckscheibe in den Codierung aktiviert ist. 0 = Nicht aktiv 1 = Aktiv
 
     #define I3_RES_BDC_STAT_CODIERUNG_MOTORHAUBE                     (RXBUF_UCHAR(3))
     #define I3_RES_BDC_STAT_CODIERUNG_MOTORHAUBE_UNIT                '0/1'
     #define I3_RES_BDC_STAT_CODIERUNG_MOTORHAUBE_TYPE                unsigned char
         // The result returns whether the bonnet is activated in the coding. 0 = not active 1 = active / Das Ergebnis
-        // gibt zurÃ¼ck ob die Motorhaube in den Codierung aktiviert ist. 0 = Nicht aktiv 1 = Aktiv
+        // gibt zurück ob die Motorhaube in den Codierung aktiviert ist. 0 = Nicht aktiv 1 = Aktiv
 
     #define I3_RES_BDC_STAT_CODIERUNG_SPLITDOORS                     (RXBUF_UCHAR(4))
     #define I3_RES_BDC_STAT_CODIERUNG_SPLITDOORS_UNIT                '0/1'
     #define I3_RES_BDC_STAT_CODIERUNG_SPLITDOORS_TYPE                unsigned char
         // The result returns whether the split doors are activated in the coding. 0 = not active 1 = active / Das
-        // Ergebnis gibt zurÃ¼ck ob die Split Doors in den Codierung aktiviert sind. 0 = Nicht aktiv 1 = Aktiv
+        // Ergebnis gibt zurück ob die Split Doors in den Codierung aktiviert sind. 0 = Nicht aktiv 1 = Aktiv
 
 // Skipping LAYERING_LIN_EINZELN on 0xDA62 which takes arguments
 
@@ -4962,16 +4952,16 @@
 #define I3_PID_BDC_TUERKONTAKT_FAH_OBEN                              0xDA7E
         // The result contains the current state of the HW input, door contact, driver's door top rear. Note: For value 8
         // = contact not installed, the coding value CLI_REAR_DOOR_CONTACT_TOP_ASSEMBLED must be evaluated. / Das Result
-        // enthÃ¤lt den aktuellen Zustand des HW-Eingang TÃ¼rkontakt FahrertÃ¼r hinten oben. Hinweis: FÃ¼r Wert  8 =
-        // Kontakt nicht verbaut  muss der Codierwert CLI_REAR_DOOR_CONTACT_TOP_ASSEMBLED ausgewertet werden.
+        // enthält den aktuellen Zustand des HW-Eingang Türkontakt Fahrertür hinten oben. Hinweis: Für Wert  8 = Kontakt
+        // nicht verbaut  muss der Codierwert CLI_REAR_DOOR_CONTACT_TOP_ASSEMBLED ausgewertet werden.
 
     #define I3_RES_BDC_STAT_TUERKONTAKT_FA_OBEN                      (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_TUERKONTAKT_FA_OBEN_UNIT                 '0-n'
     #define I3_RES_BDC_STAT_TUERKONTAKT_FA_OBEN_TYPE                 unsigned char
         // The result contains the current state of the HW input, door contact, driver's door top rear. Note: For value 8
         // = contact not installed, the coding value CLI_REAR_DOOR_CONTACT_TOP_ASSEMBLED must be evaluated. / Das Result
-        // enthÃ¤lt den aktuellen Zustand des HW-Eingang TÃ¼rkontakt FahrertÃ¼r hinten oben. Hinweis: FÃ¼r Wert  8 =
-        // Kontakt nicht verbaut  muss der Codierwert CLI_REAR_DOOR_CONTACT_TOP_ASSEMBLED ausgewertet werden.
+        // enthält den aktuellen Zustand des HW-Eingang Türkontakt Fahrertür hinten oben. Hinweis: Für Wert  8 = Kontakt
+        // nicht verbaut  muss der Codierwert CLI_REAR_DOOR_CONTACT_TOP_ASSEMBLED ausgewertet werden.
 
 // Skipping HECKSCHEIBE_TASTER on 0xDA80 which takes arguments
 
@@ -5066,14 +5056,14 @@
     #define I3_RES_BDC_STAT_ZV_HECKKLAPPE_ENTRIEGELT_NR_UNIT         '0-n'
     #define I3_RES_BDC_STAT_ZV_HECKKLAPPE_ENTRIEGELT_NR_TYPE         unsigned char
         // 0: lock is not unlocked (not active); 1: lock is unlocked (active); 255: Signal invalid / implausible / 0:
-        // Schloss ist nicht entriegelt (nicht aktiv ); 1: Schloss ist entriegelt (aktiv); 255: Signal ungÃ¼ltig /
+        // Schloss ist nicht entriegelt (nicht aktiv ); 1: Schloss ist entriegelt (aktiv); 255: Signal ungültig /
         // unplausibel
 
     #define I3_RES_BDC_STAT_ZV_HECKKLAPPE_VERRIEGELT_NR              (RXBUF_UCHAR(1))
     #define I3_RES_BDC_STAT_ZV_HECKKLAPPE_VERRIEGELT_NR_UNIT         '0-n'
     #define I3_RES_BDC_STAT_ZV_HECKKLAPPE_VERRIEGELT_NR_TYPE         unsigned char
         // 0: lock is not locked (not active); 1: lock is locked (active); 255: Signal invalid / implausible / 0: Schloss
-        // ist nicht verriegelt (nicht aktiv ); 1: Schloss ist verriegelt (aktiv); 255: Signal ungÃ¼ltig / unplausibel
+        // ist nicht verriegelt (nicht aktiv ); 1: Schloss ist verriegelt (aktiv); 255: Signal ungültig / unplausibel
 
 #define I3_PID_BDC_ZV_HECKSCHEIBE                                    0xDA86
         // Rear window central locking status / Status Zentralverriegelung Heckscheibe
@@ -5096,26 +5086,26 @@
     #define I3_RES_BDC_STAT_ZV_FA_NR                                 (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_ZV_FA_NR_UNIT                            '0-n'
     #define I3_RES_BDC_STAT_ZV_FA_NR_TYPE                            unsigned char
-        // The result contains the current ZV status of the driver's door. / Das Result enthÃ¤lt den aktuellen ZV-Zustand
-        // der FahrertÃ¼re.
+        // The result contains the current ZV status of the driver's door. / Das Result enthält den aktuellen ZV-Zustand
+        // der Fahrertüre.
 
     #define I3_RES_BDC_STAT_ZV_BF_NR                                 (RXBUF_UCHAR(1))
     #define I3_RES_BDC_STAT_ZV_BF_NR_UNIT                            '0-n'
     #define I3_RES_BDC_STAT_ZV_BF_NR_TYPE                            unsigned char
-        // The result contains the current ZV status of the passenger door. / Das Result enthÃ¤lt den aktuellen
-        // ZV-Zustand der BeifahrertÃ¼re.
+        // The result contains the current ZV status of the passenger door. / Das Result enthält den aktuellen ZV-Zustand
+        // der Beifahrertüre.
 
     #define I3_RES_BDC_STAT_ZV_FAH_NR                                (RXBUF_UCHAR(2))
     #define I3_RES_BDC_STAT_ZV_FAH_NR_UNIT                           '0-n'
     #define I3_RES_BDC_STAT_ZV_FAH_NR_TYPE                           unsigned char
-        // The result contains the current ZV status of the rear driver's door. / Das Result enthÃ¤lt den aktuellen
-        // ZV-Zustand der FahrertÃ¼re hinten.
+        // The result contains the current ZV status of the rear driver's door. / Das Result enthält den aktuellen
+        // ZV-Zustand der Fahrertüre hinten.
 
     #define I3_RES_BDC_STAT_ZV_BFH_NR                                (RXBUF_UCHAR(3))
     #define I3_RES_BDC_STAT_ZV_BFH_NR_UNIT                           '0-n'
     #define I3_RES_BDC_STAT_ZV_BFH_NR_TYPE                           unsigned char
-        // The result contains the current ZV status of the rear passenger door. / Das Result enthÃ¤lt den aktuellen
-        // ZV-Zustand der BeifahrertÃ¼re hinten.
+        // The result contains the current ZV status of the rear passenger door. / Das Result enthält den aktuellen
+        // ZV-Zustand der Beifahrertüre hinten.
 
 // Skipping FRONTKLAPPE_TASTER on 0xDA89 which takes arguments
 
@@ -5133,176 +5123,174 @@
         // Notes: - The job is called via the standard job STATUS_LESEN with the argument ZV_KURZSCHLUSSABSCHALTUNG - For
         // details on the process of short-circuit switch-off, see ZSG_BF_13070 / Dieser Job dient zum Auslesen des
         // Status der dauerhaften Kurzschlussabschaltung der ZV-Antriebe der Heckklappe und Heckscheibe. Die
-        // Kurzschlussabschaltung dient zum Ãberlastschutz des HW-Treiber.  Hinweise: - Aufruf des Jobs erfolgt Ã¼ber
+        // Kurzschlussabschaltung dient zum Überlastschutz des HW-Treiber.  Hinweise: - Aufruf des Jobs erfolgt über
         // Standardjob STATUS_LESEN mit Argument ZV_KURZSCHLUSSABSCHALTUNG - Details zum Ablauf der
         // Kurzschlussabschaltung siehe ZSG_BF_13070
 
     #define I3_RES_BDC_STAT_HECKKLAPPE_KURZSCHLUSSABSCHALTUNG_AKTIV  (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_HECKKLAPPE_KURZSCHLUSSABSCHALTUNG_AKTIV_UNIT '0-n'
     #define I3_RES_BDC_STAT_HECKKLAPPE_KURZSCHLUSSABSCHALTUNG_AKTIV_TYPE unsigned char
-        // The result contains the activation status of the short-circuit shutdown of the tailgate. / Das Result enthÃ¤lt
+        // The result contains the activation status of the short-circuit shutdown of the tailgate. / Das Result enthält
         // den Aktivierungsstatus der Kurzschlussabschaltung der Heckklappe.
 
     #define I3_RES_BDC_STAT_HECKSCHEIBE_KURZSCHLUSSABSCHALTUNG_AKTIV (RXBUF_UCHAR(1))
     #define I3_RES_BDC_STAT_HECKSCHEIBE_KURZSCHLUSSABSCHALTUNG_AKTIV_UNIT '0-n'
     #define I3_RES_BDC_STAT_HECKSCHEIBE_KURZSCHLUSSABSCHALTUNG_AKTIV_TYPE unsigned char
         // The result contains the activation status of the short-circuit shutdown of the rear window. / Das Result
-        // enthÃ¤lt den Aktivierungsstatus der Kurzschlussabschaltung der Heckscheibe.
+        // enthält den Aktivierungsstatus der Kurzschlussabschaltung der Heckscheibe.
 
 #define I3_PID_BDC_SPANNUNG_KLEMMEN                                  0xDAB3
         // Reading out analog voltage and current values at the CAS outputs and inputs. Notes: - The job is called via
         // the standard job STATUS_LESEN with the argument SPANNUNG_KLEMMEN. / Auslesen analoger Spannungs- und
-        // Strom-Werte an den CAS AusgÃ¤ngen und EingÃ¤ngen. Hinweise:  - Aufruf des Jobs erfolgt Ã¼ber Standardjob
+        // Strom-Werte an den CAS Ausgängen und Eingängen. Hinweise:  - Aufruf des Jobs erfolgt über Standardjob
         // STATUS_LESEN mit Argument SPANNUNG_KLEMMEN.
 
     #define I3_RES_BDC_STAT_SPANNUNG_KLEMME_30B_1_WERT               (RXBUF_UINT(0)/1000.0f)
     #define I3_RES_BDC_STAT_SPANNUNG_KLEMME_30B_1_WERT_UNIT          'V'
     #define I3_RES_BDC_STAT_SPANNUNG_KLEMME_30B_1_WERT_TYPE          float
-        // The result contains the voltage value of terminal 30B_1. / Das Result enthÃ¤lt den Spannungswert Klemme 30B_1.
+        // The result contains the voltage value of terminal 30B_1. / Das Result enthält den Spannungswert Klemme 30B_1.
 
     #define I3_RES_BDC_STAT_SPANNUNG_KLEMME_30B_2_WERT               (RXBUF_UINT(2)/1000.0f)
     #define I3_RES_BDC_STAT_SPANNUNG_KLEMME_30B_2_WERT_UNIT          'V'
     #define I3_RES_BDC_STAT_SPANNUNG_KLEMME_30B_2_WERT_TYPE          float
-        // The result contains the voltage value of terminal 30B_2. / Das Result enthÃ¤lt den Spannungswert Klemme 30B_2.
+        // The result contains the voltage value of terminal 30B_2. / Das Result enthält den Spannungswert Klemme 30B_2.
 
     #define I3_RES_BDC_STAT_SPANNUNG_KLEMME_30B_3_WERT               (RXBUF_UINT(4)/1000.0f)
     #define I3_RES_BDC_STAT_SPANNUNG_KLEMME_30B_3_WERT_UNIT          'V'
     #define I3_RES_BDC_STAT_SPANNUNG_KLEMME_30B_3_WERT_TYPE          float
-        // The result contains the voltage value of terminal 30B_3. / Das Result enthÃ¤lt den Spannungswert Klemme 30B_3.
+        // The result contains the voltage value of terminal 30B_3. / Das Result enthält den Spannungswert Klemme 30B_3.
 
     #define I3_RES_BDC_STAT_SPANNUNG_KLEMME_15WUP                    (RXBUF_UINT(6))
     #define I3_RES_BDC_STAT_SPANNUNG_KLEMME_15WUP_UNIT               '0/1'
     #define I3_RES_BDC_STAT_SPANNUNG_KLEMME_15WUP_TYPE               unsigned short
         // The result contains the voltage value of terminal 15_WUP at the FEM output. Possible values: 1 = active, 0 =
-        // not active / Das Result enthÃ¤lt den Spannungswert Klemme 15_WUP am FEM Ausgang. MÃ¶gliche Werte: 1 = Aktiv, 0
-        // = nicht aktiv
+        // not active / Das Result enthält den Spannungswert Klemme 15_WUP am FEM Ausgang. Mögliche Werte: 1 = Aktiv, 0 =
+        // nicht aktiv
 
     #define I3_RES_BDC_STAT_SPANNUNG_KLEMME_15N1_WERT                (RXBUF_UINT(8)/1000.0f)
     #define I3_RES_BDC_STAT_SPANNUNG_KLEMME_15N1_WERT_UNIT           'V'
     #define I3_RES_BDC_STAT_SPANNUNG_KLEMME_15N1_WERT_TYPE           float
-        // The result contains the voltage value of terminal 15_N1 at the FEM output. / Das Result enthÃ¤lt den
+        // The result contains the voltage value of terminal 15_N1 at the FEM output. / Das Result enthält den
         // Spannungswert Klemme 15_N1 am FEM Ausgang.
 
     #define I3_RES_BDC_STAT_SPANNUNG_KLEMME_15N2_WERT                (RXBUF_UINT(10)/1000.0f)
     #define I3_RES_BDC_STAT_SPANNUNG_KLEMME_15N2_WERT_UNIT           'V'
     #define I3_RES_BDC_STAT_SPANNUNG_KLEMME_15N2_WERT_TYPE           float
-        // The result contains the voltage value of terminal 15_N2 at the FEM output. / Das Result enthÃ¤lt den
+        // The result contains the voltage value of terminal 15_N2 at the FEM output. / Das Result enthält den
         // Spannungswert Klemme 15_N2 am FEM Ausgang.
 
     #define I3_RES_BDC_STAT_SPANNUNG_KLEMME_15_WERT                  (RXBUF_UINT(12)/1000.0f)
     #define I3_RES_BDC_STAT_SPANNUNG_KLEMME_15_WERT_UNIT             'V'
     #define I3_RES_BDC_STAT_SPANNUNG_KLEMME_15_WERT_TYPE             float
-        // The result contains the voltage value at terminal 15 at the FEM output. / Das Result enthÃ¤lt den
-        // Spannungswert Klemme 15 am FEM Ausgang.
+        // The result contains the voltage value at terminal 15 at the FEM output. / Das Result enthält den Spannungswert
+        // Klemme 15 am FEM Ausgang.
 
     #define I3_RES_BDC_STAT_STROM_KLEMME_15_50_WERT                  (RXBUF_UINT(14)/1000.0f)
     #define I3_RES_BDC_STAT_STROM_KLEMME_15_50_WERT_UNIT             'A'
     #define I3_RES_BDC_STAT_STROM_KLEMME_15_50_WERT_TYPE             float
-        // The result contains the current value at terminals 15 and 50 at the FEM output. / Das Result enthÃ¤lt den
+        // The result contains the current value at terminals 15 and 50 at the FEM output. / Das Result enthält den
         // Stromwert an Klemme 15 und 50 am FEM Ausgang.
 
     #define I3_RES_BDC_STAT_SPANNUNG_KLEMME_50_WERT                  (RXBUF_UINT(16)/1000.0f)
     #define I3_RES_BDC_STAT_SPANNUNG_KLEMME_50_WERT_UNIT             'V'
     #define I3_RES_BDC_STAT_SPANNUNG_KLEMME_50_WERT_TYPE             float
-        // The result contains the voltage value at terminal 50 at the FEM output. / Das Result enthÃ¤lt den
-        // Spannungswert Klemme 50  am FEM Ausgang.
+        // The result contains the voltage value at terminal 50 at the FEM output. / Das Result enthält den Spannungswert
+        // Klemme 50  am FEM Ausgang.
 
     #define I3_RES_BDC_STAT_SPANNUNG_KLEMME_50MSA_WERT               (RXBUF_UINT(18)/1000.0f)
     #define I3_RES_BDC_STAT_SPANNUNG_KLEMME_50MSA_WERT_UNIT          'V'
     #define I3_RES_BDC_STAT_SPANNUNG_KLEMME_50MSA_WERT_TYPE          float
-        // The result contains the voltage value of terminal 50_MSA at the FEM output. / Das Result enthÃ¤lt den
+        // The result contains the voltage value of terminal 50_MSA at the FEM output. / Das Result enthält den
         // Spannungswert Klemme 50_MSA am FEM Ausgang.
 
     #define I3_RES_BDC_STAT_STROM_LF_WERT                            (RXBUF_UINT(20)/1000.0f)
     #define I3_RES_BDC_STAT_STROM_LF_WERT_UNIT                       'A'
     #define I3_RES_BDC_STAT_STROM_LF_WERT_TYPE                       float
-        // The result contains the current value at LF (CA antennas) at the FEM output. / Das Result enthÃ¤lt den
+        // The result contains the current value at LF (CA antennas) at the FEM output. / Das Result enthält den
         // Stromwert an LF (CA-Antennen) am FEM Ausgang.
 
     #define I3_RES_BDC_STAT_DIAG_LF_WERT                             (RXBUF_UINT(22)/1000.0f)
     #define I3_RES_BDC_STAT_DIAG_LF_WERT_UNIT                        'V'
     #define I3_RES_BDC_STAT_DIAG_LF_WERT_TYPE                        float
-        // The result contains the voltage value at the LF (CA antennas) at the FEM output. / Das Result enthÃ¤lt den
+        // The result contains the voltage value at the LF (CA antennas) at the FEM output. / Das Result enthält den
         // Spannungswert an LF (CA-Antennen) am FEM Ausgang.
 
     #define I3_RES_BDC_STAT_SPANNUNG_KLEMME_31ELV_WERT               (RXBUF_UINT(24)/1000.0f)
     #define I3_RES_BDC_STAT_SPANNUNG_KLEMME_31ELV_WERT_UNIT          'V'
     #define I3_RES_BDC_STAT_SPANNUNG_KLEMME_31ELV_WERT_TYPE          float
-        // The result contains the voltage value at terminal 31ELV at the FEM output. / Das Result enthÃ¤lt den
+        // The result contains the voltage value at terminal 31ELV at the FEM output. / Das Result enthält den
         // Spannungswert Klemme 31ELV am FEM Ausgang.
 
     #define I3_RES_BDC_STAT_SPANNUNG_KLEMME_30ELV_WERT               (RXBUF_UINT(26)/1000.0f)
     #define I3_RES_BDC_STAT_SPANNUNG_KLEMME_30ELV_WERT_UNIT          'V'
     #define I3_RES_BDC_STAT_SPANNUNG_KLEMME_30ELV_WERT_TYPE          float
-        // The result contains the voltage value at terminal 30ELV at the FEM output. / Das Result enthÃ¤lt den
+        // The result contains the voltage value at terminal 30ELV at the FEM output. / Das Result enthält den
         // Spannungswert Klemme 30ELV am FEM Ausgang.
 
     #define I3_RES_BDC_STAT_SPANNUNG_INNENTEMPERATUR_WERT            (RXBUF_UINT(28)/1000.0f)
     #define I3_RES_BDC_STAT_SPANNUNG_INNENTEMPERATUR_WERT_UNIT       'V'
     #define I3_RES_BDC_STAT_SPANNUNG_INNENTEMPERATUR_WERT_TYPE       float
         // The result contains the voltage value at the PTC / NTC in the control unit to determine the internal
-        // temperature. / Das Result enthÃ¤lt den Spannungswert am PTC/NTC im SteuergerÃ¤t zur Ermittlung der
+        // temperature. / Das Result enthält den Spannungswert am PTC/NTC im Steuergerät zur Ermittlung der
         // Innentemperatur.
 
 #define I3_PID_BDC_KEY_VALID_NR_AKTUELL                              0xDAB4
         // The result contains the number (according to the transponder table) of the currently valid key. Values: 0-19
-        // key number, 255 currently not a valid key. / Das Result enthÃ¤lt die Nummer (gemÃ¤Ã Transpondertabelle) des
-        // aktuell gÃ¼ltigen SchlÃ¼ssel. Werte: 0-19 SchlÃ¼sselnummer, 255 momentan kein gÃ¼ltiger SchlÃ¼ssel.
+        // key number, 255 currently not a valid key. / Das Result enthält die Nummer (gemäß Transpondertabelle) des
+        // aktuell gültigen Schlüssel. Werte: 0-19 Schlüsselnummer, 255 momentan kein gültiger Schlüssel.
 
     #define I3_RES_BDC_STAT_KEY_VAILD_NR_AKTUELL                     (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_KEY_VAILD_NR_AKTUELL_UNIT                '0-n'
     #define I3_RES_BDC_STAT_KEY_VAILD_NR_AKTUELL_TYPE                unsigned char
         // The result contains the number (according to the transponder table) of the currently valid key. Values: 0-19
-        // key number, 255 currently not a valid key. / Das Result enthÃ¤lt die Nummer (gemÃ¤Ã Transpondertabelle) des
-        // aktuell gÃ¼ltigen SchlÃ¼ssel. Werte: 0-19 SchlÃ¼sselnummer, 255 momentan kein gÃ¼ltiger SchlÃ¼ssel.
+        // key number, 255 currently not a valid key. / Das Result enthält die Nummer (gemäß Transpondertabelle) des
+        // aktuell gültigen Schlüssel. Werte: 0-19 Schlüsselnummer, 255 momentan kein gültiger Schlüssel.
 
 #define I3_PID_BDC_CA_TAGE_ER_LEITUNG                                0xDAB5
         // Reading out the respective status values of the analog unlocking lines from the outside door handle
-        // electronics (TAGE) in the doors FT, BFT, FTH, BFTH. Notes: - The job is called using the standard job
+        // electronics (TAGE) in the doors FT, BFT, FTH, BFTH. Notes: - The job is called via the standard job
         // STATUS_LESEN with the argument CA_TAGE_ER_LEITUNG / Auslesen der jeweiligen Statuswerte der analogen
-        // Entriegeln-Leitungen von den TÃ¼r-Aussengriff-Elektroniken (TAGE) in den TÃ¼ren FT, BFT, FTH, BFTH. Hinweise: 
-        // - Aufruf des Jobs erfolgt Ã¼ber Standardjob STATUS_LESEN mit Argument CA_TAGE_ER_LEITUNG
+        // Entriegeln-Leitungen von den Tür-Aussengriff-Elektroniken (TAGE) in den Türen FT, BFT, FTH, BFTH. Hinweise:  -
+        // Aufruf des Jobs erfolgt über Standardjob STATUS_LESEN mit Argument CA_TAGE_ER_LEITUNG
 
     #define I3_RES_BDC_STAT_TAGE_ER_FT                               (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_TAGE_ER_FT_UNIT                          '0-n'
     #define I3_RES_BDC_STAT_TAGE_ER_FT_TYPE                          unsigned char
         // The result contains the status of the line between the ZSG and the CA button / TAGE in the driver's door.
-        // Notes: - Assignment via table TAB_CAS_CA_TAGE_ER_LEITUNG. / Das Result enthÃ¤lt den Status der Leitung
-        // zwischen ZSG und CA-Taster/TAGE in der  FahrertÃ¼r. Hinweise: - Zuordnung Ã¼ber Tabelle
-        // TAB_CAS_CA_TAGE_ER_LEITUNG.
+        // Notes: - Assignment via table TAB_CAS_CA_TAGE_ER_LEITUNG. / Das Result enthält den Status der Leitung zwischen
+        // ZSG und CA-Taster/TAGE in der  Fahrertür. Hinweise: - Zuordnung über Tabelle TAB_CAS_CA_TAGE_ER_LEITUNG.
 
     #define I3_RES_BDC_STAT_TAGE_ER_BFT                              (RXBUF_UCHAR(1))
     #define I3_RES_BDC_STAT_TAGE_ER_BFT_UNIT                         '0-n'
     #define I3_RES_BDC_STAT_TAGE_ER_BFT_TYPE                         unsigned char
         // The result contains the status of the line between the ZSG and the CA button / TAGE in the passenger door.
-        // Notes: - Assignment via table TAB_CAS_CA_TAGE_ER_LEITUNG. / Das Result enthÃ¤lt den Status der Leitung
-        // zwischen ZSG und CA-Taster/TAGE in der  BeifahrertÃ¼r.. Hinweise: - Zuordnung Ã¼ber Tabelle
-        // TAB_CAS_CA_TAGE_ER_LEITUNG.
+        // Notes: - Allocation via table TAB_CAS_CA_TAGE_ER_LEITUNG. / Das Result enthält den Status der Leitung zwischen
+        // ZSG und CA-Taster/TAGE in der  Beifahrertür.. Hinweise: - Zuordnung über Tabelle TAB_CAS_CA_TAGE_ER_LEITUNG.
 
     #define I3_RES_BDC_STAT_TAGE_ER_FTH                              (RXBUF_UCHAR(2))
     #define I3_RES_BDC_STAT_TAGE_ER_FTH_UNIT                         '0-n'
     #define I3_RES_BDC_STAT_TAGE_ER_FTH_TYPE                         unsigned char
         // The result contains the status of the line between the ZSG and the CA button / TAGE in the rear driver's door.
-        // Notes: - Assignment via table TAB_CAS_CA_TAGE_ER_LEITUNG. / Das Result enthÃ¤lt den Status der Leitung
-        // zwischen ZSG und CA-Taster/TAGE in der  FahrertÃ¼r hinten. Hinweise: - Zuordnung Ã¼ber Tabelle
+        // Notes: - Assignment via table TAB_CAS_CA_TAGE_ER_LEITUNG. / Das Result enthält den Status der Leitung zwischen
+        // ZSG und CA-Taster/TAGE in der  Fahrertür hinten. Hinweise: - Zuordnung über Tabelle
         // TAB_CAS_CA_TAGE_ER_LEITUNG.
 
     #define I3_RES_BDC_STAT_TAGE_ER_BFTH                             (RXBUF_UCHAR(3))
     #define I3_RES_BDC_STAT_TAGE_ER_BFTH_UNIT                        '0-n'
     #define I3_RES_BDC_STAT_TAGE_ER_BFTH_TYPE                        unsigned char
         // The result contains the status of the line between the ZSG and the CA button / TAGE in the rear passenger
-        // door. Notes: - Assignment via table TAB_CAS_CA_TAGE_ER_LEITUNG. / Das Result enthÃ¤lt den Status der Leitung
-        // zwischen ZSG und CA-Taster/TAGE in der  BeifahrertÃ¼r hinten. Hinweise: - Zuordnung Ã¼ber Tabelle
+        // door. Notes: - Assignment via table TAB_CAS_CA_TAGE_ER_LEITUNG. / Das Result enthält den Status der Leitung
+        // zwischen ZSG und CA-Taster/TAGE in der  Beifahrertür hinten. Hinweise: - Zuordnung über Tabelle
         // TAB_CAS_CA_TAGE_ER_LEITUNG.
 
 #define I3_PID_BDC_START_STOP_TASTER                                 0xDAB6
-        // The result contains the current logical state of the start / stop button. / Das Result enthÃ¤lt den aktuellen
+        // The result contains the current logical state of the start / stop button. / Das Result enthält den aktuellen
         // logischen Zustand des Start-Stopp-Tasters.
 
     #define I3_RES_BDC_STAT_TASTER_SST_AKTIV                         (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_TASTER_SST_AKTIV_UNIT                    '0/1'
     #define I3_RES_BDC_STAT_TASTER_SST_AKTIV_TYPE                    unsigned char
-        // The result contains the current logical state of the start / stop button. / Das Result enthÃ¤lt den aktuellen
+        // The result contains the current logical state of the start / stop button. / Das Result enthält den aktuellen
         // logischen Zustand des Start-Stopp-Tasters.
 
 // Skipping STEUERN_FAHRPROFIL on 0xDAB8 which takes arguments
@@ -5311,33 +5299,33 @@
 
 #define I3_PID_BDC_STATUS_KLEMMEN_VERHINDERER                        0xDABA
         // Reading out the internal reasons for preventing the terminal control state machine for changing terminals:
-        // Switching on the KL15, switching off the KL15, switching on the KL50 Notes: - Only one reason is output, even
-        // if there are several reasons. - Depending on the terminal change considered, not all values from the table
-        // TAB_CAS_KLEMMEN_VERHINDERER are possible. / Auslesen der internen VerhinderungsgrÃ¼nde der
-        // Klemmensteuerungs-Statemachine fÃ¼r Klemmenwechsel:  Einschalten der KL15, Ausschalten der KL15, Einschalten
-        // der KL50 Hinweise: - Es wird jeweils nur ein Hinderungsgrund ausgegeben, auch wenn mehrere HinderungsgrÃ¼nde
-        // vorliegen. - AbhÃ¤ngig vom betrachteten Klemmen-Wechsel sind jeweils nicht alle Werte aus der Tabelle
-        // TAB_CAS_KLEMMEN_VERHINDERER mÃ¶glich.
+        // Switching on the KL15, switching off the KL15, switching on the KL50 Notes: - Only one reason is output at a
+        // time, even if there are several reasons. - Depending on the terminal change considered, not all values from
+        // the table TAB_CAS_KLEMMEN_VERHINDERER are possible. / Auslesen der internen Verhinderungsgründe der
+        // Klemmensteuerungs-Statemachine für Klemmenwechsel:  Einschalten der KL15, Ausschalten der KL15, Einschalten
+        // der KL50 Hinweise: - Es wird jeweils nur ein Hinderungsgrund ausgegeben, auch wenn mehrere Hinderungsgründe
+        // vorliegen. - Abhängig vom betrachteten Klemmen-Wechsel sind jeweils nicht alle Werte aus der Tabelle
+        // TAB_CAS_KLEMMEN_VERHINDERER möglich.
 
     #define I3_RES_BDC_STAT_KL15_EIN_VERHINDERER                     (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_KL15_EIN_VERHINDERER_UNIT                '0-n'
     #define I3_RES_BDC_STAT_KL15_EIN_VERHINDERER_TYPE                unsigned char
         // The result contains the cause that currently prevents the KL15 from being switched on if a terminal change to
         // KL15 is requested via the StartStop button (SST) or via diagnosis. Notes: - Allocation takes place in
-        // accordance with table 0 = No obstacle present 1 = Current key not valid 14 = ELV locked / Das Result enthÃ¤lt
-        // die Ursache, die momentan ein Einschalten der KL15 verhindert, wenn eine KlemmenÃ¤nderung zu KL15 Ã¼ber
-        // StartStop-Taster (SST) oder Ã¼ber Diagnose angefordert wÃ¼rde. Hinweise: - Zuordnung erfolgt gemÃ¤Ã Tabelle 0
-        // = Kein Hinderungsgrund vorliegend  1 = Aktueller SchlÃ¼ssel nicht gÃ¼ltig 14 = ELV verriegelt  
+        // accordance with table 0 = No obstacle present 1 = Current key not valid 14 = ELV locked / Das Result enthält
+        // die Ursache, die momentan ein Einschalten der KL15 verhindert, wenn eine Klemmenänderung zu KL15 über
+        // StartStop-Taster (SST) oder über Diagnose angefordert würde. Hinweise: - Zuordnung erfolgt gemäß Tabelle 0 =
+        // Kein Hinderungsgrund vorliegend  1 = Aktueller Schlüssel nicht gültig 14 = ELV verriegelt  
 
     #define I3_RES_BDC_STAT_KL15_AUS_VERHINDERER                     (RXBUF_UCHAR(1))
     #define I3_RES_BDC_STAT_KL15_AUS_VERHINDERER_UNIT                '0-n'
     #define I3_RES_BDC_STAT_KL15_AUS_VERHINDERER_TYPE                unsigned char
         // The result contains the cause that currently prevents the KL15 from switching off if a terminal change is
-        // requested via the StartStop button (SST) or via diagnosis. Notes: - Allocation takes place in accordance with
-        // table 0 = No obstacle present 3 = Speed of travel detected 4 = Speed signal invalid / Das Result enthÃ¤lt die
-        // Ursache, die momentan ein Ausschalten der KL15 verhindert, wenn eine KlemmenÃ¤nderung Ã¼ber StartStop-Taster
-        // (SST) oder Ã¼ber Diagnose angefordert wÃ¼rde. Hinweise: - Zuordnung erfolgt gemÃ¤Ã Tabelle 0 = Kein
-        // Hinderungsgrund vorliegend  3 = Geschwindigkeit Fahrt erkannt  4 = Geschwindigkeitsignal ungÃ¼ltig 
+        // requested via the StartStop button (SST) or via diagnosis. Notes: - Allocation takes place according to table
+        // 0 = No reason for hindrance present 3 = Speed of travel detected 4 = Speed signal invalid / Das Result enthält
+        // die Ursache, die momentan ein Ausschalten der KL15 verhindert, wenn eine Klemmenänderung über StartStop-Taster
+        // (SST) oder über Diagnose angefordert würde. Hinweise: - Zuordnung erfolgt gemäß Tabelle 0 = Kein
+        // Hinderungsgrund vorliegend  3 = Geschwindigkeit Fahrt erkannt  4 = Geschwindigkeitsignal ungültig 
 
     #define I3_RES_BDC_STAT_KL50_EIN_VERHINDERER                     (RXBUF_UCHAR(2))
     #define I3_RES_BDC_STAT_KL50_EIN_VERHINDERER_UNIT                '0-n'
@@ -5347,128 +5335,127 @@
         // according to table 0 = No obstacle present 1 = No valid key 5 = Brake not pressed 6 = Brake implausible 7 =
         // Clutch not pressed 8 = Clutch implausible 9 = Abort DME / DDE (engine running detected / no engine start
         // allowed via CAN ) 10 = frictional connection detected (P or N not inserted) 13 = assembly mode KL50 14 = ELV
-        // locked / Das Result enthÃ¤lt die Ursache, die momentan ein Ansteuern der KL50 verhindert, wenn eine
-        // KlemmenÃ¤nderung Ã¼ber StartStop-Taster (SST), Telestarthandsender oder Ã¼ber Diagnose angefordert wÃ¼rde.
-        // Hinweise: - Zuordnung erfolgt gemÃ¤Ã Tabelle 0 = Kein Hinderungsgrund vorliegend  1 = Kein gÃ¼ltiger
-        // SchlÃ¼ssel  5 = Bremse nicht gedrÃ¼ckt  6 = Bremse unplausibel 7 = Kupplung nicht gedrÃ¼ckt  8 = Kupplung
-        // unplausibel  9 = Abbruch DME/DDE (Motorlauf erkannt/Kein Motorstart erlaubt Ã¼ber CAN) 10 = Kraftschluss
-        // erkannt (P oder N nicht eingelegt) 13 = Montagmodus KL50  14 = ELV verriegelt  
+        // locked / Das Result enthält die Ursache, die momentan ein Ansteuern der KL50 verhindert, wenn eine
+        // Klemmenänderung über StartStop-Taster (SST), Telestarthandsender oder über Diagnose angefordert würde.
+        // Hinweise: - Zuordnung erfolgt gemäß Tabelle 0 = Kein Hinderungsgrund vorliegend  1 = Kein gültiger Schlüssel 
+        // 5 = Bremse nicht gedrückt  6 = Bremse unplausibel 7 = Kupplung nicht gedrückt  8 = Kupplung unplausibel  9 =
+        // Abbruch DME/DDE (Motorlauf erkannt/Kein Motorstart erlaubt über CAN) 10 = Kraftschluss erkannt (P oder N nicht
+        // eingelegt) 13 = Montagmodus KL50  14 = ELV verriegelt  
 
 #define I3_PID_BDC_BUS_IN_DATUM_ZEIT                                 0xDABB
         // The job is used to read out the current time stamp (date and time) received by the combi. Notes: The job is
         // called via the standard job STATUS_LESEN with argument BUS_IN_DATUM_ZEIT - If a message is not received within
         // the expected time (timeout), the status invalid / no signal is returned in the corresponding results. - The
         // data come from the CAN message UHRZEIT_DATUM and RELATIVZEIT / Der Job dient zum Auslesen des aktuellen vom
-        // Kombi empfangenen Zeitstempels (Datum und Zeit). Hinweise:  Aufruf des Jobs erfolgt Ã¼ber Standardjob
+        // Kombi empfangenen Zeitstempels (Datum und Zeit). Hinweise:  Aufruf des Jobs erfolgt über Standardjob
         // STATUS_LESEN mit Argument BUS_IN_DATUM_ZEIT - Wird eine Botschaft innerhalb der erwarteten Zeit nicht
-        // empfangen (timeout), so wird der Status ungÃ¼ltig/kein Signal in den entsprechenden Results zurÃ¼ckgegeben. -
+        // empfangen (timeout), so wird der Status ungültig/kein Signal in den entsprechenden Results zurückgegeben. -
         // Die Daten stammen aus CAN-Nachricht UHRZEIT_DATUM und RELATIVZEIT
 
     #define I3_RES_BDC_STAT_BUS_IN_ZEIT_STUNDEN_WERT                 (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_BUS_IN_ZEIT_STUNDEN_WERT_TYPE            unsigned char
         // Hours: 0-23; 253 corresponds to -; 254 No answer; 255 signal invalid / Stunden: 0 - 23; 253 entspricht --; 254
-        // Keine Angabe; 255 Signal ungÃ¼ltig
+        // Keine Angabe; 255 Signal ungültig
 
     #define I3_RES_BDC_STAT_BUS_IN_ZEIT_MINUTEN_WERT                 (RXBUF_UCHAR(1))
     #define I3_RES_BDC_STAT_BUS_IN_ZEIT_MINUTEN_WERT_TYPE            unsigned char
         // Minutes: 0 - 59; 253 corresponds to -; 254 No answer; 255 signal invalid / Minuten: 0 - 59; 253 entspricht --;
-        // 254 Keine Angabe; 255 Signal ungÃ¼ltig
+        // 254 Keine Angabe; 255 Signal ungültig
 
     #define I3_RES_BDC_STAT_BUS_IN_DATUM_TAG_WERT                    (RXBUF_UCHAR(2))
     #define I3_RES_BDC_STAT_BUS_IN_DATUM_TAG_WERT_TYPE               unsigned char
-        // Day: 0 - 31; 255 signal invalid / Tag: 0 - 31; 255 Signal ungÃ¼ltig
+        // Day: 0 - 31; 255 signal invalid / Tag: 0 - 31; 255 Signal ungültig
 
     #define I3_RES_BDC_STAT_BUS_IN_DATUM_MONAT_WERT                  (RXBUF_UCHAR(3))
     #define I3_RES_BDC_STAT_BUS_IN_DATUM_MONAT_WERT_TYPE             unsigned char
-        // Month: 1 - 12; 255 signal invalid / Monat: 1 - 12; 255 Signal ungÃ¼ltig
+        // Month: 1 - 12; 255 signal invalid / Monat: 1 - 12; 255 Signal ungültig
 
     #define I3_RES_BDC_STAT_BUS_IN_DATUM_JAHR_WERT                   (RXBUF_UINT(4))
     #define I3_RES_BDC_STAT_BUS_IN_DATUM_JAHR_WERT_TYPE              unsigned short
-        // Year: 2000 - 9999; 65535 Signal invalid / Jahr: 2000 - 9999; 65535 Signal ungÃ¼ltig
+        // Year: 2000 - 9999; 65535 Signal invalid / Jahr: 2000 - 9999; 65535 Signal ungültig
 
     #define I3_RES_BDC_STAT_BUS_IN_ZEIT_RELATIV_WERT                 (RXBUF_UINT32(6))
     #define I3_RES_BDC_STAT_BUS_IN_ZEIT_RELATIV_WERT_UNIT            's'
     #define I3_RES_BDC_STAT_BUS_IN_ZEIT_RELATIV_WERT_TYPE            unsigned long
         // Current relative time in seconds since 01/01/2000, seconds: 0 - 4.2 billion, 4294967295 invalid / Aktuelle
-        // Relative Zeit in Sekunden seit 01.01.2000, Sekunden: 0 - 4,2 Millarden, 4294967295 ungÃ¼ltig
+        // Relative Zeit in Sekunden seit 01.01.2000, Sekunden: 0 - 4,2 Millarden, 4294967295 ungültig
 
     #define I3_RES_BDC_STAT_BUS_IN_ZEIT_TAGE_RELATIV_WERT            (RXBUF_UINT(10))
     #define I3_RES_BDC_STAT_BUS_IN_ZEIT_TAGE_RELATIV_WERT_UNIT       'd'
     #define I3_RES_BDC_STAT_BUS_IN_ZEIT_TAGE_RELATIV_WERT_TYPE       unsigned short
         // Current relative time in days since 01.01.2000; Days: 1 corresponds to 01/01/2000, 65535 corresponds to
         // invalid. / Aktuelle Relative Zeit in Tagen seit 01.01.2000; Tage: 1 entspricht 01.01.2000, 65535 entspricht
-        // ungÃ¼ltig.
+        // ungültig.
 
 #define I3_PID_BDC_BUS_IN_DME1                                       0xDABC
         // The job is used to read out the values received via CAN from the engine management system (DME). Notes: The
         // job is called using the standard job STATUS_LESEN with argument BUS_IN_DME1. If a message is not received
         // within the expected time (timeout), the status invalid / no signal is returned. The data come from the CAN
         // messages data drive train 2 (DT_PT_2) and torque crankshaft 1 (TORQ_CRSH_1) / Der Job dient zum Auslesen der
-        // Ã¼ber CAN empfangenen Werte von der Motorsteuerung (DME). Hinweise:  Aufruf des Jobs erfolgt Ã¼ber Standardjob
+        // über CAN empfangenen Werte von der Motorsteuerung (DME). Hinweise:  Aufruf des Jobs erfolgt über Standardjob
         // STATUS_LESEN mit Argument BUS_IN_DME1. Wird eine Botschaft innerhalb der erwarteten Zeit nicht empfangen
-        // (timeout), so wird der Status ungÃ¼ltig/kein Signal zurÃ¼ckgegeben. Die Daten stammen aus den CAN-Nachrichten
+        // (timeout), so wird der Status ungültig/kein Signal zurückgegeben. Die Daten stammen aus den CAN-Nachrichten
         // Daten Antriebsstrang 2 (DT_PT_2) und Drehmoment Kurbelwelle 1 (TORQ_CRSH_1)
 
     #define I3_RES_BDC_STAT_BUS_IN_GANG                              (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_BUS_IN_GANG_UNIT                         '0-n'
     #define I3_RES_BDC_STAT_BUS_IN_GANG_TYPE                         unsigned char
         // The result contains the current value for the gear (received via CAN). Notes: - The value is determined from
-        // the CAN signal ST_GRSEL_DRV. - Allocation takes place according to table TAB_CAS_GANG. / Das Result enthÃ¤lt
-        // den aktuellen Wert fÃ¼r den Gang (Ã¼ber CAN empfangen). Hinweise:  - Der Wert wird aus CAN-Signal ST_GRSEL_DRV
-        // ermittelt. - Zuordnung erfolgt gemÃ¤Ã Tabelle TAB_CAS_GANG.
+        // the CAN signal ST_GRSEL_DRV. - Allocation takes place according to table TAB_CAS_GANG. / Das Result enthält
+        // den aktuellen Wert für den Gang (über CAN empfangen). Hinweise:  - Der Wert wird aus CAN-Signal ST_GRSEL_DRV
+        // ermittelt. - Zuordnung erfolgt gemäß Tabelle TAB_CAS_GANG.
 
     #define I3_RES_BDC_STAT_BUS_IN_MOTOR_LAEUFT                      (RXBUF_UCHAR(1))
     #define I3_RES_BDC_STAT_BUS_IN_MOTOR_LAEUFT_UNIT                 '0-n'
     #define I3_RES_BDC_STAT_BUS_IN_MOTOR_LAEUFT_TYPE                 unsigned char
         // The result contains the current value (received via CAN) for engine running. Notes: - The value is determined
         // from bit 0 & 1 of the CAN signal ST_DRV_VEH. - Allocation takes place according to table TAB_CAS_MOTOR_STATUS
-        // / Das Result enthÃ¤lt den aktuellen Wert (Ã¼ber CAN empfangen) fÃ¼r Motor lÃ¤uft. Hinweise: - Der Wert wird
-        // ermittelt aus Bit 0 & 1 des CAN-Signals ST_DRV_VEH. - Zuordnung erfolgt gemÃ¤Ã Tabelle TAB_CAS_MOTOR_STATUS
+        // / Das Result enthält den aktuellen Wert (über CAN empfangen) für Motor läuft. Hinweise: - Der Wert wird
+        // ermittelt aus Bit 0 & 1 des CAN-Signals ST_DRV_VEH. - Zuordnung erfolgt gemäß Tabelle TAB_CAS_MOTOR_STATUS
 
     #define I3_RES_BDC_STAT_BUS_IN_MOTOR_FREIGABE                    (RXBUF_UCHAR(2))
     #define I3_RES_BDC_STAT_BUS_IN_MOTOR_FREIGABE_UNIT               '0-n'
     #define I3_RES_BDC_STAT_BUS_IN_MOTOR_FREIGABE_TYPE               unsigned char
         // The result contains the current value (received via CAN) for the motor enable. Note: - The value is determined
         // from the CAN signal RLS_ENGSTA. - Allocation takes place according to table TAB_CAS_MOTORSTART_FREIGABE / Das
-        // Result enthÃ¤lt den aktuellen Wert (Ã¼ber CAN empfangen) fÃ¼r die Motor Freigabe. Hinweis: - Der Wert wird
-        // ermittelt aus CAN-Signal RLS_ENGSTA. - Zuordnung erfolgt gemÃ¤Ã Tabelle TAB_CAS_MOTORSTART_FREIGABE
+        // Result enthält den aktuellen Wert (über CAN empfangen) für die Motor Freigabe. Hinweis: - Der Wert wird
+        // ermittelt aus CAN-Signal RLS_ENGSTA. - Zuordnung erfolgt gemäß Tabelle TAB_CAS_MOTORSTART_FREIGABE
 
     #define I3_RES_BDC_STAT_BUS_IN_ANLASSER_SPERRE                   (RXBUF_UCHAR(3))
     #define I3_RES_BDC_STAT_BUS_IN_ANLASSER_SPERRE_UNIT              '0-n'
     #define I3_RES_BDC_STAT_BUS_IN_ANLASSER_SPERRE_TYPE              unsigned char
         // The result contains the current value (received via CAN) for the starter lock. Note: - The value is determined
         // from the CAN signal ST_ILK_STRT_DRV. - Allocation takes place according to table TAB_CAS_MOTOR_ANLASSERSPERRE
-        // / Das Result enthÃ¤lt den aktuellen Wert (Ã¼ber CAN empfangen) fÃ¼r die Anlassersperre. Hinweis: - Der Wert
-        // wird ermittelt aus CAN-Signal ST_ILK_STRT_DRV. - Zuordnung erfolgt gemÃ¤Ã Tabelle
-        // TAB_CAS_MOTOR_ANLASSERSPERRE
+        // / Das Result enthält den aktuellen Wert (über CAN empfangen) für die Anlassersperre. Hinweis: - Der Wert wird
+        // ermittelt aus CAN-Signal ST_ILK_STRT_DRV. - Zuordnung erfolgt gemäß Tabelle TAB_CAS_MOTOR_ANLASSERSPERRE
 
     #define I3_RES_BDC_STAT_BUS_IN_KUPPLUNG                          (RXBUF_UCHAR(4))
     #define I3_RES_BDC_STAT_BUS_IN_KUPPLUNG_UNIT                     '0-n'
     #define I3_RES_BDC_STAT_BUS_IN_KUPPLUNG_TYPE                     unsigned char
         // The result contains the current value (received via CAN) for the clutch. Notes: - The value is determined from
         // the CAN signal ST_SW_CLT_DRV. - Allocation takes place according to table TAB_CAS_DIGITAL_EINGANG. Only the
-        // values 0, 1 and 255 are returned. / Das Result enthÃ¤lt den aktuellen Wert (Ã¼ber CAN empfangen) fÃ¼r die
-        // Kupplung. Hinweise: - Der Wert wird ermittelt aus CAN-Signal ST_SW_CLT_DRV. - Zuordnung erfolgt gemÃ¤Ã
-        // Tabelle TAB_CAS_DIGITAL_EINGANG. Nur die Werte 0, 1 und 255 werden zurÃ¼ckgeliefert.
+        // values 0, 1 and 255 are returned. / Das Result enthält den aktuellen Wert (über CAN empfangen) für die
+        // Kupplung. Hinweise: - Der Wert wird ermittelt aus CAN-Signal ST_SW_CLT_DRV. - Zuordnung erfolgt gemäß Tabelle
+        // TAB_CAS_DIGITAL_EINGANG. Nur die Werte 0, 1 und 255 werden zurückgeliefert.
 
     #define I3_RES_BDC_STAT_BUS_IN_DREHZAHL_WERT                     (RXBUF_UINT(5)/4.0f)
     #define I3_RES_BDC_STAT_BUS_IN_DREHZAHL_WERT_UNIT                '1/min'
     #define I3_RES_BDC_STAT_BUS_IN_DREHZAHL_WERT_TYPE                float
         // The result contains the current value (received via CAN) for the speed. Notes: - The value is determined from
         // the CAN signal AVL_RPM_ENG_CRSH. - The SGBD divides the value from the telegram by 4, since the
-        // AVL_RPM_ENG_CRSH signal is accurate to a quarter of a turn. / Das Result enthÃ¤lt den aktuellen Wert (Ã¼ber
-        // CAN empfangen) fÃ¼r die Drehzahl. Hinweise: - Der Wert wird ermittelt aus CAN-Signal AVL_RPM_ENG_CRSH. - Der
-        // Wert aus dem Telegramm wird von der SGBD durch 4 geteilt, da das Signal AVL_RPM_ENG_CRSH
-        // Viertel-Umdrehungs-genau ist.
+        // AVL_RPM_ENG_CRSH signal is accurate to a quarter of a turn. / Das Result enthält den aktuellen Wert (über CAN
+        // empfangen) für die Drehzahl. Hinweise: - Der Wert wird ermittelt aus CAN-Signal AVL_RPM_ENG_CRSH. - Der Wert
+        // aus dem Telegramm wird von der SGBD durch 4 geteilt, da das Signal AVL_RPM_ENG_CRSH Viertel-Umdrehungs-genau
+        // ist.
 
 #define I3_PID_BDC_BUS_IN_DSC                                        0xDABD
         // The job is used to read out the values received via CAN from the digital stability control (DSC). Notes: The
         // job is called using the standard job STATUS_LESEN with the argument BUS_IN_DSC. If a message is not received
         // within the expected time (timeout), the status invalid / no signal is returned. The data come from CAN
         // messages, status stabilization DSC (ST_STAB_DSC) and vehicle speed (V_VEH) / Der Job dient zum Auslesen der
-        // Ã¼ber CAN empfangenen Werte von der Digitalen StabilitÃ¤tskontrolle (DSC). Hinweise:  Aufruf des Jobs erfolgt
-        // Ã¼ber Standardjob STATUS_LESEN mit Argument BUS_IN_DSC. Wird eine Botschaft innerhalb der erwarteten Zeit
-        // nicht empfangen (timeout), so wird der Status ungÃ¼ltig/kein Signal zurÃ¼ckgegeben. Die Daten stammen aus
+        // über CAN empfangenen Werte von der Digitalen Stabilitätskontrolle (DSC). Hinweise:  Aufruf des Jobs erfolgt
+        // über Standardjob STATUS_LESEN mit Argument BUS_IN_DSC. Wird eine Botschaft innerhalb der erwarteten Zeit nicht
+        // empfangen (timeout), so wird der Status ungültig/kein Signal zurückgegeben. Die Daten stammen aus
         // CAN-Nachrichten Status Stabilisierung DSC (ST_STAB_DSC) und Geschwindigkeit Fahrzeug (V_VEH)
 
     #define I3_RES_BDC_STAT_BUS_IN_GESCHW_WERT                       (RXBUF_UINT(0)/64.0f)
@@ -5476,17 +5463,17 @@
     #define I3_RES_BDC_STAT_BUS_IN_GESCHW_WERT_TYPE                  float
         // The result contains the current value (received via CAN) for the speed. Notes: - The value is determined from
         // the signal V_VEH_COG. - Value range 0-350, Invalid 1023 - The raw value is divided by 64 by the SGBD, since
-        // the V_VEH_COG signal is accurate to 64. / Das Result enthÃ¤lt den aktuellen Wert (Ã¼ber CAN empfangen) fÃ¼r
-        // die Geschwindigkeit. Hinweise: - Der Wert wird ermittelt aus dem Signal V_VEH_COG. - Wertebereich 0-350,
-        // UngÃ¼ltig 1023 - Der Rohwert wird von der SGBD durch 64 geteilt, da das Signal V_VEH_COG 64-tel-genau ist.
+        // the V_VEH_COG signal is accurate to 64. / Das Result enthält den aktuellen Wert (über CAN empfangen) für die
+        // Geschwindigkeit. Hinweise: - Der Wert wird ermittelt aus dem Signal V_VEH_COG. - Wertebereich 0-350, Ungültig
+        // 1023 - Der Rohwert wird von der SGBD durch 64 geteilt, da das Signal V_VEH_COG 64-tel-genau ist.
 
     #define I3_RES_BDC_STAT_BUS_IN_GESCHW_STATUS                     (RXBUF_UCHAR(2))
     #define I3_RES_BDC_STAT_BUS_IN_GESCHW_STATUS_UNIT                '0-n'
     #define I3_RES_BDC_STAT_BUS_IN_GESCHW_STATUS_TYPE                unsigned char
         // The result contains the current value (received via CAN) for the speed as status. Notes: - Allocation takes
         // place according to table TAB_CAS_GESCHW_STATUS - The value is determined from the signal DVCO_VEH. / Das
-        // Result enthÃ¤lt den aktuellen Wert (Ã¼ber CAN empfangen) fÃ¼r die Geschwindigkeit als Status Hinweise: -
-        // Zuordnung erfolgt gemÃ¤Ã Tabelle TAB_CAS_GESCHW_STATUS - Der Wert wird ermittelt aus dem Signal DVCO_VEH.
+        // Result enthält den aktuellen Wert (über CAN empfangen) für die Geschwindigkeit als Status Hinweise: -
+        // Zuordnung erfolgt gemäß Tabelle TAB_CAS_GESCHW_STATUS - Der Wert wird ermittelt aus dem Signal DVCO_VEH.
 
     #define I3_RES_BDC_STAT_BUS_IN_BREMSPEDAL                        (RXBUF_UCHAR(3))
     #define I3_RES_BDC_STAT_BUS_IN_BREMSPEDAL_UNIT                   '0-n'
@@ -5494,21 +5481,21 @@
         // The result contains the current value (received via CAN) for the position of the brake pedal. Notes: - CAN
         // signal Status_Bremsung_Fahrer (ST_BRG_DV), evaluation of the bit coding Activation_Bremssystem_Fahrer + total
         // signal invalid must take place in the CAS. - Allocation takes place according to table TAB_CAS_DIGITAL_EINGANG
-        // / Das Result enthÃ¤lt den aktuellen Wert (Ã¼ber CAN empfangen) fÃ¼r die Stellung des Bremspedals. Hinweise: -
-        // CAN-Signal Status_Bremsung_Fahrer (ST_BRG_DV), Auswertung der Bit-Kodierung BetÃ¤tigung_Bremssystem_Fahrer +
-        // Gesamtsignal ungÃ¼ltig muss im CAS erfolgen. - Zuordnung erfolgt gemÃ¤Ã Tabelle TAB_CAS_DIGITAL_EINGANG
+        // / Das Result enthält den aktuellen Wert (über CAN empfangen) für die Stellung des Bremspedals. Hinweise: -
+        // CAN-Signal Status_Bremsung_Fahrer (ST_BRG_DV), Auswertung der Bit-Kodierung Betätigung_Bremssystem_Fahrer +
+        // Gesamtsignal ungültig muss im CAS erfolgen. - Zuordnung erfolgt gemäß Tabelle TAB_CAS_DIGITAL_EINGANG
 
 // Skipping STEUERN_HISTORIE_30F_ABSCHALTUNG on 0xDABE which takes arguments
 
 #define I3_PID_BDC_BUS_IN_FH                                         0xDABF
         // The job is used to read out the values received via CAN for the status of the individual window lifters (FT,
-        // BFT, FTH, BFTH for each door). Notes: The job is called using the standard job STATUS_LESEN with argument
+        // BFT, FTH, BFTH per door). Notes: The job is called using the standard job STATUS_LESEN with the argument
         // BUS_IN_FH. - If a message is not received within the expected time (timeout), the status invalid / no signal
         // is returned. - The data comes from the CAN messages POSITION_FH_BFT, POSITION_FH_BFTH, POSITION_FH_FAT and
-        // POSITION_FH_FATH / Der Job dient zum Auslesen der Ã¼ber CAN empfangenen Werte fÃ¼r den Status der einzelnen
-        // Fensterheber (je TÃ¼r FT,BFT,FTH,BFTH). Hinweise:  Aufruf des Jobs erfolgt Ã¼ber Standardjob STATUS_LESEN mit
+        // POSITION_FH_FATH / Der Job dient zum Auslesen der über CAN empfangenen Werte für den Status der einzelnen
+        // Fensterheber (je Tür FT,BFT,FTH,BFTH). Hinweise:  Aufruf des Jobs erfolgt über Standardjob STATUS_LESEN mit
         // Argument BUS_IN_FH. - Wird eine Botschaft innerhalb der erwarteten Zeit nicht empfangen (timeout), so wird der
-        // Status ungÃ¼ltig/kein Signal zurÃ¼ckgegeben. - Die Daten stammen aus CAN-Nachricht POSITION_FH_BFT,
+        // Status ungültig/kein Signal zurückgegeben. - Die Daten stammen aus CAN-Nachricht POSITION_FH_BFT,
         // POSITION_FH_BFTH, POSITION_FH_FAT und POSITION_FH_FATH
 
     #define I3_RES_BDC_STAT_BUS_IN_FH_FT                             (RXBUF_UCHAR(0))
@@ -5516,7 +5503,7 @@
     #define I3_RES_BDC_STAT_BUS_IN_FH_FT_TYPE                        unsigned char
         // CAN signal for the driver's door window regulator status. Notes: - The content comes from the CAN signal
         // ST_PO_WRG_DRD. - Allocation takes place according to table TAB_CAS_FH_STATUS. / CAN-Signal Status Fensterheber
-        // FahrertÃ¼r. Hinweise:  - Inhalt stammt aus CAN-Signal ST_PO_WRG_DRD. - Zuordnung erfolgt gemÃ¤Ã Tabelle
+        // Fahrertür. Hinweise:  - Inhalt stammt aus CAN-Signal ST_PO_WRG_DRD. - Zuordnung erfolgt gemäß Tabelle
         // TAB_CAS_FH_STATUS.
 
     #define I3_RES_BDC_STAT_BUS_IN_FH_BFT                            (RXBUF_UCHAR(1))
@@ -5524,7 +5511,7 @@
     #define I3_RES_BDC_STAT_BUS_IN_FH_BFT_TYPE                       unsigned char
         // CAN signal for the status of the passenger door window regulator. Notes: - Content from the CAN signal
         // ST_PO_WRG_PSD. - Allocation takes place according to table TAB_CAS_FH_STATUS. / CAN-Signal Status Fensterheber
-        // BeifahrertÃ¼r. Hinweise:  - Inhalt aus dem CAN-Signal ST_PO_WRG_PSD. - Zuordnung erfolgt gemÃ¤Ã Tabelle
+        // Beifahrertür. Hinweise:  - Inhalt aus dem CAN-Signal ST_PO_WRG_PSD. - Zuordnung erfolgt gemäß Tabelle
         // TAB_CAS_FH_STATUS.
 
     #define I3_RES_BDC_STAT_BUS_IN_FH_FTH                            (RXBUF_UCHAR(2))
@@ -5532,16 +5519,16 @@
     #define I3_RES_BDC_STAT_BUS_IN_FH_FTH_TYPE                       unsigned char
         // CAN signal for the status of the rear window regulator in the driver's door. Notes: - Content from the CAN
         // signal ST_PO_WRG_DVDR. - Allocation takes place according to table TAB_CAS_FH_STATUS. / CAN-Signal Status
-        // Fensterheber FahrertÃ¼r hinten. Hinweise:  - Inhalt aus dem CAN-Signal ST_PO_WRG_DVDR. - Zuordnung erfolgt
-        // gemÃ¤Ã Tabelle TAB_CAS_FH_STATUS.
+        // Fensterheber Fahrertür hinten. Hinweise:  - Inhalt aus dem CAN-Signal ST_PO_WRG_DVDR. - Zuordnung erfolgt
+        // gemäß Tabelle TAB_CAS_FH_STATUS.
 
     #define I3_RES_BDC_STAT_BUS_IN_FH_BFTH                           (RXBUF_UCHAR(3))
     #define I3_RES_BDC_STAT_BUS_IN_FH_BFTH_UNIT                      '0-n'
     #define I3_RES_BDC_STAT_BUS_IN_FH_BFTH_TYPE                      unsigned char
         // CAN signal for the status of the window lifter, rear passenger door. Notes: - Content from the CAN signal
         // ST_PO_WRG_PSDR. - Allocation takes place according to table TAB_CAS_FH_STATUS. / CAN-Signal Status
-        // Fensterheber BeifahrertÃ¼r hinten. Hinweise: - Inhalt aus dem CAN-Signal ST_PO_WRG_PSDR. - Zuordnung erfolgt
-        // gemÃ¤Ã Tabelle TAB_CAS_FH_STATUS.
+        // Fensterheber Beifahrertür hinten. Hinweise: - Inhalt aus dem CAN-Signal ST_PO_WRG_PSDR. - Zuordnung erfolgt
+        // gemäß Tabelle TAB_CAS_FH_STATUS.
 
 // Skipping STEUERN_HISTORIE_KL30B_AKTIV on 0xDAC0 which takes arguments
 
@@ -5550,64 +5537,64 @@
 #define I3_PID_BDC_CA_TAGE_STATUS                                    0xDACA
         // Reading out the respective sensor status of the outside door handle electronics (TAGE) in the doors FT, BFT,
         // FTH, BFTH. Notes: - The job is called via the standard job STATUS_LESEN with the argument CA_TAGE_STATUS /
-        // Auslesen des jeweiligen Sensorstatus der TÃ¼r-Aussengriff-Elektroniken (TAGE) in den TÃ¼ren FT, BFT, FTH,
-        // BFTH. Hinweise:  - Aufruf des Jobs erfolgt Ã¼ber Standardjob STATUS_LESEN mit Argument CA_TAGE_STATUS
+        // Auslesen des jeweiligen Sensorstatus der Tür-Aussengriff-Elektroniken (TAGE) in den Türen FT, BFT, FTH, BFTH.
+        // Hinweise:  - Aufruf des Jobs erfolgt über Standardjob STATUS_LESEN mit Argument CA_TAGE_STATUS
 
     #define I3_RES_BDC_STAT_TAGE_FT                                  (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_TAGE_FT_UNIT                             '0-n'
     #define I3_RES_BDC_STAT_TAGE_FT_TYPE                             unsigned char
         // The result contains the status of the CA button or the TAGE driver's door. Notes: - The assignment is made via
-        // table TAB_CAS_CA_TAGE_STATUS / Das Result enthÃ¤lt den Status des CA-Tasters oder der TAGE FahrertÃ¼re..
-        // Hinweise: - Die Zuordnung erfolgt Ã¼ber Tabelle TAB_CAS_CA_TAGE_STATUS
+        // table TAB_CAS_CA_TAGE_STATUS / Das Result enthält den Status des CA-Tasters oder der TAGE Fahrertüre..
+        // Hinweise: - Die Zuordnung erfolgt über Tabelle TAB_CAS_CA_TAGE_STATUS
 
     #define I3_RES_BDC_STAT_TAGE_BFT                                 (RXBUF_UCHAR(1))
     #define I3_RES_BDC_STAT_TAGE_BFT_UNIT                            '0-n'
     #define I3_RES_BDC_STAT_TAGE_BFT_TYPE                            unsigned char
         // The result contains the status of the CA button or the TAGE passenger door. Notes: - The assignment is made
-        // via table TAB_CAS_CA_TAGE_STATUS / Das Result enthÃ¤lt den Status des CA-Tasters oder der TAGE
-        // BeifahrertÃ¼re.. Hinweise: - Die Zuordnung erfolgt Ã¼ber Tabelle TAB_CAS_CA_TAGE_STATUS
+        // via table TAB_CAS_CA_TAGE_STATUS / Das Result enthält den Status des CA-Tasters oder der TAGE Beifahrertüre..
+        // Hinweise: - Die Zuordnung erfolgt über Tabelle TAB_CAS_CA_TAGE_STATUS
 
     #define I3_RES_BDC_STAT_TAGE_FTH                                 (RXBUF_UCHAR(2))
     #define I3_RES_BDC_STAT_TAGE_FTH_UNIT                            '0-n'
     #define I3_RES_BDC_STAT_TAGE_FTH_TYPE                            unsigned char
         // The result contains the status of the CA button or the TAGE back door on the driver's side. Notes: - The
-        // assignment is made via table TAB_CAS_CA_TAGE_STATUS / Das Result enthÃ¤lt den Status des CA-Tasters oder der
-        // TAGE HintertÃ¼re Fahrerseite.. Hinweise: - Die Zuordnung erfolgt Ã¼ber Tabelle TAB_CAS_CA_TAGE_STATUS
+        // assignment is made via table TAB_CAS_CA_TAGE_STATUS / Das Result enthält den Status des CA-Tasters oder der
+        // TAGE Hintertüre Fahrerseite.. Hinweise: - Die Zuordnung erfolgt über Tabelle TAB_CAS_CA_TAGE_STATUS
 
     #define I3_RES_BDC_STAT_TAGE_BFTH                                (RXBUF_UCHAR(3))
     #define I3_RES_BDC_STAT_TAGE_BFTH_UNIT                           '0-n'
     #define I3_RES_BDC_STAT_TAGE_BFTH_TYPE                           unsigned char
         // The result contains the status of the CA button or the TAGE back door on the passenger side. Notes: - The
-        // assignment is made via table TAB_CAS_CA_TAGE_STATUS / Das Result enthÃ¤lt den Status des CA-Tasters oder der
-        // TAGE HintertÃ¼re Beifahrerseite. Hinweise: - Die Zuordnung erfolgt Ã¼ber Tabelle TAB_CAS_CA_TAGE_STATUS
+        // assignment is made via table TAB_CAS_CA_TAGE_STATUS / Das Result enthält den Status des CA-Tasters oder der
+        // TAGE Hintertüre Beifahrerseite. Hinweise: - Die Zuordnung erfolgt über Tabelle TAB_CAS_CA_TAGE_STATUS
 
 #define I3_PID_BDC_SPANNUNG_KLEMME_30L1                              0xDAD6
-        // Voltage value at the control unit at terminal 30L (exactly to one decimal place) Notes: - The SGBD divides the
-        // value supplied by the control unit by 10 (one decimal place). / Spannungswert am SteuergerÃ¤t an Klemme 30L
-        // (auf eine Nachkommastelle genau) Hinweise: - Der vom SteuergerÃ¤t gelieferte Wert wird von der SGBD durch 10
-        // geteilt (eine Nachkommastelle).
+        // Voltage value at the control unit at terminal 30L (to one decimal place) Notes: - The SGBD divides the value
+        // supplied by the control unit by 10 (one decimal place). / Spannungswert am Steuergerät an Klemme 30L (auf eine
+        // Nachkommastelle genau) Hinweise: - Der vom Steuergerät gelieferte Wert wird von der SGBD durch 10 geteilt
+        // (eine Nachkommastelle).
 
     #define I3_RES_BDC_STAT_SPANNUNG_KLEMME_30L1_WERT                (RXBUF_SINT(0)/10.0f)
     #define I3_RES_BDC_STAT_SPANNUNG_KLEMME_30L1_WERT_UNIT           'V'
     #define I3_RES_BDC_STAT_SPANNUNG_KLEMME_30L1_WERT_TYPE           float
-        // Voltage value at the control unit at terminal 30L (exactly to one decimal place) Notes: - The SGBD divides the
-        // value supplied by the control unit by 10 (one decimal place). / Spannungswert am SteuergerÃ¤t an Klemme 30L
-        // (auf eine Nachkommastelle genau) Hinweise: - Der vom SteuergerÃ¤t gelieferte Wert wird von der SGBD durch 10
-        // geteilt (eine Nachkommastelle).
+        // Voltage value at the control unit at terminal 30L (to one decimal place) Notes: - The SGBD divides the value
+        // supplied by the control unit by 10 (one decimal place). / Spannungswert am Steuergerät an Klemme 30L (auf eine
+        // Nachkommastelle genau) Hinweise: - Der vom Steuergerät gelieferte Wert wird von der SGBD durch 10 geteilt
+        // (eine Nachkommastelle).
 
 #define I3_PID_BDC_SPANNUNG_KLEMME_30L2                              0xDAD7
-        // Voltage value at the control unit at terminal 30L (exactly to one decimal place) Notes: - The SGBD divides the
-        // value supplied by the control unit by 10 (one decimal place). / Spannungswert am SteuergerÃ¤t an Klemme 30L
-        // (auf eine Nachkommastelle genau) Hinweise: - Der vom SteuergerÃ¤t gelieferte Wert wird von der SGBD durch 10
-        // geteilt (eine Nachkommastelle).
+        // Voltage value at the control unit at terminal 30L (to one decimal place) Notes: - The SGBD divides the value
+        // supplied by the control unit by 10 (one decimal place). / Spannungswert am Steuergerät an Klemme 30L (auf eine
+        // Nachkommastelle genau) Hinweise: - Der vom Steuergerät gelieferte Wert wird von der SGBD durch 10 geteilt
+        // (eine Nachkommastelle).
 
     #define I3_RES_BDC_STAT_SPANNUNG_KLEMME_30L2_WERT                (RXBUF_SINT(0)/10.0f)
     #define I3_RES_BDC_STAT_SPANNUNG_KLEMME_30L2_WERT_UNIT           'V'
     #define I3_RES_BDC_STAT_SPANNUNG_KLEMME_30L2_WERT_TYPE           float
-        // Voltage value at the control unit at terminal 30L (exactly to one decimal place) Notes: - The SGBD divides the
-        // value supplied by the control unit by 10 (one decimal place). / Spannungswert am SteuergerÃ¤t an Klemme 30L
-        // (auf eine Nachkommastelle genau) Hinweise: - Der vom SteuergerÃ¤t gelieferte Wert wird von der SGBD durch 10
-        // geteilt (eine Nachkommastelle).
+        // Voltage value at the control unit at terminal 30L (to one decimal place) Notes: - The SGBD divides the value
+        // supplied by the control unit by 10 (one decimal place). / Spannungswert am Steuergerät an Klemme 30L (auf eine
+        // Nachkommastelle genau) Hinweise: - Der vom Steuergerät gelieferte Wert wird von der SGBD durch 10 geteilt
+        // (eine Nachkommastelle).
 
 #define I3_PID_BDC_KLEMMENSTEUERUNG_KURZSCHLUSSABSCHALTUNG           0xDB12
         // This job is used to read out the status of the permanent short-circuit shutdown of the HW drivers KL30B /
@@ -5615,39 +5602,39 @@
         // - The job is called via the standard job STATUS_LESEN with the argument
         // KLEMMENSTEUERUNG_KURZSCHLUSSABSCHALTUNG - For details on the short-circuit shutdown process, see ZSG_BF_13070
         // / Dieser Job dient zum Auslesen des Status der dauerhaften Kurzschlussabschaltung der HW-Treiber KL30B/KL15N
-        // und KL30B-ACSM. Die Kurzschlussabschaltung dient zum Ãberlastschutz der HW-Treiber.  Hinweise: - Aufruf des
-        // Jobs erfolgt Ã¼ber Standardjob STATUS_LESEN mit Argument KLEMMENSTEUERUNG_KURZSCHLUSSABSCHALTUNG - Details zum
+        // und KL30B-ACSM. Die Kurzschlussabschaltung dient zum Überlastschutz der HW-Treiber.  Hinweise: - Aufruf des
+        // Jobs erfolgt über Standardjob STATUS_LESEN mit Argument KLEMMENSTEUERUNG_KURZSCHLUSSABSCHALTUNG - Details zum
         // Ablauf der Kurzschlussabschaltung siehe ZSG_BF_13070
 
     #define I3_RES_BDC_STAT_KURZSCHLUSSABSCHALTUNG_TREIBER_15N1_AKTIV (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_KURZSCHLUSSABSCHALTUNG_TREIBER_15N1_AKTIV_UNIT '0-n'
     #define I3_RES_BDC_STAT_KURZSCHLUSSABSCHALTUNG_TREIBER_15N1_AKTIV_TYPE unsigned char
         // The result contains the activation status of the short-circuit shutdown of the HW driver KL15N1. / Das Result
-        // enthÃ¤lt den Aktivierungsstatus der Kurzschlussabschaltung des HW-Treiber KL15N1.
+        // enthält den Aktivierungsstatus der Kurzschlussabschaltung des HW-Treiber KL15N1.
 
     #define I3_RES_BDC_STAT_KURZSCHLUSSABSCHALTUNG_TREIBER_15N2_AKTIV (RXBUF_UCHAR(1))
     #define I3_RES_BDC_STAT_KURZSCHLUSSABSCHALTUNG_TREIBER_15N2_AKTIV_UNIT '0-n'
     #define I3_RES_BDC_STAT_KURZSCHLUSSABSCHALTUNG_TREIBER_15N2_AKTIV_TYPE unsigned char
         // The result contains the activation status of the short-circuit shutdown of the HW driver KL15N2. / Das Result
-        // enthÃ¤lt den Aktivierungsstatus der Kurzschlussabschaltung des HW-Treiber KL15N2.
+        // enthält den Aktivierungsstatus der Kurzschlussabschaltung des HW-Treiber KL15N2.
 
     #define I3_RES_BDC_STAT_KURZSCHLUSSABSCHALTUNG_TREIBER_KL30BACSM_AKTIV (RXBUF_UCHAR(2))
     #define I3_RES_BDC_STAT_KURZSCHLUSSABSCHALTUNG_TREIBER_KL30BACSM_AKTIV_UNIT '0-n'
     #define I3_RES_BDC_STAT_KURZSCHLUSSABSCHALTUNG_TREIBER_KL30BACSM_AKTIV_TYPE unsigned char
         // The result contains the activation status of the short-circuit shutdown of the HW driver KL30B-ACSM. / Das
-        // Result enthÃ¤lt den Aktivierungsstatus der Kurzschlussabschaltung des HW-Treiber KL30B-ACSM.
+        // Result enthält den Aktivierungsstatus der Kurzschlussabschaltung des HW-Treiber KL30B-ACSM.
 
     #define I3_RES_BDC_STAT_KURZSCHLUSSABSCHALTUNG_TREIBER_KL301_AKTIV (RXBUF_UCHAR(3))
     #define I3_RES_BDC_STAT_KURZSCHLUSSABSCHALTUNG_TREIBER_KL301_AKTIV_UNIT '0-n'
     #define I3_RES_BDC_STAT_KURZSCHLUSSABSCHALTUNG_TREIBER_KL301_AKTIV_TYPE unsigned char
         // The result contains the activation status of the short-circuit shutdown of the KL30B1 HW driver. / Das Result
-        // enthÃ¤lt den Aktivierungsstatus der Kurzschlussabschaltung des HW-Treiber KL30B1.
+        // enthält den Aktivierungsstatus der Kurzschlussabschaltung des HW-Treiber KL30B1.
 
     #define I3_RES_BDC_STAT_KURZSCHLUSSABSCHALTUNG_TREIBER_KL302_AKTIV (RXBUF_UCHAR(4))
     #define I3_RES_BDC_STAT_KURZSCHLUSSABSCHALTUNG_TREIBER_KL302_AKTIV_UNIT '0-n'
     #define I3_RES_BDC_STAT_KURZSCHLUSSABSCHALTUNG_TREIBER_KL302_AKTIV_TYPE unsigned char
         // The result contains the activation status of the short-circuit shutdown of the KL30B2 HW driver. / Das Result
-        // enthÃ¤lt den Aktivierungsstatus der Kurzschlussabschaltung des HW-Treiber KL30B2.
+        // enthält den Aktivierungsstatus der Kurzschlussabschaltung des HW-Treiber KL30B2.
 
 #define I3_PID_BDC_HECKKLAPPENSENSOR                                 0xDB16
         // Current status of the tailgate sensor / Aktueller Zustand des Heckklappensensors
@@ -5658,23 +5645,23 @@
         // Current status of the tailgate sensor / Aktueller Zustand des Heckklappensensors
 
 #define I3_PID_BDC_NACHLAUFZEIT_KLEMME_15N                           0xDB2D
-        // The result contains the follow-up time of terminal 15N in seconds. / Das Result enthÃ¤lt die Nachlaufzeit der
+        // The result contains the follow-up time of terminal 15N in seconds. / Das Result enthält die Nachlaufzeit der
         // Klemme 15N in Sekunden.
 
     #define I3_RES_BDC_STAT_NACHLAUFZEIT_KLEMME_15N_WERT             (RXBUF_UINT(0))
     #define I3_RES_BDC_STAT_NACHLAUFZEIT_KLEMME_15N_WERT_UNIT        's'
     #define I3_RES_BDC_STAT_NACHLAUFZEIT_KLEMME_15N_WERT_TYPE        unsigned short
-        // The result contains the follow-up time of terminal 15N in seconds. / Das Result enthÃ¤lt die Nachlaufzeit der
+        // The result contains the follow-up time of terminal 15N in seconds. / Das Result enthält die Nachlaufzeit der
         // Klemme 15N in Sekunden.
 
 #define I3_PID_BDC_NACHLAUFZEIT_KLEMME_30B                           0xDB2E
-        // The result contains the delay time of terminal 30B in seconds. / Das Result enthÃ¤lt die Nachlaufzeit der
+        // The result contains the delay time of terminal 30B in seconds. / Das Result enthält die Nachlaufzeit der
         // Klemme 30B in Sekunden.
 
     #define I3_RES_BDC_STAT_NACHLAUFZEIT_KLEMME_30B_WERT             (RXBUF_UINT(0))
     #define I3_RES_BDC_STAT_NACHLAUFZEIT_KLEMME_30B_WERT_UNIT        's'
     #define I3_RES_BDC_STAT_NACHLAUFZEIT_KLEMME_30B_WERT_TYPE        unsigned short
-        // The result contains the delay time of terminal 30B in seconds. / Das Result enthÃ¤lt die Nachlaufzeit der
+        // The result contains the delay time of terminal 30B in seconds. / Das Result enthält die Nachlaufzeit der
         // Klemme 30B in Sekunden.
 
 // Skipping ACC_TASTER on 0xDBEA which takes arguments
@@ -5685,19 +5672,19 @@
 
 #define I3_PID_BDC_STATUS_KLEMMEN                                    0xDC56
         // The result contains the status of the terminals in the CAS control unit. Notes: - Allocation takes place
-        // according to table TAB_CAS_KLEMMENSTATUS. / Das Result enthÃ¤lt den Status der Klemmen im CAS-SteuergerÃ¤t.
-        // Hinweise: - Zuordnung erfolgt gemÃ¤Ã Tabelle TAB_CAS_KLEMMENSTATUS.
+        // according to table TAB_CAS_KLEMMENSTATUS. / Das Result enthält den Status der Klemmen im CAS-Steuergerät.
+        // Hinweise: - Zuordnung erfolgt gemäß Tabelle TAB_CAS_KLEMMENSTATUS.
 
     #define I3_RES_BDC_STAT_KLEMMENSTATUS                            (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_KLEMMENSTATUS_UNIT                       '0-n'
     #define I3_RES_BDC_STAT_KLEMMENSTATUS_TYPE                       unsigned char
         // The result contains the status of the terminals in the CAS control unit. Notes: - Allocation takes place
-        // according to table TAB_CAS_KLEMMENSTATUS. / Das Result enthÃ¤lt den Status der Klemmen im CAS-SteuergerÃ¤t.
-        // Hinweise: - Zuordnung erfolgt gemÃ¤Ã Tabelle TAB_CAS_KLEMMENSTATUS.
+        // according to table TAB_CAS_KLEMMENSTATUS. / Das Result enthält den Status der Klemmen im CAS-Steuergerät.
+        // Hinweise: - Zuordnung erfolgt gemäß Tabelle TAB_CAS_KLEMMENSTATUS.
 
 #define I3_PID_BDC_STATUS_KL15_ABSCHALTUNG                           0xDC57
         // This job is used to read out the status of the automatic KL15 shutdown function (door open / closed, secure
-        // ZV, OSFG). / Dieser Job dient zum Auslesen des Status der Funktion automatische KL15-Abschaltung (TÃ¼r auf/zu,
+        // ZV, OSFG). / Dieser Job dient zum Auslesen des Status der Funktion automatische KL15-Abschaltung (Tür auf/zu,
         // ZV sichern, OSFG).
 
     #define I3_RES_BDC_STAT_CODIERUNG_KL15_ABSCHALTUNG               (RXBUF_UCHAR(0))
@@ -5711,14 +5698,14 @@
     #define I3_RES_BDC_STAT_ABSCHALTVERHINDERER_OBDKOMMUNIKATION_AKTIV_TYPE unsigned char
         // The result indicates whether the switch-off preventer OBD communication (OBD-relevant diagnostic communication
         // via D-CAN) is currently active. Notes: - 0 = not active, 1 = active / Das Result gibt an, ob der
-        // Abschaltverhinderer OBD-Kommunikation (OBD-relevante Diagnosekommunikation Ã¼ber D-CAN) gerade aktiv ist.
+        // Abschaltverhinderer OBD-Kommunikation (OBD-relevante Diagnosekommunikation über D-CAN) gerade aktiv ist.
         // Hinweise: - 0=nicht aktiv, 1=aktiv
 
     #define I3_RES_BDC_STAT_ABSCHALTVERHINDERER_BREMSE_AKTIV         (RXBUF_UCHAR(2))
     #define I3_RES_BDC_STAT_ABSCHALTVERHINDERER_BREMSE_AKTIV_UNIT    '0/1'
     #define I3_RES_BDC_STAT_ABSCHALTVERHINDERER_BREMSE_AKTIV_TYPE    unsigned char
         // The result indicates whether the switch-off preventer brake pedal is currently active. Notes: - 0 = not
-        // active, 1 = active / Das Result gibt an, ob der Abschaltverhinderer Bremspedal betÃ¤tigt ist gerade aktiv.
+        // active, 1 = active / Das Result gibt an, ob der Abschaltverhinderer Bremspedal betätigt ist gerade aktiv.
         // Hinweise: - 0=nicht aktiv, 1=aktiv
 
     #define I3_RES_BDC_STAT_ABSCHALTVERHINDERER_MOTORLAUF_AKTIV      (RXBUF_UCHAR(3))
@@ -5732,14 +5719,14 @@
     #define I3_RES_BDC_STAT_ABSCHALTVERHINDERER_KUPPLUNG_AKTIV_UNIT  '0/1'
     #define I3_RES_BDC_STAT_ABSCHALTVERHINDERER_KUPPLUNG_AKTIV_TYPE  unsigned char
         // The result indicates whether the switch-off preventer clutch pedal is currently active. Notes: - 0 = not
-        // active, 1 = active / Das Result gibt an, ob der Abschaltverhinderer Kupplungspedal betÃ¤tigt gerade aktiv ist.
+        // active, 1 = active / Das Result gibt an, ob der Abschaltverhinderer Kupplungspedal betätigt gerade aktiv ist.
         // Hinweise: - 0=nicht aktiv, 1=aktiv
 
     #define I3_RES_BDC_STAT_ABSCHALTVERHINDERER_ENERGIESPARMODE_AKTIV (RXBUF_UCHAR(5))
     #define I3_RES_BDC_STAT_ABSCHALTVERHINDERER_ENERGIESPARMODE_AKTIV_UNIT '0/1'
     #define I3_RES_BDC_STAT_ABSCHALTVERHINDERER_ENERGIESPARMODE_AKTIV_TYPE unsigned char
-        // The result indicates whether the switch-off preventer energy mode (FETRAFLA) is currently active. Note: The
-        // KL15 shutdown is deactivated here due to the energy manager in the FEM. / Das Result gibt an, ob der
+        // The result indicates whether the switch-off preventer energy mode active (FETRAFLA) is currently active. Note:
+        // The KL15 shutdown is deactivated here due to the energy manager in the FEM. / Das Result gibt an, ob der
         // Abschaltverhinderer Energiemode aktiv(FETRAFLA) gerade aktiv ist. Hinweis: Die KL15-Abschaltung ist hier
         // aufgrund des Energymanager im FEM deaktiviert.
 
@@ -5753,9 +5740,9 @@
     #define I3_RES_BDC_STAT_ABSCHALTVERHINDERER_MSA_AKTIV            (RXBUF_UCHAR(7))
     #define I3_RES_BDC_STAT_ABSCHALTVERHINDERER_MSA_AKTIV_UNIT       '0/1'
     #define I3_RES_BDC_STAT_ABSCHALTVERHINDERER_MSA_AKTIV_TYPE       unsigned char
-        // MSA is currently (L6, L7) not a switch-off preventer for the KL15. This result is only available as a lead and
-        // is always filled with ¿0¿. / MSA ist aktuell (L6,L7) kein Abschaltverhinderer fÃ¼r die KL15. Dieses Result ist
-        // nur als Vorhalt vorhanden und wird immer mit Â¿0Â¿ befÃ¼llt.
+        // MSA is currently (L6, L7) no switch-off preventer for the KL15. This result is only available as a lead and is
+        // always filled with ¿0¿. / MSA ist aktuell (L6,L7) kein Abschaltverhinderer für die KL15. Dieses Result ist nur
+        // als Vorhalt vorhanden und wird immer mit ¿0¿ befüllt.
 
     #define I3_RES_BDC_STAT_ABSCHALTVERHINDERER_ABBLENDLICHT_AKTIV   (RXBUF_UCHAR(8))
     #define I3_RES_BDC_STAT_ABSCHALTVERHINDERER_ABBLENDLICHT_AKTIV_UNIT '0/1'
@@ -5768,8 +5755,8 @@
     #define I3_RES_BDC_STAT_ABSCHALTVERHINDERER_WAEHLHEBEL_IN_N_AKTIV_UNIT '0/1'
     #define I3_RES_BDC_STAT_ABSCHALTVERHINDERER_WAEHLHEBEL_IN_N_AKTIV_TYPE unsigned char
         // The result indicates whether the switch-off preventer selector lever in N is currently active (car wash
-        // function). Notes: - 0 = not active, 1 = active / Das Result gibt an, ob der Abschaltverhinderer WÃ¤hlhebel in
-        // N gerade aktiv ist (Waschstrassen-Funktion). Hinweise: - 0=nicht aktiv, 1=aktiv
+        // function). Notes: - 0 = not active, 1 = active / Das Result gibt an, ob der Abschaltverhinderer Wählhebel in N
+        // gerade aktiv ist (Waschstrassen-Funktion). Hinweise: - 0=nicht aktiv, 1=aktiv
 
     #define I3_RES_BDC_STAT_ABSCHALTVERHINDERER_DIAGNOSE_AKTIV       (RXBUF_UCHAR(10))
     #define I3_RES_BDC_STAT_ABSCHALTVERHINDERER_DIAGNOSE_AKTIV_UNIT  '0/1'
@@ -5782,7 +5769,7 @@
     #define I3_RES_BDC_STAT_ABSCHALTVERHINDERER_FLA_MODE_UNIT        '0/1'
     #define I3_RES_BDC_STAT_ABSCHALTVERHINDERER_FLA_MODE_TYPE        unsigned char
         // This result is only available as a lead and is always filled with 0. / Dieses Result ist nur als Vorhalt
-        // vorhanden und wird immer mit 0 befÃ¼llt.
+        // vorhanden und wird immer mit 0 befüllt.
 
     #define I3_RES_BDC_STAT_ABSCHALTVERHINDERER_AKTIV                (RXBUF_UCHAR(12))
     #define I3_RES_BDC_STAT_ABSCHALTVERHINDERER_AKTIV_UNIT           '0/1'
@@ -5800,29 +5787,29 @@
         // as soon as a non-automatic KL15 switch-off (e.g. via SST) has been carried out. 0 = automatic KL15 switch-off
         // was not carried out 1 = automatic KL15 switch-off was carried out / Das Result gibt an, ob die letzte
         // KL15-Abschaltung  eine automatische KL15-Abschaltung war oder nicht. Hinweise: - Der Wert wird auf aktiv
-        // gesetzt, sobald eine autom. KL15-Abschaltung durchgefÃ¼hrt wurde. - Der Wert wird auf nicht aktiv
-        // rÃ¼ckgesetzt, sobald eine nicht-automatische KL15-Abschaltung (z.B. per SST) durchgefÃ¼hrt wurde. 0 =
-        // automatische KL15-Abschaltung wurde nicht durchgefÃ¼hrt 1 = automatische KL15-Abschaltung wurde durchgefÃ¼hrt
+        // gesetzt, sobald eine autom. KL15-Abschaltung durchgeführt wurde. - Der Wert wird auf nicht aktiv rückgesetzt,
+        // sobald eine nicht-automatische KL15-Abschaltung (z.B. per SST) durchgeführt wurde. 0 = automatische
+        // KL15-Abschaltung wurde nicht durchgeführt 1 = automatische KL15-Abschaltung wurde durchgeführt
 
     #define I3_RES_BDC_STAT_ABSCHALTVERHINDERER_PRAESENTATIONSMODUS_AKTIV (RXBUF_UCHAR(14))
     #define I3_RES_BDC_STAT_ABSCHALTVERHINDERER_PRAESENTATIONSMODUS_AKTIV_UNIT '0/1'
     #define I3_RES_BDC_STAT_ABSCHALTVERHINDERER_PRAESENTATIONSMODUS_AKTIV_TYPE unsigned char
         // The result indicates whether the shutdown preventer presentation mode (CAS assembly mode) is currently active.
         // Notes: - 0 = not active, 1 = active / Das Result gibt an, ob der Abschaltverhinderer
-        // PrÃ¤sentationsmodus(CAS-Montagemodus) gerade aktiv ist. Hinweise: - 0=nicht aktiv, 1=aktiv
+        // Präsentationsmodus(CAS-Montagemodus) gerade aktiv ist. Hinweise: - 0=nicht aktiv, 1=aktiv
 
     #define I3_RES_BDC_STAT_ABSCHALTVERHINDERER_GESCHWINDIGKEIT_UNPLAUSIBEL_AKTIV (RXBUF_UCHAR(15))
     #define I3_RES_BDC_STAT_ABSCHALTVERHINDERER_GESCHWINDIGKEIT_UNPLAUSIBEL_AKTIV_UNIT '0/1'
     #define I3_RES_BDC_STAT_ABSCHALTVERHINDERER_GESCHWINDIGKEIT_UNPLAUSIBEL_AKTIV_TYPE unsigned char
         // The result indicates whether the speed implausible switch-off preventer (CAS has received an implausible speed
         // value via both the HW input and CAN) is currently active. Notes: - 0 = not active, 1 = active / Das Result
-        // gibt an, ob der Abschaltverhinderer Geschwindigkeit unplausibel (CAS hat sowohl Ã¼ber HW-Eingang als auch CAN
+        // gibt an, ob der Abschaltverhinderer Geschwindigkeit unplausibel (CAS hat sowohl über HW-Eingang als auch CAN
         // einen unplausiblen Geschwindigkeitswert erhalten) gerade aktiv ist. Hinweise: - 0=nicht aktiv, 1=aktiv
 
     #define I3_RES_BDC_STAT_ABSCHALTVERHINDERER_FREMDLADUNG_HYBRID_AKTIV (RXBUF_UCHAR(16))
     #define I3_RES_BDC_STAT_ABSCHALTVERHINDERER_FREMDLADUNG_HYBRID_AKTIV_UNIT '0/1'
     #define I3_RES_BDC_STAT_ABSCHALTVERHINDERER_FREMDLADUNG_HYBRID_AKTIV_TYPE unsigned char
-        // The result indicates whether the switch-off preventer external charging is currently active in hybrid
+        // The result indicates whether the switch-off preventer for external charging is currently active in hybrid
         // vehicles. Notes: - 0 = not active, 1 = active / Das Result gibt an, ob der Abschaltverhinderer Fremdladung bei
         // Hybridfahrzeugen gerade aktiv ist. Hinweise: - 0=nicht aktiv, 1=aktiv
 
@@ -5831,25 +5818,25 @@
     #define I3_RES_BDC_STAT_ABSCHALTVERHINDERER_GURT_FAHRER_GESTECKT_AKTIV_TYPE unsigned char
         // The result indicates whether the switch-off preventer seat belt driver is currently active. Notes: - 0 = no
         // shutdown performed, 1 = shutdown performed. / Das Result gibt an, ob der Abschaltverhinderer Gurt Fahrer
-        // gesteckt gerade aktiv ist. Hinweise: - 0=keine Abschaltung durchgefÃ¼hrt, 1=Abschaltung durchgefÃ¼hrt.
+        // gesteckt gerade aktiv ist. Hinweise: - 0=keine Abschaltung durchgeführt, 1=Abschaltung durchgeführt.
 
     #define I3_RES_BDC_STAT_CODIERUNG_KL15_ABSCHALTUNG_GURT_AKTIV    (RXBUF_UCHAR(18))
     #define I3_RES_BDC_STAT_CODIERUNG_KL15_ABSCHALTUNG_GURT_AKTIV_UNIT '0/1'
     #define I3_RES_BDC_STAT_CODIERUNG_KL15_ABSCHALTUNG_GURT_AKTIV_TYPE unsigned char
-        // The result indicates whether the KL15 is switched off by opening the driver's seat belt via coding. / Das
-        // Result gibt an, ob Abschaltung der KL15 durch Ãffnen Fahrergurt per Codierung freigeschaltet ist.
+        // The result indicates whether the KL15 is switched off by opening the driver's seat belt by coding. / Das
+        // Result gibt an, ob Abschaltung der KL15 durch Öffnen Fahrergurt per Codierung freigeschaltet ist.
 
     #define I3_RES_BDC_STAT_CODIERUNG_KL15_ABSCHALTUNG_KLAPPENWECHSEL_AKTIV (RXBUF_UCHAR(19))
     #define I3_RES_BDC_STAT_CODIERUNG_KL15_ABSCHALTUNG_KLAPPENWECHSEL_AKTIV_UNIT '0/1'
     #define I3_RES_BDC_STAT_CODIERUNG_KL15_ABSCHALTUNG_KLAPPENWECHSEL_AKTIV_TYPE unsigned char
         // The result indicates whether shutdown of the KL15 by opening / closing the door is enabled by coding. / Das
-        // Result gibt an, ob Abschaltung der KL15 durch TÃ¼r auf/zu per Codierung freigeschaltet ist.
+        // Result gibt an, ob Abschaltung der KL15 durch Tür auf/zu per Codierung freigeschaltet ist.
 
     #define I3_RES_BDC_STAT_CODIERUNG_KL15_ABSCHALTUNG_OSFG_ERREICHT_AKTIV (RXBUF_UCHAR(20))
     #define I3_RES_BDC_STAT_CODIERUNG_KL15_ABSCHALTUNG_OSFG_ERREICHT_AKTIV_UNIT '0/1'
     #define I3_RES_BDC_STAT_CODIERUNG_KL15_ABSCHALTUNG_OSFG_ERREICHT_AKTIV_TYPE unsigned char
         // The result indicates whether shutdown of KL15 by reaching the OSFG (upper startability limit) is enabled by
-        // coding. / Das Result gibt an, ob Abschaltung der KL15 durch Erreichen der OSFG (Obere StartfÃ¤higkeitsgrenze)
+        // coding. / Das Result gibt an, ob Abschaltung der KL15 durch Erreichen der OSFG (Obere Startfähigkeitsgrenze)
         // per Codierung freigeschaltet ist.
 
     #define I3_RES_BDC_STAT_CODIERUNG_KL15_ABSCHALTUNG_TIMEOUT_OSFG_AKTIV (RXBUF_UCHAR(21))
@@ -5868,72 +5855,72 @@
 #define I3_PID_BDC_ANSTEUERUNG_KL30F_HINTEN                          0xDC5A
         // This job is used to read out the status of the FEM outputs for controlling the KL30F rear. Notes: The job is
         // called via the standard job STATUS_LESEN with the argument ANSTEUERUNG_KL30F_HINTEN / Dieser Job dient zum
-        // Auslesen des Zustands der FEM-AusgÃ¤nge zum Ansteuern der KL30F Hinten. Hinweise: Aufruf des Jobs erfolgt
-        // Ã¼ber Standardjob STATUS_LESEN mit Argument ANSTEUERUNG_KL30F_HINTEN
+        // Auslesen des Zustands der FEM-Ausgänge zum Ansteuern der KL30F Hinten. Hinweise: Aufruf des Jobs erfolgt über
+        // Standardjob STATUS_LESEN mit Argument ANSTEUERUNG_KL30F_HINTEN
 
     #define I3_RES_BDC_STAT_KL30F_HINTEN_AN                          (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_KL30F_HINTEN_AN_UNIT                     '0-n'
     #define I3_RES_BDC_STAT_KL30F_HINTEN_AN_TYPE                     unsigned char
-        // The result contains the current state of the HW output for switching on the KL30F rear. / Das Result enthÃ¤lt
+        // The result contains the current state of the HW output for switching on the KL30F rear. / Das Result enthält
         // den aktuellen Zustand des HW-Ausgangs zum Einschalten der KL30F hinten.
 
     #define I3_RES_BDC_STAT_KL30F_HINTEN_AUS                         (RXBUF_UCHAR(1))
     #define I3_RES_BDC_STAT_KL30F_HINTEN_AUS_UNIT                    '0-n'
     #define I3_RES_BDC_STAT_KL30F_HINTEN_AUS_TYPE                    unsigned char
-        // The result contains the current state of the HW output for switching off the KL30F rear. / Das Result enthÃ¤lt
+        // The result contains the current state of the HW output for switching off the KL30F rear. / Das Result enthält
         // den aktuellen Zustand des HW-Ausgangs zum Ausschalten der KL30F hinten.
 
 // Skipping START_STOP_TASTER_SENSOREN on 0xDC60 which takes arguments
 
 #define I3_PID_BDC_BREMSLICHT_SCHALTER                               0xDC61
-        // The result contains the current status of the brake light switch / Das Result enthÃ¤lt den aktuellen Zustand
+        // The result contains the current status of the brake light switch / Das Result enthält den aktuellen Zustand
         // des Bremslichtschalters
 
     #define I3_RES_BDC_STAT_SCHALTER_BREMSLICHT_AKTIV                (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_SCHALTER_BREMSLICHT_AKTIV_UNIT           '0-n'
     #define I3_RES_BDC_STAT_SCHALTER_BREMSLICHT_AKTIV_TYPE           unsigned char
-        // The result contains the current status of the brake light switch / Das Result enthÃ¤lt den aktuellen Zustand
+        // The result contains the current status of the brake light switch / Das Result enthält den aktuellen Zustand
         // des Bremslichtschalters
 
 #define I3_PID_BDC_KUPPL_PN_SCHALTER                                 0xDC63
         // The result contains the current status of the clutch switch (manual gearbox) or PN signal (automatic gearbox)
-        // from the EGS. Notes: - Allocation takes place in accordance with table TAB_CAS_DIGITAL_EINGANG. / Das Result
-        // enthÃ¤lt den aktuellen Zustand des Kupplungsschalters (Manuelles Getriebe) oder PN-Signal (Automatikgetriebe)
-        // vom EGS. Hinweise: - Zuordnung erfolgt gemÃ¤Ã Tabelle TAB_CAS_DIGITAL_EINGANG.
+        // from the EGS. Notes: - Allocation takes place according to table TAB_CAS_DIGITAL_EINGANG. / Das Result enthält
+        // den aktuellen Zustand des Kupplungsschalters (Manuelles Getriebe) oder PN-Signal (Automatikgetriebe) vom EGS.
+        // Hinweise: - Zuordnung erfolgt gemäß Tabelle TAB_CAS_DIGITAL_EINGANG.
 
     #define I3_RES_BDC_STAT_SCHALTER_KUPPL_PN_AKTIV                  (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_SCHALTER_KUPPL_PN_AKTIV_UNIT             '0-n'
     #define I3_RES_BDC_STAT_SCHALTER_KUPPL_PN_AKTIV_TYPE             unsigned char
         // The result contains the current status of the clutch switch (manual gearbox) or PN signal (automatic gearbox)
-        // from the EGS. Notes: - Allocation takes place in accordance with table TAB_CAS_DIGITAL_EINGANG. / Das Result
-        // enthÃ¤lt den aktuellen Zustand des Kupplungsschalters (Manuelles Getriebe) oder PN-Signal (Automatikgetriebe)
-        // vom EGS. Hinweise: - Zuordnung erfolgt gemÃ¤Ã Tabelle TAB_CAS_DIGITAL_EINGANG.
+        // from the EGS. Notes: - Allocation takes place according to table TAB_CAS_DIGITAL_EINGANG. / Das Result enthält
+        // den aktuellen Zustand des Kupplungsschalters (Manuelles Getriebe) oder PN-Signal (Automatikgetriebe) vom EGS.
+        // Hinweise: - Zuordnung erfolgt gemäß Tabelle TAB_CAS_DIGITAL_EINGANG.
 
 // Skipping CENTERLOCK_TASTER on 0xDC64 which takes arguments
 
 #define I3_PID_BDC_MOTORHAUBE_SCHALTER                               0xDC65
-        // The result contains the current status of the engine hood contact input. Notes: - Allocation takes place in
-        // accordance with table TAB_CAS_DIGITAL_EINGANG. / Das Result enthÃ¤lt den aktuellen Zustand des Eingangs
-        // Motorhaubenkontakt. Hinweise: - Zuordnung erfolgt gemÃ¤Ã Tabelle TAB_CAS_DIGITAL_EINGANG.
+        // The result contains the current status of the engine hood contact input. Notes: - Allocation takes place
+        // according to table TAB_CAS_DIGITAL_EINGANG. / Das Result enthält den aktuellen Zustand des Eingangs
+        // Motorhaubenkontakt. Hinweise: - Zuordnung erfolgt gemäß Tabelle TAB_CAS_DIGITAL_EINGANG.
 
     #define I3_RES_BDC_STAT_SCHALTER_MOTORHAUBE_AKTIV                (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_SCHALTER_MOTORHAUBE_AKTIV_UNIT           '0-n'
     #define I3_RES_BDC_STAT_SCHALTER_MOTORHAUBE_AKTIV_TYPE           unsigned char
-        // The result contains the current status of the engine hood contact input. Notes: - Allocation takes place in
-        // accordance with table TAB_CAS_DIGITAL_EINGANG. / Das Result enthÃ¤lt den aktuellen Zustand des Eingangs
-        // Motorhaubenkontakt. Hinweise: - Zuordnung erfolgt gemÃ¤Ã Tabelle TAB_CAS_DIGITAL_EINGANG.
+        // The result contains the current status of the engine hood contact input. Notes: - Allocation takes place
+        // according to table TAB_CAS_DIGITAL_EINGANG. / Das Result enthält den aktuellen Zustand des Eingangs
+        // Motorhaubenkontakt. Hinweise: - Zuordnung erfolgt gemäß Tabelle TAB_CAS_DIGITAL_EINGANG.
 
 #define I3_PID_BDC_HOTEL_SCHALTER                                    0xDC66
         // The result contains the current status of the HOTEL switch input. Note: - Allocation takes place according to
-        // table TAB_CAS_DIGITAL_EINGANG. / Das Result enthÃ¤lt den aktuellen Zustand des Eingangs HOTEL-Schalters.
-        // Hinweis: - Zuordnung erfolgt gemÃ¤Ã Tabelle TAB_CAS_DIGITAL_EINGANG.
+        // table TAB_CAS_DIGITAL_EINGANG. / Das Result enthält den aktuellen Zustand des Eingangs HOTEL-Schalters.
+        // Hinweis: - Zuordnung erfolgt gemäß Tabelle TAB_CAS_DIGITAL_EINGANG.
 
     #define I3_RES_BDC_STAT_SCHALTER_HOTEL_AKTIV                     (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_SCHALTER_HOTEL_AKTIV_UNIT                '0-n'
     #define I3_RES_BDC_STAT_SCHALTER_HOTEL_AKTIV_TYPE                unsigned char
         // The result contains the current status of the HOTEL switch input. Note: - Allocation takes place according to
-        // table TAB_CAS_DIGITAL_EINGANG. / Das Result enthÃ¤lt den aktuellen Zustand des Eingangs HOTEL-Schalters.
-        // Hinweis: - Zuordnung erfolgt gemÃ¤Ã Tabelle TAB_CAS_DIGITAL_EINGANG.
+        // table TAB_CAS_DIGITAL_EINGANG. / Das Result enthält den aktuellen Zustand des Eingangs HOTEL-Schalters.
+        // Hinweis: - Zuordnung erfolgt gemäß Tabelle TAB_CAS_DIGITAL_EINGANG.
 
 // Skipping MSA_TASTER on 0xDC67 which takes arguments
 
@@ -5948,12 +5935,12 @@
 // Skipping SARAH_TASTER_LED on 0xDC85 which takes arguments
 
 #define I3_PID_BDC_READHWMODIFICATIONINDEX                           0xF152
-        // This service is only used if there has been a minor hardware change on the control unit that has not led to a
+        // This service is only used if there has been a minor hardware change to the control unit that has not led to a
         // change in the part number or the hardware SGBM IDs. Such a change cannot be diagnosed from the outside, so
-        // this service was introduced for this. / Dieser Service kommt nur zum Einsatz, wenn es eine geringfÃ¼gige
-        // HardwareÃ¤nderung an dem SteuergerÃ¤t gegeben hat, die nicht zu einer Ãnderung der Sachnummer bzw. der
-        // Hardware SGBM-IDs gefÃ¼hrt hat. Eine solche Ãnderung ist von auÃen nicht diagnostizierbar, daher wurde
-        // dieser Dienst dafÃ¼r eingefÃ¼hrt.
+        // this service was introduced for this. / Dieser Service kommt nur zum Einsatz, wenn es eine geringfügige
+        // Hardwareänderung an dem Steuergerät gegeben hat, die nicht zu einer Änderung der Sachnummer bzw. der Hardware
+        // SGBM-IDs geführt hat. Eine solche Änderung ist von außen nicht diagnostizierbar, daher wurde dieser Dienst
+        // dafür eingeführt.
 
     #define I3_RES_BDC_STAT_HW_MODIFICATION_INDEX_WERT               (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_HW_MODIFICATION_INDEX_WERT_UNIT          'HEX'
@@ -5973,8 +5960,8 @@
 #define I3_PID_BDC_LWR_STATISTIK                                     0x2302
         // Reading out the statistics about the duration of the respective load status depending on the total system time
         // with active low beam and compares the values between the variants 1 HSS and 2 HSS / Auslesen der Statistik
-        // Ã¼ber die Dauer des jeweiligen Beladungszustandes in AbhÃ¤ngigkeit der Gesamtsystemzeit mit aktivem
-        // Ablendlicht und gleicht die Werte zwischen den Varianten 1 HSS und 2 HSS ab
+        // über die Dauer des jeweiligen Beladungszustandes in Abhängigkeit der Gesamtsystemzeit mit aktivem Ablendlicht
+        // und gleicht die Werte zwischen den Varianten 1 HSS und 2 HSS ab
 
     #define I3_RES_BDC_STAT_BETRIEBSMINUTEN_AL_AKTIV_WERT            (RXBUF_UINT32(0))
     #define I3_RES_BDC_STAT_BETRIEBSMINUTEN_AL_AKTIV_WERT_TYPE       unsigned long
@@ -5986,7 +5973,7 @@
 
     #define I3_RES_BDC_STAT_BETRIEBSMINUTEN_0001_WERT                (RXBUF_UINT(6))
     #define I3_RES_BDC_STAT_BETRIEBSMINUTEN_0001_WERT_TYPE           unsigned short
-        // Driver with trailer + low beam / Fahrer mit AnhÃ¤nger + Ablendlicht
+        // Driver with trailer + low beam / Fahrer mit Anhänger + Ablendlicht
 
     #define I3_RES_BDC_STAT_BETRIEBSMINUTEN_1000_WERT                (RXBUF_UINT(8))
     #define I3_RES_BDC_STAT_BETRIEBSMINUTEN_1000_WERT_TYPE           unsigned short
@@ -5994,7 +5981,7 @@
 
     #define I3_RES_BDC_STAT_BETRIEBSMINUTEN_1001_WERT                (RXBUF_UINT(10))
     #define I3_RES_BDC_STAT_BETRIEBSMINUTEN_1001_WERT_TYPE           unsigned short
-        // Driver and passenger with trailer + low beam / Fahrer und Beifahrer mit AnhÃ¤nger + Ablendlicht
+        // Driver and passenger with trailer + low beam / Fahrer und Beifahrer mit Anhänger + Ablendlicht
 
     #define I3_RES_BDC_STAT_BETRIEBSMINUTEN_1010_WERT                (RXBUF_UINT(12))
     #define I3_RES_BDC_STAT_BETRIEBSMINUTEN_1010_WERT_TYPE           unsigned short
@@ -6002,7 +5989,7 @@
 
     #define I3_RES_BDC_STAT_BETRIEBSMINUTEN_1100_WERT                (RXBUF_UINT(14))
     #define I3_RES_BDC_STAT_BETRIEBSMINUTEN_1100_WERT_TYPE           unsigned short
-        // Driver, front passenger, 2 people in the rear + low beam / Fahrer, Beifahrer, 2 Pers in Fond + Ablendlicht
+        // Driver, passenger, 2 people in the rear + low beam / Fahrer, Beifahrer, 2 Pers in Fond + Ablendlicht
 
     #define I3_RES_BDC_STAT_BETRIEBSMINUTEN_1110_WERT                (RXBUF_UINT(16))
     #define I3_RES_BDC_STAT_BETRIEBSMINUTEN_1110_WERT_TYPE           unsigned short
@@ -6011,17 +5998,17 @@
     #define I3_RES_BDC_STAT_BETRIEBSMINUTEN_1011_WERT                (RXBUF_UINT(18))
     #define I3_RES_BDC_STAT_BETRIEBSMINUTEN_1011_WERT_TYPE           unsigned short
         // Driver, passenger, 1 person in the rear with trailer + low beam / Fahrer, Beifahrer, 1 Pers in Fond mit
-        // AnhÃ¤nger + Ablendlicht
+        // Anhänger + Ablendlicht
 
     #define I3_RES_BDC_STAT_BETRIEBSMINUTEN_1101_WERT                (RXBUF_UINT(20))
     #define I3_RES_BDC_STAT_BETRIEBSMINUTEN_1101_WERT_TYPE           unsigned short
         // Driver, passenger, 2 people in the rear with trailer + low beam / Fahrer, Beifahrer, 2 Pers in Fond mit
-        // AnhÃ¤nger + Ablendlicht
+        // Anhänger + Ablendlicht
 
     #define I3_RES_BDC_STAT_BETRIEBSMINUTEN_1111_WERT                (RXBUF_UINT(22))
     #define I3_RES_BDC_STAT_BETRIEBSMINUTEN_1111_WERT_TYPE           unsigned short
         // Driver, co-driver, 3 people in the rear with trailer + low beam / Fahrer, Beifahrer, 3 Pers in Fond mit
-        // AnhÃ¤nger + Ablendlicht
+        // Anhänger + Ablendlicht
 
     #define I3_RES_BDC_STAT_BETRIEBSMINUTEN_0010_WERT                (RXBUF_UINT(24))
     #define I3_RES_BDC_STAT_BETRIEBSMINUTEN_0010_WERT_TYPE           unsigned short
@@ -6037,19 +6024,19 @@
 
     #define I3_RES_BDC_STAT_BETRIEBSMINUTEN_0011_WERT                (RXBUF_UINT(30))
     #define I3_RES_BDC_STAT_BETRIEBSMINUTEN_0011_WERT_TYPE           unsigned short
-        // Driver, 1 person in the rear with trailer + vent / Fahrer, 1 Pers in Fond mit AnhÃ¤nger + Ablentlicht
+        // Driver, 1 person in the rear with trailer + vent / Fahrer, 1 Pers in Fond mit Anhänger + Ablentlicht
 
     #define I3_RES_BDC_STAT_BETRIEBSMINUTEN_0101_WERT                (RXBUF_UINT(32))
     #define I3_RES_BDC_STAT_BETRIEBSMINUTEN_0101_WERT_TYPE           unsigned short
-        // Driver, 2 people in the rear with trailer + low beam / Fahrer, 2 Pers in Fond mit AnhÃ¤nger + Ablendlicht
+        // Driver, 2 people in the rear with trailer + low beam / Fahrer, 2 Pers in Fond mit Anhänger + Ablendlicht
 
     #define I3_RES_BDC_STAT_BETRIEBSMINUTEN_0111_WERT                (RXBUF_UINT(34))
     #define I3_RES_BDC_STAT_BETRIEBSMINUTEN_0111_WERT_TYPE           unsigned short
-        // Driver, 3 people in the rear with trailer + low beam / Fahrer, 3 Pers in Fond mit AnhÃ¤nger + Ablendlicht
+        // Driver, 3 people in the rear with trailer + low beam / Fahrer, 3 Pers in Fond mit Anhänger + Ablendlicht
 
     #define I3_RES_BDC_STAT_ANZAHL_GES_WERT                          (RXBUF_UINT32(36))
     #define I3_RES_BDC_STAT_ANZAHL_GES_WERT_TYPE                     unsigned long
-        // Total situation counter / Gesamt SituationszÃ¤hler
+        // Total situation counter / Gesamt Situationszähler
 
     #define I3_RES_BDC_STAT_ANZAHL_GES_KL_20_WERT                    (RXBUF_UINT(40))
     #define I3_RES_BDC_STAT_ANZAHL_GES_KL_20_WERT_TYPE               unsigned short
@@ -6065,11 +6052,11 @@
 
     #define I3_RES_BDC_STAT_ANZAHL_GES_GR_20_WERT                    (RXBUF_UINT(46))
     #define I3_RES_BDC_STAT_ANZAHL_GES_GR_20_WERT_TYPE               unsigned short
-        // Lighting range higher or no matter than 20m. / Leuchtweite hÃ¶her oder egal als 20m.
+        // Lighting range higher or no matter than 20m. / Leuchtweite höher oder egal als 20m.
 
     #define I3_RES_BDC_STAT_ANZAHL_AL_WERT                           (RXBUF_UINT32(48))
     #define I3_RES_BDC_STAT_ANZAHL_AL_WERT_TYPE                      unsigned long
-        // Night situation counter / Nacht SituationszÃ¤hler
+        // Night situation counter / Nacht Situationszähler
 
     #define I3_RES_BDC_STAT_ANZAHL_AL_KL_20_WERT                     (RXBUF_UINT(52))
     #define I3_RES_BDC_STAT_ANZAHL_AL_KL_20_WERT_TYPE                unsigned short
@@ -6085,7 +6072,7 @@
 
     #define I3_RES_BDC_STAT_ANZAHL_AL_GR_20_WERT                     (RXBUF_UINT(58))
     #define I3_RES_BDC_STAT_ANZAHL_AL_GR_20_WERT_TYPE                unsigned short
-        // Lighting range higher or no matter than 20m. / Leuchtweite hÃ¶her oder egal als 20m.
+        // Lighting range higher or no matter than 20m. / Leuchtweite höher oder egal als 20m.
 
 #define I3_PID_BDC_COUNT_NSC_MIRRORHEATING_ACTIVATIONS               0x2303
         // Number of activations of ASP heating due to NSC / Anzahl der Aktivierungen der ASP-Heizung aufgrund NSC
@@ -6111,36 +6098,35 @@
     #define I3_RES_BDC_STAT_LWR_SPUL_ERR_STOP                        (RXBUF_UCHAR(1))
     #define I3_RES_BDC_STAT_LWR_SPUL_ERR_STOP_UNIT                   '0/1'
     #define I3_RES_BDC_STAT_LWR_SPUL_ERR_STOP_TYPE                   unsigned char
-        // no motor stop in case of problems with the coil test / kein Motorstop bei Problemen mit der SpulenprÃ¼fung
+        // no motor stop in case of problems with the coil test / kein Motorstop bei Problemen mit der Spulenprüfung
 
     #define I3_RES_BDC_STAT_LWR_SPUL_EINTR                           (RXBUF_UCHAR(2))
     #define I3_RES_BDC_STAT_LWR_SPUL_EINTR_UNIT                      '0/1'
     #define I3_RES_BDC_STAT_LWR_SPUL_EINTR_TYPE                      unsigned char
-        // no error entry in case of problems with the coil test / kein Fehlereintrag bei Problemen mit der
-        // SpulenprÃ¼fung
+        // no error entry in case of problems with the coil test / kein Fehlereintrag bei Problemen mit der Spulenprüfung
 
     #define I3_RES_BDC_STAT_SP_PRUEF_AKTIV                           (RXBUF_UCHAR(3))
     #define I3_RES_BDC_STAT_SP_PRUEF_AKTIV_UNIT                      '0/1'
     #define I3_RES_BDC_STAT_SP_PRUEF_AKTIV_TYPE                      unsigned char
-        // Coil check activated / SpulenprÃ¼fung aktiviert
+        // Coil check activated / Spulenprüfung aktiviert
 
     #define I3_RES_BDC_STAT_LWR_DIAGNOSE_PARAM_WERT                  (RXBUF_UCHAR(4))
     #define I3_RES_BDC_STAT_LWR_DIAGNOSE_PARAM_WERT_TYPE             unsigned char
-        // Coil test: Limit value characteristic offset / SpulenprÃ¼fung: Grenzwertkennlinie  Offset 
+        // Coil test: Limit value characteristic offset / Spulenprüfung: Grenzwertkennlinie  Offset 
 
     #define I3_RES_BDC_STAT_LWR_DIAGNOSE_PARAM_A_WERT                (RXBUF_UCHAR(5))
     #define I3_RES_BDC_STAT_LWR_DIAGNOSE_PARAM_A_WERT_TYPE           unsigned char
-        // Coil test: Limit value characteristic slope / SpulenprÃ¼fung: Grenzwertkennlinie  Steigung 
+        // Coil test: Limit value characteristic slope / Spulenprüfung: Grenzwertkennlinie  Steigung 
 
     #define I3_RES_BDC_STAT_LWR_CHECKGRENZE_WERT                     (RXBUF_UCHAR(6)/10.0f)
     #define I3_RES_BDC_STAT_LWR_CHECKGRENZE_WERT_UNIT                'V'
     #define I3_RES_BDC_STAT_LWR_CHECKGRENZE_WERT_TYPE                float
-        // LWR test limit / LWR-PrÃ¼fgrenze
+        // LWR test limit / LWR-Prüfgrenze
 
     #define I3_RES_BDC_STAT_LWR_PRUEF_SPANNUNG_WERT                  (RXBUF_UCHAR(7)/10.0f)
     #define I3_RES_BDC_STAT_LWR_PRUEF_SPANNUNG_WERT_UNIT             'V'
     #define I3_RES_BDC_STAT_LWR_PRUEF_SPANNUNG_WERT_TYPE             float
-        // Diagnosis of LWR coil test: measured value voltage / Diagnose LWR SpulenprÃ¼fung: Messwert Spannung
+        // Diagnosis of LWR coil test: measured value voltage / Diagnose LWR Spulenprüfung: Messwert Spannung
 
     #define I3_RES_BDC_STAT_LWR_DIAG_HEAT_TIME_WERT                  (RXBUF_UCHAR(8)*512.0f)
     #define I3_RES_BDC_STAT_LWR_DIAG_HEAT_TIME_WERT_UNIT             's'
@@ -6163,12 +6149,12 @@
         // Timer headlight thermal model / Timer Scheinwerfer Thermomodell
 
 #define I3_PID_BDC__LICHT_UEBERSPANNUNGSCOUNTER                      0x4508
-        // Total number of light overvoltage counter activations / Anzahl Licht Ãberspannungscounter Aktivierungen
+        // Total number of light overvoltage counter activations / Anzahl Licht Überspannungscounter Aktivierungen
         // insgesamt
 
     #define I3_RES_BDC_STAT_LICHT_UESPANNUNG_COUNTER_WERT            (RXBUF_UINT(0))
     #define I3_RES_BDC_STAT_LICHT_UESPANNUNG_COUNTER_WERT_TYPE       unsigned short
-        // Total number of light overvoltage counter activations / Anzahl Licht Ãberspannungscounter Aktivierungen
+        // Total number of light overvoltage counter activations / Anzahl Licht Überspannungscounter Aktivierungen
         // insgesamt
 
 // Skipping _LICHT_12H_TIMER on 0x4509 which takes arguments
@@ -6177,68 +6163,67 @@
 
 #define I3_PID_BDC__ZV_KURZSCHLUSSABSCHALTUNG_ZAEHLER                0x4700
         // DID for reading out the counters for the permanent short-circuit shutdown of the central locking drives,
-        // tailgate and rear window / DID zum Auslesen der ZÃ¤hler der dauerhaften Kurzschlussabschaltung der ZV-Antriebe
+        // tailgate and rear window / DID zum Auslesen der Zähler der dauerhaften Kurzschlussabschaltung der ZV-Antriebe
         // Heckklappe und Heckscheibe
 
     #define I3_RES_BDC_STAT_HECKKLAPPE_ZAEHLER_COUNT_MAX_WERT        (RXBUF_UINT32(0))
     #define I3_RES_BDC_STAT_HECKKLAPPE_ZAEHLER_COUNT_MAX_WERT_TYPE   unsigned long
         // The result contains the current count for the short-circuits to ground detected so far. Valid values: 0 -
         // 100000 = current counter value for the restart attempts FFFFFFFFh = signal invalid / implausible / Das Result
-        // enthÃ¤lt den aktuellen ZÃ¤hlerstand fÃ¼r die  bisher erkannten KurzschlÃ¼sse gegen Masse. GÃ¼ltige Werte: 0 -
-        // 100000 = Aktueller ZÃ¤hlerwert fÃ¼r die Wiedereinschaltversuche FFFFFFFFh = Signal ungÃ¼ltig / unplausibel
+        // enthält den aktuellen Zählerstand für die  bisher erkannten Kurzschlüsse gegen Masse. Gültige Werte: 0 -
+        // 100000 = Aktueller Zählerwert für die Wiedereinschaltversuche FFFFFFFFh = Signal ungültig / unplausibel
 
     #define I3_RES_BDC_STAT_HECKKLAPPE_ZAEHLER_KS_RESTARTS_WERT      (RXBUF_UCHAR(4))
     #define I3_RES_BDC_STAT_HECKKLAPPE_ZAEHLER_KS_RESTARTS_WERT_TYPE unsigned char
-        // The result contains the number of reclosing attempts carried out so far in cycle KL15 on -> KL15 off Valid
+        // The result contains the number of reconnection attempts carried out so far in cycle KL15 on -> KL15 off Valid
         // values: 0 - 254 = current counter value for reclosing attempts 255 = signal invalid / implausible / Das Result
-        // enthÃ¤lt die Anzahl der bisher durchgefÃ¼hrten Wiedereinschaltversuche im Zyklus KL15 ein -> KL15 aus GÃ¼ltige
-        // Werte: 0 - 254 = Aktueller ZÃ¤hlerwert fÃ¼r die Wiedereinschaltversuche 255 = Signal ungÃ¼ltig / unplausibel
+        // enthält die Anzahl der bisher durchgeführten Wiedereinschaltversuche im Zyklus KL15 ein -> KL15 aus Gültige
+        // Werte: 0 - 254 = Aktueller Zählerwert für die Wiedereinschaltversuche 255 = Signal ungültig / unplausibel
 
     #define I3_RES_BDC_STAT_HECKKLAPPE_ZAEHLER_KS_KL15_CYCLES_WERT   (RXBUF_UCHAR(5))
     #define I3_RES_BDC_STAT_HECKKLAPPE_ZAEHLER_KS_KL15_CYCLES_WERT_TYPE unsigned char
-        // The result contains the current number of resets that have already been carried out for short-circuit
-        // disconnection by KL15. Valid values: 0 - 254 = current counter value for the number of short-circuit shutdown
-        // resets that have already been carried out. 255 = signal invalid / implausible / Das Result enthÃ¤lt den
-        // aktuelle Anzahl an bereits durchgefÃ¼hrten Resets des Kurzschlussabschaltung durch KL15 ein. GÃ¼ltige Werte: 0
-        // - 254 = Aktueller ZÃ¤hlerwert fÃ¼r die Anzahl an bereits durchgefÃ¼hrten Resets der Kurzschlussabschaltung 255
-        // = Signal ungÃ¼ltig / unplausibel
+        // The result contains the current number of resets that have already been carried out for short-circuit shutdown
+        // by KL15. Valid values: 0 - 254 = current counter value for the number of resets already carried out for
+        // short-circuit shutdown 255 = signal invalid / implausible / Das Result enthält den aktuelle Anzahl an bereits
+        // durchgeführten Resets des Kurzschlussabschaltung durch KL15 ein. Gültige Werte: 0 - 254 = Aktueller Zählerwert
+        // für die Anzahl an bereits durchgeführten Resets der Kurzschlussabschaltung 255 = Signal ungültig / unplausibel
 
     #define I3_RES_BDC_STAT_HECKSCHEIBE_ZAEHLER_COUNT_MAX_WERT       (RXBUF_UINT32(6))
     #define I3_RES_BDC_STAT_HECKSCHEIBE_ZAEHLER_COUNT_MAX_WERT_TYPE  unsigned long
         // The result contains the current count for the short-circuits to ground detected so far. Valid values: ¿0 -
         // 100000 = current counter value for the restart attempts FFFFFFFFh = signal invalid / implausible / Das Result
-        // enthÃ¤lt den aktuellen ZÃ¤hlerstand fÃ¼r die  bisher erkannten KurzschlÃ¼sse gegen Masse. GÃ¼ltige Werte: Â¿ 
-        // 0 - 100000 =Aktueller ZÃ¤hlerwert fÃ¼r die Wiedereinschaltversuche FFFFFFFFh = Signal ungÃ¼ltig / unplausibel
+        // enthält den aktuellen Zählerstand für die  bisher erkannten Kurzschlüsse gegen Masse. Gültige Werte: ¿  0 -
+        // 100000 =Aktueller Zählerwert für die Wiedereinschaltversuche FFFFFFFFh = Signal ungültig / unplausibel
 
     #define I3_RES_BDC_STAT_HECKSCHEIBE_ZAEHLER_KS_RESTARTS_WERT     (RXBUF_UCHAR(10))
     #define I3_RES_BDC_STAT_HECKSCHEIBE_ZAEHLER_KS_RESTARTS_WERT_TYPE unsigned char
-        // The result contains the number of reclosing attempts carried out so far in cycle KL15 on -> KL15 off Valid
+        // The result contains the number of reconnection attempts carried out so far in cycle KL15 on -> KL15 off Valid
         // values: 0 - 254 = current counter value for reclosing attempts 255 = signal invalid / implausible / Das Result
-        // enthÃ¤lt die Anzahl der bisher durchgefÃ¼hrten Wiedereinschaltversuche im Zyklus KL15 ein -> KL15 aus GÃ¼ltige
-        // Werte: 0 - 254 = Aktueller ZÃ¤hlerwert fÃ¼r die Wiedereinschaltversuche 255 = Signal ungÃ¼ltig / unplausibel
+        // enthält die Anzahl der bisher durchgeführten Wiedereinschaltversuche im Zyklus KL15 ein -> KL15 aus Gültige
+        // Werte: 0 - 254 = Aktueller Zählerwert für die Wiedereinschaltversuche 255 = Signal ungültig / unplausibel
 
     #define I3_RES_BDC_STAT_HECKSCHEIBE_ZAEHLER_KS_KL15_CYCLES_WERT  (RXBUF_UCHAR(11))
     #define I3_RES_BDC_STAT_HECKSCHEIBE_ZAEHLER_KS_KL15_CYCLES_WERT_TYPE unsigned char
-        // The result contains the current number of resets that have already been carried out for short-circuit
-        // disconnection by KL15. Valid values: 0 - 254 = current counter value for the number of short-circuit shutdown
-        // resets that have already been carried out. 255 = signal invalid / implausible / Das Result enthÃ¤lt den
-        // aktuelle Anzahl an bereits durchgefÃ¼hrten Resets des Kurzschlussabschaltung durch KL15 ein. GÃ¼ltige Werte: 0
-        // - 254 = Aktueller ZÃ¤hlerwert fÃ¼r die Anzahl an bereits durchgefÃ¼hrten Resets der Kurzschlussabschaltung 255
-        // = Signal ungÃ¼ltig / unplausibel
+        // The result contains the current number of resets that have already been carried out for short-circuit shutdown
+        // by KL15. Valid values: 0 - 254 = current counter value for the number of resets already carried out for
+        // short-circuit shutdown 255 = signal invalid / implausible / Das Result enthält den aktuelle Anzahl an bereits
+        // durchgeführten Resets des Kurzschlussabschaltung durch KL15 ein. Gültige Werte: 0 - 254 = Aktueller Zählerwert
+        // für die Anzahl an bereits durchgeführten Resets der Kurzschlussabschaltung 255 = Signal ungültig / unplausibel
 
     #define I3_RES_BDC_STAT_KODIERUNG_RESTARTS_WERT                  (RXBUF_UCHAR(12))
     #define I3_RES_BDC_STAT_KODIERUNG_RESTARTS_WERT_TYPE             unsigned char
-        // The result contains the codable maximum value of restart attempts in cycle KL15 on -> KL15 off -> KL15 on.
-        // Valid values: 0 - 254 = maximum value for the restart attempts 255 = signal invalid / implausible / Das Result
-        // enthÃ¤lt den codierbaren maximalen Wert an Wiedereinschaltversuche im Zyklus KL15 ein -> KL15 aus -> KL15 ein.
-        // GÃ¼ltige Werte: 0 - 254 = maximaler Wert fÃ¼r die Wiedereinschaltversuche 255 = Signal ungÃ¼ltig / unplausibel
+        // The result contains the maximum value that can be coded for restart attempts in cycle KL15 on -> KL15 off ->
+        // KL15 on. Valid values: 0 - 254 = maximum value for the restart attempts 255 = signal invalid / implausible /
+        // Das Result enthält den codierbaren maximalen Wert an Wiedereinschaltversuche im Zyklus KL15 ein -> KL15 aus ->
+        // KL15 ein. Gültige Werte: 0 - 254 = maximaler Wert für die Wiedereinschaltversuche 255 = Signal ungültig /
+        // unplausibel
 
     #define I3_RES_BDC_STAT_KODIERUNG_KL15_CYCLES_WERT               (RXBUF_UCHAR(13))
     #define I3_RES_BDC_STAT_KODIERUNG_KL15_CYCLES_WERT_TYPE          unsigned char
         // The result contains the codable maximum value of resets of the short-circuit shutdown by KL15. Valid values: 0
-        // - 254 = maximum value for the resets of the short-circuit switch-off 255 = invalid / implausible / Das Result
-        // enthÃ¤lt den codierbaren maximalen Wert an Resets des Kurzschlussabschaltung durch KL15 ein. GÃ¼ltige Werte: 0
-        // - 254 = maximaler Wert fÃ¼r die Resets der Kurzschlussabschaltung 255 = UngÃ¼ltig / unplausibel
+        // - 254 = maximum value for the resets of the short-circuit disconnection 255 = invalid / implausible / Das
+        // Result enthält den codierbaren maximalen Wert an Resets des Kurzschlussabschaltung durch KL15 ein. Gültige
+        // Werte: 0 - 254 = maximaler Wert für die Resets der Kurzschlussabschaltung 255 = Ungültig / unplausibel
 
 // Skipping _INNENBELEUCHTUNG_PWM on 0x4800 which takes arguments
 
@@ -6267,7 +6252,7 @@
     #define I3_RES_BDC_STAT_SARAH_TASTER_WERT                        (RXBUF_UINT(4))
     #define I3_RES_BDC_STAT_SARAH_TASTER_WERT_UNIT                   'Counts'
     #define I3_RES_BDC_STAT_SARAH_TASTER_WERT_TYPE                   unsigned short
-        // Number of SARAH key presses / Anzahl SARAH TastendrÃ¼cke
+        // Number of SARAH key presses / Anzahl SARAH Tastendrücke
 
     #define I3_RES_BDC_STAT_SARAH_CONFIG_WERT                        (RXBUF_UINT(6))
     #define I3_RES_BDC_STAT_SARAH_CONFIG_WERT_UNIT                   'Counts'
@@ -6278,7 +6263,7 @@
     #define I3_RES_BDC_STAT_SARAH_CONFIG_DIREKT_WERT_UNIT            'Counts'
     #define I3_RES_BDC_STAT_SARAH_CONFIG_DIREKT_WERT_TYPE            unsigned char
         // Number of SARAH configurations via the settings menu (last key operation more than 5 minutes ago) / Anzahl der
-        // SARAH Konfigurationen Ã¼ber Einstellungsmenu (letzte Tastenbedienung mehr als 5 min zurÃ¼ckliegend)
+        // SARAH Konfigurationen über Einstellungsmenu (letzte Tastenbedienung mehr als 5 min zurückliegend)
 
     #define I3_RES_BDC_STAT_RESERVE1_WERT                            (RXBUF_UCHAR(9))
     #define I3_RES_BDC_STAT_RESERVE1_WERT_TYPE                       unsigned char
@@ -6305,48 +6290,48 @@
         // reserve / Reserve
 
 #define I3_PID_BDC__STATUS_BASESTATION                               0x4E07
-        // The result contains the 6 bytes of raw data from the base station register. / Das Ergebnis enthÃ¤lt die 6 Byte
+        // The result contains the 6 bytes of raw data from the base station register. / Das Ergebnis enthält die 6 Byte
         // Rohdaten der Basestation-Register.
 
     // Can't yet generate code for STAT_BASESTATION_RAW_WERT_DATA of type data[6] at offset 0. But we account for the 6 bytes
-        // The result contains the 6 bytes of raw data from the base station register. / Das Ergebnis enthÃ¤lt die 6 Byte
+        // The result contains the 6 bytes of raw data from the base station register. / Das Ergebnis enthält die 6 Byte
         // Rohdaten der Basestation-Register.
 
 #define I3_PID_BDC_IBS_WAKEUP_GRUND                                  0x4F0E
-        // The result contains the last wakeup reason from IBS stored in the FEM. / Das Result enthÃ¤lt den im FEM
+        // The result contains the last wake-up reason from the IBS stored in the FEM. / Das Result enthält den im FEM
         // gespeicherten letzten Wakeupgrund vom IBS.
 
     #define I3_RES_BDC_STAT_IBS_WAKEUP                               (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_IBS_WAKEUP_UNIT                          '0-n'
     #define I3_RES_BDC_STAT_IBS_WAKEUP_TYPE                          unsigned char
-        // The result contains the last wakeup reason from IBS stored in the FEM. / Das Result enthÃ¤lt den im FEM
+        // The result contains the last wake-up reason from the IBS stored in the FEM. / Das Result enthält den im FEM
         // gespeicherten letzten Wakeupgrund vom IBS.
 
 #define I3_PID_BDC__STATUS_DFZ_SK                                    0x5001
-        // The result contains the secret key of the DFZ. 16 byte hexadecimal value / Das Ergebnis enthÃ¤lt die Secret
-        // Key des DFZ. 16 Byte Hexadezimaler Wert
+        // The result contains the secret key of the DFZ. 16 byte hexadecimal value / Das Ergebnis enthält die Secret Key
+        // des DFZ. 16 Byte Hexadezimaler Wert
 
     // Can't process STAT_DFZ_SK_WERT - don't know type string (*** this will mean all the following offsets are wrong!!! ****)
 
 // Skipping _DFZ_MODUS on 0x5002 which takes arguments
 
 #define I3_PID_BDC__STATUS_DFZ_GUELTIGKEIT                           0x5003
-        // The result contains the value of the DFZ validity counter. 0-255 / Das Result enthÃ¤lt den Wert des DFZ
-        // GÃ¼ltigkeitszÃ¤hlers. 0-255
+        // The result contains the value of the DFZ validity counter. 0-255 / Das Result enthält den Wert des DFZ
+        // Gültigkeitszählers. 0-255
 
     #define I3_RES_BDC_STAT_DFZ_GUELTIGKEITSZAEHLER_WERT             (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_DFZ_GUELTIGKEITSZAEHLER_WERT_TYPE        unsigned char
-        // The result contains the value of the DFZ validity counter. 0-255 / Das Result enthÃ¤lt den Wert des DFZ
-        // GÃ¼ltigkeitszÃ¤hlers. 0-255
+        // The result contains the value of the DFZ validity counter. 0-255 / Das Result enthält den Wert des DFZ
+        // Gültigkeitszählers. 0-255
 
 // Skipping _STEUERN_FBD_EMPFAENGER on 0x5007 which takes arguments
 
 #define I3_PID_BDC__KLEMMENSTEUERUNG_KURZSCHLUSSABSCHALTUNG_ZAEHLER  0x5020
         // This job is used to read out the counter values and coding parameters for the permanent short-circuit shutdown
         // of the KL30B / KL15N and KL30B-ACSM drivers. The short-circuit shutdown serves to protect the HW driver from
-        // overload. / Dieser Job dient zum Auslesen der ZÃ¤hlerwerte und Kodierparameter der dauerhaften
+        // overload. / Dieser Job dient zum Auslesen der Zählerwerte und Kodierparameter der dauerhaften
         // Kurzschlussabschaltung der Treiber KL30B/KL15N und KL30B-ACSM. Die Kurzschlussabschaltung dient zum
-        // Ãberlastschutz des HW-Treiber.
+        // Überlastschutz des HW-Treiber.
 
     #define I3_RES_BDC_STAT_TREIBER_15N1_ZAEHLER_COUNT_MAX_WERT      (RXBUF_UINT32(0))
     #define I3_RES_BDC_STAT_TREIBER_15N1_ZAEHLER_COUNT_MAX_WERT_TYPE unsigned long
@@ -6354,12 +6339,12 @@
         // driver. Note: ¿The start value is 100000 and is decremented by 1 for each SW or HW-related short circuit
         // detected (see also request ZSG_BF_13075). If the value 0 is reached, the output is permanently deactivated and
         // cannot be reset using terminal switching or a diagnostic job. -> SG exchange necessary. 0 - 100000 = current
-        // counter value for the restart attempts FFFFFFFFh = signal invalid / implausible / Das Result enthÃ¤lt den
-        // aktuellen ZÃ¤hlerstand fÃ¼r die  bisher erkannten KurzschlÃ¼sse gegen Masse des Treibers KL15N1. Hinweis:  Â¿ 
-        // Startwert ist 100000 und wird pro SW- oder HW-mÃ¤Ãigem erkanntem Kurzschluss um 1 dekrementiert (Siehe hierzu
+        // counter value for the restart attempts FFFFFFFFh = signal invalid / implausible / Das Result enthält den
+        // aktuellen Zählerstand für die  bisher erkannten Kurzschlüsse gegen Masse des Treibers KL15N1. Hinweis:  ¿  
+        // Startwert ist 100000 und wird pro SW- oder HW-mäßigem erkanntem Kurzschluss um 1 dekrementiert (Siehe hierzu
         // auch Anforderung ZSG_BF_13075).Wird der Wert 0 erreicht, so wird der Ausgang dauerhaft deaktiviert kann weder
-        // mittels Klemmenschalten noch per Diagnosejob zurÃ¼ckgesetzt werden. -> SG-Tausch nÃ¶tig.  0 - 100000
-        // =Aktueller ZÃ¤hlerwert fÃ¼r die Wiedereinschaltversuche FFFFFFFFh = Signal ungÃ¼ltig / unplausibel
+        // mittels Klemmenschalten noch per Diagnosejob zurückgesetzt werden. -> SG-Tausch nötig.  0 - 100000 =Aktueller
+        // Zählerwert für die Wiedereinschaltversuche FFFFFFFFh = Signal ungültig / unplausibel
 
     #define I3_RES_BDC_STAT_TREIBER_15N1_ZAEHLER_KS_RESTARTS_WERT    (RXBUF_UCHAR(4))
     #define I3_RES_BDC_STAT_TREIBER_15N1_ZAEHLER_KS_RESTARTS_WERT_TYPE unsigned char
@@ -6367,23 +6352,23 @@
         // driver KL15N1. Note: After a short circuit is detected (on the software or hardware side), the driver is
         // reactivated as often as the maximum defined by the coding. Afterwards, a terminal change KL15 off -> KL15 on
         // is necessary in order to restart the restart attempts (see requirements ZSG_BF_13096 and ZSG_BF_13097) 0 - 254
-        // = current counter value for the restart attempts 255 = signal invalid / implausible / Das Result enthÃ¤lt die
-        // Anzahl der bisher durchgefÃ¼hrten Wiedereinschaltversuche im Zyklus KL15 ein -> KL15 aus des Treibers KL15N1. 
+        // = current counter value for the restart attempts 255 = signal invalid / implausible / Das Result enthält die
+        // Anzahl der bisher durchgeführten Wiedereinschaltversuche im Zyklus KL15 ein -> KL15 aus des Treibers KL15N1. 
         // Hinweis:  Nach erkanntem Kurzschluss (SW- oder HW-seitig) wird der Treiber so oft wieder aktiviert, wie
-        // maximal per Codierung definiert. Danach ist ein Klemmenwechsel KL15 aus -> KL15 ein nÃ¶tig, um die
+        // maximal per Codierung definiert. Danach ist ein Klemmenwechsel KL15 aus -> KL15 ein nötig, um die
         // Wiedereinschaltversuche erneut zu starten (Siehe hierzu Anfoderungen ZSG_BF_13096 und ZSG_BF_13097) 0 - 254 =
-        // Aktueller ZÃ¤hlerwert fÃ¼r die Wiedereinschaltversuche 255 = Signal ungÃ¼ltig / unplausibel
+        // Aktueller Zählerwert für die Wiedereinschaltversuche 255 = Signal ungültig / unplausibel
 
     #define I3_RES_BDC_STAT_TREIBER_15N1_ZAEHLER_KS_KL15_CYCLES_WERT (RXBUF_UCHAR(5))
     #define I3_RES_BDC_STAT_TREIBER_15N1_ZAEHLER_KS_KL15_CYCLES_WERT_TYPE unsigned char
         // The result contains the current number of already performed resets of the short-circuit shutdown by KL15 on of
         // the driver KL15N1. Note: The coding defines how often the short-circuit switch-off can be reset by switching
         // terminal 15. (See requirements ZSG_BF_13098) 0 - 254 = Current counter value for the number of resets already
-        // carried out for short-circuit shutdown 255 = Signal invalid / implausible / Das Result enthÃ¤lt den aktuelle
-        // Anzahl an bereits durchgefÃ¼hrten Resets des Kurzschlussabschaltung durch KL15 ein des Treibers KL15N1. 
+        // carried out for short-circuit shutdown 255 = Signal invalid / implausible / Das Result enthält den aktuelle
+        // Anzahl an bereits durchgeführten Resets des Kurzschlussabschaltung durch KL15 ein des Treibers KL15N1. 
         // Hinweis:  Per Kodierung ist festgelegt wie oft die Kurzschlussabschaltung durch Schalten der Klemme 15
-        // zurÃ¼ckgesetzt werden kann. (Siehe hierzu Anfoderungen ZSG_BF_13098) 0 - 254 = Aktueller ZÃ¤hlerwert fÃ¼r die
-        // Anzahl an bereits durchgefÃ¼hrten Resets der Kurzschlussabschaltung 255 = Signal ungÃ¼ltig / unplausibel
+        // zurückgesetzt werden kann. (Siehe hierzu Anfoderungen ZSG_BF_13098) 0 - 254 = Aktueller Zählerwert für die
+        // Anzahl an bereits durchgeführten Resets der Kurzschlussabschaltung 255 = Signal ungültig / unplausibel
 
     #define I3_RES_BDC_STAT_TREIBER_15N2_ZAEHLER_COUNT_MAX_WERT      (RXBUF_UINT32(6))
     #define I3_RES_BDC_STAT_TREIBER_15N2_ZAEHLER_COUNT_MAX_WERT_TYPE unsigned long
@@ -6391,12 +6376,12 @@
         // KL15N2 driver. Note: The start value is 100000 and is decremented by 1 for each SW or HW-related short circuit
         // detected (see also requirement ZSG_BF_13075). If the value 0 is reached, the output is permanently deactivated
         // and cannot be reset using terminal switching or a diagnostic job. -> SG exchange necessary. 0 - 100000 =
-        // current counter value for the restart attempts FFFFFFFFh = signal invalid / implausible / Das Result enthÃ¤lt
-        // den aktuellen ZÃ¤hlerstand fÃ¼r die  bisher erkannten KurzschlÃ¼sse gegen Masse des Treibers KL15N2. Hinweis: 
-        // Startwert ist 100000 und wird pro SW- oder HW-mÃ¤Ãigem erkanntem Kurzschluss um 1 dekrementiert (Siehe hierzu
+        // current counter value for the restart attempts FFFFFFFFh = signal invalid / implausible / Das Result enthält
+        // den aktuellen Zählerstand für die  bisher erkannten Kurzschlüsse gegen Masse des Treibers KL15N2. Hinweis:  
+        // Startwert ist 100000 und wird pro SW- oder HW-mäßigem erkanntem Kurzschluss um 1 dekrementiert (Siehe hierzu
         // auch Anforderung ZSG_BF_13075).Wird der Wert 0 erreicht, so wird der Ausgang dauerhaft deaktiviert kann weder
-        // mittels Klemmenschalten noch per Diagnosejob zurÃ¼ckgesetzt werden. -> SG-Tausch nÃ¶tig. 0 - 100000 =Aktueller
-        // ZÃ¤hlerwert fÃ¼r die Wiedereinschaltversuche FFFFFFFFh = Signal ungÃ¼ltig / unplausibel
+        // mittels Klemmenschalten noch per Diagnosejob zurückgesetzt werden. -> SG-Tausch nötig. 0 - 100000 =Aktueller
+        // Zählerwert für die Wiedereinschaltversuche FFFFFFFFh = Signal ungültig / unplausibel
 
     #define I3_RES_BDC_STAT_TREIBER_15N2_ZAEHLER_KS_RESTARTS_WERT    (RXBUF_UCHAR(10))
     #define I3_RES_BDC_STAT_TREIBER_15N2_ZAEHLER_KS_RESTARTS_WERT_TYPE unsigned char
@@ -6404,23 +6389,23 @@
         // driver KL15N2. Note: After a short circuit is detected (on the software or hardware side), the driver is
         // reactivated as often as the maximum defined by the coding. Afterwards, a terminal change KL15 off -> KL15 on
         // is necessary in order to restart the restart attempts (see requirements ZSG_BF_13096 and ZSG_BF_13097) 0 - 254
-        // = current counter value for the restart attempts 255 = signal invalid / implausible / Das Result enthÃ¤lt die
-        // Anzahl der bisher durchgefÃ¼hrten Wiedereinschaltversuche im Zyklus KL15 ein -> KL15 aus des Treibers KL15N2. 
+        // = current counter value for the restart attempts 255 = signal invalid / implausible / Das Result enthält die
+        // Anzahl der bisher durchgeführten Wiedereinschaltversuche im Zyklus KL15 ein -> KL15 aus des Treibers KL15N2. 
         // Hinweis:  Nach erkanntem Kurzschluss (SW- oder HW-seitig) wird der Treiber so oft wieder aktiviert, wie
-        // maximal per Codierung definiert. Danach ist ein Klemmenwechsel KL15 aus -> KL15 ein nÃ¶tig, um die
+        // maximal per Codierung definiert. Danach ist ein Klemmenwechsel KL15 aus -> KL15 ein nötig, um die
         // Wiedereinschaltversuche erneut zu starten (Siehe hierzu Anfoderungen ZSG_BF_13096 und ZSG_BF_13097) 0 - 254 =
-        // Aktueller ZÃ¤hlerwert fÃ¼r die Wiedereinschaltversuche 255 = Signal ungÃ¼ltig / unplausibel
+        // Aktueller Zählerwert für die Wiedereinschaltversuche 255 = Signal ungültig / unplausibel
 
     #define I3_RES_BDC_STAT_TREIBER_15N2_ZAEHLER_KS_KL15_CYCLES_WERT (RXBUF_UCHAR(11))
     #define I3_RES_BDC_STAT_TREIBER_15N2_ZAEHLER_KS_KL15_CYCLES_WERT_TYPE unsigned char
         // The result contains the current number of already performed resets of the short-circuit shutdown by KL15 on of
         // the driver KL15N2. Note: The coding defines how often the short-circuit switch-off can be reset by switching
         // terminal 15. (See requirements ZSG_BF_13098) 0 - 254 = Current counter value for the number of resets already
-        // carried out for short-circuit shutdown 255 = Signal invalid / implausible / Das Result enthÃ¤lt den aktuelle
-        // Anzahl an bereits durchgefÃ¼hrten Resets des Kurzschlussabschaltung durch KL15 ein des Treibers KL15N2. 
+        // carried out for short-circuit shutdown 255 = Signal invalid / implausible / Das Result enthält den aktuelle
+        // Anzahl an bereits durchgeführten Resets des Kurzschlussabschaltung durch KL15 ein des Treibers KL15N2. 
         // Hinweis:  Per Kodierung ist festgelegt wie oft die Kurzschlussabschaltung durch Schalten der Klemme 15
-        // zurÃ¼ckgesetzt werden kann. (Siehe hierzu Anfoderungen ZSG_BF_13098) 0 - 254 = Aktueller ZÃ¤hlerwert fÃ¼r die
-        // Anzahl an bereits durchgefÃ¼hrten Resets der Kurzschlussabschaltung 255 = Signal ungÃ¼ltig / unplausibel
+        // zurückgesetzt werden kann. (Siehe hierzu Anfoderungen ZSG_BF_13098) 0 - 254 = Aktueller Zählerwert für die
+        // Anzahl an bereits durchgeführten Resets der Kurzschlussabschaltung 255 = Signal ungültig / unplausibel
 
     #define I3_RES_BDC_STAT_TREIBER_KL30BACSM_ZAEHLER_COUNT_MAX_WERT (RXBUF_UINT32(12))
     #define I3_RES_BDC_STAT_TREIBER_KL30BACSM_ZAEHLER_COUNT_MAX_WERT_TYPE unsigned long
@@ -6429,51 +6414,48 @@
         // circuit detected (see also request ZSG_BF_13075). If the value 0 is reached, the output is permanently
         // deactivated and cannot be reset using terminal switching or a diagnostic job. -> SG exchange necessary. 0 -
         // 100000 = current counter value for the restart attempts FFFFFFFFh = signal invalid / implausible / Das Result
-        // enthÃ¤lt den aktuellen ZÃ¤hlerstand fÃ¼r die bisher erkannten KurzschlÃ¼sse gegen Masse des Treibers
-        // KL30B-ACSM. Hinweis:  Â¿   Startwert ist 100000 und wird pro SW- oder HW-mÃ¤Ãigem erkanntem Kurzschluss um 1
-        // dekrementiert (Siehe hierzu auch Anforderung ZSG_BF_13075).Wird der Wert 0 erreicht, so wird der Ausgang
-        // dauerhaft deaktiviert kann weder mittels Klemmenschalten noch per Diagnosejob zurÃ¼ckgesetzt werden. ->
-        // SG-Tausch nÃ¶tig. 0 - 100000 =Aktueller ZÃ¤hlerwert fÃ¼r die Wiedereinschaltversuche FFFFFFFFh = Signal
-        // ungÃ¼ltig / unplausibel
+        // enthält den aktuellen Zählerstand für die bisher erkannten Kurzschlüsse gegen Masse des Treibers KL30B-ACSM.
+        // Hinweis:  ¿   Startwert ist 100000 und wird pro SW- oder HW-mäßigem erkanntem Kurzschluss um 1 dekrementiert
+        // (Siehe hierzu auch Anforderung ZSG_BF_13075).Wird der Wert 0 erreicht, so wird der Ausgang dauerhaft
+        // deaktiviert kann weder mittels Klemmenschalten noch per Diagnosejob zurückgesetzt werden. -> SG-Tausch nötig.
+        // 0 - 100000 =Aktueller Zählerwert für die Wiedereinschaltversuche FFFFFFFFh = Signal ungültig / unplausibel
 
     #define I3_RES_BDC_STAT_TREIBER_KL30BACSM_ZAEHLER_KS_RESTARTS_WERT (RXBUF_UCHAR(16))
     #define I3_RES_BDC_STAT_TREIBER_KL30BACSM_ZAEHLER_KS_RESTARTS_WERT_TYPE unsigned char
-        // The result contains the number of reconnection attempts made so far in cycle KL15 on -> KL15 off of the
+        // The result contains the number of reconnection attempts carried out so far in cycle KL15 on -> KL15 off of the
         // KL30B-ACSM driver. Note: After a short circuit is detected (on the software or hardware side), the driver is
         // reactivated as often as the maximum defined by the coding. Afterwards, a terminal change KL15 off -> KL15 on
-        // is necessary in order to start the restart attempts again (see requirements ZSG_BF_13096 and ZSG_BF_13097). 0
-        // - 254 = current counter value for the restart attempts 255 = signal invalid / implausible / Das Result
-        // enthÃ¤lt die Anzahl der bisher durchgefÃ¼hrten Wiedereinschaltversuche im Zyklus KL15 ein -> KL15 aus des
-        // Treibers KL30B-ACSM.  Hinweis:  Nach erkanntem Kurzschluss (SW- oder HW-seitig) wird der Treiber so oft wieder
-        // aktiviert, wie maximal per Codierung definiert. Danach ist ein Klemmenwechsel KL15 aus -> KL15 ein nÃ¶tig, um
+        // is necessary in order to restart the restart attempts (see requirements ZSG_BF_13096 and ZSG_BF_13097). 0 -
+        // 254 = current counter value for the restart attempts 255 = signal invalid / implausible / Das Result enthält
+        // die Anzahl der bisher durchgeführten Wiedereinschaltversuche im Zyklus KL15 ein -> KL15 aus des Treibers
+        // KL30B-ACSM.  Hinweis:  Nach erkanntem Kurzschluss (SW- oder HW-seitig) wird der Treiber so oft wieder
+        // aktiviert, wie maximal per Codierung definiert. Danach ist ein Klemmenwechsel KL15 aus -> KL15 ein nötig, um
         // die Wiedereinschaltversuche erneut zu starten (Siehe hierzu Anfoderungen ZSG_BF_13096 und ZSG_BF_13097). 0 -
-        // 254 = Aktueller ZÃ¤hlerwert fÃ¼r die Wiedereinschaltversuche 255 = Signal ungÃ¼ltig / unplausibel
+        // 254 = Aktueller Zählerwert für die Wiedereinschaltversuche 255 = Signal ungültig / unplausibel
 
     #define I3_RES_BDC_STAT_TREIBER_KL30BACSM_ZAEHLER_KS_KL15_CYCLES_WERT (RXBUF_UCHAR(17))
     #define I3_RES_BDC_STAT_TREIBER_KL30BACSM_ZAEHLER_KS_KL15_CYCLES_WERT_TYPE unsigned char
-        // The result contains the current number of already performed resets of the short-circuit shutdown by KL15 on of
+        // The result contains the current number of already performed resets of the short-circuit shutdown by KL15 on
         // the KL30B-ACSM driver. Note: The coding defines how often the short-circuit switch-off can be reset by
         // switching terminal 15. (See requirements ZSG_BF_13098) 0 - 254 = Current counter value for the number of
-        // resets already carried out for short-circuit shutdown 255 = Signal invalid / implausible / Das Result enthÃ¤lt
-        // den aktuelle Anzahl an bereits durchgefÃ¼hrten Resets des Kurzschlussabschaltung durch KL15 ein des Treibers
+        // resets already carried out for short-circuit shutdown 255 = Signal invalid / implausible / Das Result enthält
+        // den aktuelle Anzahl an bereits durchgeführten Resets des Kurzschlussabschaltung durch KL15 ein des Treibers
         // KL30B-ACSM.  Hinweis:  Per Kodierung ist festgelegt wie oft die Kurzschlussabschaltung durch Schalten der
-        // Klemme 15 zurÃ¼ckgesetzt werden kann. (Siehe hierzu Anfoderungen ZSG_BF_13098) 0 - 254 = Aktueller ZÃ¤hlerwert
-        // fÃ¼r die Anzahl an bereits durchgefÃ¼hrten Resets der Kurzschlussabschaltung 255 = Signal ungÃ¼ltig /
-        // unplausibel
+        // Klemme 15 zurückgesetzt werden kann. (Siehe hierzu Anfoderungen ZSG_BF_13098) 0 - 254 = Aktueller Zählerwert
+        // für die Anzahl an bereits durchgeführten Resets der Kurzschlussabschaltung 255 = Signal ungültig / unplausibel
 
     #define I3_RES_BDC_STAT_TREIBER_KL30B1_ZAEHLER_COUNT_MAX_WERT    (RXBUF_UINT32(18))
     #define I3_RES_BDC_STAT_TREIBER_KL30B1_ZAEHLER_COUNT_MAX_WERT_TYPE unsigned long
-        // The result contains the current counter status for the previously detected short circuits to ground of the
+        // The result contains the current counter status for the previously recognized short circuits to ground of the
         // KL30B-1 driver. Note: The start value is 100000 and is decremented by 1 for each SW or HW-related short
         // circuit detected (see also requirement ZSG_BF_13075). If the value 0 is reached, the output is permanently
         // deactivated and cannot be reset using terminal switching or a diagnostic job. -> SG exchange necessary. 0 -
         // 100000 = current counter value for the restart attempts FFFFFFFFh = signal invalid / implausible / Das Result
-        // enthÃ¤lt den aktuellen ZÃ¤hlerstand fÃ¼r die  bisher erkannten KurzschlÃ¼sse gegen Masse des Treibers KL30B-1.
-        // Hinweis:   Startwert ist 100000 und wird pro SW- oder HW-mÃ¤Ãigem erkanntem Kurzschluss um 1 dekrementiert
+        // enthält den aktuellen Zählerstand für die  bisher erkannten Kurzschlüsse gegen Masse des Treibers KL30B-1.
+        // Hinweis:   Startwert ist 100000 und wird pro SW- oder HW-mäßigem erkanntem Kurzschluss um 1 dekrementiert
         // (Siehe hierzu auch Anforderung ZSG_BF_13075).Wird der Wert 0 erreicht, so wird der Ausgang dauerhaft
-        // deaktiviert kann weder mittels Klemmenschalten noch per Diagnosejob zurÃ¼ckgesetzt werden. -> SG-Tausch
-        // nÃ¶tig. 0 - 100000 =Aktueller ZÃ¤hlerwert fÃ¼r die Wiedereinschaltversuche FFFFFFFFh = Signal ungÃ¼ltig /
-        // unplausibel
+        // deaktiviert kann weder mittels Klemmenschalten noch per Diagnosejob zurückgesetzt werden. -> SG-Tausch nötig.
+        // 0 - 100000 =Aktueller Zählerwert für die Wiedereinschaltversuche FFFFFFFFh = Signal ungültig / unplausibel
 
     #define I3_RES_BDC_STAT_TREIBER_KL30B1_ZAEHLER_KS_RESTARTS_WERT  (RXBUF_UCHAR(22))
     #define I3_RES_BDC_STAT_TREIBER_KL30B1_ZAEHLER_KS_RESTARTS_WERT_TYPE unsigned char
@@ -6481,79 +6463,78 @@
         // driver KL30B-1. Note: After a short circuit is detected (on the software or hardware side), the driver is
         // reactivated as often as the maximum defined by the coding. Afterwards, a terminal change KL15 off -> KL15 on
         // is necessary in order to restart the restart attempts (see requirements ZSG_BF_13096 and ZSG_BF_13097) 0 - 254
-        // = current counter value for the restart attempts 255 = signal invalid / implausible / Das Result enthÃ¤lt die
-        // Anzahl der bisher durchgefÃ¼hrten Wiedereinschaltversuche im Zyklus KL15 ein -> KL15 aus des Treibers KL30B-1.
+        // = current counter value for the restart attempts 255 = signal invalid / implausible / Das Result enthält die
+        // Anzahl der bisher durchgeführten Wiedereinschaltversuche im Zyklus KL15 ein -> KL15 aus des Treibers KL30B-1. 
         // Hinweis:  Nach erkanntem Kurzschluss (SW- oder HW-seitig) wird der Treiber so oft wieder aktiviert, wie
-        // maximal per Codierung definiert. Danach ist ein Klemmenwechsel KL15 aus -> KL15 ein nÃ¶tig, um die
+        // maximal per Codierung definiert. Danach ist ein Klemmenwechsel KL15 aus -> KL15 ein nötig, um die
         // Wiedereinschaltversuche erneut zu starten (Siehe hierzu Anfoderungen ZSG_BF_13096 und ZSG_BF_13097) 0 - 254 =
-        // Aktueller ZÃ¤hlerwert fÃ¼r die Wiedereinschaltversuche 255 = Signal ungÃ¼ltig / unplausibel
+        // Aktueller Zählerwert für die Wiedereinschaltversuche 255 = Signal ungültig / unplausibel
 
     #define I3_RES_BDC_STAT_TREIBER_KL30B1_ZAEHLER_KS_KL15_CYCLES_WERT (RXBUF_UCHAR(23))
     #define I3_RES_BDC_STAT_TREIBER_KL30B1_ZAEHLER_KS_KL15_CYCLES_WERT_TYPE unsigned char
-        // The result contains the current number of resets that have already been carried out for short-circuit
-        // disconnection by KL15 on of the KL30B-1 driver. Note: The coding defines how often the short-circuit
-        // switch-off can be reset by switching terminal 15. (See requirements ZSG_BF_13098) 0 - 254 = Current counter
-        // value for the number of resets already carried out for short-circuit shutdown 255 = Signal invalid /
-        // implausible / Das Result enthÃ¤lt den aktuelle Anzahl an bereits durchgefÃ¼hrten Resets des
-        // Kurzschlussabschaltung durch KL15 ein des Treibers KL30B-1.  Hinweis:  Per Kodierung ist festgelegt wie oft
-        // die Kurzschlussabschaltung durch Schalten der Klemme 15 zurÃ¼ckgesetzt werden kann. (Siehe hierzu Anfoderungen
-        // ZSG_BF_13098) 0 - 254 = Aktueller ZÃ¤hlerwert fÃ¼r die Anzahl an bereits durchgefÃ¼hrten Resets der
-        // Kurzschlussabschaltung 255 = Signal ungÃ¼ltig / unplausibel
+        // The result contains the current number of already performed resets of the short-circuit shutdown by KL15 on of
+        // the KL30B-1 driver. Note: The coding defines how often the short-circuit switch-off can be reset by switching
+        // terminal 15. (See requirements ZSG_BF_13098) 0 - 254 = Current counter value for the number of resets already
+        // carried out for short-circuit shutdown 255 = Signal invalid / implausible / Das Result enthält den aktuelle
+        // Anzahl an bereits durchgeführten Resets des Kurzschlussabschaltung durch KL15 ein des Treibers KL30B-1. 
+        // Hinweis:  Per Kodierung ist festgelegt wie oft die Kurzschlussabschaltung durch Schalten der Klemme 15
+        // zurückgesetzt werden kann. (Siehe hierzu Anfoderungen ZSG_BF_13098) 0 - 254 = Aktueller Zählerwert für die
+        // Anzahl an bereits durchgeführten Resets der Kurzschlussabschaltung 255 = Signal ungültig / unplausibel
 
     #define I3_RES_BDC_STAT_TREIBER_KL30B2_ZAEHLER_COUNT_MAX_WERT    (RXBUF_UINT32(24))
     #define I3_RES_BDC_STAT_TREIBER_KL30B2_ZAEHLER_COUNT_MAX_WERT_TYPE unsigned long
-        // The result contains the current count for the previously detected short circuits to ground of the KL30B-2
-        // driver. Note: The start value is 100000 and is decremented by 1 for each SW or HW-related short circuit
-        // detected (see also requirement ZSG_BF_13075). If the value 0 is reached, the output is permanently deactivated
-        // and cannot be reset using terminal switching or a diagnostic job. -> SG exchange necessary. 0 - 100000 =
-        // current counter value for the restart attempts FFFFFFFFh = signal invalid / implausible / Das Result enthÃ¤lt
-        // den aktuellen ZÃ¤hlerstand fÃ¼r die  bisher erkannten KurzschlÃ¼sse gegen Masse des Treibers KL30B-2. Hinweis:
-        // Startwert ist 100000 und wird pro SW- oder HW-mÃ¤Ãigem erkanntem Kurzschluss um 1 dekrementiert (Siehe hierzu
-        // auch Anforderung ZSG_BF_13075).Wird der Wert 0 erreicht, so wird der Ausgang dauerhaft deaktiviert kann weder
-        // mittels Klemmenschalten noch per Diagnosejob zurÃ¼ckgesetzt werden. -> SG-Tausch nÃ¶tig. 0 - 100000 =Aktueller
-        // ZÃ¤hlerwert fÃ¼r die Wiedereinschaltversuche FFFFFFFFh = Signal ungÃ¼ltig / unplausibel
+        // The result contains the current counter status for the previously recognized short circuits to ground of the
+        // KL30B-2 driver. Note: The start value is 100000 and is decremented by 1 for each SW or HW-related short
+        // circuit detected (see also requirement ZSG_BF_13075). If the value 0 is reached, the output is permanently
+        // deactivated and cannot be reset using terminal switching or a diagnostic job. -> SG exchange necessary. 0 -
+        // 100000 = current counter value for the restart attempts FFFFFFFFh = signal invalid / implausible / Das Result
+        // enthält den aktuellen Zählerstand für die  bisher erkannten Kurzschlüsse gegen Masse des Treibers KL30B-2.
+        // Hinweis:   Startwert ist 100000 und wird pro SW- oder HW-mäßigem erkanntem Kurzschluss um 1 dekrementiert
+        // (Siehe hierzu auch Anforderung ZSG_BF_13075).Wird der Wert 0 erreicht, so wird der Ausgang dauerhaft
+        // deaktiviert kann weder mittels Klemmenschalten noch per Diagnosejob zurückgesetzt werden. -> SG-Tausch nötig.
+        // 0 - 100000 =Aktueller Zählerwert für die Wiedereinschaltversuche FFFFFFFFh = Signal ungültig / unplausibel
 
     #define I3_RES_BDC_STAT_TREIBER_KL30B2_ZAEHLER_KS_RESTARTS_WERT  (RXBUF_UCHAR(28))
     #define I3_RES_BDC_STAT_TREIBER_KL30B2_ZAEHLER_KS_RESTARTS_WERT_TYPE unsigned char
-        // The result contains the number of reconnection attempts carried out so far in cycle KL15 on -> KL15 off of
-        // driver KL30B-2. Note: After a short circuit is detected (on the software or hardware side), the driver is
-        // reactivated as often as the maximum defined by the coding. Afterwards, a terminal change KL15 off -> KL15 on
-        // is necessary in order to restart the restart attempts (see requirements ZSG_BF_13096 and ZSG_BF_13097) 0 - 254
-        // = current counter value for the restart attempts 255 = signal invalid / implausible / Das Result enthÃ¤lt die
-        // Anzahl der bisher durchgefÃ¼hrten Wiedereinschaltversuche im Zyklus KL15 ein -> KL15 aus des Treibers KL30B-2.
-        // Hinweis:  Nach erkanntem Kurzschluss (SW- oder HW-seitig) wird der Treiber so oft wieder aktiviert, wie
-        // maximal per Codierung definiert. Danach ist ein Klemmenwechsel KL15 aus -> KL15 ein nÃ¶tig, um die
-        // Wiedereinschaltversuche erneut zu starten (Siehe hierzu Anfoderungen ZSG_BF_13096 und ZSG_BF_13097) 0 - 254 =
-        // Aktueller ZÃ¤hlerwert fÃ¼r die Wiedereinschaltversuche 255 = Signal ungÃ¼ltig / unplausibel
+        // The result contains the number of reconnection attempts carried out in cycle KL15 on -> KL15 off of driver
+        // KL30B-2. Note: After a short circuit is detected (on the software or hardware side), the driver is reactivated
+        // as often as the maximum defined by the coding. Afterwards, a terminal change KL15 off -> KL15 on is necessary
+        // in order to restart the restart attempts (see requirements ZSG_BF_13096 and ZSG_BF_13097) 0 - 254 = current
+        // counter value for the restart attempts 255 = signal invalid / implausible / Das Result enthält die Anzahl der
+        // bisher durchgeführten Wiedereinschaltversuche im Zyklus KL15 ein -> KL15 aus des Treibers KL30B-2.  Hinweis: 
+        // Nach erkanntem Kurzschluss (SW- oder HW-seitig) wird der Treiber so oft wieder aktiviert, wie maximal per
+        // Codierung definiert. Danach ist ein Klemmenwechsel KL15 aus -> KL15 ein nötig, um die Wiedereinschaltversuche
+        // erneut zu starten (Siehe hierzu Anfoderungen ZSG_BF_13096 und ZSG_BF_13097) 0 - 254 = Aktueller Zählerwert für
+        // die Wiedereinschaltversuche 255 = Signal ungültig / unplausibel
 
     #define I3_RES_BDC_STAT_TREIBER_KL30B2_ZAEHLER_KS_KL15_CYCLES_WERT (RXBUF_UCHAR(29))
     #define I3_RES_BDC_STAT_TREIBER_KL30B2_ZAEHLER_KS_KL15_CYCLES_WERT_TYPE unsigned char
-        // The result contains the current number of already performed resets of the short-circuit shutdown by KL15 on of
+        // The result contains the current number of already performed resets of the short-circuit shutdown by KL15 on
         // the KL30B-2 driver. Note: The coding defines how often the short-circuit switch-off can be reset by switching
         // terminal 15. (See requirements ZSG_BF_13098) 0 - 254 = Current counter value for the number of resets already
-        // carried out for short-circuit shutdown 255 = Signal invalid / implausible / Das Result enthÃ¤lt den aktuelle
-        // Anzahl an bereits durchgefÃ¼hrten Resets des Kurzschlussabschaltung durch KL15 ein des Treibers KL30B-2. 
+        // carried out for short-circuit shutdown 255 = Signal invalid / implausible / Das Result enthält den aktuelle
+        // Anzahl an bereits durchgeführten Resets des Kurzschlussabschaltung durch KL15 ein des Treibers KL30B-2. 
         // Hinweis:  Per Kodierung ist festgelegt wie oft die Kurzschlussabschaltung durch Schalten der Klemme 15
-        // zurÃ¼ckgesetzt werden kann. (Siehe hierzu Anfoderungen ZSG_BF_13098) 0 - 254 = Aktueller ZÃ¤hlerwert fÃ¼r die
-        // Anzahl an bereits durchgefÃ¼hrten Resets der Kurzschlussabschaltung 255 = Signal ungÃ¼ltig / unplausibel
+        // zurückgesetzt werden kann. (Siehe hierzu Anfoderungen ZSG_BF_13098) 0 - 254 = Aktueller Zählerwert für die
+        // Anzahl an bereits durchgeführten Resets der Kurzschlussabschaltung 255 = Signal ungültig / unplausibel
 
     #define I3_RES_BDC_STAT_KODIERUNG_RESTARTS_WERT_0X5020           (RXBUF_UCHAR(30))
     #define I3_RES_BDC_STAT_KODIERUNG_RESTARTS_WERT_0X5020_TYPE      unsigned char
-        // The result contains the codable maximum value of restart attempts in cycle KL15 on -> KL15 off -> KL15 on.
-        // Note: The content corresponds to the coding SCD_RESTART (see requirements ZSG_BF_13073) 0 - 254 = maximum
-        // value for the restart attempts 255 = signal invalid / implausible / Das Result enthÃ¤lt den codierbaren
+        // The result contains the maximum value that can be coded for restart attempts in cycle KL15 on -> KL15 off ->
+        // KL15 on. Note: The content corresponds to the coding SCD_RESTART (see requirements ZSG_BF_13073) 0 - 254 =
+        // maximum value for the restart attempts 255 = signal invalid / implausible / Das Result enthält den codierbaren
         // maximalen Wert an Wiedereinschaltversuche im Zyklus KL15 ein -> KL15 aus -> KL15 ein.  Hinweis: Inhalt
-        // entspricht der Codierung SCD_RESTART (Siehe hierzu Anfoderungen ZSG_BF_13073) 0 - 254 = maximaler Wert fÃ¼r
-        // die Wiedereinschaltversuche 255 = Signal ungÃ¼ltig / unplausibel
+        // entspricht der Codierung SCD_RESTART (Siehe hierzu Anfoderungen ZSG_BF_13073) 0 - 254 = maximaler Wert für die
+        // Wiedereinschaltversuche 255 = Signal ungültig / unplausibel
 
     #define I3_RES_BDC_STAT_KODIERUNG_KL15_CYCLES_WERT_0X5020        (RXBUF_UCHAR(31))
     #define I3_RES_BDC_STAT_KODIERUNG_KL15_CYCLES_WERT_0X5020_TYPE   unsigned char
         // The result contains the codable maximum value of resets of the short-circuit shutdown by KL15. Note: The
         // content corresponds to the coding SCD_KL15_CYCLES (see requirements ZSG_BF_13073) 0 - 254 = maximum value for
-        // the resets of the short-circuit shutdown 255 = invalid / implausible / Das Result enthÃ¤lt den codierbaren
+        // the resets of the short-circuit shutdown 255 = invalid / implausible / Das Result enthält den codierbaren
         // maximalen Wert an Resets des Kurzschlussabschaltung durch KL15 ein.  Hinweis: Inhalt entspricht der Codierung
-        // SCD_KL15_CYCLES (Siehe hierzu Anfoderungen ZSG_BF_13073) 0 - 254 = maximaler Wert fÃ¼r die Resets der
-        // Kurzschlussabschaltung 255 = UngÃ¼ltig / unplausibel
+        // SCD_KL15_CYCLES (Siehe hierzu Anfoderungen ZSG_BF_13073) 0 - 254 = maximaler Wert für die Resets der
+        // Kurzschlussabschaltung 255 = Ungültig / unplausibel
 
 #define I3_PID_BDC__ECUMA_INTERN                                     0x5101
         // Diagnostic job status-EcuMA-internal / Diagnosejob Status-EcuMA-intern
@@ -6609,14 +6590,14 @@
     #define I3_RES_BDC_STAT_NORMAL_LOCK_STATE                        (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_NORMAL_LOCK_STATE_UNIT                   '0/1'
     #define I3_RES_BDC_STAT_NORMAL_LOCK_STATE_TYPE                   unsigned char
-        // Jtag normal lock status. (0x00 ¿jtag is unlocked; 0x01 ¿jtag is locked) / Jtag normal lock status. (0x00 Â¿
-        // jtag is unlocked; 0x01 Â¿ jtag is locked)
+        // Jtag normal lock status. (0x00 ¿jtag is unlocked; 0x01 ¿jtag is locked) / Jtag normal lock status. (0x00 ¿
+        // jtag is unlocked; 0x01 ¿ jtag is locked)
 
     #define I3_RES_BDC_STAT_PERMANENT_LOCK_STATE                     (RXBUF_UCHAR(1))
     #define I3_RES_BDC_STAT_PERMANENT_LOCK_STATE_UNIT                '0/1'
     #define I3_RES_BDC_STAT_PERMANENT_LOCK_STATE_TYPE                unsigned char
         // Jtag permanent lock status. (0x00 ¿permanent lock not done; 0x01 ¿permanent lock done) / Jtag permanent lock
-        // status. (0x00 Â¿ permanent lock not done; 0x01 Â¿ permanent lock done)
+        // status. (0x00 ¿ permanent lock not done; 0x01 ¿ permanent lock done)
 
 #define I3_PID_BDC_READ_PULLUP_REF_RESFUEL_TANK_0                    0x5DBE
         // represents resistance value for tank left / represents resistance value for tank left
@@ -6847,13 +6828,13 @@
 // Skipping _FH_DENORMIERUNGS_LOGGER_LOESCHEN_REAR on 0x6039 which takes arguments
 
 #define I3_PID_BDC__FH_DENORMIERUNGS_LOGGER_LESEN_FRONT              0x603A
-        // DID for the implementation of the job header of the same name for the front windows. / DID fÃ¼r die
-        // Implementierung des gleichnamigen Jobheaders fÃ¼r die vorderen Fenster.
+        // DID for the implementation of the job header of the same name for the front windows. / DID für die
+        // Implementierung des gleichnamigen Jobheaders für die vorderen Fenster.
 
     #define I3_RES_BDC_STAT_FA_DENORM_ZAEHLER_WERT                   (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_FA_DENORM_ZAEHLER_WERT_UNIT              'Ink'
     #define I3_RES_BDC_STAT_FA_DENORM_ZAEHLER_WERT_TYPE              unsigned char
-        // The denormalization frequency is incremented with each denormalization / Die DenormierhÂ¿ufigkeit wird bei
+        // The denormalization frequency is incremented with each denormalization / Die Denormierh¿ufigkeit wird bei
         // jeder Denormierung inkrementiert
 
     #define I3_RES_BDC_STAT_FA_DENORM_1_URSACHE_NR                   (RXBUF_UCHAR(1))
@@ -6954,7 +6935,7 @@
     #define I3_RES_BDC_STAT_BF_DENORM_ZAEHLER_WERT                   (RXBUF_UCHAR(46))
     #define I3_RES_BDC_STAT_BF_DENORM_ZAEHLER_WERT_UNIT              'Ink'
     #define I3_RES_BDC_STAT_BF_DENORM_ZAEHLER_WERT_TYPE              unsigned char
-        // The denormalization frequency is incremented with each denormalization / Die DenormierhÂ¿ufigkeit wird bei
+        // The denormalization frequency is incremented with each denormalization / Die Denormierh¿ufigkeit wird bei
         // jeder Denormierung inkrementiert
 
     #define I3_RES_BDC_STAT_BF_DENORM_1_URSACHE_NR                   (RXBUF_UCHAR(47))
@@ -7053,13 +7034,13 @@
         // Implementation in the SW-C MT / Umsetzung in der SW-C MT
 
 #define I3_PID_BDC__FH_DENORMIERUNGS_LOGGER_LESEN_REAR               0x603B
-        // DID for the implementation of the job header of the same name for the rear windows / DID fÃ¼r die
-        // Implementierung des gleichnamigen Jobheaders fÃ¼r die hinteren Fenster
+        // DID for the implementation of the job header of the same name for the rear windows / DID für die
+        // Implementierung des gleichnamigen Jobheaders für die hinteren Fenster
 
     #define I3_RES_BDC_STAT_FAH_DENORM_ZAEHLER_WERT                  (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_FAH_DENORM_ZAEHLER_WERT_UNIT             'Ink'
     #define I3_RES_BDC_STAT_FAH_DENORM_ZAEHLER_WERT_TYPE             unsigned char
-        // The denormalization frequency is incremented with each denormalization / Die DenormierhÂ¿ufigkeit wird bei
+        // The denormalization frequency is incremented with each denormalization / Die Denormierh¿ufigkeit wird bei
         // jeder Denormierung inkrementiert
 
     #define I3_RES_BDC_STAT_FAH_DENORM_1_URSACHE_NR                  (RXBUF_UCHAR(1))
@@ -7160,7 +7141,7 @@
     #define I3_RES_BDC_STAT_BFH_DENORM_ZAEHLER_WERT                  (RXBUF_UCHAR(46))
     #define I3_RES_BDC_STAT_BFH_DENORM_ZAEHLER_WERT_UNIT             'Ink'
     #define I3_RES_BDC_STAT_BFH_DENORM_ZAEHLER_WERT_TYPE             unsigned char
-        // The denormalization frequency is incremented with each denormalization / Die DenormierhÂ¿ufigkeit wird bei
+        // The denormalization frequency is incremented with each denormalization / Die Denormierh¿ufigkeit wird bei
         // jeder Denormierung inkrementiert
 
     #define I3_RES_BDC_STAT_BFH_DENORM_1_URSACHE_NR                  (RXBUF_UCHAR(47))
@@ -7263,8 +7244,8 @@
 // Skipping _FH_REVERSIER_LOGGER_LOESCHEN_REAR on 0x603D which takes arguments
 
 #define I3_PID_BDC__FH_REVERSIER_LOGGER_LESEN_FRONT                  0x603E
-        // DID for the implementation of the job header of the same name for the front windows / DID fÃ¼r die
-        // Implementierung des gleichnamigen Jobheaders fÃ¼r die vorderen Fenster
+        // DID for the implementation of the job header of the same name for the front windows / DID für die
+        // Implementierung des gleichnamigen Jobheaders für die vorderen Fenster
 
     #define I3_RES_BDC_STAT_FA_REVERSIEREN_ZAEHLER_WERT              (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_FA_REVERSIEREN_ZAEHLER_WERT_UNIT         'Ink'
@@ -7290,7 +7271,7 @@
         // Indication of mileage / Angabe Kilometerstand
 
     #define I3_RES_BDC_STAT_FA_REVERSIEREN_1_ATEMP_WERT              (RXBUF_SCHAR(8))
-    #define I3_RES_BDC_STAT_FA_REVERSIEREN_1_ATEMP_WERT_UNIT         'Â°C'
+    #define I3_RES_BDC_STAT_FA_REVERSIEREN_1_ATEMP_WERT_UNIT         '°C'
     #define I3_RES_BDC_STAT_FA_REVERSIEREN_1_ATEMP_WERT_TYPE         char
         // Outside temperature (from CAN signal) / Aussentemperatur (aus CAN-Signal)
 
@@ -7322,7 +7303,7 @@
         // Indication of mileage / Angabe Kilometerstand
 
     #define I3_RES_BDC_STAT_FA_REVERSIEREN_2_ATEMP_WERT              (RXBUF_SCHAR(19))
-    #define I3_RES_BDC_STAT_FA_REVERSIEREN_2_ATEMP_WERT_UNIT         'Â°C'
+    #define I3_RES_BDC_STAT_FA_REVERSIEREN_2_ATEMP_WERT_UNIT         '°C'
     #define I3_RES_BDC_STAT_FA_REVERSIEREN_2_ATEMP_WERT_TYPE         char
         // Outside temperature (from CAN signal) / Aussentemperatur (aus CAN-Signal)
 
@@ -7354,7 +7335,7 @@
         // Indication of mileage / Angabe Kilometerstand
 
     #define I3_RES_BDC_STAT_FA_REVERSIEREN_3_ATEMP_WERT              (RXBUF_SCHAR(30))
-    #define I3_RES_BDC_STAT_FA_REVERSIEREN_3_ATEMP_WERT_UNIT         'Â°C'
+    #define I3_RES_BDC_STAT_FA_REVERSIEREN_3_ATEMP_WERT_UNIT         '°C'
     #define I3_RES_BDC_STAT_FA_REVERSIEREN_3_ATEMP_WERT_TYPE         char
         // Outside temperature (from CAN signal) / Aussentemperatur (aus CAN-Signal)
 
@@ -7386,7 +7367,7 @@
         // Indication of mileage / Angabe Kilometerstand
 
     #define I3_RES_BDC_STAT_FA_REVERSIEREN_4_ATEMP_WERT              (RXBUF_SCHAR(41))
-    #define I3_RES_BDC_STAT_FA_REVERSIEREN_4_ATEMP_WERT_UNIT         'Â°C'
+    #define I3_RES_BDC_STAT_FA_REVERSIEREN_4_ATEMP_WERT_UNIT         '°C'
     #define I3_RES_BDC_STAT_FA_REVERSIEREN_4_ATEMP_WERT_TYPE         char
         // Outside temperature (from CAN signal) / Aussentemperatur (aus CAN-Signal)
 
@@ -7418,7 +7399,7 @@
         // Indication of mileage / Angabe Kilometerstand
 
     #define I3_RES_BDC_STAT_FA_REVERSIEREN_5_ATEMP_WERT              (RXBUF_SCHAR(52))
-    #define I3_RES_BDC_STAT_FA_REVERSIEREN_5_ATEMP_WERT_UNIT         'Â°C'
+    #define I3_RES_BDC_STAT_FA_REVERSIEREN_5_ATEMP_WERT_UNIT         '°C'
     #define I3_RES_BDC_STAT_FA_REVERSIEREN_5_ATEMP_WERT_TYPE         char
         // Outside temperature (from CAN signal) / Aussentemperatur (aus CAN-Signal)
 
@@ -7456,7 +7437,7 @@
         // Indication of mileage / Angabe Kilometerstand
 
     #define I3_RES_BDC_STAT_BF_REVERSIEREN_1_ATEMP_WERT              (RXBUF_SCHAR(64))
-    #define I3_RES_BDC_STAT_BF_REVERSIEREN_1_ATEMP_WERT_UNIT         'Â°C'
+    #define I3_RES_BDC_STAT_BF_REVERSIEREN_1_ATEMP_WERT_UNIT         '°C'
     #define I3_RES_BDC_STAT_BF_REVERSIEREN_1_ATEMP_WERT_TYPE         char
         // Outside temperature (from CAN signal) / Aussentemperatur (aus CAN-Signal)
 
@@ -7488,7 +7469,7 @@
         // Indication of mileage / Angabe Kilometerstand
 
     #define I3_RES_BDC_STAT_BF_REVERSIEREN_2_ATEMP_WERT              (RXBUF_SCHAR(75))
-    #define I3_RES_BDC_STAT_BF_REVERSIEREN_2_ATEMP_WERT_UNIT         'Â°C'
+    #define I3_RES_BDC_STAT_BF_REVERSIEREN_2_ATEMP_WERT_UNIT         '°C'
     #define I3_RES_BDC_STAT_BF_REVERSIEREN_2_ATEMP_WERT_TYPE         char
         // Outside temperature (from CAN signal) / Aussentemperatur (aus CAN-Signal)
 
@@ -7520,7 +7501,7 @@
         // Indication of mileage / Angabe Kilometerstand
 
     #define I3_RES_BDC_STAT_BF_REVERSIEREN_3_ATEMP_WERT              (RXBUF_SCHAR(86))
-    #define I3_RES_BDC_STAT_BF_REVERSIEREN_3_ATEMP_WERT_UNIT         'Â°C'
+    #define I3_RES_BDC_STAT_BF_REVERSIEREN_3_ATEMP_WERT_UNIT         '°C'
     #define I3_RES_BDC_STAT_BF_REVERSIEREN_3_ATEMP_WERT_TYPE         char
         // Outside temperature (from CAN signal) / Aussentemperatur (aus CAN-Signal)
 
@@ -7552,7 +7533,7 @@
         // Indication of mileage / Angabe Kilometerstand
 
     #define I3_RES_BDC_STAT_BF_REVERSIEREN_4_ATEMP_WERT              (RXBUF_SCHAR(97))
-    #define I3_RES_BDC_STAT_BF_REVERSIEREN_4_ATEMP_WERT_UNIT         'Â°C'
+    #define I3_RES_BDC_STAT_BF_REVERSIEREN_4_ATEMP_WERT_UNIT         '°C'
     #define I3_RES_BDC_STAT_BF_REVERSIEREN_4_ATEMP_WERT_TYPE         char
         // Outside temperature (from CAN signal) / Aussentemperatur (aus CAN-Signal)
 
@@ -7584,7 +7565,7 @@
         // Indication of mileage / Angabe Kilometerstand
 
     #define I3_RES_BDC_STAT_BF_REVERSIEREN_5_ATEMP_WERT              (RXBUF_SCHAR(108))
-    #define I3_RES_BDC_STAT_BF_REVERSIEREN_5_ATEMP_WERT_UNIT         'Â°C'
+    #define I3_RES_BDC_STAT_BF_REVERSIEREN_5_ATEMP_WERT_UNIT         '°C'
     #define I3_RES_BDC_STAT_BF_REVERSIEREN_5_ATEMP_WERT_TYPE         char
         // Outside temperature (from CAN signal) / Aussentemperatur (aus CAN-Signal)
 
@@ -7599,8 +7580,8 @@
         // Vehicle speed (coding analogue to CAN signal) / Fahrzeuggeschwindigkeit (Codierung analog CAN-Signal)
 
 #define I3_PID_BDC__FH_REVERSIER_LOGGER_LESEN_REAR                   0x603F
-        // DID for the implementation of the job header of the same name for the rear windows / DID fÃ¼r die
-        // Implementierung des gleichnamigen Jobheaders fÃ¼r die hinteren Fenster
+        // DID for the implementation of the job header of the same name for the rear windows / DID für die
+        // Implementierung des gleichnamigen Jobheaders für die hinteren Fenster
 
     #define I3_RES_BDC_STAT_FAH_REVERSIEREN_ZAEHLER_WERT             (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_FAH_REVERSIEREN_ZAEHLER_WERT_UNIT        'Ink'
@@ -7626,7 +7607,7 @@
         // Indication of mileage / Angabe Kilometerstand
 
     #define I3_RES_BDC_STAT_FAH_REVERSIEREN_1_ATEMP_WERT             (RXBUF_SCHAR(8))
-    #define I3_RES_BDC_STAT_FAH_REVERSIEREN_1_ATEMP_WERT_UNIT        'Â°C'
+    #define I3_RES_BDC_STAT_FAH_REVERSIEREN_1_ATEMP_WERT_UNIT        '°C'
     #define I3_RES_BDC_STAT_FAH_REVERSIEREN_1_ATEMP_WERT_TYPE        char
         // Outside temperature (from CAN signal) / Aussentemperatur (aus CAN-Signal)
 
@@ -7658,7 +7639,7 @@
         // Indication of mileage / Angabe Kilometerstand
 
     #define I3_RES_BDC_STAT_FAH_REVERSIEREN_2_ATEMP_WERT             (RXBUF_SCHAR(19))
-    #define I3_RES_BDC_STAT_FAH_REVERSIEREN_2_ATEMP_WERT_UNIT        'Â°C'
+    #define I3_RES_BDC_STAT_FAH_REVERSIEREN_2_ATEMP_WERT_UNIT        '°C'
     #define I3_RES_BDC_STAT_FAH_REVERSIEREN_2_ATEMP_WERT_TYPE        char
         // Outside temperature (from CAN signal) / Aussentemperatur (aus CAN-Signal)
 
@@ -7690,7 +7671,7 @@
         // Indication of mileage / Angabe Kilometerstand
 
     #define I3_RES_BDC_STAT_FAH_REVERSIEREN_3_ATEMP_WERT             (RXBUF_SCHAR(30))
-    #define I3_RES_BDC_STAT_FAH_REVERSIEREN_3_ATEMP_WERT_UNIT        'Â°C'
+    #define I3_RES_BDC_STAT_FAH_REVERSIEREN_3_ATEMP_WERT_UNIT        '°C'
     #define I3_RES_BDC_STAT_FAH_REVERSIEREN_3_ATEMP_WERT_TYPE        char
         // Outside temperature (from CAN signal) / Aussentemperatur (aus CAN-Signal)
 
@@ -7722,7 +7703,7 @@
         // Indication of mileage / Angabe Kilometerstand
 
     #define I3_RES_BDC_STAT_FAH_REVERSIEREN_4_ATEMP_WERT             (RXBUF_SCHAR(41))
-    #define I3_RES_BDC_STAT_FAH_REVERSIEREN_4_ATEMP_WERT_UNIT        'Â°C'
+    #define I3_RES_BDC_STAT_FAH_REVERSIEREN_4_ATEMP_WERT_UNIT        '°C'
     #define I3_RES_BDC_STAT_FAH_REVERSIEREN_4_ATEMP_WERT_TYPE        char
         // Outside temperature (from CAN signal) / Aussentemperatur (aus CAN-Signal)
 
@@ -7754,7 +7735,7 @@
         // Indication of mileage / Angabe Kilometerstand
 
     #define I3_RES_BDC_STAT_FAH_REVERSIEREN_5_ATEMP_WERT             (RXBUF_SCHAR(52))
-    #define I3_RES_BDC_STAT_FAH_REVERSIEREN_5_ATEMP_WERT_UNIT        'Â°C'
+    #define I3_RES_BDC_STAT_FAH_REVERSIEREN_5_ATEMP_WERT_UNIT        '°C'
     #define I3_RES_BDC_STAT_FAH_REVERSIEREN_5_ATEMP_WERT_TYPE        char
         // Outside temperature (from CAN signal) / Aussentemperatur (aus CAN-Signal)
 
@@ -7792,7 +7773,7 @@
         // Indication of mileage / Angabe Kilometerstand
 
     #define I3_RES_BDC_STAT_BFH_REVERSIEREN_1_ATEMP_WERT             (RXBUF_SCHAR(64))
-    #define I3_RES_BDC_STAT_BFH_REVERSIEREN_1_ATEMP_WERT_UNIT        'Â°C'
+    #define I3_RES_BDC_STAT_BFH_REVERSIEREN_1_ATEMP_WERT_UNIT        '°C'
     #define I3_RES_BDC_STAT_BFH_REVERSIEREN_1_ATEMP_WERT_TYPE        char
         // Outside temperature (from CAN signal) / Aussentemperatur (aus CAN-Signal)
 
@@ -7824,7 +7805,7 @@
         // Indication of mileage / Angabe Kilometerstand
 
     #define I3_RES_BDC_STAT_BFH_REVERSIEREN_2_ATEMP_WERT             (RXBUF_SCHAR(75))
-    #define I3_RES_BDC_STAT_BFH_REVERSIEREN_2_ATEMP_WERT_UNIT        'Â°C'
+    #define I3_RES_BDC_STAT_BFH_REVERSIEREN_2_ATEMP_WERT_UNIT        '°C'
     #define I3_RES_BDC_STAT_BFH_REVERSIEREN_2_ATEMP_WERT_TYPE        char
         // Outside temperature (from CAN signal) / Aussentemperatur (aus CAN-Signal)
 
@@ -7856,7 +7837,7 @@
         // Indication of mileage / Angabe Kilometerstand
 
     #define I3_RES_BDC_STAT_BFH_REVERSIEREN_3_ATEMP_WERT             (RXBUF_SCHAR(86))
-    #define I3_RES_BDC_STAT_BFH_REVERSIEREN_3_ATEMP_WERT_UNIT        'Â°C'
+    #define I3_RES_BDC_STAT_BFH_REVERSIEREN_3_ATEMP_WERT_UNIT        '°C'
     #define I3_RES_BDC_STAT_BFH_REVERSIEREN_3_ATEMP_WERT_TYPE        char
         // Outside temperature (from CAN signal) / Aussentemperatur (aus CAN-Signal)
 
@@ -7888,7 +7869,7 @@
         // Indication of mileage / Angabe Kilometerstand
 
     #define I3_RES_BDC_STAT_BFH_REVERSIEREN_4_ATEMP_WERT             (RXBUF_SCHAR(97))
-    #define I3_RES_BDC_STAT_BFH_REVERSIEREN_4_ATEMP_WERT_UNIT        'Â°C'
+    #define I3_RES_BDC_STAT_BFH_REVERSIEREN_4_ATEMP_WERT_UNIT        '°C'
     #define I3_RES_BDC_STAT_BFH_REVERSIEREN_4_ATEMP_WERT_TYPE        char
         // Outside temperature (from CAN signal) / Aussentemperatur (aus CAN-Signal)
 
@@ -7920,7 +7901,7 @@
         // Indication of mileage / Angabe Kilometerstand
 
     #define I3_RES_BDC_STAT_BFH_REVERSIEREN_5_ATEMP_WERT             (RXBUF_SCHAR(108))
-    #define I3_RES_BDC_STAT_BFH_REVERSIEREN_5_ATEMP_WERT_UNIT        'Â°C'
+    #define I3_RES_BDC_STAT_BFH_REVERSIEREN_5_ATEMP_WERT_UNIT        '°C'
     #define I3_RES_BDC_STAT_BFH_REVERSIEREN_5_ATEMP_WERT_TYPE        char
         // Outside temperature (from CAN signal) / Aussentemperatur (aus CAN-Signal)
 
@@ -7940,7 +7921,7 @@
 
 #define I3_PID_BDC__FH_MOTORSTOP_LOGGER_LESEN_FRONT                  0x6042
         // DID to implement the job header _FH_MOTORSTOP_LOGGER_LESEN for the front windows / DID zur Umsetzung des
-        // Jobheaders _FH_MOTORSTOP_LOGGER_LESEN fÃ¼r die vorderen Fenster
+        // Jobheaders _FH_MOTORSTOP_LOGGER_LESEN für die vorderen Fenster
 
     #define I3_RES_BDC_STAT_FA_STOPREASON_1_NR                       (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_FA_STOPREASON_1_NR_UNIT                  '0-n'
@@ -8044,7 +8025,7 @@
 
 #define I3_PID_BDC__FH_MOTORSTOP_LOGGER_LESEN_REAR                   0x6043
         // DID to implement the job header _FH_MOTORSTOP_LOGGER_LESEN for the rear window / DID zur Umsetzung des
-        // Jobheaders _FH_MOTORSTOP_LOGGER_LESEN fÃ¼r die hinteren Fenster
+        // Jobheaders _FH_MOTORSTOP_LOGGER_LESEN für die hinteren Fenster
 
     #define I3_RES_BDC_STAT_FAH_STOPREASON_1_NR                      (RXBUF_UCHAR(0))
     #define I3_RES_BDC_STAT_FAH_STOPREASON_1_NR_UNIT                 '0-n'
@@ -8158,8 +8139,8 @@
 
 #define I3_PID_BDC__STEUERN_DFZ_VERBINDUNGSENDE                      0xF003
         // The job to terminate an HDLC connection (Disconnect). Note: The FBD receiver is reset to the low data rate. /
-        // Der Job zum Beenden einer HDLC-Verbindung (Disconnect). Hinweis: Der FBD-EmpfÃ¤nger wird wieder auf niedrige
-        // Datenrate zurÃ¼ckgesetzt.
+        // Der Job zum Beenden einer HDLC-Verbindung (Disconnect). Hinweis: Der FBD-Empfänger wird wieder auf niedrige
+        // Datenrate zurückgesetzt.
 
 #define I3_PID_BDC__ECU_HW_RESET                                     0xF005
         // STEUERN__ECU_HW_RESET / STEUERN__ECU_HW_RESET
@@ -8167,8 +8148,8 @@
 // Skipping _SENSE_LESEN on 0xF100 which takes arguments
 
 #define I3_PID_BDC__LWR_STATISTIK_RESET                              0xF105
-        // Resetting data stored in NV-RAM regarding LWR statistics. / ZurÃ¼cksetzen im NV-RAM abgelegten Daten
-        // bezÃ¼glich LWR Statistik.
+        // Resetting data stored in NV-RAM regarding LWR statistics. / Zurücksetzen im NV-RAM abgelegten Daten bezüglich
+        // LWR Statistik.
 
 // Skipping _FH_DEBUG_OUTPUT_KONF on 0xF200 which takes arguments
 

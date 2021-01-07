@@ -100,11 +100,11 @@
         // BF_MOD_ERR is a BITFIELD of size unsigned long.  We don't yet generate definitions for each bit, we treat as the host data type
             // STAT_BF_DSP_ERR_HVDCV_OORL: Mask: 0x00000001 - PM HVDC voltage sensor outside lower threshold: 0 = not active; 1 = active
             // STAT_BF_DSP_ERR_HVDCV_OORH: Mask: 0x00000002 - PM HVDC voltage sensor outside upper threshold: 0 = not active; 1 = active
-            // STAT_BF_DSP_ERR_HVDCI_OORH: Mask: 0x00000004 - PM HVDC current sensor outside upper threshold: 0 = not active; 1 = active
+            // STAT_BF_DSP_ERR_HVDCI_OORH: Mask: 0x00000004 - PM HVDC current sensor outside upper threshold value: 0 = not active; 1 = active
             // STAT_BF_DSP_ERR_IRES_OORH: Mask: 0x00000008 - PM sensor resonance current outside the upper threshold value: 0 = not active; 1 = active
             // STAT_BF_DSP_ERR_VBUS_OORL: Mask: 0x00000010 - PM sensor bus voltage outside the lower threshold value: 0 = not active; 1 = active
             // STAT_BF_DSP_ERR_VBUS_OORH: Mask: 0x00000020 - PM sensor bus voltage outside the upper threshold value: 0 = not active; 1 = active
-            // STAT_BF_DSP_ERR_OVERTEMPERATURE: Mask: 0x00000040 - PM temperature sensor outside the upper threshold value: 0 = not active; 1 = active
+            // STAT_BF_DSP_ERR_OVERTEMPERATURE: Mask: 0x00000040 - PM temperature sensor outside upper threshold value: 0 = not active; 1 = active
             // STAT_BF_DSP_ERR_UNDERTEMPERATURE: Mask: 0x00000080 - PM temperature sensor outside lower threshold: 0 = not active; 1 = active
             // STAT_BF_DSP_ERR_HVDCV_SHGND: Mask: 0x00000100 - PM HVDC voltage sensor short circuit to ground: 0 = not active; 1 = active
             // STAT_BF_DSP_ERR_HVDCI_SHGND: Mask: 0x00000200 - PM HVDC current sensor short circuit to ground: 0 = not active; 1 = active
@@ -128,7 +128,7 @@
             // STAT_BF_DSP_ERR_CRC_CALIBRATION: Mask: 0x08000000 - PM CRC calibration: 0 = not active; 1 = active
             // STAT_BF_DSP_ERR_VAC_LY_SHBATT: Mask: 0x10000000 - PM AC Ly voltage sensor short circuit to plus: 0 = not active; 1 = active
             // STAT_BF_DSP_ERR_VAC_LY_SHGND: Mask: 0x20000000 - PM AC Ly voltage sensor short circuit to ground: 0 = not active; 1 = active
-            // STAT_BF_DSP_ERR_VAC_LX_OORH: Mask: 0x40000000 - PM AC Lx voltage sensor outside upper threshold: 0 = not active; 1 = active
+            // STAT_BF_DSP_ERR_VAC_LX_OORH: Mask: 0x40000000 - PM AC Lx voltage sensor outside upper threshold value: 0 = not active; 1 = active
             // STAT_BF_DSP_ERR_VAC_LY_OORH: Mask: 0x80000000 - PM AC Ly voltage sensor outside upper threshold: 0 = not active; 1 = active
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lx%s\n", "KLE", "BETRIEBSZUSTAND_LADEGERAET", "BF_MOD_ERR", (unsigned long)BF_MOD_ERR, "\"Bit\"");
 
@@ -365,28 +365,28 @@
     }
 
     unsigned long STAT_SEKUNDEN_TEMPERATUR_BEREICH_1_WERT = (RXBUF_UINT32(0));
-        // Seconds at temperature below 0 � C / Sekunden bei Temperatur unter 0°C
+        // Seconds at temperature below 0 ° C / Sekunden bei Temperatur unter 0°C
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "KLE", "LADEGERAET_LADE_HISTOGRAMM", "STAT_SEKUNDEN_TEMPERATUR_BEREICH_1_WERT", STAT_SEKUNDEN_TEMPERATUR_BEREICH_1_WERT, "\"s\"");
 
     unsigned long STAT_SEKUNDEN_TEMPERATUR_BEREICH_2_WERT = (RXBUF_UINT32(4));
-        // Seconds at a temperature between 0 � C and 45 � C / Sekunden bei Temperatur zwischen 0°C und 45°C
+        // Seconds at a temperature between 0 ° C and 45 ° C / Sekunden bei Temperatur zwischen 0°C und 45°C
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "KLE", "LADEGERAET_LADE_HISTOGRAMM", "STAT_SEKUNDEN_TEMPERATUR_BEREICH_2_WERT", STAT_SEKUNDEN_TEMPERATUR_BEREICH_2_WERT, "\"s\"");
 
     unsigned long STAT_SEKUNDEN_TEMPERATUR_BEREICH_3_WERT = (RXBUF_UINT32(8));
-        // Seconds at a temperature between 46 � C and 60 � C / Sekunden bei Temperatur zwischen 46°C und 60°C
+        // Seconds at a temperature between 46 ° C and 60 ° C / Sekunden bei Temperatur zwischen 46°C und 60°C
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "KLE", "LADEGERAET_LADE_HISTOGRAMM", "STAT_SEKUNDEN_TEMPERATUR_BEREICH_3_WERT", STAT_SEKUNDEN_TEMPERATUR_BEREICH_3_WERT, "\"s\"");
 
     unsigned long STAT_SEKUNDEN_TEMPERATUR_BEREICH_4_WERT = (RXBUF_UINT32(12));
-        // Seconds in the temperature range between 61 � C and 70 � C / Sekunden im Temperaturbereich zwischen 61°C und
+        // Seconds in the temperature range between 61 ° C and 70 ° C / Sekunden im Temperaturbereich zwischen 61°C und
         // 70°C
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "KLE", "LADEGERAET_LADE_HISTOGRAMM", "STAT_SEKUNDEN_TEMPERATUR_BEREICH_4_WERT", STAT_SEKUNDEN_TEMPERATUR_BEREICH_4_WERT, "\"s\"");
 
     unsigned long STAT_SEKUNDEN_TEMPERATUR_BEREICH_5_WERT = (RXBUF_UINT32(16));
-        // Seconds at a temperature between 71 � C and 85 � C / Sekunden bei Temperatur zwischen 71°C und 85°C
+        // Seconds at a temperature between 71 ° C and 85 ° C / Sekunden bei Temperatur zwischen 71°C und 85°C
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "KLE", "LADEGERAET_LADE_HISTOGRAMM", "STAT_SEKUNDEN_TEMPERATUR_BEREICH_5_WERT", STAT_SEKUNDEN_TEMPERATUR_BEREICH_5_WERT, "\"s\"");
 
     unsigned long STAT_SEKUNDEN_TEMPERATUR_BEREICH_6_WERT = (RXBUF_UINT32(20));
-        // Seconds at temperatures above 85 � C / Sekunden bei Temperatur über 85°C
+        // Seconds at temperatures above 85 ° C / Sekunden bei Temperatur über 85°C
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "KLE", "LADEGERAET_LADE_HISTOGRAMM", "STAT_SEKUNDEN_TEMPERATUR_BEREICH_6_WERT", STAT_SEKUNDEN_TEMPERATUR_BEREICH_6_WERT, "\"s\"");
 
     unsigned long STAT_SEKUNDEN_LEISTUNG_BEREICH_1_WERT = (RXBUF_UINT32(24));
@@ -418,28 +418,28 @@
     }
 
     unsigned long STAT_SEKUNDEN_TEMPERATUR_BEREICH_1_WERT_0XDFB7 = (RXBUF_UINT32(0));
-        // Seconds at temperature below 0 � C / Sekunden bei Temperatur unter 0°C
+        // Seconds at temperature below 0 ° C / Sekunden bei Temperatur unter 0°C
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "KLE", "LADEGERAET_LADE_HISTOGRAMM2", "STAT_SEKUNDEN_TEMPERATUR_BEREICH_1_WERT_0XDFB7", STAT_SEKUNDEN_TEMPERATUR_BEREICH_1_WERT_0XDFB7, "\"s\"");
 
     unsigned long STAT_SEKUNDEN_TEMPERATUR_BEREICH_2_WERT_0XDFB7 = (RXBUF_UINT32(4));
-        // Seconds at a temperature between 0 � C and 45 � C / Sekunden bei Temperatur zwischen 0°C und 45°C
+        // Seconds at a temperature between 0 ° C and 45 ° C / Sekunden bei Temperatur zwischen 0°C und 45°C
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "KLE", "LADEGERAET_LADE_HISTOGRAMM2", "STAT_SEKUNDEN_TEMPERATUR_BEREICH_2_WERT_0XDFB7", STAT_SEKUNDEN_TEMPERATUR_BEREICH_2_WERT_0XDFB7, "\"s\"");
 
     unsigned long STAT_SEKUNDEN_TEMPERATUR_BEREICH_3_WERT_0XDFB7 = (RXBUF_UINT32(8));
-        // Seconds at a temperature between 46 � C and 60 � C / Sekunden bei Temperatur zwischen 46°C und 60°C
+        // Seconds at a temperature between 46 ° C and 60 ° C / Sekunden bei Temperatur zwischen 46°C und 60°C
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "KLE", "LADEGERAET_LADE_HISTOGRAMM2", "STAT_SEKUNDEN_TEMPERATUR_BEREICH_3_WERT_0XDFB7", STAT_SEKUNDEN_TEMPERATUR_BEREICH_3_WERT_0XDFB7, "\"s\"");
 
     unsigned long STAT_SEKUNDEN_TEMPERATUR_BEREICH_4_WERT_0XDFB7 = (RXBUF_UINT32(12));
-        // Seconds in the temperature range between 61 � C and 70 � C / Sekunden im Temperaturbereich zwischen 61°C und
+        // Seconds in the temperature range between 61 ° C and 70 ° C / Sekunden im Temperaturbereich zwischen 61°C und
         // 70°C
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "KLE", "LADEGERAET_LADE_HISTOGRAMM2", "STAT_SEKUNDEN_TEMPERATUR_BEREICH_4_WERT_0XDFB7", STAT_SEKUNDEN_TEMPERATUR_BEREICH_4_WERT_0XDFB7, "\"s\"");
 
     unsigned long STAT_SEKUNDEN_TEMPERATUR_BEREICH_5_WERT_0XDFB7 = (RXBUF_UINT32(16));
-        // Seconds at a temperature between 71 � C and 85 � C / Sekunden bei Temperatur zwischen 71°C und 85°C
+        // Seconds at a temperature between 71 ° C and 85 ° C / Sekunden bei Temperatur zwischen 71°C und 85°C
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "KLE", "LADEGERAET_LADE_HISTOGRAMM2", "STAT_SEKUNDEN_TEMPERATUR_BEREICH_5_WERT_0XDFB7", STAT_SEKUNDEN_TEMPERATUR_BEREICH_5_WERT_0XDFB7, "\"s\"");
 
     unsigned long STAT_SEKUNDEN_TEMPERATUR_BEREICH_6_WERT_0XDFB7 = (RXBUF_UINT32(20));
-        // Seconds at temperatures above 85 � C / Sekunden bei Temperatur über 85°C
+        // Seconds at temperatures above 85 ° C / Sekunden bei Temperatur über 85°C
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "KLE", "LADEGERAET_LADE_HISTOGRAMM2", "STAT_SEKUNDEN_TEMPERATUR_BEREICH_6_WERT_0XDFB7", STAT_SEKUNDEN_TEMPERATUR_BEREICH_6_WERT_0XDFB7, "\"s\"");
 
     unsigned long STAT_SEKUNDEN_LEISTUNG_BEREICH_1_WERT_0XDFB7 = (RXBUF_UINT32(24));
@@ -495,18 +495,18 @@
     }
 
     unsigned long STAT_SCHALTER1_SCHALTZYKLEN_ANZAHL_WERT = (RXBUF_UINT32(0));
-        // Number of switching cycles for switch 1 (multi-phase charging: phase 1) / Anzahl von Schaltzyklen für
-        // Schalter 1 (mehrphasiges Laden: Phase 1)
+        // Number of switching cycles for switch 1 (multi-phase charging: phase 1) / Anzahl von Schaltzyklen für Schalter
+        // 1 (mehrphasiges Laden: Phase 1)
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "KLE", "UMSCHALTMATRIX", "STAT_SCHALTER1_SCHALTZYKLEN_ANZAHL_WERT", STAT_SCHALTER1_SCHALTZYKLEN_ANZAHL_WERT, "");
 
     unsigned long STAT_SCHALTER2_SCHALTZYKLEN_ANZAHL_WERT = (RXBUF_UINT32(4));
-        // Number of switching cycles for switch 2 (multi-phase charging: phase 2) / Anzahl von Schaltzyklen für
-        // Schalter 2 (mehrphasiges Laden: Phase 2)
+        // Number of switching cycles for switch 2 (multi-phase charging: phase 2) / Anzahl von Schaltzyklen für Schalter
+        // 2 (mehrphasiges Laden: Phase 2)
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "KLE", "UMSCHALTMATRIX", "STAT_SCHALTER2_SCHALTZYKLEN_ANZAHL_WERT", STAT_SCHALTER2_SCHALTZYKLEN_ANZAHL_WERT, "");
 
     unsigned long STAT_SCHALTER3_SCHALTZYKLEN_ANZAHL_WERT = (RXBUF_UINT32(8));
-        // Number of switching cycles for switch 3 (multi-phase charging: phase 3) / Anzahl von Schaltzyklen für
-        // Schalter 3 (mehrphasiges Laden: Phase 3)
+        // Number of switching cycles for switch 3 (multi-phase charging: phase 3) / Anzahl von Schaltzyklen für Schalter
+        // 3 (mehrphasiges Laden: Phase 3)
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "KLE", "UMSCHALTMATRIX", "STAT_SCHALTER3_SCHALTZYKLEN_ANZAHL_WERT", STAT_SCHALTER3_SCHALTZYKLEN_ANZAHL_WERT, "");
 
     unsigned long STAT_SCHALTER4_SCHALTZYKLEN_ANZAHL_WERT = (RXBUF_UINT32(12));

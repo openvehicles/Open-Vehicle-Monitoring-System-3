@@ -92,8 +92,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "EME", "AKS_DIAG_STATUS_INFO", "STAT_ERR_UPDATE_IN_PROGRESS_WERT", STAT_ERR_UPDATE_IN_PROGRESS_WERT, "\"HEX\"");
 
     unsigned long STAT_FRM_WHY_WERT = (RXBUF_UINT32(41));
-        // FRM: Why word Attention: The value can only be interpreted in connection with the associated software version!
-        // / FRM: Why-Wort Achtung: Wert kann nur m Zusammenhang mit dem zugehörigen Softwarestand interpretiert werden!
+        // FRM: Why word Attention: Value can only be interpreted in connection with the associated software version! /
+        // FRM: Why-Wort Achtung: Wert kann nur m Zusammenhang mit dem zugehörigen Softwarestand interpretiert werden!
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "EME", "AKS_DIAG_STATUS_INFO", "STAT_FRM_WHY_WERT", STAT_FRM_WHY_WERT, "\"HEX\"");
 
     unsigned long STAT_FRM_EM2_WERT = (RXBUF_UINT32(45));
@@ -141,8 +141,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "EME", "EME_HVPM_DCDC_ANSTEUERUNG", "STAT_SOC_HVB_MIN_WERT", STAT_SOC_HVB_MIN_WERT, "\"%\"");
 
     unsigned char STAT_LADEGERAET = (RXBUF_UCHAR(3));
-        // Charger recognized (1 = recognized / 0 = not recognized) / Ladegerät erkannt (1 = erkannt / 0 = nicht
-        // erkannt)
+        // Charger recognized (1 = recognized / 0 = not recognized) / Ladegerät erkannt (1 = erkannt / 0 = nicht erkannt)
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "EME", "EME_HVPM_DCDC_ANSTEUERUNG", "STAT_LADEGERAET", STAT_LADEGERAET, "\"0/1\"");
 
     unsigned char STAT_FREMDLADUNG = (RXBUF_UCHAR(4));
@@ -226,7 +225,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "EME", "EME_HVPM_HV_SYSTEM_ON_OFF", "STAT_I0ANF_HVB", STAT_I0ANF_HVB, "\"0-n\"");
 
     unsigned char STAT_ANF_ENTL_ZK = (RXBUF_UCHAR(5));
-        // Requirement for discharge of the HV intermediate circuit through a DCDC converter / Anforderung Entladung
+        // Requirement for discharge of the HV intermediate circuit through DCDC converter / Anforderung Entladung
         // HV-Zwischenkreis durch DCDC-Wandler
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "EME", "EME_HVPM_HV_SYSTEM_ON_OFF", "STAT_ANF_ENTL_ZK", STAT_ANF_ENTL_ZK, "\"0/1\"");
 
@@ -330,8 +329,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "EME", "EME_HVPM_PKOR", "STAT_T_P_WUNSCH_ID_1_WERT", STAT_T_P_WUNSCH_ID_1_WERT, "\"s\"");
 
     unsigned short STAT_T_P_WUNSCH_ID_2_WERT = (RXBUF_UINT(4));
-        // Cool-Down - Time during which the function was requested. / Cool-Down - Zeit, während der Funktion
-        // angefordert war.
+        // Cool-Down - Time during which the function was requested. / Cool-Down - Zeit, während der Funktion angefordert
+        // war.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "EME", "EME_HVPM_PKOR", "STAT_T_P_WUNSCH_ID_2_WERT", STAT_T_P_WUNSCH_ID_2_WERT, "\"s\"");
 
     unsigned short STAT_T_P_WUNSCH_ID_3_WERT = (RXBUF_UINT(6));
@@ -360,13 +359,13 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "EME", "EME_HVPM_PKOR", "STAT_T_P_WUNSCH_ID_7_WERT", STAT_T_P_WUNSCH_ID_7_WERT, "\"s\"");
 
     unsigned short STAT_T_P_WUNSCH_ID_8_WERT = (RXBUF_UINT(16));
-        // Battery heating - time during which the function was requested. / Batterieheizung - Zeit, während der
-        // Funktion angefordert war.
+        // Battery heating - time during which the function was requested. / Batterieheizung - Zeit, während der Funktion
+        // angefordert war.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "EME", "EME_HVPM_PKOR", "STAT_T_P_WUNSCH_ID_8_WERT", STAT_T_P_WUNSCH_ID_8_WERT, "\"s\"");
 
     unsigned short STAT_T_P_WUNSCH_ID_9_WERT = (RXBUF_UINT(18));
-        // DC / DC converter - time during which the function was requested. / DC/DC-Wandler - Zeit, während der
-        // Funktion angefordert war.
+        // DC / DC converter - time during which the function was requested. / DC/DC-Wandler - Zeit, während der Funktion
+        // angefordert war.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "EME", "EME_HVPM_PKOR", "STAT_T_P_WUNSCH_ID_9_WERT", STAT_T_P_WUNSCH_ID_9_WERT, "\"s\"");
 
     unsigned short STAT_T_P_WUNSCH_ID_10_WERT = (RXBUF_UINT(20));
@@ -415,8 +414,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "EME", "EME_HVPM_PKOR", "STAT_T_P_SOLL_WUNSCH_RANGE1_ID_5_WERT", STAT_T_P_SOLL_WUNSCH_RANGE1_ID_5_WERT, "\"s\"");
 
     unsigned short STAT_T_P_SOLL_WUNSCH_RANGE1_ID_6_WERT = (RXBUF_UINT(38));
-        // Battery cooling - time during which the function was not fully enabled, SOC area 1. / Batterie Kühlung -
-        // Zeit, während der Funktion nicht vollständig freigegeben war, SOC-Bereich 1.
+        // Battery cooling - time during which the function was not fully enabled, SOC area 1. / Batterie Kühlung - Zeit,
+        // während der Funktion nicht vollständig freigegeben war, SOC-Bereich 1.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "EME", "EME_HVPM_PKOR", "STAT_T_P_SOLL_WUNSCH_RANGE1_ID_6_WERT", STAT_T_P_SOLL_WUNSCH_RANGE1_ID_6_WERT, "\"s\"");
 
     unsigned short STAT_T_P_SOLL_WUNSCH_RANGE1_ID_7_WERT = (RXBUF_UINT(40));
@@ -480,8 +479,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "EME", "EME_HVPM_PKOR", "STAT_T_P_SOLL_WUNSCH_RANGE2_ID_5_WERT", STAT_T_P_SOLL_WUNSCH_RANGE2_ID_5_WERT, "\"s\"");
 
     unsigned short STAT_T_P_SOLL_WUNSCH_RANGE2_ID_6_WERT = (RXBUF_UINT(64));
-        // Battery cooling - time during which the function was not fully enabled, SOC area 2. / Batterie Kühlung -
-        // Zeit, während der Funktion nicht vollständig freigegeben war, SOC-Bereich 2.
+        // Battery cooling - time during which the function was not fully enabled, SOC area 2. / Batterie Kühlung - Zeit,
+        // während der Funktion nicht vollständig freigegeben war, SOC-Bereich 2.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "EME", "EME_HVPM_PKOR", "STAT_T_P_SOLL_WUNSCH_RANGE2_ID_6_WERT", STAT_T_P_SOLL_WUNSCH_RANGE2_ID_6_WERT, "\"s\"");
 
     unsigned short STAT_T_P_SOLL_WUNSCH_RANGE2_ID_7_WERT = (RXBUF_UINT(66));
@@ -827,8 +826,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "EME", "AE_SYSTEMLEISTUNG_INV_EM", "STAT_V_E_BAMSTATUS", STAT_V_E_BAMSTATUS, "\"0-n\"");
 
     unsigned short STAT_V_LIM_TQP_MD_EM2_GEN_MAX_WERT = (RXBUF_UINT(26));
-        // Maximum regenerative moment that the system consisting of LE + EM could provide for the next second /
-        // Maximales generatorisches Moment, welches das System aus LE + EM für die naechste Sekunde stellen koennte
+        // Maximum regenerative moment that the LE + EM system could provide for the next second / Maximales
+        // generatorisches Moment, welches das System aus LE + EM für die naechste Sekunde stellen koennte
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "EME", "AE_SYSTEMLEISTUNG_INV_EM", "STAT_V_LIM_TQP_MD_EM2_GEN_MAX_WERT", STAT_V_LIM_TQP_MD_EM2_GEN_MAX_WERT, "\"Nm\"");
 
     unsigned short STAT_V_LIM_TQP_MD_EM2_MOT_MAX_WERT = (RXBUF_UINT(28));
@@ -972,8 +971,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "EME", "AE_LSC_LADEN_2", "STAT_LADESTATUS_NR", STAT_LADESTATUS_NR, "\"0-n\"");
 
     unsigned char STAT_BEGINN_FENSTER_STD_WERT = (RXBUF_UCHAR(16));
-        // Only with AC charging: Start of the favorable charging window (hours) / Nur bei AC-Laden: Beginn des
-        // günstigen Ladefensters (Stunden)
+        // Only with AC charging: Start of the favorable charging window (hours) / Nur bei AC-Laden: Beginn des günstigen
+        // Ladefensters (Stunden)
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "EME", "AE_LSC_LADEN_2", "STAT_BEGINN_FENSTER_STD_WERT", STAT_BEGINN_FENSTER_STD_WERT, "\"h\"");
 
     unsigned char STAT_BEGINN_FENSTER_MIN_WERT = (RXBUF_UCHAR(17));
@@ -1027,8 +1026,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "EME", "AE_LSC_LADEN_2", "STAT_POLY_TIM_2_WERT", STAT_POLY_TIM_2_WERT, "");
 
     float STAT_POLY_SOC_2_WERT = (RXBUF_UINT(28)*0.01f);
-        // Feedback from the SOC support points: SOC of the second support point / Rückmeldung der SOC
-        // Unterstützpunkte: SOC des zweiten Stützpunktes
+        // Feedback from the SOC support points: SOC of the second support point / Rückmeldung der SOC Unterstützpunkte:
+        // SOC des zweiten Stützpunktes
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "EME", "AE_LSC_LADEN_2", "STAT_POLY_SOC_2_WERT", STAT_POLY_SOC_2_WERT, "\"%\"");
 
     float STAT_POLY_TIM_3_WERT = (RXBUF_UCHAR(30)*0.01f);
@@ -2076,8 +2075,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "EME", "AE_LSC_LADEN", "STAT_LADESTATUS_NR_0XDEDE", STAT_LADESTATUS_NR_0XDEDE, "\"0-n\"");
 
     unsigned char STAT_BEGINN_FENSTER_STD_WERT_0XDEDE = (RXBUF_UCHAR(2));
-        // Only with AC charging: Start of the favorable charging window (hours) / Nur bei AC-Laden: Beginn des
-        // günstigen Ladefensters (Stunden)
+        // Only with AC charging: Start of the favorable charging window (hours) / Nur bei AC-Laden: Beginn des günstigen
+        // Ladefensters (Stunden)
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "EME", "AE_LSC_LADEN", "STAT_BEGINN_FENSTER_STD_WERT_0XDEDE", STAT_BEGINN_FENSTER_STD_WERT_0XDEDE, "\"h\"");
 
     unsigned char STAT_BEGINN_FENSTER_MIN_WERT_0XDEDE = (RXBUF_UCHAR(3));
@@ -2131,8 +2130,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "EME", "AE_LSC_LADEN", "STAT_POLY_TIM_2_WERT_0XDEDE", STAT_POLY_TIM_2_WERT_0XDEDE, "");
 
     float STAT_POLY_SOC_2_WERT_0XDEDE = (RXBUF_UINT(14)*0.01f);
-        // Feedback from the SOC support points: SOC of the second support point / Rückmeldung der SOC
-        // Unterstützpunkte: SOC des zweiten Stützpunktes
+        // Feedback from the SOC support points: SOC of the second support point / Rückmeldung der SOC Unterstützpunkte:
+        // SOC des zweiten Stützpunktes
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "EME", "AE_LSC_LADEN", "STAT_POLY_SOC_2_WERT_0XDEDE", STAT_POLY_SOC_2_WERT_0XDEDE, "\"%\"");
 
     float STAT_POLY_TIM_3_WERT_0XDEDE = (RXBUF_UCHAR(16)*0.01f);
@@ -2586,13 +2585,12 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "EME", "AUTOP_SBW", "STAT_COUNT_AUTOP_LVEH_WERT", STAT_COUNT_AUTOP_LVEH_WERT, "");
 
     unsigned short STAT_COUNT_AUTOP_EMF_N_WERT = (RXBUF_UINT(2));
-        // Frequency counter for Auto-P by EMF call for help in N / Häufigkeitszähler für Auto-P durch EMF-Hilferuf in
-        // N
+        // Frequency counter for Auto-P by EMF call for help in N / Häufigkeitszähler für Auto-P durch EMF-Hilferuf in N
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "EME", "AUTOP_SBW", "STAT_COUNT_AUTOP_EMF_N_WERT", STAT_COUNT_AUTOP_EMF_N_WERT, "");
 
     unsigned short STAT_COUNT_AUTOP_EMF_DR_WERT = (RXBUF_UINT(4));
-        // Frequency counter for Auto-P by EMF call for help in D or R / Häufigkeitszähler für Auto-P durch
-        // EMF-Hilferuf in D oder R
+        // Frequency counter for Auto-P by EMF call for help in D or R / Häufigkeitszähler für Auto-P durch EMF-Hilferuf
+        // in D oder R
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "EME", "AUTOP_SBW", "STAT_COUNT_AUTOP_EMF_DR_WERT", STAT_COUNT_AUTOP_EMF_DR_WERT, "");
 
     unsigned short STAT_COUNT_AUTOP_FB_WERT = (RXBUF_UINT(6));
@@ -2795,7 +2793,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "EME", "INVERTER_HISTOGRAMM", "STAT_INVERTER_IGBT_LEBENSZEIT_WERT", STAT_INVERTER_IGBT_LEBENSZEIT_WERT, "\"%\"");
 
     unsigned char STAT_INVERTER_IGBT_LEBENSZEIT_KONST_KUEHLUNG_WERT = (RXBUF_UCHAR(1)-10.0);
-        // Total IGBT service life consumption for a constant coolant temperature of 70 � C / Summierter
+        // Total IGBT service life consumption for a constant coolant temperature of 70 ° C / Summierter
         // Lebensdauerverbrauch IGBT für konstante Kühlmitteltemperatur von 70°C
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "EME", "INVERTER_HISTOGRAMM", "STAT_INVERTER_IGBT_LEBENSZEIT_KONST_KUEHLUNG_WERT", STAT_INVERTER_IGBT_LEBENSZEIT_KONST_KUEHLUNG_WERT, "\"%\"");
 
@@ -2804,7 +2802,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "EME", "INVERTER_HISTOGRAMM", "STAT_INVERTER_DIODE_LEBENSZEIT_WERT", STAT_INVERTER_DIODE_LEBENSZEIT_WERT, "\"%\"");
 
     unsigned char STAT_INVERTER_DIODE_LEBENSZEIT_KONST_KUEHLUNG_WERT = (RXBUF_UCHAR(3)-10.0);
-        // Total service life consumption diode for constant coolant temperature of 70 � C / Summierter
+        // Total service life consumption diode for constant coolant temperature of 70 ° C / Summierter
         // Lebensdauerverbrauch Diode für konstante Kühlmitteltemperatur von 70°C
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "EME", "INVERTER_HISTOGRAMM", "STAT_INVERTER_DIODE_LEBENSZEIT_KONST_KUEHLUNG_WERT", STAT_INVERTER_DIODE_LEBENSZEIT_KONST_KUEHLUNG_WERT, "\"%\"");
 
@@ -5150,9 +5148,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "EME", "LADEKOORDINATOR_INTERFACE", "STAT_AVL_PWR_CF_CHGE_WERT", STAT_AVL_PWR_CF_CHGE_WERT, "\"W\"");
 
     float STAT_SPEC_I_MAX_ALTC_CHGE_WERT = (RXBUF_UINT32(28)*0.1f);
-        // HVPM specification of the maximum permissible AC conductor current (effective value) for all available grid
-        // phases / HVPM-Vorgabe des maximal zulässigen AC-Leiterstromes (Effektivwert) für alle verfügbaren
-        // Netzphasen
+        // HVPM specification of the maximum permissible AC conductor current (effective value) for all available network
+        // phases / HVPM-Vorgabe des maximal zulässigen AC-Leiterstromes (Effektivwert) für alle verfügbaren Netzphasen
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "EME", "LADEKOORDINATOR_INTERFACE", "STAT_SPEC_I_MAX_ALTC_CHGE_WERT", STAT_SPEC_I_MAX_ALTC_CHGE_WERT, "\"A\"");
 
     float STAT_SPEC_I_MAX_ALTC_CF_CHGE_WERT = (RXBUF_UINT(32)*0.1f);
@@ -5177,8 +5174,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "EME", "LADEKOORDINATOR_INTERFACE", "STAT_SPEC_I_MAX_DC_INTLE_WERT", STAT_SPEC_I_MAX_DC_INTLE_WERT, "\"A\"");
 
     float STAT_AVL_I_INTLE_WERT = (RXBUF_UINT32(44)*0.1f);
-        // Information about the DC-HV current currently being delivered by the KLE - internal charger / Information
-        // über den aktuell von der KLE abgegebenen DC-HV-Strom - Interner Lader
+        // Information about the DC-HV current currently being supplied by the KLE - internal charger / Information über
+        // den aktuell von der KLE abgegebenen DC-HV-Strom - Interner Lader
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "EME", "LADEKOORDINATOR_INTERFACE", "STAT_AVL_I_INTLE_WERT", STAT_AVL_I_INTLE_WERT, "\"A\"");
 
     float STAT_SPEC_I_MAX_DC_CF_CHGE_WERT = (RXBUF_UINT(48)*0.1f);
@@ -5187,8 +5184,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "EME", "LADEKOORDINATOR_INTERFACE", "STAT_SPEC_I_MAX_DC_CF_CHGE_WERT", STAT_SPEC_I_MAX_DC_CF_CHGE_WERT, "\"A\"");
 
     float STAT_AVL_I_CF_CHGE_WERT = (RXBUF_SINT(50)*0.1f-204.7);
-        // Information about the current DC-HV current output by the KLE - external charger / Information über den
-        // aktuell von der KLE abgegebenen DC-HV-Strom - Externer Lader
+        // Information about the DC-HV current currently being supplied by the KLE - external charger / Information über
+        // den aktuell von der KLE abgegebenen DC-HV-Strom - Externer Lader
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "EME", "LADEKOORDINATOR_INTERFACE", "STAT_AVL_I_CF_CHGE_WERT", STAT_AVL_I_CF_CHGE_WERT, "\"A\"");
 
     float STAT_SPEC_U_MAX_CHG_CHGE_WERT = (RXBUF_UINT(52)*0.1f);
@@ -5262,8 +5259,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "EME", "LADEKOORDINATOR_INTERFACE", "STAT_PWR_HV_STAT_AVLB_CF_CHGE_DER_WERT", STAT_PWR_HV_STAT_AVLB_CF_CHGE_DER_WERT, "\"W\"");
 
     unsigned short STAT_REAS_FAILSAFE_CHGNG_WERT = (RXBUF_UINT(89));
-        // Information about the trigger for the Failsafe state / Information über den Auslöser für den Zustand
-        // Failsafe
+        // Information about the trigger for the Failsafe state / Information über den Auslöser für den Zustand Failsafe
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "EME", "LADEKOORDINATOR_INTERFACE", "STAT_REAS_FAILSAFE_CHGNG_WERT", STAT_REAS_FAILSAFE_CHGNG_WERT, "");
 
     unsigned short STAT_REAS_FAILSAFE_INTLE_WERT = (RXBUF_UINT(91));
@@ -5277,18 +5273,18 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "EME", "LADEKOORDINATOR_INTERFACE", "STAT_REAS_CON_VRFD_CF_CHGE_WERT", STAT_REAS_CON_VRFD_CF_CHGE_WERT, "");
 
     unsigned char STAT_REAS_DER_CHGNG_WERT = (RXBUF_UCHAR(95));
-        // Information about the cause of the derating of the charging electronics / Information über die
-        // Deratingursache der Ladeelektronik
+        // Information about the cause of the derating of the charging electronics / Information über die Deratingursache
+        // der Ladeelektronik
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "EME", "LADEKOORDINATOR_INTERFACE", "STAT_REAS_DER_CHGNG_WERT", STAT_REAS_DER_CHGNG_WERT, "");
 
     unsigned char STAT_REAS_DER_INTLE_WERT = (RXBUF_UCHAR(96));
-        // Information about the cause of the derating of the internal charger / Information über die Deratingursache
-        // des internen Laders
+        // Information about the cause of the derating of the internal charger / Information über die Deratingursache des
+        // internen Laders
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "EME", "LADEKOORDINATOR_INTERFACE", "STAT_REAS_DER_INTLE_WERT", STAT_REAS_DER_INTLE_WERT, "");
 
     unsigned char STAT_REAS_DER_CF_CHGNG_WERT = (RXBUF_UCHAR(97));
-        // Information about the cause of the derating of the external charger / Information über die Deratingursache
-        // des externen Laders
+        // Information about the cause of the derating of the external charger / Information über die Deratingursache des
+        // externen Laders
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "EME", "LADEKOORDINATOR_INTERFACE", "STAT_REAS_DER_CF_CHGNG_WERT", STAT_REAS_DER_CF_CHGNG_WERT, "");
 
     unsigned char STAT_ST_ERR_CHGNG_WERT = (RXBUF_UCHAR(98));
@@ -5430,8 +5426,8 @@
     unsigned long STAT_V_E_DCDC_MC0_CTRL_WERT = (RXBUF_UINT32(49));
         // Status and control bits for the DCDC: Bit 0: Release signal (at 1) for frequency modulation operation in DCDC
         // Bit 1: KL15 status Bit 2: Status ELUP startup (1: active) (Bit 2 - only for PKR2!) / Status und Steuerungsbits
-        // für den DCDC: Bit 0:   Freigabesignal (bei 1) für den Frequenzmodulation-Betrieb im DCDC Bit 1:  
-        // KL15-Status Bit 2: Status ELUP Anlauf (1: aktiv) (Bit 2 - nur für PKR2!)
+        // für den DCDC: Bit 0:   Freigabesignal (bei 1) für den Frequenzmodulation-Betrieb im DCDC Bit 1:   KL15-Status
+        // Bit 2: Status ELUP Anlauf (1: aktiv) (Bit 2 - nur für PKR2!)
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "EME", "DCDC_MESSGROESSEN_KOMPLETT", "STAT_V_E_DCDC_MC0_CTRL_WERT", STAT_V_E_DCDC_MC0_CTRL_WERT, "");
 
     unsigned short STAT_V_H_SPI_DCDC_0_SPI_DATA_E_STATUS_WERT = (RXBUF_UINT(53));
@@ -5503,8 +5499,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "EME", "DCDC_MESSGROESSEN_KOMPLETT", "STAT_V_I_DCDC_TS1_MC6_RUKO_WERT", STAT_V_I_DCDC_TS1_MC6_RUKO_WERT, "\"A\"");
 
     unsigned long STAT_V_I_DCDC_TS2_MC6_RUKO_WERT = (RXBUF_UINT32(107));
-        // Buck converter phase 2 current (only for non-PKR2 software!) / Tiefsetzsteller Phase 2 Strom (nur für
-        // non-PKR2 Software!)
+        // Buck converter phase 2 current (only for non-PKR2 software!) / Tiefsetzsteller Phase 2 Strom (nur für non-PKR2
+        // Software!)
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "EME", "DCDC_MESSGROESSEN_KOMPLETT", "STAT_V_I_DCDC_TS2_MC6_RUKO_WERT", STAT_V_I_DCDC_TS2_MC6_RUKO_WERT, "\"A\"");
 
     unsigned long STAT_V_T_DCDC_TS_MC6_RUKO_WERT = (RXBUF_UINT32(111));

@@ -114,8 +114,7 @@
     }
 
     long STAT_ABSOLUT_GWSZ_RAM_WERT = (RXBUF_SINT32(0));
-        // Returns the absolute total odometer from the RAM. / Liefert den absoluten Gesamtwegstreckenzähler aus dem
-        // RAM.
+        // Returns the absolute total odometer from the RAM. / Liefert den absoluten Gesamtwegstreckenzähler aus dem RAM.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%ld%s\n", "KOM", "GWSZ_ABSOLUT_WERT", "STAT_ABSOLUT_GWSZ_RAM_WERT", STAT_ABSOLUT_GWSZ_RAM_WERT, "\"km\"");
 
     long STAT_ABSOLUT_GWSZ_EEP_WERT = (RXBUF_SINT32(4));
@@ -366,8 +365,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "KOM", "TANKINHALT", "STAT_TANKKAMMER_LINKS_WERT", STAT_TANKKAMMER_LINKS_WERT, "\"l\"");
 
     float STAT_SUMMENWERT_WERT = (RXBUF_UINT(4)/128.0f);
-        // Undamped sum of the liter values of the tank lever sensors on the right and left in liters / Ungedämpfte
-        // Summe der Literwerte der Tank-Hebelgeber rechts und links in Liter
+        // Undamped sum of the liter values of the tank lever sensors right and left in liters / Ungedämpfte Summe der
+        // Literwerte der Tank-Hebelgeber rechts und links in Liter
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "KOM", "TANKINHALT", "STAT_SUMMENWERT_WERT", STAT_SUMMENWERT_WERT, "\"l\"");
 
     float STAT_GEDAEMPFT_ANZ_WERT = (RXBUF_UINT(6)/128.0f);
@@ -626,7 +625,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "KOM", "SEGMENTDATEN_SPEICHER", "STAT_BLOCK_01_MINUTE_WERT", STAT_BLOCK_01_MINUTE_WERT, "\"min\"");
 
     float STAT_BLOCK_01_A_TEMP_WERT = (RXBUF_UCHAR(9)*0.5f-40.0);
-        // Outside temperature [-40 to + 50 � C] / Außentemperatur [-40 bis +50°C]
+        // Outside temperature [-40 to + 50 ° C] / Außentemperatur [-40 bis +50°C]
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "KOM", "SEGMENTDATEN_SPEICHER", "STAT_BLOCK_01_A_TEMP_WERT", STAT_BLOCK_01_A_TEMP_WERT, "\"°C\"");
 
     float STAT_BLOCK_01_AKT_DAUER_ECO_WERT = (RXBUF_UCHAR(10)/2.0f);
@@ -682,7 +681,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "KOM", "SEGMENTDATEN_SPEICHER", "STAT_BLOCK_02_MINUTE_WERT", STAT_BLOCK_02_MINUTE_WERT, "\"min\"");
 
     float STAT_BLOCK_02_A_TEMP_WERT = (RXBUF_UCHAR(30)*0.5f-40.0);
-        // Outside temperature [-40 to + 50 � C] / Außentemperatur [-40 bis +50°C]
+        // Outside temperature [-40 to + 50 ° C] / Außentemperatur [-40 bis +50°C]
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "KOM", "SEGMENTDATEN_SPEICHER", "STAT_BLOCK_02_A_TEMP_WERT", STAT_BLOCK_02_A_TEMP_WERT, "\"°C\"");
 
     float STAT_BLOCK_02_AKT_DAUER_ECO_WERT = (RXBUF_UCHAR(31)/2.0f);
@@ -738,7 +737,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "KOM", "SEGMENTDATEN_SPEICHER", "STAT_BLOCK_03_MINUTE_WERT", STAT_BLOCK_03_MINUTE_WERT, "\"min\"");
 
     float STAT_BLOCK_03_A_TEMP_WERT = (RXBUF_UCHAR(51)*0.5f-40.0);
-        // Outside temperature [-40 to + 50 � C] / Außentemperatur [-40 bis +50°C]
+        // Outside temperature [-40 to + 50 ° C] / Außentemperatur [-40 bis +50°C]
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "KOM", "SEGMENTDATEN_SPEICHER", "STAT_BLOCK_03_A_TEMP_WERT", STAT_BLOCK_03_A_TEMP_WERT, "\"°C\"");
 
     float STAT_BLOCK_03_AKT_DAUER_ECO_WERT = (RXBUF_UCHAR(52)/2.0f);
@@ -794,7 +793,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "KOM", "SEGMENTDATEN_SPEICHER", "STAT_BLOCK_04_MINUTE_WERT", STAT_BLOCK_04_MINUTE_WERT, "\"min\"");
 
     float STAT_BLOCK_04_A_TEMP_WERT = (RXBUF_UCHAR(72)*0.5f-40.0);
-        // Outside temperature [-40 to + 50 � C] / Außentemperatur [-40 bis +50°C]
+        // Outside temperature [-40 to + 50 ° C] / Außentemperatur [-40 bis +50°C]
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "KOM", "SEGMENTDATEN_SPEICHER", "STAT_BLOCK_04_A_TEMP_WERT", STAT_BLOCK_04_A_TEMP_WERT, "\"°C\"");
 
     float STAT_BLOCK_04_AKT_DAUER_ECO_WERT = (RXBUF_UCHAR(73)/2.0f);
@@ -850,7 +849,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "KOM", "SEGMENTDATEN_SPEICHER", "STAT_BLOCK_05_MINUTE_WERT", STAT_BLOCK_05_MINUTE_WERT, "\"min\"");
 
     float STAT_BLOCK_05_A_TEMP_WERT = (RXBUF_UCHAR(93)*0.5f-40.0);
-        // Outside temperature [-40 to + 50 � C] / Außentemperatur [-40 bis +50°C]
+        // Outside temperature [-40 to + 50 ° C] / Außentemperatur [-40 bis +50°C]
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "KOM", "SEGMENTDATEN_SPEICHER", "STAT_BLOCK_05_A_TEMP_WERT", STAT_BLOCK_05_A_TEMP_WERT, "\"°C\"");
 
     float STAT_BLOCK_05_AKT_DAUER_ECO_WERT = (RXBUF_UCHAR(94)/2.0f);
@@ -906,7 +905,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "KOM", "SEGMENTDATEN_SPEICHER", "STAT_BLOCK_06_MINUTE_WERT", STAT_BLOCK_06_MINUTE_WERT, "\"min\"");
 
     float STAT_BLOCK_06_A_TEMP_WERT = (RXBUF_UCHAR(114)*0.5f-40.0);
-        // Outside temperature [-40 to + 50 � C] / Außentemperatur [-40 bis +50°C]
+        // Outside temperature [-40 to + 50 ° C] / Außentemperatur [-40 bis +50°C]
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "KOM", "SEGMENTDATEN_SPEICHER", "STAT_BLOCK_06_A_TEMP_WERT", STAT_BLOCK_06_A_TEMP_WERT, "\"°C\"");
 
     float STAT_BLOCK_06_AKT_DAUER_ECO_WERT = (RXBUF_UCHAR(115)/2.0f);
@@ -962,7 +961,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "KOM", "SEGMENTDATEN_SPEICHER", "STAT_BLOCK_07_MINUTE_WERT", STAT_BLOCK_07_MINUTE_WERT, "\"min\"");
 
     float STAT_BLOCK_07_A_TEMP_WERT = (RXBUF_UCHAR(135)*0.5f-40.0);
-        // Outside temperature [-40 to + 50 � C] / Außentemperatur [-40 bis +50°C]
+        // Outside temperature [-40 to + 50 ° C] / Außentemperatur [-40 bis +50°C]
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "KOM", "SEGMENTDATEN_SPEICHER", "STAT_BLOCK_07_A_TEMP_WERT", STAT_BLOCK_07_A_TEMP_WERT, "\"°C\"");
 
     float STAT_BLOCK_07_AKT_DAUER_ECO_WERT = (RXBUF_UCHAR(136)/2.0f);
@@ -1018,7 +1017,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "KOM", "SEGMENTDATEN_SPEICHER", "STAT_BLOCK_08_MINUTE_WERT", STAT_BLOCK_08_MINUTE_WERT, "\"min\"");
 
     float STAT_BLOCK_08_A_TEMP_WERT = (RXBUF_UCHAR(156)*0.5f-40.0);
-        // Outside temperature [-40 to + 50 � C] / Außentemperatur [-40 bis +50°C]
+        // Outside temperature [-40 to + 50 ° C] / Außentemperatur [-40 bis +50°C]
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "KOM", "SEGMENTDATEN_SPEICHER", "STAT_BLOCK_08_A_TEMP_WERT", STAT_BLOCK_08_A_TEMP_WERT, "\"°C\"");
 
     float STAT_BLOCK_08_AKT_DAUER_ECO_WERT = (RXBUF_UCHAR(157)/2.0f);
@@ -1074,7 +1073,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "KOM", "SEGMENTDATEN_SPEICHER", "STAT_BLOCK_09_MINUTE_WERT", STAT_BLOCK_09_MINUTE_WERT, "\"min\"");
 
     float STAT_BLOCK_09_A_TEMP_WERT = (RXBUF_UCHAR(177)*0.5f-40.0);
-        // Outside temperature [-40 to + 50 � C] / Außentemperatur [-40 bis +50°C]
+        // Outside temperature [-40 to + 50 ° C] / Außentemperatur [-40 bis +50°C]
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "KOM", "SEGMENTDATEN_SPEICHER", "STAT_BLOCK_09_A_TEMP_WERT", STAT_BLOCK_09_A_TEMP_WERT, "\"°C\"");
 
     float STAT_BLOCK_09_AKT_DAUER_ECO_WERT = (RXBUF_UCHAR(178)/2.0f);
@@ -1130,7 +1129,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "KOM", "SEGMENTDATEN_SPEICHER", "STAT_BLOCK_10_MINUTE_WERT", STAT_BLOCK_10_MINUTE_WERT, "\"min\"");
 
     float STAT_BLOCK_10_A_TEMP_WERT = (RXBUF_UCHAR(198)*0.5f-40.0);
-        // Outside temperature [-40 to + 50 � C] / Außentemperatur [-40 bis +50°C]
+        // Outside temperature [-40 to + 50 ° C] / Außentemperatur [-40 bis +50°C]
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "KOM", "SEGMENTDATEN_SPEICHER", "STAT_BLOCK_10_A_TEMP_WERT", STAT_BLOCK_10_A_TEMP_WERT, "\"°C\"");
 
     float STAT_BLOCK_10_AKT_DAUER_ECO_WERT = (RXBUF_UCHAR(199)/2.0f);

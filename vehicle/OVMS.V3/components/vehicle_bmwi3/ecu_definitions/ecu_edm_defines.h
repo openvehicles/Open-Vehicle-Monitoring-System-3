@@ -8,8 +8,7 @@
 #define I3_ECU_EDM_RX                                                0x0612F1
 
 #define I3_PID_EDM_ENTLUEFTUNG_KUEHLSYSTEM                           0xA1D0
-        // Ventilation routine for cooling system, only for F56 BEV / EntlÃ¼ftungsroutine fÃ¼r KÃ¼hlsystem, nur fÃ¼r F56
-        // BEV
+        // Ventilation routine for cooling system, only for F56 BEV / Entlüftungsroutine für Kühlsystem, nur für F56 BEV
 
     #define I3_RES_EDM_STAT_ROUTINE_STATUS                           (RXBUF_UCHAR(0))
     #define I3_RES_EDM_STAT_ROUTINE_STATUS_UNIT                      '0-n'
@@ -33,26 +32,26 @@
 // Skipping EME_EWAP on 0xADF3 which takes arguments
 
 #define I3_PID_EDM_MCAMOS                                            0xADFA
-        // Return goods analysis of parts from the factory in series / RÃ¼ckwarenanalyse von Teilen aus dem Werk in Serie
+        // Return goods analysis of parts from the factory in series / Rückwarenanalyse von Teilen aus dem Werk in Serie
 
 #define I3_PID_EDM_12V_NACHLADEHISTORIE_LOESCHEN                     0xAE02
         // Deleting the history memory for the last 4 charging processes of the 12V battery from the high-voltage battery
-        // (ring memory with 4 records each) / LÃ¶schen des Historienspeichers fÃ¼r die letzen 4 LadevorgÃ¤nge der
-        // 12V-Batterie aus der Hochvolt-Batterie (Ringspeicher mit je 4 SÃ¤tze)
+        // (ring memory with 4 records each) / Löschen des Historienspeichers für die letzen 4 Ladevorgänge der
+        // 12V-Batterie aus der Hochvolt-Batterie (Ringspeicher mit je 4 Sätze)
 
 #define I3_PID_EDM_12V_NACHLADEHISTOGRAMM_LOESCHEN                   0xAE03
         // Deletion of the histogram and counter of all charging processes of the 12V battery from the high-voltage
-        // system / LÃ¶schen von Histogramm und ZÃ¤hler aller LadevorgÃ¤nge der 12V-Batterie aus dem Hochvolt-Sys
+        // system / Löschen von Histogramm und Zähler aller Ladevorgänge der 12V-Batterie aus dem Hochvolt-Sys
 
 #define I3_PID_EDM_EME_KAELTEMITTEL_ABSPERRVENTIL_ON_OFF             0xDE22
         // Status of the refrigerant shut-off valve; 0 = valve closed; 1 = valve open / Status des
-        // KÃ¤ltemittelabsperrventils; 0 = Ventil geschlossen; 1 = Ventil offen
+        // Kältemittelabsperrventils; 0 = Ventil geschlossen; 1 = Ventil offen
 
     #define I3_RES_EDM_STAT_AKAV_ON                                  (RXBUF_UCHAR(0))
     #define I3_RES_EDM_STAT_AKAV_ON_UNIT                             '0/1'
     #define I3_RES_EDM_STAT_AKAV_ON_TYPE                             unsigned char
         // Status of the refrigerant shut-off valve; 0 = valve closed; 1 = valve open / Status des
-        // KÃ¤ltemittelabsperrventils; 0 = Ventil geschlossen; 1 = Ventil offen
+        // Kältemittelabsperrventils; 0 = Ventil geschlossen; 1 = Ventil offen
 
 // Skipping EME_KAELTEMITTEL_ABSPERRVENTIL on 0xDE23 which takes arguments
 
@@ -90,11 +89,11 @@
 
     #define I3_RES_EDM_STAT_BETRIEB_ERSTSTARTS_WERT                  (RXBUF_UINT32(8))
     #define I3_RES_EDM_STAT_BETRIEB_ERSTSTARTS_WERT_TYPE             unsigned long
-        // Number of first start processes / Anzahl der Erststart-VorgÃ¤nge
+        // Number of first start processes / Anzahl der Erststart-Vorgänge
 
     #define I3_RES_EDM_STAT_BETRIEB_MSA_STARTS_WERT                  (RXBUF_UINT32(12))
     #define I3_RES_EDM_STAT_BETRIEB_MSA_STARTS_WERT_TYPE             unsigned long
-        // Number of MSA starts / Anzahl MSA - StartvorgÃ¤nge
+        // Number of MSA starts / Anzahl MSA - Startvorgänge
 
     #define I3_RES_EDM_STAT_REX_BETRIEB_WARTUNG_STARTS_WERT          (RXBUF_UINT(16))
     #define I3_RES_EDM_STAT_REX_BETRIEB_WARTUNG_STARTS_WERT_TYPE     unsigned short
@@ -206,9 +205,9 @@
 // Skipping WARTUNGSLAUF_REX_FAELLIG on 0xDEFC which takes arguments
 
 #define I3_PID_EDM_ZYKLISCHES_NACHLADEN_INFO                         0xDEFD
-        // Reading of important parameters of the last 4 processes of the cyclical reloading plus the last parking
-        // process. / Auslesen von wichtigen KenngrÃ¶Ãen der letzten 4 VorgÃ¤nge des zyklischen Nachladens plus dem
-        // letzten Parkvorgang.
+        // Reading out of important parameters of the last 4 processes of the cyclical reloading plus the last parking
+        // process. / Auslesen von wichtigen Kenngrößen der letzten 4 Vorgänge des zyklischen Nachladens plus dem letzten
+        // Parkvorgang.
 
     #define I3_RES_EDM_STAT_PARKEN_SYSTEMZEIT_WERT                   (RXBUF_UINT32(0))
     #define I3_RES_EDM_STAT_PARKEN_SYSTEMZEIT_WERT_UNIT              's'
@@ -249,7 +248,7 @@
     #define I3_RES_EDM_STAT_E1_START_ZYKNL_NV_BATTERIE_SOC_WERT      (RXBUF_UCHAR(22)*0.5f)
     #define I3_RES_EDM_STAT_E1_START_ZYKNL_NV_BATTERIE_SOC_WERT_UNIT '%'
     #define I3_RES_EDM_STAT_E1_START_ZYKNL_NV_BATTERIE_SOC_WERT_TYPE float
-        // 1st event (last): SOC 12V battery at the start of cyclical recharging / 1. Ereignis (letzte): SOC 12V Batterie
+        // 1st event (last): SOC 12V battery when starting cyclical recharging / 1. Ereignis (letzte): SOC 12V Batterie
         // beim Start des zyklischen Nachladens
 
     #define I3_RES_EDM_STAT_E1_START_ZYKNL_HV_BATTERIE_SOC_WERT      (RXBUF_UCHAR(23)*0.5f)
@@ -259,7 +258,7 @@
         // beim Start des zyklischen Nachladens
 
     #define I3_RES_EDM_STAT_E1_START_ZYKNL_NV_BATTERIE_TEMPERATUR_WERT (RXBUF_UCHAR(24)-128.0)
-    #define I3_RES_EDM_STAT_E1_START_ZYKNL_NV_BATTERIE_TEMPERATUR_WERT_UNIT 'Â°C'
+    #define I3_RES_EDM_STAT_E1_START_ZYKNL_NV_BATTERIE_TEMPERATUR_WERT_UNIT '°C'
     #define I3_RES_EDM_STAT_E1_START_ZYKNL_NV_BATTERIE_TEMPERATUR_WERT_TYPE unsigned char
         // 1st event (last): Temperature of the 12V battery at the start of the cyclical recharging / 1. Ereignis
         // (letzte): Temperatur der 12V Batterie beim Start des zyklischen Nachladens
@@ -290,7 +289,7 @@
     #define I3_RES_EDM_STAT_E1_ZYKNL_PROGNOSE_EIN_UNIT               '0/1'
     #define I3_RES_EDM_STAT_E1_ZYKNL_PROGNOSE_EIN_TYPE               unsigned char
         // 1st event (last): Forecast as to whether further cyclical NL possible (0 = no, 1 = yes) / 1. Ereignis
-        // (letzte): Prognose, ob weiteres zykl. NL mÃ¶glich (0 = nein, 1 = ja)
+        // (letzte): Prognose, ob weiteres zykl. NL möglich (0 = nein, 1 = ja)
 
     #define I3_RES_EDM_STAT_E2_PARKEN_SYSTEMZEIT_WERT                (RXBUF_UINT32(31))
     #define I3_RES_EDM_STAT_E2_PARKEN_SYSTEMZEIT_WERT_UNIT           's'
@@ -326,7 +325,7 @@
         // zyklischen Nachladens
 
     #define I3_RES_EDM_STAT_E2_START_ZYKNL_NV_BATTERIE_TEMPERATUR_WERT (RXBUF_UCHAR(46)-128.0)
-    #define I3_RES_EDM_STAT_E2_START_ZYKNL_NV_BATTERIE_TEMPERATUR_WERT_UNIT 'Â°C'
+    #define I3_RES_EDM_STAT_E2_START_ZYKNL_NV_BATTERIE_TEMPERATUR_WERT_UNIT '°C'
     #define I3_RES_EDM_STAT_E2_START_ZYKNL_NV_BATTERIE_TEMPERATUR_WERT_TYPE unsigned char
         // 2nd event: temperature of the 12V battery at the start of the cyclical recharge / 2. Ereignis: Temperatur der
         // 12V Batterie beim Start des zyklischen Nachladens
@@ -357,7 +356,7 @@
     #define I3_RES_EDM_STAT_E2_ZYKNL_PROGNOSE_EIN_UNIT               '0/1'
     #define I3_RES_EDM_STAT_E2_ZYKNL_PROGNOSE_EIN_TYPE               unsigned char
         // 2nd event: prognosis whether further cyclical NL possible (0 = no, 1 = yes) / 2. Ereignis: Prognose, ob
-        // weiteres zykl. NL mÃ¶glich (0 = nein, 1 = ja)
+        // weiteres zykl. NL möglich (0 = nein, 1 = ja)
 
     #define I3_RES_EDM_STAT_E3_PARKEN_SYSTEMZEIT_WERT                (RXBUF_UINT32(53))
     #define I3_RES_EDM_STAT_E3_PARKEN_SYSTEMZEIT_WERT_UNIT           's'
@@ -393,7 +392,7 @@
         // zyklischen Nachladens
 
     #define I3_RES_EDM_STAT_E3_START_ZYKNL_NV_BATTERIE_TEMPERATUR_WERT (RXBUF_UCHAR(68)-128.0)
-    #define I3_RES_EDM_STAT_E3_START_ZYKNL_NV_BATTERIE_TEMPERATUR_WERT_UNIT 'Â°C'
+    #define I3_RES_EDM_STAT_E3_START_ZYKNL_NV_BATTERIE_TEMPERATUR_WERT_UNIT '°C'
     #define I3_RES_EDM_STAT_E3_START_ZYKNL_NV_BATTERIE_TEMPERATUR_WERT_TYPE unsigned char
         // 3rd event: temperature of the 12V battery at the start of the cyclic recharge / 3. Ereignis: Temperatur der
         // 12V Batterie beim Start des zyklischen Nachladens
@@ -424,7 +423,7 @@
     #define I3_RES_EDM_STAT_E3_ZYKNL_PROGNOSE_EIN_UNIT               '0/1'
     #define I3_RES_EDM_STAT_E3_ZYKNL_PROGNOSE_EIN_TYPE               unsigned char
         // 3rd event: prognosis whether further cyclical NL possible (0 = no, 1 = yes) / 3. Ereignis: Prognose, ob
-        // weiteres zykl. NL mÃ¶glich (0 = nein, 1 = ja)
+        // weiteres zykl. NL möglich (0 = nein, 1 = ja)
 
     #define I3_RES_EDM_STAT_E4_PARKEN_SYSTEMZEIT_WERT                (RXBUF_UINT32(75))
     #define I3_RES_EDM_STAT_E4_PARKEN_SYSTEMZEIT_WERT_UNIT           's'
@@ -460,7 +459,7 @@
         // zyklischen Nachladens
 
     #define I3_RES_EDM_STAT_E4_START_ZYKNL_NV_BATTERIE_TEMPERATUR_WERT (RXBUF_UCHAR(90)-128.0)
-    #define I3_RES_EDM_STAT_E4_START_ZYKNL_NV_BATTERIE_TEMPERATUR_WERT_UNIT 'Â°C'
+    #define I3_RES_EDM_STAT_E4_START_ZYKNL_NV_BATTERIE_TEMPERATUR_WERT_UNIT '°C'
     #define I3_RES_EDM_STAT_E4_START_ZYKNL_NV_BATTERIE_TEMPERATUR_WERT_TYPE unsigned char
         // 4th event: temperature of the 12V battery at the start of cyclic recharging / 4. Ereignis: Temperatur der 12V
         // Batterie beim Start des zyklischen Nachladens
@@ -491,122 +490,122 @@
     #define I3_RES_EDM_STAT_E4_ZYKNL_PROGNOSE_EIN_UNIT               '0/1'
     #define I3_RES_EDM_STAT_E4_ZYKNL_PROGNOSE_EIN_TYPE               unsigned char
         // 4th event: prognosis whether further cyclical NL possible (0 = no, 1 = yes) / 4. Ereignis: Prognose, ob
-        // weiteres zykl. NL mÃ¶glich (0 = nein, 1 = ja)
+        // weiteres zykl. NL möglich (0 = nein, 1 = ja)
 
 #define I3_PID_EDM_ZYKLISCHES_NACHLADEN_HISTOGRAMM                   0xDEFE
-        // Reading out the histograms over the service life up to the beginning of the cyclical reloading and the loading
-        // times of the cyclical reloading processes / Auslesen der Histogramme Ã¼ber die Standzeit bis zum Beginn des
-        // zyklischen Nachladens und der Ladedauern der zyklischen NachladevorgÃ¤nge
+        // Reading out the histograms over the service life up to the start of the cyclical reloading and the loading
+        // times of the cyclical reloading processes / Auslesen der Histogramme über die Standzeit bis zum Beginn des
+        // zyklischen Nachladens und der Ladedauern der zyklischen Nachladevorgänge
 
     #define I3_RES_EDM_STAT_STANDZEIT_START_ZYKNL_BEREICH_A_WERT     (RXBUF_UCHAR(0))
     #define I3_RES_EDM_STAT_STANDZEIT_START_ZYKNL_BEREICH_A_WERT_TYPE unsigned char
         // Number of idle times until the beginning of the cyclical reloading in area A. Area A <= K_STDZEITLADEHISTGRZ1
         // (days) (count up to 255, then no count, value is retained) / Anzahl der Standzeiten bis zum Beginn des
-        // zyklischen Nachladens im Bereich A. Bereich A <= K_STDZEITLADEHISTGRZ1 (Tage) (ZÃ¤hlung bis 255, danach keine
-        // ZÃ¤hlung, Wert bleibt erhalten)
+        // zyklischen Nachladens im Bereich A. Bereich A <= K_STDZEITLADEHISTGRZ1 (Tage) (Zählung bis 255, danach keine
+        // Zählung, Wert bleibt erhalten)
 
     #define I3_RES_EDM_STAT_STANDZEIT_START_ZYKNL_BEREICH_B_WERT     (RXBUF_UCHAR(1))
     #define I3_RES_EDM_STAT_STANDZEIT_START_ZYKNL_BEREICH_B_WERT_TYPE unsigned char
         // Number of idle times until the start of the cyclical reloading in area B. K_STDZEITLADEHISTGRZ1 (days) <area B
         // <= K_STDZEITLADEHISTGRZ2 (days) (count up to 255, after that no count, value is retained) / Anzahl der
         // Standzeiten bis zum Beginn des zyklischen Nachladens im Bereich B.  K_STDZEITLADEHISTGRZ1 (Tage) < Bereich B
-        // <= K_STDZEITLADEHISTGRZ2 (Tage) (ZÃ¤hlung bis 255, danach keine ZÃ¤hlung, Wert bleibt erhalten)
+        // <= K_STDZEITLADEHISTGRZ2 (Tage) (Zählung bis 255, danach keine Zählung, Wert bleibt erhalten)
 
     #define I3_RES_EDM_STAT_STANDZEIT_START_ZYKNL_BEREICH_C_WERT     (RXBUF_UCHAR(2))
     #define I3_RES_EDM_STAT_STANDZEIT_START_ZYKNL_BEREICH_C_WERT_TYPE unsigned char
         // Number of idle times until the start of the cyclical reloading in area B. K_STDZEITLADEHISTGRZ2 (days) <area C
         // <= K_STDZEITLADEHISTGRZ3 (days) (count up to 255, after that no count, value is retained) / Anzahl der
         // Standzeiten bis zum Beginn des zyklischen Nachladens im Bereich B.  K_STDZEITLADEHISTGRZ2 (Tage) < Bereich C
-        // <= K_STDZEITLADEHISTGRZ3 (Tage) (ZÃ¤hlung bis 255, danach keine ZÃ¤hlung, Wert bleibt erhalten)
+        // <= K_STDZEITLADEHISTGRZ3 (Tage) (Zählung bis 255, danach keine Zählung, Wert bleibt erhalten)
 
     #define I3_RES_EDM_STAT_STANDZEIT_START_ZYKNL_BEREICH_D_WERT     (RXBUF_UCHAR(3))
     #define I3_RES_EDM_STAT_STANDZEIT_START_ZYKNL_BEREICH_D_WERT_TYPE unsigned char
         // Number of idle times until the beginning of the cyclical reloading in area D. K_STDZEITLADEHISTGRZ3 (days)
         // <area D <= K_STDZEITLADEHISTGRZ4 (days) (count up to 255, after that no count, value is retained) / Anzahl der
         // Standzeiten bis zum Beginn des zyklischen Nachladens im Bereich D.  K_STDZEITLADEHISTGRZ3 (Tage) < Bereich D
-        // <= K_STDZEITLADEHISTGRZ4 (Tage) (ZÃ¤hlung bis 255, danach keine ZÃ¤hlung, Wert bleibt erhalten)
+        // <= K_STDZEITLADEHISTGRZ4 (Tage) (Zählung bis 255, danach keine Zählung, Wert bleibt erhalten)
 
     #define I3_RES_EDM_STAT_STANDZEIT_START_ZYKNL_BEREICH_E_WERT     (RXBUF_UCHAR(4))
     #define I3_RES_EDM_STAT_STANDZEIT_START_ZYKNL_BEREICH_E_WERT_TYPE unsigned char
         // Number of idle times until the beginning of the cyclical reloading in area E. K_STDZEITLADEHISTGRZ4 (days)
-        // <area E <= K_STDZEITLADEHISTGRZ5 (days) (count up to 255, then no count, value is retained) / Anzahl der
+        // <area E <= K_STDZEITLADEHISTGRZ5 (days) (count up to 255, after that no count, value is retained) / Anzahl der
         // Standzeiten bis zum Beginn des zyklischen Nachladens im Bereich E.  K_STDZEITLADEHISTGRZ4 (Tage) < Bereich E
-        // <= K_STDZEITLADEHISTGRZ5 (Tage) (ZÃ¤hlung bis 255, danach keine ZÃ¤hlung, Wert bleibt erhalten)
+        // <= K_STDZEITLADEHISTGRZ5 (Tage) (Zählung bis 255, danach keine Zählung, Wert bleibt erhalten)
 
     #define I3_RES_EDM_STAT_STANDZEIT_START_ZYKNL_BEREICH_F_WERT     (RXBUF_UCHAR(5))
     #define I3_RES_EDM_STAT_STANDZEIT_START_ZYKNL_BEREICH_F_WERT_TYPE unsigned char
-        // Number of idle times until the beginning of the cyclical reloading in the area F. K_STDZEITLADEHISTGRZ5 (days)
-        // <area F <= K_STDZEITLADEHISTGRZ6 (days) (counting up to 255, then no counting, value is retained) / Anzahl der
+        // Number of idle times until the start of the cyclical reloading in the area F. K_STDZEITLADEHISTGRZ5 (days)
+        // <area F <= K_STDZEITLADEHISTGRZ6 (days) (count up to 255, after that no count, value is retained) / Anzahl der
         // Standzeiten bis zum Beginn des zyklischen Nachladens im Bereich F.  K_STDZEITLADEHISTGRZ5 (Tage) < Bereich F
-        // <= K_STDZEITLADEHISTGRZ6 (Tage) (ZÃ¤hlung bis 255, danach keine ZÃ¤hlung, Wert bleibt erhalten)
+        // <= K_STDZEITLADEHISTGRZ6 (Tage) (Zählung bis 255, danach keine Zählung, Wert bleibt erhalten)
 
     #define I3_RES_EDM_STAT_STANDZEIT_START_ZYKNL_BEREICH_G_WERT     (RXBUF_UCHAR(6))
     #define I3_RES_EDM_STAT_STANDZEIT_START_ZYKNL_BEREICH_G_WERT_TYPE unsigned char
         // Number of idle times until the start of the cyclical reloading in area G. K_STDZEITLADEHISTGRZ6 (days) <area G
         // <= K_STDZEITLADEHISTGRZ7 (days) (count up to 255, after that no count, value is retained) / Anzahl der
         // Standzeiten bis zum Beginn des zyklischen Nachladens im Bereich G.  K_STDZEITLADEHISTGRZ6 (Tage) < Bereich G
-        // <= K_STDZEITLADEHISTGRZ7 (Tage) (ZÃ¤hlung bis 255, danach keine ZÃ¤hlung, Wert bleibt erhalten)
+        // <= K_STDZEITLADEHISTGRZ7 (Tage) (Zählung bis 255, danach keine Zählung, Wert bleibt erhalten)
 
     #define I3_RES_EDM_STAT_STANDZEIT_START_ZYKNL_BEREICH_H_WERT     (RXBUF_UCHAR(7))
     #define I3_RES_EDM_STAT_STANDZEIT_START_ZYKNL_BEREICH_H_WERT_TYPE unsigned char
         // Number of idle times until the beginning of the cyclical reloading in area H. K_STDZEITLADEHISTGRZ7 (days)
         // <area H (count up to 255, then no count, value is retained) / Anzahl der Standzeiten bis zum Beginn des
-        // zyklischen Nachladens im Bereich H.  K_STDZEITLADEHISTGRZ7 (Tage) < Bereich H  (ZÃ¤hlung bis 255, danach keine
-        // ZÃ¤hlung, Wert bleibt erhalten)
+        // zyklischen Nachladens im Bereich H.  K_STDZEITLADEHISTGRZ7 (Tage) < Bereich H  (Zählung bis 255, danach keine
+        // Zählung, Wert bleibt erhalten)
 
     #define I3_RES_EDM_STAT_LADUNGSDAUER_BEREICH_A_WERT              (RXBUF_UCHAR(8))
     #define I3_RES_EDM_STAT_LADUNGSDAUER_BEREICH_A_WERT_TYPE         unsigned char
         // Number of loading times of the cyclical reloading in area A. Area A <= K_NLDDAUERHISTGRZ1 (days) (counting up
         // to 255, then no counting, value is retained) / Anzahl der Ladungsdauer des zyklischen Nachladens im Bereich A.
-        // Bereich A <= K_NLDDAUERHISTGRZ1 (Tage) (ZÃ¤hlung bis 255, danach keine ZÃ¤hlung, Wert bleibt erhalten)
+        // Bereich A <= K_NLDDAUERHISTGRZ1 (Tage) (Zählung bis 255, danach keine Zählung, Wert bleibt erhalten)
 
     #define I3_RES_EDM_STAT_LADUNGSDAUER_BEREICH_B_WERT              (RXBUF_UCHAR(9))
     #define I3_RES_EDM_STAT_LADUNGSDAUER_BEREICH_B_WERT_TYPE         unsigned char
         // Number of loading times of the cyclical reloading in area B. K_NLDDAUERHISTGRZ1 (days) <area B <=
         // K_NLDDAUERHISTGRZ2 (days) (count up to 255, then no count, value is retained) / Anzahl der Ladungsdauer des
         // zyklischen Nachladens im Bereich B. K_NLDDAUERHISTGRZ1 (Tage) < Bereich B <= K_NLDDAUERHISTGRZ2 (Tage)
-        // (ZÃ¤hlung bis 255, danach keine ZÃ¤hlung, Wert bleibt erhalten)
+        // (Zählung bis 255, danach keine Zählung, Wert bleibt erhalten)
 
     #define I3_RES_EDM_STAT_LADUNGSDAUER_BEREICH_C_WERT              (RXBUF_UCHAR(10))
     #define I3_RES_EDM_STAT_LADUNGSDAUER_BEREICH_C_WERT_TYPE         unsigned char
         // Number of loading times of the cyclical reloading in area C. K_NLDDAUERHISTGRZ2 (days) <area C <=
-        // K_NLDDAUERHISTGRZ3 (days) (counting up to 255, after that no counting, value is retained) / Anzahl der
-        // Ladungsdauer des zyklischen Nachladens im Bereich C. K_NLDDAUERHISTGRZ2 (Tage) < Bereich C <=
-        // K_NLDDAUERHISTGRZ3 (Tage) (ZÃ¤hlung bis 255, danach keine ZÃ¤hlung, Wert bleibt erhalten)
+        // K_NLDDAUERHISTGRZ3 (days) (count up to 255, then no count, value is retained) / Anzahl der Ladungsdauer des
+        // zyklischen Nachladens im Bereich C. K_NLDDAUERHISTGRZ2 (Tage) < Bereich C <= K_NLDDAUERHISTGRZ3 (Tage)
+        // (Zählung bis 255, danach keine Zählung, Wert bleibt erhalten)
 
     #define I3_RES_EDM_STAT_LADUNGSDAUER_BEREICH_D_WERT              (RXBUF_UCHAR(11))
     #define I3_RES_EDM_STAT_LADUNGSDAUER_BEREICH_D_WERT_TYPE         unsigned char
         // Number of loading times of the cyclical reloading in area D. K_NLDDAUERHISTGRZ3 (days) <area D <=
-        // K_NLDDAUERHISTGRZ4 (days) (count up to 255, then no count, value is retained) / Anzahl der Ladungsdauer des
-        // zyklischen Nachladens im Bereich D. K_NLDDAUERHISTGRZ3 (Tage) < Bereich D <= K_NLDDAUERHISTGRZ4 (Tage)
-        // (ZÃ¤hlung bis 255, danach keine ZÃ¤hlung, Wert bleibt erhalten)
+        // K_NLDDAUERHISTGRZ4 (days) (count up to 255, after that no count, value is retained) / Anzahl der Ladungsdauer
+        // des zyklischen Nachladens im Bereich D. K_NLDDAUERHISTGRZ3 (Tage) < Bereich D <= K_NLDDAUERHISTGRZ4 (Tage)
+        // (Zählung bis 255, danach keine Zählung, Wert bleibt erhalten)
 
     #define I3_RES_EDM_STAT_LADUNGSDAUER_BEREICH_E_WERT              (RXBUF_UCHAR(12))
     #define I3_RES_EDM_STAT_LADUNGSDAUER_BEREICH_E_WERT_TYPE         unsigned char
         // Number of loading times of the cyclical reloading in area E. K_NLDDAUERHISTGRZ4 (days) <area E <=
         // K_NLDDAUERHISTGRZ5 (days) (count up to 255, then no count, value is retained) / Anzahl der Ladungsdauer des
         // zyklischen Nachladens im Bereich E. K_NLDDAUERHISTGRZ4 (Tage) < Bereich E <= K_NLDDAUERHISTGRZ5 (Tage)
-        // (ZÃ¤hlung bis 255, danach keine ZÃ¤hlung, Wert bleibt erhalten)
+        // (Zählung bis 255, danach keine Zählung, Wert bleibt erhalten)
 
     #define I3_RES_EDM_STAT_LADUNGSDAUER_BEREICH_F_WERT              (RXBUF_UCHAR(13))
     #define I3_RES_EDM_STAT_LADUNGSDAUER_BEREICH_F_WERT_TYPE         unsigned char
         // Number of loading times of the cyclical reloading in area F. K_NLDDAUERHISTGRZ5 (days) <area F <=
         // K_NLDDAUERHISTGRZ6 (days) (count up to 255, then no count, value is retained) / Anzahl der Ladungsdauer des
         // zyklischen Nachladens im Bereich F. K_NLDDAUERHISTGRZ5 (Tage) < Bereich F <= K_NLDDAUERHISTGRZ6 (Tage)
-        // (ZÃ¤hlung bis 255, danach keine ZÃ¤hlung, Wert bleibt erhalten)
+        // (Zählung bis 255, danach keine Zählung, Wert bleibt erhalten)
 
     #define I3_RES_EDM_STAT_LADUNGSDAUER_BEREICH_G_WERT              (RXBUF_UCHAR(14))
     #define I3_RES_EDM_STAT_LADUNGSDAUER_BEREICH_G_WERT_TYPE         unsigned char
         // Number of loading times of the cyclical reloading in area G. K_NLDDAUERHISTGRZ6 (days) <area G <=
         // K_NLDDAUERHISTGRZ7 (days) (count up to 255, then no count, value is retained) / Anzahl der Ladungsdauer des
         // zyklischen Nachladens im Bereich G. K_NLDDAUERHISTGRZ6 (Tage) < Bereich G <= K_NLDDAUERHISTGRZ7 (Tage)
-        // (ZÃ¤hlung bis 255, danach keine ZÃ¤hlung, Wert bleibt erhalten)
+        // (Zählung bis 255, danach keine Zählung, Wert bleibt erhalten)
 
     #define I3_RES_EDM_STAT_LADUNGSDAUER_BEREICH_H_WERT              (RXBUF_UCHAR(15))
     #define I3_RES_EDM_STAT_LADUNGSDAUER_BEREICH_H_WERT_TYPE         unsigned char
         // Number of loading times of the cyclical reloading in area H. K_NLDDAUERHISTGRZ7 (days) <area H (count up to
         // 255, then no count, value is retained) / Anzahl der Ladungsdauer des zyklischen Nachladens im Bereich H.
-        // K_NLDDAUERHISTGRZ7 (Tage) < Bereich H  (ZÃ¤hlung bis 255, danach keine ZÃ¤hlung, Wert bleibt erhalten)
+        // K_NLDDAUERHISTGRZ7 (Tage) < Bereich H  (Zählung bis 255, danach keine Zählung, Wert bleibt erhalten)
 
 // Skipping CBS_NV_RESET on 0xDF4E which takes arguments
 
@@ -616,32 +615,32 @@
     #define I3_RES_EDM_STAT_REX_TEMPERATUR_MOTOR_KUEHLMITTEL_1_WERT  (RXBUF_UINT32(0)*0.1f)
     #define I3_RES_EDM_STAT_REX_TEMPERATUR_MOTOR_KUEHLMITTEL_1_WERT_UNIT 's'
     #define I3_RES_EDM_STAT_REX_TEMPERATUR_MOTOR_KUEHLMITTEL_1_WERT_TYPE float
-        // Temperature statistics REX coolant 1 / Temperaturstatistik REX KÃ¼hlmittel 1
+        // Temperature statistics REX coolant 1 / Temperaturstatistik REX Kühlmittel 1
 
     #define I3_RES_EDM_STAT_REX_TEMPERATUR_MOTOR_KUEHLMITTEL_2_WERT  (RXBUF_UINT32(4)*0.1f)
     #define I3_RES_EDM_STAT_REX_TEMPERATUR_MOTOR_KUEHLMITTEL_2_WERT_UNIT 's'
     #define I3_RES_EDM_STAT_REX_TEMPERATUR_MOTOR_KUEHLMITTEL_2_WERT_TYPE float
-        // Temperature statistics REX coolant 2 / Temperaturstatistik REX KÃ¼hlmittel 2
+        // Temperature statistics REX coolant 2 / Temperaturstatistik REX Kühlmittel 2
 
     #define I3_RES_EDM_STAT_REX_TEMPERATUR_MOTOR_KUEHLMITTEL_3_WERT  (RXBUF_UINT32(8)*0.1f)
     #define I3_RES_EDM_STAT_REX_TEMPERATUR_MOTOR_KUEHLMITTEL_3_WERT_UNIT 's'
     #define I3_RES_EDM_STAT_REX_TEMPERATUR_MOTOR_KUEHLMITTEL_3_WERT_TYPE float
-        // Temperature statistics REX coolant 3 / Temperaturstatistik REX KÃ¼hlmittel 3
+        // Temperature statistics REX coolant 3 / Temperaturstatistik REX Kühlmittel 3
 
     #define I3_RES_EDM_STAT_REX_TEMPERATUR_MOTOROEL_1_WERT           (RXBUF_UINT32(12)*0.1f)
     #define I3_RES_EDM_STAT_REX_TEMPERATUR_MOTOROEL_1_WERT_UNIT      's'
     #define I3_RES_EDM_STAT_REX_TEMPERATUR_MOTOROEL_1_WERT_TYPE      float
-        // Temperature statistics REX engine oil 1 / Temperaturstatistik REX MotorÃ¶l 1
+        // Temperature statistics REX engine oil 1 / Temperaturstatistik REX Motoröl 1
 
     #define I3_RES_EDM_STAT_REX_TEMPERATUR_MOTOROEL_2_WERT           (RXBUF_UINT32(16)*0.1f)
     #define I3_RES_EDM_STAT_REX_TEMPERATUR_MOTOROEL_2_WERT_UNIT      's'
     #define I3_RES_EDM_STAT_REX_TEMPERATUR_MOTOROEL_2_WERT_TYPE      float
-        // Temperature statistics REX engine oil 2 / Temperaturstatistik REX MotorÃ¶l 2
+        // Temperature statistics REX engine oil 2 / Temperaturstatistik REX Motoröl 2
 
     #define I3_RES_EDM_STAT_REX_TEMPERATUR_MOTOROEL_3_WERT           (RXBUF_UINT32(20)*0.1f)
     #define I3_RES_EDM_STAT_REX_TEMPERATUR_MOTOROEL_3_WERT_UNIT      's'
     #define I3_RES_EDM_STAT_REX_TEMPERATUR_MOTOROEL_3_WERT_TYPE      float
-        // Temperature statistics REX engine oil 3 / Temperaturstatistik REX MotorÃ¶l 3
+        // Temperature statistics REX engine oil 3 / Temperaturstatistik REX Motoröl 3
 
     #define I3_RES_EDM_STAT_REX_TEMPERATUR_UMGEBUNG_1_WERT           (RXBUF_UINT32(24)*0.1f)
     #define I3_RES_EDM_STAT_REX_TEMPERATUR_UMGEBUNG_1_WERT_UNIT      's'
@@ -683,15 +682,15 @@
         // Number of REX cycles in kilometers class 5 / Anzahl REX Zyklen in Kilometer Klasse 5
 
 #define I3_PID_EDM_REX_STATISTIK_ZYKLEN                              0xDF55
-        // Driving cycle counter / ZÃ¤hler fÃ¼r Fahrzyklen
+        // Driving cycle counter / Zähler für Fahrzyklen
 
     #define I3_RES_EDM_STAT_ZYKLEN_GESAMT_WERT                       (RXBUF_UINT(0))
     #define I3_RES_EDM_STAT_ZYKLEN_GESAMT_WERT_TYPE                  unsigned short
-        // Counter for all driving cycles / ZÃ¤hler fÃ¼r alle Fahrzyklen
+        // Counter for all driving cycles / Zähler für alle Fahrzyklen
 
     #define I3_RES_EDM_STAT_ZYKLEN_REX_BETRIEB_WERT                  (RXBUF_UINT(2))
     #define I3_RES_EDM_STAT_ZYKLEN_REX_BETRIEB_WERT_TYPE             unsigned short
-        // Counter for all driving cycles where the REX has run. / ZÃ¤hler fÃ¼r alle Fahrzyklen, wo der REX gelaufen ist.
+        // Counter for all driving cycles where the REX has run. / Zähler für alle Fahrzyklen, wo der REX gelaufen ist.
 
 #define I3_PID_EDM_REX_STATISTIK_SOC_KILOMETER_KLASSEN               0xDF56
         // Number of REX starts after X kilometers with Y SOC at the start of the journey / Anzahl der REX-Starts nach
@@ -699,166 +698,166 @@
 
     #define I3_RES_EDM_STAT_REX_START_SOC_1_KM_1_WERT                (RXBUF_UINT(0))
     #define I3_RES_EDM_STAT_REX_START_SOC_1_KM_1_WERT_TYPE           unsigned short
-        // Number of REX starts for SOC class 1, electrically driven kilometers class 1 / Anzahl REX Starts fÃ¼r SOC
+        // Number of REX starts for SOC class 1, electrically driven kilometers class 1 / Anzahl REX Starts für SOC
         // Klasse 1, elektrisch gefahrene Kilometer Klasse 1
 
     #define I3_RES_EDM_STAT_REX_START_SOC_2_KM_1_WERT                (RXBUF_UINT(2))
     #define I3_RES_EDM_STAT_REX_START_SOC_2_KM_1_WERT_TYPE           unsigned short
-        // Number of REX starts for SOC class 2, electrically driven kilometers class 1 / Anzahl REX Starts fÃ¼r SOC
+        // Number of REX starts for SOC class 2, electrically driven kilometers class 1 / Anzahl REX Starts für SOC
         // Klasse 2, elektrisch gefahrene Kilometer Klasse 1
 
     #define I3_RES_EDM_STAT_REX_START_SOC_3_KM_1_WERT                (RXBUF_UINT(4))
     #define I3_RES_EDM_STAT_REX_START_SOC_3_KM_1_WERT_TYPE           unsigned short
-        // Number of REX starts for SOC class 3, electrically driven kilometers class 1 / Anzahl REX Starts fÃ¼r SOC
+        // Number of REX starts for SOC class 3, electrically driven kilometers class 1 / Anzahl REX Starts für SOC
         // Klasse 3, elektrisch gefahrene Kilometer Klasse 1
 
     #define I3_RES_EDM_STAT_REX_START_SOC_4_KM_1_WERT                (RXBUF_UINT(6))
     #define I3_RES_EDM_STAT_REX_START_SOC_4_KM_1_WERT_TYPE           unsigned short
-        // Number of REX starts for SOC class 4, electrically driven kilometers class 1 / Anzahl REX Starts fÃ¼r SOC
+        // Number of REX starts for SOC class 4, electrically driven kilometers class 1 / Anzahl REX Starts für SOC
         // Klasse 4, elektrisch gefahrene Kilometer Klasse 1
 
     #define I3_RES_EDM_STAT_REX_START_SOC_1_KM_2_WERT                (RXBUF_UINT(8))
     #define I3_RES_EDM_STAT_REX_START_SOC_1_KM_2_WERT_TYPE           unsigned short
-        // Number of REX starts for SOC class 1, electrically driven kilometers class 2 / Anzahl REX Starts fÃ¼r SOC
+        // Number of REX starts for SOC class 1, electrically driven kilometers class 2 / Anzahl REX Starts für SOC
         // Klasse 1, elektrisch gefahrene Kilometer Klasse 2
 
     #define I3_RES_EDM_STAT_REX_START_SOC_2_KM_2_WERT                (RXBUF_UINT(10))
     #define I3_RES_EDM_STAT_REX_START_SOC_2_KM_2_WERT_TYPE           unsigned short
-        // Number of REX starts for SOC class 2, electrically driven kilometers class 2 / Anzahl REX Starts fÃ¼r SOC
+        // Number of REX starts for SOC class 2, electrically driven kilometers class 2 / Anzahl REX Starts für SOC
         // Klasse 2, elektrisch gefahrene Kilometer Klasse 2
 
     #define I3_RES_EDM_STAT_REX_START_SOC_3_KM_2_WERT                (RXBUF_UINT(12))
     #define I3_RES_EDM_STAT_REX_START_SOC_3_KM_2_WERT_TYPE           unsigned short
-        // Number of REX starts for SOC class 3, electrically driven kilometers class 2 / Anzahl REX Starts fÃ¼r SOC
+        // Number of REX starts for SOC class 3, electrically driven kilometers class 2 / Anzahl REX Starts für SOC
         // Klasse 3, elektrisch gefahrene Kilometer Klasse 2
 
     #define I3_RES_EDM_STAT_REX_START_SOC_4_KM_2_WERT                (RXBUF_UINT(14))
     #define I3_RES_EDM_STAT_REX_START_SOC_4_KM_2_WERT_TYPE           unsigned short
-        // Number of REX starts for SOC class 4, electrically driven kilometers class 2 / Anzahl REX Starts fÃ¼r SOC
+        // Number of REX starts for SOC class 4, electrically driven kilometers class 2 / Anzahl REX Starts für SOC
         // Klasse 4, elektrisch gefahrene Kilometer Klasse 2
 
     #define I3_RES_EDM_STAT_REX_START_SOC_1_KM_3_WERT                (RXBUF_UINT(16))
     #define I3_RES_EDM_STAT_REX_START_SOC_1_KM_3_WERT_TYPE           unsigned short
-        // Number of REX starts for SOC class 1, electrically driven kilometers class 3 / Anzahl REX Starts fÃ¼r SOC
+        // Number of REX starts for SOC class 1, electrically driven kilometers class 3 / Anzahl REX Starts für SOC
         // Klasse 1, elektrisch gefahrene Kilometer Klasse 3
 
     #define I3_RES_EDM_STAT_REX_START_SOC_2_KM_3_WERT                (RXBUF_UINT(18))
     #define I3_RES_EDM_STAT_REX_START_SOC_2_KM_3_WERT_TYPE           unsigned short
-        // Number of REX starts for SOC class 2, electrically driven kilometers class 3 / Anzahl REX Starts fÃ¼r SOC
+        // Number of REX starts for SOC class 2, electrically driven kilometers class 3 / Anzahl REX Starts für SOC
         // Klasse 2, elektrisch gefahrene Kilometer Klasse 3
 
     #define I3_RES_EDM_STAT_REX_START_SOC_3_KM_3_WERT                (RXBUF_UINT(20))
     #define I3_RES_EDM_STAT_REX_START_SOC_3_KM_3_WERT_TYPE           unsigned short
-        // Number of REX starts for SOC class 3, electrically driven kilometers class 3 / Anzahl REX Starts fÃ¼r SOC
+        // Number of REX starts for SOC class 3, electrically driven kilometers class 3 / Anzahl REX Starts für SOC
         // Klasse 3, elektrisch gefahrene Kilometer Klasse 3
 
     #define I3_RES_EDM_STAT_REX_START_SOC_4_KM_3_WERT                (RXBUF_UINT(22))
     #define I3_RES_EDM_STAT_REX_START_SOC_4_KM_3_WERT_TYPE           unsigned short
-        // Number of REX starts for SOC class 4, electrically driven kilometers class 3 / Anzahl REX Starts fÃ¼r SOC
+        // Number of REX starts for SOC class 4, electrically driven kilometers class 3 / Anzahl REX Starts für SOC
         // Klasse 4, elektrisch gefahrene Kilometer Klasse 3
 
     #define I3_RES_EDM_STAT_REX_START_SOC_1_KM_4_WERT                (RXBUF_UINT(24))
     #define I3_RES_EDM_STAT_REX_START_SOC_1_KM_4_WERT_TYPE           unsigned short
-        // Number of REX starts for SOC class 1, electrically driven kilometers class 4 / Anzahl REX Starts fÃ¼r SOC
+        // Number of REX starts for SOC class 1, electrically driven kilometers class 4 / Anzahl REX Starts für SOC
         // Klasse 1, elektrisch gefahrene Kilometer Klasse 4
 
     #define I3_RES_EDM_STAT_REX_START_SOC_2_KM_4_WERT                (RXBUF_UINT(26))
     #define I3_RES_EDM_STAT_REX_START_SOC_2_KM_4_WERT_TYPE           unsigned short
-        // Number of REX starts for SOC class 2, electrically driven kilometers class 4 / Anzahl REX Starts fÃ¼r SOC
+        // Number of REX starts for SOC class 2, electrically driven kilometers class 4 / Anzahl REX Starts für SOC
         // Klasse 2, elektrisch gefahrene Kilometer Klasse 4
 
     #define I3_RES_EDM_STAT_REX_START_SOC_3_KM_4_WERT                (RXBUF_UINT(28))
     #define I3_RES_EDM_STAT_REX_START_SOC_3_KM_4_WERT_TYPE           unsigned short
-        // Number of REX starts for SOC class 3, electrically driven kilometers class 4 / Anzahl REX Starts fÃ¼r SOC
+        // Number of REX starts for SOC class 3, electrically driven kilometers class 4 / Anzahl REX Starts für SOC
         // Klasse 3, elektrisch gefahrene Kilometer Klasse 4
 
     #define I3_RES_EDM_STAT_REX_START_SOC_4_KM_4_WERT                (RXBUF_UINT(30))
     #define I3_RES_EDM_STAT_REX_START_SOC_4_KM_4_WERT_TYPE           unsigned short
-        // Number of REX starts for SOC class 4, electrically driven kilometers class 4 / Anzahl REX Starts fÃ¼r SOC
+        // Number of REX starts for SOC class 4, electrically driven kilometers class 4 / Anzahl REX Starts für SOC
         // Klasse 4, elektrisch gefahrene Kilometer Klasse 4
 
     #define I3_RES_EDM_STAT_REX_START_SOC_1_KM_5_WERT                (RXBUF_UINT(32))
     #define I3_RES_EDM_STAT_REX_START_SOC_1_KM_5_WERT_TYPE           unsigned short
-        // Number of REX starts for SOC class 1, electrically driven kilometers class 5 / Anzahl REX Starts fÃ¼r SOC
+        // Number of REX starts for SOC class 1, electrically driven kilometers class 5 / Anzahl REX Starts für SOC
         // Klasse 1, elektrisch gefahrene Kilometer Klasse 5
 
     #define I3_RES_EDM_STAT_REX_START_SOC_2_KM_5_WERT                (RXBUF_UINT(34))
     #define I3_RES_EDM_STAT_REX_START_SOC_2_KM_5_WERT_TYPE           unsigned short
-        // Number of REX starts for SOC class 2, electrically driven kilometers class 5 / Anzahl REX Starts fÃ¼r SOC
+        // Number of REX starts for SOC class 2, electrically driven kilometers class 5 / Anzahl REX Starts für SOC
         // Klasse 2, elektrisch gefahrene Kilometer Klasse 5
 
     #define I3_RES_EDM_STAT_REX_START_SOC_3_KM_5_WERT                (RXBUF_UINT(36))
     #define I3_RES_EDM_STAT_REX_START_SOC_3_KM_5_WERT_TYPE           unsigned short
-        // Number of REX starts for SOC class 3, electrically driven kilometers class 5 / Anzahl REX Starts fÃ¼r SOC
+        // Number of REX starts for SOC class 3, electrically driven kilometers class 5 / Anzahl REX Starts für SOC
         // Klasse 3, elektrisch gefahrene Kilometer Klasse 5
 
     #define I3_RES_EDM_STAT_REX_START_SOC_4_KM_5_WERT                (RXBUF_UINT(38))
     #define I3_RES_EDM_STAT_REX_START_SOC_4_KM_5_WERT_TYPE           unsigned short
-        // Number of REX starts for SOC class 4, electrically driven kilometers class 5 / Anzahl REX Starts fÃ¼r SOC
+        // Number of REX starts for SOC class 4, electrically driven kilometers class 5 / Anzahl REX Starts für SOC
         // Klasse 4, elektrisch gefahrene Kilometer Klasse 5
 
     #define I3_RES_EDM_STAT_REX_START_SOC_1_KM_6_WERT                (RXBUF_UINT(40))
     #define I3_RES_EDM_STAT_REX_START_SOC_1_KM_6_WERT_TYPE           unsigned short
-        // Number of REX starts for SOC class 1, electrically driven kilometers class 6 / Anzahl REX Starts fÃ¼r SOC
+        // Number of REX starts for SOC class 1, electrically driven kilometers class 6 / Anzahl REX Starts für SOC
         // Klasse 1, elektrisch gefahrene Kilometer Klasse 6
 
     #define I3_RES_EDM_STAT_REX_START_SOC_2_KM_6_WERT                (RXBUF_UINT(42))
     #define I3_RES_EDM_STAT_REX_START_SOC_2_KM_6_WERT_TYPE           unsigned short
-        // Number of REX starts for SOC class 2, electrically driven kilometers class 6 / Anzahl REX Starts fÃ¼r SOC
+        // Number of REX starts for SOC class 2, electrically driven kilometers class 6 / Anzahl REX Starts für SOC
         // Klasse 2, elektrisch gefahrene Kilometer Klasse 6
 
     #define I3_RES_EDM_STAT_REX_START_SOC_3_KM_6_WERT                (RXBUF_UINT(44))
     #define I3_RES_EDM_STAT_REX_START_SOC_3_KM_6_WERT_TYPE           unsigned short
-        // Number of REX starts for SOC class 3, electrically driven kilometers class 6 / Anzahl REX Starts fÃ¼r SOC
+        // Number of REX starts for SOC class 3, electrically driven kilometers class 6 / Anzahl REX Starts für SOC
         // Klasse 3, elektrisch gefahrene Kilometer Klasse 6
 
     #define I3_RES_EDM_STAT_REX_START_SOC_4_KM_6_WERT                (RXBUF_UINT(46))
     #define I3_RES_EDM_STAT_REX_START_SOC_4_KM_6_WERT_TYPE           unsigned short
-        // Number of REX starts for SOC class 4, electrically driven kilometers class 6 / Anzahl REX Starts fÃ¼r SOC
+        // Number of REX starts for SOC class 4, electrically driven kilometers class 6 / Anzahl REX Starts für SOC
         // Klasse 4, elektrisch gefahrene Kilometer Klasse 6
 
     #define I3_RES_EDM_STAT_REX_START_SOC_1_KM_7_WERT                (RXBUF_UINT(48))
     #define I3_RES_EDM_STAT_REX_START_SOC_1_KM_7_WERT_TYPE           unsigned short
-        // Number of REX starts for SOC class 1, electrically driven kilometers class 7 / Anzahl REX Starts fÃ¼r SOC
+        // Number of REX starts for SOC class 1, electrically driven kilometers class 7 / Anzahl REX Starts für SOC
         // Klasse 1, elektrisch gefahrene Kilometer Klasse 7
 
     #define I3_RES_EDM_STAT_REX_START_SOC_2_KM_7_WERT                (RXBUF_UINT(50))
     #define I3_RES_EDM_STAT_REX_START_SOC_2_KM_7_WERT_TYPE           unsigned short
-        // Number of REX starts for SOC class 2, electrically driven kilometers class 7 / Anzahl REX Starts fÃ¼r SOC
+        // Number of REX starts for SOC class 2, electrically driven kilometers class 7 / Anzahl REX Starts für SOC
         // Klasse 2, elektrisch gefahrene Kilometer Klasse 7
 
     #define I3_RES_EDM_STAT_REX_START_SOC_3_KM_7_WERT                (RXBUF_UINT(52))
     #define I3_RES_EDM_STAT_REX_START_SOC_3_KM_7_WERT_TYPE           unsigned short
-        // Number of REX starts for SOC class 3, electrically driven kilometers class 7 / Anzahl REX Starts fÃ¼r SOC
+        // Number of REX starts for SOC class 3, electrically driven kilometers class 7 / Anzahl REX Starts für SOC
         // Klasse 3, elektrisch gefahrene Kilometer Klasse 7
 
     #define I3_RES_EDM_STAT_REX_START_SOC_4_KM_7_WERT                (RXBUF_UINT(54))
     #define I3_RES_EDM_STAT_REX_START_SOC_4_KM_7_WERT_TYPE           unsigned short
-        // Number of REX starts for SOC class 4, electrically driven kilometers class 7 / Anzahl REX Starts fÃ¼r SOC
+        // Number of REX starts for SOC class 4, electrically driven kilometers class 7 / Anzahl REX Starts für SOC
         // Klasse 4, elektrisch gefahrene Kilometer Klasse 7
 
     #define I3_RES_EDM_STAT_REX_START_SOC_1_KM_8_WERT                (RXBUF_UINT(56))
     #define I3_RES_EDM_STAT_REX_START_SOC_1_KM_8_WERT_TYPE           unsigned short
-        // Number of REX starts for SOC class 1, electrically driven kilometers class 8 / Anzahl REX Starts fÃ¼r SOC
+        // Number of REX starts for SOC class 1, electrically driven kilometers class 8 / Anzahl REX Starts für SOC
         // Klasse 1, elektrisch gefahrene Kilometer Klasse 8
 
     #define I3_RES_EDM_STAT_REX_START_SOC_2_KM_8_WERT                (RXBUF_UINT(58))
     #define I3_RES_EDM_STAT_REX_START_SOC_2_KM_8_WERT_TYPE           unsigned short
-        // Number of REX starts for SOC class 2, electrically driven kilometers class 8 / Anzahl REX Starts fÃ¼r SOC
+        // Number of REX starts for SOC class 2, electrically driven kilometers class 8 / Anzahl REX Starts für SOC
         // Klasse 2, elektrisch gefahrene Kilometer Klasse 8
 
     #define I3_RES_EDM_STAT_REX_START_SOC_3_KM_8_WERT                (RXBUF_UINT(60))
     #define I3_RES_EDM_STAT_REX_START_SOC_3_KM_8_WERT_TYPE           unsigned short
-        // Number of REX starts for SOC class 3, electrically driven kilometers class 8 / Anzahl REX Starts fÃ¼r SOC
+        // Number of REX starts for SOC class 3, electrically driven kilometers class 8 / Anzahl REX Starts für SOC
         // Klasse 3, elektrisch gefahrene Kilometer Klasse 8
 
     #define I3_RES_EDM_STAT_REX_START_SOC_4_KM_8_WERT                (RXBUF_UINT(62))
     #define I3_RES_EDM_STAT_REX_START_SOC_4_KM_8_WERT_TYPE           unsigned short
-        // Number of REX starts for SOC class 4, electrically driven kilometers class 8 / Anzahl REX Starts fÃ¼r SOC
+        // Number of REX starts for SOC class 4, electrically driven kilometers class 8 / Anzahl REX Starts für SOC
         // Klasse 4, elektrisch gefahrene Kilometer Klasse 8
 
 #define I3_PID_EDM_REX_STATISTIK_ZAEHLER                             0xDF5E
-        // Query meter statistics from the REX network / Abfrage ZÃ¤hlerstatistik vom REX-Verbund
+        // Query meter statistics from the REX network / Abfrage Zählerstatistik vom REX-Verbund
 
     #define I3_RES_EDM_STAT_REX_BETRIEB_LANGZEITSTART_IO_WERT        (RXBUF_UINT(0))
     #define I3_RES_EDM_STAT_REX_BETRIEB_LANGZEITSTART_IO_WERT_TYPE   unsigned short
@@ -877,7 +876,7 @@
 
 #define I3_PID_EDM_12V_NACHLADEHISTORIE                              0x409D
         // History with important parameters of the 12V recharge function. Last 4 records / Historie mit wichtigen
-        // KenngrÃ¶Ãen der 12V Nachladefunktion. Letzte 4 DatensÃ¤tze
+        // Kenngrößen der 12V Nachladefunktion. Letzte 4 Datensätze
 
     #define I3_RES_EDM_STAT_KM_STAND_WERT                            (RXBUF_UINT32(0))
     #define I3_RES_EDM_STAT_KM_STAND_WERT_UNIT                       'km'
@@ -995,14 +994,14 @@
     #define I3_RES_EDM_STAT_E3_12V_BATTERIE_SOC_LADEBEGINN_WERT      (RXBUF_UCHAR(63)/2.0f)
     #define I3_RES_EDM_STAT_E3_12V_BATTERIE_SOC_LADEBEGINN_WERT_UNIT '%'
     #define I3_RES_EDM_STAT_E3_12V_BATTERIE_SOC_LADEBEGINN_WERT_TYPE float
-        // Set 3 - Charge level of the 12V battery when starting the 12V battery charging process / Satz 3 - Ladezustand
+        // Set 3 - Charge status of the 12V battery when starting the 12V battery charging process / Satz 3 - Ladezustand
         // der 12V-Batterie beim Starten des 12V-Batterie Ladevorgangs
 
     #define I3_RES_EDM_STAT_E4_12V_BATTERIE_SOC_LADEBEGINN_WERT      (RXBUF_UCHAR(64)/2.0f)
     #define I3_RES_EDM_STAT_E4_12V_BATTERIE_SOC_LADEBEGINN_WERT_UNIT '%'
     #define I3_RES_EDM_STAT_E4_12V_BATTERIE_SOC_LADEBEGINN_WERT_TYPE float
-        // Set 4 - State of charge of the 12V battery when starting the 12V battery charging process / Satz 4 -
-        // Ladezustand der 12V-Batterie beim Starten des 12V-Batterie Ladevorgangs
+        // Set 4 - Charge status of the 12V battery when starting the 12V battery charging process / Satz 4 - Ladezustand
+        // der 12V-Batterie beim Starten des 12V-Batterie Ladevorgangs
 
     #define I3_RES_EDM_STAT_E1_HV_BATTERIE_SOC_LADEBEGINN_WERT       (RXBUF_UCHAR(65)/2.0f)
     #define I3_RES_EDM_STAT_E1_HV_BATTERIE_SOC_LADEBEGINN_WERT_UNIT  '%'
@@ -1029,25 +1028,25 @@
         // 4 - Ladezustand der Hochvolt-Batterie beim Starten des 12V-Batterie Ladevorgangs
 
     #define I3_RES_EDM_STAT_E1_12V_BATTERIE_TEMP_LADEBEGINN_WERT     (RXBUF_SCHAR(69))
-    #define I3_RES_EDM_STAT_E1_12V_BATTERIE_TEMP_LADEBEGINN_WERT_UNIT 'Â°C'
+    #define I3_RES_EDM_STAT_E1_12V_BATTERIE_TEMP_LADEBEGINN_WERT_UNIT '°C'
     #define I3_RES_EDM_STAT_E1_12V_BATTERIE_TEMP_LADEBEGINN_WERT_TYPE char
         // Set 1 (last) - temperature of the 12V battery when starting the 12V battery charging process / Satz 1
         // (letzter) - Temperatur der 12V-Batterie beim Starten des 12V-Batterie Ladevorgangs
 
     #define I3_RES_EDM_STAT_E2_12V_BATTERIE_TEMP_LADEBEGINN_WERT     (RXBUF_SCHAR(70))
-    #define I3_RES_EDM_STAT_E2_12V_BATTERIE_TEMP_LADEBEGINN_WERT_UNIT 'Â°C'
+    #define I3_RES_EDM_STAT_E2_12V_BATTERIE_TEMP_LADEBEGINN_WERT_UNIT '°C'
     #define I3_RES_EDM_STAT_E2_12V_BATTERIE_TEMP_LADEBEGINN_WERT_TYPE char
         // Set 2 - Temperature of the 12V battery when starting the 12V battery charging process / Satz 2 - Temperatur
         // der 12V-Batterie beim Starten des 12V-Batterie Ladevorgangs
 
     #define I3_RES_EDM_STAT_E3_12V_BATTERIE_TEMP_LADEBEGINN_WERT     (RXBUF_SCHAR(71))
-    #define I3_RES_EDM_STAT_E3_12V_BATTERIE_TEMP_LADEBEGINN_WERT_UNIT 'Â°C'
+    #define I3_RES_EDM_STAT_E3_12V_BATTERIE_TEMP_LADEBEGINN_WERT_UNIT '°C'
     #define I3_RES_EDM_STAT_E3_12V_BATTERIE_TEMP_LADEBEGINN_WERT_TYPE char
         // Set 3 - Temperature of the 12V battery when starting the 12V battery charging process / Satz 3 - Temperatur
         // der 12V-Batterie beim Starten des 12V-Batterie Ladevorgangs
 
     #define I3_RES_EDM_STAT_E4_12V_BATTERIE_TEMP_LADEBEGINN_WERT     (RXBUF_SCHAR(72))
-    #define I3_RES_EDM_STAT_E4_12V_BATTERIE_TEMP_LADEBEGINN_WERT_UNIT 'Â°C'
+    #define I3_RES_EDM_STAT_E4_12V_BATTERIE_TEMP_LADEBEGINN_WERT_UNIT '°C'
     #define I3_RES_EDM_STAT_E4_12V_BATTERIE_TEMP_LADEBEGINN_WERT_TYPE char
         // Set 4 - Temperature of the 12V battery when starting the 12V battery charging process / Satz 4 - Temperatur
         // der 12V-Batterie beim Starten des 12V-Batterie Ladevorgangs
@@ -1081,28 +1080,28 @@
     #define I3_RES_EDM_STAT_E1_12V_BATTERIE_SOC_LADEENDE_WERT_TYPE   float
         // Sentence 1 (last) - state of charge of the 12V battery when the 12V battery charging process is ended (= state
         // of charge when starting if charging is not possible) / Satz 1 (letzter) - Ladezustand der 12V-Batterie beim
-        // Beenden des 12V-Batterie Ladevorgangs (=Ladezustand beim Starten wenn Laden nicht mÃ¶glich)
+        // Beenden des 12V-Batterie Ladevorgangs (=Ladezustand beim Starten wenn Laden nicht möglich)
 
     #define I3_RES_EDM_STAT_E2_12V_BATTERIE_SOC_LADEENDE_WERT        (RXBUF_UCHAR(82)/2.0f)
     #define I3_RES_EDM_STAT_E2_12V_BATTERIE_SOC_LADEENDE_WERT_UNIT   '%'
     #define I3_RES_EDM_STAT_E2_12V_BATTERIE_SOC_LADEENDE_WERT_TYPE   float
         // Sentence 2 - Charge status of the 12V battery when the 12V battery charging process is ended (= charge status
         // when starting if charging is not possible) / Satz 2 - Ladezustand der 12V-Batterie beim Beenden des
-        // 12V-Batterie Ladevorgangs (=Ladezustand beim Starten wenn Laden nicht mÃ¶glich)
+        // 12V-Batterie Ladevorgangs (=Ladezustand beim Starten wenn Laden nicht möglich)
 
     #define I3_RES_EDM_STAT_E3_12V_BATTERIE_SOC_LADEENDE_WERT        (RXBUF_UCHAR(83)/2.0f)
     #define I3_RES_EDM_STAT_E3_12V_BATTERIE_SOC_LADEENDE_WERT_UNIT   '%'
     #define I3_RES_EDM_STAT_E3_12V_BATTERIE_SOC_LADEENDE_WERT_TYPE   float
         // Sentence 3 - Charge status of the 12V battery when the 12V battery charging process is ended (= charge status
         // when starting if charging is not possible) / Satz 3 - Ladezustand der 12V-Batterie beim Beenden des
-        // 12V-Batterie Ladevorgangs (=Ladezustand beim Starten wenn Laden nicht mÃ¶glich)
+        // 12V-Batterie Ladevorgangs (=Ladezustand beim Starten wenn Laden nicht möglich)
 
     #define I3_RES_EDM_STAT_E4_12V_BATTERIE_SOC_LADEENDE_WERT        (RXBUF_UCHAR(84)/2.0f)
     #define I3_RES_EDM_STAT_E4_12V_BATTERIE_SOC_LADEENDE_WERT_UNIT   '%'
     #define I3_RES_EDM_STAT_E4_12V_BATTERIE_SOC_LADEENDE_WERT_TYPE   float
         // Sentence 4 - Charge status of the 12V battery when the 12V battery charging process is ended (= charge status
         // when starting if charging is not possible) / Satz 4 - Ladezustand der 12V-Batterie beim Beenden des
-        // 12V-Batterie Ladevorgangs (=Ladezustand beim Starten wenn Laden nicht mÃ¶glich)
+        // 12V-Batterie Ladevorgangs (=Ladezustand beim Starten wenn Laden nicht möglich)
 
     #define I3_RES_EDM_STAT_E1_HV_BATTERIE_SOC_LADEENDE_WERT         (RXBUF_UCHAR(85)/2.0f)
     #define I3_RES_EDM_STAT_E1_HV_BATTERIE_SOC_LADEENDE_WERT_UNIT    '%'
@@ -1110,28 +1109,28 @@
         // Sentence 1 (last) - state of charge of the high-voltage battery when the 12V battery charging process is ended
         // (= state of charge when starting if charging is not possible) / Satz 1 (letzter) - Ladezustand der
         // Hochvolt-Batterie beim Beenden des 12V-Batterie Ladevorgangs (=Ladezustand beim Starten wenn Laden nicht
-        // mÃ¶glich)
+        // möglich)
 
     #define I3_RES_EDM_STAT_E2_HV_BATTERIE_SOC_LADEENDE_WERT         (RXBUF_UCHAR(86)/2.0f)
     #define I3_RES_EDM_STAT_E2_HV_BATTERIE_SOC_LADEENDE_WERT_UNIT    '%'
     #define I3_RES_EDM_STAT_E2_HV_BATTERIE_SOC_LADEENDE_WERT_TYPE    float
         // Sentence 2 - Charge status of the high-voltage battery when the 12V battery charging process is ended (=
         // charge status when starting if charging is not possible) / Satz 2 - Ladezustand der Hochvolt-Batterie beim
-        // Beenden des 12V-Batterie Ladevorgangs (=Ladezustand beim Starten wenn Laden nicht mÃ¶glich)
+        // Beenden des 12V-Batterie Ladevorgangs (=Ladezustand beim Starten wenn Laden nicht möglich)
 
     #define I3_RES_EDM_STAT_E3_HV_BATTERIE_SOC_LADEENDE_WERT         (RXBUF_UCHAR(87)/2.0f)
     #define I3_RES_EDM_STAT_E3_HV_BATTERIE_SOC_LADEENDE_WERT_UNIT    '%'
     #define I3_RES_EDM_STAT_E3_HV_BATTERIE_SOC_LADEENDE_WERT_TYPE    float
         // Sentence 3 - State of charge of the high-voltage battery when the 12V battery charging process is ended (=
         // state of charge when starting if charging is not possible) / Satz 3 - Ladezustand der Hochvolt-Batterie beim
-        // Beenden des 12V-Batterie Ladevorgangs (=Ladezustand beim Starten wenn Laden nicht mÃ¶glich)
+        // Beenden des 12V-Batterie Ladevorgangs (=Ladezustand beim Starten wenn Laden nicht möglich)
 
     #define I3_RES_EDM_STAT_E4_HV_BATTERIE_SOC_LADEENDE_WERT         (RXBUF_UCHAR(88)/2.0f)
     #define I3_RES_EDM_STAT_E4_HV_BATTERIE_SOC_LADEENDE_WERT_UNIT    '%'
     #define I3_RES_EDM_STAT_E4_HV_BATTERIE_SOC_LADEENDE_WERT_TYPE    float
         // Sentence 4 - Charge status of the high-voltage battery when the 12V battery charging process is ended (=
         // charge status when starting if charging is not possible) / Satz 4 - Ladezustand der Hochvolt-Batterie beim
-        // Beenden des 12V-Batterie Ladevorgangs (=Ladezustand beim Starten wenn Laden nicht mÃ¶glich)
+        // Beenden des 12V-Batterie Ladevorgangs (=Ladezustand beim Starten wenn Laden nicht möglich)
 
     #define I3_RES_EDM_STAT_E1_12VLADEFEHLER                         (RXBUF_UCHAR(89))
     #define I3_RES_EDM_STAT_E1_12VLADEFEHLER_UNIT                    '0-n'
@@ -1154,69 +1153,69 @@
         // Sentence 4 - Reason for end of loading / Satz 4 - Ladeendegrund
 
 #define I3_PID_EDM_12V_NACHLADEHISTOGRAMM                            0x409E
-        // Read out the histograms for 12V recharge function / Auslesen der Histogramme fÃ¼r 12V Nachladefunktion
+        // Reading out the histograms for the 12V recharge function / Auslesen der Histogramme für 12V Nachladefunktion
 
     #define I3_RES_EDM_STAT_HFK_STANDZEIT_BIS_LADEBEGINN_BEREICH_A_WERT (RXBUF_UCHAR(0))
     #define I3_RES_EDM_STAT_HFK_STANDZEIT_BIS_LADEBEGINN_BEREICH_A_WERT_TYPE unsigned char
         // Number of idle times until the start of the cyclical reloading in area A. Area A <= K_STDZEITLADEHISTGRZ1 (2
         // days) (counting up to 255, then no counting, value is retained) / Anzahl der Standzeiten bis zum Beginn des
-        // zyklischen Nachladens im Bereich A. Bereich A <= K_STDZEITLADEHISTGRZ1 (2 Tage) (ZÃ¤hlung bis 255, danach
-        // keine ZÃ¤hlung, Wert bleibt erhalten)
+        // zyklischen Nachladens im Bereich A. Bereich A <= K_STDZEITLADEHISTGRZ1 (2 Tage) (Zählung bis 255, danach keine
+        // Zählung, Wert bleibt erhalten)
 
     #define I3_RES_EDM_STAT_HFK_STANDZEIT_BIS_LADEBEGINN_BEREICH_B_WERT (RXBUF_UCHAR(1))
     #define I3_RES_EDM_STAT_HFK_STANDZEIT_BIS_LADEBEGINN_BEREICH_B_WERT_TYPE unsigned char
         // Number of idle times until the start of cyclical reloading in area B. K_STDZEITLADEHISTGRZ1 (2 days) <area B
         // <= K_STDZEITLADEHISTGRZ2 (4 days) (counting up to 255, then no counting, value is retained) / Anzahl der
         // Standzeiten bis zum Beginn des zyklischen Nachladens im Bereich B.   K_STDZEITLADEHISTGRZ1 (2 Tage) < Bereich
-        // B <= K_STDZEITLADEHISTGRZ2 (4 Tage)  (ZÃ¤hlung bis 255, danach keine ZÃ¤hlung, Wert bleibt erhalten)
+        // B <= K_STDZEITLADEHISTGRZ2 (4 Tage)  (Zählung bis 255, danach keine Zählung, Wert bleibt erhalten)
 
     #define I3_RES_EDM_STAT_HFK_STANDZEIT_BIS_LADEBEGINN_BEREICH_C_WERT (RXBUF_UCHAR(2))
     #define I3_RES_EDM_STAT_HFK_STANDZEIT_BIS_LADEBEGINN_BEREICH_C_WERT_TYPE unsigned char
         // Number of idle times until the start of the cyclical reloading in area C. K_STDZEITLADEHISTGRZ2 (4 days) <area
         // C <= K_STDZEITLADEHISTGRZ3 (6 days) (count up to 255, after that no count, value is retained) / Anzahl der
         // Standzeiten bis zum Beginn des zyklischen Nachladens im Bereich C.  K_STDZEITLADEHISTGRZ2 (4 Tage) < Bereich C
-        // <= K_STDZEITLADEHISTGRZ3 (6 Tage) (ZÃ¤hlung bis 255, danach keine ZÃ¤hlung, Wert bleibt erhalten)
+        // <= K_STDZEITLADEHISTGRZ3 (6 Tage) (Zählung bis 255, danach keine Zählung, Wert bleibt erhalten)
 
     #define I3_RES_EDM_STAT_HFK_STANDZEIT_BIS_LADEBEGINN_BEREICH_D_WERT (RXBUF_UCHAR(3))
     #define I3_RES_EDM_STAT_HFK_STANDZEIT_BIS_LADEBEGINN_BEREICH_D_WERT_TYPE unsigned char
         // Number of idle times until the start of cyclical reloading in area D. K_STDZEITLADEHISTGRZ3 (6 days) <area D
         // <= K_STDZEITLADEHISTGRZ4 (10 days) (counting up to 255, after that no counting, value is retained) / Anzahl
         // der Standzeiten bis zum Beginn des zyklischen Nachladens im Bereich D.  K_STDZEITLADEHISTGRZ3 (6 Tage) <
-        // Bereich D <= K_STDZEITLADEHISTGRZ4 (10 Tage) (ZÃ¤hlung bis 255, danach keine ZÃ¤hlung, Wert bleibt erhalten)
+        // Bereich D <= K_STDZEITLADEHISTGRZ4 (10 Tage) (Zählung bis 255, danach keine Zählung, Wert bleibt erhalten)
 
     #define I3_RES_EDM_STAT_HFK_STANDZEIT_BIS_LADEBEGINN_BEREICH_E_WERT (RXBUF_UCHAR(4))
     #define I3_RES_EDM_STAT_HFK_STANDZEIT_BIS_LADEBEGINN_BEREICH_E_WERT_TYPE unsigned char
         // Number of idle times until the start of cyclical reloading in area E. K_STDZEITLADEHISTGRZ4 (10 days) <area E
         // <= K_STDZEITLADEHISTGRZ5 (14 days) (counting up to 255, then no counting, value is retained) / Anzahl der
         // Standzeiten bis zum Beginn des zyklischen Nachladens im Bereich E.  K_STDZEITLADEHISTGRZ4 (10 Tage) < Bereich
-        // E <= K_STDZEITLADEHISTGRZ5 (14 Tage) (ZÃ¤hlung bis 255, danach keine ZÃ¤hlung, Wert bleibt erhalten)
+        // E <= K_STDZEITLADEHISTGRZ5 (14 Tage) (Zählung bis 255, danach keine Zählung, Wert bleibt erhalten)
 
     #define I3_RES_EDM_STAT_HFK_STANDZEIT_BIS_LADEBEGINN_BEREICH_F_WERT (RXBUF_UCHAR(5))
     #define I3_RES_EDM_STAT_HFK_STANDZEIT_BIS_LADEBEGINN_BEREICH_F_WERT_TYPE unsigned char
         // Number of idle times until the beginning of the cyclical reloading in the area F. K_STDZEITLADEHISTGRZ5 (14
         // days) <area F <= K_STDZEITLADEHISTGRZ6 (21 days) (count up to 255, after that no count, value is retained) /
         // Anzahl der Standzeiten bis zum Beginn des zyklischen Nachladens im Bereich F.  K_STDZEITLADEHISTGRZ5 (14 Tage)
-        // < Bereich F <= K_STDZEITLADEHISTGRZ6 (21 Tage) (ZÃ¤hlung bis 255, danach keine ZÃ¤hlung, Wert bleibt erhalten)
+        // < Bereich F <= K_STDZEITLADEHISTGRZ6 (21 Tage) (Zählung bis 255, danach keine Zählung, Wert bleibt erhalten)
 
     #define I3_RES_EDM_STAT_HFK_STANDZEIT_BIS_LADEBEGINN_BEREICH_G_WERT (RXBUF_UCHAR(6))
     #define I3_RES_EDM_STAT_HFK_STANDZEIT_BIS_LADEBEGINN_BEREICH_G_WERT_TYPE unsigned char
-        // Number of idle times until the start of the cyclical reloading in area G. K_STDZEITLADEHISTGRZ6 (21 days)
-        // <area G <= K_STDZEITLADEHISTGRZ7 (28 days) (count up to 255, after that no count, value is retained) / Anzahl
-        // der Standzeiten bis zum Beginn des zyklischen Nachladens im Bereich G.  K_STDZEITLADEHISTGRZ6 (21 Tage) <
-        // Bereich G <= K_STDZEITLADEHISTGRZ7 (28 Tage) (ZÃ¤hlung bis 255, danach keine ZÃ¤hlung, Wert bleibt erhalten)
+        // Number of idle times until the start of cyclical reloading in area G. K_STDZEITLADEHISTGRZ6 (21 days) <area G
+        // <= K_STDZEITLADEHISTGRZ7 (28 days) (counts up to 255, then no count, value is retained) / Anzahl der
+        // Standzeiten bis zum Beginn des zyklischen Nachladens im Bereich G.  K_STDZEITLADEHISTGRZ6 (21 Tage) < Bereich
+        // G <= K_STDZEITLADEHISTGRZ7 (28 Tage) (Zählung bis 255, danach keine Zählung, Wert bleibt erhalten)
 
     #define I3_RES_EDM_STAT_HFK_STANDZEIT_BIS_LADEBEGINN_BEREICH_H_WERT (RXBUF_UCHAR(7))
     #define I3_RES_EDM_STAT_HFK_STANDZEIT_BIS_LADEBEGINN_BEREICH_H_WERT_TYPE unsigned char
         // Number of idle times until the start of the cyclical reloading in area H. K_STDZEITLADEHISTGRZ7 (28 days)
         // <area H (counting up to 255, then no counting, value is retained) / Anzahl der Standzeiten bis zum Beginn des
-        // zyklischen Nachladens im Bereich H.  K_STDZEITLADEHISTGRZ7 (28 Tage) < Bereich H (ZÃ¤hlung bis 255, danach
-        // keine ZÃ¤hlung, Wert bleibt erhalten)
+        // zyklischen Nachladens im Bereich H.  K_STDZEITLADEHISTGRZ7 (28 Tage) < Bereich H (Zählung bis 255, danach
+        // keine Zählung, Wert bleibt erhalten)
 
     #define I3_RES_EDM_STAT_HFK_LADEDAUER_BEREICH_A_WERT             (RXBUF_UCHAR(8))
     #define I3_RES_EDM_STAT_HFK_LADEDAUER_BEREICH_A_WERT_TYPE        unsigned char
         // Number of loading times of the cyclical reloading in area A. Area A <= K_NLDDAUERHISTGRZ1 (3 minutes)
         // (counting up to 255, then no counting, value is retained) / Anzahl der Ladungsdauer des zyklischen Nachladens
-        // im Bereich A.  Bereich A <= K_NLDDAUERHISTGRZ1 (3 Minuten)  (ZÃ¤hlung bis 255, danach keine ZÃ¤hlung, Wert
+        // im Bereich A.  Bereich A <= K_NLDDAUERHISTGRZ1 (3 Minuten)  (Zählung bis 255, danach keine Zählung, Wert
         // bleibt erhalten)
 
     #define I3_RES_EDM_STAT_HFK_LADEDAUER_BEREICH_B_WERT             (RXBUF_UCHAR(9))
@@ -1224,48 +1223,48 @@
         // Number of loading times of the cyclical reloading in area B. K_NLDDAUERHISTGRZ1 (3 minutes) <area B <=
         // K_NLDDAUERHISTGRZ2 (6 minutes) (count up to 255, then no count, value is retained) / Anzahl der Ladungsdauer
         // des zyklischen Nachladens im Bereich B.   K_NLDDAUERHISTGRZ1 (3 Minuten) < Bereich B <= K_NLDDAUERHISTGRZ2 (6
-        // Minuten) (ZÃ¤hlung bis 255, danach keine ZÃ¤hlung, Wert bleibt erhalten)
+        // Minuten) (Zählung bis 255, danach keine Zählung, Wert bleibt erhalten)
 
     #define I3_RES_EDM_STAT_HFK_LADEDAUER_BEREICH_C_WERT             (RXBUF_UCHAR(10))
     #define I3_RES_EDM_STAT_HFK_LADEDAUER_BEREICH_C_WERT_TYPE        unsigned char
         // Number of loading times of the cyclical reloading in area C. K_NLDDAUERHISTGRZ2 (6 minutes) <area C <=
         // K_NLDDAUERHISTGRZ3 (10 minutes) (counting up to 255, after that no counting, value is retained) / Anzahl der
         // Ladungsdauer des zyklischen Nachladens im Bereich C.   K_NLDDAUERHISTGRZ2 (6 Minuten) < Bereich C <=
-        // K_NLDDAUERHISTGRZ3 (10 Minuten) (ZÃ¤hlung bis 255, danach keine ZÃ¤hlung, Wert bleibt erhalten)
+        // K_NLDDAUERHISTGRZ3 (10 Minuten) (Zählung bis 255, danach keine Zählung, Wert bleibt erhalten)
 
     #define I3_RES_EDM_STAT_HFK_LADEDAUER_BEREICH_D_WERT             (RXBUF_UCHAR(11))
     #define I3_RES_EDM_STAT_HFK_LADEDAUER_BEREICH_D_WERT_TYPE        unsigned char
         // Number of loading times of the cyclical reloading in area D. K_NLDDAUERHISTGRZ3 (10 minutes) <area D <=
         // K_NLDDAUERHISTGRZ4 (15 minutes) (counting up to 255, after that no counting, value is retained) / Anzahl der
         // Ladungsdauer des zyklischen Nachladens im Bereich D.   K_NLDDAUERHISTGRZ3 (10 Minuten) < Bereich D <=
-        // K_NLDDAUERHISTGRZ4 (15 Minuten) (ZÃ¤hlung bis 255, danach keine ZÃ¤hlung, Wert bleibt erhalten)
+        // K_NLDDAUERHISTGRZ4 (15 Minuten) (Zählung bis 255, danach keine Zählung, Wert bleibt erhalten)
 
     #define I3_RES_EDM_STAT_HFK_LADEDAUER_BEREICH_E_WERT             (RXBUF_UCHAR(12))
     #define I3_RES_EDM_STAT_HFK_LADEDAUER_BEREICH_E_WERT_TYPE        unsigned char
         // Number of loading times of the cyclical reloading in area E. K_NLDDAUERHISTGRZ4 (15 minutes) <area E <=
         // K_NLDDAUERHISTGRZ5 (20 minutes) (counting up to 255, after that no counting, value is retained) / Anzahl der
         // Ladungsdauer des zyklischen Nachladens im Bereich E.   K_NLDDAUERHISTGRZ4 (15 Minuten) < Bereich E <=
-        // K_NLDDAUERHISTGRZ5 (20 Minuten) (ZÃ¤hlung bis 255, danach keine ZÃ¤hlung, Wert bleibt erhalten)
+        // K_NLDDAUERHISTGRZ5 (20 Minuten) (Zählung bis 255, danach keine Zählung, Wert bleibt erhalten)
 
     #define I3_RES_EDM_STAT_HFK_LADEDAUER_BEREICH_F_WERT             (RXBUF_UCHAR(13))
     #define I3_RES_EDM_STAT_HFK_LADEDAUER_BEREICH_F_WERT_TYPE        unsigned char
         // Number of loading times of the cyclical reloading in the area F. K_NLDDAUERHISTGRZ5 (20 minutes) <area F <=
-        // K_NLDDAUERHISTGRZ6 (28 minutes) (count up to 255, then no count, value is retained) / Anzahl der Ladungsdauer
-        // des zyklischen Nachladens im Bereich F.   K_NLDDAUERHISTGRZ5 (20 Minuten) < Bereich F <= K_NLDDAUERHISTGRZ6
-        // (28 Minuten) (ZÃ¤hlung bis 255, danach keine ZÃ¤hlung, Wert bleibt erhalten)
+        // K_NLDDAUERHISTGRZ6 (28 minutes) (counting up to 255, then no counting, value is retained) / Anzahl der
+        // Ladungsdauer des zyklischen Nachladens im Bereich F.   K_NLDDAUERHISTGRZ5 (20 Minuten) < Bereich F <=
+        // K_NLDDAUERHISTGRZ6 (28 Minuten) (Zählung bis 255, danach keine Zählung, Wert bleibt erhalten)
 
     #define I3_RES_EDM_STAT_HFK_LADEDAUER_BEREICH_G_WERT             (RXBUF_UCHAR(14))
     #define I3_RES_EDM_STAT_HFK_LADEDAUER_BEREICH_G_WERT_TYPE        unsigned char
         // Number of loading times of the cyclical reloading in area G. K_NLDDAUERHISTGRZ6 (28 minutes) <area F <=
         // K_NLDDAUERHISTGRZ7 (45 minutes) (counting up to 255, after that no counting, value is retained) / Anzahl der
         // Ladungsdauer des zyklischen Nachladens im Bereich G.   K_NLDDAUERHISTGRZ6 (28 Minuten) < Bereich F <=
-        // K_NLDDAUERHISTGRZ7 (45 Minuten) (ZÃ¤hlung bis 255, danach keine ZÃ¤hlung, Wert bleibt erhalten)
+        // K_NLDDAUERHISTGRZ7 (45 Minuten) (Zählung bis 255, danach keine Zählung, Wert bleibt erhalten)
 
     #define I3_RES_EDM_STAT_HFK_LADEDAUER_BEREICH_H_WERT             (RXBUF_UCHAR(15))
     #define I3_RES_EDM_STAT_HFK_LADEDAUER_BEREICH_H_WERT_TYPE        unsigned char
         // Number of loading times of the cyclical reloading in area H. K_NLDDAUERHISTGRZ7 (45 minutes) <area H (counting
         // up to 255, then no counting, value is retained) / Anzahl der Ladungsdauer des zyklischen Nachladens im Bereich
-        // H. K_NLDDAUERHISTGRZ7 (45 Minuten) < Bereich H (ZÃ¤hlung bis 255, danach keine ZÃ¤hlung, Wert bleibt erhalten)
+        // H. K_NLDDAUERHISTGRZ7 (45 Minuten) < Bereich H (Zählung bis 255, danach keine Zählung, Wert bleibt erhalten)
 
 #define I3_PID_EDM_STATUS_E_S_KL_15_WUP                              0x4101
         // Wakeup Line (E_S_KL15_WUP) / Wakeup Line (E_S_KL15_WUP)
@@ -1335,7 +1334,7 @@
         // Ecu micro temperature / Ecu micro Temperatur
 
     #define I3_RES_EDM_STAT_ECU_MICRO_TEMPERATUR_WERT                (RXBUF_SINT(0))
-    #define I3_RES_EDM_STAT_ECU_MICRO_TEMPERATUR_WERT_UNIT           'Â°C'
+    #define I3_RES_EDM_STAT_ECU_MICRO_TEMPERATUR_WERT_UNIT           '°C'
     #define I3_RES_EDM_STAT_ECU_MICRO_TEMPERATUR_WERT_TYPE           short
         // Ecu micro temperature / Ecu micro Temperatur
 
@@ -1442,7 +1441,7 @@
         // Temperatursensors im Motorraum
 
     #define I3_RES_EDM_STAT_TEMPERATUR_TEMPERATURSENSOR_1_WERT       (RXBUF_SINT(0)/100.0f)
-    #define I3_RES_EDM_STAT_TEMPERATUR_TEMPERATURSENSOR_1_WERT_UNIT  'Â°C'
+    #define I3_RES_EDM_STAT_TEMPERATUR_TEMPERATURSENSOR_1_WERT_UNIT  '°C'
     #define I3_RES_EDM_STAT_TEMPERATUR_TEMPERATURSENSOR_1_WERT_TYPE  float
         // Temperature value of the first temperature sensor in the engine compartment / Temperaturwert des ersten
         // Temperatursensors im Motorraum
@@ -1460,7 +1459,7 @@
         // Temperatursensors im Motorraum
 
     #define I3_RES_EDM_STAT_TEMPERATUR_TEMPERATURSENSOR_2_WERT       (RXBUF_SINT(0)/100.0f)
-    #define I3_RES_EDM_STAT_TEMPERATUR_TEMPERATURSENSOR_2_WERT_UNIT  'Â°C'
+    #define I3_RES_EDM_STAT_TEMPERATUR_TEMPERATURSENSOR_2_WERT_UNIT  '°C'
     #define I3_RES_EDM_STAT_TEMPERATUR_TEMPERATURSENSOR_2_WERT_TYPE  float
         // Temperature value of the second temperature sensor in the engine compartment / Temperaturwert des zweiten
         // Temperatursensors im Motorraum
@@ -1476,7 +1475,7 @@
 // Skipping STEUERN_BETRIEBSART_EM2 on 0xF087 which takes arguments
 
 #define I3_PID_EDM_STEUERN_AKKS                                      0xF0D5
-        // Controlling the active cooling flap / Steuern der aktiven KÃ¼hlklappe
+        // Controlling the active cooling flap / Steuern der aktiven Kühlklappe
 
     #define I3_RES_EDM_STAT_AKKS_SMOTPOAKKSLIN_WERT                  (RXBUF_UINT(0))
     #define I3_RES_EDM_STAT_AKKS_SMOTPOAKKSLIN_WERT_TYPE             unsigned short

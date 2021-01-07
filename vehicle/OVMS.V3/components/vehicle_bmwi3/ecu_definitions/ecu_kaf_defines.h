@@ -36,12 +36,12 @@
     #define I3_RES_KAF_STAT_FLA_COUNT_OVERRIDE_WERT                  (RXBUF_UINT32(16))
     #define I3_RES_KAF_STAT_FLA_COUNT_OVERRIDE_WERT_UNIT             'Counts'
     #define I3_RES_KAF_STAT_FLA_COUNT_OVERRIDE_WERT_TYPE             unsigned long
-        // Number of driver overloads / Anzahl Ãbersteuerung durch Fahrer
+        // Number of driver overloads / Anzahl Übersteuerung durch Fahrer
 
     #define I3_RES_KAF_STAT_OPTIME_TOTAL_WERT                        (RXBUF_UINT32(20))
     #define I3_RES_KAF_STAT_OPTIME_TOTAL_WERT_UNIT                   's'
     #define I3_RES_KAF_STAT_OPTIME_TOTAL_WERT_TYPE                   unsigned long
-        // Absolute operating time counter [s] / Absoluter BetriebszeitzÃ¤hler [s]
+        // Absolute operating time counter [s] / Absoluter Betriebszeitzähler [s]
 
 #define I3_PID_KAF__KAFAS_ECU_DATA                                   0x4002
         // _KAFAS_ECU_DATA / _KAFAS_ECU_DATA
@@ -50,12 +50,12 @@
     #define I3_RES_KAF_STAT_CNTRY_CODE_WERT_UNIT                     'Counts'
     #define I3_RES_KAF_STAT_CNTRY_CODE_WERT_TYPE                     unsigned short
         // ISO Country Code of the country in which the vehicle covered the most kilometers. / ISO Country Code des
-        // Landes in welchem das Fahrzeug die meisten  Kilometer zurÃ¼ckgelegt hat.
+        // Landes in welchem das Fahrzeug die meisten  Kilometer zurückgelegt hat.
 
     #define I3_RES_KAF_STAT_OPTIME_TOTAL_WERT_0X4002                 (RXBUF_UINT32(2))
     #define I3_RES_KAF_STAT_OPTIME_TOTAL_WERT_0X4002_UNIT            's'
     #define I3_RES_KAF_STAT_OPTIME_TOTAL_WERT_0X4002_TYPE            unsigned long
-        // Absolute operating time counter / Absoluter BetriebszeitzÃ¤hler
+        // Absolute operating time counter / Absoluter Betriebszeitzähler
 
     #define I3_RES_KAF_STAT_OPTIME_NIGHT_WERT                        (RXBUF_UINT32(6))
     #define I3_RES_KAF_STAT_OPTIME_NIGHT_WERT_UNIT                   's'
@@ -66,7 +66,7 @@
     #define I3_RES_KAF_STAT_OPTIME_WIPER_WERT                        (RXBUF_UINT32(10))
     #define I3_RES_KAF_STAT_OPTIME_WIPER_WERT_UNIT                   's'
     #define I3_RES_KAF_STAT_OPTIME_WIPER_WERT_TYPE                   unsigned long
-        // Operating time during rain. Based on Algo Rain Decision / Betriebszeit wÃ¤hrend Regen. Basiert auf Algo
+        // Operating time during rain. Based on Algo Rain Decision / Betriebszeit während Regen. Basiert auf Algo
         // Regenentscheidung
 
     #define I3_RES_KAF_STAT_DRIVEN_DIST_TOTAL_WERT                   (RXBUF_UINT32(14))
@@ -77,36 +77,36 @@
     #define I3_RES_KAF_STAT_DRIVEN_DIST_URBAN_WERT                   (RXBUF_UINT32(18))
     #define I3_RES_KAF_STAT_DRIVEN_DIST_URBAN_WERT_UNIT              'km'
     #define I3_RES_KAF_STAT_DRIVEN_DIST_URBAN_WERT_TYPE              unsigned long
-        // Total kilometers driven on urban or residential area roads / Absolut gefahrene Kilometer auf StraÃentyp Urban
+        // Total kilometers driven on urban or residential area roads / Absolut gefahrene Kilometer auf Straßentyp Urban
         // oder Residential Area
 
     #define I3_RES_KAF_STAT_DRIVEN_DIST_RURAL_WERT                   (RXBUF_UINT32(22))
     #define I3_RES_KAF_STAT_DRIVEN_DIST_RURAL_WERT_UNIT              'km'
     #define I3_RES_KAF_STAT_DRIVEN_DIST_RURAL_WERT_TYPE              unsigned long
-        // Absolute kilometers driven on the rural or highway type / Absolut gefahrene Kilometer auf StraÃentyp Rural
+        // Absolute kilometers driven on the rural or highway type / Absolut gefahrene Kilometer auf Straßentyp Rural
         // oder Highway
 
     #define I3_RES_KAF_STAT_DRIVEN_DIST_MOWAY_WERT                   (RXBUF_UINT32(26))
     #define I3_RES_KAF_STAT_DRIVEN_DIST_MOWAY_WERT_UNIT              'km'
     #define I3_RES_KAF_STAT_DRIVEN_DIST_MOWAY_WERT_TYPE              unsigned long
-        // Absolute kilometers driven on road type Motorway / Absolut gefahrene Kilometer auf StraÃentyp Motorway
+        // Absolute kilometers driven on road type Motorway / Absolut gefahrene Kilometer auf Straßentyp Motorway
 
     #define I3_RES_KAF_STAT_DRIVEN_DIST_NA_WERT                      (RXBUF_UINT32(30))
     #define I3_RES_KAF_STAT_DRIVEN_DIST_NA_WERT_UNIT                 'km'
     #define I3_RES_KAF_STAT_DRIVEN_DIST_NA_WERT_TYPE                 unsigned long
-        // Absolute kilometers driven with no available road type / Absolut gefahrene Kilometer ohne verfÃ¼gbaren
-        // StraÃentyp
+        // Absolute kilometers driven with no available road type / Absolut gefahrene Kilometer ohne verfügbaren
+        // Straßentyp
 
     #define I3_RES_KAF_STAT_AMNT_EYEQ_RESET_WERT                     (RXBUF_UINT(34))
     #define I3_RES_KAF_STAT_AMNT_EYEQ_RESET_WERT_UNIT                'Counts'
     #define I3_RES_KAF_STAT_AMNT_EYEQ_RESET_WERT_TYPE                unsigned short
         // Number of resets of the BV processor performed during normal operation / Anzahl der erfolgten Resets des
-        // BV-Prozessors wÃ¤hrend normalem Betrieb
+        // BV-Prozessors während normalem Betrieb
 
     #define I3_RES_KAF_STAT_AMNT_ONLINE_CALIB_WERT                   (RXBUF_UINT(36))
     #define I3_RES_KAF_STAT_AMNT_ONLINE_CALIB_WERT_UNIT              'Counts'
     #define I3_RES_KAF_STAT_AMNT_ONLINE_CALIB_WERT_TYPE              unsigned short
-        // Counter for the completed online calibration processes / ZÃ¤hler Ã¼ber die Erfolgten Online-KalibriervorgÃ¤nge
+        // Counter for the completed online calibration processes / Zähler über die Erfolgten Online-Kalibriervorgänge
 
 #define I3_PID_KAF__KAFAS_TLC_DATA                                   0x4003
         // _KAFAS_TLC_DATA / _KAFAS_TLC_DATA
@@ -114,13 +114,13 @@
     #define I3_RES_KAF_STAT_TLC_DRIV_LEFT_AVAIL_WERT                 (RXBUF_UINT32(0))
     #define I3_RES_KAF_STAT_TLC_DRIV_LEFT_AVAIL_WERT_UNIT            'km'
     #define I3_RES_KAF_STAT_TLC_DRIV_LEFT_AVAIL_WERT_TYPE            unsigned long
-        // Absolute kilometers driven with availability on the left / Absolut gefahrene Kilometer mit VerfÃ¼barkeit auf
+        // Absolute kilometers driven with availability on the left / Absolut gefahrene Kilometer mit Verfübarkeit auf
         // der linken Seite
 
     #define I3_RES_KAF_STAT_TLC_DRIV_RIGHT_AVAIL_WERT                (RXBUF_UINT32(4))
     #define I3_RES_KAF_STAT_TLC_DRIV_RIGHT_AVAIL_WERT_UNIT           'km'
     #define I3_RES_KAF_STAT_TLC_DRIV_RIGHT_AVAIL_WERT_TYPE           unsigned long
-        // Absolute kilometers driven with availability on the right / Absolut gefahrene Kilometer mit VerfÃ¼barkeit auf
+        // Absolute kilometers driven with availability on the right / Absolut gefahrene Kilometer mit Verfübarkeit auf
         // der rechten Seite
 
     #define I3_RES_KAF_STAT_TLC_DRIV_DIST_REL_SPD_WERT               (RXBUF_UINT32(8))
@@ -174,13 +174,13 @@
     #define I3_RES_KAF_STAT_FCW_DRIVEN_DIST_FOR_EARLY_WERT_UNIT      'km'
     #define I3_RES_KAF_STAT_FCW_DRIVEN_DIST_FOR_EARLY_WERT_TYPE      unsigned long
         // Total kilometers traveled with activated FCW function and early warning level / Absolut gefahrene Kilometer
-        // mit aktivierter FCW Funktion und Vorwarnstufe  frÃ¼h 
+        // mit aktivierter FCW Funktion und Vorwarnstufe  früh 
 
     #define I3_RES_KAF_STAT_FCW_DRIVEN_DIST_FOR_LATE_WERT            (RXBUF_UINT32(20))
     #define I3_RES_KAF_STAT_FCW_DRIVEN_DIST_FOR_LATE_WERT_UNIT       'km'
     #define I3_RES_KAF_STAT_FCW_DRIVEN_DIST_FOR_LATE_WERT_TYPE       unsigned long
         // Total kilometers driven with activated FCW function and late warning level / Absolut gefahrene Kilometer mit
-        // aktivierter FCW Funktion und Vorwarnstufe  spÃ¤t 
+        // aktivierter FCW Funktion und Vorwarnstufe  spät 
 
     #define I3_RES_KAF_STAT_FCW_AMNT_FOR_WERT                        (RXBUF_UINT(24))
     #define I3_RES_KAF_STAT_FCW_AMNT_FOR_WERT_UNIT                   'Counts'
@@ -195,30 +195,30 @@
     #define I3_RES_KAF_STAT_FCW_AMNT_ACUTE_45_WERT                   (RXBUF_UINT(28))
     #define I3_RES_KAF_STAT_FCW_AMNT_ACUTE_45_WERT_UNIT              'Counts'
     #define I3_RES_KAF_STAT_FCW_AMNT_ACUTE_45_WERT_TYPE              unsigned short
-        // Number of acute warnings in the range 0 km / h¿ 45 km / h / Anzahl der Akutwarnungen im Bereich 0 km/hÂ¿ 45
+        // Number of acute warnings in the range 0 km / h¿ 45 km / h / Anzahl der Akutwarnungen im Bereich 0 km/h¿ 45
         // km/h
 
     #define I3_RES_KAF_STAT_FCW_AMNT_ACUTE_90_WERT                   (RXBUF_UINT(30))
     #define I3_RES_KAF_STAT_FCW_AMNT_ACUTE_90_WERT_UNIT              'Counts'
     #define I3_RES_KAF_STAT_FCW_AMNT_ACUTE_90_WERT_TYPE              unsigned short
-        // Number of acute warnings in the range 45 km / h¿ 90 km / h / Anzahl der Akutwarnungen im Bereich 45 km/hÂ¿ 90
+        // Number of acute warnings in the range 45 km / h¿ 90 km / h / Anzahl der Akutwarnungen im Bereich 45 km/h¿ 90
         // km/h
 
     #define I3_RES_KAF_STAT_FCW_AMNT_ACUTE_135_WERT                  (RXBUF_UINT(32))
     #define I3_RES_KAF_STAT_FCW_AMNT_ACUTE_135_WERT_UNIT             'Counts'
     #define I3_RES_KAF_STAT_FCW_AMNT_ACUTE_135_WERT_TYPE             unsigned short
-        // Number of acute warnings in the range 90 km / h¿ 135 km / h / Anzahl der Akutwarnungen im Bereich 90 km/hÂ¿
-        // 135 km/h
+        // Number of acute warnings in the range 90 km / h¿ 135 km / h / Anzahl der Akutwarnungen im Bereich 90 km/h¿ 135
+        // km/h
 
     #define I3_RES_KAF_STAT_FCW_PREFILLS_WERT                        (RXBUF_UINT(34))
     #define I3_RES_KAF_STAT_FCW_PREFILLS_WERT_UNIT                   'Counts'
     #define I3_RES_KAF_STAT_FCW_PREFILLS_WERT_TYPE                   unsigned short
-        // Number of pre-fill requests triggered by FCW / Anzahl der von FCW ausgelÃ¶sten Pre-Fill Anforderungen
+        // Number of pre-fill requests triggered by FCW / Anzahl der von FCW ausgelösten Pre-Fill Anforderungen
 
     #define I3_RES_KAF_STAT_FCW_PRECRASH_WERT                        (RXBUF_UINT(36))
     #define I3_RES_KAF_STAT_FCW_PRECRASH_WERT_UNIT                   'Counts'
     #define I3_RES_KAF_STAT_FCW_PRECRASH_WERT_TYPE                   unsigned short
-        // Number of pre-crash messages triggered by FCW / Anzahl der von FCW ausgelÃ¶sten Pre-Crash Meldungen
+        // Number of pre-crash messages triggered by FCW / Anzahl der von FCW ausgelösten Pre-Crash Meldungen
 
     #define I3_RES_KAF_STAT_FCW_DEACT_WERT                           (RXBUF_UINT(38))
     #define I3_RES_KAF_STAT_FCW_DEACT_WERT_UNIT                      'Counts'
@@ -229,7 +229,7 @@
     #define I3_RES_KAF_STAT_FCW_FS_CC_WERT                           (RXBUF_UINT(40))
     #define I3_RES_KAF_STAT_FCW_FS_CC_WERT_UNIT                      'Counts'
     #define I3_RES_KAF_STAT_FCW_FS_CC_WERT_TYPE                      unsigned short
-        // Number of triggered Fail-Save CC messages / Anzahl der ausgelÃ¶sten Fail-Save CC-Meldungen
+        // Number of triggered Fail-Save CC messages / Anzahl der ausgelösten Fail-Save CC-Meldungen
 
 #define I3_PID_KAF__KAFAS_SLI_DATA                                   0x4005
         // _KAFAS_SLI_DATA / _KAFAS_SLI_DATA
@@ -242,68 +242,68 @@
     #define I3_RES_KAF_STAT_SLI_MATCH_URBAN_WERT                     (RXBUF_UCHAR(4))
     #define I3_RES_KAF_STAT_SLI_MATCH_URBAN_WERT_UNIT                'Counts'
     #define I3_RES_KAF_STAT_SLI_MATCH_URBAN_WERT_TYPE                char
-        // Proportion of camera detection that match the explicit speed limits on the street type Urban or Residential
-        // Area / Anteil der  Kameradetektion die mit den expliziten Speed Limits auf dem StraÃentyp Urban oder
-        // Residential Area Ã¼bereinstimmen
+        // Share of camera detection that match the explicit speed limits on the street type Urban or Residential Area /
+        // Anteil der  Kameradetektion die mit den expliziten Speed Limits auf dem Straßentyp Urban oder Residential Area
+        // übereinstimmen
 
     #define I3_RES_KAF_STAT_SLI_MATCH_RURAL_WERT                     (RXBUF_UCHAR(5))
     #define I3_RES_KAF_STAT_SLI_MATCH_RURAL_WERT_UNIT                'Counts'
     #define I3_RES_KAF_STAT_SLI_MATCH_RURAL_WERT_TYPE                char
         // Proportion of camera detection that corresponds to the explicit speed limits on the road type rural or highway
-        // / Anteil der  Kameradetektion die mit den expliziten Speed Limits auf dem StraÃentyp Rural oder Highway
-        // Ã¼bereinstimmen
+        // / Anteil der  Kameradetektion die mit den expliziten Speed Limits auf dem Straßentyp Rural oder Highway
+        // übereinstimmen
 
     #define I3_RES_KAF_STAT_SLI_MATCH_MOWAY_WERT                     (RXBUF_UCHAR(6))
     #define I3_RES_KAF_STAT_SLI_MATCH_MOWAY_WERT_UNIT                'Counts'
     #define I3_RES_KAF_STAT_SLI_MATCH_MOWAY_WERT_TYPE                char
-        // Proportion of camera detection that corresponds to the explicit speed limits on the road type Motorway /
-        // Anteil der  Kameradetektion die mit den expliziten Speed Limits auf dem StraÃentyp Motorway Ã¼bereinstimmen
+        // Percentage of camera detection that corresponds to the explicit speed limits on the road type Motorway /
+        // Anteil der  Kameradetektion die mit den expliziten Speed Limits auf dem Straßentyp Motorway übereinstimmen
 
     #define I3_RES_KAF_STAT_SLI_REP_URBAN_WERT                       (RXBUF_UINT(7))
     #define I3_RES_KAF_STAT_SLI_REP_URBAN_WERT_UNIT                  'm'
     #define I3_RES_KAF_STAT_SLI_REP_URBAN_WERT_TYPE                  unsigned short
-        // Average distance at which signs repeat themselves on the street type Urban or Residential Area /
-        // Durschnittlich Enfernung in welcher sich Schilder auf dem StraÃentyp Urbanoder Residential Area wiederholen
+        // Average distance at which signs repeat on the street type Urban or Residential Area / Durschnittlich Enfernung
+        // in welcher sich Schilder auf dem Straßentyp Urbanoder Residential Area wiederholen
 
     #define I3_RES_KAF_STAT_SLI_REP_RURAL_WERT                       (RXBUF_UINT(9))
     #define I3_RES_KAF_STAT_SLI_REP_RURAL_WERT_UNIT                  'm'
     #define I3_RES_KAF_STAT_SLI_REP_RURAL_WERT_TYPE                  unsigned short
         // Average distance at which signs repeat on the road type rural or highway / Durschnittlich Enfernung in welcher
-        // sich Schilder auf dem StraÃentyp Rural oder Highway wiederholen
+        // sich Schilder auf dem Straßentyp Rural oder Highway wiederholen
 
     #define I3_RES_KAF_STAT_SLI_REP_MOWAY_WERT                       (RXBUF_UINT(11))
     #define I3_RES_KAF_STAT_SLI_REP_MOWAY_WERT_UNIT                  'm'
     #define I3_RES_KAF_STAT_SLI_REP_MOWAY_WERT_TYPE                  unsigned short
         // Average distance at which signs repeat on the road type Motorway / Durschnittlich Enfernung in welcher sich
-        // Schilder auf dem StraÃentyp Motorway wiederholen
+        // Schilder auf dem Straßentyp Motorway wiederholen
 
     #define I3_RES_KAF_STAT_SLI_OVER_SLI_WERT                        (RXBUF_UINT32(13))
     #define I3_RES_KAF_STAT_SLI_OVER_SLI_WERT_UNIT                   'km'
     #define I3_RES_KAF_STAT_SLI_OVER_SLI_WERT_TYPE                   unsigned long
-        // Distance traveled with at least 20 km / h above the recognized speed limit / Gefahrene Entfernung mit
-        // mindestens 20 km/h Ã¼ber dem erkannten Speed Limit
+        // Distance driven at least 20 km / h above the detected speed limit / Gefahrene Entfernung mit mindestens 20
+        // km/h über dem erkannten Speed Limit
 
     #define I3_RES_KAF_STAT_SLI_SSS_TIME_WERT                        (RXBUF_UINT(17))
     #define I3_RES_KAF_STAT_SLI_SSS_TIME_WERT_UNIT                   'Counts'
     #define I3_RES_KAF_STAT_SLI_SSS_TIME_WERT_TYPE                   unsigned short
         // Number of recognized additional characters with time restriction / Anzahl der erkannten Zusatzzeichen mit
-        // ZeitbeschrÃ¤nkung
+        // Zeitbeschränkung
 
     #define I3_RES_KAF_STAT_SLI_NPI_WERT                             (RXBUF_UINT32(19))
     #define I3_RES_KAF_STAT_SLI_NPI_WERT_UNIT                        'km'
     #define I3_RES_KAF_STAT_SLI_NPI_WERT_TYPE                        unsigned long
-        // Kilometers driven with no overtaking recognized / Gefahrene Kilometer mit erkanntem Ãberholverbot
+        // Kilometers driven with no overtaking recognized / Gefahrene Kilometer mit erkanntem Überholverbot
 
     #define I3_RES_KAF_STAT_SLI_NP_WITHDRAW_DIST_WERT                (RXBUF_UINT(23))
     #define I3_RES_KAF_STAT_SLI_NP_WITHDRAW_DIST_WERT_UNIT           'Counts'
     #define I3_RES_KAF_STAT_SLI_NP_WITHDRAW_DIST_WERT_TYPE           unsigned short
         // Number of cancellations of overtaking ban due to exceeding the stopping distance / Anzahl Aufhebungen
-        // Ãberholverbot infolge Ãberschreitung Haltedistanz
+        // Überholverbot infolge Überschreitung Haltedistanz
 
     #define I3_RES_KAF_STAT_SLI_NP_WITHDRAW_SIGN_WERT                (RXBUF_UINT(25))
     #define I3_RES_KAF_STAT_SLI_NP_WITHDRAW_SIGN_WERT_UNIT           'Counts'
     #define I3_RES_KAF_STAT_SLI_NP_WITHDRAW_SIGN_WERT_TYPE           unsigned short
-        // Number of cancellations No overtaking due to detection of a lifting sign / Anzahl Aufhebungen Ãberholverbot
+        // Number of cancellations No overtaking due to detection of a lifting sign / Anzahl Aufhebungen Überholverbot
         // infolge Detektion Aufhebungsschild
 
 // Skipping _FASTA_FLA_LOESCHEN on 0x4006 which takes arguments
@@ -404,135 +404,135 @@
     #define I3_RES_KAF_STAT_PPP_AMNT_DZ_EVENTS_0_TO_20_WERT          (RXBUF_UINT(2))
     #define I3_RES_KAF_STAT_PPP_AMNT_DZ_EVENTS_0_TO_20_WERT_UNIT     'Counts'
     #define I3_RES_KAF_STAT_PPP_AMNT_DZ_EVENTS_0_TO_20_WERT_TYPE     unsigned short
-        // The parameter is determined by counting the number of DZ events in the range 0 <x <20 km / h / Die KenngrÃ¶Ãe
-        // wird bestimmt, indem die Anzahl der DZ-Events im Bereich 0 < x < 20 km/h gezÃ¤hlt wird
+        // The parameter is determined by counting the number of DZ events in the range 0 <x <20 km / h / Die Kenngröße
+        // wird bestimmt, indem die Anzahl der DZ-Events im Bereich 0 < x < 20 km/h gezählt wird
 
     #define I3_RES_KAF_STAT_PPP_AMNT_DZ_EVENTS_20_TO_40_WERT         (RXBUF_UINT(4))
     #define I3_RES_KAF_STAT_PPP_AMNT_DZ_EVENTS_20_TO_40_WERT_UNIT    'Counts'
     #define I3_RES_KAF_STAT_PPP_AMNT_DZ_EVENTS_20_TO_40_WERT_TYPE    unsigned short
-        // The parameter is determined by counting the number of DZ events in the range 20 <x <40 km / h / Die
-        // KenngrÃ¶Ãe wird bestimmt, indem die Anzahl der DZ-Events im Bereich 20 < x < 40 km/h gezÃ¤hlt wird
+        // The parameter is determined by counting the number of DZ events in the range 20 <x <40 km / h / Die Kenngröße
+        // wird bestimmt, indem die Anzahl der DZ-Events im Bereich 20 < x < 40 km/h gezählt wird
 
     #define I3_RES_KAF_STAT_PPP_AMNT_DZ_EVENTS_40_TO_60_WERT         (RXBUF_UINT(6))
     #define I3_RES_KAF_STAT_PPP_AMNT_DZ_EVENTS_40_TO_60_WERT_UNIT    'Counts'
     #define I3_RES_KAF_STAT_PPP_AMNT_DZ_EVENTS_40_TO_60_WERT_TYPE    unsigned short
-        // The parameter is determined by counting the number of DZ events in the range 40 <x <60 km / h / Die
-        // KenngrÃ¶Ãe wird bestimmt, indem die Anzahl der DZ-Events im Bereich 40 < x < 60 km/h gezÃ¤hlt wird
+        // The parameter is determined by counting the number of DZ events in the range 40 <x <60 km / h / Die Kenngröße
+        // wird bestimmt, indem die Anzahl der DZ-Events im Bereich 40 < x < 60 km/h gezählt wird
 
     #define I3_RES_KAF_STAT_PPP_AMNT_PDZ1_EVENTS_0_TO_20_WERT        (RXBUF_UINT(8))
     #define I3_RES_KAF_STAT_PPP_AMNT_PDZ1_EVENTS_0_TO_20_WERT_UNIT   'Counts'
     #define I3_RES_KAF_STAT_PPP_AMNT_PDZ1_EVENTS_0_TO_20_WERT_TYPE   unsigned short
-        // The parameter is determined by counting the number of PDZ1 events in the range 0 <x <20 km / h / Die
-        // KenngrÃ¶Ãe wird bestimmt, indem die Anzahl der PDZ1-Events im Bereich 0 < x < 20 km/h gezÃ¤hlt wird
+        // The parameter is determined by counting the number of PDZ1 events in the range 0 <x <20 km / h / Die Kenngröße
+        // wird bestimmt, indem die Anzahl der PDZ1-Events im Bereich 0 < x < 20 km/h gezählt wird
 
     #define I3_RES_KAF_STAT_PPP_AMNT_PDZ1_EVENTS_20_TO_40_WERT       (RXBUF_UINT(10))
     #define I3_RES_KAF_STAT_PPP_AMNT_PDZ1_EVENTS_20_TO_40_WERT_UNIT  'Counts'
     #define I3_RES_KAF_STAT_PPP_AMNT_PDZ1_EVENTS_20_TO_40_WERT_TYPE  unsigned short
         // The parameter is determined by counting the number of PDZ1 events in the range 20 <x <40 km / h / Die
-        // KenngrÃ¶Ãe wird bestimmt, indem die Anzahl der PDZ1-Events im Bereich 20 < x < 40 km/h gezÃ¤hlt wird
+        // Kenngröße wird bestimmt, indem die Anzahl der PDZ1-Events im Bereich 20 < x < 40 km/h gezählt wird
 
     #define I3_RES_KAF_STAT_PPP_AMNT_PDZ1_EVENTS_40_TO_60_WERT       (RXBUF_UINT(12))
     #define I3_RES_KAF_STAT_PPP_AMNT_PDZ1_EVENTS_40_TO_60_WERT_UNIT  'Counts'
     #define I3_RES_KAF_STAT_PPP_AMNT_PDZ1_EVENTS_40_TO_60_WERT_TYPE  unsigned short
         // The parameter is determined by counting the number of PDZ1 events in the range 40 <x <60 km / h / Die
-        // KenngrÃ¶Ãe wird bestimmt, indem die Anzahl der PDZ1-Events im Bereich 40 < x < 60 km/h gezÃ¤hlt wird
+        // Kenngröße wird bestimmt, indem die Anzahl der PDZ1-Events im Bereich 40 < x < 60 km/h gezählt wird
 
     #define I3_RES_KAF_STAT_PPP_AMNT_PDZ2_EVENTS_0_TO_20_WERT        (RXBUF_UINT(14))
     #define I3_RES_KAF_STAT_PPP_AMNT_PDZ2_EVENTS_0_TO_20_WERT_UNIT   'Counts'
     #define I3_RES_KAF_STAT_PPP_AMNT_PDZ2_EVENTS_0_TO_20_WERT_TYPE   unsigned short
-        // The parameter is determined by counting the number of PDZ2 events in the range 0 <x <20 km / h / Die
-        // KenngrÃ¶Ãe wird bestimmt, indem die Anzahl der PDZ2-Events im Bereich 0 < x < 20 km/h gezÃ¤hlt wird
+        // The parameter is determined by counting the number of PDZ2 events in the range 0 <x <20 km / h / Die Kenngröße
+        // wird bestimmt, indem die Anzahl der PDZ2-Events im Bereich 0 < x < 20 km/h gezählt wird
 
     #define I3_RES_KAF_STAT_PPP_AMNT_PDZ2_EVENTS_20_TO_40_WERT       (RXBUF_UINT(16))
     #define I3_RES_KAF_STAT_PPP_AMNT_PDZ2_EVENTS_20_TO_40_WERT_UNIT  'Counts'
     #define I3_RES_KAF_STAT_PPP_AMNT_PDZ2_EVENTS_20_TO_40_WERT_TYPE  unsigned short
         // The parameter is determined by counting the number of PDZ2 events in the range 20 <x <40 km / h / Die
-        // KenngrÃ¶Ãe wird bestimmt, indem die Anzahl der PDZ2-Events im Bereich 20 < x < 40 km/h gezÃ¤hlt wird
+        // Kenngröße wird bestimmt, indem die Anzahl der PDZ2-Events im Bereich 20 < x < 40 km/h gezählt wird
 
     #define I3_RES_KAF_STAT_PPP_AMNT_PDZ2_EVENTS_40_TO_60_WERT       (RXBUF_UINT(18))
     #define I3_RES_KAF_STAT_PPP_AMNT_PDZ2_EVENTS_40_TO_60_WERT_UNIT  'Counts'
     #define I3_RES_KAF_STAT_PPP_AMNT_PDZ2_EVENTS_40_TO_60_WERT_TYPE  unsigned short
         // The parameter is determined by counting the number of PDZ2 events in the range 40 <x <60 km / h / Die
-        // KenngrÃ¶Ãe wird bestimmt, indem die Anzahl der PDZ2-Events im Bereich 40 < x < 60 km/h gezÃ¤hlt wird
+        // Kenngröße wird bestimmt, indem die Anzahl der PDZ2-Events im Bereich 40 < x < 60 km/h gezählt wird
 
     #define I3_RES_KAF_STAT_PPP_AMNT_PREWARNUNG_REQUESTS_WERT        (RXBUF_UINT(20))
     #define I3_RES_KAF_STAT_PPP_AMNT_PREWARNUNG_REQUESTS_WERT_UNIT   'Counts'
     #define I3_RES_KAF_STAT_PPP_AMNT_PREWARNUNG_REQUESTS_WERT_TYPE   unsigned short
-        // The parameter is determined by counting the number of pre-warning requests / Die KenngrÃ¶Ãe wird bestimmt,
-        // indem die Anzahl der Pre-Warning-Requests gezÃ¤hlt wird
+        // The parameter is determined by counting the number of pre-warning requests / Die Kenngröße wird bestimmt,
+        // indem die Anzahl der Pre-Warning-Requests gezählt wird
 
     #define I3_RES_KAF_STAT_PPP_AMNT_ACUTEWARNING_REQUESTS_WERT      (RXBUF_UINT(22))
     #define I3_RES_KAF_STAT_PPP_AMNT_ACUTEWARNING_REQUESTS_WERT_UNIT 'Counts'
     #define I3_RES_KAF_STAT_PPP_AMNT_ACUTEWARNING_REQUESTS_WERT_TYPE unsigned short
-        // The parameter is determined by counting the number of acute warning requests. / Die KenngrÃ¶Ãe wird bestimmt,
-        // indem die Anzahl der Acute-Warning-Requests gezÃ¤hlt wird.
+        // The parameter is determined by counting the number of acute warning requests. / Die Kenngröße wird bestimmt,
+        // indem die Anzahl der Acute-Warning-Requests gezählt wird.
 
     #define I3_RES_KAF_STAT_PPP_AMNT_HBA_REQUESTS_WERT               (RXBUF_UINT(24))
     #define I3_RES_KAF_STAT_PPP_AMNT_HBA_REQUESTS_WERT_UNIT          'Counts'
     #define I3_RES_KAF_STAT_PPP_AMNT_HBA_REQUESTS_WERT_TYPE          unsigned short
-        // The parameter is determined by counting the number of HBA requests. / Die KenngrÃ¶Ãe wird bestimmt, indem die
-        // Anzahl der HBA-Requests gezÃ¤hlt wird.
+        // The parameter is determined by counting the number of HBA requests. / Die Kenngröße wird bestimmt, indem die
+        // Anzahl der HBA-Requests gezählt wird.
 
     #define I3_RES_KAF_STAT_PPP_AMNT_PREFILL_REQUESTS_WERT           (RXBUF_UINT(26))
     #define I3_RES_KAF_STAT_PPP_AMNT_PREFILL_REQUESTS_WERT_UNIT      'Counts'
     #define I3_RES_KAF_STAT_PPP_AMNT_PREFILL_REQUESTS_WERT_TYPE      unsigned short
-        // The parameter is determined by counting the number of prefill requests. / Die KenngrÃ¶Ãe wird bestimmt, indem
-        // die Anzahl der Prefill-Requests gezÃ¤hlt wird.
+        // The parameter is determined by counting the number of prefill requests. / Die Kenngröße wird bestimmt, indem
+        // die Anzahl der Prefill-Requests gezählt wird.
 
     #define I3_RES_KAF_STAT_PPP_AMNT_BRAKE_REQUESTS_WERT             (RXBUF_UINT(28))
     #define I3_RES_KAF_STAT_PPP_AMNT_BRAKE_REQUESTS_WERT_UNIT        'Counts'
     #define I3_RES_KAF_STAT_PPP_AMNT_BRAKE_REQUESTS_WERT_TYPE        unsigned short
-        // The parameter is determined by counting the number of brake requests. / Die KenngrÃ¶Ãe wird bestimmt, indem
-        // die Anzahl der Brake-Requests gezÃ¤hlt wird.
+        // The parameter is determined by counting the number of brake requests. / Die Kenngröße wird bestimmt, indem die
+        // Anzahl der Brake-Requests gezählt wird.
 
     #define I3_RES_KAF_STAT_PPP_DEACT_DRIVER_WERT                    (RXBUF_UINT(30))
     #define I3_RES_KAF_STAT_PPP_DEACT_DRIVER_WERT_UNIT               'Counts'
     #define I3_RES_KAF_STAT_PPP_DEACT_DRIVER_WERT_TYPE               unsigned short
         // The parameter is determined by counting the number of times the pFGS function was switched off by the driver.
-        // (Status change of the activation by pressing the button) / Die KenngrÃ¶Ãe wird bestimmt, indem die Anzahl der
-        // Abschaltungen der Funktion pFGS durch den Fahrer gezÃ¤hlt wird. (Statuswechsel der Aktivierung durch
-        // TasterbetÃ¤tigung)
+        // (Status change of the activation by pressing the button) / Die Kenngröße wird bestimmt, indem die Anzahl der
+        // Abschaltungen der Funktion pFGS durch den Fahrer gezählt wird. (Statuswechsel der Aktivierung durch
+        // Tasterbetätigung)
 
     #define I3_RES_KAF_STAT_PPP_DEACT_AVAILABILITY_WERT              (RXBUF_UINT(32))
     #define I3_RES_KAF_STAT_PPP_DEACT_AVAILABILITY_WERT_UNIT         'Counts'
     #define I3_RES_KAF_STAT_PPP_DEACT_AVAILABILITY_WERT_TYPE         unsigned short
         // The parameter is determined by counting the number of times the pFGS function was switched off by the KAFAS
         // system based on the availability concept (e.g. recognition qualifier, degradation concept, ...). / Die
-        // KenngrÃ¶Ãe wird bestimmt, indem die Anzahl der Abschaltungen der Funktion pFGS durch das KAFAS System
-        // aufgrund des VerfÃ¼gbarkeitskonzeptes (z.B. Erkennungsqualifier, Degradationskonzept,...) gezÃ¤hlt wird.
+        // Kenngröße wird bestimmt, indem die Anzahl der Abschaltungen der Funktion pFGS durch das KAFAS System aufgrund
+        // des Verfügbarkeitskonzeptes (z.B. Erkennungsqualifier, Degradationskonzept,...) gezählt wird.
 
     #define I3_RES_KAF_STAT_PPP_DEACT_WARNING_CHAIN_WERT             (RXBUF_UINT(34))
     #define I3_RES_KAF_STAT_PPP_DEACT_WARNING_CHAIN_WERT_UNIT        'Counts'
     #define I3_RES_KAF_STAT_PPP_DEACT_WARNING_CHAIN_WERT_TYPE        unsigned short
         // The parameter is determined by counting the number of times the pPP function has been switched off by the
-        // KAFAS system based on the braking and warning chain. / Die KenngrÃ¶Ãe wird bestimmt, indem die Anzahl der
-        // Abschaltungen der Funktion pPP durch das KAFAS System aufgrund der Brems-und Warnkette gezÃ¤hlt wird.
+        // KAFAS system based on the braking and warning chain. / Die Kenngröße wird bestimmt, indem die Anzahl der
+        // Abschaltungen der Funktion pPP durch das KAFAS System aufgrund der Brems-und Warnkette gezählt wird.
 
     #define I3_RES_KAF_STAT_PPP_OPERATION_TIME_CL50_WERT             (RXBUF_UINT32(36))
     #define I3_RES_KAF_STAT_PPP_OPERATION_TIME_CL50_WERT_UNIT        's'
     #define I3_RES_KAF_STAT_PPP_OPERATION_TIME_CL50_WERT_TYPE        unsigned long
-        // The parameter is determined by always counting the operating time in seconds from terminal 50. / Die
-        // KenngrÃ¶Ãe wird bestimmt, indem immer ab Kl 50 die Betriebszeit in Sekunden gezÃ¤hlt wird.
+        // The parameter is determined by always counting the operating time in seconds from terminal 50. / Die Kenngröße
+        // wird bestimmt, indem immer ab Kl 50 die Betriebszeit in Sekunden gezählt wird.
 
     #define I3_RES_KAF_STAT_PPP_OPERATION_TIME_ACTIVE_WERT           (RXBUF_UINT32(40))
     #define I3_RES_KAF_STAT_PPP_OPERATION_TIME_ACTIVE_WERT_UNIT      's'
     #define I3_RES_KAF_STAT_PPP_OPERATION_TIME_ACTIVE_WERT_TYPE      unsigned long
         // The parameter is determined by always counting the operating time in seconds from terminal 50 while the pFGS
-        // function is activated. / Die KenngrÃ¶Ãe wird bestimmt, indem immer ab Kl 50 die Betriebszeit in Sekunden
-        // gezÃ¤hlt wird, wÃ¤hrend die pFGS-Funktion aktiviert ist.
+        // function is activated. / Die Kenngröße wird bestimmt, indem immer ab Kl 50 die Betriebszeit in Sekunden
+        // gezählt wird, während die pFGS-Funktion aktiviert ist.
 
     #define I3_RES_KAF_STAT_PPP_FS_CC_WERT                           (RXBUF_UINT(44))
     #define I3_RES_KAF_STAT_PPP_FS_CC_WERT_UNIT                      'Counts'
     #define I3_RES_KAF_STAT_PPP_FS_CC_WERT_TYPE                      unsigned short
         // The parameter is determined by counting the number of Check Control messages triggered due to reduced
-        // visibility for the pFGS function. / Die KenngrÃ¶Ãe wird bestimmt, indem die Anzahl der ausgelÃ¶sten Check
-        // Control Meldungen aufgrund reduzierter Sicht fÃ¼r die Funktion pFGS gezÃ¤hlt wird.
+        // visibility for the pFGS function. / Die Kenngröße wird bestimmt, indem die Anzahl der ausgelösten Check
+        // Control Meldungen aufgrund reduzierter Sicht für die Funktion pFGS gezählt wird.
 
     #define I3_RES_KAF_STAT_PPP_DRIVEN_TIME_FS_ACT_WERT              (RXBUF_UINT32(46))
     #define I3_RES_KAF_STAT_PPP_DRIVEN_TIME_FS_ACT_WERT_UNIT         's'
     #define I3_RES_KAF_STAT_PPP_DRIVEN_TIME_FS_ACT_WERT_TYPE         unsigned long
         // The parameter is determined by determining the operating time from Kl 50 in seconds in which pFGS is in the
-        // reduced visibility status and activated by the driver. / Die KenngrÃ¶Ãe wird bestimmt, indem die Betriebszeit
+        // reduced visibility status and activated by the driver. / Die Kenngröße wird bestimmt, indem die Betriebszeit
         // ab Kl 50 in Sekunden ermittelt wird, in der pFGS im Status  reduzierte Sicht  und vom Fahrer aktiviert ist.
 
 #define I3_PID_KAF_FASTA_CCM_DATA                                    0x4011
@@ -542,25 +542,25 @@
     #define I3_RES_KAF_STAT_CCM_AMNT_BRAKE_20_WERT_UNIT              'Counts'
     #define I3_RES_KAF_STAT_CCM_AMNT_BRAKE_20_WERT_TYPE              unsigned short
         // The parameter is determined by counting the number of CCM brakes in which the speed of the host vehicle at the
-        // start of braking is greater than or equal to 0 km / h and less than 20 km / h. / Die KenngrÃ¶Ãe wird
-        // bestimmt, indem die Anzahl der CCM-Bremsungen gezÃ¤hlt wird, bei denen die Geschwindigkeit des Egofahrzeugs zu
-        // Bremsbeginn grÃ¶Ãer gleich 0 km/h und kleiner 20 km/h ist.
+        // start of braking is greater than or equal to 0 km / h and less than 20 km / h. / Die Kenngröße wird bestimmt,
+        // indem die Anzahl der CCM-Bremsungen gezählt wird, bei denen die Geschwindigkeit des Egofahrzeugs zu
+        // Bremsbeginn größer gleich 0 km/h und kleiner 20 km/h ist.
 
     #define I3_RES_KAF_STAT_CCM_AMNT_BRAKE_40_WERT                   (RXBUF_UINT(2))
     #define I3_RES_KAF_STAT_CCM_AMNT_BRAKE_40_WERT_UNIT              'Counts'
     #define I3_RES_KAF_STAT_CCM_AMNT_BRAKE_40_WERT_TYPE              unsigned short
         // The parameter is determined by counting the number of CCM brakes in which the speed of the host vehicle at the
-        // start of braking is greater than or equal to 20 km / h and less than 40 km / h. / Die KenngrÃ¶Ãe wird
-        // bestimmt, indem die Anzahl der CCM-Bremsungen gezÃ¤hlt wird, bei denen die Geschwindigkeit des Egofahrzeugs zu
-        // Bremsbeginn grÃ¶Ãer gleich 20 km/h und kleiner 40 km/h ist.
+        // start of braking is greater than or equal to 20 km / h and less than 40 km / h. / Die Kenngröße wird bestimmt,
+        // indem die Anzahl der CCM-Bremsungen gezählt wird, bei denen die Geschwindigkeit des Egofahrzeugs zu
+        // Bremsbeginn größer gleich 20 km/h und kleiner 40 km/h ist.
 
     #define I3_RES_KAF_STAT_CCM_AMNT_BRAKE_GEQ40_WERT                (RXBUF_UINT(4))
     #define I3_RES_KAF_STAT_CCM_AMNT_BRAKE_GEQ40_WERT_UNIT           'Counts'
     #define I3_RES_KAF_STAT_CCM_AMNT_BRAKE_GEQ40_WERT_TYPE           unsigned short
         // The parameter is determined by counting the number of CCM brakes in which the speed of the host vehicle is
-        // greater than or equal to 40 km / h at the beginning of the braking / Die KenngrÃ¶Ãe wird bestimmt, indem die
-        // Anzahl der CCM-Bremsungen gezÃ¤hlt wird, bei denen die Geschwindigkeit des Egofahrzeugs zu Bremsbeginn
-        // grÃ¶Ãer gleich 40 km/h ist
+        // greater than or equal to 40 km / h at the beginning of the braking / Die Kenngröße wird bestimmt, indem die
+        // Anzahl der CCM-Bremsungen gezählt wird, bei denen die Geschwindigkeit des Egofahrzeugs zu Bremsbeginn größer
+        // gleich 40 km/h ist
 
 #define I3_PID_KAF__KAFAS_ENVINT_DATA                                0x4012
         // _KAFAS_ENVINT_DATA / _KAFAS_ENVINT_DATA
@@ -662,7 +662,7 @@
         // for any other reason, such as too long processing time for the preceding frame.
 
     #define I3_RES_KAF_STAT_CAMERA_TEMP_WERT                         (RXBUF_UCHAR(6)-60.0)
-    #define I3_RES_KAF_STAT_CAMERA_TEMP_WERT_UNIT                    'Â°C'
+    #define I3_RES_KAF_STAT_CAMERA_TEMP_WERT_UNIT                    '°C'
     #define I3_RES_KAF_STAT_CAMERA_TEMP_WERT_TYPE                    unsigned char
         // The camera temperature, as read by the EyeQ2 via I2C. The camera temperature shall be read from the EyeQ2
         // every 10 seconds. / The camera temperature, as read by the EyeQ2 via I2C. The camera temperature shall be read
@@ -671,7 +671,7 @@
 // Skipping STEUERN_ANZEIGE_KOMBI_TLC on 0xA37C which takes arguments
 
 #define I3_PID_KAF_ABSCHALTGRUND_FERNLICHT                           0xD341
-        // Reasons for switching off high beam. / AbschaltgrÃ¼nde fÃ¼r Fernlicht.
+        // Reasons for switching off high beam. / Abschaltgründe für Fernlicht.
 
     #define I3_RES_KAF_STAT_FLA_ENTGEGENKOMMENDES_FAHRZEUG           (RXBUF_UCHAR(0))
     #define I3_RES_KAF_STAT_FLA_ENTGEGENKOMMENDES_FAHRZEUG_UNIT      '0/1'
@@ -723,8 +723,8 @@
     #define I3_RES_KAF_STAT_FLA_VERZOEGERUNGSZEIT_UNIT               '0/1'
     #define I3_RES_KAF_STAT_FLA_VERZOEGERUNGSZEIT_TYPE               unsigned char
         // Indicates whether the high beam is not switched on due to a time delay: 0 = no time delay, 1 = time delay /
-        // Gibt aus, ob wegen einer ZeiterzÃ¶gerung das Fernlicht nicht eingeschaltet wird:  0 = keine ZeitverzÃ¶gerung, 
-        // 1 = ZeitverzÃ¶gerung
+        // Gibt aus, ob wegen einer Zeiterzögerung das Fernlicht nicht eingeschaltet wird:  0 = keine Zeitverzögerung,  1
+        // = Zeitverzögerung
 
 #define I3_PID_KAF_KONFIGURATION_KAFAS                               0xD374
         // Issue of equipment from KAFAS / Ausgabe der Ausstattung von KAFAS
@@ -732,7 +732,7 @@
     #define I3_RES_KAF_STAT_VORHANDEN_TLC                            (RXBUF_UCHAR(0))
     #define I3_RES_KAF_STAT_VORHANDEN_TLC_UNIT                       '0/1'
     #define I3_RES_KAF_STAT_VORHANDEN_TLC_TYPE                       unsigned char
-        // Indicates whether the Time-to-Line Crossing function is available: 0 = not available; 1 = present / Gibt an,
+        // Indicates whether the time-to-line crossing function is available: 0 = not available; 1 = present / Gibt an,
         // ob die Funktion Time-to-Line Crossing vorhanden ist: 0= nicht vorhanden; 1= vorhanden
 
     #define I3_RES_KAF_STAT_VORHANDEN_FLA                            (RXBUF_UCHAR(1))
@@ -744,7 +744,7 @@
     #define I3_RES_KAF_STAT_VORHANDEN_SLI                            (RXBUF_UCHAR(2))
     #define I3_RES_KAF_STAT_VORHANDEN_SLI_UNIT                       '0/1'
     #define I3_RES_KAF_STAT_VORHANDEN_SLI_TYPE                       unsigned char
-        // Indicates whether the function speed limit info is available: 0 = not available; 1 = present / Gibt an, ob die
+        // Indicates whether the Speed-Limit-Info function is available: 0 = not available; 1 = present / Gibt an, ob die
         // Funktion Speed-Limit-Info vorhanden ist: 0= nicht vorhanden; 1= vorhanden
 
     #define I3_RES_KAF_STAT_VORHANDEN_NPI                            (RXBUF_UCHAR(3))
@@ -763,11 +763,11 @@
     #define I3_RES_KAF_STAT_VORHANDEN_PED_UNIT                       '0/1'
     #define I3_RES_KAF_STAT_VORHANDEN_PED_TYPE                       unsigned char
         // Indicates whether the Pedistrian Recognition function is available: 0 = not available; 1 = present / Gibt an,
-        // ob die Funktion Pedistrian Recognition (FuÃgÃ¤ngererkennung) vorhanden ist: 0= nicht vorhanden; 1= vorhanden
+        // ob die Funktion Pedistrian Recognition (Fußgängererkennung) vorhanden ist: 0= nicht vorhanden; 1= vorhanden
 
 #define I3_PID_KAF_KAFAS_VINS_LESEN                                  0xD393
         // Reading out the chassis number from the camera and the control unit. / Auslesen der Fahrgestellnummer aus der
-        // Kamera und dem SteuergerÃ¤t.
+        // Kamera und dem Steuergerät.
 
     // Can't yet generate code for STAT_KAFAS_KAM_VIN_TEXT of type string[7], at offset 0. But we account for the 7 bytes
         // Output of the 7-digit chassis number from the camera. / Ausgabe der 7-stelligen Fahrgestellnummer aus der
@@ -775,13 +775,13 @@
 
     // Can't yet generate code for STAT_KAFAS_ECU_VIN_TEXT of type string[7], at offset 7. But we account for the 7 bytes
         // Output of the 7-digit chassis number from the control unit. / Ausgabe der 7-stelligen Fahrgestellnummer aus
-        // dem SteuergerÃ¤t.
+        // dem Steuergerät.
 
     #define I3_RES_KAF_STAT_KAFAS_VIN_STATUS_NR                      (RXBUF_UCHAR(14))
     #define I3_RES_KAF_STAT_KAFAS_VIN_STATUS_NR_UNIT                 '0-n'
     #define I3_RES_KAF_STAT_KAFAS_VIN_STATUS_NR_TYPE                 unsigned char
         // Indicates whether the assignment of camera to control unit matches: 0x00: NO MATCH, 0x01: MATCH / Gibt aus, ob
-        // die Zuordnung Kamera zu SteuergerÃ¤t Ã¼bereinstimmt:  0x00: KEINE UEBEREINSTIMMUNG,  0x01: UEBEREINSTIMMUNG
+        // die Zuordnung Kamera zu Steuergerät übereinstimmt:  0x00: KEINE UEBEREINSTIMMUNG,  0x01: UEBEREINSTIMMUNG
 
 #define I3_PID_KAF_KALIBRIERDATEN_KAFAS                              0xD396
         // Output of the calibration data from the KAFAS camera / Ausgabe der Kalibrierdaten der KAFAS-Kamera
@@ -819,7 +819,7 @@
     #define I3_RES_KAF_STAT_KAM_HOEHE_WERT                           (RXBUF_UINT(12))
     #define I3_RES_KAF_STAT_KAM_HOEHE_WERT_UNIT                      'mm'
     #define I3_RES_KAF_STAT_KAM_HOEHE_WERT_TYPE                      unsigned short
-        // Camera installation height / Kamera-VerbauhÃ¶he
+        // Camera installation height / Kamera-Verbauhöhe
 
     #define I3_RES_KAF_STAT_BRENNWEITE_WERT                          (RXBUF_UINT(14))
     #define I3_RES_KAF_STAT_BRENNWEITE_WERT_UNIT                     'Pixel'
@@ -887,15 +887,15 @@
 
     #define I3_RES_KAF_STAT_FUSIONIERT_GESCHWINDIGKEIT_WERT          (RXBUF_UCHAR(5))
     #define I3_RES_KAF_STAT_FUSIONIERT_GESCHWINDIGKEIT_WERT_TYPE     unsigned char
-        // Outputs the speed that is output from the merged recognition result: 0 = cancel everything, 5 to 150 in steps
-        // of 5 / Gibt aus, welche Geschwindigkeit aus dem fusionierten Erkennungsergebnis ausgegeben wird: 0 = Aufhebung
-        // alles, 5 bis 150 in 5-er Schritten
+        // Outputs the speed from the merged recognition result: 0 = cancel everything, 5 to 150 in steps of 5 / Gibt
+        // aus, welche Geschwindigkeit aus dem fusionierten Erkennungsergebnis ausgegeben wird: 0 = Aufhebung alles, 5
+        // bis 150 in 5-er Schritten
 
     #define I3_RES_KAF_STAT_GUETE_KAM_SLI_GESCHW_WERT                (RXBUF_UCHAR(6))
     #define I3_RES_KAF_STAT_GUETE_KAM_SLI_GESCHW_WERT_UNIT           '%'
     #define I3_RES_KAF_STAT_GUETE_KAM_SLI_GESCHW_WERT_TYPE           unsigned char
         // Indicates the quality with which the restriction and cancellation sign for speeds was recognized with the
-        // camera: 0 - 100 / Gibt aus, mit welcher GÃ¼te das BeschrÃ¤nkungs- und Aufhebungszeichen fÃ¼r Geschwindigkeiten
+        // camera: 0 - 100 / Gibt aus, mit welcher Güte das Beschränkungs- und Aufhebungszeichen für Geschwindigkeiten
         // mit der Kamera erkannt wurde: 0 - 100
 
 // Skipping STEUERN_METHODE_SLI on 0xD3AB which takes arguments
@@ -908,16 +908,16 @@
 
 #define I3_PID_KAF_SPANNUNG_KLEMME_15N_WERT                          0xDAD2
         // Voltage value on the control unit at terminal 15N (accurate to one decimal place) / Spannungswert am
-        // SteuergerÃ¤t an Klemme 15N (auf eine Nachkommastelle genau)
+        // Steuergerät an Klemme 15N (auf eine Nachkommastelle genau)
 
     #define I3_RES_KAF_STAT_SPANNUNG_KLEMME_15N_WERT                 (RXBUF_UINT(0)/10.0f)
     #define I3_RES_KAF_STAT_SPANNUNG_KLEMME_15N_WERT_UNIT            'V'
     #define I3_RES_KAF_STAT_SPANNUNG_KLEMME_15N_WERT_TYPE            float
         // Voltage value on the control unit at terminal 15N (accurate to one decimal place) / Spannungswert am
-        // SteuergerÃ¤t an Klemme 15N (auf eine Nachkommastelle genau)
+        // Steuergerät an Klemme 15N (auf eine Nachkommastelle genau)
 
 #define I3_PID_KAF__DEBUG_AUSGABE                                    0xF001
-        // Debug output for KAFAS / Debug Ausgabe fÃ¼r KAFAS
+        // Debug output for KAFAS / Debug Ausgabe für KAFAS
 
     #define I3_RES_KAF_STAT_DEBUG_AUSGABE                            (RXBUF_UINT(0))
     #define I3_RES_KAF_STAT_DEBUG_AUSGABE_UNIT                       '0-n'
@@ -928,17 +928,17 @@
 // Skipping _SIM_COUNTRY_CODE on 0xF002 which takes arguments
 
 #define I3_PID_KAF__PEDANTIC_MODE                                    0xF003
-        // Pedantic mode for SLI and NPI / Pedantic Mode fÃ¼r  SLI und NPI
+        // Pedantic mode for SLI and NPI / Pedantic Mode für  SLI und NPI
 
     #define I3_RES_KAF_STAT_PEDANTIC_MODE                            (RXBUF_UCHAR(0))
     #define I3_RES_KAF_STAT_PEDANTIC_MODE_UNIT                       '0-n'
     #define I3_RES_KAF_STAT_PEDANTIC_MODE_TYPE                       unsigned char
-        // Activation status of Pedantic Mode for SLI and NPI / Aktivierungsstatus des Pedantic Mode fÃ¼r SLI und NPI
+        // Activation status of Pedantic Mode for SLI and NPI / Aktivierungsstatus des Pedantic Mode für SLI und NPI
 
 #define I3_PID_KAF__ERASE_MICRO_CORE_DUMP                            0xF004
-        // Delete from MicroCoreDump / LÃ¶schen vom MicroCoreDump
+        // Delete from MicroCoreDump / Löschen vom MicroCoreDump
 
     #define I3_RES_KAF_STAT_ERASE_RESULT                             (RXBUF_UINT(0))
     #define I3_RES_KAF_STAT_ERASE_RESULT_UNIT                        '0-n'
     #define I3_RES_KAF_STAT_ERASE_RESULT_TYPE                        unsigned short
-        // Deletion result / LÃ¶schergebnis
+        // Deletion result / Löschergebnis

@@ -67,39 +67,39 @@
 
 #define I3_PID_SME__UEBERLAST_ZAHELER                                0x651D
         // Diagnostic job to read out the overload failures that have occurred for warranty returns / Diagnosejob zum
-        // Auslesen der aufgetretenen ÃberlastausfÃ¤lle fÃ¼r GewÃ¤hrleistungs-RÃ¼cklÃ¤ufer
+        // Auslesen der aufgetretenen Überlastausfälle für Gewährleistungs-Rückläufer
 
     #define I3_RES_SME_STAT_OVERLOAD_K1_WERT                         (RXBUF_UINT(0))
     #define I3_RES_SME_STAT_OVERLOAD_K1_WERT_TYPE                    unsigned short
-        // Overload counter contactor K1 / ÃberlastzÃ¤hler SchÃ¼tz K1
+        // Overload counter contactor K1 / Überlastzähler Schütz K1
 
     #define I3_RES_SME_STAT_OVERLOAD_K2_WERT                         (RXBUF_UINT(2))
     #define I3_RES_SME_STAT_OVERLOAD_K2_WERT_TYPE                    unsigned short
-        // Overload counter contactor K2 / ÃberlastzÃ¤hler SchÃ¼tz K2
+        // Overload counter contactor K2 / Überlastzähler Schütz K2
 
     #define I3_RES_SME_STAT_OVERLOAD_K3_WERT                         (RXBUF_UINT(4))
     #define I3_RES_SME_STAT_OVERLOAD_K3_WERT_TYPE                    unsigned short
-        // Overload counter contactor K3 / ÃberlastzÃ¤hler SchÃ¼tz K3
+        // Overload counter contactor K3 / Überlastzähler Schütz K3
 
     #define I3_RES_SME_STAT_OVERLOAD_COOLING_VALVE_WERT              (RXBUF_UINT(6))
     #define I3_RES_SME_STAT_OVERLOAD_COOLING_VALVE_WERT_TYPE         unsigned short
-        // Overload counter cooling valve / ÃberlastzÃ¤hler KÃ¼hlventil
+        // Overload counter cooling valve / Überlastzähler Kühlventil
 
     #define I3_RES_SME_STAT_OVERLOAD_CSC_SUPPLY_WERT                 (RXBUF_UINT(8))
     #define I3_RES_SME_STAT_OVERLOAD_CSC_SUPPLY_WERT_TYPE            unsigned short
-        // Overload counter CSC supply / ÃberlastzÃ¤hler CSC Versorgung
+        // Overload counter CSC supply / Überlastzähler CSC Versorgung
 
     #define I3_RES_SME_STAT_OVERLOAD_ISENS_WERT                      (RXBUF_UINT(10))
     #define I3_RES_SME_STAT_OVERLOAD_ISENS_WERT_TYPE                 unsigned short
-        // Overload counter current sensor / ÃberlastzÃ¤hler Stromsensor
+        // Overload counter current sensor / Überlastzähler Stromsensor
 
     #define I3_RES_SME_STAT_OVERLOAD_COOLING_PUMP_WERT               (RXBUF_UINT(12))
     #define I3_RES_SME_STAT_OVERLOAD_COOLING_PUMP_WERT_TYPE          unsigned short
-        // Coolant pump overload counter / ÃberlastzÃ¤hler KÃ¼hlmittelpumpe
+        // Coolant pump overload counter / Überlastzähler Kühlmittelpumpe
 
     #define I3_RES_SME_STAT_OVERLOAD_HEATING_WERT                    (RXBUF_UINT(14))
     #define I3_RES_SME_STAT_OVERLOAD_HEATING_WERT_TYPE               unsigned short
-        // Overload counter heating / ÃberlastzÃ¤hler Heizung
+        // Overload counter heating / Überlastzähler Heizung
 
 // Skipping _NV_DATA_RESET on 0x651F which takes arguments
 
@@ -107,15 +107,15 @@
 
 #define I3_PID_SME__STATUS_UEBERNAHME_KAPATEST_NV                    0x6526
         // Current setting of the transfer of the results of a capacity test to the SoH_C estimator (0: no transfer, 1:
-        // transfer (standard)) / Aktuelle Einstellung der ErgebnisÃ¼bertragung eines KapazitÃ¤tstests in den
-        // SoH_C-SchÃ¤tzer (0: keine Ãbernahme, 1: Ãbernahme (standard))
+        // transfer (standard)) / Aktuelle Einstellung der Ergebnisübertragung eines Kapazitätstests in den
+        // SoH_C-Schätzer (0: keine Übernahme, 1: Übernahme (standard))
 
     #define I3_RES_SME_STAT_UEBERNAHME_KAPATEST_NV                   (RXBUF_UCHAR(0))
     #define I3_RES_SME_STAT_UEBERNAHME_KAPATEST_NV_UNIT              '0-n'
     #define I3_RES_SME_STAT_UEBERNAHME_KAPATEST_NV_TYPE              unsigned char
         // Current setting of the transfer of the results of a capacity test to the SoH_C estimator (0: no transfer, 1:
-        // transfer (standard)) / Aktuelle Einstellung der ErgebnisÃ¼bertragung eines KapazitÃ¤tstests in den
-        // SoH_C-SchÃ¤tzer (0: keine Ãbernahme, 1: Ãbernahme (standard))
+        // transfer (standard)) / Aktuelle Einstellung der Ergebnisübertragung eines Kapazitätstests in den
+        // SoH_C-Schätzer (0: keine Übernahme, 1: Übernahme (standard))
 
 // Skipping _ADRESSBEREICH on 0x6527 which takes arguments
 
@@ -147,18 +147,18 @@
         // current state of the insulation fault / aktueller Zustand des Isolationsfehlers
 
 #define I3_PID_SME_KAPAZITAET_BESTIMMUNG                             0xAD66
-        // Determination of the capacity / Bestimmung der KapazitÃ¤t
+        // Determination of the capacity / Bestimmung der Kapazität
 
     #define I3_RES_SME_STAT_KAPAZITAET_WERT                          (RXBUF_UCHAR(0))
     #define I3_RES_SME_STAT_KAPAZITAET_WERT_UNIT                     '%'
     #define I3_RES_SME_STAT_KAPAZITAET_WERT_TYPE                     unsigned char
-        // Estimated capacity value in% (value range 0-100%) based on nominal capacity / KapazitÃ¤tsschÃ¤tzwert in %
-        // (Wertebereich 0-100%) bezogen auf NennkapazitÃ¤t
+        // Estimated capacity value in% (value range 0-100%) based on nominal capacity / Kapazitätsschätzwert in %
+        // (Wertebereich 0-100%) bezogen auf Nennkapazität
 
     #define I3_RES_SME_STAT_AKTUELLER_ZUSTAND_NR                     (RXBUF_UCHAR(1))
     #define I3_RES_SME_STAT_AKTUELLER_ZUSTAND_NR_UNIT                '0-n'
     #define I3_RES_SME_STAT_AKTUELLER_ZUSTAND_NR_TYPE                unsigned char
-        // Return Determination is running, successful or ended with an error / RÃ¼ckgabe Ermittlung lÃ¤uft, erfolgreich
+        // Return Determination is running, successful or ended with an error / Rückgabe Ermittlung läuft, erfolgreich
         // oder mit Fehler beendet
 
 #define I3_PID_SME_HEIZUNG                                           0xAD6A
@@ -190,7 +190,7 @@
 // Skipping HIS_SPANNUNG_MOD_LESEN on 0xAD71 which takes arguments
 
 #define I3_PID_SME_HEIZUNG_FUNKTION                                  0xAD73
-        // Execution of the functional diagnosis heating / AusfÃ¼hren der funktionale Diagnose Heizung
+        // Execution of the functional diagnosis heating / Ausführen der funktionale Diagnose Heizung
 
     #define I3_RES_SME_STAT_HEIZUNG_FUNKTION_NR                      (RXBUF_UCHAR(0))
     #define I3_RES_SME_STAT_HEIZUNG_FUNKTION_NR_UNIT                 '0-n'
@@ -232,16 +232,16 @@
     #define I3_RES_SME_STAT_HVOFFTIME_REKAL_1_WERT                   (RXBUF_UINT32(5))
     #define I3_RES_SME_STAT_HVOFFTIME_REKAL_1_WERT_UNIT              's'
     #define I3_RES_SME_STAT_HVOFFTIME_REKAL_1_WERT_TYPE              unsigned long
-        // Duration during which the shooters were last open-1 / Dauer, wÃ¤hrend die SchÃ¼tze letzmalig geÃ¶ffnet waren-1
+        // Duration during which the shooters were last open-1 / Dauer, während die Schütze letzmalig geöffnet waren-1
 
     #define I3_RES_SME_STAT_TEMP_MESS_MEAN_VOR_1_WERT                (RXBUF_SCHAR(9))
-    #define I3_RES_SME_STAT_TEMP_MESS_MEAN_VOR_1_WERT_UNIT           'Â°C'
+    #define I3_RES_SME_STAT_TEMP_MESS_MEAN_VOR_1_WERT_UNIT           '°C'
     #define I3_RES_SME_STAT_TEMP_MESS_MEAN_VOR_1_WERT_TYPE           char
         // Average measuring temperature at HVS level BEFORE recalibration-1 / Mittlere Messtemperatur auf HVS-Ebene VOR
         // Rekalibrierung-1
 
     #define I3_RES_SME_STAT_TEMP_MESS_MEAN_NACH_1_WERT               (RXBUF_SCHAR(10))
-    #define I3_RES_SME_STAT_TEMP_MESS_MEAN_NACH_1_WERT_UNIT          'Â°C'
+    #define I3_RES_SME_STAT_TEMP_MESS_MEAN_NACH_1_WERT_UNIT          '°C'
     #define I3_RES_SME_STAT_TEMP_MESS_MEAN_NACH_1_WERT_TYPE          char
         // Mean measurement temperature at HVS level AFTER recalibration-1 / Mittlere Messtemperatur auf HVS-Ebene NACH
         // Rekalibrierung-1
@@ -362,17 +362,17 @@
     #define I3_RES_SME_STAT_HVOFFTIME_REKAL_2_WERT                   (RXBUF_UINT32(56))
     #define I3_RES_SME_STAT_HVOFFTIME_REKAL_2_WERT_UNIT              's'
     #define I3_RES_SME_STAT_HVOFFTIME_REKAL_2_WERT_TYPE              unsigned long
-        // Duration while the shooters were open for the last time-2 / Dauer, wÃ¤hrend die SchÃ¼tze letzmalig geÃ¶ffnet
+        // Duration while the shooters were open for the last time-2 / Dauer, während die Schütze letzmalig geöffnet
         // waren-2
 
     #define I3_RES_SME_STAT_TEMP_MESS_MEAN_VOR_2_WERT                (RXBUF_SCHAR(60))
-    #define I3_RES_SME_STAT_TEMP_MESS_MEAN_VOR_2_WERT_UNIT           'Â°C'
+    #define I3_RES_SME_STAT_TEMP_MESS_MEAN_VOR_2_WERT_UNIT           '°C'
     #define I3_RES_SME_STAT_TEMP_MESS_MEAN_VOR_2_WERT_TYPE           char
         // Average measuring temperature at HVS level BEFORE recalibration-2 / Mittlere Messtemperatur auf HVS-Ebene VOR
         // Rekalibrierung-2
 
     #define I3_RES_SME_STAT_TEMP_MESS_MEAN_NACH_2_WERT               (RXBUF_SCHAR(61))
-    #define I3_RES_SME_STAT_TEMP_MESS_MEAN_NACH_2_WERT_UNIT          'Â°C'
+    #define I3_RES_SME_STAT_TEMP_MESS_MEAN_NACH_2_WERT_UNIT          '°C'
     #define I3_RES_SME_STAT_TEMP_MESS_MEAN_NACH_2_WERT_TYPE          char
         // Mean measurement temperature at HVS level AFTER recalibration-2 / Mittlere Messtemperatur auf HVS-Ebene NACH
         // Rekalibrierung-2
@@ -493,17 +493,17 @@
     #define I3_RES_SME_STAT_HVOFFTIME_REKAL_3_WERT                   (RXBUF_UINT32(107))
     #define I3_RES_SME_STAT_HVOFFTIME_REKAL_3_WERT_UNIT              's'
     #define I3_RES_SME_STAT_HVOFFTIME_REKAL_3_WERT_TYPE              unsigned long
-        // Duration while the shooters were open for the last time -3 / Dauer, wÃ¤hrend die SchÃ¼tze letzmalig geÃ¶ffnet
+        // Duration while the shooters were open for the last time -3 / Dauer, während die Schütze letzmalig geöffnet
         // waren-3
 
     #define I3_RES_SME_STAT_TEMP_MESS_MEAN_VOR_3_WERT                (RXBUF_SCHAR(111))
-    #define I3_RES_SME_STAT_TEMP_MESS_MEAN_VOR_3_WERT_UNIT           'Â°C'
+    #define I3_RES_SME_STAT_TEMP_MESS_MEAN_VOR_3_WERT_UNIT           '°C'
     #define I3_RES_SME_STAT_TEMP_MESS_MEAN_VOR_3_WERT_TYPE           char
         // Average measuring temperature at HVS level BEFORE recalibration-3 / Mittlere Messtemperatur auf HVS-Ebene VOR
         // Rekalibrierung-3
 
     #define I3_RES_SME_STAT_TEMP_MESS_MEAN_NACH_3_WERT               (RXBUF_SCHAR(112))
-    #define I3_RES_SME_STAT_TEMP_MESS_MEAN_NACH_3_WERT_UNIT          'Â°C'
+    #define I3_RES_SME_STAT_TEMP_MESS_MEAN_NACH_3_WERT_UNIT          '°C'
     #define I3_RES_SME_STAT_TEMP_MESS_MEAN_NACH_3_WERT_TYPE          char
         // Average measurement temperature at HVS level AFTER recalibration-3 / Mittlere Messtemperatur auf HVS-Ebene
         // NACH Rekalibrierung-3
@@ -624,17 +624,17 @@
     #define I3_RES_SME_STAT_HVOFFTIME_REKAL_4_WERT                   (RXBUF_UINT32(158))
     #define I3_RES_SME_STAT_HVOFFTIME_REKAL_4_WERT_UNIT              's'
     #define I3_RES_SME_STAT_HVOFFTIME_REKAL_4_WERT_TYPE              unsigned long
-        // Duration while the shooters were open for the last time-4 / Dauer, wÃ¤hrend die SchÃ¼tze letzmalig geÃ¶ffnet
+        // Duration while the shooters were open for the last time-4 / Dauer, während die Schütze letzmalig geöffnet
         // waren-4
 
     #define I3_RES_SME_STAT_TEMP_MESS_MEAN_VOR_4_WERT                (RXBUF_SCHAR(162))
-    #define I3_RES_SME_STAT_TEMP_MESS_MEAN_VOR_4_WERT_UNIT           'Â°C'
+    #define I3_RES_SME_STAT_TEMP_MESS_MEAN_VOR_4_WERT_UNIT           '°C'
     #define I3_RES_SME_STAT_TEMP_MESS_MEAN_VOR_4_WERT_TYPE           char
         // Average measuring temperature at HVS level BEFORE recalibration-4 / Mittlere Messtemperatur auf HVS-Ebene VOR
         // Rekalibrierung-4
 
     #define I3_RES_SME_STAT_TEMP_MESS_MEAN_NACH_4_WERT               (RXBUF_SCHAR(163))
-    #define I3_RES_SME_STAT_TEMP_MESS_MEAN_NACH_4_WERT_UNIT          'Â°C'
+    #define I3_RES_SME_STAT_TEMP_MESS_MEAN_NACH_4_WERT_UNIT          '°C'
     #define I3_RES_SME_STAT_TEMP_MESS_MEAN_NACH_4_WERT_TYPE          char
         // Mean measurement temperature at HVS level AFTER recalibration-4 / Mittlere Messtemperatur auf HVS-Ebene NACH
         // Rekalibrierung-4
@@ -755,17 +755,17 @@
     #define I3_RES_SME_STAT_HVOFFTIME_REKAL_5_WERT                   (RXBUF_UINT32(209))
     #define I3_RES_SME_STAT_HVOFFTIME_REKAL_5_WERT_UNIT              's'
     #define I3_RES_SME_STAT_HVOFFTIME_REKAL_5_WERT_TYPE              unsigned long
-        // Duration while the shooters were open for the last time -5 / Dauer, wÃ¤hrend die SchÃ¼tze letzmalig geÃ¶ffnet
+        // Duration while the shooters were open for the last time -5 / Dauer, während die Schütze letzmalig geöffnet
         // waren-5
 
     #define I3_RES_SME_STAT_TEMP_MESS_MEAN_VOR_5_WERT                (RXBUF_SCHAR(213))
-    #define I3_RES_SME_STAT_TEMP_MESS_MEAN_VOR_5_WERT_UNIT           'Â°C'
+    #define I3_RES_SME_STAT_TEMP_MESS_MEAN_VOR_5_WERT_UNIT           '°C'
     #define I3_RES_SME_STAT_TEMP_MESS_MEAN_VOR_5_WERT_TYPE           char
-        // Average measurement temperature at HVS level BEFORE recalibration-5 / Mittlere Messtemperatur auf HVS-Ebene
-        // VOR Rekalibrierung-5
+        // Average measuring temperature at HVS level BEFORE recalibration-5 / Mittlere Messtemperatur auf HVS-Ebene VOR
+        // Rekalibrierung-5
 
     #define I3_RES_SME_STAT_TEMP_MESS_MEAN_NACH_5_WERT               (RXBUF_SCHAR(214))
-    #define I3_RES_SME_STAT_TEMP_MESS_MEAN_NACH_5_WERT_UNIT          'Â°C'
+    #define I3_RES_SME_STAT_TEMP_MESS_MEAN_NACH_5_WERT_UNIT          '°C'
     #define I3_RES_SME_STAT_TEMP_MESS_MEAN_NACH_5_WERT_TYPE          char
         // Mean measurement temperature at HVS level AFTER recalibration-5 / Mittlere Messtemperatur auf HVS-Ebene NACH
         // Rekalibrierung-5
@@ -877,42 +877,42 @@
 
 #define I3_PID_SME_SOC_GUETE                                         0xD4C7
         // Reading out the current SOC quality value based on the SOC estimate (1 == best quality,> 30 == worst quality)
-        // / Auslesen des aktuellen SOC GÃ¼tewertes auf Basis der SOC SchÃ¤tzung (1 == beste GÃ¼te,  >30 == schlechteste
-        // GÃ¼te )
+        // / Auslesen des aktuellen SOC Gütewertes auf Basis der SOC Schätzung (1 == beste Güte,  >30 == schlechteste
+        // Güte )
 
     #define I3_RES_SME_STAT_SOC_GUETE_WERT                           (RXBUF_UCHAR(0))
     #define I3_RES_SME_STAT_SOC_GUETE_WERT_TYPE                      unsigned char
         // Reading out the current SOC quality value based on the SOC estimate (1 == best quality,> 30 == worst quality)
-        // / Auslesen des aktuellen SOC GÃ¼tewertes auf Basis der SOC SchÃ¤tzung (1 == beste GÃ¼te,  >30 == schlechteste
-        // GÃ¼te )
+        // / Auslesen des aktuellen SOC Gütewertes auf Basis der SOC Schätzung (1 == beste Güte,  >30 == schlechteste
+        // Güte )
 
 #define I3_PID_SME_HIS_SOC_GUETE                                     0xD4C8
         // Reading out the length of stay in 5 classes of the SOC quality value based on the SOC estimate / Auslesen der
-        // Aufenthaltsdauer in 5 Klassen des SOC GÃ¼tewertes auf Basis der SOC SchÃ¤tzung
+        // Aufenthaltsdauer in 5 Klassen des SOC Gütewertes auf Basis der SOC Schätzung
 
     #define I3_RES_SME_STAT_HIS_SOC_GUETE_1_WERT                     (RXBUF_UINT32(0))
     #define I3_RES_SME_STAT_HIS_SOC_GUETE_1_WERT_TYPE                unsigned long
-        // Length of stay of the SOC quality value in the class: 0 <= GW <3 / Aufenthaltsdauer des SOC GÃ¼tewertes in der
+        // Length of stay of the SOC quality value in the class: 0 <= GW <3 / Aufenthaltsdauer des SOC Gütewertes in der
         // Klasse: 0 <= GW < 3
 
     #define I3_RES_SME_STAT_HIS_SOC_GUETE_2_WERT                     (RXBUF_UINT32(4))
     #define I3_RES_SME_STAT_HIS_SOC_GUETE_2_WERT_TYPE                unsigned long
-        // Duration of the SOC quality value in the class: 3 <= GW <7 / Aufenthaltsdauer des SOC GÃ¼tewertes in der
+        // Duration of the SOC quality value in the class: 3 <= GW <7 / Aufenthaltsdauer des SOC Gütewertes in der
         // Klasse: 3 <= GW < 7
 
     #define I3_RES_SME_STAT_HIS_SOC_GUETE_3_WERT                     (RXBUF_UINT32(8))
     #define I3_RES_SME_STAT_HIS_SOC_GUETE_3_WERT_TYPE                unsigned long
-        // Duration of the SOC quality value in the class: 7 <= GW <20 / Aufenthaltsdauer des SOC GÃ¼tewertes in der
+        // Duration of the SOC quality value in the class: 7 <= GW <20 / Aufenthaltsdauer des SOC Gütewertes in der
         // Klasse: 7 <= GW < 20
 
     #define I3_RES_SME_STAT_HIS_SOC_GUETE_4_WERT                     (RXBUF_UINT32(12))
     #define I3_RES_SME_STAT_HIS_SOC_GUETE_4_WERT_TYPE                unsigned long
-        // Duration of the SOC quality value in the class: 20 <= GW <30 / Aufenthaltsdauer des SOC GÃ¼tewertes in der
+        // Duration of the SOC quality value in the class: 20 <= GW <30 / Aufenthaltsdauer des SOC Gütewertes in der
         // Klasse: 20 <= GW < 30
 
     #define I3_RES_SME_STAT_HIS_SOC_GUETE_5_WERT                     (RXBUF_UINT32(16))
     #define I3_RES_SME_STAT_HIS_SOC_GUETE_5_WERT_TYPE                unsigned long
-        // Duration of the SOC quality value in the class: GW> 30 / Aufenthaltsdauer des SOC GÃ¼tewertes in der Klasse: 
+        // Duration of the SOC quality value in the class: GW> 30 / Aufenthaltsdauer des SOC Gütewertes in der Klasse: 
         // GW > 30
 
 #define I3_PID_SME_ANZAHL_OCV_SOC_REKAL                              0xD4C9
@@ -931,7 +931,7 @@
 
 #define I3_PID_SME_RB_SOC_VOLLADEENDE                                0xD4CB
         // Reading out different SOCs of the last 5 full charges / Auslesen verschiedener SOCs der letzten 5
-        // VollladevorgÃ¤nge
+        // Vollladevorgänge
 
     #define I3_RES_SME_STAT_SOC_MIN_NENN_1_WERT                      (RXBUF_UINT(0)/100.0f)
     #define I3_RES_SME_STAT_SOC_MIN_NENN_1_WERT_UNIT                 '%'
@@ -956,13 +956,13 @@
         // U/I Vollladeende-1
 
     #define I3_RES_SME_STAT_TEMP_LADEBEGINN_1_WERT                   (RXBUF_SCHAR(8))
-    #define I3_RES_SME_STAT_TEMP_LADEBEGINN_1_WERT_UNIT              'Â°C'
+    #define I3_RES_SME_STAT_TEMP_LADEBEGINN_1_WERT_UNIT              '°C'
     #define I3_RES_SME_STAT_TEMP_LADEBEGINN_1_WERT_TYPE              char
         // Average measurement temperature at HVS level at start of charging -1 / Mittlere Messtemperatur auf HVS-Ebene
         // zu Ladebeginn-1
 
     #define I3_RES_SME_STAT_TEMP_LADEENDE_1_WERT                     (RXBUF_SCHAR(9))
-    #define I3_RES_SME_STAT_TEMP_LADEENDE_1_WERT_UNIT                'Â°C'
+    #define I3_RES_SME_STAT_TEMP_LADEENDE_1_WERT_UNIT                '°C'
     #define I3_RES_SME_STAT_TEMP_LADEENDE_1_WERT_TYPE                char
         // Average measurement temperature at HVS level at the end of charging-1 / Mittlere Messtemperatur auf HVS-Ebene
         // zu Ladeende-1
@@ -990,13 +990,13 @@
         // U/I Vollladeende-2
 
     #define I3_RES_SME_STAT_TEMP_LADEBEGINN_2_WERT                   (RXBUF_SCHAR(18))
-    #define I3_RES_SME_STAT_TEMP_LADEBEGINN_2_WERT_UNIT              'Â°C'
+    #define I3_RES_SME_STAT_TEMP_LADEBEGINN_2_WERT_UNIT              '°C'
     #define I3_RES_SME_STAT_TEMP_LADEBEGINN_2_WERT_TYPE              char
         // Average measurement temperature at HVS level at the start of charging-2 / Mittlere Messtemperatur auf
         // HVS-Ebene zu Ladebeginn-2
 
     #define I3_RES_SME_STAT_TEMP_LADEENDE_2_WERT                     (RXBUF_SCHAR(19))
-    #define I3_RES_SME_STAT_TEMP_LADEENDE_2_WERT_UNIT                'Â°C'
+    #define I3_RES_SME_STAT_TEMP_LADEENDE_2_WERT_UNIT                '°C'
     #define I3_RES_SME_STAT_TEMP_LADEENDE_2_WERT_TYPE                char
         // Average measurement temperature at HVS level at the end of charging-2 / Mittlere Messtemperatur auf HVS-Ebene
         // zu Ladeende-2
@@ -1024,13 +1024,13 @@
         // U/I Vollladeende-3
 
     #define I3_RES_SME_STAT_TEMP_LADEBEGINN_3_WERT                   (RXBUF_SCHAR(28))
-    #define I3_RES_SME_STAT_TEMP_LADEBEGINN_3_WERT_UNIT              'Â°C'
+    #define I3_RES_SME_STAT_TEMP_LADEBEGINN_3_WERT_UNIT              '°C'
     #define I3_RES_SME_STAT_TEMP_LADEBEGINN_3_WERT_TYPE              char
         // Average measurement temperature at HVS level at the start of charging -3 / Mittlere Messtemperatur auf
         // HVS-Ebene zu Ladebeginn-3
 
     #define I3_RES_SME_STAT_TEMP_LADEENDE_3_WERT                     (RXBUF_SCHAR(29))
-    #define I3_RES_SME_STAT_TEMP_LADEENDE_3_WERT_UNIT                'Â°C'
+    #define I3_RES_SME_STAT_TEMP_LADEENDE_3_WERT_UNIT                '°C'
     #define I3_RES_SME_STAT_TEMP_LADEENDE_3_WERT_TYPE                char
         // Average measuring temperature at HVS level at the end of charging -3 / Mittlere Messtemperatur auf HVS-Ebene
         // zu Ladeende-3
@@ -1058,13 +1058,13 @@
         // U/I Vollladeende-4
 
     #define I3_RES_SME_STAT_TEMP_LADEBEGINN_4_WERT                   (RXBUF_SCHAR(38))
-    #define I3_RES_SME_STAT_TEMP_LADEBEGINN_4_WERT_UNIT              'Â°C'
+    #define I3_RES_SME_STAT_TEMP_LADEBEGINN_4_WERT_UNIT              '°C'
     #define I3_RES_SME_STAT_TEMP_LADEBEGINN_4_WERT_TYPE              char
         // Average measurement temperature at HVS level at the start of charging -4 / Mittlere Messtemperatur auf
         // HVS-Ebene zu Ladebeginn-4
 
     #define I3_RES_SME_STAT_TEMP_LADEENDE_4_WERT                     (RXBUF_SCHAR(39))
-    #define I3_RES_SME_STAT_TEMP_LADEENDE_4_WERT_UNIT                'Â°C'
+    #define I3_RES_SME_STAT_TEMP_LADEENDE_4_WERT_UNIT                '°C'
     #define I3_RES_SME_STAT_TEMP_LADEENDE_4_WERT_TYPE                char
         // Average measurement temperature at HVS level at the end of charging-4 / Mittlere Messtemperatur auf HVS-Ebene
         // zu Ladeende-4
@@ -1092,25 +1092,25 @@
         // U/I Vollladeende-5
 
     #define I3_RES_SME_STAT_TEMP_LADEBEGINN_5_WERT                   (RXBUF_SCHAR(48))
-    #define I3_RES_SME_STAT_TEMP_LADEBEGINN_5_WERT_UNIT              'Â°C'
+    #define I3_RES_SME_STAT_TEMP_LADEBEGINN_5_WERT_UNIT              '°C'
     #define I3_RES_SME_STAT_TEMP_LADEBEGINN_5_WERT_TYPE              char
         // Average measurement temperature at HVS level at the start of charging -5 / Mittlere Messtemperatur auf
         // HVS-Ebene zu Ladebeginn-5
 
     #define I3_RES_SME_STAT_TEMP_LADEENDE_5_WERT                     (RXBUF_SCHAR(49))
-    #define I3_RES_SME_STAT_TEMP_LADEENDE_5_WERT_UNIT                'Â°C'
+    #define I3_RES_SME_STAT_TEMP_LADEENDE_5_WERT_UNIT                '°C'
     #define I3_RES_SME_STAT_TEMP_LADEENDE_5_WERT_TYPE                char
         // Average measuring temperature at HVS level at the end of charging -5 / Mittlere Messtemperatur auf HVS-Ebene
         // zu Ladeende-5
 
 #define I3_PID_SME_KUEHLDAUER_HVB                                    0xD4CC
         // Job is not relevant for SME_03 // Replacement is STATUS_KUEHLDAUER Cooling time of the HV battery / Job ist
-        // nicht fÃ¼r SME_03 relevant // Ersatz ist STATUS_KUEHLDAUER  KÃ¼hldauer der HV-Batterie
+        // nicht für SME_03 relevant // Ersatz ist STATUS_KUEHLDAUER  Kühldauer der HV-Batterie
 
     #define I3_RES_SME_STAT_KUEHLDAUER_MAX_WERT                      (RXBUF_UCHAR(0))
     #define I3_RES_SME_STAT_KUEHLDAUER_MAX_WERT_UNIT                 'min'
     #define I3_RES_SME_STAT_KUEHLDAUER_MAX_WERT_TYPE                 unsigned char
-        // Predefined maximum cooling duration [tmax] (project-specific) / Vordefinierte maximale KÃ¼hldauer [tmax]
+        // Predefined maximum cooling duration [tmax] (project-specific) / Vordefinierte maximale Kühldauer [tmax]
         // (projektspezifisch)
 
     #define I3_RES_SME_STAT_KUEHLDAUER_1_WERT                        (RXBUF_UINT(1))
@@ -1136,61 +1136,61 @@
     #define I3_RES_SME_STAT_SOC_MIN_NENN_01_WERT_UNIT                '%'
     #define I3_RES_SME_STAT_SOC_MIN_NENN_01_WERT_TYPE                float
         // Minimum charge level of all cells based on nominal capacity / Minimaler Ladezustand aller Zellen bezogen auf
-        // NennkapazitÃ¤t
+        // Nennkapazität
 
     #define I3_RES_SME_STAT_DIFF_SOC_01_WERT                         (RXBUF_UINT(2)/10.0f)
     #define I3_RES_SME_STAT_DIFF_SOC_01_WERT_UNIT                    '%'
     #define I3_RES_SME_STAT_DIFF_SOC_01_WERT_TYPE                    float
         // Difference between the average and minimum charge status of all cells based on nominal capacity / Differenz
-        // zwischen dem mittleren und minimalen Ladezsustand aller Zellen bezogen auf NennkapazitÃ¤t
+        // zwischen dem mittleren und minimalen Ladezsustand aller Zellen bezogen auf Nennkapazität
 
     #define I3_RES_SME_STAT_SOC_MIN_NENN_02_WERT                     (RXBUF_UINT(4)/10.0f)
     #define I3_RES_SME_STAT_SOC_MIN_NENN_02_WERT_UNIT                '%'
     #define I3_RES_SME_STAT_SOC_MIN_NENN_02_WERT_TYPE                float
         // Minimum charge level of all cells based on nominal capacity / Minimaler Ladezustand aller Zellen bezogen auf
-        // NennkapazitÃ¤t
+        // Nennkapazität
 
     #define I3_RES_SME_STAT_DIFF_SOC_02_WERT                         (RXBUF_UINT(6)/10.0f)
     #define I3_RES_SME_STAT_DIFF_SOC_02_WERT_UNIT                    '%'
     #define I3_RES_SME_STAT_DIFF_SOC_02_WERT_TYPE                    float
         // Difference between the average and minimum charge status of all cells based on nominal capacity / Differenz
-        // zwischen dem mittleren und minimalen Ladezsustand aller Zellen bezogen auf NennkapazitÃ¤t
+        // zwischen dem mittleren und minimalen Ladezsustand aller Zellen bezogen auf Nennkapazität
 
     #define I3_RES_SME_STAT_SOC_MIN_NENN_03_WERT                     (RXBUF_UINT(8)/10.0f)
     #define I3_RES_SME_STAT_SOC_MIN_NENN_03_WERT_UNIT                '%'
     #define I3_RES_SME_STAT_SOC_MIN_NENN_03_WERT_TYPE                float
         // Minimum charge level of all cells based on nominal capacity / Minimaler Ladezustand aller Zellen bezogen auf
-        // NennkapazitÃ¤t
+        // Nennkapazität
 
     #define I3_RES_SME_STAT_DIFF_SOC_03_WERT                         (RXBUF_UINT(10)/10.0f)
     #define I3_RES_SME_STAT_DIFF_SOC_03_WERT_UNIT                    '%'
     #define I3_RES_SME_STAT_DIFF_SOC_03_WERT_TYPE                    float
         // Difference between the average and minimum charge status of all cells based on nominal capacity / Differenz
-        // zwischen dem mittleren und minimalen Ladezsustand aller Zellen bezogen auf NennkapazitÃ¤t
+        // zwischen dem mittleren und minimalen Ladezsustand aller Zellen bezogen auf Nennkapazität
 
     #define I3_RES_SME_STAT_SOC_MIN_NENN_04_WERT                     (RXBUF_UINT(12)/10.0f)
     #define I3_RES_SME_STAT_SOC_MIN_NENN_04_WERT_UNIT                '%'
     #define I3_RES_SME_STAT_SOC_MIN_NENN_04_WERT_TYPE                float
         // Minimum charge level of all cells based on nominal capacity / Minimaler Ladezustand aller Zellen bezogen auf
-        // NennkapazitÃ¤t
+        // Nennkapazität
 
     #define I3_RES_SME_STAT_DIFF_SOC_04_WERT                         (RXBUF_UINT(14)/10.0f)
     #define I3_RES_SME_STAT_DIFF_SOC_04_WERT_UNIT                    '%'
     #define I3_RES_SME_STAT_DIFF_SOC_04_WERT_TYPE                    float
         // Difference between the average and minimum charge status of all cells based on nominal capacity / Differenz
-        // zwischen dem mittleren und minimalen Ladezsustand aller Zellen bezogen auf NennkapazitÃ¤t
+        // zwischen dem mittleren und minimalen Ladezsustand aller Zellen bezogen auf Nennkapazität
 
     #define I3_RES_SME_STAT_SOC_MIN_NENN_05_WERT                     (RXBUF_UINT(16)/10.0f)
     #define I3_RES_SME_STAT_SOC_MIN_NENN_05_WERT_UNIT                '%'
     #define I3_RES_SME_STAT_SOC_MIN_NENN_05_WERT_TYPE                float
         // Minimum charge level of all cells based on nominal capacity / Minimaler Ladezustand aller Zellen bezogen auf
-        // NennkapazitÃ¤t
+        // Nennkapazität
 
     #define I3_RES_SME_STAT_DIFF_SOC_05_WERT                         (RXBUF_UINT(18)/10.0f)
     #define I3_RES_SME_STAT_DIFF_SOC_05_WERT_UNIT                    '%'
     #define I3_RES_SME_STAT_DIFF_SOC_05_WERT_TYPE                    float
         // Difference between the average and minimum charge status of all cells based on nominal capacity / Differenz
-        // zwischen dem mittleren und minimalen Ladezsustand aller Zellen bezogen auf NennkapazitÃ¤t
+        // zwischen dem mittleren und minimalen Ladezsustand aller Zellen bezogen auf Nennkapazität
 
     #define I3_RES_SME_STAT_ID_ZELLE_SOC_MIN_WERT                    (RXBUF_UCHAR(20))
     #define I3_RES_SME_STAT_ID_ZELLE_SOC_MIN_WERT_TYPE               unsigned char
@@ -1198,75 +1198,75 @@
 
     #define I3_RES_SME_STAT_COUNTER_RG_WERT                          (RXBUF_UCHAR(21))
     #define I3_RES_SME_STAT_COUNTER_RG_WERT_TYPE                     unsigned char
-        // Counter of how often the ring buffer has been written to since the last reset / ZÃ¤hler, wie oft der
+        // Counter of how often the ring buffer has been written to since the last reset / Zähler, wie oft der
         // Ringspeicher seit dem letzten Reset beschrieben wurde
 
 #define I3_PID_SME_STATUS_MIN_KAPAZITAET_MOD                         0xD681
-        // Reading out the current minimum capacity of ALL modules, based on the capacity quotient. / Auslesen der
-        // aktuellen minimalen KapazitÃ¤t ALLER Module, bezogen auf KapazitÃ¤tsquotient.
+        // Reading of the current minimum capacity of ALL modules, based on the capacity quotient. / Auslesen der
+        // aktuellen minimalen Kapazität ALLER Module, bezogen auf Kapazitätsquotient.
 
     #define I3_RES_SME_STAT_MIN_KAPA_MOD_01_WERT                     (RXBUF_UCHAR(0))
     #define I3_RES_SME_STAT_MIN_KAPA_MOD_01_WERT_UNIT                '%'
     #define I3_RES_SME_STAT_MIN_KAPA_MOD_01_WERT_TYPE                unsigned char
-        // Minimum capacity in percent of MODULE 01 / Minimale KapazitÃ¤t in Prozent von MODUL 01
+        // Minimum capacity in percent of MODULE 01 / Minimale Kapazität in Prozent von MODUL 01
 
     #define I3_RES_SME_STAT_MIN_KAPA_MOD_02_WERT                     (RXBUF_UCHAR(1))
     #define I3_RES_SME_STAT_MIN_KAPA_MOD_02_WERT_UNIT                '%'
     #define I3_RES_SME_STAT_MIN_KAPA_MOD_02_WERT_TYPE                unsigned char
-        // Minimum capacity in percent of MODULE 02 / Minimale KapazitÃ¤t in Prozent von MODUL 02
+        // Minimum capacity in percent of MODULE 02 / Minimale Kapazität in Prozent von MODUL 02
 
     #define I3_RES_SME_STAT_MIN_KAPA_MOD_03_WERT                     (RXBUF_UCHAR(2))
     #define I3_RES_SME_STAT_MIN_KAPA_MOD_03_WERT_UNIT                '%'
     #define I3_RES_SME_STAT_MIN_KAPA_MOD_03_WERT_TYPE                unsigned char
-        // Minimum capacity in percent of MODULE 03 / Minimale KapazitÃ¤t in Prozent von MODUL 03
+        // Minimum capacity in percent of MODULE 03 / Minimale Kapazität in Prozent von MODUL 03
 
     #define I3_RES_SME_STAT_MIN_KAPA_MOD_04_WERT                     (RXBUF_UCHAR(3))
     #define I3_RES_SME_STAT_MIN_KAPA_MOD_04_WERT_UNIT                '%'
     #define I3_RES_SME_STAT_MIN_KAPA_MOD_04_WERT_TYPE                unsigned char
-        // Minimum capacity in percent of MODULE 04 / Minimale KapazitÃ¤t in Prozent von MODUL 04
+        // Minimum capacity in percent of MODULE 04 / Minimale Kapazität in Prozent von MODUL 04
 
     #define I3_RES_SME_STAT_MIN_KAPA_MOD_05_WERT                     (RXBUF_UCHAR(4))
     #define I3_RES_SME_STAT_MIN_KAPA_MOD_05_WERT_UNIT                '%'
     #define I3_RES_SME_STAT_MIN_KAPA_MOD_05_WERT_TYPE                unsigned char
-        // Minimum capacity in percent of MODULE 05 / Minimale KapazitÃ¤t in Prozent von MODUL 05
+        // Minimum capacity in percent of MODULE 05 / Minimale Kapazität in Prozent von MODUL 05
 
     #define I3_RES_SME_STAT_MIN_KAPA_MOD_06_WERT                     (RXBUF_UCHAR(5))
     #define I3_RES_SME_STAT_MIN_KAPA_MOD_06_WERT_UNIT                '%'
     #define I3_RES_SME_STAT_MIN_KAPA_MOD_06_WERT_TYPE                unsigned char
-        // Minimum capacity in percent of MODULE 06 / Minimale KapazitÃ¤t in Prozent von MODUL 06
+        // Minimum capacity in percent of MODULE 06 / Minimale Kapazität in Prozent von MODUL 06
 
     #define I3_RES_SME_STAT_MIN_KAPA_MOD_07_WERT                     (RXBUF_UCHAR(6))
     #define I3_RES_SME_STAT_MIN_KAPA_MOD_07_WERT_UNIT                '%'
     #define I3_RES_SME_STAT_MIN_KAPA_MOD_07_WERT_TYPE                unsigned char
-        // Minimum capacity in percent of MODULE 07 / Minimale KapazitÃ¤t in Prozent von MODUL 07
+        // Minimum capacity in percent of MODULE 07 / Minimale Kapazität in Prozent von MODUL 07
 
     #define I3_RES_SME_STAT_MIN_KAPA_MOD_08_WERT                     (RXBUF_UCHAR(7))
     #define I3_RES_SME_STAT_MIN_KAPA_MOD_08_WERT_UNIT                '%'
     #define I3_RES_SME_STAT_MIN_KAPA_MOD_08_WERT_TYPE                unsigned char
-        // Minimum capacity in percent of MODULE 08 / Minimale KapazitÃ¤t in Prozent von MODUL 08
+        // Minimum capacity in percent of MODULE 08 / Minimale Kapazität in Prozent von MODUL 08
 
     #define I3_RES_SME_STAT_MIN_KAPA_MOD_09_WERT                     (RXBUF_UCHAR(8))
     #define I3_RES_SME_STAT_MIN_KAPA_MOD_09_WERT_UNIT                '%'
     #define I3_RES_SME_STAT_MIN_KAPA_MOD_09_WERT_TYPE                unsigned char
-        // Minimum capacity in percent of MODULE 09 / Minimale KapazitÃ¤t in Prozent von MODUL 09
+        // Minimum capacity in percent of MODULE 09 / Minimale Kapazität in Prozent von MODUL 09
 
     #define I3_RES_SME_STAT_MIN_KAPA_MOD_10_WERT                     (RXBUF_UCHAR(9))
     #define I3_RES_SME_STAT_MIN_KAPA_MOD_10_WERT_UNIT                '%'
     #define I3_RES_SME_STAT_MIN_KAPA_MOD_10_WERT_TYPE                unsigned char
-        // Minimum capacity in percent of MODULE 10 / Minimale KapazitÃ¤t in Prozent von MODUL 10
+        // Minimum capacity in percent of MODULE 10 / Minimale Kapazität in Prozent von MODUL 10
 
     #define I3_RES_SME_STAT_MIN_KAPA_MOD_11_WERT                     (RXBUF_UCHAR(10))
     #define I3_RES_SME_STAT_MIN_KAPA_MOD_11_WERT_UNIT                '%'
     #define I3_RES_SME_STAT_MIN_KAPA_MOD_11_WERT_TYPE                unsigned char
-        // Minimum capacity in percent of MODULE 11 / Minimale KapazitÃ¤t in Prozent von MODUL 11
+        // Minimum capacity in percent of MODULE 11 / Minimale Kapazität in Prozent von MODUL 11
 
     #define I3_RES_SME_STAT_MIN_KAPA_MOD_12_WERT                     (RXBUF_UCHAR(11))
     #define I3_RES_SME_STAT_MIN_KAPA_MOD_12_WERT_UNIT                '%'
     #define I3_RES_SME_STAT_MIN_KAPA_MOD_12_WERT_TYPE                unsigned char
-        // Minimum capacity in percent of MODULE 12 / Minimale KapazitÃ¤t in Prozent von MODUL 12
+        // Minimum capacity in percent of MODULE 12 / Minimale Kapazität in Prozent von MODUL 12
 
 #define I3_PID_SME_RB_ISO_MESS_TRG                                   0xD6C7
-        // Return of the R_iso including quality of the last 5 follow-up measurements / RÃ¼ckgabe der R_iso incl. Qual.
+        // Return of the R_iso including quality of the last 5 follow-up measurements / Rückgabe der R_iso incl. Qual.
         // der letzten 5 Nachlaufmessungen
 
     #define I3_RES_SME_STAT_R_ISO_TRG_01_WERT                        (RXBUF_UINT(0))
@@ -1316,356 +1316,356 @@
 
 #define I3_PID_SME_RB_ISO_MESS_STD_IO_NIO                            0xD6C8
         // Return of the last 10 events of the R_iso standard measurement when the error threshold is undershot /
-        // exceeded / RÃ¼ckgabe der letzten 10 Ereignisse der R_iso Standard Messung bei
-        // Fehlerschwellenunter-/-Ã¼berschreitung
+        // exceeded / Rückgabe der letzten 10 Ereignisse der R_iso Standard Messung bei
+        // Fehlerschwellenunter-/-überschreitung
 
     #define I3_RES_SME_STAT_STD_KM_ISO_01_WERT                       (RXBUF_UINT32(0))
     #define I3_RES_SME_STAT_STD_KM_ISO_01_WERT_UNIT                  'km'
     #define I3_RES_SME_STAT_STD_KM_ISO_01_WERT_TYPE                  unsigned long
         // Mileage when the error threshold is below / exceeded in the R_iso standard measurement [km] 01 / km-Stand bei
-        // Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Standardmessung [km] 01
+        // Fehlerschwellenunter-/-überschreitung der R_iso Standardmessung [km] 01
 
     #define I3_RES_SME_STAT_STD_R_ISO_01_WERT                        (RXBUF_UINT(4))
     #define I3_RES_SME_STAT_STD_R_ISO_01_WERT_UNIT                   'kOhm'
     #define I3_RES_SME_STAT_STD_R_ISO_01_WERT_TYPE                   unsigned short
-        // R_iso_Value when the error threshold of the R_iso standard measurement is below / exceeded [kOhm] 01 /
-        // R_iso_Wert bei Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Standardmessung [kOhm] 01
+        // R_iso_Value when the error threshold is below / exceeded in the R_iso standard measurement [kOhm] 01 /
+        // R_iso_Wert bei Fehlerschwellenunter-/-überschreitung der R_iso Standardmessung [kOhm] 01
 
     #define I3_RES_SME_STAT_STD_R_ISO_QAL_01_WERT                    (RXBUF_UCHAR(6))
     #define I3_RES_SME_STAT_STD_R_ISO_QAL_01_WERT_TYPE               unsigned char
         // R_iso_Qual if the R_iso standard measurement falls below / exceeds the error threshold [-] 01 / R_iso_Qual bei
-        // Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Standardmessung [-] 01
+        // Fehlerschwellenunter-/-überschreitung der R_iso Standardmessung [-] 01
 
     #define I3_RES_SME_STAT_STD_KM_ISO_02_WERT                       (RXBUF_UINT32(7))
     #define I3_RES_SME_STAT_STD_KM_ISO_02_WERT_UNIT                  'km'
     #define I3_RES_SME_STAT_STD_KM_ISO_02_WERT_TYPE                  unsigned long
         // Mileage reading when the error threshold of the R_iso standard measurement is below / exceeded [km] 02 /
-        // km-Stand bei Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Standardmessung [km] 02
+        // km-Stand bei Fehlerschwellenunter-/-überschreitung der R_iso Standardmessung [km] 02
 
     #define I3_RES_SME_STAT_STD_R_ISO_02_WERT                        (RXBUF_UINT(11))
     #define I3_RES_SME_STAT_STD_R_ISO_02_WERT_UNIT                   'kOhm'
     #define I3_RES_SME_STAT_STD_R_ISO_02_WERT_TYPE                   unsigned short
         // R_iso_Wert if the R_iso standard measurement falls below / exceeds the error threshold [kOhm] 02 / R_iso_Wert
-        // bei Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Standardmessung [kOhm] 02
+        // bei Fehlerschwellenunter-/-überschreitung der R_iso Standardmessung [kOhm] 02
 
     #define I3_RES_SME_STAT_STD_R_ISO_QAL_02_WERT                    (RXBUF_UCHAR(13))
     #define I3_RES_SME_STAT_STD_R_ISO_QAL_02_WERT_TYPE               unsigned char
         // R_iso_Qual if the R_iso standard measurement falls below / exceeds the error threshold [-] 02 / R_iso_Qual bei
-        // Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Standardmessung [-] 02
+        // Fehlerschwellenunter-/-überschreitung der R_iso Standardmessung [-] 02
 
     #define I3_RES_SME_STAT_STD_KM_ISO_03_WERT                       (RXBUF_UINT32(14))
     #define I3_RES_SME_STAT_STD_KM_ISO_03_WERT_UNIT                  'km'
     #define I3_RES_SME_STAT_STD_KM_ISO_03_WERT_TYPE                  unsigned long
         // Mileage in case of failure threshold of the R_iso standard measurement [km] 03 / km-Stand bei
-        // Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Standardmessung [km] 03
+        // Fehlerschwellenunter-/-überschreitung der R_iso Standardmessung [km] 03
 
     #define I3_RES_SME_STAT_STD_R_ISO_03_WERT                        (RXBUF_UINT(18))
     #define I3_RES_SME_STAT_STD_R_ISO_03_WERT_UNIT                   'kOhm'
     #define I3_RES_SME_STAT_STD_R_ISO_03_WERT_TYPE                   unsigned short
-        // R_iso_Value when the error threshold of the R_iso standard measurement is below / exceeded [kOhm] 03 /
-        // R_iso_Wert bei Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Standardmessung [kOhm] 03
+        // R_iso_Wert if the R_iso standard measurement falls below / exceeds the error threshold [kOhm] 03 / R_iso_Wert
+        // bei Fehlerschwellenunter-/-überschreitung der R_iso Standardmessung [kOhm] 03
 
     #define I3_RES_SME_STAT_STD_R_ISO_QAL_03_WERT                    (RXBUF_UCHAR(20))
     #define I3_RES_SME_STAT_STD_R_ISO_QAL_03_WERT_TYPE               unsigned char
         // R_iso_Qual if the R_iso standard measurement falls below / exceeds the error threshold [-] 03 / R_iso_Qual bei
-        // Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Standardmessung [-] 03
+        // Fehlerschwellenunter-/-überschreitung der R_iso Standardmessung [-] 03
 
     #define I3_RES_SME_STAT_STD_KM_ISO_04_WERT                       (RXBUF_UINT32(21))
     #define I3_RES_SME_STAT_STD_KM_ISO_04_WERT_UNIT                  'km'
     #define I3_RES_SME_STAT_STD_KM_ISO_04_WERT_TYPE                  unsigned long
-        // Mileage in case of error threshold under / overrun of the R_iso standard measurement [km] 04 / km-Stand bei
-        // Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Standardmessung [km] 04
+        // Mileage when the error threshold is below / exceeded in the R_iso standard measurement [km] 04 / km-Stand bei
+        // Fehlerschwellenunter-/-überschreitung der R_iso Standardmessung [km] 04
 
     #define I3_RES_SME_STAT_STD_R_ISO_04_WERT                        (RXBUF_UINT(25))
     #define I3_RES_SME_STAT_STD_R_ISO_04_WERT_UNIT                   'kOhm'
     #define I3_RES_SME_STAT_STD_R_ISO_04_WERT_TYPE                   unsigned short
         // R_iso_Value when the error threshold falls below / exceeds the R_iso standard measurement [kOhm] 04 /
-        // R_iso_Wert bei Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Standardmessung [kOhm] 04
+        // R_iso_Wert bei Fehlerschwellenunter-/-überschreitung der R_iso Standardmessung [kOhm] 04
 
     #define I3_RES_SME_STAT_STD_R_ISO_QAL_04_WERT                    (RXBUF_UCHAR(27))
     #define I3_RES_SME_STAT_STD_R_ISO_QAL_04_WERT_TYPE               unsigned char
         // R_iso_Qual if the R_iso standard measurement falls below / exceeds the error threshold [-] 04 / R_iso_Qual bei
-        // Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Standardmessung [-] 04
+        // Fehlerschwellenunter-/-überschreitung der R_iso Standardmessung [-] 04
 
     #define I3_RES_SME_STAT_STD_KM_ISO_05_WERT                       (RXBUF_UINT32(28))
     #define I3_RES_SME_STAT_STD_KM_ISO_05_WERT_UNIT                  'km'
     #define I3_RES_SME_STAT_STD_KM_ISO_05_WERT_TYPE                  unsigned long
         // Mileage in case of failure threshold of the R_iso standard measurement [km] 05 / km-Stand bei
-        // Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Standardmessung [km] 05
+        // Fehlerschwellenunter-/-überschreitung der R_iso Standardmessung [km] 05
 
     #define I3_RES_SME_STAT_STD_R_ISO_05_WERT                        (RXBUF_UINT(32))
     #define I3_RES_SME_STAT_STD_R_ISO_05_WERT_UNIT                   'kOhm'
     #define I3_RES_SME_STAT_STD_R_ISO_05_WERT_TYPE                   unsigned short
-        // R_iso_Wert if the R_iso standard measurement falls below / exceeds the error threshold [kOhm] 05 / R_iso_Wert
-        // bei Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Standardmessung [kOhm] 05
+        // R_iso_Value if the R_iso standard measurement falls below / exceeds the error threshold [kOhm] 05 / R_iso_Wert
+        // bei Fehlerschwellenunter-/-überschreitung der R_iso Standardmessung [kOhm] 05
 
     #define I3_RES_SME_STAT_STD_R_ISO_QAL_05_WERT                    (RXBUF_UCHAR(34))
     #define I3_RES_SME_STAT_STD_R_ISO_QAL_05_WERT_TYPE               unsigned char
         // R_iso_Qual if the R_iso standard measurement falls below / exceeds the error threshold [-] 05 / R_iso_Qual bei
-        // Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Standardmessung [-] 05
+        // Fehlerschwellenunter-/-überschreitung der R_iso Standardmessung [-] 05
 
     #define I3_RES_SME_STAT_STD_KM_ISO_06_WERT                       (RXBUF_UINT32(35))
     #define I3_RES_SME_STAT_STD_KM_ISO_06_WERT_UNIT                  'km'
     #define I3_RES_SME_STAT_STD_KM_ISO_06_WERT_TYPE                  unsigned long
         // Mileage when the error threshold is below / exceeded in the R_iso standard measurement [km] 06 / km-Stand bei
-        // Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Standardmessung [km] 06
+        // Fehlerschwellenunter-/-überschreitung der R_iso Standardmessung [km] 06
 
     #define I3_RES_SME_STAT_STD_R_ISO_06_WERT                        (RXBUF_UINT(39))
     #define I3_RES_SME_STAT_STD_R_ISO_06_WERT_UNIT                   'kOhm'
     #define I3_RES_SME_STAT_STD_R_ISO_06_WERT_TYPE                   unsigned short
         // R_iso_Wert if the R_iso standard measurement falls below / exceeds the error threshold [kOhm] 06 / R_iso_Wert
-        // bei Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Standardmessung [kOhm] 06
+        // bei Fehlerschwellenunter-/-überschreitung der R_iso Standardmessung [kOhm] 06
 
     #define I3_RES_SME_STAT_STD_R_ISO_QAL_06_WERT                    (RXBUF_UCHAR(41))
     #define I3_RES_SME_STAT_STD_R_ISO_QAL_06_WERT_TYPE               unsigned char
         // R_iso_Qual if the R_iso standard measurement falls below / exceeds the error threshold [-] 06 / R_iso_Qual bei
-        // Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Standardmessung [-] 06
+        // Fehlerschwellenunter-/-überschreitung der R_iso Standardmessung [-] 06
 
     #define I3_RES_SME_STAT_STD_KM_ISO_07_WERT                       (RXBUF_UINT32(42))
     #define I3_RES_SME_STAT_STD_KM_ISO_07_WERT_UNIT                  'km'
     #define I3_RES_SME_STAT_STD_KM_ISO_07_WERT_TYPE                  unsigned long
         // Mileage in case of failure threshold of the R_iso standard measurement [km] 07 / km-Stand bei
-        // Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Standardmessung [km] 07
+        // Fehlerschwellenunter-/-überschreitung der R_iso Standardmessung [km] 07
 
     #define I3_RES_SME_STAT_STD_R_ISO_07_WERT                        (RXBUF_UINT(46))
     #define I3_RES_SME_STAT_STD_R_ISO_07_WERT_UNIT                   'kOhm'
     #define I3_RES_SME_STAT_STD_R_ISO_07_WERT_TYPE                   unsigned short
         // R_iso_Value if the R_iso standard measurement falls below / exceeds the error threshold [kOhm] 07 / R_iso_Wert
-        // bei Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Standardmessung [kOhm] 07
+        // bei Fehlerschwellenunter-/-überschreitung der R_iso Standardmessung [kOhm] 07
 
     #define I3_RES_SME_STAT_STD_R_ISO_QAL_07_WERT                    (RXBUF_UCHAR(48))
     #define I3_RES_SME_STAT_STD_R_ISO_QAL_07_WERT_TYPE               unsigned char
         // R_iso_Qual if the R_iso standard measurement falls below / exceeds the error threshold [-] 07 / R_iso_Qual bei
-        // Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Standardmessung [-] 07
+        // Fehlerschwellenunter-/-überschreitung der R_iso Standardmessung [-] 07
 
     #define I3_RES_SME_STAT_STD_KM_ISO_08_WERT                       (RXBUF_UINT32(49))
     #define I3_RES_SME_STAT_STD_KM_ISO_08_WERT_UNIT                  'km'
     #define I3_RES_SME_STAT_STD_KM_ISO_08_WERT_TYPE                  unsigned long
         // Mileage in case of failure threshold of the R_iso standard measurement [km] 08 / km-Stand bei
-        // Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Standardmessung [km] 08
+        // Fehlerschwellenunter-/-überschreitung der R_iso Standardmessung [km] 08
 
     #define I3_RES_SME_STAT_STD_R_ISO_08_WERT                        (RXBUF_UINT(53))
     #define I3_RES_SME_STAT_STD_R_ISO_08_WERT_UNIT                   'kOhm'
     #define I3_RES_SME_STAT_STD_R_ISO_08_WERT_TYPE                   unsigned short
         // R_iso_Wert if the R_iso standard measurement falls below / exceeds the error threshold [kOhm] 08 / R_iso_Wert
-        // bei Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Standardmessung [kOhm] 08
+        // bei Fehlerschwellenunter-/-überschreitung der R_iso Standardmessung [kOhm] 08
 
     #define I3_RES_SME_STAT_STD_R_ISO_QAL_08_WERT                    (RXBUF_UCHAR(55))
     #define I3_RES_SME_STAT_STD_R_ISO_QAL_08_WERT_TYPE               unsigned char
         // R_iso_Qual if the R_iso standard measurement falls below / exceeds the error threshold [-] 08 / R_iso_Qual bei
-        // Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Standardmessung [-] 08
+        // Fehlerschwellenunter-/-überschreitung der R_iso Standardmessung [-] 08
 
     #define I3_RES_SME_STAT_STD_KM_ISO_09_WERT                       (RXBUF_UINT32(56))
     #define I3_RES_SME_STAT_STD_KM_ISO_09_WERT_UNIT                  'km'
     #define I3_RES_SME_STAT_STD_KM_ISO_09_WERT_TYPE                  unsigned long
         // Mileage in case of failure threshold of the R_iso standard measurement [km] 09 / km-Stand bei
-        // Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Standardmessung [km] 09
+        // Fehlerschwellenunter-/-überschreitung der R_iso Standardmessung [km] 09
 
     #define I3_RES_SME_STAT_STD_R_ISO_09_WERT                        (RXBUF_UINT(60))
     #define I3_RES_SME_STAT_STD_R_ISO_09_WERT_UNIT                   'kOhm'
     #define I3_RES_SME_STAT_STD_R_ISO_09_WERT_TYPE                   unsigned short
-        // R_iso_Wert if the R_iso standard measurement falls below / exceeds the error threshold [kOhm] 09 / R_iso_Wert
-        // bei Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Standardmessung [kOhm] 09
+        // R_iso_Value when the error threshold of the R_iso standard measurement is below / exceeded [kOhm] 09 /
+        // R_iso_Wert bei Fehlerschwellenunter-/-überschreitung der R_iso Standardmessung [kOhm] 09
 
     #define I3_RES_SME_STAT_STD_R_ISO_QAL_09_WERT                    (RXBUF_UCHAR(62))
     #define I3_RES_SME_STAT_STD_R_ISO_QAL_09_WERT_TYPE               unsigned char
         // R_iso_Qual if the R_iso standard measurement falls below / exceeds the error threshold [-] 09 / R_iso_Qual bei
-        // Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Standardmessung [-] 09
+        // Fehlerschwellenunter-/-überschreitung der R_iso Standardmessung [-] 09
 
     #define I3_RES_SME_STAT_STD_KM_ISO_10_WERT                       (RXBUF_UINT32(63))
     #define I3_RES_SME_STAT_STD_KM_ISO_10_WERT_UNIT                  'km'
     #define I3_RES_SME_STAT_STD_KM_ISO_10_WERT_TYPE                  unsigned long
         // Mileage when the error threshold is exceeded or not reached in the R_iso standard measurement [km] 10 /
-        // km-Stand bei Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Standardmessung [km] 10
+        // km-Stand bei Fehlerschwellenunter-/-überschreitung der R_iso Standardmessung [km] 10
 
     #define I3_RES_SME_STAT_STD_R_ISO_10_WERT                        (RXBUF_UINT(67))
     #define I3_RES_SME_STAT_STD_R_ISO_10_WERT_UNIT                   'kOhm'
     #define I3_RES_SME_STAT_STD_R_ISO_10_WERT_TYPE                   unsigned short
         // R_iso_Wert if the R_iso standard measurement falls below / exceeds the error threshold [kOhm] 10 / R_iso_Wert
-        // bei Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Standardmessung [kOhm] 10
+        // bei Fehlerschwellenunter-/-überschreitung der R_iso Standardmessung [kOhm] 10
 
     #define I3_RES_SME_STAT_STD_R_ISO_QAL_10_WERT                    (RXBUF_UCHAR(69))
     #define I3_RES_SME_STAT_STD_R_ISO_QAL_10_WERT_TYPE               unsigned char
         // R_iso_Qual if the R_iso standard measurement falls below / exceeds the error threshold [-] 10 / R_iso_Qual bei
-        // Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Standardmessung [-] 10
+        // Fehlerschwellenunter-/-überschreitung der R_iso Standardmessung [-] 10
 
 #define I3_PID_SME_RB_ISO_MESS_TRG_IO_NIO                            0xD6C9
         // Return of the last 10 events of the triggered follow-up ISO measurement when the error threshold is undershot
-        // / exceeded / RÃ¼ckgabe der letzten 10 Ereignisse der getriggerten Nachlauf-ISO-Messung bei
-        // Fehlerschwellenunter-/-Ã¼berschreitung 
+        // / exceeded / Rückgabe der letzten 10 Ereignisse der getriggerten Nachlauf-ISO-Messung bei
+        // Fehlerschwellenunter-/-überschreitung 
 
     #define I3_RES_SME_STAT_TRG_KM_ISO_01_WERT                       (RXBUF_UINT32(0))
     #define I3_RES_SME_STAT_TRG_KM_ISO_01_WERT_UNIT                  'km'
     #define I3_RES_SME_STAT_TRG_KM_ISO_01_WERT_TYPE                  unsigned long
         // Mileage when the error threshold is below / exceeded in the R_iso lag measurement [km] 01 / km-Stand bei
-        // Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Nachlaufmessung [km] 01
+        // Fehlerschwellenunter-/-überschreitung der R_iso Nachlaufmessung [km] 01
 
     #define I3_RES_SME_STAT_TRG_R_ISO_01_WERT                        (RXBUF_UINT(4))
     #define I3_RES_SME_STAT_TRG_R_ISO_01_WERT_UNIT                   'kOhm'
     #define I3_RES_SME_STAT_TRG_R_ISO_01_WERT_TYPE                   unsigned short
         // R_iso_Wert if the R_iso lag measurement falls below / exceeds the error threshold [kOhm] 01 / R_iso_Wert bei
-        // Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Nachlaufmessung [kOhm] 01
+        // Fehlerschwellenunter-/-überschreitung der R_iso Nachlaufmessung [kOhm] 01
 
     #define I3_RES_SME_STAT_TRG_R_ISO_QAL_01_WERT                    (RXBUF_UCHAR(6))
     #define I3_RES_SME_STAT_TRG_R_ISO_QAL_01_WERT_TYPE               unsigned char
         // R_iso_Qual if the R_iso lag measurement falls below / exceeds the error threshold [-] 01 / R_iso_Qual bei
-        // Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Nachlaufmessung [-] 01
+        // Fehlerschwellenunter-/-überschreitung der R_iso Nachlaufmessung [-] 01
 
     #define I3_RES_SME_STAT_TRG_KM_ISO_02_WERT                       (RXBUF_UINT32(7))
     #define I3_RES_SME_STAT_TRG_KM_ISO_02_WERT_UNIT                  'km'
     #define I3_RES_SME_STAT_TRG_KM_ISO_02_WERT_TYPE                  unsigned long
         // Mileage in case of error threshold under / overrun of the R_iso follow-up measurement [km] 02 / km-Stand bei
-        // Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Nachlaufmessung [km] 02
+        // Fehlerschwellenunter-/-überschreitung der R_iso Nachlaufmessung [km] 02
 
     #define I3_RES_SME_STAT_TRG_R_ISO_02_WERT                        (RXBUF_UINT(11))
     #define I3_RES_SME_STAT_TRG_R_ISO_02_WERT_UNIT                   'kOhm'
     #define I3_RES_SME_STAT_TRG_R_ISO_02_WERT_TYPE                   unsigned short
-        // R_iso_Value if the R_iso lag measurement falls below / exceeds the error threshold [kOhm] 02 / R_iso_Wert bei
-        // Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Nachlaufmessung [kOhm] 02
+        // R_iso_Wert if the R_iso lag measurement falls below / exceeds the error threshold [kOhm] 02 / R_iso_Wert bei
+        // Fehlerschwellenunter-/-überschreitung der R_iso Nachlaufmessung [kOhm] 02
 
     #define I3_RES_SME_STAT_TRG_R_ISO_QAL_02_WERT                    (RXBUF_UCHAR(13))
     #define I3_RES_SME_STAT_TRG_R_ISO_QAL_02_WERT_TYPE               unsigned char
         // R_iso_Qual if the R_iso lag measurement falls below / exceeds the error threshold [-] 02 / R_iso_Qual bei
-        // Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Nachlaufmessung [-] 02
+        // Fehlerschwellenunter-/-überschreitung der R_iso Nachlaufmessung [-] 02
 
     #define I3_RES_SME_STAT_TRG_KM_ISO_03_WERT                       (RXBUF_UINT32(14))
     #define I3_RES_SME_STAT_TRG_KM_ISO_03_WERT_UNIT                  'km'
     #define I3_RES_SME_STAT_TRG_KM_ISO_03_WERT_TYPE                  unsigned long
         // Mileage when the error threshold is below / exceeded in the R_iso lag measurement [km] 03 / km-Stand bei
-        // Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Nachlaufmessung [km] 03
+        // Fehlerschwellenunter-/-überschreitung der R_iso Nachlaufmessung [km] 03
 
     #define I3_RES_SME_STAT_TRG_R_ISO_03_WERT                        (RXBUF_UINT(18))
     #define I3_RES_SME_STAT_TRG_R_ISO_03_WERT_UNIT                   'kOhm'
     #define I3_RES_SME_STAT_TRG_R_ISO_03_WERT_TYPE                   unsigned short
-        // R_iso_Wert if the R_iso lag measurement falls below / exceeds the error threshold [kOhm] 03 / R_iso_Wert bei
-        // Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Nachlaufmessung [kOhm] 03
+        // R_iso_Value when the R_iso lag measurement falls below / exceeds the error threshold [kOhm] 03 / R_iso_Wert
+        // bei Fehlerschwellenunter-/-überschreitung der R_iso Nachlaufmessung [kOhm] 03
 
     #define I3_RES_SME_STAT_TRG_R_ISO_QAL_03_WERT                    (RXBUF_UCHAR(20))
     #define I3_RES_SME_STAT_TRG_R_ISO_QAL_03_WERT_TYPE               unsigned char
         // R_iso_Qual if the R_iso lag measurement falls below / exceeds the error threshold [-] 03 / R_iso_Qual bei
-        // Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Nachlaufmessung [-] 03
+        // Fehlerschwellenunter-/-überschreitung der R_iso Nachlaufmessung [-] 03
 
     #define I3_RES_SME_STAT_TRG_KM_ISO_04_WERT                       (RXBUF_UINT32(21))
     #define I3_RES_SME_STAT_TRG_KM_ISO_04_WERT_UNIT                  'km'
     #define I3_RES_SME_STAT_TRG_KM_ISO_04_WERT_TYPE                  unsigned long
-        // Mileage when the error threshold is below / exceeded in the R_iso lag measurement [km] 04 / km-Stand bei
-        // Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Nachlaufmessung [km] 04
+        // Mileage in case of error threshold under / overrun of the R_iso lag measurement [km] 04 / km-Stand bei
+        // Fehlerschwellenunter-/-überschreitung der R_iso Nachlaufmessung [km] 04
 
     #define I3_RES_SME_STAT_TRG_R_ISO_04_WERT                        (RXBUF_UINT(25))
     #define I3_RES_SME_STAT_TRG_R_ISO_04_WERT_UNIT                   'kOhm'
     #define I3_RES_SME_STAT_TRG_R_ISO_04_WERT_TYPE                   unsigned short
         // R_iso_Wert if the R_iso lag measurement falls below / exceeds the error threshold [kOhm] 04 / R_iso_Wert bei
-        // Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Nachlaufmessung [kOhm] 04
+        // Fehlerschwellenunter-/-überschreitung der R_iso Nachlaufmessung [kOhm] 04
 
     #define I3_RES_SME_STAT_TRG_R_ISO_QAL_04_WERT                    (RXBUF_UCHAR(27))
     #define I3_RES_SME_STAT_TRG_R_ISO_QAL_04_WERT_TYPE               unsigned char
         // R_iso_Qual if the R_iso lag measurement falls below / exceeds the error threshold [-] 04 / R_iso_Qual bei
-        // Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Nachlaufmessung [-] 04
+        // Fehlerschwellenunter-/-überschreitung der R_iso Nachlaufmessung [-] 04
 
     #define I3_RES_SME_STAT_TRG_KM_ISO_05_WERT                       (RXBUF_UINT32(28))
     #define I3_RES_SME_STAT_TRG_KM_ISO_05_WERT_UNIT                  'km'
     #define I3_RES_SME_STAT_TRG_KM_ISO_05_WERT_TYPE                  unsigned long
         // Mileage when the error threshold is below / exceeded in the R_iso lag measurement [km] 05 / km-Stand bei
-        // Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Nachlaufmessung [km] 05
+        // Fehlerschwellenunter-/-überschreitung der R_iso Nachlaufmessung [km] 05
 
     #define I3_RES_SME_STAT_TRG_R_ISO_05_WERT                        (RXBUF_UINT(32))
     #define I3_RES_SME_STAT_TRG_R_ISO_05_WERT_UNIT                   'kOhm'
     #define I3_RES_SME_STAT_TRG_R_ISO_05_WERT_TYPE                   unsigned short
-        // R_iso_Value if the R_iso lag measurement falls below / exceeds the error threshold [kOhm] 05 / R_iso_Wert bei
-        // Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Nachlaufmessung [kOhm] 05
+        // R_iso_Wert if the R_iso lag measurement falls below / exceeds the error threshold [kOhm] 05 / R_iso_Wert bei
+        // Fehlerschwellenunter-/-überschreitung der R_iso Nachlaufmessung [kOhm] 05
 
     #define I3_RES_SME_STAT_TRG_R_ISO_QAL_05_WERT                    (RXBUF_UCHAR(34))
     #define I3_RES_SME_STAT_TRG_R_ISO_QAL_05_WERT_TYPE               unsigned char
         // R_iso_Qual if the R_iso lag measurement falls below / exceeds the error threshold [-] 05 / R_iso_Qual bei
-        // Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Nachlaufmessung [-] 05
+        // Fehlerschwellenunter-/-überschreitung der R_iso Nachlaufmessung [-] 05
 
     #define I3_RES_SME_STAT_TRG_KM_ISO_06_WERT                       (RXBUF_UINT32(35))
     #define I3_RES_SME_STAT_TRG_KM_ISO_06_WERT_UNIT                  'km'
     #define I3_RES_SME_STAT_TRG_KM_ISO_06_WERT_TYPE                  unsigned long
         // Mileage in case of error threshold under / overrun of the R_iso follow-up measurement [km] 06 / km-Stand bei
-        // Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Nachlaufmessung [km] 06
+        // Fehlerschwellenunter-/-überschreitung der R_iso Nachlaufmessung [km] 06
 
     #define I3_RES_SME_STAT_TRG_R_ISO_06_WERT                        (RXBUF_UINT(39))
     #define I3_RES_SME_STAT_TRG_R_ISO_06_WERT_UNIT                   'kOhm'
     #define I3_RES_SME_STAT_TRG_R_ISO_06_WERT_TYPE                   unsigned short
         // R_iso_Wert if the R_iso lag measurement falls below / exceeds the error threshold [kOhm] 06 / R_iso_Wert bei
-        // Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Nachlaufmessung [kOhm] 06
+        // Fehlerschwellenunter-/-überschreitung der R_iso Nachlaufmessung [kOhm] 06
 
     #define I3_RES_SME_STAT_TRG_R_ISO_QAL_06_WERT                    (RXBUF_UCHAR(41))
     #define I3_RES_SME_STAT_TRG_R_ISO_QAL_06_WERT_TYPE               unsigned char
         // R_iso_Qual if the R_iso lag measurement falls below / exceeds the error threshold [-] 06 / R_iso_Qual bei
-        // Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Nachlaufmessung [-] 06
+        // Fehlerschwellenunter-/-überschreitung der R_iso Nachlaufmessung [-] 06
 
     #define I3_RES_SME_STAT_TRG_KM_ISO_07_WERT                       (RXBUF_UINT32(42))
     #define I3_RES_SME_STAT_TRG_KM_ISO_07_WERT_UNIT                  'km'
     #define I3_RES_SME_STAT_TRG_KM_ISO_07_WERT_TYPE                  unsigned long
-        // Mileage in case of failure threshold of the R_iso follow-up measurement [km] 07 / km-Stand bei
-        // Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Nachlaufmessung [km] 07
+        // Mileage in case of error threshold under / overrun of the R_iso follow-up measurement [km] 07 / km-Stand bei
+        // Fehlerschwellenunter-/-überschreitung der R_iso Nachlaufmessung [km] 07
 
     #define I3_RES_SME_STAT_TRG_R_ISO_07_WERT                        (RXBUF_UINT(46))
     #define I3_RES_SME_STAT_TRG_R_ISO_07_WERT_UNIT                   'kOhm'
     #define I3_RES_SME_STAT_TRG_R_ISO_07_WERT_TYPE                   unsigned short
-        // R_iso_Value when the R_iso lag measurement falls below / exceeds the error threshold [kOhm] 07 / R_iso_Wert
-        // bei Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Nachlaufmessung [kOhm] 07
+        // R_iso_Wert when the R_iso lag measurement falls below / exceeds the error threshold [kOhm] 07 / R_iso_Wert bei
+        // Fehlerschwellenunter-/-überschreitung der R_iso Nachlaufmessung [kOhm] 07
 
     #define I3_RES_SME_STAT_TRG_R_ISO_QAL_07_WERT                    (RXBUF_UCHAR(48))
     #define I3_RES_SME_STAT_TRG_R_ISO_QAL_07_WERT_TYPE               unsigned char
         // R_iso_Qual if the R_iso lag measurement falls below / exceeds the error threshold [-] 07 / R_iso_Qual bei
-        // Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Nachlaufmessung [-] 07
+        // Fehlerschwellenunter-/-überschreitung der R_iso Nachlaufmessung [-] 07
 
     #define I3_RES_SME_STAT_TRG_KM_ISO_08_WERT                       (RXBUF_UINT32(49))
     #define I3_RES_SME_STAT_TRG_KM_ISO_08_WERT_UNIT                  'km'
     #define I3_RES_SME_STAT_TRG_KM_ISO_08_WERT_TYPE                  unsigned long
-        // Mileage in case of error threshold under / overrun of the R_iso follow-up measurement [km] 08 / km-Stand bei
-        // Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Nachlaufmessung [km] 08
+        // Mileage when the error threshold is below / exceeded in the R_iso follow-up measurement [km] 08 / km-Stand bei
+        // Fehlerschwellenunter-/-überschreitung der R_iso Nachlaufmessung [km] 08
 
     #define I3_RES_SME_STAT_TRG_R_ISO_08_WERT                        (RXBUF_UINT(53))
     #define I3_RES_SME_STAT_TRG_R_ISO_08_WERT_UNIT                   'kOhm'
     #define I3_RES_SME_STAT_TRG_R_ISO_08_WERT_TYPE                   unsigned short
         // R_iso_Wert if the R_iso lag measurement falls below / exceeds the error threshold [kOhm] 08 / R_iso_Wert bei
-        // Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Nachlaufmessung [kOhm] 08
+        // Fehlerschwellenunter-/-überschreitung der R_iso Nachlaufmessung [kOhm] 08
 
     #define I3_RES_SME_STAT_TRG_R_ISO_QAL_08_WERT                    (RXBUF_UCHAR(55))
     #define I3_RES_SME_STAT_TRG_R_ISO_QAL_08_WERT_TYPE               unsigned char
         // R_iso_Qual if the R_iso lag measurement falls below / exceeds the error threshold [-] 08 / R_iso_Qual bei
-        // Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Nachlaufmessung [-] 08
+        // Fehlerschwellenunter-/-überschreitung der R_iso Nachlaufmessung [-] 08
 
     #define I3_RES_SME_STAT_TRG_KM_ISO_09_WERT                       (RXBUF_UINT32(56))
     #define I3_RES_SME_STAT_TRG_KM_ISO_09_WERT_UNIT                  'km'
     #define I3_RES_SME_STAT_TRG_KM_ISO_09_WERT_TYPE                  unsigned long
         // Mileage in case of error threshold under / overrun of the R_iso follow-up measurement [km] 09 / km-Stand bei
-        // Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Nachlaufmessung [km] 09
+        // Fehlerschwellenunter-/-überschreitung der R_iso Nachlaufmessung [km] 09
 
     #define I3_RES_SME_STAT_TRG_R_ISO_09_WERT                        (RXBUF_UINT(60))
     #define I3_RES_SME_STAT_TRG_R_ISO_09_WERT_UNIT                   'kOhm'
     #define I3_RES_SME_STAT_TRG_R_ISO_09_WERT_TYPE                   unsigned short
         // R_iso_Wert if the R_iso lag measurement falls below / exceeds the error threshold [kOhm] 09 / R_iso_Wert bei
-        // Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Nachlaufmessung [kOhm] 09
+        // Fehlerschwellenunter-/-überschreitung der R_iso Nachlaufmessung [kOhm] 09
 
     #define I3_RES_SME_STAT_TRG_R_ISO_QAL_09_WERT                    (RXBUF_UCHAR(62))
     #define I3_RES_SME_STAT_TRG_R_ISO_QAL_09_WERT_TYPE               unsigned char
         // R_iso_Qual if the R_iso lag measurement falls below / exceeds the error threshold [-] 09 / R_iso_Qual bei
-        // Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Nachlaufmessung [-] 09
+        // Fehlerschwellenunter-/-überschreitung der R_iso Nachlaufmessung [-] 09
 
     #define I3_RES_SME_STAT_TRG_KM_ISO_10_WERT                       (RXBUF_UINT32(63))
     #define I3_RES_SME_STAT_TRG_KM_ISO_10_WERT_UNIT                  'km'
     #define I3_RES_SME_STAT_TRG_KM_ISO_10_WERT_TYPE                  unsigned long
-        // Mileage in case of error threshold under / overrun of the R_iso follow-up measurement [km] 10 / km-Stand bei
-        // Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Nachlaufmessung [km] 10
+        // Mileage in case of failure threshold of the R_iso follow-up measurement [km] 10 / km-Stand bei
+        // Fehlerschwellenunter-/-überschreitung der R_iso Nachlaufmessung [km] 10
 
     #define I3_RES_SME_STAT_TRG_R_ISO_10_WERT                        (RXBUF_UINT(67))
     #define I3_RES_SME_STAT_TRG_R_ISO_10_WERT_UNIT                   'kOhm'
     #define I3_RES_SME_STAT_TRG_R_ISO_10_WERT_TYPE                   unsigned short
-        // R_iso_Wert if the R_iso lag measurement falls below / exceeds the error threshold [kOhm] 10 / R_iso_Wert bei
-        // Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Nachlaufmessung [kOhm] 10
+        // R_iso_Value if the R_iso lag measurement falls below / exceeds the error threshold [kOhm] 10 / R_iso_Wert bei
+        // Fehlerschwellenunter-/-überschreitung der R_iso Nachlaufmessung [kOhm] 10
 
     #define I3_RES_SME_STAT_TRG_R_ISO_QAL_10_WERT                    (RXBUF_UCHAR(69))
     #define I3_RES_SME_STAT_TRG_R_ISO_QAL_10_WERT_TYPE               unsigned char
         // R_iso_Qual if the R_iso lag measurement falls below / exceeds the error threshold [-] 10 / R_iso_Qual bei
-        // Fehlerschwellenunter-/-Ã¼berschreitung der R_iso Nachlaufmessung [-] 10
+        // Fehlerschwellenunter-/-überschreitung der R_iso Nachlaufmessung [-] 10
 
 #define I3_PID_SME_ISODIAG_INPUT_ISTWERTE                            0xD6CA
-        // Return of input signals of the R_ISO calculation formula / RÃ¼ckgabe von Inputsignalen der R_ISO
+        // Return of input signals of the R_ISO calculation formula / Rückgabe von Inputsignalen der R_ISO
         // Berechnungsformel
 
     #define I3_RES_SME_STAT_INPUT_ISO_01_WERT                        (RXBUF_UINT(0)/100.0f)
@@ -1714,12 +1714,12 @@
         // LI: Uoffset_QUAL / LI: Uoffset_QUAL
 
 #define I3_PID_SME_ISO_ERR_STD_FZ1_2                                 0xD6CB
-        // Return of input signals and result values of the standard ISO measurement at error time 1 and 2 / RÃ¼ckgabe
-        // von Inputsignalen und Ergebniswerten der Standard-ISO-Messung zu Fehlerzeitpunkt 1 und 2
+        // Return of input signals and result values of the standard ISO measurement at error time 1 and 2 / Rückgabe von
+        // Inputsignalen und Ergebniswerten der Standard-ISO-Messung zu Fehlerzeitpunkt 1 und 2
 
     #define I3_RES_SME_STAT_FEHLERZAEHLER_STD_WERT                   (RXBUF_UINT32(0))
     #define I3_RES_SME_STAT_FEHLERZAEHLER_STD_WERT_TYPE              unsigned long
-        // LI: Counter of all errors that have occurred in the standard measurement / LI: ZÃ¤hler aller aufgetretenen
+        // LI: Counter of all errors that have occurred in the standard measurement / LI: Zähler aller aufgetretenen
         // Fehler der Standardmessung
 
     #define I3_RES_SME_STAT_INPUT_ISO_STD_FZ1_01_WERT                (RXBUF_UINT(4)/100.0f)
@@ -1824,7 +1824,7 @@
     #define I3_RES_SME_STAT_INPUT_ISO_STD_FZ2_07_WERT                (RXBUF_UINT(37)/100.0f)
     #define I3_RES_SME_STAT_INPUT_ISO_STD_FZ2_07_WERT_UNIT           'V'
     #define I3_RES_SME_STAT_INPUT_ISO_STD_FZ2_07_WERT_TYPE           float
-        // LI: last time the error occurred Uiso02 [V] / LI: letztmaliger Fehlerzeitpunkt Uiso02 [V]
+        // LI: last error time Uiso02 [V] / LI: letztmaliger Fehlerzeitpunkt Uiso02 [V]
 
     #define I3_RES_SME_STAT_INPUT_ISO_STD_FZ2_08_WERT                (RXBUF_UCHAR(39))
     #define I3_RES_SME_STAT_INPUT_ISO_STD_FZ2_08_WERT_TYPE           unsigned char
@@ -1867,87 +1867,87 @@
         // LI: last time the error occurred R_iso_minus_QUAL / LI: letztmaliger Fehlerzeitpunkt R_iso_minus_QUAL
 
 #define I3_PID_SME_RB_SOH_KAPATEST                                   0xD6CC
-        // Return of the results of the last 3 HVS offboard capacity tests (ring memory) / RÃ¼ckgabe der Ergebnisse der
+        // Return of the results of the last 3 HVS offboard capacity tests (ring memory) / Rückgabe der Ergebnisse der
         // letzten 3 HVS-Offboard-Kapatests (Ringspeicher)
 
     #define I3_RES_SME_STAT_SOH_C_MIN_ERG_TEST_1_WERT                (RXBUF_UINT(0)/100.0f)
     #define I3_RES_SME_STAT_SOH_C_MIN_ERG_TEST_1_WERT_UNIT           '%'
     #define I3_RES_SME_STAT_SOH_C_MIN_ERG_TEST_1_WERT_TYPE           float
         // Minimum SoH_C (on the memory level) as the result of the first capacity test / Minimaler SoH_C (auf
-        // Speicherebene) als Ergebnis des ersten KapazitÃ¤tstests 
+        // Speicherebene) als Ergebnis des ersten Kapazitätstests 
 
     #define I3_RES_SME_STAT_SOH_C_MIN_VOR_TEST_1_WERT                (RXBUF_UINT(2)/100.0f)
     #define I3_RES_SME_STAT_SOH_C_MIN_VOR_TEST_1_WERT_UNIT           '%'
     #define I3_RES_SME_STAT_SOH_C_MIN_VOR_TEST_1_WERT_TYPE           float
-        // Minimum SoH_C BEFORE the first capacity test / Minimaler SoH_C VOR erstem KapazitÃ¤tstest
+        // Minimum SoH_C BEFORE the first capacity test / Minimaler SoH_C VOR erstem Kapazitätstest
 
     #define I3_RES_SME_STAT_SOH_C_MAX_VOR_TEST_1_WERT                (RXBUF_UINT(4)/100.0f)
     #define I3_RES_SME_STAT_SOH_C_MAX_VOR_TEST_1_WERT_UNIT           '%'
     #define I3_RES_SME_STAT_SOH_C_MAX_VOR_TEST_1_WERT_TYPE           float
-        // Maximum SoH_C BEFORE the first capacity test / Maximaler SoH_C VOR erstem KapazitÃ¤tstest
+        // Maximum SoH_C BEFORE the first capacity test / Maximaler SoH_C VOR erstem Kapazitätstest
 
     #define I3_RES_SME_STAT_SOH_C_AVG_VOR_TEST_1_WERT                (RXBUF_UINT(6)/100.0f)
     #define I3_RES_SME_STAT_SOH_C_AVG_VOR_TEST_1_WERT_UNIT           '%'
     #define I3_RES_SME_STAT_SOH_C_AVG_VOR_TEST_1_WERT_TYPE           float
-        // Mean SoH_C BEFORE the first capacity test / Mittlerer SoH_C VOR erstem KapazitÃ¤tstest
+        // Mean SoH_C BEFORE the first capacity test / Mittlerer SoH_C VOR erstem Kapazitätstest
 
     #define I3_RES_SME_STAT_TEMP_VOR_TEST_1_WERT                     (RXBUF_SCHAR(8))
-    #define I3_RES_SME_STAT_TEMP_VOR_TEST_1_WERT_UNIT                'Â°C'
+    #define I3_RES_SME_STAT_TEMP_VOR_TEST_1_WERT_UNIT                '°C'
     #define I3_RES_SME_STAT_TEMP_VOR_TEST_1_WERT_TYPE                char
         // Average measured temperature at HVS level BEFORE the first capacity test / Mittlere gemessene Temperatur auf
-        // HVS-Ebene VOR erstem KapazitÃ¤tstest
+        // HVS-Ebene VOR erstem Kapazitätstest
 
     #define I3_RES_SME_STAT_MAX_DELTA_U_CELL_1_WERT                  (RXBUF_UINT(9)/1000.0f)
     #define I3_RES_SME_STAT_MAX_DELTA_U_CELL_1_WERT_UNIT             'V'
     #define I3_RES_SME_STAT_MAX_DELTA_U_CELL_1_WERT_TYPE             float
         // Maximum voltage delta of the cells BEFORE the first capacity test From I levels I15 / SP15: 18-03-i420; I01 /
         // SE09: 17-11-i400; F56 / SE14: 19-11-i310 the following applies: Asymmetry potential as the voltage difference
-        // between the cell that was most deeply discharged during the first capacity test and Ucel_max when fully
-        // charged / Maximales Spannungsdelta der Zellen VOR erstem KapazitÃ¤tstest  Ab den I-Stufen I15/SP15:
-        // 18-03-i420; I01/SE09: 17-11-i400; F56/SE14: 19-11-i310 gilt: Asymmetrie-Potential als Spannungsdifferenz der
-        // wÃ¤hrend des ersten KapazitÃ¤tstests am tiefsten entladenen Zelle zu Ucel_max im Volllademoment
+        // between the cell that was most deeply discharged during the first capacity test and Ucel_max at full charge /
+        // Maximales Spannungsdelta der Zellen VOR erstem Kapazitätstest  Ab den I-Stufen I15/SP15: 18-03-i420; I01/SE09:
+        // 17-11-i400; F56/SE14: 19-11-i310 gilt: Asymmetrie-Potential als Spannungsdifferenz der während des ersten
+        // Kapazitätstests am tiefsten entladenen Zelle zu Ucel_max im Volllademoment
 
     #define I3_RES_SME_STAT_MAX_DELTA_SOC_NENN_1_WERT                (RXBUF_UINT(11)/100.0f)
     #define I3_RES_SME_STAT_MAX_DELTA_SOC_NENN_1_WERT_UNIT           '%'
     #define I3_RES_SME_STAT_MAX_DELTA_SOC_NENN_1_WERT_TYPE           float
         // Maximum SoC delta of the cells BEFORE the first capacity test From I levels I15 / SP15: 18-03-i420; I01 /
         // SE09: 17-11-i400; F56 / SE14: 19-11-i310 applies: Asymmetry potential as SoC_Nenn-Percent value, which was
-        // determined during the first capacity test. / Maximales SoC-Delta der Zellen VOR erstem KapazitÃ¤tstest Ab den
+        // determined during the first capacity test. / Maximales SoC-Delta der Zellen VOR erstem Kapazitätstest Ab den
         // I-Stufen I15/SP15: 18-03-i420; I01/SE09: 17-11-i400; F56/SE14: 19-11-i310 gilt: Asymmetrie-Potential als
-        // SoC_Nenn-Prozent-Wert, der wÃ¤hrend des ersten KapazitÃ¤tstests ermittelt wurde.
+        // SoC_Nenn-Prozent-Wert, der während des ersten Kapazitätstests ermittelt wurde.
 
     #define I3_RES_SME_STAT_ZEITPUNKT_TEST_1_WERT                    (RXBUF_UINT32(13))
     #define I3_RES_SME_STAT_ZEITPUNKT_TEST_1_WERT_UNIT               's'
     #define I3_RES_SME_STAT_ZEITPUNKT_TEST_1_WERT_TYPE               unsigned long
         // Point in time (SME time) at the end of the first capacity test / Zeitpunkt (SME-Zeit) am Ende des ersten
-        // KapazitÃ¤tstests
+        // Kapazitätstests
 
     #define I3_RES_SME_STAT_SOH_C_MIN_ERG_TEST_2_WERT                (RXBUF_UINT(17)/100.0f)
     #define I3_RES_SME_STAT_SOH_C_MIN_ERG_TEST_2_WERT_UNIT           '%'
     #define I3_RES_SME_STAT_SOH_C_MIN_ERG_TEST_2_WERT_TYPE           float
         // Minimum SoH_C (on the memory level) as the result of the second capacity test / Minimaler SoH_C (auf
-        // Speicherebene) als Ergebnis des zweiten KapazitÃ¤tstests 
+        // Speicherebene) als Ergebnis des zweiten Kapazitätstests 
 
     #define I3_RES_SME_STAT_SOH_C_MIN_VOR_TEST_2_WERT                (RXBUF_UINT(19)/100.0f)
     #define I3_RES_SME_STAT_SOH_C_MIN_VOR_TEST_2_WERT_UNIT           '%'
     #define I3_RES_SME_STAT_SOH_C_MIN_VOR_TEST_2_WERT_TYPE           float
-        // Minimum SoH_C BEFORE the second capacity test / Minimaler SoH_C VOR zweitem KapazitÃ¤tstest
+        // Minimum SoH_C BEFORE the second capacity test / Minimaler SoH_C VOR zweitem Kapazitätstest
 
     #define I3_RES_SME_STAT_SOH_C_MAX_VOR_TEST_2_WERT                (RXBUF_UINT(21)/100.0f)
     #define I3_RES_SME_STAT_SOH_C_MAX_VOR_TEST_2_WERT_UNIT           '%'
     #define I3_RES_SME_STAT_SOH_C_MAX_VOR_TEST_2_WERT_TYPE           float
-        // Maximum SoH_C BEFORE the second capacity test / Maximaler SoH_C VOR zweitem KapazitÃ¤tstest
+        // Maximum SoH_C BEFORE the second capacity test / Maximaler SoH_C VOR zweitem Kapazitätstest
 
     #define I3_RES_SME_STAT_SOH_C_AVG_VOR_TEST_2_WERT                (RXBUF_UINT(23)/100.0f)
     #define I3_RES_SME_STAT_SOH_C_AVG_VOR_TEST_2_WERT_UNIT           '%'
     #define I3_RES_SME_STAT_SOH_C_AVG_VOR_TEST_2_WERT_TYPE           float
-        // Mean SoH_C BEFORE second capacity test / Mittlerer SoH_C VOR zweitem KapazitÃ¤tstest
+        // Mean SoH_C BEFORE second capacity test / Mittlerer SoH_C VOR zweitem Kapazitätstest
 
     #define I3_RES_SME_STAT_TEMP_VOR_TEST_2_WERT                     (RXBUF_SCHAR(25))
-    #define I3_RES_SME_STAT_TEMP_VOR_TEST_2_WERT_UNIT                'Â°C'
+    #define I3_RES_SME_STAT_TEMP_VOR_TEST_2_WERT_UNIT                '°C'
     #define I3_RES_SME_STAT_TEMP_VOR_TEST_2_WERT_TYPE                char
         // Average measured temperature at HVS level BEFORE the second capacity test / Mittlere gemessene Temperatur auf
-        // HVS-Ebene VOR zweitem KapazitÃ¤tstest
+        // HVS-Ebene VOR zweitem Kapazitätstest
 
     #define I3_RES_SME_STAT_MAX_DELTA_U_CELL_2_WERT                  (RXBUF_UINT(26)/1000.0f)
     #define I3_RES_SME_STAT_MAX_DELTA_U_CELL_2_WERT_UNIT             'V'
@@ -1955,51 +1955,51 @@
         // Maximum voltage delta of the cells BEFORE the second capacity test From I levels I15 / SP15: 18-03-i420; I01 /
         // SE09: 17-11-i400; F56 / SE14: 19-11-i310 the following applies: Asymmetry potential as the voltage difference
         // between the deepest cell discharged during the second capacity test and Ucel_max when fully charged /
-        // Maximales Spannungsdelta der Zellen VOR zweitem KapazitÃ¤tstest  Ab den I-Stufen I15/SP15: 18-03-i420;
-        // I01/SE09: 17-11-i400; F56/SE14: 19-11-i310 gilt: Asymmetrie-Potential als Spannungsdifferenz der wÃ¤hrend des
-        // zweiten KapazitÃ¤tstests am tiefsten entladenen Zelle zu Ucel_max im Volllademoment
+        // Maximales Spannungsdelta der Zellen VOR zweitem Kapazitätstest  Ab den I-Stufen I15/SP15: 18-03-i420;
+        // I01/SE09: 17-11-i400; F56/SE14: 19-11-i310 gilt: Asymmetrie-Potential als Spannungsdifferenz der während des
+        // zweiten Kapazitätstests am tiefsten entladenen Zelle zu Ucel_max im Volllademoment
 
     #define I3_RES_SME_STAT_MAX_DELTA_SOC_NENN_2_WERT                (RXBUF_UINT(28)/100.0f)
     #define I3_RES_SME_STAT_MAX_DELTA_SOC_NENN_2_WERT_UNIT           '%'
     #define I3_RES_SME_STAT_MAX_DELTA_SOC_NENN_2_WERT_TYPE           float
         // Maximum SoC delta of the cells BEFORE the second capacity test From I levels I15 / SP15: 18-03-i420; I01 /
         // SE09: 17-11-i400; F56 / SE14: 19-11-i310 applies: Asymmetry potential as SoC_Nenn-Percent value, which was
-        // determined during the second capacity test. / Maximales SoC-Delta der Zellen VOR zweitem KapazitÃ¤tstest Ab
-        // den I-Stufen I15/SP15: 18-03-i420; I01/SE09: 17-11-i400; F56/SE14: 19-11-i310 gilt: Asymmetrie-Potential als
-        // SoC_Nenn-Prozent-Wert, der wÃ¤hrend des zweiten KapazitÃ¤tstests ermittelt wurde.
+        // determined during the second capacity test. / Maximales SoC-Delta der Zellen VOR zweitem Kapazitätstest Ab den
+        // I-Stufen I15/SP15: 18-03-i420; I01/SE09: 17-11-i400; F56/SE14: 19-11-i310 gilt: Asymmetrie-Potential als
+        // SoC_Nenn-Prozent-Wert, der während des zweiten Kapazitätstests ermittelt wurde.
 
     #define I3_RES_SME_STAT_ZEITPUNKT_TEST_2_WERT                    (RXBUF_UINT32(30))
     #define I3_RES_SME_STAT_ZEITPUNKT_TEST_2_WERT_UNIT               's'
     #define I3_RES_SME_STAT_ZEITPUNKT_TEST_2_WERT_TYPE               unsigned long
         // Point in time (SME time) at the end of the second capacity test / Zeitpunkt (SME-Zeit) am Ende des zweiten
-        // KapazitÃ¤tstests
+        // Kapazitätstests
 
     #define I3_RES_SME_STAT_SOH_C_MIN_ERG_TEST_3_WERT                (RXBUF_UINT(34)/100.0f)
     #define I3_RES_SME_STAT_SOH_C_MIN_ERG_TEST_3_WERT_UNIT           '%'
     #define I3_RES_SME_STAT_SOH_C_MIN_ERG_TEST_3_WERT_TYPE           float
         // Minimum SoH_C (on the memory level) as the result of the third capacity test / Minimaler SoH_C (auf
-        // Speicherebene) als Ergebnis des dritten KapazitÃ¤tstests 
+        // Speicherebene) als Ergebnis des dritten Kapazitätstests 
 
     #define I3_RES_SME_STAT_SOH_C_MIN_VOR_TEST_3_WERT                (RXBUF_UINT(36)/100.0f)
     #define I3_RES_SME_STAT_SOH_C_MIN_VOR_TEST_3_WERT_UNIT           '%'
     #define I3_RES_SME_STAT_SOH_C_MIN_VOR_TEST_3_WERT_TYPE           float
-        // Minimum SoH_C BEFORE the third capacity test / Minimaler SoH_C VOR drittem KapazitÃ¤tstest
+        // Minimum SoH_C BEFORE the third capacity test / Minimaler SoH_C VOR drittem Kapazitätstest
 
     #define I3_RES_SME_STAT_SOH_C_MAX_VOR_TEST_3_WERT                (RXBUF_UINT(38)/100.0f)
     #define I3_RES_SME_STAT_SOH_C_MAX_VOR_TEST_3_WERT_UNIT           '%'
     #define I3_RES_SME_STAT_SOH_C_MAX_VOR_TEST_3_WERT_TYPE           float
-        // Maximum SoH_C BEFORE the third capacity test / Maximaler SoH_C VOR drittem KapazitÃ¤tstest
+        // Maximum SoH_C BEFORE the third capacity test / Maximaler SoH_C VOR drittem Kapazitätstest
 
     #define I3_RES_SME_STAT_SOH_C_AVG_VOR_TEST_3_WERT                (RXBUF_UINT(40)/100.0f)
     #define I3_RES_SME_STAT_SOH_C_AVG_VOR_TEST_3_WERT_UNIT           '%'
     #define I3_RES_SME_STAT_SOH_C_AVG_VOR_TEST_3_WERT_TYPE           float
-        // Middle SoH_C BEFORE the third capacity test / Mittlerer SoH_C VOR drittem KapazitÃ¤tstest
+        // Middle SoH_C BEFORE the third capacity test / Mittlerer SoH_C VOR drittem Kapazitätstest
 
     #define I3_RES_SME_STAT_TEMP_VOR_TEST_3_WERT                     (RXBUF_SCHAR(42))
-    #define I3_RES_SME_STAT_TEMP_VOR_TEST_3_WERT_UNIT                'Â°C'
+    #define I3_RES_SME_STAT_TEMP_VOR_TEST_3_WERT_UNIT                '°C'
     #define I3_RES_SME_STAT_TEMP_VOR_TEST_3_WERT_TYPE                char
         // Average measured temperature at HVS level BEFORE the third capacity test / Mittlere gemessene Temperatur auf
-        // HVS-Ebene VOR drittem KapazitÃ¤tstest
+        // HVS-Ebene VOR drittem Kapazitätstest
 
     #define I3_RES_SME_STAT_MAX_DELTA_U_CELL_3_WERT                  (RXBUF_UINT(43)/1000.0f)
     #define I3_RES_SME_STAT_MAX_DELTA_U_CELL_3_WERT_UNIT             'V'
@@ -2007,55 +2007,55 @@
         // Maximum voltage delta of the cells BEFORE the third capacity test From I levels I15 / SP15: 18-03-i420; I01 /
         // SE09: 17-11-i400; F56 / SE14: 19-11-i310 the following applies: Asymmetry potential as the voltage difference
         // between the deepest cell discharged during the third capacity test and Ucel_max at full charge / Maximales
-        // Spannungsdelta der Zellen VOR drittem KapazitÃ¤tstest  Ab den I-Stufen I15/SP15: 18-03-i420; I01/SE09:
-        // 17-11-i400; F56/SE14: 19-11-i310 gilt: Asymmetrie-Potential als Spannungsdifferenz der wÃ¤hrend des dritten
-        // KapazitÃ¤tstests am tiefsten entladenen Zelle zu Ucel_max im Volllademoment
+        // Spannungsdelta der Zellen VOR drittem Kapazitätstest  Ab den I-Stufen I15/SP15: 18-03-i420; I01/SE09:
+        // 17-11-i400; F56/SE14: 19-11-i310 gilt: Asymmetrie-Potential als Spannungsdifferenz der während des dritten
+        // Kapazitätstests am tiefsten entladenen Zelle zu Ucel_max im Volllademoment
 
     #define I3_RES_SME_STAT_MAX_DELTA_SOC_NENN_3_WERT                (RXBUF_UINT(45)/100.0f)
     #define I3_RES_SME_STAT_MAX_DELTA_SOC_NENN_3_WERT_UNIT           '%'
     #define I3_RES_SME_STAT_MAX_DELTA_SOC_NENN_3_WERT_TYPE           float
         // Maximum SoC delta of the cells BEFORE the third capacity test From I levels I15 / SP15: 18-03-i420; I01 /
         // SE09: 17-11-i400; F56 / SE14: 19-11-i310 applies: Asymmetry potential as SoC_Nenn-Percent value, which was
-        // determined during the third capacity test. / Maximales SoC-Delta der Zellen VOR drittem KapazitÃ¤tstest Ab den
+        // determined during the third capacity test. / Maximales SoC-Delta der Zellen VOR drittem Kapazitätstest Ab den
         // I-Stufen I15/SP15: 18-03-i420; I01/SE09: 17-11-i400; F56/SE14: 19-11-i310 gilt: Asymmetrie-Potential als
-        // SoC_Nenn-Prozent-Wert, der wÃ¤hrend des dritten KapazitÃ¤tstests ermittelt wurde.
+        // SoC_Nenn-Prozent-Wert, der während des dritten Kapazitätstests ermittelt wurde.
 
     #define I3_RES_SME_STAT_ZEITPUNKT_TEST_3_WERT                    (RXBUF_UINT32(47))
     #define I3_RES_SME_STAT_ZEITPUNKT_TEST_3_WERT_UNIT               's'
     #define I3_RES_SME_STAT_ZEITPUNKT_TEST_3_WERT_TYPE               unsigned long
         // Point in time (SME time) at the end of the third capacity test / Zeitpunkt (SME-Zeit) am Ende des dritten
-        // KapazitÃ¤tstests
+        // Kapazitätstests
 
 #define I3_PID_SME_REKU_VOLTAGE_LIFT                                 0xD6CD
-        // Return of the duration and frequency in which the increased recuperation capacity is made available when the
-        // HVS is almost full / RÃ¼ckgabe der Dauer und HÃ¤ufigkeit, in der erhÃ¶hte Rekuperationsleistung zur VerfÃ¼gung
-        // gestellt wird bei fast vollem HVS
+        // Return of the duration and frequency in which the increased recuperation is made available when the HVS is
+        // almost full / Rückgabe der Dauer und Häufigkeit, in der erhöhte Rekuperationsleistung zur Verfügung gestellt
+        // wird bei fast vollem HVS
 
     #define I3_RES_SME_STAT_ANZAHL_REKU_VOLT_LIFT_WERT               (RXBUF_UINT(0))
     #define I3_RES_SME_STAT_ANZAHL_REKU_VOLT_LIFT_WERT_TYPE          unsigned short
         // Return of the number in which the increased recuperation capacity is made available when the HVS is almost
-        // full / RÃ¼ckgabe der Anzahl, in der erhÃ¶hte Rekuperationsleistung zur VerfÃ¼gung gestellt wird bei fast
-        // vollem HVS
+        // full / Rückgabe der Anzahl, in der erhöhte Rekuperationsleistung zur Verfügung gestellt wird bei fast vollem
+        // HVS
 
     #define I3_RES_SME_STAT_DAUER_REKU_VOLT_LIFT_WERT                (RXBUF_UINT32(2)/10.0f)
     #define I3_RES_SME_STAT_DAUER_REKU_VOLT_LIFT_WERT_UNIT           's'
     #define I3_RES_SME_STAT_DAUER_REKU_VOLT_LIFT_WERT_TYPE           float
         // Return of the duration in which the increased recuperation capacity is available when the HVS is almost full /
-        // RÃ¼ckgabe der Dauer, in der erhÃ¶hte Rekuperationsleistung zur VerfÃ¼gung gestellt wird bei fast vollem HVS
+        // Rückgabe der Dauer, in der erhöhte Rekuperationsleistung zur Verfügung gestellt wird bei fast vollem HVS
 
 #define I3_PID_SME_RB_ALTERUNG_KAPA                                  0xD6CE
-        // Return of the results of the last 5 SoH_C adaptations including capacity tests (ring memory) / RÃ¼ckgabe der
+        // Return of the results of the last 5 SoH_C adaptations including capacity tests (ring memory) / Rückgabe der
         // Ergebnisse der letzten 5 SoH_C-Adaptionen incl. Kapatests  (Ringspeicher)
 
     #define I3_RES_SME_STAT_SOH_ADAPT_COUNT_1_WERT                   (RXBUF_UINT(0))
     #define I3_RES_SME_STAT_SOH_ADAPT_COUNT_1_WERT_TYPE              unsigned short
-        // Adaptation counter of 1st adaptation / AdaptionszÃ¤hler von 1. Adaption
+        // Adaptation counter of 1st adaptation / Adaptionszähler von 1. Adaption
 
     #define I3_RES_SME_STAT_GRUND_ADAPTION_1_WERT                    (RXBUF_UCHAR(2))
     #define I3_RES_SME_STAT_GRUND_ADAPTION_1_WERT_TYPE               unsigned char
         // Reason for triggering the ring buffer entry (0 = SoH_C estimate; 1 = KapaTest with transfer of the result to
-        // NV; 2 = KapaTest without transfer of the result to NV) / AuslÃ¶segrund des Ringspeicher-Eintrags (0 =
-        // SoH_C-SchÃ¤tzung; 1 = KapaTest mit Ãbernahme vom Ergebnis in NV; 2 = KapaTest ohne Ãbernahme vom Ergebnis in
+        // NV; 2 = KapaTest without transfer of the result to NV) / Auslösegrund des Ringspeicher-Eintrags (0 =
+        // SoH_C-Schätzung; 1 = KapaTest mit Übernahme vom Ergebnis in NV; 2 = KapaTest ohne Übernahme vom Ergebnis in
         // NV)
 
     #define I3_RES_SME_STAT_ZEITPUNKT_ADAP_1_WERT                    (RXBUF_UINT32(3))
@@ -2078,17 +2078,17 @@
     #define I3_RES_SME_STAT_HVOFFTIME_ADAP_1_WERT                    (RXBUF_UINT(15))
     #define I3_RES_SME_STAT_HVOFFTIME_ADAP_1_WERT_UNIT               's'
     #define I3_RES_SME_STAT_HVOFFTIME_ADAP_1_WERT_TYPE               unsigned short
-        // Duration the shooter was open during the 1st adaptation / Dauer, die die SchÃ¼tze wÃ¤hrend der 1. Adaption
-        // geÃ¶ffnet war
+        // Duration the shooter was open during the 1st adaptation / Dauer, die die Schütze während der 1. Adaption
+        // geöffnet war
 
     #define I3_RES_SME_STAT_TEMP_MEAN1_1_WERT                        (RXBUF_SCHAR(17))
-    #define I3_RES_SME_STAT_TEMP_MEAN1_1_WERT_UNIT                   'Â°C'
+    #define I3_RES_SME_STAT_TEMP_MEAN1_1_WERT_UNIT                   '°C'
     #define I3_RES_SME_STAT_TEMP_MEAN1_1_WERT_TYPE                   char
         // Average temperature at HVS level at the beginning of the 1st adaptation or at the beginning of the test /
         // Mittlere Temperatur auf HVS-Ebene zu Beginn der 1. Adaption bzw. zu Beginn des Tests
 
     #define I3_RES_SME_STAT_TEMP_MEAN2_1_WERT                        (RXBUF_SCHAR(18))
-    #define I3_RES_SME_STAT_TEMP_MEAN2_1_WERT_UNIT                   'Â°C'
+    #define I3_RES_SME_STAT_TEMP_MEAN2_1_WERT_UNIT                   '°C'
     #define I3_RES_SME_STAT_TEMP_MEAN2_1_WERT_TYPE                   char
         // Average temperature at HVS level at the end of the 1st adaptation / Mittlere Temperatur auf HVS-Ebene am Ende
         // der 1. Adaption
@@ -2156,7 +2156,7 @@
 
     #define I3_RES_SME_STAT_SOH_GAIN_FAKTOR_ZELLE1_1_WERT            (RXBUF_UINT(39)/10000.0f)
     #define I3_RES_SME_STAT_SOH_GAIN_FAKTOR_ZELLE1_1_WERT_TYPE       float
-        // Gain factor of cell 1 for the first adaptation / Gain Faktor von Zelle 1 fÃ¼r die erste Adaption
+        // Gain factor of cell 1 for the first adaptation / Gain Faktor von Zelle 1 für die erste Adaption
 
     #define I3_RES_SME_STAT_SOH_MIN_NACH_1_WERT                      (RXBUF_UINT(41)/100.0f)
     #define I3_RES_SME_STAT_SOH_MIN_NACH_1_WERT_UNIT                 '%'
@@ -2175,13 +2175,13 @@
 
     #define I3_RES_SME_STAT_SOH_ADAPT_COUNT_2_WERT                   (RXBUF_UINT(47))
     #define I3_RES_SME_STAT_SOH_ADAPT_COUNT_2_WERT_TYPE              unsigned short
-        // Adaptation counter of 2nd adaptation / AdaptionszÃ¤hler von 2. Adaption
+        // Adaptation counter of 2nd adaptation / Adaptionszähler von 2. Adaption
 
     #define I3_RES_SME_STAT_GRUND_ADAPTION_2_WERT                    (RXBUF_UCHAR(49))
     #define I3_RES_SME_STAT_GRUND_ADAPTION_2_WERT_TYPE               unsigned char
         // Reason for triggering the ring buffer entry (0 = SoH_C estimate; 1 = KapaTest with transfer of the result to
-        // NV; 2 = KapaTest without transfer of the result to NV) / AuslÃ¶segrund des Ringspeicher-Eintrags (0 =
-        // SoH_C-SchÃ¤tzung; 1 = KapaTest mit Ãbernahme vom Ergebnis in NV; 2 = KapaTest ohne Ãbernahme vom Ergebnis in
+        // NV; 2 = KapaTest without transfer of the result to NV) / Auslösegrund des Ringspeicher-Eintrags (0 =
+        // SoH_C-Schätzung; 1 = KapaTest mit Übernahme vom Ergebnis in NV; 2 = KapaTest ohne Übernahme vom Ergebnis in
         // NV)
 
     #define I3_RES_SME_STAT_ZEITPUNKT_ADAP_2_WERT                    (RXBUF_UINT32(50))
@@ -2204,17 +2204,17 @@
     #define I3_RES_SME_STAT_HVOFFTIME_ADAP_2_WERT                    (RXBUF_UINT(62))
     #define I3_RES_SME_STAT_HVOFFTIME_ADAP_2_WERT_UNIT               's'
     #define I3_RES_SME_STAT_HVOFFTIME_ADAP_2_WERT_TYPE               unsigned short
-        // Duration that the shooter was open during the 2nd adaptation / Dauer, die die SchÃ¼tze wÃ¤hrend der 2.
-        // Adaption geÃ¶ffnet war
+        // Duration that the shooter was open during the 2nd adaptation / Dauer, die die Schütze während der 2. Adaption
+        // geöffnet war
 
     #define I3_RES_SME_STAT_TEMP_MEAN1_2_WERT                        (RXBUF_SCHAR(64))
-    #define I3_RES_SME_STAT_TEMP_MEAN1_2_WERT_UNIT                   'Â°C'
+    #define I3_RES_SME_STAT_TEMP_MEAN1_2_WERT_UNIT                   '°C'
     #define I3_RES_SME_STAT_TEMP_MEAN1_2_WERT_TYPE                   char
         // Average temperature at HVS level at the beginning of the 2nd adaptation or at the beginning of the test /
         // Mittlere Temperatur auf HVS-Ebene zu Beginn der 2. Adaption bzw. zu Beginn des Tests
 
     #define I3_RES_SME_STAT_TEMP_MEAN2_2_WERT                        (RXBUF_SCHAR(65))
-    #define I3_RES_SME_STAT_TEMP_MEAN2_2_WERT_UNIT                   'Â°C'
+    #define I3_RES_SME_STAT_TEMP_MEAN2_2_WERT_UNIT                   '°C'
     #define I3_RES_SME_STAT_TEMP_MEAN2_2_WERT_TYPE                   char
         // Average temperature at HVS level at the end of the 2nd adaptation / Mittlere Temperatur auf HVS-Ebene am Ende
         // der 2. Adaption
@@ -2222,10 +2222,9 @@
     #define I3_RES_SME_STAT_UCEL_MIN_INIT1_2_WERT                    (RXBUF_UINT(66)/1000.0f)
     #define I3_RES_SME_STAT_UCEL_MIN_INIT1_2_WERT_UNIT               'V'
     #define I3_RES_SME_STAT_UCEL_MIN_INIT1_2_WERT_TYPE               float
-        // Minimum measured open-circuit voltage of the cells at the beginning of the 2nd adaptation (if adaptation
-        // reason = KapaTest: minimum measured open-circuit voltage when waking up) / Minimale gemessene Ruhespannung der
-        // Zellen zu Beginn der 2. Adaption (Wenn Adaptionsgrund = KapaTest: Minimale gemessene Ruhespannung beim
-        // Aufwachen)
+        // Minimum measured resting voltage of the cells at the beginning of the 2nd adaptation (if adaptation reason =
+        // KapaTest: minimum measured resting voltage when waking up) / Minimale gemessene Ruhespannung der Zellen zu
+        // Beginn der 2. Adaption (Wenn Adaptionsgrund = KapaTest: Minimale gemessene Ruhespannung beim Aufwachen)
 
     #define I3_RES_SME_STAT_UCEL_MAX_INIT1_2_WERT                    (RXBUF_UINT(68)/1000.0f)
     #define I3_RES_SME_STAT_UCEL_MAX_INIT1_2_WERT_UNIT               'V'
@@ -2237,9 +2236,9 @@
     #define I3_RES_SME_STAT_UCEL_MEAN_INIT1_2_WERT                   (RXBUF_UINT(70)/1000.0f)
     #define I3_RES_SME_STAT_UCEL_MEAN_INIT1_2_WERT_UNIT              'V'
     #define I3_RES_SME_STAT_UCEL_MEAN_INIT1_2_WERT_TYPE              float
-        // Average measured open-circuit voltage of the cells at the beginning of the 2nd adaptation (if adaptation
-        // reason = KapaTest: average measured open-circuit voltage when waking up) / Mittlere gemessene Ruhespannung der
-        // Zellen zu Beginn der 2. Adaption (Wenn Adaptionsgrund = KapaTest: Mittlere gemessene Ruhespannung beim
+        // Mean measured open-circuit voltage of the cells at the beginning of the 2nd adaptation (if reason for
+        // adaptation = KapaTest: mean measured open-circuit voltage when waking up) / Mittlere gemessene Ruhespannung
+        // der Zellen zu Beginn der 2. Adaption (Wenn Adaptionsgrund = KapaTest: Mittlere gemessene Ruhespannung beim
         // Aufwachen)
 
     #define I3_RES_SME_STAT_UCEL_MIN_INIT2_2_WERT                    (RXBUF_UINT(72)/1000.0f)
@@ -2282,7 +2281,7 @@
 
     #define I3_RES_SME_STAT_SOH_GAIN_FAKTOR_ZELLE1_2_WERT            (RXBUF_UINT(86)/10000.0f)
     #define I3_RES_SME_STAT_SOH_GAIN_FAKTOR_ZELLE1_2_WERT_TYPE       float
-        // Gain factor of cell 1 for the second adaptation / Gain Faktor von Zelle 1 fÃ¼r die zweite Adaption
+        // Gain factor of cell 1 for the second adaptation / Gain Faktor von Zelle 1 für die zweite Adaption
 
     #define I3_RES_SME_STAT_SOH_MIN_NACH_2_WERT                      (RXBUF_UINT(88)/100.0f)
     #define I3_RES_SME_STAT_SOH_MIN_NACH_2_WERT_UNIT                 '%'
@@ -2301,13 +2300,13 @@
 
     #define I3_RES_SME_STAT_SOH_ADAPT_COUNT_3_WERT                   (RXBUF_UINT(94))
     #define I3_RES_SME_STAT_SOH_ADAPT_COUNT_3_WERT_TYPE              unsigned short
-        // Adaptation counter of 3rd adaptation / AdaptionszÃ¤hler von 3. Adaption
+        // Adaptation counter of 3rd adaptation / Adaptionszähler von 3. Adaption
 
     #define I3_RES_SME_STAT_GRUND_ADAPTION_3_WERT                    (RXBUF_UCHAR(96))
     #define I3_RES_SME_STAT_GRUND_ADAPTION_3_WERT_TYPE               unsigned char
         // Reason for triggering the ring buffer entry (0 = SoH_C estimate; 1 = KapaTest with transfer of the result to
-        // NV; 2 = KapaTest without transfer of the result to NV) / AuslÃ¶segrund des Ringspeicher-Eintrags (0 =
-        // SoH_C-SchÃ¤tzung; 1 = KapaTest mit Ãbernahme vom Ergebnis in NV; 2 = KapaTest ohne Ãbernahme vom Ergebnis in
+        // NV; 2 = KapaTest without transfer of the result to NV) / Auslösegrund des Ringspeicher-Eintrags (0 =
+        // SoH_C-Schätzung; 1 = KapaTest mit Übernahme vom Ergebnis in NV; 2 = KapaTest ohne Übernahme vom Ergebnis in
         // NV)
 
     #define I3_RES_SME_STAT_ZEITPUNKT_ADAP_3_WERT                    (RXBUF_UINT32(97))
@@ -2330,17 +2329,17 @@
     #define I3_RES_SME_STAT_HVOFFTIME_ADAP_3_WERT                    (RXBUF_UINT(109))
     #define I3_RES_SME_STAT_HVOFFTIME_ADAP_3_WERT_UNIT               's'
     #define I3_RES_SME_STAT_HVOFFTIME_ADAP_3_WERT_TYPE               unsigned short
-        // Duration that the shooter was open during the 3rd adaptation / Dauer, die die SchÃ¼tze wÃ¤hrend der 3.
-        // Adaption geÃ¶ffnet war
+        // Duration that the shooter was open during the 3rd adaptation / Dauer, die die Schütze während der 3. Adaption
+        // geöffnet war
 
     #define I3_RES_SME_STAT_TEMP_MEAN1_3_WERT                        (RXBUF_SCHAR(111))
-    #define I3_RES_SME_STAT_TEMP_MEAN1_3_WERT_UNIT                   'Â°C'
+    #define I3_RES_SME_STAT_TEMP_MEAN1_3_WERT_UNIT                   '°C'
     #define I3_RES_SME_STAT_TEMP_MEAN1_3_WERT_TYPE                   char
         // Average temperature at HVS level at the beginning of the 3rd adaptation or at the beginning of the test /
         // Mittlere Temperatur auf HVS-Ebene zu Beginn der 3. Adaption bzw. zu Beginn des Tests
 
     #define I3_RES_SME_STAT_TEMP_MEAN2_3_WERT                        (RXBUF_SCHAR(112))
-    #define I3_RES_SME_STAT_TEMP_MEAN2_3_WERT_UNIT                   'Â°C'
+    #define I3_RES_SME_STAT_TEMP_MEAN2_3_WERT_UNIT                   '°C'
     #define I3_RES_SME_STAT_TEMP_MEAN2_3_WERT_TYPE                   char
         // Average temperature at HVS level at the end of the 3rd adaptation / Mittlere Temperatur auf HVS-Ebene am Ende
         // der 3. Adaption
@@ -2362,9 +2361,9 @@
     #define I3_RES_SME_STAT_UCEL_MEAN_INIT1_3_WERT                   (RXBUF_UINT(117)/1000.0f)
     #define I3_RES_SME_STAT_UCEL_MEAN_INIT1_3_WERT_UNIT              'V'
     #define I3_RES_SME_STAT_UCEL_MEAN_INIT1_3_WERT_TYPE              float
-        // Average measured open-circuit voltage of the cells at the beginning of the 3rd adaptation (if adaptation
-        // reason = KapaTest: average measured open-circuit voltage when waking up) / Mittlere gemessene Ruhespannung der
-        // Zellen zu Beginn der 3. Adaption (Wenn Adaptionsgrund = KapaTest: Mittlere gemessene Ruhespannung beim
+        // Mean measured open-circuit voltage of the cells at the beginning of the 3rd adaptation (if reason for
+        // adaptation = KapaTest: mean measured open-circuit voltage when waking up) / Mittlere gemessene Ruhespannung
+        // der Zellen zu Beginn der 3. Adaption (Wenn Adaptionsgrund = KapaTest: Mittlere gemessene Ruhespannung beim
         // Aufwachen)
 
     #define I3_RES_SME_STAT_UCEL_MIN_INIT2_3_WERT                    (RXBUF_UINT(119)/1000.0f)
@@ -2407,7 +2406,7 @@
 
     #define I3_RES_SME_STAT_SOH_GAIN_FAKTOR_ZELLE1_3_WERT            (RXBUF_UINT(133)/10000.0f)
     #define I3_RES_SME_STAT_SOH_GAIN_FAKTOR_ZELLE1_3_WERT_TYPE       float
-        // Gain factor of cell 1 for the third adaptation / Gain Faktor von Zelle 1 fÃ¼r die dritte Adaption
+        // Gain factor of cell 1 for the third adaptation / Gain Faktor von Zelle 1 für die dritte Adaption
 
     #define I3_RES_SME_STAT_SOH_MIN_NACH_3_WERT                      (RXBUF_UINT(135)/100.0f)
     #define I3_RES_SME_STAT_SOH_MIN_NACH_3_WERT_UNIT                 '%'
@@ -2426,13 +2425,13 @@
 
     #define I3_RES_SME_STAT_SOH_ADAPT_COUNT_4_WERT                   (RXBUF_UINT(141))
     #define I3_RES_SME_STAT_SOH_ADAPT_COUNT_4_WERT_TYPE              unsigned short
-        // Adaptation counter of 4th adaptation / AdaptionszÃ¤hler von 4. Adaption
+        // Adaptation counter of 4th adaptation / Adaptionszähler von 4. Adaption
 
     #define I3_RES_SME_STAT_GRUND_ADAPTION_4_WERT                    (RXBUF_UCHAR(143))
     #define I3_RES_SME_STAT_GRUND_ADAPTION_4_WERT_TYPE               unsigned char
         // Reason for triggering the ring buffer entry (0 = SoH_C estimate; 1 = KapaTest with transfer of the result to
-        // NV; 2 = KapaTest without transfer of the result to NV) / AuslÃ¶segrund des Ringspeicher-Eintrags (0 =
-        // SoH_C-SchÃ¤tzung; 1 = KapaTest mit Ãbernahme vom Ergebnis in NV; 2 = KapaTest ohne Ãbernahme vom Ergebnis in
+        // NV; 2 = KapaTest without transfer of the result to NV) / Auslösegrund des Ringspeicher-Eintrags (0 =
+        // SoH_C-Schätzung; 1 = KapaTest mit Übernahme vom Ergebnis in NV; 2 = KapaTest ohne Übernahme vom Ergebnis in
         // NV)
 
     #define I3_RES_SME_STAT_ZEITPUNKT_ADAP_4_WERT                    (RXBUF_UINT32(144))
@@ -2455,17 +2454,17 @@
     #define I3_RES_SME_STAT_HVOFFTIME_ADAP_4_WERT                    (RXBUF_UINT(156))
     #define I3_RES_SME_STAT_HVOFFTIME_ADAP_4_WERT_UNIT               's'
     #define I3_RES_SME_STAT_HVOFFTIME_ADAP_4_WERT_TYPE               unsigned short
-        // Duration the shooter was open during the 4th adaptation / Dauer, die die SchÃ¼tze wÃ¤hrend der 4. Adaption
-        // geÃ¶ffnet war
+        // Duration the shooter was open during the 4th adaptation / Dauer, die die Schütze während der 4. Adaption
+        // geöffnet war
 
     #define I3_RES_SME_STAT_TEMP_MEAN1_4_WERT                        (RXBUF_SCHAR(158))
-    #define I3_RES_SME_STAT_TEMP_MEAN1_4_WERT_UNIT                   'Â°C'
+    #define I3_RES_SME_STAT_TEMP_MEAN1_4_WERT_UNIT                   '°C'
     #define I3_RES_SME_STAT_TEMP_MEAN1_4_WERT_TYPE                   char
         // Average temperature at HVS level at the beginning of the 4th adaptation or at the beginning of the test /
         // Mittlere Temperatur auf HVS-Ebene zu Beginn der 4. Adaption bzw. zu Beginn des Tests
 
     #define I3_RES_SME_STAT_TEMP_MEAN2_4_WERT                        (RXBUF_SCHAR(159))
-    #define I3_RES_SME_STAT_TEMP_MEAN2_4_WERT_UNIT                   'Â°C'
+    #define I3_RES_SME_STAT_TEMP_MEAN2_4_WERT_UNIT                   '°C'
     #define I3_RES_SME_STAT_TEMP_MEAN2_4_WERT_TYPE                   char
         // Average temperature at HVS level at the end of the 4th adaptation / Mittlere Temperatur auf HVS-Ebene am Ende
         // der 4. Adaption
@@ -2473,9 +2472,9 @@
     #define I3_RES_SME_STAT_UCEL_MIN_INIT1_4_WERT                    (RXBUF_UINT(160)/1000.0f)
     #define I3_RES_SME_STAT_UCEL_MIN_INIT1_4_WERT_UNIT               'V'
     #define I3_RES_SME_STAT_UCEL_MIN_INIT1_4_WERT_TYPE               float
-        // Minimum measured open-circuit voltage of the cells at the beginning of the 4th adaptation (if the reason for
-        // adaptation = KapaTest: minimum measured open-circuit voltage when waking up) / Minimale gemessene Ruhespannung
-        // der Zellen zu Beginn der 4. Adaption (Wenn Adaptionsgrund = KapaTest: Minimale gemessene Ruhespannung beim
+        // Minimum measured open-circuit voltage of the cells at the beginning of the 4th adaptation (if adaptation
+        // reason = KapaTest: minimum measured open-circuit voltage when waking up) / Minimale gemessene Ruhespannung der
+        // Zellen zu Beginn der 4. Adaption (Wenn Adaptionsgrund = KapaTest: Minimale gemessene Ruhespannung beim
         // Aufwachen)
 
     #define I3_RES_SME_STAT_UCEL_MAX_INIT1_4_WERT                    (RXBUF_UINT(162)/1000.0f)
@@ -2533,7 +2532,7 @@
 
     #define I3_RES_SME_STAT_SOH_GAIN_FAKTOR_ZELLE1_4_WERT            (RXBUF_UINT(180)/10000.0f)
     #define I3_RES_SME_STAT_SOH_GAIN_FAKTOR_ZELLE1_4_WERT_TYPE       float
-        // Gain factor of cell 1 for the fourth adaptation / Gain Faktor von Zelle 1 fÃ¼r die vierte Adaption
+        // Gain factor of cell 1 for the fourth adaptation / Gain Faktor von Zelle 1 für die vierte Adaption
 
     #define I3_RES_SME_STAT_SOH_MIN_NACH_4_WERT                      (RXBUF_UINT(182)/100.0f)
     #define I3_RES_SME_STAT_SOH_MIN_NACH_4_WERT_UNIT                 '%'
@@ -2552,13 +2551,13 @@
 
     #define I3_RES_SME_STAT_SOH_ADAPT_COUNT_5_WERT                   (RXBUF_UINT(188))
     #define I3_RES_SME_STAT_SOH_ADAPT_COUNT_5_WERT_TYPE              unsigned short
-        // Adaptation counter of 5th adaptation / AdaptionszÃ¤hler von 5. Adaption
+        // Adaptation counter of 5th adaptation / Adaptionszähler von 5. Adaption
 
     #define I3_RES_SME_STAT_GRUND_ADAPTION_5_WERT                    (RXBUF_UCHAR(190))
     #define I3_RES_SME_STAT_GRUND_ADAPTION_5_WERT_TYPE               unsigned char
         // Reason for triggering the ring buffer entry (0 = SoH_C estimate; 1 = KapaTest with transfer of the result to
-        // NV; 2 = KapaTest without transfer of the result to NV) / AuslÃ¶segrund des Ringspeicher-Eintrags (0 =
-        // SoH_C-SchÃ¤tzung; 1 = KapaTest mit Ãbernahme vom Ergebnis in NV; 2 = KapaTest ohne Ãbernahme vom Ergebnis in
+        // NV; 2 = KapaTest without transfer of the result to NV) / Auslösegrund des Ringspeicher-Eintrags (0 =
+        // SoH_C-Schätzung; 1 = KapaTest mit Übernahme vom Ergebnis in NV; 2 = KapaTest ohne Übernahme vom Ergebnis in
         // NV)
 
     #define I3_RES_SME_STAT_ZEITPUNKT_ADAP_5_WERT                    (RXBUF_UINT32(191))
@@ -2581,17 +2580,17 @@
     #define I3_RES_SME_STAT_HVOFFTIME_ADAP_5_WERT                    (RXBUF_UINT(203))
     #define I3_RES_SME_STAT_HVOFFTIME_ADAP_5_WERT_UNIT               's'
     #define I3_RES_SME_STAT_HVOFFTIME_ADAP_5_WERT_TYPE               unsigned short
-        // Duration that the shooter was open during the 5th adaptation / Dauer, die die SchÃ¼tze wÃ¤hrend der 5.
-        // Adaption geÃ¶ffnet war
+        // Duration that the shooter was open during the 5th adaptation / Dauer, die die Schütze während der 5. Adaption
+        // geöffnet war
 
     #define I3_RES_SME_STAT_TEMP_MEAN1_5_WERT                        (RXBUF_SCHAR(205))
-    #define I3_RES_SME_STAT_TEMP_MEAN1_5_WERT_UNIT                   'Â°C'
+    #define I3_RES_SME_STAT_TEMP_MEAN1_5_WERT_UNIT                   '°C'
     #define I3_RES_SME_STAT_TEMP_MEAN1_5_WERT_TYPE                   char
         // Average temperature at HVS level at the beginning of the 5th adaptation or at the beginning of the test /
         // Mittlere Temperatur auf HVS-Ebene zu Beginn der 5. Adaption bzw. zu Beginn des Tests
 
     #define I3_RES_SME_STAT_TEMP_MEAN2_5_WERT                        (RXBUF_SCHAR(206))
-    #define I3_RES_SME_STAT_TEMP_MEAN2_5_WERT_UNIT                   'Â°C'
+    #define I3_RES_SME_STAT_TEMP_MEAN2_5_WERT_UNIT                   '°C'
     #define I3_RES_SME_STAT_TEMP_MEAN2_5_WERT_TYPE                   char
         // Average temperature at HVS level at the end of the 5th adaptation / Mittlere Temperatur auf HVS-Ebene am Ende
         // der 5. Adaption
@@ -2658,7 +2657,7 @@
 
     #define I3_RES_SME_STAT_SOH_GAIN_FAKTOR_ZELLE1_5_WERT            (RXBUF_UINT(227)/10000.0f)
     #define I3_RES_SME_STAT_SOH_GAIN_FAKTOR_ZELLE1_5_WERT_TYPE       float
-        // Gain factor of cell 1 for the fifth adaptation / Gain Faktor von Zelle 1 fÃ¼r die fÃ¼nfte Adaption
+        // Gain factor of cell 1 for the fifth adaptation / Gain Faktor von Zelle 1 für die fünfte Adaption
 
     #define I3_RES_SME_STAT_SOH_MIN_NACH_5_WERT                      (RXBUF_UINT(229)/100.0f)
     #define I3_RES_SME_STAT_SOH_MIN_NACH_5_WERT_UNIT                 '%'
@@ -2678,173 +2677,173 @@
     #define I3_RES_SME_STAT_SOH_MIN_VOR_5_WERT                       (RXBUF_UINT(235)/100.0f)
     #define I3_RES_SME_STAT_SOH_MIN_VOR_5_WERT_UNIT                  '%'
     #define I3_RES_SME_STAT_SOH_MIN_VOR_5_WERT_TYPE                  float
-        // Minimal SOH BEFORE the oldest adaptation / Minimaler SOH VOR der Ã¤ltesten Adaption
+        // Minimal SOH BEFORE the oldest adaptation / Minimaler SOH VOR der ältesten Adaption
 
     #define I3_RES_SME_STAT_SOH_MAX_VOR_5_WERT                       (RXBUF_UINT(237)/100.0f)
     #define I3_RES_SME_STAT_SOH_MAX_VOR_5_WERT_UNIT                  '%'
     #define I3_RES_SME_STAT_SOH_MAX_VOR_5_WERT_TYPE                  float
-        // Maximum SOH BEFORE the oldest adaptation / Maximaler SOH VOR der Ã¤ltesten Adaption
+        // Maximum SOH BEFORE the oldest adaptation / Maximaler SOH VOR der ältesten Adaption
 
     #define I3_RES_SME_STAT_SOH_MEAN_VOR_5_WERT                      (RXBUF_UINT(239)/100.0f)
     #define I3_RES_SME_STAT_SOH_MEAN_VOR_5_WERT_UNIT                 '%'
     #define I3_RES_SME_STAT_SOH_MEAN_VOR_5_WERT_TYPE                 float
-        // Middle SOH BEFORE the oldest adaptation / Mittlerer SOH VOR der Ã¤ltesten Adaption
+        // Middle SOH BEFORE the oldest adaptation / Mittlerer SOH VOR der ältesten Adaption
 
 #define I3_PID_SME_CSC_TEMPERATUREN                                  0xD6CF
-        // Return of the current temperature measured values of all CSC sensors (max 3 * 12, without HW-RL) / RÃ¼ckgabe
+        // Return of the current temperature measured values of all CSC sensors (max 3 * 12, without HW-RL) / Rückgabe
         // der aktuellen Temperaturmesswerte aller CSC-Sensoren (max 3*12, ohne HW-RL)
 
     #define I3_RES_SME_STAT_MESSTEMP_CSC1_SENS1_WERT                 (RXBUF_SCHAR(0))
-    #define I3_RES_SME_STAT_MESSTEMP_CSC1_SENS1_WERT_UNIT            'Â°C'
+    #define I3_RES_SME_STAT_MESSTEMP_CSC1_SENS1_WERT_UNIT            '°C'
     #define I3_RES_SME_STAT_MESSTEMP_CSC1_SENS1_WERT_TYPE            char
         // Current measured temperature value sensor 1 CSC 1 // 127 = Qual invalid / aktueller Temperaturmesswert Sensor
-        // 1 CSC 1 // 127 = Qual ungÃ¼ltig
+        // 1 CSC 1 // 127 = Qual ungültig
 
     #define I3_RES_SME_STAT_MESSTEMP_CSC1_SENS2_WERT                 (RXBUF_SCHAR(1))
-    #define I3_RES_SME_STAT_MESSTEMP_CSC1_SENS2_WERT_UNIT            'Â°C'
+    #define I3_RES_SME_STAT_MESSTEMP_CSC1_SENS2_WERT_UNIT            '°C'
     #define I3_RES_SME_STAT_MESSTEMP_CSC1_SENS2_WERT_TYPE            char
         // Current measured temperature value sensor 2 CSC 1 // 127 = Qual invalid / aktueller Temperaturmesswert Sensor
-        // 2 CSC 1 // 127 = Qual ungÃ¼ltig
+        // 2 CSC 1 // 127 = Qual ungültig
 
     #define I3_RES_SME_STAT_MESSTEMP_CSC2_SENS1_WERT                 (RXBUF_SCHAR(2))
-    #define I3_RES_SME_STAT_MESSTEMP_CSC2_SENS1_WERT_UNIT            'Â°C'
+    #define I3_RES_SME_STAT_MESSTEMP_CSC2_SENS1_WERT_UNIT            '°C'
     #define I3_RES_SME_STAT_MESSTEMP_CSC2_SENS1_WERT_TYPE            char
         // Current measured temperature value sensor 1 CSC 2 // 127 = Qual invalid / aktueller Temperaturmesswert Sensor
-        // 1 CSC 2 // 127 = Qual ungÃ¼ltig
+        // 1 CSC 2 // 127 = Qual ungültig
 
     #define I3_RES_SME_STAT_MESSTEMP_CSC2_SENS2_WERT                 (RXBUF_SCHAR(3))
-    #define I3_RES_SME_STAT_MESSTEMP_CSC2_SENS2_WERT_UNIT            'Â°C'
+    #define I3_RES_SME_STAT_MESSTEMP_CSC2_SENS2_WERT_UNIT            '°C'
     #define I3_RES_SME_STAT_MESSTEMP_CSC2_SENS2_WERT_TYPE            char
         // Current measured temperature value sensor 2 CSC 2 // 127 = Qual invalid / aktueller Temperaturmesswert Sensor
-        // 2 CSC 2 // 127 = Qual ungÃ¼ltig
+        // 2 CSC 2 // 127 = Qual ungültig
 
     #define I3_RES_SME_STAT_MESSTEMP_CSC3_SENS1_WERT                 (RXBUF_SCHAR(4))
-    #define I3_RES_SME_STAT_MESSTEMP_CSC3_SENS1_WERT_UNIT            'Â°C'
+    #define I3_RES_SME_STAT_MESSTEMP_CSC3_SENS1_WERT_UNIT            '°C'
     #define I3_RES_SME_STAT_MESSTEMP_CSC3_SENS1_WERT_TYPE            char
         // Current measured temperature value sensor 1 CSC 3 // 127 = Qual invalid / aktueller Temperaturmesswert Sensor
-        // 1 CSC 3 // 127 = Qual ungÃ¼ltig
+        // 1 CSC 3 // 127 = Qual ungültig
 
     #define I3_RES_SME_STAT_MESSTEMP_CSC3_SENS2_WERT                 (RXBUF_SCHAR(5))
-    #define I3_RES_SME_STAT_MESSTEMP_CSC3_SENS2_WERT_UNIT            'Â°C'
+    #define I3_RES_SME_STAT_MESSTEMP_CSC3_SENS2_WERT_UNIT            '°C'
     #define I3_RES_SME_STAT_MESSTEMP_CSC3_SENS2_WERT_TYPE            char
         // Current measured temperature value sensor 2 CSC 3 // 127 = Qual invalid / aktueller Temperaturmesswert Sensor
-        // 2 CSC 3 // 127 = Qual ungÃ¼ltig
+        // 2 CSC 3 // 127 = Qual ungültig
 
     #define I3_RES_SME_STAT_MESSTEMP_CSC4_SENS1_WERT                 (RXBUF_SCHAR(6))
-    #define I3_RES_SME_STAT_MESSTEMP_CSC4_SENS1_WERT_UNIT            'Â°C'
+    #define I3_RES_SME_STAT_MESSTEMP_CSC4_SENS1_WERT_UNIT            '°C'
     #define I3_RES_SME_STAT_MESSTEMP_CSC4_SENS1_WERT_TYPE            char
         // Current measured temperature value sensor 1 CSC 4 // 127 = Qual invalid / aktueller Temperaturmesswert Sensor
-        // 1 CSC 4 // 127 = Qual ungÃ¼ltig
+        // 1 CSC 4 // 127 = Qual ungültig
 
     #define I3_RES_SME_STAT_MESSTEMP_CSC4_SENS2_WERT                 (RXBUF_SCHAR(7))
-    #define I3_RES_SME_STAT_MESSTEMP_CSC4_SENS2_WERT_UNIT            'Â°C'
+    #define I3_RES_SME_STAT_MESSTEMP_CSC4_SENS2_WERT_UNIT            '°C'
     #define I3_RES_SME_STAT_MESSTEMP_CSC4_SENS2_WERT_TYPE            char
         // Current measured temperature value sensor 2 CSC 4 // 127 = Qual invalid / aktueller Temperaturmesswert Sensor
-        // 2 CSC 4 // 127 = Qual ungÃ¼ltig
+        // 2 CSC 4 // 127 = Qual ungültig
 
     #define I3_RES_SME_STAT_MESSTEMP_CSC5_SENS1_WERT                 (RXBUF_SCHAR(8))
-    #define I3_RES_SME_STAT_MESSTEMP_CSC5_SENS1_WERT_UNIT            'Â°C'
+    #define I3_RES_SME_STAT_MESSTEMP_CSC5_SENS1_WERT_UNIT            '°C'
     #define I3_RES_SME_STAT_MESSTEMP_CSC5_SENS1_WERT_TYPE            char
         // Current measured temperature value sensor 1 CSC 5 // 127 = Qual invalid / aktueller Temperaturmesswert Sensor
-        // 1 CSC 5 // 127 = Qual ungÃ¼ltig
+        // 1 CSC 5 // 127 = Qual ungültig
 
     #define I3_RES_SME_STAT_MESSTEMP_CSC5_SENS2_WERT                 (RXBUF_SCHAR(9))
-    #define I3_RES_SME_STAT_MESSTEMP_CSC5_SENS2_WERT_UNIT            'Â°C'
+    #define I3_RES_SME_STAT_MESSTEMP_CSC5_SENS2_WERT_UNIT            '°C'
     #define I3_RES_SME_STAT_MESSTEMP_CSC5_SENS2_WERT_TYPE            char
         // Current measured temperature value sensor 2 CSC 5 // 127 = Qual invalid / aktueller Temperaturmesswert Sensor
-        // 2 CSC 5 // 127 = Qual ungÃ¼ltig
+        // 2 CSC 5 // 127 = Qual ungültig
 
     #define I3_RES_SME_STAT_MESSTEMP_CSC6_SENS1_WERT                 (RXBUF_SCHAR(10))
-    #define I3_RES_SME_STAT_MESSTEMP_CSC6_SENS1_WERT_UNIT            'Â°C'
+    #define I3_RES_SME_STAT_MESSTEMP_CSC6_SENS1_WERT_UNIT            '°C'
     #define I3_RES_SME_STAT_MESSTEMP_CSC6_SENS1_WERT_TYPE            char
         // Current measured temperature value sensor 1 CSC 6 // 127 = Qual invalid / aktueller Temperaturmesswert Sensor
-        // 1 CSC 6 // 127 = Qual ungÃ¼ltig
+        // 1 CSC 6 // 127 = Qual ungültig
 
     #define I3_RES_SME_STAT_MESSTEMP_CSC6_SENS2_WERT                 (RXBUF_SCHAR(11))
-    #define I3_RES_SME_STAT_MESSTEMP_CSC6_SENS2_WERT_UNIT            'Â°C'
+    #define I3_RES_SME_STAT_MESSTEMP_CSC6_SENS2_WERT_UNIT            '°C'
     #define I3_RES_SME_STAT_MESSTEMP_CSC6_SENS2_WERT_TYPE            char
         // Current measured temperature value sensor 2 CSC 6 // 127 = Qual invalid / aktueller Temperaturmesswert Sensor
-        // 2 CSC 6 // 127 = Qual ungÃ¼ltig
+        // 2 CSC 6 // 127 = Qual ungültig
 
     #define I3_RES_SME_STAT_MESSTEMP_CSC7_SENS1_WERT                 (RXBUF_SCHAR(12))
-    #define I3_RES_SME_STAT_MESSTEMP_CSC7_SENS1_WERT_UNIT            'Â°C'
+    #define I3_RES_SME_STAT_MESSTEMP_CSC7_SENS1_WERT_UNIT            '°C'
     #define I3_RES_SME_STAT_MESSTEMP_CSC7_SENS1_WERT_TYPE            char
         // Current measured temperature value sensor 1 CSC 7 // 127 = Qual invalid / aktueller Temperaturmesswert Sensor
-        // 1 CSC 7 // 127 = Qual ungÃ¼ltig
+        // 1 CSC 7 // 127 = Qual ungültig
 
     #define I3_RES_SME_STAT_MESSTEMP_CSC7_SENS2_WERT                 (RXBUF_SCHAR(13))
-    #define I3_RES_SME_STAT_MESSTEMP_CSC7_SENS2_WERT_UNIT            'Â°C'
+    #define I3_RES_SME_STAT_MESSTEMP_CSC7_SENS2_WERT_UNIT            '°C'
     #define I3_RES_SME_STAT_MESSTEMP_CSC7_SENS2_WERT_TYPE            char
         // Current measured temperature value sensor 2 CSC 7 // 127 = Qual invalid / aktueller Temperaturmesswert Sensor
-        // 2 CSC 7 // 127 = Qual ungÃ¼ltig
+        // 2 CSC 7 // 127 = Qual ungültig
 
     #define I3_RES_SME_STAT_MESSTEMP_CSC8_SENS1_WERT                 (RXBUF_SCHAR(14))
-    #define I3_RES_SME_STAT_MESSTEMP_CSC8_SENS1_WERT_UNIT            'Â°C'
+    #define I3_RES_SME_STAT_MESSTEMP_CSC8_SENS1_WERT_UNIT            '°C'
     #define I3_RES_SME_STAT_MESSTEMP_CSC8_SENS1_WERT_TYPE            char
         // Current measured temperature value sensor 1 CSC 8 // 127 = Qual invalid / aktueller Temperaturmesswert Sensor
-        // 1 CSC 8 // 127 = Qual ungÃ¼ltig
+        // 1 CSC 8 // 127 = Qual ungültig
 
     #define I3_RES_SME_STAT_MESSTEMP_CSC8_SENS2_WERT                 (RXBUF_SCHAR(15))
-    #define I3_RES_SME_STAT_MESSTEMP_CSC8_SENS2_WERT_UNIT            'Â°C'
+    #define I3_RES_SME_STAT_MESSTEMP_CSC8_SENS2_WERT_UNIT            '°C'
     #define I3_RES_SME_STAT_MESSTEMP_CSC8_SENS2_WERT_TYPE            char
         // Current measured temperature value sensor 2 CSC 8 // 127 = Qual invalid / aktueller Temperaturmesswert Sensor
-        // 2 CSC 8 // 127 = Qual ungÃ¼ltig
+        // 2 CSC 8 // 127 = Qual ungültig
 
     #define I3_RES_SME_STAT_MESSTEMP_CSC9_SENS1_WERT                 (RXBUF_SCHAR(16))
-    #define I3_RES_SME_STAT_MESSTEMP_CSC9_SENS1_WERT_UNIT            'Â°C'
+    #define I3_RES_SME_STAT_MESSTEMP_CSC9_SENS1_WERT_UNIT            '°C'
     #define I3_RES_SME_STAT_MESSTEMP_CSC9_SENS1_WERT_TYPE            char
         // Current measured temperature value sensor 1 CSC 9 // 127 = Qual invalid / aktueller Temperaturmesswert Sensor
-        // 1 CSC 9 // 127 = Qual ungÃ¼ltig
+        // 1 CSC 9 // 127 = Qual ungültig
 
     #define I3_RES_SME_STAT_MESSTEMP_CSC9_SENS2_WERT                 (RXBUF_SCHAR(17))
-    #define I3_RES_SME_STAT_MESSTEMP_CSC9_SENS2_WERT_UNIT            'Â°C'
+    #define I3_RES_SME_STAT_MESSTEMP_CSC9_SENS2_WERT_UNIT            '°C'
     #define I3_RES_SME_STAT_MESSTEMP_CSC9_SENS2_WERT_TYPE            char
         // Current measured temperature value sensor 2 CSC 9 // 127 = Qual invalid / aktueller Temperaturmesswert Sensor
-        // 2 CSC 9 // 127 = Qual ungÃ¼ltig
+        // 2 CSC 9 // 127 = Qual ungültig
 
     #define I3_RES_SME_STAT_MESSTEMP_CSC10_SENS1_WERT                (RXBUF_SCHAR(18))
-    #define I3_RES_SME_STAT_MESSTEMP_CSC10_SENS1_WERT_UNIT           'Â°C'
+    #define I3_RES_SME_STAT_MESSTEMP_CSC10_SENS1_WERT_UNIT           '°C'
     #define I3_RES_SME_STAT_MESSTEMP_CSC10_SENS1_WERT_TYPE           char
         // Current measured temperature value sensor 1 CSC 10 // 127 = Qual invalid / aktueller Temperaturmesswert Sensor
-        // 1 CSC 10 // 127 = Qual ungÃ¼ltig
+        // 1 CSC 10 // 127 = Qual ungültig
 
     #define I3_RES_SME_STAT_MESSTEMP_CSC10_SENS2_WERT                (RXBUF_SCHAR(19))
-    #define I3_RES_SME_STAT_MESSTEMP_CSC10_SENS2_WERT_UNIT           'Â°C'
+    #define I3_RES_SME_STAT_MESSTEMP_CSC10_SENS2_WERT_UNIT           '°C'
     #define I3_RES_SME_STAT_MESSTEMP_CSC10_SENS2_WERT_TYPE           char
         // Current measured temperature value sensor 2 CSC 10 // 127 = Qual invalid / aktueller Temperaturmesswert Sensor
-        // 2 CSC 10 // 127 = Qual ungÃ¼ltig
+        // 2 CSC 10 // 127 = Qual ungültig
 
     #define I3_RES_SME_STAT_MESSTEMP_CSC11_SENS1_WERT                (RXBUF_SCHAR(20))
-    #define I3_RES_SME_STAT_MESSTEMP_CSC11_SENS1_WERT_UNIT           'Â°C'
+    #define I3_RES_SME_STAT_MESSTEMP_CSC11_SENS1_WERT_UNIT           '°C'
     #define I3_RES_SME_STAT_MESSTEMP_CSC11_SENS1_WERT_TYPE           char
         // Current measured temperature value sensor 1 CSC 11 // 127 = Qual invalid / aktueller Temperaturmesswert Sensor
-        // 1 CSC 11 // 127 = Qual ungÃ¼ltig
+        // 1 CSC 11 // 127 = Qual ungültig
 
     #define I3_RES_SME_STAT_MESSTEMP_CSC11_SENS2_WERT                (RXBUF_SCHAR(21))
-    #define I3_RES_SME_STAT_MESSTEMP_CSC11_SENS2_WERT_UNIT           'Â°C'
+    #define I3_RES_SME_STAT_MESSTEMP_CSC11_SENS2_WERT_UNIT           '°C'
     #define I3_RES_SME_STAT_MESSTEMP_CSC11_SENS2_WERT_TYPE           char
         // Current measured temperature value sensor 2 CSC 11 // 127 = Qual invalid / aktueller Temperaturmesswert Sensor
-        // 2 CSC 11 // 127 = Qual ungÃ¼ltig
+        // 2 CSC 11 // 127 = Qual ungültig
 
     #define I3_RES_SME_STAT_MESSTEMP_CSC12_SENS1_WERT                (RXBUF_SCHAR(22))
-    #define I3_RES_SME_STAT_MESSTEMP_CSC12_SENS1_WERT_UNIT           'Â°C'
+    #define I3_RES_SME_STAT_MESSTEMP_CSC12_SENS1_WERT_UNIT           '°C'
     #define I3_RES_SME_STAT_MESSTEMP_CSC12_SENS1_WERT_TYPE           char
         // Current measured temperature value sensor 1 CSC 12 // 127 = Qual invalid / aktueller Temperaturmesswert Sensor
-        // 1 CSC 12 // 127 = Qual ungÃ¼ltig
+        // 1 CSC 12 // 127 = Qual ungültig
 
     #define I3_RES_SME_STAT_MESSTEMP_CSC12_SENS2_WERT                (RXBUF_SCHAR(23))
-    #define I3_RES_SME_STAT_MESSTEMP_CSC12_SENS2_WERT_UNIT           'Â°C'
+    #define I3_RES_SME_STAT_MESSTEMP_CSC12_SENS2_WERT_UNIT           '°C'
     #define I3_RES_SME_STAT_MESSTEMP_CSC12_SENS2_WERT_TYPE           char
         // Current measured temperature value sensor 2 CSC 12 // 127 = Qual invalid / aktueller Temperaturmesswert Sensor
-        // 2 CSC 12 // 127 = Qual ungÃ¼ltig
+        // 2 CSC 12 // 127 = Qual ungültig
 
 #define I3_PID_SME_ISO_ERR_TRG_FZ1_2                                 0xD6D1
         // Return of input signals and result values of the triggered follow-up ISO measurement at error time 1 and 2 /
-        // RÃ¼ckgabe von Inputsignalen und Ergebniswerten der getriggerte Nachlauf-ISO-Messung zu Fehlerzeitpunkt 1 und 2
+        // Rückgabe von Inputsignalen und Ergebniswerten der getriggerte Nachlauf-ISO-Messung zu Fehlerzeitpunkt 1 und 2
 
     #define I3_RES_SME_STAT_FEHLERZAEHLER_TRG_WERT                   (RXBUF_UINT32(0))
     #define I3_RES_SME_STAT_FEHLERZAEHLER_TRG_WERT_TYPE              unsigned long
-        // LI: Counter of all errors that have occurred in the overrun measurement / LI: ZÃ¤hler aller aufgetretenen
+        // LI: Counter of all errors that have occurred in the overrun measurement / LI: Zähler aller aufgetretenen
         // Fehler der Nachlaufmessung
 
     #define I3_RES_SME_STAT_INPUT_ISO_TRG_FZ1_01_WERT                (RXBUF_UINT(4)/100.0f)
@@ -2949,7 +2948,7 @@
     #define I3_RES_SME_STAT_INPUT_ISO_TRG_FZ2_07_WERT                (RXBUF_UINT(37)/100.0f)
     #define I3_RES_SME_STAT_INPUT_ISO_TRG_FZ2_07_WERT_UNIT           'V'
     #define I3_RES_SME_STAT_INPUT_ISO_TRG_FZ2_07_WERT_TYPE           float
-        // LI: last time the error occurred Uiso02 [V] / LI: letztmaliger Fehlerzeitpunkt Uiso02 [V]
+        // LI: last error time Uiso02 [V] / LI: letztmaliger Fehlerzeitpunkt Uiso02 [V]
 
     #define I3_RES_SME_STAT_INPUT_ISO_TRG_FZ2_08_WERT                (RXBUF_UCHAR(39))
     #define I3_RES_SME_STAT_INPUT_ISO_TRG_FZ2_08_WERT_TYPE           unsigned char
@@ -2993,68 +2992,67 @@
 
 #define I3_PID_SME_SCHUETZ_SCHALTER                                  0xDD60
         // Contactor switch status: closed, open, welded contacts or not defined. For results see table
-        // TAB_SCHUETZ_SCHALTER / Status der SchÃ¼tzschalter: geschlossen, offen, verschweiÃte Kontakte oder nicht
+        // TAB_SCHUETZ_SCHALTER / Status der Schützschalter: geschlossen, offen, verschweißte Kontakte oder nicht
         // definiert. Ergebnisse siehe Tabelle TAB_SCHUETZ_SCHALTER
 
     #define I3_RES_SME_STAT_SCHUETZ_SCHALTER                         (RXBUF_UCHAR(0))
     #define I3_RES_SME_STAT_SCHUETZ_SCHALTER_UNIT                    '0-n'
     #define I3_RES_SME_STAT_SCHUETZ_SCHALTER_TYPE                    unsigned char
         // Contactor switch status: closed, open, welded contacts or not defined. For results see table
-        // TAB_SCHUETZ_SCHALTER / Status der SchÃ¼tzschalter: geschlossen, offen, verschweiÃte Kontakte oder nicht
+        // TAB_SCHUETZ_SCHALTER / Status der Schützschalter: geschlossen, offen, verschweißte Kontakte oder nicht
         // definiert. Ergebnisse siehe Tabelle TAB_SCHUETZ_SCHALTER
 
 // Skipping SCHUETZ_FREIGABE on 0xDD61 which takes arguments
 
 #define I3_PID_SME_SCHUETZSCHALTUNGEN_ANZAHL                         0xDD63
         // Number of switchings of the contactor switch (currentless and under load) / Anzahl der Schaltungen der
-        // SchÃ¼tzschalter (stromlos und unter Last)
+        // Schützschalter (stromlos und unter Last)
 
     #define I3_RES_SME_STAT_ANZAHL_SCHALTUNGEN_WERT                  (RXBUF_UINT32(0))
     #define I3_RES_SME_STAT_ANZAHL_SCHALTUNGEN_WERT_TYPE             unsigned long
-        // Number of switchings of the contactor switch without load / Anzahl der Schaltungen der SchÃ¼tzschalter ohne
+        // Number of switchings of the contactor switch without load / Anzahl der Schaltungen der Schützschalter ohne
         // Last
 
     #define I3_RES_SME_STAT_ANZAHL_SCHALTUNGEN_LAST_WERT             (RXBUF_UINT32(4))
     #define I3_RES_SME_STAT_ANZAHL_SCHALTUNGEN_LAST_WERT_TYPE        unsigned long
-        // Number of switchings of the contactor switch under load / Anzahl der Schaltungen der SchÃ¼tzschalter unter
-        // Last
+        // Number of switchings of the contactor switch under load / Anzahl der Schaltungen der Schützschalter unter Last
 
 #define I3_PID_SME_HVIL                                              0xDD64
-        // HVIL test result / Ergebnis HVIL-PrÃ¼fung
+        // HVIL test result / Ergebnis HVIL-Prüfung
 
     #define I3_RES_SME_STAT_GUELTIG                                  (RXBUF_UCHAR(0))
     #define I3_RES_SME_STAT_GUELTIG_UNIT                             '0-n'
     #define I3_RES_SME_STAT_GUELTIG_TYPE                             unsigned char
-        // HVIL test result / Ergebnis HVIL-PrÃ¼fung
+        // HVIL test result / Ergebnis HVIL-Prüfung
 
 #define I3_PID_SME_HV_SPANNUNG                                       0xDD66
         // Intermediate circuit voltage to the HV connection plug, depending on the contactor status /
-        // Zwischenkreisspannung zum HV-Anschlussstecker, abhÃ¤ngig vom SchÃ¼tzzustand
+        // Zwischenkreisspannung zum HV-Anschlussstecker, abhängig vom Schützzustand
 
     #define I3_RES_SME_STAT_HV_SPANNUNG_WERT                         (RXBUF_UINT(0)/100.0f)
     #define I3_RES_SME_STAT_HV_SPANNUNG_WERT_UNIT                    'V'
     #define I3_RES_SME_STAT_HV_SPANNUNG_WERT_TYPE                    float
         // Intermediate circuit voltage to the HV connection plug, depending on the contactor status /
-        // Zwischenkreisspannung zum HV-Anschlussstecker, abhÃ¤ngig vom SchÃ¼tzzustand
+        // Zwischenkreisspannung zum HV-Anschlussstecker, abhängig vom Schützzustand
 
 #define I3_PID_SME_ANZAHL_KUEHLANFORDERUNG_DRINGEND                  0xDD67
         // Number of consecutive wake cycles with urgent cooling requirements (service life max. Value) / Anzahl
-        // aufeinanderfolgenender Wachzyklen mit dringender KÃ¼hlanforderung (Lebensdauer-Max.wert)
+        // aufeinanderfolgenender Wachzyklen mit dringender Kühlanforderung (Lebensdauer-Max.wert)
 
     #define I3_RES_SME_STAT_ANZAHL_KUEHLANFORDERUNG_DRINGEND_WERT    (RXBUF_UCHAR(0))
     #define I3_RES_SME_STAT_ANZAHL_KUEHLANFORDERUNG_DRINGEND_WERT_TYPE unsigned char
         // Number of consecutive wake cycles with urgent cooling requirements (service life max. Value) / Anzahl
-        // aufeinanderfolgenender Wachzyklen mit dringender KÃ¼hlanforderung (Lebensdauer-Max.wert)
+        // aufeinanderfolgenender Wachzyklen mit dringender Kühlanforderung (Lebensdauer-Max.wert)
 
 #define I3_PID_SME_HV_SPANNUNG_BERECHNET                             0xDD68
         // Battery voltage behind the contactors, regardless of the contactor status / Batteriespannung hinter den
-        // SchÃ¼tzen, unabhÃ¤ngig vom SchÃ¼tzzustand
+        // Schützen, unabhängig vom Schützzustand
 
     #define I3_RES_SME_STAT_HV_SPANNUNG_BERECHNET_WERT               (RXBUF_UINT(0)/100.0f)
     #define I3_RES_SME_STAT_HV_SPANNUNG_BERECHNET_WERT_UNIT          'V'
     #define I3_RES_SME_STAT_HV_SPANNUNG_BERECHNET_WERT_TYPE          float
         // Battery voltage behind the contactors, regardless of the contactor status / Batteriespannung hinter den
-        // SchÃ¼tzen, unabhÃ¤ngig vom SchÃ¼tzzustand
+        // Schützen, unabhängig vom Schützzustand
 
 #define I3_PID_SME_HV_STROM                                          0xDD69
         // HV current in A / HV-Strom in A
@@ -3072,25 +3070,25 @@
     #define I3_RES_SME_STAT_ISOWIDERSTAND_EXT_TRG_WERT_UNIT          'kOhm'
     #define I3_RES_SME_STAT_ISOWIDERSTAND_EXT_TRG_WERT_TYPE          unsigned short
         // Determined isoresistance from the overall system in the wake (closed contactors) / Ermittelter Isowiderstand
-        // vom Gesamtsystem im Nachlauf (geschlossene SchÃ¼tze)
+        // vom Gesamtsystem im Nachlauf (geschlossene Schütze)
 
     #define I3_RES_SME_STAT_ISOWIDERSTAND_EXT_STD_WERT               (RXBUF_UINT(2))
     #define I3_RES_SME_STAT_ISOWIDERSTAND_EXT_STD_WERT_UNIT          'kOhm'
     #define I3_RES_SME_STAT_ISOWIDERSTAND_EXT_STD_WERT_TYPE          unsigned short
         // Determined isoresistance of the overall system in operation (closed contactors) / Ermittelter Isowiderstand
-        // vom Gesamtsystem im Betrieb (geschlossene SchÃ¼tze)
+        // vom Gesamtsystem im Betrieb (geschlossene Schütze)
 
     #define I3_RES_SME_STAT_ISOWIDERSTAND_INT_WERT                   (RXBUF_UINT(4))
     #define I3_RES_SME_STAT_ISOWIDERSTAND_INT_WERT_UNIT              'kOhm'
     #define I3_RES_SME_STAT_ISOWIDERSTAND_INT_WERT_TYPE              unsigned short
         // Determined internal isoresistance (open contactors); is only measured on request via the STEUERN_ISOLATION
-        // service routine with open contactors / Ermittelter interner Isowiderstand (offene SchÃ¼tze); wird nur auf
-        // Anfrage per Service-Routine STEUERN_ISOLATION bei offenen SchÃ¼tzen gemessen
+        // service routine with open contactors / Ermittelter interner Isowiderstand (offene Schütze); wird nur auf
+        // Anfrage per Service-Routine STEUERN_ISOLATION bei offenen Schützen gemessen
 
     #define I3_RES_SME_STAT_ISOWIDERSTAND_EXT_TRG_PLAUS              (RXBUF_UCHAR(6))
     #define I3_RES_SME_STAT_ISOWIDERSTAND_EXT_TRG_PLAUS_UNIT         '0/1'
     #define I3_RES_SME_STAT_ISOWIDERSTAND_EXT_TRG_PLAUS_TYPE         unsigned char
-        // Entire system after-run: 0 = insulation resistance not plausible, 1 = insulation resistance plausible /
+        // Entire system after-run: 0 = insulation resistance implausible, 1 = insulation resistance plausible /
         // Gesamtsystem im Nachlauf: 0 = Isolationswiderstand nicht plausibel, 1 = Isolationswiderstand plausibel
 
     #define I3_RES_SME_STAT_ISOWIDERSTAND_EXT_STD_PLAUS              (RXBUF_UCHAR(7))
@@ -3105,16 +3103,16 @@
         // Internal: 0 = insulation resistance not plausible, 1 = insulation resistance plausible; is only measured on
         // request via the STEUERN_ISOLATION service routine with open contactors / Intern: 0 = Isolationswiderstand
         // nicht plausibel, 1 = Isolationswiderstand plausibel; wird nur auf Anfrage per Service-Routine
-        // STEUERN_ISOLATION bei offenen SchÃ¼tzen gemessen
+        // STEUERN_ISOLATION bei offenen Schützen gemessen
 
 #define I3_PID_SME_KUEHLKREISLAUF_TEMP                               0xDD6C
-        // Temperature of the cooling medium in ° C (327.67 = implausible) / Temperatur des KÃ¼hlmediums in Â°C (327,67 =
+        // Temperature of the cooling medium in ° C (327.67 = implausible) / Temperatur des Kühlmediums in °C (327,67 =
         // unplausibel)
 
     #define I3_RES_SME_STAT_TEMP_KUEHLKREISLAUF_WERT                 (RXBUF_SINT(0)/100.0f)
-    #define I3_RES_SME_STAT_TEMP_KUEHLKREISLAUF_WERT_UNIT            'Â°C'
+    #define I3_RES_SME_STAT_TEMP_KUEHLKREISLAUF_WERT_UNIT            '°C'
     #define I3_RES_SME_STAT_TEMP_KUEHLKREISLAUF_WERT_TYPE            float
-        // Temperature of the cooling medium in ° C (327.67 = implausible) / Temperatur des KÃ¼hlmediums in Â°C (327,67 =
+        // Temperature of the cooling medium in ° C (327.67 = implausible) / Temperatur des Kühlmediums in °C (327,67 =
         // unplausibel)
 
 // Skipping SCHUETZE_MAX_SOC_SICHERHEITABFRAGE on 0xDD6E which takes arguments
@@ -3122,28 +3120,28 @@
 // Skipping KUEHLKREISLAUF_VENTIL on 0xDD6F which takes arguments
 
 #define I3_PID_SME_AUFSTART_VERHINDERER                              0xDD72
-        // Reason for not starting the HV system / Grund fÃ¼r nicht Aufstarten des HV-Systems
+        // Reason for not starting the HV system / Grund für nicht Aufstarten des HV-Systems
 
     #define I3_RES_SME_STAT_AUFSTART_VERHINDERER                     (RXBUF_UCHAR(0))
     #define I3_RES_SME_STAT_AUFSTART_VERHINDERER_UNIT                '0-n'
     #define I3_RES_SME_STAT_AUFSTART_VERHINDERER_TYPE                unsigned char
-        // Reason for not starting the HV system / Grund fÃ¼r nicht Aufstarten des HV-Systems
+        // Reason for not starting the HV system / Grund für nicht Aufstarten des HV-Systems
 
 #define I3_PID_SME_CUMULATIVE_LADUNG                                 0xDD73
-        // The accumulated charge for charges in Ah / Die kumulierte Ladung fÃ¼r LadevorgÃ¤nge in Ah
+        // The accumulated charge for charges in Ah / Die kumulierte Ladung für Ladevorgänge in Ah
 
     #define I3_RES_SME_STAT_LADUNG_AMP_STUNDEN_WERT                  (RXBUF_UINT32(0)/3600.0f)
     #define I3_RES_SME_STAT_LADUNG_AMP_STUNDEN_WERT_UNIT             'Ah'
     #define I3_RES_SME_STAT_LADUNG_AMP_STUNDEN_WERT_TYPE             float
-        // The accumulated charge for charges in Ah / Die kumulierte Ladung fÃ¼r LadevorgÃ¤nge in Ah
+        // The accumulated charge for charges in Ah / Die kumulierte Ladung für Ladevorgänge in Ah
 
 #define I3_PID_SME_CUMULATIVE_ENTLADUNG                              0xDD74
-        // The accumulated charge for discharges in Ah / Die kumulierte Ladung fÃ¼r EntladevorgÃ¤nge in Ah
+        // The accumulated charge for discharges in Ah / Die kumulierte Ladung für Entladevorgänge in Ah
 
     #define I3_RES_SME_STAT_ENTLADUNG_AMP_STUNDEN_WERT               (RXBUF_UINT32(0)/3600.0f)
     #define I3_RES_SME_STAT_ENTLADUNG_AMP_STUNDEN_WERT_UNIT          'Ah'
     #define I3_RES_SME_STAT_ENTLADUNG_AMP_STUNDEN_WERT_TYPE          float
-        // The accumulated charge for discharges in Ah / Die kumulierte Ladung fÃ¼r EntladevorgÃ¤nge in Ah
+        // The accumulated charge for discharges in Ah / Die kumulierte Ladung für Entladevorgänge in Ah
 
 #define I3_PID_SME_STATUS_KL30C_SPANNUNG                             0xDD76
         // Voltage terminal 30C in V / Spannung Klemme 30C in V
@@ -3158,20 +3156,20 @@
 // Skipping SCHUETZE_MIN_SOC_SICHERHEITABFRAGE on 0xDD79 which takes arguments
 
 #define I3_PID_SME_ALTERUNG_KAPAZITAET                               0xDD7B
-        // Readout of the battery capacity adjustment / Auslesen der Justierung KapazitÃ¤t Batterie
+        // Readout of the battery capacity adjustment / Auslesen der Justierung Kapazität Batterie
 
     #define I3_RES_SME_STAT_KAPAZITAET_WERT_0XDD7B                   (RXBUF_UCHAR(0))
     #define I3_RES_SME_STAT_KAPAZITAET_WERT_0XDD7B_UNIT              '%'
     #define I3_RES_SME_STAT_KAPAZITAET_WERT_0XDD7B_TYPE              unsigned char
-        // Readout of the battery capacity adjustment / Auslesen der Justierung KapazitÃ¤t Batterie
+        // Readout of the battery capacity adjustment / Auslesen der Justierung Kapazität Batterie
 
 #define I3_PID_SME_GW_INFO                                           0xDD7C
-        // Warranty data / GewÃ¤hrleistungsdaten
+        // Warranty data / Gewährleistungsdaten
 
     #define I3_RES_SME_STAT_LEISTUNG_MAX_WERT                        (RXBUF_UINT(0)*1000.0f)
     #define I3_RES_SME_STAT_LEISTUNG_MAX_WERT_UNIT                   'W'
     #define I3_RES_SME_STAT_LEISTUNG_MAX_WERT_TYPE                   float
-        // Predefined maximum power value in watts (project-specific, on the total storage level) / Vordefinierter
+        // Predefined maximum power value in watts (project-specific, on the overall storage level) / Vordefinierter
         // maximaler Leistungswert in Watt (projektspezifisch, auf Gesamtspeicherebene)
 
     #define I3_RES_SME_STAT_ZEIT_POWER_DCHG_1_WERT                   (RXBUF_UINT32(2))
@@ -3183,8 +3181,8 @@
     #define I3_RES_SME_STAT_ZEIT_POWER_DCHG_2_WERT                   (RXBUF_UINT32(6))
     #define I3_RES_SME_STAT_ZEIT_POWER_DCHG_2_WERT_UNIT              'min'
     #define I3_RES_SME_STAT_ZEIT_POWER_DCHG_2_WERT_TYPE              unsigned long
-        // Duration in performance class in the discharge process (on total storage level): Pmax * 0.16 <P <= Pmax * 0.33
-        // / Dauer in Leistungsklasse im Entladevorgang (auf Gesamtspeicherebene):  Pmax*0.16 < P <= Pmax*0.33
+        // Duration in performance class in the discharge process (on the total storage level): Pmax * 0.16 <P <= Pmax *
+        // 0.33 / Dauer in Leistungsklasse im Entladevorgang (auf Gesamtspeicherebene):  Pmax*0.16 < P <= Pmax*0.33
 
     #define I3_RES_SME_STAT_ZEIT_POWER_DCHG_3_WERT                   (RXBUF_UINT32(10))
     #define I3_RES_SME_STAT_ZEIT_POWER_DCHG_3_WERT_UNIT              'min'
@@ -3278,36 +3276,36 @@
     #define I3_RES_SME_STAT_IMAX_DCHG_WERT                           (RXBUF_UINT32(64)/100.0f)
     #define I3_RES_SME_STAT_IMAX_DCHG_WERT_UNIT                      'A'
     #define I3_RES_SME_STAT_IMAX_DCHG_WERT_TYPE                      float
-        // maximum measured discharge current over lifetime / maximal gemessener Entladestrom Ã¼ber Lebenszeit
+        // maximum measured discharge current over lifetime / maximal gemessener Entladestrom über Lebenszeit
 
     #define I3_RES_SME_STAT_IMAX_CHG_WERT                            (RXBUF_UINT32(68)/100.0f)
     #define I3_RES_SME_STAT_IMAX_CHG_WERT_UNIT                       'A'
     #define I3_RES_SME_STAT_IMAX_CHG_WERT_TYPE                       float
-        // maximum measured charging current over lifetime / maximal gemessener Ladestrom Ã¼ber Lebenszeit
+        // maximum measured charging current over lifetime / maximal gemessener Ladestrom über Lebenszeit
 
     #define I3_RES_SME_STAT_IMAX_LAD_ERROR_EIN                       (RXBUF_UCHAR(72))
     #define I3_RES_SME_STAT_IMAX_LAD_ERROR_EIN_UNIT                  '0/1'
     #define I3_RES_SME_STAT_IMAX_LAD_ERROR_EIN_TYPE                  unsigned char
         // Limit violation of the maximum permitted charging current exceeded (1 = yes / 0 = no) / GW-Grenzverletzung des
-        // maximal erlaubten Ladestroms Ã¼berschritten (1 = ja / 0 = nein)
+        // maximal erlaubten Ladestroms überschritten (1 = ja / 0 = nein)
 
     #define I3_RES_SME_STAT_TMAX_ERROR_OP_EIN                        (RXBUF_UCHAR(73))
     #define I3_RES_SME_STAT_TMAX_ERROR_OP_EIN_UNIT                   '0/1'
     #define I3_RES_SME_STAT_TMAX_ERROR_OP_EIN_TYPE                   unsigned char
         // maximum permitted temperature exceeded during operation (1 = yes, 0 = no) / maximal erlaubte Temperatur
-        // wÃ¤hrend Betrieb Ã¼berschritten (1 = ja, 0 = nein)
+        // während Betrieb überschritten (1 = ja, 0 = nein)
 
     #define I3_RES_SME_STAT_TMAX_ERROR_NO_OP_EIN                     (RXBUF_UCHAR(74))
     #define I3_RES_SME_STAT_TMAX_ERROR_NO_OP_EIN_UNIT                '0/1'
     #define I3_RES_SME_STAT_TMAX_ERROR_NO_OP_EIN_TYPE                unsigned char
         // maximum allowed temperature exceeded without operation (1 = yes, 0 = no) / maximal erlaubte Temperatur ohne
-        // Betrieb Ã¼berschritten (1 = ja, 0 = nein)
+        // Betrieb überschritten (1 = ja, 0 = nein)
 
     #define I3_RES_SME_STAT_TMIN_ERROR_OP_EIN                        (RXBUF_UCHAR(75))
     #define I3_RES_SME_STAT_TMIN_ERROR_OP_EIN_UNIT                   '0/1'
     #define I3_RES_SME_STAT_TMIN_ERROR_OP_EIN_TYPE                   unsigned char
         // Minimum permitted temperature undercut during operation (1 = yes, 0 = no) / minimal erlaubte Temperatur
-        // wÃ¤hrend Betrieb unterschritten (1 = ja, 0 = nein)
+        // während Betrieb unterschritten (1 = ja, 0 = nein)
 
     #define I3_RES_SME_STAT_TMIN_ERROR_NO_OP_EIN                     (RXBUF_UCHAR(76))
     #define I3_RES_SME_STAT_TMIN_ERROR_NO_OP_EIN_UNIT                '0/1'
@@ -3318,12 +3316,12 @@
     #define I3_RES_SME_STAT_CUMULATIVE_ENERGIE_LADUNG_WERT           (RXBUF_UINT32(77)*36.0f)
     #define I3_RES_SME_STAT_CUMULATIVE_ENERGIE_LADUNG_WERT_UNIT      'Ws'
     #define I3_RES_SME_STAT_CUMULATIVE_ENERGIE_LADUNG_WERT_TYPE      float
-        // Value of the accumulated energy for charging processes / Wert der kumulierten Energie fÃ¼r LadevorgÃ¤nge
+        // Value of the accumulated energy for charging processes / Wert der kumulierten Energie für Ladevorgänge
 
     #define I3_RES_SME_STAT_CUMULATIVE_ENERGIE_ENTLADUNG_WERT        (RXBUF_UINT32(81)*36.0f)
     #define I3_RES_SME_STAT_CUMULATIVE_ENERGIE_ENTLADUNG_WERT_UNIT   'Ws'
     #define I3_RES_SME_STAT_CUMULATIVE_ENERGIE_ENTLADUNG_WERT_TYPE   float
-        // Value of the accumulated energy for discharges / Wert der kumulierten Energie fÃ¼r EntladevorgÃ¤nge
+        // Value of the accumulated energy for discharges / Wert der kumulierten Energie für Entladevorgänge
 
 #define I3_PID_SME_STROMGRENZEN                                      0xDD7D
         // Current limits / Stromgrenzen
@@ -3508,181 +3506,181 @@
 
 #define I3_PID_SME_ZEIT_TEMP_HISTOGRAMM                              0xDD90
         // Time in different temperature classes and control unit states (SG awake, SG asleep) of the averaged calculated
-        // temperature over all cell nuclei / Zeit in verschiedenen Temperaturklassen und SteuergerÃ¤tezustÃ¤nden (SG
-        // wach, SG schlÃ¤ft) der gemittelten berechneten Temperatur Ã¼ber alle Zellkerne
+        // temperature over all cell nuclei / Zeit in verschiedenen Temperaturklassen und Steuergerätezuständen (SG wach,
+        // SG schläft) der gemittelten berechneten Temperatur über alle Zellkerne
 
     #define I3_RES_SME_STAT_ZEIT_TEMP_TOTAL_1_WERT                   (RXBUF_UINT32(0))
     #define I3_RES_SME_STAT_ZEIT_TEMP_TOTAL_1_WERT_UNIT              'min'
     #define I3_RES_SME_STAT_ZEIT_TEMP_TOTAL_1_WERT_TYPE              unsigned long
         // Time in temperature class T <= - 25 ° C with the control unit awake and asleep / Zeit in Temperaturklasse
-        // T<=-25Â°C bei wachem und schlafenden SteuergerÃ¤t
+        // T<=-25°C bei wachem und schlafenden Steuergerät
 
     #define I3_RES_SME_STAT_ZEIT_TEMP_TOTAL_2_WERT                   (RXBUF_UINT32(4))
     #define I3_RES_SME_STAT_ZEIT_TEMP_TOTAL_2_WERT_UNIT              'min'
     #define I3_RES_SME_STAT_ZEIT_TEMP_TOTAL_2_WERT_TYPE              unsigned long
         // Time in temperature class -25 ° C <T <= - 10 ° C with the control unit awake and asleep / Zeit in
-        // Temperaturklasse -25Â°C<T<=-10Â°C bei wachem und schlafenden SteuergerÃ¤t
+        // Temperaturklasse -25°C<T<=-10°C bei wachem und schlafenden Steuergerät
 
     #define I3_RES_SME_STAT_ZEIT_TEMP_TOTAL_3_WERT                   (RXBUF_UINT32(8))
     #define I3_RES_SME_STAT_ZEIT_TEMP_TOTAL_3_WERT_UNIT              'min'
     #define I3_RES_SME_STAT_ZEIT_TEMP_TOTAL_3_WERT_TYPE              unsigned long
-        // Time in temperature class -10 ° C <T <= 0 ° C with the control unit awake and sleeping / Zeit in
-        // Temperaturklasse -10Â°C<T<=0Â°C bei wachem und schlafenden SteuergerÃ¤t
+        // Time in temperature class -10 ° C <T <= 0 ° C with the control unit awake and asleep / Zeit in
+        // Temperaturklasse -10°C<T<=0°C bei wachem und schlafenden Steuergerät
 
     #define I3_RES_SME_STAT_ZEIT_TEMP_TOTAL_4_WERT                   (RXBUF_UINT32(12))
     #define I3_RES_SME_STAT_ZEIT_TEMP_TOTAL_4_WERT_UNIT              'min'
     #define I3_RES_SME_STAT_ZEIT_TEMP_TOTAL_4_WERT_TYPE              unsigned long
         // Time in temperature class 0 ° C <T <= 10 ° C with the control unit awake and asleep / Zeit in Temperaturklasse
-        // 0Â°C<T<=10Â°C bei wachem und schlafenden SteuergerÃ¤t
+        // 0°C<T<=10°C bei wachem und schlafenden Steuergerät
 
     #define I3_RES_SME_STAT_ZEIT_TEMP_TOTAL_5_WERT                   (RXBUF_UINT32(16))
     #define I3_RES_SME_STAT_ZEIT_TEMP_TOTAL_5_WERT_UNIT              'min'
     #define I3_RES_SME_STAT_ZEIT_TEMP_TOTAL_5_WERT_TYPE              unsigned long
         // Time in temperature class 10 ° C <T <= 20 ° C with the control unit awake and asleep / Zeit in
-        // Temperaturklasse 10Â°C<T<=20Â°C bei wachem und schlafenden SteuergerÃ¤t
+        // Temperaturklasse 10°C<T<=20°C bei wachem und schlafenden Steuergerät
 
     #define I3_RES_SME_STAT_ZEIT_TEMP_TOTAL_6_WERT                   (RXBUF_UINT32(20))
     #define I3_RES_SME_STAT_ZEIT_TEMP_TOTAL_6_WERT_UNIT              'min'
     #define I3_RES_SME_STAT_ZEIT_TEMP_TOTAL_6_WERT_TYPE              unsigned long
         // Time in temperature class 20 ° C <T <= 25 ° C with the control unit awake and asleep / Zeit in
-        // Temperaturklasse 20Â°C<T<=25Â°C bei wachem und schlafenden SteuergerÃ¤t
+        // Temperaturklasse 20°C<T<=25°C bei wachem und schlafenden Steuergerät
 
     #define I3_RES_SME_STAT_ZEIT_TEMP_TOTAL_7_WERT                   (RXBUF_UINT32(24))
     #define I3_RES_SME_STAT_ZEIT_TEMP_TOTAL_7_WERT_UNIT              'min'
     #define I3_RES_SME_STAT_ZEIT_TEMP_TOTAL_7_WERT_TYPE              unsigned long
         // Time in temperature class 25 ° C <T <= 30 ° C with the control unit awake and asleep / Zeit in
-        // Temperaturklasse 25Â°C<T<=30Â°C bei wachem und schlafenden SteuergerÃ¤t
+        // Temperaturklasse 25°C<T<=30°C bei wachem und schlafenden Steuergerät
 
     #define I3_RES_SME_STAT_ZEIT_TEMP_TOTAL_8_WERT                   (RXBUF_UINT32(28))
     #define I3_RES_SME_STAT_ZEIT_TEMP_TOTAL_8_WERT_UNIT              'min'
     #define I3_RES_SME_STAT_ZEIT_TEMP_TOTAL_8_WERT_TYPE              unsigned long
         // Time in temperature class 30 ° C <T <= 35 ° C with the control unit awake and asleep / Zeit in
-        // Temperaturklasse 30Â°C<T<=35Â°C bei wachem und schlafenden SteuergerÃ¤t
+        // Temperaturklasse 30°C<T<=35°C bei wachem und schlafenden Steuergerät
 
     #define I3_RES_SME_STAT_ZEIT_TEMP_TOTAL_9_WERT                   (RXBUF_UINT32(32))
     #define I3_RES_SME_STAT_ZEIT_TEMP_TOTAL_9_WERT_UNIT              'min'
     #define I3_RES_SME_STAT_ZEIT_TEMP_TOTAL_9_WERT_TYPE              unsigned long
         // Time in temperature class 35 ° C <T <= 40 ° C with the control unit awake and asleep / Zeit in
-        // Temperaturklasse 35Â°C<T<=40Â°C bei wachem und schlafenden SteuergerÃ¤t
+        // Temperaturklasse 35°C<T<=40°C bei wachem und schlafenden Steuergerät
 
     #define I3_RES_SME_STAT_ZEIT_TEMP_TOTAL_10_WERT                  (RXBUF_UINT32(36))
     #define I3_RES_SME_STAT_ZEIT_TEMP_TOTAL_10_WERT_UNIT             'min'
     #define I3_RES_SME_STAT_ZEIT_TEMP_TOTAL_10_WERT_TYPE             unsigned long
         // Time in temperature class 40 ° C <T <= 45 ° C with the control unit awake and asleep / Zeit in
-        // Temperaturklasse 40Â°C<T<=45Â°C bei wachem und schlafenden SteuergerÃ¤t
+        // Temperaturklasse 40°C<T<=45°C bei wachem und schlafenden Steuergerät
 
     #define I3_RES_SME_STAT_ZEIT_TEMP_TOTAL_11_WERT                  (RXBUF_UINT32(40))
     #define I3_RES_SME_STAT_ZEIT_TEMP_TOTAL_11_WERT_UNIT             'min'
     #define I3_RES_SME_STAT_ZEIT_TEMP_TOTAL_11_WERT_TYPE             unsigned long
         // Time in temperature class 45 ° C <T <= 50 ° C with the control unit awake and asleep / Zeit in
-        // Temperaturklasse 45Â°C<T<=50Â°C bei wachem und schlafenden SteuergerÃ¤t
+        // Temperaturklasse 45°C<T<=50°C bei wachem und schlafenden Steuergerät
 
     #define I3_RES_SME_STAT_ZEIT_TEMP_TOTAL_12_WERT                  (RXBUF_UINT32(44))
     #define I3_RES_SME_STAT_ZEIT_TEMP_TOTAL_12_WERT_UNIT             'min'
     #define I3_RES_SME_STAT_ZEIT_TEMP_TOTAL_12_WERT_TYPE             unsigned long
         // Time in temperature class 50 ° C <T <= 55 ° C with the control unit awake and asleep / Zeit in
-        // Temperaturklasse 50Â°C<T<=55Â°C bei wachem und schlafenden SteuergerÃ¤t
+        // Temperaturklasse 50°C<T<=55°C bei wachem und schlafenden Steuergerät
 
     #define I3_RES_SME_STAT_ZEIT_TEMP_TOTAL_13_WERT                  (RXBUF_UINT32(48))
     #define I3_RES_SME_STAT_ZEIT_TEMP_TOTAL_13_WERT_UNIT             'min'
     #define I3_RES_SME_STAT_ZEIT_TEMP_TOTAL_13_WERT_TYPE             unsigned long
         // Time in temperature class 55 ° C <T <= 60 ° C with the control unit awake and asleep / Zeit in
-        // Temperaturklasse 55Â°C<T<=60Â°C bei wachem und schlafenden SteuergerÃ¤t
+        // Temperaturklasse 55°C<T<=60°C bei wachem und schlafenden Steuergerät
 
     #define I3_RES_SME_STAT_ZEIT_TEMP_TOTAL_14_WERT                  (RXBUF_UINT32(52))
     #define I3_RES_SME_STAT_ZEIT_TEMP_TOTAL_14_WERT_UNIT             'min'
     #define I3_RES_SME_STAT_ZEIT_TEMP_TOTAL_14_WERT_TYPE             unsigned long
-        // Time in temperature class T> 60 ° C with the control unit awake and asleep / Zeit in Temperaturklasse T>60Â°C
-        // bei wachem und schlafenden SteuergerÃ¤t
+        // Time in temperature class T> 60 ° C with the control unit awake and asleep / Zeit in Temperaturklasse T>60°C
+        // bei wachem und schlafenden Steuergerät
 
     #define I3_RES_SME_STAT_ZEIT_TEMP_NO_OP_1_WERT                   (RXBUF_UINT32(56))
     #define I3_RES_SME_STAT_ZEIT_TEMP_NO_OP_1_WERT_UNIT              'min'
     #define I3_RES_SME_STAT_ZEIT_TEMP_NO_OP_1_WERT_TYPE              unsigned long
-        // Time in temperature class T <-25 ° C with the control unit asleep / Zeit in Temperaturklasse T<-25Â°C bei
-        // schlafendem SteuergerÃ¤t
+        // Time in temperature class T <-25 ° C with the control unit asleep / Zeit in Temperaturklasse T<-25°C bei
+        // schlafendem Steuergerät
 
     #define I3_RES_SME_STAT_ZEIT_TEMP_NO_OP_2_WERT                   (RXBUF_UINT32(60))
     #define I3_RES_SME_STAT_ZEIT_TEMP_NO_OP_2_WERT_UNIT              'min'
     #define I3_RES_SME_STAT_ZEIT_TEMP_NO_OP_2_WERT_TYPE              unsigned long
         // Time in temperature class -25 ° C <T <= - 10 ° C with the control unit asleep / Zeit in Temperaturklasse
-        // -25Â°C<T<=-10Â°C bei schlafendem SteuergerÃ¤t
+        // -25°C<T<=-10°C bei schlafendem Steuergerät
 
     #define I3_RES_SME_STAT_ZEIT_TEMP_NO_OP_3_WERT                   (RXBUF_UINT32(64))
     #define I3_RES_SME_STAT_ZEIT_TEMP_NO_OP_3_WERT_UNIT              'min'
     #define I3_RES_SME_STAT_ZEIT_TEMP_NO_OP_3_WERT_TYPE              unsigned long
         // Time in temperature class -10 ° C <T <= 0 ° C with the control unit sleeping / Zeit in Temperaturklasse
-        // -10Â°C<T<=0Â°C bei schlafendem SteuergerÃ¤t
+        // -10°C<T<=0°C bei schlafendem Steuergerät
 
     #define I3_RES_SME_STAT_ZEIT_TEMP_NO_OP_4_WERT                   (RXBUF_UINT32(68))
     #define I3_RES_SME_STAT_ZEIT_TEMP_NO_OP_4_WERT_UNIT              'min'
     #define I3_RES_SME_STAT_ZEIT_TEMP_NO_OP_4_WERT_TYPE              unsigned long
         // Time in temperature class 0 ° C <T <= 10 ° C with the control unit asleep / Zeit in Temperaturklasse
-        // 0Â°C<T<=10Â°C bei schlafendem SteuergerÃ¤t
+        // 0°C<T<=10°C bei schlafendem Steuergerät
 
     #define I3_RES_SME_STAT_ZEIT_TEMP_NO_OP_5_WERT                   (RXBUF_UINT32(72))
     #define I3_RES_SME_STAT_ZEIT_TEMP_NO_OP_5_WERT_UNIT              'min'
     #define I3_RES_SME_STAT_ZEIT_TEMP_NO_OP_5_WERT_TYPE              unsigned long
         // Time in temperature class 10 ° C <T <= 20 ° C with the control unit sleeping / Zeit in Temperaturklasse
-        // 10Â°C<T<=20Â°C bei schlafendem SteuergerÃ¤t
+        // 10°C<T<=20°C bei schlafendem Steuergerät
 
     #define I3_RES_SME_STAT_ZEIT_TEMP_NO_OP_6_WERT                   (RXBUF_UINT32(76))
     #define I3_RES_SME_STAT_ZEIT_TEMP_NO_OP_6_WERT_UNIT              'min'
     #define I3_RES_SME_STAT_ZEIT_TEMP_NO_OP_6_WERT_TYPE              unsigned long
         // Time in temperature class 20 ° C less than T less than or equal to 25 ° C with the control unit asleep / Zeit
-        // in Temperaturklasse 20Â°C kleiner T kleiner gleich 25Â°C bei schlafendem SteuergerÃ¤t
+        // in Temperaturklasse 20°C kleiner T kleiner gleich 25°C bei schlafendem Steuergerät
 
     #define I3_RES_SME_STAT_ZEIT_TEMP_NO_OP_7_WERT                   (RXBUF_UINT32(80))
     #define I3_RES_SME_STAT_ZEIT_TEMP_NO_OP_7_WERT_UNIT              'min'
     #define I3_RES_SME_STAT_ZEIT_TEMP_NO_OP_7_WERT_TYPE              unsigned long
         // Time in temperature class 25 ° C less than T less than or equal to 30 ° C with the control unit asleep / Zeit
-        // in Temperaturklasse 25Â°C kleiner T kleiner gleich 30Â°C bei schlafendem SteuergerÃ¤t
+        // in Temperaturklasse 25°C kleiner T kleiner gleich 30°C bei schlafendem Steuergerät
 
     #define I3_RES_SME_STAT_ZEIT_TEMP_NO_OP_8_WERT                   (RXBUF_UINT32(84))
     #define I3_RES_SME_STAT_ZEIT_TEMP_NO_OP_8_WERT_UNIT              'min'
     #define I3_RES_SME_STAT_ZEIT_TEMP_NO_OP_8_WERT_TYPE              unsigned long
         // Time in temperature class 30 ° C less than T less than or equal to 35 ° C with the control unit asleep / Zeit
-        // in Temperaturklasse 30Â°C kleiner T kleiner gleich 35Â°C bei schlafendem SteuergerÃ¤t
+        // in Temperaturklasse 30°C kleiner T kleiner gleich 35°C bei schlafendem Steuergerät
 
     #define I3_RES_SME_STAT_ZEIT_TEMP_NO_OP_9_WERT                   (RXBUF_UINT32(88))
     #define I3_RES_SME_STAT_ZEIT_TEMP_NO_OP_9_WERT_UNIT              'min'
     #define I3_RES_SME_STAT_ZEIT_TEMP_NO_OP_9_WERT_TYPE              unsigned long
-        // Time in temperature class 35 ° C less than T less than or equal to 40 ° C with the control unit asleep / Zeit
-        // in Temperaturklasse 35Â°C kleiner T kleiner gleich 40Â°C bei schlafendem SteuergerÃ¤t
+        // Time in temperature class 35 ° C less than T less than or equal to 40 ° C with the control unit sleeping /
+        // Zeit in Temperaturklasse 35°C kleiner T kleiner gleich 40°C bei schlafendem Steuergerät
 
     #define I3_RES_SME_STAT_ZEIT_TEMP_NO_OP_10_WERT                  (RXBUF_UINT32(92))
     #define I3_RES_SME_STAT_ZEIT_TEMP_NO_OP_10_WERT_UNIT             'min'
     #define I3_RES_SME_STAT_ZEIT_TEMP_NO_OP_10_WERT_TYPE             unsigned long
         // Time in temperature class 40 ° C less than T less than or equal to 45 ° C with the control unit asleep / Zeit
-        // in Temperaturklasse 40Â°C kleiner T kleiner gleich 45Â°C bei schlafendem SteuergerÃ¤t
+        // in Temperaturklasse 40°C kleiner T kleiner gleich 45°C bei schlafendem Steuergerät
 
     #define I3_RES_SME_STAT_ZEIT_TEMP_NO_OP_11_WERT                  (RXBUF_UINT32(96))
     #define I3_RES_SME_STAT_ZEIT_TEMP_NO_OP_11_WERT_UNIT             'min'
     #define I3_RES_SME_STAT_ZEIT_TEMP_NO_OP_11_WERT_TYPE             unsigned long
         // Time in temperature class 45 ° C <T <= 50 ° C with the control unit asleep / Zeit in Temperaturklasse
-        // 45Â°C<T<=50Â°C bei schlafendem SteuergerÃ¤t
+        // 45°C<T<=50°C bei schlafendem Steuergerät
 
     #define I3_RES_SME_STAT_ZEIT_TEMP_NO_OP_12_WERT                  (RXBUF_UINT32(100))
     #define I3_RES_SME_STAT_ZEIT_TEMP_NO_OP_12_WERT_UNIT             'min'
     #define I3_RES_SME_STAT_ZEIT_TEMP_NO_OP_12_WERT_TYPE             unsigned long
         // Time in temperature class 50 ° C <T <= 55 ° C with the control unit asleep / Zeit in Temperaturklasse
-        // 50Â°C<T<=55Â°C bei schlafendem SteuergerÃ¤t
+        // 50°C<T<=55°C bei schlafendem Steuergerät
 
     #define I3_RES_SME_STAT_ZEIT_TEMP_NO_OP_13_WERT                  (RXBUF_UINT32(104))
     #define I3_RES_SME_STAT_ZEIT_TEMP_NO_OP_13_WERT_UNIT             'min'
     #define I3_RES_SME_STAT_ZEIT_TEMP_NO_OP_13_WERT_TYPE             unsigned long
         // Time in temperature class 55 ° C <T <= 60 ° C with the control unit asleep / Zeit in Temperaturklasse
-        // 55Â°C<T<=60Â°C bei schlafendem SteuergerÃ¤t
+        // 55°C<T<=60°C bei schlafendem Steuergerät
 
     #define I3_RES_SME_STAT_ZEIT_TEMP_NO_OP_14_WERT                  (RXBUF_UINT32(108))
     #define I3_RES_SME_STAT_ZEIT_TEMP_NO_OP_14_WERT_UNIT             'min'
     #define I3_RES_SME_STAT_ZEIT_TEMP_NO_OP_14_WERT_TYPE             unsigned long
-        // Time in temperature class T> 60 ° C with the control unit asleep / Zeit in Temperaturklasse T>60Â°C bei
-        // schlafendem SteuergerÃ¤t
+        // Time in temperature class T> 60 ° C with the control unit asleep / Zeit in Temperaturklasse T>60°C bei
+        // schlafendem Steuergerät
 
 #define I3_PID_SME_ZEIT_SOC_KLASSE                                   0xDD91
         // Returns the length of stay of the SoC in SoC classes over the service life - SE03 from 11/13 total duration
         // (sleep + awake) - up to 11/13 only operating time (awake) / Liefert die Aufenthaltsdauer des SoC in
-        // SoC-Klassen Ã¼ber Lebensdauer - SE03 ab 11/13 Gesamtdauer (schlafen + wach) - bis 11/13 nur Betriebsdauer
+        // SoC-Klassen über Lebensdauer - SE03 ab 11/13 Gesamtdauer (schlafen + wach) - bis 11/13 nur Betriebsdauer
         // (wach)
 
     #define I3_RES_SME_STAT_ZEIT_SOC_1_WERT                          (RXBUF_UINT32(0))
@@ -3747,1975 +3745,1975 @@
 
 #define I3_PID_SME_HV_BATT_HIST_SOC_T1_1                             0xDD94
         // Duration at temperature less than 0 ° C and with different values of current and SOC - part 1 / Dauer bei
-        // Temperatur kleiner als 0Â°C und bei unterschiedlichen Werten von Strom und SOC - Teil 1
+        // Temperatur kleiner als 0°C und bei unterschiedlichen Werten von Strom und SOC - Teil 1
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T1_I1_WERT             (RXBUF_UINT32(0)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T1_I1_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T1_I1_WERT_TYPE        float
         // Duration with SoC less than 10%. Temperature less than 0 ° C. Current less than -2.5xC A / Dauer bei SoC
-        // kleiner als 10 %. Temperatur kleiner als 0 Â°C. Strom kleiner als -2.5xC A
+        // kleiner als 10 %. Temperatur kleiner als 0 °C. Strom kleiner als -2.5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T1_I2_WERT             (RXBUF_UINT32(4)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T1_I2_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T1_I2_WERT_TYPE        float
         // Duration with SoC less than 10%. Temperature less than 0 ° C. -2.5xC A less than current less than -2.0xC A /
-        // Dauer bei SoC kleiner als 10 %. Temperatur kleiner als 0 Â°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
+        // Dauer bei SoC kleiner als 10 %. Temperatur kleiner als 0 °C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T1_I3_WERT             (RXBUF_UINT32(8)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T1_I3_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T1_I3_WERT_TYPE        float
         // Duration with SoC less than 10%. Temperature less than 0 ° C. -2.0xC A less than current less than -1.5xC A /
-        // Dauer bei SoC kleiner als 10 %. Temperatur kleiner als 0 Â°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
+        // Dauer bei SoC kleiner als 10 %. Temperatur kleiner als 0 °C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T1_I4_WERT             (RXBUF_UINT32(12)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T1_I4_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T1_I4_WERT_TYPE        float
         // Duration with SoC less than 10%. Temperature less than 0 ° C. -1.5xC A less than current less than -1.0xC A /
-        // Dauer bei SoC kleiner als 10 %. Temperatur kleiner als 0 Â°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
+        // Dauer bei SoC kleiner als 10 %. Temperatur kleiner als 0 °C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T1_I5_WERT             (RXBUF_UINT32(16)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T1_I5_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T1_I5_WERT_TYPE        float
         // Duration with SoC less than 10%. Temperature less than 0 ° C. -1.0xC A less than current less than -0.5xC A /
-        // Dauer bei SoC kleiner als 10 %. Temperatur kleiner als 0 Â°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
+        // Dauer bei SoC kleiner als 10 %. Temperatur kleiner als 0 °C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T1_I6_WERT             (RXBUF_UINT32(20)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T1_I6_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T1_I6_WERT_TYPE        float
         // Duration with SoC less than 10%. Temperature less than 0 ° C. -0.5xC A less than current less than -0.0xC A /
-        // Dauer bei SoC kleiner als 10 %. Temperatur kleiner als 0 Â°C. -0,5xC A kleiner als Strom kleiner als -0,0xC A
+        // Dauer bei SoC kleiner als 10 %. Temperatur kleiner als 0 °C. -0,5xC A kleiner als Strom kleiner als -0,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T1_I7_WERT             (RXBUF_UINT32(24)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T1_I7_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T1_I7_WERT_TYPE        float
         // Duration with SoC less than 10%. Temperature less than 0 ° C. 0.0xC A less than current less than 0.5xC A /
-        // Dauer bei SoC kleiner als 10 %. Temperatur kleiner als 0 Â°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
+        // Dauer bei SoC kleiner als 10 %. Temperatur kleiner als 0 °C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T1_I8_WERT             (RXBUF_UINT32(28)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T1_I8_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T1_I8_WERT_TYPE        float
         // Duration with SoC less than 10%. Temperature less than 0 ° C. 0.5xC A less than current less than 1.0xC A /
-        // Dauer bei SoC kleiner als 10 %. Temperatur kleiner als 0 Â°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
+        // Dauer bei SoC kleiner als 10 %. Temperatur kleiner als 0 °C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T1_I9_WERT             (RXBUF_UINT32(32)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T1_I9_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T1_I9_WERT_TYPE        float
         // Duration with SoC less than 10%. Temperature less than 0 ° C. 1.0xC A less than current less than 1.5xC A /
-        // Dauer bei SoC kleiner als 10 %. Temperatur kleiner als 0 Â°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
+        // Dauer bei SoC kleiner als 10 %. Temperatur kleiner als 0 °C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T1_I10_WERT            (RXBUF_UINT32(36)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T1_I10_WERT_UNIT       's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T1_I10_WERT_TYPE       float
         // Duration with SoC less than 10%. Temperature less than 0 ° C. 1.5xC A less than current / Dauer bei SoC
-        // kleiner als 10 %. Temperatur kleiner als 0 Â°C. 1,5xC A kleiner als Strom
+        // kleiner als 10 %. Temperatur kleiner als 0 °C. 1,5xC A kleiner als Strom
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T1_I1_WERT             (RXBUF_UINT32(40)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T1_I1_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T1_I1_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. Temperature less than 0 ° C. Current less than -2.5xC A / Dauer
-        // bei 10 % kleiner als SoC kleiner als 30 %. Temperatur kleiner als 0 Â°C. Strom kleiner als -2,5xC A
+        // bei 10 % kleiner als SoC kleiner als 30 %. Temperatur kleiner als 0 °C. Strom kleiner als -2,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T1_I2_WERT             (RXBUF_UINT32(44)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T1_I2_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T1_I2_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. Temperature less than 0 ° C. -2.5xC A less than current less than
-        // -2.0xC A / Dauer bei 10 % kleiner als SoC kleiner als 30 %. Temperatur kleiner als 0 Â°C.  -2,5xC A kleiner
-        // als Strom kleiner als -2,0xC A
+        // -2.0xC A / Dauer bei 10 % kleiner als SoC kleiner als 30 %. Temperatur kleiner als 0 °C.  -2,5xC A kleiner als
+        // Strom kleiner als -2,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T1_I3_WERT             (RXBUF_UINT32(48)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T1_I3_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T1_I3_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. Temperature less than 0 ° C. -2.0xC A less than current less than
-        // -1.5xC A / Dauer bei 10 % kleiner als SoC kleiner als 30 %. Temperatur kleiner als 0 Â°C.  -2,0xC A kleiner
-        // als Strom kleiner als -1,5xC A
+        // -1.5xC A / Dauer bei 10 % kleiner als SoC kleiner als 30 %. Temperatur kleiner als 0 °C.  -2,0xC A kleiner als
+        // Strom kleiner als -1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T1_I4_WERT             (RXBUF_UINT32(52)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T1_I4_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T1_I4_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. Temperature less than 0 ° C. -1.5xC A less than current less than
-        // -1.0xC A / Dauer bei 10 % kleiner als SoC kleiner als 30 %. Temperatur kleiner als 0 Â°C.  -1,5xC A kleiner
-        // als Strom kleiner als -1,0xC A
+        // -1.0xC A / Dauer bei 10 % kleiner als SoC kleiner als 30 %. Temperatur kleiner als 0 °C.  -1,5xC A kleiner als
+        // Strom kleiner als -1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T1_I5_WERT             (RXBUF_UINT32(56)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T1_I5_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T1_I5_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. Temperature less than 0 ° C. -1.0xC A less than current less than
-        // -0.5xC A / Dauer bei 10 % kleiner als SoC kleiner als 30 %. Temperatur kleiner als 0 Â°C.  -1,0xC A kleiner
-        // als Strom kleiner als -0,5xC A
+        // -0.5xC A / Dauer bei 10 % kleiner als SoC kleiner als 30 %. Temperatur kleiner als 0 °C.  -1,0xC A kleiner als
+        // Strom kleiner als -0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T1_I6_WERT             (RXBUF_UINT32(60)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T1_I6_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T1_I6_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. Temperature less than 0 ° C. -0.5xC A less than current less than
-        // 0.0xC A / Dauer bei 10 % kleiner als SoC kleiner als 30 %. Temperatur kleiner als 0 Â°C.  -0,5xC A kleiner als
+        // 0.0xC A / Dauer bei 10 % kleiner als SoC kleiner als 30 %. Temperatur kleiner als 0 °C.  -0,5xC A kleiner als
         // Strom kleiner als 0,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T1_I7_WERT             (RXBUF_UINT32(64)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T1_I7_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T1_I7_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. Temperature less than 0 ° C. 0.0xC A less than current less than
-        // 0.5xC A / Dauer bei 10 % kleiner als SoC kleiner als 30 %. Temperatur kleiner als 0 Â°C.  0,0xC A kleiner als
+        // 0.5xC A / Dauer bei 10 % kleiner als SoC kleiner als 30 %. Temperatur kleiner als 0 °C.  0,0xC A kleiner als
         // Strom kleiner als 0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T1_I8_WERT             (RXBUF_UINT32(68)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T1_I8_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T1_I8_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. Temperature less than 0 ° C. 0.5xC A less than current less than
-        // 1.0xC A / Dauer bei 10 % kleiner als SoC kleiner als 30 %. Temperatur kleiner als 0 Â°C.  0,5xC A kleiner als
+        // 1.0xC A / Dauer bei 10 % kleiner als SoC kleiner als 30 %. Temperatur kleiner als 0 °C.  0,5xC A kleiner als
         // Strom kleiner als 1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T1_I9_WERT             (RXBUF_UINT32(72)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T1_I9_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T1_I9_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. Temperature less than 0 ° C. 1.0xC A less than current less than
-        // 1.5xC A / Dauer bei 10 % kleiner als SoC kleiner als 30 %. Temperatur kleiner als 0 Â°C.  1,0xC A kleiner als
+        // 1.5xC A / Dauer bei 10 % kleiner als SoC kleiner als 30 %. Temperatur kleiner als 0 °C.  1,0xC A kleiner als
         // Strom kleiner als 1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T1_I10_WERT            (RXBUF_UINT32(76)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T1_I10_WERT_UNIT       's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T1_I10_WERT_TYPE       float
         // Duration at 10% less than SoC less than 30%. Temperature less than 0 ° C. 1.5xC A less than current / Dauer
-        // bei 10 % kleiner als SoC kleiner als 30 %. Temperatur kleiner als 0 Â°C.  1,5xC A kleiner als Strom
+        // bei 10 % kleiner als SoC kleiner als 30 %. Temperatur kleiner als 0 °C.  1,5xC A kleiner als Strom
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T1_I1_WERT             (RXBUF_UINT32(80)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T1_I1_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T1_I1_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. Temperature less than 0 ° C. Current less than -2.5xC A / Dauer
-        // bei 30 % kleiner als SoC kleiner als 50 %. Temperatur kleiner als 0 Â°C. Strom kleiner als -2,5xC A
+        // bei 30 % kleiner als SoC kleiner als 50 %. Temperatur kleiner als 0 °C. Strom kleiner als -2,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T1_I2_WERT             (RXBUF_UINT32(84)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T1_I2_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T1_I2_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. Temperature less than 0 ° C. -2.5xC A less than current less than
-        // -2.0xC A / Dauer bei 30 % kleiner als SoC kleiner als 50 %. Temperatur kleiner als 0 Â°C.  -2,5xC A kleiner
-        // als Strom kleiner als -2,0xC A
+        // -2.0xC A / Dauer bei 30 % kleiner als SoC kleiner als 50 %. Temperatur kleiner als 0 °C.  -2,5xC A kleiner als
+        // Strom kleiner als -2,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T1_I3_WERT             (RXBUF_UINT32(88)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T1_I3_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T1_I3_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. Temperature less than 0 ° C. -2.0xC A less than current less than
-        // -1.5xC A / Dauer bei 30 % kleiner als SoC kleiner als 50 %. Temperatur kleiner als 0 Â°C.  -2,0xC A kleiner
-        // als Strom kleiner als -1,5xC A
+        // -1.5xC A / Dauer bei 30 % kleiner als SoC kleiner als 50 %. Temperatur kleiner als 0 °C.  -2,0xC A kleiner als
+        // Strom kleiner als -1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T1_I4_WERT             (RXBUF_UINT32(92)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T1_I4_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T1_I4_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. Temperature less than 0 ° C. -1.5xC A less than current less than
-        // -1.0xC A / Dauer bei 30 % kleiner als SoC kleiner als 50 %. Temperatur kleiner als 0 Â°C.  -1,5xC A kleiner
-        // als Strom kleiner als -1,0xC A
+        // -1.0xC A / Dauer bei 30 % kleiner als SoC kleiner als 50 %. Temperatur kleiner als 0 °C.  -1,5xC A kleiner als
+        // Strom kleiner als -1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T1_I5_WERT             (RXBUF_UINT32(96)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T1_I5_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T1_I5_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. Temperature less than 0 ° C. -1.0xC A less than current less than
-        // -0.5xC A / Dauer bei 30 % kleiner als SoC kleiner als 50 %. Temperatur kleiner als 0 Â°C.  -1,0xC A kleiner
-        // als Strom kleiner als -0,5xC A
+        // -0.5xC A / Dauer bei 30 % kleiner als SoC kleiner als 50 %. Temperatur kleiner als 0 °C.  -1,0xC A kleiner als
+        // Strom kleiner als -0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T1_I6_WERT             (RXBUF_UINT32(100)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T1_I6_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T1_I6_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. Temperature less than 0 ° C. -0.5xC A less than current less than
-        // 0.0xC A / Dauer bei 30 % kleiner als SoC kleiner als 50 %. Temperatur kleiner als 0 Â°C.  -0,5xC A kleiner als
+        // 0.0xC A / Dauer bei 30 % kleiner als SoC kleiner als 50 %. Temperatur kleiner als 0 °C.  -0,5xC A kleiner als
         // Strom kleiner als 0,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T1_I7_WERT             (RXBUF_UINT32(104)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T1_I7_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T1_I7_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. Temperature less than 0 ° C. 0.0xC A less than current less than
-        // 0.5xC A / Dauer bei 30 % kleiner als SoC kleiner als 50 %. Temperatur kleiner als 0 Â°C.  0,0xC A kleiner als
+        // 0.5xC A / Dauer bei 30 % kleiner als SoC kleiner als 50 %. Temperatur kleiner als 0 °C.  0,0xC A kleiner als
         // Strom kleiner als 0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T1_I8_WERT             (RXBUF_UINT32(108)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T1_I8_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T1_I8_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. Temperature less than 0 ° C. 0.5xC A less than current less than
-        // 1.0xC A / Dauer bei 30 % kleiner als SoC kleiner als 50 %. Temperatur kleiner als 0 Â°C.  0,5xC A kleiner als
+        // 1.0xC A / Dauer bei 30 % kleiner als SoC kleiner als 50 %. Temperatur kleiner als 0 °C.  0,5xC A kleiner als
         // Strom kleiner als 1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T1_I9_WERT             (RXBUF_UINT32(112)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T1_I9_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T1_I9_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. Temperature less than 0 ° C. 1.0xC A less than current less than
-        // 1.5xC A / Dauer bei 30 % kleiner als SoC kleiner als 50 %. Temperatur kleiner als 0 Â°C.  1,0xC A kleiner als
+        // 1.5xC A / Dauer bei 30 % kleiner als SoC kleiner als 50 %. Temperatur kleiner als 0 °C.  1,0xC A kleiner als
         // Strom kleiner als 1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T1_I10_WERT            (RXBUF_UINT32(116)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T1_I10_WERT_UNIT       's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T1_I10_WERT_TYPE       float
         // Duration at 30% less than SoC less than 50%. Temperature less than 0 ° C. 1.5xC A less than current / Dauer
-        // bei 30 % kleiner als SoC kleiner als 50 %. Temperatur kleiner als 0 Â°C.  1,5xC A kleiner als Strom
+        // bei 30 % kleiner als SoC kleiner als 50 %. Temperatur kleiner als 0 °C.  1,5xC A kleiner als Strom
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T1_I1_WERT             (RXBUF_UINT32(120)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T1_I1_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T1_I1_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. Temperature less than 0 ° C. Current less than -2.5xC A / Dauer
-        // bei 50 % kleiner als SoC kleiner als 70 %. Temperatur kleiner als 0 Â°C. Strom kleiner als -2,5xC A
+        // bei 50 % kleiner als SoC kleiner als 70 %. Temperatur kleiner als 0 °C. Strom kleiner als -2,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T1_I2_WERT             (RXBUF_UINT32(124)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T1_I2_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T1_I2_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. Temperature less than 0 ° C. -2.5xC A less than current less than
-        // -2.0xC A / Dauer bei 50 % kleiner als SoC kleiner als 70 %. Temperatur kleiner als 0 Â°C.  -2,5xC A kleiner
-        // als Strom kleiner als -2,0xC A
+        // -2.0xC A / Dauer bei 50 % kleiner als SoC kleiner als 70 %. Temperatur kleiner als 0 °C.  -2,5xC A kleiner als
+        // Strom kleiner als -2,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T1_I3_WERT             (RXBUF_UINT32(128)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T1_I3_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T1_I3_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. Temperature less than 0 ° C. -2.0xC A less than current less than
-        // -1.5xC A / Dauer bei 50 % kleiner als SoC kleiner als 70 %. Temperatur kleiner als 0 Â°C.  -2,0xC A kleiner
-        // als Strom kleiner als -1,5xC A
+        // -1.5xC A / Dauer bei 50 % kleiner als SoC kleiner als 70 %. Temperatur kleiner als 0 °C.  -2,0xC A kleiner als
+        // Strom kleiner als -1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T1_I4_WERT             (RXBUF_UINT32(132)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T1_I4_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T1_I4_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. Temperature less than 0 ° C. -1.5xC A less than current less than
-        // -1.0xC A / Dauer bei 50 % kleiner als SoC kleiner als 70 %. Temperatur kleiner als 0 Â°C.  -1,5xC A kleiner
-        // als Strom kleiner als -1,0xC A
+        // -1.0xC A / Dauer bei 50 % kleiner als SoC kleiner als 70 %. Temperatur kleiner als 0 °C.  -1,5xC A kleiner als
+        // Strom kleiner als -1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T1_I5_WERT             (RXBUF_UINT32(136)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T1_I5_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T1_I5_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. Temperature less than 0 ° C. -1.0xC A less than current less than
-        // -0.5xC A / Dauer bei 50 % kleiner als SoC kleiner als 70 %. Temperatur kleiner als 0 Â°C.  -1,0xC A kleiner
-        // als Strom kleiner als -0,5xC A
+        // -0.5xC A / Dauer bei 50 % kleiner als SoC kleiner als 70 %. Temperatur kleiner als 0 °C.  -1,0xC A kleiner als
+        // Strom kleiner als -0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T1_I6_WERT             (RXBUF_UINT32(140)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T1_I6_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T1_I6_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. Temperature less than 0 ° C. -0.5xC A less than current less than
-        // 0.0xC A / Dauer bei 50 % kleiner als SoC kleiner als 70 %. Temperatur kleiner als 0 Â°C.  -0,5xC A kleiner als
+        // 0.0xC A / Dauer bei 50 % kleiner als SoC kleiner als 70 %. Temperatur kleiner als 0 °C.  -0,5xC A kleiner als
         // Strom kleiner als 0,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T1_I7_WERT             (RXBUF_UINT32(144)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T1_I7_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T1_I7_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. Temperature less than 0 ° C. 0.0xC A less than current less than
-        // 0.5xC A / Dauer bei 50 % kleiner als SoC kleiner als 70 %. Temperatur kleiner als 0 Â°C.  0,0xC A kleiner als
+        // 0.5xC A / Dauer bei 50 % kleiner als SoC kleiner als 70 %. Temperatur kleiner als 0 °C.  0,0xC A kleiner als
         // Strom kleiner als 0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T1_I8_WERT             (RXBUF_UINT32(148)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T1_I8_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T1_I8_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. Temperature less than 0 ° C. 0.5xC A less than current less than
-        // 1.0xC A / Dauer bei 50 % kleiner als SoC kleiner als 70 %. Temperatur kleiner als 0 Â°C.  0,5xC A kleiner als
+        // 1.0xC A / Dauer bei 50 % kleiner als SoC kleiner als 70 %. Temperatur kleiner als 0 °C.  0,5xC A kleiner als
         // Strom kleiner als 1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T1_I9_WERT             (RXBUF_UINT32(152)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T1_I9_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T1_I9_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. Temperature less than 0 ° C. 1.0xC A less than current less than
-        // 1.5xC A / Dauer bei 50 % kleiner als SoC kleiner als 70 %. Temperatur kleiner als 0 Â°C.  1,0xC A kleiner als
+        // 1.5xC A / Dauer bei 50 % kleiner als SoC kleiner als 70 %. Temperatur kleiner als 0 °C.  1,0xC A kleiner als
         // Strom kleiner als 1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T1_I10_WERT            (RXBUF_UINT32(156)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T1_I10_WERT_UNIT       's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T1_I10_WERT_TYPE       float
         // Duration at 50% less than SoC less than 70%. Temperature less than 0 ° C. 1.5xC A less than current / Dauer
-        // bei 50 % kleiner als SoC kleiner als 70 %. Temperatur kleiner als 0 Â°C.  1,5xC A kleiner als Strom
+        // bei 50 % kleiner als SoC kleiner als 70 %. Temperatur kleiner als 0 °C.  1,5xC A kleiner als Strom
 
 #define I3_PID_SME_HV_BATT_HIST_SOC_T2_1                             0xDD95
         // Duration at 0 ° C less than temperature less than 10 ° C and with different values of current and SOC - part 1
-        // / Dauer bei 0Â°C kleiner als Temperatur kleiner als 10 Â°C und bei unterschiedlichen Werten von Strom und SOC
-        // - Teil 1
+        // / Dauer bei 0°C kleiner als Temperatur kleiner als 10 °C und bei unterschiedlichen Werten von Strom und SOC -
+        // Teil 1
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T2_I1_WERT             (RXBUF_UINT32(0)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T2_I1_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T2_I1_WERT_TYPE        float
         // Duration with SoC less than 10%. 0 ° C less than temperature less than 10 ° C. Current less than -2.5xC A /
-        // Dauer bei SoC kleiner als 10 %. 0Â°C kleiner als Temperatur kleiner als 10 Â°C. Strom kleiner als -2,5xC A
+        // Dauer bei SoC kleiner als 10 %. 0°C kleiner als Temperatur kleiner als 10 °C. Strom kleiner als -2,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T2_I2_WERT             (RXBUF_UINT32(4)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T2_I2_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T2_I2_WERT_TYPE        float
         // Duration with SoC less than 10%. 0 ° C less than temperature less than 10 ° C. -2.5xC A less than current less
-        // than -2.0xC A / Dauer bei SoC kleiner als 10 %. 0Â°C kleiner als Temperatur kleiner als 10 Â°C.  -2,5xC A
+        // than -2.0xC A / Dauer bei SoC kleiner als 10 %. 0°C kleiner als Temperatur kleiner als 10 °C.  -2,5xC A
         // kleiner als Strom kleiner als -2,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T2_I3_WERT             (RXBUF_UINT32(8)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T2_I3_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T2_I3_WERT_TYPE        float
         // Duration with SoC less than 10%. 0 ° C less than temperature less than 10 ° C. -2.0xC A less than current less
-        // than -1.5xC A / Dauer bei SoC kleiner als 10 %. 0Â°C kleiner als Temperatur kleiner als 10 Â°C.  -2,0xC A
+        // than -1.5xC A / Dauer bei SoC kleiner als 10 %. 0°C kleiner als Temperatur kleiner als 10 °C.  -2,0xC A
         // kleiner als Strom kleiner als -1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T2_I4_WERT             (RXBUF_UINT32(12)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T2_I4_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T2_I4_WERT_TYPE        float
         // Duration with SoC less than 10%. 0 ° C less than temperature less than 10 ° C. -1.5xC A less than current less
-        // than -1.0xC A / Dauer bei SoC kleiner als 10 %. 0Â°C kleiner als Temperatur kleiner als 10 Â°C.  -1,5xC A
+        // than -1.0xC A / Dauer bei SoC kleiner als 10 %. 0°C kleiner als Temperatur kleiner als 10 °C.  -1,5xC A
         // kleiner als Strom kleiner als -1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T2_I5_WERT             (RXBUF_UINT32(16)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T2_I5_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T2_I5_WERT_TYPE        float
         // Duration with SoC less than 10%. 0 ° C less than temperature less than 10 ° C. -1.0xC A less than current less
-        // than -0.5xC A / Dauer bei SoC kleiner als 10 %. 0Â°C kleiner als Temperatur kleiner als 10 Â°C.  -1,0xC A
+        // than -0.5xC A / Dauer bei SoC kleiner als 10 %. 0°C kleiner als Temperatur kleiner als 10 °C.  -1,0xC A
         // kleiner als Strom kleiner als -0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T2_I6_WERT             (RXBUF_UINT32(20)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T2_I6_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T2_I6_WERT_TYPE        float
         // Duration with SoC less than 10%. 0 ° C less than temperature less than 10 ° C. -0.5xC A less than current less
-        // than 0.0xC A / Dauer bei SoC kleiner als 10 %. 0Â°C kleiner als Temperatur kleiner als 10 Â°C.  -0,5xC A
-        // kleiner als Strom kleiner als 0,0xC A
+        // than 0.0xC A / Dauer bei SoC kleiner als 10 %. 0°C kleiner als Temperatur kleiner als 10 °C.  -0,5xC A kleiner
+        // als Strom kleiner als 0,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T2_I7_WERT             (RXBUF_UINT32(24)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T2_I7_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T2_I7_WERT_TYPE        float
         // Duration with SoC less than 10%. 0 ° C less than temperature less than 10 ° C. 0.0xC A less than current less
-        // than 0.5xC A / Dauer bei SoC kleiner als 10 %. 0Â°C kleiner als Temperatur kleiner als 10 Â°C.  0,0xC A
-        // kleiner als Strom kleiner als 0,5xC A
+        // than 0.5xC A / Dauer bei SoC kleiner als 10 %. 0°C kleiner als Temperatur kleiner als 10 °C.  0,0xC A kleiner
+        // als Strom kleiner als 0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T2_I8_WERT             (RXBUF_UINT32(28)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T2_I8_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T2_I8_WERT_TYPE        float
         // Duration with SoC less than 10%. 0 ° C less than temperature less than 10 ° C. 0.5xC A less than current less
-        // than 1.0xC A / Dauer bei SoC kleiner als 10 %. 0Â°C kleiner als Temperatur kleiner als 10 Â°C.  0,5xC A
-        // kleiner als Strom kleiner als 1,0xC A
+        // than 1.0xC A / Dauer bei SoC kleiner als 10 %. 0°C kleiner als Temperatur kleiner als 10 °C.  0,5xC A kleiner
+        // als Strom kleiner als 1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T2_I9_WERT             (RXBUF_UINT32(32)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T2_I9_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T2_I9_WERT_TYPE        float
         // Duration with SoC less than 10%. 0 ° C less than temperature less than 10 ° C. 1.0xC A less than current less
-        // than 1.5xC A / Dauer bei SoC kleiner als 10 %. 0Â°C kleiner als Temperatur kleiner als 10 Â°C.  1,0xC A
-        // kleiner als Strom kleiner als 1,5xC A
+        // than 1.5xC A / Dauer bei SoC kleiner als 10 %. 0°C kleiner als Temperatur kleiner als 10 °C.  1,0xC A kleiner
+        // als Strom kleiner als 1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T2_I10_WERT            (RXBUF_UINT32(36)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T2_I10_WERT_UNIT       's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T2_I10_WERT_TYPE       float
         // Duration with SoC less than 10%. 0 ° C less than temperature less than 10 ° C. 1.5xC A less than current /
-        // Dauer bei SoC kleiner als 10 %. 0Â°C kleiner als Temperatur kleiner als 10 Â°C.  1,5xC A kleiner als Strom
+        // Dauer bei SoC kleiner als 10 %. 0°C kleiner als Temperatur kleiner als 10 °C.  1,5xC A kleiner als Strom
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T2_I1_WERT             (RXBUF_UINT32(40)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T2_I1_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T2_I1_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. 0 ° C less than temperature less than 10 ° C. Current less than
-        // -2.5xC A / Dauer bei 10 % kleiner als SoC kleiner als 30 %. 0Â°C kleiner als Temperatur kleiner als 10 Â°C.
+        // -2.5xC A / Dauer bei 10 % kleiner als SoC kleiner als 30 %. 0°C kleiner als Temperatur kleiner als 10 °C.
         // Strom kleiner als -2,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T2_I2_WERT             (RXBUF_UINT32(44)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T2_I2_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T2_I2_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. 0 ° C less than temperature less than 10 ° C. -2.5xC A less than
-        // current less than -2.0xC A / Dauer bei 10 % kleiner als SoC kleiner als 30 %. 0Â°C kleiner als Temperatur
-        // kleiner als 10 Â°C.  -2,5xC A kleiner als Strom kleiner als -2,0xC A
+        // current less than -2.0xC A / Dauer bei 10 % kleiner als SoC kleiner als 30 %. 0°C kleiner als Temperatur
+        // kleiner als 10 °C.  -2,5xC A kleiner als Strom kleiner als -2,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T2_I3_WERT             (RXBUF_UINT32(48)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T2_I3_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T2_I3_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. 0 ° C less than temperature less than 10 ° C. -2.0xC A less than
-        // current less than -1.5xC A / Dauer bei 10 % kleiner als SoC kleiner als 30 %. 0Â°C kleiner als Temperatur
-        // kleiner als 10 Â°C.  -2,0xC A kleiner als Strom kleiner als -1,5xC A
+        // current less than -1.5xC A / Dauer bei 10 % kleiner als SoC kleiner als 30 %. 0°C kleiner als Temperatur
+        // kleiner als 10 °C.  -2,0xC A kleiner als Strom kleiner als -1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T2_I4_WERT             (RXBUF_UINT32(52)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T2_I4_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T2_I4_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. 0 ° C less than temperature less than 10 ° C. -1.5xC A less than
-        // current less than -1.0xC A / Dauer bei 10 % kleiner als SoC kleiner als 30 %. 0Â°C kleiner als Temperatur
-        // kleiner als 10 Â°C.  -1,5xC A kleiner als Strom kleiner als -1,0xC A
+        // current less than -1.0xC A / Dauer bei 10 % kleiner als SoC kleiner als 30 %. 0°C kleiner als Temperatur
+        // kleiner als 10 °C.  -1,5xC A kleiner als Strom kleiner als -1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T2_I5_WERT             (RXBUF_UINT32(56)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T2_I5_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T2_I5_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. 0 ° C less than temperature less than 10 ° C. -1.0xC A less than
-        // current less than -0.5xC A / Dauer bei 10 % kleiner als SoC kleiner als 30 %. 0Â°C kleiner als Temperatur
-        // kleiner als 10 Â°C.  -1,0xC A kleiner als Strom kleiner als -0,5xC A
+        // current less than -0.5xC A / Dauer bei 10 % kleiner als SoC kleiner als 30 %. 0°C kleiner als Temperatur
+        // kleiner als 10 °C.  -1,0xC A kleiner als Strom kleiner als -0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T2_I6_WERT             (RXBUF_UINT32(60)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T2_I6_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T2_I6_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. 0 ° C less than temperature less than 10 ° C. -0.5xC A less than
-        // current less than 0.0xC A / Dauer bei 10 % kleiner als SoC kleiner als 30 %. 0Â°C kleiner als Temperatur
-        // kleiner als 10 Â°C.  -0,5xC A kleiner als Strom kleiner als 0,0xC A
+        // current less than 0.0xC A / Dauer bei 10 % kleiner als SoC kleiner als 30 %. 0°C kleiner als Temperatur
+        // kleiner als 10 °C.  -0,5xC A kleiner als Strom kleiner als 0,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T2_I7_WERT             (RXBUF_UINT32(64)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T2_I7_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T2_I7_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. 0 ° C less than temperature less than 10 ° C. 0.0xC A less than
-        // current less than 0.5xC A / Dauer bei 10 % kleiner als SoC kleiner als 30 %. 0Â°C kleiner als Temperatur
-        // kleiner als 10 Â°C.  0,0xC A kleiner als Strom kleiner als 0,5xC A
+        // current less than 0.5xC A / Dauer bei 10 % kleiner als SoC kleiner als 30 %. 0°C kleiner als Temperatur
+        // kleiner als 10 °C.  0,0xC A kleiner als Strom kleiner als 0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T2_I8_WERT             (RXBUF_UINT32(68)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T2_I8_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T2_I8_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. 0 ° C less than temperature less than 10 ° C. 0.5xC A less than
-        // current less than 1.0xC A / Dauer bei 10 % kleiner als SoC kleiner als 30 %. 0Â°C kleiner als Temperatur
-        // kleiner als 10 Â°C.  0,5xC A kleiner als Strom kleiner als 1,0xC A
+        // current less than 1.0xC A / Dauer bei 10 % kleiner als SoC kleiner als 30 %. 0°C kleiner als Temperatur
+        // kleiner als 10 °C.  0,5xC A kleiner als Strom kleiner als 1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T2_I9_WERT             (RXBUF_UINT32(72)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T2_I9_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T2_I9_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. 0 ° C less than temperature less than 10 ° C. 1.0xC A less than
-        // current less than 1.5xC A / Dauer bei 10 % kleiner als SoC kleiner als 30 %. 0Â°C kleiner als Temperatur
-        // kleiner als 10 Â°C.  1,0xC A kleiner als Strom kleiner als 1,5xC A
+        // current less than 1.5xC A / Dauer bei 10 % kleiner als SoC kleiner als 30 %. 0°C kleiner als Temperatur
+        // kleiner als 10 °C.  1,0xC A kleiner als Strom kleiner als 1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T2_I10_WERT            (RXBUF_UINT32(76)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T2_I10_WERT_UNIT       's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T2_I10_WERT_TYPE       float
         // Duration at 10% less than SoC less than 30%. 0 ° C less than temperature less than 10 ° C. 1.5xC A less than
-        // current / Dauer bei 10 % kleiner als SoC kleiner als 30 %. 0Â°C kleiner als Temperatur kleiner als 10 Â°C. 
+        // current / Dauer bei 10 % kleiner als SoC kleiner als 30 %. 0°C kleiner als Temperatur kleiner als 10 °C. 
         // 1,5xC A kleiner als Strom
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T2_I1_WERT             (RXBUF_UINT32(80)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T2_I1_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T2_I1_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. 0 ° C less than temperature less than 10 ° C. Current less than
-        // -2.5xC A / Dauer bei 30 % kleiner als SoC kleiner als 50 %. 0Â°C kleiner als Temperatur kleiner als 10 Â°C.
+        // -2.5xC A / Dauer bei 30 % kleiner als SoC kleiner als 50 %. 0°C kleiner als Temperatur kleiner als 10 °C.
         // Strom kleiner als -2,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T2_I2_WERT             (RXBUF_UINT32(84)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T2_I2_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T2_I2_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. 0 ° C less than temperature less than 10 ° C. -2.5xC A less than
-        // current less than -2.0xC A / Dauer bei 30 % kleiner als SoC kleiner als 50 %. 0Â°C kleiner als Temperatur
-        // kleiner als 10 Â°C.  -2,5xC A kleiner als Strom kleiner als -2,0xC A
+        // current less than -2.0xC A / Dauer bei 30 % kleiner als SoC kleiner als 50 %. 0°C kleiner als Temperatur
+        // kleiner als 10 °C.  -2,5xC A kleiner als Strom kleiner als -2,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T2_I3_WERT             (RXBUF_UINT32(88)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T2_I3_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T2_I3_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. 0 ° C less than temperature less than 10 ° C. -2.0xC A less than
-        // current less than -1.5xC A / Dauer bei 30 % kleiner als SoC kleiner als 50 %. 0Â°C kleiner als Temperatur
-        // kleiner als 10 Â°C.  -2,0xC A kleiner als Strom kleiner als -1,5xC A
+        // current less than -1.5xC A / Dauer bei 30 % kleiner als SoC kleiner als 50 %. 0°C kleiner als Temperatur
+        // kleiner als 10 °C.  -2,0xC A kleiner als Strom kleiner als -1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T2_I4_WERT             (RXBUF_UINT32(92)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T2_I4_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T2_I4_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. 0 ° C less than temperature less than 10 ° C. -1.5xC A less than
-        // current less than -1.0xC A / Dauer bei 30 % kleiner als SoC kleiner als 50 %. 0Â°C kleiner als Temperatur
-        // kleiner als 10 Â°C.  -1,5xC A kleiner als Strom kleiner als -1,0xC A
+        // current less than -1.0xC A / Dauer bei 30 % kleiner als SoC kleiner als 50 %. 0°C kleiner als Temperatur
+        // kleiner als 10 °C.  -1,5xC A kleiner als Strom kleiner als -1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T2_I5_WERT             (RXBUF_UINT32(96)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T2_I5_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T2_I5_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. 0 ° C less than temperature less than 10 ° C. -1.0xC A less than
-        // current less than -0.5xC A / Dauer bei 30 % kleiner als SoC kleiner als 50 %. 0Â°C kleiner als Temperatur
-        // kleiner als 10 Â°C.  -1,0xC A kleiner als Strom kleiner als -0,5xC A
+        // current less than -0.5xC A / Dauer bei 30 % kleiner als SoC kleiner als 50 %. 0°C kleiner als Temperatur
+        // kleiner als 10 °C.  -1,0xC A kleiner als Strom kleiner als -0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T2_I6_WERT             (RXBUF_UINT32(100)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T2_I6_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T2_I6_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. 0 ° C less than temperature less than 10 ° C. -0.5xC A less than
-        // current less than 0.0xC A / Dauer bei 30 % kleiner als SoC kleiner als 50 %. 0Â°C kleiner als Temperatur
-        // kleiner als 10 Â°C.  -0,5xC A kleiner als Strom kleiner als 0,0xC A
+        // current less than 0.0xC A / Dauer bei 30 % kleiner als SoC kleiner als 50 %. 0°C kleiner als Temperatur
+        // kleiner als 10 °C.  -0,5xC A kleiner als Strom kleiner als 0,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T2_I7_WERT             (RXBUF_UINT32(104)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T2_I7_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T2_I7_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. 0 ° C less than temperature less than 10 ° C. 0.0xC A less than
-        // current less than 0.5xC A / Dauer bei 30 % kleiner als SoC kleiner als 50 %. 0Â°C kleiner als Temperatur
-        // kleiner als 10 Â°C.  0,0xC A kleiner als Strom kleiner als 0,5xC A
+        // current less than 0.5xC A / Dauer bei 30 % kleiner als SoC kleiner als 50 %. 0°C kleiner als Temperatur
+        // kleiner als 10 °C.  0,0xC A kleiner als Strom kleiner als 0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T2_I8_WERT             (RXBUF_UINT32(108)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T2_I8_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T2_I8_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. 0 ° C less than temperature less than 10 ° C. 0.5xC A less than
-        // current less than 1.0xC A / Dauer bei 30 % kleiner als SoC kleiner als 50 %. 0Â°C kleiner als Temperatur
-        // kleiner als 10 Â°C.  0,5xC A kleiner als Strom kleiner als 1,0xC A
+        // current less than 1.0xC A / Dauer bei 30 % kleiner als SoC kleiner als 50 %. 0°C kleiner als Temperatur
+        // kleiner als 10 °C.  0,5xC A kleiner als Strom kleiner als 1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T2_I9_WERT             (RXBUF_UINT32(112)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T2_I9_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T2_I9_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. 0 ° C less than temperature less than 10 ° C. 1.0xC A less than
-        // current less than 1.5xC A / Dauer bei 30 % kleiner als SoC kleiner als 50 %. 0Â°C kleiner als Temperatur
-        // kleiner als 10 Â°C.  1,0xC A kleiner als Strom kleiner als 1,5xC A
+        // current less than 1.5xC A / Dauer bei 30 % kleiner als SoC kleiner als 50 %. 0°C kleiner als Temperatur
+        // kleiner als 10 °C.  1,0xC A kleiner als Strom kleiner als 1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T2_I10_WERT            (RXBUF_UINT32(116)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T2_I10_WERT_UNIT       's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T2_I10_WERT_TYPE       float
         // Duration at 30% less than SoC less than 50%. 0 ° C less than temperature less than 10 ° C. 1.5xC A less than
-        // current / Dauer bei 30 % kleiner als SoC kleiner als 50 %. 0Â°C kleiner als Temperatur kleiner als 10 Â°C. 
+        // current / Dauer bei 30 % kleiner als SoC kleiner als 50 %. 0°C kleiner als Temperatur kleiner als 10 °C. 
         // 1,5xC A kleiner als Strom
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T2_I1_WERT             (RXBUF_UINT32(120)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T2_I1_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T2_I1_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. 0 ° C less than temperature less than 10 ° C. Current less than
-        // -2.5xC A / Dauer bei 50 % kleiner als SoC kleiner als 70 %. 0Â°C kleiner als Temperatur kleiner als 10 Â°C.
+        // -2.5xC A / Dauer bei 50 % kleiner als SoC kleiner als 70 %. 0°C kleiner als Temperatur kleiner als 10 °C.
         // Strom kleiner als -2,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T2_I2_WERT             (RXBUF_UINT32(124)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T2_I2_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T2_I2_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. 0 ° C less than temperature less than 10 ° C. -2.5xC A less than
-        // current less than -2.0xC A / Dauer bei 50 % kleiner als SoC kleiner als 70 %. 0Â°C kleiner als Temperatur
-        // kleiner als 10 Â°C.  -2,5xC A kleiner als Strom kleiner als -2,0xC A
+        // current less than -2.0xC A / Dauer bei 50 % kleiner als SoC kleiner als 70 %. 0°C kleiner als Temperatur
+        // kleiner als 10 °C.  -2,5xC A kleiner als Strom kleiner als -2,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T2_I3_WERT             (RXBUF_UINT32(128)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T2_I3_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T2_I3_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. 0 ° C less than temperature less than 10 ° C. -2.0xC A less than
-        // current less than -1.5xC A / Dauer bei 50 % kleiner als SoC kleiner als 70 %. 0Â°C kleiner als Temperatur
-        // kleiner als 10 Â°C.  -2,0xC A kleiner als Strom kleiner als -1,5xC A
+        // current less than -1.5xC A / Dauer bei 50 % kleiner als SoC kleiner als 70 %. 0°C kleiner als Temperatur
+        // kleiner als 10 °C.  -2,0xC A kleiner als Strom kleiner als -1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T2_I4_WERT             (RXBUF_UINT32(132)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T2_I4_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T2_I4_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. 0 ° C less than temperature less than 10 ° C. -1.5xC A less than
-        // current less than -1.0xC A / Dauer bei 50 % kleiner als SoC kleiner als 70 %. 0Â°C kleiner als Temperatur
-        // kleiner als 10 Â°C.  -1,5xC A kleiner als Strom kleiner als -1,0xC A
+        // current less than -1.0xC A / Dauer bei 50 % kleiner als SoC kleiner als 70 %. 0°C kleiner als Temperatur
+        // kleiner als 10 °C.  -1,5xC A kleiner als Strom kleiner als -1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T2_I5_WERT             (RXBUF_UINT32(136)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T2_I5_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T2_I5_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. 0 ° C less than temperature less than 10 ° C. -1.0xC A less than
-        // current less than -0.5xC A / Dauer bei 50 % kleiner als SoC kleiner als 70 %. 0Â°C kleiner als Temperatur
-        // kleiner als 10 Â°C.  -1,0xC A kleiner als Strom kleiner als -0,5xC A
+        // current less than -0.5xC A / Dauer bei 50 % kleiner als SoC kleiner als 70 %. 0°C kleiner als Temperatur
+        // kleiner als 10 °C.  -1,0xC A kleiner als Strom kleiner als -0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T2_I6_WERT             (RXBUF_UINT32(140)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T2_I6_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T2_I6_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. 0 ° C less than temperature less than 10 ° C. -0.5xC A less than
-        // current less than 0.0xC A / Dauer bei 50 % kleiner als SoC kleiner als 70 %. 0Â°C kleiner als Temperatur
-        // kleiner als 10 Â°C.  -0,5xC A kleiner als Strom kleiner als 0,0xC A
+        // current less than 0.0xC A / Dauer bei 50 % kleiner als SoC kleiner als 70 %. 0°C kleiner als Temperatur
+        // kleiner als 10 °C.  -0,5xC A kleiner als Strom kleiner als 0,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T2_I7_WERT             (RXBUF_UINT32(144)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T2_I7_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T2_I7_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. 0 ° C less than temperature less than 10 ° C. 0.0xC A less than
-        // current less than 0.5xC A / Dauer bei 50 % kleiner als SoC kleiner als 70 %. 0Â°C kleiner als Temperatur
-        // kleiner als 10 Â°C.  0,0xC A kleiner als Strom kleiner als 0,5xC A
+        // current less than 0.5xC A / Dauer bei 50 % kleiner als SoC kleiner als 70 %. 0°C kleiner als Temperatur
+        // kleiner als 10 °C.  0,0xC A kleiner als Strom kleiner als 0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T2_I8_WERT             (RXBUF_UINT32(148)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T2_I8_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T2_I8_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. 0 ° C less than temperature less than 10 ° C. 0.5xC A less than
-        // current less than 1.0xC A / Dauer bei 50 % kleiner als SoC kleiner als 70 %. 0Â°C kleiner als Temperatur
-        // kleiner als 10 Â°C.  0,5xC A kleiner als Strom kleiner als 1,0xC A
+        // current less than 1.0xC A / Dauer bei 50 % kleiner als SoC kleiner als 70 %. 0°C kleiner als Temperatur
+        // kleiner als 10 °C.  0,5xC A kleiner als Strom kleiner als 1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T2_I9_WERT             (RXBUF_UINT32(152)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T2_I9_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T2_I9_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. 0 ° C less than temperature less than 10 ° C. 1.0xC A less than
-        // current less than 1.5xC A / Dauer bei 50 % kleiner als SoC kleiner als 70 %. 0Â°C kleiner als Temperatur
-        // kleiner als 10 Â°C.  1,0xC A kleiner als Strom kleiner als 1,5xC A
+        // current less than 1.5xC A / Dauer bei 50 % kleiner als SoC kleiner als 70 %. 0°C kleiner als Temperatur
+        // kleiner als 10 °C.  1,0xC A kleiner als Strom kleiner als 1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T2_I10_WERT            (RXBUF_UINT32(156)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T2_I10_WERT_UNIT       's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T2_I10_WERT_TYPE       float
         // Duration at 50% less than SoC less than 70%. 0 ° C less than temperature less than 10 ° C. 1.5xC A less than
-        // current / Dauer bei 50 % kleiner als SoC kleiner als 70 %. 0Â°C kleiner als Temperatur kleiner als 10 Â°C. 
+        // current / Dauer bei 50 % kleiner als SoC kleiner als 70 %. 0°C kleiner als Temperatur kleiner als 10 °C. 
         // 1,5xC A kleiner als Strom
 
 #define I3_PID_SME_HV_BATT_HIST_SOC_T3_1                             0xDD96
         // Duration at 10 ° C less than temperature less than 20 ° C and with different values of current and SOC - part
-        // 1 / Dauer bei 10Â°C kleiner als Temperatur kleiner als 20 Â°C und bei unterschiedlichen Werten von Strom und
-        // SOC - Teil 1
+        // 1 / Dauer bei 10°C kleiner als Temperatur kleiner als 20 °C und bei unterschiedlichen Werten von Strom und SOC
+        // - Teil 1
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T3_I1_WERT             (RXBUF_UINT32(0)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T3_I1_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T3_I1_WERT_TYPE        float
         // Duration with SoC less than 10%. 10 ° C less than temperature less than 20 ° C. Current less than -2.5xC A /
-        // Dauer bei SoC kleiner als 10%. 10Â°C kleiner als Temperatur kleiner als 20Â°C. Strom kleiner als -2,5xC A
+        // Dauer bei SoC kleiner als 10%. 10°C kleiner als Temperatur kleiner als 20°C. Strom kleiner als -2,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T3_I2_WERT             (RXBUF_UINT32(4)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T3_I2_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T3_I2_WERT_TYPE        float
         // Duration with SoC less than 10%. 10 ° C less than temperature less than 20 ° C. -2.5xC A less than current
-        // less than -2.0xC A / Dauer bei SoC kleiner als 10%. 10Â°C kleiner als Temperatur kleiner als 20Â°C. -2,5xC A
+        // less than -2.0xC A / Dauer bei SoC kleiner als 10%. 10°C kleiner als Temperatur kleiner als 20°C. -2,5xC A
         // kleiner als Strom kleiner als -2,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T3_I3_WERT             (RXBUF_UINT32(8)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T3_I3_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T3_I3_WERT_TYPE        float
         // Duration with SoC less than 10%. 10 ° C less than temperature less than 20 ° C. -2.0xC A less than current
-        // less than -1.5xC A / Dauer bei SoC kleiner als 10%. 10Â°C kleiner als Temperatur kleiner als 20Â°C. -2,0xC A
+        // less than -1.5xC A / Dauer bei SoC kleiner als 10%. 10°C kleiner als Temperatur kleiner als 20°C. -2,0xC A
         // kleiner als Strom kleiner als -1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T3_I4_WERT             (RXBUF_UINT32(12)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T3_I4_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T3_I4_WERT_TYPE        float
         // Duration with SoC less than 10%. 10 ° C less than temperature less than 20 ° C. -1.5xC A less than current
-        // less than -1.0xC A / Dauer bei SoC kleiner als 10%. 10Â°C kleiner als Temperatur kleiner als 20Â°C. -1,5xC A
+        // less than -1.0xC A / Dauer bei SoC kleiner als 10%. 10°C kleiner als Temperatur kleiner als 20°C. -1,5xC A
         // kleiner als Strom kleiner als -1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T3_I5_WERT             (RXBUF_UINT32(16)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T3_I5_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T3_I5_WERT_TYPE        float
         // Duration with SoC less than 10%. 10 ° C less than temperature less than 20 ° C. -1.0xC A less than current
-        // less than -0.5xC A / Dauer bei SoC kleiner als 10%. 10Â°C kleiner als Temperatur kleiner als 20Â°C. -1,0xC A
+        // less than -0.5xC A / Dauer bei SoC kleiner als 10%. 10°C kleiner als Temperatur kleiner als 20°C. -1,0xC A
         // kleiner als Strom kleiner als -0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T3_I6_WERT             (RXBUF_UINT32(20)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T3_I6_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T3_I6_WERT_TYPE        float
         // Duration with SoC less than 10%. 10 ° C less than temperature less than 20 ° C. -0.5xC A less than current
-        // less than 0.0xC A / Dauer bei SoC kleiner als 10%. 10Â°C kleiner als Temperatur kleiner als 20Â°C. -0,5xC A
+        // less than 0.0xC A / Dauer bei SoC kleiner als 10%. 10°C kleiner als Temperatur kleiner als 20°C. -0,5xC A
         // kleiner als Strom kleiner als 0,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T3_I7_WERT             (RXBUF_UINT32(24)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T3_I7_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T3_I7_WERT_TYPE        float
         // Duration with SoC less than 10%. 10 ° C less than temperature less than 20 ° C. 0.0xC A less than current less
-        // than 0.5xC A / Dauer bei SoC kleiner als 10%. 10Â°C kleiner als Temperatur kleiner als 20Â°C. 0,0xC A kleiner
+        // than 0.5xC A / Dauer bei SoC kleiner als 10%. 10°C kleiner als Temperatur kleiner als 20°C. 0,0xC A kleiner
         // als Strom kleiner als 0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T3_I8_WERT             (RXBUF_UINT32(28)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T3_I8_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T3_I8_WERT_TYPE        float
         // Duration with SoC less than 10%. 10 ° C less than temperature less than 20 ° C. 0.5xC A less than current less
-        // than 1.0xC A / Dauer bei SoC kleiner als 10%. 10Â°C kleiner als Temperatur kleiner als 20Â°C. 0,5xC A kleiner
+        // than 1.0xC A / Dauer bei SoC kleiner als 10%. 10°C kleiner als Temperatur kleiner als 20°C. 0,5xC A kleiner
         // als Strom kleiner als 1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T3_I9_WERT             (RXBUF_UINT32(32)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T3_I9_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T3_I9_WERT_TYPE        float
         // Duration with SoC less than 10%. 10 ° C less than temperature less than 20 ° C. 1.0xC A less than current less
-        // than 1.5xC A / Dauer bei SoC kleiner als 10%. 10Â°C kleiner als Temperatur kleiner als 20Â°C. 1,0xC A kleiner
+        // than 1.5xC A / Dauer bei SoC kleiner als 10%. 10°C kleiner als Temperatur kleiner als 20°C. 1,0xC A kleiner
         // als Strom kleiner als 1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T3_I10_WERT            (RXBUF_UINT32(36)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T3_I10_WERT_UNIT       's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T3_I10_WERT_TYPE       float
         // Duration with SoC less than 10%. 10 ° C less than temperature less than 20 ° C. 1.5xC A less than current /
-        // Dauer bei SoC kleiner als 10%. 10Â°C kleiner als Temperatur kleiner als 20Â°C. 1,5xC A kleiner als Strom
+        // Dauer bei SoC kleiner als 10%. 10°C kleiner als Temperatur kleiner als 20°C. 1,5xC A kleiner als Strom
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T3_I1_WERT             (RXBUF_UINT32(40)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T3_I1_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T3_I1_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. 10 ° C less than temperature less than 20 ° C. Current less than
-        // -2.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 10Â°C kleiner als Temperatur kleiner als 20Â°C.
-        // Strom kleiner als -2,5xC A
+        // -2.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 10°C kleiner als Temperatur kleiner als 20°C. Strom
+        // kleiner als -2,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T3_I2_WERT             (RXBUF_UINT32(44)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T3_I2_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T3_I2_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. 10 ° C less than temperature less than 20 ° C. -2.5xC A less than
-        // current less than -2.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 10Â°C kleiner als Temperatur
-        // kleiner als 20Â°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
+        // current less than -2.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 10°C kleiner als Temperatur
+        // kleiner als 20°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T3_I3_WERT             (RXBUF_UINT32(48)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T3_I3_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T3_I3_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. 10 ° C less than temperature less than 20 ° C. -2.0xC A less than
-        // current less than -1.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 10Â°C kleiner als Temperatur
-        // kleiner als 20Â°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
+        // current less than -1.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 10°C kleiner als Temperatur
+        // kleiner als 20°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T3_I4_WERT             (RXBUF_UINT32(52)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T3_I4_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T3_I4_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. 10 ° C less than temperature less than 20 ° C. -1.5xC A less than
-        // current less than -1.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 10Â°C kleiner als Temperatur
-        // kleiner als 20Â°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
+        // current less than -1.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 10°C kleiner als Temperatur
+        // kleiner als 20°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T3_I5_WERT             (RXBUF_UINT32(56)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T3_I5_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T3_I5_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. 10 ° C less than temperature less than 20 ° C. -1.0xC A less than
-        // current less than -0.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 10Â°C kleiner als Temperatur
-        // kleiner als 20Â°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
+        // current less than -0.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 10°C kleiner als Temperatur
+        // kleiner als 20°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T3_I6_WERT             (RXBUF_UINT32(60)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T3_I6_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T3_I6_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. 10 ° C less than temperature less than 20 ° C. -0.5xC A less than
-        // current less than 0.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 10Â°C kleiner als Temperatur
-        // kleiner als 20Â°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
+        // current less than 0.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 10°C kleiner als Temperatur kleiner
+        // als 20°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T3_I7_WERT             (RXBUF_UINT32(64)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T3_I7_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T3_I7_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. 10 ° C less than temperature less than 20 ° C. 0.0xC A less than
-        // current less than 0.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 10Â°C kleiner als Temperatur
-        // kleiner als 20Â°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
+        // current less than 0.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 10°C kleiner als Temperatur kleiner
+        // als 20°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T3_I8_WERT             (RXBUF_UINT32(68)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T3_I8_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T3_I8_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. 10 ° C less than temperature less than 20 ° C. 0.5xC A less than
-        // current less than 1.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 10Â°C kleiner als Temperatur
-        // kleiner als 20Â°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
+        // current less than 1.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 10°C kleiner als Temperatur kleiner
+        // als 20°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T3_I9_WERT             (RXBUF_UINT32(72)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T3_I9_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T3_I9_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. 10 ° C less than temperature less than 20 ° C. 1.0xC A less than
-        // current less than 1.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 10Â°C kleiner als Temperatur
-        // kleiner als 20Â°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
+        // current less than 1.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 10°C kleiner als Temperatur kleiner
+        // als 20°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T3_I10_WERT            (RXBUF_UINT32(76)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T3_I10_WERT_UNIT       's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T3_I10_WERT_TYPE       float
         // Duration at 10% less than SoC less than 30%. 10 ° C less than temperature less than 20 ° C. 1.5xC A less than
-        // current / Dauer bei 10% kleiner als SoC kleiner als 30%. 10Â°C kleiner als Temperatur kleiner als 20Â°C. 1,5xC
-        // A kleiner als Strom
+        // current / Dauer bei 10% kleiner als SoC kleiner als 30%. 10°C kleiner als Temperatur kleiner als 20°C. 1,5xC A
+        // kleiner als Strom
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T3_I1_WERT             (RXBUF_UINT32(80)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T3_I1_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T3_I1_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. 10 ° C less than temperature less than 20 ° C. Current less than
-        // -2.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 10Â°C kleiner als Temperatur kleiner als 20Â°C.
-        // Strom kleiner als -2,5xC A
+        // -2.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 10°C kleiner als Temperatur kleiner als 20°C. Strom
+        // kleiner als -2,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T3_I2_WERT             (RXBUF_UINT32(84)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T3_I2_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T3_I2_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. 10 ° C less than temperature less than 20 ° C. -2.5xC A less than
-        // current less than -2.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 10Â°C kleiner als Temperatur
-        // kleiner als 20Â°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
+        // current less than -2.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 10°C kleiner als Temperatur
+        // kleiner als 20°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T3_I3_WERT             (RXBUF_UINT32(88)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T3_I3_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T3_I3_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. 10 ° C less than temperature less than 20 ° C. -2.0xC A less than
-        // current less than -1.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 10Â°C kleiner als Temperatur
-        // kleiner als 20Â°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
+        // current less than -1.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 10°C kleiner als Temperatur
+        // kleiner als 20°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T3_I4_WERT             (RXBUF_UINT32(92)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T3_I4_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T3_I4_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. 10 ° C less than temperature less than 20 ° C. -1.5xC A less than
-        // current less than -1.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 10Â°C kleiner als Temperatur
-        // kleiner als 20Â°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
+        // current less than -1.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 10°C kleiner als Temperatur
+        // kleiner als 20°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T3_I5_WERT             (RXBUF_UINT32(96)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T3_I5_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T3_I5_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. 10 ° C less than temperature less than 20 ° C. -1.0xC A less than
-        // current less than -0.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 10Â°C kleiner als Temperatur
-        // kleiner als 20Â°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
+        // current less than -0.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 10°C kleiner als Temperatur
+        // kleiner als 20°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T3_I6_WERT             (RXBUF_UINT32(100)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T3_I6_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T3_I6_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. 10 ° C less than temperature less than 20 ° C. -0.5xC A less than
-        // current less than 0.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 10Â°C kleiner als Temperatur
-        // kleiner als 20Â°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
+        // current less than 0.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 10°C kleiner als Temperatur kleiner
+        // als 20°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T3_I7_WERT             (RXBUF_UINT32(104)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T3_I7_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T3_I7_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. 10 ° C less than temperature less than 20 ° C. 0.0xC A less than
-        // current less than 0.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 10Â°C kleiner als Temperatur
-        // kleiner als 20Â°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
+        // current less than 0.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 10°C kleiner als Temperatur kleiner
+        // als 20°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T3_I8_WERT             (RXBUF_UINT32(108)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T3_I8_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T3_I8_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. 10 ° C less than temperature less than 20 ° C. 0.5xC A less than
-        // current less than 1.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 10Â°C kleiner als Temperatur
-        // kleiner als 20Â°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
+        // current less than 1.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 10°C kleiner als Temperatur kleiner
+        // als 20°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T3_I9_WERT             (RXBUF_UINT32(112)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T3_I9_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T3_I9_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. 10 ° C less than temperature less than 20 ° C. 1.0xC A less than
-        // current less than 1.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 10Â°C kleiner als Temperatur
-        // kleiner als 20Â°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
+        // current less than 1.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 10°C kleiner als Temperatur kleiner
+        // als 20°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T3_I10_WERT            (RXBUF_UINT32(116)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T3_I10_WERT_UNIT       's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T3_I10_WERT_TYPE       float
         // Duration at 30% less than SoC less than 50%. 10 ° C less than temperature less than 20 ° C. 1.5xC A less than
-        // current / Dauer bei 30% kleiner als SoC kleiner als 50%. 10Â°C kleiner als Temperatur kleiner als 20Â°C. 1,5xC
-        // A kleiner als Strom
+        // current / Dauer bei 30% kleiner als SoC kleiner als 50%. 10°C kleiner als Temperatur kleiner als 20°C. 1,5xC A
+        // kleiner als Strom
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T3_I1_WERT             (RXBUF_UINT32(120)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T3_I1_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T3_I1_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. 10 ° C less than temperature less than 20 ° C. Current less than
-        // -2.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 10Â°C kleiner als Temperatur kleiner als 20Â°C.
-        // Strom kleiner als -2,5xC A
+        // -2.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 10°C kleiner als Temperatur kleiner als 20°C. Strom
+        // kleiner als -2,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T3_I2_WERT             (RXBUF_UINT32(124)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T3_I2_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T3_I2_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. 10 ° C less than temperature less than 20 ° C. -2.5xC A less than
-        // current less than -2.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 10Â°C kleiner als Temperatur
-        // kleiner als 20Â°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
+        // current less than -2.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 10°C kleiner als Temperatur
+        // kleiner als 20°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T3_I3_WERT             (RXBUF_UINT32(128)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T3_I3_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T3_I3_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. 10 ° C less than temperature less than 20 ° C. -2.0xC A less than
-        // current less than -1.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 10Â°C kleiner als Temperatur
-        // kleiner als 20Â°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
+        // current less than -1.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 10°C kleiner als Temperatur
+        // kleiner als 20°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T3_I4_WERT             (RXBUF_UINT32(132)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T3_I4_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T3_I4_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. 10 ° C less than temperature less than 20 ° C. -1.5xC A less than
-        // current less than -1.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 10Â°C kleiner als Temperatur
-        // kleiner als 20Â°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
+        // current less than -1.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 10°C kleiner als Temperatur
+        // kleiner als 20°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T3_I5_WERT             (RXBUF_UINT32(136)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T3_I5_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T3_I5_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. 10 ° C less than temperature less than 20 ° C. -1.0xC A less than
-        // current less than -0.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 10Â°C kleiner als Temperatur
-        // kleiner als 20Â°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
+        // current less than -0.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 10°C kleiner als Temperatur
+        // kleiner als 20°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T3_I6_WERT             (RXBUF_UINT32(140)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T3_I6_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T3_I6_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. 10 ° C less than temperature less than 20 ° C. -0.5xC A less than
-        // current less than 0.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 10Â°C kleiner als Temperatur
-        // kleiner als 20Â°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
+        // current less than 0.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 10°C kleiner als Temperatur kleiner
+        // als 20°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T3_I7_WERT             (RXBUF_UINT32(144)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T3_I7_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T3_I7_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. 10 ° C less than temperature less than 20 ° C. 0.0xC A less than
-        // current less than 0.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 10Â°C kleiner als Temperatur
-        // kleiner als 20Â°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
+        // current less than 0.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 10°C kleiner als Temperatur kleiner
+        // als 20°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T3_I8_WERT             (RXBUF_UINT32(148)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T3_I8_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T3_I8_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. 10 ° C less than temperature less than 20 ° C. 0.5xC A less than
-        // current less than 1.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 10Â°C kleiner als Temperatur
-        // kleiner als 20Â°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
+        // current less than 1.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 10°C kleiner als Temperatur kleiner
+        // als 20°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T3_I9_WERT             (RXBUF_UINT32(152)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T3_I9_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T3_I9_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. 10 ° C less than temperature less than 20 ° C. 1.0xC A less than
-        // current less than 1.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 10Â°C kleiner als Temperatur
-        // kleiner als 20Â°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
+        // current less than 1.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 10°C kleiner als Temperatur kleiner
+        // als 20°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T3_I10_WERT            (RXBUF_UINT32(156)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T3_I10_WERT_UNIT       's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T3_I10_WERT_TYPE       float
         // Duration at 50% less than SoC less than 70%. 10 ° C less than temperature less than 20 ° C. 1.5xC A less than
-        // current / Dauer bei 50% kleiner als SoC kleiner als 70%. 10Â°C kleiner als Temperatur kleiner als 20Â°C. 1,5xC
-        // A kleiner als Strom
+        // current / Dauer bei 50% kleiner als SoC kleiner als 70%. 10°C kleiner als Temperatur kleiner als 20°C. 1,5xC A
+        // kleiner als Strom
 
 #define I3_PID_SME_HV_BATT_HIST_SOC_T4_1                             0xDD97
         // Duration at 20 ° C less than temperature less than 27.5 ° C and with different values of current and SOC -
-        // part 1 / Dauer bei 20Â°C kleiner als Temperatur kleiner als 27,5 Â°C und bei unterschiedlichen Werten von
-        // Strom und SOC - Teil 1
+        // part 1 / Dauer bei 20°C kleiner als Temperatur kleiner als 27,5 °C und bei unterschiedlichen Werten von Strom
+        // und SOC - Teil 1
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T4_I1_WERT             (RXBUF_UINT32(0)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T4_I1_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T4_I1_WERT_TYPE        float
         // Duration with SoC less than 10%. 20 ° C less than temperature less than 27.5 ° C. Current less than -2.5xC A /
-        // Dauer bei SoC kleiner als 10%. 20Â°C kleiner als Temperatur kleiner als 27,5Â°C. Strom kleiner als -2,5xC A
+        // Dauer bei SoC kleiner als 10%. 20°C kleiner als Temperatur kleiner als 27,5°C. Strom kleiner als -2,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T4_I2_WERT             (RXBUF_UINT32(4)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T4_I2_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T4_I2_WERT_TYPE        float
         // Duration with SoC less than 10%. 20 ° C less than temperature less than 27.5 ° C. -2.5xC A less than current
-        // less than -2.0xC A / Dauer bei SoC kleiner als 10%. 20Â°C kleiner als Temperatur kleiner als 27,5Â°C. -2,5xC A
+        // less than -2.0xC A / Dauer bei SoC kleiner als 10%. 20°C kleiner als Temperatur kleiner als 27,5°C. -2,5xC A
         // kleiner als Strom kleiner als -2,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T4_I3_WERT             (RXBUF_UINT32(8)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T4_I3_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T4_I3_WERT_TYPE        float
         // Duration with SoC less than 10%. 20 ° C less than temperature less than 27.5 ° C. -2.0xC A less than current
-        // less than -1.5xC A / Dauer bei SoC kleiner als 10%. 20Â°C kleiner als Temperatur kleiner als 27,5Â°C. -2,0xC A
+        // less than -1.5xC A / Dauer bei SoC kleiner als 10%. 20°C kleiner als Temperatur kleiner als 27,5°C. -2,0xC A
         // kleiner als Strom kleiner als -1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T4_I4_WERT             (RXBUF_UINT32(12)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T4_I4_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T4_I4_WERT_TYPE        float
         // Duration with SoC less than 10%. 20 ° C less than temperature less than 27.5 ° C. -1.5xC A less than current
-        // less than -1.0xC A / Dauer bei SoC kleiner als 10%. 20Â°C kleiner als Temperatur kleiner als 27,5Â°C. -1,5xC A
+        // less than -1.0xC A / Dauer bei SoC kleiner als 10%. 20°C kleiner als Temperatur kleiner als 27,5°C. -1,5xC A
         // kleiner als Strom kleiner als -1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T4_I5_WERT             (RXBUF_UINT32(16)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T4_I5_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T4_I5_WERT_TYPE        float
         // Duration with SoC less than 10%. 20 ° C less than temperature less than 27.5 ° C. -1.0xC A less than current
-        // less than -0.5xC A / Dauer bei SoC kleiner als 10%. 20Â°C kleiner als Temperatur kleiner als 27,5Â°C. -1,0xC A
+        // less than -0.5xC A / Dauer bei SoC kleiner als 10%. 20°C kleiner als Temperatur kleiner als 27,5°C. -1,0xC A
         // kleiner als Strom kleiner als -0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T4_I6_WERT             (RXBUF_UINT32(20)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T4_I6_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T4_I6_WERT_TYPE        float
         // Duration with SoC less than 10%. 20 ° C less than temperature less than 27.5 ° C. -0.5xC A less than current
-        // less than 0.0xC A / Dauer bei SoC kleiner als 10%. 20Â°C kleiner als Temperatur kleiner als 27,5Â°C. -0,5xC A
+        // less than 0.0xC A / Dauer bei SoC kleiner als 10%. 20°C kleiner als Temperatur kleiner als 27,5°C. -0,5xC A
         // kleiner als Strom kleiner als 0,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T4_I7_WERT             (RXBUF_UINT32(24)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T4_I7_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T4_I7_WERT_TYPE        float
         // Duration with SoC less than 10%. 20 ° C less than temperature less than 27.5 ° C. 0.0xC A less than current
-        // less than 0.5xC A / Dauer bei SoC kleiner als 10%. 20Â°C kleiner als Temperatur kleiner als 27,5Â°C. 0,0xC A
+        // less than 0.5xC A / Dauer bei SoC kleiner als 10%. 20°C kleiner als Temperatur kleiner als 27,5°C. 0,0xC A
         // kleiner als Strom kleiner als 0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T4_I8_WERT             (RXBUF_UINT32(28)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T4_I8_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T4_I8_WERT_TYPE        float
         // Duration with SoC less than 10%. 20 ° C less than temperature less than 27.5 ° C. 0.5xC A less than current
-        // less than 1.0xC A / Dauer bei SoC kleiner als 10%. 20Â°C kleiner als Temperatur kleiner als 27,5Â°C. 0,5xC A
+        // less than 1.0xC A / Dauer bei SoC kleiner als 10%. 20°C kleiner als Temperatur kleiner als 27,5°C. 0,5xC A
         // kleiner als Strom kleiner als 1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T4_I9_WERT             (RXBUF_UINT32(32)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T4_I9_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T4_I9_WERT_TYPE        float
         // Duration with SoC less than 10%. 20 ° C less than temperature less than 27.5 ° C. 1.0xC A less than current
-        // less than 1.5xC A / Dauer bei SoC kleiner als 10%. 20Â°C kleiner als Temperatur kleiner als 27,5Â°C. 1,0xC A
+        // less than 1.5xC A / Dauer bei SoC kleiner als 10%. 20°C kleiner als Temperatur kleiner als 27,5°C. 1,0xC A
         // kleiner als Strom kleiner als 1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T4_I10_WERT            (RXBUF_UINT32(36)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T4_I10_WERT_UNIT       's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T4_I10_WERT_TYPE       float
         // Duration with SoC less than 10%. 20 ° C less than temperature less than 27.5 ° C. 1.5xC A less than current /
-        // Dauer bei SoC kleiner als 10%. 20Â°C kleiner als Temperatur kleiner als 27,5Â°C. 1,5xC A kleiner als Strom
+        // Dauer bei SoC kleiner als 10%. 20°C kleiner als Temperatur kleiner als 27,5°C. 1,5xC A kleiner als Strom
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T4_I1_WERT             (RXBUF_UINT32(40)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T4_I1_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T4_I1_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. 20 ° C less than temperature less than 27.5 ° C. Current less
-        // than -2.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 20Â°C kleiner als Temperatur kleiner als
-        // 27,5Â°C. Strom kleiner als -2,5xC A
+        // than -2.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 20°C kleiner als Temperatur kleiner als 27,5°C.
+        // Strom kleiner als -2,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T4_I2_WERT             (RXBUF_UINT32(44)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T4_I2_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T4_I2_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. 20 ° C less than temperature less than 27.5 ° C. -2.5xC A less
-        // than current less than -2.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 20Â°C kleiner als Temperatur
-        // kleiner als 27,5Â°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
+        // than current less than -2.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 20°C kleiner als Temperatur
+        // kleiner als 27,5°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T4_I3_WERT             (RXBUF_UINT32(48)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T4_I3_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T4_I3_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. 20 ° C less than temperature less than 27.5 ° C. -2.0xC A less
-        // than current less than -1.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 20Â°C kleiner als Temperatur
-        // kleiner als 27,5Â°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
+        // than current less than -1.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 20°C kleiner als Temperatur
+        // kleiner als 27,5°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T4_I4_WERT             (RXBUF_UINT32(52)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T4_I4_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T4_I4_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. 20 ° C less than temperature less than 27.5 ° C. -1.5xC A less
-        // than current less than -1.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 20Â°C kleiner als Temperatur
-        // kleiner als 27,5Â°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
+        // than current less than -1.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 20°C kleiner als Temperatur
+        // kleiner als 27,5°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T4_I5_WERT             (RXBUF_UINT32(56)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T4_I5_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T4_I5_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. 20 ° C less than temperature less than 27.5 ° C. -1.0xC A less
-        // than current less than -0.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 20Â°C kleiner als Temperatur
-        // kleiner als 27,5Â°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
+        // than current less than -0.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 20°C kleiner als Temperatur
+        // kleiner als 27,5°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T4_I6_WERT             (RXBUF_UINT32(60)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T4_I6_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T4_I6_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. 20 ° C less than temperature less than 27.5 ° C. -0.5xC A less
-        // than current less than 0.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 20Â°C kleiner als Temperatur
-        // kleiner als 27,5Â°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
+        // than current less than 0.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 20°C kleiner als Temperatur
+        // kleiner als 27,5°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T4_I7_WERT             (RXBUF_UINT32(64)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T4_I7_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T4_I7_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. 20 ° C less than temperature less than 27.5 ° C. 0.0xC A less
-        // than current less than 0.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 20Â°C kleiner als Temperatur
-        // kleiner als 27,5Â°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
+        // than current less than 0.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 20°C kleiner als Temperatur
+        // kleiner als 27,5°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T4_I8_WERT             (RXBUF_UINT32(68)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T4_I8_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T4_I8_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. 20 ° C less than temperature less than 27.5 ° C. 0.5xC A less
-        // than current less than 1.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 20Â°C kleiner als Temperatur
-        // kleiner als 27,5Â°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
+        // than current less than 1.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 20°C kleiner als Temperatur
+        // kleiner als 27,5°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T4_I9_WERT             (RXBUF_UINT32(72)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T4_I9_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T4_I9_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. 20 ° C less than temperature less than 27.5 ° C. 1.0xC A less
-        // than current less than 1.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 20Â°C kleiner als Temperatur
-        // kleiner als 27,5Â°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
+        // than current less than 1.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 20°C kleiner als Temperatur
+        // kleiner als 27,5°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T4_I10_WERT            (RXBUF_UINT32(76)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T4_I10_WERT_UNIT       's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T4_I10_WERT_TYPE       float
         // Duration at 10% less than SoC less than 30%. 20 ° C less than temperature less than 27.5 ° C. 1.5xC A less
-        // than current / Dauer bei 10% kleiner als SoC kleiner als 30%. 20Â°C kleiner als Temperatur kleiner als
-        // 27,5Â°C. 1,5xC A kleiner als Strom
+        // than current / Dauer bei 10% kleiner als SoC kleiner als 30%. 20°C kleiner als Temperatur kleiner als 27,5°C.
+        // 1,5xC A kleiner als Strom
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T4_I1_WERT             (RXBUF_UINT32(80)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T4_I1_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T4_I1_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. 20 ° C less than temperature less than 27.5 ° C. Current less
-        // than -2.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 20Â°C kleiner als Temperatur kleiner als
-        // 27,5Â°C. Strom kleiner als -2,5xC A
+        // than -2.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 20°C kleiner als Temperatur kleiner als 27,5°C.
+        // Strom kleiner als -2,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T4_I2_WERT             (RXBUF_UINT32(84)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T4_I2_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T4_I2_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. 20 ° C less than temperature less than 27.5 ° C. -2.5xC A less
-        // than current less than -2.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 20Â°C kleiner als Temperatur
-        // kleiner als 27,5Â°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
+        // than current less than -2.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 20°C kleiner als Temperatur
+        // kleiner als 27,5°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T4_I3_WERT             (RXBUF_UINT32(88)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T4_I3_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T4_I3_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. 20 ° C less than temperature less than 27.5 ° C. -2.0xC A less
-        // than current less than -1.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 20Â°C kleiner als Temperatur
-        // kleiner als 27,5Â°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
+        // than current less than -1.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 20°C kleiner als Temperatur
+        // kleiner als 27,5°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T4_I4_WERT             (RXBUF_UINT32(92)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T4_I4_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T4_I4_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. 20 ° C less than temperature less than 27.5 ° C. -1.5xC A less
-        // than current less than -1.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 20Â°C kleiner als Temperatur
-        // kleiner als 27,5Â°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
+        // than current less than -1.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 20°C kleiner als Temperatur
+        // kleiner als 27,5°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T4_I5_WERT             (RXBUF_UINT32(96)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T4_I5_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T4_I5_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. 20 ° C less than temperature less than 27.5 ° C. -1.0xC A less
-        // than current less than -0.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 20Â°C kleiner als Temperatur
-        // kleiner als 27,5Â°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
+        // than current less than -0.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 20°C kleiner als Temperatur
+        // kleiner als 27,5°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T4_I6_WERT             (RXBUF_UINT32(100)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T4_I6_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T4_I6_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. 20 ° C less than temperature less than 27.5 ° C. -0.5xC A less
-        // than current less than 0.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 20Â°C kleiner als Temperatur
-        // kleiner als 27,5Â°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
+        // than current less than 0.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 20°C kleiner als Temperatur
+        // kleiner als 27,5°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T4_I7_WERT             (RXBUF_UINT32(104)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T4_I7_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T4_I7_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. 20 ° C less than temperature less than 27.5 ° C. 0.0xC A less
-        // than current less than 0.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 20Â°C kleiner als Temperatur
-        // kleiner als 27,5Â°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
+        // than current less than 0.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 20°C kleiner als Temperatur
+        // kleiner als 27,5°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T4_I8_WERT             (RXBUF_UINT32(108)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T4_I8_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T4_I8_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. 20 ° C less than temperature less than 27.5 ° C. 0.5xC A less
-        // than current less than 1.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 20Â°C kleiner als Temperatur
-        // kleiner als 27,5Â°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
+        // than current less than 1.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 20°C kleiner als Temperatur
+        // kleiner als 27,5°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T4_I9_WERT             (RXBUF_UINT32(112)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T4_I9_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T4_I9_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. 20 ° C less than temperature less than 27.5 ° C. 1.0xC A less
-        // than current less than 1.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 20Â°C kleiner als Temperatur
-        // kleiner als 27,5Â°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
+        // than current less than 1.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 20°C kleiner als Temperatur
+        // kleiner als 27,5°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T4_I10_WERT            (RXBUF_UINT32(116)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T4_I10_WERT_UNIT       's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T4_I10_WERT_TYPE       float
         // Duration at 30% less than SoC less than 50%. 20 ° C less than temperature less than 27.5 ° C. 1.5xC A less
-        // than current / Dauer bei 30% kleiner als SoC kleiner als 50%. 20Â°C kleiner als Temperatur kleiner als
-        // 27,5Â°C. 1,5xC A kleiner als Strom
+        // than current / Dauer bei 30% kleiner als SoC kleiner als 50%. 20°C kleiner als Temperatur kleiner als 27,5°C.
+        // 1,5xC A kleiner als Strom
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T4_I1_WERT             (RXBUF_UINT32(120)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T4_I1_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T4_I1_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. 20 ° C less than temperature less than 27.5 ° C. Current less
-        // than -2.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 20Â°C kleiner als Temperatur kleiner als
-        // 27,5Â°C. Strom kleiner als -2,5xC A
+        // than -2.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 20°C kleiner als Temperatur kleiner als 27,5°C.
+        // Strom kleiner als -2,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T4_I2_WERT             (RXBUF_UINT32(124)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T4_I2_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T4_I2_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. 20 ° C less than temperature less than 27.5 ° C. -2.5xC A less
-        // than current less than -2.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 20Â°C kleiner als Temperatur
-        // kleiner als 27,5Â°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
+        // than current less than -2.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 20°C kleiner als Temperatur
+        // kleiner als 27,5°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T4_I3_WERT             (RXBUF_UINT32(128)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T4_I3_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T4_I3_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. 20 ° C less than temperature less than 27.5 ° C. -2.0xC A less
-        // than current less than -1.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 20Â°C kleiner als Temperatur
-        // kleiner als 27,5Â°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
+        // than current less than -1.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 20°C kleiner als Temperatur
+        // kleiner als 27,5°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T4_I4_WERT             (RXBUF_UINT32(132)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T4_I4_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T4_I4_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. 20 ° C less than temperature less than 27.5 ° C. -1.5xC A less
-        // than current less than -1.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 20Â°C kleiner als Temperatur
-        // kleiner als 27,5Â°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
+        // than current less than -1.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 20°C kleiner als Temperatur
+        // kleiner als 27,5°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T4_I5_WERT             (RXBUF_UINT32(136)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T4_I5_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T4_I5_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. 20 ° C less than temperature less than 27.5 ° C. -1.0xC A less
-        // than current less than -0.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 20Â°C kleiner als Temperatur
-        // kleiner als 27,5Â°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
+        // than current less than -0.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 20°C kleiner als Temperatur
+        // kleiner als 27,5°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T4_I6_WERT             (RXBUF_UINT32(140)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T4_I6_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T4_I6_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. 20 ° C less than temperature less than 27.5 ° C. -0.5xC A less
-        // than current less than 0.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 20Â°C kleiner als Temperatur
-        // kleiner als 27,5Â°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
+        // than current less than 0.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 20°C kleiner als Temperatur
+        // kleiner als 27,5°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T4_I7_WERT             (RXBUF_UINT32(144)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T4_I7_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T4_I7_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. 20 ° C less than temperature less than 27.5 ° C. 0.0xC A less
-        // than current less than 0.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 20Â°C kleiner als Temperatur
-        // kleiner als 27,5Â°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
+        // than current less than 0.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 20°C kleiner als Temperatur
+        // kleiner als 27,5°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T4_I8_WERT             (RXBUF_UINT32(148)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T4_I8_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T4_I8_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. 20 ° C less than temperature less than 27.5 ° C. 0.5xC A less
-        // than current less than 1.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 20Â°C kleiner als Temperatur
-        // kleiner als 27,5Â°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
+        // than current less than 1.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 20°C kleiner als Temperatur
+        // kleiner als 27,5°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T4_I9_WERT             (RXBUF_UINT32(152)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T4_I9_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T4_I9_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. 20 ° C less than temperature less than 27.5 ° C. 1.0xC A less
-        // than current less than 1.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 20Â°C kleiner als Temperatur
-        // kleiner als 27,5Â°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
+        // than current less than 1.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 20°C kleiner als Temperatur
+        // kleiner als 27,5°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T4_I10_WERT            (RXBUF_UINT32(156)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T4_I10_WERT_UNIT       's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T4_I10_WERT_TYPE       float
         // Duration at 50% less than SoC less than 70%. 20 ° C less than temperature less than 27.5 ° C. 1.5xC A less
-        // than current / Dauer bei 50% kleiner als SoC kleiner als 70%. 20Â°C kleiner als Temperatur kleiner als
-        // 27,5Â°C. 1,5xC A kleiner als Strom
+        // than current / Dauer bei 50% kleiner als SoC kleiner als 70%. 20°C kleiner als Temperatur kleiner als 27,5°C.
+        // 1,5xC A kleiner als Strom
 
 #define I3_PID_SME_HV_BATT_HIST_SOC_T5_1                             0xDD98
         // Duration at 27.5 ° C less than temperature less than 32.5 ° C and with different values of current and SOC -
-        // part 1 / Dauer bei 27,5Â°C kleiner als Temperatur kleiner als 32,5 Â°C und bei unterschiedlichen Werten von
+        // part 1 / Dauer bei 27,5°C kleiner als Temperatur kleiner als 32,5 °C und bei unterschiedlichen Werten von
         // Strom und SOC - Teil 1
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T5_I1_WERT             (RXBUF_UINT32(0)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T5_I1_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T5_I1_WERT_TYPE        float
         // Duration with SoC less than 10%. 27.5 ° C less than temperature less than 32.5 ° C. Current less than -2.5xC
-        // A. / Dauer bei SoC kleiner als 10%. 27,5Â°C kleiner als Temperatur kleiner als 32,5Â°C. Strom kleiner als
-        // -2,5xC A.
+        // A. / Dauer bei SoC kleiner als 10%. 27,5°C kleiner als Temperatur kleiner als 32,5°C. Strom kleiner als -2,5xC
+        // A.
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T5_I2_WERT             (RXBUF_UINT32(4)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T5_I2_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T5_I2_WERT_TYPE        float
         // Duration with SoC less than 10%. 27.5 ° C less than temperature less than 32.5 ° C. -2.5xC A less than current
-        // less than -2.0xC A. / Dauer bei SoC kleiner als 10%. 27,5Â°C kleiner als Temperatur kleiner als 32,5Â°C.
-        // -2,5xC A kleiner als Strom kleiner als -2,0xC A.
+        // less than -2.0xC A. / Dauer bei SoC kleiner als 10%. 27,5°C kleiner als Temperatur kleiner als 32,5°C. -2,5xC
+        // A kleiner als Strom kleiner als -2,0xC A.
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T5_I3_WERT             (RXBUF_UINT32(8)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T5_I3_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T5_I3_WERT_TYPE        float
         // Duration with SoC less than 10%. 27.5 ° C less than temperature less than 32.5 ° C. -2.0xC A less than current
-        // less than -1.5xC A. / Dauer bei SoC kleiner als 10%. 27,5Â°C kleiner als Temperatur kleiner als 32,5Â°C.
-        // -2,0xC A kleiner als Strom kleiner als -1,5xC A.
+        // less than -1.5xC A. / Dauer bei SoC kleiner als 10%. 27,5°C kleiner als Temperatur kleiner als 32,5°C. -2,0xC
+        // A kleiner als Strom kleiner als -1,5xC A.
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T5_I4_WERT             (RXBUF_UINT32(12)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T5_I4_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T5_I4_WERT_TYPE        float
         // Duration with SoC less than 10%. 27.5 ° C less than temperature less than 32.5 ° C. -1.5xC A less than current
-        // less than -1.0xC A. / Dauer bei SoC kleiner als 10%. 27,5Â°C kleiner als Temperatur kleiner als 32,5Â°C.
-        // -1,5xC A kleiner als Strom kleiner als -1,0xC A.
+        // less than -1.0xC A. / Dauer bei SoC kleiner als 10%. 27,5°C kleiner als Temperatur kleiner als 32,5°C. -1,5xC
+        // A kleiner als Strom kleiner als -1,0xC A.
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T5_I5_WERT             (RXBUF_UINT32(16)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T5_I5_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T5_I5_WERT_TYPE        float
         // Duration with SoC less than 10%. 27.5 ° C less than temperature less than 32.5 ° C. -1.0xC A less than current
-        // less than -0.5xC A. / Dauer bei SoC kleiner als 10%. 27,5Â°C kleiner als Temperatur kleiner als 32,5Â°C.
-        // -1,0xC A kleiner als Strom kleiner als -0,5xC A.
+        // less than -0.5xC A. / Dauer bei SoC kleiner als 10%. 27,5°C kleiner als Temperatur kleiner als 32,5°C. -1,0xC
+        // A kleiner als Strom kleiner als -0,5xC A.
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T5_I6_WERT             (RXBUF_UINT32(20)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T5_I6_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T5_I6_WERT_TYPE        float
         // Duration with SoC less than 10%. 27.5 ° C less than temperature less than 32.5 ° C. -0.5xC A less than current
-        // less than 0.0xC A. / Dauer bei SoC kleiner als 10%. 27,5Â°C kleiner als Temperatur kleiner als 32,5Â°C. -0,5xC
-        // A kleiner als Strom kleiner als 0,0xC A.
+        // less than 0.0xC A. / Dauer bei SoC kleiner als 10%. 27,5°C kleiner als Temperatur kleiner als 32,5°C. -0,5xC A
+        // kleiner als Strom kleiner als 0,0xC A.
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T5_I7_WERT             (RXBUF_UINT32(24)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T5_I7_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T5_I7_WERT_TYPE        float
         // Duration with SoC less than 10%. 27.5 ° C less than temperature less than 32.5 ° C. 0.0xC A less than current
-        // less than 0.5xC A. / Dauer bei SoC kleiner als 10%. 27,5Â°C kleiner als Temperatur kleiner als 32,5Â°C. 0,0xC
-        // A kleiner als Strom kleiner als 0,5xC A.
+        // less than 0.5xC A. / Dauer bei SoC kleiner als 10%. 27,5°C kleiner als Temperatur kleiner als 32,5°C. 0,0xC A
+        // kleiner als Strom kleiner als 0,5xC A.
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T5_I8_WERT             (RXBUF_UINT32(28)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T5_I8_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T5_I8_WERT_TYPE        float
         // Duration with SoC less than 10%. 27.5 ° C less than temperature less than 32.5 ° C. 0.5xC A less than current
-        // less than 1.0xC A. / Dauer bei SoC kleiner als 10%. 27,5Â°C kleiner als Temperatur kleiner als 32,5Â°C. 0,5xC
-        // A kleiner als Strom kleiner als 1,0xC A.
+        // less than 1.0xC A. / Dauer bei SoC kleiner als 10%. 27,5°C kleiner als Temperatur kleiner als 32,5°C. 0,5xC A
+        // kleiner als Strom kleiner als 1,0xC A.
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T5_I9_WERT             (RXBUF_UINT32(32)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T5_I9_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T5_I9_WERT_TYPE        float
         // Duration with SoC less than 10%. 27.5 ° C less than temperature less than 32.5 ° C. 1.0xC A less than current
-        // less than 1.5xC A. / Dauer bei SoC kleiner als 10%. 27,5Â°C kleiner als Temperatur kleiner als 32,5Â°C. 1,0xC
-        // A kleiner als Strom kleiner als 1,5xC A.
+        // less than 1.5xC A. / Dauer bei SoC kleiner als 10%. 27,5°C kleiner als Temperatur kleiner als 32,5°C. 1,0xC A
+        // kleiner als Strom kleiner als 1,5xC A.
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T5_I10_WERT            (RXBUF_UINT32(36)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T5_I10_WERT_UNIT       's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T5_I10_WERT_TYPE       float
         // Duration with SoC less than 10%. 27.5 ° C less than temperature less than 32.5 ° C. 1.5xC A less than current
-        // / Dauer bei SoC kleiner als 10%. 27,5Â°C kleiner als Temperatur kleiner als 32,5Â°C. 1,5xC A kleiner als Strom
+        // / Dauer bei SoC kleiner als 10%. 27,5°C kleiner als Temperatur kleiner als 32,5°C. 1,5xC A kleiner als Strom
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T5_I1_WERT             (RXBUF_UINT32(40)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T5_I1_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T5_I1_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. 27.5 ° C less than temperature less than 32.5 ° C. Current less
-        // than -2.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 27,5Â°C kleiner als Temperatur kleiner als
-        // 32,5Â°C. Strom kleiner als -2,5xC A
+        // than -2.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 27,5°C kleiner als Temperatur kleiner als
+        // 32,5°C. Strom kleiner als -2,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T5_I2_WERT             (RXBUF_UINT32(44)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T5_I2_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T5_I2_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. 27.5 ° C less than temperature less than 32.5 ° C. -2.5xC A less
-        // than current less than -2.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 27,5Â°C kleiner als
-        // Temperatur kleiner als 32,5Â°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
+        // than current less than -2.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T5_I3_WERT             (RXBUF_UINT32(48)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T5_I3_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T5_I3_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. 27.5 ° C less than temperature less than 32.5 ° C. -2.0xC A less
-        // than current less than -1.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 27,5Â°C kleiner als
-        // Temperatur kleiner als 32,5Â°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
+        // than current less than -1.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T5_I4_WERT             (RXBUF_UINT32(52)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T5_I4_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T5_I4_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. 27.5 ° C less than temperature less than 32.5 ° C. -1.5xC A less
-        // than current less than -1.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 27,5Â°C kleiner als
-        // Temperatur kleiner als 32,5Â°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
+        // than current less than -1.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T5_I5_WERT             (RXBUF_UINT32(56)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T5_I5_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T5_I5_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. 27.5 ° C less than temperature less than 32.5 ° C. -1.0xC A less
-        // than current less than -0.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 27,5Â°C kleiner als
-        // Temperatur kleiner als 32,5Â°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
+        // than current less than -0.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T5_I6_WERT             (RXBUF_UINT32(60)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T5_I6_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T5_I6_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. 27.5 ° C less than temperature less than 32.5 ° C. -0.5xC A less
-        // than current less than 0.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 27,5Â°C kleiner als Temperatur
-        // kleiner als 32,5Â°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
+        // than current less than 0.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T5_I7_WERT             (RXBUF_UINT32(64)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T5_I7_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T5_I7_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. 27.5 ° C less than temperature less than 32.5 ° C. 0.0xC A less
-        // than current less than 0.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 27,5Â°C kleiner als Temperatur
-        // kleiner als 32,5Â°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
+        // than current less than 0.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T5_I8_WERT             (RXBUF_UINT32(68)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T5_I8_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T5_I8_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. 27.5 ° C less than temperature less than 32.5 ° C. 0.5xC A less
-        // than current less than 1.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 27,5Â°C kleiner als Temperatur
-        // kleiner als 32,5Â°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
+        // than current less than 1.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T5_I9_WERT             (RXBUF_UINT32(72)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T5_I9_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T5_I9_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. 27.5 ° C less than temperature less than 32.5 ° C. 1.0xC A less
-        // than current less than 1.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 27,5Â°C kleiner als Temperatur
-        // kleiner als 32,5Â°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
+        // than current less than 1.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T5_I10_WERT            (RXBUF_UINT32(76)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T5_I10_WERT_UNIT       's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T5_I10_WERT_TYPE       float
         // Duration at 10% less than SoC less than 30%. 27.5 ° C less than temperature less than 32.5 ° C. 1.5xC A less
-        // than current / Dauer bei 10% kleiner als SoC kleiner als 30%. 27,5Â°C kleiner als Temperatur kleiner als
-        // 32,5Â°C. 1,5xC A kleiner als Strom
+        // than current / Dauer bei 10% kleiner als SoC kleiner als 30%. 27,5°C kleiner als Temperatur kleiner als
+        // 32,5°C. 1,5xC A kleiner als Strom
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T5_I1_WERT             (RXBUF_UINT32(80)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T5_I1_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T5_I1_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. 27.5 ° C less than temperature less than 32.5 ° C. Current less
-        // than -2.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 27,5Â°C kleiner als Temperatur kleiner als
-        // 32,5Â°C. Strom kleiner als -2,5xC A
+        // than -2.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 27,5°C kleiner als Temperatur kleiner als
+        // 32,5°C. Strom kleiner als -2,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T5_I2_WERT             (RXBUF_UINT32(84)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T5_I2_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T5_I2_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. 27.5 ° C less than temperature less than 32.5 ° C. -2.5xC A less
-        // than current less than -2.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 27,5Â°C kleiner als
-        // Temperatur kleiner als 32,5Â°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
+        // than current less than -2.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T5_I3_WERT             (RXBUF_UINT32(88)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T5_I3_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T5_I3_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. 27.5 ° C less than temperature less than 32.5 ° C. -2.0xC A less
-        // than current less than -1.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 27,5Â°C kleiner als
-        // Temperatur kleiner als 32,5Â°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
+        // than current less than -1.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T5_I4_WERT             (RXBUF_UINT32(92)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T5_I4_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T5_I4_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. 27.5 ° C less than temperature less than 32.5 ° C. -1.5xC A less
-        // than current less than -1.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 27,5Â°C kleiner als
-        // Temperatur kleiner als 32,5Â°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
+        // than current less than -1.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T5_I5_WERT             (RXBUF_UINT32(96)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T5_I5_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T5_I5_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. 27.5 ° C less than temperature less than 32.5 ° C. -1.0xC A less
-        // than current less than -0.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 27,5Â°C kleiner als
-        // Temperatur kleiner als 32,5Â°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
+        // than current less than -0.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T5_I6_WERT             (RXBUF_UINT32(100)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T5_I6_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T5_I6_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. 27.5 ° C less than temperature less than 32.5 ° C. -0.5xC A less
-        // than current less than 0.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 27,5Â°C kleiner als Temperatur
-        // kleiner als 32,5Â°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
+        // than current less than 0.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T5_I7_WERT             (RXBUF_UINT32(104)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T5_I7_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T5_I7_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. 27.5 ° C less than temperature less than 32.5 ° C. 0.0xC A less
-        // than current less than 0.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 27,5Â°C kleiner als Temperatur
-        // kleiner als 32,5Â°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
+        // than current less than 0.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T5_I8_WERT             (RXBUF_UINT32(108)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T5_I8_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T5_I8_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. 27.5 ° C less than temperature less than 32.5 ° C. 0.5xC A less
-        // than current less than 1.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 27,5Â°C kleiner als Temperatur
-        // kleiner als 32,5Â°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
+        // than current less than 1.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T5_I9_WERT             (RXBUF_UINT32(112)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T5_I9_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T5_I9_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. 27.5 ° C less than temperature less than 32.5 ° C. 1.0xC A less
-        // than current less than 1.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 27,5Â°C kleiner als Temperatur
-        // kleiner als 32,5Â°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
+        // than current less than 1.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T5_I10_WERT            (RXBUF_UINT32(116)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T5_I10_WERT_UNIT       's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T5_I10_WERT_TYPE       float
         // Duration at 30% less than SoC less than 50%. 27.5 ° C less than temperature less than 32.5 ° C. 1.5xC A less
-        // than current / Dauer bei 30% kleiner als SoC kleiner als 50%. 27,5Â°C kleiner als Temperatur kleiner als
-        // 32,5Â°C. 1,5xC A kleiner als Strom
+        // than current / Dauer bei 30% kleiner als SoC kleiner als 50%. 27,5°C kleiner als Temperatur kleiner als
+        // 32,5°C. 1,5xC A kleiner als Strom
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T5_I1_WERT             (RXBUF_UINT32(120)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T5_I1_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T5_I1_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. 27.5 ° C less than temperature less than 32.5 ° C. Current less
-        // than -2.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 27,5Â°C kleiner als Temperatur kleiner als
-        // 32,5Â°C. Strom kleiner als -2,5xC A
+        // than -2.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 27,5°C kleiner als Temperatur kleiner als
+        // 32,5°C. Strom kleiner als -2,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T5_I2_WERT             (RXBUF_UINT32(124)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T5_I2_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T5_I2_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. 27.5 ° C less than temperature less than 32.5 ° C. -2.5xC A less
-        // than current less than -2.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 27,5Â°C kleiner als
-        // Temperatur kleiner als 32,5Â°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
+        // than current less than -2.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T5_I3_WERT             (RXBUF_UINT32(128)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T5_I3_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T5_I3_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. 27.5 ° C less than temperature less than 32.5 ° C. -2.0xC A less
-        // than current less than -1.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 27,5Â°C kleiner als
-        // Temperatur kleiner als 32,5Â°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
+        // than current less than -1.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T5_I4_WERT             (RXBUF_UINT32(132)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T5_I4_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T5_I4_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. 27.5 ° C less than temperature less than 32.5 ° C. -1.5xC A less
-        // than current less than -1.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 27,5Â°C kleiner als
-        // Temperatur kleiner als 32,5Â°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
+        // than current less than -1.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T5_I5_WERT             (RXBUF_UINT32(136)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T5_I5_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T5_I5_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. 27.5 ° C less than temperature less than 32.5 ° C. -1.0xC A less
-        // than current less than -0.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 27,5Â°C kleiner als
-        // Temperatur kleiner als 32,5Â°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
+        // than current less than -0.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T5_I6_WERT             (RXBUF_UINT32(140)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T5_I6_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T5_I6_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. 27.5 ° C less than temperature less than 32.5 ° C. -0.5xC A less
-        // than current less than 0.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 27,5Â°C kleiner als Temperatur
-        // kleiner als 32,5Â°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
+        // than current less than 0.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T5_I7_WERT             (RXBUF_UINT32(144)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T5_I7_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T5_I7_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. 27.5 ° C less than temperature less than 32.5 ° C. 0.0xC A less
-        // than current less than 0.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 27,5Â°C kleiner als Temperatur
-        // kleiner als 32,5Â°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
+        // than current less than 0.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T5_I8_WERT             (RXBUF_UINT32(148)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T5_I8_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T5_I8_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. 27.5 ° C less than temperature less than 32.5 ° C. 0.5xC A less
-        // than current less than 1.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 27,5Â°C kleiner als Temperatur
-        // kleiner als 32,5Â°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
+        // than current less than 1.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T5_I9_WERT             (RXBUF_UINT32(152)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T5_I9_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T5_I9_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. 27.5 ° C less than temperature less than 32.5 ° C. 1.0xC A less
-        // than current less than 1.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 27,5Â°C kleiner als Temperatur
-        // kleiner als 32,5Â°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
+        // than current less than 1.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T5_I10_WERT            (RXBUF_UINT32(156)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T5_I10_WERT_UNIT       's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T5_I10_WERT_TYPE       float
         // Duration at 50% less than SoC less than 70%. 27.5 ° C less than temperature less than 32.5 ° C. 1.5xC A less
-        // than current / Dauer bei 50% kleiner als SoC kleiner als 70%. 27,5Â°C kleiner als Temperatur kleiner als
-        // 32,5Â°C. 1,5xC A kleiner als Strom
+        // than current / Dauer bei 50% kleiner als SoC kleiner als 70%. 27,5°C kleiner als Temperatur kleiner als
+        // 32,5°C. 1,5xC A kleiner als Strom
 
 #define I3_PID_SME_HV_BATT_HIST_SOC_T6_1                             0xDD99
         // Duration at 32.5 ° C less than temperature less than 40 ° C and with different values of current and SOC -
-        // Part 1 / Dauer bei 32,5Â°C kleiner als Temperatur kleiner als 40 Â°C und bei unterschiedlichen Werten von
-        // Strom und SOC - Teil 1
+        // part 1 / Dauer bei 32,5°C kleiner als Temperatur kleiner als 40 °C und bei unterschiedlichen Werten von Strom
+        // und SOC - Teil 1
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T6_I1_WERT             (RXBUF_UINT32(0)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T6_I1_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T6_I1_WERT_TYPE        float
         // Duration with SoC less than 10%. 32.5 ° C less than temperature less than 40 ° C. Current less than -2.5xC A /
-        // Dauer bei SoC kleiner als 10%. 32,5Â°C kleiner als Temperatur kleiner als 40Â°C. Strom kleiner als -2,5xC A
+        // Dauer bei SoC kleiner als 10%. 32,5°C kleiner als Temperatur kleiner als 40°C. Strom kleiner als -2,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T6_I2_WERT             (RXBUF_UINT32(4)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T6_I2_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T6_I2_WERT_TYPE        float
         // Duration with SoC less than 10%. 32.5 ° C less than temperature less than 40 ° C. -2.5xC A less than current
-        // less than -2.0xC A / Dauer bei SoC kleiner als 10%. 32,5Â°C kleiner als Temperatur kleiner als 40Â°C. -2,5xC A
+        // less than -2.0xC A / Dauer bei SoC kleiner als 10%. 32,5°C kleiner als Temperatur kleiner als 40°C. -2,5xC A
         // kleiner als Strom kleiner als -2,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T6_I3_WERT             (RXBUF_UINT32(8)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T6_I3_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T6_I3_WERT_TYPE        float
         // Duration with SoC less than 10%. 32.5 ° C less than temperature less than 40 ° C. -2.0xC A less than current
-        // less than -1.5xC A / Dauer bei SoC kleiner als 10%. 32,5Â°C kleiner als Temperatur kleiner als 40Â°C. -2,0xC A
+        // less than -1.5xC A / Dauer bei SoC kleiner als 10%. 32,5°C kleiner als Temperatur kleiner als 40°C. -2,0xC A
         // kleiner als Strom kleiner als -1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T6_I4_WERT             (RXBUF_UINT32(12)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T6_I4_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T6_I4_WERT_TYPE        float
         // Duration with SoC less than 10%. 32.5 ° C less than temperature less than 40 ° C. -1.5xC A less than current
-        // less than -1.0xC A / Dauer bei SoC kleiner als 10%. 32,5Â°C kleiner als Temperatur kleiner als 40Â°C. -1,5xC A
+        // less than -1.0xC A / Dauer bei SoC kleiner als 10%. 32,5°C kleiner als Temperatur kleiner als 40°C. -1,5xC A
         // kleiner als Strom kleiner als -1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T6_I5_WERT             (RXBUF_UINT32(16)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T6_I5_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T6_I5_WERT_TYPE        float
         // Duration with SoC less than 10%. 32.5 ° C less than temperature less than 40 ° C. -1.0xC A less than current
-        // less than -0.5xC A / Dauer bei SoC kleiner als 10%. 32,5Â°C kleiner als Temperatur kleiner als 40Â°C. -1,0xC A
+        // less than -0.5xC A / Dauer bei SoC kleiner als 10%. 32,5°C kleiner als Temperatur kleiner als 40°C. -1,0xC A
         // kleiner als Strom kleiner als -0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T6_I6_WERT             (RXBUF_UINT32(20)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T6_I6_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T6_I6_WERT_TYPE        float
         // Duration with SoC less than 10%. 32.5 ° C less than temperature less than 40 ° C. -0.5xC A less than current
-        // less than 0.0xC A / Dauer bei SoC kleiner als 10%. 32,5Â°C kleiner als Temperatur kleiner als 40Â°C. -0,5xC A
+        // less than 0.0xC A / Dauer bei SoC kleiner als 10%. 32,5°C kleiner als Temperatur kleiner als 40°C. -0,5xC A
         // kleiner als Strom kleiner als 0,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T6_I7_WERT             (RXBUF_UINT32(24)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T6_I7_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T6_I7_WERT_TYPE        float
         // Duration with SoC less than 10%. 32.5 ° C less than temperature less than 40 ° C. 0.0xC A less than current
-        // less than 0.5xC A / Dauer bei SoC kleiner als 10%. 32,5Â°C kleiner als Temperatur kleiner als 40Â°C. 0,0xC A
+        // less than 0.5xC A / Dauer bei SoC kleiner als 10%. 32,5°C kleiner als Temperatur kleiner als 40°C. 0,0xC A
         // kleiner als Strom kleiner als 0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T6_I8_WERT             (RXBUF_UINT32(28)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T6_I8_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T6_I8_WERT_TYPE        float
         // Duration with SoC less than 10%. 32.5 ° C less than temperature less than 40 ° C. 0.5xC A less than current
-        // less than 1.0xC A / Dauer bei SoC kleiner als 10%. 32,5Â°C kleiner als Temperatur kleiner als 40Â°C. 0,5xC A
+        // less than 1.0xC A / Dauer bei SoC kleiner als 10%. 32,5°C kleiner als Temperatur kleiner als 40°C. 0,5xC A
         // kleiner als Strom kleiner als 1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T6_I9_WERT             (RXBUF_UINT32(32)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T6_I9_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T6_I9_WERT_TYPE        float
         // Duration with SoC less than 10%. 32.5 ° C less than temperature less than 40 ° C. 1.0xC A less than current
-        // less than 1.5xC A / Dauer bei SoC kleiner als 10%. 32,5Â°C kleiner als Temperatur kleiner als 40Â°C. 1,0xC A
+        // less than 1.5xC A / Dauer bei SoC kleiner als 10%. 32,5°C kleiner als Temperatur kleiner als 40°C. 1,0xC A
         // kleiner als Strom kleiner als 1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T6_I10_WERT            (RXBUF_UINT32(36)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T6_I10_WERT_UNIT       's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T6_I10_WERT_TYPE       float
         // Duration with SoC less than 10%. 32.5 ° C less than temperature less than 40 ° C. 1.5xC A less than current /
-        // Dauer bei SoC kleiner als 10%. 32,5Â°C kleiner als Temperatur kleiner als 40Â°C. 1,5xC A kleiner als Strom
+        // Dauer bei SoC kleiner als 10%. 32,5°C kleiner als Temperatur kleiner als 40°C. 1,5xC A kleiner als Strom
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T6_I1_WERT             (RXBUF_UINT32(40)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T6_I1_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T6_I1_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. 32.5 ° C less than temperature less than 40 ° C. Current less
-        // than -2.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 32,5Â°C kleiner als Temperatur kleiner als
-        // 40Â°C. Strom kleiner als -2,5xC A
+        // than -2.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 32,5°C kleiner als Temperatur kleiner als 40°C.
+        // Strom kleiner als -2,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T6_I2_WERT             (RXBUF_UINT32(44)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T6_I2_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T6_I2_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. 32.5 ° C less than temperature less than 40 ° C. -2.5xC A less
-        // than current less than -2.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 32,5Â°C kleiner als
-        // Temperatur kleiner als 40Â°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
+        // than current less than -2.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T6_I3_WERT             (RXBUF_UINT32(48)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T6_I3_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T6_I3_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. 32.5 ° C less than temperature less than 40 ° C. -2.0xC A less
-        // than current less than -1.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 32,5Â°C kleiner als
-        // Temperatur kleiner als 40Â°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
+        // than current less than -1.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T6_I4_WERT             (RXBUF_UINT32(52)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T6_I4_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T6_I4_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. 32.5 ° C less than temperature less than 40 ° C. -1.5xC A less
-        // than current less than -1.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 32,5Â°C kleiner als
-        // Temperatur kleiner als 40Â°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
+        // than current less than -1.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T6_I5_WERT             (RXBUF_UINT32(56)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T6_I5_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T6_I5_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. 32.5 ° C less than temperature less than 40 ° C. -1.0xC A less
-        // than current less than -0.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 32,5Â°C kleiner als
-        // Temperatur kleiner als 40Â°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
+        // than current less than -0.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T6_I6_WERT             (RXBUF_UINT32(60)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T6_I6_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T6_I6_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. 32.5 ° C less than temperature less than 40 ° C. -0.5xC A less
-        // than current less than 0.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 32,5Â°C kleiner als Temperatur
-        // kleiner als 40Â°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
+        // than current less than 0.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T6_I7_WERT             (RXBUF_UINT32(64)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T6_I7_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T6_I7_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. 32.5 ° C less than temperature less than 40 ° C. 0.0xC A less
-        // than current less than 0.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 32,5Â°C kleiner als Temperatur
-        // kleiner als 40Â°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
+        // than current less than 0.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T6_I8_WERT             (RXBUF_UINT32(68)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T6_I8_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T6_I8_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. 32.5 ° C less than temperature less than 40 ° C. 0.5xC A less
-        // than current less than 1.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 32,5Â°C kleiner als Temperatur
-        // kleiner als 40Â°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
+        // than current less than 1.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T6_I9_WERT             (RXBUF_UINT32(72)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T6_I9_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T6_I9_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. 32.5 ° C less than temperature less than 40 ° C. 1.0xC A less
-        // than current less than 1.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 32,5Â°C kleiner als Temperatur
-        // kleiner als 40Â°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
+        // than current less than 1.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T6_I10_WERT            (RXBUF_UINT32(76)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T6_I10_WERT_UNIT       's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T6_I10_WERT_TYPE       float
         // Duration at 10% less than SoC less than 30%. 32.5 ° C less than temperature less than 40 ° C. 1.5xC A less
-        // than current / Dauer bei 10% kleiner als SoC kleiner als 30%. 32,5Â°C kleiner als Temperatur kleiner als
-        // 40Â°C. 1,5xC A kleiner als Strom
+        // than current / Dauer bei 10% kleiner als SoC kleiner als 30%. 32,5°C kleiner als Temperatur kleiner als 40°C.
+        // 1,5xC A kleiner als Strom
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T6_I1_WERT             (RXBUF_UINT32(80)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T6_I1_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T6_I1_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. 32.5 ° C less than temperature less than 40 ° C. Current less
-        // than -2.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 32,5Â°C kleiner als Temperatur kleiner als
-        // 40Â°C. Strom kleiner als -2,5xC A
+        // than -2.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 32,5°C kleiner als Temperatur kleiner als 40°C.
+        // Strom kleiner als -2,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T6_I2_WERT             (RXBUF_UINT32(84)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T6_I2_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T6_I2_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. 32.5 ° C less than temperature less than 40 ° C. -2.5xC A less
-        // than current less than -2.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 32,5Â°C kleiner als
-        // Temperatur kleiner als 40Â°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
+        // than current less than -2.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T6_I3_WERT             (RXBUF_UINT32(88)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T6_I3_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T6_I3_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. 32.5 ° C less than temperature less than 40 ° C. -2.0xC A less
-        // than current less than -1.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 32,5Â°C kleiner als
-        // Temperatur kleiner als 40Â°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
+        // than current less than -1.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T6_I4_WERT             (RXBUF_UINT32(92)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T6_I4_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T6_I4_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. 32.5 ° C less than temperature less than 40 ° C. -1.5xC A less
-        // than current less than -1.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 32,5Â°C kleiner als
-        // Temperatur kleiner als 40Â°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
+        // than current less than -1.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T6_I5_WERT             (RXBUF_UINT32(96)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T6_I5_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T6_I5_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. 32.5 ° C less than temperature less than 40 ° C. -1.0xC A less
-        // than current less than -0.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 32,5Â°C kleiner als
-        // Temperatur kleiner als 40Â°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
+        // than current less than -0.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T6_I6_WERT             (RXBUF_UINT32(100)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T6_I6_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T6_I6_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. 32.5 ° C less than temperature less than 40 ° C. -0.5xC A less
-        // than current less than 0.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 32,5Â°C kleiner als Temperatur
-        // kleiner als 40Â°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
+        // than current less than 0.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T6_I7_WERT             (RXBUF_UINT32(104)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T6_I7_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T6_I7_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. 32.5 ° C less than temperature less than 40 ° C. 0.0xC A less
-        // than current less than 0.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 32,5Â°C kleiner als Temperatur
-        // kleiner als 40Â°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
+        // than current less than 0.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T6_I8_WERT             (RXBUF_UINT32(108)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T6_I8_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T6_I8_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. 32.5 ° C less than temperature less than 40 ° C. 0.5xC A less
-        // than current less than 1.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 32,5Â°C kleiner als Temperatur
-        // kleiner als 40Â°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
+        // than current less than 1.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T6_I9_WERT             (RXBUF_UINT32(112)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T6_I9_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T6_I9_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. 32.5 ° C less than temperature less than 40 ° C. 1.0xC A less
-        // than current less than 1.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 32,5Â°C kleiner als Temperatur
-        // kleiner als 40Â°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
+        // than current less than 1.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T6_I10_WERT            (RXBUF_UINT32(116)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T6_I10_WERT_UNIT       's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T6_I10_WERT_TYPE       float
         // Duration at 30% less than SoC less than 50%. 32.5 ° C less than temperature less than 40 ° C. 1.5xC A less
-        // than current / Dauer bei 30% kleiner als SoC kleiner als 50%. 32,5Â°C kleiner als Temperatur kleiner als
-        // 40Â°C. 1,5xC A kleiner als Strom
+        // than current / Dauer bei 30% kleiner als SoC kleiner als 50%. 32,5°C kleiner als Temperatur kleiner als 40°C.
+        // 1,5xC A kleiner als Strom
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T6_I1_WERT             (RXBUF_UINT32(120)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T6_I1_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T6_I1_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. 32.5 ° C less than temperature less than 40 ° C. Current less
-        // than -2.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 32,5Â°C kleiner als Temperatur kleiner als
-        // 40Â°C. Strom kleiner als -2,5xC A
+        // than -2.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 32,5°C kleiner als Temperatur kleiner als 40°C.
+        // Strom kleiner als -2,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T6_I2_WERT             (RXBUF_UINT32(124)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T6_I2_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T6_I2_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. 32.5 ° C less than temperature less than 40 ° C. -2.5xC A less
-        // than current less than -2.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 32,5Â°C kleiner als
-        // Temperatur kleiner als 40Â°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
+        // than current less than -2.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T6_I3_WERT             (RXBUF_UINT32(128)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T6_I3_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T6_I3_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. 32.5 ° C less than temperature less than 40 ° C. -2.0xC A less
-        // than current less than -1.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 32,5Â°C kleiner als
-        // Temperatur kleiner als 40Â°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
+        // than current less than -1.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T6_I4_WERT             (RXBUF_UINT32(132)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T6_I4_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T6_I4_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. 32.5 ° C less than temperature less than 40 ° C. -1.5xC A less
-        // than current less than -1.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 32,5Â°C kleiner als
-        // Temperatur kleiner als 40Â°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
+        // than current less than -1.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T6_I5_WERT             (RXBUF_UINT32(136)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T6_I5_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T6_I5_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. 32.5 ° C less than temperature less than 40 ° C. -1.0xC A less
-        // than current less than -0.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 32,5Â°C kleiner als
-        // Temperatur kleiner als 40Â°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
+        // than current less than -0.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T6_I6_WERT             (RXBUF_UINT32(140)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T6_I6_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T6_I6_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. 32.5 ° C less than temperature less than 40 ° C. -0.5xC A less
-        // than current less than 0.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 32,5Â°C kleiner als Temperatur
-        // kleiner als 40Â°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
+        // than current less than 0.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T6_I7_WERT             (RXBUF_UINT32(144)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T6_I7_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T6_I7_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. 32.5 ° C less than temperature less than 40 ° C. 0.0xC A less
-        // than current less than 0.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 32,5Â°C kleiner als Temperatur
-        // kleiner als 40Â°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
+        // than current less than 0.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T6_I8_WERT             (RXBUF_UINT32(148)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T6_I8_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T6_I8_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. 32.5 ° C less than temperature less than 40 ° C. 0.5xC A less
-        // than current less than 1.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 32,5Â°C kleiner als Temperatur
-        // kleiner als 40Â°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
+        // than current less than 1.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T6_I9_WERT             (RXBUF_UINT32(152)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T6_I9_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T6_I9_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. 32.5 ° C less than temperature less than 40 ° C. 1.0xC A less
-        // than current less than 1.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 32,5Â°C kleiner als Temperatur
-        // kleiner als 40Â°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
+        // than current less than 1.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T6_I10_WERT            (RXBUF_UINT32(156)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T6_I10_WERT_UNIT       's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T6_I10_WERT_TYPE       float
         // Duration at 50% less than SoC less than 70%. 32.5 ° C less than temperature less than 40 ° C. 1.5xC A less
-        // than current / Dauer bei 50% kleiner als SoC kleiner als 70%. 32,5Â°C kleiner als Temperatur kleiner als
-        // 40Â°C. 1,5xC A kleiner als Strom
+        // than current / Dauer bei 50% kleiner als SoC kleiner als 70%. 32,5°C kleiner als Temperatur kleiner als 40°C.
+        // 1,5xC A kleiner als Strom
 
 #define I3_PID_SME_HV_BATT_HIST_SOC_T7_1                             0xDD9A
         // Duration at 40 ° C less than temperature and with different values of current and SOC - part 1 / Dauer bei 40
-        // Â°C kleiner als Temperatur und bei unterschiedlichen Werten von Strom und SOC - Teil 1
+        // °C kleiner als Temperatur und bei unterschiedlichen Werten von Strom und SOC - Teil 1
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T7_I1_WERT             (RXBUF_UINT32(0)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T7_I1_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T7_I1_WERT_TYPE        float
         // Duration with SoC less than 10%. 40 ° C less than temperature. Current less than -2.5xC A / Dauer bei SoC
-        // kleiner als 10%. 40Â°C kleiner als Temperatur. Strom kleiner als -2,5xC A
+        // kleiner als 10%. 40°C kleiner als Temperatur. Strom kleiner als -2,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T7_I2_WERT             (RXBUF_UINT32(4)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T7_I2_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T7_I2_WERT_TYPE        float
         // Duration with SoC less than 10%. 40 ° C less than temperature. -2.5xC A less than current less than -2.0xC A /
-        // Dauer bei SoC kleiner als 10%. 40Â°C kleiner als Temperatur. -2,5xC A kleiner als Strom kleiner als -2,0xC A
+        // Dauer bei SoC kleiner als 10%. 40°C kleiner als Temperatur. -2,5xC A kleiner als Strom kleiner als -2,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T7_I3_WERT             (RXBUF_UINT32(8)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T7_I3_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T7_I3_WERT_TYPE        float
         // Duration with SoC less than 10%. 40 ° C less than temperature. -2.0xC A less than current less than -1.5xC A /
-        // Dauer bei SoC kleiner als 10%. 40Â°C kleiner als Temperatur. -2,0xC A kleiner als Strom kleiner als -1,5xC A
+        // Dauer bei SoC kleiner als 10%. 40°C kleiner als Temperatur. -2,0xC A kleiner als Strom kleiner als -1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T7_I4_WERT             (RXBUF_UINT32(12)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T7_I4_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T7_I4_WERT_TYPE        float
         // Duration with SoC less than 10%. 40 ° C less than temperature. -1.5xC A less than current less than -1.0xC A /
-        // Dauer bei SoC kleiner als 10%. 40Â°C kleiner als Temperatur. -1,5xC A kleiner als Strom kleiner als -1,0xC A
+        // Dauer bei SoC kleiner als 10%. 40°C kleiner als Temperatur. -1,5xC A kleiner als Strom kleiner als -1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T7_I5_WERT             (RXBUF_UINT32(16)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T7_I5_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T7_I5_WERT_TYPE        float
         // Duration with SoC less than 10%. 40 ° C less than temperature. -1.0xC A less than current less than -0.5xC A /
-        // Dauer bei SoC kleiner als 10%. 40Â°C kleiner als Temperatur. -1,0xC A kleiner als Strom kleiner als -0,5xC A
+        // Dauer bei SoC kleiner als 10%. 40°C kleiner als Temperatur. -1,0xC A kleiner als Strom kleiner als -0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T7_I6_WERT             (RXBUF_UINT32(20)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T7_I6_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T7_I6_WERT_TYPE        float
         // Duration with SoC less than 10%. 40 ° C less than temperature. -0.5xC A less than current less than 0.0xC A /
-        // Dauer bei SoC kleiner als 10%. 40Â°C kleiner als Temperatur. -0,5xC A kleiner als Strom kleiner als 0,0xC A
+        // Dauer bei SoC kleiner als 10%. 40°C kleiner als Temperatur. -0,5xC A kleiner als Strom kleiner als 0,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T7_I7_WERT             (RXBUF_UINT32(24)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T7_I7_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T7_I7_WERT_TYPE        float
         // Duration with SoC less than 10%. 40 ° C less than temperature. 0.0xC A less than current less than 0.5xC A /
-        // Dauer bei SoC kleiner als 10%. 40Â°C kleiner als Temperatur. 0,0xC A kleiner als Strom kleiner als 0,5xC A
+        // Dauer bei SoC kleiner als 10%. 40°C kleiner als Temperatur. 0,0xC A kleiner als Strom kleiner als 0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T7_I8_WERT             (RXBUF_UINT32(28)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T7_I8_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T7_I8_WERT_TYPE        float
         // Duration with SoC less than 10%. 40 ° C less than temperature. 0.5xC A less than current less than 1.0xC A /
-        // Dauer bei SoC kleiner als 10%. 40Â°C kleiner als Temperatur. 0,5xC A kleiner als Strom kleiner als 1,0xC A
+        // Dauer bei SoC kleiner als 10%. 40°C kleiner als Temperatur. 0,5xC A kleiner als Strom kleiner als 1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T7_I9_WERT             (RXBUF_UINT32(32)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T7_I9_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T7_I9_WERT_TYPE        float
         // Duration with SoC less than 10%. 40 ° C less than temperature. 1.0xC A less than current less than 1.5xC A /
-        // Dauer bei SoC kleiner als 10%. 40Â°C kleiner als Temperatur. 1,0xC A kleiner als Strom kleiner als 1,5xC A
+        // Dauer bei SoC kleiner als 10%. 40°C kleiner als Temperatur. 1,0xC A kleiner als Strom kleiner als 1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T7_I10_WERT            (RXBUF_UINT32(36)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T7_I10_WERT_UNIT       's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC1_T7_I10_WERT_TYPE       float
         // Duration with SoC less than 10%. 40 ° C less than temperature. 1.5xC A less than current / Dauer bei SoC
-        // kleiner als 10%. 40Â°C kleiner als Temperatur. 1,5xC A kleiner als Strom
+        // kleiner als 10%. 40°C kleiner als Temperatur. 1,5xC A kleiner als Strom
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T7_I1_WERT             (RXBUF_UINT32(40)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T7_I1_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T7_I1_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. 40 ° C less than temperature. Current less than -2.5xC A / Dauer
-        // bei 10% kleiner als SoC kleiner als 30%. 40Â°C kleiner als Temperatur. Strom kleiner als -2,5xC A
+        // bei 10% kleiner als SoC kleiner als 30%. 40°C kleiner als Temperatur. Strom kleiner als -2,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T7_I2_WERT             (RXBUF_UINT32(44)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T7_I2_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T7_I2_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. 40 ° C less than temperature. -2.5xC A less than current less
-        // than -2.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 40Â°C kleiner als Temperatur. -2,5xC A kleiner
+        // than -2.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 40°C kleiner als Temperatur. -2,5xC A kleiner
         // als Strom kleiner als -2,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T7_I3_WERT             (RXBUF_UINT32(48)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T7_I3_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T7_I3_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. 40 ° C less than temperature. -2.0xC A less than current less
-        // than -1.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 40Â°C kleiner als Temperatur. -2,0xC A kleiner
+        // than -1.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 40°C kleiner als Temperatur. -2,0xC A kleiner
         // als Strom kleiner als -1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T7_I4_WERT             (RXBUF_UINT32(52)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T7_I4_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T7_I4_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. 40 ° C less than temperature. -1.5xC A less than current less
-        // than -1.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 40Â°C kleiner als Temperatur. -1,5xC A kleiner
+        // than -1.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 40°C kleiner als Temperatur. -1,5xC A kleiner
         // als Strom kleiner als -1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T7_I5_WERT             (RXBUF_UINT32(56)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T7_I5_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T7_I5_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. 40 ° C less than temperature. -1.0xC A less than current less
-        // than -0.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 40Â°C kleiner als Temperatur. -1,0xC A kleiner
+        // than -0.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 40°C kleiner als Temperatur. -1,0xC A kleiner
         // als Strom kleiner als -0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T7_I6_WERT             (RXBUF_UINT32(60)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T7_I6_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T7_I6_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. 40 ° C less than temperature. -0.5xC A less than current less
-        // than 0.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 40Â°C kleiner als Temperatur. -0,5xC A kleiner
+        // than 0.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 40°C kleiner als Temperatur. -0,5xC A kleiner
         // als Strom kleiner als 0,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T7_I7_WERT             (RXBUF_UINT32(64)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T7_I7_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T7_I7_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. 40 ° C less than temperature. 0.0xC A less than current less than
-        // 0.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 40Â°C kleiner als Temperatur. 0,0xC A kleiner als
+        // 0.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 40°C kleiner als Temperatur. 0,0xC A kleiner als
         // Strom kleiner als 0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T7_I8_WERT             (RXBUF_UINT32(68)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T7_I8_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T7_I8_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. 40 ° C less than temperature. 0.5xC A less than current less than
-        // 1.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 40Â°C kleiner als Temperatur. 0,5xC A kleiner als
+        // 1.0xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 40°C kleiner als Temperatur. 0,5xC A kleiner als
         // Strom kleiner als 1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T7_I9_WERT             (RXBUF_UINT32(72)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T7_I9_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T7_I9_WERT_TYPE        float
         // Duration at 10% less than SoC less than 30%. 40 ° C less than temperature. 1.0xC A less than current less than
-        // 1.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 40Â°C kleiner als Temperatur. 1,0xC A kleiner als
+        // 1.5xC A / Dauer bei 10% kleiner als SoC kleiner als 30%. 40°C kleiner als Temperatur. 1,0xC A kleiner als
         // Strom kleiner als 1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T7_I10_WERT            (RXBUF_UINT32(76)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T7_I10_WERT_UNIT       's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC2_T7_I10_WERT_TYPE       float
         // Duration at 10% less than SoC less than 30%. 40 ° C less than temperature. 1.5xC A less than current / Dauer
-        // bei 10% kleiner als SoC kleiner als 30%. 40Â°C kleiner als Temperatur. 1,5xC A kleiner als Strom
+        // bei 10% kleiner als SoC kleiner als 30%. 40°C kleiner als Temperatur. 1,5xC A kleiner als Strom
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T7_I1_WERT             (RXBUF_UINT32(80)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T7_I1_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T7_I1_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. 40 ° C less than temperature. Current less than -2.5xC A / Dauer
-        // bei 30% kleiner als SoC kleiner als 50%. 40Â°C kleiner als Temperatur. Strom kleiner als -2,5xC A
+        // bei 30% kleiner als SoC kleiner als 50%. 40°C kleiner als Temperatur. Strom kleiner als -2,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T7_I2_WERT             (RXBUF_UINT32(84)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T7_I2_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T7_I2_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. 40 ° C less than temperature. -2.5xC A less than current less
-        // than -2.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 40Â°C kleiner als Temperatur. -2,5xC A kleiner
+        // than -2.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 40°C kleiner als Temperatur. -2,5xC A kleiner
         // als Strom kleiner als -2,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T7_I3_WERT             (RXBUF_UINT32(88)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T7_I3_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T7_I3_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. 40 ° C less than temperature. -2.0xC A less than current less
-        // than -1.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 40Â°C kleiner als Temperatur. -2,0xC A kleiner
+        // than -1.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 40°C kleiner als Temperatur. -2,0xC A kleiner
         // als Strom kleiner als -1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T7_I4_WERT             (RXBUF_UINT32(92)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T7_I4_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T7_I4_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. 40 ° C less than temperature. -1.5xC A less than current less
-        // than -1.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 40Â°C kleiner als Temperatur. -1,5xC A kleiner
+        // than -1.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 40°C kleiner als Temperatur. -1,5xC A kleiner
         // als Strom kleiner als -1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T7_I5_WERT             (RXBUF_UINT32(96)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T7_I5_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T7_I5_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. 40 ° C less than temperature. -1.0xC A less than current less
-        // than -0.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 40Â°C kleiner als Temperatur. -1,0xC A kleiner
+        // than -0.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 40°C kleiner als Temperatur. -1,0xC A kleiner
         // als Strom kleiner als -0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T7_I6_WERT             (RXBUF_UINT32(100)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T7_I6_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T7_I6_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. 40 ° C less than temperature. -0.5xC A less than current less
-        // than 0.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 40Â°C kleiner als Temperatur. -0,5xC A kleiner
+        // than 0.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 40°C kleiner als Temperatur. -0,5xC A kleiner
         // als Strom kleiner als 0,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T7_I7_WERT             (RXBUF_UINT32(104)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T7_I7_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T7_I7_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. 40 ° C less than temperature. 0.0xC A less than current less than
-        // 0.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 40Â°C kleiner als Temperatur. 0,0xC A kleiner als
+        // 0.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 40°C kleiner als Temperatur. 0,0xC A kleiner als
         // Strom kleiner als 0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T7_I8_WERT             (RXBUF_UINT32(108)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T7_I8_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T7_I8_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. 40 ° C less than temperature. 0.5xC A less than current less than
-        // 1.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 40Â°C kleiner als Temperatur. 0,5xC A kleiner als
+        // 1.0xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 40°C kleiner als Temperatur. 0,5xC A kleiner als
         // Strom kleiner als 1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T7_I9_WERT             (RXBUF_UINT32(112)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T7_I9_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T7_I9_WERT_TYPE        float
         // Duration at 30% less than SoC less than 50%. 40 ° C less than temperature. 1.0xC A less than current less than
-        // 1.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 40Â°C kleiner als Temperatur. 1,0xC A kleiner als
+        // 1.5xC A / Dauer bei 30% kleiner als SoC kleiner als 50%. 40°C kleiner als Temperatur. 1,0xC A kleiner als
         // Strom kleiner als 1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T7_I10_WERT            (RXBUF_UINT32(116)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T7_I10_WERT_UNIT       's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC3_T7_I10_WERT_TYPE       float
         // Duration at 30% less than SoC less than 50%. 40 ° C less than temperature. 1.5xC A less than current / Dauer
-        // bei 30% kleiner als SoC kleiner als 50%. 40Â°C kleiner als Temperatur. 1,5xC A kleiner als Strom
+        // bei 30% kleiner als SoC kleiner als 50%. 40°C kleiner als Temperatur. 1,5xC A kleiner als Strom
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T7_I1_WERT             (RXBUF_UINT32(120)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T7_I1_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T7_I1_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. 40 ° C less than temperature. Current less than -2.5xC A / Dauer
-        // bei 50% kleiner als SoC kleiner als 70%. 40Â°C kleiner als Temperatur. Strom kleiner als -2,5xC A
+        // bei 50% kleiner als SoC kleiner als 70%. 40°C kleiner als Temperatur. Strom kleiner als -2,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T7_I2_WERT             (RXBUF_UINT32(124)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T7_I2_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T7_I2_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. 40 ° C less than temperature. -2.5xC A less than current less
-        // than -2.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 40Â°C kleiner als Temperatur. -2,5xC A kleiner
+        // than -2.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 40°C kleiner als Temperatur. -2,5xC A kleiner
         // als Strom kleiner als -2,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T7_I3_WERT             (RXBUF_UINT32(128)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T7_I3_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T7_I3_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. 40 ° C less than temperature. -2.0xC A less than current less
-        // than -1.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 40Â°C kleiner als Temperatur. -2,0xC A kleiner
+        // than -1.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 40°C kleiner als Temperatur. -2,0xC A kleiner
         // als Strom kleiner als -1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T7_I4_WERT             (RXBUF_UINT32(132)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T7_I4_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T7_I4_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. 40 ° C less than temperature. -1.5xC A less than current less
-        // than -1.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 40Â°C kleiner als Temperatur. -1,5xC A kleiner
+        // than -1.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 40°C kleiner als Temperatur. -1,5xC A kleiner
         // als Strom kleiner als -1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T7_I5_WERT             (RXBUF_UINT32(136)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T7_I5_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T7_I5_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. 40 ° C less than temperature. -1.0xC A less than current less
-        // than -0.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 40Â°C kleiner als Temperatur. -1,0xC A kleiner
+        // than -0.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 40°C kleiner als Temperatur. -1,0xC A kleiner
         // als Strom kleiner als -0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T7_I6_WERT             (RXBUF_UINT32(140)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T7_I6_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T7_I6_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. 40 ° C less than temperature. -0.5xC A less than current less
-        // than 0.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 40Â°C kleiner als Temperatur. -0,5xC A kleiner
+        // than 0.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 40°C kleiner als Temperatur. -0,5xC A kleiner
         // als Strom kleiner als 0,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T7_I7_WERT             (RXBUF_UINT32(144)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T7_I7_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T7_I7_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. 40 ° C less than temperature. 0.0xC A less than current less than
-        // 0.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 40Â°C kleiner als Temperatur. 0,0xC A kleiner als
+        // 0.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 40°C kleiner als Temperatur. 0,0xC A kleiner als
         // Strom kleiner als 0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T7_I8_WERT             (RXBUF_UINT32(148)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T7_I8_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T7_I8_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. 40 ° C less than temperature. 0.5xC A less than current less than
-        // 1.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 40Â°C kleiner als Temperatur. 0,5xC A kleiner als
+        // 1.0xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 40°C kleiner als Temperatur. 0,5xC A kleiner als
         // Strom kleiner als 1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T7_I9_WERT             (RXBUF_UINT32(152)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T7_I9_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T7_I9_WERT_TYPE        float
         // Duration at 50% less than SoC less than 70%. 40 ° C less than temperature. 1.0xC A less than current less than
-        // 1.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 40Â°C kleiner als Temperatur. 1,0xC A kleiner als
+        // 1.5xC A / Dauer bei 50% kleiner als SoC kleiner als 70%. 40°C kleiner als Temperatur. 1,0xC A kleiner als
         // Strom kleiner als 1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T7_I10_WERT            (RXBUF_UINT32(156)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T7_I10_WERT_UNIT       's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC4_T7_I10_WERT_TYPE       float
         // Duration at 50% less than SoC less than 70%. 40 ° C less than temperature. 1.5xC A less than current / Dauer
-        // bei 50% kleiner als SoC kleiner als 70%. 40Â°C kleiner als Temperatur. 1,5xC A kleiner als Strom
+        // bei 50% kleiner als SoC kleiner als 70%. 40°C kleiner als Temperatur. 1,5xC A kleiner als Strom
 
 #define I3_PID_SME_LADEZIELSPANNUNG_TAUSCH                           0xDDAB
-        // Output of the target charge voltage for module replacement before installing the module in the vehicle /
-        // Ausgabe der Ladezielspannung fÃ¼r Modultausch vor Einbau des Moduls ins Fahrzeug
+        // Output of the charging target voltage for module replacement before installing the module in the vehicle /
+        // Ausgabe der Ladezielspannung für Modultausch vor Einbau des Moduls ins Fahrzeug
 
     #define I3_RES_SME_STAT_LADEZIELSPANNUNG_WERT                    (RXBUF_UINT(0)/100.0f)
     #define I3_RES_SME_STAT_LADEZIELSPANNUNG_WERT_UNIT               'V'
     #define I3_RES_SME_STAT_LADEZIELSPANNUNG_WERT_TYPE               float
-        // Output of the target charge voltage for module replacement before installing the module in the vehicle /
-        // Ausgabe der Ladezielspannung fÃ¼r Modultausch vor Einbau des Moduls ins Fahrzeug
+        // Output of the charging target voltage for module replacement before installing the module in the vehicle /
+        // Ausgabe der Ladezielspannung für Modultausch vor Einbau des Moduls ins Fahrzeug
 
 #define I3_PID_SME_HV_SPANNUNG_BATTERIE                              0xDDB4
         // Battery voltage behind the contactors, regardless of the contactor status / Batteriespannung hinter den
-        // SchÃ¼tzen, unabhÃ¤ngig vom SchÃ¼tzzustand
+        // Schützen, unabhängig vom Schützzustand
 
     #define I3_RES_SME_STAT_HV_SPANNUNG_BATT_WERT                    (RXBUF_UINT(0)/100.0f)
     #define I3_RES_SME_STAT_HV_SPANNUNG_BATT_WERT_UNIT               'V'
     #define I3_RES_SME_STAT_HV_SPANNUNG_BATT_WERT_TYPE               float
         // Battery voltage behind the contactors, regardless of the contactor status / Batteriespannung hinter den
-        // SchÃ¼tzen, unabhÃ¤ngig vom SchÃ¼tzzustand
+        // Schützen, unabhängig vom Schützzustand
 
 #define I3_PID_SME_ALTERUNG_INNENWIDERSTAND                          0xDDB6
         // Aging of the internal resistance in percent: Internal resistance of the storage tank when new is related to
@@ -5760,33 +5758,33 @@
         // Status Service Disconnect (0 = open, 1 = closed) / Status Service Disconnect (0 = offen, 1 = geschlossen)
 
 #define I3_PID_SME_VORLADUNG                                         0xDDBE
-        // Info about time, current and temperatures during pre-charging / Info Ã¼ber Zeit, Strom und Temperaturen bei
+        // Info about time, current and temperatures during pre-charging / Info über Zeit, Strom und Temperaturen bei
         // Vorladung
 
     #define I3_RES_SME_STAT_ZEIT_VORLADUNG_WERT                      (RXBUF_UINT(0))
     #define I3_RES_SME_STAT_ZEIT_VORLADUNG_WERT_UNIT                 'ms'
     #define I3_RES_SME_STAT_ZEIT_VORLADUNG_WERT_TYPE                 unsigned short
-        // last precharge time required / zuletzt benÃ¶tigte Vorladezeit
+        // last precharge time required / zuletzt benötigte Vorladezeit
 
     #define I3_RES_SME_STAT_ZEIT_VORLADUNG_1_WERT                    (RXBUF_UINT(2))
     #define I3_RES_SME_STAT_ZEIT_VORLADUNG_1_WERT_UNIT               'ms'
     #define I3_RES_SME_STAT_ZEIT_VORLADUNG_1_WERT_TYPE               unsigned short
-        // Required precharge time (1 process before) / benÃ¶tigte Vorladezeit (1 Vorgang zuvor)
+        // Required precharge time (1 process before) / benötigte Vorladezeit (1 Vorgang zuvor)
 
     #define I3_RES_SME_STAT_ZEIT_VORLADUNG_2_WERT                    (RXBUF_UINT(4))
     #define I3_RES_SME_STAT_ZEIT_VORLADUNG_2_WERT_UNIT               'ms'
     #define I3_RES_SME_STAT_ZEIT_VORLADUNG_2_WERT_TYPE               unsigned short
-        // Required pre-charging time (2 processes before) / benÃ¶tigte Vorladezeit (2 VorgÃ¤nge zuvor)
+        // Required pre-charging time (2 processes before) / benötigte Vorladezeit (2 Vorgänge zuvor)
 
     #define I3_RES_SME_STAT_ZEIT_VORLADUNG_3_WERT                    (RXBUF_UINT(6))
     #define I3_RES_SME_STAT_ZEIT_VORLADUNG_3_WERT_UNIT               'ms'
     #define I3_RES_SME_STAT_ZEIT_VORLADUNG_3_WERT_TYPE               unsigned short
-        // Required pre-charging time (3 processes before) / benÃ¶tigte Vorladezeit (3 VorgÃ¤nge zuvor)
+        // Required pre-charging time (3 processes before) / benötigte Vorladezeit (3 Vorgänge zuvor)
 
     #define I3_RES_SME_STAT_ZEIT_VORLADUNG_4_WERT                    (RXBUF_UINT(8))
     #define I3_RES_SME_STAT_ZEIT_VORLADUNG_4_WERT_UNIT               'ms'
     #define I3_RES_SME_STAT_ZEIT_VORLADUNG_4_WERT_TYPE               unsigned short
-        // Required pre-charging time (4 processes before) / benÃ¶tigte Vorladezeit (4 VorgÃ¤nge zuvor)
+        // Required pre-charging time (4 processes before) / benötigte Vorladezeit (4 Vorgänge zuvor)
 
     #define I3_RES_SME_STAT_MAX_STROM_VORLADUNG_WERT                 (RXBUF_SINT(10)/100.0f)
     #define I3_RES_SME_STAT_MAX_STROM_VORLADUNG_WERT_UNIT            'A'
@@ -5801,17 +5799,17 @@
     #define I3_RES_SME_STAT_MAX_STROM_VORLADUNG_2_WERT               (RXBUF_SINT(14)/100.0f)
     #define I3_RES_SME_STAT_MAX_STROM_VORLADUNG_2_WERT_UNIT          'A'
     #define I3_RES_SME_STAT_MAX_STROM_VORLADUNG_2_WERT_TYPE          float
-        // maximum precharge current (2 processes before) / maximaler Vorladestrom (2 VorgÃ¤nge zuvor)
+        // maximum precharge current (2 processes before) / maximaler Vorladestrom (2 Vorgänge zuvor)
 
     #define I3_RES_SME_STAT_MAX_STROM_VORLADUNG_3_WERT               (RXBUF_SINT(16)/100.0f)
     #define I3_RES_SME_STAT_MAX_STROM_VORLADUNG_3_WERT_UNIT          'A'
     #define I3_RES_SME_STAT_MAX_STROM_VORLADUNG_3_WERT_TYPE          float
-        // maximum precharge current (3 processes before) / maximaler Vorladestrom (3 VorgÃ¤nge zuvor)
+        // maximum precharge current (3 processes before) / maximaler Vorladestrom (3 Vorgänge zuvor)
 
     #define I3_RES_SME_STAT_MAX_STROM_VORLADUNG_4_WERT               (RXBUF_SINT(18)/100.0f)
     #define I3_RES_SME_STAT_MAX_STROM_VORLADUNG_4_WERT_UNIT          'A'
     #define I3_RES_SME_STAT_MAX_STROM_VORLADUNG_4_WERT_TYPE          float
-        // maximum precharge current (4 processes before) / maximaler Vorladestrom (4 VorgÃ¤nge zuvor)
+        // maximum precharge current (4 processes before) / maximaler Vorladestrom (4 Vorgänge zuvor)
 
 #define I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX                            0xDDBF
         // minimum and maximum single cell voltages are output / minimale und maximale Einzelzellspannungen werden
@@ -5832,19 +5830,19 @@
         // Zellkerntemperaturen (minimale, maximale und durchschnittliche)
 
     #define I3_RES_SME_STAT_TCORE_MIN_WERT                           (RXBUF_SINT(0)/100.0f)
-    #define I3_RES_SME_STAT_TCORE_MIN_WERT_UNIT                      'Â°C'
+    #define I3_RES_SME_STAT_TCORE_MIN_WERT_UNIT                      '°C'
     #define I3_RES_SME_STAT_TCORE_MIN_WERT_TYPE                      float
         // Output of the calculated minimum cell core temperatures / Ausgabe der berechneten minimalen
         // Zellkerntemperaturen
 
     #define I3_RES_SME_STAT_TCORE_MAX_WERT                           (RXBUF_SINT(2)/100.0f)
-    #define I3_RES_SME_STAT_TCORE_MAX_WERT_UNIT                      'Â°C'
+    #define I3_RES_SME_STAT_TCORE_MAX_WERT_UNIT                      '°C'
     #define I3_RES_SME_STAT_TCORE_MAX_WERT_TYPE                      float
         // Output of the calculated maximum cell core temperatures / Ausgabe der berechneten maximalen
         // Zellkerntemperaturen
 
     #define I3_RES_SME_STAT_TCORE_MEAN_WERT                          (RXBUF_SINT(4)/100.0f)
-    #define I3_RES_SME_STAT_TCORE_MEAN_WERT_UNIT                     'Â°C'
+    #define I3_RES_SME_STAT_TCORE_MEAN_WERT_UNIT                     '°C'
     #define I3_RES_SME_STAT_TCORE_MEAN_WERT_TYPE                     float
         // Output of the calculated average cell core temperatures / Ausgabe der berechneten durchschnittlichen
         // Zellkerntemperaturen
@@ -5852,29 +5850,29 @@
 #define I3_PID_SME_ALTERUNG_PARAMETER                                0xDDC2
         // Correction factor of the serial and parallel ohmic resistance as well as the parallel capacitance (1.5 =
         // increase in resistance by 50%) / Korrekturfaktor des seriellen und parallelen ohmschen Widerstands sowie der
-        // parallelen KapazitÃ¤t (1,5 = ErÃ¶hung des Widerstands um 50%)
+        // parallelen Kapazität (1,5 = Eröhung des Widerstands um 50%)
 
     #define I3_RES_SME_STAT_FAKTOR_RS_WERT                           (RXBUF_UINT(0)/1000.0f)
     #define I3_RES_SME_STAT_FAKTOR_RS_WERT_TYPE                      float
         // Correction factor for the serial ohmic resistance (1.5 = increase in resistance by 50%) / Korrekturfaktor des
-        // seriellen ohmschen Wiederstands (1,5 = ErhÃ¶hung des Wiederstands um 50%)
+        // seriellen ohmschen Wiederstands (1,5 = Erhöhung des Wiederstands um 50%)
 
     #define I3_RES_SME_STAT_FAKTOR_RP_WERT                           (RXBUF_UINT(2)/1000.0f)
     #define I3_RES_SME_STAT_FAKTOR_RP_WERT_TYPE                      float
         // Correction factor for the parallel ohmic resistance (1.5 = increase in resistance by 50%) / Korrekturfaktor
-        // des paralellen ohmschen Wiederstands (1,5 = ErhÃ¶hung des Wiederstands um 50%)
+        // des paralellen ohmschen Wiederstands (1,5 = Erhöhung des Wiederstands um 50%)
 
     #define I3_RES_SME_STAT_FAKTOR_CP_WERT                           (RXBUF_UINT(4)/1000.0f)
     #define I3_RES_SME_STAT_FAKTOR_CP_WERT_TYPE                      float
         // Correction factor of the parallel capacity (1.5 = increase in capacity by 50%) / Korrekturfaktor der
-        // parallelen KapazitÃ¤t (1,5 = ErhÃ¶hung der KapazitÃ¤t um 50%)
+        // parallelen Kapazität (1,5 = Erhöhung der Kapazität um 50%)
 
 // Skipping SOC on 0xDDC4 which takes arguments
 
 #define I3_PID_SME_HISTO_SYM_DAUER                                   0xDDC6
         // Reading out the number of balancing processes in the respective time classes (actual time in which the
-        // balancing resistors were active) / Auslesen der Anzahl von SymmetriervorgÃ¤ngen in den jeweiligen Zeitklassen
-        // (Ist-Zeit in der die SymmetrierwiderstÃ¤nde aktiv waren)
+        // balancing resistors were active) / Auslesen der Anzahl von Symmetriervorgängen in den jeweiligen Zeitklassen
+        // (Ist-Zeit in der die Symmetrierwiderstände aktiv waren)
 
     #define I3_RES_SME_STAT_SYM_DAUER_MAX_WERT                       (RXBUF_UINT(0))
     #define I3_RES_SME_STAT_SYM_DAUER_MAX_WERT_UNIT                  'min'
@@ -5918,10 +5916,10 @@
         // Number of duration classes: t> tmax / Anzahl der Dauerklasse :  t > tmax
 
 #define I3_PID_SME_HISTO_SYM_ZELLANZAHL                              0xDDC7
-        // Frequency over the lifetime of the number of cells that were instructed for balancing. Increment if
-        // symmetrization is required when falling asleep after FIRST cyclical waking up. / HÃ¤ufigkeit Ã¼ber Lebensdauer
-        // der Zellenanzahl, die zur Symmetrierung angewiesen wurden. Inkrementieren falls Symmertrierbedarf bei
-        // Einschlafen nach ERSTEM zyklischen Aufwachen.
+        // Frequency over the lifetime of the number of cells that were instructed for balancing. Increment if symmetry
+        // is required when falling asleep after FIRST cyclical waking up. / Häufigkeit über Lebensdauer der
+        // Zellenanzahl, die zur Symmetrierung angewiesen wurden. Inkrementieren falls Symmertrierbedarf bei Einschlafen
+        // nach ERSTEM zyklischen Aufwachen.
 
     #define I3_RES_SME_STAT_HISTO_SYM_ZELLANZAHL_1_WERT              (RXBUF_UINT(0))
     #define I3_RES_SME_STAT_HISTO_SYM_ZELLANZAHL_1_WERT_TYPE         unsigned short
@@ -5961,7 +5959,7 @@
 
 #define I3_PID_SME_SYM_DELTASOC                                      0xDDC8
         // Maximum SoC difference in% over the entire HVS. Ring memory of the last 5 trips / Maximale SoC-Differenz in %
-        // Ã¼ber den gesamten HVS. Ringspeicher der letzten 5 Fahrten
+        // über den gesamten HVS. Ringspeicher der letzten 5 Fahrten
 
     #define I3_RES_SME_STAT_SYM_DELTASOC_1_WERT                      (RXBUF_UINT(0)/100.0f)
     #define I3_RES_SME_STAT_SYM_DELTASOC_1_WERT_UNIT                 '%'
@@ -6011,8 +6009,8 @@
     #define I3_RES_SME_STAT_MAX_SYM_DAUER_2_WERT                     (RXBUF_UINT32(9))
     #define I3_RES_SME_STAT_MAX_SYM_DAUER_2_WERT_UNIT                's'
     #define I3_RES_SME_STAT_MAX_SYM_DAUER_2_WERT_TYPE                unsigned long
-        // Maximum duration of the symmetrization process before 1 trip / Maximale Symmetrierdauer des Symmetriervorgangs
-        // vor 1 Fahrt
+        // Maximum symmetrization duration of the symmetrization process before 1 trip / Maximale Symmetrierdauer des
+        // Symmetriervorgangs vor 1 Fahrt
 
     #define I3_RES_SME_STAT_MAX_SYM_ZEIT_2_WERT                      (RXBUF_UINT32(13))
     #define I3_RES_SME_STAT_MAX_SYM_ZEIT_2_WERT_UNIT                 's'
@@ -6073,23 +6071,23 @@
         // Status balancing / Status Symmetrierung
 
 #define I3_PID_SME_SERIENNUMMER_ECU                                  0xDDCA
-        // Serial number of the SME control unit / Seriennummer des SME SteuergerÃ¤ts
+        // Serial number of the SME control unit / Seriennummer des SME Steuergeräts
 
     // Can't yet generate code for STAT_SERIENNUMMER_ECU_TEXT of type string[10], at offset 0. But we account for the 10 bytes
-        // Serial number of the SME control unit / Seriennummer des SME SteuergerÃ¤ts
+        // Serial number of the SME control unit / Seriennummer des SME Steuergeräts
 
 #define I3_PID_SME_SOC_GRENZEN                                       0xDDCB
-        // Reading and changing the SOC limits / Auslesen und Ãndern der SOC Grenzen
+        // Reading and changing the SOC limits / Auslesen und Ändern der SOC Grenzen
 
     #define I3_RES_SME_STAT_MIN_SOC_GRENZE_WERT                      (RXBUF_SINT(0)/100.0f)
     #define I3_RES_SME_STAT_MIN_SOC_GRENZE_WERT_UNIT                 '%'
     #define I3_RES_SME_STAT_MIN_SOC_GRENZE_WERT_TYPE                 float
-        // currently valid minimum SOC limit / aktuell gÃ¼ltige minimale SOC Grenze
+        // currently valid minimum SOC limit / aktuell gültige minimale SOC Grenze
 
     #define I3_RES_SME_STAT_MAX_SOC_GRENZE_WERT                      (RXBUF_SINT(2)/100.0f)
     #define I3_RES_SME_STAT_MAX_SOC_GRENZE_WERT_UNIT                 '%'
     #define I3_RES_SME_STAT_MAX_SOC_GRENZE_WERT_TYPE                 float
-        // currently valid maximum SOC limit / aktuell gÃ¼ltige maximale SOC Grenze
+        // currently valid maximum SOC limit / aktuell gültige maximale SOC Grenze
 
 // Skipping SCHUETZ_RESTZAEHLER on 0xDDCC which takes arguments
 
@@ -6112,111 +6110,111 @@
     #define I3_RES_SME_STAT_ANZAHL_DEGRADATION_GESAMT_WERT_TYPE      unsigned short
         // Number of age-related voltage degradations of the high-voltage storage system over the total time >> This job
         // is no longer supported and has NULL data. / Anzahl der alterungsbedingten Spannungsdegradationen der
-        // Hochvolt-Speicher Ã¼ber Gesamtzeit >> Dieser Job wird nicht mehr unterstÃ¼tzt und ist NULL-bedatet.
+        // Hochvolt-Speicher über Gesamtzeit >> Dieser Job wird nicht mehr unterstützt und ist NULL-bedatet.
 
     #define I3_RES_SME_STAT_ANZAHL_DEGRADATION_LAUFENDES_JAHR_WERT   (RXBUF_UINT(2))
     #define I3_RES_SME_STAT_ANZAHL_DEGRADATION_LAUFENDES_JAHR_WERT_TYPE unsigned short
         // Average number of age-related voltage degradations of the high-voltage storage system over the last and
         // current year >> This job is no longer supported and has NULL data. / Anzahl der alterungsbedingten
-        // Spannungsdegradationen der Hochvolt-Speicher im Mittel Ã¼ber letztes und laufendes Jahr >> Dieser Job wird
-        // nicht mehr unterstÃ¼tzt und ist NULL-bedatet.
+        // Spannungsdegradationen der Hochvolt-Speicher im Mittel über letztes und laufendes Jahr >> Dieser Job wird
+        // nicht mehr unterstützt und ist NULL-bedatet.
 
 #define I3_PID_SME_ALTERUNG_KAPAZITAET_HISTOGRAMM_SOC_HUB            0xDDE9
         // Histogram with the frequency of individual SoC strokes that occurred during the operating period / Histogramm
-        // mit HÃ¤ufigkeit einzelner aufgetretener SoC-HÃ¼be im Betriebszeitraum
+        // mit Häufigkeit einzelner aufgetretener SoC-Hübe im Betriebszeitraum
 
     #define I3_RES_SME_STAT_HFK_GESAMT_SOC_HUB_50_65_WERT            (RXBUF_UINT(0))
     #define I3_RES_SME_STAT_HFK_GESAMT_SOC_HUB_50_65_WERT_TYPE       unsigned short
         // Up to 14-03: Frequency with SoC hub between 50% and 65%, total from last year and current year From 14-07:
-        // Frequency with SoC hub between 70% and 74%, total from last year and current year / Bis 14-03: HÃ¤ufigkeit bei
-        // SoC-Hub zwischen 50% und 65%, Summe letztes Jahr und laufendes Jahr Ab 14-07: HÃ¤ufigkeit bei SoC-Hub zwischen
+        // Frequency with SoC hub between 70% and 74%, total from last year and current year / Bis 14-03: Häufigkeit bei
+        // SoC-Hub zwischen 50% und 65%, Summe letztes Jahr und laufendes Jahr Ab 14-07: Häufigkeit bei SoC-Hub zwischen
         // 70% und 74%, Summe letztes Jahr und laufendes Jahr
 
     #define I3_RES_SME_STAT_HFK_GESAMT_SOC_HUB_65_80_WERT            (RXBUF_UINT(2))
     #define I3_RES_SME_STAT_HFK_GESAMT_SOC_HUB_65_80_WERT_TYPE       unsigned short
         // Up to 14-03: Frequency with SoC hub between 65% and 80%, total from last year and current year From 14-07:
-        // Frequency with SoC hub between 74% and 80%, total from last year and current year / Bis 14-03: HÃ¤ufigkeit bei
-        // SoC-Hub zwischen 65% und 80%, Summe letztes Jahr und laufendes Jahr Ab 14-07: HÃ¤ufigkeit bei SoC-Hub zwischen
+        // Frequency with SoC hub between 74% and 80%, total from last year and current year / Bis 14-03: Häufigkeit bei
+        // SoC-Hub zwischen 65% und 80%, Summe letztes Jahr und laufendes Jahr Ab 14-07: Häufigkeit bei SoC-Hub zwischen
         // 74% und 80%, Summe letztes Jahr und laufendes Jahr
 
     #define I3_RES_SME_STAT_HFK_GESAMT_SOC_HUB_80_85_WERT            (RXBUF_UINT(4))
     #define I3_RES_SME_STAT_HFK_GESAMT_SOC_HUB_80_85_WERT_TYPE       unsigned short
-        // Frequency with SoC hub between 80% and 85%, total of last year and current year / HÃ¤ufigkeit bei SoC-Hub
+        // Frequency with SoC hub between 80% and 85%, sum of last year and current year / Häufigkeit bei SoC-Hub
         // zwischen 80% und 85%, Summe letztes Jahr und laufendes Jahr
 
     #define I3_RES_SME_STAT_HFK_GESAMT_SOC_HUB_85_90_WERT            (RXBUF_UINT(6))
     #define I3_RES_SME_STAT_HFK_GESAMT_SOC_HUB_85_90_WERT_TYPE       unsigned short
-        // Frequency with SoC hub between 85% and 90%, sum of last year and current year / HÃ¤ufigkeit bei SoC-Hub
+        // Frequency with SoC hub between 85% and 90%, sum of last year and current year / Häufigkeit bei SoC-Hub
         // zwischen 85% und 90%, Summe letztes Jahr und laufendes Jahr
 
     #define I3_RES_SME_STAT_HFK_GESAMT_SOC_HUB_90_95_WERT            (RXBUF_UINT(8))
     #define I3_RES_SME_STAT_HFK_GESAMT_SOC_HUB_90_95_WERT_TYPE       unsigned short
-        // Frequency with SoC hub between 90% and 95%, sum of last year and current year / HÃ¤ufigkeit bei SoC-Hub
+        // Frequency with SoC hub between 90% and 95%, sum of last year and current year / Häufigkeit bei SoC-Hub
         // zwischen 90% und 95%, Summe letztes Jahr und laufendes Jahr
 
     #define I3_RES_SME_STAT_HFK_GESAMT_SOC_HUB_95_100_WERT           (RXBUF_UINT(10))
     #define I3_RES_SME_STAT_HFK_GESAMT_SOC_HUB_95_100_WERT_TYPE      unsigned short
-        // Frequency for SoC hub between 95% and 100%, sum of last year and current year / HÃ¤ufigkeit bei SoC-Hub
+        // Frequency with SoC hub between 95% and 100%, sum of last year and current year / Häufigkeit bei SoC-Hub
         // zwischen 95% und 100%, Summe letztes Jahr und laufendes Jahr
 
     #define I3_RES_SME_STAT_HFK_LAUFENDES_JAHR_SOC_HUB_50_65_WERT    (RXBUF_UINT(12))
     #define I3_RES_SME_STAT_HFK_LAUFENDES_JAHR_SOC_HUB_50_65_WERT_TYPE unsigned short
-        // Frequency with SoC hub between 50% and 65%, sum of last year and current year / HÃ¤ufigkeit bei SoC-Hub
+        // Frequency with SoC hub between 50% and 65%, sum of last year and current year / Häufigkeit bei SoC-Hub
         // zwischen 50% und 65%, Summe letztes Jahr und laufendes Jahr
 
     #define I3_RES_SME_STAT_HFK_LAUFENDES_JAHR_SOC_HUB_65_80_WERT    (RXBUF_UINT(14))
     #define I3_RES_SME_STAT_HFK_LAUFENDES_JAHR_SOC_HUB_65_80_WERT_TYPE unsigned short
-        // Frequency with SoC hub between 65% and 80%, total of last year and current year / HÃ¤ufigkeit bei SoC-Hub
+        // Frequency with SoC hub between 65% and 80%, total of last year and current year / Häufigkeit bei SoC-Hub
         // zwischen 65% und 80%, Summe letztes Jahr und laufendes Jahr
 
     #define I3_RES_SME_STAT_HFK_LAUFENDES_JAHR_SOC_HUB_80_85_WERT    (RXBUF_UINT(16))
     #define I3_RES_SME_STAT_HFK_LAUFENDES_JAHR_SOC_HUB_80_85_WERT_TYPE unsigned short
-        // Frequency with SoC hub between 80% and 85%, total of last year and current year / HÃ¤ufigkeit bei SoC-Hub
+        // Frequency with SoC hub between 80% and 85%, sum of last year and current year / Häufigkeit bei SoC-Hub
         // zwischen 80% und 85%, Summe letztes Jahr und laufendes Jahr
 
     #define I3_RES_SME_STAT_HFK_LAUFENDES_JAHR_SOC_HUB_85_90_WERT    (RXBUF_UINT(18))
     #define I3_RES_SME_STAT_HFK_LAUFENDES_JAHR_SOC_HUB_85_90_WERT_TYPE unsigned short
-        // Frequency with SoC hub between 85% and 90%, sum of last year and current year / HÃ¤ufigkeit bei SoC-Hub
+        // Frequency with SoC hub between 85% and 90%, sum of last year and current year / Häufigkeit bei SoC-Hub
         // zwischen 85% und 90%, Summe letztes Jahr und laufendes Jahr
 
     #define I3_RES_SME_STAT_HFK_LAUFENDES_JAHR_SOC_HUB_90_95_WERT    (RXBUF_UINT(20))
     #define I3_RES_SME_STAT_HFK_LAUFENDES_JAHR_SOC_HUB_90_95_WERT_TYPE unsigned short
-        // Frequency with SoC hub between 90% and 95%, sum of last year and current year / HÃ¤ufigkeit bei SoC-Hub
+        // Frequency with SoC hub between 90% and 95%, sum of last year and current year / Häufigkeit bei SoC-Hub
         // zwischen 90% und 95%, Summe letztes Jahr und laufendes Jahr
 
     #define I3_RES_SME_STAT_HFK_LAUFENDES_JAHR_SOC_HUB_95_100_WERT   (RXBUF_UINT(22))
     #define I3_RES_SME_STAT_HFK_LAUFENDES_JAHR_SOC_HUB_95_100_WERT_TYPE unsigned short
-        // Frequency for SoC hub between 95% and 100%, sum of last year and current year / HÃ¤ufigkeit bei SoC-Hub
+        // Frequency with SoC hub between 95% and 100%, sum of last year and current year / Häufigkeit bei SoC-Hub
         // zwischen 95% und 100%, Summe letztes Jahr und laufendes Jahr
 
     #define I3_RES_SME_STAT_HFK_LAUFENDES_MONAT_SOC_HUB_50_65_WERT   (RXBUF_UINT(24))
     #define I3_RES_SME_STAT_HFK_LAUFENDES_MONAT_SOC_HUB_50_65_WERT_TYPE unsigned short
-        // Frequency with SoC hub between 50% and 65%, sum of the last and current month / HÃ¤ufigkeit bei SoC-Hub
+        // Frequency with SoC hub between 50% and 65%, sum of the last and current month / Häufigkeit bei SoC-Hub
         // zwischen 50% und 65%, Summe letzter und laufender Monat
 
     #define I3_RES_SME_STAT_HFK_LAUFENDES_MONAT_SOC_HUB_65_80_WERT   (RXBUF_UINT(26))
     #define I3_RES_SME_STAT_HFK_LAUFENDES_MONAT_SOC_HUB_65_80_WERT_TYPE unsigned short
-        // Frequency with SoC hub between 65% and 80%, sum of the last and current month / HÃ¤ufigkeit bei SoC-Hub
+        // Frequency with SoC hub between 65% and 80%, sum of the last and current month / Häufigkeit bei SoC-Hub
         // zwischen 65% und 80%, Summe letzter und laufender Monat
 
     #define I3_RES_SME_STAT_HFK_LAUFENDES_MONAT_SOC_HUB_80_85_WERT   (RXBUF_UINT(28))
     #define I3_RES_SME_STAT_HFK_LAUFENDES_MONAT_SOC_HUB_80_85_WERT_TYPE unsigned short
-        // Frequency with SoC hub between 80% and 85%, sum of the last and current month / HÃ¤ufigkeit bei SoC-Hub
+        // Frequency with SoC hub between 80% and 85%, sum of the last and current month / Häufigkeit bei SoC-Hub
         // zwischen 80% und 85%, Summe letzter und laufender Monat
 
     #define I3_RES_SME_STAT_HFK_LAUFENDES_MONAT_SOC_HUB_85_90_WERT   (RXBUF_UINT(30))
     #define I3_RES_SME_STAT_HFK_LAUFENDES_MONAT_SOC_HUB_85_90_WERT_TYPE unsigned short
-        // Frequency with SoC hub between 85% and 90%, sum of the last and current month / HÃ¤ufigkeit bei SoC-Hub
+        // Frequency with SoC hub between 85% and 90%, sum of the last and current month / Häufigkeit bei SoC-Hub
         // zwischen 85% und 90%, Summe letzter und laufender Monat
 
     #define I3_RES_SME_STAT_HFK_LAUFENDES_MONAT_SOC_HUB_90_95_WERT   (RXBUF_UINT(32))
     #define I3_RES_SME_STAT_HFK_LAUFENDES_MONAT_SOC_HUB_90_95_WERT_TYPE unsigned short
-        // Frequency with SoC hub between 90% and 95%, sum of the last and current month / HÃ¤ufigkeit bei SoC-Hub
+        // Frequency with SoC hub between 90% and 95%, sum of the last and current month / Häufigkeit bei SoC-Hub
         // zwischen 90% und 95%, Summe letzter und laufender Monat
 
     #define I3_RES_SME_STAT_HFK_LAUFENDES_MONAT_SOC_HUB_95_100_WERT  (RXBUF_UINT(34))
     #define I3_RES_SME_STAT_HFK_LAUFENDES_MONAT_SOC_HUB_95_100_WERT_TYPE unsigned short
-        // Frequency with SoC hub between 95% and 100%, sum of the last and current month / HÃ¤ufigkeit bei SoC-Hub
+        // Frequency with SoC hub between 95% and 100%, sum of the last and current month / Häufigkeit bei SoC-Hub
         // zwischen 95% und 100%, Summe letzter und laufender Monat
 
     #define I3_RES_SME_STAT_ZEITSTEMPEL_SOC_HUB_50_65_WERT           (RXBUF_UINT32(36))
@@ -6262,10 +6260,10 @@
         // power - Actual end SOC - Reason charging end (no charging end detected 0, target SOC reached 1, U / I full
         // charge detection 2, external cancellation 3, error SME 4 ) - Start temperature - End temperature - Charging
         // time forecast at the beginning in min - Actual charging time in min - Relative time (continuous combination
-        // system time from ACAN with start in the factory) / RÃ¼ckgabe von MessgrÃ¶Ãen der letzten 5 abgeschlossenen
-        // LadevorgÃ¤nge: - Start-SOC - VerfÃ¼gbare Ladeleistung - TatsÃ¤chlicher End-SOC - Grund Ladeende (Kein Ladeende
+        // system time from ACAN with start in the factory) / Rückgabe von Messgrößen der letzten 5 abgeschlossenen
+        // Ladevorgänge: - Start-SOC - Verfügbare Ladeleistung - Tatsächlicher End-SOC - Grund Ladeende (Kein Ladeende
         // detektiert 0, Ziel-SOC erreicht 1, U/I-Volladeerkennung 2, Abbruch extern 3, Fehler SME 4) - Start Temperatur 
-        // - End-Temperatur  - Zu Beginn prognostizierte Ladezeit in min  - TatsÃ¤chliche Ladezeit in min - Relativzeit
+        // - End-Temperatur  - Zu Beginn prognostizierte Ladezeit in min  - Tatsächliche Ladezeit in min - Relativzeit
         // (fortlaufende Kombi-System-Zeit v. ACAN mit Start im Werk)
 
     #define I3_RES_SME_STAT_START_SOC_1_WERT                         (RXBUF_UCHAR(0))
@@ -6301,9 +6299,9 @@
     #define I3_RES_SME_STAT_VERF_P_LADEN_1_WERT                      (RXBUF_UCHAR(5))
     #define I3_RES_SME_STAT_VERF_P_LADEN_1_WERT_UNIT                 'kW'
     #define I3_RES_SME_STAT_VERF_P_LADEN_1_WERT_TYPE                 unsigned char
-        // Value (from HVPM) of the available charging power at the start of charging -1 (255 = implausible). The output
-        // 'available charging power' must be divided by 5 in order to obtain a real value. / Wert (aus HVPM) der
-        // verfÃ¼gbaren Ladeleistung zu Ladebeginn-1 (255 = unplausibel). Die ausgegebene 'verfÃ¼gbare Ladeleistung' muss
+        // Value (from HVPM) of the available charging power at the beginning of charging-1 (255 = implausible). The
+        // output 'available charging power' must be divided by 5 in order to obtain a real value. / Wert (aus HVPM) der
+        // verfügbaren Ladeleistung zu Ladebeginn-1 (255 = unplausibel). Die ausgegebene 'verfügbare Ladeleistung' muss
         // mit 5 dividiert werden um realen Wert zu erhalten.
 
     #define I3_RES_SME_STAT_VERF_P_LADEN_2_WERT                      (RXBUF_UCHAR(6))
@@ -6311,7 +6309,7 @@
     #define I3_RES_SME_STAT_VERF_P_LADEN_2_WERT_TYPE                 unsigned char
         // Value (from HVPM) of the available charging power at the start of charging-2 (255 = implausible). The output
         // 'available charging power' must be divided by 5 in order to obtain a real value. / Wert (aus HVPM) der
-        // verfÃ¼gbaren Ladeleistung zu Ladebeginn-2 (255 = unplausibel). Die ausgegebene 'verfÃ¼gbare Ladeleistung' muss
+        // verfügbaren Ladeleistung zu Ladebeginn-2 (255 = unplausibel). Die ausgegebene 'verfügbare Ladeleistung' muss
         // mit 5 dividiert werden um realen Wert zu erhalten.
 
     #define I3_RES_SME_STAT_VERF_P_LADEN_3_WERT                      (RXBUF_UCHAR(7))
@@ -6319,7 +6317,7 @@
     #define I3_RES_SME_STAT_VERF_P_LADEN_3_WERT_TYPE                 unsigned char
         // Value (from HVPM) of the available charging power at the start of charging -3 (255 = implausible). The output
         // 'available charging power' must be divided by 5 in order to obtain a real value. / Wert (aus HVPM) der
-        // verfÃ¼gbaren Ladeleistung zu Ladebeginn-3 (255 = unplausibel). Die ausgegebene 'verfÃ¼gbare Ladeleistung' muss
+        // verfügbaren Ladeleistung zu Ladebeginn-3 (255 = unplausibel). Die ausgegebene 'verfügbare Ladeleistung' muss
         // mit 5 dividiert werden um realen Wert zu erhalten.
 
     #define I3_RES_SME_STAT_VERF_P_LADEN_4_WERT                      (RXBUF_UCHAR(8))
@@ -6327,7 +6325,7 @@
     #define I3_RES_SME_STAT_VERF_P_LADEN_4_WERT_TYPE                 unsigned char
         // Value (from HVPM) of the available charging power at the start of charging-4 (255 = implausible). The output
         // 'available charging power' must be divided by 5 in order to obtain a real value. / Wert (aus HVPM) der
-        // verfÃ¼gbaren Ladeleistung zu Ladebeginn-4 (255 = unplausibel). Die ausgegebene 'verfÃ¼gbare Ladeleistung' muss
+        // verfügbaren Ladeleistung zu Ladebeginn-4 (255 = unplausibel). Die ausgegebene 'verfügbare Ladeleistung' muss
         // mit 5 dividiert werden um realen Wert zu erhalten.
 
     #define I3_RES_SME_STAT_VERF_P_LADEN_5_WERT                      (RXBUF_UCHAR(9))
@@ -6335,38 +6333,38 @@
     #define I3_RES_SME_STAT_VERF_P_LADEN_5_WERT_TYPE                 unsigned char
         // Value (from HVPM) of the available charging power at the start of charging -5 (255 = implausible). The output
         // 'available charging power' must be divided by 5 in order to obtain a real value. / Wert (aus HVPM) der
-        // verfÃ¼gbaren Ladeleistung zu Ladebeginn-5 (255 = unplausibel). Die ausgegebene 'verfÃ¼gbare Ladeleistung' muss
+        // verfügbaren Ladeleistung zu Ladebeginn-5 (255 = unplausibel). Die ausgegebene 'verfügbare Ladeleistung' muss
         // mit 5 dividiert werden um realen Wert zu erhalten.
 
     #define I3_RES_SME_STAT_REAL_END_SOC_1_WERT                      (RXBUF_UCHAR(10))
     #define I3_RES_SME_STAT_REAL_END_SOC_1_WERT_UNIT                 '%'
     #define I3_RES_SME_STAT_REAL_END_SOC_1_WERT_TYPE                 unsigned char
         // Value of the actual SOC after completion of the charging process-1 (255 = implausible) / Wert des
-        // tatsÃ¤chlichen  SOC nach Abschluss des Ladervorgang-1 (255 = unplausibel)
+        // tatsächlichen  SOC nach Abschluss des Ladervorgang-1 (255 = unplausibel)
 
     #define I3_RES_SME_STAT_REAL_END_SOC_2_WERT                      (RXBUF_UCHAR(11))
     #define I3_RES_SME_STAT_REAL_END_SOC_2_WERT_UNIT                 '%'
     #define I3_RES_SME_STAT_REAL_END_SOC_2_WERT_TYPE                 unsigned char
         // Value of the actual SOC after completion of the charging process-2 (255 = implausible) / Wert des
-        // tatsÃ¤chlichen  SOC nach Abschluss des Ladervorgang-2 (255 = unplausibel)
+        // tatsächlichen  SOC nach Abschluss des Ladervorgang-2 (255 = unplausibel)
 
     #define I3_RES_SME_STAT_REAL_END_SOC_3_WERT                      (RXBUF_UCHAR(12))
     #define I3_RES_SME_STAT_REAL_END_SOC_3_WERT_UNIT                 '%'
     #define I3_RES_SME_STAT_REAL_END_SOC_3_WERT_TYPE                 unsigned char
         // Value of the actual SOC after completion of the charging process-3 (255 = implausible) / Wert des
-        // tatsÃ¤chlichen  SOC nach Abschluss des Ladervorgang-3 (255 = unplausibel)
+        // tatsächlichen  SOC nach Abschluss des Ladervorgang-3 (255 = unplausibel)
 
     #define I3_RES_SME_STAT_REAL_END_SOC_4_WERT                      (RXBUF_UCHAR(13))
     #define I3_RES_SME_STAT_REAL_END_SOC_4_WERT_UNIT                 '%'
     #define I3_RES_SME_STAT_REAL_END_SOC_4_WERT_TYPE                 unsigned char
         // Value of the actual SOC after completion of the charging process-4 (255 = implausible) / Wert des
-        // tatsÃ¤chlichen  SOC nach Abschluss des Ladervorgang-4 (255 = unplausibel)
+        // tatsächlichen  SOC nach Abschluss des Ladervorgang-4 (255 = unplausibel)
 
     #define I3_RES_SME_STAT_REAL_END_SOC_5_WERT                      (RXBUF_UCHAR(14))
     #define I3_RES_SME_STAT_REAL_END_SOC_5_WERT_UNIT                 '%'
     #define I3_RES_SME_STAT_REAL_END_SOC_5_WERT_TYPE                 unsigned char
         // Value of the actual SOC after completion of the loading process -5 (255 = implausible) / Wert des
-        // tatsÃ¤chlichen  SOC nach Abschluss des Ladervorgang-5 (255 = unplausibel)
+        // tatsächlichen  SOC nach Abschluss des Ladervorgang-5 (255 = unplausibel)
 
     #define I3_RES_SME_STAT_GRUND_LADEENDE_WERT_1                    (RXBUF_UCHAR(15))
     #define I3_RES_SME_STAT_GRUND_LADEENDE_WERT_1_UNIT               '0-n'
@@ -6399,61 +6397,61 @@
         // Ladervorgang-5
 
     #define I3_RES_SME_STAT_START_TEMP_1_WERT                        (RXBUF_SCHAR(20))
-    #define I3_RES_SME_STAT_START_TEMP_1_WERT_UNIT                   'Â°C'
+    #define I3_RES_SME_STAT_START_TEMP_1_WERT_UNIT                   '°C'
     #define I3_RES_SME_STAT_START_TEMP_1_WERT_TYPE                   char
         // Value of the start temperature after completion of the charging process-1 (127 = implausible) / Wert der Start
         // Temperatur nach Abschluss des Ladervorgang-1 (127 = unplausibel)
 
     #define I3_RES_SME_STAT_START_TEMP_2_WERT                        (RXBUF_SCHAR(21))
-    #define I3_RES_SME_STAT_START_TEMP_2_WERT_UNIT                   'Â°C'
+    #define I3_RES_SME_STAT_START_TEMP_2_WERT_UNIT                   '°C'
     #define I3_RES_SME_STAT_START_TEMP_2_WERT_TYPE                   char
         // Value of the start temperature after completion of the charging process-2 (127 = implausible) / Wert der Start
         // Temperatur nach Abschluss des Ladervorgang-2 (127 = unplausibel)
 
     #define I3_RES_SME_STAT_START_TEMP_3_WERT                        (RXBUF_SCHAR(22))
-    #define I3_RES_SME_STAT_START_TEMP_3_WERT_UNIT                   'Â°C'
+    #define I3_RES_SME_STAT_START_TEMP_3_WERT_UNIT                   '°C'
     #define I3_RES_SME_STAT_START_TEMP_3_WERT_TYPE                   char
         // Value of the start temperature after completion of the charging process-3 (127 = implausible) / Wert der Start
         // Temperatur nach Abschluss des Ladervorgang-3 (127 = unplausibel)
 
     #define I3_RES_SME_STAT_START_TEMP_4_WERT                        (RXBUF_SCHAR(23))
-    #define I3_RES_SME_STAT_START_TEMP_4_WERT_UNIT                   'Â°C'
+    #define I3_RES_SME_STAT_START_TEMP_4_WERT_UNIT                   '°C'
     #define I3_RES_SME_STAT_START_TEMP_4_WERT_TYPE                   char
         // Value of the start temperature after completion of the charging process-4 (127 = implausible) / Wert der Start
         // Temperatur nach Abschluss des Ladervorgang-4 (127 = unplausibel)
 
     #define I3_RES_SME_STAT_START_TEMP_5_WERT                        (RXBUF_SCHAR(24))
-    #define I3_RES_SME_STAT_START_TEMP_5_WERT_UNIT                   'Â°C'
+    #define I3_RES_SME_STAT_START_TEMP_5_WERT_UNIT                   '°C'
     #define I3_RES_SME_STAT_START_TEMP_5_WERT_TYPE                   char
         // Value of the start temperature after completion of the charging process -5 (127 = implausible) / Wert der
         // Start Temperatur nach Abschluss des Ladervorgang-5 (127 = unplausibel)
 
     #define I3_RES_SME_STAT_END_TEMP_1_WERT                          (RXBUF_SCHAR(25))
-    #define I3_RES_SME_STAT_END_TEMP_1_WERT_UNIT                     'Â°C'
+    #define I3_RES_SME_STAT_END_TEMP_1_WERT_UNIT                     '°C'
     #define I3_RES_SME_STAT_END_TEMP_1_WERT_TYPE                     char
         // Value of the end temperature after completion of the loading process-1 (127 = implausible) / Wert der End
         // Temperatur nach Abschluss des Ladervorgang-1 (127 = unplausibel)
 
     #define I3_RES_SME_STAT_END_TEMP_2_WERT                          (RXBUF_SCHAR(26))
-    #define I3_RES_SME_STAT_END_TEMP_2_WERT_UNIT                     'Â°C'
+    #define I3_RES_SME_STAT_END_TEMP_2_WERT_UNIT                     '°C'
     #define I3_RES_SME_STAT_END_TEMP_2_WERT_TYPE                     char
         // Value of the end temperature after completion of the charging process-2 (127 = implausible) / Wert der End
         // Temperatur nach Abschluss des Ladervorgang-2  (127 = unplausibel)
 
     #define I3_RES_SME_STAT_END_TEMP_3_WERT                          (RXBUF_SCHAR(27))
-    #define I3_RES_SME_STAT_END_TEMP_3_WERT_UNIT                     'Â°C'
+    #define I3_RES_SME_STAT_END_TEMP_3_WERT_UNIT                     '°C'
     #define I3_RES_SME_STAT_END_TEMP_3_WERT_TYPE                     char
         // Value of the end temperature after completion of the loading process-3 (127 = implausible) / Wert der End
         // Temperatur nach Abschluss des Ladervorgang-3  (127 = unplausibel)
 
     #define I3_RES_SME_STAT_END_TEMP_4_WERT                          (RXBUF_SCHAR(28))
-    #define I3_RES_SME_STAT_END_TEMP_4_WERT_UNIT                     'Â°C'
+    #define I3_RES_SME_STAT_END_TEMP_4_WERT_UNIT                     '°C'
     #define I3_RES_SME_STAT_END_TEMP_4_WERT_TYPE                     char
         // Value of the end temperature after completion of the loading process-4 (127 = implausible) / Wert der End
         // Temperatur nach Abschluss des Ladervorgang-4 (127 = unplausibel)
 
     #define I3_RES_SME_STAT_END_TEMP_5_WERT                          (RXBUF_SCHAR(29))
-    #define I3_RES_SME_STAT_END_TEMP_5_WERT_UNIT                     'Â°C'
+    #define I3_RES_SME_STAT_END_TEMP_5_WERT_UNIT                     '°C'
     #define I3_RES_SME_STAT_END_TEMP_5_WERT_TYPE                     char
         // Value of the end temperature after completion of the loading process -5 (127 = implausible) / Wert der End
         // Temperatur nach Abschluss des Ladervorgang-5 (127 = unplausibel)
@@ -6461,8 +6459,8 @@
     #define I3_RES_SME_STAT_BEGINN_PROG_LADEZEIT_1_WERT              (RXBUF_UCHAR(30)*5.0f)
     #define I3_RES_SME_STAT_BEGINN_PROG_LADEZEIT_1_WERT_UNIT         'min'
     #define I3_RES_SME_STAT_BEGINN_PROG_LADEZEIT_1_WERT_TYPE         float
-        // At the beginning forecast charging time after the completion of the charging process-1 / Zu Beginn
-        // prognostizierte Ladezeit nach Abschluss des Ladevorgang-1
+        // Charging time forecast at the beginning after completion of the charging process-1 / Zu Beginn prognostizierte
+        // Ladezeit nach Abschluss des Ladevorgang-1
 
     #define I3_RES_SME_STAT_BEGINN_PROG_LADEZEIT_2_WERT              (RXBUF_UCHAR(31)*5.0f)
     #define I3_RES_SME_STAT_BEGINN_PROG_LADEZEIT_2_WERT_UNIT         'min'
@@ -6491,31 +6489,31 @@
     #define I3_RES_SME_STAT_REAL_LADEZEIT_1_WERT                     (RXBUF_UCHAR(35)*5.0f)
     #define I3_RES_SME_STAT_REAL_LADEZEIT_1_WERT_UNIT                'min'
     #define I3_RES_SME_STAT_REAL_LADEZEIT_1_WERT_TYPE                float
-        // The actual charging time after charging is complete -1 / Die tatsÃ¤chliche Ladezeit nach Abschluss des
+        // The actual charging time after charging is complete -1 / Die tatsächliche Ladezeit nach Abschluss des
         // Ladevorgang-1
 
     #define I3_RES_SME_STAT_REAL_LADEZEIT_2_WERT                     (RXBUF_UCHAR(36)*5.0f)
     #define I3_RES_SME_STAT_REAL_LADEZEIT_2_WERT_UNIT                'min'
     #define I3_RES_SME_STAT_REAL_LADEZEIT_2_WERT_TYPE                float
-        // The actual charging time after the charging process is complete-2 / Die tatsÃ¤chliche Ladezeit nach Abschluss
+        // The actual charging time after the charging process is complete-2 / Die tatsächliche Ladezeit nach Abschluss
         // des Ladevorgang-2
 
     #define I3_RES_SME_STAT_REAL_LADEZEIT_3_WERT                     (RXBUF_UCHAR(37)*5.0f)
     #define I3_RES_SME_STAT_REAL_LADEZEIT_3_WERT_UNIT                'min'
     #define I3_RES_SME_STAT_REAL_LADEZEIT_3_WERT_TYPE                float
-        // The actual charging time after charging is complete -3 / Die tatsÃ¤chliche Ladezeit nach Abschluss des
+        // The actual charging time after charging is complete -3 / Die tatsächliche Ladezeit nach Abschluss des
         // Ladevorgang-3
 
     #define I3_RES_SME_STAT_REAL_LADEZEIT_4_WERT                     (RXBUF_UCHAR(38)*5.0f)
     #define I3_RES_SME_STAT_REAL_LADEZEIT_4_WERT_UNIT                'min'
     #define I3_RES_SME_STAT_REAL_LADEZEIT_4_WERT_TYPE                float
-        // The actual charging time after charging is complete -4 / Die tatsÃ¤chliche Ladezeit nach Abschluss des
+        // The actual charging time after charging is complete -4 / Die tatsächliche Ladezeit nach Abschluss des
         // Ladevorgang-4
 
     #define I3_RES_SME_STAT_REAL_LADEZEIT_5_WERT                     (RXBUF_UCHAR(39)*5.0f)
     #define I3_RES_SME_STAT_REAL_LADEZEIT_5_WERT_UNIT                'min'
     #define I3_RES_SME_STAT_REAL_LADEZEIT_5_WERT_TYPE                float
-        // The actual charging time after charging is complete -5 / Die tatsÃ¤chliche Ladezeit nach Abschluss des
+        // The actual charging time after charging is complete -5 / Die tatsächliche Ladezeit nach Abschluss des
         // Ladevorgang-5
 
     #define I3_RES_SME_STAT_RELATIVZEIT_1_WERT                       (RXBUF_UINT32(40))
@@ -6535,8 +6533,8 @@
     #define I3_RES_SME_STAT_RELATIVZEIT_3_WERT                       (RXBUF_UINT32(48))
     #define I3_RES_SME_STAT_RELATIVZEIT_3_WERT_UNIT                  's'
     #define I3_RES_SME_STAT_RELATIVZEIT_3_WERT_TYPE                  unsigned long
-        // Relative time at the beginning of charging process 3 (continuous combination system time from ACAN with start
-        // in the factory) / Relativzeit zu Beginn des Ladevorgang-3 (fortlaufende Kombi-System-Zeit v. ACAN mit Start im
+        // Relative time at the beginning of the charging process-3 (continuous combi system time from ACAN with start in
+        // the factory) / Relativzeit zu Beginn des Ladevorgang-3 (fortlaufende Kombi-System-Zeit v. ACAN mit Start im
         // Werk)
 
     #define I3_RES_SME_STAT_RELATIVZEIT_4_WERT                       (RXBUF_UINT32(52))
@@ -6556,9 +6554,9 @@
 #define I3_PID_SME_HIS_PROG_LADEZEIT                                 0xDDEC
         // Representation of the frequency of a relative deviation of the charging time forecast from the real value
         // (fact = (t_prog-t_ist) / t_ist * 100%). t_prog = predicted value at the beginning of the charging phase. t_ist
-        // = time actually required to reach the loading target. / Darstellung der HÃ¤ufigkeit einer relative Abweichung
+        // = time actually required to reach the loading target. / Darstellung der Häufigkeit einer relative Abweichung
         // der Ladezeitprognose vom realen Wert (fact = (t_prog-t_ist) / t_ist * 100%). t_prog =  zu Beginn der Ladephase
-        // prognostizierte Wert. t_ist =  tatsÃ¤chlich bis zum Erreichen des Ladeziels benÃ¶tigte Zeit.
+        // prognostizierte Wert. t_ist =  tatsächlich bis zum Erreichen des Ladeziels benötigte Zeit.
 
     #define I3_RES_SME_STAT_HIS_PROG_LADEZEIT_1_WERT                 (RXBUF_UINT(0))
     #define I3_RES_SME_STAT_HIS_PROG_LADEZEIT_1_WERT_TYPE            unsigned short
@@ -6610,9 +6608,8 @@
         // Initial value of the SOH_R calculation / Initialwert der SOH_R-Berechnung
 
 #define I3_PID_SME_BETRIEBSSTUNDEN                                   0xDF60
-        // Time for closed main switch and total battery life (closed and open time of main switch) / Zeit fÃ¼r
-        // geschlossene Hauptschalter und gesamte Batterielebensdauer (geschlossene und geÃ¶ffnete Zeit der
-        // Hauptschalter)
+        // Time for closed main switch and total battery life (closed and open time of main switch) / Zeit für
+        // geschlossene Hauptschalter und gesamte Batterielebensdauer (geschlossene und geöffnete Zeit der Hauptschalter)
 
     #define I3_RES_SME_STAT_TIME_HV_ON_WERT                          (RXBUF_UINT32(0))
     #define I3_RES_SME_STAT_TIME_HV_ON_WERT_UNIT                     'h'
@@ -6622,17 +6619,17 @@
     #define I3_RES_SME_STAT_TIME_TOTAL_WERT                          (RXBUF_UINT32(4))
     #define I3_RES_SME_STAT_TIME_TOTAL_WERT_UNIT                     'h'
     #define I3_RES_SME_STAT_TIME_TOTAL_WERT_TYPE                     unsigned long
-        // The total battery life (total time with closed and open main switches) / Die gesamte Batterielebensdauer
-        // (Gesamtzeit bei geschlossenen und geÃ¶ffneten Hauptschaltern)
+        // The total battery life (total time with main switches closed and open) / Die gesamte Batterielebensdauer
+        // (Gesamtzeit bei geschlossenen und geöffneten Hauptschaltern)
 
 #define I3_PID_SME_COOL_DOWN                                         0xDF62
         // Number of CoolDown scenarios (departure with hot HV storage) / Anzahl der CoolDown Szenarios (Abfahrt mit
-        // heiÃem HV-Speicher)
+        // heißem HV-Speicher)
 
     #define I3_RES_SME_STAT_ANZAHL_KUEHLVORGAENGE_WERT               (RXBUF_UINT(0))
     #define I3_RES_SME_STAT_ANZAHL_KUEHLVORGAENGE_WERT_TYPE          unsigned short
         // Number of CoolDown scenarios (departure with hot HV storage) / Anzahl der CoolDown Szenarios (Abfahrt mit
-        // heiÃem HV-Speicher)
+        // heißem HV-Speicher)
 
 #define I3_PID_SME_KLEMMENZYKLEN                                     0xDF63
         // Number of terminal cycles / Anzahl der Klemmenzyklen
@@ -6642,12 +6639,12 @@
         // Number of terminal cycles / Anzahl der Klemmenzyklen
 
 #define I3_PID_SME_KUEHLDAUER                                        0xDF64
-        // HV battery cooling time / KÃ¼hldauer der HV-Batterie
+        // HV battery cooling time / Kühldauer der HV-Batterie
 
     #define I3_RES_SME_STAT_KUEHLDAUER_MAX_WERT_0XDF64               (RXBUF_UINT(0))
     #define I3_RES_SME_STAT_KUEHLDAUER_MAX_WERT_0XDF64_UNIT          'min'
     #define I3_RES_SME_STAT_KUEHLDAUER_MAX_WERT_0XDF64_TYPE          unsigned short
-        // Predefined maximum cooling time (project-specific) / Vordefinierte maximale KÃ¼hldauer (projektspezifisch)
+        // Predefined maximum cooling time (project-specific) / Vordefinierte maximale Kühldauer (projektspezifisch)
 
     #define I3_RES_SME_STAT_KUEHLDAUER_1_WERT_0XDF64                 (RXBUF_UINT(2))
     #define I3_RES_SME_STAT_KUEHLDAUER_1_WERT_0XDF64_TYPE            unsigned short
@@ -6666,10 +6663,10 @@
         // Number of duration classes: t> tmax / Anzahl Dauerklasse:  t > tmax
 
 #define I3_PID_SME_TEMP_SPREIZUNG_SYSTEM                             0xDF65
-        // Time in different dT classes with active cooling / Zeit in verschiedenen dT-Klassen bei aktiver KÃ¼hlung
+        // Time in different dT classes with active cooling / Zeit in verschiedenen dT-Klassen bei aktiver Kühlung
 
     #define I3_RES_SME_STAT_TEMP_SPREIZUNG_MAX_WERT                  (RXBUF_UINT(0)/100.0f)
-    #define I3_RES_SME_STAT_TEMP_SPREIZUNG_MAX_WERT_UNIT             'Â°C'
+    #define I3_RES_SME_STAT_TEMP_SPREIZUNG_MAX_WERT_UNIT             '°C'
     #define I3_RES_SME_STAT_TEMP_SPREIZUNG_MAX_WERT_TYPE             float
         // Predefined maximum temperature spread value in Celcius (project-specific) / Vorderfinierter maximaler
         // Temperaturspreizungswert in Celcius  (projektspezifisch)
@@ -6677,46 +6674,45 @@
     #define I3_RES_SME_STAT_TEMP_SPREIZUNG_SYS_1_WERT                (RXBUF_UINT32(2))
     #define I3_RES_SME_STAT_TEMP_SPREIZUNG_SYS_1_WERT_UNIT           'min'
     #define I3_RES_SME_STAT_TEMP_SPREIZUNG_SYS_1_WERT_TYPE           unsigned long
-        // Time in minutes with cooling on class 1: 0 <dT <= dTmax * 0.2 / Zeit in Minuten bei KÃ¼hlung an Klasse 1: 0 <
+        // Time in minutes with cooling on class 1: 0 <dT <= dTmax * 0.2 / Zeit in Minuten bei Kühlung an Klasse 1: 0 <
         // dT <= dTmax*0.2
 
     #define I3_RES_SME_STAT_TEMP_SPREIZUNG_SYS_2_WERT                (RXBUF_UINT32(6))
     #define I3_RES_SME_STAT_TEMP_SPREIZUNG_SYS_2_WERT_UNIT           'min'
     #define I3_RES_SME_STAT_TEMP_SPREIZUNG_SYS_2_WERT_TYPE           unsigned long
-        // Time in minutes for cooling on class 2: dTmax * 0.2 <dT <= dTmax * 0.4 / Zeit in Minuten bei KÃ¼hlung an
-        // Klasse 2: dTmax*0.2 < dT <= dTmax*0.4
+        // Time in minutes for cooling on class 2: dTmax * 0.2 <dT <= dTmax * 0.4 / Zeit in Minuten bei Kühlung an Klasse
+        // 2: dTmax*0.2 < dT <= dTmax*0.4
 
     #define I3_RES_SME_STAT_TEMP_SPREIZUNG_SYS_3_WERT                (RXBUF_UINT32(10))
     #define I3_RES_SME_STAT_TEMP_SPREIZUNG_SYS_3_WERT_UNIT           'min'
     #define I3_RES_SME_STAT_TEMP_SPREIZUNG_SYS_3_WERT_TYPE           unsigned long
-        // Time in minutes for cooling on class 3: dTmax * 0.4 <dT <= dTmax * 0.6 / Zeit in Minuten bei KÃ¼hlung an
-        // Klasse 3: dTmax*0.4 < dT <= dTmax*0.6
+        // Time in minutes for cooling on class 3: dTmax * 0.4 <dT <= dTmax * 0.6 / Zeit in Minuten bei Kühlung an Klasse
+        // 3: dTmax*0.4 < dT <= dTmax*0.6
 
     #define I3_RES_SME_STAT_TEMP_SPREIZUNG_SYS_4_WERT                (RXBUF_UINT32(14))
     #define I3_RES_SME_STAT_TEMP_SPREIZUNG_SYS_4_WERT_UNIT           'min'
     #define I3_RES_SME_STAT_TEMP_SPREIZUNG_SYS_4_WERT_TYPE           unsigned long
-        // Time in minutes for cooling on class 4: dTmax * 0.6 <dT <= dTmax * 0.8 / Zeit in Minuten bei KÃ¼hlung an
-        // Klasse 4: dTmax*0.6 < dT <= dTmax*0.8
+        // Time in minutes for cooling on class 4: dTmax * 0.6 <dT <= dTmax * 0.8 / Zeit in Minuten bei Kühlung an Klasse
+        // 4: dTmax*0.6 < dT <= dTmax*0.8
 
     #define I3_RES_SME_STAT_TEMP_SPREIZUNG_SYS_5_WERT                (RXBUF_UINT32(18))
     #define I3_RES_SME_STAT_TEMP_SPREIZUNG_SYS_5_WERT_UNIT           'min'
     #define I3_RES_SME_STAT_TEMP_SPREIZUNG_SYS_5_WERT_TYPE           unsigned long
-        // Time in minutes for cooling on class 5: dTmax * 0.8 <dT <= dTmax / Zeit in Minuten bei KÃ¼hlung an Klasse 5:
+        // Time in minutes with cooling on class 5: dTmax * 0.8 <dT <= dTmax / Zeit in Minuten bei Kühlung an Klasse 5:
         // dTmax*0.8 < dT <= dTmax
 
     #define I3_RES_SME_STAT_TEMP_SPREIZUNG_SYS_6_WERT                (RXBUF_UINT32(22))
     #define I3_RES_SME_STAT_TEMP_SPREIZUNG_SYS_6_WERT_UNIT           'min'
     #define I3_RES_SME_STAT_TEMP_SPREIZUNG_SYS_6_WERT_TYPE           unsigned long
-        // Time in minutes with cooling on class 6: dT> dTmax / Zeit in Minuten bei KÃ¼hlung an Klasse 6: dT > dTmax
+        // Time in minutes with cooling on class 6: dT> dTmax / Zeit in Minuten bei Kühlung an Klasse 6: dT > dTmax
 
 #define I3_PID_SME_TEMP_KUEHLMITTEL                                  0xDF66
-        // Time in different temperature classes of the coolant / Zeit in verschiedenen Temperaturklassen des
-        // KÃ¼hlmittels
+        // Time in different temperature classes of the coolant / Zeit in verschiedenen Temperaturklassen des Kühlmittels
 
     #define I3_RES_SME_STAT_TEMP_KUEHLMITTEL_MAX_WERT                (RXBUF_UINT(0)/10.0f)
-    #define I3_RES_SME_STAT_TEMP_KUEHLMITTEL_MAX_WERT_UNIT           'Â°C'
+    #define I3_RES_SME_STAT_TEMP_KUEHLMITTEL_MAX_WERT_UNIT           '°C'
     #define I3_RES_SME_STAT_TEMP_KUEHLMITTEL_MAX_WERT_TYPE           float
-        // Predefined maximum coolant temperature (project-specific) / Vordefinierte maximale KÃ¼hlmittelstemperatur
+        // Predefined maximum coolant temperature (project-specific) / Vordefinierte maximale Kühlmittelstemperatur
         // (projektspezifisch)
 
     #define I3_RES_SME_STAT_TEMP_KUEHLMITTEL_1_WERT                  (RXBUF_UINT32(2))
@@ -6753,1488 +6749,1488 @@
 
 #define I3_PID_SME_LADUNG_KUEHLUNG                                   0xDF67
         // Amount of charge and discharge with the cooling switched on / Ladungs- und Entladungsmenge bei eingeschalteter
-        // KÃ¼hlung
+        // Kühlung
 
     #define I3_RES_SME_STAT_LADUNG_KUEHLUNG_WERT                     (RXBUF_UINT32(0)/3600.0f)
     #define I3_RES_SME_STAT_LADUNG_KUEHLUNG_WERT_UNIT                'Ah'
     #define I3_RES_SME_STAT_LADUNG_KUEHLUNG_WERT_TYPE                float
-        // Charge amount with activated cooling / Ladungsmenge bei eingeschalteter KÃ¼hlung
+        // Charge amount with activated cooling / Ladungsmenge bei eingeschalteter Kühlung
 
     #define I3_RES_SME_STAT_ENTLADUNG_KUEHLUNG_WERT                  (RXBUF_UINT32(4)/3600.0f)
     #define I3_RES_SME_STAT_ENTLADUNG_KUEHLUNG_WERT_UNIT             'Ah'
     #define I3_RES_SME_STAT_ENTLADUNG_KUEHLUNG_WERT_TYPE             float
-        // Discharge amount with the cooling switched on / Entladungsmenge bei eingeschalteter KÃ¼hlung
+        // Discharge amount with the cooling switched on / Entladungsmenge bei eingeschalteter Kühlung
 
 #define I3_PID_SME_HV_BATT_HIST_SOC_T1_2                             0xDF68
         // Duration at temperature less than 0 ° C and with different values of current and SOC - part 2 / Dauer bei
-        // Temperatur kleiner als 0Â°C und bei unterschiedlichen Werten von Strom und SOC - Teil 2
+        // Temperatur kleiner als 0°C und bei unterschiedlichen Werten von Strom und SOC - Teil 2
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T1_I1_WERT             (RXBUF_UINT32(0)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T1_I1_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T1_I1_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. Temperature less than 0 ° C. Current less than -2.5xC A / Dauer
-        // bei 70 % kleiner als SoC kleiner als 90 %. Temperatur kleiner als 0 Â°C. Strom kleiner als -2,5xC A
+        // bei 70 % kleiner als SoC kleiner als 90 %. Temperatur kleiner als 0 °C. Strom kleiner als -2,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T1_I2_WERT             (RXBUF_UINT32(4)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T1_I2_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T1_I2_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. Temperature less than 0 ° C. -2.5xC A less than current less than
-        // -2.0xC A / Dauer bei 70 % kleiner als SoC kleiner als 90 %. Temperatur kleiner als 0 Â°C.  -2,5xC A kleiner
-        // als Strom kleiner als -2,0xC A
+        // -2.0xC A / Dauer bei 70 % kleiner als SoC kleiner als 90 %. Temperatur kleiner als 0 °C.  -2,5xC A kleiner als
+        // Strom kleiner als -2,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T1_I3_WERT             (RXBUF_UINT32(8)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T1_I3_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T1_I3_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. Temperature less than 0 ° C. -2.0xC A less than current less than
-        // -1.5xC A / Dauer bei 70 % kleiner als SoC kleiner als 90 %. Temperatur kleiner als 0 Â°C.  -2,0xC A kleiner
-        // als Strom kleiner als -1,5xC A
+        // -1.5xC A / Dauer bei 70 % kleiner als SoC kleiner als 90 %. Temperatur kleiner als 0 °C.  -2,0xC A kleiner als
+        // Strom kleiner als -1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T1_I4_WERT             (RXBUF_UINT32(12)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T1_I4_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T1_I4_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. Temperature less than 0 ° C. -1.5xC A less than current less than
-        // -1.0xC A / Dauer bei 70 % kleiner als SoC kleiner als 90 %. Temperatur kleiner als 0 Â°C.  -1,5xC A kleiner
-        // als Strom kleiner als -1,0xC A
+        // -1.0xC A / Dauer bei 70 % kleiner als SoC kleiner als 90 %. Temperatur kleiner als 0 °C.  -1,5xC A kleiner als
+        // Strom kleiner als -1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T1_I5_WERT             (RXBUF_UINT32(16)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T1_I5_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T1_I5_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. Temperature less than 0 ° C. -1.0xC A less than current less than
-        // -0.5xC A / Dauer bei 70 % kleiner als SoC kleiner als 90 %. Temperatur kleiner als 0 Â°C.  -1,0xC A kleiner
-        // als Strom kleiner als -0,5xC A
+        // -0.5xC A / Dauer bei 70 % kleiner als SoC kleiner als 90 %. Temperatur kleiner als 0 °C.  -1,0xC A kleiner als
+        // Strom kleiner als -0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T1_I6_WERT             (RXBUF_UINT32(20)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T1_I6_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T1_I6_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. Temperature less than 0 ° C. -0.5xC A less than current less than
-        // 0.0xC A / Dauer bei 70 % kleiner als SoC kleiner als 90 %. Temperatur kleiner als 0 Â°C.  -0,5xC A kleiner als
+        // 0.0xC A / Dauer bei 70 % kleiner als SoC kleiner als 90 %. Temperatur kleiner als 0 °C.  -0,5xC A kleiner als
         // Strom kleiner als 0,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T1_I7_WERT             (RXBUF_UINT32(24)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T1_I7_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T1_I7_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. Temperature less than 0 ° C. 0.0xC A less than current less than
-        // 0.5xC A / Dauer bei 70 % kleiner als SoC kleiner als 90 %. Temperatur kleiner als 0 Â°C.  0,0xC A kleiner als
+        // 0.5xC A / Dauer bei 70 % kleiner als SoC kleiner als 90 %. Temperatur kleiner als 0 °C.  0,0xC A kleiner als
         // Strom kleiner als 0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T1_I8_WERT             (RXBUF_UINT32(28)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T1_I8_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T1_I8_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. Temperature less than 0 ° C. 0.5xC A less than current less than
-        // 1.0xC A / Dauer bei 70 % kleiner als SoC kleiner als 90 %. Temperatur kleiner als 0 Â°C.  0,5xC A kleiner als
+        // 1.0xC A / Dauer bei 70 % kleiner als SoC kleiner als 90 %. Temperatur kleiner als 0 °C.  0,5xC A kleiner als
         // Strom kleiner als 1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T1_I9_WERT             (RXBUF_UINT32(32)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T1_I9_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T1_I9_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. Temperature less than 0 ° C. 1.0xC A less than current less than
-        // 1.5xC A / Dauer bei 70 % kleiner als SoC kleiner als 90 %. Temperatur kleiner als 0 Â°C.  1,0xC A kleiner als
+        // 1.5xC A / Dauer bei 70 % kleiner als SoC kleiner als 90 %. Temperatur kleiner als 0 °C.  1,0xC A kleiner als
         // Strom kleiner als 1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T1_I10_WERT            (RXBUF_UINT32(36)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T1_I10_WERT_UNIT       's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T1_I10_WERT_TYPE       float
         // Duration at 70% less than SoC less than 90%. Temperature less than 0 ° C. 1.5xC A less than current / Dauer
-        // bei 70 % kleiner als SoC kleiner als 90 %. Temperatur kleiner als 0 Â°C.  1,5xC A kleiner als Strom
+        // bei 70 % kleiner als SoC kleiner als 90 %. Temperatur kleiner als 0 °C.  1,5xC A kleiner als Strom
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T1_I1_WERT             (RXBUF_UINT32(40)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T1_I1_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T1_I1_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. Temperature less than 0 ° C. Current less than -2.5xC A / Dauer
-        // bei 90 % kleiner als SoC kleiner als 95 %. Temperatur kleiner als 0 Â°C. Strom kleiner als -2,5xC A
+        // bei 90 % kleiner als SoC kleiner als 95 %. Temperatur kleiner als 0 °C. Strom kleiner als -2,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T1_I2_WERT             (RXBUF_UINT32(44)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T1_I2_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T1_I2_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. Temperature less than 0 ° C. -2.5xC A less than current less than
-        // -2.0xC A / Dauer bei 90 % kleiner als SoC kleiner als 95 %. Temperatur kleiner als 0 Â°C.  -2,5xC A kleiner
-        // als Strom kleiner als -2,0xC A
+        // -2.0xC A / Dauer bei 90 % kleiner als SoC kleiner als 95 %. Temperatur kleiner als 0 °C.  -2,5xC A kleiner als
+        // Strom kleiner als -2,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T1_I3_WERT             (RXBUF_UINT32(48)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T1_I3_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T1_I3_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. Temperature less than 0 ° C. -2.0xC A less than current less than
-        // -1.5xC A / Dauer bei 90 % kleiner als SoC kleiner als 95 %. Temperatur kleiner als 0 Â°C.  -2,0xC A kleiner
-        // als Strom kleiner als -1,5xC A
+        // -1.5xC A / Dauer bei 90 % kleiner als SoC kleiner als 95 %. Temperatur kleiner als 0 °C.  -2,0xC A kleiner als
+        // Strom kleiner als -1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T1_I4_WERT             (RXBUF_UINT32(52)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T1_I4_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T1_I4_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. Temperature less than 0 ° C. -1.5xC A less than current less than
-        // -1.0xC A / Dauer bei 90 % kleiner als SoC kleiner als 95 %. Temperatur kleiner als 0 Â°C.  -1,5xC A kleiner
-        // als Strom kleiner als -1,0xC A
+        // -1.0xC A / Dauer bei 90 % kleiner als SoC kleiner als 95 %. Temperatur kleiner als 0 °C.  -1,5xC A kleiner als
+        // Strom kleiner als -1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T1_I5_WERT             (RXBUF_UINT32(56)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T1_I5_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T1_I5_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. Temperature less than 0 ° C. -1.0xC A less than current less than
-        // -0.5xC A / Dauer bei 90 % kleiner als SoC kleiner als 95 %. Temperatur kleiner als 0 Â°C.  -1,0xC A kleiner
-        // als Strom kleiner als -0,5xC A
+        // -0.5xC A / Dauer bei 90 % kleiner als SoC kleiner als 95 %. Temperatur kleiner als 0 °C.  -1,0xC A kleiner als
+        // Strom kleiner als -0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T1_I6_WERT             (RXBUF_UINT32(60)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T1_I6_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T1_I6_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. Temperature less than 0 ° C. -0.5xC A less than current less than
-        // 0.0xC A / Dauer bei 90 % kleiner als SoC kleiner als 95 %. Temperatur kleiner als 0 Â°C.  -0,5xC A kleiner als
+        // 0.0xC A / Dauer bei 90 % kleiner als SoC kleiner als 95 %. Temperatur kleiner als 0 °C.  -0,5xC A kleiner als
         // Strom kleiner als 0,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T1_I7_WERT             (RXBUF_UINT32(64)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T1_I7_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T1_I7_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. Temperature less than 0 ° C. 0.0xC A less than current less than
-        // 0.5xC A / Dauer bei 90 % kleiner als SoC kleiner als 95 %. Temperatur kleiner als 0 Â°C.  0,0xC A kleiner als
+        // 0.5xC A / Dauer bei 90 % kleiner als SoC kleiner als 95 %. Temperatur kleiner als 0 °C.  0,0xC A kleiner als
         // Strom kleiner als 0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T1_I8_WERT             (RXBUF_UINT32(68)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T1_I8_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T1_I8_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. Temperature less than 0 ° C. 0.5xC A less than current less than
-        // 1.0xC A / Dauer bei 90 % kleiner als SoC kleiner als 95 %. Temperatur kleiner als 0 Â°C.  0,5xC A kleiner als
+        // 1.0xC A / Dauer bei 90 % kleiner als SoC kleiner als 95 %. Temperatur kleiner als 0 °C.  0,5xC A kleiner als
         // Strom kleiner als 1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T1_I9_WERT             (RXBUF_UINT32(72)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T1_I9_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T1_I9_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. Temperature less than 0 ° C. 1.0xC A less than current less than
-        // 1.5xC A / Dauer bei 90 % kleiner als SoC kleiner als 95 %. Temperatur kleiner als 0 Â°C.  1,0xC A kleiner als
+        // 1.5xC A / Dauer bei 90 % kleiner als SoC kleiner als 95 %. Temperatur kleiner als 0 °C.  1,0xC A kleiner als
         // Strom kleiner als 1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T1_I10_WERT            (RXBUF_UINT32(76)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T1_I10_WERT_UNIT       's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T1_I10_WERT_TYPE       float
         // Duration at 90% less than SoC less than 95%. Temperature less than 0 ° C. 1.5xC A less than current / Dauer
-        // bei 90 % kleiner als SoC kleiner als 95 %. Temperatur kleiner als 0 Â°C.  1,5xC A kleiner als Strom
+        // bei 90 % kleiner als SoC kleiner als 95 %. Temperatur kleiner als 0 °C.  1,5xC A kleiner als Strom
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T1_I1_WERT             (RXBUF_UINT32(80)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T1_I1_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T1_I1_WERT_TYPE        float
         // Duration at 95% smaller than SoC. Temperature less than 0 ° C. Current less than -2.5xC A / Dauer bei 95 %
-        // kleiner als SoC. Temperatur kleiner als 0 Â°C. Strom kleiner als -2,5xC A
+        // kleiner als SoC. Temperatur kleiner als 0 °C. Strom kleiner als -2,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T1_I2_WERT             (RXBUF_UINT32(84)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T1_I2_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T1_I2_WERT_TYPE        float
         // Duration at 95% smaller than SoC. Temperature less than 0 ° C. -2.5xC A less than current less than -2.0xC A /
-        // Dauer bei 95 % kleiner als SoC. Temperatur kleiner als 0 Â°C.  -2,5xC A kleiner als Strom kleiner als -2,0xC A
+        // Dauer bei 95 % kleiner als SoC. Temperatur kleiner als 0 °C.  -2,5xC A kleiner als Strom kleiner als -2,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T1_I3_WERT             (RXBUF_UINT32(88)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T1_I3_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T1_I3_WERT_TYPE        float
         // Duration at 95% smaller than SoC. Temperature less than 0 ° C. -2.0xC A less than current less than -1.5xC A /
-        // Dauer bei 95 % kleiner als SoC. Temperatur kleiner als 0 Â°C.  -2,0xC A kleiner als Strom kleiner als -1,5xC A
+        // Dauer bei 95 % kleiner als SoC. Temperatur kleiner als 0 °C.  -2,0xC A kleiner als Strom kleiner als -1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T1_I4_WERT             (RXBUF_UINT32(92)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T1_I4_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T1_I4_WERT_TYPE        float
         // Duration at 95% smaller than SoC. Temperature less than 0 ° C. -1.5xC A less than current less than -1.0xC A /
-        // Dauer bei 95 % kleiner als SoC. Temperatur kleiner als 0 Â°C.  -1,5xC A kleiner als Strom kleiner als -1,0xC A
+        // Dauer bei 95 % kleiner als SoC. Temperatur kleiner als 0 °C.  -1,5xC A kleiner als Strom kleiner als -1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T1_I5_WERT             (RXBUF_UINT32(96)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T1_I5_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T1_I5_WERT_TYPE        float
         // Duration at 95% smaller than SoC. Temperature less than 0 ° C. -1.0xC A less than current less than -0.5xC A /
-        // Dauer bei 95 % kleiner als SoC. Temperatur kleiner als 0 Â°C.  -1,0xC A kleiner als Strom kleiner als -0,5xC A
+        // Dauer bei 95 % kleiner als SoC. Temperatur kleiner als 0 °C.  -1,0xC A kleiner als Strom kleiner als -0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T1_I6_WERT             (RXBUF_UINT32(100)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T1_I6_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T1_I6_WERT_TYPE        float
         // Duration at 95% smaller than SoC. Temperature less than 0 ° C. -0.5xC A less than current less than 0.0xC A /
-        // Dauer bei 95 % kleiner als SoC. Temperatur kleiner als 0 Â°C.  -0,5xC A kleiner als Strom kleiner als 0,0xC A
+        // Dauer bei 95 % kleiner als SoC. Temperatur kleiner als 0 °C.  -0,5xC A kleiner als Strom kleiner als 0,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T1_I7_WERT             (RXBUF_UINT32(104)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T1_I7_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T1_I7_WERT_TYPE        float
         // Duration at 95% smaller than SoC. Temperature less than 0 ° C. 0.0xC A less than current less than 0.5xC A /
-        // Dauer bei 95 % kleiner als SoC. Temperatur kleiner als 0 Â°C.  0,0xC A kleiner als Strom kleiner als 0,5xC A
+        // Dauer bei 95 % kleiner als SoC. Temperatur kleiner als 0 °C.  0,0xC A kleiner als Strom kleiner als 0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T1_I8_WERT             (RXBUF_UINT32(108)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T1_I8_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T1_I8_WERT_TYPE        float
         // Duration at 95% smaller than SoC. Temperature less than 0 ° C. 0.5xC A less than current less than 1.0xC A /
-        // Dauer bei 95 % kleiner als SoC. Temperatur kleiner als 0 Â°C.  0,5xC A kleiner als Strom kleiner als 1,0xC A
+        // Dauer bei 95 % kleiner als SoC. Temperatur kleiner als 0 °C.  0,5xC A kleiner als Strom kleiner als 1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T1_I9_WERT             (RXBUF_UINT32(112)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T1_I9_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T1_I9_WERT_TYPE        float
         // Duration at 95% smaller than SoC. Temperature less than 0 ° C. 1.0xC A less than current less than 1.5xC A /
-        // Dauer bei 95 % kleiner als SoC. Temperatur kleiner als 0 Â°C.  1,0xC A kleiner als Strom kleiner als 1,5xC A
+        // Dauer bei 95 % kleiner als SoC. Temperatur kleiner als 0 °C.  1,0xC A kleiner als Strom kleiner als 1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T1_I10_WERT            (RXBUF_UINT32(116)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T1_I10_WERT_UNIT       's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T1_I10_WERT_TYPE       float
         // Duration at 95% smaller than SoC. Temperature less than 0 ° C. 1.5xC A less than current / Dauer bei 95 %
-        // kleiner als SoC. Temperatur kleiner als 0 Â°C.  1,5xC A kleiner als Strom
+        // kleiner als SoC. Temperatur kleiner als 0 °C.  1,5xC A kleiner als Strom
 
 #define I3_PID_SME_HV_BATT_HIST_SOC_T4_2                             0xDF69
         // Duration at 20 ° C less than temperature less than 27.5 ° C and with different values of current and SOC -
-        // part 2 / Dauer bei 20Â°C kleiner als Temperatur kleiner als 27,5 Â°C und bei unterschiedlichen Werten von
-        // Strom und SOC - Teil 2
+        // part 2 / Dauer bei 20°C kleiner als Temperatur kleiner als 27,5 °C und bei unterschiedlichen Werten von Strom
+        // und SOC - Teil 2
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T4_I1_WERT             (RXBUF_UINT32(0)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T4_I1_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T4_I1_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. 20 ° C less than temperature less than 27.5 ° C. Current less
-        // than -2.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 20Â°C kleiner als Temperatur kleiner als
-        // 27,5Â°C. Strom kleiner als -2,5xC A
+        // than -2.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 20°C kleiner als Temperatur kleiner als 27,5°C.
+        // Strom kleiner als -2,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T4_I2_WERT             (RXBUF_UINT32(4)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T4_I2_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T4_I2_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. 20 ° C less than temperature less than 27.5 ° C. -2.5xC A less
-        // than current less than -2.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 20Â°C kleiner als Temperatur
-        // kleiner als 27,5Â°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
+        // than current less than -2.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 20°C kleiner als Temperatur
+        // kleiner als 27,5°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T4_I3_WERT             (RXBUF_UINT32(8)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T4_I3_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T4_I3_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. 20 ° C less than temperature less than 27.5 ° C. -2.0xC A less
-        // than current less than -1.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 20Â°C kleiner als Temperatur
-        // kleiner als 27,5Â°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
+        // than current less than -1.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 20°C kleiner als Temperatur
+        // kleiner als 27,5°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T4_I4_WERT             (RXBUF_UINT32(12)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T4_I4_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T4_I4_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. 20 ° C less than temperature less than 27.5 ° C. -1.5xC A less
-        // than current less than -1.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 20Â°C kleiner als Temperatur
-        // kleiner als 27,5Â°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
+        // than current less than -1.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 20°C kleiner als Temperatur
+        // kleiner als 27,5°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T4_I5_WERT             (RXBUF_UINT32(16)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T4_I5_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T4_I5_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. 20 ° C less than temperature less than 27.5 ° C. -1.0xC A less
-        // than current less than -0.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 20Â°C kleiner als Temperatur
-        // kleiner als 27,5Â°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
+        // than current less than -0.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 20°C kleiner als Temperatur
+        // kleiner als 27,5°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T4_I6_WERT             (RXBUF_UINT32(20)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T4_I6_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T4_I6_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. 20 ° C less than temperature less than 27.5 ° C. -0.5xC A less
-        // than current less than 0.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 20Â°C kleiner als Temperatur
-        // kleiner als 27,5Â°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
+        // than current less than 0.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 20°C kleiner als Temperatur
+        // kleiner als 27,5°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T4_I7_WERT             (RXBUF_UINT32(24)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T4_I7_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T4_I7_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. 20 ° C less than temperature less than 27.5 ° C. 0.0xC A less
-        // than current less than 0.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 20Â°C kleiner als Temperatur
-        // kleiner als 27,5Â°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
+        // than current less than 0.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 20°C kleiner als Temperatur
+        // kleiner als 27,5°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T4_I8_WERT             (RXBUF_UINT32(28)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T4_I8_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T4_I8_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. 20 ° C less than temperature less than 27.5 ° C. 0.5xC A less
-        // than current less than 1.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 20Â°C kleiner als Temperatur
-        // kleiner als 27,5Â°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
+        // than current less than 1.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 20°C kleiner als Temperatur
+        // kleiner als 27,5°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T4_I9_WERT             (RXBUF_UINT32(32)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T4_I9_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T4_I9_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. 20 ° C less than temperature less than 27.5 ° C. 1.0xC A less
-        // than current less than 1.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 20Â°C kleiner als Temperatur
-        // kleiner als 27,5Â°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
+        // than current less than 1.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 20°C kleiner als Temperatur
+        // kleiner als 27,5°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T4_I10_WERT            (RXBUF_UINT32(36)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T4_I10_WERT_UNIT       's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T4_I10_WERT_TYPE       float
         // Duration at 70% less than SoC less than 90%. 20 ° C less than temperature less than 27.5 ° C. 1.5xC A less
-        // than current / Dauer bei 70% kleiner als SoC kleiner als 90%. 20Â°C kleiner als Temperatur kleiner als
-        // 27,5Â°C. 1,5xC A kleiner als Strom
+        // than current / Dauer bei 70% kleiner als SoC kleiner als 90%. 20°C kleiner als Temperatur kleiner als 27,5°C.
+        // 1,5xC A kleiner als Strom
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T4_I1_WERT             (RXBUF_UINT32(40)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T4_I1_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T4_I1_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. 20 ° C less than temperature less than 27.5 ° C. Current less
-        // than -2.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 20Â°C kleiner als Temperatur kleiner als
-        // 27,5Â°C. Strom kleiner als -2,5xC A
+        // than -2.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 20°C kleiner als Temperatur kleiner als 27,5°C.
+        // Strom kleiner als -2,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T4_I2_WERT             (RXBUF_UINT32(44)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T4_I2_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T4_I2_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. 20 ° C less than temperature less than 27.5 ° C. -2.5xC A less
-        // than current less than -2.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 20Â°C kleiner als Temperatur
-        // kleiner als 27,5Â°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
+        // than current less than -2.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 20°C kleiner als Temperatur
+        // kleiner als 27,5°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T4_I3_WERT             (RXBUF_UINT32(48)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T4_I3_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T4_I3_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. 20 ° C less than temperature less than 27.5 ° C. -2.0xC A less
-        // than current less than -1.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 20Â°C kleiner als Temperatur
-        // kleiner als 27,5Â°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
+        // than current less than -1.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 20°C kleiner als Temperatur
+        // kleiner als 27,5°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T4_I4_WERT             (RXBUF_UINT32(52)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T4_I4_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T4_I4_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. 20 ° C less than temperature less than 27.5 ° C. -1.5xC A less
-        // than current less than -1.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 20Â°C kleiner als Temperatur
-        // kleiner als 27,5Â°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
+        // than current less than -1.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 20°C kleiner als Temperatur
+        // kleiner als 27,5°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T4_I5_WERT             (RXBUF_UINT32(56)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T4_I5_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T4_I5_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. 20 ° C less than temperature less than 27.5 ° C. -1.0xC A less
-        // than current less than -0.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 20Â°C kleiner als Temperatur
-        // kleiner als 27,5Â°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
+        // than current less than -0.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 20°C kleiner als Temperatur
+        // kleiner als 27,5°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T4_I6_WERT             (RXBUF_UINT32(60)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T4_I6_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T4_I6_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. 20 ° C less than temperature less than 27.5 ° C. -0.5xC A less
-        // than current less than 0.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 20Â°C kleiner als Temperatur
-        // kleiner als 27,5Â°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
+        // than current less than 0.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 20°C kleiner als Temperatur
+        // kleiner als 27,5°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T4_I7_WERT             (RXBUF_UINT32(64)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T4_I7_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T4_I7_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. 20 ° C less than temperature less than 27.5 ° C. 0.0xC A less
-        // than current less than 0.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 20Â°C kleiner als Temperatur
-        // kleiner als 27,5Â°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
+        // than current less than 0.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 20°C kleiner als Temperatur
+        // kleiner als 27,5°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T4_I8_WERT             (RXBUF_UINT32(68)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T4_I8_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T4_I8_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. 20 ° C less than temperature less than 27.5 ° C. 0.5xC A less
-        // than current less than 1.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 20Â°C kleiner als Temperatur
-        // kleiner als 27,5Â°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
+        // than current less than 1.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 20°C kleiner als Temperatur
+        // kleiner als 27,5°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T4_I9_WERT             (RXBUF_UINT32(72)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T4_I9_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T4_I9_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. 20 ° C less than temperature less than 27.5 ° C. 1.0xC A less
-        // than current less than 1.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 20Â°C kleiner als Temperatur
-        // kleiner als 27,5Â°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
+        // than current less than 1.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 20°C kleiner als Temperatur
+        // kleiner als 27,5°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T4_I10_WERT            (RXBUF_UINT32(76)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T4_I10_WERT_UNIT       's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T4_I10_WERT_TYPE       float
         // Duration at 90% less than SoC less than 95%. 20 ° C less than temperature less than 27.5 ° C. 1.5xC A less
-        // than current / Dauer bei 90% kleiner als SoC kleiner als 95%. 20Â°C kleiner als Temperatur kleiner als
-        // 27,5Â°C. 1,5xC A kleiner als Strom
+        // than current / Dauer bei 90% kleiner als SoC kleiner als 95%. 20°C kleiner als Temperatur kleiner als 27,5°C.
+        // 1,5xC A kleiner als Strom
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T4_I1_WERT             (RXBUF_UINT32(80)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T4_I1_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T4_I1_WERT_TYPE        float
         // Duration at 95% smaller than SoC. 20 ° C less than temperature less than 27.5 ° C. Current less than -2.5xC A
-        // / Dauer bei 95% kleiner als SoC. 20Â°C kleiner als Temperatur kleiner als 27,5Â°C. Strom kleiner als -2,5xC A
+        // / Dauer bei 95% kleiner als SoC. 20°C kleiner als Temperatur kleiner als 27,5°C. Strom kleiner als -2,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T4_I2_WERT             (RXBUF_UINT32(84)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T4_I2_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T4_I2_WERT_TYPE        float
         // Duration at 95% smaller than SoC. 20 ° C less than temperature less than 27.5 ° C. -2.5xC A less than current
-        // less than -2.0xC A / Dauer bei 95% kleiner als SoC. 20Â°C kleiner als Temperatur kleiner als 27,5Â°C. -2,5xC A
+        // less than -2.0xC A / Dauer bei 95% kleiner als SoC. 20°C kleiner als Temperatur kleiner als 27,5°C. -2,5xC A
         // kleiner als Strom kleiner als -2,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T4_I3_WERT             (RXBUF_UINT32(88)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T4_I3_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T4_I3_WERT_TYPE        float
         // Duration at 95% smaller than SoC. 20 ° C less than temperature less than 27.5 ° C. -2.0xC A less than current
-        // less than -1.5xC A / Dauer bei 95% kleiner als SoC. 20Â°C kleiner als Temperatur kleiner als 27,5Â°C. -2,0xC A
+        // less than -1.5xC A / Dauer bei 95% kleiner als SoC. 20°C kleiner als Temperatur kleiner als 27,5°C. -2,0xC A
         // kleiner als Strom kleiner als -1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T4_I4_WERT             (RXBUF_UINT32(92)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T4_I4_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T4_I4_WERT_TYPE        float
         // Duration at 95% smaller than SoC. 20 ° C less than temperature less than 27.5 ° C. -1.5xC A less than current
-        // less than -1.0xC A / Dauer bei 95% kleiner als SoC. 20Â°C kleiner als Temperatur kleiner als 27,5Â°C. -1,5xC A
+        // less than -1.0xC A / Dauer bei 95% kleiner als SoC. 20°C kleiner als Temperatur kleiner als 27,5°C. -1,5xC A
         // kleiner als Strom kleiner als -1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T4_I5_WERT             (RXBUF_UINT32(96)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T4_I5_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T4_I5_WERT_TYPE        float
         // Duration at 95% smaller than SoC. 20 ° C less than temperature less than 27.5 ° C. -1.0xC A less than current
-        // less than -0.5xC A / Dauer bei 95% kleiner als SoC. 20Â°C kleiner als Temperatur kleiner als 27,5Â°C. -1,0xC A
+        // less than -0.5xC A / Dauer bei 95% kleiner als SoC. 20°C kleiner als Temperatur kleiner als 27,5°C. -1,0xC A
         // kleiner als Strom kleiner als -0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T4_I6_WERT             (RXBUF_UINT32(100)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T4_I6_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T4_I6_WERT_TYPE        float
         // Duration at 95% smaller than SoC. 20 ° C less than temperature less than 27.5 ° C. -0.5xC A less than current
-        // less than 0.0xC A / Dauer bei 95% kleiner als SoC. 20Â°C kleiner als Temperatur kleiner als 27,5Â°C. -0,5xC A
+        // less than 0.0xC A / Dauer bei 95% kleiner als SoC. 20°C kleiner als Temperatur kleiner als 27,5°C. -0,5xC A
         // kleiner als Strom kleiner als 0,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T4_I7_WERT             (RXBUF_UINT32(104)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T4_I7_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T4_I7_WERT_TYPE        float
         // Duration at 95% smaller than SoC. 20 ° C less than temperature less than 27.5 ° C. 0.0xC A less than current
-        // less than 0.5xC A / Dauer bei 95% kleiner als SoC. 20Â°C kleiner als Temperatur kleiner als 27,5Â°C. 0,0xC A
+        // less than 0.5xC A / Dauer bei 95% kleiner als SoC. 20°C kleiner als Temperatur kleiner als 27,5°C. 0,0xC A
         // kleiner als Strom kleiner als 0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T4_I8_WERT             (RXBUF_UINT32(108)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T4_I8_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T4_I8_WERT_TYPE        float
         // Duration at 95% smaller than SoC. 20 ° C less than temperature less than 27.5 ° C. 0.5xC A less than current
-        // less than 1.0xC A / Dauer bei 95% kleiner als SoC. 20Â°C kleiner als Temperatur kleiner als 27,5Â°C. 0,5xC A
+        // less than 1.0xC A / Dauer bei 95% kleiner als SoC. 20°C kleiner als Temperatur kleiner als 27,5°C. 0,5xC A
         // kleiner als Strom kleiner als 1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T4_I9_WERT             (RXBUF_UINT32(112)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T4_I9_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T4_I9_WERT_TYPE        float
         // Duration at 95% smaller than SoC. 20 ° C less than temperature less than 27.5 ° C. 1.0xC A less than current
-        // less than 1.5xC A / Dauer bei 95% kleiner als SoC. 20Â°C kleiner als Temperatur kleiner als 27,5Â°C. 1,0xC A
+        // less than 1.5xC A / Dauer bei 95% kleiner als SoC. 20°C kleiner als Temperatur kleiner als 27,5°C. 1,0xC A
         // kleiner als Strom kleiner als 1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T4_I10_WERT            (RXBUF_UINT32(116)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T4_I10_WERT_UNIT       's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T4_I10_WERT_TYPE       float
         // Duration at 95% smaller than SoC. 20 ° C less than temperature less than 27.5 ° C. 1.5xC A less than current /
-        // Dauer bei 95% kleiner als SoC. 20Â°C kleiner als Temperatur kleiner als 27,5Â°C. 1,5xC A kleiner als Strom
+        // Dauer bei 95% kleiner als SoC. 20°C kleiner als Temperatur kleiner als 27,5°C. 1,5xC A kleiner als Strom
 
 #define I3_PID_SME_HV_BATT_HIST_SOC_T3_2                             0xDF6A
         // Duration at 10 ° C less than temperature less than 20 ° C and with different values of current and SOC - Part
-        // 2 / Dauer bei 10Â°C kleiner als Temperatur kleiner als 20 Â°C und bei unterschiedlichen Werten von Strom und
-        // SOC - Teil 2
+        // 2 / Dauer bei 10°C kleiner als Temperatur kleiner als 20 °C und bei unterschiedlichen Werten von Strom und SOC
+        // - Teil 2
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T3_I1_WERT             (RXBUF_UINT32(0)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T3_I1_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T3_I1_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. 10 ° C less than temperature less than 20 ° C. Current less than
-        // -2.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 10Â°C kleiner als Temperatur kleiner als 20Â°C.
-        // Strom kleiner als -2,5xC A
+        // -2.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 10°C kleiner als Temperatur kleiner als 20°C. Strom
+        // kleiner als -2,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T3_I2_WERT             (RXBUF_UINT32(4)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T3_I2_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T3_I2_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. 10 ° C less than temperature less than 20 ° C. -2.5xC A less than
-        // current less than -2.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 10Â°C kleiner als Temperatur
-        // kleiner als 20Â°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
+        // current less than -2.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 10°C kleiner als Temperatur
+        // kleiner als 20°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T3_I3_WERT             (RXBUF_UINT32(8)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T3_I3_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T3_I3_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. 10 ° C less than temperature less than 20 ° C. -2.0xC A less than
-        // current less than -1.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 10Â°C kleiner als Temperatur
-        // kleiner als 20Â°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
+        // current less than -1.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 10°C kleiner als Temperatur
+        // kleiner als 20°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T3_I4_WERT             (RXBUF_UINT32(12)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T3_I4_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T3_I4_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. 10 ° C less than temperature less than 20 ° C. -1.5xC A less than
-        // current less than -1.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 10Â°C kleiner als Temperatur
-        // kleiner als 20Â°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
+        // current less than -1.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 10°C kleiner als Temperatur
+        // kleiner als 20°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T3_I5_WERT             (RXBUF_UINT32(16)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T3_I5_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T3_I5_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. 10 ° C less than temperature less than 20 ° C. -1.0xC A less than
-        // current less than -0.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 10Â°C kleiner als Temperatur
-        // kleiner als 20Â°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
+        // current less than -0.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 10°C kleiner als Temperatur
+        // kleiner als 20°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T3_I6_WERT             (RXBUF_UINT32(20)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T3_I6_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T3_I6_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. 10 ° C less than temperature less than 20 ° C. -0.5xC A less than
-        // current less than 0.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 10Â°C kleiner als Temperatur
-        // kleiner als 20Â°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
+        // current less than 0.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 10°C kleiner als Temperatur kleiner
+        // als 20°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T3_I7_WERT             (RXBUF_UINT32(24)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T3_I7_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T3_I7_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. 10 ° C less than temperature less than 20 ° C. 0.0xC A less than
-        // current less than 0.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 10Â°C kleiner als Temperatur
-        // kleiner als 20Â°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
+        // current less than 0.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 10°C kleiner als Temperatur kleiner
+        // als 20°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T3_I8_WERT             (RXBUF_UINT32(28)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T3_I8_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T3_I8_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. 10 ° C less than temperature less than 20 ° C. 0.5xC A less than
-        // current less than 1.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 10Â°C kleiner als Temperatur
-        // kleiner als 20Â°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
+        // current less than 1.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 10°C kleiner als Temperatur kleiner
+        // als 20°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T3_I9_WERT             (RXBUF_UINT32(32)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T3_I9_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T3_I9_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. 10 ° C less than temperature less than 20 ° C. 1.0xC A less than
-        // current less than 1.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 10Â°C kleiner als Temperatur
-        // kleiner als 20Â°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
+        // current less than 1.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 10°C kleiner als Temperatur kleiner
+        // als 20°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T3_I10_WERT            (RXBUF_UINT32(36)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T3_I10_WERT_UNIT       's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T3_I10_WERT_TYPE       float
         // Duration at 70% less than SoC less than 90%. 10 ° C less than temperature less than 20 ° C. 1.5xC A less than
-        // current / Dauer bei 70% kleiner als SoC kleiner als 90%. 10Â°C kleiner als Temperatur kleiner als 20Â°C. 1,5xC
-        // A kleiner als Strom
+        // current / Dauer bei 70% kleiner als SoC kleiner als 90%. 10°C kleiner als Temperatur kleiner als 20°C. 1,5xC A
+        // kleiner als Strom
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T3_I1_WERT             (RXBUF_UINT32(40)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T3_I1_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T3_I1_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. 10 ° C less than temperature less than 20 ° C. Current less than
-        // -2.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 10Â°C kleiner als Temperatur kleiner als 20Â°C.
-        // Strom kleiner als -2,5xC A
+        // -2.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 10°C kleiner als Temperatur kleiner als 20°C. Strom
+        // kleiner als -2,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T3_I2_WERT             (RXBUF_UINT32(44)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T3_I2_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T3_I2_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. 10 ° C less than temperature less than 20 ° C. -2.5xC A less than
-        // current less than -2.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 10Â°C kleiner als Temperatur
-        // kleiner als 20Â°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
+        // current less than -2.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 10°C kleiner als Temperatur
+        // kleiner als 20°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T3_I3_WERT             (RXBUF_UINT32(48)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T3_I3_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T3_I3_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. 10 ° C less than temperature less than 20 ° C. -2.0xC A less than
-        // current less than -1.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 10Â°C kleiner als Temperatur
-        // kleiner als 20Â°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
+        // current less than -1.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 10°C kleiner als Temperatur
+        // kleiner als 20°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T3_I4_WERT             (RXBUF_UINT32(52)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T3_I4_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T3_I4_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. 10 ° C less than temperature less than 20 ° C. -1.5xC A less than
-        // current less than -1.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 10Â°C kleiner als Temperatur
-        // kleiner als 20Â°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
+        // current less than -1.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 10°C kleiner als Temperatur
+        // kleiner als 20°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T3_I5_WERT             (RXBUF_UINT32(56)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T3_I5_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T3_I5_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. 10 ° C less than temperature less than 20 ° C. -1.0xC A less than
-        // current less than -0.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 10Â°C kleiner als Temperatur
-        // kleiner als 20Â°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
+        // current less than -0.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 10°C kleiner als Temperatur
+        // kleiner als 20°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T3_I6_WERT             (RXBUF_UINT32(60)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T3_I6_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T3_I6_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. 10 ° C less than temperature less than 20 ° C. -0.5xC A less than
-        // current less than 0.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 10Â°C kleiner als Temperatur
-        // kleiner als 20Â°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
+        // current less than 0.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 10°C kleiner als Temperatur kleiner
+        // als 20°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T3_I7_WERT             (RXBUF_UINT32(64)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T3_I7_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T3_I7_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. 10 ° C less than temperature less than 20 ° C. 0.0xC A less than
-        // current less than 0.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 10Â°C kleiner als Temperatur
-        // kleiner als 20Â°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
+        // current less than 0.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 10°C kleiner als Temperatur kleiner
+        // als 20°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T3_I8_WERT             (RXBUF_UINT32(68)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T3_I8_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T3_I8_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. 10 ° C less than temperature less than 20 ° C. 0.5xC A less than
-        // current less than 1.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 10Â°C kleiner als Temperatur
-        // kleiner als 20Â°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
+        // current less than 1.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 10°C kleiner als Temperatur kleiner
+        // als 20°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T3_I9_WERT             (RXBUF_UINT32(72)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T3_I9_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T3_I9_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. 10 ° C less than temperature less than 20 ° C. 1.0xC A less than
-        // current less than 1.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 10Â°C kleiner als Temperatur
-        // kleiner als 20Â°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
+        // current less than 1.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 10°C kleiner als Temperatur kleiner
+        // als 20°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T3_I10_WERT            (RXBUF_UINT32(76)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T3_I10_WERT_UNIT       's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T3_I10_WERT_TYPE       float
         // Duration at 90% less than SoC less than 95%. 10 ° C less than temperature less than 20 ° C. 1.5xC A less than
-        // current / Dauer bei 90% kleiner als SoC kleiner als 95%. 10Â°C kleiner als Temperatur kleiner als 20Â°C. 1,5xC
-        // A kleiner als Strom
+        // current / Dauer bei 90% kleiner als SoC kleiner als 95%. 10°C kleiner als Temperatur kleiner als 20°C. 1,5xC A
+        // kleiner als Strom
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T3_I1_WERT             (RXBUF_UINT32(80)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T3_I1_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T3_I1_WERT_TYPE        float
         // Duration at 95% smaller than SoC. 10 ° C less than temperature less than 20 ° C. Current less than -2.5xC A /
-        // Dauer bei 95% kleiner als SoC. 10Â°C kleiner als Temperatur kleiner als 20Â°C. Strom kleiner als -2,5xC A
+        // Dauer bei 95% kleiner als SoC. 10°C kleiner als Temperatur kleiner als 20°C. Strom kleiner als -2,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T3_I2_WERT             (RXBUF_UINT32(84)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T3_I2_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T3_I2_WERT_TYPE        float
         // Duration at 95% smaller than SoC. 10 ° C less than temperature less than 20 ° C. -2.5xC A less than current
-        // less than -2.0xC A / Dauer bei 95% kleiner als SoC. 10Â°C kleiner als Temperatur kleiner als 20Â°C. -2,5xC A
+        // less than -2.0xC A / Dauer bei 95% kleiner als SoC. 10°C kleiner als Temperatur kleiner als 20°C. -2,5xC A
         // kleiner als Strom kleiner als -2,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T3_I3_WERT             (RXBUF_UINT32(88)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T3_I3_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T3_I3_WERT_TYPE        float
         // Duration at 95% smaller than SoC. 10 ° C less than temperature less than 20 ° C. -2.0xC A less than current
-        // less than -1.5xC A / Dauer bei 95% kleiner als SoC. 10Â°C kleiner als Temperatur kleiner als 20Â°C. -2,0xC A
+        // less than -1.5xC A / Dauer bei 95% kleiner als SoC. 10°C kleiner als Temperatur kleiner als 20°C. -2,0xC A
         // kleiner als Strom kleiner als -1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T3_I4_WERT             (RXBUF_UINT32(92)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T3_I4_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T3_I4_WERT_TYPE        float
         // Duration at 95% smaller than SoC. 10 ° C less than temperature less than 20 ° C. -1.5xC A less than current
-        // less than -1.0xC A / Dauer bei 95% kleiner als SoC. 10Â°C kleiner als Temperatur kleiner als 20Â°C. -1,5xC A
+        // less than -1.0xC A / Dauer bei 95% kleiner als SoC. 10°C kleiner als Temperatur kleiner als 20°C. -1,5xC A
         // kleiner als Strom kleiner als -1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T3_I5_WERT             (RXBUF_UINT32(96)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T3_I5_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T3_I5_WERT_TYPE        float
         // Duration at 95% smaller than SoC. 10 ° C less than temperature less than 20 ° C. -1.0xC A less than current
-        // less than -0.5xC A / Dauer bei 95% kleiner als SoC. 10Â°C kleiner als Temperatur kleiner als 20Â°C. -1,0xC A
+        // less than -0.5xC A / Dauer bei 95% kleiner als SoC. 10°C kleiner als Temperatur kleiner als 20°C. -1,0xC A
         // kleiner als Strom kleiner als -0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T3_I6_WERT             (RXBUF_UINT32(100)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T3_I6_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T3_I6_WERT_TYPE        float
         // Duration at 95% smaller than SoC. 10 ° C less than temperature less than 20 ° C. -0.5xC A less than current
-        // less than 0.0xC A / Dauer bei 95% kleiner als SoC. 10Â°C kleiner als Temperatur kleiner als 20Â°C. -0,5xC A
+        // less than 0.0xC A / Dauer bei 95% kleiner als SoC. 10°C kleiner als Temperatur kleiner als 20°C. -0,5xC A
         // kleiner als Strom kleiner als 0,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T3_I7_WERT             (RXBUF_UINT32(104)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T3_I7_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T3_I7_WERT_TYPE        float
         // Duration at 95% smaller than SoC. 10 ° C less than temperature less than 20 ° C. 0.0xC A less than current
-        // less than 0.5xC A / Dauer bei 95% kleiner als SoC. 10Â°C kleiner als Temperatur kleiner als 20Â°C. 0,0xC A
+        // less than 0.5xC A / Dauer bei 95% kleiner als SoC. 10°C kleiner als Temperatur kleiner als 20°C. 0,0xC A
         // kleiner als Strom kleiner als 0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T3_I8_WERT             (RXBUF_UINT32(108)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T3_I8_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T3_I8_WERT_TYPE        float
         // Duration at 95% smaller than SoC. 10 ° C less than temperature less than 20 ° C. 0.5xC A less than current
-        // less than 1.0xC A / Dauer bei 95% kleiner als SoC. 10Â°C kleiner als Temperatur kleiner als 20Â°C. 0,5xC A
+        // less than 1.0xC A / Dauer bei 95% kleiner als SoC. 10°C kleiner als Temperatur kleiner als 20°C. 0,5xC A
         // kleiner als Strom kleiner als 1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T3_I9_WERT             (RXBUF_UINT32(112)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T3_I9_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T3_I9_WERT_TYPE        float
         // Duration at 95% smaller than SoC. 10 ° C less than temperature less than 20 ° C. 1.0xC A less than current
-        // less than 1.5xC A / Dauer bei 95% kleiner als SoC. 10Â°C kleiner als Temperatur kleiner als 20Â°C. 1,0xC A
+        // less than 1.5xC A / Dauer bei 95% kleiner als SoC. 10°C kleiner als Temperatur kleiner als 20°C. 1,0xC A
         // kleiner als Strom kleiner als 1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T3_I10_WERT            (RXBUF_UINT32(116)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T3_I10_WERT_UNIT       's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T3_I10_WERT_TYPE       float
         // Duration at 95% smaller than SoC. 10 ° C less than temperature less than 20 ° C. 1.5xC A less than current /
-        // Dauer bei 95% kleiner als SoC. 10Â°C kleiner als Temperatur kleiner als 20Â°C. 1,5xC A kleiner als Strom
+        // Dauer bei 95% kleiner als SoC. 10°C kleiner als Temperatur kleiner als 20°C. 1,5xC A kleiner als Strom
 
 #define I3_PID_SME_HV_BATT_HIST_SOC_T5_2                             0xDF6B
         // Duration at 27.5 ° C less than temperature less than 32.5 ° C and with different values of current and SOC -
-        // part 2 / Dauer bei 27,5Â°C kleiner als Temperatur kleiner als 32,5 Â°C und bei unterschiedlichen Werten von
+        // part 2 / Dauer bei 27,5°C kleiner als Temperatur kleiner als 32,5 °C und bei unterschiedlichen Werten von
         // Strom und SOC - Teil 2
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T5_I1_WERT             (RXBUF_UINT32(0)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T5_I1_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T5_I1_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. 27.5 ° C less than temperature less than 32.5 ° C. Current less
-        // than -2.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 27,5Â°C kleiner als Temperatur kleiner als
-        // 32,5Â°C. Strom kleiner als -2,5xC A
+        // than -2.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 27,5°C kleiner als Temperatur kleiner als
+        // 32,5°C. Strom kleiner als -2,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T5_I2_WERT             (RXBUF_UINT32(4)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T5_I2_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T5_I2_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. 27.5 ° C less than temperature less than 32.5 ° C. -2.5xC A less
-        // than current less than -2.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 27,5Â°C kleiner als
-        // Temperatur kleiner als 32,5Â°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
+        // than current less than -2.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T5_I3_WERT             (RXBUF_UINT32(8)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T5_I3_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T5_I3_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. 27.5 ° C less than temperature less than 32.5 ° C. -2.0xC A less
-        // than current less than -1.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 27,5Â°C kleiner als
-        // Temperatur kleiner als 32,5Â°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
+        // than current less than -1.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T5_I4_WERT             (RXBUF_UINT32(12)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T5_I4_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T5_I4_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. 27.5 ° C less than temperature less than 32.5 ° C. -1.5xC A less
-        // than current less than -1.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 27,5Â°C kleiner als
-        // Temperatur kleiner als 32,5Â°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
+        // than current less than -1.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T5_I5_WERT             (RXBUF_UINT32(16)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T5_I5_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T5_I5_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. 27.5 ° C less than temperature less than 32.5 ° C. -1.0xC A less
-        // than current less than -0.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 27,5Â°C kleiner als
-        // Temperatur kleiner als 32,5Â°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
+        // than current less than -0.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T5_I6_WERT             (RXBUF_UINT32(20)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T5_I6_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T5_I6_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. 27.5 ° C less than temperature less than 32.5 ° C. -0.5xC A less
-        // than current less than 0.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 27,5Â°C kleiner als Temperatur
-        // kleiner als 32,5Â°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
+        // than current less than 0.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T5_I7_WERT             (RXBUF_UINT32(24)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T5_I7_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T5_I7_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. 27.5 ° C less than temperature less than 32.5 ° C. 0.0xC A less
-        // than current less than 0.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 27,5Â°C kleiner als Temperatur
-        // kleiner als 32,5Â°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
+        // than current less than 0.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T5_I8_WERT             (RXBUF_UINT32(28)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T5_I8_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T5_I8_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. 27.5 ° C less than temperature less than 32.5 ° C. 0.5xC A less
-        // than current less than 1.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 27,5Â°C kleiner als Temperatur
-        // kleiner als 32,5Â°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
+        // than current less than 1.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T5_I9_WERT             (RXBUF_UINT32(32)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T5_I9_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T5_I9_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. 27.5 ° C less than temperature less than 32.5 ° C. 1.0xC A less
-        // than current less than 1.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 27,5Â°C kleiner als Temperatur
-        // kleiner als 32,5Â°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
+        // than current less than 1.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T5_I10_WERT            (RXBUF_UINT32(36)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T5_I10_WERT_UNIT       's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T5_I10_WERT_TYPE       float
         // Duration at 70% less than SoC less than 90%. 27.5 ° C less than temperature less than 32.5 ° C. 1.5xC A less
-        // than current / Dauer bei 70% kleiner als SoC kleiner als 90%. 27,5Â°C kleiner als Temperatur kleiner als
-        // 32,5Â°C. 1,5xC A kleiner als Strom
+        // than current / Dauer bei 70% kleiner als SoC kleiner als 90%. 27,5°C kleiner als Temperatur kleiner als
+        // 32,5°C. 1,5xC A kleiner als Strom
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T5_I1_WERT             (RXBUF_UINT32(40)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T5_I1_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T5_I1_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. 27.5 ° C less than temperature less than 32.5 ° C. Current less
-        // than -2.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 27,5Â°C kleiner als Temperatur kleiner als
-        // 32,5Â°C. Strom kleiner als -2,5xC A
+        // than -2.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 27,5°C kleiner als Temperatur kleiner als
+        // 32,5°C. Strom kleiner als -2,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T5_I2_WERT             (RXBUF_UINT32(44)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T5_I2_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T5_I2_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. 27.5 ° C less than temperature less than 32.5 ° C. -2.5xC A less
-        // than current less than -2.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 27,5Â°C kleiner als
-        // Temperatur kleiner als 32,5Â°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
+        // than current less than -2.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T5_I3_WERT             (RXBUF_UINT32(48)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T5_I3_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T5_I3_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. 27.5 ° C less than temperature less than 32.5 ° C. -2.0xC A less
-        // than current less than -1.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 27,5Â°C kleiner als
-        // Temperatur kleiner als 32,5Â°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
+        // than current less than -1.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T5_I4_WERT             (RXBUF_UINT32(52)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T5_I4_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T5_I4_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. 27.5 ° C less than temperature less than 32.5 ° C. -1.5xC A less
-        // than current less than -1.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 27,5Â°C kleiner als
-        // Temperatur kleiner als 32,5Â°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
+        // than current less than -1.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T5_I5_WERT             (RXBUF_UINT32(56)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T5_I5_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T5_I5_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. 27.5 ° C less than temperature less than 32.5 ° C. -1.0xC A less
-        // than current less than -0.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 27,5Â°C kleiner als
-        // Temperatur kleiner als 32,5Â°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
+        // than current less than -0.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T5_I6_WERT             (RXBUF_UINT32(60)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T5_I6_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T5_I6_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. 27.5 ° C less than temperature less than 32.5 ° C. -0.5xC A less
-        // than current less than 0.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 27,5Â°C kleiner als Temperatur
-        // kleiner als 32,5Â°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
+        // than current less than 0.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T5_I7_WERT             (RXBUF_UINT32(64)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T5_I7_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T5_I7_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. 27.5 ° C less than temperature less than 32.5 ° C. 0.0xC A less
-        // than current less than 0.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 27,5Â°C kleiner als Temperatur
-        // kleiner als 32,5Â°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
+        // than current less than 0.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T5_I8_WERT             (RXBUF_UINT32(68)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T5_I8_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T5_I8_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. 27.5 ° C less than temperature less than 32.5 ° C. 0.5xC A less
-        // than current less than 1.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 27,5Â°C kleiner als Temperatur
-        // kleiner als 32,5Â°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
+        // than current less than 1.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T5_I9_WERT             (RXBUF_UINT32(72)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T5_I9_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T5_I9_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. 27.5 ° C less than temperature less than 32.5 ° C. 1.0xC A less
-        // than current less than 1.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 27,5Â°C kleiner als Temperatur
-        // kleiner als 32,5Â°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
+        // than current less than 1.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 27,5°C kleiner als Temperatur
+        // kleiner als 32,5°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T5_I10_WERT            (RXBUF_UINT32(76)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T5_I10_WERT_UNIT       's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T5_I10_WERT_TYPE       float
         // Duration at 90% less than SoC less than 95%. 27.5 ° C less than temperature less than 32.5 ° C. 1.5xC A less
-        // than current / Dauer bei 90% kleiner als SoC kleiner als 95%. 27,5Â°C kleiner als Temperatur kleiner als
-        // 32,5Â°C. 1,5xC A kleiner als Strom
+        // than current / Dauer bei 90% kleiner als SoC kleiner als 95%. 27,5°C kleiner als Temperatur kleiner als
+        // 32,5°C. 1,5xC A kleiner als Strom
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T5_I1_WERT             (RXBUF_UINT32(80)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T5_I1_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T5_I1_WERT_TYPE        float
         // Duration at 95% smaller than SoC. 27.5 ° C less than temperature less than 32.5 ° C. Current less than -2.5xC
-        // A / Dauer bei 95% kleiner als SoC. 27,5Â°C kleiner als Temperatur kleiner als 32,5Â°C. Strom kleiner als
-        // -2,5xC A
+        // A / Dauer bei 95% kleiner als SoC. 27,5°C kleiner als Temperatur kleiner als 32,5°C. Strom kleiner als -2,5xC
+        // A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T5_I2_WERT             (RXBUF_UINT32(84)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T5_I2_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T5_I2_WERT_TYPE        float
         // Duration at 95% smaller than SoC. 27.5 ° C less than temperature less than 32.5 ° C. -2.5xC A less than
-        // current less than -2.0xC A / Dauer bei 95% kleiner als SoC. 27,5Â°C kleiner als Temperatur kleiner als
-        // 32,5Â°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
+        // current less than -2.0xC A / Dauer bei 95% kleiner als SoC. 27,5°C kleiner als Temperatur kleiner als 32,5°C.
+        // -2,5xC A kleiner als Strom kleiner als -2,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T5_I3_WERT             (RXBUF_UINT32(88)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T5_I3_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T5_I3_WERT_TYPE        float
         // Duration at 95% smaller than SoC. 27.5 ° C less than temperature less than 32.5 ° C. -2.0xC A less than
-        // current less than -1.5xC A / Dauer bei 95% kleiner als SoC. 27,5Â°C kleiner als Temperatur kleiner als
-        // 32,5Â°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
+        // current less than -1.5xC A / Dauer bei 95% kleiner als SoC. 27,5°C kleiner als Temperatur kleiner als 32,5°C.
+        // -2,0xC A kleiner als Strom kleiner als -1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T5_I4_WERT             (RXBUF_UINT32(92)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T5_I4_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T5_I4_WERT_TYPE        float
         // Duration at 95% smaller than SoC. 27.5 ° C less than temperature less than 32.5 ° C. -1.5xC A less than
-        // current less than -1.0xC A / Dauer bei 95% kleiner als SoC. 27,5Â°C kleiner als Temperatur kleiner als
-        // 32,5Â°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
+        // current less than -1.0xC A / Dauer bei 95% kleiner als SoC. 27,5°C kleiner als Temperatur kleiner als 32,5°C.
+        // -1,5xC A kleiner als Strom kleiner als -1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T5_I5_WERT             (RXBUF_UINT32(96)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T5_I5_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T5_I5_WERT_TYPE        float
         // Duration at 95% smaller than SoC. 27.5 ° C less than temperature less than 32.5 ° C. -1.0xC A less than
-        // current less than -0.5xC A / Dauer bei 95% kleiner als SoC. 27,5Â°C kleiner als Temperatur kleiner als
-        // 32,5Â°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
+        // current less than -0.5xC A / Dauer bei 95% kleiner als SoC. 27,5°C kleiner als Temperatur kleiner als 32,5°C.
+        // -1,0xC A kleiner als Strom kleiner als -0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T5_I6_WERT             (RXBUF_UINT32(100)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T5_I6_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T5_I6_WERT_TYPE        float
         // Duration at 95% smaller than SoC. 27.5 ° C less than temperature less than 32.5 ° C. -0.5xC A less than
-        // current less than 0.0xC A / Dauer bei 95% kleiner als SoC. 27,5Â°C kleiner als Temperatur kleiner als 32,5Â°C.
+        // current less than 0.0xC A / Dauer bei 95% kleiner als SoC. 27,5°C kleiner als Temperatur kleiner als 32,5°C.
         // -0,5xC A kleiner als Strom kleiner als 0,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T5_I7_WERT             (RXBUF_UINT32(104)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T5_I7_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T5_I7_WERT_TYPE        float
         // Duration at 95% smaller than SoC. 27.5 ° C less than temperature less than 32.5 ° C. 0.0xC A less than current
-        // less than 0.5xC A / Dauer bei 95% kleiner als SoC. 27,5Â°C kleiner als Temperatur kleiner als 32,5Â°C. 0,0xC A
+        // less than 0.5xC A / Dauer bei 95% kleiner als SoC. 27,5°C kleiner als Temperatur kleiner als 32,5°C. 0,0xC A
         // kleiner als Strom kleiner als 0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T5_I8_WERT             (RXBUF_UINT32(108)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T5_I8_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T5_I8_WERT_TYPE        float
         // Duration at 95% smaller than SoC. 27.5 ° C less than temperature less than 32.5 ° C. 0.5xC A less than current
-        // less than 1.0xC A / Dauer bei 95% kleiner als SoC. 27,5Â°C kleiner als Temperatur kleiner als 32,5Â°C. 0,5xC A
+        // less than 1.0xC A / Dauer bei 95% kleiner als SoC. 27,5°C kleiner als Temperatur kleiner als 32,5°C. 0,5xC A
         // kleiner als Strom kleiner als 1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T5_I9_WERT             (RXBUF_UINT32(112)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T5_I9_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T5_I9_WERT_TYPE        float
         // Duration at 95% smaller than SoC. 27.5 ° C less than temperature less than 32.5 ° C. 1.0xC A less than current
-        // less than 1.5xC A / Dauer bei 95% kleiner als SoC. 27,5Â°C kleiner als Temperatur kleiner als 32,5Â°C. 1,0xC A
+        // less than 1.5xC A / Dauer bei 95% kleiner als SoC. 27,5°C kleiner als Temperatur kleiner als 32,5°C. 1,0xC A
         // kleiner als Strom kleiner als 1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T5_I10_WERT            (RXBUF_UINT32(116)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T5_I10_WERT_UNIT       's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T5_I10_WERT_TYPE       float
         // Duration at 95% smaller than SoC. 27.5 ° C less than temperature less than 32.5 ° C. 1.5xC A less than current
-        // / Dauer bei 95% kleiner als SoC. 27,5Â°C kleiner als Temperatur kleiner als 32,5Â°C. 1,5xC A kleiner als Strom
+        // / Dauer bei 95% kleiner als SoC. 27,5°C kleiner als Temperatur kleiner als 32,5°C. 1,5xC A kleiner als Strom
 
 #define I3_PID_SME_HV_BATT_HIST_SOC_T2_2                             0xDF6C
         // Duration at 0 ° C less than temperature less than 10 ° C and with different values of current and SOC - part 2
-        // / Dauer bei 0Â°C kleiner als Temperatur kleiner als 10 Â°C und bei unterschiedlichen Werten von Strom und SOC
-        // - Teil 2
+        // / Dauer bei 0°C kleiner als Temperatur kleiner als 10 °C und bei unterschiedlichen Werten von Strom und SOC -
+        // Teil 2
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T2_I1_WERT             (RXBUF_UINT32(0)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T2_I1_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T2_I1_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. 0 ° C less than temperature less than 10 ° C. Current less than
-        // -2.5xC A / Dauer bei 70 % kleiner als SoC kleiner als 90 %. 0Â°C kleiner als Temperatur kleiner als 10 Â°C.
+        // -2.5xC A / Dauer bei 70 % kleiner als SoC kleiner als 90 %. 0°C kleiner als Temperatur kleiner als 10 °C.
         // Strom kleiner als -2,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T2_I2_WERT             (RXBUF_UINT32(4)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T2_I2_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T2_I2_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. 0 ° C less than temperature less than 10 ° C. -2.5xC A less than
-        // current less than -2.0xC A / Dauer bei 70 % kleiner als SoC kleiner als 90 %. 0Â°C kleiner als Temperatur
-        // kleiner als 10 Â°C.  -2,5xC A kleiner als Strom kleiner als -2,0xC A
+        // current less than -2.0xC A / Dauer bei 70 % kleiner als SoC kleiner als 90 %. 0°C kleiner als Temperatur
+        // kleiner als 10 °C.  -2,5xC A kleiner als Strom kleiner als -2,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T2_I3_WERT             (RXBUF_UINT32(8)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T2_I3_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T2_I3_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. 0 ° C less than temperature less than 10 ° C. -2.0xC A less than
-        // current less than -1.5xC A / Dauer bei 70 % kleiner als SoC kleiner als 90 %. 0Â°C kleiner als Temperatur
-        // kleiner als 10 Â°C.  -2,0xC A kleiner als Strom kleiner als -1,5xC A
+        // current less than -1.5xC A / Dauer bei 70 % kleiner als SoC kleiner als 90 %. 0°C kleiner als Temperatur
+        // kleiner als 10 °C.  -2,0xC A kleiner als Strom kleiner als -1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T2_I4_WERT             (RXBUF_UINT32(12)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T2_I4_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T2_I4_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. 0 ° C less than temperature less than 10 ° C. -1.5xC A less than
-        // current less than -1.0xC A / Dauer bei 70 % kleiner als SoC kleiner als 90 %. 0Â°C kleiner als Temperatur
-        // kleiner als 10 Â°C.  -1,5xC A kleiner als Strom kleiner als -1,0xC A
+        // current less than -1.0xC A / Dauer bei 70 % kleiner als SoC kleiner als 90 %. 0°C kleiner als Temperatur
+        // kleiner als 10 °C.  -1,5xC A kleiner als Strom kleiner als -1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T2_I5_WERT             (RXBUF_UINT32(16)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T2_I5_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T2_I5_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. 0 ° C less than temperature less than 10 ° C. -1.0xC A less than
-        // current less than -0.5xC A / Dauer bei 70 % kleiner als SoC kleiner als 90 %. 0Â°C kleiner als Temperatur
-        // kleiner als 10 Â°C.  -1,0xC A kleiner als Strom kleiner als -0,5xC A
+        // current less than -0.5xC A / Dauer bei 70 % kleiner als SoC kleiner als 90 %. 0°C kleiner als Temperatur
+        // kleiner als 10 °C.  -1,0xC A kleiner als Strom kleiner als -0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T2_I6_WERT             (RXBUF_UINT32(20)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T2_I6_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T2_I6_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. 0 ° C less than temperature less than 10 ° C. -0.5xC A less than
-        // current less than 0.0xC A / Dauer bei 70 % kleiner als SoC kleiner als 90 %. 0Â°C kleiner als Temperatur
-        // kleiner als 10 Â°C.  -0,5xC A kleiner als Strom kleiner als 0,0xC A
+        // current less than 0.0xC A / Dauer bei 70 % kleiner als SoC kleiner als 90 %. 0°C kleiner als Temperatur
+        // kleiner als 10 °C.  -0,5xC A kleiner als Strom kleiner als 0,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T2_I7_WERT             (RXBUF_UINT32(24)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T2_I7_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T2_I7_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. 0 ° C less than temperature less than 10 ° C. 0.0xC A less than
-        // current less than 0.5xC A / Dauer bei 70 % kleiner als SoC kleiner als 90 %. 0Â°C kleiner als Temperatur
-        // kleiner als 10 Â°C.  0,0xC A kleiner als Strom kleiner als 0,5xC A
+        // current less than 0.5xC A / Dauer bei 70 % kleiner als SoC kleiner als 90 %. 0°C kleiner als Temperatur
+        // kleiner als 10 °C.  0,0xC A kleiner als Strom kleiner als 0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T2_I8_WERT             (RXBUF_UINT32(28)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T2_I8_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T2_I8_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. 0 ° C less than temperature less than 10 ° C. 0.5xC A less than
-        // current less than 1.0xC A / Dauer bei 70 % kleiner als SoC kleiner als 90 %. 0Â°C kleiner als Temperatur
-        // kleiner als 10 Â°C.  0,5xC A kleiner als Strom kleiner als 1,0xC A
+        // current less than 1.0xC A / Dauer bei 70 % kleiner als SoC kleiner als 90 %. 0°C kleiner als Temperatur
+        // kleiner als 10 °C.  0,5xC A kleiner als Strom kleiner als 1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T2_I9_WERT             (RXBUF_UINT32(32)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T2_I9_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T2_I9_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. 0 ° C less than temperature less than 10 ° C. 1.0xC A less than
-        // current less than 1.5xC A / Dauer bei 70 % kleiner als SoC kleiner als 90 %. 0Â°C kleiner als Temperatur
-        // kleiner als 10 Â°C.  1,0xC A kleiner als Strom kleiner als 1,5xC A
+        // current less than 1.5xC A / Dauer bei 70 % kleiner als SoC kleiner als 90 %. 0°C kleiner als Temperatur
+        // kleiner als 10 °C.  1,0xC A kleiner als Strom kleiner als 1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T2_I10_WERT            (RXBUF_UINT32(36)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T2_I10_WERT_UNIT       's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T2_I10_WERT_TYPE       float
         // Duration at 70% less than SoC less than 90%. 0 ° C less than temperature less than 10 ° C. 1.5xC A less than
-        // current / Dauer bei 70 % kleiner als SoC kleiner als 90 %. 0Â°C kleiner als Temperatur kleiner als 10 Â°C. 
+        // current / Dauer bei 70 % kleiner als SoC kleiner als 90 %. 0°C kleiner als Temperatur kleiner als 10 °C. 
         // 1,5xC A kleiner als Strom
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T2_I1_WERT             (RXBUF_UINT32(40)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T2_I1_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T2_I1_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. 0 ° C less than temperature less than 10 ° C. Current less than
-        // -2.5xC A / Dauer bei 90 % kleiner als SoC kleiner als 95 %. 0Â°C kleiner als Temperatur kleiner als 10 Â°C.
+        // -2.5xC A / Dauer bei 90 % kleiner als SoC kleiner als 95 %. 0°C kleiner als Temperatur kleiner als 10 °C.
         // Strom kleiner als -2,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T2_I2_WERT             (RXBUF_UINT32(44)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T2_I2_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T2_I2_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. 0 ° C less than temperature less than 10 ° C. -2.5xC A less than
-        // current less than -2.0xC A / Dauer bei 90 % kleiner als SoC kleiner als 95 %. 0Â°C kleiner als Temperatur
-        // kleiner als 10 Â°C.  -2,5xC A kleiner als Strom kleiner als -2,0xC A
+        // current less than -2.0xC A / Dauer bei 90 % kleiner als SoC kleiner als 95 %. 0°C kleiner als Temperatur
+        // kleiner als 10 °C.  -2,5xC A kleiner als Strom kleiner als -2,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T2_I3_WERT             (RXBUF_UINT32(48)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T2_I3_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T2_I3_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. 0 ° C less than temperature less than 10 ° C. -2.0xC A less than
-        // current less than -1.5xC A / Dauer bei 90 % kleiner als SoC kleiner als 95 %. 0Â°C kleiner als Temperatur
-        // kleiner als 10 Â°C.  -2,0xC A kleiner als Strom kleiner als -1,5xC A
+        // current less than -1.5xC A / Dauer bei 90 % kleiner als SoC kleiner als 95 %. 0°C kleiner als Temperatur
+        // kleiner als 10 °C.  -2,0xC A kleiner als Strom kleiner als -1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T2_I4_WERT             (RXBUF_UINT32(52)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T2_I4_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T2_I4_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. 0 ° C less than temperature less than 10 ° C. -1.5xC A less than
-        // current less than -1.0xC A / Dauer bei 90 % kleiner als SoC kleiner als 95 %. 0Â°C kleiner als Temperatur
-        // kleiner als 10 Â°C.  -1,5xC A kleiner als Strom kleiner als -1,0xC A
+        // current less than -1.0xC A / Dauer bei 90 % kleiner als SoC kleiner als 95 %. 0°C kleiner als Temperatur
+        // kleiner als 10 °C.  -1,5xC A kleiner als Strom kleiner als -1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T2_I5_WERT             (RXBUF_UINT32(56)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T2_I5_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T2_I5_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. 0 ° C less than temperature less than 10 ° C. -1.0xC A less than
-        // current less than -0.5xC A / Dauer bei 90 % kleiner als SoC kleiner als 95 %. 0Â°C kleiner als Temperatur
-        // kleiner als 10 Â°C.  -1,0xC A kleiner als Strom kleiner als -0,5xC A
+        // current less than -0.5xC A / Dauer bei 90 % kleiner als SoC kleiner als 95 %. 0°C kleiner als Temperatur
+        // kleiner als 10 °C.  -1,0xC A kleiner als Strom kleiner als -0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T2_I6_WERT             (RXBUF_UINT32(60)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T2_I6_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T2_I6_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. 0 ° C less than temperature less than 10 ° C. -0.5xC A less than
-        // current less than 0.0xC A / Dauer bei 90 % kleiner als SoC kleiner als 95 %. 0Â°C kleiner als Temperatur
-        // kleiner als 10 Â°C.  -0,5xC A kleiner als Strom kleiner als 0,0xC A
+        // current less than 0.0xC A / Dauer bei 90 % kleiner als SoC kleiner als 95 %. 0°C kleiner als Temperatur
+        // kleiner als 10 °C.  -0,5xC A kleiner als Strom kleiner als 0,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T2_I7_WERT             (RXBUF_UINT32(64)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T2_I7_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T2_I7_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. 0 ° C less than temperature less than 10 ° C. 0.0xC A less than
-        // current less than 0.5xC A / Dauer bei 90 % kleiner als SoC kleiner als 95 %. 0Â°C kleiner als Temperatur
-        // kleiner als 10 Â°C.  0,0xC A kleiner als Strom kleiner als 0,5xC A
+        // current less than 0.5xC A / Dauer bei 90 % kleiner als SoC kleiner als 95 %. 0°C kleiner als Temperatur
+        // kleiner als 10 °C.  0,0xC A kleiner als Strom kleiner als 0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T2_I8_WERT             (RXBUF_UINT32(68)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T2_I8_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T2_I8_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. 0 ° C less than temperature less than 10 ° C. 0.5xC A less than
-        // current less than 1.0xC A / Dauer bei 90 % kleiner als SoC kleiner als 95 %. 0Â°C kleiner als Temperatur
-        // kleiner als 10 Â°C.  0,5xC A kleiner als Strom kleiner als 1,0xC A
+        // current less than 1.0xC A / Dauer bei 90 % kleiner als SoC kleiner als 95 %. 0°C kleiner als Temperatur
+        // kleiner als 10 °C.  0,5xC A kleiner als Strom kleiner als 1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T2_I9_WERT             (RXBUF_UINT32(72)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T2_I9_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T2_I9_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. 0 ° C less than temperature less than 10 ° C. 1.0xC A less than
-        // current less than 1.5xC A / Dauer bei 90 % kleiner als SoC kleiner als 95 %. 0Â°C kleiner als Temperatur
-        // kleiner als 10 Â°C.  1,0xC A kleiner als Strom kleiner als 1,5xC A
+        // current less than 1.5xC A / Dauer bei 90 % kleiner als SoC kleiner als 95 %. 0°C kleiner als Temperatur
+        // kleiner als 10 °C.  1,0xC A kleiner als Strom kleiner als 1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T2_I10_WERT            (RXBUF_UINT32(76)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T2_I10_WERT_UNIT       's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T2_I10_WERT_TYPE       float
         // Duration at 90% less than SoC less than 95%. 0 ° C less than temperature less than 10 ° C. 1.5xC A less than
-        // current / Dauer bei 90 % kleiner als SoC kleiner als 95 %. 0Â°C kleiner als Temperatur kleiner als 10 Â°C. 
+        // current / Dauer bei 90 % kleiner als SoC kleiner als 95 %. 0°C kleiner als Temperatur kleiner als 10 °C. 
         // 1,5xC A kleiner als Strom
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T2_I1_WERT             (RXBUF_UINT32(80)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T2_I1_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T2_I1_WERT_TYPE        float
         // Duration at 95% smaller than SoC. 0 ° C less than temperature less than 10 ° C. Current less than -2.5xC A /
-        // Dauer bei 95 % kleiner als SoC. 0Â°C kleiner als Temperatur kleiner als 10 Â°C. Strom kleiner als -2,5xC A
+        // Dauer bei 95 % kleiner als SoC. 0°C kleiner als Temperatur kleiner als 10 °C. Strom kleiner als -2,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T2_I2_WERT             (RXBUF_UINT32(84)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T2_I2_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T2_I2_WERT_TYPE        float
         // Duration at 95% smaller than SoC. 0 ° C less than temperature less than 10 ° C. -2.5xC A less than current
-        // less than -2.0xC A / Dauer bei 95 % kleiner als SoC. 0Â°C kleiner als Temperatur kleiner als 10 Â°C.  -2,5xC A
+        // less than -2.0xC A / Dauer bei 95 % kleiner als SoC. 0°C kleiner als Temperatur kleiner als 10 °C.  -2,5xC A
         // kleiner als Strom kleiner als -2,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T2_I3_WERT             (RXBUF_UINT32(88)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T2_I3_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T2_I3_WERT_TYPE        float
         // Duration at 95% smaller than SoC. 0 ° C less than temperature less than 10 ° C. -2.0xC A less than current
-        // less than -1.5xC A / Dauer bei 95 % kleiner als SoC. 0Â°C kleiner als Temperatur kleiner als 10 Â°C.  -2,0xC A
+        // less than -1.5xC A / Dauer bei 95 % kleiner als SoC. 0°C kleiner als Temperatur kleiner als 10 °C.  -2,0xC A
         // kleiner als Strom kleiner als -1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T2_I4_WERT             (RXBUF_UINT32(92)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T2_I4_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T2_I4_WERT_TYPE        float
         // Duration at 95% smaller than SoC. 0 ° C less than temperature less than 10 ° C. -1.5xC A less than current
-        // less than -1.0xC A / Dauer bei 95 % kleiner als SoC. 0Â°C kleiner als Temperatur kleiner als 10 Â°C.  -1,5xC A
+        // less than -1.0xC A / Dauer bei 95 % kleiner als SoC. 0°C kleiner als Temperatur kleiner als 10 °C.  -1,5xC A
         // kleiner als Strom kleiner als -1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T2_I5_WERT             (RXBUF_UINT32(96)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T2_I5_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T2_I5_WERT_TYPE        float
         // Duration at 95% smaller than SoC. 0 ° C less than temperature less than 10 ° C. -1.0xC A less than current
-        // less than -0.5xC A / Dauer bei 95 % kleiner als SoC. 0Â°C kleiner als Temperatur kleiner als 10 Â°C.  -1,0xC A
+        // less than -0.5xC A / Dauer bei 95 % kleiner als SoC. 0°C kleiner als Temperatur kleiner als 10 °C.  -1,0xC A
         // kleiner als Strom kleiner als -0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T2_I6_WERT             (RXBUF_UINT32(100)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T2_I6_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T2_I6_WERT_TYPE        float
         // Duration at 95% smaller than SoC. 0 ° C less than temperature less than 10 ° C. -0.5xC A less than current
-        // less than 0.0xC A / Dauer bei 95 % kleiner als SoC. 0Â°C kleiner als Temperatur kleiner als 10 Â°C.  -0,5xC A
+        // less than 0.0xC A / Dauer bei 95 % kleiner als SoC. 0°C kleiner als Temperatur kleiner als 10 °C.  -0,5xC A
         // kleiner als Strom kleiner als 0,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T2_I7_WERT             (RXBUF_UINT32(104)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T2_I7_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T2_I7_WERT_TYPE        float
         // Duration at 95% smaller than SoC. 0 ° C less than temperature less than 10 ° C. 0.0xC A less than current less
-        // than 0.5xC A / Dauer bei 95 % kleiner als SoC. 0Â°C kleiner als Temperatur kleiner als 10 Â°C.  0,0xC A
-        // kleiner als Strom kleiner als 0,5xC A
+        // than 0.5xC A / Dauer bei 95 % kleiner als SoC. 0°C kleiner als Temperatur kleiner als 10 °C.  0,0xC A kleiner
+        // als Strom kleiner als 0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T2_I8_WERT             (RXBUF_UINT32(108)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T2_I8_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T2_I8_WERT_TYPE        float
         // Duration at 95% smaller than SoC. 0 ° C less than temperature less than 10 ° C. 0.5xC A less than current less
-        // than 1.0xC A / Dauer bei 95 % kleiner als SoC. 0Â°C kleiner als Temperatur kleiner als 10 Â°C.  0,5xC A
-        // kleiner als Strom kleiner als 1,0xC A
+        // than 1.0xC A / Dauer bei 95 % kleiner als SoC. 0°C kleiner als Temperatur kleiner als 10 °C.  0,5xC A kleiner
+        // als Strom kleiner als 1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T2_I9_WERT             (RXBUF_UINT32(112)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T2_I9_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T2_I9_WERT_TYPE        float
         // Duration at 95% smaller than SoC. 0 ° C less than temperature less than 10 ° C. 1.0xC A less than current less
-        // than 1.5xC A / Dauer bei 95 % kleiner als SoC. 0Â°C kleiner als Temperatur kleiner als 10 Â°C.  1,0xC A
-        // kleiner als Strom kleiner als 1,5xC A
+        // than 1.5xC A / Dauer bei 95 % kleiner als SoC. 0°C kleiner als Temperatur kleiner als 10 °C.  1,0xC A kleiner
+        // als Strom kleiner als 1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T2_I10_WERT            (RXBUF_UINT32(116)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T2_I10_WERT_UNIT       's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T2_I10_WERT_TYPE       float
         // Duration at 95% smaller than SoC. 0 ° C less than temperature less than 10 ° C. 1.5xC A less than current /
-        // Dauer bei 95 % kleiner als SoC. 0Â°C kleiner als Temperatur kleiner als 10 Â°C.  1,5xC A kleiner als Strom
+        // Dauer bei 95 % kleiner als SoC. 0°C kleiner als Temperatur kleiner als 10 °C.  1,5xC A kleiner als Strom
 
 #define I3_PID_SME_HV_BATT_HIST_SOC_T7_2                             0xDF6D
         // Duration at 40 ° C less than temperature and with different values of current and SOC - part 2 / Dauer bei 40
-        // Â°C kleiner als Temperatur und bei unterschiedlichen Werten von Strom und SOC - Teil 2
+        // °C kleiner als Temperatur und bei unterschiedlichen Werten von Strom und SOC - Teil 2
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T7_I1_WERT             (RXBUF_UINT32(0)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T7_I1_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T7_I1_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. 40 ° C less than temperature. Current less than -2.5xC A / Dauer
-        // bei 70% kleiner als SoC kleiner als 90%. 40Â°C kleiner als Temperatur. Strom kleiner als -2,5xC A
+        // bei 70% kleiner als SoC kleiner als 90%. 40°C kleiner als Temperatur. Strom kleiner als -2,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T7_I2_WERT             (RXBUF_UINT32(4)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T7_I2_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T7_I2_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. 40 ° C less than temperature. -2.5xC A less than current less
-        // than -2.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 40Â°C kleiner als Temperatur. -2,5xC A kleiner
+        // than -2.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 40°C kleiner als Temperatur. -2,5xC A kleiner
         // als Strom kleiner als -2,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T7_I3_WERT             (RXBUF_UINT32(8)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T7_I3_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T7_I3_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. 40 ° C less than temperature. -2.0xC A less than current less
-        // than -1.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 40Â°C kleiner als Temperatur. -2,0xC A kleiner
+        // than -1.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 40°C kleiner als Temperatur. -2,0xC A kleiner
         // als Strom kleiner als -1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T7_I4_WERT             (RXBUF_UINT32(12)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T7_I4_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T7_I4_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. 40 ° C less than temperature. -1.5xC A less than current less
-        // than -1.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 40Â°C kleiner als Temperatur. -1,5xC A kleiner
+        // than -1.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 40°C kleiner als Temperatur. -1,5xC A kleiner
         // als Strom kleiner als -1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T7_I5_WERT             (RXBUF_UINT32(16)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T7_I5_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T7_I5_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. 40 ° C less than temperature. -1.0xC A less than current less
-        // than -0.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 40Â°C kleiner als Temperatur. -1,0xC A kleiner
+        // than -0.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 40°C kleiner als Temperatur. -1,0xC A kleiner
         // als Strom kleiner als -0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T7_I6_WERT             (RXBUF_UINT32(20)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T7_I6_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T7_I6_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. 40 ° C less than temperature. -0.5xC A less than current less
-        // than 0.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 40Â°C kleiner als Temperatur. -0,5xC A kleiner
+        // than 0.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 40°C kleiner als Temperatur. -0,5xC A kleiner
         // als Strom kleiner als 0,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T7_I7_WERT             (RXBUF_UINT32(24)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T7_I7_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T7_I7_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. 40 ° C less than temperature. 0.0xC A less than current less than
-        // 0.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 40Â°C kleiner als Temperatur. 0,0xC A kleiner als
+        // 0.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 40°C kleiner als Temperatur. 0,0xC A kleiner als
         // Strom kleiner als 0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T7_I8_WERT             (RXBUF_UINT32(28)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T7_I8_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T7_I8_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. 40 ° C less than temperature. 0.5xC A less than current less than
-        // 1.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 40Â°C kleiner als Temperatur. 0,5xC A kleiner als
+        // 1.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 40°C kleiner als Temperatur. 0,5xC A kleiner als
         // Strom kleiner als 1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T7_I9_WERT             (RXBUF_UINT32(32)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T7_I9_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T7_I9_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. 40 ° C less than temperature. 1.0xC A less than current less than
-        // 1.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 40Â°C kleiner als Temperatur. 1,0xC A kleiner als
+        // 1.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 40°C kleiner als Temperatur. 1,0xC A kleiner als
         // Strom kleiner als 1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T7_I10_WERT            (RXBUF_UINT32(36)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T7_I10_WERT_UNIT       's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T7_I10_WERT_TYPE       float
         // Duration at 70% less than SoC less than 90%. 40 ° C less than temperature. 1.5xC A less than current / Dauer
-        // bei 70% kleiner als SoC kleiner als 90%. 40Â°C kleiner als Temperatur. 1,5xC A kleiner als Strom
+        // bei 70% kleiner als SoC kleiner als 90%. 40°C kleiner als Temperatur. 1,5xC A kleiner als Strom
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T7_I1_WERT             (RXBUF_UINT32(40)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T7_I1_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T7_I1_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. 40 ° C less than temperature. Current less than -2.5xC A / Dauer
-        // bei 90% kleiner als SoC kleiner als 95%. 40Â°C kleiner als Temperatur. Strom kleiner als -2,5xC A
+        // bei 90% kleiner als SoC kleiner als 95%. 40°C kleiner als Temperatur. Strom kleiner als -2,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T7_I2_WERT             (RXBUF_UINT32(44)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T7_I2_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T7_I2_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. 40 ° C less than temperature. -2.5xC A less than current less
-        // than -2.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 40Â°C kleiner als Temperatur. -2,5xC A kleiner
+        // than -2.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 40°C kleiner als Temperatur. -2,5xC A kleiner
         // als Strom kleiner als -2,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T7_I3_WERT             (RXBUF_UINT32(48)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T7_I3_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T7_I3_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. 40 ° C less than temperature. -2.0xC A less than current less
-        // than -1.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 40Â°C kleiner als Temperatur. -2,0xC A kleiner
+        // than -1.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 40°C kleiner als Temperatur. -2,0xC A kleiner
         // als Strom kleiner als -1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T7_I4_WERT             (RXBUF_UINT32(52)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T7_I4_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T7_I4_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. 40 ° C less than temperature. -1.5xC A less than current less
-        // than -1.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 40Â°C kleiner als Temperatur. -1,5xC A kleiner
+        // than -1.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 40°C kleiner als Temperatur. -1,5xC A kleiner
         // als Strom kleiner als -1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T7_I5_WERT             (RXBUF_UINT32(56)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T7_I5_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T7_I5_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. 40 ° C less than temperature. -1.0xC A less than current less
-        // than -0.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 40Â°C kleiner als Temperatur. -1,0xC A kleiner
+        // than -0.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 40°C kleiner als Temperatur. -1,0xC A kleiner
         // als Strom kleiner als -0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T7_I6_WERT             (RXBUF_UINT32(60)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T7_I6_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T7_I6_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. 40 ° C less than temperature. -0.5xC A less than current less
-        // than 0.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 40Â°C kleiner als Temperatur. -0,5xC A kleiner
+        // than 0.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 40°C kleiner als Temperatur. -0,5xC A kleiner
         // als Strom kleiner als 0,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T7_I7_WERT             (RXBUF_UINT32(64)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T7_I7_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T7_I7_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. 40 ° C less than temperature. 0.0xC A less than current less than
-        // 0.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 40Â°C kleiner als Temperatur. 0,0xC A kleiner als
+        // 0.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 40°C kleiner als Temperatur. 0,0xC A kleiner als
         // Strom kleiner als 0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T7_I8_WERT             (RXBUF_UINT32(68)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T7_I8_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T7_I8_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. 40 ° C less than temperature. 0.5xC A less than current less than
-        // 1.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 40Â°C kleiner als Temperatur. 0,5xC A kleiner als
+        // 1.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 40°C kleiner als Temperatur. 0,5xC A kleiner als
         // Strom kleiner als 1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T7_I9_WERT             (RXBUF_UINT32(72)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T7_I9_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T7_I9_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. 40 ° C less than temperature. 1.0xC A less than current less than
-        // 1.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 40Â°C kleiner als Temperatur. 1,0xC A kleiner als
+        // 1.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 40°C kleiner als Temperatur. 1,0xC A kleiner als
         // Strom kleiner als 1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T7_I10_WERT            (RXBUF_UINT32(76)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T7_I10_WERT_UNIT       's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T7_I10_WERT_TYPE       float
         // Duration at 90% less than SoC less than 95%. 40 ° C less than temperature. 1.5xC A less than current / Dauer
-        // bei 90% kleiner als SoC kleiner als 95%. 40Â°C kleiner als Temperatur. 1,5xC A kleiner als Strom
+        // bei 90% kleiner als SoC kleiner als 95%. 40°C kleiner als Temperatur. 1,5xC A kleiner als Strom
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T7_I1_WERT             (RXBUF_UINT32(80)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T7_I1_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T7_I1_WERT_TYPE        float
         // Duration at 95% smaller than SoC. 40 ° C less than temperature. Current less than -2.5xC A / Dauer bei 95%
-        // kleiner als SoC. 40Â°C kleiner als Temperatur. Strom kleiner als -2,5xC A
+        // kleiner als SoC. 40°C kleiner als Temperatur. Strom kleiner als -2,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T7_I2_WERT             (RXBUF_UINT32(84)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T7_I2_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T7_I2_WERT_TYPE        float
         // Duration at 95% smaller than SoC. 40 ° C less than temperature. -2.5xC A less than current less than -2.0xC A
-        // / Dauer bei 95% kleiner als SoC. 40Â°C kleiner als Temperatur. -2,5xC A kleiner als Strom kleiner als -2,0xC A
+        // / Dauer bei 95% kleiner als SoC. 40°C kleiner als Temperatur. -2,5xC A kleiner als Strom kleiner als -2,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T7_I3_WERT             (RXBUF_UINT32(88)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T7_I3_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T7_I3_WERT_TYPE        float
         // Duration at 95% smaller than SoC. 40 ° C less than temperature. -2.0xC A less than current less than -1.5xC A
-        // / Dauer bei 95% kleiner als SoC. 40Â°C kleiner als Temperatur. -2,0xC A kleiner als Strom kleiner als -1,5xC A
+        // / Dauer bei 95% kleiner als SoC. 40°C kleiner als Temperatur. -2,0xC A kleiner als Strom kleiner als -1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T7_I4_WERT             (RXBUF_UINT32(92)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T7_I4_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T7_I4_WERT_TYPE        float
         // Duration at 95% smaller than SoC. 40 ° C less than temperature. -1.5xC A less than current less than -1.0xC A
-        // / Dauer bei 95% kleiner als SoC. 40Â°C kleiner als Temperatur. -1,5xC A kleiner als Strom kleiner als -1,0xC A
+        // / Dauer bei 95% kleiner als SoC. 40°C kleiner als Temperatur. -1,5xC A kleiner als Strom kleiner als -1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T7_I5_WERT             (RXBUF_UINT32(96)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T7_I5_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T7_I5_WERT_TYPE        float
         // Duration at 95% smaller than SoC. 40 ° C less than temperature. -1.0xC A less than current less than -0.5xC A
-        // / Dauer bei 95% kleiner als SoC. 40Â°C kleiner als Temperatur. -1,0xC A kleiner als Strom kleiner als -0,5xC A
+        // / Dauer bei 95% kleiner als SoC. 40°C kleiner als Temperatur. -1,0xC A kleiner als Strom kleiner als -0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T7_I6_WERT             (RXBUF_UINT32(100)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T7_I6_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T7_I6_WERT_TYPE        float
         // Duration at 95% smaller than SoC. 40 ° C less than temperature. -0.5xC A less than current less than 0.0xC A /
-        // Dauer bei 95% kleiner als SoC. 40Â°C kleiner als Temperatur. -0,5xC A kleiner als Strom kleiner als 0,0xC A
+        // Dauer bei 95% kleiner als SoC. 40°C kleiner als Temperatur. -0,5xC A kleiner als Strom kleiner als 0,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T7_I7_WERT             (RXBUF_UINT32(104)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T7_I7_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T7_I7_WERT_TYPE        float
         // Duration at 95% smaller than SoC. 40 ° C less than temperature. 0.0xC A less than current less than 0.5xC A /
-        // Dauer bei 95% kleiner als SoC. 40Â°C kleiner als Temperatur. 0,0xC A kleiner als Strom kleiner als 0,5xC A
+        // Dauer bei 95% kleiner als SoC. 40°C kleiner als Temperatur. 0,0xC A kleiner als Strom kleiner als 0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T7_I8_WERT             (RXBUF_UINT32(108)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T7_I8_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T7_I8_WERT_TYPE        float
         // Duration at 95% smaller than SoC. 40 ° C less than temperature. 0.5xC A less than current less than 1.0xC A /
-        // Dauer bei 95% kleiner als SoC. 40Â°C kleiner als Temperatur. 0,5xC A kleiner als Strom kleiner als 1,0xC A
+        // Dauer bei 95% kleiner als SoC. 40°C kleiner als Temperatur. 0,5xC A kleiner als Strom kleiner als 1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T7_I9_WERT             (RXBUF_UINT32(112)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T7_I9_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T7_I9_WERT_TYPE        float
         // Duration at 95% smaller than SoC. 40 ° C less than temperature. 1.0xC A less than current less than 1.5xC A /
-        // Dauer bei 95% kleiner als SoC. 40Â°C kleiner als Temperatur. 1,0xC A kleiner als Strom kleiner als 1,5xC A
+        // Dauer bei 95% kleiner als SoC. 40°C kleiner als Temperatur. 1,0xC A kleiner als Strom kleiner als 1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T7_I10_WERT            (RXBUF_UINT32(116)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T7_I10_WERT_UNIT       's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T7_I10_WERT_TYPE       float
         // Duration at 95% smaller than SoC. 40 ° C less than temperature. 1.5xC A less than current / Dauer bei 95%
-        // kleiner als SoC. 40Â°C kleiner als Temperatur. 1,5xC A kleiner als Strom
+        // kleiner als SoC. 40°C kleiner als Temperatur. 1,5xC A kleiner als Strom
 
 #define I3_PID_SME_HV_BATT_HIST_SOC_T6_2                             0xDF6E
         // Duration at 32.5 ° C less than temperature less than 40 ° C and with different values of current and SOC -
-        // part 2 / Dauer bei 32,5Â°C kleiner als Temperatur kleiner als 40 Â°C und bei unterschiedlichen Werten von
-        // Strom und SOC - Teil 2
+        // part 2 / Dauer bei 32,5°C kleiner als Temperatur kleiner als 40 °C und bei unterschiedlichen Werten von Strom
+        // und SOC - Teil 2
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T6_I1_WERT             (RXBUF_UINT32(0)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T6_I1_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T6_I1_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. 32.5 ° C less than temperature less than 40 ° C. Current less
-        // than -2.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 32,5Â°C kleiner als Temperatur kleiner als
-        // 40Â°C. Strom kleiner als -2,5xC A
+        // than -2.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 32,5°C kleiner als Temperatur kleiner als 40°C.
+        // Strom kleiner als -2,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T6_I2_WERT             (RXBUF_UINT32(4)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T6_I2_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T6_I2_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. 32.5 ° C less than temperature less than 40 ° C. -2.5xC A less
-        // than current less than -2.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 32,5Â°C kleiner als
-        // Temperatur kleiner als 40Â°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
+        // than current less than -2.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T6_I3_WERT             (RXBUF_UINT32(8)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T6_I3_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T6_I3_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. 32.5 ° C less than temperature less than 40 ° C. -2.0xC A less
-        // than current less than -1.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 32,5Â°C kleiner als
-        // Temperatur kleiner als 40Â°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
+        // than current less than -1.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T6_I4_WERT             (RXBUF_UINT32(12)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T6_I4_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T6_I4_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. 32.5 ° C less than temperature less than 40 ° C. -1.5xC A less
-        // than current less than -1.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 32,5Â°C kleiner als
-        // Temperatur kleiner als 40Â°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
+        // than current less than -1.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T6_I5_WERT             (RXBUF_UINT32(16)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T6_I5_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T6_I5_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. 32.5 ° C less than temperature less than 40 ° C. -1.0xC A less
-        // than current less than -0.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 32,5Â°C kleiner als
-        // Temperatur kleiner als 40Â°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
+        // than current less than -0.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T6_I6_WERT             (RXBUF_UINT32(20)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T6_I6_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T6_I6_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. 32.5 ° C less than temperature less than 40 ° C. -0.5xC A less
-        // than current less than 0.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 32,5Â°C kleiner als Temperatur
-        // kleiner als 40Â°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
+        // than current less than 0.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T6_I7_WERT             (RXBUF_UINT32(24)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T6_I7_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T6_I7_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. 32.5 ° C less than temperature less than 40 ° C. 0.0xC A less
-        // than current less than 0.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 32,5Â°C kleiner als Temperatur
-        // kleiner als 40Â°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
+        // than current less than 0.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T6_I8_WERT             (RXBUF_UINT32(28)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T6_I8_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T6_I8_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. 32.5 ° C less than temperature less than 40 ° C. 0.5xC A less
-        // than current less than 1.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 32,5Â°C kleiner als Temperatur
-        // kleiner als 40Â°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
+        // than current less than 1.0xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T6_I9_WERT             (RXBUF_UINT32(32)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T6_I9_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T6_I9_WERT_TYPE        float
         // Duration at 70% less than SoC less than 90%. 32.5 ° C less than temperature less than 40 ° C. 1.0xC A less
-        // than current less than 1.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 32,5Â°C kleiner als Temperatur
-        // kleiner als 40Â°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
+        // than current less than 1.5xC A / Dauer bei 70% kleiner als SoC kleiner als 90%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T6_I10_WERT            (RXBUF_UINT32(36)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T6_I10_WERT_UNIT       's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC5_T6_I10_WERT_TYPE       float
         // Duration at 70% less than SoC less than 90%. 32.5 ° C less than temperature less than 40 ° C. 1.5xC A less
-        // than current / Dauer bei 70% kleiner als SoC kleiner als 90%. 32,5Â°C kleiner als Temperatur kleiner als
-        // 40Â°C. 1,5xC A kleiner als Strom
+        // than current / Dauer bei 70% kleiner als SoC kleiner als 90%. 32,5°C kleiner als Temperatur kleiner als 40°C.
+        // 1,5xC A kleiner als Strom
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T6_I1_WERT             (RXBUF_UINT32(40)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T6_I1_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T6_I1_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. 32.5 ° C less than temperature less than 40 ° C. Current less
-        // than -2.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 32,5Â°C kleiner als Temperatur kleiner als
-        // 40Â°C. Strom kleiner als -2,5xC A
+        // than -2.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 32,5°C kleiner als Temperatur kleiner als 40°C.
+        // Strom kleiner als -2,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T6_I2_WERT             (RXBUF_UINT32(44)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T6_I2_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T6_I2_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. 32.5 ° C less than temperature less than 40 ° C. -2.5xC A less
-        // than current less than -2.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 32,5Â°C kleiner als
-        // Temperatur kleiner als 40Â°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
+        // than current less than -2.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. -2,5xC A kleiner als Strom kleiner als -2,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T6_I3_WERT             (RXBUF_UINT32(48)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T6_I3_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T6_I3_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. 32.5 ° C less than temperature less than 40 ° C. -2.0xC A less
-        // than current less than -1.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 32,5Â°C kleiner als
-        // Temperatur kleiner als 40Â°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
+        // than current less than -1.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. -2,0xC A kleiner als Strom kleiner als -1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T6_I4_WERT             (RXBUF_UINT32(52)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T6_I4_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T6_I4_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. 32.5 ° C less than temperature less than 40 ° C. -1.5xC A less
-        // than current less than -1.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 32,5Â°C kleiner als
-        // Temperatur kleiner als 40Â°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
+        // than current less than -1.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. -1,5xC A kleiner als Strom kleiner als -1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T6_I5_WERT             (RXBUF_UINT32(56)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T6_I5_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T6_I5_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. 32.5 ° C less than temperature less than 40 ° C. -1.0xC A less
-        // than current less than -0.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 32,5Â°C kleiner als
-        // Temperatur kleiner als 40Â°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
+        // than current less than -0.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. -1,0xC A kleiner als Strom kleiner als -0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T6_I6_WERT             (RXBUF_UINT32(60)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T6_I6_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T6_I6_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. 32.5 ° C less than temperature less than 40 ° C. -0.5xC A less
-        // than current less than 0.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 32,5Â°C kleiner als Temperatur
-        // kleiner als 40Â°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
+        // than current less than 0.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. -0,5xC A kleiner als Strom kleiner als 0,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T6_I7_WERT             (RXBUF_UINT32(64)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T6_I7_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T6_I7_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. 32.5 ° C less than temperature less than 40 ° C. 0.0xC A less
-        // than current less than 0.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 32,5Â°C kleiner als Temperatur
-        // kleiner als 40Â°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
+        // than current less than 0.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. 0,0xC A kleiner als Strom kleiner als 0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T6_I8_WERT             (RXBUF_UINT32(68)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T6_I8_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T6_I8_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. 32.5 ° C less than temperature less than 40 ° C. 0.5xC A less
-        // than current less than 1.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 32,5Â°C kleiner als Temperatur
-        // kleiner als 40Â°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
+        // than current less than 1.0xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. 0,5xC A kleiner als Strom kleiner als 1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T6_I9_WERT             (RXBUF_UINT32(72)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T6_I9_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T6_I9_WERT_TYPE        float
         // Duration at 90% less than SoC less than 95%. 32.5 ° C less than temperature less than 40 ° C. 1.0xC A less
-        // than current less than 1.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 32,5Â°C kleiner als Temperatur
-        // kleiner als 40Â°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
+        // than current less than 1.5xC A / Dauer bei 90% kleiner als SoC kleiner als 95%. 32,5°C kleiner als Temperatur
+        // kleiner als 40°C. 1,0xC A kleiner als Strom kleiner als 1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T6_I10_WERT            (RXBUF_UINT32(76)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T6_I10_WERT_UNIT       's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC6_T6_I10_WERT_TYPE       float
         // Duration at 90% less than SoC less than 95%. 32.5 ° C less than temperature less than 40 ° C. 1.5xC A less
-        // than current / Dauer bei 90% kleiner als SoC kleiner als 95%. 32,5Â°C kleiner als Temperatur kleiner als
-        // 40Â°C. 1,5xC A kleiner als Strom
+        // than current / Dauer bei 90% kleiner als SoC kleiner als 95%. 32,5°C kleiner als Temperatur kleiner als 40°C.
+        // 1,5xC A kleiner als Strom
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T6_I1_WERT             (RXBUF_UINT32(80)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T6_I1_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T6_I1_WERT_TYPE        float
         // Duration at 95% smaller than SoC. 32.5 ° C less than temperature less than 40 ° C. Current less than -2.5xC A
-        // / Dauer bei 95% kleiner als SoC. 32,5Â°C kleiner als Temperatur kleiner als 40Â°C. Strom kleiner als -2,5xC A
+        // / Dauer bei 95% kleiner als SoC. 32,5°C kleiner als Temperatur kleiner als 40°C. Strom kleiner als -2,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T6_I2_WERT             (RXBUF_UINT32(84)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T6_I2_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T6_I2_WERT_TYPE        float
         // Duration at 95% smaller than SoC. 32.5 ° C less than temperature less than 40 ° C. -2.5xC A less than current
-        // less than -2.0xC A / Dauer bei 95% kleiner als SoC. 32,5Â°C kleiner als Temperatur kleiner als 40Â°C. -2,5xC A
+        // less than -2.0xC A / Dauer bei 95% kleiner als SoC. 32,5°C kleiner als Temperatur kleiner als 40°C. -2,5xC A
         // kleiner als Strom kleiner als -2,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T6_I3_WERT             (RXBUF_UINT32(88)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T6_I3_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T6_I3_WERT_TYPE        float
         // Duration at 95% smaller than SoC. 32.5 ° C less than temperature less than 40 ° C. -2.0xC A less than current
-        // less than -1.5xC A / Dauer bei 95% kleiner als SoC. 32,5Â°C kleiner als Temperatur kleiner als 40Â°C. -2,0xC A
+        // less than -1.5xC A / Dauer bei 95% kleiner als SoC. 32,5°C kleiner als Temperatur kleiner als 40°C. -2,0xC A
         // kleiner als Strom kleiner als -1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T6_I4_WERT             (RXBUF_UINT32(92)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T6_I4_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T6_I4_WERT_TYPE        float
         // Duration at 95% smaller than SoC. 32.5 ° C less than temperature less than 40 ° C. -1.5xC A less than current
-        // less than -1.0xC A / Dauer bei 95% kleiner als SoC. 32,5Â°C kleiner als Temperatur kleiner als 40Â°C. -1,5xC A
+        // less than -1.0xC A / Dauer bei 95% kleiner als SoC. 32,5°C kleiner als Temperatur kleiner als 40°C. -1,5xC A
         // kleiner als Strom kleiner als -1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T6_I5_WERT             (RXBUF_UINT32(96)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T6_I5_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T6_I5_WERT_TYPE        float
         // Duration at 95% smaller than SoC. 32.5 ° C less than temperature less than 40 ° C. -1.0xC A less than current
-        // less than -0.5xC A / Dauer bei 95% kleiner als SoC. 32,5Â°C kleiner als Temperatur kleiner als 40Â°C. -1,0xC A
+        // less than -0.5xC A / Dauer bei 95% kleiner als SoC. 32,5°C kleiner als Temperatur kleiner als 40°C. -1,0xC A
         // kleiner als Strom kleiner als -0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T6_I6_WERT             (RXBUF_UINT32(100)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T6_I6_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T6_I6_WERT_TYPE        float
         // Duration at 95% smaller than SoC. 32.5 ° C less than temperature less than 40 ° C. -0.5xC A less than current
-        // less than 0.0xC A / Dauer bei 95% kleiner als SoC. 32,5Â°C kleiner als Temperatur kleiner als 40Â°C. -0,5xC A
+        // less than 0.0xC A / Dauer bei 95% kleiner als SoC. 32,5°C kleiner als Temperatur kleiner als 40°C. -0,5xC A
         // kleiner als Strom kleiner als 0,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T6_I7_WERT             (RXBUF_UINT32(104)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T6_I7_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T6_I7_WERT_TYPE        float
         // Duration at 95% smaller than SoC. 32.5 ° C less than temperature less than 40 ° C. 0.0xC A less than current
-        // less than 0.5xC A / Dauer bei 95% kleiner als SoC. 32,5Â°C kleiner als Temperatur kleiner als 40Â°C. 0,0xC A
+        // less than 0.5xC A / Dauer bei 95% kleiner als SoC. 32,5°C kleiner als Temperatur kleiner als 40°C. 0,0xC A
         // kleiner als Strom kleiner als 0,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T6_I8_WERT             (RXBUF_UINT32(108)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T6_I8_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T6_I8_WERT_TYPE        float
         // Duration at 95% smaller than SoC. 32.5 ° C less than temperature less than 40 ° C. 0.5xC A less than current
-        // less than 1.0xC A / Dauer bei 95% kleiner als SoC. 32,5Â°C kleiner als Temperatur kleiner als 40Â°C. 0,5xC A
+        // less than 1.0xC A / Dauer bei 95% kleiner als SoC. 32,5°C kleiner als Temperatur kleiner als 40°C. 0,5xC A
         // kleiner als Strom kleiner als 1,0xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T6_I9_WERT             (RXBUF_UINT32(112)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T6_I9_WERT_UNIT        's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T6_I9_WERT_TYPE        float
         // Duration at 95% smaller than SoC. 32.5 ° C less than temperature less than 40 ° C. 1.0xC A less than current
-        // less than 1.5xC A / Dauer bei 95% kleiner als SoC. 32,5Â°C kleiner als Temperatur kleiner als 40Â°C. 1,0xC A
+        // less than 1.5xC A / Dauer bei 95% kleiner als SoC. 32,5°C kleiner als Temperatur kleiner als 40°C. 1,0xC A
         // kleiner als Strom kleiner als 1,5xC A
 
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T6_I10_WERT            (RXBUF_UINT32(116)/10.0f)
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T6_I10_WERT_UNIT       's'
     #define I3_RES_SME_STAT_HV_BATT_HIST_SOC7_T6_I10_WERT_TYPE       float
         // Duration at 95% smaller than SoC. 32.5 ° C less than temperature less than 40 ° C. 1.5xC A less than current /
-        // Dauer bei 95% kleiner als SoC. 32,5Â°C kleiner als Temperatur kleiner als 40Â°C. 1,5xC A kleiner als Strom
+        // Dauer bei 95% kleiner als SoC. 32,5°C kleiner als Temperatur kleiner als 40°C. 1,5xC A kleiner als Strom
 
 #define I3_PID_SME_HIS_ERR_LIM_STROM                                 0xDF6F
         // Time in minutes in different current error limit classes separately for charging and discharging over all
-        // temperatures / Zeit in Minuten in verschiedenen Stromfehlergrenzenklassen getrennt fÃ¼r Laden und Entladen
-        // Ã¼ber alle Temperaturen
+        // temperatures / Zeit in Minuten in verschiedenen Stromfehlergrenzenklassen getrennt für Laden und Entladen über
+        // alle Temperaturen
 
     #define I3_RES_SME_STAT_CHA_CURR_ERR_INT_LIM_WERT                (RXBUF_UINT32(0)/100.0f)
     #define I3_RES_SME_STAT_CHA_CURR_ERR_INT_LIM_WERT_UNIT           'As'
@@ -8274,7 +8270,7 @@
 
 #define I3_PID_SME_HIS_EFF_STROM                                     0xDF70
         // Time in minutes in different effective current value classes separately for charging and discharging / Zeit in
-        // Minuten in verschiedenen effektiven Stromwertklassen getrennt fÃ¼r Laden und Entladen
+        // Minuten in verschiedenen effektiven Stromwertklassen getrennt für Laden und Entladen
 
     #define I3_RES_SME_STAT_CHA_EFF_CURR_LIM_100_PERC_WERT           (RXBUF_UINT32(0)/100.0f)
     #define I3_RES_SME_STAT_CHA_EFF_CURR_LIM_100_PERC_WERT_UNIT      'A'
@@ -8330,9 +8326,9 @@
     #define I3_RES_SME_STAT_HIS_EFF_CURR_ABS_1_WERT                  (RXBUF_UINT32(32))
     #define I3_RES_SME_STAT_HIS_EFF_CURR_ABS_1_WERT_UNIT             'min'
     #define I3_RES_SME_STAT_HIS_EFF_CURR_ABS_1_WERT_TYPE             unsigned long
-        // Duration in minutes of the rms value of the current during charging and discharging in the class: 0 <= Irms
-        // <0.7 * Irms_abs (% 100) / Dauer in Minuten des Effektivwerts des Stroms beim Laden und Entladen in der Klasse:
-        // 0 <= Irms < 0,7 * Irms_abs(%100)
+        // Duration in minutes of the effective value of the current when charging and discharging in the class: 0 <=
+        // Irms <0.7 * Irms_abs (% 100) / Dauer in Minuten des Effektivwerts des Stroms beim Laden und Entladen in der
+        // Klasse: 0 <= Irms < 0,7 * Irms_abs(%100)
 
     #define I3_RES_SME_STAT_HIS_EFF_CURR_ABS_2_WERT                  (RXBUF_UINT32(36))
     #define I3_RES_SME_STAT_HIS_EFF_CURR_ABS_2_WERT_UNIT             'min'
@@ -8375,11 +8371,11 @@
         // Number of temperature sensors per module / Anzahl der Temperatursensoren pro Modul
 
 #define I3_PID_SME_KURZSCHLUESSE                                     0xDF72
-        // Number of short circuits that occurred / Anzahl der vorgekommenen KurschlÃ¼sse
+        // Number of short circuits that occurred / Anzahl der vorgekommenen Kurschlüsse
 
     #define I3_RES_SME_STAT_ANZAHL_KURZSCHLUESSE_WERT                (RXBUF_UCHAR(0))
     #define I3_RES_SME_STAT_ANZAHL_KURZSCHLUESSE_WERT_TYPE           unsigned char
-        // Number of short circuits that occurred / Anzahl der vorgekommenen KurschlÃ¼sse
+        // Number of short circuits that occurred / Anzahl der vorgekommenen Kurschlüsse
 
 #define I3_PID_SME_HEIZUNG_VERBAUT                                   0xDF73
         // Status heating installed (0 = no / 1 = yes) / Status Heizung verbaut (0=nein/ 1=ja)
@@ -8390,7 +8386,7 @@
         // Status heating installed (0 = no / 1 = yes) / Status Heizung verbaut (0=nein/ 1=ja)
 
 #define I3_PID_SME_VOKO_HEIZ_DAUER                                   0xDF74
-        // Number of preconditioning heating cycles / Anzahl der Vorkonditionierungs-HeizdauervorgÃ¤ngen
+        // Number of preconditioning heating cycles / Anzahl der Vorkonditionierungs-Heizdauervorgängen
 
     #define I3_RES_SME_STAT_VOKO_HEIZ_DAUER_MAX_WERT                 (RXBUF_UCHAR(0))
     #define I3_RES_SME_STAT_VOKO_HEIZ_DAUER_MAX_WERT_UNIT            'min'
@@ -8423,7 +8419,7 @@
         // Number of duration classes: t> tmax * 0.6 / Anzahl der Dauerklasse: t > tmax*0.6
 
 #define I3_PID_SME_LADE_KOND_HEIZ_DAUER                              0xDF75
-        // Number of heating conditioning processes when charging / Anzahl der HeizkonditionierungsvorgÃ¤ngen beim Laden
+        // Number of heating conditioning processes during charging / Anzahl der Heizkonditionierungsvorgängen beim Laden
 
     #define I3_RES_SME_STAT_LADE_KOND_HEIZ_DAUER_MAX_WERT            (RXBUF_UINT32(0))
     #define I3_RES_SME_STAT_LADE_KOND_HEIZ_DAUER_MAX_WERT_UNIT       'min'
@@ -8456,7 +8452,7 @@
         // Number of duration classes: t> tmax * 0.6 / Anzahl der Dauerklasse:  t > tmax*0.6
 
 #define I3_PID_SME_VOKO_KUEHL_DAUER                                  0xDF76
-        // Number of pre-conditioning cooling cycles / Anzahl der Vorkonditionierungs-KÃ¼hldauervorgÃ¤ngen
+        // Number of pre-conditioning cooling cycles / Anzahl der Vorkonditionierungs-Kühldauervorgängen
 
     #define I3_RES_SME_STAT_VOKO_KUEHL_DAUER_MAX_WERT                (RXBUF_UCHAR(0))
     #define I3_RES_SME_STAT_VOKO_KUEHL_DAUER_MAX_WERT_UNIT           'min'
@@ -8489,7 +8485,7 @@
         // Number of duration classes: t> tmax * 0.6 / Anzahl der Dauerklasse: t > tmax*0.6
 
 #define I3_PID_SME_LADE_DAUER                                        0xDF77
-        // Number of charging processes in charging duration classes / Anzahl der LadevorgÃ¤nge in Ladedauerklassen
+        // Number of charging processes in charging duration classes / Anzahl der Ladevorgänge in Ladedauerklassen
 
     #define I3_RES_SME_STAT_LADE_DAUER_MAX_WERT                      (RXBUF_UCHAR(0))
     #define I3_RES_SME_STAT_LADE_DAUER_MAX_WERT_UNIT                 'h'
@@ -8648,7 +8644,7 @@
     #define I3_RES_SME_STAT_SOC_DAY_5_WERT                           (RXBUF_UCHAR(4))
     #define I3_RES_SME_STAT_SOC_DAY_5_WERT_UNIT                      '%'
     #define I3_RES_SME_STAT_SOC_DAY_5_WERT_TYPE                      unsigned char
-        // SOC value at the end of the fifth day of the week / SOC Wert am Ende des fÃ¼nften Tages der Woche
+        // SOC value at the end of the fifth day of the week / SOC Wert am Ende des fünften Tages der Woche
 
     #define I3_RES_SME_STAT_SOC_DAY_6_WERT                           (RXBUF_UCHAR(5))
     #define I3_RES_SME_STAT_SOC_DAY_6_WERT_UNIT                      '%'
@@ -8698,32 +8694,32 @@
 
 #define I3_PID_SME_KL30C                                             0xDF89
         // Reading out the logical status of the KL30C> not for I01 and I12, use STATUS_KL30C_SPANNUNG here / Auslesen
-        // des logischen Status der KL30C > nicht fÃ¼r I01 und I12, hier STATUS_KL30C_SPANNUNG verwenden
+        // des logischen Status der KL30C > nicht für I01 und I12, hier STATUS_KL30C_SPANNUNG verwenden
 
     #define I3_RES_SME_STAT_KL30C                                    (RXBUF_UCHAR(0))
     #define I3_RES_SME_STAT_KL30C_UNIT                               '0-n'
     #define I3_RES_SME_STAT_KL30C_TYPE                               unsigned char
         // Reading out the logical status of the KL30C> not for I01 and I12, use STATUS_KL30C_SPANNUNG here / Auslesen
-        // des logischen Status der KL30C > nicht fÃ¼r I01 und I12, hier STATUS_KL30C_SPANNUNG verwenden
+        // des logischen Status der KL30C > nicht für I01 und I12, hier STATUS_KL30C_SPANNUNG verwenden
 
 #define I3_PID_SME_HIS_EFF_STROM_TMIN                                0xDF8A
         // At T <-10: time in minutes in different percentage value classes for the ratio of effective current to current
         // limit separately for charging and discharging (SBL) / Bei T < -10: Zeit in Minuten in verschiedenen
-        // Prozentwertklassen fÃ¼r das VerhÃ¤ltnis effektiver Strom zu Stromgrenze getrennt fÃ¼r Laden und Entladen (SBL)
+        // Prozentwertklassen für das Verhältnis effektiver Strom zu Stromgrenze getrennt für Laden und Entladen (SBL)
 
     #define I3_RES_SME_STAT_CHA_EFF_CURR_LIM_100_PERC_TMIN_WERT      (RXBUF_UINT32(0))
     #define I3_RES_SME_STAT_CHA_EFF_CURR_LIM_100_PERC_TMIN_WERT_UNIT 'A'
     #define I3_RES_SME_STAT_CHA_EFF_CURR_LIM_100_PERC_TMIN_WERT_TYPE unsigned long
         // At T &lt;-10: rms value of the current limit when loading to 100% life [Irms_cha (% 100)] &gt;&gt; This status
         // output is no longer required and is set to zero. / Bei T < -10: Effektivwert der Stromgrenze beim Laden auf
-        // 100% Leben [Irms_cha(%100)] >> Dieses Statusausgabe wird nicht mehr benÃ¶tigt und ist mit Null bedatet.
+        // 100% Leben [Irms_cha(%100)] >> Dieses Statusausgabe wird nicht mehr benötigt und ist mit Null bedatet.
 
     #define I3_RES_SME_STAT_CHA_EFF_CURR_LIM_3_PERC_TMIN_WERT        (RXBUF_UINT32(4))
     #define I3_RES_SME_STAT_CHA_EFF_CURR_LIM_3_PERC_TMIN_WERT_UNIT   'A'
     #define I3_RES_SME_STAT_CHA_EFF_CURR_LIM_3_PERC_TMIN_WERT_TYPE   unsigned long
         // At T &lt;-10: RMS value of the current limit when loading to 3% life [Irms_cha (% 3)] &gt;&gt; This status
         // output is no longer required and is set to zero. / Bei T < -10: Effektivwert der Stromgrenze beim Laden auf 3%
-        // Leben [Irms_cha(%3)] >> Dieses Statusausgabe wird nicht mehr benÃ¶tigt und ist mit Null bedatet.
+        // Leben [Irms_cha(%3)] >> Dieses Statusausgabe wird nicht mehr benötigt und ist mit Null bedatet.
 
     #define I3_RES_SME_STAT_ABS_EFF_CURR_LIM_100_PERC_TMIN_WERT      (RXBUF_UINT32(8))
     #define I3_RES_SME_STAT_ABS_EFF_CURR_LIM_100_PERC_TMIN_WERT_UNIT 'A'
@@ -8731,7 +8727,7 @@
         // At T &lt;-10: RMS value of the current limit during charging and discharging (absolute) to 100% life [Irms_abs
         // (% 100)] &gt;&gt; This status output is no longer required and is set to zero. / Bei T < -10: Effektivwert der
         // Stromgrenze beim Laden und Entladen (Absolut) auf 100% Leben [Irms_abs(%100)] >> Dieses Statusausgabe wird
-        // nicht mehr benÃ¶tigt und ist mit Null bedatet.
+        // nicht mehr benötigt und ist mit Null bedatet.
 
     #define I3_RES_SME_STAT_ABS_EFF_CURR_LIM_3_PERC_TMIN_WERT        (RXBUF_UINT32(12))
     #define I3_RES_SME_STAT_ABS_EFF_CURR_LIM_3_PERC_TMIN_WERT_UNIT   'A'
@@ -8739,7 +8735,7 @@
         // At T &lt;-10: RMS value of the current limit during charging and discharging (absolute) to 3% life [Irms_abs
         // (% 3)] &gt;&gt; This status output is no longer required and is set to zero. / Bei T < -10: Effektivwert der
         // Stromgrenze beim Laden und Entladen (Absolut) auf 3% Leben [Irms_abs(%3)] >> Dieses Statusausgabe wird nicht
-        // mehr benÃ¶tigt und ist mit Null bedatet.
+        // mehr benötigt und ist mit Null bedatet.
 
     #define I3_RES_SME_STAT_HIS_EFF_CURR_CHG_1_TMIN_WERT             (RXBUF_UINT32(16))
     #define I3_RES_SME_STAT_HIS_EFF_CURR_CHG_1_TMIN_WERT_UNIT        'min'
@@ -8765,9 +8761,9 @@
     #define I3_RES_SME_STAT_HIS_EFF_CURR_CHG_4_TMIN_WERT             (RXBUF_UINT32(28))
     #define I3_RES_SME_STAT_HIS_EFF_CURR_CHG_4_TMIN_WERT_UNIT        'min'
     #define I3_RES_SME_STAT_HIS_EFF_CURR_CHG_4_TMIN_WERT_TYPE        unsigned long
-        // For T <-10: Duration in minutes of the relative value of Irms_cha / Irms_cha_lim when loading in the class:
-        // 140 <Irel_cha / Bei T < -10: Dauer in Minuten des Relativwerts von Irms_cha/Irms_cha_lim beim Laden in der
-        // Klasse: 140 < Irel_cha
+        // If T <-10: Duration in minutes of the relative value of Irms_cha / Irms_cha_lim when loading in the class: 140
+        // <Irel_cha / Bei T < -10: Dauer in Minuten des Relativwerts von Irms_cha/Irms_cha_lim beim Laden in der Klasse:
+        // 140 < Irel_cha
 
     #define I3_RES_SME_STAT_HIS_EFF_CURR_ABS_1_TMIN_WERT             (RXBUF_UINT32(32))
     #define I3_RES_SME_STAT_HIS_EFF_CURR_ABS_1_TMIN_WERT_UNIT        'min'
@@ -8800,7 +8796,7 @@
 #define I3_PID_SME_HIS_EFF_STROM_TLOW                                0xDF8B
         // At -10 <= T <5: time in minutes in various percentage value classes for the ratio of effective current to
         // current limit separately for charging and discharging (SBL) / Bei -10 <= T < 5: Zeit in Minuten in
-        // verschiedenen Prozentwertklassen fÃ¼r das VerhÃ¤ltnis effektiver Strom zu Stromgrenze getrennt fÃ¼r Laden und
+        // verschiedenen Prozentwertklassen für das Verhältnis effektiver Strom zu Stromgrenze getrennt für Laden und
         // Entladen (SBL)
 
     #define I3_RES_SME_STAT_CHA_EFF_CURR_LIM_100_PERC_TLOW_WERT      (RXBUF_UINT32(0))
@@ -8808,7 +8804,7 @@
     #define I3_RES_SME_STAT_CHA_EFF_CURR_LIM_100_PERC_TLOW_WERT_TYPE unsigned long
         // At -10 &lt;= T &lt;5: RMS value of the current limit when loading to 100% life [Irms_cha (% 100)] &gt;&gt;
         // This status output is no longer required and is set to zero. / Bei -10 <= T< 5: Effektivwert der Stromgrenze
-        // beim Laden auf 100% Leben [Irms_cha(%100)] >> Dieses Statusausgabe wird nicht mehr benÃ¶tigt und ist mit Null
+        // beim Laden auf 100% Leben [Irms_cha(%100)] >> Dieses Statusausgabe wird nicht mehr benötigt und ist mit Null
         // bedatet.
 
     #define I3_RES_SME_STAT_CHA_EFF_CURR_LIM_3_PERC_TLOW_WERT        (RXBUF_UINT32(4))
@@ -8816,16 +8812,16 @@
     #define I3_RES_SME_STAT_CHA_EFF_CURR_LIM_3_PERC_TLOW_WERT_TYPE   unsigned long
         // At -10 &lt;= T &lt;5: effective value of the current limit when loading to 3% life [Irms_cha (% 3)] &gt;&gt;
         // This status output is no longer required and is set to zero. / Bei -10 <= T< 5: Effektivwert der Stromgrenze
-        // beim Laden auf 3% Leben [Irms_cha(%3)] >> Dieses Statusausgabe wird nicht mehr benÃ¶tigt und ist mit Null
+        // beim Laden auf 3% Leben [Irms_cha(%3)] >> Dieses Statusausgabe wird nicht mehr benötigt und ist mit Null
         // bedatet.
 
     #define I3_RES_SME_STAT_ABS_EFF_CURR_LIM_100_PERC_TLOW_WERT      (RXBUF_UINT32(8))
     #define I3_RES_SME_STAT_ABS_EFF_CURR_LIM_100_PERC_TLOW_WERT_UNIT 'A'
     #define I3_RES_SME_STAT_ABS_EFF_CURR_LIM_100_PERC_TLOW_WERT_TYPE unsigned long
-        // At -10 &lt;= T &lt;5: RMS value of the current limit when charging and discharging (absolute) to 100% life
+        // At -10 &lt;= T &lt;5: RMS value of the current limit during charging and discharging (absolute) to 100% life
         // [Irms_abs (% 100)] &gt;&gt; This status output is no longer required and is set to zero. / Bei -10 <= T< 5:
         // Effektivwert der Stromgrenze beim Laden und Entladen (Absolut) auf 100% Leben [Irms_abs(%100)] >> Dieses
-        // Statusausgabe wird nicht mehr benÃ¶tigt und ist mit Null bedatet.
+        // Statusausgabe wird nicht mehr benötigt und ist mit Null bedatet.
 
     #define I3_RES_SME_STAT_ABS_EFF_CURR_LIM_3_PERC_TLOW_WERT        (RXBUF_UINT32(12))
     #define I3_RES_SME_STAT_ABS_EFF_CURR_LIM_3_PERC_TLOW_WERT_UNIT   'A'
@@ -8833,7 +8829,7 @@
         // At -10 &lt;= T &lt;5: rms value of the current limit during charging and discharging (absolute) to 3% life
         // [Irms_abs (% 3)] &gt;&gt; This status output is no longer required and is set to zero. / Bei -10 <= T< 5:
         // Effektivwert der Stromgrenze beim Laden und Entladen (Absolut) auf 3% Leben [Irms_abs(%3)] >> Dieses
-        // Statusausgabe wird nicht mehr benÃ¶tigt und ist mit Null bedatet.
+        // Statusausgabe wird nicht mehr benötigt und ist mit Null bedatet.
 
     #define I3_RES_SME_STAT_HIS_EFF_CURR_CHG_1_TLOW_WERT             (RXBUF_UINT32(16))
     #define I3_RES_SME_STAT_HIS_EFF_CURR_CHG_1_TLOW_WERT_UNIT        'min'
@@ -8892,17 +8888,17 @@
         // Irms_abs/Irms_dch_lim beim Laden und Entladen in der Klasse: 140 < Irel_abs
 
 #define I3_PID_SME_HIS_EFF_STROM_TMID                                0xDF8C
-        // At 5 <= T <25 (40 SP01): Time in minutes in various percentage classes for the ratio of effective current to
-        // current limit separately for charging and discharging (SBL) / Bei 5 <= T < 25 (40 SP01): Zeit in Minuten in
-        // verschiedenen Prozentwertklassen fÃ¼r das VerhÃ¤ltnis effektiver Strom zu Stromgrenze getrennt fÃ¼r Laden und
-        // Entladen (SBL)
+        // At 5 <= T <25 (40 SP01): Time in minutes in various percentage value classes for the ratio of effective
+        // current to current limit separately for charging and discharging (SBL) / Bei 5 <= T < 25 (40 SP01): Zeit in
+        // Minuten in verschiedenen Prozentwertklassen für das Verhältnis effektiver Strom zu Stromgrenze getrennt für
+        // Laden und Entladen (SBL)
 
     #define I3_RES_SME_STAT_CHA_EFF_CURR_LIM_100_PERC_TMID_WERT      (RXBUF_UINT32(0))
     #define I3_RES_SME_STAT_CHA_EFF_CURR_LIM_100_PERC_TMID_WERT_UNIT 'A'
     #define I3_RES_SME_STAT_CHA_EFF_CURR_LIM_100_PERC_TMID_WERT_TYPE unsigned long
         // With 5 &lt;= T &lt;25 (40 SP01): RMS value of the current limit when loading to 100% life [Irms_cha (% 100)]
         // &gt;&gt; This status output is no longer required and is set to zero. / Bei 5 <= T< 25 (40 SP01): Effektivwert
-        // der Stromgrenze beim Laden auf 100% Leben [Irms_cha(%100)] >> Dieses Statusausgabe wird nicht mehr benÃ¶tigt
+        // der Stromgrenze beim Laden auf 100% Leben [Irms_cha(%100)] >> Dieses Statusausgabe wird nicht mehr benötigt
         // und ist mit Null bedatet.
 
     #define I3_RES_SME_STAT_CHA_EFF_CURR_LIM_3_PERC_TMID_WERT        (RXBUF_UINT32(4))
@@ -8910,7 +8906,7 @@
     #define I3_RES_SME_STAT_CHA_EFF_CURR_LIM_3_PERC_TMID_WERT_TYPE   unsigned long
         // With 5 &lt;= T &lt;25 (40 SP01): RMS value of the current limit when loading to 3% life [Irms_cha (% 3)]
         // &gt;&gt; This status output is no longer required and is set to zero. / Bei 5 <= T< 25 (40 SP01): Effektivwert
-        // der Stromgrenze beim Laden auf 3% Leben [Irms_cha(%3)] >> Dieses Statusausgabe wird nicht mehr benÃ¶tigt und
+        // der Stromgrenze beim Laden auf 3% Leben [Irms_cha(%3)] >> Dieses Statusausgabe wird nicht mehr benötigt und
         // ist mit Null bedatet.
 
     #define I3_RES_SME_STAT_ABS_EFF_CURR_LIM_100_PERC_TMID_WERT      (RXBUF_UINT32(8))
@@ -8919,7 +8915,7 @@
         // With 5 &lt;= T &lt;25 (40 SP01): RMS value of the current limit when charging and discharging (absolute) to
         // 100% life [Irms_abs (% 100)] &gt;&gt; This status output is no longer required and is set to zero. / Bei 5 <=
         // T< 25 (40 SP01): Effektivwert der Stromgrenze beim Laden und Entladen (Absolut) auf 100% Leben
-        // [Irms_abs(%100)] >> Dieses Statusausgabe wird nicht mehr benÃ¶tigt und ist mit Null bedatet.
+        // [Irms_abs(%100)] >> Dieses Statusausgabe wird nicht mehr benötigt und ist mit Null bedatet.
 
     #define I3_RES_SME_STAT_ABS_EFF_CURR_LIM_3_PERC_TMID_WERT        (RXBUF_UINT32(12))
     #define I3_RES_SME_STAT_ABS_EFF_CURR_LIM_3_PERC_TMID_WERT_UNIT   'A'
@@ -8927,7 +8923,7 @@
         // With 5 &lt;= T &lt;25 (40 SP01): RMS value of the current limit during charging and discharging (absolute) to
         // 3% life [Irms_abs (% 3)] &gt;&gt; This status output is no longer required and is set to zero. / Bei 5 <= T<
         // 25 (40 SP01): Effektivwert der Stromgrenze beim Laden und Entladen (Absolut) auf 3% Leben [Irms_abs(%3)] >>
-        // Dieses Statusausgabe wird nicht mehr benÃ¶tigt und ist mit Null bedatet.
+        // Dieses Statusausgabe wird nicht mehr benötigt und ist mit Null bedatet.
 
     #define I3_RES_SME_STAT_HIS_EFF_CURR_CHG_1_TMID_WERT             (RXBUF_UINT32(16))
     #define I3_RES_SME_STAT_HIS_EFF_CURR_CHG_1_TMID_WERT_UNIT        'min'
@@ -8981,23 +8977,23 @@
     #define I3_RES_SME_STAT_HIS_EFF_CURR_ABS_4_TMID_WERT             (RXBUF_UINT32(44))
     #define I3_RES_SME_STAT_HIS_EFF_CURR_ABS_4_TMID_WERT_UNIT        'min'
     #define I3_RES_SME_STAT_HIS_EFF_CURR_ABS_4_TMID_WERT_TYPE        unsigned long
-        // With 5 <= T <25 (40 SP01): Duration in minutes of the relative value of Irms_abs / Irms_dch_lim when loading
-        // and unloading in the class: 140 <Irel_abs / Bei 5 <= T < 25 (40 SP01): Dauer in Minuten des Relativwerts von
+        // If 5 <= T <25 (40 SP01): Duration in minutes of the relative value of Irms_abs / Irms_dch_lim when loading and
+        // unloading in the class: 140 <Irel_abs / Bei 5 <= T < 25 (40 SP01): Dauer in Minuten des Relativwerts von
         // Irms_abs/Irms_dch_lim beim Laden und Entladen in der Klasse: 140 < Irel_abs
 
 #define I3_PID_SME_HIS_EFF_STROM_THIGH                               0xDF8D
-        // ONLY SE03 !!! At 25 <= T <40: time in minutes in different percentage classes for the ratio of effective
+        // ONLY SE03 !!! At 25 <= T <40: Time in minutes in different percentage classes for the ratio of effective
         // current to current limit separately for charging and discharging (SBL) / NUR SE03!!! Bei 25 <= T < 40: Zeit in
-        // Minuten in verschiedenen Prozentwertklassen fÃ¼r das VerhÃ¤ltnis effektiver Strom zu Stromgrenze getrennt fÃ¼r
+        // Minuten in verschiedenen Prozentwertklassen für das Verhältnis effektiver Strom zu Stromgrenze getrennt für
         // Laden und Entladen (SBL)
 
     #define I3_RES_SME_STAT_CHA_EFF_CURR_LIM_100_PERC_THIGH_WERT     (RXBUF_UINT32(0))
     #define I3_RES_SME_STAT_CHA_EFF_CURR_LIM_100_PERC_THIGH_WERT_UNIT 'A'
     #define I3_RES_SME_STAT_CHA_EFF_CURR_LIM_100_PERC_THIGH_WERT_TYPE unsigned long
-        // ONLY SE03 !!! At 25 &lt;= T &lt;40: rms value of the current limit when loading to 100% life [Irms_cha (%
-        // 100)] &gt;&gt; This status output is no longer required and is set to zero. / NUR SE03!!! Bei 25 <= T< 40:
+        // ONLY SE03 !!! At 25 &lt;= T &lt;40: effective value of the current limit when loading to 100% life [Irms_cha
+        // (% 100)] &gt;&gt; This status output is no longer required and is set to zero. / NUR SE03!!! Bei 25 <= T< 40:
         // Effektivwert der Stromgrenze beim Laden auf 100% Leben [Irms_cha(%100)] >> Dieses Statusausgabe wird nicht
-        // mehr benÃ¶tigt und ist mit Null bedatet.
+        // mehr benötigt und ist mit Null bedatet.
 
     #define I3_RES_SME_STAT_CHA_EFF_CURR_LIM_3_PERC_THIGH_WERT       (RXBUF_UINT32(4))
     #define I3_RES_SME_STAT_CHA_EFF_CURR_LIM_3_PERC_THIGH_WERT_UNIT  'A'
@@ -9005,23 +9001,23 @@
         // ONLY SE03 !!! At 25 &lt;= T &lt;40: effective value of the current limit when loading to 3% life [Irms_cha (%
         // 3)] &gt;&gt; This status output is no longer required and is set to zero. / NUR SE03!!! Bei 25 <= T< 40:
         // Effektivwert der Stromgrenze beim Laden auf 3% Leben [Irms_cha(%3)] >> Dieses Statusausgabe wird nicht mehr
-        // benÃ¶tigt und ist mit Null bedatet.
+        // benötigt und ist mit Null bedatet.
 
     #define I3_RES_SME_STAT_ABS_EFF_CURR_LIM_100_PERC_THIGH_WERT     (RXBUF_UINT32(8))
     #define I3_RES_SME_STAT_ABS_EFF_CURR_LIM_100_PERC_THIGH_WERT_UNIT 'A'
     #define I3_RES_SME_STAT_ABS_EFF_CURR_LIM_100_PERC_THIGH_WERT_TYPE unsigned long
-        // ONLY SE03 !!! At 25 &lt;= T &lt;40: RMS value of the current limit when charging and discharging (absolute) to
-        // 100% life [Irms_abs (% 100)] &gt;&gt; This status output is no longer required and is set to zero. / NUR
+        // ONLY SE03 !!! At 25 &lt;= T &lt;40: RMS value of the current limit during charging and discharging (absolute)
+        // to 100% life [Irms_abs (% 100)] &gt;&gt; This status output is no longer required and is set to zero. / NUR
         // SE03!!! Bei 25 <= T< 40: Effektivwert der Stromgrenze beim Laden und Entladen (Absolut) auf 100% Leben
-        // [Irms_abs(%100)] >> Dieses Statusausgabe wird nicht mehr benÃ¶tigt und ist mit Null bedatet.
+        // [Irms_abs(%100)] >> Dieses Statusausgabe wird nicht mehr benötigt und ist mit Null bedatet.
 
     #define I3_RES_SME_STAT_ABS_EFF_CURR_LIM_3_PERC_THIGH_WERT       (RXBUF_UINT32(12))
     #define I3_RES_SME_STAT_ABS_EFF_CURR_LIM_3_PERC_THIGH_WERT_UNIT  'A'
     #define I3_RES_SME_STAT_ABS_EFF_CURR_LIM_3_PERC_THIGH_WERT_TYPE  unsigned long
-        // ONLY SE03 !!! At 25 &lt;= T &lt;40: rms value of the current limit during charging and discharging (absolute)
-        // to 3% life [Irms_abs (% 3)] &gt;&gt; This status output is no longer required and is set to zero. / NUR
-        // SE03!!! Bei 25 <= T< 40: Effektivwert der Stromgrenze beim Laden und Entladen (Absolut) auf 3% Leben
-        // [Irms_abs(%3)] >> Dieses Statusausgabe wird nicht mehr benÃ¶tigt und ist mit Null bedatet.
+        // ONLY SE03 !!! At 25 &lt;= T &lt;40: RMS value of the current limit when charging and discharging (absolute) to
+        // 3% life [Irms_abs (% 3)] &gt;&gt; This status output is no longer required and is set to zero. / NUR SE03!!!
+        // Bei 25 <= T< 40: Effektivwert der Stromgrenze beim Laden und Entladen (Absolut) auf 3% Leben [Irms_abs(%3)] >>
+        // Dieses Statusausgabe wird nicht mehr benötigt und ist mit Null bedatet.
 
     #define I3_RES_SME_STAT_HIS_EFF_CURR_CHG_1_THIGH_WERT            (RXBUF_UINT32(16))
     #define I3_RES_SME_STAT_HIS_EFF_CURR_CHG_1_THIGH_WERT_UNIT       'min'
@@ -9033,14 +9029,14 @@
     #define I3_RES_SME_STAT_HIS_EFF_CURR_CHG_2_THIGH_WERT            (RXBUF_UINT32(20))
     #define I3_RES_SME_STAT_HIS_EFF_CURR_CHG_2_THIGH_WERT_UNIT       'min'
     #define I3_RES_SME_STAT_HIS_EFF_CURR_CHG_2_THIGH_WERT_TYPE       unsigned long
-        // ONLY SE03 !!! With 25 <= T <40: Duration in minutes of the relative value of Irms_cha / Irms_cha_lim when
+        // ONLY SE03 !!! If 25 <= T <40: Duration in minutes of the relative value of Irms_cha / Irms_cha_lim when
         // loading in the class: 70 <Irel_cha <= 100 / NUR SE03!!! Bei 25 <= T < 40: Dauer in Minuten des Relativwerts
         // von Irms_cha/Irms_cha_lim beim Laden in der Klasse: 70 < Irel_cha <= 100
 
     #define I3_RES_SME_STAT_HIS_EFF_CURR_CHG_3_THIGH_WERT            (RXBUF_UINT32(24))
     #define I3_RES_SME_STAT_HIS_EFF_CURR_CHG_3_THIGH_WERT_UNIT       'min'
     #define I3_RES_SME_STAT_HIS_EFF_CURR_CHG_3_THIGH_WERT_TYPE       unsigned long
-        // ONLY SE03 !!! If 25 <= T <40: Duration in minutes of the relative value of Irms_cha / Irms_cha_lim when
+        // ONLY SE03 !!! With 25 <= T <40: Duration in minutes of the relative value of Irms_cha / Irms_cha_lim when
         // loading in the class: 100 <Irel_cha <= 140 / NUR SE03!!! Bei 25 <= T < 40: Dauer in Minuten des Relativwerts
         // von Irms_cha/Irms_cha_lim beim Laden in der Klasse: 100 < Irel_cha <= 140
 
@@ -9075,36 +9071,36 @@
     #define I3_RES_SME_STAT_HIS_EFF_CURR_ABS_4_THIGH_WERT            (RXBUF_UINT32(44))
     #define I3_RES_SME_STAT_HIS_EFF_CURR_ABS_4_THIGH_WERT_UNIT       'min'
     #define I3_RES_SME_STAT_HIS_EFF_CURR_ABS_4_THIGH_WERT_TYPE       unsigned long
-        // ONLY SE03 !!! With 25 <= T <40: Duration in minutes of the relative value of Irms_abs / Irms_dch_lim when
+        // ONLY SE03 !!! If 25 <= T <40: Duration in minutes of the relative value of Irms_abs / Irms_dch_lim when
         // loading and unloading in the class: 140 <Irel_abs / NUR SE03!!! Bei 25 <= T < 40: Dauer in Minuten des
         // Relativwerts von Irms_abs/Irms_dch_lim beim Laden und Entladen in der Klasse: 140 < Irel_abs
 
 #define I3_PID_SME_HIS_EFF_STROM_TMAX                                0xDF8E
-        // At 40 <= T: Time in minutes in different percentage classes for the ratio of effective current to current
+        // At 40 <= T: time in minutes in various percentage value classes for the ratio of effective current to current
         // limit separately for charging and discharging (SBL) / Bei 40 <= T: Zeit in Minuten in verschiedenen
-        // Prozentwertklassen fÃ¼r das VerhÃ¤ltnis effektiver Strom zu Stromgrenze getrennt fÃ¼r Laden und Entladen (SBL)
+        // Prozentwertklassen für das Verhältnis effektiver Strom zu Stromgrenze getrennt für Laden und Entladen (SBL)
 
     #define I3_RES_SME_STAT_CHA_EFF_CURR_LIM_100_PERC_TMAX_WERT      (RXBUF_UINT32(0))
     #define I3_RES_SME_STAT_CHA_EFF_CURR_LIM_100_PERC_TMAX_WERT_UNIT 'A'
     #define I3_RES_SME_STAT_CHA_EFF_CURR_LIM_100_PERC_TMAX_WERT_TYPE unsigned long
         // At 40 &lt;= T: RMS value of the current limit when loading to 100% life [Irms_cha (% 100)] &gt;&gt; This
         // status output is no longer required and is set to zero. / Bei 40 <= T: Effektivwert der Stromgrenze beim Laden
-        // auf 100% Leben [Irms_cha(%100)] >> Dieses Statusausgabe wird nicht mehr benÃ¶tigt und ist mit Null bedatet.
+        // auf 100% Leben [Irms_cha(%100)] >> Dieses Statusausgabe wird nicht mehr benötigt und ist mit Null bedatet.
 
     #define I3_RES_SME_STAT_CHA_EFF_CURR_LIM_3_PERC_TMAX_WERT        (RXBUF_UINT32(4))
     #define I3_RES_SME_STAT_CHA_EFF_CURR_LIM_3_PERC_TMAX_WERT_UNIT   'A'
     #define I3_RES_SME_STAT_CHA_EFF_CURR_LIM_3_PERC_TMAX_WERT_TYPE   unsigned long
         // At 40 &lt;= T: effective value of the current limit when loading to 3% life [Irms_cha (% 3)] &gt;&gt; This
         // status output is no longer required and is set to zero. / Bei 40 <= T: Effektivwert der Stromgrenze beim Laden
-        // auf 3% Leben [Irms_cha(%3)] >> Dieses Statusausgabe wird nicht mehr benÃ¶tigt und ist mit Null bedatet.
+        // auf 3% Leben [Irms_cha(%3)] >> Dieses Statusausgabe wird nicht mehr benötigt und ist mit Null bedatet.
 
     #define I3_RES_SME_STAT_ABS_EFF_CURR_LIM_100_PERC_TMAX_WERT      (RXBUF_UINT32(8))
     #define I3_RES_SME_STAT_ABS_EFF_CURR_LIM_100_PERC_TMAX_WERT_UNIT 'A'
     #define I3_RES_SME_STAT_ABS_EFF_CURR_LIM_100_PERC_TMAX_WERT_TYPE unsigned long
-        // At 40 &lt;= T: rms value of the current limit during charging and discharging (absolute) to 100% life
-        // [Irms_abs (% 100)] &gt;&gt; This status output is no longer required and is set to zero. / Bei 40 <= T:
-        // Effektivwert der Stromgrenze beim Laden und Entladen (Absolut) auf 100% Leben [Irms_abs(%100)] >> Dieses
-        // Statusausgabe wird nicht mehr benÃ¶tigt und ist mit Null bedatet.
+        // At 40 &lt;= T: RMS value of the current limit when charging and discharging (absolute) to 100% life [Irms_abs
+        // (% 100)] &gt;&gt; This status output is no longer required and is set to zero. / Bei 40 <= T: Effektivwert der
+        // Stromgrenze beim Laden und Entladen (Absolut) auf 100% Leben [Irms_abs(%100)] >> Dieses Statusausgabe wird
+        // nicht mehr benötigt und ist mit Null bedatet.
 
     #define I3_RES_SME_STAT_ABS_EFF_CURR_LIM_3_PERC_TMAX_WERT        (RXBUF_UINT32(12))
     #define I3_RES_SME_STAT_ABS_EFF_CURR_LIM_3_PERC_TMAX_WERT_UNIT   'A'
@@ -9112,7 +9108,7 @@
         // At 40 &lt;= T: RMS value of the current limit when charging and discharging (absolute) to 3% life [Irms_abs (%
         // 3)] &gt;&gt; This status output is no longer required and is set to zero. / Bei 40 <= T: Effektivwert der
         // Stromgrenze beim Laden und Entladen (Absolut) auf 3% Leben [Irms_abs(%3)] >> Dieses Statusausgabe wird nicht
-        // mehr benÃ¶tigt und ist mit Null bedatet.
+        // mehr benötigt und ist mit Null bedatet.
 
     #define I3_RES_SME_STAT_HIS_EFF_CURR_CHG_1_TMAX_WERT             (RXBUF_UINT32(16))
     #define I3_RES_SME_STAT_HIS_EFF_CURR_CHG_1_TMAX_WERT_UNIT        'min'
@@ -9138,7 +9134,7 @@
     #define I3_RES_SME_STAT_HIS_EFF_CURR_CHG_4_TMAX_WERT             (RXBUF_UINT32(28))
     #define I3_RES_SME_STAT_HIS_EFF_CURR_CHG_4_TMAX_WERT_UNIT        'min'
     #define I3_RES_SME_STAT_HIS_EFF_CURR_CHG_4_TMAX_WERT_TYPE        unsigned long
-        // With 40 <= T: Duration in minutes of the relative value of Irms_cha / Irms_cha_lim when loading in the class:
+        // At 40 <= T: Duration in minutes of the relative value of Irms_cha / Irms_cha_lim when loading in the class:
         // 140 <Irel_cha / Bei 40 <= T: Dauer in Minuten des Relativwerts von Irms_cha/Irms_cha_lim beim Laden in der
         // Klasse: 140 < Irel_cha
 
@@ -9172,7 +9168,7 @@
 
 #define I3_PID_SME_HIS_ERR_LIM_STROM_TMIN                            0xDF8F
         // At T <= -10: time in minutes in different current error limit classes separately for charging and discharging
-        // / Bei T <= -10: Zeit in Minuten in verschiedenen Stromfehlergrenzenklassen getrennt fÃ¼r Laden und Entladen
+        // / Bei T <= -10: Zeit in Minuten in verschiedenen Stromfehlergrenzenklassen getrennt für Laden und Entladen
 
     #define I3_RES_SME_STAT_CHA_CURR_ERR_INT_LIM_TMIN_WERT           (RXBUF_UINT32(0)/100.0f)
     #define I3_RES_SME_STAT_CHA_CURR_ERR_INT_LIM_TMIN_WERT_UNIT      'As'
@@ -9183,7 +9179,7 @@
     #define I3_RES_SME_STAT_DCH_CURR_ERR_INT_LIM_TMIN_WERT           (RXBUF_UINT32(4)/100.0f)
     #define I3_RES_SME_STAT_DCH_CURR_ERR_INT_LIM_TMIN_WERT_UNIT      'As'
     #define I3_RES_SME_STAT_DCH_CURR_ERR_INT_LIM_TMIN_WERT_TYPE      float
-        // At T <= -10: threshold value of the error integral of the current during discharge [IerrIntLim_dch] / Bei T <=
+        // At T <= -10: threshold value of the error integral of the current when discharging [IerrIntLim_dch] / Bei T <=
         // -10: Schwellwert des Fehlerintegrals des Stroms beim Entladen [IerrIntLim_dch]
 
     #define I3_RES_SME_STAT_HIS_CHG_ERR_LIM_STROM_1_TMIN_WERT        (RXBUF_UINT32(8))
@@ -9201,7 +9197,7 @@
     #define I3_RES_SME_STAT_HIS_DCH_ERR_LIM_STROM_1_TMIN_WERT        (RXBUF_UINT32(16))
     #define I3_RES_SME_STAT_HIS_DCH_ERR_LIM_STROM_1_TMIN_WERT_UNIT   'min'
     #define I3_RES_SME_STAT_HIS_DCH_ERR_LIM_STROM_1_TMIN_WERT_TYPE   unsigned long
-        // With T <= -10: Duration in minutes when loading in the class: 0 <= IerrInt_dch <IerrIntLim_dch / Bei T <= -10:
+        // If T <= -10: Duration in minutes when loading in the class: 0 <= IerrInt_dch <IerrIntLim_dch / Bei T <= -10:
         // Dauer in Minuten beim  Laden in der  Klasse: 0 <= IerrInt_dch < IerrIntLim_dch
 
     #define I3_RES_SME_STAT_HIS_DCH_ERR_LIM_STROM_2_TMIN_WERT        (RXBUF_UINT32(20))
@@ -9212,7 +9208,7 @@
 
 #define I3_PID_SME_HIS_ERR_LIM_STROM_TLOW                            0xDF90
         // At -10 <T <= 5: time in minutes in different current error limit classes separately for charging and
-        // discharging / Bei -10 < T <= 5: Zeit in Minuten in verschiedenen Stromfehlergrenzenklassen getrennt fÃ¼r Laden
+        // discharging / Bei -10 < T <= 5: Zeit in Minuten in verschiedenen Stromfehlergrenzenklassen getrennt für Laden
         // und Entladen
 
     #define I3_RES_SME_STAT_CHA_CURR_ERR_INT_LIM_TLOW_WERT           (RXBUF_UINT32(0)/100.0f)
@@ -9252,20 +9248,20 @@
         // -10 < T <= 5: Dauer in Minuten beim  Laden in der  Klasse: IerrInt_dch > IerrIntLim_dch
 
 #define I3_PID_SME_HIS_ERR_LIM_STROM_THIGH                           0xDF91
-        // If 5 <T <= 25: Time in minutes in different current error limit classes separately for charging and
-        // discharging / Bei 5 < T <= 25: Zeit in Minuten in verschiedenen Stromfehlergrenzenklassen getrennt fÃ¼r Laden
+        // If 5 <T <= 25: time in minutes in different current error limit classes separately for charging and
+        // discharging / Bei 5 < T <= 25: Zeit in Minuten in verschiedenen Stromfehlergrenzenklassen getrennt für Laden
         // und Entladen
 
     #define I3_RES_SME_STAT_CHA_CURR_ERR_INT_LIM_THIGH_WERT          (RXBUF_UINT32(0)/100.0f)
     #define I3_RES_SME_STAT_CHA_CURR_ERR_INT_LIM_THIGH_WERT_UNIT     'As'
     #define I3_RES_SME_STAT_CHA_CURR_ERR_INT_LIM_THIGH_WERT_TYPE     float
-        // If 5 <T <= 25: Threshold value of the error integral of the current during loading [IerrIntLim_cha] / Bei 5 <
-        // T <= 25: Schwellwert des Fehlerintegrals des Stroms beim Laden [IerrIntLim_cha]
+        // If 5 <T <= 25: Threshold value of the error integral of the current when loading [IerrIntLim_cha] / Bei 5 < T
+        // <= 25: Schwellwert des Fehlerintegrals des Stroms beim Laden [IerrIntLim_cha]
 
     #define I3_RES_SME_STAT_DCH_CURR_ERR_INT_LIM_THIGH_WERT          (RXBUF_UINT32(4)/100.0f)
     #define I3_RES_SME_STAT_DCH_CURR_ERR_INT_LIM_THIGH_WERT_UNIT     'As'
     #define I3_RES_SME_STAT_DCH_CURR_ERR_INT_LIM_THIGH_WERT_TYPE     float
-        // If 5 <T <= 25: Threshold value of the error integral of the current during discharge [IerrIntLim_dch] / Bei 5
+        // If 5 <T <= 25: threshold value of the error integral of the current during discharge [IerrIntLim_dch] / Bei 5
         // < T <= 25: Schwellwert des Fehlerintegrals des Stroms beim Entladen [IerrIntLim_dch]
 
     #define I3_RES_SME_STAT_HIS_CHG_ERR_LIM_STROM_1_THIGH_WERT       (RXBUF_UINT32(8))
@@ -9294,7 +9290,7 @@
 
 #define I3_PID_SME_HIS_ERR_LIM_STROM_TMAX                            0xDF92
         // At 25 <T: time in minutes in different current error limit classes separately for charging and discharging /
-        // Bei 25 < T: Zeit in Minuten in verschiedenen Stromfehlergrenzenklassen getrennt fÃ¼r Laden und Entladen
+        // Bei 25 < T: Zeit in Minuten in verschiedenen Stromfehlergrenzenklassen getrennt für Laden und Entladen
 
     #define I3_RES_SME_STAT_CHA_CURR_ERR_INT_LIM_TMAX_WERT           (RXBUF_UINT32(0)/100.0f)
     #define I3_RES_SME_STAT_CHA_CURR_ERR_INT_LIM_TMAX_WERT_UNIT      'As'
@@ -9357,57 +9353,57 @@
     #define I3_RES_SME_STAT_PWR_STUETZP_P1_WERT                      (RXBUF_UCHAR(0)*200.0f)
     #define I3_RES_SME_STAT_PWR_STUETZP_P1_WERT_UNIT                 'W'
     #define I3_RES_SME_STAT_PWR_STUETZP_P1_WERT_TYPE                 float
-        // Available charging power, base P1 / Zur VerfÃ¼gung stehende Ladeleistung, StÃ¼tzpunkt P1
+        // Available charging power, base P1 / Zur Verfügung stehende Ladeleistung, Stützpunkt P1
 
     #define I3_RES_SME_STAT_PWR_STUETZP_P2_WERT                      (RXBUF_UCHAR(1)*200.0f)
     #define I3_RES_SME_STAT_PWR_STUETZP_P2_WERT_UNIT                 'W'
     #define I3_RES_SME_STAT_PWR_STUETZP_P2_WERT_TYPE                 float
-        // Available charging power, base P2 / Zur VerfÃ¼gung stehende Ladeleistung, StÃ¼tzpunkt P2
+        // Available charging power, base P2 / Zur Verfügung stehende Ladeleistung, Stützpunkt P2
 
     #define I3_RES_SME_STAT_TEMP_STUETZP_T1_WERT                     (RXBUF_SCHAR(2))
-    #define I3_RES_SME_STAT_TEMP_STUETZP_T1_WERT_UNIT                'Â°C'
+    #define I3_RES_SME_STAT_TEMP_STUETZP_T1_WERT_UNIT                '°C'
     #define I3_RES_SME_STAT_TEMP_STUETZP_T1_WERT_TYPE                char
-        // Storage tank temperature, support point T1 / Speichertemperatur, StÃ¼tzpunkt T1
+        // Storage tank temperature, support point T1 / Speichertemperatur, Stützpunkt T1
 
     #define I3_RES_SME_STAT_TEMP_STUETZP_T2_WERT                     (RXBUF_SCHAR(3))
-    #define I3_RES_SME_STAT_TEMP_STUETZP_T2_WERT_UNIT                'Â°C'
+    #define I3_RES_SME_STAT_TEMP_STUETZP_T2_WERT_UNIT                '°C'
     #define I3_RES_SME_STAT_TEMP_STUETZP_T2_WERT_TYPE                char
-        // Storage tank temperature, support point T2 / Speichertemperatur, StÃ¼tzpunkt T2
+        // Storage tank temperature, support point T2 / Speichertemperatur, Stützpunkt T2
 
     #define I3_RES_SME_STAT_TEMP_STUETZP_T3_WERT                     (RXBUF_SCHAR(4))
-    #define I3_RES_SME_STAT_TEMP_STUETZP_T3_WERT_UNIT                'Â°C'
+    #define I3_RES_SME_STAT_TEMP_STUETZP_T3_WERT_UNIT                '°C'
     #define I3_RES_SME_STAT_TEMP_STUETZP_T3_WERT_TYPE                char
-        // Storage tank temperature, support point T3 / Speichertemperatur, StÃ¼tzpunkt T3
+        // Storage tank temperature, support point T3 / Speichertemperatur, Stützpunkt T3
 
     #define I3_RES_SME_STAT_TEMP_STUETZP_T4_WERT                     (RXBUF_SCHAR(5))
-    #define I3_RES_SME_STAT_TEMP_STUETZP_T4_WERT_UNIT                'Â°C'
+    #define I3_RES_SME_STAT_TEMP_STUETZP_T4_WERT_UNIT                '°C'
     #define I3_RES_SME_STAT_TEMP_STUETZP_T4_WERT_TYPE                char
-        // Storage tank temperature, support point T4 / Speichertemperatur, StÃ¼tzpunkt T4
+        // Storage tank temperature, support point T4 / Speichertemperatur, Stützpunkt T4
 
     #define I3_RES_SME_STAT_SOC_STUETZP_SOC1_WERT                    (RXBUF_UCHAR(6))
     #define I3_RES_SME_STAT_SOC_STUETZP_SOC1_WERT_UNIT               '%'
     #define I3_RES_SME_STAT_SOC_STUETZP_SOC1_WERT_TYPE               unsigned char
-        // SOC (SOC_akt_max), base point SOC1 / SOC (SOC_akt_max), StÃ¼tzpunkt SOC1
+        // SOC (SOC_akt_max), base point SOC1 / SOC (SOC_akt_max), Stützpunkt SOC1
 
     #define I3_RES_SME_STAT_SOC_STUETZP_SOC2_WERT                    (RXBUF_UCHAR(7))
     #define I3_RES_SME_STAT_SOC_STUETZP_SOC2_WERT_UNIT               '%'
     #define I3_RES_SME_STAT_SOC_STUETZP_SOC2_WERT_TYPE               unsigned char
-        // SOC (SOC_akt_max), base point SOC2 / SOC (SOC_akt_max), StÃ¼tzpunkt SOC2
+        // SOC (SOC_akt_max), base point SOC2 / SOC (SOC_akt_max), Stützpunkt SOC2
 
     #define I3_RES_SME_STAT_SOC_STUETZP_SOC3_WERT                    (RXBUF_UCHAR(8))
     #define I3_RES_SME_STAT_SOC_STUETZP_SOC3_WERT_UNIT               '%'
     #define I3_RES_SME_STAT_SOC_STUETZP_SOC3_WERT_TYPE               unsigned char
-        // SOC (SOC_akt_max), base point SOC3 / SOC (SOC_akt_max), StÃ¼tzpunkt SOC3
+        // SOC (SOC_akt_max), base point SOC3 / SOC (SOC_akt_max), Stützpunkt SOC3
 
     #define I3_RES_SME_STAT_SOC_STUETZP_SOC4_WERT                    (RXBUF_UCHAR(9))
     #define I3_RES_SME_STAT_SOC_STUETZP_SOC4_WERT_UNIT               '%'
     #define I3_RES_SME_STAT_SOC_STUETZP_SOC4_WERT_TYPE               unsigned char
-        // SOC (SOC_akt_max), base point SOC4 / SOC (SOC_akt_max), StÃ¼tzpunkt SOC4
+        // SOC (SOC_akt_max), base point SOC4 / SOC (SOC_akt_max), Stützpunkt SOC4
 
     #define I3_RES_SME_STAT_SOC_STUETZP_SOC5_WERT                    (RXBUF_UCHAR(10))
     #define I3_RES_SME_STAT_SOC_STUETZP_SOC5_WERT_UNIT               '%'
     #define I3_RES_SME_STAT_SOC_STUETZP_SOC5_WERT_TYPE               unsigned char
-        // SOC (SOC_akt_max), base point SOC5 / SOC (SOC_akt_max), StÃ¼tzpunkt SOC5
+        // SOC (SOC_akt_max), base point SOC5 / SOC (SOC_akt_max), Stützpunkt SOC5
 
     #define I3_RES_SME_STAT_FAKT_P1_T1_SOC1_WERT                     (RXBUF_UCHAR(11))
     #define I3_RES_SME_STAT_FAKT_P1_T1_SOC1_WERT_UNIT                '%'
@@ -9612,38 +9608,38 @@
 // Skipping RESET_LADEZEIT_ADAPT_KENNFELD on 0xDF9D which takes arguments
 
 #define I3_PID_SME_VERH_VOLLADE_LADEVORG_LESEN                       0xDF9E
-        // Percentage of the ratio of full charges to total charges / Prozentualer Wert vom VerhÃ¤ltnis der
-        // VolladevorgÃ¤nge zu den gesamten LadevorgÃ¤ngen
+        // Percentage of the ratio of full charges to total charges / Prozentualer Wert vom Verhältnis der
+        // Volladevorgänge zu den gesamten Ladevorgängen
 
     #define I3_RES_SME_STAT_VERH_VOLLADE_LADEVORG_WERT               (RXBUF_UCHAR(0))
     #define I3_RES_SME_STAT_VERH_VOLLADE_LADEVORG_WERT_UNIT          '%'
     #define I3_RES_SME_STAT_VERH_VOLLADE_LADEVORG_WERT_TYPE          unsigned char
-        // Percentage of the ratio of full charges to total charges / Prozentualer Wert vom VerhÃ¤ltnis der
-        // VolladevorgÃ¤nge zu den gesamten LadevorgÃ¤ngen
+        // Percentage of the ratio of full charges to total charges / Prozentualer Wert vom Verhältnis der
+        // Volladevorgänge zu den gesamten Ladevorgängen
 
 // Skipping RESET_VERH_VOLLADE_LADEVORG on 0xDF9F which takes arguments
 
 #define I3_PID_SME_ZUSTAND_SPEICHER                                  0xDFA0
         // Output of central storage quantities as max., Min. And mean values / Ausgabe von zentralen
-        // SpeicherzudstandsgrÃ¶Ãen als Max.-, Min.- und Mittelwert
+        // Speicherzudstandsgrößen als Max.-, Min.- und Mittelwert
 
     #define I3_RES_SME_STAT_ZELLKAPAZITAET_MIN_WERT                  (RXBUF_UINT(0)/100.0f)
     #define I3_RES_SME_STAT_ZELLKAPAZITAET_MIN_WERT_UNIT             'Ah'
     #define I3_RES_SME_STAT_ZELLKAPAZITAET_MIN_WERT_TYPE             float
         // Output of the current minimum measured cell capacity of all cells in Ah / Ausgabe der aktuellen minimalen
-        // gemessenen ZellkapazitÃ¤t aller Zellen in Ah
+        // gemessenen Zellkapazität aller Zellen in Ah
 
     #define I3_RES_SME_STAT_ZELLKAPAZITAET_MAX_WERT                  (RXBUF_UINT(2)/100.0f)
     #define I3_RES_SME_STAT_ZELLKAPAZITAET_MAX_WERT_UNIT             'Ah'
     #define I3_RES_SME_STAT_ZELLKAPAZITAET_MAX_WERT_TYPE             float
         // Output of the current maximum measured cell capacity of all cells in Ah / Ausgabe der aktuellen maximalen
-        // gemessenen ZellkapazitÃ¤t aller Zellen in Ah
+        // gemessenen Zellkapazität aller Zellen in Ah
 
     #define I3_RES_SME_STAT_ZELLKAPAZITAET_MEAN_WERT                 (RXBUF_UINT(4)/100.0f)
     #define I3_RES_SME_STAT_ZELLKAPAZITAET_MEAN_WERT_UNIT            'Ah'
     #define I3_RES_SME_STAT_ZELLKAPAZITAET_MEAN_WERT_TYPE            float
         // Output of the current mean measured cell capacity averaged over all cells in Ah / Ausgabe der aktuellen
-        // mittleren gemessenen ZellkapazitÃ¤t gemittelt Ã¼ber alle Zellen in Ah
+        // mittleren gemessenen Zellkapazität gemittelt über alle Zellen in Ah
 
     #define I3_RES_SME_STAT_ZELLSPANNUNG_MIN_WERT                    (RXBUF_UINT(6)/10000.0f)
     #define I3_RES_SME_STAT_ZELLSPANNUNG_MIN_WERT_UNIT               'V'
@@ -9664,22 +9660,22 @@
         // gemessenen Zellspannung aller Zellen in V
 
     #define I3_RES_SME_STAT_ZELLTEMPERATUR_MIN_WERT                  (RXBUF_SINT(12)/100.0f)
-    #define I3_RES_SME_STAT_ZELLTEMPERATUR_MIN_WERT_UNIT             'Â°C'
+    #define I3_RES_SME_STAT_ZELLTEMPERATUR_MIN_WERT_UNIT             '°C'
     #define I3_RES_SME_STAT_ZELLTEMPERATUR_MIN_WERT_TYPE             float
         // Output of the current minimum measured cell temperature of all cells in ° C / Ausgabe der aktuellen minimalen
-        // gemessenen Zelltemperatur aller Zellen in Â°C
+        // gemessenen Zelltemperatur aller Zellen in °C
 
     #define I3_RES_SME_STAT_ZELLTEMPERATUR_MAX_WERT                  (RXBUF_SINT(14)/100.0f)
-    #define I3_RES_SME_STAT_ZELLTEMPERATUR_MAX_WERT_UNIT             'Â°C'
+    #define I3_RES_SME_STAT_ZELLTEMPERATUR_MAX_WERT_UNIT             '°C'
     #define I3_RES_SME_STAT_ZELLTEMPERATUR_MAX_WERT_TYPE             float
         // Output of the current maximum measured cell temperature of all cells in ° C / Ausgabe der aktuellen maximalen
-        // gemessenen Zelltemperatur aller Zellen in Â°C
+        // gemessenen Zelltemperatur aller Zellen in °C
 
     #define I3_RES_SME_STAT_ZELLTEMPERATUR_MEAN_WERT                 (RXBUF_SINT(16)/100.0f)
-    #define I3_RES_SME_STAT_ZELLTEMPERATUR_MEAN_WERT_UNIT            'Â°C'
+    #define I3_RES_SME_STAT_ZELLTEMPERATUR_MEAN_WERT_UNIT            '°C'
     #define I3_RES_SME_STAT_ZELLTEMPERATUR_MEAN_WERT_TYPE            float
         // Output of the current mean measured cell temperature of all cells in ° C / Ausgabe der aktuellen mittleren
-        // gemessenen Zelltemperatur aller Zellen in Â°C
+        // gemessenen Zelltemperatur aller Zellen in °C
 
     #define I3_RES_SME_STAT_ZELLWIDERSTANDSFAKTOR_MIN_WERT           (RXBUF_UINT(18)/10000.0f)
     #define I3_RES_SME_STAT_ZELLWIDERSTANDSFAKTOR_MIN_WERT_TYPE      float
@@ -9736,69 +9732,69 @@
     #define I3_RES_SME_STAT_IMPEDANCE_ESTIMATION_ALPHA_WERT_TYPE     float
         // Current aging factor of the serial and parallel ohmic resistance as well as the parallel capacitance (1.5 =
         // increase of the current resistance by 50%) / Aktueller Alterungsfaktor des seriellen und parallelen ohmschen
-        // Wider aktuellenstands sowie der parallelen KapazitÃ¤t (1,5 = ErÃ¶hung des aktuellen Wider aktuellenstands um
+        // Wider aktuellenstands sowie der parallelen Kapazität (1,5 = Eröhung des aktuellen Wider aktuellenstands um
         // 50%)
 
 #define I3_PID_SME_HIS_ERR_LIM_SPANNUNG                              0xDFA1
         // Output of the maximum dwell time in voltage error limit classes across all modules in minutes. At temperatures
         // <-10 ° C, the voltage error limit changes depending on the temperature. / Ausgabe der maximalen Verweildauer
-        // in Spannungsfehlergrenzenklassen Ã¼ber alle Module in Minuten. Bei Temperaturen < -10Â°C verÃ¤ndert sich die
-        // Spannungsfehlergrenze temperaturabhÃ¤ngig.
+        // in Spannungsfehlergrenzenklassen über alle Module in Minuten. Bei Temperaturen < -10°C verändert sich die
+        // Spannungsfehlergrenze temperaturabhängig.
 
     #define I3_RES_SME_STAT_OVER_VOLT_INT_LIM_WERT                   (RXBUF_UINT(0)/1000.0f)
     #define I3_RES_SME_STAT_OVER_VOLT_INT_LIM_WERT_TYPE              float
         // [UerrIntLim_over] Error threshold of the OVERVOLTAGE integral (at temperatures <-10 ° C the error threshold
-        // changes depending on the temperature.) / [UerrIntLim_over] Fehlerschwellwert des ÃBERspannungsintegrals (Bei
-        // Temperaturen < -10Â°C verÃ¤ndert sich der Fehlerschellwert temperaturabhÃ¤ngig.) 
+        // changes depending on the temperature.) / [UerrIntLim_over] Fehlerschwellwert des ÜBERspannungsintegrals (Bei
+        // Temperaturen < -10°C verändert sich der Fehlerschellwert temperaturabhängig.) 
 
     #define I3_RES_SME_STAT_UNDER_VOLT_INT_LIM_WERT                  (RXBUF_UINT(2)/1000.0f)
     #define I3_RES_SME_STAT_UNDER_VOLT_INT_LIM_WERT_TYPE             float
-        // [UerrIntLim_under] Error threshold of the UNDERVOLTAGE integral (at temperatures <-10 ° C, the error threshold
-        // changes depending on the temperature.) / [UerrIntLim_under] Fehlerschwellwert des UNTERspannungsintegrals (Bei
-        // Temperaturen < -10Â°C verÃ¤ndert sich der Fehlerschellwert temperaturabhÃ¤ngig.)
+        // [UerrIntLim_under] Error threshold value of the UNDERVOLTAGE integral (at temperatures <-10 ° C the error
+        // threshold value changes depending on the temperature.) / [UerrIntLim_under] Fehlerschwellwert des
+        // UNTERspannungsintegrals (Bei Temperaturen < -10°C verändert sich der Fehlerschellwert temperaturabhängig.)
 
     #define I3_RES_SME_STAT_HIS_ERR_LIM_SPANNUNG_MODSMAX_UNDER_1_WERT (RXBUF_UINT(4))
     #define I3_RES_SME_STAT_HIS_ERR_LIM_SPANNUNG_MODSMAX_UNDER_1_WERT_UNIT 'min'
     #define I3_RES_SME_STAT_HIS_ERR_LIM_SPANNUNG_MODSMAX_UNDER_1_WERT_TYPE unsigned short
-        // Maximum duration in minutes over all modules when loading in the class: 0 <UerrInt_under <= UerrIntLim_under /
-        // Maximum der Dauer in Minuten Ã¼ber alle Module beim  Laden in der  Klasse: 0 <UerrInt_under <=
+        // Maximum duration in minutes across all modules when loading in the class: 0 <UerrInt_under <= UerrIntLim_under
+        // / Maximum der Dauer in Minuten über alle Module beim  Laden in der  Klasse: 0 <UerrInt_under <=
         // UerrIntLim_under
 
     #define I3_RES_SME_STAT_HIS_ERR_LIM_SPANNUNG_MODSMAX_UNDER_2_WERT (RXBUF_UINT(6))
     #define I3_RES_SME_STAT_HIS_ERR_LIM_SPANNUNG_MODSMAX_UNDER_2_WERT_UNIT 'min'
     #define I3_RES_SME_STAT_HIS_ERR_LIM_SPANNUNG_MODSMAX_UNDER_2_WERT_TYPE unsigned short
         // Maximum of the duration in minutes over all modules when loading in the class: UerrInt_under> UerrIntLim_under
-        // / Maximum der Dauer in Minuten Ã¼ber alle Module beim  Laden in der  Klasse: UerrInt_under > UerrIntLim_under
+        // / Maximum der Dauer in Minuten über alle Module beim  Laden in der  Klasse: UerrInt_under > UerrIntLim_under
 
     #define I3_RES_SME_STAT_HIS_ERR_LIM_SPANNUNG_MODSMAX_OVER_1_WERT (RXBUF_UINT(8))
     #define I3_RES_SME_STAT_HIS_ERR_LIM_SPANNUNG_MODSMAX_OVER_1_WERT_UNIT 'min'
     #define I3_RES_SME_STAT_HIS_ERR_LIM_SPANNUNG_MODSMAX_OVER_1_WERT_TYPE unsigned short
         // Maximum duration in minutes across all modules when loading in the class: 0 <UerrInt_over <= UerrIntLim_over /
-        // Maximum der Dauer in Minuten Ã¼ber alle Module beim  Laden in der  Klasse: 0 <UerrInt_over <= UerrIntLim_over
+        // Maximum der Dauer in Minuten über alle Module beim  Laden in der  Klasse: 0 <UerrInt_over <= UerrIntLim_over
 
     #define I3_RES_SME_STAT_HIS_ERR_LIM_SPANNUNG_MODSMAX_OVER_2_WERT (RXBUF_UINT(10))
     #define I3_RES_SME_STAT_HIS_ERR_LIM_SPANNUNG_MODSMAX_OVER_2_WERT_UNIT 'min'
     #define I3_RES_SME_STAT_HIS_ERR_LIM_SPANNUNG_MODSMAX_OVER_2_WERT_TYPE unsigned short
-        // Maximum of the duration in minutes over all modules when loading in the class: UerrInt_over> UerrIntLim_over /
-        // Maximum der Dauer in Minuten Ã¼ber alle Module beim  Laden in der  Klasse: UerrInt_over > UerrIntLim_over
+        // Maximum duration in minutes across all modules when loading in the class: UerrInt_over> UerrIntLim_over /
+        // Maximum der Dauer in Minuten über alle Module beim  Laden in der  Klasse: UerrInt_over > UerrIntLim_over
 
 #define I3_PID_SME_HIS_SOC_MAX_MIN                                   0xDFAE
         // Job has not been requested for SME_03 since I001_14-03-490 and is therefore not implemented from now on.
-        // Output of the minimum and maximum MIN nominal SoC that occurs over the life of the vehicle. / Job ist fÃ¼r
+        // Output of the minimum and maximum MIN nominal SoC that occurs over the life of the vehicle. / Job ist für
         // SME_03 seit I001_14-03-490 nicht angefordert und somit fortan nicht implementiert.   Ausgabe des minimalen und
-        // maximalen MIN-Nenn-SoC, der Ã¼ber Fahrzeuglebensdauer auftritt.
+        // maximalen MIN-Nenn-SoC, der über Fahrzeuglebensdauer auftritt.
 
     #define I3_RES_SME_STAT_SOC_MIN_NENN_MAX_WERT                    (RXBUF_UCHAR(0))
     #define I3_RES_SME_STAT_SOC_MIN_NENN_MAX_WERT_UNIT               '%'
     #define I3_RES_SME_STAT_SOC_MIN_NENN_MAX_WERT_TYPE               unsigned char
         // Output of the maximum nominal MIN SoC that occurs over the life of the vehicle. / Ausgabe des maximalen
-        // MIN-Nenn-SoC, der Ã¼ber Fahrzeuglebensdauer auftritt.
+        // MIN-Nenn-SoC, der über Fahrzeuglebensdauer auftritt.
 
     #define I3_RES_SME_STAT_SOC_MIN_NENN_MIN_WERT                    (RXBUF_UCHAR(1))
     #define I3_RES_SME_STAT_SOC_MIN_NENN_MIN_WERT_UNIT               '%'
     #define I3_RES_SME_STAT_SOC_MIN_NENN_MIN_WERT_TYPE               unsigned char
         // Output of the minimum nominal MIN SoC that occurs over the life of the vehicle. / Ausgabe des minimalen
-        // MIN-Nenn-SoC, der Ã¼ber Fahrzeuglebensdauer auftritt.
+        // MIN-Nenn-SoC, der über Fahrzeuglebensdauer auftritt.
 
 // Skipping RESET_HIS_SOC_MAX_MIN on 0xDFAF which takes arguments
 
@@ -9811,15 +9807,15 @@
     #define I3_RES_SME_STAT_SP_ID_00                                 (RXBUF_UINT(0))
     #define I3_RES_SME_STAT_SP_ID_00_UNIT                            '0-n'
     #define I3_RES_SME_STAT_SP_ID_00_TYPE                            unsigned short
-        // ID_00 memory type [invalid value = FFFF] / ID_00 Speicher-Typ [UngÃ¼ltigkeitswert = FFFF]
+        // ID_00 memory type [invalid value = FFFF] / ID_00 Speicher-Typ [Ungültigkeitswert = FFFF]
 
     #define I3_RES_SME_STAT_SP_ID_01_WERT                            (RXBUF_UINT(2))
     #define I3_RES_SME_STAT_SP_ID_01_WERT_UNIT                       'HEX'
     #define I3_RES_SME_STAT_SP_ID_01_WERT_TYPE                       unsigned short
-        // ID_01 memory number [invalid value = FFFF] / ID_01 Speicher-Nummer [UngÃ¼ltigkeitswert = FFFF]
+        // ID_01 memory number [invalid value = FFFF] / ID_01 Speicher-Nummer [Ungültigkeitswert = FFFF]
 
 #define I3_PID_SME_SYMMETRIERBAND                                    0xDFE2
-        // Information on the last successful balancing process and the last no-load SoCs / Informationen zum letzten
+        // Information about the last successful balancing process and the last no-load SoCs / Informationen zum letzten
         // erfolgreichen Symmetriervorgang und den letzten Ruhespannungs-SoCs
 
     #define I3_RES_SME_STAT_SOC_LAST_BALANCING_WERT                  (RXBUF_UCHAR(0)/2.0f)
@@ -9866,21 +9862,21 @@
     #define I3_RES_SME_STAT_LAST_PARKING_SOC_5_WERT                  (RXBUF_UCHAR(10)/2.0f)
     #define I3_RES_SME_STAT_LAST_PARKING_SOC_5_WERT_UNIT             '%'
     #define I3_RES_SME_STAT_LAST_PARKING_SOC_5_WERT_TYPE             float
-        // Fifth to last SoC in which the vehicle has reached idle voltage / FÃ¼nftletzter SoC bei dem das Fahrzeug
+        // Fifth to last SoC in which the vehicle has reached idle voltage / Fünftletzter SoC bei dem das Fahrzeug
         // Ruhespannung erreicht hat
 
 // Skipping RESET_KUEHLERBRUCH on 0xE4E1 which takes arguments
 
 #define I3_PID_SME_GW_INFO_SCHNELLLADEN                              0xE50D
         // Provides warranty-relevant information on the share of fast charging in the total energy throughput of the
-        // storage facility at different temperatures. / Liefert gewÃ¤hrleistungsrelevante Informationen zum Anteil des
+        // storage facility at different temperatures. / Liefert gewährleistungsrelevante Informationen zum Anteil des
         // Schnellladens am Gesamtenergiedurchsatz des Speichers bei verschiedenen Temperaturen.
 
     #define I3_RES_SME_STAT_ENERGIEANTEIL_SCHNELLLADEN_TEMP_HIGH_WERT (RXBUF_UINT(0)/100.0f)
     #define I3_RES_SME_STAT_ENERGIEANTEIL_SCHNELLLADEN_TEMP_HIGH_WERT_UNIT '%'
     #define I3_RES_SME_STAT_ENERGIEANTEIL_SCHNELLLADEN_TEMP_HIGH_WERT_TYPE float
         // Share of the total energy throughput from fast charging at higher temperatures / Anteil des
-        // Gesamt-Energiedurchsatzes durch Schnellladen bei hÃ¶heren Temperaturen
+        // Gesamt-Energiedurchsatzes durch Schnellladen bei höheren Temperaturen
 
     #define I3_RES_SME_STAT_ENERGIEANTEIL_SCHNELLLADEN_TEMP_LOW_WERT (RXBUF_UINT(2)/100.0f)
     #define I3_RES_SME_STAT_ENERGIEANTEIL_SCHNELLLADEN_TEMP_LOW_WERT_UNIT '%'
@@ -9892,7 +9888,7 @@
     #define I3_RES_SME_STAT_ENERGIEDURCHSATZ_SCHNELLLADEN_TEMP_HIGH_WERT_UNIT 'kWh'
     #define I3_RES_SME_STAT_ENERGIEDURCHSATZ_SCHNELLLADEN_TEMP_HIGH_WERT_TYPE float
         // Energy throughput through fast charging at higher temperatures / Energiedurchsatz durch Schnellladen bei
-        // hÃ¶heren Temperaturen
+        // höheren Temperaturen
 
     #define I3_RES_SME_STAT_ENERGIEDURCHSATZ_SCHNELLLADEN_TEMP_LOW_WERT (RXBUF_UINT32(8)/10.0f)
     #define I3_RES_SME_STAT_ENERGIEDURCHSATZ_SCHNELLLADEN_TEMP_LOW_WERT_UNIT 'kWh'
@@ -9912,12 +9908,12 @@
     #define I3_RES_SME_STAT_COOL_VALVE_PRESENT_WERT                  (RXBUF_UCHAR(0))
     #define I3_RES_SME_STAT_COOL_VALVE_PRESENT_WERT_UNIT             'HEX'
     #define I3_RES_SME_STAT_COOL_VALVE_PRESENT_WERT_TYPE             unsigned char
-        // Coding parameters: cooling valve active / Codierparameter: KÃ¼hlventil aktiv
+        // Coding parameters: cooling valve active / Codierparameter: Kühlventil aktiv
 
     #define I3_RES_SME_STAT_COUNTRY_CODE_WERT                        (RXBUF_UCHAR(1))
     #define I3_RES_SME_STAT_COUNTRY_CODE_WERT_UNIT                   'HEX'
     #define I3_RES_SME_STAT_COUNTRY_CODE_WERT_TYPE                   unsigned char
-        // Coding parameters: country code / Codierparameter: LÃ¤ndercode
+        // Coding parameters: country code / Codierparameter: Ländercode
 
     #define I3_RES_SME_STAT_COD_FUNKTION_SWITCH_WERT                 (RXBUF_UCHAR(2))
     #define I3_RES_SME_STAT_COD_FUNKTION_SWITCH_WERT_UNIT            'HEX'
@@ -9927,7 +9923,7 @@
     #define I3_RES_SME_STAT_COD_STATSP_WERT                          (RXBUF_UCHAR(3))
     #define I3_RES_SME_STAT_COD_STATSP_WERT_UNIT                     'HEX'
     #define I3_RES_SME_STAT_COD_STATSP_WERT_TYPE                     unsigned char
-        // Coding parameters: stationary memory / Codierparameter: StationÃ¤rspeicher
+        // Coding parameters: stationary memory / Codierparameter: Stationärspeicher
 
 // Skipping SOH_OFFSET on 0xE5EC which takes arguments
 
@@ -9948,12 +9944,12 @@
         // Status job to analyze the voltage drop after parking the vehicle. In connection with the cell indices and
         // status signals of the symmetry requirement, this enables a collection of indices for defective or particularly
         // weak cells in the module network. / Statusjob zur Analyse der Spannungsabsenkung nach Abstellen des Fahrzeugs.
-        // Diese ermÃ¶glicht im Zusammenhang mit den Zellindizes und Statussignalen des Symmetrierbedarfs eine
-        // Indizsammlung fÃ¼r defekte bzw. besonders schwache Zellen im Modulverbund.
+        // Diese ermöglicht im Zusammenhang mit den Zellindizes und Statussignalen des Symmetrierbedarfs eine
+        // Indizsammlung für defekte bzw. besonders schwache Zellen im Modulverbund.
 
     #define I3_RES_SME_STAT_HVOFF_VOLTAGES_COUNTER_RB1_WERT          (RXBUF_UCHAR(0))
     #define I3_RES_SME_STAT_HVOFF_VOLTAGES_COUNTER_RB1_WERT_TYPE     unsigned char
-        // Counter of written data records / ZÃ¤hler der geschriebenen DatensÃ¤tze
+        // Counter of written data records / Zähler der geschriebenen Datensätze
 
     #define I3_RES_SME_STAT_HVOFF_VOLTAGES_UCEL_MIN_RB1_1_WERT       (RXBUF_UINT(1)/10000.0f)
     #define I3_RES_SME_STAT_HVOFF_VOLTAGES_UCEL_MIN_RB1_1_WERT_UNIT  'V'
@@ -10114,50 +10110,46 @@
     #define I3_RES_SME_STAT_HVOFF_VOLTAGES_INFO_SYM_RB1_1            (RXBUF_UCHAR(61))
     #define I3_RES_SME_STAT_HVOFF_VOLTAGES_INFO_SYM_RB1_1_UNIT       '0-n'
     #define I3_RES_SME_STAT_HVOFF_VOLTAGES_INFO_SYM_RB1_1_TYPE       unsigned char
-        // Info about the number of cells in symmetry (n) / Info Ã¼ber die Anzahl in Symmetrierung befindlicher Zellen
-        // (n)
+        // Info about the number of cells in symmetry (n) / Info über die Anzahl in Symmetrierung befindlicher Zellen (n)
 
     #define I3_RES_SME_STAT_HVOFF_VOLTAGES_INFO_SYM_RB1_2            (RXBUF_UCHAR(62))
     #define I3_RES_SME_STAT_HVOFF_VOLTAGES_INFO_SYM_RB1_2_UNIT       '0-n'
     #define I3_RES_SME_STAT_HVOFF_VOLTAGES_INFO_SYM_RB1_2_TYPE       unsigned char
-        // Info about the number of cells in symmetry (n) / Info Ã¼ber die Anzahl in Symmetrierung befindlicher Zellen
-        // (n)
+        // Info about the number of cells in symmetry (n) / Info über die Anzahl in Symmetrierung befindlicher Zellen (n)
 
     #define I3_RES_SME_STAT_HVOFF_VOLTAGES_INFO_SYM_RB1_3            (RXBUF_UCHAR(63))
     #define I3_RES_SME_STAT_HVOFF_VOLTAGES_INFO_SYM_RB1_3_UNIT       '0-n'
     #define I3_RES_SME_STAT_HVOFF_VOLTAGES_INFO_SYM_RB1_3_TYPE       unsigned char
-        // Info about the number of cells in symmetry (n) / Info Ã¼ber die Anzahl in Symmetrierung befindlicher Zellen
-        // (n)
+        // Info about the number of cells in symmetry (n) / Info über die Anzahl in Symmetrierung befindlicher Zellen (n)
 
     #define I3_RES_SME_STAT_HVOFF_VOLTAGES_INFO_SYM_RB1_4            (RXBUF_UCHAR(64))
     #define I3_RES_SME_STAT_HVOFF_VOLTAGES_INFO_SYM_RB1_4_UNIT       '0-n'
     #define I3_RES_SME_STAT_HVOFF_VOLTAGES_INFO_SYM_RB1_4_TYPE       unsigned char
-        // Info about the number of cells in symmetry (n) / Info Ã¼ber die Anzahl in Symmetrierung befindlicher Zellen
-        // (n)
+        // Info about the number of cells in symmetry (n) / Info über die Anzahl in Symmetrierung befindlicher Zellen (n)
 
     #define I3_RES_SME_STAT_HVOFF_VOLTAGES_T_CORE_AVG_RB1_1_WERT     (RXBUF_SCHAR(65))
-    #define I3_RES_SME_STAT_HVOFF_VOLTAGES_T_CORE_AVG_RB1_1_WERT_UNIT 'Â°C'
+    #define I3_RES_SME_STAT_HVOFF_VOLTAGES_T_CORE_AVG_RB1_1_WERT_UNIT '°C'
     #define I3_RES_SME_STAT_HVOFF_VOLTAGES_T_CORE_AVG_RB1_1_WERT_TYPE char
         // Average storage temperature / Durchschnittliche Speichertemperatur
 
     #define I3_RES_SME_STAT_HVOFF_VOLTAGES_T_CORE_AVG_RB1_2_WERT     (RXBUF_SCHAR(66))
-    #define I3_RES_SME_STAT_HVOFF_VOLTAGES_T_CORE_AVG_RB1_2_WERT_UNIT 'Â°C'
+    #define I3_RES_SME_STAT_HVOFF_VOLTAGES_T_CORE_AVG_RB1_2_WERT_UNIT '°C'
     #define I3_RES_SME_STAT_HVOFF_VOLTAGES_T_CORE_AVG_RB1_2_WERT_TYPE char
         // Average storage temperature / Durchschnittliche Speichertemperatur
 
     #define I3_RES_SME_STAT_HVOFF_VOLTAGES_T_CORE_AVG_RB1_3_WERT     (RXBUF_SCHAR(67))
-    #define I3_RES_SME_STAT_HVOFF_VOLTAGES_T_CORE_AVG_RB1_3_WERT_UNIT 'Â°C'
+    #define I3_RES_SME_STAT_HVOFF_VOLTAGES_T_CORE_AVG_RB1_3_WERT_UNIT '°C'
     #define I3_RES_SME_STAT_HVOFF_VOLTAGES_T_CORE_AVG_RB1_3_WERT_TYPE char
         // Average storage temperature / Durchschnittliche Speichertemperatur
 
     #define I3_RES_SME_STAT_HVOFF_VOLTAGES_T_CORE_AVG_RB1_4_WERT     (RXBUF_SCHAR(68))
-    #define I3_RES_SME_STAT_HVOFF_VOLTAGES_T_CORE_AVG_RB1_4_WERT_UNIT 'Â°C'
+    #define I3_RES_SME_STAT_HVOFF_VOLTAGES_T_CORE_AVG_RB1_4_WERT_UNIT '°C'
     #define I3_RES_SME_STAT_HVOFF_VOLTAGES_T_CORE_AVG_RB1_4_WERT_TYPE char
         // Average storage temperature / Durchschnittliche Speichertemperatur
 
     #define I3_RES_SME_STAT_HVOFF_VOLTAGES_COUNTER_RB2_WERT          (RXBUF_UCHAR(69))
     #define I3_RES_SME_STAT_HVOFF_VOLTAGES_COUNTER_RB2_WERT_TYPE     unsigned char
-        // Counter of written data records / ZÃ¤hler der geschriebenen DatensÃ¤tze
+        // Counter of written data records / Zähler der geschriebenen Datensätze
 
     #define I3_RES_SME_STAT_HVOFF_VOLTAGES_UCEL_MIN_RB2_1_WERT       (RXBUF_UINT(70)/10000.0f)
     #define I3_RES_SME_STAT_HVOFF_VOLTAGES_UCEL_MIN_RB2_1_WERT_UNIT  'V'
@@ -10318,216 +10310,216 @@
     #define I3_RES_SME_STAT_HVOFF_VOLTAGES_INFO_SYM_RB2_1            (RXBUF_UCHAR(130))
     #define I3_RES_SME_STAT_HVOFF_VOLTAGES_INFO_SYM_RB2_1_UNIT       '0-n'
     #define I3_RES_SME_STAT_HVOFF_VOLTAGES_INFO_SYM_RB2_1_TYPE       unsigned char
-        // Info about the number of cells in symmetry / Info Ã¼ber die Anzahl in Symmetrierung befindlicher Zellen
+        // Info about the number of cells in symmetry / Info über die Anzahl in Symmetrierung befindlicher Zellen
 
     #define I3_RES_SME_STAT_HVOFF_VOLTAGES_INFO_SYM_RB2_2            (RXBUF_UCHAR(131))
     #define I3_RES_SME_STAT_HVOFF_VOLTAGES_INFO_SYM_RB2_2_UNIT       '0-n'
     #define I3_RES_SME_STAT_HVOFF_VOLTAGES_INFO_SYM_RB2_2_TYPE       unsigned char
-        // Info about the number of cells in symmetry / Info Ã¼ber die Anzahl in Symmetrierung befindlicher Zellen
+        // Info about the number of cells in symmetry / Info über die Anzahl in Symmetrierung befindlicher Zellen
 
     #define I3_RES_SME_STAT_HVOFF_VOLTAGES_INFO_SYM_RB2_3            (RXBUF_UCHAR(132))
     #define I3_RES_SME_STAT_HVOFF_VOLTAGES_INFO_SYM_RB2_3_UNIT       '0-n'
     #define I3_RES_SME_STAT_HVOFF_VOLTAGES_INFO_SYM_RB2_3_TYPE       unsigned char
-        // Info about the number of cells in symmetry / Info Ã¼ber die Anzahl in Symmetrierung befindlicher Zellen
+        // Info about the number of cells in symmetry / Info über die Anzahl in Symmetrierung befindlicher Zellen
 
     #define I3_RES_SME_STAT_HVOFF_VOLTAGES_INFO_SYM_RB2_4            (RXBUF_UCHAR(133))
     #define I3_RES_SME_STAT_HVOFF_VOLTAGES_INFO_SYM_RB2_4_UNIT       '0-n'
     #define I3_RES_SME_STAT_HVOFF_VOLTAGES_INFO_SYM_RB2_4_TYPE       unsigned char
-        // Info about the number of cells in symmetry / Info Ã¼ber die Anzahl in Symmetrierung befindlicher Zellen
+        // Info about the number of cells in symmetry / Info über die Anzahl in Symmetrierung befindlicher Zellen
 
     #define I3_RES_SME_STAT_HVOFF_VOLTAGES_T_CORE_AVG_RB2_1_WERT     (RXBUF_SCHAR(134))
-    #define I3_RES_SME_STAT_HVOFF_VOLTAGES_T_CORE_AVG_RB2_1_WERT_UNIT 'Â°C'
+    #define I3_RES_SME_STAT_HVOFF_VOLTAGES_T_CORE_AVG_RB2_1_WERT_UNIT '°C'
     #define I3_RES_SME_STAT_HVOFF_VOLTAGES_T_CORE_AVG_RB2_1_WERT_TYPE char
         // Average storage temperature / Durchschnittliche Speichertemperatur
 
     #define I3_RES_SME_STAT_HVOFF_VOLTAGES_T_CORE_AVG_RB2_2_WERT     (RXBUF_SCHAR(135))
-    #define I3_RES_SME_STAT_HVOFF_VOLTAGES_T_CORE_AVG_RB2_2_WERT_UNIT 'Â°C'
+    #define I3_RES_SME_STAT_HVOFF_VOLTAGES_T_CORE_AVG_RB2_2_WERT_UNIT '°C'
     #define I3_RES_SME_STAT_HVOFF_VOLTAGES_T_CORE_AVG_RB2_2_WERT_TYPE char
         // Average storage temperature / Durchschnittliche Speichertemperatur
 
     #define I3_RES_SME_STAT_HVOFF_VOLTAGES_T_CORE_AVG_RB2_3_WERT     (RXBUF_SCHAR(136))
-    #define I3_RES_SME_STAT_HVOFF_VOLTAGES_T_CORE_AVG_RB2_3_WERT_UNIT 'Â°C'
+    #define I3_RES_SME_STAT_HVOFF_VOLTAGES_T_CORE_AVG_RB2_3_WERT_UNIT '°C'
     #define I3_RES_SME_STAT_HVOFF_VOLTAGES_T_CORE_AVG_RB2_3_WERT_TYPE char
         // Average storage temperature / Durchschnittliche Speichertemperatur
 
     #define I3_RES_SME_STAT_HVOFF_VOLTAGES_T_CORE_AVG_RB2_4_WERT     (RXBUF_SCHAR(137))
-    #define I3_RES_SME_STAT_HVOFF_VOLTAGES_T_CORE_AVG_RB2_4_WERT_UNIT 'Â°C'
+    #define I3_RES_SME_STAT_HVOFF_VOLTAGES_T_CORE_AVG_RB2_4_WERT_UNIT '°C'
     #define I3_RES_SME_STAT_HVOFF_VOLTAGES_T_CORE_AVG_RB2_4_WERT_TYPE char
         // Average storage temperature / Durchschnittliche Speichertemperatur
 
     #define I3_RES_SME_STAT_HVOFF_VOLTAGES_COUNTER_SCORE_WERT        (RXBUF_UCHAR(138))
     #define I3_RES_SME_STAT_HVOFF_VOLTAGES_COUNTER_SCORE_WERT_TYPE   unsigned char
-        // Counter for evaluating the voltage drop over the lifetime / ZÃ¤hler zur Bewertung des Spannungsabfalls Ã¼ber
-        // die Lebenszeit
+        // Counter for evaluating the voltage drop over the lifetime / Zähler zur Bewertung des Spannungsabfalls über die
+        // Lebenszeit
 
 #define I3_PID_SME_RB_SOH_KAPATEST_ERW                               0xE5F3
         // Extension of the return of the results of the last 3 HVS offboard capacity tests (ring memory) / Erweiterung
-        // der RÃ¼ckgabe der Ergebnisse der letzten 3 HVS-Offboard-Kapatests (Ringspeicher)
+        // der Rückgabe der Ergebnisse der letzten 3 HVS-Offboard-Kapatests (Ringspeicher)
 
     #define I3_RES_SME_STAT_TEMP_MEAN_DCH_END_TEST_1_WERT            (RXBUF_UCHAR(0))
-    #define I3_RES_SME_STAT_TEMP_MEAN_DCH_END_TEST_1_WERT_UNIT       'Â°C'
+    #define I3_RES_SME_STAT_TEMP_MEAN_DCH_END_TEST_1_WERT_UNIT       '°C'
     #define I3_RES_SME_STAT_TEMP_MEAN_DCH_END_TEST_1_WERT_TYPE       unsigned char
         // Mean simulated temperature at HVS level at the end of discharge of the first capacity test / Mittlere
-        // simulierte Temperatur auf HVS-Ebene bei Entladeende des ersten KapazitÃ¤tstests
+        // simulierte Temperatur auf HVS-Ebene bei Entladeende des ersten Kapazitätstests
 
     #define I3_RES_SME_STAT_TEMP_MIN_DCH_END_TEST_1_WERT             (RXBUF_UCHAR(1))
-    #define I3_RES_SME_STAT_TEMP_MIN_DCH_END_TEST_1_WERT_UNIT        'Â°C'
+    #define I3_RES_SME_STAT_TEMP_MIN_DCH_END_TEST_1_WERT_UNIT        '°C'
     #define I3_RES_SME_STAT_TEMP_MIN_DCH_END_TEST_1_WERT_TYPE        unsigned char
         // Minimum simulated temperature at HVS level at the end of discharge of the first capacity test / Minimale
-        // simulierte Temperatur auf HVS-Ebene bei Entladeende des ersten KapazitÃ¤tstests
+        // simulierte Temperatur auf HVS-Ebene bei Entladeende des ersten Kapazitätstests
 
     #define I3_RES_SME_STAT_TEMP_MAX_DCH_END_TEST_1_WERT             (RXBUF_UCHAR(2))
-    #define I3_RES_SME_STAT_TEMP_MAX_DCH_END_TEST_1_WERT_UNIT        'Â°C'
+    #define I3_RES_SME_STAT_TEMP_MAX_DCH_END_TEST_1_WERT_UNIT        '°C'
     #define I3_RES_SME_STAT_TEMP_MAX_DCH_END_TEST_1_WERT_TYPE        unsigned char
         // Maximum simulated temperature at HVS level at the end of discharge of the first capacity test / Maximale
-        // simulierte Temperatur auf HVS-Ebene bei Entladeende des ersten KapazitÃ¤tstests
+        // simulierte Temperatur auf HVS-Ebene bei Entladeende des ersten Kapazitätstests
 
     #define I3_RES_SME_STAT_TEMP_MEAN_CHA_END_TEST_1_WERT            (RXBUF_UCHAR(3))
-    #define I3_RES_SME_STAT_TEMP_MEAN_CHA_END_TEST_1_WERT_UNIT       'Â°C'
+    #define I3_RES_SME_STAT_TEMP_MEAN_CHA_END_TEST_1_WERT_UNIT       '°C'
     #define I3_RES_SME_STAT_TEMP_MEAN_CHA_END_TEST_1_WERT_TYPE       unsigned char
         // Mean simulated temperature at HVS level at the end of charging of the first capacity test / Mittlere
-        // simulierte Temperatur auf HVS-Ebene bei Ladeende des ersten KapazitÃ¤tstests
+        // simulierte Temperatur auf HVS-Ebene bei Ladeende des ersten Kapazitätstests
 
     #define I3_RES_SME_STAT_TEMP_MIN_CHA_END_TEST_1_WERT             (RXBUF_UCHAR(4))
-    #define I3_RES_SME_STAT_TEMP_MIN_CHA_END_TEST_1_WERT_UNIT        'Â°C'
+    #define I3_RES_SME_STAT_TEMP_MIN_CHA_END_TEST_1_WERT_UNIT        '°C'
     #define I3_RES_SME_STAT_TEMP_MIN_CHA_END_TEST_1_WERT_TYPE        unsigned char
         // Minimum simulated temperature at HVS level at the end of charging of the first capacity test / Minimale
-        // simulierte Temperatur auf HVS-Ebene bei Ladeende des ersten KapazitÃ¤tstests
+        // simulierte Temperatur auf HVS-Ebene bei Ladeende des ersten Kapazitätstests
 
     #define I3_RES_SME_STAT_TEMP_MAX_CHA_END_TEST_1_WERT             (RXBUF_UCHAR(5))
-    #define I3_RES_SME_STAT_TEMP_MAX_CHA_END_TEST_1_WERT_UNIT        'Â°C'
+    #define I3_RES_SME_STAT_TEMP_MAX_CHA_END_TEST_1_WERT_UNIT        '°C'
     #define I3_RES_SME_STAT_TEMP_MAX_CHA_END_TEST_1_WERT_TYPE        unsigned char
         // Maximum simulated temperature at HVS level at the end of charging of the first capacity test / Maximale
-        // simulierte Temperatur auf HVS-Ebene bei Ladeende des ersten KapazitÃ¤tstests
+        // simulierte Temperatur auf HVS-Ebene bei Ladeende des ersten Kapazitätstests
 
     #define I3_RES_SME_STAT_FRC_PWR_CHG_TEST_1_WERT                  (RXBUF_UCHAR(6)/10.0f)
     #define I3_RES_SME_STAT_FRC_PWR_CHG_TEST_1_WERT_UNIT             'kW'
     #define I3_RES_SME_STAT_FRC_PWR_CHG_TEST_1_WERT_TYPE             float
         // Charging power (from forecast) during the first capacity test / Ladeleistung (aus Prognose) bei erstem
-        // KapazitÃ¤tstest
+        // Kapazitätstest
 
     #define I3_RES_SME_STAT_I_DCH_END_FILT_TEST_1_WERT               (RXBUF_UCHAR(7)/10.0f)
     #define I3_RES_SME_STAT_I_DCH_END_FILT_TEST_1_WERT_UNIT          'A'
     #define I3_RES_SME_STAT_I_DCH_END_FILT_TEST_1_WERT_TYPE          float
         // Aborted discharge current (filtered) during the first capacity test / Entladeabbruch-Strom (gefiltert) bei
-        // erstem KapazitÃ¤tstest
+        // erstem Kapazitätstest
 
     #define I3_RES_SME_STAT_U_CELL_MIN_IDX_DCH_END_TEST_1_WERT       (RXBUF_UCHAR(8))
     #define I3_RES_SME_STAT_U_CELL_MIN_IDX_DCH_END_TEST_1_WERT_TYPE  unsigned char
         // Index of the cell with the minimum cell voltage at the end of the discharge of the first capacity test / Index
-        // der Zelle mit der minimalen Zellspannung bei Entladeende des ersen KapazitÃ¤tstests
+        // der Zelle mit der minimalen Zellspannung bei Entladeende des ersen Kapazitätstests
 
     #define I3_RES_SME_STAT_TEMP_MEAN_DCH_END_TEST_2_WERT            (RXBUF_UCHAR(9))
-    #define I3_RES_SME_STAT_TEMP_MEAN_DCH_END_TEST_2_WERT_UNIT       'Â°C'
+    #define I3_RES_SME_STAT_TEMP_MEAN_DCH_END_TEST_2_WERT_UNIT       '°C'
     #define I3_RES_SME_STAT_TEMP_MEAN_DCH_END_TEST_2_WERT_TYPE       unsigned char
         // Mean simulated temperature at HVS level at the end of discharge of the second capacity test / Mittlere
-        // simulierte Temperatur auf HVS-Ebene bei Entladeende des zweiten KapazitÃ¤tstests
+        // simulierte Temperatur auf HVS-Ebene bei Entladeende des zweiten Kapazitätstests
 
     #define I3_RES_SME_STAT_TEMP_MIN_DCH_END_TEST_2_WERT             (RXBUF_UCHAR(10))
-    #define I3_RES_SME_STAT_TEMP_MIN_DCH_END_TEST_2_WERT_UNIT        'Â°C'
+    #define I3_RES_SME_STAT_TEMP_MIN_DCH_END_TEST_2_WERT_UNIT        '°C'
     #define I3_RES_SME_STAT_TEMP_MIN_DCH_END_TEST_2_WERT_TYPE        unsigned char
         // Minimum simulated temperature at HVS level at the end of the discharge of the second capacity test / Minimale
-        // simulierte Temperatur auf HVS-Ebene bei Entladeende des zweiten KapazitÃ¤tstests
+        // simulierte Temperatur auf HVS-Ebene bei Entladeende des zweiten Kapazitätstests
 
     #define I3_RES_SME_STAT_TEMP_MAX_DCH_END_TEST_2_WERT             (RXBUF_UCHAR(11))
-    #define I3_RES_SME_STAT_TEMP_MAX_DCH_END_TEST_2_WERT_UNIT        'Â°C'
+    #define I3_RES_SME_STAT_TEMP_MAX_DCH_END_TEST_2_WERT_UNIT        '°C'
     #define I3_RES_SME_STAT_TEMP_MAX_DCH_END_TEST_2_WERT_TYPE        unsigned char
         // Maximum simulated temperature at HVS level at the end of the discharge of the second capacity test / Maximale
-        // simulierte Temperatur auf HVS-Ebene bei Entladeende des zweiten KapazitÃ¤tstests
+        // simulierte Temperatur auf HVS-Ebene bei Entladeende des zweiten Kapazitätstests
 
     #define I3_RES_SME_STAT_TEMP_MEAN_CHA_END_TEST_2_WERT            (RXBUF_UCHAR(12))
-    #define I3_RES_SME_STAT_TEMP_MEAN_CHA_END_TEST_2_WERT_UNIT       'Â°C'
+    #define I3_RES_SME_STAT_TEMP_MEAN_CHA_END_TEST_2_WERT_UNIT       '°C'
     #define I3_RES_SME_STAT_TEMP_MEAN_CHA_END_TEST_2_WERT_TYPE       unsigned char
         // Mean simulated temperature at HVS level at the end of charging of the second capacity test / Mittlere
-        // simulierte Temperatur auf HVS-Ebene bei Ladeende des zweiten KapazitÃ¤tstests
+        // simulierte Temperatur auf HVS-Ebene bei Ladeende des zweiten Kapazitätstests
 
     #define I3_RES_SME_STAT_TEMP_MIN_CHA_END_TEST_2_WERT             (RXBUF_UCHAR(13))
-    #define I3_RES_SME_STAT_TEMP_MIN_CHA_END_TEST_2_WERT_UNIT        'Â°C'
+    #define I3_RES_SME_STAT_TEMP_MIN_CHA_END_TEST_2_WERT_UNIT        '°C'
     #define I3_RES_SME_STAT_TEMP_MIN_CHA_END_TEST_2_WERT_TYPE        unsigned char
         // Minimum simulated temperature at HVS level at the end of charging of the second capacity test / Minimale
-        // simulierte Temperatur auf HVS-Ebene bei Ladeende des zweiten KapazitÃ¤tstests
+        // simulierte Temperatur auf HVS-Ebene bei Ladeende des zweiten Kapazitätstests
 
     #define I3_RES_SME_STAT_TEMP_MAX_CHA_END_TEST_2_WERT             (RXBUF_UCHAR(14))
-    #define I3_RES_SME_STAT_TEMP_MAX_CHA_END_TEST_2_WERT_UNIT        'Â°C'
+    #define I3_RES_SME_STAT_TEMP_MAX_CHA_END_TEST_2_WERT_UNIT        '°C'
     #define I3_RES_SME_STAT_TEMP_MAX_CHA_END_TEST_2_WERT_TYPE        unsigned char
         // Maximum simulated temperature at HVS level at the end of charging of the second capacity test / Maximale
-        // simulierte Temperatur auf HVS-Ebene bei Ladeende des zweiten KapazitÃ¤tstests
+        // simulierte Temperatur auf HVS-Ebene bei Ladeende des zweiten Kapazitätstests
 
     #define I3_RES_SME_STAT_FRC_PWR_CHG_TEST_2_WERT                  (RXBUF_UCHAR(15)/10.0f)
     #define I3_RES_SME_STAT_FRC_PWR_CHG_TEST_2_WERT_UNIT             'kW'
     #define I3_RES_SME_STAT_FRC_PWR_CHG_TEST_2_WERT_TYPE             float
         // Charging power (from forecast) in the second capacity test / Ladeleistung (aus Prognose) bei zweitem
-        // KapazitÃ¤tstest
+        // Kapazitätstest
 
     #define I3_RES_SME_STAT_I_DCH_END_FILT_TEST_2_WERT               (RXBUF_UCHAR(16)/10.0f)
     #define I3_RES_SME_STAT_I_DCH_END_FILT_TEST_2_WERT_UNIT          'A'
     #define I3_RES_SME_STAT_I_DCH_END_FILT_TEST_2_WERT_TYPE          float
         // Aborted discharge current (filtered) during the second capacity test / Entladeabbruch-Strom (gefiltert) bei
-        // zweitem KapazitÃ¤tstest
+        // zweitem Kapazitätstest
 
     #define I3_RES_SME_STAT_U_CELL_MIN_IDX_DCH_END_TEST_2_WERT       (RXBUF_UCHAR(17))
     #define I3_RES_SME_STAT_U_CELL_MIN_IDX_DCH_END_TEST_2_WERT_TYPE  unsigned char
         // Index of the cell with the minimum cell voltage at the end of the discharge of the second capacity test /
-        // Index der Zelle mit der minimalen Zellspannung bei Entladeende des zweiten KapazitÃ¤tstests
+        // Index der Zelle mit der minimalen Zellspannung bei Entladeende des zweiten Kapazitätstests
 
     #define I3_RES_SME_STAT_TEMP_MEAN_DCH_END_TEST_3_WERT            (RXBUF_UCHAR(18))
-    #define I3_RES_SME_STAT_TEMP_MEAN_DCH_END_TEST_3_WERT_UNIT       'Â°C'
+    #define I3_RES_SME_STAT_TEMP_MEAN_DCH_END_TEST_3_WERT_UNIT       '°C'
     #define I3_RES_SME_STAT_TEMP_MEAN_DCH_END_TEST_3_WERT_TYPE       unsigned char
         // Mean simulated temperature at HVS level at the end of discharge of the third capacity test / Mittlere
-        // simulierte Temperatur auf HVS-Ebene bei Entladeende des dritten KapazitÃ¤tstests
+        // simulierte Temperatur auf HVS-Ebene bei Entladeende des dritten Kapazitätstests
 
     #define I3_RES_SME_STAT_TEMP_MIN_DCH_END_TEST_3_WERT             (RXBUF_UCHAR(19))
-    #define I3_RES_SME_STAT_TEMP_MIN_DCH_END_TEST_3_WERT_UNIT        'Â°C'
+    #define I3_RES_SME_STAT_TEMP_MIN_DCH_END_TEST_3_WERT_UNIT        '°C'
     #define I3_RES_SME_STAT_TEMP_MIN_DCH_END_TEST_3_WERT_TYPE        unsigned char
-        // Minimum simulated temperature at HVS level at the end of discharge of the third capacity test / Minimale
-        // simulierte Temperatur auf HVS-Ebene bei Entladeende des dritten KapazitÃ¤tstests
+        // Minimum simulated temperature at HVS level at the end of the discharge of the third capacity test / Minimale
+        // simulierte Temperatur auf HVS-Ebene bei Entladeende des dritten Kapazitätstests
 
     #define I3_RES_SME_STAT_TEMP_MAX_DCH_END_TEST_3_WERT             (RXBUF_UCHAR(20))
-    #define I3_RES_SME_STAT_TEMP_MAX_DCH_END_TEST_3_WERT_UNIT        'Â°C'
+    #define I3_RES_SME_STAT_TEMP_MAX_DCH_END_TEST_3_WERT_UNIT        '°C'
     #define I3_RES_SME_STAT_TEMP_MAX_DCH_END_TEST_3_WERT_TYPE        unsigned char
         // Maximum simulated temperature at HVS level at the end of the discharge of the third capacity test / Maximale
-        // simulierte Temperatur auf HVS-Ebene bei Entladeende des dritten KapazitÃ¤tstests
+        // simulierte Temperatur auf HVS-Ebene bei Entladeende des dritten Kapazitätstests
 
     #define I3_RES_SME_STAT_TEMP_MEAN_CHA_END_TEST_3_WERT            (RXBUF_UCHAR(21))
-    #define I3_RES_SME_STAT_TEMP_MEAN_CHA_END_TEST_3_WERT_UNIT       'Â°C'
+    #define I3_RES_SME_STAT_TEMP_MEAN_CHA_END_TEST_3_WERT_UNIT       '°C'
     #define I3_RES_SME_STAT_TEMP_MEAN_CHA_END_TEST_3_WERT_TYPE       unsigned char
         // Mean simulated temperature at HVS level at the end of charging of the third capacity test / Mittlere
-        // simulierte Temperatur auf HVS-Ebene bei Ladeende des dritten KapazitÃ¤tstests
+        // simulierte Temperatur auf HVS-Ebene bei Ladeende des dritten Kapazitätstests
 
     #define I3_RES_SME_STAT_TEMP_MIN_CHA_END_TEST_3_WERT             (RXBUF_UCHAR(22))
-    #define I3_RES_SME_STAT_TEMP_MIN_CHA_END_TEST_3_WERT_UNIT        'Â°C'
+    #define I3_RES_SME_STAT_TEMP_MIN_CHA_END_TEST_3_WERT_UNIT        '°C'
     #define I3_RES_SME_STAT_TEMP_MIN_CHA_END_TEST_3_WERT_TYPE        unsigned char
         // Minimum simulated temperature at HVS level at the end of charging of the third capacity test / Minimale
-        // simulierte Temperatur auf HVS-Ebene bei Ladeende des dritten KapazitÃ¤tstests
+        // simulierte Temperatur auf HVS-Ebene bei Ladeende des dritten Kapazitätstests
 
     #define I3_RES_SME_STAT_TEMP_MAX_CHA_END_TEST_3_WERT             (RXBUF_UCHAR(23))
-    #define I3_RES_SME_STAT_TEMP_MAX_CHA_END_TEST_3_WERT_UNIT        'Â°C'
+    #define I3_RES_SME_STAT_TEMP_MAX_CHA_END_TEST_3_WERT_UNIT        '°C'
     #define I3_RES_SME_STAT_TEMP_MAX_CHA_END_TEST_3_WERT_TYPE        unsigned char
         // Maximum simulated temperature at HVS level at the end of charging of the third capacity test / Maximale
-        // simulierte Temperatur auf HVS-Ebene bei Ladeende des dritten KapazitÃ¤tstests
+        // simulierte Temperatur auf HVS-Ebene bei Ladeende des dritten Kapazitätstests
 
     #define I3_RES_SME_STAT_FRC_PWR_CHG_TEST_3_WERT                  (RXBUF_UCHAR(24)/10.0f)
     #define I3_RES_SME_STAT_FRC_PWR_CHG_TEST_3_WERT_UNIT             'kW'
     #define I3_RES_SME_STAT_FRC_PWR_CHG_TEST_3_WERT_TYPE             float
         // Charging power (from forecast) in the third capacity test / Ladeleistung (aus Prognose) bei drittem
-        // KapazitÃ¤tstest
+        // Kapazitätstest
 
     #define I3_RES_SME_STAT_I_DCH_END_FILT_TEST_3_WERT               (RXBUF_UCHAR(25)/10.0f)
     #define I3_RES_SME_STAT_I_DCH_END_FILT_TEST_3_WERT_UNIT          'A'
     #define I3_RES_SME_STAT_I_DCH_END_FILT_TEST_3_WERT_TYPE          float
         // Aborted discharge current (filtered) during the third capacity test / Entladeabbruch-Strom (gefiltert) bei
-        // drittem KapazitÃ¤tstest
+        // drittem Kapazitätstest
 
     #define I3_RES_SME_STAT_U_CELL_MIN_IDX_DCH_END_TEST_3_WERT       (RXBUF_UCHAR(26))
     #define I3_RES_SME_STAT_U_CELL_MIN_IDX_DCH_END_TEST_3_WERT_TYPE  unsigned char
         // Index of the cell with the minimum cell voltage at the end of the discharge of the third capacity test / Index
-        // der Zelle mit der minimalen Zellspannung bei Entladeende des dritten KapazitÃ¤tstests
+        // der Zelle mit der minimalen Zellspannung bei Entladeende des dritten Kapazitätstests
 
 #define I3_PID_SME_CPI_ANALYSE                                       0xE5F4
         // Returns a data packet with the most critical relative temperature deviation since the last reset (drag
         // pointer). A data package contains the relevant measured values for data entry for the CPI diagnosis. / Gibt
-        // ein Datenpaket mit der kritischsten relativen Temperaturabweichung seit dem letzten Reset zurÃ¼ck
-        // (Schleppzeiger). Ein Datenpaket enthÃ¤lt fÃ¼r die Bedatung der CPI-Diagnose relevante Messwerte.
+        // ein Datenpaket mit der kritischsten relativen Temperaturabweichung seit dem letzten Reset zurück
+        // (Schleppzeiger). Ein Datenpaket enthält für die Bedatung der CPI-Diagnose relevante Messwerte.
 
     #define I3_RES_SME_STAT_CPI_REL_TEMP_WERT                        (RXBUF_SINT(0)/10.0f)
     #define I3_RES_SME_STAT_CPI_REL_TEMP_WERT_UNIT                   '%'
@@ -10551,15 +10543,15 @@
         // Result of CPI diagnosis / Ergebnis CPI Diagnose
 
     #define I3_RES_SME_STAT_CPI_TEMP_UMGEBUNG_WERT                   (RXBUF_SCHAR(11))
-    #define I3_RES_SME_STAT_CPI_TEMP_UMGEBUNG_WERT_UNIT              'Â°C'
+    #define I3_RES_SME_STAT_CPI_TEMP_UMGEBUNG_WERT_UNIT              '°C'
     #define I3_RES_SME_STAT_CPI_TEMP_UMGEBUNG_WERT_TYPE              char
-        // Ambient temperature during the CPI diagnosis / Umgebungstemperatatur wÃ¤hrend der CPI-Diagnose
+        // Ambient temperature during the CPI diagnosis / Umgebungstemperatatur während der CPI-Diagnose
 
     #define I3_RES_SME_STAT_CPI_FRT_AC                               (RXBUF_UCHAR(12))
     #define I3_RES_SME_STAT_CPI_FRT_AC_UNIT                          '0-n'
     #define I3_RES_SME_STAT_CPI_FRT_AC_TYPE                          unsigned char
-        // Status of the interior air conditioning during the CPI diagnosis / Status der Innenraum-Klimatisierung
-        // wÃ¤hrend der CPI-Diagnose
+        // Status of the interior air conditioning during the CPI diagnosis / Status der Innenraum-Klimatisierung während
+        // der CPI-Diagnose
 
     #define I3_RES_SME_STAT_CPI_LIFE_TIME_WERT                       (RXBUF_UINT32(13))
     #define I3_RES_SME_STAT_CPI_LIFE_TIME_WERT_UNIT                  's'
@@ -10585,27 +10577,26 @@
         // Return of sizes for the asymmetry potential of the memory that were determined as part of a capacity
         // determination (offboard capacity test). The cell and module index of the cell that potentially has the lowest
         // capacity, as well as the additional capacity range of this cell (in percent), which can potentially be made
-        // usable by balancing the memory, are output. / RÃ¼ckgabe von GrÃ¶Ãen zum Asymmetrie-Potenzial des Speichers,
-        // die im Rahmen einer KapazitÃ¤tsbestimmung (Offboard Kapatest) ermittelt wurden. Ausgegeben werden Zell- und
-        // Modul-Index der Zelle, die potenziell die geringste KapazitÃ¤t besitzt, sowie der zusÃ¤tzliche
-        // KapazitÃ¤tsbereich dieser Zelle (in Prozent), der potenziell durch eine Symmetrierung des Speichers nutzbar
-        // gemacht werden kann.
+        // usable by balancing the memory, are output. / Rückgabe von Größen zum Asymmetrie-Potenzial des Speichers, die
+        // im Rahmen einer Kapazitätsbestimmung (Offboard Kapatest) ermittelt wurden. Ausgegeben werden Zell- und
+        // Modul-Index der Zelle, die potenziell die geringste Kapazität besitzt, sowie der zusätzliche Kapazitätsbereich
+        // dieser Zelle (in Prozent), der potenziell durch eine Symmetrierung des Speichers nutzbar gemacht werden kann.
 
     #define I3_RES_SME_STAT_KAPATEST_ASYM_ZELLE_ID_WERT              (RXBUF_UCHAR(0))
     #define I3_RES_SME_STAT_KAPATEST_ASYM_ZELLE_ID_WERT_TYPE         unsigned char
         // Cell index of the cell that was most deeply discharged during the capacity test. / Zell-Index der Zelle, die
-        // wÃ¤hrend des KapazitÃ¤ts-Test am tiefsten entladen wurde.
+        // während des Kapazitäts-Test am tiefsten entladen wurde.
 
     #define I3_RES_SME_STAT_KAPATEST_ASYM_MOD_ID_WERT                (RXBUF_UCHAR(1))
     #define I3_RES_SME_STAT_KAPATEST_ASYM_MOD_ID_WERT_TYPE           unsigned char
         // Module index of the cell that was deeply discharged during the capacity test. / Modul-Index der Zelle, die
-        // wÃ¤hrend KapazitÃ¤tstest am tiefsten entladen wurde.
+        // während Kapazitätstest am tiefsten entladen wurde.
 
     #define I3_RES_SME_STAT_KAPATEST_ASYM_POT_WERT                   (RXBUF_UINT(2)/10.0f)
     #define I3_RES_SME_STAT_KAPATEST_ASYM_POT_WERT_UNIT              '%'
     #define I3_RES_SME_STAT_KAPATEST_ASYM_POT_WERT_TYPE              float
-        // Capacity area that can potentially be made usable by balancing. / KapazitÃ¤tsbereich, der potenziell durch
-        // eine Symmetrierung nutzbar gemacht werden kann.
+        // Capacity area that can potentially be made usable by balancing. / Kapazitätsbereich, der potenziell durch eine
+        // Symmetrierung nutzbar gemacht werden kann.
 
 // Skipping VIN on 0xF190 which takes arguments
 

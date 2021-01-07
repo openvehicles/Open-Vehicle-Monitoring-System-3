@@ -686,7 +686,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "NBT", "STATUS_ANT_QFS", "STAT_QUALITY_WERT_0XD010", STAT_QUALITY_WERT_0XD010, "");
 
     unsigned char STAT_FIELDSTRENGTH_WERT_0XD010 = (RXBUF_UCHAR(1));
-        // Values between 0..15 This corresponds to 0..60 dB�V in steps of 4dB. / Werte zwischen 0..15 Dies entspricht
+        // Values between 0..15 This corresponds to 0..60 dBµV in steps of 4dB. / Werte zwischen 0..15 Dies entspricht
         // 0..60 dBµV in Schritten von 4dB.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "NBT", "STATUS_ANT_QFS", "STAT_FIELDSTRENGTH_WERT_0XD010", STAT_FIELDSTRENGTH_WERT_0XD010, "");
 
@@ -695,7 +695,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "NBT", "STATUS_ANT_QFS", "STAT_ANT_PW", STAT_ANT_PW, "\"0-n\"");
 
     unsigned char STAT_FIELDSTRENGTH_EXACT_WERT = (RXBUF_UCHAR(3));
-        // Values between 0..60 This corresponds to 0..60 dB�V in steps of 1dB. Return of 255 if no measurement possible.
+        // Values between 0..60 This corresponds to 0..60 dBµV in steps of 1dB. Return of 255 if no measurement possible.
         // / Werte zwischen 0..60 Dies entspricht 0..60 dBµV in Schritten von 1dB. Rückgabe von 255, wenn keine Messung
         // möglich.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "NBT", "STATUS_ANT_QFS", "STAT_FIELDSTRENGTH_EXACT_WERT", STAT_FIELDSTRENGTH_EXACT_WERT, "\"dBµV\"");
@@ -811,7 +811,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "NBT", "STATUS_SWUP_INSTALLATION_HISTORY", "STAT_HISTORY_3_ERROR_CODE", STAT_HISTORY_3_ERROR_CODE, "\"0-n\"");
 
     unsigned long STAT_HISTORY_4_KILOMETER_WERT = (RXBUF_UINT32(30));
-        // Mileage in operation 4. History entry 0xFFFFFFFF is invalid / Kilometerstand bei der Operation 4.
+        // Mileage during operation 4. History entry 0xFFFFFFFF is invalid / Kilometerstand bei der Operation 4.
         // Historyeintrag  0xFFFFFFFF für ungültig
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "NBT", "STATUS_SWUP_INSTALLATION_HISTORY", "STAT_HISTORY_4_KILOMETER_WERT", STAT_HISTORY_4_KILOMETER_WERT, "\"km\"");
 
@@ -858,7 +858,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "NBT", "STATUS_SWUP_INSTALLATION_HISTORY", "STAT_HISTORY_6_TYP", STAT_HISTORY_6_TYP, "\"0-n\"");
 
     unsigned long STAT_HISTORY_6_FLASHSPEICHER_WERT = (RXBUF_UINT32(55));
-        // Free flash memory which is available for updates after the update (0xff ff ff ff if unknown) 6. History entry
+        // Free flash memory that is available for updates after the update (0xff ff ff ff if unknown) 6. History entry
         // Unit: kBytes / Freier Flashspeicher, der für Updates nach dem Update zur Verfügung steht (0xff ff ff ff wenn
         // unbekannt) 6. Historyeintrag  Einheit: kBytes
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "NBT", "STATUS_SWUP_INSTALLATION_HISTORY", "STAT_HISTORY_6_FLASHSPEICHER_WERT", STAT_HISTORY_6_FLASHSPEICHER_WERT, "\"kBytes\"");
@@ -930,8 +930,8 @@
     }
 
     unsigned char STAT_APPL_1 = (RXBUF_UCHAR(0));
-        // returns the names of each application X from the TApplication table. / gibt für jede Applikation X deren
-        // Namen aus der Tabelle TApplication wieder.
+        // returns the names of each application X from the TApplication table. / gibt für jede Applikation X deren Namen
+        // aus der Tabelle TApplication wieder.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "NBT", "APPLICATION", "STAT_APPL_1", STAT_APPL_1, "\"0-n\"");
 
     unsigned char STAT_APPL_ENABLED_1 = (RXBUF_UCHAR(1));
@@ -960,8 +960,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "NBT", "APPLICATION", "STAT_APPL_CODED_2", STAT_APPL_CODED_2, "\"0-n\"");
 
     unsigned char STAT_APPL_3 = (RXBUF_UCHAR(6));
-        // returns the names of each application X from the TApplication table. / gibt für jede Applikation X deren
-        // Namen aus der Tabelle TApplication wieder.
+        // returns the names of each application X from the TApplication table. / gibt für jede Applikation X deren Namen
+        // aus der Tabelle TApplication wieder.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "NBT", "APPLICATION", "STAT_APPL_3", STAT_APPL_3, "\"0-n\"");
 
     unsigned char STAT_APPL_ENABLED_3 = (RXBUF_UCHAR(7));
@@ -975,8 +975,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "NBT", "APPLICATION", "STAT_APPL_CODED_3", STAT_APPL_CODED_3, "\"0-n\"");
 
     unsigned char STAT_APPL_4 = (RXBUF_UCHAR(9));
-        // returns the names of each application X from the TApplication table. / gibt für jede Applikation X deren
-        // Namen aus der Tabelle TApplication wieder.
+        // returns the names of each application X from the TApplication table. / gibt für jede Applikation X deren Namen
+        // aus der Tabelle TApplication wieder.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "NBT", "APPLICATION", "STAT_APPL_4", STAT_APPL_4, "\"0-n\"");
 
     unsigned char STAT_APPL_ENABLED_4 = (RXBUF_UCHAR(10));
@@ -990,8 +990,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "NBT", "APPLICATION", "STAT_APPL_CODED_4", STAT_APPL_CODED_4, "\"0-n\"");
 
     unsigned char STAT_APPL_5 = (RXBUF_UCHAR(12));
-        // returns the names of each application X from the TApplication table. / gibt für jede Applikation X deren
-        // Namen aus der Tabelle TApplication wieder.
+        // returns the names of each application X from the TApplication table. / gibt für jede Applikation X deren Namen
+        // aus der Tabelle TApplication wieder.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "NBT", "APPLICATION", "STAT_APPL_5", STAT_APPL_5, "\"0-n\"");
 
     unsigned char STAT_APPL_ENABLED_5 = (RXBUF_UCHAR(13));
@@ -1005,8 +1005,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "NBT", "APPLICATION", "STAT_APPL_CODED_5", STAT_APPL_CODED_5, "\"0-n\"");
 
     unsigned char STAT_APPL_6 = (RXBUF_UCHAR(15));
-        // returns the names of each application X from the TApplication table. / gibt für jede Applikation X deren
-        // Namen aus der Tabelle TApplication wieder.
+        // returns the names of each application X from the TApplication table. / gibt für jede Applikation X deren Namen
+        // aus der Tabelle TApplication wieder.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "NBT", "APPLICATION", "STAT_APPL_6", STAT_APPL_6, "\"0-n\"");
 
     unsigned char STAT_APPL_ENABLED_6 = (RXBUF_UCHAR(16));
@@ -1020,8 +1020,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "NBT", "APPLICATION", "STAT_APPL_CODED_6", STAT_APPL_CODED_6, "\"0-n\"");
 
     unsigned char STAT_APPL_7 = (RXBUF_UCHAR(18));
-        // returns the names of each application X from the TApplication table. / gibt für jede Applikation X deren
-        // Namen aus der Tabelle TApplication wieder.
+        // returns the names of each application X from the TApplication table. / gibt für jede Applikation X deren Namen
+        // aus der Tabelle TApplication wieder.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "NBT", "APPLICATION", "STAT_APPL_7", STAT_APPL_7, "\"0-n\"");
 
     unsigned char STAT_APPL_ENABLED_7 = (RXBUF_UCHAR(19));
@@ -1035,8 +1035,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "NBT", "APPLICATION", "STAT_APPL_CODED_7", STAT_APPL_CODED_7, "\"0-n\"");
 
     unsigned char STAT_APPL_8 = (RXBUF_UCHAR(21));
-        // returns the names of each application X from the TApplication table. / gibt für jede Applikation X deren
-        // Namen aus der Tabelle TApplication wieder.
+        // returns the names of each application X from the TApplication table. / gibt für jede Applikation X deren Namen
+        // aus der Tabelle TApplication wieder.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "NBT", "APPLICATION", "STAT_APPL_8", STAT_APPL_8, "\"0-n\"");
 
     unsigned char STAT_APPL_ENABLED_8 = (RXBUF_UCHAR(22));
@@ -1050,8 +1050,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "NBT", "APPLICATION", "STAT_APPL_CODED_8", STAT_APPL_CODED_8, "\"0-n\"");
 
     unsigned char STAT_APPL_9 = (RXBUF_UCHAR(24));
-        // returns the names of each application X from the TApplication table. / gibt für jede Applikation X deren
-        // Namen aus der Tabelle TApplication wieder.
+        // returns the names of each application X from the TApplication table. / gibt für jede Applikation X deren Namen
+        // aus der Tabelle TApplication wieder.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "NBT", "APPLICATION", "STAT_APPL_9", STAT_APPL_9, "\"0-n\"");
 
     unsigned char STAT_APPL_ENABLED_9 = (RXBUF_UCHAR(25));
@@ -1065,8 +1065,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "NBT", "APPLICATION", "STAT_APPL_CODED_9", STAT_APPL_CODED_9, "\"0-n\"");
 
     unsigned char STAT_APPL_10 = (RXBUF_UCHAR(27));
-        // returns the names of each application X from the TApplication table. / gibt für jede Applikation X deren
-        // Namen aus der Tabelle TApplication wieder.
+        // returns the names of each application X from the TApplication table. / gibt für jede Applikation X deren Namen
+        // aus der Tabelle TApplication wieder.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "NBT", "APPLICATION", "STAT_APPL_10", STAT_APPL_10, "\"0-n\"");
 
     unsigned char STAT_APPL_ENABLED_10 = (RXBUF_UCHAR(28));
@@ -1080,8 +1080,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "NBT", "APPLICATION", "STAT_APPL_CODED_10", STAT_APPL_CODED_10, "\"0-n\"");
 
     unsigned char STAT_APPL_11 = (RXBUF_UCHAR(30));
-        // returns the names of each application X from the TApplication table. / gibt für jede Applikation X deren
-        // Namen aus der Tabelle TApplication wieder.
+        // returns the names of each application X from the TApplication table. / gibt für jede Applikation X deren Namen
+        // aus der Tabelle TApplication wieder.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "NBT", "APPLICATION", "STAT_APPL_11", STAT_APPL_11, "\"0-n\"");
 
     unsigned char STAT_APPL_ENABLED_11 = (RXBUF_UCHAR(31));
@@ -1095,8 +1095,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "NBT", "APPLICATION", "STAT_APPL_CODED_11", STAT_APPL_CODED_11, "\"0-n\"");
 
     unsigned char STAT_APPL_12 = (RXBUF_UCHAR(33));
-        // returns the names of each application X from the TApplication table. / gibt für jede Applikation X deren
-        // Namen aus der Tabelle TApplication wieder.
+        // returns the names of each application X from the TApplication table. / gibt für jede Applikation X deren Namen
+        // aus der Tabelle TApplication wieder.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "NBT", "APPLICATION", "STAT_APPL_12", STAT_APPL_12, "\"0-n\"");
 
     unsigned char STAT_APPL_ENABLED_12 = (RXBUF_UCHAR(34));
@@ -1110,8 +1110,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "NBT", "APPLICATION", "STAT_APPL_CODED_12", STAT_APPL_CODED_12, "\"0-n\"");
 
     unsigned char STAT_APPL_13 = (RXBUF_UCHAR(36));
-        // returns the names of each application X from the TApplication table. / gibt für jede Applikation X deren
-        // Namen aus der Tabelle TApplication wieder.
+        // returns the names of each application X from the TApplication table. / gibt für jede Applikation X deren Namen
+        // aus der Tabelle TApplication wieder.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "NBT", "APPLICATION", "STAT_APPL_13", STAT_APPL_13, "\"0-n\"");
 
     unsigned char STAT_APPL_ENABLED_13 = (RXBUF_UCHAR(37));
@@ -1125,8 +1125,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "NBT", "APPLICATION", "STAT_APPL_CODED_13", STAT_APPL_CODED_13, "\"0-n\"");
 
     unsigned char STAT_APPL_14 = (RXBUF_UCHAR(39));
-        // returns the names of each application X from the TApplication table. / gibt für jede Applikation X deren
-        // Namen aus der Tabelle TApplication wieder.
+        // returns the names of each application X from the TApplication table. / gibt für jede Applikation X deren Namen
+        // aus der Tabelle TApplication wieder.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "NBT", "APPLICATION", "STAT_APPL_14", STAT_APPL_14, "\"0-n\"");
 
     unsigned char STAT_APPL_ENABLED_14 = (RXBUF_UCHAR(40));
@@ -1140,8 +1140,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "NBT", "APPLICATION", "STAT_APPL_CODED_14", STAT_APPL_CODED_14, "\"0-n\"");
 
     unsigned char STAT_APPL_15 = (RXBUF_UCHAR(42));
-        // returns the names of each application X from the TApplication table. / gibt für jede Applikation X deren
-        // Namen aus der Tabelle TApplication wieder.
+        // returns the names of each application X from the TApplication table. / gibt für jede Applikation X deren Namen
+        // aus der Tabelle TApplication wieder.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "NBT", "APPLICATION", "STAT_APPL_15", STAT_APPL_15, "\"0-n\"");
 
     unsigned char STAT_APPL_ENABLED_15 = (RXBUF_UCHAR(43));
@@ -1155,8 +1155,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "NBT", "APPLICATION", "STAT_APPL_CODED_15", STAT_APPL_CODED_15, "\"0-n\"");
 
     unsigned char STAT_APPL_16 = (RXBUF_UCHAR(45));
-        // returns the names of each application X from the TApplication table. / gibt für jede Applikation X deren
-        // Namen aus der Tabelle TApplication wieder.
+        // returns the names of each application X from the TApplication table. / gibt für jede Applikation X deren Namen
+        // aus der Tabelle TApplication wieder.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "NBT", "APPLICATION", "STAT_APPL_16", STAT_APPL_16, "\"0-n\"");
 
     unsigned char STAT_APPL_ENABLED_16 = (RXBUF_UCHAR(46));
@@ -1170,8 +1170,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "NBT", "APPLICATION", "STAT_APPL_CODED_16", STAT_APPL_CODED_16, "\"0-n\"");
 
     unsigned char STAT_APPL_17 = (RXBUF_UCHAR(48));
-        // returns the names of each application X from the TApplication table. / gibt für jede Applikation X deren
-        // Namen aus der Tabelle TApplication wieder.
+        // returns the names of each application X from the TApplication table. / gibt für jede Applikation X deren Namen
+        // aus der Tabelle TApplication wieder.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "NBT", "APPLICATION", "STAT_APPL_17", STAT_APPL_17, "\"0-n\"");
 
     unsigned char STAT_APPL_ENABLED_17 = (RXBUF_UCHAR(49));
@@ -1185,8 +1185,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "NBT", "APPLICATION", "STAT_APPL_CODED_17", STAT_APPL_CODED_17, "\"0-n\"");
 
     unsigned char STAT_APPL_18 = (RXBUF_UCHAR(51));
-        // returns the names of each application X from the TApplication table. / gibt für jede Applikation X deren
-        // Namen aus der Tabelle TApplication wieder.
+        // returns the names of each application X from the TApplication table. / gibt für jede Applikation X deren Namen
+        // aus der Tabelle TApplication wieder.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "NBT", "APPLICATION", "STAT_APPL_18", STAT_APPL_18, "\"0-n\"");
 
     unsigned char STAT_APPL_ENABLED_18 = (RXBUF_UCHAR(52));
@@ -1257,8 +1257,8 @@
         // Quality of the digital recording: Range: 0-15 0-1: Medium not readable (drive not ok) 2-8: Distortion / mute
         // parts audible (drive not ok) 9-14: Medium readable, no distortion audible (drive ok) 15: Medium quality 100%,
         // e.g. BLER 0 (drive ok) / Qualität der digitalen Aufnahme: Bereich: 0-15 0-1: Medium nicht lesbar (drive not
-        // ok) 2-8: Verzerrung / Stumm Stellen hörbar (drive not ok) 9-14: Medium lesbar, keine Verzerrung hörbar
-        // (drive ok) 15: Medium Qualität 100%, z.B. BLER 0 (drive ok)
+        // ok) 2-8: Verzerrung / Stumm Stellen hörbar (drive not ok) 9-14: Medium lesbar, keine Verzerrung hörbar (drive
+        // ok) 15: Medium Qualität 100%, z.B. BLER 0 (drive ok)
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "NBT", "STATUS_CD_MD_CDC", "STAT_DIGITAL_PLAYBACK_QUALITY_WERT", STAT_DIGITAL_PLAYBACK_QUALITY_WERT, "");
 
     // ==========  Add your processing here ==========
@@ -1298,8 +1298,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%d%s\n", "NBT", "STATUS_SPEED", "STAT_GPS_SPEED_WERT", STAT_GPS_SPEED_WERT, "\"km/h\"");
 
     unsigned short STAT_SPEED_DIFFERENCE_PERCENT_WERT = (RXBUF_UINT(12));
-        // Difference in percent between the speeds that were recorded with the wheel sensors or GPS / Abweichung in
-        // Prozent zwischen den Geschwindigkeiten, die mit den Radsensoren bzw. mittels GPS erfasst wurden
+        // Difference in percent between the speeds recorded with the wheel sensors or GPS / Abweichung in Prozent
+        // zwischen den Geschwindigkeiten, die mit den Radsensoren bzw. mittels GPS erfasst wurden
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "NBT", "STATUS_SPEED", "STAT_SPEED_DIFFERENCE_PERCENT_WERT", STAT_SPEED_DIFFERENCE_PERCENT_WERT, "\"%\"");
 
     // ==========  Add your processing here ==========
@@ -1674,7 +1674,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "NBT", "STATUS_ANT_QFS_FM2", "STAT_QUALITY_WERT_0XD045", STAT_QUALITY_WERT_0XD045, "");
 
     unsigned char STAT_FIELDSTRENGTH_WERT_0XD045 = (RXBUF_UCHAR(1));
-        // Values between 0..15 This corresponds to 0..60 dB�V in steps of 4dB. / Werte zwischen 0..15 Dies entspricht
+        // Values between 0..15 This corresponds to 0..60 dBµV in steps of 4dB. / Werte zwischen 0..15 Dies entspricht
         // 0..60 dBµV in Schritten von 4dB.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "NBT", "STATUS_ANT_QFS_FM2", "STAT_FIELDSTRENGTH_WERT_0XD045", STAT_FIELDSTRENGTH_WERT_0XD045, "");
 
@@ -1683,7 +1683,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "NBT", "STATUS_ANT_QFS_FM2", "STAT_ANT_PW_0XD045", STAT_ANT_PW_0XD045, "\"0-n\"");
 
     unsigned char STAT_FIELDSTRENGTH_EXACT_WERT_0XD045 = (RXBUF_UCHAR(3));
-        // Values between 0..60 This corresponds to 0..60 dB�V in steps of 1dB. Return of 255 if no measurement possible.
+        // Values between 0..60 This corresponds to 0..60 dBµV in steps of 1dB. Return of 255 if no measurement possible.
         // / Werte zwischen 0..60 Dies entspricht 0..60 dBµV in Schritten von 1dB. Rückgabe von 255, wenn keine Messung
         // möglich.
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "NBT", "STATUS_ANT_QFS_FM2", "STAT_FIELDSTRENGTH_EXACT_WERT_0XD045", STAT_FIELDSTRENGTH_EXACT_WERT_0XD045, "\"dBµV\"");
@@ -1874,8 +1874,8 @@
     char STAT_TIME_AFTER_POWER_DOWN_AVAILABLE_WERT = (RXBUF_SCHAR(1));
         // Values from 0-127 [s], which indicate how much time has passed since the internal traffic jam was reached, to
         // execute a powerdown immediately. -1 means 'not yet reached' / Werte von 0-127 [s], die angeben, wie viel Zeit
-        // vergangen ist, seit dem intern der Staus erreicht wurde, sofort einen Powerdown auszuführen. -1 bedeutet
-        // 'noch nicht erreicht'
+        // vergangen ist, seit dem intern der Staus erreicht wurde, sofort einen Powerdown auszuführen. -1 bedeutet 'noch
+        // nicht erreicht'
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "NBT", "STATUS_TIME_AFTER_STARTUP", "STAT_TIME_AFTER_POWER_DOWN_AVAILABLE_WERT", STAT_TIME_AFTER_POWER_DOWN_AVAILABLE_WERT, "\"s\"");
 
     char STAT_TIME_AFTER_FULLY_OPERATIONAL_WERT = (RXBUF_SCHAR(2));
@@ -2447,8 +2447,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "NBT", "USB_TEST", "STAT_VENDORID_HUB_WERT", STAT_VENDORID_HUB_WERT, "\"HEX\"");
 
     unsigned short STAT_PRODUCTID_HUB_WERT = (RXBUF_UINT(4));
-        // Predefined ProductID that is output for the device from the USB interface / vorgegebene ProductID, die für
-        // das Gerät von der USB Schnittstelle ausgegeben wird
+        // Predefined ProductID that is output for the device from the USB interface / vorgegebene ProductID, die für das
+        // Gerät von der USB Schnittstelle ausgegeben wird
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "NBT", "USB_TEST", "STAT_PRODUCTID_HUB_WERT", STAT_PRODUCTID_HUB_WERT, "\"HEX\"");
 
     unsigned char STAT_USB_TEST_KDZ1 = (RXBUF_UCHAR(6));
@@ -2460,8 +2460,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "NBT", "USB_TEST", "STAT_VENDORID_KDZ1_WERT", STAT_VENDORID_KDZ1_WERT, "\"HEX\"");
 
     unsigned short STAT_PRODUCTID_KDZ1_WERT = (RXBUF_UINT(9));
-        // Predefined ProductID that is output for the device from the USB interface / vorgegebene ProductID, die für
-        // das Gerät von der USB Schnittstelle ausgegeben wird
+        // Predefined ProductID that is output for the device from the USB interface / vorgegebene ProductID, die für das
+        // Gerät von der USB Schnittstelle ausgegeben wird
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "NBT", "USB_TEST", "STAT_PRODUCTID_KDZ1_WERT", STAT_PRODUCTID_KDZ1_WERT, "\"HEX\"");
 
     unsigned char STAT_USB_TEST_KDZ2 = (RXBUF_UCHAR(11));
@@ -2473,8 +2473,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "NBT", "USB_TEST", "STAT_VENDORID_KDZ2_WERT", STAT_VENDORID_KDZ2_WERT, "\"HEX\"");
 
     unsigned short STAT_PRODUCTID_KDZ2_WERT = (RXBUF_UINT(14));
-        // Predefined ProductID that is output for the device from the USB interface / vorgegebene ProductID, die für
-        // das Gerät von der USB Schnittstelle ausgegeben wird
+        // Predefined ProductID that is output for the device from the USB interface / vorgegebene ProductID, die für das
+        // Gerät von der USB Schnittstelle ausgegeben wird
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "NBT", "USB_TEST", "STAT_PRODUCTID_KDZ2_WERT", STAT_PRODUCTID_KDZ2_WERT, "\"HEX\"");
 
     unsigned char STAT_USB_TEST_SIA = (RXBUF_UCHAR(16));
@@ -2482,13 +2482,13 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "NBT", "USB_TEST", "STAT_USB_TEST_SIA", STAT_USB_TEST_SIA, "\"0-n\"");
 
     unsigned short STAT_VENDORID_SIA_WERT = (RXBUF_UINT(17));
-        // recognized VendorID of the device from the USB interface is output / erkannte VendorID des Gerätes von der
-        // USB Schnittstelle wird ausgegeben
+        // recognized VendorID of the device from the USB interface is output / erkannte VendorID des Gerätes von der USB
+        // Schnittstelle wird ausgegeben
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "NBT", "USB_TEST", "STAT_VENDORID_SIA_WERT", STAT_VENDORID_SIA_WERT, "\"HEX\"");
 
     unsigned short STAT_PRODUCTID_SIA_WERT = (RXBUF_UINT(19));
-        //  recognized ProductID of the device from the USB interface is output /  erkannte ProductID des Gerätes von
-        // der USB Schnittstelle wird ausgegeben
+        //  recognized ProductID of the device from the USB interface is output /  erkannte ProductID des Gerätes von der
+        // USB Schnittstelle wird ausgegeben
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "NBT", "USB_TEST", "STAT_PRODUCTID_SIA_WERT", STAT_PRODUCTID_SIA_WERT, "\"HEX\"");
 
     // ==========  Add your processing here ==========
@@ -2685,29 +2685,29 @@
     }
 
     unsigned short STAT_AMB_SENSOR_WERT = (RXBUF_UINT(0));
-        // Ambient brightness of the local CID sensor (Lux). Range: [0x0000�0x03E8] 0�1000 Lux 0xFFFF invalid or sensor
+        // Ambient brightness of the local CID sensor (Lux). Range: [0x0000¿0x03E8] 0¿1000 Lux 0xFFFF invalid or sensor
         // not implemented / Ambient brightness of the local CID sensor (Lux). Range: [0x0000¿0x03E8] 0¿1000 Lux 0xFFFF
         // invalid or sensor not implemented
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "NBT", "STATUS_SENSOR_WERTE", "STAT_AMB_SENSOR_WERT", STAT_AMB_SENSOR_WERT, "\"lx\"");
 
     char STAT_BL_TEMP_WERT = (RXBUF_SCHAR(2));
-        // Currently measured temperature of the backlight temperature sensor. Range: [0xD8�0x78] -40 � C to 120 � C 0x80
-        // -128 � C Sensor Failure / Currently measured temperature of the backlight temperature sensor. Range:
+        // Currently measured temperature of the backlight temperature sensor. Range: [0xD8¿0x78] -40 ° C to 120 ° C 0x80
+        // -128 ° C Sensor Failure / Currently measured temperature of the backlight temperature sensor. Range:
         // [0xD8¿0x78] -40°C bis  120°C 0x80 -128°C  Sensor Failure
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "NBT", "STATUS_SENSOR_WERTE", "STAT_BL_TEMP_WERT", STAT_BL_TEMP_WERT, "\"°C\"");
 
     unsigned short STAT_VCC_VOLTAGE_WERT = (RXBUF_UINT(3));
-        // Vcc voltage of the CID in steps of 1/10 V Range: [0x0000�0xFFFE] 0xFFFF invalid / Vcc voltage of the CID in
+        // Vcc voltage of the CID in steps of 1/10 V Range: [0x0000¿0xFFFE] 0xFFFF invalid / Vcc voltage of the CID in
         // steps of 1/10 V Range: [0x0000¿0xFFFE]  0xFFFF invalid
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "NBT", "STATUS_SENSOR_WERTE", "STAT_VCC_VOLTAGE_WERT", STAT_VCC_VOLTAGE_WERT, "");
 
     unsigned char STAT_BACKLIGT_DRIVER_WERT = (RXBUF_UCHAR(5));
-        // Error status output pins of the backlight LED. Range: [0x00�0x03] 0xFF invalid / Error status output pins of
+        // Error status output pins of the backlight LED. Range: [0x00¿0x03] 0xFF invalid / Error status output pins of
         // the backlight LED. Range: [0x00¿0x03] 0xFF invalid
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "NBT", "STATUS_SENSOR_WERTE", "STAT_BACKLIGT_DRIVER_WERT", STAT_BACKLIGT_DRIVER_WERT, "");
 
     unsigned short STAT_INT_STATUS_WERT = (RXBUF_UINT(6));
-        // Contents of the Indigo register �IntStatus' Range: [0x0000�0xFFFF] / Contents of the Indigo register
+        // Contents of the Indigo register ¿IntStatus' Range: [0x0000¿0xFFFF] / Contents of the Indigo register
         // ¿IntStatus' Range: [0x0000¿0xFFFF]
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "NBT", "STATUS_SENSOR_WERTE", "STAT_INT_STATUS_WERT", STAT_INT_STATUS_WERT, "");
 
@@ -2753,7 +2753,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "NBT", "STATUS_INTERNAL_STATES", "STAT_CID_POWER_MODE", STAT_CID_POWER_MODE, "\"0-n\"");
 
     unsigned short STAT_ERROR_FLAGS_WERT = (RXBUF_UINT(1));
-        // Indicates which internal error are active.Range: [0x0000�0xFFFF] / Indicates which internal error are
+        // Indicates which internal error are active.Range: [0x0000¿0xFFFF] / Indicates which internal error are
         // active.Range: [0x0000¿0xFFFF]
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "NBT", "STATUS_INTERNAL_STATES", "STAT_ERROR_FLAGS_WERT", STAT_ERROR_FLAGS_WERT, "");
 
@@ -2775,7 +2775,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "NBT", "STATUS_INTERNAL_STATES", "STAT_COM_STATE", STAT_COM_STATE, "\"0-n\"");
 
     unsigned char STAT_SCHEDULE_ID = (RXBUF_UCHAR(7));
-        // Schedule ID of communication stack. Range: [0x00�0x04] 0xFF invalid / Schedule ID of communication stack.
+        // Schedule ID of communication stack. Range: [0x00¿0x04] 0xFF invalid / Schedule ID of communication stack.
         // Range: [0x00¿0x04] 0xFF invalid
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "NBT", "STATUS_INTERNAL_STATES", "STAT_SCHEDULE_ID", STAT_SCHEDULE_ID, "\"0-n\"");
 
@@ -2886,34 +2886,34 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "NBT", "CID_CODIERDATEN", "STAT_DIM_MAX_OFFSET_BRIG_WERT", STAT_DIM_MAX_OFFSET_BRIG_WERT, "");
 
     unsigned char STAT_DIM_FADE_TIME_T0_WERT = (RXBUF_UCHAR(22));
-        // Death time before fading starts (resolution 100ms). Range: [0x00�0xFF] / Death time before fading starts
+        // Death time before fading starts (resolution 100ms). Range: [0x00¿0xFF] / Death time before fading starts
         // (resolution 100ms). Range: [0x00¿0xFF]
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "NBT", "CID_CODIERDATEN", "STAT_DIM_FADE_TIME_T0_WERT", STAT_DIM_FADE_TIME_T0_WERT, "");
 
     unsigned char STAT_DIM_FADE_TIME_T1_WERT = (RXBUF_UCHAR(23));
-        // Time to fade to current luminous density (resolution 100ms). Range: [0x00�0x3F] / Time to fade to current
+        // Time to fade to current luminous density (resolution 100ms). Range: [0x00¿0x3F] / Time to fade to current
         // luminous density (resolution 100ms). Range: [0x00¿0x3F]
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "NBT", "CID_CODIERDATEN", "STAT_DIM_FADE_TIME_T1_WERT", STAT_DIM_FADE_TIME_T1_WERT, "");
 
     unsigned char STAT_DIM_FADE_TIME_T2_WERT = (RXBUF_UCHAR(24));
-        // Time to fade out (resolution 100ms). Range: [0x00�0x3F] / Time to fade out (resolution 100ms). Range:
+        // Time to fade out (resolution 100ms). Range: [0x00¿0x3F] / Time to fade out (resolution 100ms). Range:
         // [0x00¿0x3F]
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "NBT", "CID_CODIERDATEN", "STAT_DIM_FADE_TIME_T2_WERT", STAT_DIM_FADE_TIME_T2_WERT, "");
 
     unsigned char STAT_DIM_FADE_EXPO_T1_WERT = (RXBUF_UCHAR(25));
-        //  Fade in ramp curve exponent. 0 = linear, 1 = square, ... Range: [0x00�0x04] /  Fade in ramp curve exponent.
+        //  Fade in ramp curve exponent. 0 = linear, 1 = square, ... Range: [0x00¿0x04] /  Fade in ramp curve exponent.
         // 0=linear, 1=square, ... Range: [0x00¿0x04] 
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "NBT", "CID_CODIERDATEN", "STAT_DIM_FADE_EXPO_T1_WERT", STAT_DIM_FADE_EXPO_T1_WERT, "");
 
     unsigned char STAT_DIM_FADE_EXPO_T2_WERT = (RXBUF_UCHAR(26));
-        //  Fade out ramp curve exponent. 0 = linear, 1 = square, ... Range: [0x00�0x04] /  Fade out ramp curve exponent.
+        //  Fade out ramp curve exponent. 0 = linear, 1 = square, ... Range: [0x00¿0x04] /  Fade out ramp curve exponent.
         // 0=linear, 1=square, ... Range: [0x00¿0x04] 
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "NBT", "CID_CODIERDATEN", "STAT_DIM_FADE_EXPO_T2_WERT", STAT_DIM_FADE_EXPO_T2_WERT, "");
 
     unsigned short STAT_DIM_FILT_CHANGE_SENSITIVITY_WERT = (RXBUF_UINT(27));
         // Adjusts the reaction on strong signal changes depending on the time the input value is stable. 0 = no
         // adjustment (old filter algorithm) 1-65535 = number of dim cycles the input value has to be stable Range:
-        // [0x0000�0xFFFF] / Adjusts the reaction on  strong signal changes depending on the time the input value is
+        // [0x0000¿0xFFFF] / Adjusts the reaction on  strong signal changes depending on the time the input value is
         // stable. 0 = no adjustment (old filter algorithm) 1-65535 = number of dim cycles the input value has to be
         // stable Range: [0x0000¿0xFFFF]
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "NBT", "CID_CODIERDATEN", "STAT_DIM_FILT_CHANGE_SENSITIVITY_WERT", STAT_DIM_FILT_CHANGE_SENSITIVITY_WERT, "");

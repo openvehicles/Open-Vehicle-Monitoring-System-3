@@ -150,7 +150,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "FZD", "SHD_BEWEGUNG", "STAT_SHD_BEWEGUNG_NR", STAT_SHD_BEWEGUNG_NR, "\"0-n\"");
 
     unsigned char STAT_SHD_POSITION_NR = (RXBUF_UCHAR(2));
-        // For the current position of the glass cover, see table TAB_FH_SHD_ESH_POSITION / Aktuelle Position des
+        // For the current position of the glass lid, see table TAB_FH_SHD_ESH_POSITION / Aktuelle Position des
         // Glasdeckels siehe Tabelle TAB_FH_SHD_ESH_POSITION
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "FZD", "SHD_BEWEGUNG", "STAT_SHD_POSITION_NR", STAT_SHD_POSITION_NR, "\"0-n\"");
 
@@ -381,7 +381,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "FZD", "ESH_BEWEGUNG", "STAT_ESH_POSITION_PROZENT_WERT", STAT_ESH_POSITION_PROZENT_WERT, "\"%\"");
 
     unsigned char STAT_ESH_LAGE_NR = (RXBUF_UCHAR(16));
-        // See table TAB_FH_SHD_ESH_LAGE_NR for the position of the sliding roof / Lage Schiebehimmel siehe Tabelle
+        // For the position of the sliding headliner, see table TAB_FH_SHD_ESH_LAGE_NR / Lage Schiebehimmel siehe Tabelle
         // TAB_FH_SHD_ESH_LAGE_NR
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "FZD", "ESH_BEWEGUNG", "STAT_ESH_LAGE_NR", STAT_ESH_LAGE_NR, "\"0-n\"");
 
@@ -602,8 +602,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "FZD", "SHD_STATISTIKZAEHLER_LESEN", "STAT_VORGANG_OEFFNEN_80_KMH", STAT_VORGANG_OEFFNEN_80_KMH, "\"0-n\"");
 
     unsigned short STAT_VORGANG_HEBEN_80_KMH = (RXBUF_UINT(16));
-        // Number of lifting operations / fan position in the range 0-80 km / h / Anzahl Vorgänge Heben/Lüfterposition
-        // im Bereich 0-80 km/h
+        // Number of lifting operations / fan position in the range 0-80 km / h / Anzahl Vorgänge Heben/Lüfterposition im
+        // Bereich 0-80 km/h
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "FZD", "SHD_STATISTIKZAEHLER_LESEN", "STAT_VORGANG_HEBEN_80_KMH", STAT_VORGANG_HEBEN_80_KMH, "\"0-n\"");
 
     unsigned short STAT_VORGANG_SCHLIESSEN_80_KMH = (RXBUF_UINT(18));
@@ -615,8 +615,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "FZD", "SHD_STATISTIKZAEHLER_LESEN", "STAT_VORGANG_OEFFNEN_120_KMH", STAT_VORGANG_OEFFNEN_120_KMH, "\"0-n\"");
 
     unsigned short STAT_VORGANG_HEBEN_120_KMH = (RXBUF_UINT(22));
-        // Number of lifting operations / fan position in the range 80-120 km / h / Anzahl Vorgänge
-        // Heben/Lüfterposition im Bereich 80-120  km/h
+        // Number of lifting operations / fan position in the range 80-120 km / h / Anzahl Vorgänge Heben/Lüfterposition
+        // im Bereich 80-120  km/h
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "FZD", "SHD_STATISTIKZAEHLER_LESEN", "STAT_VORGANG_HEBEN_120_KMH", STAT_VORGANG_HEBEN_120_KMH, "\"0-n\"");
 
     unsigned short STAT_VORGANG_SCHLIESSEN_120_KMH = (RXBUF_UINT(24));
@@ -628,8 +628,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "FZD", "SHD_STATISTIKZAEHLER_LESEN", "STAT_VORGANG_OEFFNEN_160_KMH", STAT_VORGANG_OEFFNEN_160_KMH, "\"0-n\"");
 
     unsigned short STAT_VORGANG_HEBEN_160_KMH = (RXBUF_UINT(28));
-        // Number of lifting operations / fan position in the range 120-160 km / h / Anzahl Vorgänge
-        // Heben/Lüfterposition im Bereich 120-160 km/h
+        // Number of lifting operations / fan position in the range 120-160 km / h / Anzahl Vorgänge Heben/Lüfterposition
+        // im Bereich 120-160 km/h
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "FZD", "SHD_STATISTIKZAEHLER_LESEN", "STAT_VORGANG_HEBEN_160_KMH", STAT_VORGANG_HEBEN_160_KMH, "\"0-n\"");
 
     unsigned short STAT_VORGANG_SCHLIESSEN_160_KMH = (RXBUF_UINT(30));
@@ -641,8 +641,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "FZD", "SHD_STATISTIKZAEHLER_LESEN", "STAT_VORGANG_OEFFNEN_300_KMH", STAT_VORGANG_OEFFNEN_300_KMH, "\"0-n\"");
 
     unsigned short STAT_VORGANG_HEBEN_300_KMH = (RXBUF_UINT(34));
-        // Number of lifting operations / fan position in the range> 160 km / h / Anzahl Vorgänge Heben/Lüfterposition
-        // im Bereich > 160 km/h
+        // Number of lifting operations / fan position in the range> 160 km / h / Anzahl Vorgänge Heben/Lüfterposition im
+        // Bereich > 160 km/h
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "FZD", "SHD_STATISTIKZAEHLER_LESEN", "STAT_VORGANG_HEBEN_300_KMH", STAT_VORGANG_HEBEN_300_KMH, "\"0-n\"");
 
     unsigned short STAT_VORGANG_SCHLIESSEN_300_KMH = (RXBUF_UINT(36));
@@ -726,8 +726,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "FZD", "ESH_STATISTIKZAEHLER_LESEN", "STAT_VORGANG_OEFFNEN_80_KMH_0XD1C0", STAT_VORGANG_OEFFNEN_80_KMH_0XD1C0, "\"0-n\"");
 
     unsigned short STAT_VORGANG_HEBEN_80_KMH_0XD1C0 = (RXBUF_UINT(16));
-        // Number of lifting operations / fan position in the range 0-80 km / h / Anzahl Vorgänge Heben/Lüfterposition
-        // im Bereich 0-80 km/h
+        // Number of lifting operations / fan position in the range 0-80 km / h / Anzahl Vorgänge Heben/Lüfterposition im
+        // Bereich 0-80 km/h
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "FZD", "ESH_STATISTIKZAEHLER_LESEN", "STAT_VORGANG_HEBEN_80_KMH_0XD1C0", STAT_VORGANG_HEBEN_80_KMH_0XD1C0, "\"0-n\"");
 
     unsigned short STAT_VORGANG_SCHLIESSEN_80_KMH_0XD1C0 = (RXBUF_UINT(18));
@@ -739,8 +739,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "FZD", "ESH_STATISTIKZAEHLER_LESEN", "STAT_VORGANG_OEFFNEN_120_KMH_0XD1C0", STAT_VORGANG_OEFFNEN_120_KMH_0XD1C0, "\"0-n\"");
 
     unsigned short STAT_VORGANG_HEBEN_120_KMH_0XD1C0 = (RXBUF_UINT(22));
-        // Number of lifting operations / fan position in the range 80-120 km / h / Anzahl Vorgänge
-        // Heben/Lüfterposition im Bereich 80-120  km/h
+        // Number of lifting operations / fan position in the range 80-120 km / h / Anzahl Vorgänge Heben/Lüfterposition
+        // im Bereich 80-120  km/h
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "FZD", "ESH_STATISTIKZAEHLER_LESEN", "STAT_VORGANG_HEBEN_120_KMH_0XD1C0", STAT_VORGANG_HEBEN_120_KMH_0XD1C0, "\"0-n\"");
 
     unsigned short STAT_VORGANG_SCHLIESSEN_120_KMH_0XD1C0 = (RXBUF_UINT(24));
@@ -752,8 +752,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "FZD", "ESH_STATISTIKZAEHLER_LESEN", "STAT_VORGANG_OEFFNEN_160_KMH_0XD1C0", STAT_VORGANG_OEFFNEN_160_KMH_0XD1C0, "\"0-n\"");
 
     unsigned short STAT_VORGANG_HEBEN_160_KMH_0XD1C0 = (RXBUF_UINT(28));
-        // Number of lifting operations / fan position in the range 120-160 km / h / Anzahl Vorgänge
-        // Heben/Lüfterposition im Bereich 120-160 km/h
+        // Number of lifting operations / fan position in the range 120-160 km / h / Anzahl Vorgänge Heben/Lüfterposition
+        // im Bereich 120-160 km/h
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "FZD", "ESH_STATISTIKZAEHLER_LESEN", "STAT_VORGANG_HEBEN_160_KMH_0XD1C0", STAT_VORGANG_HEBEN_160_KMH_0XD1C0, "\"0-n\"");
 
     unsigned short STAT_VORGANG_SCHLIESSEN_160_KMH_0XD1C0 = (RXBUF_UINT(30));
@@ -765,8 +765,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "FZD", "ESH_STATISTIKZAEHLER_LESEN", "STAT_VORGANG_OEFFNEN_300_KMH_0XD1C0", STAT_VORGANG_OEFFNEN_300_KMH_0XD1C0, "\"0-n\"");
 
     unsigned short STAT_VORGANG_HEBEN_300_KMH_0XD1C0 = (RXBUF_UINT(34));
-        // Number of lifting operations / fan position in the range> 160 km / h / Anzahl Vorgänge Heben/Lüfterposition
-        // im Bereich > 160 km/h
+        // Number of lifting operations / fan position in the range> 160 km / h / Anzahl Vorgänge Heben/Lüfterposition im
+        // Bereich > 160 km/h
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "FZD", "ESH_STATISTIKZAEHLER_LESEN", "STAT_VORGANG_HEBEN_300_KMH_0XD1C0", STAT_VORGANG_HEBEN_300_KMH_0XD1C0, "\"0-n\"");
 
     unsigned short STAT_VORGANG_SCHLIESSEN_300_KMH_0XD1C0 = (RXBUF_UINT(36));
@@ -975,8 +975,8 @@
 
     char STAT_DWA_ALARM_MANIPULATION_AUTH_AUSGELOEST_EIN = (RXBUF_UCHAR(9));
         // 0 = DWA alarm not triggered by manipulation authentication; 1 = DWA alarm triggered by manipulation
-        // authentication / 0= DWA-Alarm nicht ausgelöst durch Manipulation Authentisierung; 1= DWA-Alarm ausgelöst
-        // durch Manipulation Authentisierung
+        // authentication / 0= DWA-Alarm nicht ausgelöst durch Manipulation Authentisierung; 1= DWA-Alarm ausgelöst durch
+        // Manipulation Authentisierung
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "FZD", "DWA_ALARM_AUSGELOEST", "STAT_DWA_ALARM_MANIPULATION_AUTH_AUSGELOEST_EIN", STAT_DWA_ALARM_MANIPULATION_AUTH_AUSGELOEST_EIN, "\"0/1\"");
 
     char STAT_DWA_ALARM_USIS_A_UND_B_AUSGELOEST_EIN = (RXBUF_UCHAR(10));
@@ -997,14 +997,12 @@
 
     char STAT_DWA_ALARM_NEIGUNGSGEBER_X_AUSGELOEST_EIN = (RXBUF_UCHAR(13));
         // 0 = DWA alarm not triggered by X-axis inclination sensor; 1 = DWA alarm triggered by inclination sensor X-axis
-        // / 0= DWA-Alarm nicht ausgelöst durch Neigungsgeber X-Achse; 1= DWA-Alarm ausgelöst durch Neigungsgeber
-        // X-Achse
+        // / 0= DWA-Alarm nicht ausgelöst durch Neigungsgeber X-Achse; 1= DWA-Alarm ausgelöst durch Neigungsgeber X-Achse
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "FZD", "DWA_ALARM_AUSGELOEST", "STAT_DWA_ALARM_NEIGUNGSGEBER_X_AUSGELOEST_EIN", STAT_DWA_ALARM_NEIGUNGSGEBER_X_AUSGELOEST_EIN, "\"0/1\"");
 
     char STAT_DWA_ALARM_NEIGUNGSGEBER_Y_AUSGELOEST_EIN = (RXBUF_UCHAR(14));
         // 0 = DWA alarm not triggered by Y-axis inclination sensor; 1 = DWA alarm triggered by inclination sensor Y-axis
-        // / 0= DWA-Alarm nicht ausgelöst durch Neigungsgeber Y-Achse; 1= DWA-Alarm ausgelöst durch Neigungsgeber
-        // Y-Achse
+        // / 0= DWA-Alarm nicht ausgelöst durch Neigungsgeber Y-Achse; 1= DWA-Alarm ausgelöst durch Neigungsgeber Y-Achse
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "FZD", "DWA_ALARM_AUSGELOEST", "STAT_DWA_ALARM_NEIGUNGSGEBER_Y_AUSGELOEST_EIN", STAT_DWA_ALARM_NEIGUNGSGEBER_Y_AUSGELOEST_EIN, "\"0/1\"");
 
     char STAT_DWA_ALARM_NEIGUNGSGEBER_X_UND_Y_AUSGELOEST_EIN = (RXBUF_UCHAR(15));

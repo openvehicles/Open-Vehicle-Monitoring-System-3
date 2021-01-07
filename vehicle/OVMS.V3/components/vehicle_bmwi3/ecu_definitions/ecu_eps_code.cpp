@@ -25,12 +25,12 @@
     }
 
     unsigned char STAT_ROUTINE_STATUS = (RXBUF_UCHAR(0));
-        // Execution status / Ausführungsstatus
+        // Execution status / AusfÃ¼hrungsstatus
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "EPS", "EPS_INITIALISIERUNG_SERVICE", "STAT_ROUTINE_STATUS", STAT_ROUTINE_STATUS, "\"0-n\"");
 
     short STAT_LENKRADWINKEL_WERT = (RXBUF_SINT(1));
         // Steering wheel angle / Lenkradwinkel
-    ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%d%s\n", "EPS", "EPS_INITIALISIERUNG_SERVICE", "STAT_LENKRADWINKEL_WERT", STAT_LENKRADWINKEL_WERT, "\"°\"");
+    ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%d%s\n", "EPS", "EPS_INITIALISIERUNG_SERVICE", "STAT_LENKRADWINKEL_WERT", STAT_LENKRADWINKEL_WERT, "\"Â°\"");
 
     char STAT_SENSOR_ZUSTAND_NR = (RXBUF_SCHAR(3));
         // Condition sensor pinion angle sensor / Zustand Sensor Ritzelwinkelsensor
@@ -57,11 +57,11 @@
 
     float STAT_RITZELWINKEL_WERT = (RXBUF_SINT32(0)/100.0f);
         // Pinion angle / Ritzelwinkel
-    ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "EPS", "EPS_RITZELWINKELSENSOR", "STAT_RITZELWINKEL_WERT", STAT_RITZELWINKEL_WERT, "\"°\"");
+    ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "EPS", "EPS_RITZELWINKELSENSOR", "STAT_RITZELWINKEL_WERT", STAT_RITZELWINKEL_WERT, "\"Â°\"");
 
     short STAT_RITZELWINKELGESCHWINDIGKEIT_WERT = (RXBUF_SINT(4));
         // Pinion angle angular speed / Ritzelwinkel Winkelgeschwindigkeit
-    ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%d%s\n", "EPS", "EPS_RITZELWINKELSENSOR", "STAT_RITZELWINKELGESCHWINDIGKEIT_WERT", STAT_RITZELWINKELGESCHWINDIGKEIT_WERT, "\"°/s\"");
+    ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%d%s\n", "EPS", "EPS_RITZELWINKELSENSOR", "STAT_RITZELWINKELGESCHWINDIGKEIT_WERT", STAT_RITZELWINKELGESCHWINDIGKEIT_WERT, "\"Â°/s\"");
 
     char STAT_SENSOR_ZUSTAND_NR_0XDB57 = (RXBUF_SCHAR(6));
         // Condition sensor pinion angle sensor / Zustand Sensor Ritzelwinkelsensor

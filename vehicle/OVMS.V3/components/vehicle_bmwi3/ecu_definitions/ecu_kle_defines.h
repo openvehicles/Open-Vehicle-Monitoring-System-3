@@ -16,7 +16,7 @@
         // DSP programming status. / Status der DSP-Programmierung.
 
 #define I3_PID_KLE_BETRIEBSZUSTAND_LADEGERAET                        0xDE84
-        // Operating modes charger / Betriebsarten LadegerÃ¤t
+        // Operating modes charger / Betriebsarten Ladegerät
 
     #define I3_RES_KLE_STAT_NETZFREQUENZ_PHASE_1_WERT                (RXBUF_UCHAR(0)/4.0f)
     #define I3_RES_KLE_STAT_NETZFREQUENZ_PHASE_1_WERT_UNIT           'Hz'
@@ -24,7 +24,7 @@
         // Current grid frequency phase 1 / Aktuelle Netzfrequenz Phase 1
 
     // BF_LADEGERAET_DERATING is a BITFIELD of size unsigned char.  We don't yet generate definitions for each bit, we treat as the host data type
-        // Reason for derating / Grund fÃ¼r Derating
+        // Reason for derating / Grund für Derating
             // STAT_DERATING_BIT0: Mask: 0x01 - Overtemperature: 0 = not active; 1 = active
             // STAT_DERATING_BIT1: Mask: 0x02 - Mains frequency too low: 0 = not active; 1 = active
             // STAT_DERATING_BIT2: Mask: 0x04 - Failure of a charging module: 0 = not active; 1 = active
@@ -35,7 +35,7 @@
     #define I3_RES_KLE_BF_LADEGERAET_DERATING                        (RXBUF_UCHAR(1))
     #define I3_RES_KLE_BF_LADEGERAET_DERATING_UNIT                   'Bit'
     #define I3_RES_KLE_BF_LADEGERAET_DERATING_TYPE                   unsigned char
-        // Reason for derating / Grund fÃ¼r Derating
+        // Reason for derating / Grund für Derating
 
     #define I3_RES_KLE_STAT_LEISTUNG_DERATING_WERT                   (RXBUF_UINT(2)*10.0f)
     #define I3_RES_KLE_STAT_LEISTUNG_DERATING_WERT_UNIT              'W'
@@ -48,7 +48,7 @@
         // Derating / Derating
 
     // BF_LADEGERAET_FEHLERZUSTAND_UCXII is a BITFIELD of size unsigned char.  We don't yet generate definitions for each bit, we treat as the host data type
-        // Charger fault conditions / LadegerÃ¤t FehlerzustÃ¤nde 
+        // Charger fault conditions / Ladegerät Fehlerzustände 
             // STAT_FEHLERZUSTAND_BIT0: Mask: 0x01 - Derating: 0 = not active; 1 = active
             // STAT_FEHLERZUSTAND_BIT1: Mask: 0x02 - Charge interruption: 0 = not active; 1 = active
             // STAT_FEHLERZUSTAND_BIT2: Mask: 0x04 - Failsafe: 0 = not active; 1 = active
@@ -56,10 +56,10 @@
     #define I3_RES_KLE_BF_LADEGERAET_FEHLERZUSTAND_UCXII             (RXBUF_UCHAR(5))
     #define I3_RES_KLE_BF_LADEGERAET_FEHLERZUSTAND_UCXII_UNIT        'Bit'
     #define I3_RES_KLE_BF_LADEGERAET_FEHLERZUSTAND_UCXII_TYPE        unsigned char
-        // Charger fault conditions / LadegerÃ¤t FehlerzustÃ¤nde 
+        // Charger fault conditions / Ladegerät Fehlerzustände 
 
     // BF_AUSLOESER_FAILSAFE_UCXII is a BITFIELD of size unsigned int.  We don't yet generate definitions for each bit, we treat as the host data type
-        // Failsafe trigger / AuslÃ¶ser Failsafe
+        // Failsafe trigger / Auslöser Failsafe
             // STAT_AUSLOESER_FAILSAFE_BIT0: Mask: 0x001 - Hardware error: 0 = not active; 1 = active
             // STAT_AUSLOESER_FAILSAFE_BIT1: Mask: 0x002 - Undervoltage AC: 0 = not active; 1 = active
             // STAT_AUSLOESER_FAILSAFE_BIT2: Mask: 0x004 - Overvoltage AC: 0 = not active; 1 = active
@@ -74,17 +74,17 @@
     #define I3_RES_KLE_BF_AUSLOESER_FAILSAFE_UCXII                   (RXBUF_UINT(6))
     #define I3_RES_KLE_BF_AUSLOESER_FAILSAFE_UCXII_UNIT              'Bit'
     #define I3_RES_KLE_BF_AUSLOESER_FAILSAFE_UCXII_TYPE              unsigned short
-        // Failsafe trigger / AuslÃ¶ser Failsafe
+        // Failsafe trigger / Auslöser Failsafe
 
     // BF_LADEGERAET_URSACHE_LADEUNTERBRECHUNG is a BITFIELD of size unsigned char.  We don't yet generate definitions for each bit, we treat as the host data type
-        // Cause of charging interruption / Ursache fÃ¼r Ladeunterbrechung
+        // Cause of charging interruption / Ursache für Ladeunterbrechung
             // STAT_URSACHE_LADEUNTERBRECHUNG_BIT0: Mask: 0x01 - Forced separation of the plug: 0 = not active; 1 = active
             // STAT_URSACHE_LADEUNTERBRECHUNG_BIT1: Mask: 0x02 - AC voltage missing or grid connection unstable: 0 = not active; 1 = active
             // STAT_URSACHE_LADEUNTERBRECHUNG_BIT2: Mask: 0x04 - Connector not locked: 0 = not active; 1 = active
     #define I3_RES_KLE_BF_LADEGERAET_URSACHE_LADEUNTERBRECHUNG       (RXBUF_UCHAR(8))
     #define I3_RES_KLE_BF_LADEGERAET_URSACHE_LADEUNTERBRECHUNG_UNIT  'Bit'
     #define I3_RES_KLE_BF_LADEGERAET_URSACHE_LADEUNTERBRECHUNG_TYPE  unsigned char
-        // Cause of charging interruption / Ursache fÃ¼r Ladeunterbrechung
+        // Cause of charging interruption / Ursache für Ladeunterbrechung
 
     #define I3_RES_KLE_STAT_BETRIEBSART_NR                           (RXBUF_UCHAR(9))
     #define I3_RES_KLE_STAT_BETRIEBSART_NR_UNIT                      '0-n'
@@ -102,14 +102,14 @@
         // Current grid frequency phase 3 / Aktuelle Netzfrequenz Phase 3
 
     // BF_MOD_ERR is a BITFIELD of size unsigned long.  We don't yet generate definitions for each bit, we treat as the host data type
-        // Error states load module / FehlerzustÃ¤nde Lademodul
+        // Error states load module / Fehlerzustände Lademodul
             // STAT_BF_DSP_ERR_HVDCV_OORL: Mask: 0x00000001 - PM HVDC voltage sensor outside lower threshold: 0 = not active; 1 = active
             // STAT_BF_DSP_ERR_HVDCV_OORH: Mask: 0x00000002 - PM HVDC voltage sensor outside upper threshold: 0 = not active; 1 = active
-            // STAT_BF_DSP_ERR_HVDCI_OORH: Mask: 0x00000004 - PM HVDC current sensor outside upper threshold: 0 = not active; 1 = active
+            // STAT_BF_DSP_ERR_HVDCI_OORH: Mask: 0x00000004 - PM HVDC current sensor outside upper threshold value: 0 = not active; 1 = active
             // STAT_BF_DSP_ERR_IRES_OORH: Mask: 0x00000008 - PM sensor resonance current outside the upper threshold value: 0 = not active; 1 = active
             // STAT_BF_DSP_ERR_VBUS_OORL: Mask: 0x00000010 - PM sensor bus voltage outside the lower threshold value: 0 = not active; 1 = active
             // STAT_BF_DSP_ERR_VBUS_OORH: Mask: 0x00000020 - PM sensor bus voltage outside the upper threshold value: 0 = not active; 1 = active
-            // STAT_BF_DSP_ERR_OVERTEMPERATURE: Mask: 0x00000040 - PM temperature sensor outside the upper threshold value: 0 = not active; 1 = active
+            // STAT_BF_DSP_ERR_OVERTEMPERATURE: Mask: 0x00000040 - PM temperature sensor outside upper threshold value: 0 = not active; 1 = active
             // STAT_BF_DSP_ERR_UNDERTEMPERATURE: Mask: 0x00000080 - PM temperature sensor outside lower threshold: 0 = not active; 1 = active
             // STAT_BF_DSP_ERR_HVDCV_SHGND: Mask: 0x00000100 - PM HVDC voltage sensor short circuit to ground: 0 = not active; 1 = active
             // STAT_BF_DSP_ERR_HVDCI_SHGND: Mask: 0x00000200 - PM HVDC current sensor short circuit to ground: 0 = not active; 1 = active
@@ -133,15 +133,15 @@
             // STAT_BF_DSP_ERR_CRC_CALIBRATION: Mask: 0x08000000 - PM CRC calibration: 0 = not active; 1 = active
             // STAT_BF_DSP_ERR_VAC_LY_SHBATT: Mask: 0x10000000 - PM AC Ly voltage sensor short circuit to plus: 0 = not active; 1 = active
             // STAT_BF_DSP_ERR_VAC_LY_SHGND: Mask: 0x20000000 - PM AC Ly voltage sensor short circuit to ground: 0 = not active; 1 = active
-            // STAT_BF_DSP_ERR_VAC_LX_OORH: Mask: 0x40000000 - PM AC Lx voltage sensor outside upper threshold: 0 = not active; 1 = active
+            // STAT_BF_DSP_ERR_VAC_LX_OORH: Mask: 0x40000000 - PM AC Lx voltage sensor outside upper threshold value: 0 = not active; 1 = active
             // STAT_BF_DSP_ERR_VAC_LY_OORH: Mask: 0x80000000 - PM AC Ly voltage sensor outside upper threshold: 0 = not active; 1 = active
     #define I3_RES_KLE_BF_MOD_ERR                                    (RXBUF_UINT32(12))
     #define I3_RES_KLE_BF_MOD_ERR_UNIT                               'Bit'
     #define I3_RES_KLE_BF_MOD_ERR_TYPE                               unsigned long
-        // Error states load module / FehlerzustÃ¤nde Lademodul
+        // Error states load module / Fehlerzustände Lademodul
 
 #define I3_PID_KLE_LADEGERAET_LEISTUNG                               0xDE85
-        // Power values intermediate circuit of the charger / Leistungswerte Zwischenkreis des LadegerÃ¤ts
+        // Power values intermediate circuit of the charger / Leistungswerte Zwischenkreis des Ladegeräts
 
     #define I3_RES_KLE_STAT_WIRKUNGSGRAD_LADEZYKLUS_WERT             (RXBUF_UCHAR(0))
     #define I3_RES_KLE_STAT_WIRKUNGSGRAD_LADEZYKLUS_WERT_UNIT        '%'
@@ -159,7 +159,7 @@
         // Instantaneous power output in the intermediate circuit / Abgegebende Momentanleistung in den Zwischenkreis
 
 #define I3_PID_KLE_LADEGERAET_SPANNUNG                               0xDE86
-        // AC and DC voltages charger / AC und DC Spannungen LadegerÃ¤t
+        // AC and DC voltages charger / AC und DC Spannungen Ladegerät
 
     #define I3_RES_KLE_STAT_SPANNUNG_RMS_AC_PHASE_1_WERT             (RXBUF_UINT(0))
     #define I3_RES_KLE_STAT_SPANNUNG_RMS_AC_PHASE_1_WERT_UNIT        'V'
@@ -197,7 +197,7 @@
         // RMS values of the AC conductor voltages (phase 3) / Effektivwerte der AC Leiterspannungen (Phase 3)
 
 #define I3_PID_KLE_LADEGERAET_STROM                                  0xDE87
-        // AC and DC currents charger / AC und DC StrÃ¶me LadegerÃ¤t
+        // AC and DC currents charger / AC und DC Ströme Ladegerät
 
     #define I3_RES_KLE_STAT_STROM_AC_PHASE_1_WERT                    (RXBUF_UINT(0)/10.0f)
     #define I3_RES_KLE_STAT_STROM_AC_PHASE_1_WERT_UNIT               'A'
@@ -262,57 +262,57 @@
         // Reading out temperatures / Auslesen Temperaturen
 
     #define I3_RES_KLE_STAT_NTC1_TEMPERATUR_WERT                     (RXBUF_UCHAR(0)-75.0)
-    #define I3_RES_KLE_STAT_NTC1_TEMPERATUR_WERT_UNIT                'Â°C'
+    #define I3_RES_KLE_STAT_NTC1_TEMPERATUR_WERT_UNIT                '°C'
     #define I3_RES_KLE_STAT_NTC1_TEMPERATUR_WERT_TYPE                unsigned char
         // internal temperature (temperature sensor 1) / interne Temperatur (Temperatursensor 1)
 
     #define I3_RES_KLE_STAT_NTC2_TEMPERATUR_WERT                     (RXBUF_UCHAR(1)-75.0)
-    #define I3_RES_KLE_STAT_NTC2_TEMPERATUR_WERT_UNIT                'Â°C'
+    #define I3_RES_KLE_STAT_NTC2_TEMPERATUR_WERT_UNIT                '°C'
     #define I3_RES_KLE_STAT_NTC2_TEMPERATUR_WERT_TYPE                unsigned char
         // internal temperature (temperature sensor 2) / interne Temperatur (Temperatursensor 2)
 
     #define I3_RES_KLE_STAT_NTC3_TEMPERATUR_WERT                     (RXBUF_UCHAR(2)-75.0)
-    #define I3_RES_KLE_STAT_NTC3_TEMPERATUR_WERT_UNIT                'Â°C'
+    #define I3_RES_KLE_STAT_NTC3_TEMPERATUR_WERT_UNIT                '°C'
     #define I3_RES_KLE_STAT_NTC3_TEMPERATUR_WERT_TYPE                unsigned char
         // internal temperature (temperature sensor 3) / interne Temperatur (Temperatursensor 3)
 
     #define I3_RES_KLE_STAT_NTC4_TEMPERATUR_WERT                     (RXBUF_UCHAR(3)-75.0)
-    #define I3_RES_KLE_STAT_NTC4_TEMPERATUR_WERT_UNIT                'Â°C'
+    #define I3_RES_KLE_STAT_NTC4_TEMPERATUR_WERT_UNIT                '°C'
     #define I3_RES_KLE_STAT_NTC4_TEMPERATUR_WERT_TYPE                unsigned char
         // internal temperature (temperature sensor 4) / interne Temperatur (Temperatursensor 4)
 
     #define I3_RES_KLE_STAT_NTC5_TEMPERATUR_WERT                     (RXBUF_UCHAR(4)-75.0)
-    #define I3_RES_KLE_STAT_NTC5_TEMPERATUR_WERT_UNIT                'Â°C'
+    #define I3_RES_KLE_STAT_NTC5_TEMPERATUR_WERT_UNIT                '°C'
     #define I3_RES_KLE_STAT_NTC5_TEMPERATUR_WERT_TYPE                unsigned char
         // internal temperature (temperature sensor 5) / interne Temperatur (Temperatursensor 5)
 
     #define I3_RES_KLE_STAT_NTC6_TEMPERATUR_WERT                     (RXBUF_UCHAR(5)-75.0)
-    #define I3_RES_KLE_STAT_NTC6_TEMPERATUR_WERT_UNIT                'Â°C'
+    #define I3_RES_KLE_STAT_NTC6_TEMPERATUR_WERT_UNIT                '°C'
     #define I3_RES_KLE_STAT_NTC6_TEMPERATUR_WERT_TYPE                unsigned char
         // internal temperature (temperature sensor 6) / interne Temperatur (Temperatursensor 6)
 
     #define I3_RES_KLE_STAT_NTC7_TEMPERAUTR_WERT                     (RXBUF_UCHAR(6)-75.0)
-    #define I3_RES_KLE_STAT_NTC7_TEMPERAUTR_WERT_UNIT                'Â°C'
+    #define I3_RES_KLE_STAT_NTC7_TEMPERAUTR_WERT_UNIT                '°C'
     #define I3_RES_KLE_STAT_NTC7_TEMPERAUTR_WERT_TYPE                unsigned char
         // internal temperature (temperature sensor 7) / interne Temperatur (Temperatursensor 7)
 
     #define I3_RES_KLE_STAT_NTC8_TEMPERATUR_WERT                     (RXBUF_UCHAR(7)-75.0)
-    #define I3_RES_KLE_STAT_NTC8_TEMPERATUR_WERT_UNIT                'Â°C'
+    #define I3_RES_KLE_STAT_NTC8_TEMPERATUR_WERT_UNIT                '°C'
     #define I3_RES_KLE_STAT_NTC8_TEMPERATUR_WERT_TYPE                unsigned char
         // internal temperature (temperature sensor 8) / interne Tempeartur (Temperatursensor 8)
 
     #define I3_RES_KLE_STAT_NTC9_TEMPEARTUR_WERT                     (RXBUF_UCHAR(8)-75.0)
-    #define I3_RES_KLE_STAT_NTC9_TEMPEARTUR_WERT_UNIT                'Â°C'
+    #define I3_RES_KLE_STAT_NTC9_TEMPEARTUR_WERT_UNIT                '°C'
     #define I3_RES_KLE_STAT_NTC9_TEMPEARTUR_WERT_TYPE                unsigned char
         // internal temperature (temperature sensor 9) / interne Temperatur (Temperatursensor 9)
 
     #define I3_RES_KLE_STAT_NTC10_TEMPEARTUR_WERT                    (RXBUF_UCHAR(9)-75.0)
-    #define I3_RES_KLE_STAT_NTC10_TEMPEARTUR_WERT_UNIT               'Â°C'
+    #define I3_RES_KLE_STAT_NTC10_TEMPEARTUR_WERT_UNIT               '°C'
     #define I3_RES_KLE_STAT_NTC10_TEMPEARTUR_WERT_TYPE               unsigned char
         // internal temperature (temperature sensor 10) / interne Temperatur (Temperatursensor 10)
 
 #define I3_PID_KLE_LADEGERAET_LEISTUNG2                              0xDFB4
-        // Power values for second charger (multi-phase charging) / Leistungswerte fÃ¼r zweites LadegerÃ¤t (mehrphasiges
+        // Power values for second charger (multi-phase charging) / Leistungswerte für zweites Ladegerät (mehrphasiges
         // Laden)
 
     #define I3_RES_KLE_STAT_WIRKUNGSGRAD_LADEZYKLUS_WERT_0XDFB4      (RXBUF_UCHAR(0))
@@ -331,38 +331,38 @@
         // Instantaneous power output in the intermediate circuit / Abgegebende Momentanleistung in den Zwischenkreis
 
 #define I3_PID_KLE_LADEGERAET_LADE_HISTOGRAMM                        0xDFB6
-        // Charge histogram related to temperature and power / Ladehistogramm bezÃ¼glich Temperatur und Leistung
+        // Charge histogram related to temperature and power / Ladehistogramm bezüglich Temperatur und Leistung
 
     #define I3_RES_KLE_STAT_SEKUNDEN_TEMPERATUR_BEREICH_1_WERT       (RXBUF_UINT32(0))
     #define I3_RES_KLE_STAT_SEKUNDEN_TEMPERATUR_BEREICH_1_WERT_UNIT  's'
     #define I3_RES_KLE_STAT_SEKUNDEN_TEMPERATUR_BEREICH_1_WERT_TYPE  unsigned long
-        // Seconds at temperature below 0 ° C / Sekunden bei Temperatur unter 0Â°C
+        // Seconds at temperature below 0 ° C / Sekunden bei Temperatur unter 0°C
 
     #define I3_RES_KLE_STAT_SEKUNDEN_TEMPERATUR_BEREICH_2_WERT       (RXBUF_UINT32(4))
     #define I3_RES_KLE_STAT_SEKUNDEN_TEMPERATUR_BEREICH_2_WERT_UNIT  's'
     #define I3_RES_KLE_STAT_SEKUNDEN_TEMPERATUR_BEREICH_2_WERT_TYPE  unsigned long
-        // Seconds at a temperature between 0 ° C and 45 ° C / Sekunden bei Temperatur zwischen 0Â°C und 45Â°C
+        // Seconds at a temperature between 0 ° C and 45 ° C / Sekunden bei Temperatur zwischen 0°C und 45°C
 
     #define I3_RES_KLE_STAT_SEKUNDEN_TEMPERATUR_BEREICH_3_WERT       (RXBUF_UINT32(8))
     #define I3_RES_KLE_STAT_SEKUNDEN_TEMPERATUR_BEREICH_3_WERT_UNIT  's'
     #define I3_RES_KLE_STAT_SEKUNDEN_TEMPERATUR_BEREICH_3_WERT_TYPE  unsigned long
-        // Seconds at a temperature between 46 ° C and 60 ° C / Sekunden bei Temperatur zwischen 46Â°C und 60Â°C
+        // Seconds at a temperature between 46 ° C and 60 ° C / Sekunden bei Temperatur zwischen 46°C und 60°C
 
     #define I3_RES_KLE_STAT_SEKUNDEN_TEMPERATUR_BEREICH_4_WERT       (RXBUF_UINT32(12))
     #define I3_RES_KLE_STAT_SEKUNDEN_TEMPERATUR_BEREICH_4_WERT_UNIT  's'
     #define I3_RES_KLE_STAT_SEKUNDEN_TEMPERATUR_BEREICH_4_WERT_TYPE  unsigned long
-        // Seconds in the temperature range between 61 ° C and 70 ° C / Sekunden im Temperaturbereich zwischen 61Â°C und
-        // 70Â°C
+        // Seconds in the temperature range between 61 ° C and 70 ° C / Sekunden im Temperaturbereich zwischen 61°C und
+        // 70°C
 
     #define I3_RES_KLE_STAT_SEKUNDEN_TEMPERATUR_BEREICH_5_WERT       (RXBUF_UINT32(16))
     #define I3_RES_KLE_STAT_SEKUNDEN_TEMPERATUR_BEREICH_5_WERT_UNIT  's'
     #define I3_RES_KLE_STAT_SEKUNDEN_TEMPERATUR_BEREICH_5_WERT_TYPE  unsigned long
-        // Seconds at a temperature between 71 ° C and 85 ° C / Sekunden bei Temperatur zwischen 71Â°C und 85Â°C
+        // Seconds at a temperature between 71 ° C and 85 ° C / Sekunden bei Temperatur zwischen 71°C und 85°C
 
     #define I3_RES_KLE_STAT_SEKUNDEN_TEMPERATUR_BEREICH_6_WERT       (RXBUF_UINT32(20))
     #define I3_RES_KLE_STAT_SEKUNDEN_TEMPERATUR_BEREICH_6_WERT_UNIT  's'
     #define I3_RES_KLE_STAT_SEKUNDEN_TEMPERATUR_BEREICH_6_WERT_TYPE  unsigned long
-        // Seconds at temperatures above 85 ° C / Sekunden bei Temperatur Ã¼ber 85Â°C
+        // Seconds at temperatures above 85 ° C / Sekunden bei Temperatur über 85°C
 
     #define I3_RES_KLE_STAT_SEKUNDEN_LEISTUNG_BEREICH_1_WERT         (RXBUF_UINT32(24))
     #define I3_RES_KLE_STAT_SEKUNDEN_LEISTUNG_BEREICH_1_WERT_UNIT    's'
@@ -382,42 +382,42 @@
     #define I3_RES_KLE_STAT_SEKUNDEN_LEISTUNG_BEREICH_4_WERT         (RXBUF_UINT32(36))
     #define I3_RES_KLE_STAT_SEKUNDEN_LEISTUNG_BEREICH_4_WERT_UNIT    's'
     #define I3_RES_KLE_STAT_SEKUNDEN_LEISTUNG_BEREICH_4_WERT_TYPE    unsigned long
-        // Seconds at power over 3000W / Sekunden bei Leistung Ã¼ber 3000W
+        // Seconds at power over 3000W / Sekunden bei Leistung über 3000W
 
 #define I3_PID_KLE_LADEGERAET_LADE_HISTOGRAMM2                       0xDFB7
         // Charging histogram relating to temperature and power for a second charger (multi-phase charging). /
-        // Ladehistogramm bezÃ¼glich Temperatur und Leistung fÃ¼r ein zweites LadegerÃ¤t (mehrphasiges Laden).
+        // Ladehistogramm bezüglich Temperatur und Leistung für ein zweites Ladegerät (mehrphasiges Laden).
 
     #define I3_RES_KLE_STAT_SEKUNDEN_TEMPERATUR_BEREICH_1_WERT_0XDFB7 (RXBUF_UINT32(0))
     #define I3_RES_KLE_STAT_SEKUNDEN_TEMPERATUR_BEREICH_1_WERT_0XDFB7_UNIT 's'
     #define I3_RES_KLE_STAT_SEKUNDEN_TEMPERATUR_BEREICH_1_WERT_0XDFB7_TYPE unsigned long
-        // Seconds at temperature below 0 ° C / Sekunden bei Temperatur unter 0Â°C
+        // Seconds at temperature below 0 ° C / Sekunden bei Temperatur unter 0°C
 
     #define I3_RES_KLE_STAT_SEKUNDEN_TEMPERATUR_BEREICH_2_WERT_0XDFB7 (RXBUF_UINT32(4))
     #define I3_RES_KLE_STAT_SEKUNDEN_TEMPERATUR_BEREICH_2_WERT_0XDFB7_UNIT 's'
     #define I3_RES_KLE_STAT_SEKUNDEN_TEMPERATUR_BEREICH_2_WERT_0XDFB7_TYPE unsigned long
-        // Seconds at a temperature between 0 ° C and 45 ° C / Sekunden bei Temperatur zwischen 0Â°C und 45Â°C
+        // Seconds at a temperature between 0 ° C and 45 ° C / Sekunden bei Temperatur zwischen 0°C und 45°C
 
     #define I3_RES_KLE_STAT_SEKUNDEN_TEMPERATUR_BEREICH_3_WERT_0XDFB7 (RXBUF_UINT32(8))
     #define I3_RES_KLE_STAT_SEKUNDEN_TEMPERATUR_BEREICH_3_WERT_0XDFB7_UNIT 's'
     #define I3_RES_KLE_STAT_SEKUNDEN_TEMPERATUR_BEREICH_3_WERT_0XDFB7_TYPE unsigned long
-        // Seconds at a temperature between 46 ° C and 60 ° C / Sekunden bei Temperatur zwischen 46Â°C und 60Â°C
+        // Seconds at a temperature between 46 ° C and 60 ° C / Sekunden bei Temperatur zwischen 46°C und 60°C
 
     #define I3_RES_KLE_STAT_SEKUNDEN_TEMPERATUR_BEREICH_4_WERT_0XDFB7 (RXBUF_UINT32(12))
     #define I3_RES_KLE_STAT_SEKUNDEN_TEMPERATUR_BEREICH_4_WERT_0XDFB7_UNIT 's'
     #define I3_RES_KLE_STAT_SEKUNDEN_TEMPERATUR_BEREICH_4_WERT_0XDFB7_TYPE unsigned long
-        // Seconds in the temperature range between 61 ° C and 70 ° C / Sekunden im Temperaturbereich zwischen 61Â°C und
-        // 70Â°C
+        // Seconds in the temperature range between 61 ° C and 70 ° C / Sekunden im Temperaturbereich zwischen 61°C und
+        // 70°C
 
     #define I3_RES_KLE_STAT_SEKUNDEN_TEMPERATUR_BEREICH_5_WERT_0XDFB7 (RXBUF_UINT32(16))
     #define I3_RES_KLE_STAT_SEKUNDEN_TEMPERATUR_BEREICH_5_WERT_0XDFB7_UNIT 's'
     #define I3_RES_KLE_STAT_SEKUNDEN_TEMPERATUR_BEREICH_5_WERT_0XDFB7_TYPE unsigned long
-        // Seconds at a temperature between 71 ° C and 85 ° C / Sekunden bei Temperatur zwischen 71Â°C und 85Â°C
+        // Seconds at a temperature between 71 ° C and 85 ° C / Sekunden bei Temperatur zwischen 71°C und 85°C
 
     #define I3_RES_KLE_STAT_SEKUNDEN_TEMPERATUR_BEREICH_6_WERT_0XDFB7 (RXBUF_UINT32(20))
     #define I3_RES_KLE_STAT_SEKUNDEN_TEMPERATUR_BEREICH_6_WERT_0XDFB7_UNIT 's'
     #define I3_RES_KLE_STAT_SEKUNDEN_TEMPERATUR_BEREICH_6_WERT_0XDFB7_TYPE unsigned long
-        // Seconds at temperatures above 85 ° C / Sekunden bei Temperatur Ã¼ber 85Â°C
+        // Seconds at temperatures above 85 ° C / Sekunden bei Temperatur über 85°C
 
     #define I3_RES_KLE_STAT_SEKUNDEN_LEISTUNG_BEREICH_1_WERT_0XDFB7  (RXBUF_UINT32(24))
     #define I3_RES_KLE_STAT_SEKUNDEN_LEISTUNG_BEREICH_1_WERT_0XDFB7_UNIT 's'
@@ -437,11 +437,11 @@
     #define I3_RES_KLE_STAT_SEKUNDEN_LEISTUNG_BEREICH_4_WERT_0XDFB7  (RXBUF_UINT32(36))
     #define I3_RES_KLE_STAT_SEKUNDEN_LEISTUNG_BEREICH_4_WERT_0XDFB7_UNIT 's'
     #define I3_RES_KLE_STAT_SEKUNDEN_LEISTUNG_BEREICH_4_WERT_0XDFB7_TYPE unsigned long
-        // Seconds at power over 3000W / Sekunden bei Leistung Ã¼ber 3000W
+        // Seconds at power over 3000W / Sekunden bei Leistung über 3000W
 
 #define I3_PID_KLE_LADEGERAET_LADEDAUER2                             0xDFB8
-        // Information on the charging time for a second charger (multi-phase charging) / Information zur Ladedauer fÃ¼r
-        // ein zweites LadegerÃ¤t (mehrphasiges Laden)
+        // Information on the charging time for a second charger (multi-phase charging) / Information zur Ladedauer für
+        // ein zweites Ladegerät (mehrphasiges Laden)
 
     #define I3_RES_KLE_STAT_MINUTEN_LADEZYKLUS_WERT_0XDFB8           (RXBUF_UINT32(0))
     #define I3_RES_KLE_STAT_MINUTEN_LADEZYKLUS_WERT_0XDFB8_UNIT      'min'
@@ -463,22 +463,22 @@
 
     #define I3_RES_KLE_STAT_SCHALTER1_SCHALTZYKLEN_ANZAHL_WERT       (RXBUF_UINT32(0))
     #define I3_RES_KLE_STAT_SCHALTER1_SCHALTZYKLEN_ANZAHL_WERT_TYPE  unsigned long
-        // Number of switching cycles for switch 1 (multi-phase charging: phase 1) / Anzahl von Schaltzyklen fÃ¼r
-        // Schalter 1 (mehrphasiges Laden: Phase 1)
+        // Number of switching cycles for switch 1 (multi-phase charging: phase 1) / Anzahl von Schaltzyklen für Schalter
+        // 1 (mehrphasiges Laden: Phase 1)
 
     #define I3_RES_KLE_STAT_SCHALTER2_SCHALTZYKLEN_ANZAHL_WERT       (RXBUF_UINT32(4))
     #define I3_RES_KLE_STAT_SCHALTER2_SCHALTZYKLEN_ANZAHL_WERT_TYPE  unsigned long
-        // Number of switching cycles for switch 2 (multi-phase charging: phase 2) / Anzahl von Schaltzyklen fÃ¼r
-        // Schalter 2 (mehrphasiges Laden: Phase 2)
+        // Number of switching cycles for switch 2 (multi-phase charging: phase 2) / Anzahl von Schaltzyklen für Schalter
+        // 2 (mehrphasiges Laden: Phase 2)
 
     #define I3_RES_KLE_STAT_SCHALTER3_SCHALTZYKLEN_ANZAHL_WERT       (RXBUF_UINT32(8))
     #define I3_RES_KLE_STAT_SCHALTER3_SCHALTZYKLEN_ANZAHL_WERT_TYPE  unsigned long
-        // Number of switching cycles for switch 3 (multi-phase charging: phase 3) / Anzahl von Schaltzyklen fÃ¼r
-        // Schalter 3 (mehrphasiges Laden: Phase 3)
+        // Number of switching cycles for switch 3 (multi-phase charging: phase 3) / Anzahl von Schaltzyklen für Schalter
+        // 3 (mehrphasiges Laden: Phase 3)
 
     #define I3_RES_KLE_STAT_SCHALTER4_SCHALTZYKLEN_ANZAHL_WERT       (RXBUF_UINT32(12))
     #define I3_RES_KLE_STAT_SCHALTER4_SCHALTZYKLEN_ANZAHL_WERT_TYPE  unsigned long
-        // Number of switching cycles for switch 4 (multi-phase charging: changeover) / Anzahl von Schaltzyklen fÃ¼r
+        // Number of switching cycles for switch 4 (multi-phase charging: changeover) / Anzahl von Schaltzyklen für
         // Schalter 4 (mehrphasiges Laden: Umschaltung)
 
     #define I3_RES_KLE_STAT_SCHALTER1                                (RXBUF_UCHAR(16))
@@ -499,10 +499,10 @@
     #define I3_RES_KLE_STAT_SCHALTER4                                (RXBUF_UCHAR(19))
     #define I3_RES_KLE_STAT_SCHALTER4_UNIT                           '0/1'
     #define I3_RES_KLE_STAT_SCHALTER4_TYPE                           unsigned char
-        // State of switch 4 (0 = charger 1, 1 = charger 2) / Zustand vom Schalter 4 (0= LadegerÃ¤t 1, 1=LadegerÃ¤t 2)
+        // State of switch 4 (0 = charger 1, 1 = charger 2) / Zustand vom Schalter 4 (0= Ladegerät 1, 1=Ladegerät 2)
 
 #define I3_PID_KLE_LADEGERAET_SPANNUNG2                              0xDFBA
-        // AC and DC voltages for second charger (multi-phase charging) / AC und DC Spannungen fÃ¼r zweites LadegerÃ¤t
+        // AC and DC voltages for second charger (multi-phase charging) / AC und DC Spannungen für zweites Ladegerät
         // (mehrphasiges Laden)
 
     #define I3_RES_KLE_STAT_SPANNUNG_RMS_AC_PHASE_1_WERT_0XDFBA      (RXBUF_UINT(0))
@@ -541,7 +541,7 @@
         // RMS values of the AC conductor voltages (phase 3) / Effektivwerte der AC Leiterspannungen (Phase 3)
 
 #define I3_PID_KLE_LADEGERAET_STROM2                                 0xDFBB
-        // Charger currents for second charger (multi-phase charging) / StrÃ¶me des LadegerÃ¤ts fÃ¼r zweits LadegerÃ¤t
+        // Charger currents for second charger (multi-phase charging) / Ströme des Ladegeräts für zweits Ladegerät
         // (mehrphasiges Laden)
 
     #define I3_RES_KLE_STAT_STROM_AC_PHASE_1_WERT_0XDFBB             (RXBUF_UINT(0)/10.0f)
@@ -580,8 +580,8 @@
         // AC current phase 3 / AC Strom Phase 3
 
 #define I3_PID_KLE_BETRIEBSZUSTAND_LADEGERAET2                       0xDFBC
-        // Operating modes charger for second charger (multi-phase charging) / Betriebsarten LadegerÃ¤t fÃ¼r zweites
-        // LadegerÃ¤t (mehrphasiges Laden)
+        // Operating modes charger for second charger (multi-phase charging) / Betriebsarten Ladegerät für zweites
+        // Ladegerät (mehrphasiges Laden)
 
     #define I3_RES_KLE_STAT_NETZFREQUENZ_PHASE_1_WERT_0XDFBC         (RXBUF_UCHAR(0)/4.0f)
     #define I3_RES_KLE_STAT_NETZFREQUENZ_PHASE_1_WERT_0XDFBC_UNIT    'Hz'
@@ -589,11 +589,11 @@
         // Current grid frequency phase 1 / Aktuelle Netzfrequenz Phase 1
 
     // BF_LADEGERAET_DERATING_0XDFBC is a BITFIELD of unknown size.  We don't have definitions for each bit, and we GUESSED it is one byte ***
-        // Reason for derating / Grund fÃ¼r Derating
+        // Reason for derating / Grund für Derating
     #define I3_RES_KLE_BF_LADEGERAET_DERATING_0XDFBC                 (RXBUF_UCHAR(1))
     #define I3_RES_KLE_BF_LADEGERAET_DERATING_0XDFBC_UNIT            'Bit'
     #define I3_RES_KLE_BF_LADEGERAET_DERATING_0XDFBC_TYPE            unsigned char
-        // Reason for derating / Grund fÃ¼r Derating
+        // Reason for derating / Grund für Derating
 
     #define I3_RES_KLE_STAT_LEISTUNG_DERATING_WERT_0XDFBC            (RXBUF_UINT(2)*10.0f)
     #define I3_RES_KLE_STAT_LEISTUNG_DERATING_WERT_0XDFBC_UNIT       'W'
@@ -606,25 +606,25 @@
         // Derating / Derating
 
     // BF_LADEGERAET_FEHLERZUSTAND_UCXII_0XDFBC is a BITFIELD of unknown size.  We don't have definitions for each bit, and we GUESSED it is one byte ***
-        // Charger fault conditions / LadegerÃ¤t FehlerzustÃ¤nde
+        // Charger fault conditions / Ladegerät Fehlerzustände
     #define I3_RES_KLE_BF_LADEGERAET_FEHLERZUSTAND_UCXII_0XDFBC      (RXBUF_UCHAR(5))
     #define I3_RES_KLE_BF_LADEGERAET_FEHLERZUSTAND_UCXII_0XDFBC_UNIT 'Bit'
     #define I3_RES_KLE_BF_LADEGERAET_FEHLERZUSTAND_UCXII_0XDFBC_TYPE unsigned char
-        // Charger fault conditions / LadegerÃ¤t FehlerzustÃ¤nde
+        // Charger fault conditions / Ladegerät Fehlerzustände
 
     // BF_AUSLOESER_FAILSAFE_UCXII_0XDFBC is a BITFIELD of unknown size.  We don't have definitions for each bit, and we GUESSED it is one byte ***
-        // Failsafe trigger / AuslÃ¶ser Failsafe
+        // Failsafe trigger / Auslöser Failsafe
     #define I3_RES_KLE_BF_AUSLOESER_FAILSAFE_UCXII_0XDFBC            (RXBUF_UCHAR(6))
     #define I3_RES_KLE_BF_AUSLOESER_FAILSAFE_UCXII_0XDFBC_UNIT       'Bit'
     #define I3_RES_KLE_BF_AUSLOESER_FAILSAFE_UCXII_0XDFBC_TYPE       unsigned char
-        // Failsafe trigger / AuslÃ¶ser Failsafe
+        // Failsafe trigger / Auslöser Failsafe
 
     // BF_LADEGERAET_URSACHE_LADEUNTERBRECHUNG_0XDFBC is a BITFIELD of unknown size.  We don't have definitions for each bit, and we GUESSED it is one byte ***
-        // Cause of charging interruption / Ursache fÃ¼r Ladeunterbrechung
+        // Cause of charging interruption / Ursache für Ladeunterbrechung
     #define I3_RES_KLE_BF_LADEGERAET_URSACHE_LADEUNTERBRECHUNG_0XDFBC (RXBUF_UCHAR(7))
     #define I3_RES_KLE_BF_LADEGERAET_URSACHE_LADEUNTERBRECHUNG_0XDFBC_UNIT 'Bit'
     #define I3_RES_KLE_BF_LADEGERAET_URSACHE_LADEUNTERBRECHUNG_0XDFBC_TYPE unsigned char
-        // Cause of charging interruption / Ursache fÃ¼r Ladeunterbrechung
+        // Cause of charging interruption / Ursache für Ladeunterbrechung
 
     #define I3_RES_KLE_STAT_BETRIEBSART_NR_0XDFBC                    (RXBUF_UCHAR(8))
     #define I3_RES_KLE_STAT_BETRIEBSART_NR_0XDFBC_UNIT               '0-n'
@@ -642,24 +642,24 @@
         // Current grid frequency phase 3 / Aktuelle Netzfrequenz Phase 3
 
     // BF_MOD_ERR_0XDFBC is a BITFIELD of unknown size.  We don't have definitions for each bit, and we GUESSED it is one byte ***
-        // Error states load module / FehlerzustÃ¤nde Lademodul
+        // Error states load module / Fehlerzustände Lademodul
     #define I3_RES_KLE_BF_MOD_ERR_0XDFBC                             (RXBUF_UCHAR(11))
     #define I3_RES_KLE_BF_MOD_ERR_0XDFBC_UNIT                        'Bit'
     #define I3_RES_KLE_BF_MOD_ERR_0XDFBC_TYPE                        unsigned char
-        // Error states load module / FehlerzustÃ¤nde Lademodul
+        // Error states load module / Fehlerzustände Lademodul
 
 #define I3_PID_KLE_LADEDAUER_LADEART                                 0xDFBD
-        // Charging time for different charging types / Ladedauer fÃ¼r verschiedene Ladearten
+        // Charging time for different charging types / Ladedauer für verschiedene Ladearten
 
     #define I3_RES_KLE_STAT_MINUTEN_LADEZYKLUS_1PH_WERT              (RXBUF_UINT32(0))
     #define I3_RES_KLE_STAT_MINUTEN_LADEZYKLUS_1PH_WERT_UNIT         'min'
     #define I3_RES_KLE_STAT_MINUTEN_LADEZYKLUS_1PH_WERT_TYPE         unsigned long
-        // Charging time in minutes for single-phase charging / Ladezeit in Minuten fÃ¼r einphasiges Laden
+        // Charging time in minutes for single-phase charging / Ladezeit in Minuten für einphasiges Laden
 
     #define I3_RES_KLE_STAT_SEKUNDEN_LADEZYKLUS_1PH_WERT             (RXBUF_UINT(4))
     #define I3_RES_KLE_STAT_SEKUNDEN_LADEZYKLUS_1PH_WERT_UNIT        's'
     #define I3_RES_KLE_STAT_SEKUNDEN_LADEZYKLUS_1PH_WERT_TYPE        unsigned short
-        // Charging time in seconds for single-phase charging / Ladezeit in Sekunden fÃ¼r einphasiges Laden
+        // Charging time in seconds for single-phase charging / Ladezeit in Sekunden für einphasiges Laden
 
     #define I3_RES_KLE_STAT_LADEZYKLUS_1PH_WERT                      (RXBUF_UINT(6))
     #define I3_RES_KLE_STAT_LADEZYKLUS_1PH_WERT_TYPE                 unsigned short
@@ -668,12 +668,12 @@
     #define I3_RES_KLE_STAT_MINUTEN_LADEZYKLUS_3PH_WERT              (RXBUF_UINT32(8))
     #define I3_RES_KLE_STAT_MINUTEN_LADEZYKLUS_3PH_WERT_UNIT         'min'
     #define I3_RES_KLE_STAT_MINUTEN_LADEZYKLUS_3PH_WERT_TYPE         unsigned long
-        // Charging time in minutes for multi-phase charging / Ladezeit in Minuten fÃ¼r mehrphasiges Laden
+        // Charging time in minutes for multi-phase charging / Ladezeit in Minuten für mehrphasiges Laden
 
     #define I3_RES_KLE_STAT_SEKUNDEN_LADEZYKLUS_3PH_WERT             (RXBUF_UINT(12))
     #define I3_RES_KLE_STAT_SEKUNDEN_LADEZYKLUS_3PH_WERT_UNIT        's'
     #define I3_RES_KLE_STAT_SEKUNDEN_LADEZYKLUS_3PH_WERT_TYPE        unsigned short
-        // Charging time in seconds for multi-phase charging / Ladezeit in Sekunden fÃ¼r mehrphasiges Laden
+        // Charging time in seconds for multi-phase charging / Ladezeit in Sekunden für mehrphasiges Laden
 
     #define I3_RES_KLE_STAT_LADEZYKLUS_3PH_WERT                      (RXBUF_UINT(14))
     #define I3_RES_KLE_STAT_LADEZYKLUS_3PH_WERT_TYPE                 unsigned short

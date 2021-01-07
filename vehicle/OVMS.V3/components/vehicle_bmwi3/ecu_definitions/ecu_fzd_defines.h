@@ -22,18 +22,18 @@
 // Skipping SHD_ESH_TASTER_STEUERN on 0xA188 which takes arguments
 
 #define I3_PID_FZD_DWA_SINE_ANSTEUERUNG                              0xAA70
-        // Activation of the siren for a maximum of 5 seconds / Ansteuerung der Sirene fÃ¼r maximal 5 Sekunden
+        // Activation of the siren for a maximum of 5 seconds / Ansteuerung der Sirene für maximal 5 Sekunden
 
 #define I3_PID_FZD_DWA_SINE_BATT_LEVEL_RESET                         0xAA71
         // Reset the battery level. Perform only after replacing the battery / Reset des Batterie-Levels. Nur nach
-        // Austausch der Batterie durchfÃ¼hren
+        // Austausch der Batterie durchführen
 
 // Skipping DWA_SELBSTTEST on 0xAA76 which takes arguments
 
 // Skipping DWA_SCHAERFEN on 0xAA79 which takes arguments
 
 #define I3_PID_FZD_DWA_ALARM_ANZAHL_LOESCHEN                         0xAA7A
-        // Delete number of alarms / Anzahl Alarme lÃ¶schen
+        // Delete number of alarms / Anzahl Alarme löschen
 
 // Skipping DWA_CAR_KEY_MEMORY_RESET on 0xAA7B which takes arguments
 
@@ -137,7 +137,7 @@
     #define I3_RES_FZD_STAT_SHD_POSITION_NR                          (RXBUF_UCHAR(2))
     #define I3_RES_FZD_STAT_SHD_POSITION_NR_UNIT                     '0-n'
     #define I3_RES_FZD_STAT_SHD_POSITION_NR_TYPE                     unsigned char
-        // For the current position of the glass cover, see table TAB_FH_SHD_ESH_POSITION / Aktuelle Position des
+        // For the current position of the glass lid, see table TAB_FH_SHD_ESH_POSITION / Aktuelle Position des
         // Glasdeckels siehe Tabelle TAB_FH_SHD_ESH_POSITION
 
     #define I3_RES_FZD_STAT_SHD_POSITION_HALL_WERT                   (RXBUF_UINT(3))
@@ -188,7 +188,7 @@
     #define I3_RES_FZD_STAT_SHD_ZUSTAND_TUER_NR_UNIT                 '0-n'
     #define I3_RES_FZD_STAT_SHD_ZUSTAND_TUER_NR_TYPE                 unsigned char
         // Status of the door contact that is available to the motor driver. see table TAB_FH_SHD_ESH_ZUSTAND_TUER /
-        // Status TÃ¼rkontakt, der den Motortreiber zur VerfÃ¼gung steht. siehe Tabelle TAB_FH_SHD_ESH_ZUSTAND_TUER
+        // Status Türkontakt, der den Motortreiber zur Verfügung steht. siehe Tabelle TAB_FH_SHD_ESH_ZUSTAND_TUER
 
     #define I3_RES_FZD_STAT_SHD_FREIGABE_AKTIV_NR                    (RXBUF_UCHAR(18))
     #define I3_RES_FZD_STAT_SHD_FREIGABE_AKTIV_NR_UNIT               '0-n'
@@ -198,7 +198,7 @@
     #define I3_RES_FZD_STAT_SHD_PANIKMODUS_AKTIV_NR                  (RXBUF_UCHAR(19))
     #define I3_RES_FZD_STAT_SHD_PANIKMODUS_AKTIV_NR_UNIT             '0-n'
     #define I3_RES_FZD_STAT_SHD_PANIKMODUS_AKTIV_NR_TYPE             unsigned char
-        // Status link enable panic mode / Status VerknÃ¼pfung Freigabe Panikmodus
+        // Status link enable panic mode / Status Verknüpfung Freigabe Panikmodus
 
     #define I3_RES_FZD_STAT_SHD_RESERVE                              (RXBUF_UINT32(20))
     #define I3_RES_FZD_STAT_SHD_RESERVE_UNIT                         '0-n'
@@ -222,7 +222,7 @@
         // TAB_FH_SHD_ESH_MOTORTEMPERATUR
 
     #define I3_RES_FZD_STAT_SHD_AUSSENTEMPERATUR_WERT                (RXBUF_UCHAR(2))
-    #define I3_RES_FZD_STAT_SHD_AUSSENTEMPERATUR_WERT_UNIT           'Â°C'
+    #define I3_RES_FZD_STAT_SHD_AUSSENTEMPERATUR_WERT_UNIT           '°C'
     #define I3_RES_FZD_STAT_SHD_AUSSENTEMPERATUR_WERT_TYPE           unsigned char
         // Outside temperature (coding analogue to CAN signal) / Aussentemperatur (Codierung analog CAN-Signal)
 
@@ -268,7 +268,7 @@
     #define I3_RES_FZD_STAT_SHD_TEMPERATUR_UEBERWACHUNG              (RXBUF_UCHAR(16))
     #define I3_RES_FZD_STAT_SHD_TEMPERATUR_UEBERWACHUNG_UNIT         '0/1'
     #define I3_RES_FZD_STAT_SHD_TEMPERATUR_UEBERWACHUNG_TYPE         unsigned char
-        // Status activation temperature monitoring 0x00: Off 0x01: On / Status Aktivierung TemperaturÃ¼berwachung  0x00:
+        // Status activation temperature monitoring 0x00: Off 0x01: On / Status Aktivierung Temperaturüberwachung  0x00:
         // Aus 0x01: Ein
 
     #define I3_RES_FZD_STAT_SHD_EKS_AKTIV                            (RXBUF_UCHAR(17))
@@ -279,17 +279,17 @@
     #define I3_RES_FZD_STAT_SHD_FREIGABE_DEAKTIVIERT                 (RXBUF_UCHAR(18))
     #define I3_RES_FZD_STAT_SHD_FREIGABE_DEAKTIVIERT_UNIT            '0/1'
     #define I3_RES_FZD_STAT_SHD_FREIGABE_DEAKTIVIERT_TYPE            unsigned char
-        // Status link enable 0x00: Off 0x01: On / Status VerknÃ¼pfung Freigabe 0x00: Aus 0x01: Ein
+        // Status link enable 0x00: Off 0x01: On / Status Verknüpfung Freigabe 0x00: Aus 0x01: Ein
 
     #define I3_RES_FZD_STAT_SHD_PANIKMODUS_DEAKTIVIERT               (RXBUF_UCHAR(19))
     #define I3_RES_FZD_STAT_SHD_PANIKMODUS_DEAKTIVIERT_UNIT          '0/1'
     #define I3_RES_FZD_STAT_SHD_PANIKMODUS_DEAKTIVIERT_TYPE          unsigned char
-        // Status link enable panic mode 0x00: Off 0x01: On / Status VerknÃ¼pfung Freigabe Panikmodus 0x00: Aus 0x01: Ein
+        // Status link enable panic mode 0x00: Off 0x01: On / Status Verknüpfung Freigabe Panikmodus 0x00: Aus 0x01: Ein
 
     #define I3_RES_FZD_STAT_SHD_RESERVE_0XD1A6                       (RXBUF_UINT32(20))
     #define I3_RES_FZD_STAT_SHD_RESERVE_0XD1A6_UNIT                  '0-n'
     #define I3_RES_FZD_STAT_SHD_RESERVE_0XD1A6_TYPE                  unsigned long
-        // Reserve for extensions / Reserve fÃ¼r Erweiterungen
+        // Reserve for extensions / Reserve für Erweiterungen
 
 #define I3_PID_FZD_SHD_RELAIS                                        0xD1B9
         // Status relay sunroof / Status Relais Schiebedach
@@ -302,7 +302,7 @@
     #define I3_RES_FZD_STAT_RELAIS_A_RUECK_EIN                       (RXBUF_UCHAR(1))
     #define I3_RES_FZD_STAT_RELAIS_A_RUECK_EIN_UNIT                  '0/1'
     #define I3_RES_FZD_STAT_RELAIS_A_RUECK_EIN_TYPE                  unsigned char
-        // Status of the read-back line relay A 0x00: Off 0x01: On / Status RÃ¼ckleseleitung Relais A 0x00: Aus 0x01: Ein
+        // Status of the read-back line relay A 0x00: Off 0x01: On / Status Rückleseleitung Relais A 0x00: Aus 0x01: Ein
 
     #define I3_RES_FZD_STAT_RELAIS_B_ANSTEUERUNG_EIN                 (RXBUF_UCHAR(2))
     #define I3_RES_FZD_STAT_RELAIS_B_ANSTEUERUNG_EIN_UNIT            '0/1'
@@ -312,19 +312,19 @@
     #define I3_RES_FZD_STAT_RELAIS_B_RUECK_EIN                       (RXBUF_UCHAR(3))
     #define I3_RES_FZD_STAT_RELAIS_B_RUECK_EIN_UNIT                  '0/1'
     #define I3_RES_FZD_STAT_RELAIS_B_RUECK_EIN_TYPE                  unsigned char
-        // Status of the readback line relay B 0x00: Off 0x01: On / Status RÃ¼ckleseleitung Relais B 0x00: Aus 0x01: Ein
+        // Status of the readback line relay B 0x00: Off 0x01: On / Status Rückleseleitung Relais B 0x00: Aus 0x01: Ein
 
     #define I3_RES_FZD_STAT_RELAIS_A_VERSORGUNG_WERT                 (RXBUF_UINT(4)/100.0f)
     #define I3_RES_FZD_STAT_RELAIS_A_VERSORGUNG_WERT_UNIT            'V'
     #define I3_RES_FZD_STAT_RELAIS_A_VERSORGUNG_WERT_TYPE            float
         // Input voltage at the relay (terminal voltage of the motor). Resolution 0.01 V / Eingangsspannung am Relais
-        // (Klemmenspannung des Motors) . AuflÃ¶sung 0,01 V
+        // (Klemmenspannung des Motors) . Auflösung 0,01 V
 
     #define I3_RES_FZD_STAT_RELAIS_B_VERSORGUNG_WERT                 (RXBUF_UINT(6)/100.0f)
     #define I3_RES_FZD_STAT_RELAIS_B_VERSORGUNG_WERT_UNIT            'V'
     #define I3_RES_FZD_STAT_RELAIS_B_VERSORGUNG_WERT_TYPE            float
         // Input voltage at the relay (terminal voltage of the motor). Resolution 0.01 V / Eingangsspannung am Relais
-        // (Klemmenspannung des Motors) . AuflÃ¶sung 0,01 V
+        // (Klemmenspannung des Motors) . Auflösung 0,01 V
 
 #define I3_PID_FZD_ESH_BEWEGUNG                                      0xD1BA
         // Status of electrical sliding headliner movement / Status elektrischer Schiebehimmel Bewegung
@@ -387,14 +387,14 @@
     #define I3_RES_FZD_STAT_ESH_LAGE_NR                              (RXBUF_UCHAR(16))
     #define I3_RES_FZD_STAT_ESH_LAGE_NR_UNIT                         '0-n'
     #define I3_RES_FZD_STAT_ESH_LAGE_NR_TYPE                         unsigned char
-        // See table TAB_FH_SHD_ESH_LAGE_NR for the position of the sliding roof / Lage Schiebehimmel siehe Tabelle
+        // For the position of the sliding headliner, see table TAB_FH_SHD_ESH_LAGE_NR / Lage Schiebehimmel siehe Tabelle
         // TAB_FH_SHD_ESH_LAGE_NR
 
     #define I3_RES_FZD_STAT_ESH_ZUSTAND_TUER_NR                      (RXBUF_UCHAR(17))
     #define I3_RES_FZD_STAT_ESH_ZUSTAND_TUER_NR_UNIT                 '0-n'
     #define I3_RES_FZD_STAT_ESH_ZUSTAND_TUER_NR_TYPE                 unsigned char
         // Status of the door contact that is available to the motor driver. see table TAB_FH_SHD_ESH_ZUSTAND_TUER /
-        // Status TÃ¼rkontakt, der den Motortreiber zur VerfÃ¼gung steht. siehe Tabelle TAB_FH_SHD_ESH_ZUSTAND_TUER
+        // Status Türkontakt, der den Motortreiber zur Verfügung steht. siehe Tabelle TAB_FH_SHD_ESH_ZUSTAND_TUER
 
     #define I3_RES_FZD_STAT_ESH_FREIGABE_AKTIV_NR                    (RXBUF_UCHAR(18))
     #define I3_RES_FZD_STAT_ESH_FREIGABE_AKTIV_NR_UNIT               '0-n'
@@ -404,7 +404,7 @@
     #define I3_RES_FZD_STAT_ESH_PANIKMODUS_AKTIV_NR                  (RXBUF_UCHAR(19))
     #define I3_RES_FZD_STAT_ESH_PANIKMODUS_AKTIV_NR_UNIT             '0-n'
     #define I3_RES_FZD_STAT_ESH_PANIKMODUS_AKTIV_NR_TYPE             unsigned char
-        // Status link enable panic mode / Status VerknÃ¼pfung Freigabe Panikmodus
+        // Status link enable panic mode / Status Verknüpfung Freigabe Panikmodus
 
     #define I3_RES_FZD_STAT_ESH_RESERVE                              (RXBUF_UINT32(20))
     #define I3_RES_FZD_STAT_ESH_RESERVE_UNIT                         '0-n'
@@ -457,7 +457,7 @@
     #define I3_RES_FZD_STAT_RELAIS_A_RUECK_EIN_0XD1BC                (RXBUF_UCHAR(1))
     #define I3_RES_FZD_STAT_RELAIS_A_RUECK_EIN_0XD1BC_UNIT           '0/1'
     #define I3_RES_FZD_STAT_RELAIS_A_RUECK_EIN_0XD1BC_TYPE           unsigned char
-        // Status of the read-back line relay A 0x00: Off 0x01: On / Status RÃ¼ckleseleitung Relais A 0x00: Aus 0x01: Ein
+        // Status of the read-back line relay A 0x00: Off 0x01: On / Status Rückleseleitung Relais A 0x00: Aus 0x01: Ein
 
     #define I3_RES_FZD_STAT_RELAIS_B_ANSTEUERUNG_EIN_0XD1BC          (RXBUF_UCHAR(2))
     #define I3_RES_FZD_STAT_RELAIS_B_ANSTEUERUNG_EIN_0XD1BC_UNIT     '0/1'
@@ -467,19 +467,19 @@
     #define I3_RES_FZD_STAT_RELAIS_B_RUECK_EIN_0XD1BC                (RXBUF_UCHAR(3))
     #define I3_RES_FZD_STAT_RELAIS_B_RUECK_EIN_0XD1BC_UNIT           '0/1'
     #define I3_RES_FZD_STAT_RELAIS_B_RUECK_EIN_0XD1BC_TYPE           unsigned char
-        // Status of the readback line relay B 0x00: Off 0x01: On / Status RÃ¼ckleseleitung Relais B 0x00: Aus 0x01: Ein
+        // Status of the readback line relay B 0x00: Off 0x01: On / Status Rückleseleitung Relais B 0x00: Aus 0x01: Ein
 
     #define I3_RES_FZD_STAT_RELAIS_A_VERSORGUNG_WERT_0XD1BC          (RXBUF_UINT(4)/100.0f)
     #define I3_RES_FZD_STAT_RELAIS_A_VERSORGUNG_WERT_0XD1BC_UNIT     'V'
     #define I3_RES_FZD_STAT_RELAIS_A_VERSORGUNG_WERT_0XD1BC_TYPE     float
         // Input voltage at the relay (terminal voltage of the motor). Resolution 0.01 V / Eingangsspannung am Relais
-        // (Klemmenspannung des Motors) . AuflÃ¶sung 0,01 V
+        // (Klemmenspannung des Motors) . Auflösung 0,01 V
 
     #define I3_RES_FZD_STAT_RELAIS_B_VERSORGUNG_WERT_0XD1BC          (RXBUF_UINT(6)/100.0f)
     #define I3_RES_FZD_STAT_RELAIS_B_VERSORGUNG_WERT_0XD1BC_UNIT     'V'
     #define I3_RES_FZD_STAT_RELAIS_B_VERSORGUNG_WERT_0XD1BC_TYPE     float
         // Input voltage at the relay (terminal voltage of the motor). Resolution 0.01 V / Eingangsspannung am Relais
-        // (Klemmenspannung des Motors) . AuflÃ¶sung 0,01 V
+        // (Klemmenspannung des Motors) . Auflösung 0,01 V
 
 #define I3_PID_FZD_ESH_STATUS_DETAIL                                 0xD1BD
         // Extended information electric sliding headliner / Erweiterte Informationen elektrischer Schiebehimmel
@@ -496,7 +496,7 @@
         // TAB_FH_SHD_ESH_MOTORTEMPERATUR
 
     #define I3_RES_FZD_STAT_ESH_AUSSENTEMPERATUR_WERT                (RXBUF_UCHAR(2)*0.5f-40.0)
-    #define I3_RES_FZD_STAT_ESH_AUSSENTEMPERATUR_WERT_UNIT           'Â°C'
+    #define I3_RES_FZD_STAT_ESH_AUSSENTEMPERATUR_WERT_UNIT           '°C'
     #define I3_RES_FZD_STAT_ESH_AUSSENTEMPERATUR_WERT_TYPE           float
         // Outside temperature (coding analogue to CAN signal) / Aussentemperatur (Codierung analog CAN-Signal)
 
@@ -542,7 +542,7 @@
     #define I3_RES_FZD_STAT_ESH_TEMPERATUR_UEBERWACHUNG              (RXBUF_UCHAR(16))
     #define I3_RES_FZD_STAT_ESH_TEMPERATUR_UEBERWACHUNG_UNIT         '0/1'
     #define I3_RES_FZD_STAT_ESH_TEMPERATUR_UEBERWACHUNG_TYPE         unsigned char
-        // Status activation temperature monitoring 0x00: Off 0x01: On / Status Aktivierung TemperaturÃ¼berwachung 0x00:
+        // Status activation temperature monitoring 0x00: Off 0x01: On / Status Aktivierung Temperaturüberwachung 0x00:
         // Aus 0x01: Ein
 
     #define I3_RES_FZD_STAT_ESH_EKS_AKTIV                            (RXBUF_UCHAR(17))
@@ -553,21 +553,21 @@
     #define I3_RES_FZD_STAT_ESH_FREIGABE_DEAKTIVIERT                 (RXBUF_UCHAR(18))
     #define I3_RES_FZD_STAT_ESH_FREIGABE_DEAKTIVIERT_UNIT            '0/1'
     #define I3_RES_FZD_STAT_ESH_FREIGABE_DEAKTIVIERT_TYPE            unsigned char
-        // Status link enable 0x00: Off 0x01: On / Status VerknÃ¼pfung Freigabe 0x00: Aus 0x01: Ein
+        // Status link enable 0x00: Off 0x01: On / Status Verknüpfung Freigabe 0x00: Aus 0x01: Ein
 
     #define I3_RES_FZD_STAT_ESH_PANIKMODUS_DEAKTIVIERT               (RXBUF_UCHAR(19))
     #define I3_RES_FZD_STAT_ESH_PANIKMODUS_DEAKTIVIERT_UNIT          '0/1'
     #define I3_RES_FZD_STAT_ESH_PANIKMODUS_DEAKTIVIERT_TYPE          unsigned char
-        // Status link enable panic mode 0x00: Panic mode active 0x01: Panic mode deactivated / Status VerknÃ¼pfung
+        // Status link enable panic mode 0x00: Panic mode active 0x01: Panic mode deactivated / Status Verknüpfung
         // Freigabe Panikmodus 0x00: Panikmodus aktiv 0x01: Panikmodus deaktiviert
 
     #define I3_RES_FZD_STAT_ESH_RESERVE_0XD1BD                       (RXBUF_UINT32(20))
     #define I3_RES_FZD_STAT_ESH_RESERVE_0XD1BD_UNIT                  '0-n'
     #define I3_RES_FZD_STAT_ESH_RESERVE_0XD1BD_TYPE                  unsigned long
-        // Reserve for extensions / Reserve fÃ¼r Erweiterungen
+        // Reserve for extensions / Reserve für Erweiterungen
 
 #define I3_PID_FZD_SHD_STATISTIKZAEHLER_LESEN                        0xD1BE
-        // Reading out the statistic counter of the sunroof / Auslesen des StatistikzÃ¤hlers Schiebedach
+        // Reading out the statistic counter of the sunroof / Auslesen des Statistikzählers Schiebedach
 
     #define I3_RES_FZD_STAT_NACHNORMIERUNG_AUTOMATISCH               (RXBUF_UINT(0))
     #define I3_RES_FZD_STAT_NACHNORMIERUNG_AUTOMATISCH_UNIT          '0-n'
@@ -592,91 +592,91 @@
     #define I3_RES_FZD_STAT_REVERSIER_NORMALMODUS                    (RXBUF_UINT(8))
     #define I3_RES_FZD_STAT_REVERSIER_NORMALMODUS_UNIT               '0-n'
     #define I3_RES_FZD_STAT_REVERSIER_NORMALMODUS_TYPE               unsigned short
-        // Number of reversing processes in normal mode / Anzahl der ReversiervorgÃ¤nge im Normalmode
+        // Number of reversing processes in normal mode / Anzahl der Reversiervorgänge im Normalmode
 
     #define I3_RES_FZD_STAT_REVERSIERER_EMERGENCY                    (RXBUF_UINT(10))
     #define I3_RES_FZD_STAT_REVERSIERER_EMERGENCY_UNIT               '0-n'
     #define I3_RES_FZD_STAT_REVERSIERER_EMERGENCY_TYPE               unsigned short
-        // Number of reversing processes in emergency mode / Anzahl ReversiervorgÃ¤nge im Emergency Mode
+        // Number of reversing processes in emergency mode / Anzahl Reversiervorgänge im Emergency Mode
 
     #define I3_RES_FZD_STAT_ABBRUCH_MOTORLAUF                        (RXBUF_UINT(12))
     #define I3_RES_FZD_STAT_ABBRUCH_MOTORLAUF_UNIT                   '0-n'
     #define I3_RES_FZD_STAT_ABBRUCH_MOTORLAUF_TYPE                   unsigned short
-        // Number of times the engine has aborted / Anzahl der AbbrÃ¼che des Motorlaufs
+        // Number of times the engine has aborted / Anzahl der Abbrüche des Motorlaufs
 
     #define I3_RES_FZD_STAT_VORGANG_OEFFNEN_80_KMH                   (RXBUF_UINT(14))
     #define I3_RES_FZD_STAT_VORGANG_OEFFNEN_80_KMH_UNIT              '0-n'
     #define I3_RES_FZD_STAT_VORGANG_OEFFNEN_80_KMH_TYPE              unsigned short
-        // Number of opening processes in the range 0-80 km / h / Anzahl VorgÃ¤nge Ãffnen im Bereich 0-80 km/h
+        // Number of opening processes in the range 0-80 km / h / Anzahl Vorgänge Öffnen im Bereich 0-80 km/h
 
     #define I3_RES_FZD_STAT_VORGANG_HEBEN_80_KMH                     (RXBUF_UINT(16))
     #define I3_RES_FZD_STAT_VORGANG_HEBEN_80_KMH_UNIT                '0-n'
     #define I3_RES_FZD_STAT_VORGANG_HEBEN_80_KMH_TYPE                unsigned short
-        // Number of lifting operations / fan position in the range 0-80 km / h / Anzahl VorgÃ¤nge Heben/LÃ¼fterposition
-        // im Bereich 0-80 km/h
+        // Number of lifting operations / fan position in the range 0-80 km / h / Anzahl Vorgänge Heben/Lüfterposition im
+        // Bereich 0-80 km/h
 
     #define I3_RES_FZD_STAT_VORGANG_SCHLIESSEN_80_KMH                (RXBUF_UINT(18))
     #define I3_RES_FZD_STAT_VORGANG_SCHLIESSEN_80_KMH_UNIT           '0-n'
     #define I3_RES_FZD_STAT_VORGANG_SCHLIESSEN_80_KMH_TYPE           unsigned short
-        // Number of closing processes in the range 0-80 km / h / Anzahl VorgÃ¤nge Schliessen im Bereich 0-80 km/h
+        // Number of closing processes in the range 0-80 km / h / Anzahl Vorgänge Schliessen im Bereich 0-80 km/h
 
     #define I3_RES_FZD_STAT_VORGANG_OEFFNEN_120_KMH                  (RXBUF_UINT(20))
     #define I3_RES_FZD_STAT_VORGANG_OEFFNEN_120_KMH_UNIT             '0-n'
     #define I3_RES_FZD_STAT_VORGANG_OEFFNEN_120_KMH_TYPE             unsigned short
-        // Number of opening processes in the range 80-120 km / h / Anzahl VorgÃ¤nge Ãffnen im Bereich 80-120 km/h
+        // Number of opening processes in the range 80-120 km / h / Anzahl Vorgänge Öffnen im Bereich 80-120 km/h
 
     #define I3_RES_FZD_STAT_VORGANG_HEBEN_120_KMH                    (RXBUF_UINT(22))
     #define I3_RES_FZD_STAT_VORGANG_HEBEN_120_KMH_UNIT               '0-n'
     #define I3_RES_FZD_STAT_VORGANG_HEBEN_120_KMH_TYPE               unsigned short
-        // Number of lifting operations / fan position in the range 80-120 km / h / Anzahl VorgÃ¤nge
-        // Heben/LÃ¼fterposition im Bereich 80-120  km/h
+        // Number of lifting operations / fan position in the range 80-120 km / h / Anzahl Vorgänge Heben/Lüfterposition
+        // im Bereich 80-120  km/h
 
     #define I3_RES_FZD_STAT_VORGANG_SCHLIESSEN_120_KMH               (RXBUF_UINT(24))
     #define I3_RES_FZD_STAT_VORGANG_SCHLIESSEN_120_KMH_UNIT          '0-n'
     #define I3_RES_FZD_STAT_VORGANG_SCHLIESSEN_120_KMH_TYPE          unsigned short
-        // Number of closing processes in the range 80-120 km / h / Anzahl VorgÃ¤nge Schliessen im Bereich 80-120 km/h
+        // Number of closing processes in the range 80-120 km / h / Anzahl Vorgänge Schliessen im Bereich 80-120 km/h
 
     #define I3_RES_FZD_STAT_VORGANG_OEFFNEN_160_KMH                  (RXBUF_UINT(26))
     #define I3_RES_FZD_STAT_VORGANG_OEFFNEN_160_KMH_UNIT             '0-n'
     #define I3_RES_FZD_STAT_VORGANG_OEFFNEN_160_KMH_TYPE             unsigned short
-        // Number of opening processes in the range 120-160 km / h / Anzahl VorgÃ¤nge Ãffnen im Bereich 120-160 km/h
+        // Number of opening processes in the range 120-160 km / h / Anzahl Vorgänge Öffnen im Bereich 120-160 km/h
 
     #define I3_RES_FZD_STAT_VORGANG_HEBEN_160_KMH                    (RXBUF_UINT(28))
     #define I3_RES_FZD_STAT_VORGANG_HEBEN_160_KMH_UNIT               '0-n'
     #define I3_RES_FZD_STAT_VORGANG_HEBEN_160_KMH_TYPE               unsigned short
-        // Number of lifting operations / fan position in the range 120-160 km / h / Anzahl VorgÃ¤nge
-        // Heben/LÃ¼fterposition im Bereich 120-160 km/h
+        // Number of lifting operations / fan position in the range 120-160 km / h / Anzahl Vorgänge Heben/Lüfterposition
+        // im Bereich 120-160 km/h
 
     #define I3_RES_FZD_STAT_VORGANG_SCHLIESSEN_160_KMH               (RXBUF_UINT(30))
     #define I3_RES_FZD_STAT_VORGANG_SCHLIESSEN_160_KMH_UNIT          '0-n'
     #define I3_RES_FZD_STAT_VORGANG_SCHLIESSEN_160_KMH_TYPE          unsigned short
-        // Number of processes closing in the range 120-160 km / h / Anzahl VorgÃ¤nge Schliessen im Bereich 120-160 km/h
+        // Number of processes closing in the range 120-160 km / h / Anzahl Vorgänge Schliessen im Bereich 120-160 km/h
 
     #define I3_RES_FZD_STAT_VORGANG_OEFFNEN_300_KMH                  (RXBUF_UINT(32))
     #define I3_RES_FZD_STAT_VORGANG_OEFFNEN_300_KMH_UNIT             '0-n'
     #define I3_RES_FZD_STAT_VORGANG_OEFFNEN_300_KMH_TYPE             unsigned short
-        // Number of opening processes in the range> 160 km / h / Anzahl VorgÃ¤nge Ãffnen im Bereich > 160 km/h
+        // Number of opening processes in the range> 160 km / h / Anzahl Vorgänge Öffnen im Bereich > 160 km/h
 
     #define I3_RES_FZD_STAT_VORGANG_HEBEN_300_KMH                    (RXBUF_UINT(34))
     #define I3_RES_FZD_STAT_VORGANG_HEBEN_300_KMH_UNIT               '0-n'
     #define I3_RES_FZD_STAT_VORGANG_HEBEN_300_KMH_TYPE               unsigned short
-        // Number of lifting operations / fan position in the range> 160 km / h / Anzahl VorgÃ¤nge Heben/LÃ¼fterposition
-        // im Bereich > 160 km/h
+        // Number of lifting operations / fan position in the range> 160 km / h / Anzahl Vorgänge Heben/Lüfterposition im
+        // Bereich > 160 km/h
 
     #define I3_RES_FZD_STAT_VORGANG_SCHLIESSEN_300_KMH               (RXBUF_UINT(36))
     #define I3_RES_FZD_STAT_VORGANG_SCHLIESSEN_300_KMH_UNIT          '0-n'
     #define I3_RES_FZD_STAT_VORGANG_SCHLIESSEN_300_KMH_TYPE          unsigned short
-        // Number of closing processes in the range> 160 km / h / Anzahl VorgÃ¤nge Schliessen im Bereich > 160 km/h
+        // Number of closing processes in the range> 160 km / h / Anzahl Vorgänge Schliessen im Bereich > 160 km/h
 
     #define I3_RES_FZD_STAT_BETAETIGUNG_BEI_MINUS_10_GRAD            (RXBUF_UINT(38))
     #define I3_RES_FZD_STAT_BETAETIGUNG_BEI_MINUS_10_GRAD_UNIT       '0-n'
     #define I3_RES_FZD_STAT_BETAETIGUNG_BEI_MINUS_10_GRAD_TYPE       unsigned short
-        // Actuation at minus 10 degrees / BetÃ¤tigungen bei minus 10 Grad
+        // Actuation at minus 10 degrees / Betätigungen bei minus 10 Grad
 
     #define I3_RES_FZD_STAT_REVERSIER_BEI_0_GRAD                     (RXBUF_UINT(40))
     #define I3_RES_FZD_STAT_REVERSIER_BEI_0_GRAD_UNIT                '0-n'
     #define I3_RES_FZD_STAT_REVERSIER_BEI_0_GRAD_TYPE                unsigned short
-        // Reversing processes at less than 0 degrees / ReversiervorgÃ¤nge bei kleiner 0 Grad
+        // Reversing processes at less than 0 degrees / Reversiervorgänge bei kleiner 0 Grad
 
     #define I3_RES_FZD_STAT_RESERVE_1                                (RXBUF_UINT32(42))
     #define I3_RES_FZD_STAT_RESERVE_1_UNIT                           '0-n'
@@ -711,7 +711,7 @@
 // Skipping SHD_STATISTIKZAEHLER_LOESCHEN on 0xD1BF which takes arguments
 
 #define I3_PID_FZD_ESH_STATISTIKZAEHLER_LESEN                        0xD1C0
-        // Reading out the statistics counter for the electric sliding headliner / Auslesen des StatistikzÃ¤hler
+        // Reading out the statistics counter for the electric sliding headliner / Auslesen des Statistikzähler
         // elektrischer Schiebehimmel
 
     #define I3_RES_FZD_STAT_NACHNORMIERUNG_AUTOMATISCH_0XD1C0        (RXBUF_UINT(0))
@@ -737,91 +737,91 @@
     #define I3_RES_FZD_STAT_REVERSIER_NORMALMODUS_0XD1C0             (RXBUF_UINT(8))
     #define I3_RES_FZD_STAT_REVERSIER_NORMALMODUS_0XD1C0_UNIT        '0-n'
     #define I3_RES_FZD_STAT_REVERSIER_NORMALMODUS_0XD1C0_TYPE        unsigned short
-        // Number of reversing processes in normal mode / Anzahl der ReversiervorgÃ¤nge im Normalmode
+        // Number of reversing processes in normal mode / Anzahl der Reversiervorgänge im Normalmode
 
     #define I3_RES_FZD_STAT_REVERSIERER_EMERGENCY_0XD1C0             (RXBUF_UINT(10))
     #define I3_RES_FZD_STAT_REVERSIERER_EMERGENCY_0XD1C0_UNIT        '0-n'
     #define I3_RES_FZD_STAT_REVERSIERER_EMERGENCY_0XD1C0_TYPE        unsigned short
-        // Number of reversing processes in emergency mode / Anzahl ReversiervorgÃ¤nge im Emergency Mode
+        // Number of reversing processes in emergency mode / Anzahl Reversiervorgänge im Emergency Mode
 
     #define I3_RES_FZD_STAT_ABBRUCH_MOTORLAUF_0XD1C0                 (RXBUF_UINT(12))
     #define I3_RES_FZD_STAT_ABBRUCH_MOTORLAUF_0XD1C0_UNIT            '0-n'
     #define I3_RES_FZD_STAT_ABBRUCH_MOTORLAUF_0XD1C0_TYPE            unsigned short
-        // Number of times the engine has aborted / Anzahl der AbbrÃ¼che des Motorlaufs
+        // Number of times the engine has aborted / Anzahl der Abbrüche des Motorlaufs
 
     #define I3_RES_FZD_STAT_VORGANG_OEFFNEN_80_KMH_0XD1C0            (RXBUF_UINT(14))
     #define I3_RES_FZD_STAT_VORGANG_OEFFNEN_80_KMH_0XD1C0_UNIT       '0-n'
     #define I3_RES_FZD_STAT_VORGANG_OEFFNEN_80_KMH_0XD1C0_TYPE       unsigned short
-        // Number of opening processes in the range 0-80 km / h / Anzahl VorgÃ¤nge Ãffnen im Bereich 0-80 km/h
+        // Number of opening processes in the range 0-80 km / h / Anzahl Vorgänge Öffnen im Bereich 0-80 km/h
 
     #define I3_RES_FZD_STAT_VORGANG_HEBEN_80_KMH_0XD1C0              (RXBUF_UINT(16))
     #define I3_RES_FZD_STAT_VORGANG_HEBEN_80_KMH_0XD1C0_UNIT         '0-n'
     #define I3_RES_FZD_STAT_VORGANG_HEBEN_80_KMH_0XD1C0_TYPE         unsigned short
-        // Number of lifting operations / fan position in the range 0-80 km / h / Anzahl VorgÃ¤nge Heben/LÃ¼fterposition
-        // im Bereich 0-80 km/h
+        // Number of lifting operations / fan position in the range 0-80 km / h / Anzahl Vorgänge Heben/Lüfterposition im
+        // Bereich 0-80 km/h
 
     #define I3_RES_FZD_STAT_VORGANG_SCHLIESSEN_80_KMH_0XD1C0         (RXBUF_UINT(18))
     #define I3_RES_FZD_STAT_VORGANG_SCHLIESSEN_80_KMH_0XD1C0_UNIT    '0-n'
     #define I3_RES_FZD_STAT_VORGANG_SCHLIESSEN_80_KMH_0XD1C0_TYPE    unsigned short
-        // Number of closing processes in the range 0-80 km / h / Anzahl VorgÃ¤nge Schliessen im Bereich 0-80 km/h
+        // Number of closing processes in the range 0-80 km / h / Anzahl Vorgänge Schliessen im Bereich 0-80 km/h
 
     #define I3_RES_FZD_STAT_VORGANG_OEFFNEN_120_KMH_0XD1C0           (RXBUF_UINT(20))
     #define I3_RES_FZD_STAT_VORGANG_OEFFNEN_120_KMH_0XD1C0_UNIT      '0-n'
     #define I3_RES_FZD_STAT_VORGANG_OEFFNEN_120_KMH_0XD1C0_TYPE      unsigned short
-        // Number of opening processes in the range 80-120 km / h / Anzahl VorgÃ¤nge Ãffnen im Bereich 80-120 km/h
+        // Number of opening processes in the range 80-120 km / h / Anzahl Vorgänge Öffnen im Bereich 80-120 km/h
 
     #define I3_RES_FZD_STAT_VORGANG_HEBEN_120_KMH_0XD1C0             (RXBUF_UINT(22))
     #define I3_RES_FZD_STAT_VORGANG_HEBEN_120_KMH_0XD1C0_UNIT        '0-n'
     #define I3_RES_FZD_STAT_VORGANG_HEBEN_120_KMH_0XD1C0_TYPE        unsigned short
-        // Number of lifting operations / fan position in the range 80-120 km / h / Anzahl VorgÃ¤nge
-        // Heben/LÃ¼fterposition im Bereich 80-120  km/h
+        // Number of lifting operations / fan position in the range 80-120 km / h / Anzahl Vorgänge Heben/Lüfterposition
+        // im Bereich 80-120  km/h
 
     #define I3_RES_FZD_STAT_VORGANG_SCHLIESSEN_120_KMH_0XD1C0        (RXBUF_UINT(24))
     #define I3_RES_FZD_STAT_VORGANG_SCHLIESSEN_120_KMH_0XD1C0_UNIT   '0-n'
     #define I3_RES_FZD_STAT_VORGANG_SCHLIESSEN_120_KMH_0XD1C0_TYPE   unsigned short
-        // Number of closing processes in the range 80-120 km / h / Anzahl VorgÃ¤nge Schliessen im Bereich 80-120 km/h
+        // Number of closing processes in the range 80-120 km / h / Anzahl Vorgänge Schliessen im Bereich 80-120 km/h
 
     #define I3_RES_FZD_STAT_VORGANG_OEFFNEN_160_KMH_0XD1C0           (RXBUF_UINT(26))
     #define I3_RES_FZD_STAT_VORGANG_OEFFNEN_160_KMH_0XD1C0_UNIT      '0-n'
     #define I3_RES_FZD_STAT_VORGANG_OEFFNEN_160_KMH_0XD1C0_TYPE      unsigned short
-        // Number of opening processes in the range 120-160 km / h / Anzahl VorgÃ¤nge Ãffnen im Bereich 120-160 km/h
+        // Number of opening processes in the range 120-160 km / h / Anzahl Vorgänge Öffnen im Bereich 120-160 km/h
 
     #define I3_RES_FZD_STAT_VORGANG_HEBEN_160_KMH_0XD1C0             (RXBUF_UINT(28))
     #define I3_RES_FZD_STAT_VORGANG_HEBEN_160_KMH_0XD1C0_UNIT        '0-n'
     #define I3_RES_FZD_STAT_VORGANG_HEBEN_160_KMH_0XD1C0_TYPE        unsigned short
-        // Number of lifting operations / fan position in the range 120-160 km / h / Anzahl VorgÃ¤nge
-        // Heben/LÃ¼fterposition im Bereich 120-160 km/h
+        // Number of lifting operations / fan position in the range 120-160 km / h / Anzahl Vorgänge Heben/Lüfterposition
+        // im Bereich 120-160 km/h
 
     #define I3_RES_FZD_STAT_VORGANG_SCHLIESSEN_160_KMH_0XD1C0        (RXBUF_UINT(30))
     #define I3_RES_FZD_STAT_VORGANG_SCHLIESSEN_160_KMH_0XD1C0_UNIT   '0-n'
     #define I3_RES_FZD_STAT_VORGANG_SCHLIESSEN_160_KMH_0XD1C0_TYPE   unsigned short
-        // Number of processes closing in the range 120-160 km / h / Anzahl VorgÃ¤nge Schliessen im Bereich 120-160 km/h
+        // Number of processes closing in the range 120-160 km / h / Anzahl Vorgänge Schliessen im Bereich 120-160 km/h
 
     #define I3_RES_FZD_STAT_VORGANG_OEFFNEN_300_KMH_0XD1C0           (RXBUF_UINT(32))
     #define I3_RES_FZD_STAT_VORGANG_OEFFNEN_300_KMH_0XD1C0_UNIT      '0-n'
     #define I3_RES_FZD_STAT_VORGANG_OEFFNEN_300_KMH_0XD1C0_TYPE      unsigned short
-        // Number of opening processes in the range> 160 km / h / Anzahl VorgÃ¤nge Ãffnen im Bereich > 160 km/h
+        // Number of opening processes in the range> 160 km / h / Anzahl Vorgänge Öffnen im Bereich > 160 km/h
 
     #define I3_RES_FZD_STAT_VORGANG_HEBEN_300_KMH_0XD1C0             (RXBUF_UINT(34))
     #define I3_RES_FZD_STAT_VORGANG_HEBEN_300_KMH_0XD1C0_UNIT        '0-n'
     #define I3_RES_FZD_STAT_VORGANG_HEBEN_300_KMH_0XD1C0_TYPE        unsigned short
-        // Number of lifting operations / fan position in the range> 160 km / h / Anzahl VorgÃ¤nge Heben/LÃ¼fterposition
-        // im Bereich > 160 km/h
+        // Number of lifting operations / fan position in the range> 160 km / h / Anzahl Vorgänge Heben/Lüfterposition im
+        // Bereich > 160 km/h
 
     #define I3_RES_FZD_STAT_VORGANG_SCHLIESSEN_300_KMH_0XD1C0        (RXBUF_UINT(36))
     #define I3_RES_FZD_STAT_VORGANG_SCHLIESSEN_300_KMH_0XD1C0_UNIT   '0-n'
     #define I3_RES_FZD_STAT_VORGANG_SCHLIESSEN_300_KMH_0XD1C0_TYPE   unsigned short
-        // Number of closing processes in the range> 160 km / h / Anzahl VorgÃ¤nge Schliessen im Bereich > 160 km/h
+        // Number of closing processes in the range> 160 km / h / Anzahl Vorgänge Schliessen im Bereich > 160 km/h
 
     #define I3_RES_FZD_STAT_BETAETIGUNG_BEI_MINUS_10_GRAD_0XD1C0     (RXBUF_UINT(38))
     #define I3_RES_FZD_STAT_BETAETIGUNG_BEI_MINUS_10_GRAD_0XD1C0_UNIT '0-n'
     #define I3_RES_FZD_STAT_BETAETIGUNG_BEI_MINUS_10_GRAD_0XD1C0_TYPE unsigned short
-        // Actuation at minus 10 degrees / BetÃ¤tigungen bei minus 10 Grad
+        // Actuation at minus 10 degrees / Betätigungen bei minus 10 Grad
 
     #define I3_RES_FZD_STAT_REVERSIER_BEI_0_GRAD_0XD1C0              (RXBUF_UINT(40))
     #define I3_RES_FZD_STAT_REVERSIER_BEI_0_GRAD_0XD1C0_UNIT         '0-n'
     #define I3_RES_FZD_STAT_REVERSIER_BEI_0_GRAD_0XD1C0_TYPE         unsigned short
-        // Reversing processes at less than 0 degrees / ReversiervorgÃ¤nge bei kleiner 0 Grad
+        // Reversing processes at less than 0 degrees / Reversiervorgänge bei kleiner 0 Grad
 
     #define I3_RES_FZD_STAT_RESERVE_1_0XD1C0                         (RXBUF_UINT32(42))
     #define I3_RES_FZD_STAT_RESERVE_1_0XD1C0_UNIT                    '0-n'
@@ -869,18 +869,18 @@
     #define I3_RES_FZD_STAT_LEITUNG_NR                               (RXBUF_UCHAR(0))
     #define I3_RES_FZD_STAT_LEITUNG_NR_UNIT                          '0-n'
     #define I3_RES_FZD_STAT_LEITUNG_NR_TYPE                          char
-        // Line monitoring status / Status der LeitungsÃ¼berwachung
+        // Line monitoring status / Status der Leitungsüberwachung
 
     #define I3_RES_FZD_STAT_UNTERSPANNUNG_EXT_NR                     (RXBUF_UCHAR(1))
     #define I3_RES_FZD_STAT_UNTERSPANNUNG_EXT_NR_UNIT                '0-n'
     #define I3_RES_FZD_STAT_UNTERSPANNUNG_EXT_NR_TYPE                char
-        // Status of undervoltage monitoring of the external battery / Status UnterspannungsÃ¼berwachung der externen
+        // Status of undervoltage monitoring of the external battery / Status Unterspannungsüberwachung der externen
         // Batterie
 
     #define I3_RES_FZD_STAT_EEPROM_NR                                (RXBUF_UCHAR(2))
     #define I3_RES_FZD_STAT_EEPROM_NR_UNIT                           '0-n'
     #define I3_RES_FZD_STAT_EEPROM_NR_TYPE                           char
-        // EEPROM monitoring status / Status Ãberwachnung EEPROM
+        // EEPROM monitoring status / Status Überwachnung EEPROM
 
     #define I3_RES_FZD_STAT_AKTIVER_SCHUTZ_NR                        (RXBUF_UCHAR(3))
     #define I3_RES_FZD_STAT_AKTIVER_SCHUTZ_NR_UNIT                   '0-n'
@@ -890,7 +890,7 @@
     #define I3_RES_FZD_STAT_WAKE_UP_NR                               (RXBUF_UCHAR(4))
     #define I3_RES_FZD_STAT_WAKE_UP_NR_UNIT                          '0-n'
     #define I3_RES_FZD_STAT_WAKE_UP_NR_TYPE                          char
-        // Status monitoring of the wake-up time / Status Ãberwachung der WakeUp-Zeit
+        // Status monitoring of the wake-up time / Status Überwachung der WakeUp-Zeit
 
     #define I3_RES_FZD_STAT_SIRENE_AKUSTIK_NR                        (RXBUF_UCHAR(5))
     #define I3_RES_FZD_STAT_SIRENE_AKUSTIK_NR_UNIT                   '0-n'
@@ -930,136 +930,134 @@
 // Skipping DWA_CAR_KEY_MEMORY on 0xDCAA which takes arguments
 
 #define I3_PID_FZD_DWA_INTERN                                        0xDCAC
-        // 0: disarmed; / 0: entschÃ¤rft;
+        // 0: disarmed; / 0: entschärft;
 
     #define I3_RES_FZD_STAT_DWA_INTERN_NR                            (RXBUF_UINT(0))
     #define I3_RES_FZD_STAT_DWA_INTERN_NR_UNIT                       '0-n'
     #define I3_RES_FZD_STAT_DWA_INTERN_NR_TYPE                       unsigned short
-        // 0: disarmed; / 0: entschÃ¤rft;
+        // 0: disarmed; / 0: entschärft;
 
 #define I3_PID_FZD_DWA_ALARM_AUSGELOEST                              0xDCB0
-        // Status which triggered the alarm / Status, welcher Alarm ausgelÃ¶st hat
+        // Status which triggered the alarm / Status, welcher Alarm ausgelöst hat
 
     #define I3_RES_FZD_STAT_DWA_ALARM_MOTORHAUBE_AUSGELOEST_EIN      (RXBUF_UCHAR(0))
     #define I3_RES_FZD_STAT_DWA_ALARM_MOTORHAUBE_AUSGELOEST_EIN_UNIT '0/1'
     #define I3_RES_FZD_STAT_DWA_ALARM_MOTORHAUBE_AUSGELOEST_EIN_TYPE char
-        // 0 = DWA alarm not triggered by bonnet; 1 = DWA alarm triggered by bonnet / 0= DWA-Alarm nicht ausgelÃ¶st durch
-        // Motorhaube; 1= DWA-Alarm ausgelÃ¶st durch Motorhaube
+        // 0 = DWA alarm not triggered by bonnet; 1 = DWA alarm triggered by bonnet / 0= DWA-Alarm nicht ausgelöst durch
+        // Motorhaube; 1= DWA-Alarm ausgelöst durch Motorhaube
 
     #define I3_RES_FZD_STAT_DWA_ALARM_FAT_AUSGELOEST_EIN             (RXBUF_UCHAR(1))
     #define I3_RES_FZD_STAT_DWA_ALARM_FAT_AUSGELOEST_EIN_UNIT        '0/1'
     #define I3_RES_FZD_STAT_DWA_ALARM_FAT_AUSGELOEST_EIN_TYPE        char
         // 0 = DWA alarm not triggered by driver's door; 1 = DWA alarm triggered by driver's door / 0= DWA-Alarm nicht
-        // ausgelÃ¶st durch FahrertÃ¼r; 1= DWA-Alarm ausgelÃ¶st durch FahrertÃ¼r
+        // ausgelöst durch Fahrertür; 1= DWA-Alarm ausgelöst durch Fahrertür
 
     #define I3_RES_FZD_STAT_DWA_ALARM_BFT_AUSGELOEST_EIN             (RXBUF_UCHAR(2))
     #define I3_RES_FZD_STAT_DWA_ALARM_BFT_AUSGELOEST_EIN_UNIT        '0/1'
     #define I3_RES_FZD_STAT_DWA_ALARM_BFT_AUSGELOEST_EIN_TYPE        char
         // 0 = DWA alarm not triggered by passenger door; 1 = DWA alarm triggered by passenger door / 0= DWA-Alarm nicht
-        // ausgelÃ¶st durch BeifahrertÃ¼r; 1= DWA-Alarm ausgelÃ¶st durch BeifahrertÃ¼r
+        // ausgelöst durch Beifahrertür; 1= DWA-Alarm ausgelöst durch Beifahrertür
 
     #define I3_RES_FZD_STAT_DWA_ALARM_FATH_AUSGELOEST_EIN            (RXBUF_UCHAR(3))
     #define I3_RES_FZD_STAT_DWA_ALARM_FATH_AUSGELOEST_EIN_UNIT       '0/1'
     #define I3_RES_FZD_STAT_DWA_ALARM_FATH_AUSGELOEST_EIN_TYPE       char
         // 0 = DWA alarm not triggered by the rear driver's door; 1 = DWA alarm triggered by the driver's rear door / 0=
-        // DWA-Alarm nicht ausgelÃ¶st durch FahrertÃ¼r hinten; 1= DWA-Alarm ausgelÃ¶st durch FahrertÃ¼r hinten
+        // DWA-Alarm nicht ausgelöst durch Fahrertür hinten; 1= DWA-Alarm ausgelöst durch Fahrertür hinten
 
     #define I3_RES_FZD_STAT_DWA_ALARM_BFTH_AUSGELOEST_EIN            (RXBUF_UCHAR(4))
     #define I3_RES_FZD_STAT_DWA_ALARM_BFTH_AUSGELOEST_EIN_UNIT       '0/1'
     #define I3_RES_FZD_STAT_DWA_ALARM_BFTH_AUSGELOEST_EIN_TYPE       char
         // 0 = DWA alarm not triggered by rear passenger door; 1 = DWA alarm triggered by the rear passenger door / 0=
-        // DWA-Alarm nicht ausgelÃ¶st durch BeifahrertÃ¼r hinten ; 1= DWA-Alarm ausgelÃ¶st durch BeifahrertÃ¼r hinten
+        // DWA-Alarm nicht ausgelöst durch Beifahrertür hinten ; 1= DWA-Alarm ausgelöst durch Beifahrertür hinten
 
     #define I3_RES_FZD_STAT_DWA_ALARM_HECKKLAPPE_AUSGELOEST_EIN      (RXBUF_UCHAR(5))
     #define I3_RES_FZD_STAT_DWA_ALARM_HECKKLAPPE_AUSGELOEST_EIN_UNIT '0/1'
     #define I3_RES_FZD_STAT_DWA_ALARM_HECKKLAPPE_AUSGELOEST_EIN_TYPE char
-        // 0 = DWA alarm not triggered by tailgate; 1 = DWA alarm triggered by tailgate / 0= DWA-Alarm nicht ausgelÃ¶st
-        // durch Heckklappe; 1= DWA-Alarm ausgelÃ¶st durch Heckklappe
+        // 0 = DWA alarm not triggered by tailgate; 1 = DWA alarm triggered by tailgate / 0= DWA-Alarm nicht ausgelöst
+        // durch Heckklappe; 1= DWA-Alarm ausgelöst durch Heckklappe
 
     #define I3_RES_FZD_STAT_DWA_ALARM_HECKSCHEIBE_AUSGELOEST_EIN     (RXBUF_UCHAR(6))
     #define I3_RES_FZD_STAT_DWA_ALARM_HECKSCHEIBE_AUSGELOEST_EIN_UNIT '0/1'
     #define I3_RES_FZD_STAT_DWA_ALARM_HECKSCHEIBE_AUSGELOEST_EIN_TYPE char
         // 0 = DWA alarm not triggered by rear window; 1 = DWA alarm triggered by rear window / 0= DWA-Alarm nicht
-        // ausgelÃ¶st durch Heckscheibe; 1= DWA-Alarm ausgelÃ¶st durch Heckscheibe
+        // ausgelöst durch Heckscheibe; 1= DWA-Alarm ausgelöst durch Heckscheibe
 
     #define I3_RES_FZD_STAT_DWA_ALARM_OBD_KOMMUNIKATION_EIN          (RXBUF_UCHAR(7))
     #define I3_RES_FZD_STAT_DWA_ALARM_OBD_KOMMUNIKATION_EIN_UNIT     '0/1'
     #define I3_RES_FZD_STAT_DWA_ALARM_OBD_KOMMUNIKATION_EIN_TYPE     char
         // 0 = DWA alarm not triggered by OBD communication; 1 = DWA alarm triggered by OBD communication / 0= DWA-Alarm
-        // nicht ausgelÃ¶st durch OBD-Kommunikation; 1= DWA-Alarm ausgelÃ¶st durch OBD-Kommunikation
+        // nicht ausgelöst durch OBD-Kommunikation; 1= DWA-Alarm ausgelöst durch OBD-Kommunikation
 
     #define I3_RES_FZD_STAT_DWA_ALARM_LEITUNGSUEBERWACHUNG_SINE_AUSGELOEST_EIN (RXBUF_UCHAR(8))
     #define I3_RES_FZD_STAT_DWA_ALARM_LEITUNGSUEBERWACHUNG_SINE_AUSGELOEST_EIN_UNIT '0/1'
     #define I3_RES_FZD_STAT_DWA_ALARM_LEITUNGSUEBERWACHUNG_SINE_AUSGELOEST_EIN_TYPE char
         // 0 = DWA alarm not triggered by line monitoring SINE; 1 = DWA alarm triggered by SINE line monitoring / 0=
-        // DWA-Alarm nicht ausgelÃ¶st durch LeitungsÃ¼berwachung SINE; 1= DWA-Alarm ausgelÃ¶st durch LeitungsÃ¼berwachung
+        // DWA-Alarm nicht ausgelöst durch Leitungsüberwachung SINE; 1= DWA-Alarm ausgelöst durch Leitungsüberwachung
         // SINE
 
     #define I3_RES_FZD_STAT_DWA_ALARM_MANIPULATION_AUTH_AUSGELOEST_EIN (RXBUF_UCHAR(9))
     #define I3_RES_FZD_STAT_DWA_ALARM_MANIPULATION_AUTH_AUSGELOEST_EIN_UNIT '0/1'
     #define I3_RES_FZD_STAT_DWA_ALARM_MANIPULATION_AUTH_AUSGELOEST_EIN_TYPE char
         // 0 = DWA alarm not triggered by manipulation authentication; 1 = DWA alarm triggered by manipulation
-        // authentication / 0= DWA-Alarm nicht ausgelÃ¶st durch Manipulation Authentisierung; 1= DWA-Alarm ausgelÃ¶st
-        // durch Manipulation Authentisierung
+        // authentication / 0= DWA-Alarm nicht ausgelöst durch Manipulation Authentisierung; 1= DWA-Alarm ausgelöst durch
+        // Manipulation Authentisierung
 
     #define I3_RES_FZD_STAT_DWA_ALARM_USIS_A_UND_B_AUSGELOEST_EIN    (RXBUF_UCHAR(10))
     #define I3_RES_FZD_STAT_DWA_ALARM_USIS_A_UND_B_AUSGELOEST_EIN_UNIT '0/1'
     #define I3_RES_FZD_STAT_DWA_ALARM_USIS_A_UND_B_AUSGELOEST_EIN_TYPE char
         // 0 = DWA alarm not triggered by interior protection A and B; 1 = DWA alarm triggered by interior protection A
-        // and B / 0= DWA-Alarm nicht ausgelÃ¶st durch Innenraumschutz A und B; 1= DWA-Alarm ausgelÃ¶st durch
+        // and B / 0= DWA-Alarm nicht ausgelöst durch Innenraumschutz A und B; 1= DWA-Alarm ausgelöst durch
         // Innenraumschutz A und B
 
     #define I3_RES_FZD_STAT_DWA_ALARM_USIS_A_AUSGELOEST_EIN          (RXBUF_UCHAR(11))
     #define I3_RES_FZD_STAT_DWA_ALARM_USIS_A_AUSGELOEST_EIN_UNIT     '0/1'
     #define I3_RES_FZD_STAT_DWA_ALARM_USIS_A_AUSGELOEST_EIN_TYPE     char
         // 0 = DWA alarm not triggered by interior protection A; 1 = DWA alarm triggered by interior protection A / 0=
-        // DWA-Alarm nicht ausgelÃ¶st durch Innenraumschutz A; 1= DWA-Alarm ausgelÃ¶st durch Innenraumschutz A
+        // DWA-Alarm nicht ausgelöst durch Innenraumschutz A; 1= DWA-Alarm ausgelöst durch Innenraumschutz A
 
     #define I3_RES_FZD_STAT_DWA_ALARM_USIS_B_AUSGELOEST_EIN          (RXBUF_UCHAR(12))
     #define I3_RES_FZD_STAT_DWA_ALARM_USIS_B_AUSGELOEST_EIN_UNIT     '0/1'
     #define I3_RES_FZD_STAT_DWA_ALARM_USIS_B_AUSGELOEST_EIN_TYPE     char
         // 0 = DWA alarm not triggered by interior protection B; 1 = DWA alarm triggered by interior protection B / 0=
-        // DWA-Alarm nicht ausgelÃ¶st durch Innenraumschutz B; 1= DWA-Alarm ausgelÃ¶st durch Innenraumschutz B
+        // DWA-Alarm nicht ausgelöst durch Innenraumschutz B; 1= DWA-Alarm ausgelöst durch Innenraumschutz B
 
     #define I3_RES_FZD_STAT_DWA_ALARM_NEIGUNGSGEBER_X_AUSGELOEST_EIN (RXBUF_UCHAR(13))
     #define I3_RES_FZD_STAT_DWA_ALARM_NEIGUNGSGEBER_X_AUSGELOEST_EIN_UNIT '0/1'
     #define I3_RES_FZD_STAT_DWA_ALARM_NEIGUNGSGEBER_X_AUSGELOEST_EIN_TYPE char
         // 0 = DWA alarm not triggered by X-axis inclination sensor; 1 = DWA alarm triggered by inclination sensor X-axis
-        // / 0= DWA-Alarm nicht ausgelÃ¶st durch Neigungsgeber X-Achse; 1= DWA-Alarm ausgelÃ¶st durch Neigungsgeber
-        // X-Achse
+        // / 0= DWA-Alarm nicht ausgelöst durch Neigungsgeber X-Achse; 1= DWA-Alarm ausgelöst durch Neigungsgeber X-Achse
 
     #define I3_RES_FZD_STAT_DWA_ALARM_NEIGUNGSGEBER_Y_AUSGELOEST_EIN (RXBUF_UCHAR(14))
     #define I3_RES_FZD_STAT_DWA_ALARM_NEIGUNGSGEBER_Y_AUSGELOEST_EIN_UNIT '0/1'
     #define I3_RES_FZD_STAT_DWA_ALARM_NEIGUNGSGEBER_Y_AUSGELOEST_EIN_TYPE char
         // 0 = DWA alarm not triggered by Y-axis inclination sensor; 1 = DWA alarm triggered by inclination sensor Y-axis
-        // / 0= DWA-Alarm nicht ausgelÃ¶st durch Neigungsgeber Y-Achse; 1= DWA-Alarm ausgelÃ¶st durch Neigungsgeber
-        // Y-Achse
+        // / 0= DWA-Alarm nicht ausgelöst durch Neigungsgeber Y-Achse; 1= DWA-Alarm ausgelöst durch Neigungsgeber Y-Achse
 
     #define I3_RES_FZD_STAT_DWA_ALARM_NEIGUNGSGEBER_X_UND_Y_AUSGELOEST_EIN (RXBUF_UCHAR(15))
     #define I3_RES_FZD_STAT_DWA_ALARM_NEIGUNGSGEBER_X_UND_Y_AUSGELOEST_EIN_UNIT '0/1'
     #define I3_RES_FZD_STAT_DWA_ALARM_NEIGUNGSGEBER_X_UND_Y_AUSGELOEST_EIN_TYPE char
         // 0 = DWA alarm not triggered by inclination sensor X and Y axis; 1 = DWA alarm triggered by inclination sensor
-        // X and Y axis / 0= DWA-Alarm nicht ausgelÃ¶st durch Neigungsgeber X- und Y-Achse; 1= DWA-Alarm ausgelÃ¶st durch
+        // X and Y axis / 0= DWA-Alarm nicht ausgelöst durch Neigungsgeber X- und Y-Achse; 1= DWA-Alarm ausgelöst durch
         // Neigungsgeber X- und Y-Achse
 
     #define I3_RES_FZD_STAT_DWA_ALARM_SINE_SPANNUNG_EIN              (RXBUF_UCHAR(16))
     #define I3_RES_FZD_STAT_DWA_ALARM_SINE_SPANNUNG_EIN_UNIT         '0/1'
     #define I3_RES_FZD_STAT_DWA_ALARM_SINE_SPANNUNG_EIN_TYPE         char
         // 0 = DWA alarm not triggered by SINE power supply; 1 = DWA alarm triggered by SINE power supply / 0= DWA-Alarm
-        // nicht ausgelÃ¶st durch SINE Spannungsversorgung; 1= DWA-Alarm ausgelÃ¶st durch SINE Spannungsversorgung
+        // nicht ausgelöst durch SINE Spannungsversorgung; 1= DWA-Alarm ausgelöst durch SINE Spannungsversorgung
 
     #define I3_RES_FZD_STAT_DWA_ALARM_SINE_LIN_TELEGRAMM_EIN         (RXBUF_UCHAR(17))
     #define I3_RES_FZD_STAT_DWA_ALARM_SINE_LIN_TELEGRAMM_EIN_UNIT    '0/1'
     #define I3_RES_FZD_STAT_DWA_ALARM_SINE_LIN_TELEGRAMM_EIN_TYPE    char
         // 0 = DWA alarm not triggered by SINE no LIN telegram can be sent; 1 = DWA alarm triggered by SINE no LIN
-        // telegram can be sent / 0= DWA-Alarm nicht ausgelÃ¶st durch SINE kein LIN-Telegramm absetzbar; 1= DWA-Alarm
-        // ausgelÃ¶st durch SINE kein LIN-Telegramm absetzbar
+        // telegram can be sent / 0= DWA-Alarm nicht ausgelöst durch SINE kein LIN-Telegramm absetzbar; 1= DWA-Alarm
+        // ausgelöst durch SINE kein LIN-Telegramm absetzbar
 
     #define I3_RES_FZD_STAT_DWA_ALARM_PANIKALARM_EIN                 (RXBUF_UCHAR(18))
     #define I3_RES_FZD_STAT_DWA_ALARM_PANIKALARM_EIN_UNIT            '0/1'
     #define I3_RES_FZD_STAT_DWA_ALARM_PANIKALARM_EIN_TYPE            char
         // 0 = DWA alarm not triggered by panic alarm; 1 = DWA alarm triggered by panic alarm / 0= DWA-Alarm nicht
-        // ausgelÃ¶st durch Panikalarm; 1= DWA-Alarm ausgelÃ¶st durch Panikalarm
+        // ausgelöst durch Panikalarm; 1= DWA-Alarm ausgelöst durch Panikalarm
 
 #define I3_PID_FZD_DWA_VORHANDEN                                     0xDCB1
         // 0: No DWA installed 1: DWA installed / 0: Keine DWA verbaut 1: DWA verbaut
@@ -1085,22 +1083,22 @@
     #define I3_RES_FZD_STAT_KONTAKT_FAHRERTUER_NR                    (RXBUF_UCHAR(0))
     #define I3_RES_FZD_STAT_KONTAKT_FAHRERTUER_NR_UNIT               '0-n'
     #define I3_RES_FZD_STAT_KONTAKT_FAHRERTUER_NR_TYPE               unsigned char
-        // Contact driver's door / Kontakt FahrertÃ¼r
+        // Contact driver's door / Kontakt Fahrertür
 
     #define I3_RES_FZD_STAT_KONTAKT_BEIFAHRERTUER_NR                 (RXBUF_UCHAR(1))
     #define I3_RES_FZD_STAT_KONTAKT_BEIFAHRERTUER_NR_UNIT            '0-n'
     #define I3_RES_FZD_STAT_KONTAKT_BEIFAHRERTUER_NR_TYPE            unsigned char
-        // Contact passenger door / Kontakt BeifahrertÃ¼r
+        // Contact passenger door / Kontakt Beifahrertür
 
     #define I3_RES_FZD_STAT_KONTAKT_FAHRERTUER_HINTEN_NR             (RXBUF_UCHAR(2))
     #define I3_RES_FZD_STAT_KONTAKT_FAHRERTUER_HINTEN_NR_UNIT        '0-n'
     #define I3_RES_FZD_STAT_KONTAKT_FAHRERTUER_HINTEN_NR_TYPE        unsigned char
-        // Contact at the rear of the driver's door / Kontakt FahrertÃ¼r hinten
+        // Contact at the rear of the driver's door / Kontakt Fahrertür hinten
 
     #define I3_RES_FZD_STAT_KONTAKT_BEIFAHRERTUER_HINTEN_NR          (RXBUF_UCHAR(3))
     #define I3_RES_FZD_STAT_KONTAKT_BEIFAHRERTUER_HINTEN_NR_UNIT     '0-n'
     #define I3_RES_FZD_STAT_KONTAKT_BEIFAHRERTUER_HINTEN_NR_TYPE     unsigned char
-        // Contact rear passenger door / Kontakt BeifahrertÃ¼r hinten
+        // Contact rear passenger door / Kontakt Beifahrertür hinten
 
     #define I3_RES_FZD_STAT_KONTAKT_MOTORHAUBE_NR                    (RXBUF_UCHAR(4))
     #define I3_RES_FZD_STAT_KONTAKT_MOTORHAUBE_NR_UNIT               '0-n'
@@ -1139,22 +1137,22 @@
         // ESH_BEWERTUNG_KENNLINIE_SCHIEBELAGE / ESH_BEWERTUNG_KENNLINIE_SCHIEBELAGE
 
     // Can't yet generate code for STAT_KENNLINIENDATEN_DATA of type data[128] at offset 0. But we account for the 128 bytes
-        // Speed value over the travel path of the first block / Drehzahlwert Ã¼ber dem Verfahrweg erster Block
+        // Speed value over the travel path of the first block / Drehzahlwert über dem Verfahrweg erster Block
 
     // Can't yet generate code for STAT_KENNLINIENDATEN_2_DATA of type data[128] at offset 128. But we account for the 128 bytes
-        // Speed value over the travel distance of the second block / Drehzahlwert Ã¼ber dem Verfahrweg zweiter Block
+        // Speed value over the travel distance of the second block / Drehzahlwert über dem Verfahrweg zweiter Block
 
     #define I3_RES_FZD_STAT_SCHLIESSZEIT_WERT                        (RXBUF_UINT(256))
     #define I3_RES_FZD_STAT_SCHLIESSZEIT_WERT_UNIT                   's'
     #define I3_RES_FZD_STAT_SCHLIESSZEIT_WERT_TYPE                   unsigned short
         // Closing time during the initialization process. Resolution 10ms steps / Schliesszeit beim
-        // Initialisierungsvorgang. AuflÃ¶sung 10ms Schritte
+        // Initialisierungsvorgang. Auflösung 10ms Schritte
 
     #define I3_RES_FZD_STAT_BN_SPANNUNG_WERT                         (RXBUF_UCHAR(258))
     #define I3_RES_FZD_STAT_BN_SPANNUNG_WERT_UNIT                    'V'
     #define I3_RES_FZD_STAT_BN_SPANNUNG_WERT_TYPE                    unsigned char
         // Voltage that is applied to the window regulator during initialization. Resolution 100mV steps / Spannung die
-        // am Fensterheber wÃ¤hrend dem Initialisieren anliegt. AuflÃ¶sung 100mV Schritte
+        // am Fensterheber während dem Initialisieren anliegt. Auflösung 100mV Schritte
 
     #define I3_RES_FZD_STAT_SPIEL_WERT                               (RXBUF_UCHAR(259))
     #define I3_RES_FZD_STAT_SPIEL_WERT_TYPE                          unsigned char
@@ -1163,8 +1161,8 @@
     #define I3_RES_FZD_STAT_GUELTIGKEIT                              (RXBUF_UCHAR(260))
     #define I3_RES_FZD_STAT_GUELTIGKEIT_UNIT                         '0/1'
     #define I3_RES_FZD_STAT_GUELTIGKEIT_TYPE                         unsigned char
-        // 0x00 characteristic curve invalid 0x01 characteristic curve valid / 0x00 Kennlinie ungÃ¼ltig 0x01 Kennlinie
-        // gÃ¼ltig
+        // 0x00 characteristic curve invalid 0x01 characteristic curve valid / 0x00 Kennlinie ungültig 0x01 Kennlinie
+        // gültig
 
     #define I3_RES_FZD_STAT_BEWERTUNG                                (RXBUF_UCHAR(261))
     #define I3_RES_FZD_STAT_BEWERTUNG_UNIT                           '0/1'
@@ -1174,28 +1172,28 @@
 
     #define I3_RES_FZD_STAT_REGELVERLETZUNG_WERT                     (RXBUF_UCHAR(262))
     #define I3_RES_FZD_STAT_REGELVERLETZUNG_WERT_TYPE                unsigned char
-        // to clarify / zu klÃ¤ren
+        // to clarify / zu klären
 
 #define I3_PID_FZD_SHD_BEWERTUNG_KENNLINIE_AUSSTELLLAGE_1            0x4108
         // SHD_BEWERTUNG_KENNLINIE_AUSSTELLLAGE_1 / SHD_BEWERTUNG_KENNLINIE_AUSSTELLLAGE_1
 
     // Can't yet generate code for STAT_KENNLINIENDATEN_DATA_0X4108 of type data[128] at offset 0. But we account for the 128 bytes
-        // Speed value over the travel path of the first block / Drehzahlwert Ã¼ber dem Verfahrweg erster Block
+        // Speed value over the travel path of the first block / Drehzahlwert über dem Verfahrweg erster Block
 
     // Can't yet generate code for STAT_KENNLINIENDATEN_2_DATA_0X4108 of type data[128] at offset 128. But we account for the 128 bytes
-        // Speed value over the travel distance of the second block / Drehzahlwert Ã¼ber dem Verfahrweg zweiter Block
+        // Speed value over the travel distance of the second block / Drehzahlwert über dem Verfahrweg zweiter Block
 
     #define I3_RES_FZD_STAT_SCHLIESSZEIT_WERT_0X4108                 (RXBUF_UINT(256))
     #define I3_RES_FZD_STAT_SCHLIESSZEIT_WERT_0X4108_UNIT            's'
     #define I3_RES_FZD_STAT_SCHLIESSZEIT_WERT_0X4108_TYPE            unsigned short
         // Closing time during the initialization process. Resolution 10ms steps / Schliesszeit beim
-        // Initialisierungsvorgang. AuflÃ¶sung 10ms Schritte
+        // Initialisierungsvorgang. Auflösung 10ms Schritte
 
     #define I3_RES_FZD_STAT_BN_SPANNUNG_WERT_0X4108                  (RXBUF_UCHAR(258))
     #define I3_RES_FZD_STAT_BN_SPANNUNG_WERT_0X4108_UNIT             'V'
     #define I3_RES_FZD_STAT_BN_SPANNUNG_WERT_0X4108_TYPE             unsigned char
         // Voltage that is applied to the window regulator during initialization. Resolution 100mV steps / Spannung die
-        // am Fensterheber wÃ¤hrend dem Initialisieren anliegt. AuflÃ¶sung 100mV Schritte
+        // am Fensterheber während dem Initialisieren anliegt. Auflösung 100mV Schritte
 
     #define I3_RES_FZD_STAT_SPIEL_WERT_0X4108                        (RXBUF_UCHAR(259))
     #define I3_RES_FZD_STAT_SPIEL_WERT_0X4108_TYPE                   unsigned char
@@ -1204,8 +1202,8 @@
     #define I3_RES_FZD_STAT_GUELTIGKEIT_0X4108                       (RXBUF_UCHAR(260))
     #define I3_RES_FZD_STAT_GUELTIGKEIT_0X4108_UNIT                  '0/1'
     #define I3_RES_FZD_STAT_GUELTIGKEIT_0X4108_TYPE                  unsigned char
-        // 0x00 characteristic curve invalid 0x01 characteristic curve valid / 0x00 Kennlinie ungÃ¼ltig 0x01 Kennlinie
-        // gÃ¼ltig
+        // 0x00 characteristic curve invalid 0x01 characteristic curve valid / 0x00 Kennlinie ungültig 0x01 Kennlinie
+        // gültig
 
     #define I3_RES_FZD_STAT_BEWERTUNG_0X4108                         (RXBUF_UCHAR(261))
     #define I3_RES_FZD_STAT_BEWERTUNG_0X4108_UNIT                    '0/1'
@@ -1215,28 +1213,28 @@
 
     #define I3_RES_FZD_STAT_REGELVERLETZUNG_WERT_0X4108              (RXBUF_UCHAR(262))
     #define I3_RES_FZD_STAT_REGELVERLETZUNG_WERT_0X4108_TYPE         unsigned char
-        // to clarify / zu klÃ¤ren
+        // to clarify / zu klären
 
 #define I3_PID_FZD_SHD_BEWERTUNG_KENNLINIE_SCHIEBELAGE_1             0x4109
         // SHD_BEWERTUNG_KENNLINIE_SCHIEBELAGE_1 / SHD_BEWERTUNG_KENNLINIE_SCHIEBELAGE_1
 
     // Can't yet generate code for STAT_KENNLINIENDATEN_DATA_0X4109 of type data[128] at offset 0. But we account for the 128 bytes
-        // Speed value over the travel path of the first block / Drehzahlwert Ã¼ber dem Verfahrweg erster Block
+        // Speed value over the travel path of the first block / Drehzahlwert über dem Verfahrweg erster Block
 
     // Can't yet generate code for STAT_KENNLINIENDATEN_2_DATA_0X4109 of type data[128] at offset 128. But we account for the 128 bytes
-        // Speed value over the travel distance of the second block / Drehzahlwert Ã¼ber dem Verfahrweg zweiter Block
+        // Speed value over the travel distance of the second block / Drehzahlwert über dem Verfahrweg zweiter Block
 
     #define I3_RES_FZD_STAT_SCHLIESSZEIT_WERT_0X4109                 (RXBUF_UINT(256))
     #define I3_RES_FZD_STAT_SCHLIESSZEIT_WERT_0X4109_UNIT            's'
     #define I3_RES_FZD_STAT_SCHLIESSZEIT_WERT_0X4109_TYPE            unsigned short
         // Closing time during the initialization process. Resolution 10ms steps / Schliesszeit beim
-        // Initialisierungsvorgang. AuflÃ¶sung 10ms Schritte
+        // Initialisierungsvorgang. Auflösung 10ms Schritte
 
     #define I3_RES_FZD_STAT_BN_SPANNUNG_WERT_0X4109                  (RXBUF_UCHAR(258))
     #define I3_RES_FZD_STAT_BN_SPANNUNG_WERT_0X4109_UNIT             'V'
     #define I3_RES_FZD_STAT_BN_SPANNUNG_WERT_0X4109_TYPE             unsigned char
         // Voltage that is applied to the window regulator during initialization. Resolution 100mV steps / Spannung die
-        // am Fensterheber wÃ¤hrend dem Initialisieren anliegt. AuflÃ¶sung 100mV Schritte
+        // am Fensterheber während dem Initialisieren anliegt. Auflösung 100mV Schritte
 
     #define I3_RES_FZD_STAT_SPIEL_WERT_0X4109                        (RXBUF_UCHAR(259))
     #define I3_RES_FZD_STAT_SPIEL_WERT_0X4109_TYPE                   unsigned char
@@ -1245,8 +1243,8 @@
     #define I3_RES_FZD_STAT_GUELTIGKEIT_0X4109                       (RXBUF_UCHAR(260))
     #define I3_RES_FZD_STAT_GUELTIGKEIT_0X4109_UNIT                  '0/1'
     #define I3_RES_FZD_STAT_GUELTIGKEIT_0X4109_TYPE                  unsigned char
-        // 0x00 characteristic curve invalid 0x01 characteristic curve valid / 0x00 Kennlinie ungÃ¼ltig 0x01 Kennlinie
-        // gÃ¼ltig
+        // 0x00 characteristic curve invalid 0x01 characteristic curve valid / 0x00 Kennlinie ungültig 0x01 Kennlinie
+        // gültig
 
     #define I3_RES_FZD_STAT_BEWERTUNG_0X4109                         (RXBUF_UCHAR(261))
     #define I3_RES_FZD_STAT_BEWERTUNG_0X4109_UNIT                    '0/1'
@@ -1256,10 +1254,10 @@
 
     #define I3_RES_FZD_STAT_REGELVERLETZUNG_WERT_0X4109              (RXBUF_UCHAR(262))
     #define I3_RES_FZD_STAT_REGELVERLETZUNG_WERT_0X4109_TYPE         unsigned char
-        // to clarify / zu klÃ¤ren
+        // to clarify / zu klären
 
 #define I3_PID_FZD_DWA_ALARM_ANZAHL                                  0x6012
-        // Number of triggered alarms / Anzahl ausgelÃ¶ster Alarme
+        // Number of triggered alarms / Anzahl ausgelöster Alarme
 
     #define I3_RES_FZD_STAT_FZD_ALARM_MOTORHAUBE_WERT                (RXBUF_UCHAR(0))
     #define I3_RES_FZD_STAT_FZD_ALARM_MOTORHAUBE_WERT_UNIT           'count'
@@ -1269,23 +1267,23 @@
     #define I3_RES_FZD_STAT_FZD_ALARM_FAT_WERT                       (RXBUF_UCHAR(1))
     #define I3_RES_FZD_STAT_FZD_ALARM_FAT_WERT_UNIT                  'count'
     #define I3_RES_FZD_STAT_FZD_ALARM_FAT_WERT_TYPE                  unsigned char
-        // Number of alarms for flap contact for driver's door / Anzahl Alarme Klappenkontakt FAhrerTÃ¼r
+        // Number of alarms for flap contact for driver's door / Anzahl Alarme Klappenkontakt FAhrerTür
 
     #define I3_RES_FZD_STAT_FZD_ALARM_BFT_WERT                       (RXBUF_UCHAR(2))
     #define I3_RES_FZD_STAT_FZD_ALARM_BFT_WERT_UNIT                  'count'
     #define I3_RES_FZD_STAT_FZD_ALARM_BFT_WERT_TYPE                  unsigned char
-        // Number of alarms for flap contact at driver's door / Anzahl Alarme Klappenkontakt BeiFahrerTÃ¼r
+        // Number of alarms for flap contact at driver's door / Anzahl Alarme Klappenkontakt BeiFahrerTür
 
     #define I3_RES_FZD_STAT_FZD_ALARM_FATH_WERT                      (RXBUF_UCHAR(3))
     #define I3_RES_FZD_STAT_FZD_ALARM_FATH_WERT_UNIT                 'count'
     #define I3_RES_FZD_STAT_FZD_ALARM_FATH_WERT_TYPE                 unsigned char
-        // Number of alarms for flap contact at the rear of the driver's door / Anzahl Alarme Klappenkontakt FAhrerTÃ¼r
+        // Number of alarms for flap contact at the rear of the driver's door / Anzahl Alarme Klappenkontakt FAhrerTür
         // Hinten
 
     #define I3_RES_FZD_STAT_FZD_ALARM_BFTH_WERT                      (RXBUF_UCHAR(4))
     #define I3_RES_FZD_STAT_FZD_ALARM_BFTH_WERT_UNIT                 'count'
     #define I3_RES_FZD_STAT_FZD_ALARM_BFTH_WERT_TYPE                 unsigned char
-        // Number of alarms for flap contact at the rear door of the driver / Anzahl Alarme Klappenkontakt BeiFahrerTÃ¼r
+        // Number of alarms for flap contact at the rear door of the driver / Anzahl Alarme Klappenkontakt BeiFahrerTür
         // Hinten
 
     #define I3_RES_FZD_STAT_FZD_ALARM_HECKKLAPPE_WERT                (RXBUF_UCHAR(5))
@@ -1306,7 +1304,7 @@
     #define I3_RES_FZD_STAT_FZD_ALARM_LEITUNGSUEBERWACHUNG_SINE_WERT (RXBUF_UCHAR(8))
     #define I3_RES_FZD_STAT_FZD_ALARM_LEITUNGSUEBERWACHUNG_SINE_WERT_UNIT 'count'
     #define I3_RES_FZD_STAT_FZD_ALARM_LEITUNGSUEBERWACHUNG_SINE_WERT_TYPE unsigned char
-        // Number of alarms line monitoring LIN-SINE / Anzahl Alarme LeitungsÃ¼berwachung LIN-SINE
+        // Number of alarms line monitoring LIN-SINE / Anzahl Alarme Leitungsüberwachung LIN-SINE
 
     #define I3_RES_FZD_STAT_FZD_ALARM_MANIPULATION_AUTH_WERT         (RXBUF_UCHAR(9))
     #define I3_RES_FZD_STAT_FZD_ALARM_MANIPULATION_AUTH_WERT_UNIT    'count'

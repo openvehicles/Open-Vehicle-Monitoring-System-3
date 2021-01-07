@@ -8,10 +8,10 @@
 #define I3_ECU_DSC_RX                                                0x0629F1
 
 #define I3_PID_DSC_FS_LOESCHEN_PERMANENT                             0x1060
-        // Job to delete the permanent DTCs / Job zum LÃ¶schen der Permanent-DTCs
+        // Job to delete the permanent DTCs / Job zum Löschen der Permanent-DTCs
 
 #define I3_PID_DSC_FEHLERSPEICHER_ENDE_WERKSABLAUF                   0x1061
-        // Deletion of individual errors and permanent DTCs prevented / LÃ¶schen von Einzelfehlern und Permanent-DTCs
+        // Deletion of individual errors and permanent DTCs prevented / Löschen von Einzelfehlern und Permanent-DTCs
         // unterbindet
 
     #define I3_RES_DSC_STAT_FS_ENDE_WABL                             (RXBUF_UCHAR(0))
@@ -27,7 +27,7 @@
     #define I3_RES_DSC_STAT_ROUTINE_STATUS                           (RXBUF_UCHAR(0))
     #define I3_RES_DSC_STAT_ROUTINE_STATUS_UNIT                      '0-n'
     #define I3_RES_DSC_STAT_ROUTINE_STATUS_TYPE                      unsigned char
-        // Execution status / AusfÃ¼hrungsstatus
+        // Execution status / Ausführungsstatus
 
 #define I3_PID_DSC_STEUERN_AX_AY_ABGLEICH                            0xA052
         // Start and status comparison of accelerometers / Starten und Status Abgleich Beschleunigungssensoren
@@ -35,7 +35,7 @@
     #define I3_RES_DSC_STAT_ROUTINE_STATUS_0XA052                    (RXBUF_UCHAR(0))
     #define I3_RES_DSC_STAT_ROUTINE_STATUS_0XA052_UNIT               '0-n'
     #define I3_RES_DSC_STAT_ROUTINE_STATUS_0XA052_TYPE               unsigned char
-        // Execution status / AusfÃ¼hrungsstatus
+        // Execution status / Ausführungsstatus
 
 #define I3_PID_DSC_START_ADAPTIVDATEN_WERKSMODUS                     0xA053
         // Start and status standardization adaptive data / Starten und Status Standardisierung Adaptivdaten
@@ -43,7 +43,7 @@
     #define I3_RES_DSC_STAT_ROUTINE_STATUS_0XA053                    (RXBUF_UCHAR(0))
     #define I3_RES_DSC_STAT_ROUTINE_STATUS_0XA053_UNIT               '0-n'
     #define I3_RES_DSC_STAT_ROUTINE_STATUS_0XA053_TYPE               unsigned char
-        // Execution status / AusfÃ¼hrungsstatus
+        // Execution status / Ausführungsstatus
 
 #define I3_PID_DSC_STEUERN_ADAPTIVDATEN_SLW_RESET                    0xA05B
         // Start and status total steering angle reset / Start und Status Summenlenkwinkel Reset
@@ -51,13 +51,13 @@
     #define I3_RES_DSC_STAT_ROUTINE_STATUS_0XA05B                    (RXBUF_UCHAR(0))
     #define I3_RES_DSC_STAT_ROUTINE_STATUS_0XA05B_UNIT               '0-n'
     #define I3_RES_DSC_STAT_ROUTINE_STATUS_0XA05B_TYPE               unsigned char
-        // Execution status / AusfÃ¼hrungsstatus
+        // Execution status / Ausführungsstatus
 
     #define I3_RES_DSC_STAT_DATEN_SCHREIBEN_AKTIV_NR                 (RXBUF_UCHAR(1))
     #define I3_RES_DSC_STAT_DATEN_SCHREIBEN_AKTIV_NR_UNIT            '0-n'
     #define I3_RES_DSC_STAT_DATEN_SCHREIBEN_AKTIV_NR_TYPE            unsigned char
         // Information as to whether the adaptive data is being written. / Information ob der Schreibvorgang der
-        // Adaptivdaten lÃ¤uft.
+        // Adaptivdaten läuft.
 
 // Skipping DSC_ENTLUEFTUNG on 0xA061 which takes arguments
 
@@ -81,11 +81,11 @@
         // Reset RPA standardization / Reset RPA Standardisierung
 
 #define I3_PID_DSC_DAC_RESET                                         0xA087
-        // Reset of the learning values for the Driver Attention Control (drowsiness detection) / Reset der Lernwerte
-        // fÃ¼r die Driver Attention Control (MÃ¼digkeitserkennung)
+        // Reset of the learning values for the Driver Attention Control (drowsiness detection) / Reset der Lernwerte für
+        // die Driver Attention Control (Müdigkeitserkennung)
 
 #define I3_PID_DSC_DAC_AUSLOESUNG                                    0xA088
-        // Triggering of a drowsiness warning from Driver Attention Control / AuslÃ¶sung einer MÃ¼digkeitswarnung der
+        // Triggering of a drowsiness warning from Driver Attention Control / Auslösung einer Müdigkeitswarnung der
         // Driver Attention Control
 
 // Skipping VENTILE_KALIBRIERUNG on 0xA08F which takes arguments
@@ -105,16 +105,16 @@
     #define I3_RES_DSC_STAT_FLM_RESET                                (RXBUF_UCHAR(0))
     #define I3_RES_DSC_STAT_FLM_RESET_UNIT                           '0-n'
     #define I3_RES_DSC_STAT_FLM_RESET_TYPE                           unsigned char
-        // Execution status / AusfÃ¼hrungsstatus
+        // Execution status / Ausführungsstatus
 
 // Skipping EPB_ACTION_REQUEST on 0xA193 which takes arguments
 
 #define I3_PID_DSC_EXTERNE_ANFORDERUNG_GKU_IPB_ZAEHLER_RUECKSETZEN   0xA1AA
-        // Reset counter for takeover by external request gear / Zaehler fuer Uebernahmen durch externe Anforderung
+        // Reset counter for transfer by external request gear / Zaehler fuer Uebernahmen durch externe Anforderung
         // Getriebe ruecksetzen
 
 #define I3_PID_DSC_EXTERNE_ANFORDERUNG_EPB_ZAEHLER_RUECKSETZEN       0xA1BE
-        // Reset counter for external request gear / ZÃ¤hler fÃ¼r externe Anforderung Getriebe rÃ¼cksetzen
+        // Reset counter for external request gear / Zähler für externe Anforderung Getriebe rücksetzen
 
 #define I3_PID_DSC_DSC_PUMPENFUNKTIONSTEST                           0xA222
         // Starting, stopping and status function test pump / Starten, Stoppen und Status Funktionstest Pumpe
@@ -122,29 +122,29 @@
     #define I3_RES_DSC_STAT_ROUTINE_STATUS_0XA222                    (RXBUF_UCHAR(0))
     #define I3_RES_DSC_STAT_ROUTINE_STATUS_0XA222_UNIT               '0-n'
     #define I3_RES_DSC_STAT_ROUTINE_STATUS_0XA222_TYPE               unsigned char
-        // Execution status / AusfÃ¼hrungsstatus
+        // Execution status / Ausführungsstatus
 
     #define I3_RES_DSC_STAT_PUMPENLEISTUNG_LEERLAUF_WERT             (RXBUF_UINT(1)/100.0f)
     #define I3_RES_DSC_STAT_PUMPENLEISTUNG_LEERLAUF_WERT_UNIT        '%'
     #define I3_RES_DSC_STAT_PUMPENLEISTUNG_LEERLAUF_WERT_TYPE        float
-        // Pump performance during circulation (idling without resistance, no active brake pressure build-up) /
-        // Pumpenleistung wÃ¤hrend KreisfÃ¶rderung (Leerlauf ohne Wiederstand, kein aktiver Bremsdruckaufbau)
+        // Pump output during circulation (idling without resistance, no active brake pressure build-up) / Pumpenleistung
+        // während Kreisförderung (Leerlauf ohne Wiederstand, kein aktiver Bremsdruckaufbau)
 
     #define I3_RES_DSC_STAT_PUMPENLEISTUNG_KREIS_1_WERT              (RXBUF_UINT(3)/100.0f)
     #define I3_RES_DSC_STAT_PUMPENLEISTUNG_KREIS_1_WERT_UNIT         '%'
     #define I3_RES_DSC_STAT_PUMPENLEISTUNG_KREIS_1_WERT_TYPE         float
-        // Pump output during load against the isolating valve in the primary brake circuit / Pumpenleistung wÃ¤hrend
-        // Belastung gegen das Trennventil im primÃ¤ren Bremskreis
+        // Pump output during load against the isolating valve in the primary brake circuit / Pumpenleistung während
+        // Belastung gegen das Trennventil im primären Bremskreis
 
     #define I3_RES_DSC_STAT_PUMPENLEISTUNG_KREIS_2_WERT              (RXBUF_UINT(5)/100.0f)
     #define I3_RES_DSC_STAT_PUMPENLEISTUNG_KREIS_2_WERT_UNIT         '%'
     #define I3_RES_DSC_STAT_PUMPENLEISTUNG_KREIS_2_WERT_TYPE         float
-        // Pump output during load against the isolating valve in the secondary brake circuit / Pumpenleistung wÃ¤hrend
-        // Belastung gegen das Trennventil im sekundÃ¤ren Bremskreis
+        // Pump output during load against the isolating valve in the secondary brake circuit / Pumpenleistung während
+        // Belastung gegen das Trennventil im sekundären Bremskreis
 
 #define I3_PID_DSC_STEUERN_ANTI_POWER_HOP_FUNKTION_ZAEHLER_RUECKSETZEN 0xA2A2
         // This diagnostic job can be used to reset the counter of the anti-power HOP function. / Mit diesem Diagnosejob
-        // kann der Zaehler der Anti-Power-HOP-Funktion zurÃ¼ckgesetzt werden.
+        // kann der Zaehler der Anti-Power-HOP-Funktion zurückgesetzt werden.
 
 // Skipping EMF_VERFAHREN on 0xA803 which takes arguments
 
@@ -154,13 +154,13 @@
     #define I3_RES_DSC_STAT_ROUTINE_STATUS_0XAB5B                    (RXBUF_UCHAR(0))
     #define I3_RES_DSC_STAT_ROUTINE_STATUS_0XAB5B_UNIT               '0-n'
     #define I3_RES_DSC_STAT_ROUTINE_STATUS_0XAB5B_TYPE               unsigned char
-        // Execution status / AusfÃ¼hrungsstatus
+        // Execution status / Ausführungsstatus
 
     #define I3_RES_DSC_STAT_EEPROM_SICHERN_NR                        (RXBUF_UCHAR(1))
     #define I3_RES_DSC_STAT_EEPROM_SICHERN_NR_UNIT                   '0-n'
     #define I3_RES_DSC_STAT_EEPROM_SICHERN_NR_TYPE                   unsigned char
         // Status of the EEPROM backup 0 = backup successful 1 = backup running / Status der EEPROM Sicherung 
-        // 0=Sicherung erfolgreich 1= Sicherung lÃ¤uft
+        // 0=Sicherung erfolgreich 1= Sicherung läuft
 
 #define I3_PID_DSC_START_ADAPTIVDATEN_WERKSMODUS_2                   0xABA3
         // Initialization of the learning values of the self-steering behavior function. / Initialisierung der Lernwerte
@@ -169,7 +169,7 @@
     #define I3_RES_DSC_STAT_ROUTINE_STATUS_0XABA3                    (RXBUF_UCHAR(0))
     #define I3_RES_DSC_STAT_ROUTINE_STATUS_0XABA3_UNIT               '0-n'
     #define I3_RES_DSC_STAT_ROUTINE_STATUS_0XABA3_TYPE               unsigned char
-        // Execution status / AusfÃ¼hrungsstatus
+        // Execution status / Ausführungsstatus
 
 #define I3_PID_DSC_GMK_DATEN                                         0xD09A
         // Reading out GMK data / Auslesen GMK Daten
@@ -177,7 +177,7 @@
     #define I3_RES_DSC_STAT_ZUSTAND_IST_GMK_WERT                     (RXBUF_UCHAR(0))
     #define I3_RES_DSC_STAT_ZUSTAND_IST_GMK_WERT_TYPE                unsigned char
         // Actual status of the GMK function (depending on the qualifiers of the inputs) / Ist-Zustand der GMK-Funktion
-        // (abhÃ¤ngig von Qualifiern der EingÃ¤nge)
+        // (abhängig von Qualifiern der Eingänge)
 
     #define I3_RES_DSC_STAT_ZUSTAND_SOLL_GMK_WERT                    (RXBUF_UCHAR(1))
     #define I3_RES_DSC_STAT_ZUSTAND_SOLL_GMK_WERT_TYPE               unsigned char
@@ -186,8 +186,8 @@
     #define I3_RES_DSC_STAT_MMOTOR_OFFSET_EPS_WERT                   (RXBUF_SCHAR(2)/100.0f)
     #define I3_RES_DSC_STAT_MMOTOR_OFFSET_EPS_WERT_UNIT              'Nm'
     #define I3_RES_DSC_STAT_MMOTOR_OFFSET_EPS_WERT_TYPE              float
-        // Offset engine torque, which the EPS additively superimposes on its own engine torque / Offset-Motormoment, das
-        // die EPS dem eigenen Motormoment additiv Ã¼berlagert
+        // Offset motor torque, which the EPS additively superimposes on its own motor torque / Offset-Motormoment, das
+        // die EPS dem eigenen Motormoment additiv überlagert
 
     #define I3_RES_DSC_STAT_OFFSET_EPS_QUALIFIER_WERT                (RXBUF_UCHAR(3))
     #define I3_RES_DSC_STAT_OFFSET_EPS_QUALIFIER_WERT_TYPE           unsigned char
@@ -202,7 +202,7 @@
     #define I3_RES_DSC_STAT_MMOTOR_OFFSET_GMK_EPS_WERT               (RXBUF_SCHAR(5)/100.0f)
     #define I3_RES_DSC_STAT_MMOTOR_OFFSET_GMK_EPS_WERT_UNIT          'Nm'
     #define I3_RES_DSC_STAT_MMOTOR_OFFSET_GMK_EPS_WERT_TYPE          float
-        // Offset motor torque that the EPS has to provide due to the GMK function / Offset-Motormoment, welches die EPS
+        // Offset engine torque that the EPS has to provide due to the GMK function / Offset-Motormoment, welches die EPS
         // aufgrund der GMK Funktion zu stellen hat
 
     #define I3_RES_DSC_STAT_LENKUNG_VERBAUT_FAHRZEUG_WERT            (RXBUF_UCHAR(6))
@@ -212,7 +212,7 @@
     #define I3_RES_DSC_STAT_EPS_FAKT_MOM_SERVICE_QUALIFIER_WERT      (RXBUF_UCHAR(7))
     #define I3_RES_DSC_STAT_EPS_FAKT_MOM_SERVICE_QUALIFIER_WERT_TYPE unsigned char
         // Service qualifier of the EPS for the implementation of the factors and the offset motor torque (everything OK
-        // if 32 or 33) / Service-Qualifier der EPS fÃ¼r Umsetzung der Faktoren und des Offset-Motormoments (alles i.O
+        // if 32 or 33) / Service-Qualifier der EPS für Umsetzung der Faktoren und des Offset-Motormoments (alles i.O
         // wenn 32 od 33)
 
     #define I3_RES_DSC_STAT_FUNKTION_GBR_KENNLINIE_NUMMER_WERT       (RXBUF_UCHAR(8))
@@ -279,7 +279,7 @@
     #define I3_RES_DSC_STAT_VA_S_REST_ORIG_WERT                      (RXBUF_UINT(5))
     #define I3_RES_DSC_STAT_VA_S_REST_ORIG_WERT_UNIT                 'km'
     #define I3_RES_DSC_STAT_VA_S_REST_ORIG_WERT_TYPE                 unsigned short
-        // Remaining distance without min- u. max restriction / Restlaufstrecke ohne min- u. max-BeschrÃ¤nkung
+        // Remaining distance without min- u. max restriction / Restlaufstrecke ohne min- u. max-Beschränkung
 
     #define I3_RES_DSC_STAT_VA_S_MIN_WERT                            (RXBUF_UINT(7))
     #define I3_RES_DSC_STAT_VA_S_MIN_WERT_UNIT                       'km'
@@ -313,11 +313,11 @@
 
     #define I3_RES_DSC_STAT_VA_SZ_WERT                               (RXBUF_UCHAR(27))
     #define I3_RES_DSC_STAT_VA_SZ_WERT_TYPE                          unsigned char
-        // Service counter / ServicezÃ¤hler
+        // Service counter / Servicezähler
 
     // BF_VA_FLAG_BVA is a BITFIELD of size unsigned char.  We don't yet generate definitions for each bit, we treat as the host data type
         // Bitfield state of the BVA sensor / Bitfield Zustand BVA-Sensor
-            // STAT_VA_FLAG_BVA: Mask: 0x01 - State of BVA sensor: 0 = BVA sensor not looped through, 1 = BVA sensor looped through
+            // STAT_VA_FLAG_BVA: Mask: 0x01 - BVA sensor status: 0 = BVA sensor not looped through, 1 = BVA sensor looped through
     #define I3_RES_DSC_BF_VA_FLAG_BVA                                (RXBUF_UCHAR(28))
     #define I3_RES_DSC_BF_VA_FLAG_BVA_UNIT                           'Bit'
     #define I3_RES_DSC_BF_VA_FLAG_BVA_TYPE                           unsigned char
@@ -364,7 +364,7 @@
     #define I3_RES_DSC_STAT_HA_S_REST_ORIG_WERT                      (RXBUF_UINT(36))
     #define I3_RES_DSC_STAT_HA_S_REST_ORIG_WERT_UNIT                 'km'
     #define I3_RES_DSC_STAT_HA_S_REST_ORIG_WERT_TYPE                 unsigned short
-        // Remaining distance without min- u. max restriction / Restlaufstrecke ohne min- u. max-BeschrÃ¤nkung
+        // Remaining distance without min- u. max restriction / Restlaufstrecke ohne min- u. max-Beschränkung
 
     #define I3_RES_DSC_STAT_HA_S_MIN_WERT                            (RXBUF_UINT(38))
     #define I3_RES_DSC_STAT_HA_S_MIN_WERT_UNIT                       'km'
@@ -398,11 +398,11 @@
 
     #define I3_RES_DSC_STAT_HA_SZ_WERT                               (RXBUF_UCHAR(58))
     #define I3_RES_DSC_STAT_HA_SZ_WERT_TYPE                          unsigned char
-        // Service counter / ServicezÃ¤hler
+        // Service counter / Servicezähler
 
     // BF_HA_FLAG_BVA is a BITFIELD of size unsigned char.  We don't yet generate definitions for each bit, we treat as the host data type
         // Bitfield state of the BVA sensor / Bitfield Zustand BVA-Sensor
-            // STAT_HA_FLAG_BVA: Mask: 0x01 - State of BVA sensor: 0 = BVA sensor not looped through, 1 = BVA sensor looped through
+            // STAT_HA_FLAG_BVA: Mask: 0x01 - BVA sensor status: 0 = BVA sensor not looped through, 1 = BVA sensor looped through
     #define I3_RES_DSC_BF_HA_FLAG_BVA                                (RXBUF_UCHAR(59))
     #define I3_RES_DSC_BF_HA_FLAG_BVA_UNIT                           'Bit'
     #define I3_RES_DSC_BF_HA_FLAG_BVA_TYPE                           unsigned char
@@ -475,7 +475,7 @@
 
     #define I3_RES_DSC_STAT_ZAEHLER_NACHSPANNEN_PRAEVENTIV_WERT      (RXBUF_UINT(8))
     #define I3_RES_DSC_STAT_ZAEHLER_NACHSPANNEN_PRAEVENTIV_WERT_TYPE unsigned short
-        // Number of re-tensioning preventive / Anzahl Nachspannen vorbeugend
+        // Number of retightening as a preventive measure / Anzahl Nachspannen vorbeugend
 
     #define I3_RES_DSC_STAT_RESERVE5_WERT                            (RXBUF_UINT(10))
     #define I3_RES_DSC_STAT_RESERVE5_WERT_TYPE                       unsigned short
@@ -511,7 +511,7 @@
         // Electricity motor rear left / Strom Motor hinten links
 
     #define I3_RES_DSC_STAT_TEMPERATUR_MOTOR_HL_WERT                 (RXBUF_SINT(4)/10.0f)
-    #define I3_RES_DSC_STAT_TEMPERATUR_MOTOR_HL_WERT_UNIT            'Â°C'
+    #define I3_RES_DSC_STAT_TEMPERATUR_MOTOR_HL_WERT_UNIT            '°C'
     #define I3_RES_DSC_STAT_TEMPERATUR_MOTOR_HL_WERT_TYPE            float
         // Engine temperature, rear left / Temperatur Motor hinten links
 
@@ -526,7 +526,7 @@
         // Electricity motor rear right / Strom Motor hinten rechts
 
     #define I3_RES_DSC_STAT_TEMPERATUR_MOTOR_HR_WERT                 (RXBUF_SINT(10)/10.0f)
-    #define I3_RES_DSC_STAT_TEMPERATUR_MOTOR_HR_WERT_UNIT            'Â°C'
+    #define I3_RES_DSC_STAT_TEMPERATUR_MOTOR_HR_WERT_UNIT            '°C'
     #define I3_RES_DSC_STAT_TEMPERATUR_MOTOR_HR_WERT_TYPE            float
         // Temperature engine rear right / Temperatur Motor hinten rechts
 
@@ -554,7 +554,7 @@
 
     #define I3_RES_DSC_STAT_ZAEHLER_TASTER_LOESEN_WERT               (RXBUF_UINT32(4))
     #define I3_RES_DSC_STAT_ZAEHLER_TASTER_LOESEN_WERT_TYPE          unsigned long
-        // Solve number of operations / Anzahl Bedienungen LÃ¶sen
+        // Solve number of operations / Anzahl Bedienungen Lösen
 
 #define I3_PID_DSC_EMF_LERNDATEN_AKTUATOR                            0xD80A
         // Read out actuator learning data / Auslesen Lerndaten Aktuator
@@ -573,15 +573,15 @@
 
     #define I3_RES_DSC_STAT_ZAEHLER_AKTUATOR_UEBERLAST_WERT          (RXBUF_UINT(8))
     #define I3_RES_DSC_STAT_ZAEHLER_AKTUATOR_UEBERLAST_WERT_TYPE     unsigned short
-        // Number of overloads / Anzahl Ãberlast
+        // Number of overloads / Anzahl Überlast
 
 #define I3_PID_DSC_EMF_KLEMMEN_KOMBISATTEL                           0xD80C
-        // Read out voltage control unit / Auslesen Spannung SteuergerÃ¤t
+        // Read out voltage control unit / Auslesen Spannung Steuergerät
 
     #define I3_RES_DSC_STAT_SPANNUNG_ELEKTRONIK_WERT                 (RXBUF_UINT(0)/1000.0f)
     #define I3_RES_DSC_STAT_SPANNUNG_ELEKTRONIK_WERT_UNIT            'V'
     #define I3_RES_DSC_STAT_SPANNUNG_ELEKTRONIK_WERT_TYPE            float
-        // Voltage control unit / Spannung SteuergerÃ¤t
+        // Voltage control unit / Spannung Steuergerät
 
     #define I3_RES_DSC_STAT_SPANNUNG_AKUATOR_HL_WERT                 (RXBUF_UINT(2)/1000.0f)
     #define I3_RES_DSC_STAT_SPANNUNG_AKUATOR_HL_WERT_UNIT            'V'
@@ -745,7 +745,7 @@
     #define I3_RES_DSC_STAT_NAEHERUNG_WARNGRENZE_WERT                (RXBUF_UCHAR(5))
     #define I3_RES_DSC_STAT_NAEHERUNG_WARNGRENZE_WERT_UNIT           '%'
     #define I3_RES_DSC_STAT_NAEHERUNG_WARNGRENZE_WERT_TYPE           unsigned char
-        // Current value approaching warning limit / aktueller Wert NÃ¤herung Warngrenze
+        // Current value approaching warning limit / aktueller Wert Näherung Warngrenze
 
     #define I3_RES_DSC_STAT_PANNEN_POSITION                          (RXBUF_UCHAR(6))
     #define I3_RES_DSC_STAT_PANNEN_POSITION_UNIT                     '0-n'
@@ -768,7 +768,7 @@
         // Learning progress speed range> 190 km / h / Lernfortschritt Geschwindigkeitsbereich > 190 km/h
 
 #define I3_PID_DSC_GESCHWINDIGKEIT_RAD                               0xDBE4
-        // Read out wheel speed sensor / Auslesen RaddrehzahlfÃ¼hler
+        // Read out wheel speed sensor / Auslesen Raddrehzahlfühler
 
     #define I3_RES_DSC_STAT_GESCHWINDIGKEIT_RAD_VL_WERT              (RXBUF_SINT(0)/100.0f)
     #define I3_RES_DSC_STAT_GESCHWINDIGKEIT_RAD_VL_WERT_UNIT         'km/h'
@@ -824,28 +824,28 @@
     #define I3_RES_DSC_STAT_SIGNALQUALITAET_VL_WERT_UNIT             '%'
     #define I3_RES_DSC_STAT_SIGNALQUALITAET_VL_WERT_TYPE             unsigned char
         // Signal quality front left x &lt;10% = no signal; 10% &lt;= x &lt;= 50% weak signal; x&gt; 50% signal OK /
-        // SignalqualitÃ¤t vorne links x < 10 % = kein Signal;  10 % <= x <= 50 % schwaches Signal;  x > 50 % Signal in
+        // Signalqualität vorne links x < 10 % = kein Signal;  10 % <= x <= 50 % schwaches Signal;  x > 50 % Signal in
         // Ordnung
 
     #define I3_RES_DSC_STAT_SIGNALQUALITAET_VR_WERT                  (RXBUF_UCHAR(16))
     #define I3_RES_DSC_STAT_SIGNALQUALITAET_VR_WERT_UNIT             '%'
     #define I3_RES_DSC_STAT_SIGNALQUALITAET_VR_WERT_TYPE             unsigned char
         // Signal quality front right x &lt;10% = no signal; 10% &lt;= x &lt;= 50% weak signal; x&gt; 50% signal OK /
-        // SignalqualitÃ¤t vorne rechts x < 10 % = kein Signal;  10 % <= x <= 50 % schwaches Signal;  x > 50 % Signal in
+        // Signalqualität vorne rechts x < 10 % = kein Signal;  10 % <= x <= 50 % schwaches Signal;  x > 50 % Signal in
         // Ordnung
 
     #define I3_RES_DSC_STAT_SIGNALQUALITAET_HL_WERT                  (RXBUF_UCHAR(17))
     #define I3_RES_DSC_STAT_SIGNALQUALITAET_HL_WERT_UNIT             '%'
     #define I3_RES_DSC_STAT_SIGNALQUALITAET_HL_WERT_TYPE             unsigned char
         // Signal quality rear left x &lt;10% = no signal; 10% &lt;= x &lt;= 50% weak signal; x&gt; 50% signal OK /
-        // SignalqualitÃ¤t hinten links x < 10 % = kein Signal;  10 % <= x <= 50 % schwaches Signal;  x > 50 % Signal in
+        // Signalqualität hinten links x < 10 % = kein Signal;  10 % <= x <= 50 % schwaches Signal;  x > 50 % Signal in
         // Ordnung
 
     #define I3_RES_DSC_STAT_SIGNALQUALITAET_HR_WERT                  (RXBUF_UCHAR(18))
     #define I3_RES_DSC_STAT_SIGNALQUALITAET_HR_WERT_UNIT             '%'
     #define I3_RES_DSC_STAT_SIGNALQUALITAET_HR_WERT_TYPE             unsigned char
         // Signal quality rear right x &lt;10% = no signal; 10% &lt;= x &lt;= 50% weak signal; x&gt; 50% signal OK /
-        // SignalqualitÃ¤t hinten rechts x < 10 % = kein Signal;  10 % <= x <= 50 % schwaches Signal;  x > 50 % Signal in
+        // Signalqualität hinten rechts x < 10 % = kein Signal;  10 % <= x <= 50 % schwaches Signal;  x > 50 % Signal in
         // Ordnung
 
 #define I3_PID_DSC_DSC_DRUCKSENSOREN                                 0xDBE5
@@ -885,7 +885,7 @@
         // Print back right LG, 35up, LG-X, LU / LI: unoccupied / Druck hinten rechts LG, 35up, LG-X, LU/LI: unbelegt
 
 #define I3_PID_DSC_DSC_KLEMMEN                                       0xDBE7
-        // Read out voltage control unit / Auslesen Spannung SteuergerÃ¤t
+        // Read out voltage control unit / Auslesen Spannung Steuergerät
 
     #define I3_RES_DSC_STAT_SPANNUNG_ELEKTRONIK_WERT_0XDBE7          (RXBUF_UINT(0)/1000.0f)
     #define I3_RES_DSC_STAT_SPANNUNG_ELEKTRONIK_WERT_0XDBE7_UNIT     'V'
@@ -1070,19 +1070,19 @@
     #define I3_RES_DSC_STAT_GESCHWINDIGKEIT_LETZTE_PANNE_WERT        (RXBUF_UCHAR(38))
     #define I3_RES_DSC_STAT_GESCHWINDIGKEIT_LETZTE_PANNE_WERT_UNIT   'km/h'
     #define I3_RES_DSC_STAT_GESCHWINDIGKEIT_LETZTE_PANNE_WERT_TYPE   unsigned char
-        // Vehicle speed during the last flat tire detected / Fahrzeuggeschwindigkeit wÃ¤hrend der letzten erkannten
+        // Vehicle speed during the last flat tire detected / Fahrzeuggeschwindigkeit während der letzten erkannten
         // Reifenpanne
 
     #define I3_RES_DSC_STAT_GESCHWINDIGKEIT_LETZTE_PANNE_MINUS_1_WERT (RXBUF_UCHAR(39))
     #define I3_RES_DSC_STAT_GESCHWINDIGKEIT_LETZTE_PANNE_MINUS_1_WERT_UNIT 'km/h'
     #define I3_RES_DSC_STAT_GESCHWINDIGKEIT_LETZTE_PANNE_MINUS_1_WERT_TYPE unsigned char
-        // Vehicle speed during the penultimate flat tire detected / Fahrzeuggeschwindigkeit wÃ¤hrend der vorletzten
+        // Vehicle speed during the penultimate flat tire detected / Fahrzeuggeschwindigkeit während der vorletzten
         // erkannten Reifenpanne
 
     #define I3_RES_DSC_STAT_GESCHWINDIGKEIT_LETZTE_PANNE_MINUS_2_WERT (RXBUF_UCHAR(40))
     #define I3_RES_DSC_STAT_GESCHWINDIGKEIT_LETZTE_PANNE_MINUS_2_WERT_UNIT 'km/h'
     #define I3_RES_DSC_STAT_GESCHWINDIGKEIT_LETZTE_PANNE_MINUS_2_WERT_TYPE unsigned char
-        // Vehicle speed during the penultimate to last detected flat tire / Fahrzeuggeschwindigkeit wÃ¤hrend der
+        // Vehicle speed during the penultimate to last detected flat tire / Fahrzeuggeschwindigkeit während der
         // vor-vorletzten erkannten Reifenpanne
 
     #define I3_RES_DSC_STAT_GESCHWINDIGKEIT_MAX_LETZTE_PANNE_WERT    (RXBUF_UCHAR(41))
@@ -1090,18 +1090,18 @@
     #define I3_RES_DSC_STAT_GESCHWINDIGKEIT_MAX_LETZTE_PANNE_WERT_TYPE unsigned char
         // Max. Vehicle speed after the last flat tire detected (first value is entered no earlier than 30 seconds after
         // the flat tire was detected) / max. Fahrzeuggeschwindigkeit nach der letzten erkannten Reifenpanne (erster wert
-        // wird frÃ¼hestens 30 Sekunden nach der Pannenerkennung eingetragen)
+        // wird frühestens 30 Sekunden nach der Pannenerkennung eingetragen)
 
     #define I3_RES_DSC_STAT_GESCHWINDIGKEIT_MAX_LETZTE_PANNE_MINUS_1_WERT (RXBUF_UCHAR(42))
     #define I3_RES_DSC_STAT_GESCHWINDIGKEIT_MAX_LETZTE_PANNE_MINUS_1_WERT_UNIT 'km/h'
     #define I3_RES_DSC_STAT_GESCHWINDIGKEIT_MAX_LETZTE_PANNE_MINUS_1_WERT_TYPE unsigned char
-        // Vehicle speed during the penultimate flat tire detected / Fahrzeuggeschwindigkeit wÃ¤hrend der vorletzten
+        // Vehicle speed during the penultimate flat tire detected / Fahrzeuggeschwindigkeit während der vorletzten
         // erkannten Reifenpanne
 
     #define I3_RES_DSC_STAT_GESCHWINDIGKEIT_MAX_LETZTE_PANNE_MINUS_2_WERT (RXBUF_UCHAR(43))
     #define I3_RES_DSC_STAT_GESCHWINDIGKEIT_MAX_LETZTE_PANNE_MINUS_2_WERT_UNIT 'km/h'
     #define I3_RES_DSC_STAT_GESCHWINDIGKEIT_MAX_LETZTE_PANNE_MINUS_2_WERT_TYPE unsigned char
-        // Vehicle speed during the penultimate to last detected flat tire / Fahrzeuggeschwindigkeit wÃ¤hrend der
+        // Vehicle speed during the penultimate to last detected flat tire / Fahrzeuggeschwindigkeit während der
         // vor-vorletzten erkannten Reifenpanne
 
     #define I3_RES_DSC_STAT_KM_LETZTE_3PLUS1_ERKENNUNG_WERT          (RXBUF_UINT32(44))
@@ -1127,7 +1127,7 @@
     #define I3_RES_DSC_STAT_MAX_NAEHERUNG_WARNGRENZE_SEIT_LETZTER_STD_WERT (RXBUF_UCHAR(54))
     #define I3_RES_DSC_STAT_MAX_NAEHERUNG_WARNGRENZE_SEIT_LETZTER_STD_WERT_UNIT '%'
     #define I3_RES_DSC_STAT_MAX_NAEHERUNG_WARNGRENZE_SEIT_LETZTER_STD_WERT_TYPE unsigned char
-        // The last initialization is the maximum approximation to the applied warning limit / Maximale NÃ¤herung zur
+        // The last initialization is the maximum approximation to the applied warning limit / Maximale Näherung zur
         // applizierten Warngrenze siet der letzte Initialisierung
 
 #define I3_PID_DSC_RPA_LERNDATEN_STD                                 0xDC15
@@ -1137,145 +1137,145 @@
     #define I3_RES_DSC_STAT_LERNSTATUS_BEREICH_0_WERT_UNIT           '%'
     #define I3_RES_DSC_STAT_LERNSTATUS_BEREICH_0_WERT_TYPE           unsigned char
         // Learning progress speed range 0 (100% = fully learned) / Lernfortschritt Geschwindigkeitsbereich 0 (100 % =
-        // vollstÃ¤ndig eingelernt)
+        // vollständig eingelernt)
 
     #define I3_RES_DSC_STAT_LERNSTATUS_BEREICH_1_WERT                (RXBUF_UCHAR(1))
     #define I3_RES_DSC_STAT_LERNSTATUS_BEREICH_1_WERT_UNIT           '%'
     #define I3_RES_DSC_STAT_LERNSTATUS_BEREICH_1_WERT_TYPE           unsigned char
         // Learning progress speed range 1 (100% = fully learned) / Lernfortschritt Geschwindigkeitsbereich 1 (100 % =
-        // vollstÃ¤ndig eingelernt)
+        // vollständig eingelernt)
 
     #define I3_RES_DSC_STAT_LERNSTATUS_BEREICH_2_WERT                (RXBUF_UCHAR(2))
     #define I3_RES_DSC_STAT_LERNSTATUS_BEREICH_2_WERT_UNIT           '%'
     #define I3_RES_DSC_STAT_LERNSTATUS_BEREICH_2_WERT_TYPE           unsigned char
         // Learning progress speed range 2 (100% = fully learned) / Lernfortschritt Geschwindigkeitsbereich 2 (100 % =
-        // vollstÃ¤ndig eingelernt)
+        // vollständig eingelernt)
 
     #define I3_RES_DSC_STAT_LERNSTATUS_BEREICH_3_WERT                (RXBUF_UCHAR(3))
     #define I3_RES_DSC_STAT_LERNSTATUS_BEREICH_3_WERT_UNIT           '%'
     #define I3_RES_DSC_STAT_LERNSTATUS_BEREICH_3_WERT_TYPE           unsigned char
         // Learning progress speed range 3 (100% = fully learned) / Lernfortschritt Geschwindigkeitsbereich 3 (100 % =
-        // vollstÃ¤ndig eingelernt)
+        // vollständig eingelernt)
 
     #define I3_RES_DSC_STAT_LERNSTATUS_BEREICH_4_WERT                (RXBUF_UCHAR(4))
     #define I3_RES_DSC_STAT_LERNSTATUS_BEREICH_4_WERT_UNIT           '%'
     #define I3_RES_DSC_STAT_LERNSTATUS_BEREICH_4_WERT_TYPE           unsigned char
         // Learning progress speed range 4 (100% = fully learned) / Lernfortschritt Geschwindigkeitsbereich 4 (100 % =
-        // vollstÃ¤ndig eingelernt)
+        // vollständig eingelernt)
 
     #define I3_RES_DSC_STAT_LERNSTATUS_BEREICH_5_WERT                (RXBUF_UCHAR(5))
     #define I3_RES_DSC_STAT_LERNSTATUS_BEREICH_5_WERT_UNIT           '%'
     #define I3_RES_DSC_STAT_LERNSTATUS_BEREICH_5_WERT_TYPE           unsigned char
         // Learning progress speed range 5 (100% = fully learned) / Lernfortschritt Geschwindigkeitsbereich 5 (100 % =
-        // vollstÃ¤ndig eingelernt)
+        // vollständig eingelernt)
 
     #define I3_RES_DSC_STAT_LERNSTATUS_BEREICH_6_WERT                (RXBUF_UCHAR(6))
     #define I3_RES_DSC_STAT_LERNSTATUS_BEREICH_6_WERT_UNIT           '%'
     #define I3_RES_DSC_STAT_LERNSTATUS_BEREICH_6_WERT_TYPE           unsigned char
         // Learning progress speed range 6 (100% = fully learned) / Lernfortschritt Geschwindigkeitsbereich 6 (100 % =
-        // vollstÃ¤ndig eingelernt)
+        // vollständig eingelernt)
 
     #define I3_RES_DSC_STAT_LERNSTATUS_BEREICH_7_WERT                (RXBUF_UCHAR(7))
     #define I3_RES_DSC_STAT_LERNSTATUS_BEREICH_7_WERT_UNIT           '%'
     #define I3_RES_DSC_STAT_LERNSTATUS_BEREICH_7_WERT_TYPE           unsigned char
         // Learning progress speed range 7 (100% = fully learned) / Lernfortschritt Geschwindigkeitsbereich 7 (100 % =
-        // vollstÃ¤ndig eingelernt)
+        // vollständig eingelernt)
 
     #define I3_RES_DSC_STAT_KURVENKOMPENSATION_0_WERT                (RXBUF_UCHAR(8))
     #define I3_RES_DSC_STAT_KURVENKOMPENSATION_0_WERT_UNIT           '%'
     #define I3_RES_DSC_STAT_KURVENKOMPENSATION_0_WERT_TYPE           unsigned char
         // Learning status curve compensation speed range 0 (100% = fully learned) / Lernstatus Kurvenkompensation
-        // Geschwindigkeitsbereich 0 (100 % = vollstÃ¤ndig eingelernt)
+        // Geschwindigkeitsbereich 0 (100 % = vollständig eingelernt)
 
     #define I3_RES_DSC_STAT_KURVENKOMPENSATION_1_WERT                (RXBUF_UCHAR(9))
     #define I3_RES_DSC_STAT_KURVENKOMPENSATION_1_WERT_UNIT           '%'
     #define I3_RES_DSC_STAT_KURVENKOMPENSATION_1_WERT_TYPE           unsigned char
         // Learning status curve compensation speed range 1 (100% = fully learned) / Lernstatus Kurvenkompensation
-        // Geschwindigkeitsbereich 1 (100 % = vollstÃ¤ndig eingelernt)
+        // Geschwindigkeitsbereich 1 (100 % = vollständig eingelernt)
 
     #define I3_RES_DSC_STAT_KURVENKOMPENSATION_2_WERT                (RXBUF_UCHAR(10))
     #define I3_RES_DSC_STAT_KURVENKOMPENSATION_2_WERT_UNIT           '%'
     #define I3_RES_DSC_STAT_KURVENKOMPENSATION_2_WERT_TYPE           unsigned char
         // Learning status curve compensation speed range 2 (100% = fully learned) / Lernstatus Kurvenkompensation
-        // Geschwindigkeitsbereich 2 (100 % = vollstÃ¤ndig eingelernt)
+        // Geschwindigkeitsbereich 2 (100 % = vollständig eingelernt)
 
     #define I3_RES_DSC_STAT_KURVENKOMPENSATION_3_WERT                (RXBUF_UCHAR(11))
     #define I3_RES_DSC_STAT_KURVENKOMPENSATION_3_WERT_UNIT           '%'
     #define I3_RES_DSC_STAT_KURVENKOMPENSATION_3_WERT_TYPE           unsigned char
         // Learning status curve compensation speed range 3 (100% = fully learned) / Lernstatus Kurvenkompensation
-        // Geschwindigkeitsbereich 3 (100 % = vollstÃ¤ndig eingelernt)
+        // Geschwindigkeitsbereich 3 (100 % = vollständig eingelernt)
 
     #define I3_RES_DSC_STAT_KURVENKOMPENSATION_4_WERT                (RXBUF_UCHAR(12))
     #define I3_RES_DSC_STAT_KURVENKOMPENSATION_4_WERT_UNIT           '%'
     #define I3_RES_DSC_STAT_KURVENKOMPENSATION_4_WERT_TYPE           unsigned char
         // Learning status curve compensation speed range 4 (100% = fully learned) / Lernstatus Kurvenkompensation
-        // Geschwindigkeitsbereich 4 (100 % = vollstÃ¤ndig eingelernt)
+        // Geschwindigkeitsbereich 4 (100 % = vollständig eingelernt)
 
     #define I3_RES_DSC_STAT_KURVENKOMPENSATION_5_WERT                (RXBUF_UCHAR(13))
     #define I3_RES_DSC_STAT_KURVENKOMPENSATION_5_WERT_UNIT           '%'
     #define I3_RES_DSC_STAT_KURVENKOMPENSATION_5_WERT_TYPE           unsigned char
         // Learning status curve compensation speed range 5 (100% = fully learned) / Lernstatus Kurvenkompensation
-        // Geschwindigkeitsbereich 5 (100 % = vollstÃ¤ndig eingelernt)
+        // Geschwindigkeitsbereich 5 (100 % = vollständig eingelernt)
 
     #define I3_RES_DSC_STAT_KURVENKOMPENSATION_6_WERT                (RXBUF_UCHAR(14))
     #define I3_RES_DSC_STAT_KURVENKOMPENSATION_6_WERT_UNIT           '%'
     #define I3_RES_DSC_STAT_KURVENKOMPENSATION_6_WERT_TYPE           unsigned char
         // Learning status curve compensation speed range 6 (100% = fully learned) / Lernstatus Kurvenkompensation
-        // Geschwindigkeitsbereich 6 (100 % = vollstÃ¤ndig eingelernt)
+        // Geschwindigkeitsbereich 6 (100 % = vollständig eingelernt)
 
     #define I3_RES_DSC_STAT_KURVENKOMPENSATION_7_WERT                (RXBUF_UCHAR(15))
     #define I3_RES_DSC_STAT_KURVENKOMPENSATION_7_WERT_UNIT           '%'
     #define I3_RES_DSC_STAT_KURVENKOMPENSATION_7_WERT_TYPE           unsigned char
         // Learning status curve compensation speed range 7 (100% = fully learned) / Lernstatus Kurvenkompensation
-        // Geschwindigkeitsbereich 7 (100 % = vollstÃ¤ndig eingelernt)
+        // Geschwindigkeitsbereich 7 (100 % = vollständig eingelernt)
 
     #define I3_RES_DSC_STAT_MOMENTENKOMPENSATION_0_WERT              (RXBUF_UCHAR(16))
     #define I3_RES_DSC_STAT_MOMENTENKOMPENSATION_0_WERT_UNIT         '%'
     #define I3_RES_DSC_STAT_MOMENTENKOMPENSATION_0_WERT_TYPE         unsigned char
         // Learning status torque compensation torque range 0 (100% = fully learned) / Lernstatus Momentenkompensation
-        // Momentenbereich 0 (100 % = vollstÃ¤ndig eingelernt)
+        // Momentenbereich 0 (100 % = vollständig eingelernt)
 
     #define I3_RES_DSC_STAT_MOMENTENKOMPENSATION_1_WERT              (RXBUF_UCHAR(17))
     #define I3_RES_DSC_STAT_MOMENTENKOMPENSATION_1_WERT_UNIT         '%'
     #define I3_RES_DSC_STAT_MOMENTENKOMPENSATION_1_WERT_TYPE         unsigned char
         // Learning status torque compensation torque range 1 (100% = fully learned) / Lernstatus Momentenkompensation
-        // Momentenbereich 1 (100 % = vollstÃ¤ndig eingelernt)
+        // Momentenbereich 1 (100 % = vollständig eingelernt)
 
     #define I3_RES_DSC_STAT_MOMENTENKOMPENSATION_2_WERT              (RXBUF_UCHAR(18))
     #define I3_RES_DSC_STAT_MOMENTENKOMPENSATION_2_WERT_UNIT         '%'
     #define I3_RES_DSC_STAT_MOMENTENKOMPENSATION_2_WERT_TYPE         unsigned char
         // Learning status torque compensation torque range 2 (100% = fully learned) / Lernstatus Momentenkompensation
-        // Momentenbereich 2 (100 % = vollstÃ¤ndig eingelernt)
+        // Momentenbereich 2 (100 % = vollständig eingelernt)
 
     #define I3_RES_DSC_STAT_MOMENTENKOMPENSATION_3_WERT              (RXBUF_UCHAR(19))
     #define I3_RES_DSC_STAT_MOMENTENKOMPENSATION_3_WERT_UNIT         '%'
     #define I3_RES_DSC_STAT_MOMENTENKOMPENSATION_3_WERT_TYPE         unsigned char
         // Learning status torque compensation torque range 3 (100% = fully learned) / Lernstatus Momentenkompensation
-        // Momentenbereich 3 (100 % = vollstÃ¤ndig eingelernt)
+        // Momentenbereich 3 (100 % = vollständig eingelernt)
 
     #define I3_RES_DSC_STAT_MOMENTENKOMPENSATION_4_WERT              (RXBUF_UCHAR(20))
     #define I3_RES_DSC_STAT_MOMENTENKOMPENSATION_4_WERT_UNIT         '%'
     #define I3_RES_DSC_STAT_MOMENTENKOMPENSATION_4_WERT_TYPE         unsigned char
         // Learning status torque compensation torque range 4 (100% = fully learned) / Lernstatus Momentenkompensation
-        // Momentenbereich 4 (100 % = vollstÃ¤ndig eingelernt)
+        // Momentenbereich 4 (100 % = vollständig eingelernt)
 
     #define I3_RES_DSC_STAT_MOMENTENKOMPENSATION_5_WERT              (RXBUF_UCHAR(21))
     #define I3_RES_DSC_STAT_MOMENTENKOMPENSATION_5_WERT_UNIT         '%'
     #define I3_RES_DSC_STAT_MOMENTENKOMPENSATION_5_WERT_TYPE         unsigned char
         // Learning status torque compensation torque range 5 (100% = fully learned) / Lernstatus Momentenkompensation
-        // Momentenbereich 5 (100 % = vollstÃ¤ndig eingelernt)
+        // Momentenbereich 5 (100 % = vollständig eingelernt)
 
     #define I3_RES_DSC_STAT_MOMENTENKOMPENSATION_6_WERT              (RXBUF_UCHAR(22))
     #define I3_RES_DSC_STAT_MOMENTENKOMPENSATION_6_WERT_UNIT         '%'
     #define I3_RES_DSC_STAT_MOMENTENKOMPENSATION_6_WERT_TYPE         unsigned char
         // Learning status torque compensation torque range 6 (100% = fully learned) / Lernstatus Momentenkompensation
-        // Momentenbereich 6 (100 % = vollstÃ¤ndig eingelernt)
+        // Momentenbereich 6 (100 % = vollständig eingelernt)
 
     #define I3_RES_DSC_STAT_MOMENTENKOMPENSATION_7_WERT              (RXBUF_UCHAR(23))
     #define I3_RES_DSC_STAT_MOMENTENKOMPENSATION_7_WERT_UNIT         '%'
     #define I3_RES_DSC_STAT_MOMENTENKOMPENSATION_7_WERT_TYPE         unsigned char
         // Learning status torque compensation torque range 7 (100% = fully learned) / Lernstatus Momentenkompensation
-        // Momentenbereich 7 (100 % = vollstÃ¤ndig eingelernt)
+        // Momentenbereich 7 (100 % = vollständig eingelernt)
 
 #define I3_PID_DSC_DSC_BREMSLICHTSCHALTER                            0xDC1E
         // Read out brake light switch 1 = on (lights up); 0 = off / Auslesen Bremslichtschalter 1= ein (leuchtet); 0=
@@ -1289,36 +1289,36 @@
 
 #define I3_PID_DSC_BREMSFLUESSIGKEITSSCHALTER                        0xDC1F
         // Reading level of brake fluid 1 = brake fluid available; 0 = brake fluid empty or interruption / Auslesen
-        // Niveau BremsflÃ¼ssigkeit 1 = BremsflÃ¼ssigkeit vorhanden;  0 = BremsflÃ¼ssigkeit leer oder Unterbrechung
+        // Niveau Bremsflüssigkeit 1 = Bremsflüssigkeit vorhanden;  0 = Bremsflüssigkeit leer oder Unterbrechung
 
     #define I3_RES_DSC_STAT_BREMSFLUESSIGKEIT_NIVEAU_SCHALTER_EIN    (RXBUF_UCHAR(0))
     #define I3_RES_DSC_STAT_BREMSFLUESSIGKEIT_NIVEAU_SCHALTER_EIN_UNIT '0/1'
     #define I3_RES_DSC_STAT_BREMSFLUESSIGKEIT_NIVEAU_SCHALTER_EIN_TYPE unsigned char
         // Reading level of brake fluid 1 = brake fluid available; 0 = brake fluid empty or interruption / Auslesen
-        // Niveau BremsflÃ¼ssigkeit 1 = BremsflÃ¼ssigkeit vorhanden;  0 = BremsflÃ¼ssigkeit leer oder Unterbrechung
+        // Niveau Bremsflüssigkeit 1 = Bremsflüssigkeit vorhanden;  0 = Bremsflüssigkeit leer oder Unterbrechung
 
 #define I3_PID_DSC_STATUS_GBRPLUS                                    0xDC3A
-        // Read out data limit range feedback (GBR) / Auslesen Daten GrenzbereichsrÃ¼ckmeldung (GBR)
+        // Read out data limit range feedback (GBR) / Auslesen Daten Grenzbereichsrückmeldung (GBR)
 
     #define I3_RES_DSC_STAT_FAKTORU_EPS_WERT                         (RXBUF_UCHAR(0)/100.0f)
     #define I3_RES_DSC_STAT_FAKTORU_EPS_WERT_TYPE                    float
-        // Factor by which the GBR influences the steering assistance of the EPS / Faktor, Ã¼ber den die GBR die
-        // LenkunterstÃ¼tzung der EPS beeinflusst
+        // Factor by which the GBR influences the steering assistance of the EPS / Faktor, über den die GBR die
+        // Lenkunterstützung der EPS beeinflusst
 
     #define I3_RES_DSC_STAT_FAKTORARD_EPS_WERT                       (RXBUF_UCHAR(1)/100.0f)
     #define I3_RES_DSC_STAT_FAKTORARD_EPS_WERT_TYPE                  float
-        // Factor by which the GBR influences the damping of the EPS / Faktor, Ã¼ber den die GBR die DÃ¤mpfung der EPS
+        // Factor by which the GBR influences the damping of the EPS / Faktor, über den die GBR die Dämpfung der EPS
         // beinflusst
 
     #define I3_RES_DSC_STAT_FAKTORARZ_EPS_WERT                       (RXBUF_UCHAR(2)/100.0f)
     #define I3_RES_DSC_STAT_FAKTORARZ_EPS_WERT_TYPE                  float
-        // Factor by which the GBR influences the active return of the EPS / Faktor, Ã¼ber den die GBR den aktiven
-        // RÃ¼cklauf der EPS beeinflusst
+        // Factor by which the GBR influences the active return of the EPS / Faktor, über den die GBR den aktiven
+        // Rücklauf der EPS beeinflusst
 
     #define I3_RES_DSC_STAT_MMOTOR_OFFSET_EPS_WERT_0XDC3A            (RXBUF_SCHAR(3)/100.0f)
     #define I3_RES_DSC_STAT_MMOTOR_OFFSET_EPS_WERT_0XDC3A_TYPE       float
-        // Offset engine torque, which the EPS additively superimposes on its own engine torque / Offset-Motormoment, das
-        // die EPS dem eigenen Motormoment additiv Ã¼berlagert
+        // Offset motor torque, which the EPS additively superimposes on its own motor torque / Offset-Motormoment, das
+        // die EPS dem eigenen Motormoment additiv überlagert
 
     #define I3_RES_DSC_STAT_FAKTOR_EPS_QUALIFIER_WERT                (RXBUF_UCHAR(4))
     #define I3_RES_DSC_STAT_FAKTOR_EPS_QUALIFIER_WERT_TYPE           unsigned char
@@ -1342,16 +1342,16 @@
     #define I3_RES_DSC_STAT_EPS_FAKT_MOM_SERVICE_QUALIFIER_WERT_0XDC3A (RXBUF_UCHAR(8))
     #define I3_RES_DSC_STAT_EPS_FAKT_MOM_SERVICE_QUALIFIER_WERT_0XDC3A_TYPE unsigned char
         // Service qualifier of the EPS for the implementation of the factors and the offset motor torque (everything OK
-        // if 32 or 33) / Service-Qualifier der EPS fÃ¼r Umsetzung der Faktoren und des Offset-Motormoments (alles i.O
+        // if 32 or 33) / Service-Qualifier der EPS für Umsetzung der Faktoren und des Offset-Motormoments (alles i.O
         // wenn 32 od 33)
 
     #define I3_RES_DSC_STAT_ZUSTAND_GRENZBEREICHSREUCKMELDUNG_WERT   (RXBUF_UCHAR(9))
     #define I3_RES_DSC_STAT_ZUSTAND_GRENZBEREICHSREUCKMELDUNG_WERT_TYPE unsigned char
         // Actual state of the GBR function (depending on the qualifiers of the inputs) / Ist-Zustand der GBR-Funktion
-        // (abhÃ¤ngig von Qualifiern der EingÃ¤nge)
+        // (abhängig von Qualifiern der Eingänge)
 
 #define I3_PID_DSC_STATUS_LLP                                        0xDC42
-        // Reading out data steering power prediction / Auslesen Daten LenkleistungsprÃ¤diktion
+        // Reading out data steering power prediction / Auslesen Daten Lenkleistungsprädiktion
 
     #define I3_RES_DSC_STAT_LLP_MANI_AKTIV                           (RXBUF_UCHAR(0))
     #define I3_RES_DSC_STAT_LLP_MANI_AKTIV_UNIT                      '0/1'
@@ -1379,7 +1379,7 @@
         // Power rack / Kraft Zahnstange
 
     #define I3_RES_DSC_STAT_LLP_RITZELWINKEL_WERT                    (RXBUF_SINT(6))
-    #define I3_RES_DSC_STAT_LLP_RITZELWINKEL_WERT_UNIT               'Â°'
+    #define I3_RES_DSC_STAT_LLP_RITZELWINKEL_WERT_UNIT               '°'
     #define I3_RES_DSC_STAT_LLP_RITZELWINKEL_WERT_TYPE               short
         // Pinion angle / Ritzelwinkel
 
@@ -1406,7 +1406,7 @@
     #define I3_RES_DSC_STAT_LLP_AX_KORR                              (RXBUF_UCHAR(14))
     #define I3_RES_DSC_STAT_LLP_AX_KORR_UNIT                         '0/1'
     #define I3_RES_DSC_STAT_LLP_AX_KORR_TYPE                         unsigned char
-        // Longitudinal acceleration incorrect / LÃ¤ngsbeschleunigung fehlerhaft
+        // Longitudinal acceleration incorrect / Längsbeschleunigung fehlerhaft
 
     #define I3_RES_DSC_STAT_LLP_RETURN                               (RXBUF_UCHAR(15))
     #define I3_RES_DSC_STAT_LLP_RETURN_UNIT                          '0/1'
@@ -1436,7 +1436,7 @@
     #define I3_RES_DSC_STAT_LLP_PMA                                  (RXBUF_UCHAR(20))
     #define I3_RES_DSC_STAT_LLP_PMA_UNIT                             '0/1'
     #define I3_RES_DSC_STAT_LLP_PMA_TYPE                             unsigned char
-        // Parking maneuvering assistant recognized / ParkenmanÃ¶verassistent erkannt
+        // Parking maneuvering assistant recognized / Parkenmanöverassistent erkannt
 
     #define I3_RES_DSC_STAT_LLP_PDC                                  (RXBUF_UCHAR(21))
     #define I3_RES_DSC_STAT_LLP_PDC_UNIT                             '0/1'
@@ -1446,7 +1446,7 @@
     #define I3_RES_DSC_STAT_LLP_TEMP_A                               (RXBUF_UCHAR(22))
     #define I3_RES_DSC_STAT_LLP_TEMP_A_UNIT                          '0/1'
     #define I3_RES_DSC_STAT_LLP_TEMP_A_TYPE                          unsigned char
-        // Outside temperature detected / AuÃentemperatur erkannt
+        // Outside temperature detected / Außentemperatur erkannt
 
     #define I3_RES_DSC_STAT_LLP_RAIN                                 (RXBUF_UCHAR(23))
     #define I3_RES_DSC_STAT_LLP_RAIN_UNIT                            '0/1'
@@ -1456,7 +1456,7 @@
     #define I3_RES_DSC_STAT_LLP_FLAG_AX                              (RXBUF_UCHAR(24))
     #define I3_RES_DSC_STAT_LLP_FLAG_AX_UNIT                         '0/1'
     #define I3_RES_DSC_STAT_LLP_FLAG_AX_TYPE                         unsigned char
-        // Longitudinal acceleration active / LÃ¤ngsbeschleunigung aktiv
+        // Longitudinal acceleration active / Längsbeschleunigung aktiv
 
     #define I3_RES_DSC_STAT_LLP_FLAG_STOP                            (RXBUF_UCHAR(25))
     #define I3_RES_DSC_STAT_LLP_FLAG_STOP_UNIT                       '0/1'
@@ -1471,7 +1471,7 @@
     #define I3_RES_DSC_STAT_LLP_FLAG_PMA                             (RXBUF_UCHAR(27))
     #define I3_RES_DSC_STAT_LLP_FLAG_PMA_UNIT                        '0/1'
     #define I3_RES_DSC_STAT_LLP_FLAG_PMA_TYPE                        unsigned char
-        // Parking maneuver assistant active / ParkenmanÃ¶verassistent aktiv
+        // Parking maneuver assistant active / Parkenmanöverassistent aktiv
 
     #define I3_RES_DSC_STAT_LLP_FLAG_PDC                             (RXBUF_UCHAR(28))
     #define I3_RES_DSC_STAT_LLP_FLAG_PDC_UNIT                        '0/1'
@@ -1486,7 +1486,7 @@
     #define I3_RES_DSC_STAT_LLP_FLAG_TEMP_A                          (RXBUF_UCHAR(30))
     #define I3_RES_DSC_STAT_LLP_FLAG_TEMP_A_UNIT                     '0/1'
     #define I3_RES_DSC_STAT_LLP_FLAG_TEMP_A_TYPE                     unsigned char
-        // Outside temperature active / AuÃentemperatur aktiv
+        // Outside temperature active / Außentemperatur aktiv
 
     #define I3_RES_DSC_STAT_LLP_FLAG_EXTRAP_FZS                      (RXBUF_UCHAR(31))
     #define I3_RES_DSC_STAT_LLP_FLAG_EXTRAP_FZS_UNIT                 '0/1'
@@ -1723,7 +1723,7 @@
     // Can't process STAT_TSC_FAKTOR_SOLL_HANDMOMENT_WERT - don't know type motorola float (*** this will mean all the following offsets are wrong!!! ****)
 
 #define I3_PID_DSC_MIRROR_ZFM                                        0xDC93
-        // Offset longitudinal acceleration motor torque / Offset LÃ¤ngsbeschleunigung Motormoment
+        // Offset longitudinal acceleration motor torque / Offset Längsbeschleunigung Motormoment
 
     // Can't process STAT_ZFMFS_OFS_AXM_WERT - don't know type motorola float (*** this will mean all the following offsets are wrong!!! ****)
 
@@ -1753,7 +1753,7 @@
     #define I3_RES_DSC_STAT_RADPOS_UEBERPRUEFT_BESTAETIGT_UNIT       '0-n'
     #define I3_RES_DSC_STAT_RADPOS_UEBERPRUEFT_BESTAETIGT_TYPE       unsigned char
         // All wheel positions are checked and confirmed: 0 = not confirmed; 1 = confirmed / Alle Radpositionen sind
-        // ueberprueft und bestaetigt: 0 = nicht bestÃ¤tigt; 1 = bestÃ¤tigt
+        // ueberprueft und bestaetigt: 0 = nicht bestätigt; 1 = bestätigt
 
     #define I3_RES_DSC_STAT_DTC_INACTIVE                             (RXBUF_UCHAR(3))
     #define I3_RES_DSC_STAT_DTC_INACTIVE_UNIT                        '0-n'
@@ -1846,12 +1846,12 @@
     #define I3_RES_DSC_STAT_MOTOR_LAEUFT_EIN                         (RXBUF_UCHAR(18))
     #define I3_RES_DSC_STAT_MOTOR_LAEUFT_EIN_UNIT                    '0-n'
     #define I3_RES_DSC_STAT_MOTOR_LAEUFT_EIN_TYPE                    unsigned char
-        // Engine running: 0 = off; 1 = ON / Motor lÃ¤uft : 0 = Aus ; 1 = EIN
+        // Engine running: 0 = off; 1 = ON / Motor läuft : 0 = Aus ; 1 = EIN
 
     #define I3_RES_DSC_STAT_FZG_FAEHRT                               (RXBUF_UCHAR(19))
     #define I3_RES_DSC_STAT_FZG_FAEHRT_UNIT                          '0-n'
     #define I3_RES_DSC_STAT_FZG_FAEHRT_TYPE                          unsigned char
-        // Signal vehicle is moving: 0 = stationary, 1 = moving / Signal Fahrzeug fÃ¤hrt : 0 = steht , 1 = fÃ¤hrt
+        // Signal vehicle is moving: 0 = stationary, 1 = moving / Signal Fahrzeug fährt : 0 = steht , 1 = fährt
 
     #define I3_RES_DSC_STAT_ERKENNUNG_ALLE_RE                        (RXBUF_UCHAR(20))
     #define I3_RES_DSC_STAT_ERKENNUNG_ALLE_RE_UNIT                   '0-n'
@@ -1874,17 +1874,17 @@
     #define I3_RES_DSC_STAT_FREQUENZ_WERT_UNIT                       'MHz'
     #define I3_RES_DSC_STAT_FREQUENZ_WERT_TYPE                       unsigned short
         // Returns the current RF frequency. The frequency depends on the coding. (315 or 433). Specification in MHz /
-        // Gibt die aktuelle RF-Frequenz zurÃ¼ck. Die Frequenz ist abhaengig von der Codierung. (315 oder 433). Angabe in
+        // Gibt die aktuelle RF-Frequenz zurück. Die Frequenz ist abhaengig von der Codierung. (315 oder 433). Angabe in
         // MHz
 
 #define I3_PID_DSC_RDC_HS_INAKTIVEREIGNIS                            0xDC96
         // RDC_HS_INAKTIVEREIGNIS / RDC_HS_INAKTIVEREIGNIS
 
     // Can't yet generate code for STAT_1_DATUM_TEXT of type string[9], at offset 0. But we account for the 9 bytes
-        // Date of the inactive event. 99.99.99 => invalid / Datum zum Inaktivereignis. 99.99.99 => ungÃ¼ltig
+        // Date of the inactive event. 99.99.99 => invalid / Datum zum Inaktivereignis. 99.99.99 => ungültig
 
     // Can't yet generate code for STAT_1_UHRZEIT_TEXT of type string[9], at offset 9. But we account for the 9 bytes
-        // Time of the inactive event. 99.99.99 => invalid / Uhrzeit zum Inaktivereignis. 99.99.99 => ungÃ¼ltig
+        // Time of the inactive event. 99.99.99 => invalid / Uhrzeit zum Inaktivereignis. 99.99.99 => ungültig
 
     #define I3_RES_DSC_STAT_1_KILOMETERSTAND_WERT                    (RXBUF_SINT32(18))
     #define I3_RES_DSC_STAT_1_KILOMETERSTAND_WERT_UNIT               'km'
@@ -1904,13 +1904,13 @@
     #define I3_RES_DSC_STAT_1_ZAEHLER_INAKTIV                        (RXBUF_UCHAR(28))
     #define I3_RES_DSC_STAT_1_ZAEHLER_INAKTIV_UNIT                   '0-n'
     #define I3_RES_DSC_STAT_1_ZAEHLER_INAKTIV_TYPE                   unsigned char
-        // Counter for inactive events / ZÃ¤hler fÃ¼r Inaktiv-Ereignisse
+        // Counter for inactive events / Zähler für Inaktiv-Ereignisse
 
     // Can't yet generate code for STAT_2_DATUM_TEXT of type string[9], at offset 29. But we account for the 9 bytes
-        // Date of the inactive event. 99.99.99 => invalid / Datum zum Inaktivereignis. 99.99.99 => ungÃ¼ltig
+        // Date of the inactive event. 99.99.99 => invalid / Datum zum Inaktivereignis. 99.99.99 => ungültig
 
     // Can't yet generate code for STAT_2_UHRZEIT_TEXT of type string[9], at offset 38. But we account for the 9 bytes
-        // Time of the inactive event. 99.99.99 => invalid / Uhrzeit zum Inaktivereignis. 99.99.99 => ungÃ¼ltig
+        // Time of the inactive event. 99.99.99 => invalid / Uhrzeit zum Inaktivereignis. 99.99.99 => ungültig
 
     #define I3_RES_DSC_STAT_2_KILOMETERSTAND_WERT                    (RXBUF_SINT32(47))
     #define I3_RES_DSC_STAT_2_KILOMETERSTAND_WERT_UNIT               'km'
@@ -1930,13 +1930,13 @@
     #define I3_RES_DSC_STAT_2_ZAEHLER_INAKTIV                        (RXBUF_UCHAR(57))
     #define I3_RES_DSC_STAT_2_ZAEHLER_INAKTIV_UNIT                   '0-n'
     #define I3_RES_DSC_STAT_2_ZAEHLER_INAKTIV_TYPE                   unsigned char
-        // Counter for inactive events / ZÃ¤hler fÃ¼r Inaktiv-Ereignisse
+        // Counter for inactive events / Zähler für Inaktiv-Ereignisse
 
     // Can't yet generate code for STAT_3_DATUM_TEXT of type string[9], at offset 58. But we account for the 9 bytes
-        // Date of the inactive event. 99.99.99 => invalid / Datum zum Inaktivereignis. 99.99.99 => ungÃ¼ltig
+        // Date of the inactive event. 99.99.99 => invalid / Datum zum Inaktivereignis. 99.99.99 => ungültig
 
     // Can't yet generate code for STAT_3_UHRZEIT_TEXT of type string[9], at offset 67. But we account for the 9 bytes
-        // Time of the inactive event. 99.99.99 => invalid / Uhrzeit zum Inaktivereignis. 99.99.99 => ungÃ¼ltig
+        // Time of the inactive event. 99.99.99 => invalid / Uhrzeit zum Inaktivereignis. 99.99.99 => ungültig
 
     #define I3_RES_DSC_STAT_3_KILOMETERSTAND_WERT                    (RXBUF_SINT32(76))
     #define I3_RES_DSC_STAT_3_KILOMETERSTAND_WERT_UNIT               'km'
@@ -1956,7 +1956,7 @@
     #define I3_RES_DSC_STAT_3_ZAEHLER_INAKTIV                        (RXBUF_UCHAR(86))
     #define I3_RES_DSC_STAT_3_ZAEHLER_INAKTIV_UNIT                   '0-n'
     #define I3_RES_DSC_STAT_3_ZAEHLER_INAKTIV_TYPE                   unsigned char
-        // Counter for inactive events / ZÃ¤hler fÃ¼r Inaktiv-Ereignisse
+        // Counter for inactive events / Zähler für Inaktiv-Ereignisse
 
 #define I3_PID_DSC_RDC_HS_KALIBRIEREREIGNIS                          0xDC97
         // RDC_HS_KALIBRIEREREIGNIS / RDC_HS_KALIBRIEREREIGNIS
@@ -1964,18 +1964,18 @@
     #define I3_RES_DSC_STAT_1_PLAUSI_DRUCK                           (RXBUF_UCHAR(0))
     #define I3_RES_DSC_STAT_1_PLAUSI_DRUCK_UNIT                      '0-n'
     #define I3_RES_DSC_STAT_1_PLAUSI_DRUCK_TYPE                      unsigned char
-        // Filled pressures passed yes or no / EingefÃ¼llte DrÃ¼cke bestanden ja oder nein
+        // Filled pressures passed yes or no / Eingefüllte Drücke bestanden ja oder nein
 
     #define I3_RES_DSC_STAT_1_KALIBRIERUNG                           (RXBUF_UCHAR(1))
     #define I3_RES_DSC_STAT_1_KALIBRIERUNG_UNIT                      '0-n'
     #define I3_RES_DSC_STAT_1_KALIBRIERUNG_TYPE                      unsigned char
-        // Status byte about success / failure of calibration / Statusbyte Ã¼ber Erfolg- Misserfolg der Kalibrierung
+        // Status byte about success / failure of calibration / Statusbyte über Erfolg- Misserfolg der Kalibrierung
 
     // Can't yet generate code for STAT_1_DATUM_TEXT_0XDC97 of type string[9], at offset 2. But we account for the 9 bytes
-        // Date of the calibration event. 99.99.99 => invalid / Datum zum Kalibrierereignis. 99.99.99 => ungÃ¼ltig
+        // Date of the calibration event. 99.99.99 => invalid / Datum zum Kalibrierereignis. 99.99.99 => ungültig
 
     // Can't yet generate code for STAT_1_UHRZEIT_TEXT_0XDC97 of type string[9], at offset 11. But we account for the 9 bytes
-        // Time of the calibration event. 99.99.99 => invalid / Uhrzeit zum Kalibrierereignis. 99.99.99 => ungÃ¼ltig
+        // Time of the calibration event. 99.99.99 => invalid / Uhrzeit zum Kalibrierereignis. 99.99.99 => ungültig
 
     #define I3_RES_DSC_STAT_1_KILOMETERSTAND_WERT_0XDC97             (RXBUF_SINT32(20))
     #define I3_RES_DSC_STAT_1_KILOMETERSTAND_WERT_0XDC97_UNIT        'km'
@@ -1988,14 +1988,14 @@
         // System flags / Systemflags
 
     #define I3_RES_DSC_STAT_1_BEFUELL_AUSSENTEMPERATUR_WERT          (RXBUF_SCHAR(28))
-    #define I3_RES_DSC_STAT_1_BEFUELL_AUSSENTEMPERATUR_WERT_UNIT     'Â°'
+    #define I3_RES_DSC_STAT_1_BEFUELL_AUSSENTEMPERATUR_WERT_UNIT     '°'
     #define I3_RES_DSC_STAT_1_BEFUELL_AUSSENTEMPERATUR_WERT_TYPE     char
-        // Outside temperature when filling / Aussentemperatur beim BefÃ¼llen
+        // Outside temperature when filling / Aussentemperatur beim Befüllen
 
     #define I3_RES_DSC_STAT_1_BEFUELL_AUSSENDRUCK_WERT               (RXBUF_SINT(29)/1000.0f)
     #define I3_RES_DSC_STAT_1_BEFUELL_AUSSENDRUCK_WERT_UNIT          'bar'
     #define I3_RES_DSC_STAT_1_BEFUELL_AUSSENDRUCK_WERT_TYPE          float
-        // External pressure when filling / Aussendruck beim BefÃ¼llen
+        // External pressure when filling / Aussendruck beim Befüllen
 
     #define I3_RES_DSC_STAT_1_RADPOSITION_RE0                        (RXBUF_UCHAR(31))
     #define I3_RES_DSC_STAT_1_RADPOSITION_RE0_UNIT                   '0-n'
@@ -2009,10 +2009,10 @@
         // (-9.999 bar => ungueltig)
 
     #define I3_RES_DSC_STAT_1_BEFUELLTEMPERATUR_RE0_WERT             (RXBUF_SCHAR(34))
-    #define I3_RES_DSC_STAT_1_BEFUELLTEMPERATUR_RE0_WERT_UNIT        'Â°C'
+    #define I3_RES_DSC_STAT_1_BEFUELLTEMPERATUR_RE0_WERT_UNIT        '°C'
     #define I3_RES_DSC_STAT_1_BEFUELLTEMPERATUR_RE0_WERT_TYPE        char
         // Filling temperature value wheel electronics RE0 (-99 ° C => invalid) / Befuelltemperaturwert Radelektronik RE0
-        // (-99 Â°C => ungueltig)
+        // (-99 °C => ungueltig)
 
     #define I3_RES_DSC_STAT_1_RADPOSITION_RE1                        (RXBUF_UCHAR(35))
     #define I3_RES_DSC_STAT_1_RADPOSITION_RE1_UNIT                   '0-n'
@@ -2026,10 +2026,10 @@
         // (-9.999 bar => ungueltig)
 
     #define I3_RES_DSC_STAT_1_BEFUELLTEMPERATUR_RE1_WERT             (RXBUF_SCHAR(38))
-    #define I3_RES_DSC_STAT_1_BEFUELLTEMPERATUR_RE1_WERT_UNIT        'Â°C'
+    #define I3_RES_DSC_STAT_1_BEFUELLTEMPERATUR_RE1_WERT_UNIT        '°C'
     #define I3_RES_DSC_STAT_1_BEFUELLTEMPERATUR_RE1_WERT_TYPE        char
         // Filling temperature value wheel electronics RE1 (-99 ° C => invalid) / Befuelltemperaturwert Radelektronik RE1
-        // (-99 Â°C => ungueltig)
+        // (-99 °C => ungueltig)
 
     #define I3_RES_DSC_STAT_1_RADPOSITION_RE2                        (RXBUF_UCHAR(39))
     #define I3_RES_DSC_STAT_1_RADPOSITION_RE2_UNIT                   '0-n'
@@ -2043,10 +2043,10 @@
         // (-9.999 bar => ungueltig)
 
     #define I3_RES_DSC_STAT_1_BEFUELLTEMPERATUR_RE2_WERT             (RXBUF_SCHAR(42))
-    #define I3_RES_DSC_STAT_1_BEFUELLTEMPERATUR_RE2_WERT_UNIT        'Â°C'
+    #define I3_RES_DSC_STAT_1_BEFUELLTEMPERATUR_RE2_WERT_UNIT        '°C'
     #define I3_RES_DSC_STAT_1_BEFUELLTEMPERATUR_RE2_WERT_TYPE        char
         // Filling temperature value wheel electronics RE2 (-99 ° C => invalid) / Befuelltemperaturwert Radelektronik RE2
-        // (-99 Â°C => ungueltig)
+        // (-99 °C => ungueltig)
 
     #define I3_RES_DSC_STAT_1_RADPOSITION_RE3                        (RXBUF_UCHAR(43))
     #define I3_RES_DSC_STAT_1_RADPOSITION_RE3_UNIT                   '0-n'
@@ -2060,31 +2060,31 @@
         // (-9.999 bar => ungueltig)
 
     #define I3_RES_DSC_STAT_1_BEFUELLTEMPERATUR_RE3_WERT             (RXBUF_SCHAR(46))
-    #define I3_RES_DSC_STAT_1_BEFUELLTEMPERATUR_RE3_WERT_UNIT        'Â°C'
+    #define I3_RES_DSC_STAT_1_BEFUELLTEMPERATUR_RE3_WERT_UNIT        '°C'
     #define I3_RES_DSC_STAT_1_BEFUELLTEMPERATUR_RE3_WERT_TYPE        char
         // Filling temperature value wheel electronics RE3 (-99 ° C => invalid) / Befuelltemperaturwert Radelektronik RE3
-        // (-99 Â°C => ungueltig)
+        // (-99 °C => ungueltig)
 
     #define I3_RES_DSC_STAT_1_ZAEHLER_KALIBRIERUNG                   (RXBUF_UCHAR(47))
     #define I3_RES_DSC_STAT_1_ZAEHLER_KALIBRIERUNG_UNIT              '0-n'
     #define I3_RES_DSC_STAT_1_ZAEHLER_KALIBRIERUNG_TYPE              unsigned char
-        // Calibration event counter / ZÃ¤hler fÃ¼r Kalibrierereignisse
+        // Calibration event counter / Zähler für Kalibrierereignisse
 
     #define I3_RES_DSC_STAT_2_PLAUSI_DRUCK                           (RXBUF_UCHAR(48))
     #define I3_RES_DSC_STAT_2_PLAUSI_DRUCK_UNIT                      '0-n'
     #define I3_RES_DSC_STAT_2_PLAUSI_DRUCK_TYPE                      unsigned char
-        // Filled pressures passed yes or no / EingefÃ¼llte DrÃ¼cke bestanden ja oder nein
+        // Filled pressures passed yes or no / Eingefüllte Drücke bestanden ja oder nein
 
     #define I3_RES_DSC_STAT_2_KALIBRIERUNG                           (RXBUF_UCHAR(49))
     #define I3_RES_DSC_STAT_2_KALIBRIERUNG_UNIT                      '0-n'
     #define I3_RES_DSC_STAT_2_KALIBRIERUNG_TYPE                      unsigned char
-        // Status byte about success / failure of calibration / Statusbyte Ã¼ber Erfolg- Misserfolg der Kalibrierung
+        // Status byte about success / failure of calibration / Statusbyte über Erfolg- Misserfolg der Kalibrierung
 
     // Can't yet generate code for STAT_2_DATUM_TEXT_0XDC97 of type string[9], at offset 50. But we account for the 9 bytes
-        // Date of the calibration event. 99.99.99 => invalid / Datum zum Kalibrierereignis. 99.99.99 => ungÃ¼ltig
+        // Date of the calibration event. 99.99.99 => invalid / Datum zum Kalibrierereignis. 99.99.99 => ungültig
 
     // Can't yet generate code for STAT_2_UHRZEIT_TEXT_0XDC97 of type string[9], at offset 59. But we account for the 9 bytes
-        // Time of the calibration event. 99.99.99 => invalid / Uhrzeit zum Kalibrierereignis. 99.99.99 => ungÃ¼ltig
+        // Time of the calibration event. 99.99.99 => invalid / Uhrzeit zum Kalibrierereignis. 99.99.99 => ungültig
 
     #define I3_RES_DSC_STAT_2_KILOMETERSTAND_WERT_0XDC97             (RXBUF_SINT32(68))
     #define I3_RES_DSC_STAT_2_KILOMETERSTAND_WERT_0XDC97_UNIT        'km'
@@ -2097,14 +2097,14 @@
         // System flags / Systemflags
 
     #define I3_RES_DSC_STAT_2_BEFUELL_AUSSENTEMPERATUR_WERT          (RXBUF_SCHAR(76))
-    #define I3_RES_DSC_STAT_2_BEFUELL_AUSSENTEMPERATUR_WERT_UNIT     'Â°'
+    #define I3_RES_DSC_STAT_2_BEFUELL_AUSSENTEMPERATUR_WERT_UNIT     '°'
     #define I3_RES_DSC_STAT_2_BEFUELL_AUSSENTEMPERATUR_WERT_TYPE     char
-        // Outside temperature when filling / Aussentemperatur beim BefÃ¼llen
+        // Outside temperature when filling / Aussentemperatur beim Befüllen
 
     #define I3_RES_DSC_STAT_2_BEFUELL_AUSSENDRUCK_WERT               (RXBUF_SINT(77)/1000.0f)
     #define I3_RES_DSC_STAT_2_BEFUELL_AUSSENDRUCK_WERT_UNIT          'bar'
     #define I3_RES_DSC_STAT_2_BEFUELL_AUSSENDRUCK_WERT_TYPE          float
-        // External pressure when filling / Aussendruck beim BefÃ¼llen
+        // External pressure when filling / Aussendruck beim Befüllen
 
     #define I3_RES_DSC_STAT_2_RADPOSITION_RE0                        (RXBUF_UCHAR(79))
     #define I3_RES_DSC_STAT_2_RADPOSITION_RE0_UNIT                   '0-n'
@@ -2118,10 +2118,10 @@
         // (-9.999 bar => ungueltig)
 
     #define I3_RES_DSC_STAT_2_BEFUELLTEMPERATUR_RE0_WERT             (RXBUF_SCHAR(82))
-    #define I3_RES_DSC_STAT_2_BEFUELLTEMPERATUR_RE0_WERT_UNIT        'Â°C'
+    #define I3_RES_DSC_STAT_2_BEFUELLTEMPERATUR_RE0_WERT_UNIT        '°C'
     #define I3_RES_DSC_STAT_2_BEFUELLTEMPERATUR_RE0_WERT_TYPE        char
         // Filling temperature value wheel electronics RE0 (-99 ° C => invalid) / Befuelltemperaturwert Radelektronik RE0
-        // (-99 Â°C => ungueltig)
+        // (-99 °C => ungueltig)
 
     #define I3_RES_DSC_STAT_2_RADPOSITION_RE1                        (RXBUF_UCHAR(83))
     #define I3_RES_DSC_STAT_2_RADPOSITION_RE1_UNIT                   '0-n'
@@ -2135,10 +2135,10 @@
         // (-9.999 bar => ungueltig)
 
     #define I3_RES_DSC_STAT_2_BEFUELLTEMPERATUR_RE1_WERT             (RXBUF_SCHAR(86))
-    #define I3_RES_DSC_STAT_2_BEFUELLTEMPERATUR_RE1_WERT_UNIT        'Â°C'
+    #define I3_RES_DSC_STAT_2_BEFUELLTEMPERATUR_RE1_WERT_UNIT        '°C'
     #define I3_RES_DSC_STAT_2_BEFUELLTEMPERATUR_RE1_WERT_TYPE        char
         // Filling temperature value wheel electronics RE1 (-99 ° C => invalid) / Befuelltemperaturwert Radelektronik RE1
-        // (-99 Â°C => ungueltig)
+        // (-99 °C => ungueltig)
 
     #define I3_RES_DSC_STAT_2_RADPOSITION_RE2                        (RXBUF_UCHAR(87))
     #define I3_RES_DSC_STAT_2_RADPOSITION_RE2_UNIT                   '0-n'
@@ -2152,10 +2152,10 @@
         // (-9.999 bar => ungueltig)
 
     #define I3_RES_DSC_STAT_2_BEFUELLTEMPERATUR_RE2_WERT             (RXBUF_SCHAR(90))
-    #define I3_RES_DSC_STAT_2_BEFUELLTEMPERATUR_RE2_WERT_UNIT        'Â°C'
+    #define I3_RES_DSC_STAT_2_BEFUELLTEMPERATUR_RE2_WERT_UNIT        '°C'
     #define I3_RES_DSC_STAT_2_BEFUELLTEMPERATUR_RE2_WERT_TYPE        char
         // Filling temperature value wheel electronics RE2 (-99 ° C => invalid) / Befuelltemperaturwert Radelektronik RE2
-        // (-99 Â°C => ungueltig)
+        // (-99 °C => ungueltig)
 
     #define I3_RES_DSC_STAT_2_RADPOSITION_RE3                        (RXBUF_UCHAR(91))
     #define I3_RES_DSC_STAT_2_RADPOSITION_RE3_UNIT                   '0-n'
@@ -2169,31 +2169,31 @@
         // (-9.999 bar => ungueltig)
 
     #define I3_RES_DSC_STAT_2_BEFUELLTEMPERATUR_RE3_WERT             (RXBUF_SCHAR(94))
-    #define I3_RES_DSC_STAT_2_BEFUELLTEMPERATUR_RE3_WERT_UNIT        'Â°C'
+    #define I3_RES_DSC_STAT_2_BEFUELLTEMPERATUR_RE3_WERT_UNIT        '°C'
     #define I3_RES_DSC_STAT_2_BEFUELLTEMPERATUR_RE3_WERT_TYPE        char
         // Filling temperature value wheel electronics RE3 (-99 ° C => invalid) / Befuelltemperaturwert Radelektronik RE3
-        // (-99 Â°C => ungueltig)
+        // (-99 °C => ungueltig)
 
     #define I3_RES_DSC_STAT_2_ZAEHLER_KALIBRIERUNG                   (RXBUF_UCHAR(95))
     #define I3_RES_DSC_STAT_2_ZAEHLER_KALIBRIERUNG_UNIT              '0-n'
     #define I3_RES_DSC_STAT_2_ZAEHLER_KALIBRIERUNG_TYPE              unsigned char
-        // Calibration event counter / ZÃ¤hler fÃ¼r Kalibrierereignisse
+        // Calibration event counter / Zähler für Kalibrierereignisse
 
     #define I3_RES_DSC_STAT_3_PLAUSI_DRUCK                           (RXBUF_UCHAR(96))
     #define I3_RES_DSC_STAT_3_PLAUSI_DRUCK_UNIT                      '0-n'
     #define I3_RES_DSC_STAT_3_PLAUSI_DRUCK_TYPE                      unsigned char
-        // Filled pressures passed yes or no / EingefÃ¼llte DrÃ¼cke bestanden ja oder nein
+        // Filled pressures passed yes or no / Eingefüllte Drücke bestanden ja oder nein
 
     #define I3_RES_DSC_STAT_3_KALIBRIERUNG                           (RXBUF_UCHAR(97))
     #define I3_RES_DSC_STAT_3_KALIBRIERUNG_UNIT                      '0-n'
     #define I3_RES_DSC_STAT_3_KALIBRIERUNG_TYPE                      unsigned char
-        // Status byte about success / failure of calibration / Statusbyte Ã¼ber Erfolg- Misserfolg der Kalibrierung
+        // Status byte about success / failure of calibration / Statusbyte über Erfolg- Misserfolg der Kalibrierung
 
     // Can't yet generate code for STAT_3_DATUM_TEXT_0XDC97 of type string[9], at offset 98. But we account for the 9 bytes
-        // Date of the calibration event. 99.99.99 => invalid / Datum zum Kalibrierereignis. 99.99.99 => ungÃ¼ltig
+        // Date of the calibration event. 99.99.99 => invalid / Datum zum Kalibrierereignis. 99.99.99 => ungültig
 
     // Can't yet generate code for STAT_3_UHRZEIT_TEXT_0XDC97 of type string[9], at offset 107. But we account for the 9 bytes
-        // Time of the calibration event. 99.99.99 => invalid / Uhrzeit zum Kalibrierereignis. 99.99.99 => ungÃ¼ltig
+        // Time of the calibration event. 99.99.99 => invalid / Uhrzeit zum Kalibrierereignis. 99.99.99 => ungültig
 
     #define I3_RES_DSC_STAT_3_KILOMETERSTAND_WERT_0XDC97             (RXBUF_SINT32(116))
     #define I3_RES_DSC_STAT_3_KILOMETERSTAND_WERT_0XDC97_UNIT        'km'
@@ -2206,14 +2206,14 @@
         // System flags / Systemflags
 
     #define I3_RES_DSC_STAT_3_BEFUELL_AUSSENTEMPERATUR_WERT          (RXBUF_SCHAR(124))
-    #define I3_RES_DSC_STAT_3_BEFUELL_AUSSENTEMPERATUR_WERT_UNIT     'Â°'
+    #define I3_RES_DSC_STAT_3_BEFUELL_AUSSENTEMPERATUR_WERT_UNIT     '°'
     #define I3_RES_DSC_STAT_3_BEFUELL_AUSSENTEMPERATUR_WERT_TYPE     char
-        // Outside temperature when filling / Aussentemperatur beim BefÃ¼llen
+        // Outside temperature when filling / Aussentemperatur beim Befüllen
 
     #define I3_RES_DSC_STAT_3_BEFUELL_AUSSENDRUCK_WERT               (RXBUF_SINT(125)/1000.0f)
     #define I3_RES_DSC_STAT_3_BEFUELL_AUSSENDRUCK_WERT_UNIT          'bar'
     #define I3_RES_DSC_STAT_3_BEFUELL_AUSSENDRUCK_WERT_TYPE          float
-        // External pressure when filling / Aussendruck beim BefÃ¼llen
+        // External pressure when filling / Aussendruck beim Befüllen
 
     #define I3_RES_DSC_STAT_3_RADPOSITION_RE0                        (RXBUF_UCHAR(127))
     #define I3_RES_DSC_STAT_3_RADPOSITION_RE0_UNIT                   '0-n'
@@ -2227,10 +2227,10 @@
         // (-9.999 bar => ungueltig)
 
     #define I3_RES_DSC_STAT_3_BEFUELLTEMPERATUR_RE0_WERT             (RXBUF_SCHAR(130))
-    #define I3_RES_DSC_STAT_3_BEFUELLTEMPERATUR_RE0_WERT_UNIT        'Â°C'
+    #define I3_RES_DSC_STAT_3_BEFUELLTEMPERATUR_RE0_WERT_UNIT        '°C'
     #define I3_RES_DSC_STAT_3_BEFUELLTEMPERATUR_RE0_WERT_TYPE        char
         // Filling temperature value wheel electronics RE0 (-99 ° C => invalid) / Befuelltemperaturwert Radelektronik RE0
-        // (-99 Â°C => ungueltig)
+        // (-99 °C => ungueltig)
 
     #define I3_RES_DSC_STAT_3_RADPOSITION_RE1                        (RXBUF_UCHAR(131))
     #define I3_RES_DSC_STAT_3_RADPOSITION_RE1_UNIT                   '0-n'
@@ -2244,10 +2244,10 @@
         // (-9.999 bar => ungueltig)
 
     #define I3_RES_DSC_STAT_3_BEFUELLTEMPERATUR_RE1_WERT             (RXBUF_SCHAR(134))
-    #define I3_RES_DSC_STAT_3_BEFUELLTEMPERATUR_RE1_WERT_UNIT        'Â°C'
+    #define I3_RES_DSC_STAT_3_BEFUELLTEMPERATUR_RE1_WERT_UNIT        '°C'
     #define I3_RES_DSC_STAT_3_BEFUELLTEMPERATUR_RE1_WERT_TYPE        char
         // Filling temperature value wheel electronics RE1 (-99 ° C => invalid) / Befuelltemperaturwert Radelektronik RE1
-        // (-99 Â°C => ungueltig)
+        // (-99 °C => ungueltig)
 
     #define I3_RES_DSC_STAT_3_RADPOSITION_RE2                        (RXBUF_UCHAR(135))
     #define I3_RES_DSC_STAT_3_RADPOSITION_RE2_UNIT                   '0-n'
@@ -2261,10 +2261,10 @@
         // (-9.999 bar => ungueltig)
 
     #define I3_RES_DSC_STAT_3_BEFUELLTEMPERATUR_RE2_WERT             (RXBUF_SCHAR(138))
-    #define I3_RES_DSC_STAT_3_BEFUELLTEMPERATUR_RE2_WERT_UNIT        'Â°C'
+    #define I3_RES_DSC_STAT_3_BEFUELLTEMPERATUR_RE2_WERT_UNIT        '°C'
     #define I3_RES_DSC_STAT_3_BEFUELLTEMPERATUR_RE2_WERT_TYPE        char
         // Filling temperature value wheel electronics RE2 (-99 ° C => invalid) / Befuelltemperaturwert Radelektronik RE2
-        // (-99 Â°C => ungueltig)
+        // (-99 °C => ungueltig)
 
     #define I3_RES_DSC_STAT_3_RADPOSITION_RE3                        (RXBUF_UCHAR(139))
     #define I3_RES_DSC_STAT_3_RADPOSITION_RE3_UNIT                   '0-n'
@@ -2278,15 +2278,15 @@
         // (-9.999 bar => ungueltig)
 
     #define I3_RES_DSC_STAT_3_BEFUELLTEMPERATUR_RE3_WERT             (RXBUF_SCHAR(142))
-    #define I3_RES_DSC_STAT_3_BEFUELLTEMPERATUR_RE3_WERT_UNIT        'Â°C'
+    #define I3_RES_DSC_STAT_3_BEFUELLTEMPERATUR_RE3_WERT_UNIT        '°C'
     #define I3_RES_DSC_STAT_3_BEFUELLTEMPERATUR_RE3_WERT_TYPE        char
         // Filling temperature value wheel electronics RE3 (-99 ° C => invalid) / Befuelltemperaturwert Radelektronik RE3
-        // (-99 Â°C => ungueltig)
+        // (-99 °C => ungueltig)
 
     #define I3_RES_DSC_STAT_3_ZAEHLER_KALIBRIERUNG                   (RXBUF_UCHAR(143))
     #define I3_RES_DSC_STAT_3_ZAEHLER_KALIBRIERUNG_UNIT              '0-n'
     #define I3_RES_DSC_STAT_3_ZAEHLER_KALIBRIERUNG_TYPE              unsigned char
-        // Calibration event counter / ZÃ¤hler fÃ¼r Kalibrierereignisse
+        // Calibration event counter / Zähler für Kalibrierereignisse
 
 #define I3_PID_DSC_RDC_MESSDATENBLOCK_1                              0xDC98
         // RDC_MESSDATENBLOCK_1 / RDC_MESSDATENBLOCK_1
@@ -2307,29 +2307,29 @@
     #define I3_RES_DSC_STAT_LETZTER_REIFENDRUCKWERT_WERT             (RXBUF_SINT(5)/1000.0f)
     #define I3_RES_DSC_STAT_LETZTER_REIFENDRUCKWERT_WERT_UNIT        'bar'
     #define I3_RES_DSC_STAT_LETZTER_REIFENDRUCKWERT_WERT_TYPE        float
-        // Last valid tire pressure value returned by the selected wheel / Letzer gÃ¼ltiger Reifendruckwert der vom
-        // ausgewÃ¤hlten Rad zurÃ¼ckgeliefert wird
+        // Last valid tire pressure value returned by the selected wheel / Letzer gültiger Reifendruckwert der vom
+        // ausgewählten Rad zurückgeliefert wird
 
     #define I3_RES_DSC_STAT_LETZTER_REIFENTEMPERATURWERT_WERT        (RXBUF_SCHAR(7))
-    #define I3_RES_DSC_STAT_LETZTER_REIFENTEMPERATURWERT_WERT_UNIT   'Â°C'
+    #define I3_RES_DSC_STAT_LETZTER_REIFENTEMPERATURWERT_WERT_UNIT   '°C'
     #define I3_RES_DSC_STAT_LETZTER_REIFENTEMPERATURWERT_WERT_TYPE   char
-        // Last valid tire temperature of the selected wheel / Letzte gÃ¼ltige Reifentemperatur des ausgewÃ¤hlten Rads
+        // Last valid tire temperature of the selected wheel / Letzte gültige Reifentemperatur des ausgewählten Rads
 
     #define I3_RES_DSC_STAT_SOLLDRUCK_WERT                           (RXBUF_SINT(8)/1000.0f)
     #define I3_RES_DSC_STAT_SOLLDRUCK_WERT_UNIT                      'bar'
     #define I3_RES_DSC_STAT_SOLLDRUCK_WERT_TYPE                      float
-        // Predefined target pressure of the selected wheel / Vorgegebener Solldruck des ausgewÃ¤hlten Rads
+        // Predefined target pressure of the selected wheel / Vorgegebener Solldruck des ausgewählten Rads
 
     #define I3_RES_DSC_STAT_GUTEMPFAENGE                             (RXBUF_UINT(10))
     #define I3_RES_DSC_STAT_GUTEMPFAENGE_UNIT                        '0-n'
     #define I3_RES_DSC_STAT_GUTEMPFAENGE_TYPE                        unsigned short
         // Number of correctly received telegrams from the selected bike / Anzahl korrekt empfangener Telegramme vom
-        // ausgewÃ¤hlten Rad
+        // ausgewählten Rad
 
     #define I3_RES_DSC_STAT_AUSBEUTE                                 (RXBUF_UCHAR(12))
     #define I3_RES_DSC_STAT_AUSBEUTE_UNIT                            '0-n'
     #define I3_RES_DSC_STAT_AUSBEUTE_TYPE                            unsigned char
-        // Telegram yield from the selected bike in percent / Telegrammausbeute vom ausgewÃ¤hlten Rad in Prozent
+        // Telegram yield from the selected bike in percent / Telegrammausbeute vom ausgewählten Rad in Prozent
 
     #define I3_RES_DSC_STAT_RSSI_PEGEL                               (RXBUF_UINT(13))
     #define I3_RES_DSC_STAT_RSSI_PEGEL_UNIT                          '0-n'
@@ -2346,26 +2346,25 @@
     #define I3_RES_DSC_STAT_RADELEKTRONIK_STATUS_UNIT                '0-n'
     #define I3_RES_DSC_STAT_RADELEKTRONIK_STATUS_TYPE                unsigned char
         // Status message from the wheel electronics of the selected wheel. / Status Meldung der Radelektronik des
-        // angewÃ¤hlten Rads.
+        // angewählten Rads.
 
     #define I3_RES_DSC_STAT_HARTE_WARNUNG_AKTIV                      (RXBUF_UCHAR(18))
     #define I3_RES_DSC_STAT_HARTE_WARNUNG_AKTIV_UNIT                 '0-n'
     #define I3_RES_DSC_STAT_HARTE_WARNUNG_AKTIV_TYPE                 unsigned char
         // Breakdown warning from the selected bike, 0 = inactive, 1 = active, FF = signal unknown / Pannen Warnung vom
-        // angewÃ¤hlten Rad, 0= Inaktiv, 1 = aktiv, FF = Signal unbekannt
+        // angewählten Rad, 0= Inaktiv, 1 = aktiv, FF = Signal unbekannt
 
     #define I3_RES_DSC_STAT_POS_CHANGED                              (RXBUF_UCHAR(19))
     #define I3_RES_DSC_STAT_POS_CHANGED_UNIT                         '0-n'
     #define I3_RES_DSC_STAT_POS_CHANGED_TYPE                         unsigned char
         // Wheel electronics ID of the selected wheel has changed, 0 = not changed, 1 = changed, FF = signal unknown /
-        // Radelektronik ID vom angewÃ¤hlten Rad hat sich geÃ¤ndert, 0 = nicht geÃ¤ndert, 1 = geÃ¤ndert, FF= Signal
-        // unbekannt
+        // Radelektronik ID vom angewählten Rad hat sich geändert, 0 = nicht geändert, 1 = geändert, FF= Signal unbekannt
 
     #define I3_RES_DSC_STAT_RE_OVERHEAT_AKTIV                        (RXBUF_UCHAR(20))
     #define I3_RES_DSC_STAT_RE_OVERHEAT_AKTIV_UNIT                   '0-n'
     #define I3_RES_DSC_STAT_RE_OVERHEAT_AKTIV_TYPE                   unsigned char
         // Overheating message from the wheel electronics of the selected wheel, 0 = inactive, 1 = active, FF = signal
-        // unknown / Ãberhitzungsmeldung der Radelektronik vom angewÃ¤hlten Rad, 0 = Inaktiv, 1 = aktiv, FF = Signal
+        // unknown / Überhitzungsmeldung der Radelektronik vom angewählten Rad, 0 = Inaktiv, 1 = aktiv, FF = Signal
         // unbekannt
 
     #define I3_RES_DSC_STAT_DREHRICHTUNG                             (RXBUF_UCHAR(21))
@@ -2424,29 +2423,29 @@
     #define I3_RES_DSC_STAT_LETZTER_REIFENDRUCKWERT_WERT_0XDC99      (RXBUF_SINT(5)/1000.0f)
     #define I3_RES_DSC_STAT_LETZTER_REIFENDRUCKWERT_WERT_0XDC99_UNIT 'bar'
     #define I3_RES_DSC_STAT_LETZTER_REIFENDRUCKWERT_WERT_0XDC99_TYPE float
-        // Last valid tire pressure value returned by the selected wheel / Letzer gÃ¼ltiger Reifendruckwert der vom
-        // ausgewÃ¤hlten Rad zurÃ¼ckgeliefert wird
+        // Last valid tire pressure value returned by the selected wheel / Letzer gültiger Reifendruckwert der vom
+        // ausgewählten Rad zurückgeliefert wird
 
     #define I3_RES_DSC_STAT_LETZTER_REIFENTEMPERATURWERT_WERT_0XDC99 (RXBUF_SCHAR(7))
-    #define I3_RES_DSC_STAT_LETZTER_REIFENTEMPERATURWERT_WERT_0XDC99_UNIT 'Â°C'
+    #define I3_RES_DSC_STAT_LETZTER_REIFENTEMPERATURWERT_WERT_0XDC99_UNIT '°C'
     #define I3_RES_DSC_STAT_LETZTER_REIFENTEMPERATURWERT_WERT_0XDC99_TYPE char
-        // Last valid tire temperature of the selected wheel / Letzte gÃ¼ltige Reifentemperatur des ausgewÃ¤hlten Rads
+        // Last valid tire temperature of the selected wheel / Letzte gültige Reifentemperatur des ausgewählten Rads
 
     #define I3_RES_DSC_STAT_SOLLDRUCK_WERT_0XDC99                    (RXBUF_SINT(8)/1000.0f)
     #define I3_RES_DSC_STAT_SOLLDRUCK_WERT_0XDC99_UNIT               'bar'
     #define I3_RES_DSC_STAT_SOLLDRUCK_WERT_0XDC99_TYPE               float
-        // Predefined target pressure of the selected wheel / Vorgegebener Solldruck des ausgewÃ¤hlten Rads
+        // Predefined target pressure of the selected wheel / Vorgegebener Solldruck des ausgewählten Rads
 
     #define I3_RES_DSC_STAT_GUTEMPFAENGE_0XDC99                      (RXBUF_UINT(10))
     #define I3_RES_DSC_STAT_GUTEMPFAENGE_0XDC99_UNIT                 '0-n'
     #define I3_RES_DSC_STAT_GUTEMPFAENGE_0XDC99_TYPE                 unsigned short
         // Number of correctly received telegrams from the selected bike / Anzahl korrekt empfangener Telegramme vom
-        // ausgewÃ¤hlten Rad
+        // ausgewählten Rad
 
     #define I3_RES_DSC_STAT_AUSBEUTE_0XDC99                          (RXBUF_UCHAR(12))
     #define I3_RES_DSC_STAT_AUSBEUTE_0XDC99_UNIT                     '0-n'
     #define I3_RES_DSC_STAT_AUSBEUTE_0XDC99_TYPE                     unsigned char
-        // Telegram yield from the selected bike in percent / Telegrammausbeute vom ausgewÃ¤hlten Rad in Prozent
+        // Telegram yield from the selected bike in percent / Telegrammausbeute vom ausgewählten Rad in Prozent
 
     #define I3_RES_DSC_STAT_RSSI_PEGEL_0XDC99                        (RXBUF_UINT(13))
     #define I3_RES_DSC_STAT_RSSI_PEGEL_0XDC99_UNIT                   '0-n'
@@ -2463,26 +2462,25 @@
     #define I3_RES_DSC_STAT_RADELEKTRONIK_STATUS_0XDC99_UNIT         '0-n'
     #define I3_RES_DSC_STAT_RADELEKTRONIK_STATUS_0XDC99_TYPE         unsigned char
         // Status message from the wheel electronics of the selected wheel. / Status Meldung der Radelektronik des
-        // angewÃ¤hlten Rads.
+        // angewählten Rads.
 
     #define I3_RES_DSC_STAT_HARTE_WARNUNG_AKTIV_0XDC99               (RXBUF_UCHAR(18))
     #define I3_RES_DSC_STAT_HARTE_WARNUNG_AKTIV_0XDC99_UNIT          '0-n'
     #define I3_RES_DSC_STAT_HARTE_WARNUNG_AKTIV_0XDC99_TYPE          unsigned char
         // Breakdown warning from the selected bike, 0 = inactive, 1 = active, FF = signal unknown / Pannen Warnung vom
-        // angewÃ¤hlten Rad, 0= Inaktiv, 1 = aktiv, FF = Signal unbekannt
+        // angewählten Rad, 0= Inaktiv, 1 = aktiv, FF = Signal unbekannt
 
     #define I3_RES_DSC_STAT_POS_CHANGED_0XDC99                       (RXBUF_UCHAR(19))
     #define I3_RES_DSC_STAT_POS_CHANGED_0XDC99_UNIT                  '0-n'
     #define I3_RES_DSC_STAT_POS_CHANGED_0XDC99_TYPE                  unsigned char
         // Wheel electronics ID of the selected wheel has changed, 0 = not changed, 1 = changed, FF = signal unknown /
-        // Radelektronik ID vom angewÃ¤hlten Rad hat sich geÃ¤ndert, 0 = nicht geÃ¤ndert, 1 = geÃ¤ndert, FF= Signal
-        // unbekannt
+        // Radelektronik ID vom angewählten Rad hat sich geändert, 0 = nicht geändert, 1 = geändert, FF= Signal unbekannt
 
     #define I3_RES_DSC_STAT_RE_OVERHEAT_AKTIV_0XDC99                 (RXBUF_UCHAR(20))
     #define I3_RES_DSC_STAT_RE_OVERHEAT_AKTIV_0XDC99_UNIT            '0-n'
     #define I3_RES_DSC_STAT_RE_OVERHEAT_AKTIV_0XDC99_TYPE            unsigned char
         // Overheating message from the wheel electronics of the selected wheel, 0 = inactive, 1 = active, FF = signal
-        // unknown / Ãberhitzungsmeldung der Radelektronik vom angewÃ¤hlten Rad, 0 = Inaktiv, 1 = aktiv, FF = Signal
+        // unknown / Überhitzungsmeldung der Radelektronik vom angewählten Rad, 0 = Inaktiv, 1 = aktiv, FF = Signal
         // unbekannt
 
     #define I3_RES_DSC_STAT_DREHRICHTUNG_0XDC99                      (RXBUF_UCHAR(21))
@@ -2541,29 +2539,29 @@
     #define I3_RES_DSC_STAT_LETZTER_REIFENDRUCKWERT_WERT_0XDC9A      (RXBUF_SINT(5)/1000.0f)
     #define I3_RES_DSC_STAT_LETZTER_REIFENDRUCKWERT_WERT_0XDC9A_UNIT 'bar'
     #define I3_RES_DSC_STAT_LETZTER_REIFENDRUCKWERT_WERT_0XDC9A_TYPE float
-        // Last valid tire pressure value returned by the selected wheel / Letzer gÃ¼ltiger Reifendruckwert der vom
-        // ausgewÃ¤hlten Rad zurÃ¼ckgeliefert wird
+        // Last valid tire pressure value returned by the selected wheel / Letzer gültiger Reifendruckwert der vom
+        // ausgewählten Rad zurückgeliefert wird
 
     #define I3_RES_DSC_STAT_LETZTER_REIFENTEMPERATURWERT_WERT_0XDC9A (RXBUF_SCHAR(7))
-    #define I3_RES_DSC_STAT_LETZTER_REIFENTEMPERATURWERT_WERT_0XDC9A_UNIT 'Â°C'
+    #define I3_RES_DSC_STAT_LETZTER_REIFENTEMPERATURWERT_WERT_0XDC9A_UNIT '°C'
     #define I3_RES_DSC_STAT_LETZTER_REIFENTEMPERATURWERT_WERT_0XDC9A_TYPE char
-        // Last valid tire temperature of the selected wheel / Letzte gÃ¼ltige Reifentemperatur des ausgewÃ¤hlten Rads
+        // Last valid tire temperature of the selected wheel / Letzte gültige Reifentemperatur des ausgewählten Rads
 
     #define I3_RES_DSC_STAT_SOLLDRUCK_WERT_0XDC9A                    (RXBUF_SINT(8)/1000.0f)
     #define I3_RES_DSC_STAT_SOLLDRUCK_WERT_0XDC9A_UNIT               'bar'
     #define I3_RES_DSC_STAT_SOLLDRUCK_WERT_0XDC9A_TYPE               float
-        // Predefined target pressure of the selected wheel / Vorgegebener Solldruck des ausgewÃ¤hlten Rads
+        // Predefined target pressure of the selected wheel / Vorgegebener Solldruck des ausgewählten Rads
 
     #define I3_RES_DSC_STAT_GUTEMPFAENGE_0XDC9A                      (RXBUF_UINT(10))
     #define I3_RES_DSC_STAT_GUTEMPFAENGE_0XDC9A_UNIT                 '0-n'
     #define I3_RES_DSC_STAT_GUTEMPFAENGE_0XDC9A_TYPE                 unsigned short
         // Number of correctly received telegrams from the selected bike / Anzahl korrekt empfangener Telegramme vom
-        // ausgewÃ¤hlten Rad
+        // ausgewählten Rad
 
     #define I3_RES_DSC_STAT_AUSBEUTE_0XDC9A                          (RXBUF_UCHAR(12))
     #define I3_RES_DSC_STAT_AUSBEUTE_0XDC9A_UNIT                     '0-n'
     #define I3_RES_DSC_STAT_AUSBEUTE_0XDC9A_TYPE                     unsigned char
-        // Telegram yield from the selected bike in percent / Telegrammausbeute vom ausgewÃ¤hlten Rad in Prozent
+        // Telegram yield from the selected bike in percent / Telegrammausbeute vom ausgewählten Rad in Prozent
 
     #define I3_RES_DSC_STAT_RSSI_PEGEL_0XDC9A                        (RXBUF_UINT(13))
     #define I3_RES_DSC_STAT_RSSI_PEGEL_0XDC9A_UNIT                   '0-n'
@@ -2580,26 +2578,25 @@
     #define I3_RES_DSC_STAT_RADELEKTRONIK_STATUS_0XDC9A_UNIT         '0-n'
     #define I3_RES_DSC_STAT_RADELEKTRONIK_STATUS_0XDC9A_TYPE         unsigned char
         // Status message from the wheel electronics of the selected wheel. / Status Meldung der Radelektronik des
-        // angewÃ¤hlten Rads.
+        // angewählten Rads.
 
     #define I3_RES_DSC_STAT_HARTE_WARNUNG_AKTIV_0XDC9A               (RXBUF_UCHAR(18))
     #define I3_RES_DSC_STAT_HARTE_WARNUNG_AKTIV_0XDC9A_UNIT          '0-n'
     #define I3_RES_DSC_STAT_HARTE_WARNUNG_AKTIV_0XDC9A_TYPE          unsigned char
         // Breakdown warning from the selected bike, 0 = inactive, 1 = active, FF = signal unknown / Pannen Warnung vom
-        // angewÃ¤hlten Rad, 0= Inaktiv, 1 = aktiv, FF = Signal unbekannt
+        // angewählten Rad, 0= Inaktiv, 1 = aktiv, FF = Signal unbekannt
 
     #define I3_RES_DSC_STAT_POS_CHANGED_0XDC9A                       (RXBUF_UCHAR(19))
     #define I3_RES_DSC_STAT_POS_CHANGED_0XDC9A_UNIT                  '0-n'
     #define I3_RES_DSC_STAT_POS_CHANGED_0XDC9A_TYPE                  unsigned char
         // Wheel electronics ID of the selected wheel has changed, 0 = not changed, 1 = changed, FF = signal unknown /
-        // Radelektronik ID vom angewÃ¤hlten Rad hat sich geÃ¤ndert, 0 = nicht geÃ¤ndert, 1 = geÃ¤ndert, FF= Signal
-        // unbekannt
+        // Radelektronik ID vom angewählten Rad hat sich geändert, 0 = nicht geändert, 1 = geändert, FF= Signal unbekannt
 
     #define I3_RES_DSC_STAT_RE_OVERHEAT_AKTIV_0XDC9A                 (RXBUF_UCHAR(20))
     #define I3_RES_DSC_STAT_RE_OVERHEAT_AKTIV_0XDC9A_UNIT            '0-n'
     #define I3_RES_DSC_STAT_RE_OVERHEAT_AKTIV_0XDC9A_TYPE            unsigned char
         // Overheating message from the wheel electronics of the selected wheel, 0 = inactive, 1 = active, FF = signal
-        // unknown / Ãberhitzungsmeldung der Radelektronik vom angewÃ¤hlten Rad, 0 = Inaktiv, 1 = aktiv, FF = Signal
+        // unknown / Überhitzungsmeldung der Radelektronik vom angewählten Rad, 0 = Inaktiv, 1 = aktiv, FF = Signal
         // unbekannt
 
     #define I3_RES_DSC_STAT_DREHRICHTUNG_0XDC9A                      (RXBUF_UCHAR(21))
@@ -2658,29 +2655,29 @@
     #define I3_RES_DSC_STAT_LETZTER_REIFENDRUCKWERT_WERT_0XDC9B      (RXBUF_SINT(5)/1000.0f)
     #define I3_RES_DSC_STAT_LETZTER_REIFENDRUCKWERT_WERT_0XDC9B_UNIT 'bar'
     #define I3_RES_DSC_STAT_LETZTER_REIFENDRUCKWERT_WERT_0XDC9B_TYPE float
-        // Last valid tire pressure value returned by the selected wheel / Letzer gÃ¼ltiger Reifendruckwert der vom
-        // ausgewÃ¤hlten Rad zurÃ¼ckgeliefert wird
+        // Last valid tire pressure value returned by the selected wheel / Letzer gültiger Reifendruckwert der vom
+        // ausgewählten Rad zurückgeliefert wird
 
     #define I3_RES_DSC_STAT_LETZTER_REIFENTEMPERATURWERT_WERT_0XDC9B (RXBUF_SCHAR(7))
-    #define I3_RES_DSC_STAT_LETZTER_REIFENTEMPERATURWERT_WERT_0XDC9B_UNIT 'Â°C'
+    #define I3_RES_DSC_STAT_LETZTER_REIFENTEMPERATURWERT_WERT_0XDC9B_UNIT '°C'
     #define I3_RES_DSC_STAT_LETZTER_REIFENTEMPERATURWERT_WERT_0XDC9B_TYPE char
-        // Last valid tire temperature of the selected wheel / Letzte gÃ¼ltige Reifentemperatur des ausgewÃ¤hlten Rads
+        // Last valid tire temperature of the selected wheel / Letzte gültige Reifentemperatur des ausgewählten Rads
 
     #define I3_RES_DSC_STAT_SOLLDRUCK_WERT_0XDC9B                    (RXBUF_SINT(8)/1000.0f)
     #define I3_RES_DSC_STAT_SOLLDRUCK_WERT_0XDC9B_UNIT               'bar'
     #define I3_RES_DSC_STAT_SOLLDRUCK_WERT_0XDC9B_TYPE               float
-        // Predefined target pressure of the selected wheel / Vorgegebener Solldruck des ausgewÃ¤hlten Rads
+        // Predefined target pressure of the selected wheel / Vorgegebener Solldruck des ausgewählten Rads
 
     #define I3_RES_DSC_STAT_GUTEMPFAENGE_0XDC9B                      (RXBUF_UINT(10))
     #define I3_RES_DSC_STAT_GUTEMPFAENGE_0XDC9B_UNIT                 '0-n'
     #define I3_RES_DSC_STAT_GUTEMPFAENGE_0XDC9B_TYPE                 unsigned short
         // Number of correctly received telegrams from the selected bike / Anzahl korrekt empfangener Telegramme vom
-        // ausgewÃ¤hlten Rad
+        // ausgewählten Rad
 
     #define I3_RES_DSC_STAT_AUSBEUTE_0XDC9B                          (RXBUF_UCHAR(12))
     #define I3_RES_DSC_STAT_AUSBEUTE_0XDC9B_UNIT                     '0-n'
     #define I3_RES_DSC_STAT_AUSBEUTE_0XDC9B_TYPE                     unsigned char
-        // Telegram yield from the selected bike in percent / Telegrammausbeute vom ausgewÃ¤hlten Rad in Prozent
+        // Telegram yield from the selected bike in percent / Telegrammausbeute vom ausgewählten Rad in Prozent
 
     #define I3_RES_DSC_STAT_RSSI_PEGEL_0XDC9B                        (RXBUF_UINT(13))
     #define I3_RES_DSC_STAT_RSSI_PEGEL_0XDC9B_UNIT                   '0-n'
@@ -2697,26 +2694,25 @@
     #define I3_RES_DSC_STAT_RADELEKTRONIK_STATUS_0XDC9B_UNIT         '0-n'
     #define I3_RES_DSC_STAT_RADELEKTRONIK_STATUS_0XDC9B_TYPE         unsigned char
         // Status message from the wheel electronics of the selected wheel. / Status Meldung der Radelektronik des
-        // angewÃ¤hlten Rads.
+        // angewählten Rads.
 
     #define I3_RES_DSC_STAT_HARTE_WARNUNG_AKTIV_0XDC9B               (RXBUF_UCHAR(18))
     #define I3_RES_DSC_STAT_HARTE_WARNUNG_AKTIV_0XDC9B_UNIT          '0-n'
     #define I3_RES_DSC_STAT_HARTE_WARNUNG_AKTIV_0XDC9B_TYPE          unsigned char
         // Breakdown warning from the selected bike, 0 = inactive, 1 = active, FF = signal unknown / Pannen Warnung vom
-        // angewÃ¤hlten Rad, 0= Inaktiv, 1 = aktiv, FF = Signal unbekannt
+        // angewählten Rad, 0= Inaktiv, 1 = aktiv, FF = Signal unbekannt
 
     #define I3_RES_DSC_STAT_POS_CHANGED_0XDC9B                       (RXBUF_UCHAR(19))
     #define I3_RES_DSC_STAT_POS_CHANGED_0XDC9B_UNIT                  '0-n'
     #define I3_RES_DSC_STAT_POS_CHANGED_0XDC9B_TYPE                  unsigned char
         // Wheel electronics ID of the selected wheel has changed, 0 = not changed, 1 = changed, FF = signal unknown /
-        // Radelektronik ID vom angewÃ¤hlten Rad hat sich geÃ¤ndert, 0 = nicht geÃ¤ndert, 1 = geÃ¤ndert, FF= Signal
-        // unbekannt
+        // Radelektronik ID vom angewählten Rad hat sich geändert, 0 = nicht geändert, 1 = geändert, FF= Signal unbekannt
 
     #define I3_RES_DSC_STAT_RE_OVERHEAT_AKTIV_0XDC9B                 (RXBUF_UCHAR(20))
     #define I3_RES_DSC_STAT_RE_OVERHEAT_AKTIV_0XDC9B_UNIT            '0-n'
     #define I3_RES_DSC_STAT_RE_OVERHEAT_AKTIV_0XDC9B_TYPE            unsigned char
         // Overheating message from the wheel electronics of the selected wheel, 0 = inactive, 1 = active, FF = signal
-        // unknown / Ãberhitzungsmeldung der Radelektronik vom angewÃ¤hlten Rad, 0 = Inaktiv, 1 = aktiv, FF = Signal
+        // unknown / Überhitzungsmeldung der Radelektronik vom angewählten Rad, 0 = Inaktiv, 1 = aktiv, FF = Signal
         // unbekannt
 
     #define I3_RES_DSC_STAT_DREHRICHTUNG_0XDC9B                      (RXBUF_UCHAR(21))
@@ -2760,10 +2756,10 @@
         // RDC_HS_WARNEREIGNIS_1 / RDC_HS_WARNEREIGNIS_1
 
     // Can't yet generate code for STAT_DATUM_TEXT of type string[9], at offset 0. But we account for the 9 bytes
-        // Date of the warning event. 99.99.99 => invalid / Datum zum Warnereignis. 99.99.99 => ungÃ¼ltig
+        // Date of the warning event. 99.99.99 => invalid / Datum zum Warnereignis. 99.99.99 => ungültig
 
     // Can't yet generate code for STAT_UHRZEIT_TEXT of type string[9], at offset 9. But we account for the 9 bytes
-        // Time of the warning event. 99.99.99 => invalid / Uhrzeit zum Warnereignis. 99.99.99 => ungÃ¼ltig
+        // Time of the warning event. 99.99.99 => invalid / Uhrzeit zum Warnereignis. 99.99.99 => ungültig
 
     #define I3_RES_DSC_STAT_KILOMETERSTAND_WERT                      (RXBUF_SINT32(18))
     #define I3_RES_DSC_STAT_KILOMETERSTAND_WERT_UNIT                 'km'
@@ -2776,19 +2772,19 @@
         // System flags / Systemflags
 
     #define I3_RES_DSC_STAT_BEFUELL_AUSSENTEMPERATUR_WERT            (RXBUF_SCHAR(26))
-    #define I3_RES_DSC_STAT_BEFUELL_AUSSENTEMPERATUR_WERT_UNIT       'Â°'
+    #define I3_RES_DSC_STAT_BEFUELL_AUSSENTEMPERATUR_WERT_UNIT       '°'
     #define I3_RES_DSC_STAT_BEFUELL_AUSSENTEMPERATUR_WERT_TYPE       char
-        // Outside temperature when filling / Aussentemperatur beim BefÃ¼llen
+        // Outside temperature when filling / Aussentemperatur beim Befüllen
 
     #define I3_RES_DSC_STAT_BEFUELL_AUSSENDRUCK_WERT                 (RXBUF_SINT(27)/1000.0f)
     #define I3_RES_DSC_STAT_BEFUELL_AUSSENDRUCK_WERT_UNIT            'bar'
     #define I3_RES_DSC_STAT_BEFUELL_AUSSENDRUCK_WERT_TYPE            float
-        // External pressure when filling / Aussendruck beim BefÃ¼llen
+        // External pressure when filling / Aussendruck beim Befüllen
 
     #define I3_RES_DSC_STAT_AUSSENTEMPERATUR_WERT                    (RXBUF_SCHAR(29))
-    #define I3_RES_DSC_STAT_AUSSENTEMPERATUR_WERT_UNIT               'Â°'
+    #define I3_RES_DSC_STAT_AUSSENTEMPERATUR_WERT_UNIT               '°'
     #define I3_RES_DSC_STAT_AUSSENTEMPERATUR_WERT_TYPE               char
-        // Outside temperature in the event of a warning / Aussentemperatur bei Warnereignis
+        // Outside temperature at warning event / Aussentemperatur bei Warnereignis
 
     #define I3_RES_DSC_STAT_AUSSENDRUCK_WERT                         (RXBUF_SINT(30)/1000.0f)
     #define I3_RES_DSC_STAT_AUSSENDRUCK_WERT_UNIT                    'bar'
@@ -2798,13 +2794,12 @@
     #define I3_RES_DSC_STAT_RADELEKTRONIK_STATUS_PANNENRAD_WERT      (RXBUF_UCHAR(32))
     #define I3_RES_DSC_STAT_RADELEKTRONIK_STATUS_PANNENRAD_WERT_UNIT 'HEX'
     #define I3_RES_DSC_STAT_RADELEKTRONIK_STATUS_PANNENRAD_WERT_TYPE unsigned char
-        // Wheel electronics status of the wheel causing the breakdown / Radelektronik-Status des PannenauslÃ¶senden
-        // Rades
+        // Wheel electronics status of the wheel causing the breakdown / Radelektronik-Status des Pannenauslösenden Rades
 
     #define I3_RES_DSC_STAT_RADPOSITION_PANNENRAD                    (RXBUF_UCHAR(33))
     #define I3_RES_DSC_STAT_RADPOSITION_PANNENRAD_UNIT               '0-n'
     #define I3_RES_DSC_STAT_RADPOSITION_PANNENRAD_TYPE               unsigned char
-        // Wheel position of the wheel causing the breakdown / Radposition des PannenauslÃ¶senden Rades
+        // Wheel position of the wheel causing the breakdown / Radposition des Pannenauslösenden Rades
 
     #define I3_RES_DSC_STAT_RADPOSITON_RE0                           (RXBUF_UCHAR(34))
     #define I3_RES_DSC_STAT_RADPOSITON_RE0_UNIT                      '0-n'
@@ -2817,7 +2812,7 @@
         // Filling pressure value RE0 / Befuelldruckwert RE0
 
     #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE0_WERT               (RXBUF_SCHAR(37))
-    #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE0_WERT_UNIT          'Â°C'
+    #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE0_WERT_UNIT          '°C'
     #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE0_WERT_TYPE          char
         // Filling temperature value RE0 / Befuelltemperaturwert RE0
 
@@ -2827,7 +2822,7 @@
         // Tire pressure RE0 / Reifenddruck RE0
 
     #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE0_WERT                (RXBUF_SCHAR(40))
-    #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE0_WERT_UNIT           'Â°'
+    #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE0_WERT_UNIT           '°'
     #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE0_WERT_TYPE           char
         // Tire temperature RE0 / Reifentemperatur RE0
 
@@ -2842,7 +2837,7 @@
         // Filling pressure value RE1 / Befuelldruckwert RE1
 
     #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE1_WERT               (RXBUF_SCHAR(44))
-    #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE1_WERT_UNIT          'Â°C'
+    #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE1_WERT_UNIT          '°C'
     #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE1_WERT_TYPE          char
         // Filling temperature value RE1 / Befuelltemperaturwert RE1
 
@@ -2852,7 +2847,7 @@
         // Tire pressure RE1 / Reifenddruck RE1
 
     #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE1_WERT                (RXBUF_SCHAR(47))
-    #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE1_WERT_UNIT           'Â°'
+    #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE1_WERT_UNIT           '°'
     #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE1_WERT_TYPE           char
         // Tire temperature RE1 / Reifentemperatur RE1
 
@@ -2867,7 +2862,7 @@
         // Filling pressure value RE2 / Befuelldruckwert RE2
 
     #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE2_WERT               (RXBUF_SCHAR(51))
-    #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE2_WERT_UNIT          'Â°C'
+    #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE2_WERT_UNIT          '°C'
     #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE2_WERT_TYPE          char
         // Filling temperature value RE2 / Befuelltemperaturwert RE2
 
@@ -2877,7 +2872,7 @@
         // Tire pressure RE2 / Reifenddruck RE2
 
     #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE2_WERT                (RXBUF_SCHAR(54))
-    #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE2_WERT_UNIT           'Â°'
+    #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE2_WERT_UNIT           '°'
     #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE2_WERT_TYPE           char
         // Tire temperature RE2 / Reifentemperatur RE2
 
@@ -2892,7 +2887,7 @@
         // Filling pressure value RE3 / Befuelldruckwert RE3
 
     #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE3_WERT               (RXBUF_SCHAR(58))
-    #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE3_WERT_UNIT          'Â°C'
+    #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE3_WERT_UNIT          '°C'
     #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE3_WERT_TYPE          char
         // Filling temperature value RE3 / Befuelltemperaturwert RE3
 
@@ -2902,7 +2897,7 @@
         // Tire pressure RE3 / Reifenddruck RE3
 
     #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE3_WERT                (RXBUF_SCHAR(61))
-    #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE3_WERT_UNIT           'Â°'
+    #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE3_WERT_UNIT           '°'
     #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE3_WERT_TYPE           char
         // Tire temperature RE3 / Reifentemperatur RE3
 
@@ -2914,10 +2909,10 @@
         // RDC_HS_WARNEREIGNIS_2 / RDC_HS_WARNEREIGNIS_2
 
     // Can't yet generate code for STAT_DATUM_TEXT_0XDC9D of type string[9], at offset 0. But we account for the 9 bytes
-        // Date of the warning event. 99.99.99 => invalid / Datum zum Warnereignis. 99.99.99 => ungÃ¼ltig
+        // Date of the warning event. 99.99.99 => invalid / Datum zum Warnereignis. 99.99.99 => ungültig
 
     // Can't yet generate code for STAT_UHRZEIT_TEXT_0XDC9D of type string[9], at offset 9. But we account for the 9 bytes
-        // Time of the warning event. 99.99.99 => invalid / Uhrzeit zum Warnereignis. 99.99.99 => ungÃ¼ltig
+        // Time of the warning event. 99.99.99 => invalid / Uhrzeit zum Warnereignis. 99.99.99 => ungültig
 
     #define I3_RES_DSC_STAT_KILOMETERSTAND_WERT_0XDC9D               (RXBUF_SINT32(18))
     #define I3_RES_DSC_STAT_KILOMETERSTAND_WERT_0XDC9D_UNIT          'km'
@@ -2930,19 +2925,19 @@
         // System flags / Systemflags
 
     #define I3_RES_DSC_STAT_BEFUELL_AUSSENTEMPERATUR_WERT_0XDC9D     (RXBUF_SCHAR(26))
-    #define I3_RES_DSC_STAT_BEFUELL_AUSSENTEMPERATUR_WERT_0XDC9D_UNIT 'Â°'
+    #define I3_RES_DSC_STAT_BEFUELL_AUSSENTEMPERATUR_WERT_0XDC9D_UNIT '°'
     #define I3_RES_DSC_STAT_BEFUELL_AUSSENTEMPERATUR_WERT_0XDC9D_TYPE char
-        // Outside temperature when filling / Aussentemperatur beim BefÃ¼llen
+        // Outside temperature when filling / Aussentemperatur beim Befüllen
 
     #define I3_RES_DSC_STAT_BEFUELL_AUSSENDRUCK_WERT_0XDC9D          (RXBUF_SINT(27)/1000.0f)
     #define I3_RES_DSC_STAT_BEFUELL_AUSSENDRUCK_WERT_0XDC9D_UNIT     'bar'
     #define I3_RES_DSC_STAT_BEFUELL_AUSSENDRUCK_WERT_0XDC9D_TYPE     float
-        // External pressure when filling / Aussendruck beim BefÃ¼llen
+        // External pressure when filling / Aussendruck beim Befüllen
 
     #define I3_RES_DSC_STAT_AUSSENTEMPERATUR_WERT_0XDC9D             (RXBUF_SCHAR(29))
-    #define I3_RES_DSC_STAT_AUSSENTEMPERATUR_WERT_0XDC9D_UNIT        'Â°'
+    #define I3_RES_DSC_STAT_AUSSENTEMPERATUR_WERT_0XDC9D_UNIT        '°'
     #define I3_RES_DSC_STAT_AUSSENTEMPERATUR_WERT_0XDC9D_TYPE        char
-        // Outside temperature in the event of a warning / Aussentemperatur bei Warnereignis
+        // Outside temperature at warning event / Aussentemperatur bei Warnereignis
 
     #define I3_RES_DSC_STAT_AUSSENDRUCK_WERT_0XDC9D                  (RXBUF_SINT(30)/1000.0f)
     #define I3_RES_DSC_STAT_AUSSENDRUCK_WERT_0XDC9D_UNIT             'bar'
@@ -2952,13 +2947,12 @@
     #define I3_RES_DSC_STAT_RADELEKTRONIK_STATUS_PANNENRAD_WERT_0XDC9D (RXBUF_UCHAR(32))
     #define I3_RES_DSC_STAT_RADELEKTRONIK_STATUS_PANNENRAD_WERT_0XDC9D_UNIT 'HEX'
     #define I3_RES_DSC_STAT_RADELEKTRONIK_STATUS_PANNENRAD_WERT_0XDC9D_TYPE unsigned char
-        // Wheel electronics status of the wheel causing the breakdown / Radelektronik-Status des PannenauslÃ¶senden
-        // Rades
+        // Wheel electronics status of the wheel causing the breakdown / Radelektronik-Status des Pannenauslösenden Rades
 
     #define I3_RES_DSC_STAT_RADPOSITION_PANNENRAD_0XDC9D             (RXBUF_UCHAR(33))
     #define I3_RES_DSC_STAT_RADPOSITION_PANNENRAD_0XDC9D_UNIT        '0-n'
     #define I3_RES_DSC_STAT_RADPOSITION_PANNENRAD_0XDC9D_TYPE        unsigned char
-        // Wheel position of the wheel causing the breakdown / Radposition des PannenauslÃ¶senden Rades
+        // Wheel position of the wheel causing the breakdown / Radposition des Pannenauslösenden Rades
 
     #define I3_RES_DSC_STAT_RADPOSITON_RE0_0XDC9D                    (RXBUF_UCHAR(34))
     #define I3_RES_DSC_STAT_RADPOSITON_RE0_0XDC9D_UNIT               '0-n'
@@ -2971,7 +2965,7 @@
         // Filling pressure value RE0 / Befuelldruckwert RE0
 
     #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE0_WERT_0XDC9D        (RXBUF_SCHAR(37))
-    #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE0_WERT_0XDC9D_UNIT   'Â°C'
+    #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE0_WERT_0XDC9D_UNIT   '°C'
     #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE0_WERT_0XDC9D_TYPE   char
         // Filling temperature value RE0 / Befuelltemperaturwert RE0
 
@@ -2981,7 +2975,7 @@
         // Tire pressure RE0 / Reifenddruck RE0
 
     #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE0_WERT_0XDC9D         (RXBUF_SCHAR(40))
-    #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE0_WERT_0XDC9D_UNIT    'Â°'
+    #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE0_WERT_0XDC9D_UNIT    '°'
     #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE0_WERT_0XDC9D_TYPE    char
         // Tire temperature RE0 / Reifentemperatur RE0
 
@@ -2996,7 +2990,7 @@
         // Filling pressure value RE1 / Befuelldruckwert RE1
 
     #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE1_WERT_0XDC9D        (RXBUF_SCHAR(44))
-    #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE1_WERT_0XDC9D_UNIT   'Â°C'
+    #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE1_WERT_0XDC9D_UNIT   '°C'
     #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE1_WERT_0XDC9D_TYPE   char
         // Filling temperature value RE1 / Befuelltemperaturwert RE1
 
@@ -3006,7 +3000,7 @@
         // Tire pressure RE1 / Reifenddruck RE1
 
     #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE1_WERT_0XDC9D         (RXBUF_SCHAR(47))
-    #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE1_WERT_0XDC9D_UNIT    'Â°'
+    #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE1_WERT_0XDC9D_UNIT    '°'
     #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE1_WERT_0XDC9D_TYPE    char
         // Tire temperature RE1 / Reifentemperatur RE1
 
@@ -3021,7 +3015,7 @@
         // Filling pressure value RE2 / Befuelldruckwert RE2
 
     #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE2_WERT_0XDC9D        (RXBUF_SCHAR(51))
-    #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE2_WERT_0XDC9D_UNIT   'Â°C'
+    #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE2_WERT_0XDC9D_UNIT   '°C'
     #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE2_WERT_0XDC9D_TYPE   char
         // Filling temperature value RE2 / Befuelltemperaturwert RE2
 
@@ -3031,7 +3025,7 @@
         // Tire pressure RE2 / Reifenddruck RE2
 
     #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE2_WERT_0XDC9D         (RXBUF_SCHAR(54))
-    #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE2_WERT_0XDC9D_UNIT    'Â°'
+    #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE2_WERT_0XDC9D_UNIT    '°'
     #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE2_WERT_0XDC9D_TYPE    char
         // Tire temperature RE2 / Reifentemperatur RE2
 
@@ -3046,7 +3040,7 @@
         // Filling pressure value RE3 / Befuelldruckwert RE3
 
     #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE3_WERT_0XDC9D        (RXBUF_SCHAR(58))
-    #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE3_WERT_0XDC9D_UNIT   'Â°C'
+    #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE3_WERT_0XDC9D_UNIT   '°C'
     #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE3_WERT_0XDC9D_TYPE   char
         // Filling temperature value RE3 / Befuelltemperaturwert RE3
 
@@ -3056,7 +3050,7 @@
         // Tire pressure RE3 / Reifenddruck RE3
 
     #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE3_WERT_0XDC9D         (RXBUF_SCHAR(61))
-    #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE3_WERT_0XDC9D_UNIT    'Â°'
+    #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE3_WERT_0XDC9D_UNIT    '°'
     #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE3_WERT_0XDC9D_TYPE    char
         // Tire temperature RE3 / Reifentemperatur RE3
 
@@ -3068,10 +3062,10 @@
         // RDC_HS_WARNEREIGNIS_3 / RDC_HS_WARNEREIGNIS_3
 
     // Can't yet generate code for STAT_DATUM_TEXT_0XDC9E of type string[9], at offset 0. But we account for the 9 bytes
-        // Date of the warning event. 99.99.99 => invalid / Datum zum Warnereignis. 99.99.99 => ungÃ¼ltig
+        // Date of the warning event. 99.99.99 => invalid / Datum zum Warnereignis. 99.99.99 => ungültig
 
     // Can't yet generate code for STAT_UHRZEIT_TEXT_0XDC9E of type string[9], at offset 9. But we account for the 9 bytes
-        // Time of the warning event. 99.99.99 => invalid / Uhrzeit zum Warnereignis. 99.99.99 => ungÃ¼ltig
+        // Time of the warning event. 99.99.99 => invalid / Uhrzeit zum Warnereignis. 99.99.99 => ungültig
 
     #define I3_RES_DSC_STAT_KILOMETERSTAND_WERT_0XDC9E               (RXBUF_SINT32(18))
     #define I3_RES_DSC_STAT_KILOMETERSTAND_WERT_0XDC9E_UNIT          'km'
@@ -3084,19 +3078,19 @@
         // System flags / Systemflags
 
     #define I3_RES_DSC_STAT_BEFUELL_AUSSENTEMPERATUR_WERT_0XDC9E     (RXBUF_SCHAR(26))
-    #define I3_RES_DSC_STAT_BEFUELL_AUSSENTEMPERATUR_WERT_0XDC9E_UNIT 'Â°'
+    #define I3_RES_DSC_STAT_BEFUELL_AUSSENTEMPERATUR_WERT_0XDC9E_UNIT '°'
     #define I3_RES_DSC_STAT_BEFUELL_AUSSENTEMPERATUR_WERT_0XDC9E_TYPE char
-        // Outside temperature when filling / Aussentemperatur beim BefÃ¼llen
+        // Outside temperature when filling / Aussentemperatur beim Befüllen
 
     #define I3_RES_DSC_STAT_BEFUELL_AUSSENDRUCK_WERT_0XDC9E          (RXBUF_SINT(27)/1000.0f)
     #define I3_RES_DSC_STAT_BEFUELL_AUSSENDRUCK_WERT_0XDC9E_UNIT     'bar'
     #define I3_RES_DSC_STAT_BEFUELL_AUSSENDRUCK_WERT_0XDC9E_TYPE     float
-        // External pressure when filling / Aussendruck beim BefÃ¼llen
+        // External pressure when filling / Aussendruck beim Befüllen
 
     #define I3_RES_DSC_STAT_AUSSENTEMPERATUR_WERT_0XDC9E             (RXBUF_SCHAR(29))
-    #define I3_RES_DSC_STAT_AUSSENTEMPERATUR_WERT_0XDC9E_UNIT        'Â°'
+    #define I3_RES_DSC_STAT_AUSSENTEMPERATUR_WERT_0XDC9E_UNIT        '°'
     #define I3_RES_DSC_STAT_AUSSENTEMPERATUR_WERT_0XDC9E_TYPE        char
-        // Outside temperature in the event of a warning / Aussentemperatur bei Warnereignis
+        // Outside temperature at warning event / Aussentemperatur bei Warnereignis
 
     #define I3_RES_DSC_STAT_AUSSENDRUCK_WERT_0XDC9E                  (RXBUF_SINT(30)/1000.0f)
     #define I3_RES_DSC_STAT_AUSSENDRUCK_WERT_0XDC9E_UNIT             'bar'
@@ -3106,13 +3100,12 @@
     #define I3_RES_DSC_STAT_RADELEKTRONIK_STATUS_PANNENRAD_WERT_0XDC9E (RXBUF_UCHAR(32))
     #define I3_RES_DSC_STAT_RADELEKTRONIK_STATUS_PANNENRAD_WERT_0XDC9E_UNIT 'HEX'
     #define I3_RES_DSC_STAT_RADELEKTRONIK_STATUS_PANNENRAD_WERT_0XDC9E_TYPE unsigned char
-        // Wheel electronics status of the wheel causing the breakdown / Radelektronik-Status des PannenauslÃ¶senden
-        // Rades
+        // Wheel electronics status of the wheel causing the breakdown / Radelektronik-Status des Pannenauslösenden Rades
 
     #define I3_RES_DSC_STAT_RADPOSITION_PANNENRAD_0XDC9E             (RXBUF_UCHAR(33))
     #define I3_RES_DSC_STAT_RADPOSITION_PANNENRAD_0XDC9E_UNIT        '0-n'
     #define I3_RES_DSC_STAT_RADPOSITION_PANNENRAD_0XDC9E_TYPE        unsigned char
-        // Wheel position of the wheel causing the breakdown / Radposition des PannenauslÃ¶senden Rades
+        // Wheel position of the wheel causing the breakdown / Radposition des Pannenauslösenden Rades
 
     #define I3_RES_DSC_STAT_RADPOSITON_RE0_0XDC9E                    (RXBUF_UCHAR(34))
     #define I3_RES_DSC_STAT_RADPOSITON_RE0_0XDC9E_UNIT               '0-n'
@@ -3125,7 +3118,7 @@
         // Filling pressure value RE0 / Befuelldruckwert RE0
 
     #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE0_WERT_0XDC9E        (RXBUF_SCHAR(37))
-    #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE0_WERT_0XDC9E_UNIT   'Â°C'
+    #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE0_WERT_0XDC9E_UNIT   '°C'
     #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE0_WERT_0XDC9E_TYPE   char
         // Filling temperature value RE0 / Befuelltemperaturwert RE0
 
@@ -3135,7 +3128,7 @@
         // Tire pressure RE0 / Reifenddruck RE0
 
     #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE0_WERT_0XDC9E         (RXBUF_SCHAR(40))
-    #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE0_WERT_0XDC9E_UNIT    'Â°'
+    #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE0_WERT_0XDC9E_UNIT    '°'
     #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE0_WERT_0XDC9E_TYPE    char
         // Tire temperature RE0 / Reifentemperatur RE0
 
@@ -3150,7 +3143,7 @@
         // Filling pressure value RE1 / Befuelldruckwert RE1
 
     #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE1_WERT_0XDC9E        (RXBUF_SCHAR(44))
-    #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE1_WERT_0XDC9E_UNIT   'Â°C'
+    #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE1_WERT_0XDC9E_UNIT   '°C'
     #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE1_WERT_0XDC9E_TYPE   char
         // Filling temperature value RE1 / Befuelltemperaturwert RE1
 
@@ -3160,7 +3153,7 @@
         // Tire pressure RE1 / Reifenddruck RE1
 
     #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE1_WERT_0XDC9E         (RXBUF_SCHAR(47))
-    #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE1_WERT_0XDC9E_UNIT    'Â°'
+    #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE1_WERT_0XDC9E_UNIT    '°'
     #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE1_WERT_0XDC9E_TYPE    char
         // Tire temperature RE1 / Reifentemperatur RE1
 
@@ -3175,7 +3168,7 @@
         // Filling pressure value RE2 / Befuelldruckwert RE2
 
     #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE2_WERT_0XDC9E        (RXBUF_SCHAR(51))
-    #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE2_WERT_0XDC9E_UNIT   'Â°C'
+    #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE2_WERT_0XDC9E_UNIT   '°C'
     #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE2_WERT_0XDC9E_TYPE   char
         // Filling temperature value RE2 / Befuelltemperaturwert RE2
 
@@ -3185,7 +3178,7 @@
         // Tire pressure RE2 / Reifenddruck RE2
 
     #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE2_WERT_0XDC9E         (RXBUF_SCHAR(54))
-    #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE2_WERT_0XDC9E_UNIT    'Â°'
+    #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE2_WERT_0XDC9E_UNIT    '°'
     #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE2_WERT_0XDC9E_TYPE    char
         // Tire temperature RE2 / Reifentemperatur RE2
 
@@ -3200,7 +3193,7 @@
         // Filling pressure value RE3 / Befuelldruckwert RE3
 
     #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE3_WERT_0XDC9E        (RXBUF_SCHAR(58))
-    #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE3_WERT_0XDC9E_UNIT   'Â°C'
+    #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE3_WERT_0XDC9E_UNIT   '°C'
     #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE3_WERT_0XDC9E_TYPE   char
         // Filling temperature value RE3 / Befuelltemperaturwert RE3
 
@@ -3210,7 +3203,7 @@
         // Tire pressure RE3 / Reifenddruck RE3
 
     #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE3_WERT_0XDC9E         (RXBUF_SCHAR(61))
-    #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE3_WERT_0XDC9E_UNIT    'Â°'
+    #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE3_WERT_0XDC9E_UNIT    '°'
     #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE3_WERT_0XDC9E_TYPE    char
         // Tire temperature RE3 / Reifentemperatur RE3
 
@@ -3222,10 +3215,10 @@
         // RDC_HS_WARNEREIGNIS_RUECKNAHME / RDC_HS_WARNEREIGNIS_RUECKNAHME
 
     // Can't yet generate code for STAT_DATUM_TEXT_0XDC9F of type string[9], at offset 0. But we account for the 9 bytes
-        // Date of the warning event. 99.99.99 => invalid / Datum zum Warnereignis. 99.99.99 => ungÃ¼ltig
+        // Date of the warning event. 99.99.99 => invalid / Datum zum Warnereignis. 99.99.99 => ungültig
 
     // Can't yet generate code for STAT_UHRZEIT_TEXT_0XDC9F of type string[9], at offset 9. But we account for the 9 bytes
-        // Time of the warning event. 99.99.99 => invalid / Uhrzeit zum Warnereignis. 99.99.99 => ungÃ¼ltig
+        // Time of the warning event. 99.99.99 => invalid / Uhrzeit zum Warnereignis. 99.99.99 => ungültig
 
     #define I3_RES_DSC_STAT_KILOMETERSTAND_WERT_0XDC9F               (RXBUF_SINT32(18))
     #define I3_RES_DSC_STAT_KILOMETERSTAND_WERT_0XDC9F_UNIT          'km'
@@ -3238,19 +3231,19 @@
         // System flags / Systemflags
 
     #define I3_RES_DSC_STAT_BEFUELL_AUSSENTEMPERATUR_WERT_0XDC9F     (RXBUF_SCHAR(26))
-    #define I3_RES_DSC_STAT_BEFUELL_AUSSENTEMPERATUR_WERT_0XDC9F_UNIT 'Â°'
+    #define I3_RES_DSC_STAT_BEFUELL_AUSSENTEMPERATUR_WERT_0XDC9F_UNIT '°'
     #define I3_RES_DSC_STAT_BEFUELL_AUSSENTEMPERATUR_WERT_0XDC9F_TYPE char
-        // Outside temperature when filling / Aussentemperatur beim BefÃ¼llen
+        // Outside temperature when filling / Aussentemperatur beim Befüllen
 
     #define I3_RES_DSC_STAT_BEFUELL_AUSSENDRUCK_WERT_0XDC9F          (RXBUF_SINT(27)/1000.0f)
     #define I3_RES_DSC_STAT_BEFUELL_AUSSENDRUCK_WERT_0XDC9F_UNIT     'bar'
     #define I3_RES_DSC_STAT_BEFUELL_AUSSENDRUCK_WERT_0XDC9F_TYPE     float
-        // External pressure when filling / Aussendruck beim BefÃ¼llen
+        // External pressure when filling / Aussendruck beim Befüllen
 
     #define I3_RES_DSC_STAT_AUSSENTEMPERATUR_WERT_0XDC9F             (RXBUF_SCHAR(29))
-    #define I3_RES_DSC_STAT_AUSSENTEMPERATUR_WERT_0XDC9F_UNIT        'Â°'
+    #define I3_RES_DSC_STAT_AUSSENTEMPERATUR_WERT_0XDC9F_UNIT        '°'
     #define I3_RES_DSC_STAT_AUSSENTEMPERATUR_WERT_0XDC9F_TYPE        char
-        // Outside temperature in the event of a warning / Aussentemperatur bei Warnereignis
+        // Outside temperature at warning event / Aussentemperatur bei Warnereignis
 
     #define I3_RES_DSC_STAT_AUSSENDRUCK_WERT_0XDC9F                  (RXBUF_SINT(30)/1000.0f)
     #define I3_RES_DSC_STAT_AUSSENDRUCK_WERT_0XDC9F_UNIT             'bar'
@@ -3260,13 +3253,12 @@
     #define I3_RES_DSC_STAT_RADELEKTRONIK_STATUS_PANNENRAD_WERT_0XDC9F (RXBUF_UCHAR(32))
     #define I3_RES_DSC_STAT_RADELEKTRONIK_STATUS_PANNENRAD_WERT_0XDC9F_UNIT 'HEX'
     #define I3_RES_DSC_STAT_RADELEKTRONIK_STATUS_PANNENRAD_WERT_0XDC9F_TYPE unsigned char
-        // Wheel electronics status of the wheel causing the breakdown / Radelektronik-Status des PannenauslÃ¶senden
-        // Rades
+        // Wheel electronics status of the wheel causing the breakdown / Radelektronik-Status des Pannenauslösenden Rades
 
     #define I3_RES_DSC_STAT_RADPOSITION_PANNENRAD_0XDC9F             (RXBUF_UCHAR(33))
     #define I3_RES_DSC_STAT_RADPOSITION_PANNENRAD_0XDC9F_UNIT        '0-n'
     #define I3_RES_DSC_STAT_RADPOSITION_PANNENRAD_0XDC9F_TYPE        unsigned char
-        // Wheel position of the wheel causing the breakdown / Radposition des PannenauslÃ¶senden Rades
+        // Wheel position of the wheel causing the breakdown / Radposition des Pannenauslösenden Rades
 
     #define I3_RES_DSC_STAT_RADPOSITON_RE0_0XDC9F                    (RXBUF_UCHAR(34))
     #define I3_RES_DSC_STAT_RADPOSITON_RE0_0XDC9F_UNIT               '0-n'
@@ -3279,7 +3271,7 @@
         // Filling pressure value RE0 / Befuelldruckwert RE0
 
     #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE0_WERT_0XDC9F        (RXBUF_SCHAR(37))
-    #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE0_WERT_0XDC9F_UNIT   'Â°C'
+    #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE0_WERT_0XDC9F_UNIT   '°C'
     #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE0_WERT_0XDC9F_TYPE   char
         // Filling temperature value RE0 / Befuelltemperaturwert RE0
 
@@ -3289,7 +3281,7 @@
         // Tire pressure RE0 / Reifenddruck RE0
 
     #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE0_WERT_0XDC9F         (RXBUF_SCHAR(40))
-    #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE0_WERT_0XDC9F_UNIT    'Â°'
+    #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE0_WERT_0XDC9F_UNIT    '°'
     #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE0_WERT_0XDC9F_TYPE    char
         // Tire temperature RE0 / Reifentemperatur RE0
 
@@ -3304,7 +3296,7 @@
         // Filling pressure value RE1 / Befuelldruckwert RE1
 
     #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE1_WERT_0XDC9F        (RXBUF_SCHAR(44))
-    #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE1_WERT_0XDC9F_UNIT   'Â°C'
+    #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE1_WERT_0XDC9F_UNIT   '°C'
     #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE1_WERT_0XDC9F_TYPE   char
         // Filling temperature value RE1 / Befuelltemperaturwert RE1
 
@@ -3314,7 +3306,7 @@
         // Tire pressure RE1 / Reifenddruck RE1
 
     #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE1_WERT_0XDC9F         (RXBUF_SCHAR(47))
-    #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE1_WERT_0XDC9F_UNIT    'Â°'
+    #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE1_WERT_0XDC9F_UNIT    '°'
     #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE1_WERT_0XDC9F_TYPE    char
         // Tire temperature RE1 / Reifentemperatur RE1
 
@@ -3329,7 +3321,7 @@
         // Filling pressure value RE2 / Befuelldruckwert RE2
 
     #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE2_WERT_0XDC9F        (RXBUF_SCHAR(51))
-    #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE2_WERT_0XDC9F_UNIT   'Â°C'
+    #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE2_WERT_0XDC9F_UNIT   '°C'
     #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE2_WERT_0XDC9F_TYPE   char
         // Filling temperature value RE2 / Befuelltemperaturwert RE2
 
@@ -3339,7 +3331,7 @@
         // Tire pressure RE2 / Reifenddruck RE2
 
     #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE2_WERT_0XDC9F         (RXBUF_SCHAR(54))
-    #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE2_WERT_0XDC9F_UNIT    'Â°'
+    #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE2_WERT_0XDC9F_UNIT    '°'
     #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE2_WERT_0XDC9F_TYPE    char
         // Tire temperature RE2 / Reifentemperatur RE2
 
@@ -3354,7 +3346,7 @@
         // Filling pressure value RE3 / Befuelldruckwert RE3
 
     #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE3_WERT_0XDC9F        (RXBUF_SCHAR(58))
-    #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE3_WERT_0XDC9F_UNIT   'Â°C'
+    #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE3_WERT_0XDC9F_UNIT   '°C'
     #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE3_WERT_0XDC9F_TYPE   char
         // Filling temperature value RE3 / Befuelltemperaturwert RE3
 
@@ -3364,15 +3356,15 @@
         // Tire pressure RE3 / Reifenddruck RE3
 
     #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE3_WERT_0XDC9F         (RXBUF_SCHAR(61))
-    #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE3_WERT_0XDC9F_UNIT    'Â°'
+    #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE3_WERT_0XDC9F_UNIT    '°'
     #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE3_WERT_0XDC9F_TYPE    char
         // Tire temperature RE3 / Reifentemperatur RE3
 
     #define I3_RES_DSC_STAT_ZAEHLER_WARN_RUECKNAHME                  (RXBUF_UCHAR(62))
     #define I3_RES_DSC_STAT_ZAEHLER_WARN_RUECKNAHME_UNIT             '0-n'
     #define I3_RES_DSC_STAT_ZAEHLER_WARN_RUECKNAHME_TYPE             unsigned char
-        // Counter for canceling warnings by refilling air or changing wheels. / ZÃ¤hler fÃ¼r WarnungsrÃ¼cknahmen durch
-        // LuftnachfÃ¼llen oder Radtausch.
+        // Counter for canceling warnings by refilling air or changing wheels. / Zähler für Warnungsrücknahmen durch
+        // Luftnachfüllen oder Radtausch.
 
 // Skipping STEUERN_RADELEKTRONIK_VORGEBEN on 0xDCC0 which takes arguments
 
@@ -3435,7 +3427,7 @@
 
     #define I3_RES_DSC_STAT_RESTLEBENSDAUER_RE2_WERT                 (RXBUF_SINT(24))
     #define I3_RES_DSC_STAT_RESTLEBENSDAUER_RE2_WERT_TYPE            short
-        // Remaining service life of wheel electronics RE2 in months (-999 months => invalid) / Restlebensdauer
+        // Remaining service life of RE2 wheel electronics in months (-999 months => invalid) / Restlebensdauer
         // Radelektronik RE2 in Monaten (-999 Monate => ungueltig)
 
     #define I3_RES_DSC_STAT_EMPFANGSZAEHLER_RE2_WERT                 (RXBUF_UCHAR(26))
@@ -3543,7 +3535,7 @@
 
     #define I3_RES_DSC_STAT_EMPFANGSZAEHLER_RE7_WERT                 (RXBUF_UCHAR(71))
     #define I3_RES_DSC_STAT_EMPFANGSZAEHLER_RE7_WERT_TYPE            unsigned char
-        // Receiving counter wheel electronics RE7 (255 => invalid) / Empfangszaehler Radelektronik RE7 (255 =>
+        // Re7 wheel electronics reception counter (255 => invalid) / Empfangszaehler Radelektronik RE7 (255 =>
         // ungueltig)
 
 // Skipping STEUERN_SOLLDRUCK_VORGEBEN on 0xDCEE which takes arguments
@@ -3552,10 +3544,10 @@
         // RDC_WARNEREIGNIS_WEICH_1 / RDC_WARNEREIGNIS_WEICH_1
 
     // Can't yet generate code for STAT_DATUM_TEXT_0XDCF1 of type string[9], at offset 0. But we account for the 9 bytes
-        // Date of the warning event. 99.99.99 => invalid / Datum zum Warnereignis. 99.99.99 => ungÃ¼ltig
+        // Date of the warning event. 99.99.99 => invalid / Datum zum Warnereignis. 99.99.99 => ungültig
 
     // Can't yet generate code for STAT_UHRZEIT_TEXT_0XDCF1 of type string[9], at offset 9. But we account for the 9 bytes
-        // Time of the warning event. 99.99.99 => invalid / Uhrzeit zum Warnereignis. 99.99.99 => ungÃ¼ltig
+        // Time of the warning event. 99.99.99 => invalid / Uhrzeit zum Warnereignis. 99.99.99 => ungültig
 
     #define I3_RES_DSC_STAT_KILOMETERSTAND_WERT_0XDCF1               (RXBUF_SINT32(18))
     #define I3_RES_DSC_STAT_KILOMETERSTAND_WERT_0XDCF1_UNIT          'km'
@@ -3568,19 +3560,19 @@
         // System flags / Systemflags
 
     #define I3_RES_DSC_STAT_BEFUELL_AUSSENTEMPERATUR_WERT_0XDCF1     (RXBUF_SCHAR(26))
-    #define I3_RES_DSC_STAT_BEFUELL_AUSSENTEMPERATUR_WERT_0XDCF1_UNIT 'Â°'
+    #define I3_RES_DSC_STAT_BEFUELL_AUSSENTEMPERATUR_WERT_0XDCF1_UNIT '°'
     #define I3_RES_DSC_STAT_BEFUELL_AUSSENTEMPERATUR_WERT_0XDCF1_TYPE char
-        // Outside temperature when filling / Aussentemperatur beim BefÃ¼llen
+        // Outside temperature when filling / Aussentemperatur beim Befüllen
 
     #define I3_RES_DSC_STAT_BEFUELL_AUSSENDRUCK_WERT_0XDCF1          (RXBUF_SINT(27)/1000.0f)
     #define I3_RES_DSC_STAT_BEFUELL_AUSSENDRUCK_WERT_0XDCF1_UNIT     'bar'
     #define I3_RES_DSC_STAT_BEFUELL_AUSSENDRUCK_WERT_0XDCF1_TYPE     float
-        // External pressure when filling / Aussendruck beim BefÃ¼llen
+        // External pressure when filling / Aussendruck beim Befüllen
 
     #define I3_RES_DSC_STAT_AUSSENTEMPERATUR_WERT_0XDCF1             (RXBUF_SCHAR(29))
-    #define I3_RES_DSC_STAT_AUSSENTEMPERATUR_WERT_0XDCF1_UNIT        'Â°'
+    #define I3_RES_DSC_STAT_AUSSENTEMPERATUR_WERT_0XDCF1_UNIT        '°'
     #define I3_RES_DSC_STAT_AUSSENTEMPERATUR_WERT_0XDCF1_TYPE        char
-        // Outside temperature in the event of a warning / Aussentemperatur bei Warnereignis
+        // Outside temperature at warning event / Aussentemperatur bei Warnereignis
 
     #define I3_RES_DSC_STAT_AUSSENDRUCK_WERT_0XDCF1                  (RXBUF_SINT(30)/1000.0f)
     #define I3_RES_DSC_STAT_AUSSENDRUCK_WERT_0XDCF1_UNIT             'bar'
@@ -3590,13 +3582,12 @@
     #define I3_RES_DSC_STAT_RADELEKTRONIK_STATUS_PANNENRAD_WERT_0XDCF1 (RXBUF_UCHAR(32))
     #define I3_RES_DSC_STAT_RADELEKTRONIK_STATUS_PANNENRAD_WERT_0XDCF1_UNIT 'HEX'
     #define I3_RES_DSC_STAT_RADELEKTRONIK_STATUS_PANNENRAD_WERT_0XDCF1_TYPE unsigned char
-        // Wheel electronics status of the wheel causing the breakdown / Radelektronik-Status des PannenauslÃ¶senden
-        // Rades
+        // Wheel electronics status of the wheel causing the breakdown / Radelektronik-Status des Pannenauslösenden Rades
 
     #define I3_RES_DSC_STAT_RADPOSITION_PANNENRAD_0XDCF1             (RXBUF_UCHAR(33))
     #define I3_RES_DSC_STAT_RADPOSITION_PANNENRAD_0XDCF1_UNIT        '0-n'
     #define I3_RES_DSC_STAT_RADPOSITION_PANNENRAD_0XDCF1_TYPE        unsigned char
-        // Wheel position of the wheel causing the breakdown / Radposition des PannenauslÃ¶senden Rades
+        // Wheel position of the wheel causing the breakdown / Radposition des Pannenauslösenden Rades
 
     #define I3_RES_DSC_STAT_RADPOSITON_RE0_0XDCF1                    (RXBUF_UCHAR(34))
     #define I3_RES_DSC_STAT_RADPOSITON_RE0_0XDCF1_UNIT               '0-n'
@@ -3609,7 +3600,7 @@
         // Filling pressure value RE0 / Befuelldruckwert RE0
 
     #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE0_WERT_0XDCF1        (RXBUF_SCHAR(37))
-    #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE0_WERT_0XDCF1_UNIT   'Â°C'
+    #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE0_WERT_0XDCF1_UNIT   '°C'
     #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE0_WERT_0XDCF1_TYPE   char
         // Filling temperature value RE0 / Befuelltemperaturwert RE0
 
@@ -3619,7 +3610,7 @@
         // Tire pressure RE0 / Reifenddruck RE0
 
     #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE0_WERT_0XDCF1         (RXBUF_SCHAR(40))
-    #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE0_WERT_0XDCF1_UNIT    'Â°'
+    #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE0_WERT_0XDCF1_UNIT    '°'
     #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE0_WERT_0XDCF1_TYPE    char
         // Tire temperature RE0 / Reifentemperatur RE0
 
@@ -3634,7 +3625,7 @@
         // Filling pressure value RE1 / Befuelldruckwert RE1
 
     #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE1_WERT_0XDCF1        (RXBUF_SCHAR(44))
-    #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE1_WERT_0XDCF1_UNIT   'Â°C'
+    #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE1_WERT_0XDCF1_UNIT   '°C'
     #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE1_WERT_0XDCF1_TYPE   char
         // Filling temperature value RE1 / Befuelltemperaturwert RE1
 
@@ -3644,7 +3635,7 @@
         // Tire pressure RE1 / Reifenddruck RE1
 
     #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE1_WERT_0XDCF1         (RXBUF_SCHAR(47))
-    #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE1_WERT_0XDCF1_UNIT    'Â°'
+    #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE1_WERT_0XDCF1_UNIT    '°'
     #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE1_WERT_0XDCF1_TYPE    char
         // Tire temperature RE1 / Reifentemperatur RE1
 
@@ -3659,7 +3650,7 @@
         // Filling pressure value RE2 / Befuelldruckwert RE2
 
     #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE2_WERT_0XDCF1        (RXBUF_SCHAR(51))
-    #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE2_WERT_0XDCF1_UNIT   'Â°C'
+    #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE2_WERT_0XDCF1_UNIT   '°C'
     #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE2_WERT_0XDCF1_TYPE   char
         // Filling temperature value RE2 / Befuelltemperaturwert RE2
 
@@ -3669,7 +3660,7 @@
         // Tire pressure RE2 / Reifenddruck RE2
 
     #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE2_WERT_0XDCF1         (RXBUF_SCHAR(54))
-    #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE2_WERT_0XDCF1_UNIT    'Â°'
+    #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE2_WERT_0XDCF1_UNIT    '°'
     #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE2_WERT_0XDCF1_TYPE    char
         // Tire temperature RE2 / Reifentemperatur RE2
 
@@ -3684,7 +3675,7 @@
         // Filling pressure value RE3 / Befuelldruckwert RE3
 
     #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE3_WERT_0XDCF1        (RXBUF_SCHAR(58))
-    #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE3_WERT_0XDCF1_UNIT   'Â°C'
+    #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE3_WERT_0XDCF1_UNIT   '°C'
     #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE3_WERT_0XDCF1_TYPE   char
         // Filling temperature value RE3 / Befuelltemperaturwert RE3
 
@@ -3694,7 +3685,7 @@
         // Tire pressure RE3 / Reifenddruck RE3
 
     #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE3_WERT_0XDCF1         (RXBUF_SCHAR(61))
-    #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE3_WERT_0XDCF1_UNIT    'Â°'
+    #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE3_WERT_0XDCF1_UNIT    '°'
     #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE3_WERT_0XDCF1_TYPE    char
         // Tire temperature RE3 / Reifentemperatur RE3
 
@@ -3706,10 +3697,10 @@
         // RDC_HS_WARNEREIGNIS_WEICH_2 / RDC_HS_WARNEREIGNIS_WEICH_2
 
     // Can't yet generate code for STAT_DATUM_TEXT_0XDCF2 of type string[9], at offset 0. But we account for the 9 bytes
-        // Date of the warning event. 99.99.99 => invalid / Datum zum Warnereignis. 99.99.99 => ungÃ¼ltig
+        // Date of the warning event. 99.99.99 => invalid / Datum zum Warnereignis. 99.99.99 => ungültig
 
     // Can't yet generate code for STAT_UHRZEIT_TEXT_0XDCF2 of type string[9], at offset 9. But we account for the 9 bytes
-        // Time of the warning event. 99.99.99 => invalid / Uhrzeit zum Warnereignis. 99.99.99 => ungÃ¼ltig
+        // Time of the warning event. 99.99.99 => invalid / Uhrzeit zum Warnereignis. 99.99.99 => ungültig
 
     #define I3_RES_DSC_STAT_KILOMETERSTAND_WERT_0XDCF2               (RXBUF_SINT32(18))
     #define I3_RES_DSC_STAT_KILOMETERSTAND_WERT_0XDCF2_UNIT          'km'
@@ -3722,19 +3713,19 @@
         // System flags / Systemflags
 
     #define I3_RES_DSC_STAT_BEFUELL_AUSSENTEMPERATUR_WERT_0XDCF2     (RXBUF_SCHAR(26))
-    #define I3_RES_DSC_STAT_BEFUELL_AUSSENTEMPERATUR_WERT_0XDCF2_UNIT 'Â°'
+    #define I3_RES_DSC_STAT_BEFUELL_AUSSENTEMPERATUR_WERT_0XDCF2_UNIT '°'
     #define I3_RES_DSC_STAT_BEFUELL_AUSSENTEMPERATUR_WERT_0XDCF2_TYPE char
-        // Outside temperature when filling / Aussentemperatur beim BefÃ¼llen
+        // Outside temperature when filling / Aussentemperatur beim Befüllen
 
     #define I3_RES_DSC_STAT_BEFUELL_AUSSENDRUCK_WERT_0XDCF2          (RXBUF_SINT(27)/1000.0f)
     #define I3_RES_DSC_STAT_BEFUELL_AUSSENDRUCK_WERT_0XDCF2_UNIT     'bar'
     #define I3_RES_DSC_STAT_BEFUELL_AUSSENDRUCK_WERT_0XDCF2_TYPE     float
-        // External pressure when filling / Aussendruck beim BefÃ¼llen
+        // External pressure when filling / Aussendruck beim Befüllen
 
     #define I3_RES_DSC_STAT_AUSSENTEMPERATUR_WERT_0XDCF2             (RXBUF_SCHAR(29))
-    #define I3_RES_DSC_STAT_AUSSENTEMPERATUR_WERT_0XDCF2_UNIT        'Â°'
+    #define I3_RES_DSC_STAT_AUSSENTEMPERATUR_WERT_0XDCF2_UNIT        '°'
     #define I3_RES_DSC_STAT_AUSSENTEMPERATUR_WERT_0XDCF2_TYPE        char
-        // Outside temperature in the event of a warning / Aussentemperatur bei Warnereignis
+        // Outside temperature at warning event / Aussentemperatur bei Warnereignis
 
     #define I3_RES_DSC_STAT_AUSSENDRUCK_WERT_0XDCF2                  (RXBUF_SINT(30)/1000.0f)
     #define I3_RES_DSC_STAT_AUSSENDRUCK_WERT_0XDCF2_UNIT             'bar'
@@ -3744,13 +3735,12 @@
     #define I3_RES_DSC_STAT_RADELEKTRONIK_STATUS_PANNENRAD_WERT_0XDCF2 (RXBUF_UCHAR(32))
     #define I3_RES_DSC_STAT_RADELEKTRONIK_STATUS_PANNENRAD_WERT_0XDCF2_UNIT 'HEX'
     #define I3_RES_DSC_STAT_RADELEKTRONIK_STATUS_PANNENRAD_WERT_0XDCF2_TYPE unsigned char
-        // Wheel electronics status of the wheel causing the breakdown / Radelektronik-Status des PannenauslÃ¶senden
-        // Rades
+        // Wheel electronics status of the wheel causing the breakdown / Radelektronik-Status des Pannenauslösenden Rades
 
     #define I3_RES_DSC_STAT_RADPOSITION_PANNENRAD_0XDCF2             (RXBUF_UCHAR(33))
     #define I3_RES_DSC_STAT_RADPOSITION_PANNENRAD_0XDCF2_UNIT        '0-n'
     #define I3_RES_DSC_STAT_RADPOSITION_PANNENRAD_0XDCF2_TYPE        unsigned char
-        // Wheel position of the wheel causing the breakdown / Radposition des PannenauslÃ¶senden Rades
+        // Wheel position of the wheel causing the breakdown / Radposition des Pannenauslösenden Rades
 
     #define I3_RES_DSC_STAT_RADPOSITON_RE0_0XDCF2                    (RXBUF_UCHAR(34))
     #define I3_RES_DSC_STAT_RADPOSITON_RE0_0XDCF2_UNIT               '0-n'
@@ -3763,7 +3753,7 @@
         // Filling pressure value RE0 / Befuelldruckwert RE0
 
     #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE0_WERT_0XDCF2        (RXBUF_SCHAR(37))
-    #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE0_WERT_0XDCF2_UNIT   'Â°C'
+    #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE0_WERT_0XDCF2_UNIT   '°C'
     #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE0_WERT_0XDCF2_TYPE   char
         // Filling temperature value RE0 / Befuelltemperaturwert RE0
 
@@ -3773,7 +3763,7 @@
         // Tire pressure RE0 / Reifenddruck RE0
 
     #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE0_WERT_0XDCF2         (RXBUF_SCHAR(40))
-    #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE0_WERT_0XDCF2_UNIT    'Â°'
+    #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE0_WERT_0XDCF2_UNIT    '°'
     #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE0_WERT_0XDCF2_TYPE    char
         // Tire temperature RE0 / Reifentemperatur RE0
 
@@ -3788,7 +3778,7 @@
         // Filling pressure value RE1 / Befuelldruckwert RE1
 
     #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE1_WERT_0XDCF2        (RXBUF_SCHAR(44))
-    #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE1_WERT_0XDCF2_UNIT   'Â°C'
+    #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE1_WERT_0XDCF2_UNIT   '°C'
     #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE1_WERT_0XDCF2_TYPE   char
         // Filling temperature value RE1 / Befuelltemperaturwert RE1
 
@@ -3798,7 +3788,7 @@
         // Tire pressure RE1 / Reifenddruck RE1
 
     #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE1_WERT_0XDCF2         (RXBUF_SCHAR(47))
-    #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE1_WERT_0XDCF2_UNIT    'Â°'
+    #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE1_WERT_0XDCF2_UNIT    '°'
     #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE1_WERT_0XDCF2_TYPE    char
         // Tire temperature RE1 / Reifentemperatur RE1
 
@@ -3813,7 +3803,7 @@
         // Filling pressure value RE2 / Befuelldruckwert RE2
 
     #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE2_WERT_0XDCF2        (RXBUF_SCHAR(51))
-    #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE2_WERT_0XDCF2_UNIT   'Â°C'
+    #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE2_WERT_0XDCF2_UNIT   '°C'
     #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE2_WERT_0XDCF2_TYPE   char
         // Filling temperature value RE2 / Befuelltemperaturwert RE2
 
@@ -3823,7 +3813,7 @@
         // Tire pressure RE2 / Reifenddruck RE2
 
     #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE2_WERT_0XDCF2         (RXBUF_SCHAR(54))
-    #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE2_WERT_0XDCF2_UNIT    'Â°'
+    #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE2_WERT_0XDCF2_UNIT    '°'
     #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE2_WERT_0XDCF2_TYPE    char
         // Tire temperature RE2 / Reifentemperatur RE2
 
@@ -3838,7 +3828,7 @@
         // Filling pressure value RE3 / Befuelldruckwert RE3
 
     #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE3_WERT_0XDCF2        (RXBUF_SCHAR(58))
-    #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE3_WERT_0XDCF2_UNIT   'Â°C'
+    #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE3_WERT_0XDCF2_UNIT   '°C'
     #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE3_WERT_0XDCF2_TYPE   char
         // Filling temperature value RE3 / Befuelltemperaturwert RE3
 
@@ -3848,7 +3838,7 @@
         // Tire pressure RE3 / Reifenddruck RE3
 
     #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE3_WERT_0XDCF2         (RXBUF_SCHAR(61))
-    #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE3_WERT_0XDCF2_UNIT    'Â°'
+    #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE3_WERT_0XDCF2_UNIT    '°'
     #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE3_WERT_0XDCF2_TYPE    char
         // Tire temperature RE3 / Reifentemperatur RE3
 
@@ -3860,10 +3850,10 @@
         // RDC_HS_WARNEREIGNIS_WEICH_3 / RDC_HS_WARNEREIGNIS_WEICH_3
 
     // Can't yet generate code for STAT_DATUM_TEXT_0XDCF3 of type string[9], at offset 0. But we account for the 9 bytes
-        // Date of the warning event. 99.99.99 => invalid / Datum zum Warnereignis. 99.99.99 => ungÃ¼ltig
+        // Date of the warning event. 99.99.99 => invalid / Datum zum Warnereignis. 99.99.99 => ungültig
 
     // Can't yet generate code for STAT_UHRZEIT_TEXT_0XDCF3 of type string[9], at offset 9. But we account for the 9 bytes
-        // Time of the warning event. 99.99.99 => invalid / Uhrzeit zum Warnereignis. 99.99.99 => ungÃ¼ltig
+        // Time of the warning event. 99.99.99 => invalid / Uhrzeit zum Warnereignis. 99.99.99 => ungültig
 
     #define I3_RES_DSC_STAT_KILOMETERSTAND_WERT_0XDCF3               (RXBUF_SINT32(18))
     #define I3_RES_DSC_STAT_KILOMETERSTAND_WERT_0XDCF3_UNIT          'km'
@@ -3876,19 +3866,19 @@
         // System flags / Systemflags
 
     #define I3_RES_DSC_STAT_BEFUELL_AUSSENTEMPERATUR_WERT_0XDCF3     (RXBUF_SCHAR(26))
-    #define I3_RES_DSC_STAT_BEFUELL_AUSSENTEMPERATUR_WERT_0XDCF3_UNIT 'Â°'
+    #define I3_RES_DSC_STAT_BEFUELL_AUSSENTEMPERATUR_WERT_0XDCF3_UNIT '°'
     #define I3_RES_DSC_STAT_BEFUELL_AUSSENTEMPERATUR_WERT_0XDCF3_TYPE char
-        // Outside temperature when filling / Aussentemperatur beim BefÃ¼llen
+        // Outside temperature when filling / Aussentemperatur beim Befüllen
 
     #define I3_RES_DSC_STAT_BEFUELL_AUSSENDRUCK_WERT_0XDCF3          (RXBUF_SINT(27)/1000.0f)
     #define I3_RES_DSC_STAT_BEFUELL_AUSSENDRUCK_WERT_0XDCF3_UNIT     'bar'
     #define I3_RES_DSC_STAT_BEFUELL_AUSSENDRUCK_WERT_0XDCF3_TYPE     float
-        // External pressure when filling / Aussendruck beim BefÃ¼llen
+        // External pressure when filling / Aussendruck beim Befüllen
 
     #define I3_RES_DSC_STAT_AUSSENTEMPERATUR_WERT_0XDCF3             (RXBUF_SCHAR(29))
-    #define I3_RES_DSC_STAT_AUSSENTEMPERATUR_WERT_0XDCF3_UNIT        'Â°'
+    #define I3_RES_DSC_STAT_AUSSENTEMPERATUR_WERT_0XDCF3_UNIT        '°'
     #define I3_RES_DSC_STAT_AUSSENTEMPERATUR_WERT_0XDCF3_TYPE        char
-        // Outside temperature in the event of a warning / Aussentemperatur bei Warnereignis
+        // Outside temperature at warning event / Aussentemperatur bei Warnereignis
 
     #define I3_RES_DSC_STAT_AUSSENDRUCK_WERT_0XDCF3                  (RXBUF_SINT(30)/1000.0f)
     #define I3_RES_DSC_STAT_AUSSENDRUCK_WERT_0XDCF3_UNIT             'bar'
@@ -3898,13 +3888,12 @@
     #define I3_RES_DSC_STAT_RADELEKTRONIK_STATUS_PANNENRAD_WERT_0XDCF3 (RXBUF_UCHAR(32))
     #define I3_RES_DSC_STAT_RADELEKTRONIK_STATUS_PANNENRAD_WERT_0XDCF3_UNIT 'HEX'
     #define I3_RES_DSC_STAT_RADELEKTRONIK_STATUS_PANNENRAD_WERT_0XDCF3_TYPE unsigned char
-        // Wheel electronics status of the wheel causing the breakdown / Radelektronik-Status des PannenauslÃ¶senden
-        // Rades
+        // Wheel electronics status of the wheel causing the breakdown / Radelektronik-Status des Pannenauslösenden Rades
 
     #define I3_RES_DSC_STAT_RADPOSITION_PANNENRAD_0XDCF3             (RXBUF_UCHAR(33))
     #define I3_RES_DSC_STAT_RADPOSITION_PANNENRAD_0XDCF3_UNIT        '0-n'
     #define I3_RES_DSC_STAT_RADPOSITION_PANNENRAD_0XDCF3_TYPE        unsigned char
-        // Wheel position of the wheel causing the breakdown / Radposition des PannenauslÃ¶senden Rades
+        // Wheel position of the wheel causing the breakdown / Radposition des Pannenauslösenden Rades
 
     #define I3_RES_DSC_STAT_RADPOSITON_RE0_0XDCF3                    (RXBUF_UCHAR(34))
     #define I3_RES_DSC_STAT_RADPOSITON_RE0_0XDCF3_UNIT               '0-n'
@@ -3917,7 +3906,7 @@
         // Filling pressure value RE0 / Befuelldruckwert RE0
 
     #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE0_WERT_0XDCF3        (RXBUF_SCHAR(37))
-    #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE0_WERT_0XDCF3_UNIT   'Â°C'
+    #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE0_WERT_0XDCF3_UNIT   '°C'
     #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE0_WERT_0XDCF3_TYPE   char
         // Filling temperature value RE0 / Befuelltemperaturwert RE0
 
@@ -3927,7 +3916,7 @@
         // Tire pressure RE0 / Reifenddruck RE0
 
     #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE0_WERT_0XDCF3         (RXBUF_SCHAR(40))
-    #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE0_WERT_0XDCF3_UNIT    'Â°'
+    #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE0_WERT_0XDCF3_UNIT    '°'
     #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE0_WERT_0XDCF3_TYPE    char
         // Tire temperature RE0 / Reifentemperatur RE0
 
@@ -3942,7 +3931,7 @@
         // Filling pressure value RE1 / Befuelldruckwert RE1
 
     #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE1_WERT_0XDCF3        (RXBUF_SCHAR(44))
-    #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE1_WERT_0XDCF3_UNIT   'Â°C'
+    #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE1_WERT_0XDCF3_UNIT   '°C'
     #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE1_WERT_0XDCF3_TYPE   char
         // Filling temperature value RE1 / Befuelltemperaturwert RE1
 
@@ -3952,7 +3941,7 @@
         // Tire pressure RE1 / Reifenddruck RE1
 
     #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE1_WERT_0XDCF3         (RXBUF_SCHAR(47))
-    #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE1_WERT_0XDCF3_UNIT    'Â°'
+    #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE1_WERT_0XDCF3_UNIT    '°'
     #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE1_WERT_0XDCF3_TYPE    char
         // Tire temperature RE1 / Reifentemperatur RE1
 
@@ -3967,7 +3956,7 @@
         // Filling pressure value RE2 / Befuelldruckwert RE2
 
     #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE2_WERT_0XDCF3        (RXBUF_SCHAR(51))
-    #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE2_WERT_0XDCF3_UNIT   'Â°C'
+    #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE2_WERT_0XDCF3_UNIT   '°C'
     #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE2_WERT_0XDCF3_TYPE   char
         // Filling temperature value RE2 / Befuelltemperaturwert RE2
 
@@ -3977,7 +3966,7 @@
         // Tire pressure RE2 / Reifenddruck RE2
 
     #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE2_WERT_0XDCF3         (RXBUF_SCHAR(54))
-    #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE2_WERT_0XDCF3_UNIT    'Â°'
+    #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE2_WERT_0XDCF3_UNIT    '°'
     #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE2_WERT_0XDCF3_TYPE    char
         // Tire temperature RE2 / Reifentemperatur RE2
 
@@ -3992,7 +3981,7 @@
         // Filling pressure value RE3 / Befuelldruckwert RE3
 
     #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE3_WERT_0XDCF3        (RXBUF_SCHAR(58))
-    #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE3_WERT_0XDCF3_UNIT   'Â°C'
+    #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE3_WERT_0XDCF3_UNIT   '°C'
     #define I3_RES_DSC_STAT_BEFUELLTEMPERATUR_RE3_WERT_0XDCF3_TYPE   char
         // Filling temperature value RE3 / Befuelltemperaturwert RE3
 
@@ -4002,7 +3991,7 @@
         // Tire pressure RE3 / Reifenddruck RE3
 
     #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE3_WERT_0XDCF3         (RXBUF_SCHAR(61))
-    #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE3_WERT_0XDCF3_UNIT    'Â°'
+    #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE3_WERT_0XDCF3_UNIT    '°'
     #define I3_RES_DSC_STAT_REIFENTEMPERATUR_RE3_WERT_0XDCF3_TYPE    char
         // Tire temperature RE3 / Reifentemperatur RE3
 
@@ -4021,12 +4010,12 @@
 
 #define I3_PID_DSC_EXTERNE_ANFORDERUNG_EPB_ZAEHLER_LESEN             0xE354
         // Returns the number of EPB activations by external transmission requests / Gibt Anzahl der EPB-Aktivierungen
-        // durch externe Getriebe-Anforderungen zurÃ¼ck
+        // durch externe Getriebe-Anforderungen zurück
 
     #define I3_RES_DSC_STAT_ZAEHLERSTAND_EPB_AKTIVIERUNG_WERT        (RXBUF_UINT(0))
     #define I3_RES_DSC_STAT_ZAEHLERSTAND_EPB_AKTIVIERUNG_WERT_TYPE   unsigned short
         // Returns the number of EPB activations by external transmission requests / Gibt Anzahl der EPB-Aktivierungen
-        // durch externe Getriebe-Anforderungen zurÃ¼ck
+        // durch externe Getriebe-Anforderungen zurück
 
 #define I3_PID_DSC__SW_IDENTIFIKATION                                0x4000
         // 11 bytes software identification / 11 Bytes SW-Identifikation
@@ -4053,18 +4042,18 @@
 #define I3_PID_DSC_SPANNUNGSMASTER_VERFUEGBAR                        0x5008
         // Voltage master available (see description of voltage threshold client) and decision logic error cause (bit 0:
         // availability of voltage master; bit 4 = 1: DSC internal error as cause; bit 5 = 1: BBx error or RDCI error as
-        // cause; bits 1,2,3,6 , 7 not used) / Spannungsmaster verfÃ¼gbar (siehe Beschreibung Spannungsschwellenclient)
-        // und Entscheidungslogik Fehlerursache (Bit 0: VerfÃ¼gbarkeit der Spannungsmaster; Bit 4 = 1: DSC interner
-        // Fehler als Ursache; Bit 5 = 1: BBx Fehler oder RDCI Fehler als Ursache; Bits 1,2,3,6,7 nicht genutzt) 
+        // cause; bits 1,2,3,6 , 7 not used) / Spannungsmaster verfügbar (siehe Beschreibung Spannungsschwellenclient)
+        // und Entscheidungslogik Fehlerursache (Bit 0: Verfügbarkeit der Spannungsmaster; Bit 4 = 1: DSC interner Fehler
+        // als Ursache; Bit 5 = 1: BBx Fehler oder RDCI Fehler als Ursache; Bits 1,2,3,6,7 nicht genutzt) 
 
     #define I3_RES_DSC_STAT_SPANNUNGSMASTER_VERFUEGBAR_WERT          (RXBUF_UCHAR(0))
     #define I3_RES_DSC_STAT_SPANNUNGSMASTER_VERFUEGBAR_WERT_UNIT     'HEX'
     #define I3_RES_DSC_STAT_SPANNUNGSMASTER_VERFUEGBAR_WERT_TYPE     unsigned char
         // Voltage master available (see description of voltage threshold client) and decision logic error cause (bit 0:
         // availability of voltage master; bit 4 = 1: DSC internal error as cause; bit 5 = 1: BBx error or RDCI error as
-        // cause; bits 1,2,3,6 , 7 not used) / Spannungsmaster verfÃ¼gbar (siehe Beschreibung Spannungsschwellenclient)
-        // und Entscheidungslogik Fehlerursache (Bit 0: VerfÃ¼gbarkeit der Spannungsmaster; Bit 4 = 1: DSC interner
-        // Fehler als Ursache; Bit 5 = 1: BBx Fehler oder RDCI Fehler als Ursache; Bits 1,2,3,6,7 nicht genutzt) 
+        // cause; bits 1,2,3,6 , 7 not used) / Spannungsmaster verfügbar (siehe Beschreibung Spannungsschwellenclient)
+        // und Entscheidungslogik Fehlerursache (Bit 0: Verfügbarkeit der Spannungsmaster; Bit 4 = 1: DSC interner Fehler
+        // als Ursache; Bit 5 = 1: BBx Fehler oder RDCI Fehler als Ursache; Bits 1,2,3,6,7 nicht genutzt) 
 
 #define I3_PID_DSC_FUNKTIONSZUSTAND                                  0x500B
         // Functional status of the controller: ABS, ASC, FDR, GMV, ECBA, IBrake, start-up assistant, autohold, EMF
@@ -4081,12 +4070,12 @@
         // Fahrtrichtung
 
 #define I3_PID_DSC_INTERNER_FUNKTIONSZUSTAND                         0x500C
-        // ECU internal status / SteuergerÃ¤te interner Zustand
+        // ECU internal status / Steuergeräte interner Zustand
 
     #define I3_RES_DSC_STAT_INTERNER_FUNKTIONSZUSTAND_WERT           (RXBUF_UCHAR(0))
     #define I3_RES_DSC_STAT_INTERNER_FUNKTIONSZUSTAND_WERT_UNIT      'HEX'
     #define I3_RES_DSC_STAT_INTERNER_FUNKTIONSZUSTAND_WERT_TYPE      unsigned char
-        // ECU internal status / SteuergerÃ¤te interner Zustand
+        // ECU internal status / Steuergeräte interner Zustand
 
 #define I3_PID_DSC_FEHLERSPEICHERSPERRE_AKTIV                        0x500F
         // Image of the Flexray signal ST_ILK_ERRM_FZM (fault memory lock) / Abbild des Flexraysignals  ST_ILK_ERRM_FZM 

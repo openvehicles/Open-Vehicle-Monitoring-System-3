@@ -190,8 +190,8 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "DSC", "DSC_PUMPENFUNKTIONSTEST", "STAT_ROUTINE_STATUS_0XA222", STAT_ROUTINE_STATUS_0XA222, "\"0-n\"");
 
     float STAT_PUMPENLEISTUNG_LEERLAUF_WERT = (RXBUF_UINT(1)/100.0f);
-        // Pump performance during circulation (idling without resistance, no active brake pressure build-up) /
-        // Pumpenleistung w채hrend Kreisf철rderung (Leerlauf ohne Wiederstand, kein aktiver Bremsdruckaufbau)
+        // Pump output during circulation (idling without resistance, no active brake pressure build-up) / Pumpenleistung
+        // w채hrend Kreisf철rderung (Leerlauf ohne Wiederstand, kein aktiver Bremsdruckaufbau)
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "DSC", "DSC_PUMPENFUNKTIONSTEST", "STAT_PUMPENLEISTUNG_LEERLAUF_WERT", STAT_PUMPENLEISTUNG_LEERLAUF_WERT, "\"%\"");
 
     float STAT_PUMPENLEISTUNG_KREIS_1_WERT = (RXBUF_UINT(3)/100.0f);
@@ -270,7 +270,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "DSC", "GMK_DATEN", "STAT_ZUSTAND_SOLL_GMK_WERT", STAT_ZUSTAND_SOLL_GMK_WERT, "");
 
     float STAT_MMOTOR_OFFSET_EPS_WERT = (RXBUF_SCHAR(2)/100.0f);
-        // Offset engine torque, which the EPS additively superimposes on its own engine torque / Offset-Motormoment, das
+        // Offset motor torque, which the EPS additively superimposes on its own motor torque / Offset-Motormoment, das
         // die EPS dem eigenen Motormoment additiv 체berlagert
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "DSC", "GMK_DATEN", "STAT_MMOTOR_OFFSET_EPS_WERT", STAT_MMOTOR_OFFSET_EPS_WERT, "\"Nm\"");
 
@@ -284,7 +284,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "DSC", "GMK_DATEN", "STAT_FUNKTION_GMK_CODIERUNG_EIN", STAT_FUNKTION_GMK_CODIERUNG_EIN, "\"0/1\"");
 
     float STAT_MMOTOR_OFFSET_GMK_EPS_WERT = (RXBUF_SCHAR(5)/100.0f);
-        // Offset motor torque that the EPS has to provide due to the GMK function / Offset-Motormoment, welches die EPS
+        // Offset engine torque that the EPS has to provide due to the GMK function / Offset-Motormoment, welches die EPS
         // aufgrund der GMK Funktion zu stellen hat
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "DSC", "GMK_DATEN", "STAT_MMOTOR_OFFSET_GMK_EPS_WERT", STAT_MMOTOR_OFFSET_GMK_EPS_WERT, "\"Nm\"");
 
@@ -403,7 +403,7 @@
     unsigned char BF_VA_FLAG_BVA = (RXBUF_UCHAR(28));
         // Bitfield state of the BVA sensor / Bitfield Zustand BVA-Sensor
         // BF_VA_FLAG_BVA is a BITFIELD of size unsigned char.  We don't yet generate definitions for each bit, we treat as the host data type
-            // STAT_VA_FLAG_BVA: Mask: 0x01 - State of BVA sensor: 0 = BVA sensor not looped through, 1 = BVA sensor looped through
+            // STAT_VA_FLAG_BVA: Mask: 0x01 - BVA sensor status: 0 = BVA sensor not looped through, 1 = BVA sensor looped through
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lx%s\n", "DSC", "CBS_BREMSE_DETAILS", "BF_VA_FLAG_BVA", (unsigned long)BF_VA_FLAG_BVA, "\"Bit\"");
 
     unsigned char BF_VA_RESET_VERHINDERER_1 = (RXBUF_UCHAR(29));
@@ -473,7 +473,7 @@
     unsigned char BF_HA_FLAG_BVA = (RXBUF_UCHAR(59));
         // Bitfield state of the BVA sensor / Bitfield Zustand BVA-Sensor
         // BF_HA_FLAG_BVA is a BITFIELD of size unsigned char.  We don't yet generate definitions for each bit, we treat as the host data type
-            // STAT_HA_FLAG_BVA: Mask: 0x01 - State of BVA sensor: 0 = BVA sensor not looped through, 1 = BVA sensor looped through
+            // STAT_HA_FLAG_BVA: Mask: 0x01 - BVA sensor status: 0 = BVA sensor not looped through, 1 = BVA sensor looped through
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lx%s\n", "DSC", "CBS_BREMSE_DETAILS", "BF_HA_FLAG_BVA", (unsigned long)BF_HA_FLAG_BVA, "\"Bit\"");
 
     unsigned char BF_HA_RESET_VERHINDERER_1 = (RXBUF_UCHAR(60));
@@ -553,7 +553,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "DSC", "EMF_LERNDATEN_STATISTIK", "STAT_ZAEHLER_AUTO_ADJUST_WERT", STAT_ZAEHLER_AUTO_ADJUST_WERT, "");
 
     unsigned short STAT_ZAEHLER_NACHSPANNEN_PRAEVENTIV_WERT = (RXBUF_UINT(8));
-        // Number of re-tensioning preventive / Anzahl Nachspannen vorbeugend
+        // Number of retightening as a preventive measure / Anzahl Nachspannen vorbeugend
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%u%s\n", "DSC", "EMF_LERNDATEN_STATISTIK", "STAT_ZAEHLER_NACHSPANNEN_PRAEVENTIV_WERT", STAT_ZAEHLER_NACHSPANNEN_PRAEVENTIV_WERT, "");
 
     unsigned short STAT_RESERVE5_WERT = (RXBUF_UINT(10));
@@ -1467,7 +1467,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "DSC", "STATUS_GBRPLUS", "STAT_FAKTORARZ_EPS_WERT", STAT_FAKTORARZ_EPS_WERT, "");
 
     float STAT_MMOTOR_OFFSET_EPS_WERT_0XDC3A = (RXBUF_SCHAR(3)/100.0f);
-        // Offset engine torque, which the EPS additively superimposes on its own engine torque / Offset-Motormoment, das
+        // Offset motor torque, which the EPS additively superimposes on its own motor torque / Offset-Motormoment, das
         // die EPS dem eigenen Motormoment additiv 체berlagert
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "DSC", "STATUS_GBRPLUS", "STAT_MMOTOR_OFFSET_EPS_WERT_0XDC3A", STAT_MMOTOR_OFFSET_EPS_WERT_0XDC3A, "");
 
@@ -2066,7 +2066,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "DSC", "RDC_HS_KALIBRIEREREIGNIS", "STAT_1_BEFUELLDRUCK_RE0_WERT", STAT_1_BEFUELLDRUCK_RE0_WERT, "\"bar\"");
 
     char STAT_1_BEFUELLTEMPERATUR_RE0_WERT = (RXBUF_SCHAR(34));
-        // Filling temperature value wheel electronics RE0 (-99 � C => invalid) / Befuelltemperaturwert Radelektronik RE0
+        // Filling temperature value wheel electronics RE0 (-99 째 C => invalid) / Befuelltemperaturwert Radelektronik RE0
         // (-99 째C => ungueltig)
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "DSC", "RDC_HS_KALIBRIEREREIGNIS", "STAT_1_BEFUELLTEMPERATUR_RE0_WERT", STAT_1_BEFUELLTEMPERATUR_RE0_WERT, "\"째C\"");
 
@@ -2080,7 +2080,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "DSC", "RDC_HS_KALIBRIEREREIGNIS", "STAT_1_BEFUELLDRUCK_RE1_WERT", STAT_1_BEFUELLDRUCK_RE1_WERT, "\"bar\"");
 
     char STAT_1_BEFUELLTEMPERATUR_RE1_WERT = (RXBUF_SCHAR(38));
-        // Filling temperature value wheel electronics RE1 (-99 � C => invalid) / Befuelltemperaturwert Radelektronik RE1
+        // Filling temperature value wheel electronics RE1 (-99 째 C => invalid) / Befuelltemperaturwert Radelektronik RE1
         // (-99 째C => ungueltig)
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "DSC", "RDC_HS_KALIBRIEREREIGNIS", "STAT_1_BEFUELLTEMPERATUR_RE1_WERT", STAT_1_BEFUELLTEMPERATUR_RE1_WERT, "\"째C\"");
 
@@ -2094,7 +2094,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "DSC", "RDC_HS_KALIBRIEREREIGNIS", "STAT_1_BEFUELLDRUCK_RE2_WERT", STAT_1_BEFUELLDRUCK_RE2_WERT, "\"bar\"");
 
     char STAT_1_BEFUELLTEMPERATUR_RE2_WERT = (RXBUF_SCHAR(42));
-        // Filling temperature value wheel electronics RE2 (-99 � C => invalid) / Befuelltemperaturwert Radelektronik RE2
+        // Filling temperature value wheel electronics RE2 (-99 째 C => invalid) / Befuelltemperaturwert Radelektronik RE2
         // (-99 째C => ungueltig)
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "DSC", "RDC_HS_KALIBRIEREREIGNIS", "STAT_1_BEFUELLTEMPERATUR_RE2_WERT", STAT_1_BEFUELLTEMPERATUR_RE2_WERT, "\"째C\"");
 
@@ -2108,7 +2108,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "DSC", "RDC_HS_KALIBRIEREREIGNIS", "STAT_1_BEFUELLDRUCK_RE3_WERT", STAT_1_BEFUELLDRUCK_RE3_WERT, "\"bar\"");
 
     char STAT_1_BEFUELLTEMPERATUR_RE3_WERT = (RXBUF_SCHAR(46));
-        // Filling temperature value wheel electronics RE3 (-99 � C => invalid) / Befuelltemperaturwert Radelektronik RE3
+        // Filling temperature value wheel electronics RE3 (-99 째 C => invalid) / Befuelltemperaturwert Radelektronik RE3
         // (-99 째C => ungueltig)
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "DSC", "RDC_HS_KALIBRIEREREIGNIS", "STAT_1_BEFUELLTEMPERATUR_RE3_WERT", STAT_1_BEFUELLTEMPERATUR_RE3_WERT, "\"째C\"");
 
@@ -2150,7 +2150,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "DSC", "RDC_HS_KALIBRIEREREIGNIS", "STAT_2_BEFUELLDRUCK_RE0_WERT", STAT_2_BEFUELLDRUCK_RE0_WERT, "\"bar\"");
 
     char STAT_2_BEFUELLTEMPERATUR_RE0_WERT = (RXBUF_SCHAR(82));
-        // Filling temperature value wheel electronics RE0 (-99 � C => invalid) / Befuelltemperaturwert Radelektronik RE0
+        // Filling temperature value wheel electronics RE0 (-99 째 C => invalid) / Befuelltemperaturwert Radelektronik RE0
         // (-99 째C => ungueltig)
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "DSC", "RDC_HS_KALIBRIEREREIGNIS", "STAT_2_BEFUELLTEMPERATUR_RE0_WERT", STAT_2_BEFUELLTEMPERATUR_RE0_WERT, "\"째C\"");
 
@@ -2164,7 +2164,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "DSC", "RDC_HS_KALIBRIEREREIGNIS", "STAT_2_BEFUELLDRUCK_RE1_WERT", STAT_2_BEFUELLDRUCK_RE1_WERT, "\"bar\"");
 
     char STAT_2_BEFUELLTEMPERATUR_RE1_WERT = (RXBUF_SCHAR(86));
-        // Filling temperature value wheel electronics RE1 (-99 � C => invalid) / Befuelltemperaturwert Radelektronik RE1
+        // Filling temperature value wheel electronics RE1 (-99 째 C => invalid) / Befuelltemperaturwert Radelektronik RE1
         // (-99 째C => ungueltig)
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "DSC", "RDC_HS_KALIBRIEREREIGNIS", "STAT_2_BEFUELLTEMPERATUR_RE1_WERT", STAT_2_BEFUELLTEMPERATUR_RE1_WERT, "\"째C\"");
 
@@ -2178,7 +2178,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "DSC", "RDC_HS_KALIBRIEREREIGNIS", "STAT_2_BEFUELLDRUCK_RE2_WERT", STAT_2_BEFUELLDRUCK_RE2_WERT, "\"bar\"");
 
     char STAT_2_BEFUELLTEMPERATUR_RE2_WERT = (RXBUF_SCHAR(90));
-        // Filling temperature value wheel electronics RE2 (-99 � C => invalid) / Befuelltemperaturwert Radelektronik RE2
+        // Filling temperature value wheel electronics RE2 (-99 째 C => invalid) / Befuelltemperaturwert Radelektronik RE2
         // (-99 째C => ungueltig)
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "DSC", "RDC_HS_KALIBRIEREREIGNIS", "STAT_2_BEFUELLTEMPERATUR_RE2_WERT", STAT_2_BEFUELLTEMPERATUR_RE2_WERT, "\"째C\"");
 
@@ -2192,7 +2192,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "DSC", "RDC_HS_KALIBRIEREREIGNIS", "STAT_2_BEFUELLDRUCK_RE3_WERT", STAT_2_BEFUELLDRUCK_RE3_WERT, "\"bar\"");
 
     char STAT_2_BEFUELLTEMPERATUR_RE3_WERT = (RXBUF_SCHAR(94));
-        // Filling temperature value wheel electronics RE3 (-99 � C => invalid) / Befuelltemperaturwert Radelektronik RE3
+        // Filling temperature value wheel electronics RE3 (-99 째 C => invalid) / Befuelltemperaturwert Radelektronik RE3
         // (-99 째C => ungueltig)
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "DSC", "RDC_HS_KALIBRIEREREIGNIS", "STAT_2_BEFUELLTEMPERATUR_RE3_WERT", STAT_2_BEFUELLTEMPERATUR_RE3_WERT, "\"째C\"");
 
@@ -2234,7 +2234,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "DSC", "RDC_HS_KALIBRIEREREIGNIS", "STAT_3_BEFUELLDRUCK_RE0_WERT", STAT_3_BEFUELLDRUCK_RE0_WERT, "\"bar\"");
 
     char STAT_3_BEFUELLTEMPERATUR_RE0_WERT = (RXBUF_SCHAR(130));
-        // Filling temperature value wheel electronics RE0 (-99 � C => invalid) / Befuelltemperaturwert Radelektronik RE0
+        // Filling temperature value wheel electronics RE0 (-99 째 C => invalid) / Befuelltemperaturwert Radelektronik RE0
         // (-99 째C => ungueltig)
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "DSC", "RDC_HS_KALIBRIEREREIGNIS", "STAT_3_BEFUELLTEMPERATUR_RE0_WERT", STAT_3_BEFUELLTEMPERATUR_RE0_WERT, "\"째C\"");
 
@@ -2248,7 +2248,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "DSC", "RDC_HS_KALIBRIEREREIGNIS", "STAT_3_BEFUELLDRUCK_RE1_WERT", STAT_3_BEFUELLDRUCK_RE1_WERT, "\"bar\"");
 
     char STAT_3_BEFUELLTEMPERATUR_RE1_WERT = (RXBUF_SCHAR(134));
-        // Filling temperature value wheel electronics RE1 (-99 � C => invalid) / Befuelltemperaturwert Radelektronik RE1
+        // Filling temperature value wheel electronics RE1 (-99 째 C => invalid) / Befuelltemperaturwert Radelektronik RE1
         // (-99 째C => ungueltig)
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "DSC", "RDC_HS_KALIBRIEREREIGNIS", "STAT_3_BEFUELLTEMPERATUR_RE1_WERT", STAT_3_BEFUELLTEMPERATUR_RE1_WERT, "\"째C\"");
 
@@ -2262,7 +2262,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "DSC", "RDC_HS_KALIBRIEREREIGNIS", "STAT_3_BEFUELLDRUCK_RE2_WERT", STAT_3_BEFUELLDRUCK_RE2_WERT, "\"bar\"");
 
     char STAT_3_BEFUELLTEMPERATUR_RE2_WERT = (RXBUF_SCHAR(138));
-        // Filling temperature value wheel electronics RE2 (-99 � C => invalid) / Befuelltemperaturwert Radelektronik RE2
+        // Filling temperature value wheel electronics RE2 (-99 째 C => invalid) / Befuelltemperaturwert Radelektronik RE2
         // (-99 째C => ungueltig)
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "DSC", "RDC_HS_KALIBRIEREREIGNIS", "STAT_3_BEFUELLTEMPERATUR_RE2_WERT", STAT_3_BEFUELLTEMPERATUR_RE2_WERT, "\"째C\"");
 
@@ -2276,7 +2276,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "DSC", "RDC_HS_KALIBRIEREREIGNIS", "STAT_3_BEFUELLDRUCK_RE3_WERT", STAT_3_BEFUELLDRUCK_RE3_WERT, "\"bar\"");
 
     char STAT_3_BEFUELLTEMPERATUR_RE3_WERT = (RXBUF_SCHAR(142));
-        // Filling temperature value wheel electronics RE3 (-99 � C => invalid) / Befuelltemperaturwert Radelektronik RE3
+        // Filling temperature value wheel electronics RE3 (-99 째 C => invalid) / Befuelltemperaturwert Radelektronik RE3
         // (-99 째C => ungueltig)
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "DSC", "RDC_HS_KALIBRIEREREIGNIS", "STAT_3_BEFUELLTEMPERATUR_RE3_WERT", STAT_3_BEFUELLTEMPERATUR_RE3_WERT, "\"째C\"");
 
@@ -2350,8 +2350,7 @@
 
     unsigned char STAT_POS_CHANGED = (RXBUF_UCHAR(19));
         // Wheel electronics ID of the selected wheel has changed, 0 = not changed, 1 = changed, FF = signal unknown /
-        // Radelektronik ID vom angew채hlten Rad hat sich ge채ndert, 0 = nicht ge채ndert, 1 = ge채ndert, FF= Signal
-        // unbekannt
+        // Radelektronik ID vom angew채hlten Rad hat sich ge채ndert, 0 = nicht ge채ndert, 1 = ge채ndert, FF= Signal unbekannt
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "DSC", "RDC_MESSDATENBLOCK_1", "STAT_POS_CHANGED", STAT_POS_CHANGED, "\"0-n\"");
 
     unsigned char STAT_RE_OVERHEAT_AKTIV = (RXBUF_UCHAR(20));
@@ -2456,8 +2455,7 @@
 
     unsigned char STAT_POS_CHANGED_0XDC99 = (RXBUF_UCHAR(19));
         // Wheel electronics ID of the selected wheel has changed, 0 = not changed, 1 = changed, FF = signal unknown /
-        // Radelektronik ID vom angew채hlten Rad hat sich ge채ndert, 0 = nicht ge채ndert, 1 = ge채ndert, FF= Signal
-        // unbekannt
+        // Radelektronik ID vom angew채hlten Rad hat sich ge채ndert, 0 = nicht ge채ndert, 1 = ge채ndert, FF= Signal unbekannt
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "DSC", "RDC_MESSDATENBLOCK_2", "STAT_POS_CHANGED_0XDC99", STAT_POS_CHANGED_0XDC99, "\"0-n\"");
 
     unsigned char STAT_RE_OVERHEAT_AKTIV_0XDC99 = (RXBUF_UCHAR(20));
@@ -2562,8 +2560,7 @@
 
     unsigned char STAT_POS_CHANGED_0XDC9A = (RXBUF_UCHAR(19));
         // Wheel electronics ID of the selected wheel has changed, 0 = not changed, 1 = changed, FF = signal unknown /
-        // Radelektronik ID vom angew채hlten Rad hat sich ge채ndert, 0 = nicht ge채ndert, 1 = ge채ndert, FF= Signal
-        // unbekannt
+        // Radelektronik ID vom angew채hlten Rad hat sich ge채ndert, 0 = nicht ge채ndert, 1 = ge채ndert, FF= Signal unbekannt
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "DSC", "RDC_MESSDATENBLOCK_3", "STAT_POS_CHANGED_0XDC9A", STAT_POS_CHANGED_0XDC9A, "\"0-n\"");
 
     unsigned char STAT_RE_OVERHEAT_AKTIV_0XDC9A = (RXBUF_UCHAR(20));
@@ -2668,8 +2665,7 @@
 
     unsigned char STAT_POS_CHANGED_0XDC9B = (RXBUF_UCHAR(19));
         // Wheel electronics ID of the selected wheel has changed, 0 = not changed, 1 = changed, FF = signal unknown /
-        // Radelektronik ID vom angew채hlten Rad hat sich ge채ndert, 0 = nicht ge채ndert, 1 = ge채ndert, FF= Signal
-        // unbekannt
+        // Radelektronik ID vom angew채hlten Rad hat sich ge채ndert, 0 = nicht ge채ndert, 1 = ge채ndert, FF= Signal unbekannt
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "DSC", "RDC_MESSDATENBLOCK_4", "STAT_POS_CHANGED_0XDC9B", STAT_POS_CHANGED_0XDC9B, "\"0-n\"");
 
     unsigned char STAT_RE_OVERHEAT_AKTIV_0XDC9B = (RXBUF_UCHAR(20));
@@ -2737,7 +2733,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "DSC", "RDC_HS_WARNEREIGNIS_1", "STAT_BEFUELL_AUSSENDRUCK_WERT", STAT_BEFUELL_AUSSENDRUCK_WERT, "\"bar\"");
 
     char STAT_AUSSENTEMPERATUR_WERT = (RXBUF_SCHAR(29));
-        // Outside temperature in the event of a warning / Aussentemperatur bei Warnereignis
+        // Outside temperature at warning event / Aussentemperatur bei Warnereignis
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "DSC", "RDC_HS_WARNEREIGNIS_1", "STAT_AUSSENTEMPERATUR_WERT", STAT_AUSSENTEMPERATUR_WERT, "\"째\"");
 
     float STAT_AUSSENDRUCK_WERT = (RXBUF_SINT(30)/1000.0f);
@@ -2745,8 +2741,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "DSC", "RDC_HS_WARNEREIGNIS_1", "STAT_AUSSENDRUCK_WERT", STAT_AUSSENDRUCK_WERT, "\"bar\"");
 
     unsigned char STAT_RADELEKTRONIK_STATUS_PANNENRAD_WERT = (RXBUF_UCHAR(32));
-        // Wheel electronics status of the wheel causing the breakdown / Radelektronik-Status des Pannenausl철senden
-        // Rades
+        // Wheel electronics status of the wheel causing the breakdown / Radelektronik-Status des Pannenausl철senden Rades
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "DSC", "RDC_HS_WARNEREIGNIS_1", "STAT_RADELEKTRONIK_STATUS_PANNENRAD_WERT", STAT_RADELEKTRONIK_STATUS_PANNENRAD_WERT, "\"HEX\"");
 
     unsigned char STAT_RADPOSITION_PANNENRAD = (RXBUF_UCHAR(33));
@@ -2866,7 +2861,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "DSC", "RDC_HS_WARNEREIGNIS_2", "STAT_BEFUELL_AUSSENDRUCK_WERT_0XDC9D", STAT_BEFUELL_AUSSENDRUCK_WERT_0XDC9D, "\"bar\"");
 
     char STAT_AUSSENTEMPERATUR_WERT_0XDC9D = (RXBUF_SCHAR(29));
-        // Outside temperature in the event of a warning / Aussentemperatur bei Warnereignis
+        // Outside temperature at warning event / Aussentemperatur bei Warnereignis
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "DSC", "RDC_HS_WARNEREIGNIS_2", "STAT_AUSSENTEMPERATUR_WERT_0XDC9D", STAT_AUSSENTEMPERATUR_WERT_0XDC9D, "\"째\"");
 
     float STAT_AUSSENDRUCK_WERT_0XDC9D = (RXBUF_SINT(30)/1000.0f);
@@ -2874,8 +2869,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "DSC", "RDC_HS_WARNEREIGNIS_2", "STAT_AUSSENDRUCK_WERT_0XDC9D", STAT_AUSSENDRUCK_WERT_0XDC9D, "\"bar\"");
 
     unsigned char STAT_RADELEKTRONIK_STATUS_PANNENRAD_WERT_0XDC9D = (RXBUF_UCHAR(32));
-        // Wheel electronics status of the wheel causing the breakdown / Radelektronik-Status des Pannenausl철senden
-        // Rades
+        // Wheel electronics status of the wheel causing the breakdown / Radelektronik-Status des Pannenausl철senden Rades
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "DSC", "RDC_HS_WARNEREIGNIS_2", "STAT_RADELEKTRONIK_STATUS_PANNENRAD_WERT_0XDC9D", STAT_RADELEKTRONIK_STATUS_PANNENRAD_WERT_0XDC9D, "\"HEX\"");
 
     unsigned char STAT_RADPOSITION_PANNENRAD_0XDC9D = (RXBUF_UCHAR(33));
@@ -2995,7 +2989,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "DSC", "RDC_HS_WARNEREIGNIS_3", "STAT_BEFUELL_AUSSENDRUCK_WERT_0XDC9E", STAT_BEFUELL_AUSSENDRUCK_WERT_0XDC9E, "\"bar\"");
 
     char STAT_AUSSENTEMPERATUR_WERT_0XDC9E = (RXBUF_SCHAR(29));
-        // Outside temperature in the event of a warning / Aussentemperatur bei Warnereignis
+        // Outside temperature at warning event / Aussentemperatur bei Warnereignis
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "DSC", "RDC_HS_WARNEREIGNIS_3", "STAT_AUSSENTEMPERATUR_WERT_0XDC9E", STAT_AUSSENTEMPERATUR_WERT_0XDC9E, "\"째\"");
 
     float STAT_AUSSENDRUCK_WERT_0XDC9E = (RXBUF_SINT(30)/1000.0f);
@@ -3003,8 +2997,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "DSC", "RDC_HS_WARNEREIGNIS_3", "STAT_AUSSENDRUCK_WERT_0XDC9E", STAT_AUSSENDRUCK_WERT_0XDC9E, "\"bar\"");
 
     unsigned char STAT_RADELEKTRONIK_STATUS_PANNENRAD_WERT_0XDC9E = (RXBUF_UCHAR(32));
-        // Wheel electronics status of the wheel causing the breakdown / Radelektronik-Status des Pannenausl철senden
-        // Rades
+        // Wheel electronics status of the wheel causing the breakdown / Radelektronik-Status des Pannenausl철senden Rades
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "DSC", "RDC_HS_WARNEREIGNIS_3", "STAT_RADELEKTRONIK_STATUS_PANNENRAD_WERT_0XDC9E", STAT_RADELEKTRONIK_STATUS_PANNENRAD_WERT_0XDC9E, "\"HEX\"");
 
     unsigned char STAT_RADPOSITION_PANNENRAD_0XDC9E = (RXBUF_UCHAR(33));
@@ -3124,7 +3117,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "DSC", "RDC_HS_WARNEREIGNIS_RUECKNAHME", "STAT_BEFUELL_AUSSENDRUCK_WERT_0XDC9F", STAT_BEFUELL_AUSSENDRUCK_WERT_0XDC9F, "\"bar\"");
 
     char STAT_AUSSENTEMPERATUR_WERT_0XDC9F = (RXBUF_SCHAR(29));
-        // Outside temperature in the event of a warning / Aussentemperatur bei Warnereignis
+        // Outside temperature at warning event / Aussentemperatur bei Warnereignis
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "DSC", "RDC_HS_WARNEREIGNIS_RUECKNAHME", "STAT_AUSSENTEMPERATUR_WERT_0XDC9F", STAT_AUSSENTEMPERATUR_WERT_0XDC9F, "\"째\"");
 
     float STAT_AUSSENDRUCK_WERT_0XDC9F = (RXBUF_SINT(30)/1000.0f);
@@ -3132,8 +3125,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "DSC", "RDC_HS_WARNEREIGNIS_RUECKNAHME", "STAT_AUSSENDRUCK_WERT_0XDC9F", STAT_AUSSENDRUCK_WERT_0XDC9F, "\"bar\"");
 
     unsigned char STAT_RADELEKTRONIK_STATUS_PANNENRAD_WERT_0XDC9F = (RXBUF_UCHAR(32));
-        // Wheel electronics status of the wheel causing the breakdown / Radelektronik-Status des Pannenausl철senden
-        // Rades
+        // Wheel electronics status of the wheel causing the breakdown / Radelektronik-Status des Pannenausl철senden Rades
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "DSC", "RDC_HS_WARNEREIGNIS_RUECKNAHME", "STAT_RADELEKTRONIK_STATUS_PANNENRAD_WERT_0XDC9F", STAT_RADELEKTRONIK_STATUS_PANNENRAD_WERT_0XDC9F, "\"HEX\"");
 
     unsigned char STAT_RADPOSITION_PANNENRAD_0XDC9F = (RXBUF_UCHAR(33));
@@ -3284,7 +3276,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "DSC", "STATUS_RE_LESEN_DRUCKCODIERUNG", "STAT_REIFENDRUCK_RE2_WERT_0XDCD9", STAT_REIFENDRUCK_RE2_WERT_0XDCD9, "\"bar\"");
 
     short STAT_RESTLEBENSDAUER_RE2_WERT = (RXBUF_SINT(24));
-        // Remaining service life of wheel electronics RE2 in months (-999 months => invalid) / Restlebensdauer
+        // Remaining service life of RE2 wheel electronics in months (-999 months => invalid) / Restlebensdauer
         // Radelektronik RE2 in Monaten (-999 Monate => ungueltig)
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%d%s\n", "DSC", "STATUS_RE_LESEN_DRUCKCODIERUNG", "STAT_RESTLEBENSDAUER_RE2_WERT", STAT_RESTLEBENSDAUER_RE2_WERT, "");
 
@@ -3382,7 +3374,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%d%s\n", "DSC", "STATUS_RE_LESEN_DRUCKCODIERUNG", "STAT_RESTLEBENSDAUER_RE7_WERT", STAT_RESTLEBENSDAUER_RE7_WERT, "");
 
     unsigned char STAT_EMPFANGSZAEHLER_RE7_WERT = (RXBUF_UCHAR(71));
-        // Receiving counter wheel electronics RE7 (255 => invalid) / Empfangszaehler Radelektronik RE7 (255 =>
+        // Re7 wheel electronics reception counter (255 => invalid) / Empfangszaehler Radelektronik RE7 (255 =>
         // ungueltig)
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "DSC", "STATUS_RE_LESEN_DRUCKCODIERUNG", "STAT_EMPFANGSZAEHLER_RE7_WERT", STAT_EMPFANGSZAEHLER_RE7_WERT, "");
 
@@ -3415,7 +3407,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "DSC", "RDC_HS_WARNEREIGNIS_WEICH_1", "STAT_BEFUELL_AUSSENDRUCK_WERT_0XDCF1", STAT_BEFUELL_AUSSENDRUCK_WERT_0XDCF1, "\"bar\"");
 
     char STAT_AUSSENTEMPERATUR_WERT_0XDCF1 = (RXBUF_SCHAR(29));
-        // Outside temperature in the event of a warning / Aussentemperatur bei Warnereignis
+        // Outside temperature at warning event / Aussentemperatur bei Warnereignis
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "DSC", "RDC_HS_WARNEREIGNIS_WEICH_1", "STAT_AUSSENTEMPERATUR_WERT_0XDCF1", STAT_AUSSENTEMPERATUR_WERT_0XDCF1, "\"째\"");
 
     float STAT_AUSSENDRUCK_WERT_0XDCF1 = (RXBUF_SINT(30)/1000.0f);
@@ -3423,8 +3415,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "DSC", "RDC_HS_WARNEREIGNIS_WEICH_1", "STAT_AUSSENDRUCK_WERT_0XDCF1", STAT_AUSSENDRUCK_WERT_0XDCF1, "\"bar\"");
 
     unsigned char STAT_RADELEKTRONIK_STATUS_PANNENRAD_WERT_0XDCF1 = (RXBUF_UCHAR(32));
-        // Wheel electronics status of the wheel causing the breakdown / Radelektronik-Status des Pannenausl철senden
-        // Rades
+        // Wheel electronics status of the wheel causing the breakdown / Radelektronik-Status des Pannenausl철senden Rades
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "DSC", "RDC_HS_WARNEREIGNIS_WEICH_1", "STAT_RADELEKTRONIK_STATUS_PANNENRAD_WERT_0XDCF1", STAT_RADELEKTRONIK_STATUS_PANNENRAD_WERT_0XDCF1, "\"HEX\"");
 
     unsigned char STAT_RADPOSITION_PANNENRAD_0XDCF1 = (RXBUF_UCHAR(33));
@@ -3544,7 +3535,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "DSC", "RDC_HS_WARNEREIGNIS_WEICH_2", "STAT_BEFUELL_AUSSENDRUCK_WERT_0XDCF2", STAT_BEFUELL_AUSSENDRUCK_WERT_0XDCF2, "\"bar\"");
 
     char STAT_AUSSENTEMPERATUR_WERT_0XDCF2 = (RXBUF_SCHAR(29));
-        // Outside temperature in the event of a warning / Aussentemperatur bei Warnereignis
+        // Outside temperature at warning event / Aussentemperatur bei Warnereignis
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "DSC", "RDC_HS_WARNEREIGNIS_WEICH_2", "STAT_AUSSENTEMPERATUR_WERT_0XDCF2", STAT_AUSSENTEMPERATUR_WERT_0XDCF2, "\"째\"");
 
     float STAT_AUSSENDRUCK_WERT_0XDCF2 = (RXBUF_SINT(30)/1000.0f);
@@ -3552,8 +3543,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "DSC", "RDC_HS_WARNEREIGNIS_WEICH_2", "STAT_AUSSENDRUCK_WERT_0XDCF2", STAT_AUSSENDRUCK_WERT_0XDCF2, "\"bar\"");
 
     unsigned char STAT_RADELEKTRONIK_STATUS_PANNENRAD_WERT_0XDCF2 = (RXBUF_UCHAR(32));
-        // Wheel electronics status of the wheel causing the breakdown / Radelektronik-Status des Pannenausl철senden
-        // Rades
+        // Wheel electronics status of the wheel causing the breakdown / Radelektronik-Status des Pannenausl철senden Rades
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "DSC", "RDC_HS_WARNEREIGNIS_WEICH_2", "STAT_RADELEKTRONIK_STATUS_PANNENRAD_WERT_0XDCF2", STAT_RADELEKTRONIK_STATUS_PANNENRAD_WERT_0XDCF2, "\"HEX\"");
 
     unsigned char STAT_RADPOSITION_PANNENRAD_0XDCF2 = (RXBUF_UCHAR(33));
@@ -3673,7 +3663,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "DSC", "RDC_HS_WARNEREIGNIS_WEICH_3", "STAT_BEFUELL_AUSSENDRUCK_WERT_0XDCF3", STAT_BEFUELL_AUSSENDRUCK_WERT_0XDCF3, "\"bar\"");
 
     char STAT_AUSSENTEMPERATUR_WERT_0XDCF3 = (RXBUF_SCHAR(29));
-        // Outside temperature in the event of a warning / Aussentemperatur bei Warnereignis
+        // Outside temperature at warning event / Aussentemperatur bei Warnereignis
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "DSC", "RDC_HS_WARNEREIGNIS_WEICH_3", "STAT_AUSSENTEMPERATUR_WERT_0XDCF3", STAT_AUSSENTEMPERATUR_WERT_0XDCF3, "\"째\"");
 
     float STAT_AUSSENDRUCK_WERT_0XDCF3 = (RXBUF_SINT(30)/1000.0f);
@@ -3681,8 +3671,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "DSC", "RDC_HS_WARNEREIGNIS_WEICH_3", "STAT_AUSSENDRUCK_WERT_0XDCF3", STAT_AUSSENDRUCK_WERT_0XDCF3, "\"bar\"");
 
     unsigned char STAT_RADELEKTRONIK_STATUS_PANNENRAD_WERT_0XDCF3 = (RXBUF_UCHAR(32));
-        // Wheel electronics status of the wheel causing the breakdown / Radelektronik-Status des Pannenausl철senden
-        // Rades
+        // Wheel electronics status of the wheel causing the breakdown / Radelektronik-Status des Pannenausl철senden Rades
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "DSC", "RDC_HS_WARNEREIGNIS_WEICH_3", "STAT_RADELEKTRONIK_STATUS_PANNENRAD_WERT_0XDCF3", STAT_RADELEKTRONIK_STATUS_PANNENRAD_WERT_0XDCF3, "\"HEX\"");
 
     unsigned char STAT_RADPOSITION_PANNENRAD_0XDCF3 = (RXBUF_UCHAR(33));
@@ -3866,8 +3855,8 @@
         // Voltage master available (see description of voltage threshold client) and decision logic error cause (bit 0:
         // availability of voltage master; bit 4 = 1: DSC internal error as cause; bit 5 = 1: BBx error or RDCI error as
         // cause; bits 1,2,3,6 , 7 not used) / Spannungsmaster verf체gbar (siehe Beschreibung Spannungsschwellenclient)
-        // und Entscheidungslogik Fehlerursache (Bit 0: Verf체gbarkeit der Spannungsmaster; Bit 4 = 1: DSC interner
-        // Fehler als Ursache; Bit 5 = 1: BBx Fehler oder RDCI Fehler als Ursache; Bits 1,2,3,6,7 nicht genutzt) 
+        // und Entscheidungslogik Fehlerursache (Bit 0: Verf체gbarkeit der Spannungsmaster; Bit 4 = 1: DSC interner Fehler
+        // als Ursache; Bit 5 = 1: BBx Fehler oder RDCI Fehler als Ursache; Bits 1,2,3,6,7 nicht genutzt) 
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "DSC", "SPANNUNGSMASTER_VERFUEGBAR", "STAT_SPANNUNGSMASTER_VERFUEGBAR_WERT", STAT_SPANNUNGSMASTER_VERFUEGBAR_WERT, "\"HEX\"");
 
     // ==========  Add your processing here ==========

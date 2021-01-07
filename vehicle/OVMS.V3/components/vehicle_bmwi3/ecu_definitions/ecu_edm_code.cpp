@@ -245,7 +245,7 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lu%s\n", "EDM", "ZYKLISCHES_NACHLADEN_INFO", "STAT_E1_START_ZYKNL_SYSTEMZEIT_WERT", STAT_E1_START_ZYKNL_SYSTEMZEIT_WERT, "\"s\"");
 
     float STAT_E1_START_ZYKNL_NV_BATTERIE_SOC_WERT = (RXBUF_UCHAR(22)*0.5f);
-        // 1st event (last): SOC 12V battery at the start of cyclical recharging / 1. Ereignis (letzte): SOC 12V Batterie
+        // 1st event (last): SOC 12V battery when starting cyclical recharging / 1. Ereignis (letzte): SOC 12V Batterie
         // beim Start des zyklischen Nachladens
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "EDM", "ZYKLISCHES_NACHLADEN_INFO", "STAT_E1_START_ZYKNL_NV_BATTERIE_SOC_WERT", STAT_E1_START_ZYKNL_NV_BATTERIE_SOC_WERT, "\"%\"");
 
@@ -489,14 +489,14 @@
 
     unsigned char STAT_STANDZEIT_START_ZYKNL_BEREICH_E_WERT = (RXBUF_UCHAR(4));
         // Number of idle times until the beginning of the cyclical reloading in area E. K_STDZEITLADEHISTGRZ4 (days)
-        // <area E <= K_STDZEITLADEHISTGRZ5 (days) (count up to 255, then no count, value is retained) / Anzahl der
+        // <area E <= K_STDZEITLADEHISTGRZ5 (days) (count up to 255, after that no count, value is retained) / Anzahl der
         // Standzeiten bis zum Beginn des zyklischen Nachladens im Bereich E.  K_STDZEITLADEHISTGRZ4 (Tage) < Bereich E
         // <= K_STDZEITLADEHISTGRZ5 (Tage) (Zählung bis 255, danach keine Zählung, Wert bleibt erhalten)
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "EDM", "ZYKLISCHES_NACHLADEN_HISTOGRAMM", "STAT_STANDZEIT_START_ZYKNL_BEREICH_E_WERT", STAT_STANDZEIT_START_ZYKNL_BEREICH_E_WERT, "");
 
     unsigned char STAT_STANDZEIT_START_ZYKNL_BEREICH_F_WERT = (RXBUF_UCHAR(5));
-        // Number of idle times until the beginning of the cyclical reloading in the area F. K_STDZEITLADEHISTGRZ5 (days)
-        // <area F <= K_STDZEITLADEHISTGRZ6 (days) (counting up to 255, then no counting, value is retained) / Anzahl der
+        // Number of idle times until the start of the cyclical reloading in the area F. K_STDZEITLADEHISTGRZ5 (days)
+        // <area F <= K_STDZEITLADEHISTGRZ6 (days) (count up to 255, after that no count, value is retained) / Anzahl der
         // Standzeiten bis zum Beginn des zyklischen Nachladens im Bereich F.  K_STDZEITLADEHISTGRZ5 (Tage) < Bereich F
         // <= K_STDZEITLADEHISTGRZ6 (Tage) (Zählung bis 255, danach keine Zählung, Wert bleibt erhalten)
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "EDM", "ZYKLISCHES_NACHLADEN_HISTOGRAMM", "STAT_STANDZEIT_START_ZYKNL_BEREICH_F_WERT", STAT_STANDZEIT_START_ZYKNL_BEREICH_F_WERT, "");
@@ -530,15 +530,15 @@
 
     unsigned char STAT_LADUNGSDAUER_BEREICH_C_WERT = (RXBUF_UCHAR(10));
         // Number of loading times of the cyclical reloading in area C. K_NLDDAUERHISTGRZ2 (days) <area C <=
-        // K_NLDDAUERHISTGRZ3 (days) (counting up to 255, after that no counting, value is retained) / Anzahl der
-        // Ladungsdauer des zyklischen Nachladens im Bereich C. K_NLDDAUERHISTGRZ2 (Tage) < Bereich C <=
-        // K_NLDDAUERHISTGRZ3 (Tage) (Zählung bis 255, danach keine Zählung, Wert bleibt erhalten)
+        // K_NLDDAUERHISTGRZ3 (days) (count up to 255, then no count, value is retained) / Anzahl der Ladungsdauer des
+        // zyklischen Nachladens im Bereich C. K_NLDDAUERHISTGRZ2 (Tage) < Bereich C <= K_NLDDAUERHISTGRZ3 (Tage)
+        // (Zählung bis 255, danach keine Zählung, Wert bleibt erhalten)
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "EDM", "ZYKLISCHES_NACHLADEN_HISTOGRAMM", "STAT_LADUNGSDAUER_BEREICH_C_WERT", STAT_LADUNGSDAUER_BEREICH_C_WERT, "");
 
     unsigned char STAT_LADUNGSDAUER_BEREICH_D_WERT = (RXBUF_UCHAR(11));
         // Number of loading times of the cyclical reloading in area D. K_NLDDAUERHISTGRZ3 (days) <area D <=
-        // K_NLDDAUERHISTGRZ4 (days) (count up to 255, then no count, value is retained) / Anzahl der Ladungsdauer des
-        // zyklischen Nachladens im Bereich D. K_NLDDAUERHISTGRZ3 (Tage) < Bereich D <= K_NLDDAUERHISTGRZ4 (Tage)
+        // K_NLDDAUERHISTGRZ4 (days) (count up to 255, after that no count, value is retained) / Anzahl der Ladungsdauer
+        // des zyklischen Nachladens im Bereich D. K_NLDDAUERHISTGRZ3 (Tage) < Bereich D <= K_NLDDAUERHISTGRZ4 (Tage)
         // (Zählung bis 255, danach keine Zählung, Wert bleibt erhalten)
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "EDM", "ZYKLISCHES_NACHLADEN_HISTOGRAMM", "STAT_LADUNGSDAUER_BEREICH_D_WERT", STAT_LADUNGSDAUER_BEREICH_D_WERT, "");
 
@@ -977,13 +977,13 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "EDM", "12V_NACHLADEHISTORIE", "STAT_E2_12V_BATTERIE_SOC_LADEBEGINN_WERT", STAT_E2_12V_BATTERIE_SOC_LADEBEGINN_WERT, "\"%\"");
 
     float STAT_E3_12V_BATTERIE_SOC_LADEBEGINN_WERT = (RXBUF_UCHAR(63)/2.0f);
-        // Set 3 - Charge level of the 12V battery when starting the 12V battery charging process / Satz 3 - Ladezustand
+        // Set 3 - Charge status of the 12V battery when starting the 12V battery charging process / Satz 3 - Ladezustand
         // der 12V-Batterie beim Starten des 12V-Batterie Ladevorgangs
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "EDM", "12V_NACHLADEHISTORIE", "STAT_E3_12V_BATTERIE_SOC_LADEBEGINN_WERT", STAT_E3_12V_BATTERIE_SOC_LADEBEGINN_WERT, "\"%\"");
 
     float STAT_E4_12V_BATTERIE_SOC_LADEBEGINN_WERT = (RXBUF_UCHAR(64)/2.0f);
-        // Set 4 - State of charge of the 12V battery when starting the 12V battery charging process / Satz 4 -
-        // Ladezustand der 12V-Batterie beim Starten des 12V-Batterie Ladevorgangs
+        // Set 4 - Charge status of the 12V battery when starting the 12V battery charging process / Satz 4 - Ladezustand
+        // der 12V-Batterie beim Starten des 12V-Batterie Ladevorgangs
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "EDM", "12V_NACHLADEHISTORIE", "STAT_E4_12V_BATTERIE_SOC_LADEBEGINN_WERT", STAT_E4_12V_BATTERIE_SOC_LADEBEGINN_WERT, "\"%\"");
 
     float STAT_E1_HV_BATTERIE_SOC_LADEBEGINN_WERT = (RXBUF_UCHAR(65)/2.0f);
@@ -1126,8 +1126,8 @@
     unsigned char STAT_HFK_STANDZEIT_BIS_LADEBEGINN_BEREICH_A_WERT = (RXBUF_UCHAR(0));
         // Number of idle times until the start of the cyclical reloading in area A. Area A <= K_STDZEITLADEHISTGRZ1 (2
         // days) (counting up to 255, then no counting, value is retained) / Anzahl der Standzeiten bis zum Beginn des
-        // zyklischen Nachladens im Bereich A. Bereich A <= K_STDZEITLADEHISTGRZ1 (2 Tage) (Zählung bis 255, danach
-        // keine Zählung, Wert bleibt erhalten)
+        // zyklischen Nachladens im Bereich A. Bereich A <= K_STDZEITLADEHISTGRZ1 (2 Tage) (Zählung bis 255, danach keine
+        // Zählung, Wert bleibt erhalten)
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "EDM", "12V_NACHLADEHISTOGRAMM", "STAT_HFK_STANDZEIT_BIS_LADEBEGINN_BEREICH_A_WERT", STAT_HFK_STANDZEIT_BIS_LADEBEGINN_BEREICH_A_WERT, "");
 
     unsigned char STAT_HFK_STANDZEIT_BIS_LADEBEGINN_BEREICH_B_WERT = (RXBUF_UCHAR(1));
@@ -1166,10 +1166,10 @@
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "EDM", "12V_NACHLADEHISTOGRAMM", "STAT_HFK_STANDZEIT_BIS_LADEBEGINN_BEREICH_F_WERT", STAT_HFK_STANDZEIT_BIS_LADEBEGINN_BEREICH_F_WERT, "");
 
     unsigned char STAT_HFK_STANDZEIT_BIS_LADEBEGINN_BEREICH_G_WERT = (RXBUF_UCHAR(6));
-        // Number of idle times until the start of the cyclical reloading in area G. K_STDZEITLADEHISTGRZ6 (21 days)
-        // <area G <= K_STDZEITLADEHISTGRZ7 (28 days) (count up to 255, after that no count, value is retained) / Anzahl
-        // der Standzeiten bis zum Beginn des zyklischen Nachladens im Bereich G.  K_STDZEITLADEHISTGRZ6 (21 Tage) <
-        // Bereich G <= K_STDZEITLADEHISTGRZ7 (28 Tage) (Zählung bis 255, danach keine Zählung, Wert bleibt erhalten)
+        // Number of idle times until the start of cyclical reloading in area G. K_STDZEITLADEHISTGRZ6 (21 days) <area G
+        // <= K_STDZEITLADEHISTGRZ7 (28 days) (counts up to 255, then no count, value is retained) / Anzahl der
+        // Standzeiten bis zum Beginn des zyklischen Nachladens im Bereich G.  K_STDZEITLADEHISTGRZ6 (21 Tage) < Bereich
+        // G <= K_STDZEITLADEHISTGRZ7 (28 Tage) (Zählung bis 255, danach keine Zählung, Wert bleibt erhalten)
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "EDM", "12V_NACHLADEHISTOGRAMM", "STAT_HFK_STANDZEIT_BIS_LADEBEGINN_BEREICH_G_WERT", STAT_HFK_STANDZEIT_BIS_LADEBEGINN_BEREICH_G_WERT, "");
 
     unsigned char STAT_HFK_STANDZEIT_BIS_LADEBEGINN_BEREICH_H_WERT = (RXBUF_UCHAR(7));
@@ -1216,9 +1216,9 @@
 
     unsigned char STAT_HFK_LADEDAUER_BEREICH_F_WERT = (RXBUF_UCHAR(13));
         // Number of loading times of the cyclical reloading in the area F. K_NLDDAUERHISTGRZ5 (20 minutes) <area F <=
-        // K_NLDDAUERHISTGRZ6 (28 minutes) (count up to 255, then no count, value is retained) / Anzahl der Ladungsdauer
-        // des zyklischen Nachladens im Bereich F.   K_NLDDAUERHISTGRZ5 (20 Minuten) < Bereich F <= K_NLDDAUERHISTGRZ6
-        // (28 Minuten) (Zählung bis 255, danach keine Zählung, Wert bleibt erhalten)
+        // K_NLDDAUERHISTGRZ6 (28 minutes) (counting up to 255, then no counting, value is retained) / Anzahl der
+        // Ladungsdauer des zyklischen Nachladens im Bereich F.   K_NLDDAUERHISTGRZ5 (20 Minuten) < Bereich F <=
+        // K_NLDDAUERHISTGRZ6 (28 Minuten) (Zählung bis 255, danach keine Zählung, Wert bleibt erhalten)
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "EDM", "12V_NACHLADEHISTOGRAMM", "STAT_HFK_LADEDAUER_BEREICH_F_WERT", STAT_HFK_LADEDAUER_BEREICH_F_WERT, "");
 
     unsigned char STAT_HFK_LADEDAUER_BEREICH_G_WERT = (RXBUF_UCHAR(14));
