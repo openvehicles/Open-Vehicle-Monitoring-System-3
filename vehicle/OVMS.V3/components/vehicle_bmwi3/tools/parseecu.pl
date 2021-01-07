@@ -5,9 +5,15 @@ use File::Slurp;
 use Data::Dumper;
 use JSON::PP;
 
+use utf8;
+
+binmode(STDIN, ":utf8");
+binmode(STDOUT, ":utf8");
+binmode(STDERR, ":utf8");
+
 # ------ TRANSLATION ---------------------------------------------------------------------------
 
-my $google_translate_api_key = "YOUR KEY GOES HERE";
+my $google_translate_api_key = "YOUR-KEY-GOES-HERE";
 
 my $de_to_en = WWW::Google::Translate->new({
 	key => $google_translate_api_key,
@@ -42,6 +48,9 @@ sub test_translation {
     my $en = de_to_en($de);
     print "Again:\n$de\n$en\n";
 }
+
+# test_translation;
+# exit 99;
 
 # ------ TRANSLATION ---------------------------------------------------------------------------
 
@@ -83,8 +92,6 @@ while (<>) {
 
 print STDERR Dumper($tables->{"SG_FUNKTIONEN"});
 
-my $json = JSON::PP->new->pretty->utf8;
-
-binmode(STDOUT, ":utf8");
+my $json = JSON::PP->new->pretty; # ->utf8(true);
 
 print $json->encode( { tables => $tables } );
