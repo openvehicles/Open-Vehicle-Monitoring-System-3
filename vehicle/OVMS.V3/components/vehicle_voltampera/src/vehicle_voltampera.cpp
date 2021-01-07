@@ -9,6 +9,7 @@
 ;    (C) 2011-2017  Mark Webb-Johnson
 ;    (C) 2011       Sonny Chen @ EPRO/DX
 ;    (C) 2019       Marko Juhanne
+;    (C) 2021       Alexander Kiiyashko
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -45,25 +46,38 @@ static const char *TAG = "v-voltampera";
 #define VA_BCM 0x241
 #define VA_TESTER_PRESENT_TIMEOUT 30*60 //  seconds
 
+#define VA_POLLING_START_DELAY 2 // seconds
+#define VA_POLLING_NORMAL_THROTTLING 1 
+#define VA_POLLING_HIGH_THROTTLING 20 
+
 
 // Use states:
 // 0 = bus is idle, car sleeping
 // 1 = car is on and ready to Drive
+// 2 = car wakeup or powertrain off, one request with high polling speed. After swith to state 1.
+
 static const OvmsVehicle::poll_pid_t va_polls[]
   =
   {
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x4369, {  0, 10,  0 }, 0, ISOTP_STD }, // On-board charger current
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x4368, {  0, 10,  0 }, 0, ISOTP_STD }, // On-board charger voltage
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x434f, {  0, 10,  0 }, 0, ISOTP_STD }, // High-voltage Battery temperature
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x1c43, {  0, 10,  0 }, 0, ISOTP_STD }, // PEM temperature
-    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x8334, {  0, 10,  0 }, 0, ISOTP_STD }, // SOC
+    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x4369, {  0, 10,   10 },  0, ISOTP_STD }, // On-board charger current
+    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x4368, {  0, 10,   10 },  0, ISOTP_STD }, // On-board charger voltage
+    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x434f, {  0, 10,   10 },  0, ISOTP_STD }, // High-voltage Battery temperature
+    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x1c43, {  0, 10,   10 },  0, ISOTP_STD }, // PEM temperature
+    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x8334, {  0, 10,   10 },  0, ISOTP_STD }, // SOC
+    { 0x7e7, 0x7ef, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x40d7, {  0, 60,   60 },  0, ISOTP_STD }, // High-voltage Battery Section 1 temperature
+    { 0x7e7, 0x7ef, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x40d9, {  0, 60,   60 },  0, ISOTP_STD }, // High-voltage Battery Section 2 temperature
+    { 0x7e7, 0x7ef, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x40db, {  0, 60,   60 },  0, ISOTP_STD }, // High-voltage Battery Section 3 temperature
+    { 0x7e7, 0x7ef, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x40dd, {  0, 60,   60 },  0, ISOTP_STD }, // High-voltage Battery Section 4 temperature
+    { 0x7e7, 0x7ef, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x40df, {  0, 60,   60 },  0, ISOTP_STD }, // High-voltage Battery Section 5 temperature
+    { 0x7e7, 0x7ef, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x40e1, {  0, 60,   60 },  0, ISOTP_STD }, // High-voltage Battery Section 6 temperature
     POLL_LIST_END
   };
 // These are not polled anymore but instead received passively
 // { 0x7e0, 0x7e8, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x000d, {  0, 10,  0 } }, // Vehicle speed
-//  { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x801f, {  0, 10,  0 } }, // Outside temperature (filtered)
-//  { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x801e, {  0, 10,  0 } }, // Outside temperature (raw)
 // { 0x7e1, 0x7e9, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2487, {  0, 100,  100 }, 0, ISOTP_STD }, // Distance Traveled on Battery Energy This Drive Cycle
+// { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x801f, {  0, 10,  0 } }, // Outside temperature (filtered)
+// { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x801e, {  0, 10,  0 } }, // Outside temperature (raw)
+
 
 OvmsVehicleVoltAmpera::OvmsVehicleVoltAmpera()
   {
@@ -83,6 +97,15 @@ OvmsVehicleVoltAmpera::OvmsVehicleVoltAmpera()
   m_tx_retry_counter = 0;
   m_tester_present_timer = 0;
   m_controlled_lights = 0;
+  m_startPolling_timer = 0;
+  m_pPollingList = NULL;
+
+  BmsSetCellArrangementVoltage(96, 16);
+  BmsSetCellArrangementTemperature(6, 1);
+  BmsSetCellLimitsVoltage(2,5);
+  BmsSetCellLimitsTemperature(-35,90);
+  BmsSetCellDefaultThresholdsVoltage(0.020, 0.030);
+  BmsSetCellDefaultThresholdsTemperature(4.0, 8.0);
 
   mt_charging_limits = MyMetrics.InitVector<int>("xva.v.b.charging_limits", SM_STALE_HIGH, "0");
 
@@ -95,7 +118,31 @@ OvmsVehicleVoltAmpera::OvmsVehicleVoltAmpera()
   // Register CAN bus and polling requests
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);  // powertrain bus
   //RegisterCanBus(2,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);  // chassis bus 
-  PollSetPidList(m_can1,va_polls);
+  
+  //Add cell requests to polling list
+  const int nCellListSize = 96; 
+  const int va_pollsSize = sizeof(va_polls)/sizeof(va_polls[0]);
+  m_pPollingList = new poll_pid_t[va_pollsSize + nCellListSize];
+  uint16_t pid = 0x4181;
+  
+  int iPoll=0;
+  for(iPoll=0; iPoll<nCellListSize; iPoll++)
+    {
+    if(iPoll==31)
+      pid+=96;
+
+    //Updating of the cells takes significant time. To prevent fake deviation, start updates in state 2 only (without HV battery load)
+    m_pPollingList[iPoll] = { 0x7e7, 0x7ef, VEHICLE_POLL_TYPE_OBDIIEXTENDED, pid, {0, 0, 10}, 0, ISOTP_STD };
+    pid++;
+    }
+
+  for(int i=0; i<va_pollsSize; i++)
+    {
+      m_pPollingList[iPoll] = va_polls[i];
+      iPoll++;
+    }
+
+  PollSetPidList(m_can1, m_pPollingList);
   PollSetState(0);
 #ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
   ESP_LOGI(TAG, "Volt/Ampera vehicle module: Register SWCAN using external CAN module");
@@ -126,7 +173,9 @@ OvmsVehicleVoltAmpera::~OvmsVehicleVoltAmpera()
   MyCan.DeregisterCallback(TAG);
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
   WebCleanup();
-#endif  
+#endif
+  PollSetPidList(m_can1, NULL); 
+  delete m_pPollingList; 
   }
 
 /**
@@ -184,6 +233,8 @@ void OvmsVehicleVoltAmpera::IncomingFrameCan1(CAN_frame_t* p_frame)
   uint8_t *d = p_frame->data.u8;
   int k;
 
+  m_candata_timer = VA_CANDATA_TIMEOUT;
+
   ESP_LOGV(TAG,"CAN1 message received: %08x: [%02x %02x %02x %02x %02x %02x %02x %02x]", 
     p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7] );
 
@@ -193,25 +244,19 @@ void OvmsVehicleVoltAmpera::IncomingFrameCan1(CAN_frame_t* p_frame)
     return; // Ignore poll responses
 
   // Activity on the bus, so resume polling
-  if (m_poll_state != 1)
+  if (m_poll_state == 0 && m_startPolling_timer == 0)
     {
     ESP_LOGI(TAG,"Car has woken (CAN bus activity)");
     StandardMetrics.ms_v_env_awake->SetValue(true);
-    PollSetState(1);
+    m_startPolling_timer = VA_POLLING_START_DELAY;
     }
-  m_candata_timer = VA_CANDATA_TIMEOUT;
 
   // Process the incoming message
   switch (p_frame->MsgID)
     {
     case 0x0c9: 
       {
-      bool powertrain_enabled = ((d[0] & 0xC0) != 0);
-      if (StandardMetrics.ms_v_env_on->AsBool() != powertrain_enabled)
-        {
-        ESP_LOGI(TAG,"Powertrain %s",powertrain_enabled ? "enabled" : "disabled");
-        StandardMetrics.ms_v_env_on->SetValue(powertrain_enabled);
-        }
+      StandardMetrics.ms_v_env_on->SetValue((d[0] & 0xC0) != 0);
       StandardMetrics.ms_v_mot_rpm->SetValue( GET16(p_frame, 1) >> 2 );
       break;
       }
@@ -239,7 +284,7 @@ void OvmsVehicleVoltAmpera::IncomingFrameCan1(CAN_frame_t* p_frame)
 
     case 0x120: 
       {
-      StandardMetrics.ms_v_pos_odometer->SetValue( GET32(p_frame, 0) / 64);
+      StandardMetrics.ms_v_pos_odometer->SetValue(GET32(p_frame, 0) / 64);
       break;
       } 
 
@@ -364,22 +409,22 @@ void OvmsVehicleVoltAmpera::IncomingFrameCan3(CAN_frame_t* p_frame)
   IncomingFrameCan4(p_frame);  // assume third can bus messages coming from SWCAN bus
   }
 
-
 void OvmsVehicleVoltAmpera::IncomingFrameCan4(CAN_frame_t* p_frame)
   {
   uint8_t *d = p_frame->data.u8;
+
+  m_candata_timer = VA_CANDATA_TIMEOUT;
 
   ESP_LOGV(TAG,"SW CAN message received: %08x: [%02x %02x %02x %02x %02x %02x %02x %02x]", 
     p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7] );
 
   // Activity on the bus, so resume polling
-  if (m_poll_state != 1)
+  if (m_poll_state == 0 && m_startPolling_timer == 0)
     {
     ESP_LOGI(TAG,"Car has woken (SWCAN bus activity)");
     StandardMetrics.ms_v_env_awake->SetValue(true);
-    PollSetState(1);
+    m_startPolling_timer = VA_POLLING_START_DELAY;
     }
-  m_candata_timer = VA_CANDATA_TIMEOUT;
 
   // Process the incoming message
   switch (p_frame->MsgID)
@@ -607,10 +652,27 @@ void OvmsVehicleVoltAmpera::IncomingFrameCan4(CAN_frame_t* p_frame)
     ClimateControlIncomingSWCAN(p_frame);
   }
 
-
 void OvmsVehicleVoltAmpera::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
   {
   uint8_t value = *data;
+
+  //Cell voltage
+  const uint16_t pid_cellv1 = 0x4181;
+  if((pid>=pid_cellv1 && pid<=pid_cellv1+30) || (pid>=pid_cellv1+127 && pid<=pid_cellv1+191)){
+    if(length <2)
+      return;
+
+    int nCellNum = 0;
+    if(pid <= pid_cellv1+30){
+      nCellNum = pid - pid_cellv1;
+    }
+    else{
+      nCellNum = pid - pid_cellv1 - 96;
+    }
+    uint32_t uCellv =  (data[0]<<8 | data[1]);
+    BmsSetCellVoltage(nCellNum, (float)5 * uCellv / 65535);
+    return;
+  }
 
   switch (pid)
     {
@@ -653,6 +715,24 @@ void OvmsVehicleVoltAmpera::IncomingPollReply(canbus* bus, uint16_t type, uint16
       break;
       }
     */
+    case 0x40d7:  // High-voltage Battery Section 1 temperature  
+      BmsSetCellTemperature(0, data[0] - 40);
+      break;
+    case 0x40d9:  // High-voltage Battery Section 2 temperature  
+      BmsSetCellTemperature(1, data[0] - 40);
+      break;    
+    case 0x40db:  // High-voltage Battery Section 3 temperature  
+      BmsSetCellTemperature(2, data[0] - 40);
+      break;
+    case 0x40dd:  // High-voltage Battery Section 4 temperature  
+      BmsSetCellTemperature(3, data[0] - 40);
+      break;
+    case 0x40df:  // High-voltage Battery Section 5 temperature  
+      BmsSetCellTemperature(4, data[0] - 40);
+      break;
+    case 0x40e1:  // High-voltage Battery Section 6 temperature  
+      BmsSetCellTemperature(5, data[0] - 40);
+      break;   
     default:
       break;
     }
@@ -681,6 +761,26 @@ void OvmsVehicleVoltAmpera::Ticker1(uint32_t ticker)
       StandardMetrics.ms_v_env_awake->SetValue(false);
       PollSetState(0);
       }
+    }
+
+  if (m_startPolling_timer > 0)
+    {
+    if (--m_startPolling_timer == 0)
+      {
+      if(m_poll_state == 0)
+        {
+        // Start polling with delay (battery module need time to wake up)
+        PollSetThrottling(VA_POLLING_HIGH_THROTTLING);  // get all cells info before sleep
+        PollSetState(2);
+        }
+      }
+    }
+  
+  if((m_poll_state == 2) && (m_poll_plcur == m_poll_plist))
+    {
+    // polling complete one time for state 2. Switch to state 1.
+    PollSetState(1);
+    PollSetThrottling(VA_POLLING_NORMAL_THROTTLING);
     }
 
   PreheatWatchdog();
@@ -779,6 +879,20 @@ void OvmsVehicleVoltAmpera::Ticker1(uint32_t ticker)
 
   }
 
+void OvmsVehicleVoltAmpera::NotifiedVehicleOn()
+  {
+  ESP_LOGI(TAG,"Powertrain enabled");
+  }
+
+void OvmsVehicleVoltAmpera::NotifiedVehicleOff()
+  {
+  ESP_LOGI(TAG,"Powertrain disabled");
+  
+  // update all cells info without HV load
+  BmsResetCellVoltages();
+  PollSetThrottling(VA_POLLING_HIGH_THROTTLING);  
+  PollSetState(2);
+  }
 
 void OvmsVehicleVoltAmpera::CommandWakeupComplete( const CAN_frame_t* p_frame, bool success )
   {
