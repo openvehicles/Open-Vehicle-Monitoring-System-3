@@ -246,6 +246,13 @@ private:
     return m_poll_state == VWEUP_CHARGING;
   }
 
+  bool HasT26() {
+    return (vweup_con & CON_T26) != 0;
+  }
+  bool HasOBD() {
+    return (vweup_con & CON_OBD) != 0;
+  }
+
 };
 
 #endif //#ifndef __VEHICLE_EUP_H__
