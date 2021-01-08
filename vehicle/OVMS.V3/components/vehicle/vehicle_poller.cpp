@@ -707,3 +707,38 @@ int OvmsVehicle::PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
 
   return (rxok == pdFALSE) ? -1 : (int)m_poll_single_rxerr;
   }
+
+
+/**
+ * PollSingleRequest: perform prioritized synchronous single OBD2/UDS request
+ *  Convenience wrapper for standard PID polls, see above for main implementation.
+ *  
+ *  @param bus          CAN bus to use for the request
+ *  @param txid         CAN ID to send to (0x7df = broadcast)
+ *  @param rxid         CAN ID to expect response from (broadcast: 0)
+ *  @param polltype     OBD2/UDS poll type …
+ *  @param pid          … and PID to poll
+ *  @param response     Response buffer (binary string) (multiple response frames assembled)
+ *  @param timeout_ms   Timeout for poller/response in milliseconds
+ *  @param protocol     Protocol variant: ISOTP_STD / ISOTP_EXTADR
+ *  
+ *  @return             0 = OK, -1 = timeout/poller unavailable, else UDS NRC detail code
+ *                      Note: response is only valid with return value 0
+ */
+int OvmsVehicle::PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
+                                   uint8_t polltype, uint16_t pid, std::string& response,
+                                   int timeout_ms /*=3000*/, uint8_t protocol /*=ISOTP_STD*/)
+  {
+  std::string request;
+  request = (char) polltype;
+  if (POLL_TYPE_HAS_16BIT_PID(polltype))
+    {
+    request += (char) (pid >> 8);
+    request += (char) (pid & 0xff);
+    }
+  else if (POLL_TYPE_HAS_8BIT_PID(polltype))
+    {
+    request += (char) (pid & 0xff);
+    }
+  return PollSingleRequest(bus, txid, rxid, request, response, timeout_ms, protocol);
+  }
