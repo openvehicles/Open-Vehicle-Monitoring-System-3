@@ -50,8 +50,11 @@ void OvmsVehicleVWeUp::WebInit()
   // vehicle menu:
   MyWebServer.RegisterPage("/xvu/features", "Features", WebCfgFeatures, PageMenu_Vehicle, PageAuth_Cookie);
   MyWebServer.RegisterPage("/xvu/climate", "Climate control", WebCfgClimate, PageMenu_Vehicle, PageAuth_Cookie);
-  if (vweup_con > 1) // only useful with OBD metrics
+  if (vweup_con > 1) {
+    // only useful with OBD metrics:
     MyWebServer.RegisterPage("/xvu/metrics_charger", "Charging Metrics", WebDispChgMetrics, PageMenu_Vehicle, PageAuth_Cookie);
+    MyWebServer.RegisterPage("/xvu/battmon", "Battery Monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
+  }
 }
 
 /**
@@ -62,6 +65,7 @@ void OvmsVehicleVWeUp::WebDeInit()
   MyWebServer.DeregisterPage("/xvu/features");
   MyWebServer.DeregisterPage("/xvu/climate");
   MyWebServer.DeregisterPage("/xvu/metrics_charger");
+  MyWebServer.DeregisterPage("/xvu/battmon");
 }
 
 /**
@@ -71,6 +75,7 @@ void OvmsVehicleVWeUp::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
 {
   std::string error;
   std::string modelyear;
+  std::string cell_interval_drv, cell_interval_chg;
   bool canwrite;
   bool con_obd;
   bool con_t26;
@@ -82,6 +87,8 @@ void OvmsVehicleVWeUp::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
     con_obd = (c.getvar("con_obd") == "yes");
     con_t26 = (c.getvar("con_t26") == "yes");
     canwrite = (c.getvar("canwrite") == "yes");
+    cell_interval_drv = c.getvar("cell_interval_drv");
+    cell_interval_chg = c.getvar("cell_interval_chg");
 
     // check:
     if (!modelyear.empty())
@@ -98,6 +105,15 @@ void OvmsVehicleVWeUp::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
       MyConfig.SetParamValueBool("xvu", "con_obd", con_obd);
       MyConfig.SetParamValueBool("xvu", "con_t26", con_t26);
       MyConfig.SetParamValueBool("xvu", "canwrite", canwrite);
+
+      if (cell_interval_drv == "15")
+        MyConfig.DeleteInstance("xvu", "cell_interval_drv");
+      else
+        MyConfig.SetParamValue("xvu", "cell_interval_drv", cell_interval_drv);
+      if (cell_interval_chg == "60")
+        MyConfig.DeleteInstance("xvu", "cell_interval_chg");
+      else
+        MyConfig.SetParamValue("xvu", "cell_interval_chg", cell_interval_chg);
 
       c.head(200);
       c.alert("success", "<p class=\"lead\">VW e-Up feature configuration saved.</p>");
@@ -118,6 +134,8 @@ void OvmsVehicleVWeUp::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
     con_obd = MyConfig.GetParamValueBool("xvu", "con_obd", true);
     con_t26 = MyConfig.GetParamValueBool("xvu", "con_t26", true);
     canwrite = MyConfig.GetParamValueBool("xvu", "canwrite", false);
+    cell_interval_drv = MyConfig.GetParamValue("xvu", "cell_interval_drv");
+    cell_interval_chg = MyConfig.GetParamValue("xvu", "cell_interval_chg");
 
     c.head(200);
   }
@@ -145,6 +163,17 @@ void OvmsVehicleVWeUp::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
   c.input_checkbox("Enable CAN writes", "canwrite", canwrite,
     "<p>Controls overall CAN write access, OBD2 and climate control depends on this.</p>"
     "<p>This parameter can also be set in the app under FEATURES 15.</p>");
+  c.fieldset_end();
+
+  c.fieldset_start("BMS Cell Monitoring");
+  c.input_slider("Update interval driving", "cell_interval_drv", 3, "s",
+    -1, cell_interval_drv.empty() ? 15 : atof(cell_interval_drv.c_str()),
+    15, 0, 300, 1,
+    "<p>Default 15 seconds, 0=off.</p>");
+  c.input_slider("Update interval charging", "cell_interval_chg", 3, "s",
+    -1, cell_interval_chg.empty() ? 60 : atof(cell_interval_chg.c_str()),
+    60, 0, 300, 1,
+    "<p>Default 60 seconds, 0=off.</p>");
   c.fieldset_end();
 
   c.print("<hr>");

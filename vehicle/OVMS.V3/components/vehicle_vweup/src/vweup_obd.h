@@ -139,11 +139,16 @@ using namespace std;
 #define VWUP_BAT_MGMT_I                 0x1E3D
 #define VWUP_BAT_MGMT_SOC_ABS           0x028C
 #define VWUP_BAT_MGMT_ENERGY_COUNTERS   0x1E32
-#define VWUP_BAT_MGMT_CELL_MAX          0x1E33
-#define VWUP_BAT_MGMT_CELL_MIN          0x1E34
+#define VWUP_BAT_MGMT_CELL_MAX          0x1E33    // max battery voltage
+#define VWUP_BAT_MGMT_CELL_MIN          0x1E34    // min battery voltage
 #define VWUP_BAT_MGMT_TEMP              0x2A0B
 #define VWUP_BAT_MGMT_TEMP_MAX          0x1E0E    // maximum battery temperature
 #define VWUP_BAT_MGMT_TEMP_MIN          0x1E0F    // minimum battery temperature
+#define VWUP_BAT_MGMT_CELL_VBASE        0x1E40    // cell voltage base address
+#define VWUP_BAT_MGMT_CELL_VLAST        0x1EA5    // cell voltage last address
+#define VWUP_BAT_MGMT_CELL_TBASE        0x1EAE    // cell temperature base address
+#define VWUP_BAT_MGMT_CELL_TLAST        0x1EBD    // cell temperature last address
+#define VWUP_BAT_MGMT_CELL_T17          0x7425    // cell temperature for module #17 (gen1)
 
 #define VWUP_BRKSENS_TEMP               0x1024    // sensor temperature
 

@@ -119,13 +119,10 @@ public:
   bool vin_part2;
   bool vin_part3;
   bool vweup_enable_obd;
-  bool vweup_enable_obd_new;
   bool vweup_enable_t26;
-  bool vweup_enable_t26_new;
   bool vweup_enable_write;
   int vweup_con;  // 0: none, 1: only T26, 2: only OBD2; 3: both
   int vweup_modelyear;
-  int vweup_modelyear_new;
   int vweup_remote_climate_ticker;
   int vweup_cc_temp_int;
   bool ocu_awake;
@@ -218,6 +215,12 @@ protected:
   uint16_t            eup_obd_rxerr;
   OvmsMutex           eup_obd_request;
   OvmsSemaphore       eup_obd_rxwait;
+
+protected:
+  int                 m_cfg_cell_interval_drv;          // Cell poll interval while driving, default 15 sec.
+  int                 m_cfg_cell_interval_chg;          // … while charging, default 60 sec.
+  uint16_t            m_cell_last_vi;                   // Index of last cell voltage read
+  uint16_t            m_cell_last_ti;                   // … temperature
 
 //  protected:
 //    virtual void Ticker1(uint32_t ticker);
