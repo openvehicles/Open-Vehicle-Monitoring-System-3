@@ -69,6 +69,15 @@ typedef enum {
 #define VWEUP_ON          1
 #define VWEUP_CHARGING    2
 
+// Connections available (vweup_con):
+#define CON_NONE          0
+#define CON_T26           1
+#define CON_OBD           2
+#define CON_BOTH          3
+
+typedef std::vector<OvmsVehicle::poll_pid_t, ExtRamAllocator<OvmsVehicle::poll_pid_t>> poll_vector_t;
+typedef std::initializer_list<const OvmsVehicle::poll_pid_t> poll_list_t;
+
 class OvmsVehicleVWeUp : public OvmsVehicle
 {
 public:
@@ -104,6 +113,8 @@ public:
   vehicle_command_t CommandDeactivateValet(const char *pin);
   void RemoteCommandTimer();
   void CcDisableTimer();
+
+public:
   bool vin_part1;
   bool vin_part2;
   bool vin_part3;
@@ -202,6 +213,7 @@ public:
   void IncomingPollReply(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length, uint16_t mlremain);
 
 protected:
+  poll_vector_t       m_poll_vector;
   string              eup_obd_rxbuf;
   uint16_t            eup_obd_rxerr;
   OvmsMutex           eup_obd_request;
