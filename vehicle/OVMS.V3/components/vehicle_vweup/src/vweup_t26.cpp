@@ -115,7 +115,7 @@
 ;
 ;    (C) 2021       Chris van der Meijden
 ;
-;    Big thanx to sharkcow, Dimitrie78, E-Imo, Dexter and 'der kleine Nik'.
+;    Big thanx to sharkcow, Dimitrie78, E-lmo, Dexter and 'der kleine Nik'.
 */
 
 #include "ovms_log.h"
@@ -831,7 +831,7 @@ void OvmsVehicleVWeUp::CCOn()
   data[3] = 0xFF;
   data[4] = 0xFF;
   data[5] = 0x01;
-  data[6] = 0x6E; // This is the target temperature. T = 10 + d6/10
+  data[6] = 0x78; // This is the target temperature. T = 10 + d6/10
 
   if (vweup_cc_temp_int == 15) {
     data[6] = 0x32;
@@ -1052,8 +1052,32 @@ void OvmsVehicleVWeUp::CCOnP()
   data[3] = 0xFF;
   data[4] = 0xFF;
   data[5] = 0x01;
-  data[6] = 0x6E; // This is the target temperature. T = 10 + d6/10
+  data[6] = 0x78; // This is the target temperature. T = 10 + d6/10
 
+  if (vweup_cc_temp_int == 15) {
+    data[6] = 0x32;
+    if (dev_mode) {
+      ESP_LOGI(TAG, "Cabin temperature set: 15");
+    }
+  }
+  if (vweup_cc_temp_int == 16) {
+    data[6] = 0x3C;
+    if (dev_mode) {
+      ESP_LOGI(TAG, "Cabin temperature set: 16");
+    }
+  }
+  if (vweup_cc_temp_int == 17) {
+    data[6] = 0x46;
+    if (dev_mode) {
+      ESP_LOGI(TAG, "Cabin temperature set: 17");
+    }
+  }
+  if (vweup_cc_temp_int == 18) {
+    data[6] = 0x50;
+    if (dev_mode) {
+      ESP_LOGI(TAG, "Cabin temperature set: 18");
+    }
+  }
   if (vweup_cc_temp_int == 19) {
     data[6] = 0x5A;
     if (dev_mode) {
@@ -1082,6 +1106,48 @@ void OvmsVehicleVWeUp::CCOnP()
     data[6] = 0x82;
     if (dev_mode) {
       ESP_LOGI(TAG, "Cabin temperature set: 23");
+    }
+  }
+  if (vweup_cc_temp_int == 24) {
+    data[6] = 0x8C;
+    if (dev_mode) {
+      ESP_LOGI(TAG, "Cabin temperature set: 24");
+    }
+  }
+  if (vweup_cc_temp_int == 25) {
+    data[6] = 0x96;
+    if (dev_mode) {
+      ESP_LOGI(TAG, "Cabin temperature set: 25");
+    }
+  }
+  if (vweup_cc_temp_int == 26) {
+    data[6] = 0xA0;
+    if (dev_mode) {
+      ESP_LOGI(TAG, "Cabin temperature set: 26");
+    }
+  }
+  if (vweup_cc_temp_int == 27) {
+    data[6] = 0xAA;
+    if (dev_mode) {
+      ESP_LOGI(TAG, "Cabin temperature set: 27");
+    }
+  }
+  if (vweup_cc_temp_int == 28) {
+    data[6] = 0xB4;
+    if (dev_mode) {
+      ESP_LOGI(TAG, "Cabin temperature set: 28");
+    }
+  }
+  if (vweup_cc_temp_int == 29) {
+    data[6] = 0xBE;
+    if (dev_mode) {
+      ESP_LOGI(TAG, "Cabin temperature set: 29");
+    }
+  }
+  if (vweup_cc_temp_int == 30) {
+    data[6] = 0xC8;
+    if (dev_mode) {
+      ESP_LOGI(TAG, "Cabin temperature set: 30");
     }
   }
 
@@ -1193,7 +1259,7 @@ void OvmsVehicleVWeUp::CCOff()
   data[3] = 0xFF;
   data[4] = 0xFF;
   data[5] = 0x01;
-  data[6] = 0x6E; // This is the target temperature. T = 10 + d6/10
+  data[6] = 0x78; // This is the target temperature. T = 10 + d6/10
 
   if (vweup_cc_temp_int == 19) {
     data[6] = 0x5A;
@@ -1223,6 +1289,48 @@ void OvmsVehicleVWeUp::CCOff()
     data[6] = 0x82;
     if (dev_mode) {
       ESP_LOGI(TAG, "Cabin temperature set: 23");
+    }
+  }
+  if (vweup_cc_temp_int == 24) {
+    data[6] = 0x8C;
+    if (dev_mode) {
+      ESP_LOGI(TAG, "Cabin temperature set: 24");
+    }
+  }
+  if (vweup_cc_temp_int == 25) {
+    data[6] = 0x96;
+    if (dev_mode) {
+      ESP_LOGI(TAG, "Cabin temperature set: 25");
+    }
+  }
+  if (vweup_cc_temp_int == 26) {
+    data[6] = 0xA0;
+    if (dev_mode) {
+      ESP_LOGI(TAG, "Cabin temperature set: 26");
+    }
+  }
+  if (vweup_cc_temp_int == 27) {
+    data[6] = 0xAA;
+    if (dev_mode) {
+      ESP_LOGI(TAG, "Cabin temperature set: 27");
+    }
+  }
+  if (vweup_cc_temp_int == 28) {
+    data[6] = 0xB4;
+    if (dev_mode) {
+      ESP_LOGI(TAG, "Cabin temperature set: 28");
+    }
+  }
+  if (vweup_cc_temp_int == 29) {
+    data[6] = 0xBE;
+    if (dev_mode) {
+      ESP_LOGI(TAG, "Cabin temperature set: 29");
+    }
+  }
+  if (vweup_cc_temp_int == 30) {
+    data[6] = 0xC8;
+    if (dev_mode) {
+      ESP_LOGI(TAG, "Cabin temperature set: 30");
     }
   }
 
