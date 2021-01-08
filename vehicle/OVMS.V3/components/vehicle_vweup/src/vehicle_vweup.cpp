@@ -285,7 +285,7 @@ void OvmsVehicleVWeUp::ConfigChanged(OvmsConfigParam *param)
 
 void OvmsVehicleVWeUp::Ticker1(uint32_t ticker)
 {
-  if (vweup_con == 2)
+  if (vweup_con == CON_OBD)
   {
     // only OBD connected -> get car state by polling OBD
     OBDCheckCarState();
@@ -328,7 +328,7 @@ void OvmsVehicleVWeUp::Ticker1(uint32_t ticker)
 int OvmsVehicleVWeUp::GetNotifyChargeStateDelay(const char *state)
 {
   // With OBD data, wait for first voltage & current when starting the charge:
-  if (vweup_con == 2 && strcmp(state, "charging") == 0) {
+  if (vweup_con == CON_OBD && strcmp(state, "charging") == 0) {
     return 5;
   }
   else {

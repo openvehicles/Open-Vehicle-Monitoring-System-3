@@ -56,6 +56,9 @@
   #define sizeof_array(array) (std::size(array))
 #endif
 
+// container.insert() helper:
+#define endof_array(array) ((array)+sizeof_array(array))
+
 // C string sorting for std::map et al:
 struct CmpStrOp
   {
