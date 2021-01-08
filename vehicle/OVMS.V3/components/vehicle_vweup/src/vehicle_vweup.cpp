@@ -72,7 +72,7 @@
 #include <string>
 static const char *TAG = "v-vweup";
 
-#define VERSION "0.4.0"
+#define VERSION "0.5.0"
 
 #include <stdio.h>
 #include <string>
@@ -131,6 +131,9 @@ OvmsVehicleVWeUp::OvmsVehicleVWeUp()
 {
   ESP_LOGI(TAG, "Start VW e-Up vehicle module");
 
+  // Init metrics:
+  m_version = MyMetrics.InitString("xvu.m.version", 0, VERSION " " __DATE__ " " __TIME__);
+
   // init configs:
   MyConfig.RegisterParam("xvu", "VW e-Up", true, true);
 
@@ -148,6 +151,10 @@ OvmsVehicleVWeUp::~OvmsVehicleVWeUp()
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
   WebDeInit();
 #endif
+
+  // delete metrics:
+  MyMetrics.DeregisterMetric(m_version);
+  // TODO: delete all xvu metrics
 }
 
 /*
@@ -234,53 +241,87 @@ void OvmsVehicleVWeUp::ConfigChanged(OvmsConfigParam *param)
   }
 
   ESP_LOGD(TAG, "VW e-Up reload configuration");
-  vweup_modelyear_new = MyConfig.GetParamValueInt("xvu", "modelyear", DEFAULT_MODEL_YEAR);
-  vweup_enable_obd = MyConfig.GetParamValueBool("xvu", "con_obd", true);
+  int vweup_modelyear_new = MyConfig.GetParamValueInt("xvu", "modelyear", DEFAULT_MODEL_YEAR);
+  bool vweup_enable_obd_new = MyConfig.GetParamValueBool("xvu", "con_obd", true);
   vweup_enable_t26 = MyConfig.GetParamValueBool("xvu", "con_t26", true);
   vweup_enable_write = MyConfig.GetParamValueBool("xvu", "canwrite", false);
   vweup_cc_temp_int = MyConfig.GetParamValueInt("xvu", "cc_temp", 22);
+  int cell_interval_drv = MyConfig.GetParamValueInt("xvu", "cell_interval_drv", 15);
+  int cell_interval_chg = MyConfig.GetParamValueInt("xvu", "cell_interval_chg", 60);
+
+  bool do_obd_init = (
+    (!vweup_enable_obd && vweup_enable_obd_new) ||
+    (vweup_modelyear < 2020 && vweup_modelyear_new > 2019) ||
+    (vweup_modelyear_new < 2020 && vweup_modelyear > 2019) ||
+    (cell_interval_drv != m_cfg_cell_interval_drv) ||
+    (cell_interval_chg != m_cfg_cell_interval_chg));
+
+  vweup_modelyear = vweup_modelyear_new;
+  vweup_enable_obd = vweup_enable_obd_new;
+  m_cfg_cell_interval_drv = cell_interval_drv;
+  m_cfg_cell_interval_chg = cell_interval_chg;
 
   // Connectors:
   vweup_con = vweup_enable_obd * 2 + vweup_enable_t26;
+  if (!vweup_con) {
+    ESP_LOGW(TAG, "Module will not work without any connection!");
+  }
 
+  // Set model specific general vehicle properties:
+  //  Note: currently using standard specs
+  //  TODO: get actual capacity/SOH & max charge current
+  float socfactor = StdMetrics.ms_v_bat_soc->AsFloat() / 100;
+  if (vweup_modelyear > 2019)
+  {
+    // 32.3 kWh net / 36.8 kWh gross, 2P84S = 120 Ah, 260 km WLTP
+    StdMetrics.ms_v_bat_cac->SetValue(120);
+    StdMetrics.ms_v_bat_range_full->SetValue(260);
+    StdMetrics.ms_v_bat_range_ideal->SetValue(260 * socfactor);
+    StdMetrics.ms_v_charge_climit->SetValue(32);
+
+    // Battery pack layout: 2P84S in 14 modules
+    BmsSetCellArrangementVoltage(84, 6);
+    BmsSetCellArrangementTemperature(14, 1);
+    BmsSetCellLimitsVoltage(2.0, 5.0);
+    BmsSetCellLimitsTemperature(-39, 200);
+    BmsSetCellDefaultThresholdsVoltage(0.020, 0.030);
+    BmsSetCellDefaultThresholdsTemperature(2.0, 3.0);
+  }
+  else
+  {
+    // 16.4 kWh net / 18.7 kWh gross, 2P102S = 50 Ah, 160 km WLTP
+    StdMetrics.ms_v_bat_cac->SetValue(50);
+    StdMetrics.ms_v_bat_range_full->SetValue(160);
+    StdMetrics.ms_v_bat_range_ideal->SetValue(160 * socfactor);
+    StdMetrics.ms_v_charge_climit->SetValue(16);
+
+    // Battery pack layout: 2P102S in 17 modules
+    BmsSetCellArrangementVoltage(102, 6);
+    BmsSetCellArrangementTemperature(17, 1);
+    BmsSetCellLimitsVoltage(2.0, 5.0);
+    BmsSetCellLimitsTemperature(-39, 200);
+    BmsSetCellDefaultThresholdsVoltage(0.020, 0.030);
+    BmsSetCellDefaultThresholdsTemperature(2.0, 3.0);
+  }
+
+  // Init T26 subsystem:
   if (vweup_enable_t26) {
     T26Init();
   }
 
-  // switch between generations: reload OBD poll list
-  if (vweup_enable_obd ||
-      (vweup_modelyear < 2020 && vweup_modelyear_new > 2019) ||
-      (vweup_modelyear_new < 2020 && vweup_modelyear > 2019))
-  {
-    if (vweup_modelyear_new > 2019) {
-      // set battery capacity & init calculated range
-      // This is dirty. Based on WLTP only. Should be based on SOH:
-      StandardMetrics.ms_v_bat_range_ideal->SetValue((260 * StandardMetrics.ms_v_bat_soc->AsFloat()) / 100.0);
-      // set max charge current to max possible for now:
-      StandardMetrics.ms_v_charge_climit->SetValue(32);
-    }
-    else {
-      // This is dirty. Based on WLTP only. Should be based on SOH:
-      StandardMetrics.ms_v_bat_range_ideal->SetValue((160 * StandardMetrics.ms_v_bat_soc->AsFloat()) / 100.0);
-      // set max charge current to max possible for now:
-      StandardMetrics.ms_v_charge_climit->SetValue(16);
-    }
+  // Init OBD subsystem:
+  if (do_obd_init) {
     OBDInit();
   }
-
-  if (!vweup_enable_obd) {
+  else if (!vweup_enable_obd) {
     OBDDeInit();
   }
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
+  // Init Web subsystem:
   WebDeInit();    // this can probably be done more elegantly... :-/
   WebInit();
 #endif
-
-  vweup_modelyear = vweup_modelyear_new;
-  if (!vweup_con) {
-    ESP_LOGW(TAG, "Module will not work without any connection!");
-  }
 }
 
 void OvmsVehicleVWeUp::Ticker1(uint32_t ticker)

@@ -26,7 +26,7 @@ Range Display               Partial (ideal range)
 GPS Location                Yes
 Speed Display               No
 Temperature Display         No
-BMS v+t Display             Partial (no cell details)
+BMS v+t Display             Yes (including cell details)
 TPMS Display                No
 Charge Status Display       Yes
 Charge Interruption Alerts  Yes

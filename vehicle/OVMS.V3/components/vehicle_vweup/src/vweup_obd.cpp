@@ -190,6 +190,40 @@ void OvmsVehicleVWeUp::OBDInit()
     });
   }
 
+  // Add BMS cell PIDs if enabled:
+  if (m_cfg_cell_interval_drv || m_cfg_cell_interval_chg)
+  {
+    // Battery pack layout:
+    //  Gen2 (2020): 2P84S in 14 modules
+    //  Gen1 (2013): 2P102S in 16+1 modules
+    int volts = (vweup_modelyear > 2019) ? 84 : 102;
+    int temps = (vweup_modelyear > 2019) ? 14 : 16;
+
+    // Add PIDs to poll list:
+    OvmsVehicle::poll_pid_t p = { VWUP_BAT_MGMT, UDS_READ, 0, {0,0,0}, 1, ISOTP_STD };
+    p.polltime[VWEUP_ON]        = m_cfg_cell_interval_drv;
+    p.polltime[VWEUP_CHARGING]  = m_cfg_cell_interval_chg;
+    for (int i = 0; i < volts; i++) {
+      p.pid = VWUP_BAT_MGMT_CELL_VBASE + i;
+      m_poll_vector.push_back(p);
+    }
+    for (int i = 0; i < temps; i++) {
+      p.pid = VWUP_BAT_MGMT_CELL_TBASE + i;
+      m_poll_vector.push_back(p);
+    }
+    if (vweup_modelyear <= 2019) {
+      p.pid = VWUP_BAT_MGMT_CELL_T17;
+      m_poll_vector.push_back(p);
+    }
+
+    // Init processing:
+    m_cell_last_vi = 0;
+    m_cell_last_ti = 0;
+    BmsRestartCellVoltages();
+    BmsRestartCellTemperatures();
+  }
+
+  // Terminate poll list:
   m_poll_vector.push_back(POLL_LIST_END);
   ESP_LOGD(TAG, "Poll vector: size=%d cap=%d", m_poll_vector.size(), m_poll_vector.capacity());
   PollSetPidList(m_can1, m_poll_vector.data());
@@ -325,6 +359,39 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
 
   float value;
 
+  //
+  // Handle BMS cell voltage & temperatures
+  //
+
+  if (pid >= VWUP_BAT_MGMT_CELL_VBASE && pid <= VWUP_BAT_MGMT_CELL_VLAST)
+  {
+    uint16_t vi = pid - VWUP_BAT_MGMT_CELL_VBASE;
+    if (vi < m_cell_last_vi) {
+      BmsRestartCellVoltages();
+    }
+    if (PollReply.FromUint16("VWUP_BAT_MGMT_CELL_VOLT", value)) {
+      BmsSetCellVoltage(vi, value / 4096);
+    }
+    m_cell_last_vi = vi;
+  }
+
+  if ((pid >= VWUP_BAT_MGMT_CELL_TBASE && pid <= VWUP_BAT_MGMT_CELL_TLAST) ||
+      (pid == VWUP_BAT_MGMT_CELL_T17))
+  {
+    uint16_t ti = (pid == VWUP_BAT_MGMT_CELL_T17) ? 16 : pid - VWUP_BAT_MGMT_CELL_TBASE;
+    if (ti < m_cell_last_ti) {
+      BmsRestartCellTemperatures();
+    }
+    if (PollReply.FromUint16("VWUP_BAT_MGMT_CELL_TEMP", value)) {
+      BmsSetCellTemperature(ti, value / 64);
+    }
+    m_cell_last_ti = ti;
+  }
+
+  //
+  // Handle regular PIDs
+  //
+
   switch (pid) {
     case VWUP_BAT_MGMT_U:
       if (PollReply.FromUint16("VWUP_BAT_MGMT_U", value)) {
@@ -350,6 +417,9 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
         StdMetrics.ms_v_bat_soc->SetValue(value / 100.0f);
         MotElecSoCNorm->SetValue(value / 100.0f);
         VALUE_LOG(TAG, "VWUP_MOT_ELEC_SOC_NORM=%f => %f", value, StdMetrics.ms_v_bat_soc->AsFloat());
+        // Update range:
+        StandardMetrics.ms_v_bat_range_ideal->SetValue(
+          StdMetrics.ms_v_bat_range_full->AsFloat() * StdMetrics.ms_v_bat_soc->AsFloat() / 100);
       }
       break;
 
@@ -372,6 +442,9 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
         StdMetrics.ms_v_bat_soc->SetValue(value / 2.0f);
         ChgMgmtSoCNorm->SetValue(value / 2.0f);
         VALUE_LOG(TAG, "VWUP_CHG_MGMT_SOC_NORM=%f => %f", value, StdMetrics.ms_v_bat_soc->AsFloat());
+        // Update range:
+        StandardMetrics.ms_v_bat_range_ideal->SetValue(
+          StdMetrics.ms_v_bat_range_full->AsFloat() * StdMetrics.ms_v_bat_soc->AsFloat() / 100);
       }
       break;
 
