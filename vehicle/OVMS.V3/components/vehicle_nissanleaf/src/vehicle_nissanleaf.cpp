@@ -947,13 +947,8 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       break;
     case 0x54b:
     {
-      int fanspeed_int = d[4] >> 3;
-      // todo: actually we need to use individual bits (7:3) here as remaining ones are for something else
-      if ((fanspeed_int < 1) || (fanspeed_int > 7))
-      {
-        fanspeed_int = 0;
-      }
-
+      int fanspeed_int = ((d[4] & 0x38) >> 3); //use bits 5:3 to read fan speed
+	    
       m_climate_fan_speed->SetValue(fanspeed_int / 7.0 * 100);
       m_climate_fan_speed_limit->SetValue(7);
 
