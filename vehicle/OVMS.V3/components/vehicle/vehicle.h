@@ -138,6 +138,11 @@ struct DashboardConfig;
 // Macro for poll_pid_t termination
 #define POLL_LIST_END                   { 0, 0, 0x00, 0x00, { 0, 0, 0 }, 0, 0 }
 
+// PollSingleRequest specific result codes:
+#define POLLSINGLE_OK                   0 
+#define POLLSINGLE_TIMEOUT              -1
+#define POLLSINGLE_TXFAILURE            -2
+
 
 // Standard MSG protocol commands:
 
@@ -414,7 +419,7 @@ class OvmsVehicle : public InternalRamAllocated
   private:
     OvmsRecMutex      m_poll_single_mutex;    // PollSingleRequest() concurrency protection
     std::string*      m_poll_single_rxbuf;    // … response buffer
-    uint16_t          m_poll_single_rxerr;    // … response error code (NRC)
+    int               m_poll_single_rxerr;    // … response error code (NRC) / TX failure code
     OvmsSemaphore     m_poll_single_rxdone;   // … response done (ok/error)
 
   protected:
@@ -428,6 +433,16 @@ class OvmsVehicle : public InternalRamAllocated
     int PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
                       uint8_t polltype, uint16_t pid, std::string& response,
                       int timeout_ms=3000, uint8_t protocol=ISOTP_STD);
+
+  private:
+    CanFrameCallback  m_poll_txcallback;      // Poller CAN TxCallback
+    uint32_t          m_poll_txmsgid;         // Poller last TX CAN ID (frame MsgID)
+
+  private:
+    void PollerTxCallback(const CAN_frame_t* frame, bool success);
+  protected:
+    virtual void IncomingPollTxCallback(canbus* bus, uint32_t txid, uint16_t type, uint16_t pid, bool success);
+
 
   // BMS helpers
   protected:

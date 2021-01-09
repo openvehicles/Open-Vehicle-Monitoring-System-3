@@ -245,6 +245,9 @@ static void OvmsVehicleRxTask(void *pvParameters)
 
 OvmsVehicle::OvmsVehicle()
   {
+  using std::placeholders::_1;
+  using std::placeholders::_2;
+
   m_can1 = NULL;
   m_can2 = NULL;
   m_can3 = NULL;
@@ -261,6 +264,7 @@ OvmsVehicle::OvmsVehicle()
   m_poll_state = 0;
   m_poll_bus = NULL;
   m_poll_bus_default = NULL;
+  m_poll_txcallback = std::bind(&OvmsVehicle::PollerTxCallback, this, _1, _2);
   m_poll_plist = NULL;
   m_poll_plcur = NULL;
   m_poll_ticker = 0;
@@ -336,8 +340,6 @@ OvmsVehicle::OvmsVehicle()
   xTaskCreatePinnedToCore(OvmsVehicleRxTask, "OVMS Vehicle",
     CONFIG_OVMS_VEHICLE_RXTASK_STACK, (void*)this, 10, &m_rxtask, CORE(1));
 
-  using std::placeholders::_1;
-  using std::placeholders::_2;
   MyEvents.RegisterEvent(TAG, "ticker.1", std::bind(&OvmsVehicle::VehicleTicker1, this, _1, _2));
   MyEvents.RegisterEvent(TAG, "config.changed", std::bind(&OvmsVehicle::VehicleConfigChanged, this, _1, _2));
   MyEvents.RegisterEvent(TAG, "config.mounted", std::bind(&OvmsVehicle::VehicleConfigChanged, this, _1, _2));
