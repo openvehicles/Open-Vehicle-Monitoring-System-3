@@ -348,6 +348,9 @@ class can : public InternalRamAllocated
      can();
      ~can();
 
+  private:
+    static void CAN_rxtask(void *pvParameters);
+
   public:
     void IncomingFrame(CAN_frame_t* p_frame);
 
@@ -362,7 +365,7 @@ class can : public InternalRamAllocated
   public:
     void RegisterCallback(const char* caller, CanFrameCallback callback, bool txfeedback=false);
     void DeregisterCallback(const char* caller);
-    void ExecuteCallbacks(const CAN_frame_t* frame, bool tx, bool success);
+    int ExecuteCallbacks(const CAN_frame_t* frame, bool tx, bool success);
 
   public:
     uint32_t AddLogger(canlog* logger, int filterc=0, const char* const* filterv=NULL);

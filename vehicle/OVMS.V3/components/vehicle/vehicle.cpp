@@ -245,6 +245,9 @@ static void OvmsVehicleRxTask(void *pvParameters)
 
 OvmsVehicle::OvmsVehicle()
   {
+  using std::placeholders::_1;
+  using std::placeholders::_2;
+
   m_can1 = NULL;
   m_can2 = NULL;
   m_can3 = NULL;
@@ -261,6 +264,7 @@ OvmsVehicle::OvmsVehicle()
   m_poll_state = 0;
   m_poll_bus = NULL;
   m_poll_bus_default = NULL;
+  m_poll_txcallback = std::bind(&OvmsVehicle::PollerTxCallback, this, _1, _2);
   m_poll_plist = NULL;
   m_poll_plcur = NULL;
   m_poll_ticker = 0;
@@ -336,8 +340,6 @@ OvmsVehicle::OvmsVehicle()
   xTaskCreatePinnedToCore(OvmsVehicleRxTask, "OVMS Vehicle",
     CONFIG_OVMS_VEHICLE_RXTASK_STACK, (void*)this, 10, &m_rxtask, CORE(1));
 
-  using std::placeholders::_1;
-  using std::placeholders::_2;
   MyEvents.RegisterEvent(TAG, "ticker.1", std::bind(&OvmsVehicle::VehicleTicker1, this, _1, _2));
   MyEvents.RegisterEvent(TAG, "config.changed", std::bind(&OvmsVehicle::VehicleConfigChanged, this, _1, _2));
   MyEvents.RegisterEvent(TAG, "config.mounted", std::bind(&OvmsVehicle::VehicleConfigChanged, this, _1, _2));
@@ -779,7 +781,8 @@ void OvmsVehicle::CalculateEfficiency()
   float consumption = 0;
   if (StdMetrics.ms_v_pos_speed->AsFloat() >= 5)
     consumption = StdMetrics.ms_v_bat_power->AsFloat(0, Watts) / StdMetrics.ms_v_pos_speed->AsFloat();
-  StdMetrics.ms_v_bat_consumption->SetValue((StdMetrics.ms_v_bat_consumption->AsFloat() * 4 + consumption) / 5);
+  StdMetrics.ms_v_bat_consumption->SetValue(
+    TRUNCPREC((StdMetrics.ms_v_bat_consumption->AsFloat() * 4 + consumption) / 5, 1));
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicle::CommandSetChargeMode(vehicle_mode_t mode)

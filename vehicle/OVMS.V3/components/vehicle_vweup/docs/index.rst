@@ -58,9 +58,9 @@ By default, both connections are activated.
 
 For more details on the two connection types, please see the corresponding projects:
 
-`Comfort CAN (T26) <https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3/blob/master/vehicle/OVMS.V3/components/vehicle_vweup/docs/index_t26.rst>`_ 
+:doc:`index_t26`
 
-`OBD2 <https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3/blob/master/vehicle/OVMS.V3/components/vehicle_vweup/docs/index_obd.rst>`_ 
+:doc:`index_obd`
 
 The initial code is shamelessly copied from the original projects for the Comfort CAN by Chris van der Meijden and for the OBD2 port by SokoFromNZ.
 

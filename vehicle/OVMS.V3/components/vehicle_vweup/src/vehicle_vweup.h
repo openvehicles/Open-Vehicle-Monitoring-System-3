@@ -60,14 +60,24 @@ typedef enum {
   AUTO_DISABLE_CLIMATE_CONTROL
 } RemoteCommand;
 
-// So I can easily swap between logging all Values as Info or as Debug
-// #define VALUE_LOG(t, d, v1, v2) (ESP_LOGI(t, d, v1, v2))
-#define VALUE_LOG(t, d, v1, v2) (ESP_LOGD(t, d, v1, v2))
+// Value update & conversion debug logging:
+#define VALUE_LOG(...)    ESP_LOGD(__VA_ARGS__)
+// …disable:
+//#define VALUE_LOG(...)
 
 // Car (poll) states
 #define VWEUP_OFF         0
 #define VWEUP_ON          1
 #define VWEUP_CHARGING    2
+
+// Connections available (vweup_con):
+#define CON_NONE          0
+#define CON_T26           1
+#define CON_OBD           2
+#define CON_BOTH          3
+
+typedef std::vector<OvmsVehicle::poll_pid_t, ExtRamAllocator<OvmsVehicle::poll_pid_t>> poll_vector_t;
+typedef std::initializer_list<const OvmsVehicle::poll_pid_t> poll_list_t;
 
 class OvmsVehicleVWeUp : public OvmsVehicle
 {
@@ -104,17 +114,16 @@ public:
   vehicle_command_t CommandDeactivateValet(const char *pin);
   void RemoteCommandTimer();
   void CcDisableTimer();
+
+public:
   bool vin_part1;
   bool vin_part2;
   bool vin_part3;
   bool vweup_enable_obd;
-  bool vweup_enable_obd_new;
   bool vweup_enable_t26;
-  bool vweup_enable_t26_new;
   bool vweup_enable_write;
   int vweup_con;  // 0: none, 1: only T26, 2: only OBD2; 3: both
   int vweup_modelyear;
-  int vweup_modelyear_new;
   int vweup_remote_climate_ticker;
   int vweup_cc_temp_int;
   bool ocu_awake;
@@ -202,10 +211,17 @@ public:
   void IncomingPollReply(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length, uint16_t mlremain);
 
 protected:
+  poll_vector_t       m_poll_vector;
   string              eup_obd_rxbuf;
   uint16_t            eup_obd_rxerr;
   OvmsMutex           eup_obd_request;
   OvmsSemaphore       eup_obd_rxwait;
+
+protected:
+  int                 m_cfg_cell_interval_drv;          // Cell poll interval while driving, default 15 sec.
+  int                 m_cfg_cell_interval_chg;          // … while charging, default 60 sec.
+  uint16_t            m_cell_last_vi;                   // Index of last cell voltage read
+  uint16_t            m_cell_last_ti;                   // … temperature
 
 //  protected:
 //    virtual void Ticker1(uint32_t ticker);
@@ -229,6 +245,13 @@ private:
   }
   bool IsCharging() {
     return m_poll_state == VWEUP_CHARGING;
+  }
+
+  bool HasT26() {
+    return (vweup_con & CON_T26) != 0;
+  }
+  bool HasOBD() {
+    return (vweup_con & CON_OBD) != 0;
   }
 
 };

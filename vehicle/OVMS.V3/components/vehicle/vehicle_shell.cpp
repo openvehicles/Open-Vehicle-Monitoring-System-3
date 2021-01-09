@@ -595,7 +595,12 @@ void OvmsVehicleFactory::obdii_request(int verbosity, OvmsWriter* writer, OvmsCo
   // execute request:
   int err = MyVehicleFactory.m_currentvehicle->PollSingleRequest(bus, txid, rxid,
     request, response, timeout_ms, protocol);
-  if (err < 0)
+  if (err == POLLSINGLE_TXFAILURE)
+    {
+    writer->puts("ERROR: transmission failure (CAN bus error)");
+    return;
+    }
+  else if (err < 0)
     {
     writer->puts("ERROR: timeout waiting for poller/response");
     return;

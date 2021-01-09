@@ -66,6 +66,24 @@ using namespace std;
 #define VWUP_CHG_MGMT_RX                0x7CF
 
 //
+// Poll list shortcuts
+//
+#define VWUP_MOT_ELEC                   VWUP_MOT_ELEC_TX, VWUP_MOT_ELEC_RX
+#define VWUP_BRK                        VWUP_BRK_TX,      VWUP_BRK_RX
+#define VWUP_MFD                        VWUP_MFD_TX,      VWUP_MFD_RX
+#define VWUP_BRKBOOST                   VWUP_BRKBOOST_TX, VWUP_BRKBOOST_RX
+#define VWUP_STEER                      VWUP_STEER_TX,    VWUP_STEER_RX
+#define VWUP_ELD                        VWUP_ELD_TX,      VWUP_ELD_RX
+#define VWUP_INF                        VWUP_INF_TX,      VWUP_INF_RX
+#define VWUP_BAT_MGMT                   VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX
+#define VWUP_BRKSENS                    VWUP_BRKSENS_TX,  VWUP_BRKSENS_RX
+#define VWUP_CHG                        VWUP_CHG_TX,      VWUP_CHG_RX
+#define VWUP_CHG_MGMT                   VWUP_CHG_MGMT_TX, VWUP_CHG_MGMT_RX
+
+#define UDS_READ                        VEHICLE_POLL_TYPE_READDATA
+#define UDS_SESSION                     VEHICLE_POLL_TYPE_OBDIISESSION
+
+//
 // ECU diagnostic session(s)
 //
 #define VWUP_EXTDIAG_START              0x03
@@ -76,7 +94,7 @@ using namespace std;
 //
 #define VWUP_MOT_ELEC_SOC_NORM          0x1164
 #define VWUP_MOT_ELEC_SOC_ABS           0xF45B
-//#define VWUP_MOT_ELEC_TEMP_AMB          0xF446    // not working for some reason (value always 0)
+#define VWUP_MOT_ELEC_TEMP_AMB          0xF446    // Ambient temperature
 #define VWUP_MOT_ELEC_TEMP_DCDC         0x116F    // DCDC converter temperature current value
 #define VWUP_MOT_ELEC_TEMP_PEM          0x1116    // pulse inverter temperature current value
 #define VWUP_MOT_ELEC_TEMP_COOL1        0x1611    // coolant temperature after heat exchanger HV battery current value
@@ -85,6 +103,9 @@ using namespace std;
 #define VWUP_MOT_ELEC_TEMP_COOL4        0x1614    // coolant temperature before PTC current value
 #define VWUP_MOT_ELEC_TEMP_COOL5        0x1615    // coolant temperature before power electronics current value
 #define VWUP_MOT_ELEC_TEMP_COOL_BAT     0x1169    // cooling temperature of hybrid battery
+#define VWUP_MOT_ELEC_VIN               0xF802    // Vehicle Identification Number
+#define VWUP_MOT_ELEC_SPEED             0xF40D    // Speed [kph]
+#define VWUP_MOT_ELEC_POWER_MOT         0x147E    // Inverter output / motor input power level [kW]
 
 #define VWUP_BRK_TPMS                   0x1821
 
@@ -120,11 +141,16 @@ using namespace std;
 #define VWUP_BAT_MGMT_I                 0x1E3D
 #define VWUP_BAT_MGMT_SOC_ABS           0x028C
 #define VWUP_BAT_MGMT_ENERGY_COUNTERS   0x1E32
-#define VWUP_BAT_MGMT_CELL_MAX          0x1E33
-#define VWUP_BAT_MGMT_CELL_MIN          0x1E34
+#define VWUP_BAT_MGMT_CELL_MAX          0x1E33    // max battery voltage
+#define VWUP_BAT_MGMT_CELL_MIN          0x1E34    // min battery voltage
 #define VWUP_BAT_MGMT_TEMP              0x2A0B
 #define VWUP_BAT_MGMT_TEMP_MAX          0x1E0E    // maximum battery temperature
 #define VWUP_BAT_MGMT_TEMP_MIN          0x1E0F    // minimum battery temperature
+#define VWUP_BAT_MGMT_CELL_VBASE        0x1E40    // cell voltage base address
+#define VWUP_BAT_MGMT_CELL_VLAST        0x1EA5    // cell voltage last address
+#define VWUP_BAT_MGMT_CELL_TBASE        0x1EAE    // cell temperature base address
+#define VWUP_BAT_MGMT_CELL_TLAST        0x1EBD    // cell temperature last address
+#define VWUP_BAT_MGMT_CELL_T17          0x7425    // cell temperature for module #17 (gen1)
 
 #define VWUP_BRKSENS_TEMP               0x1024    // sensor temperature
 

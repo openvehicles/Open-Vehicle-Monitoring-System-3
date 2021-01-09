@@ -947,13 +947,8 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       break;
     case 0x54b:
     {
-      int fanspeed_int = d[4] >> 3;
-      // todo: actually we need to use individual bits (7:3) here as remaining ones are for something else
-      if ((fanspeed_int < 1) || (fanspeed_int > 7))
-      {
-        fanspeed_int = 0;
-      }
-
+      int fanspeed_int = ((d[4] & 0x38) >> 3); //use bits 5:3 to read fan speed
+	    
       m_climate_fan_speed->SetValue(fanspeed_int / 7.0 * 100);
       m_climate_fan_speed_limit->SetValue(7);
 
@@ -1196,11 +1191,11 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         {
         /* Battery type 1 and 2 use different (* and conficting)
          * mx values to identify the charge duration type:
-         *       |    |  full 100% | range 80%  |
-         *  type | QC | L2  L1  L0 | L2  L1  L0 |
-         *  ---- | -- | --  --  -- | --  --  -- |
-         *     1 |  ? |  ?   9  17 |  ?  10  18*|
-         *     2 |  0 |  5   8  11 | 18* 21  24 |
+         *         |    |  full 100% 	    | range 80%  	|
+         *   type  | QC | 6.6kW  200V  100V | 6.6kW  200V  100V |
+         *  ------ | -- |  --    --    --   |  --    --    --   |
+         *   ZE0 1 |  0 |  NA    9     17   |  NA    10    18*	|
+         *  AZE0 2 |  0 |  5	 8     11   |  18*   21    24	|
          *
          * Only type 1 and type 2 24kwh models from before 2016 will report a valid 'range 80%'.
          * Any type 2 24 or 30kwh models starting mid 2015 (USA/Jap) or 2016 (UK), will always

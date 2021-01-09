@@ -704,7 +704,7 @@ void can::RemovePlayers()
 // CAN controller task
 ////////////////////////////////////////////////////////////////////////
 
-static void CAN_rxtask(void *pvParameters)
+void can::CAN_rxtask(void *pvParameters)
   {
   can *me = (can*)pvParameters;
   CAN_queue_msg_t msg;
@@ -735,7 +735,6 @@ static void CAN_rxtask(void *pvParameters)
           break;
         case CAN_txfailedcallback:
           msg.body.bus->TxCallback(&msg.body.frame, false);
-          msg.body.bus->LogStatus(CAN_LogStatus_Error);
           break;
         case CAN_logerror:
           msg.body.bus->LogStatus(CAN_LogStatus_Error);
@@ -864,23 +863,33 @@ void can::DeregisterCallback(const char* caller)
   m_txcallbacks.remove_if([caller](CanFrameCallbackEntry* entry){ return strcmp(entry->m_caller, caller)==0; });
   }
 
-void can::ExecuteCallbacks(const CAN_frame_t* frame, bool tx, bool success)
+int can::ExecuteCallbacks(const CAN_frame_t* frame, bool tx, bool success)
   {
+  int cnt = 0;
   if (tx)
     {
     if (frame->callback)
       {
-      (*(frame->callback))(frame, success); // invoke frame-specific callback function
+      // invoke frame-specific callback function
+      (*(frame->callback))(frame, success);
+      cnt++;
       }
-    for (auto entry : m_txcallbacks) {      // invoke generic tx callbacks
+    for (auto entry : m_txcallbacks)
+      {
+      // invoke generic tx callbacks
       entry->m_callback(frame, success);
+      cnt++;
       }
     }
   else
     {
     for (auto entry : m_rxcallbacks)
+      {
       entry->m_callback(frame, success);
+      cnt++;
+      }
     }
+  return cnt;
   }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1022,8 +1031,13 @@ void canbus::TxCallback(CAN_frame_t* p_frame, bool success)
   else
     {
     m_status.tx_fails++;
-    MyCan.ExecuteCallbacks(p_frame, true, success);
+    int cnt = MyCan.ExecuteCallbacks(p_frame, true, success);
     LogFrame(CAN_LogFrame_TX_Fail, p_frame);
+    // log error status if no application callbacks were called for this frame:
+    if (cnt == 0)
+      {
+      LogStatus(CAN_LogStatus_Error);
+      }
     }
   }
 

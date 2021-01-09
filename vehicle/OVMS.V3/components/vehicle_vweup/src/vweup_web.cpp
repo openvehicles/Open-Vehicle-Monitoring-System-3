@@ -50,8 +50,11 @@ void OvmsVehicleVWeUp::WebInit()
   // vehicle menu:
   MyWebServer.RegisterPage("/xvu/features", "Features", WebCfgFeatures, PageMenu_Vehicle, PageAuth_Cookie);
   MyWebServer.RegisterPage("/xvu/climate", "Climate control", WebCfgClimate, PageMenu_Vehicle, PageAuth_Cookie);
-  if (vweup_con > 1) // only useful with OBD metrics
+  if (HasOBD()) {
+    // only useful with OBD metrics:
     MyWebServer.RegisterPage("/xvu/metrics_charger", "Charging Metrics", WebDispChgMetrics, PageMenu_Vehicle, PageAuth_Cookie);
+    MyWebServer.RegisterPage("/xvu/battmon", "Battery Monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
+  }
 }
 
 /**
@@ -62,6 +65,7 @@ void OvmsVehicleVWeUp::WebDeInit()
   MyWebServer.DeregisterPage("/xvu/features");
   MyWebServer.DeregisterPage("/xvu/climate");
   MyWebServer.DeregisterPage("/xvu/metrics_charger");
+  MyWebServer.DeregisterPage("/xvu/battmon");
 }
 
 /**
@@ -69,11 +73,13 @@ void OvmsVehicleVWeUp::WebDeInit()
  */
 void OvmsVehicleVWeUp::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
 {
-  std::string error;
+  std::string error, warn;
   std::string modelyear;
+  std::string cell_interval_drv, cell_interval_chg;
   bool canwrite;
   bool con_obd;
   bool con_t26;
+  bool do_reload = false;
 
   if (c.method == "POST")
   {
@@ -82,6 +88,8 @@ void OvmsVehicleVWeUp::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
     con_obd = (c.getvar("con_obd") == "yes");
     con_t26 = (c.getvar("con_t26") == "yes");
     canwrite = (c.getvar("canwrite") == "yes");
+    cell_interval_drv = c.getvar("cell_interval_drv");
+    cell_interval_chg = c.getvar("cell_interval_chg");
 
     // check:
     if (!modelyear.empty())
@@ -91,17 +99,42 @@ void OvmsVehicleVWeUp::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
         error += "<li data-input=\"modelyear\">Model year must be &ge; 2013</li>";
     }
 
+    if (!con_obd && !con_t26) {
+      warn += "<li><b>No connection type enabled.</b> You won't be able to get live data.</li>";
+    }
+
     if (error == "")
     {
+      do_reload =
+        MyConfig.GetParamValue("xvu", "modelyear", STR(DEFAULT_MODEL_YEAR)) != modelyear ||
+        MyConfig.GetParamValueBool("xvu", "con_obd", true) != con_obd ||
+        MyConfig.GetParamValueBool("xvu", "con_t26", true) != con_t26;
+
       // store:
       MyConfig.SetParamValue("xvu", "modelyear", modelyear);
       MyConfig.SetParamValueBool("xvu", "con_obd", con_obd);
       MyConfig.SetParamValueBool("xvu", "con_t26", con_t26);
       MyConfig.SetParamValueBool("xvu", "canwrite", canwrite);
 
+      if (cell_interval_drv == "15")
+        MyConfig.DeleteInstance("xvu", "cell_interval_drv");
+      else
+        MyConfig.SetParamValue("xvu", "cell_interval_drv", cell_interval_drv);
+      if (cell_interval_chg == "60")
+        MyConfig.DeleteInstance("xvu", "cell_interval_chg");
+      else
+        MyConfig.SetParamValue("xvu", "cell_interval_chg", cell_interval_chg);
+
       c.head(200);
       c.alert("success", "<p class=\"lead\">VW e-Up feature configuration saved.</p>");
-      MyWebServer.OutputHome(p, c);
+      if (warn != "") {
+        warn = "<p class=\"lead\">Warning:</p><ul class=\"warnlist\">" + warn + "</ul>";
+        c.alert("warning", warn.c_str());
+      }
+      if (do_reload)
+        MyWebServer.OutputReconnect(p, c, "Module reconfiguration in progress…");
+      else
+        MyWebServer.OutputHome(p, c);
       c.done();
       return;
     }
@@ -118,6 +151,8 @@ void OvmsVehicleVWeUp::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
     con_obd = MyConfig.GetParamValueBool("xvu", "con_obd", true);
     con_t26 = MyConfig.GetParamValueBool("xvu", "con_t26", true);
     canwrite = MyConfig.GetParamValueBool("xvu", "canwrite", false);
+    cell_interval_drv = MyConfig.GetParamValue("xvu", "cell_interval_drv");
+    cell_interval_chg = MyConfig.GetParamValue("xvu", "cell_interval_chg");
 
     c.head(200);
   }
@@ -147,9 +182,32 @@ void OvmsVehicleVWeUp::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
     "<p>This parameter can also be set in the app under FEATURES 15.</p>");
   c.fieldset_end();
 
+  c.fieldset_start("BMS Cell Monitoring", "needs-con-obd");
+  c.input_slider("Update interval driving", "cell_interval_drv", 3, "s",
+    -1, cell_interval_drv.empty() ? 15 : atof(cell_interval_drv.c_str()),
+    15, 0, 300, 1,
+    "<p>Default 15 seconds, 0=off.</p>");
+  c.input_slider("Update interval charging", "cell_interval_chg", 3, "s",
+    -1, cell_interval_chg.empty() ? 60 : atof(cell_interval_chg.c_str()),
+    60, 0, 300, 1,
+    "<p>Default 60 seconds, 0=off.</p>");
+  c.fieldset_end();
+
   c.print("<hr>");
   c.input_button("default", "Save");
   c.form_end();
+
+  // Hide/show connection specific features:
+  c.print(
+    "<script>\n"
+    "$('[name=con_obd]').on('change', function() {\n"
+      "if ($(this).prop('checked'))\n"
+        "$('.needs-con-obd').slideDown();\n"
+      "else\n"
+        "$('.needs-con-obd').hide();\n"
+    "}).trigger('change');\n"
+    "</script>\n");
+
   c.panel_end();
   c.done();
 }
