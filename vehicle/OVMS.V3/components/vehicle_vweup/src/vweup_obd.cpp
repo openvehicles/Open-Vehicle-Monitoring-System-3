@@ -179,6 +179,14 @@ void OvmsVehicleVWeUp::OBDInit()
     m_poll_vector.push_back(p);
   }
 
+  // Add high priority PIDs only necessary without T26:
+  if (vweup_con == CON_OBD) {
+    m_poll_vector.insert(m_poll_vector.end(), {
+      {VWUP_MOT_ELEC, UDS_READ, VWUP_MOT_ELEC_SPEED,    {  0,  1,  0}, 1, ISOTP_STD},
+      // … speed interval = VWUP_BAT_MGMT_U & _I to get a consistent consumption calculation
+    });
+  }
+
   // Add general & model year specific PIDs:
   m_poll_vector.insert(m_poll_vector.end(), vweup_polls, endof_array(vweup_polls));
   if (vweup_modelyear < 2020) {
@@ -188,7 +196,7 @@ void OvmsVehicleVWeUp::OBDInit()
     m_poll_vector.insert(m_poll_vector.end(), vweup_gen2_polls, endof_array(vweup_gen2_polls));
   }
 
-  // Add PIDs only necessary without T26:
+  // Add low priority PIDs only necessary without T26:
   if (vweup_con == CON_OBD) {
     m_poll_vector.insert(m_poll_vector.end(), {
       {VWUP_MOT_ELEC, UDS_READ, VWUP_MOT_ELEC_TEMP_AMB, {  0,150,150}, 1, ISOTP_STD},
@@ -660,6 +668,12 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
       }
       break;
 
+    case VWUP_MOT_ELEC_SPEED:
+      if (PollReply.FromUint8("VWUP_MOT_ELEC_SPEED", value)) {
+        StdMetrics.ms_v_pos_speed->SetValue(value);
+        VALUE_LOG(TAG, "VWUP_MOT_ELEC_SPEED=%f", value);
+      }
+      break;
     case VWUP_MFD_ODOMETER:
       if (PollReply.FromUint16("VWUP_MFD_ODOMETER", value)) {
         StdMetrics.ms_v_pos_odometer->SetValue(value * 10.0f);

@@ -60,9 +60,10 @@ typedef enum {
   AUTO_DISABLE_CLIMATE_CONTROL
 } RemoteCommand;
 
-// So I can easily swap between logging all Values as Info or as Debug
-// #define VALUE_LOG(t, d, v1, v2) (ESP_LOGI(t, d, v1, v2))
-#define VALUE_LOG(t, d, v1, v2) (ESP_LOGD(t, d, v1, v2))
+// Value update & conversion debug logging:
+#define VALUE_LOG(...)    ESP_LOGD(__VA_ARGS__)
+// …disable:
+//#define VALUE_LOG(...)
 
 // Car (poll) states
 #define VWEUP_OFF         0
