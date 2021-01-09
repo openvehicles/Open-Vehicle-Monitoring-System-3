@@ -211,16 +211,16 @@ OvmsVehicleBMWi3::OvmsVehicleBMWi3()
     mt_i3_v_charge_temp_gatedriver      = MyMetrics.InitInt("xi3.v.c.temp.gatedriver",      SM_STALE_MID, 0, Celcius);
     // Trip consumption
     mt_i3_v_pos_tripconsumption         = MyMetrics.InitInt("xi3.v.p.tripconsumption",      SM_STALE_MID, 0, WattHoursPK);
-
     // State
     mt_i3_obdtraffic                    = MyMetrics.InitBool("xi3.v.e.obdtraffic",          SM_STALE_MID, false);
     mt_i3_pollermode                    = MyMetrics.InitInt("xi3.s.pollermode",             SM_STALE_MID, false);
-
+    mt_i3_age                           = MyMetrics.InitInt("xi3.s.age",                    SM_STALE_MID, -1, Minutes);
     // Controls
     mt_i3_v_env_autorecirc              = MyMetrics.InitBool("xi3.v.e.autorecirc",          SM_STALE_MID, true);
  
     // Init the stuff to keep track of whether the car is talking or not
     framecount = 0; tickercount = 0; replycount = 0;
+    last_obd_data_seen = 0;
 
     // Callbacks
     MyCan.RegisterCallback(TAG, std::bind(&OvmsVehicleBMWi3::CanResponder, this, std::placeholders::_1));
@@ -328,6 +328,11 @@ void OvmsVehicleBMWi3::Ticker10(uint32_t ticker)
 
     // 3) i3 always has regen braking on
     StdMetrics.ms_v_env_regenbrake->SetValue(true);
+
+    // 4) mt_i3_age
+    if (last_obd_data_seen) {
+        mt_i3_age->SetValue(StdMetrics.ms_m_monotonic->AsInt() - last_obd_data_seen, Seconds);
+    }
 }
 
 void OvmsVehicleBMWi3::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
@@ -355,6 +360,9 @@ void OvmsVehicleBMWi3::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pi
   // We now have received the whole reply - lets mine our nuggets!
   // FIXME: we need to check where we received it from in case PIDs clash?
   // FIXME: Seems OK for now since there aren't clashes - compiler complains if there are.
+
+  last_obd_data_seen = StdMetrics.ms_m_monotonic->AsInt();
+
   switch (pid) {
 
   // --- SME --------------------------------------------------------------------------------------------------------
