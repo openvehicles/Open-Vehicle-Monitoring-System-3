@@ -1,6 +1,13 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Volt/Ampera: BMS cell monitoring (CAN1 polling), fast CAN polling when waking up,
+  estimated range gets from CAN instead of calculation, 
+  lock/unlock status processing fixed for Volt 14MY; 
+  New standard metrics: 
+    trip (this charge), energy used (this charge), HV battery capacity (CAC, Ah), 
+    transmission temp, doors, trunk, hood, lightings;
+- VW e-Up: BMS cell monitoring (@OBD)
 - VW e-Up: combined T26A & OBD module, extended standard metrics coverage,
     charge notifications & durations (OBD), enhanced cabin pre-heating (T26)
 - Vehicle framework: generic single OBD2/UDS request shell command & API call
