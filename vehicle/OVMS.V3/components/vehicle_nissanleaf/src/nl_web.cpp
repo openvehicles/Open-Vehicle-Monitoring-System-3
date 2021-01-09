@@ -163,7 +163,7 @@ void OvmsVehicleNissanLeaf::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       "<p>This allows an offset adjustment to the cabin temperature sensor readings in Celcius.</p>",
       "step=\"0.1\"", "");
   c.input("number", "AC Charge Voltage Multiplier", "acvoltagemultiplier", acvoltagemultiplier.c_str(), "Default: " STR(DEFAULT_AC_VOLTAGE_MULTIPLIER),
-      "<p>This allows scaling of the voltage presence reading when AC charging on newer vehicles (default value scales to 220V from 179 value reported).</p>",
+      "<p>This allows scaling of the voltage presence reading when AC charging on newer vehicles (default value scales to 200V from 179 value reported).</p>",
       "step=\"0.001\"", "");
   c.fieldset_end();
 
