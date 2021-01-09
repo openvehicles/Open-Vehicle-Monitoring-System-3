@@ -51,6 +51,8 @@ const OvmsVehicle::poll_pid_t vweup_polls[] = {
   // Note: poller ticker cycles at 3600 seconds = max period
   // { ecu, type, pid, {_OFF,_ON,_CHARGING}, bus, protocol }
 
+  {VWUP_MOT_ELEC, UDS_READ, VWUP_MOT_ELEC_POWER_MOT,        {  0,  1,  0}, 1, ISOTP_STD},
+
   {VWUP_MOT_ELEC, UDS_READ, VWUP_MOT_ELEC_SOC_NORM,         {  0, 20,  0}, 1, ISOTP_STD},
   {VWUP_MOT_ELEC, UDS_READ, VWUP_MOT_ELEC_SOC_ABS,          {  0, 20,  0}, 1, ISOTP_STD},
   {VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_SOC_ABS,          {  0, 20, 20}, 1, ISOTP_STD},
@@ -672,6 +674,12 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
       if (PollReply.FromUint8("VWUP_MOT_ELEC_SPEED", value)) {
         StdMetrics.ms_v_pos_speed->SetValue(value);
         VALUE_LOG(TAG, "VWUP_MOT_ELEC_SPEED=%f", value);
+      }
+      break;
+    case VWUP_MOT_ELEC_POWER_MOT:
+      if (PollReply.FromInt16("VWUP_MOT_ELEC_POWER_MOT", value)) {
+        StdMetrics.ms_v_inv_power->SetValue(value / 250);
+        VALUE_LOG(TAG, "VWUP_MOT_ELEC_POWER_MOT=%f => %f", value, StdMetrics.ms_v_inv_power->AsFloat());
       }
       break;
     case VWUP_MFD_ODOMETER:
