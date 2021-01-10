@@ -98,6 +98,7 @@ Custom metrics
 ======================================== =================== =====================================================================================================
 Metric name                              Example value       Description
 ======================================== =================== =====================================================================================================
+xi3.s.age                                5Min                How long since we last got data from the car
 xi3.s.pollermode                         0                   OBD-II polling mode as explained above
 xi3.v.b.p.ocv.avg                        4.0646V             Main battery pack - average open-circuit voltage
 xi3.v.b.p.ocv.max                        4.067V              Main battery pack - highest open-circuit voltage
