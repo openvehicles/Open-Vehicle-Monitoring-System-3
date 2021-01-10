@@ -87,8 +87,7 @@ static const OvmsVehicle::poll_pid_t obdii_polls[] = {
     { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_SME_ALTERUNG_KAPAZITAET_TS,                     {  0, 60, 60, 60 }, 0, ISOTP_EXTADR },   // 0x6335 v_bat_soh, v_bat_health
     { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_SME_HV_SPANNUNG_BERECHNET,                      {  0,  2,  1,  2 }, 0, ISOTP_EXTADR },   // 0xDD68 v_bat_volts
     { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_SME_HV_STROM,                                   {  0,  2,  1,  2 }, 0, ISOTP_EXTADR },   // 0xDD69 v_bat_current - and v_bat_power by *v_bat_volts
-    { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_SME_ANZEIGE_SOC,                                { 10, 10, 10, 10 }, 0, ISOTP_EXTADR },   // 0xDDBC v_bat_soc, mt_i3_charge_max, mt_i3_charge_min
-                                                                                                                                                                     // We poll this even when car is asleep - just in case the car does wake up 
+    { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_SME_ANZEIGE_SOC,                                {  0, 30, 30, 30 }, 0, ISOTP_EXTADR },   // 0xDDBC v_bat_soc, mt_i3_charge_max, mt_i3_charge_min
     { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_SME_ZUSTAND_SPEICHER,                           {  0,120,120,120 }, 0, ISOTP_EXTADR },   // 0xDFA0 v_bat_cac, v_bat_pack_vmax, _vmin, _vavg, v_bat_pack_level_max, _min, avg, mt_i3_batt_pack_ocv_avg, _max, _min
     { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_SME_TEMPERATUREN,                               {  0, 30, 30, 30 }, 0, ISOTP_EXTADR },   // 0xDDC0 v_bat_pack_temp, _tmin, _tmax and _tavg
 #ifdef INVESTIGATIONS
