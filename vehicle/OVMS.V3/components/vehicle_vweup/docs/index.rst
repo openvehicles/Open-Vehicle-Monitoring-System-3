@@ -207,7 +207,7 @@ xvu.m.soc.norm                OBD        80.5 %                   Current normal
 Example Code for Web Plugin with some custom metrics:
 -----------------------------------------------------
 
-.. code-block::
+.. code-block:: html
 
   <div class="panel panel-primary">
    <div class="panel-heading">Custom Metrics</div>
