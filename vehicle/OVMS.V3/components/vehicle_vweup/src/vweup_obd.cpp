@@ -720,6 +720,7 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
     case VWUP_ELD_DCDC_I:
       if (PollReply.FromUint16("VWUP_ELD_DCDC_I", value)) {
         StdMetrics.ms_v_charge_12v_current->SetValue(value / 16.0f);
+        StdMetrics.ms_v_bat_12v_current->SetValue(value / 16.0f); // until we find a separate reading
         VALUE_LOG(TAG, "VWUP_ELD_DCDC_I=%f => %f", value, StdMetrics.ms_v_charge_12v_current->AsFloat());
         StdMetrics.ms_v_charge_12v_power->SetValue(
           StdMetrics.ms_v_charge_12v_voltage->AsFloat() * StdMetrics.ms_v_charge_12v_current->AsFloat());
