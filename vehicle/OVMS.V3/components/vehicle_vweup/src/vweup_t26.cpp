@@ -352,6 +352,10 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
       }
       break;
 
+    case 0x571: // 12 Volt
+      StandardMetrics.ms_v_bat_12v_voltage->SetValue(5 + (0.05 * d[0]));
+      break;
+
     case 0x61C: // Charge detection
       cd_count++;
       if (d[2] < 0x07) {
