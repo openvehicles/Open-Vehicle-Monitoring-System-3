@@ -238,7 +238,7 @@ OvmsVehicleBMWi3::OvmsVehicleBMWi3()
     mt_i3_obdtraffic->SetValue(false);
     StdMetrics.ms_v_env_awake->SetValue(false);
     StdMetrics.ms_v_env_on->SetValue(false);
-    PollSetThrottling(10);
+    PollSetThrottling(50);
     PollSetResponseSeparationTime(5);
 }
 
