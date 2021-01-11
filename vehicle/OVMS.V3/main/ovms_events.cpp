@@ -239,8 +239,8 @@ void OvmsEvents::EventTask()
 
 void OvmsEvents::HandleQueueSignalEvent(event_queue_t* msg)
   {
-  // Log everything but the excessively verbose ticker signals
-  if (m_current_event.compare(0,7,"ticker.") != 0)
+  // Log everything but the ticker & clock signals
+  if (!startsWith(m_current_event, "ticker.") && !startsWith(m_current_event, "clock."))
     {
     if (m_trace)
       ESP_LOGI(TAG, "Signal(%s)",m_current_event.c_str());
