@@ -98,32 +98,32 @@ static const OvmsVehicle::poll_pid_t obdii_polls[] = {
   // KOM: (Combo): Instrument panel
     { I3_ECU_KOM_TX, I3_ECU_KOM_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_KOM_TACHO_WERT,                                 {  0, 10,  1, 10 }, 0, ISOTP_EXTADR },   // 0xD107 v_pos_speed
     { I3_ECU_KOM_TX, I3_ECU_KOM_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_KOM_GWSZ_ABSOLUT_WERT,                          {  0, 60, 10, 60 }, 0, ISOTP_EXTADR },   // 0xD10D v_pos_odometer
-    { I3_ECU_KOM_TX, I3_ECU_KOM_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_KOM_KOMBI_REICHWEITE_BEV_PHEV,                  {  0,  5,  5, 20 }, 0, ISOTP_EXTADR },   // 0xD111 v_bat_range_est, _ideal, _full
-    { I3_ECU_KOM_TX, I3_ECU_KOM_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_KOM_A_TEMP_WERT,                                {  0, 60, 60, 60 }, 0, ISOTP_EXTADR },   // 0xD112 v_env_temp
+    { I3_ECU_KOM_TX, I3_ECU_KOM_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_KOM_KOMBI_REICHWEITE_BEV_PHEV,                  {  0,  5,  5,  5 }, 0, ISOTP_EXTADR },   // 0xD111 v_bat_range_est, _ideal, _full
+    { I3_ECU_KOM_TX, I3_ECU_KOM_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_KOM_A_TEMP_WERT,                                {  0, 10, 10, 10 }, 0, ISOTP_EXTADR },   // 0xD112 v_env_temp
     { I3_ECU_KOM_TX, I3_ECU_KOM_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_KOM_SEGMENTDATEN_SPEICHER,                      {  0,120,120,120 }, 0, ISOTP_EXTADR },   // 0xD12F edrive stuff I think --> FIXME See what this gives us.
-    { I3_ECU_KOM_TX, I3_ECU_KOM_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_KOM_REICHWEITE_MCV,                             {  0, 30, 30, 30 }, 0, ISOTP_EXTADR },   // 0x420C mt_i3_range_bc, _comfort, _ecopro, _ecoproplus
-    { I3_ECU_KOM_TX, I3_ECU_KOM_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_KOM_KOMBI_BC_BCW_KWH_KM,                        {  0, 10,  2, 60 }, 0, ISOTP_EXTADR },   // 0xD129 Averages - but we don't use
+    { I3_ECU_KOM_TX, I3_ECU_KOM_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_KOM_REICHWEITE_MCV,                             {  0, 10, 10, 10 }, 0, ISOTP_EXTADR },   // 0x420C mt_i3_range_bc, _comfort, _ecopro, _ecoproplus
+    { I3_ECU_KOM_TX, I3_ECU_KOM_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_KOM_KOMBI_BC_BCW_KWH_KM,                        {  0, 10, 10, 60 }, 0, ISOTP_EXTADR },   // 0xD129 Averages - but we don't use
     { I3_ECU_KOM_TX, I3_ECU_KOM_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_KOM_KOMBI_BC_RBC_KWH_KM,                        {  0, 10,  2, 60 }, 0, ISOTP_EXTADR },   // 0xD12A v_pos_trip, v_post_tripconsumption, v_bat_coulomb_used, v_bat_energy_used
   
   // EME:
-    { I3_ECU_EME_TX, I3_ECU_EME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_EME_EME_HVPM_DCDC_ANSTEUERUNG,                {  0, 30, 30, 30 }, 0, ISOTP_EXTADR },   // 0xDE00 mt_i3_charge_actual
-    { I3_ECU_EME_TX, I3_ECU_EME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_EME_AE_STROM_EMASCHINE,                       {  0, 30, 30, 30 }, 0, ISOTP_EXTADR },   // 0xDE8A Motor currents - can we calculate an efficiency from this?
-    { I3_ECU_EME_TX, I3_ECU_EME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_EME_AE_TEMP_LE,                               {  0, 30, 30, 30 }, 0, ISOTP_EXTADR },   // 0xDE8C v_inv_temp, v_charge_temp, mt_i3_v_charge_temp_gatedriver
-    { I3_ECU_EME_TX, I3_ECU_EME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_EME_AE_TEMP_EMASCHINE,                        {  0, 30, 30, 30 }, 0, ISOTP_EXTADR },   // 0xDEA6 v_mot_temp
-    { I3_ECU_EME_TX, I3_ECU_EME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_EME_AE_ELEKTRISCHE_MASCHINE,                  {  0, 60,  2, 60 }, 0, ISOTP_EXTADR },   // 0xDEA7 v_mot_rpm
+    { I3_ECU_EME_TX, I3_ECU_EME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_EME_EME_HVPM_DCDC_ANSTEUERUNG,                {  0, 30, 30, 10 }, 0, ISOTP_EXTADR },   // 0xDE00 mt_i3_charge_actual
+    { I3_ECU_EME_TX, I3_ECU_EME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_EME_AE_STROM_EMASCHINE,                       {  0, 30,  2, 30 }, 0, ISOTP_EXTADR },   // 0xDE8A Motor currents - can we calculate an efficiency from this?
+    { I3_ECU_EME_TX, I3_ECU_EME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_EME_AE_TEMP_LE,                               {  0, 10, 10, 10 }, 0, ISOTP_EXTADR },   // 0xDE8C v_inv_temp, v_charge_temp, mt_i3_v_charge_temp_gatedriver
+    { I3_ECU_EME_TX, I3_ECU_EME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_EME_AE_TEMP_EMASCHINE,                        {  0, 10,  5, 30 }, 0, ISOTP_EXTADR },   // 0xDEA6 v_mot_temp
+    { I3_ECU_EME_TX, I3_ECU_EME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_EME_AE_ELEKTRISCHE_MASCHINE,                  {  0, 60,  1, 60 }, 0, ISOTP_EXTADR },   // 0xDEA7 v_mot_rpm
 
   //NBT: Headunit high
-    { I3_ECU_NBT_TX, I3_ECU_NBT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_NBT_STATUS_SPEED,                             {  0, 30, 30, 30 }, 0, ISOTP_EXTADR },   // 0xD030 Speeds from wheels: mt_i3_wheelX_speed 
-    { I3_ECU_NBT_TX, I3_ECU_NBT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_NBT_STATUS_DIRECTION,                         {  0, 30, 30, 30 }, 0, ISOTP_EXTADR },   // 0xD031 v_env_gear
+    { I3_ECU_NBT_TX, I3_ECU_NBT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_NBT_STATUS_SPEED,                             {  0, 30,  1, 30 }, 0, ISOTP_EXTADR },   // 0xD030 Speeds from wheels: mt_i3_wheelX_speed 
+    { I3_ECU_NBT_TX, I3_ECU_NBT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_NBT_STATUS_DIRECTION,                         {  0, 10, 10, 10 }, 0, ISOTP_EXTADR },   // 0xD031 v_env_gear
 
   // FZD: Roof function centre
-    { I3_ECU_FZD_TX, I3_ECU_FZD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_FZD_DWA_KLAPPENKONTAKTE,                      {  0, 60, 60, 60 }, 0, ISOTP_EXTADR },   // 0xDCDD v_door_fr, _fl. etc.  v_env_locked
+    { I3_ECU_FZD_TX, I3_ECU_FZD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_FZD_DWA_KLAPPENKONTAKTE,                      {  0, 10, 10, 10 }, 0, ISOTP_EXTADR },   // 0xDCDD v_door_fr, _fl. etc.  v_env_locked
 
   //KLE: Convenience charging electronics
-    { I3_ECU_KLE_TX, I3_ECU_KLE_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_KLE_BETRIEBSZUSTAND_LADEGERAET,               {  0, 30, 30, 30 }, 0, ISOTP_EXTADR },   // 0xDE84 v_charge_state, c_charge_inprogress, mt_i3_v_charge_dc_inprogress, v_charge_state, etc
-    { I3_ECU_KLE_TX, I3_ECU_KLE_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_KLE_LADEGERAET_LEISTUNG,                      {  0, 30, 30, 30 }, 0, ISOTP_EXTADR },   // 0xDE85 v_charge_efficiency
-    { I3_ECU_KLE_TX, I3_ECU_KLE_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_KLE_LADEGERAET_SPANNUNG,                      {  0, 30, 30, 30 }, 0, ISOTP_EXTADR },   // 0xDE86 v_charge_voltage, mt_i3_v_charge_voltage_phaseX, mt_i3_v_charge_voltage_dc etc
-    { I3_ECU_KLE_TX, I3_ECU_KLE_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_KLE_LADEGERAET_STROM,                         {  0, 30, 30, 30 }, 0, ISOTP_EXTADR },   // 0xDE87 v_charge_currents in similar way
+    { I3_ECU_KLE_TX, I3_ECU_KLE_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_KLE_BETRIEBSZUSTAND_LADEGERAET,               {  0, 10, 10, 10 }, 0, ISOTP_EXTADR },   // 0xDE84 v_charge_state, c_charge_inprogress, mt_i3_v_charge_dc_inprogress, v_charge_state, etc
+    { I3_ECU_KLE_TX, I3_ECU_KLE_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_KLE_LADEGERAET_LEISTUNG,                      {  0, 10, 10, 10 }, 0, ISOTP_EXTADR },   // 0xDE85 v_charge_efficiency
+    { I3_ECU_KLE_TX, I3_ECU_KLE_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_KLE_LADEGERAET_SPANNUNG,                      {  0, 10, 10, 10 }, 0, ISOTP_EXTADR },   // 0xDE86 v_charge_voltage, mt_i3_v_charge_voltage_phaseX, mt_i3_v_charge_voltage_dc etc
+    { I3_ECU_KLE_TX, I3_ECU_KLE_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_KLE_LADEGERAET_STROM,                         {  0, 10, 10, 10 }, 0, ISOTP_EXTADR },   // 0xDE87 v_charge_currents in similar way
 
   // EDM: Electrical digital motor electronics (low voltage ECU)
     { I3_ECU_EDM_TX, I3_ECU_EDM_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_EDM_PEDALWERTGEBER,                           {  0,  5,  1, 60 }, 0, ISOTP_EXTADR },   // 0xDE9C v_env_throttle
@@ -144,12 +144,12 @@ static const OvmsVehicle::poll_pid_t obdii_polls[] = {
     { I3_ECU_LIM_TX, I3_ECU_LIM_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_LIM_LED_LADESTATUS,                           {  0, 10, 10, 10 }, 0, ISOTP_EXTADR },   // 0xDEF3 mt_i3_v_charge_chargeledstate
 
   // IHX: Integrated automatic heating/aircon
-    { I3_ECU_IHX_TX, I3_ECU_IHX_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_IHX_TEMP_INNEN_UNBELUEFTET,                   {  0, 20, 20, 20 }, 0, ISOTP_EXTADR },   // 0xD85C v_env_cabintemp
-    { I3_ECU_IHX_TX, I3_ECU_IHX_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_IHX_EKMV_BETRIEBSZUSTAND_GEN20,               {  0, 20, 20, 20 }, 0, ISOTP_EXTADR },   // 0xD8C5 v_env_cooling
-    { I3_ECU_IHX_TX, I3_ECU_IHX_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_IHX_KLIMA_VORN_LUFTVERTEILUNG_LI_RE,          {  0, 20, 20, 20 }, 0, ISOTP_EXTADR },   // 0xD91A v_env_cabinvent
-    { I3_ECU_IHX_TX, I3_ECU_IHX_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_IHX_KLIMA_VORN_OFF_EIN,                       {  0, 20, 20, 20 }, 0, ISOTP_EXTADR },   // 0xD92C v_env_hvac
-    { I3_ECU_IHX_TX, I3_ECU_IHX_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_IHX_KLIMA_VORN_PRG_AUC_EIN,                   {  0, 20, 20, 20 }, 0, ISOTP_EXTADR },   // 0xD930 mt_i3_v_env_autorecirc
-    { I3_ECU_IHX_TX, I3_ECU_IHX_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_IHX_KLIMA_VORN_PRG_UMLUFT_EIN,                {  0, 20, 20, 20 }, 0, ISOTP_EXTADR },   // 0xD931 v_env_cabinintake
+    { I3_ECU_IHX_TX, I3_ECU_IHX_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_IHX_TEMP_INNEN_UNBELUEFTET,                   {  0, 11, 11, 11 }, 0, ISOTP_EXTADR },   // 0xD85C v_env_cabintemp
+    { I3_ECU_IHX_TX, I3_ECU_IHX_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_IHX_EKMV_BETRIEBSZUSTAND_GEN20,               {  0, 11, 11, 11 }, 0, ISOTP_EXTADR },   // 0xD8C5 v_env_cooling
+    { I3_ECU_IHX_TX, I3_ECU_IHX_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_IHX_KLIMA_VORN_LUFTVERTEILUNG_LI_RE,          {  0, 11, 11, 11 }, 0, ISOTP_EXTADR },   // 0xD91A v_env_cabinvent
+    { I3_ECU_IHX_TX, I3_ECU_IHX_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_IHX_KLIMA_VORN_OFF_EIN,                       {  0, 11, 11, 11 }, 0, ISOTP_EXTADR },   // 0xD92C v_env_hvac
+    { I3_ECU_IHX_TX, I3_ECU_IHX_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_IHX_KLIMA_VORN_PRG_AUC_EIN,                   {  0, 11, 11, 11 }, 0, ISOTP_EXTADR },   // 0xD930 mt_i3_v_env_autorecirc
+    { I3_ECU_IHX_TX, I3_ECU_IHX_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_IHX_KLIMA_VORN_PRG_UMLUFT_EIN,                {  0, 11, 11, 11 }, 0, ISOTP_EXTADR },   // 0xD931 v_env_cabinintake
 
   // EPS:  Power steering (We only use this to tell if the car is ready since the EPS is only on when the car is READY)
     { I3_ECU_EPS_TX, I3_ECU_EPS_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_EPS_EPS_MOMENTENSENSOR,                       {  0,  5,  5,  5 }, 0, ISOTP_EXTADR },   // 0xDB99
@@ -215,12 +215,16 @@ OvmsVehicleBMWi3::OvmsVehicleBMWi3()
     // State
     mt_i3_obdtraffic                    = MyMetrics.InitBool("xi3.v.e.obdtraffic",          SM_STALE_MID, false);
     mt_i3_pollermode                    = MyMetrics.InitInt("xi3.s.pollermode",             SM_STALE_MID, false);
+    mt_i3_age                           = MyMetrics.InitInt("xi3.s.age",                    SM_STALE_MID, -1, Minutes);
 
     // Controls
     mt_i3_v_env_autorecirc              = MyMetrics.InitBool("xi3.v.e.autorecirc",          SM_STALE_MID, true);
  
     // Init the stuff to keep track of whether the car is talking or not
-    framecount = 0; tickercount = 0; replycount = 0;
+    framecount = 0;
+    tickercount = 0;
+    replycount = 0;
+    last_obd_data_seen = 0;
 
     // Callbacks
     MyCan.RegisterCallback(TAG, std::bind(&OvmsVehicleBMWi3::CanResponder, this, std::placeholders::_1));
@@ -234,7 +238,7 @@ OvmsVehicleBMWi3::OvmsVehicleBMWi3()
     mt_i3_obdtraffic->SetValue(false);
     StdMetrics.ms_v_env_awake->SetValue(false);
     StdMetrics.ms_v_env_on->SetValue(false);
-    PollSetThrottling(10);
+    PollSetThrottling(50);
     PollSetResponseSeparationTime(5);
 }
 
@@ -328,6 +332,11 @@ void OvmsVehicleBMWi3::Ticker10(uint32_t ticker)
 
     // 3) i3 always has regen braking on
     StdMetrics.ms_v_env_regenbrake->SetValue(true);
+
+    // 4) mt_i3_age
+    if (last_obd_data_seen) {
+        mt_i3_age->SetValue(StdMetrics.ms_m_monotonic->AsInt() - last_obd_data_seen, Seconds);
+    }
 }
 
 void OvmsVehicleBMWi3::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
@@ -355,6 +364,9 @@ void OvmsVehicleBMWi3::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pi
   // We now have received the whole reply - lets mine our nuggets!
   // FIXME: we need to check where we received it from in case PIDs clash?
   // FIXME: Seems OK for now since there aren't clashes - compiler complains if there are.
+
+  last_obd_data_seen = StdMetrics.ms_m_monotonic->AsInt();
+
   switch (pid) {
 
   // --- SME --------------------------------------------------------------------------------------------------------
