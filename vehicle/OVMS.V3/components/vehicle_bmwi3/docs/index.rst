@@ -77,8 +77,14 @@ The car is accessible over the OBD-II port when it is running (ignition on) and 
 (40 seconds or so) after it is turned off or the car is "tweaked" (lock button pushed,
 connected-drive command received, etc).
 
-Unfortunately this means that when your car is standing or charging OVMS cannot consistently get data 
-from the car.  Metrics "v.e.awake" tells you if the car is awake or not.
+Unfortunately this means that when your car is standing or charging OVMS only has
+intermittent access to data from the car.  
+
+By observation, whilst the car is charging it wakes up now and then (seems to be every 30 minutes).
+So at those times we can update our SOC etc.
+
+Metrics "v.e.awake" tells you if the car is awake or not.  Metric "xi3.s.age" will tell you how
+many minutes have passed since we last received data from the car.
 
 You may also refer to metric xi3.s.pollermode as follows:
 
