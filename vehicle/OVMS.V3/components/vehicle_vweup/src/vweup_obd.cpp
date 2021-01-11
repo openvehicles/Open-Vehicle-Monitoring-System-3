@@ -752,7 +752,8 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
       break;
 
     case VWUP_CHG_MGMT_REM:
-      if (PollReply.FromUint8("VWUP_CHG_MGMT_REM", value)) {
+      // Ignore charge shutdown value of 127 to keep last estimation:
+      if (PollReply.FromUint8("VWUP_CHG_MGMT_REM", value) && value != 127) {
         StdMetrics.ms_v_charge_duration_full->SetValue(value * 5.0f);
         VALUE_LOG(TAG, "VWUP_CHG_MGMT_REM=%f => %f", value, StdMetrics.ms_v_charge_duration_full->AsFloat());
       }
