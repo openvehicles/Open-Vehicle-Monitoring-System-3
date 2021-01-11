@@ -276,6 +276,7 @@ void OvmsVehicleVWeUp::OBDCheckCarState()
     if (!IsCharging()) {
       ESP_LOGI(TAG, "Setting car state to CHARGING");
       StdMetrics.ms_v_env_on->SetValue(false);
+      StdMetrics.ms_v_env_awake->SetValue(false);
       // TODO: get real charge mode, port & pilot states, fake for now:
       StdMetrics.ms_v_charge_mode->SetValue("standard");
       StdMetrics.ms_v_door_chargeport->SetValue(true);
@@ -317,7 +318,6 @@ void OvmsVehicleVWeUp::OBDCheckCarState()
       EnergyRecdStart = StdMetrics.ms_v_bat_energy_recd_total->AsFloat();
       EnergyUsedStart = StdMetrics.ms_v_bat_energy_used_total->AsFloat();
       ESP_LOGD(TAG, "Start Counters: %f, %f, %f", OdoStart, EnergyRecdStart, EnergyUsedStart);
-      StdMetrics.ms_v_charge_duration_full->SetValue(0);
 
       // Fetch VIN once:
       if (!StdMetrics.ms_v_vin->IsDefined()) {
@@ -351,9 +351,6 @@ void OvmsVehicleVWeUp::OBDCheckCarState()
   ESP_LOGI(TAG, "Wait is over: Setting car state to OFF");
   StdMetrics.ms_v_env_on->SetValue(false);
   StdMetrics.ms_v_env_awake->SetValue(false);
-  // StdMetrics.ms_v_charge_voltage->SetValue(0);
-  // StdMetrics.ms_v_charge_current->SetValue(0);
-  StdMetrics.ms_v_charge_duration_full->SetValue(0);
   PollSetState(VWEUP_OFF);
 }
 
