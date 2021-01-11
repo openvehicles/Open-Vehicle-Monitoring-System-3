@@ -309,7 +309,7 @@ canbus* OvmsVehicleMgEv::IdToBus(int id)
 
 void OvmsVehicleMgEv::NotifyVehicleIdling()
 {
-    if (m_poll_state != PollStateCharging)
+    if (m_poll_state == PollStateRunning)
     {
         OvmsVehicle::NotifyVehicleIdling();
     }
