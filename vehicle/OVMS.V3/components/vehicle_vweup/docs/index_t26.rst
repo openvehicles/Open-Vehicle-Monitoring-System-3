@@ -1,4 +1,5 @@
 .. _index_t26:
+
 ==============================
 VW e-Up via Comfort CAN (T26A)
 ==============================
@@ -35,7 +36,7 @@ Charge Interruption Alerts  Yes (per notification on the charging state)
 Charge Control              tba
 Lock/Unlock Vehicle         No
 Valet Mode Control          No
-Others                      Odometer, VIN, status of lock, plug, lights, doors, trunk and bonnet
+Others                      Odometer, trip, VIN, status of lock, plug, lights, doors, trunk and bonnet
 =========================== ==============
 
 
@@ -92,7 +93,7 @@ User notes
 * Close the carpet lid.
 * Reinstall the passenger seat.
 * Configure OVMS as described in the OVMS user manual.
-* Configure 'Model year' and 'Can write access' under VW e-Up (Komfort CAN) -> Features.
+* Configure 'Model year', 'Can write access' and 'Connection type' under VW e-Up -> Features.
 * 'Model year' and 'Can write access' can also be set from within the app (FEATURES 20 and 15).
 * Register and connect OVMS to a server (as guided within the OVMS setup).
 * Turn the ignition in the car on and off to receive initial values (also needed after updates).
@@ -107,11 +108,11 @@ User notes
 Climate control
 ---------------
 
-Climate control works, as long as write access to the comfort can has been enabled in the app or in the OVMS webinterface (VW e-Up (Komfort CAN) -> Features).
+Climate control works, as long as write access to the comfort can has been enabled in the app or in the OVMS webinterface (VW e-Up -> Features).
 
 To turn on or off the AC from within the Android app just press the "A/C" button. Within the iOS app press "Homelink 1" for AC on and "Homelink 2" for AC off.
 
-Once the AC is turned on by the app there will be a delay of about 15 seconds untill the AC actually starts in the car. Further 10 seconds all communication from the app to the car is blocked.
+Once the AC is turned on by the app there will be a delay of about 17 seconds untill the AC actually starts in the car. Further 10 seconds all communication from the app to the car is blocked.
 
 The communication from the app to the car is also blocked for 10 seconds after the "AC off" command from the app to the car. There is no delay between the "AC off" signal of the app and the actually turning off in the car.
 
@@ -160,13 +161,11 @@ ID	    Conversion	      Unit    Function
 Development notes
 -----------------
 
-Under this vehicle component we use the original T26A approach, which can write to the comfort can and is able to manage the climate control of the car.
-
-Because T26A does not use the OBD socket and has limited access to system information an OBD approach is implemented as a different vehicle component (VWUP.OBD). That component is not covered here.
+Under this vehicle component part we use the original T26A approach, which can write to the comfort can and is able to manage the climate control of the car.
 
 You will normally use the OVMS binaries provided i.e. `here <https://dexters-web.de/>`_. 
 
-The VWUP.T26 component with working climate control is publicly available within the OVMS binary version 3.2.15 'edge' and upwards ('main', 'eap' and 'edge'). The Android app version has to be 3.17.1 or higher to have access to the climate control functions for this vehicle component.
+The VWUP T26A component part with working climate control is publicly available within the OVMS binary version 3.2.15 'edge' and upwards ('main', 'eap' and 'edge'). The Android app version has to be 3.17.1 or higher to have access to the climate control functions for this vehicle component.
 
 If you want to compile the binary yourself you will need to read the OVMS development documentation on how to set up the tool chain, check out the repository and the submodules and copy the file
 
@@ -181,7 +180,7 @@ sdkconfig
 Vehicle log files
 --------------------------
 
-To be able to implement the VWUP.T26 vehicle component for OVMS the CAN logging of the VW e-UP provided by 'sharkcow' was of tremendous help.
+To be able to implement the VWUP vehicle component for OVMS the CAN logging of the VW e-UP provided by 'sharkcow' was of tremendous help.
 
 The implementation of this vehicle component could not have been done without these great files.
 
