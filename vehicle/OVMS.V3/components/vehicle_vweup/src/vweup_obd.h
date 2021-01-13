@@ -159,7 +159,7 @@ using namespace std;
 #define VWUP_CHG_TEMP_BRD               0x15D8    // temperature battery charger system board
 #define VWUP_CHG_TEMP_PFCCOIL           0x15D9    // temperature battery charger PFC coil
 #define VWUP_CHG_TEMP_DCDCCOIL          0x15DA    // temperature battery charger DCDC coil
-#define VWUP_CHG_TEMP                   0x15E2    // charger coolant temperature
+#define VWUP_CHG_TEMP_COOLER            0x15E2    // charger coolant temperature
 #define VWUP_CHG_TEMP_DCDCPL            0x15EC    // temperature DCDC powerline
 #define VWUP1_CHG_AC_U                  0x1DA9
 #define VWUP1_CHG_AC_I                  0x1DA8

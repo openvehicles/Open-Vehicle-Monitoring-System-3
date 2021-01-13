@@ -79,7 +79,7 @@ const OvmsVehicle::poll_pid_t vweup_polls[] = {
   {VWUP_ELD,      UDS_READ, VWUP_ELD_DCDC_I,                {  0,  5, 10}, 1, ISOTP_STD},
   {VWUP_ELD,      UDS_READ, VWUP_ELD_TEMP_MOT,              {  0, 20,  0}, 1, ISOTP_STD},
   {VWUP_MOT_ELEC, UDS_READ, VWUP_MOT_ELEC_TEMP_PEM,         {  0, 20,  0}, 1, ISOTP_STD},
-  {VWUP_CHG,      UDS_READ, VWUP_CHG_TEMP_BRD,              {  0, 20, 20}, 1, ISOTP_STD},
+  {VWUP_CHG,      UDS_READ, VWUP_CHG_TEMP_COOLER,           {  0, 20, 20}, 1, ISOTP_STD},
 //{VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_TEMP_MAX,         {  0, 20,  0}, 1, ISOTP_STD},
 //{VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_TEMP_MIN,         {  0, 20,  0}, 1, ISOTP_STD},
 
@@ -201,7 +201,7 @@ void OvmsVehicleVWeUp::OBDInit()
   // Add low priority PIDs only necessary without T26:
   if (vweup_con == CON_OBD) {
     m_poll_vector.insert(m_poll_vector.end(), {
-      {VWUP_MOT_ELEC, UDS_READ, VWUP_MOT_ELEC_TEMP_AMB, {  0,150,150}, 1, ISOTP_STD},
+      {VWUP_MOT_ELEC, UDS_READ, VWUP_MOT_ELEC_TEMP_AMB, {  0, 30,  0}, 1, ISOTP_STD},
     });
   }
 
@@ -738,10 +738,10 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
         VALUE_LOG(TAG, "VWUP_MOT_ELEC_TEMP_PEM=%f => %f", value, StdMetrics.ms_v_inv_temp->AsFloat());
       }
       break;
-    case VWUP_CHG_TEMP_BRD:
-      if (PollReply.FromUint8("VWUP_CHG_TEMP_BRD", value)) {
+    case VWUP_CHG_TEMP_COOLER:
+      if (PollReply.FromUint8("VWUP_CHG_TEMP_COOLER", value)) {
         StdMetrics.ms_v_charge_temp->SetValue(value - 40.0f);
-        VALUE_LOG(TAG, "VWUP_CHG_TEMP_BRD=%f => %f", value, StdMetrics.ms_v_charge_temp->AsFloat());
+        VALUE_LOG(TAG, "VWUP_CHG_TEMP_COOLER=%f => %f", value, StdMetrics.ms_v_charge_temp->AsFloat());
       }
       break;
     case VWUP_MOT_ELEC_TEMP_AMB:

@@ -25,8 +25,8 @@ GPS Antenna                 1020200 Universal GPS Antenna (SMA Connector) (or an
 SOC Display                 Yes
 Range Display               Partial (ideal range)
 GPS Location                Yes
-Speed Display               No
-Temperature Display         No
+Speed Display               Yes
+Temperature Display         Yes
 BMS v+t Display             Yes (including cell details)
 TPMS Display                No
 Charge Status Display       Yes
