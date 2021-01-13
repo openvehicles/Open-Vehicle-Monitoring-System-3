@@ -69,6 +69,7 @@ const OvmsVehicle::poll_pid_t vweup_polls[] = {
   {VWUP_CHG,      UDS_READ, VWUP_CHG_POWER_LOSS,            {  0,  0, 10}, 1, ISOTP_STD},
 
   {VWUP_MFD,      UDS_READ, VWUP_MFD_ODOMETER,              {  0, 60,  0}, 1, ISOTP_STD},
+  {VWUP_MFD,      UDS_READ, VWUP_MFD_RANGE_CAP,             {  0, 60,  0}, 1, ISOTP_STD},
 
 //{VWUP_BRK,      UDS_READ, VWUP_BRK_TPMS,                  {  0,  5,  0}, 1, ISOTP_STD},
   {VWUP_MFD,      UDS_READ, VWUP_MFD_SERV_RANGE,            {  0, 60,  0}, 1, ISOTP_STD},
@@ -433,7 +434,7 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
         VALUE_LOG(TAG, "VWUP_MOT_ELEC_SOC_NORM=%f => %f", value, StdMetrics.ms_v_bat_soc->AsFloat());
         // Update range:
         StandardMetrics.ms_v_bat_range_ideal->SetValue(
-          StdMetrics.ms_v_bat_range_full->AsFloat() * StdMetrics.ms_v_bat_soc->AsFloat() / 100);
+          StdMetrics.ms_v_bat_range_full->AsFloat() * (StdMetrics.ms_v_bat_soc->AsFloat() / 100));
       }
       break;
 
@@ -467,6 +468,35 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
             m_range_est_factor = range_factor;
           }
         }
+      }
+      break;
+
+    case VWUP_MFD_RANGE_CAP:
+      if (PollReply.FromUint16("VWUP_MFD_RANGE_CAP", value)) {
+        // Usable battery energy [kWh] from range estimation:
+        //  We assume this to be usable as an indicator for the overall CAC & SOH,
+        //  as the range estimation needs to be based on the actual (aged) battery capacity.
+        //  The value may include a battery temperature compensation, so may change
+        //  from summer to winter, this isn't known yet. There also may be a separate
+        //  actual SOH reading available (to be discovered).
+        float energy_avail = value / 10;
+        float soc_fct = StdMetrics.ms_v_bat_soc->AsFloat() / 100;
+        float energy_full = energy_avail / soc_fct;
+        
+        // Gen2: 32.3 kWh net / 36.8 kWh gross, 2P84S = 120 Ah, 260 km WLTP
+        // Gen1: 16.4 kWh net / 18.7 kWh gross, 2P102S = 50 Ah, 160 km WLTP
+        float cap_fct    = energy_full / ((vweup_modelyear > 2019) ?  32.3f :  16.4f);
+        float cap_ah     = cap_fct     * ((vweup_modelyear > 2019) ? 120.0f :  50.0f);
+        float range_full = cap_fct     * ((vweup_modelyear > 2019) ? 260.0f : 160.0f);
+        
+        // Update metrics:
+        StdMetrics.ms_v_bat_soh->SetValue(cap_fct * 100);
+        StdMetrics.ms_v_bat_cac->SetValue(cap_ah);
+        StdMetrics.ms_v_bat_range_full->SetValue(range_full);
+        StdMetrics.ms_v_bat_range_ideal->SetValue(range_full * soc_fct);
+        VALUE_LOG(TAG, "VWUP_MFD_RANGE_CAP=%f => %.1fkWh"
+          " => CAC=%.1fAh, SOH=%.1f%%, RangeFull=%.0fkm, RangeIdeal=%.0fkm",
+          value, energy_avail, cap_ah, cap_fct * 100, range_full, range_full * soc_fct);
       }
       break;
 

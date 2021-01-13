@@ -114,6 +114,7 @@ using namespace std;
 #define VWUP_MFD_SERV_TIME              0x2261
 //#define VWUP_MFD_TEMP_COOL              0x        // coolant temperature
 #define VWUP_MFD_RANGE_DSP              0x22E0    // Estimated range displayed
+#define VWUP_MFD_RANGE_CAP              0x22E4    // Usable battery energy [kWh] from range estimation
 
 #define VWUP_BRKBOOST_TEMP_ECU          0x028D    // control unit temperature
 #define VWUP_BRKBOOST_TEMP_ACC          0x4E06    // temperature brake accumulator control unit
