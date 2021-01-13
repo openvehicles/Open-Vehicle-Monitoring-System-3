@@ -211,17 +211,14 @@ public:
   void IncomingPollReply(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length, uint16_t mlremain);
 
 protected:
-  poll_vector_t       m_poll_vector;
-  string              eup_obd_rxbuf;
-  uint16_t            eup_obd_rxerr;
-  OvmsMutex           eup_obd_request;
-  OvmsSemaphore       eup_obd_rxwait;
+  poll_vector_t       m_poll_vector;                    // List of PIDs to poll
 
-protected:
   int                 m_cfg_cell_interval_drv;          // Cell poll interval while driving, default 15 sec.
   int                 m_cfg_cell_interval_chg;          // … while charging, default 60 sec.
   uint16_t            m_cell_last_vi;                   // Index of last cell voltage read
   uint16_t            m_cell_last_ti;                   // … temperature
+
+  float               m_range_est_factor;               // For range calculation during charge
 
 //  protected:
 //    virtual void Ticker1(uint32_t ticker);

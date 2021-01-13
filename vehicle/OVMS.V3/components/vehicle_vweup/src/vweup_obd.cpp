@@ -202,6 +202,7 @@ void OvmsVehicleVWeUp::OBDInit()
   if (vweup_con == CON_OBD) {
     m_poll_vector.insert(m_poll_vector.end(), {
       {VWUP_MOT_ELEC, UDS_READ, VWUP_MOT_ELEC_TEMP_AMB, {  0, 30,  0}, 1, ISOTP_STD},
+      {VWUP_MFD,      UDS_READ, VWUP_MFD_RANGE_DSP,     {  0, 30,  0}, 1, ISOTP_STD},
     });
   }
 
@@ -425,6 +426,7 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
       break;
 
     case VWUP_MOT_ELEC_SOC_NORM:
+      // Gets updates while driving
       if (PollReply.FromUint16("VWUP_MOT_ELEC_SOC_NORM", value)) {
         StdMetrics.ms_v_bat_soc->SetValue(value / 100.0f);
         MotElecSoCNorm->SetValue(value / 100.0f);
@@ -432,6 +434,37 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
         // Update range:
         StandardMetrics.ms_v_bat_range_ideal->SetValue(
           StdMetrics.ms_v_bat_range_full->AsFloat() * StdMetrics.ms_v_bat_soc->AsFloat() / 100);
+      }
+      break;
+
+    case VWUP_CHG_MGMT_SOC_NORM:
+      // Gets updates while charging
+      if (PollReply.FromUint8("VWUP_CHG_MGMT_SOC_NORM", value)) {
+        float soc = value / 2.0f;
+        StdMetrics.ms_v_bat_soc->SetValue(soc);
+        ChgMgmtSoCNorm->SetValue(soc);
+        VALUE_LOG(TAG, "VWUP_CHG_MGMT_SOC_NORM=%f => %f", value, soc);
+        // Update range:
+        StdMetrics.ms_v_bat_range_ideal->SetValue(
+          StdMetrics.ms_v_bat_range_full->AsFloat() * soc / 100.0f);
+        // Calculate estimated range from last known factor:
+        StdMetrics.ms_v_bat_range_est->SetValue(soc * m_range_est_factor);
+      }
+      break;
+
+    case VWUP_MFD_RANGE_DSP:
+      // Gets updates while driving
+      if (PollReply.FromUint16("VWUP_MFD_RANGE_DSP", value)) {
+        StdMetrics.ms_v_bat_range_est->SetValue(value);
+        VALUE_LOG(TAG, "VWUP_MFD_RANGE_DSP=%f", value);
+        // Update range factor for calculation during charge:
+        float soc = StdMetrics.ms_v_bat_soc->AsFloat();
+        if (value > 10 && soc > 10) {
+          float range_factor = value / soc;
+          if (range_factor > 0.1) {
+            m_range_est_factor = range_factor;
+          }
+        }
       }
       break;
 
@@ -446,17 +479,6 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
       if (PollReply.FromUint8("VWUP_BAT_MGMT_SOC_ABS", value)) {
         BatMgmtSoCAbs->SetValue(value / 2.5f);
         VALUE_LOG(TAG, "VWUP_BAT_MGMT_SOC_ABS=%f => %f", value, BatMgmtSoCAbs->AsFloat());
-      }
-      break;
-
-    case VWUP_CHG_MGMT_SOC_NORM:
-      if (PollReply.FromUint8("VWUP_CHG_MGMT_SOC_NORM", value)) {
-        StdMetrics.ms_v_bat_soc->SetValue(value / 2.0f);
-        ChgMgmtSoCNorm->SetValue(value / 2.0f);
-        VALUE_LOG(TAG, "VWUP_CHG_MGMT_SOC_NORM=%f => %f", value, StdMetrics.ms_v_bat_soc->AsFloat());
-        // Update range:
-        StandardMetrics.ms_v_bat_range_ideal->SetValue(
-          StdMetrics.ms_v_bat_range_full->AsFloat() * StdMetrics.ms_v_bat_soc->AsFloat() / 100);
       }
       break;
 

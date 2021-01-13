@@ -72,7 +72,7 @@
 #include <string>
 static const char *TAG = "v-vweup";
 
-#define VERSION "0.5.1"
+#define VERSION "0.6.0"
 
 #include <stdio.h>
 #include <string>
@@ -277,6 +277,10 @@ void OvmsVehicleVWeUp::ConfigChanged(OvmsConfigParam *param)
     StdMetrics.ms_v_bat_cac->SetValue(120);
     StdMetrics.ms_v_bat_range_full->SetValue(260);
     StdMetrics.ms_v_bat_range_ideal->SetValue(260 * socfactor);
+    if (StdMetrics.ms_v_bat_range_est->AsFloat() > 10 && StdMetrics.ms_v_bat_soc->AsFloat() > 10)
+      m_range_est_factor = StdMetrics.ms_v_bat_range_est->AsFloat() / StdMetrics.ms_v_bat_soc->AsFloat();
+    else
+      m_range_est_factor = 2.6f;
     StdMetrics.ms_v_charge_climit->SetValue(32);
 
     // Battery pack layout: 2P84S in 14 modules
@@ -293,6 +297,10 @@ void OvmsVehicleVWeUp::ConfigChanged(OvmsConfigParam *param)
     StdMetrics.ms_v_bat_cac->SetValue(50);
     StdMetrics.ms_v_bat_range_full->SetValue(160);
     StdMetrics.ms_v_bat_range_ideal->SetValue(160 * socfactor);
+    if (StdMetrics.ms_v_bat_range_est->AsFloat() > 10 && StdMetrics.ms_v_bat_soc->AsFloat() > 10)
+      m_range_est_factor = StdMetrics.ms_v_bat_range_est->AsFloat() / StdMetrics.ms_v_bat_soc->AsFloat();
+    else
+      m_range_est_factor = 1.6f;
     StdMetrics.ms_v_charge_climit->SetValue(16);
 
     // Battery pack layout: 2P102S in 17 modules
