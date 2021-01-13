@@ -242,7 +242,10 @@ void scanStatus(int, OvmsWriter* writer, OvmsCommand*, int, const char* const*)
     }
     else if (s_scanner->Complete())
     {
-        writer->puts("Scan complete");
+        writer->printf(
+            "Scan complete (%03x %04x-%04x)\n",
+            s_scanner->Ecu(), s_scanner->Start(), s_scanner->End()
+        );
     }
     else
     {
@@ -264,7 +267,11 @@ void scanStop(int, OvmsWriter* writer, OvmsCommand*, int, const char* const*)
         writer->puts("Error: No scan currently in progress");
         return;
     }
-    writer->puts("Scan results:");
+    writer->printf(
+        "Scan results (%03x %04x-%04x):\n",
+        s_scanner->Ecu(), s_scanner->Start(),
+        s_scanner->Complete() ? s_scanner->End() : s_scanner->Current()
+    );
     s_scanner->Output(writer);
     delete s_scanner;
     s_scanner = nullptr;
