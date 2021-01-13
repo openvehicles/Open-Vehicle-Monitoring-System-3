@@ -173,7 +173,7 @@ void OvmsVehicleVWeUp::OBDInit()
       {VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_I, {  0,  1,  5}, 1, ISOTP_STD},
       // Same tick & order important of above 2: VWUP_BAT_MGMT_I calculates the power
     }) {
-    if (vweup_con == CON_OBD) {
+    if (HasNoT26()) {
       // only OBD connected -> get car state by polling OBD
       // (is this still necessary with state detection by 12V level?)
       p.polltime[VWEUP_OFF] = 30;
@@ -182,7 +182,7 @@ void OvmsVehicleVWeUp::OBDInit()
   }
 
   // Add high priority PIDs only necessary without T26:
-  if (vweup_con == CON_OBD) {
+  if (HasNoT26()) {
     m_poll_vector.insert(m_poll_vector.end(), {
       {VWUP_MOT_ELEC, UDS_READ, VWUP_MOT_ELEC_SPEED,    {  0,  1,  0}, 1, ISOTP_STD},
       // … speed interval = VWUP_BAT_MGMT_U & _I to get a consistent consumption calculation
@@ -199,7 +199,7 @@ void OvmsVehicleVWeUp::OBDInit()
   }
 
   // Add low priority PIDs only necessary without T26:
-  if (vweup_con == CON_OBD) {
+  if (HasNoT26()) {
     m_poll_vector.insert(m_poll_vector.end(), {
       {VWUP_MOT_ELEC, UDS_READ, VWUP_MOT_ELEC_TEMP_AMB, {  0, 30,  0}, 1, ISOTP_STD},
       {VWUP_MFD,      UDS_READ, VWUP_MFD_RANGE_DSP,     {  0, 30,  0}, 1, ISOTP_STD},

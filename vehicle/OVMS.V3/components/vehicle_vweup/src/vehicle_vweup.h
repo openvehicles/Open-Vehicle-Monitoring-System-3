@@ -247,8 +247,14 @@ private:
   bool HasT26() {
     return (vweup_con & CON_T26) != 0;
   }
+  bool HasNoT26() {
+    return (vweup_con & CON_T26) == 0;
+  }
   bool HasOBD() {
     return (vweup_con & CON_OBD) != 0;
+  }
+  bool HasNoOBD() {
+    return (vweup_con & CON_OBD) == 0;
   }
 
 };
