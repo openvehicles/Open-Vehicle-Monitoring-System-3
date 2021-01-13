@@ -343,8 +343,14 @@ void OvmsVehicleMgEv::DeterminePollState(canbus* currentBus, uint32_t ticker)
             ESP_LOGI(TAG, "12V has just started charging, setting to running poll mode. Reading");
         } 
 
+        if(m_gwmState == Undefined)
+        {
+            PollSetState(PollStateRunning);
+            ESP_LOGI(TAG, "GWM in Unknown state, possibly just changed vehicle type. Setting to running poll mode.");
+        } 
+
         
-        if ( carIgnitionOn && m_gwmState !=SendDiagnostic) // If ignition is on, we should set the car into running pollstate
+        if ( carIgnitionOn && m_gwmState !=SendDiagnostic) // If ignition is on, we should set the car into running pollstate, Diagnostic override confuses things
         {
             if( m_gwmState != SendTester )
             {
@@ -391,7 +397,12 @@ void OvmsVehicleMgEv::DeterminePollState(canbus* currentBus, uint32_t ticker)
         }
         else // State is not known
         {
-            ESP_LOGV(TAG, "Vehicle State is Unknown, checking if responsive");
+            
+            if( m_poll_state != PollStateListenOnly)
+            {
+                ESP_LOGV(TAG, "Vehicle State is Unknown, checking if responsive");
+            }
+
             if (m_rxPackets != rxPackets)
             {
                 ESP_LOGV(TAG, "RX Frames Recieved, rx %i and m_rx %i and count %i ", rxPackets, m_rxPackets, m_noRxCount);
@@ -538,6 +549,21 @@ bool OvmsVehicleMgEv::SendDiagSessionTo(canbus* currentBus, uint16_t id, uint8_t
             (ISOTP_FT_SINGLE<<4) + 2, VEHICLE_POLL_TYPE_OBDIISESSION, mode, 0, 0, 0, 0, 0
         } }
     };
+    return currentBus->Write(&diagnosticControl) != ESP_FAIL;
+}
+
+bool OvmsVehicleMgEv::SendPidQueryTo(canbus* currentBus, uint16_t id, uint8_t pid)
+{
+    //TODO
+    // CAN_frame_t diagnosticControl = {
+    //     currentBus,
+    //     nullptr,
+    //     { .B = { 8, 0, CAN_no_RTR, CAN_frame_std, 0 } },
+    //     id,
+    //     { .u8 = {
+    //         (ISOTP_FT_SINGLE<<4) + 2, VEHICLE_POLL_TYPE_OBDIISESSION, mode, 0, 0, 0, 0, 0
+    //     } }
+    // };
     return currentBus->Write(&diagnosticControl) != ESP_FAIL;
 }
 
