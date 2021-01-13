@@ -68,16 +68,16 @@ const OvmsVehicle::poll_pid_t vweup_polls[] = {
   {VWUP_CHG,      UDS_READ, VWUP_CHG_POWER_EFF,             {  0,  5, 10}, 1, ISOTP_STD}, // 5 @ _ON to detect charging
   {VWUP_CHG,      UDS_READ, VWUP_CHG_POWER_LOSS,            {  0,  0, 10}, 1, ISOTP_STD},
 
-  {VWUP_MFD,      UDS_READ, VWUP_MFD_ODOMETER,              {  0, 60, 60}, 1, ISOTP_STD},
+  {VWUP_MFD,      UDS_READ, VWUP_MFD_ODOMETER,              {  0, 60,  0}, 1, ISOTP_STD},
 
-//{VWUP_BRK,      UDS_READ, VWUP_BRK_TPMS,                  {  0,  5,  5}, 1, ISOTP_STD},
-  {VWUP_MFD,      UDS_READ, VWUP_MFD_SERV_RANGE,            {  0, 60, 60}, 1, ISOTP_STD},
-  {VWUP_MFD,      UDS_READ, VWUP_MFD_SERV_TIME,             {  0, 60, 60}, 1, ISOTP_STD},
+//{VWUP_BRK,      UDS_READ, VWUP_BRK_TPMS,                  {  0,  5,  0}, 1, ISOTP_STD},
+  {VWUP_MFD,      UDS_READ, VWUP_MFD_SERV_RANGE,            {  0, 60,  0}, 1, ISOTP_STD},
+  {VWUP_MFD,      UDS_READ, VWUP_MFD_SERV_TIME,             {  0, 60,  0}, 1, ISOTP_STD},
 
-  {VWUP_MOT_ELEC, UDS_READ, VWUP_MOT_ELEC_TEMP_DCDC,        {  0, 20, 20}, 1, ISOTP_STD},
+  {VWUP_MOT_ELEC, UDS_READ, VWUP_MOT_ELEC_TEMP_DCDC,        {  0, 20,  0}, 1, ISOTP_STD},
   {VWUP_ELD,      UDS_READ, VWUP_ELD_DCDC_U,                {  0,  5, 10}, 1, ISOTP_STD},
   {VWUP_ELD,      UDS_READ, VWUP_ELD_DCDC_I,                {  0,  5, 10}, 1, ISOTP_STD},
-  {VWUP_ELD,      UDS_READ, VWUP_ELD_TEMP_MOT,              {  0, 20,  0}, 1, ISOTP_STD},
+  {VWUP_ELD,      UDS_READ, VWUP_ELD_TEMP_MOT,              {  0, 20, 60}, 1, ISOTP_STD},
   {VWUP_MOT_ELEC, UDS_READ, VWUP_MOT_ELEC_TEMP_PEM,         {  0, 20,  0}, 1, ISOTP_STD},
   {VWUP_CHG,      UDS_READ, VWUP_CHG_TEMP_COOLER,           {  0, 20, 20}, 1, ISOTP_STD},
 //{VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_TEMP_MAX,         {  0, 20,  0}, 1, ISOTP_STD},

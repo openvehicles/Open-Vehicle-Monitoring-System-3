@@ -40,45 +40,45 @@
 using namespace std;
 
 //
-// ECU TX/RX IDs
+// ECU TX/RX IDs                                                                          [Availability]
 //
-#define VWUP_MOT_ELEC_TX                0x7E0   // ECU 01 motor elecronics
+#define VWUP_MOT_ELEC_TX                0x7E0   // ECU 01 motor elecronics                [DRV]
 #define VWUP_MOT_ELEC_RX                0x7E8
-#define VWUP_BRK_TX                     0x713   // ECU 03 brake electronics
+#define VWUP_BRK_TX                     0x713   // ECU 03 brake electronics               [DRV]
 #define VWUP_BRK_RX                     0x77D
-#define VWUP_MFD_TX                     0x714   // ECU 17 multi-function display
+#define VWUP_MFD_TX                     0x714   // ECU 17 multi-function display          [DRV]
 #define VWUP_MFD_RX                     0x77E
-#define VWUP_BRKBOOST_TX                0x73B   // ECU 23 brake boost
+#define VWUP_BRKBOOST_TX                0x73B   // ECU 23 brake boost                     [DRV]
 #define VWUP_BRKBOOST_RX                0x743
-#define VWUP_STEER_TX                   0x712   // ECU 44 steering support
+#define VWUP_STEER_TX                   0x712   // ECU 44 steering support                [DRV,CHG]
 #define VWUP_STEER_RX                   0x71A
-#define VWUP_ELD_TX                     0x7E6   // ECU 51 electric drive
+#define VWUP_ELD_TX                     0x7E6   // ECU 51 electric drive                  [DRV,CHG]
 #define VWUP_ELD_RX                     0x7EE
-#define VWUP_INF_TX                     0x773   // ECU 5F information electronics
+#define VWUP_INF_TX                     0x773   // ECU 5F information electronics         [DRV]
 #define VWUP_INF_RX                     0x77B
-#define VWUP_BAT_MGMT_TX                0x7E5   // ECU 8C hybrid battery management
+#define VWUP_BAT_MGMT_TX                0x7E5   // ECU 8C hybrid battery management       [DRV,CHG]
 #define VWUP_BAT_MGMT_RX                0x7ED
-#define VWUP_BRKSENS_TX                 0x762   // ECU AD sensors for braking system
+#define VWUP_BRKSENS_TX                 0x762   // ECU AD sensors for braking system      [DRV]
 #define VWUP_BRKSENS_RX                 0x76A
-#define VWUP_CHG_TX                     0x744   // ECU C6 high voltage charger
+#define VWUP_CHG_TX                     0x744   // ECU C6 HV charger                      [DRV,CHG]
 #define VWUP_CHG_RX                     0x7AE
-#define VWUP_CHG_MGMT_TX                0x765   // ECU BD high voltage charge management
+#define VWUP_CHG_MGMT_TX                0x765   // ECU BD HV charge management            [DRV,CHG]
 #define VWUP_CHG_MGMT_RX                0x7CF
 
 //
-// Poll list shortcuts
+// Poll list shortcuts                                                                    [Availability]
 //
-#define VWUP_MOT_ELEC                   VWUP_MOT_ELEC_TX, VWUP_MOT_ELEC_RX
-#define VWUP_BRK                        VWUP_BRK_TX,      VWUP_BRK_RX
-#define VWUP_MFD                        VWUP_MFD_TX,      VWUP_MFD_RX
-#define VWUP_BRKBOOST                   VWUP_BRKBOOST_TX, VWUP_BRKBOOST_RX
-#define VWUP_STEER                      VWUP_STEER_TX,    VWUP_STEER_RX
-#define VWUP_ELD                        VWUP_ELD_TX,      VWUP_ELD_RX
-#define VWUP_INF                        VWUP_INF_TX,      VWUP_INF_RX
-#define VWUP_BAT_MGMT                   VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX
-#define VWUP_BRKSENS                    VWUP_BRKSENS_TX,  VWUP_BRKSENS_RX
-#define VWUP_CHG                        VWUP_CHG_TX,      VWUP_CHG_RX
-#define VWUP_CHG_MGMT                   VWUP_CHG_MGMT_TX, VWUP_CHG_MGMT_RX
+#define VWUP_MOT_ELEC                   VWUP_MOT_ELEC_TX, VWUP_MOT_ELEC_RX            //  [DRV]
+#define VWUP_BRK                        VWUP_BRK_TX,      VWUP_BRK_RX                 //  [DRV]
+#define VWUP_MFD                        VWUP_MFD_TX,      VWUP_MFD_RX                 //  [DRV]
+#define VWUP_BRKBOOST                   VWUP_BRKBOOST_TX, VWUP_BRKBOOST_RX            //  [DRV]
+#define VWUP_STEER                      VWUP_STEER_TX,    VWUP_STEER_RX               //  [DRV,CHG]
+#define VWUP_ELD                        VWUP_ELD_TX,      VWUP_ELD_RX                 //  [DRV,CHG]
+#define VWUP_INF                        VWUP_INF_TX,      VWUP_INF_RX                 //  [DRV]
+#define VWUP_BAT_MGMT                   VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX            //  [DRV,CHG]
+#define VWUP_BRKSENS                    VWUP_BRKSENS_TX,  VWUP_BRKSENS_RX             //  [DRV]
+#define VWUP_CHG                        VWUP_CHG_TX,      VWUP_CHG_RX                 //  [DRV,CHG]
+#define VWUP_CHG_MGMT                   VWUP_CHG_MGMT_TX, VWUP_CHG_MGMT_RX            //  [DRV,CHG]
 
 #define UDS_READ                        VEHICLE_POLL_TYPE_READDATA
 #define UDS_SESSION                     VEHICLE_POLL_TYPE_OBDIISESSION
