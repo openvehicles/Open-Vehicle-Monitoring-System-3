@@ -446,9 +446,11 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
         VALUE_LOG(TAG, "VWUP_CHG_MGMT_SOC_NORM=%f => %f", value, soc);
         // Update range:
         StdMetrics.ms_v_bat_range_ideal->SetValue(
-          StdMetrics.ms_v_bat_range_full->AsFloat() * soc / 100.0f);
-        // Calculate estimated range from last known factor:
-        StdMetrics.ms_v_bat_range_est->SetValue(soc * m_range_est_factor);
+          StdMetrics.ms_v_bat_range_full->AsFloat() * (soc / 100));
+        if (HasNoT26()) {
+          // Calculate estimated range from last known factor:
+          StdMetrics.ms_v_bat_range_est->SetValue(soc * m_range_est_factor);
+        }
       }
       break;
 
