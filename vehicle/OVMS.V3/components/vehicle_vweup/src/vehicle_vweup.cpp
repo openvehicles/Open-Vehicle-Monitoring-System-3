@@ -72,7 +72,7 @@
 #include <string>
 static const char *TAG = "v-vweup";
 
-#define VERSION "0.7.0"
+#define VERSION "0.7.1"
 
 #include <stdio.h>
 #include <string>
@@ -130,6 +130,13 @@ OvmsVehicleVWeUp *OvmsVehicleVWeUp::GetInstance(OvmsWriter *writer)
 OvmsVehicleVWeUp::OvmsVehicleVWeUp()
 {
   ESP_LOGI(TAG, "Start VW e-Up vehicle module");
+
+  // Init general state:
+  vweup_enable_write = false;
+  vweup_enable_obd = false;
+  vweup_enable_t26 = false;
+  vweup_con = 0;
+  vweup_modelyear = 0;
 
   // Init metrics:
   m_version = MyMetrics.InitString("xvu.m.version", 0, VERSION " " __DATE__ " " __TIME__);
@@ -318,7 +325,7 @@ void OvmsVehicleVWeUp::ConfigChanged(OvmsConfigParam *param)
   }
 
   // Init OBD subsystem:
-  if (do_obd_init) {
+  if (vweup_enable_obd && do_obd_init) {
     OBDInit();
   }
   else if (!vweup_enable_obd) {
