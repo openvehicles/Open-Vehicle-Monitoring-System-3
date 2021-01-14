@@ -516,22 +516,22 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
 
     case VWUP_BAT_MGMT_ENERGY_COUNTERS:
       if (PollReply.FromInt32("VWUP_BAT_MGMT_ENERGY_COUNTERS_RECD", value, 8)) {
-        StdMetrics.ms_v_bat_energy_recd_total->SetValue(value / ((0xFFFFFFFF / 2.0f) / 250200.0f));
-        if (StdMetrics.ms_v_charge_inprogress) {
-          StdMetrics.ms_v_charge_kwh->SetValue(StdMetrics.ms_v_bat_energy_recd_total->AsFloat() - m_energy_charged_start);
-        }
-        else {
-          StdMetrics.ms_v_bat_energy_recd->SetValue(StdMetrics.ms_v_bat_energy_recd_total->AsFloat() - m_energy_recd_start);
-          // so far we don't know where to get energy recovered on trip directly...
-        }
-        VALUE_LOG(TAG, "VWUP_BAT_MGMT_ENERGY_COUNTERS_RECD=%f => %f", value, StdMetrics.ms_v_bat_energy_recd_total->AsFloat());
+        float energy_recd_total = value / ((0xFFFFFFFF / 2.0f) / 250200.0f);
+        StdMetrics.ms_v_bat_energy_recd_total->SetValue(energy_recd_total);
+        // Set difference from charge/trip reference:
+        if (StdMetrics.ms_v_charge_inprogress->AsBool())
+          StdMetrics.ms_v_charge_kwh->SetValue(energy_recd_total - m_energy_charged_start);
+        else
+          StdMetrics.ms_v_bat_energy_recd->SetValue(energy_recd_total - m_energy_recd_start);
+        VALUE_LOG(TAG, "VWUP_BAT_MGMT_ENERGY_COUNTERS_RECD=%f => %f", value, energy_recd_total);
       }
       if (PollReply.FromInt32("VWUP_BAT_MGMT_ENERGY_COUNTERS_USED", value, 12)) {
         // Used is negative here, standard metric is positive
-        StdMetrics.ms_v_bat_energy_used_total->SetValue((value * -1.0f) / ((0xFFFFFFFF / 2.0f) / 250200.0f));
-        StdMetrics.ms_v_bat_energy_used->SetValue(StdMetrics.ms_v_bat_energy_used_total->AsFloat() - m_energy_used_start);
-        // so far we don't know where to get energy used on trip directly...
-        VALUE_LOG(TAG, "VWUP_BAT_MGMT_ENERGY_COUNTERS_USED=%f => %f", value, StdMetrics.ms_v_bat_energy_used_total->AsFloat());
+        float energy_used_total = (value * -1.0f) / ((0xFFFFFFFF / 2.0f) / 250200.0f);
+        StdMetrics.ms_v_bat_energy_used_total->SetValue(energy_used_total);
+        // Set difference from trip reference:
+        StdMetrics.ms_v_bat_energy_used->SetValue(energy_used_total - m_energy_used_start);
+        VALUE_LOG(TAG, "VWUP_BAT_MGMT_ENERGY_COUNTERS_USED=%f => %f", value, energy_used_total);
       }
       break;
 
