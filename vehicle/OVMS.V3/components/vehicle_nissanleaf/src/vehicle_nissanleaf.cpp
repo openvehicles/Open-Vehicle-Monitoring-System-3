@@ -552,7 +552,7 @@ void OvmsVehicleNissanLeaf::PollReply_BMS_Volt(uint8_t reply_data[], uint16_t re
   // [192,193]: Pack voltage, in volts/100
   // [194,195]: Bus voltage, in volts/100
 
-  int i;
+  uint8_t i;
   for(i=0; i<96; i++)
     {
     int millivolt = reply_data[i*2] << 8 | reply_data[i*2+1];
@@ -575,7 +575,7 @@ void OvmsVehicleNissanLeaf::PollReply_BMS_Shunt(uint8_t reply_data[], uint16_t r
     // [ 0..23]: Contains all 96 of the cell shunts, where cell1=bit3, cell2=bit2, cell3=bit1, cell4=bit0 of byte0 etc
     // referred to as shunt order 8421
   std::bitset<96> balancing;
-  int i;
+  uint8_t i;
   for(i=0; i<24; i++)
     {
     if ((reply_data[i] & 0x08) == 0x08) balancing.set(i*4 + 0);
@@ -947,7 +947,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       break;
     case 0x54b:
     {
-      int fanspeed_int = ((d[4] & 0x38) >> 3); //use bits 5:3 to read fan speed
+      uint8_t fanspeed_int = ((d[4] & 0x38) >> 3); //use bits 5:3 to read fan speed
 	    
       m_climate_fan_speed->SetValue(fanspeed_int / 7.0 * 100);
       m_climate_fan_speed_limit->SetValue(7);
