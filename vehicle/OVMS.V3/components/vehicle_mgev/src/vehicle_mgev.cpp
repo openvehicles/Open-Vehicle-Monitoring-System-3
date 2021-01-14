@@ -110,7 +110,7 @@ constexpr uint32_t UNLOCKED_CHARGING_TIMEOUT = 5u;
 constexpr uint16_t DIAG_ATTEMPTS = 3u;
 
 /// Threshold for 12v where we make the assumption that it is being charged
-constexpr float CHARGING_THRESHOLD = 12.8;
+constexpr float CHARGING_THRESHOLD = 12.9;
 
 }  // anon namespace
 
@@ -552,20 +552,20 @@ bool OvmsVehicleMgEv::SendDiagSessionTo(canbus* currentBus, uint16_t id, uint8_t
     return currentBus->Write(&diagnosticControl) != ESP_FAIL;
 }
 
-bool OvmsVehicleMgEv::SendPidQueryTo(canbus* currentBus, uint16_t id, uint8_t pid)
-{
-    //TODO
-    // CAN_frame_t diagnosticControl = {
-    //     currentBus,
-    //     nullptr,
-    //     { .B = { 8, 0, CAN_no_RTR, CAN_frame_std, 0 } },
-    //     id,
-    //     { .u8 = {
-    //         (ISOTP_FT_SINGLE<<4) + 2, VEHICLE_POLL_TYPE_OBDIISESSION, mode, 0, 0, 0, 0, 0
-    //     } }
-    // };
-    return currentBus->Write(&diagnosticControl) != ESP_FAIL;
-}
+// bool OvmsVehicleMgEv::SendPidQueryTo(canbus* currentBus, uint16_t id, uint8_t pid)
+// {
+//     //TODO
+//     // CAN_frame_t diagnosticControl = {
+//     //     currentBus,
+//     //     nullptr,
+//     //     { .B = { 8, 0, CAN_no_RTR, CAN_frame_std, 0 } },
+//     //     id,
+//     //     { .u8 = {
+//     //         (ISOTP_FT_SINGLE<<4) + 2, VEHICLE_POLL_TYPE_OBDIISESSION, mode, 0, 0, 0, 0, 0
+//     //     } }
+//     // };
+//     return currentBus->Write(&diagnosticControl) != ESP_FAIL;
+// }
 
 void OvmsVehicleMgEv::Ticker1(uint32_t ticker)
 {
