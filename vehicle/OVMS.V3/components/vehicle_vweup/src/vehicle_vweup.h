@@ -149,10 +149,10 @@ public:
   int vweup_modelyear;
 
 private:
-  float OdoStart;
-  float EnergyRecdStart;
-  float EnergyUsedStart;
-  float EnergyChargedStart;
+  float m_odo_start;
+  float m_energy_recd_start;
+  float m_energy_used_start;
+  float m_energy_charged_start;
 
 
   // --------------------------------------------------------------------------

@@ -184,10 +184,10 @@ void OvmsVehicleVWeUp::vehicle_vweup_car_on(bool turnOn)
     StandardMetrics.ms_v_env_on->SetValue(true);
     PollSetState(VWEUP_ON);
     // TimeOffRequested = 0;
-    OdoStart = StandardMetrics.ms_v_pos_odometer->AsFloat();
-    EnergyRecdStart = StandardMetrics.ms_v_bat_energy_recd_total->AsFloat();
-    EnergyUsedStart = StandardMetrics.ms_v_bat_energy_used_total->AsFloat();
-    ESP_LOGD(TAG, "Start Counters: %f, %f, %f", OdoStart, EnergyRecdStart, EnergyUsedStart);
+    m_odo_start = StandardMetrics.ms_v_pos_odometer->AsFloat();
+    m_energy_recd_start = StandardMetrics.ms_v_bat_energy_recd_total->AsFloat();
+    m_energy_used_start = StandardMetrics.ms_v_bat_energy_used_total->AsFloat();
+    ESP_LOGD(TAG, "Start Counters: %f, %f, %f", m_odo_start, m_energy_recd_start, m_energy_used_start);
     // Turn off possibly running climate control timer
     if (ocu_awake) {
       xTimerStop(m_sendOcuHeartbeat, 0);
@@ -294,7 +294,7 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
 
     case 0x65D: // ODO
       StandardMetrics.ms_v_pos_odometer->SetValue(((uint32_t)(d[3] & 0xf) << 12) | ((UINT)d[2] << 8) | d[1]);
-      StandardMetrics.ms_v_pos_trip->SetValue(StandardMetrics.ms_v_pos_odometer->AsFloat() - OdoStart); // so far we don't know where to get trip distance directly...
+      StandardMetrics.ms_v_pos_trip->SetValue(StandardMetrics.ms_v_pos_odometer->AsFloat() - m_odo_start); // so far we don't know where to get trip distance directly...
       break;
 
     case 0x320: // Speed
@@ -377,8 +377,8 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
           StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
           StandardMetrics.ms_v_charge_state->SetValue("charging");
           ESP_LOGI(TAG, "Car charge session started");
-          EnergyChargedStart = StandardMetrics.ms_v_bat_energy_recd_total->AsFloat();
-          ESP_LOGD(TAG, "Charge Start Counter: %f", EnergyChargedStart);
+          m_energy_charged_start = StandardMetrics.ms_v_bat_energy_recd_total->AsFloat();
+          ESP_LOGD(TAG, "Charge Start Counter: %f", m_energy_charged_start);
           PollSetState(VWEUP_CHARGING);
         }
         if (!isCharging && cd_count == 3) {

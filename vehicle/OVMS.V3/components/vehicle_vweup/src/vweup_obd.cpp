@@ -146,9 +146,9 @@ void OvmsVehicleVWeUp::OBDInit()
 
   TimeOffRequested = 0;
 
-  OdoStart = StdMetrics.ms_v_pos_odometer->AsFloat();
-  EnergyRecdStart = StdMetrics.ms_v_bat_energy_recd_total->AsFloat();
-  EnergyUsedStart = StdMetrics.ms_v_bat_energy_used_total->AsFloat();
+  m_odo_start = StdMetrics.ms_v_pos_odometer->AsFloat();
+  m_energy_recd_start = StdMetrics.ms_v_bat_energy_recd_total->AsFloat();
+  m_energy_used_start = StdMetrics.ms_v_bat_energy_used_total->AsFloat();
 
   //
   // Init poller
@@ -285,8 +285,8 @@ void OvmsVehicleVWeUp::OBDCheckCarState()
       StdMetrics.ms_v_charge_pilot->SetValue(true);
       StdMetrics.ms_v_charge_inprogress->SetValue(true);
       StdMetrics.ms_v_charge_state->SetValue("charging");
-      EnergyChargedStart = StdMetrics.ms_v_bat_energy_recd_total->AsFloat();
-      ESP_LOGD(TAG, "Charge Start Counter: %f", EnergyChargedStart);
+      m_energy_charged_start = StdMetrics.ms_v_bat_energy_recd_total->AsFloat();
+      ESP_LOGD(TAG, "Charge Start Counter: %f", m_energy_charged_start);
       PollSetState(VWEUP_CHARGING);
       TimeOffRequested = 0;
     }
@@ -316,10 +316,10 @@ void OvmsVehicleVWeUp::OBDCheckCarState()
       // TODO: get real "ignition" state, assume on for now:
       StdMetrics.ms_v_env_on->SetValue(true);
       TimeOffRequested = 0;
-      OdoStart = StdMetrics.ms_v_pos_odometer->AsFloat();
-      EnergyRecdStart = StdMetrics.ms_v_bat_energy_recd_total->AsFloat();
-      EnergyUsedStart = StdMetrics.ms_v_bat_energy_used_total->AsFloat();
-      ESP_LOGD(TAG, "Start Counters: %f, %f, %f", OdoStart, EnergyRecdStart, EnergyUsedStart);
+      m_odo_start = StdMetrics.ms_v_pos_odometer->AsFloat();
+      m_energy_recd_start = StdMetrics.ms_v_bat_energy_recd_total->AsFloat();
+      m_energy_used_start = StdMetrics.ms_v_bat_energy_used_total->AsFloat();
+      ESP_LOGD(TAG, "Start Counters: %f, %f, %f", m_odo_start, m_energy_recd_start, m_energy_used_start);
 
       // Fetch VIN once:
       if (!StdMetrics.ms_v_vin->IsDefined()) {
@@ -518,10 +518,10 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
       if (PollReply.FromInt32("VWUP_BAT_MGMT_ENERGY_COUNTERS_RECD", value, 8)) {
         StdMetrics.ms_v_bat_energy_recd_total->SetValue(value / ((0xFFFFFFFF / 2.0f) / 250200.0f));
         if (StdMetrics.ms_v_charge_inprogress) {
-          StdMetrics.ms_v_charge_kwh->SetValue(StdMetrics.ms_v_bat_energy_recd_total->AsFloat() - EnergyChargedStart);
+          StdMetrics.ms_v_charge_kwh->SetValue(StdMetrics.ms_v_bat_energy_recd_total->AsFloat() - m_energy_charged_start);
         }
         else {
-          StdMetrics.ms_v_bat_energy_recd->SetValue(StdMetrics.ms_v_bat_energy_recd_total->AsFloat() - EnergyRecdStart);
+          StdMetrics.ms_v_bat_energy_recd->SetValue(StdMetrics.ms_v_bat_energy_recd_total->AsFloat() - m_energy_recd_start);
           // so far we don't know where to get energy recovered on trip directly...
         }
         VALUE_LOG(TAG, "VWUP_BAT_MGMT_ENERGY_COUNTERS_RECD=%f => %f", value, StdMetrics.ms_v_bat_energy_recd_total->AsFloat());
@@ -529,7 +529,7 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
       if (PollReply.FromInt32("VWUP_BAT_MGMT_ENERGY_COUNTERS_USED", value, 12)) {
         // Used is negative here, standard metric is positive
         StdMetrics.ms_v_bat_energy_used_total->SetValue((value * -1.0f) / ((0xFFFFFFFF / 2.0f) / 250200.0f));
-        StdMetrics.ms_v_bat_energy_used->SetValue(StdMetrics.ms_v_bat_energy_used_total->AsFloat() - EnergyUsedStart);
+        StdMetrics.ms_v_bat_energy_used->SetValue(StdMetrics.ms_v_bat_energy_used_total->AsFloat() - m_energy_used_start);
         // so far we don't know where to get energy used on trip directly...
         VALUE_LOG(TAG, "VWUP_BAT_MGMT_ENERGY_COUNTERS_USED=%f => %f", value, StdMetrics.ms_v_bat_energy_used_total->AsFloat());
       }
@@ -737,7 +737,7 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
       if (PollReply.FromUint16("VWUP_MFD_ODOMETER", value)) {
         StdMetrics.ms_v_pos_odometer->SetValue(value * 10.0f);
         // so far we don't know where to get trip distance directly...
-        StdMetrics.ms_v_pos_trip->SetValue(StdMetrics.ms_v_pos_odometer->AsFloat() - OdoStart);
+        StdMetrics.ms_v_pos_trip->SetValue(StdMetrics.ms_v_pos_odometer->AsFloat() - m_odo_start);
         VALUE_LOG(TAG, "VWUP_MFD_ODOMETER=%f => %f", value, StdMetrics.ms_v_pos_odometer->AsFloat());
       }
       break;
