@@ -81,6 +81,10 @@ typedef std::initializer_list<const OvmsVehicle::poll_pid_t> poll_list_t;
 
 class OvmsVehicleVWeUp : public OvmsVehicle
 {
+  // --------------------------------------------------------------------------
+  // General Framework & Connection Manager
+  //
+
 public:
   OvmsVehicleVWeUp();
   ~OvmsVehicleVWeUp();
@@ -92,16 +96,7 @@ public:
   const std::string GetFeature(int key);
 
 protected:
-  static size_t m_modifier;
-  OvmsMetricString *m_version;
-  OvmsCommand *cmd_xvu;
-
-public:
-  void IncomingFrameCan3(CAN_frame_t *p_frame);
-
-protected:
-  virtual void Ticker1(uint32_t ticker);
-  char m_vin[18];
+  void Ticker1(uint32_t ticker);
 
 public:
   vehicle_command_t CommandHomelink(int button, int durationms = 1000);
@@ -112,18 +107,98 @@ public:
   vehicle_command_t CommandStopCharge();
   vehicle_command_t CommandActivateValet(const char *pin);
   vehicle_command_t CommandDeactivateValet(const char *pin);
-  void RemoteCommandTimer();
-  void CcDisableTimer();
+  vehicle_command_t CommandWakeup();
+
+protected:
+  int GetNotifyChargeStateDelay(const char *state);
 
 public:
-  bool vin_part1;
-  bool vin_part2;
-  bool vin_part3;
+  bool IsOff() {
+    return m_poll_state == VWEUP_OFF;
+  }
+  bool IsOn() {
+    return m_poll_state == VWEUP_ON;
+  }
+  bool IsCharging() {
+    return m_poll_state == VWEUP_CHARGING;
+  }
+
+  bool HasT26() {
+    return (vweup_con & CON_T26) != 0;
+  }
+  bool HasNoT26() {
+    return (vweup_con & CON_T26) == 0;
+  }
+  bool HasOBD() {
+    return (vweup_con & CON_OBD) != 0;
+  }
+  bool HasNoOBD() {
+    return (vweup_con & CON_OBD) == 0;
+  }
+
+protected:
+  static size_t m_modifier;
+  OvmsMetricString *m_version;
+  OvmsCommand *cmd_xvu;
+
+public:
   bool vweup_enable_obd;
   bool vweup_enable_t26;
   bool vweup_enable_write;
-  int vweup_con;  // 0: none, 1: only T26, 2: only OBD2; 3: both
+  int vweup_con;                // 0: none, 1: only T26, 2: only OBD2; 3: both
   int vweup_modelyear;
+
+private:
+  float OdoStart;
+  float EnergyRecdStart;
+  float EnergyUsedStart;
+  float EnergyChargedStart;
+
+
+  // --------------------------------------------------------------------------
+  // Web UI Subsystem
+  //  - implementation: vweup_web.(h,cpp)
+  //
+
+protected:
+  void WebInit();
+  void WebDeInit();
+
+  static void WebCfgFeatures(PageEntry_t &p, PageContext_t &c);
+  static void WebCfgClimate(PageEntry_t &p, PageContext_t &c);
+  static void WebDispChgMetrics(PageEntry_t &p, PageContext_t &c);
+
+
+  // --------------------------------------------------------------------------
+  // T26 Connection Subsystem
+  //  - implementation: vweup_t26.(h,cpp)
+  //
+
+protected:
+  void T26Init();
+
+protected:
+  void IncomingFrameCan3(CAN_frame_t *p_frame);
+
+public:
+  void SendOcuHeartbeat();
+  void CCCountdown();
+  void CCOn();
+  void CCOnP();
+  void CCOff();
+  static void ccCountdown(TimerHandle_t timer);
+  static void sendOcuHeartbeat(TimerHandle_t timer);
+
+private:
+  void SendCommand(RemoteCommand);
+  OvmsVehicle::vehicle_command_t RemoteCommandHandler(RemoteCommand command);
+  void vehicle_vweup_car_on(bool turnOn);
+
+public:
+  char m_vin[18];
+  bool vin_part1;
+  bool vin_part2;
+  bool vin_part3;
   int vweup_remote_climate_ticker;
   int vweup_cc_temp_int;
   bool ocu_awake;
@@ -140,35 +215,25 @@ public:
   bool dev_mode;
 
 private:
-  void SendCommand(RemoteCommand);
-  OvmsVehicle::vehicle_command_t RemoteCommandHandler(RemoteCommand command);
-
   RemoteCommand vweup_remote_command; // command to send, see RemoteCommandTimer()
-
-  void vehicle_vweup_car_on(bool turnOn);
   TimerHandle_t m_sendOcuHeartbeat;
   TimerHandle_t m_ccCountdown;
 
+
+  // --------------------------------------------------------------------------
+  // OBD2 subsystem
+  //  - implementation: vweup_obd.(h,cpp)
+  //
+
 protected:
-  int GetNotifyChargeStateDelay(const char *state);
+  void OBDInit();
+  void OBDDeInit();
+  void OBDCheckCarState();
 
-public:
-  void T26Init();
-  void WebInit();
-  void WebDeInit();
-  void SendOcuHeartbeat();
-  void CCCountdown();
-  void CCOn();
-  void CCOnP();
-  void CCOff();
-  static void ccCountdown(TimerHandle_t timer);
-  static void sendOcuHeartbeat(TimerHandle_t timer);
+protected:
+  void IncomingPollReply(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length, uint16_t mlremain);
 
-  static void WebCfgFeatures(PageEntry_t &p, PageContext_t &c);
-  static void WebCfgClimate(PageEntry_t &p, PageContext_t &c);
-  static void WebDispChgMetrics(PageEntry_t &p, PageContext_t &c);
-  virtual vehicle_command_t CommandWakeup();
-
+protected:
   OvmsMetricFloat *MotElecSoCAbs;                 // Absolute SoC of main battery from motor electrics ECU
   OvmsMetricFloat *MotElecSoCNorm;                // Normalized SoC of main battery from motor electrics ECU
   OvmsMetricFloat *BatMgmtSoCAbs;                 // Absolute SoC of main battery from battery management ECU
@@ -194,68 +259,24 @@ public:
   OvmsMetricFloat *BatTempMax;
   OvmsMetricFloat *BatTempMin;
 
-private:
-  float OdoStart;
-  float EnergyRecdStart;
-  float EnergyUsedStart;
-  float EnergyChargedStart;
-
-  // --------------------------------------------------------------------------
-  // OBD2 subsystem
-  //  - implementation: vweup_obd.(h,cpp)
-  //
-
-public:
-  void OBDInit();
-  void OBDDeInit();
-  void IncomingPollReply(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length, uint16_t mlremain);
-
 protected:
-  poll_vector_t       m_poll_vector;                    // List of PIDs to poll
+  poll_vector_t       m_poll_vector;              // List of PIDs to poll
 
-  int                 m_cfg_cell_interval_drv;          // Cell poll interval while driving, default 15 sec.
-  int                 m_cfg_cell_interval_chg;          // … while charging, default 60 sec.
-  uint16_t            m_cell_last_vi;                   // Index of last cell voltage read
-  uint16_t            m_cell_last_ti;                   // … temperature
+  int                 m_cfg_cell_interval_drv;    // Cell poll interval while driving, default 15 sec.
+  int                 m_cfg_cell_interval_chg;    // … while charging, default 60 sec.
+  uint16_t            m_cell_last_vi;             // Index of last cell voltage read
+  uint16_t            m_cell_last_ti;             // … temperature
 
-  float               m_range_est_factor;               // For range calculation during charge
-
-//  protected:
-//    virtual void Ticker1(uint32_t ticker);
+  float               m_range_est_factor;         // For range calculation during charge
 
 private:
-  PollReplyHelper PollReply;
+  PollReplyHelper     PollReply;
 
-  float BatMgmtCellMax; // Maximum cell voltage
-  float BatMgmtCellMin; // Minimum cell voltage
+  float               BatMgmtCellMax;             // Maximum cell voltage
+  float               BatMgmtCellMin;             // Minimum cell voltage
 
-  void OBDCheckCarState();
-
-  uint32_t TimeOffRequested;  // For Off-Timeout: Monotonictime when the poll should have gone to VWEUP_OFF
-                              //                  0 means no Off requested so far
-
-  bool IsOff() {
-    return m_poll_state == VWEUP_OFF;
-  }
-  bool IsOn() {
-    return m_poll_state == VWEUP_ON;
-  }
-  bool IsCharging() {
-    return m_poll_state == VWEUP_CHARGING;
-  }
-
-  bool HasT26() {
-    return (vweup_con & CON_T26) != 0;
-  }
-  bool HasNoT26() {
-    return (vweup_con & CON_T26) == 0;
-  }
-  bool HasOBD() {
-    return (vweup_con & CON_OBD) != 0;
-  }
-  bool HasNoOBD() {
-    return (vweup_con & CON_OBD) == 0;
-  }
+  uint32_t            TimeOffRequested;           // For Off-Timeout: Monotonictime when the poll should
+                                                  //   have gone to VWEUP_OFF, 0 means no Off requested
 
 };
 
