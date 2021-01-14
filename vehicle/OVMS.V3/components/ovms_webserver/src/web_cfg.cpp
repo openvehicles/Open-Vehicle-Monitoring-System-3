@@ -234,7 +234,7 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
       "loaduri(\"#main\", \"post\", \"/status\", { \"action\": $(this).val() });"
     "});"
     "$(\"#livestatus\").on(\"msg:event\", function(e, event){"
-      "if (event.startsWith(\"ticker\"))"
+      "if (event.startsWith(\"ticker\") || event.startsWith(\"clock\"))"
         "return;"
       "var list = $(\"#eventlog\");"
       "if (list.children().size() >= 5)"
