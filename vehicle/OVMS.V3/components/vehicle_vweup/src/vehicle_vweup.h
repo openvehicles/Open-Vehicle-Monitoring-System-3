@@ -79,6 +79,13 @@ typedef enum {
 typedef std::vector<OvmsVehicle::poll_pid_t, ExtRamAllocator<OvmsVehicle::poll_pid_t>> poll_vector_t;
 typedef std::initializer_list<const OvmsVehicle::poll_pid_t> poll_list_t;
 
+typedef enum {
+  OBDS_Init = 0,
+  OBDS_DeInit,
+  OBDS_Config,
+  OBDS_Run,
+} obd_state_t;
+
 class OvmsVehicleVWeUp : public OvmsVehicle
 {
   // --------------------------------------------------------------------------
@@ -111,6 +118,10 @@ public:
 
 protected:
   int GetNotifyChargeStateDelay(const char *state);
+
+protected:
+  void ResetTripCounters();
+  void ResetChargeCounters();
 
 public:
   bool IsOff() {
@@ -153,6 +164,8 @@ private:
   float m_energy_recd_start;
   float m_energy_used_start;
   float m_energy_charged_start;
+  float m_coulomb_recd_start;
+  float m_coulomb_used_start;
 
 
   // --------------------------------------------------------------------------
@@ -260,6 +273,7 @@ protected:
   OvmsMetricFloat *BatTempMin;
 
 protected:
+  obd_state_t         m_obd_state;                // OBD subsystem state
   poll_vector_t       m_poll_vector;              // List of PIDs to poll
 
   int                 m_cfg_cell_interval_drv;    // Cell poll interval while driving, default 15 sec.

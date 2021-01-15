@@ -72,7 +72,7 @@
 #include <string>
 static const char *TAG = "v-vweup";
 
-#define VERSION "0.7.2"
+#define VERSION "0.8.0"
 
 #include <stdio.h>
 #include <string>
@@ -137,6 +137,8 @@ OvmsVehicleVWeUp::OvmsVehicleVWeUp()
   vweup_enable_t26 = false;
   vweup_con = 0;
   vweup_modelyear = 0;
+
+  m_obd_state = OBDS_Init;
 
   // Init metrics:
   m_version = MyMetrics.InitString("xvu.m.version", 0, VERSION " " __DATE__ " " __TIME__);
@@ -341,6 +343,7 @@ void OvmsVehicleVWeUp::ConfigChanged(OvmsConfigParam *param)
 #endif
 }
 
+
 void OvmsVehicleVWeUp::Ticker1(uint32_t ticker)
 {
   if (vweup_con == CON_OBD)
@@ -392,4 +395,49 @@ int OvmsVehicleVWeUp::GetNotifyChargeStateDelay(const char *state)
   else {
     return 3;
   }
+}
+
+
+/**
+ * ResetTripCounters: called at trip start to set reference points
+ *  Called by the connector subsystem detecting vehicle state changes,
+ *  i.e. T26 has priority if available.
+ */
+void OvmsVehicleVWeUp::ResetTripCounters()
+{
+  // Clear per trip counters:
+  StdMetrics.ms_v_pos_trip->SetValue(0);
+  StdMetrics.ms_v_bat_energy_recd->SetValue(0);
+  StdMetrics.ms_v_bat_energy_used->SetValue(0);
+  StdMetrics.ms_v_bat_coulomb_recd->SetValue(0);
+  StdMetrics.ms_v_bat_coulomb_used->SetValue(0);
+
+  // Get trip start references as far as available:
+  //  (if we don't have them yet, IncomingPollReply() will set them ASAP)
+  m_odo_start           = StdMetrics.ms_v_pos_odometer->AsFloat();
+  m_energy_recd_start   = StdMetrics.ms_v_bat_energy_recd_total->AsFloat();
+  m_energy_used_start   = StdMetrics.ms_v_bat_energy_used_total->AsFloat();
+  m_coulomb_recd_start  = StdMetrics.ms_v_bat_coulomb_recd_total->AsFloat();
+  m_coulomb_used_start  = StdMetrics.ms_v_bat_coulomb_used_total->AsFloat();
+
+  ESP_LOGD(TAG, "Trip start ref: odo=%f, er=%f, eu=%f, cr=%f, cu=%f", m_odo_start,
+    m_energy_recd_start, m_energy_used_start, m_coulomb_recd_start, m_coulomb_used_start);
+}
+
+
+/**
+ * ResetChargeCounters: call at charge start to set reference points
+ *  Called by the connector subsystem detecting vehicle state changes,
+ *  i.e. T26 has priority if available.
+ */
+void OvmsVehicleVWeUp::ResetChargeCounters()
+{
+  // Clear per charge counter:
+  StdMetrics.ms_v_charge_kwh->SetValue(0);
+
+  // Get charge start reference as far as available:
+  //  (if we don't have it yet, IncomingPollReply() will set it ASAP)
+  m_energy_charged_start = StdMetrics.ms_v_bat_energy_recd_total->AsFloat();
+
+  ESP_LOGD(TAG, "Charge start ref: er=%f", m_energy_charged_start);
 }
