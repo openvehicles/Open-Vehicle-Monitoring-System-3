@@ -225,7 +225,7 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
   switch (p_frame->MsgID) {
 
     case 0x61A: // SOC.
-      if ((!StandardMetrics.ms_v_env_on->AsBool()) || (vweup_con == 0)) {
+      if (HasNoOBD() || !StandardMetrics.ms_v_env_on->AsBool()) {
         StandardMetrics.ms_v_bat_soc->SetValue(d[7] / 2.0);
       }
       if (HasNoOBD()) {
