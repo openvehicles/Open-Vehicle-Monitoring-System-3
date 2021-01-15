@@ -296,8 +296,15 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
   memset( kia_send_can.byte, 0, sizeof(kia_send_can.byte));
 
   ks_maxrange = CFG_DEFAULT_MAXRANGE;
-
-  BmsSetCellArrangementVoltage(96, 1);
+	
+  if(ks_battery_capacity > 29999)
+  { //2018+ 30kWh battery has 100S
+	BmsSetCellArrangementVoltage(100, 1);
+  }
+  else
+  { //2016-2017 27kWh battery has 96S
+	BmsSetCellArrangementVoltage(96, 1);
+  }
   BmsSetCellArrangementTemperature(8, 1);
   BmsSetCellLimitsVoltage(2.0,5.0);
   BmsSetCellLimitsTemperature(-35,90);
