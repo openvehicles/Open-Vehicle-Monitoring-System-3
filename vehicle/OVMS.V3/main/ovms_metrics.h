@@ -179,9 +179,12 @@ class OvmsMetricBool : public OvmsMetric
     void SetValue(std::string value);
     void SetValue(dbcNumber& value);
     void operator=(std::string value) { SetValue(value); }
+    bool CheckPersist();
+    void RefreshPersist();
 
   protected:
     bool m_value;
+    bool* m_valuep;
   };
 
 class OvmsMetricInt : public OvmsMetric
@@ -203,9 +206,12 @@ class OvmsMetricInt : public OvmsMetric
     void SetValue(std::string value);
     void SetValue(dbcNumber& value);
     void operator=(std::string value) { SetValue(value); }
+    bool CheckPersist();
+    void RefreshPersist();
 
   protected:
     int m_value;
+    int* m_valuep;
   };
 
 class OvmsMetricFloat : public OvmsMetric
@@ -227,8 +233,8 @@ class OvmsMetricFloat : public OvmsMetric
     void SetValue(std::string value);
     void SetValue(dbcNumber& value);
     void operator=(std::string value) { SetValue(value); }
-    virtual bool CheckPersist();
-    virtual void RefreshPersist();
+    bool CheckPersist();
+    void RefreshPersist();
 
   protected:
     float m_value;
@@ -238,7 +244,7 @@ class OvmsMetricFloat : public OvmsMetric
 class OvmsMetricString : public OvmsMetric
   {
   public:
-    OvmsMetricString(const char* name, uint16_t autostale=0, metric_unit_t units = Other, bool persist = false);
+    OvmsMetricString(const char* name, uint16_t autostale=0, metric_unit_t units = Other);
     virtual ~OvmsMetricString();
 
   public:
@@ -263,8 +269,8 @@ template <size_t N, int startpos=1>
 class OvmsMetricBitset : public OvmsMetric
   {
   public:
-    OvmsMetricBitset(const char* name, uint16_t autostale=0, metric_unit_t units = Other, bool persist = false)
-      : OvmsMetric(name, autostale, units, persist)
+    OvmsMetricBitset(const char* name, uint16_t autostale=0, metric_unit_t units = Other)
+      : OvmsMetric(name, autostale, units, false)
       {
       }
     virtual ~OvmsMetricBitset()
@@ -376,8 +382,8 @@ template <typename ElemType>
 class OvmsMetricSet : public OvmsMetric
   {
   public:
-    OvmsMetricSet(const char* name, uint16_t autostale=0, metric_unit_t units = Other, bool persist = false)
-      : OvmsMetric(name, autostale, units, persist)
+    OvmsMetricSet(const char* name, uint16_t autostale=0, metric_unit_t units = Other)
+      : OvmsMetric(name, autostale, units, false)
       {
       }
     virtual ~OvmsMetricSet()
@@ -495,8 +501,8 @@ template
 class OvmsMetricVector : public OvmsMetric
   {
   public:
-    OvmsMetricVector(const char* name, uint16_t autostale=0, metric_unit_t units = Other, bool persist = false)
-      : OvmsMetric(name, autostale, units, persist)
+    OvmsMetricVector(const char* name, uint16_t autostale=0, metric_unit_t units = Other)
+      : OvmsMetric(name, autostale, units, false)
       {
       }
     virtual ~OvmsMetricVector()
@@ -693,12 +699,12 @@ class OvmsMetrics
     bool SetFloat(const char* metric, float value);
     OvmsMetric* Find(const char* metric);
 
-    OvmsMetricString *InitString(const char* metric, uint16_t autostale=0, const char* value=NULL, metric_unit_t units = Other, bool persist = false);
     OvmsMetricInt *InitInt(const char* metric, uint16_t autostale=0, int value=0, metric_unit_t units = Other, bool persist = false);
     OvmsMetricBool *InitBool(const char* metric, uint16_t autostale=0, bool value=0, metric_unit_t units = Other, bool persist = false);
     OvmsMetricFloat *InitFloat(const char* metric, uint16_t autostale=0, float value=0, metric_unit_t units = Other, bool persist = false);
+    OvmsMetricString *InitString(const char* metric, uint16_t autostale=0, const char* value=NULL, metric_unit_t units = Other);
     template <size_t N>
-    OvmsMetricBitset<N> *InitBitset(const char* metric, uint16_t autostale=0, const char* value=NULL, metric_unit_t units = Other, bool persist = false)
+    OvmsMetricBitset<N> *InitBitset(const char* metric, uint16_t autostale=0, const char* value=NULL, metric_unit_t units = Other)
       {
       OvmsMetricBitset<N> *m = (OvmsMetricBitset<N> *)Find(metric);
       if (m==NULL) m = new OvmsMetricBitset<N>(metric, autostale, units);
@@ -707,7 +713,7 @@ class OvmsMetrics
       return m;
       }
     template <typename ElemType>
-    OvmsMetricSet<ElemType> *InitSet(const char* metric, uint16_t autostale=0, const char* value=NULL, metric_unit_t units = Other, bool persist = false)
+    OvmsMetricSet<ElemType> *InitSet(const char* metric, uint16_t autostale=0, const char* value=NULL, metric_unit_t units = Other)
       {
       OvmsMetricSet<ElemType> *m = (OvmsMetricSet<ElemType> *)Find(metric);
       if (m==NULL) m = new OvmsMetricSet<ElemType>(metric, autostale, units);
@@ -716,7 +722,7 @@ class OvmsMetrics
       return m;
       }
     template <typename ElemType>
-    OvmsMetricVector<ElemType> *InitVector(const char* metric, uint16_t autostale=0, const char* value=NULL, metric_unit_t units = Other, bool persist = false)
+    OvmsMetricVector<ElemType> *InitVector(const char* metric, uint16_t autostale=0, const char* value=NULL, metric_unit_t units = Other)
       {
       OvmsMetricVector<ElemType> *m = (OvmsMetricVector<ElemType> *)Find(metric);
       if (m==NULL) m = new OvmsMetricVector<ElemType>(metric, autostale, units);
