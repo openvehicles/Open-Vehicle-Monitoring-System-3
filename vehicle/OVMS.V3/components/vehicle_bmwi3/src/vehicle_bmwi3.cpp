@@ -324,7 +324,6 @@ void OvmsVehicleBMWi3::Ticker1(uint32_t ticker)
             // we previously shut down.  Wake up again since the car seems to be back
             pollerstate = POLLSTATE_ALIVE;
             mt_i3_pollermode->SetValue(pollerstate);
-            mt_i3_obdisalive->SetValue(true);
             PollSetState(pollerstate);
             ESP_LOGI(TAG, "Woke up polling since we saw CANBUS traffic from the car");
         }
@@ -336,7 +335,6 @@ void OvmsVehicleBMWi3::Ticker1(uint32_t ticker)
         ESP_LOGW(TAG, "No OBD traffic from car for 3 seconds, shutting down poller");
         pollerstate = POLLSTATE_SHUTDOWN;
         mt_i3_pollermode->SetValue(pollerstate);
-        mt_i3_obdisalive->SetValue(false);
         StdMetrics.ms_v_env_awake->SetValue(false);
         StdMetrics.ms_v_env_on->SetValue(false);
         PollSetState(pollerstate);
@@ -346,16 +344,16 @@ void OvmsVehicleBMWi3::Ticker1(uint32_t ticker)
 void OvmsVehicleBMWi3::Ticker10(uint32_t ticker)
 {
     // 1) Is the car responsive - ie replying to our polls?
-    StdMetrics.ms_v_env_awake->SetValue( (replycount != 0) );
+    mt_i3_obdisalive->SetValue( (replycount != 0) );
     if (replycount == 0 && pollerstate != POLLSTATE_SHUTDOWN) {
-        ESP_LOGI(TAG, "No replies from the car to our polls - it's not awake");
+        ESP_LOGI(TAG, "No replies from the car to our polls - OBD is not alive");
     }
     replycount = 0;
 
     // 2) Is the car 'on' (READY)?  We check if we are hearing from the EPS - which seems to only be powered when the car is READY (more or less).
     // FIXME: Would be nice to find a better way to do this
     if (eps_messages != 0) {
-        StdMetrics.ms_v_env_on->SetValue(true);
+        StdMetrics.ms_v_env_awake->SetValue(true);
         if (pollerstate != POLLSTATE_READY) {
             ESP_LOGI(TAG, "Car is now ON");
             pollerstate = POLLSTATE_READY;
@@ -364,7 +362,7 @@ void OvmsVehicleBMWi3::Ticker10(uint32_t ticker)
         }
         eps_messages = 0;
     } else {
-        StdMetrics.ms_v_env_on->SetValue(false);
+        StdMetrics.ms_v_env_awake->SetValue(false);
         if (pollerstate == POLLSTATE_READY) {
             pollerstate = POLLSTATE_ALIVE;
             mt_i3_pollermode->SetValue(pollerstate);
@@ -373,10 +371,13 @@ void OvmsVehicleBMWi3::Ticker10(uint32_t ticker)
         }
     }
 
-    // 3) i3 always has regen braking on
+    //3) Are we actually DRIVING?  - we take it that if the car is awake and in gear
+    StdMetrics.ms_v_env_on->SetValue( (pollerstate == POLLSTATE_READY && StdMetrics.ms_v_env_gear->AsInt() != 0) );
+
+    // 4) i3 always has regen braking on
     StdMetrics.ms_v_env_regenbrake->SetValue(true);
 
-    // 4) mt_i3_age
+    // 5) mt_i3_age
     if (last_obd_data_seen) {
         mt_i3_age->SetValue(StdMetrics.ms_m_monotonic->AsInt() - last_obd_data_seen, Seconds);
     }
