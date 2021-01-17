@@ -221,6 +221,18 @@
 #define MS_V_TPMS_RR_P              "v.tp.rr.p"
 #define MS_V_TPMS_RL_P              "v.tp.rl.p"
 
+#define MS_V_TPMS_PRESSURE          "v.t.pressure"
+#define MS_V_TPMS_TEMP              "v.t.temp"
+#define MS_V_TPMS_HEALTH            "v.t.health"
+#define MS_V_TPMS_ALERT             "v.t.alert"
+
+// Standard wheel index numbers:
+#define MS_V_TPMS_IDX_FL            0
+#define MS_V_TPMS_IDX_FR            1
+#define MS_V_TPMS_IDX_RL            2
+#define MS_V_TPMS_IDX_RR            3
+
+
 class MetricsStandard
   {
   public:
@@ -403,14 +415,18 @@ class MetricsStandard
     OvmsMetricFloat*  ms_v_pos_odometer;
     OvmsMetricFloat*  ms_v_pos_trip;
 
-    OvmsMetricFloat*  ms_v_tpms_fl_t;
-    OvmsMetricFloat*  ms_v_tpms_fr_t;
-    OvmsMetricFloat*  ms_v_tpms_rr_t;
-    OvmsMetricFloat*  ms_v_tpms_rl_t;
-    OvmsMetricFloat*  ms_v_tpms_fl_p;
-    OvmsMetricFloat*  ms_v_tpms_fr_p;
-    OvmsMetricFloat*  ms_v_tpms_rr_p;
-    OvmsMetricFloat*  ms_v_tpms_rl_p;
+    //
+    // TPMS: tyre monitoring metrics
+    //
+    // Notes:
+    //  "Tyre" = whatever device your vehicle uses for movement & steering force transmission.
+    //  Standard layout: four wheels FL,FR,RL,RR (see MS_V_TPMS_IDX_* constants)
+    //  Override OvmsVehicle::GetTpmsLayout() for custom layouts
+    OvmsMetricVector<float>*  ms_v_tpms_pressure;         // Tyre pressures [kPa]
+    OvmsMetricVector<float>*  ms_v_tpms_temp;             // Tyre temperatures [°C]
+    OvmsMetricVector<float>*  ms_v_tpms_health;           // Tyre health states [%]
+    OvmsMetricVector<short>*  ms_v_tpms_alert;            // Tyre warning/alert levels [0=normal, 1=warning, 2=alert]
+
   };
 
 extern MetricsStandard StandardMetrics;

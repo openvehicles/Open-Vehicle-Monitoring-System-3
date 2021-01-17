@@ -336,6 +336,8 @@ OvmsVehicle::OvmsVehicle()
   m_brakelight_basepwr = 0;
   m_brakelight_ignftbrk = false;
 
+  m_tpms_lastcheck = 0;
+
   m_rxqueue = xQueueCreate(CONFIG_OVMS_VEHICLE_CAN_RX_QUEUE_SIZE,sizeof(CAN_frame_t));
   xTaskCreatePinnedToCore(OvmsVehicleRxTask, "OVMS Vehicle",
     CONFIG_OVMS_VEHICLE_RXTASK_STACK, (void*)this, 10, &m_rxtask, CORE(1));
@@ -640,6 +642,27 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
     m_bms_talerts_new = 0;
     }
 
+  // TPMS alerts:
+  if (StdMetrics.ms_v_tpms_alert->LastModified() > m_tpms_lastcheck)
+    {
+    m_tpms_lastcheck = StdMetrics.ms_v_tpms_alert->LastModified();
+    auto tpms_state = StdMetrics.ms_v_tpms_alert->AsVector();
+    m_tpms_laststate.resize(tpms_state.size());
+    bool notify = false;
+    for (int i = 0; i < tpms_state.size(); i++)
+      {
+      if (tpms_state[i] > m_tpms_laststate[i])
+        notify = true;
+      m_tpms_laststate[i] = tpms_state[i];
+      }
+    if (notify)
+      {
+      MyEvents.SignalEvent("vehicle.alert.tpms", NULL);
+      if (m_autonotifications && MyConfig.GetParamValueBool("vehicle", "tpms.alerts.enabled", true))
+        NotifyTpmsAlerts();
+      }
+    }
+
   // Idle alert:
   if (!StdMetrics.ms_v_env_awake->AsBool() || StdMetrics.ms_v_pos_speed->AsFloat() > 0)
     {
@@ -765,6 +788,49 @@ void OvmsVehicle::NotifyMinSocCritical()
 void OvmsVehicle::NotifyVehicleIdling()
   {
   MyNotify.NotifyString("alert", "vehicle.idle", "Vehicle is idling / stopped turned on");
+  }
+
+std::vector<std::string> OvmsVehicle::GetTpmsLayout()
+  {
+  return { "FL", "FR", "RL", "RR" };
+  }
+
+void OvmsVehicle::NotifyTpmsAlerts()
+  {
+  int maxlevel = 0;
+  for (int i = 0; i < m_tpms_laststate.size(); i++)
+    {
+    if (m_tpms_laststate[i] > maxlevel)
+      maxlevel = m_tpms_laststate[i];
+    }
+  if (maxlevel == 0)
+    return;
+
+  StringWriter buf(200);
+  std::vector<std::string> wheels = GetTpmsLayout();
+  const char* alertlevel[] = { "OK", "WARNING", "ALERT" };
+
+  buf.printf("TPMS %s:\n", maxlevel == 1 ? "INFO" : "ALERT");
+
+  for (int i = 0; i < m_tpms_laststate.size(); i++)
+    {
+    if (m_tpms_laststate[i])
+      {
+      buf.printf("%s wheel %s:", wheels[i].c_str(), alertlevel[m_tpms_laststate[i]]);
+      if (StdMetrics.ms_v_tpms_health->IsDefined())
+        buf.printf(" Health=%s", StdMetrics.ms_v_tpms_health->ElemAsUnitString(i, "", Native, 0).c_str());
+      if (StdMetrics.ms_v_tpms_pressure->IsDefined())
+        buf.printf(" Pressure=%s", StdMetrics.ms_v_tpms_pressure->ElemAsUnitString(i, "", Native, 1).c_str());
+      if (StdMetrics.ms_v_tpms_temp->IsDefined())
+        buf.printf(" Temp=%sC", StdMetrics.ms_v_tpms_temp->ElemAsString(i, "", Native, 1).c_str());
+      buf.append("\n");
+      }
+    }
+
+  if (maxlevel == 1)
+    MyNotify.NotifyString("info", "tpms.warning", buf.c_str());
+  else
+    MyNotify.NotifyString("alert", "tpms.alert", buf.c_str());
   }
 
 void OvmsVehicle::NotifyBmsAlerts()

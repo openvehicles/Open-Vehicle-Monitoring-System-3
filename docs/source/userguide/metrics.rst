@@ -20,14 +20,10 @@ The full list of metrics available can be shown::
   v.p.satcount                             12
   v.p.speed                                0Kph
   v.p.trip                                 0Km
-  v.tp.fl.p                                206.843kPa
-  v.tp.fl.t                                33°C
-  v.tp.fr.p                                206.843kPa
-  v.tp.fr.t                                33°C
-  v.tp.rl.p                                275.79kPa
-  v.tp.rl.t                                34°C
-  v.tp.rr.p                                275.79kPa
-  v.tp.rr.t                                34°C
+  v.t.alert                                0,0,0,1
+  v.t.health                               95,93,96,74%
+  v.t.pressure                             206.843,216.483,275.79,175.79kPa
+  v.t.temp                                 33,33,34,38°C
   v.type                                   DEMO
 
 You can filter the ``metrics list`` output for names matching a given substring,
@@ -225,14 +221,10 @@ v.p.odometer                             57913.1km                Vehicle odomet
 v.p.satcount                             8                        GPS satellite count in view
 v.p.speed                                0km/h                    Vehicle speed
 v.p.trip                                 0km                      Trip odometer
-v.tp.fl.p                                                         TPMS front left pressure
-v.tp.fl.t                                                         TPMS front left temperature
-v.tp.fr.p                                                         TPMS front right pressure
-v.tp.fr.t                                                         TPMS front right temperature
-v.tp.rl.p                                                         TPMS rear left pressure
-v.tp.rl.t                                                         TPMS rear left temperature
-v.tp.rr.p                                                         TPMS rear right pressure
-v.tp.rr.t                                                         TPMS rear right temperature
+v.t.alert                                0,0,0,1                  TPMS tyre alert levels [0=normal, 1=warning, 2=alert]
+v.t.health                               95,93,96,74%             TPMS tyre health states
+v.t.pressure                             206.8,216.4,…kPa         TPMS tyre pressures
+v.t.temp                                 33,33,34,38°C            TPMS tyre temperatures
 v.type                                   RT                       Vehicle type code
 v.vin                                    VF1ACVYB012345678        Vehicle identification number
 ======================================== ======================== ============================================

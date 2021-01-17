@@ -1,6 +1,22 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- TPMS: metrics rework & standard alert notifications on new v.t.alert metric.
+  Replaced metrics…
+    v.tp.fl.p               TPMS front left pressure
+    v.tp.fl.t               TPMS front left temperature
+    v.tp.fr.p               TPMS front right pressure
+    v.tp.fr.t               TPMS front right temperature
+    v.tp.rl.p               TPMS rear left pressure
+    v.tp.rl.t               TPMS rear left temperature
+    v.tp.rr.p               TPMS rear right pressure
+    v.tp.rr.t               TPMS rear right temperature
+  …by…
+    v.t.pressure            TPMS tyre pressures vector (fl,fr,rl,rr)
+    v.t.temp                TPMS tyre temperatures vector
+  New standard metrics:
+    v.t.alert               TPMS tyre alert levels [0=normal, 1=warning, 2=alert]
+    v.t.health              TPMS tyre health states
 - Volt/Ampera: BMS cell monitoring (CAN1 polling), fast CAN polling when waking up,
   estimated range gets from CAN instead of calculation, 
   lock/unlock status processing fixed for Volt 14MY; 

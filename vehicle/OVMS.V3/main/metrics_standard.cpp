@@ -208,14 +208,13 @@ MetricsStandard::MetricsStandard()
   ms_v_pos_odometer = new OvmsMetricFloat(MS_V_POS_ODOMETER, SM_STALE_MID, Kilometers, true);
   ms_v_pos_trip = new OvmsMetricFloat(MS_V_POS_TRIP, SM_STALE_MID, Kilometers, true);
 
-  ms_v_tpms_fl_t = new OvmsMetricFloat(MS_V_TPMS_FL_T, SM_STALE_MID, Celcius, true);
-  ms_v_tpms_fr_t = new OvmsMetricFloat(MS_V_TPMS_FR_T, SM_STALE_MID, Celcius, true);
-  ms_v_tpms_rr_t = new OvmsMetricFloat(MS_V_TPMS_RR_T, SM_STALE_MID, Celcius, true);
-  ms_v_tpms_rl_t = new OvmsMetricFloat(MS_V_TPMS_RL_T, SM_STALE_MID, Celcius, true);
-  ms_v_tpms_fl_p = new OvmsMetricFloat(MS_V_TPMS_FL_P, SM_STALE_MID, kPa, true);
-  ms_v_tpms_fr_p = new OvmsMetricFloat(MS_V_TPMS_FR_P, SM_STALE_MID, kPa, true);
-  ms_v_tpms_rr_p = new OvmsMetricFloat(MS_V_TPMS_RR_P, SM_STALE_MID, kPa, true);
-  ms_v_tpms_rl_p = new OvmsMetricFloat(MS_V_TPMS_RL_P, SM_STALE_MID, kPa, true);
+  //
+  // TPMS: tyre monitoring metrics
+  //
+  ms_v_tpms_pressure = new OvmsMetricVector<float>(MS_V_TPMS_PRESSURE, SM_STALE_HIGH, kPa, true);
+  ms_v_tpms_temp = new OvmsMetricVector<float>(MS_V_TPMS_TEMP, SM_STALE_HIGH, Celcius, true);
+  ms_v_tpms_health = new OvmsMetricVector<float>(MS_V_TPMS_HEALTH, SM_STALE_HIGH, Percentage, true);
+  ms_v_tpms_alert = new OvmsMetricVector<short>(MS_V_TPMS_ALERT, SM_STALE_HIGH, Other, true);
   }
 
 MetricsStandard::~MetricsStandard()

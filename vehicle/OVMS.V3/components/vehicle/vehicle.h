@@ -356,6 +356,16 @@ class OvmsVehicle : public InternalRamAllocated
 #endif // #ifdef CONFIG_OVMS_COMP_TPMS
 
   public:
+    virtual std::vector<std::string> GetTpmsLayout();
+
+  protected:
+    uint32_t m_tpms_lastcheck;              // monotonictime of last TPMS alert check
+    std::vector<short> m_tpms_laststate;    // last TPMS alert state for change detection
+
+  protected:
+    virtual void NotifyTpmsAlerts();
+
+  public:
     virtual vehicle_command_t CommandStat(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t ProcessMsgCommand(std::string &result, int command, const char* args);
 
