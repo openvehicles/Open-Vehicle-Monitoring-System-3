@@ -521,6 +521,10 @@ class OvmsMetricSet : public OvmsMetric
  * A persistent vector will need 1+size pmetrics slots. It will allocate new slots as
  * needed when growing, but the slots will remain used when shrinking the vector. If any
  * new element cannot allocate a pmetrics slot, the whole vector loses its persistence.
+ * 
+ * Unit conversion currently casts to and from float for the conversion, it's assumed to
+ * only be necessary for floating point values here. If you need int conversion, rework
+ * UnitConvert() into a template.
  */
 template
   <
@@ -667,7 +671,7 @@ class OvmsMetricVector : public OvmsMetric
       std::ostringstream ss;
       if (precision >= 0)
         {
-        ss.precision(precision); // Set desired precision
+        ss.precision(precision);
         ss << fixed;
         }
       OvmsMutexLock lock(&m_mutex);
@@ -675,9 +679,37 @@ class OvmsMetricVector : public OvmsMetric
         {
         if (ss.tellp() > 0)
           ss << ',';
-        ss << *i;
+        if (units != Other && units != m_units)
+          ss << (ElemType) UnitConvert(m_units, units, (float)*i);
+        else
+          ss << *i;
         }
       return ss.str();
+      }
+
+    virtual std::string ElemAsString(size_t n, const char* defvalue = "", metric_unit_t units = Other, int precision = -1, bool addunitlabel = false)
+      {
+      OvmsMutexLock lock(&m_mutex);
+      if (!IsDefined() || m_value.size() <= n)
+        return std::string(defvalue);
+      std::ostringstream ss;
+      if (precision >= 0)
+        {
+        ss.precision(precision);
+        ss << fixed;
+        }
+      if (units != Other && units != m_units)
+        ss << (ElemType) UnitConvert(m_units, units, (float)m_value[n]);
+      else
+        ss << m_value[n];
+      if (addunitlabel)
+        ss << OvmsMetricUnitLabel(units == Native ? GetUnits() : units);
+      return ss.str();
+      }
+
+    std::string ElemAsUnitString(size_t n, const char* defvalue = "", metric_unit_t units = Other, int precision = -1)
+      {
+      return ElemAsString(n, defvalue, units, precision, true);
       }
 
     virtual std::string AsJSON(const char* defvalue = "", metric_unit_t units = Other, int precision = -1)
@@ -722,21 +754,31 @@ class OvmsMetricVector : public OvmsMetric
       }
     void operator=(std::string value) { SetValue(value); }
 
-    void SetValue(std::vector<ElemType, Allocator> value, metric_unit_t units = Other)
+    void SetValue(const std::vector<ElemType, Allocator>& value, metric_unit_t units = Other)
       {
+      bool modified = false, resized = false;
       if (m_mutex.Lock())
         {
-        bool modified = false;
-        if (m_value != value)
+        if (m_value.size() < value.size())
           {
+          m_value.resize(value.size());
           if (m_persist)
             SetPersistSize(value.size());
-          m_value = value;
-          modified = true;
-          if (m_persist)
+          resized = true;
+          }
+        for (size_t i = 0; i < value.size(); i++)
+          {
+          ElemType ivalue;
+          if (units != Other && units != m_units)
+            ivalue = (ElemType) UnitConvert(units, m_units, (float)value[i]);
+          else
+            ivalue = value[i];
+          if (resized || m_value[i] != ivalue)
             {
-            for (int i = 0; i < m_value.size(); i++)
-              *m_valuep_elem[i] = m_value[i];
+            m_value[i] = ivalue;
+            modified = true;
+            if (m_persist)
+              *m_valuep_elem[i] = ivalue;
             }
           }
         m_mutex.Unlock();
@@ -755,8 +797,8 @@ class OvmsMetricVector : public OvmsMetric
             SetPersistSize(0);
           m_value.clear();
           m_mutex.Unlock();
+          SetModified(true);
           }
-        SetModified(true);
         }
       }
 
@@ -777,8 +819,13 @@ class OvmsMetricVector : public OvmsMetric
       return val;
       }
 
-    void SetElemValue(size_t n, ElemType value)
+    void SetElemValue(size_t n, const ElemType nvalue, metric_unit_t units = Other)
       {
+      ElemType value;
+      if (units != Other && units != m_units)
+        value = (ElemType) UnitConvert(units, m_units, (float)nvalue);
+      else
+        value = nvalue;
       bool modified = false, resized = false;
       if (m_mutex.Lock())
         {
@@ -801,7 +848,7 @@ class OvmsMetricVector : public OvmsMetric
       SetModified(modified);
       }
 
-    void SetElemValues(size_t start, size_t cnt, ElemType* values)
+    void SetElemValues(size_t start, size_t cnt, const ElemType* values, metric_unit_t units = Other)
       {
       bool modified = false, resized = false;
       if (m_mutex.Lock())
@@ -815,12 +862,17 @@ class OvmsMetricVector : public OvmsMetric
           }
         for (size_t i = 0; i < cnt; i++)
           {
-          if (resized || m_value[start+i] != values[i])
+          ElemType ivalue;
+          if (units != Other && units != m_units)
+            ivalue = (ElemType) UnitConvert(units, m_units, (float)values[i]);
+          else
+            ivalue = values[i];
+          if (resized || m_value[start+i] != ivalue)
             {
-            m_value[start+i] = values[i];
+            m_value[start+i] = ivalue;
             modified = true;
             if (m_persist)
-              *m_valuep_elem[start+i] = values[i];
+              *m_valuep_elem[start+i] = ivalue;
             }
           }
         m_mutex.Unlock();
