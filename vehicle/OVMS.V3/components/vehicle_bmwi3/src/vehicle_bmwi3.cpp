@@ -278,7 +278,7 @@ OvmsVehicleBMWi3::OvmsVehicleBMWi3()
     pollerstate = POLLSTATE_SHUTDOWN;  // If the car is alive we'll get frames and switch to ALIVE
     PollSetState(pollerstate);
     mt_i3_pollermode->SetValue(pollerstate);
-    mt_i3_obdtraffic->SetValue(false);
+    mt_i3_obdisalive->SetValue(false);
     StdMetrics.ms_v_env_awake->SetValue(false);
     StdMetrics.ms_v_env_on->SetValue(false);
     PollSetThrottling(50);
@@ -324,7 +324,7 @@ void OvmsVehicleBMWi3::Ticker1(uint32_t ticker)
             // we previously shut down.  Wake up again since the car seems to be back
             pollerstate = POLLSTATE_ALIVE;
             mt_i3_pollermode->SetValue(pollerstate);
-            mt_i3_obdtraffic->SetValue(true);
+            mt_i3_obdisalive->SetValue(true);
             PollSetState(pollerstate);
             ESP_LOGI(TAG, "Woke up polling since we saw CANBUS traffic from the car");
         }
@@ -336,7 +336,7 @@ void OvmsVehicleBMWi3::Ticker1(uint32_t ticker)
         ESP_LOGW(TAG, "No OBD traffic from car for 3 seconds, shutting down poller");
         pollerstate = POLLSTATE_SHUTDOWN;
         mt_i3_pollermode->SetValue(pollerstate);
-        mt_i3_obdtraffic->SetValue(false);
+        mt_i3_obdisalive->SetValue(false);
         StdMetrics.ms_v_env_awake->SetValue(false);
         StdMetrics.ms_v_env_on->SetValue(false);
         PollSetState(pollerstate);
