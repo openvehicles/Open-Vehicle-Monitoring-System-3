@@ -81,6 +81,18 @@ static const char *TAG = "v-bmwi3";
 // "connected to power and could charge" and "actually charging right now"
 
 
+// https://www.bimmerfest.com/threads/can-bus-wake-up-via-obd-connector.789159/
+// Hi !
+// Do anybody know how to wake-up the CAN-Bus via OBD connector?
+// Current situation: The car is locked and in sleep modus - CAN-Bus OFF. Now I want to wake-up the CAN-Bus and sent messages via OBD connector e.g. read vin, ...
+// I heared about a methode which should work on Audi cars with gateway:
+// In sleep mode PIN 14 (CAN low) should have 11V. Now pull the PIN 14 down (switch to ground) and the wake-up of the CAN-Bus is done.
+// Can anybody confirm this on e.g. F10?
+// Any other ideas?
+// Answers highly wellcome! :)
+
+
+
 static const OvmsVehicle::poll_pid_t obdii_polls[] = {
   // TXMODULEID, RXMODULEID, TYPE, PID, { POLLTIMES }, BUS, ADDRESSING
   // SME: Battery management electronics
