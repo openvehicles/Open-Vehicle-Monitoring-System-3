@@ -385,7 +385,7 @@ void OvmsVehicleBMWi3::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pi
 
   case I3_PID_SME_ALTERUNG_KAPAZITAET_TS: {
     if (datalen < 4) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", length, "I3_PID_SME_ALTERUNG_KAPAZITAET_TS", 4);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", length, "I3_PID_SME_ALTERUNG_KAPAZITAET_TS", 4);
         break;
     }
     unsigned long STAT_ALTERUNG_KAPAZITAET_WERT = (RXBUF_UINT32(0));
@@ -406,7 +406,7 @@ void OvmsVehicleBMWi3::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pi
 
   case I3_PID_SME_HV_SPANNUNG_BERECHNET: {
     if (datalen < 2) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", length, "I3_PID_SME_HV_SPANNUNG_BERECHNET", 2);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", length, "I3_PID_SME_HV_SPANNUNG_BERECHNET", 2);
         break;
     }
     float STAT_HV_SPANNUNG_BERECHNET_WERT = (RXBUF_UINT(0)/100.0f);
@@ -423,7 +423,7 @@ void OvmsVehicleBMWi3::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pi
 
   case I3_PID_SME_HV_STROM: {
     if (datalen < 4) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", length, "I3_PID_SME_HV_STROM", 4);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", length, "I3_PID_SME_HV_STROM", 4);
         break;
     }
     float STAT_HV_STROM_WERT = (RXBUF_SINT32(0)/100.0f);
@@ -444,7 +444,7 @@ void OvmsVehicleBMWi3::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pi
 
   case I3_PID_SME_ANZEIGE_SOC: {
     if (datalen < 6) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", length, "I3_PID_SME_ANZEIGE_SOC", 6);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", length, "I3_PID_SME_ANZEIGE_SOC", 6);
         break;
     }
     float STAT_ANZEIGE_SOC_WERT = (RXBUF_UINT(0)/10.0f);
@@ -468,7 +468,7 @@ void OvmsVehicleBMWi3::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pi
 
   case I3_PID_SME_TEMPERATUREN: {
     if (datalen < 6) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_SME_TEMPERATUREN", 6);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_SME_TEMPERATUREN", 6);
         break;
     }
     float STAT_TCORE_MIN_WERT = (RXBUF_SINT(0)/100.0f);
@@ -496,7 +496,7 @@ void OvmsVehicleBMWi3::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pi
 
     case I3_PID_SME_ZUSTAND_SPEICHER: {                                             // 0xDFA0
     if (datalen < 38) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_SME_ZUSTAND_SPEICHER", 38);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_SME_ZUSTAND_SPEICHER", 38);
         break;
     }
 
@@ -636,7 +636,7 @@ void OvmsVehicleBMWi3::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pi
 #ifdef INVESTIGATIONS
   case I3_PID_SME_PROJEKT_PARAMETER: {                                            // 0xDF71
     if (datalen < 5) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_SME_PROJEKT_PARAMETER", 5);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_SME_PROJEKT_PARAMETER", 5);
         break;
     }
 
@@ -672,7 +672,7 @@ void OvmsVehicleBMWi3::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pi
 
 case I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX: {                                       // 0xDDBF
     if (datalen < 4) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX", 4);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX", 4);
         break;
     }
 
@@ -695,7 +695,7 @@ case I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX: {                                       
 
   case I3_PID_KOM_KOMBI_REICHWEITE_BEV_PHEV: {
     if (datalen < 12) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_KOM_KOMBI_REICHWEITE_BEV_PHEV", 12);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_KOM_KOMBI_REICHWEITE_BEV_PHEV", 12);
         break;
     }
     float STAT_ELECTRIC_RANGE_CURRENT_WERT = (RXBUF_UINT(0)/10.0f);
@@ -738,7 +738,7 @@ case I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX: {                                       
 
   case I3_PID_KOM_TACHO_WERT: {
     if (datalen < 2) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_KOM_TACHO_WERT", 2);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_KOM_TACHO_WERT", 2);
         break;
     }
     float STAT_GESCHWINDIGKEIT_WERT = (RXBUF_UINT(0)/10.0f);
@@ -753,7 +753,7 @@ case I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX: {                                       
 
   case I3_PID_KOM_GWSZ_ABSOLUT_WERT: {
     if (datalen < 8) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_KOM_GWSZ_ABSOLUT_WERT", 8);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_KOM_GWSZ_ABSOLUT_WERT", 8);
         break;
     }
     long STAT_ABSOLUT_GWSZ_RAM_WERT = (RXBUF_SINT32(0));
@@ -773,7 +773,7 @@ case I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX: {                                       
 
   case I3_PID_KOM_A_TEMP_WERT: {
     if (datalen < 2) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_KOM_A_TEMP_WERT", 2);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_KOM_A_TEMP_WERT", 2);
         break;
     }
     float STAT_A_TEMP_ANZEIGE_WERT = (RXBUF_UCHAR(0)/2.0f-40.0);
@@ -791,7 +791,7 @@ case I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX: {                                       
 
   case I3_PID_KOM_KOMBI_BC_BCW_KWH_KM: {
     if (datalen < 8) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_KOM_KOMBI_BC_BCW_KWH_KM", 8);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_KOM_KOMBI_BC_BCW_KWH_KM", 8);
         break;
     }
     float STAT_BC_DSV_KWH_KM_WERT = (RXBUF_UINT(0)/10.0f);
@@ -818,7 +818,7 @@ case I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX: {                                       
 
   case I3_PID_KOM_KOMBI_BC_RBC_KWH_KM: {
     if (datalen < 6) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_KOM_KOMBI_BC_RBC_KWH_KM", 10);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_KOM_KOMBI_BC_RBC_KWH_KM", 10);
         break;
     }
     float STAT_RBC_DSV_KWH_KM_WERT = (RXBUF_UINT(0)/10.0f);
@@ -865,7 +865,7 @@ case I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX: {                                       
 
   case I3_PID_KOM_REICHWEITE_MCV: {                                               // 0x420C
     if (datalen < 8) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_KOM_REICHWEITE_MCV", 8);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_KOM_REICHWEITE_MCV", 8);
         break;
     }
 
@@ -899,7 +899,7 @@ case I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX: {                                       
   // Don't think this is actually what we want
   case I3_PID_KOM_SEGMENTDATEN_SPEICHER: {                                        // 0xD12F
     if (datalen < 210) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_KOM_SEGMENTDATEN_SPEICHER", 210);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_KOM_SEGMENTDATEN_SPEICHER", 210);
         break;
     }
 
@@ -1473,7 +1473,7 @@ case I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX: {                                       
 
   case I3_PID_EME_EME_HVPM_DCDC_ANSTEUERUNG: {                                    // 0xDE00
     if (datalen < 25) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_EME_EME_HVPM_DCDC_ANSTEUERUNG", 25);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_EME_EME_HVPM_DCDC_ANSTEUERUNG", 25);
         break;
     }
 
@@ -1551,7 +1551,7 @@ case I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX: {                                       
   // TODO can we use this to calculate efficiency - how much battery power got to the motor?
   case I3_PID_EME_AE_STROM_EMASCHINE: {                                           // 0xDE8A
     if (datalen < 10) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_EME_AE_STROM_EMASCHINE", 10);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_EME_AE_STROM_EMASCHINE", 10);
         break;
     }
 
@@ -1583,7 +1583,7 @@ case I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX: {                                       
 
   case I3_PID_EME_AE_TEMP_LE: {
     if (datalen < 30) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_EME_AE_TEMP_LE", 30);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_EME_AE_TEMP_LE", 30);
         break;
     }
     float STAT_TEMP_UMRICHTER_PHASE_U_WERT = (RXBUF_SINT(0)*0.0156f);
@@ -1651,7 +1651,7 @@ case I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX: {                                       
 
   case I3_PID_EME_AE_TEMP_EMASCHINE: {
     if (datalen < 4) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_EME_AE_TEMP_EMASCHINE", 4);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_EME_AE_TEMP_EMASCHINE", 4);
         break;
     }
     float STAT_TEMP1_E_MOTOR_WERT = (RXBUF_SINT(0)*0.0156f);
@@ -1669,7 +1669,7 @@ case I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX: {                                       
 
   case I3_PID_EME_AE_ELEKTRISCHE_MASCHINE: {
     if (datalen < 7) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_EME_AE_ELEKTRISCHE_MASCHINE", 7);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_EME_AE_ELEKTRISCHE_MASCHINE", 7);
         break;
     }
     float STAT_ELEKTRISCHE_MASCHINE_DREHZAHL_WERT = (RXBUF_UINT(0)*0.5f-5000.0);
@@ -1695,7 +1695,7 @@ case I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX: {                                       
 
   case I3_PID_NBT_STATUS_SPEED: {                                                 // 0xD030
     if (datalen < 14) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_NBT_STATUS_SPEED", 14);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_NBT_STATUS_SPEED", 14);
         break;
     }
 
@@ -1742,7 +1742,7 @@ case I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX: {                                       
 
   case I3_PID_NBT_STATUS_DIRECTION: {                                             // 0xD031
     if (datalen < 2) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_NBT_STATUS_DIRECTION", 2);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_NBT_STATUS_DIRECTION", 2);
         break;
     }
 
@@ -1765,7 +1765,7 @@ case I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX: {                                       
 
   case I3_PID_FZD_DWA_KLAPPENKONTAKTE: {                                          // 0xDCDD
     if (datalen < 12) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_FZD_DWA_KLAPPENKONTAKTE", 12);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_FZD_DWA_KLAPPENKONTAKTE", 12);
         break;
     }
 
@@ -1823,7 +1823,7 @@ case I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX: {                                       
 
   case I3_PID_KLE_BETRIEBSZUSTAND_LADEGERAET: {                                   // 0xDE84
     if (datalen < 16) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_KLE_BETRIEBSZUSTAND_LADEGERAET", 16);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_KLE_BETRIEBSZUSTAND_LADEGERAET", 16);
         break;
     }
 
@@ -1985,7 +1985,7 @@ case I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX: {                                       
 
   case I3_PID_KLE_LADEGERAET_LEISTUNG: {                                          // 0xDE85
     if (datalen < 4) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_KLE_LADEGERAET_LEISTUNG", 4);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_KLE_LADEGERAET_LEISTUNG", 4);
         break;
     }
 
@@ -2009,7 +2009,7 @@ case I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX: {                                       
 
   case I3_PID_KLE_LADEGERAET_SPANNUNG: {                                          // 0xDE86
     if (datalen < 12) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_KLE_LADEGERAET_SPANNUNG", 12);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_KLE_LADEGERAET_SPANNUNG", 12);
         break;
     }
 
@@ -2065,7 +2065,7 @@ case I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX: {                                       
 
   case I3_PID_KLE_LADEGERAET_STROM: {                                             // 0xDE87
     if (datalen < 14) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_KLE_LADEGERAET_STROM", 14);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_KLE_LADEGERAET_STROM", 14);
         break;
     }
 
@@ -2127,7 +2127,7 @@ case I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX: {                                       
 
   case I3_PID_EDM_STATUS_MESSWERTE_IBS: {                                              // 0xDF25
     if (datalen < 6) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected at least %d", datalen, "I3_PID_EDM_STATUS_MESSWERTE_IBS", 6);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected at least %d", datalen, "I3_PID_EDM_STATUS_MESSWERTE_IBS", 6);
         break;
     }
 
@@ -2141,7 +2141,7 @@ case I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX: {                                       
 
 case I3_PID_EDM_PEDALWERTGEBER: {                                               // 0xDE9C
     if (datalen < 6) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_EDM_PEDALWERTGEBER", 6);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_EDM_PEDALWERTGEBER", 6);
         break;
     }
 
@@ -2169,7 +2169,7 @@ case I3_PID_EDM_PEDALWERTGEBER: {                                               
 
   case I3_PID_LIM_STATUS_LADEKLAPPE: {
     if (datalen < 2) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected at least %d", datalen, "I3_PID_LIM_STATUS_LADEKLAPPE", 2);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected at least %d", datalen, "I3_PID_LIM_STATUS_LADEKLAPPE", 2);
         break;
     }
 
@@ -2182,7 +2182,7 @@ case I3_PID_EDM_PEDALWERTGEBER: {                                               
 
   case I3_PID_LIM_LED_LADESTATUS: {
     if (datalen < 1) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected at least %d", datalen, "I3_PID_LIM_LED_LADESTATUS", 1);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected at least %d", datalen, "I3_PID_LIM_LED_LADESTATUS", 1);
         break;
     }
 
@@ -2208,7 +2208,7 @@ case I3_PID_EDM_PEDALWERTGEBER: {                                               
 
    case I3_PID_LIM_LADEBEREITSCHAFT_LIM: {                                         // 0xDEF2
     if (datalen < 1) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_LIM_LADEBEREITSCHAFT_LIM", 1);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_LIM_LADEBEREITSCHAFT_LIM", 1);
         break;
     }
 
@@ -2225,7 +2225,7 @@ case I3_PID_EDM_PEDALWERTGEBER: {                                               
 
   case I3_PID_LIM_PILOTSIGNAL: {                                                  // 0xDEF6
     if (datalen < 7) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_LIM_PILOTSIGNAL", 7);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_LIM_PILOTSIGNAL", 7);
         break;
     }
 
@@ -2263,7 +2263,7 @@ case I3_PID_EDM_PEDALWERTGEBER: {                                               
 
   case I3_PID_LIM_PROXIMITY: {                                                    // 0xDEF5
     if (datalen < 2) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_LIM_PROXIMITY", 2);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_LIM_PROXIMITY", 2);
         break;
     }
 
@@ -2289,7 +2289,7 @@ case I3_PID_EDM_PEDALWERTGEBER: {                                               
 
   case I3_PID_LIM_LADESCHNITTSTELLE_DC_TEPCO: {                                   // 0xDEF7
     if (datalen < 4) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_LIM_LADESCHNITTSTELLE_DC_TEPCO", 4);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_LIM_LADESCHNITTSTELLE_DC_TEPCO", 4);
         break;
     }
 
@@ -2323,7 +2323,7 @@ case I3_PID_EDM_PEDALWERTGEBER: {                                               
 
   case I3_PID_LIM_DC_SCHUETZ_SCHALTER: {                                          // 0xDEF8
     if (datalen < 1) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_LIM_DC_SCHUETZ_SCHALTER", 1);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_LIM_DC_SCHUETZ_SCHALTER", 1);
         break;
     }
 
@@ -2362,7 +2362,7 @@ case I3_PID_EDM_PEDALWERTGEBER: {                                               
 
   case I3_PID_LIM_DC_PINABDECKUNG_COMBO: {                                        // 0xDEFA
     if (datalen < 1) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_LIM_DC_PINABDECKUNG_COMBO", 1);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_LIM_DC_PINABDECKUNG_COMBO", 1);
         break;
     }
 
@@ -2386,7 +2386,7 @@ case I3_PID_EDM_PEDALWERTGEBER: {                                               
 
     case I3_PID_BDC_HANDBREMSE_KONTAKT: {                                           // 0xD130
     if (datalen < 1) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_BDC_HANDBREMSE_KONTAKT", 1);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_BDC_HANDBREMSE_KONTAKT", 1);
         break;
     }
 
@@ -2402,7 +2402,7 @@ case I3_PID_EDM_PEDALWERTGEBER: {                                               
 
   case I3_PID_BDC_VIN: {
       if (datalen != 17) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_BDC_VIN", 17);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_BDC_VIN", 17);
         break;
       }
       StdMetrics.ms_v_vin->SetValue(rxbuf);
@@ -2412,7 +2412,7 @@ case I3_PID_EDM_PEDALWERTGEBER: {                                               
 
 case I3_PID_IHX_TEMP_INNEN_UNBELUEFTET: {                                       // 0xD85C
     if (datalen < 1) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_IHX_TEMP_INNEN_UNBELUEFTET", 1);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_IHX_TEMP_INNEN_UNBELUEFTET", 1);
         break;
     }
 
@@ -2430,7 +2430,7 @@ case I3_PID_IHX_TEMP_INNEN_UNBELUEFTET: {                                       
 
   case I3_PID_IHX_EKMV_BETRIEBSZUSTAND_GEN20: {                                   // 0xD8C5
     if (datalen < 1) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_IHX_EKMV_BETRIEBSZUSTAND_GEN20", 1);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_IHX_EKMV_BETRIEBSZUSTAND_GEN20", 1);
         break;
     }
 
@@ -2447,7 +2447,7 @@ case I3_PID_IHX_TEMP_INNEN_UNBELUEFTET: {                                       
 
   case I3_PID_IHX_KLIMA_VORN_LUFTVERTEILUNG_LI_RE: {                              // 0xD91A
     if (datalen < 2) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_IHX_KLIMA_VORN_LUFTVERTEILUNG_LI_RE", 2);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_IHX_KLIMA_VORN_LUFTVERTEILUNG_LI_RE", 2);
         break;
     }
 
@@ -2487,7 +2487,7 @@ case I3_PID_IHX_TEMP_INNEN_UNBELUEFTET: {                                       
 
   case I3_PID_IHX_KLIMA_VORN_OFF_EIN: {                                           // 0xD92C
     if (datalen < 1) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_IHX_KLIMA_VORN_OFF_EIN", 1);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_IHX_KLIMA_VORN_OFF_EIN", 1);
         break;
     }
 
@@ -2505,7 +2505,7 @@ case I3_PID_IHX_TEMP_INNEN_UNBELUEFTET: {                                       
 
   case I3_PID_IHX_KLIMA_VORN_PRG_AUC_EIN: {                                       // 0xD930
     if (datalen < 1) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_IHX_KLIMA_VORN_PRG_AUC_EIN", 1);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_IHX_KLIMA_VORN_PRG_AUC_EIN", 1);
         break;
     }
 
@@ -2521,7 +2521,7 @@ case I3_PID_IHX_TEMP_INNEN_UNBELUEFTET: {                                       
 
   case I3_PID_IHX_KLIMA_VORN_PRG_UMLUFT_EIN: {                                    // 0xD931
     if (datalen < 1) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_IHX_KLIMA_VORN_PRG_UMLUFT_EIN", 1);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_IHX_KLIMA_VORN_PRG_UMLUFT_EIN", 1);
         break;
     }
 
@@ -2541,7 +2541,7 @@ case I3_PID_IHX_TEMP_INNEN_UNBELUEFTET: {                                       
 
   case I3_PID_EPS_EPS_MOMENTENSENSOR: {                                           // 0xDB99
     if (datalen < 3) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_EPS_EPS_MOMENTENSENSOR", 3);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_EPS_EPS_MOMENTENSENSOR", 3);
         break;
     }
 
