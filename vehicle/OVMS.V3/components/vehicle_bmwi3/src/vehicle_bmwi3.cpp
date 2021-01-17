@@ -168,69 +168,100 @@ static const OvmsVehicle::poll_pid_t obdii_polls[] = {
   
     POLL_LIST_END
   };
+
+OvmsMetricFloat* MetricFloat(const char* name, uint16_t autostale=0, metric_unit_t units = Other) {
+    OvmsMetricFloat* metric = (OvmsMetricFloat*)MyMetrics.Find(name);
+    if (metric==NULL) {
+        metric = new OvmsMetricFloat(name, autostale, units, 0);
+    }
+    return metric;
+}
+OvmsMetricInt* MetricInt(const char* name, uint16_t autostale=0, metric_unit_t units = Other) {
+    OvmsMetricInt* metric = (OvmsMetricInt*)MyMetrics.Find(name);
+    if (metric==NULL) {
+        metric = new OvmsMetricInt(name, autostale, units, 0);
+    }
+    return metric;
+}
   
+OvmsMetricBool* MetricBool(const char* name, uint16_t autostale=0, metric_unit_t units = Other) {
+    OvmsMetricBool* metric = (OvmsMetricBool*)MyMetrics.Find(name);
+    if (metric==NULL) {
+        metric = new OvmsMetricBool(name, autostale, units, 0);
+    }
+    return metric;
+}
+
+OvmsMetricString* MetricString(const char* name, uint16_t autostale=0, metric_unit_t units = Other) {
+    OvmsMetricString* metric = (OvmsMetricString*)MyMetrics.Find(name);
+    if (metric==NULL) {
+        metric = new OvmsMetricString(name, autostale, units, 0);
+    }
+    return metric;
+}
+
 OvmsVehicleBMWi3::OvmsVehicleBMWi3()
 {
     ESP_LOGI(TAG, "BMW i3/i3s vehicle module");
 
     // Our metrics.
     // Charge limits
-    mt_i3_charge_actual                 = MyMetrics.InitFloat("xi3.v.b.soc.actual",         SM_STALE_MAX,  0, Percentage);
-    mt_i3_charge_max                    = MyMetrics.InitFloat("xi3.v.b.soc.actual.highlimit", SM_STALE_MAX, 0, Percentage);
-    mt_i3_charge_min                    = MyMetrics.InitFloat("xi3.v.b.soc.actual.lowlimit", SM_STALE_MAX, 0, Percentage);
+    mt_i3_charge_actual                 = MetricFloat("xi3.v.b.soc.actual",         SM_STALE_MAX,  Percentage);
+    mt_i3_charge_max                    = MetricFloat("xi3.v.b.soc.actual.highlimit", SM_STALE_MAX, Percentage);
+    mt_i3_charge_min                    = MetricFloat("xi3.v.b.soc.actual.lowlimit", SM_STALE_MAX, Percentage);
     // Wheel speeds
-    mt_i3_wheel1_speed                  = MyMetrics.InitFloat("xi3.v.p.wheel1_speed",       SM_STALE_MIN,  0, Kph);
-    mt_i3_wheel2_speed                  = MyMetrics.InitFloat("xi3.v.p.wheel2_speed",       SM_STALE_MIN,  0, Kph);
-    mt_i3_wheel3_speed                  = MyMetrics.InitFloat("xi3.v.p.wheel3_speed",       SM_STALE_MIN,  0, Kph);
-    mt_i3_wheel4_speed                  = MyMetrics.InitFloat("xi3.v.p.wheel4_speed",       SM_STALE_MIN,  0, Kph);
-    mt_i3_wheel_speed                   = MyMetrics.InitFloat("xi3.v.p.wheel_speed",        SM_STALE_MIN,  0, Kph);
-    mt_i3_batt_pack_ocv_avg             = MyMetrics.InitFloat("xi3.v.b.p.ocv.avg",          SM_STALE_MAX,  0, Volts);
-    mt_i3_batt_pack_ocv_min             = MyMetrics.InitFloat("xi3.v.b.p.ocv.min",          SM_STALE_MAX,  0, Volts);
-    mt_i3_batt_pack_ocv_max             = MyMetrics.InitFloat("xi3.v.b.p.ocv.max",          SM_STALE_MAX,  0, Volts);
+    mt_i3_wheel1_speed                  = MetricFloat("xi3.v.p.wheel1_speed",       SM_STALE_MIN,  Kph);
+    mt_i3_wheel2_speed                  = MetricFloat("xi3.v.p.wheel2_speed",       SM_STALE_MIN,  Kph);
+    mt_i3_wheel3_speed                  = MetricFloat("xi3.v.p.wheel3_speed",       SM_STALE_MIN,  Kph);
+    mt_i3_wheel4_speed                  = MetricFloat("xi3.v.p.wheel4_speed",       SM_STALE_MIN,  Kph);
+    mt_i3_wheel_speed                   = MetricFloat("xi3.v.p.wheel_speed",        SM_STALE_MIN,  Kph);
+    mt_i3_batt_pack_ocv_avg             = MetricFloat("xi3.v.b.p.ocv.avg",          SM_STALE_MAX,  Volts);
+    mt_i3_batt_pack_ocv_min             = MetricFloat("xi3.v.b.p.ocv.min",          SM_STALE_MAX,  Volts);
+    mt_i3_batt_pack_ocv_max             = MetricFloat("xi3.v.b.p.ocv.max",          SM_STALE_MAX,  Volts);
     // Ranges in modes
-    mt_i3_range_bc                      = MyMetrics.InitInt  ("xi3.v.b.range.bc",           SM_STALE_HIGH, 0, Kilometers);
-    mt_i3_range_comfort                 = MyMetrics.InitInt  ("xi3.v.b.range.comfort",      SM_STALE_HIGH, 0, Kilometers);
-    mt_i3_range_ecopro                  = MyMetrics.InitInt  ("xi3.v.b.range.ecopro",       SM_STALE_HIGH, 0, Kilometers);
-    mt_i3_range_ecoproplus              = MyMetrics.InitInt  ("xi3.v.b.range.ecoproplus",   SM_STALE_HIGH, 0, Kilometers);
+    mt_i3_range_bc                      = MetricInt  ("xi3.v.b.range.bc",           SM_STALE_HIGH, Kilometers);
+    mt_i3_range_comfort                 = MetricInt  ("xi3.v.b.range.comfort",      SM_STALE_HIGH, Kilometers);
+    mt_i3_range_ecopro                  = MetricInt  ("xi3.v.b.range.ecopro",       SM_STALE_HIGH, Kilometers);
+    mt_i3_range_ecoproplus              = MetricInt  ("xi3.v.b.range.ecoproplus",   SM_STALE_HIGH, Kilometers);
     // Charging
-    mt_i3_v_charge_voltage_phase1       = MyMetrics.InitInt("xi3.v.c.voltage.phase1",       SM_STALE_MID,  0, Volts);
-    mt_i3_v_charge_voltage_phase2       = MyMetrics.InitInt("xi3.v.c.voltage.phase2",       SM_STALE_MID,  0, Volts);
-    mt_i3_v_charge_voltage_phase3       = MyMetrics.InitInt("xi3.v.c.voltage.phase3",       SM_STALE_MID,  0, Volts);
-    mt_i3_v_charge_voltage_dc           = MyMetrics.InitFloat("xi3.v.c.voltage.dc",         SM_STALE_MID,  0, Volts);
-    mt_i3_v_charge_voltage_dc_limit     = MyMetrics.InitFloat("xi3.v.c.voltage.dc.limit",   SM_STALE_MID,  0, Volts);
-    mt_i3_v_charge_current_phase1       = MyMetrics.InitFloat("xi3.v.c.current.phase1",     SM_STALE_MID,  0, Amps);
-    mt_i3_v_charge_current_phase2       = MyMetrics.InitFloat("xi3.v.c.current.phase2",     SM_STALE_MID,  0, Amps);
-    mt_i3_v_charge_current_phase3       = MyMetrics.InitFloat("xi3.v.c.current.phase3",     SM_STALE_MID,  0, Amps);
-    mt_i3_v_charge_current_dc           = MyMetrics.InitFloat("xi3.v.c.current.dc",         SM_STALE_MID,  0, Amps);
-    mt_i3_v_charge_current_dc_limit     = MyMetrics.InitFloat("xi3.v.c.current.dc.limit",   SM_STALE_MID,  0, Amps);
-    mt_i3_v_charge_current_dc_maxlimit  = MyMetrics.InitFloat("xi3.v.c.current.dc.maxlimit", SM_STALE_MID, 0, Amps);
-    mt_i3_v_charge_deratingreasons      = MyMetrics.InitInt("xi3.v.c.deratingreasons",      SM_STALE_HIGH, 0, Other);
-    mt_i3_v_charge_faults               = MyMetrics.InitInt("xi3.v.c.deratingreasons",      SM_STALE_HIGH, 0, Other);
-    mt_i3_v_charge_failsafetriggers     = MyMetrics.InitInt("xi3.v.c.failsafetriggers",     SM_STALE_HIGH, 0, Other);
-    mt_i3_v_charge_interruptionreasons  = MyMetrics.InitInt("xi3.v.c.interruptionreasons",  SM_STALE_HIGH, 0, Other);
-    mt_i3_v_charge_errors               = MyMetrics.InitInt("xi3.v.c.error",                SM_STALE_HIGH, 0, Other);
-    mt_i3_v_charge_readytocharge        = MyMetrics.InitBool("xi3.v.c.readytocharge",       SM_STALE_MID, false);
-    mt_i3_v_charge_plugstatus           = MyMetrics.InitString("xi3.v.c.chargeplugstatus",  SM_STALE_MID);
-    mt_i3_v_charge_pilotsignal          = MyMetrics.InitInt("xi3.v.c.pilotsignal",          SM_STALE_MID, 0, Amps);
-    mt_i3_v_charge_cablecapacity        = MyMetrics.InitInt("xi3.v.c.chargecablecapacity",  SM_STALE_MID, 0, Amps);
-    mt_i3_v_charge_dc_plugconnected     = MyMetrics.InitBool("xi3.v.c.dc.plugconnected",    SM_STALE_MID, false);
-    mt_i3_v_charge_dc_voltage           = MyMetrics.InitInt("xi3.v.c.dc.chargevoltage",     SM_STALE_MID, 0, Volts);
-    mt_i3_v_charge_dc_controlsignals    = MyMetrics.InitInt("xi3.v.c.dc.controlsignals",    SM_STALE_MID, 0);
-    mt_i3_v_door_dc_chargeport          = MyMetrics.InitBool("xi3.v.d.chargeport.dc",       SM_STALE_MID, false);
-    mt_i3_v_charge_dc_contactorstatus   = MyMetrics.InitString("xi3.v.c.dc.contactorstatus", SM_STALE_MID, "open");
-    mt_i3_v_charge_dc_inprogress        = MyMetrics.InitBool("xi3.v.c.dc.inprogress",       SM_STALE_MID, false);
-    mt_i3_v_charge_chargeledstate       = MyMetrics.InitInt("xi3.v.c.chargeledstate",       SM_STALE_MID, 0);
-    mt_i3_v_charge_temp_gatedriver      = MyMetrics.InitInt("xi3.v.c.temp.gatedriver",      SM_STALE_MID, 0, Celcius);
+    mt_i3_v_charge_voltage_phase1       = MetricInt  ("xi3.v.c.voltage.phase1",     SM_STALE_MID,  Volts);
+    mt_i3_v_charge_voltage_phase2       = MetricInt  ("xi3.v.c.voltage.phase2",     SM_STALE_MID,  Volts);
+    mt_i3_v_charge_voltage_phase3       = MetricInt  ("xi3.v.c.voltage.phase3",     SM_STALE_MID,  Volts);
+    mt_i3_v_charge_voltage_dc           = MetricFloat("xi3.v.c.voltage.dc",         SM_STALE_MID,  Volts);
+    mt_i3_v_charge_voltage_dc_limit     = MetricFloat("xi3.v.c.voltage.dc.limit",   SM_STALE_MID,  Volts);
+    mt_i3_v_charge_current_phase1       = MetricFloat("xi3.v.c.current.phase1",     SM_STALE_MID,  Amps);
+    mt_i3_v_charge_current_phase2       = MetricFloat("xi3.v.c.current.phase2",     SM_STALE_MID,  Amps);
+    mt_i3_v_charge_current_phase3       = MetricFloat("xi3.v.c.current.phase3",     SM_STALE_MID,  Amps);
+    mt_i3_v_charge_current_dc           = MetricFloat("xi3.v.c.current.dc",         SM_STALE_MID,  Amps);
+    mt_i3_v_charge_current_dc_limit     = MetricFloat("xi3.v.c.current.dc.limit",   SM_STALE_MID,  Amps);
+    mt_i3_v_charge_current_dc_maxlimit  = MetricFloat("xi3.v.c.current.dc.maxlimit", SM_STALE_MID, Amps);
+    mt_i3_v_charge_deratingreasons      = MetricInt  ("xi3.v.c.deratingreasons",    SM_STALE_HIGH, Other);
+    mt_i3_v_charge_faults               = MetricInt  ("xi3.v.c.deratingreasons",    SM_STALE_HIGH, Other);
+    mt_i3_v_charge_failsafetriggers     = MetricInt  ("xi3.v.c.failsafetriggers",   SM_STALE_HIGH, Other);
+    mt_i3_v_charge_interruptionreasons  = MetricInt  ("xi3.v.c.interruptionreasons", SM_STALE_HIGH, Other);
+    mt_i3_v_charge_errors               = MetricInt  ("xi3.v.c.error",              SM_STALE_HIGH, Other);
+    mt_i3_v_charge_readytocharge        = MetricBool ("xi3.v.c.readytocharge",      SM_STALE_MID);
+    mt_i3_v_charge_plugstatus           = MetricString("xi3.v.c.chargeplugstatus",  SM_STALE_MID);
+    mt_i3_v_charge_pilotsignal          = MetricInt  ("xi3.v.c.pilotsignal",        SM_STALE_MID,  Amps);
+    mt_i3_v_charge_cablecapacity        = MetricInt  ("xi3.v.c.chargecablecapacity", SM_STALE_MID, Amps);
+    mt_i3_v_charge_dc_plugconnected     = MetricBool ("xi3.v.c.dc.plugconnected",   SM_STALE_MID);
+    mt_i3_v_charge_dc_voltage           = MetricInt  ("xi3.v.c.dc.chargevoltage",   SM_STALE_MID,  Volts);
+    mt_i3_v_charge_dc_controlsignals    = MetricInt  ("xi3.v.c.dc.controlsignals",  SM_STALE_MID,  Other);
+    mt_i3_v_door_dc_chargeport          = MetricBool ("xi3.v.d.chargeport.dc",      SM_STALE_MID);
+    mt_i3_v_charge_dc_contactorstatus   = MetricString("xi3.v.c.dc.contactorstatus", SM_STALE_MID);
+    mt_i3_v_charge_dc_inprogress        = MetricBool ("xi3.v.c.dc.inprogress",      SM_STALE_MID);
+    mt_i3_v_charge_chargeledstate       = MetricInt  ("xi3.v.c.chargeledstate",     SM_STALE_MID,  Other);
+    mt_i3_v_charge_temp_gatedriver      = MetricInt  ("xi3.v.c.temp.gatedriver",    SM_STALE_MID,  Celcius);
     // Trip consumption
-    mt_i3_v_pos_tripconsumption         = MyMetrics.InitInt("xi3.v.p.tripconsumption",      SM_STALE_MID, 0, WattHoursPK);
+    mt_i3_v_pos_tripconsumption         = MetricInt  ("xi3.v.p.tripconsumption",    SM_STALE_MID,  WattHoursPK);
 
     // State
-    mt_i3_obdtraffic                    = MyMetrics.InitBool("xi3.v.e.obdtraffic",          SM_STALE_MID, false);
-    mt_i3_pollermode                    = MyMetrics.InitInt("xi3.s.pollermode",             SM_STALE_MID, false);
-    mt_i3_age                           = MyMetrics.InitInt("xi3.s.age",                    SM_STALE_MID, -1, Minutes);
+    mt_i3_obdisalive                    = MetricBool ("xi3.v.e.obdisalive",         SM_STALE_MID);
+    mt_i3_pollermode                    = MetricInt  ("xi3.s.pollermode",           SM_STALE_MID);
+    mt_i3_age                           = MetricInt  ("xi3.s.age",                  SM_STALE_MID,  Minutes);
 
     // Controls
-    mt_i3_v_env_autorecirc              = MyMetrics.InitBool("xi3.v.e.autorecirc",          SM_STALE_MID, true);
+    mt_i3_v_env_autorecirc              = MetricBool("xi3.v.e.autorecirc",          SM_STALE_MID);
  
     // Init the stuff to keep track of whether the car is talking or not
     framecount = 0;
