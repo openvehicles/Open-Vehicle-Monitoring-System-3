@@ -778,7 +778,7 @@ bool OvmsMetric::IsStale()
   {
   if (m_autostale>0)
     {
-    if (m_lastmodified < (monotonictime-m_autostale))
+    if (m_lastmodified + m_autostale < monotonictime)
       m_stale=true;
     else
       m_stale=false;
