@@ -1946,7 +1946,7 @@ case I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX: {                                       
     // FIXME not convinced these are correctly mapped to the standard values
     switch (STAT_BETRIEBSART_NR) {
         case 1:
-            state = "idle";  // Standby: does that always mean done?
+            state = "";  // Standby: does that always mean done?
             break;
         case 2:
             state = "charging";
@@ -2344,7 +2344,7 @@ case I3_PID_EDM_PEDALWERTGEBER: {                                               
         ESP_LOGI(TAG, "DC charge started");
         StdMetrics.ms_v_charge_inprogress->SetValue(true);
         mt_i3_v_charge_dc_inprogress->SetValue(true);
-        if (StdMetrics.ms_v_charge_state->AsString().compare("idle") == 0) {
+        if (StdMetrics.ms_v_charge_state->AsString().compare("") == 0) {
             StdMetrics.ms_v_charge_state->SetValue("charging");
         }
     }
@@ -2353,7 +2353,7 @@ case I3_PID_EDM_PEDALWERTGEBER: {                                               
         mt_i3_v_charge_dc_inprogress->SetValue(false);
         StdMetrics.ms_v_charge_inprogress->SetValue(false);
         if (StdMetrics.ms_v_charge_state->AsString().compare("charging") == 0) {
-            StdMetrics.ms_v_charge_state->SetValue("idle");
+            StdMetrics.ms_v_charge_state->SetValue("");
         }
     }
     
