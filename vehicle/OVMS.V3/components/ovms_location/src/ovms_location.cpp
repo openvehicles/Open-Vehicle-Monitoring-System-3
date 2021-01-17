@@ -829,4 +829,13 @@ void OvmsLocations::UpdatedConfig(std::string event, void* data)
     }
 
   ReloadMap();
+
+  if (event == "config.mounted")
+    {
+    // Init from persistent position & vehicle state:
+    m_latitude = StdMetrics.ms_v_pos_latitude->AsFloat();
+    m_longitude = StdMetrics.ms_v_pos_longitude->AsFloat();
+    UpdateLocations();
+    UpdatedVehicleOn(StdMetrics.ms_v_env_on);
+    }
   }
