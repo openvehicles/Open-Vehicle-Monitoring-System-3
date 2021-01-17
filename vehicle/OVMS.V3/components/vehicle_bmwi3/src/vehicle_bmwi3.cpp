@@ -195,7 +195,7 @@ OvmsMetricBool* MetricBool(const char* name, uint16_t autostale=0, metric_unit_t
 OvmsMetricString* MetricString(const char* name, uint16_t autostale=0, metric_unit_t units = Other) {
     OvmsMetricString* metric = (OvmsMetricString*)MyMetrics.Find(name);
     if (metric==NULL) {
-        metric = new OvmsMetricString(name, autostale, units, 0);
+        metric = new OvmsMetricString(name, autostale, units);
     }
     return metric;
 }
