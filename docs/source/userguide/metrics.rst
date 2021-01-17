@@ -178,8 +178,8 @@ v.d.rl                                                            yes = Rear lef
 v.d.rr                                                            yes = Rear right door open
 v.d.trunk                                                         yes = Trunk open
 v.e.alarm                                                         yes = Alarm currently sounding
-v.e.aux12v                                                        yes = Auxilliary 12v system is on
-v.e.awake                                no                       yes = Vehicle/bus awake (switched on)
+v.e.aux12v                                                        yes = 12V auxiliary system is on (base system awake)
+v.e.awake                                no                       yes = Vehicle is fully awake (switched on by the user)
 v.e.c.config                                                      yes = ECU/controller in configuration state
 v.e.c.login                                                       yes = Module logged in at ECU/controller
 v.e.cabintemp                            20°C                     Cabin temperature
@@ -187,7 +187,7 @@ v.e.cabinfan                             100%                     Cabin fan
 v.e.cabinsetpoint                        24°C                     Cabin set point
 v.e.cabinintake                          fresh                    Cabin intake type (fresh, recirc, etc)
 v.e.cabinvent                            feet,face                Cabin vent type (comma-separated list of feet, face, screen, etc)
-v.e.charging12v                          no                       yes = 12V battery charging
+v.e.charging12v                          no                       yes = 12V battery is charging
 v.e.cooling                                                       yes = Cooling
 v.e.drivemode                            33882626                 Active drive profile code (vehicle specific)
 v.e.drivetime                            0Sec                     Seconds driving (turned on)
@@ -198,7 +198,7 @@ v.e.headlights                                                    yes = Headligh
 v.e.heating                                                       yes = Heating
 v.e.hvac                                                          yes = HVAC active
 v.e.locked                                                        yes = Vehicle locked
-v.e.on                                   no                       yes = "Ignition" state (drivable)
+v.e.on                                   no                       yes = Vehicle is in "ignition" state (drivable)
 v.e.parktime                             49608Sec                 Seconds parking (turned off)
 v.e.regenbrake                                                    yes = Regenerative braking active
 v.e.serv.range                           12345km                  Distance to next scheduled maintenance/service [km]
