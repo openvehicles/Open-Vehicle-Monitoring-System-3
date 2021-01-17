@@ -153,6 +153,8 @@ v.c.duration.range                       -1Min                    … for suffic
 v.c.duration.soc                         0Min                     … for sufficient SOC
 v.c.efficiency                           87.6%                    Momentary charger efficiency
 v.c.kwh                                  2.6969kWh                Energy sum for running charge
+v.c.kwh.grid                             3.6969kWh                Energy drawn from grid during running session
+v.c.kwh.grid.total                       256.69kWh                Energy drawn from grid total (life time)
 v.c.limit.range                          0km                      Sufficient range limit for current charge
 v.c.limit.soc                            80%                      Sufficient SOC limit for current charge
 v.c.mode                                 standard                 standard, range, performance, storage
@@ -202,6 +204,29 @@ v.e.serv.time                            1572590910Sec            Time of next s
 v.e.temp                                                          Ambient temperature
 v.e.throttle                             0%                       Drive pedal state [%]
 v.e.valet                                                         yes = Valet mode engaged
+v.g.generating                           no                       True = currently delivering power
+v.g.climit                               0A                       Maximum generator input current (from battery)
+v.g.current                              1.25A                    Momentary generator input current (from battery)
+v.g.duration.empty                       25Min                    Estimated time remaining for full discharge
+v.g.duration.range                       -1Min                    … for range limit
+v.g.duration.soc                         0Min                     … for SOC limit
+v.g.efficiency                           87.6%                    Momentary generator efficiency
+v.g.kwh                                  2.6969kWh                Energy sum generated in the running session
+v.g.kwh.grid                             3.6969kWh                Energy sent to grid during running session
+v.g.kwh.grid.total                       256.69kWh                Energy sent to grid total
+v.g.limit.range                          0km                      Minimum range limit for generator mode
+v.g.limit.soc                            80%                      Minimum SOC limit for generator mode
+v.g.mode                                 standard                 Generator mode (TBD)
+v.g.pilot                                no                       Pilot signal present
+v.g.power                                125kW                    Momentary generator output power
+v.g.state                                done                     Generator state (TBD)
+v.g.substate                                                      Generator substate (TBD)
+v.g.temp                                 16°C                     Generator temperature
+v.g.time                                 0Sec                     Duration of generator running
+v.g.timermode                            false                    True if generator timer enabled 
+v.g.timerstart                                                    Time generator is due to start 
+v.g.type                                                          Connection type (chademo, ccs, …)
+v.g.voltage                              0V                       Momentary generator output voltage
 v.i.temp                                                          Inverter temperature
 v.i.power                                42.7kW                   Momentary inverter motor power (output=positive)
 v.i.efficiency                           98.2%                    Momentary inverter efficiency
