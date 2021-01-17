@@ -46,30 +46,17 @@ static const char *TAG = "metrics";
 
 using namespace std;
 
-#define PERSISTENT_METRICS_MAGIC (('O' << 24) | ('V' << 16) | ('M' << 8) | '3')
-#define PERSISTENT_VERSION 3            /* increment when struct is changed */
+#define PERSISTENT_METRICS_MAGIC        (('O' << 24) | ('V' << 16) | ('M' << 8) | '3')
+#define PERSISTENT_VERSION              3                     // increment when struct is changed
 
-struct persistent_values {
-  std::size_t   namehash;
-  uint8_t       value[4];
-};
+RTC_NOINIT_ATTR persistent_metrics      pmetrics;             // persistent storage container
+#define NUM_PERSISTENT_VALUES           sizeof_array(pmetrics.values)
+static const char*                      pmetrics_reason;      // reason pmetrics was zeroed
+std::map<std::size_t, const char*>      pmetrics_keymap       // hash key → metric name map (registry)
+                                        __attribute__ ((init_priority (1800)));
 
-struct persistent_metrics {
-  u_long magic;
-  int version;
-  unsigned int serial;
-  size_t size;
-  int used;
-  struct persistent_values values[100];
-};
-
-RTC_NOINIT_ATTR struct persistent_metrics pmetrics;
-static const char* pmetrics_reason;     /* reason pmetrics was zeroed */
-std::map<std::size_t, const char*> pmetrics_keymap __attribute__ ((init_priority (1800)));
-
-#define NUM_PERSISTENT_VALUES sizeof_array(pmetrics.values)
-
-OvmsMetrics       MyMetrics       __attribute__ ((init_priority (1800)));
+OvmsMetrics                             MyMetrics
+                                        __attribute__ ((init_priority (1800)));
 
 void metrics_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
@@ -167,7 +154,7 @@ void metrics_set(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
     writer->puts("Metric could not be set");
   }
 
-bool pmetrics_check(bool checkused=false)
+bool pmetrics_check()
   {
   bool ret = true;
   if (pmetrics.magic != PERSISTENT_METRICS_MAGIC)
@@ -190,29 +177,21 @@ bool pmetrics_check(bool checkused=false)
     ESP_LOGE(TAG, "pmetrics_check: out of range used");
     ret = false;
     }
-  int used = 0;
   for (OvmsMetric* m = MyMetrics.m_first; m != NULL; m = m->m_next)
     {
-    if (m->m_persist)
+    if (m->m_persist && !m->CheckPersist())
       {
-      ++used;
-      if (!m->CheckPersist())
-        ret = false;
+      ret = false;
+      break;
       }
-    }
-  if (checkused && pmetrics.used != used)
-    {
-    ESP_LOGE(TAG, "pmetrics_check: incorrect used (%d != %d)",
-        used, pmetrics.used);
-    ret = false;
     }
   return ret;
   }
 
-struct persistent_values *pmetrics_find(const char *name)
+persistent_values *pmetrics_find(const char *name)
   {
   int i;
-  struct persistent_values *vp;
+  persistent_values *vp;
   std::size_t namehash = std::hash<std::string>{}(name);
   for (i = 0, vp = pmetrics.values; i < pmetrics.used; ++i, ++vp)
     {
@@ -235,9 +214,10 @@ void pmetrics_init(bool refresh = false)
     }
   }
 
-struct persistent_values *pmetrics_register(const char *name, struct persistent_values *vp = NULL)
+persistent_values *pmetrics_register(const char *name)
   {
   int i;
+  persistent_values *vp;
   std::size_t namehash = std::hash<std::string>{}(name);
 
   // check for hash collision:
@@ -249,29 +229,28 @@ struct persistent_values *pmetrics_register(const char *name, struct persistent_
     return NULL;
     }
 
-  if (!vp)
+  // find slot:
+  for (i = 0, vp = pmetrics.values; i < pmetrics.used; ++i, ++vp)
     {
-    // find slot:
-    for (i = 0, vp = pmetrics.values; i < pmetrics.used; ++i, ++vp)
-      {
-      if (vp->namehash == namehash)
-        break;
-      }
-
-    // not found? assign to next free slot:
-    if (i >= pmetrics.used)
-      {
-      if (i >= NUM_PERSISTENT_VALUES)
-        {
-        ESP_LOGE(TAG, "pmetrics_register: no free slots, cannot persist '%s'", name);
-        return NULL;
-        }
-      vp->namehash = namehash;
-      memset(&vp->value, 0, sizeof(vp->value));
-      ++pmetrics.used;
-      }
+    if (vp->namehash == namehash)
+      break;
     }
 
+  // not found? assign to next free slot:
+  if (i >= pmetrics.used)
+    {
+    if (i >= NUM_PERSISTENT_VALUES)
+      {
+      ESP_LOGE(TAG, "pmetrics_register: no free slots, cannot persist '%s'", name);
+      return NULL;
+      }
+    vp->namehash = namehash;
+    memset(&vp->value, 0, sizeof(vp->value));
+    ++pmetrics.used;
+    }
+
+  ESP_LOGD(TAG, "pmetrics_register: '%s' => slot=%d, used %d/%d",
+    name, i, pmetrics.used, NUM_PERSISTENT_VALUES);
   pmetrics_keymap[namehash] = name;
   return vp;
   }
@@ -279,7 +258,7 @@ struct persistent_values *pmetrics_register(const char *name, struct persistent_
 void OvmsMetrics::EventSystemShutDown(std::string event, void* data)
   {
   /* Check for corruption and repair of possible before shutting down */
-  if (!pmetrics_check(true))
+  if (!pmetrics_check())
     {
     ESP_LOGI(TAG, "Persistent metrics shutdown check failed");
     pmetrics_init(true);
@@ -848,7 +827,7 @@ OvmsMetricInt::OvmsMetricInt(const char* name, uint16_t autostale, metric_unit_t
 
   if (m_persist)
     {
-    struct persistent_values *vp = pmetrics_register(name);
+    persistent_values *vp = pmetrics_register(name);
     if (!vp)
       {
       m_persist = false;
@@ -879,7 +858,7 @@ bool OvmsMetricInt::CheckPersist()
     ESP_LOGE(TAG, "CheckPersist: bad value for %s", m_name);
     return false;
     }
-  struct persistent_values *vp = pmetrics_find(m_name);
+  persistent_values *vp = pmetrics_find(m_name);
   if (vp == NULL)
     {
     ESP_LOGE(TAG, "CheckPersist: can't find %s", m_name);
@@ -887,7 +866,7 @@ bool OvmsMetricInt::CheckPersist()
     }
   if (m_valuep != reinterpret_cast<int*>(&vp->value))
     {
-    ESP_LOGE(TAG, "CheckPersist: bad value for %s", m_name);
+    ESP_LOGE(TAG, "CheckPersist: bad address for %s", m_name);
     return false;
     }
   return true;
@@ -1003,7 +982,7 @@ OvmsMetricBool::OvmsMetricBool(const char* name, uint16_t autostale, metric_unit
 
   if (m_persist)
     {
-    struct persistent_values *vp = pmetrics_register(name);
+    persistent_values *vp = pmetrics_register(name);
     if (!vp)
       {
       m_persist = false;
@@ -1034,7 +1013,7 @@ bool OvmsMetricBool::CheckPersist()
     ESP_LOGE(TAG, "CheckPersist: bad value for %s", m_name);
     return false;
     }
-  struct persistent_values *vp = pmetrics_find(m_name);
+  persistent_values *vp = pmetrics_find(m_name);
   if (vp == NULL)
     {
     ESP_LOGE(TAG, "CheckPersist: can't find %s", m_name);
@@ -1042,7 +1021,7 @@ bool OvmsMetricBool::CheckPersist()
     }
   if (m_valuep != reinterpret_cast<bool*>(&vp->value))
     {
-    ESP_LOGE(TAG, "CheckPersist: bad value for %s", m_name);
+    ESP_LOGE(TAG, "CheckPersist: bad address for %s", m_name);
     return false;
     }
   return true;
@@ -1148,7 +1127,7 @@ OvmsMetricFloat::OvmsMetricFloat(const char* name, uint16_t autostale, metric_un
 
   if (m_persist)
     {
-    struct persistent_values *vp = pmetrics_register(name);
+    persistent_values *vp = pmetrics_register(name);
     if (!vp)
       {
       m_persist = false;
@@ -1179,7 +1158,7 @@ bool OvmsMetricFloat::CheckPersist()
     ESP_LOGE(TAG, "CheckPersist: bad value for %s", m_name);
     return false;
     }
-  struct persistent_values *vp = pmetrics_find(m_name);
+  persistent_values *vp = pmetrics_find(m_name);
   if (vp == NULL)
     {
     ESP_LOGE(TAG, "CheckPersist: can't find %s", m_name);
@@ -1187,7 +1166,7 @@ bool OvmsMetricFloat::CheckPersist()
     }
   if (m_valuep != reinterpret_cast<float*>(&vp->value))
     {
-    ESP_LOGE(TAG, "CheckPersist: bad value for %s", m_name);
+    ESP_LOGE(TAG, "CheckPersist: bad address for %s", m_name);
     return false;
     }
   return true;

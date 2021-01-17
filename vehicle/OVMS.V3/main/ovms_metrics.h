@@ -48,6 +48,9 @@
 #include "ovms_script.h"
 #endif
 
+#include "ovms_log.h"
+#define TAG ((const char*)"metric")
+
 #define METRICS_MAX_MODIFIERS 32
 
 using namespace std;
@@ -115,6 +118,27 @@ typedef enum : uint8_t
 extern const char* OvmsMetricUnitLabel(metric_unit_t units);
 extern int UnitConvert(metric_unit_t from, metric_unit_t to, int value);
 extern float UnitConvert(metric_unit_t from, metric_unit_t to, float value);
+
+typedef uint32_t persistent_value_t;
+
+struct persistent_values
+  {
+  std::size_t                 namehash;
+  persistent_value_t          value;
+  };
+
+struct persistent_metrics
+  {
+  u_long                      magic;
+  int                         version;
+  unsigned int                serial;
+  size_t                      size;
+  int                         used;
+  persistent_values           values[100];
+  };
+
+extern persistent_values *pmetrics_find(const char *name);
+extern persistent_values *pmetrics_register(const char *name);
 
 class OvmsMetric
   {
@@ -492,6 +516,11 @@ class OvmsMetricSet : public OvmsMetric
  *  vf->SetElemValues(10, 3, myvals);
  *
  * Note: use ExtRamAllocator<type> for large vectors (= use SPIRAM)
+ * 
+ * Persistence can only be used on ElemTypes fitting into a pmetrics storage container.
+ * A persistent vector will need 1+size pmetrics slots. It will allocate new slots as
+ * needed when growing, but the slots will remain used when shrinking the vector. If any
+ * new element cannot allocate a pmetrics slot, the whole vector loses its persistence.
  */
 template
   <
@@ -501,12 +530,133 @@ template
 class OvmsMetricVector : public OvmsMetric
   {
   public:
-    OvmsMetricVector(const char* name, uint16_t autostale=0, metric_unit_t units = Other)
-      : OvmsMetric(name, autostale, units, false)
+    OvmsMetricVector(const char* name, uint16_t autostale=0, metric_unit_t units = Other, bool persist = false)
+      : OvmsMetric(name, autostale, units, persist)
       {
+      m_valuep_size = NULL;
+      if (!persist)
+        return;
+      
+      // Ensure ElemType fits into persistent value:
+      if (sizeof(ElemType) > sizeof(persistent_value_t))
+        return;
+      
+      // Vector persistence is currently implemented by a size entry with the metric name
+      //  + one additional entry per element using the metric name extended by the element index.
+      // This may be optimized when the persistence system supports arrays.
+      struct persistent_values *vp = pmetrics_register(m_name);
+      if (!vp)
+        return;
+      m_valuep_size = reinterpret_cast<std::size_t*>(&vp->value);
+      std::size_t psize = *m_valuep_size;
+      if (SetPersistSize(psize))
+        {
+        SetModified(true);
+        ESP_LOGI(TAG, "persist %s = %s", m_name, AsUnitString().c_str());
+        }
       }
     virtual ~OvmsMetricVector()
       {
+      }
+
+  private:
+    bool SetPersistSize(std::size_t new_size)
+      {
+      // Used by the constructor for initial read and by later SetValue() calls
+      // on vector size changes:
+      //  m_persist false => register & read persistent values
+      //  m_persist true  => only register new elements
+      // 
+      // Persistent element pointers will be retained on shrinking, and reused
+      // when the size grows again. Overall vector persistence is cancelled if any
+      // new element fails to register.
+      
+      if (!m_valuep_size)
+        return false;
+      
+      std::size_t old_size = m_valuep_elem.size();
+      if (new_size <= old_size)
+        {
+        *m_valuep_size = new_size;
+        m_persist = true;
+        return false;
+        }
+      
+      m_valuep_elem.resize(new_size);
+      if (!m_persist)
+        m_value.resize(new_size);
+      
+      struct persistent_values *vp;
+      char elem_name[100];
+      for (std::size_t i = old_size; i < new_size; i++)
+        {
+        snprintf(elem_name, sizeof(elem_name), "%s_%u", m_name, i);
+        vp = pmetrics_register(elem_name);
+        if (!vp)
+          {
+          // if any element fails to register, the whole vector persistence fails:
+          ESP_LOGE(TAG, "%s persistence lost: can't register slot for elem index %u", m_name, i);
+          *m_valuep_size = 0;
+          m_valuep_size = NULL;
+          m_valuep_elem.resize(0);
+          if (!m_persist)
+            m_value.resize(0);
+          m_persist = false;
+          return false;
+          }
+        else
+          {
+          m_valuep_elem[i] = reinterpret_cast<ElemType*>(&vp->value);
+          if (!m_persist)
+            m_value[i] = *m_valuep_elem[i];
+          }
+        }
+
+      *m_valuep_size = new_size;
+      m_persist = true;
+      return true;
+      }
+
+  public:
+    bool CheckPersist()
+      {
+      if (!m_persist || !m_valuep_size || !IsDefined())
+        return true;
+      if (*m_valuep_size != m_value.size())
+        {
+        ESP_LOGE(TAG, "CheckPersist: bad value for %s", m_name);
+        return false;
+        }
+      persistent_values *vp = pmetrics_find(m_name);
+      if (vp == NULL)
+        {
+        ESP_LOGE(TAG, "CheckPersist: can't find %s", m_name);
+        return false;
+        }
+      if (m_valuep_size != reinterpret_cast<std::size_t*>(&vp->value))
+        {
+        ESP_LOGE(TAG, "CheckPersist: bad address for %s", m_name);
+        return false;
+        }
+      for (int i = 0; i < m_value.size(); i++)
+        {
+        if (*m_valuep_elem[i] != m_value[i])
+          {
+          ESP_LOGE(TAG, "CheckPersist: bad value for %s[%d]", m_name, i);
+          return false;
+          }
+        }
+      return true;
+      }
+
+    void RefreshPersist()
+      {
+      if (m_persist && m_valuep_size && IsDefined())
+        {
+        *m_valuep_size = m_value.size();
+        for (int i = 0; i < m_value.size(); i++)
+          *m_valuep_elem[i] = m_value[i];
+        }
       }
 
   public:
@@ -579,8 +729,15 @@ class OvmsMetricVector : public OvmsMetric
         bool modified = false;
         if (m_value != value)
           {
+          if (m_persist)
+            SetPersistSize(value.size());
           m_value = value;
           modified = true;
+          if (m_persist)
+            {
+            for (int i = 0; i < m_value.size(); i++)
+              *m_valuep_elem[i] = m_value[i];
+            }
           }
         m_mutex.Unlock();
         SetModified(modified);
@@ -594,6 +751,8 @@ class OvmsMetricVector : public OvmsMetric
         {
         if (m_mutex.Lock())
           {
+          if (m_persist)
+            SetPersistSize(0);
           m_value.clear();
           m_mutex.Unlock();
           }
@@ -620,15 +779,22 @@ class OvmsMetricVector : public OvmsMetric
 
     void SetElemValue(size_t n, ElemType value)
       {
-      bool modified = false;
+      bool modified = false, resized = false;
       if (m_mutex.Lock())
         {
         if (m_value.size() < n+1)
+          {
           m_value.resize(n+1);
-        if (m_value[n] != value)
+          if (m_persist)
+            SetPersistSize(n+1);
+          resized = true;
+          }
+        if (resized || m_value[n] != value)
           {
           m_value[n] = value;
           modified = true;
+          if (m_persist)
+            *m_valuep_elem[n] = value;
           }
         m_mutex.Unlock();
         }
@@ -637,17 +803,24 @@ class OvmsMetricVector : public OvmsMetric
 
     void SetElemValues(size_t start, size_t cnt, ElemType* values)
       {
-      bool modified = false;
+      bool modified = false, resized = false;
       if (m_mutex.Lock())
         {
         if (m_value.size() < start+cnt)
+          {
           m_value.resize(start+cnt);
+          if (m_persist)
+            SetPersistSize(start+cnt);
+          resized = true;
+          }
         for (size_t i = 0; i < cnt; i++)
           {
-          if (m_value[start+i] != values[i])
+          if (resized || m_value[start+i] != values[i])
             {
             m_value[start+i] = values[i];
             modified = true;
+            if (m_persist)
+              *m_valuep_elem[start+i] = values[i];
             }
           }
         m_mutex.Unlock();
@@ -663,6 +836,8 @@ class OvmsMetricVector : public OvmsMetric
   protected:
     OvmsMutex m_mutex;
     std::vector<ElemType, Allocator> m_value;
+    std::size_t* m_valuep_size;
+    std::vector<ElemType*, Allocator> m_valuep_elem;
   };
 
 
@@ -722,10 +897,10 @@ class OvmsMetrics
       return m;
       }
     template <typename ElemType>
-    OvmsMetricVector<ElemType> *InitVector(const char* metric, uint16_t autostale=0, const char* value=NULL, metric_unit_t units = Other)
+    OvmsMetricVector<ElemType> *InitVector(const char* metric, uint16_t autostale=0, const char* value=NULL, metric_unit_t units = Other, bool persist = false)
       {
       OvmsMetricVector<ElemType> *m = (OvmsMetricVector<ElemType> *)Find(metric);
-      if (m==NULL) m = new OvmsMetricVector<ElemType>(metric, autostale, units);
+      if (m==NULL) m = new OvmsMetricVector<ElemType>(metric, autostale, units, persist);
       if (value)
         m->SetValue(value);
       return m;
@@ -754,5 +929,7 @@ class OvmsMetrics
   };
 
 extern OvmsMetrics MyMetrics;
+
+#undef TAG
 
 #endif //#ifndef __METRICS_H__
