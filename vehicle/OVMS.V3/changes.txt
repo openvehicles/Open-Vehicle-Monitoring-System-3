@@ -1,6 +1,51 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Metrics: extended reboot persistence: most vehicle state and long term counter
+    metrics will now retain their values over a reboot (e.g. OTA update)
+- Metrics: new standard metrics for grid integration (V2G) / generator role
+  New standard metrics:
+    v.c.kwh.grid            Energy drawn from grid during running session
+    v.c.kwh.grid.total      Energy drawn from grid total (life time)
+    v.g.generating          True = currently delivering power
+    v.g.climit              Maximum generator input current (from battery)
+    v.g.current             Momentary generator input current (from battery)
+    v.g.duration.empty      Estimated time remaining for full discharge
+    v.g.duration.range      … for range limit
+    v.g.duration.soc        … for SOC limit
+    v.g.efficiency          Momentary generator efficiency
+    v.g.kwh                 Energy sum generated in the running session
+    v.g.kwh.grid            Energy sent to grid during running session
+    v.g.kwh.grid.total      Energy sent to grid total
+    v.g.limit.range         Minimum range limit for generator mode
+    v.g.limit.soc           Minimum SOC limit for generator mode
+    v.g.mode                Generator mode (TBD)
+    v.g.pilot               Pilot signal present
+    v.g.power               Momentary generator output power
+    v.g.state               Generator state (TBD)
+    v.g.substate            Generator substate (TBD)
+    v.g.temp                Generator temperature
+    v.g.time                Duration of generator running
+    v.g.timermode           True if generator timer enabled 
+    v.g.timerstart          Time generator is due to start 
+    v.g.type                Connection type (chademo, ccs, …)
+    v.g.voltage             Momentary generator output voltage
+- TPMS: metrics rework & standard alert notifications on new v.t.alert metric.
+  Replaced metrics…
+    v.tp.fl.p               TPMS front left pressure
+    v.tp.fl.t               TPMS front left temperature
+    v.tp.fr.p               TPMS front right pressure
+    v.tp.fr.t               TPMS front right temperature
+    v.tp.rl.p               TPMS rear left pressure
+    v.tp.rl.t               TPMS rear left temperature
+    v.tp.rr.p               TPMS rear right pressure
+    v.tp.rr.t               TPMS rear right temperature
+  …by…
+    v.t.pressure            TPMS tyre pressures vector (fl,fr,rl,rr)
+    v.t.temp                TPMS tyre temperatures vector
+  New standard metrics:
+    v.t.alert               TPMS tyre alert levels [0=normal, 1=warning, 2=alert]
+    v.t.health              TPMS tyre health states
 - Volt/Ampera: BMS cell monitoring (CAN1 polling), fast CAN polling when waking up,
   estimated range gets from CAN instead of calculation, 
   lock/unlock status processing fixed for Volt 14MY; 

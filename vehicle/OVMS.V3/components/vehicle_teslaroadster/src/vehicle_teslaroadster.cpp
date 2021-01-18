@@ -513,23 +513,23 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
       {
       if (d[1]>0) // Front-left
         {
-        StandardMetrics.ms_v_tpms_fl_p->SetValue((float)d[0] / 2.755, PSI);
-        StandardMetrics.ms_v_tpms_fl_t->SetValue((float)d[1] - 40);
+        StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FL, (float)d[0] / 2.755, PSI);
+        StandardMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_FL, (float)d[1] - 40);
         }
       if (d[3]>0) // Front-right
         {
-        StandardMetrics.ms_v_tpms_fr_p->SetValue((float)d[2] / 2.755, PSI);
-        StandardMetrics.ms_v_tpms_fr_t->SetValue((float)d[3] - 40);
+        StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FR, (float)d[2] / 2.755, PSI);
+        StandardMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_FR, (float)d[3] - 40);
         }
       if (d[5]>0) // Rear-left
         {
-        StandardMetrics.ms_v_tpms_rl_p->SetValue((float)d[4] / 2.755, PSI);
-        StandardMetrics.ms_v_tpms_rl_t->SetValue((float)d[5] - 40);
+        StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RL, (float)d[4] / 2.755, PSI);
+        StandardMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_RL, (float)d[5] - 40);
         }
       if (d[7]>0) // Rear-right
         {
-        StandardMetrics.ms_v_tpms_rr_p->SetValue((float)d[6] / 2.755, PSI);
-        StandardMetrics.ms_v_tpms_rr_t->SetValue((float)d[7] - 40);
+        StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RR, (float)d[6] / 2.755, PSI);
+        StandardMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_RR, (float)d[7] - 40);
         }
       break;
       }

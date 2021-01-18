@@ -229,15 +229,6 @@ ESP_LOGI(TAG, "now awake");
 #ifdef notdef
     case 0x???:
       /* ??? TMPS */
-      StandardMetrics.ms_v_tpms_fl_t->SetValue(?);
-      StandardMetrics.ms_v_tpms_fr_t->SetValue(?);
-      StandardMetrics.ms_v_tpms_rr_t->SetValue(?);
-      StandardMetrics.ms_v_tpms_rl_t->SetValue(?);
-
-      StandardMetrics.ms_v_tpms_fl_p->SetValue(?);
-      StandardMetrics.ms_v_tpms_fr_p->SetValue(?);
-      StandardMetrics.ms_v_tpms_rr_p->SetValue(?);
-      StandardMetrics.ms_v_tpms_rl_p->SetValue(?);
       break;
 #endif
 

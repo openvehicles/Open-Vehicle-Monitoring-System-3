@@ -136,7 +136,7 @@ class OvmsVehicleBMWi3 : public OvmsVehicle
     // Cabin aircon
     OvmsMetricBool *mt_i3_v_env_autorecirc;
     // State
-    OvmsMetricBool *mt_i3_obdtraffic;
+    OvmsMetricBool *mt_i3_obdisalive;
     OvmsMetricInt *mt_i3_pollermode;
     OvmsMetricInt *mt_i3_age;
 
