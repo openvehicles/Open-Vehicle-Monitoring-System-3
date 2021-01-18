@@ -99,9 +99,9 @@ static const OvmsVehicle::poll_pid_t obdii_polls[] = {
     { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_SME_ALTERUNG_KAPAZITAET_TS,                     {  0, 60, 60, 60 }, 0, ISOTP_EXTADR },   // 0x6335 v_bat_soh, v_bat_health
     { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_SME_HV_SPANNUNG_BERECHNET,                      {  0,  2,  1,  2 }, 0, ISOTP_EXTADR },   // 0xDD68 v_bat_volts
     { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_SME_HV_STROM,                                   {  0,  2,  1,  2 }, 0, ISOTP_EXTADR },   // 0xDD69 v_bat_current - and v_bat_power by *v_bat_volts
-    { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_SME_ANZEIGE_SOC,                                {  0, 30, 30, 30 }, 0, ISOTP_EXTADR },   // 0xDDBC v_bat_soc, mt_i3_charge_max, mt_i3_charge_min
-    { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_SME_ZUSTAND_SPEICHER,                           {  0,120,120,120 }, 0, ISOTP_EXTADR },   // 0xDFA0 v_bat_cac, v_bat_pack_vmax, _vmin, _vavg, v_bat_pack_level_max, _min, avg, mt_i3_batt_pack_ocv_avg, _max, _min
-    { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_SME_TEMPERATUREN,                               {  0, 30, 30, 30 }, 0, ISOTP_EXTADR },   // 0xDDC0 v_bat_pack_temp, _tmin, _tmax and _tavg
+    { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_SME_ANZEIGE_SOC,                                {  0, 30, 10, 10 }, 0, ISOTP_EXTADR },   // 0xDDBC v_bat_soc, mt_i3_charge_max, mt_i3_charge_min
+    { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_SME_ZUSTAND_SPEICHER,                           {  0,120, 60, 60 }, 0, ISOTP_EXTADR },   // 0xDFA0 v_bat_cac, v_bat_pack_vmax, _vmin, _vavg, v_bat_pack_level_max, _min, avg, mt_i3_batt_pack_ocv_avg, _max, _min
+    { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_SME_TEMPERATUREN,                               {  0, 30, 10, 10 }, 0, ISOTP_EXTADR },   // 0xDDC0 v_bat_pack_temp, _tmin, _tmax and _tavg
 #ifdef INVESTIGATIONS
     { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_SME_PROJEKT_PARAMETER,                          {  0,120,120,120 }, 0, ISOTP_EXTADR },   // 0xDF71 Battery pack info - but we don't use
     { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX,                     {  0, 30, 30, 30 }, 0, ISOTP_EXTADR },   // 0xDDBF
@@ -118,15 +118,15 @@ static const OvmsVehicle::poll_pid_t obdii_polls[] = {
     { I3_ECU_KOM_TX, I3_ECU_KOM_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_KOM_KOMBI_BC_RBC_KWH_KM,                        {  0, 10,  2, 60 }, 0, ISOTP_EXTADR },   // 0xD12A v_pos_trip, v_post_tripconsumption, v_bat_coulomb_used, v_bat_energy_used
   
   // EME:
-    { I3_ECU_EME_TX, I3_ECU_EME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_EME_EME_HVPM_DCDC_ANSTEUERUNG,                {  0, 30, 30, 10 }, 0, ISOTP_EXTADR },   // 0xDE00 mt_i3_charge_actual
+    { I3_ECU_EME_TX, I3_ECU_EME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_EME_EME_HVPM_DCDC_ANSTEUERUNG,                {  0, 30, 10, 10 }, 0, ISOTP_EXTADR },   // 0xDE00 mt_i3_charge_actual
     { I3_ECU_EME_TX, I3_ECU_EME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_EME_AE_STROM_EMASCHINE,                       {  0, 30,  2, 30 }, 0, ISOTP_EXTADR },   // 0xDE8A Motor currents - can we calculate an efficiency from this?
     { I3_ECU_EME_TX, I3_ECU_EME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_EME_AE_TEMP_LE,                               {  0, 10, 10, 10 }, 0, ISOTP_EXTADR },   // 0xDE8C v_inv_temp, v_charge_temp, mt_i3_v_charge_temp_gatedriver
     { I3_ECU_EME_TX, I3_ECU_EME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_EME_AE_TEMP_EMASCHINE,                        {  0, 10,  5, 30 }, 0, ISOTP_EXTADR },   // 0xDEA6 v_mot_temp
     { I3_ECU_EME_TX, I3_ECU_EME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_EME_AE_ELEKTRISCHE_MASCHINE,                  {  0, 60,  1, 60 }, 0, ISOTP_EXTADR },   // 0xDEA7 v_mot_rpm
 
   //NBT: Headunit high
-    { I3_ECU_NBT_TX, I3_ECU_NBT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_NBT_STATUS_SPEED,                             {  0, 30,  1, 30 }, 0, ISOTP_EXTADR },   // 0xD030 Speeds from wheels: mt_i3_wheelX_speed 
-    { I3_ECU_NBT_TX, I3_ECU_NBT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_NBT_STATUS_DIRECTION,                         {  0, 10, 10, 10 }, 0, ISOTP_EXTADR },   // 0xD031 v_env_gear
+    { I3_ECU_NBT_TX, I3_ECU_NBT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_NBT_STATUS_SPEED,                             {  0, 30,  2, 30 }, 0, ISOTP_EXTADR },   // 0xD030 Speeds from wheels: mt_i3_wheelX_speed 
+    { I3_ECU_NBT_TX, I3_ECU_NBT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_NBT_STATUS_DIRECTION,                         {  0, 10,  4, 10 }, 0, ISOTP_EXTADR },   // 0xD031 v_env_gear
 
   // FZD: Roof function centre
     { I3_ECU_FZD_TX, I3_ECU_FZD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_FZD_DWA_KLAPPENKONTAKTE,                      {  0, 10, 10, 10 }, 0, ISOTP_EXTADR },   // 0xDCDD v_door_fr, _fl. etc.  v_env_locked
