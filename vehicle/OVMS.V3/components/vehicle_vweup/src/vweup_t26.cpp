@@ -31,7 +31,7 @@
 
 /*
 ;    Subproject:    Integration of support for the VW e-UP via Comfort CAN
-;    Date:          21st November 2020
+;    Date:          19th January 2021
 ;
 ;    Changes:
 ;    0.1.0  Initial code
@@ -113,6 +113,8 @@
 ;
 ;    0.4.7  Beautified code
 ;
+;    0.4.8  Started using ms_v_env_charging12v
+;
 ;    (C) 2021       Chris van der Meijden
 ;
 ;    Big thanx to sharkcow, Dimitrie78, E-lmo, Dexter and 'der kleine Nik'.
@@ -171,6 +173,7 @@ void OvmsVehicleVWeUp::T26Init()
 
   StandardMetrics.ms_v_env_locked->SetValue(true);
   StandardMetrics.ms_v_env_headlights->SetValue(false);
+  StandardMetrics.ms_v_env_charging12v->SetValue(false);
 }
 
 // Takes care of setting all the state appropriate when the car is on
@@ -182,6 +185,7 @@ void OvmsVehicleVWeUp::vehicle_vweup_car_on(bool turnOn)
     // Log once that car is being turned on
     ESP_LOGI(TAG, "CAR IS ON");
     StandardMetrics.ms_v_env_on->SetValue(true);
+    StandardMetrics.ms_v_env_charging12v->SetValue(true);
     PollSetState(VWEUP_ON);
     // TimeOffRequested = 0;
     ResetTripCounters();
@@ -206,6 +210,7 @@ void OvmsVehicleVWeUp::vehicle_vweup_car_on(bool turnOn)
     // Log once that car is being turned off
     ESP_LOGI(TAG, "CAR IS OFF");
     StandardMetrics.ms_v_env_on->SetValue(false);
+    StandardMetrics.ms_v_env_charging12v->SetValue(false);
     // StandardMetrics.ms_v_charge_voltage->SetValue(0);
     // StandardMetrics.ms_v_charge_current->SetValue(0);
     PollSetState(VWEUP_OFF);
@@ -357,7 +362,7 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
       break;
 
     case 0x571: // 12 Volt
-      StandardMetrics.ms_v_bat_12v_voltage->SetValue(5 + (0.05 * d[0]));
+      StandardMetrics.ms_v_charge_12v_voltage->SetValue(5 + (0.05 * d[0]));
       break;
 
     case 0x61C: // Charge detection
@@ -379,6 +384,7 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
           StandardMetrics.ms_v_charge_inprogress->SetValue(true);
           StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
           StandardMetrics.ms_v_charge_state->SetValue("charging");
+          StandardMetrics.ms_v_env_charging12v->SetValue(true);
           ESP_LOGI(TAG, "Car charge session started");
           PollSetState(VWEUP_CHARGING);
         }
@@ -390,6 +396,7 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
           StandardMetrics.ms_v_door_chargeport->SetValue(false);
           StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
           StandardMetrics.ms_v_charge_state->SetValue("done");
+          StandardMetrics.ms_v_env_charging12v->SetValue(false);
           ESP_LOGI(TAG, "Car charge session ended");
           PollSetState(VWEUP_OFF);
         }
@@ -989,6 +996,7 @@ void OvmsVehicleVWeUp::CCOn()
   ESP_LOGI(TAG, "Wrote second stage Climate Control On Messages to Comfort CAN.");
   vweup_cc_on = true;
   vweup_cc_turning_on = false;
+  StandardMetrics.ms_v_env_charging12v->SetValue(true);
 }
 
 void OvmsVehicleVWeUp::CCOnP()
