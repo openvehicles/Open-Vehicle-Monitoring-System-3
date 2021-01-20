@@ -162,7 +162,9 @@ class OvmsMetric
     virtual bool CheckPersist();
     virtual bool IsDefined();
     virtual bool IsFirstDefined();
+    virtual bool IsPersistent();
     virtual bool IsStale();
+    virtual bool IsFresh();
     virtual void RefreshPersist();
     virtual void SetStale(bool stale);
     virtual void SetAutoStale(uint16_t seconds);
