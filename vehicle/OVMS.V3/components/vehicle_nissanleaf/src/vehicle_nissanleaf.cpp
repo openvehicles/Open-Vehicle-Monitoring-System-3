@@ -89,10 +89,11 @@ void ccDisableTimer(TimerHandle_t timer)
 
 enum battery_type
   {
-  BATTERY_TYPE_1_24kWh,
-  BATTERY_TYPE_2_24kWh,
-  BATTERY_TYPE_2_30kWh,
-  // there may be more...
+  BATTERY_ZE0_24kWh,
+  BATTERY_AZE0_24kWh,
+  BATTERY_AZE0_30kWh,
+  BATTERY_ZE1_40kWh,
+  BATTERY_ZE1_62kWh,
   };
 
 enum charge_duration_index
@@ -1127,16 +1128,16 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       break;
     case 0x59e:
       {
-      switch(m_battery_type->AsInt(BATTERY_TYPE_2_24kWh))
+      switch(m_battery_type->AsInt(BATTERY_AZE0_24kWh))
         {
-        case BATTERY_TYPE_1_24kWh:
-        case BATTERY_TYPE_2_24kWh:
+        case BATTERY_ZE0_24kWh:
+        case BATTERY_AZE0_24kWh:
           {
           uint16_t cap_gid = d[2] << 4 | d[3] >> 4;
           m_battery_energy_capacity->SetValue(cap_gid * GEN_1_WH_PER_GID, WattHours);
           }
           break;
-        case BATTERY_TYPE_2_30kWh:
+        case BATTERY_AZE0_30kWh:
           // This msg does not give a sensible capacity estimate for 30kWh battery,
           // instead m_battery_energy_capacity is set from message 0x5bc
           break;
@@ -1175,7 +1176,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
             {
             // Max gids, this mx value only occurs on 30kwh models. For 24 kwh models we use the value from msg 0x59e
             m_battery_energy_capacity->SetValue(nl_gids * GEN_1_WH_PER_GID, WattHours);
-            type = BATTERY_TYPE_2_30kWh;
+            type = BATTERY_AZE0_30kWh;
             }
             break;
           }
@@ -1189,7 +1190,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       uint16_t val = ( d[6] << 8 | d[7] ) & 0x1fff;
       if (val != 0x1fff)
         {
-        /* Battery type 1 and 2 use different (* and conficting)
+        /* ZE0 and AZE0 use different (* and conficting)
          * mx values to identify the charge duration type:
          *         |    |  full 100% 	    | range 80%  	|
          *   type  | QC | 6.6kW  200V  100V | 6.6kW  200V  100V |
@@ -1197,8 +1198,8 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
          *   ZE0 1 |  0 |  NA    9     17   |  NA    10    18*	|
          *  AZE0 2 |  0 |  5	 8     11   |  18*   21    24	|
          *
-         * Only type 1 and type 2 24kwh models from before 2016 will report a valid 'range 80%'.
-         * Any type 2 24 or 30kwh models starting mid 2015 (USA/Jap) or 2016 (UK), will always
+         * Only ZE0 and AZE0 24kwh models from before 2016 will report a valid 'range 80%'.
+         * Any AZE0 24 or 30kwh models starting mid 2015 (USA/Jap) or 2016 (UK), will always
          * return 0x1fff, and therefore never enter this if with mx values 18, 21 or 24.
          * This is linked to Nissan removing the 'long life mode (80%)' from the car settings.
          */
@@ -1208,20 +1209,20 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
           case  0: m_quick_charge->SetValue(val); break;
           case  5: cd = CHARGE_DURATION_FULL_L2;  break;
           case  8: cd = CHARGE_DURATION_FULL_L1;  break;
-          case  9: cd = CHARGE_DURATION_FULL_L1;  type = BATTERY_TYPE_1_24kWh; break;
-          case 10: cd = CHARGE_DURATION_RANGE_L1; type = BATTERY_TYPE_1_24kWh; break;
+          case  9: cd = CHARGE_DURATION_FULL_L1;  type = BATTERY_ZE0_24kWh; break;
+          case 10: cd = CHARGE_DURATION_RANGE_L1; type = BATTERY_ZE0_24kWh; break;
           case 11: cd = CHARGE_DURATION_FULL_L0;  break;
-          case 17: cd = CHARGE_DURATION_FULL_L0;  type = BATTERY_TYPE_1_24kWh; break;
+          case 17: cd = CHARGE_DURATION_FULL_L0;  type = BATTERY_ZE0_24kWh; break;
           case 18: // meaning of mx 18 differs by battery version
-            switch(m_battery_type->AsInt(BATTERY_TYPE_2_24kWh))
+            switch(m_battery_type->AsInt(BATTERY_AZE0_24kWh))
               {
-              case BATTERY_TYPE_1_24kWh: cd = CHARGE_DURATION_RANGE_L0; break;
-              case BATTERY_TYPE_2_24kWh: cd = CHARGE_DURATION_RANGE_L2; break;
-              case BATTERY_TYPE_2_30kWh: break;  // Will never occur with val != 0x1fff
+              case BATTERY_ZE0_24kWh: cd = CHARGE_DURATION_RANGE_L0; break;
+              case BATTERY_AZE0_24kWh: cd = CHARGE_DURATION_RANGE_L2; break;
+              case BATTERY_AZE0_30kWh: break;  // Will never occur with val != 0x1fff
               }
             break;
-          case 21: cd = CHARGE_DURATION_RANGE_L1; type = BATTERY_TYPE_2_24kWh; break;
-          case 24: cd = CHARGE_DURATION_RANGE_L0; type = BATTERY_TYPE_2_24kWh; break;
+          case 21: cd = CHARGE_DURATION_RANGE_L1; type = BATTERY_AZE0_24kWh; break;
+          case 24: cd = CHARGE_DURATION_RANGE_L0; type = BATTERY_AZE0_24kWh; break;
           }
         if (cd != -1) m_charge_duration->SetElemValue(cd, val/2);
         }
@@ -1328,10 +1329,10 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
      break;
     case 0x385:
       // not sure if this order is correct
-      if (d[2]) StandardMetrics.ms_v_tpms_fl_p->SetValue(d[2] / 4.0, PSI);
-      if (d[3]) StandardMetrics.ms_v_tpms_fr_p->SetValue(d[3] / 4.0, PSI);
-      if (d[4]) StandardMetrics.ms_v_tpms_rl_p->SetValue(d[4] / 4.0, PSI);
-      if (d[5]) StandardMetrics.ms_v_tpms_rr_p->SetValue(d[5] / 4.0, PSI);
+      if (d[2]) StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FL, d[2] / 4.0, PSI);
+      if (d[3]) StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FR, d[3] / 4.0, PSI);
+      if (d[4]) StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RL, d[4] / 4.0, PSI);
+      if (d[5]) StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RR, d[5] / 4.0, PSI);
       break;
     case 0x421:
       switch ( (d[0] >> 3) & 7 )
