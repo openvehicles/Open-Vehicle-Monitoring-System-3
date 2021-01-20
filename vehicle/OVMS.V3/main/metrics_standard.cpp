@@ -78,7 +78,7 @@ MetricsStandard::MetricsStandard()
   ms_v_bat_soh = new OvmsMetricFloat(MS_V_BAT_SOH, SM_STALE_HIGH, Percentage, true);
   ms_v_bat_cac = new OvmsMetricFloat(MS_V_BAT_CAC, SM_STALE_HIGH, AmpHours, true);
   ms_v_bat_health = new OvmsMetricString(MS_V_BAT_HEALTH, SM_STALE_HIGH);
-  ms_v_bat_voltage = new OvmsMetricFloat(MS_V_BAT_VOLTAGE, SM_STALE_MID, Volts);
+  ms_v_bat_voltage = new OvmsMetricFloat(MS_V_BAT_VOLTAGE, SM_STALE_MID, Volts, true);
   ms_v_bat_current = new OvmsMetricFloat(MS_V_BAT_CURRENT, SM_STALE_MID, Amps);
   ms_v_bat_coulomb_used = new OvmsMetricFloat(MS_V_BAT_COULOMB_USED, SM_STALE_MID, AmpHours, true);
   ms_v_bat_coulomb_used_total = new OvmsMetricFloat(MS_V_BAT_COULOMB_USED_TOTAL, SM_STALE_MID, AmpHours, true);
@@ -95,7 +95,7 @@ MetricsStandard::MetricsStandard()
   ms_v_bat_range_est = new OvmsMetricFloat(MS_V_BAT_RANGE_EST, SM_STALE_HIGH, Kilometers, true);
   ms_v_bat_temp = new OvmsMetricFloat(MS_V_BAT_TEMP, SM_STALE_MID, Celcius, true);
 
-  ms_v_bat_12v_voltage = new OvmsMetricFloat(MS_V_BAT_12V_VOLTAGE, SM_STALE_HIGH, Volts);
+  ms_v_bat_12v_voltage = new OvmsMetricFloat(MS_V_BAT_12V_VOLTAGE, SM_STALE_HIGH, Volts, true);
   ms_v_bat_12v_current = new OvmsMetricFloat(MS_V_BAT_12V_CURRENT, SM_STALE_HIGH, Amps);
   ms_v_bat_12v_voltage_ref = new OvmsMetricFloat(MS_V_BAT_12V_VOLTAGE_REF, SM_STALE_HIGH, Volts, true);
   ms_v_bat_12v_voltage_alert = new OvmsMetricBool(MS_V_BAT_12V_VOLTAGE_ALERT, SM_STALE_MID);
