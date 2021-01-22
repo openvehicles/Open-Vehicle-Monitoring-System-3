@@ -994,6 +994,18 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStat(int verbosity, OvmsWrite
           (char*) StdMetrics.ms_v_charge_limit_range->AsUnitString("Range", rangeUnit, 0).c_str(),
           duration_range);
       }
+
+    // Energy sums:
+    if (StdMetrics.ms_v_charge_kwh_grid->IsDefined())
+      {
+      writer->printf("Drawn: %s\n",
+        StdMetrics.ms_v_charge_kwh_grid->AsUnitString("-", Native, 1).c_str());
+      }
+    if (StdMetrics.ms_v_charge_kwh->IsDefined())
+      {
+      writer->printf("Charged: %s\n",
+        StdMetrics.ms_v_charge_kwh->AsUnitString("-", Native, 1).c_str());
+      }
     }
   else
     {
