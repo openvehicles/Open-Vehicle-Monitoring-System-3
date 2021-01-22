@@ -52,6 +52,17 @@ static const char *TAG = "vehicle";
 
 
 /**
+ * PollerStateTicker: check for state changes (stub, override with vehicle implementation)
+ *  This is called by VehicleTicker1() just before the next PollerSend().
+ *  Implement your poller state transition logic in this method, so the changes
+ *  will get applied immediately.
+ */
+void OvmsVehicle::PollerStateTicker()
+  {
+  }
+
+
+/**
  * IncomingPollReply: poll response handler (stub, override with vehicle implementation)
  *  This is called by PollerReceive() on each valid response frame for the current request.
  *  Be aware responses may consist of multiple frames, detectable e.g. by mlremain > 0.
@@ -135,6 +146,14 @@ void OvmsVehicle::IncomingPollTxCallback(canbus* bus, uint32_t txid, uint16_t ty
 
 /**
  * PollSetPidList: set the default bus and the polling list to process
+ *  Call this to install a new polling list or restart the list.
+ *  This won't change the polling state; you can change the list while keeping the state.
+ *  The list is changed without waiting for pending responses to finish (except PollSingleRequests).
+ *  
+ *  @param bus
+ *    CAN bus to use as the default bus (for all poll entries with bus=0) or NULL to stop polling
+ *  @param plist
+ *    The polling list to use or NULL to stop polling
  */
 void OvmsVehicle::PollSetPidList(canbus* bus, const poll_pid_t* plist)
   {
@@ -152,7 +171,13 @@ void OvmsVehicle::PollSetPidList(canbus* bus, const poll_pid_t* plist)
 
 
 /**
- * PollSetPidList: set the polling state
+ * PollSetState: set the polling state
+ *  Call this to change the polling state and restart the current polling list.
+ *  This won't do anything if the state is already active. The state is changed without
+ *  waiting for pending responses to finish (except PollSingleRequests).
+ *  
+ *  @param state
+ *    The polling state to activate (0 … VEHICLE_POLL_NSTATES)
  */
 void OvmsVehicle::PollSetState(uint8_t state)
   {

@@ -536,6 +536,7 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
 
   m_ticker++;
 
+  PollerStateTicker();
   PollerSend(true);
 
   Ticker1(m_ticker);

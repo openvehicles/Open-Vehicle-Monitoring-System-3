@@ -216,6 +216,9 @@ class OvmsVehicle : public InternalRamAllocated
     virtual void IncomingFrameCan2(CAN_frame_t* p_frame);
     virtual void IncomingFrameCan3(CAN_frame_t* p_frame);
     virtual void IncomingFrameCan4(CAN_frame_t* p_frame);
+
+  protected:
+    virtual void PollerStateTicker();
     virtual void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
     virtual void IncomingPollError(canbus* bus, uint16_t type, uint16_t pid, uint16_t code);
 
