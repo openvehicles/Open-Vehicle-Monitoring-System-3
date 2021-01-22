@@ -197,6 +197,10 @@ OvmsServerV3::OvmsServerV3(const char* name)
   m_streaming = 0;
   m_updatetime_idle = 600;
   m_updatetime_connected = 60;
+  m_updatetime_awake = m_updatetime_idle;
+  m_updatetime_on = m_updatetime_idle;
+  m_updatetime_charging = m_updatetime_idle;
+  m_updatetime_sendall = 0;
   m_notify_info_pending = false;
   m_notify_error_pending = false;
   m_notify_alert_pending = false;
@@ -263,7 +267,10 @@ void OvmsServerV3::TransmitAllMetrics()
   while (metric != NULL)
     {
     metric->ClearModified(MyOvmsServerV3Modifier);
-    TransmitMetric(metric);
+    if (!metric->AsString().empty())
+      {
+      TransmitMetric(metric);
+      }
     metric = metric->m_next;
     }
   }
@@ -812,6 +819,10 @@ void OvmsServerV3::ConfigChanged(OvmsConfigParam* param)
   m_streaming = MyConfig.GetParamValueInt("vehicle", "stream", 0);
   m_updatetime_connected = MyConfig.GetParamValueInt("server.v3", "updatetime.connected", 60);
   m_updatetime_idle = MyConfig.GetParamValueInt("server.v3", "updatetime.idle", 600);
+  m_updatetime_awake = MyConfig.GetParamValueInt("server.v3", "updatetime.awake", m_updatetime_idle);
+  m_updatetime_on = MyConfig.GetParamValueInt("server.v3", "updatetime.on", m_updatetime_idle);
+  m_updatetime_charging = MyConfig.GetParamValueInt("server.v3", "updatetime.charging", m_updatetime_idle);
+  m_updatetime_sendall = MyConfig.GetParamValueInt("server.v3", "updatetime.sendall", 0);
   }
 
 void OvmsServerV3::NetUp(std::string event, void* data)
@@ -876,6 +887,7 @@ void OvmsServerV3::Ticker1(std::string event, void* data)
 
   if (StandardMetrics.ms_s_v3_connected->AsBool())
     {
+    int now = StandardMetrics.ms_m_monotonic->AsInt();
     if (m_sendall)
       {
       ESP_LOGI(TAG, "Subscribe to MQTT topics");
@@ -889,6 +901,7 @@ void OvmsServerV3::Ticker1(std::string event, void* data)
 
       ESP_LOGI(TAG, "Transmit all metrics");
       TransmitAllMetrics();
+      m_lasttx_sendall = now;
       m_sendall = false;
       }
 
@@ -899,9 +912,20 @@ void OvmsServerV3::Ticker1(std::string event, void* data)
       TransmitPendingNotificationsData();
 
     bool caron = StandardMetrics.ms_v_env_on->AsBool();
-    int now = StandardMetrics.ms_m_monotonic->AsInt();
-    int next = (m_peers==0) ? m_updatetime_idle : m_updatetime_connected;
-    if ((m_lasttx==0)||(now>(m_lasttx+next)))
+    // Next send time depends on the state of the car
+    int next = (m_peers != 0) ? m_updatetime_connected :
+               (caron) ? m_updatetime_on :
+               (StandardMetrics.ms_v_charge_inprogress->AsBool()) ? m_updatetime_charging :
+               (StandardMetrics.ms_v_env_awake->AsBool()) ? m_updatetime_awake :
+               m_updatetime_idle;
+
+    if ( m_updatetime_sendall > 0 && (now > (m_lasttx_sendall + m_updatetime_sendall)) )
+      {
+      ESP_LOGI(TAG, "Transmit all metrics");
+      TransmitAllMetrics();
+      m_lasttx_sendall = now;
+      }
+    else if ((m_lasttx==0)||(now>(m_lasttx+next)))
       {
       TransmitModifiedMetrics();
       m_lasttx = m_lasttx_stream = now;
