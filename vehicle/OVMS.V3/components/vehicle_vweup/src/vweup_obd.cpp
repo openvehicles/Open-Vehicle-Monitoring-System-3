@@ -625,13 +625,7 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
         ChargerACPower->SetValue(value);
         VALUE_LOG(TAG, "VWUP_CHG_AC_P=%f => %f", value, ChargerACPower->AsFloat());
 
-        // Standard Charge Power and Charge Efficiency calculation as requested by the standard
-        StdMetrics.ms_v_charge_power->SetValue(value);
-        value = value == 0.0f
-                ? 0.0f
-                : ((StdMetrics.ms_v_bat_power->AsFloat() * -1.0f) / value) * 100.0f;
-        StdMetrics.ms_v_charge_efficiency->SetValue(value);
-        VALUE_LOG(TAG, "VWUP_CHG_EFF_STD=%f => %f", value, StdMetrics.ms_v_charge_efficiency->AsFloat());
+        UpdateChargePower(value);
       }
       break;
 
@@ -677,13 +671,7 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
         ChargerACPower->SetValue(value);
         VALUE_LOG(TAG, "VWUP_CHG_AC_P=%f => %f", value, ChargerACPower->AsFloat());
 
-        // Standard Charge Power and Charge Efficiency calculation as requested by the standard
-        StdMetrics.ms_v_charge_power->SetValue(value);
-        value = value == 0.0f
-                ? 0.0f
-                : ((StdMetrics.ms_v_bat_power->AsFloat() * -1.0f) / value) * 100.0f;
-        StdMetrics.ms_v_charge_efficiency->SetValue(value);
-        VALUE_LOG(TAG, "VWUP_CHG_EFF_STD=%f => %f", value, StdMetrics.ms_v_charge_efficiency->AsFloat());
+        UpdateChargePower(value);
       }
       break;
 
@@ -864,4 +852,24 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
       break;
 
   }
+}
+
+
+void OvmsVehicleVWeUp::UpdateChargePower(float power_kw)
+{
+  // Accumulate grid energy sum:
+  int time_seconds = StdMetrics.ms_v_charge_power->Age();
+  if (time_seconds < 60) {
+    m_charge_kwh_grid += (double)power_kw * time_seconds / 3600;
+    StdMetrics.ms_v_charge_kwh_grid->SetValue(m_charge_kwh_grid);
+    StdMetrics.ms_v_charge_kwh_grid_total->SetValue(m_charge_kwh_grid_start + m_charge_kwh_grid);
+  }
+
+  // Standard Charge Power and Charge Efficiency calculation as requested by the standard
+  StdMetrics.ms_v_charge_power->SetValue(power_kw);
+  float efficiency = (power_kw == 0)
+                     ? 0
+                     : ((StdMetrics.ms_v_bat_power->AsFloat() * -1) / power_kw) * 100;
+  StdMetrics.ms_v_charge_efficiency->SetValue(efficiency);
+  VALUE_LOG(TAG, "VWUP_CHG_EFF_STD=%f", efficiency);
 }

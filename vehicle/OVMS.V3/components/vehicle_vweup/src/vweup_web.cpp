@@ -520,6 +520,16 @@ void OvmsVehicleVWeUp::WebDispChgMetrics(PageEntry_t &p, PageContext_t &c)
               "<span class=\"value\">?</span>"
               "<span class=\"unit\">kW</span>"
             "</div>"
+            "<div class=\"metric number\" data-metric=\"v.c.kwh.grid\" data-prec=\"2\">"
+              "<span class=\"label\">Charged (grid)</span>"
+              "<span class=\"value\">?</span>"
+              "<span class=\"unit\">kWh</span>"
+            "</div>"
+            "<div class=\"metric number\" data-metric=\"v.c.kwh.grid.total\" data-prec=\"1\">"
+              "<span class=\"label\">Charged total (grid)</span>"
+              "<span class=\"value\">?</span>"
+              "<span class=\"unit\">kWh</span>"
+            "</div>"
           "</div>"
 
         "</div>" // receiver

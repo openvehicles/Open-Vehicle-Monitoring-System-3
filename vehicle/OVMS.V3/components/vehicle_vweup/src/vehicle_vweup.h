@@ -166,6 +166,8 @@ private:
   float m_energy_charged_start;
   float m_coulomb_recd_start;
   float m_coulomb_used_start;
+  float m_charge_kwh_grid_start;
+  double m_charge_kwh_grid;
 
 
   // --------------------------------------------------------------------------
@@ -245,6 +247,9 @@ protected:
 
 protected:
   void IncomingPollReply(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length, uint16_t mlremain);
+
+protected:
+  void UpdateChargePower(float power_kw);
 
 protected:
   OvmsMetricFloat *MotElecSoCAbs;                 // Absolute SoC of main battery from motor electrics ECU

@@ -434,10 +434,13 @@ void OvmsVehicleVWeUp::ResetChargeCounters()
 {
   // Clear per charge counter:
   StdMetrics.ms_v_charge_kwh->SetValue(0);
+  StdMetrics.ms_v_charge_kwh_grid->SetValue(0);
+  m_charge_kwh_grid = 0;
 
   // Get charge start reference as far as available:
   //  (if we don't have it yet, IncomingPollReply() will set it ASAP)
   m_energy_charged_start = StdMetrics.ms_v_bat_energy_recd_total->AsFloat();
+  m_charge_kwh_grid_start = StdMetrics.ms_v_charge_kwh_grid_total->AsFloat();
 
-  ESP_LOGD(TAG, "Charge start ref: er=%f", m_energy_charged_start);
+  ESP_LOGD(TAG, "Charge start ref: er=%f gr=%f", m_energy_charged_start, m_charge_kwh_grid_start);
 }
