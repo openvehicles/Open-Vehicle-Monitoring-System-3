@@ -1421,7 +1421,7 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
 {
   std::string error;
   std::string server, user, password, port, topic_prefix;
-  std::string updatetime_connected, updatetime_idle;
+  std::string updatetime_connected, updatetime_idle, updatetime_on, updatetime_charging, updatetime_awake, updatetime_sendall;
   bool tls;
 
   if (c.method == "POST") {
@@ -1434,6 +1434,10 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
     topic_prefix = c.getvar("topic_prefix");
     updatetime_connected = c.getvar("updatetime_connected");
     updatetime_idle = c.getvar("updatetime_idle");
+    updatetime_on = c.getvar("updatetime_on");
+    updatetime_charging = c.getvar("updatetime_charging");
+    updatetime_awake = c.getvar("updatetime_awake");
+    updatetime_sendall = c.getvar("updatetime_sendall");
 
     // validate:
     if (port != "") {
@@ -1452,6 +1456,26 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
         error += "<li data-input=\"updatetime_idle\">Update interval (idle) must be at least 1 second</li>";
       }
     }
+    if (updatetime_on != "") {
+      if (atoi(updatetime_on.c_str()) < 1) {
+        error += "<li data-input=\"updatetime_on\">Update interval (on) must be at least 1 second</li>";
+      }
+    }
+    if (updatetime_charging != "") {
+      if (atoi(updatetime_charging.c_str()) < 1) {
+        error += "<li data-input=\"updatetime_charging\">Update interval (charging) must be at least 1 second</li>";
+      }
+    }
+    if (updatetime_awake != "") {
+      if (atoi(updatetime_awake.c_str()) < 1) {
+        error += "<li data-input=\"updatetime_awake\">Update interval (awake) must be at least 1 second</li>";
+      }
+    }
+    if (updatetime_sendall != "") {
+      if (atoi(updatetime_sendall.c_str()) < 60) {
+        error += "<li data-input=\"updatetime_sendall\">Update interval (sendall) must be at least 60 seconds</li>";
+      }
+    }
 
     if (error == "") {
       // success:
@@ -1464,6 +1488,22 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValue("server.v3", "topic.prefix", topic_prefix);
       MyConfig.SetParamValue("server.v3", "updatetime.connected", updatetime_connected);
       MyConfig.SetParamValue("server.v3", "updatetime.idle", updatetime_idle);
+      if (updatetime_on == "")
+        MyConfig.DeleteInstance("server.v3", "updatetime.on");
+      else
+        MyConfig.SetParamValue("server.v3", "updatetime.on", updatetime_on);
+      if (updatetime_charging == "")
+        MyConfig.DeleteInstance("server.v3", "updatetime.charging");
+      else
+        MyConfig.SetParamValue("server.v3", "updatetime.charging", updatetime_charging);
+      if (updatetime_awake == "")
+        MyConfig.DeleteInstance("server.v3", "updatetime.awake");
+      else
+        MyConfig.SetParamValue("server.v3", "updatetime.awake", updatetime_awake);
+      if (updatetime_sendall == "")
+        MyConfig.DeleteInstance("server.v3", "updatetime.sendall");
+      else
+        MyConfig.SetParamValue("server.v3", "updatetime.sendall", updatetime_sendall);
 
       c.head(200);
       c.alert("success", "<p class=\"lead\">Server V3 (MQTT) connection configured.</p>");
@@ -1487,6 +1527,10 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
     topic_prefix = MyConfig.GetParamValue("server.v3", "topic.prefix");
     updatetime_connected = MyConfig.GetParamValue("server.v3", "updatetime.connected");
     updatetime_idle = MyConfig.GetParamValue("server.v3", "updatetime.idle");
+    updatetime_on = MyConfig.GetParamValue("server.v3", "updatetime.on");
+    updatetime_charging = MyConfig.GetParamValue("server.v3", "updatetime.charging");
+    updatetime_awake = MyConfig.GetParamValue("server.v3", "updatetime.awake");
+    updatetime_sendall = MyConfig.GetParamValue("server.v3", "updatetime.sendall");
 
     // generate form:
     c.head(200);
@@ -1516,6 +1560,14 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
     "optional, in seconds, default: 60");
   c.input_text("…idle", "updatetime_idle", updatetime_idle.c_str(),
     "optional, in seconds, default: 600");
+  c.input_text("…on", "updatetime_on", updatetime_on.c_str(),
+    "optional, in seconds, only used if set");
+  c.input_text("…charging", "updatetime_charging", updatetime_charging.c_str(),
+    "optional, in seconds, only used if set");
+  c.input_text("…awake", "updatetime_awake", updatetime_awake.c_str(),
+    "optional, in seconds, only used if set");
+  c.input_text("…sendall", "updatetime_sendall", updatetime_sendall.c_str(),
+    "optional, in seconds, only used if set");
   c.fieldset_end();
 
   c.hr();
