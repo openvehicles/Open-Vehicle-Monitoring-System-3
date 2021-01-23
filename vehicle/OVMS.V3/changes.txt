@@ -1,6 +1,18 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Server V3 improvements:
+    a) On first connection to MQTT broker we used to send all metrics. Now
+       we only send metrics for which we have a value.
+    b) New config settings:
+         "updatetime.on" which sets updatetime when the car is on (driving)
+         "updatetime.charging" which sets updatetime when the car is charging
+         "updatetime.awake" which sets updatetime when the car is awake
+       If unset the server uses the "idle" or "connected" interval as before
+    c) New config setting "updatetime.sendall". If you set this we will publish
+       _all_ valid metrics at this interval. Helpful to keep a steady flow of
+       values for charting.
+    PLEASE NOTE: These settings will increase OVMS' data usage. 
 - Metrics: extended reboot persistence: most vehicle state and long term counter
     metrics will now retain their values over a reboot (e.g. OTA update)
 - Metrics: new standard metrics for grid integration (V2G) / generator role
