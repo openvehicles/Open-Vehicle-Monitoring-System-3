@@ -438,6 +438,17 @@ void OvmsVehicleMgEv::DeterminePollState(canbus* currentBus, uint32_t ticker)
             m_gwmState = AllowToSleep;
             m_afterRunTicker = (TRANSITION_TIMEOUT +1);
             StandardMetrics.ms_v_env_on->SetValue(false);
+            StandardMetrics.ms_v_charge_type->SetValue("not charging");
+            if (StandardMetrics.ms_v_bat_soc->AsFloat() >= 97.0)
+            {
+                StandardMetrics.ms_v_charge_state->SetValue("done");
+                StandardMetrics.ms_v_charge_inprogress->SetValue(false);
+            }
+            else
+            {
+                StandardMetrics.ms_v_charge_state->SetValue("stopped");
+                StandardMetrics.ms_v_charge_inprogress->SetValue(false);
+            }
         }else if (charging12vLast != StandardMetrics.ms_v_env_charging12v->AsBool())
         {
             ESP_LOGI(TAG, "12V has stopped charging, remain in current state for %i seconds.", TRANSITION_TIMEOUT);
@@ -456,6 +467,9 @@ void OvmsVehicleMgEv::DeterminePollState(canbus* currentBus, uint32_t ticker)
             // Do not let afterrun ticker go crazy, peg it at TRANSITION_TIMEOUT + 1
             m_afterRunTicker = (TRANSITION_TIMEOUT +1) ;
         }
+
+        
+
     }
 
     if( m_afterRunTicker != (TRANSITION_TIMEOUT +1))
