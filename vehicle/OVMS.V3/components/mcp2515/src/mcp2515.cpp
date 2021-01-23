@@ -510,6 +510,11 @@ bool mcp2515::AsynchronousInterruptHandler(CAN_frame_t* frame, bool * frameRecei
     p = m_spibus->spi_cmd(m_spi, buf, 2, 2, CMD_READ, REG_TEC);
     m_status.errors_tx = p[0];
     m_status.errors_rx = p[1];
+    if (errflag & EFLG_TXBO)
+      {
+      m_status.errors_tx |= 0x100;
+      m_status.errors_rx |= 0x100;
+      }
 
     // Check for TX failure:
     //  We consider the TX to have failed if a bus error is detected during the
@@ -559,6 +564,11 @@ bool mcp2515::AsynchronousInterruptHandler(CAN_frame_t* frame, bool * frameRecei
       p = m_spibus->spi_cmd(m_spi, buf, 2, 2, CMD_READ, REG_TEC);
       m_status.errors_tx = p[0];
       m_status.errors_rx = p[1];
+      if (errflag & EFLG_TXBO)
+        {
+        m_status.errors_tx |= 0x100;
+        m_status.errors_rx |= 0x100;
+        }
       if (!m_status.errors_tx && !m_status.errors_rx)
         m_status.error_flags = 0;
       }

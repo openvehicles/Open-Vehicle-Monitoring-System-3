@@ -155,6 +155,18 @@ typedef struct
   uint16_t error_resets;            // Error resolving reset counter
   } CAN_status_t;
 
+// CAN error states
+typedef enum
+  {
+  CAN_errorstate_none = 0,          // normal operation, no errors present
+  CAN_errorstate_active,            // normal operation, some errors present (< 96 rx/tx errors)
+  CAN_errorstate_warning,           // normal operation, many errors present (>= 96 rx/tx errors)
+  CAN_errorstate_passive,           // passive mode, no tx retries until bus recovery (>= 128 rx/tx errors)
+  CAN_errorstate_busoff             // bus-off mode, no tx/rx until bus recovery (> 255 rx/tx errors)
+} CAN_errorstate_t;
+
+extern const char* GetCanErrorStateName(CAN_errorstate_t error_state);
+
 ////////////////////////////////////////////////////////////////////////
 // CAN messages queue
 // This queue is between the CAN bus controller MyCAN and tasks that
@@ -305,6 +317,8 @@ class canbus : public pcp, public InternalRamAllocated
     void LogStatus(CAN_log_type_t type);
     void LogInfo(CAN_log_type_t type, const char* text);
     bool StatusChanged();
+    CAN_errorstate_t GetErrorState();
+    const char* GetErrorStateName();
 
   public:
     CAN_speed_t m_speed;
