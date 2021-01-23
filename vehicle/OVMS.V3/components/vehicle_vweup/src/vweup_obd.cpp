@@ -276,7 +276,8 @@ void OvmsVehicleVWeUp::OBDDeInit()
  */
 void OvmsVehicleVWeUp::PollerStateTicker()
 {
-  if (m_obd_state != OBDS_Run)
+  // T26 state management has precedence if available:
+  if (HasT26() || m_obd_state != OBDS_Run)
     return;
 
   bool car_online = (m_can1->GetErrorState() < CAN_errorstate_passive && !m_lv_pwrstate->IsStale());
