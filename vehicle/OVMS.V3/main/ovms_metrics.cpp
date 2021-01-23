@@ -543,7 +543,8 @@ OvmsMetricInt* OvmsMetrics::InitInt(const char* metric, uint16_t autostale, int 
   OvmsMetricInt *m = (OvmsMetricInt*)Find(metric);
   if (m==NULL) m = new OvmsMetricInt(metric, autostale, units, persist);
 
-  m->SetValue(value);
+  if (!m->IsDefined())
+    m->SetValue(value);
   return m;
   }
 
@@ -553,7 +554,8 @@ OvmsMetricBool* OvmsMetrics::InitBool(const char* metric, uint16_t autostale, bo
 
   if (m==NULL) m = new OvmsMetricBool(metric, autostale, units, persist);
 
-  m->SetValue(value);
+  if (!m->IsDefined())
+    m->SetValue(value);
   return m;
   }
 
@@ -563,7 +565,8 @@ OvmsMetricFloat* OvmsMetrics::InitFloat(const char* metric, uint16_t autostale, 
 
   if (m==NULL) m = new OvmsMetricFloat(metric, autostale, units, persist);
 
-  m->SetValue(value);
+  if (!m->IsDefined())
+    m->SetValue(value);
   return m;
   }
 
@@ -572,7 +575,7 @@ OvmsMetricString* OvmsMetrics::InitString(const char* metric, uint16_t autostale
   OvmsMetricString *m = (OvmsMetricString*)Find(metric);
   if (m==NULL) m = new OvmsMetricString(metric, autostale, units);
 
-  if (value)
+  if (value && !m->IsDefined())
     m->SetValue(value);
   return m;
   }
