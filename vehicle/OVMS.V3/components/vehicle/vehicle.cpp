@@ -120,7 +120,7 @@ OvmsVehicleFactory::OvmsVehicleFactory()
       " add -e to use ISO-TP extended addressing (19 bit IDs).\n"
       "<request> is the hex string of the request type + arguments,"
       " e.g. '223a4b' = read data from PID 0x3a4b.\n"
-      "Default timeout is 3000 ms.",
+      "Default timeout is 100 ms.",
       3, 5);
     cmd_obdreq->RegisterCommand(
       "broadcast", "Send OBD2/UDS request as broadcast", obdii_request,
@@ -129,7 +129,7 @@ OvmsVehicleFactory::OvmsVehicleFactory()
       "Note: only the first response will be shown, enable CAN log to check for more.\n"
       "<request> is the hex string of the request type + arguments,"
       " e.g. '223a4b' = read data from PID 0x3a4b.\n"
-      "Default timeout is 3000 ms.",
+      "Default timeout is 100 ms.",
       1, 2);
     }
 

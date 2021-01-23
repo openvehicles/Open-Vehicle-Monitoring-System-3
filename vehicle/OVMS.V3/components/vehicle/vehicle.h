@@ -442,10 +442,10 @@ class OvmsVehicle : public InternalRamAllocated
     void PollSetResponseSeparationTime(uint8_t septime);
     int PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
                       std::string request, std::string& response,
-                      int timeout_ms=3000, uint8_t protocol=ISOTP_STD);
+                      int timeout_ms=100, uint8_t protocol=ISOTP_STD);
     int PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
                       uint8_t polltype, uint16_t pid, std::string& response,
-                      int timeout_ms=3000, uint8_t protocol=ISOTP_STD);
+                      int timeout_ms=100, uint8_t protocol=ISOTP_STD);
 
   private:
     CanFrameCallback  m_poll_txcallback;      // Poller CAN TxCallback

@@ -715,7 +715,7 @@ void OvmsVehicle::PollerReceive(CAN_frame_t* frame, uint32_t msgid)
  */
 int OvmsVehicle::PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
                                    std::string request, std::string& response,
-                                   int timeout_ms /*=3000*/, uint8_t protocol /*=ISOTP_STD*/)
+                                   int timeout_ms /*=100*/, uint8_t protocol /*=ISOTP_STD*/)
   {
   if (!m_ready)
     return -1;
@@ -814,7 +814,7 @@ int OvmsVehicle::PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
  */
 int OvmsVehicle::PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
                                    uint8_t polltype, uint16_t pid, std::string& response,
-                                   int timeout_ms /*=3000*/, uint8_t protocol /*=ISOTP_STD*/)
+                                   int timeout_ms /*=100*/, uint8_t protocol /*=ISOTP_STD*/)
   {
   std::string request;
   request = (char) polltype;
