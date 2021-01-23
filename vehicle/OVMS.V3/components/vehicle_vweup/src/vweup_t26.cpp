@@ -187,7 +187,6 @@ void OvmsVehicleVWeUp::vehicle_vweup_car_on(bool turnOn)
     StandardMetrics.ms_v_env_on->SetValue(true);
     StandardMetrics.ms_v_env_charging12v->SetValue(true);
     PollSetState(VWEUP_ON);
-    // TimeOffRequested = 0;
     ResetTripCounters();
     // Turn off possibly running climate control timer
     if (ocu_awake) {

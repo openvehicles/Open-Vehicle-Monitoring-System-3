@@ -61,14 +61,15 @@ typedef enum {
 } RemoteCommand;
 
 // Value update & conversion debug logging:
-#define VALUE_LOG(...)    ESP_LOGD(__VA_ARGS__)
+#define VALUE_LOG(...)    ESP_LOGV(__VA_ARGS__)
 // …disable:
 //#define VALUE_LOG(...)
 
 // Car (poll) states
-#define VWEUP_OFF         0
-#define VWEUP_ON          1
-#define VWEUP_CHARGING    2
+#define VWEUP_OFF         0           // All systems sleeping
+#define VWEUP_AWAKE       1           // Base systems online
+#define VWEUP_CHARGING    2           // Base systems online & car is charging the main battery
+#define VWEUP_ON          3           // All systems online & car is drivable
 
 // Connections available (vweup_con):
 #define CON_NONE          0
@@ -127,11 +128,14 @@ public:
   bool IsOff() {
     return m_poll_state == VWEUP_OFF;
   }
-  bool IsOn() {
-    return m_poll_state == VWEUP_ON;
+  bool IsAwake() {
+    return m_poll_state == VWEUP_AWAKE;
   }
   bool IsCharging() {
     return m_poll_state == VWEUP_CHARGING;
+  }
+  bool IsOn() {
+    return m_poll_state == VWEUP_ON;
   }
 
   bool HasT26() {
@@ -243,9 +247,9 @@ private:
 protected:
   void OBDInit();
   void OBDDeInit();
-  void OBDCheckCarState();
 
 protected:
+  void PollerStateTicker();
   void IncomingPollReply(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length, uint16_t mlremain);
 
 protected:
@@ -277,12 +281,17 @@ protected:
   OvmsMetricFloat *BatTempMax;
   OvmsMetricFloat *BatTempMin;
 
+  OvmsMetricInt       *m_lv_pwrstate;             // Low voltage (12V) systems power state (0x1DEC[0]: 0-15)
+  OvmsMetricInt       *m_lv_autochg;              // Low voltage (12V) auto charge mode (0x1DED[0]: 0/1)
+  OvmsMetricInt       *m_hv_chgmode;              // High voltage charge mode (0x1DD6[0]: 0/1)
+
 protected:
   obd_state_t         m_obd_state;                // OBD subsystem state
   poll_vector_t       m_poll_vector;              // List of PIDs to poll
 
   int                 m_cfg_cell_interval_drv;    // Cell poll interval while driving, default 15 sec.
   int                 m_cfg_cell_interval_chg;    // … while charging, default 60 sec.
+  int                 m_cfg_cell_interval_awk;    // … while awake, default 60 sec.
   uint16_t            m_cell_last_vi;             // Index of last cell voltage read
   uint16_t            m_cell_last_ti;             // … temperature
 
@@ -293,9 +302,6 @@ private:
 
   float               BatMgmtCellMax;             // Maximum cell voltage
   float               BatMgmtCellMin;             // Minimum cell voltage
-
-  uint32_t            TimeOffRequested;           // For Off-Timeout: Monotonictime when the poll should
-                                                  //   have gone to VWEUP_OFF, 0 means no Off requested
 
 };
 
