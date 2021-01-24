@@ -33,6 +33,9 @@ static const char *TAG = "vehicle";
 
 #include <stdio.h>
 #include <algorithm>
+#include <iostream>
+#include <sstream>
+#include <iomanip>
 #include <ovms_command.h>
 #include <ovms_script.h>
 #include <ovms_metrics.h>
@@ -256,6 +259,7 @@ OvmsVehicle::OvmsVehicle()
   m_ticker = 0;
   m_12v_ticker = 0;
   m_chargestate_ticker = 0;
+  m_vehicleoff_ticker = 0;
   m_idle_ticker = 0;
   m_registeredlistener = false;
   m_autonotifications = true;
@@ -564,6 +568,8 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
 
   if (m_chargestate_ticker > 0 && --m_chargestate_ticker == 0)
     NotifyChargeState();
+  if (m_vehicleoff_ticker > 0 && --m_vehicleoff_ticker == 0)
+    NotifyVehicleOff();
 
   CalculateEfficiency();
 
@@ -1097,6 +1103,12 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
         StdMetrics.ms_v_env_regenbrake->SetValue(false);
         }
       MyEvents.SignalEvent("vehicle.off",NULL);
+      if (m_autonotifications)
+        {
+        m_vehicleoff_ticker = GetNotifyVehicleStateDelay("off");
+        if (m_vehicleoff_ticker == 0)
+          NotifyVehicleOff();
+        }
       NotifiedVehicleOff();
       }
     }
@@ -1265,6 +1277,14 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
       }
     NotifiedVehicleChargeState(mc);
     }
+  else if (metric == StandardMetrics.ms_v_gen_state)
+    {
+    std::string state = metric->AsString();
+    MyEvents.SignalEvent("vehicle.gen.state", (void*)state.c_str(), state.size()+1);
+    if (m_autonotifications)
+      NotifyGenState();
+    NotifiedVehicleGenState(state);
+    }
   else if (metric == StandardMetrics.ms_v_pos_acceleration)
     {
     if (m_brakelight_enable)
@@ -1400,6 +1420,182 @@ void OvmsVehicle::NotifyChargeState()
     NotifyChargeStart();
   else if (m == "heating")
     NotifyHeatingStart();
+
+  if (m != "")
+    NotifyGridLog();
+  }
+
+void OvmsVehicle::NotifyGenState()
+  {
+  std::string m = StandardMetrics.ms_v_gen_state->AsString();
+  // Generator states TBD
+
+  if (m != "")
+    NotifyGridLog();
+  }
+
+void OvmsVehicle::NotifyGridLog()
+  {
+  // Send grid (charge/generator) session log
+  //  History type "*-LOG-Grid"
+  //  Notification type "data", subtype "log.grid" 
+
+  int storetime_days = MyConfig.GetParamValueInt("notify", "log.grid.storetime", 0);
+  if (storetime_days <= 0)
+    return;
+
+  std::ostringstream buf;
+  buf
+    << "*-LOG-Grid,1," << storetime_days * 86400        // V1, increment on additions
+
+    << std::noboolalpha
+    << "," << (StdMetrics.ms_v_pos_gpslock->AsBool() ? 1 : 0)
+    << std::fixed
+    << std::setprecision(8)
+    << "," << StdMetrics.ms_v_pos_latitude->AsFloat()
+    << "," << StdMetrics.ms_v_pos_longitude->AsFloat()
+    << std::setprecision(1)
+    << "," << StdMetrics.ms_v_pos_altitude->AsFloat()
+    << "," << mp_encode(StdMetrics.ms_v_pos_location->AsString())
+
+    << "," << mp_encode(StdMetrics.ms_v_charge_type->AsString())
+    << "," << mp_encode(StdMetrics.ms_v_charge_state->AsString())
+    << "," << mp_encode(StdMetrics.ms_v_charge_substate->AsString())
+    << "," << mp_encode(StdMetrics.ms_v_charge_mode->AsString())
+    << "," << StdMetrics.ms_v_charge_climit->AsFloat()
+    << "," << StdMetrics.ms_v_charge_limit_range->AsFloat()
+    << "," << StdMetrics.ms_v_charge_limit_soc->AsFloat()
+
+    << "," << mp_encode(StdMetrics.ms_v_gen_type->AsString())
+    << "," << mp_encode(StdMetrics.ms_v_gen_state->AsString())
+    << "," << mp_encode(StdMetrics.ms_v_gen_substate->AsString())
+    << "," << mp_encode(StdMetrics.ms_v_gen_mode->AsString())
+    << "," << StdMetrics.ms_v_gen_climit->AsFloat()
+    << "," << StdMetrics.ms_v_gen_limit_range->AsFloat()
+    << "," << StdMetrics.ms_v_gen_limit_soc->AsFloat()
+
+    << "," << StdMetrics.ms_v_charge_time->AsInt()
+    << "," << StdMetrics.ms_v_charge_kwh->AsFloat()
+    << "," << StdMetrics.ms_v_charge_kwh_grid->AsFloat()
+    << "," << StdMetrics.ms_v_charge_kwh_grid_total->AsFloat()
+
+    << "," << StdMetrics.ms_v_gen_time->AsInt()
+    << "," << StdMetrics.ms_v_gen_kwh->AsFloat()
+    << "," << StdMetrics.ms_v_gen_kwh_grid->AsFloat()
+    << "," << StdMetrics.ms_v_gen_kwh_grid_total->AsFloat()
+
+    << "," << StdMetrics.ms_v_bat_soc->AsFloat()
+    << "," << StdMetrics.ms_v_bat_range_est->AsFloat()
+    << "," << StdMetrics.ms_v_bat_range_ideal->AsFloat()
+    << "," << StdMetrics.ms_v_bat_range_full->AsFloat()
+
+    << "," << StdMetrics.ms_v_bat_voltage->AsFloat()
+    << "," << StdMetrics.ms_v_bat_temp->AsFloat()
+
+    << "," << StdMetrics.ms_v_charge_temp->AsFloat()
+    << "," << StdMetrics.ms_v_charge_12v_temp->AsFloat()
+    << "," << StdMetrics.ms_v_env_temp->AsFloat()
+    << "," << StdMetrics.ms_v_env_cabintemp->AsFloat()
+
+    << "," << StdMetrics.ms_v_bat_soh->AsFloat()
+    << "," << mp_encode(StdMetrics.ms_v_bat_health->AsString())
+    << "," << StdMetrics.ms_v_bat_cac->AsFloat()
+
+    << "," << StdMetrics.ms_v_bat_energy_used_total->AsFloat()
+    << "," << StdMetrics.ms_v_bat_energy_recd_total->AsFloat()
+    << "," << StdMetrics.ms_v_bat_coulomb_used_total->AsFloat()
+    << "," << StdMetrics.ms_v_bat_coulomb_recd_total->AsFloat()
+    ;
+
+  MyNotify.NotifyString("data", "log.grid", buf.str().c_str());
+  }
+
+void OvmsVehicle::NotifyVehicleOff()
+  {
+  float min_trip_length = MyConfig.GetParamValueFloat("notify", "log.trip.minlength", 0.2);
+  if (StdMetrics.ms_v_pos_trip->AsFloat() >= min_trip_length)
+    NotifyTripLog();
+  }
+
+void OvmsVehicle::NotifyTripLog()
+  {
+  // Send trip log
+  //  History type "*-LOG-Trip"
+  //  Notification type "data", subtype "log.trip" 
+
+  int storetime_days = MyConfig.GetParamValueInt("notify", "log.trip.storetime", 0);
+  if (storetime_days <= 0)
+    return;
+
+  // Get min/max TPMS values:
+  const auto t_temp = StdMetrics.ms_v_tpms_temp->AsVector();
+  const auto t_prss = StdMetrics.ms_v_tpms_pressure->AsVector();
+  const auto t_hlth = StdMetrics.ms_v_tpms_health->AsVector();
+  const auto t_temp_minmax = std::minmax_element(t_temp.begin(), t_temp.end());
+  const auto t_prss_minmax = std::minmax_element(t_prss.begin(), t_prss.end());
+  const auto t_hlth_minmax = std::minmax_element(t_hlth.begin(), t_hlth.end());
+
+  std::ostringstream buf;
+  buf
+    << "*-LOG-Trip,1," << storetime_days * 86400        // V1, increment on additions
+
+    << std::noboolalpha
+    << "," << (StdMetrics.ms_v_pos_gpslock->AsBool() ? 1 : 0)
+    << std::fixed
+    << std::setprecision(8)
+    << "," << StdMetrics.ms_v_pos_latitude->AsFloat()
+    << "," << StdMetrics.ms_v_pos_longitude->AsFloat()
+    << std::setprecision(1)
+    << "," << StdMetrics.ms_v_pos_altitude->AsFloat()
+    << "," << mp_encode(StdMetrics.ms_v_pos_location->AsString())
+
+    << "," << StdMetrics.ms_v_pos_odometer->AsFloat()
+
+    << "," << StdMetrics.ms_v_pos_trip->AsFloat()
+    << "," << StdMetrics.ms_v_env_drivetime->AsInt()
+    << "," << StdMetrics.ms_v_env_drivemode->AsInt()
+
+    << "," << StdMetrics.ms_v_bat_soc->AsFloat()
+    << "," << StdMetrics.ms_v_bat_range_est->AsFloat()
+    << "," << StdMetrics.ms_v_bat_range_ideal->AsFloat()
+    << "," << StdMetrics.ms_v_bat_range_full->AsFloat()
+
+    << "," << StdMetrics.ms_v_bat_energy_used->AsFloat()
+    << "," << StdMetrics.ms_v_bat_energy_recd->AsFloat()
+    << "," << StdMetrics.ms_v_bat_coulomb_used->AsFloat()
+    << "," << StdMetrics.ms_v_bat_coulomb_recd->AsFloat()
+
+    << "," << StdMetrics.ms_v_bat_soh->AsFloat()
+    << "," << mp_encode(StdMetrics.ms_v_bat_health->AsString())
+    << "," << StdMetrics.ms_v_bat_cac->AsFloat()
+
+    << "," << StdMetrics.ms_v_bat_energy_used_total->AsFloat()
+    << "," << StdMetrics.ms_v_bat_energy_recd_total->AsFloat()
+    << "," << StdMetrics.ms_v_bat_coulomb_used_total->AsFloat()
+    << "," << StdMetrics.ms_v_bat_coulomb_recd_total->AsFloat()
+
+    << "," << StdMetrics.ms_v_env_temp->AsFloat()
+    << "," << StdMetrics.ms_v_env_cabintemp->AsFloat()
+    << "," << StdMetrics.ms_v_bat_temp->AsFloat()
+    << "," << StdMetrics.ms_v_inv_temp->AsFloat()
+    << "," << StdMetrics.ms_v_mot_temp->AsFloat()
+    << "," << StdMetrics.ms_v_charge_12v_temp->AsFloat()
+    ;
+
+  if (t_temp.empty())
+    buf << ",,";
+  else
+    buf << "," << *std::get<0>(t_temp_minmax) << "," << *std::get<1>(t_temp_minmax);
+  if (t_prss.empty())
+    buf << ",,";
+  else
+    buf << "," << *std::get<0>(t_prss_minmax) << "," << *std::get<1>(t_prss_minmax);
+  if (t_hlth.empty())
+    buf << ",,";
+  else
+    buf << "," << *std::get<0>(t_hlth_minmax) << "," << *std::get<1>(t_hlth_minmax);
+
+  MyNotify.NotifyString("data", "log.trip", buf.str().c_str());
   }
 
 OvmsVehicle::vehicle_mode_t OvmsVehicle::VehicleModeKey(const std::string code)

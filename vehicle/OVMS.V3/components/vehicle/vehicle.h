@@ -251,6 +251,7 @@ class OvmsVehicle : public InternalRamAllocated
     uint32_t m_ticker;
     int m_12v_ticker;
     int m_chargestate_ticker;
+    int m_vehicleoff_ticker;
     int m_idle_ticker;
     virtual void Ticker1(uint32_t ticker);
     virtual void Ticker10(uint32_t ticker);
@@ -275,9 +276,20 @@ class OvmsVehicle : public InternalRamAllocated
     virtual void Notify12vRecovered();
     virtual void NotifyMinSocCritical();
     virtual void NotifyVehicleIdling();
+    virtual void NotifyVehicleOff();
 
   protected:
+    virtual void NotifyGenState();
+
+  protected:
+    virtual void NotifyGridLog();
+    virtual void NotifyTripLog();
+
+  protected:
+    virtual int GetNotifyVehicleStateDelay(const std::string& state) { return 3; }
     virtual int GetNotifyChargeStateDelay(const char* state) { return 3; }
+
+  protected:
     virtual void NotifiedVehicleOn() {}
     virtual void NotifiedVehicleOff() {}
     virtual void NotifiedVehicleAwake() {}
@@ -300,6 +312,7 @@ class OvmsVehicle : public InternalRamAllocated
     virtual void NotifiedVehicleAlarmOff() {}
     virtual void NotifiedVehicleChargeMode(const char* m) {}
     virtual void NotifiedVehicleChargeState(const char* s) {}
+    virtual void NotifiedVehicleGenState(const std::string& state) {}
 
   protected:
     virtual void ConfigChanged(OvmsConfigParam* param);

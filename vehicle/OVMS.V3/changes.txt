@@ -1,6 +1,12 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Notifications: added optional long term trip & grid (charge/generator session) server logs.
+    See https://docs.openvehicles.com/en/latest/userguide/notifications.html for details.
+  New configs:
+    [notify]  log.trip.storetime    Trip log storage time in days, 0/empty = off (default)
+    [notify]  log.trip.minlength    … minimum trip length in km, default 0.2 km
+    [notify]  log.grid.storetime    Grid log storage time in days, 0/empty = off (default)
 - Server V3 improvements:
     a) On first connection to MQTT broker we used to send all metrics. Now
        we only send metrics for which we have a value.
