@@ -54,9 +54,6 @@
 #include "console_ssh.h"
 
 static void wolf_logger(enum wolfSSH_LogLevel level, const char* const msg);
-static void* wolfssh_malloc(size_t size);
-static void wolfssh_free(void* ptr);
-static void* wolfssh_realloc(void* ptr, size_t size);
 static void* wolfssl_malloc(size_t size);
 static void wolfssl_free(void* ptr);
 static void* wolfssl_realloc(void* ptr, size_t size);
@@ -228,7 +225,7 @@ void OvmsSSH::NetManStop(std::string event, void* data)
     }
   }
 
-int OvmsSSH::Authenticate(uint8_t type, const WS_UserAuthData* data, void* ctx)
+int OvmsSSH::Authenticate(uint8_t type, WS_UserAuthData* data, void* ctx)
   {
   ConsoleSSH* cons = (ConsoleSSH*)ctx;
   if (type == WOLFSSH_USERAUTH_PASSWORD)
@@ -289,14 +286,14 @@ ConsoleSSH::ConsoleSSH(OvmsSSH* server, struct mg_connection* nc)
   m_verbose = false;
   m_recursive = false;
   m_file = NULL;
+  wolfSSH_Debugging_ON();
+  wolfSSL_SetAllocators(wolfssl_malloc, wolfssl_free, wolfssl_realloc);
   m_ssh = wolfSSH_new(m_server->ctx());
   if (m_ssh == NULL)
     {
     ::printf("Couldn't allocate SSH session data.\n");
     return;
     }
-  wolfSSH_SetAllocators(wolfssh_malloc, wolfssh_free, wolfssh_realloc);
-  wolfSSL_SetAllocators(wolfssl_malloc, wolfssl_free, wolfssl_realloc);
   wolfSSH_SetIORecv(m_server->ctx(), ::RecvCallback);
   wolfSSH_SetIOSend(m_server->ctx(), ::SendCallback);
   wolfSSH_SetIOReadCtx(m_ssh, this);
@@ -305,7 +302,6 @@ ConsoleSSH::ConsoleSSH(OvmsSSH* server, struct mg_connection* nc)
   /* Use the session object for its own highwater callback ctx */
   wolfSSH_SetHighwaterCtx(m_ssh, (void*)m_ssh);
   wolfSSH_SetHighwater(m_ssh, DEFAULT_HIGHWATER_MARK);
-  wolfSSH_Debugging_ON();
   }
 
 ConsoleSSH::~ConsoleSSH()
@@ -877,6 +873,8 @@ void ConsoleSSH::HandleDeviceEvent(void* pEvent)
       }
     } while (rc >= 0);
 
+  if (rc == WS_ERROR)
+    rc = wolfSSH_get_error(m_ssh);
   if (rc == WS_WANT_READ || rc == WS_BAD_ARGUMENT)  // Latter => channel closed
     return;
   if (rc == WS_EOF)
@@ -1143,6 +1141,9 @@ static void wolf_logger(enum wolfSSH_LogLevel level, const char* const msg)
   {
   switch (level)
     {
+    case WS_LOG_AGENT:
+    case WS_LOG_SCP:
+    case WS_LOG_SFTP:
     case WS_LOG_USER:
     case WS_LOG_ERROR:
       ESP_LOGE(wolfssh_tag, "%s", msg);
@@ -1160,27 +1161,6 @@ static void wolf_logger(enum wolfSSH_LogLevel level, const char* const msg)
       ESP_LOGD(wolfssh_tag, "%s", msg);
       break;
     }
-  }
-
-static void* wolfssh_malloc(size_t size)
-  {
-  void* ptr = ExternalRamMalloc(size);
-  if (!ptr)
-    ESP_LOGE(wolfssh_tag, "memory allocation failed for size %zu", size);
-  return ptr;
-  }
-
-static void wolfssh_free(void* ptr)
-  {
-  free(ptr);
-  }
-
-static void* wolfssh_realloc(void* ptr, size_t size)
-  {
-  void* nptr = ExternalRamRealloc(ptr, size);
-  if (!nptr)
-    ESP_LOGE(wolfssh_tag, "memory reallocation failed for size %zu", size);
-  return nptr;
   }
 
 static void* wolfssl_malloc(size_t size)
