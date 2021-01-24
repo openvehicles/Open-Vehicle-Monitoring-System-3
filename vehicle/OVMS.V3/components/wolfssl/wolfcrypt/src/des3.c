@@ -1,6 +1,6 @@
 /* des3.c
  *
- * Copyright (C) 2006-2016 wolfSSL Inc.
+ * Copyright (C) 2006-2020 wolfSSL Inc.
  *
  * This file is part of wolfSSL.
  *
@@ -31,10 +31,28 @@
 
 #ifndef NO_DES3
 
+#if defined(HAVE_FIPS) && \
+	defined(HAVE_FIPS_VERSION) && (HAVE_FIPS_VERSION >= 2)
+
+    /* set NO_WRAPPERS before headers, use direct internal f()s not wrappers */
+    #define FIPS_NO_WRAPPERS
+
+    #ifdef USE_WINDOWS_API
+        #pragma code_seg(".fipsA$i")
+        #pragma const_seg(".fipsB$i")
+    #endif
+#endif
+
 #include <wolfssl/wolfcrypt/des3.h>
 
+#ifdef WOLF_CRYPTO_CB
+    #include <wolfssl/wolfcrypt/cryptocb.h>
+#endif
+
 /* fips wrapper calls, user can call direct */
-#ifdef HAVE_FIPS
+#if defined(HAVE_FIPS) && \
+    (!defined(HAVE_FIPS_VERSION) || (HAVE_FIPS_VERSION < 2))
+
     int wc_Des_SetKey(Des* des, const byte* key, const byte* iv, int dir)
     {
         return Des_SetKey(des, key, iv, dir);
@@ -107,7 +125,7 @@
             Des3Free(des3); */
     }
 
-#else /* build without fips */
+#else /* else build without fips, or for FIPS v2 */
 
 
 #if defined(WOLFSSL_TI_CRYPT)
@@ -124,7 +142,7 @@
 
 
 /* Hardware Acceleration */
-#if defined(STM32F2_CRYPTO) || defined(STM32F4_CRYPTO)
+#if defined(STM32_CRYPTO)
 
     /*
      * STM32F2/F4 hardware DES/3DES support through the standard
@@ -149,22 +167,26 @@
 
     int wc_Des3_SetKey(Des3* des, const byte* key, const byte* iv, int dir)
     {
+        if (des == NULL || key == NULL)
+            return BAD_FUNC_ARG;
+
+        (void)dir;
+
     #ifndef WOLFSSL_STM32_CUBEMX
-        word32 *dkey1 = des->key[0];
-        word32 *dkey2 = des->key[1];
-        word32 *dkey3 = des->key[2];
+        {
+            word32 *dkey1 = des->key[0];
+            word32 *dkey2 = des->key[1];
+            word32 *dkey3 = des->key[2];
 
-        (void)dir;
+            XMEMCPY(dkey1, key, 8);         /* set key 1 */
+            XMEMCPY(dkey2, key + 8, 8);     /* set key 2 */
+            XMEMCPY(dkey3, key + 16, 8);    /* set key 3 */
 
-        XMEMCPY(dkey1, key, 8);         /* set key 1 */
-        XMEMCPY(dkey2, key + 8, 8);     /* set key 2 */
-        XMEMCPY(dkey3, key + 16, 8);    /* set key 3 */
-
-        ByteReverseWords(dkey1, dkey1, 8);
-        ByteReverseWords(dkey2, dkey2, 8);
-        ByteReverseWords(dkey3, dkey3, 8);
+            ByteReverseWords(dkey1, dkey1, 8);
+            ByteReverseWords(dkey2, dkey2, 8);
+            ByteReverseWords(dkey3, dkey3, 8);
+        }
     #else
-        (void)dir;
         XMEMCPY(des->key[0], key, DES3_KEYLEN); /* CUBEMX wants keys in sequential memory */
     #endif
 
@@ -174,9 +196,22 @@
     static void DesCrypt(Des* des, byte* out, const byte* in, word32 sz,
                   int dir, int mode)
     {
+        int ret;
     #ifdef WOLFSSL_STM32_CUBEMX
         CRYP_HandleTypeDef hcryp;
+    #else
+        word32 *dkey, *iv;
+        CRYP_InitTypeDef DES_CRYP_InitStructure;
+        CRYP_KeyInitTypeDef DES_CRYP_KeyInitStructure;
+        CRYP_IVInitTypeDef DES_CRYP_IVInitStructure;
+    #endif
 
+        ret = wolfSSL_CryptHwMutexLock();
+        if (ret != 0) {
+            return;
+        }
+
+    #ifdef WOLFSSL_STM32_CUBEMX
         XMEMSET(&hcryp, 0, sizeof(CRYP_HandleTypeDef));
         hcryp.Instance = CRYP;
         hcryp.Init.KeySize  = CRYP_KEYSIZE_128B;
@@ -186,8 +221,7 @@
 
         HAL_CRYP_Init(&hcryp);
 
-        while (sz > 0)
-        {
+        while (sz > 0) {
             /* if input and output same will overwrite input iv */
             XMEMCPY(des->tmp, in + sz - DES_BLOCK_SIZE, DES_BLOCK_SIZE);
 
@@ -222,11 +256,6 @@
 
         HAL_CRYP_DeInit(&hcryp);
     #else
-        word32 *dkey, *iv;
-        CRYP_InitTypeDef DES_CRYP_InitStructure;
-        CRYP_KeyInitTypeDef DES_CRYP_KeyInitStructure;
-        CRYP_IVInitTypeDef DES_CRYP_IVInitStructure;
-
         dkey = des->key;
         iv = des->reg;
 
@@ -268,8 +297,7 @@
         /* enable crypto processor */
         CRYP_Cmd(ENABLE);
 
-        while (sz > 0)
-        {
+        while (sz > 0) {
             /* flush IN/OUT FIFOs */
             CRYP_FIFOFlush();
 
@@ -296,6 +324,7 @@
         /* disable crypto processor */
         CRYP_Cmd(DISABLE);
     #endif /* WOLFSSL_STM32_CUBEMX */
+        wolfSSL_CryptHwMutexUnLock();
     }
 
     int wc_Des_CbcEncrypt(Des* des, byte* out, const byte* in, word32 sz)
@@ -316,126 +345,132 @@
         return 0;
     }
 
-    static void Des3Crypt(Des3* des, byte* out, const byte* in, word32 sz,
+    static int Des3Crypt(Des3* des, byte* out, const byte* in, word32 sz,
                    int dir)
     {
+        if (des == NULL || out == NULL || in == NULL)
+            return BAD_FUNC_ARG;
+
     #ifdef WOLFSSL_STM32_CUBEMX
-        CRYP_HandleTypeDef hcryp;
-
-        XMEMSET(&hcryp, 0, sizeof(CRYP_HandleTypeDef));
-        hcryp.Instance = CRYP;
-        hcryp.Init.KeySize  = CRYP_KEYSIZE_128B;
-        hcryp.Init.DataType = CRYP_DATATYPE_8B;
-        hcryp.Init.pKey = (uint8_t*)des->key;
-        hcryp.Init.pInitVect = (uint8_t*)des->reg;
-
-        HAL_CRYP_Init(&hcryp);
-
-        while (sz > 0)
         {
-            if (dir == DES_ENCRYPTION) {
-                HAL_CRYP_TDESCBC_Encrypt(&hcryp, (byte*)in,
-                                    DES_BLOCK_SIZE, out, STM32_HAL_TIMEOUT);
-            }
-            else {
-                HAL_CRYP_TDESCBC_Decrypt(&hcryp, (byte*)in,
-                                    DES_BLOCK_SIZE, out, STM32_HAL_TIMEOUT);
+            CRYP_HandleTypeDef hcryp;
+
+            XMEMSET(&hcryp, 0, sizeof(CRYP_HandleTypeDef));
+            hcryp.Instance = CRYP;
+            hcryp.Init.KeySize  = CRYP_KEYSIZE_128B;
+            hcryp.Init.DataType = CRYP_DATATYPE_8B;
+            hcryp.Init.pKey = (uint8_t*)des->key;
+            hcryp.Init.pInitVect = (uint8_t*)des->reg;
+
+            HAL_CRYP_Init(&hcryp);
+
+            while (sz > 0)
+            {
+                if (dir == DES_ENCRYPTION) {
+                    HAL_CRYP_TDESCBC_Encrypt(&hcryp, (byte*)in,
+                                       DES_BLOCK_SIZE, out, STM32_HAL_TIMEOUT);
+                }
+                else {
+                    HAL_CRYP_TDESCBC_Decrypt(&hcryp, (byte*)in,
+                                       DES_BLOCK_SIZE, out, STM32_HAL_TIMEOUT);
+                }
+
+                /* store iv for next call */
+                XMEMCPY(des->reg, out + sz - DES_BLOCK_SIZE, DES_BLOCK_SIZE);
+
+                sz  -= DES_BLOCK_SIZE;
+                in  += DES_BLOCK_SIZE;
+                out += DES_BLOCK_SIZE;
             }
 
-            /* store iv for next call */
-            XMEMCPY(des->reg, out + sz - DES_BLOCK_SIZE, DES_BLOCK_SIZE);
-
-            sz  -= DES_BLOCK_SIZE;
-            in  += DES_BLOCK_SIZE;
-            out += DES_BLOCK_SIZE;
+            HAL_CRYP_DeInit(&hcryp);
         }
-
-        HAL_CRYP_DeInit(&hcryp);
     #else
-        word32 *dkey1, *dkey2, *dkey3, *iv;
-        CRYP_InitTypeDef DES3_CRYP_InitStructure;
-        CRYP_KeyInitTypeDef DES3_CRYP_KeyInitStructure;
-        CRYP_IVInitTypeDef DES3_CRYP_IVInitStructure;
-
-        dkey1 = des->key[0];
-        dkey2 = des->key[1];
-        dkey3 = des->key[2];
-        iv = des->reg;
-
-        /* crypto structure initialization */
-        CRYP_KeyStructInit(&DES3_CRYP_KeyInitStructure);
-        CRYP_StructInit(&DES3_CRYP_InitStructure);
-        CRYP_IVStructInit(&DES3_CRYP_IVInitStructure);
-
-        /* reset registers to their default values */
-        CRYP_DeInit();
-
-        /* set direction, mode, and datatype */
-        if (dir == DES_ENCRYPTION) {
-            DES3_CRYP_InitStructure.CRYP_AlgoDir  = CRYP_AlgoDir_Encrypt;
-        } else {
-            DES3_CRYP_InitStructure.CRYP_AlgoDir  = CRYP_AlgoDir_Decrypt;
-        }
-
-        DES3_CRYP_InitStructure.CRYP_AlgoMode = CRYP_AlgoMode_TDES_CBC;
-        DES3_CRYP_InitStructure.CRYP_DataType = CRYP_DataType_8b;
-        CRYP_Init(&DES3_CRYP_InitStructure);
-
-        /* load key into correct registers */
-        DES3_CRYP_KeyInitStructure.CRYP_Key1Left  = dkey1[0];
-        DES3_CRYP_KeyInitStructure.CRYP_Key1Right = dkey1[1];
-        DES3_CRYP_KeyInitStructure.CRYP_Key2Left  = dkey2[0];
-        DES3_CRYP_KeyInitStructure.CRYP_Key2Right = dkey2[1];
-        DES3_CRYP_KeyInitStructure.CRYP_Key3Left  = dkey3[0];
-        DES3_CRYP_KeyInitStructure.CRYP_Key3Right = dkey3[1];
-        CRYP_KeyInit(&DES3_CRYP_KeyInitStructure);
-
-        /* set iv */
-        ByteReverseWords(iv, iv, DES_BLOCK_SIZE);
-        DES3_CRYP_IVInitStructure.CRYP_IV0Left  = iv[0];
-        DES3_CRYP_IVInitStructure.CRYP_IV0Right = iv[1];
-        CRYP_IVInit(&DES3_CRYP_IVInitStructure);
-
-        /* enable crypto processor */
-        CRYP_Cmd(ENABLE);
-
-        while (sz > 0)
         {
-            /* flush IN/OUT FIFOs */
-            CRYP_FIFOFlush();
+            word32 *dkey1, *dkey2, *dkey3, *iv;
+            CRYP_InitTypeDef DES3_CRYP_InitStructure;
+            CRYP_KeyInitTypeDef DES3_CRYP_KeyInitStructure;
+            CRYP_IVInitTypeDef DES3_CRYP_IVInitStructure;
 
-            CRYP_DataIn(*(uint32_t*)&in[0]);
-            CRYP_DataIn(*(uint32_t*)&in[4]);
+            dkey1 = des->key[0];
+            dkey2 = des->key[1];
+            dkey3 = des->key[2];
+            iv = des->reg;
 
-            /* wait until the complete message has been processed */
-            while(CRYP_GetFlagStatus(CRYP_FLAG_BUSY) != RESET) {}
+            /* crypto structure initialization */
+            CRYP_KeyStructInit(&DES3_CRYP_KeyInitStructure);
+            CRYP_StructInit(&DES3_CRYP_InitStructure);
+            CRYP_IVStructInit(&DES3_CRYP_IVInitStructure);
 
-            *(uint32_t*)&out[0]  = CRYP_DataOut();
-            *(uint32_t*)&out[4]  = CRYP_DataOut();
+            /* reset registers to their default values */
+            CRYP_DeInit();
 
-            /* store iv for next call */
-            XMEMCPY(des->reg, out + sz - DES_BLOCK_SIZE, DES_BLOCK_SIZE);
+            /* set direction, mode, and datatype */
+            if (dir == DES_ENCRYPTION) {
+                DES3_CRYP_InitStructure.CRYP_AlgoDir  = CRYP_AlgoDir_Encrypt;
+            } else {
+                DES3_CRYP_InitStructure.CRYP_AlgoDir  = CRYP_AlgoDir_Decrypt;
+            }
 
-            sz  -= DES_BLOCK_SIZE;
-            in  += DES_BLOCK_SIZE;
-            out += DES_BLOCK_SIZE;
+            DES3_CRYP_InitStructure.CRYP_AlgoMode = CRYP_AlgoMode_TDES_CBC;
+            DES3_CRYP_InitStructure.CRYP_DataType = CRYP_DataType_8b;
+            CRYP_Init(&DES3_CRYP_InitStructure);
+
+            /* load key into correct registers */
+            DES3_CRYP_KeyInitStructure.CRYP_Key1Left  = dkey1[0];
+            DES3_CRYP_KeyInitStructure.CRYP_Key1Right = dkey1[1];
+            DES3_CRYP_KeyInitStructure.CRYP_Key2Left  = dkey2[0];
+            DES3_CRYP_KeyInitStructure.CRYP_Key2Right = dkey2[1];
+            DES3_CRYP_KeyInitStructure.CRYP_Key3Left  = dkey3[0];
+            DES3_CRYP_KeyInitStructure.CRYP_Key3Right = dkey3[1];
+            CRYP_KeyInit(&DES3_CRYP_KeyInitStructure);
+
+            /* set iv */
+            ByteReverseWords(iv, iv, DES_BLOCK_SIZE);
+            DES3_CRYP_IVInitStructure.CRYP_IV0Left  = iv[0];
+            DES3_CRYP_IVInitStructure.CRYP_IV0Right = iv[1];
+            CRYP_IVInit(&DES3_CRYP_IVInitStructure);
+
+            /* enable crypto processor */
+            CRYP_Cmd(ENABLE);
+
+            while (sz > 0)
+            {
+                /* flush IN/OUT FIFOs */
+                CRYP_FIFOFlush();
+
+                CRYP_DataIn(*(uint32_t*)&in[0]);
+                CRYP_DataIn(*(uint32_t*)&in[4]);
+
+                /* wait until the complete message has been processed */
+                while(CRYP_GetFlagStatus(CRYP_FLAG_BUSY) != RESET) {}
+
+                *(uint32_t*)&out[0]  = CRYP_DataOut();
+                *(uint32_t*)&out[4]  = CRYP_DataOut();
+
+                /* store iv for next call */
+                XMEMCPY(des->reg, out + sz - DES_BLOCK_SIZE, DES_BLOCK_SIZE);
+
+                sz  -= DES_BLOCK_SIZE;
+                in  += DES_BLOCK_SIZE;
+                out += DES_BLOCK_SIZE;
+            }
+
+            /* disable crypto processor */
+            CRYP_Cmd(DISABLE);
         }
-
-        /* disable crypto processor */
-        CRYP_Cmd(DISABLE);
     #endif /* WOLFSSL_STM32_CUBEMX */
+        return 0;
     }
 
     int wc_Des3_CbcEncrypt(Des3* des, byte* out, const byte* in, word32 sz)
     {
-        Des3Crypt(des, out, in, sz, DES_ENCRYPTION);
-        return 0;
+        return Des3Crypt(des, out, in, sz, DES_ENCRYPTION);
     }
 
     int wc_Des3_CbcDecrypt(Des3* des, byte* out, const byte* in, word32 sz)
     {
-        Des3Crypt(des, out, in, sz, DES_DECRYPTION);
-        return 0;
+        return Des3Crypt(des, out, in, sz, DES_DECRYPTION);
     }
 
 #elif defined(HAVE_COLDFIRE_SEC)
@@ -630,10 +665,13 @@
 
     int wc_Des3_SetKey(Des3* des3, const byte* key, const byte* iv, int dir)
     {
+        if (des3 == NULL || key == NULL) {
+            return BAD_FUNC_ARG;
+        }
 
-        if(desBuffIn == NULL) {
+        if (desBuffIn == NULL) {
         #if defined (HAVE_THREADX)
-    			  int s1, s2, s3, s4, s5;
+            int s1, s2, s3, s4, s5;
             s5 = tx_byte_allocate(&mp_ncached,(void *)&secDesc,
                                                          sizeof(SECdescriptorType), TX_NO_WAIT);
             s1 = tx_byte_allocate(&mp_ncached,(void *)&desBuffIn,  DES_BUFFER_SIZE, TX_NO_WAIT);
@@ -663,7 +701,13 @@
     #include "fsl_ltc.h"
     int wc_Des_SetKey(Des* des, const byte* key, const byte* iv, int dir)
     {
-        byte* dkey = (byte*)des->key;
+        byte* dkey;
+
+        if (des == NULL || key == NULL) {
+            return BAD_FUNC_ARG;
+        }
+
+        dkey = (byte*)des->key;
 
         XMEMCPY(dkey, key, 8);
 
@@ -767,7 +811,14 @@
     int wc_Des_SetKey(Des* des, const byte* key, const byte* iv, int dir)
     {
         int i = 0;
-        byte* dkey = (byte*)des->key;
+        byte* dkey;
+
+
+        if (des == NULL || key == NULL) {
+            return BAD_FUNC_ARG;
+        }
+
+        dkey = (byte*)des->key;
 
         XMEMCPY(dkey, key, 8);
 
@@ -1119,7 +1170,7 @@
 #ifdef NEED_SOFT_DES
 
     /* permuted choice table (key) */
-    static const byte pc1[] = {
+    static const FLASH_QUALIFIER byte pc1[] = {
            57, 49, 41, 33, 25, 17,  9,
             1, 58, 50, 42, 34, 26, 18,
            10,  2, 59, 51, 43, 35, 27,
@@ -1132,12 +1183,12 @@
     };
 
     /* number left rotations of pc1 */
-    static const byte totrot[] = {
+    static const FLASH_QUALIFIER byte totrot[] = {
            1,2,4,6,8,10,12,14,15,17,19,21,23,25,27,28
     };
 
     /* permuted choice key (table) */
-    static const byte pc2[] = {
+    static const FLASH_QUALIFIER byte pc2[] = {
            14, 17, 11, 24,  1,  5,
             3, 28, 15,  6, 21, 10,
            23, 19, 12,  4, 26,  8,
@@ -1151,11 +1202,11 @@
     /* End of DES-defined tables */
 
     /* bit 0 is left-most in byte */
-    static const int bytebit[] = {
+    static const FLASH_QUALIFIER int bytebit[] = {
         0200,0100,040,020,010,04,02,01
     };
 
-    static const word32 Spbox[8][64] = {
+    static const FLASH_QUALIFIER word32 Spbox[8][64] = {
     {   0x01010400,0x00000000,0x00010000,0x01010404,
         0x01010004,0x00010404,0x00000004,0x00010000,
         0x00000400,0x01010400,0x01010404,0x00000400,
@@ -1286,7 +1337,7 @@
         0x00001040,0x00040040,0x10000000,0x10041000}
     };
 
-    static INLINE void IPERM(word32* left, word32* right)
+    static WC_INLINE void IPERM(word32* left, word32* right)
     {
         word32 work;
 
@@ -1312,7 +1363,7 @@
         *right ^= work;
     }
 
-    static INLINE void FPERM(word32* left, word32* right)
+    static WC_INLINE void FPERM(word32* left, word32* right)
     {
         word32 work;
 
@@ -1429,15 +1480,15 @@
             return BAD_FUNC_ARG;
         }
 
-    #if defined(WOLFSSL_ASYNC_CRYPT) && defined(WC_ASYNC_ENABLE_3DES)
-        if (des->asyncDev.marker == WOLFSSL_ASYNC_MARKER_3DES) {
-            /* key_raw holds orignal key copy */
-            des->key_raw = key;
-            des->iv_raw = iv;
-
-            /* continue on to set normal key for smaller DES operations */
+    #if defined(WOLF_CRYPTO_CB) || \
+        (defined(WOLFSSL_ASYNC_CRYPT) && defined(WC_ASYNC_ENABLE_3DES))
+        #ifdef WOLF_CRYPTO_CB
+        if (des->devId != INVALID_DEVID)
+        #endif
+        {
+            XMEMCPY(des->devKey, key, DES3_KEYLEN);
         }
-    #endif /* WOLFSSL_ASYNC_CRYPT */
+    #endif
 
         ret = DesSetKey(key + (dir == DES_ENCRYPTION ? 0:16), dir, des->key[0]);
         if (ret != 0)
@@ -1573,6 +1624,15 @@
             return BAD_FUNC_ARG;
         }
 
+    #ifdef WOLF_CRYPTO_CB
+        if (des->devId != INVALID_DEVID) {
+            int ret = wc_CryptoCb_Des3Encrypt(des, out, in, sz);
+            if (ret != CRYPTOCB_UNAVAILABLE)
+                return ret;
+            /* fall-through when unavailable */
+        }
+    #endif
+
     #if defined(WOLFSSL_ASYNC_CRYPT) && defined(WC_ASYNC_ENABLE_3DES)
         if (des->asyncDev.marker == WOLFSSL_ASYNC_MARKER_3DES &&
                                             sz >= WC_ASYNC_THRESH_DES3_CBC) {
@@ -1580,11 +1640,10 @@
             return NitroxDes3CbcEncrypt(des, out, in, sz);
         #elif defined(HAVE_INTEL_QA)
             return IntelQaSymDes3CbcEncrypt(&des->asyncDev, out, in, sz,
-                des->key_raw, DES3_KEYLEN, (byte*)des->iv_raw, DES3_IVLEN);
+                (const byte*)des->devKey, DES3_KEYLEN, (byte*)des->reg, DES3_IVLEN);
         #else /* WOLFSSL_ASYNC_CRYPT_TEST */
-            WC_ASYNC_TEST* testDev = &des->asyncDev.test;
-            if (testDev->type == ASYNC_TEST_NONE) {
-                testDev->type = ASYNC_TEST_DES3_CBC_ENCRYPT;
+            if (wc_AsyncTestInit(&des->asyncDev, ASYNC_TEST_DES3_CBC_ENCRYPT)) {
+                WC_ASYNC_TEST* testDev = &des->asyncDev.test;
                 testDev->des.des = des;
                 testDev->des.out = out;
                 testDev->des.in = in;
@@ -1616,18 +1675,26 @@
             return BAD_FUNC_ARG;
         }
 
-    #if defined(WOLFSSL_ASYNC_CRYPT)
+    #ifdef WOLF_CRYPTO_CB
+        if (des->devId != INVALID_DEVID) {
+            int ret = wc_CryptoCb_Des3Decrypt(des, out, in, sz);
+            if (ret != CRYPTOCB_UNAVAILABLE)
+                return ret;
+            /* fall-through when unavailable */
+        }
+    #endif
+
+    #if defined(WOLFSSL_ASYNC_CRYPT) && defined(WC_ASYNC_ENABLE_3DES)
         if (des->asyncDev.marker == WOLFSSL_ASYNC_MARKER_3DES &&
                                             sz >= WC_ASYNC_THRESH_DES3_CBC) {
         #if defined(HAVE_CAVIUM)
             return NitroxDes3CbcDecrypt(des, out, in, sz);
         #elif defined(HAVE_INTEL_QA)
             return IntelQaSymDes3CbcDecrypt(&des->asyncDev, out, in, sz,
-                des->key_raw, DES3_KEYLEN, (byte*)des->iv_raw, DES3_IVLEN);
+                (const byte*)des->devKey, DES3_KEYLEN, (byte*)des->reg, DES3_IVLEN);
         #else /* WOLFSSL_ASYNC_CRYPT_TEST */
-            WC_ASYNC_TEST* testDev = &des->asyncDev.test;
-            if (testDev->type == ASYNC_TEST_NONE) {
-                testDev->type = ASYNC_TEST_DES3_CBC_DECRYPT;
+            if (wc_AsyncTestInit(&des->asyncDev, ASYNC_TEST_DES3_CBC_DECRYPT)) {
+                WC_ASYNC_TEST* testDev = &des->asyncDev.test;
                 testDev->des.des = des;
                 testDev->des.out = out;
                 testDev->des.in = in;
@@ -1722,11 +1789,16 @@ int wc_Des3Init(Des3* des3, void* heap, int devId)
 
     des3->heap = heap;
 
+#ifdef WOLF_CRYPTO_CB
+    des3->devId = devId;
+    des3->devCtx = NULL;
+#else
+    (void)devId;
+#endif
+
 #if defined(WOLFSSL_ASYNC_CRYPT) && defined(WC_ASYNC_ENABLE_3DES)
     ret = wolfAsync_DevCtxInit(&des3->asyncDev, WOLFSSL_ASYNC_MARKER_3DES,
                                                         des3->heap, devId);
-#else
-    (void)devId;
 #endif
 
     return ret;
@@ -1741,6 +1813,10 @@ void wc_Des3Free(Des3* des3)
 #if defined(WOLFSSL_ASYNC_CRYPT) && defined(WC_ASYNC_ENABLE_3DES)
     wolfAsync_DevCtxFree(&des3->asyncDev, WOLFSSL_ASYNC_MARKER_3DES);
 #endif /* WOLFSSL_ASYNC_CRYPT */
+#if defined(WOLF_CRYPTO_CB) || \
+        (defined(WOLFSSL_ASYNC_CRYPT) && defined(WC_ASYNC_ENABLE_3DES))
+    ForceZero(des3->devKey, sizeof(des3->devKey));
+#endif
 }
 
 #endif /* WOLFSSL_TI_CRYPT */

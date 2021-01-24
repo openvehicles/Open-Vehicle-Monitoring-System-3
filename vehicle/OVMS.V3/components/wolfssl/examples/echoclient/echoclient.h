@@ -1,6 +1,6 @@
 /* echoclient.h
  *
- * Copyright (C) 2006-2016 wolfSSL Inc.
+ * Copyright (C) 2006-2020 wolfSSL Inc.
  *
  * This file is part of wolfSSL.
  *
@@ -25,7 +25,6 @@
 
 
 void echoclient_test(void* args);
-
 
 #endif /* WOLFSSL_ECHOCLIENT_H */
 
