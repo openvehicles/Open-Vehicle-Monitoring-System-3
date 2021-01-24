@@ -1,6 +1,6 @@
 /* ed25519.c
  *
- * Copyright (C) 2006-2016 wolfSSL Inc.
+ * Copyright (C) 2006-2020 wolfSSL Inc.
  *
  * This file is part of wolfSSL.
  *
@@ -45,16 +45,55 @@
     #include <wolfssl/wolfcrypt/port/nxp/ksdk_port.h>
 #endif
 
+#if defined(HAVE_ED25519_SIGN) || defined(HAVE_ED25519_VERIFY)
+#define ED25519CTX_SIZE    32
+
+static const byte ed25519Ctx[ED25519CTX_SIZE+1] =
+                                             "SigEd25519 no Ed25519 collisions";
+#endif
+
+int wc_ed25519_make_public(ed25519_key* key, unsigned char* pubKey,
+                           word32 pubKeySz)
+{
+    int   ret = 0;
+    byte  az[ED25519_PRV_KEY_SIZE];
+#if !defined(FREESCALE_LTC_ECC)
+    ge_p3 A;
+#endif
+
+    if (key == NULL || pubKey == NULL || pubKeySz != ED25519_PUB_KEY_SIZE)
+        ret = BAD_FUNC_ARG;
+
+    if (ret == 0)
+        ret = wc_Sha512Hash(key->k, ED25519_KEY_SIZE, az);
+    if (ret == 0) {
+        /* apply clamp */
+        az[0]  &= 248;
+        az[31] &= 63; /* same than az[31] &= 127 because of az[31] |= 64 */
+        az[31] |= 64;
+
+    #ifdef FREESCALE_LTC_ECC
+        ltc_pkha_ecc_point_t publicKey = {0};
+        publicKey.X = key->pointX;
+        publicKey.Y = key->pointY;
+        LTC_PKHA_Ed25519_PointMul(LTC_PKHA_Ed25519_BasePoint(), az,
+            ED25519_KEY_SIZE, &publicKey, kLTC_Ed25519 /* result on Ed25519 */);
+        LTC_PKHA_Ed25519_Compress(&publicKey, pubKey);
+    #else
+        ge_scalarmult_base(&A, az);
+        ge_p3_tobytes(pubKey, &A);
+    #endif
+    }
+
+    return ret;
+}
+
 /* generate an ed25519 key pair.
  * returns 0 on success
  */
 int wc_ed25519_make_key(WC_RNG* rng, int keySz, ed25519_key* key)
 {
-    byte  az[ED25519_PRV_KEY_SIZE];
-    int   ret;
-#if !defined(FREESCALE_LTC_ECC)
-    ge_p3 A;
-#endif
+    int ret;
 
     if (rng == NULL || key == NULL)
         return BAD_FUNC_ARG;
@@ -66,29 +105,17 @@ int wc_ed25519_make_key(WC_RNG* rng, int keySz, ed25519_key* key)
     ret  = wc_RNG_GenerateBlock(rng, key->k, ED25519_KEY_SIZE);
     if (ret != 0)
         return ret;
-    ret = wc_Sha512Hash(key->k, ED25519_KEY_SIZE, az);
+
+    ret = wc_ed25519_make_public(key, key->p, ED25519_PUB_KEY_SIZE);
     if (ret != 0) {
         ForceZero(key->k, ED25519_KEY_SIZE);
         return ret;
     }
 
-    /* apply clamp */
-    az[0]  &= 248;
-    az[31] &= 63; /* same than az[31] &= 127 because of az[31] |= 64 */
-    az[31] |= 64;
-
-#ifdef FREESCALE_LTC_ECC
-    ltc_pkha_ecc_point_t publicKey = {0};
-    publicKey.X = key->pointX;
-    publicKey.Y = key->pointY;
-    LTC_PKHA_Ed25519_PointMul(LTC_PKHA_Ed25519_BasePoint(), az, ED25519_KEY_SIZE, &publicKey, kLTC_Ed25519 /* result on Ed25519 */);
-    LTC_PKHA_Ed25519_Compress(&publicKey, key->p);
-#else
-    ge_scalarmult_base(&A, az);
-    ge_p3_tobytes(key->p, &A);
-#endif
     /* put public key after private key, on the same buffer */
     XMEMMOVE(key->k + ED25519_KEY_SIZE, key->p, ED25519_PUB_KEY_SIZE);
+
+    key->pubKeySet = 1;
 
     return ret;
 }
@@ -96,30 +123,38 @@ int wc_ed25519_make_key(WC_RNG* rng, int keySz, ed25519_key* key)
 
 #ifdef HAVE_ED25519_SIGN
 /*
-    in     contains the message to sign
-    inlen  is the length of the message to sign
-    out    is the buffer to write the signature
-    outLen [in/out] input size of out buf
-                     output gets set as the final length of out
-    key    is the ed25519 key to use when signing
+    in          contains the message to sign
+    inLen       is the length of the message to sign
+    out         is the buffer to write the signature
+    outLen      [in/out] input size of out buf
+                          output gets set as the final length of out
+    key         is the ed25519 key to use when signing
+    type        one of Ed25519, Ed25519ctx or Ed25519ph
+    context     extra signing data
+    contextLen  length of extra signing data
     return 0 on success
  */
-int wc_ed25519_sign_msg(const byte* in, word32 inlen, byte* out,
-                        word32 *outLen, ed25519_key* key)
+static int ed25519_sign_msg(const byte* in, word32 inLen, byte* out,
+                            word32 *outLen, ed25519_key* key, byte type,
+                            const byte* context, byte contextLen)
 {
 #ifdef FREESCALE_LTC_ECC
     byte   tempBuf[ED25519_PRV_KEY_SIZE];
 #else
     ge_p3  R;
 #endif
-    byte   nonce[SHA512_DIGEST_SIZE];
-    byte   hram[SHA512_DIGEST_SIZE];
+    byte   nonce[WC_SHA512_DIGEST_SIZE];
+    byte   hram[WC_SHA512_DIGEST_SIZE];
     byte   az[ED25519_PRV_KEY_SIZE];
-    Sha512 sha;
+    wc_Sha512 sha;
     int    ret;
 
     /* sanity check on arguments */
-    if (in == NULL || out == NULL || outLen == NULL || key == NULL)
+    if (in == NULL || out == NULL || outLen == NULL || key == NULL ||
+                                         (context == NULL && contextLen != 0)) {
+        return BAD_FUNC_ARG;
+    }
+    if (!key->pubKeySet)
         return BAD_FUNC_ARG;
 
     /* check and set up out length */
@@ -143,13 +178,22 @@ int wc_ed25519_sign_msg(const byte* in, word32 inlen, byte* out,
     ret = wc_InitSha512(&sha);
     if (ret != 0)
         return ret;
-    ret = wc_Sha512Update(&sha, az + ED25519_KEY_SIZE, ED25519_KEY_SIZE);
-    if (ret != 0)
-        return ret;
-    ret = wc_Sha512Update(&sha, in, inlen);
-    if (ret != 0)
-        return ret;
-    ret = wc_Sha512Final(&sha, nonce);
+    if (type == Ed25519ctx || type == Ed25519ph) {
+        ret = wc_Sha512Update(&sha, ed25519Ctx, ED25519CTX_SIZE);
+        if (ret == 0)
+            ret = wc_Sha512Update(&sha, &type, sizeof(type));
+        if (ret == 0)
+            ret = wc_Sha512Update(&sha, &contextLen, sizeof(contextLen));
+        if (ret == 0 && context != NULL)
+            ret = wc_Sha512Update(&sha, context, contextLen);
+    }
+    if (ret == 0)
+        ret = wc_Sha512Update(&sha, az + ED25519_KEY_SIZE, ED25519_KEY_SIZE);
+    if (ret == 0)
+        ret = wc_Sha512Update(&sha, in, inLen);
+    if (ret == 0)
+        ret = wc_Sha512Final(&sha, nonce);
+    wc_Sha512Free(&sha);
     if (ret != 0)
         return ret;
 
@@ -158,7 +202,8 @@ int wc_ed25519_sign_msg(const byte* in, word32 inlen, byte* out,
     ltcPoint.X = &tempBuf[0];
     ltcPoint.Y = &tempBuf[32];
     LTC_PKHA_sc_reduce(nonce);
-    LTC_PKHA_Ed25519_PointMul(LTC_PKHA_Ed25519_BasePoint(), nonce, ED25519_KEY_SIZE, &ltcPoint, kLTC_Ed25519 /* result on Ed25519 */);
+    LTC_PKHA_Ed25519_PointMul(LTC_PKHA_Ed25519_BasePoint(), nonce,
+           ED25519_KEY_SIZE, &ltcPoint, kLTC_Ed25519 /* result on Ed25519 */);
     LTC_PKHA_Ed25519_Compress(&ltcPoint, out);
 #else
     sc_reduce(nonce);
@@ -174,16 +219,24 @@ int wc_ed25519_sign_msg(const byte* in, word32 inlen, byte* out,
     ret = wc_InitSha512(&sha);
     if (ret != 0)
         return ret;
-    ret = wc_Sha512Update(&sha, out, ED25519_SIG_SIZE/2);
-    if (ret != 0)
-        return ret;
-    ret = wc_Sha512Update(&sha, key->p, ED25519_PUB_KEY_SIZE);
-    if (ret != 0)
-        return ret;
-    ret = wc_Sha512Update(&sha, in, inlen);
-    if (ret != 0)
-        return ret;
-    ret = wc_Sha512Final(&sha, hram);
+    if (type == Ed25519ctx || type == Ed25519ph) {
+        ret = wc_Sha512Update(&sha, ed25519Ctx, ED25519CTX_SIZE);
+        if (ret == 0)
+            ret = wc_Sha512Update(&sha, &type, sizeof(type));
+        if (ret == 0)
+            ret = wc_Sha512Update(&sha, &contextLen, sizeof(contextLen));
+        if (ret == 0 && context != NULL)
+            ret = wc_Sha512Update(&sha, context, contextLen);
+    }
+    if (ret == 0)
+        ret = wc_Sha512Update(&sha, out, ED25519_SIG_SIZE/2);
+    if (ret == 0)
+        ret = wc_Sha512Update(&sha, key->p, ED25519_PUB_KEY_SIZE);
+    if (ret == 0)
+        ret = wc_Sha512Update(&sha, in, inLen);
+    if (ret == 0)
+        ret = wc_Sha512Final(&sha, hram);
+    wc_Sha512Free(&sha);
     if (ret != 0)
         return ret;
 
@@ -198,39 +251,121 @@ int wc_ed25519_sign_msg(const byte* in, word32 inlen, byte* out,
     return ret;
 }
 
+/*
+    in     contains the message to sign
+    inLen  is the length of the message to sign
+    out    is the buffer to write the signature
+    outLen [in/out] input size of out buf
+                     output gets set as the final length of out
+    key    is the ed25519 key to use when signing
+    return 0 on success
+ */
+int wc_ed25519_sign_msg(const byte* in, word32 inLen, byte* out,
+                        word32 *outLen, ed25519_key* key)
+{
+    return ed25519_sign_msg(in, inLen, out, outLen, key, (byte)Ed25519, NULL, 0);
+}
+
+/*
+    in          contains the message to sign
+    inLen       is the length of the message to sign
+    out         is the buffer to write the signature
+    outLen      [in/out] input size of out buf
+                          output gets set as the final length of out
+    key         is the ed25519 key to use when signing
+    context     extra signing data
+    contextLen  length of extra signing data
+    return 0 on success
+ */
+int wc_ed25519ctx_sign_msg(const byte* in, word32 inLen, byte* out,
+                           word32 *outLen, ed25519_key* key,
+                           const byte* context, byte contextLen)
+{
+    return ed25519_sign_msg(in, inLen, out, outLen, key, Ed25519ctx, context,
+                                                                    contextLen);
+}
+
+/*
+    hash        contains the SHA-512 hash of the message to sign
+    hashLen     is the length of the SHA-512 hash of the message to sign
+    out         is the buffer to write the signature
+    outLen      [in/out] input size of out buf
+                          output gets set as the final length of out
+    key         is the ed25519 key to use when signing
+    context     extra signing data
+    contextLen  length of extra signing data
+    return 0 on success
+ */
+int wc_ed25519ph_sign_hash(const byte* hash, word32 hashLen, byte* out,
+                           word32 *outLen, ed25519_key* key,
+                           const byte* context, byte contextLen)
+{
+    return ed25519_sign_msg(hash, hashLen, out, outLen, key, Ed25519ph, context,
+                                                                    contextLen);
+}
+
+/*
+    in          contains the message to sign
+    inLen       is the length of the message to sign
+    out         is the buffer to write the signature
+    outLen      [in/out] input size of out buf
+                          output gets set as the final length of out
+    key         is the ed25519 key to use when signing
+    context     extra signing data
+    contextLen  length of extra signing data
+    return 0 on success
+ */
+int wc_ed25519ph_sign_msg(const byte* in, word32 inLen, byte* out,
+                          word32 *outLen, ed25519_key* key,
+                          const byte* context, byte contextLen)
+{
+    int  ret;
+    byte hash[WC_SHA512_DIGEST_SIZE];
+
+    ret = wc_Sha512Hash(in, inLen, hash);
+    if (ret != 0)
+        return ret;
+
+    return wc_ed25519ph_sign_hash(hash, sizeof(hash), out, outLen, key, context,
+                                                                    contextLen);
+}
 #endif /* HAVE_ED25519_SIGN */
 
 #ifdef HAVE_ED25519_VERIFY
 
 /*
    sig     is array of bytes containing the signature
-   siglen  is the length of sig byte array
+   sigLen  is the length of sig byte array
    msg     the array of bytes containing the message
-   msglen  length of msg array
+   msgLen  length of msg array
    res     will be 1 on successful verify and 0 on unsuccessful
+   key     Ed25519 public key
    return  0 and res of 1 on success
 */
-int wc_ed25519_verify_msg(const byte* sig, word32 siglen, const byte* msg,
-                          word32 msglen, int* res, ed25519_key* key)
+static int ed25519_verify_msg(const byte* sig, word32 sigLen, const byte* msg,
+                              word32 msgLen, int* res, ed25519_key* key,
+                              byte type, const byte* context, byte contextLen)
 {
     byte   rcheck[ED25519_KEY_SIZE];
-    byte   h[SHA512_DIGEST_SIZE];
+    byte   h[WC_SHA512_DIGEST_SIZE];
 #ifndef FREESCALE_LTC_ECC
     ge_p3  A;
     ge_p2  R;
 #endif
     int    ret;
-    Sha512 sha;
+    wc_Sha512 sha;
 
     /* sanity check on arguments */
-    if (sig == NULL || msg == NULL || res == NULL || key == NULL)
+    if (sig == NULL || msg == NULL || res == NULL || key == NULL ||
+                                         (context == NULL && contextLen != 0)) {
         return BAD_FUNC_ARG;
+    }
 
     /* set verification failed by default */
     *res = 0;
 
     /* check on basics needed to verify signature */
-    if (siglen < ED25519_SIG_SIZE || (sig[ED25519_SIG_SIZE-1] & 224))
+    if (sigLen != ED25519_SIG_SIZE || (sig[ED25519_SIG_SIZE-1] & 224))
         return BAD_FUNC_ARG;
 
     /* uncompress A (public key), test if valid, and negate it */
@@ -243,16 +378,24 @@ int wc_ed25519_verify_msg(const byte* sig, word32 siglen, const byte* msg,
     ret  = wc_InitSha512(&sha);
     if (ret != 0)
         return ret;
-    ret = wc_Sha512Update(&sha, sig,    ED25519_SIG_SIZE/2);
-    if (ret != 0)
-        return ret;
-    ret = wc_Sha512Update(&sha, key->p, ED25519_PUB_KEY_SIZE);
-    if (ret != 0)
-        return ret;
-    ret = wc_Sha512Update(&sha, msg,    msglen);
-    if (ret != 0)
-        return ret;
-    ret = wc_Sha512Final(&sha,  h);
+    if (type == Ed25519ctx || type == Ed25519ph) {
+        ret = wc_Sha512Update(&sha, ed25519Ctx, ED25519CTX_SIZE);
+        if (ret == 0)
+            ret = wc_Sha512Update(&sha, &type, sizeof(type));
+        if (ret == 0)
+            ret = wc_Sha512Update(&sha, &contextLen, sizeof(contextLen));
+        if (ret == 0 && context != NULL)
+            ret = wc_Sha512Update(&sha, context, contextLen);
+    }
+    if (ret == 0)
+        ret = wc_Sha512Update(&sha, sig, ED25519_SIG_SIZE/2);
+    if (ret == 0)
+        ret = wc_Sha512Update(&sha, key->p, ED25519_PUB_KEY_SIZE);
+    if (ret == 0)
+        ret = wc_Sha512Update(&sha, msg, msgLen);
+    if (ret == 0)
+        ret = wc_Sha512Final(&sha,  h);
+    wc_Sha512Free(&sha);
     if (ret != 0)
         return ret;
 
@@ -284,6 +427,85 @@ int wc_ed25519_verify_msg(const byte* sig, word32 siglen, const byte* msg,
     return ret;
 }
 
+/*
+   sig     is array of bytes containing the signature
+   sigLen  is the length of sig byte array
+   msg     the array of bytes containing the message
+   msgLen  length of msg array
+   res     will be 1 on successful verify and 0 on unsuccessful
+   key     Ed25519 public key
+   return  0 and res of 1 on success
+*/
+int wc_ed25519_verify_msg(const byte* sig, word32 sigLen, const byte* msg,
+                          word32 msgLen, int* res, ed25519_key* key)
+{
+    return ed25519_verify_msg(sig, sigLen, msg, msgLen, res, key, (byte)Ed25519,
+                                                                       NULL, 0);
+}
+
+/*
+   sig         is array of bytes containing the signature
+   sigLen      is the length of sig byte array
+   msg         the array of bytes containing the message
+   msgLen      length of msg array
+   res         will be 1 on successful verify and 0 on unsuccessful
+   key         Ed25519 public key
+   context     extra sigining data
+   contextLen  length of extra sigining data
+   return  0 and res of 1 on success
+*/
+int wc_ed25519ctx_verify_msg(const byte* sig, word32 sigLen, const byte* msg,
+                             word32 msgLen, int* res, ed25519_key* key,
+                             const byte* context, byte contextLen)
+{
+    return ed25519_verify_msg(sig, sigLen, msg, msgLen, res, key, Ed25519ctx,
+                                                           context, contextLen);
+}
+
+/*
+   sig         is array of bytes containing the signature
+   sigLen      is the length of sig byte array
+   hash        the array of bytes containing the SHA-512 hash of the message
+   hashLen     length of hash array
+   res         will be 1 on successful verify and 0 on unsuccessful
+   key         Ed25519 public key
+   context     extra sigining data
+   contextLen  length of extra sigining data
+   return  0 and res of 1 on success
+*/
+int wc_ed25519ph_verify_hash(const byte* sig, word32 sigLen, const byte* hash,
+                             word32 hashLen, int* res, ed25519_key* key,
+                             const byte* context, byte contextLen)
+{
+    return ed25519_verify_msg(sig, sigLen, hash, hashLen, res, key, Ed25519ph,
+                                                           context, contextLen);
+}
+
+/*
+   sig         is array of bytes containing the signature
+   sigLen      is the length of sig byte array
+   msg         the array of bytes containing the message
+   msgLen      length of msg array
+   res         will be 1 on successful verify and 0 on unsuccessful
+   key         Ed25519 public key
+   context     extra sigining data
+   contextLen  length of extra sigining data
+   return  0 and res of 1 on success
+*/
+int wc_ed25519ph_verify_msg(const byte* sig, word32 sigLen, const byte* msg,
+                            word32 msgLen, int* res, ed25519_key* key,
+                            const byte* context, byte contextLen)
+{
+    int  ret;
+    byte hash[WC_SHA512_DIGEST_SIZE];
+
+    ret = wc_Sha512Hash(msg, msgLen, hash);
+    if (ret != 0)
+        return ret;
+
+    return wc_ed25519ph_verify_hash(sig, sigLen, hash, sizeof(hash), res, key,
+                                                           context, contextLen);
+}
 #endif /* HAVE_ED25519_VERIFY */
 
 
@@ -294,6 +516,10 @@ int wc_ed25519_init(ed25519_key* key)
         return BAD_FUNC_ARG;
 
     XMEMSET(key, 0, sizeof(ed25519_key));
+
+#ifndef FREESCALE_LTC_ECC
+    fe_init();
+#endif
 
     return 0;
 }
@@ -366,6 +592,7 @@ int wc_ed25519_import_public(const byte* in, word32 inLen, ed25519_key* key)
         pubKey.Y = key->pointY;
         LTC_PKHA_Ed25519_PointDecompress(key->p, ED25519_PUB_KEY_SIZE, &pubKey);
 #endif
+        key->pubKeySet = 1;
         return 0;
     }
 
@@ -379,11 +606,14 @@ int wc_ed25519_import_public(const byte* in, word32 inLen, ed25519_key* key)
             key->pointY[i] = *(in + 2*ED25519_KEY_SIZE - i);
         }
         XMEMCPY(key->p, key->pointY, ED25519_KEY_SIZE);
+        key->pubKeySet = 1;
         ret = 0;
 #else
         /* pass in (x,y) and store compressed key */
         ret = ge_compress_key(key->p, in+1,
                               in+1+ED25519_PUB_KEY_SIZE, ED25519_PUB_KEY_SIZE);
+        if (ret == 0)
+            key->pubKeySet = 1;
 #endif /* FREESCALE_LTC_ECC */
         return ret;
     }
@@ -399,6 +629,7 @@ int wc_ed25519_import_public(const byte* in, word32 inLen, ed25519_key* key)
         pubKey.Y = key->pointY;
         LTC_PKHA_Ed25519_PointDecompress(key->p, ED25519_PUB_KEY_SIZE, &pubKey);
 #endif
+        key->pubKeySet = 1;
         return 0;
     }
 
@@ -530,10 +761,17 @@ int wc_ed25519_export_key(ed25519_key* key,
 /* check the private and public keys match */
 int wc_ed25519_check_key(ed25519_key* key)
 {
-    /* TODO: Perform check of private and public key */
-    (void)key;
+    int ret = 0;
+    unsigned char pubKey[ED25519_PUB_KEY_SIZE];
 
-    return 0;
+    if (!key->pubKeySet)
+        ret = PUBLIC_KEY_E;
+    if (ret == 0)
+        ret = wc_ed25519_make_public(key, pubKey, sizeof(pubKey));
+    if (ret == 0 && XMEMCMP(pubKey, key->p, ED25519_PUB_KEY_SIZE) != 0)
+        ret = PUBLIC_KEY_E;
+
+    return ret;
 }
 
 /* returns the private key size (secret only) in bytes */

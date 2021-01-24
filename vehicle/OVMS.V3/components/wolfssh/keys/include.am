@@ -4,9 +4,18 @@
 
 
 EXTRA_DIST+= \
-            keys/server-key.der \
-            keys/server-key.pem \
-            keys/key-hansel.pem \
-            keys/key-gretel.pem \
-            keys/publickeys.txt \
+            keys/server-key-ecc.der \
+            keys/server-key-ecc.pem \
+            keys/server-key-ecc-384.der \
+            keys/server-key-ecc-384.pem \
+            keys/server-key-ecc-521.der \
+            keys/server-key-ecc-521.pem \
+            keys/server-key-rsa.der \
+            keys/server-key-rsa.pem \
+            keys/hansel-key-ecc.pem \
+            keys/hansel-key-rsa.pem \
+            keys/gretel-key-ecc.pem \
+            keys/gretel-key-rsa.pem \
+            keys/pubkeys-ecc.txt \
+            keys/pubkeys-rsa.txt \
             keys/passwd.txt

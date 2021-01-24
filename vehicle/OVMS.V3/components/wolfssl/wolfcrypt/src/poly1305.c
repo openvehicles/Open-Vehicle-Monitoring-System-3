@@ -1,6 +1,6 @@
 /* poly1305.c
  *
- * Copyright (C) 2006-2016 wolfSSL Inc.
+ * Copyright (C) 2006-2020 wolfSSL Inc.
  *
  * This file is part of wolfSSL.
  *
@@ -18,11 +18,16 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335, USA
  */
-
 /*
- * Based off the public domain implementations by Andrew Moon
- * and Daniel J. Bernstein
- */
+
+DESCRIPTION
+This library contains implementation for the Poly1305 authenticator.
+
+Based off the public domain implementations by Andrew Moon
+and Daniel J. Bernstein
+
+*/
+
 
 #ifdef HAVE_CONFIG_H
     #include <config.h>
@@ -34,6 +39,7 @@
 #include <wolfssl/wolfcrypt/poly1305.h>
 #include <wolfssl/wolfcrypt/error-crypt.h>
 #include <wolfssl/wolfcrypt/logging.h>
+#include <wolfssl/wolfcrypt/cpuid.h>
 #ifdef NO_INLINE
     #include <wolfssl/wolfcrypt/misc.h>
 #else
@@ -49,8 +55,34 @@
     #pragma warning(disable: 4127)
 #endif
 
-#if defined(POLY130564)
+#ifdef USE_INTEL_SPEEDUP
+    #include <emmintrin.h>
+    #include <immintrin.h>
 
+    #if defined(__GNUC__) && ((__GNUC__ < 4) || \
+                              (__GNUC__ == 4 && __GNUC_MINOR__ <= 8))
+        #undef  NO_AVX2_SUPPORT
+        #define NO_AVX2_SUPPORT
+    #endif
+    #if defined(__clang__) && ((__clang_major__ < 3) || \
+                               (__clang_major__ == 3 && __clang_minor__ <= 5))
+        #define NO_AVX2_SUPPORT
+    #elif defined(__clang__) && defined(NO_AVX2_SUPPORT)
+        #undef NO_AVX2_SUPPORT
+    #endif
+
+    #define HAVE_INTEL_AVX1
+    #ifndef NO_AVX2_SUPPORT
+        #define HAVE_INTEL_AVX2
+    #endif
+#endif
+
+#ifdef USE_INTEL_SPEEDUP
+static word32 intel_flags = 0;
+static word32 cpu_flags_set = 0;
+#endif
+
+#if defined(USE_INTEL_SPEEDUP) || defined(POLY130564)
     #if defined(_MSC_VER)
         #define POLY1305_NOINLINE __declspec(noinline)
     #elif defined(__GNUC__)
@@ -88,8 +120,84 @@
         #define SHR(in, shift) (word64)(in >> (shift))
         #define LO(in) (word64)(in)
     #endif
+#endif
 
-    static word64 U8TO64(const byte* p) {
+#ifdef USE_INTEL_SPEEDUP
+#ifdef __cplusplus
+    extern "C" {
+#endif
+
+#ifdef HAVE_INTEL_AVX1
+/* Process one block (16 bytes) of data.
+ *
+ * ctx  Poly1305 context.
+ * m    One block of message data.
+ */
+extern void poly1305_block_avx(Poly1305* ctx, const unsigned char *m);
+/* Process multiple blocks (n * 16 bytes) of data.
+ *
+ * ctx    Poly1305 context.
+ * m      Blocks of message data.
+ * bytes  The number of bytes to process.
+ */
+extern void poly1305_blocks_avx(Poly1305* ctx, const unsigned char* m,
+                                size_t bytes);
+/* Set the key to use when processing data.
+ * Initialize the context.
+ *
+ * ctx  Poly1305 context.
+ * key  The key data (16 bytes).
+ */
+extern void poly1305_setkey_avx(Poly1305* ctx, const byte* key);
+/* Calculate the final result - authentication data.
+ * Zeros out the private data in the context.
+ *
+ * ctx  Poly1305 context.
+ * mac  Buffer to hold 16 bytes.
+ */
+extern void poly1305_final_avx(Poly1305* ctx, byte* mac);
+#endif
+
+#ifdef HAVE_INTEL_AVX2
+/* Process multiple blocks (n * 16 bytes) of data.
+ *
+ * ctx    Poly1305 context.
+ * m      Blocks of message data.
+ * bytes  The number of bytes to process.
+ */
+extern void poly1305_blocks_avx2(Poly1305* ctx, const unsigned char* m,
+                                 size_t bytes);
+/* Calculate R^1, R^2, R^3 and R^4 and store them in the context.
+ *
+ * ctx    Poly1305 context.
+ */
+extern void poly1305_calc_powers_avx2(Poly1305* ctx);
+/* Set the key to use when processing data.
+ * Initialize the context.
+ * Calls AVX set key function as final function calls AVX code.
+ *
+ * ctx  Poly1305 context.
+ * key  The key data (16 bytes).
+ */
+extern void poly1305_setkey_avx2(Poly1305* ctx, const byte* key);
+/* Calculate the final result - authentication data.
+ * Zeros out the private data in the context.
+ * Calls AVX final function to quickly process last blocks.
+ *
+ * ctx  Poly1305 context.
+ * mac  Buffer to hold 16 bytes - authentication data.
+ */
+extern void poly1305_final_avx2(Poly1305* ctx, byte* mac);
+#endif
+
+#ifdef __cplusplus
+    }  /* extern "C" */
+#endif
+
+#elif defined(POLY130564)
+#ifndef WOLFSSL_ARMASM
+    static word64 U8TO64(const byte* p)
+    {
         return
             (((word64)(p[0] & 0xff)      ) |
              ((word64)(p[1] & 0xff) <<  8) |
@@ -111,10 +219,11 @@
         p[6] = (v >> 48) & 0xff;
         p[7] = (v >> 56) & 0xff;
     }
-
+#endif/* WOLFSSL_ARMASM */
 #else /* if not 64 bit then use 32 bit */
 
-    static word32 U8TO32(const byte *p) {
+    static word32 U8TO32(const byte *p)
+    {
         return
             (((word32)(p[0] & 0xff)      ) |
              ((word32)(p[1] & 0xff) <<  8) |
@@ -123,47 +232,51 @@
     }
 
     static void U32TO8(byte *p, word32 v) {
-        p[0] = (v      ) & 0xff;
-        p[1] = (v >>  8) & 0xff;
-        p[2] = (v >> 16) & 0xff;
-        p[3] = (v >> 24) & 0xff;
+        p[0] = (byte)((v      ) & 0xff);
+        p[1] = (byte)((v >>  8) & 0xff);
+        p[2] = (byte)((v >> 16) & 0xff);
+        p[3] = (byte)((v >> 24) & 0xff);
     }
 #endif
 
-
-static void U32TO64(word32 v, byte* p) {
-    XMEMSET(p, 0, 8);
-    p[0] = (v & 0xFF);
-    p[1] = (v >>  8) & 0xFF;
-    p[2] = (v >> 16) & 0xFF;
-    p[3] = (v >> 24) & 0xFF;
+/* convert 32-bit unsigned to little endian 64 bit type as byte array */
+static WC_INLINE void u32tole64(const word32 inLe32, byte outLe64[8])
+{
+#ifndef WOLFSSL_X86_64_BUILD
+    outLe64[0] = (byte)(inLe32  & 0x000000FF);
+    outLe64[1] = (byte)((inLe32 & 0x0000FF00) >> 8);
+    outLe64[2] = (byte)((inLe32 & 0x00FF0000) >> 16);
+    outLe64[3] = (byte)((inLe32 & 0xFF000000) >> 24);
+    outLe64[4] = 0;
+    outLe64[5] = 0;
+    outLe64[6] = 0;
+    outLe64[7] = 0;
+#else
+    *(word64*)outLe64 = inLe32;
+#endif
 }
 
 
+#if !defined(WOLFSSL_ARMASM) || !defined(__aarch64__)
+/*
+This local function operates on a message with a given number of bytes
+with a given ctx pointer to a Poly1305 structure.
+*/
 static void poly1305_blocks(Poly1305* ctx, const unsigned char *m,
-                            size_t bytes) {
-
-#ifdef POLY130564
-
-    const word64 hibit = (ctx->final) ? 0 : ((word64)1 << 40); /* 1 << 128 */
+                     size_t bytes)
+{
+#ifdef USE_INTEL_SPEEDUP
+    /* AVX2 is handled in wc_Poly1305Update. */
+    SAVE_VECTOR_REGISTERS();
+    poly1305_blocks_avx(ctx, m, bytes);
+    RESTORE_VECTOR_REGISTERS();
+#elif defined(POLY130564)
+    const word64 hibit = (ctx->finished) ? 0 : ((word64)1 << 40); /* 1 << 128 */
     word64 r0,r1,r2;
     word64 s1,s2;
     word64 h0,h1,h2;
     word64 c;
     word128 d0,d1,d2,d;
-
-#else
-
-    const word32 hibit = (ctx->final) ? 0 : (1 << 24); /* 1 << 128 */
-    word32 r0,r1,r2,r3,r4;
-    word32 s1,s2,s3,s4;
-    word32 h0,h1,h2,h3,h4;
-    word64 d0,d1,d2,d3,d4;
-    word32 c;
-
-#endif
-
-#ifdef POLY130564
 
     r0 = ctx->r[0];
     r1 = ctx->r[1];
@@ -208,6 +321,13 @@ static void poly1305_blocks(Poly1305* ctx, const unsigned char *m,
     ctx->h[2] = h2;
 
 #else /* if not 64 bit then use 32 bit */
+    const word32 hibit = (ctx->finished) ? 0 : ((word32)1 << 24); /* 1 << 128 */
+    word32 r0,r1,r2,r3,r4;
+    word32 s1,s2,s3,s4;
+    word32 h0,h1,h2,h3,h4;
+    word64 d0,d1,d2,d3,d4;
+    word32 c;
+
 
     r0 = ctx->r[0];
     r1 = ctx->r[1];
@@ -268,12 +388,32 @@ static void poly1305_blocks(Poly1305* ctx, const unsigned char *m,
 #endif /* end of 64 bit cpu blocks or 32 bit cpu */
 }
 
+/*
+This local function is used for the last call when a message with a given
+number of bytes is less than the block size.
+*/
+static void poly1305_block(Poly1305* ctx, const unsigned char *m)
+{
+#ifdef USE_INTEL_SPEEDUP
+    /* No call to poly1305_block when AVX2, AVX2 does 4 blocks at a time. */
+    SAVE_VECTOR_REGISTERS();
+    poly1305_block_avx(ctx, m);
+    RESTORE_VECTOR_REGISTERS();
+#else
+    poly1305_blocks(ctx, m, POLY1305_BLOCK_SIZE);
+#endif
+}
+#endif /* !defined(WOLFSSL_ARMASM) || !defined(__aarch64__) */
 
-int wc_Poly1305SetKey(Poly1305* ctx, const byte* key, word32 keySz) {
-
-#if defined(POLY130564)
+#if !defined(WOLFSSL_ARMASM) || !defined(__aarch64__)
+int wc_Poly1305SetKey(Poly1305* ctx, const byte* key, word32 keySz)
+{
+#if defined(POLY130564) && !defined(USE_INTEL_SPEEDUP)
     word64 t0,t1;
 #endif
+
+    if (key == NULL)
+        return BAD_FUNC_ARG;
 
 #ifdef CHACHA_AEAD_TEST
     word32 k;
@@ -289,7 +429,20 @@ int wc_Poly1305SetKey(Poly1305* ctx, const byte* key, word32 keySz) {
     if (keySz != 32 || ctx == NULL)
         return BAD_FUNC_ARG;
 
-#if defined(POLY130564)
+#ifdef USE_INTEL_SPEEDUP
+    if (!cpu_flags_set) {
+        intel_flags = cpuid_get_flags();
+        cpu_flags_set = 1;
+    }
+    SAVE_VECTOR_REGISTERS();
+    #ifdef HAVE_INTEL_AVX2
+    if (IS_INTEL_AVX2(intel_flags))
+        poly1305_setkey_avx2(ctx, key);
+    else
+    #endif
+        poly1305_setkey_avx(ctx, key);
+    RESTORE_VECTOR_REGISTERS();
+#elif defined(POLY130564)
 
     /* r &= 0xffffffc0ffffffc0ffffffc0fffffff */
     t0 = U8TO64(key + 0);
@@ -307,6 +460,9 @@ int wc_Poly1305SetKey(Poly1305* ctx, const byte* key, word32 keySz) {
     /* save pad for later */
     ctx->pad[0] = U8TO64(key + 16);
     ctx->pad[1] = U8TO64(key + 24);
+
+    ctx->leftover = 0;
+    ctx->finished = 0;
 
 #else /* if not 64 bit then use 32 bit */
 
@@ -330,18 +486,18 @@ int wc_Poly1305SetKey(Poly1305* ctx, const byte* key, word32 keySz) {
     ctx->pad[2] = U8TO32(key + 24);
     ctx->pad[3] = U8TO32(key + 28);
 
-#endif
-
     ctx->leftover = 0;
-    ctx->final = 0;
+    ctx->finished = 0;
+
+#endif
 
     return 0;
 }
 
-
-int wc_Poly1305Final(Poly1305* ctx, byte* mac) {
-
-#if defined(POLY130564)
+int wc_Poly1305Final(Poly1305* ctx, byte* mac)
+{
+#ifdef USE_INTEL_SPEEDUP
+#elif defined(POLY130564)
 
     word64 h0,h1,h2,c;
     word64 g0,g1,g2;
@@ -356,10 +512,19 @@ int wc_Poly1305Final(Poly1305* ctx, byte* mac) {
 
 #endif
 
-    if (ctx == NULL)
+    if (ctx == NULL || mac == NULL)
         return BAD_FUNC_ARG;
 
-#if defined(POLY130564)
+#ifdef USE_INTEL_SPEEDUP
+    SAVE_VECTOR_REGISTERS();
+    #ifdef HAVE_INTEL_AVX2
+    if (IS_INTEL_AVX2(intel_flags))
+        poly1305_final_avx2(ctx, mac);
+    else
+    #endif
+        poly1305_final_avx(ctx, mac);
+    RESTORE_VECTOR_REGISTERS();
+#elif defined(POLY130564)
 
     /* process the remaining block */
     if (ctx->leftover) {
@@ -367,8 +532,8 @@ int wc_Poly1305Final(Poly1305* ctx, byte* mac) {
         ctx->buffer[i] = 1;
         for (i = i + 1; i < POLY1305_BLOCK_SIZE; i++)
             ctx->buffer[i] = 0;
-        ctx->final = 1;
-        poly1305_blocks(ctx, ctx->buffer, POLY1305_BLOCK_SIZE);
+        ctx->finished = 1;
+        poly1305_block(ctx, ctx->buffer);
     }
 
     /* fully carry h */
@@ -435,8 +600,8 @@ int wc_Poly1305Final(Poly1305* ctx, byte* mac) {
         ctx->buffer[i++] = 1;
         for (; i < POLY1305_BLOCK_SIZE; i++)
             ctx->buffer[i] = 0;
-        ctx->final = 1;
-        poly1305_blocks(ctx, ctx->buffer, POLY1305_BLOCK_SIZE);
+        ctx->finished = 1;
+        poly1305_block(ctx, ctx->buffer);
     }
 
     /* fully carry h */
@@ -458,10 +623,10 @@ int wc_Poly1305Final(Poly1305* ctx, byte* mac) {
     g1 = h1 + c; c = g1 >> 26; g1 &= 0x3ffffff;
     g2 = h2 + c; c = g2 >> 26; g2 &= 0x3ffffff;
     g3 = h3 + c; c = g3 >> 26; g3 &= 0x3ffffff;
-    g4 = h4 + c - (1 << 26);
+    g4 = h4 + c - ((word32)1 << 26);
 
     /* select h if h < p, or h + -p if h >= p */
-    mask = (g4 >> ((sizeof(word32) * 8) - 1)) - 1;
+    mask = ((word32)g4 >> ((sizeof(word32) * 8) - 1)) - 1;
     g0 &= mask;
     g1 &= mask;
     g2 &= mask;
@@ -511,12 +676,20 @@ int wc_Poly1305Final(Poly1305* ctx, byte* mac) {
 
     return 0;
 }
+#endif /* !defined(WOLFSSL_ARMASM) || !defined(__aarch64__) */
 
 
-int wc_Poly1305Update(Poly1305* ctx, const byte* m, word32 bytes) {
-
+int wc_Poly1305Update(Poly1305* ctx, const byte* m, word32 bytes)
+{
     size_t i;
 
+    if (ctx == NULL || (m == NULL && bytes > 0))
+        return BAD_FUNC_ARG;
+
+    if (bytes == 0) {
+        /* valid, but do nothing */
+        return 0;
+    }
 #ifdef CHACHA_AEAD_TEST
     word32 k;
     printf("Raw input to poly:\n");
@@ -528,42 +701,163 @@ int wc_Poly1305Update(Poly1305* ctx, const byte* m, word32 bytes) {
     printf("\n");
 #endif
 
-    if (ctx == NULL)
-        return BAD_FUNC_ARG;
+#ifdef USE_INTEL_SPEEDUP
+    #ifdef HAVE_INTEL_AVX2
+    if (IS_INTEL_AVX2(intel_flags)) {
+        /* handle leftover */
+        if (ctx->leftover) {
+            size_t want = sizeof(ctx->buffer) - ctx->leftover;
+            if (want > bytes)
+                want = bytes;
 
-    /* handle leftover */
-    if (ctx->leftover) {
-        size_t want = (POLY1305_BLOCK_SIZE - ctx->leftover);
-        if (want > bytes)
-            want = bytes;
-        for (i = 0; i < want; i++)
-            ctx->buffer[ctx->leftover + i] = m[i];
-        bytes -= (word32)want;
-        m += want;
-        ctx->leftover += want;
-        if (ctx->leftover < POLY1305_BLOCK_SIZE)
-            return 0;
-        poly1305_blocks(ctx, ctx->buffer, POLY1305_BLOCK_SIZE);
-        ctx->leftover = 0;
+            for (i = 0; i < want; i++)
+                ctx->buffer[ctx->leftover + i] = m[i];
+            bytes -= (word32)want;
+            m += want;
+            ctx->leftover += want;
+            if (ctx->leftover < sizeof(ctx->buffer))
+                return 0;
+
+            SAVE_VECTOR_REGISTERS();
+            if (!ctx->started)
+                poly1305_calc_powers_avx2(ctx);
+            poly1305_blocks_avx2(ctx, ctx->buffer, sizeof(ctx->buffer));
+            ctx->leftover = 0;
+        } else
+            SAVE_VECTOR_REGISTERS();
+
+        /* process full blocks */
+        if (bytes >= sizeof(ctx->buffer)) {
+            size_t want = bytes & ~(sizeof(ctx->buffer) - 1);
+
+            if (!ctx->started)
+                poly1305_calc_powers_avx2(ctx);
+            poly1305_blocks_avx2(ctx, m, want);
+            m += want;
+            bytes -= (word32)want;
+        }
+
+        /* store leftover */
+        if (bytes) {
+            for (i = 0; i < bytes; i++)
+                ctx->buffer[ctx->leftover + i] = m[i];
+            ctx->leftover += bytes;
+        }
+        RESTORE_VECTOR_REGISTERS();
+    }
+    else
+    #endif
+#endif
+    {
+        /* handle leftover */
+        if (ctx->leftover) {
+            size_t want = (POLY1305_BLOCK_SIZE - ctx->leftover);
+            if (want > bytes)
+                want = bytes;
+            for (i = 0; i < want; i++)
+                ctx->buffer[ctx->leftover + i] = m[i];
+            bytes -= (word32)want;
+            m += want;
+            ctx->leftover += want;
+            if (ctx->leftover < POLY1305_BLOCK_SIZE)
+                return 0;
+            poly1305_block(ctx, ctx->buffer);
+            ctx->leftover = 0;
+        }
+
+        /* process full blocks */
+        if (bytes >= POLY1305_BLOCK_SIZE) {
+            size_t want = (bytes & ~(POLY1305_BLOCK_SIZE - 1));
+            poly1305_blocks(ctx, m, want);
+            m += want;
+            bytes -= (word32)want;
+        }
+
+        /* store leftover */
+        if (bytes) {
+            for (i = 0; i < bytes; i++)
+                ctx->buffer[ctx->leftover + i] = m[i];
+            ctx->leftover += bytes;
+        }
     }
 
-    /* process full blocks */
-    if (bytes >= POLY1305_BLOCK_SIZE) {
-        size_t want = (bytes & ~(POLY1305_BLOCK_SIZE - 1));
-        poly1305_blocks(ctx, m, want);
-        m += want;
-        bytes -= (word32)want;
-    }
-
-    /* store leftover */
-    if (bytes) {
-        for (i = 0; i < bytes; i++)
-            ctx->buffer[ctx->leftover + i] = m[i];
-        ctx->leftover += bytes;
-    }
     return 0;
 }
 
+/*  Takes a Poly1305 struct that has a key loaded and pads the provided length
+    ctx        : Initialized Poly1305 struct to use
+    lenToPad   : Current number of bytes updated that needs padding to 16
+ */
+int wc_Poly1305_Pad(Poly1305* ctx, word32 lenToPad)
+{
+    int ret = 0;
+    word32 paddingLen;
+    byte padding[WC_POLY1305_PAD_SZ - 1];
+
+    if (ctx == NULL) {
+        return BAD_FUNC_ARG;
+    }
+    if (lenToPad == 0) {
+        return 0; /* nothing needs to be done */
+    }
+
+    XMEMSET(padding, 0, sizeof(padding));
+
+    /* Pad length to 16 bytes */
+    paddingLen = -(int)lenToPad & (WC_POLY1305_PAD_SZ - 1);
+    if (paddingLen > 0) {
+        ret = wc_Poly1305Update(ctx, padding, paddingLen);
+    }
+    return ret;
+}
+
+/*  Takes a Poly1305 struct that has a key loaded and adds the AEAD length
+    encoding in 64-bit little endian
+    aadSz      : Size of the additional authentication data
+    dataSz     : Size of the plaintext or ciphertext
+ */
+int wc_Poly1305_EncodeSizes(Poly1305* ctx, word32 aadSz, word32 dataSz)
+{
+    int ret;
+    byte little64[16]; /* sizeof(word64) * 2 */
+
+    if (ctx == NULL) {
+        return BAD_FUNC_ARG;
+    }
+
+    XMEMSET(little64, 0, sizeof(little64));
+
+    /* size of additional data and input data as little endian 64 bit types */
+    u32tole64(aadSz,  little64);
+    u32tole64(dataSz, little64 + 8);
+    ret = wc_Poly1305Update(ctx, little64, sizeof(little64));
+
+    return ret;
+}
+
+#ifdef WORD64_AVAILABLE
+int wc_Poly1305_EncodeSizes64(Poly1305* ctx, word64 aadSz, word64 dataSz)
+{
+    int ret;
+    word64 little64[2];
+
+    if (ctx == NULL) {
+        return BAD_FUNC_ARG;
+    }
+
+#ifdef BIG_ENDIAN_ORDER
+    little64[0] = ByteReverseWord64(aadSz);
+    little64[1] = ByteReverseWord64(dataSz);
+#else
+    little64[0] = aadSz;
+    little64[1] = dataSz;
+#endif
+
+    ret = wc_Poly1305Update(ctx, (byte *)little64, sizeof(little64));
+
+    return ret;
+}
+#endif
 
 /*  Takes in an initialized Poly1305 struct that has a key loaded and creates
     a MAC (tag) using recent TLS AEAD padding scheme.
@@ -580,11 +874,6 @@ int wc_Poly1305_MAC(Poly1305* ctx, byte* additional, word32 addSz,
                     byte* input, word32 sz, byte* tag, word32 tagSz)
 {
     int ret;
-    byte padding[WC_POLY1305_PAD_SZ - 1];
-    word32 paddingLen;
-    byte little64[8];
-
-    XMEMSET(padding, 0, sizeof(padding));
 
     /* sanity check on arguments */
     if (ctx == NULL || input == NULL || tag == NULL ||
@@ -601,11 +890,9 @@ int wc_Poly1305_MAC(Poly1305* ctx, byte* additional, word32 addSz,
         if ((ret = wc_Poly1305Update(ctx, additional, addSz)) != 0) {
             return ret;
         }
-        paddingLen = -((int)addSz) & (WC_POLY1305_PAD_SZ - 1);
-        if (paddingLen) {
-            if ((ret = wc_Poly1305Update(ctx, padding, paddingLen)) != 0) {
-                return ret;
-            }
+        /* pad additional data */
+        if ((ret = wc_Poly1305_Pad(ctx, addSz)) != 0) {
+            return ret;
         }
     }
 
@@ -613,25 +900,13 @@ int wc_Poly1305_MAC(Poly1305* ctx, byte* additional, word32 addSz,
     if ((ret = wc_Poly1305Update(ctx, input, sz)) != 0) {
         return ret;
     }
-    paddingLen = -((int)sz) & (WC_POLY1305_PAD_SZ - 1);
-    if (paddingLen) {
-        if ((ret = wc_Poly1305Update(ctx, padding, paddingLen)) != 0) {
-            return ret;
-        }
-    }
-
-    /* size of additional data and input as little endian 64 bit types */
-    U32TO64(addSz, little64);
-    ret = wc_Poly1305Update(ctx, little64, sizeof(little64));
-    if (ret)
-    {
+    /* pad input data */
+    if ((ret = wc_Poly1305_Pad(ctx, sz)) != 0) {
         return ret;
     }
 
-    U32TO64(sz, little64);
-    ret = wc_Poly1305Update(ctx, little64, sizeof(little64));
-    if (ret)
-    {
+    /* encode size of AAD and input data as little endian 64 bit types */
+    if ((ret = wc_Poly1305_EncodeSizes(ctx, addSz, sz)) != 0) {
         return ret;
     }
 
@@ -642,4 +917,3 @@ int wc_Poly1305_MAC(Poly1305* ctx, byte* additional, word32 addSz,
 
 }
 #endif /* HAVE_POLY1305 */
-
