@@ -143,6 +143,13 @@ Reference voltage for 12v power
 
 Door State #5
 
+* bit0 = Rear left door (open=1/closed=0)
+* bit1 = Rear right door (open=1/closed=0)
+* bit2 = Frunk (open=1/closed=0)
+* bit4 = 12V battery charging
+* bit5 = Auxiliary 12V systems online
+* bit7 = HVAC running
+
 Temperature of the Charger (celsius)
 
 Vehicle 12V current (i.e. DC converter output)
