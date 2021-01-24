@@ -1200,7 +1200,9 @@ bool OvmsVehicleTeslaRoadster::TPMSRead(std::vector<uint32_t> *tpms)
     MyCommandApp.HexDump(TAG, "tpms", (const char*)data, length);
     }
 
+#ifdef CONFIG_OVMS_COMP_MAX7317
   MyPeripherals->m_max7317->Output(9, 0); // Enable LOW
+#endif // #ifdef CONFIG_OVMS_COMP_MAX7317
   uart_flush(uart);
   uart_driver_delete(uart);
 
@@ -1281,7 +1283,9 @@ bool OvmsVehicleTeslaRoadster::TPMSWrite(std::vector<uint32_t> &tpms)
     MyCommandApp.HexDump(TAG, "tpms", (const char*)data, length);
     }
 
+#ifdef CONFIG_OVMS_COMP_MAX7317
   MyPeripherals->m_max7317->Output(9, 0); // Enable LOW
+#endif // #ifdef CONFIG_OVMS_COMP_MAX7317
   uart_flush(uart);
   uart_driver_delete(uart);
 
