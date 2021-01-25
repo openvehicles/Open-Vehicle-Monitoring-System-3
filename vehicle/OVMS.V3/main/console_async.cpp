@@ -50,6 +50,9 @@ ConsoleAsync* ConsoleAsync::Instance()
 ConsoleAsync::ConsoleAsync() : TaskBase("OVMS Console", CONFIG_OVMS_SYS_COMMAND_STACK_SIZE)
   {
   m_monitoring = true;
+#ifdef CONFIG_OVMS_DEV_SECUREASYNC
+  SetSecure(true);	// Security Risk - Only for development
+#endif
   uart_config_t uart_config =
     {
     .baud_rate = 115200,
