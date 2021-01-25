@@ -1164,6 +1164,19 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
       NotifiedVehicleChargePilotOff();
       }
     }
+  else if (metric == StandardMetrics.ms_v_env_aux12v)
+    {
+    if (StandardMetrics.ms_v_env_aux12v->AsBool())
+      {
+      MyEvents.SignalEvent("vehicle.aux.12v.on", NULL);
+      NotifiedVehicleAux12vOn();
+      }
+    else
+      {
+      MyEvents.SignalEvent("vehicle.aux.12v.off", NULL);
+      NotifiedVehicleAux12vOff();
+      }
+    }
   else if (metric == StandardMetrics.ms_v_env_charging12v)
     {
     if (StandardMetrics.ms_v_env_charging12v->AsBool())

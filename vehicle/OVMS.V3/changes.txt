@@ -1,6 +1,10 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Events: added automatic events on v.e.aux12v changes.
+  New events:
+    vehicle.aux.12v.on
+    vehicle.aux.12v.off
 - Notifications: added optional long term trip & grid (charge/generator session) server logs.
     See https://docs.openvehicles.com/en/latest/userguide/notifications.html for details.
   New configs:
