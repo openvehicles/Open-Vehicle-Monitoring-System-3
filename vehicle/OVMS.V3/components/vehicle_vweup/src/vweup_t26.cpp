@@ -185,7 +185,6 @@ void OvmsVehicleVWeUp::vehicle_vweup_car_on(bool turnOn)
     // Log once that car is being turned on
     ESP_LOGI(TAG, "CAR IS ON");
     StandardMetrics.ms_v_env_on->SetValue(true);
-    StandardMetrics.ms_v_env_charging12v->SetValue(true);
     PollSetState(VWEUP_ON);
     ResetTripCounters();
     // Turn off possibly running climate control timer
@@ -204,6 +203,7 @@ void OvmsVehicleVWeUp::vehicle_vweup_car_on(bool turnOn)
     vweup_remote_climate_ticker = 0;
     fas_counter_on = 0;
     fas_counter_off = 0;
+    StandardMetrics.ms_v_env_charging12v->SetValue(true);
   }
   else if (!turnOn && StandardMetrics.ms_v_env_on->AsBool()) {
     // Log once that car is being turned off
@@ -449,7 +449,6 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
         fas_counter_on = 0;
         fas_counter_off = 0;
         StandardMetrics.ms_v_env_charging12v->SetValue(false);
-
         PollSetState(VWEUP_OFF);
 
         break;
