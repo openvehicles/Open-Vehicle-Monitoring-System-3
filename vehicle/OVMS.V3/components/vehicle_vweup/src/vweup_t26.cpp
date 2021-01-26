@@ -398,6 +398,8 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
           if (!StandardMetrics.ms_v_env_on->AsBool()) {
              StandardMetrics.ms_v_env_charging12v->SetValue(false);
              PollSetState(VWEUP_OFF);
+          } else {
+             PollSetState(VWEUP_ON);
           }
           ESP_LOGI(TAG, "Car charge session ended");
         }
