@@ -1360,6 +1360,7 @@ $.fn.chart = function(options) {
         $(this).data("chart", chart).addClass("has-chart get-window-resize").on("window-resize", function() {
           $(this).data("chart").reflow();
         });
+        $(this).closest(".metric.chart").data("chart", chart);
       });
     }
     if (window.Highcharts) {
@@ -1409,6 +1410,7 @@ $.fn.table = function(options) {
         });
         var table = $(this).DataTable(options);
         $(this).data("dataTable", table).addClass("has-dataTable");
+        $(this).closest(".metric.table").data("dataTable", table);
       });
     }
     if ($.fn.DataTables) {
@@ -1668,13 +1670,13 @@ $(function(){
         var lw = 0; $pb.find("span").each(function(){ lw += $(this).width(); });
         if (($pb.parent().width()*vp/100) < lw) $pb.addClass("value-low"); else $pb.removeClass("value-low");
       } else if ($el.hasClass("chart")) {
-        var ch = $(this.firstElementChild).data("chart");
+        var ch = $(this).data("chart");
         if (ch && ch.userOptions && ch.userOptions.onUpdate)
           ch.userOptions.onUpdate.call(ch, update);
       } else if ($el.hasClass("table")) {
-        var dt = $(this.firstElementChild).data("dataTable");
-        if (dt && dt.settings() && dt.settings().oInit && dt.settings().oInit.onUpdate)
-          dt.settings().oInit.onUpdate.call(dt, update);
+        var dt = $(this).data("dataTable");
+        if (dt && dt.settings() && dt.settings()[0] && dt.settings()[0].oInit && dt.settings()[0].oInit.onUpdate)
+          dt.settings()[0].oInit.onUpdate.call(dt, update);
       } else {
         $el.text(val);
       }
