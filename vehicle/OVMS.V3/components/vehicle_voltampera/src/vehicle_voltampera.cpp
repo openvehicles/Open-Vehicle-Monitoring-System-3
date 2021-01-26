@@ -258,7 +258,7 @@ void OvmsVehicleVoltAmpera::IncomingFrameCan1(CAN_frame_t* p_frame)
     {
     case 0x0c9: 
       {
-      StandardMetrics.ms_v_env_on->SetValue((d[0] & 0xC0) != 0);
+      StandardMetrics.ms_v_env_on->SetValue((d[0] & 0xC0) != 0);  // true for Ign ON, remote preheating
       StandardMetrics.ms_v_mot_rpm->SetValue( GET16(p_frame, 1) >> 2 );
       break;
       }
@@ -895,6 +895,8 @@ void OvmsVehicleVoltAmpera::Ticker1(uint32_t ticker)
 void OvmsVehicleVoltAmpera::NotifiedVehicleOn()
   {
   ESP_LOGI(TAG,"Powertrain enabled");
+  PollSetState(1); // abort state 2 if not complete yet
+  PollSetThrottling(VA_POLLING_NORMAL_THROTTLING);
   }
 
 void OvmsVehicleVoltAmpera::NotifiedVehicleOff()
