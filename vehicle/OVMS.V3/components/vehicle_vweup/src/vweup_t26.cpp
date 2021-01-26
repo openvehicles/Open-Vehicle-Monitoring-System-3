@@ -395,7 +395,9 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
           StandardMetrics.ms_v_door_chargeport->SetValue(false);
           StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
           StandardMetrics.ms_v_charge_state->SetValue("done");
-          StandardMetrics.ms_v_env_charging12v->SetValue(false);
+          if (!StandardMetrics.ms_v_env_on->AsBool()) {
+             StandardMetrics.ms_v_env_charging12v->SetValue(false);
+          }
           ESP_LOGI(TAG, "Car charge session ended");
           PollSetState(VWEUP_OFF);
         }
