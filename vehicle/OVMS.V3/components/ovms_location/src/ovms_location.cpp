@@ -87,17 +87,21 @@ void OvmsLocationAction::Execute(bool enter)
     OvmsVehicle* currentvehicle = MyVehicleFactory.m_currentvehicle;
     if (currentvehicle)
       {
+      if (!StandardMetrics.ms_v_env_on->AsBool())
+        ESP_LOGI(TAG, "Not activating Homelink #%d because parked",homelink);
+      else
         switch(currentvehicle->CommandHomelink(homelink-1, durationms))
-        {
-        case OvmsVehicle::Success:
-          ESP_LOGI(TAG, "Homelink #%d activated for %dms",homelink,durationms);
-          break;
-        case OvmsVehicle::Fail:
-          ESP_LOGE(TAG, "Could not activate homelink #%d",homelink);
-          break;
-        default:
-          break;
-        }
+          {
+          case OvmsVehicle::Success:
+            ESP_LOGI(TAG, "Homelink #%d activated for %dms",homelink,durationms);
+            break;
+          case OvmsVehicle::Fail:
+            ESP_LOGE(TAG, "Could not activate homelink #%d",homelink);
+            break;
+          default:
+            ESP_LOGE(TAG, "Vehicle does not implement homelink");
+            break;
+          }
       }
     }
   else if (m_action == NOTIFY)
