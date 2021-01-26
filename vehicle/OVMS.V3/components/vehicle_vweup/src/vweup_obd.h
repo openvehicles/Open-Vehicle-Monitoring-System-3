@@ -173,7 +173,10 @@ using namespace std;
 #define VWUP2_CHG_DC_I                  0x41F9
 
 #define VWUP_CHG_MGMT_SOC_NORM          0x1DD0
+#define VWUP_CHG_MGMT_HV_CHGMODE        0x1DD6    // High voltage charge mode
 #define VWUP_CHG_MGMT_REM               0x1DE4    // remaining time for full charge
+#define VWUP_CHG_MGMT_LV_PWRSTATE       0x1DEC    // Low voltage (12V) systems power state
+#define VWUP_CHG_MGMT_LV_AUTOCHG        0x1DED    // Low voltage (12V) auto charge mode
 
 
 #endif //#ifndef __VEHICLE_EUP_OBD_H__

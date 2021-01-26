@@ -661,6 +661,13 @@ endmenu # Component Options
 menu "Developer Options"
     depends on OVMS
 
+config OVMS_DEV_SECUREASYNC
+    bool "Initialize async console in enabled mode"
+    default n
+    depends on OVMS
+    help
+        Enable for async console to be automatically logged in (danger: insecure)
+
 config OVMS_DEV_CONFIGVFS
     bool "Disable the usual protections for configuration visibility in VFS"
     default n

@@ -513,10 +513,10 @@ void OvmsVehicleVoltAmpera::IncomingFrameCan4(CAN_frame_t* p_frame)
     // Tire pressure
     case 0x103D4040: 
       {
-      StandardMetrics.ms_v_tpms_fl_p->SetValue( d[2] << 2 );
-      StandardMetrics.ms_v_tpms_rl_p->SetValue( d[3] << 2 );
-      StandardMetrics.ms_v_tpms_fr_p->SetValue( d[4] << 2 );
-      StandardMetrics.ms_v_tpms_rr_p->SetValue( d[5] << 2 );
+      StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FL,  d[2] << 2 );
+      StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RL,  d[3] << 2 );
+      StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FR,  d[4] << 2 );
+      StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RR,  d[5] << 2 );
 
       // Tire temperature is not sent via CAN. For now set bogus tire temperature, 
       // because iOS app does not show tire pressure unless tempereature is set and >0 ..
@@ -527,10 +527,10 @@ void OvmsVehicleVoltAmpera::IncomingFrameCan4(CAN_frame_t* p_frame)
         temp = 255;
       if (temp<1)
         temp=1;
-      StandardMetrics.ms_v_tpms_fl_t->SetValue(temp);
-      StandardMetrics.ms_v_tpms_fr_t->SetValue(temp);
-      StandardMetrics.ms_v_tpms_rl_t->SetValue(temp);
-      StandardMetrics.ms_v_tpms_rr_t->SetValue(temp);
+      StandardMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_FL, temp);
+      StandardMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_FR, temp);
+      StandardMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_RL, temp);
+      StandardMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_RR, temp);
       break;
       } 
 

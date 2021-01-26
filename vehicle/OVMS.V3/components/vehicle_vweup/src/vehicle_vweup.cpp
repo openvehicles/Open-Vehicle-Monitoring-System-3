@@ -72,7 +72,7 @@
 #include <string>
 static const char *TAG = "v-vweup";
 
-#define VERSION "0.8.1"
+#define VERSION "0.9.1"
 
 #include <stdio.h>
 #include <string>
@@ -257,6 +257,7 @@ void OvmsVehicleVWeUp::ConfigChanged(OvmsConfigParam *param)
   vweup_cc_temp_int = MyConfig.GetParamValueInt("xvu", "cc_temp", 22);
   int cell_interval_drv = MyConfig.GetParamValueInt("xvu", "cell_interval_drv", 15);
   int cell_interval_chg = MyConfig.GetParamValueInt("xvu", "cell_interval_chg", 60);
+  int cell_interval_awk = MyConfig.GetParamValueInt("xvu", "cell_interval_awk", 60);
 
   bool do_obd_init = (
     (!vweup_enable_obd && vweup_enable_obd_new) ||
@@ -264,13 +265,15 @@ void OvmsVehicleVWeUp::ConfigChanged(OvmsConfigParam *param)
     (vweup_modelyear < 2020 && vweup_modelyear_new > 2019) ||
     (vweup_modelyear_new < 2020 && vweup_modelyear > 2019) ||
     (cell_interval_drv != m_cfg_cell_interval_drv) ||
-    (cell_interval_chg != m_cfg_cell_interval_chg));
+    (cell_interval_chg != m_cfg_cell_interval_chg) ||
+    (cell_interval_awk != m_cfg_cell_interval_awk));
 
   vweup_modelyear = vweup_modelyear_new;
   vweup_enable_obd = vweup_enable_obd_new;
   vweup_enable_t26 = vweup_enable_t26_new;
   m_cfg_cell_interval_drv = cell_interval_drv;
   m_cfg_cell_interval_chg = cell_interval_chg;
+  m_cfg_cell_interval_awk = cell_interval_awk;
 
   // Connectors:
   vweup_con = vweup_enable_obd * 2 + vweup_enable_t26;
@@ -346,12 +349,7 @@ void OvmsVehicleVWeUp::ConfigChanged(OvmsConfigParam *param)
 
 void OvmsVehicleVWeUp::Ticker1(uint32_t ticker)
 {
-  if (vweup_con == CON_OBD)
-  {
-    // only OBD connected -> get car state by polling OBD
-    OBDCheckCarState();
-  }
-  else
+  if (HasT26())
   {
     // T26 connected
 
@@ -390,7 +388,7 @@ int OvmsVehicleVWeUp::GetNotifyChargeStateDelay(const char *state)
 {
   // With OBD data, wait for first voltage & current when starting the charge:
   if (vweup_con == CON_OBD && strcmp(state, "charging") == 0) {
-    return 5;
+    return 6;
   }
   else {
     return 3;
@@ -434,10 +432,13 @@ void OvmsVehicleVWeUp::ResetChargeCounters()
 {
   // Clear per charge counter:
   StdMetrics.ms_v_charge_kwh->SetValue(0);
+  StdMetrics.ms_v_charge_kwh_grid->SetValue(0);
+  m_charge_kwh_grid = 0;
 
   // Get charge start reference as far as available:
   //  (if we don't have it yet, IncomingPollReply() will set it ASAP)
   m_energy_charged_start = StdMetrics.ms_v_bat_energy_recd_total->AsFloat();
+  m_charge_kwh_grid_start = StdMetrics.ms_v_charge_kwh_grid_total->AsFloat();
 
-  ESP_LOGD(TAG, "Charge start ref: er=%f", m_energy_charged_start);
+  ESP_LOGD(TAG, "Charge start ref: er=%f gr=%f", m_energy_charged_start, m_charge_kwh_grid_start);
 }

@@ -216,6 +216,9 @@ class OvmsVehicle : public InternalRamAllocated
     virtual void IncomingFrameCan2(CAN_frame_t* p_frame);
     virtual void IncomingFrameCan3(CAN_frame_t* p_frame);
     virtual void IncomingFrameCan4(CAN_frame_t* p_frame);
+
+  protected:
+    virtual void PollerStateTicker();
     virtual void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
     virtual void IncomingPollError(canbus* bus, uint16_t type, uint16_t pid, uint16_t code);
 
@@ -248,6 +251,7 @@ class OvmsVehicle : public InternalRamAllocated
     uint32_t m_ticker;
     int m_12v_ticker;
     int m_chargestate_ticker;
+    int m_vehicleoff_ticker;
     int m_idle_ticker;
     virtual void Ticker1(uint32_t ticker);
     virtual void Ticker10(uint32_t ticker);
@@ -272,9 +276,20 @@ class OvmsVehicle : public InternalRamAllocated
     virtual void Notify12vRecovered();
     virtual void NotifyMinSocCritical();
     virtual void NotifyVehicleIdling();
+    virtual void NotifyVehicleOff();
 
   protected:
+    virtual void NotifyGenState();
+
+  protected:
+    virtual void NotifyGridLog();
+    virtual void NotifyTripLog();
+
+  protected:
+    virtual int GetNotifyVehicleStateDelay(const std::string& state) { return 3; }
     virtual int GetNotifyChargeStateDelay(const char* state) { return 3; }
+
+  protected:
     virtual void NotifiedVehicleOn() {}
     virtual void NotifiedVehicleOff() {}
     virtual void NotifiedVehicleAwake() {}
@@ -285,6 +300,8 @@ class OvmsVehicle : public InternalRamAllocated
     virtual void NotifiedVehicleChargeFinish() {}
     virtual void NotifiedVehicleChargePilotOn() {}
     virtual void NotifiedVehicleChargePilotOff() {}
+    virtual void NotifiedVehicleAux12vOn() {}
+    virtual void NotifiedVehicleAux12vOff() {}
     virtual void NotifiedVehicleCharge12vStart() {}
     virtual void NotifiedVehicleCharge12vStop() {}
     virtual void NotifiedVehicleLocked() {}
@@ -297,6 +314,7 @@ class OvmsVehicle : public InternalRamAllocated
     virtual void NotifiedVehicleAlarmOff() {}
     virtual void NotifiedVehicleChargeMode(const char* m) {}
     virtual void NotifiedVehicleChargeState(const char* s) {}
+    virtual void NotifiedVehicleGenState(const std::string& state) {}
 
   protected:
     virtual void ConfigChanged(OvmsConfigParam* param);
@@ -354,6 +372,16 @@ class OvmsVehicle : public InternalRamAllocated
     virtual bool TPMSRead(std::vector<uint32_t> *tpms);
     virtual bool TPMSWrite(std::vector<uint32_t> &tpms);
 #endif // #ifdef CONFIG_OVMS_COMP_TPMS
+
+  public:
+    virtual std::vector<std::string> GetTpmsLayout();
+
+  protected:
+    uint32_t m_tpms_lastcheck;              // monotonictime of last TPMS alert check
+    std::vector<short> m_tpms_laststate;    // last TPMS alert state for change detection
+
+  protected:
+    virtual void NotifyTpmsAlerts();
 
   public:
     virtual vehicle_command_t CommandStat(int verbosity, OvmsWriter* writer);
@@ -429,10 +457,10 @@ class OvmsVehicle : public InternalRamAllocated
     void PollSetResponseSeparationTime(uint8_t septime);
     int PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
                       std::string request, std::string& response,
-                      int timeout_ms=3000, uint8_t protocol=ISOTP_STD);
+                      int timeout_ms=100, uint8_t protocol=ISOTP_STD);
     int PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
                       uint8_t polltype, uint16_t pid, std::string& response,
-                      int timeout_ms=3000, uint8_t protocol=ISOTP_STD);
+                      int timeout_ms=100, uint8_t protocol=ISOTP_STD);
 
   private:
     CanFrameCallback  m_poll_txcallback;      // Poller CAN TxCallback

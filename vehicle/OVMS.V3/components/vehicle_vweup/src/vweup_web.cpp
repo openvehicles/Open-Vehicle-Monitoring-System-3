@@ -75,7 +75,7 @@ void OvmsVehicleVWeUp::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
 {
   std::string error, warn;
   std::string modelyear;
-  std::string cell_interval_drv, cell_interval_chg;
+  std::string cell_interval_drv, cell_interval_chg, cell_interval_awk;
   bool canwrite;
   bool con_obd;
   bool con_t26;
@@ -90,6 +90,7 @@ void OvmsVehicleVWeUp::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
     canwrite = (c.getvar("canwrite") == "yes");
     cell_interval_drv = c.getvar("cell_interval_drv");
     cell_interval_chg = c.getvar("cell_interval_chg");
+    cell_interval_awk = c.getvar("cell_interval_awk");
 
     // check:
     if (!modelyear.empty())
@@ -124,6 +125,10 @@ void OvmsVehicleVWeUp::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
         MyConfig.DeleteInstance("xvu", "cell_interval_chg");
       else
         MyConfig.SetParamValue("xvu", "cell_interval_chg", cell_interval_chg);
+      if (cell_interval_awk == "60")
+        MyConfig.DeleteInstance("xvu", "cell_interval_awk");
+      else
+        MyConfig.SetParamValue("xvu", "cell_interval_awk", cell_interval_awk);
 
       c.head(200);
       c.alert("success", "<p class=\"lead\">VW e-Up feature configuration saved.</p>");
@@ -153,6 +158,7 @@ void OvmsVehicleVWeUp::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
     canwrite = MyConfig.GetParamValueBool("xvu", "canwrite", false);
     cell_interval_drv = MyConfig.GetParamValue("xvu", "cell_interval_drv");
     cell_interval_chg = MyConfig.GetParamValue("xvu", "cell_interval_chg");
+    cell_interval_awk = MyConfig.GetParamValue("xvu", "cell_interval_awk");
 
     c.head(200);
   }
@@ -189,6 +195,10 @@ void OvmsVehicleVWeUp::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
     "<p>Default 15 seconds, 0=off.</p>");
   c.input_slider("Update interval charging", "cell_interval_chg", 3, "s",
     -1, cell_interval_chg.empty() ? 60 : atof(cell_interval_chg.c_str()),
+    60, 0, 300, 1,
+    "<p>Default 60 seconds, 0=off.</p>");
+  c.input_slider("Update interval awake", "cell_interval_awk", 3, "s",
+    -1, cell_interval_awk.empty() ? 60 : atof(cell_interval_awk.c_str()),
     60, 0, 300, 1,
     "<p>Default 60 seconds, 0=off.</p>");
   c.fieldset_end();
@@ -519,6 +529,16 @@ void OvmsVehicleVWeUp::WebDispChgMetrics(PageEntry_t &p, PageContext_t &c)
               "<span class=\"label\">Loss (charger)</span>"
               "<span class=\"value\">?</span>"
               "<span class=\"unit\">kW</span>"
+            "</div>"
+            "<div class=\"metric number\" data-metric=\"v.c.kwh.grid\" data-prec=\"2\">"
+              "<span class=\"label\">Charged (grid)</span>"
+              "<span class=\"value\">?</span>"
+              "<span class=\"unit\">kWh</span>"
+            "</div>"
+            "<div class=\"metric number\" data-metric=\"v.c.kwh.grid.total\" data-prec=\"1\">"
+              "<span class=\"label\">Charged total (grid)</span>"
+              "<span class=\"value\">?</span>"
+              "<span class=\"unit\">kWh</span>"
             "</div>"
           "</div>"
 
