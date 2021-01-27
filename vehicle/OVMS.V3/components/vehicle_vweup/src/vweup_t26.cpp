@@ -185,7 +185,11 @@ void OvmsVehicleVWeUp::vehicle_vweup_car_on(bool turnOn)
     // Log once that car is being turned on
     ESP_LOGI(TAG, "CAR IS ON");
     StandardMetrics.ms_v_env_on->SetValue(true);
-    PollSetState(VWEUP_ON);
+    if (!StandardMetrics.ms_v_door_chargeport->AsBool()) {
+       PollSetState(VWEUP_ON);
+    } else {
+       PollSetState(VWEUP_CHARGING);
+    }
     ResetTripCounters();
     // Turn off possibly running climate control timer
     if (ocu_awake) {
@@ -212,7 +216,11 @@ void OvmsVehicleVWeUp::vehicle_vweup_car_on(bool turnOn)
     StandardMetrics.ms_v_env_charging12v->SetValue(false);
     // StandardMetrics.ms_v_charge_voltage->SetValue(0);
     // StandardMetrics.ms_v_charge_current->SetValue(0);
-    PollSetState(VWEUP_OFF);
+    if (!StandardMetrics.ms_v_door_chargeport->AsBool()) {
+       PollSetState(VWEUP_OFF);
+    } else {
+       PollSetState(VWEUP_CHARGING);
+    }
   }
 }
 
@@ -687,7 +695,11 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandWakeup()
     xTimerStart(m_sendOcuHeartbeat, 0);
 
     ESP_LOGI(TAG, "Sent Wakeup Command - stage 2");
-    PollSetState(VWEUP_ON);
+    if (!StandardMetrics.ms_v_door_chargeport->AsBool()) {
+       PollSetState(VWEUP_ON);
+    } else {
+       PollSetState(VWEUP_CHARGING);
+    }
   }
   // This can be done better. Gives always success, even when already awake.
   return Success;
