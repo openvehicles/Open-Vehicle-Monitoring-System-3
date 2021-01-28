@@ -227,6 +227,8 @@ public:
   bool vweup_cc_on;
   bool vweup_cc_turning_on;
   bool signal_ok;
+  bool t26_12v_boost;
+  bool t26_car_on;
   int cc_count;
   int cd_count;
   int fas_counter_on;
