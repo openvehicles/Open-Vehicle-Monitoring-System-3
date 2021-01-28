@@ -26,6 +26,7 @@
 #define HAVE_GETADDRINFO 1
 #define HAVE_GMTIME_R 1
 
+#define WOLFSSL_SMALL_STACK
 #define USE_WOLFSSL_MEMORY
 #define XMALLOC_USER
 #define XMALLOC(s, h, t)     wolfSSL_Malloc(s)
