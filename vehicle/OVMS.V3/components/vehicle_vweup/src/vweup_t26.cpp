@@ -220,10 +220,12 @@ void OvmsVehicleVWeUp::vehicle_vweup_car_on(bool turnOn)
     ESP_LOGI(TAG, "CAR IS OFF");
     t26_car_on = false;
     StandardMetrics.ms_v_env_on->SetValue(false);
-    StandardMetrics.ms_v_env_charging12v->SetValue(false);
     // StandardMetrics.ms_v_charge_voltage->SetValue(0);
     // StandardMetrics.ms_v_charge_current->SetValue(0);
     if (!StandardMetrics.ms_v_door_chargeport->AsBool()) {
+       StandardMetrics.ms_v_env_charging12v->SetValue(false);
+       StandardMetrics.ms_v_bat_current->SetValue(0);
+       StandardMetrics.ms_v_bat_12v_current->SetValue(0);
        PollSetState(VWEUP_OFF);
     } else {
        PollSetState(VWEUP_CHARGING);
@@ -408,6 +410,8 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
           StandardMetrics.ms_v_charge_state->SetValue("done");
           if (!StandardMetrics.ms_v_env_on->AsBool()) {
              StandardMetrics.ms_v_env_charging12v->SetValue(false);
+             StandardMetrics.ms_v_bat_current->SetValue(0);
+             StandardMetrics.ms_v_bat_12v_current->SetValue(0);
              PollSetState(VWEUP_OFF);
           } else {
              PollSetState(VWEUP_ON);
@@ -460,9 +464,11 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
         PollSetState(VWEUP_AWAKE);
         ESP_LOGI(TAG, "Car woke up itself to charge 12v battery");
       }
-      if (d[1] == 0x31 && !ocu_awake && t26_12v_boost) {
+      if (d[1] == 0x31 && t26_12v_boost) {
         // The car stopped charging the 12v battery
         StandardMetrics.ms_v_env_charging12v->SetValue(false);
+        StandardMetrics.ms_v_bat_current->SetValue(0);
+        StandardMetrics.ms_v_bat_12v_current->SetValue(0);
         t26_12v_boost = false;
         PollSetState(VWEUP_OFF);
         ESP_LOGI(TAG, "Car stopped itself charging the 12v battery");
@@ -483,8 +489,10 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
         vweup_remote_climate_ticker = 0;
         fas_counter_on = 0;
         fas_counter_off = 0;
-        StandardMetrics.ms_v_env_charging12v->SetValue(false);
         if (!StandardMetrics.ms_v_door_chargeport->AsBool()) {
+           StandardMetrics.ms_v_env_charging12v->SetValue(false);
+           StandardMetrics.ms_v_bat_current->SetValue(0);
+           StandardMetrics.ms_v_bat_12v_current->SetValue(0);
            PollSetState(VWEUP_OFF);
         } else {
            PollSetState(VWEUP_CHARGING);
