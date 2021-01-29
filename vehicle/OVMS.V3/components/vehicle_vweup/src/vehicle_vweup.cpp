@@ -72,7 +72,7 @@
 #include <string>
 static const char *TAG = "v-vweup";
 
-#define VERSION "0.9.1"
+#define VERSION "0.9.2"
 
 #include <stdio.h>
 #include <string>
@@ -398,7 +398,7 @@ void OvmsVehicleVWeUp::Ticker1(uint32_t ticker)
 int OvmsVehicleVWeUp::GetNotifyChargeStateDelay(const char *state)
 {
   // With OBD data, wait for first voltage & current when starting the charge:
-  if (vweup_con == CON_OBD && strcmp(state, "charging") == 0) {
+  if (HasOBD() && strcmp(state, "charging") == 0) {
     return 6;
   }
   else {
