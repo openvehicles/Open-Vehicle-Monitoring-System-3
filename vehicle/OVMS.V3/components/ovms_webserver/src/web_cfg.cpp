@@ -2799,7 +2799,7 @@ void OvmsWebServer::HandleCfgLogging(PageEntry_t& p, PageContext_t& c)
     if (p != std::string::npos) {
       std::string webdir = webpath.substr(0, p);
       if (webdir != docroot)
-        download += " <a class=\"btn btn-default\" target=\"_blank\" href=\"" + webdir + "/\">Open directory</a>";
+        download += " <a class=\"btn btn-default\" target=\"_blank\" href=\"" + webdir + "/#sc=0&amp;so=1\">Open directory</a>";
     }
   } else {
     download = "You can access your logs with the browser if the path is in your webserver root (" + docroot + ").";
