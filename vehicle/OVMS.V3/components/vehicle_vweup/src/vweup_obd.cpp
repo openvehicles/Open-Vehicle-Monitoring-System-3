@@ -413,6 +413,14 @@ void OvmsVehicleVWeUp::PollerStateTicker()
     if (!IsOff()) {
       ESP_LOGI(TAG, "OBDCheckCarState: Setting car state to OFF");
       PollSetState(VWEUP_OFF);
+
+      // Clear powers & currents in case we missed the zero reading:
+      StdMetrics.ms_v_bat_current->SetValue(0);
+      StdMetrics.ms_v_bat_power->SetValue(0);
+      StdMetrics.ms_v_bat_12v_current->SetValue(0);
+      StdMetrics.ms_v_charge_12v_current->SetValue(0);
+      StdMetrics.ms_v_charge_12v_power->SetValue(0);
+      StdMetrics.ms_v_charge_12v_voltage->SetValue(0);
     }
     return;
   }
