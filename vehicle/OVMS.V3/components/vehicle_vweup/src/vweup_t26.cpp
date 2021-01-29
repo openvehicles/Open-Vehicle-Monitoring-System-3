@@ -115,7 +115,7 @@
 ;
 ;    0.4.8  Started using ms_v_env_charging12v
 ;
-;    0.4.9  Added aux12v awake detection
+;    0.4.9  Added T26 awake detection for OBD
 ;
 ;    (C) 2021       Chris van der Meijden
 ;
@@ -179,6 +179,7 @@ void OvmsVehicleVWeUp::T26Init()
   StandardMetrics.ms_v_env_headlights->SetValue(false);
   StandardMetrics.ms_v_env_charging12v->SetValue(false);
   StandardMetrics.ms_v_env_awake->SetValue(false);
+  StandardMetrics.ms_v_env_aux12v->SetValue(false);
 }
 
 // Takes care of setting all the state appropriate when the car is on
@@ -219,6 +220,7 @@ void OvmsVehicleVWeUp::vehicle_vweup_car_on(bool turnOn)
     // Log once that car is being turned off
     ESP_LOGI(TAG, "CAR IS OFF");
     t26_car_on = false;
+    t26_12v_boost = false;
     StandardMetrics.ms_v_env_on->SetValue(false);
     // StandardMetrics.ms_v_charge_voltage->SetValue(0);
     // StandardMetrics.ms_v_charge_current->SetValue(0);
@@ -451,12 +453,6 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
     case 0x40C: // We know this one too. Climatronic.
     case 0x436: // Working in the ring.
     case 0x439: // Who are 436 and 439 and why do they differ on some cars?
-      if (d[0] == 0x00) {
-        StandardMetrics.ms_v_env_awake->SetValue(true);
-      }
-      if (d[1] == 0x31) {
-        StandardMetrics.ms_v_env_awake->SetValue(false);
-      }
       if (d[0] == 0x00 && !ocu_awake && !StandardMetrics.ms_v_door_chargeport->AsBool() && !t26_12v_boost && !t26_car_on) {
         // The car wakes up to charge the 12v battery 
         StandardMetrics.ms_v_env_charging12v->SetValue(true);
@@ -489,6 +485,7 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
         vweup_remote_climate_ticker = 0;
         fas_counter_on = 0;
         fas_counter_off = 0;
+        t26_12v_boost = false;
         if (!StandardMetrics.ms_v_door_chargeport->AsBool()) {
            StandardMetrics.ms_v_env_charging12v->SetValue(false);
            StandardMetrics.ms_v_bat_current->SetValue(0);
@@ -499,6 +496,15 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
         }
 
         break;
+      }
+      if (d[0] == 0x00) {
+        StandardMetrics.ms_v_env_awake->SetValue(true);
+        StandardMetrics.ms_v_env_aux12v->SetValue(true);
+      }
+      if (d[1] == 0x31) {
+        StandardMetrics.ms_v_env_awake->SetValue(false);
+        StandardMetrics.ms_v_env_aux12v->SetValue(false);
+        t26_12v_boost = false;
       }
       if (d[0] == 0x1D) {
         // We are called in the ring
