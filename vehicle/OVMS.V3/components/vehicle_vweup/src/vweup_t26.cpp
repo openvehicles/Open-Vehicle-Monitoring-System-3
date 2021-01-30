@@ -172,6 +172,7 @@ void OvmsVehicleVWeUp::T26Init()
   cd_count = 0;
   t26_12v_boost = false;
   t26_car_on = false;
+  t26_car_awake = false;
 
   dev_mode = false; // true disables writing on the comfort CAN. For code debugging only.
 
@@ -180,6 +181,7 @@ void OvmsVehicleVWeUp::T26Init()
   StandardMetrics.ms_v_env_charging12v->SetValue(false);
   StandardMetrics.ms_v_env_awake->SetValue(false);
   StandardMetrics.ms_v_env_aux12v->SetValue(false);
+  StandardMetrics.ms_v_env_on->SetValue(false);
 }
 
 // Takes care of setting all the state appropriate when the car is on
@@ -425,8 +427,10 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
       switch (d[0]) {
         case 0x00: // No key
           vehicle_vweup_car_on(false);
+          StandardMetrics.ms_v_env_awake->SetValue(false);
           break;
         case 0x01: // Key in position 1, no ignition
+          StandardMetrics.ms_v_env_awake->SetValue(true);
           vehicle_vweup_car_on(false);
           break;
         case 0x03: // Ignition is turned off
@@ -473,17 +477,17 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
         if (StandardMetrics.ms_v_door_chargeport->AsBool()) {
            PollSetState(VWEUP_CHARGING);
         } else {
-           StandardMetrics.ms_v_env_awake->SetValue(false);
+           t26_car_awake = false;
         }
 
         break;
       }
       if (d[0] == 0x00) {
-        StandardMetrics.ms_v_env_awake->SetValue(true);
+        t26_car_awake = true;
         StandardMetrics.ms_v_env_aux12v->SetValue(true);
       }
       if (d[1] == 0x31) {
-        StandardMetrics.ms_v_env_awake->SetValue(false);
+        t26_car_awake = false;
       }
       if (d[0] == 0x1D) {
         // We are called in the ring
