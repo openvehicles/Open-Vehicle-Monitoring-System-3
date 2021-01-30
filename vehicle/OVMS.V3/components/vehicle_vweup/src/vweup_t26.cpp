@@ -172,7 +172,7 @@ void OvmsVehicleVWeUp::T26Init()
   cd_count = 0;
   t26_12v_boost = false;
   t26_car_on = false;
-  t26_car_awake = false;
+  t26_ring_awake = false;
 
   dev_mode = false; // true disables writing on the comfort CAN. For code debugging only.
 
@@ -477,17 +477,17 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
         if (StandardMetrics.ms_v_door_chargeport->AsBool()) {
            PollSetState(VWEUP_CHARGING);
         } else {
-           t26_car_awake = false;
+           t26_ring_awake = false;
         }
 
         break;
       }
       if (d[0] == 0x00) {
-        t26_car_awake = true;
+        t26_ring_awake = true;
         StandardMetrics.ms_v_env_aux12v->SetValue(true);
       }
       if (d[1] == 0x31) {
-        t26_car_awake = false;
+        t26_ring_awake = false;
       }
       if (d[0] == 0x1D) {
         // We are called in the ring

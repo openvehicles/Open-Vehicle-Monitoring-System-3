@@ -229,7 +229,7 @@ public:
   bool signal_ok;
   bool t26_12v_boost;
   bool t26_car_on;
-  bool t26_car_awake;
+  bool t26_ring_awake;
   int cc_count;
   int cd_count;
   int fas_counter_on;
