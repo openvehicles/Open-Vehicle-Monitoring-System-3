@@ -377,7 +377,7 @@ void OvmsVehicleVWeUp::Ticker1(uint32_t ticker)
       vweup_cc_on = false;
       ocu_awake = true;
     }
-    if (StdMetrics.ms_v_charge_12v_voltage->AsFloat() < 13 && !t26_car_awake && StandardMetrics.ms_v_env_charging12v->AsBool()) {
+    if (StdMetrics.ms_v_charge_12v_voltage->AsFloat() < 13 && !t26_ring_awake && StandardMetrics.ms_v_env_charging12v->AsBool()) {
       ESP_LOGI(TAG, "Car stopped itself charging the 12v battery");
       StandardMetrics.ms_v_env_charging12v->SetValue(false);
       StandardMetrics.ms_v_bat_current->SetValue(0);
