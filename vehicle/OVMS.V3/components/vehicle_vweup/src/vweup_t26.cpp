@@ -449,11 +449,12 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
     case 0x40C: // We know this one too. Climatronic.
     case 0x436: // Working in the ring.
     case 0x439: // Who are 436 and 439 and why do they differ on some cars?
-      if (d[0] == 0x00 && !ocu_awake && !StandardMetrics.ms_v_door_chargeport->AsBool() && !t26_12v_boost && !t26_car_on) {
+      if (d[0] == 0x00 && !ocu_awake && !StandardMetrics.ms_v_door_chargeport->AsBool() && !t26_12v_boost && !t26_car_on && d[1] != 0x31) {
         // The car wakes up to charge the 12v battery 
         StandardMetrics.ms_v_env_charging12v->SetValue(true);
         StandardMetrics.ms_v_env_aux12v->SetValue(true);
         t26_12v_boost = true;
+        t26_ring_awake = true;
         PollSetState(VWEUP_AWAKE);
         ESP_LOGI(TAG, "Car woke up itself to charge 12v battery");
       }
@@ -482,9 +483,8 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
 
         break;
       }
-      if (d[0] == 0x00) {
+      if (d[0] == 0x00 && d[1] != 0x31) {
         t26_ring_awake = true;
-        StandardMetrics.ms_v_env_aux12v->SetValue(true);
       }
       if (d[1] == 0x31) {
         t26_ring_awake = false;
