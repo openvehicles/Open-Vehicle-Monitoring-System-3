@@ -353,12 +353,6 @@ void OvmsVehicleVWeUp::Ticker1(uint32_t ticker)
   {
     // T26 connected
 
-    // This is just to be sure that we really have an asleep message. It has delay of 120 sec.
-    // Do we still need this?
-    if (StandardMetrics.ms_v_env_awake->IsStale()) {
-      StandardMetrics.ms_v_env_awake->SetValue(false);
-    }
-
     // Autodisable climate control ticker (30 min.)
     if (vweup_remote_climate_ticker != 0) {
       vweup_remote_climate_ticker--;
@@ -377,19 +371,27 @@ void OvmsVehicleVWeUp::Ticker1(uint32_t ticker)
       vweup_cc_on = false;
       ocu_awake = true;
     }
-    if (StdMetrics.ms_v_charge_12v_voltage->AsFloat() < 13 && !t26_ring_awake && StandardMetrics.ms_v_env_charging12v->AsBool()) {
-      ESP_LOGI(TAG, "Car stopped itself charging the 12v battery");
-      StandardMetrics.ms_v_env_charging12v->SetValue(false);
-      StandardMetrics.ms_v_env_aux12v->SetValue(false);
-      t26_12v_boost = false;
-      PollSetState(VWEUP_OFF);
+    if (StdMetrics.ms_v_bat_12v_voltage->AsFloat() < 13 && !t26_ring_awake && StandardMetrics.ms_v_env_charging12v->AsBool()) {
+      t26_12v_boost_cnt++;    // Wait for 12v voltage to come up to 13.2v while getting a boost
+      if (t26_12v_boost_cnt > 20) {
+         ESP_LOGI(TAG, "Car stopped itself charging the 12v battery");
+         StandardMetrics.ms_v_env_charging12v->SetValue(false);
+         StandardMetrics.ms_v_env_aux12v->SetValue(false);
+         t26_12v_boost = false;
+         t26_12v_boost_cnt = 0;
 
-      // Clear powers & currents that are not supported by T26:
-      StdMetrics.ms_v_bat_current->SetValue(0);
-      StdMetrics.ms_v_bat_power->SetValue(0);
-      StdMetrics.ms_v_bat_12v_current->SetValue(0);
-      StdMetrics.ms_v_charge_12v_current->SetValue(0);
-      StdMetrics.ms_v_charge_12v_power->SetValue(0);
+         // Clear powers & currents that are not supported by T26:
+         StdMetrics.ms_v_bat_current->SetValue(0);
+         StdMetrics.ms_v_bat_power->SetValue(0);
+         StdMetrics.ms_v_bat_12v_current->SetValue(0);
+         StdMetrics.ms_v_charge_12v_current->SetValue(0);
+         StdMetrics.ms_v_charge_12v_power->SetValue(0);
+
+         PollSetState(VWEUP_OFF);
+      }
+    }
+    if (StdMetrics.ms_v_bat_12v_voltage->AsFloat() >= 13 && t26_12v_boost_cnt > 0) {
+       t26_12v_boost_cnt = 0;
     }
   }
 }

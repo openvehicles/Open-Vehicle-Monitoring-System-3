@@ -173,6 +173,7 @@ void OvmsVehicleVWeUp::T26Init()
   t26_12v_boost = false;
   t26_car_on = false;
   t26_ring_awake = false;
+  t26_12v_boost_cnt = 0;
 
   dev_mode = false; // true disables writing on the comfort CAN. For code debugging only.
 
@@ -453,10 +454,10 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
         // The car wakes up to charge the 12v battery 
         StandardMetrics.ms_v_env_charging12v->SetValue(true);
         StandardMetrics.ms_v_env_aux12v->SetValue(true);
-        t26_12v_boost = true;
         t26_ring_awake = true;
+        t26_12v_boost = true;
         PollSetState(VWEUP_AWAKE);
-        ESP_LOGI(TAG, "Car woke up itself to charge 12v battery");
+        ESP_LOGI(TAG, "Car woke up. Will try to charge 12v battery");
       }
       if (d[1] == 0x31 && ocu_awake) {
         // We should go to sleep, no matter what
@@ -483,11 +484,13 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
 
         break;
       }
-      if (d[0] == 0x00 && d[1] != 0x31) {
-        t26_ring_awake = true;
+      if (d[0] == 0x00 && d[1] != 0x31 && !t26_ring_awake) {
+         t26_ring_awake = true;
+         ESP_LOGI(TAG, "Ring awake");
       }
-      if (d[1] == 0x31) {
-        t26_ring_awake = false;
+      if (d[1] == 0x31 && t26_ring_awake) {
+         t26_ring_awake = false;
+         ESP_LOGI(TAG, "Ring asleep");
       }
       if (d[0] == 0x1D) {
         // We are called in the ring
