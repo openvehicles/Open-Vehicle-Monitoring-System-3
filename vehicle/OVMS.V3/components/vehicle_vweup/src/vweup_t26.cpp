@@ -173,6 +173,7 @@ void OvmsVehicleVWeUp::T26Init()
   t26_12v_boost = false;
   t26_car_on = false;
   t26_ring_awake = false;
+  t26_12v_boost_cnt = 0;
 
   dev_mode = false; // true disables writing on the comfort CAN. For code debugging only.
 
@@ -449,13 +450,14 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
     case 0x40C: // We know this one too. Climatronic.
     case 0x436: // Working in the ring.
     case 0x439: // Who are 436 and 439 and why do they differ on some cars?
-      if (d[0] == 0x00 && !ocu_awake && !StandardMetrics.ms_v_door_chargeport->AsBool() && !t26_12v_boost && !t26_car_on) {
+      if (d[0] == 0x00 && !ocu_awake && !StandardMetrics.ms_v_door_chargeport->AsBool() && !t26_12v_boost && !t26_car_on && d[1] != 0x31) {
         // The car wakes up to charge the 12v battery 
         StandardMetrics.ms_v_env_charging12v->SetValue(true);
         StandardMetrics.ms_v_env_aux12v->SetValue(true);
+        t26_ring_awake = true;
         t26_12v_boost = true;
         PollSetState(VWEUP_AWAKE);
-        ESP_LOGI(TAG, "Car woke up itself to charge 12v battery");
+        ESP_LOGI(TAG, "Car woke up. Will try to charge 12v battery");
       }
       if (d[1] == 0x31 && ocu_awake) {
         // We should go to sleep, no matter what
@@ -482,12 +484,13 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
 
         break;
       }
-      if (d[0] == 0x00) {
-        t26_ring_awake = true;
-        StandardMetrics.ms_v_env_aux12v->SetValue(true);
+      if (d[0] == 0x00 && d[1] != 0x31 && !t26_ring_awake) {
+         t26_ring_awake = true;
+         ESP_LOGI(TAG, "Ring awake");
       }
-      if (d[1] == 0x31) {
-        t26_ring_awake = false;
+      if (d[1] == 0x31 && t26_ring_awake) {
+         t26_ring_awake = false;
+         ESP_LOGI(TAG, "Ring asleep");
       }
       if (d[0] == 0x1D) {
         // We are called in the ring
