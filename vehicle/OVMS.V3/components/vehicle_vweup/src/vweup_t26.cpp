@@ -195,6 +195,7 @@ void OvmsVehicleVWeUp::vehicle_vweup_car_on(bool turnOn)
     ESP_LOGI(TAG, "CAR IS ON");
     StandardMetrics.ms_v_env_on->SetValue(true);
     if (!StandardMetrics.ms_v_door_chargeport->AsBool()) {
+       t26_12v_boost_cnt = 0;
        PollSetState(VWEUP_ON);
     } else {
        PollSetState(VWEUP_CHARGING);
@@ -400,6 +401,7 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
           StandardMetrics.ms_v_env_charging12v->SetValue(true);
           StandardMetrics.ms_v_env_aux12v->SetValue(true);
           ESP_LOGI(TAG, "Car charge session started");
+          t26_12v_boost_cnt = 0;
           PollSetState(VWEUP_CHARGING);
         }
         if (!isCharging && cd_count == 3) {
@@ -456,6 +458,7 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
         StandardMetrics.ms_v_env_aux12v->SetValue(true);
         t26_ring_awake = true;
         t26_12v_boost = true;
+        t26_12v_boost_cnt = 0;
         PollSetState(VWEUP_AWAKE);
         ESP_LOGI(TAG, "Car woke up. Will try to charge 12v battery");
       }
@@ -724,6 +727,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandWakeup()
     ESP_LOGI(TAG, "Sent Wakeup Command - stage 2");
     StandardMetrics.ms_v_env_charging12v->SetValue(true);
     StandardMetrics.ms_v_env_aux12v->SetValue(true);
+    t26_12v_boost_cnt = 0;
     if (!StandardMetrics.ms_v_door_chargeport->AsBool()) {
        PollSetState(VWEUP_AWAKE);
     } else {
