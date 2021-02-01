@@ -347,7 +347,7 @@ void OvmsVehicle::BmsResetCellVoltages(bool full /*=false*/)
     StandardMetrics.ms_v_bat_cell_vmax->ClearValue();
     StandardMetrics.ms_v_bat_cell_vdevmax->ClearValue();
     StandardMetrics.ms_v_bat_cell_valert->ClearValue();
-    StandardMetrics.ms_v_bat_pack_tstddev_max->SetValue(StandardMetrics.ms_v_bat_pack_tstddev->AsFloat());
+    StandardMetrics.ms_v_bat_pack_vstddev_max->SetValue(StandardMetrics.ms_v_bat_pack_vstddev->AsFloat());
     }
   }
 
