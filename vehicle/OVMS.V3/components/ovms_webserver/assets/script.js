@@ -1659,7 +1659,7 @@ $(function(){
   // Metrics displays:
   $("body").on('msg:metrics', '.receiver', function(e, update) {
     $(this).find(".metric").each(function() {
-      var $el = $(this), metric = $el.data("metric"), prec = $el.data("prec");
+      var $el = $(this), metric = $el.data("metric"), prec = $el.data("prec"), scale = $el.data("scale");
       if (!metric) return;
       // filter:
       var keys = metric.split(","), val;
@@ -1671,12 +1671,16 @@ $(function(){
       if ($el.hasClass("text")) {
         $el.children(".value").text(val);
       } else if ($el.hasClass("number")) {
-        var vf = (prec != null) ? Number(val).toFixed(prec) : val;
+        var vf = val;
+        if (scale != null) vf = Number(vf) * scale;
+        if (prec != null) vf = Number(vf).toFixed(prec);
         $el.children(".value").text(vf);
       } else if ($el.hasClass("progress")) {
+        var vf = val;
+        if (scale != null) vf = Number(vf) * scale;
+        if (prec != null) vf = Number(vf).toFixed(prec);
         var $pb = $(this.firstElementChild), min = $pb.attr("aria-valuemin"), max = $pb.attr("aria-valuemax");
         var vp = (val-min) / (max-min) * 100;
-        var vf = (prec != null) ? Number(val).toFixed(prec) : val;
         $pb.css("width", vp+"%").attr("aria-valuenow", vp).find(".value").text(vf);
         var lw = 0; $pb.find("span").each(function(){ lw += $(this).width(); });
         if (($pb.parent().width()*vp/100) < lw) $pb.addClass("value-low"); else $pb.removeClass("value-low");
