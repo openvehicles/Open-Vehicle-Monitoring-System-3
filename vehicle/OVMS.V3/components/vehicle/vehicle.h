@@ -510,6 +510,8 @@ class OvmsVehicle : public InternalRamAllocated
     float m_bms_defthr_valert;                // Default voltage deviation alert threshold [V]
     float m_bms_defthr_twarn;                 // Default temperature deviation warn threshold [°C]
     float m_bms_defthr_talert;                // Default temperature deviation alert threshold [°C]
+    uint32_t m_bms_vlog_last;                 // Last log time for voltages
+    uint32_t m_bms_tlog_last;                 // Last log time for temperatures
 
   protected:
     void BmsSetCellArrangementVoltage(int readings, int readingspermodule);

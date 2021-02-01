@@ -599,4 +599,36 @@ void OvmsVehicle::BmsTicker()
     m_bms_valerts_new = 0;
     m_bms_talerts_new = 0;
     }
+
+  // Log cell voltages:
+  int vlog_interval = MyConfig.GetParamValueInt("vehicle", "bms.log.voltage.interval", 0);
+  if (vlog_interval > 0 && m_bms_vlog_last + vlog_interval < monotonictime &&
+      StdMetrics.ms_v_bat_cell_voltage->LastModified() > m_bms_vlog_last)
+    {
+    m_bms_vlog_last = monotonictime;
+    ESP_LOGI(TAG, "BMS cell voltage: avg=%.3f min=%.3f max=%.3f grad=%.1f stddev=%.1f sdavg=%.1f sdmax=%.1f cells: %s",
+      StdMetrics.ms_v_bat_pack_vavg->AsFloat(),
+      StdMetrics.ms_v_bat_pack_vmin->AsFloat(),
+      StdMetrics.ms_v_bat_pack_vmax->AsFloat(),
+      StdMetrics.ms_v_bat_pack_vgrad->AsFloat() * 1000,
+      StdMetrics.ms_v_bat_pack_vstddev->AsFloat() * 1000,
+      m_bms_vstddev_avg * 1000,
+      StdMetrics.ms_v_bat_pack_vstddev_max->AsFloat() * 1000,
+      StdMetrics.ms_v_bat_cell_voltage->AsString("", Native, 3).c_str());
+    }
+
+  // Log cell temperatures:
+  int tlog_interval = MyConfig.GetParamValueInt("vehicle", "bms.log.temp.interval", 0);
+  if (tlog_interval > 0 && m_bms_tlog_last + tlog_interval < monotonictime &&
+      StdMetrics.ms_v_bat_cell_temp->LastModified() > m_bms_tlog_last)
+    {
+    m_bms_tlog_last = monotonictime;
+    ESP_LOGI(TAG, "BMS cell temperature: avg=%.1f min=%.1f max=%.1f stddev=%.1f sdmax=%.1f cells: %s",
+      StdMetrics.ms_v_bat_pack_tavg->AsFloat(),
+      StdMetrics.ms_v_bat_pack_tmin->AsFloat(),
+      StdMetrics.ms_v_bat_pack_tmax->AsFloat(),
+      StdMetrics.ms_v_bat_pack_tstddev->AsFloat(),
+      StdMetrics.ms_v_bat_pack_tstddev_max->AsFloat(),
+      StdMetrics.ms_v_bat_cell_temp->AsString("", Native, 1).c_str());
+    }
   }

@@ -326,6 +326,9 @@ OvmsVehicle::OvmsVehicle()
   m_bms_defthr_twarn      = BMS_DEFTHR_TWARN;
   m_bms_defthr_talert     = BMS_DEFTHR_TALERT;
 
+  m_bms_vlog_last = 0;
+  m_bms_tlog_last = 0;
+
   m_minsoc = 0;
   m_minsoc_triggered = 0;
 

@@ -1,6 +1,10 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- BMS: optional cell voltage & temperature logging
+  New configs:
+    [vehicle] bms.log.voltage.interval    Interval [s] for cell voltage logging, default 0=disable
+    [vehicle] bms.log.temp.interval       Interval [s] for cell temperature logging, default 0=disable
 - BMS: detection of inconsistent voltage series by gradient & stddev average deviation
     thresholds, added pack metrics to battery monitor web UI, change cell warning & alert
     thresholds to be applied exceeding stddev level
