@@ -293,6 +293,8 @@ OvmsVehicle::OvmsVehicle()
   m_bms_vdevmaxs = NULL;
   m_bms_valerts = NULL;
   m_bms_valerts_new = 0;
+  m_bms_vstddev_cnt = 0;
+  m_bms_vstddev_avg = 0;
   m_bms_has_voltages = false;
 
   m_bms_temperatures = NULL;
@@ -317,10 +319,12 @@ OvmsVehicle::OvmsVehicle()
   m_bms_limit_vmin = -1000;
   m_bms_limit_vmax = 1000;
 
-  m_bms_defthr_vwarn  = BMS_DEFTHR_VWARN;
-  m_bms_defthr_valert = BMS_DEFTHR_VALERT;
-  m_bms_defthr_twarn  = BMS_DEFTHR_TWARN;
-  m_bms_defthr_talert = BMS_DEFTHR_TALERT;
+  m_bms_defthr_vmaxgrad   = BMS_DEFTHR_VMAXGRAD;
+  m_bms_defthr_vmaxsddev  = BMS_DEFTHR_VMAXSDDEV;
+  m_bms_defthr_vwarn      = BMS_DEFTHR_VWARN;
+  m_bms_defthr_valert     = BMS_DEFTHR_VALERT;
+  m_bms_defthr_twarn      = BMS_DEFTHR_TWARN;
+  m_bms_defthr_talert     = BMS_DEFTHR_TALERT;
 
   m_minsoc = 0;
   m_minsoc_triggered = 0;

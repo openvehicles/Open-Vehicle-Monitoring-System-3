@@ -110,6 +110,7 @@ MetricsStandard::MetricsStandard()
   ms_v_bat_pack_vavg = new OvmsMetricFloat(MS_V_BAT_PACK_VAVG, SM_STALE_HIGH, Volts);
   ms_v_bat_pack_vstddev = new OvmsMetricFloat(MS_V_BAT_PACK_VSTDDEV, SM_STALE_HIGH, Volts);
   ms_v_bat_pack_vstddev_max = new OvmsMetricFloat(MS_V_BAT_PACK_VSTDDEVMAX, SM_STALE_HIGH, Volts);
+  ms_v_bat_pack_vgrad = new OvmsMetricFloat(MS_V_BAT_PACK_VGRAD, SM_STALE_HIGH, Volts);
 
   ms_v_bat_pack_tmin = new OvmsMetricFloat(MS_V_BAT_PACK_TMIN, SM_STALE_HIGH, Celcius);
   ms_v_bat_pack_tmax = new OvmsMetricFloat(MS_V_BAT_PACK_TMAX, SM_STALE_HIGH, Celcius);

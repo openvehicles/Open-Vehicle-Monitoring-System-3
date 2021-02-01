@@ -1,6 +1,14 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- BMS: detection of inconsistent voltage series by gradient & stddev average deviation
+    thresholds, added pack metrics to battery monitor web UI, change cell warning & alert
+    thresholds to be applied exceeding stddev level
+  New metrics:
+    v.b.p.voltage.grad                    Cell voltage - gradient of current series [V]
+  New configs:
+    [vehicle] bms.dev.voltage.maxgrad     Max gradient for a valid series
+    [vehicle] bms.dev.voltage.maxsddev    Max stddev deviation from average for valid series
 - Events: added automatic events on v.e.aux12v changes.
   New events:
     vehicle.aux.12v.on

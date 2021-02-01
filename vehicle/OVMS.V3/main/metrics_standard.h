@@ -108,6 +108,7 @@
 #define MS_V_BAT_PACK_VAVG          "v.b.p.voltage.avg"
 #define MS_V_BAT_PACK_VSTDDEV       "v.b.p.voltage.stddev"
 #define MS_V_BAT_PACK_VSTDDEVMAX    "v.b.p.voltage.stddev.max"
+#define MS_V_BAT_PACK_VGRAD         "v.b.p.voltage.grad"
 #define MS_V_BAT_PACK_TMIN          "v.b.p.temp.min"
 #define MS_V_BAT_PACK_TMAX          "v.b.p.temp.max"
 #define MS_V_BAT_PACK_TAVG          "v.b.p.temp.avg"
@@ -343,6 +344,7 @@ class MetricsStandard
     OvmsMetricFloat*  ms_v_bat_pack_vavg;                 // Cell voltage - pack average [V]
     OvmsMetricFloat*  ms_v_bat_pack_vstddev;              // Cell voltage - current standard deviation [V]
     OvmsMetricFloat*  ms_v_bat_pack_vstddev_max;          // Cell voltage - maximum standard deviation observed [V]
+    OvmsMetricFloat*  ms_v_bat_pack_vgrad;                // Cell voltage - gradient of current series [V]
 
     OvmsMetricFloat*  ms_v_bat_pack_tmin;                 // Cell temperature - coldest cell in pack [°C]
     OvmsMetricFloat*  ms_v_bat_pack_tmax;                 // Cell temperature - warmest cell in pack [°C]

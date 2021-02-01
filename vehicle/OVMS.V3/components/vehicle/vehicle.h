@@ -176,10 +176,12 @@ struct DashboardConfig;
 
 
 // BMS default deviation thresholds:
-#define BMS_DEFTHR_VWARN    0.020   // [V]
-#define BMS_DEFTHR_VALERT   0.030   // [V]
-#define BMS_DEFTHR_TWARN    2.00    // [°C]
-#define BMS_DEFTHR_TALERT   3.00    // [°C]
+#define BMS_DEFTHR_VMAXGRAD             0.010   // [V]
+#define BMS_DEFTHR_VMAXSDDEV            0.010   // [V]
+#define BMS_DEFTHR_VWARN                0.020   // [V]
+#define BMS_DEFTHR_VALERT               0.030   // [V]
+#define BMS_DEFTHR_TWARN                2.00    // [°C]
+#define BMS_DEFTHR_TALERT               3.00    // [°C]
 
 
 class OvmsVehicle : public InternalRamAllocated
@@ -480,6 +482,8 @@ class OvmsVehicle : public InternalRamAllocated
     float* m_bms_vdevmaxs;                    // BMS maximum voltage deviations seen (since reset)
     short* m_bms_valerts;                     // BMS voltage deviation alerts (since reset)
     int m_bms_valerts_new;                    // BMS new voltage alerts since last notification
+    int m_bms_vstddev_cnt;                    // BMS internal stddev counter
+    float m_bms_vstddev_avg;                  // BMS internal stddev average
     bool m_bms_has_voltages;                  // True if BMS has a complete set of voltage values
     float* m_bms_temperatures;                // BMS temperatures (celcius current value)
     float* m_bms_tmins;                       // BMS minimum temperatures seen (since reset)
@@ -500,6 +504,8 @@ class OvmsVehicle : public InternalRamAllocated
     float m_bms_limit_tmax;                   // Maximum temperature limit (for sanity checking)
     float m_bms_limit_vmin;                   // Minimum voltage limit (for sanity checking)
     float m_bms_limit_vmax;                   // Maximum voltage limit (for sanity checking)
+    float m_bms_defthr_vmaxgrad;              // Default voltage deviation max valid gradient [V]
+    float m_bms_defthr_vmaxsddev;             // Default voltage deviation max valid stddev deviation [V]
     float m_bms_defthr_vwarn;                 // Default voltage deviation warn threshold [V]
     float m_bms_defthr_valert;                // Default voltage deviation alert threshold [V]
     float m_bms_defthr_twarn;                 // Default temperature deviation warn threshold [°C]
@@ -508,7 +514,7 @@ class OvmsVehicle : public InternalRamAllocated
   protected:
     void BmsSetCellArrangementVoltage(int readings, int readingspermodule);
     void BmsSetCellArrangementTemperature(int readings, int readingspermodule);
-    void BmsSetCellDefaultThresholdsVoltage(float warn, float alert);
+    void BmsSetCellDefaultThresholdsVoltage(float warn, float alert, float maxgrad=-1, float maxsddev=-1);
     void BmsSetCellDefaultThresholdsTemperature(float warn, float alert);
     void BmsSetCellLimitsVoltage(float min, float max);
     void BmsSetCellLimitsTemperature(float min, float max);
@@ -524,7 +530,7 @@ class OvmsVehicle : public InternalRamAllocated
   public:
     int BmsGetCellArangementVoltage(int* readings=NULL, int* readingspermodule=NULL);
     int BmsGetCellArangementTemperature(int* readings=NULL, int* readingspermodule=NULL);
-    void BmsGetCellDefaultThresholdsVoltage(float* warn, float* alert);
+    void BmsGetCellDefaultThresholdsVoltage(float* warn, float* alert, float* maxgrad=NULL, float* maxsddev=NULL);
     void BmsGetCellDefaultThresholdsTemperature(float* warn, float* alert);
     void BmsResetCellStats();
     virtual void BmsStatus(int verbosity, OvmsWriter* writer);
