@@ -1,10 +1,10 @@
-===========
-Nissan Leaf
-===========
+===================
+Nissan Leaf/e-NV200
+===================
 
 Vehicle Type: **NL**
 
-This vehicle type supports the Nissan Leaf and Nissan e-NV200.
+This vehicle type supports the Nissan Leaf (24kWh & 30kWh) and Nissan e-NV200 (24kWh & 40kWh).
 
 ----------------
 Support Overview
@@ -17,7 +17,7 @@ Hardware
 =========================== ==============
 Item                        Support Status
 =========================== ==============
-Module                      Any OVMS v3 (or later) module. Vehicle support: 2011-2017 (24kWh & 30kWh & custom battery)
+Module                      Any OVMS v3 (or later) module. Vehicle support: 2011-2017 (24kWh & 30kWh LEAF, 24kWh & 40KWh e-Nv200 & custom battery e.g Muxsan)
 Vehicle Cable               1779000 Nissan Leaf OBD-II to DB9 Data Cable for OVMS
 GSM Antenna                 1000500 Open Vehicles OVMS GSM Antenna (or any compatible antenna)
 GPS Antenna                 1020200 Universal GPS Antenna (SMA Connector) (or any compatible antenna)

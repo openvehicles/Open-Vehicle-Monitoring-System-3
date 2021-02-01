@@ -1002,7 +1002,7 @@ void OvmsServerV2::TransmitMsgStat(bool always)
     << ","
     << StandardMetrics.ms_v_charge_voltage->AsInt()
     << ","
-    << StandardMetrics.ms_v_charge_current->AsInt()
+    << StandardMetrics.ms_v_charge_current->AsFloat()
     << ","
     << StandardMetrics.ms_v_charge_state->AsString("stopped")
     << ","
@@ -1210,7 +1210,9 @@ void OvmsServerV2::TransmitMsgFirmware(bool always)
     StandardMetrics.ms_v_vin->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_m_net_sq->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_type->IsModifiedAndClear(MyOvmsServerV2Modifier) |
-    StandardMetrics.ms_m_net_provider->IsModifiedAndClear(MyOvmsServerV2Modifier);
+    StandardMetrics.ms_m_net_provider->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_env_service_range->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_env_service_time->IsModifiedAndClear(MyOvmsServerV2Modifier);
 
   // Quick exit if nothing modified
   if ((!always)&&(!modified)) return;
@@ -1227,6 +1229,10 @@ void OvmsServerV2::TransmitMsgFirmware(bool always)
     << StandardMetrics.ms_v_type->AsString("")
     << ","
     << StandardMetrics.ms_m_net_provider->AsString("")
+    << ","
+    << StandardMetrics.ms_v_env_service_range->AsString("-1", Kilometers, 0)
+    << ","
+    << StandardMetrics.ms_v_env_service_time->AsString("-1", Seconds, 0)
     ;
 
   Transmit(buffer.str().c_str());

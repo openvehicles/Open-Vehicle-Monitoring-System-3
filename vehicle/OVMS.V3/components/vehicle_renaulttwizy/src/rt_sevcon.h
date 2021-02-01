@@ -211,6 +211,7 @@ class SevconClient : public InternalRamAllocated
   public:
     // Monitoring:
     void InitMonitoring();
+    void ShutdownMonitoring();
     void QueryMonitoringData();
     void ProcessMonitoringData(CANopenJob &job);
     void SendMonitoringData();

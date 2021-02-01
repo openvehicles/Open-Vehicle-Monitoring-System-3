@@ -110,7 +110,7 @@ constexpr uint32_t UNLOCKED_CHARGING_TIMEOUT = 5u;
 constexpr uint16_t DIAG_ATTEMPTS = 3u;
 
 /// Threshold for 12v where we make the assumption that it is being charged
-constexpr float CHARGING_THRESHOLD = 12.8;
+constexpr float CHARGING_THRESHOLD = 12.9;
 
 }  // anon namespace
 
@@ -309,7 +309,7 @@ canbus* OvmsVehicleMgEv::IdToBus(int id)
 
 void OvmsVehicleMgEv::NotifyVehicleIdling()
 {
-    if (m_poll_state != PollStateCharging)
+    if (m_poll_state == PollStateRunning)
     {
         OvmsVehicle::NotifyVehicleIdling();
     }
@@ -343,8 +343,14 @@ void OvmsVehicleMgEv::DeterminePollState(canbus* currentBus, uint32_t ticker)
             ESP_LOGI(TAG, "12V has just started charging, setting to running poll mode. Reading");
         } 
 
+        if(m_gwmState == Undefined)
+        {
+            PollSetState(PollStateRunning);
+            ESP_LOGI(TAG, "GWM in Unknown state, possibly just changed vehicle type. Setting to running poll mode.");
+        } 
+
         
-        if ( carIgnitionOn && m_gwmState !=SendDiagnostic) // If ignition is on, we should set the car into running pollstate
+        if ( carIgnitionOn && m_gwmState !=SendDiagnostic) // If ignition is on, we should set the car into running pollstate, Diagnostic override confuses things
         {
             if( m_gwmState != SendTester )
             {
@@ -391,7 +397,12 @@ void OvmsVehicleMgEv::DeterminePollState(canbus* currentBus, uint32_t ticker)
         }
         else // State is not known
         {
-            ESP_LOGV(TAG, "Vehicle State is Unknown, checking if responsive");
+            
+            if( m_poll_state != PollStateListenOnly)
+            {
+                ESP_LOGV(TAG, "Vehicle State is Unknown, checking if responsive");
+            }
+
             if (m_rxPackets != rxPackets)
             {
                 ESP_LOGV(TAG, "RX Frames Recieved, rx %i and m_rx %i and count %i ", rxPackets, m_rxPackets, m_noRxCount);
@@ -427,6 +438,17 @@ void OvmsVehicleMgEv::DeterminePollState(canbus* currentBus, uint32_t ticker)
             m_gwmState = AllowToSleep;
             m_afterRunTicker = (TRANSITION_TIMEOUT +1);
             StandardMetrics.ms_v_env_on->SetValue(false);
+            StandardMetrics.ms_v_charge_type->SetValue("not charging");
+            if (StandardMetrics.ms_v_bat_soc->AsFloat() >= 97.0)
+            {
+                StandardMetrics.ms_v_charge_state->SetValue("done");
+                StandardMetrics.ms_v_charge_inprogress->SetValue(false);
+            }
+            else
+            {
+                StandardMetrics.ms_v_charge_state->SetValue("stopped");
+                StandardMetrics.ms_v_charge_inprogress->SetValue(false);
+            }
         }else if (charging12vLast != StandardMetrics.ms_v_env_charging12v->AsBool())
         {
             ESP_LOGI(TAG, "12V has stopped charging, remain in current state for %i seconds.", TRANSITION_TIMEOUT);
@@ -445,6 +467,9 @@ void OvmsVehicleMgEv::DeterminePollState(canbus* currentBus, uint32_t ticker)
             // Do not let afterrun ticker go crazy, peg it at TRANSITION_TIMEOUT + 1
             m_afterRunTicker = (TRANSITION_TIMEOUT +1) ;
         }
+
+        
+
     }
 
     if( m_afterRunTicker != (TRANSITION_TIMEOUT +1))
@@ -540,6 +565,21 @@ bool OvmsVehicleMgEv::SendDiagSessionTo(canbus* currentBus, uint16_t id, uint8_t
     };
     return currentBus->Write(&diagnosticControl) != ESP_FAIL;
 }
+
+// bool OvmsVehicleMgEv::SendPidQueryTo(canbus* currentBus, uint16_t id, uint8_t pid)
+// {
+//     //TODO
+//     // CAN_frame_t diagnosticControl = {
+//     //     currentBus,
+//     //     nullptr,
+//     //     { .B = { 8, 0, CAN_no_RTR, CAN_frame_std, 0 } },
+//     //     id,
+//     //     { .u8 = {
+//     //         (ISOTP_FT_SINGLE<<4) + 2, VEHICLE_POLL_TYPE_OBDIISESSION, mode, 0, 0, 0, 0, 0
+//     //     } }
+//     // };
+//     return currentBus->Write(&diagnosticControl) != ESP_FAIL;
+// }
 
 void OvmsVehicleMgEv::Ticker1(uint32_t ticker)
 {

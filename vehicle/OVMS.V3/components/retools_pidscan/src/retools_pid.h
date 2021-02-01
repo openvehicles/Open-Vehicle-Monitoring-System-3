@@ -40,12 +40,13 @@
 #include <functional>
 #include <vector>
 #include <tuple>
+#include <time.h>
 
 class OvmsReToolsPidScanner
 {
   public:
     OvmsReToolsPidScanner(canbus* bus, uint16_t ecu, uint16_t rxid_low, uint16_t rxid_high,
-                          uint8_t polltype, int start, int end, uint8_t timeout);
+                          uint8_t polltype, int start, int end, int step, uint8_t timeout);
     ~OvmsReToolsPidScanner();
 
     bool Complete() const { return m_currentPid > m_endPid; }
@@ -83,6 +84,8 @@ class OvmsReToolsPidScanner
     int m_startPid;
     /// The PID to stop scanning at
     int m_endPid;
+    /// The PID step size
+    int m_pidStep;
     /// The current PID being scanned
     int m_currentPid;
     /// The current ticker value
@@ -91,6 +94,9 @@ class OvmsReToolsPidScanner
     uint8_t m_timeout;
     /// When the last frame was sent
     uint32_t m_lastFrame;
+    /// Scan start & last response time
+    time_t m_startTime;
+    time_t m_lastResponseTime;
     /// The number of bytes expected on a multi-frame response
     uint16_t m_mfRemain;
     /// The handle to the CAN task handler

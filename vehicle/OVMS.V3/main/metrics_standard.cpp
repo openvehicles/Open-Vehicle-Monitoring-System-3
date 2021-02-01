@@ -141,6 +141,10 @@ MetricsStandard::MetricsStandard()
   ms_v_charge_duration_full = new OvmsMetricInt(MS_V_CHARGE_DURATION_FULL, SM_STALE_MID, Minutes);
   ms_v_charge_duration_range = new OvmsMetricInt(MS_V_CHARGE_DURATION_RANGE, SM_STALE_MID, Minutes);
   ms_v_charge_duration_soc = new OvmsMetricInt(MS_V_CHARGE_DURATION_SOC, SM_STALE_MID, Minutes);
+  ms_v_charge_12v_current = new OvmsMetricFloat(MS_V_CHARGE_12V_CURRENT, SM_STALE_MID, Amps);
+  ms_v_charge_12v_power = new OvmsMetricFloat(MS_V_CHARGE_12V_POWER, SM_STALE_MID, Watts);
+  ms_v_charge_12v_temp = new OvmsMetricFloat(MS_V_CHARGE_12V_TEMP, SM_STALE_MID, Celcius);
+  ms_v_charge_12v_voltage = new OvmsMetricFloat(MS_V_CHARGE_12V_VOLTAGE, SM_STALE_MID, Volts);
 
   ms_v_inv_temp = new OvmsMetricFloat(MS_V_INV_TEMP, SM_STALE_MID, Celcius, true);
   ms_v_inv_power = new OvmsMetricFloat(MS_V_INV_POWER, SM_STALE_MID, kW);
@@ -186,6 +190,8 @@ MetricsStandard::MetricsStandard()
   ms_v_env_drivetime = new OvmsMetricInt(MS_V_ENV_DRIVETIME, SM_STALE_MID, Seconds);
   ms_v_env_ctrl_login = new OvmsMetricBool(MS_V_ENV_CTRL_LOGIN, SM_STALE_MID);
   ms_v_env_ctrl_config = new OvmsMetricBool(MS_V_ENV_CTRL_CONFIG, SM_STALE_MID);
+  ms_v_env_service_range = new OvmsMetricInt(MS_V_ENV_SERV_RANGE, SM_STALE_MID, Kilometers);
+  ms_v_env_service_time = new OvmsMetricInt(MS_V_ENV_SERV_TIME, SM_STALE_MID, Seconds);
 
   ms_v_pos_gpslock = new OvmsMetricBool(MS_V_POS_GPSLOCK, SM_STALE_MID);
   ms_v_pos_gpsmode = new OvmsMetricString(MS_V_POS_GPSMODE, SM_STALE_MID);

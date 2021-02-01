@@ -21,6 +21,7 @@ Open Vehicles Monitoring System
    :maxdepth: 1
    :caption: Developer Guides:
 
+   cli/index
    crtd/can_logging
    crtd/index
    components/ovms_webserver/docs/index

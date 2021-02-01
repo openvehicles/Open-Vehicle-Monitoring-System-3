@@ -881,7 +881,7 @@ void dbcSignal::WriteFile(dbcOutputCallback callback, void* param)
   ss << '|';
   ss << m_signal_size;
   ss << '@';
-  ss << ((m_byte_order == DBC_BYTEORDER_BIG_ENDIAN)?"1":"0");
+  ss << ((m_byte_order == DBC_BYTEORDER_BIG_ENDIAN)?"0":"1");
   ss << ((m_value_type == DBC_VALUETYPE_SIGNED)?"- ":"+ ");
   ss << '(';
   ss << m_factor;

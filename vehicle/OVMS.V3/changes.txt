@@ -1,6 +1,25 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Volt/Ampera: BMS cell monitoring (CAN1 polling), fast CAN polling when waking up,
+  estimated range gets from CAN instead of calculation, 
+  lock/unlock status processing fixed for Volt 14MY; 
+  New standard metrics: 
+    trip (this charge), energy used (this charge), HV battery capacity (CAC, Ah), 
+    transmission temp, doors, trunk, hood, lightings;
+- VW e-Up: BMS cell monitoring (@OBD)
+- VW e-Up: combined T26A & OBD module, extended standard metrics coverage,
+    charge notifications & durations (OBD), enhanced cabin pre-heating (T26)
+- Vehicle framework: generic single OBD2/UDS request shell command & API call
+  New commands:
+    obdii can[1-4] request device [-t<timeout_ms>] [-e] txid rxid request
+    obdii can[1-4] request broadcast [-t<timeout_ms>] request
+- Wifi: option to immediately disconnect/reconnect on bad signal level
+  New config:
+    [network] wifi.bad.reconnect [bool], default no
+- Renault Twizy: new metrics to reflect extended lock & valet modes:
+    xrt.v.e.locked.speed    -- Speed limit [kph] set for Twizy lock mode
+    xrt.v.e.valet.odo       -- Odometer limit [km] set for Twizy valet mode
 - Location: add metric for name of current location
   New metrics:
     v.p.location        -- Name of current location if defined
@@ -10,6 +29,7 @@ Open Vehicle Monitor System v3 - Change log
 - VW e-UP T26A: add climate control and charging detection
 - New vehicle: VW e-Up via OBD-II Port (VWUP.OBD)
 - New vehicle: MG ZS EV via OBD-II Port (MGEV)
+- New vehicle: BMW i3/i3s via OBD-II Port (BMWI3) 
 
 2020-09-02 MWJ  3.2.015  OTA release
 - Notify: add explicit channel exclusion config syntax

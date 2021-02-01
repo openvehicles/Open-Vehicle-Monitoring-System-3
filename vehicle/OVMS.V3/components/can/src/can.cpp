@@ -252,21 +252,24 @@ void can_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
                                    ((sbus->m_mode==CAN_MODE_LISTEN)?"Listen":"Active"));
   writer->printf("Speed:     %d\n",MAP_CAN_SPEED(sbus->m_speed));
   writer->printf("DBC:       %s\n",(sbus->GetDBC())?sbus->GetDBC()->GetName().c_str():"none");
-  writer->printf("Interrupts:%20d\n",sbus->m_status.interrupts);
+
+  writer->printf("\nInterrupts:%20d\n",sbus->m_status.interrupts);
   writer->printf("Rx pkt:    %20d\n",sbus->m_status.packets_rx);
-  writer->printf("Rx err:    %20d\n",sbus->m_status.errors_rx);
   writer->printf("Rx ovrflw: %20d\n",sbus->m_status.rxbuf_overflow);
   writer->printf("Tx pkt:    %20d\n",sbus->m_status.packets_tx);
   writer->printf("Tx delays: %20d\n",sbus->m_status.txbuf_delay);
-  writer->printf("Tx err:    %20d\n",sbus->m_status.errors_tx);
   writer->printf("Tx ovrflw: %20d\n",sbus->m_status.txbuf_overflow);
+  writer->printf("Tx fails:  %20d\n",sbus->m_status.tx_fails);
+
+  writer->printf("\nErr flags: 0x%08x\n",sbus->m_status.error_flags);
+  writer->printf("Rx err:    %20d\n",sbus->m_status.errors_rx);
+  writer->printf("Tx err:    %20d\n",sbus->m_status.errors_tx);
   writer->printf("Wdg Resets:%20d\n",sbus->m_status.watchdog_resets);
-  writer->printf("Err Resets:%20d\n",sbus->m_status.error_resets);
   if (sbus->m_watchdog_timer>0)
     {
     writer->printf("Wdg Timer: %20d sec(s)\n",monotonictime-sbus->m_watchdog_timer);
     }
-  writer->printf("Err flags: 0x%08x\n",sbus->m_status.error_flags);
+  writer->printf("Err Resets:%20d\n",sbus->m_status.error_resets);
   }
 
 void can_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -477,6 +480,7 @@ std::string canfilter::Info()
 ////////////////////////////////////////////////////////////////////////
 
 static const char* const CAN_log_type_names[] = {
+  "-",
   "RX",
   "TX",
   "TX_Queue",
@@ -536,11 +540,11 @@ void canbus::LogStatus(CAN_log_type_t type)
       return;
     ESP_LOGE(TAG,
       "%s: intr=%d rxpkt=%d txpkt=%d errflags=%#x rxerr=%d txerr=%d rxovr=%d txovr=%d"
-      " txdelay=%d wdgreset=%d errreset=%d",
+      " txdelay=%d txfail=%d wdgreset=%d errreset=%d",
       m_name, m_status.interrupts, m_status.packets_rx, m_status.packets_tx,
       m_status.error_flags, m_status.errors_rx, m_status.errors_tx,
       m_status.rxbuf_overflow, m_status.txbuf_overflow, m_status.txbuf_delay,
-      m_status.watchdog_resets, m_status.error_resets);
+      m_status.tx_fails, m_status.watchdog_resets, m_status.error_resets);
     }
   if (MyCan.HasLogger())
     MyCan.LogStatus(this, type, &m_status);
@@ -556,7 +560,7 @@ bool canbus::StatusChanged()
   // simple checksum to prevent log flooding:
   uint32_t chksum = m_status.errors_rx + m_status.errors_tx
     + m_status.rxbuf_overflow + m_status.txbuf_overflow
-    + m_status.error_flags + m_status.txbuf_delay
+    + m_status.error_flags + m_status.txbuf_delay + m_status.tx_fails
     + m_status.watchdog_resets + m_status.error_resets;
   if (chksum != m_status_chksum)
     {
@@ -700,7 +704,7 @@ void can::RemovePlayers()
 // CAN controller task
 ////////////////////////////////////////////////////////////////////////
 
-static void CAN_rxtask(void *pvParameters)
+void can::CAN_rxtask(void *pvParameters)
   {
   can *me = (can*)pvParameters;
   CAN_queue_msg_t msg;
@@ -731,10 +735,12 @@ static void CAN_rxtask(void *pvParameters)
           break;
         case CAN_txfailedcallback:
           msg.body.bus->TxCallback(&msg.body.frame, false);
-          msg.body.bus->LogStatus(CAN_LogStatus_Error);
           break;
         case CAN_logerror:
           msg.body.bus->LogStatus(CAN_LogStatus_Error);
+          break;
+        case CAN_logstatus:
+          msg.body.bus->LogStatus(CAN_LogStatus_Statistics);
           break;
         default:
           break;
@@ -857,23 +863,33 @@ void can::DeregisterCallback(const char* caller)
   m_txcallbacks.remove_if([caller](CanFrameCallbackEntry* entry){ return strcmp(entry->m_caller, caller)==0; });
   }
 
-void can::ExecuteCallbacks(const CAN_frame_t* frame, bool tx, bool success)
+int can::ExecuteCallbacks(const CAN_frame_t* frame, bool tx, bool success)
   {
+  int cnt = 0;
   if (tx)
     {
     if (frame->callback)
       {
-      (*(frame->callback))(frame, success); // invoke frame-specific callback function
+      // invoke frame-specific callback function
+      (*(frame->callback))(frame, success);
+      cnt++;
       }
-    for (auto entry : m_txcallbacks) {      // invoke generic tx callbacks
+    for (auto entry : m_txcallbacks)
+      {
+      // invoke generic tx callbacks
       entry->m_callback(frame, success);
+      cnt++;
       }
     }
   else
     {
     for (auto entry : m_rxcallbacks)
+      {
       entry->m_callback(frame, success);
+      cnt++;
+      }
     }
+  return cnt;
   }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1014,8 +1030,14 @@ void canbus::TxCallback(CAN_frame_t* p_frame, bool success)
     }
   else
     {
-    MyCan.ExecuteCallbacks(p_frame, true, success);
+    m_status.tx_fails++;
+    int cnt = MyCan.ExecuteCallbacks(p_frame, true, success);
     LogFrame(CAN_LogFrame_TX_Fail, p_frame);
+    // log error status if no application callbacks were called for this frame:
+    if (cnt == 0)
+      {
+      LogStatus(CAN_LogStatus_Error);
+      }
     }
   }
 

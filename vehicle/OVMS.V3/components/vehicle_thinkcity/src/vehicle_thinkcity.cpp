@@ -39,14 +39,14 @@ static const char *TAG = "v-thinkcity";
 static const OvmsVehicle::poll_pid_t obdii_polls[] =
   {
    // 0x753 03 22 49 65 - charger temp
-    { 0x753, 0x75B, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x4965, {  0, 30, 300 }, 0 }, 
+    { 0x753, 0x75B, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x4965, {  0, 30, 300 }, 0, ISOTP_STD }, 
    // 0x753 03 22 49 66 - pcu heat sink temp
-    { 0x753, 0x75B, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x4966, {  0, 30, 300 }, 0 }, 
+    { 0x753, 0x75B, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x4966, {  0, 30, 300 }, 0, ISOTP_STD }, 
    // 0x753 03 22 49 67 - motor temp
-    { 0x753, 0x75B, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x4967, {  0, 30, 300 }, 0 }, 
+    { 0x753, 0x75B, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x4967, {  0, 30, 300 }, 0, ISOTP_STD }, 
    // 0x753 03 22 49 68 - sli batt temp and volts
-    { 0x753, 0x75B, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x4968, {  0, 30, 300 }, 0 }, 
-    { 0, 0, 0x00, 0x00, { 0, 0, 0 }, 0 }
+    { 0x753, 0x75B, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x4968, {  0, 30, 300 }, 0, ISOTP_STD }, 
+    POLL_LIST_END
   };
 
 

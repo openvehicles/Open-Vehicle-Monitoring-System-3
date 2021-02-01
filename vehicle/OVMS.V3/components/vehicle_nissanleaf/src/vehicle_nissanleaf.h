@@ -42,6 +42,7 @@
 #include "nl_types.h"
 
 #define DEFAULT_MODEL_YEAR 2012
+#define DEFAULT_CABINTEMP_OFFSET .0
 #define GEN_1_NEW_CAR_GIDS 281
 #define GEN_1_NEW_CAR_AH 66
 #define GEN_1_KM_PER_KWH 7.1
@@ -54,6 +55,7 @@
 #define GEN_2_62_NEW_CAR_AH 176
 #define REMOTE_COMMAND_REPEAT_COUNT 24 // number of times to send the remote command after the first time
 #define ACTIVATION_REQUEST_TIME 10 // tenths of a second to hold activation request signal
+#define DEFAULT_AC_VOLTAGE_MULTIPLIER 1.12 // scales from 179 to 200V see pg EVC-88 of 2013 Leaf EVC.pdf where AC voltage is 100/200V
 
 using namespace std;
 
@@ -164,6 +166,7 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     OvmsMetricFloat *m_battery_energy_capacity;
     OvmsMetricFloat *m_battery_energy_available;
     OvmsMetricInt *m_battery_type;
+    OvmsMetricBool *m_battery_heaterpresent;
     OvmsMetricVector<int> *m_charge_duration;
     OvmsMetricVector<string> *m_charge_duration_label;
     OvmsMetricInt *m_quick_charge;
@@ -178,6 +181,7 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     OvmsMetricInt *m_climate_fan_speed;
     OvmsMetricInt *m_climate_fan_speed_limit;
     OvmsMetricFloat *m_climate_setpoint;
+    OvmsMetricBool *m_climate_auto;
 
 
     float m_cum_energy_used_wh;				    // Cumulated energy (in wh) used within 1 second ticker interval

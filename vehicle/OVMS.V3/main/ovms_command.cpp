@@ -108,65 +108,6 @@ void OvmsWriter::SetSecure(bool secure)
   m_issecure = secure;
   }
 
-const std::string NameStringMap::m_null = std::string();
-
-const std::string& NameStringMap::FindUniquePrefix(const char* token) const
-  {
-  size_t len = strlen(token);
-  const std::string* found = &m_null;
-  for (const_iterator it = begin(); it != end(); ++it)
-    {
-    if (it->first.compare(0, len, token) == 0)
-      {
-      if (len == it->first.length())
-	return it->second;
-      if (found == &m_null)
-	return m_null;
-      else
-	found = &it->second;
-      }
-    }
-  return *found;
-  }
-
-bool NameStringMap::GetCompletion(OvmsWriter* writer, const char* token) const
-  {
-  unsigned int index = 0;
-  bool match = false;
-  writer->SetCompletion(index, NULL);
-  if (token)
-    {
-    size_t len = strlen(token);
-    for (const_iterator it = begin(); it != end(); ++it)
-      {
-      if (it->first.compare(0, len, token) == 0)
-        {
-	writer->SetCompletion(index++, it->first.c_str());
-        match = true;
-        }
-      }
-    }
-  return match;
-  }
-
-int NameStringMap::Validate(OvmsWriter* writer, int argc, const char* token, bool complete) const
-  {
-  if (complete)
-    {
-    if (!GetCompletion(writer, token))
-      return -1;
-    }
-  else
-    {
-    if (FindUniquePrefix(token).empty())
-      {
-      writer->printf("Error: %s is not defined\n", token);
-      return -1;
-      }
-    }
-  return argc;
-  }
-
 OvmsCommand* OvmsCommandMap::FindUniquePrefix(const char* key)
   {
   int len = strlen(key);
@@ -220,7 +161,10 @@ char ** OvmsCommandMap::GetCompletion(OvmsWriter* writer, const char* token)
 
 OvmsCommand::OvmsCommand()
   {
+  m_execute = NULL;
+  m_usage_template= "";
   m_parent = NULL;
+  m_validate = NULL;
   }
 
 OvmsCommand::OvmsCommand(const char* name, const char* title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
@@ -230,7 +174,7 @@ OvmsCommand::OvmsCommand(const char* name, const char* title, void (*execute)(in
   m_name = name;
   m_title = title;
   m_execute = execute;
-  m_usage_template= usage;
+  m_usage_template= !usage ? "" : usage;
   m_min = min;
   m_max = max;
   m_parent = NULL;
@@ -269,7 +213,6 @@ const char* OvmsCommand::GetTitle()
 // - Empty usage template "" defaults to "$C" for non-terminal OvmsCommand
 void OvmsCommand::PutUsage(OvmsWriter* writer)
   {
-  const char* usage = !m_usage_template ? "" : (!*m_usage_template && !m_execute) ? "$C" : m_usage_template;
   std::string result ="Usage: ";
   size_t pos = result.size();
   for (OvmsCommand* parent = m_parent; parent && parent->m_parent; parent = parent->m_parent)
@@ -293,13 +236,13 @@ void OvmsCommand::PutUsage(OvmsWriter* writer)
     }
   result += m_name;
   result += " ";
-  ExpandUsage(usage, writer, result);
+  ExpandUsage(m_usage_template, writer, result);
   writer->puts(result.c_str());
   }
 
 void OvmsCommand::ExpandUsage(const char* templ, OvmsWriter* writer, std::string& result)
   {
-  std::string usage = templ;
+  std::string usage = (*templ || m_children.empty()) ? templ : m_execute ? "[$C]" : "$C";
   size_t pos;
   if ((pos = usage.find("$L")) != std::string::npos)
     {
@@ -423,6 +366,7 @@ bool OvmsCommand::UnregisterCommand(const char* name)
 
 char ** OvmsCommand::Complete(OvmsWriter* writer, int argc, const char * const * argv)
   {
+  writer->SetCompletion(0, NULL);       // Start with no completion tokens
   if (m_validate)
     {
     int used = -1;
@@ -479,8 +423,7 @@ void OvmsCommand::Execute(int verbosity, OvmsWriter* writer, int argc, const cha
         {
         if (argc > 0 && strcmp(argv[argc-1],"?") != 0)
           writer->puts("Unrecognised command");
-        if (m_usage_template && *m_usage_template)
-          PutUsage(writer);
+	PutUsage(writer);
         return;
         }
       argc -= used;
@@ -503,7 +446,8 @@ void OvmsCommand::Execute(int verbosity, OvmsWriter* writer, int argc, const cha
       }
     if (strcmp(argv[0],"?")==0)
       {
-      if (m_usage_template && *m_usage_template && m_execute)
+      // Skip usage line if it's just the one-line list of children.
+      if (*m_usage_template || m_execute)
         PutUsage(writer);
       // Show available commands
       int avail = 0;
@@ -524,7 +468,7 @@ void OvmsCommand::Execute(int verbosity, OvmsWriter* writer, int argc, const cha
     if (!cmd)
       {
       writer->puts("Unrecognised command");
-      if (m_usage_template && *m_usage_template)
+      if (GetParent())    // No usage line for root command
         PutUsage(writer);
       return;
       }
@@ -540,6 +484,48 @@ OvmsCommand* OvmsCommand::GetParent()
 OvmsCommand* OvmsCommand::FindCommand(const char* name)
   {
   return m_children.FindCommand(name);
+  }
+
+// List all OvmsCommand objects in the tree as a tab-separated CSV-format table
+// (which requires doubling " marks).
+void OvmsCommand::Display(OvmsWriter* writer, int level)
+  {
+  static const char* const spaces = "                                        ";
+  static const int len = strlen(spaces);
+  static const char* const end = spaces + len;
+  if (level >= 0)
+    {
+    const char* usage = m_usage_template;
+    if (!usage)
+	usage = "NULL";
+    const char* p = usage;
+    int quotes = 0;
+    for ( ; *p; ++p)
+      if (*p == '"')
+        ++quotes;
+    char* m = (char*)malloc(p - m_usage_template + quotes + 1);
+    if (m)
+      {
+      char* q = m;
+      for (p = usage; *p; )
+        {
+        if (*p == '"')
+          *q++ = '"';
+        *q++ = *p++;
+        }
+      *q = '\0';
+      usage = m;
+      }
+    if (2*level > len)
+      level = 0;
+    writer->printf("\"%s%s\"\t\"%s\"\t\"%s\"\t%d\t%d\t%s\t%s\t%s\t%s\n",
+      end-2*level, m_name, m_title, usage, m_min, m_max, m_children.empty() ? "--" : "children",
+      m_execute ? "execute" : "--", m_secure ? "secure" : "--", m_validate ? "validate" : "--");
+    if (m)
+      free(m);
+    }
+  for (OvmsCommandMap::iterator it=m_children.begin(); it!=m_children.end(); ++it)
+    it->second->Display(writer, level + 1);
   }
 
 void help(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -570,11 +556,11 @@ void log_level(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
 
 void log_file(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  const char* path;
+  std::string path;
   if (argc == 1)
     path = argv[0];
   else
-    path = MyConfig.GetParamValue("log", "file.path").c_str();
+    path = MyConfig.GetParamValue("log", "file.path");
   if (MyConfig.ProtectedPath(path))
     {
     writer->puts("Error: protected path");
@@ -585,7 +571,7 @@ void log_file(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
     writer->puts("Error: VFS file cannot be opened for append");
     return;
     }
-  writer->printf("Logging to file: %s\n", path);
+  writer->printf("Logging to file: %s\n", path.c_str());
   }
 
 void log_close(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -830,7 +816,7 @@ OvmsCommandApp::OvmsCommandApp()
   level_cmd->RegisterCommand("warn", "Log at the WARN level (2)", log_level , "[<tag>]", 0, 1, false);
   level_cmd->RegisterCommand("error", "Log at the ERROR level (1)", log_level , "[<tag>]", 0, 1, false);
   level_cmd->RegisterCommand("none", "No logging (0)", log_level , "[<tag>]", 0, 1, false);
-  monitor = cmd_log->RegisterCommand("monitor", "Monitor log on this console", log_monitor , "[$C]");
+  monitor = cmd_log->RegisterCommand("monitor", "Monitor log on this console", log_monitor);
   monitor_yes = monitor->RegisterCommand("yes", "Monitor log", log_monitor);
   monitor->RegisterCommand("no", "Don't monitor log", log_monitor);
   m_root.RegisterCommand("enable","Enter secure mode (enable access to all commands)", enable, "[<password>]", 0, 1, false);
@@ -1508,6 +1494,11 @@ void OvmsCommandApp::ReadConfig()
   m_logfile_maxsize = MyConfig.GetParamValueInt("log", "file.maxsize", 1024);
   if (MyConfig.GetParamValueBool("log", "file.enable", false) == true)
     SetLogfile(MyConfig.GetParamValue("log", "file.path"));
+  }
+
+void OvmsCommandApp::Display(OvmsWriter* writer)
+  {
+  m_root.Display(writer, -1);
   }
 
 

@@ -95,6 +95,7 @@ class OvmsNetManager
     void WifiStaGood(std::string event, void* data);
     void WifiStaBad(std::string event, void* data);
     void WifiStaCheckSQ(OvmsMetric* metric);
+    void WifiStaSetSQ(bool good);
     void WifiUpAP(std::string event, void* data);
     void WifiDownAP(std::string event, void* data);
     void WifiApStaDisconnect(std::string event, void* data);

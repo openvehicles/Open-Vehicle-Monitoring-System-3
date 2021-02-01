@@ -145,6 +145,10 @@ v.b.soc                                  96.3%                    State of charg
 v.b.soh                                  85%                      State of health
 v.b.temp                                 13°C                     Main battery momentary temperature
 v.b.voltage                              57.4V                    Main battery momentary voltage
+v.c.12v.current                          7.8A                     Output current of DC/DC-converter
+v.c.12v.power                            123W                     Output power of DC/DC-converter
+v.c.12v.temp                             34.5°C                   Temperature of DC/DC-converter
+v.c.12v.voltage                          12.3V                    Output voltage of DC/DC-converter
 v.c.charging                             no                       yes = currently charging
 v.c.climit                               0A                       Maximum charger output current
 v.c.current                              1.25A                    Momentary charger output current
@@ -197,6 +201,8 @@ v.e.locked                                                        yes = Vehicle 
 v.e.on                                   no                       yes = "Ignition" state (drivable)
 v.e.parktime                             49608Sec                 Seconds parking (turned off)
 v.e.regenbrake                                                    yes = Regenerative braking active
+v.e.serv.range                           12345km                  Distance to next scheduled maintenance/service [km]
+v.e.serv.time                            1572590910Sec            Time of next scheduled maintenance/service [Seconds]
 v.e.temp                                                          Ambient temperature
 v.e.throttle                             0%                       Drive pedal state [%]
 v.e.valet                                                         yes = Valet mode engaged

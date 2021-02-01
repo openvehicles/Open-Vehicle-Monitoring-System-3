@@ -105,11 +105,11 @@ static const char *TAG = "v-mitsubishi";
 // Pollstate 2 - car is charging
 static const OvmsVehicle::poll_pid_t vehicle_mitsubishi_polls[] =
   {
-    { 0x761, 0x762, VEHICLE_POLL_TYPE_OBDIIGROUP,  0x01, 		{       0,  10,   10 }, 0 }, 	// cac
-    { 0x765, 0x766, VEHICLE_POLL_TYPE_OBDIIGROUP,  0x01, 		{       0,  10,    0 }, 0 },   // OBC
-    { 0x771, 0x772, VEHICLE_POLL_TYPE_OBDIIGROUP,  0x13, 		{       0,  10,   10 }, 0 },   //external/internal temp
-    { 0x782, 0x783, VEHICLE_POLL_TYPE_OBDIIGROUP,  0xCE, 		{       0,   5,    0 }, 0 },   //Trip A/B
-    { 0, 0, 0, 0, { 0, 0, 0 }, 0 }
+    { 0x761, 0x762, VEHICLE_POLL_TYPE_OBDIIGROUP,  0x01, 		{       0,  10,   10 }, 0, ISOTP_STD }, 	// cac
+    { 0x765, 0x766, VEHICLE_POLL_TYPE_OBDIIGROUP,  0x01, 		{       0,  10,    0 }, 0, ISOTP_STD },   // OBC
+    { 0x771, 0x772, VEHICLE_POLL_TYPE_OBDIIGROUP,  0x13, 		{       0,  10,   10 }, 0, ISOTP_STD },   //external/internal temp
+    { 0x782, 0x783, VEHICLE_POLL_TYPE_OBDIIGROUP,  0xCE, 		{       0,   5,    0 }, 0, ISOTP_STD },   //Trip A/B
+    POLL_LIST_END
   };
 
 OvmsVehicleMitsubishi::OvmsVehicleMitsubishi()

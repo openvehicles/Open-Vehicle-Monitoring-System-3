@@ -158,6 +158,7 @@ static IRAM_ATTR void ESP32CAN_isr(void *pvParameters)
   esp32can *me = (esp32can*)pvParameters;
   BaseType_t task_woken = pdFALSE;
   uint32_t interrupt;
+  uint32_t error_irqs = 0;
 
   ESP32CAN_ENTER_CRITICAL_ISR();
 
@@ -172,43 +173,100 @@ static IRAM_ATTR void ESP32CAN_isr(void *pvParameters)
       interrupt |= ESP32CAN_rxframe(me, &task_woken);
       }
 
-    // Handle TX complete interrupt:
+    // Handle TX interrupt:
     if ((interrupt & __CAN_IRQ_TX) != 0)
       {
-      // Request TxCallback:
       CAN_queue_msg_t msg;
-      msg.type = CAN_txcallback;
+      // The TX interrupt occurs when the TX buffer becomes available, which may be due
+      //  to transmission success or abortion. A real SJA1000 would tell the actual result
+      //  by the SR.3 TCS bit, but the ESP32CAN also sets TCS on aborts. So there is no
+      //  way to tell if the frame was really aborted, we can only rely on our own abort
+      //  request status:
+      if (me->m_tx_abort)
+        {
+        // Clear abort command:
+        MODULE_ESP32CAN->CMR.B.AT = 0;
+        me->m_tx_abort = false;
+        msg.type = CAN_txfailedcallback;
+        }
+      else
+        {
+        msg.type = CAN_txcallback;
+        }
       msg.body.frame = me->m_tx_frame;
       msg.body.bus = me;
       xQueueSendFromISR(MyCan.m_rxqueue, &msg, &task_woken);
       }
 
-    // Handle error interrupts:
-    uint8_t error_irqs = interrupt &
-        (__CAN_IRQ_ERR						//0x4
-        |__CAN_IRQ_DATA_OVERRUN	  //0x8
-        |__CAN_IRQ_ERR_PASSIVE		//0x20
-        |__CAN_IRQ_ARB_LOST			  //0x40
-        |__CAN_IRQ_BUS_ERR				//0x80
+    // Collect error interrupts:
+    error_irqs |= interrupt &
+        (__CAN_IRQ_ERR_WARNING    // IR.2 Error Interrupt (warning state change)
+        |__CAN_IRQ_DATA_OVERRUN	  // IR.3 Data Overrun Interrupt
+        |__CAN_IRQ_ERR_PASSIVE    // IR.5 Error Passive Interrupt (passive state change)
+        |__CAN_IRQ_BUS_ERR        // IR.7 Bus Error Interrupt
         );
-    if (error_irqs)
-      {
-      // Record error data:
-      me->m_status.error_flags = error_irqs << 16 | (MODULE_ESP32CAN->SR.U & 0b11001111) << 8 | MODULE_ESP32CAN->ECC.B.ECC;
-      me->m_status.errors_rx = MODULE_ESP32CAN->RXERR.U;
-      me->m_status.errors_tx = MODULE_ESP32CAN->TXERR.U;
-      // Request error log:
-      CAN_queue_msg_t msg;
-      msg.type = CAN_logerror;
-      msg.body.bus = me;
-      xQueueSendFromISR(MyCan.m_rxqueue, &msg, &task_woken);
-      }
 
     // Handle wakeup interrupt:
     if ((interrupt & __CAN_IRQ_WAKEUP) != 0)
       {
       // Todo
       }
+    } // while interrupt
+
+  // Get error counters:
+  uint32_t rxerr = MODULE_ESP32CAN->RXERR.U;
+  uint32_t txerr = MODULE_ESP32CAN->TXERR.U;
+
+  // Handle error interrupts:
+  if (error_irqs)
+    {
+    uint32_t status = MODULE_ESP32CAN->SR.U;
+    uint32_t ecc = MODULE_ESP32CAN->ECC.U;
+    uint32_t error_flags = error_irqs << 16 | (status & 0b11001110) << 8 | (ecc & 0xff);
+
+    // Check for TX failure:
+    //  We consider the TX to have failed if a bus error is detected during the
+    //  transmission attempt and the controller gave up on retrying (= entered
+    //  passive mode, txerr >= 128).
+    if ((status & (__CAN_STS_TXDONE|__CAN_STS_TXFREE)) == 0 &&
+        (error_irqs & __CAN_IRQ_BUS_ERR) != 0 &&
+        (ecc & __CAN_ECC_DIR) == 0 &&
+        txerr >= 128)
+      {
+      // Set abort command:
+      me->m_tx_abort = true;
+      MODULE_ESP32CAN->CMR.B.AT = 1;
+      // Note: another TX IRQ will occur from the abort, see above
+      }
+
+    // Request error log?
+    if (me->m_status.error_flags != error_flags ||
+        me->m_status.errors_rx != rxerr ||
+        me->m_status.errors_tx != txerr)
+      {
+      me->m_status.error_flags = error_flags;
+      me->m_status.errors_rx = rxerr;
+      me->m_status.errors_tx = txerr;
+      // …only necessary if no abort has been issued:
+      if (!me->m_tx_abort)
+        {
+        CAN_queue_msg_t msg;
+        if (ecc != 0 || (status & (__CAN_STS_DATA_OVERRUN|__CAN_STS_BUS_OFF)) != 0)
+          msg.type = CAN_logerror;
+        else
+          msg.type = CAN_logstatus;
+        msg.body.bus = me;
+        xQueueSendFromISR(MyCan.m_rxqueue, &msg, &task_woken);
+        }
+      }
+    }
+  else
+    {
+    // Update status:
+    if (rxerr == 0 && txerr == 0)
+      me->m_status.error_flags = 0;
+    me->m_status.errors_rx = rxerr;
+    me->m_status.errors_tx = txerr;
     }
 
   ESP32CAN_EXIT_CRITICAL_ISR();
@@ -240,6 +298,7 @@ esp32can::esp32can(const char* name, int txpin, int rxpin)
   // on-chip controller, and let housekeeping power us down
   // after startup.
   m_powermode = Off;
+  m_tx_abort = false;
   MODULE_ESP32CAN->MOD.B.RM = 1;
 
   // Launch ISR allocator task on core 0:
@@ -284,8 +343,8 @@ void esp32can::InitController()
    * 0 -> single; the bus is sampled once; recommended for high speed buses (SAE class C)*/
   MODULE_ESP32CAN->BTR1.B.SAM=0x1;
 
-  // Enable all interrupts
-  MODULE_ESP32CAN->IER.U = 0xff;
+  // Enable all interrupts except arbitration loss (can be ignored):
+  MODULE_ESP32CAN->IER.U = 0xff - __CAN_IRQ_ARB_LOST;
 
   // No acceptance filtering, as we want to fetch all messages
   MODULE_ESP32CAN->MBX_CTRL.ACC.CODE[0] = 0;
@@ -313,6 +372,7 @@ void esp32can::InitController()
 
   // Clear interrupt flags
   (void)MODULE_ESP32CAN->IR.U;
+  m_tx_abort = false;
   }
 
 esp_err_t esp32can::Start(CAN_mode_t mode, CAN_speed_t speed)
@@ -401,6 +461,9 @@ esp_err_t esp32can::WriteFrame(const CAN_frame_t* p_frame)
   {
   ESP32CAN_ENTER_CRITICAL();
   uint8_t __byte_i; // Byte iterator
+
+  // Clear abort command:
+  MODULE_ESP32CAN->CMR.B.AT = 0;
 
   // check if TX buffer is available:
   if (MODULE_ESP32CAN->SR.B.TBS == 0)

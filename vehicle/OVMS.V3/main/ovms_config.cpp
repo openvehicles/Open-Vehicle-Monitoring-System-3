@@ -71,10 +71,19 @@ int config_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* 
   {
   if (!MyConfig.ismounted())
     return -1;
+  // argv[0] is the <param>
   if (argc == 1)
     return MyConfig.m_map.Validate(writer, argc, argv[0], complete);
-  OvmsConfigParam* p = MyConfig.m_map.FindUniquePrefix(argv[0]);
-  return p->m_map.Validate(writer, argc, argv[1], complete);
+  // argv[1] is the <instance>
+  if (argc == 2)
+    {
+    OvmsConfigParam* const* p = MyConfig.m_map.FindUniquePrefix(argv[0]);
+    if (!p)	// <param> was not valid, so can't check <instance>
+      return -1;
+    return (*p)->m_map.Validate(writer, argc, argv[1], complete);
+    }
+  // argv[2] is the value, which we can't validate
+  return -1;
   }
 
 void config_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -355,10 +364,27 @@ void OvmsConfig::upgrade()
       }
     }
 
-  // Migrate vehicle ID VWUP to VWUP.T26
-  if (GetParamValue("auto", "vehicle.type") == "VWUP")
+  // Migrate vehicle IDs VWUP.T26/.OBD back to VWUP
+  std::string vt = GetParamValue("auto", "vehicle.type");
+  if (vt == "VWUP.T26" || vt == "VWUP.OBD")
     {
-    SetParamValue("auto", "vehicle.type", "VWUP.T26");
+    SetParamValue("auto", "vehicle.type", "VWUP");
+    }
+  // Move obsolete VWUP "xut" instances to "xvu":
+  if (CachedParam("xut"))
+    {
+    RegisterParam("xvu", "VW e-Up", true, true);
+    for (const auto& instance : { "canwrite", "modelyear", "cc_temp" })
+      {
+      if (!IsDefined("xvu", instance) && IsDefined("xut", instance))
+        SetParamValue("xvu", instance, GetParamValue("xut", instance));
+      }
+    DeregisterParam("xut");
+    }
+  // Remove obsolete VWUP "vwup" param:
+  if (CachedParam("vwup"))
+    {
+    DeregisterParam("vwup");
     }
 
   // Done, set config version:
@@ -508,8 +534,10 @@ bool OvmsConfig::IsDefined(std::string param, std::string instance)
 OvmsConfigParam* OvmsConfig::CachedParam(std::string param)
   {
   if (!m_mounted) return NULL;
-
-  return m_map.FindUniquePrefix(param.c_str());
+  OvmsConfigParam* const* p = m_map.FindUniquePrefix(param.c_str());
+  if (!p)
+    return NULL;
+  return *p;
   }
 
 bool OvmsConfig::ProtectedPath(std::string path)

@@ -12,7 +12,9 @@ After discarding CR+LF line termination, and base64 decoding, the following prot
 
   <magic> ::= MP-
 
-  <version> ::= 1 byte version number - this protocol is 0x30 <space> ::= ' ' (ascii 0x20)
+  <version> ::= 1 byte version number - this protocol is 0x30
+  
+  <space> ::= ' ' (ascii 0x20)
 
   <protmsg> ::= <servertocar> | <cartoserver> | <servertoapp> | <apptoserver>
 
