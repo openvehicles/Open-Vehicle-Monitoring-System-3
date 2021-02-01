@@ -518,6 +518,7 @@ class OvmsVehicle : public InternalRamAllocated
     void BmsResetCellTemperatures(bool full = false);
     void BmsRestartCellVoltages();
     void BmsRestartCellTemperatures();
+    void BmsTicker();
     virtual void NotifyBmsAlerts();
 
   public:

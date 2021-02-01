@@ -638,16 +638,8 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
       }
     }
 
-  // BMS alerts:
-  if (m_bms_valerts_new || m_bms_talerts_new)
-    {
-    ESP_LOGW(TAG, "BMS new alerts: %d voltages, %d temperatures", m_bms_valerts_new, m_bms_talerts_new);
-    MyEvents.SignalEvent("vehicle.alert.bms", NULL);
-    if (m_autonotifications && MyConfig.GetParamValueBool("vehicle", "bms.alerts.enabled", true))
-      NotifyBmsAlerts();
-    m_bms_valerts_new = 0;
-    m_bms_talerts_new = 0;
-    }
+  // BMS ticker:
+  BmsTicker();
 
   // TPMS alerts:
   if (StdMetrics.ms_v_tpms_alert->LastModified() > m_tpms_lastcheck)
@@ -838,13 +830,6 @@ void OvmsVehicle::NotifyTpmsAlerts()
     MyNotify.NotifyString("info", "tpms.warning", buf.c_str());
   else
     MyNotify.NotifyString("alert", "tpms.alert", buf.c_str());
-  }
-
-void OvmsVehicle::NotifyBmsAlerts()
-  {
-  StringWriter buf(200);
-  if (FormatBmsAlerts(COMMAND_RESULT_SMS, &buf, false))
-    MyNotify.NotifyString("alert", "batt.bms.alert", buf.c_str());
   }
 
 // Default efficiency calculation by speed & power per second, average smoothed over 5 seconds.

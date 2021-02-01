@@ -29,7 +29,7 @@
 */
 
 #include "ovms_log.h"
-// static const char *TAG = "vehicle";
+static const char *TAG = "vehicle";
 
 #include <stdio.h>
 #include <algorithm>
@@ -515,4 +515,27 @@ bool OvmsVehicle::FormatBmsAlerts(int verbosity, OvmsWriter* writer, bool show_w
     }
 
   return (has_valerts > 0) || (has_talerts > 0);
+  }
+
+
+void OvmsVehicle::NotifyBmsAlerts()
+  {
+  StringWriter buf(200);
+  if (FormatBmsAlerts(COMMAND_RESULT_SMS, &buf, false))
+    MyNotify.NotifyString("alert", "batt.bms.alert", buf.c_str());
+  }
+
+
+void OvmsVehicle::BmsTicker()
+  {
+  // Alerts:
+  if (m_bms_valerts_new || m_bms_talerts_new)
+    {
+    ESP_LOGW(TAG, "BMS new alerts: %d voltages, %d temperatures", m_bms_valerts_new, m_bms_talerts_new);
+    MyEvents.SignalEvent("vehicle.alert.bms", NULL);
+    if (m_autonotifications && MyConfig.GetParamValueBool("vehicle", "bms.alerts.enabled", true))
+      NotifyBmsAlerts();
+    m_bms_valerts_new = 0;
+    m_bms_talerts_new = 0;
+    }
   }
