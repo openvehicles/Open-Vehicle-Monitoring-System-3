@@ -393,6 +393,10 @@ void OvmsVehicleVWeUp::Ticker1(uint32_t ticker)
     if (StdMetrics.ms_v_bat_12v_voltage->AsFloat() >= 13 && t26_12v_boost_cnt == 0) {
        t26_12v_boost_cnt = 20;
     }
+    if (t26_12v_boost_last_cnt == t26_12v_boost_cnt && t26_12v_boost_cnt != 0 && t26_12v_boost_cnt != 20) {    // We are not waiting to charging 12v to come up anymore
+       t26_12v_boost_cnt = 0;
+    }
+    t26_12v_boost_last_cnt = t26_12v_boost_cnt;
   }
 }
 
