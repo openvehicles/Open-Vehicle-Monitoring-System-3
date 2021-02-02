@@ -518,10 +518,21 @@ void OvmsReToolsPidScanner::IncomingPollFrame(const CAN_frame_t* frame)
             m_lastFrame = m_ticker;
         }
     }
-    else if (dataLength == 3 && data[0] == UDS_RESP_TYPE_NRC)
+    else if (dataLength == 3 && data[0] == UDS_RESP_TYPE_NRC && data[1] == m_pollType)
     {
-        // Invalid frame response
-        SendNextFrame();
+        if (data[2] == UDS_RESP_NRC_RCRRP)
+        {
+            // ResponsePending: ignore, keep waiting
+            ESP_LOGD(TAG, "ResponsePending from %x[%x]:%x",
+              m_id, frame->MsgID, m_currentPid);
+        }
+        else
+        {
+            // …other negative response code:
+            ESP_LOGD(TAG, "Negative response from %x[%x]:%x code %02x",
+              m_id, frame->MsgID, m_currentPid, data[2]);
+            SendNextFrame();
+        }
     }
     else if (dataLength > 3 && data[0] == m_pollType + 0x40)
     {
