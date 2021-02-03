@@ -1,0 +1,106 @@
+#!/bin/sh
+
+# sftp local test
+
+no_pid=-1
+server_pid=$no_pid
+ready_file=`pwd`/wolfssh_sftp_ready$$
+counter=0
+
+[ ! -x ./examples/sftpclient/wolfsftp ] && echo -e "\n\nwolfSFTP client doesn't exist" && exit 1
+
+#echo "ready file $ready_file"
+
+create_port() {
+    while [ ! -s "$ready_file" ] && [ "$counter" -lt 20 ]; do
+        echo -e "waiting for ready file..."
+        sleep 0.1
+        counter=$((counter+ 1))
+    done
+
+    if test -e $ready_file; then
+        echo -e "found ready file, starting client..."
+
+        # get created port 0 ephemeral port
+        port=`cat $ready_file`
+    else
+        echo -e "NO ready file ending test..."
+        do_cleanup
+        exit 1
+    fi
+}
+
+remove_ready_file() {
+    if test -e $ready_file; then
+        echo -e "removing existing ready file"
+    rm $ready_file
+    fi
+}
+
+do_cleanup() {
+    echo "in cleanup"
+
+    if  [ $server_pid != $no_pid ]
+    then
+        echo "killing server"
+        kill -9 $server_pid
+    fi
+    remove_ready_file
+}
+
+do_trap() {
+    echo "got trap"
+    do_cleanup
+    exit -1
+}
+
+trap do_trap INT TERM
+
+[ ! -x ./examples/sftpclient/wolfsftp ] && echo -e "\n\nClient doesn't exist" && exit 1
+
+echo "Test basic connection"
+./examples/echoserver/echoserver -1 -R $ready_file &
+server_pid=$!
+create_port
+echo "exit" | ./examples/sftpclient/wolfsftp -u jill -P upthehill -p $port
+RESULT=$?
+remove_ready_file
+if [ $RESULT -ne 0 ]; then
+    echo -e "\n\nfailed to connect"
+    do_cleanup
+    exit 1
+fi
+
+# Test non blocking connection
+echo "Test non blocking connection"
+./examples/echoserver/echoserver -N -1 -R $ready_file &
+server_pid=$!
+create_port
+echo "exit" | ./examples/sftpclient/wolfsftp -N -u jill -P upthehill -p $port
+RESULT=$?
+remove_ready_file
+if [ $RESULT -ne 0 ]; then
+    echo -e "\n\nfailed to connect"
+    do_cleanup
+    exit 1
+fi
+
+# Test of setting directory
+echo "Test of setting directory"
+PWD=`pwd`
+./examples/echoserver/echoserver -d $PWD/examples -1 -R $ready_file &
+server_pid=$!
+create_port
+echo "exit" | ./examples/sftpclient/wolfsftp -N -u jill -P upthehill -p $port
+RESULT=$?
+remove_ready_file
+if [ $RESULT -ne 0 ]; then
+    echo -e "\n\nfailed to connect"
+    do_cleanup
+    exit 1
+fi
+
+echo -e "\nALL Tests Passed"
+
+exit 0
+

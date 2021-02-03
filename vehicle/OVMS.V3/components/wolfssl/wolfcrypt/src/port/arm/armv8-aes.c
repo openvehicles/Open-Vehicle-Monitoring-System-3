@@ -1,6 +1,6 @@
 /* armv8-aes.c
  *
- * Copyright (C) 2006-2016 wolfSSL Inc.
+ * Copyright (C) 2006-2020 wolfSSL Inc.
  *
  * This file is part of wolfSSL.
  *
@@ -33,6 +33,10 @@
 #include <wolfssl/wolfcrypt/settings.h>
 
 #if !defined(NO_AES) && defined(WOLFSSL_ARMASM)
+
+#ifdef HAVE_FIPS
+#undef HAVE_FIPS
+#endif
 
 #include <wolfssl/wolfcrypt/aes.h>
 #include <wolfssl/wolfcrypt/error-crypt.h>
@@ -110,12 +114,8 @@ static const byte rcon[] = {
 
 
 #ifdef HAVE_AESGCM
-enum {
-    NONCE_SZ = 12,
-    CTR_SZ   = 4
-};
 
-static INLINE void IncrementGcmCounter(byte* inOutCtr)
+static WC_INLINE void IncrementGcmCounter(byte* inOutCtr)
 {
     int i;
 
@@ -127,7 +127,7 @@ static INLINE void IncrementGcmCounter(byte* inOutCtr)
 }
 
 
-static INLINE void FlattenSzInBits(byte* buf, word32 sz)
+static WC_INLINE void FlattenSzInBits(byte* buf, word32 sz)
 {
     /* Multiply the sz by 8 */
     word32 szHi = (sz >> (8*sizeof(sz) - 3));
@@ -181,7 +181,8 @@ int wc_AesSetKey(Aes* aes, const byte* userKey, word32 keylen,
 
     switch(keylen)
     {
-#if defined(AES_MAX_KEY_SIZE) && AES_MAX_KEY_SIZE >= 128
+#if defined(AES_MAX_KEY_SIZE) && AES_MAX_KEY_SIZE >= 128 && \
+        defined(WOLFSSL_AES_128)
     case 16:
         while (1)
         {
@@ -199,7 +200,8 @@ int wc_AesSetKey(Aes* aes, const byte* userKey, word32 keylen,
         break;
 #endif /* 128 */
 
-#if defined(AES_MAX_KEY_SIZE) && AES_MAX_KEY_SIZE >= 192
+#if defined(AES_MAX_KEY_SIZE) && AES_MAX_KEY_SIZE >= 192 && \
+        defined(WOLFSSL_AES_192)
     case 24:
         /* for (;;) here triggers a bug in VC60 SP4 w/ Pro Pack */
         while (1)
@@ -220,7 +222,8 @@ int wc_AesSetKey(Aes* aes, const byte* userKey, word32 keylen,
         break;
 #endif /* 192 */
 
-#if defined(AES_MAX_KEY_SIZE) && AES_MAX_KEY_SIZE >= 256
+#if defined(AES_MAX_KEY_SIZE) && AES_MAX_KEY_SIZE >= 256 && \
+        defined(WOLFSSL_AES_256)
     case 32:
         while (1)
         {
@@ -297,24 +300,6 @@ int wc_AesSetIV(Aes* aes, const byte* iv)
         XMEMSET(aes->reg,  0, AES_BLOCK_SIZE);
 
     return 0;
-}
-
-
-/* set the heap hint for aes struct */
-int wc_AesInit(Aes* aes, void* heap, int devId)
-{
-    if (aes == NULL)
-        return BAD_FUNC_ARG;
-
-    aes->heap = heap;
-    (void)devId;
-
-    return 0;
-}
-
-void wc_AesFree(Aes* aes)
-{
-    (void)aes;
 }
 
 
@@ -492,6 +477,7 @@ void wc_AesFree(Aes* aes)
             note: grouping AESE & AESMC together as pairs reduces latency
             */
             switch(aes->rounds) {
+#ifdef WOLFSSL_AES_128
             case 10: /* AES 128 BLOCK */
                 __asm__ __volatile__ (
                 "MOV w11, %w[blocks] \n"
@@ -542,7 +528,8 @@ void wc_AesFree(Aes* aes)
                 "v6", "v7", "v8", "v9", "v10", "v11", "v12", "v13"
                 );
                 break;
-
+#endif /* WOLFSSL_AES_128 */
+#ifdef WOLFSSL_AES_192
             case 12: /* AES 192 BLOCK */
                 __asm__ __volatile__ (
                 "MOV w11, %w[blocks] \n"
@@ -599,7 +586,8 @@ void wc_AesFree(Aes* aes)
                 "v6", "v7", "v8", "v9", "v10", "v11", "v12", "v13", "v14"
                 );
                 break;
-
+#endif /* WOLFSSL_AES_192*/
+#ifdef WOLFSSL_AES_256
             case 14: /* AES 256 BLOCK */
                 __asm__ __volatile__ (
                 "MOV w11, %w[blocks] \n"
@@ -662,7 +650,7 @@ void wc_AesFree(Aes* aes)
                 "v16"
                 );
                 break;
-
+#endif /* WOLFSSL_AES_256 */
             default:
                 WOLFSSL_MSG("Bad AES-CBC round value");
                 return BAD_FUNC_ARG;
@@ -688,6 +676,7 @@ void wc_AesFree(Aes* aes)
             word32* reg = aes->reg;
 
             switch(aes->rounds) {
+#ifdef WOLFSSL_AES_128
             case 10: /* AES 128 BLOCK */
                 __asm__ __volatile__ (
                 "MOV w11, %w[blocks] \n"
@@ -739,7 +728,8 @@ void wc_AesFree(Aes* aes)
                 "v6", "v7", "v8", "v9", "v10", "v11", "v12", "v13"
                 );
                 break;
-
+#endif /* WOLFSSL_AES_128 */
+#ifdef WOLFSSL_AES_192
             case 12: /* AES 192 BLOCK */
                 __asm__ __volatile__ (
                 "MOV w11, %w[blocks] \n"
@@ -797,7 +787,8 @@ void wc_AesFree(Aes* aes)
                 "v6", "v7", "v8", "v9", "v10", "v11", "v12", "v13", "v14", "v15"
                 );
                 break;
-
+#endif /* WOLFSSL_AES_192 */
+#ifdef WOLFSSL_AES_256
             case 14: /* AES 256 BLOCK */
                 __asm__ __volatile__ (
                 "MOV w11, %w[blocks] \n"
@@ -860,7 +851,7 @@ void wc_AesFree(Aes* aes)
                 "v16", "v17"
                 );
                 break;
-
+#endif /* WOLFSSL_AES_256 */
             default:
                 WOLFSSL_MSG("Bad AES-CBC round value");
                 return BAD_FUNC_ARG;
@@ -877,7 +868,7 @@ void wc_AesFree(Aes* aes)
 #ifdef WOLFSSL_AES_COUNTER
 
         /* Increment AES counter */
-        static INLINE void IncrementAesCounter(byte* inOutCtr)
+        static WC_INLINE void IncrementAesCounter(byte* inOutCtr)
         {
             int i;
 
@@ -914,6 +905,7 @@ void wc_AesFree(Aes* aes)
                 byte*  keyPt  = (byte*)aes->key;
                 sz           -= numBlocks * AES_BLOCK_SIZE;
                 switch(aes->rounds) {
+#ifdef WOLFSSL_AES_128
                 case 10: /* AES 128 BLOCK */
                     __asm__ __volatile__ (
                     "MOV w11, %w[blocks] \n"
@@ -1053,7 +1045,8 @@ void wc_AesFree(Aes* aes)
                     "v6", "v7", "v8", "v9", "v10","v11","v12","v13","v14","v15"
                     );
                     break;
-
+#endif /* WOLFSSL_AES_128 */
+#ifdef WOLFSSL_AES_192
                 case 12: /* AES 192 BLOCK */
                     __asm__ __volatile__ (
                     "MOV w11, %w[blocks]              \n"
@@ -1209,7 +1202,8 @@ void wc_AesFree(Aes* aes)
                     "v16", "v17"
                     );
                     break;
-
+#endif /* WOLFSSL_AES_192 */
+#ifdef WOLFSSL_AES_256
                 case 14: /* AES 256 BLOCK */
                     __asm__ __volatile__ (
                     "MOV w11, %w[blocks] \n"
@@ -1378,7 +1372,7 @@ void wc_AesFree(Aes* aes)
                     "v16", "v17", "v18", "v19"
                     );
                     break;
-
+#endif /* WOLFSSL_AES_256 */
                 default:
                     WOLFSSL_MSG("Bad AES-CTR round value");
                     return BAD_FUNC_ARG;
@@ -1517,6 +1511,7 @@ void GHASH(Aes* aes, const byte* a, word32 aSz,
 }
 
 
+#ifdef WOLFSSL_AES_128
 /* internal function : see wc_AesGcmEncrypt */
 static int Aes128GcmEncrypt(Aes* aes, byte* out, const byte* in, word32 sz,
                    const byte* iv, word32 ivSz,
@@ -1542,7 +1537,7 @@ static int Aes128GcmEncrypt(Aes* aes, byte* out, const byte* in, word32 sz,
     byte* keyPt; /* pointer to handle pointer advencment */
 
     XMEMSET(initialCounter, 0, AES_BLOCK_SIZE);
-    if (ivSz == NONCE_SZ) {
+    if (ivSz == GCM_NONCE_MID_SZ) {
         XMEMCPY(initialCounter, iv, ivSz);
         initialCounter[AES_BLOCK_SIZE - 1] = 1;
     }
@@ -1832,8 +1827,9 @@ static int Aes128GcmEncrypt(Aes* aes, byte* out, const byte* in, word32 sz,
     }
     return 0;
 }
+#endif /* WOLFSSL_AES_128 */
 
-
+#ifdef WOLFSSL_AES_192
 /* internal function : see wc_AesGcmEncrypt */
 static int Aes192GcmEncrypt(Aes* aes, byte* out, const byte* in, word32 sz,
                    const byte* iv, word32 ivSz,
@@ -1859,7 +1855,7 @@ static int Aes192GcmEncrypt(Aes* aes, byte* out, const byte* in, word32 sz,
     byte* keyPt; /* pointer to handle pointer advencment */
 
     XMEMSET(initialCounter, 0, AES_BLOCK_SIZE);
-    if (ivSz == NONCE_SZ) {
+    if (ivSz == GCM_NONCE_MID_SZ) {
         XMEMCPY(initialCounter, iv, ivSz);
         initialCounter[AES_BLOCK_SIZE - 1] = 1;
     }
@@ -2164,8 +2160,9 @@ static int Aes192GcmEncrypt(Aes* aes, byte* out, const byte* in, word32 sz,
 
     return 0;
 }
+#endif /* WOLFSSL_AES_192 */
 
-
+#ifdef WOLFSSL_AES_256
 /* internal function : see wc_AesGcmEncrypt */
 static int Aes256GcmEncrypt(Aes* aes, byte* out, const byte* in, word32 sz,
                    const byte* iv, word32 ivSz,
@@ -2191,7 +2188,7 @@ static int Aes256GcmEncrypt(Aes* aes, byte* out, const byte* in, word32 sz,
     byte* keyPt; /* pointer to handle pointer advencment */
 
     XMEMSET(initialCounter, 0, AES_BLOCK_SIZE);
-    if (ivSz == NONCE_SZ) {
+    if (ivSz == GCM_NONCE_MID_SZ) {
         XMEMCPY(initialCounter, iv, ivSz);
         initialCounter[AES_BLOCK_SIZE - 1] = 1;
     }
@@ -2508,6 +2505,7 @@ static int Aes256GcmEncrypt(Aes* aes, byte* out, const byte* in, word32 sz,
 
     return 0;
 }
+#endif /* WOLFSSL_AES_256 */
 
 
 /* aarch64 with PMULL and PMULL2
@@ -2540,8 +2538,7 @@ int wc_AesGcmEncrypt(Aes* aes, byte* out, const byte* in, word32 sz,
     if (aes == NULL || (iv == NULL && ivSz > 0) ||
                        (authTag == NULL) ||
                        (authIn == NULL && authInSz > 0) ||
-                       (in == NULL && sz > 0) ||
-                       (out == NULL && sz > 0)) {
+                       (ivSz == 0)) {
         WOLFSSL_MSG("a NULL parameter passed in when size is larger than 0");
         return BAD_FUNC_ARG;
     }
@@ -2552,18 +2549,21 @@ int wc_AesGcmEncrypt(Aes* aes, byte* out, const byte* in, word32 sz,
     }
 
     switch (aes->rounds) {
+#ifdef WOLFSSL_AES_128
         case 10:
             return Aes128GcmEncrypt(aes, out, in, sz, iv, ivSz,
                                     authTag, authTagSz, authIn, authInSz);
-
+#endif
+#ifdef WOLFSSL_AES_192
         case 12:
             return Aes192GcmEncrypt(aes, out, in, sz, iv, ivSz,
                                     authTag, authTagSz, authIn, authInSz);
-
+#endif
+#ifdef WOLFSSL_AES_256
         case 14:
             return Aes256GcmEncrypt(aes, out, in, sz, iv, ivSz,
                                     authTag, authTagSz, authIn, authInSz);
-
+#endif
         default:
             WOLFSSL_MSG("AES-GCM invalid round number");
             return BAD_FUNC_ARG;
@@ -2602,17 +2602,15 @@ int  wc_AesGcmDecrypt(Aes* aes, byte* out, const byte* in, word32 sz,
     ctr = counter ;
 
     /* sanity checks */
-    if (aes == NULL || (iv == NULL && ivSz > 0) ||
-                       (authTag == NULL) ||
-                       (authIn == NULL && authInSz > 0) ||
-                       (in  == NULL && sz > 0) ||
-                       (out == NULL && sz > 0)) {
+    if (aes == NULL || iv == NULL || (sz != 0 && (in == NULL || out == NULL)) ||
+        authTag == NULL || authTagSz > AES_BLOCK_SIZE || authTagSz == 0 ||
+        ivSz == 0) {
         WOLFSSL_MSG("a NULL parameter passed in when size is larger than 0");
         return BAD_FUNC_ARG;
     }
 
     XMEMSET(initialCounter, 0, AES_BLOCK_SIZE);
-    if (ivSz == NONCE_SZ) {
+    if (ivSz == GCM_NONCE_MID_SZ) {
         XMEMCPY(initialCounter, iv, ivSz);
         initialCounter[AES_BLOCK_SIZE - 1] = 1;
     }
@@ -2644,6 +2642,7 @@ int  wc_AesGcmDecrypt(Aes* aes, byte* out, const byte* in, word32 sz,
          * an issue with call to encrypt/decrypt leftovers */
         byte*  keyPt  = (byte*)aes->key;
         switch(aes->rounds) {
+#ifdef WOLFSSL_AES_128
         case 10: /* AES 128 BLOCK */
             __asm__ __volatile__ (
             "MOV w11, %w[blocks] \n"
@@ -2707,7 +2706,8 @@ int  wc_AesGcmDecrypt(Aes* aes, byte* out, const byte* in, word32 sz,
             "v6", "v7", "v8", "v9", "v10", "v11", "v12", "v13", "v14"
             );
             break;
-
+#endif
+#ifdef WOLFSSL_AES_192
         case 12: /* AES 192 BLOCK */
             __asm__ __volatile__ (
             "MOV w11, %w[blocks] \n"
@@ -2777,6 +2777,8 @@ int  wc_AesGcmDecrypt(Aes* aes, byte* out, const byte* in, word32 sz,
             "v16"
             );
             break;
+#endif /* WOLFSSL_AES_192 */
+#ifdef WOLFSSL_AES_256
         case 14: /* AES 256 BLOCK */
             __asm__ __volatile__ (
             "MOV w11, %w[blocks] \n"
@@ -2850,7 +2852,7 @@ int  wc_AesGcmDecrypt(Aes* aes, byte* out, const byte* in, word32 sz,
             "v16", "v17", "v18", "v19"
             );
             break;
-
+#endif /* WOLFSSL_AES_256 */
         default:
             WOLFSSL_MSG("Bad AES-GCM round value");
             return BAD_FUNC_ARG;
@@ -3057,6 +3059,7 @@ int  wc_AesGcmDecrypt(Aes* aes, byte* out, const byte* in, word32 sz,
             note: grouping AESE & AESMC together as pairs reduces latency
             */
             switch(aes->rounds) {
+#ifdef WOLFSSL_AES_128
             case 10: /* AES 128 BLOCK */
                 __asm__ __volatile__ (
                 "MOV r11, %[blocks] \n"
@@ -3116,7 +3119,8 @@ int  wc_AesGcmDecrypt(Aes* aes, byte* out, const byte* in, word32 sz,
                 "q6", "q7", "q8", "q9", "q10", "q11", "q12"
                 );
                 break;
-
+#endif /* WOLFSSL_AES_128 */
+#ifdef WOLFSSL_AES_192
             case 12: /* AES 192 BLOCK */
                 __asm__ __volatile__ (
                 "MOV r11, %[blocks] \n"
@@ -3182,7 +3186,8 @@ int  wc_AesGcmDecrypt(Aes* aes, byte* out, const byte* in, word32 sz,
                 "q6", "q7", "q8", "q9", "q10", "q11", "q12", "q13", "q14"
                 );
                 break;
-
+#endif /* WOLFSSL_AES_192 */
+#ifdef WOLFSSL_AES_256
             case 14: /* AES 256 BLOCK */
                 __asm__ __volatile__ (
                 "MOV r11, %[blocks] \n"
@@ -3255,7 +3260,7 @@ int  wc_AesGcmDecrypt(Aes* aes, byte* out, const byte* in, word32 sz,
                 "q6", "q7", "q8", "q9", "q10", "q11", "q12", "q13", "q14", "q15"
                 );
                 break;
-
+#endif /* WOLFSSL_AES_256 */
             default:
                 WOLFSSL_MSG("Bad AES-CBC round value");
                 return BAD_FUNC_ARG;
@@ -3280,6 +3285,7 @@ int  wc_AesGcmDecrypt(Aes* aes, byte* out, const byte* in, word32 sz,
             word32* keyPt = aes->key;
             word32* regPt = aes->reg;
             switch(aes->rounds) {
+#ifdef WOLFSSL_AES_128
             case 10: /* AES 128 BLOCK */
                 __asm__ __volatile__ (
                 "MOV r11, %[blocks] \n"
@@ -3341,7 +3347,8 @@ int  wc_AesGcmDecrypt(Aes* aes, byte* out, const byte* in, word32 sz,
                 "q6", "q7", "q8", "q9", "q10", "q11", "q12", "q13"
                 );
                 break;
-
+#endif /* WOLFSSL_AES_128 */
+#ifdef WOLFSSL_AES_192
             case 12: /* AES 192 BLOCK */
                 __asm__ __volatile__ (
                 "MOV r11, %[blocks] \n"
@@ -3409,7 +3416,8 @@ int  wc_AesGcmDecrypt(Aes* aes, byte* out, const byte* in, word32 sz,
                 "q6", "q7", "q8", "q9", "q10", "q11", "q12", "q13", "q14", "q15"
                 );
                 break;
-
+#endif /* WOLFSSL_AES_192 */
+#ifdef WOLFSSL_AES_256
             case 14: /* AES 256 BLOCK */
                 __asm__ __volatile__ (
                 "MOV r11, %[blocks] \n"
@@ -3484,7 +3492,7 @@ int  wc_AesGcmDecrypt(Aes* aes, byte* out, const byte* in, word32 sz,
                 "q6", "q7", "q8", "q9", "q10", "q11", "q12", "q13", "q14", "q15"
                 );
                 break;
-
+#endif /* WOLFSSL_AES_256 */
             default:
                 WOLFSSL_MSG("Bad AES-CBC round value");
                 return BAD_FUNC_ARG;
@@ -3501,7 +3509,7 @@ int  wc_AesGcmDecrypt(Aes* aes, byte* out, const byte* in, word32 sz,
 #ifdef WOLFSSL_AES_COUNTER
 
         /* Increment AES counter */
-        static INLINE void IncrementAesCounter(byte* inOutCtr)
+        static WC_INLINE void IncrementAesCounter(byte* inOutCtr)
         {
             int i;
 
@@ -3539,6 +3547,7 @@ int  wc_AesGcmDecrypt(Aes* aes, byte* out, const byte* in, word32 sz,
                 word32*  regPt  = aes->reg;
                 sz           -= numBlocks * AES_BLOCK_SIZE;
                 switch(aes->rounds) {
+#ifdef WOLFSSL_AES_128
                 case 10: /* AES 128 BLOCK */
                     __asm__ __volatile__ (
                     "MOV r11, %[blocks] \n"
@@ -3674,7 +3683,8 @@ int  wc_AesGcmDecrypt(Aes* aes, byte* out, const byte* in, word32 sz,
                     "q6", "q7", "q8", "q9", "q10","q11","q12","q13","q14", "q15"
                     );
                     break;
-
+#endif /* WOLFSSL_AES_128 */
+#ifdef WOLFSSL_AES_192
                 case 12: /* AES 192 BLOCK */
                     __asm__ __volatile__ (
                     "MOV r11, %[blocks] \n"
@@ -3833,7 +3843,8 @@ int  wc_AesGcmDecrypt(Aes* aes, byte* out, const byte* in, word32 sz,
                     "q6", "q7", "q8", "q9", "q10","q11","q12","q13","q14"
                     );
                     break;
-
+#endif /* WOLFSSL_AES_192 */
+#ifdef WOLFSSL_AES_256
                 case 14: /* AES 256 BLOCK */
                     __asm__ __volatile__ (
                     "MOV r11, %[blocks] \n"
@@ -4009,7 +4020,7 @@ int  wc_AesGcmDecrypt(Aes* aes, byte* out, const byte* in, word32 sz,
                     "q6", "q7", "q8", "q9", "q10","q11","q12","q13","q14"
                     );
                     break;
-
+#endif /* WOLFSSL_AES_256 */
                 default:
                     WOLFSSL_MSG("Bad AES-CTR round qalue");
                     return BAD_FUNC_ARG;
@@ -4188,9 +4199,8 @@ int wc_AesGcmEncrypt(Aes* aes, byte* out, const byte* in, word32 sz,
     /* sanity checks */
     if (aes == NULL || (iv == NULL && ivSz > 0) ||
                        (authTag == NULL) ||
-                       (authIn == NULL) ||
-                       (in == NULL && sz > 0) ||
-                       (out == NULL && sz > 0)) {
+                       (authIn == NULL && authInSz > 0) ||
+                       (ivSz == 0)) {
         WOLFSSL_MSG("a NULL parameter passed in when size is larger than 0");
         return BAD_FUNC_ARG;
     }
@@ -4201,7 +4211,7 @@ int wc_AesGcmEncrypt(Aes* aes, byte* out, const byte* in, word32 sz,
     }
 
     XMEMSET(initialCounter, 0, AES_BLOCK_SIZE);
-    if (ivSz == NONCE_SZ) {
+    if (ivSz == GCM_NONCE_MID_SZ) {
         XMEMCPY(initialCounter, iv, ivSz);
         initialCounter[AES_BLOCK_SIZE - 1] = 1;
     }
@@ -4270,17 +4280,15 @@ int  wc_AesGcmDecrypt(Aes* aes, byte* out, const byte* in, word32 sz,
     ctr = counter ;
 
     /* sanity checks */
-    if (aes == NULL || (iv == NULL && ivSz > 0) ||
-                       (authTag == NULL) ||
-                       (authIn == NULL) ||
-                       (in  == NULL && sz > 0) ||
-                       (out == NULL && sz > 0)) {
+    if (aes == NULL || iv == NULL || (sz != 0 && (in == NULL || out == NULL)) ||
+        authTag == NULL || authTagSz > AES_BLOCK_SIZE || authTagSz == 0 ||
+        ivSz == 0) {
         WOLFSSL_MSG("a NULL parameter passed in when size is larger than 0");
         return BAD_FUNC_ARG;
     }
 
     XMEMSET(initialCounter, 0, AES_BLOCK_SIZE);
-    if (ivSz == NONCE_SZ) {
+    if (ivSz == GCM_NONCE_MID_SZ) {
         XMEMCPY(initialCounter, iv, ivSz);
         initialCounter[AES_BLOCK_SIZE - 1] = 1;
     }
@@ -4335,18 +4343,6 @@ int  wc_AesGcmDecrypt(Aes* aes, byte* out, const byte* in, word32 sz,
 #ifdef HAVE_AESCCM
 /* Software version of AES-CCM from wolfcrypt/src/aes.c
  * Gets some speed up from hardware acceleration of wc_AesEncrypt */
-
-int wc_AesCcmSetKey(Aes* aes, const byte* key, word32 keySz)
-{
-    byte nonce[AES_BLOCK_SIZE];
-
-    if (!((keySz == 16) || (keySz == 24) || (keySz == 32)))
-        return BAD_FUNC_ARG;
-
-    XMEMSET(nonce, 0, sizeof(nonce));
-    return wc_AesSetKey(aes, key, keySz, nonce, AES_ENCRYPTION);
-}
-
 
 static void roll_x(Aes* aes, const byte* in, word32 inSz, byte* out)
 {
@@ -4412,7 +4408,7 @@ static void roll_auth(Aes* aes, const byte* in, word32 inSz, byte* out)
 }
 
 
-static INLINE void AesCcmCtrInc(byte* B, word32 lenSz)
+static WC_INLINE void AesCcmCtrInc(byte* B, word32 lenSz)
 {
     word32 i;
 
@@ -4439,6 +4435,10 @@ int wc_AesCcmEncrypt(Aes* aes, byte* out, const byte* in, word32 inSz,
     if (aes == NULL || out == NULL || in == NULL || nonce == NULL
             || authTag == NULL || nonceSz < 7 || nonceSz > 13)
         return BAD_FUNC_ARG;
+
+    if (wc_AesCcmCheckTagSize(authTagSz) != 0) {
+        return BAD_FUNC_ARG;
+    }
 
     XMEMCPY(B+1, nonce, nonceSz);
     lenSz = AES_BLOCK_SIZE - 1 - (byte)nonceSz;
@@ -4507,6 +4507,10 @@ int  wc_AesCcmDecrypt(Aes* aes, byte* out, const byte* in, word32 inSz,
     if (aes == NULL || out == NULL || in == NULL || nonce == NULL
             || authTag == NULL || nonceSz < 7 || nonceSz > 13)
         return BAD_FUNC_ARG;
+
+    if (wc_AesCcmCheckTagSize(authTagSz) != 0) {
+        return BAD_FUNC_ARG;
+    }
 
     o = out;
     oSz = inSz;
@@ -4583,20 +4587,6 @@ int  wc_AesCcmDecrypt(Aes* aes, byte* out, const byte* in, word32 inSz,
 
 
 #ifdef HAVE_AESGCM /* common GCM functions 32 and 64 bit */
-WOLFSSL_API int wc_GmacSetKey(Gmac* gmac, const byte* key, word32 len)
-{
-    return wc_AesGcmSetKey(&gmac->aes, key, len);
-}
-
-
-WOLFSSL_API int wc_GmacUpdate(Gmac* gmac, const byte* iv, word32 ivSz,
-                              const byte* authIn, word32 authInSz,
-                              byte* authTag, word32 authTagSz)
-{
-    return wc_AesGcmEncrypt(&gmac->aes, NULL, NULL, 0, iv, ivSz,
-                                         authTag, authTagSz, authIn, authInSz);
-}
-
 int wc_AesGcmSetKey(Aes* aes, const byte* key, word32 len)
 {
     int  ret;
@@ -4666,32 +4656,4 @@ int wc_AesGcmSetKey(Aes* aes, const byte* key, word32 len)
         }
     #endif /* HAVE_AES_DECRYPT */
 #endif /* WOLFSSL_AES_DIRECT */
-
-int wc_AesGetKeySize(Aes* aes, word32* keySize)
-{
-    int ret = 0;
-
-    if (aes == NULL || keySize == NULL) {
-        return BAD_FUNC_ARG;
-    }
-
-    switch (aes->rounds) {
-    case 10:
-        *keySize = 16;
-        break;
-    case 12:
-        *keySize = 24;
-        break;
-    case 14:
-        *keySize = 32;
-        break;
-    default:
-        *keySize = 0;
-        ret = BAD_FUNC_ARG;
-    }
-
-    return ret;
-}
-
-#endif /* NO_AES */
-
+#endif /* !NO_AES && WOLFSSL_ARMASM */
