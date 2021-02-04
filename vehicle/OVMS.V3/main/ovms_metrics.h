@@ -761,7 +761,7 @@ class OvmsMetricVector : public OvmsMetric
       bool modified = false, resized = false;
       if (m_mutex.Lock())
         {
-        if (m_value.size() < value.size())
+        if (m_value.size() != value.size())
           {
           m_value.resize(value.size());
           if (m_persist)
