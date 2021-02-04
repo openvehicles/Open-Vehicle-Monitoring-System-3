@@ -1653,6 +1653,11 @@ void OvmsServerV2::MetricModified(OvmsMetric* metric)
     {
     m_now_gps = true;
     }
+
+  if ((metric == StandardMetrics.ms_v_tpms_alert))
+    {
+    m_now_tpms = true;
+    }
   }
 
 bool OvmsServerV2::NotificationFilter(OvmsNotifyType* type, const char* subtype)
