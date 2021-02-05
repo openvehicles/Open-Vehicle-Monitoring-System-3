@@ -109,6 +109,8 @@ Open Vehicle Monitor System v3 - Change log
 - New vehicle: VW e-Up via OBD-II Port (VWUP.OBD)
 - New vehicle: MG ZS EV via OBD-II Port (MGEV)
 - New vehicle: BMW i3/i3s via OBD-II Port (BMWI3) 
+- Updated wolfssh and wolfssl so the restriction of clients to use
+  aes128-cbc cipher is no longer required.
 
 2020-09-02 MWJ  3.2.015  OTA release
 - Notify: add explicit channel exclusion config syntax
