@@ -163,6 +163,7 @@ class OvmsVehicleMgEv : public OvmsVehicle
     OvmsCommand* m_cmdSoftver;
     /// The responses from the software version queries
     std::vector<std::pair<uint32_t, std::vector<char>>> m_versions;
+    float mg_cum_energy_charge_wh;
 };
 
 #endif  // __VEHICLE_MGEV_H__
