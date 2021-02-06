@@ -167,7 +167,6 @@ OvmsVehicleMgEv::OvmsVehicleMgEv()
     WebInit();
 #endif
 }
-}
 
 OvmsVehicleMgEv::~OvmsVehicleMgEv()
 {
