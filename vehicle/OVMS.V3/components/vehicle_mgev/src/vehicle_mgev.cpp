@@ -163,6 +163,10 @@ OvmsVehicleMgEv::OvmsVehicleMgEv()
     m_cmdSoftver = MyCommandApp.RegisterCommand(
         "softver", "MG EV Software", &OvmsVehicleMgEv::SoftwareVersions
     );
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
+    WebInit();
+#endif
+}
 }
 
 OvmsVehicleMgEv::~OvmsVehicleMgEv()

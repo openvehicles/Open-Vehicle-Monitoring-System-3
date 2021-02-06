@@ -164,6 +164,18 @@ class OvmsVehicleMgEv : public OvmsVehicle
     /// The responses from the software version queries
     std::vector<std::pair<uint32_t, std::vector<char>>> m_versions;
     float mg_cum_energy_charge_wh;
+    
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
+    // --------------------------------------------------------------------------
+    // Webserver subsystem
+    //  - implementation: mi_web.(h,cpp)
+    //
+  public:
+    void WebInit();
+    //static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
+    void GetDashboardConfig(DashboardConfig& cfg);
+#endif //CONFIG_OVMS_COMP_WEBSERVER
+    
 };
 
 #endif  // __VEHICLE_MGEV_H__
