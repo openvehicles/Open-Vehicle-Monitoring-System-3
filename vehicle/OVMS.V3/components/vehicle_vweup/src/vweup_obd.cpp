@@ -79,7 +79,6 @@ const OvmsVehicle::poll_pid_t vweup_polls[] = {
   {VWUP_MFD,      UDS_READ, VWUP_MFD_ODOMETER,              {  0,  0,  0, 60}, 1, ISOTP_STD},
   {VWUP_MFD,      UDS_READ, VWUP_MFD_RANGE_CAP,             {  0,  0,  0, 60}, 1, ISOTP_STD},
 
-//{VWUP_BRK,      UDS_READ, VWUP_BRK_TPMS,                  {  0,  0,  0,  5}, 1, ISOTP_STD},
   {VWUP_MFD,      UDS_READ, VWUP_MFD_SERV_RANGE,            {  0,  0,  0, 60}, 1, ISOTP_STD},
   {VWUP_MFD,      UDS_READ, VWUP_MFD_SERV_TIME,             {  0,  0,  0, 60}, 1, ISOTP_STD},
 
@@ -161,8 +160,8 @@ void OvmsVehicleVWeUp::OBDInit()
     ChargerDCPower = MyMetrics.InitFloat("xvu.c.dc.p", SM_STALE_NONE, 0, Watts);
 
     ServiceDays =  MyMetrics.InitInt("xvu.e.serv.days", SM_STALE_NONE, 0);
-    TPMSDiffusion = MyMetrics.InitVector<float>("xvu.v.tp.d", SM_STALE_NONE, 0);
-    TPMSEmergency = MyMetrics.InitVector<float>("xvu.v.tp.e", SM_STALE_NONE, 0);
+    TPMSDiffusion = MyMetrics.InitVector<float>("xvu.v.t.diff", SM_STALE_NONE, 0);
+    TPMSEmergency = MyMetrics.InitVector<float>("xvu.v.t.emgcy", SM_STALE_NONE, 0);
 
     // Note: the following metrics will probably be removed after deciding if/which of these
     //  we can use to get the actual battery capacity:
@@ -1017,8 +1016,9 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
       break;
 
     case VWUP_BRK_TPMS:
-      if (PollReply.FromUint8("VWUP_BRK_TPMS", value, 36)) {
+      if (PollReply.FromUint8("VWUP_BRK_TPMS", value, 43)) {
         std::vector<float> tpms_health(4);
+        std::vector<short> tpms_alert(4);
         float old_value;
         float threshold_warn = MyConfig.GetParamValueFloat("xvu", "tpms_warn", 80);
         float threshold_alert = MyConfig.GetParamValueFloat("xvu", "tpms_alert", 60);
@@ -1029,26 +1029,29 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
             if (!j){
               tpms_health[i] = TRUNCPREC(value / 2.55f, 1);
               TPMSDiffusion->SetElemValue(i,value);
-              VALUE_LOG(TAG, "VWUP_BRK_TPMS Diffusion %s: %f => %f", m_tyre_abb[i], value, TPMSDiffusion->GetElemValue(i));
+              VALUE_LOG(TAG, "VWUP_BRK_TPMS Diffusion %s: %f => %f", OvmsVehicle::GetTpmsLayout()[i].c_str(), value, TPMSDiffusion->GetElemValue(i));
             }
             else {
-              if ( value / 2.55f < tpms_health[i]) {
+              if (value / 2.55f < tpms_health[i]) {
                 tpms_health[i] = TRUNCPREC(value / 2.55f, 1);
               }
               TPMSEmergency->SetElemValue(i,value);
-              VALUE_LOG(TAG, "VWUP_BRK_TPMS Emergency %s: %f => %f", m_tyre_abb[i], value, TPMSEmergency->GetElemValue(i));
+              VALUE_LOG(TAG, "VWUP_BRK_TPMS Emergency %s: %f => %f", OvmsVehicle::GetTpmsLayout()[i].c_str(), value, TPMSEmergency->GetElemValue(i));
             }
           }
           // Send notification?
           old_value = StdMetrics.ms_v_tpms_health->GetElemValue(i);
-          if (old_value > threshold_alert && tpms_health[i] <= threshold_alert && tpms_health[i] > 0) { // on turning on, incorrect value of 0 seems to appear
-            StdMetrics.ms_v_tpms_alert->SetElemValue(i,2);
+          if (old_value > threshold_alert && tpms_health[i] <= threshold_alert) {
+            tpms_alert[i] = 2;
           }
-          else if (old_value > threshold_warn && tpms_health[i] <= threshold_warn && tpms_health[i] > 0) { // on turning on, incorrect value of 0 seems to appear
-            StdMetrics.ms_v_tpms_alert->SetElemValue(i,1);
+          else if (old_value > threshold_warn && tpms_health[i] <= threshold_warn) {
+            tpms_alert[i] = 1;
           }
+          else 
+            tpms_alert[i] = 0;
         }
         StdMetrics.ms_v_tpms_health->SetValue(tpms_health);
+        StdMetrics.ms_v_tpms_alert->SetValue(tpms_alert);
       }
 
     default:
