@@ -223,6 +223,25 @@ void OvmsVehicleVWeUp::OBDInit()
     m_poll_vector.insert(m_poll_vector.end(), vweup_gen2_polls, endof_array(vweup_gen2_polls));
   }
 
+  // Add test/log PIDs for DC fast charging:
+  if (m_cfg_dc_interval) {
+    for (auto p : poll_list_t {
+        {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_TEST_1DDC, {  0,  0,  0,  0}, 1, ISOTP_STD},
+        {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_TEST_1DDD, {  0,  0,  0,  0}, 1, ISOTP_STD},
+        {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_TEST_1DDE, {  0,  0,  0,  0}, 1, ISOTP_STD},
+        {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_TEST_1DDF, {  0,  0,  0,  0}, 1, ISOTP_STD},
+        {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_TEST_1DE2, {  0,  0,  0,  0}, 1, ISOTP_STD},
+        {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_TEST_1DE3, {  0,  0,  0,  0}, 1, ISOTP_STD},
+        {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_TEST_1DEA, {  0,  0,  0,  0}, 1, ISOTP_STD},
+      }) {
+      // …enable polling in all states in case charge detection doesn't work:
+      p.polltime[VWEUP_AWAKE]     = m_cfg_dc_interval;
+      p.polltime[VWEUP_CHARGING]  = m_cfg_dc_interval;
+      p.polltime[VWEUP_ON]        = m_cfg_dc_interval;
+      m_poll_vector.push_back(p);
+    }
+  }
+
   // Add low priority PIDs only necessary without T26:
   if (HasNoT26()) {
     m_poll_vector.insert(m_poll_vector.end(), {
@@ -976,7 +995,7 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
       break;
 
     default:
-      ESP_LOGD(TAG, "IncomingPollReply: unhandled PID %X: %s", pid, PollReply.GetHexString().c_str());
+      VALUE_LOG(TAG, "IncomingPollReply: unhandled PID %X: %s", pid, PollReply.GetHexString().c_str());
       break;
   }
 }

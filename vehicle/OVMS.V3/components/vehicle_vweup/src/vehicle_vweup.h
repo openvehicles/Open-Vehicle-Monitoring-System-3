@@ -314,6 +314,8 @@ protected:
 
   float               m_bat_cap_range_hist[3];    // Range capacity maximum detection for SOH calculation
 
+  int                 m_cfg_dc_interval;          // Interval for DC fast charge test/log PIDs
+
 private:
   PollReplyHelper     PollReply;
 

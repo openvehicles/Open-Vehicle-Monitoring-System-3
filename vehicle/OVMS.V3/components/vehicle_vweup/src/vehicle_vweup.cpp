@@ -255,6 +255,7 @@ void OvmsVehicleVWeUp::ConfigChanged(OvmsConfigParam *param)
   bool vweup_enable_t26_new = MyConfig.GetParamValueBool("xvu", "con_t26", true);
   vweup_enable_write = MyConfig.GetParamValueBool("xvu", "canwrite", false);
   vweup_cc_temp_int = MyConfig.GetParamValueInt("xvu", "cc_temp", 22);
+  int dc_interval = MyConfig.GetParamValueInt("xvu", "dc_interval", 0);
   int cell_interval_drv = MyConfig.GetParamValueInt("xvu", "cell_interval_drv", 15);
   int cell_interval_chg = MyConfig.GetParamValueInt("xvu", "cell_interval_chg", 60);
   int cell_interval_awk = MyConfig.GetParamValueInt("xvu", "cell_interval_awk", 60);
@@ -264,6 +265,7 @@ void OvmsVehicleVWeUp::ConfigChanged(OvmsConfigParam *param)
     (vweup_enable_t26_new != vweup_enable_t26) ||
     (vweup_modelyear < 2020 && vweup_modelyear_new > 2019) ||
     (vweup_modelyear_new < 2020 && vweup_modelyear > 2019) ||
+    (dc_interval != m_cfg_dc_interval) ||
     (cell_interval_drv != m_cfg_cell_interval_drv) ||
     (cell_interval_chg != m_cfg_cell_interval_chg) ||
     (cell_interval_awk != m_cfg_cell_interval_awk));
@@ -271,6 +273,7 @@ void OvmsVehicleVWeUp::ConfigChanged(OvmsConfigParam *param)
   vweup_modelyear = vweup_modelyear_new;
   vweup_enable_obd = vweup_enable_obd_new;
   vweup_enable_t26 = vweup_enable_t26_new;
+  m_cfg_dc_interval = dc_interval;
   m_cfg_cell_interval_drv = cell_interval_drv;
   m_cfg_cell_interval_chg = cell_interval_chg;
   m_cfg_cell_interval_awk = cell_interval_awk;

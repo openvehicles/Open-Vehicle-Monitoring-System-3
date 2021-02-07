@@ -178,5 +178,12 @@ using namespace std;
 #define VWUP_CHG_MGMT_LV_PWRSTATE       0x1DEC    // Low voltage (12V) systems power state
 #define VWUP_CHG_MGMT_LV_AUTOCHG        0x1DED    // Low voltage (12V) auto charge mode
 
+#define VWUP_CHG_MGMT_TEST_1DDC         0x1DDC    // DC charge socket status?
+#define VWUP_CHG_MGMT_TEST_1DDD         0x1DDD    // DC charge relay or indicators for sockets A & B?
+#define VWUP_CHG_MGMT_TEST_1DDE         0x1DDE    // DC charge lock?
+#define VWUP_CHG_MGMT_TEST_1DDF         0x1DDF    // DC charge control signal?
+#define VWUP_CHG_MGMT_TEST_1DE2         0x1DE2    // DC charge current?
+#define VWUP_CHG_MGMT_TEST_1DE3         0x1DE3    // DC charge voltage?
+#define VWUP_CHG_MGMT_TEST_1DEA         0x1DEA    // DC socket statistics (plugcnt, lockcnt, chargecnt)?
 
 #endif //#ifndef __VEHICLE_EUP_OBD_H__
