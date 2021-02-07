@@ -441,7 +441,7 @@ void location_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
     writer->printf(", %d satellite%s", n, n == 1 ? "" : "s");
   writer->puts(")");
 
-  if ((MyLocations.m_park_latitude != 0)&&(MyLocations.m_park_longitude != 0))
+  if ((MyLocations.m_park_latitude != 0) || (MyLocations.m_park_longitude != 0))
     writer->printf("Vehicle is parked at %0.6f,%0.6f\n",
       MyLocations.m_park_latitude,
       MyLocations.m_park_longitude);
@@ -794,7 +794,7 @@ void OvmsLocations::ReloadMap()
 
 void OvmsLocations::UpdateLocations()
   {
-  if ((m_latitude == 0)||(m_longitude == 0)) return;
+  if ((m_latitude == 0) && (m_longitude == 0)) return;
 
   for (LocationMap::iterator it=m_locations.begin(); it!=m_locations.end(); ++it)
     {
@@ -804,8 +804,7 @@ void OvmsLocations::UpdateLocations()
 
 void OvmsLocations::CheckTheft()
   {
-  if (m_park_latitude == 0) return;
-  if (m_park_longitude == 0) return;
+  if ((m_park_latitude == 0) && (m_park_longitude == 0)) return;
   if (StandardMetrics.ms_v_env_on->AsBool()) return;
   int alarm = MyConfig.GetParamValueInt("vehicle", "flatbed.alarmdistance", 500);
   if (alarm == 0) return;
