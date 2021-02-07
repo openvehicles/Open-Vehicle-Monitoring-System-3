@@ -285,12 +285,15 @@ void OvmsVehicleVWeUp::ConfigChanged(OvmsConfigParam *param)
   //  Note: currently using standard specs
   //  TODO: get actual capacity/SOH & max charge current
   float socfactor = StdMetrics.ms_v_bat_soc->AsFloat() / 100;
+  float sohfactor = StdMetrics.ms_v_bat_soh->AsFloat() / 100;
+  if (sohfactor == 0) sohfactor = 100;
   if (vweup_modelyear > 2019)
   {
     // 32.3 kWh net / 36.8 kWh gross, 2P84S = 120 Ah, 260 km WLTP
-    StdMetrics.ms_v_bat_cac->SetValue(120);
-    StdMetrics.ms_v_bat_range_full->SetValue(260);
-    StdMetrics.ms_v_bat_range_ideal->SetValue(260 * socfactor);
+    StdMetrics.ms_v_bat_cac->SetValue(120 * sohfactor);
+    StdMetrics.ms_v_bat_range_full->SetValue(260 * sohfactor);
+    if (StdMetrics.ms_v_bat_range_ideal->AsFloat() == 0)
+      StdMetrics.ms_v_bat_range_ideal->SetValue(260 * sohfactor * socfactor);
     if (StdMetrics.ms_v_bat_range_est->AsFloat() > 10 && StdMetrics.ms_v_bat_soc->AsFloat() > 10)
       m_range_est_factor = StdMetrics.ms_v_bat_range_est->AsFloat() / StdMetrics.ms_v_bat_soc->AsFloat();
     else
@@ -308,9 +311,10 @@ void OvmsVehicleVWeUp::ConfigChanged(OvmsConfigParam *param)
   else
   {
     // 16.4 kWh net / 18.7 kWh gross, 2P102S = 50 Ah, 160 km WLTP
-    StdMetrics.ms_v_bat_cac->SetValue(50);
-    StdMetrics.ms_v_bat_range_full->SetValue(160);
-    StdMetrics.ms_v_bat_range_ideal->SetValue(160 * socfactor);
+    StdMetrics.ms_v_bat_cac->SetValue(50 * sohfactor);
+    StdMetrics.ms_v_bat_range_full->SetValue(160 * sohfactor);
+    if (StdMetrics.ms_v_bat_range_ideal->AsFloat() == 0)
+      StdMetrics.ms_v_bat_range_ideal->SetValue(160 * sohfactor * socfactor);
     if (StdMetrics.ms_v_bat_range_est->AsFloat() > 10 && StdMetrics.ms_v_bat_soc->AsFloat() > 10)
       m_range_est_factor = StdMetrics.ms_v_bat_range_est->AsFloat() / StdMetrics.ms_v_bat_soc->AsFloat();
     else
