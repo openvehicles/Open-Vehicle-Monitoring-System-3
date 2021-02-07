@@ -219,11 +219,17 @@ void OvmsVehicleMgEv::SetBmsStatus(uint8_t status)
                 {
                     StandardMetrics.ms_v_charge_state->SetValue("done");
                     StandardMetrics.ms_v_charge_inprogress->SetValue(false);
+                    mg_cum_energy_charge_wh=0;
+                    StandardMetrics.ms_v_charge_duration_full->SetValue(0);
+                    StandardMetrics.ms_v_charge_kwh->SetValue(0);
                 }
                 else
                 {
                     StandardMetrics.ms_v_charge_state->SetValue("stopped");
                     StandardMetrics.ms_v_charge_inprogress->SetValue(false);
+                    mg_cum_energy_charge_wh=0;
+                    StandardMetrics.ms_v_charge_duration_full->SetValue(0);
+                    StandardMetrics.ms_v_charge_kwh->SetValue(0);
                 }
             } 
             break;

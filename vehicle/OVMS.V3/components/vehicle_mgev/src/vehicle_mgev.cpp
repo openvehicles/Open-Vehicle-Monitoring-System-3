@@ -448,11 +448,17 @@ void OvmsVehicleMgEv::DeterminePollState(canbus* currentBus, uint32_t ticker)
             {
                 StandardMetrics.ms_v_charge_state->SetValue("done");
                 StandardMetrics.ms_v_charge_inprogress->SetValue(false);
+                mg_cum_energy_charge_wh=0;
+                StandardMetrics.ms_v_charge_duration_full->SetValue(0);
+                StandardMetrics.ms_v_charge_kwh->SetValue(0);
             }
             else
             {
                 StandardMetrics.ms_v_charge_state->SetValue("stopped");
                 StandardMetrics.ms_v_charge_inprogress->SetValue(false);
+                mg_cum_energy_charge_wh=0;
+                StandardMetrics.ms_v_charge_duration_full->SetValue(0);
+                StandardMetrics.ms_v_charge_kwh->SetValue(0);
             }
         }else if (charging12vLast != StandardMetrics.ms_v_env_charging12v->AsBool())
         {
@@ -646,9 +652,6 @@ void OvmsVehicleMgEv::Ticker1(uint32_t ticker)
         mg_cum_energy_charge_wh += StandardMetrics.ms_v_charge_power->AsFloat()*1000/3600;
         StandardMetrics.ms_v_charge_kwh->SetValue(mg_cum_energy_charge_wh/1000);
         ESP_LOGV(TAG,"Cumulative Energy = %.2f",mg_cum_energy_charge_wh);
-    } else { // Not charging set back to zero. TODO - Only reset when charge first stops
-        mg_cum_energy_charge_wh=0;
-        StandardMetrics.ms_v_charge_duration_full->SetValue(0);
     }
 }
 
