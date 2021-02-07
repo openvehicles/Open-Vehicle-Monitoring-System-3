@@ -43,7 +43,11 @@ static const char *TAG = "v-vweup";
 #include "vehicle_vweup.h"
 #include "vweup_obd.h"
 
-
+#undef TRUNCPREC
+#define TRUNCPREC(fval,prec) (trunc((fval) * pow(10,(prec))) / pow(10,(prec)))
+#undef ROUNDPREC
+#define ROUNDPREC(fval,prec) (round((fval) * pow(10,(prec))) / pow(10,(prec)))
+ 
 //
 // General PIDs for all model years
 //
@@ -924,13 +928,26 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
       break;
 
     case VWUP_MFD_SERV_RANGE:
-      if (PollReply.FromUint16("VWUP_MFD_SERV_RANGE", value)) {
+      if (PollReply.FromUint16("VWUP_MFD_SERV_RANGE", value) && value > 0) { // excluding value of 0 seems to be necessary for now
+        // Send notification?
+        int threshold = MyConfig.GetParamValueInt("xvu", "serv_warn_range", 5000);
+        int old_value = StdMetrics.ms_v_env_service_range->AsInt();
+        if (old_value > threshold && value <= threshold) { 
+          MyNotify.NotifyStringf("info", "Service", "Service range left: %d km!", value);
+        }         
         StdMetrics.ms_v_env_service_range->SetValue(value);
         VALUE_LOG(TAG, "VWUP_MFD_SERV_RANGE=%f => %f", value, StdMetrics.ms_v_env_service_range->AsFloat());
       }
       break;
     case VWUP_MFD_SERV_TIME:
-      if (PollReply.FromUint16("VWUP_MFD_SERV_TIME", value)) {
+      if (PollReply.FromUint16("VWUP_MFD_SERV_TIME", value) && value > 0) { // excluding value of 0 seems to be necessary for now
+        // Send notification?
+        int now = StdMetrics.ms_m_timeutc->AsInt();
+        int threshold = MyConfig.GetParamValueInt("xvu", "serv_warn_days", 30);
+        int old_value = ROUNDPREC((StdMetrics.ms_v_env_service_time->AsInt() - now) / 86400.0f, 0);
+        if (old_value > threshold && value <= threshold) {
+          MyNotify.NotifyStringf("info", "Service", "Service time left: %d days!", value);
+        }         
         ServiceDays -> SetValue(value);
         StdMetrics.ms_v_env_service_time->SetValue(StdMetrics.ms_m_timeutc->AsInt() + value * 86400);
         VALUE_LOG(TAG, "VWUP_MFD_SERV_TIME=%f => %f", value, StdMetrics.ms_v_env_service_time->AsFloat());
