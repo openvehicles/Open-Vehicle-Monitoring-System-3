@@ -72,7 +72,7 @@
 #include <string>
 static const char *TAG = "v-vweup";
 
-#define VERSION "0.9.2"
+#define VERSION "0.10.1"
 
 #include <stdio.h>
 #include <string>
@@ -437,12 +437,15 @@ void OvmsVehicleVWeUp::ResetTripCounters()
   // Get trip start references as far as available:
   //  (if we don't have them yet, IncomingPollReply() will set them ASAP)
   m_odo_start           = StdMetrics.ms_v_pos_odometer->AsFloat();
+  m_soc_norm_start      = StdMetrics.ms_v_bat_soc->AsFloat();
+  m_soc_abs_start       = BatMgmtSoCAbs->AsFloat();
   m_energy_recd_start   = StdMetrics.ms_v_bat_energy_recd_total->AsFloat();
   m_energy_used_start   = StdMetrics.ms_v_bat_energy_used_total->AsFloat();
   m_coulomb_recd_start  = StdMetrics.ms_v_bat_coulomb_recd_total->AsFloat();
   m_coulomb_used_start  = StdMetrics.ms_v_bat_coulomb_used_total->AsFloat();
 
-  ESP_LOGD(TAG, "Trip start ref: odo=%f, er=%f, eu=%f, cr=%f, cu=%f", m_odo_start,
+  ESP_LOGD(TAG, "Trip start ref: socnrm=%f socabs=%f odo=%f, er=%f, eu=%f, cr=%f, cu=%f",
+    m_soc_norm_start, m_soc_abs_start, m_odo_start,
     m_energy_recd_start, m_energy_used_start, m_coulomb_recd_start, m_coulomb_used_start);
 }
 
@@ -461,8 +464,13 @@ void OvmsVehicleVWeUp::ResetChargeCounters()
 
   // Get charge start reference as far as available:
   //  (if we don't have it yet, IncomingPollReply() will set it ASAP)
-  m_energy_charged_start = StdMetrics.ms_v_bat_energy_recd_total->AsFloat();
+  m_soc_norm_start        = StdMetrics.ms_v_bat_soc->AsFloat();
+  m_soc_abs_start         = BatMgmtSoCAbs->AsFloat();
+  m_energy_charged_start  = StdMetrics.ms_v_bat_energy_recd_total->AsFloat();
+  m_coulomb_charged_start = StdMetrics.ms_v_bat_coulomb_recd_total->AsFloat();
   m_charge_kwh_grid_start = StdMetrics.ms_v_charge_kwh_grid_total->AsFloat();
 
-  ESP_LOGD(TAG, "Charge start ref: er=%f gr=%f", m_energy_charged_start, m_charge_kwh_grid_start);
+  ESP_LOGD(TAG, "Charge start ref: socnrm=%f socabs=%f cr=%f er=%f gr=%f",
+    m_soc_norm_start, m_soc_abs_start, m_coulomb_charged_start,
+    m_energy_charged_start, m_charge_kwh_grid_start);
 }

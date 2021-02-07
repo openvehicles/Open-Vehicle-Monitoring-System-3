@@ -165,11 +165,14 @@ public:
 
 private:
   float m_odo_start;
+  float m_soc_norm_start;
+  float m_soc_abs_start;
   float m_energy_recd_start;
   float m_energy_used_start;
   float m_energy_charged_start;
   float m_coulomb_recd_start;
   float m_coulomb_used_start;
+  float m_coulomb_charged_start;
   float m_charge_kwh_grid_start;
   double m_charge_kwh_grid;
 
@@ -259,6 +262,7 @@ protected:
 
 protected:
   void UpdateChargePower(float power_kw);
+  void UpdateChargeCap(bool charging);
 
 protected:
   OvmsMetricFloat *MotElecSoCAbs;                 // Absolute SoC of main battery from motor electrics ECU
@@ -290,6 +294,12 @@ protected:
   OvmsMetricInt       *m_lv_autochg;              // Low voltage (12V) auto charge mode (0x1DED[0]: 0/1)
   OvmsMetricInt       *m_hv_chgmode;              // High voltage charge mode (0x1DD6[0]: 0/1)
 
+  OvmsMetricFloat     *m_bat_cap_range;           // Momentary battery capacity based on MFD range [kWh]
+  OvmsMetricFloat     *m_bat_cap_chg_ah_norm;     // Battery capacity based on coulomb charge count [Ah]
+  OvmsMetricFloat     *m_bat_cap_chg_ah_abs;      // … using absolute SOC
+  OvmsMetricFloat     *m_bat_cap_chg_kwh_norm;    // Battery capacity based on energy charge count [kWh]
+  OvmsMetricFloat     *m_bat_cap_chg_kwh_abs;     // … using absolute SOC
+
 protected:
   obd_state_t         m_obd_state;                // OBD subsystem state
   poll_vector_t       m_poll_vector;              // List of PIDs to poll
@@ -301,6 +311,8 @@ protected:
   uint16_t            m_cell_last_ti;             // … temperature
 
   float               m_range_est_factor;         // For range calculation during charge
+
+  float               m_bat_cap_range_hist[3];    // Range capacity maximum detection for SOH calculation
 
 private:
   PollReplyHelper     PollReply;
