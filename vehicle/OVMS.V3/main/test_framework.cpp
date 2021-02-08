@@ -317,6 +317,7 @@ void test_string(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
   const char* t5 = "0123456789-abcdefghijk-";
   std::string t6(t5);
 
+  int64_t time_start_us = esp_timer_get_time();
   for (int j = 1; j <= loopcnt; j++)
     {
     std::string msg;
@@ -356,7 +357,9 @@ void test_string(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
       writer->printf("#%d: stdlen = %d\n%s\n\n", j, stdlen, msg.c_str());
       }
     }
-  writer->puts("finished");
+  writer->printf("finished %d loops for mode %d using %s in %d ms\n", loopcnt, mode,
+    (t6.data() >= (void*)0x3F800000 && t6.data() < (void*)0x3FC00000) ? "extram" : "intram",
+    (int)((esp_timer_get_time() - time_start_us) / 1000));
   }
 
 void test_command(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
