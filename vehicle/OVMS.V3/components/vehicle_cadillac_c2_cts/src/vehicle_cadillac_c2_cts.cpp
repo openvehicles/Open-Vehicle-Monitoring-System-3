@@ -286,16 +286,16 @@ OvmsVehicleCadillaccC2CTS::IncomingPollReply(canbus* bus, uint16_t type,
       if (value2 == 0)
         { // Car engine is OFF
         PollSetState(0);
-        // StandardMetrics.ms_v_env_handbrake->SetValue(true);
-        // StandardMetrics.ms_v_env_on->SetValue(false);
-        // StandardMetrics.ms_v_pos_speed->SetValue(0);
+        StandardMetrics.ms_v_env_handbrake->SetValue(true);
+        StandardMetrics.ms_v_env_on->SetValue(false);
+        StandardMetrics.ms_v_pos_speed->SetValue(0);
         StandardMetrics.ms_v_env_charging12v->SetValue(false);
         }
       else
         { // Car engine is ON
         PollSetState(1);
-        // StandardMetrics.ms_v_env_handbrake->SetValue(false);
-        // StandardMetrics.ms_v_env_on->SetValue(true);
+        StandardMetrics.ms_v_env_handbrake->SetValue(false);
+        StandardMetrics.ms_v_env_on->SetValue(true);
         StandardMetrics.ms_v_env_charging12v->SetValue(true);
         }
       break;
