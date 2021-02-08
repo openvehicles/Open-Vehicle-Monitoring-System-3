@@ -619,7 +619,8 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
         MyConfig.SetParamValue("password", "pin", pin);
 
       info = "<p class=\"lead\">Success!</p><ul class=\"infolist\">" + info + "</ul>";
-      info += "<script>$(\"#menu\").load(\"/menu\")</script>";
+      info += "<script>$(\"title\").data(\"moduleid\", \"" + c.encode_html(vehicleid)
+        + "\");$(\"#menu\").load(\"/menu\")</script>";
       c.head(200);
       c.alert("success", info.c_str());
       OutputHome(p, c);
@@ -1354,8 +1355,11 @@ void OvmsWebServer::HandleCfgServerV2(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValue("server.v2", "updatetime.connected", updatetime_connected);
       MyConfig.SetParamValue("server.v2", "updatetime.idle", updatetime_idle);
 
+      std::string info = "<p class=\"lead\">Server V2 (MP) connection configured.</p>"
+        "<script>$(\"title\").data(\"moduleid\", \"" + c.encode_html(vehicleid) + "\");</script>";
+
       c.head(200);
-      c.alert("success", "<p class=\"lead\">Server V2 (MP) connection configured.</p>");
+      c.alert("success", info.c_str());
       OutputHome(p, c);
       c.done();
       return;

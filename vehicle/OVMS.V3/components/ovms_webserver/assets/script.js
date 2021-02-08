@@ -160,10 +160,11 @@ function setcontent(tgt, uri, text){
     tgt.html(text);
     var $p = tgt.find(">.panel");
     if ($p.length == 1) $p.addClass("panel-single");
+    var moduleid = $("title").data("moduleid") || "OVMS";
     if (mi.length > 0)
-      document.title = "OVMS " + (mi.attr("title") || mi.text());
+      document.title = moduleid + " " + (mi.attr("title") || mi.text());
     else
-      document.title = "OVMS Console";
+      document.title = moduleid + " Console";
   } else {
     tgt[0].scrollIntoView();
     tgt.html(text);
