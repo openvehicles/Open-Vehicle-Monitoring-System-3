@@ -69,5 +69,7 @@ xrt.v.b.alert.temp                       no                       Display servic
 xrt.v.b.status                           0                        Internal BMS status (CAN frame 628)
 xrt.v.c.status                           0                        Internal Charger status (CAN frame 627)
 xrt.v.i.status                           0                        Internal SEVCON status (CAN frame 629)
+xrt.v.e.locked.speed                     0                        Speed limit [kph] set for Twizy lock mode
+xrt.v.e.valet.odo                        0                        Odometer limit [km] set for Twizy valet mode
 ======================================== ======================== ============================================
 

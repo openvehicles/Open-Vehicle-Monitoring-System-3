@@ -2865,36 +2865,60 @@ void OvmsVehicle::BmsStatus(int verbosity, OvmsWriter* writer)
 
 bool OvmsVehicle::FormatBmsAlerts(int verbosity, OvmsWriter* writer, bool show_warnings)
   {
+  int has_valerts = 0, has_talerts = 0;
+  bool verbose = (verbosity > COMMAND_RESULT_SMS);
+
+  writer->puts("Battery cell deviation:");
+
   // Voltages:
-  writer->printf("Voltage: SD=%dmV", (int)(StdMetrics.ms_v_bat_pack_vstddev_max->AsFloat() * 1000));
-  bool has_valerts = false;
+  writer->printf("Voltage: StdDev %dmV", (int)(StdMetrics.ms_v_bat_pack_vstddev_max->AsFloat() * 1000));
   for (int i=0; i<m_bms_readings_v; i++)
     {
     int sts = StdMetrics.ms_v_bat_cell_valert->GetElemValue(i);
     if (sts == 0) continue;
     if (sts == 1 && !show_warnings) continue;
-    int dev = StdMetrics.ms_v_bat_cell_vdevmax->GetElemValue(i) * 1000;
-    writer->printf(" %c%d:%+dmV", (sts==1) ? '?' : '!', i+1, dev);
-    has_valerts = true;
+    has_valerts++;
+    if (verbose || has_valerts <= 5)
+      {
+      int dev = StdMetrics.ms_v_bat_cell_vdevmax->GetElemValue(i) * 1000;
+      writer->printf("\n %c #%02d: %+4dmV", (sts==1) ? '?' : '!', i+1, dev);
+      }
+    else
+      {
+      writer->printf("\n [...]");
+      break;
+      }
     }
-  writer->printf("%s\n", has_valerts ? "" : " OK");
+  writer->printf("%s\n", has_valerts ? "" : ", cells OK");
 
   // Temperatures:
   // (Note: '°' is not SMS safe, so we only output 'C')
-  writer->printf("Temperature: SD=%.1fC", StdMetrics.ms_v_bat_pack_tstddev_max->AsFloat());
-  bool has_talerts = false;
+  writer->printf("Temperature: StdDev %.1fC", StdMetrics.ms_v_bat_pack_tstddev_max->AsFloat());
   for (int i=0; i<m_bms_readings_v; i++)
     {
     int sts = StdMetrics.ms_v_bat_cell_talert->GetElemValue(i);
     if (sts == 0) continue;
     if (sts == 1 && !show_warnings) continue;
-    float dev = StdMetrics.ms_v_bat_cell_tdevmax->GetElemValue(i);
-    writer->printf(" %c%d:%+.1fC", (sts==1) ? '?' : '!', i+1, dev);
-    has_talerts = true;
+    has_talerts++;
+    if (verbose || has_talerts <= 5)
+      {
+      float dev = StdMetrics.ms_v_bat_cell_tdevmax->GetElemValue(i);
+      writer->printf("\n %c #%02d: %+3.1fC", (sts==1) ? '?' : '!', i+1, dev);
+      }
+    else
+      {
+      writer->printf("\n [...]");
+      break;
+      }
     }
-  writer->printf("%s\n", has_talerts ? "" : " OK");
+  writer->printf("%s\n", has_talerts ? "" : ", cells OK");
 
-  return has_valerts || has_talerts;
+  if (verbose || has_valerts >= 5 || has_talerts >= 5)
+    {
+    writer->puts("Details: bms status");
+    }
+
+  return (has_valerts > 0) || (has_talerts > 0);
   }
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER

@@ -40,6 +40,7 @@ static const char *TAG = "events";
 #include "ovms_command.h"
 #include "ovms_script.h"
 #include "ovms_boot.h"
+#include "ovms_ota.h"
 
 OvmsEvents MyEvents __attribute__ ((init_priority (1200)));
 
@@ -216,7 +217,11 @@ void OvmsEvents::EventTask()
       }
     else
       {
-      // timeout on xQueueReceive means:
+      // Timeout on xQueueReceive: ignore during OTA flash job:
+      OvmsMutexLock m_lock(&MyOTA.m_flashing, 0);
+      if (!m_lock.IsLocked())
+        continue;
+      // …no OTA flashing in progress => abort:
       ESP_LOGE(TAG, "EventTask: [QueueTimeout] timer service / ticker timer has died => aborting");
       m_current_event = "[QueueTimeout]";
       m_current_started = monotonictime - 5;
@@ -355,6 +360,9 @@ static void CheckQueueOverflow(const char* from, char* event)
     {
     // We've dropped a potentially important event, system is instable now.
     // As the event queue is full, a normal reboot is no option, so…
+    // …wait for a running OTA job to finish…
+    OvmsMutexLock m_lock(&MyOTA.m_flashing);
+    // …then abort:
     ESP_LOGE(TAG, "%s: lost important event => aborting", from);
     MyCommandApp.CloseLogfile();
     vTaskDelay(pdMS_TO_TICKS(100));

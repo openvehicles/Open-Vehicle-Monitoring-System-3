@@ -31,7 +31,7 @@ gpslogint               5              (F8)       Seconds between RT-GPS-Log ent
 kd_compzero             120            F2         Kickdown pedal compensation (Default: 120)
 kd_threshold            35             F1         Kickdown threshold (Default: 35)
 kickdown                yes            F15/4      Bool: SEVCON automatic kickdown (Default: yes)
-lock_on                 no             --         Engage lock mode (Default: no)
+lock_on                 6              --         Speed limit [kph] to engage lock mode at (Default: undefined = off)
 maxrange                55             F12        Maximum ideal range at 20 °C [km] (Default: 80)
 motor_rpm_rated         2050           --         Powermap V3 control: rated speed [RPM] (Default: 0 = V2)
 motor_trq_breakdown     210.375        --         Powermap V3 control: breakdown torque [Nm] (Default: 0 = V2)
@@ -44,6 +44,6 @@ profile_user            2              P15        Tuning profile last loaded in 
 suffrange               0              F11        Sufficient range [km] (Default: 0=disabled)
 suffsoc                 80             F10        Sufficient SOC [%] (Default: 0=disabled)
 type                    --             --         Twizy custom SEVCON/Gearbox type: [SC80GB45,SC45GB80] (Default: - = auto detect)
-valet_on                no             --         Engage valet mode (Default: no)
+valet_on                12345.6        --         Odometer limit [km] to engage valet mode at (Default: undefined = off)
 ======================= ============== ========== ============================================
 

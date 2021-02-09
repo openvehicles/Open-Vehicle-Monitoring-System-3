@@ -71,8 +71,14 @@ using namespace std;
 
 #define SetCtrlLoggedIn(b)    (StdMetrics.ms_v_env_ctrl_login->SetValue(b))
 #define SetCtrlCfgMode(b)     (StdMetrics.ms_v_env_ctrl_config->SetValue(b))
-#define SetCarLocked(b)       (StdMetrics.ms_v_env_locked->SetValue(b))
-#define SetValetMode(b)       (StdMetrics.ms_v_env_valet->SetValue(b))
+#define SetCarLocked(b, kph)  { \
+  m_lock_speed->SetValue(kph); \
+  StdMetrics.ms_v_env_locked->SetValue(b); \
+}
+#define SetValetMode(b, odo)  { \
+  m_valet_odo->SetValue(odo / 100.0f); \
+  StdMetrics.ms_v_env_valet->SetValue(b); \
+}
 
 
 class OvmsVehicleRenaultTwizy : public OvmsVehicle
@@ -484,6 +490,8 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
   public:
     int               twizy_lock_speed = 6;     // if Lock mode: fix speed to this (kph)
     uint32_t          twizy_valet_odo = 0;      // if Valet mode: reduce speed if twizy_odometer > this
+    OvmsMetricInt     *m_lock_speed;
+    OvmsMetricFloat   *m_valet_odo;
 
   protected:
     SevconClient *m_sevcon = NULL;

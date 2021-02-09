@@ -790,6 +790,8 @@ void esp32wifi::Scan(OvmsWriter* writer, bool json)
   scanConf.channel = 0;
   scanConf.show_hidden = true;
   scanConf.scan_type = WIFI_SCAN_TYPE_ACTIVE;
+  scanConf.scan_time.active.min = 200;
+  scanConf.scan_time.active.max = 500;
   res = esp_wifi_scan_start(&scanConf, true);
   if (res != ESP_OK)
     {
@@ -1122,6 +1124,8 @@ void esp32wifi::StartConnect()
   scanConf.channel = 0;
   scanConf.show_hidden = true;
   scanConf.scan_type = WIFI_SCAN_TYPE_ACTIVE;
+  scanConf.scan_time.active.min = 200;
+  scanConf.scan_time.active.max = 500;
   esp_err_t res = esp_wifi_scan_start(&scanConf, false);
   if (res != ESP_OK)
     ESP_LOGE(TAG, "StartConnect: error 0x%x starting scan", res);
