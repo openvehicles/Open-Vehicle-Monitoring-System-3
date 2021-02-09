@@ -160,6 +160,10 @@ void OvmsTLS::Reload()
   extern const unsigned char starfield_class2_end[] asm("_binary_starfield_class2_crt_end");
   m_trustlist["Starfield Class 2 CA"] = new OvmsTrustedCert(starfield_class2, starfield_class2_end - starfield_class2);
 
+  extern const unsigned char baltimore_cybertrust[] asm("_binary_baltimore_cybertrust_crt_start");
+  extern const unsigned char baltimore_cybertrust_end[] asm("_binary_baltimore_cybertrust_crt_end");
+  m_trustlist["Baltimore CyberTrust Root CA"] = new OvmsTrustedCert(baltimore_cybertrust, baltimore_cybertrust_end - baltimore_cybertrust);
+
   // Add trusted certs on disk (/store/trustedca)
   DIR *dir;
   struct dirent *dp;
