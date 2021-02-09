@@ -551,18 +551,17 @@ bool OvmsConfig::ProtectedPath(std::string path)
   }
 
 /**
- * GetParamMap: get map of param instances
- * - Note: no modification allowed, to modify clone & call SetParamMap()
+ * GetParamMap: get map (copy) of param instances
  */
-const ConfigParamMap* OvmsConfig::GetParamMap(std::string param)
+ConfigParamMap OvmsConfig::GetParamMap(std::string param)
   {
+  ConfigParamMap pmap;
   if (!CachedParam(param))
     RegisterParam(param, "", true, false);
   OvmsConfigParam* p = CachedParam(param);
   if (p)
-    return &p->GetMap();
-  else
-    return NULL;
+    pmap = p->GetMap();
+  return pmap;
   }
 
 /**
