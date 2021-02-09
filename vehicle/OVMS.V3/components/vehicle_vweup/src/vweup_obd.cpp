@@ -1042,12 +1042,11 @@ void OvmsVehicleVWeUp::UpdateChargeCap(bool charging)
 
   if (charge_time >= checkpoint + 300) {
     update = true;
+    checkpoint += 300;
   }
 
   if (update)
   {
-    checkpoint += 300;
-    
     float coulomb_diff  = StdMetrics.ms_v_bat_coulomb_recd_total->AsFloat() - m_coulomb_charged_start;
     float energy_diff   = StdMetrics.ms_v_bat_energy_recd_total->AsFloat() - m_energy_charged_start;
     float soc_norm_diff = StdMetrics.ms_v_bat_soc->AsFloat() - m_soc_norm_start;
