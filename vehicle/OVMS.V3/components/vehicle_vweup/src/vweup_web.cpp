@@ -25,6 +25,7 @@
  * THE SOFTWARE.
  */
 
+#define _GLIBCXX_USE_C99 // to enable std::stoi etc.
 #include <stdio.h>
 #include <string>
 #include "ovms_metrics.h"
@@ -73,62 +74,47 @@ void OvmsVehicleVWeUp::WebDeInit()
  */
 void OvmsVehicleVWeUp::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
 {
+  ConfigParamMap pmap = MyConfig.GetParamMap("xvu");
+  ConfigParamMap nmap = pmap;
   std::string error, warn;
-  std::string modelyear;
-  std::string cell_interval_drv, cell_interval_chg, cell_interval_awk;
-  bool canwrite;
-  bool con_obd;
-  bool con_t26;
   bool do_reload = false;
 
   if (c.method == "POST")
   {
     // process form submission:
-    modelyear = c.getvar("modelyear");
-    con_obd = (c.getvar("con_obd") == "yes");
-    con_t26 = (c.getvar("con_t26") == "yes");
-    canwrite = (c.getvar("canwrite") == "yes");
-    cell_interval_drv = c.getvar("cell_interval_drv");
-    cell_interval_chg = c.getvar("cell_interval_chg");
-    cell_interval_awk = c.getvar("cell_interval_awk");
+    nmap["modelyear"] = c.getvar("modelyear");
+    nmap["con_obd"] = (c.getvar("con_obd") == "yes") ? "yes" : "no";
+    nmap["con_t26"] = (c.getvar("con_t26") == "yes") ? "yes" : "no";
+    nmap["canwrite"] = (c.getvar("canwrite") == "yes") ? "yes" : "no";
+    nmap["cell_interval_drv"] = c.getvar("cell_interval_drv");
+    nmap["cell_interval_chg"] = c.getvar("cell_interval_chg");
+    nmap["cell_interval_awk"] = c.getvar("cell_interval_awk");
 
     // check:
-    if (!modelyear.empty())
+    if (nmap["modelyear"] != "")
     {
-      int n = atoi(modelyear.c_str());
+      int n = std::stoi(nmap["modelyear"]);
       if (n < 2013)
         error += "<li data-input=\"modelyear\">Model year must be &ge; 2013</li>";
     }
 
-    if (!con_obd && !con_t26) {
+    if (nmap["con_obd"] != "yes" && nmap["con_t26"] != "yes") {
       warn += "<li><b>No connection type enabled.</b> You won't be able to get live data.</li>";
+    }
+
+    if (std::stoi(nmap["cell_interval_awk"]) > 0 && std::stoi(nmap["cell_interval_awk"]) < 30) {
+      warn += "<li><b>BMS update intervals below 30 seconds in awake may keep the car awake indefinitely!</b></li>";
     }
 
     if (error == "")
     {
       do_reload =
-        MyConfig.GetParamValue("xvu", "modelyear", STR(DEFAULT_MODEL_YEAR)) != modelyear ||
-        MyConfig.GetParamValueBool("xvu", "con_obd", true) != con_obd ||
-        MyConfig.GetParamValueBool("xvu", "con_t26", true) != con_t26;
+        nmap["modelyear"] != pmap["modelyear"]  ||
+        nmap["con_obd"]   != pmap["con_obd"]    ||
+        nmap["con_t26"]   != pmap["con_t26"];
 
       // store:
-      MyConfig.SetParamValue("xvu", "modelyear", modelyear);
-      MyConfig.SetParamValueBool("xvu", "con_obd", con_obd);
-      MyConfig.SetParamValueBool("xvu", "con_t26", con_t26);
-      MyConfig.SetParamValueBool("xvu", "canwrite", canwrite);
-
-      if (cell_interval_drv == "15")
-        MyConfig.DeleteInstance("xvu", "cell_interval_drv");
-      else
-        MyConfig.SetParamValue("xvu", "cell_interval_drv", cell_interval_drv);
-      if (cell_interval_chg == "60")
-        MyConfig.DeleteInstance("xvu", "cell_interval_chg");
-      else
-        MyConfig.SetParamValue("xvu", "cell_interval_chg", cell_interval_chg);
-      if (cell_interval_awk == "60")
-        MyConfig.DeleteInstance("xvu", "cell_interval_awk");
-      else
-        MyConfig.SetParamValue("xvu", "cell_interval_awk", cell_interval_awk);
+      MyConfig.SetParamMap("xvu", nmap);
 
       c.head(200);
       c.alert("success", "<p class=\"lead\">VW e-Up feature configuration saved.</p>");
@@ -151,14 +137,13 @@ void OvmsVehicleVWeUp::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
   }
   else
   {
-    // read configuration:
-    modelyear = MyConfig.GetParamValue("xvu", "modelyear", STR(DEFAULT_MODEL_YEAR));
-    con_obd = MyConfig.GetParamValueBool("xvu", "con_obd", true);
-    con_t26 = MyConfig.GetParamValueBool("xvu", "con_t26", true);
-    canwrite = MyConfig.GetParamValueBool("xvu", "canwrite", false);
-    cell_interval_drv = MyConfig.GetParamValue("xvu", "cell_interval_drv");
-    cell_interval_chg = MyConfig.GetParamValue("xvu", "cell_interval_chg");
-    cell_interval_awk = MyConfig.GetParamValue("xvu", "cell_interval_awk");
+    // fill in defaults:
+    if (nmap["modelyear"] == "")
+      nmap["modelyear"] = STR(DEFAULT_MODEL_YEAR);
+    if (nmap["con_obd"] == "")
+      nmap["con_obd"] = "yes";
+    if (nmap["con_t26"] == "")
+      nmap["con_t26"] = "yes";
 
     c.head(200);
   }
@@ -169,38 +154,38 @@ void OvmsVehicleVWeUp::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
   c.form_start(p.uri);
 
   c.fieldset_start("Vehicle Settings");
-  c.input("number", "Model year", "modelyear", modelyear.c_str(), "Default: " STR(DEFAULT_MODEL_YEAR),
+  c.input("number", "Model year", "modelyear", nmap["modelyear"].c_str(), "Default: " STR(DEFAULT_MODEL_YEAR),
     "<p>This sets some parameters that differ for pre 2020 models. I.e. kWh of battery.</p>"
     "<p>This parameter can also be set in the app under FEATURES 20.</p>",
     "min=\"2013\" step=\"1\"");
   c.fieldset_end();
 
   c.fieldset_start("Connection Types");
-  c.input_checkbox("OBD2", "con_obd", con_obd,
+  c.input_checkbox("OBD2", "con_obd", strtobool(nmap["con_obd"]),
     "<p>CAN1 connected to OBD2 port?</p>");
-  c.input_checkbox("T26A", "con_t26", con_t26,
+  c.input_checkbox("T26A", "con_t26", strtobool(nmap["con_t26"]),
     "<p>CAN3 connected to T26A plug underneath passenger seat?</p>");
   c.fieldset_end();
 
   c.fieldset_start("Remote Control");
-  c.input_checkbox("Enable CAN writes", "canwrite", canwrite,
+  c.input_checkbox("Enable CAN writes", "canwrite", strtobool(nmap["canwrite"]),
     "<p>Controls overall CAN write access, OBD2 and climate control depends on this.</p>"
     "<p>This parameter can also be set in the app under FEATURES 15.</p>");
   c.fieldset_end();
 
   c.fieldset_start("BMS Cell Monitoring", "needs-con-obd");
   c.input_slider("Update interval driving", "cell_interval_drv", 3, "s",
-    -1, cell_interval_drv.empty() ? 15 : atof(cell_interval_drv.c_str()),
+    -1, nmap["cell_interval_drv"].empty() ? 15 : std::stof(nmap["cell_interval_drv"]),
     15, 0, 300, 1,
     "<p>Default 15 seconds, 0=off.</p>");
   c.input_slider("Update interval charging", "cell_interval_chg", 3, "s",
-    -1, cell_interval_chg.empty() ? 60 : atof(cell_interval_chg.c_str()),
+    -1, nmap["cell_interval_chg"].empty() ? 60 : std::stof(nmap["cell_interval_chg"]),
     60, 0, 300, 1,
     "<p>Default 60 seconds, 0=off.</p>");
   c.input_slider("Update interval awake", "cell_interval_awk", 3, "s",
-    -1, cell_interval_awk.empty() ? 60 : atof(cell_interval_awk.c_str()),
+    -1, nmap["cell_interval_awk"].empty() ? 60 : std::stof(nmap["cell_interval_awk"]),
     60, 0, 300, 1,
-    "<p>Default 60 seconds, 0=off.</p>");
+    "<p>Default 60 seconds, 0=off. Note: an interval below 30 seconds may keep the car awake indefinitely.</p>");
   c.fieldset_end();
 
   c.print("<hr>");
