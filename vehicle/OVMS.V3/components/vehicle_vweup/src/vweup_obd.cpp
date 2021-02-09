@@ -356,6 +356,7 @@ void OvmsVehicleVWeUp::PollerStateTicker()
   else if (StdMetrics.ms_v_env_on->AsBool() == false && dcdc_voltage > 14) {
     // TODO: get real charge port state
     // For now, we assume the port has been closed when the car is started:
+    StdMetrics.ms_v_charge_duration_full->SetValue(0);
     StdMetrics.ms_v_door_chargeport->SetValue(false);
     StdMetrics.ms_v_env_on->SetValue(true);
   }
