@@ -417,7 +417,7 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     std::string tag = MyConfig.GetParamValue("ota","tag");
     url = MyConfig.GetParamValue("ota","server");
     if (url.empty())
-      url = "api.openvehicles.com/firmware/ota";
+      url = "https://api.openvehicles.com/firmware/ota";
 #ifdef CONFIG_OVMS_HW_BASE_3_0
     url.append("/v3.0/");
 #endif //#ifdef CONFIG_OVMS_HW_BASE_3_0
@@ -690,7 +690,7 @@ void OvmsOTA::GetStatus(ota_info& info, bool check_update /*=true*/)
       std::string tag = MyConfig.GetParamValue("ota","tag");
       std::string url = MyConfig.GetParamValue("ota","server");
       if (url.empty())
-        url = "api.openvehicles.com/firmware/ota";
+        url = "https://api.openvehicles.com/firmware/ota";
 #ifdef CONFIG_OVMS_HW_BASE_3_0
       url.append("/v3.0/");
 #endif //#ifdef CONFIG_OVMS_HW_BASE_3_0
@@ -853,7 +853,7 @@ bool OvmsOTA::AutoFlash(bool force)
   std::string tag = MyConfig.GetParamValue("ota","tag");
   std::string url = MyConfig.GetParamValue("ota","server");
   if (url.empty())
-    url = "api.openvehicles.com/firmware/ota";
+    url = "https://api.openvehicles.com/firmware/ota";
 #ifdef CONFIG_OVMS_HW_BASE_3_0
   url.append("/v3.0/");
 #endif //#ifdef CONFIG_OVMS_HW_BASE_3_0
