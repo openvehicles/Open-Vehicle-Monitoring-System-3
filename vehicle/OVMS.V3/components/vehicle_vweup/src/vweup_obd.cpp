@@ -30,6 +30,7 @@ static const char *TAG = "v-vweup";
 #include <stdio.h>
 #include <string>
 #include <iomanip>
+#include <algorithm>
 
 #include "pcp.h"
 #include "ovms_metrics.h"
@@ -478,6 +479,13 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
 
   float value;
   int ivalue;
+
+  //
+  // Handle reply for diagnostic session
+  //
+
+  if (type == UDS_SESSION)
+    return;
 
   //
   // Handle BMS cell voltage & temperatures
@@ -1022,6 +1030,7 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
         float old_value;
         float threshold_warn = MyConfig.GetParamValueFloat("xvu", "tpms_warn", 80);
         float threshold_alert = MyConfig.GetParamValueFloat("xvu", "tpms_alert", 60);
+        std::vector<string> tyre_abb = OvmsVehicle::GetTpmsLayout();
 
         for (int i = 0; i < 4; i++) {
           for (int j = 0; j < 5; j+=4) { // switch between diffusion and emergency values
@@ -1029,14 +1038,14 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
             if (!j){
               tpms_health[i] = TRUNCPREC(value / 2.55f, 1);
               TPMSDiffusion->SetElemValue(i,value);
-              VALUE_LOG(TAG, "VWUP_BRK_TPMS Diffusion %s: %f => %f", OvmsVehicle::GetTpmsLayout()[i].c_str(), value, TPMSDiffusion->GetElemValue(i));
+              VALUE_LOG(TAG, "VWUP_BRK_TPMS Diffusion %s: %f => %f", tyre_abb[i].c_str(), value, TPMSDiffusion->GetElemValue(i));
             }
             else {
               if (value / 2.55f < tpms_health[i]) {
                 tpms_health[i] = TRUNCPREC(value / 2.55f, 1);
               }
               TPMSEmergency->SetElemValue(i,value);
-              VALUE_LOG(TAG, "VWUP_BRK_TPMS Emergency %s: %f => %f", OvmsVehicle::GetTpmsLayout()[i].c_str(), value, TPMSEmergency->GetElemValue(i));
+              VALUE_LOG(TAG, "VWUP_BRK_TPMS Emergency %s: %f => %f", tyre_abb[i].c_str(), value, TPMSEmergency->GetElemValue(i));
             }
           }
           // Send notification?
@@ -1047,12 +1056,17 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
           else if (old_value > threshold_warn && tpms_health[i] <= threshold_warn) {
             tpms_alert[i] = 1;
           }
-          else 
+          else if (value <= threshold_alert)
+            tpms_alert[i] = 1;
+          else if (value <= threshold_warn)
             tpms_alert[i] = 0;
         }
+        if (std::count(tpms_health.begin(), tpms_health.end(), 0)) // at least one value was 0, abort
+          break;
         StdMetrics.ms_v_tpms_health->SetValue(tpms_health);
         StdMetrics.ms_v_tpms_alert->SetValue(tpms_alert);
       }
+      break;
 
     default:
       VALUE_LOG(TAG, "IncomingPollReply: unhandled PID %X: %s", pid, PollReply.GetHexString().c_str());
