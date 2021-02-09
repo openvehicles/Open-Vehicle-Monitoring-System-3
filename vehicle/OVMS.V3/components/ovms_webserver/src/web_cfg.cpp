@@ -2167,12 +2167,6 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
     tag = c.getvar("tag");
 
     if (action.substr(0,3) == "set") {
-
-      if (startsWith(server, "https:")) {
-        error = true;
-        output += "<p>Sorry, https not yet supported!</p>";
-      }
-
       info.partition_boot = c.getvar("boot_old");
       std::string partition_boot = c.getvar("boot");
       if (partition_boot != info.partition_boot) {
@@ -2291,8 +2285,8 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
     "<p>Automatic updates are normally only done if a wifi connection is available at the time. Before allowing updates via modem, be aware a single firmware image has a size of around 3 MB, which may lead to additional costs on your data plan.</p>");
   c.print(
     "<datalist id=\"server-list\">"
-      "<option value=\"api.openvehicles.com/firmware/ota\">"
-      "<option value=\"ovms.dexters-web.de/firmware/ota\">"
+      "<option value=\"https://api.openvehicles.com/firmware/ota\">"
+      "<option value=\"https://ovms.dexters-web.de/firmware/ota\">"
     "</datalist>"
     "<datalist id=\"tag-list\">"
       "<option value=\"main\">"
@@ -2301,7 +2295,7 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
     "</datalist>"
     );
   c.input_text("Update server", "server", server.c_str(), "Specify or select from list (clear to see all options)",
-    "<p>Default is <code>api.openvehicles.com/firmware/ota</code>. Note: currently only http is supported.</p>",
+    "<p>Default is <code>https://api.openvehicles.com/firmware/ota</code>.</p>",
     "list=\"server-list\"");
   c.input_text("Version tag", "tag", tag.c_str(), "Specify or select from list (clear to see all options)",
     "<p>Default is <code>main</code> for standard releases. Use <code>eap</code> (early access program) for stable or <code>edge</code> for bleeding edge developer builds.</p>",
