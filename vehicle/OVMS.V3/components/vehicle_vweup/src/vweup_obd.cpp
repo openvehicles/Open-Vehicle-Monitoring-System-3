@@ -1048,17 +1048,12 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
               VALUE_LOG(TAG, "VWUP_BRK_TPMS Emergency %s: %f => %f", tyre_abb[i].c_str(), value, TPMSEmergency->GetElemValue(i));
             }
           }
-          // Send notification?
-          old_value = StdMetrics.ms_v_tpms_health->GetElemValue(i);
-          if (old_value > threshold_alert && tpms_health[i] <= threshold_alert) {
+          // Set alert?
+          if (tpms_health[i] <= threshold_alert)
             tpms_alert[i] = 2;
-          }
-          else if (old_value > threshold_warn && tpms_health[i] <= threshold_warn) {
+          else if (tpms_health[i] <= threshold_warn)
             tpms_alert[i] = 1;
-          }
-          else if (value <= threshold_alert)
-            tpms_alert[i] = 1;
-          else if (value <= threshold_warn)
+          else 
             tpms_alert[i] = 0;
         }
         if (std::count(tpms_health.begin(), tpms_health.end(), 0)) // at least one value was 0, abort
