@@ -1057,7 +1057,7 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
             tpms_alert[i] = 1;
           else 
             tpms_alert[i] = 0;
-          }
+        }
 
         // all wheels valid?
         if (i == 4) {
