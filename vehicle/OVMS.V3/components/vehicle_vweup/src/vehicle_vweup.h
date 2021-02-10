@@ -286,6 +286,8 @@ protected:
   OvmsMetricFloat *ChargerPowerEffCalc;           // Efficiency of the Charger [%] (calculated from U and I)
   OvmsMetricFloat *ChargerPowerLossCalc;          // Power loss of Charger [kW] (calculated from U and I)
   OvmsMetricInt *ServiceDays;                     // Days until next scheduled maintenance/service
+  OvmsMetricVector<float> *TPMSDiffusion;         // TPMS Indicator for Pressure Diffusion
+  OvmsMetricVector<float> *TPMSEmergency;         // TPMS Indicator for Tyre Emergency
 
   OvmsMetricFloat *BatTempMax;
   OvmsMetricFloat *BatTempMin;

@@ -30,6 +30,7 @@ static const char *TAG = "v-vweup";
 #include <stdio.h>
 #include <string>
 #include <iomanip>
+#include <algorithm>
 
 #include "pcp.h"
 #include "ovms_metrics.h"
@@ -75,7 +76,6 @@ const OvmsVehicle::poll_pid_t vweup_polls[] = {
   {VWUP_MFD,      UDS_READ, VWUP_MFD_ODOMETER,              {  0,  0,  0, 60}, 1, ISOTP_STD},
   {VWUP_MFD,      UDS_READ, VWUP_MFD_RANGE_CAP,             {  0,  0,  0, 60}, 1, ISOTP_STD},
 
-//{VWUP_BRK,      UDS_READ, VWUP_BRK_TPMS,                  {  0,  0,  0,  5}, 1, ISOTP_STD},
   {VWUP_MFD,      UDS_READ, VWUP_MFD_SERV_RANGE,            {  0,  0,  0, 60}, 1, ISOTP_STD},
   {VWUP_MFD,      UDS_READ, VWUP_MFD_SERV_TIME,             {  0,  0,  0, 60}, 1, ISOTP_STD},
 
@@ -89,6 +89,8 @@ const OvmsVehicle::poll_pid_t vweup_polls[] = {
 //{VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_TEMP_MIN,         {  0,  0,  0, 20}, 1, ISOTP_STD},
 
   {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_REM,              {  0,  0, 30,  0}, 1, ISOTP_STD},
+  {VWUP_BRK,      UDS_SESSION, VWUP_EXTDIAG_START,          {  0, 30,  0, 30}, 1, ISOTP_STD},
+  {VWUP_BRK,      UDS_READ, VWUP_BRK_TPMS,                  {  0, 30,  0, 30}, 1, ISOTP_STD},
 };
 
 //
@@ -155,6 +157,8 @@ void OvmsVehicleVWeUp::OBDInit()
     ChargerDCPower = MyMetrics.InitFloat("xvu.c.dc.p", SM_STALE_NONE, 0, Watts);
 
     ServiceDays =  MyMetrics.InitInt("xvu.e.serv.days", SM_STALE_NONE, 0);
+    TPMSDiffusion = MyMetrics.InitVector<float>("xvu.v.t.diff", SM_STALE_NONE, 0);
+    TPMSEmergency = MyMetrics.InitVector<float>("xvu.v.t.emgcy", SM_STALE_NONE, 0);
 
     // Note: the following metrics will probably be removed after deciding if/which of these
     //  we can use to get the actual battery capacity:
@@ -471,6 +475,13 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
 
   float value;
   int ivalue;
+
+  //
+  // Handle reply for diagnostic session
+  //
+
+  if (type == UDS_SESSION)
+    return;
 
   //
   // Handle BMS cell voltage & temperatures
@@ -1005,6 +1016,50 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
       if (PollReply.FromUint8("VWUP_CHG_MGMT_REM", value) && value != 127) {
         StdMetrics.ms_v_charge_duration_full->SetValue(value * 5.0f);
         VALUE_LOG(TAG, "VWUP_CHG_MGMT_REM=%f => %f", value, StdMetrics.ms_v_charge_duration_full->AsFloat());
+      }
+      break;
+
+    case VWUP_BRK_TPMS:
+      if (PollReply.FromUint8("VWUP_BRK_TPMS", value, 43)) {
+        std::vector<float> tpms_health(4);
+        std::vector<short> tpms_alert(4);
+        float threshold_warn = MyConfig.GetParamValueFloat("xvu", "tpms_warn", 80);
+        float threshold_alert = MyConfig.GetParamValueFloat("xvu", "tpms_alert", 60);
+        std::vector<string> tyre_abb = OvmsVehicle::GetTpmsLayout();
+        int i;
+
+        for (i = 0; i < 4; i++) {
+          // read diffusion:
+          PollReply.FromUint8("VWUP_BRK_TPMS", value, 36+i);
+          tpms_health[i] = TRUNCPREC(value / 2.55f, 1);
+          TPMSDiffusion->SetElemValue(i,value);
+          VALUE_LOG(TAG, "VWUP_BRK_TPMS Diffusion %s: %f", tyre_abb[i].c_str(), value);
+
+          // read emergency:
+          PollReply.FromUint8("VWUP_BRK_TPMS", value, 40+i);
+          if (value / 2.55f < tpms_health[i])
+            tpms_health[i] = TRUNCPREC(value / 2.55f, 1);
+          TPMSEmergency->SetElemValue(i,value);
+          VALUE_LOG(TAG, "VWUP_BRK_TPMS Emergency %s: %f", tyre_abb[i].c_str(), value);
+
+          // invalid?
+          if (tpms_health[i] == 0)
+            break;
+
+          // Set alert?
+          if (tpms_health[i] <= threshold_alert)
+            tpms_alert[i] = 2;
+          else if (tpms_health[i] <= threshold_warn)
+            tpms_alert[i] = 1;
+          else 
+            tpms_alert[i] = 0;
+        }
+
+        // all wheels valid?
+        if (i == 4) {
+          StdMetrics.ms_v_tpms_health->SetValue(tpms_health);
+          StdMetrics.ms_v_tpms_alert->SetValue(tpms_alert);
+        }
       }
       break;
 
