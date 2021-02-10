@@ -1027,27 +1027,29 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
       if (PollReply.FromUint8("VWUP_BRK_TPMS", value, 43)) {
         std::vector<float> tpms_health(4);
         std::vector<short> tpms_alert(4);
-        float old_value;
         float threshold_warn = MyConfig.GetParamValueFloat("xvu", "tpms_warn", 80);
         float threshold_alert = MyConfig.GetParamValueFloat("xvu", "tpms_alert", 60);
         std::vector<string> tyre_abb = OvmsVehicle::GetTpmsLayout();
+        int i;
 
-        for (int i = 0; i < 4; i++) {
-          for (int j = 0; j < 5; j+=4) { // switch between diffusion and emergency values
-            PollReply.FromUint8("VWUP_BRK_TPMS", value, 36+i+j);
-            if (!j){
-              tpms_health[i] = TRUNCPREC(value / 2.55f, 1);
-              TPMSDiffusion->SetElemValue(i,value);
-              VALUE_LOG(TAG, "VWUP_BRK_TPMS Diffusion %s: %f => %f", tyre_abb[i].c_str(), value, TPMSDiffusion->GetElemValue(i));
-            }
-            else {
-              if (value / 2.55f < tpms_health[i]) {
-                tpms_health[i] = TRUNCPREC(value / 2.55f, 1);
-              }
-              TPMSEmergency->SetElemValue(i,value);
-              VALUE_LOG(TAG, "VWUP_BRK_TPMS Emergency %s: %f => %f", tyre_abb[i].c_str(), value, TPMSEmergency->GetElemValue(i));
-            }
-          }
+        for (i = 0; i < 4; i++) {
+          // read diffusion:
+          PollReply.FromUint8("VWUP_BRK_TPMS", value, 36+i);
+          tpms_health[i] = TRUNCPREC(value / 2.55f, 1);
+          TPMSDiffusion->SetElemValue(i,value);
+          VALUE_LOG(TAG, "VWUP_BRK_TPMS Diffusion %s: %f", tyre_abb[i].c_str(), value);
+
+          // read emergency:
+          PollReply.FromUint8("VWUP_BRK_TPMS", value, 40+i);
+          if (value / 2.55f < tpms_health[i])
+            tpms_health[i] = TRUNCPREC(value / 2.55f, 1);
+          TPMSEmergency->SetElemValue(i,value);
+          VALUE_LOG(TAG, "VWUP_BRK_TPMS Emergency %s: %f", tyre_abb[i].c_str(), value);
+
+          // invalid?
+          if (tpms_health[i] == 0)
+            break;
+
           // Set alert?
           if (tpms_health[i] <= threshold_alert)
             tpms_alert[i] = 2;
@@ -1055,11 +1057,13 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
             tpms_alert[i] = 1;
           else 
             tpms_alert[i] = 0;
+          }
+
+        // all wheels valid?
+        if (i == 4) {
+          StdMetrics.ms_v_tpms_health->SetValue(tpms_health);
+          StdMetrics.ms_v_tpms_alert->SetValue(tpms_alert);
         }
-        if (std::count(tpms_health.begin(), tpms_health.end(), 0)) // at least one value was 0, abort
-          break;
-        StdMetrics.ms_v_tpms_health->SetValue(tpms_health);
-        StdMetrics.ms_v_tpms_alert->SetValue(tpms_alert);
       }
       break;
 
