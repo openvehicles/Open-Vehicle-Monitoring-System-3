@@ -198,6 +198,7 @@ protected:
 
 protected:
   void T26Init();
+  void T26Ticker1(uint32_t ticker);
 
 protected:
   void IncomingFrameCan3(CAN_frame_t *p_frame);

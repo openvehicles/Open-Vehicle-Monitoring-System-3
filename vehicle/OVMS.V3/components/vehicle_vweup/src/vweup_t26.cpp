@@ -185,6 +185,61 @@ void OvmsVehicleVWeUp::T26Init()
   StandardMetrics.ms_v_env_on->SetValue(false);
 }
 
+
+void OvmsVehicleVWeUp::T26Ticker1(uint32_t ticker)
+{
+  // Autodisable climate control ticker (30 min.)
+  if (vweup_remote_climate_ticker != 0) {
+    vweup_remote_climate_ticker--;
+    if (vweup_remote_climate_ticker == 1) {
+      SendCommand(AUTO_DISABLE_CLIMATE_CONTROL);
+    }
+  }
+
+  // Car disabled climate control
+  if (!StandardMetrics.ms_v_env_on->AsBool() &&
+      vweup_remote_climate_ticker < 1770 &&
+      vweup_remote_climate_ticker != 0 &&
+      !StandardMetrics.ms_v_env_hvac->AsBool())
+  {
+    ESP_LOGI(TAG, "Car disabled Climate Control or cc did not turn on");
+    vweup_remote_climate_ticker = 0;
+    vweup_cc_on = false;
+    ocu_awake = true;
+  }
+
+  if (StdMetrics.ms_v_bat_12v_voltage->AsFloat() < 13 && !t26_ring_awake && StandardMetrics.ms_v_env_charging12v->AsBool()) {
+    // Wait for 12v voltage to come up to 13.2v while getting a boost:
+    t26_12v_boost_cnt++;
+    if (t26_12v_boost_cnt > 20) {
+      ESP_LOGI(TAG, "Car stopped itself charging the 12v battery");
+      StandardMetrics.ms_v_env_charging12v->SetValue(false);
+      StandardMetrics.ms_v_env_aux12v->SetValue(false);
+      t26_12v_boost = false;
+      t26_12v_boost_cnt = 0;
+
+      // Clear powers & currents that are not supported by T26:
+      StdMetrics.ms_v_bat_current->SetValue(0);
+      StdMetrics.ms_v_bat_power->SetValue(0);
+      StdMetrics.ms_v_bat_12v_current->SetValue(0);
+      StdMetrics.ms_v_charge_12v_current->SetValue(0);
+      StdMetrics.ms_v_charge_12v_power->SetValue(0);
+
+      PollSetState(VWEUP_OFF);
+    }
+  }
+
+  if (StdMetrics.ms_v_bat_12v_voltage->AsFloat() >= 13 && t26_12v_boost_cnt == 0) {
+    t26_12v_boost_cnt = 20;
+  }
+  if (t26_12v_boost_last_cnt == t26_12v_boost_cnt && t26_12v_boost_cnt != 0 && t26_12v_boost_cnt != 20) {
+    // We are not waiting to charging 12v to come up anymore:
+    t26_12v_boost_cnt = 0;
+  }
+  t26_12v_boost_last_cnt = t26_12v_boost_cnt;
+}
+
+
 // Takes care of setting all the state appropriate when the car is on
 // or off.
 //
