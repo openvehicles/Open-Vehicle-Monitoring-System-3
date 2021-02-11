@@ -350,7 +350,7 @@ void OvmsVehicleRenaultZoe::IncomingFrameCan1(CAN_frame_t* p_frame) {
       StandardMetrics.ms_v_charge_climit->SetValue((((CAN_UINT(4))>>4) & 0x3Fu));
       StandardMetrics.ms_v_charge_current->SetValue((((CAN_UINT(4))>>4) & 0x3Fu)); // Todo change to charger current
       // 42e,44,50,1,40,0,°C,,,e3,HV Battery Temp
-      StandardMetrics.ms_v_bat_temp->SetValue((((CAN_UINT(5))>>5) & 0x7fu) - 40);
+      StandardMetrics.ms_v_bat_temp->SetValue((float) (((CAN_UINT(5))>>5) & 0x7fu) - 40);
       // 42e,56,63,0.3,0,1,kW,,,ff,Charging Power
       break;
     case 0x430:
