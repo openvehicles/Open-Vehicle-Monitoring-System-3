@@ -1,0 +1,96 @@
+#!/bin/bash
+
+if test ! -x ./examples/sftpclient/wolfsftp
+then
+    echo "This test requires the wolfSFTP client."
+    exit 1
+fi
+
+if test ! -x ./examples/echoserver/echoserver
+then
+    echo "This test requires the wolfSSH echoserver."
+    exit 1
+fi
+
+SERVER_PID=0
+READY_FILE=$(pwd)/wolfssh_sftp_ready$$
+READY_COUNTER=0
+
+
+wait_for_server() {
+    while [ ! -s "$READY_FILE" ] && [ "$READY_COUNTER" -lt 20 ]; do
+        sleep 0.1
+        READY_COUNTER=$((READY_COUNTER+ 1))
+    done
+
+    if test -e "$READY_FILE"
+    then
+        # get created port 0 ephemeral port
+        PORT=$(cat "$READY_FILE")
+    else
+        echo "Echoserver never started."
+        do_cleanup
+        exit 1
+    fi
+}
+
+
+do_cleanup() {
+    rm -f "$READY_FILE" sample1.txt sample2.txt sample1-copy.txt sample2-copy.txt
+    if test $SERVER_PID != 0
+    then
+        kill -9 $SERVER_PID
+    fi
+}
+
+
+do_trap() {
+    do_cleanup
+    exit 1
+}
+
+
+trap do_trap INT TERM
+
+
+./examples/echoserver/echoserver -d "$(pwd)" -R "$READY_FILE" >/dev/null 2>&1 &
+
+SERVER_PID=$!
+wait_for_server
+
+echo "This is some sample test to make a file to copy back and forth." > sample1.txt
+echo "This is a different set of sample text to copy back and forth." > sample2.txt
+
+# Get test.
+if ! ./examples/sftpclient/wolfsftp -u jill -P upthehill -p "$PORT" \
+    -G -l sample1-copy.txt -r sample1.txt
+then
+    echo "Unable to get file."
+    do_cleanup
+    exit 1
+fi
+
+# Put test.
+if ! ./examples/sftpclient/wolfsftp -u jill -P upthehill -p "$PORT" \
+    -g -l sample2.txt -r sample2-copy.txt
+then
+    echo "Unable to put file."
+    do_cleanup
+    exit 1
+fi
+
+if ! diff sample1.txt sample1-copy.txt >/dev/null
+then
+    echo "Get test files do not match."
+    do_cleanup
+    exit 1
+fi
+
+if ! diff sample2.txt sample2-copy.txt >/dev/null
+then
+    echo "Put test files do not match."
+    do_cleanup
+    exit 1
+fi
+
+do_cleanup

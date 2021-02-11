@@ -99,5 +99,19 @@ STRINGTABLE
 
     81, "Bad Decrypt Size"
     82, "Extended Master Secret Hash Error"
-}
+    83, "Handshake Message Split Across TLS Records"
+    84, "ECC Private Decode Error"
+    85, "ECC Public Decode Error"
 
+    86, "Watch callback not set"
+    87, "Watch hash failed"
+    88, "Watch callback failed"
+    89, "Bad Certificate Message"
+    90, "Store data callback not set"
+
+    91, "No data destination Error"
+    92, "Store Data callback failed"
+    93, "Loading chain input"
+    94, "Got encrypted extension"
+    95, "Got Hello Retry Request"
+}

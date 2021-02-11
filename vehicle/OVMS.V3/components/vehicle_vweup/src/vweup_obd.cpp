@@ -30,6 +30,7 @@ static const char *TAG = "v-vweup";
 #include <stdio.h>
 #include <string>
 #include <iomanip>
+#include <algorithm>
 
 #include "pcp.h"
 #include "ovms_metrics.h"
@@ -43,59 +44,64 @@ static const char *TAG = "v-vweup";
 #include "vehicle_vweup.h"
 #include "vweup_obd.h"
 
-
+ 
 //
 // General PIDs for all model years
 //
 const OvmsVehicle::poll_pid_t vweup_polls[] = {
   // Note: poller ticker cycles at 3600 seconds = max period
-  // { ecu, type, pid, {_OFF,_ON,_CHARGING}, bus, protocol }
+  // { ecu, type, pid, {_OFF,_AWAKE,_CHARGING,_ON}, bus, protocol }
 
-  {VWUP_MOT_ELEC, UDS_READ, VWUP_MOT_ELEC_POWER_MOT,        {  0,  1,  0}, 1, ISOTP_STD},
+  {VWUP_MOT_ELEC, UDS_READ, VWUP_MOT_ELEC_POWER_MOT,        {  0,  0,  0,  1}, 1, ISOTP_STD},
 
-  {VWUP_MOT_ELEC, UDS_READ, VWUP_MOT_ELEC_SOC_NORM,         {  0, 20,  0}, 1, ISOTP_STD},
-  {VWUP_MOT_ELEC, UDS_READ, VWUP_MOT_ELEC_SOC_ABS,          {  0, 20,  0}, 1, ISOTP_STD},
-  {VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_SOC_ABS,          {  0, 20, 20}, 1, ISOTP_STD},
-  {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_SOC_NORM,         {  0,  0, 20}, 1, ISOTP_STD},
-  {VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_ENERGY_COUNTERS,  {  0, 20, 20}, 1, ISOTP_STD},
+  {VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_U,                {  0, 10,  5,  1}, 1, ISOTP_STD},
+  {VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_I,                {  0, 10,  5,  1}, 1, ISOTP_STD},
+  // Same tick & order important of above 2: VWUP_BAT_MGMT_I calculates the power
 
-  {VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_CELL_MAX,         {  0, 20, 20}, 1, ISOTP_STD},
-  {VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_CELL_MIN,         {  0, 20, 20}, 1, ISOTP_STD},
+  {VWUP_MOT_ELEC, UDS_READ, VWUP_MOT_ELEC_SOC_NORM,         {  0,  0,  0, 20}, 1, ISOTP_STD},
+  {VWUP_MOT_ELEC, UDS_READ, VWUP_MOT_ELEC_SOC_ABS,          {  0,  0,  0, 20}, 1, ISOTP_STD},
+  {VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_SOC_ABS,          {  0, 20, 20, 20}, 1, ISOTP_STD},
+  {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_SOC_NORM,         {  0, 20, 20,  0}, 1, ISOTP_STD},
+  {VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_ENERGY_COUNTERS,  {  0, 20, 20, 20}, 1, ISOTP_STD},
+
+  {VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_CELL_MAX,         {  0, 20, 20, 20}, 1, ISOTP_STD},
+  {VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_CELL_MIN,         {  0, 20, 20, 20}, 1, ISOTP_STD},
   // Same tick & order important of above 2: VWUP_BAT_MGMT_CELL_MIN calculates the delta
 
-  {VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_TEMP,             {  0, 20, 20}, 1, ISOTP_STD},
+  {VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_TEMP,             {  0, 20, 20, 20}, 1, ISOTP_STD},
 
-  {VWUP_CHG,      UDS_READ, VWUP_CHG_POWER_EFF,             {  0,  5, 10}, 1, ISOTP_STD}, // 5 @ _ON to detect charging
-  {VWUP_CHG,      UDS_READ, VWUP_CHG_POWER_LOSS,            {  0,  0, 10}, 1, ISOTP_STD},
+  {VWUP_CHG,      UDS_READ, VWUP_CHG_POWER_EFF,             {  0,  0, 10,  5}, 1, ISOTP_STD}, // 5 @ _ON to detect charging
+  {VWUP_CHG,      UDS_READ, VWUP_CHG_POWER_LOSS,            {  0,  0, 10,  0}, 1, ISOTP_STD},
 
-  {VWUP_MFD,      UDS_READ, VWUP_MFD_ODOMETER,              {  0, 60,  0}, 1, ISOTP_STD},
-  {VWUP_MFD,      UDS_READ, VWUP_MFD_RANGE_CAP,             {  0, 60,  0}, 1, ISOTP_STD},
+  {VWUP_MFD,      UDS_READ, VWUP_MFD_ODOMETER,              {  0,  0,  0, 60}, 1, ISOTP_STD},
+  {VWUP_MFD,      UDS_READ, VWUP_MFD_RANGE_CAP,             {  0,  0,  0, 60}, 1, ISOTP_STD},
 
-//{VWUP_BRK,      UDS_READ, VWUP_BRK_TPMS,                  {  0,  5,  0}, 1, ISOTP_STD},
-  {VWUP_MFD,      UDS_READ, VWUP_MFD_SERV_RANGE,            {  0, 60,  0}, 1, ISOTP_STD},
-  {VWUP_MFD,      UDS_READ, VWUP_MFD_SERV_TIME,             {  0, 60,  0}, 1, ISOTP_STD},
+  {VWUP_MFD,      UDS_READ, VWUP_MFD_SERV_RANGE,            {  0,  0,  0, 60}, 1, ISOTP_STD},
+  {VWUP_MFD,      UDS_READ, VWUP_MFD_SERV_TIME,             {  0,  0,  0, 60}, 1, ISOTP_STD},
 
-  {VWUP_MOT_ELEC, UDS_READ, VWUP_MOT_ELEC_TEMP_DCDC,        {  0, 20,  0}, 1, ISOTP_STD},
-  {VWUP_ELD,      UDS_READ, VWUP_ELD_DCDC_U,                {  0,  5, 10}, 1, ISOTP_STD},
-  {VWUP_ELD,      UDS_READ, VWUP_ELD_DCDC_I,                {  0,  5, 10}, 1, ISOTP_STD},
-  {VWUP_ELD,      UDS_READ, VWUP_ELD_TEMP_MOT,              {  0, 20, 60}, 1, ISOTP_STD},
-  {VWUP_MOT_ELEC, UDS_READ, VWUP_MOT_ELEC_TEMP_PEM,         {  0, 20,  0}, 1, ISOTP_STD},
-  {VWUP_CHG,      UDS_READ, VWUP_CHG_TEMP_COOLER,           {  0, 20, 20}, 1, ISOTP_STD},
-//{VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_TEMP_MAX,         {  0, 20,  0}, 1, ISOTP_STD},
-//{VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_TEMP_MIN,         {  0, 20,  0}, 1, ISOTP_STD},
+  {VWUP_MOT_ELEC, UDS_READ, VWUP_MOT_ELEC_TEMP_DCDC,        {  0,  0,  0, 20}, 1, ISOTP_STD},
+  {VWUP_ELD,      UDS_READ, VWUP_ELD_DCDC_U,                {  0, 10, 10,  5}, 1, ISOTP_STD},
+  {VWUP_ELD,      UDS_READ, VWUP_ELD_DCDC_I,                {  0, 10, 10,  5}, 1, ISOTP_STD},
+  {VWUP_ELD,      UDS_READ, VWUP_ELD_TEMP_MOT,              {  0, 60, 60, 20}, 1, ISOTP_STD},
+  {VWUP_MOT_ELEC, UDS_READ, VWUP_MOT_ELEC_TEMP_PEM,         {  0,  0,  0, 20}, 1, ISOTP_STD},
+  {VWUP_CHG,      UDS_READ, VWUP_CHG_TEMP_COOLER,           {  0, 20, 20, 20}, 1, ISOTP_STD},
+//{VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_TEMP_MAX,         {  0,  0,  0, 20}, 1, ISOTP_STD},
+//{VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_TEMP_MIN,         {  0,  0,  0, 20}, 1, ISOTP_STD},
 
-  {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_REM,              {  0,  0, 30}, 1, ISOTP_STD},
+  {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_REM,              {  0,  0, 30,  0}, 1, ISOTP_STD},
+  {VWUP_BRK,      UDS_SESSION, VWUP_EXTDIAG_START,          {  0, 30,  0, 30}, 1, ISOTP_STD},
+  {VWUP_BRK,      UDS_READ, VWUP_BRK_TPMS,                  {  0, 30,  0, 30}, 1, ISOTP_STD},
 };
 
 //
 // Specific PIDs for gen1 model (before year 2020)
 //
 const OvmsVehicle::poll_pid_t vweup_gen1_polls[] = {
-  {VWUP_CHG,      UDS_READ, VWUP1_CHG_AC_U,                 {  0,  0,  5}, 1, ISOTP_STD},
-  {VWUP_CHG,      UDS_READ, VWUP1_CHG_AC_I,                 {  0,  0,  5}, 1, ISOTP_STD},
+  {VWUP_CHG,      UDS_READ, VWUP1_CHG_AC_U,                 {  0,  0,  3,  0}, 1, ISOTP_STD},
+  {VWUP_CHG,      UDS_READ, VWUP1_CHG_AC_I,                 {  0,  0,  3,  0}, 1, ISOTP_STD},
   // Same tick & order important of above 2: VWUP_CHG_AC_I calculates the AC power
-  {VWUP_CHG,      UDS_READ, VWUP1_CHG_DC_U,                 {  0,  0,  5}, 1, ISOTP_STD},
-  {VWUP_CHG,      UDS_READ, VWUP1_CHG_DC_I,                 {  0,  0,  5}, 1, ISOTP_STD},
+  {VWUP_CHG,      UDS_READ, VWUP1_CHG_DC_U,                 {  0,  0,  3,  0}, 1, ISOTP_STD},
+  {VWUP_CHG,      UDS_READ, VWUP1_CHG_DC_I,                 {  0,  0,  3,  0}, 1, ISOTP_STD},
   // Same tick & order important of above 2: VWUP_CHG_DC_I calculates the DC power
   // Same tick & order important of above 4: VWUP_CHG_DC_I calculates the power loss & efficiency
 };
@@ -104,11 +110,11 @@ const OvmsVehicle::poll_pid_t vweup_gen1_polls[] = {
 // Specific PIDs for gen2 model (from year 2020)
 //
 const OvmsVehicle::poll_pid_t vweup_gen2_polls[] = {
-  {VWUP_CHG,      UDS_READ, VWUP2_CHG_AC_U,                 {  0,  0,  5}, 1, ISOTP_STD},
-  {VWUP_CHG,      UDS_READ, VWUP2_CHG_AC_I,                 {  0,  0,  5}, 1, ISOTP_STD},
+  {VWUP_CHG,      UDS_READ, VWUP2_CHG_AC_U,                 {  0,  0,  3,  0}, 1, ISOTP_STD},
+  {VWUP_CHG,      UDS_READ, VWUP2_CHG_AC_I,                 {  0,  0,  3,  0}, 1, ISOTP_STD},
   // Same tick & order important of above 2: VWUP_CHG_AC_I calculates the AC power
-  {VWUP_CHG,      UDS_READ, VWUP2_CHG_DC_U,                 {  0,  0,  5}, 1, ISOTP_STD},
-  {VWUP_CHG,      UDS_READ, VWUP2_CHG_DC_I,                 {  0,  0,  5}, 1, ISOTP_STD},
+  {VWUP_CHG,      UDS_READ, VWUP2_CHG_DC_U,                 {  0,  0,  3,  0}, 1, ISOTP_STD},
+  {VWUP_CHG,      UDS_READ, VWUP2_CHG_DC_I,                 {  0,  0,  3,  0}, 1, ISOTP_STD},
   // Same tick & order important of above 2: VWUP_CHG_DC_I calculates the DC power
   // Same tick & order important of above 4: VWUP_CHG_DC_I calculates the power loss & efficiency
 };
@@ -125,6 +131,10 @@ void OvmsVehicleVWeUp::OBDInit()
   if (m_obd_state == OBDS_Init)
   {
     // Init metrics:
+    m_lv_pwrstate = MyMetrics.InitInt("xvu.e.lv.pwrstate", 30, 0, Other, true);
+    m_hv_chgmode  = MyMetrics.InitInt("xvu.e.hv.chgmode", 30, 0, Other, true);
+    m_lv_autochg  = MyMetrics.InitInt("xvu.e.lv.autochg", 30, 0);
+
     BatMgmtSoCAbs = MyMetrics.InitFloat("xvu.b.soc.abs", 100, 0, Percentage);
     MotElecSoCAbs = MyMetrics.InitFloat("xvu.m.soc.abs", 100, 0, Percentage);
     MotElecSoCNorm = MyMetrics.InitFloat("xvu.m.soc.norm", 100, 0, Percentage);
@@ -145,7 +155,21 @@ void OvmsVehicleVWeUp::OBDInit()
     ChargerDC1I = MyMetrics.InitFloat("xvu.c.dc.i1", SM_STALE_NONE, 0, Amps);
     ChargerDC2I = MyMetrics.InitFloat("xvu.c.dc.i2", SM_STALE_NONE, 0, Amps);
     ChargerDCPower = MyMetrics.InitFloat("xvu.c.dc.p", SM_STALE_NONE, 0, Watts);
+
     ServiceDays =  MyMetrics.InitInt("xvu.e.serv.days", SM_STALE_NONE, 0);
+    TPMSDiffusion = MyMetrics.InitVector<float>("xvu.v.t.diff", SM_STALE_NONE, 0);
+    TPMSEmergency = MyMetrics.InitVector<float>("xvu.v.t.emgcy", SM_STALE_NONE, 0);
+
+    // Note: the following metrics will probably be removed after deciding if/which of these
+    //  we can use to get the actual battery capacity:
+    m_bat_cap_range        = MyMetrics.InitFloat("xvu.b.cap.range", SM_STALE_MAX, 0, kWh);
+    m_bat_cap_chg_ah_norm  = MyMetrics.InitFloat("xvu.b.cap.chg.ah.norm", SM_STALE_MAX, 0, AmpHours);
+    m_bat_cap_chg_ah_abs   = MyMetrics.InitFloat("xvu.b.cap.chg.ah.abs", SM_STALE_MAX, 0, AmpHours);
+    m_bat_cap_chg_kwh_norm = MyMetrics.InitFloat("xvu.b.cap.chg.kwh.norm", SM_STALE_MAX, 0, kWh);
+    m_bat_cap_chg_kwh_abs  = MyMetrics.InitFloat("xvu.b.cap.chg.kwh.abs", SM_STALE_MAX, 0, kWh);
+
+    // Init state:
+    std::fill_n(m_bat_cap_range_hist, sizeof_array(m_bat_cap_range_hist), m_bat_cap_range->AsFloat());
 
     // Start can1:
     RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
@@ -167,20 +191,21 @@ void OvmsVehicleVWeUp::OBDInit()
     PollSetState(VWEUP_ON);
   else
     PollSetState(VWEUP_OFF);
-  TimeOffRequested = 0;
 
   m_poll_vector.clear();
 
   // Add vehicle state detection PIDs:
   for (auto p : poll_list_t {
-      {VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_U, {  0,  1,  5}, 1, ISOTP_STD},
-      {VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_I, {  0,  1,  5}, 1, ISOTP_STD},
-      // Same tick & order important of above 2: VWUP_BAT_MGMT_I calculates the power
+      {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_LV_PWRSTATE, {  1,  1,  1,  1}, 1, ISOTP_STD},
+      {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_HV_CHGMODE,  {  0,  1,  1,  1}, 1, ISOTP_STD},
+      {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_LV_AUTOCHG,  {  0,  1,  1,  1}, 1, ISOTP_STD},
     }) {
-    if (HasNoT26()) {
-      // only OBD connected -> get car state by polling OBD
-      // (is this still necessary with state detection by 12V level?)
-      p.polltime[VWEUP_OFF] = 30;
+    if (HasT26()) {
+      // We can get the car state from T26, adjust poll intervals:
+      p.polltime[VWEUP_OFF]       = 0;
+      p.polltime[VWEUP_AWAKE]     = 5;
+      p.polltime[VWEUP_CHARGING]  = 5;
+      p.polltime[VWEUP_ON]        = 5;
     }
     m_poll_vector.push_back(p);
   }
@@ -188,7 +213,7 @@ void OvmsVehicleVWeUp::OBDInit()
   // Add high priority PIDs only necessary without T26:
   if (HasNoT26()) {
     m_poll_vector.insert(m_poll_vector.end(), {
-      {VWUP_MOT_ELEC, UDS_READ, VWUP_MOT_ELEC_SPEED,    {  0,  1,  0}, 1, ISOTP_STD},
+      {VWUP_MOT_ELEC, UDS_READ, VWUP_MOT_ELEC_SPEED,    {  0,  0,  0,  1}, 1, ISOTP_STD},
       // … speed interval = VWUP_BAT_MGMT_U & _I to get a consistent consumption calculation
     });
   }
@@ -202,16 +227,35 @@ void OvmsVehicleVWeUp::OBDInit()
     m_poll_vector.insert(m_poll_vector.end(), vweup_gen2_polls, endof_array(vweup_gen2_polls));
   }
 
+  // Add test/log PIDs for DC fast charging:
+  if (m_cfg_dc_interval) {
+    for (auto p : poll_list_t {
+        {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_TEST_1DDC, {  0,  0,  0,  0}, 1, ISOTP_STD},
+        {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_TEST_1DDD, {  0,  0,  0,  0}, 1, ISOTP_STD},
+        {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_TEST_1DDE, {  0,  0,  0,  0}, 1, ISOTP_STD},
+        {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_TEST_1DDF, {  0,  0,  0,  0}, 1, ISOTP_STD},
+        {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_TEST_1DE2, {  0,  0,  0,  0}, 1, ISOTP_STD},
+        {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_TEST_1DE3, {  0,  0,  0,  0}, 1, ISOTP_STD},
+        {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_TEST_1DEA, {  0,  0,  0,  0}, 1, ISOTP_STD},
+      }) {
+      // …enable polling in all states in case charge detection doesn't work:
+      p.polltime[VWEUP_AWAKE]     = m_cfg_dc_interval;
+      p.polltime[VWEUP_CHARGING]  = m_cfg_dc_interval;
+      p.polltime[VWEUP_ON]        = m_cfg_dc_interval;
+      m_poll_vector.push_back(p);
+    }
+  }
+
   // Add low priority PIDs only necessary without T26:
   if (HasNoT26()) {
     m_poll_vector.insert(m_poll_vector.end(), {
-      {VWUP_MOT_ELEC, UDS_READ, VWUP_MOT_ELEC_TEMP_AMB, {  0, 30,  0}, 1, ISOTP_STD},
-      {VWUP_MFD,      UDS_READ, VWUP_MFD_RANGE_DSP,     {  0, 30,  0}, 1, ISOTP_STD},
+      {VWUP_MOT_ELEC, UDS_READ, VWUP_MOT_ELEC_TEMP_AMB, {  0,  0,  0, 30}, 1, ISOTP_STD},
+      {VWUP_MFD,      UDS_READ, VWUP_MFD_RANGE_DSP,     {  0,  0,  0, 30}, 1, ISOTP_STD},
     });
   }
 
   // Add BMS cell PIDs if enabled:
-  if (m_cfg_cell_interval_drv || m_cfg_cell_interval_chg)
+  if (m_cfg_cell_interval_drv || m_cfg_cell_interval_chg || m_cfg_cell_interval_awk)
   {
     // Battery pack layout:
     //  Gen2 (2020): 2P84S in 14 modules
@@ -220,9 +264,10 @@ void OvmsVehicleVWeUp::OBDInit()
     int temps = (vweup_modelyear > 2019) ? 14 : 16;
 
     // Add PIDs to poll list:
-    OvmsVehicle::poll_pid_t p = { VWUP_BAT_MGMT, UDS_READ, 0, {0,0,0}, 1, ISOTP_STD };
+    OvmsVehicle::poll_pid_t p = { VWUP_BAT_MGMT, UDS_READ, 0, {0,0,0,0}, 1, ISOTP_STD };
     p.polltime[VWEUP_ON]        = m_cfg_cell_interval_drv;
     p.polltime[VWEUP_CHARGING]  = m_cfg_cell_interval_chg;
+    p.polltime[VWEUP_AWAKE]     = m_cfg_cell_interval_awk;
     for (int i = 0; i < volts; i++) {
       p.pid = VWUP_BAT_MGMT_CELL_VBASE + i;
       m_poll_vector.push_back(p);
@@ -260,35 +305,87 @@ void OvmsVehicleVWeUp::OBDDeInit()
 }
 
 
-void OvmsVehicleVWeUp::OBDCheckCarState()
+/**
+ * PollerStateTicker: check for state changes
+ *  This is called by VehicleTicker1() just before the next PollerSend().
+ */
+void OvmsVehicleVWeUp::PollerStateTicker()
 {
-  if (m_obd_state != OBDS_Run)
+  // T26 state management has precedence if available:
+  if (HasT26() || m_obd_state != OBDS_Run)
     return;
 
-  ESP_LOGV(TAG, "CheckCarState(): 12V=%f ChargerEff=%f BatI=%f BatIModified=%u time=%u",
-    StdMetrics.ms_v_bat_12v_voltage->AsFloat(),
-    ChargerPowerEffEcu->AsFloat(),
-    StdMetrics.ms_v_bat_current->AsFloat(),
-    StdMetrics.ms_v_bat_current->LastModified(),
-    monotonictime);
+  bool car_online = (m_can1->GetErrorState() < CAN_errorstate_passive && !m_lv_pwrstate->IsStale());
+  int lv_pwrstate = m_lv_pwrstate->AsInt();
+  int hv_chgmode = m_hv_chgmode->AsInt();
+  float dcdc_voltage = StdMetrics.ms_v_charge_12v_voltage->AsFloat();
 
-  // 12V Battery: if voltage >= 12.9 it is charging and the car must be on (or charging) for that
-  bool voltageSaysOn = StdMetrics.ms_v_bat_12v_voltage->AsFloat() >= 12.9f;
-  StdMetrics.ms_v_env_charging12v->SetValue(voltageSaysOn);
+  // Determine and prioritize the new polling state:
+  //  - if lv_pwrstate didn't get an update for 3 seconds, the car is off
+  //  - if the HV charger is active, we're in charge mode
+  //      (Note: the car may still also be switched on by the user while charging,
+  //        but we consider that to require concentrating on the charge metric polling)
+  //  - if the LV system is fully online, the car is switched on
+  //  - else it's awake
 
-  // HV-Batt current: If there is a current flowing and the value is not older than 2 minutes (120 secs) we are on
-  bool currentSaysOn = StdMetrics.ms_v_bat_current->AsFloat() != 0.0f &&
-    (monotonictime - StdMetrics.ms_v_bat_current->LastModified()) < 120;
+  int poll_state = 0;
+  if (!car_online)
+    poll_state = VWEUP_OFF;
+  else if (hv_chgmode)
+    poll_state = VWEUP_CHARGING;
+  else if (lv_pwrstate > 12)
+    poll_state = VWEUP_ON;
+  else
+    poll_state = VWEUP_AWAKE;
 
-  // Charger ECU: When it reports an efficiency > 0 the car is charging
-  bool chargerSaysOn = ChargerPowerEffEcu->AsFloat() > 0.0f;
+  //
+  // Determine independent state flags
+  //
 
-  if (chargerSaysOn) {
+  // - base system is awake if we've got a fresh lv_pwrstate:
+  StdMetrics.ms_v_env_aux12v->SetValue(car_online);
+
+  // - charging / trickle charging 12V battery is active when lv_pwrstate is not zero:
+  StdMetrics.ms_v_env_charging12v->SetValue(car_online && lv_pwrstate > 0);
+
+  // - v_env_awake = car has been switched on by the user (yeah, confusing name, may be changed itf)
+  StdMetrics.ms_v_env_awake->SetValue(car_online && lv_pwrstate > 12);
+
+  // - v_env_on = "ignition" / drivable mode: this is currently still a heuristical guess;
+  //      set when ON & DC converter puts out more than 14V, reset when not ON
+  //      (TODO: find proper PID)
+  if (poll_state != VWEUP_ON) {
+    StdMetrics.ms_v_env_on->SetValue(false);
+  }
+  else if (StdMetrics.ms_v_env_on->AsBool() == false && dcdc_voltage > 14) {
+    // TODO: get real charge port state
+    // For now, we assume the port has been closed when the car is started:
+    StdMetrics.ms_v_charge_duration_full->SetValue(0);
+    StdMetrics.ms_v_door_chargeport->SetValue(false);
+    StdMetrics.ms_v_env_on->SetValue(true);
+  }
+
+  //
+  // Handle polling state change
+  //
+
+  if (poll_state != m_poll_state) {
+    ESP_LOGD(TAG,
+      "OBDCheckCarState: [%s] LVPwrState=%d HVChgMode=%d LVAutoChg=%d "
+      "12V=%.1f DCDC_U=%.1f DCDC_I=%.1f ChgEff=%.1f BatI=%.1f BatIAge=%u => PollState %d->%d",
+      car_online ? "online" : "offline", lv_pwrstate, hv_chgmode, m_lv_autochg->AsInt(),
+      StdMetrics.ms_v_bat_12v_voltage->AsFloat(),
+      dcdc_voltage, StdMetrics.ms_v_charge_12v_current->AsFloat(),
+      ChargerPowerEffEcu->AsFloat(),
+      StdMetrics.ms_v_bat_current->AsFloat(), StdMetrics.ms_v_bat_current->Age(),
+      m_poll_state, poll_state);
+  }
+
+  if (poll_state == VWEUP_CHARGING) {
     if (!IsCharging()) {
-      ESP_LOGI(TAG, "Setting car state to CHARGING");
-      StdMetrics.ms_v_env_on->SetValue(false);
-      StdMetrics.ms_v_env_awake->SetValue(false);
+      ESP_LOGI(TAG, "OBDCheckCarState: Setting car state to CHARGING");
 
+      // Start new charge:
       ResetChargeCounters();
 
       // TODO: get real charge mode, port & pilot states, fake for now:
@@ -299,18 +396,16 @@ void OvmsVehicleVWeUp::OBDCheckCarState()
       StdMetrics.ms_v_charge_state->SetValue("charging");
 
       PollSetState(VWEUP_CHARGING);
-      TimeOffRequested = 0;
     }
     return;
   }
+  else if (IsCharging()) {
+    ESP_LOGI(TAG, "OBDCheckCarState: Charge stopped/done");
 
-  if (IsCharging()) {
-    // Charge stopped/done:
-    // TODO: get real charge port & pilot states, fake for now:
+    // TODO: get real charge pilot states, fake for now:
     StdMetrics.ms_v_charge_inprogress->SetValue(false);
     StdMetrics.ms_v_charge_pilot->SetValue(false);
-    StdMetrics.ms_v_door_chargeport->SetValue(false);
-    // Determine type of charge end by the SOC reached;
+    // Guess type of charge end by the SOC reached;
     //  tolerate SOC not reaching 100%
     //  TODO: read user defined destination SOC, read actual charge stop reason
     if (StdMetrics.ms_v_bat_soc->AsFloat() > 99) {
@@ -321,15 +416,12 @@ void OvmsVehicleVWeUp::OBDCheckCarState()
     }
   }
 
-  if (voltageSaysOn || currentSaysOn) {
+  if (poll_state == VWEUP_ON) {
     if (!IsOn()) {
-      ESP_LOGI(TAG, "Setting car state to ON");
+      ESP_LOGI(TAG, "OBDCheckCarState: Setting car state to ON");
 
+      // Start new trip:
       ResetTripCounters();
-
-      // TODO: get real "ignition" state, assume on for now:
-      StdMetrics.ms_v_env_awake->SetValue(true);
-      StdMetrics.ms_v_env_on->SetValue(true);
 
       // Fetch VIN once:
       if (!StdMetrics.ms_v_vin->IsDefined()) {
@@ -341,30 +433,33 @@ void OvmsVehicleVWeUp::OBDCheckCarState()
 
       // Start regular polling:
       PollSetState(VWEUP_ON);
-      TimeOffRequested = 0;
     }
     return;
   }
 
-  if (TimeOffRequested == 0) {
-    TimeOffRequested = monotonictime;
-    if (TimeOffRequested == 0) {
-      // For the small chance we are requesting exactly at 0 time
-      TimeOffRequested--;
+  if (poll_state == VWEUP_AWAKE) {
+    if (!IsAwake()) {
+      ESP_LOGI(TAG, "OBDCheckCarState: Setting car state to AWAKE");
+      PollSetState(VWEUP_AWAKE);
     }
-    ESP_LOGI(TAG, "Car state to OFF requested. Waiting for possible re-activation ...");
-  }
-
-  // When already OFF or I haven't waited for 60 seconds: return
-  if (IsOff() || (monotonictime - TimeOffRequested) < 60) {
     return;
   }
 
-  // Set car to OFF
-  ESP_LOGI(TAG, "Wait is over: Setting car state to OFF");
-  StdMetrics.ms_v_env_on->SetValue(false);
-  StdMetrics.ms_v_env_awake->SetValue(false);
-  PollSetState(VWEUP_OFF);
+  if (poll_state == VWEUP_OFF) {
+    if (!IsOff()) {
+      ESP_LOGI(TAG, "OBDCheckCarState: Setting car state to OFF");
+      PollSetState(VWEUP_OFF);
+
+      // Clear powers & currents in case we missed the zero reading:
+      StdMetrics.ms_v_bat_current->SetValue(0);
+      StdMetrics.ms_v_bat_power->SetValue(0);
+      StdMetrics.ms_v_bat_12v_current->SetValue(0);
+      StdMetrics.ms_v_charge_12v_current->SetValue(0);
+      StdMetrics.ms_v_charge_12v_power->SetValue(0);
+      StdMetrics.ms_v_charge_12v_voltage->SetValue(0);
+    }
+    return;
+  }
 }
 
 
@@ -373,19 +468,20 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
   if (m_obd_state != OBDS_Run)
     return;
 
-  ESP_LOGV(TAG, "IncomingPollReply(type=%u, pid=%X, length=%u, mlremain=%u): called", type, pid, length, mlremain);
-
-  // for (uint8_t i = 0; i < length; i++)
-  // {
-  //   ESP_LOGV(TAG, "data[%u]=%X", i, data[i]);
-  // }
-
   // If not all data is here: wait for the next call
   if (!PollReply.AddNewData(pid, data, length, mlremain)) {
     return;
   }
 
   float value;
+  int ivalue;
+
+  //
+  // Handle reply for diagnostic session
+  //
+
+  if (type == UDS_SESSION)
+    return;
 
   //
   // Handle BMS cell voltage & temperatures
@@ -401,6 +497,7 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
       BmsSetCellVoltage(vi, value / 4096);
     }
     m_cell_last_vi = vi;
+    return;
   }
 
   if ((pid >= VWUP_BAT_MGMT_CELL_TBASE && pid <= VWUP_BAT_MGMT_CELL_TLAST) ||
@@ -414,6 +511,7 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
       BmsSetCellTemperature(ti, value / 64);
     }
     m_cell_last_ti = ti;
+    return;
   }
 
   //
@@ -421,6 +519,26 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
   //
 
   switch (pid) {
+
+    case VWUP_CHG_MGMT_LV_PWRSTATE:
+      if (PollReply.FromUint8("VWUP_CHG_MGMT_LV_PWRSTATE", ivalue)) {
+        m_lv_pwrstate->SetValue(ivalue);
+        VALUE_LOG(TAG, "VWUP_CHG_MGMT_LV_PWRSTATE=%d", ivalue);
+      }
+      break;
+    case VWUP_CHG_MGMT_LV_AUTOCHG:
+      if (PollReply.FromUint8("VWUP_CHG_MGMT_LV_AUTOCHG", ivalue)) {
+        m_lv_autochg->SetValue(ivalue);
+        VALUE_LOG(TAG, "VWUP_CHG_MGMT_LV_AUTOCHG=%d", ivalue);
+      }
+      break;
+    case VWUP_CHG_MGMT_HV_CHGMODE:
+      if (PollReply.FromUint8("VWUP_CHG_MGMT_HV_CHGMODE", ivalue)) {
+        m_hv_chgmode->SetValue(ivalue);
+        VALUE_LOG(TAG, "VWUP_CHG_MGMT_HV_CHGMODE=%d", ivalue);
+      }
+      break;
+
     case VWUP_BAT_MGMT_U:
       if (PollReply.FromUint16("VWUP_BAT_MGMT_U", value)) {
         StdMetrics.ms_v_bat_voltage->SetValue(value / 4.0f);
@@ -486,7 +604,7 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
       break;
 
     case VWUP_MFD_RANGE_CAP:
-      if (PollReply.FromUint16("VWUP_MFD_RANGE_CAP", value)) {
+      if (PollReply.FromUint16("VWUP_MFD_RANGE_CAP", value) && value != 511) {
         // Usable battery energy [kWh] from range estimation:
         //  We assume this to be usable as an indicator for the overall CAC & SOH,
         //  as the range estimation needs to be based on the actual (aged) battery capacity.
@@ -495,26 +613,55 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
         //  actual SOH reading available (to be discovered).
         float energy_avail = value / 10;
         float soc_fct = StdMetrics.ms_v_bat_soc->AsFloat() / 100;
-        float energy_full = energy_avail / soc_fct;
-        
-        // Gen2: 32.3 kWh net / 36.8 kWh gross, 2P84S = 120 Ah, 260 km WLTP
-        // Gen1: 16.4 kWh net / 18.7 kWh gross, 2P102S = 50 Ah, 160 km WLTP
-        float cap_fct    = energy_full / ((vweup_modelyear > 2019) ?  32.3f :  16.4f);
-        float cap_ah     = cap_fct     * ((vweup_modelyear > 2019) ? 120.0f :  50.0f);
-        float range_full = cap_fct     * ((vweup_modelyear > 2019) ? 260.0f : 160.0f);
-        
-        // Update metrics:
-        StdMetrics.ms_v_bat_soh->SetValue(cap_fct * 100);
-        StdMetrics.ms_v_bat_cac->SetValue(cap_ah);
-        StdMetrics.ms_v_bat_range_full->SetValue(range_full);
-        StdMetrics.ms_v_bat_range_ideal->SetValue(range_full * soc_fct);
-        VALUE_LOG(TAG, "VWUP_MFD_RANGE_CAP=%f => %.1fkWh"
-          " => CAC=%.1fAh, SOH=%.1f%%, RangeFull=%.0fkm, RangeIdeal=%.0fkm",
-          value, energy_avail, cap_ah, cap_fct * 100, range_full, range_full * soc_fct);
+        // Value resolution is at only 0.1 kWh, also capacity is artificially reduced by the
+        //  car below 30% SOC, so we limit the calculation to…
+        if (energy_avail > 3.0 && soc_fct > 0.30)
+        {
+          float energy_full = energy_avail / soc_fct;
+          m_bat_cap_range->SetValue(energy_full);
+          VALUE_LOG(TAG, "VWUP_MFD_RANGE_CAP=%f => %.1fkWh => full=%.1fkWh",
+            value, energy_avail, energy_full);
+          
+          // The range estimation based capacity decreases with SOC and temperature, so we
+          //  only update the SOH from the smoothed maximum values seen. Also, if this is
+          //  the first SOH taken, the SOC needs to be above 80% to minimize the errors.
+
+          m_bat_cap_range_hist[0] = m_bat_cap_range_hist[1];
+          m_bat_cap_range_hist[1] = m_bat_cap_range_hist[2] ? m_bat_cap_range_hist[2] : energy_full;
+          m_bat_cap_range_hist[2] = energy_full;
+
+          if (m_bat_cap_range_hist[1] >  m_bat_cap_range_hist[0] &&
+              m_bat_cap_range_hist[1] >= m_bat_cap_range_hist[2] &&
+              (StdMetrics.ms_v_bat_soh->IsDefined() || soc_fct > 0.80))
+          {
+            // Calculate SOH from maximum in m_bat_cap_range_hist[1]:
+            // Gen2: 32.3 kWh net / 36.8 kWh gross, 2P84S = 120 Ah, 260 km WLTP
+            // Gen1: 16.4 kWh net / 18.7 kWh gross, 2P102S = 50 Ah, 160 km WLTP
+            float soh_new = m_bat_cap_range_hist[1] / ((vweup_modelyear > 2019) ?  32.3f :  16.4f) * 100;
+
+            // Smooth SOH downwards:
+            float soh_old = StdMetrics.ms_v_bat_soh->AsFloat();
+            if (soh_new < soh_old)
+              soh_new = (49 * soh_old + soh_new) / 50;
+
+            float soh_fct    = soh_new / 100;
+            float cap_ah     = soh_fct * ((vweup_modelyear > 2019) ? 120.0f :  50.0f);
+            float range_full = soh_fct * ((vweup_modelyear > 2019) ? 260.0f : 160.0f);
+            
+            // Update metrics:
+            StdMetrics.ms_v_bat_soh->SetValue(soh_new);
+            StdMetrics.ms_v_bat_cac->SetValue(cap_ah);
+            StdMetrics.ms_v_bat_range_full->SetValue(range_full);
+            StdMetrics.ms_v_bat_range_ideal->SetValue(range_full * soc_fct);
+            ESP_LOGD(TAG, "VWUP_MFD_RANGE_CAP: max=%.2fkWh => SOH=%.3f%% CAC=%.3fAh RangeFull=%.1fkm RangeIdeal=%.1fkm",
+              m_bat_cap_range_hist[1], soh_new, cap_ah, range_full, range_full * soc_fct);
+          }
+        }
       }
       break;
 
     case VWUP_MOT_ELEC_SOC_ABS:
+      // Gets updates only while driving
       if (PollReply.FromUint8("VWUP_MOT_ELEC_SOC_ABS", value)) {
         MotElecSoCAbs->SetValue(value / 2.55f);
         VALUE_LOG(TAG, "VWUP_MOT_ELEC_SOC_ABS=%f => %f", value, MotElecSoCAbs->AsFloat());
@@ -528,15 +675,20 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
       }
       break;
 
-    case VWUP_BAT_MGMT_ENERGY_COUNTERS:
+    case VWUP_BAT_MGMT_ENERGY_COUNTERS: {
+      bool charge_inprogress = StdMetrics.ms_v_charge_inprogress->AsBool();
       if (PollReply.FromInt32("VWUP_BAT_MGMT_COULOMB_COUNTERS_RECD", value, 0)) {
         float coulomb_recd_total = value / 549.2949f;
         StdMetrics.ms_v_bat_coulomb_recd_total->SetValue(coulomb_recd_total);
         // Get trip difference:
-        if (!StdMetrics.ms_v_charge_inprogress->AsBool()) {
+        if (!charge_inprogress) {
           if (m_coulomb_recd_start <= 0)
             m_coulomb_recd_start = coulomb_recd_total;
           StdMetrics.ms_v_bat_coulomb_recd->SetValue(coulomb_recd_total - m_coulomb_recd_start);
+        }
+        else {
+          if (m_coulomb_charged_start <= 0)
+            m_coulomb_charged_start = coulomb_recd_total;
         }
         VALUE_LOG(TAG, "VWUP_BAT_MGMT_COULOMB_COUNTERS_RECD=%f => %f", value, coulomb_recd_total);
       }
@@ -545,7 +697,7 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
         float coulomb_used_total = (value * -1.0f) / 549.2949f;
         StdMetrics.ms_v_bat_coulomb_used_total->SetValue(coulomb_used_total);
         // Get trip difference:
-        if (!StdMetrics.ms_v_charge_inprogress->AsBool()) {
+        if (!charge_inprogress) {
           if (m_coulomb_used_start <= 0)
             m_coulomb_used_start = coulomb_used_total;
           StdMetrics.ms_v_bat_coulomb_used->SetValue(coulomb_used_total - m_coulomb_used_start);
@@ -556,7 +708,7 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
         float energy_recd_total = value / ((0xFFFFFFFF / 2.0f) / 250200.0f);
         StdMetrics.ms_v_bat_energy_recd_total->SetValue(energy_recd_total);
         // Get charge/trip difference:
-        if (!StdMetrics.ms_v_charge_inprogress->AsBool()) {
+        if (!charge_inprogress) {
           if (m_energy_recd_start <= 0)
             m_energy_recd_start = energy_recd_total;
           StdMetrics.ms_v_bat_energy_recd->SetValue(energy_recd_total - m_energy_recd_start);
@@ -573,14 +725,17 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
         float energy_used_total = (value * -1.0f) / ((0xFFFFFFFF / 2.0f) / 250200.0f);
         StdMetrics.ms_v_bat_energy_used_total->SetValue(energy_used_total);
         // Get trip difference:
-        if (!StdMetrics.ms_v_charge_inprogress->AsBool()) {
+        if (!charge_inprogress) {
           if (m_energy_used_start <= 0)
             m_energy_used_start = energy_used_total;
           StdMetrics.ms_v_bat_energy_used->SetValue(energy_used_total - m_energy_used_start);
         }
         VALUE_LOG(TAG, "VWUP_BAT_MGMT_ENERGY_COUNTERS_USED=%f => %f", value, energy_used_total);
       }
+      // After receiving the new SOCs & coulomb counts, we can update our capacities:
+      UpdateChargeCap(charge_inprogress);
       break;
+    }
 
     case VWUP_BAT_MGMT_CELL_MAX:
       if (PollReply.FromUint16("VWUP_BAT_MGMT_CELL_MAX", value)) {
@@ -610,14 +765,14 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
       break;
 
     case VWUP1_CHG_AC_U:
-      if (PollReply.FromUint16("VWUP_CHG_AC1_U", value)) {
+      if (PollReply.FromUint16("VWUP_CHG_AC1_U", value) && value != 511) {
         StdMetrics.ms_v_charge_voltage->SetValue(value);
         VALUE_LOG(TAG, "VWUP_CHG_AC1_U=%f => %f", value, StdMetrics.ms_v_charge_voltage->AsFloat());
       }
       break;
 
     case VWUP1_CHG_AC_I:
-      if (PollReply.FromUint8("VWUP_CHG_AC1_I", value)) {
+      if (PollReply.FromUint8("VWUP_CHG_AC1_I", value) && value != 255) {
         StdMetrics.ms_v_charge_current->SetValue(value / 10.0f);
         VALUE_LOG(TAG, "VWUP_CHG_AC1_I=%f => %f", value, StdMetrics.ms_v_charge_current->AsFloat());
 
@@ -625,13 +780,7 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
         ChargerACPower->SetValue(value);
         VALUE_LOG(TAG, "VWUP_CHG_AC_P=%f => %f", value, ChargerACPower->AsFloat());
 
-        // Standard Charge Power and Charge Efficiency calculation as requested by the standard
-        StdMetrics.ms_v_charge_power->SetValue(value);
-        value = value == 0.0f
-                ? 0.0f
-                : ((StdMetrics.ms_v_bat_power->AsFloat() * -1.0f) / value) * 100.0f;
-        StdMetrics.ms_v_charge_efficiency->SetValue(value);
-        VALUE_LOG(TAG, "VWUP_CHG_EFF_STD=%f => %f", value, StdMetrics.ms_v_charge_efficiency->AsFloat());
+        UpdateChargePower(value);
       }
       break;
 
@@ -639,7 +788,7 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
       int phasecnt = 0;
       float voltagesum = 0;
 
-      if (PollReply.FromUint16("VWUP_CHG_AC1_U", value)) {
+      if (PollReply.FromUint16("VWUP_CHG_AC1_U", value) && value != 511) {
         ChargerAC1U->SetValue(value);
         VALUE_LOG(TAG, "VWUP_CHG_AC1_U=%f => %f", value, ChargerAC1U->AsFloat());
         if (value > 90) {
@@ -647,7 +796,7 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
           voltagesum += value;
         }
       }
-      if (PollReply.FromUint16("VWUP_CHG_AC2_U", value, 2)) {
+      if (PollReply.FromUint16("VWUP_CHG_AC2_U", value, 2) && value != 511) {
         ChargerAC2U->SetValue(value);
         VALUE_LOG(TAG, "VWUP_CHG_AC2_U=%f => %f", value, ChargerAC2U->AsFloat());
         if (value > 90) {
@@ -663,11 +812,11 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
     }
 
     case VWUP2_CHG_AC_I:
-      if (PollReply.FromUint8("VWUP_CHG_AC1_I", value)) {
+      if (PollReply.FromUint8("VWUP_CHG_AC1_I", value) && value != 255) {
         ChargerAC1I->SetValue(value / 10.0f);
         VALUE_LOG(TAG, "VWUP_CHG_AC1_I=%f => %f", value, ChargerAC1I->AsFloat());
       }
-      if (PollReply.FromUint8("VWUP_CHG_AC2_I", value, 1)) {
+      if (PollReply.FromUint8("VWUP_CHG_AC2_I", value, 1) && value != 255) {
         ChargerAC2I->SetValue(value / 10.0f);
         VALUE_LOG(TAG, "VWUP_CHG_AC2_I=%f => %f", value, ChargerAC2I->AsFloat());
         StdMetrics.ms_v_charge_current->SetValue(ChargerAC1I->AsFloat() + ChargerAC2I->AsFloat());
@@ -677,13 +826,7 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
         ChargerACPower->SetValue(value);
         VALUE_LOG(TAG, "VWUP_CHG_AC_P=%f => %f", value, ChargerACPower->AsFloat());
 
-        // Standard Charge Power and Charge Efficiency calculation as requested by the standard
-        StdMetrics.ms_v_charge_power->SetValue(value);
-        value = value == 0.0f
-                ? 0.0f
-                : ((StdMetrics.ms_v_bat_power->AsFloat() * -1.0f) / value) * 100.0f;
-        StdMetrics.ms_v_charge_efficiency->SetValue(value);
-        VALUE_LOG(TAG, "VWUP_CHG_EFF_STD=%f => %f", value, StdMetrics.ms_v_charge_efficiency->AsFloat());
+        UpdateChargePower(value);
       }
       break;
 
@@ -727,11 +870,11 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
       break;
 
     case VWUP2_CHG_DC_I:
-      if (PollReply.FromUint16("VWUP_CHG_DC1_I", value)) {
+      if (PollReply.FromUint16("VWUP_CHG_DC1_I", value) && value != 1023) {
         ChargerDC1I->SetValue((value - 510.0f) / 5.0f);
         VALUE_LOG(TAG, "VWUP_CHG_DC1_I=%f => %f", value, ChargerDC1I->AsFloat());
       }
-      if (PollReply.FromUint16("VWUP_CHG_DC2_I", value, 2)) {
+      if (PollReply.FromUint16("VWUP_CHG_DC2_I", value, 2) && value != 1023) {
         ChargerDC2I->SetValue((value - 510.0f) / 5.0f);
         VALUE_LOG(TAG, "VWUP_CHG_DC2_I=%f => %f", value, ChargerDC2I->AsFloat());
 
@@ -793,13 +936,26 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
       break;
 
     case VWUP_MFD_SERV_RANGE:
-      if (PollReply.FromUint16("VWUP_MFD_SERV_RANGE", value)) {
+      if (PollReply.FromUint16("VWUP_MFD_SERV_RANGE", value) && value > 0) { // excluding value of 0 seems to be necessary for now
+        // Send notification?
+        int threshold = MyConfig.GetParamValueInt("xvu", "serv_warn_range", 5000);
+        int old_value = StdMetrics.ms_v_env_service_range->AsInt();
+        if (old_value > threshold && value <= threshold) { 
+          MyNotify.NotifyStringf("info", "serv.range", "Service range left: %d km!", value);
+        }         
         StdMetrics.ms_v_env_service_range->SetValue(value);
         VALUE_LOG(TAG, "VWUP_MFD_SERV_RANGE=%f => %f", value, StdMetrics.ms_v_env_service_range->AsFloat());
       }
       break;
     case VWUP_MFD_SERV_TIME:
-      if (PollReply.FromUint16("VWUP_MFD_SERV_TIME", value)) {
+      if (PollReply.FromUint16("VWUP_MFD_SERV_TIME", value) && value > 0) { // excluding value of 0 seems to be necessary for now
+        // Send notification?
+        int now = StdMetrics.ms_m_timeutc->AsInt();
+        int threshold = MyConfig.GetParamValueInt("xvu", "serv_warn_days", 30);
+        int old_value = ROUNDPREC((StdMetrics.ms_v_env_service_time->AsInt() - now) / 86400.0f, 0);
+        if (old_value > threshold && value <= threshold) {
+          MyNotify.NotifyStringf("info", "serv.time", "Service time left: %d days!", value);
+        }         
         ServiceDays -> SetValue(value);
         StdMetrics.ms_v_env_service_time->SetValue(StdMetrics.ms_m_timeutc->AsInt() + value * 86400);
         VALUE_LOG(TAG, "VWUP_MFD_SERV_TIME=%f => %f", value, StdMetrics.ms_v_env_service_time->AsFloat());
@@ -863,5 +1019,136 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
       }
       break;
 
+    case VWUP_BRK_TPMS:
+      if (PollReply.FromUint8("VWUP_BRK_TPMS", value, 43)) {
+        std::vector<float> tpms_health(4);
+        std::vector<short> tpms_alert(4);
+        float threshold_warn = MyConfig.GetParamValueFloat("xvu", "tpms_warn", 80);
+        float threshold_alert = MyConfig.GetParamValueFloat("xvu", "tpms_alert", 60);
+        std::vector<string> tyre_abb = OvmsVehicle::GetTpmsLayout();
+        int i;
+
+        for (i = 0; i < 4; i++) {
+          // read diffusion:
+          PollReply.FromUint8("VWUP_BRK_TPMS", value, 36+i);
+          tpms_health[i] = TRUNCPREC(value / 2.55f, 1);
+          TPMSDiffusion->SetElemValue(i,value);
+          VALUE_LOG(TAG, "VWUP_BRK_TPMS Diffusion %s: %f", tyre_abb[i].c_str(), value);
+
+          // read emergency:
+          PollReply.FromUint8("VWUP_BRK_TPMS", value, 40+i);
+          if (value / 2.55f < tpms_health[i])
+            tpms_health[i] = TRUNCPREC(value / 2.55f, 1);
+          TPMSEmergency->SetElemValue(i,value);
+          VALUE_LOG(TAG, "VWUP_BRK_TPMS Emergency %s: %f", tyre_abb[i].c_str(), value);
+
+          // invalid?
+          if (tpms_health[i] == 0)
+            break;
+
+          // Set alert?
+          if (tpms_health[i] <= threshold_alert)
+            tpms_alert[i] = 2;
+          else if (tpms_health[i] <= threshold_warn)
+            tpms_alert[i] = 1;
+          else 
+            tpms_alert[i] = 0;
+        }
+
+        // all wheels valid?
+        if (i == 4) {
+          StdMetrics.ms_v_tpms_health->SetValue(tpms_health);
+          StdMetrics.ms_v_tpms_alert->SetValue(tpms_alert);
+        }
+      }
+      break;
+
+    default:
+      VALUE_LOG(TAG, "IncomingPollReply: unhandled PID %X: %s", pid, PollReply.GetHexString().c_str());
+      break;
+  }
+}
+
+
+void OvmsVehicleVWeUp::UpdateChargePower(float power_kw)
+{
+  // Accumulate grid energy sum:
+  int time_seconds = StdMetrics.ms_v_charge_power->Age();
+  if (time_seconds < 60) {
+    m_charge_kwh_grid += (double)power_kw * time_seconds / 3600;
+    StdMetrics.ms_v_charge_kwh_grid->SetValue(m_charge_kwh_grid);
+    StdMetrics.ms_v_charge_kwh_grid_total->SetValue(m_charge_kwh_grid_start + m_charge_kwh_grid);
+  }
+
+  // Standard Charge Power and Charge Efficiency calculation as requested by the standard
+  StdMetrics.ms_v_charge_power->SetValue(power_kw);
+  float efficiency = (power_kw == 0)
+                     ? 0
+                     : ((StdMetrics.ms_v_bat_power->AsFloat() * -1) / power_kw) * 100;
+  StdMetrics.ms_v_charge_efficiency->SetValue(efficiency);
+  VALUE_LOG(TAG, "VWUP_CHG_EFF_STD=%f", efficiency);
+}
+
+
+/**
+ * UpdateChargeCap: calculate normalized & absolute battery capacities during charge
+ *  Called by IncomingPollReply() after receiving SOCs & energy/coulomb counts.
+ */
+void OvmsVehicleVWeUp::UpdateChargeCap(bool charging)
+{
+  // Update every 5 minutes while charging and once after charge stop:
+  static int checkpoint = 0;
+  bool update = false;
+  int charge_time = StdMetrics.ms_v_charge_time->AsInt();
+
+  if (!charging && checkpoint > 0) {
+    update = true;
+    checkpoint = 0;
+  }
+  else if (charge_time < checkpoint) {
+    checkpoint = 0;
+  }
+
+  if (charge_time >= checkpoint + 300) {
+    update = true;
+    checkpoint += 300;
+  }
+
+  if (update)
+  {
+    float coulomb_diff  = StdMetrics.ms_v_bat_coulomb_recd_total->AsFloat() - m_coulomb_charged_start;
+    float energy_diff   = StdMetrics.ms_v_bat_energy_recd_total->AsFloat() - m_energy_charged_start;
+    float soc_norm_diff = StdMetrics.ms_v_bat_soc->AsFloat() - m_soc_norm_start;
+    float soc_abs_diff  = BatMgmtSoCAbs->AsFloat() - m_soc_abs_start;
+
+    float cap_ah_norm   = coulomb_diff / soc_norm_diff * 100;
+    float cap_ah_abs    = coulomb_diff / soc_abs_diff  * 100;
+    float cap_kwh_norm  = energy_diff  / soc_norm_diff * 100;
+    float cap_kwh_abs   = energy_diff  / soc_abs_diff  * 100;
+
+    m_bat_cap_chg_ah_norm->SetValue(cap_ah_norm);
+    m_bat_cap_chg_ah_abs->SetValue(cap_ah_abs);
+    m_bat_cap_chg_kwh_norm->SetValue(cap_kwh_norm);
+    m_bat_cap_chg_kwh_abs->SetValue(cap_kwh_abs);
+    
+    // Log local:
+    ESP_LOGI(TAG, "ChargeCap: charge_time=%ds bat_temp=%.1f°C cap_range=%.2fkWh "
+      "soc_norm=%.1f+%.1f%% soc_abs=%.1f+%.1f%% energy+=%.3fkWh coulomb+=%.3fAh "
+      "=> cap_ah_norm=%.2f cap_ah_abs=%.2f cap_kwh_norm=%.2f cap_kwh_abs=%.2f",
+      charge_time, StdMetrics.ms_v_bat_temp->AsFloat(), m_bat_cap_range->AsFloat(),
+      m_soc_norm_start, soc_norm_diff, m_soc_abs_start, soc_abs_diff,
+      energy_diff, coulomb_diff, cap_ah_norm, cap_ah_abs, cap_kwh_norm, cap_kwh_abs);
+    
+    // Log to server:
+    int storetime_days = MyConfig.GetParamValueInt("xvu", "log.chargecap.storetime", 0);
+    if (storetime_days > 0)
+    {
+      MyNotify.NotifyStringf("data", "xvu.log.chargecap",
+        "XVU-LOG-ChargeCap,1,%d,%d,%.1f,%.2f,%.1f,%.1f,%.1f,%.1f,%.3f,%.3f,%.2f,%.2f,%.2f,%.2f",
+        storetime_days * 86400,
+        charge_time, StdMetrics.ms_v_bat_temp->AsFloat(), m_bat_cap_range->AsFloat(),
+        m_soc_norm_start, soc_norm_diff, m_soc_abs_start, soc_abs_diff,
+        energy_diff, coulomb_diff, cap_ah_norm, cap_ah_abs, cap_kwh_norm, cap_kwh_abs);
+    }
   }
 }

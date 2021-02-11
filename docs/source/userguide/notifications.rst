@@ -128,6 +128,8 @@ data    debug.crash                 Transmit crash backtraces (→ ``*-OVM-Debug
 data    debug.tasks                 Transmit task statistics (→ ``*-OVM-DebugTasks``)
 alert   flatbed.moved               Vehicle is being transported while parked - possible theft/flatbed
 info    heating.started             ``stat`` on start of heating (battery)
+data    log.grid                    Grid (charge/generator) history log (see below) (→ ``*-LOG-Grid``)
+data    log.trip                    Trip history log (see below) (→ ``*-LOG-Trip``)
 alert   modem.no_pincode            No PIN code for SIM card configured
 alert   modem.wrongpincode          Wrong pin code
 info    ota.update                  New firmware available/downloaded/installed
@@ -140,4 +142,133 @@ alert   valet.hood                  Vehicle hood opened while in valet mode
 alert   valet.trunk                 Vehicle trunk opened while in valet mode
 alert   vehicle.idle                Vehicle is idling / stopped turned on
 ======= =========================== ================================================================
+
+
+----------------
+Grid history log
+----------------
+
+The grid history log can be used as a source for long term statistics on your charges and typical 
+energy usages and to calculate your vehicle energy costs.
+
+Log entries are created on each change of the charge or generator state (``v.c.state`` / ``v.g.state``).
+
+You need to enable this log explicitly by configuring a storage time via config param ``notify 
+log.grid.storetime`` (in days) or via the web configuration page. Set to 0/empty to disable the log. 
+Already stored log entries will be kept on the server until expiry or manual deletion.
+
+Note: the stability of the total energy counters included in this log depends on their source 
+and persistence on the vehicle and/or module. If they are kept on the module, they may lose their
+values on a power outage.
+
+  - Notification subtype: ``log.grid``
+  - History record type: ``*-LOG-Grid``
+  - Format: CSV
+  - Archive time: config ``notify log.grid.storetime`` (days)
+  - Fields/columns:
+
+    * pos_gpslock
+    * pos_latitude
+    * pos_longitude
+    * pos_altitude
+    * pos_location
+    * charge_type
+    * charge_state
+    * charge_substate
+    * charge_mode
+    * charge_climit
+    * charge_limit_range
+    * charge_limit_soc
+    * gen_type
+    * gen_state
+    * gen_substate
+    * gen_mode
+    * gen_climit
+    * gen_limit_range
+    * gen_limit_soc
+    * charge_time
+    * charge_kwh
+    * charge_kwh_grid
+    * charge_kwh_grid_total
+    * gen_time
+    * gen_kwh
+    * gen_kwh_grid
+    * gen_kwh_grid_total
+    * bat_soc
+    * bat_range_est
+    * bat_range_ideal
+    * bat_range_full
+    * bat_voltage
+    * bat_temp
+    * charge_temp
+    * charge_12v_temp
+    * env_temp
+    * env_cabintemp
+    * bat_soh
+    * bat_health
+    * bat_cac
+    * bat_energy_used_total
+    * bat_energy_recd_total
+    * bat_coulomb_used_total
+    * bat_coulomb_recd_total
+
+
+----------------
+Trip history log
+----------------
+
+The trip history log can be used as a source for long term statistics on your trips and typical 
+trip power usages, as well as your battery performance in different environmental conditions and 
+degradation over time.
+
+Entries are created at the end of a trip (specifically ``v.e.on`` transition to off). Configure a 
+minimum trip length for logging by the config variable ``notify log.trip.minlength`` or via the web 
+UI.
+
+You need to enable this log explicitly by configuring a storage time via config param ``notify 
+log.trip.storetime`` (in days) or via the web configuration page. Set to 0/empty to disable the log. 
+Already stored log entries will be kept on the server until expiry or manual deletion.
+
+  - Notification subtype: ``log.trip``
+  - History record type: ``*-LOG-Trip``
+  - Format: CSV
+  - Archive time: config ``notify log.trip.storetime`` (days)
+  - Fields/columns:
+
+    * pos_gpslock
+    * pos_latitude
+    * pos_longitude
+    * pos_altitude
+    * pos_location
+    * pos_odometer
+    * pos_trip
+    * env_drivetime
+    * env_drivemode
+    * bat_soc
+    * bat_range_est
+    * bat_range_ideal
+    * bat_range_full
+    * bat_energy_used
+    * bat_energy_recd
+    * bat_coulomb_used
+    * bat_coulomb_recd
+    * bat_soh
+    * bat_health
+    * bat_cac
+    * bat_energy_used_total
+    * bat_energy_recd_total
+    * bat_coulomb_used_total
+    * bat_coulomb_recd_total
+    * env_temp
+    * env_cabintemp
+    * bat_temp
+    * inv_temp
+    * mot_temp
+    * charge_12v_temp
+    * tpms_temp_min
+    * tpms_temp_max
+    * tpms_pressure_min
+    * tpms_pressure_max
+    * tpms_health_min
+    * tpms_health_max
 

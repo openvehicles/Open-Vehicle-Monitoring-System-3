@@ -50,6 +50,7 @@ static const char *TAG = "v-teslaroadster";
 #include "ovms_peripherals.h"
 #include "metrics_standard.h"
 #include "ovms_utils.h"
+#include "ovms_time.h"
 #include "driver/uart.h"
 #include "driver/gpio.h"
 
@@ -194,10 +195,8 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
           }
         case 0x81: // Time/Date UTC
           {
-          StandardMetrics.ms_m_timeutc->SetValue(((int)d[7]<<24)+
-                                                 ((int)d[6]<<16)+
-                                                 ((int)d[5]<<8)+
-                                                 d[4]);
+          int tm = ((int)d[7]<<24) + ((int)d[6]<<16) + ((int)d[5]<<8) + d[4];
+          MyTime.Set(TAG, 2, true, tm);
           break;
           }
         case 0x82: // Ambient Temperature
@@ -1200,7 +1199,9 @@ bool OvmsVehicleTeslaRoadster::TPMSRead(std::vector<uint32_t> *tpms)
     MyCommandApp.HexDump(TAG, "tpms", (const char*)data, length);
     }
 
+#ifdef CONFIG_OVMS_COMP_MAX7317
   MyPeripherals->m_max7317->Output(9, 0); // Enable LOW
+#endif // #ifdef CONFIG_OVMS_COMP_MAX7317
   uart_flush(uart);
   uart_driver_delete(uart);
 
@@ -1281,7 +1282,9 @@ bool OvmsVehicleTeslaRoadster::TPMSWrite(std::vector<uint32_t> &tpms)
     MyCommandApp.HexDump(TAG, "tpms", (const char*)data, length);
     }
 
+#ifdef CONFIG_OVMS_COMP_MAX7317
   MyPeripherals->m_max7317->Output(9, 0); // Enable LOW
+#endif // #ifdef CONFIG_OVMS_COMP_MAX7317
   uart_flush(uart);
   uart_driver_delete(uart);
 

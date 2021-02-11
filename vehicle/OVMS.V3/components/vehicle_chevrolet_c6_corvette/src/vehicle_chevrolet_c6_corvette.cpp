@@ -35,17 +35,24 @@ static const char *TAG = "v-chevroletc6corvette";
 #include <stdio.h>
 #include "vehicle_chevrolet_c6_corvette.h"
 
-static const OvmsVehicle::poll_pid_t obdii_polls[]
-  =
+static const OvmsVehicle::poll_pid_t obdii_polls[] =
   {
-    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x05, {  0, 30, 30 }, 0, ISOTP_STD }, // Engine coolant temp
-    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x0c, { 10, 10, 10 }, 0, ISOTP_STD }, // Engine RPM
-    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x0d, {  0, 10, 10 }, 0, ISOTP_STD }, // Speed
-    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x0f, {  0, 30, 30 }, 0, ISOTP_STD }, // Engine air intake temp
-    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x2f, {  0, 30, 30 }, 0, ISOTP_STD }, // Fuel level
-    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x46, {  0, 30, 30 }, 0, ISOTP_STD }, // Ambiant temp
-    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x5c, {  0, 30, 30 }, 0, ISOTP_STD }, // Engine oil temp
-    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIIVEHICLE, 0x02, {999,999,999 }, 0, ISOTP_STD }, // VIN
+    // Engine coolant temp
+    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x05, {  0, 30, 30 }, 0, ISOTP_STD },
+    // Engine RPM
+    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x0c, { 10, 10, 10 }, 0, ISOTP_STD },
+    // Speed
+    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x0d, {  0, 10, 10 }, 0, ISOTP_STD },
+    // Engine air intake temp
+    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x0f, {  0, 30, 30 }, 0, ISOTP_STD },
+    // Fuel level
+    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x2f, {  0, 30, 30 }, 0, ISOTP_STD },
+    // Ambiant temp
+    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x46, {  0, 30, 30 }, 0, ISOTP_STD },
+    // Engine oil temp
+    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x5c, {  0, 30, 30 }, 0, ISOTP_STD },
+    // VIN
+    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIIVEHICLE, 0x02, {999,999,999 }, 0, ISOTP_STD },
     POLL_LIST_END
   };
 
@@ -80,24 +87,31 @@ void OvmsVehicleChevroletC6Corvette::IncomingPollReply(canbus* bus, uint16_t typ
         m_vin[0] = 0;
         }
       break;
+
     case 0x05:  // Engine coolant temperature
       StandardMetrics.ms_v_bat_temp->SetValue(value1 - 0x28);
       break;
+
     case 0x0f:  // Engine intake air temperature
       StandardMetrics.ms_v_inv_temp->SetValue(value1 - 0x28);
       break;
+
     case 0x5c:  // Engine oil temperature
       StandardMetrics.ms_v_mot_temp->SetValue(value1 - 0x28);
       break;
+
     case 0x46:  // Ambient temperature
       StandardMetrics.ms_v_env_temp->SetValue(value1 - 0x28);
       break;
+
     case 0x0d:  // Speed
       StandardMetrics.ms_v_pos_speed->SetValue(value1);
       break;
+
     case 0x2f:  // Fuel Level
       StandardMetrics.ms_v_bat_soc->SetValue((value1 * 100) >> 8);
       break;
+
     case 0x0c:  // Engine RPM
       if (value2 == 0)
         { // Car engine is OFF

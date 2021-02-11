@@ -478,7 +478,7 @@ void OvmsVehicleFactory::obdii_request(int verbosity, OvmsWriter* writer, OvmsCo
 
   uint32_t txid = 0, rxid = 0;
   uint8_t protocol = ISOTP_STD;
-  int timeout_ms = 3000;
+  int timeout_ms = 100;
   std::string request;
   std::string response;
 

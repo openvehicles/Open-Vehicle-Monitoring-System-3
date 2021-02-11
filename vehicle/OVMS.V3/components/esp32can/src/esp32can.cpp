@@ -216,11 +216,16 @@ static IRAM_ATTR void ESP32CAN_isr(void *pvParameters)
   // Get error counters:
   uint32_t rxerr = MODULE_ESP32CAN->RXERR.U;
   uint32_t txerr = MODULE_ESP32CAN->TXERR.U;
+  uint32_t status = MODULE_ESP32CAN->SR.U;
+  if (status & __CAN_STS_BUS_OFF)
+    {
+    rxerr |= 0x100;
+    txerr |= 0x100;
+    }
 
   // Handle error interrupts:
   if (error_irqs)
     {
-    uint32_t status = MODULE_ESP32CAN->SR.U;
     uint32_t ecc = MODULE_ESP32CAN->ECC.U;
     uint32_t error_flags = error_irqs << 16 | (status & 0b11001110) << 8 | (ecc & 0xff);
 

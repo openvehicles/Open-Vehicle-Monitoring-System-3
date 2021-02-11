@@ -1,6 +1,40 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- BMS: optional cell voltage & temperature logging
+  New configs:
+    [vehicle] bms.log.voltage.interval    Interval [s] for cell voltage logging, default 0=disable
+    [vehicle] bms.log.temp.interval       Interval [s] for cell temperature logging, default 0=disable
+- BMS: detection of inconsistent voltage series by gradient & stddev average deviation
+    thresholds, added pack metrics to battery monitor web UI, change cell warning & alert
+    thresholds to be applied exceeding stddev level
+  New metrics:
+    v.b.p.voltage.grad                    Cell voltage - gradient of current series [V]
+  New configs:
+    [vehicle] bms.dev.voltage.maxgrad     Max gradient for a valid series
+    [vehicle] bms.dev.voltage.maxsddev    Max stddev deviation from average for valid series
+- Events: added automatic events on v.e.aux12v changes.
+  New events:
+    vehicle.aux.12v.on
+    vehicle.aux.12v.off
+- Notifications: added optional long term trip & grid (charge/generator session) server logs.
+    See https://docs.openvehicles.com/en/latest/userguide/notifications.html for details.
+  New configs:
+    [notify]  log.trip.storetime    Trip log storage time in days, 0/empty = off (default)
+    [notify]  log.trip.minlength    … minimum trip length in km, default 0.2 km
+    [notify]  log.grid.storetime    Grid log storage time in days, 0/empty = off (default)
+- Server V3 improvements:
+    a) On first connection to MQTT broker we used to send all metrics. Now
+       we only send metrics for which we have a value.
+    b) New config settings:
+         "updatetime.on" which sets updatetime when the car is on (driving)
+         "updatetime.charging" which sets updatetime when the car is charging
+         "updatetime.awake" which sets updatetime when the car is awake
+       If unset the server uses the "idle" or "connected" interval as before
+    c) New config setting "updatetime.sendall". If you set this we will publish
+       _all_ valid metrics at this interval. Helpful to keep a steady flow of
+       values for charting.
+    PLEASE NOTE: These settings will increase OVMS' data usage. 
 - Metrics: extended reboot persistence: most vehicle state and long term counter
     metrics will now retain their values over a reboot (e.g. OTA update)
 - Metrics: new standard metrics for grid integration (V2G) / generator role
@@ -75,6 +109,8 @@ Open Vehicle Monitor System v3 - Change log
 - New vehicle: VW e-Up via OBD-II Port (VWUP.OBD)
 - New vehicle: MG ZS EV via OBD-II Port (MGEV)
 - New vehicle: BMW i3/i3s via OBD-II Port (BMWI3) 
+- Updated wolfssh and wolfssl so the restriction of clients to use
+  aes128-cbc cipher is no longer required.
 
 2020-09-02 MWJ  3.2.015  OTA release
 - Notify: add explicit channel exclusion config syntax

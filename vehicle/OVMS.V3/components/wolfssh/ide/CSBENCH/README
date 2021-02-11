@@ -1,0 +1,13 @@
+This is to build with Sourcery CodeBench IDE
+
+It makes the assumption that the root wolfssl and wolfssh directory are in the same folder
+
+workspace ->
+    ->wolfssl
+    ->wolfssh
+
+To build first compile the wolfssl library using the project provided in wolfssl/IDE/CSBENCH
+
+Next compile the sftp example project provided in wolfssh/ide/CSBENCH
+
+Note that this is using port 8080 to listen on by default

@@ -78,7 +78,7 @@ MetricsStandard::MetricsStandard()
   ms_v_bat_soh = new OvmsMetricFloat(MS_V_BAT_SOH, SM_STALE_HIGH, Percentage, true);
   ms_v_bat_cac = new OvmsMetricFloat(MS_V_BAT_CAC, SM_STALE_HIGH, AmpHours, true);
   ms_v_bat_health = new OvmsMetricString(MS_V_BAT_HEALTH, SM_STALE_HIGH);
-  ms_v_bat_voltage = new OvmsMetricFloat(MS_V_BAT_VOLTAGE, SM_STALE_MID, Volts);
+  ms_v_bat_voltage = new OvmsMetricFloat(MS_V_BAT_VOLTAGE, SM_STALE_MID, Volts, true);
   ms_v_bat_current = new OvmsMetricFloat(MS_V_BAT_CURRENT, SM_STALE_MID, Amps);
   ms_v_bat_coulomb_used = new OvmsMetricFloat(MS_V_BAT_COULOMB_USED, SM_STALE_MID, AmpHours, true);
   ms_v_bat_coulomb_used_total = new OvmsMetricFloat(MS_V_BAT_COULOMB_USED_TOTAL, SM_STALE_MID, AmpHours, true);
@@ -95,7 +95,7 @@ MetricsStandard::MetricsStandard()
   ms_v_bat_range_est = new OvmsMetricFloat(MS_V_BAT_RANGE_EST, SM_STALE_HIGH, Kilometers, true);
   ms_v_bat_temp = new OvmsMetricFloat(MS_V_BAT_TEMP, SM_STALE_MID, Celcius, true);
 
-  ms_v_bat_12v_voltage = new OvmsMetricFloat(MS_V_BAT_12V_VOLTAGE, SM_STALE_HIGH, Volts);
+  ms_v_bat_12v_voltage = new OvmsMetricFloat(MS_V_BAT_12V_VOLTAGE, SM_STALE_HIGH, Volts, true);
   ms_v_bat_12v_current = new OvmsMetricFloat(MS_V_BAT_12V_CURRENT, SM_STALE_HIGH, Amps);
   ms_v_bat_12v_voltage_ref = new OvmsMetricFloat(MS_V_BAT_12V_VOLTAGE_REF, SM_STALE_HIGH, Volts, true);
   ms_v_bat_12v_voltage_alert = new OvmsMetricBool(MS_V_BAT_12V_VOLTAGE_ALERT, SM_STALE_MID);
@@ -110,6 +110,7 @@ MetricsStandard::MetricsStandard()
   ms_v_bat_pack_vavg = new OvmsMetricFloat(MS_V_BAT_PACK_VAVG, SM_STALE_HIGH, Volts);
   ms_v_bat_pack_vstddev = new OvmsMetricFloat(MS_V_BAT_PACK_VSTDDEV, SM_STALE_HIGH, Volts);
   ms_v_bat_pack_vstddev_max = new OvmsMetricFloat(MS_V_BAT_PACK_VSTDDEVMAX, SM_STALE_HIGH, Volts);
+  ms_v_bat_pack_vgrad = new OvmsMetricFloat(MS_V_BAT_PACK_VGRAD, SM_STALE_HIGH, Volts);
 
   ms_v_bat_pack_tmin = new OvmsMetricFloat(MS_V_BAT_PACK_TMIN, SM_STALE_HIGH, Celcius);
   ms_v_bat_pack_tmax = new OvmsMetricFloat(MS_V_BAT_PACK_TMAX, SM_STALE_HIGH, Celcius);
@@ -250,18 +251,18 @@ MetricsStandard::MetricsStandard()
   //
   // Position / movement metrics
   //
-  ms_v_pos_gpslock = new OvmsMetricBool(MS_V_POS_GPSLOCK, SM_STALE_MID);
-  ms_v_pos_gpsmode = new OvmsMetricString(MS_V_POS_GPSMODE, SM_STALE_MID);
-  ms_v_pos_gpshdop = new OvmsMetricFloat(MS_V_POS_GPSHDOP, SM_STALE_MID);
-  ms_v_pos_satcount= new OvmsMetricInt(MS_V_POS_SATCOUNT, SM_STALE_MID);
-  ms_v_pos_latitude = new OvmsMetricFloat(MS_V_POS_LATITUDE, SM_STALE_MID, Other, true);
-  ms_v_pos_longitude = new OvmsMetricFloat(MS_V_POS_LONGITUDE, SM_STALE_MID, Other, true);
+  ms_v_pos_gpslock = new OvmsMetricBool(MS_V_POS_GPSLOCK, SM_STALE_MIN);
+  ms_v_pos_gpsmode = new OvmsMetricString(MS_V_POS_GPSMODE, SM_STALE_MIN);
+  ms_v_pos_gpshdop = new OvmsMetricFloat(MS_V_POS_GPSHDOP, SM_STALE_MIN);
+  ms_v_pos_satcount= new OvmsMetricInt(MS_V_POS_SATCOUNT, SM_STALE_MIN);
+  ms_v_pos_latitude = new OvmsMetricFloat(MS_V_POS_LATITUDE, SM_STALE_MIN, Other, true);
+  ms_v_pos_longitude = new OvmsMetricFloat(MS_V_POS_LONGITUDE, SM_STALE_MIN, Other, true);
   ms_v_pos_location = new OvmsMetricString(MS_V_POS_LOCATION, SM_STALE_MID);
-  ms_v_pos_direction = new OvmsMetricFloat(MS_V_POS_DIRECTION, SM_STALE_MID, Degrees);
-  ms_v_pos_altitude = new OvmsMetricFloat(MS_V_POS_ALTITUDE, SM_STALE_MID, Meters, true);
-  ms_v_pos_speed = new OvmsMetricFloat(MS_V_POS_SPEED, SM_STALE_MID, Kph);
-  ms_v_pos_acceleration = new OvmsMetricFloat(MS_V_POS_ACCELERATION, SM_STALE_MID, MetersPSS);
-  ms_v_pos_gpsspeed = new OvmsMetricFloat(MS_V_POS_GPSSPEED, SM_STALE_MID, Kph);
+  ms_v_pos_direction = new OvmsMetricFloat(MS_V_POS_DIRECTION, SM_STALE_MIN, Degrees);
+  ms_v_pos_altitude = new OvmsMetricFloat(MS_V_POS_ALTITUDE, SM_STALE_MIN, Meters, true);
+  ms_v_pos_speed = new OvmsMetricFloat(MS_V_POS_SPEED, SM_STALE_MIN, Kph);
+  ms_v_pos_acceleration = new OvmsMetricFloat(MS_V_POS_ACCELERATION, SM_STALE_MIN, MetersPSS);
+  ms_v_pos_gpsspeed = new OvmsMetricFloat(MS_V_POS_GPSSPEED, SM_STALE_MIN, Kph);
   ms_v_pos_odometer = new OvmsMetricFloat(MS_V_POS_ODOMETER, SM_STALE_MID, Kilometers, true);
   ms_v_pos_trip = new OvmsMetricFloat(MS_V_POS_TRIP, SM_STALE_MID, Kilometers, true);
 

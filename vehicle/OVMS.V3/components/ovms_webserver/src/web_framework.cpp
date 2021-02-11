@@ -93,6 +93,8 @@ extram::string PageContext::encode_html(const extram::string& text) {
 
 #define _attr(text) (encode_html(text).c_str())
 #define _html(text) (encode_html(text).c_str())
+#define __attr(text) (c.encode_html(text).c_str())
+#define __html(text) (c.encode_html(text).c_str())
 
 
 /**
@@ -594,8 +596,11 @@ void OvmsWebServer::HandleHome(PageEntry_t& p, PageContext_t& c)
     return;
   }
 
+  std::string moduleid = MyConfig.GetParamValue("vehicle", "id", "OVMS");
+  std::string info = "<p class=\"lead\">Welcome to the " + moduleid + " web console.</p>";
+
   c.head(200);
-  c.alert("info", "<p class=\"lead\">Welcome to the OVMS web console.</p>");
+  c.alert("info", info.c_str());
   PAGE_HOOK("body.pre");
   OutputHome(p, c);
   PAGE_HOOK("body.post");
@@ -609,11 +614,12 @@ void OvmsWebServer::HandleHome(PageEntry_t& p, PageContext_t& c)
 void OvmsWebServer::HandleRoot(PageEntry_t& p, PageContext_t& c)
 {
   std::string menu = CreateMenu(c);
+  std::string moduleid = MyConfig.GetParamValue("vehicle", "id", "OVMS");
 
   // output page framework:
   c.head(200);
   PAGE_HOOK("html.pre");
-  c.print(
+  c.printf(
     "<!DOCTYPE html>"
     "<html lang=\"en\">"
       "<head>"
@@ -621,10 +627,11 @@ void OvmsWebServer::HandleRoot(PageEntry_t& p, PageContext_t& c)
         "<meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\">"
         "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
         "<meta name=\"mobile-web-app-capable\" content=\"yes\">"
-        "<title>OVMS Console</title>"
+        "<title data-moduleid=\"%s\">%s Console</title>"
         "<link rel=\"stylesheet\" href=\"" URL_ASSETS_STYLE_CSS "\">"
         "<link rel=\"shortcut icon\" sizes=\"192x192\" href=\"" URL_ASSETS_FAVICON_PNG "\">"
-        "<link rel=\"apple-touch-icon\" href=\"" URL_ASSETS_FAVICON_PNG "\">");
+        "<link rel=\"apple-touch-icon\" href=\"" URL_ASSETS_FAVICON_PNG "\">",
+    __attr(moduleid), __attr(moduleid));
   PAGE_HOOK("head.post");
   c.print(
       "</head>"
@@ -650,7 +657,10 @@ void OvmsWebServer::HandleRoot(PageEntry_t& p, PageContext_t& c)
         "</nav>"
         "<div role=\"main\" id=\"main\" class=\"container-fluid\">"
         "</div>"
-        "<script>window.assets={\"charts_js\":\"" URL_ASSETS_CHARTS_JS "\",\"tables_js\":\"" URL_ASSETS_TABLES_JS "\"}</script>"
+        "<script>window.assets={"
+          "\"charts_js\":\"" URL_ASSETS_CHARTS_JS "\","
+          "\"tables_js\":\"" URL_ASSETS_TABLES_JS "\""
+        "}</script>"
         "<script src=\"" URL_ASSETS_SCRIPT_JS "\"></script>");
   PAGE_HOOK("body.post");
   c.print(

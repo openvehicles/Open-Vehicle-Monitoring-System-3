@@ -543,7 +543,8 @@ OvmsMetricInt* OvmsMetrics::InitInt(const char* metric, uint16_t autostale, int 
   OvmsMetricInt *m = (OvmsMetricInt*)Find(metric);
   if (m==NULL) m = new OvmsMetricInt(metric, autostale, units, persist);
 
-  m->SetValue(value);
+  if (!m->IsDefined())
+    m->SetValue(value);
   return m;
   }
 
@@ -553,7 +554,8 @@ OvmsMetricBool* OvmsMetrics::InitBool(const char* metric, uint16_t autostale, bo
 
   if (m==NULL) m = new OvmsMetricBool(metric, autostale, units, persist);
 
-  m->SetValue(value);
+  if (!m->IsDefined())
+    m->SetValue(value);
   return m;
   }
 
@@ -563,7 +565,8 @@ OvmsMetricFloat* OvmsMetrics::InitFloat(const char* metric, uint16_t autostale, 
 
   if (m==NULL) m = new OvmsMetricFloat(metric, autostale, units, persist);
 
-  m->SetValue(value);
+  if (!m->IsDefined())
+    m->SetValue(value);
   return m;
   }
 
@@ -572,7 +575,7 @@ OvmsMetricString* OvmsMetrics::InitString(const char* metric, uint16_t autostale
   OvmsMetricString *m = (OvmsMetricString*)Find(metric);
   if (m==NULL) m = new OvmsMetricString(metric, autostale, units);
 
-  if (value)
+  if (value && !m->IsDefined())
     m->SetValue(value);
   return m;
   }
@@ -671,6 +674,7 @@ OvmsMetric::OvmsMetric(const char* name, uint16_t autostale, metric_unit_t units
   m_name = name;
   m_lastmodified = 0;
   m_autostale = autostale;
+  m_stale = false;
   m_units = units;
   m_next = NULL;
   m_persist = false;          // only set by metrics supporting persistence
@@ -765,6 +769,11 @@ bool OvmsMetric::IsFirstDefined()
   return (m_defined == FirstDefined);
   }
 
+bool OvmsMetric::IsPersistent()
+  {
+  return m_persist;
+  }
+
 bool OvmsMetric::CheckPersist()
   {
   return true;
@@ -774,16 +783,38 @@ void OvmsMetric::RefreshPersist()
   {
   }
 
+/**
+ * IsStale: check if metric value has not been set within the staleness period / since marked stale
+ *  Note: a persistent metric won't be stale immediately after a reboot, because
+ *    it's unknown when the value was set before the reboot. If you need to assert
+ *    freshness, use IsFresh().
+ */
 bool OvmsMetric::IsStale()
   {
-  if (m_autostale>0)
+  if (m_autostale > 0)
     {
     if (m_lastmodified + m_autostale < monotonictime)
-      m_stale=true;
+      m_stale = true;
     else
-      m_stale=false;
+      m_stale = false;
     }
   return m_stale;
+  }
+
+/**
+ * IsFresh: check if metric value has been set explicitly within the staleness period / since marked stale
+ *  Note: a persistent metric won't be fresh immediately after a reboot, because
+ *    it's unknown when the value was set before the reboot. It needs to receive a
+ *    live value to become fresh.
+ */
+bool OvmsMetric::IsFresh()
+  {
+  if (m_defined == NeverDefined)
+    return false;
+  else if (m_persist && m_defined == FirstDefined)
+    return false;
+  else
+    return !IsStale();
   }
 
 void OvmsMetric::SetStale(bool stale)

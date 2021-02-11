@@ -112,7 +112,7 @@ typedef union {
   unsigned Frunk:1;             // 0x04
   unsigned :1;                  // 0x08
   unsigned Charging12V:1;       // 0x10
-  unsigned :1;                  // 0x20
+  unsigned Aux12V:1;            // 0x20
   unsigned :1;                  // 0x40
   unsigned HVAC:1;              // 0x80
   } bits;
@@ -967,6 +967,7 @@ void OvmsServerV2::TransmitMsgStat(bool always)
     StandardMetrics.ms_v_bat_range_ideal->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_bat_range_est->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_charge_climit->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_charge_kwh->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_charge_timermode->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_charge_timerstart->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_bat_cac->IsModifiedAndClear(MyOvmsServerV2Modifier) |
@@ -1340,6 +1341,7 @@ uint8_t Doors5()
   car_doors5.bits.RearRightDoor = StandardMetrics.ms_v_door_rr->AsBool();
   car_doors5.bits.Frunk = false; // should this be hood or something else?
   car_doors5.bits.Charging12V = StandardMetrics.ms_v_env_charging12v->AsBool();
+  car_doors5.bits.Aux12V = StandardMetrics.ms_v_env_aux12v->AsBool();
   car_doors5.bits.HVAC = StandardMetrics.ms_v_env_hvac->AsBool();
 
   return car_doors5.flags;
@@ -1385,6 +1387,7 @@ void OvmsServerV2::TransmitMsgEnvironment(bool always)
     StandardMetrics.ms_v_door_rl->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_door_rr->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_env_charging12v->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_env_aux12v->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_env_hvac->IsModifiedAndClear(MyOvmsServerV2Modifier) |
 
     StandardMetrics.ms_v_charge_temp->IsModifiedAndClear(MyOvmsServerV2Modifier) |
@@ -1640,6 +1643,7 @@ void OvmsServerV2::MetricModified(OvmsMetric* metric)
       (metric == StandardMetrics.ms_v_door_rl)||
       (metric == StandardMetrics.ms_v_door_rr)||
       (metric == StandardMetrics.ms_v_env_charging12v)||
+      (metric == StandardMetrics.ms_v_env_aux12v)||
       (metric == StandardMetrics.ms_v_env_hvac))
     {
     m_now_environment = true;
@@ -1649,6 +1653,11 @@ void OvmsServerV2::MetricModified(OvmsMetric* metric)
       (metric == StandardMetrics.ms_v_pos_gpslock))
     {
     m_now_gps = true;
+    }
+
+  if ((metric == StandardMetrics.ms_v_tpms_alert))
+    {
+    m_now_tpms = true;
     }
   }
 

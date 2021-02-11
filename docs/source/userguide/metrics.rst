@@ -129,6 +129,7 @@ v.b.p.temp.min                           13°C                     Cell temperat
 v.b.p.temp.stddev                        0°C                      Cell temperature - current standard deviation
 v.b.p.temp.stddev.max                    0.73°C                   Cell temperature - maximum standard deviation observed
 v.b.p.voltage.avg                        4.1V                     Cell voltage - pack average
+v.b.p.voltage.grad                       0.0032V                  Cell voltage - gradient of current series
 v.b.p.voltage.max                        4.105V                   Cell voltage - strongest cell in pack
 v.b.p.voltage.min                        4.09V                    Cell voltage - weakest cell in pack
 v.b.p.voltage.stddev                     0.00535V                 Cell voltage - current standard deviation
