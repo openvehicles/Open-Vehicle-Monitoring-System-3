@@ -639,6 +639,42 @@ void OvmsVehicleMgEv::Ticker1(uint32_t ticker)
     //     );
     //     xTimerStart(m_zombieTimer, 0);
     // }
+    //
+    
+    // Calculate battery energy usage and regeneration
+    //
+    // Car is turned on and not charging
+    if (StandardMetrics.ms_v_env_awake->AsBool() && !StandardMetrics.ms_v_charge_inprogress->AsBool()) {
+        if (StandardMetrics.ms_v_env_on->AsBool()) { // In READY State
+            float bat_power = StandardMetrics.ms_v_bat_voltage->AsFloat() * StandardMetrics.ms_v_bat_current->AsFloat() / 1000;
+            float energy = bat_power / 3600.0;
+            float coulombs = (StandardMetrics.ms_v_bat_current->AsFloat() / 3600.0);
+            StandardMetrics.ms_v_bat_power->SetValue(bat_power);  // Need this to show on Dashboard
+            if (StandardMetrics.ms_v_env_drivetime->AsInt() == 0) { // Haven't moved yet. Reset all the values.
+                ESP_LOGI(TAG, "Trip has started");
+                StandardMetrics.ms_v_bat_coulomb_used->SetValue(0);
+                StandardMetrics.ms_v_bat_coulomb_recd->SetValue(0);
+                StandardMetrics.ms_v_bat_energy_used->SetValue(0);
+                StandardMetrics.ms_v_bat_energy_recd->SetValue(0);
+            } else { //Already driving. Calculate power usage
+                if (bat_power < 0) { // Are we regenerating?
+                    StandardMetrics.ms_v_bat_energy_recd->SetValue(StandardMetrics.ms_v_bat_energy_recd->AsFloat() + (energy * -1.0));
+                    StandardMetrics.ms_v_bat_coulomb_recd->SetValue(StandardMetrics.ms_v_bat_coulomb_recd->AsFloat() + (coulombs * -1.0));
+                } else { // Battery is being Drained
+                    StandardMetrics.ms_v_bat_energy_used->SetValue(StandardMetrics.ms_v_bat_energy_used->AsFloat()+energy);
+                    StandardMetrics.ms_v_bat_coulomb_used->SetValue(StandardMetrics.ms_v_bat_coulomb_used->AsFloat()+coulombs);
+                }
+            }
+        } else {
+            if (StandardMetrics.ms_v_env_parktime->AsInt() == 0) {
+                ESP_LOGI(TAG, "Trip has ended");
+                StandardMetrics.ms_v_bat_energy_used_total->SetValue(StandardMetrics.ms_v_bat_energy_used_total->AsFloat() +StandardMetrics.ms_v_bat_energy_used->AsFloat());
+                StandardMetrics.ms_v_bat_energy_recd_total->SetValue(StandardMetrics.ms_v_bat_energy_recd_total->AsFloat() + StandardMetrics.ms_v_bat_energy_recd->AsFloat());
+                StandardMetrics.ms_v_bat_coulomb_used_total->SetValue(StandardMetrics.ms_v_bat_coulomb_used_total->AsFloat() + StandardMetrics.ms_v_bat_coulomb_used->AsFloat());
+                StandardMetrics.ms_v_bat_coulomb_recd_total->SetValue(StandardMetrics.ms_v_bat_coulomb_recd_total->AsFloat() + StandardMetrics.ms_v_bat_coulomb_recd->AsFloat());
+            }
+        }
+    }
     
     // Calculate cumulative charge energy each second
     if(StandardMetrics.ms_v_charge_inprogress->AsBool())

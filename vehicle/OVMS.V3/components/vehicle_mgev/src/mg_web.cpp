@@ -70,7 +70,7 @@ void OvmsVehicleMgEv::WebInit()
 }
 
 /**
- * GetDashboardConfig: Mitsubishi i-MiEV Citroen C-Zero, Peugeot iOn specific dashboard setup
+ * GetDashboardConfig: MG ZS EV specific dashboard setup
  */
 void OvmsVehicleMgEv::GetDashboardConfig(DashboardConfig& cfg)
 {
@@ -84,10 +84,10 @@ void OvmsVehicleMgEv::GetDashboardConfig(DashboardConfig& cfg)
     "{ from: 100, to: 135, className: 'red-band' }]"
     "},{"
     // Voltage:
-    "min: 310, max: 460,"
+    "min: 340, max: 460,"
     "plotBands: ["
-    "{ from: 310, to: 360, className: 'red-band' },"
-    "{ from: 360, to: 410, className: 'yellow-band' },"
+    "{ from: 340, to: 380, className: 'red-band' },"
+    "{ from: 380, to: 420, className: 'yellow-band' },"
     "{ from: 410, to: 460, className: 'green-band' }]"
     "},{"
     // SOC:
@@ -98,19 +98,19 @@ void OvmsVehicleMgEv::GetDashboardConfig(DashboardConfig& cfg)
     "{ from: 25, to: 100, className: 'green-band' }]"
     "},{"
     // Efficiency:
-    "min: 0, max: 300,"
+    "min: 0, max: 600,"
     "plotBands: ["
-    "{ from: 0, to: 120, className: 'green-band' },"
-    "{ from: 120, to: 250, className: 'yellow-band' },"
-    "{ from: 250, to: 300, className: 'red-band' }]"
+    "{ from: 0, to: 200, className: 'green-band' },"
+    "{ from: 200, to: 400, className: 'yellow-band' },"
+    "{ from: 400, to: 600, className: 'red-band' }]"
     "},{"
     // Power:
-    "min: -30, max: 85,"
+    "min: -30, max: 150,"
     "plotBands: ["
     "{ from: -30, to: 0, className: 'violet-band' },"
-    "{ from: 0, to: 20, className: 'green-band' },"
-    "{ from: 20, to: 50, className: 'yellow-band' },"
-    "{ from: 50, to: 85, className: 'red-band' }]"
+    "{ from: 0, to: 50, className: 'green-band' },"
+    "{ from: 50, to: 100, className: 'yellow-band' },"
+    "{ from: 100, to: 150, className: 'red-band' }]"
     "},{"
     // Charger temperature:
     "min: -10, max: 55, tickInterval: 20,"
