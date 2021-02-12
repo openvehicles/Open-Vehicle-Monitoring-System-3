@@ -429,6 +429,33 @@ This message is sent <cartoserver> "C" and transmits the last known location of 
 * Energy recovered (in Wh)
 * Inverter motor power (kW) (positive = output)
 * Inverter efficiency (%)
+* GPS mode indicator (see below)
+* GPS satellite count
+* GPS HDOP (see below)
+* GPS speed (in distance units per hour)
+
+**GPS mode indicator**: this shows the NMEA receiver mode. If using the SIM5360 modem for GPS, this 
+is a two character string. The first character represents the GPS receiver mode, the second the GLONASS 
+receiver mode. Each mode character may be one of:
+
+* `N` = No fix. Satellite system not used in position fix, or fix not valid
+* `A` = Autonomous. Satellite system used in non-differential mode in position fix
+* `D` = Differential (including all OmniSTAR services). Satellite system used in differential mode in position fix
+* `P` = Precise. Satellite system used in precision mode. Precision mode is defined as: no deliberate degradation (such as Selective Availability) and higher resolution code (P-code) is used to compute position fix
+* `R` = Real Time Kinematic. Satellite system used in RTK mode with fixed integers
+* `F` = Float RTK. Satellite system used in real time kinematic mode with floating integers
+* `E` = Estimated (dead reckoning) Mode
+* `M` = Manual Input Mode
+* `S` = Simulator Mode
+
+**GPS HDOP**: HDOP = horizontal dilution of precision. This is a measure for the currently achievable 
+precision of the horizontal coordinates (latitude & longitude), which depends on the momentary relative 
+satellite positions and visibility to the device.
+
+The lower the value, the higher the precision. Values up to 2 mean high precision, up to 5 is good. 
+If the value is higher than 20, coordinates may be off by 300 meters from the actual position.
+
+See https://en.wikipedia.org/wiki/Dilution_of_precision_(navigation) for further details.
 
 ---------------------------------
 Car Capabilities message 0x56 "V"
