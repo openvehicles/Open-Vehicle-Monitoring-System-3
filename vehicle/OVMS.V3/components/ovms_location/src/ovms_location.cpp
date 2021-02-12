@@ -842,6 +842,12 @@ void OvmsLocations::CheckTheft()
       "Vehicle is being transported while parked - possible theft/flatbed (@%0.6f,%0.6f)",
       m_latitude, m_longitude);
     MyEvents.SignalEvent("location.alert.flatbed.moved", NULL);
+    ESP_LOGW(TAG, "CheckTheft: flatbed.moved @%0.6f,%0.6f gpsmode=%s satcount=%d hdop=%.1f gpsspeed=%.1f",
+      m_latitude, m_longitude,
+      StdMetrics.ms_v_pos_gpsmode->AsString().c_str(),
+      StdMetrics.ms_v_pos_satcount->AsInt(),
+      StdMetrics.ms_v_pos_gpshdop->AsFloat(),
+      StdMetrics.ms_v_pos_gpsspeed->AsFloat());
     }
   }
 
