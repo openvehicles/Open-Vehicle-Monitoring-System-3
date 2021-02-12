@@ -1,6 +1,6 @@
 /* ssh.h
  *
- * Copyright (C) 2014-2016 wolfSSL Inc.
+ * Copyright (C) 2014-2020 wolfSSL Inc.
  *
  * This file is part of wolfSSH.
  *
@@ -26,6 +26,12 @@
 
 #pragma once
 
+#ifdef WOLFSSL_USER_SETTINGS
+#include <wolfssl/wolfcrypt/settings.h>
+#else
+#include <wolfssl/options.h>
+#endif
+#include <wolfssl/wolfcrypt/types.h>
 #include <wolfssh/settings.h>
 #include <wolfssh/version.h>
 #include <wolfssh/port.h>
@@ -41,41 +47,70 @@ typedef struct WOLFSSH WOLFSSH;
 typedef struct WOLFSSH_CHANNEL WOLFSSH_CHANNEL;
 
 
-WOLFSSH_API int  wolfSSH_Init(void);
-WOLFSSH_API int  wolfSSH_Cleanup(void);
+WOLFSSH_API int wolfSSH_Init(void);
+WOLFSSH_API int wolfSSH_Cleanup(void);
 
 /* debugging output functions */
-WOLFSSH_API int  wolfSSH_Debugging_ON(void);
+WOLFSSH_API void wolfSSH_Debugging_ON(void);
 WOLFSSH_API void wolfSSH_Debugging_OFF(void);
 
 /* context functions */
-WOLFSSH_API WOLFSSH_CTX* wolfSSH_CTX_new(uint8_t, void*);
-WOLFSSH_API void         wolfSSH_CTX_free(WOLFSSH_CTX*);
+WOLFSSH_API WOLFSSH_CTX* wolfSSH_CTX_new(byte, void*);
+WOLFSSH_API void wolfSSH_CTX_free(WOLFSSH_CTX*);
 
 /* ssh session functions */
 WOLFSSH_API WOLFSSH* wolfSSH_new(WOLFSSH_CTX*);
-WOLFSSH_API void     wolfSSH_free(WOLFSSH*);
+WOLFSSH_API void wolfSSH_free(WOLFSSH*);
 
-WOLFSSH_API int  wolfSSH_set_fd(WOLFSSH*, int);
-WOLFSSH_API int  wolfSSH_get_fd(const WOLFSSH*);
+WOLFSSH_API int wolfSSH_worker(WOLFSSH*, word32*);
+WOLFSSH_API int wolfSSH_GetLastRxId(WOLFSSH*, word32*);
+
+WOLFSSH_API int wolfSSH_set_fd(WOLFSSH*, WS_SOCKET_T);
+WOLFSSH_API WS_SOCKET_T wolfSSH_get_fd(const WOLFSSH*);
+
+WOLFSSH_API int wolfSSH_SetFilesystemHandle(WOLFSSH*, void*);
+WOLFSSH_API void* wolfSSH_GetFilesystemHandle(WOLFSSH*);
 
 /* data high water mark functions */
-WOLFSSH_API int wolfSSH_SetHighwater(WOLFSSH*, uint32_t);
-WOLFSSH_API uint32_t wolfSSH_GetHighwater(WOLFSSH*);
+WOLFSSH_API int wolfSSH_SetHighwater(WOLFSSH*, word32);
+WOLFSSH_API word32 wolfSSH_GetHighwater(WOLFSSH*);
 
-typedef int (*WS_CallbackHighwater)(uint8_t, void*);
-WOLFSSH_API void wolfSSH_SetHighwaterCb(WOLFSSH_CTX*, uint32_t,
+typedef int (*WS_CallbackHighwater)(byte, void*);
+WOLFSSH_API void wolfSSH_SetHighwaterCb(WOLFSSH_CTX*, word32,
                                         WS_CallbackHighwater);
 WOLFSSH_API void wolfSSH_SetHighwaterCtx(WOLFSSH*, void*);
 WOLFSSH_API void* wolfSSH_GetHighwaterCtx(WOLFSSH*);
 
+WOLFSSH_API int wolfSSH_ReadKey_buffer(const byte*, word32, int,
+        byte**, word32*, const byte**, word32*, void*);
+WOLFSSH_API int wolfSSH_ReadKey_file(const char*,
+        byte**, word32*, const byte**, word32*, byte*, void*);
+
+
+#define WS_CHANNEL_ID_SELF 0
+#define WS_CHANNEL_ID_PEER 1
+
+WOLFSSH_API WOLFSSH_CHANNEL* wolfSSH_ChannelFwdNew(WOLFSSH*,
+        const char*, word32, const char*, word32);
+WOLFSSH_API int wolfSSH_ChannelFree(WOLFSSH_CHANNEL*);
+WOLFSSH_API int wolfSSH_ChannelGetId(WOLFSSH_CHANNEL*, word32*, byte);
+WOLFSSH_API WOLFSSH_CHANNEL* wolfSSH_ChannelFind(WOLFSSH*, word32, byte);
+WOLFSSH_API WOLFSSH_CHANNEL* wolfSSH_ChannelNext(WOLFSSH*, WOLFSSH_CHANNEL*);
+WOLFSSH_API int wolfSSH_ChannelSetFwdFd(WOLFSSH_CHANNEL*, int);
+WOLFSSH_API int wolfSSH_ChannelGetFwdFd(const WOLFSSH_CHANNEL*);
+WOLFSSH_API int wolfSSH_ChannelRead(WOLFSSH_CHANNEL*, byte*, word32);
+WOLFSSH_API int wolfSSH_ChannelSend(WOLFSSH_CHANNEL*, const byte*, word32);
+WOLFSSH_API int wolfSSH_ChannelExit(WOLFSSH_CHANNEL*);
+WOLFSSH_API int wolfSSH_ChannelGetEof(WOLFSSH_CHANNEL*);
+
 
 WOLFSSH_API int wolfSSH_get_error(const WOLFSSH*);
 WOLFSSH_API const char* wolfSSH_get_error_name(const WOLFSSH*);
+WOLFSSH_API const char* wolfSSH_ErrorToName(int);
 
 /* I/O callbacks */
-typedef int (*WS_CallbackIORecv)(WOLFSSH*, void*, uint32_t, void*);
-typedef int (*WS_CallbackIOSend)(WOLFSSH*, void*, uint32_t, void*);
+typedef int (*WS_CallbackIORecv)(WOLFSSH*, void*, word32, void*);
+typedef int (*WS_CallbackIOSend)(WOLFSSH*, void*, word32, void*);
 WOLFSSH_API void wolfSSH_SetIORecv(WOLFSSH_CTX*, WS_CallbackIORecv);
 WOLFSSH_API void wolfSSH_SetIOSend(WOLFSSH_CTX*, WS_CallbackIOSend);
 WOLFSSH_API void wolfSSH_SetIOReadCtx(WOLFSSH*, void*);
@@ -83,77 +118,114 @@ WOLFSSH_API void wolfSSH_SetIOWriteCtx(WOLFSSH*, void*);
 WOLFSSH_API void* wolfSSH_GetIOReadCtx(WOLFSSH*);
 WOLFSSH_API void* wolfSSH_GetIOWriteCtx(WOLFSSH*);
 
-/* User Authentication callback */
+/* Global Request callbacks */
+typedef int (*WS_CallbackGlobalReq)(WOLFSSH*, void*, word32, int, void*);
+WOLFSSH_API void wolfSSH_SetGlobalReq(WOLFSSH_CTX*, WS_CallbackGlobalReq);
+WOLFSSH_API void wolfSSH_SetGlobalReqCtx(WOLFSSH*, void*);
+WOLFSSH_API void *wolfSSH_GetGlobalReqCtx(WOLFSSH*);
+typedef int (*WS_CallbackReqSuccess)(WOLFSSH*, void*, word32, void*);
+WOLFSSH_API void wolfSSH_SetReqSuccess(WOLFSSH_CTX*, WS_CallbackReqSuccess);
+WOLFSSH_API void wolfSSH_SetReqSuccessCtx(WOLFSSH*, void *);
+WOLFSSH_API void* wolfSSH_GetReqSuccessCtx(WOLFSSH*);
+typedef int (*WS_CallbackReqFailure)(WOLFSSH *, void *, word32, void *);
+WOLFSSH_API void wolfSSH_SetReqFailure(WOLFSSH_CTX *, WS_CallbackReqSuccess);
+WOLFSSH_API void wolfSSH_SetReqFailureCtx(WOLFSSH *, void *);
+WOLFSSH_API void *wolfSSH_GetReqFailureCtx(WOLFSSH *);
 
+/* User Authentication callback */
 typedef struct WS_UserAuthData_Password {
-    uint8_t* password;
-    uint32_t passwordSz;
+    const byte* password;
+    word32 passwordSz;
     /* The following are present for future use. */
-    uint8_t hasNewPassword;
-    uint8_t* newPassword;
-    uint32_t newPasswordSz;
+    byte hasNewPassword;
+    const byte* newPassword;
+    word32 newPasswordSz;
 } WS_UserAuthData_Password;
 
 typedef struct WS_UserAuthData_PublicKey {
-    uint8_t* dataToSign;
-    uint8_t* publicKeyType;
-    uint32_t publicKeyTypeSz;
-    uint8_t* publicKey;
-    uint32_t publicKeySz;
-    uint8_t hasSignature;
-    uint8_t* signature;
-    uint32_t signatureSz;
+    const byte* dataToSign;
+    const byte* publicKeyType;
+    word32 publicKeyTypeSz;
+    const byte* publicKey;
+    word32 publicKeySz;
+    const byte* privateKey;
+    word32 privateKeySz;
+    byte hasSignature;
+    const byte* signature;
+    word32 signatureSz;
 } WS_UserAuthData_PublicKey;
 
 typedef struct WS_UserAuthData {
-    uint8_t type;
-    uint8_t* username;
-    uint32_t usernameSz;
-    uint8_t* serviceName;
-    uint32_t serviceNameSz;
-    uint8_t* authName;
-    uint32_t authNameSz;
+    byte type;
+    const byte* username;
+    word32 usernameSz;
+    const byte* serviceName;
+    word32 serviceNameSz;
+    const byte* authName;
+    word32 authNameSz;
     union {
         WS_UserAuthData_Password password;
         WS_UserAuthData_PublicKey publicKey;
     } sf;
 } WS_UserAuthData;
 
-typedef int (*WS_CallbackUserAuth)(uint8_t, const WS_UserAuthData*, void*);
+typedef int (*WS_CallbackUserAuth)(byte, WS_UserAuthData*, void*);
 WOLFSSH_API void wolfSSH_SetUserAuth(WOLFSSH_CTX*, WS_CallbackUserAuth);
 WOLFSSH_API void wolfSSH_SetUserAuthCtx(WOLFSSH*, void*);
 WOLFSSH_API void* wolfSSH_GetUserAuthCtx(WOLFSSH*);
 
+/* Public Key Check Callback */
+typedef int (*WS_CallbackPublicKeyCheck)(const byte*, word32, void*);
+WOLFSSH_API void wolfSSH_CTX_SetPublicKeyCheck(WOLFSSH_CTX*,
+                                               WS_CallbackPublicKeyCheck);
+WOLFSSH_API void wolfSSH_SetPublicKeyCheckCtx(WOLFSSH*, void*);
+WOLFSSH_API void* wolfSSH_GetPublicKeyCheckCtx(WOLFSSH*);
+
+WOLFSSH_API int wolfSSH_SetUsernameRaw(WOLFSSH*, const byte*, word32);
+WOLFSSH_API int wolfSSH_SetUsername(WOLFSSH*, const char*);
+WOLFSSH_API char* wolfSSH_GetUsername(WOLFSSH*);
+
 WOLFSSH_API int wolfSSH_CTX_SetBanner(WOLFSSH_CTX*, const char*);
 WOLFSSH_API int wolfSSH_CTX_UsePrivateKey_buffer(WOLFSSH_CTX*,
-                                                 const uint8_t*, uint32_t, int);
+                                                 const byte*, word32, int);
+WOLFSSH_API int wolfSSH_CTX_SetWindowPacketSize(WOLFSSH_CTX*, word32, word32);
 
 WOLFSSH_API int wolfSSH_accept(WOLFSSH*);
-WOLFSSH_API int wolfSSH_stream_read(WOLFSSH*, uint8_t*, uint32_t);
-WOLFSSH_API int wolfSSH_stream_send(WOLFSSH*, uint8_t*, uint32_t);
+WOLFSSH_API int wolfSSH_connect(WOLFSSH*);
+WOLFSSH_API int wolfSSH_shutdown(WOLFSSH*);
+WOLFSSH_API int wolfSSH_stream_peek(WOLFSSH*, byte*, word32);
+WOLFSSH_API int wolfSSH_stream_read(WOLFSSH*, byte*, word32);
+WOLFSSH_API int wolfSSH_stream_send(WOLFSSH*, byte*, word32);
 WOLFSSH_API int wolfSSH_stream_exit(WOLFSSH*, int);
-WOLFSSH_API int wolfSSH_channel_read(WOLFSSH_CHANNEL*, uint8_t*, uint32_t);
-WOLFSSH_API int wolfSSH_channel_send(WOLFSSH_CHANNEL*, uint8_t*, uint32_t);
-WOLFSSH_API int wolfSSH_worker(WOLFSSH*);
+WOLFSSH_API int wolfSSH_extended_data_read(WOLFSSH*, byte*, word32);
 WOLFSSH_API int wolfSSH_TriggerKeyExchange(WOLFSSH*);
+WOLFSSH_API int wolfSSH_SendIgnore(WOLFSSH*, const byte*, word32);
+WOLFSSH_API int wolfSSH_SendDisconnect(WOLFSSH*, word32);
+WOLFSSH_API int wolfSSH_global_request(WOLFSSH*, const unsigned char*, word32, int);
+WOLFSSH_API int wolfSSH_ChannelIdRead(WOLFSSH*, word32, byte*, word32);
+WOLFSSH_API int wolfSSH_ChannelIdSend(WOLFSSH*, word32, byte*, word32);
 
 WOLFSSH_API void wolfSSH_GetStats(WOLFSSH*,
-                                  uint32_t*, uint32_t*, uint32_t*, uint32_t*);
+                                  word32*, word32*, word32*, word32*);
 
-WOLFSSH_API int wolfSSH_KDF(uint8_t, uint8_t, uint8_t*, uint32_t,
-                const uint8_t*, uint32_t, const uint8_t*, uint32_t,
-                const uint8_t*, uint32_t);
+WOLFSSH_API int wolfSSH_KDF(byte, byte, byte*, word32, const byte*, word32,
+                            const byte*, word32, const byte*, word32);
 
+#ifdef USE_WINDOWS_API
+WOLFSSH_API int wolfSSH_ConvertConsole(WOLFSSH*, WOLFSSH_HANDLE, byte*, word32);
+#endif
 
 typedef enum {
     WOLFSSH_SESSION_UNKNOWN = 0,
     WOLFSSH_SESSION_SHELL,
     WOLFSSH_SESSION_EXEC,
     WOLFSSH_SESSION_SUBSYSTEM,
+    WOLFSSH_SESSION_TERMINAL,
 } WS_SessionType;
 
 WOLFSSH_API WS_SessionType wolfSSH_GetSessionType(const WOLFSSH*);
 WOLFSSH_API const char* wolfSSH_GetSessionCommand(const WOLFSSH*);
+WOLFSSH_API int wolfSSH_SetChannelType(WOLFSSH*, byte, byte*, word32);
 
 
 enum WS_HighwaterSide {
@@ -171,25 +243,26 @@ enum WS_EndpointTypes {
 enum WS_FormatTypes {
     WOLFSSH_FORMAT_ASN1,
     WOLFSSH_FORMAT_PEM,
-    WOLFSSH_FORMAT_RAW
+    WOLFSSH_FORMAT_RAW,
+    WOLFSSH_FORMAT_SSH,
 };
 
 
-enum WS_UserAuthTypes {
-    WOLFSSH_USERAUTH_PASSWORD,
-    WOLFSSH_USERAUTH_PUBLICKEY
-};
+/* bit map */
+#define WOLFSSH_USERAUTH_PASSWORD  0x01
+#define WOLFSSH_USERAUTH_PUBLICKEY 0x02
+#define WOLFSSH_USERAUTH_NONE      0x04
 
-
-enum WS_UserAuthResults {
+enum WS_UserAuthResults
+{
     WOLFSSH_USERAUTH_SUCCESS,
     WOLFSSH_USERAUTH_FAILURE,
     WOLFSSH_USERAUTH_INVALID_AUTHTYPE,
     WOLFSSH_USERAUTH_INVALID_USER,
     WOLFSSH_USERAUTH_INVALID_PASSWORD,
+    WOLFSSH_USERAUTH_REJECTED,
     WOLFSSH_USERAUTH_INVALID_PUBLICKEY
 };
-
 
 enum WS_DisconnectReasonCodes {
     WOLFSSH_DISCONNECT_HOST_NOT_ALLOWED_TO_CONNECT    = 1,
@@ -208,6 +281,16 @@ enum WS_DisconnectReasonCodes {
     WOLFSSH_DISCONNECT_NO_MORE_AUTH_METHODS_AVAILABLE = 14,
     WOLFSSH_DISCONNECT_ILLEGAL_USER_NAME              = 15
 };
+
+
+WOLFSSH_API void wolfSSH_ShowSizes(void);
+
+
+#ifndef WOLFSSH_MAX_FILENAME
+    #define WOLFSSH_MAX_FILENAME 256
+#endif
+#define WOLFSSH_MAX_OCTET_LEN 6
+#define WOLFSSH_EXT_DATA_STDERR 1
 
 
 #ifdef __cplusplus

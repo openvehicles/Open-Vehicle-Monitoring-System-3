@@ -72,7 +72,7 @@
 #include <string>
 static const char *TAG = "v-vweup";
 
-#define VERSION "0.5.1"
+#define VERSION "0.10.1"
 
 #include <stdio.h>
 #include <string>
@@ -130,6 +130,15 @@ OvmsVehicleVWeUp *OvmsVehicleVWeUp::GetInstance(OvmsWriter *writer)
 OvmsVehicleVWeUp::OvmsVehicleVWeUp()
 {
   ESP_LOGI(TAG, "Start VW e-Up vehicle module");
+
+  // Init general state:
+  vweup_enable_write = false;
+  vweup_enable_obd = false;
+  vweup_enable_t26 = false;
+  vweup_con = 0;
+  vweup_modelyear = 0;
+
+  m_obd_state = OBDS_Init;
 
   // Init metrics:
   m_version = MyMetrics.InitString("xvu.m.version", 0, VERSION " " __DATE__ " " __TIME__);
@@ -243,23 +252,31 @@ void OvmsVehicleVWeUp::ConfigChanged(OvmsConfigParam *param)
   ESP_LOGD(TAG, "VW e-Up reload configuration");
   int vweup_modelyear_new = MyConfig.GetParamValueInt("xvu", "modelyear", DEFAULT_MODEL_YEAR);
   bool vweup_enable_obd_new = MyConfig.GetParamValueBool("xvu", "con_obd", true);
-  vweup_enable_t26 = MyConfig.GetParamValueBool("xvu", "con_t26", true);
+  bool vweup_enable_t26_new = MyConfig.GetParamValueBool("xvu", "con_t26", true);
   vweup_enable_write = MyConfig.GetParamValueBool("xvu", "canwrite", false);
   vweup_cc_temp_int = MyConfig.GetParamValueInt("xvu", "cc_temp", 22);
+  int dc_interval = MyConfig.GetParamValueInt("xvu", "dc_interval", 0);
   int cell_interval_drv = MyConfig.GetParamValueInt("xvu", "cell_interval_drv", 15);
   int cell_interval_chg = MyConfig.GetParamValueInt("xvu", "cell_interval_chg", 60);
+  int cell_interval_awk = MyConfig.GetParamValueInt("xvu", "cell_interval_awk", 60);
 
   bool do_obd_init = (
     (!vweup_enable_obd && vweup_enable_obd_new) ||
+    (vweup_enable_t26_new != vweup_enable_t26) ||
     (vweup_modelyear < 2020 && vweup_modelyear_new > 2019) ||
     (vweup_modelyear_new < 2020 && vweup_modelyear > 2019) ||
+    (dc_interval != m_cfg_dc_interval) ||
     (cell_interval_drv != m_cfg_cell_interval_drv) ||
-    (cell_interval_chg != m_cfg_cell_interval_chg));
+    (cell_interval_chg != m_cfg_cell_interval_chg) ||
+    (cell_interval_awk != m_cfg_cell_interval_awk));
 
   vweup_modelyear = vweup_modelyear_new;
   vweup_enable_obd = vweup_enable_obd_new;
+  vweup_enable_t26 = vweup_enable_t26_new;
+  m_cfg_dc_interval = dc_interval;
   m_cfg_cell_interval_drv = cell_interval_drv;
   m_cfg_cell_interval_chg = cell_interval_chg;
+  m_cfg_cell_interval_awk = cell_interval_awk;
 
   // Connectors:
   vweup_con = vweup_enable_obd * 2 + vweup_enable_t26;
@@ -271,12 +288,19 @@ void OvmsVehicleVWeUp::ConfigChanged(OvmsConfigParam *param)
   //  Note: currently using standard specs
   //  TODO: get actual capacity/SOH & max charge current
   float socfactor = StdMetrics.ms_v_bat_soc->AsFloat() / 100;
+  float sohfactor = StdMetrics.ms_v_bat_soh->AsFloat() / 100;
+  if (sohfactor == 0) sohfactor = 100;
   if (vweup_modelyear > 2019)
   {
     // 32.3 kWh net / 36.8 kWh gross, 2P84S = 120 Ah, 260 km WLTP
-    StdMetrics.ms_v_bat_cac->SetValue(120);
-    StdMetrics.ms_v_bat_range_full->SetValue(260);
-    StdMetrics.ms_v_bat_range_ideal->SetValue(260 * socfactor);
+    StdMetrics.ms_v_bat_cac->SetValue(120 * sohfactor);
+    StdMetrics.ms_v_bat_range_full->SetValue(260 * sohfactor);
+    if (StdMetrics.ms_v_bat_range_ideal->AsFloat() == 0)
+      StdMetrics.ms_v_bat_range_ideal->SetValue(260 * sohfactor * socfactor);
+    if (StdMetrics.ms_v_bat_range_est->AsFloat() > 10 && StdMetrics.ms_v_bat_soc->AsFloat() > 10)
+      m_range_est_factor = StdMetrics.ms_v_bat_range_est->AsFloat() / StdMetrics.ms_v_bat_soc->AsFloat();
+    else
+      m_range_est_factor = 2.6f;
     StdMetrics.ms_v_charge_climit->SetValue(32);
 
     // Battery pack layout: 2P84S in 14 modules
@@ -290,9 +314,14 @@ void OvmsVehicleVWeUp::ConfigChanged(OvmsConfigParam *param)
   else
   {
     // 16.4 kWh net / 18.7 kWh gross, 2P102S = 50 Ah, 160 km WLTP
-    StdMetrics.ms_v_bat_cac->SetValue(50);
-    StdMetrics.ms_v_bat_range_full->SetValue(160);
-    StdMetrics.ms_v_bat_range_ideal->SetValue(160 * socfactor);
+    StdMetrics.ms_v_bat_cac->SetValue(50 * sohfactor);
+    StdMetrics.ms_v_bat_range_full->SetValue(160 * sohfactor);
+    if (StdMetrics.ms_v_bat_range_ideal->AsFloat() == 0)
+      StdMetrics.ms_v_bat_range_ideal->SetValue(160 * sohfactor * socfactor);
+    if (StdMetrics.ms_v_bat_range_est->AsFloat() > 10 && StdMetrics.ms_v_bat_soc->AsFloat() > 10)
+      m_range_est_factor = StdMetrics.ms_v_bat_range_est->AsFloat() / StdMetrics.ms_v_bat_soc->AsFloat();
+    else
+      m_range_est_factor = 1.6f;
     StdMetrics.ms_v_charge_climit->SetValue(16);
 
     // Battery pack layout: 2P102S in 17 modules
@@ -310,7 +339,7 @@ void OvmsVehicleVWeUp::ConfigChanged(OvmsConfigParam *param)
   }
 
   // Init OBD subsystem:
-  if (do_obd_init) {
+  if (vweup_enable_obd && do_obd_init) {
     OBDInit();
   }
   else if (!vweup_enable_obd) {
@@ -324,41 +353,11 @@ void OvmsVehicleVWeUp::ConfigChanged(OvmsConfigParam *param)
 #endif
 }
 
+
 void OvmsVehicleVWeUp::Ticker1(uint32_t ticker)
 {
-  if (vweup_con == CON_OBD)
-  {
-    // only OBD connected -> get car state by polling OBD
-    OBDCheckCarState();
-  }
-  else
-  {
-    // T26 connected
-
-    // This is just to be sure that we really have an asleep message. It has delay of 120 sec.
-    // Do we still need this?
-    if (StandardMetrics.ms_v_env_awake->IsStale()) {
-      StandardMetrics.ms_v_env_awake->SetValue(false);
-    }
-
-    // Autodisable climate control ticker (30 min.)
-    if (vweup_remote_climate_ticker != 0) {
-      vweup_remote_climate_ticker--;
-      if (vweup_remote_climate_ticker == 1) {
-        SendCommand(AUTO_DISABLE_CLIMATE_CONTROL);
-      }
-    }
-    // Car disabled climate control
-    if (!StandardMetrics.ms_v_env_on->AsBool() &&
-        vweup_remote_climate_ticker < 1770 &&
-        vweup_remote_climate_ticker != 0 &&
-        !StandardMetrics.ms_v_env_hvac->AsBool())
-    {
-      ESP_LOGI(TAG, "Car disabled Climate Control or cc did not turn on");
-      vweup_remote_climate_ticker = 0;
-      vweup_cc_on = false;
-      ocu_awake = true;
-    }
+  if (HasT26()) {
+    T26Ticker1(ticker);
   }
 }
 
@@ -369,10 +368,66 @@ void OvmsVehicleVWeUp::Ticker1(uint32_t ticker)
 int OvmsVehicleVWeUp::GetNotifyChargeStateDelay(const char *state)
 {
   // With OBD data, wait for first voltage & current when starting the charge:
-  if (vweup_con == CON_OBD && strcmp(state, "charging") == 0) {
-    return 5;
+  if (HasOBD() && strcmp(state, "charging") == 0) {
+    return 6;
   }
   else {
     return 3;
   }
+}
+
+
+/**
+ * ResetTripCounters: called at trip start to set reference points
+ *  Called by the connector subsystem detecting vehicle state changes,
+ *  i.e. T26 has priority if available.
+ */
+void OvmsVehicleVWeUp::ResetTripCounters()
+{
+  // Clear per trip counters:
+  StdMetrics.ms_v_pos_trip->SetValue(0);
+  StdMetrics.ms_v_bat_energy_recd->SetValue(0);
+  StdMetrics.ms_v_bat_energy_used->SetValue(0);
+  StdMetrics.ms_v_bat_coulomb_recd->SetValue(0);
+  StdMetrics.ms_v_bat_coulomb_used->SetValue(0);
+
+  // Get trip start references as far as available:
+  //  (if we don't have them yet, IncomingPollReply() will set them ASAP)
+  m_odo_start           = StdMetrics.ms_v_pos_odometer->AsFloat();
+  m_soc_norm_start      = StdMetrics.ms_v_bat_soc->AsFloat();
+  m_soc_abs_start       = BatMgmtSoCAbs->AsFloat();
+  m_energy_recd_start   = StdMetrics.ms_v_bat_energy_recd_total->AsFloat();
+  m_energy_used_start   = StdMetrics.ms_v_bat_energy_used_total->AsFloat();
+  m_coulomb_recd_start  = StdMetrics.ms_v_bat_coulomb_recd_total->AsFloat();
+  m_coulomb_used_start  = StdMetrics.ms_v_bat_coulomb_used_total->AsFloat();
+
+  ESP_LOGD(TAG, "Trip start ref: socnrm=%f socabs=%f odo=%f, er=%f, eu=%f, cr=%f, cu=%f",
+    m_soc_norm_start, m_soc_abs_start, m_odo_start,
+    m_energy_recd_start, m_energy_used_start, m_coulomb_recd_start, m_coulomb_used_start);
+}
+
+
+/**
+ * ResetChargeCounters: call at charge start to set reference points
+ *  Called by the connector subsystem detecting vehicle state changes,
+ *  i.e. T26 has priority if available.
+ */
+void OvmsVehicleVWeUp::ResetChargeCounters()
+{
+  // Clear per charge counter:
+  StdMetrics.ms_v_charge_kwh->SetValue(0);
+  StdMetrics.ms_v_charge_kwh_grid->SetValue(0);
+  m_charge_kwh_grid = 0;
+
+  // Get charge start reference as far as available:
+  //  (if we don't have it yet, IncomingPollReply() will set it ASAP)
+  m_soc_norm_start        = StdMetrics.ms_v_bat_soc->AsFloat();
+  m_soc_abs_start         = BatMgmtSoCAbs->AsFloat();
+  m_energy_charged_start  = StdMetrics.ms_v_bat_energy_recd_total->AsFloat();
+  m_coulomb_charged_start = StdMetrics.ms_v_bat_coulomb_recd_total->AsFloat();
+  m_charge_kwh_grid_start = StdMetrics.ms_v_charge_kwh_grid_total->AsFloat();
+
+  ESP_LOGD(TAG, "Charge start ref: socnrm=%f socabs=%f cr=%f er=%f gr=%f",
+    m_soc_norm_start, m_soc_abs_start, m_coulomb_charged_start,
+    m_energy_charged_start, m_charge_kwh_grid_start);
 }

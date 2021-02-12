@@ -45,10 +45,16 @@ static const char *TAG = "vehicle";
 #include <string_writer.h>
 #include "vehicle.h"
 
-#undef LIMIT_MIN
-#define LIMIT_MIN(n,lim) ((n) < (lim) ? (lim) : (n))
-#undef LIMIT_MAX
-#define LIMIT_MAX(n,lim) ((n) > (lim) ? (lim) : (n))
+
+/**
+ * PollerStateTicker: check for state changes (stub, override with vehicle implementation)
+ *  This is called by VehicleTicker1() just before the next PollerSend().
+ *  Implement your poller state transition logic in this method, so the changes
+ *  will get applied immediately.
+ */
+void OvmsVehicle::PollerStateTicker()
+  {
+  }
 
 
 /**
@@ -110,7 +116,39 @@ void OvmsVehicle::IncomingPollError(canbus* bus, uint16_t type, uint16_t pid, ui
 
 
 /**
+ * IncomingPollTxCallback: poller TX callback (stub, override with vehicle implementation)
+ *  This is called by PollerTxCallback() on TX success/failure for a poller request.
+ *  You can use this to detect CAN bus issues, e.g. if the car switches off the OBD port.
+ *  
+ *  ATT: this is executed in the main CAN task context. Keep it simple.
+ *    Complex processing here will affect overall CAN performance.
+ *  
+ *  @param bus
+ *    CAN bus the current poll is done on
+ *  @param txid
+ *    The module TX ID of the current poll
+ *  @param type
+ *    OBD2 mode / UDS polling type, e.g. VEHICLE_POLL_TYPE_READDTC
+ *  @param pid
+ *    PID addressed (depending on the request type, may be none / 8 bit / 16 bit)
+ *  @param success
+ *    Frame transmission success
+ */
+void OvmsVehicle::IncomingPollTxCallback(canbus* bus, uint32_t txid, uint16_t type, uint16_t pid, bool success)
+  {
+  }
+
+
+/**
  * PollSetPidList: set the default bus and the polling list to process
+ *  Call this to install a new polling list or restart the list.
+ *  This won't change the polling state; you can change the list while keeping the state.
+ *  The list is changed without waiting for pending responses to finish (except PollSingleRequests).
+ *  
+ *  @param bus
+ *    CAN bus to use as the default bus (for all poll entries with bus=0) or NULL to stop polling
+ *  @param plist
+ *    The polling list to use or NULL to stop polling
  */
 void OvmsVehicle::PollSetPidList(canbus* bus, const poll_pid_t* plist)
   {
@@ -123,11 +161,18 @@ void OvmsVehicle::PollSetPidList(canbus* bus, const poll_pid_t* plist)
   m_poll_sequence_cnt = 0;
   m_poll_wait = 0;
   m_poll_plcur = NULL;
+  m_poll_txmsgid = 0;
   }
 
 
 /**
- * PollSetPidList: set the polling state
+ * PollSetState: set the polling state
+ *  Call this to change the polling state and restart the current polling list.
+ *  This won't do anything if the state is already active. The state is changed without
+ *  waiting for pending responses to finish (except PollSingleRequests).
+ *  
+ *  @param state
+ *    The polling state to activate (0 … VEHICLE_POLL_NSTATES)
  */
 void OvmsVehicle::PollSetState(uint8_t state)
   {
@@ -140,6 +185,7 @@ void OvmsVehicle::PollSetState(uint8_t state)
     m_poll_sequence_cnt = 0;
     m_poll_wait = 0;
     m_poll_plcur = NULL;
+    m_poll_txmsgid = 0;
     }
   }
 
@@ -256,6 +302,7 @@ void OvmsVehicle::PollerSend(bool fromTicker)
       uint8_t* txdata;
       memset(&txframe,0,sizeof(txframe));
       txframe.origin = m_poll_bus;
+      txframe.callback = &m_poll_txcallback;
       txframe.FIR.B.FF = CAN_frame_std;
       txframe.FIR.B.DLC = 8;
 
@@ -296,6 +343,7 @@ void OvmsVehicle::PollerSend(bool fromTicker)
         memcpy(&txdata[2], m_poll_plcur->args.data, datalen);
         }
 
+      m_poll_txmsgid = txframe.MsgID;
       m_poll_ml_frame = 0;
       m_poll_ml_offset = 0;
       m_poll_ml_remain = 0;
@@ -316,6 +364,34 @@ void OvmsVehicle::PollerSend(bool fromTicker)
   m_poll_plcur = m_poll_plist;
   m_poll_ticker++;
   if (m_poll_ticker > 3600) m_poll_ticker -= 3600;
+  }
+
+
+/**
+ * PollerTxCallback: internal: process poll request callbacks
+ */
+void OvmsVehicle::PollerTxCallback(const CAN_frame_t* frame, bool success)
+  {
+  OvmsRecMutexLock lock(&m_poll_mutex);
+
+  // Check for a late callback:
+  if (!m_poll_wait || !m_poll_plist || frame->origin != m_poll_bus || frame->MsgID != m_poll_txmsgid)
+    return;
+
+  // On failure, try to speed up the current poll timeout:
+  if (!success)
+    {
+    m_poll_wait = 0;
+    if (m_poll_single_rxbuf)
+      {
+      m_poll_single_rxerr = POLLSINGLE_TXFAILURE;
+      m_poll_single_rxbuf = NULL;
+      m_poll_single_rxdone.Give();
+      }
+    }
+
+  // Forward to application:
+  IncomingPollTxCallback(m_poll_bus, m_poll_moduleid_sent, m_poll_type, m_poll_pid, success);
   }
 
 
@@ -626,12 +702,15 @@ void OvmsVehicle::PollerReceive(CAN_frame_t* frame, uint32_t msgid)
  *  @param timeout_ms   Timeout for poller/response in milliseconds
  *  @param protocol     Protocol variant: ISOTP_STD / ISOTP_EXTADR
  *  
- *  @return             0 = OK, -1 = timeout/poller unavailable, else UDS NRC detail code
+ *  @return             POLLSINGLE_OK         (0)   -- success, response is valid
+ *                      POLLSINGLE_TIMEOUT    (-1)  -- timeout/poller unavailable
+ *                      POLLSINGLE_TXFAILURE  (-2)  -- CAN transmission failure
+ *                      else                  (>0)  -- UDS NRC detail code
  *                      Note: response is only valid with return value 0
  */
 int OvmsVehicle::PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
                                    std::string request, std::string& response,
-                                   int timeout_ms /*=3000*/, uint8_t protocol /*=ISOTP_STD*/)
+                                   int timeout_ms /*=100*/, uint8_t protocol /*=ISOTP_STD*/)
   {
   if (!m_ready)
     return -1;
@@ -705,7 +784,7 @@ int OvmsVehicle::PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
   m_poll_single_rxbuf = NULL;
   m_poll_mutex.Unlock();
 
-  return (rxok == pdFALSE) ? -1 : (int)m_poll_single_rxerr;
+  return (rxok == pdFALSE) ? -1 : m_poll_single_rxerr;
   }
 
 
@@ -722,12 +801,15 @@ int OvmsVehicle::PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
  *  @param timeout_ms   Timeout for poller/response in milliseconds
  *  @param protocol     Protocol variant: ISOTP_STD / ISOTP_EXTADR
  *  
- *  @return             0 = OK, -1 = timeout/poller unavailable, else UDS NRC detail code
+ *  @return             POLLSINGLE_OK         ( 0)  -- success, response is valid
+ *                      POLLSINGLE_TIMEOUT    (-1)  -- timeout/poller unavailable
+ *                      POLLSINGLE_TXFAILURE  (-2)  -- CAN transmission failure
+ *                      else                  (>0)  -- UDS NRC detail code
  *                      Note: response is only valid with return value 0
  */
 int OvmsVehicle::PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
                                    uint8_t polltype, uint16_t pid, std::string& response,
-                                   int timeout_ms /*=3000*/, uint8_t protocol /*=ISOTP_STD*/)
+                                   int timeout_ms /*=100*/, uint8_t protocol /*=ISOTP_STD*/)
   {
   std::string request;
   request = (char) polltype;

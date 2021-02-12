@@ -1,6 +1,6 @@
 /* visibility.h
  *
- * Copyright (C) 2014-2016 wolfSSL Inc.
+ * Copyright (C) 2014-2020 wolfSSL Inc.
  *
  * This file is part of wolfSSH.
  *
@@ -40,25 +40,25 @@ extern "C" {
 */
 
 #if defined(BUILDING_WOLFSSH)
-    #if defined(HAVE_VISIBILITY) && HAVE_VISIBILITY
-        #define WOLFSSH_API   __attribute__ ((visibility("default")))
-        #define WOLFSSH_LOCAL __attribute__ ((visibility("hidden")))
-    #elif defined(__SUNPRO_C) && (__SUNPRO_C >= 0x550)
-        #define WOLFSSH_API   __global  
-        #define WOLFSSH_LOCAL __hidden
-    #elif defined(_MSC_VER)
+    #if defined(_MSC_VER) || defined(__CYGWIN__)
         #ifdef WOLFSSH_DLL
             #define WOLFSSH_API extern __declspec(dllexport)
         #else
             #define WOLFSSH_API
         #endif
         #define WOLFSSH_LOCAL
+    #elif defined(HAVE_VISIBILITY) && HAVE_VISIBILITY
+        #define WOLFSSH_API   __attribute__ ((visibility("default")))
+        #define WOLFSSH_LOCAL __attribute__ ((visibility("hidden")))
+    #elif defined(__SUNPRO_C) && (__SUNPRO_C >= 0x550)
+        #define WOLFSSH_API   __global
+        #define WOLFSSH_LOCAL __hidden
     #else
         #define WOLFSSH_API
         #define WOLFSSH_LOCAL
     #endif /* HAVE_VISIBILITY */
 #else /* BUILDING_WOLFSSH */
-    #if defined(_MSC_VER)
+    #if defined(_MSC_VER) || defined(__CYGWIN__)
         #ifdef WOLFSSH_DLL
             #define WOLFSSH_API extern __declspec(dllimport)
         #else

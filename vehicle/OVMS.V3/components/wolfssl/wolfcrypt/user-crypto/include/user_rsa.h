@@ -1,6 +1,6 @@
 /* user_rsa.h
  *
- * Copyright (C) 2006-2016 wolfSSL Inc.
+ * Copyright (C) 2006-2020 wolfSSL Inc.
  *
  * This file is part of wolfSSL.
  *
@@ -50,14 +50,14 @@
     #define WOLFSSL_RSA_TYPE_DEFINED
 #endif
 
+
 enum {
     RSA_PUBLIC   = 0,
     RSA_PRIVATE  = 1,
 };
 
-
 /* RSA */
-typedef struct RsaKey {
+struct RsaKey {
     IppsBigNumState* n;
     IppsBigNumState* e;
     IppsBigNumState* dipp;
@@ -73,7 +73,12 @@ typedef struct RsaKey {
     word32 sz;    /* size of signature */
     int   type;                               /* public or private */
     void* heap;                               /* for user memory overrides */
-} RsaKey;
+};
+
+#ifndef WC_RSAKEY_TYPE_DEFINED
+    typedef struct RsaKey RsaKey;
+    #define WC_RSAKEY_TYPE_DEFINED
+#endif
 
 WOLFSSL_API int  wc_InitRsaKey(RsaKey* key, void*);
 WOLFSSL_API int  wc_InitRsaKey_ex(RsaKey* key, void* heap, int devId);
@@ -95,13 +100,15 @@ WOLFSSL_API int  wc_RsaEncryptSize(RsaKey* key);
 
 WOLFSSL_API int  wc_RsaPrivateKeyDecode(const byte* input, word32* inOutIdx,
                                                                RsaKey*, word32);
+WOLFSSL_API int  wc_RsaPublicKeyDecode_ex(const byte* input, word32* inOutIdx,
+        word32 inSz, const byte** n, word32* nSz, const byte** e, word32* eSz);
 WOLFSSL_API int  wc_RsaPublicKeyDecode(const byte* input, word32* inOutIdx,
                                                                RsaKey*, word32);
 WOLFSSL_API int  wc_RsaPublicKeyDecodeRaw(const byte* n, word32 nSz,
                                         const byte* e, word32 eSz, RsaKey* key);
+WOLFSSL_API int wc_RsaKeyToDer(RsaKey*, byte* output, word32 inLen);
+WOLFSSL_API int wc_RsaKeyToPublicDer(RsaKey*, byte* output, word32 inLen);
 #ifdef WOLFSSL_KEY_GEN
-    WOLFSSL_API int wc_RsaKeyToDer(RsaKey*, byte* output, word32 inLen);
-    WOLFSSL_API int wc_RsaKeyToPublicDer(RsaKey*, byte* output, word32 inLen);
     WOLFSSL_API int wc_MakeRsaKey(RsaKey* key, int size, long e, WC_RNG* rng);
 #endif
 WOLFSSL_API int  wc_RsaFlattenPublicKey(RsaKey*, byte*, word32*, byte*,
@@ -109,7 +116,7 @@ WOLFSSL_API int  wc_RsaFlattenPublicKey(RsaKey*, byte*, word32*, byte*,
 WOLFSSL_API int  wc_RsaSetRNG(RsaKey* key, WC_RNG* rng);
 
 
-#if defined(WOLFSSL_CERT_GEN) || defined(WOLFSSL_KEY_GEN)
+#if defined(WOLFSSL_CERT_GEN) || defined(WOLFSSL_KEY_GEN) || defined(OPENSSL_EXTRA)
         /* abstracted BN operations with RSA key */
     WOLFSSL_API int wc_Rsa_leading_bit(void* BN);
     WOLFSSL_API int wc_Rsa_unsigned_bin_size(void* BN);
@@ -128,5 +135,3 @@ WOLFSSL_API int  wc_RsaSetRNG(RsaKey* key, WC_RNG* rng);
 
 #endif /* NO_RSA */
 #endif /* USER_WOLF_CRYPT_RSA_H */
-
-

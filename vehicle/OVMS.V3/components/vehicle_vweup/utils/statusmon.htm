@@ -1,0 +1,206 @@
+<!--
+  Web page plugin: VW e-Up Status Monitor
+    - Live display for status metrics & indicators
+    - Log monitor
+    - Command buttons for log level switching
+-->
+
+<style>
+.indicator {
+  display: inline-block;
+}
+.indicator > .label {
+  font-size: 100%;
+  line-height: 150%;
+  margin: 10px;
+  padding: 10px;
+  display: inline-block;
+  border-radius: 15px;
+}
+.metric.number {
+  display: block;
+  float: none;
+  text-align: center;
+}
+.metric.number .label {
+  min-width: 8em;
+  font-size: 110%;
+}
+.metric.number .unit {
+  font-size: 110%;
+}
+.metric.number .value {
+  font-size: 130%;
+  font-family: monospace;
+}
+#log {
+  height: 300px; resize: vertical;
+}
+.log { font-size: 87%; color: gray; }
+.log.log-I { color: green; }
+.log.log-W { color: darkorange; }
+.log.log-E { color: red; }
+</style>
+
+<div class="panel panel-primary">
+  <div class="panel-heading">VW e-Up Status Monitor</div>
+  <div class="panel-body">
+
+    <div class="receiver" id="my-receiver">
+
+      <div class="row">
+        <div class="col-sm-6">
+          <div class="metric number" data-metric="xvu.e.lv.pwrstate" data-prec="0">
+            <span class="label">LVPwrState:</span>
+            <span class="value">?</span>
+            <span class="unit"></span>
+          </div>
+          <div class="metric number" data-metric="xvu.e.lv.autochg" data-prec="0">
+            <span class="label">LVAutoChg:</span>
+            <span class="value">?</span>
+            <span class="unit"></span>
+          </div>
+          <div class="metric number" data-metric="xvu.e.hv.chgmode" data-prec="0">
+            <span class="label">HVChgMode:</span>
+            <span class="value">?</span>
+            <span class="unit"></span>
+          </div>
+          <div class="metric number" data-metric="v.b.12v.voltage" data-prec="1">
+            <span class="label">12V:</span>
+            <span class="value">?</span>
+            <span class="unit">V</span>
+          </div>
+          <div class="metric number" data-metric="v.c.12v.voltage" data-prec="1">
+            <span class="label">DCDC U:</span>
+            <span class="value">?</span>
+            <span class="unit">V</span>
+          </div>
+          <div class="metric number" data-metric="v.c.12v.current" data-prec="1">
+            <span class="label">DCDC I:</span>
+            <span class="value">?</span>
+            <span class="unit">A</span>
+          </div>
+          <div class="metric number" data-metric="xvu.c.eff.ecu" data-prec="1">
+            <span class="label">ChgEff:</span>
+            <span class="value">?</span>
+            <span class="unit">%</span>
+          </div>
+          <div class="metric number" data-metric="v.b.voltage" data-prec="1">
+            <span class="label">MainBat U:</span>
+            <span class="value">?</span>
+            <span class="unit">V</span>
+          </div>
+          <div class="metric number" data-metric="v.b.current" data-prec="1">
+            <span class="label">MainBat I:</span>
+            <span class="value">?</span>
+            <span class="unit">A</span>
+          </div>
+          <br class="clearfix"/>
+        </div>
+        <div class="col-sm-6 text-center">
+          <div class="indicator" data-metric="v.e.aux12v">
+            <span class="label label-default">12V AUX</span>
+          </div>
+          <div class="indicator" data-metric="v.e.charging12v">
+            <span class="label label-default">12V CHG</span>
+          </div>
+          <div class="indicator" data-metric="v.e.awake">
+            <span class="label label-default">AWAKE</span>
+          </div>
+          <div class="indicator" data-metric="v.e.on">
+            <span class="label label-default">ON</span>
+          </div>
+          <br class="clearfix"/>
+          <div class="indicator" data-metric="v.d.cp">
+            <span class="label label-default">CHG PORT</span>
+          </div>
+          <div class="indicator" data-metric="v.c.pilot">
+            <span class="label label-default">CHG PILOT</span>
+          </div>
+          <div class="indicator" data-metric="v.c.charging">
+            <span class="label label-default">CHARGING</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-xs-12">
+          <pre id="log"></pre>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <div class="panel-footer">
+    <div class="menu">
+      <span class="cmd-stat">
+        <a class="btn btn-default" data-target="#cmdres" data-cmd="stat">stat</a>
+        <a class="btn btn-default" data-target="#cmdres" data-cmd="metrics list xvu">metrics xvu</a>
+        <a class="btn btn-default" data-target="#cmdres" data-cmd="metrics list 12v">metrics 12v</a>
+      </span>
+      <span class="cmd-event">
+        <a class="btn btn-default" data-target="#cmdres" data-cmd="event trace on">event trace on</a>
+        <a class="btn btn-default" data-target="#cmdres" data-cmd="event trace off">event trace off</a>
+      </span>
+      <span class="cmd-vweup">
+        <a class="btn btn-default" data-target="#cmdres" data-cmd="log level debug v-vweup">vweup log debug</a>
+        <a class="btn btn-default" data-target="#cmdres" data-cmd="log level verbose v-vweup">vweup log verbose</a>
+        <a class="btn btn-default" data-target="#cmdres" data-cmd="log level info v-vweup">vweup log info</a>
+      </span>
+      <span class="cmd-vehicle">
+        <a class="btn btn-default" data-target="#cmdres" data-cmd="log level debug vehicle">vehicle log debug</a>
+        <a class="btn btn-default" data-target="#cmdres" data-cmd="log level info vehicle">vehicle log info</a>
+      </span>
+      <span class="cmd-canlog">
+        <a class="btn btn-default" data-target="#cmdres" data-cmd="log level verbose canlog-monitor&#10;can log start mon crtd">can log on</a>
+        <a class="btn btn-default" data-target="#cmdres" data-cmd="can log stop">can log off</a>
+      </span>
+    </div>
+    <pre id="cmdres" />
+  </div>
+  <style>
+  .menu .btn { margin-bottom: 5px; }
+  .cmd-event .btn { color: #00a; }
+  .cmd-vweup .btn { color: #050; }
+  .cmd-vehicle .btn { color: #066; }
+  .cmd-canlog .btn { color: #600; }
+  </style>
+
+</div>
+
+<script>
+(function(){
+
+  /* Indicators: */
+  $('#my-receiver').on('msg:metrics', function(e, update) {
+    $(this).find('.indicator').each(function() {
+      var $el = $(this), metric = $el.data("metric"), val = update[metric];
+      if (val == null)
+        return;
+      else if (val != 0)
+        $el.children().removeClass('label-default').addClass('label-success');
+      else if (val == 0)
+        $el.children().removeClass('label-success').addClass('label-default');
+    });
+  });
+
+  /* Log monitor: */
+  const maxlinecnt = 500;
+  var $output = $('#log'), _output = $output.get(0);
+  function add_output(addhtml) {
+    var autoscroll = (_output.scrollTop + $output.innerHeight()) >= _output.scrollHeight;
+    while (_output.childElementCount >= maxlinecnt) _output.removeChild(_output.firstChild);
+    $output.append(addhtml);
+    if (autoscroll) $output.scrollTop(_output.scrollHeight);
+  };
+  for (msg of loghist) {
+    add_output('<div class="log log-'+msg[0]+'">'+encode_html(unwrapLogLine(msg))+'</div>');
+  }
+  $('#my-receiver').on("msg:log", function(ev, msg) {
+    add_output('<div class="log log-'+msg[0]+'">'+encode_html(unwrapLogLine(msg))+'</div>');
+  });
+
+})();
+</script>

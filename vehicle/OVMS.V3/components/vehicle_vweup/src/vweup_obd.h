@@ -40,45 +40,45 @@
 using namespace std;
 
 //
-// ECU TX/RX IDs
+// ECU TX/RX IDs                                                                          [Availability]
 //
-#define VWUP_MOT_ELEC_TX                0x7E0   // ECU 01 motor elecronics
+#define VWUP_MOT_ELEC_TX                0x7E0   // ECU 01 motor elecronics                [DRV]
 #define VWUP_MOT_ELEC_RX                0x7E8
-#define VWUP_BRK_TX                     0x713   // ECU 03 brake electronics
+#define VWUP_BRK_TX                     0x713   // ECU 03 brake electronics               [DRV]
 #define VWUP_BRK_RX                     0x77D
-#define VWUP_MFD_TX                     0x714   // ECU 17 multi-function display
+#define VWUP_MFD_TX                     0x714   // ECU 17 multi-function display          [DRV]
 #define VWUP_MFD_RX                     0x77E
-#define VWUP_BRKBOOST_TX                0x73B   // ECU 23 brake boost
+#define VWUP_BRKBOOST_TX                0x73B   // ECU 23 brake boost                     [DRV]
 #define VWUP_BRKBOOST_RX                0x743
-#define VWUP_STEER_TX                   0x712   // ECU 44 steering support
+#define VWUP_STEER_TX                   0x712   // ECU 44 steering support                [DRV,CHG]
 #define VWUP_STEER_RX                   0x71A
-#define VWUP_ELD_TX                     0x7E6   // ECU 51 electric drive
+#define VWUP_ELD_TX                     0x7E6   // ECU 51 electric drive                  [DRV,CHG]
 #define VWUP_ELD_RX                     0x7EE
-#define VWUP_INF_TX                     0x773   // ECU 5F information electronics
+#define VWUP_INF_TX                     0x773   // ECU 5F information electronics         [DRV]
 #define VWUP_INF_RX                     0x77B
-#define VWUP_BAT_MGMT_TX                0x7E5   // ECU 8C hybrid battery management
+#define VWUP_BAT_MGMT_TX                0x7E5   // ECU 8C hybrid battery management       [DRV,CHG]
 #define VWUP_BAT_MGMT_RX                0x7ED
-#define VWUP_BRKSENS_TX                 0x762   // ECU AD sensors for braking system
+#define VWUP_BRKSENS_TX                 0x762   // ECU AD sensors for braking system      [DRV]
 #define VWUP_BRKSENS_RX                 0x76A
-#define VWUP_CHG_TX                     0x744   // ECU C6 high voltage charger
+#define VWUP_CHG_TX                     0x744   // ECU C6 HV charger                      [DRV,CHG]
 #define VWUP_CHG_RX                     0x7AE
-#define VWUP_CHG_MGMT_TX                0x765   // ECU BD high voltage charge management
+#define VWUP_CHG_MGMT_TX                0x765   // ECU BD HV charge management            [DRV,CHG]
 #define VWUP_CHG_MGMT_RX                0x7CF
 
 //
-// Poll list shortcuts
+// Poll list shortcuts                                                                    [Availability]
 //
-#define VWUP_MOT_ELEC                   VWUP_MOT_ELEC_TX, VWUP_MOT_ELEC_RX
-#define VWUP_BRK                        VWUP_BRK_TX,      VWUP_BRK_RX
-#define VWUP_MFD                        VWUP_MFD_TX,      VWUP_MFD_RX
-#define VWUP_BRKBOOST                   VWUP_BRKBOOST_TX, VWUP_BRKBOOST_RX
-#define VWUP_STEER                      VWUP_STEER_TX,    VWUP_STEER_RX
-#define VWUP_ELD                        VWUP_ELD_TX,      VWUP_ELD_RX
-#define VWUP_INF                        VWUP_INF_TX,      VWUP_INF_RX
-#define VWUP_BAT_MGMT                   VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX
-#define VWUP_BRKSENS                    VWUP_BRKSENS_TX,  VWUP_BRKSENS_RX
-#define VWUP_CHG                        VWUP_CHG_TX,      VWUP_CHG_RX
-#define VWUP_CHG_MGMT                   VWUP_CHG_MGMT_TX, VWUP_CHG_MGMT_RX
+#define VWUP_MOT_ELEC                   VWUP_MOT_ELEC_TX, VWUP_MOT_ELEC_RX            //  [DRV]
+#define VWUP_BRK                        VWUP_BRK_TX,      VWUP_BRK_RX                 //  [DRV]
+#define VWUP_MFD                        VWUP_MFD_TX,      VWUP_MFD_RX                 //  [DRV]
+#define VWUP_BRKBOOST                   VWUP_BRKBOOST_TX, VWUP_BRKBOOST_RX            //  [DRV]
+#define VWUP_STEER                      VWUP_STEER_TX,    VWUP_STEER_RX               //  [DRV,CHG]
+#define VWUP_ELD                        VWUP_ELD_TX,      VWUP_ELD_RX                 //  [DRV,CHG]
+#define VWUP_INF                        VWUP_INF_TX,      VWUP_INF_RX                 //  [DRV]
+#define VWUP_BAT_MGMT                   VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX            //  [DRV,CHG]
+#define VWUP_BRKSENS                    VWUP_BRKSENS_TX,  VWUP_BRKSENS_RX             //  [DRV]
+#define VWUP_CHG                        VWUP_CHG_TX,      VWUP_CHG_RX                 //  [DRV,CHG]
+#define VWUP_CHG_MGMT                   VWUP_CHG_MGMT_TX, VWUP_CHG_MGMT_RX            //  [DRV,CHG]
 
 #define UDS_READ                        VEHICLE_POLL_TYPE_READDATA
 #define UDS_SESSION                     VEHICLE_POLL_TYPE_OBDIISESSION
@@ -104,6 +104,8 @@ using namespace std;
 #define VWUP_MOT_ELEC_TEMP_COOL5        0x1615    // coolant temperature before power electronics current value
 #define VWUP_MOT_ELEC_TEMP_COOL_BAT     0x1169    // cooling temperature of hybrid battery
 #define VWUP_MOT_ELEC_VIN               0xF802    // Vehicle Identification Number
+#define VWUP_MOT_ELEC_SPEED             0xF40D    // Speed [kph]
+#define VWUP_MOT_ELEC_POWER_MOT         0x147E    // Inverter output / motor input power level [kW]
 
 #define VWUP_BRK_TPMS                   0x1821
 
@@ -111,6 +113,8 @@ using namespace std;
 #define VWUP_MFD_SERV_RANGE             0x2260
 #define VWUP_MFD_SERV_TIME              0x2261
 //#define VWUP_MFD_TEMP_COOL              0x        // coolant temperature
+#define VWUP_MFD_RANGE_DSP              0x22E0    // Estimated range displayed
+#define VWUP_MFD_RANGE_CAP              0x22E4    // Usable battery energy [kWh] from range estimation
 
 #define VWUP_BRKBOOST_TEMP_ECU          0x028D    // control unit temperature
 #define VWUP_BRKBOOST_TEMP_ACC          0x4E06    // temperature brake accumulator control unit
@@ -157,7 +161,7 @@ using namespace std;
 #define VWUP_CHG_TEMP_BRD               0x15D8    // temperature battery charger system board
 #define VWUP_CHG_TEMP_PFCCOIL           0x15D9    // temperature battery charger PFC coil
 #define VWUP_CHG_TEMP_DCDCCOIL          0x15DA    // temperature battery charger DCDC coil
-#define VWUP_CHG_TEMP                   0x15E2    // charger coolant temperature
+#define VWUP_CHG_TEMP_COOLER            0x15E2    // charger coolant temperature
 #define VWUP_CHG_TEMP_DCDCPL            0x15EC    // temperature DCDC powerline
 #define VWUP1_CHG_AC_U                  0x1DA9
 #define VWUP1_CHG_AC_I                  0x1DA8
@@ -169,7 +173,17 @@ using namespace std;
 #define VWUP2_CHG_DC_I                  0x41F9
 
 #define VWUP_CHG_MGMT_SOC_NORM          0x1DD0
+#define VWUP_CHG_MGMT_HV_CHGMODE        0x1DD6    // High voltage charge mode
 #define VWUP_CHG_MGMT_REM               0x1DE4    // remaining time for full charge
+#define VWUP_CHG_MGMT_LV_PWRSTATE       0x1DEC    // Low voltage (12V) systems power state
+#define VWUP_CHG_MGMT_LV_AUTOCHG        0x1DED    // Low voltage (12V) auto charge mode
 
+#define VWUP_CHG_MGMT_TEST_1DDC         0x1DDC    // DC charge socket status?
+#define VWUP_CHG_MGMT_TEST_1DDD         0x1DDD    // DC charge relay or indicators for sockets A & B?
+#define VWUP_CHG_MGMT_TEST_1DDE         0x1DDE    // DC charge lock?
+#define VWUP_CHG_MGMT_TEST_1DDF         0x1DDF    // DC charge control signal?
+#define VWUP_CHG_MGMT_TEST_1DE2         0x1DE2    // DC charge current?
+#define VWUP_CHG_MGMT_TEST_1DE3         0x1DE3    // DC charge voltage?
+#define VWUP_CHG_MGMT_TEST_1DEA         0x1DEA    // DC socket statistics (plugcnt, lockcnt, chargecnt)?
 
 #endif //#ifndef __VEHICLE_EUP_OBD_H__

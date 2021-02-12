@@ -251,7 +251,8 @@ OvmsConfig::OvmsConfig()
     "Note: user files or directories in /store will not be touched.\n"
     "The module will perform a reboot after successful restore.\n"
     "<password> defaults to the current module password.\n"
-    "Note: you need to supply the password used for the backup creation.", 1, 2);
+    "Note: You need to supply the password used for the backup creation.\n"
+    "The default password is not available after flash is erased.", 1, 2);
 #endif // CONFIG_OVMS_SC_ZIP
 
   RegisterParam("password", "Password store", true, false);
@@ -550,18 +551,17 @@ bool OvmsConfig::ProtectedPath(std::string path)
   }
 
 /**
- * GetParamMap: get map of param instances
- * - Note: no modification allowed, to modify clone & call SetParamMap()
+ * GetParamMap: get map (copy) of param instances
  */
-const ConfigParamMap* OvmsConfig::GetParamMap(std::string param)
+ConfigParamMap OvmsConfig::GetParamMap(std::string param)
   {
+  ConfigParamMap pmap;
   if (!CachedParam(param))
     RegisterParam(param, "", true, false);
   OvmsConfigParam* p = CachedParam(param);
   if (p)
-    return &p->GetMap();
-  else
-    return NULL;
+    pmap = p->GetMap();
+  return pmap;
   }
 
 /**
@@ -706,9 +706,11 @@ bool OvmsConfig::Restore(std::string path, std::string password, OvmsWriter* wri
   if (!ok)
     {
     if (writer)
-      writer->printf("Error: unzip failed: %s\n", zip.strerror());
+      writer->printf("Error: unzip failed: %s%s\n", zip.strerror(),
+        password.empty() ? " (password required?)" : "");
     else
-      ESP_LOGE(TAG, "Restore '%s': unzip failed: %s", path.c_str(), zip.strerror());
+      ESP_LOGE(TAG, "Restore '%s': unzip failed: %s%s", path.c_str(), zip.strerror(),
+        password.empty() ? " (password required?)" : "");
     rmtree(tempdir);
     m_store_lock.Unlock();
     return false;

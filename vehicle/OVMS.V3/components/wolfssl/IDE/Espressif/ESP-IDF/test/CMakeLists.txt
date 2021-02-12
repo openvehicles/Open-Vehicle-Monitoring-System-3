@@ -1,0 +1,8 @@
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DNO_MAIN_DRIVER -DWOLFSSL_USER_SETTINGS")
+
+set(COMPONENT_SRCDIRS ".")
+set(COMPONENT_ADD_INCLUDEDIRS ".")
+
+set(COMPONENT_REQUIRES unity test_utils wolfssl)
+
+register_component()

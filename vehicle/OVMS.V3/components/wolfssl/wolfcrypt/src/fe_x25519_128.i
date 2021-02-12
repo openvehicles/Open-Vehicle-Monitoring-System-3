@@ -1,6 +1,6 @@
-/* fp_x25519_128.i
+/* fe_x25519_128.i
  *
- * Copyright (C) 2006-2017 wolfSSL Inc.
+ * Copyright (C) 2006-2020 wolfSSL Inc.
  *
  * This file is part of wolfSSL.
  *
@@ -18,6 +18,10 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335, USA
  */
+
+void fe_init(void)
+{
+}
 
 /* Convert a number represented as an array of bytes to an array of words with
  * 51-bits of data in each word.
@@ -402,7 +406,7 @@ void fe_invert(fe r, const fe a)
  * n  The scalar as an array of bytes.
  * a  A field element as an array of bytes.
  */
-int curve25519(byte* r, byte* n, byte* a)
+int curve25519(byte* r, const byte* n, const byte* a)
 {
     fe           x1, x2, z2, x3, z3;
     fe           t0, t1;
@@ -458,7 +462,7 @@ int curve25519(byte* r, byte* n, byte* a)
 /* The field element value 0 as an array of bytes. */
 static const unsigned char zero[32] = {0};
 
-/* Constant time check as to whether a is a not 0.
+/* Constant time check as to whether a is not 0.
  *
  * a  A field element.
  */

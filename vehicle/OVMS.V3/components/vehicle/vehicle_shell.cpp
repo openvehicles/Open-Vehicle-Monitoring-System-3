@@ -478,7 +478,7 @@ void OvmsVehicleFactory::obdii_request(int verbosity, OvmsWriter* writer, OvmsCo
 
   uint32_t txid = 0, rxid = 0;
   uint8_t protocol = ISOTP_STD;
-  int timeout_ms = 3000;
+  int timeout_ms = 100;
   std::string request;
   std::string response;
 
@@ -595,7 +595,14 @@ void OvmsVehicleFactory::obdii_request(int verbosity, OvmsWriter* writer, OvmsCo
   // execute request:
   int err = MyVehicleFactory.m_currentvehicle->PollSingleRequest(bus, txid, rxid,
     request, response, timeout_ms, protocol);
-  if (err < 0)
+
+  writer->printf("%x[%x] %s: ", txid, rxid, hexencode(request).c_str());
+  if (err == POLLSINGLE_TXFAILURE)
+    {
+    writer->puts("ERROR: transmission failure (CAN bus error)");
+    return;
+    }
+  else if (err < 0)
     {
     writer->puts("ERROR: timeout waiting for poller/response");
     return;

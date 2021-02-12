@@ -38,16 +38,16 @@ void OvmsVehicleMgEv::IncomingTpmsPoll(uint16_t pid, uint8_t* data, uint8_t leng
     switch (pid)
     {
         case tyrePressurePid:
-            StandardMetrics.ms_v_tpms_fl_p->SetValue(data[0] * 4);
-            StandardMetrics.ms_v_tpms_fr_p->SetValue(data[1] * 4);
-            StandardMetrics.ms_v_tpms_rr_p->SetValue(data[2] * 4);
-            StandardMetrics.ms_v_tpms_rl_p->SetValue(data[3] * 4);
+            StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FL, data[0] * 4);
+            StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FR, data[1] * 4);
+            StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RR, data[2] * 4);
+            StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RL, data[3] * 4);
             break;
         case typeTemperaturePid:
-            StandardMetrics.ms_v_tpms_fl_t->SetValue(data[0] * 0.5);
-            StandardMetrics.ms_v_tpms_fr_t->SetValue(data[1] * 0.5);
-            StandardMetrics.ms_v_tpms_rr_t->SetValue(data[2] * 0.5);
-            StandardMetrics.ms_v_tpms_rl_t->SetValue(data[3] * 0.5);
+            StandardMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_FL, data[0] * 0.5);
+            StandardMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_FR, data[1] * 0.5);
+            StandardMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_RR, data[2] * 0.5);
+            StandardMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_RL, data[3] * 0.5);
             break;
     }
 }

@@ -29,7 +29,7 @@
 */
 
 #include "ovms_log.h"
-// static const char *TAG = "vehicle";
+static const char *TAG = "vehicle";
 
 #include <stdio.h>
 #include <algorithm>
@@ -45,21 +45,8 @@
 #include <string_writer.h>
 #include "vehicle.h"
 
-#undef SQR
-#define SQR(n) ((n)*(n))
-#undef ABS
-#define ABS(n) (((n) < 0) ? -(n) : (n))
-#undef LIMIT_MIN
-#define LIMIT_MIN(n,lim) ((n) < (lim) ? (lim) : (n))
-#undef LIMIT_MAX
-#define LIMIT_MAX(n,lim) ((n) > (lim) ? (lim) : (n))
-
-#undef TRUNCPREC
-#define TRUNCPREC(fval,prec) (trunc((fval) * pow(10,(prec))) / pow(10,(prec)))
-#undef ROUNDPREC
-#define ROUNDPREC(fval,prec) (round((fval) * pow(10,(prec))) / pow(10,(prec)))
-#undef CEILPREC
-#define CEILPREC(fval,prec)  (ceil((fval)  * pow(10,(prec))) / pow(10,(prec)))
+// Voltage stddev running average sample count:
+#define VSTDDEV_SMOOTHCNT         5
 
 
 void OvmsVehicle::BmsSetCellArrangementVoltage(int readings, int readingspermodule)
@@ -122,16 +109,22 @@ int OvmsVehicle::BmsGetCellArangementTemperature(int* readings, int* readingsper
   return m_bms_readings_t;
   }
 
-void OvmsVehicle::BmsSetCellDefaultThresholdsVoltage(float warn, float alert)
+void OvmsVehicle::BmsSetCellDefaultThresholdsVoltage(float warn, float alert,
+    float maxgrad /*=-1*/, float maxsddev /*=-1*/)
   {
   m_bms_defthr_vwarn = warn;
   m_bms_defthr_valert = alert;
+  m_bms_defthr_vmaxgrad = (maxgrad < 0) ? BMS_DEFTHR_VMAXGRAD : maxgrad;
+  m_bms_defthr_vmaxsddev = (maxsddev < 0) ? BMS_DEFTHR_VMAXSDDEV : maxsddev;
   }
 
-void OvmsVehicle::BmsGetCellDefaultThresholdsVoltage(float* warn, float* alert)
+void OvmsVehicle::BmsGetCellDefaultThresholdsVoltage(float* warn, float* alert,
+    float* maxgrad /*=NULL*/, float* maxsddev /*=NULL*/)
   {
   if (warn) *warn = m_bms_defthr_vwarn;
   if (alert) *alert = m_bms_defthr_valert;
+  if (maxgrad) *maxgrad = m_bms_defthr_vmaxgrad;
+  if (maxsddev) *maxsddev = m_bms_defthr_vmaxsddev;
   }
 
 void OvmsVehicle::BmsSetCellDefaultThresholdsTemperature(float warn, float alert)
@@ -178,7 +171,13 @@ void OvmsVehicle::BmsSetCellVoltage(int index, float value)
   if (m_bms_bitset_v[index] == false) m_bms_bitset_cv++;
   if (m_bms_bitset_cv == m_bms_readings_v)
     {
-    // get min, max, avg & standard deviation:
+    // Series complete, all cell voltages acquired
+    float thr_maxgrad  = MyConfig.GetParamValueFloat("vehicle", "bms.dev.voltage.maxgrad",  m_bms_defthr_vmaxgrad);
+    float thr_maxsddev = MyConfig.GetParamValueFloat("vehicle", "bms.dev.voltage.maxsddev", m_bms_defthr_vmaxsddev);
+    float thr_warn     = MyConfig.GetParamValueFloat("vehicle", "bms.dev.voltage.warn",     m_bms_defthr_vwarn);
+    float thr_alert    = MyConfig.GetParamValueFloat("vehicle", "bms.dev.voltage.alert",    m_bms_defthr_valert);
+
+    // Get min, max, avg & standard deviation:
     double sum=0, sqrsum=0, avg, stddev=0;
     float min=0, max=0;
     for (int i=0; i<m_bms_readings_v; i++)
@@ -192,37 +191,76 @@ void OvmsVehicle::BmsSetCellVoltage(int index, float value)
       }
     avg = sum / m_bms_readings_v;
     stddev = sqrt(LIMIT_MIN((sqrsum / m_bms_readings_v) - SQR(avg), 0));
-    // check cell deviations:
-    float dev;
-    float thr_warn  = MyConfig.GetParamValueFloat("vehicle", "bms.dev.voltage.warn", m_bms_defthr_vwarn);
-    float thr_alert = MyConfig.GetParamValueFloat("vehicle", "bms.dev.voltage.alert", m_bms_defthr_valert);
+
+    // Get gradient:
+    double sumn = 0, sumd = 0;
     for (int i=0; i<m_bms_readings_v; i++)
       {
-      dev = ROUNDPREC(m_bms_voltages[i] - avg, 5);
-      if (ABS(dev) > ABS(m_bms_vdevmaxs[i]))
-        m_bms_vdevmaxs[i] = dev;
-      if (ABS(dev) >= thr_alert && m_bms_valerts[i] < 2)
-        {
-        m_bms_valerts[i] = 2;
-        m_bms_valerts_new++; // trigger notification
-        }
-      else if (ABS(dev) >= thr_warn && m_bms_valerts[i] < 1)
-        m_bms_valerts[i] = 1;
+      sumn += (i - (m_bms_readings_v / 2 - 0.5)) * (m_bms_voltages[i] - avg);
+      sumd += SQR(i - (m_bms_readings_v / 2 - 0.5));
       }
-    // publish to metrics:
-    avg = ROUNDPREC(avg, 5);
-    stddev = ROUNDPREC(stddev, 5);
+    float grad = (sumn / sumd) * m_bms_readings_v;
+
+    // …publish to metrics:
     StandardMetrics.ms_v_bat_pack_vmin->SetValue(min);
     StandardMetrics.ms_v_bat_pack_vmax->SetValue(max);
-    StandardMetrics.ms_v_bat_pack_vavg->SetValue(avg);
-    StandardMetrics.ms_v_bat_pack_vstddev->SetValue(stddev);
-    if (stddev > StandardMetrics.ms_v_bat_pack_vstddev_max->AsFloat())
-      StandardMetrics.ms_v_bat_pack_vstddev_max->SetValue(stddev);
+    StandardMetrics.ms_v_bat_pack_vavg->SetValue(ROUNDPREC(avg, 5));
+    StandardMetrics.ms_v_bat_pack_vstddev->SetValue(ROUNDPREC(stddev, 5));
+    StandardMetrics.ms_v_bat_pack_vgrad->SetValue(ROUNDPREC(grad, 5));
     StandardMetrics.ms_v_bat_cell_voltage->SetElemValues(0, m_bms_readings_v, m_bms_voltages);
     StandardMetrics.ms_v_bat_cell_vmin->SetElemValues(0, m_bms_readings_v, m_bms_vmins);
     StandardMetrics.ms_v_bat_cell_vmax->SetElemValues(0, m_bms_readings_v, m_bms_vmaxs);
-    StandardMetrics.ms_v_bat_cell_vdevmax->SetElemValues(0, m_bms_readings_v, m_bms_vdevmaxs);
-    StandardMetrics.ms_v_bat_cell_valert->SetElemValues(0, m_bms_readings_v, m_bms_valerts);
+
+    // Voltages are very volatile and may respond to a load change within the sensor query loop.
+    // To detect an inconsistent series, we check for a too high gradient and/or a too high
+    // offset of the momentary stddev level from the previously observed average:
+    bool series_valid;
+    if (ABS(grad) > thr_maxgrad)
+      {
+      series_valid = false;
+      }
+    else if (m_bms_vstddev_cnt < VSTDDEV_SMOOTHCNT)
+      {
+      // skip the first VSTDDEV_SMOOTHCNT series to init the average:
+      m_bms_vstddev_cnt++;
+      m_bms_vstddev_avg = ((m_bms_vstddev_cnt-1) * m_bms_vstddev_avg + stddev) / m_bms_vstddev_cnt;
+      series_valid = false;
+      }
+    else if (stddev - m_bms_vstddev_avg > thr_maxsddev)
+      {
+      series_valid = false;
+      }
+    else
+      {
+      m_bms_vstddev_avg = ((VSTDDEV_SMOOTHCNT-1) * m_bms_vstddev_avg + stddev) / VSTDDEV_SMOOTHCNT;
+      series_valid = true;
+      }
+
+    // Check cell deviations only if the series appears to be consistent:
+    if (series_valid)
+      {
+      float dev;
+      for (int i=0; i<m_bms_readings_v; i++)
+        {
+        dev = ROUNDPREC(m_bms_voltages[i] - avg, 5);
+        if (ABS(dev) > ABS(m_bms_vdevmaxs[i]))
+          m_bms_vdevmaxs[i] = dev;
+        if (ABS(dev) >= stddev + thr_alert && m_bms_valerts[i] < 2)
+          {
+          m_bms_valerts[i] = 2;
+          m_bms_valerts_new++; // trigger notification
+          }
+        else if (ABS(dev) >= stddev + thr_warn && m_bms_valerts[i] < 1)
+          m_bms_valerts[i] = 1;
+        }
+
+      // Publish deviation maximums & alerts:
+      if (stddev > StandardMetrics.ms_v_bat_pack_vstddev_max->AsFloat())
+        StandardMetrics.ms_v_bat_pack_vstddev_max->SetValue(stddev);
+      StandardMetrics.ms_v_bat_cell_vdevmax->SetElemValues(0, m_bms_readings_v, m_bms_vdevmaxs);
+      StandardMetrics.ms_v_bat_cell_valert->SetElemValues(0, m_bms_readings_v, m_bms_valerts);
+      }
+
     // complete:
     m_bms_has_voltages = true;
     m_bms_bitset_v.clear();
@@ -255,6 +293,10 @@ void OvmsVehicle::BmsSetCellTemperature(int index, float value)
   if (m_bms_bitset_t[index] == false) m_bms_bitset_ct++;
   if (m_bms_bitset_ct == m_bms_readings_t)
     {
+    // Series complete, all cell temperatures acquired
+    float thr_warn  = MyConfig.GetParamValueFloat("vehicle", "bms.dev.temp.warn", m_bms_defthr_twarn);
+    float thr_alert = MyConfig.GetParamValueFloat("vehicle", "bms.dev.temp.alert", m_bms_defthr_talert);
+
     // get min, max, avg & standard deviation:
     double sum=0, sqrsum=0, avg, stddev=0;
     float min=0, max=0;
@@ -269,23 +311,23 @@ void OvmsVehicle::BmsSetCellTemperature(int index, float value)
       }
     avg = sum / m_bms_readings_t;
     stddev = sqrt(LIMIT_MIN((sqrsum / m_bms_readings_t) - SQR(avg), 0));
+
     // check cell deviations:
     float dev;
-    float thr_warn  = MyConfig.GetParamValueFloat("vehicle", "bms.dev.temp.warn", m_bms_defthr_twarn);
-    float thr_alert = MyConfig.GetParamValueFloat("vehicle", "bms.dev.temp.alert", m_bms_defthr_talert);
     for (int i=0; i<m_bms_readings_t; i++)
       {
       dev = ROUNDPREC(m_bms_temperatures[i] - avg, 2);
       if (ABS(dev) > ABS(m_bms_tdevmaxs[i]))
         m_bms_tdevmaxs[i] = dev;
-      if (ABS(dev) >= thr_alert && m_bms_talerts[i] < 2)
+      if (ABS(dev) >= stddev + thr_alert && m_bms_talerts[i] < 2)
         {
         m_bms_talerts[i] = 2;
         m_bms_talerts_new++; // trigger notification
         }
-      else if (ABS(dev) >= thr_warn && m_bms_valerts[i] < 1)
+      else if (ABS(dev) >= stddev + thr_warn && m_bms_valerts[i] < 1)
         m_bms_talerts[i] = 1;
       }
+
     // publish to metrics:
     avg = ROUNDPREC(avg, 2);
     stddev = ROUNDPREC(stddev, 2);
@@ -300,6 +342,7 @@ void OvmsVehicle::BmsSetCellTemperature(int index, float value)
     StandardMetrics.ms_v_bat_cell_tmax->SetElemValues(0, m_bms_readings_t, m_bms_tmaxs);
     StandardMetrics.ms_v_bat_cell_tdevmax->SetElemValues(0, m_bms_readings_t, m_bms_tdevmaxs);
     StandardMetrics.ms_v_bat_cell_talert->SetElemValues(0, m_bms_readings_t, m_bms_talerts);
+
     // complete:
     m_bms_has_temperatures = true;
     m_bms_bitset_t.clear();
@@ -342,12 +385,14 @@ void OvmsVehicle::BmsResetCellVoltages(bool full /*=false*/)
       m_bms_valerts[k] = 0;
       }
     m_bms_valerts_new = 0;
+    m_bms_vstddev_cnt = 0;
+    m_bms_vstddev_avg = 0;
     if (full) StandardMetrics.ms_v_bat_cell_voltage->ClearValue();
     StandardMetrics.ms_v_bat_cell_vmin->ClearValue();
     StandardMetrics.ms_v_bat_cell_vmax->ClearValue();
     StandardMetrics.ms_v_bat_cell_vdevmax->ClearValue();
     StandardMetrics.ms_v_bat_cell_valert->ClearValue();
-    StandardMetrics.ms_v_bat_pack_tstddev_max->SetValue(StandardMetrics.ms_v_bat_pack_tstddev->AsFloat());
+    StandardMetrics.ms_v_bat_pack_vstddev_max->SetValue(StandardMetrics.ms_v_bat_pack_vstddev->AsFloat());
     }
   }
 
@@ -515,4 +560,59 @@ bool OvmsVehicle::FormatBmsAlerts(int verbosity, OvmsWriter* writer, bool show_w
     }
 
   return (has_valerts > 0) || (has_talerts > 0);
+  }
+
+
+void OvmsVehicle::NotifyBmsAlerts()
+  {
+  StringWriter buf(200);
+  if (FormatBmsAlerts(COMMAND_RESULT_SMS, &buf, false))
+    MyNotify.NotifyString("alert", "batt.bms.alert", buf.c_str());
+  }
+
+
+void OvmsVehicle::BmsTicker()
+  {
+  // Alerts:
+  if (m_bms_valerts_new || m_bms_talerts_new)
+    {
+    ESP_LOGW(TAG, "BMS new alerts: %d voltages, %d temperatures", m_bms_valerts_new, m_bms_talerts_new);
+    MyEvents.SignalEvent("vehicle.alert.bms", NULL);
+    if (m_autonotifications && MyConfig.GetParamValueBool("vehicle", "bms.alerts.enabled", true))
+      NotifyBmsAlerts();
+    m_bms_valerts_new = 0;
+    m_bms_talerts_new = 0;
+    }
+
+  // Log cell voltages:
+  int vlog_interval = MyConfig.GetParamValueInt("vehicle", "bms.log.voltage.interval", 0);
+  if (vlog_interval > 0 && m_bms_vlog_last + vlog_interval < monotonictime &&
+      StdMetrics.ms_v_bat_cell_voltage->LastModified() > m_bms_vlog_last)
+    {
+    m_bms_vlog_last = monotonictime;
+    ESP_LOGI(TAG, "BMS cell voltage: avg=%.3f min=%.3f max=%.3f grad=%.1f stddev=%.1f sdavg=%.1f sdmax=%.1f cells: %s",
+      StdMetrics.ms_v_bat_pack_vavg->AsFloat(),
+      StdMetrics.ms_v_bat_pack_vmin->AsFloat(),
+      StdMetrics.ms_v_bat_pack_vmax->AsFloat(),
+      StdMetrics.ms_v_bat_pack_vgrad->AsFloat() * 1000,
+      StdMetrics.ms_v_bat_pack_vstddev->AsFloat() * 1000,
+      m_bms_vstddev_avg * 1000,
+      StdMetrics.ms_v_bat_pack_vstddev_max->AsFloat() * 1000,
+      StdMetrics.ms_v_bat_cell_voltage->AsString("", Native, 3).c_str());
+    }
+
+  // Log cell temperatures:
+  int tlog_interval = MyConfig.GetParamValueInt("vehicle", "bms.log.temp.interval", 0);
+  if (tlog_interval > 0 && m_bms_tlog_last + tlog_interval < monotonictime &&
+      StdMetrics.ms_v_bat_cell_temp->LastModified() > m_bms_tlog_last)
+    {
+    m_bms_tlog_last = monotonictime;
+    ESP_LOGI(TAG, "BMS cell temperature: avg=%.1f min=%.1f max=%.1f stddev=%.1f sdmax=%.1f cells: %s",
+      StdMetrics.ms_v_bat_pack_tavg->AsFloat(),
+      StdMetrics.ms_v_bat_pack_tmin->AsFloat(),
+      StdMetrics.ms_v_bat_pack_tmax->AsFloat(),
+      StdMetrics.ms_v_bat_pack_tstddev->AsFloat(),
+      StdMetrics.ms_v_bat_pack_tstddev_max->AsFloat(),
+      StdMetrics.ms_v_bat_cell_temp->AsString("", Native, 1).c_str());
+    }
   }

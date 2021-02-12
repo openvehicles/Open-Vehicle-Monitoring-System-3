@@ -1,6 +1,6 @@
 /* unit.c
  *
- * Copyright (C) 2014-2016 wolfSSL Inc.
+ * Copyright (C) 2014-2020 wolfSSL Inc.
  *
  * This file is part of wolfSSH.
  *
@@ -29,7 +29,7 @@
 
 #define BAD 0xFF
 
-const uint8_t hexDecode[] =
+const byte hexDecode[] =
 {
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
     BAD, BAD, BAD, BAD, BAD, BAD, BAD,
@@ -42,14 +42,14 @@ const uint8_t hexDecode[] =
 };  /* A starts at 0x41 not 0x3A */
 
 
-static int Base16_Decode(const uint8_t* in, uint32_t inLen,
-                         uint8_t* out, uint32_t* outLen)
+static int Base16_Decode(const byte* in, word32 inLen,
+                         byte* out, word32* outLen)
 {
-    uint32_t inIdx  = 0;
-    uint32_t outIdx = 0;
+    word32 inIdx = 0;
+    word32 outIdx = 0;
 
     if (inLen == 1 && *outLen && in) {
-        uint8_t b = in[inIdx++] - 0x30;  /* 0 starts at 0x30 */
+        byte b = in[inIdx] - 0x30;  /* 0 starts at 0x30 */
 
         /* sanity check */
         if (b >=  sizeof(hexDecode)/sizeof(hexDecode[0]))
@@ -73,8 +73,8 @@ static int Base16_Decode(const uint8_t* in, uint32_t inLen,
         return -1;
 
     while (inLen) {
-        uint8_t b  = in[inIdx++] - 0x30;  /* 0 starts at 0x30 */
-        uint8_t b2 = in[inIdx++] - 0x30;
+        byte b = in[inIdx++] - 0x30;  /* 0 starts at 0x30 */
+        byte b2 = in[inIdx++] - 0x30;
 
         /* sanity checks */
         if (b >=  sizeof(hexDecode)/sizeof(hexDecode[0]))
@@ -88,7 +88,7 @@ static int Base16_Decode(const uint8_t* in, uint32_t inLen,
         if (b == BAD || b2 == BAD)
             return -1;
 
-        out[outIdx++] = (uint8_t)((b << 4) | b2);
+        out[outIdx++] = (byte)((b << 4) | b2);
         inLen -= 2;
     }
 
@@ -97,7 +97,7 @@ static int Base16_Decode(const uint8_t* in, uint32_t inLen,
 }
 
 
-static void FreeBins(uint8_t* b1, uint8_t* b2, uint8_t* b3, uint8_t* b4)
+static void FreeBins(byte* b1, byte* b2, byte* b3, byte* b4)
 {
     if (b1 != NULL) free(b1);
     if (b2 != NULL) free(b2);
@@ -107,71 +107,87 @@ static void FreeBins(uint8_t* b1, uint8_t* b2, uint8_t* b3, uint8_t* b4)
 
 
 /* convert hex string to binary, store size, 0 success (free mem on failure) */
-static int ConvertHexToBin(const char* h1, uint8_t** b1, uint32_t* b1Sz,
-                           const char* h2, uint8_t** b2, uint32_t* b2Sz,
-                           const char* h3, uint8_t** b3, uint32_t* b3Sz,
-                           const char* h4, uint8_t** b4, uint32_t* b4Sz)
+static int ConvertHexToBin(const char* h1, byte** b1, word32* b1Sz,
+                           const char* h2, byte** b2, word32* b2Sz,
+                           const char* h3, byte** b3, word32* b3Sz,
+                           const char* h4, byte** b4, word32* b4Sz)
 {
     int ret;
 
     /* b1 */
     if (h1 && b1 && b1Sz) {
-        *b1Sz = (uint32_t)strlen(h1) / 2;
-        *b1   = (uint8_t*)malloc(*b1Sz);
+        *b1Sz = (word32)strlen(h1) / 2;
+        *b1 = (byte*)malloc(*b1Sz);
         if (*b1 == NULL)
             return -1;
-        ret = Base16_Decode((const uint8_t*)h1, (uint32_t)strlen(h1),
+        ret = Base16_Decode((const byte*)h1, (word32)strlen(h1),
                             *b1, b1Sz);
         if (ret != 0) {
             FreeBins(*b1, NULL, NULL, NULL);
+            *b1 = NULL;
             return -1;
         }
     }
 
     /* b2 */
     if (h2 && b2 && b2Sz) {
-        *b2Sz = (uint32_t)strlen(h2) / 2;
-        *b2   = (uint8_t*)malloc(*b2Sz);
+        *b2Sz = (word32)strlen(h2) / 2;
+        *b2 = (byte*)malloc(*b2Sz);
         if (*b2 == NULL) {
             FreeBins(b1 ? *b1 : NULL, NULL, NULL, NULL);
+            if (b1) *b1 = NULL;
             return -1;
         }
-        ret = Base16_Decode((const uint8_t*)h2, (uint32_t)strlen(h2),
+        ret = Base16_Decode((const byte*)h2, (word32)strlen(h2),
                             *b2, b2Sz);
         if (ret != 0) {
             FreeBins(b1 ? *b1 : NULL, *b2, NULL, NULL);
+            if (b1) *b1 = NULL;
+            *b2 = NULL;
             return -1;
         }
     }
 
     /* b3 */
     if (h3 && b3 && b3Sz) {
-        *b3Sz = (uint32_t)strlen(h3) / 2;
-        *b3   = (uint8_t*)malloc(*b3Sz);
+        *b3Sz = (word32)strlen(h3) / 2;
+        *b3 = (byte*)malloc(*b3Sz);
         if (*b3 == NULL) {
             FreeBins(b1 ? *b1 : NULL, b2 ? *b2 : NULL, NULL, NULL);
+            if (b1) *b1 = NULL;
+            if (b2) *b2 = NULL;
             return -1;
         }
-        ret = Base16_Decode((const uint8_t*)h3, (uint32_t)strlen(h3),
+        ret = Base16_Decode((const byte*)h3, (word32)strlen(h3),
                             *b3, b3Sz);
         if (ret != 0) {
             FreeBins(b1 ? *b1 : NULL, b2 ? *b2 : NULL, *b3, NULL);
+            if (b1) *b1 = NULL;
+            if (b2) *b2 = NULL;
+            *b3 = NULL;
             return -1;
         }
     }
 
     /* b4 */
     if (h4 && b4 && b4Sz) {
-        *b4Sz = (uint32_t)strlen(h4) / 2;
-        *b4   = (uint8_t*)malloc(*b4Sz);
+        *b4Sz = (word32)strlen(h4) / 2;
+        *b4 = (byte*)malloc(*b4Sz);
         if (*b4 == NULL) {
             FreeBins(b1 ? *b1 : NULL, b2 ? *b2 : NULL, b3 ? *b3 : NULL, NULL);
+            if (b1) *b1 = NULL;
+            if (b2) *b2 = NULL;
+            if (b3) *b3 = NULL;
             return -1;
         }
-        ret = Base16_Decode((const uint8_t*)h4, (uint32_t)strlen(h4),
+        ret = Base16_Decode((const byte*)h4, (word32)strlen(h4),
                             *b4, b4Sz);
         if (ret != 0) {
             FreeBins(b1 ? *b1 : NULL, b2 ? *b2 : NULL, b3 ? *b3 : NULL, *b4);
+            if (b1) *b1 = NULL;
+            if (b2) *b2 = NULL;
+            if (b3) *b3 = NULL;
+            *b4 = NULL;
             return -1;
         }
     }
@@ -183,8 +199,8 @@ static int ConvertHexToBin(const char* h1, uint8_t** b1, uint32_t* b1Sz,
 /* Key Derivation Function (KDF) Unit Test */
 
 typedef struct {
-    uint8_t hashId;
-    uint8_t keyId;
+    byte hashId;
+    byte keyId;
     const char* k;
     const char* h;
     const char* sessionId;
@@ -310,15 +326,15 @@ static const KdfTestVector kdfTestVectors[] = {
 static int test_KDF(void)
 {
     int result = 0;
-    uint32_t i;
-    uint32_t tc = sizeof(kdfTestVectors)/sizeof(KdfTestVector);
+    word32 i;
+    word32 tc = sizeof(kdfTestVectors)/sizeof(KdfTestVector);
     const KdfTestVector* tv = NULL;
-    uint8_t* k = NULL;
-    uint8_t* h = NULL;
-    uint8_t* sId = NULL;
-    uint8_t* eKey = NULL;
-    uint32_t kSz, hSz, sIdSz, eKeySz;
-    uint8_t cKey[20]; /* Greater of SHA_DIGEST_SIZE and AES_BLOCK_SIZE */
+    byte* k = NULL;
+    byte* h = NULL;
+    byte* sId = NULL;
+    byte* eKey = NULL;
+    word32 kSz = 0, hSz = 0, sIdSz = 0, eKeySz = 0;
+    byte cKey[32]; /* Greater of SHA256_DIGEST_SIZE and AES_BLOCK_SIZE */
     /* sId - Session ID, eKey - Expected Key, cKey - Calculated Key */
 
     for (i = 0, tv = kdfTestVectors; i < tc; i++, tv++) {
@@ -327,19 +343,22 @@ static int test_KDF(void)
                                  tv->h, &h, &hSz,
                                  tv->sessionId, &sId, &sIdSz,
                                  tv->expectedKey, &eKey, &eKeySz);
-        if (result != 0) {
+        if (result != 0 || eKey == NULL) {
             printf("KDF: Could not convert test vector %u.\n", i);
-            return -100;
+            result = -100;
         }
 
-        result = wolfSSH_KDF(tv->hashId, tv->keyId, cKey, eKeySz,
-                             k, kSz, h, hSz, sId, sIdSz);
+        if (result == 0) {
+            result = wolfSSH_KDF(tv->hashId, tv->keyId, cKey, eKeySz,
+                    k, kSz, h, hSz, sId, sIdSz);
 
-        if (result != 0) {
-            printf("KDF: Could not derive key.\n");
-            result = -101;
+            if (result != 0) {
+                printf("KDF: Could not derive key.\n");
+                result = -101;
+            }
         }
-        else {
+
+        if (result == 0) {
             if (memcmp(cKey, eKey, eKeySz) != 0) {
                 printf("KDF: Calculated Key does not match Expected Key.\n");
                 result = -102;
@@ -347,6 +366,10 @@ static int test_KDF(void)
         }
 
         FreeBins(k, h, sId, eKey);
+        k = NULL;
+        h = NULL;
+        sId = NULL;
+        eKey = NULL;
 
         if (result != 0) break;
     }
@@ -362,7 +385,7 @@ static int test_KDF(void)
 static int test_RsaKeyGen(void)
 {
     int result = 0;
-    uint8_t der[1200];
+    byte der[1200];
     int derSz;
 
     derSz = wolfSSH_MakeRsaKey(der, sizeof(der),
@@ -379,9 +402,67 @@ static int test_RsaKeyGen(void)
 #endif
 
 
+/* Error Code And Message Test */
+
+static int test_Errors(void)
+{
+    const char* errStr;
+    const char* unknownStr = wolfSSH_ErrorToName(1);
+    int result = 0;
+
+#ifdef NO_WOLFSSH_STRINGS
+    /* Ensure a valid error code's string matches an invalid code's.
+     * The string is that error strings are not available.
+     */
+    errStr = wolfSSH_ErrorToName(WS_BAD_ARGUMENT);
+    if (errStr != unknownStr)
+        result = -104;
+#else
+    int i, j = 0;
+    /* Values that are not or no longer error codes. */
+    int missing[] = { -1059 };
+    int missingSz = (int)sizeof(missing)/sizeof(missing[0]);
+
+    /* Check that all errors have a string and it's the same through the two
+     * APIs. Check that the values that are not errors map to the unknown
+     * string.  */
+    for (i = WS_ERROR; i >= WS_LAST_E; i--) {
+        errStr = wolfSSH_ErrorToName(i);
+
+        if (j < missingSz && i == missing[j]) {
+            j++;
+            if (errStr != unknownStr) {
+                result = -105;
+                break;
+            }
+        }
+        else {
+            if (errStr == unknownStr) {
+                result = -106;
+                break;
+            }
+        }
+    }
+
+    /* Check if the next possible value has been given a string. */
+    if (result == 0) {
+        errStr = wolfSSH_ErrorToName(i);
+        if (errStr != unknownStr)
+            return -107;
+    }
+#endif
+
+    return result;
+}
+
+
 int main(void)
 {
     int testResult = 0, unitResult = 0;
+
+    unitResult = test_Errors();
+    printf("Errors: %s\n", (unitResult == 0 ? "SUCCESS" : "FAILED"));
+    testResult = testResult || unitResult;
 
     unitResult = test_KDF();
     printf("KDF: %s\n", (unitResult == 0 ? "SUCCESS" : "FAILED"));

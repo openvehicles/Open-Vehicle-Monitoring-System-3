@@ -28,8 +28,8 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __UTILS_H__
-#define __UTILS_H__
+#ifndef __OVMS_UTILS_H__
+#define __OVMS_UTILS_H__
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -44,6 +44,17 @@
 #define STRX(x)   #x
 #define STR(x)    STRX(x)
 #endif
+
+// Math utils:
+#define SQR(n) ((n)*(n))
+#define ABS(n) (((n) < 0) ? -(n) : (n))
+#define LIMIT_MIN(n,lim) ((n) < (lim) ? (lim) : (n))
+#define LIMIT_MAX(n,lim) ((n) > (lim) ? (lim) : (n))
+
+// Value precision utils:
+#define TRUNCPREC(fval,prec) (trunc((fval) * pow(10,(prec))) / pow(10,(prec)))
+#define ROUNDPREC(fval,prec) (round((fval) * pow(10,(prec))) / pow(10,(prec)))
+#define CEILPREC(fval,prec)  (ceil((fval)  * pow(10,(prec))) / pow(10,(prec)))
 
 // Standard array size (number of elements):
 #if __cplusplus < 201703L
@@ -264,4 +275,4 @@ double float2double(float f);
 std::string idtag(const char* tag, void* instance);
 #define IDTAG idtag(TAG,this)
 
-#endif //#ifndef __UTILS_H__
+#endif // __OVMS_UTILS_H__

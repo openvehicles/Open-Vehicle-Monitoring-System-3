@@ -570,6 +570,39 @@ bool canbus::StatusChanged()
   return false;
   }
 
+static const char* const CAN_errorstate_names[] = {
+  "none",
+  "active",
+  "warning",
+  "passive",
+  "busoff"
+  };
+
+const char* GetCanErrorStateName(CAN_errorstate_t error_state)
+  {
+  return CAN_errorstate_names[error_state];
+  }
+
+CAN_errorstate_t canbus::GetErrorState()
+  {
+  if (m_status.errors_tx == 0 && m_status.errors_rx == 0)
+    return CAN_errorstate_none;
+  else if (m_status.errors_tx < 96 && m_status.errors_rx < 96)
+    return CAN_errorstate_active;
+  else if (m_status.errors_tx < 128 && m_status.errors_rx < 128)
+    return CAN_errorstate_warning;
+  else if (m_status.errors_tx < 256 && m_status.errors_rx < 256)
+    return CAN_errorstate_passive;
+  else
+    return CAN_errorstate_busoff;
+  }
+
+const char* canbus::GetErrorStateName()
+  {
+  return GetCanErrorStateName(GetErrorState());
+  }
+
+
 uint32_t can::AddLogger(canlog* logger, int filterc, const char* const* filterv)
   {
   if (filterc>0)
@@ -704,7 +737,7 @@ void can::RemovePlayers()
 // CAN controller task
 ////////////////////////////////////////////////////////////////////////
 
-static void CAN_rxtask(void *pvParameters)
+void can::CAN_rxtask(void *pvParameters)
   {
   can *me = (can*)pvParameters;
   CAN_queue_msg_t msg;
@@ -735,7 +768,6 @@ static void CAN_rxtask(void *pvParameters)
           break;
         case CAN_txfailedcallback:
           msg.body.bus->TxCallback(&msg.body.frame, false);
-          msg.body.bus->LogStatus(CAN_LogStatus_Error);
           break;
         case CAN_logerror:
           msg.body.bus->LogStatus(CAN_LogStatus_Error);
@@ -864,23 +896,33 @@ void can::DeregisterCallback(const char* caller)
   m_txcallbacks.remove_if([caller](CanFrameCallbackEntry* entry){ return strcmp(entry->m_caller, caller)==0; });
   }
 
-void can::ExecuteCallbacks(const CAN_frame_t* frame, bool tx, bool success)
+int can::ExecuteCallbacks(const CAN_frame_t* frame, bool tx, bool success)
   {
+  int cnt = 0;
   if (tx)
     {
     if (frame->callback)
       {
-      (*(frame->callback))(frame, success); // invoke frame-specific callback function
+      // invoke frame-specific callback function
+      (*(frame->callback))(frame, success);
+      cnt++;
       }
-    for (auto entry : m_txcallbacks) {      // invoke generic tx callbacks
+    for (auto entry : m_txcallbacks)
+      {
+      // invoke generic tx callbacks
       entry->m_callback(frame, success);
+      cnt++;
       }
     }
   else
     {
     for (auto entry : m_rxcallbacks)
+      {
       entry->m_callback(frame, success);
+      cnt++;
+      }
     }
+  return cnt;
   }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1022,8 +1064,13 @@ void canbus::TxCallback(CAN_frame_t* p_frame, bool success)
   else
     {
     m_status.tx_fails++;
-    MyCan.ExecuteCallbacks(p_frame, true, success);
+    int cnt = MyCan.ExecuteCallbacks(p_frame, true, success);
     LogFrame(CAN_LogFrame_TX_Fail, p_frame);
+    // log error status if no application callbacks were called for this frame:
+    if (cnt == 0)
+      {
+      LogStatus(CAN_LogStatus_Error);
+      }
     }
   }
 

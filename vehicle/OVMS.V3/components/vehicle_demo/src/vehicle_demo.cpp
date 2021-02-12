@@ -108,14 +108,10 @@ OvmsVehicleDemo::OvmsVehicleDemo()
   StandardMetrics.ms_v_pos_speed->SetValue(0);
   StandardMetrics.ms_v_pos_odometer->SetValue(100000);
   StandardMetrics.ms_v_pos_trip->SetValue(0);
-  StandardMetrics.ms_v_tpms_fl_t->SetValue(33);
-  StandardMetrics.ms_v_tpms_fr_t->SetValue(33);
-  StandardMetrics.ms_v_tpms_rr_t->SetValue(34);
-  StandardMetrics.ms_v_tpms_rl_t->SetValue(34);
-  StandardMetrics.ms_v_tpms_fl_p->SetValue(206.843);
-  StandardMetrics.ms_v_tpms_fr_p->SetValue(206.843);
-  StandardMetrics.ms_v_tpms_rr_p->SetValue(275.79);
-  StandardMetrics.ms_v_tpms_rl_p->SetValue(275.79);
+  StandardMetrics.ms_v_tpms_pressure->SetValue(std::vector<float>{ 206.843, 216.483, 275.79, 175.79 });
+  StandardMetrics.ms_v_tpms_temp->SetValue(std::vector<float>{ 33, 33, 34, 38 });
+  StandardMetrics.ms_v_tpms_health->SetValue(std::vector<float>{ 95, 93, 96, 74 });
+  StandardMetrics.ms_v_tpms_alert->SetValue(std::vector<short>{ 0, 0, 0, 1 });
   }
 
 OvmsVehicleDemo::~OvmsVehicleDemo()

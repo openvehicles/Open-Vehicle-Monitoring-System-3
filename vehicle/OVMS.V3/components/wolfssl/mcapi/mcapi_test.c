@@ -1,6 +1,6 @@
 /* mcapi_test.c
  *
- * Copyright (C) 2006-2016 wolfSSL Inc.
+ * Copyright (C) 2006-2020 wolfSSL Inc.
  *
  * This file is part of wolfSSL.
  *
@@ -53,7 +53,7 @@
     #include <stdio.h>
     #include <stdlib.h>
     #include "PIC32MZ-serial.h"
-    #define  SYSTEMConfigPerformance /* void out SYSTEMConfigPerformance(); */
+    #define  SYSTEMConfigPerformance(n) /* void out SYSTEMConfigPerformance(); */
 #elif defined(MICROCHIP_PIC32)
     #define PIC32_STARTER_KIT
     #include <stdio.h>
@@ -233,8 +233,13 @@ static int check_md5(void)
         ret = wc_Md5Final(&defMd5, defDigest);
     }
 
-    if (memcmp(mcDigest, defDigest, CRYPT_MD5_DIGEST_SIZE) != 0) {
-        printf("md5 final memcmp fialed\n");
+    if (ret != 0) {
+        printf("md5 failed\n");
+        return -1;
+    }
+
+    if (ret == 0 && memcmp(mcDigest, defDigest, CRYPT_MD5_DIGEST_SIZE) != 0) {
+        printf("md5 final memcmp failed\n");
         return -1;
     }
     printf("md5         mcapi test passed\n");
@@ -279,10 +284,10 @@ static int check_sha(void)
 static int check_sha256(void)
 {
     CRYPT_SHA256_CTX mcSha256;
-    Sha256           defSha256;
+    wc_Sha256        defSha256;
     int              ret;
     byte             mcDigest[CRYPT_SHA256_DIGEST_SIZE];
-    byte             defDigest[SHA256_DIGEST_SIZE];
+    byte             defDigest[WC_SHA256_DIGEST_SIZE];
 
     CRYPT_SHA256_Initialize(&mcSha256);
     ret = wc_InitSha256(&defSha256);
@@ -319,10 +324,10 @@ static int check_sha256(void)
 static int check_sha384(void)
 {
     CRYPT_SHA384_CTX mcSha384;
-    Sha384           defSha384;
+    wc_Sha384        defSha384;
     int              ret;
     byte             mcDigest[CRYPT_SHA384_DIGEST_SIZE];
-    byte             defDigest[SHA384_DIGEST_SIZE];
+    byte             defDigest[WC_SHA384_DIGEST_SIZE];
 
     CRYPT_SHA384_Initialize(&mcSha384);
     ret = wc_InitSha384(&defSha384);
@@ -359,10 +364,10 @@ static int check_sha384(void)
 static int check_sha512(void)
 {
     CRYPT_SHA512_CTX mcSha512;
-    Sha512           defSha512;
+    wc_Sha512        defSha512;
     int              ret;
     byte             mcDigest[CRYPT_SHA512_DIGEST_SIZE];
-    byte             defDigest[SHA512_DIGEST_SIZE];
+    byte             defDigest[WC_SHA512_DIGEST_SIZE];
 
     CRYPT_SHA512_Initialize(&mcSha512);
     ret = wc_InitSha512(&defSha512);
@@ -402,13 +407,13 @@ static int check_hmac(void)
     Hmac           defHmac;
     int            ret;
     byte           mcDigest[CRYPT_SHA512_DIGEST_SIZE];
-    byte           defDigest[SHA512_DIGEST_SIZE];
+    byte           defDigest[WC_SHA512_DIGEST_SIZE];
 
-    strncpy((char*)key, "Jefe", 4);
+    memcpy((char*)key, "Jefe", 4);
 
     /* SHA1 */
     CRYPT_HMAC_SetKey(&mcHmac, CRYPT_HMAC_SHA, key, 4);
-    ret = wc_HmacSetKey(&defHmac, SHA, key, 4);
+    ret = wc_HmacSetKey(&defHmac, WC_SHA, key, 4);
     if (ret != 0) {
         printf("hmac sha setkey default failed\n");
         return -1;
@@ -436,7 +441,7 @@ static int check_hmac(void)
 
     /* SHA-256 */
     CRYPT_HMAC_SetKey(&mcHmac, CRYPT_HMAC_SHA256, key, 4);
-    ret = wc_HmacSetKey(&defHmac, SHA256, key, 4);
+    ret = wc_HmacSetKey(&defHmac, WC_SHA256, key, 4);
     if (ret != 0) {
         printf("hmac sha256 setkey default failed\n");
         return -1;
@@ -464,7 +469,7 @@ static int check_hmac(void)
 
     /* SHA-384 */
     CRYPT_HMAC_SetKey(&mcHmac, CRYPT_HMAC_SHA384, key, 4);
-    ret = wc_HmacSetKey(&defHmac, SHA384, key, 4);
+    ret = wc_HmacSetKey(&defHmac, WC_SHA384, key, 4);
     if (ret != 0) {
         printf("hmac sha384 setkey default failed\n");
         return -1;
@@ -492,7 +497,7 @@ static int check_hmac(void)
 
     /* SHA-512 */
     CRYPT_HMAC_SetKey(&mcHmac, CRYPT_HMAC_SHA512, key, 4);
-    ret = wc_HmacSetKey(&defHmac, SHA512, key, 4);
+    ret = wc_HmacSetKey(&defHmac, WC_SHA512, key, 4);
     if (ret != 0) {
         printf("hmac sha512 setkey default failed\n");
         return -1;
@@ -684,8 +689,8 @@ static int check_des3(void)
     byte           out1[TDES_TEST_SIZE];
     byte           out2[TDES_TEST_SIZE];
 
-    strncpy((char*)key, "1234567890abcdefghijklmn", 24);
-    strncpy((char*)iv,  "12345678", 8);
+    memcpy((char*)key, "1234567890abcdefghijklmn", 24);
+    memcpy((char*)iv,  "12345678", 8);
 
     /* cbc encrypt */
     ret = CRYPT_TDES_KeySet(&mcDes3, key, iv, CRYPT_TDES_ENCRYPTION);
@@ -765,8 +770,8 @@ static int check_aescbc(void)
     byte          out1[AES_TEST_SIZE];
     byte          out2[AES_TEST_SIZE];
 
-    strncpy((char*)key, "1234567890abcdefghijklmnopqrstuv", 32);
-    strncpy((char*)iv,  "1234567890abcdef", 16);
+    memcpy((char*)key, "1234567890abcdefghijklmnopqrstuv", 32);
+    memcpy((char*)iv,  "1234567890abcdef", 16);
 
     /* 128 cbc encrypt */
     ret = CRYPT_AES_KeySet(&mcAes, key, 16, iv, CRYPT_AES_ENCRYPTION);
@@ -942,8 +947,8 @@ static int check_aesctr(void)
     byte          out1[AES_TEST_SIZE];
     byte          out2[AES_TEST_SIZE];
 
-    strncpy((char*)key, "1234567890abcdefghijklmnopqrstuv", 32);
-    strncpy((char*)iv,  "1234567890abcdef", 16);
+    memcpy((char*)key, "1234567890abcdefghijklmnopqrstuv", 32);
+    memcpy((char*)iv,  "1234567890abcdef", 16);
 
     /* 128 ctr encrypt */
     ret = CRYPT_AES_KeySet(&mcAes, key, 16, iv, CRYPT_AES_ENCRYPTION);
@@ -1110,8 +1115,8 @@ static int check_aesdirect(void)
     byte          out1[CRYPT_AES_BLOCK_SIZE];
     byte          out2[16];  /* one block at a time */
 
-    strncpy((char*)key, "1234567890abcdefghijklmnopqrstuv", 32);
-    strncpy((char*)iv,  "1234567890abcdef", 16);
+    memcpy((char*)key, "1234567890abcdefghijklmnopqrstuv", 32);
+    memcpy((char*)iv,  "1234567890abcdef", 16);
 
     /* 128 direct encrypt */
     ret = CRYPT_AES_KeySet(&mcAes, key, 16, iv, CRYPT_AES_ENCRYPTION);
@@ -1437,7 +1442,7 @@ static int check_ecc(void)
         return -1;
     }
 
-    if (usedA != usedB || usedA <= 0) {
+    if (usedA != usedB || usedA == 0) {
         printf("mcapi ecc make shared secret output size match failed\n");
         return -1;
     }
@@ -1456,7 +1461,7 @@ static int check_ecc(void)
     }
 
     sigSz = usedA;
-    if (sigSz <= 0) {
+    if (sigSz == 0) {
         printf("mcapi ecc sign hash bad sig size\n");
         return -1;
     }
