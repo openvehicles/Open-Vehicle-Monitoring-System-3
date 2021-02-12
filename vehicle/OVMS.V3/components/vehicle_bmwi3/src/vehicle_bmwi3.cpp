@@ -490,10 +490,14 @@ void OvmsVehicleBMWi3::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pi
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "ANZEIGE_SOC", "STAT_MINIMALE_ANZEIGE_SOC_WERT", STAT_MINIMALE_ANZEIGE_SOC_WERT, "\"%\"");
 
     // ==========  Add your processing here ==========
-    StdMetrics.ms_v_bat_soc->SetValue(STAT_ANZEIGE_SOC_WERT, Percentage);
-    soc = STAT_ANZEIGE_SOC_WERT / 100.0f;
-    mt_i3_charge_max->SetValue(STAT_MAXIMALE_ANZEIGE_SOC_WERT, Percentage);
-    mt_i3_charge_min->SetValue(STAT_MINIMALE_ANZEIGE_SOC_WERT, Percentage);
+    if (STAT_ANZEIGE_SOC_WERT >= 0.0 && STAT_ANZEIGE_SOC_WERT <= 100.0) {
+        StdMetrics.ms_v_bat_soc->SetValue(STAT_ANZEIGE_SOC_WERT, Percentage);
+        soc = STAT_ANZEIGE_SOC_WERT / 100.0f;
+    }
+    if (STAT_MAXIMALE_ANZEIGE_SOC_WERT >= 0.0 && STAT_MAXIMALE_ANZEIGE_SOC_WERT <= 100.0)
+        mt_i3_charge_max->SetValue(STAT_MAXIMALE_ANZEIGE_SOC_WERT, Percentage);
+    if (STAT_MINIMALE_ANZEIGE_SOC_WERT >= 0.0 && STAT_MINIMALE_ANZEIGE_SOC_WERT <= 100.0)
+        mt_i3_charge_min->SetValue(STAT_MINIMALE_ANZEIGE_SOC_WERT, Percentage);
 
     break;
   }
