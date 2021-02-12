@@ -253,13 +253,6 @@ OvmsVehicleBMWi3::OvmsVehicleBMWi3()
     mt_i3_v_charge_chargeledstate       = MetricInt  ("xi3.v.c.chargeledstate",     SM_STALE_MID,  Other);
     mt_i3_v_charge_temp_gatedriver      = MetricInt  ("xi3.v.c.temp.gatedriver",    SM_STALE_MID,  Celcius);
     // Trip consumption
-<<<<<<< HEAD
-    mt_i3_v_pos_tripconsumption         = MyMetrics.InitInt("xi3.v.p.tripconsumption",      SM_STALE_MID, 0, WattHoursPK);
-    // State
-    mt_i3_obdtraffic                    = MyMetrics.InitBool("xi3.v.e.obdtraffic",          SM_STALE_MID, false);
-    mt_i3_pollermode                    = MyMetrics.InitInt("xi3.s.pollermode",             SM_STALE_MID, false);
-    mt_i3_age                           = MyMetrics.InitInt("xi3.s.age",                    SM_STALE_MID, -1, Minutes);
-=======
     mt_i3_v_pos_tripconsumption         = MetricInt  ("xi3.v.p.tripconsumption",    SM_STALE_MID,  WattHoursPK);
 
     // State
@@ -267,18 +260,13 @@ OvmsVehicleBMWi3::OvmsVehicleBMWi3()
     mt_i3_pollermode                    = MetricInt  ("xi3.s.pollermode",           SM_STALE_MID);
     mt_i3_age                           = MetricInt  ("xi3.s.age",                  SM_STALE_MID,  Minutes);
 
->>>>>>> 3ed5f3a6df9582a8be2c7d392d4ab466ba091007
     // Controls
     mt_i3_v_env_autorecirc              = MetricBool("xi3.v.e.autorecirc",          SM_STALE_MID);
  
     // Init the stuff to keep track of whether the car is talking or not
-<<<<<<< HEAD
-    framecount = 0; tickercount = 0; replycount = 0;
-=======
     framecount = 0;
     tickercount = 0;
     replycount = 0;
->>>>>>> 3ed5f3a6df9582a8be2c7d392d4ab466ba091007
     last_obd_data_seen = 0;
 
     // Callbacks
@@ -389,11 +377,7 @@ void OvmsVehicleBMWi3::Ticker10(uint32_t ticker)
     // 4) i3 always has regen braking on
     StdMetrics.ms_v_env_regenbrake->SetValue(true);
 
-<<<<<<< HEAD
-    // 4) mt_i3_age
-=======
     // 5) mt_i3_age
->>>>>>> 3ed5f3a6df9582a8be2c7d392d4ab466ba091007
     if (last_obd_data_seen) {
         mt_i3_age->SetValue(StdMetrics.ms_m_monotonic->AsInt() - last_obd_data_seen, Seconds);
     }
