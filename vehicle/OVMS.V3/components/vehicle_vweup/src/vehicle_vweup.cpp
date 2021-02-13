@@ -289,7 +289,7 @@ void OvmsVehicleVWeUp::ConfigChanged(OvmsConfigParam *param)
   //  TODO: get actual capacity/SOH & max charge current
   float socfactor = StdMetrics.ms_v_bat_soc->AsFloat() / 100;
   float sohfactor = StdMetrics.ms_v_bat_soh->AsFloat() / 100;
-  if (sohfactor == 0) sohfactor = 100;
+  if (sohfactor == 0) sohfactor = 1;
   if (vweup_modelyear > 2019)
   {
     // 32.3 kWh net / 36.8 kWh gross, 2P84S = 120 Ah, 260 km WLTP
