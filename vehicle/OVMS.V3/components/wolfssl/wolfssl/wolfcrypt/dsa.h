@@ -1,6 +1,6 @@
 /* dsa.h
  *
- * Copyright (C) 2006-2016 wolfSSL Inc.
+ * Copyright (C) 2006-2020 wolfSSL Inc.
  *
  * This file is part of wolfSSL.
  *
@@ -19,6 +19,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335, USA
  */
 
+/*!
+    \file wolfssl/wolfcrypt/dsa.h
+*/
 
 #ifndef WOLF_CRYPT_DSA_H
 #define WOLF_CRYPT_DSA_H
@@ -49,6 +52,11 @@ enum {
     DSA_PRIVATE  = 1
 };
 
+enum {
+    DSA_HALF_SIZE = 20,   /* r and s size  */
+    DSA_SIG_SIZE  = 40    /* signature size */
+};
+
 /* DSA */
 typedef struct DsaKey {
     mp_int p, q, g, y, x;
@@ -68,12 +76,26 @@ WOLFSSL_API int wc_DsaPublicKeyDecode(const byte* input, word32* inOutIdx,
 WOLFSSL_API int wc_DsaPrivateKeyDecode(const byte* input, word32* inOutIdx,
                                        DsaKey*, word32);
 WOLFSSL_API int wc_DsaKeyToDer(DsaKey* key, byte* output, word32 inLen);
+WOLFSSL_API int wc_SetDsaPublicKey(byte* output, DsaKey* key,
+                                   int outLen, int with_header);
+WOLFSSL_API int wc_DsaKeyToPublicDer(DsaKey* key, byte* output, word32 inLen);
 
 #ifdef WOLFSSL_KEY_GEN
 WOLFSSL_API int wc_MakeDsaKey(WC_RNG *rng, DsaKey *dsa);
 WOLFSSL_API int wc_MakeDsaParameters(WC_RNG *rng, int modulus_size, DsaKey *dsa);
 #endif
 
+/* raw export functions */
+WOLFSSL_API int wc_DsaImportParamsRaw(DsaKey* dsa, const char* p,
+                                      const char* q, const char* g);
+WOLFSSL_API int wc_DsaImportParamsRawCheck(DsaKey* dsa, const char* p,
+                                      const char* q, const char* g,
+                                      int trusted, WC_RNG* rng);
+WOLFSSL_API int wc_DsaExportParamsRaw(DsaKey* dsa, byte* p, word32* pSz,
+                                      byte* q, word32* qSz, byte* g,
+                                      word32* gSz);
+WOLFSSL_API int wc_DsaExportKeyRaw(DsaKey* dsa, byte* x, word32* xSz, byte* y,
+                                   word32* ySz);
 #ifdef __cplusplus
     } /* extern "C" */
 #endif

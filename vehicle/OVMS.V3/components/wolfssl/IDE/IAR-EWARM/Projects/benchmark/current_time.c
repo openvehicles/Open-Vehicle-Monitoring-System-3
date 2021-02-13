@@ -1,6 +1,6 @@
 /* current-time.c
  *
- * Copyright (C) 2006-2016 wolfSSL Inc.
+ * Copyright (C) 2006-2020 wolfSSL Inc.
  *
  * This file is part of wolfSSL.
  *
@@ -44,7 +44,7 @@ void InitTimer(void) {
                                        SYSCTL_USE_PLL |
                                        SYSCTL_CFG_VCO_480), 120000000);
 
-    printf("Clock=%dMHz\n", ui32SysClock/1000000) ;
+    printf("Clock=%dMHz\n", (int)(ui32SysClock/1000000));
     ROM_SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER0);
     ROM_TimerConfigure(TIMER0_BASE, TIMER_CFG_PERIODIC);
     ROM_TimerLoadSet(TIMER0_BASE, TIMER_A, -1);
@@ -53,7 +53,7 @@ void InitTimer(void) {
 
 static int initFlag = false ;
 double current_time(int reset)
-{   
+{
     if(!initFlag)InitTimer() ;
     initFlag = true ;
     if(reset)ROM_TimerLoadSet(TIMER0_BASE, TIMER_A, -1);
@@ -62,6 +62,12 @@ double current_time(int reset)
 
 #else
 
-double current_time(int reset) { return 0.0 ; }
+/* dummy */
+double current_time(int reset) {
+    static double t;
+    t += 1.0; /* for avoid infinite loop of waiting time */
+    if(reset)t = 0.0;
+    return t ;
+}
 
 #endif

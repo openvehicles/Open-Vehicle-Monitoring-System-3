@@ -1,6 +1,6 @@
 /* keygen.h
  *
- * Copyright (C) 2014-2016 wolfSSL Inc.
+ * Copyright (C) 2014-2020 wolfSSL Inc.
  *
  * This file is part of wolfSSH.
  *
@@ -42,7 +42,7 @@ extern "C" {
 #define WOLFSSH_RSAKEY_DEFAULT_E  65537
 
 
-WOLFSSH_API int wolfSSH_MakeRsaKey(uint8_t*, uint32_t, uint32_t, uint32_t);
+WOLFSSH_API int wolfSSH_MakeRsaKey(byte*, word32, word32, word32);
 
 
 #ifdef __cplusplus

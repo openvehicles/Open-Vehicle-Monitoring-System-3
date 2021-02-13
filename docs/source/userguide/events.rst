@@ -152,6 +152,8 @@ vehicle.alert.12v.on                          12V system voltage is below alert 
 vehicle.alert.bms                             BMS cell/pack volts/temps exceeded thresholds
 vehicle.asleep                                Vehicle systems are asleep
 vehicle.awake                                 Vehicle systems are awake
+vehicle.aux.12v.on                            Vehicle 12V auxiliary system is on (base system awake)
+vehicle.aux.12v.off                           Vehicle 12V auxiliary system is off
 vehicle.charge.12v.start                      Vehicle 12V battery is charging
 vehicle.charge.12v.stop                       Vehicle 12V battery has stopped charging
 vehicle.charge.finished                       Vehicle charge has completed normally

@@ -82,11 +82,7 @@ void OvmsVehicleMgEv::IncomingVcuPoll(
         case vcuIgnitionStatePid:
             // Aux only is 1, but we'll say it's on when the ignition is too
             StandardMetrics.ms_v_env_aux12v->SetValue(data[0] != 0);
-            if (StandardMetrics.ms_v_env_on->AsBool() != (data[0] == 2))
-            {
-                // Only set on change so we can see when it was turned on
-                StandardMetrics.ms_v_env_on->SetValue(data[0] == 2);
-            }
+            StandardMetrics.ms_v_env_on->SetValue(data[0] == 2);
             break;
         case vcuVinPid:
             HandleVinMessage(data, length, remain);
@@ -109,42 +105,30 @@ void OvmsVehicleMgEv::IncomingVcuPoll(
         case vcuGearPid:
             if (data[0] == 8)
             {
-                StandardMetrics.ms_v_env_gear->SetValue(0);
+                StandardMetrics.ms_v_env_drivemode->SetValue(0);
             }
             // TODO: Get the correct value here for reverse
             else if (data[0] == 0)
             {
-                StandardMetrics.ms_v_env_gear->SetValue(-1);
+                StandardMetrics.ms_v_env_drivemode->SetValue(-1);
             }
             else
             {
-                StandardMetrics.ms_v_env_gear->SetValue(1);
+                StandardMetrics.ms_v_env_drivemode->SetValue(1);
             }
             break;
-        case vcuBreakPid:
+        case vcuBrakePid:
             StandardMetrics.ms_v_env_footbrake->SetValue(value / 10.0);
             break;
         case vcuBonnetPid:
             StandardMetrics.ms_v_door_hood->SetValue(data[0] & 1);
             break;
         case chargeRatePid:
-            // The kW of the charger, crude way to determine the charge type
-            {
-                auto rate = value / 10.0;
-                StandardMetrics.ms_v_charge_climit->SetValue(rate);
-                if (rate < 0.1)
-                {
-                    StandardMetrics.ms_v_charge_type->SetValue("undefined");
-                }
-                else if (rate > 7.0)
-                {
-                    StandardMetrics.ms_v_charge_type->SetValue("ccs");
-                }
-                else
-                {
-                    StandardMetrics.ms_v_charge_type->SetValue("type2");
-                }
-            }
+            // The available charge rate, max power BMS will accept right now
+            
+            auto rate = value / 10.0;
+            StandardMetrics.ms_v_charge_climit->SetValue(rate);
+            
             break;
     }
 }

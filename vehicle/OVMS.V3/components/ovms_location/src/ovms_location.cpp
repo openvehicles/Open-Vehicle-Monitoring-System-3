@@ -87,17 +87,21 @@ void OvmsLocationAction::Execute(bool enter)
     OvmsVehicle* currentvehicle = MyVehicleFactory.m_currentvehicle;
     if (currentvehicle)
       {
+      if (!StandardMetrics.ms_v_env_on->AsBool())
+        ESP_LOGI(TAG, "Not activating Homelink #%d because parked",homelink);
+      else
         switch(currentvehicle->CommandHomelink(homelink-1, durationms))
-        {
-        case OvmsVehicle::Success:
-          ESP_LOGI(TAG, "Homelink #%d activated for %dms",homelink,durationms);
-          break;
-        case OvmsVehicle::Fail:
-          ESP_LOGE(TAG, "Could not activate homelink #%d",homelink);
-          break;
-        default:
-          break;
-        }
+          {
+          case OvmsVehicle::Success:
+            ESP_LOGI(TAG, "Homelink #%d activated for %dms",homelink,durationms);
+            break;
+          case OvmsVehicle::Fail:
+            ESP_LOGE(TAG, "Could not activate homelink #%d",homelink);
+            break;
+          default:
+            ESP_LOGE(TAG, "Vehicle does not implement homelink");
+            break;
+          }
       }
     }
   else if (m_action == NOTIFY)
@@ -437,8 +441,9 @@ void location_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
     writer->printf(", %d satellite%s", n, n == 1 ? "" : "s");
   writer->puts(")");
 
-  if ((MyLocations.m_park_latitude != 0)&&(MyLocations.m_park_longitude != 0))
-    writer->printf("Vehicle is parked at %0.6f,%0.6f\n",
+  if ((MyLocations.m_park_latitude != 0) || (MyLocations.m_park_longitude != 0))
+    writer->printf("Vehicle is parked%s %0.6f,%0.6f\n",
+      MyLocations.m_park_invalid ? ", last known coordinates:" : " at",
       MyLocations.m_park_latitude,
       MyLocations.m_park_longitude);
   n = MyLocations.m_locations.size();
@@ -610,12 +615,14 @@ OvmsLocations::OvmsLocations()
   {
   ESP_LOGI(TAG, "Initialising LOCATIONS (1900)");
 
+  m_ready = false;
   m_gpslock = false;
   m_latitude = 0;
   m_longitude = 0;
   m_park_latitude = 0;
   m_park_longitude = 0;
   m_park_distance = 0;
+  m_park_invalid = true;
 
   // Register our commands
   OvmsCommand* cmd_location = MyCommandApp.RegisterCommand("location","LOCATION framework");
@@ -687,8 +694,13 @@ void OvmsLocations::UpdatedGpsLock(OvmsMetric* metric)
   m_gpslock = m->AsBool();
   if (m_gpslock)
     {
-    MyEvents.SignalEvent("gps.lock.acquired", NULL);
+    if (!m_ready)
+      {
+      UpdateParkPosition();
+      m_ready = true;
+      }
     UpdateLocations();
+    MyEvents.SignalEvent("gps.lock.acquired", NULL);
     }
   else
     {
@@ -720,18 +732,24 @@ void OvmsLocations::UpdatedLongitude(OvmsMetric* metric)
 
 void OvmsLocations::UpdatedVehicleOn(OvmsMetric* metric)
   {
-  OvmsMetricBool* m = (OvmsMetricBool*)metric;
-  bool caron = m->AsBool();
+  UpdateParkPosition();
+  }
+
+void OvmsLocations::UpdateParkPosition()
+  {
+  bool caron = StdMetrics.ms_v_env_on->AsBool();
   if (caron)
     {
     m_park_latitude = 0;
     m_park_longitude = 0;
     m_park_distance = 0;
+    m_park_invalid = true;
     }
   else
     {
     m_park_latitude = m_latitude;
     m_park_longitude = m_longitude;
+    m_park_invalid = (!m_gpslock || StdMetrics.ms_v_pos_latitude->IsStale() || StdMetrics.ms_v_pos_longitude->IsStale());
     }
   }
 
@@ -790,7 +808,7 @@ void OvmsLocations::ReloadMap()
 
 void OvmsLocations::UpdateLocations()
   {
-  if ((m_latitude == 0)||(m_longitude == 0)) return;
+  if ((m_latitude == 0) && (m_longitude == 0)) return;
 
   for (LocationMap::iterator it=m_locations.begin(); it!=m_locations.end(); ++it)
     {
@@ -800,9 +818,16 @@ void OvmsLocations::UpdateLocations()
 
 void OvmsLocations::CheckTheft()
   {
-  if (m_park_latitude == 0) return;
-  if (m_park_longitude == 0) return;
+  if ((m_park_latitude == 0) && (m_park_longitude == 0)) return;
   if (StandardMetrics.ms_v_env_on->AsBool()) return;
+
+  // Wait for first valid coordinates if we had none when we parked the car:
+  if (m_park_invalid)
+    {
+    UpdateParkPosition();
+    return;
+    }
+
   int alarm = MyConfig.GetParamValueInt("vehicle", "flatbed.alarmdistance", 500);
   if (alarm == 0) return;
 
@@ -812,10 +837,17 @@ void OvmsLocations::CheckTheft()
     {
     m_park_latitude = 0;
     m_park_longitude = 0;
+    m_park_invalid = true;
     MyNotify.NotifyStringf("alert", "flatbed.moved",
       "Vehicle is being transported while parked - possible theft/flatbed (@%0.6f,%0.6f)",
       m_latitude, m_longitude);
     MyEvents.SignalEvent("location.alert.flatbed.moved", NULL);
+    ESP_LOGW(TAG, "CheckTheft: flatbed.moved @%0.6f,%0.6f gpsmode=%s satcount=%d hdop=%.1f gpsspeed=%.1f",
+      m_latitude, m_longitude,
+      StdMetrics.ms_v_pos_gpsmode->AsString().c_str(),
+      StdMetrics.ms_v_pos_satcount->AsInt(),
+      StdMetrics.ms_v_pos_gpshdop->AsFloat(),
+      StdMetrics.ms_v_pos_gpsspeed->AsFloat());
     }
   }
 
@@ -829,4 +861,13 @@ void OvmsLocations::UpdatedConfig(std::string event, void* data)
     }
 
   ReloadMap();
+
+  if (event == "config.mounted")
+    {
+    // Init from persistent position & vehicle state:
+    m_latitude = StdMetrics.ms_v_pos_latitude->AsFloat();
+    m_longitude = StdMetrics.ms_v_pos_longitude->AsFloat();
+    UpdateLocations();
+    UpdatedVehicleOn(StdMetrics.ms_v_env_on);
+    }
   }

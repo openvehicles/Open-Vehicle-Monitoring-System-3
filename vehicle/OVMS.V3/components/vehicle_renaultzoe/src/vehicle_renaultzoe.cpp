@@ -669,16 +669,16 @@ void OvmsVehicleRenaultZoe::IncomingFrameCan1(CAN_frame_t* p_frame) {
       // 673,11,13,1,0,0,,,,ff,Front left wheel state
       // 673,16,23,13.725,0,0,mbar,,,ff,Rear right wheel pressure
       if (CAN_BYTE(2) != 0xff)
-        StandardMetrics.ms_v_tpms_rr_p->SetValue((float) (CAN_BYTE(2)*13.725)/10);
+        StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RR, (float) (CAN_BYTE(2)*13.725)/10);
       // 673,24,31,13.725,0,0,mbar,,,ff,Rear left wheel pressure
       if (CAN_BYTE(3) != 0xff)
-        StandardMetrics.ms_v_tpms_rl_p->SetValue((float) (CAN_BYTE(3)*13.725)/10);
+        StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RL, (float) (CAN_BYTE(3)*13.725)/10);
       // 673,32,39,13.725,0,0,mbar,,,ff,Front right wheel pressure
       if (CAN_BYTE(4) != 0xff)
-        StandardMetrics.ms_v_tpms_fr_p->SetValue((float) (CAN_BYTE(4)*13.725)/10);
+        StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FR, (float) (CAN_BYTE(4)*13.725)/10);
       // 673,40,47,13.725,0,0,mbar,,,ff,Front left wheel pressure
       if (CAN_BYTE(5) != 0xff)
-        StandardMetrics.ms_v_tpms_fl_p->SetValue((float) (CAN_BYTE(5)*13.725)/10);
+        StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FL, (float) (CAN_BYTE(5)*13.725)/10);
       break;
     case 0x68b:
       // 68b,0,3,1,0,0,,,,ff,MM action counter

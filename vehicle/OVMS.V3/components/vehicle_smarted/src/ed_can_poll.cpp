@@ -75,17 +75,6 @@ static const char *TAG = "v-smarted";
 
 #include "vehicle_smarted.h"
 
-#undef SQR
-#define SQR(n) ((n)*(n))
-#undef ABS
-#define ABS(n) (((n) < 0) ? -(n) : (n))
-#undef LIMIT_MIN
-#define LIMIT_MIN(n,lim) ((n) < (lim) ? (lim) : (n))
-#undef LIMIT_MAX
-#define LIMIT_MAX(n,lim) ((n) > (lim) ? (lim) : (n))
-
-#undef ROUNDPREC
-#define ROUNDPREC(fval,prec) (round((fval) * pow(10,(prec))) / pow(10,(prec)))
 
 static const OvmsVehicle::poll_pid_t smarted_polls[] =
 {

@@ -570,6 +570,39 @@ bool canbus::StatusChanged()
   return false;
   }
 
+static const char* const CAN_errorstate_names[] = {
+  "none",
+  "active",
+  "warning",
+  "passive",
+  "busoff"
+  };
+
+const char* GetCanErrorStateName(CAN_errorstate_t error_state)
+  {
+  return CAN_errorstate_names[error_state];
+  }
+
+CAN_errorstate_t canbus::GetErrorState()
+  {
+  if (m_status.errors_tx == 0 && m_status.errors_rx == 0)
+    return CAN_errorstate_none;
+  else if (m_status.errors_tx < 96 && m_status.errors_rx < 96)
+    return CAN_errorstate_active;
+  else if (m_status.errors_tx < 128 && m_status.errors_rx < 128)
+    return CAN_errorstate_warning;
+  else if (m_status.errors_tx < 256 && m_status.errors_rx < 256)
+    return CAN_errorstate_passive;
+  else
+    return CAN_errorstate_busoff;
+  }
+
+const char* canbus::GetErrorStateName()
+  {
+  return GetCanErrorStateName(GetErrorState());
+  }
+
+
 uint32_t can::AddLogger(canlog* logger, int filterc, const char* const* filterv)
   {
   if (filterc>0)

@@ -47,7 +47,11 @@ void tpms_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
   {
   writer->puts("\nTyre Sets:");
   OvmsConfigParam *p = MyConfig.CachedParam(TPMS_PARAM);
-  if (p)
+  if (!p || p->m_map.empty())
+    {
+    writer->puts("No tyre sets defined.");
+    }
+  else if (p)
     {
     for (ConfigParamMap::iterator it=p->m_map.begin(); it!=p->m_map.end(); ++it)
       {
@@ -100,20 +104,60 @@ void tpms_delete(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
 
 void tpms_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  if (StandardMetrics.ms_v_tpms_fl_t->IsStale())
+  bool data_shown = false;
+
+  writer->printf("TPMS status       ");
+  if (MyVehicleFactory.m_currentvehicle)
     {
-    writer->puts("TPMS data is stale. Information shown below is not up to date\n");
+    std::vector<std::string> wheels = MyVehicleFactory.m_currentvehicle->GetTpmsLayout();
+    for (auto wheel : wheels)
+      writer->printf(" %8s", wheel.c_str());
+    writer->puts("");
+    }
+  else
+    {
+    writer->puts("(axles front to back, per axle left to right)");
     }
 
-  writer->puts("TPMS status:");
-  writer->printf("  FL: %s %s\n",StandardMetrics.ms_v_tpms_fl_t->AsUnitString().c_str(),
-                                 StandardMetrics.ms_v_tpms_fl_p->AsUnitString().c_str());
-  writer->printf("  FR: %s %s\n",StandardMetrics.ms_v_tpms_fr_t->AsUnitString().c_str(),
-                                 StandardMetrics.ms_v_tpms_fr_p->AsUnitString().c_str());
-  writer->printf("  RL: %s %s\n",StandardMetrics.ms_v_tpms_rl_t->AsUnitString().c_str(),
-                                 StandardMetrics.ms_v_tpms_rl_p->AsUnitString().c_str());
-  writer->printf("  RR: %s %s\n",StandardMetrics.ms_v_tpms_rr_t->AsUnitString().c_str(),
-                                 StandardMetrics.ms_v_tpms_rr_p->AsUnitString().c_str());
+  if (StandardMetrics.ms_v_tpms_alert->IsDefined())
+    {
+    const char* alertname[] = { "OK", "WARN", "ALERT" };
+    writer->printf("Alert level.....: ");
+    for (auto val : StandardMetrics.ms_v_tpms_alert->AsVector())
+      writer->printf(" %8s", alertname[val]);
+    writer->puts(StandardMetrics.ms_v_tpms_alert->IsStale() ? "  [stale]" : "");
+    data_shown = true;
+    }
+
+  if (StandardMetrics.ms_v_tpms_health->IsDefined())
+    {
+    writer->printf("Health.......[%%]: ");
+    for (auto val : StandardMetrics.ms_v_tpms_health->AsVector())
+      writer->printf(" %8.1f", val);
+    writer->puts(StandardMetrics.ms_v_tpms_health->IsStale() ? "  [stale]" : "");
+    data_shown = true;
+    }
+
+  if (StandardMetrics.ms_v_tpms_pressure->IsDefined())
+    {
+    writer->printf("Pressure...[kPa]: ");
+    for (auto val : StandardMetrics.ms_v_tpms_pressure->AsVector())
+      writer->printf(" %8.1f", val);
+    writer->puts(StandardMetrics.ms_v_tpms_pressure->IsStale() ? "  [stale]" : "");
+    data_shown = true;
+    }
+
+  if (StandardMetrics.ms_v_tpms_temp->IsDefined())
+    {
+    writer->printf("Temperature.[°C]: ");
+    for (auto val : StandardMetrics.ms_v_tpms_temp->AsVector())
+      writer->printf(" %8.1f", val);
+    writer->puts(StandardMetrics.ms_v_tpms_temp->IsStale() ? "  [stale]" : "");
+    data_shown = true;
+    }
+
+  if (!data_shown)
+    writer->puts("Sorry, no data available. Try switching the vehicle on.");
 
   writer->puts("");
   tpms_list(verbosity, writer, cmd, argc, argv);
