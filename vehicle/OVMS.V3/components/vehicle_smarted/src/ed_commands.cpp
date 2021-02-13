@@ -318,6 +318,7 @@ bool OvmsVehicleSmartED::SetRecu(int mode) {
     return false;
   
   int drivemode = StandardMetrics.ms_v_env_drivemode->AsInt(1);
+  int i=0, x=20;
   
   if (drivemode == mode)
     return true;
@@ -326,12 +327,16 @@ bool OvmsVehicleSmartED::SetRecu(int mode) {
       while(StandardMetrics.ms_v_env_drivemode->AsInt(1) != mode) {
         CommandSetRecu(false);
         vTaskDelay(500 / portTICK_PERIOD_MS);
+        i++;
+        if (i==x) break;
       }
     }
     if (mode > drivemode) {
       while(StandardMetrics.ms_v_env_drivemode->AsInt(1) != mode) {
         CommandSetRecu(true);
         vTaskDelay(500 / portTICK_PERIOD_MS);
+        i++;
+        if (i==x) break;
       }
     }
   }
