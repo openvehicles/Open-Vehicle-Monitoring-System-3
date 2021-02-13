@@ -306,6 +306,17 @@ void OvmsVehicleVWeUp::OBDDeInit()
 
 
 /**
+ * PollSetState: set the polling state, log the change/call
+ */
+void OvmsVehicleVWeUp::PollSetState(uint8_t state)
+{
+  const char *statename[] = { "OFF", "AWAKE", "CHARGING", "ON" };
+  ESP_LOGI(TAG, "PollSetState: %s -> %s", statename[m_poll_state], statename[state]);
+  OvmsVehicle::PollSetState(state);
+}
+
+
+/**
  * PollerStateTicker: check for state changes
  *  This is called by VehicleTicker1() just before the next PollerSend().
  */
@@ -371,7 +382,7 @@ void OvmsVehicleVWeUp::PollerStateTicker()
 
   if (poll_state != m_poll_state) {
     ESP_LOGD(TAG,
-      "OBDCheckCarState: [%s] LVPwrState=%d HVChgMode=%d LVAutoChg=%d "
+      "PollerStateTicker: [%s] LVPwrState=%d HVChgMode=%d LVAutoChg=%d "
       "12V=%.1f DCDC_U=%.1f DCDC_I=%.1f ChgEff=%.1f BatI=%.1f BatIAge=%u => PollState %d->%d",
       car_online ? "online" : "offline", lv_pwrstate, hv_chgmode, m_lv_autochg->AsInt(),
       StdMetrics.ms_v_bat_12v_voltage->AsFloat(),
@@ -383,7 +394,7 @@ void OvmsVehicleVWeUp::PollerStateTicker()
 
   if (poll_state == VWEUP_CHARGING) {
     if (!IsCharging()) {
-      ESP_LOGI(TAG, "OBDCheckCarState: Setting car state to CHARGING");
+      ESP_LOGI(TAG, "PollerStateTicker: Setting car state to CHARGING");
 
       // Start new charge:
       ResetChargeCounters();
@@ -400,7 +411,7 @@ void OvmsVehicleVWeUp::PollerStateTicker()
     return;
   }
   else if (IsCharging()) {
-    ESP_LOGI(TAG, "OBDCheckCarState: Charge stopped/done");
+    ESP_LOGI(TAG, "PollerStateTicker: Charge stopped/done");
 
     // TODO: get real charge pilot states, fake for now:
     StdMetrics.ms_v_charge_inprogress->SetValue(false);
@@ -418,7 +429,7 @@ void OvmsVehicleVWeUp::PollerStateTicker()
 
   if (poll_state == VWEUP_ON) {
     if (!IsOn()) {
-      ESP_LOGI(TAG, "OBDCheckCarState: Setting car state to ON");
+      ESP_LOGI(TAG, "PollerStateTicker: Setting car state to ON");
 
       // Start new trip:
       ResetTripCounters();
@@ -439,7 +450,7 @@ void OvmsVehicleVWeUp::PollerStateTicker()
 
   if (poll_state == VWEUP_AWAKE) {
     if (!IsAwake()) {
-      ESP_LOGI(TAG, "OBDCheckCarState: Setting car state to AWAKE");
+      ESP_LOGI(TAG, "PollerStateTicker: Setting car state to AWAKE");
       PollSetState(VWEUP_AWAKE);
     }
     return;
@@ -447,7 +458,7 @@ void OvmsVehicleVWeUp::PollerStateTicker()
 
   if (poll_state == VWEUP_OFF) {
     if (!IsOff()) {
-      ESP_LOGI(TAG, "OBDCheckCarState: Setting car state to OFF");
+      ESP_LOGI(TAG, "PollerStateTicker: Setting car state to OFF");
       PollSetState(VWEUP_OFF);
 
       // Clear powers & currents in case we missed the zero reading:

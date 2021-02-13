@@ -258,6 +258,7 @@ protected:
   void OBDDeInit();
 
 protected:
+  void PollSetState(uint8_t state);
   void PollerStateTicker();
   void IncomingPollReply(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length, uint16_t mlremain);
 
