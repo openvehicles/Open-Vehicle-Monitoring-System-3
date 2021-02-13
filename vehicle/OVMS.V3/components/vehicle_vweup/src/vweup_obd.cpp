@@ -230,13 +230,10 @@ void OvmsVehicleVWeUp::OBDInit()
   // Add test/log PIDs for DC fast charging:
   if (m_cfg_dc_interval) {
     for (auto p : poll_list_t {
-        {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_TEST_1DDC, {  0,  0,  0,  0}, 1, ISOTP_STD},
-        {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_TEST_1DDD, {  0,  0,  0,  0}, 1, ISOTP_STD},
-        {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_TEST_1DDE, {  0,  0,  0,  0}, 1, ISOTP_STD},
-        {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_TEST_1DDF, {  0,  0,  0,  0}, 1, ISOTP_STD},
-        {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_TEST_1DE2, {  0,  0,  0,  0}, 1, ISOTP_STD},
-        {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_TEST_1DE3, {  0,  0,  0,  0}, 1, ISOTP_STD},
-        {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_TEST_1DEA, {  0,  0,  0,  0}, 1, ISOTP_STD},
+        {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_TEST_1DD7, {  0,  0,  0,  0}, 1, ISOTP_STD},
+        {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_TEST_1DDA, {  0,  0,  0,  0}, 1, ISOTP_STD},
+        {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_TEST_1DE6, {  0,  0,  0,  0}, 1, ISOTP_STD},
+        {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_TEST_1DEF, {  0,  0,  0,  0}, 1, ISOTP_STD},
       }) {
       // …enable polling in all states in case charge detection doesn't work:
       p.polltime[VWEUP_AWAKE]     = m_cfg_dc_interval;
