@@ -59,6 +59,7 @@ void OvmsVehicleRenaultZoe::WebInit()
   // vehicle menu:
   MyWebServer.RegisterPage("/xrz/features", "Features",       WebCfgFeatures, PageMenu_Vehicle, PageAuth_Cookie);
   MyWebServer.RegisterPage("/xrz/battery",  "Battery config", WebCfgBattery,  PageMenu_Vehicle, PageAuth_Cookie);
+  MyWebServer.RegisterPage("/xrz/battmon",  "Battery Monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
 }
 
 /**
@@ -68,6 +69,7 @@ void OvmsVehicleRenaultZoe::WebDeInit()
 {
   MyWebServer.DeregisterPage("/xrz/features");
   MyWebServer.DeregisterPage("/xrz/battery");
+  MyWebServer.DeregisterPage("/xrz/battmon");
 }
 
 /**
