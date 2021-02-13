@@ -1,6 +1,8 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- ZOE: BMS cell monitoring (PH1)
+- SmartED: add Drivmode for Brabus
 - BMS: optional cell voltage & temperature logging
   New configs:
     [vehicle] bms.log.voltage.interval    Interval [s] for cell voltage logging, default 0=disable

@@ -81,6 +81,7 @@ class OvmsVehicleSmartED : public OvmsVehicle
     bool SetFeature(int key, const char* value);
     const std::string GetFeature(int key);
     bool CommandSetRecu(bool on);
+    bool SetRecu(int mode);
 
   public:
     virtual vehicle_command_t CommandSetChargeCurrent(uint16_t limit);
@@ -99,6 +100,7 @@ class OvmsVehicleSmartED : public OvmsVehicle
 
   public:
     static void xse_recu(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void xse_drivemode(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xse_chargetimer(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xse_trip(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xse_bmsdiag(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
@@ -300,7 +302,7 @@ class OvmsVehicleSmartED : public OvmsVehicle
   
   private:
     void AutoSetRecu();
-    bool m_auto_set_recu;
+    int m_auto_set_recu;
     bool recuSet = false;
   
   protected:

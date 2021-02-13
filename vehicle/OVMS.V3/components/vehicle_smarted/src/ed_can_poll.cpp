@@ -181,8 +181,8 @@ void OvmsVehicleSmartED::ObdInitPoll() {
   mt_CEPC_Wippen               = new OvmsMetricBool("xse.cepc.wippen", SM_STALE_MID);
 
   // BMS configuration:
-  BmsSetCellArrangementCapacity(93, 1);
-  BmsSetCellArrangementVoltage(93, 1);
+  BmsSetCellArrangementCapacity(93, 31);
+  BmsSetCellArrangementVoltage(93, 31);
   BmsSetCellArrangementTemperature(9, 1);
   BmsSetCellLimitsVoltage(2.0, 5.0);
   BmsSetCellLimitsTemperature(-39, 200);

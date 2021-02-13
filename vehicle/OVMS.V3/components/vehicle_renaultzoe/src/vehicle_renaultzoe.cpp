@@ -58,9 +58,9 @@ static const OvmsVehicle::poll_pid_t vehicle_renaultzoe_polls[] = {
   //{ 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3203, { 0, 10, 10, 10 } },  // Battery Voltage
   { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3204, { 0, 30, 1, 2 }, 0, ISOTP_STD },  // Battery Current
   //{ 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3028, { 0, 10, 10, 10 } },  // 12Battery Current
-  // 7ec,24,39,.005,0,0,kwh,22320C,62320C,ff,Available discharge Energy
+  //7ec,24,39,.005,0,0,kwh,22320C,62320C,ff,Available discharge Energy
   //{ 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x320C, { 0, 10, 10, 10 } },  // Available discharge Energy
-  // 7ec,30,31,1,0,0,,223332,623332,ff,Electrical Machine functionning Authorization,0:Not used;1:Inverter Off;2:Inverter On\n" //
+  //7ec,30,31,1,0,0,,223332,623332,ff,Electrical Machine functionning Authorization,0:Not used;1:Inverter Off;2:Inverter On\n" //
   //{ 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3332, { 0, 10, 10, 10 } },  //  Inverter Off: 1; Inverter On: 2
   //{ 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2005, { 0, 10, 10, 10 } },  // 12Battery Voltage
   //{ 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3206, { 0, 10, 10, 10 } },  // Battery SOH
@@ -68,10 +68,12 @@ static const OvmsVehicle::poll_pid_t vehicle_renaultzoe_polls[] = {
   //{ 0x75a, 0x77e, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3018, { 0, 10, 10, 10 } },  // DCDC Temp
   //{ 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x504A, { 0, 10, 10, 10 } },  // Mains active Power consumed
   //{ 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5063, { 0, 10, 10, 10 } },  // Charging State
-  // { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5062, { 0, 10, 10, 10 } },  // Ground Resistance
-  //{ 0x79b, 0x7bb, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x04, { 0, 10, 10, 10 } },  // Temp Bat Module 1
+  //{ 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5062, { 0, 10, 10, 10 } },  // Ground Resistance
+  { 0x79b, 0x7bb, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x04, { 0, 60, 600, 60 }, 0, ISOTP_STD },  // Temp Bat Module 1
+  { 0x79b, 0x7bb, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x41, { 0, 60, 600, 60 }, 0, ISOTP_STD },  // Cell Bat Module 1-62
+  { 0x79b, 0x7bb, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x42, { 0, 60, 600, 60 }, 0, ISOTP_STD },  // Cell Bat Module 63-96
   //+"7bc,28,39,1,4094,0,N·m,224B7C,624B7C,ff,Electric brake wheels torque request\n" //
-      //+ "Uncoupled Braking Pedal,2197,V,7bc,79c,UBP,-,5902ff\n"
+  //+ "Uncoupled Braking Pedal,2197,V,7bc,79c,UBP,-,5902ff\n"
   //{ 0x79c, 0x7bc, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x04, { 0, 120, 1, 120 } }, // Braking Pedal
   //{ 0x742, 0x762, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x012D, { 0, 0, 10, 10 } }, // Motor temperature (nope)
   // -END-
@@ -102,6 +104,8 @@ OvmsVehicleRenaultZoe::OvmsVehicleRenaultZoe() {
 	// Poll Zoe Specific PIDs
   POLLSTATE_OFF;
   PollSetPidList(m_can1,vehicle_renaultzoe_polls);
+  PollSetThrottling(5);
+  PollSetResponseSeparationTime(20);
   
   MyConfig.RegisterParam("xrz", "Renault Zoe", true, true);
   ConfigChanged(NULL);
@@ -114,7 +118,14 @@ OvmsVehicleRenaultZoe::OvmsVehicleRenaultZoe() {
 	// init commands:
   cmd_zoe = MyCommandApp.RegisterCommand("zoe", "Renault Zoe");
 	cmd_zoe->RegisterCommand("trip", "Show vehicle trip", zoe_trip);
-	//MyCommandApp.RegisterCommand("trip", "Show vehicle trip", zoe_trip);
+  
+  // BMS configuration:
+  BmsSetCellArrangementVoltage(96, 8);
+  BmsSetCellArrangementTemperature(12, 1);
+  BmsSetCellLimitsVoltage(2.0, 5.0);
+  BmsSetCellLimitsTemperature(-39, 200);
+  BmsSetCellDefaultThresholdsVoltage(0.030, 0.050);
+  BmsSetCellDefaultThresholdsTemperature(4.0, 5.0);
   
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
   WebInit();
@@ -339,7 +350,7 @@ void OvmsVehicleRenaultZoe::IncomingFrameCan1(CAN_frame_t* p_frame) {
       StandardMetrics.ms_v_charge_climit->SetValue((((CAN_UINT(4))>>4) & 0x3Fu));
       StandardMetrics.ms_v_charge_current->SetValue((((CAN_UINT(4))>>4) & 0x3Fu)); // Todo change to charger current
       // 42e,44,50,1,40,0,°C,,,e3,HV Battery Temp
-      StandardMetrics.ms_v_bat_temp->SetValue((((CAN_UINT(5))>>5) & 0x7fu) - 40);
+      StandardMetrics.ms_v_bat_temp->SetValue((float) (((CAN_UINT(5))>>5) & 0x7fu) - 40);
       // 42e,56,63,0.3,0,1,kW,,,ff,Charging Power
       break;
     case 0x430:
@@ -748,40 +759,57 @@ void OvmsVehicleRenaultZoe::IncomingFrameCan1(CAN_frame_t* p_frame) {
  * Handles incoming poll results
  */
 void OvmsVehicleRenaultZoe::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain) {
-	ESP_LOGV(TAG, "%03x TYPE:%x PID:%02x Lenght:%x Data:%02x %02x %02x %02x %02x %02x %02x %02x", m_poll_moduleid_low, type, pid, length, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
+	string& rxbuf = zoe_obd_rxbuf;
+  static uint16_t last_pid = -1;
+  
+  if (pid != last_pid) {
+    //ESP_LOGD(TAG, "pid: %04x length: %d m_poll_ml_remain: %d m_poll_ml_frame: %d", pid, length, m_poll_ml_remain, m_poll_ml_frame);
+    last_pid = pid;
+    m_poll_ml_frame=0;
+  }
+  
+  // init / fill rx buffer:
+  if (m_poll_ml_frame == 0) {
+    rxbuf.clear();
+    rxbuf.reserve(length + remain);
+  }
+  rxbuf.append((char*)data, length);
+  
+  if (remain)
+    return;
+  
 	switch (m_poll_moduleid_low) {
 		// ****** EPS *****
 		case 0x762:
-			IncomingEPS(bus, type, pid, data, length, remain);
+			IncomingEPS(type, pid, rxbuf.data(), rxbuf.size());
 			break;
     // ****** EVC *****
 		case 0x7ec:
-			IncomingEVC(bus, type, pid, data, length, remain);
+			IncomingEVC(type, pid, rxbuf.data(), rxbuf.size());
 			break;
     // ****** BCB *****
     case 0x793:
-      IncomingBCB(bus, type, pid, data, length, remain);
+      IncomingBCB(type, pid, rxbuf.data(), rxbuf.size());
       break;
     // ****** LBC *****
     case 0x7bb:
-      IncomingLBC(bus, type, pid, data, length, remain);
+      IncomingLBC(type, pid, rxbuf.data(), rxbuf.size());
       break;
     // ****** UBP *****
     case 0x7bc:
-      IncomingUBP(bus, type, pid, data, length, remain);
+      IncomingUBP(type, pid, rxbuf.data(), rxbuf.size());
       break;
     // ****** PEB *****
     case 0x77e:
-      IncomingPEB(bus, type, pid, data, length, remain);
+      IncomingPEB(type, pid, rxbuf.data(), rxbuf.size());
       break;
-    
 	}
 }
 
 /**
  * Handle incoming polls from the EPS Computer
  */
-void OvmsVehicleRenaultZoe::IncomingEPS(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain) {
+void OvmsVehicleRenaultZoe::IncomingEPS(uint16_t type, uint16_t pid, const char* data, uint16_t len) {
   switch (pid) {
     case 0x012D: {			// Motor temperature
       //762,24,31,2,0,0,°C,22012D,62012D,ff,DID - Motor temperature
@@ -793,7 +821,7 @@ void OvmsVehicleRenaultZoe::IncomingEPS(canbus* bus, uint16_t type, uint16_t pid
 /**
  * Handle incoming polls from the EVC Computer
  */
-void OvmsVehicleRenaultZoe::IncomingEVC(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain) {
+void OvmsVehicleRenaultZoe::IncomingEVC(uint16_t type, uint16_t pid, const char* data, uint16_t len) {
 	switch (pid) {
     case 0x2001: {			// Bat. rack Temperature
       //StandardMetrics.ms_v_bat_temp->SetValue((float) CAN_BYTE(0)-40, Celcius);
@@ -847,7 +875,7 @@ void OvmsVehicleRenaultZoe::IncomingEVC(canbus* bus, uint16_t type, uint16_t pid
 /**
  * Handle incoming polls from the BCB Computer
  */
-void OvmsVehicleRenaultZoe::IncomingBCB(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain) {
+void OvmsVehicleRenaultZoe::IncomingBCB(uint16_t type, uint16_t pid, const char* data, uint16_t len) {
 	switch (pid) {
     case 0x504A: {
       // 793,24,39,1,20000,0,W,22504A,62504A,ff\n" // Mains active power consumed
@@ -898,7 +926,7 @@ void OvmsVehicleRenaultZoe::IncomingBCB(canbus* bus, uint16_t type, uint16_t pid
 /**
  * Handle incoming polls from the LBC Computer
  */
-void OvmsVehicleRenaultZoe::IncomingLBC(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain) {
+void OvmsVehicleRenaultZoe::IncomingLBC(uint16_t type, uint16_t pid, const char* data, uint16_t len) {
 	switch (pid) {
     case 0x01: {
       // Todo
@@ -925,58 +953,36 @@ void OvmsVehicleRenaultZoe::IncomingLBC(canbus* bus, uint16_t type, uint16_t pid
       break;
     }
     case 0x04: {
-      // Todo
-      // 7bb,32,39,1,40,0,°C,2104,6104,e2\n" // Cell 1 Temperature
-      // 7bb,56,63,1,40,0,°C,2104,6104,e2\n" // Cell 2 Temperature
-      // 7bb,80,87,1,40,0,°C,2104,6104,e2\n" // Cell 3 Temperature
-      // 7bb,104,111,1,40,0,°C,2104,6104,e2\n" // Cell 4 Temperature
-      // 7bb,128,135,1,40,0,°C,2104,6104,e2\n" // Cell 5 Temperature
-      // 7bb,152,159,1,40,0,°C,2104,6104,e2\n" // Cell 6 Temperature
-      // 7bb,176,183,1,40,0,°C,2104,6104,e2\n" // Cell 7 Temperature
-      // 7bb,200,207,1,40,0,°C,2104,6104,e2\n" // Cell 8 Temperature
-      // 7bb,224,231,1,40,0,°C,2104,6104,e2\n" // Cell 9 Temperature
-      // 7bb,248,255,1,40,0,°C,2104,6104,e2\n" // Cell 10 Temperature
-      // 7bb,272,279,1,40,0,°C,2104,6104,e2\n" // Cell 11 Temperature
-      // 7bb,296,303,1,40,0,°C,2104,6104,e2\n" // Cell 12 Temperature
-      /* if (type == VEHICLE_POLL_TYPE_OBDIIGROUP)
-      {
-          if (m_poll_ml_frame == 0)
-          {
-              rz_battery_module_temp[0]=( (INT)CAN_BYTE(1)-40 );
-          }
-          else if (m_poll_ml_frame == 1)
-          {
-              rz_battery_module_temp[1]=( (INT)CAN_BYTE(1)-40 );
-              rz_battery_module_temp[2]=( (INT)CAN_BYTE(4)-40 );
-          }
-          else if (m_poll_ml_frame == 2)
-          {
-              rz_battery_module_temp[3]=( (INT)CAN_BYTE(0)-40 );
-              rz_battery_module_temp[4]=( (INT)CAN_BYTE(3)-40 );
-              rz_battery_module_temp[5]=( (INT)CAN_BYTE(6)-40 );
-          }
-          else if (m_poll_ml_frame == 3)
-          {
-              rz_battery_module_temp[6]=( (INT)CAN_BYTE(2)-40 );
-              rz_battery_module_temp[7]=( (INT)CAN_BYTE(5)-40 );
-          }
-          else if (m_poll_ml_frame == 4)
-          {
-              rz_battery_module_temp[8]=( (INT)CAN_BYTE(1)-40 );
-              rz_battery_module_temp[9]=( (INT)CAN_BYTE(4)-40 );
-          }
-          else if (m_poll_ml_frame == 5)
-          {
-              rz_battery_module_temp[10]=( (INT)CAN_BYTE(0)-40 );
-              rz_battery_module_temp[11]=( (INT)CAN_BYTE(3)-40 );
-          }
-          int sum=0;
-          for (int i=0; i<12; i++) {
-              sum+=rz_battery_module_temp[i];
-          }
-          StdMetrics.ms_v_bat_temp->SetValue(float(sum)/12); // Calculate Mean Value
-          
-      }*/
+      for(int i=2; i<36; i+=3){
+        BmsSetCellTemperature( (i-2)/3, (INT)CAN_BYTE(i)-40 );
+        //ESP_LOGI(TAG, "temp %d - %d", (i-2)/3, (INT)CAN_BYTE(i)-40);
+      }
+      break;
+    }
+    case 0x41: {
+      for(int i=0; i<124; i+=2){
+        float cell = (float)CAN_UINT(i)/1000;
+        BmsSetCellVoltage(i/2, cell);
+      }
+      break;
+    }
+    case 0x42: {
+      for(int i=0; i<68; i+=2){
+        float cell = (float)CAN_UINT(i)/1000;
+        BmsSetCellVoltage((i/2)+62, cell);
+      }
+      break;
+    }
+    default: {
+      char *buf = NULL;
+      size_t rlen = len, offset = 0;
+      do {
+        rlen = FormatHexDump(&buf, data + offset, rlen, 16);
+        offset += 16;
+        ESP_LOGW(TAG, "OBD2: unhandled reply [%02x %02x]: %s", type, pid, buf ? buf : "-");
+      } while (rlen);
+      if (buf)
+        free(buf);
       break;
     }
 	}
@@ -985,7 +991,7 @@ void OvmsVehicleRenaultZoe::IncomingLBC(canbus* bus, uint16_t type, uint16_t pid
 /**
  * Handle incoming polls from the UBP Computer
  */
-void OvmsVehicleRenaultZoe::IncomingUBP(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain) {
+void OvmsVehicleRenaultZoe::IncomingUBP(uint16_t type, uint16_t pid, const char* data, uint16_t len) {
 	switch (pid) {
     case 0x4B7C: {
       // Todo
@@ -1003,7 +1009,7 @@ void OvmsVehicleRenaultZoe::IncomingUBP(canbus* bus, uint16_t type, uint16_t pid
 /**
  * Handle incoming polls from the PEB Computer
  */
-void OvmsVehicleRenaultZoe::IncomingPEB(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain) {
+void OvmsVehicleRenaultZoe::IncomingPEB(uint16_t type, uint16_t pid, const char* data, uint16_t len) {
 	switch (pid) {
     case 0x3018: {
       // 77e,24,39,0.015625,0,2,ºC,223018,623018,ff\n" // DCDC converter temperature
