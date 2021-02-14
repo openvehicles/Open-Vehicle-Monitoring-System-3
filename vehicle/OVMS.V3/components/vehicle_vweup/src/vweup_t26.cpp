@@ -240,7 +240,7 @@ void OvmsVehicleVWeUp::T26Ticker1(uint32_t ticker)
   if (t26_12v_wait_off != 0) {
     t26_12v_wait_off--;
   }
-
+  t26_12v_boost_last_cnt = t26_12v_boost_cnt;
 }
 
 
