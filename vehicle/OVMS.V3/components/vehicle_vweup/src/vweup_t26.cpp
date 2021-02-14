@@ -513,19 +513,15 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
     case 0x40C: // We know this one too. Climatronic.
     case 0x436: // Working in the ring.
     case 0x439: // Who are 436 and 439 and why do they differ on some cars?
-      if (d[0] == 0x00 && !ocu_awake && !StandardMetrics.ms_v_door_chargeport->AsBool() && !t26_12v_boost && !t26_car_on && d[1] != 0x31) {
+      if (d[0] == 0x00 && !ocu_awake && !StandardMetrics.ms_v_door_chargeport->AsBool() && !t26_12v_boost && !t26_car_on && d[1] != 0x31 && t26_12v_wait_off == 0) {
         // The car wakes up to charge the 12v battery 
-        if (t26_12v_wait_off == 0) { 
-           StandardMetrics.ms_v_env_charging12v->SetValue(true);
-           StandardMetrics.ms_v_env_aux12v->SetValue(true);
-           t26_ring_awake = true;
-           t26_12v_boost = true;
-           t26_12v_boost_cnt = 0;
-           PollSetState(VWEUP_AWAKE);
-           ESP_LOGI(TAG, "Car woke up. Will try to charge 12v battery");
-        } else {
-           ESP_LOGI(TAG, "Car woke up, but ODB AWAKE ist still blocked");
-        }
+        StandardMetrics.ms_v_env_charging12v->SetValue(true);
+        StandardMetrics.ms_v_env_aux12v->SetValue(true);
+        t26_ring_awake = true;
+        t26_12v_boost = true;
+        t26_12v_boost_cnt = 0;
+        PollSetState(VWEUP_AWAKE);
+        ESP_LOGI(TAG, "Car woke up. Will try to charge 12v battery");
       }
       if (d[1] == 0x31 && ocu_awake) {
         // We should go to sleep, no matter what
@@ -553,8 +549,11 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
         break;
       }
       if (d[0] == 0x00 && d[1] != 0x31 && !t26_ring_awake) {
-         t26_ring_awake = true;
-         ESP_LOGI(TAG, "Ring awake");
+        t26_ring_awake = true;
+        ESP_LOGI(TAG, "Ring awake");
+        if (t26_12v_wait_off != 0) {
+          ESP_LOGI(TAG, "ODB AWAKE ist still blocked");
+        }
       }
       if (d[1] == 0x31 && t26_ring_awake) {
          t26_ring_awake = false;
@@ -793,6 +792,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandWakeup()
     StandardMetrics.ms_v_env_charging12v->SetValue(true);
     StandardMetrics.ms_v_env_aux12v->SetValue(true);
     t26_12v_boost_cnt = 0;
+    t26_12v_wait_off = 0;
     if (!StandardMetrics.ms_v_door_chargeport->AsBool()) {
        PollSetState(VWEUP_AWAKE);
     } else {
