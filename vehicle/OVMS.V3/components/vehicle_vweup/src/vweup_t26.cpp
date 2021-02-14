@@ -225,7 +225,7 @@ void OvmsVehicleVWeUp::T26Ticker1(uint32_t ticker)
       StdMetrics.ms_v_bat_12v_current->SetValue(0);
       StdMetrics.ms_v_charge_12v_current->SetValue(0);
       StdMetrics.ms_v_charge_12v_power->SetValue(0);
-      t26_12v_wait_off = 30;
+      t26_12v_wait_off = 120; // Wait for two minutes before allowing new polling
       PollSetState(VWEUP_OFF);
     }
   }
