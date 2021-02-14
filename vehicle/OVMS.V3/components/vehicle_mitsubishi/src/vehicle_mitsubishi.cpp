@@ -239,7 +239,13 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
 
   switch ( p_frame->MsgID )
     {
-      case 0x101: //freq10 //Key status
+      case 0x012://freq10 // Key status (early iMIEV)
+      {
+        (d[2] == 4) ? vehicle_mitsubishi_car_on(true) : vehicle_mitsubishi_car_on(false);
+      break;
+      }
+      
+      case 0x101://freq10 //Key status (later iMIEV)
       {
         (d[0] == 4) ? vehicle_mitsubishi_car_on(true) : vehicle_mitsubishi_car_on(false);
       break;
@@ -685,8 +691,8 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
     {
       //Pid index 0-3
       int pid_index = (p_frame->MsgID) - 1761;
-      //cmu index 1-12
-      int cmu_id = d[0];
+      //cmu index 1-12: ignore high order nybble which appears to sometimes contain other status bits
+      int cmu_id = d[0] & 0x0f;
       //
       double temp1 = d[1] - 50.0;
       double temp2 = d[2] - 50.0;
