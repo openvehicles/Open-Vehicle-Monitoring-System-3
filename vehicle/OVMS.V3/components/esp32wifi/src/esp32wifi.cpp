@@ -761,6 +761,27 @@ void esp32wifi::StopStation()
   UpdateNetMetrics();
   }
 
+wifi_active_scan_time_t esp32wifi::GetScanTime()
+  {
+  // https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-guides/wifi.html#scan-configuration
+  // On wifi_active_scan_time_t:
+  //  min=0, max=0: scan dwells on each channel for 120 ms.
+  //  min>0, max=0: scan dwells on each channel for 120 ms.
+  //  min=0, max>0: scan dwells on each channel for max ms.
+  //  min>0, max>0: the minimum time the scan dwells on each channel is min ms.
+  //    If no AP is found during this time frame, the scan switches to the next channel.
+  //    Otherwise, the scan dwells on the channel for max ms.
+
+  // Hint: some older Android APs need higher min times, try 200 ms.
+
+  wifi_active_scan_time_t active;
+  active.min = MyConfig.GetParamValueInt("network", "wifi.scan.tmin", 120);
+  active.max = MyConfig.GetParamValueInt("network", "wifi.scan.tmax", 120);
+  if (active.max < active.min)
+    active.max = active.min;
+  return active;
+  }
+
 void esp32wifi::Scan(OvmsWriter* writer, bool json)
   {
   uint16_t apCount = 0;
@@ -801,8 +822,7 @@ void esp32wifi::Scan(OvmsWriter* writer, bool json)
   scanConf.channel = 0;
   scanConf.show_hidden = true;
   scanConf.scan_type = WIFI_SCAN_TYPE_ACTIVE;
-  scanConf.scan_time.active.min = 200;
-  scanConf.scan_time.active.max = 500;
+  scanConf.scan_time.active = GetScanTime();
   res = esp_wifi_scan_start(&scanConf, true);
   if (res != ESP_OK)
     {
@@ -1135,8 +1155,7 @@ void esp32wifi::StartConnect()
   scanConf.channel = 0;
   scanConf.show_hidden = true;
   scanConf.scan_type = WIFI_SCAN_TYPE_ACTIVE;
-  scanConf.scan_time.active.min = 200;
-  scanConf.scan_time.active.max = 500;
+  scanConf.scan_time.active = GetScanTime();
   esp_err_t res = esp_wifi_scan_start(&scanConf, false);
   if (res != ESP_OK)
     ESP_LOGE(TAG, "StartConnect: error 0x%x starting scan", res);

@@ -1,6 +1,10 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- WiFi: replace fixed scan times by config instances
+  New configs:
+    [network] wifi.scan.tmin              Min scan time per channel [ms], default 120 ms
+    [network] wifi.scan.tmax              Max scan time per channel [ms], default 120 ms
 - ZOE: BMS cell monitoring (PH1)
 - SmartED: add Drivmode for Brabus
 - BMS: optional cell voltage & temperature logging
