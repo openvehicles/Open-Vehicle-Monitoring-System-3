@@ -1122,41 +1122,43 @@ void OvmsVehicleVWeUp::UpdateChargeCap(bool charging)
     checkpoint += 300;
   }
 
-  if (update)
-  {
-    float coulomb_diff  = StdMetrics.ms_v_bat_coulomb_recd_total->AsFloat() - m_coulomb_charged_start;
-    float energy_diff   = StdMetrics.ms_v_bat_energy_recd_total->AsFloat() - m_energy_charged_start;
-    float soc_norm_diff = StdMetrics.ms_v_bat_soc->AsFloat() - m_soc_norm_start;
-    float soc_abs_diff  = BatMgmtSoCAbs->AsFloat() - m_soc_abs_start;
+  if (!update)
+    return;
 
-    float cap_ah_norm   = coulomb_diff / soc_norm_diff * 100;
-    float cap_ah_abs    = coulomb_diff / soc_abs_diff  * 100;
-    float cap_kwh_norm  = energy_diff  / soc_norm_diff * 100;
-    float cap_kwh_abs   = energy_diff  / soc_abs_diff  * 100;
+  float coulomb_diff  = StdMetrics.ms_v_bat_coulomb_recd_total->AsFloat() - m_coulomb_charged_start;
+  float energy_diff   = StdMetrics.ms_v_bat_energy_recd_total->AsFloat() - m_energy_charged_start;
+  float soc_norm_diff = StdMetrics.ms_v_bat_soc->AsFloat() - m_soc_norm_start;
+  float soc_abs_diff  = BatMgmtSoCAbs->AsFloat() - m_soc_abs_start;
 
-    m_bat_cap_chg_ah_norm->SetValue(cap_ah_norm);
-    m_bat_cap_chg_ah_abs->SetValue(cap_ah_abs);
-    m_bat_cap_chg_kwh_norm->SetValue(cap_kwh_norm);
-    m_bat_cap_chg_kwh_abs->SetValue(cap_kwh_abs);
-    
-    // Log local:
-    ESP_LOGI(TAG, "ChargeCap: charge_time=%ds bat_temp=%.1f°C cap_range=%.2fkWh "
-      "soc_norm=%.1f+%.1f%% soc_abs=%.1f+%.1f%% energy+=%.3fkWh coulomb+=%.3fAh "
-      "=> cap_ah_norm=%.2f cap_ah_abs=%.2f cap_kwh_norm=%.2f cap_kwh_abs=%.2f",
+  if (coulomb_diff == 0 || energy_diff == 0 || soc_norm_diff < 1 || soc_abs_diff < 1)
+    return;
+
+  float cap_ah_norm   = coulomb_diff / soc_norm_diff * 100;
+  float cap_ah_abs    = coulomb_diff / soc_abs_diff  * 100;
+  float cap_kwh_norm  = energy_diff  / soc_norm_diff * 100;
+  float cap_kwh_abs   = energy_diff  / soc_abs_diff  * 100;
+
+  m_bat_cap_chg_ah_norm->SetValue(cap_ah_norm);
+  m_bat_cap_chg_ah_abs->SetValue(cap_ah_abs);
+  m_bat_cap_chg_kwh_norm->SetValue(cap_kwh_norm);
+  m_bat_cap_chg_kwh_abs->SetValue(cap_kwh_abs);
+  
+  // Log local:
+  ESP_LOGI(TAG, "ChargeCap: charge_time=%ds bat_temp=%.1f°C cap_range=%.2fkWh "
+    "soc_norm=%.1f+%.1f%% soc_abs=%.1f+%.1f%% energy+=%.3fkWh coulomb+=%.3fAh "
+    "=> cap_ah_norm=%.2f cap_ah_abs=%.2f cap_kwh_norm=%.2f cap_kwh_abs=%.2f",
+    charge_time, StdMetrics.ms_v_bat_temp->AsFloat(), m_bat_cap_range->AsFloat(),
+    m_soc_norm_start, soc_norm_diff, m_soc_abs_start, soc_abs_diff,
+    energy_diff, coulomb_diff, cap_ah_norm, cap_ah_abs, cap_kwh_norm, cap_kwh_abs);
+  
+  // Log to server:
+  int storetime_days = MyConfig.GetParamValueInt("xvu", "log.chargecap.storetime", 0);
+  if (storetime_days > 0) {
+    MyNotify.NotifyStringf("data", "xvu.log.chargecap",
+      "XVU-LOG-ChargeCap,1,%d,%d,%.1f,%.2f,%.1f,%.1f,%.1f,%.1f,%.3f,%.3f,%.2f,%.2f,%.2f,%.2f",
+      storetime_days * 86400,
       charge_time, StdMetrics.ms_v_bat_temp->AsFloat(), m_bat_cap_range->AsFloat(),
       m_soc_norm_start, soc_norm_diff, m_soc_abs_start, soc_abs_diff,
       energy_diff, coulomb_diff, cap_ah_norm, cap_ah_abs, cap_kwh_norm, cap_kwh_abs);
-    
-    // Log to server:
-    int storetime_days = MyConfig.GetParamValueInt("xvu", "log.chargecap.storetime", 0);
-    if (storetime_days > 0)
-    {
-      MyNotify.NotifyStringf("data", "xvu.log.chargecap",
-        "XVU-LOG-ChargeCap,1,%d,%d,%.1f,%.2f,%.1f,%.1f,%.1f,%.1f,%.3f,%.3f,%.2f,%.2f,%.2f,%.2f",
-        storetime_days * 86400,
-        charge_time, StdMetrics.ms_v_bat_temp->AsFloat(), m_bat_cap_range->AsFloat(),
-        m_soc_norm_start, soc_norm_diff, m_soc_abs_start, soc_abs_diff,
-        energy_diff, coulomb_diff, cap_ah_norm, cap_ah_abs, cap_kwh_norm, cap_kwh_abs);
-    }
   }
 }
