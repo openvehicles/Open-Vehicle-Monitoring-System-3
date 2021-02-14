@@ -174,6 +174,7 @@ void OvmsVehicleVWeUp::T26Init()
   t26_car_on = false;
   t26_ring_awake = false;
   t26_12v_boost_cnt = 0;
+  t26_12v_wait_off = 0;
 
   dev_mode = false; // true disables writing on the comfort CAN. For code debugging only.
 
@@ -224,7 +225,7 @@ void OvmsVehicleVWeUp::T26Ticker1(uint32_t ticker)
       StdMetrics.ms_v_bat_12v_current->SetValue(0);
       StdMetrics.ms_v_charge_12v_current->SetValue(0);
       StdMetrics.ms_v_charge_12v_power->SetValue(0);
-
+      t26_12v_wait_off = 30;
       PollSetState(VWEUP_OFF);
     }
   }
@@ -236,7 +237,10 @@ void OvmsVehicleVWeUp::T26Ticker1(uint32_t ticker)
     // We are not waiting to charging 12v to come up anymore:
     t26_12v_boost_cnt = 0;
   }
-  t26_12v_boost_last_cnt = t26_12v_boost_cnt;
+  if (t26_12v_wait_off != 0) {
+    t26_12v_wait_off--;
+  }
+
 }
 
 
@@ -251,6 +255,7 @@ void OvmsVehicleVWeUp::vehicle_vweup_car_on(bool turnOn)
     StandardMetrics.ms_v_env_on->SetValue(true);
     if (!StandardMetrics.ms_v_door_chargeport->AsBool()) {
        t26_12v_boost_cnt = 0;
+       t26_12v_wait_off = 0;
        PollSetState(VWEUP_ON);
     } else {
        PollSetState(VWEUP_CHARGING);
@@ -456,6 +461,7 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
           StandardMetrics.ms_v_env_charging12v->SetValue(true);
           StandardMetrics.ms_v_env_aux12v->SetValue(true);
           ESP_LOGI(TAG, "Car charge session started");
+          t26_12v_wait_off = 0;
           t26_12v_boost_cnt = 0;
           PollSetState(VWEUP_CHARGING);
         }
@@ -509,13 +515,17 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
     case 0x439: // Who are 436 and 439 and why do they differ on some cars?
       if (d[0] == 0x00 && !ocu_awake && !StandardMetrics.ms_v_door_chargeport->AsBool() && !t26_12v_boost && !t26_car_on && d[1] != 0x31) {
         // The car wakes up to charge the 12v battery 
-        StandardMetrics.ms_v_env_charging12v->SetValue(true);
-        StandardMetrics.ms_v_env_aux12v->SetValue(true);
-        t26_ring_awake = true;
-        t26_12v_boost = true;
-        t26_12v_boost_cnt = 0;
-        PollSetState(VWEUP_AWAKE);
-        ESP_LOGI(TAG, "Car woke up. Will try to charge 12v battery");
+        if (t26_12v_wait_off == 0) { 
+           StandardMetrics.ms_v_env_charging12v->SetValue(true);
+           StandardMetrics.ms_v_env_aux12v->SetValue(true);
+           t26_ring_awake = true;
+           t26_12v_boost = true;
+           t26_12v_boost_cnt = 0;
+           PollSetState(VWEUP_AWAKE);
+           ESP_LOGI(TAG, "Car woke up. Will try to charge 12v battery");
+        } else {
+           ESP_LOGI(TAG, "Car woke up, but ODB AWAKE ist still blocked");
+        }
       }
       if (d[1] == 0x31 && ocu_awake) {
         // We should go to sleep, no matter what
