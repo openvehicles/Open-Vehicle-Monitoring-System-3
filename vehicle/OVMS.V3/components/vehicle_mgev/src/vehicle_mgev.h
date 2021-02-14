@@ -83,6 +83,8 @@ class OvmsVehicleMgEv : public OvmsVehicle
     void SoftwareVersions(OvmsWriter* writer);
 
     static void WakeUp(void* self);
+    
+    void processEnergy();
 
     void IncomingPollFrame(CAN_frame_t* frame);
     bool SendPollMessage(canbus* bus, uint16_t id, uint8_t type, uint16_t pid);
