@@ -236,6 +236,7 @@ public:
   bool t26_ring_awake;
   int t26_12v_boost_cnt;
   int t26_12v_boost_last_cnt;
+  int t26_12v_wait_off;
   int cc_count;
   int cd_count;
   int fas_counter_on;
