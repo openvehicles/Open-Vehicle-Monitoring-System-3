@@ -291,6 +291,8 @@ void OvmsVehicleVWeUp::vehicle_vweup_car_on(bool turnOn)
     // StandardMetrics.ms_v_charge_current->SetValue(0);
     if (StandardMetrics.ms_v_door_chargeport->AsBool()) {
        PollSetState(VWEUP_CHARGING);
+    } else {
+       PollSetState(VWEUP_AWAKE);
     }
   }
 }
@@ -475,6 +477,8 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
           StandardMetrics.ms_v_charge_state->SetValue("done");
           if (StandardMetrics.ms_v_env_on->AsBool()) {
              PollSetState(VWEUP_ON);
+          } else {
+             PollSetState(VWEUP_AWAKE);
           }
           ESP_LOGI(TAG, "Car charge session ended");
         }
@@ -544,6 +548,7 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
            PollSetState(VWEUP_CHARGING);
         } else {
            t26_ring_awake = false;
+           PollSetState(VWEUP_AWAKE);
         }
 
         break;
