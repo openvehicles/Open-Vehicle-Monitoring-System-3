@@ -253,7 +253,7 @@ void OvmsVehicleVWeUp::vehicle_vweup_car_on(bool turnOn)
     // Log once that car is being turned on
     ESP_LOGI(TAG, "CAR IS ON");
     StandardMetrics.ms_v_env_on->SetValue(true);
-    if (!StandardMetrics.ms_v_door_chargeport->AsBool()) {
+    if (!StandardMetrics.ms_v_charge_inprogress->AsBool()) {
        t26_12v_boost_cnt = 0;
        t26_12v_wait_off = 0;
        PollSetState(VWEUP_ON);
@@ -289,7 +289,7 @@ void OvmsVehicleVWeUp::vehicle_vweup_car_on(bool turnOn)
     StandardMetrics.ms_v_env_on->SetValue(false);
     // StandardMetrics.ms_v_charge_voltage->SetValue(0);
     // StandardMetrics.ms_v_charge_current->SetValue(0);
-    if (StandardMetrics.ms_v_door_chargeport->AsBool()) {
+    if (StandardMetrics.ms_v_charge_inprogress->AsBool()) {
        PollSetState(VWEUP_CHARGING);
     } else {
        PollSetState(VWEUP_AWAKE);
@@ -517,7 +517,7 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
     case 0x40C: // We know this one too. Climatronic.
     case 0x436: // Working in the ring.
     case 0x439: // Who are 436 and 439 and why do they differ on some cars?
-      if (d[0] == 0x00 && !ocu_awake && !StandardMetrics.ms_v_door_chargeport->AsBool() && !t26_12v_boost && !t26_car_on && d[1] != 0x31 && t26_12v_wait_off == 0) {
+      if (d[0] == 0x00 && !ocu_awake && !StandardMetrics.ms_v_charge_inprogress->AsBool() && !t26_12v_boost && !t26_car_on && d[1] != 0x31 && t26_12v_wait_off == 0) {
         // The car wakes up to charge the 12v battery 
         StandardMetrics.ms_v_env_charging12v->SetValue(true);
         StandardMetrics.ms_v_env_aux12v->SetValue(true);
@@ -544,7 +544,7 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
         fas_counter_on = 0;
         fas_counter_off = 0;
         t26_12v_boost = false;
-        if (StandardMetrics.ms_v_door_chargeport->AsBool()) {
+        if (StandardMetrics.ms_v_charge_inprogress->AsBool()) {
            PollSetState(VWEUP_CHARGING);
         } else {
            t26_ring_awake = false;
@@ -798,7 +798,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandWakeup()
     StandardMetrics.ms_v_env_aux12v->SetValue(true);
     t26_12v_boost_cnt = 0;
     t26_12v_wait_off = 0;
-    if (!StandardMetrics.ms_v_door_chargeport->AsBool()) {
+    if (!StandardMetrics.ms_v_charge_inprogress->AsBool()) {
        PollSetState(VWEUP_AWAKE);
     } else {
        PollSetState(VWEUP_CHARGING);
