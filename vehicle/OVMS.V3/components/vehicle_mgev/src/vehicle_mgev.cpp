@@ -134,6 +134,7 @@ OvmsVehicleMgEv::OvmsVehicleMgEv()
         "xmg.v.env.faceoutlet.temp", 0, SM_STALE_HIGH, Celcius
     );
     m_dcdc_load = MyMetrics.InitFloat("xmg.v.dcdc.load", 0, SM_STALE_HIGH, Percentage);
+    m_soc_raw = MyMetrics.InitFloat("xmg.v.soc.raw", 0, SM_STALE_HIGH, Percentage);
 
     PollSetState(PollStateListenOnly);
 

@@ -34,6 +34,7 @@
 
 #include "vehicle.h"
 #include "ovms_metrics.h"
+#include "ovms_webserver.h"
 #include "mg_poll_states.h"
 
 #include "freertos/timers.h"
@@ -56,6 +57,7 @@ class OvmsVehicleMgEv : public OvmsVehicle
     OvmsMetricFloat* m_bat_pack_voltage;
     OvmsMetricFloat* m_env_face_outlet_temp;
     OvmsMetricFloat* m_dcdc_load;
+    OvmsMetricFloat* m_soc_raw;
 
   protected:
     void ConfigChanged(OvmsConfigParam* param) override;
@@ -176,6 +178,7 @@ class OvmsVehicleMgEv : public OvmsVehicle
     void WebInit();
     //static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
     void GetDashboardConfig(DashboardConfig& cfg);
+    static void WebDispChgMetrics(PageEntry_t &p, PageContext_t &c);
 #endif //CONFIG_OVMS_COMP_WEBSERVER
     
 };

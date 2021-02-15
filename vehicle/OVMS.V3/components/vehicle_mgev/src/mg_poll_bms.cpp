@@ -99,6 +99,12 @@ void OvmsVehicleMgEv::ProcessBatteryStats(int index, uint8_t* data, uint16_t rem
                 *std::max_element(ptmax.begin(), ptmax.end())
             );
         }
+        StandardMetrics.ms_v_bat_pack_vstddev->SetValue(
+            StandardMetrics.ms_v_bat_pack_vmax->AsFloat()
+            - StandardMetrics.ms_v_bat_pack_vmin->AsFloat());
+        StandardMetrics.ms_v_bat_pack_tstddev->SetValue(
+            StandardMetrics.ms_v_bat_pack_tmax->AsFloat()
+            - StandardMetrics.ms_v_bat_pack_tmin->AsFloat());
     }
 }
 
@@ -180,7 +186,7 @@ void OvmsVehicleMgEv::IncomingBmsPoll(
                 StandardMetrics.ms_v_bat_soc->SetValue(scaledSoc);
                 // Ideal range set to SoC percentage of 262 km (WLTP Range)
                 StandardMetrics.ms_v_bat_range_ideal->SetValue(262 * (scaledSoc / 100));
-                
+                m_soc_raw->SetValue(soc);
             }
             break;
         case bmsStatusPid:
