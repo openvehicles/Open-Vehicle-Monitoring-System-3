@@ -143,4 +143,5 @@ OvmsVehicleChevroletC6CorvetteInit::OvmsVehicleChevroletC6CorvetteInit()
 
   MyVehicleFactory.RegisterVehicle<OvmsVehicleChevroletC6Corvette>("C6CORVETTE",
       "Chevrolet C6 Corvette");
+  StandardMetrics.ms_v_env_on->SetValue(false);
   }
