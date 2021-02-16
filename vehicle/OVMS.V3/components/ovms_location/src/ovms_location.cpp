@@ -744,12 +744,18 @@ void OvmsLocations::UpdateParkPosition()
     m_park_longitude = 0;
     m_park_distance = 0;
     m_park_invalid = true;
+    ESP_LOGI(TAG, "UpdateParkPosition: vehicle is driving");
     }
   else
     {
     m_park_latitude = m_latitude;
     m_park_longitude = m_longitude;
     m_park_invalid = (!m_gpslock || StdMetrics.ms_v_pos_latitude->IsStale() || StdMetrics.ms_v_pos_longitude->IsStale());
+    ESP_LOGI(TAG, "UpdateParkPosition: vehicle is parking @%0.6f,%0.6f gpslock=%d satcount=%d hdop=%.1f invalid=%d",
+      m_park_latitude, m_park_longitude, m_gpslock,
+      StdMetrics.ms_v_pos_satcount->AsInt(),
+      StdMetrics.ms_v_pos_gpshdop->AsFloat(),
+      m_park_invalid);
     }
   }
 
@@ -818,6 +824,8 @@ void OvmsLocations::UpdateLocations()
 
 void OvmsLocations::CheckTheft()
   {
+  static int last_dist = 0;
+
   if ((m_park_latitude == 0) && (m_park_longitude == 0)) return;
   if (StandardMetrics.ms_v_env_on->AsBool()) return;
 
@@ -833,21 +841,29 @@ void OvmsLocations::CheckTheft()
 
   double dist = fabs(OvmsLocationDistance((double)m_latitude,(double)m_longitude,(double)m_park_latitude,(double)m_park_longitude));
   m_park_distance = (m_park_distance * 4 + dist) / 5;
+  if (last_dist != round(dist/10))
+    {
+    last_dist = round(dist/10);
+    ESP_LOGV(TAG, "CheckTheft: vehicle parked @%0.6f,%0.6f now @%0.6f,%0.6f dist=%.0f smoothed=%.0f alarm=%d",
+      m_park_latitude, m_park_longitude, m_latitude, m_longitude, dist, m_park_distance, alarm);
+    }
+
   if (m_park_distance > alarm)
     {
-    m_park_latitude = 0;
-    m_park_longitude = 0;
-    m_park_invalid = true;
     MyNotify.NotifyStringf("alert", "flatbed.moved",
       "Vehicle is being transported while parked - possible theft/flatbed (@%0.6f,%0.6f)",
       m_latitude, m_longitude);
     MyEvents.SignalEvent("location.alert.flatbed.moved", NULL);
-    ESP_LOGW(TAG, "CheckTheft: flatbed.moved @%0.6f,%0.6f gpsmode=%s satcount=%d hdop=%.1f gpsspeed=%.1f",
-      m_latitude, m_longitude,
+    ESP_LOGW(TAG, "CheckTheft: flatbed.moved parked @%0.6f,%0.6f now @%0.6f,%0.6f gpsmode=%s satcount=%d hdop=%.1f gpsspeed=%.1f",
+      m_park_latitude, m_park_longitude, m_latitude, m_longitude,
       StdMetrics.ms_v_pos_gpsmode->AsString().c_str(),
       StdMetrics.ms_v_pos_satcount->AsInt(),
       StdMetrics.ms_v_pos_gpshdop->AsFloat(),
       StdMetrics.ms_v_pos_gpsspeed->AsFloat());
+    // inhibit further alerts:
+    m_park_latitude = 0;
+    m_park_longitude = 0;
+    m_park_invalid = true;
     }
   }
 
