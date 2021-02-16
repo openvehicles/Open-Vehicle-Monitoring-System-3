@@ -31,6 +31,7 @@ static const char *TAG = "v-vweup";
 #include <string>
 #include <iomanip>
 #include <algorithm>
+#include <cmath>
 
 #include "pcp.h"
 #include "ovms_metrics.h"
@@ -684,9 +685,11 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
       break;
 
     case VWUP_BAT_MGMT_ENERGY_COUNTERS: {
+      const float coulomb_factor = 4000000.0 / std::pow(2, 31);
+      const float energy_factor  =  250000.0 / std::pow(2, 31);
       bool charge_inprogress = StdMetrics.ms_v_charge_inprogress->AsBool();
       if (PollReply.FromInt32("VWUP_BAT_MGMT_COULOMB_COUNTERS_RECD", value, 0)) {
-        float coulomb_recd_total = value / 549.2949f;
+        float coulomb_recd_total = value * coulomb_factor;
         StdMetrics.ms_v_bat_coulomb_recd_total->SetValue(coulomb_recd_total);
         // Get trip difference:
         if (!charge_inprogress) {
@@ -702,7 +705,7 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
       }
       if (PollReply.FromInt32("VWUP_BAT_MGMT_COULOMB_COUNTERS_USED", value, 4)) {
         // Used is negative here, standard metric is positive
-        float coulomb_used_total = (value * -1.0f) / 549.2949f;
+        float coulomb_used_total = -value * coulomb_factor;
         StdMetrics.ms_v_bat_coulomb_used_total->SetValue(coulomb_used_total);
         // Get trip difference:
         if (!charge_inprogress) {
@@ -713,7 +716,7 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
         VALUE_LOG(TAG, "VWUP_BAT_MGMT_COULOMB_COUNTERS_USED=%f => %f", value, coulomb_used_total);
       }
       if (PollReply.FromInt32("VWUP_BAT_MGMT_ENERGY_COUNTERS_RECD", value, 8)) {
-        float energy_recd_total = value / ((0xFFFFFFFF / 2.0f) / 250200.0f);
+        float energy_recd_total = value * energy_factor;
         StdMetrics.ms_v_bat_energy_recd_total->SetValue(energy_recd_total);
         // Get charge/trip difference:
         if (!charge_inprogress) {
@@ -730,7 +733,7 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
       }
       if (PollReply.FromInt32("VWUP_BAT_MGMT_ENERGY_COUNTERS_USED", value, 12)) {
         // Used is negative here, standard metric is positive
-        float energy_used_total = (value * -1.0f) / ((0xFFFFFFFF / 2.0f) / 250200.0f);
+        float energy_used_total = -value * energy_factor;
         StdMetrics.ms_v_bat_energy_used_total->SetValue(energy_used_total);
         // Get trip difference:
         if (!charge_inprogress) {
