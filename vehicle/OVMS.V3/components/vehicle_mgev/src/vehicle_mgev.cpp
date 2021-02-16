@@ -712,9 +712,9 @@ void OvmsVehicleMgEv::processEnergy()
         if (StandardMetrics.ms_v_env_on->AsBool()) {
             auto bat_power = StandardMetrics.ms_v_bat_voltage->AsFloat() *
             StandardMetrics.ms_v_bat_current->AsFloat() / 1000;
-            // Convert battery power (kW/hr) to kW/sec
+            // Calculate battery power (kW) for one second
             auto energy = bat_power / 3600.0;
-            // Convert Ah to Amps/sec
+            // Calculate current (A) used for one second.
             auto coulombs = (StandardMetrics.ms_v_bat_current->AsFloat() / 3600.0);
             // Putting this here seems to show Battery Power on Web Dashboard
             StandardMetrics.ms_v_bat_power->SetValue(bat_power);
