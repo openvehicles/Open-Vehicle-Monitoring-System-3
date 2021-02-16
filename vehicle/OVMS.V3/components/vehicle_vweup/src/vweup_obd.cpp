@@ -31,6 +31,7 @@ static const char *TAG = "v-vweup";
 #include <string>
 #include <iomanip>
 #include <algorithm>
+#include <cmath>
 
 #include "pcp.h"
 #include "ovms_metrics.h"
@@ -230,13 +231,10 @@ void OvmsVehicleVWeUp::OBDInit()
   // Add test/log PIDs for DC fast charging:
   if (m_cfg_dc_interval) {
     for (auto p : poll_list_t {
-        {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_TEST_1DDC, {  0,  0,  0,  0}, 1, ISOTP_STD},
-        {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_TEST_1DDD, {  0,  0,  0,  0}, 1, ISOTP_STD},
-        {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_TEST_1DDE, {  0,  0,  0,  0}, 1, ISOTP_STD},
-        {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_TEST_1DDF, {  0,  0,  0,  0}, 1, ISOTP_STD},
-        {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_TEST_1DE2, {  0,  0,  0,  0}, 1, ISOTP_STD},
-        {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_TEST_1DE3, {  0,  0,  0,  0}, 1, ISOTP_STD},
-        {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_TEST_1DEA, {  0,  0,  0,  0}, 1, ISOTP_STD},
+        {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_TEST_1DD7, {  0,  0,  0,  0}, 1, ISOTP_STD},
+        {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_TEST_1DDA, {  0,  0,  0,  0}, 1, ISOTP_STD},
+        {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_TEST_1DE6, {  0,  0,  0,  0}, 1, ISOTP_STD},
+        {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_TEST_1DEF, {  0,  0,  0,  0}, 1, ISOTP_STD},
       }) {
       // …enable polling in all states in case charge detection doesn't work:
       p.polltime[VWEUP_AWAKE]     = m_cfg_dc_interval;
@@ -306,6 +304,17 @@ void OvmsVehicleVWeUp::OBDDeInit()
 
 
 /**
+ * PollSetState: set the polling state, log the change/call
+ */
+void OvmsVehicleVWeUp::PollSetState(uint8_t state)
+{
+  const char *statename[] = { "OFF", "AWAKE", "CHARGING", "ON" };
+  ESP_LOGI(TAG, "PollSetState: %s -> %s", statename[m_poll_state], statename[state]);
+  OvmsVehicle::PollSetState(state);
+}
+
+
+/**
  * PollerStateTicker: check for state changes
  *  This is called by VehicleTicker1() just before the next PollerSend().
  */
@@ -371,7 +380,7 @@ void OvmsVehicleVWeUp::PollerStateTicker()
 
   if (poll_state != m_poll_state) {
     ESP_LOGD(TAG,
-      "OBDCheckCarState: [%s] LVPwrState=%d HVChgMode=%d LVAutoChg=%d "
+      "PollerStateTicker: [%s] LVPwrState=%d HVChgMode=%d LVAutoChg=%d "
       "12V=%.1f DCDC_U=%.1f DCDC_I=%.1f ChgEff=%.1f BatI=%.1f BatIAge=%u => PollState %d->%d",
       car_online ? "online" : "offline", lv_pwrstate, hv_chgmode, m_lv_autochg->AsInt(),
       StdMetrics.ms_v_bat_12v_voltage->AsFloat(),
@@ -383,7 +392,7 @@ void OvmsVehicleVWeUp::PollerStateTicker()
 
   if (poll_state == VWEUP_CHARGING) {
     if (!IsCharging()) {
-      ESP_LOGI(TAG, "OBDCheckCarState: Setting car state to CHARGING");
+      ESP_LOGI(TAG, "PollerStateTicker: Setting car state to CHARGING");
 
       // Start new charge:
       ResetChargeCounters();
@@ -400,7 +409,7 @@ void OvmsVehicleVWeUp::PollerStateTicker()
     return;
   }
   else if (IsCharging()) {
-    ESP_LOGI(TAG, "OBDCheckCarState: Charge stopped/done");
+    ESP_LOGI(TAG, "PollerStateTicker: Charge stopped/done");
 
     // TODO: get real charge pilot states, fake for now:
     StdMetrics.ms_v_charge_inprogress->SetValue(false);
@@ -418,7 +427,7 @@ void OvmsVehicleVWeUp::PollerStateTicker()
 
   if (poll_state == VWEUP_ON) {
     if (!IsOn()) {
-      ESP_LOGI(TAG, "OBDCheckCarState: Setting car state to ON");
+      ESP_LOGI(TAG, "PollerStateTicker: Setting car state to ON");
 
       // Start new trip:
       ResetTripCounters();
@@ -439,7 +448,7 @@ void OvmsVehicleVWeUp::PollerStateTicker()
 
   if (poll_state == VWEUP_AWAKE) {
     if (!IsAwake()) {
-      ESP_LOGI(TAG, "OBDCheckCarState: Setting car state to AWAKE");
+      ESP_LOGI(TAG, "PollerStateTicker: Setting car state to AWAKE");
       PollSetState(VWEUP_AWAKE);
     }
     return;
@@ -447,7 +456,7 @@ void OvmsVehicleVWeUp::PollerStateTicker()
 
   if (poll_state == VWEUP_OFF) {
     if (!IsOff()) {
-      ESP_LOGI(TAG, "OBDCheckCarState: Setting car state to OFF");
+      ESP_LOGI(TAG, "PollerStateTicker: Setting car state to OFF");
       PollSetState(VWEUP_OFF);
 
       // Clear powers & currents in case we missed the zero reading:
@@ -676,9 +685,11 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
       break;
 
     case VWUP_BAT_MGMT_ENERGY_COUNTERS: {
+      const float coulomb_factor = 4000000.0 / std::pow(2, 31);
+      const float energy_factor  =  250000.0 / std::pow(2, 31);
       bool charge_inprogress = StdMetrics.ms_v_charge_inprogress->AsBool();
       if (PollReply.FromInt32("VWUP_BAT_MGMT_COULOMB_COUNTERS_RECD", value, 0)) {
-        float coulomb_recd_total = value / 549.2949f;
+        float coulomb_recd_total = value * coulomb_factor;
         StdMetrics.ms_v_bat_coulomb_recd_total->SetValue(coulomb_recd_total);
         // Get trip difference:
         if (!charge_inprogress) {
@@ -694,7 +705,7 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
       }
       if (PollReply.FromInt32("VWUP_BAT_MGMT_COULOMB_COUNTERS_USED", value, 4)) {
         // Used is negative here, standard metric is positive
-        float coulomb_used_total = (value * -1.0f) / 549.2949f;
+        float coulomb_used_total = -value * coulomb_factor;
         StdMetrics.ms_v_bat_coulomb_used_total->SetValue(coulomb_used_total);
         // Get trip difference:
         if (!charge_inprogress) {
@@ -705,7 +716,7 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
         VALUE_LOG(TAG, "VWUP_BAT_MGMT_COULOMB_COUNTERS_USED=%f => %f", value, coulomb_used_total);
       }
       if (PollReply.FromInt32("VWUP_BAT_MGMT_ENERGY_COUNTERS_RECD", value, 8)) {
-        float energy_recd_total = value / ((0xFFFFFFFF / 2.0f) / 250200.0f);
+        float energy_recd_total = value * energy_factor;
         StdMetrics.ms_v_bat_energy_recd_total->SetValue(energy_recd_total);
         // Get charge/trip difference:
         if (!charge_inprogress) {
@@ -722,7 +733,7 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
       }
       if (PollReply.FromInt32("VWUP_BAT_MGMT_ENERGY_COUNTERS_USED", value, 12)) {
         // Used is negative here, standard metric is positive
-        float energy_used_total = (value * -1.0f) / ((0xFFFFFFFF / 2.0f) / 250200.0f);
+        float energy_used_total = -value * energy_factor;
         StdMetrics.ms_v_bat_energy_used_total->SetValue(energy_used_total);
         // Get trip difference:
         if (!charge_inprogress) {
@@ -1114,41 +1125,43 @@ void OvmsVehicleVWeUp::UpdateChargeCap(bool charging)
     checkpoint += 300;
   }
 
-  if (update)
-  {
-    float coulomb_diff  = StdMetrics.ms_v_bat_coulomb_recd_total->AsFloat() - m_coulomb_charged_start;
-    float energy_diff   = StdMetrics.ms_v_bat_energy_recd_total->AsFloat() - m_energy_charged_start;
-    float soc_norm_diff = StdMetrics.ms_v_bat_soc->AsFloat() - m_soc_norm_start;
-    float soc_abs_diff  = BatMgmtSoCAbs->AsFloat() - m_soc_abs_start;
+  if (!update)
+    return;
 
-    float cap_ah_norm   = coulomb_diff / soc_norm_diff * 100;
-    float cap_ah_abs    = coulomb_diff / soc_abs_diff  * 100;
-    float cap_kwh_norm  = energy_diff  / soc_norm_diff * 100;
-    float cap_kwh_abs   = energy_diff  / soc_abs_diff  * 100;
+  float coulomb_diff  = StdMetrics.ms_v_bat_coulomb_recd_total->AsFloat() - m_coulomb_charged_start;
+  float energy_diff   = StdMetrics.ms_v_bat_energy_recd_total->AsFloat() - m_energy_charged_start;
+  float soc_norm_diff = StdMetrics.ms_v_bat_soc->AsFloat() - m_soc_norm_start;
+  float soc_abs_diff  = BatMgmtSoCAbs->AsFloat() - m_soc_abs_start;
 
-    m_bat_cap_chg_ah_norm->SetValue(cap_ah_norm);
-    m_bat_cap_chg_ah_abs->SetValue(cap_ah_abs);
-    m_bat_cap_chg_kwh_norm->SetValue(cap_kwh_norm);
-    m_bat_cap_chg_kwh_abs->SetValue(cap_kwh_abs);
-    
-    // Log local:
-    ESP_LOGI(TAG, "ChargeCap: charge_time=%ds bat_temp=%.1f°C cap_range=%.2fkWh "
-      "soc_norm=%.1f+%.1f%% soc_abs=%.1f+%.1f%% energy+=%.3fkWh coulomb+=%.3fAh "
-      "=> cap_ah_norm=%.2f cap_ah_abs=%.2f cap_kwh_norm=%.2f cap_kwh_abs=%.2f",
+  if (coulomb_diff == 0 || energy_diff == 0 || soc_norm_diff < 1 || soc_abs_diff < 1)
+    return;
+
+  float cap_ah_norm   = coulomb_diff / soc_norm_diff * 100;
+  float cap_ah_abs    = coulomb_diff / soc_abs_diff  * 100;
+  float cap_kwh_norm  = energy_diff  / soc_norm_diff * 100;
+  float cap_kwh_abs   = energy_diff  / soc_abs_diff  * 100;
+
+  m_bat_cap_chg_ah_norm->SetValue(cap_ah_norm);
+  m_bat_cap_chg_ah_abs->SetValue(cap_ah_abs);
+  m_bat_cap_chg_kwh_norm->SetValue(cap_kwh_norm);
+  m_bat_cap_chg_kwh_abs->SetValue(cap_kwh_abs);
+  
+  // Log local:
+  ESP_LOGI(TAG, "ChargeCap: charge_time=%ds bat_temp=%.1f°C cap_range=%.2fkWh "
+    "soc_norm=%.1f+%.1f%% soc_abs=%.1f+%.1f%% energy+=%.3fkWh coulomb+=%.3fAh "
+    "=> cap_ah_norm=%.2f cap_ah_abs=%.2f cap_kwh_norm=%.2f cap_kwh_abs=%.2f",
+    charge_time, StdMetrics.ms_v_bat_temp->AsFloat(), m_bat_cap_range->AsFloat(),
+    m_soc_norm_start, soc_norm_diff, m_soc_abs_start, soc_abs_diff,
+    energy_diff, coulomb_diff, cap_ah_norm, cap_ah_abs, cap_kwh_norm, cap_kwh_abs);
+  
+  // Log to server:
+  int storetime_days = MyConfig.GetParamValueInt("xvu", "log.chargecap.storetime", 0);
+  if (storetime_days > 0) {
+    MyNotify.NotifyStringf("data", "xvu.log.chargecap",
+      "XVU-LOG-ChargeCap,1,%d,%d,%.1f,%.2f,%.1f,%.1f,%.1f,%.1f,%.3f,%.3f,%.2f,%.2f,%.2f,%.2f",
+      storetime_days * 86400,
       charge_time, StdMetrics.ms_v_bat_temp->AsFloat(), m_bat_cap_range->AsFloat(),
       m_soc_norm_start, soc_norm_diff, m_soc_abs_start, soc_abs_diff,
       energy_diff, coulomb_diff, cap_ah_norm, cap_ah_abs, cap_kwh_norm, cap_kwh_abs);
-    
-    // Log to server:
-    int storetime_days = MyConfig.GetParamValueInt("xvu", "log.chargecap.storetime", 0);
-    if (storetime_days > 0)
-    {
-      MyNotify.NotifyStringf("data", "xvu.log.chargecap",
-        "XVU-LOG-ChargeCap,1,%d,%d,%.1f,%.2f,%.1f,%.1f,%.1f,%.1f,%.3f,%.3f,%.2f,%.2f,%.2f,%.2f",
-        storetime_days * 86400,
-        charge_time, StdMetrics.ms_v_bat_temp->AsFloat(), m_bat_cap_range->AsFloat(),
-        m_soc_norm_start, soc_norm_diff, m_soc_abs_start, soc_abs_diff,
-        energy_diff, coulomb_diff, cap_ah_norm, cap_ah_abs, cap_kwh_norm, cap_kwh_abs);
-    }
   }
 }

@@ -12,6 +12,7 @@ User Guide
    console
    logging
    configuration
+   wifi
    vfs
    metrics
    ota

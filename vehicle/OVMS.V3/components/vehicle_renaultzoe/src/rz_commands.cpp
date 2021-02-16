@@ -65,16 +65,16 @@ OvmsVehicle::vehicle_command_t OvmsVehicleRenaultZoe::CommandWakeup() {
   
   ESP_LOGI(TAG, "Send Wakeup Command");
   
-  CAN_frame_t frame;
-  memset(&frame, 0, sizeof(frame));
-
-  frame.origin = m_can1;
-  frame.FIR.U = 0;
-  frame.FIR.B.DLC = 1;
-  frame.FIR.B.FF = CAN_frame_std;
-  frame.MsgID = 0x218;
-  frame.data.u8[0] = 0xc9;
-  m_can1->Write(&frame);
+  uint8_t data[8] = {0xf1, 0x04, 0x1f, 0xc5, 0x35, 0xfe, 0x65, 0x08};
+  
+  canbus *obd;
+  obd = m_can1;
+  
+  obd->WriteStandard(0x35C, 8, data);
+  data[1] = 0x06;
+  data[7] = 0x61;
+  vTaskDelay(50 / portTICK_PERIOD_MS);
+  obd->WriteStandard(0x35C, 8, data);
 
   return Success;
 }

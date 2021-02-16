@@ -236,6 +236,7 @@ public:
   bool t26_ring_awake;
   int t26_12v_boost_cnt;
   int t26_12v_boost_last_cnt;
+  int t26_12v_wait_off;
   int cc_count;
   int cd_count;
   int fas_counter_on;
@@ -258,6 +259,7 @@ protected:
   void OBDDeInit();
 
 protected:
+  void PollSetState(uint8_t state);
   void PollerStateTicker();
   void IncomingPollReply(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length, uint16_t mlremain);
 

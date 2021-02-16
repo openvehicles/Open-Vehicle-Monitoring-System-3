@@ -72,6 +72,39 @@ void OvmsVehicleSmartED::xse_recu(int verbosity, OvmsWriter* writer, OvmsCommand
 }
 
 /**
+ * Set Recu wippen.
+ */
+void OvmsVehicleSmartED::xse_drivemode(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv) {
+  OvmsVehicleSmartED* smart = GetInstance(writer);
+  if (!smart)
+    return;
+  
+  bool status;
+  
+	if (strcmp("d", argv[0]) == 0) {
+    status = smart->SetRecu(1);
+  }
+  else if (strcmp("d+", argv[0]) == 0) {
+    status = smart->SetRecu(2);
+  }
+  else if (strcmp("d-", argv[0]) == 0) {
+    status = smart->SetRecu(0);
+  }
+  else if (strcmp("ds", argv[0]) == 0) {
+    status = smart->SetRecu(3);
+  }
+  else {
+    writer->puts("Error: argument must be 'd', 'd-', 'd+' or 'ds'");
+    return;
+  }
+  
+  if (status)
+    writer->printf("Recu set to: %s\n", argv[0]);
+  else
+    writer->puts("Error: Function need CAN-Write enable, Vehicle must be drive ready and Wippen unlocked");
+}
+
+/**
  * Set ChargeTimer.
  */
 void OvmsVehicleSmartED::xse_chargetimer(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv) {
@@ -272,6 +305,41 @@ bool OvmsVehicleSmartED::CommandSetRecu(bool on) {
   frame.MsgID = 0x236;
   frame.data.u8[0] = (on == true ? 0x02 : 0x04);
   frame.Write();
+
+  return true;
+}
+
+bool OvmsVehicleSmartED::SetRecu(int mode) {
+  if(!m_enable_write)
+    return false;
+  if (!StandardMetrics.ms_v_env_on->AsBool())
+    return false;
+  if (!mt_CEPC_Wippen->AsBool())
+    return false;
+  
+  int drivemode = StandardMetrics.ms_v_env_drivemode->AsInt(1);
+  int i=0, x=20;
+  
+  if (drivemode == mode)
+    return true;
+  else if (drivemode != mode) {
+    if (mode < drivemode) {
+      while(StandardMetrics.ms_v_env_drivemode->AsInt(1) != mode) {
+        CommandSetRecu(false);
+        vTaskDelay(500 / portTICK_PERIOD_MS);
+        i++;
+        if (i==x) break;
+      }
+    }
+    if (mode > drivemode) {
+      while(StandardMetrics.ms_v_env_drivemode->AsInt(1) != mode) {
+        CommandSetRecu(true);
+        vTaskDelay(500 / portTICK_PERIOD_MS);
+        i++;
+        if (i==x) break;
+      }
+    }
+  }
 
   return true;
 }
