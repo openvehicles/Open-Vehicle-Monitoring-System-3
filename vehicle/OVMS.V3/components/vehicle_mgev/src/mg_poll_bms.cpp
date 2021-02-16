@@ -163,10 +163,9 @@ void OvmsVehicleMgEv::IncomingBmsPoll(
         case batterySoCPid:
             {
                 auto soc = value / 10.0;
-                auto scaledSoc = (value -60) * 0.1136; // range 60 - 940
                 if (StandardMetrics.ms_v_charge_inprogress->AsBool())
                 {
-                    if (scaledSoc < 99.5)
+                    if (soc < 96.5)
                     {
                         StandardMetrics.ms_v_charge_state->SetValue("charging");
                     }
@@ -177,7 +176,7 @@ void OvmsVehicleMgEv::IncomingBmsPoll(
                 }
                 
                 // DoD is approx 6% - 97%, so we need to scale it
-                //auto scaledSoc = ((soc * 106.0) / 97.0) - 6.0;
+                auto scaledSoc = ((soc * 106.0) / 97.0) - 6.0;
                 StandardMetrics.ms_v_bat_soc->SetValue(scaledSoc);
                 // Ideal range set to SoC percentage of 262 km (WLTP Range)
                 StandardMetrics.ms_v_bat_range_ideal->SetValue(262 * (scaledSoc / 100));
