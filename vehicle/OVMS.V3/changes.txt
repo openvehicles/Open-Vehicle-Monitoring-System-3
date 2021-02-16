@@ -117,6 +117,8 @@ Open Vehicle Monitor System v3 - Change log
 - New vehicle: BMW i3/i3s via OBD-II Port (BMWI3) 
 - Updated wolfssh and wolfssl so the restriction of clients to use
   aes128-cbc cipher is no longer required.
+- MG ZS EV: Add Charging Metrics page.
+- MG ZS EV: Add support for ms_v_charge_kwh, ms_v_bat_energy_used and ms_v_bat_coulomb_used metrics
 
 2020-09-02 MWJ  3.2.015  OTA release
 - Notify: add explicit channel exclusion config syntax
