@@ -49,6 +49,14 @@ static const char *TAG = "can";
 #include "ovms_command.h"
 #include "metrics_standard.h"
 
+#if defined(CONFIG_OVMS_COMP_ESP32CAN) || \
+    defined(CONFIG_OVMS_COMP_MCP2515) || \
+    defined(CONFIG_OVMS_COMP_EXTERNAL_SWCAN)
+static const bool includeCAN = true;
+#else
+static const bool includeCAN = false;
+#endif
+
 can MyCan __attribute__ ((init_priority (4510)));
 
 ////////////////////////////////////////////////////////////////////////
@@ -788,6 +796,8 @@ void can::CAN_rxtask(void *pvParameters)
 
 can::can()
   {
+  if (!includeCAN) return;
+
   ESP_LOGI(TAG, "Initialising CAN (4510)");
 
   m_logger_id = 1;
