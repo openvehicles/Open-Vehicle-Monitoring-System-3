@@ -100,6 +100,7 @@ OvmsWebServer::OvmsWebServer()
 
   // register standard API calls:
   RegisterPage("/api/execute", "Execute command", HandleCommand, PageMenu_None, PageAuth_Cookie);
+  RegisterPage("/api/file", "Load/Save file", HandleFile, PageMenu_None, PageAuth_Cookie);
 
   // register standard public pages:
   RegisterPage("/dashboard", "Dashboard", HandleDashboard, PageMenu_Main, PageAuth_None);
@@ -122,9 +123,10 @@ OvmsWebServer::OvmsWebServer()
 #ifdef CONFIG_OVMS_COMP_SERVER_V3
   RegisterPage("/cfg/server/v3", "Server V3 (MQTT)", HandleCfgServerV3, PageMenu_Config, PageAuth_Cookie);
 #endif
+  RegisterPage("/cfg/notifications", "Notifications", HandleCfgNotifications, PageMenu_Config, PageAuth_Cookie);
 #endif
 #ifdef CONFIG_OVMS_COMP_PUSHOVER
-  RegisterPage("/cfg/notification", "Notification", HandleCfgNotification, PageMenu_Config, PageAuth_Cookie);
+  RegisterPage("/cfg/pushover", "Pushover", HandleCfgPushover, PageMenu_Config, PageAuth_Cookie);
 #endif
   RegisterPage("/cfg/webserver", "Webserver", HandleCfgWebServer, PageMenu_Config, PageAuth_Cookie);
   RegisterPage("/cfg/plugins", "Web Plugins", HandleCfgPlugins, PageMenu_Config, PageAuth_Cookie);

@@ -72,10 +72,19 @@ int config_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* 
   {
   if (!MyConfig.ismounted())
     return -1;
+  // argv[0] is the <param>
   if (argc == 1)
     return MyConfig.m_map.Validate(writer, argc, argv[0], complete);
-  OvmsConfigParam* p = MyConfig.m_map.FindUniquePrefix(argv[0]);
-  return p->m_map.Validate(writer, argc, argv[1], complete);
+  // argv[1] is the <instance>
+  if (argc == 2)
+    {
+    OvmsConfigParam* const* p = MyConfig.m_map.FindUniquePrefix(argv[0]);
+    if (!p)	// <param> was not valid, so can't check <instance>
+      return -1;
+    return (*p)->m_map.Validate(writer, argc, argv[1], complete);
+    }
+  // argv[2] is the value, which we can't validate
+  return -1;
   }
 
 void config_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -406,7 +415,8 @@ OvmsConfig::OvmsConfig()
     "Note: user files or directories in /store will not be touched.\n"
     "The module will perform a reboot after successful restore.\n"
     "<password> defaults to the current module password.\n"
-    "Note: you need to supply the password used for the backup creation.", 1, 2);
+    "Note: You need to supply the password used for the backup creation.\n"
+    "The default password is not available after flash is erased.", 1, 2);
 #endif // CONFIG_OVMS_SC_ZIP
 
   RegisterParam("password", "Password store", true, false);
@@ -531,10 +541,27 @@ void OvmsConfig::upgrade()
       }
     }
 
-  // Migrate vehicle ID VWUP to VWUP.T26
-  if (GetParamValue("auto", "vehicle.type") == "VWUP")
+  // Migrate vehicle IDs VWUP.T26/.OBD back to VWUP
+  std::string vt = GetParamValue("auto", "vehicle.type");
+  if (vt == "VWUP.T26" || vt == "VWUP.OBD")
     {
-    SetParamValue("auto", "vehicle.type", "VWUP.T26");
+    SetParamValue("auto", "vehicle.type", "VWUP");
+    }
+  // Move obsolete VWUP "xut" instances to "xvu":
+  if (CachedParam("xut"))
+    {
+    RegisterParam("xvu", "VW e-Up", true, true);
+    for (const auto& instance : { "canwrite", "modelyear", "cc_temp" })
+      {
+      if (!IsDefined("xvu", instance) && IsDefined("xut", instance))
+        SetParamValue("xvu", instance, GetParamValue("xut", instance));
+      }
+    DeregisterParam("xut");
+    }
+  // Remove obsolete VWUP "vwup" param:
+  if (CachedParam("vwup"))
+    {
+    DeregisterParam("vwup");
     }
 
   // Done, set config version:
@@ -684,8 +711,10 @@ bool OvmsConfig::IsDefined(std::string param, std::string instance)
 OvmsConfigParam* OvmsConfig::CachedParam(std::string param)
   {
   if (!m_mounted) return NULL;
-
-  return m_map.FindUniquePrefix(param.c_str());
+  OvmsConfigParam* const* p = m_map.FindUniquePrefix(param.c_str());
+  if (!p)
+    return NULL;
+  return *p;
   }
 
 bool OvmsConfig::ProtectedPath(std::string path)
@@ -698,18 +727,17 @@ bool OvmsConfig::ProtectedPath(std::string path)
   }
 
 /**
- * GetParamMap: get map of param instances
- * - Note: no modification allowed, to modify clone & call SetParamMap()
+ * GetParamMap: get map (copy) of param instances
  */
-const ConfigParamMap* OvmsConfig::GetParamMap(std::string param)
+ConfigParamMap OvmsConfig::GetParamMap(std::string param)
   {
+  ConfigParamMap pmap;
   if (!CachedParam(param))
     RegisterParam(param, "", true, false);
   OvmsConfigParam* p = CachedParam(param);
   if (p)
-    return &p->GetMap();
-  else
-    return NULL;
+    pmap = p->GetMap();
+  return pmap;
   }
 
 /**
@@ -854,9 +882,11 @@ bool OvmsConfig::Restore(std::string path, std::string password, OvmsWriter* wri
   if (!ok)
     {
     if (writer)
-      writer->printf("Error: unzip failed: %s\n", zip.strerror());
+      writer->printf("Error: unzip failed: %s%s\n", zip.strerror(),
+        password.empty() ? " (password required?)" : "");
     else
-      ESP_LOGE(TAG, "Restore '%s': unzip failed: %s", path.c_str(), zip.strerror());
+      ESP_LOGE(TAG, "Restore '%s': unzip failed: %s%s", path.c_str(), zip.strerror(),
+        password.empty() ? " (password required?)" : "");
     rmtree(tempdir);
     m_store_lock.Unlock();
     return false;

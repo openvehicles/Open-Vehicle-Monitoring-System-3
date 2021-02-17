@@ -89,30 +89,30 @@ static const char *TAG = "v-smarted";
 
 static const OvmsVehicle::poll_pid_t smarted_polls[] =
 {
-  { 0x7E5, 0x7ED, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x1001, {  0,3600,3600,3600 }, 0 }, // Wippen...
-  { 0x61A, 0x483, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xF111, {  0,300,600,600 }, 0 }, // rqChargerPN_HW
-  { 0x61A, 0x483, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0226, {  0,300,0,60 }, 0 }, // rqChargerVoltages
-  { 0x61A, 0x483, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0225, {  0,300,0,60 }, 0 }, // rqChargerAmps
-  { 0x61A, 0x483, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x022A, {  0,300,0,60 }, 0 }, // rqChargerSelCurrent
-  { 0x61A, 0x483, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0223, {  0,300,0,60 }, 0 }, // rqChargerTemperatures
-  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xF190, {  0,300,600,0 }, 0 }, // rqBattVIN
-  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0208, {  0,300,600,60 }, 0 }, // rqBattVolts
-  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0310, {  0,300,600,0 }, 0 }, // rqBattCapacity
-  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0203, {  0,300,600,0 }, 0 }, // rqBattAmps
-  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0207, {  0,300,600,0 }, 0 }, // rqBattADCref
-  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0304, {  0,300,600,0 }, 0 }, // rqBattDate
-  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xF18C, {  0,300,600,0 }, 0 }, // rqBattProdDate
+  { 0x7E5, 0x7ED, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x1001, {  0,3600,3600,3600 }, 0, ISOTP_STD }, // Wippen...
+  { 0x61A, 0x483, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xF111, {  0,300,600,600 }, 0, ISOTP_STD }, // rqChargerPN_HW
+  { 0x61A, 0x483, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0226, {  0,300,0,60 }, 0, ISOTP_STD }, // rqChargerVoltages
+  { 0x61A, 0x483, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0225, {  0,300,0,60 }, 0, ISOTP_STD }, // rqChargerAmps
+  { 0x61A, 0x483, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x022A, {  0,300,0,60 }, 0, ISOTP_STD }, // rqChargerSelCurrent
+  { 0x61A, 0x483, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0223, {  0,300,0,60 }, 0, ISOTP_STD }, // rqChargerTemperatures
+  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xF190, {  0,300,600,0 }, 0, ISOTP_STD }, // rqBattVIN
+  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0208, {  0,300,600,60 }, 0, ISOTP_STD }, // rqBattVolts
+  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0310, {  0,300,600,0 }, 0, ISOTP_STD }, // rqBattCapacity
+  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0203, {  0,300,600,0 }, 0, ISOTP_STD }, // rqBattAmps
+  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0207, {  0,300,600,0 }, 0, ISOTP_STD }, // rqBattADCref
+  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0304, {  0,300,600,0 }, 0, ISOTP_STD }, // rqBattDate
+  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xF18C, {  0,300,600,0 }, 0, ISOTP_STD }, // rqBattProdDate
   //getBatteryRevision
-  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xF150, {  0,300,600,0 }, 0 }, //rqBattHWrev
-  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xF151, {  0,300,600,0 }, 0 }, //rqBattSWrev
-  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0201, {  0,300,600,120 }, 0 }, // rqBattTemperatures
-  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0202, {  0,300,600,120 }, 0 }, // rqBattModuleTemperatures
-  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x030B, {  0,300,600,0 }, 0 }, // rqBattHVContactorCyclesLeft
-  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x030C, {  0,300,600,0 }, 0 }, // rqBattHVContactorMax
-  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xD000, {  0,300,600,0 }, 0 }, // rqBattHVContactorState
-  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0204, {  0,300,600,0 }, 0 }, // rqBattHVstatus
-  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0209, {  0,300,600,0 }, 0 }, // rqBattIsolation
-  { 0, 0, 0x00, 0x00, { 0, 0, 0, 0 }, 0 }
+  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xF150, {  0,300,600,0 }, 0, ISOTP_STD }, //rqBattHWrev
+  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xF151, {  0,300,600,0 }, 0, ISOTP_STD }, //rqBattSWrev
+  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0201, {  0,300,600,120 }, 0, ISOTP_STD }, // rqBattTemperatures
+  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0202, {  0,300,600,120 }, 0, ISOTP_STD }, // rqBattModuleTemperatures
+  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x030B, {  0,300,600,0 }, 0, ISOTP_STD }, // rqBattHVContactorCyclesLeft
+  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x030C, {  0,300,600,0 }, 0, ISOTP_STD }, // rqBattHVContactorMax
+  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xD000, {  0,300,600,0 }, 0, ISOTP_STD }, // rqBattHVContactorState
+  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0204, {  0,300,600,0 }, 0, ISOTP_STD }, // rqBattHVstatus
+  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0209, {  0,300,600,0 }, 0, ISOTP_STD }, // rqBattIsolation
+  POLL_LIST_END
 };
 
 void OvmsVehicleSmartED::ObdInitPoll() {
@@ -358,8 +358,8 @@ int OvmsVehicleSmartED::ObdRequest(uint16_t txid, uint16_t rxid, string request,
 
   // prepare single poll:
   OvmsVehicle::poll_pid_t poll[] = {
-    { txid, rxid, 0, 0, { 1, 1, 1, 1 }, 0 },
-    { 0, 0, 0, 0, { 0, 0, 0, 0 }, 0 }
+    { txid, rxid, 0, 0, { 1, 1, 1, 1 }, 0, ISOTP_STD },
+    POLL_LIST_END
   };
 
   assert(request.size() > 0);

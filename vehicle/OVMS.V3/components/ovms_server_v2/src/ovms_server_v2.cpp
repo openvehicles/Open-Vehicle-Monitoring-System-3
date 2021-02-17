@@ -112,7 +112,7 @@ typedef union {
   unsigned Frunk:1;             // 0x04
   unsigned :1;                  // 0x08
   unsigned Charging12V:1;       // 0x10
-  unsigned :1;                  // 0x20
+  unsigned Aux12V:1;            // 0x20
   unsigned :1;                  // 0x40
   unsigned HVAC:1;              // 0x80
   } bits;
@@ -967,6 +967,7 @@ void OvmsServerV2::TransmitMsgStat(bool always)
     StandardMetrics.ms_v_bat_range_ideal->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_bat_range_est->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_charge_climit->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_charge_kwh->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_charge_timermode->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_charge_timerstart->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_bat_cac->IsModifiedAndClear(MyOvmsServerV2Modifier) |
@@ -1140,33 +1141,83 @@ void OvmsServerV2::TransmitMsgTPMS(bool always)
   m_now_tpms = false;
 
   bool modified =
-    StandardMetrics.ms_v_tpms_fl_t->IsModifiedAndClear(MyOvmsServerV2Modifier) |
-    StandardMetrics.ms_v_tpms_fr_t->IsModifiedAndClear(MyOvmsServerV2Modifier) |
-    StandardMetrics.ms_v_tpms_rl_t->IsModifiedAndClear(MyOvmsServerV2Modifier) |
-    StandardMetrics.ms_v_tpms_rr_t->IsModifiedAndClear(MyOvmsServerV2Modifier) |
-    StandardMetrics.ms_v_tpms_fl_p->IsModifiedAndClear(MyOvmsServerV2Modifier) |
-    StandardMetrics.ms_v_tpms_fr_p->IsModifiedAndClear(MyOvmsServerV2Modifier) |
-    StandardMetrics.ms_v_tpms_rl_p->IsModifiedAndClear(MyOvmsServerV2Modifier) |
-    StandardMetrics.ms_v_tpms_rr_p->IsModifiedAndClear(MyOvmsServerV2Modifier);
+    StandardMetrics.ms_v_tpms_pressure->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_tpms_temp->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_tpms_health->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_tpms_alert->IsModifiedAndClear(MyOvmsServerV2Modifier);
 
   // Quick exit if nothing modified
   if ((!always)&&(!modified)) return;
 
+  extram::ostringstream buffer;
+
+  // Transmit new "Y" message:
+
+  int defstale_pressure =
+    StandardMetrics.ms_v_tpms_pressure->IsDefined()
+    ? (StandardMetrics.ms_v_tpms_pressure->IsStale() ? 0 : 1)
+    : -1;
+  int defstale_temp =
+    StandardMetrics.ms_v_tpms_temp->IsDefined()
+    ? (StandardMetrics.ms_v_tpms_temp->IsStale() ? 0 : 1)
+    : -1;
+  int defstale_health =
+    StandardMetrics.ms_v_tpms_health->IsDefined()
+    ? (StandardMetrics.ms_v_tpms_health->IsStale() ? 0 : 1)
+    : -1;
+  int defstale_alert =
+    StandardMetrics.ms_v_tpms_alert->IsDefined()
+    ? (StandardMetrics.ms_v_tpms_alert->IsStale() ? 0 : 1)
+    : -1;
+
+  std::vector<std::string> wheels;
+  if (MyVehicleFactory.m_currentvehicle)
+    wheels = MyVehicleFactory.m_currentvehicle->GetTpmsLayout();
+
+  buffer
+    << "MP-0 Y"
+    << wheels.size();
+  for (auto wheel : wheels)
+    {
+    buffer << "," << wheel;
+    }
+  buffer
+    << ","
+    << StandardMetrics.ms_v_tpms_pressure->GetSize()
+    << (StandardMetrics.ms_v_tpms_pressure->GetSize() ? "," : "")
+    << StandardMetrics.ms_v_tpms_pressure->AsString("", kPa, 1)
+    << "," << defstale_pressure
+    << ","
+    << StandardMetrics.ms_v_tpms_temp->GetSize()
+    << (StandardMetrics.ms_v_tpms_temp->GetSize() ? "," : "")
+    << StandardMetrics.ms_v_tpms_temp->AsString("", Celcius, 1)
+    << "," << defstale_temp
+    << ","
+    << StandardMetrics.ms_v_tpms_health->GetSize()
+    << (StandardMetrics.ms_v_tpms_health->GetSize() ? "," : "")
+    << StandardMetrics.ms_v_tpms_health->AsString("", Percentage, 1)
+    << "," << defstale_health
+    << ","
+    << StandardMetrics.ms_v_tpms_alert->GetSize()
+    << (StandardMetrics.ms_v_tpms_alert->GetSize() ? "," : "")
+    << StandardMetrics.ms_v_tpms_alert->AsString("")
+    << "," << defstale_alert
+    ;
+  Transmit(buffer.str().c_str());
+  
+  // Transmit legacy "W" message (fixed four tyres, only pressures & temperatures):
+
   bool stale =
-    StandardMetrics.ms_v_tpms_fl_t->IsStale() ||
-    StandardMetrics.ms_v_tpms_fr_t->IsStale() ||
-    StandardMetrics.ms_v_tpms_rl_t->IsStale() ||
-    StandardMetrics.ms_v_tpms_rr_t->IsStale() ||
-    StandardMetrics.ms_v_tpms_fl_p->IsStale() ||
-    StandardMetrics.ms_v_tpms_fr_p->IsStale() ||
-    StandardMetrics.ms_v_tpms_rl_p->IsStale() ||
-    StandardMetrics.ms_v_tpms_rr_p->IsStale();
+    StandardMetrics.ms_v_tpms_pressure->IsStale() ||
+    StandardMetrics.ms_v_tpms_temp->IsStale() ||
+    StandardMetrics.ms_v_tpms_health->IsStale() ||
+    StandardMetrics.ms_v_tpms_alert->IsStale();
 
   bool defined =
-    StandardMetrics.ms_v_tpms_fl_p->IsDefined() ||
-    StandardMetrics.ms_v_tpms_fr_p->IsDefined() ||
-    StandardMetrics.ms_v_tpms_rl_p->IsDefined() ||
-    StandardMetrics.ms_v_tpms_rr_p->IsDefined();
+    StandardMetrics.ms_v_tpms_pressure->IsDefined() ||
+    StandardMetrics.ms_v_tpms_temp->IsDefined() ||
+    StandardMetrics.ms_v_tpms_health->IsDefined() ||
+    StandardMetrics.ms_v_tpms_alert->IsDefined();
 
   int defstale;
   if (!defined)
@@ -1176,28 +1227,28 @@ void OvmsServerV2::TransmitMsgTPMS(bool always)
   else
     { defstale = 1; }
 
-  extram::ostringstream buffer;
+  buffer.str("");
+  buffer.clear();
   buffer
     << "MP-0 W"
-    << StandardMetrics.ms_v_tpms_fr_p->AsString("0",PSI)
+    << StandardMetrics.ms_v_tpms_pressure->ElemAsString(MS_V_TPMS_IDX_FR, "0", PSI)
     << ","
-    << StandardMetrics.ms_v_tpms_fr_t->AsString("0")
+    << StandardMetrics.ms_v_tpms_temp->ElemAsString(MS_V_TPMS_IDX_FR, "0")
     << ","
-    << StandardMetrics.ms_v_tpms_rr_p->AsString("0",PSI)
+    << StandardMetrics.ms_v_tpms_pressure->ElemAsString(MS_V_TPMS_IDX_RR, "0", PSI)
     << ","
-    << StandardMetrics.ms_v_tpms_rr_t->AsString("0")
+    << StandardMetrics.ms_v_tpms_temp->ElemAsString(MS_V_TPMS_IDX_RR, "0")
     << ","
-    << StandardMetrics.ms_v_tpms_fl_p->AsString("0",PSI)
+    << StandardMetrics.ms_v_tpms_pressure->ElemAsString(MS_V_TPMS_IDX_FL, "0", PSI)
     << ","
-    << StandardMetrics.ms_v_tpms_fl_t->AsString("0")
+    << StandardMetrics.ms_v_tpms_temp->ElemAsString(MS_V_TPMS_IDX_FL, "0")
     << ","
-    << StandardMetrics.ms_v_tpms_rl_p->AsString("0",PSI)
+    << StandardMetrics.ms_v_tpms_pressure->ElemAsString(MS_V_TPMS_IDX_RL, "0", PSI)
     << ","
-    << StandardMetrics.ms_v_tpms_rl_t->AsString("0")
+    << StandardMetrics.ms_v_tpms_temp->ElemAsString(MS_V_TPMS_IDX_RL, "0")
     << ","
     << defstale
     ;
-
   Transmit(buffer.str().c_str());
   }
 
@@ -1210,7 +1261,9 @@ void OvmsServerV2::TransmitMsgFirmware(bool always)
     StandardMetrics.ms_v_vin->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_m_net_sq->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_type->IsModifiedAndClear(MyOvmsServerV2Modifier) |
-    StandardMetrics.ms_m_net_provider->IsModifiedAndClear(MyOvmsServerV2Modifier);
+    StandardMetrics.ms_m_net_provider->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_env_service_range->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_env_service_time->IsModifiedAndClear(MyOvmsServerV2Modifier);
 
   // Quick exit if nothing modified
   if ((!always)&&(!modified)) return;
@@ -1227,6 +1280,10 @@ void OvmsServerV2::TransmitMsgFirmware(bool always)
     << StandardMetrics.ms_v_type->AsString("")
     << ","
     << StandardMetrics.ms_m_net_provider->AsString("")
+    << ","
+    << StandardMetrics.ms_v_env_service_range->AsString("-1", Kilometers, 0)
+    << ","
+    << StandardMetrics.ms_v_env_service_time->AsString("-1", Seconds, 0)
     ;
 
   Transmit(buffer.str().c_str());
@@ -1284,6 +1341,7 @@ uint8_t Doors5()
   car_doors5.bits.RearRightDoor = StandardMetrics.ms_v_door_rr->AsBool();
   car_doors5.bits.Frunk = false; // should this be hood or something else?
   car_doors5.bits.Charging12V = StandardMetrics.ms_v_env_charging12v->AsBool();
+  car_doors5.bits.Aux12V = StandardMetrics.ms_v_env_aux12v->AsBool();
   car_doors5.bits.HVAC = StandardMetrics.ms_v_env_hvac->AsBool();
 
   return car_doors5.flags;
@@ -1329,6 +1387,7 @@ void OvmsServerV2::TransmitMsgEnvironment(bool always)
     StandardMetrics.ms_v_door_rl->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_door_rr->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_env_charging12v->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_env_aux12v->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_env_hvac->IsModifiedAndClear(MyOvmsServerV2Modifier) |
 
     StandardMetrics.ms_v_charge_temp->IsModifiedAndClear(MyOvmsServerV2Modifier) |
@@ -1584,6 +1643,7 @@ void OvmsServerV2::MetricModified(OvmsMetric* metric)
       (metric == StandardMetrics.ms_v_door_rl)||
       (metric == StandardMetrics.ms_v_door_rr)||
       (metric == StandardMetrics.ms_v_env_charging12v)||
+      (metric == StandardMetrics.ms_v_env_aux12v)||
       (metric == StandardMetrics.ms_v_env_hvac))
     {
     m_now_environment = true;
@@ -1593,6 +1653,11 @@ void OvmsServerV2::MetricModified(OvmsMetric* metric)
       (metric == StandardMetrics.ms_v_pos_gpslock))
     {
     m_now_gps = true;
+    }
+
+  if ((metric == StandardMetrics.ms_v_tpms_alert))
+    {
+    m_now_tpms = true;
     }
   }
 

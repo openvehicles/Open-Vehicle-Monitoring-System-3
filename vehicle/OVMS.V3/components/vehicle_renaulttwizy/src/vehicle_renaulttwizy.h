@@ -315,6 +315,7 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
   
   public:
     void PowerInit();
+    void PowerShutdown();
     void PowerUpdateMetrics();
     void PowerUpdate();
     void PowerReset();
@@ -365,6 +366,7 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
   
   public:
     void BatteryInit();
+    void BatteryShutdown();
     bool BatteryLock(int maxwait_ms);
     void BatteryUnlock();
     void BatteryUpdateMetrics();
@@ -448,6 +450,7 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
   
   public:
     void ChargeInit();
+    void ChargeShutdown();
     vehicle_command_t CommandCA(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     vehicle_command_t MsgCommandCA(std::string &result, int command, const char* args);
     vehicle_command_t CommandSetChargeMode(vehicle_mode_t mode);
@@ -505,6 +508,7 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
   
   public:
     void ObdInit();
+    void ObdShutdown();
     void ObdTicker1();
     void ObdTicker10();
     int ObdRequest(uint16_t txid, uint16_t rxid, string request, string& response, int timeout_ms=3000);
@@ -544,6 +548,7 @@ class OvmsVehicleRenaultTwizy : public OvmsVehicle
   
   public:
     void WebInit();
+    void WebShutdown();
     static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
     static void WebCfgBattery(PageEntry_t& p, PageContext_t& c);
     static void WebConsole(PageEntry_t& p, PageContext_t& c);

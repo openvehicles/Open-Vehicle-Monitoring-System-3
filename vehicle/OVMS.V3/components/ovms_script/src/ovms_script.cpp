@@ -112,6 +112,8 @@ static void script_ovms(int verbosity, OvmsWriter* writer,
     while(fgets(cmdline, _COMMAND_LINE_LEN, sf) != NULL )
       {
       bs->ProcessChars(cmdline, strlen(cmdline));
+      if (strlen(cmdline) > 0 && cmdline[strlen(cmdline)-1] != '\n')
+        bs->ProcessChar('\n');
       }
     fclose(sf);
     if (writer)

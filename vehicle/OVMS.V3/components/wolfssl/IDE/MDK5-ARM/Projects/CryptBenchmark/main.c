@@ -1,6 +1,6 @@
 /* main.c
  *
- * Copyright (C) 2006-2016 wolfSSL Inc.
+ * Copyright (C) 2006-2020 wolfSSL Inc.
  *
  * This file is part of wolfSSL.
  *
@@ -18,7 +18,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335, USA
  */
- 
+
 #ifdef HAVE_CONFIG_H
     #include <config.h>
 #endif
@@ -28,14 +28,96 @@
 #include "wolfcrypt/test/test.h"
 
 #include <stdio.h>
-#include "stm32f2xx_hal.h"
-#include "cmsis_os.h"
+#include <time.h>
 
-/*-----------------------------------------------------------------------------
- *        System Clock Configuration
- *----------------------------------------------------------------------------*/
-void SystemClock_Config(void) {
-    #warning "write MPU specific System Clock Set up\n"
+#if defined(WOLFSSL_CMSIS_RTOS)
+#include "cmsis_os.h"
+#elif defined(WOLFSSL_CMSIS_RTOSv2)
+#include "cmsis_os2.h"
+#endif
+
+/* Dummy definition for test RTC */
+#define RTC_YEAR 2019
+#define RTC_MONTH 1
+#define RTC_DAY 1
+#define RTC_MONTH 1
+#define RTC_DAY 1
+
+#if defined(STM32F7xx)
+#include "stm32f7xx_hal.h"
+#elif defined(STM32F4xx)
+#include "stm32f4xx_hal.h"
+#elif defined(STM32F2xx)
+#include "stm32f2xx_hal.h"
+#endif
+
+#warning "write MPU specific Set ups\n"
+static void SystemClock_Config (void) {
+
+}
+
+static void MPU_Config (void) {
+
+}
+
+static void CPU_CACHE_Enable (void) {
+
+}
+
+#if defined(WOLFSSL_CMSIS_RTOS) || defined(WOLFSSL_CMSIS_RTOSv2)
+
+#if defined(WOLFSSL_CMSIS_RTOS)
+extern uint32_t os_time;
+#endif
+
+uint32_t HAL_GetTick(void)
+{
+    #if defined(WOLFSSL_CMSIS_RTOS)
+        return os_time;
+    #elif defined(WOLFSSL_CMSIS_RTOSv2)
+        return osKernelGetTickCount();
+    #endif
+}
+
+double current_time(int reset)
+{
+    if (reset)
+        return 0;
+    #if defined(WOLFSSL_CMSIS_RTOS)
+        return (double)os_time / 1000.0;
+    #elif defined(WOLFSSL_CMSIS_RTOSv2)
+        return (double)osKernelGetTickCount() / 1000.0;
+    #endif
+}
+
+#else
+
+#include <stdint.h>
+#define DWT                 ((DWT_Type       *)     (0xE0001000UL)     )
+typedef struct
+{
+  uint32_t CTRL;                    /*!< Offset: 0x000 (R/W)  Control Register                          */
+  uint32_t CYCCNT;                  /*!< Offset: 0x004 (R/W)  Cycle Count Register                      */
+} DWT_Type;
+
+extern uint32_t SystemCoreClock ;
+
+double current_time(int reset)
+{
+      if(reset) DWT->CYCCNT = 0 ;
+      return ((double)DWT->CYCCNT/SystemCoreClock) ;
+}
+#endif
+
+static time_t epochTime;
+time_t time(time_t *t)
+{
+  return epochTime;
+}
+
+void setTime(time_t t)
+{
+  epochTime = t;
 }
 
 /*-----------------------------------------------------------------------------
@@ -48,13 +130,13 @@ static void init_filesystem (void) {
   int32_t retv;
 
   retv = finit ("M0:");
-  if (retv == 0) {
+  if (retv == fsOK) {
     retv = fmount ("M0:");
-    if (retv == 0) {
+    if (retv == fsOK) {
       printf ("Drive M0 ready!\n");
     }
     else {
-      printf ("Drive M0 mount failed!\n");
+      printf ("Drive M0 mount failed(%d)!\n", retv);
     }
   }
   else {
@@ -64,24 +146,28 @@ static void init_filesystem (void) {
 #endif
 
 /*-----------------------------------------------------------------------------
- *       mian entry 
+ *       mian entry
  *----------------------------------------------------------------------------*/
- void    benchmark_test(void *arg) ;
-int main() 
+void benchmark_test(void *arg) ;
+
+int main()
 {
-     void * arg = NULL ;
-
-	    HAL_Init();                               /* Initialize the HAL Library     */
-	    SystemClock_Config();              /* Configure the System Clock     */
-
-	#if !defined(NO_FILESYSTEM)
-       init_filesystem ();
-	#endif
-       osDelay(300) ;  
-
-       printf("=== Start: Crypt Benchmark ===\n") ;
-       benchmark_test(arg) ;
-       printf("=== End: Crypt Benchmark  ===\n") ;   
-
+    void * arg = NULL ;
     
+    MPU_Config(); 
+    CPU_CACHE_Enable();
+    HAL_Init();                        /* Initialize the HAL Library     */
+    SystemClock_Config();              /* Configure the System Clock     */
+
+    #if !defined(NO_FILESYSTEM)
+    init_filesystem ();
+    #endif
+    
+    setTime((RTC_YEAR-1970)*365*24*60*60 + RTC_MONTH*30*24*60*60 + RTC_DAY*24*60*60);
+
+    printf("=== Start: Crypt Benchmark ===\n") ;
+    benchmark_test(arg) ;
+    printf("=== End: Crypt Benchmark  ===\n") ;
+
 }
+

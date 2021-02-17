@@ -84,7 +84,7 @@ constexpr uint16_t vcuMotorSpeedPid = 0xb402u;
 constexpr uint16_t vcuOdometerPid = 0xe101u;
 constexpr uint16_t vcuHandbrakePid = 0xba40u;
 constexpr uint16_t vcuGearPid = 0xb900u;
-constexpr uint16_t vcuBreakPid = 0xb120u;
+constexpr uint16_t vcuBrakePid = 0xb120u;
 constexpr uint16_t vcuBonnetPid = 0xbb06u;
 constexpr uint16_t chargeRatePid = 0xb712u;
 

@@ -399,8 +399,8 @@ void OvmsPluginStore::PluginUpdateAll(OvmsWriter* writer)
 
 bool OvmsPluginStore::LoadRepoPlugins()
   {
-  const ConfigParamMap *cpm = MyConfig.GetParamMap("plugin.repos");
-  if (cpm->size() == 0)
+  const ConfigParamMap cpm = MyConfig.GetParamMap("plugin.repos");
+  if (cpm.size() == 0)
     {
     // Configure the default repo
     MyConfig.SetParamValue("plugin.repos","openvehicles","http://api.openvehicles.com/plugins");
@@ -409,7 +409,7 @@ bool OvmsPluginStore::LoadRepoPlugins()
   if (m_repos.size() == 0)
     {
     // Load the repos from config
-    for (auto it = cpm->begin(); it != cpm->end(); ++it)
+    for (auto it = cpm.begin(); it != cpm.end(); ++it)
       {
       OvmsRepository* r = new OvmsRepository(it->first, it->second);
       m_repos[it->first] = r;
@@ -457,11 +457,11 @@ OvmsPlugin* OvmsPluginStore::FindPlugin(std::string plugin)
 
 void OvmsPluginStore::LoadEnabledModules(plugin_element_type_t type)
   {
-  const ConfigParamMap* enabled = MyConfig.GetParamMap("plugin.enabled");
-  if (enabled != NULL)
+  const ConfigParamMap enabled = MyConfig.GetParamMap("plugin.enabled");
+  if (enabled.size() > 0)
     {
     ESP_LOGI(TAG, "Loading enabled plugins (%d)",type);
-    for (auto it=enabled->begin(); it!=enabled->end(); ++it)
+    for (auto it=enabled.begin(); it!=enabled.end(); ++it)
       {
       std::string path("/store/plugins/");
       path.append(it->first);

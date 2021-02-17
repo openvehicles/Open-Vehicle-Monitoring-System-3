@@ -1,6 +1,6 @@
 /* memory.h
  *
- * Copyright (C) 2006-2016 wolfSSL Inc.
+ * Copyright (C) 2006-2020 wolfSSL Inc.
  *
  * This file is part of wolfSSL.
  *
@@ -22,15 +22,24 @@
 
 /* submitted by eof */
 
+/*!
+    \file wolfssl/wolfcrypt/memory.h
+*/
 
 #ifndef WOLFSSL_MEMORY_H
 #define WOLFSSL_MEMORY_H
 
+#if !defined(STRING_USER) && !defined(WOLFSSL_LINUXKM)
 #include <stdlib.h>
+#endif
 #include <wolfssl/wolfcrypt/types.h>
 
 #ifdef __cplusplus
     extern "C" {
+#endif
+
+#ifdef WOLFSSL_FORCE_MALLOC_FAIL_TEST
+    WOLFSSL_API void wolfSSL_SetMemFailCount(int memFailCount);
 #endif
 
 #ifdef WOLFSSL_STATIC_MEMORY
@@ -74,7 +83,6 @@
 WOLFSSL_API int wolfSSL_SetAllocators(wolfSSL_Malloc_cb,
                                       wolfSSL_Free_cb,
                                       wolfSSL_Realloc_cb);
-
 WOLFSSL_API int wolfSSL_GetAllocators(wolfSSL_Malloc_cb*,
                                       wolfSSL_Free_cb*,
                                       wolfSSL_Realloc_cb*);
@@ -88,18 +96,51 @@ WOLFSSL_API int wolfSSL_GetAllocators(wolfSSL_Malloc_cb*,
         #define WOLFMEM_MAX_BUCKETS  9
     #endif
     #define WOLFMEM_DEF_BUCKETS  9     /* number of default memory blocks */
-    #define WOLFMEM_IO_SZ        16992 /* 16 byte aligned */
+    #ifndef WOLFMEM_IO_SZ
+        #define WOLFMEM_IO_SZ        16992 /* 16 byte aligned */
+    #endif
     #ifndef WOLFMEM_BUCKETS
-        /* default size of chunks of memory to seperate into
-         * having session certs enabled makes a 21k SSL struct */
         #ifndef SESSION_CERTS
-            #define WOLFMEM_BUCKETS 64,128,256,512,1024,2432,3456,4544,16128
+            /* default size of chunks of memory to separate into */
+            #ifndef LARGEST_MEM_BUCKET
+                #define LARGEST_MEM_BUCKET 16128
+            #endif
+            #define WOLFMEM_BUCKETS 64,128,256,512,1024,2432,3456,4544,\
+                                    LARGEST_MEM_BUCKET
+        #elif defined (OPENSSL_EXTRA)
+            /* extra storage in structs for multiple attributes and order */
+            #ifndef LARGEST_MEM_BUCKET
+                #ifdef WOLFSSL_TLS13
+                    #define LARGEST_MEM_BUCKET 30400
+                #else
+                    #define LARGEST_MEM_BUCKET 25600
+                #endif
+            #endif
+            #define WOLFMEM_BUCKETS 64,128,256,512,1024,2432,3360,4480,\
+                                    LARGEST_MEM_BUCKET
+        #elif defined (WOLFSSL_CERT_EXT)
+            /* certificate extensions requires 24k for the SSL struct */
+            #ifndef LARGEST_MEM_BUCKET
+                #define LARGEST_MEM_BUCKET 24576
+            #endif
+            #define WOLFMEM_BUCKETS 64,128,256,512,1024,2432,3456,4544,\
+                                    LARGEST_MEM_BUCKET
         #else
-            #define WOLFMEM_BUCKETS 64,128,256,512,1024,2432,3456,4544,21056
+            /* increase 23k for object member of WOLFSSL_X509_NAME_ENTRY */
+            #ifndef LARGEST_MEM_BUCKET
+                #define LARGEST_MEM_BUCKET 23440
+            #endif
+            #define WOLFMEM_BUCKETS 64,128,256,512,1024,2432,3456,4544,\
+                                    LARGEST_MEM_BUCKET
         #endif
     #endif
     #ifndef WOLFMEM_DIST
-        #define WOLFMEM_DIST    8,4,4,12,4,5,8,1,1
+        #ifndef WOLFSSL_STATIC_MEMORY_SMALL
+            #define WOLFMEM_DIST    49,10,6,14,5,6,9,1,1
+        #else
+            /* Low resource and not RSA */
+            #define WOLFMEM_DIST    29, 7,6, 9,4,4,0,0,0
+        #endif
     #endif
 
     /* flags for loading static memory (one hot bit) */
@@ -129,8 +170,8 @@ WOLFSSL_API int wolfSSL_GetAllocators(wolfSSL_Malloc_cb*,
         word32 totalFr;   /* total frees for lifetime */
         word32 totalUse;  /* total amount of memory used in blocks */
         word32 avaIO;     /* available IO specific pools */
-        word32 maxHa;     /* max number of concurent handshakes allowed */
-        word32 maxIO;     /* max number of concurent IO connections allowed */
+        word32 maxHa;     /* max number of concurrent handshakes allowed */
+        word32 maxIO;     /* max number of concurrent IO connections allowed */
         word32 blockSz[WOLFMEM_MAX_BUCKETS]; /* block sizes in stacks */
         word32 avaBlock[WOLFMEM_MAX_BUCKETS];/* ava block sizes */
         word32 usedBlock[WOLFMEM_MAX_BUCKETS];
@@ -141,7 +182,7 @@ WOLFSSL_API int wolfSSL_GetAllocators(wolfSSL_Malloc_cb*,
     typedef struct WOLFSSL_HEAP {
         wc_Memory* ava[WOLFMEM_MAX_BUCKETS];
         wc_Memory* io;                  /* list of buffers to use for IO */
-        word32     maxHa;               /* max concurent handshakes */
+        word32     maxHa;               /* max concurrent handshakes */
         word32     curHa;
         word32     maxIO;               /* max concurrent IO connections */
         word32     curIO;
@@ -180,6 +221,13 @@ WOLFSSL_API int wolfSSL_GetAllocators(wolfSSL_Malloc_cb*,
     WOLFSSL_API int wolfSSL_StaticBufferSz(byte* buffer, word32 sz, int flag);
     WOLFSSL_API int wolfSSL_MemoryPaddingSz(void);
 #endif /* WOLFSSL_STATIC_MEMORY */
+
+#ifdef WOLFSSL_STACK_LOG
+    WOLFSSL_API void __attribute__((no_instrument_function))
+            __cyg_profile_func_enter(void *func,  void *caller);
+    WOLFSSL_API void __attribute__((no_instrument_function))
+            __cyg_profile_func_exit(void *func, void *caller);
+#endif /* WOLFSSL_STACK_LOG */
 
 #ifdef __cplusplus
     }  /* extern "C" */

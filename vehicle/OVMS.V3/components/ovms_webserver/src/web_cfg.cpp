@@ -234,7 +234,7 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
       "loaduri(\"#main\", \"post\", \"/status\", { \"action\": $(this).val() });"
     "});"
     "$(\"#livestatus\").on(\"msg:event\", function(e, event){"
-      "if (event.startsWith(\"ticker\"))"
+      "if (event.startsWith(\"ticker\") || event.startsWith(\"clock\"))"
         "return;"
       "var list = $(\"#eventlog\");"
       "if (list.children().size() >= 5)"
@@ -619,7 +619,8 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
         MyConfig.SetParamValue("password", "pin", pin);
 
       info = "<p class=\"lead\">Success!</p><ul class=\"infolist\">" + info + "</ul>";
-      info += "<script>$(\"#menu\").load(\"/menu\")</script>";
+      info += "<script>$(\"title\").data(\"moduleid\", \"" + c.encode_html(vehicleid)
+        + "\");$(\"#menu\").load(\"/menu\")</script>";
       c.head(200);
       c.alert("success", info.c_str());
       OutputHome(p, c);
@@ -876,10 +877,10 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
 
 
 /**
- * HandleCfgNotification: Configure notifications (URL /cfg/notifications)
+ * HandleCfgPushover: Configure pushover notifications (URL /cfg/pushover)
  */
 #ifdef CONFIG_OVMS_COMP_PUSHOVER
-void OvmsWebServer::HandleCfgNotification(PageEntry_t& p, PageContext_t& c)
+void OvmsWebServer::HandleCfgPushover(PageEntry_t& p, PageContext_t& c)
 {
   std::string error;
   OvmsConfigParam* param = MyConfig.CachedParam("pushover");
@@ -1354,8 +1355,11 @@ void OvmsWebServer::HandleCfgServerV2(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValue("server.v2", "updatetime.connected", updatetime_connected);
       MyConfig.SetParamValue("server.v2", "updatetime.idle", updatetime_idle);
 
+      std::string info = "<p class=\"lead\">Server V2 (MP) connection configured.</p>"
+        "<script>$(\"title\").data(\"moduleid\", \"" + c.encode_html(vehicleid) + "\");</script>";
+
       c.head(200);
-      c.alert("success", "<p class=\"lead\">Server V2 (MP) connection configured.</p>");
+      c.alert("success", info.c_str());
       OutputHome(p, c);
       c.done();
       return;
@@ -1421,7 +1425,7 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
 {
   std::string error;
   std::string server, user, password, port, topic_prefix;
-  std::string updatetime_connected, updatetime_idle;
+  std::string updatetime_connected, updatetime_idle, updatetime_on, updatetime_charging, updatetime_awake, updatetime_sendall;
   bool tls;
 
   if (c.method == "POST") {
@@ -1434,6 +1438,10 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
     topic_prefix = c.getvar("topic_prefix");
     updatetime_connected = c.getvar("updatetime_connected");
     updatetime_idle = c.getvar("updatetime_idle");
+    updatetime_on = c.getvar("updatetime_on");
+    updatetime_charging = c.getvar("updatetime_charging");
+    updatetime_awake = c.getvar("updatetime_awake");
+    updatetime_sendall = c.getvar("updatetime_sendall");
 
     // validate:
     if (port != "") {
@@ -1452,6 +1460,26 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
         error += "<li data-input=\"updatetime_idle\">Update interval (idle) must be at least 1 second</li>";
       }
     }
+    if (updatetime_on != "") {
+      if (atoi(updatetime_on.c_str()) < 1) {
+        error += "<li data-input=\"updatetime_on\">Update interval (on) must be at least 1 second</li>";
+      }
+    }
+    if (updatetime_charging != "") {
+      if (atoi(updatetime_charging.c_str()) < 1) {
+        error += "<li data-input=\"updatetime_charging\">Update interval (charging) must be at least 1 second</li>";
+      }
+    }
+    if (updatetime_awake != "") {
+      if (atoi(updatetime_awake.c_str()) < 1) {
+        error += "<li data-input=\"updatetime_awake\">Update interval (awake) must be at least 1 second</li>";
+      }
+    }
+    if (updatetime_sendall != "") {
+      if (atoi(updatetime_sendall.c_str()) < 60) {
+        error += "<li data-input=\"updatetime_sendall\">Update interval (sendall) must be at least 60 seconds</li>";
+      }
+    }
 
     if (error == "") {
       // success:
@@ -1464,6 +1492,22 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValue("server.v3", "topic.prefix", topic_prefix);
       MyConfig.SetParamValue("server.v3", "updatetime.connected", updatetime_connected);
       MyConfig.SetParamValue("server.v3", "updatetime.idle", updatetime_idle);
+      if (updatetime_on == "")
+        MyConfig.DeleteInstance("server.v3", "updatetime.on");
+      else
+        MyConfig.SetParamValue("server.v3", "updatetime.on", updatetime_on);
+      if (updatetime_charging == "")
+        MyConfig.DeleteInstance("server.v3", "updatetime.charging");
+      else
+        MyConfig.SetParamValue("server.v3", "updatetime.charging", updatetime_charging);
+      if (updatetime_awake == "")
+        MyConfig.DeleteInstance("server.v3", "updatetime.awake");
+      else
+        MyConfig.SetParamValue("server.v3", "updatetime.awake", updatetime_awake);
+      if (updatetime_sendall == "")
+        MyConfig.DeleteInstance("server.v3", "updatetime.sendall");
+      else
+        MyConfig.SetParamValue("server.v3", "updatetime.sendall", updatetime_sendall);
 
       c.head(200);
       c.alert("success", "<p class=\"lead\">Server V3 (MQTT) connection configured.</p>");
@@ -1487,6 +1531,10 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
     topic_prefix = MyConfig.GetParamValue("server.v3", "topic.prefix");
     updatetime_connected = MyConfig.GetParamValue("server.v3", "updatetime.connected");
     updatetime_idle = MyConfig.GetParamValue("server.v3", "updatetime.idle");
+    updatetime_on = MyConfig.GetParamValue("server.v3", "updatetime.on");
+    updatetime_charging = MyConfig.GetParamValue("server.v3", "updatetime.charging");
+    updatetime_awake = MyConfig.GetParamValue("server.v3", "updatetime.awake");
+    updatetime_sendall = MyConfig.GetParamValue("server.v3", "updatetime.sendall");
 
     // generate form:
     c.head(200);
@@ -1516,6 +1564,14 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
     "optional, in seconds, default: 60");
   c.input_text("…idle", "updatetime_idle", updatetime_idle.c_str(),
     "optional, in seconds, default: 600");
+  c.input_text("…on", "updatetime_on", updatetime_on.c_str(),
+    "optional, in seconds, only used if set");
+  c.input_text("…charging", "updatetime_charging", updatetime_charging.c_str(),
+    "optional, in seconds, only used if set");
+  c.input_text("…awake", "updatetime_awake", updatetime_awake.c_str(),
+    "optional, in seconds, only used if set");
+  c.input_text("…sendall", "updatetime_sendall", updatetime_sendall.c_str(),
+    "optional, in seconds, only used if set");
   c.fieldset_end();
 
   c.hr();
@@ -1526,6 +1582,116 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
 }
 #endif
 #endif
+
+
+/**
+ * HandleCfgNotifications: configure notifications (URL /cfg/notifications)
+ */
+void OvmsWebServer::HandleCfgNotifications(PageEntry_t& p, PageContext_t& c)
+{
+  std::string error;
+  std::string log_trip_storetime, log_trip_minlength, log_grid_storetime;
+
+  if (c.method == "POST") {
+    // process form submission:
+    log_trip_storetime = c.getvar("log_trip_storetime");
+    log_trip_minlength = c.getvar("log_trip_minlength");
+    log_grid_storetime = c.getvar("log_grid_storetime");
+
+    if (log_trip_storetime != "") {
+      if (atoi(log_trip_storetime.c_str()) < 0 || atoi(log_trip_storetime.c_str()) > 365) {
+        error += "<li data-input=\"log_trip_storetime\">Trip history log storage time must be in the range 0…365 days</li>";
+      }
+    }
+    if (log_trip_minlength != "") {
+      if (atoi(log_trip_minlength.c_str()) < 0) {
+        error += "<li data-input=\"log_trip_minlength\">Trip min length must not be negative</li>";
+      }
+    }
+    if (log_grid_storetime != "") {
+      if (atoi(log_grid_storetime.c_str()) < 0 || atoi(log_grid_storetime.c_str()) > 365) {
+        error += "<li data-input=\"log_grid_storetime\">Grid history log storage time must be in the range 0…365 days</li>";
+      }
+    }
+
+    if (error == "") {
+      // success:
+      if (log_trip_storetime == "")
+        MyConfig.DeleteInstance("notify", "log.trip.storetime");
+      else
+        MyConfig.SetParamValue("notify", "log.trip.storetime", log_trip_storetime);
+      if (log_trip_minlength == "")
+        MyConfig.DeleteInstance("notify", "log.trip.minlength");
+      else
+        MyConfig.SetParamValue("notify", "log.trip.minlength", log_trip_minlength);
+      if (log_grid_storetime == "")
+        MyConfig.DeleteInstance("notify", "log.grid.storetime");
+      else
+        MyConfig.SetParamValue("notify", "log.grid.storetime", log_grid_storetime);
+
+      c.head(200);
+      c.alert("success", "<p class=\"lead\">Notifications configured.</p>");
+      OutputHome(p, c);
+      c.done();
+      return;
+    }
+
+    // output error, return to form:
+    error = "<p class=\"lead\">Error!</p><ul class=\"errorlist\">" + error + "</ul>";
+    c.head(400);
+    c.alert("danger", error.c_str());
+  }
+  else {
+    // read configuration:
+    log_trip_storetime = MyConfig.GetParamValue("notify", "log.trip.storetime");
+    log_trip_minlength = MyConfig.GetParamValue("notify", "log.trip.minlength");
+    log_grid_storetime = MyConfig.GetParamValue("notify", "log.grid.storetime");
+
+    // generate form:
+    c.head(200);
+  }
+
+  c.panel_start("primary", "Notifications configuration");
+  c.form_start(p.uri);
+
+  c.fieldset_start("Data Log Storage Times");
+
+  c.input("number", "Trip history log", "log_trip_storetime", log_trip_storetime.c_str(), "Default: empty/0 = disabled",
+    "<p>Empty/0 = disabled. If enabled, the trip log receives one entry per trip, "
+    "see <a target=\"_blank\" href=\""
+    "https://docs.openvehicles.com/en/latest/userguide/notifications.html#trip-history-log"
+    "\">user manual</a> for details.</p>",
+    "min=\"0\" max=\"365\" step=\"1\"", "days");
+  c.input("number", "Trip min length", "log_trip_minlength", log_trip_minlength.c_str(), "Default: 0.2 km",
+    "<p>Only trips over at least this distance will be logged.</p>",
+    "min=\"0\" step=\"0.1\"", "km");
+
+  c.input("number", "Grid history log", "log_grid_storetime", log_grid_storetime.c_str(), "Default: empty/0 = disabled",
+    "<p>Empty/0 = disabled. If enabled, the grid log receives one entry per charge/generator state change, "
+    "see <a target=\"_blank\" href=\""
+    "https://docs.openvehicles.com/en/latest/userguide/notifications.html#grid-history-log"
+    "\">user manual</a> for details.</p>",
+    "min=\"0\" max=\"365\" step=\"1\"", "days");
+
+  c.fieldset_end();
+
+  c.hr();
+  c.input_button("default", "Save");
+  c.form_end();
+  c.panel_end(
+    "<p>Data logs are sent to the server (V2/V3). A V2 server may store the logs as requested by you "
+    "for up to 365 days, depending on the server configuration. You can download the log tables "
+    "in CSV format from the server using the standard server APIs or the browser UI provided "
+    "by the server.</p>"
+    "<p>An MQTT (V3) server normally won't store data records for longer than a few days, possibly "
+    "hours. You need to fetch them as soon as possible. There are automated MQTT tools available "
+    "for this purpose.</p>"
+    "<p>See <a target=\"_blank\" href=\""
+    "https://docs.openvehicles.com/en/latest/userguide/notifications.html"
+    "\">user manual</a> for details on notifications.</p>"
+    );
+  c.done();
+}
 
 
 /**
@@ -1628,12 +1794,36 @@ void OvmsWebServer::HandleCfgWebServer(PageEntry_t& p, PageContext_t& c)
 
 void OvmsWebServer::HandleCfgWifi(PageEntry_t& p, PageContext_t& c)
 {
+  bool cfg_bad_reconnect;
+  float cfg_sq_good, cfg_sq_bad;
+  
   if (c.method == "POST") {
     std::string warn, error;
 
     // process form submission:
     UpdateWifiTable(p, c, "ap", "wifi.ap", warn, error, 8);
     UpdateWifiTable(p, c, "client", "wifi.ssid", warn, error, 0);
+
+    cfg_sq_good = atof(c.getvar("cfg_sq_good").c_str());
+    cfg_sq_bad = atof(c.getvar("cfg_sq_bad").c_str());
+    cfg_bad_reconnect = (c.getvar("cfg_bad_reconnect") == "yes");
+
+    if (cfg_sq_bad >= cfg_sq_good) {
+      error += "<li data-input=\"cfg_sq_bad\">'Bad' signal level must be lower than 'good' level.</li>";
+    } else {
+      if (cfg_sq_good == -87)
+        MyConfig.DeleteInstance("network", "wifi.sq.good");
+      else
+        MyConfig.SetParamValueFloat("network", "wifi.sq.good", cfg_sq_good);
+      if (cfg_sq_bad == -89)
+        MyConfig.DeleteInstance("network", "wifi.sq.bad");
+      else
+        MyConfig.SetParamValueFloat("network", "wifi.sq.bad", cfg_sq_bad);
+      if (!cfg_bad_reconnect)
+        MyConfig.DeleteInstance("network", "wifi.bad.reconnect");
+      else
+        MyConfig.SetParamValueBool("network", "wifi.bad.reconnect", cfg_bad_reconnect);
+    }
 
     if (error == "") {
       c.head(200);
@@ -1653,6 +1843,10 @@ void OvmsWebServer::HandleCfgWifi(PageEntry_t& p, PageContext_t& c)
     c.alert("danger", error.c_str());
   }
   else {
+    cfg_sq_good = MyConfig.GetParamValueFloat("network", "wifi.sq.good", -87);
+    cfg_sq_bad = MyConfig.GetParamValueFloat("network", "wifi.sq.bad", -89);
+    cfg_bad_reconnect = MyConfig.GetParamValueBool("network", "wifi.bad.reconnect", false);
+    
     c.head(200);
   }
 
@@ -1668,6 +1862,16 @@ void OvmsWebServer::HandleCfgWifi(PageEntry_t& p, PageContext_t& c)
 
   c.fieldset_start("Wifi client networks");
   OutputWifiTable(p, c, "client", "wifi.ssid", MyConfig.GetParamValue("auto", "wifi.ssid.client"));
+  c.fieldset_end();
+
+  c.fieldset_start("Wifi client options");
+  c.input_slider("Good signal level", "cfg_sq_good", 3, "dBm", -1, cfg_sq_good, -87.0, -128.0, 0.0, 0.1,
+    "<p>Threshold for usable wifi signal strength</p>");
+  c.input_slider("Bad signal level", "cfg_sq_bad", 3, "dBm", -1, cfg_sq_bad, -89.0, -128.0, 0.0, 0.1,
+    "<p>Threshold for unusable wifi signal strength</p>");
+  c.input_checkbox("Immediate disconnect/reconnect", "cfg_bad_reconnect", cfg_bad_reconnect,
+    "<p>Check to immediately look for better access points when signal level gets bad."
+    " Default is to stay with the current AP as long as possible.</p>");
   c.fieldset_end();
 
   c.print(
@@ -1769,7 +1973,9 @@ void OvmsWebServer::HandleCfgWifi(PageEntry_t& p, PageContext_t& c)
     "});\n"
     "</script>");
 
-  c.panel_end();
+  c.panel_end(
+    "<p>Note: set the Wifi mode and default networks on the"
+    " <a href=\"/cfg/autostart\" target=\"#main\">Autostart configuration page</a>.</p>");
   c.done();
 }
 
@@ -2120,6 +2326,7 @@ void OvmsWebServer::HandleCfgAutoInit(PageEntry_t& p, PageContext_t& c)
   c.input_select_option("can1", "can1", obd2ecu == "can1");
   c.input_select_option("can2", "can2", obd2ecu == "can2");
   c.input_select_option("can3", "can3", obd2ecu == "can3");
+  c.input_select_option("can4", "can4", obd2ecu == "can4");
   c.input_select_end(
     "<p>OBD2ECU translates OVMS to OBD2 metrics, i.e. to drive standard ECU displays</p>");
 
@@ -2590,7 +2797,7 @@ void OvmsWebServer::HandleCfgLogging(PageEntry_t& p, PageContext_t& c)
     if (p != std::string::npos) {
       std::string webdir = webpath.substr(0, p);
       if (webdir != docroot)
-        download += " <a class=\"btn btn-default\" target=\"_blank\" href=\"" + webdir + "/\">Open directory</a>";
+        download += " <a class=\"btn btn-default\" target=\"_blank\" href=\"" + webdir + "/#sc=0&amp;so=1\">Open directory</a>";
     }
   } else {
     download = "You can access your logs with the browser if the path is in your webserver root (" + docroot + ").";
@@ -2937,7 +3144,7 @@ void OvmsWebServer::HandleCfgBackup(PageEntry_t& p, PageContext_t& c)
     "\n"
     "<script>\n"
     "(function(){\n"
-      "var suggest = '/sd/backup/cfg-' + new Date().toISOString().substr(0,10) + '.zip';\n"
+      "var suggest = '/sd/backup/cfg-' + new Date().toISOString().substr(2,8).replaceAll('-','') + '.zip';\n"
       "var zip = { exists: false, iszip: false };\n"
       "var $panel = $('.panel-body');\n"
     "\n"
@@ -3762,6 +3969,115 @@ void OvmsWebServer::HandleEditor(PageEntry_t& p, PageContext_t& c)
     "})();\n"
     "</script>\n"
     );
+
+  c.done();
+}
+
+
+/**
+ * HandleFile: file load/save API
+ *  
+ *  URL: /api/file
+ *  
+ *  @param method
+ *    GET   = load content from path
+ *    POST  = save content to path
+ *  @param path
+ *    Full path to file
+ *  @param content
+ *    File content for POST
+ *  
+ *  @return
+ *    Status: 200 (OK) / 400 (Error)
+ *    Body: GET: file content or error message, POST: empty or error message
+ */
+void OvmsWebServer::HandleFile(PageEntry_t& p, PageContext_t& c)
+{
+  std::string error;
+  std::string path = c.getvar("path");
+  extram::string content;
+
+  std::string headers =
+    "Content-Type: application/octet-stream; charset=utf-8\r\n"
+    "Cache-Control: no-cache";
+
+  if (MyConfig.ProtectedPath(path)) {
+    c.head(400, headers.c_str());
+    c.print("ERROR: Protected path\n");
+    c.done();
+    return;
+  }
+
+  if (c.method == "POST")
+  {
+    bool got_content = c.getvar("content", content);
+
+    if (path == "" || path.front() != '/' || path.back() == '/') {
+      error += "; Missing or invalid path";
+    }
+    else if (!got_content) {
+      error += "; Missing content";
+    }
+    else {
+      // create path:
+      size_t n = path.rfind('/');
+      if (n != 0 && n != std::string::npos) {
+        std::string dir = path.substr(0, n);
+        if (!path_exists(dir)) {
+          if (mkpath(dir) != 0) {
+            error += "; Error creating path: ";
+            error += strerror(errno);
+          }
+        }
+      }
+      // write file:
+      if (error == "") {
+        std::ofstream file(path, std::ios::out | std::ios::binary | std::ios::trunc);
+        if (file.is_open())
+          file.write(content.data(), content.size());
+        if (file.fail()) {
+          error += "; Error writing to path: ";
+          error += strerror(errno);
+        } else {
+          MyEvents.SignalEvent("system.vfs.file.changed", (void*)path.c_str(), path.size()+1);
+        }
+      }
+    }
+  }
+  else
+  {
+    if (path == "") {
+      path = "/store/";
+    } else if (path.back() != '/') {
+      // read file:
+      std::ifstream file(path, std::ios::in | std::ios::binary | std::ios::ate);
+      if (file.is_open()) {
+        auto size = file.tellg();
+        if (size > 0) {
+          content.resize(size, '\0');
+          file.seekg(0);
+          file.read(&content[0], size);
+        }
+      }
+      if (file.fail()) {
+        error += "; Error reading from path: ";
+        error += strerror(errno);
+      }
+    }
+  }
+
+  // output:
+  if (!error.empty()) {
+    c.head(400, headers.c_str());
+    c.print("ERROR: ");
+    c.print(error.substr(2)); // skip "; " intro
+    c.print("\n");
+  } else {
+    c.head(200);
+    if (c.method == "GET") {
+      c.print(content);
+    }
+  }
 
   c.done();
 }

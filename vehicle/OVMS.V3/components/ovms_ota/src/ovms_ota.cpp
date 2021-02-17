@@ -651,13 +651,13 @@ OvmsOTA::OvmsOTA()
 
   OvmsCommand* cmd_ota = MyCommandApp.RegisterCommand("ota","OTA framework", ota_status, "", 0, 0, false);
 
-  OvmsCommand* cmd_otastatus = cmd_ota->RegisterCommand("status","Show OTA status",ota_status,"[nocheck]",0,1);
+  OvmsCommand* cmd_otastatus = cmd_ota->RegisterCommand("status","Show OTA status",ota_status);
   cmd_otastatus->RegisterCommand("nocheck","…skip check for available update",ota_status);
 
   OvmsCommand* cmd_otaflash = cmd_ota->RegisterCommand("flash","OTA flash");
   cmd_otaflash->RegisterCommand("vfs","OTA flash vfs",ota_flash_vfs,"<file>",1,1);
   cmd_otaflash->RegisterCommand("http","OTA flash http",ota_flash_http,"[<url>]",0,1);
-  OvmsCommand* cmd_otaflash_auto = cmd_otaflash->RegisterCommand("auto","Automatic regular OTA flash (over web)",ota_flash_auto,"[force]",0,1);
+  OvmsCommand* cmd_otaflash_auto = cmd_otaflash->RegisterCommand("auto","Automatic regular OTA flash (over web)",ota_flash_auto);
   cmd_otaflash_auto->RegisterCommand("force","…force update (even if server version older)",ota_flash_auto);
 
   OvmsCommand* cmd_otaboot = cmd_ota->RegisterCommand("boot","OTA boot");

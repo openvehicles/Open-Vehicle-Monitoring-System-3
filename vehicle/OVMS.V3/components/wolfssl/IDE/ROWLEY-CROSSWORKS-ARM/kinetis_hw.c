@@ -1,6 +1,6 @@
 /* kinetis_hw.c
  *
- * Copyright (C) 2006-2016 wolfSSL Inc.
+ * Copyright (C) 2006-2020 wolfSSL Inc.
  *
  * This file is part of wolfSSL.
  *
@@ -33,6 +33,7 @@
 // $(TargetsDir) location:
 // On Mac OS/X: Users/USERNAME/Library/Rowley Associates Limited/CrossWorks for ARM/packages/targets/
 // On Windows: C:/Users/USERNAME/Application Data/Local/Rowley Associates Limited/CrossWorks for ARM/packages/targets/
+// On Linux: home/USERNAME/.rowley_associates_limited/CrossWorks for ARM/v4/packages/targets/
 
 // Located in $(TargetsDir)/Kinetis/CMSIS/
 #ifdef FREESCALE_KSDK_BM
@@ -67,17 +68,28 @@
     #define UART_TX_PORT    PORTA                       /* UART TX Port */
     #define UART_TX_PIN     2U                          /* UART TX Pin */
     #define UART_TX_MUX     kPORT_MuxAlt2               /* Kinetis UART pin mux */
+#elif defined (WOLFSSL_FRDM_K64)
+    #define UART_PORT       UART0                       /* UART Port */
+    #define UART_TX_PORT    PORTB                       /* UART TX Port */
+    #define UART_TX_PIN     17U                         /* UART TX Pin */
+    #define UART_TX_MUX     0x3                         /* Kinetis UART pin mux */
 #else
     #define UART_PORT       UART4                       /* UART Port */
     #define UART_TX_PORT    PORTE                       /* UART TX Port */
     #define UART_TX_PIN     24U                         /* UART TX Pin */
     #define UART_TX_MUX     0x3                         /* Kinetis UART pin mux */
 #endif
-#define UART_BAUD       115200                          /* UART Baud Rate */
+#define UART_BAUD_RATE      115200                      /* UART Baud Rate */
+
+#ifdef WOLFSSL_FRDM_K64
+    #define UART_BAUD       UART_BAUD_RATE*8
+#else
+    #define UART_BAUD       UART_BAUD_RATE
+#endif
 
 /* Note: You will also need to update the UART clock gate in hw_uart_init (SIM_SCGC1_UART5_MASK) */
 /* Note: TWR-K60 is UART3, PTC17 */
-/* Note: FRDM-K64 is UART4, PTE24 */
+/* Note: FRDM-K64 is UART4, PTE24 or UART0 PTB17 for OpenOCD  (SIM_SCGC4_UART0_MASK)*/
 /* Note: TWR-K64 is UART5, PTE8 */
 /* Note: FRDM-K82F is LPUART0 A2, LPUART4 PTC15 */
 
@@ -100,9 +112,9 @@ static void hw_mcg_init(void)
     BOARD_BootClockHSRUN();
 #else
     /* Adjust clock dividers (core/system=div/1, bus=div/2, flex bus=div/2, flash=div/4) */
-    SIM->CLKDIV1 = SIM_CLKDIV1_OUTDIV1(SYS_CLK_DIV-1) | SIM_CLKDIV1_OUTDIV2(BUS_CLK_DIV-1) | 
+    SIM->CLKDIV1 = SIM_CLKDIV1_OUTDIV1(SYS_CLK_DIV-1) | SIM_CLKDIV1_OUTDIV2(BUS_CLK_DIV-1) |
         SIM_CLKDIV1_OUTDIV3(BUS_CLK_DIV-1) | SIM_CLKDIV1_OUTDIV4(FLASH_CLK_DIV-1);
-   
+
     /* Configure FEI internal clock speed */
     MCG->C4 = (SYS_CLK_DMX | SYS_CLK_DRS);
     while((MCG->C4 & (MCG_C4_DRST_DRS_MASK | MCG_C4_DMX32_MASK)) != (SYS_CLK_DMX | SYS_CLK_DRS));
@@ -130,23 +142,34 @@ static void hw_gpio_init(void)
         | SIM_SCGC5_PORTE_MASK
 #endif
    );
+
+#if 0 /* Debug clock */
+    /* ClockOut on PTC3 */
+    PORTC->PCR[3] = PORT_PCR_MUX(0x05); /* Alt 5 */
+    SIM_SOPT2 |= SIM_SOPT2_CLKOUTSEL(0); /* FlexBus CLKOUT */
+#endif
+
 #endif
 }
 
 static void hw_uart_init(void)
 {
-    register uint16_t sbr, brfa;
-    uint8_t temp;
-
 #ifdef FREESCALE_KSDK_BM
     PORT_SetPinMux(UART_TX_PORT, UART_TX_PIN, UART_TX_MUX);
     CLOCK_SetLpuartClock(1); /* MCGPLLCLK */
     DbgConsole_Init((uint32_t)UART_PORT, UART_BAUD, DEBUG_CONSOLE_DEVICE_TYPE_LPUART, SYS_CLK_HZ);
 #else
-    /* Enable UART core clock */
-    /* Note: Remember to update me if UART_PORT changes */
-    SIM->SCGC1 |= SIM_SCGC1_UART4_MASK;
-    
+    register uint16_t sbr, brfa;
+    uint8_t temp;
+
+    #ifdef WOLFSSL_FRDM_K64
+        /* Enable UART core clock ONLY for FRDM-K64F */
+        SIM->SCGC4 |= SIM_SCGC4_UART0_MASK;
+    #else
+        /* Enable UART core clock */
+        /* Note: Remember to update me if UART_PORT changes */
+        SIM->SCGC1 |= SIM_SCGC1_UART4_MASK;
+    #endif
     /* Configure UART TX pin */
     UART_TX_PORT->PCR[UART_TX_PIN] = PORT_PCR_MUX(UART_TX_MUX);
 
@@ -155,17 +178,17 @@ static void hw_uart_init(void)
 
     /* Configure the UART for 8-bit mode, no parity */
     UART_PORT->C1 = 0;
-    
+
     /* Calculate baud settings */
     sbr = (uint16_t)((BUS_CLK_KHZ * 1000)/(UART_BAUD * 16));
     temp = UART_PORT->BDH & ~(UART_BDH_SBR(0x1F));
     UART_PORT->BDH = temp | UART_BDH_SBR(((sbr & 0x1F00) >> 8));
     UART_PORT->BDL = (uint8_t)(sbr & UART_BDL_SBR_MASK);
-    
+
     /* Determine if a fractional divider is needed to get closer to the baud rate */
     brfa = (((BUS_CLK_KHZ * 32000)/(UART_BAUD * 16)) - (sbr * 32));
     temp = UART_PORT->C4 & ~(UART_C4_BRFA(0x1F));
-    UART_PORT->C4 = temp | UART_C4_BRFA(brfa);    
+    UART_PORT->C4 = temp | UART_C4_BRFA(brfa);
 
     /* Enable receiver and transmitter */
 	UART_PORT->C2 |= (UART_C2_TE_MASK | UART_C2_RE_MASK);
@@ -194,8 +217,6 @@ static void hw_rtc_init(void)
 
     /* Enable OSC */
     if ((RTC->CR & RTC_CR_OSCE_MASK) == 0) {
-        int i;
-
         /* Turn on */
         RTC->CR |= RTC_CR_OSCE_MASK;
 
@@ -314,7 +335,7 @@ const struct flash_conf flash_conf __attribute__ ((section (".flashconf"),used))
 {
    .backdoor_key = { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF },
    .fprot = { 0xFF, 0xFF, 0xFF, 0xFF },
-   .fsec = NV_FSEC_SEC(FSEC_UNSECURE) | NV_FSEC_FSLACC(FSEC_FSLACC_GRANTED) | 
+   .fsec = NV_FSEC_SEC(FSEC_UNSECURE) | NV_FSEC_FSLACC(FSEC_FSLACC_GRANTED) |
            NV_FSEC_MEEN(FSEC_MASS_ERASE_ENABLE) | NV_FSEC_KEYEN(FSEC_KEY_DISABLED),
    .fopt = 0xFF,
    .feprot = 0xFF,

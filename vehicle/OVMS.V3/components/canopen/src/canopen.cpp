@@ -57,7 +57,7 @@ CANopen::CANopen()
 
   for (int k=1; k <= CAN_INTERFACE_CNT; k++)
     {
-    static const char* name[4] = {"can1", "can2", "can3"};
+    static const char* name[4] = { "can1", "can2", "can3", "can4" };
     OvmsCommand* cmd_canx = cmd_co->RegisterCommand(name[k-1], "select bus");
 
     cmd_canx->RegisterCommand("start", "Start CANopen worker", shell_start);

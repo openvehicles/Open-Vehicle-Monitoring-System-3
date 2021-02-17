@@ -149,10 +149,11 @@ function setcontent(tgt, uri, text){
     tgt.html(text);
     var $p = tgt.find(">.panel");
     if ($p.length == 1) $p.addClass("panel-single");
+    var moduleid = $("title").data("moduleid") || "OVMS";
     if (mi.length > 0)
-      document.title = "OVMS " + (mi.attr("title") || mi.text());
+      document.title = moduleid + " " + (mi.attr("title") || mi.text());
     else
-      document.title = "OVMS Console";
+      document.title = moduleid + " Console";
   } else {
     tgt[0].scrollIntoView();
     tgt.html(text);
@@ -1360,6 +1361,7 @@ $.fn.chart = function(options) {
         $(this).data("chart", chart).addClass("has-chart get-window-resize").on("window-resize", function() {
           $(this).data("chart").reflow();
         });
+        $(this).closest(".metric.chart").data("chart", chart);
       });
     }
     if (window.Highcharts) {
@@ -1409,6 +1411,7 @@ $.fn.table = function(options) {
         });
         var table = $(this).DataTable(options);
         $(this).data("dataTable", table).addClass("has-dataTable");
+        $(this).closest(".metric.table").data("dataTable", table);
       });
     }
     if ($.fn.DataTables) {
@@ -1646,7 +1649,7 @@ $(function(){
   // Metrics displays:
   $("body").on('msg:metrics', '.receiver', function(e, update) {
     $(this).find(".metric").each(function() {
-      var $el = $(this), metric = $el.data("metric"), prec = $el.data("prec");
+      var $el = $(this), metric = $el.data("metric"), prec = $el.data("prec"), scale = $el.data("scale");
       if (!metric) return;
       // filter:
       var keys = metric.split(","), val;
@@ -1658,23 +1661,27 @@ $(function(){
       if ($el.hasClass("text")) {
         $el.children(".value").text(val);
       } else if ($el.hasClass("number")) {
-        var vf = (prec != null) ? Number(val).toFixed(prec) : val;
+        var vf = val;
+        if (scale != null) vf = Number(vf) * scale;
+        if (prec != null) vf = Number(vf).toFixed(prec);
         $el.children(".value").text(vf);
       } else if ($el.hasClass("progress")) {
+        var vf = val;
+        if (scale != null) vf = Number(vf) * scale;
+        if (prec != null) vf = Number(vf).toFixed(prec);
         var $pb = $(this.firstElementChild), min = $pb.attr("aria-valuemin"), max = $pb.attr("aria-valuemax");
         var vp = (val-min) / (max-min) * 100;
-        var vf = (prec != null) ? Number(val).toFixed(prec) : val;
         $pb.css("width", vp+"%").attr("aria-valuenow", vp).find(".value").text(vf);
         var lw = 0; $pb.find("span").each(function(){ lw += $(this).width(); });
         if (($pb.parent().width()*vp/100) < lw) $pb.addClass("value-low"); else $pb.removeClass("value-low");
       } else if ($el.hasClass("chart")) {
-        var ch = $(this.firstElementChild).data("chart");
+        var ch = $(this).data("chart");
         if (ch && ch.userOptions && ch.userOptions.onUpdate)
           ch.userOptions.onUpdate.call(ch, update);
       } else if ($el.hasClass("table")) {
-        var dt = $(this.firstElementChild).data("dataTable");
-        if (dt && dt.settings() && dt.settings().oInit && dt.settings().oInit.onUpdate)
-          dt.settings().oInit.onUpdate.call(dt, update);
+        var dt = $(this).data("dataTable");
+        if (dt && dt.settings() && dt.settings()[0] && dt.settings()[0].oInit && dt.settings()[0].oInit.onUpdate)
+          dt.settings()[0].oInit.onUpdate.call(dt, update);
       } else {
         $el.text(val);
       }

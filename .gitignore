@@ -63,3 +63,5 @@ docs/build/
 
 #configs for Visual Studio Code
 .vscode/
+vehicle/OVMS.V3/components/ovms_webserver/assets/charts.js.gz
+*.gz

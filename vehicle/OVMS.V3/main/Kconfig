@@ -401,18 +401,11 @@ config OVMS_VEHICLE_FIAT500
         Enable to include support for FIAT 500 vehicle.
 
 config OVMS_VEHICLE_VWEUP
-    bool "Include support for VW e-Up vehicle"
+    bool "Include support for VW e-up! vehicle"
     default y
     depends on OVMS
     help
-        Enable to include support for VW e-Up vehicle.
-
-config OVMS_VEHICLE_VWEUP_OBD
-    bool "Include support for VW e-Up vehicle via OBD2"
-    default y
-    depends on OVMS
-    help
-        Enable to include support for VW e-Up vehicle via OBD2.
+        Enable to include support for vehicles VW e-up! (all model years), Seat Mii electric, and Skoda Citigo-e iV.
 
 config OVMS_VEHICLE_MERCEDESB250E
     bool "Include support for Mercedes-Benz B250E (W242) vehicle"
@@ -441,6 +434,13 @@ config OVMS_VEHICLE_MG_EV
     depends on OVMS
     help
         Enable to include support for MG ZS EV vehicles.
+
+config OVMS_VEHICLE_BMWI3
+    bool "Include support for BMW i3/i3s"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for BMW i3 or i3s vehicles
 
 config OVMS_VEHICLE_RXTASK_STACK
     int "Stack size for vehicle RX task"
@@ -710,6 +710,13 @@ endmenu # Component Options
 
 menu "Developer Options"
     depends on OVMS
+
+config OVMS_DEV_SECUREASYNC
+    bool "Initialize async console in enabled mode"
+    default n
+    depends on OVMS
+    help
+        Enable for async console to be automatically logged in (danger: insecure)
 
 config OVMS_DEV_CONFIGVFS
     bool "Disable the usual protections for configuration visibility in VFS"

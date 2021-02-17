@@ -75,8 +75,8 @@ class OvmsVehicleMgEv : public OvmsVehicle
     canbus* IdToBus(int id);
     void ConfigurePollInterface(int bus);
 
-    static void ZombieTimer(TimerHandle_t timer);
-    void ZombieTimer();
+    static void ZombieMode(TimerHandle_t timer);
+    void ZombieMode();
 
     static void SoftwareVersions(
             int, OvmsWriter* writer, OvmsCommand*, int, const char* const*);
@@ -88,11 +88,14 @@ class OvmsVehicleMgEv : public OvmsVehicle
     bool SendPollMessage(canbus* bus, uint16_t id, uint8_t type, uint16_t pid);
 
     bool HasWoken(canbus* currentBus, uint32_t ticker);
-    void DeterminePollState(canbus* currentBus, bool wokenUp, uint32_t ticker);
+    void DeterminePollState(canbus* currentBus, uint32_t ticker);
     void SendAlarmSensitive(canbus* currentBus);
-    bool SendKeepAliveTo(canbus* currentBus, uint16_t id);
+    // Signal to an ECU that an OBD tester is connected
+    bool SendTesterPresentTo(canbus* currentBus, uint16_t id); 
+    // Signal to an ECU to enter Diagnostic session defined by mode
+    bool SendDiagSessionTo(canbus* currentBus, uint16_t id, uint8_t mode); 
 
-    void AttemptDiagnostic();
+  
 
     void NotifyVehicleIdling() override;
 
@@ -129,16 +132,12 @@ class OvmsVehicleMgEv : public OvmsVehicle
     void IncomingEvccPoll(uint16_t pid, uint8_t* data, uint8_t length);
 
     /// The states that the gateway CAN can be in
-    enum WakeState
+    enum GwmState
     {
-        Off,     // The CAN is off and we're not trying to wake it
-        Waking,  // Still off, but we are trying to wake it up
-        Tester,  // The gateway is on, but only because we're keeping it awake with a
-                 // tester present message
-        Diagnostic,  // The gateway is on, but only because we're keeping it awake with
-                     // a diagnostic session.  This causes an error on the IPK, so best
-                     // not to keep in this state.
-        Awake    // CAN is awake because the car is on or tester present is being sent
+        AllowToSleep,  // Stop Sending any control to GWM
+        SendTester,  // Send Tester Present to GWM
+        SendDiagnostic,  // Send Diagnostic Session Override to GWM
+        Undefined    // We are not controlling GWM
     };
 
     /// A temporary store for the VIN
@@ -147,19 +146,36 @@ class OvmsVehicleMgEv : public OvmsVehicle
     uint32_t m_rxPacketTicker;
     /// The last number of packets received on the CAN
     uint32_t m_rxPackets;
-    /// The current state of the CAN to the gateway
-    WakeState m_wakeState;
-    /// The ticker time the wake state was changed
-    uint32_t m_wakeTicker;
+    /// The number of ticks that no packets have been recieved
+    uint32_t m_noRxCount;
+    /// The current state of control commands we are sending to the gateway
+    GwmState m_gwmState;
+    /// The ticker time for after-run of charging and running sessions
+    uint32_t m_afterRunTicker;
+    /// The ticker time for Zombie Mode Sleep Timeout before attempting to wake.
+    uint32_t m_preZombieOverrideTicker;
+    /// Boolean for Car State
+    bool carIsResponsiveToQueries;
     /// A count of the number of times we've woken the car to find it wasn't charging
     uint16_t m_diagCount;
-    /// A timer used to send the zombie keep alive frame which is required every 250ms
-    TimerHandle_t m_zombieTimer;
     /// The command registered when the car is made to query the software versions of the
     /// different ECUs
     OvmsCommand* m_cmdSoftver;
     /// The responses from the software version queries
     std::vector<std::pair<uint32_t, std::vector<char>>> m_versions;
+    float mg_cum_energy_charge_wh;
+    
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
+    // --------------------------------------------------------------------------
+    // Webserver subsystem
+    //  - implementation: mi_web.(h,cpp)
+    //
+  public:
+    void WebInit();
+    //static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
+    void GetDashboardConfig(DashboardConfig& cfg);
+#endif //CONFIG_OVMS_COMP_WEBSERVER
+    
 };
 
 #endif  // __VEHICLE_MGEV_H__

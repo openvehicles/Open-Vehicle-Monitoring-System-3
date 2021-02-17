@@ -82,6 +82,9 @@ retools.mode.analyse                          RE switched to analysis mode
 retools.mode.discover                         RE switched to discovery mode
 retools.started                               RE (reverse engineering) toolkit started
 retools.stopped                               RE toolkit stopped
+retools.pidscan.start                         RE OBD2 PID scan started
+retools.pidscan.stop                          RE OBD2 PID scan stopped
+retools.pidscan.done                          RE OBD2 PID scan completed
 sd.insert                                     The SD card has just been inserted
 sd.mounted                                    The SD card is mounted and ready to use
 sd.remove                                     The SD card has just been removed
@@ -149,6 +152,8 @@ vehicle.alert.12v.on                          12V system voltage is below alert 
 vehicle.alert.bms                             BMS cell/pack volts/temps exceeded thresholds
 vehicle.asleep                                Vehicle systems are asleep
 vehicle.awake                                 Vehicle systems are awake
+vehicle.aux.12v.on                            Vehicle 12V auxiliary system is on (base system awake)
+vehicle.aux.12v.off                           Vehicle 12V auxiliary system is off
 vehicle.charge.12v.start                      Vehicle 12V battery is charging
 vehicle.charge.12v.stop                       Vehicle 12V battery has stopped charging
 vehicle.charge.finished                       Vehicle charge has completed normally

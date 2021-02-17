@@ -57,8 +57,7 @@ provides data logging to SD card and to a server.
   - [Tesla Model S](https://docs.openvehicles.com/en/latest/components/vehicle_teslamodels/docs/index.html)
   - [Tesla Roadster](https://docs.openvehicles.com/en/latest/components/vehicle_teslaroadster/docs/index.html)
   - Think City
-  - [VW e-Up (T26A)](https://docs.openvehicles.com/en/latest/components/vehicle_vweup/docs/index.html)
-  - [VW e-Up (OBD2)](https://docs.openvehicles.com/en/latest/components/vehicle_vweup_obd/docs/index.html)
+  - [VW e-Up](https://docs.openvehicles.com/en/latest/components/vehicle_vweup/docs/index.html)
 - _General Support_
   - [DBC File Based](https://docs.openvehicles.com/en/latest/components/vehicle_dbc/docs/index.html)
   - [GPS Tracking](https://docs.openvehicles.com/en/latest/components/vehicle_track/docs/index.html)
@@ -180,7 +179,7 @@ apply, see component sources for details.
 
 The project itself is published under the MIT license:
 
-Copyright (c) 2011-2019 Open Vehicles
+Copyright (c) 2011-2020 Open Vehicles
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

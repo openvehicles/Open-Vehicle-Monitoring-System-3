@@ -22,6 +22,7 @@ Read the source and install them as plugins (see below) to see how they work.
    :caption: API usage
    
    loadcmd
+   fileapi
 
 .. toctree::
    :maxdepth: 1

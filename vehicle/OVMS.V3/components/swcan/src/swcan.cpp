@@ -30,6 +30,7 @@
 static const char *TAG = "swcan";
 
 #include "swcan.h"
+#include "mcp2515_regdef.h"
 #include "ovms_peripherals.h"
 #include "ovms_config.h"
 #include <metrics_standard.h>

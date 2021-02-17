@@ -72,6 +72,7 @@ class esp32can : public canbus
     gpio_num_t m_txpin;               // TX pin
     gpio_num_t m_rxpin;               // RX pin
     OvmsMutex m_write_mutex;
+    bool m_tx_abort;
   };
 
 #endif //#ifndef __ESP32CAN_H__

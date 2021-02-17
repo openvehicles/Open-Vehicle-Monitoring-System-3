@@ -1,6 +1,6 @@
 /* error-ssl.h
  *
- * Copyright (C) 2006-2016 wolfSSL Inc.
+ * Copyright (C) 2006-2020 wolfSSL Inc.
  *
  * This file is part of wolfSSL.
  *
@@ -57,7 +57,7 @@ enum wolfSSL_ErrorCodes {
     DOMAIN_NAME_MISMATCH         = -322,   /* peer subject name mismatch */
     WANT_READ                    = -323,   /* want read, call again    */
     NOT_READY_ERROR              = -324,   /* handshake layer not ready */
-    PMS_VERSION_ERROR            = -325,   /* pre m secret version error */
+    IPADDR_MISMATCH              = -325,   /* peer ip address mismatch */
     VERSION_ERROR                = -326,   /* record layer version error */
     WANT_WRITE                   = -327,   /* want write, call again   */
     BUFFER_ERROR                 = -328,   /* malformed buffer input   */
@@ -66,9 +66,6 @@ enum wolfSSL_ErrorCodes {
     CLIENT_ID_ERROR              = -331,   /* psk client identity error  */
     SERVER_HINT_ERROR            = -332,   /* psk server hint error  */
     PSK_KEY_ERROR                = -333,   /* psk key error  */
-    ZLIB_INIT_ERROR              = -334,   /* zlib init error  */
-    ZLIB_COMPRESS_ERROR          = -335,   /* zlib compression error  */
-    ZLIB_DECOMPRESS_ERROR        = -336,   /* zlib decompression error  */
 
     GETTIME_ERROR                = -337,   /* gettimeofday failed ??? */
     GETITIMER_ERROR              = -338,   /* getitimer failed ??? */
@@ -104,15 +101,15 @@ enum wolfSSL_ErrorCodes {
     COOKIE_ERROR                 = -369,   /* dtls cookie error */
     SEQUENCE_ERROR               = -370,   /* dtls sequence error */
     SUITES_ERROR                 = -371,   /* suites pointer error */
-    SSL_NO_PEM_HEADER            = -372,   /* no PEM header found */
+
     OUT_OF_ORDER_E               = -373,   /* out of order message */
     BAD_KEA_TYPE_E               = -374,   /* bad KEA type found */
     SANITY_CIPHER_E              = -375,   /* sanity check on cipher error */
-    RECV_OVERFLOW_E              = -376,   /* RXCB returned more than rqed */
+    RECV_OVERFLOW_E              = -376,   /* RXCB returned more than read */
     GEN_COOKIE_E                 = -377,   /* Generate Cookie Error */
     NO_PEER_VERIFY               = -378,   /* Need peer cert verify Error */
     FWRITE_ERROR                 = -379,   /* fwrite problem */
-    CACHE_MATCH_ERROR            = -380,   /* chache hdr match error */
+    CACHE_MATCH_ERROR            = -380,   /* Cache hdr match error */
     UNKNOWN_SNI_HOST_NAME_E      = -381,   /* Unrecognized host name Error */
     UNKNOWN_MAX_FRAG_LEN_E       = -382,   /* Unrecognized max frag len Error */
     KEYUSE_SIGNATURE_E           = -383,   /* KeyUse digSignature error */
@@ -129,23 +126,19 @@ enum wolfSSL_ErrorCodes {
     DUPLICATE_MSG_E              = -395,   /* Duplicate message error */
     SNI_UNSUPPORTED              = -396,   /* SSL 3.0 does not support SNI */
     SOCKET_PEER_CLOSED_E         = -397,   /* Underlying transport closed */
-
     BAD_TICKET_KEY_CB_SZ         = -398,   /* Bad session ticket key cb size */
     BAD_TICKET_MSG_SZ            = -399,   /* Bad session ticket msg size    */
     BAD_TICKET_ENCRYPT           = -400,   /* Bad user ticket encrypt        */
-
     DH_KEY_SIZE_E                = -401,   /* DH Key too small */
     SNI_ABSENT_ERROR             = -402,   /* No SNI request. */
     RSA_SIGN_FAULT               = -403,   /* RSA Sign fault */
     HANDSHAKE_SIZE_ERROR         = -404,   /* Handshake message too large */
-
     UNKNOWN_ALPN_PROTOCOL_NAME_E = -405,   /* Unrecognized protocol name Error*/
     BAD_CERTIFICATE_STATUS_ERROR = -406,   /* Bad certificate status message */
     OCSP_INVALID_STATUS          = -407,   /* Invalid OCSP Status */
-
+    OCSP_WANT_READ               = -408,   /* OCSP callback response WOLFSSL_CBIO_ERR_WANT_READ */
     RSA_KEY_SIZE_E               = -409,   /* RSA key too small */
     ECC_KEY_SIZE_E               = -410,   /* ECC key too small */
-
     DTLS_EXPORT_VER_E            = -411,   /* export version error */
     INPUT_SIZE_E                 = -412,   /* input size too big error */
     CTX_INIT_MUTEX_E             = -413,   /* initialize ctx mutex error */
@@ -164,6 +157,20 @@ enum wolfSSL_ErrorCodes {
     MCAST_HIGHWATER_CB_E         = -426,   /* Multicast highwater cb err */
     ALERT_COUNT_E                = -427,   /* Alert Count exceeded err */
     EXT_MISSING                  = -428,   /* Required extension not found */
+    UNSUPPORTED_EXTENSION        = -429,   /* TLSX not requested by client */
+    PRF_MISSING                  = -430,   /* PRF not compiled in */
+    DTLS_RETX_OVER_TX            = -431,   /* Retransmit DTLS flight over */
+    DH_PARAMS_NOT_FFDHE_E        = -432,   /* DH params from server not FFDHE */
+    TCA_INVALID_ID_TYPE          = -433,   /* TLSX TCA ID type invalid */
+    TCA_ABSENT_ERROR             = -434,   /* TLSX TCA ID no response */
+    TSIP_MAC_DIGSZ_E             = -435,   /* Invalid MAC size for TSIP */
+    CLIENT_CERT_CB_ERROR         = -436,   /* Client cert callback error */
+    SSL_SHUTDOWN_ALREADY_DONE_E  = -437,   /* Shutdown called redundantly */
+    TLS13_SECRET_CB_E            = -438,   /* TLS1.3 secret Cb fcn failure */
+    DTLS_SIZE_ERROR              = -439,   /* Trying to send too much data */
+    NO_CERT_ERROR                = -440,   /* TLS1.3 - no cert set error */
+    APP_DATA_READY               = -441,   /* DTLS1.2 application data ready for read */
+
     /* add strings to wolfSSL_ERR_reason_error_string in internal.c !!!!! */
 
     /* begin negotiation parameter errors */
@@ -180,7 +187,7 @@ enum wolfSSL_ErrorCodes {
 };
 
 
-#ifdef WOLFSSL_CALLBACKS
+#if defined(WOLFSSL_CALLBACKS) || defined(OPENSSL_EXTRA)
     enum {
         MIN_PARAM_ERR = UNSUPPORTED_SUITE,
         MAX_PARAM_ERR = MIN_PARAM_ERR - 10

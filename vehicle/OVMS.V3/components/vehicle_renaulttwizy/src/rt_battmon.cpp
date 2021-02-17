@@ -130,6 +130,36 @@ void OvmsVehicleRenaultTwizy::BatteryInit()
 }
 
 
+/**
+ * BatteryShutdown:
+ */
+void OvmsVehicleRenaultTwizy::BatteryShutdown()
+{
+  ESP_LOGI(TAG, "battmon subsystem shutdown");
+
+  // commands
+  cmd_xrt->UnregisterCommand("batt");
+
+  // metrics
+  MyMetrics.DeregisterMetric(m_batt_use_soc_min);
+  MyMetrics.DeregisterMetric(m_batt_use_soc_max);
+  MyMetrics.DeregisterMetric(m_batt_use_volt_min);
+  MyMetrics.DeregisterMetric(m_batt_use_volt_max);
+  MyMetrics.DeregisterMetric(m_batt_use_temp_min);
+  MyMetrics.DeregisterMetric(m_batt_use_temp_max);
+
+  MyMetrics.DeregisterMetric(m_bms_type);
+  MyMetrics.DeregisterMetric(m_bms_state1);
+  MyMetrics.DeregisterMetric(m_bms_state2);
+  MyMetrics.DeregisterMetric(m_bms_error);
+  MyMetrics.DeregisterMetric(m_bms_balancing);
+  MyMetrics.DeregisterMetric(m_bms_balancetime);
+  MyMetrics.DeregisterMetric(m_bms_temp);
+
+  vSemaphoreDelete(m_batt_sensors);
+}
+
+
 bool OvmsVehicleRenaultTwizy::BatteryLock(int maxwait_ms)
 {
   if (m_batt_sensors && xSemaphoreTake(m_batt_sensors, pdMS_TO_TICKS(maxwait_ms)) == pdTRUE)

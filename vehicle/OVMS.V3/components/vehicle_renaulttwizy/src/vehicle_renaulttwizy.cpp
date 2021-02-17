@@ -26,7 +26,7 @@
 #include "ovms_log.h"
 static const char *TAG = "v-twizy";
 
-#define VERSION "1.11.0"
+#define VERSION "1.12.0"
 
 #include <stdio.h>
 #include <string>
@@ -148,11 +148,32 @@ OvmsVehicleRenaultTwizy::~OvmsVehicleRenaultTwizy()
 {
   ESP_LOGI(TAG, "Shutdown Renault Twizy vehicle module");
 
-  // unregister event listeners:
+  // deregister from framework:
   MyEvents.DeregisterEvent(TAG);
+  MyCan.DeregisterCallback(TAG);
 
+  // shutdown subsystems:
+  ObdShutdown();
   if (m_sevcon)
     delete m_sevcon;
+  WebShutdown();
+  ChargeShutdown();
+  PowerShutdown();
+  BatteryShutdown();
+
+  // delete metrics:
+  MyMetrics.DeregisterMetric(m_version);
+  MyMetrics.DeregisterMetric(mt_charger_status);
+  MyMetrics.DeregisterMetric(mt_bms_status);
+  MyMetrics.DeregisterMetric(mt_sevcon_status);
+  MyMetrics.DeregisterMetric(mt_bms_alert_12v);
+  MyMetrics.DeregisterMetric(mt_bms_alert_batt);
+  MyMetrics.DeregisterMetric(mt_bms_alert_temp);
+  MyMetrics.DeregisterMetric(m_lock_speed);
+  MyMetrics.DeregisterMetric(m_valet_odo);
+
+  // deregister command root:
+  MyCommandApp.UnregisterCommand("xrt");
 }
 
 const char* OvmsVehicleRenaultTwizy::VehicleShortName()

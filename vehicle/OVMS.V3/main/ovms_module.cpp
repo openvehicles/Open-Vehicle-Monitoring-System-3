@@ -1061,7 +1061,7 @@ class OvmsModuleInit
     OvmsCommand* cmd_module = MyCommandApp.RegisterCommand("module","MODULE framework");
     cmd_module->RegisterCommand("memory","Show module memory usage",module_memory,"[<task names or ids>|*|=]",0,TASKLIST);
     cmd_module->RegisterCommand("leaks","Show module memory changes",module_memory,"[<task names or ids>|*|=]",0,TASKLIST);
-    OvmsCommand* cmd_tasks = cmd_module->RegisterCommand("tasks","Show module task usage",module_tasks,"[stack]",0,1);
+    OvmsCommand* cmd_tasks = cmd_module->RegisterCommand("tasks","Show module task usage",module_tasks);
     cmd_tasks->RegisterCommand("stack","Show module task usage with stack",module_tasks);
     cmd_tasks->RegisterCommand("data","Output module task stats record",module_tasks_data);
     cmd_module->RegisterCommand("fault","Abort fault the module",module_fault);

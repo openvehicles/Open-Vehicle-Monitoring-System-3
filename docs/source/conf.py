@@ -18,7 +18,7 @@
 # -- Project information -----------------------------------------------------
 
 project = 'Open Vehicles'
-copyright = '2019, Open Vehicles Developers'
+copyright = '2019-2020, Open Vehicles Developers'
 author = 'Open Vehicle Developers'
 
 

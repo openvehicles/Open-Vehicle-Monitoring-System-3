@@ -515,27 +515,27 @@ void OvmsVehicleKiaNiroEv::IncomingBCM(canbus* bus, uint16_t type, uint16_t pid,
 				if (m_poll_ml_frame == 1)
 					{
 					bVal = CAN_BYTE(1);
-					if (bVal > 0) StdMetrics.ms_v_tpms_fl_p->SetValue( bVal/5.0, PSI);
+					if (bVal > 0) StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FL, bVal/5.0, PSI);
 					bVal = CAN_BYTE(2);
-					if (bVal > 0) StdMetrics.ms_v_tpms_fl_t->SetValue( bVal-50.0, Celcius);
+					if (bVal > 0) StdMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_FL, bVal-50.0, Celcius);
 					bVal = CAN_BYTE(5);
-					if (bVal > 0) StdMetrics.ms_v_tpms_fr_p->SetValue( bVal/5.0, PSI);
+					if (bVal > 0) StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FR, bVal/5.0, PSI);
 					bVal = CAN_BYTE(6);
-					if (bVal > 0) StdMetrics.ms_v_tpms_fr_t->SetValue( bVal-50.0, Celcius);
+					if (bVal > 0) StdMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_FR, bVal-50.0, Celcius);
 					}
 				else if (m_poll_ml_frame == 2)
 					{
 					bVal = CAN_BYTE(2);
-					if (bVal > 0) StdMetrics.ms_v_tpms_rr_p->SetValue( bVal/5.0, PSI);
+					if (bVal > 0) StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RR, bVal/5.0, PSI);
 					bVal = CAN_BYTE(3);
-					if (bVal > 0) StdMetrics.ms_v_tpms_rr_t->SetValue( bVal-50.0, Celcius);
+					if (bVal > 0) StdMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_RR, bVal-50.0, Celcius);
 					bVal = CAN_BYTE(6);
-					if (bVal > 0) StdMetrics.ms_v_tpms_rl_p->SetValue( bVal/5.0, PSI);
+					if (bVal > 0) StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RL, bVal/5.0, PSI);
 					}
 				else if (m_poll_ml_frame == 3)
 					{
 					bVal = CAN_BYTE(0);
-					if (bVal > 0) StdMetrics.ms_v_tpms_rl_t->SetValue( bVal-50.0, Celcius);
+					if (bVal > 0) StdMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_RL, bVal-50.0, Celcius);
 					}
 				break;
 			}

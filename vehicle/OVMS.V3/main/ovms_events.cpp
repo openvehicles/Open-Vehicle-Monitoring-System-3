@@ -46,6 +46,28 @@ OvmsEvents MyEvents __attribute__ ((init_priority (1200)));
 
 typedef void (*event_signal_done_fn)(const char* event, void* data);
 
+bool EventMap::GetCompletion(OvmsWriter* writer, const char* token) const
+  {
+  unsigned int index = 0;
+  bool match = false;
+  writer->SetCompletion(index, NULL);
+  if (token)
+    {
+    size_t len = strlen(token);
+    for (const_iterator it = begin(); it != end(); ++it)
+      {
+      if (it->first.compare("*") == 0)
+        continue;
+      if (it->first.compare(0, len, token) == 0)
+        {
+        writer->SetCompletion(index++, it->first.c_str());
+        match = true;
+        }
+      }
+    }
+  return match;
+  }
+
 void EventStdFree(const char* event, void* data)
   {
   free(data);
@@ -109,7 +131,12 @@ void event_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
 
 int event_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool complete)
   {
-  return MyEvents.Map().Validate(writer, argc, argv[0], complete);
+  int argpos = 0;
+  for (int i=0; i < argc; i++)
+    argpos += (argv[i][0] != '-') ? 1 : 0;
+  if (argpos == 1 && MyEvents.Map().GetCompletion(writer, argv[argc-1]))
+    return argc;
+  return -1;
   }
 
 void event_raise(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -127,12 +154,12 @@ void event_raise(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
 
   if (delay_ms)
     {
-    writer->printf("Raising event in %u ms: %s\n", delay_ms, argv[0]);
+    writer->printf("Raising event in %u ms: %s\n", delay_ms, event.c_str());
     MyEvents.SignalEvent(event, NULL, (size_t)0, delay_ms);
     }
   else
     {
-    writer->printf("Raising event: %s\n", argv[0]);
+    writer->printf("Raising event: %s\n", event.c_str());
     MyEvents.SignalEvent(event, NULL);
     }
   }
@@ -234,8 +261,8 @@ void OvmsEvents::EventTask()
 
 void OvmsEvents::HandleQueueSignalEvent(event_queue_t* msg)
   {
-  // Log everything but the excessively verbose ticker signals
-  if (m_current_event.compare(0,7,"ticker.") != 0)
+  // Log everything but the ticker & clock signals
+  if (!startsWith(m_current_event, "ticker.") && !startsWith(m_current_event, "clock."))
     {
     if (m_trace)
       ESP_LOGI(TAG, "Signal(%s)",m_current_event.c_str());

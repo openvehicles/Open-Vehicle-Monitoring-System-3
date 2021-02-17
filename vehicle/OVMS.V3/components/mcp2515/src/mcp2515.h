@@ -37,46 +37,6 @@
 #include "spi.h"
 #include "ovms_mutex.h"
 
-// MCP2515 SPI commands:
-#define CMD_RESET         0b11000000
-#define CMD_READ          0b00000011
-#define CMD_WRITE         0b00000010
-#define CMD_RTS           0b10000000
-#define CMD_BITMODIFY     0b00000101
-#define CMD_READ_RXBUF    0b10010000
-#define CMD_LOAD_TXBUF    0b01000000
-#define CMD_READ_STATUS   0b10100000
-
-// CANSTAT register
-#define CANSTAT_MODE_CONFIG     0x10000000
-#define CANSTAT_MODE_LISTEN     0b01100000
-#define CANSTAT_MODE_LOOPBACK   0b01000000
-#define CANSTAT_MODE_SLEEP      0b00100000
-#define CANSTAT_MODE_NORMAL     0b00000000
-#define CANSTAT_ABAT            0b00010000  // Abort All Pending Transmissions bit
-#define CANSTAT_OSM             0b00001000  // One shot mode bit
-#define CANSTAT_CLKEN           0b00000100  // CLKOUT pin enable bit
-
-
-// Configuration Registers
-#define REG_CANSTAT         0x0E
-#define REG_CANCTRL         0x0F
-#define REG_BFPCTRL         0x0C
-#define REG_TEC             0x1C
-#define REG_REC             0x1D
-#define REG_CNF3            0x28
-#define REG_CNF2            0x29
-#define REG_CNF1            0x2A
-#define REG_CANINTE         0x2B
-#define REG_CANINTF         0x2C
-#define REG_EFLG            0x2D
-#define REG_TXRTSCTRL       0x0D
-
-#define REG_RXB0CTRL        0x60
-
-#define MCP2515_TIMEOUT     100 // milliseconds
-
-
 class mcp2515 : public canbus
   {
   public:

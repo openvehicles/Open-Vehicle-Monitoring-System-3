@@ -45,6 +45,7 @@ struct speedpwr // speed+power usage statistics for const/accel/decel
   // Metrics
   
   void InitMetrics(int i, metric_unit_t spdunit);
+  void DeleteMetrics();
   void UpdateMetrics();
   bool IsModified(size_t modifier);
   
@@ -53,8 +54,6 @@ struct speedpwr // speed+power usage statistics for const/accel/decel
   OvmsMetricFloat *m_used;
   OvmsMetricFloat *m_recd;
   OvmsMetricFloat *m_spdavg;
-  
-  
 };
 
 struct levelpwr // power usage statistics for level up/down
@@ -69,6 +68,7 @@ struct levelpwr // power usage statistics for level up/down
   // Metrics
   
   void InitMetrics(int i);
+  void DeleteMetrics();
   void UpdateMetrics();
   bool IsModified(size_t modifier);
   
@@ -76,7 +76,6 @@ struct levelpwr // power usage statistics for level up/down
   OvmsMetricFloat *m_hsum;
   OvmsMetricFloat *m_used;
   OvmsMetricFloat *m_recd;
-  
 };
 
 

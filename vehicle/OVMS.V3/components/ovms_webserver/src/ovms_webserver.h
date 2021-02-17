@@ -536,6 +536,7 @@ class OvmsWebServer : public ExternalRamAllocated
   public:
     static void HandleStatus(PageEntry_t& p, PageContext_t& c);
     static void HandleCommand(PageEntry_t& p, PageContext_t& c);
+    static void HandleFile(PageEntry_t& p, PageContext_t& c);
     static void HandleShell(PageEntry_t& p, PageContext_t& c);
     static void HandleDashboard(PageEntry_t& p, PageContext_t& c);
     static void HandleBmsCellMonitor(PageEntry_t& p, PageContext_t& c);
@@ -546,9 +547,10 @@ class OvmsWebServer : public ExternalRamAllocated
     static void HandleCfgModem(PageEntry_t& p, PageContext_t& c);
     static void HandleCfgServerV2(PageEntry_t& p, PageContext_t& c);
     static void HandleCfgServerV3(PageEntry_t& p, PageContext_t& c);
+    static void HandleCfgNotifications(PageEntry_t& p, PageContext_t& c);
     static void HandleCfgWebServer(PageEntry_t& p, PageContext_t& c);
 #ifdef CONFIG_OVMS_COMP_PUSHOVER
-    static void HandleCfgNotification(PageEntry_t& p, PageContext_t& c);
+    static void HandleCfgPushover(PageEntry_t& p, PageContext_t& c);
 #endif
     static void HandleCfgWifi(PageEntry_t& p, PageContext_t& c);
     static void OutputWifiTable(PageEntry_t& p, PageContext_t& c, const std::string prefix, const std::string paramname,

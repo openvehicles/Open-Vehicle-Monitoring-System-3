@@ -1,6 +1,6 @@
 /* ksdk_port.c
  *
- * Copyright (C) 2006-2016 wolfSSL Inc.
+ * Copyright (C) 2006-2020 wolfSSL Inc.
  *
  * This file is part of wolfSSL.
  *
@@ -52,14 +52,10 @@ int ksdk_port_init(void)
     return 0;
 }
 
-
-/* LTC TFM */
-#if defined(FREESCALE_LTC_TFM)
-
 /* Reverse array in memory (in place) */
 static void ltc_reverse_array(uint8_t *src, size_t src_len)
 {
-    int i;
+    unsigned int i;
 
     for (i = 0; i < src_len / 2; i++) {
         uint8_t tmp;
@@ -70,6 +66,8 @@ static void ltc_reverse_array(uint8_t *src, size_t src_len)
     }
 }
 
+
+#ifndef WOLFSSL_SP_MATH
 /* same as mp_to_unsigned_bin() with mp_reverse() skipped */
 static int mp_to_unsigned_lsb_bin(mp_int *a, unsigned char *b)
 {
@@ -88,6 +86,7 @@ static int mp_to_unsigned_lsb_bin(mp_int *a, unsigned char *b)
 
     return res;
 }
+#endif
 
 static int ltc_get_lsb_bin_from_mp_int(uint8_t *dst, mp_int *A, uint16_t *psz)
 {
@@ -95,11 +94,21 @@ static int ltc_get_lsb_bin_from_mp_int(uint8_t *dst, mp_int *A, uint16_t *psz)
     uint16_t sz;
 
     sz = mp_unsigned_bin_size(A);
+#ifndef WOLFSSL_SP_MATH
     res = mp_to_unsigned_lsb_bin(A, dst); /* result is lsbyte at lowest addr as required by LTC */
+#else
+    res = mp_to_unsigned_bin(A, dst);
+    if (res == MP_OKAY) {
+        ltc_reverse_array(dst, sz); 
+    }
+#endif
     *psz = sz;
-
     return res;
 }
+
+/* LTC TFM */
+#if defined(FREESCALE_LTC_TFM)
+
 
 /* these function are used by wolfSSL upper layers (like RSA) */
 
@@ -113,9 +122,11 @@ int mp_mul(mp_int *A, mp_int *B, mp_int *C)
 
     /* if unsigned mul can fit into LTC PKHA let's use it, otherwise call software mul */
     if ((szA <= LTC_MAX_INT_BYTES / 2) && (szB <= LTC_MAX_INT_BYTES / 2)) {
-        int neg;
+        int neg = 0;
 
+#ifndef WOLFSSL_SP_MATH
         neg = (A->sign == B->sign) ? MP_ZPOS : MP_NEG;
+#endif
 
         /* unsigned multiply */
         uint8_t *ptrA = (uint8_t *)XMALLOC(LTC_MAX_INT_BYTES, 0, DYNAMIC_TYPE_BIGINT);
@@ -140,8 +151,10 @@ int mp_mul(mp_int *A, mp_int *B, mp_int *C)
             }
         }
 
+#ifndef WOLFSSL_SP_MATH
         /* fix sign */
         C->sign = neg;
+#endif
         if (ptrA) {
             XFREE(ptrA, NULL, DYNAMIC_TYPE_BIGINT);
         }
@@ -153,7 +166,11 @@ int mp_mul(mp_int *A, mp_int *B, mp_int *C)
         }
     }
     else {
+#ifdef WOLFSSL_SP_MATH
+        res = sp_mul(A, B, C);
+#else
         res = wolfcrypt_mp_mul(A, B, C);
+#endif
     }
     return res;
 }
@@ -169,13 +186,15 @@ int mp_mod(mp_int *a, mp_int *b, mp_int *c)
     if ((szA <= LTC_MAX_INT_BYTES) && (szB <= LTC_MAX_INT_BYTES))
     {
 #endif /* FREESCALE_LTC_TFM_RSA_4096_ENABLE */
-        int neg;
+        int neg = 0;
         uint8_t *ptrA = (uint8_t *)XMALLOC(LTC_MAX_INT_BYTES, 0, DYNAMIC_TYPE_BIGINT);
         uint8_t *ptrB = (uint8_t *)XMALLOC(LTC_MAX_INT_BYTES, 0, DYNAMIC_TYPE_BIGINT);
         uint8_t *ptrC = (uint8_t *)XMALLOC(LTC_MAX_INT_BYTES, 0, DYNAMIC_TYPE_BIGINT);
 
+#ifndef WOLFSSL_SP_MATH
         /* get sign for the result */
         neg = (a->sign == b->sign) ? MP_ZPOS : MP_NEG;
+#endif
 
         /* get remainder of unsigned a divided by unsigned b */
         if (ptrA && ptrB && ptrC) {
@@ -200,8 +219,10 @@ int mp_mod(mp_int *a, mp_int *b, mp_int *c)
             res = MP_MEM;
         }
 
+#ifndef WOLFSSL_SP_MATH
         /* fix sign */
         c->sign = neg;
+#endif
 
         if (ptrA) {
             XFREE(ptrA, NULL, DYNAMIC_TYPE_BIGINT);
@@ -257,7 +278,9 @@ int mp_invmod(mp_int *a, mp_int *b, mp_int *c)
             res = MP_MEM;
         }
 
+#ifndef WOLFSSL_SP_MATH
         c->sign = a->sign;
+#endif
         if (ptrA) {
             XFREE(ptrA, NULL, DYNAMIC_TYPE_BIGINT);
         }
@@ -297,6 +320,7 @@ int mp_mulmod(mp_int *a, mp_int *b, mp_int *c, mp_int *d)
         /* if A or B is negative, subtract abs(A) or abs(B) from modulus to get positive integer representation of the
          * same number */
         res = mp_init(&t);
+#ifndef WOLFSSL_SP_MATH
         if (a->sign) {
             if (res == MP_OKAY)
                 res = mp_add(a, c, &t);
@@ -309,6 +333,7 @@ int mp_mulmod(mp_int *a, mp_int *b, mp_int *c, mp_int *d)
             if (res == MP_OKAY)
                 res = mp_copy(&t, b);
         }
+#endif
 
         if (res == MP_OKAY && ptrA && ptrB && ptrC && ptrD) {
             uint16_t sizeA, sizeB, sizeC, sizeD;
@@ -413,12 +438,14 @@ int mp_exptmod(mp_int *G, mp_int *X, mp_int *P, mp_int *Y)
 
         /* if G is negative, add modulus to convert to positive number for LTC */
         res = mp_init(&t);
+#ifndef WOLFSSL_SP_MATH
         if (G->sign) {
             if (res == MP_OKAY)
                 res = mp_add(G, P, &t);
             if (res == MP_OKAY)
                 res = mp_copy(&t, G);
         }
+#endif
 
         if (res == MP_OKAY && ptrG && ptrX && ptrP) {
             res = ltc_get_lsb_bin_from_mp_int(ptrG, G, &sizeG);
@@ -731,12 +758,23 @@ int wc_ecc_mulmod_ex(mp_int *k, ecc_point *G, ecc_point *R, mp_int* a,
         /* if k is negative, we compute the multiplication with abs(-k)
          * with result (x, y) and modify the result to (x, -y)
          */
+#ifndef WOLFSSL_SP_MATH
         R->y->sign = k->sign;
+#endif
     }
     if (res == MP_OKAY)
         res = mp_set(R->z, 1);
 
     return res;
+}
+
+int wc_ecc_mulmod_ex2(mp_int* k, ecc_point *G, ecc_point *R, mp_int* a,
+                      mp_int* modulus, mp_int* order, WC_RNG* rng, int map,
+                      void* heap)
+{
+    (void)order;
+    (void)rng;
+    return wc_ecc_mulmod_ex(k, G, R, a, modulus, map, heap);
 }
 
 int wc_ecc_point_add(ecc_point *mG, ecc_point *mQ, ecc_point *mR, mp_int *m)
@@ -799,7 +837,7 @@ int wc_ecc_point_add(ecc_point *mG, ecc_point *mQ, ecc_point *mR, mp_int *m)
 
 #if defined(HAVE_ED25519) || defined(HAVE_CURVE25519)
 /* Weierstrass parameters of prime 2^255 - 19 */
-static const uint8_t modbin[32] = {
+static const uint8_t curve25519_modbin[32] = {
     0xed, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x7f};
@@ -809,7 +847,7 @@ static const uint8_t r2mod[32] = {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
-/* invThree = ModInv(3,modbin) in LSB first */
+/* invThree = ModInv(3,curve25519_modbin) in LSB first */
 static const uint8_t invThree[32] = {
     0x49, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55,
     0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55,
@@ -839,10 +877,10 @@ status_t LTC_PKHA_Prime25519SquareRootMod(const uint8_t *A, size_t sizeA,
         0xfd, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
         0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
         0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x0f};
-    uint8_t twoA[sizeof(modbin)] = {0};
-    uint8_t V[sizeof(modbin)] = {0};
-    uint8_t I[sizeof(modbin)] = {0};
-    uint8_t VV[sizeof(modbin)] = {0};
+    uint8_t twoA[sizeof(curve25519_modbin)] = {0};
+    uint8_t V[sizeof(curve25519_modbin)] = {0};
+    uint8_t I[sizeof(curve25519_modbin)] = {0};
+    uint8_t VV[sizeof(curve25519_modbin)] = {0};
     uint16_t szTwoA = 0;
     uint16_t szV = 0;
     uint16_t szVV = 0;
@@ -851,36 +889,36 @@ status_t LTC_PKHA_Prime25519SquareRootMod(const uint8_t *A, size_t sizeA,
     uint8_t one = 1;
 
     /* twoA = 2*A % p */
-    status = LTC_PKHA_ModAdd(LTC_BASE, A, sizeA, A, sizeA, modbin,
-        sizeof(modbin), twoA, &szTwoA, kLTC_PKHA_IntegerArith);
+    status = LTC_PKHA_ModAdd(LTC_BASE, A, sizeA, A, sizeA, curve25519_modbin,
+        sizeof(curve25519_modbin), twoA, &szTwoA, kLTC_PKHA_IntegerArith);
 
     /* V = ModularArithmetic.powmod(twoA, (p-5)/8, p) */
     if (status == kStatus_Success) {
         status =
-            LTC_PKHA_ModExp(LTC_BASE, twoA, szTwoA, modbin, sizeof(modbin),
-                curve25519_param, sizeof(curve25519_param), V, &szV,
-                kLTC_PKHA_IntegerArith, kLTC_PKHA_NormalValue,
-                kLTC_PKHA_TimingEqualized);
+            LTC_PKHA_ModExp(LTC_BASE, twoA, szTwoA, curve25519_modbin,
+                sizeof(curve25519_modbin), curve25519_param,
+                sizeof(curve25519_param), V, &szV, kLTC_PKHA_IntegerArith,
+                kLTC_PKHA_NormalValue, kLTC_PKHA_TimingEqualized);
     }
 
     /* VV = V*V % p */
     if (status == kStatus_Success) {
-        status = LTC_PKHA_ModMul(LTC_BASE, V, szV, V, szV, modbin,
-            sizeof(modbin), VV, &szVV, kLTC_PKHA_IntegerArith,
+        status = LTC_PKHA_ModMul(LTC_BASE, V, szV, V, szV, curve25519_modbin,
+            sizeof(curve25519_modbin), VV, &szVV, kLTC_PKHA_IntegerArith,
             kLTC_PKHA_NormalValue, kLTC_PKHA_NormalValue,
             kLTC_PKHA_TimingEqualized);
     }
 
     /* I = twoA * VV = 2*A*V*V % p */
     if (status == kStatus_Success) {
-        status = LTC_PKHA_ModMul(LTC_BASE, twoA, szTwoA, VV, szVV, modbin,
-            sizeof(modbin), I, &szI, kLTC_PKHA_IntegerArith,
-            kLTC_PKHA_NormalValue, kLTC_PKHA_NormalValue,
-            kLTC_PKHA_TimingEqualized);
+        status = LTC_PKHA_ModMul(LTC_BASE, twoA, szTwoA, VV, szVV,
+            curve25519_modbin, sizeof(curve25519_modbin), I, &szI,
+            kLTC_PKHA_IntegerArith, kLTC_PKHA_NormalValue,
+            kLTC_PKHA_NormalValue, kLTC_PKHA_TimingEqualized);
     }
 
     /* I = I - 1 */
-    XMEMSET(VV, 0xff, sizeof(VV)); /* just temp for maximum integer - for non-modular substract */
+    XMEMSET(VV, 0xff, sizeof(VV)); /* just temp for maximum integer - for non-modular subtract */
     if (0 <= LTC_PKHA_CompareBigNum(I, szI, &one, sizeof(one))) {
         if (status == kStatus_Success) {
             status = LTC_PKHA_ModSub1(LTC_BASE, I, szI, &one, sizeof(one),
@@ -889,23 +927,24 @@ status_t LTC_PKHA_Prime25519SquareRootMod(const uint8_t *A, size_t sizeA,
     }
     else {
         if (status == kStatus_Success) {
-            status = LTC_PKHA_ModSub1(LTC_BASE, modbin, sizeof(modbin), &one,
-                sizeof(one), VV, sizeof(VV), I, &szI);
+            status = LTC_PKHA_ModSub1(LTC_BASE, curve25519_modbin,
+                sizeof(curve25519_modbin), &one, sizeof(one), VV, sizeof(VV), I,
+                &szI);
         }
     }
 
     /* res = a*v  mod p */
-    status = LTC_PKHA_ModMul(LTC_BASE, A, sizeA, V, szV, modbin,
-        sizeof(modbin), res, &szRes16, kLTC_PKHA_IntegerArith,
+    status = LTC_PKHA_ModMul(LTC_BASE, A, sizeA, V, szV, curve25519_modbin,
+        sizeof(curve25519_modbin), res, &szRes16, kLTC_PKHA_IntegerArith,
         kLTC_PKHA_NormalValue, kLTC_PKHA_NormalValue,
         kLTC_PKHA_TimingEqualized);
 
     /* res = res * (i-1) mod p */
     if (status == kStatus_Success) {
-        status = LTC_PKHA_ModMul(LTC_BASE, res, szRes16, I, szI, modbin,
-            sizeof(modbin), res, &szRes16, kLTC_PKHA_IntegerArith,
-            kLTC_PKHA_NormalValue, kLTC_PKHA_NormalValue,
-            kLTC_PKHA_TimingEqualized);
+        status = LTC_PKHA_ModMul(LTC_BASE, res, szRes16, I, szI,
+            curve25519_modbin, sizeof(curve25519_modbin), res, &szRes16,
+            kLTC_PKHA_IntegerArith, kLTC_PKHA_NormalValue,
+            kLTC_PKHA_NormalValue, kLTC_PKHA_TimingEqualized);
     }
 
     /* if X mod 2 != X_0 then we need the -X
@@ -915,8 +954,9 @@ status_t LTC_PKHA_Prime25519SquareRootMod(const uint8_t *A, size_t sizeA,
     if ((status == kStatus_Success) &&
         ((bool)sign != (bool)(res[0] & 0x01u)))
     {
-        status = LTC_PKHA_ModSub1(LTC_BASE, modbin, sizeof(modbin), res,
-            szRes16, VV, sizeof(VV), res, &szRes16); /* -a = p - a */
+        status = LTC_PKHA_ModSub1(LTC_BASE, curve25519_modbin,
+            sizeof(curve25519_modbin), res, szRes16, VV, sizeof(VV), res,
+            &szRes16); /* -a = p - a */
     }
 
     if (status == kStatus_Success) {
@@ -943,18 +983,18 @@ static const ECPoint ecBasePoint = {
     0x1e, 0xe0, 0xb4, 0x86, 0xa0, 0xb8, 0xa1, 0x19, 0xae, 0x20},
 };
 
-const ECPoint *wc_curve25519_GetBasePoint(void)
+const ECPoint *nxp_ltc_curve25519_GetBasePoint(void)
 {
     return &ecBasePoint;
 }
 
-static const uint8_t aCurveParam[CURVE25519_KEYSIZE] = {
+static const uint8_t curve25519_aCurveParam[CURVE25519_KEYSIZE] = {
     0x44, 0xa1, 0x14, 0x49, 0x98, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa,
     0xaa, 0xaa, 0xaa, 0xaa, 0xaa,
     0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa,
     0xaa, 0xaa, 0xaa, 0xaa, 0x2a};
 
-static const uint8_t bCurveParam[CURVE25519_KEYSIZE] = {
+static const uint8_t curve25519_bCurveParam[CURVE25519_KEYSIZE] = {
     0x64, 0xc8, 0x10, 0x77, 0x9c, 0x5e, 0x0b, 0x26, 0xb4, 0x97, 0xd0,
     0x5e, 0x42, 0x7b, 0x09, 0xed,
     0x25, 0xb4, 0x97, 0xd0, 0x5e, 0x42, 0x7b, 0x09, 0xed, 0x25, 0xb4,
@@ -972,8 +1012,8 @@ status_t LTC_PKHA_Curve25519ToWeierstrass(
     uint16_t sizeRes = 0;
     status_t status;
     status = LTC_PKHA_ModAdd(LTC_BASE, ltcPointIn->X, CURVE25519_KEYSIZE,
-        offset, sizeof(offset), modbin, CURVE25519_KEYSIZE, ltcPointOut->X,
-        &sizeRes, kLTC_PKHA_IntegerArith);
+        offset, sizeof(offset), curve25519_modbin, CURVE25519_KEYSIZE,
+        ltcPointOut->X, &sizeRes, kLTC_PKHA_IntegerArith);
 
     if (status == kStatus_Success) {
         if (ltcPointOut->Y != ltcPointIn->Y) {
@@ -993,25 +1033,28 @@ status_t LTC_PKHA_WeierstrassToCurve25519(
     const uint8_t three = 0x03;
 
     status = LTC_PKHA_ModMul(LTC_BASE, &three, sizeof(three), ltcPointIn->X,
-        CURVE25519_KEYSIZE, modbin, CURVE25519_KEYSIZE, ltcPointOut->X,
-        &resultSize, kLTC_PKHA_IntegerArith, kLTC_PKHA_NormalValue,
-        kLTC_PKHA_NormalValue, kLTC_PKHA_TimingEqualized);
+        CURVE25519_KEYSIZE, curve25519_modbin, CURVE25519_KEYSIZE,
+        ltcPointOut->X, &resultSize, kLTC_PKHA_IntegerArith,
+        kLTC_PKHA_NormalValue, kLTC_PKHA_NormalValue,
+        kLTC_PKHA_TimingEqualized);
 
     if (status == kStatus_Success) {
         const uint8_t A[] = {0x06, 0x6d, 0x07};
         if (LTC_PKHA_CompareBigNum(ltcPointOut->X, resultSize, A, sizeof(A))) {
             status = LTC_PKHA_ModSub1(LTC_BASE, ltcPointOut->X, resultSize, A,
-                sizeof(A), modbin, CURVE25519_KEYSIZE, ltcPointOut->X, &resultSize);
+                sizeof(A), curve25519_modbin, CURVE25519_KEYSIZE,
+                ltcPointOut->X, &resultSize);
         }
         else {
             status = LTC_PKHA_ModSub2(LTC_BASE, ltcPointOut->X, resultSize, A,
-                sizeof(A), modbin, CURVE25519_KEYSIZE, ltcPointOut->X, &resultSize);
+                sizeof(A), curve25519_modbin, CURVE25519_KEYSIZE,
+                ltcPointOut->X, &resultSize);
         }
     }
 
     if (status == kStatus_Success) {
         status = LTC_PKHA_ModMul(LTC_BASE, invThree, CURVE25519_KEYSIZE,
-            ltcPointOut->X, resultSize, modbin, CURVE25519_KEYSIZE,
+            ltcPointOut->X, resultSize, curve25519_modbin, CURVE25519_KEYSIZE,
             ltcPointOut->X, &resultSize, kLTC_PKHA_IntegerArith,
             kLTC_PKHA_NormalValue, kLTC_PKHA_NormalValue,
             kLTC_PKHA_TimingEqualized);
@@ -1039,37 +1082,40 @@ status_t LTC_PKHA_Curve25519ComputeY(ltc_pkha_ecc_point_t *ltcPoint)
     status_t status;
 
     /* X^3 */
-    status = LTC_PKHA_ModExp(LTC_BASE, ltcPoint->X, CURVE25519_KEYSIZE, modbin,
-        CURVE25519_KEYSIZE, &three, 1, U, &sizeU, kLTC_PKHA_IntegerArith,
-        kLTC_PKHA_NormalValue, kLTC_PKHA_TimingEqualized);
+    status = LTC_PKHA_ModExp(LTC_BASE, ltcPoint->X, CURVE25519_KEYSIZE,
+        curve25519_modbin, CURVE25519_KEYSIZE, &three, 1, U, &sizeU,
+        kLTC_PKHA_IntegerArith, kLTC_PKHA_NormalValue,
+        kLTC_PKHA_TimingEqualized);
 
     /* X^2 */
     if (status == kStatus_Success) {
         status = LTC_PKHA_ModMul(LTC_BASE, ltcPoint->X, CURVE25519_KEYSIZE,
-            ltcPoint->X, CURVE25519_KEYSIZE, modbin, CURVE25519_KEYSIZE, X2,
-            &sizeX2, kLTC_PKHA_IntegerArith, kLTC_PKHA_NormalValue,
-            kLTC_PKHA_NormalValue, kLTC_PKHA_TimingEqualized);
-    }
-
-    /* 486662*X^2 */
-    if (status == kStatus_Success) {
-        status = LTC_PKHA_ModMul(LTC_BASE, A, sizeof(A), X2, sizeX2, modbin,
+            ltcPoint->X, CURVE25519_KEYSIZE, curve25519_modbin,
             CURVE25519_KEYSIZE, X2, &sizeX2, kLTC_PKHA_IntegerArith,
             kLTC_PKHA_NormalValue, kLTC_PKHA_NormalValue,
             kLTC_PKHA_TimingEqualized);
     }
 
+    /* 486662*X^2 */
+    if (status == kStatus_Success) {
+        status = LTC_PKHA_ModMul(LTC_BASE, A, sizeof(A), X2, sizeX2,
+            curve25519_modbin, CURVE25519_KEYSIZE, X2, &sizeX2,
+            kLTC_PKHA_IntegerArith, kLTC_PKHA_NormalValue,
+            kLTC_PKHA_NormalValue, kLTC_PKHA_TimingEqualized);
+    }
+
     /* X^3 + 486662*X^2 */
     if (status == kStatus_Success) {
-        status = LTC_PKHA_ModAdd(LTC_BASE, U, sizeU, X2, sizeX2, modbin,
-            CURVE25519_KEYSIZE, U, &sizeU, kLTC_PKHA_IntegerArith);
+        status = LTC_PKHA_ModAdd(LTC_BASE, U, sizeU, X2, sizeX2,
+            curve25519_modbin, CURVE25519_KEYSIZE, U, &sizeU,
+            kLTC_PKHA_IntegerArith);
     }
 
     /* U = X^3 + 486662*X^2 + X */
     if (status == kStatus_Success) {
         status = LTC_PKHA_ModAdd(LTC_BASE, U, sizeU, ltcPoint->X,
-            CURVE25519_KEYSIZE, modbin, CURVE25519_KEYSIZE, U, &sizeU,
-            kLTC_PKHA_IntegerArith);
+            CURVE25519_KEYSIZE, curve25519_modbin, CURVE25519_KEYSIZE, U,
+            &sizeU, kLTC_PKHA_IntegerArith);
     }
 
     /* Y = modular square root of U (U is Y^2) */
@@ -1085,7 +1131,7 @@ status_t LTC_PKHA_Curve25519ComputeY(ltc_pkha_ecc_point_t *ltcPoint)
 /* if type is set, the input point p is in Montgomery curve coordinates,
     so there is a map to Weierstrass curve */
 /* q output point is always in Montgomery curve coordinates */
-int wc_curve25519(ECPoint *q, byte *n, const ECPoint *p, fsl_ltc_ecc_coordinate_system_t type)
+int nxp_ltc_curve25519(ECPoint *q, const byte *n, const ECPoint *p, fsl_ltc_ecc_coordinate_system_t type)
 {
     status_t status;
     ltc_pkha_ecc_point_t ltcPoint;
@@ -1104,11 +1150,12 @@ int wc_curve25519(ECPoint *q, byte *n, const ECPoint *p, fsl_ltc_ecc_coordinate_
 
     ltcPointOut.X = &q->point[0];
     ltcPointOut.Y = &q->pointY[0];
-    /* modbin, r2mod, aCurveParam, bCurveParam are Weierstrass equivalent
-       with Curve25519 */
+    /* curve25519_modbin, r2mod, curve25519_aCurveParam, curve25519_bCurveParam
+     * are Weierstrass equivalent with Curve25519 */
     status = LTC_PKHA_ECC_PointMul(LTC_BASE, &ltcPoint, n, CURVE25519_KEYSIZE,
-        modbin, r2mod, aCurveParam, bCurveParam, CURVE25519_KEYSIZE,
-        kLTC_PKHA_TimingEqualized, kLTC_PKHA_IntegerArith, &ltcPointOut, NULL);
+        curve25519_modbin, r2mod, curve25519_aCurveParam,
+        curve25519_bCurveParam, CURVE25519_KEYSIZE, kLTC_PKHA_TimingEqualized,
+        kLTC_PKHA_IntegerArith, &ltcPointOut, NULL);
 
     /* now need to map from Weierstrass form to Montgomery form */
     if (status == kStatus_Success) {
@@ -1214,9 +1261,10 @@ status_t LTC_PKHA_Ed25519_PointMul(const ltc_pkha_ecc_point_t *ltcPointIn,
     status_t status;
     /* input on W, output in W, W parameters of ECC curve are Ed25519 curve
         parameters mapped to Weierstrass curve */
-    status = LTC_PKHA_ECC_PointMul(LTC_BASE, ltcPointIn, N, szN, modbin,
-        r2mod, a_coefEd25519, b_coefEd25519, ED25519_KEY_SIZE,
-        kLTC_PKHA_TimingEqualized, kLTC_PKHA_IntegerArith, ltcPointOut, NULL);
+    status = LTC_PKHA_ECC_PointMul(LTC_BASE, ltcPointIn, N, szN,
+        curve25519_modbin, r2mod, a_coefEd25519, b_coefEd25519,
+        ED25519_KEY_SIZE, kLTC_PKHA_TimingEqualized, kLTC_PKHA_IntegerArith,
+        ltcPointOut, NULL);
 
     /* Weierstrass coordinates to Ed25519 coordinates */
     if ((status == kStatus_Success) && (typeOut == kLTC_Ed25519)) {
@@ -1263,71 +1311,75 @@ status_t LTC_PKHA_Ed25519ToWeierstrass(const ltc_pkha_ecc_point_t *ltcPointIn,
 
     /* temp = 1 + Ey */
     status = LTC_PKHA_ModAdd(LTC_BASE, Ey, ED25519_KEY_SIZE, &one, sizeof(one),
-        modbin, sizeof(modbin), temp, &szTemp, kLTC_PKHA_IntegerArith);
+        curve25519_modbin, sizeof(curve25519_modbin), temp, &szTemp,
+        kLTC_PKHA_IntegerArith);
 
     /* temp2 = 1 - Ey = 1 + (p - Ey) */
     if (status == kStatus_Success) {
-        status = LTC_PKHA_ModSub1(LTC_BASE, modbin, sizeof(modbin), Ey,
-            ED25519_KEY_SIZE, max, sizeof(max), temp2, &szTemp2);
+        status = LTC_PKHA_ModSub1(LTC_BASE, curve25519_modbin,
+            sizeof(curve25519_modbin), Ey, ED25519_KEY_SIZE, max, sizeof(max),
+            temp2, &szTemp2);
     }
     if (status == kStatus_Success) {
         status = LTC_PKHA_ModAdd(LTC_BASE, temp2, szTemp2, &one, sizeof(one),
-            modbin, sizeof(modbin), temp2, &szTemp2, kLTC_PKHA_IntegerArith);
+            curve25519_modbin, sizeof(curve25519_modbin), temp2, &szTemp2,
+            kLTC_PKHA_IntegerArith);
     }
 
     /* Mx = ModInv(temp2,prime) */
     if (status == kStatus_Success) {
-        status = LTC_PKHA_ModInv(LTC_BASE, temp2, szTemp2, modbin,
-            sizeof(modbin), Mx, &szMx, kLTC_PKHA_IntegerArith);
+        status = LTC_PKHA_ModInv(LTC_BASE, temp2, szTemp2, curve25519_modbin,
+            sizeof(curve25519_modbin), Mx, &szMx, kLTC_PKHA_IntegerArith);
     }
 
     /* Mx = Mx * temp */
     if (status == kStatus_Success) {
-        status = LTC_PKHA_ModMul(LTC_BASE, Mx, szMx, temp, szTemp, modbin,
-            ED25519_KEY_SIZE, Mx, &szMx, kLTC_PKHA_IntegerArith,
-            kLTC_PKHA_NormalValue, kLTC_PKHA_NormalValue,
-            kLTC_PKHA_TimingEqualized);
+        status = LTC_PKHA_ModMul(LTC_BASE, Mx, szMx, temp, szTemp,
+            curve25519_modbin, ED25519_KEY_SIZE, Mx, &szMx,
+            kLTC_PKHA_IntegerArith, kLTC_PKHA_NormalValue,
+            kLTC_PKHA_NormalValue, kLTC_PKHA_TimingEqualized);
     }
 
     /* My = temp2 * Ex */
     if (status == kStatus_Success) {
         status = LTC_PKHA_ModMul(LTC_BASE, Ex, ED25519_KEY_SIZE, temp2,
-            szTemp2, modbin, ED25519_KEY_SIZE, My, &szMy,
+            szTemp2, curve25519_modbin, ED25519_KEY_SIZE, My, &szMy,
             kLTC_PKHA_IntegerArith, kLTC_PKHA_NormalValue,
             kLTC_PKHA_NormalValue, kLTC_PKHA_TimingEqualized);
     }
 
     /* My = ModInv(My, prime) */
     if (status == kStatus_Success) {
-        status = LTC_PKHA_ModInv(LTC_BASE, My, szMy, modbin, sizeof(modbin),
-            My, &szMy, kLTC_PKHA_IntegerArith);
+        status = LTC_PKHA_ModInv(LTC_BASE, My, szMy, curve25519_modbin,
+            sizeof(curve25519_modbin), My, &szMy, kLTC_PKHA_IntegerArith);
     }
     /* My = My * temp */
     if (status == kStatus_Success) {
-        status = LTC_PKHA_ModMul(LTC_BASE, My, szMy, temp, szTemp, modbin,
-            ED25519_KEY_SIZE, My, &szMy, kLTC_PKHA_IntegerArith,
-            kLTC_PKHA_NormalValue, kLTC_PKHA_NormalValue,
-            kLTC_PKHA_TimingEqualized);
+        status = LTC_PKHA_ModMul(LTC_BASE, My, szMy, temp, szTemp,
+            curve25519_modbin, ED25519_KEY_SIZE, My, &szMy,
+            kLTC_PKHA_IntegerArith, kLTC_PKHA_NormalValue,
+            kLTC_PKHA_NormalValue, kLTC_PKHA_TimingEqualized);
     }
 
     /* Gx = Mx * invB_coefEd25519 + A_mul_invThreeB_coefEd25519 */
     if (status == kStatus_Success) {
         status = LTC_PKHA_ModMul(LTC_BASE, Mx, szMx, invB_coefEd25519,
-            sizeof(invB_coefEd25519), modbin, ED25519_KEY_SIZE, Gx, &szGx,
-            kLTC_PKHA_IntegerArith, kLTC_PKHA_NormalValue,
+            sizeof(invB_coefEd25519), curve25519_modbin, ED25519_KEY_SIZE, Gx,
+            &szGx, kLTC_PKHA_IntegerArith, kLTC_PKHA_NormalValue,
             kLTC_PKHA_NormalValue, kLTC_PKHA_TimingEqualized);
     }
     if (status == kStatus_Success) {
         status = LTC_PKHA_ModAdd(LTC_BASE, Gx, szGx,
             A_mul_invThreeB_coefEd25519, sizeof(A_mul_invThreeB_coefEd25519),
-            modbin, sizeof(modbin), Gx, &szGx, kLTC_PKHA_IntegerArith);
+            curve25519_modbin, sizeof(curve25519_modbin), Gx, &szGx,
+            kLTC_PKHA_IntegerArith);
     }
 
     /* Gy = My * invB_coefEd25519 */
     if (status == kStatus_Success) {
         status = LTC_PKHA_ModMul(LTC_BASE, My, szMy, invB_coefEd25519,
-            sizeof(invB_coefEd25519), modbin, ED25519_KEY_SIZE, Gy, &szGy,
-            kLTC_PKHA_IntegerArith, kLTC_PKHA_NormalValue,
+            sizeof(invB_coefEd25519), curve25519_modbin, ED25519_KEY_SIZE, Gy,
+            &szGy, kLTC_PKHA_IntegerArith, kLTC_PKHA_NormalValue,
             kLTC_PKHA_NormalValue, kLTC_PKHA_TimingEqualized);
     }
 
@@ -1366,14 +1418,14 @@ status_t LTC_PKHA_WeierstrassToEd25519(const ltc_pkha_ecc_point_t *ltcPointIn,
 
     /* My = (B*Gy) % prime  */
     status = LTC_PKHA_ModMul(LTC_BASE, B_coefEd25519, sizeof(B_coefEd25519),
-        Gy, ED25519_KEY_SIZE, modbin, ED25519_KEY_SIZE, My, &szMy,
+        Gy, ED25519_KEY_SIZE, curve25519_modbin, ED25519_KEY_SIZE, My, &szMy,
         kLTC_PKHA_IntegerArith, kLTC_PKHA_NormalValue, kLTC_PKHA_NormalValue,
         kLTC_PKHA_TimingEqualized);
 
     /* temp = 3*B*Gx mod p */
     if (status == kStatus_Success) {
         status = LTC_PKHA_ModMul(LTC_BASE, threeB_coefEd25519,
-            sizeof(threeB_coefEd25519), Gx, ED25519_KEY_SIZE, modbin,
+            sizeof(threeB_coefEd25519), Gx, ED25519_KEY_SIZE, curve25519_modbin,
             ED25519_KEY_SIZE, temp, &szTemp, kLTC_PKHA_IntegerArith,
             kLTC_PKHA_NormalValue, kLTC_PKHA_NormalValue,
             kLTC_PKHA_TimingEqualized);
@@ -1381,57 +1433,58 @@ status_t LTC_PKHA_WeierstrassToEd25519(const ltc_pkha_ecc_point_t *ltcPointIn,
     /* temp = (temp - A) mod p */
     if (status == kStatus_Success) {
         status = LTC_PKHA_ModAdd(LTC_BASE, temp, szTemp, minus_A_coefEd25519,
-            sizeof(minus_A_coefEd25519), modbin, sizeof(modbin), temp, &szTemp,
-            kLTC_PKHA_IntegerArith);
+            sizeof(minus_A_coefEd25519), curve25519_modbin,
+            sizeof(curve25519_modbin), temp, &szTemp, kLTC_PKHA_IntegerArith);
     }
     /* Mx = (temp/3) mod p */
     if (status == kStatus_Success) {
         status = LTC_PKHA_ModMul(LTC_BASE, temp, szTemp, invThree,
-            sizeof(invThree), modbin, sizeof(modbin), Mx, &szMx,
-                kLTC_PKHA_IntegerArith, kLTC_PKHA_NormalValue,
-                kLTC_PKHA_NormalValue, kLTC_PKHA_TimingEqualized);
+            sizeof(invThree), curve25519_modbin, sizeof(curve25519_modbin), Mx,
+             &szMx, kLTC_PKHA_IntegerArith, kLTC_PKHA_NormalValue,
+             kLTC_PKHA_NormalValue, kLTC_PKHA_TimingEqualized);
     }
     /* temp = 1/My mod p */
     if (status == kStatus_Success) {
-        status = LTC_PKHA_ModInv(LTC_BASE, My, szMy, modbin, sizeof(modbin),
-            temp, &szTemp, kLTC_PKHA_IntegerArith);
+        status = LTC_PKHA_ModInv(LTC_BASE, My, szMy, curve25519_modbin,
+            sizeof(curve25519_modbin), temp, &szTemp, kLTC_PKHA_IntegerArith);
     }
     /* Ex = Mx * temp mod p */
     if (status == kStatus_Success) {
-        status = LTC_PKHA_ModMul(LTC_BASE, temp, szTemp, Mx, szMx, modbin,
-            sizeof(modbin), Ex, &szEx, kLTC_PKHA_IntegerArith,
-            kLTC_PKHA_NormalValue, kLTC_PKHA_NormalValue,
-            kLTC_PKHA_TimingEqualized);
+        status = LTC_PKHA_ModMul(LTC_BASE, temp, szTemp, Mx, szMx,
+            curve25519_modbin, sizeof(curve25519_modbin), Ex, &szEx,
+            kLTC_PKHA_IntegerArith, kLTC_PKHA_NormalValue,
+            kLTC_PKHA_NormalValue, kLTC_PKHA_TimingEqualized);
     }
 
     /* temp = Mx + 1 mod p */
     if (status == kStatus_Success) {
         status = LTC_PKHA_ModAdd(LTC_BASE, Mx, szMx, &one, sizeof(one),
-            modbin, sizeof(modbin), temp, &szTemp, kLTC_PKHA_IntegerArith);
+            curve25519_modbin, sizeof(curve25519_modbin), temp, &szTemp,
+            kLTC_PKHA_IntegerArith);
     }
     /* temp = 1/temp mod p */
     if (status == kStatus_Success) {
-        status = LTC_PKHA_ModInv(LTC_BASE, temp, szTemp, modbin,
-            sizeof(modbin), temp, &szTemp, kLTC_PKHA_IntegerArith);
+        status = LTC_PKHA_ModInv(LTC_BASE, temp, szTemp, curve25519_modbin,
+            sizeof(curve25519_modbin), temp, &szTemp, kLTC_PKHA_IntegerArith);
     }
     /* Mx = (Mx - 1) mod p */
     if (status == kStatus_Success) {
         if (LTC_PKHA_CompareBigNum(Mx, szMx, &one, sizeof(one)) >= 0) {
             status = LTC_PKHA_ModSub1(LTC_BASE, Mx, szMx, &one, sizeof(one),
-                modbin, sizeof(modbin), Mx, &szMx);
+                curve25519_modbin, sizeof(curve25519_modbin), Mx, &szMx);
         }
         else {
             /* Mx is zero, so it is modulus, thus we do modulus - 1 */
-            XMEMCPY(Mx, modbin, sizeof(modbin));
+            XMEMCPY(Mx, curve25519_modbin, sizeof(curve25519_modbin));
             Mx[0]--;
         }
     }
     /* Ey = Mx * temp mod p */
     if (status == kStatus_Success) {
-        status = LTC_PKHA_ModMul(LTC_BASE, temp, szTemp, Mx, szMx, modbin,
-            sizeof(modbin), Ey, &szEy, kLTC_PKHA_IntegerArith,
-            kLTC_PKHA_NormalValue, kLTC_PKHA_NormalValue,
-            kLTC_PKHA_TimingEqualized);
+        status = LTC_PKHA_ModMul(LTC_BASE, temp, szTemp, Mx, szMx,
+            curve25519_modbin, sizeof(curve25519_modbin), Ey, &szEy,
+            kLTC_PKHA_IntegerArith, kLTC_PKHA_NormalValue,
+            kLTC_PKHA_NormalValue, kLTC_PKHA_TimingEqualized);
     }
 
     return status;
@@ -1465,7 +1518,7 @@ status_t LTC_PKHA_Ed25519_PointDecompress(const uint8_t *pubkey,
 
     /* U = y * y mod p */
     status = LTC_PKHA_ModMul(LTC_BASE, Y, ED25519_KEY_SIZE, Y,
-        ED25519_KEY_SIZE, modbin, ED25519_KEY_SIZE, U, &szU,
+        ED25519_KEY_SIZE, curve25519_modbin, ED25519_KEY_SIZE, U, &szU,
         kLTC_PKHA_IntegerArith, kLTC_PKHA_NormalValue, kLTC_PKHA_NormalValue,
         kLTC_PKHA_TimingEqualized);
     XMEMCPY(V, U, szU);
@@ -1475,11 +1528,11 @@ status_t LTC_PKHA_Ed25519_PointDecompress(const uint8_t *pubkey,
     if (status == kStatus_Success) {
         if (LTC_PKHA_CompareBigNum(U, szU, &one, sizeof(one)) >= 0) {
             status = LTC_PKHA_ModSub1(LTC_BASE, U, szU, &one, sizeof(one),
-                modbin, sizeof(modbin), U, &szU);
+                curve25519_modbin, sizeof(curve25519_modbin), U, &szU);
         }
         else {
             /* U is zero, so it is modulus, thus we do modulus - 1 */
-            XMEMCPY(U, modbin, sizeof(modbin));
+            XMEMCPY(U, curve25519_modbin, sizeof(curve25519_modbin));
             U[0]--;
         }
     }
@@ -1487,23 +1540,24 @@ status_t LTC_PKHA_Ed25519_PointDecompress(const uint8_t *pubkey,
     /* V = d*y*y + 1 */
     if (status == kStatus_Success) {
         status = LTC_PKHA_ModMul(LTC_BASE, V, szV, d_coefEd25519,
-            ED25519_KEY_SIZE, modbin, ED25519_KEY_SIZE, V, &szV,
+            ED25519_KEY_SIZE, curve25519_modbin, ED25519_KEY_SIZE, V, &szV,
             kLTC_PKHA_IntegerArith, kLTC_PKHA_NormalValue,
             kLTC_PKHA_NormalValue, kLTC_PKHA_TimingEqualized);
     }
 
     if (status == kStatus_Success) {
         status = LTC_PKHA_ModAdd(LTC_BASE, V, szV, &one, sizeof(one),
-            modbin, sizeof(modbin), V, &szV, kLTC_PKHA_IntegerArith);
+            curve25519_modbin, sizeof(curve25519_modbin), V, &szV,
+            kLTC_PKHA_IntegerArith);
     }
 
     /* U = U / V (mod p) */
     if (status == kStatus_Success) {
-        status = LTC_PKHA_ModInv(LTC_BASE, V, szV, modbin, sizeof(modbin),
-            V, &szV, kLTC_PKHA_IntegerArith);
+        status = LTC_PKHA_ModInv(LTC_BASE, V, szV, curve25519_modbin,
+            sizeof(curve25519_modbin), V, &szV, kLTC_PKHA_IntegerArith);
     }
     if (status == kStatus_Success) {
-        status = LTC_PKHA_ModMul(LTC_BASE, V, szV, U, szU, modbin,
+        status = LTC_PKHA_ModMul(LTC_BASE, V, szV, U, szU, curve25519_modbin,
             ED25519_KEY_SIZE, U, &szU, kLTC_PKHA_IntegerArith,
             kLTC_PKHA_NormalValue, kLTC_PKHA_NormalValue,
             kLTC_PKHA_TimingEqualized);
@@ -1640,13 +1694,14 @@ status_t LTC_PKHA_SignatureForVerify(uint8_t *rcheck, const unsigned char *a,
 
     /* R = b*B - a*A */
     if (status == kStatus_Success) {
-        status = LTC_PKHA_ModSub1(LTC_BASE, modbin, sizeof(modbin), ltc1.Y,
-            szY, max, sizeof(max), ltc1.Y, &szY);
+        status = LTC_PKHA_ModSub1(LTC_BASE, curve25519_modbin,
+            sizeof(curve25519_modbin), ltc1.Y, szY, max, sizeof(max), ltc1.Y,
+            &szY);
     }
     if (status == kStatus_Success) {
-        status = LTC_PKHA_ECC_PointAdd(LTC_BASE, &ltc0, &ltc1, modbin, r2mod,
-            a_coefEd25519, b_coefEd25519, ED25519_KEY_SIZE,
-            kLTC_PKHA_IntegerArith, &ltc0);
+        status = LTC_PKHA_ECC_PointAdd(LTC_BASE, &ltc0, &ltc1,
+            curve25519_modbin, r2mod, a_coefEd25519, b_coefEd25519,
+            ED25519_KEY_SIZE, kLTC_PKHA_IntegerArith, &ltc0);
     }
     /* map to Ed25519 */
     if (status == kStatus_Success) {

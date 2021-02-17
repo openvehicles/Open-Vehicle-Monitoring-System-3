@@ -39,7 +39,7 @@
 #include "ovms_mutex.h"
 #include "ovms_command.h"
 
-typedef NameStringMap ConfigParamMap;
+typedef NameMap<std::string> ConfigParamMap;
 
 class OvmsConfigParam
   {
@@ -112,7 +112,7 @@ class OvmsConfig
     bool IsDefined(std::string param, std::string instance);
     bool ProtectedPath(std::string path);
     OvmsConfigParam* CachedParam(std::string param);
-    const ConfigParamMap* GetParamMap(std::string param);
+    ConfigParamMap GetParamMap(std::string param);
     void SetParamMap(std::string param, ConfigParamMap& map);
 
 #ifdef CONFIG_OVMS_SC_ZIP

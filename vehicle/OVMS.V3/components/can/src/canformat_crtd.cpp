@@ -105,15 +105,17 @@ std::string canformat_crtd::get(CAN_log_message_t* message)
 
     case CAN_LogStatus_Error:
     case CAN_LogStatus_Statistics:
-      snprintf(buf,sizeof(buf),"%ld.%06ld %c%s %s intr=%d rxpkt=%d txpkt=%d errflags=%#x rxerr=%d txerr=%d rxovr=%d txovr=%d txdelay=%d wdgreset=%d errreset=%d",
+      snprintf(buf,sizeof(buf),
+        "%ld.%06ld %c%s %s intr=%d rxpkt=%d txpkt=%d errflags=%#x rxerr=%d txerr=%d"
+        " rxovr=%d txovr=%d txdelay=%d txfail=%d wdgreset=%d errreset=%d",
         message->timestamp.tv_sec, message->timestamp.tv_usec,
         busnumber,
         (message->type == CAN_LogStatus_Error) ? "CER" : "CST",
         GetCanLogTypeName(message->type), message->status.interrupts,
         message->status.packets_rx, message->status.packets_tx, message->status.error_flags,
         message->status.errors_rx, message->status.errors_tx, message->status.rxbuf_overflow,
-        message->status.txbuf_overflow, message->status.txbuf_delay, message->status.watchdog_resets,
-        message->status.error_resets);
+        message->status.txbuf_overflow, message->status.txbuf_delay, message->status.tx_fails,
+        message->status.watchdog_resets, message->status.error_resets);
       break;
       break;
 

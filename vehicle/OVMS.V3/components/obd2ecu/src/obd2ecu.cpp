@@ -208,9 +208,20 @@ void obd2ecu_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
   {
   if (! MyPeripherals->m_obd2ecu)
     {
-    const char* bus = cmd->GetName();
-    MyPeripherals->m_obd2ecu = new obd2ecu("OBD2ECU", (canbus*)MyPcpApp.FindDeviceByName(bus));
-    writer->puts("OBDII ECU has been started");
+    canbus* bus = (canbus*) MyPcpApp.FindDeviceByName(cmd->GetName());
+    if (bus)
+      {
+      MyPeripherals->m_obd2ecu = new obd2ecu("OBD2ECU", bus);
+      writer->puts("OBDII ECU has been started");
+      }
+    else
+      {
+      writer->printf("ERROR: unknown CAN bus name '%s'\n", cmd->GetName());
+      }
+    }
+  else
+    {
+    writer->puts("ERROR: OBDII ECU already running");
     }
   }
 
@@ -221,6 +232,10 @@ void obd2ecu_stop(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
     delete MyPeripherals->m_obd2ecu;
     MyPeripherals->m_obd2ecu = NULL;
     writer->puts("OBDII ECU has been stopped");
+    }
+  else
+    {
+    writer->puts("No OBDII ECU running");
     }
   }
 
@@ -844,6 +859,7 @@ obd2ecuInit::obd2ecuInit()
   cmd_start->RegisterCommand("can1","start an OBDII ECU on can1",obd2ecu_start);
   cmd_start->RegisterCommand("can2","Start an OBDII ECU on can2",obd2ecu_start);
   cmd_start->RegisterCommand("can3","Start an OBDII ECU on can3",obd2ecu_start);
+  cmd_start->RegisterCommand("can4","Start an OBDII ECU on can4",obd2ecu_start);
   cmd_ecu->RegisterCommand("stop","Stop the OBDII ECU",obd2ecu_stop);
   cmd_ecu->RegisterCommand("list","Show OBDII ECU pid list",obd2ecu_list, "", 0, 1);
   cmd_ecu->RegisterCommand("reload","Reload OBDII ECU pid map",obd2ecu_reload);

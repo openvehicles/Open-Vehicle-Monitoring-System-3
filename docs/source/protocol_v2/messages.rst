@@ -12,7 +12,9 @@ After discarding CR+LF line termination, and base64 decoding, the following prot
 
   <magic> ::= MP-
 
-  <version> ::= 1 byte version number - this protocol is 0x30 <space> ::= ' ' (ascii 0x20)
+  <version> ::= 1 byte version number - this protocol is 0x30
+  
+  <space> ::= ' ' (ascii 0x20)
 
   <protmsg> ::= <servertocar> | <cartoserver> | <servertoapp> | <apptoserver>
 
@@ -140,6 +142,13 @@ Door State #4
 Reference voltage for 12v power
 
 Door State #5
+
+* bit0 = Rear left door (open=1/closed=0)
+* bit1 = Rear right door (open=1/closed=0)
+* bit2 = Frunk (open=1/closed=0)
+* bit4 = 12V battery charging
+* bit5 = Auxiliary 12V systems online
+* bit7 = HVAC running
 
 Temperature of the Charger (celsius)
 
@@ -432,9 +441,14 @@ This message is sent <cartoserver> "C", or <servertoapp> "s", and transmits the 
 * C<cmd> indicates vehicle support command <cmd>
 * C<cmdL>-<cmdH> indicates vehicle will support all commands in the specified range
 
--------------------------
-Car TPMS message 0x57 "W"
--------------------------
+----------------------------------------
+Car TPMS message 0x57 "W" (old/obsolete)
+----------------------------------------
+
+.. note:: Message "W" has been replaced by "Y" (see below) for OVMS V3.
+  The V3 module will still send "W" messages along with "Y" for old clients for some time.
+  Clients shall adapt to using "Y" if available ASAP, "W" messages will be removed from V3
+  in the near future.
 
 This message is sent <cartoserver> "C", or <servertoapp> "s", and transmits the last known TPMS values of the vehicle.
 
@@ -449,6 +463,32 @@ This message is sent <cartoserver> "C", or <servertoapp> "s", and transmits the 
 * rear-left wheel pressure (psi)
 * rear-left wheel temperature (celcius)
 * Stale TPMS indicator (-1=none, 0=stale, >0 ok)
+
+-------------------------
+Car TPMS message 0x59 "Y"
+-------------------------
+
+This message is sent <cartoserver> "C", or <servertoapp> "s", and transmits the last known TPMS values of the vehicle.
+
+<data> is comma-separated list of:
+
+* number of defined wheel names
+* list of defined wheel names
+* number of defined pressures
+* list of defined pressures (kPa)
+* pressures validity indicator (-1=undefined, 0=stale, 1=valid)
+* number of defined temperatures
+* list of defined temperatures (Celcius)
+* temperatures validity indicator (-1=undefined, 0=stale, 1=valid)
+* number of defined health states
+* list of defined health states (Percent)
+* health states validity indicator (-1=undefined, 0=stale, 1=valid)
+* number of defined alert levels
+* list of defined alert levels (0=none, 1=warning, 2=alert)
+* alert levels validity indicator (-1=undefined, 0=stale, 1=valid)
+
+.. note:: Pressures are transported in kPa now instead of the former PSI.
+  To convert to PSI, multiply by 0.14503773773020923.
 
 --------------------------------
 Peer connection message 0x5A "Z"

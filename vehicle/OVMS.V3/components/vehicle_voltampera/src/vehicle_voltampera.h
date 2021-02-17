@@ -93,6 +93,8 @@ class OvmsVehicleVoltAmpera : public OvmsVehicle
     void SendTesterPresentMessage( uint32_t id );
     virtual void Ticker1(uint32_t ticker);
     virtual void Ticker10(uint32_t ticker);
+    virtual void NotifiedVehicleOn();
+    virtual void NotifiedVehicleOff();
 
     void ClimateControlInit();
     void ClimateControlPrintStatus(int verbosity, OvmsWriter* writer);
@@ -110,8 +112,8 @@ class OvmsVehicleVoltAmpera : public OvmsVehicle
     unsigned int m_charge_wm;
     unsigned int m_candata_timer;
     unsigned int m_range_rated_km;
-    unsigned int m_range_estimated_km;
-
+    unsigned int m_startPolling_timer;
+    poll_pid_t * m_pPollingList;
 
     canbus* p_swcan;    // Either "can4" or "can3" bus, depending on which is connected to slow speed GMLAN bus
 #ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN

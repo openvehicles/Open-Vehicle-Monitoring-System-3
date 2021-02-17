@@ -37,6 +37,7 @@ static const char *TAG = "location";
 #include "ovms_script.h"
 #include "ovms_notify.h"
 #include "ovms_command.h"
+#include "vehicle.h"
 #include "metrics_standard.h"
 #include <math.h>
 
@@ -70,6 +71,42 @@ const char* OvmsLocationAction::ActionString()
     case ACC: return "acc";
     case NOTIFY: return "notify";
     default: return "INVALID";
+    }
+  }
+
+void OvmsLocationAction::Execute(bool enter)
+  {
+  if (m_enter != enter)
+    return;
+  if (m_action == HOMELINK)
+    {
+    int homelink = m_params.at(0) - '0';
+    int durationms = 1000;
+    if (m_params.length() > 1)
+      durationms = atoi(m_params.substr(2).c_str());
+    OvmsVehicle* currentvehicle = MyVehicleFactory.m_currentvehicle;
+    if (currentvehicle)
+      {
+      if (!StandardMetrics.ms_v_env_on->AsBool())
+        ESP_LOGI(TAG, "Not activating Homelink #%d because parked",homelink);
+      else
+        switch(currentvehicle->CommandHomelink(homelink-1, durationms))
+          {
+          case OvmsVehicle::Success:
+            ESP_LOGI(TAG, "Homelink #%d activated for %dms",homelink,durationms);
+            break;
+          case OvmsVehicle::Fail:
+            ESP_LOGE(TAG, "Could not activate homelink #%d",homelink);
+            break;
+          default:
+            ESP_LOGE(TAG, "Vehicle does not implement homelink");
+            break;
+          }
+      }
+    }
+  else if (m_action == NOTIFY)
+    {
+    MyNotify.NotifyString("info", enter ? "location.enter" : "location.leave", m_params.c_str());
     }
   }
 
@@ -122,6 +159,8 @@ bool OvmsLocation::IsInLocation(float latitude, float longitude)
         event.append(m_name);
         MyEvents.SignalEvent(event.c_str(), (void*)m_name.c_str(), m_name.size()+1);
         }
+      for (ActionList::iterator it = m_actions.begin(); it != m_actions.end(); ++it)
+        (*it)->Execute(true);
       }
     }
   else
@@ -137,6 +176,8 @@ bool OvmsLocation::IsInLocation(float latitude, float longitude)
         event.append(m_name);
         MyEvents.SignalEvent(event.c_str(), (void*)m_name.c_str(), m_name.size()+1);
         }
+      for (ActionList::iterator it = m_actions.begin(); it != m_actions.end(); ++it)
+        (*it)->Execute(false);
       }
     }
 
@@ -188,10 +229,21 @@ bool OvmsLocation::Parse(const std::string& value)
     len = strcspn(p, ";");
     if (alen == 8 && strncasecmp(act, "homelink", alen) == 0)
       {
-      if (len != 1 || *p < '1' || *p > '3')
+      if (len < 1 || *p < '1' || *p > '3')
         {
         ESP_LOGE(TAG, "homelink parameter must be 1, 2. or 3");
         return false;
+        }
+      if (len > 1)
+        {
+        int durationms;
+        int slen;
+        int n = sscanf(p+1, ",%d%n", &durationms, &slen);
+        if (durationms < 100 || n != 1 || slen != len-1)
+          {
+          ESP_LOGE(TAG, "Minimum homelink timer duration 100ms");
+          return false;
+          }
         }
       action = HOMELINK;
       }
@@ -255,7 +307,18 @@ void OvmsLocation::Render(std::string& buf)
       buf.append("; ");
     buf.append(ola->ActionString());
     buf.append(1, ' ');
-    buf.append(ola->m_params);
+    if (ola->m_action == HOMELINK)
+      {
+      buf.append(1, ola->m_params.at(0));
+      if (ola->m_params.length() > 1)
+        {
+        buf.append(" (");
+        buf.append(ola->m_params.substr(2));
+        buf.append("ms)");
+        }
+      }
+    else
+      buf.append(ola->m_params);
     }
   first = true;
   for (ActionList::iterator it = m_actions.begin(); it != m_actions.end(); ++it)
@@ -302,7 +365,7 @@ void location_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
       writer->printf("Location %s is invalid: %s\n", name.c_str(), value.c_str());
       }
     }
-  writer->puts("NOTE: Actions are not implemented yet!");       // XXX IMPLEMENT AND REMOVE THIS!
+  writer->puts("NOTE: ACC actions are not implemented yet!");       // XXX IMPLEMENT AND REMOVE THIS!
   }
 
 void location_set(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -311,6 +374,11 @@ void location_set(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
   float latitude, longitude;
   int radius = LOCATION_DEFRADIUS;
 
+  if (strcmp(name, "?") == 0)
+    {
+    writer->printf("Error: ? is not a valid name\n");
+    return;
+    }
   if (argc >= 3)
     {
     latitude = atof(argv[1]);
@@ -333,15 +401,16 @@ void location_set(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
 void location_radius(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   const char *name = argv[0];
-  OvmsLocation* loc = MyLocations.m_locations.FindUniquePrefix(name);
+  OvmsLocation* const* locp = MyLocations.m_locations.FindUniquePrefix(name);
 
-  if (loc == NULL)
+  if (locp == NULL)
     {
     writer->printf("Error: No location %s defined\n",name);
     return;
     }
 
   std::string buf;
+  OvmsLocation* loc = *locp;
   loc->m_radius = atoi(argv[1]);
   loc->Store(buf);
   writer->puts("Location radius set");
@@ -350,15 +419,15 @@ void location_radius(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
 void location_rm(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   const char *name = argv[0];
-  OvmsLocation* loc = MyLocations.m_locations.FindUniquePrefix(name);
+  OvmsLocation* const* locp = MyLocations.m_locations.FindUniquePrefix(name);
 
-  if (loc == NULL)
+  if (locp == NULL)
     {
     writer->printf("Error: No location %s defined\n",name);
     return;
     }
 
-  MyConfig.DeleteInstance(LOCATIONS_PARAM,loc->m_name);
+  MyConfig.DeleteInstance(LOCATIONS_PARAM,(*locp)->m_name);
   writer->puts("Location removed");
   }
 
@@ -372,8 +441,9 @@ void location_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
     writer->printf(", %d satellite%s", n, n == 1 ? "" : "s");
   writer->puts(")");
 
-  if ((MyLocations.m_park_latitude != 0)&&(MyLocations.m_park_longitude != 0))
-    writer->printf("Vehicle is parked at %0.6f,%0.6f\n",
+  if ((MyLocations.m_park_latitude != 0) || (MyLocations.m_park_longitude != 0))
+    writer->printf("Vehicle is parked%s %0.6f,%0.6f\n",
+      MyLocations.m_park_invalid ? ", last known coordinates:" : " at",
       MyLocations.m_park_latitude,
       MyLocations.m_park_longitude);
   n = MyLocations.m_locations.size();
@@ -409,18 +479,20 @@ void location_action(int verbosity, OvmsWriter* writer, enum LocationAction act,
   int remove = *rargv[2] == 'r' ? 1 : 0;
   bool enter = *rargv[2+remove] == 'e';
   const char* name = rargv[3+remove];
-  OvmsLocation* loc = MyLocations.m_locations.FindUniquePrefix(name);
-  if (loc == NULL)
+  OvmsLocation* const* locp = MyLocations.m_locations.FindUniquePrefix(name);
+  if (locp == NULL)
     {
     writer->printf("Error: No location %s defined\n",name);
     return;
     }
+  OvmsLocation* loc = *locp;
   if (!remove)
     {
     loc->m_actions.push_back(new OvmsLocationAction(enter, act, params.c_str(), params.length()));
     loc->Store(params);
     writer->puts("Location action set");
-    writer->puts("NOTE: Actions are not implemented yet!");       // XXX IMPLEMENT AND REMOVE THIS!
+    if (act == ACC)
+      writer->puts("NOTE: ACC actions are not implemented yet!");       // XXX IMPLEMENT AND REMOVE THIS!
     }
   else
     {
@@ -464,6 +536,19 @@ void location_action(int verbosity, OvmsWriter* writer, enum LocationAction act,
 void location_homelink(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   std::string params = cmd->GetName();
+  if (argc == 1)
+    {
+    int durationms;
+    int slen;
+    int n = sscanf(argv[0], "%u%n", &durationms, &slen);
+    if (durationms < 100 || n != 1 || slen != strlen(argv[0]))
+      {
+      writer->puts("Error: Minimum homelink timer duration 100ms");
+      return;
+      }
+    params.append(1, ',');
+    params.append(argv[0]);
+    }
   enum LocationAction act = HOMELINK;
   location_action(verbosity, writer, act, params);
   }
@@ -491,6 +576,11 @@ void location_notify(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
     if (i < argc-1)
       params.append(1, ' ');
     }
+  if (params.find(';') != string::npos)
+    {
+    writer->puts("Error: Notify text cannot include semicolon");
+    return;
+    }
   enum LocationAction act = NOTIFY;
   location_action(verbosity, writer, act, params);
   }
@@ -507,10 +597,10 @@ void location_all(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
 static duk_ret_t DukOvmsLocationStatus(duk_context *ctx)
   {
   const char *mn = duk_to_string(ctx,0);
-  OvmsLocation *loc = MyLocations.m_locations.FindUniquePrefix(mn);
-  if (loc)
+  OvmsLocation* const* locp = MyLocations.m_locations.FindUniquePrefix(mn);
+  if (locp && *locp)
     {
-    duk_push_boolean(ctx, loc->m_inlocation);
+    duk_push_boolean(ctx, (*locp)->m_inlocation);
     return 1;  /* one return value */
     }
   else
@@ -525,12 +615,14 @@ OvmsLocations::OvmsLocations()
   {
   ESP_LOGI(TAG, "Initialising LOCATIONS (1900)");
 
+  m_ready = false;
   m_gpslock = false;
   m_latitude = 0;
   m_longitude = 0;
   m_park_latitude = 0;
   m_park_longitude = 0;
   m_park_distance = 0;
+  m_park_invalid = true;
 
   // Register our commands
   OvmsCommand* cmd_location = MyCommandApp.RegisterCommand("location","LOCATION framework", location_status, "", 0, 0, false);
@@ -546,29 +638,29 @@ OvmsLocations::OvmsLocations()
   OvmsCommand* cmd_rm_enter = cmd_rm_action->RegisterCommand("enter","Remove an action from entering a location", location_all, "<location> [$C]", 1, 1, true, location_validate);
   OvmsCommand* cmd_rm_leave = cmd_rm_action->RegisterCommand("leave","Remove an action from leaving a location", location_all, "<location> [$C]", 1, 1, true, location_validate);
 
-  OvmsCommand* enter_homelink = cmd_enter->RegisterCommand("homelink","Transmit Homelink signal",NULL,"1|2|3");
-  enter_homelink->RegisterCommand("1","Homelink 1 signal",location_homelink,"", 0, 0, true);
-  enter_homelink->RegisterCommand("2","Homelink 2 signal",location_homelink,"", 0, 0, true);
-  enter_homelink->RegisterCommand("3","Homelink 3 signal",location_homelink,"", 0, 0, true);
-  cmd_enter->RegisterCommand("acc","ACC profile",location_acc,"<profile>", 1, 1, true);
-  cmd_enter->RegisterCommand("notify","Text notification",location_notify,"<text>", 1, INT_MAX, true);
-  OvmsCommand* leave_homelink = cmd_leave->RegisterCommand("homelink","Transmit Homelink signal",NULL,"1|2|3");
-  leave_homelink->RegisterCommand("1","Homelink 1 signal",location_homelink,"", 0, 0, true);
-  leave_homelink->RegisterCommand("2","Homelink 2 signal",location_homelink,"", 0, 0, true);
-  leave_homelink->RegisterCommand("3","Homelink 3 signal",location_homelink,"", 0, 0, true);
-  cmd_leave->RegisterCommand("notify","Text notification",location_notify,"<text>", 1, INT_MAX, true);
+  OvmsCommand* enter_homelink = cmd_enter->RegisterCommand("homelink","Transmit Homelink signal",NULL,"$C [<duration=1000ms>]");
+  enter_homelink->RegisterCommand("1","Transmit Homelink 1 signal",location_homelink,"[<duration=1000ms>]", 0, 1);
+  enter_homelink->RegisterCommand("2","Transmit Homelink 2 signal",location_homelink,"[<duration=1000ms>]", 0, 1);
+  enter_homelink->RegisterCommand("3","Transmit Homelink 3 signal",location_homelink,"[<duration=1000ms>]", 0, 1);
+  cmd_enter->RegisterCommand("acc","ACC profile",location_acc,"<profile>", 1, 1);
+  cmd_enter->RegisterCommand("notify","Text notification",location_notify,"<text>", 1, INT_MAX);
+  OvmsCommand* leave_homelink = cmd_leave->RegisterCommand("homelink","Transmit Homelink signal",NULL,"$C [<duration=1000ms>]");
+  leave_homelink->RegisterCommand("1","Transmit Homelink 1 signal",location_homelink,"[<duration=1000ms>]", 0, 1);
+  leave_homelink->RegisterCommand("2","Transmit Homelink 2 signal",location_homelink,"[<duration=1000ms>]", 0, 1);
+  leave_homelink->RegisterCommand("3","Transmit Homelink 3 signal",location_homelink,"[<duration=1000ms>]", 0, 1);
+  cmd_leave->RegisterCommand("notify","Text notification",location_notify,"<text>", 1, INT_MAX);
 
-  OvmsCommand* rm_enter_homelink = cmd_rm_enter->RegisterCommand("homelink","Remove Homelink signal",location_homelink_any,"[1|2|3]");
-  rm_enter_homelink->RegisterCommand("1","Homelink 1 signal",location_homelink,"", 0, 0, true);
-  rm_enter_homelink->RegisterCommand("2","Homelink 2 signal",location_homelink,"", 0, 0, true);
-  rm_enter_homelink->RegisterCommand("3","Homelink 3 signal",location_homelink,"", 0, 0, true);
-  cmd_rm_enter->RegisterCommand("acc","Remove ACC profile",location_acc,"[<profile>]", 0, 1, true);
-  cmd_rm_enter->RegisterCommand("notify","Remove text notification",location_notify,"[<text>]", 0, INT_MAX, true);
-  OvmsCommand* rm_leave_homelink = cmd_rm_leave->RegisterCommand("homelink","Remove Homelink signal",location_homelink_any,"[1|2|3]");
-  rm_leave_homelink->RegisterCommand("1","Homelink 1 signal",location_homelink,"", 0, 0, true);
-  rm_leave_homelink->RegisterCommand("2","Homelink 2 signal",location_homelink,"", 0, 0, true);
-  rm_leave_homelink->RegisterCommand("3","Homelink 3 signal",location_homelink,"", 0, 0, true);
-  cmd_rm_leave->RegisterCommand("notify","Remove text notification",location_notify,"[<text>]", 0, INT_MAX, true);
+  OvmsCommand* rm_enter_homelink = cmd_rm_enter->RegisterCommand("homelink","Remove Homelink signal",location_homelink_any);
+  rm_enter_homelink->RegisterCommand("1","Remove Homelink 1 signal",location_homelink);
+  rm_enter_homelink->RegisterCommand("2","Remove Homelink 2 signal",location_homelink);
+  rm_enter_homelink->RegisterCommand("3","Remove Homelink 3 signal",location_homelink);
+  cmd_rm_enter->RegisterCommand("acc","Remove ACC profile",location_acc,"[<profile>]", 0, 1);
+  cmd_rm_enter->RegisterCommand("notify","Remove text notification",location_notify,"[<text>]", 0, INT_MAX);
+  OvmsCommand* rm_leave_homelink = cmd_rm_leave->RegisterCommand("homelink","Remove Homelink signal",location_homelink_any);
+  rm_leave_homelink->RegisterCommand("1","Remove Homelink 1 signal",location_homelink);
+  rm_leave_homelink->RegisterCommand("2","Remove Homelink 2 signal",location_homelink);
+  rm_leave_homelink->RegisterCommand("3","Remove Homelink 3 signal",location_homelink);
+  cmd_rm_leave->RegisterCommand("notify","Remove text notification",location_notify,"[<text>]", 0, INT_MAX);
 
   // Register our parameters
   MyConfig.RegisterParam(LOCATIONS_PARAM, "Geo Locations", true, true);
@@ -602,8 +694,13 @@ void OvmsLocations::UpdatedGpsLock(OvmsMetric* metric)
   m_gpslock = m->AsBool();
   if (m_gpslock)
     {
-    MyEvents.SignalEvent("gps.lock.acquired", NULL);
+    if (!m_ready)
+      {
+      UpdateParkPosition();
+      m_ready = true;
+      }
     UpdateLocations();
+    MyEvents.SignalEvent("gps.lock.acquired", NULL);
     }
   else
     {
@@ -635,18 +732,24 @@ void OvmsLocations::UpdatedLongitude(OvmsMetric* metric)
 
 void OvmsLocations::UpdatedVehicleOn(OvmsMetric* metric)
   {
-  OvmsMetricBool* m = (OvmsMetricBool*)metric;
-  bool caron = m->AsBool();
+  UpdateParkPosition();
+  }
+
+void OvmsLocations::UpdateParkPosition()
+  {
+  bool caron = StdMetrics.ms_v_env_on->AsBool();
   if (caron)
     {
     m_park_latitude = 0;
     m_park_longitude = 0;
     m_park_distance = 0;
+    m_park_invalid = true;
     }
   else
     {
     m_park_latitude = m_latitude;
     m_park_longitude = m_longitude;
+    m_park_invalid = (!m_gpslock || StdMetrics.ms_v_pos_latitude->IsStale() || StdMetrics.ms_v_pos_longitude->IsStale());
     }
   }
 
@@ -705,7 +808,7 @@ void OvmsLocations::ReloadMap()
 
 void OvmsLocations::UpdateLocations()
   {
-  if ((m_latitude == 0)||(m_longitude == 0)) return;
+  if ((m_latitude == 0) && (m_longitude == 0)) return;
 
   for (LocationMap::iterator it=m_locations.begin(); it!=m_locations.end(); ++it)
     {
@@ -715,9 +818,16 @@ void OvmsLocations::UpdateLocations()
 
 void OvmsLocations::CheckTheft()
   {
-  if (m_park_latitude == 0) return;
-  if (m_park_longitude == 0) return;
+  if ((m_park_latitude == 0) && (m_park_longitude == 0)) return;
   if (StandardMetrics.ms_v_env_on->AsBool()) return;
+
+  // Wait for first valid coordinates if we had none when we parked the car:
+  if (m_park_invalid)
+    {
+    UpdateParkPosition();
+    return;
+    }
+
   int alarm = MyConfig.GetParamValueInt("vehicle", "flatbed.alarmdistance", 500);
   if (alarm == 0) return;
 
@@ -727,6 +837,7 @@ void OvmsLocations::CheckTheft()
     {
     m_park_latitude = 0;
     m_park_longitude = 0;
+    m_park_invalid = true;
     MyNotify.NotifyStringf("alert", "flatbed.moved",
       "Vehicle is being transported while parked - possible theft/flatbed (@%0.6f,%0.6f)",
       m_latitude, m_longitude);
@@ -744,4 +855,13 @@ void OvmsLocations::UpdatedConfig(std::string event, void* data)
     }
 
   ReloadMap();
+
+  if (event == "config.mounted")
+    {
+    // Init from persistent position & vehicle state:
+    m_latitude = StdMetrics.ms_v_pos_latitude->AsFloat();
+    m_longitude = StdMetrics.ms_v_pos_longitude->AsFloat();
+    UpdateLocations();
+    UpdatedVehicleOn(StdMetrics.ms_v_env_on);
+    }
   }

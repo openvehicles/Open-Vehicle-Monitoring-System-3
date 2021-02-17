@@ -1,6 +1,6 @@
 /* cpuid.c
  *
- * Copyright (C) 2006-2016 wolfSSL Inc.
+ * Copyright (C) 2006-2020 wolfSSL Inc.
  *
  * This file is part of wolfSSL.
  *
@@ -28,8 +28,9 @@
 
 #include <wolfssl/wolfcrypt/cpuid.h>
 
-#if defined(WOLFSSL_X86_64_BUILD) || defined(USE_INTEL_SPEEDUP) || \
-    defined(WOLFSSL_AESNI)
+#if (defined(WOLFSSL_X86_64_BUILD) || defined(USE_INTEL_SPEEDUP) || \
+    defined(WOLFSSL_AESNI) || defined(WOLFSSL_SP_X86_64_ASM)) && \
+    !defined(WOLFSSL_NO_ASM)
     /* Each platform needs to query info type 1 from cpuid to see if aesni is
      * supported. Also, let's setup a macro for proper linkage w/o ABI conflicts
      */
@@ -44,7 +45,7 @@
     #else
         #include <intrin.h>
 
-        #define cpuid(a,b) __cpuid((int*)a,b)
+        #define cpuid(a,b,c) __cpuidex((int*)a,b,c)
 
         #define XASM_LINK(f)
     #endif /* _MSC_VER */
@@ -60,16 +61,26 @@
     static word32 cpuid_flag(word32 leaf, word32 sub, word32 num, word32 bit)
     {
         int got_intel_cpu = 0;
+        int got_amd_cpu = 0;
         unsigned int reg[5];
-
         reg[4] = '\0';
         cpuid(reg, 0, 0);
+
+        /* check for Intel cpu */
         if (XMEMCMP((char *)&(reg[EBX]), "Genu", 4) == 0 &&
             XMEMCMP((char *)&(reg[EDX]), "ineI", 4) == 0 &&
             XMEMCMP((char *)&(reg[ECX]), "ntel", 4) == 0) {
             got_intel_cpu = 1;
         }
-        if (got_intel_cpu) {
+
+        /* check for AMD cpu */
+        if (XMEMCMP((char *)&(reg[EBX]), "Auth", 4) == 0 &&
+            XMEMCMP((char *)&(reg[EDX]), "enti", 4) == 0 &&
+            XMEMCMP((char *)&(reg[ECX]), "cAMD", 4) == 0) {
+            got_amd_cpu = 1;
+        }
+
+        if (got_intel_cpu || got_amd_cpu) {
             cpuid(reg, leaf, sub);
             return ((reg[num] >> bit) & 0x1);
         }
@@ -85,7 +96,9 @@
             if (cpuid_flag(7, 0, EBX,  8)) { cpuid_flags |= CPUID_BMI2  ; }
             if (cpuid_flag(1, 0, ECX, 30)) { cpuid_flags |= CPUID_RDRAND; }
             if (cpuid_flag(7, 0, EBX, 18)) { cpuid_flags |= CPUID_RDSEED; }
-            if (cpuid_flag(1, 0, ECX, 26)) { cpuid_flags |= CPUID_AESNI ; }
+            if (cpuid_flag(1, 0, ECX, 25)) { cpuid_flags |= CPUID_AESNI ; }
+            if (cpuid_flag(7, 0, EBX, 19)) { cpuid_flags |= CPUID_ADX   ; }
+            if (cpuid_flag(1, 0, ECX, 22)) { cpuid_flags |= CPUID_MOVBE ; }
             cpuid_check = 1;
         }
     }
@@ -96,5 +109,19 @@
             cpuid_set_flags();
         return cpuid_flags;
     }
-#endif
 
+    void cpuid_select_flags(word32 flags)
+    {
+        cpuid_flags = flags;
+    }
+
+    void cpuid_set_flag(word32 flag)
+    {
+        cpuid_flags |= flag;
+    }
+
+    void cpuid_clear_flag(word32 flag)
+    {
+        cpuid_flags &= ~flag;
+    }
+#endif

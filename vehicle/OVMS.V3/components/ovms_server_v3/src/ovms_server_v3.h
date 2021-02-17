@@ -97,10 +97,16 @@ class OvmsServerV3 : public OvmsServer
     int m_msgid;
     int m_lasttx;
     int m_lasttx_stream;
+    int m_lasttx_sendall;
     int m_peers;
     int m_streaming;
     int m_updatetime_idle;
     int m_updatetime_connected;
+    int m_updatetime_awake;
+    int m_updatetime_on;
+    int m_updatetime_charging;
+    int m_updatetime_sendall;
+
     bool m_notify_info_pending;
     bool m_notify_error_pending;
     bool m_notify_alert_pending;

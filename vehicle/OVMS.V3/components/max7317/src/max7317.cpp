@@ -544,14 +544,12 @@ Max7317Init::Max7317Init()
     "input", "Get EGPIO input level(s)", max7317_input,
     "<port> [<port> ...]", 1, 10);
   cmd_egpio->RegisterCommand(
-    "status", "Show EGPIO status", max7317_status,
-    NULL, 0, 0);
+    "status", "Show EGPIO status", max7317_status);
 
   OvmsCommand* cmd_mon = cmd_egpio->RegisterCommand(
     "monitor", "EGPIO input monitoring");
   cmd_mon->RegisterCommand(
-    "status", "Show input monitoring status", max7317_monitor,
-    NULL, 0, 0);
+    "status", "Show input monitoring status", max7317_monitor);
   cmd_mon->RegisterCommand(
     "on", "Enable input monitoring", max7317_monitor,
     "[<port> ...]\n"

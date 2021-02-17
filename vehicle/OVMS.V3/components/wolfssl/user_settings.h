@@ -7,6 +7,7 @@
 #define DEFAULT_HIGHWATER_MARK ((1024 * 1024 * 1024) - (32 * 1024))
 #define DEFAULT_WINDOW_SZ (1024*2)
 #define DEFAULT_MAX_PACKET_SZ (1024*2)
+#define WOLFSSH_LOG_PRINTF
 
 // For compatibility of WolfSSL with ESP-IDF
 
@@ -16,6 +17,8 @@
 #define NO_DEV_RANDOM
 #define NO_MAIN_DRIVER
 #define FREERTOS
+#define WOLFSSL_ESPIDF
+#define WOLFSSL_ESPWROOM32
 #define WOLFSSL_LWIP
 #define WOLFSSL_KEY_GEN
 #define SIZEOF_LONG 4
@@ -23,6 +26,7 @@
 #define HAVE_GETADDRINFO 1
 #define HAVE_GMTIME_R 1
 
+#define WOLFSSL_SMALL_STACK
 #define USE_WOLFSSL_MEMORY
 #define XMALLOC_USER
 #define XMALLOC(s, h, t)     wolfSSL_Malloc(s)
@@ -43,6 +47,7 @@
 #define SMALL_SESSION_CACHE
 #define ECC_SHAMIR
 #define ECC_TIMING_RESISTANT
+#define HAVE_WC_ECC_SET_RNG
 #define HAVE_AESGCM
 //#define HAVE_CHACHA
 #define HAVE_DH

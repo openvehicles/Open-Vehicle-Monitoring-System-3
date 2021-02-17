@@ -143,16 +143,29 @@ typedef struct
   {
   uint32_t interrupts;              // interrupts
   uint32_t packets_rx;              // frames reveiced
-  uint32_t packets_tx;              // frames loaded into TX buffers (not necessarily sent)
+  uint32_t packets_tx;              // frames sent successfully
   uint32_t txbuf_delay;             // frames routed through TX queue
   uint16_t rxbuf_overflow;          // frames lost due to RX buffers full
   uint16_t txbuf_overflow;          // TX queue overflows
+  uint32_t tx_fails;                // TX failures/aborts
   uint32_t error_flags;             // driver specific bitset
   uint16_t errors_rx;               // RX error counter
   uint16_t errors_tx;               // TX error counter
   uint16_t watchdog_resets;         // Watchdog reset counter
   uint16_t error_resets;            // Error resolving reset counter
   } CAN_status_t;
+
+// CAN error states
+typedef enum
+  {
+  CAN_errorstate_none = 0,          // normal operation, no errors present
+  CAN_errorstate_active,            // normal operation, some errors present (< 96 rx/tx errors)
+  CAN_errorstate_warning,           // normal operation, many errors present (>= 96 rx/tx errors)
+  CAN_errorstate_passive,           // passive mode, no tx retries until bus recovery (>= 128 rx/tx errors)
+  CAN_errorstate_busoff             // bus-off mode, no tx/rx until bus recovery (> 255 rx/tx errors)
+} CAN_errorstate_t;
+
+extern const char* GetCanErrorStateName(CAN_errorstate_t error_state);
 
 ////////////////////////////////////////////////////////////////////////
 // CAN messages queue
@@ -167,7 +180,8 @@ typedef enum
   CAN_asyncinterrupthandler, // used for asynchronous handling of rx and other interrupts from MCP2515
   CAN_txcallback,
   CAN_txfailedcallback,
-  CAN_logerror
+  CAN_logerror,
+  CAN_logstatus
 } CAN_queue_type_t;
 
 // CAN message
@@ -225,7 +239,8 @@ class canfilter
 // Log entry types:
 typedef enum
   {
-  CAN_LogFrame_RX = 0,        // frame received
+  CAN_LogNone = 0,            // init placeholder
+  CAN_LogFrame_RX,            // frame received
   CAN_LogFrame_TX,            // frame transmitted
   CAN_LogFrame_TX_Queue,      // frame delayed
   CAN_LogFrame_TX_Fail,       // frame transmission failure
@@ -302,6 +317,8 @@ class canbus : public pcp, public InternalRamAllocated
     void LogStatus(CAN_log_type_t type);
     void LogInfo(CAN_log_type_t type, const char* text);
     bool StatusChanged();
+    CAN_errorstate_t GetErrorState();
+    const char* GetErrorStateName();
 
   public:
     CAN_speed_t m_speed;
@@ -345,6 +362,9 @@ class can : public InternalRamAllocated
      can();
      ~can();
 
+  private:
+    static void CAN_rxtask(void *pvParameters);
+
   public:
     void IncomingFrame(CAN_frame_t* p_frame);
 
@@ -359,7 +379,7 @@ class can : public InternalRamAllocated
   public:
     void RegisterCallback(const char* caller, CanFrameCallback callback, bool txfeedback=false);
     void DeregisterCallback(const char* caller);
-    void ExecuteCallbacks(const CAN_frame_t* frame, bool tx, bool success);
+    int ExecuteCallbacks(const CAN_frame_t* frame, bool tx, bool success);
 
   public:
     uint32_t AddLogger(canlog* logger, int filterc=0, const char* const* filterv=NULL);

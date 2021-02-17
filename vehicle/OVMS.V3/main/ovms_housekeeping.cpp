@@ -95,6 +95,7 @@ void HousekeepingTicker1( TimerHandle_t timer )
   {
   monotonictime++;
   StandardMetrics.ms_m_monotonic->SetValue((int)monotonictime);
+  StandardMetrics.ms_m_timeutc->SetValue((int)time(NULL));
 
   HousekeepingUpdate12V();
   MyEvents.SignalEvent("ticker.1", NULL);
