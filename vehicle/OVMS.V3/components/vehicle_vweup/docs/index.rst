@@ -242,7 +242,7 @@ Example Code for Web Plugin with some custom metrics:
      </div>
      <div class="clearfix">
       <div class="metric number" data-metric="v.b.energy.used.total" data-prec="2">
-       <span class="label">TOTALS:&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbspUsed</span>
+       <span class="label">TOTALS:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Used</span>
        <span class="value">?</span>
        <span class="unit">kWh</span>
       </div>
@@ -257,7 +257,7 @@ Example Code for Web Plugin with some custom metrics:
        <span class="unit">km</span>
       </div>
       <div class="metric number" data-metric="v.e.serv.range" data-prec="0">
-       <span class="label">SERVICE:&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbspRange</span>
+       <span class="label">SERVICE:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Range</span>
        <span class="value">?</span>
        <span class="unit">km</span>
       </div>
