@@ -279,8 +279,10 @@ OvmsVehicleBMWi3::OvmsVehicleBMWi3()
     PollSetState(pollerstate);
     mt_i3_pollermode->SetValue(pollerstate);
     mt_i3_obdisalive->SetValue(false);
-    StdMetrics.ms_v_env_awake->SetValue(false);
-    StdMetrics.ms_v_env_on->SetValue(false);
+    if (!StdMetrics.ms_v_env_awake->AsBool())
+        StdMetrics.ms_v_env_awake->SetValue(false);
+    if (!StdMetrics.ms_v_env_on->AsBool())
+        StdMetrics.ms_v_env_on->SetValue(false);
     PollSetThrottling(50);
     PollSetResponseSeparationTime(5);
 }
