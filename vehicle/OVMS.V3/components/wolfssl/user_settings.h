@@ -14,7 +14,6 @@
 //#define DEBUG_WOLFSSL
 #define BUILDING_WOLFSSL
 #define HAVE_VISIBILITY 1
-#define WOLFCRYPT_ONLY
 #define NO_DEV_RANDOM
 #define NO_MAIN_DRIVER
 #define FREERTOS
@@ -36,12 +35,15 @@
 
 // Inclusion and exclusion of WolfSSL features, may be adjusted
 
+#define OPENSSL_EXTRA
+#define OPENSSL_ALL
+#define WC_NO_HARDEN
+#define HAVE_EX_DATA
 #define NO_DES3
 #define NO_DSA
 #define NO_ERROR_STRINGS
 #define NO_HC128
 #define NO_MD4
-#define NO_PSK
 #define NO_PWDBASED
 #define NO_RABBIT
 #define NO_RC4
