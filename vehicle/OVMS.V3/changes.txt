@@ -1,6 +1,9 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Volt/Ampera: new xva metrics:
+    xva.v.p.trip.ev   = trip using electric, km;
+    xva.v.e.fuel      = fuel tank level, %; 
 - WiFi: replace fixed scan times by config instances
   New configs:
     [network] wifi.scan.tmin              Min scan time per channel [ms], default 120 ms
