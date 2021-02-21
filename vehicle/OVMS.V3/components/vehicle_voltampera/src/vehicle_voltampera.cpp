@@ -59,6 +59,7 @@ static const char *TAG = "v-voltampera";
 static const OvmsVehicle::poll_pid_t va_polls[]
   =
   {
+    { 0x7e0, 0x7e8, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x002F, {  0, 600,  0 },   0, ISOTP_STD }, // Fuel Level
     { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x1940, {  0, 60,   60 },  0, ISOTP_STD }, // Transmission temperature
     { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x4369, {  0, 10,   10 },  0, ISOTP_STD }, // On-board charger current
     { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x4368, {  0, 10,   10 },  0, ISOTP_STD }, // On-board charger voltage
@@ -109,7 +110,12 @@ OvmsVehicleVoltAmpera::OvmsVehicleVoltAmpera()
   BmsSetCellDefaultThresholdsVoltage(0.020, 0.030);
   BmsSetCellDefaultThresholdsTemperature(4.0, 8.0);
 
+  // VA metrics
   mt_charging_limits = MyMetrics.InitVector<int>("xva.v.b.charging_limits", SM_STALE_HIGH, "0");
+  mt_coolant_temp = new OvmsMetricInt("xva.v.e.coolant_temp", SM_STALE_MIN, Celcius);
+  mt_coolant_heater_pwr = new OvmsMetricFloat("xva.v.e.coolant_heater_pwr", SM_STALE_MIN, kWh);
+  mt_fuel_level = new OvmsMetricInt("xva.v.e.fuel", SM_STALE_HIGH, Percentage, true);
+  mt_v_trip_ev = new OvmsMetricFloat("xva.v.p.trip.ev", SM_STALE_HIGH, Kilometers);
 
   // Config parameters
   MyConfig.RegisterParam("xva", "Volt/Ampera", true, true);
@@ -178,6 +184,11 @@ OvmsVehicleVoltAmpera::~OvmsVehicleVoltAmpera()
 #endif
   PollSetPidList(m_can1, NULL); 
   delete m_pPollingList; 
+
+  MyMetrics.DeregisterMetric(mt_coolant_temp);
+  MyMetrics.DeregisterMetric(mt_coolant_heater_pwr);
+  MyMetrics.DeregisterMetric(mt_fuel_level);
+  MyMetrics.DeregisterMetric(mt_v_trip_ev);
   }
 
 /**
@@ -240,11 +251,9 @@ void OvmsVehicleVoltAmpera::IncomingFrameCan1(CAN_frame_t* p_frame)
   ESP_LOGV(TAG,"CAN1 message received: %08x: [%02x %02x %02x %02x %02x %02x %02x %02x]", 
     p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7] );
 
-  if ((p_frame->MsgID == 0x7e8)||
-      (p_frame->MsgID == 0x7ec)||
-      (p_frame->MsgID == 0x7e9))
+  if ((p_frame->MsgID & 0xff8) == 0x7e8)
     return; // Ignore poll responses
-
+    
   // Activity on the bus, so resume polling
   if (m_poll_state == 0 && m_startPolling_timer == 0)
     {
@@ -629,6 +638,7 @@ void OvmsVehicleVoltAmpera::IncomingFrameCan4(CAN_frame_t* p_frame)
     case 0x1044A0CB: 
       {
       StdMetrics.ms_v_pos_trip->SetValue((float)((d[4]<<8 | d[5]) & 0x3fff)/8, Kilometers); // total km this charge
+      mt_v_trip_ev->SetValue((float)((d[0]<<6 | d[1]>>2))/8, Kilometers); // ev km this charge
       break;
       } 
 
@@ -682,6 +692,9 @@ void OvmsVehicleVoltAmpera::IncomingPollReply(canbus* bus, uint16_t type, uint16
 
   switch (pid)
     {
+    case 0x002f:  // Fuel level
+      mt_fuel_level->SetValue((int)value * 100 / 255);
+      break;
     case 0x4369:  // On-board charger current
       StandardMetrics.ms_v_charge_current->SetValue((unsigned int)value / 5);
       break;

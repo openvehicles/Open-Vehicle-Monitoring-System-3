@@ -70,12 +70,10 @@ const char * OvmsVehicleVoltAmpera::PreheatStatus()
 void OvmsVehicleVoltAmpera::ClimateControlInit()
  	{
 	// New VA specific metrics
-	mt_coolant_temp         = MyMetrics.InitInt("xva.v.e.coolant_temp", SM_STALE_MIN, 0);
-	mt_coolant_heater_pwr   = MyMetrics.InitFloat("xva.v.e.coolant_heater_pwr", SM_STALE_MIN, 0);
 	mt_preheat_status       = MyMetrics.InitInt("xva.v.ac.preheat", SM_STALE_MIN, VA_PREHEAT_STOPPED);
 	mt_preheat_timer        = MyMetrics.InitInt("xva.v.ac.preheat_timer", SM_STALE_MIN, 0);
 	mt_ac_active            = MyMetrics.InitBool("xva.v.ac.active", SM_STALE_MIN, 0);
-	mt_ac_front_blower_fan_speed = MyMetrics.InitInt("xva.v.ac.front_blower_fan_speed", SM_STALE_MIN, 0);
+	mt_ac_front_blower_fan_speed = MyMetrics.InitInt("xva.v.ac.front_blower_fan_speed", SM_STALE_MIN, 0, Percentage);
 
 	m_preheat_commander = Disabled;
 	}
