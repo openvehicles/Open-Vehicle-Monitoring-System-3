@@ -71,7 +71,7 @@ const OvmsVehicle::poll_pid_t vweup_polls[] = {
 
   {VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_TEMP,             {  0, 20, 20, 20}, 1, ISOTP_STD},
 
-  {VWUP_CHG,      UDS_READ, VWUP_CHG_POWER_EFF,             {  0,  0, 10,  5}, 1, ISOTP_STD}, // 5 @ _ON to detect charging
+  {VWUP_CHG,      UDS_READ, VWUP_CHG_POWER_EFF,             {  0,  0, 10,  0}, 1, ISOTP_STD},
   {VWUP_CHG,      UDS_READ, VWUP_CHG_POWER_LOSS,            {  0,  0, 10,  0}, 1, ISOTP_STD},
 
   {VWUP_MFD,      UDS_READ, VWUP_MFD_ODOMETER,              {  0,  0,  0, 60}, 1, ISOTP_STD},
@@ -90,8 +90,8 @@ const OvmsVehicle::poll_pid_t vweup_polls[] = {
 //{VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_TEMP_MIN,         {  0,  0,  0, 20}, 1, ISOTP_STD},
 
   {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_REM,              {  0,  0, 30,  0}, 1, ISOTP_STD},
-  {VWUP_BRK,      UDS_SESSION, VWUP_EXTDIAG_START,          {  0, 30,  0, 30}, 1, ISOTP_STD},
-  {VWUP_BRK,      UDS_READ, VWUP_BRK_TPMS,                  {  0, 30,  0, 30}, 1, ISOTP_STD},
+  {VWUP_BRK,      UDS_SESSION, VWUP_EXTDIAG_START,          {  0,  0,  0, 30}, 1, ISOTP_STD},
+  {VWUP_BRK,      UDS_READ, VWUP_BRK_TPMS,                  {  0,  0,  0, 30}, 1, ISOTP_STD},
 };
 
 //
