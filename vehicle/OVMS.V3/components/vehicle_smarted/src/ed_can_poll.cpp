@@ -58,6 +58,21 @@ const PROGMEM byte rqChargerVoltages[4]           = {0x03, 0x22, 0x02, 0x26};
 const PROGMEM byte rqChargerAmps[4]               = {0x03, 0x22, 0x02, 0x25};
 const PROGMEM byte rqChargerSelCurrent[4]         = {0x03, 0x22, 0x02, 0x2A};
 const PROGMEM byte rqChargerTemperatures[4]       = {0x03, 0x22, 0x02, 0x23};
+
+// Cooling Subsystem temperatures
+const PROGMEM byte rqCoolingTemp[4]               = {0x03, 0x22, 0x20, 0x47};
+const PROGMEM byte rqCoolingPumpTemp[4]           = {0x03, 0x22, 0x23, 0x0A};
+const PROGMEM byte rqCoolingPumpLV[4]             = {0x03, 0x22, 0x23, 0x08};
+const PROGMEM byte rqCoolingPumpAmps[4]           = {0x03, 0x22, 0x23, 0x09};
+const PROGMEM byte rqCoolingPumpRPM[4]            = {0x03, 0x22, 0xD0, 0x32}; 
+const PROGMEM byte rqCoolingPumpOTR[4]            = {0x03, 0x22, 0x63, 0x09}; //operating time record
+const PROGMEM byte rqCoolingFanRPM[4]             = {0x03, 0x22, 0xD0, 0x41};
+const PROGMEM byte rqCoolingFanOTR[4]             = {0x03, 0x22, 0x63, 0x0A};
+const PROGMEM byte rqBatteryHeaterOTR[4]          = {0x03, 0x22, 0x63, 0x21};
+const PROGMEM byte rqBatteryHeaterON[4]           = {0x03, 0x22, 0xD3, 0x02};
+const PROGMEM byte rqVacuumPumpOTR[4]             = {0x03, 0x22, 0x63, 0x03};
+const PROGMEM byte rqVacuumPumpPress1[4]          = {0x03, 0x22, 0x20, 0x41};
+const PROGMEM byte rqVacuumPumpPress2[4]          = {0x03, 0x22, 0x20, 0x43};
  */
 
 #include "ovms_log.h"
@@ -78,29 +93,44 @@ static const char *TAG = "v-smarted";
 
 static const OvmsVehicle::poll_pid_t smarted_polls[] =
 {
-  { 0x7E5, 0x7ED, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x1001, {  0,3600,3600,3600 }, 0, ISOTP_STD }, // Wippen...
   { 0x61A, 0x483, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xF111, {  0,300,600,600 }, 0, ISOTP_STD }, // rqChargerPN_HW
   { 0x61A, 0x483, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0226, {  0,300,0,60 }, 0, ISOTP_STD }, // rqChargerVoltages
   { 0x61A, 0x483, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0225, {  0,300,0,60 }, 0, ISOTP_STD }, // rqChargerAmps
   { 0x61A, 0x483, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x022A, {  0,300,0,60 }, 0, ISOTP_STD }, // rqChargerSelCurrent
   { 0x61A, 0x483, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0223, {  0,300,0,60 }, 0, ISOTP_STD }, // rqChargerTemperatures
-  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xF190, {  0,300,600,0 }, 0, ISOTP_STD }, // rqBattVIN
+  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xF190, {  0,300,600,600 }, 0, ISOTP_STD }, // rqBattVIN
   { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0208, {  0,300,600,60 }, 0, ISOTP_STD }, // rqBattVolts
-  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0310, {  0,300,600,0 }, 0, ISOTP_STD }, // rqBattCapacity
-  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0203, {  0,300,600,0 }, 0, ISOTP_STD }, // rqBattAmps
-  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0207, {  0,300,600,0 }, 0, ISOTP_STD }, // rqBattADCref
-  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0304, {  0,300,600,0 }, 0, ISOTP_STD }, // rqBattDate
-  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xF18C, {  0,300,600,0 }, 0, ISOTP_STD }, // rqBattProdDate
+  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0310, {  0,300,600,60 }, 0, ISOTP_STD }, // rqBattCapacity
+  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0203, {  0,300,600,600 }, 0, ISOTP_STD }, // rqBattAmps
+  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0207, {  0,300,600,600 }, 0, ISOTP_STD }, // rqBattADCref
+  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0304, {  0,300,600,600 }, 0, ISOTP_STD }, // rqBattDate
+  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xF18C, {  0,300,600,600 }, 0, ISOTP_STD }, // rqBattProdDate
   //getBatteryRevision
-  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xF150, {  0,300,600,0 }, 0, ISOTP_STD }, //rqBattHWrev
-  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xF151, {  0,300,600,0 }, 0, ISOTP_STD }, //rqBattSWrev
+  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xF150, {  0,300,600,600 }, 0, ISOTP_STD }, //rqBattHWrev
+  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xF151, {  0,300,600,600 }, 0, ISOTP_STD }, //rqBattSWrev
   { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0201, {  0,300,600,120 }, 0, ISOTP_STD }, // rqBattTemperatures
   { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0202, {  0,300,600,120 }, 0, ISOTP_STD }, // rqBattModuleTemperatures
-  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x030B, {  0,300,600,0 }, 0, ISOTP_STD }, // rqBattHVContactorCyclesLeft
-  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x030C, {  0,300,600,0 }, 0, ISOTP_STD }, // rqBattHVContactorMax
-  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xD000, {  0,300,600,0 }, 0, ISOTP_STD }, // rqBattHVContactorState
-  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0204, {  0,300,600,0 }, 0, ISOTP_STD }, // rqBattHVstatus
-  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0209, {  0,300,600,0 }, 0, ISOTP_STD }, // rqBattIsolation
+  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x030B, {  0,300,600,600 }, 0, ISOTP_STD }, // rqBattHVContactorCyclesLeft
+  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x030C, {  0,300,600,600 }, 0, ISOTP_STD }, // rqBattHVContactorMax
+  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xD000, {  0,300,600,600 }, 0, ISOTP_STD }, // rqBattHVContactorState
+  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0204, {  0,300,600,600 }, 0, ISOTP_STD }, // rqBattHVstatus
+  { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0209, {  0,300,600,600 }, 0, ISOTP_STD }, // rqBattIsolation
+  // CEPC
+  { 0x7E5, 0x7ED, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x1001, {  0,3600,3600,3600 }, 0, ISOTP_STD }, // Variant coding
+  { 0x7E5, 0x7ED, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2047, {  0,3600,3600,120 }, 0, ISOTP_STD }, // rqCoolingTemp
+  { 0x7E5, 0x7ED, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x230A, {  0,3600,3600,120 }, 0, ISOTP_STD }, // rqCoolingPumpTemp
+  { 0x7E5, 0x7ED, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2308, {  0,3600,3600,120 }, 0, ISOTP_STD }, // rqCoolingPumpLV
+  { 0x7E5, 0x7ED, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2309, {  0,3600,3600,120 }, 0, ISOTP_STD }, // rqCoolingPumpAmps
+  { 0x7E5, 0x7ED, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xD032, {  0,3600,3600,120 }, 0, ISOTP_STD }, // rqCoolingPumpRPM
+  { 0x7E5, 0x7ED, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x6309, {  0,3600,3600,120 }, 0, ISOTP_STD }, // rqCoolingPumpOTR
+  { 0x7E5, 0x7ED, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xD041, {  0,3600,3600,120 }, 0, ISOTP_STD }, // rqCoolingFanRPM
+  { 0x7E5, 0x7ED, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x630A, {  0,3600,3600,120 }, 0, ISOTP_STD }, // rqCoolingFanOTR
+  { 0x7E5, 0x7ED, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x6321, {  0,3600,3600,120 }, 0, ISOTP_STD }, // rqBatteryHeaterOTR
+  { 0x7E5, 0x7ED, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xD302, {  0,3600,3600,120 }, 0, ISOTP_STD }, // rqBatteryHeaterON
+  { 0x7E5, 0x7ED, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x6303, {  0,3600,3600,120 }, 0, ISOTP_STD }, // rqVacuumPumpOTR
+  { 0x7E5, 0x7ED, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2041, {  0,3600,3600,120 }, 0, ISOTP_STD }, // rqVacuumPumpPress1
+  { 0x7E5, 0x7ED, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2043, {  0,3600,3600,120 }, 0, ISOTP_STD }, // rqVacuumPumpPress2
+  { 0x7E5, 0x7ED, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x6308, {  0,3600,3600,300 }, 0, ISOTP_STD }, // DT_Batterie_Alterszustand
   POLL_LIST_END
 };
 
@@ -179,6 +209,21 @@ void OvmsVehicleSmartED::ObdInitPoll() {
   mt_myBMS_SWrev               = new OvmsMetricVector<int>("xse.mybms.SW.rev", SM_STALE_HIGH, Other);
 
   mt_CEPC_Wippen               = new OvmsMetricBool("xse.cepc.wippen", SM_STALE_MID);
+  
+  mt_CEPC_CoolingTemp          = new OvmsMetricFloat("xse.cepc.cooling.temp", SM_STALE_MID, Celcius);
+  mt_CEPC_CoolingPumpTemp      = new OvmsMetricFloat("xse.cepc.cooling.pump.temp", SM_STALE_MID, Celcius);
+  mt_CEPC_CoolingPumpLV        = new OvmsMetricFloat("xse.cepc.cooling.pump.lv", SM_STALE_MID, Volts);
+  mt_CEPC_CoolingPumpAmps      = new OvmsMetricFloat("xse.cepc.cooling.pump.amps", SM_STALE_MID, Amps);
+  mt_CEPC_CoolingPumpRPM       = new OvmsMetricFloat("xse.cepc.cooling.pump.rpm", SM_STALE_MID, Percentage);
+  mt_CEPC_CoolingPumpOTR       = new OvmsMetricInt("xse.cepc.cooling.pump.otr", SM_STALE_MID, Hours);
+  mt_CEPC_CoolingFanRPM        = new OvmsMetricFloat("xse.cepc.cooling.fan.rpm", SM_STALE_MID, Percentage);
+  mt_CEPC_CoolingFanOTR        = new OvmsMetricInt("xse.cepc.cooling.fan.otr", SM_STALE_MID, Hours);
+  mt_CEPC_BatteryHeaterOTR     = new OvmsMetricInt("xse.cepc.battery.heater.otr", SM_STALE_MID, Hours);
+  mt_CEPC_BatteryHeaterON      = new OvmsMetricInt("xse.cepc.battery.heater.on", SM_STALE_MID, Other);
+  mt_CEPC_VaccumPumpOTR        = new OvmsMetricFloat("xse.cepc.vaccum.pump.otr", SM_STALE_MID, Hours);
+  mt_CEPC_VaccumPumpPress1     = new OvmsMetricInt("xse.cepc.vaccum.pump.press1", SM_STALE_MID, Other);
+  mt_CEPC_VaccumPumpPress2     = new OvmsMetricInt("xse.cepc.vaccum.pump.press2", SM_STALE_MID, Other);
+  mt_CEPC_BatteryAgeCondition  = new OvmsMetricFloat("xse.cepc.battery.age.condition", SM_STALE_MID, Percentage);
 
   // BMS configuration:
   BmsSetCellArrangementCapacity(93, 31);
@@ -305,7 +350,49 @@ void OvmsVehicleSmartED::IncomingPollReply(canbus* bus, uint16_t type, uint16_t 
       PollReply_NLG6_ChargerTemperatures(rxbuf.data(), rxbuf.size());
       break;
     case 0x1001:
-      PollReply_CEPC(rxbuf.data(), rxbuf.size());
+      PollReply_CEPC_VC(rxbuf.data(), rxbuf.size());
+      break;
+    case 0x2047: // rqCoolingTemp
+      PollReply_CEPC_CoolingTemp(rxbuf.data(), rxbuf.size());
+      break;
+    case 0x230A: // rqCoolingPumpTemp
+      PollReply_CEPC_CoolingPumpTemp(rxbuf.data(), rxbuf.size());
+      break;
+    case 0x2308: // rqCoolingPumpLV
+      PollReply_CEPC_CoolingPumpLV(rxbuf.data(), rxbuf.size());
+      break;
+    case 0x2309: // rqCoolingPumpAmps
+      PollReply_CEPC_CoolingPumpAmps(rxbuf.data(), rxbuf.size());
+      break;
+    case 0xD032: // rqCoolingPumpRPM
+      PollReply_CEPC_CoolingPumpRPM(rxbuf.data(), rxbuf.size());
+      break;
+    case 0x6309: // rqCoolingPumpOTR
+      PollReply_CEPC_CoolingPumpOTR(rxbuf.data(), rxbuf.size());
+      break;
+    case 0xD041: // rqCoolingFanRPM
+      PollReply_CEPC_CoolingFanRPM(rxbuf.data(), rxbuf.size());
+      break;
+    case 0x630A: // rqCoolingFanOTR
+      PollReply_CEPC_CoolingFanOTR(rxbuf.data(), rxbuf.size());
+      break;
+    case 0x6321: // rqBatteryHeaterOTR
+      PollReply_CEPC_BatteryHeaterOTR(rxbuf.data(), rxbuf.size());
+      break;
+    case 0xD302: // rqBatteryHeaterON
+      PollReply_CEPC_BatteryHeaterON(rxbuf.data(), rxbuf.size());
+      break;
+    case 0x6303: // rqVacuumPumpOTR
+      PollReply_CEPC_VacuumPumpOTR(rxbuf.data(), rxbuf.size());
+      break;
+    case 0x2041: // rqVacuumPumpPress1
+      PollReply_CEPC_VacuumPumpPress1(rxbuf.data(), rxbuf.size());
+      break;
+    case 0x2043: // rqVacuumPumpPress2
+      PollReply_CEPC_VacuumPumpPress2(rxbuf.data(), rxbuf.size());
+      break;
+    case 0x6308: // DT_Batterie_Alterszustand
+      PollReply_CEPC_BatteryAgeCondition(rxbuf.data(), rxbuf.size());
       break;
     // Unknown: output
     default: {
@@ -646,8 +733,74 @@ void OvmsVehicleSmartED::PollReply_NLG6_ChargerTemperatures(const char* reply_da
   if (mt_nlg6_temp_reported->AsFloat() != 0) StandardMetrics.ms_v_charge_temp->SetValue(mt_nlg6_temp_reported->AsFloat());
 }
 
-void OvmsVehicleSmartED::PollReply_CEPC(const char* reply_data, uint16_t reply_len) {
+void OvmsVehicleSmartED::PollReply_CEPC_VC(const char* reply_data, uint16_t reply_len) {
   mt_CEPC_Wippen->SetValue(reply_data[16]&0x04);
+}
+
+void OvmsVehicleSmartED::PollReply_CEPC_CoolingTemp(const char* reply_data, uint16_t reply_len) {
+  mt_CEPC_CoolingTemp->SetValue((reply_data[0] * 256 + reply_data[1]) / 8.0);
+}
+
+void OvmsVehicleSmartED::PollReply_CEPC_CoolingPumpTemp(const char* reply_data, uint16_t reply_len) {
+  mt_CEPC_CoolingPumpTemp->SetValue(reply_data[0] - 50);
+}
+
+void OvmsVehicleSmartED::PollReply_CEPC_CoolingPumpLV(const char* reply_data, uint16_t reply_len) {
+  mt_CEPC_CoolingPumpLV->SetValue(reply_data[0] / 10.0);
+}
+
+void OvmsVehicleSmartED::PollReply_CEPC_CoolingPumpAmps(const char* reply_data, uint16_t reply_len) {
+  mt_CEPC_CoolingPumpAmps->SetValue(reply_data[1] / 5.0);
+}
+
+void OvmsVehicleSmartED::PollReply_CEPC_CoolingPumpRPM(const char* reply_data, uint16_t reply_len) {
+  mt_CEPC_CoolingPumpRPM->SetValue(reply_data[0] / 255.0 * 100.0);
+}
+
+void OvmsVehicleSmartED::PollReply_CEPC_CoolingPumpOTR(const char* reply_data, uint16_t reply_len) {
+  mt_CEPC_CoolingPumpOTR->SetValue(reply_data[0] * 256 + reply_data[1]);
+}
+
+void OvmsVehicleSmartED::PollReply_CEPC_CoolingFanRPM(const char* reply_data, uint16_t reply_len) {
+  mt_CEPC_CoolingFanRPM->SetValue(reply_data[0] / 255.0 * 100.0);
+}
+
+void OvmsVehicleSmartED::PollReply_CEPC_CoolingFanOTR(const char* reply_data, uint16_t reply_len) {
+  mt_CEPC_CoolingFanOTR->SetValue(reply_data[0] * 256 + reply_data[1]);
+}
+
+void OvmsVehicleSmartED::PollReply_CEPC_BatteryHeaterOTR(const char* reply_data, uint16_t reply_len) {
+  mt_CEPC_BatteryHeaterOTR->SetValue(reply_data[0] * 256 + reply_data[1]);
+}
+
+void OvmsVehicleSmartED::PollReply_CEPC_BatteryHeaterON(const char* reply_data, uint16_t reply_len) {
+  mt_CEPC_BatteryHeaterON->SetValue(reply_data[0]);
+}
+
+void OvmsVehicleSmartED::PollReply_CEPC_VacuumPumpOTR(const char* reply_data, uint16_t reply_len) {
+  float vpOTR;
+  vpOTR =  (float) (reply_data[0] * (16777216 / 10.0));
+  vpOTR += (float) (reply_data[1] * (65535 / 10.0));
+  vpOTR += (float) (reply_data[2] * (256 / 10.0));
+  mt_CEPC_VaccumPumpOTR->SetValue(vpOTR / 36000.0);
+}
+
+void OvmsVehicleSmartED::PollReply_CEPC_VacuumPumpPress1(const char* reply_data, uint16_t reply_len) {
+  int16_t vpPress;
+  vpPress =  (int16_t) reply_data[0] * 256;
+  vpPress += (int16_t) reply_data[1];
+  mt_CEPC_VaccumPumpPress1->SetValue(vpPress);
+}
+
+void OvmsVehicleSmartED::PollReply_CEPC_VacuumPumpPress2(const char* reply_data, uint16_t reply_len) {
+  int16_t vpPress;
+  vpPress =  (int16_t) reply_data[0] * 256;
+  vpPress += (int16_t) reply_data[1];
+  mt_CEPC_VaccumPumpPress2->SetValue(vpPress);
+}
+
+void OvmsVehicleSmartED::PollReply_CEPC_BatteryAgeCondition(const char* reply_data, uint16_t reply_len) {
+  mt_CEPC_BatteryAgeCondition->SetValue(reply_data[0] * 0.5);
 }
 
 // BMS helpers
@@ -780,12 +933,12 @@ void OvmsVehicleSmartED::BmsDiag(int verbosity, OvmsWriter* writer) {
   
   writer->puts("-------------------------------------------");
   writer->puts("---- ED Battery Management Diagnostics ----");
-  writer->puts("----         OVMS Version 1.1          ----");
+  writer->puts("----         OVMS Version 1.2          ----");
   writer->puts("-------------------------------------------");
   
-  writer->printf("Battery VIN: %s\n", (char*) mt_myBMS_BattVIN->AsString().c_str());
+  writer->printf("Battery VIN : %s\n", (char*) mt_myBMS_BattVIN->AsString().c_str());
   writer->printf("Time [hh:mm]: %02d:%02d", mt_vehicle_time->AsInt(0, Hours), mt_vehicle_time->AsInt(0, Minutes)-(mt_vehicle_time->AsInt(0, Hours)*60));
-  writer->printf(",   ODO : %s\n", (char*) StdMetrics.ms_v_pos_odometer->AsUnitString("-", rangeUnit, 0).c_str());
+  writer->printf(",       ODO : %s\n", (char*) StdMetrics.ms_v_pos_odometer->AsUnitString("-", rangeUnit, 0).c_str());
   
   writer->puts("-------------------------------------------");
   
@@ -816,7 +969,7 @@ void OvmsVehicleSmartED::BmsDiag(int verbosity, OvmsWriter* writer) {
   
   writer->printf("SOC : %s, realSOC: %s\n", (char*) StdMetrics.ms_v_bat_soc->AsUnitString("-", Native, 1).c_str(), (char*) mt_real_soc->AsUnitString("-", Native, 1).c_str());
   writer->printf("HV  : %3.1f V, %.2f A, %0.2f kW\n", StdMetrics.ms_v_bat_voltage->AsFloat(), StdMetrics.ms_v_bat_current->AsFloat(), StdMetrics.ms_v_bat_power->AsFloat());
-  writer->printf("LV  : %2.1f V\n", StdMetrics.ms_v_bat_12v_voltage->AsFloat());
+  writer->printf("LV  : %2.1f V, %.1f %%\n", StdMetrics.ms_v_bat_12v_voltage->AsFloat(), mt_CEPC_BatteryAgeCondition->AsFloat());
   
   writer->puts("-------------------------------------------");
   
@@ -890,6 +1043,25 @@ void OvmsVehicleSmartED::BmsDiag(int verbosity, OvmsWriter* writer) {
   writer->printf("CAP mean: %5.0f As/10, %2.1f Ah\n", mt_v_bat_pack_cavg->AsFloat(), mt_v_bat_pack_cavg->AsFloat() / 360.0);
   writer->printf("CAP min : %5.0f As/10, %2.1f Ah, # %d \n", mt_v_bat_pack_cmin->AsFloat(), mt_v_bat_pack_cmin->AsFloat() / 360.0, mt_v_bat_pack_cmin_cell->AsInt());
   writer->printf("CAP max : %5.0f As/10, %2.1f Ah, # %d \n", mt_v_bat_pack_cmax->AsFloat(), mt_v_bat_pack_cmax->AsFloat() / 360.0, mt_v_bat_pack_cmax_cell->AsInt());
+  
+  writer->puts("-------------------------------------------");
+  writer->puts("Status Cooling- and Subsystems:");
+  writer->puts("-------------------------------------------");
+  writer->printf("Temperature   : %.1f degC \n", mt_CEPC_CoolingTemp->AsFloat());
+  writer->printf("Cooling fan   : %.1f %% \n", mt_CEPC_CoolingFanRPM->AsFloat());
+  writer->printf("Cooling pump  : %.1f %%, %.1f degC \n", mt_CEPC_CoolingPumpRPM->AsFloat(), mt_CEPC_CoolingPumpTemp->AsFloat());
+  writer->printf("              : %.1f V, %.1f A \n", mt_CEPC_CoolingPumpLV->AsFloat(), mt_CEPC_CoolingPumpAmps->AsFloat());
+  writer->puts("OTR:");
+  writer->printf("Cooling fan   : %d h \n", mt_CEPC_CoolingFanOTR->AsInt());
+  writer->printf("Cooling pump  : %d h \n", mt_CEPC_CoolingPumpOTR->AsInt());
+  writer->printf("Battery heater: %d h ,", mt_CEPC_BatteryHeaterOTR->AsInt());
+  if (mt_CEPC_BatteryHeaterON->AsInt() == 0) {
+    writer->printf("OFF \n");
+  } else {
+    writer->printf("ON \n");
+  }
+  writer->printf("Vaccum pump   : %.3f h \n", mt_CEPC_VaccumPumpOTR->AsFloat());
+  writer->printf("Pressure 1, 2 : %d mbar, %d mbar \n", mt_CEPC_VaccumPumpPress1->AsInt(), mt_CEPC_VaccumPumpPress2->AsInt());
   writer->puts("-------------------------------------------");
 }
 
