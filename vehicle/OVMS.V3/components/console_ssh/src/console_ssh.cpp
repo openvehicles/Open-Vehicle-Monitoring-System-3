@@ -177,9 +177,8 @@ void OvmsSSH::NetManInit(std::string event, void* data)
   ESP_LOGI(tag, "Launching SSH Server");
   wolfSSH_SetLoggingCb(&wolfssh_logger);
   wolfSSH_Debugging_ON();
-  if ((ret=wolfSSL_SetLoggingCb(&wolfssl_logger)) || (ret=wolfSSL_Debugging_ON()))
-    ESP_LOGW(tag, "Couldn't initialize wolfSSL debugging, error %d: %s", ret,
-      GetErrorString(ret));
+  wolfSSL_SetLoggingCb(&wolfssl_logger);
+  wolfSSL_Debugging_ON();
   ret = wolfSSH_Init();
   if (ret != WS_SUCCESS)
     {
