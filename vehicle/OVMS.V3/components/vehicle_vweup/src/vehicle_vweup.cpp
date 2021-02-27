@@ -72,7 +72,7 @@
 #include <string>
 static const char *TAG = "v-vweup";
 
-#define VERSION "0.10.2"
+#define VERSION "0.11.0"
 
 #include <stdio.h>
 #include <string>
@@ -293,7 +293,8 @@ void OvmsVehicleVWeUp::ConfigChanged(OvmsConfigParam *param)
   if (vweup_modelyear > 2019)
   {
     // 32.3 kWh net / 36.8 kWh gross, 2P84S = 120 Ah, 260 km WLTP
-    StdMetrics.ms_v_bat_cac->SetValue(120 * sohfactor);
+    if (StdMetrics.ms_v_bat_cac->AsFloat() == 0)
+      StdMetrics.ms_v_bat_cac->SetValue(120 * sohfactor);
     StdMetrics.ms_v_bat_range_full->SetValue(260 * sohfactor);
     if (StdMetrics.ms_v_bat_range_ideal->AsFloat() == 0)
       StdMetrics.ms_v_bat_range_ideal->SetValue(260 * sohfactor * socfactor);
@@ -314,7 +315,8 @@ void OvmsVehicleVWeUp::ConfigChanged(OvmsConfigParam *param)
   else
   {
     // 16.4 kWh net / 18.7 kWh gross, 2P102S = 50 Ah, 160 km WLTP
-    StdMetrics.ms_v_bat_cac->SetValue(50 * sohfactor);
+    if (StdMetrics.ms_v_bat_cac->AsFloat() == 0)
+      StdMetrics.ms_v_bat_cac->SetValue(50 * sohfactor);
     StdMetrics.ms_v_bat_range_full->SetValue(160 * sohfactor);
     if (StdMetrics.ms_v_bat_range_ideal->AsFloat() == 0)
       StdMetrics.ms_v_bat_range_ideal->SetValue(160 * sohfactor * socfactor);

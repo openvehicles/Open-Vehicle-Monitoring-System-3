@@ -64,6 +64,7 @@ const OvmsVehicle::poll_pid_t vweup_polls[] = {
   {VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_SOC_ABS,          {  0, 20, 20, 20}, 1, ISOTP_STD},
   {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_SOC_NORM,         {  0, 20, 20,  0}, 1, ISOTP_STD},
   {VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_ENERGY_COUNTERS,  {  0, 20, 20, 20}, 1, ISOTP_STD},
+  // Energy counters need to be polled directly after the SOCs and at the same interval
 
   {VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_CELL_MAX,         {  0, 20, 20, 20}, 1, ISOTP_STD},
   {VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_CELL_MIN,         {  0, 20, 20, 20}, 1, ISOTP_STD},
@@ -161,16 +162,21 @@ void OvmsVehicleVWeUp::OBDInit()
     TPMSDiffusion = MyMetrics.InitVector<float>("xvu.v.t.diff", SM_STALE_NONE, 0);
     TPMSEmergency = MyMetrics.InitVector<float>("xvu.v.t.emgcy", SM_STALE_NONE, 0);
 
-    // Note: the following metrics will probably be removed after deciding if/which of these
-    //  we can use to get the actual battery capacity:
-    m_bat_cap_range        = MyMetrics.InitFloat("xvu.b.cap.range", SM_STALE_MAX, 0, kWh);
-    m_bat_cap_chg_ah_norm  = MyMetrics.InitFloat("xvu.b.cap.chg.ah.norm", SM_STALE_MAX, 0, AmpHours);
-    m_bat_cap_chg_ah_abs   = MyMetrics.InitFloat("xvu.b.cap.chg.ah.abs", SM_STALE_MAX, 0, AmpHours);
-    m_bat_cap_chg_kwh_norm = MyMetrics.InitFloat("xvu.b.cap.chg.kwh.norm", SM_STALE_MAX, 0, kWh);
-    m_bat_cap_chg_kwh_abs  = MyMetrics.InitFloat("xvu.b.cap.chg.kwh.abs", SM_STALE_MAX, 0, kWh);
+    // Battery energy according to MFD range estimation:
+    m_bat_energy_range  = MyMetrics.InitFloat("xvu.b.energy.range", SM_STALE_MAX, 0, kWh);
+    m_bat_cap_kwh_range = MyMetrics.InitFloat("xvu.b.cap.kwh.range", SM_STALE_MAX, 0, kWh);
 
-    // Init state:
-    std::fill_n(m_bat_cap_range_hist, sizeof_array(m_bat_cap_range_hist), m_bat_cap_range->AsFloat());
+    // Battery capacity calculations from charge SOC & coulomb/energy delta:
+    m_bat_cap_ah_abs    = MyMetrics.InitFloat("xvu.b.cap.ah.abs", SM_STALE_MAX, 0, AmpHours, true);
+    m_bat_cap_ah_norm   = MyMetrics.InitFloat("xvu.b.cap.ah.norm", SM_STALE_MAX, 0, AmpHours, true);
+    m_bat_cap_kwh_abs   = MyMetrics.InitFloat("xvu.b.cap.kwh.abs", SM_STALE_MAX, 0, kWh, true);
+    m_bat_cap_kwh_norm  = MyMetrics.InitFloat("xvu.b.cap.kwh.norm", SM_STALE_MAX, 0, kWh, true);
+
+    // Init smoothing:
+    m_smooth_cap_ah_abs  .Init(15, m_bat_cap_ah_abs->AsFloat(),   m_bat_cap_ah_abs->AsFloat() != 0);
+    m_smooth_cap_ah_norm .Init(15, m_bat_cap_ah_norm->AsFloat(),  m_bat_cap_ah_norm->AsFloat() != 0);
+    m_smooth_cap_kwh_abs .Init(15, m_bat_cap_kwh_abs->AsFloat(),  m_bat_cap_kwh_abs->AsFloat() != 0);
+    m_smooth_cap_kwh_norm.Init(15, m_bat_cap_kwh_norm->AsFloat(), m_bat_cap_kwh_norm->AsFloat() != 0);
 
     // Start can1:
     RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
@@ -615,56 +621,15 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
     case VWUP_MFD_RANGE_CAP:
       if (PollReply.FromUint16("VWUP_MFD_RANGE_CAP", value) && value != 511) {
         // Usable battery energy [kWh] from range estimation:
-        //  We assume this to be usable as an indicator for the overall CAC & SOH,
-        //  as the range estimation needs to be based on the actual (aged) battery capacity.
-        //  The value may include a battery temperature compensation, so may change
-        //  from summer to winter, this isn't known yet. There also may be a separate
-        //  actual SOH reading available (to be discovered).
         float energy_avail = value / 10;
-        float soc_fct = StdMetrics.ms_v_bat_soc->AsFloat() / 100;
-        // Value resolution is at only 0.1 kWh, also capacity is artificially reduced by the
-        //  car below 30% SOC, so we limit the calculation to…
-        if (energy_avail > 3.0 && soc_fct > 0.30)
-        {
-          float energy_full = energy_avail / soc_fct;
-          m_bat_cap_range->SetValue(energy_full);
-          VALUE_LOG(TAG, "VWUP_MFD_RANGE_CAP=%f => %.1fkWh => full=%.1fkWh",
-            value, energy_avail, energy_full);
-          
-          // The range estimation based capacity decreases with SOC and temperature, so we
-          //  only update the SOH from the smoothed maximum values seen. Also, if this is
-          //  the first SOH taken, the SOC needs to be above 80% to minimize the errors.
-
-          m_bat_cap_range_hist[0] = m_bat_cap_range_hist[1];
-          m_bat_cap_range_hist[1] = m_bat_cap_range_hist[2] ? m_bat_cap_range_hist[2] : energy_full;
-          m_bat_cap_range_hist[2] = energy_full;
-
-          if (m_bat_cap_range_hist[1] >  m_bat_cap_range_hist[0] &&
-              m_bat_cap_range_hist[1] >= m_bat_cap_range_hist[2] &&
-              (StdMetrics.ms_v_bat_soh->IsDefined() || soc_fct > 0.80))
-          {
-            // Calculate SOH from maximum in m_bat_cap_range_hist[1]:
-            // Gen2: 32.3 kWh net / 36.8 kWh gross, 2P84S = 120 Ah, 260 km WLTP
-            // Gen1: 16.4 kWh net / 18.7 kWh gross, 2P102S = 50 Ah, 160 km WLTP
-            float soh_new = m_bat_cap_range_hist[1] / ((vweup_modelyear > 2019) ?  32.3f :  16.4f) * 100;
-
-            // Smooth SOH downwards:
-            float soh_old = StdMetrics.ms_v_bat_soh->AsFloat();
-            if (soh_new < soh_old)
-              soh_new = (49 * soh_old + soh_new) / 50;
-
-            float soh_fct    = soh_new / 100;
-            float cap_ah     = soh_fct * ((vweup_modelyear > 2019) ? 120.0f :  50.0f);
-            float range_full = soh_fct * ((vweup_modelyear > 2019) ? 260.0f : 160.0f);
-            
-            // Update metrics:
-            StdMetrics.ms_v_bat_soh->SetValue(soh_new);
-            StdMetrics.ms_v_bat_cac->SetValue(cap_ah);
-            StdMetrics.ms_v_bat_range_full->SetValue(range_full);
-            StdMetrics.ms_v_bat_range_ideal->SetValue(range_full * soc_fct);
-            ESP_LOGD(TAG, "VWUP_MFD_RANGE_CAP: max=%.2fkWh => SOH=%.3f%% CAC=%.3fAh RangeFull=%.1fkm RangeIdeal=%.1fkm",
-              m_bat_cap_range_hist[1], soh_new, cap_ah, range_full, range_full * soc_fct);
-          }
+        m_bat_energy_range->SetValue(energy_avail);
+        VALUE_LOG(TAG, "VWUP_MFD_RANGE_ENERGY=%g => %.1fkWh", value, energy_avail);
+        // Stable capacity derivation only possible for SOC >= 30%:
+        float soc = StdMetrics.ms_v_bat_soc->AsFloat();
+        if (soc >= 30) {
+          float capacity = energy_avail / soc * 100;
+          m_bat_cap_kwh_range->SetValue(capacity);
+          VALUE_LOG(TAG, "VWUP_MFD_RANGE_CAP=%.1fkWh", capacity);
         }
       }
       break;
@@ -743,6 +708,7 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
         }
         VALUE_LOG(TAG, "VWUP_BAT_MGMT_ENERGY_COUNTERS_USED=%f => %f", value, energy_used_total);
       }
+
       // After receiving the new SOCs & coulomb counts, we can update our capacities:
       UpdateChargeCap(charge_inprogress);
       break;
@@ -1102,66 +1068,134 @@ void OvmsVehicleVWeUp::UpdateChargePower(float power_kw)
 
 
 /**
- * UpdateChargeCap: calculate normalized & absolute battery capacities during charge
+ * UpdateChargeCap: calculate normalized & absolute battery capacities during charge,
+ *  update CAC & SOH accordingly after charge stop.
  *  Called by IncomingPollReply() after receiving SOCs & energy/coulomb counts.
  */
 void OvmsVehicleVWeUp::UpdateChargeCap(bool charging)
 {
-  // Update every 5 minutes while charging and once after charge stop:
-  static int checkpoint = 0;
-  bool update = false;
-  int charge_time = StdMetrics.ms_v_charge_time->AsInt();
+  // Below ~30% normalized SOC difference, values tend to be unstable and far off.
+  // Values stabilize beyond ~60% normalized SOC difference.
+  // Absolute SOC has currently a value resolution of 0.4% (uint8 / 2.5 from BMS).
+  // As the SOC is corrected once in a while during charging (supposedly from voltage
+  // feedback), we need to smooth the derived capacities. To get a consistent number of
+  // values for a fixed smoothing, we take samples every 2.4% of absolute SOC difference.
+  // From 30-100% normalized SOC diff = ~62% absolute SOC that will give us ~26 samples
+  // on a full charge. Smoothing is done with a sample count of 15, so the average can
+  // adapt to a new level within 1-2 typical charges.
 
-  if (!charging && checkpoint > 0) {
-    update = true;
-    checkpoint = 0;
-  }
-  else if (charge_time < checkpoint) {
-    checkpoint = 0;
-  }
+  // IOW: to get a rough capacity estimation, charge at least 30% normalized SOC difference.
+  //  To get a good capacity estimation, do at least three charges with each covering 60%
+  //  or more normalized SOC difference.
 
-  if (charge_time >= checkpoint + 300) {
-    update = true;
-    checkpoint += 300;
-  }
+  const int checkpoint_step = 24;         // 2.4% absolute SOC diff
+  const int charged_min_valid = 272;      // 27.2% absolute SOC diff = ~30% normalized SOC diff
 
-  if (!update)
-    return;
+  static int checkpoint = 9999;
+  bool log_data = false, update_caps = false, update_soh = false;
 
-  float coulomb_diff  = StdMetrics.ms_v_bat_coulomb_recd_total->AsFloat() - m_coulomb_charged_start;
-  float energy_diff   = StdMetrics.ms_v_bat_energy_recd_total->AsFloat() - m_energy_charged_start;
-  float soc_norm_diff = StdMetrics.ms_v_bat_soc->AsFloat() - m_soc_norm_start;
+  int   charge_time   = StdMetrics.ms_v_charge_time->AsInt();
   float soc_abs_diff  = BatMgmtSoCAbs->AsFloat() - m_soc_abs_start;
+  float soc_norm_diff = StdMetrics.ms_v_bat_soc->AsFloat() - m_soc_norm_start;
+  float energy_diff   = StdMetrics.ms_v_bat_energy_recd_total->AsFloat() - m_energy_charged_start;
+  float coulomb_diff  = StdMetrics.ms_v_bat_coulomb_recd_total->AsFloat() - m_coulomb_charged_start;
 
-  if (coulomb_diff == 0 || energy_diff == 0 || soc_norm_diff < 1 || soc_abs_diff < 1)
-    return;
+  int charged = soc_abs_diff * 10 + 0.5;  // round to avoid float errors
 
-  float cap_ah_norm   = coulomb_diff / soc_norm_diff * 100;
-  float cap_ah_abs    = coulomb_diff / soc_abs_diff  * 100;
-  float cap_kwh_norm  = energy_diff  / soc_norm_diff * 100;
-  float cap_kwh_abs   = energy_diff  / soc_abs_diff  * 100;
+  if (charging && charged < checkpoint) {
+    // charge started:
+    checkpoint = 0;
+  }
+  if (charged >= checkpoint + checkpoint_step) {
+    // next checkpoint reached:
+    checkpoint += checkpoint_step;
+    log_data = true;
+    if (charged >= charged_min_valid)
+      update_caps = true;
+  }
+  if (!charging && checkpoint != 9999) {
+    // charge stopped:
+    checkpoint = 9999;
+    if (charged >= charged_min_valid)
+      update_soh = true;
+  }
 
-  m_bat_cap_chg_ah_norm->SetValue(cap_ah_norm);
-  m_bat_cap_chg_ah_abs->SetValue(cap_ah_abs);
-  m_bat_cap_chg_kwh_norm->SetValue(cap_kwh_norm);
-  m_bat_cap_chg_kwh_abs->SetValue(cap_kwh_abs);
-  
-  // Log local:
-  ESP_LOGI(TAG, "ChargeCap: charge_time=%ds bat_temp=%.1f°C cap_range=%.2fkWh "
-    "soc_norm=%.1f+%.1f%% soc_abs=%.1f+%.1f%% energy+=%.3fkWh coulomb+=%.3fAh "
-    "=> cap_ah_norm=%.2f cap_ah_abs=%.2f cap_kwh_norm=%.2f cap_kwh_abs=%.2f",
-    charge_time, StdMetrics.ms_v_bat_temp->AsFloat(), m_bat_cap_range->AsFloat(),
-    m_soc_norm_start, soc_norm_diff, m_soc_abs_start, soc_abs_diff,
-    energy_diff, coulomb_diff, cap_ah_norm, cap_ah_abs, cap_kwh_norm, cap_kwh_abs);
-  
-  // Log to server:
-  int storetime_days = MyConfig.GetParamValueInt("xvu", "log.chargecap.storetime", 0);
-  if (storetime_days > 0) {
-    MyNotify.NotifyStringf("data", "xvu.log.chargecap",
-      "XVU-LOG-ChargeCap,1,%d,%d,%.1f,%.2f,%.1f,%.1f,%.1f,%.1f,%.3f,%.3f,%.2f,%.2f,%.2f,%.2f",
-      storetime_days * 86400,
-      charge_time, StdMetrics.ms_v_bat_temp->AsFloat(), m_bat_cap_range->AsFloat(),
+  if (log_data)
+  {
+    // Calculate battery capacities from current coulomb/energy & SOC deltas:
+    float cap_ah_abs   = coulomb_diff / soc_abs_diff  * 100;
+    float cap_ah_norm  = coulomb_diff / soc_norm_diff * 100;
+    float cap_kwh_abs  = energy_diff  / soc_abs_diff  * 100;
+    float cap_kwh_norm = energy_diff  / soc_norm_diff * 100;
+    
+    // Update smoothed battery capacities:
+    if (update_caps) {
+      m_bat_cap_ah_abs  ->SetValue(m_smooth_cap_ah_abs  .Add(cap_ah_abs  ));
+      m_bat_cap_ah_norm ->SetValue(m_smooth_cap_ah_norm .Add(cap_ah_norm ));
+      m_bat_cap_kwh_abs ->SetValue(m_smooth_cap_kwh_abs .Add(cap_kwh_abs ));
+      m_bat_cap_kwh_norm->SetValue(m_smooth_cap_kwh_norm.Add(cap_kwh_norm));
+    }
+    
+    // Log local:
+    ESP_LOGI(TAG, "ChargeCap: charge_time=%ds bat_temp=%.1f°C energy_range=%.2fkWh "
+      "soc_norm=%.1f+%.1f%% soc_abs=%.1f+%.1f%% energy+=%.3fkWh coulomb+=%.3fAh "
+      "=> cap_ah_norm=%.2f cap_ah_abs=%.2f cap_kwh_norm=%.2f cap_kwh_abs=%.2f",
+      charge_time, StdMetrics.ms_v_bat_temp->AsFloat(), m_bat_energy_range->AsFloat(),
       m_soc_norm_start, soc_norm_diff, m_soc_abs_start, soc_abs_diff,
       energy_diff, coulomb_diff, cap_ah_norm, cap_ah_abs, cap_kwh_norm, cap_kwh_abs);
+    
+    // Log to server:
+    int storetime_days = MyConfig.GetParamValueInt("xvu", "log.chargecap.storetime", 0);
+    if (storetime_days > 0)
+    {
+      MyNotify.NotifyStringf("data", "xvu.log.chargecap",
+        "XVU-LOG-ChargeCap,1,%d,%d,%.1f,%.2f,%.1f,%.1f,%.1f,%.1f,%.3f,%.3f,%.2f,%.2f,%.2f,%.2f",
+        storetime_days * 86400,
+        charge_time, StdMetrics.ms_v_bat_temp->AsFloat(), m_bat_energy_range->AsFloat(),
+        m_soc_norm_start, soc_norm_diff, m_soc_abs_start, soc_abs_diff,
+        energy_diff, coulomb_diff, cap_ah_norm, cap_ah_abs, cap_kwh_norm, cap_kwh_abs);
+    }
+  }
+
+  if (update_soh)
+  {
+    // Get smoothed capacities:
+    float cap_ah_abs   = m_smooth_cap_ah_abs  .Value();
+    float cap_ah_norm  = m_smooth_cap_ah_norm .Value();
+    float cap_kwh_abs  = m_smooth_cap_kwh_abs .Value();
+    float cap_kwh_norm = m_smooth_cap_kwh_norm.Value();
+
+    // For now, calculate SOH directly from CAC:
+    // Gen2: 32.3 kWh net / 36.8 kWh gross, 2P84S = 120 Ah, 260 km WLTP
+    // Gen1: 16.4 kWh net / 18.7 kWh gross, 2P102S = 50 Ah, 160 km WLTP
+    float cac        = cap_ah_abs;
+    float soh        = cac * 100 / ((vweup_modelyear > 2019) ? 120 :  50);
+    float range_full = soh / 100 * ((vweup_modelyear > 2019) ? 260 : 160);
+    float soc_fct    = StdMetrics.ms_v_bat_soc->AsFloat() / 100;
+    
+    // Log local:
+    ESP_LOGI(TAG, "ChargeCap SOH update: CAC %.2f -> %.2fAh, SOH %.1f -> %.1f%%; "
+      "smoothed: cap_ah_norm=%.2f cap_ah_abs=%.2f cap_kwh_norm=%.2f cap_kwh_abs=%.2f",
+      StdMetrics.ms_v_bat_cac->AsFloat(), cac,
+      StdMetrics.ms_v_bat_soh->AsFloat(), soh,
+      cap_ah_norm, cap_ah_abs, cap_kwh_norm, cap_kwh_abs);
+    
+    // Log to server:
+    int storetime_days = MyConfig.GetParamValueInt("xvu", "log.chargecap.storetime", 0);
+    if (storetime_days > 0)
+    {
+      MyNotify.NotifyStringf("data", "xvu.log.chargecap.soh",
+        "XVU-LOG-ChargeCapSOH,1,%d,%.2f,%.2f,%.1f,%.1f,%.2f,%.2f,%.2f,%.2f",
+        storetime_days * 86400,
+        StdMetrics.ms_v_bat_cac->AsFloat(), cac,
+        StdMetrics.ms_v_bat_soh->AsFloat(), soh,
+        cap_ah_norm, cap_ah_abs, cap_kwh_norm, cap_kwh_abs);
+    }
+
+    // Update metrics:
+    StdMetrics.ms_v_bat_cac->SetValue(cac);
+    StdMetrics.ms_v_bat_soh->SetValue(soh);
+    StdMetrics.ms_v_bat_range_full->SetValue(range_full);
+    StdMetrics.ms_v_bat_range_ideal->SetValue(range_full * soc_fct);
   }
 }

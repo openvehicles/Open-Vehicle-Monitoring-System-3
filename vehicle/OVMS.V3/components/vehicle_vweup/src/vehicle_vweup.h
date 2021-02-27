@@ -49,6 +49,7 @@
 #include "ovms_semaphore.h"
 
 #include "poll_reply_helper.h"
+#include "vweup_utils.h"
 
 #define DEFAULT_MODEL_YEAR 2020
 
@@ -299,11 +300,18 @@ protected:
   OvmsMetricInt       *m_lv_autochg;              // Low voltage (12V) auto charge mode (0x1DED[0]: 0/1)
   OvmsMetricInt       *m_hv_chgmode;              // High voltage charge mode (0x1DD6[0]: 0/1)
 
-  OvmsMetricFloat     *m_bat_cap_range;           // Momentary battery capacity based on MFD range [kWh]
-  OvmsMetricFloat     *m_bat_cap_chg_ah_norm;     // Battery capacity based on coulomb charge count [Ah]
-  OvmsMetricFloat     *m_bat_cap_chg_ah_abs;      // … using absolute SOC
-  OvmsMetricFloat     *m_bat_cap_chg_kwh_norm;    // Battery capacity based on energy charge count [kWh]
-  OvmsMetricFloat     *m_bat_cap_chg_kwh_abs;     // … using absolute SOC
+  OvmsMetricFloat     *m_bat_energy_range;        // Battery energy available from MFD range estimation [kWh]
+  OvmsMetricFloat     *m_bat_cap_kwh_range;       // Battery usable capacity derived from MFD range estimation [kWh]
+
+  OvmsMetricFloat     *m_bat_cap_ah_abs;          // Battery capacity based on coulomb charge count [Ah]
+  OvmsMetricFloat     *m_bat_cap_ah_norm;         // … using normalized SOC
+  OvmsMetricFloat     *m_bat_cap_kwh_abs;         // … based on energy charge count [kWh]
+  OvmsMetricFloat     *m_bat_cap_kwh_norm;        // … using normalized SOC
+
+  SmoothExp<float>    m_smooth_cap_ah_abs;        // … and smoothing for these
+  SmoothExp<float>    m_smooth_cap_ah_norm;
+  SmoothExp<float>    m_smooth_cap_kwh_abs;
+  SmoothExp<float>    m_smooth_cap_kwh_norm;
 
 protected:
   obd_state_t         m_obd_state;                // OBD subsystem state
@@ -316,8 +324,6 @@ protected:
   uint16_t            m_cell_last_ti;             // … temperature
 
   float               m_range_est_factor;         // For range calculation during charge
-
-  float               m_bat_cap_range_hist[3];    // Range capacity maximum detection for SOH calculation
 
   int                 m_cfg_dc_interval;          // Interval for DC fast charge test/log PIDs
 

@@ -1,6 +1,20 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- VW e-Up: replaced MFD range based CAC/SOH by charge coulomb count based
+  Removed metrics:
+    xvu.b.cap.range
+    xvu.b.cap.chg.ah.norm
+    xvu.b.cap.chg.ah.norm
+    xvu.b.cap.chg.kwh.norm
+    xvu.b.cap.chg.kwh.abs
+  New metrics:
+    xvu.b.energy.range      -- MFD range estimation energy [kWh]
+    xvu.b.cap.kwh.range     -- … usable battery capacity derived [kWh]
+    xvu.b.cap.ah.abs        -- Charge coulomb based capacity [Ah]
+    xvu.b.cap.ah.norm       -- … normalized (usable) [Ah]
+    xvu.b.cap.kwh.abs       -- Charge energy based capacity [kWh]
+    xvu.b.cap.kwh.norm      -- … normalized (usable) [kWh]
 - Volt/Ampera: new xva metrics:
     xva.v.p.trip.ev   = trip using electric, km;
     xva.v.e.fuel      = fuel tank level, %; 
