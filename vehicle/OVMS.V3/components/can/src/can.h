@@ -75,6 +75,7 @@ typedef enum
 typedef enum
   {
   CAN_SPEED_33KBPS=33,       // CAN Node runs at 33.333kBit/s
+  CAN_SPEED_50KBPS=50,       // CAN Node runs at 50kBit/s
   CAN_SPEED_83KBPS=83,       // CAN Node runs at 83.333kBit/s
   CAN_SPEED_100KBPS=100,     // CAN Node runs at 100kBit/s
   CAN_SPEED_125KBPS=125,     // CAN Node runs at 125kBit/s

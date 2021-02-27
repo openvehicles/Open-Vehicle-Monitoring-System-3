@@ -385,6 +385,7 @@ esp_err_t esp32can::Start(CAN_mode_t mode, CAN_speed_t speed)
   switch (speed)
     {
     case CAN_SPEED_33KBPS:
+    case CAN_SPEED_50KBPS:
     case CAN_SPEED_83KBPS:
       /* XXX not yet */
       ESP_LOGW(TAG,"%d not supported",speed);

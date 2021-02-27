@@ -100,6 +100,9 @@ void can_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
     case 33333:
       res = sbus->Start(smode,CAN_SPEED_33KBPS,dbcfile);
       break;
+    case 50000:
+      res = sbus->Start(smode,CAN_SPEED_50KBPS,dbcfile);
+      break;
     case 83333:
       res = sbus->Start(smode,CAN_SPEED_83KBPS,dbcfile);
       break;

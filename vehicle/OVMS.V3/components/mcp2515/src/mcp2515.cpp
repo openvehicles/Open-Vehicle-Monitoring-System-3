@@ -180,6 +180,11 @@ esp_err_t mcp2515::Start(CAN_mode_t mode, CAN_speed_t speed)
       cnf2=0xad; // BTLMODE=1, SAM=0,  PHSEG1=5 (6 Tq), PRSEG=5 (6 Tq)
       cnf3=0x81; // SOF=1, WAKFIL=0, PHSEG2=1 (2 tQ)
       break;
+    case CAN_SPEED_50KBPS:
+      cnf1=0x87; cnf2=0xff; cnf3=0x82;
+      // BRP=7, PRSEG=7, PHSEG1=7, PHSEG2=2, SJW=2, BTLMODE=1, SAM=1, SOF=1, WAKFIL=0
+      // → Sample point at 17/20 = 85%
+      break;
     case CAN_SPEED_83KBPS:
       cnf1=0x03; cnf2=0xbe; cnf3=0x07;
       break;
