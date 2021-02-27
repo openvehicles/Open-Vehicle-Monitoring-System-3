@@ -53,11 +53,13 @@ const OvmsVehicle::poll_pid_t vweup_polls[] = {
   // Note: poller ticker cycles at 3600 seconds = max period
   // { ecu, type, pid, {_OFF,_AWAKE,_CHARGING,_ON}, bus, protocol }
 
-  {VWUP_MOT_ELEC, UDS_READ, VWUP_MOT_ELEC_POWER_MOT,        {  0,  0,  0,  1}, 1, ISOTP_STD},
+  {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_CCS_STATUS,       {  0,  0,  3,  0}, 1, ISOTP_STD},
 
-  {VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_U,                {  0, 10,  5,  1}, 1, ISOTP_STD},
-  {VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_I,                {  0, 10,  5,  1}, 1, ISOTP_STD},
+  {VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_U,                {  0, 10,  3,  1}, 1, ISOTP_STD},
+  {VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_I,                {  0, 10,  3,  1}, 1, ISOTP_STD},
   // Same tick & order important of above 2: VWUP_BAT_MGMT_I calculates the power
+  // Also, the charging interval should match the charge input polls (CCS & AC), and they
+  // should be polled close to each other to get a correct charge loss/efficiency calculation.
 
   {VWUP_MOT_ELEC, UDS_READ, VWUP_MOT_ELEC_SOC_NORM,         {  0,  0,  0, 20}, 1, ISOTP_STD},
   {VWUP_MOT_ELEC, UDS_READ, VWUP_MOT_ELEC_SOC_ABS,          {  0,  0,  0, 20}, 1, ISOTP_STD},
@@ -158,6 +160,10 @@ void OvmsVehicleVWeUp::OBDInit()
     ChargerDC2I = MyMetrics.InitFloat("xvu.c.dc.i2", SM_STALE_NONE, 0, Amps);
     ChargerDCPower = MyMetrics.InitFloat("xvu.c.dc.p", SM_STALE_NONE, 0, kW);
 
+    m_chg_ccs_voltage = MyMetrics.InitFloat("xvu.c.ccs.u", SM_STALE_MIN, 0, Volts);
+    m_chg_ccs_current = MyMetrics.InitFloat("xvu.c.ccs.i", SM_STALE_MIN, 0, Amps);
+    m_chg_ccs_power   = MyMetrics.InitFloat("xvu.c.ccs.p", SM_STALE_MIN, 0, kW);
+
     ServiceDays =  MyMetrics.InitInt("xvu.e.serv.days", SM_STALE_NONE, 0);
     TPMSDiffusion = MyMetrics.InitVector<float>("xvu.v.t.diff", SM_STALE_NONE, 0);
     TPMSEmergency = MyMetrics.InitVector<float>("xvu.v.t.emgcy", SM_STALE_NONE, 0);
@@ -225,8 +231,13 @@ void OvmsVehicleVWeUp::OBDInit()
     });
   }
 
-  // Add general & model year specific PIDs:
-  m_poll_vector.insert(m_poll_vector.end(), vweup_polls, endof_array(vweup_polls));
+  // Add high priority PIDs:
+  m_poll_vector.insert(m_poll_vector.end(), {
+    {VWUP_MOT_ELEC, UDS_READ, VWUP_MOT_ELEC_POWER_MOT,  {  0,  0,  0,  1}, 1, ISOTP_STD},
+  });
+
+  // Add model year specific AC charger PIDs:
+  // Note: these end with the charge metrics to fetch them directly before the battery metrics
   if (vweup_modelyear < 2020) {
     m_poll_vector.insert(m_poll_vector.end(), vweup_gen1_polls, endof_array(vweup_gen1_polls));
   }
@@ -234,18 +245,19 @@ void OvmsVehicleVWeUp::OBDInit()
     m_poll_vector.insert(m_poll_vector.end(), vweup_gen2_polls, endof_array(vweup_gen2_polls));
   }
 
+  // Add general / common PIDs:
+  // Note: these begin with the battery metrics to fetch them directly after the charge metrics
+  m_poll_vector.insert(m_poll_vector.end(), vweup_polls, endof_array(vweup_polls));
+
   // Add test/log PIDs for DC fast charging:
   if (m_cfg_dc_interval) {
     for (auto p : poll_list_t {
         {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_TEST_1DD7, {  0,  0,  0,  0}, 1, ISOTP_STD},
         {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_TEST_1DDA, {  0,  0,  0,  0}, 1, ISOTP_STD},
         {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_TEST_1DE6, {  0,  0,  0,  0}, 1, ISOTP_STD},
-        {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_TEST_1DEF, {  0,  0,  0,  0}, 1, ISOTP_STD},
       }) {
-      // …enable polling in all states in case charge detection doesn't work:
       p.polltime[VWEUP_AWAKE]     = m_cfg_dc_interval;
       p.polltime[VWEUP_CHARGING]  = m_cfg_dc_interval;
-      p.polltime[VWEUP_ON]        = m_cfg_dc_interval;
       m_poll_vector.push_back(p);
     }
   }
@@ -550,6 +562,12 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
     case VWUP_CHG_MGMT_HV_CHGMODE:
       if (PollReply.FromUint8("VWUP_CHG_MGMT_HV_CHGMODE", ivalue)) {
         m_hv_chgmode->SetValue(ivalue);
+        if (ivalue >= 4)
+          SetChargeType(CHGTYPE_DC);
+        else if (ivalue >= 1)
+          SetChargeType(CHGTYPE_AC);
+        else
+          SetChargeType(CHGTYPE_None);
         VALUE_LOG(TAG, "VWUP_CHG_MGMT_HV_CHGMODE=%d", ivalue);
       }
       break;
@@ -560,7 +578,6 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
         VALUE_LOG(TAG, "VWUP_BAT_MGMT_U=%f => %f", value, StdMetrics.ms_v_bat_voltage->AsFloat());
       }
       break;
-
     case VWUP_BAT_MGMT_I:
       if (PollReply.FromUint16("VWUP_BAT_MGMT_I", value)) {
         // ECU delivers negative current when it goes out of the battery. OVMS wants positive when the battery outputs current.
@@ -743,21 +760,26 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
 
     case VWUP1_CHG_AC_U:
       if (PollReply.FromUint16("VWUP_CHG_AC1_U", value) && value != 511) {
-        StdMetrics.ms_v_charge_voltage->SetValue(value);
-        VALUE_LOG(TAG, "VWUP_CHG_AC1_U=%f => %f", value, StdMetrics.ms_v_charge_voltage->AsFloat());
+        if (IsChargeModeAC()) {
+          StdMetrics.ms_v_charge_voltage->SetValue(value);
+        }
+        VALUE_LOG(TAG, "VWUP_CHG_AC1_U=%f", value);
       }
       break;
 
     case VWUP1_CHG_AC_I:
       if (PollReply.FromUint8("VWUP_CHG_AC1_I", value) && value != 255) {
-        StdMetrics.ms_v_charge_current->SetValue(value / 10.0f);
-        VALUE_LOG(TAG, "VWUP_CHG_AC1_I=%f => %f", value, StdMetrics.ms_v_charge_current->AsFloat());
+        float current = value / 10;
+        VALUE_LOG(TAG, "VWUP_CHG_AC1_I=%f => %f", value, current);
 
-        value = (StdMetrics.ms_v_charge_voltage->AsFloat() * StdMetrics.ms_v_charge_current->AsFloat()) / 1000.0f;
-        ChargerACPower->SetValue(value);
-        VALUE_LOG(TAG, "VWUP_CHG_AC_P=%f => %f", value, ChargerACPower->AsFloat());
+        if (IsChargeModeAC()) {
+          float power = (StdMetrics.ms_v_charge_voltage->AsFloat() * current) / 1000.0f;
+          ChargerACPower->SetValue(power);
+          VALUE_LOG(TAG, "VWUP_CHG_AC_P=%.1f", power);
 
-        UpdateChargePower(value);
+          StdMetrics.ms_v_charge_current->SetValue(current);
+          UpdateChargePower(power);
+        }
       }
       break;
 
@@ -784,7 +806,9 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
       if (phasecnt > 1) {
         voltagesum /= phasecnt;
       }
-      StdMetrics.ms_v_charge_voltage->SetValue(voltagesum);
+      if (IsChargeModeAC()) {
+        StdMetrics.ms_v_charge_voltage->SetValue(voltagesum);
+      }
       break;
     }
 
@@ -796,14 +820,16 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
       if (PollReply.FromUint8("VWUP_CHG_AC2_I", value, 1) && value != 255) {
         ChargerAC2I->SetValue(value / 10.0f);
         VALUE_LOG(TAG, "VWUP_CHG_AC2_I=%f => %f", value, ChargerAC2I->AsFloat());
-        StdMetrics.ms_v_charge_current->SetValue(ChargerAC1I->AsFloat() + ChargerAC2I->AsFloat());
 
-        value = (ChargerAC1U->AsFloat() * ChargerAC1I->AsFloat() +
-                 ChargerAC2U->AsFloat() * ChargerAC2I->AsFloat()) / 1000.0f;
-        ChargerACPower->SetValue(value);
-        VALUE_LOG(TAG, "VWUP_CHG_AC_P=%f => %f", value, ChargerACPower->AsFloat());
+        if (IsChargeModeAC()) {
+          float power = (ChargerAC1U->AsFloat() * ChargerAC1I->AsFloat() +
+                         ChargerAC2U->AsFloat() * ChargerAC2I->AsFloat()) / 1000.0f;
+          ChargerACPower->SetValue(power);
+          VALUE_LOG(TAG, "VWUP_CHG_AC_P=%.1f", power);
 
-        UpdateChargePower(value);
+          StdMetrics.ms_v_charge_current->SetValue(ChargerAC1I->AsFloat() + ChargerAC2I->AsFloat());
+          UpdateChargePower(power);
+        }
       }
       break;
 
@@ -869,6 +895,47 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
                 : 0.0f;
         ChargerPowerEffCalc->SetValue(value);
         VALUE_LOG(TAG, "VWUP_CHG_EFF_CALC=%f => %f", value, ChargerPowerEffCalc->AsFloat());
+      }
+      break;
+
+    case VWUP_CHG_MGMT_CCS_STATUS:
+      // CCS charge status
+      // not fully decoded yet, log for analysis:
+      VALUE_LOG(TAG, "VWUP_CHG_MGMT_CCS_STATUS: %s", PollReply.GetHexString().c_str());
+      if (PollReply.FromUint8("VWUP_CHG_MGMT_CCS_LOCK", ivalue, 13) && ivalue != 0) {
+        // CCS locked:
+        PollReply.FromUint16("VWUP_CHG_MGMT_CCS_U", value, 4);
+        float voltage = value / 10;
+        m_chg_ccs_voltage->SetValue(voltage);
+        VALUE_LOG(TAG, "VWUP_CHG_MGMT_CCS_U=%g => %.1f", value, voltage);
+
+        PollReply.FromUint16("VWUP_CHG_MGMT_CCS_I", value, 10);
+        float current = value / 10;
+        m_chg_ccs_current->SetValue(current);
+        VALUE_LOG(TAG, "VWUP_CHG_MGMT_CCS_I=%g => %.1f", value, current);
+
+        float power = voltage * current / 1000;
+        m_chg_ccs_power->SetValue(power);
+        VALUE_LOG(TAG, "VWUP_CHG_MGMT_CCS_P => %.1f", power);
+
+        if (IsChargeModeDC()) {
+          // CCS_U and CCS_I are provided by the CCS charger with varying resolution and
+          //  precision / accuracy depending on the charger type.
+          // CCS_U is allowed to be off by +/- 5% by IEC 61851 and has shown to be
+          //  very unreliable, being normally some volts below the measured battery voltage.
+          // CCS_I is allowed to be off by +/- 3% but seems to be reliable normally.
+          // To get a better power estimation we use the battery voltage instead of CCS_U:
+          voltage = StdMetrics.ms_v_bat_voltage->AsFloat();
+          power = voltage * current / 1000;
+          // Notes:
+          //  This power normally is still a bit below the power displayed by the charger (if any).
+          //  The power displayed by the charger is substantially above CCS_U x CCS_I, so
+          //  the charger possibly displays it's input power, but there doesn't seem to
+          //  be a way to retrieve that or the charger efficiency (none known yet).
+          StdMetrics.ms_v_charge_voltage->SetValue(voltage);
+          StdMetrics.ms_v_charge_current->SetValue(current);
+          UpdateChargePower(power);
+        }
       }
       break;
 
@@ -1047,6 +1114,10 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
 }
 
 
+/**
+ * UpdateChargePower: update power & efficiency, calculate energy sum drawn from grid
+ *  Called by either the AC or DC charge handler after obtaining the voltage & current.
+ */
 void OvmsVehicleVWeUp::UpdateChargePower(float power_kw)
 {
   // Accumulate grid energy sum:

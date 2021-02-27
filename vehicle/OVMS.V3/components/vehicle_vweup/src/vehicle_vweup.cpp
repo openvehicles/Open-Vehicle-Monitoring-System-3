@@ -72,7 +72,7 @@
 #include <string>
 static const char *TAG = "v-vweup";
 
-#define VERSION "0.11.0"
+#define VERSION "0.12.0"
 
 #include <stdio.h>
 #include <string>
@@ -432,4 +432,51 @@ void OvmsVehicleVWeUp::ResetChargeCounters()
   ESP_LOGD(TAG, "Charge start ref: socnrm=%f socabs=%f cr=%f er=%f gr=%f",
     m_soc_norm_start, m_soc_abs_start, m_coulomb_charged_start,
     m_energy_charged_start, m_charge_kwh_grid_start);
+}
+
+
+/**
+ * SetChargeType: set current internal & public charge type (AC / DC / None)
+ *  Controlled by the OBD handler if enabled (derived from VWUP_CHG_MGMT_HV_CHGMODE).
+ *  The charge type defines the source for the charge metrics, to query the type
+ *  use IsChargeModeAC() and IsChargeModeDC().
+ */
+void OvmsVehicleVWeUp::SetChargeType(chg_type_t chgtype)
+{
+  if (m_chg_type == chgtype)
+    return;
+
+  m_chg_type = chgtype;
+
+  if (m_chg_type == CHGTYPE_AC) {
+    StdMetrics.ms_v_charge_type->SetValue("type2");
+  }
+  else if (m_chg_type == CHGTYPE_DC) {
+    StdMetrics.ms_v_charge_type->SetValue("ccs");
+  }
+  else {
+    StdMetrics.ms_v_charge_type->SetValue("");
+    // …and clear/reset charge metrics:
+    ChargerPowerEffEcu->SetValue(100);
+    ChargerPowerLossEcu->SetValue(0);
+    ChargerPowerEffCalc->SetValue(100);
+    ChargerPowerLossCalc->SetValue(0);
+    ChargerAC1U->SetValue(0);
+    ChargerAC1I->SetValue(0);
+    ChargerAC2U->SetValue(0);
+    ChargerAC2I->SetValue(0);
+    ChargerACPower->SetValue(0);
+    ChargerDC1U->SetValue(0);
+    ChargerDC1I->SetValue(0);
+    ChargerDC2U->SetValue(0);
+    ChargerDC2I->SetValue(0);
+    ChargerDCPower->SetValue(0);
+    m_chg_ccs_voltage->SetValue(0);
+    m_chg_ccs_current->SetValue(0);
+    m_chg_ccs_power->SetValue(0);
+    StdMetrics.ms_v_charge_voltage->SetValue(0);
+    StdMetrics.ms_v_charge_current->SetValue(0);
+    StdMetrics.ms_v_charge_power->SetValue(0);
+    StdMetrics.ms_v_charge_efficiency->SetValue(0);
+  }
 }

@@ -1,6 +1,11 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- VW e-Up: CCS (DC) charge detection & data
+  New metrics:
+    xvu.c.ccs.u             -- CCS charger supplied voltage [V]
+    xvu.c.ccs.i             -- CCS Charger supplied current [A]
+    xvu.c.ccs.p             -- CCS Charger supplied power [kW]
 - VW e-Up: replaced MFD range based CAC/SOH by charge coulomb count based
   Removed metrics:
     xvu.b.cap.range

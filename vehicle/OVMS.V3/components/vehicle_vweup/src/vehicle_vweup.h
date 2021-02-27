@@ -88,6 +88,12 @@ typedef enum {
   OBDS_Run,
 } obd_state_t;
 
+typedef enum {
+  CHGTYPE_None = 0,
+  CHGTYPE_AC,
+  CHGTYPE_DC,
+} chg_type_t;
+
 class OvmsVehicleVWeUp : public OvmsVehicle
 {
   // --------------------------------------------------------------------------
@@ -124,6 +130,7 @@ protected:
 protected:
   void ResetTripCounters();
   void ResetChargeCounters();
+  void SetChargeType(chg_type_t chgtype);
 
 public:
   bool IsOff() {
@@ -150,6 +157,13 @@ public:
   }
   bool HasNoOBD() {
     return (vweup_con & CON_OBD) == 0;
+  }
+
+  bool IsChargeModeAC() {
+    return m_chg_type == CHGTYPE_AC;
+  }
+  bool IsChargeModeDC() {
+    return m_chg_type == CHGTYPE_DC;
   }
 
 protected:
@@ -289,6 +303,11 @@ protected:
   OvmsMetricFloat *ChargerPowerLossEcu;           // Power loss of Charger [kW] (from ECU)
   OvmsMetricFloat *ChargerPowerEffCalc;           // Efficiency of the Charger [%] (calculated from U and I)
   OvmsMetricFloat *ChargerPowerLossCalc;          // Power loss of Charger [kW] (calculated from U and I)
+
+  OvmsMetricFloat     *m_chg_ccs_voltage;         // CCS charger supplied voltage [V]
+  OvmsMetricFloat     *m_chg_ccs_current;         // CCS Charger supplied current [A]
+  OvmsMetricFloat     *m_chg_ccs_power;           // CCS Charger supplied power [kW]
+
   OvmsMetricInt *ServiceDays;                     // Days until next scheduled maintenance/service
   OvmsMetricVector<float> *TPMSDiffusion;         // TPMS Indicator for Pressure Diffusion
   OvmsMetricVector<float> *TPMSEmergency;         // TPMS Indicator for Tyre Emergency
@@ -298,7 +317,7 @@ protected:
 
   OvmsMetricInt       *m_lv_pwrstate;             // Low voltage (12V) systems power state (0x1DEC[0]: 0-15)
   OvmsMetricInt       *m_lv_autochg;              // Low voltage (12V) auto charge mode (0x1DED[0]: 0/1)
-  OvmsMetricInt       *m_hv_chgmode;              // High voltage charge mode (0x1DD6[0]: 0/1)
+  OvmsMetricInt       *m_hv_chgmode;              // High voltage charge mode (0x1DD6[0]: 0/1/4)
 
   OvmsMetricFloat     *m_bat_energy_range;        // Battery energy available from MFD range estimation [kWh]
   OvmsMetricFloat     *m_bat_cap_kwh_range;       // Battery usable capacity derived from MFD range estimation [kWh]
@@ -325,6 +344,7 @@ protected:
 
   float               m_range_est_factor;         // For range calculation during charge
 
+  chg_type_t          m_chg_type;                 // CHGTYPE_None / _AC / _DC
   int                 m_cfg_dc_interval;          // Interval for DC fast charge test/log PIDs
 
 private:

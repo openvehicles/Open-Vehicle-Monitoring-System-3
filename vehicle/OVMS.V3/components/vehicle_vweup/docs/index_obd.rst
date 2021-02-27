@@ -107,6 +107,16 @@ Custom Metrics
 
 In addition to the standard metrics above the following custom metrics are read from the car or internally calculated by OVMS using read values.
 
+**State metrics**
+
+======================================== ======================== ============================================
+Metric name                              Example value            Description
+======================================== ======================== ============================================
+xvu.e.hv.chgmode                         0                        High voltage charge mode; 0=off, 1=Type2, 4=CCS
+xvu.e.lv.autochg                         1                        Auxiliary battery (12V) auto charge mode (0/1)
+xvu.e.lv.pwrstate                        0                        Low voltage (12V) power state (0=off, 4=12V, 8=HVAC, 15=on)
+======================================== ======================== ============================================
+
 **Metrics updated in state "Vehicle ON" or "Vehicle CHARGING"**
 
 ======================================== ======================== ============================================
@@ -127,10 +137,17 @@ xvu.c.ac.p                               7.223 kW                 Current chargi
 xvu.c.dc.p                               6.500 kW                 Current charging power on DC side (calculated by ECU's DC voltages and DC currents)
 xvu.c.eff.calc                           90.0 %                   Charger efficiency calculated by AC and DC power
 xvu.c.loss.calc                          0.733 kW                 Charger power loss calculated by AC and DC power
+xvu.c.ccs.u [4]_                         331.5V                   CCS charger supplied voltage [V]
+xvu.c.ccs.i [4]_                         62.2A                    CCS Charger supplied current [A]
+xvu.c.ccs.p [4]_                         20.6193kW                CCS Charger supplied power [kW]
 ======================================== ======================== ============================================
 
 .. [3] Only supplied by ECU when the car ignition is on during charging.
 
+.. [4] These are not measurements by the car but provided as is by the charger and typically deviate from
+  the battery metrics. According to IEC 61851, CCS currents may be off by +/- 3% and voltages by +/- 5%. The
+  power figures displayed by some chargers also typically won't match these values, possibly because the charger
+  displays the power drawn from the grid (including losses).
 
 
 ----------------------
