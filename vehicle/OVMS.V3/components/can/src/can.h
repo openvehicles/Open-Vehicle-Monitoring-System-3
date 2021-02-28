@@ -86,7 +86,7 @@ typedef enum
 
 /* Map CAN_speed_t to a Bit/s value */
 #define MAP_CAN_SPEED(s) \
-    ((s) > CAN_SPEED_83KBPS ? (((int)(s)) * 1000) : ((((int)(s)) * 1000) + 333))
+    (((s) == CAN_SPEED_33KBPS || (s) == CAN_SPEED_83KBPS) ? ((((int)(s)) * 1000) + 333) : (((int)(s)) * 1000))
 
 // CAN frame type (standard/extended)
 typedef enum

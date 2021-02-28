@@ -122,7 +122,7 @@ void can_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
       res = sbus->Start(smode,CAN_SPEED_1000KBPS,dbcfile);
       break;
     default:
-      writer->puts("Error: Unrecognised speed (33333, 83333, 100000, 125000, 250000, 500000, 1000000 are accepted)");
+      writer->puts("Error: Unrecognised speed (33333, 50000, 83333, 100000, 125000, 250000, 500000, 1000000 are accepted)");
       return;
     }
   if (res == ESP_OK)
