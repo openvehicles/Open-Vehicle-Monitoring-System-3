@@ -1,6 +1,8 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+
+2021-03-05 MB  3.2.016  OTA release
 - VW e-Up: CCS (DC) charge detection & data
   New metrics:
     xvu.c.ccs.u             -- CCS charger supplied voltage [V]
