@@ -31,10 +31,7 @@
 
 #include "vehicle.h"
 #include "ovms_metrics.h"
-#include "mg_poll_states.h"
-
 #include "freertos/timers.h"
-
 #include <vector>
 
 using namespace std;
@@ -52,15 +49,17 @@ class OvmsVehicleEdeliver3 : public OvmsVehicle
 
   protected:
     virtual void Ticker1(uint32_t ticker);
+      string              med_obd_rxbuf;
       
   private:
       void IncomingPollFrame(CAN_frame_t* frame);
    
-      void IncomingVcuPoll(uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain);
+ //     void IncomingVcuPoll(uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain); not used????
       void HandleVinMessage(uint8_t* data, uint8_t length, uint16_t remain);
-
+      void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
       /// A temporary store for the VIN
       char m_vin[18];
  
   };
 #endif //#ifndef __VEHICLE_EDELIVER3_H__
+
