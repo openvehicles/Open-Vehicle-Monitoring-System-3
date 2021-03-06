@@ -9,6 +9,7 @@
 ;    (C) 2011-2017  Mark Webb-Johnson
 ;    (C) 2011       Sonny Chen @ EPRO/DX
 ;    (C) 2020       Chris Staite
+;    (C) 2021       Shane Hunns
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -165,7 +166,7 @@ void OvmsVehicleMgEv::IncomingBmsPoll(
                 auto soc = value / 10.0;
                 if (StandardMetrics.ms_v_charge_inprogress->AsBool())
                 {
-                    if (soc < 96.5)
+                    if (soc < 92.0)
                     {
                         StandardMetrics.ms_v_charge_state->SetValue("charging");
                     }
@@ -176,11 +177,21 @@ void OvmsVehicleMgEv::IncomingBmsPoll(
                 }
                 
                 // DoD is approx 6% - 97%, so we need to scale it
-                auto scaledSoc = ((soc * 106.0) / 97.0) - 6.0;
+                // New BMS DoD is approx 3% - 93%, so we need to scale it
+                auto scaledSoc = ((soc * 103.0) / 93.0) - 3.0;  // if (scaledSoc > 100.0) scaledSoc = 100.0;
                 StandardMetrics.ms_v_bat_soc->SetValue(scaledSoc);
+<<<<<<< Updated upstream
                 // Ideal range set to SoC percentage of 262 km (WLTP Range)
                 StandardMetrics.ms_v_bat_range_ideal->SetValue(262 * (scaledSoc / 100));
                 m_soc_raw->SetValue(soc);
+=======
+                // Set Ideal range (no heat and eco) and convert to miles
+                StandardMetrics.ms_v_bat_range_ideal->SetValue(((bmsRangePid / 100) * (scaledSoc / 100)) / 1.609);
+                // Estimated range set to SoC percentage of 262 km (WLTP Range)
+                auto scaledBre = (((bmsRangePid / 100) * (scaledSoc / 100)) / 1.609);
+                StandardMetrics.ms_v_bat_range_est->SetValue((scaledBre / 100) * 90);
+                
+>>>>>>> Stashed changes
             }
             break;
         case bmsStatusPid:
@@ -193,9 +204,10 @@ void OvmsVehicleMgEv::IncomingBmsPoll(
         case batterySoHPid:
             StandardMetrics.ms_v_bat_soh->SetValue(value / 100.0);
             break;
-        case bmsRangePid:
-            StandardMetrics.ms_v_bat_range_est->SetValue(value / 10.0);
-            break;
+       //  case bmsRangePid:
+            // StandardMetrics.ms_v_bat_range_est->SetValue((value * 1.609)-1);
+            // StandardMetrics.ms_v_bat_range_est->SetValue(262 * (scaledSoc / 100));
+         //   break;
     }
 }
 
@@ -215,7 +227,7 @@ void OvmsVehicleMgEv::SetBmsStatus(uint8_t status)
             if (StandardMetrics.ms_v_charge_inprogress->AsBool() )
             {
                 StandardMetrics.ms_v_charge_type->SetValue("not charging");
-                if (StandardMetrics.ms_v_bat_soc->AsFloat() >= 97.0)
+                if (StandardMetrics.ms_v_bat_soc->AsFloat() >= 92.5)
                 {
                     StandardMetrics.ms_v_charge_state->SetValue("done");
                     StandardMetrics.ms_v_charge_inprogress->SetValue(false);
