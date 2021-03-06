@@ -180,7 +180,7 @@ void OvmsVehicleMgEv::IncomingBmsPoll(
                 StandardMetrics.ms_v_bat_soc->SetValue(scaledSoc);
                 // Ideal range set to SoC percentage of 262 km (WLTP Range)
                 StandardMetrics.ms_v_bat_range_ideal->SetValue(262 * (scaledSoc / 100));
-                
+                m_soc_raw->SetValue(soc);
             }
             break;
         case bmsStatusPid:
