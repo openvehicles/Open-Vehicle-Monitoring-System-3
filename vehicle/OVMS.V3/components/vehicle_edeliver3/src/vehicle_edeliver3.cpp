@@ -118,17 +118,6 @@ void OvmsVehicleEdeliver3::IncomingPollReply(canbus* bus, uint16_t type, uint16_
    if (mlremain)
      return;
 
-   // complete:
- /*  switch (pid)
-   {
-     case 0xe003: {
-       unsigned int soh_raw = ((unsigned int)rxbuf[0] << 8) | (unsigned int)rxbuf[1];
-       float soh = soh_raw / 100;
-       StdMetrics.ms_v_bat_soh->SetValue(soh);
-       break;
-     }
-   }
-  */
 }
 
 
