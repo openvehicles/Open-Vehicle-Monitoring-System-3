@@ -397,7 +397,7 @@ void OvmsVehicleMgEv::DeterminePollState(canbus* currentBus, uint32_t ticker)
             m_diagCount = 0;
             m_preZombieOverrideTicker = 0; 
             
-        } else if (StandardMetrics.ms_v_bat_soc->AsFloat() >= 97.0) // Car has completed charge, topping off 12V
+        } else if (StandardMetrics.ms_v_bat_soc->AsFloat() >= 92.5) // Car has completed charge, topping off 12V
         {
             ESP_LOGV(TAG, "Vehicle is topping of the 12V and is fully charged");
         }
@@ -445,7 +445,7 @@ void OvmsVehicleMgEv::DeterminePollState(canbus* currentBus, uint32_t ticker)
             m_afterRunTicker = (TRANSITION_TIMEOUT +1);
             StandardMetrics.ms_v_env_on->SetValue(false);
             StandardMetrics.ms_v_charge_type->SetValue("not charging");
-            if (StandardMetrics.ms_v_bat_soc->AsFloat() >= 97.0)
+            if (StandardMetrics.ms_v_bat_soc->AsFloat() >= 92.5)
             {
                 StandardMetrics.ms_v_charge_state->SetValue("done");
                 StandardMetrics.ms_v_charge_inprogress->SetValue(false);
