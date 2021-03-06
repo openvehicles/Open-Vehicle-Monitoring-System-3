@@ -180,18 +180,15 @@ void OvmsVehicleMgEv::IncomingBmsPoll(
                 // New BMS DoD is approx 3% - 93%, so we need to scale it
                 auto scaledSoc = ((soc * 103.0) / 93.0) - 3.0;  // if (scaledSoc > 100.0) scaledSoc = 100.0;
                 StandardMetrics.ms_v_bat_soc->SetValue(scaledSoc);
-<<<<<<< Updated upstream
                 // Ideal range set to SoC percentage of 262 km (WLTP Range)
                 StandardMetrics.ms_v_bat_range_ideal->SetValue(262 * (scaledSoc / 100));
                 m_soc_raw->SetValue(soc);
-=======
                 // Set Ideal range (no heat and eco) and convert to miles
                 StandardMetrics.ms_v_bat_range_ideal->SetValue(((bmsRangePid / 100) * (scaledSoc / 100)) / 1.609);
                 // Estimated range set to SoC percentage of 262 km (WLTP Range)
                 auto scaledBre = (((bmsRangePid / 100) * (scaledSoc / 100)) / 1.609);
                 StandardMetrics.ms_v_bat_range_est->SetValue((scaledBre / 100) * 90);
                 
->>>>>>> Stashed changes
             }
             break;
         case bmsStatusPid:
