@@ -135,6 +135,8 @@ class OvmsVehicleVoltAmpera : public OvmsVehicle
     OvmsMetricFloat *  mt_coolant_heater_pwr;       // kW
     OvmsMetricInt *  mt_coolant_temp;
     OvmsMetricVector<int> * mt_charging_limits;
+    OvmsMetricInt *  mt_fuel_level;                 // %
+    OvmsMetricFloat *  mt_v_trip_ev;                // km
 
     unsigned long m_preheat_modechange_timer;
     va_preheat_commander_t m_preheat_commander;

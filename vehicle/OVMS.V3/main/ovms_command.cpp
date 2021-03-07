@@ -37,6 +37,7 @@ static const char *TAG = "command";
 #include <ctype.h>
 #include <functional>
 #include <esp_log.h>
+#include <sys/time.h>
 #include <sys/types.h>
 #include <dirent.h>
 #include "freertos/FreeRTOS.h"
@@ -1018,11 +1019,13 @@ static void LogTaskEntry(void* me)
 void OvmsCommandApp::LogTask()
   {
   LogTaskCmd cmd;
-  time_t rawtime;
   char tb[64];
 
   m_logtask_linecnt = 0;
   m_logtask_fsynctime = 0;
+  m_logtask_laststamp = -11;
+  m_logtask_basetime.tv_sec = 0;
+  m_logtask_basetime.tv_usec = 0;
 
   // syncperiod: 0 = never, <0 = every n lines, >0 = after n/2 seconds idle
   uint32_t linecnt_synced = 0;
@@ -1039,13 +1042,38 @@ void OvmsCommandApp::LogTask()
         // write logbuffers messages:
         for (auto it = cmd.data.logbuffers->begin(); it != cmd.data.logbuffers->end(); it++)
           {
-          // write timestamp:
-          time(&rawtime);
-          struct tm* tmu = localtime(&rawtime);
-          strftime(tb, sizeof(tb), "%Y-%m-%d %H:%M:%S %Z ", tmu);
-          m_logfile_size += fwrite(tb, 1, strlen(tb), m_logfile);
-          // write log entry:
           std::string le = stripesc(*it);
+          if (*(le.data() + 1) == ' ' && *(le.data() + 2) == '(')
+            {
+            struct timeval stamp;
+            stamp.tv_sec = atoi(le.data() + 3);
+            stamp.tv_usec = (stamp.tv_sec % 1000) * 1000;
+            stamp.tv_sec /= 1000;
+            // If 10 seconds have elapsed since the previous log message or if a
+            // real base time hasn't been set yet, recalculate the correspondence
+            // of real time to system time.
+            if (stamp.tv_sec - m_logtask_laststamp > 10 || m_logtask_basetime.tv_sec < 1609459200)
+              {
+              struct timeval daytime, uptime;
+              gettimeofday(&daytime, NULL);
+              uptime.tv_sec = xTaskGetTickCount();
+              uptime.tv_usec = (uptime.tv_sec % 100) * 10000;
+              uptime.tv_sec /= 100;
+              daytime.tv_usec -= daytime.tv_usec % 10000;       // Always show 0 for ms units
+              timersub(&daytime, &uptime, &m_logtask_basetime);
+              }
+            m_logtask_laststamp = stamp.tv_sec;
+            // write timestamp:
+            timeradd(&m_logtask_basetime, &stamp, &stamp);
+            struct tm* tmu = localtime(&stamp.tv_sec);
+            strftime(tb, sizeof(tb), "%Y-%m-%d %H:%M:%S", tmu);
+            m_logfile_size += fwrite(tb, 1, strlen(tb), m_logfile);
+            snprintf(tb, sizeof(tb), ".%03lu ", stamp.tv_usec / 1000);
+            int len = strlen(tb);
+            strftime(tb+len, sizeof(tb)-len, "%Z ", tmu);
+            m_logfile_size += fwrite(tb, 1, strlen(tb), m_logfile);
+            }
+          // write log entry:
           m_logfile_size += fwrite(le.data(), 1, le.size(), m_logfile);
           m_logtask_linecnt++;
           }

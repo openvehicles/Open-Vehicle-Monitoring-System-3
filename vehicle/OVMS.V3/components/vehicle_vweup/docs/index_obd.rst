@@ -107,6 +107,16 @@ Custom Metrics
 
 In addition to the standard metrics above the following custom metrics are read from the car or internally calculated by OVMS using read values.
 
+**State metrics**
+
+======================================== ======================== ============================================
+Metric name                              Example value            Description
+======================================== ======================== ============================================
+xvu.e.hv.chgmode                         0                        High voltage charge mode; 0=off, 1=Type2, 4=CCS
+xvu.e.lv.autochg                         1                        Auxiliary battery (12V) auto charge mode (0/1)
+xvu.e.lv.pwrstate                        0                        Low voltage (12V) power state (0=off, 4=12V, 8=HVAC, 15=on)
+======================================== ======================== ============================================
+
 **Metrics updated in state "Vehicle ON" or "Vehicle CHARGING"**
 
 ======================================== ======================== ============================================
@@ -127,9 +137,109 @@ xvu.c.ac.p                               7.223 kW                 Current chargi
 xvu.c.dc.p                               6.500 kW                 Current charging power on DC side (calculated by ECU's DC voltages and DC currents)
 xvu.c.eff.calc                           90.0 %                   Charger efficiency calculated by AC and DC power
 xvu.c.loss.calc                          0.733 kW                 Charger power loss calculated by AC and DC power
+xvu.c.ccs.u [4]_                         331.5V                   CCS charger supplied voltage [V]
+xvu.c.ccs.i [4]_                         62.2A                    CCS Charger supplied current [A]
+xvu.c.ccs.p [4]_                         20.6193kW                CCS Charger supplied power [kW]
 ======================================== ======================== ============================================
 
 .. [3] Only supplied by ECU when the car ignition is on during charging.
+
+.. [4] These are not measurements by the car but provided as is by the charger and typically deviate from
+  the battery metrics. According to IEC 61851, CCS currents may be off by +/- 3% and voltages by +/- 5%. The
+  power figures displayed by some chargers also typically won't match these values, possibly because the charger
+  displays the power drawn from the grid (including losses).
+
+
+----------------------
+Battery Capacity & SOH
+----------------------
+
+=============== ===================== ================================
+e-Up Model      Total capacity        Usable capacity
+=============== ===================== ================================
+Gen 1 (2016)    18.7 kWh / 50 Ah      16.4 kWh / 43.9 Ah (87.7%)
+Gen 2 (2020)    36.8 kWh / 120 Ah     32.3 kWh / 105.3 Ah (87.7%)
+=============== ===================== ================================
+
+There are currently two ways to get an estimation of the remaining capacity of the e-Up:
+
+1. By deriving a usable energy capacity from the MFD range estimation.
+2. By deriving a total coulomb capacity from the coulombs charged.
+
+.. note:: **Consider the capacity estimations as experimental / preliminary.**
+  We need field data to optimize the readings. If you'd like to help us, see below.
+
+The **MFD range estimation** seems to include some psychological factors with an SOC below 30%, so we 
+only provide this and the derived capacity in two custom metrics. The capacity derivation is only
+calculated with SOC >= 30%, but if so is available immediately after switching the car on. This can 
+serve as a quick first estimation, relate it to the usable capacity of your model.
+
+The **charge coulomb based estimation** provides a better estimation but will need a little more 
+time to settle. Usable measurements need charges of at least 30% SOC, the more the better. Estimations
+are only calculated if a charge has exceeded 30% SOC, and results are smoothed over multiple charges
+to provide stable readings.
+
+- To get a rough capacity estimation, charge at least 30% normalized SOC difference.
+- To get a good capacity estimation, do at least three charges with each covering 60%
+  or more normalized SOC difference.
+
+Charging by CCS (DC) apparently yields higher results, especially on the energy estimations. We
+don't know yet the reason or if we need to compensate this.
+
+Note: the **SOH** (state of health) is currently coupled directly and solely to the calculated 
+amp-hour capacity **CAC**.
+
+
+To **log your capacity data** on a connected V2 server, do::
+
+  OVMS# config set xvu log.chargecap.storetime 30
+
+30 is the number of days to keep the data, set to 0 to disable. The counters will be stored in table
+``XVU-LOG-ChargeCap``, with one entry every 2.4% absolute SOC difference. Resulting CAC/SOH updates 
+will be logged in table ``XVU-LOG-ChargeCapSOH``. You can also extract the data from your module
+log file by filtering lines matching ``ChargeCap``.
+
+
+^^^^^^^^^^^^^^^^^^^^^^^^
+Capacity and SOH metrics
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+======================================== ======================== ============================================
+Metric name                              Example value            Description
+======================================== ======================== ============================================
+xvu.b.cap.ah.abs                         122.71Ah                 Total coulomb capacity estimation
+xvu.b.cap.ah.norm                        113.63Ah                 Usable coulomb capacity estimation
+xvu.b.cap.kwh.abs                        39.1kWh                  Total energy capacity estimation
+xvu.b.cap.kwh.norm                       36.21kWh                 Usable energy capacity estimation
+xvu.b.cap.kwh.range                      32.8947kWh               Usable energy capacity estimation from MFD range
+xvu.b.energy.range                       18.5kWh                  Current energy used by MFD range estimation
+======================================== ======================== ============================================
+
+
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Provide Data to the Developers
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To help us with optimizing the capacity estimations, first of all enable file logging if not already 
+enabled. Then enable extended polling and logging before a charge by…::
+
+  OVMS# config set xvu dc_interval 30
+  OVMS# log level verbose v-vweup
+
+After the charge, disable the extended polling and logging::
+
+  OVMS# config set xvu dc_interval 0
+  OVMS# log level info v-vweup
+
+Then download all log files written during the charge (archived and current), zip them and mail
+the zip to Michael Balzer <dexter@dexters-web.de>. The log data will only be used for technical 
+analysis and deleted afterwards.
+
+Note: if you forgot enabling the local log but still have chargecap logs on the server: these can help
+as well.
+
+**Thanks!**
+
 
 -----------------------------
 Custom Status Page for Web UI

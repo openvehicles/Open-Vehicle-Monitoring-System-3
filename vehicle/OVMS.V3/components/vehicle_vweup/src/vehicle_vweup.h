@@ -49,6 +49,7 @@
 #include "ovms_semaphore.h"
 
 #include "poll_reply_helper.h"
+#include "vweup_utils.h"
 
 #define DEFAULT_MODEL_YEAR 2020
 
@@ -87,6 +88,12 @@ typedef enum {
   OBDS_Run,
 } obd_state_t;
 
+typedef enum {
+  CHGTYPE_None = 0,
+  CHGTYPE_AC,
+  CHGTYPE_DC,
+} chg_type_t;
+
 class OvmsVehicleVWeUp : public OvmsVehicle
 {
   // --------------------------------------------------------------------------
@@ -123,6 +130,7 @@ protected:
 protected:
   void ResetTripCounters();
   void ResetChargeCounters();
+  void SetChargeType(chg_type_t chgtype);
 
 public:
   bool IsOff() {
@@ -149,6 +157,13 @@ public:
   }
   bool HasNoOBD() {
     return (vweup_con & CON_OBD) == 0;
+  }
+
+  bool IsChargeModeAC() {
+    return m_chg_type == CHGTYPE_AC;
+  }
+  bool IsChargeModeDC() {
+    return m_chg_type == CHGTYPE_DC;
   }
 
 protected:
@@ -198,6 +213,7 @@ protected:
 
 protected:
   void T26Init();
+  void T26Ticker1(uint32_t ticker);
 
 protected:
   void IncomingFrameCan3(CAN_frame_t *p_frame);
@@ -235,6 +251,7 @@ public:
   bool t26_ring_awake;
   int t26_12v_boost_cnt;
   int t26_12v_boost_last_cnt;
+  int t26_12v_wait_off;
   int cc_count;
   int cd_count;
   int fas_counter_on;
@@ -257,6 +274,7 @@ protected:
   void OBDDeInit();
 
 protected:
+  void PollSetState(uint8_t state);
   void PollerStateTicker();
   void IncomingPollReply(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length, uint16_t mlremain);
 
@@ -285,20 +303,34 @@ protected:
   OvmsMetricFloat *ChargerPowerLossEcu;           // Power loss of Charger [kW] (from ECU)
   OvmsMetricFloat *ChargerPowerEffCalc;           // Efficiency of the Charger [%] (calculated from U and I)
   OvmsMetricFloat *ChargerPowerLossCalc;          // Power loss of Charger [kW] (calculated from U and I)
+
+  OvmsMetricFloat     *m_chg_ccs_voltage;         // CCS charger supplied voltage [V]
+  OvmsMetricFloat     *m_chg_ccs_current;         // CCS Charger supplied current [A]
+  OvmsMetricFloat     *m_chg_ccs_power;           // CCS Charger supplied power [kW]
+
   OvmsMetricInt *ServiceDays;                     // Days until next scheduled maintenance/service
+  OvmsMetricVector<float> *TPMSDiffusion;         // TPMS Indicator for Pressure Diffusion
+  OvmsMetricVector<float> *TPMSEmergency;         // TPMS Indicator for Tyre Emergency
 
   OvmsMetricFloat *BatTempMax;
   OvmsMetricFloat *BatTempMin;
 
   OvmsMetricInt       *m_lv_pwrstate;             // Low voltage (12V) systems power state (0x1DEC[0]: 0-15)
   OvmsMetricInt       *m_lv_autochg;              // Low voltage (12V) auto charge mode (0x1DED[0]: 0/1)
-  OvmsMetricInt       *m_hv_chgmode;              // High voltage charge mode (0x1DD6[0]: 0/1)
+  OvmsMetricInt       *m_hv_chgmode;              // High voltage charge mode (0x1DD6[0]: 0/1/4)
 
-  OvmsMetricFloat     *m_bat_cap_range;           // Momentary battery capacity based on MFD range [kWh]
-  OvmsMetricFloat     *m_bat_cap_chg_ah_norm;     // Battery capacity based on coulomb charge count [Ah]
-  OvmsMetricFloat     *m_bat_cap_chg_ah_abs;      // … using absolute SOC
-  OvmsMetricFloat     *m_bat_cap_chg_kwh_norm;    // Battery capacity based on energy charge count [kWh]
-  OvmsMetricFloat     *m_bat_cap_chg_kwh_abs;     // … using absolute SOC
+  OvmsMetricFloat     *m_bat_energy_range;        // Battery energy available from MFD range estimation [kWh]
+  OvmsMetricFloat     *m_bat_cap_kwh_range;       // Battery usable capacity derived from MFD range estimation [kWh]
+
+  OvmsMetricFloat     *m_bat_cap_ah_abs;          // Battery capacity based on coulomb charge count [Ah]
+  OvmsMetricFloat     *m_bat_cap_ah_norm;         // … using normalized SOC
+  OvmsMetricFloat     *m_bat_cap_kwh_abs;         // … based on energy charge count [kWh]
+  OvmsMetricFloat     *m_bat_cap_kwh_norm;        // … using normalized SOC
+
+  SmoothExp<float>    m_smooth_cap_ah_abs;        // … and smoothing for these
+  SmoothExp<float>    m_smooth_cap_ah_norm;
+  SmoothExp<float>    m_smooth_cap_kwh_abs;
+  SmoothExp<float>    m_smooth_cap_kwh_norm;
 
 protected:
   obd_state_t         m_obd_state;                // OBD subsystem state
@@ -312,8 +344,7 @@ protected:
 
   float               m_range_est_factor;         // For range calculation during charge
 
-  float               m_bat_cap_range_hist[3];    // Range capacity maximum detection for SOH calculation
-
+  chg_type_t          m_chg_type;                 // CHGTYPE_None / _AC / _DC
   int                 m_cfg_dc_interval;          // Interval for DC fast charge test/log PIDs
 
 private:

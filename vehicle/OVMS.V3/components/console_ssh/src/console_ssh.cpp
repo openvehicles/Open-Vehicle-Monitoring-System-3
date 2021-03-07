@@ -48,12 +48,14 @@
 #include <wolfssl/wolfcrypt/coding.h>
 #include <wolfssl/wolfcrypt/rsa.h>
 #include <wolfssl/wolfcrypt/sha.h>
+#include <wolfssl/wolfcrypt/logging.h>
 #include <wolfssh/ssh.h>
 #include <wolfssh/log.h>
 #include <wolfssh/internal.h>
 #include "console_ssh.h"
 
-static void wolf_logger(enum wolfSSH_LogLevel level, const char* const msg);
+static void wolfssh_logger(enum wolfSSH_LogLevel level, const char* const msg);
+static void wolfssl_logger(int level, const char* const msg);
 static void* wolfssl_malloc(size_t size);
 static void wolfssl_free(void* ptr);
 static void* wolfssl_realloc(void* ptr, size_t size);
@@ -171,8 +173,14 @@ void OvmsSSH::NetManInit(std::string event, void* data)
   // if (!(MyNetManager.m_connected_wifi || MyNetManager.m_wifi_ap))
   //   return;
 
+  int ret;
   ESP_LOGI(tag, "Launching SSH Server");
-  int ret = wolfSSH_Init();
+  wolfSSH_SetLoggingCb(&wolfssh_logger);
+  wolfSSH_Debugging_ON();
+  if ((ret=wolfSSL_SetLoggingCb(&wolfssl_logger)) || (ret=wolfSSL_Debugging_ON()))
+    ESP_LOGW(tag, "Couldn't initialize wolfSSL debugging, error %d: %s", ret,
+      GetErrorString(ret));
+  ret = wolfSSH_Init();
   if (ret != WS_SUCCESS)
     {
     ESP_LOGE(tag, "Couldn't initialize wolfSSH, error %d: %s", ret,
@@ -186,7 +194,6 @@ void OvmsSSH::NetManInit(std::string event, void* data)
     ::printf("\nInsufficient memory to allocate SSH context\n");
     return;
     }
-  wolfSSH_SetLoggingCb(&wolf_logger);
   wolfSSH_CTX_SetBanner(m_ctx, NULL);
   wolfSSH_SetUserAuth(m_ctx, Authenticate);
   std::string skey = MyConfig.GetParamValueBinary("ssh.server", "key", std::string());
@@ -286,7 +293,6 @@ ConsoleSSH::ConsoleSSH(OvmsSSH* server, struct mg_connection* nc)
   m_verbose = false;
   m_recursive = false;
   m_file = NULL;
-  wolfSSH_Debugging_ON();
   wolfSSL_SetAllocators(wolfssl_malloc, wolfssl_free, wolfssl_realloc);
   m_ssh = wolfSSH_new(m_server->ctx());
   if (m_ssh == NULL)
@@ -1137,7 +1143,7 @@ void RSAKeyGenerator::Service()
     ESP_LOGE(tag, "Couldn't free RNG");
   }
 
-static void wolf_logger(enum wolfSSH_LogLevel level, const char* const msg)
+static void wolfssh_logger(enum wolfSSH_LogLevel level, const char* const msg)
   {
   switch (level)
     {
@@ -1160,6 +1166,31 @@ static void wolf_logger(enum wolfSSH_LogLevel level, const char* const msg)
     case WS_LOG_DEBUG:
       ESP_LOGD(wolfssh_tag, "%s", msg);
       break;
+    }
+  }
+
+static void wolfssl_logger(int level, const char* const msg)
+  {
+  switch (level)
+    {
+    case wc_LogLevels::ERROR_LOG:
+      ESP_LOGE(wolfssl_tag, "%s", msg);
+      break;
+
+    case wc_LogLevels::ENTER_LOG:
+    case wc_LogLevels::LEAVE_LOG:
+    case wc_LogLevels::INFO_LOG:
+      ESP_LOGI(wolfssl_tag, "%s", msg);
+      break;
+
+    case wc_LogLevels::OTHER_LOG:
+      ESP_LOGD(wolfssl_tag, "%s", msg);
+      break;
+
+    default:
+      ESP_LOGV(wolfssl_tag, "%s", msg);
+      break;
+
     }
   }
 

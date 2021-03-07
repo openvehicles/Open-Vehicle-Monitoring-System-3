@@ -134,6 +134,7 @@ OvmsVehicleMgEv::OvmsVehicleMgEv()
         "xmg.v.env.faceoutlet.temp", 0, SM_STALE_HIGH, Celcius
     );
     m_dcdc_load = MyMetrics.InitFloat("xmg.v.dcdc.load", 0, SM_STALE_HIGH, Percentage);
+    m_soc_raw = MyMetrics.InitFloat("xmg.v.soc.raw", 0, SM_STALE_HIGH, Percentage);
 
     PollSetState(PollStateListenOnly);
 
@@ -640,17 +641,8 @@ void OvmsVehicleMgEv::Ticker1(uint32_t ticker)
     //     );
     //     xTimerStart(m_zombieTimer, 0);
     // }
-    
-    // Calculate cumulative charge energy each second
-    if(StandardMetrics.ms_v_charge_inprogress->AsBool())
-    {
-        mg_cum_energy_charge_wh += StandardMetrics.ms_v_charge_power->AsFloat()*1000/3600;
-        StandardMetrics.ms_v_charge_kwh->SetValue(mg_cum_energy_charge_wh/1000);
-        ESP_LOGV(TAG,"Cumulative Energy = %.2f",mg_cum_energy_charge_wh);
-    } else { // Not charging set back to zero. TODO - Only reset when charge first stops
-        mg_cum_energy_charge_wh=0;
-        StandardMetrics.ms_v_charge_duration_full->SetValue(0);
-    }
+    //
+    processEnergy();
 }
 
 void OvmsVehicleMgEv::WakeUp(void* self)
@@ -706,6 +698,88 @@ void OvmsVehicleMgEv::ConfigurePollInterface(int bus)
         oldBus->Stop();
         oldBus->SetPowerMode(PowerMode::Off);
     }
+}
+
+void OvmsVehicleMgEv::processEnergy()
+{
+    // When called each to battery power for a second is calculated.
+    // This is added to ms_v_bat_energy_recd if regenerating or
+    // ms_v_bat_energy_used if power is being drawn from the battery
+    
+    // Only calculate if the car is turned on and not charging.
+    if (StandardMetrics.ms_v_env_awake->AsBool() &&
+        !StandardMetrics.ms_v_charge_inprogress->AsBool()) {
+        // Are we in READY state? Ready to drive off.
+        if (StandardMetrics.ms_v_env_on->AsBool()) {
+            auto bat_power = StandardMetrics.ms_v_bat_voltage->AsFloat() *
+            StandardMetrics.ms_v_bat_current->AsFloat() / 1000;
+            // Calculate battery power (kW) for one second
+            auto energy = bat_power / 3600.0;
+            // Calculate current (A) used for one second.
+            auto coulombs = (StandardMetrics.ms_v_bat_current->AsFloat() / 3600.0);
+            // Putting this here seems to show Battery Power on Web Dashboard
+            StandardMetrics.ms_v_bat_power->SetValue(bat_power);
+            // Car is still parked so trip has not started.
+            // Set all values to zero
+            if (StandardMetrics.ms_v_env_drivetime->AsInt() == 0) {
+                ESP_LOGI(TAG, "Trip has started");
+                StandardMetrics.ms_v_bat_coulomb_used->SetValue(0);
+                StandardMetrics.ms_v_bat_coulomb_recd->SetValue(0);
+                StandardMetrics.ms_v_bat_energy_used->SetValue(0);
+                StandardMetrics.ms_v_bat_energy_recd->SetValue(0);
+            // Otherwise we are already moving so do calculations
+            } else {
+                // Calculate regeneration power
+                if (bat_power < 0) {
+                    StandardMetrics.ms_v_bat_energy_recd->SetValue
+                    (StandardMetrics.ms_v_bat_energy_recd->AsFloat() + -(energy));
+                    
+                    StandardMetrics.ms_v_bat_coulomb_recd->SetValue
+                    (StandardMetrics.ms_v_bat_coulomb_recd->AsFloat() + -(coulombs));
+                    
+                // Calculate power usage. Add power used each second
+                } else {
+                    StandardMetrics.ms_v_bat_energy_used->SetValue
+                    (StandardMetrics.ms_v_bat_energy_used->AsFloat() + energy);
+                    
+                    StandardMetrics.ms_v_bat_coulomb_used->SetValue
+                    (StandardMetrics.ms_v_bat_coulomb_used->AsFloat() + coulombs);
+                }
+            }
+        // Not in READY so must have been turned off
+        } else {
+            // We have only just stopped so add trip values to the totals
+            if (StandardMetrics.ms_v_env_parktime->AsInt() == 0) {
+                ESP_LOGI(TAG, "Trip has ended");
+                StandardMetrics.ms_v_bat_energy_used_total->SetValue
+                (StandardMetrics.ms_v_bat_energy_used_total->AsFloat()
+                    + StandardMetrics.ms_v_bat_energy_used->AsFloat());
+                
+                StandardMetrics.ms_v_bat_energy_recd_total->SetValue
+                (StandardMetrics.ms_v_bat_energy_recd_total->AsFloat()
+                 + StandardMetrics.ms_v_bat_energy_recd->AsFloat());
+                
+                StandardMetrics.ms_v_bat_coulomb_used_total->SetValue
+                (StandardMetrics.ms_v_bat_coulomb_used_total->AsFloat()
+                 + StandardMetrics.ms_v_bat_coulomb_used->AsFloat());
+                
+                StandardMetrics.ms_v_bat_coulomb_recd_total->SetValue
+                (StandardMetrics.ms_v_bat_coulomb_recd_total->AsFloat()
+                 + StandardMetrics.ms_v_bat_coulomb_recd->AsFloat());
+            }
+        }
+    }
+    
+    // Add cumulative charge energy each second to ms_v_charge_power
+    if(StandardMetrics.ms_v_charge_inprogress->AsBool())
+    {
+        mg_cum_energy_charge_wh += StandardMetrics.ms_v_charge_power->AsFloat()*1000/3600;
+        StandardMetrics.ms_v_charge_kwh->SetValue(mg_cum_energy_charge_wh/1000);
+    // When we are not charging set back to zero ready for next charge.
+    } else {
+        mg_cum_energy_charge_wh=0;
+    }
+
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleMgEv::CommandWakeup()

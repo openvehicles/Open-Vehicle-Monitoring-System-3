@@ -103,6 +103,7 @@ OvmsVehicleSmartED::OvmsVehicleSmartED() : smarted_obd_rxwait(1,1) {
   // init commands:
   cmd_xse = MyCommandApp.RegisterCommand("xse","SmartED 451 Gen.3");
   cmd_xse->RegisterCommand("recu","Set recu..", xse_recu, "<up/down>",1,1);
+  cmd_xse->RegisterCommand("drivemode","Set drivemode", xse_drivemode, "<d-/d/d+/ds>",1,1);
   cmd_xse->RegisterCommand("charge","Set charging Timer..", xse_chargetimer, "<hour> <minutes> <on/off>", 3, 3);
   cmd_xse->RegisterCommand("trip", "Show vehicle trip", xse_trip);
   cmd_xse->RegisterCommand("bmsdiag", "Show BMS diagnostic", xse_bmsdiag);
@@ -158,8 +159,7 @@ void OvmsVehicleSmartED::ConfigChanged(OvmsConfigParam* param) {
 
   m_reboot_time     = MyConfig.GetParamValueInt("xse", "reboot", 0);
   m_reboot          = MyConfig.GetParamValueBool("xse", "doreboot", false);
-
-  m_auto_set_recu   = MyConfig.GetParamValueBool("xse", "autosetrecu", false);
+  m_auto_set_recu   = MyConfig.GetParamValueInt("xse", "autosetrecu", 0);
 
   StandardMetrics.ms_v_charge_limit_soc->SetValue((float) MyConfig.GetParamValueInt("xse", "suffsoc", 0), Percentage );
   StandardMetrics.ms_v_charge_limit_range->SetValue((float) MyConfig.GetParamValueInt("xse", "suffrange", 0), Kilometers );
@@ -447,6 +447,9 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
         case 0x60: // D+
           StandardMetrics.ms_v_env_drivemode->SetValue(2);
           break;
+        case 0x80: // Ds Brabus
+          StandardMetrics.ms_v_env_drivemode->SetValue(3);
+          break;
       }
       break;
     }
@@ -648,9 +651,13 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
     // Polling IDs
     case 0x7a3:
     {
-      // 7a3 8 04 61 12 64 00 00 00 00
+      // 7a3 8 04 61 12 64 00 00 00 00 || 7A3 04 61 12 c2 ff 00 00 00
       if (d[0] == 0x04 && d[1] == 0x61 && d[2] == 0x12) {
-        StandardMetrics.ms_v_env_cabintemp->SetValue((float) CAN_UINT(3) / 10.0);
+        if (d[4] == 0xff) {
+          int temp = CAN_UINT(3)-0xffff;
+          StandardMetrics.ms_v_env_cabintemp->SetValue((float) temp / 10.0);
+        } else
+          StandardMetrics.ms_v_env_cabintemp->SetValue((float) CAN_UINT(3) / 10.0);
       }
       // ESP_LOGD(TAG, "%03x 8 %02x %02x %02x %02x %02x %02x %02x %02x", p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
       break;
@@ -791,14 +798,19 @@ void OvmsVehicleSmartED::RestartNetwork() {
 }
 
 void OvmsVehicleSmartED::AutoSetRecu() {
+  int i=0, x=20;
   if (StandardMetrics.ms_v_env_on->AsBool() && mt_CEPC_Wippen->AsBool() && m_auto_set_recu && m_enable_write) {
-    if (StandardMetrics.ms_v_env_drivemode->AsInt(1) != 2 && !recuSet) {
-      while(StandardMetrics.ms_v_env_drivemode->AsInt(1) != 2) {
+    if (StandardMetrics.ms_v_env_drivemode->AsInt(1) != m_auto_set_recu+1 && !recuSet) {
+      while(StandardMetrics.ms_v_env_drivemode->AsInt(1) != m_auto_set_recu+1) {
         CommandSetRecu(true);
-        vTaskDelay(50 / portTICK_PERIOD_MS);
+        vTaskDelay(500 / portTICK_PERIOD_MS);
+        i++;
+        if (i==x) break;
       }
       MyEvents.SignalEvent("v-smarted.xse.recu.up",NULL);
-      recuSet = true;
+      if (StandardMetrics.ms_v_env_drivemode->AsInt(1) == m_auto_set_recu+1)
+        recuSet = true;
+      else recuSet = false;
     }
   } else recuSet = false;
 }
@@ -858,8 +870,10 @@ bool OvmsVehicleSmartED::SetFeature(int key, const char *value)
       return true;
     case 4:
     {
-      int bits = atoi(value);
-      MyConfig.SetParamValueBool("xse", "autosetrecu", (bits& 1)!=0);
+      int v = atoi(value);
+      if (v < 0 || v > 2)
+        MyConfig.SetParamValueInt("xse", "autosetrecu", 0);
+      else MyConfig.SetParamValueInt("xse", "autosetrecu", v);
       return true;
     }
     case 5:
@@ -910,12 +924,7 @@ const std::string OvmsVehicleSmartED::GetFeature(int key)
     case 3:
       return MyConfig.GetParamValue("xse", "egpio_timout", STR(5));
     case 4:
-    {
-      int bits = ( MyConfig.GetParamValueBool("xse", "autosetrecu",  false) ?  1 : 0);
-      char buf[4];
-      sprintf(buf, "%d", bits);
-      return std::string(buf);
-    }
+      return MyConfig.GetParamValue("xse", "autosetrecu", STR(0));
     case 5:
     {
       int bits = ( MyConfig.GetParamValueBool("xse", "reset.trip.charge",  false) ?  1 : 0);

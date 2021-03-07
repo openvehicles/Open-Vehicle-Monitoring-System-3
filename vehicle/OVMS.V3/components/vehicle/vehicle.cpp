@@ -48,22 +48,6 @@ static const char *TAG = "vehicle";
 #include <string_writer.h>
 #include "vehicle.h"
 
-#undef SQR
-#define SQR(n) ((n)*(n))
-#undef ABS
-#define ABS(n) (((n) < 0) ? -(n) : (n))
-#undef LIMIT_MIN
-#define LIMIT_MIN(n,lim) ((n) < (lim) ? (lim) : (n))
-#undef LIMIT_MAX
-#define LIMIT_MAX(n,lim) ((n) > (lim) ? (lim) : (n))
-
-#undef TRUNCPREC
-#define TRUNCPREC(fval,prec) (trunc((fval) * pow(10,(prec))) / pow(10,(prec)))
-#undef ROUNDPREC
-#define ROUNDPREC(fval,prec) (round((fval) * pow(10,(prec))) / pow(10,(prec)))
-#undef CEILPREC
-#define CEILPREC(fval,prec)  (ceil((fval)  * pow(10,(prec))) / pow(10,(prec)))
-
 
 OvmsVehicleFactory MyVehicleFactory __attribute__ ((init_priority (2000)));
 

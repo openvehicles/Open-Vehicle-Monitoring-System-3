@@ -313,6 +313,8 @@ OvmsVehicleCadillaccC2CTSInit::OvmsVehicleCadillaccC2CTSInit()
 
   MyVehicleFactory.RegisterVehicle<OvmsVehicleCadillaccC2CTS>("C2CTS",
     "Cadillac 2nd gen CTS");
+  if (!StandardMetrics.ms_v_env_on->AsBool())
+      StandardMetrics.ms_v_env_on->SetValue(false);
   }
 
 // XXX from vehicle_nissanleaf.cpp

@@ -1083,6 +1083,10 @@ void OvmsServerV2::TransmitMsgGPS(bool always)
     StandardMetrics.ms_v_pos_direction->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_pos_altitude->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_pos_gpslock->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_pos_gpsmode->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_pos_gpshdop->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_pos_satcount->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_pos_gpsspeed->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_pos_speed->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_env_drivemode->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_bat_power->IsModifiedAndClear(MyOvmsServerV2Modifier) |
@@ -1103,6 +1107,8 @@ void OvmsServerV2::TransmitMsgGPS(bool always)
   char drivemode[10];
   sprintf(drivemode, "%x", StandardMetrics.ms_v_env_drivemode->AsInt());
 
+  metric_unit_t units_speed = (m_units_distance == Kilometers) ? Kph : Mph;
+
   extram::ostringstream buffer;
   buffer
     << "MP-0 L"
@@ -1116,7 +1122,7 @@ void OvmsServerV2::TransmitMsgGPS(bool always)
     << ","
     << StandardMetrics.ms_v_pos_gpslock->AsBool(false)
     << ((stale)?",0,":",1,")
-    << ((m_units_distance == Kilometers)? StandardMetrics.ms_v_pos_speed->AsString("0") : StandardMetrics.ms_v_pos_speed->AsString("0",Mph))
+    << StandardMetrics.ms_v_pos_speed->AsString("0", units_speed, 1)
     << ","
     << int(StandardMetrics.ms_v_pos_trip->AsFloat(0, m_units_distance)*10)
     << ","
@@ -1131,6 +1137,14 @@ void OvmsServerV2::TransmitMsgGPS(bool always)
     << StandardMetrics.ms_v_inv_power->AsFloat()
     << ","
     << StandardMetrics.ms_v_inv_efficiency->AsFloat()
+    << ","
+    << StandardMetrics.ms_v_pos_gpsmode->AsString()
+    << ","
+    << StandardMetrics.ms_v_pos_satcount->AsInt()
+    << ","
+    << StandardMetrics.ms_v_pos_gpshdop->AsString("0", Native, 1)
+    << ","
+    << StandardMetrics.ms_v_pos_gpsspeed->AsString("0", units_speed, 1)
     ;
 
   Transmit(buffer.str().c_str());
@@ -1650,7 +1664,8 @@ void OvmsServerV2::MetricModified(OvmsMetric* metric)
     }
 
   if ((metric == StandardMetrics.ms_v_env_drivemode)||
-      (metric == StandardMetrics.ms_v_pos_gpslock))
+      (metric == StandardMetrics.ms_v_pos_gpslock)||
+      (metric == StandardMetrics.ms_v_pos_gpsmode))
     {
     m_now_gps = true;
     }
@@ -1744,6 +1759,10 @@ void OvmsServerV2::EventListener(std::string event, void* data)
   else if (event == "config.changed" || event == "config.mounted")
     {
     ConfigChanged((OvmsConfigParam*) data);
+    }
+  else if (event == "location.alert.flatbed.moved")
+    {
+    m_now_gps = true;
     }
   }
 
@@ -1942,6 +1961,7 @@ OvmsServerV2::OvmsServerV2(const char* name)
   MyEvents.RegisterEvent(TAG,"system.modem.received.ussd", std::bind(&OvmsServerV2::EventListener, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"config.changed", std::bind(&OvmsServerV2::EventListener, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"config.mounted", std::bind(&OvmsServerV2::EventListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"location.alert.flatbed.moved", std::bind(&OvmsServerV2::EventListener, this, _1, _2));
 
   // read config:
   ConfigChanged(NULL);

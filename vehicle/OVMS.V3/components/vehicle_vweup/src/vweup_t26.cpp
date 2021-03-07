@@ -174,6 +174,7 @@ void OvmsVehicleVWeUp::T26Init()
   t26_car_on = false;
   t26_ring_awake = false;
   t26_12v_boost_cnt = 0;
+  t26_12v_wait_off = 0;
 
   dev_mode = false; // true disables writing on the comfort CAN. For code debugging only.
 
@@ -185,6 +186,64 @@ void OvmsVehicleVWeUp::T26Init()
   StandardMetrics.ms_v_env_on->SetValue(false);
 }
 
+
+void OvmsVehicleVWeUp::T26Ticker1(uint32_t ticker)
+{
+  // Autodisable climate control ticker (30 min.)
+  if (vweup_remote_climate_ticker != 0) {
+    vweup_remote_climate_ticker--;
+    if (vweup_remote_climate_ticker == 1) {
+      SendCommand(AUTO_DISABLE_CLIMATE_CONTROL);
+    }
+  }
+
+  // Car disabled climate control
+  if (!StandardMetrics.ms_v_env_on->AsBool() &&
+      vweup_remote_climate_ticker < 1770 &&
+      vweup_remote_climate_ticker != 0 &&
+      !StandardMetrics.ms_v_env_hvac->AsBool())
+  {
+    ESP_LOGI(TAG, "Car disabled Climate Control or cc did not turn on");
+    vweup_remote_climate_ticker = 0;
+    vweup_cc_on = false;
+    ocu_awake = true;
+  }
+
+  if (StdMetrics.ms_v_bat_12v_voltage->AsFloat() < 13 && !t26_ring_awake && StandardMetrics.ms_v_env_charging12v->AsBool()) {
+    // Wait for 12v voltage to come up to 13.2v while getting a boost:
+    t26_12v_boost_cnt++;
+    if (t26_12v_boost_cnt > 20) {
+      ESP_LOGI(TAG, "Car stopped itself charging the 12v battery");
+      StandardMetrics.ms_v_env_charging12v->SetValue(false);
+      StandardMetrics.ms_v_env_aux12v->SetValue(false);
+      t26_12v_boost = false;
+      t26_12v_boost_cnt = 0;
+
+      // Clear powers & currents that are not supported by T26:
+      StdMetrics.ms_v_bat_current->SetValue(0);
+      StdMetrics.ms_v_bat_power->SetValue(0);
+      StdMetrics.ms_v_bat_12v_current->SetValue(0);
+      StdMetrics.ms_v_charge_12v_current->SetValue(0);
+      StdMetrics.ms_v_charge_12v_power->SetValue(0);
+      t26_12v_wait_off = 120; // Wait for two minutes before allowing new polling
+      PollSetState(VWEUP_OFF);
+    }
+  }
+
+  if (StdMetrics.ms_v_bat_12v_voltage->AsFloat() >= 13 && t26_12v_boost_cnt == 0) {
+    t26_12v_boost_cnt = 20;
+  }
+  if (t26_12v_boost_last_cnt == t26_12v_boost_cnt && t26_12v_boost_cnt != 0 && t26_12v_boost_cnt != 20) {
+    // We are not waiting to charging 12v to come up anymore:
+    t26_12v_boost_cnt = 0;
+  }
+  if (t26_12v_wait_off != 0) {
+    t26_12v_wait_off--;
+  }
+  t26_12v_boost_last_cnt = t26_12v_boost_cnt;
+}
+
+
 // Takes care of setting all the state appropriate when the car is on
 // or off.
 //
@@ -194,8 +253,9 @@ void OvmsVehicleVWeUp::vehicle_vweup_car_on(bool turnOn)
     // Log once that car is being turned on
     ESP_LOGI(TAG, "CAR IS ON");
     StandardMetrics.ms_v_env_on->SetValue(true);
-    if (!StandardMetrics.ms_v_door_chargeport->AsBool()) {
+    if (!StandardMetrics.ms_v_charge_inprogress->AsBool()) {
        t26_12v_boost_cnt = 0;
+       t26_12v_wait_off = 0;
        PollSetState(VWEUP_ON);
     } else {
        PollSetState(VWEUP_CHARGING);
@@ -229,8 +289,10 @@ void OvmsVehicleVWeUp::vehicle_vweup_car_on(bool turnOn)
     StandardMetrics.ms_v_env_on->SetValue(false);
     // StandardMetrics.ms_v_charge_voltage->SetValue(0);
     // StandardMetrics.ms_v_charge_current->SetValue(0);
-    if (StandardMetrics.ms_v_door_chargeport->AsBool()) {
+    if (StandardMetrics.ms_v_charge_inprogress->AsBool()) {
        PollSetState(VWEUP_CHARGING);
+    } else {
+       PollSetState(VWEUP_AWAKE);
     }
   }
 }
@@ -248,7 +310,9 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
   switch (p_frame->MsgID) {
 
     case 0x61A: // SOC.
-      if (HasNoOBD() || !StandardMetrics.ms_v_env_on->AsBool()) {
+      // If available, OBD is normally responsible for the SOC, but K-CAN occasionally
+      // sends SOC updates while OBD is in state OFF:
+      if (HasNoOBD() || IsOff()) {
         StandardMetrics.ms_v_bat_soc->SetValue(d[7] / 2.0);
       }
       if (HasNoOBD()) {
@@ -401,6 +465,7 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
           StandardMetrics.ms_v_env_charging12v->SetValue(true);
           StandardMetrics.ms_v_env_aux12v->SetValue(true);
           ESP_LOGI(TAG, "Car charge session started");
+          t26_12v_wait_off = 0;
           t26_12v_boost_cnt = 0;
           PollSetState(VWEUP_CHARGING);
         }
@@ -414,6 +479,8 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
           StandardMetrics.ms_v_charge_state->SetValue("done");
           if (StandardMetrics.ms_v_env_on->AsBool()) {
              PollSetState(VWEUP_ON);
+          } else {
+             PollSetState(VWEUP_AWAKE);
           }
           ESP_LOGI(TAG, "Car charge session ended");
         }
@@ -452,7 +519,7 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
     case 0x40C: // We know this one too. Climatronic.
     case 0x436: // Working in the ring.
     case 0x439: // Who are 436 and 439 and why do they differ on some cars?
-      if (d[0] == 0x00 && !ocu_awake && !StandardMetrics.ms_v_door_chargeport->AsBool() && !t26_12v_boost && !t26_car_on && d[1] != 0x31) {
+      if (d[0] == 0x00 && !ocu_awake && !StandardMetrics.ms_v_charge_inprogress->AsBool() && !t26_12v_boost && !t26_car_on && d[1] != 0x31 && t26_12v_wait_off == 0) {
         // The car wakes up to charge the 12v battery 
         StandardMetrics.ms_v_env_charging12v->SetValue(true);
         StandardMetrics.ms_v_env_aux12v->SetValue(true);
@@ -479,17 +546,21 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
         fas_counter_on = 0;
         fas_counter_off = 0;
         t26_12v_boost = false;
-        if (StandardMetrics.ms_v_door_chargeport->AsBool()) {
+        if (StandardMetrics.ms_v_charge_inprogress->AsBool()) {
            PollSetState(VWEUP_CHARGING);
         } else {
            t26_ring_awake = false;
+           PollSetState(VWEUP_AWAKE);
         }
 
         break;
       }
       if (d[0] == 0x00 && d[1] != 0x31 && !t26_ring_awake) {
-         t26_ring_awake = true;
-         ESP_LOGI(TAG, "Ring awake");
+        t26_ring_awake = true;
+        ESP_LOGI(TAG, "Ring awake");
+        if (t26_12v_wait_off != 0) {
+          ESP_LOGI(TAG, "ODB AWAKE ist still blocked");
+        }
       }
       if (d[1] == 0x31 && t26_ring_awake) {
          t26_ring_awake = false;
@@ -728,7 +799,8 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandWakeup()
     StandardMetrics.ms_v_env_charging12v->SetValue(true);
     StandardMetrics.ms_v_env_aux12v->SetValue(true);
     t26_12v_boost_cnt = 0;
-    if (!StandardMetrics.ms_v_door_chargeport->AsBool()) {
+    t26_12v_wait_off = 0;
+    if (!StandardMetrics.ms_v_charge_inprogress->AsBool()) {
        PollSetState(VWEUP_AWAKE);
     } else {
        PollSetState(VWEUP_CHARGING);

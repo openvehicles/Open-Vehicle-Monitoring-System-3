@@ -180,14 +180,30 @@ esp_err_t mcp2515::Start(CAN_mode_t mode, CAN_speed_t speed)
       cnf2=0xad; // BTLMODE=1, SAM=0,  PHSEG1=5 (6 Tq), PRSEG=5 (6 Tq)
       cnf3=0x81; // SOF=1, WAKFIL=0, PHSEG2=1 (2 tQ)
       break;
+    case CAN_SPEED_50KBPS:
+      cnf1=0x87; cnf2=0xff; cnf3=0x82;
+      // BRP=7, PRSEG=7, PHSEG1=7, PHSEG2=2, SJW=2, BTLMODE=1, SAM=1, SOF=1, WAKFIL=0 → Sample point at 17/20 = 85%
+      // Other options:
+      //cnf1=0x07; cnf2=0xfa; cnf3=0x87;
+      // BRP=7, PRSEG=2, PHSEG1=7, PHSEG2=7, SJW=0, BTLMODE=1, SAM=1, SOF=1, WAKFIL=0 → Sample point at 12/20 = 60%
+      //cnf1=0x47; cnf2=0xfa; cnf3=0x87;
+      // BRP=7, PRSEG=2, PHSEG1=7, PHSEG2=7, SJW=1, BTLMODE=1, SAM=1, SOF=1, WAKFIL=0 (same, raised SJW)
+      //cnf1=0x47; cnf2=0xf6; cnf3=0x84;
+      // BRP=7, PRSEG=6, PHSEG1=6, PHSEG2=4, SJW=1, BTLMODE=1, SAM=1, SOF=1, WAKFIL=0 → Sample point at 15/20 = 75%
+      // (taken from MCP_CAN library)
+      break;
     case CAN_SPEED_83KBPS:
       cnf1=0x03; cnf2=0xbe; cnf3=0x07;
+      // BRP=3, PRSEG=6, PS1=7, PS2=7, SJW=0, BTLMODE=1, SAM=0, SOF=0, WAKFIL=0
+      // … this should not work at all as 83.333 kBps? Anyone using this?
       break;
     case CAN_SPEED_100KBPS:
       cnf1=0x03; cnf2=0xfa; cnf3=0x87;
+      // BRP=3, PRSEG=2, PS1=7, PS2=7, SJW=0, BTLMODE=1, SAM=1, SOF=1, WAKFIL=0 → Sample point at 9/16 = 56,25%
       break;
     case CAN_SPEED_125KBPS:
       cnf1=0x03; cnf2=0xf0; cnf3=0x86;
+      // BRP=3, PRSEG=0, PS1=6, PS2=6, SJW=0, BTLMODE=1, SAM=1, SOF=1, WAKFIL=0 → Sample point at 9/16 = 56,25%
       break;
     case CAN_SPEED_250KBPS:
       cnf1=0x41; cnf2=0xf1; cnf3=0x85;

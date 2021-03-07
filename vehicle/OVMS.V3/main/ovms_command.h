@@ -380,6 +380,8 @@ class OvmsCommandApp : public OvmsWriter
     uint32_t m_logfile_cyclecnt;
     uint32_t m_logtask_linecnt;
     uint32_t m_logtask_fsynctime;
+    time_t m_logtask_laststamp;
+    struct timeval m_logtask_basetime;
 
   public:
     TaskHandle_t m_expiretask;

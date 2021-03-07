@@ -72,7 +72,7 @@
 #include <string>
 static const char *TAG = "v-vweup";
 
-#define VERSION "0.10.1"
+#define VERSION "0.12.0"
 
 #include <stdio.h>
 #include <string>
@@ -289,11 +289,12 @@ void OvmsVehicleVWeUp::ConfigChanged(OvmsConfigParam *param)
   //  TODO: get actual capacity/SOH & max charge current
   float socfactor = StdMetrics.ms_v_bat_soc->AsFloat() / 100;
   float sohfactor = StdMetrics.ms_v_bat_soh->AsFloat() / 100;
-  if (sohfactor == 0) sohfactor = 100;
+  if (sohfactor == 0) sohfactor = 1;
   if (vweup_modelyear > 2019)
   {
     // 32.3 kWh net / 36.8 kWh gross, 2P84S = 120 Ah, 260 km WLTP
-    StdMetrics.ms_v_bat_cac->SetValue(120 * sohfactor);
+    if (StdMetrics.ms_v_bat_cac->AsFloat() == 0)
+      StdMetrics.ms_v_bat_cac->SetValue(120 * sohfactor);
     StdMetrics.ms_v_bat_range_full->SetValue(260 * sohfactor);
     if (StdMetrics.ms_v_bat_range_ideal->AsFloat() == 0)
       StdMetrics.ms_v_bat_range_ideal->SetValue(260 * sohfactor * socfactor);
@@ -314,7 +315,8 @@ void OvmsVehicleVWeUp::ConfigChanged(OvmsConfigParam *param)
   else
   {
     // 16.4 kWh net / 18.7 kWh gross, 2P102S = 50 Ah, 160 km WLTP
-    StdMetrics.ms_v_bat_cac->SetValue(50 * sohfactor);
+    if (StdMetrics.ms_v_bat_cac->AsFloat() == 0)
+      StdMetrics.ms_v_bat_cac->SetValue(50 * sohfactor);
     StdMetrics.ms_v_bat_range_full->SetValue(160 * sohfactor);
     if (StdMetrics.ms_v_bat_range_ideal->AsFloat() == 0)
       StdMetrics.ms_v_bat_range_ideal->SetValue(160 * sohfactor * socfactor);
@@ -356,54 +358,8 @@ void OvmsVehicleVWeUp::ConfigChanged(OvmsConfigParam *param)
 
 void OvmsVehicleVWeUp::Ticker1(uint32_t ticker)
 {
-  if (HasT26())
-  {
-    // T26 connected
-
-    // Autodisable climate control ticker (30 min.)
-    if (vweup_remote_climate_ticker != 0) {
-      vweup_remote_climate_ticker--;
-      if (vweup_remote_climate_ticker == 1) {
-        SendCommand(AUTO_DISABLE_CLIMATE_CONTROL);
-      }
-    }
-    // Car disabled climate control
-    if (!StandardMetrics.ms_v_env_on->AsBool() &&
-        vweup_remote_climate_ticker < 1770 &&
-        vweup_remote_climate_ticker != 0 &&
-        !StandardMetrics.ms_v_env_hvac->AsBool())
-    {
-      ESP_LOGI(TAG, "Car disabled Climate Control or cc did not turn on");
-      vweup_remote_climate_ticker = 0;
-      vweup_cc_on = false;
-      ocu_awake = true;
-    }
-    if (StdMetrics.ms_v_bat_12v_voltage->AsFloat() < 13 && !t26_ring_awake && StandardMetrics.ms_v_env_charging12v->AsBool()) {
-      t26_12v_boost_cnt++;    // Wait for 12v voltage to come up to 13.2v while getting a boost
-      if (t26_12v_boost_cnt > 20) {
-         ESP_LOGI(TAG, "Car stopped itself charging the 12v battery");
-         StandardMetrics.ms_v_env_charging12v->SetValue(false);
-         StandardMetrics.ms_v_env_aux12v->SetValue(false);
-         t26_12v_boost = false;
-         t26_12v_boost_cnt = 0;
-
-         // Clear powers & currents that are not supported by T26:
-         StdMetrics.ms_v_bat_current->SetValue(0);
-         StdMetrics.ms_v_bat_power->SetValue(0);
-         StdMetrics.ms_v_bat_12v_current->SetValue(0);
-         StdMetrics.ms_v_charge_12v_current->SetValue(0);
-         StdMetrics.ms_v_charge_12v_power->SetValue(0);
-
-         PollSetState(VWEUP_OFF);
-      }
-    }
-    if (StdMetrics.ms_v_bat_12v_voltage->AsFloat() >= 13 && t26_12v_boost_cnt == 0) {
-       t26_12v_boost_cnt = 20;
-    }
-    if (t26_12v_boost_last_cnt == t26_12v_boost_cnt && t26_12v_boost_cnt != 0 && t26_12v_boost_cnt != 20) {    // We are not waiting to charging 12v to come up anymore
-       t26_12v_boost_cnt = 0;
-    }
-    t26_12v_boost_last_cnt = t26_12v_boost_cnt;
+  if (HasT26()) {
+    T26Ticker1(ticker);
   }
 }
 
@@ -476,4 +432,51 @@ void OvmsVehicleVWeUp::ResetChargeCounters()
   ESP_LOGD(TAG, "Charge start ref: socnrm=%f socabs=%f cr=%f er=%f gr=%f",
     m_soc_norm_start, m_soc_abs_start, m_coulomb_charged_start,
     m_energy_charged_start, m_charge_kwh_grid_start);
+}
+
+
+/**
+ * SetChargeType: set current internal & public charge type (AC / DC / None)
+ *  Controlled by the OBD handler if enabled (derived from VWUP_CHG_MGMT_HV_CHGMODE).
+ *  The charge type defines the source for the charge metrics, to query the type
+ *  use IsChargeModeAC() and IsChargeModeDC().
+ */
+void OvmsVehicleVWeUp::SetChargeType(chg_type_t chgtype)
+{
+  if (m_chg_type == chgtype)
+    return;
+
+  m_chg_type = chgtype;
+
+  if (m_chg_type == CHGTYPE_AC) {
+    StdMetrics.ms_v_charge_type->SetValue("type2");
+  }
+  else if (m_chg_type == CHGTYPE_DC) {
+    StdMetrics.ms_v_charge_type->SetValue("ccs");
+  }
+  else {
+    StdMetrics.ms_v_charge_type->SetValue("");
+    // …and clear/reset charge metrics:
+    ChargerPowerEffEcu->SetValue(100);
+    ChargerPowerLossEcu->SetValue(0);
+    ChargerPowerEffCalc->SetValue(100);
+    ChargerPowerLossCalc->SetValue(0);
+    ChargerAC1U->SetValue(0);
+    ChargerAC1I->SetValue(0);
+    ChargerAC2U->SetValue(0);
+    ChargerAC2I->SetValue(0);
+    ChargerACPower->SetValue(0);
+    ChargerDC1U->SetValue(0);
+    ChargerDC1I->SetValue(0);
+    ChargerDC2U->SetValue(0);
+    ChargerDC2I->SetValue(0);
+    ChargerDCPower->SetValue(0);
+    m_chg_ccs_voltage->SetValue(0);
+    m_chg_ccs_current->SetValue(0);
+    m_chg_ccs_power->SetValue(0);
+    StdMetrics.ms_v_charge_voltage->SetValue(0);
+    StdMetrics.ms_v_charge_current->SetValue(0);
+    StdMetrics.ms_v_charge_power->SetValue(0);
+    StdMetrics.ms_v_charge_efficiency->SetValue(0);
+  }
 }
