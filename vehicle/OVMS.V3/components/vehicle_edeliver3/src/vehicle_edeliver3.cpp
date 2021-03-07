@@ -47,11 +47,11 @@ static const char *TAG = "v-edeliver3";
 static const OvmsVehicle::poll_pid_t obdii_polls[]
 =
 {
-    { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xe002u, {  120, 120, 120, 120  }, 0, ISOTP_STD }, //soc?? +1 may need scaling
-    { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xe003u, {  120, 120, 120, 120  }, 0, ISOTP_STD }, //SOH
-    { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xe005u, {  120, 120, 120, 120  }, 0, ISOTP_STD }, //temp
-    { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xe006u, {  120, 120, 120, 120  }, 0, ISOTP_STD }, //temp
-    { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xe019u, {  120, 120, 120, 120  }, 0, ISOTP_STD }, //Pack Voltage
+    { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xe002u, {  0, 120, 120, 120  }, 0, ISOTP_STD }, //soc?? +1 may need scaling
+    { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xe003u, {  0, 120, 120, 120  }, 0, ISOTP_STD }, //SOH
+    { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xe005u, {  0, 120, 120, 120  }, 0, ISOTP_STD }, //temp
+    { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xe006u, {  0, 120, 120, 120  }, 0, ISOTP_STD }, //temp
+    { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xe019u, {  0, 120, 120, 120  }, 0, ISOTP_STD }, //Pack Voltage
     { 0, 0, 0x00, 0x00, { 0, 0, 0, 0 }, 0, 0 }
 };
 // };
@@ -104,7 +104,7 @@ void OvmsVehicleEdeliver3::IncomingPollReply(canbus* bus, uint16_t type, uint16_
               StandardMetrics.ms_v_env_temp->SetValue(value1 / 10.0f);
               break;
           case 0xe019:  // Pack Voltage
-            StandardMetrics.ms_v_bat_voltage->SetValue(value2 / 10.0f);
+            StandardMetrics.ms_v_bat_voltage->SetValue(value2 / 10.0f);  ///if(soc>100)soc=100;???????
               break;
       }
     
@@ -145,8 +145,9 @@ void OvmsVehicleEdeliver3::IncomingFrameCan1(CAN_frame_t* p_frame)
               
           
           
-          //Set ideal, est and amps when CANdata received
+          //Set ideal, est and amps when CANdata received if(soc>100)soc=100;
           float soc = StandardMetrics.ms_v_bat_soc->AsFloat();
+              if(soc>100)soc=100;
           StandardMetrics.ms_v_bat_range_ideal->SetValue(241 * soc / 100);
           StandardMetrics.ms_v_bat_range_est->SetValue(241 * soc / 108);
           StandardMetrics.ms_v_bat_current->SetValue((StandardMetrics.ms_v_bat_power->AsFloat() / (StandardMetrics.ms_v_bat_voltage->AsFloat() )) * 1000); // work out current untill pid found
