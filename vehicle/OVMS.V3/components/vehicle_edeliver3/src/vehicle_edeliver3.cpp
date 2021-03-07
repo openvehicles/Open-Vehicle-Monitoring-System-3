@@ -166,7 +166,7 @@ void OvmsVehicleEdeliver3::IncomingFrameCan1(CAN_frame_t* p_frame)
             if (StandardMetrics.ms_v_bat_power->AsFloat() >=  1)
             {
             StandardMetrics.ms_v_charge_inprogress->SetValue(true);
-            PollSetState(1);
+            PollSetState(3);
             }
             else
             {
