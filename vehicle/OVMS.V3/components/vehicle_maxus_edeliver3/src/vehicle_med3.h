@@ -1,6 +1,6 @@
 /*
 ;    Project:       Open Vehicle Monitor System
-;    Date:          14th March 2017
+;    Date:          8th March 2021
 ;
 ;    Changes:
 ;    1.0  Initial release
@@ -26,8 +26,8 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __VEHICLE_EDELIVER3_H__
-#define __VEHICLE_EDELIVER3_H__
+#ifndef __VEHICLE_MAXED3_H__
+#define __VEHICLE_MAXED3_H__
 
 #include "vehicle.h"
 #include "ovms_metrics.h"
@@ -38,28 +38,28 @@ using namespace std;
 
 class OvmsCommand;
 
-class OvmsVehicleEdeliver3 : public OvmsVehicle
+class OvmsVehicleMaxed3 : public OvmsVehicle
   {
   public:
-    OvmsVehicleEdeliver3();
-    ~OvmsVehicleEdeliver3();
+    OvmsVehicleMaxed3();
+    ~OvmsVehicleMaxed3();
       
   public:
-    void IncomingFrameCan1(CAN_frame_t* p_frame);
+      void IncomingFrameCan1(CAN_frame_t* p_frame);
 
   protected:
-    virtual void Ticker1(uint32_t ticker);
+      virtual void Ticker1(uint32_t ticker);
       string              med_obd_rxbuf;
       
   private:
       void IncomingPollFrame(CAN_frame_t* frame);
    
- //     void IncomingVcuPoll(uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain); not used????
+
       void HandleVinMessage(uint8_t* data, uint8_t length, uint16_t remain);
       void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
       /// A temporary store for the VIN
       char m_vin[18];
  
   };
-#endif //#ifndef __VEHICLE_EDELIVER3_H__
+#endif //#ifndef __VEHICLE_MAXED3_H__
 
