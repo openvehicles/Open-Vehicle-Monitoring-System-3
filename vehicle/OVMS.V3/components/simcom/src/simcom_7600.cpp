@@ -46,7 +46,7 @@ class simcom7600Init
 simcom7600Init::simcom7600Init()
   {
   ESP_LOGI(TAG, "Registering SIM7600 modem driver (4650)");
-  MyModemFactory.RegisterModemDriver<simcom7600>(model,name);
+  MyCellularModemFactory.RegisterCellularModemDriver<simcom7600>(model,name);
   }
 
 simcom7600::simcom7600()

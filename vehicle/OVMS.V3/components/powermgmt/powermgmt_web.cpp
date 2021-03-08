@@ -64,7 +64,7 @@ void powermgmt::WebCleanup()
     {
     // process form submission:
     enabled = (c.getvar("enabled") == "yes");
-#ifdef CONFIG_OVMS_COMP_MODEM
+#ifdef CONFIG_OVMS_COMP_CELLULAR
     modemoff_delay = c.getvar("modemoff_delay");
 #endif
     wifioff_delay = c.getvar("wifioff_delay");
@@ -88,7 +88,7 @@ void powermgmt::WebCleanup()
       {
       // store:
       MyConfig.SetParamValueBool("power", "enabled", enabled);
-#ifdef CONFIG_OVMS_COMP_MODEM
+#ifdef CONFIG_OVMS_COMP_CELLULAR
       MyConfig.SetParamValue("power", "modemoff_delay", modemoff_delay);
 #endif
       MyConfig.SetParamValue("power", "wifioff_delay", wifioff_delay);
@@ -110,7 +110,7 @@ void powermgmt::WebCleanup()
     {
     // read configuration:
     enabled = MyConfig.GetParamValueBool("power", "enabled", false);
-#ifdef CONFIG_OVMS_COMP_MODEM
+#ifdef CONFIG_OVMS_COMP_CELLULAR
     modemoff_delay = MyConfig.GetParamValue("power", "modemoff_delay", STR(POWERMGMT_MODEMOFF_DELAY));
 #endif
     wifioff_delay = MyConfig.GetParamValue("power", "wifioff_delay", STR(POWERMGMT_WIFIOFF_DELAY));
@@ -130,7 +130,7 @@ void powermgmt::WebCleanup()
     "inactivity (non charging)</p>");
   c.fieldset_end();
 
-#ifdef CONFIG_OVMS_COMP_MODEM
+#ifdef CONFIG_OVMS_COMP_CELLULAR
   c.input("number", "Delay before modem is turned off", "modemoff_delay", modemoff_delay.c_str(),
     "Default: " STR(POWERMGMT_MODEMOFF_DELAY) " hours",
     "<p>0 = disabled</p>",

@@ -31,7 +31,7 @@
 #ifndef __SIMCOM_5360_H__
 #define __SIMCOM_5360_H__
 
-#include "ovms_modem.h"
+#include "ovms_cellular.h"
 
 class simcom5360 : public modemdriver
   {

@@ -31,7 +31,7 @@
 #ifndef __SIMCOM_7600_H__
 #define __SIMCOM_7600_H__
 
-#include "ovms_modem.h"
+#include "ovms_cellular.h"
 
 class simcom7600 : public modemdriver
   {

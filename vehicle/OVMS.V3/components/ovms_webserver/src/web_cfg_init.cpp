@@ -295,19 +295,19 @@ void OvmsWebServer::CfgInitTicker()
 #endif
   }
 
-#ifdef CONFIG_OVMS_COMP_MODEM
+#ifdef CONFIG_OVMS_COMP_CELLULAR
   else if (step == "5.test.start") {
-    if (!MyPeripherals || !MyPeripherals->m_modem) {
-      ESP_LOGE(TAG, "CfgInitTicker: step 5: modem not available");
+    if (!MyPeripherals || !MyPeripherals->m_cellular_modem) {
+      ESP_LOGE(TAG, "CfgInitTicker: step 5: cellular modem not available");
       CfgInitSetStep("done");
     }
-    if (MyPeripherals->m_modem->GetPowerMode() != On) {
-      ESP_LOGI(TAG, "CfgInitTicker: step 5: modem power on");
-      MyPeripherals->m_modem->SetPowerMode(On);
+    if (MyPeripherals->m_cellular_modem->GetPowerMode() != On) {
+      ESP_LOGI(TAG, "CfgInitTicker: step 5: cellular modem power on");
+      MyPeripherals->m_cellular_modem->SetPowerMode(On);
     }
     else {
-      ESP_LOGI(TAG, "CfgInitTicker: step 5: modem enter state NetStart");
-      MyPeripherals->m_modem->SendSetState1(modem::NetStart);
+      ESP_LOGI(TAG, "CfgInitTicker: step 5: cellular modem enter state NetStart");
+      MyPeripherals->m_cellular_modem->SendSetState1(modem::NetStart);
 
     }
   }

@@ -27,7 +27,7 @@
 */
 
 #include "ovms_log.h"
-#ifdef CONFIG_OVMS_COMP_MODEM
+#ifdef CONFIG_OVMS_COMP_CELLULAR
 static const char *TAG = "webserver";
 #endif
 
@@ -765,7 +765,7 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
 }
 
 
-#ifdef CONFIG_OVMS_COMP_MODEM
+#ifdef CONFIG_OVMS_COMP_CELLULAR
 /**
  * HandleCfgModem: configure APN & modem features (URL /cfg/modem)
  */
@@ -1796,7 +1796,7 @@ void OvmsWebServer::HandleCfgWifi(PageEntry_t& p, PageContext_t& c)
 {
   bool cfg_bad_reconnect;
   float cfg_sq_good, cfg_sq_bad;
-  
+
   if (c.method == "POST") {
     std::string warn, error;
 
@@ -1846,7 +1846,7 @@ void OvmsWebServer::HandleCfgWifi(PageEntry_t& p, PageContext_t& c)
     cfg_sq_good = MyConfig.GetParamValueFloat("network", "wifi.sq.good", -87);
     cfg_sq_bad = MyConfig.GetParamValueFloat("network", "wifi.sq.bad", -89);
     cfg_bad_reconnect = MyConfig.GetParamValueBool("network", "wifi.bad.reconnect", false);
-    
+
     c.head(200);
   }
 
@@ -3976,9 +3976,9 @@ void OvmsWebServer::HandleEditor(PageEntry_t& p, PageContext_t& c)
 
 /**
  * HandleFile: file load/save API
- *  
+ *
  *  URL: /api/file
- *  
+ *
  *  @param method
  *    GET   = load content from path
  *    POST  = save content to path
@@ -3986,7 +3986,7 @@ void OvmsWebServer::HandleEditor(PageEntry_t& p, PageContext_t& c)
  *    Full path to file
  *  @param content
  *    File content for POST
- *  
+ *
  *  @return
  *    Status: 200 (OK) / 400 (Error)
  *    Body: GET: file content or error message, POST: empty or error message

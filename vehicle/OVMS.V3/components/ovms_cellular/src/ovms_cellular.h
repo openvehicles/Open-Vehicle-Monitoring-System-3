@@ -28,8 +28,8 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __OVMS_MODEM_H__
-#define __OVMS_MODEM_H__
+#ifndef __OVMS_CELLULAR_H__
+#define __OVMS_CELLULAR_H__
 
 #include <map>
 #include <vector>
@@ -191,7 +191,7 @@ class modem : public pcp, public InternalRamAllocated
     void StopMux();
     void StartPPP();
     void StopPPP();
-    void SetModemDriver(const char* ModelType);
+    void SetCellularModemDriver(const char* ModelType);
     void Task();
     void Ticker(std::string event, void* data);
     void EventListener(std::string event, void* data);
@@ -239,16 +239,16 @@ class modemdriver : public InternalRamAllocated
     modem* m_modem;
   };
 
-template<typename Type> modemdriver* CreateModemDriver()
+template<typename Type> modemdriver* CreateCellularModemDriver()
   {
   return new Type;
   }
 
-class OvmsModemFactory
+class OvmsCellularModemFactory
   {
   public:
-    OvmsModemFactory();
-    ~OvmsModemFactory();
+    OvmsCellularModemFactory();
+    ~OvmsCellularModemFactory();
 
   public:
     typedef modemdriver* (*FactoryFuncPtr)();
@@ -263,15 +263,15 @@ class OvmsModemFactory
 
   public:
     template<typename Type>
-    short RegisterModemDriver(const char* ModelType, const char* ModelName = "")
+    short RegisterCellularModemDriver(const char* ModelType, const char* ModelName = "")
       {
-      FactoryFuncPtr function = &CreateModemDriver<Type>;
+      FactoryFuncPtr function = &CreateCellularModemDriver<Type>;
         m_drivermap.insert(std::make_pair(ModelType, (modemdriver_t){ function, ModelName }));
       return 0;
       };
-    modemdriver* NewModemDriver(const char* ModelType);
+    modemdriver* NewCellularModemDriver(const char* ModelType);
   };
 
-extern OvmsModemFactory MyModemFactory;
+extern OvmsCellularModemFactory MyCellularModemFactory;
 
-#endif //#ifndef __OVMS_MODEM_H__
+#endif //#ifndef __OVMS_CELLULAR_H__

@@ -29,11 +29,11 @@
 */
 
 #include "ovms_log.h"
-static const char *TAG = "modem-auto";
+static const char *TAG = "cellular-modem-auto";
 
 #include <string.h>
 
-#include "ovms_modem.h"
+#include "ovms_cellular.h"
 #include "ovms_peripherals.h"
 #include "ovms_config.h"
 
@@ -54,12 +54,12 @@ class autoInit
 autoInit::autoInit()
   {
   ESP_LOGI(TAG, "Registering auto-detect modem driver (4650)");
-  MyModemFactory.RegisterModemDriver<modemdriver>(model,name);
+  MyCellularModemFactory.RegisterCellularModemDriver<modemdriver>(model,name);
   }
 
 modemdriver::modemdriver()
   {
-  m_modem = MyPeripherals->m_modem;
+  m_modem = MyPeripherals->m_cellular_modem;
   }
 
 modemdriver::~modemdriver()

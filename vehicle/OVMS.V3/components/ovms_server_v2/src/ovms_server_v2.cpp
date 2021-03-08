@@ -696,17 +696,17 @@ void OvmsServerV2::ProcessCommand(const char* payload)
         *buffer << "MP-0 c" << command << ",1,No command";
       else
         {
-#ifdef CONFIG_OVMS_COMP_MODEM
+#ifdef CONFIG_OVMS_COMP_CELLULAR
         *buffer << "AT+CUSD=1,\"" << sep+1 << "\",15\r\n";
         extram::string msg = buffer->str();
         buffer->str("");
-        if (MyPeripherals->m_modem->txcmd(msg.c_str(), msg.length()))
+        if (MyPeripherals->m_cellular_modem->txcmd(msg.c_str(), msg.length()))
           *buffer << "MP-0 c" << command << ",0";
         else
           *buffer << "MP-0 c" << command << ",1,Cannot send command";
-#else // #ifdef CONFIG_OVMS_COMP_MODEM
+#else // #ifdef CONFIG_OVMS_COMP_CELLULAR
         *buffer << "MP-0 c" << command << ",1,No modem";
-#endif // #ifdef CONFIG_OVMS_COMP_MODEM
+#endif // #ifdef CONFIG_OVMS_COMP_CELLULAR
         }
       break;
     case 49: // Send raw AT command
@@ -1218,7 +1218,7 @@ void OvmsServerV2::TransmitMsgTPMS(bool always)
     << "," << defstale_alert
     ;
   Transmit(buffer.str().c_str());
-  
+
   // Transmit legacy "W" message (fixed four tyres, only pressures & temperatures):
 
   bool stale =

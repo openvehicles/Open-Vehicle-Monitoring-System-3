@@ -29,12 +29,12 @@
 */
 
 #include "ovms_log.h"
-static const char *TAG = "modem";
+static const char *TAG = "cellular";
 
 #include <string.h>
 #include <algorithm>
 #include <functional>
-#include "ovms_modem.h"
+#include "ovms_cellular.h"
 #include "ovms_peripherals.h"
 #include "metrics_standard.h"
 #include "ovms_config.h"
@@ -117,9 +117,9 @@ void modem::Task()
   uart_param_config(m_uartnum, &uart_config);
   uart_set_pin(m_uartnum, m_txpin, m_rxpin, 0, 0);
   uart_driver_install(m_uartnum,
-    CONFIG_OVMS_HW_MODEM_UART_SIZE,
-    CONFIG_OVMS_HW_MODEM_UART_SIZE,
-    CONFIG_OVMS_HW_MODEM_QUEUE_SIZE,
+    CONFIG_OVMS_HW_CELLULAR_MODEM_UART_SIZE,
+    CONFIG_OVMS_HW_CELLULAR_MODEM_UART_SIZE,
+    CONFIG_OVMS_HW_CELLULAR_MODEM_QUEUE_SIZE,
     (QueueHandle_t*)&m_queue,
     ESP_INTR_FLAG_LEVEL2);
 
@@ -254,7 +254,7 @@ void modem::Task()
 // This class implement an OVMS PCP for modem control
 
 modem::modem(const char* name, uart_port_t uartnum, int baud, int rxpin, int txpin, int pwregpio, int dtregpio)
-  : pcp(name), m_buffer(CONFIG_OVMS_HW_MODEM_BUFFER_SIZE)
+  : pcp(name), m_buffer(CONFIG_OVMS_HW_CELLULAR_MODEM_BUFFER_SIZE)
   {
   MyModem = this;
   m_task = 0;
@@ -547,7 +547,7 @@ void modem::State1Enter(modem_state1_t newstate)
     {
     // Register a default modem driver
     std::string driver = MyConfig.GetParamValue("modem", "driver","auto");
-    SetModemDriver(driver.c_str());
+    SetCellularModemDriver(driver.c_str());
     }
 
   ESP_LOGI(TAG, "State: Enter %s state",ModemState1Name(newstate));
@@ -568,7 +568,7 @@ void modem::State1Enter(modem_state1_t newstate)
       if ( (strcmp(m_driver->GetModel(),"auto") != 0) &&
            (MyConfig.GetParamValue("modem", "driver","auto").compare("auto")==0) )
         {
-        SetModemDriver("auto");
+        SetCellularModemDriver("auto");
         }
       ClearNetMetrics();
       MyEvents.SignalEvent("system.modem.poweringon", NULL);
@@ -1155,14 +1155,14 @@ bool modem::IdentifyModel()
     {
     std::string line = m_buffer.ReadLine();
 
-    for (OvmsModemFactory::map_modemdriver_t::iterator k=MyModemFactory.m_drivermap.begin();
-         k!=MyModemFactory.m_drivermap.end();
+    for (OvmsCellularModemFactory::map_modemdriver_t::iterator k=MyCellularModemFactory.m_drivermap.begin();
+         k!=MyCellularModemFactory.m_drivermap.end();
          ++k)
       {
       if (line.find(k->first) != string::npos)
         {
-        ESP_LOGI(TAG, "Identified Modem: %s/%s", k->first,k->second.name );
-        SetModemDriver(k->first);
+        ESP_LOGI(TAG, "Identified cellular modem: %s/%s", k->first,k->second.name );
+        SetCellularModemDriver(k->first);
         return true;
         }
       }
@@ -1265,7 +1265,7 @@ void modem::StartTask()
   if (!m_task)
     {
     ESP_LOGV(TAG, "Starting modem task");
-    xTaskCreatePinnedToCore(MODEM_task, "OVMS MODEM", CONFIG_OVMS_HW_MODEM_STACK_SIZE, (void*)this, 20, &m_task, CORE(0));
+    xTaskCreatePinnedToCore(MODEM_task, "OVMS MODEM", CONFIG_OVMS_HW_CELLULAR_MODEM_STACK_SIZE, (void*)this, 20, &m_task, CORE(0));
     }
   }
 
@@ -1348,7 +1348,7 @@ void modem::StopPPP()
     }
   }
 
-void modem::SetModemDriver(const char* ModelType)
+void modem::SetCellularModemDriver(const char* ModelType)
   {
   if (m_driver)
     {
@@ -1358,7 +1358,7 @@ void modem::SetModemDriver(const char* ModelType)
     }
 
   ESP_LOGI(TAG, "Set modem driver to '%s'", ModelType);
-  m_driver = MyModemFactory.NewModemDriver(ModelType);
+  m_driver = MyCellularModemFactory.NewCellularModemDriver(ModelType);
   m_model = std::string(ModelType);
   m_mux_channels = m_driver->GetMuxChannels();
   m_mux_channel_CTRL = m_driver->GetMuxChannelCTRL();
@@ -1613,8 +1613,8 @@ void modem_setstate(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
 void cellular_drivers(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   writer->puts("Type       Name");
-  for (OvmsModemFactory::map_modemdriver_t::iterator k=MyModemFactory.m_drivermap.begin();
-       k!=MyModemFactory.m_drivermap.end();
+  for (OvmsCellularModemFactory::map_modemdriver_t::iterator k=MyCellularModemFactory.m_drivermap.begin();
+       k!=MyCellularModemFactory.m_drivermap.end();
        ++k)
     {
     writer->printf("%-10.10s %s\n",k->first,k->second.name);
@@ -1642,14 +1642,14 @@ void modem::DevelopmentHexDump(const char* prefix, const char* data, size_t leng
 ////////////////////////////////////////////////////////////////////////////////
 // Modem Initialisation and Registrations
 
-class ModemInit
+class CellularModemInit
   {
-  public: ModemInit();
+  public: CellularModemInit();
 } MyModemInit  __attribute__ ((init_priority (4600)));
 
-ModemInit::ModemInit()
+CellularModemInit::CellularModemInit()
   {
-  ESP_LOGI(TAG, "Initialising MODEM (4600)");
+  ESP_LOGI(TAG, "Initialising CELLULAR (4600)");
 
   OvmsCommand* cmd_cellular = MyCommandApp.RegisterCommand("cellular","CELLULAR MODEM framework",cellular_status, "", 0, 0, false);
   cmd_cellular->RegisterCommand("tx","Transmit data on CELLULAR MODEM",cellular_tx, "", 1, INT_MAX);

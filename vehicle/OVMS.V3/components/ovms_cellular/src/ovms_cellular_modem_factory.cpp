@@ -29,31 +29,31 @@
 */
 
 #include "ovms_log.h"
-static const char *TAG = "modem-factory";
+static const char *TAG = "cellular-modem-factory";
 
 #include <string.h>
 
-#include "ovms_modem.h"
+#include "ovms_cellular.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 // The modem factory
 // Responsible for registering modem drivers, and providing a factory
 // function to create on demand.
 
-OvmsModemFactory MyModemFactory __attribute__ ((init_priority (4610)));
+OvmsCellularModemFactory MyCellularModemFactory __attribute__ ((init_priority (4610)));
 
-OvmsModemFactory::OvmsModemFactory()
+OvmsCellularModemFactory::OvmsCellularModemFactory()
   {
-  ESP_LOGI(TAG, "Initialising MODEM Factory (4601)");
+  ESP_LOGI(TAG, "Initialising CELLULAR MODEM Factory (4601)");
   }
 
-OvmsModemFactory::~OvmsModemFactory()
+OvmsCellularModemFactory::~OvmsCellularModemFactory()
   {
   }
 
-modemdriver* OvmsModemFactory::NewModemDriver(const char* ModelType)
+modemdriver* OvmsCellularModemFactory::NewCellularModemDriver(const char* ModelType)
   {
-  OvmsModemFactory::map_modemdriver_t::iterator iter = m_drivermap.find(ModelType);
+  OvmsCellularModemFactory::map_modemdriver_t::iterator iter = m_drivermap.find(ModelType);
   if (iter != m_drivermap.end())
     {
     return iter->second.construct();

@@ -33,7 +33,7 @@ static const char *TAG = "gsm-mux";
 
 #include <string.h>
 #include "gsmmux.h"
-#include "ovms_modem.h"
+#include "ovms_cellular.h"
 
 #define GSM_CR         0x02
 #define GSM_EA         0x01
@@ -204,7 +204,7 @@ void GsmMux::Startup()
   for (int k=1; k<=m_channelcount; k++)
     {
     m_channels.insert(m_channels.end(),
-      new GsmMuxChannel(this,k,CONFIG_OVMS_HW_MODEM_MUXCHANNEL_SIZE));
+      new GsmMuxChannel(this,k,CONFIG_OVMS_HW_CELLULAR_MODEM_MUXCHANNEL_SIZE));
     }
   StartChannel(0);
   m_state = DlciOpening;

@@ -102,10 +102,10 @@ void powermgmt::Ticker1(std::string event, void* data)
         m_wifi_off = false;
         }
 #endif
-#ifdef CONFIG_OVMS_COMP_MODEM
+#ifdef CONFIG_OVMS_COMP_CELLULAR
       if (m_modem_off)
         {
-        MyPeripherals->m_modem->SetPowerMode(On);
+        MyPeripherals->m_cellular_modem->SetPowerMode(On);
         m_modem_off = false;
         }
 #endif
@@ -138,15 +138,15 @@ void powermgmt::Ticker1(std::string event, void* data)
     }
 #endif
 
-#ifdef CONFIG_OVMS_COMP_MODEM
+#ifdef CONFIG_OVMS_COMP_CELLULAR
   if (m_modemoff_delay && m_notcharging_timer > m_modemoff_delay*60*60) // hours to seconds
     {
-    if (MyPeripherals->m_modem->GetPowerMode()==On)
+    if (MyPeripherals->m_cellular_modem->GetPowerMode()==On)
       {
-      ESP_LOGW(TAG,"Powering off modem");
+      ESP_LOGW(TAG,"Powering off cellular modem");
       MyEvents.SignalEvent("powermgmt.modem.off",NULL);
       vTaskDelay(500 / portTICK_PERIOD_MS); // make sure all notifications all transmitted before powerring down modem
-      MyPeripherals->m_modem->SetPowerMode(Off);
+      MyPeripherals->m_cellular_modem->SetPowerMode(Off);
       m_modem_off = true;
       }
     }
@@ -163,8 +163,8 @@ void powermgmt::Ticker1(std::string event, void* data)
 #ifdef CONFIG_OVMS_COMP_WIFI
       MyPeripherals->m_esp32wifi->SetPowerMode(Off);
 #endif
-#ifdef CONFIG_OVMS_COMP_MODEM
-      MyPeripherals->m_modem->SetPowerMode(Off);
+#ifdef CONFIG_OVMS_COMP_CELLULAR
+      MyPeripherals->m_cellular_modem->SetPowerMode(Off);
 #endif
 #ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
       MyPeripherals->m_mcp2515_swcan->SetPowerMode(Off);

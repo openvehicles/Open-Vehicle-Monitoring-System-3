@@ -271,10 +271,10 @@ void OvmsNetManager::RestartNetwork()
     MyPeripherals->m_esp32wifi->Restart();
 #endif // #ifdef CONFIG_OVMS_COMP_WIFI
 
-#ifdef CONFIG_OVMS_COMP_MODEM
-  if (MyPeripherals && MyPeripherals->m_modem)
-    MyPeripherals->m_modem->Restart();
-#endif // CONFIG_OVMS_COMP_MODEM
+#ifdef CONFIG_OVMS_COMP_CELLULAR
+  if (MyPeripherals && MyPeripherals->m_cellular_modem)
+    MyPeripherals->m_cellular_modem->Restart();
+#endif // CONFIG_OVMS_COMP_CELLULAR
   }
 
 void OvmsNetManager::WifiConnect()
@@ -658,10 +658,10 @@ void OvmsNetManager::SetNetType(std::string type)
   else if (type == "modem")
     {
     StdMetrics.ms_m_net_type->SetValue(type);
-#ifdef CONFIG_OVMS_COMP_MODEM
-    if (MyPeripherals && MyPeripherals->m_modem)
-      MyPeripherals->m_modem->UpdateNetMetrics();
-#endif // CONFIG_OVMS_COMP_MODEM
+#ifdef CONFIG_OVMS_COMP_CELLULAR
+    if (MyPeripherals && MyPeripherals->m_cellular_modem)
+      MyPeripherals->m_cellular_modem->UpdateNetMetrics();
+#endif // CONFIG_OVMS_COMP_CELLULAR
     }
   else
     {

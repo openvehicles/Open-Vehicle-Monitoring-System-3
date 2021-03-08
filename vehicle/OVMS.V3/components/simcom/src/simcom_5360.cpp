@@ -45,7 +45,7 @@ class simcom5360Init
 simcom5360Init::simcom5360Init()
   {
   ESP_LOGI(TAG, "Registering SIM5360 modem driver (4650)");
-  MyModemFactory.RegisterModemDriver<simcom5360>(model,name);
+  MyCellularModemFactory.RegisterCellularModemDriver<simcom5360>(model,name);
   }
 
 simcom5360::simcom5360()
