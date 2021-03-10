@@ -114,6 +114,15 @@
 #ifdef HAVE_CURVE448
     #include <wolfssl/wolfcrypt/curve448.h>
 #endif
+#ifndef WOLFSSL_NO_DEF_TICKET_ENC_CB
+    #if defined(HAVE_CHACHA) && defined(HAVE_POLY1305) && \
+        !defined(WOLFSSL_TICKET_ENC_AES128_GCM) && \
+        !defined(WOLFSSL_TICKET_ENC_AES256_GCM)
+        #include <wolfssl/wolfcrypt/chacha20_poly1305.h>
+    #else
+        #include <wolfssl/wolfcrypt/aes.h>
+    #endif
+#endif
 
 #include <wolfssl/wolfcrypt/wc_encrypt.h>
 #include <wolfssl/wolfcrypt/hash.h>
@@ -199,7 +208,11 @@
         #endif
     #endif
     #if defined(OPENSSL_EXTRA) && !defined(NO_FILESYSTEM)
-        #include <unistd.h>      /* for close of BIO */
+        #ifdef FUSION_RTOS
+           #include <fclunistd.h>
+        #else
+            #include <unistd.h>      /* for close of BIO */
+        #endif
     #endif
 #endif
 
@@ -1585,6 +1598,26 @@ enum Misc {
     #define SESSION_TICKET_HINT_DEFAULT 300
 #endif
 
+#if !defined(WOLFSSL_NO_DEF_TICKET_ENC_CB) && !defined(WOLFSSL_NO_SERVER)
+    /* Check chosen encryption is available. */
+    #if !(defined(HAVE_CHACHA) && defined(HAVE_POLY1305)) && \
+        defined(WOLFSSL_TICKET_ENC_CHACHA20_POLY1305)
+        #error "ChaCha20-Poly1305 not availble for default ticket encryption"
+    #endif
+    #if !defined(HAVE_AESGCM) && (defined(WOLFSSL_TICKET_ENC_AES128_GCM) || \
+        defined(WOLFSSL_TICKET_ENC_AES256_GCM))
+        #error "AES-GCM not availble for default ticket encryption"
+    #endif
+
+    #ifndef WOLFSSL_TICKET_KEY_LIFETIME
+        /* Default lifetime is 1 hour from issue of first ticket with key. */
+        #define WOLFSSL_TICKET_KEY_LIFETIME       (60 * 60)
+    #endif
+    #if WOLFSSL_TICKET_KEY_LIFETIME <= SESSION_TICKET_HINT_DEFAULT
+        #error "Ticket Key lifetime must be longer than ticket life hint."
+    #endif
+#endif
+
 
 /* don't use extra 3/4k stack space unless need to */
 #ifdef HAVE_NTRU
@@ -2020,8 +2053,8 @@ struct WOLFSSL_CERT_MANAGER {
     byte            ocspSendNonce:1;       /* send the OCSP nonce ? */
     byte            ocspUseOverrideURL:1;  /* ignore cert responder, override */
     byte            ocspStaplingEnabled:1; /* is OCSP Stapling on ? */
-#if !defined(NO_WOLFSSL_CLIENT) && (defined(HAVE_CERTIFICATE_STATUS_REQUEST) \
-                               ||  defined(HAVE_CERTIFICATE_STATUS_REQUEST_V2))
+#if defined(HAVE_CERTIFICATE_STATUS_REQUEST) \
+||  defined(HAVE_CERTIFICATE_STATUS_REQUEST_V2)
     byte            ocspMustStaple:1;      /* server must respond with staple */
 #endif
 
@@ -2356,7 +2389,7 @@ typedef struct {
     union {
         OcspRequest ocsp;
     } request;
-#if defined(WOLFSSL_TLS13) && !defined(NO_WOLFSSL_SERVER)
+#if defined(WOLFSSL_TLS13)
     buffer response;
 #endif
 } CertificateStatusRequest;
@@ -2472,6 +2505,28 @@ typedef struct SessionTicket {
     byte*  data;
     word16 size;
 } SessionTicket;
+
+#if !defined(WOLFSSL_NO_DEF_TICKET_ENC_CB) && !defined(WOLFSSL_NO_SERVER)
+
+/* Data passed to default SessionTicket enc/dec callback. */
+typedef struct TicketEncCbCtx {
+    /* Name for this context. */
+    byte name[WOLFSSL_TICKET_NAME_SZ];
+    /* Current keys - current and next. */
+    byte key[2][WOLFSSL_TICKET_KEY_SZ];
+    /* Expirary date of keys. */
+    word32 expirary[2];
+    /* Random number generator to use for generating name, keys and IV. */
+    WC_RNG rng;
+#ifndef SINGLE_THREADED
+    /* Mutex for access to changing keys. */
+    wolfSSL_Mutex mutex;
+#endif
+    /* Pointer back to SSL_CTX. */
+    WOLFSSL_CTX* ctx;
+} TicketEncCbCtx;
+
+#endif /* !WOLFSSL_NO_DEF_TICKET_ENC_CB && !WOLFSSL_NO_SERVER */
 
 WOLFSSL_LOCAL int  TLSX_UseSessionTicket(TLSX** extensions,
                                              SessionTicket* ticket, void* heap);
@@ -2625,6 +2680,10 @@ WOLFSSL_LOCAL int DeriveMasterSecret(WOLFSSL* ssl);
 WOLFSSL_LOCAL int DeriveResumptionPSK(WOLFSSL* ssl, byte* nonce, byte nonceLen, byte* secret);
 WOLFSSL_LOCAL int DeriveResumptionSecret(WOLFSSL* ssl, byte* key);
 
+WOLFSSL_LOCAL int Tls13_Exporter(WOLFSSL* ssl, unsigned char *out, size_t outLen,
+        const char *label, size_t labelLen,
+        const unsigned char *context, size_t contextLen);
+
 /* The key update request values for KeyUpdate message. */
 enum KeyUpdateRequest {
     update_not_requested,
@@ -2719,8 +2778,11 @@ struct WOLFSSL_CTX {
     byte        minDowngrade;     /* minimum downgrade version */
     byte        haveEMS:1;        /* have extended master secret extension */
     byte        useClientOrder:1; /* Use client's cipher preference order */
+#if defined(HAVE_SESSION_TICKET)
+    byte        noTicketTls12:1;  /* TLS 1.2 server won't send ticket */
+#endif
 #ifdef WOLFSSL_TLS13
-    byte        noTicketTls13:1;  /* Server won't create new Ticket */
+    byte        noTicketTls13:1;  /* TLS 1.3 Server won't create new Ticket */
     byte        noPskDheKe:1;     /* Don't use (EC)DHE with PSK */
 #endif
     byte        mutualAuth:1;     /* Mutual authentication required */
@@ -2865,6 +2927,9 @@ struct WOLFSSL_CTX {
         SessionTicketEncCb ticketEncCb;   /* enc/dec session ticket Cb */
         void*              ticketEncCtx;  /* session encrypt context */
         int                ticketHint;    /* ticket hint in seconds */
+        #ifndef WOLFSSL_NO_DEF_TICKET_ENC_CB
+            TicketEncCbCtx ticketKeyCtx;
+        #endif
     #endif
     #ifdef HAVE_SUPPORTED_CURVES
         byte userCurves;                  /* indicates user called wolfSSL_CTX_UseSupportedCurve */
@@ -3476,6 +3541,7 @@ typedef struct Options {
     word16            createTicket:1;     /* Server to create new Ticket */
     word16            useTicket:1;        /* Use Ticket not session cache */
     word16            rejectTicket:1;     /* Callback rejected ticket */
+    word16            noTicketTls12:1;    /* TLS 1.2 server won't send ticket */
 #ifdef WOLFSSL_TLS13
     word16            noTicketTls13:1;    /* Server won't create new Ticket */
 #endif
@@ -3587,6 +3653,9 @@ typedef struct Arrays {
     byte            sessionIDSz;
 #ifdef WOLFSSL_TLS13
     byte            secret[SECRET_LEN];
+#endif
+#ifdef HAVE_KEYING_MATERIAL
+    byte            exporterSecret[WC_MAX_DIGEST_SIZE];
 #endif
     byte            masterSecret[SECRET_LEN];
 #if defined(WOLFSSL_RENESAS_TSIP_TLS) && \
@@ -4651,7 +4720,8 @@ typedef struct CipherSuiteInfo {
 #endif
     byte cipherSuite0;
     byte cipherSuite;
-#if defined(OPENSSL_ALL) || defined(WOLFSSL_QT)
+#if defined(OPENSSL_ALL) || defined(WOLFSSL_QT) || \
+    defined(WOLFSSL_HAPROXY) || defined(WOLFSSL_NGINX)
     byte minor;
     byte major;
 #endif

@@ -2919,6 +2919,7 @@ int wc_CheckPrivateKey(const byte* privKey, word32 privKeySz,
     int ret;
     (void)privKeySz;
     (void)pubKeySz;
+    (void)ks;
 
     if (privKey == NULL || pubKey == NULL) {
         return BAD_FUNC_ARG;
@@ -5602,9 +5603,10 @@ int wc_OBJ_sn2nid(const char *sn)
         {WOLFSSL_ORGUNIT_NAME, NID_organizationalUnitName},
         {WOLFSSL_EMAIL_ADDR, NID_emailAddress},
         {NULL, -1}};
-
     int i;
     #ifdef HAVE_ECC
+    char curveName[16]; /* Same as MAX_CURVE_NAME_SZ but can't include that
+                         * symbol in this file */
     int eccEnum;
     #endif
     WOLFSSL_ENTER("OBJ_sn2nid");
@@ -5617,8 +5619,11 @@ int wc_OBJ_sn2nid(const char *sn)
     /* Nginx uses this OpenSSL string. */
     if (XSTRNCMP(sn, "prime256v1", 10) == 0)
         sn = "SECP256R1";
-    if (XSTRNCMP(sn, "secp384r1", 10) == 0)
-        sn = "SECP384R1";
+    /* OpenSSL allows lowercase curve names */
+    for (i = 0; i < (int)(sizeof(curveName) - 1) && *sn; i++) {
+        curveName[i] = (char)XTOUPPER(*sn++);
+    }
+    curveName[i] = '\0';
     /* find based on name and return NID */
     for (i = 0;
 #ifndef WOLFSSL_ECC_CURVE_STATIC
@@ -5627,7 +5632,7 @@ int wc_OBJ_sn2nid(const char *sn)
          ecc_sets[i].size != 0;
 #endif
          i++) {
-        if (XSTRNCMP(sn, ecc_sets[i].name, ECC_MAXNAME) == 0) {
+        if (XSTRNCMP(curveName, ecc_sets[i].name, ECC_MAXNAME) == 0) {
             eccEnum = ecc_sets[i].id;
             /* Convert enum value in ecc_curve_id to OpenSSL NID */
             return EccEnumToNID(eccEnum);
@@ -7293,7 +7298,6 @@ static int ConfirmSignature(SignatureCtx* sigCtx,
                 case DSAk:
                 {
                     word32 idx = 0;
-                    mp_int r, s;
 
                     if (sigSz < DSA_SIG_SIZE) {
                         WOLFSSL_MSG("Verify Signature is too small");
@@ -7316,7 +7320,9 @@ static int ConfirmSignature(SignatureCtx* sigCtx,
                         goto exit_cs;
                     }
                     if (sigSz != DSA_SIG_SIZE) {
+                #ifdef HAVE_ECC
                         /* Try to parse it as the contents of a bitstring */
+                        mp_int r, s;
                         idx = 0;
                         if (DecodeECC_DSA_Sig(sig + idx, sigSz - idx,
                                               &r, &s) != 0) {
@@ -7335,6 +7341,11 @@ static int ConfirmSignature(SignatureCtx* sigCtx,
                         }
                         mp_free(&r);
                         mp_free(&s);
+                #else
+                        WOLFSSL_MSG("DSA Sig is in unrecognized or "
+                                    "incorrect format");
+                        ERROR_OUT(ASN_SIG_CONFIRM_E, exit_cs);
+                #endif
                     }
                     else {
                         XMEMCPY(sigCtx->sigCpy, sig, DSA_SIG_SIZE);
@@ -9903,18 +9914,18 @@ int ParseCertRelative(DecodedCert* cert, int type, int verify, void* cm)
                     }
                 }
             }
-            #ifdef HAVE_OCSP
-            if (verify != NO_VERIFY && type != CA_TYPE &&
-                                                    type != TRUSTED_PEER_TYPE) {
-                if (cert->ca) {
-                    /* Need the CA's public key hash for OCSP */
-                    XMEMCPY(cert->issuerKeyHash, cert->ca->subjectKeyHash,
-                                                                    KEYID_SIZE);
-                }
-
-            }
-            #endif /* HAVE_OCSP */
         }
+
+        #ifdef HAVE_OCSP
+        if (verify != NO_VERIFY && type != CA_TYPE &&
+                                                type != TRUSTED_PEER_TYPE) {
+            if (cert->ca) {
+                /* Need the CA's public key hash for OCSP */
+                XMEMCPY(cert->issuerKeyHash, cert->ca->subjectKeyHash,
+                                                                KEYID_SIZE);
+            }
+        }
+        #endif /* HAVE_OCSP */
     }
 #if defined(WOLFSSL_RENESAS_TSIP)
     /* prepare for TSIP TLS cert verification API use */
@@ -13108,7 +13119,19 @@ static int wc_EncodeName(EncodedName* name, const char* nameStr, char nameType,
 }
 
 
-#if defined(OPENSSL_EXTRA) || defined(WOLFSSL_WPAS_SMALL)
+
+
+/* Guarded by either
+ * A) WOLFSSL_WPAS_SMALL is on or
+ * B) (OPENSSL_EXTRA or OPENSSL_EXTRA_X509_SMALL) + WOLFSSL_CERT_GEN +
+ *    (WOLFSSL_CERT_REQ or WOLFSSL_CERT_EXT or OPENSSL_EXTRA) has been
+ *    defined
+ */
+#if defined(WOLFSSL_WPAS_SMALL) || \
+    (defined(OPENSSL_EXTRA) || defined(OPENSSL_EXTRA_X509_SMALL)) && \
+    defined(WOLFSSL_CERT_GEN) && \
+    (defined(WOLFSSL_CERT_REQ) || defined(WOLFSSL_CERT_EXT) || \
+     defined(OPENSSL_EXTRA))
 /* Converts from NID_* value to wolfSSL value if needed */
 static int ConvertNIDToWolfSSL(int nid)
 {
@@ -15951,8 +15974,9 @@ int DecodeECC_DSA_Sig_Bin(const byte* sig, word32 sigLen, byte* r, word32* rLen,
 
     return ret;
 }
+#endif
 
-
+#if defined(HAVE_ECC) || !defined(NO_DSA)
 int DecodeECC_DSA_Sig(const byte* sig, word32 sigLen, mp_int* r, mp_int* s)
 {
     word32 idx = 0;
@@ -15985,8 +16009,9 @@ int DecodeECC_DSA_Sig(const byte* sig, word32 sigLen, mp_int* r, mp_int* s)
 
     return 0;
 }
+#endif
 
-
+#ifdef HAVE_ECC
 int wc_EccPrivateKeyDecode(const byte* input, word32* inOutIdx, ecc_key* key,
                         word32 inSz)
 {
@@ -16598,13 +16623,15 @@ int wc_EccPrivateKeyToDer(ecc_key* key, byte* output, word32 inLen)
 }
 
 #ifdef HAVE_PKCS8
-/* Write only private ecc key to unencrypted PKCS#8 format.
+/* Write only private ecc key or both private and public parts to unencrypted
+ * PKCS#8 format.
  *
  * If output is NULL, places required PKCS#8 buffer size in outLen and
  * returns LENGTH_ONLY_E.
  *
  * return length on success else < 0 */
-int wc_EccPrivateKeyToPKCS8(ecc_key* key, byte* output, word32* outLen)
+static int eccToPKCS8(ecc_key* key, byte* output, word32* outLen,
+        int includePublic)
 {
     int ret, tmpDerSz;
     int algoID = 0;
@@ -16617,7 +16644,7 @@ int wc_EccPrivateKeyToPKCS8(ecc_key* key, byte* output, word32* outLen)
     byte* tmpDer = NULL;
 #endif
 
-    if (key == NULL || outLen == NULL)
+    if (key == NULL || key->dp == NULL || outLen == NULL)
         return BAD_FUNC_ARG;
 
     /* set algoID, get curve OID */
@@ -16634,7 +16661,7 @@ int wc_EccPrivateKeyToPKCS8(ecc_key* key, byte* output, word32* outLen)
 #endif
     XMEMSET(tmpDer, 0, ECC_BUFSIZE);
 
-    tmpDerSz = wc_BuildEccKeyDer(key, tmpDer, ECC_BUFSIZE, 0);
+    tmpDerSz = wc_BuildEccKeyDer(key, tmpDer, ECC_BUFSIZE, includePublic);
     if (tmpDerSz < 0) {
     #ifndef WOLFSSL_NO_MALLOC
         XFREE(tmpDer, key->heap, DYNAMIC_TYPE_TMP_BUFFER);
@@ -16683,6 +16710,23 @@ int wc_EccPrivateKeyToPKCS8(ecc_key* key, byte* output, word32* outLen)
 
     *outLen = ret;
     return ret;
+}
+
+/* Write only private ecc key to unencrypted PKCS#8 format.
+ *
+ * return length on success else < 0 */
+int wc_EccPrivateKeyToPKCS8(ecc_key* key, byte* output, word32* outLen)
+{
+    return eccToPKCS8(key, output, outLen, 0);
+}
+
+/* Write both private and public ecc keys to unencrypted PKCS#8 format.
+ *
+ * return length on success else < 0 */
+int wc_EccKeyToPKCS8(ecc_key* key, byte* output,
+                     word32* outLen)
+{
+    return eccToPKCS8(key, output, outLen, 1);
 }
 #endif /* HAVE_PKCS8 */
 #endif /* HAVE_ECC_KEY_EXPORT && !NO_ASN_CRYPT */
@@ -18460,6 +18504,291 @@ int wc_ParseCertPIV(wc_CertPIV* piv, const byte* buf, word32 totalSz)
 }
 
 #endif /* WOLFSSL_CERT_PIV */
+
+
+
+#ifdef HAVE_SMIME
+
+/*****************************************************************************
+* wc_MIME_parse_headers - Reads the char array in and parses out MIME headers
+* and parameters into headers.  Will continue until in has no more content.
+*
+* RETURNS:
+* returns zero on success, non-zero on error.
+*/
+int wc_MIME_parse_headers(char* in, int inLen, MimeHdr** headers)
+{
+    MimeHdr* nextHdr = NULL;
+    MimeHdr* curHdr = NULL;
+    MimeParam* nextParam = NULL;
+    size_t start = 0;
+    size_t end = 0;
+    char* nameAttr = NULL;
+    char* bodyVal = NULL;
+    MimeTypes mimeType = MIME_HDR;
+    MimeStatus mimeStatus = MIME_NAMEATTR;
+    int ret = -1;
+    size_t pos = 0;
+    size_t lineLen = 0;
+    char* curLine = NULL;
+    char* ptr = NULL;
+
+    if (in == NULL || inLen <= 0 || in[inLen] != '\0' || headers == NULL) {
+        ret = BAD_FUNC_ARG;
+        goto error;
+    }
+    nextHdr = (MimeHdr*)XMALLOC(sizeof(MimeHdr), NULL, DYNAMIC_TYPE_PKCS7);
+    nextParam = (MimeParam*)XMALLOC(sizeof(MimeParam), NULL,
+                                    DYNAMIC_TYPE_PKCS7);
+    if (nextHdr == NULL || nextParam == NULL) {
+        ret = MEMORY_E;
+        goto error;
+    }
+    XMEMSET(nextHdr, 0, (word32)sizeof(MimeHdr));
+    XMEMSET(nextParam, 0, (word32)sizeof(MimeParam));
+
+    curLine = XSTRTOK(in, "\r\n", &ptr);
+    if (curLine == NULL) {
+        ret = ASN_PARSE_E;
+        goto error;
+    }
+
+    while (curLine != NULL) {
+        /* Leftover from previous line, add params to previous header. */
+        if (curLine[0] == ' ' && curHdr) {
+            mimeType = MIME_PARAM;
+        }
+        else {
+            mimeType = MIME_HDR;
+        }
+        start = end = 0;
+        lineLen = XSTRLEN(curLine);
+
+        for (pos = 0; pos < lineLen; pos++) {
+            char cur = curLine[pos];
+
+            if (mimeStatus == MIME_NAMEATTR && ((cur == ':' &&
+                mimeType == MIME_HDR) || (cur == '=' &&
+                mimeType == MIME_PARAM))) {
+                mimeStatus = MIME_BODYVAL;
+                end = pos-1;
+                ret = wc_MIME_header_strip(curLine, &nameAttr, start, end);
+                if (ret) {
+                    goto error;
+                }
+                start = pos+1;
+            }
+            else if (mimeStatus == MIME_BODYVAL && cur == ';') {
+                end = pos-1;
+                ret = wc_MIME_header_strip(curLine, &bodyVal, start, end);
+                if (ret) {
+                    goto error;
+                }
+                if (mimeType == MIME_HDR) {
+                    nextHdr->name = nameAttr;
+                    nextHdr->body = bodyVal;
+                    nextHdr->next = curHdr;
+                    curHdr = nextHdr;
+                    nextHdr = (MimeHdr*)XMALLOC(sizeof(MimeHdr), NULL,
+                                                DYNAMIC_TYPE_PKCS7);
+                    if (nextHdr == NULL) {
+                        ret = MEMORY_E;
+                        goto error;
+                    }
+                    XMEMSET(nextHdr, 0, (word32)sizeof(MimeHdr));
+                }
+                else {
+                    nextParam->attribute = nameAttr;
+                    nextParam->value = bodyVal;
+                    nextParam->next = curHdr->params;
+                    curHdr->params = nextParam;
+                    nextParam = (MimeParam*)XMALLOC(sizeof(MimeParam), NULL,
+                                                    DYNAMIC_TYPE_PKCS7);
+                    if (nextParam == NULL) {
+                        ret = MEMORY_E;
+                        goto error;
+                    }
+                    XMEMSET(nextParam, 0, (word32)sizeof(MimeParam));
+                }
+                mimeType = MIME_PARAM;
+                mimeStatus = MIME_NAMEATTR;
+                start = pos+1;
+            }
+        }
+
+        end = lineLen-1;
+        /* Omit newline characters. */
+        while ((curLine[end] == '\r' || curLine[end] == '\n') && end > 0) {
+            end--;
+        }
+        if (end >= start && mimeStatus == MIME_BODYVAL) {
+            ret = wc_MIME_header_strip(curLine, &bodyVal, start, end);
+            if (ret) {
+                goto error;
+            }
+            if (mimeType == MIME_HDR) {
+                nextHdr->name = nameAttr;
+                nextHdr->body = bodyVal;
+                nextHdr->next = curHdr;
+                curHdr = nextHdr;
+                nextHdr = (MimeHdr*)XMALLOC(sizeof(MimeHdr), NULL,
+                                            DYNAMIC_TYPE_PKCS7);
+                if (nextHdr == NULL) {
+                    ret = MEMORY_E;
+                    goto error;
+                }
+                XMEMSET(nextHdr, 0, (word32)sizeof(MimeHdr));
+            } else {
+                nextParam->attribute = nameAttr;
+                nextParam->value = bodyVal;
+                nextParam->next = curHdr->params;
+                curHdr->params = nextParam;
+                nextParam = (MimeParam*)XMALLOC(sizeof(MimeParam), NULL,
+                                                DYNAMIC_TYPE_PKCS7);
+                if (nextParam == NULL) {
+                    ret = MEMORY_E;
+                    goto error;
+                }
+                XMEMSET(nextParam, 0, (word32)sizeof(MimeParam));
+            }
+        }
+
+        curLine = XSTRTOK(NULL, "\r\n", &ptr);
+        mimeStatus = MIME_NAMEATTR;
+    }
+
+    *headers = curHdr;
+    XFREE(nextHdr, NULL, DYNAMIC_TYPE_PKCS7);
+    XFREE(nextParam, NULL, DYNAMIC_TYPE_PKCS7);
+
+    return 0;
+
+error:
+    wc_MIME_free_hdrs(curHdr);
+    wc_MIME_free_hdrs(nextHdr);
+    XFREE(nameAttr, NULL, DYNAMIC_TYPE_PKCS7);
+    XFREE(bodyVal, NULL, DYNAMIC_TYPE_PKCS7);
+    XFREE(nextParam, NULL, DYNAMIC_TYPE_PKCS7);
+
+    return ret;
+}
+
+/*****************************************************************************
+* wc_MIME_header_strip - Reads the string in from indices start to end, strips
+* out disallowed/separator characters and places the rest into *out.
+*
+* RETURNS:
+* returns zero on success, non-zero on error.
+*/
+int wc_MIME_header_strip(char* in, char** out, size_t start, size_t end)
+{
+    size_t inPos = start;
+    size_t outPos = 0;
+    size_t inLen = 0;
+
+    if (end < start || in == NULL || out == NULL) {
+        return BAD_FUNC_ARG;
+    }
+
+    inLen = XSTRLEN(in);
+    if (start > inLen || end > inLen) {
+        return BAD_FUNC_ARG;
+    }
+
+    *out = (char*)XMALLOC(((end-start)+2)*sizeof(char), NULL,
+                          DYNAMIC_TYPE_PKCS7);
+    if (*out == NULL) {
+        return MEMORY_E;
+    }
+
+    while (inPos <= end) {
+        if (in[inPos] >= MIME_HEADER_ASCII_MIN && in[inPos] <=
+            MIME_HEADER_ASCII_MAX && in[inPos] != ';' && in[inPos] != '\"') {
+            (*out)[outPos] = in[inPos];
+            outPos++;
+        }
+        inPos++;
+    }
+    (*out)[outPos] = '\0';
+
+    return 0;
+}
+
+/*****************************************************************************
+* wc_MIME_find_header_name - Searches through all given headers until a header with
+* a name matching the provided name is found.
+*
+* RETURNS:
+* returns a pointer to the found header, if no match was found, returns NULL.
+*/
+MimeHdr* wc_MIME_find_header_name(const char* name, MimeHdr* header)
+{
+    size_t len = XSTRLEN(name);
+
+    while (header) {
+        if (!XSTRNCMP(name, header->name, len)) {
+            return header;
+        }
+        header = header->next;
+    }
+
+    return header;
+}
+
+/*****************************************************************************
+* wc_MIME_find_param_attr - Searches through all parameters until a parameter
+* with a attribute matching the provided attribute is found.
+*
+* RETURNS:
+* returns a pointer to the found parameter, if no match was found,
+* returns NULL.
+*/
+MimeParam* wc_MIME_find_param_attr(const char* attribute,
+                                    MimeParam* param)
+{
+    size_t len = XSTRLEN(attribute);
+
+    while (param) {
+        if (!XSTRNCMP(attribute, param->attribute, len)) {
+            return param;
+        }
+        param = param->next;
+    }
+
+    return param;
+}
+
+/*****************************************************************************
+* wc_MIME_free_hdrs - Frees all MIME headers, parameters and strings starting from
+* the provided header pointer.
+*
+* RETURNS:
+* returns zero on success, non-zero on error.
+*/
+int wc_MIME_free_hdrs(MimeHdr* head)
+{
+    MimeHdr* curHdr = NULL;
+    MimeParam* curParam = NULL;
+
+    while (head) {
+        while (head->params) {
+            curParam = head->params;
+            head->params = head->params->next;
+            XFREE(curParam->attribute, NULL, DYNAMIC_TYPE_PKCS7);
+            XFREE(curParam->value, NULL, DYNAMIC_TYPE_PKCS7);
+            XFREE(curParam, NULL, DYNAMIC_TYPE_PKCS7);
+        }
+        curHdr = head;
+        head = head->next;
+        XFREE(curHdr->name, NULL, DYNAMIC_TYPE_PKCS7);
+        XFREE(curHdr->body, NULL, DYNAMIC_TYPE_PKCS7);
+        XFREE(curHdr, NULL, DYNAMIC_TYPE_PKCS7);
+    }
+
+    return 0;
+}
+
+#endif /* HAVE_SMIME */
 
 
 #undef ERROR_OUT

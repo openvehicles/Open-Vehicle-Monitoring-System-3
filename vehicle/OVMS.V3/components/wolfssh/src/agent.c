@@ -173,6 +173,33 @@ static int SendSuccess(WOLFSSH_AGENT_CTX* agent)
 }
 
 
+#if 0
+static int SendRequestIdentities(WOLFSSH_AGENT_CTX* agent)
+{
+    int ret = WS_SUCCESS;
+    WLOG_ENTER();
+
+    if (agent == NULL)
+        ret = WS_BAD_ARGUMENT;
+
+    if (ret == WS_SUCCESS)
+        ret = PrepareMessage(agent, MSG_ID_SZ);
+
+    if (ret == WS_SUCCESS) {
+        agent->msg[agent->msgIdx++] = MSGID_AGENT_REQUEST_IDENTITIES;
+        ret = BundleMessage(agent, MSG_ID_SZ);
+    }
+
+    if (ret == WS_SUCCESS) {
+        DUMP(agent->msg, agent->msgSz);
+    }
+
+    WLOG_LEAVE(ret);
+    return ret;
+}
+#endif
+
+
 static int SendIdentitiesAnswer(WOLFSSH_AGENT_CTX* agent)
 {
     WOLFSSH_AGENT_ID* id;
@@ -379,6 +406,7 @@ static int PostUnlock(WOLFSSH_AGENT_CTX* agent,
 }
 
 
+#ifndef WOLFSSH_NO_RSA
 static int PostAddRsaId(WOLFSSH_AGENT_CTX* agent,
         byte keyType, byte* key, word32 keySz,
         word32 nSz, word32 eSz, word32 dSz,
@@ -457,8 +485,10 @@ static int PostAddRsaId(WOLFSSH_AGENT_CTX* agent,
     WLOG_LEAVE(ret);
     return ret;
 }
+#endif
 
 
+#ifndef WOLFSSH_NO_ECDSA
 static int PostAddEcdsaId(WOLFSSH_AGENT_CTX* agent,
         byte keyType, byte* key, word32 keySz,
         word32 curveNameSz, word32 qSz, word32 dSz,
@@ -525,6 +555,7 @@ static int PostAddEcdsaId(WOLFSSH_AGENT_CTX* agent,
     WLOG_LEAVE(ret);
     return ret;
 }
+#endif
 
 
 static int PostRemoveId(WOLFSSH_AGENT_CTX* agent,
@@ -610,159 +641,221 @@ static int PostRequestIds(WOLFSSH_AGENT_CTX* agent)
 }
 
 
+static WOLFSSH_AGENT_ID* FindKeyId(WOLFSSH_AGENT_ID* id,
+        const byte* keyBlob, word32 keyBlobSz)
+{
+    int ret;
+    wc_Sha256 sha;
+    byte digest[WC_SHA256_DIGEST_SIZE];
+
+    ret = wc_InitSha256(&sha);
+    if (ret == 0)
+        ret = wc_Sha256Update(&sha, keyBlob, keyBlobSz);
+    if (ret == 0) {
+        ret = wc_Sha256Final(&sha, digest);
+        ret = (ret == 0) ? WS_SUCCESS : WS_CRYPTO_FAILED;
+    }
+
+    if (ret == WS_SUCCESS) {
+        while (id != NULL &&
+                WMEMCMP(digest, id, WC_SHA256_DIGEST_SIZE) != 0 &&
+                WMEMCMP(keyBlob, id->keyBlob, keyBlobSz)) {
+            id = id->next;
+        }
+    }
+
+    return id;
+}
+
+
+static int SignHashRsa(WOLFSSH_AGENT_KEY_RSA* rawKey, enum wc_HashType hashType,
+        const byte* digest, word32 digestSz, byte* sig, word32* sigSz,
+        WC_RNG* rng, void* heap)
+{
+    RsaKey key;
+    byte encSig[MAX_ENCODED_SIG_SZ];
+    int encSigSz;
+    int ret = 0;
+
+    wc_InitRsaKey(&key, heap);
+    mp_read_unsigned_bin(&key.n, rawKey->n, rawKey->nSz);
+    mp_read_unsigned_bin(&key.e, rawKey->e, rawKey->eSz);
+    mp_read_unsigned_bin(&key.d, rawKey->d, rawKey->dSz);
+    mp_read_unsigned_bin(&key.p, rawKey->p, rawKey->pSz);
+    mp_read_unsigned_bin(&key.q, rawKey->q, rawKey->qSz);
+    mp_read_unsigned_bin(&key.u, rawKey->iqmp, rawKey->iqmpSz);
+
+    encSigSz = wc_EncodeSignature(encSig, digest, digestSz,
+            wc_HashGetOID(hashType));
+    if (encSigSz <= 0) {
+        WLOG(WS_LOG_DEBUG, "Bad Encode Sig");
+        ret = WS_CRYPTO_FAILED;
+    }
+    else {
+        WLOG(WS_LOG_INFO, "Signing hash with RSA.");
+        *sigSz = wc_RsaSSL_Sign(encSig, encSigSz, sig, *sigSz, &key, rng);
+        if (*sigSz <= 0) {
+            WLOG(WS_LOG_DEBUG, "Bad RSA Sign");
+            ret = WS_RSA_E;
+        }
+    }
+
+    wc_FreeRsaKey(&key);
+    if (ret != 0)
+        ret = WS_RSA_E;
+
+    return ret;
+}
+
+
+static int SignHashEcc(WOLFSSH_AGENT_KEY_ECDSA* rawKey, int curveId,
+        const byte* digest, word32 digestSz,
+        byte* sig, word32* sigSz, WC_RNG* rng)
+{
+    ecc_key key;
+    int ret;
+
+    ret = wc_ecc_import_private_key_ex(rawKey->d, rawKey->dSz,
+            rawKey->q, rawKey->qSz, &key, curveId);
+
+    if (ret == 0) {
+        ret = wc_ecc_sign_hash(digest, digestSz, sig, sigSz, rng, &key);
+    }
+    if (ret != 0)  {
+        WLOG(WS_LOG_DEBUG, "SendKexDhReply: Bad ECDSA Sign");
+        ret = WS_ECC_E;
+    }
+    else {
+        byte r[MAX_ECC_BYTES + ECC_MAX_PAD_SZ];
+        word32 rSz = sizeof(r);
+        byte rPad;
+        byte s[MAX_ECC_BYTES + ECC_MAX_PAD_SZ];
+        word32 sSz = sizeof(s);
+        byte sPad;
+        int idx;
+
+        ret = wc_ecc_sig_to_rs(sig, *sigSz, r, &rSz, s, &sSz);
+        if (ret == 0) {
+            idx = 0;
+            rPad = (r[0] & 0x80) ? 1 : 0;
+            sPad = (s[0] & 0x80) ? 1 : 0;
+            *sigSz = (LENGTH_SZ * 2) + rSz + rPad + sSz + sPad;
+
+            c32toa(rSz + rPad, sig + idx);
+            idx += LENGTH_SZ;
+            if (rPad)
+                sig[idx++] = 0;
+            WMEMCPY(sig + idx, r, rSz);
+            idx += rSz;
+            c32toa(sSz + sPad, sig + idx);
+            idx += LENGTH_SZ;
+            if (sPad)
+                sig[idx++] = 0;
+            WMEMCPY(sig + idx, s, sSz);
+        }
+    }
+
+    wc_ecc_free(&key);
+    if (ret != 0)
+        ret = WS_ECC_E;
+
+    return ret;
+}
+
+
 static int PostSignRequest(WOLFSSH_AGENT_CTX* agent,
         byte* keyBlob, word32 keyBlobSz, byte* data, word32 dataSz,
         word32 flags)
 {
-    WOLFSSH_AGENT_ID* cur = NULL;
-    wc_Sha256 sha;
-    byte digest[WC_SHA256_DIGEST_SIZE];
-
+    WOLFSSH_AGENT_ID* id = NULL;
     int ret = WS_SUCCESS;
+    byte sig[256];
+    byte digest[WC_MAX_DIGEST_SIZE];
+    word32 sigSz = sizeof(sig);
+    word32 digestSz = sizeof(digest);
+    enum wc_HashType hashType;
+    int curveId = 0, signRsa = 0, signEcc = 0;
+
+    WLOG_ENTER();
+
+    (void)flags;
+    (void)curveId;
 
     if (agent == NULL || keyBlob == NULL || keyBlobSz == 0)
         ret = WS_BAD_ARGUMENT;
 
     if (ret == WS_SUCCESS) {
-        ret = wc_InitSha256(&sha);
-        if (ret == 0)
-            ret = wc_Sha256Update(&sha, keyBlob, keyBlobSz);
-        if (ret == 0) {
-            ret = wc_Sha256Final(&sha, digest);
-            ret = (ret == 0) ? WS_SUCCESS : WS_CRYPTO_FAILED;
-        }
-
-        if (ret == WS_SUCCESS) {
-            cur = agent->idList;
-            while (cur != NULL &&
-                    WMEMCMP(digest, cur->id, WC_SHA256_DIGEST_SIZE) != 0) {
-                cur = cur->next;
-            }
-
-            if (cur == NULL) {
-                WLOG(WS_LOG_AGENT, "Sign: Key not found.");
-                ret = WS_AGENT_NO_KEY_E;
-            }
+        if ((id = FindKeyId(agent->idList, keyBlob, keyBlobSz)) == NULL) {
+            WLOG(WS_LOG_AGENT, "Sign: Key not found.");
+            ret = WS_AGENT_NO_KEY_E;
         }
     }
 
     if (ret == WS_SUCCESS) {
-        if ((cur->keyType == ID_SSH_RSA && flags & AGENT_SIGN_RSA_SHA2_256) ||
-            cur->keyType == ID_ECDSA_SHA2_NISTP256) {
-
-            ret = wc_InitSha256(&sha);
-            if (ret == 0)
-                ret = wc_Sha256Update(&sha, data, dataSz);
-            if (ret == 0) {
-                ret = wc_Sha256Final(&sha, digest);
-                ret = (ret == 0) ? WS_SUCCESS : WS_CRYPTO_FAILED;
-            }
-        }
-        else
-            ret = WS_INVALID_ALGO_ID;
-    }
-
-    if (ret == WS_SUCCESS) {
-        byte sig[256];
-        int sigSz = sizeof(sig);
-
-        if (cur->keyType == ID_SSH_RSA) {
-            WOLFSSH_AGENT_KEY_RSA* key;
-            RsaKey rsa;
-            byte encSig[MAX_ENCODED_SIG_SZ];
-            int encSigSz;
-            enum wc_HashType hashType = WC_HASH_TYPE_NONE;
-
-            key = &cur->key.rsa;
-
-            if (flags & AGENT_SIGN_RSA_SHA2_256)
+        switch (id->keyType) {
+            #if !defined(WOLFSSH_NO_SSH_RSA_SHA2_256) || \
+                !defined(WOLFSSH_NO_SSH_RSA_SHA2_512)
+            case ID_SSH_RSA:
+                signRsa = 1;
+                #ifndef WOLFSSH_NO_SSH_RSA_SHA2_256
+                if (flags & AGENT_SIGN_RSA_SHA2_256)
+                    hashType = WC_HASH_TYPE_SHA256;
+                else
+                #endif
+                #ifndef WOLFSSH_NO_SSH_RSA_SHA2_512
+                if (flags & AGENT_SIGN_RSA_SHA2_512)
+                    hashType = WC_HASH_TYPE_SHA512;
+                else
+                #endif
+                    ret = WS_INVALID_ALGO_ID;
+                break;
+            #endif
+            #ifndef WOLFSSH_NO_ECDSA_SHA2_NISTP256
+            case ID_ECDSA_SHA2_NISTP256:
                 hashType = WC_HASH_TYPE_SHA256;
-            else if (flags & AGENT_SIGN_RSA_SHA2_512)
+                curveId = ECC_SECP256R1;
+                signEcc = 1;
+                break;
+            #endif
+            #ifndef WOLFSSH_NO_ECDSA_SHA2_NISTP384
+            case ID_ECDSA_SHA2_NISTP384:
+                hashType = WC_HASH_TYPE_SHA384;
+                curveId = ECC_SECP384R1;
+                signEcc = 1;
+                break;
+            #endif
+            #ifndef WOLFSSH_NO_ECDSA_SHA2_NISTP512
+            case ID_ECDSA_SHA2_NISTP521:
                 hashType = WC_HASH_TYPE_SHA512;
-
-            wc_InitRsaKey(&rsa, agent->heap);
-            mp_read_unsigned_bin(&rsa.n, key->n, key->nSz);
-            mp_read_unsigned_bin(&rsa.e, key->e, key->eSz);
-            mp_read_unsigned_bin(&rsa.d, key->d, key->dSz);
-            mp_read_unsigned_bin(&rsa.p, key->p, key->pSz);
-            mp_read_unsigned_bin(&rsa.q, key->q, key->qSz);
-            mp_read_unsigned_bin(&rsa.u, key->iqmp, key->iqmpSz);
-
-            encSigSz = wc_EncodeSignature(encSig, digest,
-                                          wc_HashGetDigestSize(hashType),
-                                          wc_HashGetOID(hashType));
-            if (encSigSz <= 0) {
-                WLOG(WS_LOG_DEBUG, "Bad Encode Sig");
-                ret = WS_CRYPTO_FAILED;
-            }
-            else {
-                WLOG(WS_LOG_INFO, "Signing hash with RSA.");
-                sigSz = wc_RsaSSL_Sign(encSig, encSigSz, sig, sizeof(sig),
-                                       &rsa, &agent->rng);
-                if (sigSz <= 0) {
-                    WLOG(WS_LOG_DEBUG, "Bad RSA Sign");
-                    ret = WS_RSA_E;
-                }
-            }
-
-            wc_FreeRsaKey(&rsa);
-            if (ret != 0)
-                ret = WS_RSA_E;
+                curveId = ECC_SECP521R1;
+                signEcc = 1;
+                break;
+            #endif
+            default:
+                ret = WS_INVALID_ALGO_ID;
         }
-        else if (cur->keyType == ID_ECDSA_SHA2_NISTP256) {
-            WOLFSSH_AGENT_KEY_ECDSA* key;
-            ecc_key ecc;
-            enum wc_HashType hashType = WC_HASH_TYPE_SHA256;
+    }
 
-            key = &cur->key.ecdsa;
-            ret = wc_ecc_import_private_key_ex(key->d, key->dSz,
-                    key->q, key->qSz,
-                    &ecc, ECC_SECP256R1);
+    if (ret == WS_SUCCESS) {
+        ret = wc_Hash(hashType, data, dataSz, digest, digestSz);
+        if (ret != 0)
+            ret = WS_CRYPTO_FAILED;
+    }
 
-            if (ret == 0) {
-                ret = wc_ecc_sign_hash(digest, wc_HashGetDigestSize(hashType),
-                        sig, (word32*)&sigSz, &agent->rng, &ecc);
-            }
-            if (ret != 0)  {
-                WLOG(WS_LOG_DEBUG, "SendKexDhReply: Bad ECDSA Sign");
-                ret = WS_ECC_E;
-            }
-            else {
-                byte r[MAX_ECC_BYTES + ECC_MAX_PAD_SZ];
-                word32 rSz = sizeof(r);
-                byte rPad;
-                byte s[MAX_ECC_BYTES + ECC_MAX_PAD_SZ];
-                word32 sSz = sizeof(s);
-                byte sPad;
-                int idx;
-
-                ret = wc_ecc_sig_to_rs(sig, sigSz, r, &rSz, s, &sSz);
-                if (ret == 0) {
-                    idx = 0;
-                    rPad = (r[0] & 0x80) ? 1 : 0;
-                    sPad = (s[0] & 0x80) ? 1 : 0;
-                    sigSz = (LENGTH_SZ * 2) + rSz + rPad + sSz + sPad;
-
-                    c32toa(rSz + rPad, sig + idx);
-                    idx += LENGTH_SZ;
-                    if (rPad)
-                        sig[idx++] = 0;
-                    WMEMCPY(sig + idx, r, rSz);
-                    idx += rSz;
-                    c32toa(sSz + sPad, sig + idx);
-                    idx += LENGTH_SZ;
-                    if (sPad)
-                        sig[idx++] = 0;
-                    WMEMCPY(sig + idx, s, sSz);
-                }
-            }
-
-            wc_ecc_free(&ecc);
-            if (ret != 0)
-                ret = WS_ECC_E;
-        }
-        else
-            ret = WS_INVALID_ALGO_ID;
+    if (ret == WS_SUCCESS) {
+#if !defined(WOLFSSH_NO_SSH_RSA_SHA2_256) || \
+    !defined(WOLFSSH_NO_SSH_RSA_SHA2_512)
+        if (signRsa)
+            ret = SignHashRsa(&id->key.rsa, hashType,
+                    digest, digestSz, sig, &sigSz, &agent->rng, agent->heap);
+#endif
+#if !defined(WOLFSSH_NO_ECDSA_SHA2_NISTP256) || \
+    !defined(WOLFSSH_NO_ECDSA_SHA2_NISTP384) || \
+    !defined(WOLFSSH_NO_ECDSA_SHA2_NISTP512)
+        if (signEcc)
+            ret = SignHashEcc(&id->key.ecdsa, curveId, digest, digestSz,
+                    sig, &sigSz, &agent->rng);
+#endif
 
         if (ret == WS_SUCCESS)
             ret = SendSignResponse(agent, sig, sigSz);
@@ -942,6 +1035,7 @@ static int DoAddIdentity(WOLFSSH_AGENT_CTX* agent,
 
         begin += sz;
         if (keyType == ID_SSH_RSA) {
+#ifndef WOLFSSH_NO_RSA
             byte* key;
             byte* scratch;
             word32 keySz, nSz, eSz, dSz, iqmpSz, pSz, qSz, commentSz;
@@ -983,10 +1077,12 @@ static int DoAddIdentity(WOLFSSH_AGENT_CTX* agent,
                 ret = PostAddRsaId(agent, keyType, key, keySz,
                         nSz, eSz, dSz, iqmpSz, pSz, qSz, commentSz);
             }
+#endif
         }
         else if (keyType == ID_ECDSA_SHA2_NISTP256 ||
                 keyType == ID_ECDSA_SHA2_NISTP384 ||
                 keyType == ID_ECDSA_SHA2_NISTP521) {
+#ifndef WOLFSSH_NO_ECDSA
             byte* key;
             byte* scratch;
             word32 keySz, curveNameSz, qSz, dSz, commentSz;
@@ -1015,6 +1111,7 @@ static int DoAddIdentity(WOLFSSH_AGENT_CTX* agent,
                 ret = PostAddEcdsaId(agent, keyType, key, keySz,
                         curveNameSz, qSz, dSz, commentSz);
             }
+#endif
         }
         else {
             ret = WS_PARSE_E;
@@ -1389,6 +1486,7 @@ void wolfSSH_AGENT_free(WOLFSSH_AGENT_CTX* agent)
     if (agent != NULL) {
         if (agent->msg != NULL)
             WFREE(agent->msg, agent->heap, DYNTYPE_AGENT_BUFFER);
+        wc_FreeRng(&agent->rng);
         wolfSSH_AGENT_ID_list_free(agent->idList, heap);
         WMEMSET(agent, 0, sizeof(*agent));
         WFREE(agent, heap, DYNTYPE_AGENT);
@@ -1695,8 +1793,14 @@ int wolfSSH_AGENT_SignRequest(WOLFSSH* ssh,
                 rxBuf, sizeof(rxBuf), ssh->agentCbCtx);
         if (rxSz > 0) {
             ret = DoMessage(ssh->agent, rxBuf, rxSz, &idx);
-            WMEMCPY(sig, ssh->agent->msg, ssh->agent->msgSz);
-            *sigSz = ssh->agent->msgSz;
+            if (ssh->agent->requestFailure) {
+                ssh->agent->requestFailure = 0;
+                ret = WS_AGENT_NO_KEY_E;
+            }
+            else {
+                WMEMCPY(sig, ssh->agent->msg, ssh->agent->msgSz);
+                *sigSz = ssh->agent->msgSz;
+            }
         }
         else ret = WS_AGENT_NO_KEY_E;
     }

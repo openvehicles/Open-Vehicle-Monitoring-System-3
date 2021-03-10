@@ -290,6 +290,19 @@ int wolfCrypt_Init(void)
     return ret;
 }
 
+#ifdef WOLFSSL_TRACK_MEMORY_VERBOSE
+long wolfCrypt_heap_peakAllocs_checkpoint(void) {
+    long ret = ourMemStats.peakAllocsTripOdometer;
+    ourMemStats.peakAllocsTripOdometer = ourMemStats.totalAllocs -
+        ourMemStats.totalDeallocs;
+    return ret;
+}
+long wolfCrypt_heap_peakBytes_checkpoint(void) {
+    long ret = ourMemStats.peakBytesTripOdometer;
+    ourMemStats.peakBytesTripOdometer = ourMemStats.currentBytes;
+    return ret;
+}
+#endif
 
 /* return success value is the same as wolfCrypt_Init */
 int wolfCrypt_Cleanup(void)
@@ -2150,7 +2163,7 @@ time_t pic32_time(time_t* timer)
 #ifdef MICROCHIP_TCPIP_V5
     DWORD sec = 0;
 #else
-    uint32_t sec = 0;
+    word32 sec = 0;
 #endif
     time_t localTime;
 
@@ -2173,8 +2186,8 @@ time_t pic32_time(time_t* timer)
 
 time_t deos_time(time_t* timer)
 {
-    const uint32_t systemTickTimeInHz = 1000000 / systemTickInMicroseconds();
-    uint32_t *systemTickPtr = systemTickPointer();
+    const word32 systemTickTimeInHz = 1000000 / systemTickInMicroseconds();
+    word32 *systemTickPtr = systemTickPointer();
 
     if (timer != NULL)
         *timer = *systemTickPtr/systemTickTimeInHz;
@@ -2450,6 +2463,54 @@ char* mystrnstr(const char* s1, const char* s2, unsigned int n)
     }
 
 #endif /* WOLFSSL_NUCLEUS_1_2 */
+
+#ifdef WOLFSSL_LINUXKM
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 12, 0)
+    /* adapted from kvrealloc() draft by Changli Gao, 2010-05-13 */
+    void *lkm_realloc(void *ptr, size_t newsize) {
+        void *nptr;
+        size_t oldsize;
+
+        if (unlikely(newsize == 0)) {
+            kvfree(ptr);
+            return ZERO_SIZE_PTR;
+        }
+
+        if (unlikely(ptr == NULL))
+            return kvmalloc(newsize, GFP_KERNEL);
+
+        if (is_vmalloc_addr(ptr)) {
+            /* no way to discern the size of the old allocation,
+             * because the kernel doesn't export find_vm_area().  if
+             * it did, we could then call get_vm_area_size() on the
+             * returned struct vm_struct.
+             */
+            return NULL;
+        } else {
+            struct page *page;
+
+            page = virt_to_head_page(ptr);
+            if (PageSlab(page) || PageCompound(page)) {
+                if (newsize < PAGE_SIZE)
+                    return krealloc(ptr, newsize, GFP_KERNEL);
+                oldsize = ksize(ptr);
+            } else {
+                oldsize = page->private;
+                if (newsize <= oldsize)
+                    return ptr;
+            }
+	}
+
+	nptr = kvmalloc(newsize, GFP_KERNEL);
+	if (nptr != NULL) {
+            memcpy(nptr, ptr, oldsize);
+            kvfree(ptr);
+	}
+
+	return nptr;
+    }
+#endif /* >= 4.12 */
+#endif /* WOLFSSL_LINUXKM */
 
 #if defined(WOLFSSL_TI_CRYPT) || defined(WOLFSSL_TI_HASH)
     #include <wolfcrypt/src/port/ti/ti-ccm.c>  /* initialize and Mutex for TI Crypt Engine */

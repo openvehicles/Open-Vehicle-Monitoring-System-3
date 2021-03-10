@@ -172,21 +172,26 @@ static void ShowUsage(void)
     printf(" -R            raw untranslated output\n");
 #endif
 #endif
+#ifdef WOLFSSH_AGENT
+    printf(" -a            Attempt to use SSH-AGENT\n");
+#endif
 }
 
 
 static byte userPassword[256];
 static byte userPublicKey[512];
 static const byte* userPublicKeyType = NULL;
-static byte* userPrivateKey = NULL; /* Will be allocated by Read Key. */
+static byte userPrivateKeyBuf[1191]; /* Size equal to hanselPrivateRsaSz. */
+static byte* userPrivateKey = userPrivateKeyBuf;
 static const byte* userPrivateKeyType = NULL;
 static word32 userPublicKeySz = 0;
 static word32 userPublicKeyTypeSz = 0;
-static word32 userPrivateKeySz = 0;
+static word32 userPrivateKeySz = sizeof(userPrivateKeyBuf);
 static word32 userPrivateKeyTypeSz = 0;
 static byte isPrivate = 0;
 
 
+#ifndef NO_RSA
 static const char* hanselPublicRsa =
     "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC9P3ZFowOsONXHD5MwWiCciXytBRZGho"
     "MNiisWSgUs5HdHcACuHYPi2W6Z1PBFmBWT9odOrGRjoZXJfDDoPi+j8SSfDGsc/hsCmc3G"
@@ -194,7 +199,6 @@ static const char* hanselPublicRsa =
     "nEhBaIPUJO2C/M0pFnnbZxKgJlX7t1Doy7h5eXxviymOIvaCZKU+x5OopfzM/wFkey0EPW"
     "NmzI5y/+pzU5afsdeEWdiQDIQc80H6Pz8fsoFPvYSG+s4/wz0duu7yeeV1Ypoho65Zr+pE"
     "nIf7dO0B8EblgWt+ud+JI8wrAhfE4x hansel";
-
 static const byte hanselPrivateRsa[] = {
   0x30, 0x82, 0x04, 0xa3, 0x02, 0x01, 0x00, 0x02, 0x82, 0x01, 0x01, 0x00,
   0xbd, 0x3f, 0x76, 0x45, 0xa3, 0x03, 0xac, 0x38, 0xd5, 0xc7, 0x0f, 0x93,
@@ -297,15 +301,16 @@ static const byte hanselPrivateRsa[] = {
   0x7c, 0x97, 0x0b, 0x27, 0x2f, 0xae, 0xfc, 0xc3, 0x93, 0xaf, 0x1a, 0x75,
   0xec, 0x18, 0xdb
 };
-
 static const unsigned int hanselPrivateRsaSz = 1191;
+#endif
 
 
-const char* hanselPublicEcc =
+#ifdef HAVE_ECC
+#ifndef NO_ECC256
+static const char* hanselPublicEcc =
     "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAA"
     "BBBNkI5JTP6D0lF42tbxX19cE87hztUS6FSDoGvPfiU0CgeNSbI+aFdKIzTP5CQEJSvm25"
     "qUzgDtH7oyaQROUnNvk= hansel";
-
 static const byte hanselPrivateEcc[] = {
   0x30, 0x77, 0x02, 0x01, 0x01, 0x04, 0x20, 0x03, 0x6e, 0x17, 0xd3, 0xb9,
   0xb8, 0xab, 0xc8, 0xf9, 0x1f, 0xf1, 0x2d, 0x44, 0x4c, 0x3b, 0x12, 0xb1,
@@ -319,8 +324,39 @@ static const byte hanselPrivateEcc[] = {
   0x4c, 0xe0, 0x0e, 0xd1, 0xfb, 0xa3, 0x26, 0x90, 0x44, 0xe5, 0x27, 0x36,
   0xf9
 };
-
 static const unsigned int hanselPrivateEccSz = 121;
+#elif defined(HAVE_ECC521)
+static const char* hanselPublicEcc =
+    "ecdsa-sha2-nistp521 AAAAE2VjZHNhLXNoYTItbmlzdHA1MjEAAAAIbmlzdHA1MjEAAA"
+    "CFBAET/BOzBb9Jx9b52VIHFP4g/uk5KceDpz2M+/Ln9WiDjsMfb4NgNCAB+EMNJUX/TNBL"
+    "FFmqr7c6+zUH+QAo2qstvQDsReyFkETRB2vZD//nCZfcAe0RMtKZmgtQLKXzSlimUjXBM4"
+    "/zE5lwE05aXADp88h8nuaT/X4bll9cWJlH0fUykA== hansel";
+static const byte hanselPrivateEcc[] = {
+  0x30, 0x81, 0xdc, 0x02, 0x01, 0x01, 0x04, 0x42, 0x01, 0x79, 0x40, 0xb8,
+  0x33, 0xe5, 0x53, 0x5b, 0x9e, 0xfd, 0xed, 0xbe, 0x7c, 0x68, 0xe4, 0xb6,
+  0xc3, 0x50, 0x00, 0x0d, 0x39, 0x64, 0x05, 0xf6, 0x5a, 0x5d, 0x41, 0xab,
+  0xb3, 0xd9, 0xa7, 0xcb, 0x1c, 0x7d, 0x34, 0x46, 0x5c, 0x2d, 0x56, 0x26,
+  0xa0, 0x6a, 0xc7, 0x3d, 0x4f, 0x78, 0x58, 0x14, 0x66, 0x6c, 0xfc, 0x86,
+  0x3c, 0x8b, 0x5b, 0x54, 0x29, 0x89, 0x93, 0x48, 0xd9, 0x54, 0x8b, 0xbe,
+  0x9d, 0x91, 0xa0, 0x07, 0x06, 0x05, 0x2b, 0x81, 0x04, 0x00, 0x23, 0xa1,
+  0x81, 0x89, 0x03, 0x81, 0x86, 0x00, 0x04, 0x01, 0x13, 0xfc, 0x13, 0xb3,
+  0x05, 0xbf, 0x49, 0xc7, 0xd6, 0xf9, 0xd9, 0x52, 0x07, 0x14, 0xfe, 0x20,
+  0xfe, 0xe9, 0x39, 0x29, 0xc7, 0x83, 0xa7, 0x3d, 0x8c, 0xfb, 0xf2, 0xe7,
+  0xf5, 0x68, 0x83, 0x8e, 0xc3, 0x1f, 0x6f, 0x83, 0x60, 0x34, 0x20, 0x01,
+  0xf8, 0x43, 0x0d, 0x25, 0x45, 0xff, 0x4c, 0xd0, 0x4b, 0x14, 0x59, 0xaa,
+  0xaf, 0xb7, 0x3a, 0xfb, 0x35, 0x07, 0xf9, 0x00, 0x28, 0xda, 0xab, 0x2d,
+  0xbd, 0x00, 0xec, 0x45, 0xec, 0x85, 0x90, 0x44, 0xd1, 0x07, 0x6b, 0xd9,
+  0x0f, 0xff, 0xe7, 0x09, 0x97, 0xdc, 0x01, 0xed, 0x11, 0x32, 0xd2, 0x99,
+  0x9a, 0x0b, 0x50, 0x2c, 0xa5, 0xf3, 0x4a, 0x58, 0xa6, 0x52, 0x35, 0xc1,
+  0x33, 0x8f, 0xf3, 0x13, 0x99, 0x70, 0x13, 0x4e, 0x5a, 0x5c, 0x00, 0xe9,
+  0xf3, 0xc8, 0x7c, 0x9e, 0xe6, 0x93, 0xfd, 0x7e, 0x1b, 0x96, 0x5f, 0x5c,
+  0x58, 0x99, 0x47, 0xd1, 0xf5, 0x32, 0x90
+};
+static const unsigned int hanselPrivateEccSz = 223;
+#else
+    #error "Enable an ECC Curve or disable ECC."
+#endif
+#endif
 
 
 static int wsUserAuth(byte authType,
@@ -765,7 +801,7 @@ THREAD_RETURN WOLFSSH_THREAD client_test(void* args)
     SOCKADDR_IN_T clientAddr;
     socklen_t clientAddrSz = sizeof(clientAddr);
     char rxBuf[80];
-    int ret;
+    int ret = 0;
     int ch;
     int userEcc = 0;
     word16 port = wolfSshPort;
@@ -782,6 +818,7 @@ THREAD_RETURN WOLFSSH_THREAD client_test(void* args)
     byte rawMode = 0;
 #endif
 #ifdef WOLFSSH_AGENT
+    byte useAgent = 0;
     WS_AgentCbActionCtx agentCbCtx;
 #endif
 
@@ -789,7 +826,7 @@ THREAD_RETURN WOLFSSH_THREAD client_test(void* args)
     char**  argv = ((func_args*)args)->argv;
     ((func_args*)args)->return_code = 0;
 
-    while ((ch = mygetopt(argc, argv, "?c:eh:i:j:p:tu:xzNP:R")) != -1) {
+    while ((ch = mygetopt(argc, argv, "?ac:eh:i:j:p:tu:xzNP:R")) != -1) {
         switch (ch) {
             case 'h':
                 host = myoptarg;
@@ -855,6 +892,13 @@ THREAD_RETURN WOLFSSH_THREAD client_test(void* args)
                 keepOpen = 1;
                 break;
         #endif
+
+        #ifdef WOLFSSH_AGENT
+            case 'a':
+                useAgent = 1;
+                break;
+        #endif
+
             case '?':
                 ShowUsage();
                 exit(EXIT_SUCCESS);
@@ -869,6 +913,10 @@ THREAD_RETURN WOLFSSH_THREAD client_test(void* args)
     if (username == NULL)
         err_sys("client requires a username parameter.");
 
+#ifdef NO_RSA
+    userEcc = 1;
+#endif
+
 #ifdef SINGLE_THREADED
     if (keepOpen)
         err_sys("Threading needed for terminal session\n");
@@ -880,17 +928,20 @@ THREAD_RETURN WOLFSSH_THREAD client_test(void* args)
 
     if (privKeyName == NULL) {
         if (userEcc) {
+        #ifdef HAVE_ECC
             ret = wolfSSH_ReadKey_buffer(hanselPrivateEcc, hanselPrivateEccSz,
                     WOLFSSH_FORMAT_ASN1, &userPrivateKey, &userPrivateKeySz,
                     &userPrivateKeyType, &userPrivateKeyTypeSz, NULL);
-            isPrivate = 1;
+        #endif
         }
         else {
+        #ifndef NO_RSA
             ret = wolfSSH_ReadKey_buffer(hanselPrivateRsa, hanselPrivateRsaSz,
                     WOLFSSH_FORMAT_ASN1, &userPrivateKey, &userPrivateKeySz,
                     &userPrivateKeyType, &userPrivateKeyTypeSz, NULL);
-            isPrivate = 1;
+        #endif
         }
+        isPrivate = 1;
         if (ret != 0) err_sys("Couldn't load private key buffer.");
     }
     else {
@@ -911,19 +962,22 @@ THREAD_RETURN WOLFSSH_THREAD client_test(void* args)
         userPublicKeySz = sizeof(userPublicKey);
 
         if (userEcc) {
+        #ifdef HAVE_ECC
             ret = wolfSSH_ReadKey_buffer((const byte*)hanselPublicEcc,
                     (word32)strlen(hanselPublicEcc), WOLFSSH_FORMAT_SSH,
                     &p, &userPublicKeySz,
                     &userPublicKeyType, &userPublicKeyTypeSz, NULL);
-            isPrivate = 1;
+        #endif
         }
         else {
+        #ifndef NO_RSA
             ret = wolfSSH_ReadKey_buffer((const byte*)hanselPublicRsa,
                     (word32)strlen(hanselPublicRsa), WOLFSSH_FORMAT_SSH,
                     &p, &userPublicKeySz,
                     &userPublicKeyType, &userPublicKeyTypeSz, NULL);
-            isPrivate = 1;
+        #endif
         }
+        isPrivate = 1;
         if (ret != 0) err_sys("Couldn't load public key buffer.");
     }
     else {
@@ -952,9 +1006,11 @@ THREAD_RETURN WOLFSSH_THREAD client_test(void* args)
         wolfSSH_SetUserAuth(ctx, ((func_args*)args)->user_auth);
 
 #ifdef WOLFSSH_AGENT
-    wolfSSH_CTX_set_agent_cb(ctx,
-            wolfSSH_AGENT_DefaultActions, wolfSSH_AGENT_IO_Cb);
-    wolfSSH_CTX_AGENT_enable(ctx, 1);
+    if (useAgent) {
+        wolfSSH_CTX_set_agent_cb(ctx,
+                wolfSSH_AGENT_DefaultActions, wolfSSH_AGENT_IO_Cb);
+        wolfSSH_CTX_AGENT_enable(ctx, 1);
+    }
 #endif
 
     ssh = wolfSSH_new(ctx);
@@ -970,9 +1026,11 @@ THREAD_RETURN WOLFSSH_THREAD client_test(void* args)
         wolfSSH_SetUserAuthCtx(ssh, (void*)password);
 
 #ifdef WOLFSSH_AGENT
-    memset(&agentCbCtx, 0, sizeof(agentCbCtx));
-    agentCbCtx.state = AGENT_STATE_INIT;
-    wolfSSH_set_agent_cb_ctx(ssh, &agentCbCtx);
+    if (useAgent) {
+        memset(&agentCbCtx, 0, sizeof(agentCbCtx));
+        agentCbCtx.state = AGENT_STATE_INIT;
+        wolfSSH_set_agent_cb_ctx(ssh, &agentCbCtx);
+    }
 #endif
 
     wolfSSH_CTX_SetPublicKeyCheck(ctx, wsPublicKeyCheck);
@@ -1083,8 +1141,6 @@ THREAD_RETURN WOLFSSH_THREAD client_test(void* args)
     WCLOSESOCKET(sockFd);
     wolfSSH_free(ssh);
     wolfSSH_CTX_free(ctx);
-    if (userPrivateKey != NULL)
-        free(userPrivateKey);
     if (ret != WS_SUCCESS)
         err_sys("Closing client stream failed. Connection could have been closed by peer");
 

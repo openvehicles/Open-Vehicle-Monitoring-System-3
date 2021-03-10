@@ -23,7 +23,8 @@
  */
 
 
-#pragma once
+#ifndef _WOLFSSH_AGENT_H_
+#define _WOLFSSH_AGENT_H_
 
 #include <wolfssh/settings.h>
 #include <wolfssh/ssh.h>
@@ -34,7 +35,6 @@
 #include <wolfssl/wolfcrypt/dh.h>
 #include <wolfssl/wolfcrypt/ecc.h>
 #include <wolfssl/wolfcrypt/rsa.h>
-#include <wolfssl/wolfcrypt/sha256.h>
 
 
 #ifdef __cplusplus
@@ -188,3 +188,6 @@ WOLFSSH_API int wolfSSH_AGENT_SignRequest(WOLFSSH*, const byte*, word32,
 #ifdef __cplusplus
 }
 #endif
+
+#endif /* _WOLFSSH_AGENT_H_ */
+
