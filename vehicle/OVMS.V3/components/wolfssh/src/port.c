@@ -428,6 +428,21 @@ int WS_DeleteFileA(const char* fileName, void* heap)
 
 #ifndef WSTRING_USER
 
+char* wstrdup(const char* s1, void* heap, int type)
+{
+    char* s2 = NULL;
+
+    if (s1 != NULL) {
+        unsigned int sz;
+        sz = (unsigned int)WSTRLEN(s1) + 1;
+        s2 = (char*)WMALLOC(sz, heap, type);
+        if (s2 != NULL)
+            WSTRNCPY(s2, (const char*)s1, sz);
+    }
+    return s2;
+}
+
+
 char* wstrnstr(const char* s1, const char* s2, unsigned int n)
 {
     unsigned int s2_len = (unsigned int)WSTRLEN(s2);

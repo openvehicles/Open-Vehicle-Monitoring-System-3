@@ -21,7 +21,6 @@
 #define WOLFSSH_TEST_SERVER
 #define WOLFSSH_TEST_ECHOSERVER
 
-
 #ifdef HAVE_CONFIG_H
     #include <config.h>
 #endif
@@ -32,7 +31,7 @@
     #include <wolfssl/options.h>
 #endif
 
-#include <wolfssl/wolfcrypt/sha256.h>
+#include <wolfssl/wolfcrypt/hash.h>
 #include <wolfssl/wolfcrypt/coding.h>
 #include <wolfssl/wolfcrypt/wc_port.h>
 #include <wolfssh/ssh.h>
@@ -40,6 +39,7 @@
 #include <wolfssh/agent.h>
 #include <wolfssh/test.h>
 #include <wolfssl/wolfcrypt/ecc.h>
+
 #include "examples/echoserver/echoserver.h"
 
 #if defined(WOLFSSL_PTHREADS) && defined(WOLFSSL_TEST_GLOBAL_REQ)
@@ -108,7 +108,7 @@ typedef struct WS_AgentCbActionCtx {
 
 typedef struct {
     WOLFSSH* ssh;
-    SOCKET_T fd;
+    WS_SOCKET_T fd;
     word32 id;
     int echo;
     char   nonBlock;
@@ -264,10 +264,10 @@ static int ssh_worker(thread_ctx_t* threadCtx) {
 
         if (!stop) {
             if (threadCtx->nonBlock) {
-                SOCKET_T sockfd;
+                WS_SOCKET_T sockfd;
                 int select_ret = 0;
 
-                sockfd = (SOCKET_T)wolfSSH_get_fd(threadCtx->ssh);
+                sockfd = (WS_SOCKET_T)wolfSSH_get_fd(threadCtx->ssh);
 
                 select_ret = tcp_select(sockfd, 1);
                 if (select_ret != WS_SELECT_RECV_READY &&
@@ -896,12 +896,13 @@ static int shell_worker(thread_ctx_t* threadCtx)
  * returns 0 on success
  */
 static int sftp_worker(thread_ctx_t* threadCtx) {
+    byte tmp[1];
     int ret   = WS_SUCCESS;
     int error = WS_SUCCESS;
-    SOCKET_T sockfd;
+    WS_SOCKET_T sockfd;
     int select_ret = 0;
 
-    sockfd = (SOCKET_T)wolfSSH_get_fd(threadCtx->ssh);
+    sockfd = (WS_SOCKET_T)wolfSSH_get_fd(threadCtx->ssh);
     do {
         if (threadCtx->nonBlock) {
             if (error == WS_WANT_READ)
@@ -910,7 +911,13 @@ static int sftp_worker(thread_ctx_t* threadCtx) {
                 printf("... sftp server would write block\n");
         }
 
-        select_ret = tcp_select(sockfd, TEST_SFTP_TIMEOUT);
+        if (wolfSSH_stream_peek(threadCtx->ssh, tmp, 1) > 0) {
+            select_ret = WS_SELECT_RECV_READY;
+        }
+        else {
+            select_ret = tcp_select(sockfd, TEST_SFTP_TIMEOUT);
+        }
+
         if (select_ret == WS_SELECT_RECV_READY ||
             select_ret == WS_SELECT_ERROR_READY ||
             error == WS_WANT_WRITE)
@@ -945,12 +952,12 @@ static int NonBlockSSH_accept(WOLFSSH* ssh)
 {
     int ret;
     int error;
-    SOCKET_T sockfd;
+    WS_SOCKET_T sockfd;
     int select_ret = 0;
 
     ret = wolfSSH_accept(ssh);
     error = wolfSSH_get_error(ssh);
-    sockfd = (SOCKET_T)wolfSSH_get_fd(ssh);
+    sockfd = (WS_SOCKET_T)wolfSSH_get_fd(ssh);
 
     while ((ret != WS_SUCCESS
                 && ret != WS_SCP_COMPLETE && ret != WS_SFTP_COMPLETE)
@@ -1077,7 +1084,7 @@ static int load_file(const char* fileName, byte* buf, word32 bufSz)
 
     if (WFOPEN(&file, fileName, "rb") != 0)
         return 0;
-    fseek(file, 0, SEEK_END);
+    fseek(file, 0, XSEEK_END);
     fileSz = (word32)ftell(file);
     rewind(file);
 
@@ -1098,6 +1105,12 @@ static int load_file(const char* fileName, byte* buf, word32 bufSz)
 }
 #endif /* NO_FILESYSTEM */
 
+#ifdef HAVE_ECC521
+    #define ECC_PATH "./keys/server-key-ecc-521.der"
+#else
+    #define ECC_PATH "./keys/server-key-ecc.der"
+#endif
+
 /* returns buffer size on success */
 static int load_key(byte isEcc, byte* buf, word32 bufSz)
 {
@@ -1105,8 +1118,7 @@ static int load_key(byte isEcc, byte* buf, word32 bufSz)
 
 #ifndef NO_FILESYSTEM
     const char* bufName;
-    bufName = isEcc ? "./keys/server-key-ecc.der" :
-                       "./keys/server-key-rsa.der" ;
+    bufName = isEcc ? ECC_PATH : "./keys/server-key-rsa.der" ;
     sz = load_file(bufName, buf, bufSz);
 #else
     /* using buffers instead */
@@ -1127,14 +1139,6 @@ static int load_key(byte isEcc, byte* buf, word32 bufSz)
 #endif
 
     return sz;
-}
-
-static INLINE void c32toa(word32 u32, byte* c)
-{
-    c[0] = (u32 >> 24) & 0xff;
-    c[1] = (u32 >> 16) & 0xff;
-    c[2] = (u32 >>  8) & 0xff;
-    c[3] =  u32 & 0xff;
 }
 
 
@@ -1162,9 +1166,6 @@ static PwMap* PwMapNew(PwMapList* list, byte type, const byte* username,
 
     map = (PwMap*)malloc(sizeof(PwMap));
     if (map != NULL) {
-        wc_Sha256 sha;
-        byte flatSz[4];
-
         map->type = type;
         if (usernameSz >= sizeof(map->username))
             usernameSz = sizeof(map->username) - 1;
@@ -1173,11 +1174,7 @@ static PwMap* PwMapNew(PwMapList* list, byte type, const byte* username,
         map->usernameSz = usernameSz;
 
         if (type != WOLFSSH_USERAUTH_NONE) {
-            wc_InitSha256(&sha);
-            c32toa(pSz, flatSz);
-            wc_Sha256Update(&sha, flatSz, sizeof(flatSz));
-            wc_Sha256Update(&sha, p, pSz);
-            wc_Sha256Final(&sha, map->p);
+            wc_Sha256Hash(p, pSz, map->p);
         }
 
         map->next = list->head;
@@ -1208,6 +1205,8 @@ static const char samplePasswordBuffer[] =
     "jack:fetchapail\n";
 
 
+#ifdef HAVE_ECC
+#ifndef NO_ECC256
 static const char samplePublicKeyEccBuffer[] =
     "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAA"
     "BBBNkI5JTP6D0lF42tbxX19cE87hztUS6FSDoGvPfiU0CgeNSbI+aFdKIzTP5CQEJSvm25"
@@ -1215,8 +1214,22 @@ static const char samplePublicKeyEccBuffer[] =
     "ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAA"
     "BBBKAtH8cqaDbtJFjtviLobHBmjCtG56DMkP6A4M2H9zX2/YCg1h9bYS7WHd9UQDwXO1Hh"
     "IZzRYecXh7SG9P4GhRY= gretel\n";
+#elif defined(HAVE_ECC521)
+static const char samplePublicKeyEccBuffer[] =
+    "ecdsa-sha2-nistp521 AAAAE2VjZHNhLXNoYTItbmlzdHA1MjEAAAAIbmlzdHA1MjEAAA"
+    "CFBAET/BOzBb9Jx9b52VIHFP4g/uk5KceDpz2M+/Ln9WiDjsMfb4NgNCAB+EMNJUX/TNBL"
+    "FFmqr7c6+zUH+QAo2qstvQDsReyFkETRB2vZD//nCZfcAe0RMtKZmgtQLKXzSlimUjXBM4"
+    "/zE5lwE05aXADp88h8nuaT/X4bll9cWJlH0fUykA== hansel\n"
+    "ecdsa-sha2-nistp521 AAAAE2VjZHNhLXNoYTItbmlzdHA1MjEAAAAIbmlzdHA1MjEAAA"
+    "CFBAD3gANmzvkxOBN8MYwRBYO6B//7TTCtA2vwG/W5bqiVVxznXWj0xiFrgayApvH7FDpL"
+    "HiJ8+c1vUsRVEa8PY5QPsgFow+xv0P2WSrRkn4/UUquftPs1ZHPhdr06LjS19ObvWM8xFZ"
+    "YU6n0i28UWCUR5qE+BCTzZDWYT8V24YD8UhpaYIw== gretel\n";
+#else
+    #error "Enable an ECC Curve or disable ECC."
+#endif
+#endif
 
-
+#ifndef NO_RSA
 static const char samplePublicKeyRsaBuffer[] =
     "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC9P3ZFowOsONXHD5MwWiCciXytBRZGho"
     "MNiisWSgUs5HdHcACuHYPi2W6Z1PBFmBWT9odOrGRjoZXJfDDoPi+j8SSfDGsc/hsCmc3G"
@@ -1230,6 +1243,7 @@ static const char samplePublicKeyRsaBuffer[] =
     "uNZl/30Mczs73N3MBzi6J1oPo7sFlqzB6ecBjK2Kpjus4Y1rYFphJnUxtKvB0s+hoaadru"
     "biE57dK6BrH5iZwVLTQKux31uCJLPhiktI3iLbdlGZEctJkTasfVSsUizwVIyRjhVKmbdI"
     "RGwkU38D043AR1h0mUoGCPIKuqcFMf gretel\n";
+#endif
 
 static const char sampleNoneBuffer[] =
     "holmes\n"
@@ -1400,26 +1414,15 @@ static int wsUserAuth(byte authType,
         return WOLFSSH_USERAUTH_FAILURE;
     }
 
-    /* Hash the password or public key with its length. */
-    {
-        wc_Sha256 sha;
-        byte flatSz[4];
-        wc_InitSha256(&sha);
-        if (authType == WOLFSSH_USERAUTH_PASSWORD) {
-            c32toa(authData->sf.password.passwordSz, flatSz);
-            wc_Sha256Update(&sha, flatSz, sizeof(flatSz));
-            wc_Sha256Update(&sha,
-                            authData->sf.password.password,
-                            authData->sf.password.passwordSz);
-        }
-        else if (authType == WOLFSSH_USERAUTH_PUBLICKEY) {
-            c32toa(authData->sf.publicKey.publicKeySz, flatSz);
-            wc_Sha256Update(&sha, flatSz, sizeof(flatSz));
-            wc_Sha256Update(&sha,
-                            authData->sf.publicKey.publicKey,
-                            authData->sf.publicKey.publicKeySz);
-        }
-        wc_Sha256Final(&sha, authHash);
+    if (authType == WOLFSSH_USERAUTH_PASSWORD) {
+        wc_Sha256Hash(authData->sf.password.password,
+                authData->sf.password.passwordSz,
+                authHash);
+    }
+    else if (authType == WOLFSSH_USERAUTH_PUBLICKEY) {
+        wc_Sha256Hash(authData->sf.publicKey.publicKey,
+                authData->sf.publicKey.publicKeySz,
+                authHash);
     }
 
     list = (PwMapList*)ctx;
@@ -1525,7 +1528,7 @@ THREAD_RETURN WOLFSSH_THREAD echoserver_test(void* args)
     func_args* serverArgs = (func_args*)args;
     WOLFSSH_CTX* ctx = NULL;
     PwMapList pwMapList;
-    SOCKET_T listenFd = 0;
+    WS_SOCKET_T listenFd = 0;
     word32 defaultHighwater = EXAMPLE_HIGHWATER_MARK;
     word32 threadCount = 0;
     int multipleConnections = 1;
@@ -1602,6 +1605,17 @@ THREAD_RETURN WOLFSSH_THREAD echoserver_test(void* args)
     }
 #endif
 
+#ifdef NO_RSA
+    /* If wolfCrypt isn't built with RSA, force ECC on. */
+    userEcc = 1;
+    peerEcc = 1;
+#endif
+#ifndef HAVE_ECC
+    /* If wolfCrypt isn't built with ECC, force ECC off. */
+    userEcc = 0;
+    peerEcc = 0;
+#endif
+
     if (wolfSSH_Init() != WS_SUCCESS) {
         fprintf(stderr, "Couldn't initialize wolfSSH.\n");
         exit(EXIT_FAILURE);
@@ -1624,7 +1638,7 @@ THREAD_RETURN WOLFSSH_THREAD echoserver_test(void* args)
 #endif
 
     {
-        const char* bufName;
+        const char* bufName = NULL;
         byte buf[SCRATCH_BUFFER_SZ];
         word32 bufSz;
 
@@ -1644,12 +1658,22 @@ THREAD_RETURN WOLFSSH_THREAD echoserver_test(void* args)
         buf[bufSz] = 0;
         LoadPasswordBuffer(buf, bufSz, &pwMapList);
 
-        bufName = userEcc ? samplePublicKeyEccBuffer :
-                            samplePublicKeyRsaBuffer;
-        bufSz = (word32)strlen(bufName);
-        memcpy(buf, bufName, bufSz);
-        buf[bufSz] = 0;
-        LoadPublicKeyBuffer(buf, bufSz, &pwMapList);
+        if (userEcc) {
+        #ifdef HAVE_ECC
+            bufName = samplePublicKeyEccBuffer;
+        #endif
+        }
+        else {
+        #ifndef NO_RSA
+            bufName = samplePublicKeyRsaBuffer;
+        #endif
+        }
+        if (bufName != NULL) {
+            bufSz = (word32)strlen(bufName);
+            memcpy(buf, bufName, bufSz);
+            buf[bufSz] = 0;
+            LoadPublicKeyBuffer(buf, bufSz, &pwMapList);
+        }
 
         bufSz = (word32)strlen(sampleNoneBuffer);
         memcpy(buf, sampleNoneBuffer, bufSz);
@@ -1704,7 +1728,7 @@ THREAD_RETURN WOLFSSH_THREAD echoserver_test(void* args)
     }
 
     do {
-        SOCKET_T      clientFd = 0;
+        WS_SOCKET_T      clientFd = 0;
     #ifdef WOLFSSL_NUCLEUS
         struct addr_struct clientAddr;
     #else

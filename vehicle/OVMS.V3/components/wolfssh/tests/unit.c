@@ -208,6 +208,7 @@ typedef struct {
 } KdfTestVector;
 
 
+#ifndef NO_SHA
 /** Test Vector Set #1: SHA-1 **/
 const char kdfTvSet1k[] =
     "35618FD3AABF980A5F766408961600D4933C60DD7B22D69EEB4D7A987C938F6F"
@@ -245,6 +246,7 @@ const char kdfTvSet2c[]         = "CB6D56EC5B9AFECD326D544DA2D22DED";
 const char kdfTvSet2d[]         = "F712F6451F1BD6CE9BAA597AC87C5A24";
 const char kdfTvSet2e[]         = "E42FC62C76B76B37818F78292D3C2226D0264760";
 const char kdfTvSet2f[]         = "D14BE4DD0093A3E759580233C80BB8399CE4C4E7";
+#endif
 
 /** Test Vector Set #3: SHA-256 **/
 const char kdfTvSet3k[] =
@@ -296,6 +298,7 @@ const char kdfTvSet4f[] =
 #define HASH_SHA256 WC_HASH_TYPE_SHA256
 
 static const KdfTestVector kdfTestVectors[] = {
+#ifndef NO_SHA
     {HASH_SHA, 'A', kdfTvSet1k, kdfTvSet1h, kdfTvSet1sid, kdfTvSet1a},
     {HASH_SHA, 'B', kdfTvSet1k, kdfTvSet1h, kdfTvSet1sid, kdfTvSet1b},
     {HASH_SHA, 'C', kdfTvSet1k, kdfTvSet1h, kdfTvSet1sid, kdfTvSet1c},
@@ -308,6 +311,7 @@ static const KdfTestVector kdfTestVectors[] = {
     {HASH_SHA, 'D', kdfTvSet2k, kdfTvSet2h, kdfTvSet2sid, kdfTvSet2d},
     {HASH_SHA, 'E', kdfTvSet2k, kdfTvSet2h, kdfTvSet2sid, kdfTvSet2e},
     {HASH_SHA, 'F', kdfTvSet2k, kdfTvSet2h, kdfTvSet2sid, kdfTvSet2f},
+#endif
     {HASH_SHA256, 'A', kdfTvSet3k, kdfTvSet3h, kdfTvSet3sid, kdfTvSet3a},
     {HASH_SHA256, 'B', kdfTvSet3k, kdfTvSet3h, kdfTvSet3sid, kdfTvSet3b},
     {HASH_SHA256, 'C', kdfTvSet3k, kdfTvSet3h, kdfTvSet3sid, kdfTvSet3c},

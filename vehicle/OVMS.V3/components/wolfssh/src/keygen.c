@@ -57,6 +57,8 @@
 int wolfSSH_MakeRsaKey(byte* out, word32 outSz,
                        word32 size, word32 e)
 {
+#ifndef NO_RSA
+
     int ret = WS_SUCCESS;
     WC_RNG rng;
 
@@ -105,6 +107,13 @@ int wolfSSH_MakeRsaKey(byte* out, word32 outSz,
 
     WLOG(WS_LOG_DEBUG, "Leaving wolfSSH_MakeRsaKey(), ret = %d", ret);
     return ret;
+#else
+    (void)out;
+    (void)outSz;
+    (void)size;
+    (void)e;
+    return WS_NOT_COMPILED;
+#endif
 }
 
 

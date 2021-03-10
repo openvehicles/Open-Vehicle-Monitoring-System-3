@@ -19,9 +19,10 @@
  */
 
 
-#pragma once
-
-
+#ifndef _WOLFSSH_EXAMPLES_SFTPCLIENT_H_
+#define _WOLFSSH_EXAMPLES_SFTPCLIENT_H_
 
 THREAD_RETURN WOLFSSH_THREAD sftpclient_test(void* args);
+
+#endif /* _WOLFSSH_EXAMPLES_SFTPCLIENT_H_ */
 

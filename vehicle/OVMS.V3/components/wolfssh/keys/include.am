@@ -4,18 +4,17 @@
 
 
 EXTRA_DIST+= \
-            keys/server-key-ecc.der \
-            keys/server-key-ecc.pem \
-            keys/server-key-ecc-384.der \
-            keys/server-key-ecc-384.pem \
-            keys/server-key-ecc-521.der \
-            keys/server-key-ecc-521.pem \
-            keys/server-key-rsa.der \
-            keys/server-key-rsa.pem \
-            keys/hansel-key-ecc.pem \
-            keys/hansel-key-rsa.pem \
-            keys/gretel-key-ecc.pem \
-            keys/gretel-key-rsa.pem \
-            keys/pubkeys-ecc.txt \
-            keys/pubkeys-rsa.txt \
-            keys/passwd.txt
+            keys/server-key-ecc.der keys/server-key-ecc.pem \
+            keys/server-key-ecc-384.der keys/server-key-ecc-384.pem \
+            keys/server-key-ecc-521.der keys/server-key-ecc-521.pem \
+            keys/server-key-rsa.der keys/server-key-rsa.pem \
+            keys/hansel-key-ecc.der keys/hansel-key-ecc.pem keys/hansel-key-ecc.pub \
+            keys/hansel-key-ecc-384.der keys/hansel-key-ecc-384.pem keys/hansel-key-ecc-384.pub \
+            keys/hansel-key-ecc-521.der keys/hansel-key-ecc-521.pem keys/hansel-key-ecc-521.pub \
+            keys/hansel-key-rsa.der keys/hansel-key-rsa.pem keys/hansel-key-rsa.pub \
+            keys/gretel-key-ecc.der keys/gretel-key-ecc.pem keys/gretel-key-ecc.pub \
+            keys/gretel-key-ecc-384.der keys/gretel-key-ecc-384.pem keys/gretel-key-ecc-384.pub \
+            keys/gretel-key-ecc-521.der keys/gretel-key-ecc-521.pem keys/gretel-key-ecc-521.pub \
+            keys/gretel-key-rsa.der keys/gretel-key-rsa.pem keys/gretel-key-rsa.pub \
+            keys/pubkeys-ecc.txt keys/pubkeys-ecc-384.txt keys/pubkeys-ecc-521.txt \
+            keys/pubkeys-rsa.txt keys/passwd.txt

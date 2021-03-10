@@ -24,7 +24,8 @@
  */
 
 
-#pragma once
+#ifndef _WOLFSSH_ERROR_H_
+#define _WOLFSSH_ERROR_H_
 
 #include <wolfssh/settings.h>
 
@@ -137,4 +138,5 @@ enum WS_IOerrors {
 #ifdef __cplusplus
 }
 #endif
+#endif /* _WOLFSSH_ERROR_H_ */
 
