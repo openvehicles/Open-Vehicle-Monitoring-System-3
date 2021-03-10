@@ -8,7 +8,8 @@
 #
 
 ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
-COMPONENT_ADD_INCLUDEDIRS := include mongoose ../wolfssl ../wolfssl/wolfssl
+COMPONENT_ADD_INCLUDEDIRS := include mongoose
+COMPONENT_PRIV_INCLUDEDIRS := ../wolfssl ../wolfssl/wolfssl
 COMPONENT_EXTRA_INCLUDES := ${IDF_PATH}/components/freertos/include/freertos
 COMPONENT_SRCDIRS := mongoose
 COMPONENT_SUBMODULES := mongoose
