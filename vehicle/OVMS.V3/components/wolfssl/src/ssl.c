@@ -5368,6 +5368,7 @@ static int ProcessBufferTryDecode(WOLFSSL_CTX* ctx, WOLFSSL* ssl, DerBuffer* der
     return ret;
 }
 
+#define WOLFSSL_SMALL_STACK
 /* process the buffer buff, length sz, into ctx of format and type
    used tracks bytes consumed, userChain specifies a user cert chain
    to pass during the handshake */
@@ -5936,6 +5937,7 @@ int ProcessBuffer(WOLFSSL_CTX* ctx, const unsigned char* buff,
 
     return WOLFSSL_SUCCESS;
 }
+#undef WOLFSSL_SMALL_STACK
 
 
 /* CA PEM file for verification, may have multiple/chain certs to process */
