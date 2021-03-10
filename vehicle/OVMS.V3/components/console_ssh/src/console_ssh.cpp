@@ -179,6 +179,7 @@ void OvmsSSH::NetManInit(std::string event, void* data)
   wolfSSH_Debugging_ON();
   wolfSSL_SetLoggingCb(&wolfssl_logger);
   wolfSSL_Debugging_ON();
+  wolfSSL_SetAllocators(wolfssl_malloc, wolfssl_free, wolfssl_realloc);
   ret = wolfSSH_Init();
   if (ret != WS_SUCCESS)
     {
@@ -292,7 +293,6 @@ ConsoleSSH::ConsoleSSH(OvmsSSH* server, struct mg_connection* nc)
   m_verbose = false;
   m_recursive = false;
   m_file = NULL;
-  wolfSSL_SetAllocators(wolfssl_malloc, wolfssl_free, wolfssl_realloc);
   m_ssh = wolfSSH_new(m_server->ctx());
   if (m_ssh == NULL)
     {
