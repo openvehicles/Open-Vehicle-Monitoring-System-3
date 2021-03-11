@@ -90,6 +90,12 @@ typedef enum
   __CAN_IRQ_BUS_ERR=            BIT(7),             // IR.7 Bus Error Interrupt
   } ESP32CAN_IRQ_t;
 
+/* 
+ * Setting this interrupt enable register bit with ESP32 revision
+ * 2 and higher divides the Baud Rate Prescaler (BRP) by 2.
+ */
+#define __CAN_IER_BRP_DIV __CAN_IRQ_WAKEUP
+
 /** \brief OCMODE options. */
 typedef enum
   {
