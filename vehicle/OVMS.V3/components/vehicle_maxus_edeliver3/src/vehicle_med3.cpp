@@ -31,14 +31,9 @@ static const char *TAG = "v-maxed3";
 
 #include "vehicle_med3.h"
 #include "metrics_standard.h"
-// temp
-//#include <stdio.h>
-//#include <string>
-//#include "ovms_metrics.h"
-//#include "ovms_events.h"
-//#include "ovms_config.h"
-//#include "ovms_command.h"
-//#include "ovms_notify.h"
+#include "ovms_metrics.h"
+#include <string>
+
 
 
 static const OvmsVehicle::poll_pid_t obdii_polls[] =
@@ -145,9 +140,9 @@ void OvmsVehicleMaxed3::IncomingFrameCan1(CAN_frame_t* p_frame)
           //Set ideal, est and amps when CANdata received
           float soc = StandardMetrics.ms_v_bat_soc->AsFloat();
               if(soc>100)soc=100;
-              StandardMetrics.ms_v_bat_range_ideal->SetValue(241 * soc / 100);
-              StandardMetrics.ms_v_bat_range_est->SetValue(241 * soc / 108);
-              StandardMetrics.ms_v_bat_current->SetValue((StandardMetrics.ms_v_bat_power->AsFloat() / (StandardMetrics.ms_v_bat_voltage->AsFloat() )) * 1000); // work out current untill pid found
+                StandardMetrics.ms_v_bat_range_ideal->SetValue(241 * soc / 100);
+                StandardMetrics.ms_v_bat_range_est->SetValue(241 * soc / 108);
+                StandardMetrics.ms_v_bat_current->SetValue((StandardMetrics.ms_v_bat_power->AsFloat() / (StandardMetrics.ms_v_bat_voltage->AsFloat() )) * 1000); // work out current untill pid found
       
               break;
         
@@ -157,30 +152,41 @@ void OvmsVehicleMaxed3::IncomingFrameCan1(CAN_frame_t* p_frame)
           break;
                 
                 
-        case 0x604:  // Setup
-            {
+            case 0x604:  // Setup
+                {
                 float power = d[5];
-                StandardMetrics.ms_v_bat_power->SetValue((power * 42) / 1000);// actual power in watts on AC converted to kw
-                if (StandardMetrics.ms_v_bat_power->AsFloat() >=  1.000f)
-                {
-                    StandardMetrics.ms_v_charge_inprogress->SetValue(true);
-                    PollSetState(3);
+                    StandardMetrics.ms_v_bat_power->SetValue((power * 42) / 1000);// actual power in watts on AC converted to kw
+                    if (StandardMetrics.ms_v_bat_power->AsFloat() >=  1.000f)
+                        {
+                            StandardMetrics.ms_v_charge_inprogress->SetValue(true);
+                            PollSetState(1);
+                        }
+                    else
+                        {
+                            StandardMetrics.ms_v_charge_inprogress->SetValue(false);
+                            PollSetState(0);
+                        }
+                    break;
                 }
-            else
+/*            case 0x375:  // Setup
                 {
-                    StandardMetrics.ms_v_charge_inprogress->SetValue(false);
-                    PollSetState(0);
+                float van_on = d[5];
+                    if (van_on == 18)
+                    {
+                        StandardMetrics.ms_v_env_on->SetValue(true);
+                        PollSetState(2);
+                    }
+                    break;
                 }
-            break;
+*/
+            case 0x540:  // odometer in KM
+                {
+                    StandardMetrics.ms_v_pos_odometer->SetValue(d[0] << 16 | d[1] << 8 | d[2]);// odometer
+                }
+                break;
             }
-
-        case 0x540:  // odometer in KM
-            {
-                StandardMetrics.ms_v_pos_odometer->SetValue(d[0] << 16 | d[1] << 8 | d[2]);// odometer
-            }
-            break;
-        }
     }
+
 
 
 void OvmsVehicleMaxed3::HandleVinMessage(uint8_t* data, uint8_t length, uint16_t remain)

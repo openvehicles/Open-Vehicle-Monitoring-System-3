@@ -1,6 +1,7 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- New vehicle: Maxus eDeliver 3 via OBD-II Port (MEDS)
 - VW e-Up: CCS (DC) charge detection & data
   New metrics:
     xvu.c.ccs.u             -- CCS charger supplied voltage [V]
