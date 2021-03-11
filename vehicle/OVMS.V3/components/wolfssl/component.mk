@@ -73,7 +73,6 @@ COMPONENT_OBJS += wolfcrypt/src/sha3.o
 COMPONENT_OBJS += wolfcrypt/src/sha512.o
 COMPONENT_OBJS += wolfcrypt/src/signature.o
 COMPONENT_OBJS += wolfcrypt/src/srp.o
-COMPONENT_OBJS += wolfcrypt/src/tfm.o
 COMPONENT_OBJS += wolfcrypt/src/wc_encrypt.o
 COMPONENT_OBJS += wolfcrypt/src/wc_port.o
 COMPONENT_OBJS += wolfcrypt/src/wolfevent.o
