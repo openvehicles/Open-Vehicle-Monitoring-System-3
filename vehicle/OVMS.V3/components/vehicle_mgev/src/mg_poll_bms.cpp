@@ -100,6 +100,9 @@ void OvmsVehicleMgEv::ProcessBatteryStats(int index, uint8_t* data, uint16_t rem
             );
         }
     }
+        // calculate cell deviation
+        StandardMetrics.ms_v_bat_pack_vstddev->SetValue((StandardMetrics.ms_v_bat_pack_vmax->AsFloat()) - (StandardMetrics.ms_v_bat_pack_vmin->AsFloat()));
+
 }
 
 void OvmsVehicleMgEv::IncomingBmsPoll(
