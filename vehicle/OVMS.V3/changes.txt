@@ -2,6 +2,10 @@ Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
 - New vehicle: Maxus eDeliver 3 via OBD-II Port (MEDS)
+- Vehicle: emit standard events on changing v.c.timermode
+  New events:
+    vehicle.charge.timermode.off   -- Vehicle charge timer mode has been switched off
+    vehicle.charge.timermode.on    -- Vehicle charge timer mode has been switched on
 
 2021-03-05 MB  3.2.016  OTA release
 - VW e-Up: CCS (DC) charge detection & data
