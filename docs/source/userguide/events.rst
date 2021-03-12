@@ -164,6 +164,8 @@ vehicle.charge.prepare                        Vehicle is preparing to charge
 vehicle.charge.start                          Vehicle has started to charge
 vehicle.charge.state                <state>   Vehicle charge state has changed
 vehicle.charge.stop                           Vehicle has stopped charging
+vehicle.charge.timermode.off                  Vehicle charge timer mode has been switched off
+vehicle.charge.timermode.on                   Vehicle charge timer mode has been switched on
 vehicle.headlights.off                        Vehicle headlights are off
 vehicle.headlights.on                         Vehicle headlights are on
 vehicle.locked                                Vehicle has been locked
