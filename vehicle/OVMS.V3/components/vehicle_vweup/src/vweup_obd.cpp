@@ -142,9 +142,11 @@ void OvmsVehicleVWeUp::OBDInit()
     m_hv_chgmode  = MyMetrics.InitInt("xvu.e.hv.chgmode", 30, 0, Other, true);
     m_lv_autochg  = MyMetrics.InitInt("xvu.e.lv.autochg", 30, 0);
 
-    m_chg_timer_socmin = MyMetrics.InitInt("xvu.c.limit.soc.min", SM_STALE_NONE, 0, Percentage);
-    m_chg_timer_socmax = MyMetrics.InitInt("xvu.c.limit.soc.max", SM_STALE_NONE, 0, Percentage);
-    m_chg_timer_def = MyMetrics.InitBool("xvu.c.timermode.def", SM_STALE_NONE, false);
+    bool timermode = StdMetrics.ms_v_charge_timermode->AsBool();
+    int soclim = StdMetrics.ms_v_charge_limit_soc->AsInt();
+    m_chg_timer_socmin = MyMetrics.InitInt("xvu.c.limit.soc.min", SM_STALE_NONE, soclim, Percentage);
+    m_chg_timer_socmax = MyMetrics.InitInt("xvu.c.limit.soc.max", SM_STALE_NONE, soclim, Percentage);
+    m_chg_timer_def = MyMetrics.InitBool("xvu.c.timermode.def", SM_STALE_NONE, timermode);
 
     BatMgmtSoCAbs = MyMetrics.InitFloat("xvu.b.soc.abs", 100, 0, Percentage);
     MotElecSoCAbs = MyMetrics.InitFloat("xvu.m.soc.abs", 100, 0, Percentage);
