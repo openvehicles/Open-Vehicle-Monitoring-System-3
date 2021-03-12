@@ -6,6 +6,11 @@ Open Vehicle Monitor System v3 - Change log
   New events:
     vehicle.charge.timermode.off   -- Vehicle charge timer mode has been switched off
     vehicle.charge.timermode.on    -- Vehicle charge timer mode has been switched on
+- VW e-Up/OBD: detect charge timer mode
+  New metrics:
+    xvu.c.limit.soc.max            -- Charge schedule maximum SOC [%]
+    xvu.c.limit.soc.min            -- Charge schedule minimum SOC [%]
+    xvu.c.timermode.def            -- Charge timer defined & default [bool]
 
 2021-03-05 MB  3.2.016  OTA release
 - VW e-Up: CCS (DC) charge detection & data

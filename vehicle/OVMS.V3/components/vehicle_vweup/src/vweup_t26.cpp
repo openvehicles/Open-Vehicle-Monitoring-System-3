@@ -184,6 +184,10 @@ void OvmsVehicleVWeUp::T26Init()
   StandardMetrics.ms_v_env_awake->SetValue(false);
   StandardMetrics.ms_v_env_aux12v->SetValue(false);
   StandardMetrics.ms_v_env_on->SetValue(false);
+
+  if (HasNoOBD()) {
+    StandardMetrics.ms_v_charge_mode->SetValue("standard");
+  }
 }
 
 
@@ -456,12 +460,9 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
         if (isCharging && cd_count == 3) {
           cd_count = 0;
           ResetChargeCounters();
-          StandardMetrics.ms_v_charge_mode->SetValue("standard");
           StandardMetrics.ms_v_door_chargeport->SetValue(true);
           StandardMetrics.ms_v_charge_pilot->SetValue(true);
-          StandardMetrics.ms_v_charge_inprogress->SetValue(true);
-          StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
-          StandardMetrics.ms_v_charge_state->SetValue("charging");
+          SetChargeState(true);
           StandardMetrics.ms_v_env_charging12v->SetValue(true);
           StandardMetrics.ms_v_env_aux12v->SetValue(true);
           ESP_LOGI(TAG, "Car charge session started");
@@ -471,12 +472,9 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
         }
         if (!isCharging && cd_count == 3) {
           cd_count = 0;
-          StandardMetrics.ms_v_charge_mode->SetValue("standard");
-          StandardMetrics.ms_v_charge_inprogress->SetValue(false);
           StandardMetrics.ms_v_charge_pilot->SetValue(false);
           StandardMetrics.ms_v_door_chargeport->SetValue(false);
-          StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
-          StandardMetrics.ms_v_charge_state->SetValue("done");
+          SetChargeState(false);
           if (StandardMetrics.ms_v_env_on->AsBool()) {
              PollSetState(VWEUP_ON);
           } else {

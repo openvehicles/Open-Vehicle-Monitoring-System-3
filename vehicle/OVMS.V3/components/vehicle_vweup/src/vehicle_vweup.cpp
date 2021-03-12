@@ -72,7 +72,7 @@
 #include <string>
 static const char *TAG = "v-vweup";
 
-#define VERSION "0.12.0"
+#define VERSION "0.13.0"
 
 #include <stdio.h>
 #include <string>
@@ -478,5 +478,69 @@ void OvmsVehicleVWeUp::SetChargeType(chg_type_t chgtype)
     StdMetrics.ms_v_charge_current->SetValue(0);
     StdMetrics.ms_v_charge_power->SetValue(0);
     StdMetrics.ms_v_charge_efficiency->SetValue(0);
+  }
+}
+
+
+/**
+ * SetChargeState: set v.c.charging, v.c.state and v.c.substate according to current
+ *  charge timer mode, limits and SOC
+ *  Note: changing v.c.state triggers the notification, so this should be called last.
+ */
+void OvmsVehicleVWeUp::SetChargeState(bool charging)
+{
+  if (charging)
+  {
+    // Charge in progress:
+    StdMetrics.ms_v_charge_inprogress->SetValue(true);
+
+    if (StdMetrics.ms_v_charge_timermode->AsBool())
+      StdMetrics.ms_v_charge_substate->SetValue("scheduledstart");
+    else
+      StdMetrics.ms_v_charge_substate->SetValue("onrequest");
+
+    StdMetrics.ms_v_charge_state->SetValue("charging");
+  }
+  else
+  {
+    // Charge stopped:
+    StdMetrics.ms_v_charge_inprogress->SetValue(false);
+
+    int soc = StdMetrics.ms_v_bat_soc->AsInt();
+    int socmin = m_chg_timer_socmin->AsInt();
+    int socmax = m_chg_timer_socmax->AsInt();
+
+    if (StdMetrics.ms_v_charge_timermode->AsBool())
+    {
+      // Scheduled charge;
+      // if stopped at minimum SOC, we're waiting for the second phase:
+      if (soc >= socmin-1 && soc <= socmin+1) {
+        StdMetrics.ms_v_charge_substate->SetValue("timerwait");
+        StdMetrics.ms_v_charge_state->SetValue("stopped");
+      }
+      // …if stopped at maximum SOC, we've finished as scheduled:
+      else if (soc >= socmax-1 && soc <= socmax+1) {
+        StdMetrics.ms_v_charge_substate->SetValue("scheduledstop");
+        StdMetrics.ms_v_charge_state->SetValue("done");
+      }
+      // …else the charge has been interrupted:
+      else {
+        StdMetrics.ms_v_charge_substate->SetValue("interrupted");
+        StdMetrics.ms_v_charge_state->SetValue("stopped");
+      }
+    }
+    else
+    {
+      // Unscheduled charge; done if fully charged:
+      if (soc >= 99) {
+        StdMetrics.ms_v_charge_substate->SetValue("stopped");
+        StdMetrics.ms_v_charge_state->SetValue("done");
+      }
+      // …else the charge has been interrupted:
+      else {
+        StdMetrics.ms_v_charge_substate->SetValue("interrupted");
+        StdMetrics.ms_v_charge_state->SetValue("stopped");
+      }
+    }
   }
 }

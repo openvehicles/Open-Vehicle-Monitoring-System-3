@@ -92,7 +92,10 @@ const OvmsVehicle::poll_pid_t vweup_polls[] = {
 //{VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_TEMP_MAX,         {  0,  0,  0, 20}, 1, ISOTP_STD},
 //{VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_TEMP_MIN,         {  0,  0,  0, 20}, 1, ISOTP_STD},
 
+  {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_SOC_LIMITS,       {  0, 30, 30, 30}, 1, ISOTP_STD},
+  {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_TIMER_DEF,        {  0, 30, 30, 30}, 1, ISOTP_STD},
   {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_REM,              {  0,  0, 30,  0}, 1, ISOTP_STD},
+
   {VWUP_BRK,      UDS_SESSION, VWUP_EXTDIAG_START,          {  0,  0,  0, 30}, 1, ISOTP_STD},
   {VWUP_BRK,      UDS_READ, VWUP_BRK_TPMS,                  {  0,  0,  0, 30}, 1, ISOTP_STD},
 };
@@ -138,6 +141,10 @@ void OvmsVehicleVWeUp::OBDInit()
     m_lv_pwrstate = MyMetrics.InitInt("xvu.e.lv.pwrstate", 30, 0, Other, true);
     m_hv_chgmode  = MyMetrics.InitInt("xvu.e.hv.chgmode", 30, 0, Other, true);
     m_lv_autochg  = MyMetrics.InitInt("xvu.e.lv.autochg", 30, 0);
+
+    m_chg_timer_socmin = MyMetrics.InitInt("xvu.c.limit.soc.min", SM_STALE_NONE, 0, Percentage);
+    m_chg_timer_socmax = MyMetrics.InitInt("xvu.c.limit.soc.max", SM_STALE_NONE, 0, Percentage);
+    m_chg_timer_def = MyMetrics.InitBool("xvu.c.timermode.def", SM_STALE_NONE, false);
 
     BatMgmtSoCAbs = MyMetrics.InitFloat("xvu.b.soc.abs", 100, 0, Percentage);
     MotElecSoCAbs = MyMetrics.InitFloat("xvu.m.soc.abs", 100, 0, Percentage);
@@ -389,6 +396,8 @@ void OvmsVehicleVWeUp::PollerStateTicker()
     // For now, we assume the port has been closed when the car is started:
     StdMetrics.ms_v_charge_duration_full->SetValue(0);
     StdMetrics.ms_v_door_chargeport->SetValue(false);
+    StdMetrics.ms_v_charge_substate->SetValue("");
+    StdMetrics.ms_v_charge_state->SetValue("");
     StdMetrics.ms_v_env_on->SetValue(true);
   }
 
@@ -415,12 +424,11 @@ void OvmsVehicleVWeUp::PollerStateTicker()
       // Start new charge:
       ResetChargeCounters();
 
-      // TODO: get real charge mode, port & pilot states, fake for now:
-      StdMetrics.ms_v_charge_mode->SetValue("standard");
+      // TODO: get real port & pilot states, fake for now:
       StdMetrics.ms_v_door_chargeport->SetValue(true);
       StdMetrics.ms_v_charge_pilot->SetValue(true);
-      StdMetrics.ms_v_charge_inprogress->SetValue(true);
-      StdMetrics.ms_v_charge_state->SetValue("charging");
+
+      SetChargeState(true);
 
       PollSetState(VWEUP_CHARGING);
     }
@@ -430,17 +438,9 @@ void OvmsVehicleVWeUp::PollerStateTicker()
     ESP_LOGI(TAG, "PollerStateTicker: Charge stopped/done");
 
     // TODO: get real charge pilot states, fake for now:
-    StdMetrics.ms_v_charge_inprogress->SetValue(false);
     StdMetrics.ms_v_charge_pilot->SetValue(false);
-    // Guess type of charge end by the SOC reached;
-    //  tolerate SOC not reaching 100%
-    //  TODO: read user defined destination SOC, read actual charge stop reason
-    if (StdMetrics.ms_v_bat_soc->AsFloat() > 99) {
-      StdMetrics.ms_v_charge_state->SetValue("done");
-    }
-    else {
-      StdMetrics.ms_v_charge_state->SetValue("stopped");
-    }
+
+    SetChargeState(false);
   }
 
   if (poll_state == VWEUP_ON) {
@@ -553,12 +553,14 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
         VALUE_LOG(TAG, "VWUP_CHG_MGMT_LV_PWRSTATE=%d", ivalue);
       }
       break;
+
     case VWUP_CHG_MGMT_LV_AUTOCHG:
       if (PollReply.FromUint8("VWUP_CHG_MGMT_LV_AUTOCHG", ivalue)) {
         m_lv_autochg->SetValue(ivalue);
         VALUE_LOG(TAG, "VWUP_CHG_MGMT_LV_AUTOCHG=%d", ivalue);
       }
       break;
+
     case VWUP_CHG_MGMT_HV_CHGMODE:
       if (PollReply.FromUint8("VWUP_CHG_MGMT_HV_CHGMODE", ivalue)) {
         m_hv_chgmode->SetValue(ivalue);
@@ -570,7 +572,33 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
           SetChargeType(CHGTYPE_None);
         VALUE_LOG(TAG, "VWUP_CHG_MGMT_HV_CHGMODE=%d", ivalue);
       }
+      if (PollReply.FromUint8("VWUP_CHG_MGMT_TIMERMODE", ivalue, 1)) {
+        bool timermode = (ivalue != 0);
+        StdMetrics.ms_v_charge_timermode->SetValue(timermode);
+        VALUE_LOG(TAG, "VWUP_CHG_MGMT_TIMERMODE=%d", ivalue);
+        UpdateChargeParams();
+      }
       break;
+
+    case VWUP_CHG_MGMT_TIMER_DEF:
+      if (PollReply.FromUint8("VWUP_CHG_MGMT_TIMER_DEF", ivalue)) {
+        bool timerdef = (ivalue != 0);
+        m_chg_timer_def->SetValue(timerdef);
+        VALUE_LOG(TAG, "VWUP_CHG_MGMT_TIMER_DEF=%d", ivalue);
+      }
+      break;
+
+    case VWUP_CHG_MGMT_SOC_LIMITS: {
+      int socmin, socmax;
+      if (PollReply.FromUint8("VWUP_CHG_MGMT_SOC_LIMIT_MAX", socmax, 1)) {
+        PollReply.FromUint8("VWUP_CHG_MGMT_SOC_LIMIT_MIN", socmin);
+        m_chg_timer_socmin->SetValue(socmin);
+        m_chg_timer_socmax->SetValue(socmax);
+        VALUE_LOG(TAG, "VWUP_CHG_MGMT_SOC_LIMITS MIN=%d%% MAX=%d%%", socmin, socmax);
+        UpdateChargeParams();
+      }
+      break;
+    }
 
     case VWUP_BAT_MGMT_U:
       if (PollReply.FromUint16("VWUP_BAT_MGMT_U", value)) {
@@ -1269,4 +1297,33 @@ void OvmsVehicleVWeUp::UpdateChargeCap(bool charging)
     StdMetrics.ms_v_bat_range_full->SetValue(range_full);
     StdMetrics.ms_v_bat_range_ideal->SetValue(range_full * soc_fct);
   }
+}
+
+
+/**
+ * UpdateChargeParams: update charge SOC limit and charge mode
+ */
+void OvmsVehicleVWeUp::UpdateChargeParams()
+{
+  bool timermode = StdMetrics.ms_v_charge_timermode->AsBool();
+  int soc = StdMetrics.ms_v_bat_soc->AsInt();
+  int socmin = m_chg_timer_socmin->AsInt();
+  int socmax = m_chg_timer_socmax->AsInt();
+
+  // Set v.c.limit.soc to either min or max SOC, or 100% depending on the state:
+  int soclim = 100;
+  if (timermode)
+  {
+    if (soc < socmin)
+      soclim = socmin;
+    else if (soc < socmax)
+      soclim = socmax;
+  }
+  StdMetrics.ms_v_charge_limit_soc->SetValue(soclim);
+
+  // Derive charge mode from final SOC destination:
+  if (soclim == 100 || socmax == 100)
+    StdMetrics.ms_v_charge_mode->SetValue("range");
+  else
+    StdMetrics.ms_v_charge_mode->SetValue("standard");
 }
