@@ -336,6 +336,13 @@ config OVMS_VEHICLE_RENAULTZOE
     help
         Enable to include support for Renault Zoe vehicles.
 
+config OVMS_VEHICLE_MAXED3
+    bool "Include support for Maxus eDeliver3 vehicle"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for Maxus eDeliver3 vehicle.
+
 config OVMS_VEHICLE_KIASOULEV
     bool "Include support for Kia Soul EV vehicles"
     default y
