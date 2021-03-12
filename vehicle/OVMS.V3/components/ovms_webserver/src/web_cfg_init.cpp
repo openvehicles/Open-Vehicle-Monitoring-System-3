@@ -420,7 +420,7 @@ std::string OvmsWebServer::CfgInit1(PageEntry_t& p, PageContext_t& c, std::strin
       "<li>Connect module to internet (via Wifi)</li>"
       "<li>Update to latest firmware version</li>"
       "<li>Configure vehicle type and server</li>"
-      "<li>Configure modem (if equipped)</li>"
+      "<li>Configure cellular modem (if equipped)</li>"
     "</ol>");
 
   // create some random passwords:
@@ -569,7 +569,7 @@ std::string OvmsWebServer::CfgInit2(PageEntry_t& p, PageContext_t& c, std::strin
       "<li><strong>Connect module to internet (via Wifi)</strong></li>"
       "<li>Update to latest firmware version</li>"
       "<li>Configure vehicle type and server</li>"
-      "<li>Configure modem (if equipped)</li>"
+      "<li>Configure cellular modem (if equipped)</li>"
     "</ol>");
 
   // generate form:
@@ -834,7 +834,7 @@ std::string OvmsWebServer::CfgInit3(PageEntry_t& p, PageContext_t& c, std::strin
       "<li>Connect module to internet (via Wifi) <span class=\"checkmark\">✔</span></li>"
       "<li><strong>Update to latest firmware version</strong></li>"
       "<li>Configure vehicle type and server</li>"
-      "<li>Configure modem (if equipped)</li>"
+      "<li>Configure cellular modem (if equipped)</li>"
     "</ol>");
 
   // form:
@@ -1012,7 +1012,7 @@ std::string OvmsWebServer::CfgInit4(PageEntry_t& p, PageContext_t& c, std::strin
       "<li>Connect module to internet (via Wifi) <span class=\"checkmark\">✔</span></li>"
       "<li>Update to latest firmware version <span class=\"checkmark\">✔</span></li>"
       "<li><strong>Configure vehicle type and server</strong></li>"
-      "<li>Configure modem (if equipped)</li>"
+      "<li>Configure cellular modem (if equipped)</li>"
     "</ol>");
 
   // form:
@@ -1110,7 +1110,7 @@ std::string OvmsWebServer::CfgInit5(PageEntry_t& p, PageContext_t& c, std::strin
         step = CfgInitSetStep("5.test.start", 3);
       }
       else {
-        ESP_LOGI(TAG, "CfgInit5: modem disabled");
+        ESP_LOGI(TAG, "CfgInit5: cellular modem disabled");
         MyConfig.SetParamValueBool("auto", "modem", false);
         return CfgInitSetStep("done");
       }
@@ -1138,18 +1138,18 @@ std::string OvmsWebServer::CfgInit5(PageEntry_t& p, PageContext_t& c, std::strin
         "<div class=\"modal-dialog modal-lg\">"
           "<div class=\"modal-content\">"
             "<div class=\"modal-header\">"
-              "<h4 class=\"modal-title\">Testing Modem APN</h4>"
+              "<h4 class=\"modal-title\">Testing cellular modem APN</h4>"
             "</div>"
             "<div class=\"modal-body\">"
               "<div class=\"alert alert-info\">"
                 "<p class=\"lead\">What happens now?</p>"
-                "<p>The modem now tries to register with the mobile network.</p>"
+                "<p>The cellular modem now tries to register with the mobile network.</p>"
                 "<p>This may take up to a few minutes depending on your mobile provider and the"
                 " SIM activation status. The progress is shown below.</p>"
-                "<p>The modem is connected when <strong>State: NetMode</strong> and <strong>PPP connected</strong>"
+                "<p>The cellular modem is connected when <strong>State: NetMode</strong> and <strong>PPP connected</strong>"
                 " have been established.</p>"
               "</div>"
-              "<pre class=\"monitor\" data-updcmd=\"modem status\" data-events=\"system.modem\" data-updcnt=\"-1\" data-updint=\"5\"></pre>"
+              "<pre class=\"monitor\" data-updcmd=\"cellular status\" data-events=\"system.modem\" data-updcnt=\"-1\" data-updint=\"5\"></pre>"
             "</div>"
             "<div class=\"modal-footer\">"
               "<button type=\"button\" class=\"btn btn-default\" name=\"action\" value=\"keep\">Keep &amp; proceed</button>"
@@ -1179,11 +1179,11 @@ std::string OvmsWebServer::CfgInit5(PageEntry_t& p, PageContext_t& c, std::strin
       "<li>Connect module to internet (via Wifi) <span class=\"checkmark\">✔</span></li>"
       "<li>Update to latest firmware version <span class=\"checkmark\">✔</span></li>"
       "<li>Configure vehicle type and server <span class=\"checkmark\">✔</span></li>"
-      "<li><strong>Configure modem (if equipped)</strong></li>"
+      "<li><strong>Configure cellular modem (if equipped)</strong></li>"
     "</ol>");
 
   // form:
-  c.panel_start("primary", "Step 5/5: Modem");
+  c.panel_start("primary", "Step 5/5: Cellular Modem");
   c.form_start(p.uri);
 
   std::string iccid = StdMetrics.ms_m_net_mdm_iccid->AsString();
@@ -1192,9 +1192,9 @@ std::string OvmsWebServer::CfgInit5(PageEntry_t& p, PageContext_t& c, std::strin
   } else {
     info =
       "<div class=\"receiver\">"
-        "<code class=\"autoselect\" data-metric=\"m.net.mdm.iccid\">(power modem on to read)</code>"
+        "<code class=\"autoselect\" data-metric=\"m.net.mdm.iccid\">(power cellular modem on to read)</code>"
         "&nbsp;"
-        "<button class=\"btn btn-default\" data-cmd=\"power modem on\" data-target=\"#pso\">Power modem on</button>"
+        "<button class=\"btn btn-default\" data-cmd=\"power cellular on\" data-target=\"#pso\">Power cellular modem on</button>"
         "&nbsp;"
         "<samp id=\"pso\" class=\"samp-inline\"></samp>"
       "</div>"
@@ -1209,14 +1209,14 @@ std::string OvmsWebServer::CfgInit5(PageEntry_t& p, PageContext_t& c, std::strin
   }
   c.input_info("SIM ICCID", info.c_str());
 
-  c.input_checkbox("Enable modem", "modem", modem);
+  c.input_checkbox("Enable cellular modem", "modem", modem);
   c.input_text("APN", "apn", apn.c_str(), NULL,
     "<p>For Hologram, use APN <code>hologram</code> with empty username &amp; password</p>");
   c.input_text("APN username", "apn_user", apn_user.c_str());
   c.input_text("APN password", "apn_pass", apn_pass.c_str());
 
   c.input_checkbox("Enable GPS", "gps", gps,
-    "<p>This enables the modem GPS receiver. Use this if your car does not provide GPS.</p>");
+    "<p>This enables the cellular modem GPS receiver. Use this if your car does not provide GPS.</p>");
 
   c.print(
     "<div class=\"form-group\">"
@@ -1231,7 +1231,7 @@ std::string OvmsWebServer::CfgInit5(PageEntry_t& p, PageContext_t& c, std::strin
 
   c.alert("info",
     "<p class=\"lead\">What will happen next?</p>"
-    "<p>The modem will try to register with the mobile network using the APN data you enter.</p>"
+    "<p>The cellular modem will try to register with the mobile network using the APN data you enter.</p>"
     "<p>This may take up to a few minutes depending on your mobile provider and the SIM activation"
     " status &mdash; if you haven't activated your SIM yet, do so before starting the test.</p>"
     "<p>The progress is shown live and can be cancelled any time.</p>");

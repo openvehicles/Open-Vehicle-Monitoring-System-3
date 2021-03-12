@@ -216,13 +216,13 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
     "</div>"
     "<div class=\"col-sm-6 col-lg-4\">");
 
-  c.panel_start("primary", "Modem");
-  output = ExecuteCommand("modem status");
-  c.printf("<samp class=\"monitor\" data-updcmd=\"modem status\" data-events=\"\\.modem\\.\">%s</samp>", _html(output));
+  c.panel_start("primary", "Cellular Modem");
+  output = ExecuteCommand("cellular status");
+  c.printf("<samp class=\"monitor\" data-updcmd=\"cellular status\" data-events=\"\\.modem\\.\">%s</samp>", _html(output));
   c.panel_end(
     "<ul class=\"list-inline\">"
-      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#modem-cmdres\" data-cmd=\"power modem on\">Start modem</button></li>"
-      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#modem-cmdres\" data-cmd=\"power modem off\">Stop modem</button></li>"
+      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#modem-cmdres\" data-cmd=\"power cellular on\">Start cellular modem</button></li>"
+      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#modem-cmdres\" data-cmd=\"power cellular off\">Stop cellular modem</button></li>"
       "<li><samp id=\"modem-cmdres\" class=\"samp-inline\"></samp></li>"
     "</ul>");
 
@@ -767,7 +767,7 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
 
 #ifdef CONFIG_OVMS_COMP_CELLULAR
 /**
- * HandleCfgModem: configure APN & modem features (URL /cfg/modem)
+ * HandleCfgModem: configure APN & cellular modem features (URL /cfg/modem)
  */
 void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
 {
@@ -822,7 +822,7 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
 
   // generate form:
   c.head(200);
-  c.panel_start("primary", "Modem configuration");
+  c.panel_start("primary", "Cellular modem configuration");
   c.form_start(p.uri);
 
   std::string info;
@@ -832,9 +832,9 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
   } else {
     info =
       "<div class=\"receiver\">"
-        "<code class=\"autoselect\" data-metric=\"m.net.mdm.iccid\">(power modem on to read)</code>"
+        "<code class=\"autoselect\" data-metric=\"m.net.mdm.iccid\">(power cellular modem on to read)</code>"
         "&nbsp;"
-        "<button class=\"btn btn-default\" data-cmd=\"power modem on\" data-target=\"#pso\">Power modem on</button>"
+        "<button class=\"btn btn-default\" data-cmd=\"power cellular on\" data-target=\"#pso\">Power cellular modem on</button>"
         "&nbsp;"
         "<samp id=\"pso\" class=\"samp-inline\"></samp>"
       "</div>"
@@ -2528,12 +2528,12 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
     if (netif_default->name[0] == 'a' && netif_default->name[1] == 'p') {
       c.alert("warning",
         "<p class=\"lead\"><strong>No internet access.</strong></p>"
-        "<p>The module is running in wifi AP mode without modem, so flashing from a public server is currently not possible.</p>"
+        "<p>The module is running in wifi AP mode without cellular modem, so flashing from a public server is currently not possible.</p>"
         "<p>You can still flash from an AP network local IP address (<code>192.168.4.x</code>).</p>");
     }
     else if (netif_default->name[0] == 'p' && netif_default->name[1] == 'p') {
       c.alert("warning",
-        "<p class=\"lead\"><strong>Using modem connection for internet.</strong></p>"
+        "<p class=\"lead\"><strong>Using cellular modem connection for internet.</strong></p>"
         "<p>Downloads from public servers will currently be done via cellular network. Be aware update files are &gt;2 MB, "
         "which may exceed your data plan and need some time depending on your link speed.</p>"
         "<p>You can also flash locally from a wifi network IP address.</p>");
