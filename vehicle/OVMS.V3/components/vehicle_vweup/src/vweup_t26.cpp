@@ -310,7 +310,9 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
   switch (p_frame->MsgID) {
 
     case 0x61A: // SOC.
-      if (HasNoOBD() || !StandardMetrics.ms_v_env_on->AsBool()) {
+      // If available, OBD is normally responsible for the SOC, but K-CAN occasionally
+      // sends SOC updates while OBD is in state OFF:
+      if (HasNoOBD() || IsOff()) {
         StandardMetrics.ms_v_bat_soc->SetValue(d[7] / 2.0);
       }
       if (HasNoOBD()) {

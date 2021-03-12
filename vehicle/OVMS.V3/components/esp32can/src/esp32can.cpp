@@ -349,7 +349,13 @@ void esp32can::InitController()
   MODULE_ESP32CAN->BTR1.B.SAM=0x1;
 
   // Enable all interrupts except arbitration loss (can be ignored):
-  MODULE_ESP32CAN->IER.U = 0xff - __CAN_IRQ_ARB_LOST;
+  uint32_t ier = 0xff & ~__CAN_IRQ_ARB_LOST;
+  // Turn off BRP_DIV if we're V2 or higher
+  esp_chip_info_t chip;
+  esp_chip_info(&chip);
+  if (chip.revision >= 2)
+      ier &= ~__CAN_IER_BRP_DIV;
+  MODULE_ESP32CAN->IER.U = ier;
 
   // No acceptance filtering, as we want to fetch all messages
   MODULE_ESP32CAN->MBX_CTRL.ACC.CODE[0] = 0;
