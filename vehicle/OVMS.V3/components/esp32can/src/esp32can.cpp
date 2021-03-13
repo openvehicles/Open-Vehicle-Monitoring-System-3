@@ -123,13 +123,18 @@ static inline uint32_t ESP32CAN_rxframe(esp32can *me, BaseType_t* task_woken)
       // get FIR
       msg.body.frame.FIR.U = MODULE_ESP32CAN->MBX_CTRL.FCTRL.FIR.U;
 
+      // Protect against corrupt frames
+      int8_t dlc = msg.body.frame.FIR.B.DLC;
+      if (dlc > sizeof(msg.body.frame.data.u8))
+        dlc = sizeof(msg.body.frame.data.u8);
+
       // check if this is a standard or extended CAN frame
       if (msg.body.frame.FIR.B.FF == CAN_frame_std)
         {
         // Standard frame: Get Message ID
         msg.body.frame.MsgID = ESP32CAN_GET_STD_ID;
         // …deep copy data bytes
-        for (int k=0 ; k<msg.body.frame.FIR.B.DLC ; k++)
+        for (int k = 0; k < dlc; k++)
           msg.body.frame.data.u8[k] = MODULE_ESP32CAN->MBX_CTRL.FCTRL.TX_RX.STD.data[k];
         }
       else
@@ -137,7 +142,7 @@ static inline uint32_t ESP32CAN_rxframe(esp32can *me, BaseType_t* task_woken)
         // Extended frame: Get Message ID
         msg.body.frame.MsgID = ESP32CAN_GET_EXT_ID;
         // …deep copy data bytes
-        for (int k=0 ; k<msg.body.frame.FIR.B.DLC ; k++)
+        for (int k = 0; k < dlc; k++)
           msg.body.frame.data.u8[k] = MODULE_ESP32CAN->MBX_CTRL.FCTRL.TX_RX.EXT.data[k];
         }
 
@@ -510,12 +515,17 @@ esp_err_t esp32can::WriteFrame(const CAN_frame_t* p_frame)
   // copy frame information record
   MODULE_ESP32CAN->MBX_CTRL.FCTRL.FIR.U=p_frame->FIR.U;
 
+  // Protect against corrupt frames
+  int8_t dlc = p_frame->FIR.B.DLC;
+  if (dlc > sizeof(p_frame->data.u8))
+    dlc = sizeof(p_frame->data.u8);
+
   if (p_frame->FIR.B.FF==CAN_frame_std)
     { // Standard frame
     // Write message ID
     ESP32CAN_SET_STD_ID(p_frame->MsgID);
     // Copy the frame data to the hardware
-    for (__byte_i=0 ; __byte_i<p_frame->FIR.B.DLC ; __byte_i++)
+    for (__byte_i = 0; __byte_i < dlc; __byte_i++)
       MODULE_ESP32CAN->MBX_CTRL.FCTRL.TX_RX.STD.data[__byte_i]=p_frame->data.u8[__byte_i];
     }
   else
@@ -523,7 +533,7 @@ esp_err_t esp32can::WriteFrame(const CAN_frame_t* p_frame)
     // Write message ID
     ESP32CAN_SET_EXT_ID(p_frame->MsgID);
     // Copy the frame data to the hardware
-    for (__byte_i=0 ; __byte_i<p_frame->FIR.B.DLC ; __byte_i++)
+    for (__byte_i = 0; __byte_i < dlc; __byte_i++)
       MODULE_ESP32CAN->MBX_CTRL.FCTRL.TX_RX.EXT.data[__byte_i]=p_frame->data.u8[__byte_i];
     }
 
