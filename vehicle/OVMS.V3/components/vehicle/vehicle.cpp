@@ -1140,6 +1140,19 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
       NotifiedVehicleChargePilotOff();
       }
     }
+  else if (metric == StandardMetrics.ms_v_charge_timermode)
+    {
+    if (StandardMetrics.ms_v_charge_timermode->AsBool())
+      {
+      MyEvents.SignalEvent("vehicle.charge.timermode.on",NULL);
+      NotifiedVehicleChargeTimermodeOn();
+      }
+    else
+      {
+      MyEvents.SignalEvent("vehicle.charge.timermode.off",NULL);
+      NotifiedVehicleChargeTimermodeOff();
+      }
+    }
   else if (metric == StandardMetrics.ms_v_env_aux12v)
     {
     if (StandardMetrics.ms_v_env_aux12v->AsBool())

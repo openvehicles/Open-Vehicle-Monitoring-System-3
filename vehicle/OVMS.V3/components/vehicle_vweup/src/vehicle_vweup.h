@@ -131,6 +131,7 @@ protected:
   void ResetTripCounters();
   void ResetChargeCounters();
   void SetChargeType(chg_type_t chgtype);
+  void SetChargeState(bool charging);
 
 public:
   bool IsOff() {
@@ -281,6 +282,7 @@ protected:
 protected:
   void UpdateChargePower(float power_kw);
   void UpdateChargeCap(bool charging);
+  void UpdateChargeParams();
 
 protected:
   OvmsMetricFloat *MotElecSoCAbs;                 // Absolute SoC of main battery from motor electrics ECU
@@ -318,6 +320,10 @@ protected:
   OvmsMetricInt       *m_lv_pwrstate;             // Low voltage (12V) systems power state (0x1DEC[0]: 0-15)
   OvmsMetricInt       *m_lv_autochg;              // Low voltage (12V) auto charge mode (0x1DED[0]: 0/1)
   OvmsMetricInt       *m_hv_chgmode;              // High voltage charge mode (0x1DD6[0]: 0/1/4)
+
+  OvmsMetricInt       *m_chg_timer_socmin;        // Scheduled minimum SOC
+  OvmsMetricInt       *m_chg_timer_socmax;        // Scheduled maximum SOC
+  OvmsMetricBool      *m_chg_timer_def;           // true = Scheduled charging is default
 
   OvmsMetricFloat     *m_bat_energy_range;        // Battery energy available from MFD range estimation [kWh]
   OvmsMetricFloat     *m_bat_cap_kwh_range;       // Battery usable capacity derived from MFD range estimation [kWh]

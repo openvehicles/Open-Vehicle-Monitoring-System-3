@@ -302,6 +302,8 @@ class OvmsVehicle : public InternalRamAllocated
     virtual void NotifiedVehicleChargeFinish() {}
     virtual void NotifiedVehicleChargePilotOn() {}
     virtual void NotifiedVehicleChargePilotOff() {}
+    virtual void NotifiedVehicleChargeTimermodeOn() {}
+    virtual void NotifiedVehicleChargeTimermodeOff() {}
     virtual void NotifiedVehicleAux12vOn() {}
     virtual void NotifiedVehicleAux12vOff() {}
     virtual void NotifiedVehicleCharge12vStart() {}

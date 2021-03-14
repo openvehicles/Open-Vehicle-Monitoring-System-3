@@ -29,7 +29,7 @@ GPS Location                Yes
 Speed Display               Yes
 Temperature Display         Yes
 BMS v+t Display             Yes (including cell details)
-TPMS Display                No
+TPMS Display                Yes
 Charge Status Display       Yes
 Charge Interruption Alerts  Yes
 Charge Control              No
@@ -68,8 +68,13 @@ Supported Standard Metrics
 ======================================== ======================== ============================================
 Metric name                              Example value            Description
 ======================================== ======================== ============================================
-v.e.on                                   true                     Is ignition on and drivable (true = "Vehicle ON", false = "Vehicle OFF" state)
-v.c.charging                             true                     Is vehicle charging (true = "Vehicle CHARGING" state. v.e.on=false if this is true)
+v.e.on                                   yes                      Is ignition on and drivable (true = "Vehicle ON", false = "Vehicle OFF" state)
+v.c.charging                             yes                      Is vehicle charging (true = "Vehicle CHARGING" state. v.e.on=false if this is true)
+v.c.limit.soc                            100%                     Current/next charge timer mode SOC destination
+v.c.mode                                 range                    "range" = charging to 100% SOC, else "standard"
+v.c.timermode                            no                       Yes = current/next charge under timer control
+v.c.state                                done                     charging, stopped, done
+v.c.substate                             scheduledstop            scheduledstop, scheduledstart, onrequest, timerwait, stopped, interrupted
 v.b.12v.voltage [1]_                     12.9 V                   Current voltage of the 12V battery
 v.b.voltage                              320.2 V                  Current voltage of the main battery
 v.b.current                              23.2 A                   Current current into (negative) or out of (positive) the main battery
@@ -117,6 +122,32 @@ xvu.e.lv.autochg                         1                        Auxiliary batt
 xvu.e.lv.pwrstate                        0                        Low voltage (12V) power state (0=off, 4=12V, 8=HVAC, 15=on)
 ======================================== ======================== ============================================
 
+
+**Timed charge metrics**
+
+======================================== ======================== ============================================
+Metric name                              Example value            Description
+======================================== ======================== ============================================
+xvu.c.limit.soc.max                      80%                      Charge schedule maximum SOC
+xvu.c.limit.soc.min                      20%                      Charge schedule minimum SOC
+xvu.c.timermode.def                      yes                      Charge timer defined & default
+======================================== ======================== ============================================
+
+``xvu.c.timermode.def`` tells if a charge schedule has been configured and enabled. If so, the car uses timed
+charging by default (the charge mode button will be lit). ``v.c.timermode`` tells if the charge timer is or will
+actually be used for the current or next charge, i.e. reflects the mode selected by pushing the button.
+
+With timed charging, the car first charges to the minimum SOC as soon as possible (when connected). If the
+maximum SOC configured for the schedule hasn't been reached by then, it will then wait for the timer to signal
+the second phase to charge up to the maximum SOC. ``v.c.limit.soc`` reflects the current phase, i.e. will be
+the minimum SOC during phase 1, the maximum (if configured) during phase 2. After reaching the timer defined
+final SOC, it will switch to 100%.
+
+Note: ``xvu.c.limit.soc.min`` will show the configured minimum SOC also if no schedule is currently enabled.
+``xvu.c.limit.soc.max`` shows the maximum for the current/next schedule to apply. If no schedule is enabled,
+it will be zero.
+
+
 **Metrics updated in state "Vehicle ON" or "Vehicle CHARGING"**
 
 ======================================== ======================== ============================================
@@ -125,6 +156,7 @@ Metric name                              Example value            Description
 xvu.b.cell.delta                         0.012 V                  Delta voltage between lowest and highest cell voltage
 xvu.b.soc                                85.3 %                   Current absolute State of Charge (SoC) of the main battery
 ======================================== ======================== ============================================
+
 
 **Metrics updated only in state "Vehicle CHARGING"**
 

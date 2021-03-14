@@ -96,6 +96,9 @@ typedef enum
  */
 #define __CAN_IER_BRP_DIV __CAN_IRQ_WAKEUP
 
+/* The BRP is 6 bits wide */
+#define BRP_MAX ((1 << 6) - 1)
+
 /** \brief OCMODE options. */
 typedef enum
   {
