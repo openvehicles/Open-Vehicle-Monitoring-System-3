@@ -1082,7 +1082,6 @@ void esp32wifi::EventWifiApState(std::string event, void* data)
     // Start
     AdjustTaskPriority();
     esp_wifi_get_mac(ESP_IF_WIFI_AP, m_mac_ap);
-    SetAPWifiBW();
     tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP, &m_ip_info_ap);
 
     // Disable routing (gateway) and DNS offer on DHCP server for AP:
@@ -1379,28 +1378,3 @@ void esp32wifi::SetSTAWifiIP(std::string ip, std::string sn, std::string gw)
     tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA,&m_ip_info_sta);
     }
   }
-  
-void esp32wifi::SetAPWifiBW()
-  {
-  esp_err_t err;
-  if (m_mode ==  ESP32WIFI_MODE_AP || m_mode ==  ESP32WIFI_MODE_APCLIENT)
-    {
-    uint8_t bw = MyConfig.GetParamValueInt("network", "wifi.ap.bw");
-    switch (bw)
-      {
-      case 20:
-        err = esp_wifi_set_bandwidth(ESP_IF_WIFI_AP, WIFI_BW_HT20);
-        break;
-      case 40:
-        err = esp_wifi_set_bandwidth(ESP_IF_WIFI_AP, WIFI_BW_HT40);
-        break;
-      default:
-        err = esp_wifi_set_bandwidth(ESP_IF_WIFI_AP, WIFI_BW_HT20);
-      }
-    if (err != ESP_OK)
-      {
-      ESP_LOGE(TAG, "WIFI: failed changing bandwidth; error=%d", err);
-      return;
-      }
-    }
-  }    

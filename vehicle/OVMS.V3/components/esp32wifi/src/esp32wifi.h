@@ -78,7 +78,6 @@ class esp32wifi : public pcp, public InternalRamAllocated
     void AdjustTaskPriority();
     void StartDhcpClient();
     void SetSTAWifiIP(std::string ip="", std::string sn="", std::string gw="");
-    void SetAPWifiBW();
 
   public:
     void EventWifiStaState(std::string event, void* data);
