@@ -176,7 +176,8 @@ class OvmsVehicleMgEv : public OvmsVehicle
     //
   public:
     void WebInit();
-    //static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
+    void WebDeInit();
+    static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
     void GetDashboardConfig(DashboardConfig& cfg);
     static void WebDispChgMetrics(PageEntry_t &p, PageContext_t &c);
 #endif //CONFIG_OVMS_COMP_WEBSERVER
