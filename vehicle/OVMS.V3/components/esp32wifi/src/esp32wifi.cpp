@@ -616,6 +616,7 @@ void esp32wifi::StartAccessPointMode(std::string ssid, std::string password)
 
   // we need APSTA mode to be able to do scans:
   ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA));
+  SetAPWifiBW();
 
   memset(&m_wifi_ap_cfg,0,sizeof(m_wifi_ap_cfg));
   m_wifi_ap_cfg.ap.ssid_len = 0;
@@ -675,6 +676,7 @@ void esp32wifi::StartAccessPointClientMode(std::string apssid, std::string appas
   OvmsMutexLock exclusive(&m_mutex);
 
   ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA));
+  SetAPWifiBW();
 
   memset(&m_wifi_ap_cfg,0,sizeof(m_wifi_ap_cfg));
   m_wifi_ap_cfg.ap.ssid_len = 0;
@@ -1082,7 +1084,6 @@ void esp32wifi::EventWifiApState(std::string event, void* data)
     // Start
     AdjustTaskPriority();
     esp_wifi_get_mac(ESP_IF_WIFI_AP, m_mac_ap);
-    SetAPWifiBW();
     tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP, &m_ip_info_ap);
 
     // Disable routing (gateway) and DNS offer on DHCP server for AP:
@@ -1286,8 +1287,13 @@ void esp32wifi::OutputStatus(int verbosity, OvmsWriter* writer)
 
   if (m_mode == ESP32WIFI_MODE_AP || m_mode == ESP32WIFI_MODE_APCLIENT)
     {
-    writer->printf("\nAP SSID: %s\n  MAC: " MACSTR "\n  IP: " IPSTR "\n",
-      m_wifi_ap_cfg.ap.ssid, MAC2STR(m_mac_ap), IP2STR(&m_ip_info_ap.ip));
+    wifi_bandwidth_t bw;
+    uint8_t primary;
+    wifi_second_chan_t secondary;
+    esp_wifi_get_channel(&primary, &secondary);
+    esp_wifi_get_bandwidth(WIFI_IF_AP, &bw);
+    writer->printf("\nAP SSID: %s (%d MHz, channel %d)\n  MAC: " MACSTR "\n  IP: " IPSTR "\n",
+      m_wifi_ap_cfg.ap.ssid, (int)bw*20, primary, MAC2STR(m_mac_ap), IP2STR(&m_ip_info_ap.ip));
     wifi_sta_list_t sta_list;
     tcpip_adapter_sta_list_t ip_list;
     if (esp_wifi_ap_get_sta_list(&sta_list) == ESP_OK)
