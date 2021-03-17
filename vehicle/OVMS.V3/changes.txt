@@ -12,6 +12,8 @@ Open Vehicle Monitor System v3 - Change log
     xvu.c.limit.soc.max            -- Charge schedule maximum SOC [%]
     xvu.c.limit.soc.min            -- Charge schedule minimum SOC [%]
     xvu.c.timermode.def            -- Charge timer defined & default [bool]
+- New vehicle: Hyundai Ioniq vFL (HIONVFL)
+  https://docs.openvehicles.com/en/latest/components/vehicle_hyundai_ioniqvfl/docs/index.html
 
 2021-03-05 MB  3.2.016  OTA release
 - VW e-Up: CCS (DC) charge detection & data

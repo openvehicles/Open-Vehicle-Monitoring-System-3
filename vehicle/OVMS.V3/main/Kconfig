@@ -414,6 +414,13 @@ config OVMS_VEHICLE_BMWI3
     help
         Enable to include support for BMW i3 or i3s vehicles
 
+config OVMS_VEHICLE_HYUNDAI_IONIQVFL
+    bool "Include support for Hyundai Ioniq Electric 28kWh (vFL)"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for Hyundai Ioniq Electric 28kWh (vFL).
+
 config OVMS_VEHICLE_RXTASK_STACK
     int "Stack size for vehicle RX task"
     default 6144
