@@ -395,9 +395,11 @@ void OvmsVehicleVWeUp::ResetTripCounters()
 
   // Get trip start references as far as available:
   //  (if we don't have them yet, IncomingPollReply() will set them ASAP)
+  if (IsOBDReady()) {
+    m_soc_abs_start       = BatMgmtSoCAbs->AsFloat();
+  }
   m_odo_start           = StdMetrics.ms_v_pos_odometer->AsFloat();
   m_soc_norm_start      = StdMetrics.ms_v_bat_soc->AsFloat();
-  m_soc_abs_start       = BatMgmtSoCAbs->AsFloat();
   m_energy_recd_start   = StdMetrics.ms_v_bat_energy_recd_total->AsFloat();
   m_energy_used_start   = StdMetrics.ms_v_bat_energy_used_total->AsFloat();
   m_coulomb_recd_start  = StdMetrics.ms_v_bat_coulomb_recd_total->AsFloat();
@@ -423,8 +425,10 @@ void OvmsVehicleVWeUp::ResetChargeCounters()
 
   // Get charge start reference as far as available:
   //  (if we don't have it yet, IncomingPollReply() will set it ASAP)
+  if (IsOBDReady()) {
+    m_soc_abs_start         = BatMgmtSoCAbs->AsFloat();
+  }
   m_soc_norm_start        = StdMetrics.ms_v_bat_soc->AsFloat();
-  m_soc_abs_start         = BatMgmtSoCAbs->AsFloat();
   m_energy_charged_start  = StdMetrics.ms_v_bat_energy_recd_total->AsFloat();
   m_coulomb_charged_start = StdMetrics.ms_v_bat_coulomb_recd_total->AsFloat();
   m_charge_kwh_grid_start = StdMetrics.ms_v_charge_kwh_grid_total->AsFloat();
@@ -457,23 +461,25 @@ void OvmsVehicleVWeUp::SetChargeType(chg_type_t chgtype)
   else {
     StdMetrics.ms_v_charge_type->SetValue("");
     // …and clear/reset charge metrics:
-    ChargerPowerEffEcu->SetValue(100);
-    ChargerPowerLossEcu->SetValue(0);
-    ChargerPowerEffCalc->SetValue(100);
-    ChargerPowerLossCalc->SetValue(0);
-    ChargerAC1U->SetValue(0);
-    ChargerAC1I->SetValue(0);
-    ChargerAC2U->SetValue(0);
-    ChargerAC2I->SetValue(0);
-    ChargerACPower->SetValue(0);
-    ChargerDC1U->SetValue(0);
-    ChargerDC1I->SetValue(0);
-    ChargerDC2U->SetValue(0);
-    ChargerDC2I->SetValue(0);
-    ChargerDCPower->SetValue(0);
-    m_chg_ccs_voltage->SetValue(0);
-    m_chg_ccs_current->SetValue(0);
-    m_chg_ccs_power->SetValue(0);
+    if (IsOBDReady()) {
+      ChargerPowerEffEcu->SetValue(100);
+      ChargerPowerLossEcu->SetValue(0);
+      ChargerPowerEffCalc->SetValue(100);
+      ChargerPowerLossCalc->SetValue(0);
+      ChargerAC1U->SetValue(0);
+      ChargerAC1I->SetValue(0);
+      ChargerAC2U->SetValue(0);
+      ChargerAC2I->SetValue(0);
+      ChargerACPower->SetValue(0);
+      ChargerDC1U->SetValue(0);
+      ChargerDC1I->SetValue(0);
+      ChargerDC2U->SetValue(0);
+      ChargerDC2I->SetValue(0);
+      ChargerDCPower->SetValue(0);
+      m_chg_ccs_voltage->SetValue(0);
+      m_chg_ccs_current->SetValue(0);
+      m_chg_ccs_power->SetValue(0);
+    }
     StdMetrics.ms_v_charge_voltage->SetValue(0);
     StdMetrics.ms_v_charge_current->SetValue(0);
     StdMetrics.ms_v_charge_power->SetValue(0);
@@ -507,12 +513,12 @@ void OvmsVehicleVWeUp::SetChargeState(bool charging)
     StdMetrics.ms_v_charge_inprogress->SetValue(false);
 
     int soc = StdMetrics.ms_v_bat_soc->AsInt();
-    int socmin = m_chg_timer_socmin->AsInt();
-    int socmax = m_chg_timer_socmax->AsInt();
 
-    if (StdMetrics.ms_v_charge_timermode->AsBool())
+    if (IsOBDReady() && StdMetrics.ms_v_charge_timermode->AsBool())
     {
       // Scheduled charge;
+      int socmin = m_chg_timer_socmin->AsInt();
+      int socmax = m_chg_timer_socmax->AsInt();
       // if stopped at minimum SOC, we're waiting for the second phase:
       if (soc >= socmin-1 && soc <= socmin+1) {
         StdMetrics.ms_v_charge_substate->SetValue("timerwait");
