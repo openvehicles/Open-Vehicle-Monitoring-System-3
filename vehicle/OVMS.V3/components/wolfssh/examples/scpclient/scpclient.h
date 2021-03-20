@@ -19,11 +19,9 @@
  */
 
 
-#pragma once
-
-#ifndef _WOLFSSH_SCPCLIENT_H_
-#define _WOLFSSH_SCPCLIENT_H_
+#ifndef _WOLFSSH_EXAMPLES_SCPCLIENT_H_
+#define _WOLFSSH_EXAMPLES_SCPCLIENT_H_
 
 THREAD_RETURN WOLFSSH_THREAD scp_client(void*);
 
-#endif /* _WOLFSSH_SCPCLIENT_H_ */
+#endif /* _WOLFSSH_EXAMPLES_SCPCLIENT_H_ */

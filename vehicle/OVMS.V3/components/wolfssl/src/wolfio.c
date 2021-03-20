@@ -98,6 +98,9 @@ static WC_INLINE int wolfSSL_LastError(int err)
     return xn_getlasterror();
 #elif defined(WOLFSSL_LINUXKM)
     return err; /* Return provided error value */
+#elif defined(FUSION_RTOS)
+    #include <fclerrno.h>
+    return FCL_GET_ERRNO;
 #else
     return errno;
 #endif
@@ -354,6 +357,7 @@ int EmbedReceiveFrom(WOLFSSL *ssl, char *buf, int sz, void *ctx)
     else if(IsSCR(ssl)) {
         if (ssl->dtls_start_timeout &&
                 LowResTimer() - ssl->dtls_start_timeout > (word32)dtls_timeout) {
+            ssl->dtls_start_timeout = 0;
             return WOLFSSL_CBIO_ERR_TIMEOUT;
         }
         else if (!ssl->dtls_start_timeout) {
@@ -784,6 +788,8 @@ int wolfIO_Send(SOCKET_T sd, char *buf, int sz, int wrFlags)
                 }
             }
         }
+
+        WOLFSSL_MSG("Select error");
         return SOCKET_ERROR_E;
     }
 #endif /* HAVE_IO_TIMEOUT */
@@ -2142,7 +2148,7 @@ int Mynewt_Receive(WOLFSSL *ssl, char *buf, int sz, void *ctx)
     struct mn_sockaddr_in from;
     struct os_mbuf *m;
     int read_sz = 0;
-    uint16_t total;
+    word16 total;
 
     if (mynewt_ctx == NULL || mynewt_ctx->mnSocket == NULL) {
         WOLFSSL_MSG("Mynewt Recv NULL parameters");
@@ -2385,7 +2391,7 @@ int GNRC_ReceiveFrom(WOLFSSL *ssl, char *buf, int sz, void *_ctx)
 {
     sock_udp_ep_t ep;
     int ret;
-    uint32_t timeout = wolfSSL_dtls_get_current_timeout(ssl) * 1000000;
+    word32 timeout = wolfSSL_dtls_get_current_timeout(ssl) * 1000000;
     sock_tls_t *ctx = (sock_tls_t *)_ctx;
     if (!ctx)
         return WOLFSSL_CBIO_ERR_GENERAL;

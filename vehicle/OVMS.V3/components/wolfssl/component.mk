@@ -10,9 +10,18 @@
 ifdef CONFIG_OVMS_SC_GPL_WOLF
 COMPONENT_ADD_INCLUDEDIRS := .
 COMPONENT_EXTRA_INCLUDES := ${IDF_PATH}/components/freertos/include/freertos
-COMPONENT_SRCDIRS := wolfcrypt/src
-COMPONENT_SRCDIRS += wolfcrypt/src/port/Espressif
-COMPONENT_OBJS := wolfcrypt/src/aes.o
+COMPONENT_ADD_LDFLAGS = -Wl,--whole-archive -l$(COMPONENT_NAME) -Wl,--no-whole-archive
+COMPONENT_SRCDIRS := src wolfcrypt/src wolfcrypt/src/port/Espressif
+COMPONENT_OBJS := src/crl.o
+COMPONENT_OBJS += src/internal.o
+COMPONENT_OBJS += src/keys.o
+COMPONENT_OBJS += src/ocsp.o
+COMPONENT_OBJS += src/sniffer.o
+COMPONENT_OBJS += src/ssl.o
+COMPONENT_OBJS += src/tls.o
+COMPONENT_OBJS += src/tls13.o
+COMPONENT_OBJS += src/wolfio.o
+COMPONENT_OBJS += wolfcrypt/src/aes.o
 COMPONENT_OBJS += wolfcrypt/src/arc4.o
 COMPONENT_OBJS += wolfcrypt/src/asm.o
 COMPONENT_OBJS += wolfcrypt/src/asn.o
@@ -64,11 +73,10 @@ COMPONENT_OBJS += wolfcrypt/src/sha3.o
 COMPONENT_OBJS += wolfcrypt/src/sha512.o
 COMPONENT_OBJS += wolfcrypt/src/signature.o
 COMPONENT_OBJS += wolfcrypt/src/srp.o
-COMPONENT_OBJS += wolfcrypt/src/tfm.o
 COMPONENT_OBJS += wolfcrypt/src/wc_encrypt.o
 COMPONENT_OBJS += wolfcrypt/src/wc_port.o
 COMPONENT_OBJS += wolfcrypt/src/wolfevent.o
 COMPONENT_OBJS += wolfcrypt/src/wolfmath.o
 
-CFLAGS += -DWOLFSSL_USER_SETTINGS
+CFLAGS += -Wno-char-subscripts -DWOLFSSL_USER_SETTINGS
 endif

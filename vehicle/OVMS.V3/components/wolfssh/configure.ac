@@ -3,7 +3,7 @@
 # All right reserved.
 
 AC_COPYRIGHT([Copyright (C) 2014-2020 wolfSSL Inc.])
-AC_INIT([wolfssh],[1.4.5],[support@wolfssl.com],[wolfssh],[https://www.wolfssl.com])
+AC_INIT([wolfssh],[1.4.6],[support@wolfssl.com],[wolfssh],[https://www.wolfssl.com])
 AC_PREREQ([2.63])
 AC_CONFIG_AUX_DIR([build-aux])
 
@@ -17,7 +17,7 @@ AC_ARG_PROGRAM
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADERS([src/config.h])
 
-WOLFSSH_LIBRARY_VERSION=12:0:3
+WOLFSSH_LIBRARY_VERSION=12:1:3
 #                       | | |
 #                +------+ | +---+
 #                |        |     |

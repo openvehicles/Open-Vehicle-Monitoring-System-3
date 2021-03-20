@@ -18,8 +18,8 @@
  * along with wolfSSH.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef WOLFSSL_CERTS_TEST_H
-#define WOLFSSL_CERTS_TEST_H
+#ifndef _WOLFSSH_CERTS_TEST_H_
+#define _WOLFSSH_CERTS_TEST_H_
 
 #if defined(NO_FILESYSTEM)
 
@@ -222,5 +222,5 @@ static const int sizeof_ecc_key_der_521 = sizeof(ecc_key_der_521);
 
 #endif /* NO_FILESYSTEM */
 
-#endif /* WOLFSSL_CERTS_TEST_H */
+#endif /* _WOLFSSL_CERTS_TEST_H_ */
 
