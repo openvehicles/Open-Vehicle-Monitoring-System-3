@@ -161,12 +161,28 @@ void OvmsWebServer::NetManInit(std::string event, void* data)
   struct mg_bind_opts bind_opts = {};
   memset(&bind_opts, 0, sizeof(bind_opts));
   bind_opts.error_string = (const char**) &error_string;
+
+  // bind http:
+  ESP_LOGI(TAG, "Binding to port 80 (http)");
   struct mg_connection *nc = mg_bind_opt(mgr, ":80", EventHandler, bind_opts);
-  if (!nc)
-    ESP_LOGE(TAG, "Cannot bind to port 80: %s", error_string);
-  else {
+  if (!nc) {
+    ESP_LOGE(TAG, "Cannot bind to port 80 (http): %s", error_string);
+  } else {
     mg_set_protocol_http_websocket(nc);
     mg_set_timer(nc, mg_time() + SESSION_CHECK_INTERVAL);
+  }
+
+  // bind https:
+  if (path_exists("/store/tls/webserver.crt") && path_exists("/store/tls/webserver.key")) {
+    ESP_LOGI(TAG, "Binding to port 443 (https)");
+    bind_opts.ssl_cert = "/store/tls/webserver.crt";
+    bind_opts.ssl_key = "/store/tls/webserver.key";
+    nc = mg_bind_opt(mgr, ":443", EventHandler, bind_opts);
+    if (!nc) {
+      ESP_LOGE(TAG, "Cannot bind to port 443 (https): %s", error_string);
+    } else {
+      mg_set_protocol_http_websocket(nc);
+    }
   }
 }
 

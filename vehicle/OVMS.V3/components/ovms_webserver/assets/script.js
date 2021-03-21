@@ -350,7 +350,11 @@ var loghist = [];
 const loghist_maxsize = 100;
 
 function initSocketConnection(){
-  ws = new WebSocket('ws://' + location.host + '/msg');
+  if (location.protocol == "https:") {
+    ws = new WebSocket('wss://' + location.host + '/msg');
+  } else {
+    ws = new WebSocket('ws://' + location.host + '/msg');
+  }
   ws.onopen = function(ev) {
     console.log("WebSocket OPENED", ev);
     $(".receiver").subscribe();
