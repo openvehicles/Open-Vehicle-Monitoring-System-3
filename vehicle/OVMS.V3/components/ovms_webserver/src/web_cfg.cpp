@@ -4025,28 +4025,10 @@ void OvmsWebServer::HandleFile(PageEntry_t& p, PageContext_t& c)
       error += "; Missing content";
     }
     else {
-      // create path:
-      size_t n = path.rfind('/');
-      if (n != 0 && n != std::string::npos) {
-        std::string dir = path.substr(0, n);
-        if (!path_exists(dir)) {
-          if (mkpath(dir) != 0) {
-            error += "; Error creating path: ";
-            error += strerror(errno);
-          }
-        }
-      }
       // write file:
-      if (error == "") {
-        std::ofstream file(path, std::ios::out | std::ios::binary | std::ios::trunc);
-        if (file.is_open())
-          file.write(content.data(), content.size());
-        if (file.fail()) {
-          error += "; Error writing to path: ";
-          error += strerror(errno);
-        } else {
-          MyEvents.SignalEvent("system.vfs.file.changed", (void*)path.c_str(), path.size()+1);
-        }
+      if (save_file(path, content) != 0) {
+        error += "; Error writing to path: ";
+        error += strerror(errno);
       }
     }
   }
@@ -4056,16 +4038,7 @@ void OvmsWebServer::HandleFile(PageEntry_t& p, PageContext_t& c)
       path = "/store/";
     } else if (path.back() != '/') {
       // read file:
-      std::ifstream file(path, std::ios::in | std::ios::binary | std::ios::ate);
-      if (file.is_open()) {
-        auto size = file.tellg();
-        if (size > 0) {
-          content.resize(size, '\0');
-          file.seekg(0);
-          file.read(&content[0], size);
-        }
-      }
-      if (file.fail()) {
+      if (load_file(path, content) != 0) {
         error += "; Error reading from path: ";
         error += strerror(errno);
       }
