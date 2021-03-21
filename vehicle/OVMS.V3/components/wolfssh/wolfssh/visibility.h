@@ -26,7 +26,8 @@
  */
 
 
-#pragma once
+#ifndef _WOLFSSH_VISIBILITY_H_
+#define _WOLFSSH_VISIBILITY_H_
 
 
 #ifdef __cplusplus
@@ -76,4 +77,6 @@ extern "C" {
 #ifdef __cplusplus
 }
 #endif
+
+#endif /* _WOLFSSH_VISIBILITY_H_ */
 

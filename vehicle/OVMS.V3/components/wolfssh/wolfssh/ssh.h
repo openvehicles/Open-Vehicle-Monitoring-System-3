@@ -24,7 +24,9 @@
  */
 
 
-#pragma once
+#ifndef _WOLFSSH_SSH_H_
+#define _WOLFSSH_SSH_H_
+
 
 #ifdef WOLFSSL_USER_SETTINGS
 #include <wolfssl/wolfcrypt/settings.h>
@@ -296,4 +298,6 @@ WOLFSSH_API void wolfSSH_ShowSizes(void);
 #ifdef __cplusplus
 }
 #endif
+
+#endif /* _WOLFSSH_SSH_H_ */
 

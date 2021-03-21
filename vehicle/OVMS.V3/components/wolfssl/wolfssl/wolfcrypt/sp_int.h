@@ -167,6 +167,8 @@ extern "C" {
         #define SP_WORD_SIZE 16
         #undef WOLFSSL_SP_ASM
     #endif
+#elif defined(WOLFSSL_SP_X86)
+    #define SP_WORD_SIZE 32
 #elif defined(WOLFSSL_SP_ARM64_ASM) || defined(WOLFSSL_SP_ARM64)
     #define SP_WORD_SIZE 64
 #elif defined(WOLFSSL_SP_ARM32_ASM) || defined(WOLFSSL_SP_ARM32)
@@ -319,9 +321,10 @@ typedef struct sp_ecc_ctx {
     /* Calculate number of digits to have in an sp_int based maximum size of
      * numbers in bits that will be used.
      * Double the size to hold multiplication result.
+     * Add one to accommodate extra digit used by sp_mul(), sp_mulmod(), sp_sqr(), and sp_sqrmod().
      */
     #define SP_INT_DIGITS                                                      \
-        (((SP_INT_BITS + (SP_WORD_SIZE - 1)) * 2 + SP_WORD_SIZE) / SP_WORD_SIZE)
+        ((((SP_INT_BITS + (SP_WORD_SIZE - 1)) * 2 + SP_WORD_SIZE) / SP_WORD_SIZE) + 1)
 #endif
 
 #ifndef SP_INT_DIGITS
@@ -331,41 +334,41 @@ typedef struct sp_ecc_ctx {
     #if !defined(WOLFSSL_HAVE_SP_RSA) && !defined(WOLFSSL_HAVE_SP_DH) && \
         !defined(WOLFSSL_HAVE_SP_ECC)
         #if !defined(NO_RSA) || !defined(NO_DH) || !defined(NO_DSA)
-            #define SP_INT_DIGITS        ((6144 + SP_WORD_SIZE) / SP_WORD_SIZE)
+            #define SP_INT_DIGITS        (((6144 + SP_WORD_SIZE) / SP_WORD_SIZE) + 1)
         #elif defined(HAVE_ECC)
             #define SP_INT_DIGITS   \
-                    ((2 * ( 521 + SP_WORD_SIZE) + SP_WORD_SIZE) / SP_WORD_SIZE)
+                    (((2 * ( 521 + SP_WORD_SIZE) + SP_WORD_SIZE) / SP_WORD_SIZE) + 1)
         #elif !defined(NO_PWDBASED) && defined(WOLFSSL_SHA512)
-            #define SP_INT_DIGITS        (( 512 + SP_WORD_SIZE) / SP_WORD_SIZE)
+            #define SP_INT_DIGITS        ((( 512 + SP_WORD_SIZE) / SP_WORD_SIZE) + 1)
         #else
-            #define SP_INT_DIGITS        (( 256 + SP_WORD_SIZE) / SP_WORD_SIZE)
+            #define SP_INT_DIGITS        ((( 256 + SP_WORD_SIZE) / SP_WORD_SIZE) + 1)
         #endif
     #elif !defined(WOLFSSL_HAVE_SP_RSA) && !defined(WOLFSSL_HAVE_SP_DH)
         #ifdef WOLFSSL_SP_MATH_ALL
             #define SP_INT_DIGITS   \
-                    ((2 * ( 521 + SP_WORD_SIZE) + SP_WORD_SIZE) / SP_WORD_SIZE)
+                    (((2 * ( 521 + SP_WORD_SIZE) + SP_WORD_SIZE) / SP_WORD_SIZE) + 1)
         #elif defined(WOLFSSL_SP_384)
-            #define SP_INT_DIGITS        (( 768 + SP_WORD_SIZE) / SP_WORD_SIZE)
+            #define SP_INT_DIGITS        ((( 768 + SP_WORD_SIZE) / SP_WORD_SIZE) + 1)
         #else
-            #define SP_INT_DIGITS        (( 512 + SP_WORD_SIZE) / SP_WORD_SIZE)
+            #define SP_INT_DIGITS        ((( 512 + SP_WORD_SIZE) / SP_WORD_SIZE) + 1)
         #endif
     #elif defined(WOLFSSL_SP_4096)
         #if defined(WOLFSSL_HAVE_SP_DH)
-            #define SP_INT_DIGITS        ((8192 + SP_WORD_SIZE) / SP_WORD_SIZE)
+            #define SP_INT_DIGITS        (((8192 + SP_WORD_SIZE) / SP_WORD_SIZE) + 1)
         #else
-            #define SP_INT_DIGITS        ((4096 + SP_WORD_SIZE) / SP_WORD_SIZE)
+            #define SP_INT_DIGITS        (((4096 + SP_WORD_SIZE) / SP_WORD_SIZE) + 1)
         #endif
     #elif !defined(WOLFSSL_SP_NO_3072)
         #if defined(WOLFSSL_HAVE_SP_DH)
-            #define SP_INT_DIGITS        ((6144 + SP_WORD_SIZE) / SP_WORD_SIZE)
+            #define SP_INT_DIGITS        (((6144 + SP_WORD_SIZE) / SP_WORD_SIZE) + 1)
         #else
-            #define SP_INT_DIGITS        ((3072 + SP_WORD_SIZE) / SP_WORD_SIZE)
+            #define SP_INT_DIGITS        (((3072 + SP_WORD_SIZE) / SP_WORD_SIZE) + 1)
         #endif
     #else
         #if defined(WOLFSSL_HAVE_SP_DH)
-            #define SP_INT_DIGITS        ((4096 + SP_WORD_SIZE) / SP_WORD_SIZE)
+            #define SP_INT_DIGITS        (((4096 + SP_WORD_SIZE) / SP_WORD_SIZE) + 1)
         #else
-            #define SP_INT_DIGITS        ((2048 + SP_WORD_SIZE) / SP_WORD_SIZE)
+            #define SP_INT_DIGITS        (((2048 + SP_WORD_SIZE) / SP_WORD_SIZE) + 1)
         #endif
     #endif
 #endif
@@ -373,6 +376,25 @@ typedef struct sp_ecc_ctx {
 #ifndef SP_INT_MAX_BITS
     /* Convert number digits to number of bits. */
     #define SP_INT_MAX_BITS     (SP_INT_DIGITS * SP_WORD_SIZE)
+#endif
+
+#if SP_WORD_SIZE < 32
+    /* Maximum number of digits in a number to mul or sqr. */
+    #define SP_MUL_SQR_DIGITS       (SP_INT_MAX_BITS / 2 / SP_WORD_SIZE)
+    /* Maximum value of partial in mul/sqr. */
+    #define SP_MUL_SQR_MAX_PARTIAL  \
+                                 (SP_MUL_SQR_DIGITS * ((1 << SP_WORD_SIZE) - 1))
+    /* Maximim value in an sp_int_word. */
+    #define SP_INT_WORD_MAX         ((1 << (SP_WORD_SIZE * 2)) - 1)
+
+    #if SP_MUL_SQR_MAX_PARTIAL > SP_INT_WORD_MAX
+        /* The sum of the partials in the multiplicaiton/square can exceed the
+         * size of a word. This will overflow the word and loose data.
+         * Use an implementation that handles carry after every add and uses an
+         * extra temporary word for overflowing high word.
+         */
+        #define SP_WORD_OVERFLOW
+    #endif
 #endif
 
 
@@ -499,6 +521,8 @@ typedef struct sp_ecc_ctx {
  * @return 0 when not zero.
  */
 #define sp_iszero(a)     ((a)->used == 0)
+
+#ifndef WOLFSSL_SP_INT_NEGATIVE
 /* Returns whether multi-precision number has the value one.
  *
  * Assumes a is not NULL.
@@ -508,6 +532,20 @@ typedef struct sp_ecc_ctx {
  * @return 0 when not one.
  */
 #define sp_isone(a)      (((a)->used == 1) && ((a)->dp[0] == 1))
+#else
+/* Returns whether multi-precision number has the value of positive one.
+ *
+ * Assumes a is not NULL.
+ *
+ * @param  [in]  a  SP integer to check.
+ * @return 1 when one.
+ * @return 0 when not one.
+ */
+#define sp_isone(a)      \
+    (((a)->used == 1) && ((a)->dp[0] == 1) && ((a)->sign == MP_ZPOS))
+#endif
+
+#ifndef WOLFSSL_SP_INT_NEGATIVE
 /* Returns whether multi-precision number has the value 'd'.
  *
  * Assumes a is not NULL.
@@ -517,7 +555,23 @@ typedef struct sp_ecc_ctx {
  * @return 1 when one.
  * @return 0 when not one.
  */
-#define sp_isword(a, d)  (((a)->used == 1) && ((a)->dp[0] == d))
+#define sp_isword(a, d)  \
+    ((((d) == 0) && sp_iszero(a)) || (((a)->used == 1) && ((a)->dp[0] == (d))))
+#else
+/* Returns whether multi-precision number has the value 'd'.
+ *
+ * Assumes a is not NULL.
+ *
+ * @param  [in]  a  SP integer to check.
+ * @param  [in]  d  SP integer digit.
+ * @return 1 when one.
+ * @return 0 when not one.
+ */
+#define sp_isword(a, d)                                                     \
+    ((((d) == 0) && sp_iszero(a)) ||                                        \
+     (((a)->used == 1) && ((a)->dp[0] == (d)) && ((a)->sign == MP_ZPOS)))
+#endif
+
 #ifndef WOLFSSL_SP_INT_NEGATIVE
 /* Calculate the absolute value of the multi-precision number.
  *
@@ -551,6 +605,7 @@ typedef struct sp_ecc_ctx {
  */
 #define sp_isneg(a)      ((a)->sign == MP_NEG)
 #endif
+
 /* Updates the used count to exclude leading zeros.
  *
  * Assumes a is not NULL.
@@ -574,23 +629,12 @@ typedef struct sp_ecc_ctx {
 #define CheckFastMathSettings()   (SP_WORD_SIZE == CheckRunTimeFastMath())
 
 
-#ifdef WOLFSSL_SP_INT_NEGATIVE
-    #ifdef HAVE_WOLF_BIGINT
-        #define SP_INT_EXTRA_OVERHEAD    sizeof(int) + sizeof(struct WC_BIGINT)
-    #else
-        #define SP_INT_EXTRA_OVERHEAD    sizeof(int)
-    #endif
-#elif defined(HAVE_WOLF_BIGINT)
-    #define SP_INT_EXTRA_OVERHEAD    sizeof(struct WC_BIGINT)
-#else
-    #define SP_INT_EXTRA_OVERHEAD    0
-#endif
-#define WOLFSSL_SP_INT_OVERHEAD \
-    (sizeof(int) + sizeof(int) + SP_INT_EXTRA_OVERHEAD)
-
+/* The number of bytes to a sp_int with 'cnt' digits. */
 #define MP_INT_SIZEOF(cnt) \
-    (WOLFSSL_SP_INT_OVERHEAD + ((cnt) * SP_WORD_SIZEOF))
-
+    (sizeof(sp_int) - (SP_INT_DIGITS - (cnt)) * sizeof(sp_int_digit))
+/* The address of the next sp_int after one with 'cnt' digits. */
+#define MP_INT_NEXT(t, cnt) \
+        (sp_int*)(((byte*)(t)) + MP_INT_SIZEOF(cnt))
 
 /**
  * A reuslt of NO.
@@ -714,7 +758,9 @@ MP_API int sp_cond_swap_ct(mp_int * a, mp_int * b, int c, int m);
 #ifdef WOLFSSL_SP_INT_NEGATIVE
 MP_API int sp_abs(sp_int* a, sp_int* b);
 #endif
+#ifdef WOLFSSL_SP_MATH_ALL
 MP_API int sp_cmp_mag(sp_int* a, sp_int* b);
+#endif
 MP_API int sp_cmp(sp_int* a, sp_int* b);
 
 MP_API int sp_is_bit_set(sp_int* a, unsigned int b);
@@ -737,17 +783,21 @@ MP_API int sp_div_d(sp_int* a, sp_int_digit d, sp_int* r, sp_int_digit* rem);
     defined(HAVE_COMP_KEY))
 MP_API int sp_mod_d(sp_int* a, const sp_int_digit d, sp_int_digit* r);
 #endif
-MP_API int sp_div_2_mod_ct (sp_int* a, sp_int* b, sp_int* c);
 #if defined(WOLFSSL_SP_MATH_ALL) && defined(HAVE_ECC)
+MP_API int sp_div_2_mod_ct (sp_int* a, sp_int* b, sp_int* c);
 MP_API int sp_div_2(sp_int* a, sp_int* r);
 #endif
 
 MP_API int sp_add(sp_int* a, sp_int* b, sp_int* r);
 MP_API int sp_sub(sp_int* a, sp_int* b, sp_int* r);
+#ifdef WOLFSSL_SP_MATH_ALL
 MP_API int sp_addmod(sp_int* a, sp_int* b, sp_int* m, sp_int* r);
 MP_API int sp_submod(sp_int* a, sp_int* b, sp_int* m, sp_int* r);
+#endif
+#if defined(WOLFSSL_SP_MATH_ALL) && defined(HAVE_ECC)
 MP_API int sp_submod_ct (sp_int* a, sp_int* b, sp_int* c, sp_int* d);
 MP_API int sp_addmod_ct (sp_int* a, sp_int* b, sp_int* c, sp_int* d);
+#endif
 
 MP_API int sp_lshd(sp_int* a, int s);
 MP_API void sp_rshd(sp_int* a, int c);
@@ -762,16 +812,22 @@ MP_API int sp_mul(sp_int* a, sp_int* b, sp_int* r);
 MP_API int sp_mulmod(sp_int* a, sp_int* b, sp_int* m, sp_int* r);
 
 MP_API int sp_invmod(sp_int* a, sp_int* m, sp_int* r);
+#if defined(WOLFSSL_SP_MATH_ALL) && defined(HAVE_ECC)
 MP_API int sp_invmod_mont_ct(sp_int* a, sp_int* m, sp_int* r, sp_int_digit mp);
+#endif
 
 MP_API int sp_exptmod_ex(sp_int* b, sp_int* e, int digits, sp_int* m,
                          sp_int* r);
 MP_API int sp_exptmod(sp_int* b, sp_int* e, sp_int* m, sp_int* r);
+#if defined(WOLFSSL_SP_MATH_ALL) || defined(WOLFSSL_HAVE_SP_DH)
 MP_API int sp_exptmod_nct(sp_int* b, sp_int* e, sp_int* m, sp_int* r);
+#endif
 
+#ifdef WOLFSSL_SP_MATH_ALL
 MP_API int sp_div_2d(sp_int* a, int e, sp_int* r, sp_int* rem);
 MP_API int sp_mod_2d(sp_int* a, int e, sp_int* r);
 MP_API int sp_mul_2d(sp_int* a, int e, sp_int* r);
+#endif
 
 MP_API int sp_sqr(sp_int* a, sp_int* r);
 MP_API int sp_sqrmod(sp_int* a, sp_int* m, sp_int* r);
@@ -784,13 +840,17 @@ MP_API int sp_unsigned_bin_size(sp_int* a);
 MP_API int sp_read_unsigned_bin(sp_int* a, const byte* in, word32 inSz);
 MP_API int sp_to_unsigned_bin(sp_int* a, byte* out);
 MP_API int sp_to_unsigned_bin_len(sp_int* a, byte* out, int outSz);
+#ifdef WOLFSSL_SP_MATH_ALL
 MP_API int sp_to_unsigned_bin_at_pos(int o, sp_int* a, unsigned char* out);
+#endif
 
 MP_API int sp_read_radix(sp_int* a, const char* in, int radix);
 MP_API int sp_tohex(sp_int* a, char* str);
 MP_API int sp_todecimal(mp_int* a, char* str);
+#ifdef WOLFSSL_SP_MATH_ALL
 MP_API int sp_toradix(mp_int* a, char* str, int radix);
 MP_API int sp_radix_size(mp_int* a, int radix, int* size);
+#endif
 
 MP_API int sp_rand_prime(sp_int* r, int len, WC_RNG* rng, void* heap);
 MP_API int sp_prime_is_prime(mp_int* a, int t, int* result);

@@ -7,16 +7,37 @@
 #
 AC_COPYRIGHT([Copyright (C) 2006-2020 wolfSSL Inc.])
 AC_PREREQ([2.63])
-AC_INIT([wolfssl],[4.6.0],[https://github.com/wolfssl/wolfssl/issues],[wolfssl],[https://www.wolfssl.com])
+AC_INIT([wolfssl],[4.7.0],[https://github.com/wolfssl/wolfssl/issues],[wolfssl],[https://www.wolfssl.com])
 AC_CONFIG_AUX_DIR([build-aux])
 
 # The following sets CFLAGS to empty if unset on command line.  We do not
 # want the default "-g -O2" that AC_PROG_CC sets automatically.
 : ${CFLAGS=""}
 
-# Test ar for the "U" option. Should be checked before the libtool macros.
+# For reproducible builds, gate out from the build anything that might
+# introduce semantically frivolous jitter, maximizing chance of
+# identical object files.
+AC_ARG_ENABLE([reproducible-build],
+    [AS_HELP_STRING([--enable-reproducible-builds],[Enable maximally reproducible build (default: disabled)])],
+    [ ENABLED_REPRODUCIBLE_BUILD=$enableval ],
+    [ ENABLED_REPRODUCIBLE_BUILD=no ]
+    )
+
+# Test ar for the "U" or "D" options. Should be checked before the libtool macros.
 xxx_ar_flags=$(ar --help 2>&1)
-AS_CASE([$xxx_ar_flags],[*'use actual timestamps and uids/gids'*],[: ${AR_FLAGS="Ucru"}])
+if test "$ENABLED_REPRODUCIBLE_BUILD" = "yes"
+then
+    AS_CASE([$xxx_ar_flags],[*'use zero for timestamps and uids/gids'*],[: ${AR_FLAGS="Dcr"}])
+else
+    AS_CASE([$xxx_ar_flags],[*'use actual timestamps and uids/gids'*],[: ${AR_FLAGS="Ucru"}])
+fi
+xxx_ranlib_flags=$(ranlib --help 2>&1)
+if test "$ENABLED_REPRODUCIBLE_BUILD" = "yes"
+then
+    AS_CASE([$xxx_ranlib_flags],[*'Use zero for symbol map timestamp'*],[: ${RANLIB="ranlib -D"}])
+else
+    AS_CASE([$xxx_ranlib_flags],[*'Use actual symbol map timestamp'*],[: ${RANLIB="ranlib -U"}])
+fi
 
 AC_PROG_CC
 AM_PROG_CC_C_O
@@ -34,7 +55,7 @@ LT_PREREQ([2.2])
 LT_INIT([disable-static win32-dll])
 
 #shared library versioning
-WOLFSSL_LIBRARY_VERSION=27:0:3
+WOLFSSL_LIBRARY_VERSION=28:0:4
 #                        | | |
 #                 +------+ | +---+
 #                 |        |     |
@@ -166,6 +187,21 @@ AS_CASE([$ENABLED_FIPS],
         FIPS_VERSION="v1"
     ])
 
+case "$FIPS_VERSION" in
+none) if test -s wolfcrypt/src/fips.c || test -s ctaocrypt/src/fips.c; then
+        AC_MSG_ERROR([FIPS source tree is incompatible with non-FIPS build (requires --enable-fips)])
+    fi
+    ;;
+v1) if ! test -s ctaocrypt/src/fips.c; then
+        AC_MSG_ERROR([non-FIPS-v1 source tree is incompatible with --enable-fips=$enableval])
+    fi
+    ;;
+*) if ! test -s wolfcrypt/src/fips.c; then
+        AC_MSG_ERROR([non-FIPS source tree is incompatible with --enable-fips=$enableval])
+   fi
+   ;;
+esac
+
 
 # Distro build feature subset (Debian, Ubuntu, etc.)
 AC_ARG_ENABLE([distro],
@@ -196,7 +232,7 @@ AC_ARG_ENABLE([linuxkm-defaults],
 
 if test "$ENABLED_LINUXKM_DEFAULTS" = "yes"
 then
-    AM_CFLAGS="$AM_CFLAGS -DWOLFSSL_DH_CONST -DWOLFSSL_SP_MOD_WORD_RP -DWOLFSSL_OLD_PRIME_CHECK -DWOLFSSL_SP_DIV_64 -DWOLFSSL_SP_DIV_WORD_HALF -DWOLFSSL_SMALL_STACK_STATIC"
+    AM_CFLAGS="$AM_CFLAGS -DWOLFSSL_DH_CONST -DWOLFSSL_SP_MOD_WORD_RP -DWOLFSSL_OLD_PRIME_CHECK -DWOLFSSL_SP_DIV_64 -DWOLFSSL_SP_DIV_WORD_HALF -DWOLFSSL_SMALL_STACK_STATIC -DWOLFSSL_TEST_SUBROUTINE=static"
 fi
 
 AC_ARG_WITH([linux-source],
@@ -379,6 +415,8 @@ then
             if test "$ENABLED_FIPS" = "no"
             then
                 test "$enable_openssh" = "" && enable_openssh=yes
+                # S/MIME support requires PKCS7, which requires no FIPS.
+                test "$enable_smime" = "" && enable_smime=yes
             fi
             test "$enable_opensslextra" = "" && enable_opensslextra=yes
             test "$enable_opensslall" = "" && enable_opensslall=yes
@@ -628,9 +666,11 @@ if test "$ENABLED_TLS13_POST_AUTH" = "yes"
 then
     if test "x$ENABLED_TLS13" = "xno"
     then
-        AC_MSG_ERROR([cannot enable postauth without enabling tls13.])
+        AC_MSG_NOTICE([TLS 1.3 is disabled - disabling Post-handshake Authentication])
+        ENABLED_TLS13_POST_AUTH="no"
+    else
+        AM_CFLAGS="-DWOLFSSL_POST_HANDSHAKE_AUTH $AM_CFLAGS"
     fi
-  AM_CFLAGS="-DWOLFSSL_POST_HANDSHAKE_AUTH $AM_CFLAGS"
 fi
 
 
@@ -644,9 +684,11 @@ if test "$ENABLED_SEND_HRR_COOKIE" = "yes"
 then
     if test "x$ENABLED_TLS13" = "xno"
     then
-        AC_MSG_ERROR([cannot enable hrrcookie without enabling tls13.])
+        AC_MSG_NOTICE([TLS 1.3 is disabled - disabling HRR Cookie])
+        ENABLED_SEND_HRR_COOKIE="no"
+    else
+        AM_CFLAGS="-DWOLFSSL_SEND_HRR_COOKIE $AM_CFLAGS"
     fi
-  AM_CFLAGS="-DWOLFSSL_SEND_HRR_COOKIE $AM_CFLAGS"
 fi
 
 
@@ -843,6 +885,12 @@ then
     AM_CFLAGS="$AM_CFLAGS -DOPENSSL_COEXIST"
 fi
 
+# S/MIME
+AC_ARG_ENABLE([smime],
+    [AS_HELP_STRING([--enable-smime],[Enable S/MIME (default: disabled)])],
+    [ ENABLED_SMIME=$enableval ],
+    [ ENABLED_SMIME=no ]
+    )
 
 # OPENSSL Compatibility ALL
 AC_ARG_ENABLE([opensslall],
@@ -850,7 +898,7 @@ AC_ARG_ENABLE([opensslall],
 [ ENABLED_OPENSSLALL=$enableval ],
 [ ENABLED_OPENSSLALL=no ]
 )
-if test "$ENABLED_LIBWEBSOCKETS" = "yes" || test "$ENABLED_OPENVPN" = "yes" || test "$ENABLED_WPAS_DPP" = "yes"
+if test "$ENABLED_LIBWEBSOCKETS" = "yes" || test "$ENABLED_OPENVPN" = "yes" || test "$ENABLED_WPAS_DPP" = "yes" || test "$ENABLED_SMIME" = "yes"
 then
     ENABLED_OPENSSLALL="yes"
 fi
@@ -936,6 +984,8 @@ fi
 if test "$ENABLED_WPAS" = "yes"
 then
     AM_CFLAGS="$AM_CFLAGS -DWOLFSSL_WPAS"
+    AM_CFLAGS="$AM_CFLAGS -DHAVE_SECRET_CALLBACK"
+    AM_CFLAGS="$AM_CFLAGS -DWOLFSSL_PUBLIC_ECC_ADD_DBL"
 fi
 if test "$ENABLED_WPAS" != "no"
 then
@@ -2228,7 +2278,6 @@ then
         AC_MSG_ERROR(stacksize-verbose needs thread-local storage.)
     fi
     AM_CFLAGS="$AM_CFLAGS -DHAVE_STACK_SIZE_VERBOSE"
-    ENABLED_STACKSIZE=yes
 fi
 
 
@@ -2259,13 +2308,17 @@ AC_ARG_ENABLE([trackmemory],
     [ ENABLED_TRACKMEMORY=no ]
     )
 
-if test "$ENABLED_TRACKMEMORY" = "yes"
+if test "$ENABLED_TRACKMEMORY" != "no"
 then
     if test "$ENABLED_MEMORY" = "yes"
     then
         AM_CFLAGS="$AM_CFLAGS -DWOLFSSL_TRACK_MEMORY"
     else
         AC_MSG_ERROR([trackmemory requires using wolfSSL memory (--enable-memory).])
+    fi
+    if test "$ENABLED_TRACKMEMORY" = "verbose"
+    then
+        AM_CFLAGS="$AM_CFLAGS -DWOLFSSL_TRACK_MEMORY_VERBOSE"
     fi
 fi
 
@@ -2419,6 +2472,7 @@ then
     fi
     AM_CFLAGS="$AM_CFLAGS -DWOLFSSL_RSA_PUBLIC_ONLY -DWOLFSSL_RSA_VERIFY_ONLY"
     AM_CFLAGS="$AM_CFLAGS -DWOLFSSL_RSA_VERIFY_INLINE -DNO_SIG_WRAPPER"
+    AM_CFLAGS="$AM_CFLAGS -DNO_CHECK_PRIVATE_KEY"
 fi
 
 
@@ -3492,6 +3546,18 @@ then
     AM_CFLAGS="$AM_CFLAGS -DHAVE_FALLBACK_SCSV"
 fi
 
+# Exporting Keying Material
+AC_ARG_ENABLE([keying-material],
+    [AS_HELP_STRING([--enable-keying-material],[Enable Keying Material Exporters (default: disabled)])],
+    [ ENABLED_KEYING_MATERIAL=$enableval ],
+    [ ENABLED_KEYING_MATERIAL=no ]
+    )
+
+if test "x$ENABLED_KEYING_MATERIAL" = "xyes"
+then
+    AM_CFLAGS="$AM_CFLAGS -DHAVE_KEYING_MATERIAL"
+fi
+
 # Supported Elliptic Curves Extensions
 AC_ARG_ENABLE([supportedcurves],
     [AS_HELP_STRING([--enable-supportedcurves],[Enable Supported Elliptic Curves (default: enabled)])],
@@ -3646,9 +3712,8 @@ fi
 AC_ARG_ENABLE([pkcs7],
     [AS_HELP_STRING([--enable-pkcs7],[Enable PKCS7 (default: disabled)])],
     [ ENABLED_PKCS7=$enableval ],
-    [ ENABLED_PKCS7=no ],
+    [ ENABLED_PKCS7=no ]
     )
-
 
 # wolfSSH Options
 AC_ARG_ENABLE([ssh],
@@ -3656,6 +3721,57 @@ AC_ARG_ENABLE([ssh],
     [ ENABLED_WOLFSSH=$enableval ],
     [ ENABLED_WOLFSSH=no ]
     )
+
+# wolfTPM Options
+AC_ARG_ENABLE([wolftpm],
+    [AS_HELP_STRING([--enable-wolftpm],[Enable wolfTPM options (default: disabled)])],
+    [ ENABLED_WOLFTPM=$enableval ],
+    [ ENABLED_WOLFTPM=no ]
+    )
+
+if test "x$ENABLED_WOLFTPM" = "xyes"
+then
+    # Requires cryptocb (set in its enable section)
+    # Requires certgen, certreq, certext
+    if test "x$ENABLED_CERTGEN" = "xno"
+    then
+        ENABLED_CERTGEN="yes"
+        AM_CFLAGS="$AM_CFLAGS -DWOLFSSL_CERT_GEN"
+    fi
+    if test "x$ENABLED_CERTREQ" = "xno"
+    then
+        ENABLED_CERTREQ="yes"
+        AM_CFLAGS="$AM_CFLAGS -DWOLFSSL_CERT_REQ"
+    fi
+    if test "x$ENABLED_CERTEXT" = "xno"
+    then
+        ENABLED_CERTEXT="yes"
+        AM_CFLAGS="$AM_CFLAGS -DWOLFSSL_CERT_EXT"
+    fi
+
+    # Requires PKCS7
+    if test "x$ENABLED_PKCS7" = "xno"
+    then
+        ENABLED_PKCS7="yes"
+    fi
+
+    # Requires aescfb
+    if test "x$ENABLED_AESCFB" = "xno"
+    then
+        ENABLED_AESCFB="yes"
+        AM_CFLAGS="$AM_CFLAGS -DWOLFSSL_AES_CFB"
+    fi
+fi
+
+if test "x$ENABLED_SMIME" = "xyes"
+then
+    AM_CFLAGS="$AM_CFLAGS -DHAVE_SMIME"
+    # Requires PKCS7
+    if test "x$ENABLED_PKCS7" = "xno"
+    then
+        ENABLED_PKCS7="yes"
+    fi
+fi
 
 # Simple Certificate Enrollment Protocol (SCEP)
 AC_ARG_ENABLE([scep],
@@ -3975,7 +4091,9 @@ fi
 
 if test "$ENABLED_OPENVPN" = "yes"
 then
-    AM_CFLAGS="$AM_CFLAGS -DWOLFSSL_DES_ECB -DHAVE_EX_DATA -DWOLFSSL_KEY_GEN -DWOLFSSL_OPENVPN"
+    ENABLED_SUPPORTED_CURVES="yes"
+    AM_CFLAGS="$AM_CFLAGS -DWOLFSSL_OPENVPN -DHAVE_KEYING_MATERIAL"
+    AM_CFLAGS="$AM_CFLAGS -DWOLFSSL_DES_ECB -DHAVE_EX_DATA -DWOLFSSL_KEY_GEN"
 fi
 
 
@@ -4485,6 +4603,7 @@ then
         # Have settings.h set FP_MAX_BITS higher if user didn't set directly
         AM_CFLAGS="$AM_CFLAGS -DWOLFSSL_X86_64_BUILD"
     fi
+    AS_IF([test "x$host_cpu" = "xaarch64"],[AM_CFLAGS="$AM_CFLAGS -DWOLFSSL_AARCH64_BUILD"])
 fi
 
 
@@ -5017,6 +5136,10 @@ do
     AM_CFLAGS="$AM_CFLAGS -DSP_INT_BITS=$v"
     ENABLED_SP_MATH_ALL="yes"
     ;;
+  nomalloc)
+    AM_CFLAGS="$AM_CFLAGS -DWOLFSSL_SP_NO_MALLOC"
+    ENABLED_SP_MATH_ALL="yes"
+    ;;
   *)
     AC_MSG_ERROR([Support SP int bit sizes: 256, 384, 521, 1024, 2048, 3072, 4096. $ENABLED_SP_MATH_ALL not supported])
     ;;
@@ -5417,7 +5540,7 @@ AC_ARG_ENABLE([cryptocb],
     [ ENABLED_CRYPTOCB=no ]
     )
 
-if test "x$ENABLED_PKCS11" = "xyes"
+if test "x$ENABLED_PKCS11" = "xyes" || test "x$ENABLED_WOLFTPM" = "xyes"
 then
     ENABLED_CRYPTOCB=yes
 fi
@@ -5593,6 +5716,10 @@ AS_IF([test "x$ENABLED_MAXSTRENGTH" = "xyes" && \
 AS_IF([test "x$ENABLED_OCSP" = "xyes" && \
        test "x$ENABLED_ASN" = "xno"],
       [AC_MSG_ERROR([please enable asn if enabling ocsp.])])
+
+AS_IF([test "x$ENABLED_SMIME" = "xyes" && \
+       test "x$ENABLED_ASN" = "xno"],
+       [AC_MSG_ERROR([please enable asn if enabling S/MIME.])])
 
 AS_IF([test "x$ENABLED_OCSP" = "xyes" && \
        test "x$ENABLED_RSA" = "xno" && \
@@ -5927,7 +6054,7 @@ if test "x$ENABLED_LINUXKM" = "xyes"; then
     if test "$ENABLED_SP_MATH" = "no" && test "$ENABLED_SP_MATH_ALL" = "no"; then
         AC_MSG_ERROR([--enable-sp-math or --enable-sp-math-all is required for --enable-linuxkm.])
     fi
-    if test "$ENABLED_STACKSIZE" = "yes"; then
+    if test "$ENABLED_STACKSIZE" != "no"; then
         AC_MSG_ERROR([--enable-stacksize is incompatible with --enable-linuxkm.])
     fi
     if test "$ENABLED_STACKLOG" = "yes"; then
@@ -6056,13 +6183,14 @@ AM_CONDITIONAL([BUILD_TRUST_PEER_CERT],[test "x$ENABLED_TRUSTED_PEER_CERT" = "xy
 AM_CONDITIONAL([BUILD_PKI],[test "x$ENABLED_PKI" = "xyes"])
 AM_CONDITIONAL([BUILD_DES3],[test "x$ENABLED_DES3" = "xyes" || test "x$ENABLED_USERSETTINGS" = "xyes"])
 AM_CONDITIONAL([BUILD_PKCS7],[test "x$ENABLED_PKCS7" = "xyes" || test "x$ENABLED_USERSETTINGS" = "xyes"])
+AM_CONDITIONAL([BUILD_SMIME],[test "x$ENABLED_SMIME" = "xyes" || test "x$ENABLED_USERSETTINGS" = "xyes"])
 AM_CONDITIONAL([BUILD_HASHFLAGS],[test "x$ENABLED_HASHFLAGS" = "xyes"])
 AM_CONDITIONAL([BUILD_LINUXKM],[test "$ENABLED_LINUXKM" = "yes"])
 AM_CONDITIONAL([BUILD_NO_LIBRARY],[test "$ENABLED_NO_LIBRARY" = "yes"])
 AM_CONDITIONAL([BUILD_RC2],[test "x$ENABLED_RC2" = "xyes"])
 
 if test "$ax_enable_debug" = "yes" ||
-        test "$ENABLED_STACKSIZE" = "yes" ||
+        test "$ENABLED_STACKSIZE" != "no" ||
         (test "$ENABLED_LEANTLS" = "no" &&
              test "$ENABLED_LEANPSK" = "no" &&
              test "$ENABLED_LOWRESOURCE" = "no")
@@ -6080,7 +6208,15 @@ AC_SUBST([LIB_STATIC_ADD])
 
 # FINAL
 AC_CONFIG_FILES([stamp-h], [echo timestamp > stamp-h])
-AC_CONFIG_FILES([Makefile wolfssl/version.h wolfssl/options.h cyassl/options.h support/wolfssl.pc rpm/spec])
+AC_CONFIG_FILES([Makefile
+        wolfssl/version.h
+        wolfssl/options.h
+        cyassl/options.h
+        support/wolfssl.pc
+        rpm/spec
+        wolfcrypt/test/test_paths.h
+        ])
+AC_CONFIG_FILES([scripts/unit.test],[chmod +x scripts/unit.test])
 
 AX_CREATE_GENERIC_CONFIG
 AX_AM_JOBSERVER([yes])
@@ -6234,6 +6370,7 @@ echo "   * OpenSSL Coexist:            $ENABLED_OPENSSLCOEXIST"
 echo "   * Old Names:                  $ENABLED_OLDNAMES"
 echo "   * Max Strength Build:         $ENABLED_MAXSTRENGTH"
 echo "   * Distro Build:               $ENABLED_DISTRO"
+echo "   * Reproducible Build:         $ENABLED_REPRODUCIBLE_BUILD"
 echo "   * fastmath:                   $ENABLED_FASTMATH"
 echo "   * Assembly Allowed:           $ENABLED_ASM"
 echo "   * sniffer:                    $ENABLED_SNIFFER"
@@ -6245,6 +6382,8 @@ echo "   * AES-CBC:                    $ENABLED_AESCBC"
 echo "   * AES-GCM:                    $ENABLED_AESGCM"
 echo "   * AES-CCM:                    $ENABLED_AESCCM"
 echo "   * AES-CTR:                    $ENABLED_AESCTR"
+echo "   * AES-CFB:                    $ENABLED_AESCFB"
+echo "   * AES-OFB:                    $ENABLED_AESOFB"
 echo "   * DES3:                       $ENABLED_DES3"
 echo "   * IDEA:                       $ENABLED_IDEA"
 echo "   * Camellia:                   $ENABLED_CAMELLIA"
@@ -6348,9 +6487,12 @@ echo "   * Extended Master Secret:     $ENABLED_EXTENDED_MASTER"
 echo "   * Renegotiation Indication:   $ENABLED_RENEGOTIATION_INDICATION"
 echo "   * Secure Renegotiation:       $ENABLED_SECURE_RENEGOTIATION"
 echo "   * Fallback SCSV:              $ENABLED_FALLBACK_SCSV"
+echo "   * Keying Material Exporter:   $ENABLED_KEYING_MATERIAL"
 echo "   * All TLS Extensions:         $ENABLED_TLSX"
 echo "   * PKCS#7                      $ENABLED_PKCS7"
+echo "   * S/MIME                      $ENABLED_SMIME"
 echo "   * wolfSSH                     $ENABLED_WOLFSSH"
+echo "   * wolfTPM                     $ENABLED_WOLFTPM"
 echo "   * wolfSCEP                    $ENABLED_WOLFSCEP"
 echo "   * Secure Remote Password      $ENABLED_SRP"
 echo "   * Small Stack:                $ENABLED_SMALL_STACK"
@@ -6360,6 +6502,7 @@ echo "   * LIBZ:                       $ENABLED_LIBZ"
 echo "   * Examples:                   $ENABLED_EXAMPLES"
 echo "   * Crypt tests:                $ENABLED_CRYPT_TESTS"
 echo "   * Stack sizes in tests:       $ENABLED_STACKSIZE"
+echo "   * Heap stats in tests:        $ENABLED_TRACKMEMORY"
 echo "   * User Crypto:                $ENABLED_USER_CRYPTO"
 echo "   * Fast RSA:                   $ENABLED_FAST_RSA"
 echo "   * Single Precision:           $ENABLED_SP"
@@ -6389,10 +6532,13 @@ echo "   * Crypto callbacks:           $ENABLED_CRYPTOCB"
 echo ""
 echo "---"
 
-echo >> config.h
-echo "#define LIBWOLFSSL_CONFIGURE_ARGS \"$ac_configure_args\"" >> config.h
-echo >> config.h
-echo "#define LIBWOLFSSL_GLOBAL_CFLAGS \"$CPPFLAGS $AM_CPPFLAGS $CFLAGS $AM_CFLAGS\"" >> config.h
+if test "$ENABLED_REPRODUCIBLE_BUILD" != "yes"
+then
+    echo >> config.h
+    echo "#define LIBWOLFSSL_CONFIGURE_ARGS \"$ac_configure_args\"" >> config.h
+    echo >> config.h
+    echo "#define LIBWOLFSSL_GLOBAL_CFLAGS \"$CPPFLAGS $AM_CPPFLAGS $CFLAGS $AM_CFLAGS\"" >> config.h
+fi
 
 ################################################################################
 # Show warnings at bottom so they are noticed

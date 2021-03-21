@@ -505,14 +505,14 @@ static int cc310_RSA_GenerateKeyPair(RsaKey* key, int size, long e)
     CRYS_RSAKGData_t        KeyGenData;
     CRYS_RSAKGFipsContext_t FipsCtx;
     byte ex[3];
-    uint16_t eSz = sizeof(ex);
+    word16 eSz = sizeof(ex);
     byte n[256];
-    uint16_t nSz = sizeof(n);
+    word16 nSz = sizeof(n);
 
     ret = CRYS_RSA_KG_GenerateKeyPair(&wc_rndState,
                         wc_rndGenVectFunc,
                         (byte*)&e,
-                        3*sizeof(uint8_t),
+                        3*sizeof(byte),
                         size,
                         &key->ctx.privKey,
                         &key->ctx.pubKey,
@@ -2273,6 +2273,7 @@ static int wc_RsaFunctionSync(const byte* in, word32 inLen, byte* out,
     tmp = (mp_int*)XMALLOC(sizeof(mp_int), key->heap, DYNAMIC_TYPE_RSA);
     if (tmp == NULL)
         return MEMORY_E;
+#if !defined(WOLFSSL_RSA_PUBLIC_ONLY) && !defined(WOLFSSL_RSA_VERIFY_ONLY)
 #ifdef WC_RSA_BLINDING
     rnd = (mp_int*)XMALLOC(sizeof(mp_int) * 2, key->heap, DYNAMIC_TYPE_RSA);
     if (rnd == NULL) {
@@ -2281,11 +2282,13 @@ static int wc_RsaFunctionSync(const byte* in, word32 inLen, byte* out,
     }
     rndi = rnd + 1;
 #endif /* WC_RSA_BLINDING */
+#endif
 #endif /* WOLFSSL_SMALL_STACK */
 
     if (mp_init(tmp) != MP_OKAY)
         ret = MP_INIT_E;
 
+#if !defined(WOLFSSL_RSA_PUBLIC_ONLY) && !defined(WOLFSSL_RSA_VERIFY_ONLY)
 #ifdef WC_RSA_BLINDING
     if (ret == 0) {
         if (type == RSA_PRIVATE_DECRYPT || type == RSA_PRIVATE_ENCRYPT) {
@@ -2296,6 +2299,7 @@ static int wc_RsaFunctionSync(const byte* in, word32 inLen, byte* out,
         }
     }
 #endif
+#endif
 
 #ifndef TEST_UNPAD_CONSTANT_TIME
     if (ret == 0 && mp_read_unsigned_bin(tmp, (byte*)in, inLen) != MP_OKAY)
@@ -2303,7 +2307,7 @@ static int wc_RsaFunctionSync(const byte* in, word32 inLen, byte* out,
 
     if (ret == 0) {
         switch(type) {
-    #ifndef WOLFSSL_RSA_PUBLIC_ONLY
+    #if !defined(WOLFSSL_RSA_PUBLIC_ONLY) && !defined(WOLFSSL_RSA_VERIFY_ONLY)
         case RSA_PRIVATE_DECRYPT:
         case RSA_PRIVATE_ENCRYPT:
         {
@@ -2679,7 +2683,7 @@ static int cc310_RsaPublicDecrypt(const byte* in, word32 inLen, byte* out,
 {
     CRYSError_t ret = 0;
     CRYS_RSAPrimeData_t primeData;
-    uint16_t actualOutLen = outLen;
+    word16 actualOutLen = outLen;
 
     ret = CRYS_RSA_PKCS1v15_Decrypt(&key->ctx.privKey,
                                     &primeData,
@@ -2699,7 +2703,7 @@ int cc310_RsaSSL_Sign(const byte* in, word32 inLen, byte* out,
                   word32 outLen, RsaKey* key, CRYS_RSA_HASH_OpMode_t mode)
 {
     CRYSError_t ret = 0;
-    uint16_t actualOutLen = outLen*sizeof(byte);
+    word16 actualOutLen = outLen*sizeof(byte);
     CRYS_RSAPrivUserContext_t  contextPrivate;
 
     ret =  CRYS_RSA_PKCS1v15_Sign(&wc_rndState,
@@ -2762,6 +2766,7 @@ int wc_RsaFunction(const byte* in, word32 inLen, byte* out,
     }
 #endif
 
+#ifndef WOLFSSL_RSA_VERIFY_ONLY
 #ifndef TEST_UNPAD_CONSTANT_TIME
 #ifndef NO_RSA_BOUNDS_CHECK
     if (type == RSA_PRIVATE_DECRYPT &&
@@ -2811,6 +2816,7 @@ int wc_RsaFunction(const byte* in, word32 inLen, byte* out,
             return ret;
     }
 #endif /* NO_RSA_BOUNDS_CHECK */
+#endif
 #endif
 
 #if defined(WOLFSSL_ASYNC_CRYPT) && defined(WC_ASYNC_ENABLE_RSA)
@@ -4396,7 +4402,7 @@ int wc_MakeRsaKey(RsaKey* key, int size, long e, WC_RNG* rng)
 #ifdef WC_RSA_BLINDING
 int wc_RsaSetRNG(RsaKey* key, WC_RNG* rng)
 {
-    if (key == NULL)
+    if (key == NULL || rng == NULL)
         return BAD_FUNC_ARG;
 
     key->rng = rng;

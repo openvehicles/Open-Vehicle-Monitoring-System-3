@@ -19,13 +19,11 @@
  */
 
 
-#pragma once
-
-#ifndef _WOLFSSH_SERVER_H_
-#define _WOLFSSH_SERVER_H_
+#ifndef _WOLFSSH_EXAMPLES_SERVER_H_
+#define _WOLFSSH_EXAMPLES_SERVER_H_
 
 
 THREAD_RETURN WOLFSSH_THREAD server_test(void* args);
 
 
-#endif /* _WOLFSSH_SERVER_H_ */
+#endif /* _WOLFSSH_EXAMPLES_SERVER_H_ */
