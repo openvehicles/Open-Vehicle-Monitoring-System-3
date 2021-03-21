@@ -259,6 +259,14 @@ int rmtree(const std::string path);
 bool path_exists(const std::string path);
 
 /**
+ * load & save file to/from string
+ *  - saving creates missing directories automatically & signals system.vfs.file.changed
+ *  - return value: 0 = ok / errno
+ */
+int load_file(const std::string &path, extram::string &content);
+int save_file(const std::string &path, extram::string &content);
+
+/**
  * get_user_agent: create User-Agent string from OVMS versions & vehicle ID
  *  Scheme: "ovms/v<hw_version> (<vehicle_id> <sw_version>)"
  */
