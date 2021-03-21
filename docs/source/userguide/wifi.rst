@@ -174,3 +174,12 @@ third argument to the ``wifi mode apclient`` command::
 This currently needs manual activation by command. Hint: use a script, for example bound to a 
 location.
 
+------------------------------
+AP Bandwidth Configuration
+------------------------------
+In normal operation, the default AP bandwidth is set to 20Mhz to reduce interference and improve the signal quality. If a wider 40Mhz
+bandwidth is preferred, eg for high throughput logging, set the network configuration ``wifi.ap.bw`` with the command::
+ 
+  OVMS# config set network wifi.ap.bw 40 
+  
+Once the parameter is set the module will require rebooting to take effect. The default bandwidth can be restored by either removing the parameter or setting it to 20.
