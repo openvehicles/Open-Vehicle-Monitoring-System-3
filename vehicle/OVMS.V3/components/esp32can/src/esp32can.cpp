@@ -127,6 +127,11 @@ static inline uint32_t ESP32CAN_rxframe(esp32can *me, BaseType_t* task_woken)
       if (msg.body.frame.FIR.B.DLC > sizeof(msg.body.frame.data.u8))
         {
         me->m_status.invalid_rx++;
+        CAN_queue_msg_t msg2;
+        memset(&msg2, 0, sizeof(msg2));
+        msg2.type = CAN_logerror;
+        msg2.body.bus = me;
+        xQueueSendFromISR(MyCan.m_rxqueue, &msg2, task_woken);
 
         // Request next frame:
         MODULE_ESP32CAN->CMR.B.RRB = 1;

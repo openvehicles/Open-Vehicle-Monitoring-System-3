@@ -114,9 +114,9 @@ std::string canformat_crtd::get(CAN_log_message_t* message)
         GetCanLogTypeName(message->type), message->status.interrupts,
         message->status.packets_rx, message->status.packets_tx, message->status.error_flags,
         message->status.errors_rx, message->status.errors_tx, message->status.invalid_rx,
-	message->status.rxbuf_overflow, message->status.txbuf_overflow,
-	message->status.txbuf_delay, message->status.tx_fails, message->status.watchdog_resets,
-	message->status.error_resets);
+        message->status.rxbuf_overflow, message->status.txbuf_overflow,
+        message->status.txbuf_delay, message->status.tx_fails, message->status.watchdog_resets,
+        message->status.error_resets);
       break;
 
     case CAN_LogInfo_Comment:
