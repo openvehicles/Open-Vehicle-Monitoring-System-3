@@ -671,7 +671,17 @@ void OvmsNetManager::SetNetType(std::string type)
     }
   }
 
+void SafePrioritiseAndIndicate(void* ctx)
+  {
+  MyNetManager.DoSafePrioritiseAndIndicate();
+  }
+
 void OvmsNetManager::PrioritiseAndIndicate()
+  {
+  tcpip_callback_with_block(SafePrioritiseAndIndicate, NULL, 1);
+  }
+
+void OvmsNetManager::DoSafePrioritiseAndIndicate()
   {
   const char *search = NULL;
   ip_addr_t* dns = NULL;
