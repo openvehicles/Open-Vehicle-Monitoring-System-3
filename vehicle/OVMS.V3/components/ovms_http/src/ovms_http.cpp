@@ -134,6 +134,13 @@ void OvmsSyncHttpClient::ConnectionLaunch()
   m_bodysize = 0;
   m_responsecode = 0;
 
+  if (MyNetManager.IsNetManagerTask())
+    {
+    ESP_LOGE(TAG, "ConnectionLaunch failed: cannot block on network manager task");
+    m_error = std::string("cannot block on netman task");
+    return;
+    }
+
   // Split URL into server and path components
   if (m_url.compare(0, 8, "https://", 8) == 0)
     {

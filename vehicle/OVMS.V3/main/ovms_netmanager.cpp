@@ -1004,4 +1004,12 @@ int OvmsNetManager::CleanupConnections()
   return cnt;
   }
 
+bool OvmsNetManager::IsNetManagerTask()
+  {
+  // Return TRUE if the currently running task is the Net Manager task
+  extern void *pxCurrentTCB[portNUM_PROCESSORS];
+
+  return (m_mongoose_task == pxCurrentTCB[xPortGetCoreID()]);
+  }
+
 #endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE

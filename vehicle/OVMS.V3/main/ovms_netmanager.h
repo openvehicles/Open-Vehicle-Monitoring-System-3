@@ -153,6 +153,7 @@ class OvmsNetManager
     int ListConnections(int verbosity, OvmsWriter* writer);
     int CloseConnection(uint32_t id);
     int CleanupConnections();
+    bool IsNetManagerTask();
 
 #endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   };
