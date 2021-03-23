@@ -99,7 +99,7 @@ static void GsmPPPOS_StatusCallback(ppp_pcb *pcb, int err_code, void *ctx)
       }
     case PPPERR_USER:
       {
-      if (m_connected)
+      if (me->m_connected)
         {
         ESP_LOGI(TAG, "PPP connection has been closed");
         me->m_connected = false;
@@ -150,7 +150,7 @@ static void GsmPPPOS_StatusCallback(ppp_pcb *pcb, int err_code, void *ctx)
     }
 
   ESP_LOGI(TAG, "Shutdown (via status callback)");
-  if (m_connected)
+  if (me->m_connected)
     {
     me->m_connected = false;
     MyEvents.SignalEvent("system.modem.down",NULL);
