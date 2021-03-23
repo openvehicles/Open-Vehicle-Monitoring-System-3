@@ -99,9 +99,12 @@ static void GsmPPPOS_StatusCallback(ppp_pcb *pcb, int err_code, void *ctx)
       }
     case PPPERR_USER:
       {
-      ESP_LOGI(TAG, "PPP connection has been closed");
-      me->m_connected = false;
-      MyEvents.SignalEvent("system.modem.down",NULL);
+      if (m_connected)
+        {
+        ESP_LOGI(TAG, "PPP connection has been closed");
+        me->m_connected = false;
+        MyEvents.SignalEvent("system.modem.down",NULL);
+        }
       return;
       }
     case PPPERR_CONNECT:
@@ -147,8 +150,11 @@ static void GsmPPPOS_StatusCallback(ppp_pcb *pcb, int err_code, void *ctx)
     }
 
   ESP_LOGI(TAG, "Shutdown (via status callback)");
-  me->m_connected = false;
-  MyEvents.SignalEvent("system.modem.down",NULL);
+  if (m_connected)
+    {
+    me->m_connected = false;
+    MyEvents.SignalEvent("system.modem.down",NULL);
+    }
 
   // Try to reconnect in 30 seconds. This is assuming the modem level
   // data channel is still open.
