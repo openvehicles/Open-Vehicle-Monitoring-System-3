@@ -1702,6 +1702,7 @@ void OvmsWebServer::HandleCfgWebServer(PageEntry_t& p, PageContext_t& c)
   std::string error, warn;
   std::string docroot, auth_domain, auth_file;
   bool enable_files, enable_dirlist, auth_global;
+  extram::string tls_cert, tls_key;
 
   if (c.method == "POST") {
     // process form submission:
@@ -1711,6 +1712,8 @@ void OvmsWebServer::HandleCfgWebServer(PageEntry_t& p, PageContext_t& c)
     enable_files = (c.getvar("enable_files") == "yes");
     enable_dirlist = (c.getvar("enable_dirlist") == "yes");
     auth_global = (c.getvar("auth_global") == "yes");
+    c.getvar("tls_cert", tls_cert);
+    c.getvar("tls_key", tls_key);
 
     // validate:
     if (docroot != "" && docroot[0] != '/') {
@@ -1718,6 +1721,35 @@ void OvmsWebServer::HandleCfgWebServer(PageEntry_t& p, PageContext_t& c)
     }
     if (docroot == "/" || docroot == "/store" || docroot == "/store/" || startsWith(docroot, "/store/ovms_config")) {
       warn += "<li data-input=\"docroot\">Document root <code>" + docroot + "</code> may open access to OVMS configuration files, consider using a sub directory</li>";
+    }
+    if (!tls_cert.empty() && !startsWith(tls_cert, "-----BEGIN CERTIFICATE-----")) {
+      error += "<li data-input=\"tls_cert\">TLS certificate must be in PEM CERTIFICATE format</li>";
+    }
+    if (!tls_key.empty() && !startsWith(tls_key, "-----BEGIN PRIVATE KEY-----")) {
+      error += "<li data-input=\"tls_key\">TLS private key must be in PEM PRIVATE KEY format</li>";
+    }
+    if (tls_cert.empty() != tls_key.empty()) {
+      error += "<li data-input=\"tls_cert,tls_key\">Both TLS certificate and private key must be given</li>";
+    }
+
+    // save TLS files:
+    if (error == "") {
+      if (tls_cert.empty()) {
+        unlink("/store/tls/webserver.crt");
+        unlink("/store/tls/webserver.key");
+      }
+      else {
+        if (save_file("/store/tls/webserver.crt", tls_cert) != 0) {
+          error += "<li data-input=\"tls_cert\">Error saving TLS certificate: ";
+          error += strerror(errno);
+          error += "</li>";
+        }
+        if (save_file("/store/tls/webserver.key", tls_key) != 0) {
+          error += "<li data-input=\"tls_key\">Error saving TLS private key: ";
+          error += strerror(errno);
+          error += "</li>";
+        }
+      }
     }
 
     if (error == "") {
@@ -1734,7 +1766,9 @@ void OvmsWebServer::HandleCfgWebServer(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValueBool("http.server", "auth.global", auth_global);
 
       c.head(200);
-      c.alert("success", "<p class=\"lead\">Webserver configuration saved.</p>");
+      c.alert("success", "<p class=\"lead\">Webserver configuration saved.</p>"
+        "<p>Note: if you changed the TLS certificate or key, you need to reboot"
+        " the module to activate the change.</p>");
       if (warn != "") {
         warn = "<p class=\"lead\">Warning:</p><ul class=\"warnlist\">" + warn + "</ul>";
         c.alert("warning", warn.c_str());
@@ -1757,6 +1791,8 @@ void OvmsWebServer::HandleCfgWebServer(PageEntry_t& p, PageContext_t& c)
     enable_files = MyConfig.GetParamValueBool("http.server", "enable.files", true);
     enable_dirlist = MyConfig.GetParamValueBool("http.server", "enable.dirlist", true);
     auth_global = MyConfig.GetParamValueBool("http.server", "auth.global", true);
+    load_file("/store/tls/webserver.crt", tls_cert);
+    load_file("/store/tls/webserver.key", tls_key);
 
     // generate form:
     c.head(200);
@@ -1781,9 +1817,45 @@ void OvmsWebServer::HandleCfgWebServer(PageEntry_t& p, PageContext_t& c)
     "<p>Note: sub directories do <u>not</u> inherit the parent auth file.</p>");
   c.input_text("Auth domain/realm", "auth_domain", auth_domain.c_str(), "Default: ovms");
 
+  c.printf(
+    "<div class=\"form-group\">\n"
+      "<label class=\"control-label col-sm-3\" for=\"input-content\">TLS certificate:</label>\n"
+      "<div class=\"col-sm-9\">\n"
+        "<textarea class=\"form-control font-monospace\" style=\"font-size:80%%;white-space:pre;\"\n"
+          "autocapitalize=\"none\" autocorrect=\"off\" autocomplete=\"off\" spellcheck=\"false\"\n"
+          "placeholder=\"-----BEGIN CERTIFICATE-----&#13;&#10;...&#13;&#10;-----END CERTIFICATE-----\"\n"
+          "rows=\"5\" id=\"input-tls_cert\" name=\"tls_cert\">%s</textarea>\n"
+      "</div>\n"
+    "</div>\n"
+    , c.encode_html(tls_cert).c_str());
+  c.printf(
+    "<div class=\"form-group\">\n"
+      "<label class=\"control-label col-sm-3\" for=\"input-content\">TLS private key:</label>\n"
+      "<div class=\"col-sm-9\">\n"
+        "<textarea class=\"form-control font-monospace\" style=\"font-size:80%%;white-space:pre;\"\n"
+          "autocapitalize=\"none\" autocorrect=\"off\" autocomplete=\"off\" spellcheck=\"false\"\n"
+          "placeholder=\"-----BEGIN PRIVATE KEY-----&#13;&#10;...&#13;&#10;-----END PRIVATE KEY-----\"\n"
+          "rows=\"5\" id=\"input-tls_key\" name=\"tls_key\">%s</textarea>\n"
+      "</div>\n"
+    "</div>\n"
+    , c.encode_html(tls_key).c_str());
+
   c.input_button("default", "Save");
   c.form_end();
-  c.panel_end();
+  c.panel_end(
+    "<p>To enable encryption (https, wss) you need to install a TLS certificate + key. Public"
+    " certification authorities (CAs) won't issue certificates for private hosts and IP addresses,"
+    " so we recommend to create a self-signed TLS certificate for your module. Use a maximum key"
+    " size of 2048 bit for acceptable performance.</p>"
+    "<p><u>Example/template using OpenSSL</u>:</p>"
+    "<samp class=\"autoselect\">openssl req -x509 -newkey rsa:2048 -sha256 -days 3650 -nodes \\\n"
+    "&nbsp;&nbsp;-keyout ovms.key -out ovms.crt -subj \"/CN=ovmsname.local\" \\\n"
+    "&nbsp;&nbsp;-addext \"subjectAltName=IP:192.168.4.1,IP:192.168.2.101\"</samp>"
+    "<p>Change the name and add more IPs as needed. The command produces two files in your current"
+    " directory, <code>ovms.crt</code> and <code>ovms.key</code>. Copy their contents into the"
+    " respective fields above.</p>"
+    "<p><u>Note</u>: as this is a self-signed certificate, you will need to explicitly allow the"
+    " browser to access the module on the first https connect.</p>");
   c.done();
 }
 
@@ -4025,28 +4097,10 @@ void OvmsWebServer::HandleFile(PageEntry_t& p, PageContext_t& c)
       error += "; Missing content";
     }
     else {
-      // create path:
-      size_t n = path.rfind('/');
-      if (n != 0 && n != std::string::npos) {
-        std::string dir = path.substr(0, n);
-        if (!path_exists(dir)) {
-          if (mkpath(dir) != 0) {
-            error += "; Error creating path: ";
-            error += strerror(errno);
-          }
-        }
-      }
       // write file:
-      if (error == "") {
-        std::ofstream file(path, std::ios::out | std::ios::binary | std::ios::trunc);
-        if (file.is_open())
-          file.write(content.data(), content.size());
-        if (file.fail()) {
-          error += "; Error writing to path: ";
-          error += strerror(errno);
-        } else {
-          MyEvents.SignalEvent("system.vfs.file.changed", (void*)path.c_str(), path.size()+1);
-        }
+      if (save_file(path, content) != 0) {
+        error += "; Error writing to path: ";
+        error += strerror(errno);
       }
     }
   }
@@ -4056,16 +4110,7 @@ void OvmsWebServer::HandleFile(PageEntry_t& p, PageContext_t& c)
       path = "/store/";
     } else if (path.back() != '/') {
       // read file:
-      std::ifstream file(path, std::ios::in | std::ios::binary | std::ios::ate);
-      if (file.is_open()) {
-        auto size = file.tellg();
-        if (size > 0) {
-          content.resize(size, '\0');
-          file.seekg(0);
-          file.read(&content[0], size);
-        }
-      }
-      if (file.fail()) {
+      if (load_file(path, content) != 0) {
         error += "; Error reading from path: ";
         error += strerror(errno);
       }

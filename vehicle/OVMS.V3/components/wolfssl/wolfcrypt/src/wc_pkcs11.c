@@ -66,7 +66,7 @@
 #endif
 
 
-/* Maximim lenght of the EC parameter string. */
+/* Maximim length of the EC parameter string. */
 #define MAX_EC_PARAM_LEN   16
 
 
@@ -762,7 +762,7 @@ static int Pkcs11CreateSecretKey(CK_OBJECT_HANDLE* key, Pkcs11Session* session,
 /**
  * Create a PKCS#11 object containing the RSA private key data.
  *
- * @param  [out]  privateKey  Henadle to private key object.
+ * @param  [out]  privateKey  Handle to private key object.
  * @param  [in]   session     Session object.
  * @param  [in]   rsaKey      RSA key with private key data.
  * @return  WC_HW_E when a PKCS#11 library call fails.
@@ -874,7 +874,7 @@ static int Pkcs11EccSetParams(ecc_key* key, CK_ATTRIBUTE* tmpl, int idx)
  * Create a PKCS#11 object containing the ECC public key data.
  * Encode the public key as an OCTET_STRING of the encoded point.
  *
- * @param  [out]  publicKey    Henadle to public key object.
+ * @param  [out]  publicKey    Handle to public key object.
  * @param  [in]   session      Session object.
  * @param  [in]   public_key   ECC public key.
  * @param  [in]   operation    Cryptographic operation key is to be used for.
@@ -935,6 +935,8 @@ static int Pkcs11CreateEccPublicKey(CK_OBJECT_HANDLE* publicKey,
         if (len >= ASN_LONG_LENGTH)
             ecPoint[i++] = ASN_LONG_LENGTH | 1;
         ecPoint[i++] = len;
+        if (public_key->type == 0)
+            public_key->type = ECC_PUBLICKEY;
         ret = wc_ecc_export_x963(public_key, ecPoint + i, &len);
     }
     if (ret == 0) {
@@ -964,7 +966,7 @@ static int Pkcs11CreateEccPublicKey(CK_OBJECT_HANDLE* publicKey,
 /**
  * Create a PKCS#11 object containing the ECC private key data.
  *
- * @param  privateKey   [out]  Henadle to private key object.
+ * @param  privateKey   [out]  Handle to private key object.
  * @param  session      [in]   Session object.
  * @param  private_key  [in]   ECC private key.
  * @param  operation    [in]   Cryptographic operation key is to be used for.
@@ -1893,7 +1895,7 @@ static int Pkcs11RsaKeyGen(Pkcs11Session* session, wc_CryptoInfo* info)
  * Find the PKCS#11 object containing the ECC public or private key data.
  * Search for public key by public point.
  *
- * @param  [out]  key       Henadle to key object.
+ * @param  [out]  key       Handle to key object.
  * @param  [in]   keyClass  Public or private key class.
  * @param  [in]   session   Session object.
  * @param  [in]   eccKey    ECC key with parameters.
@@ -1936,6 +1938,8 @@ static int Pkcs11FindEccKey(CK_OBJECT_HANDLE* key, CK_OBJECT_CLASS keyClass,
         if (len >= ASN_LONG_LENGTH)
             ecPoint[i++] = (ASN_LONG_LENGTH | 1);
         ecPoint[i++] = len;
+        if (eccKey->type == 0)
+            eccKey->type = ECC_PUBLICKEY;
         ret = wc_ecc_export_x963(eccKey, ecPoint + i, &len);
     }
     if (ret == 0 && keyClass == CKO_PUBLIC_KEY) {
@@ -2063,6 +2067,10 @@ static int Pkcs11GetEccPublicKey(ecc_key* key, Pkcs11Session* session,
         curveIdx = wc_ecc_get_curve_idx(key->dp->id);
         ret = wc_ecc_import_point_der(point + i, pointSz - i, curveIdx,
                                                                   &key->pubkey);
+    }
+    /* make sure the ecc_key type has been set */
+    if (ret == 0 && key->type == 0) {
+        key->type = ECC_PUBLICKEY;
     }
 
     if (point != NULL)
@@ -2357,7 +2365,7 @@ static int Pkcs11ECDH(Pkcs11Session* session, wc_CryptoInfo* info)
  *
  * @param  [in,out]  sig  Signature data.
  * @param  [in]      sz   Size of original signature data.
- * @return  Length of the ASN.1 DER enencoded signature.
+ * @return  Length of the ASN.1 DER encoded signature.
  */
 static word32 Pkcs11ECDSASig_Encode(byte* sig, word32 sz)
 {
@@ -3435,7 +3443,7 @@ static int Pkcs11Hmac(Pkcs11Session* session, wc_CryptoInfo* info)
             }
         }
 
-        /* Don't imitialize HMAC again if this succeeded */
+        /* Don't initialize HMAC again if this succeeded */
         if (ret == 0)
             hmac->innerHashKeyed = WC_HMAC_INNER_HASH_KEYED_DEV;
     }
@@ -3722,4 +3730,3 @@ int wc_Pkcs11_CryptoDevCb(int devId, wc_CryptoInfo* info, void* ctx)
 }
 
 #endif /* HAVE_PKCS11 */
-

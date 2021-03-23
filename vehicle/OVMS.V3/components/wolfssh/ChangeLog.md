@@ -1,3 +1,37 @@
+# wolfSSH v1.4.6 (February 3, 2021)
+
+## New Feature Additions
+
+- Added optional builds for not using RSA or ECC making the build more modular for resource constrained situations.
+- MQX IDE build added
+- Command line option added for Agent use with the example client
+
+
+
+## Fixes
+
+- Increase the ID list size for interop with some OpenSSH servers
+- In the case of a network error add a close to any open files with SFTP connection
+- Fix for potential memory leak with agent and a case with wolfSHS_SFTP_GetHandle
+- Fuzzing fix for potential out of bounds read in the public key user auth messages
+- MQX build fixes
+- Sanity check that agent was set before setting the agent’s channel
+- Fuzzing fix for bounds checking with DoKexDhReply internal function
+- Fuzzing fix for clean up of base path with SCP use
+- Fuzzing fix for sanity checks on setting the prime group and generator
+- Fuzzing fix for return result of high water check
+- Fuzzing fix for null terminator in internal ReceiveScpConfirmation function
+
+## Improvements and Optimizations
+
+- Example timeout added to SFTP example
+- Update wolfSSH_ReadKey_buffer() to handle P-384 and P-521 when reading a key from a buffer
+- Use internal version of strdup
+- Use strncmp instead of memcmp for comparint session string type
+
+--------------------------------
+
+
 # wolfSSH v1.4.5 (August 31, 2020)
 
 ## New Feature Additions

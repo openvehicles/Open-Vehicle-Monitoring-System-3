@@ -64,12 +64,18 @@ decouple library dependencies with standard string, memory and so on.
     #ifndef WOLFSSL_TYPES
         #ifndef byte
             typedef unsigned char  byte;
+            typedef   signed char  sword8;
+            typedef unsigned char  word8;
         #endif
         #ifdef WC_16BIT_CPU
+            typedef          int   sword16;
             typedef unsigned int   word16;
+            typedef          long  sword32;
             typedef unsigned long  word32;
         #else
+            typedef          short sword16;
             typedef unsigned short word16;
+            typedef          int   sword32;
             typedef unsigned int   word32;
         #endif
         typedef byte           word24[3];
@@ -114,22 +120,27 @@ decouple library dependencies with standard string, memory and so on.
     #if defined(_MSC_VER) || defined(__BCPLUSPLUS__)
         #define WORD64_AVAILABLE
         #define W64LIT(x) x##ui64
+        typedef          __int64 sword64;
         typedef unsigned __int64 word64;
     #elif defined(__EMSCRIPTEN__)
         #define WORD64_AVAILABLE
         #define W64LIT(x) x##ull
+        typedef          long long sword64;
         typedef unsigned long long word64;
     #elif defined(SIZEOF_LONG) && SIZEOF_LONG == 8
         #define WORD64_AVAILABLE
         #define W64LIT(x) x##LL
+        typedef          long sword64;
         typedef unsigned long word64;
     #elif defined(SIZEOF_LONG_LONG) && SIZEOF_LONG_LONG == 8
         #define WORD64_AVAILABLE
         #define W64LIT(x) x##LL
+        typedef          long long sword64;
         typedef unsigned long long word64;
     #elif defined(__SIZEOF_LONG_LONG__) && __SIZEOF_LONG_LONG__ == 8
         #define WORD64_AVAILABLE
         #define W64LIT(x) x##LL
+        typedef          long long sword64;
         typedef unsigned long long word64;
     #endif
 
@@ -401,15 +412,7 @@ decouple library dependencies with standard string, memory and so on.
     #if defined(WOLFSSL_ASYNC_CRYPT) || defined(WOLFSSL_SMALL_STACK)
         #define DECLARE_VAR_IS_HEAP_ALLOC
         #define DECLARE_VAR(VAR_NAME, VAR_TYPE, VAR_SIZE, HEAP) \
-            VAR_TYPE* VAR_NAME = (VAR_TYPE*)XMALLOC(sizeof(VAR_TYPE) * VAR_SIZE, (HEAP), DYNAMIC_TYPE_WOLF_BIGINT);
-        #define DECLARE_VAR_INIT(VAR_NAME, VAR_TYPE, VAR_SIZE, INIT_VALUE, HEAP) \
-            VAR_TYPE* VAR_NAME = ({ \
-                VAR_TYPE* ptr = (VAR_TYPE*)XMALLOC(sizeof(VAR_TYPE) * VAR_SIZE, (HEAP), DYNAMIC_TYPE_WOLF_BIGINT); \
-                if (ptr && INIT_VALUE) { \
-                    XMEMCPY(ptr, INIT_VALUE, sizeof(VAR_TYPE) * VAR_SIZE); \
-                } \
-                ptr; \
-            })
+            VAR_TYPE* VAR_NAME = (VAR_TYPE*)XMALLOC(sizeof(VAR_TYPE) * VAR_SIZE, (HEAP), DYNAMIC_TYPE_WOLF_BIGINT)
         #define DECLARE_ARRAY(VAR_NAME, VAR_TYPE, VAR_ITEMS, VAR_SIZE, HEAP) \
             VAR_TYPE* VAR_NAME[VAR_ITEMS]; \
             int idx##VAR_NAME, inner_idx_##VAR_NAME; \
@@ -442,8 +445,6 @@ decouple library dependencies with standard string, memory and so on.
         #undef DECLARE_VAR_IS_HEAP_ALLOC
         #define DECLARE_VAR(VAR_NAME, VAR_TYPE, VAR_SIZE, HEAP) \
             VAR_TYPE VAR_NAME[VAR_SIZE]
-        #define DECLARE_VAR_INIT(VAR_NAME, VAR_TYPE, VAR_SIZE, INIT_VALUE, HEAP) \
-            VAR_TYPE* VAR_NAME = (VAR_TYPE*)INIT_VALUE
         #define DECLARE_ARRAY(VAR_NAME, VAR_TYPE, VAR_ITEMS, VAR_SIZE, HEAP) \
             VAR_TYPE VAR_NAME[VAR_ITEMS][VAR_SIZE]
         #define FREE_VAR(VAR_NAME, HEAP) /* nothing to free, its stack */
@@ -523,6 +524,8 @@ decouple library dependencies with standard string, memory and so on.
             #endif
             #if defined(WOLFSSL_DEOS)
                 #define XSTRNCASECMP(s1,s2,n) strnicmp((s1),(s2),(n))
+            #elif defined(WOLFSSL_CMSIS_RTOSv2)
+                #define XSTRNCASECMP(s1,s2,n) strncmp((s1),(s2),(n))
             #else
                 #define XSTRNCASECMP(s1,s2,n) strncasecmp((s1),(s2),(n))
             #endif
@@ -756,6 +759,8 @@ decouple library dependencies with standard string, memory and so on.
         DYNAMIC_TYPE_NAME_ENTRY   = 90,
         DYNAMIC_TYPE_CURVE448     = 91,
         DYNAMIC_TYPE_ED448        = 92,
+        DYNAMIC_TYPE_AES          = 93,
+        DYNAMIC_TYPE_CMAC         = 94,
         DYNAMIC_TYPE_SNIFFER_SERVER     = 1000,
         DYNAMIC_TYPE_SNIFFER_SESSION    = 1001,
         DYNAMIC_TYPE_SNIFFER_PB         = 1002,

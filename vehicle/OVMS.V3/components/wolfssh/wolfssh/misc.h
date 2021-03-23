@@ -18,10 +18,9 @@
  * along with wolfSSH.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
 
-#ifndef WOLFSSH_MISC_H
-#define WOLFSSH_MISC_H
+#ifndef _WOLFSSH_MISC_H_
+#define _WOLFSSH_MISC_H_
 
 
 #ifdef __cplusplus
@@ -55,6 +54,5 @@ WOLFSSH_LOCAL void CreateMpint(byte*, word32*, byte*);
     }   /* extern "C" */
 #endif
 
-
-#endif /* WOLFSSH_MISC_H */
+#endif /* _WOLFSSH_MISC_H_ */
 

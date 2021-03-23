@@ -215,6 +215,7 @@ typedef enum ecc_curve_id {
 #ifdef WOLFSSL_CUSTOM_CURVES
     ECC_CURVE_CUSTOM,
 #endif
+    ECC_CURVE_MAX
 } ecc_curve_id;
 
 #ifdef HAVE_OID_ENCODING
@@ -322,7 +323,8 @@ typedef struct ecc_set_type {
 #endif
 
 /* determine buffer size */
-#define FP_SIZE_ECC    (FP_MAX_BITS_ECC/DIGIT_BIT)
+/* Add one to accommodate extra digit used by sp_mul(), sp_mulmod(), sp_sqr(), and sp_sqrmod(). */
+#define FP_SIZE_ECC    ((FP_MAX_BITS_ECC/DIGIT_BIT) + 1)
 
 
 /* This needs to match the size of the fp_int struct, except the

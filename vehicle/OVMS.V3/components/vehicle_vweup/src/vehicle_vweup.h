@@ -159,6 +159,9 @@ public:
   bool HasNoOBD() {
     return (vweup_con & CON_OBD) == 0;
   }
+  bool IsOBDReady() {
+    return (m_obd_state == OBDS_Run);
+  }
 
   bool IsChargeModeAC() {
     return m_chg_type == CHGTYPE_AC;

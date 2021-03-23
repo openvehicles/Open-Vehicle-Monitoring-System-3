@@ -27,16 +27,20 @@
  */
 
 
-#pragma once
+#ifndef _WOLFSSH_VERSION_H_
+#define _WOLFSSH_VERSION_H_
+
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#define LIBWOLFSSH_VERSION_STRING "1.4.5"
-#define LIBWOLFSSH_VERSION_HEX 0x01004005
+#define LIBWOLFSSH_VERSION_STRING "1.4.6"
+#define LIBWOLFSSH_VERSION_HEX 0x01004006
 
 #ifdef __cplusplus
 }
 #endif
+
+#endif /* _WOLFSSH_VERSION_H_ */
 
