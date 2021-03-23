@@ -33,13 +33,17 @@ static const char *TAG = "v-maxed3";
 #include "metrics_standard.h"
 #include "ovms_metrics.h"
 #include <string>
-
+#include "ovms_metrics.h"
+#include "ovms_events.h"
+#include "ovms_config.h"
+#include "ovms_command.h"
+#include "ovms_notify.h"
 
 
 static const OvmsVehicle::poll_pid_t obdii_polls[] =
     {
         { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xe002u, {  0, 120, 120, 120  }, 0, ISOTP_STD }, //soc?? +1 may need scaling
-        { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xe003u, {  0, 120, 120, 120  }, 0, ISOTP_STD }, //SOH
+        { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xe001u, {  0, 120, 120, 120  }, 0, ISOTP_STD }, //SOH
         { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xe005u, {  0, 120, 120, 120  }, 0, ISOTP_STD }, //temp
         { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xe006u, {  0, 120, 120, 120  }, 0, ISOTP_STD }, //temp
         { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xe019u, {  0, 120, 120, 120  }, 0, ISOTP_STD }, //Pack Voltage
@@ -55,14 +59,13 @@ OvmsVehicleMaxed3::OvmsVehicleMaxed3()
       
         RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
         PollSetPidList(m_can1,obdii_polls);
-        PollSetState(0);
+        PollSetState(1);
     }
 
 OvmsVehicleMaxed3::~OvmsVehicleMaxed3()
     {
         ESP_LOGI(TAG, "Stop eDeliver3 vehicle module");
     }
-
 
 //testing polls
 
@@ -82,11 +85,11 @@ void OvmsVehicleMaxed3::IncomingPollReply(canbus* bus, uint16_t type, uint16_t p
                         m_vin[0] = 0;
                     }
                     break;
-                case 0xe002: //soc?? +1 may need scaling
-                    StandardMetrics.ms_v_bat_soc->SetValue(value1 + 1);
+                case 0xe002: //soc scaled from 2 - 99
+                    StandardMetrics.ms_v_bat_soc->SetValue(((value1 - 2) * 100.0f) / (99 - 2);
                     break;
-                case 0xe003: //soh??
-                    StandardMetrics.ms_v_bat_soh->SetValue(value1 / 100);
+                case 0xe001: //soh
+                    StandardMetrics.ms_v_bat_soh->SetValue(value1);
                     break;
                 case 0xe005:  // temperature??
                     StandardMetrics.ms_v_mot_temp->SetValue(value1 / 10.0f);
@@ -132,21 +135,21 @@ void OvmsVehicleMaxed3::IncomingFrameCan1(CAN_frame_t* p_frame)
           uint8_t meds_status = (d[0] & 0x07); // contains status bits
           
               switch (meds_status)
+                  // Pollstate 0 - POLLSTATE_OFF      - car is off
+                  // Pollstate 1 - POLLSTATE_ON       - car is on
+                  // Pollstate 2 - POLLSTATE_RUNNING  - car is driving
+                  // Pollstate 3 - POLLSTATE_CHARGING - car is charging
               break;
           
               
-          
-          
           //Set ideal, est and amps when CANdata received
           float soc = StandardMetrics.ms_v_bat_soc->AsFloat();
-              if(soc>100)soc=100;
                 StandardMetrics.ms_v_bat_range_ideal->SetValue(241 * soc / 100);
                 StandardMetrics.ms_v_bat_range_est->SetValue(241 * soc / 108);
                 StandardMetrics.ms_v_bat_current->SetValue((StandardMetrics.ms_v_bat_power->AsFloat() / (StandardMetrics.ms_v_bat_voltage->AsFloat() )) * 1000); // work out current untill pid found
       
               break;
         
-          
             }
         default:
           break;
@@ -155,30 +158,44 @@ void OvmsVehicleMaxed3::IncomingFrameCan1(CAN_frame_t* p_frame)
             case 0x604:  // Setup
                 {
                 float power = d[5];
-                    StandardMetrics.ms_v_bat_power->SetValue((power * 42) / 1000);// actual power in watts on AC converted to kw
-                    if (StandardMetrics.ms_v_bat_power->AsFloat() >=  1.000f)
-                        {
-                            StandardMetrics.ms_v_charge_inprogress->SetValue(true);
-                            PollSetState(1);
-                        }
-                    else
-                        {
-                            StandardMetrics.ms_v_charge_inprogress->SetValue(false);
-                            PollSetState(0);
-                        }
-                    break;
-                }
-/*            case 0x375:  // Setup
-                {
-                float van_on = d[5];
-                    if (van_on == 18)
+                StandardMetrics.ms_v_bat_power->SetValue((power * 42) / 1000);// actual power in watts on AC converted to kw
+                if (StandardMetrics.ms_v_bat_power->AsFloat() >=  1.000f)
                     {
-                        StandardMetrics.ms_v_env_on->SetValue(true);
-                        PollSetState(2);
+                        StandardMetrics.ms_v_charge_inprogress->SetValue(true);
+                        StandardMetrics.ms_v_door_chargeport->SetValue (true);
+                        StandardMetrics.ms_v_charge_type->SetValue("Standard");
+                        StandardMetrics.ms_v_charge_mode->SetValue("Type2");
+                        StandardMetrics.ms_v_charge_state->SetValue("Charging");
+                        PollSetState(3);
                     }
-                    break;
+                else
+                    {
+                        StandardMetrics.ms_v_charge_inprogress->SetValue(false);
+                        StandardMetrics.ms_v_door_chargeport->SetValue (false);
+                        StandardMetrics.ms_v_charge_state->SetValue("Off");
+                        StandardMetrics.ms_v_charge_type->SetValue("Off");
+                        StandardMetrics.ms_v_charge_mode->SetValue("Off");
+                        PollSetState(0);
+                    }
+                break;
+            
                 }
-*/
+            case 0x373: // set status to on
+                  {
+                    StandardMetrics.ms_v_env_on->SetValue(bool( d[7] & 0x10 ));
+                      if (StandardMetrics.ms_v_env_on->AsBool())
+                          PollSetState(1);
+                      
+                    break;
+                  }
+
+//            case 0x375:  // set status to driving
+//                {
+//                    StandardMetrics.ms_v_env_on->SetValue(bool( d[5] & 0x10 ));
+//                          PollSetState(2);
+//                    break;
+//                }
+                
             case 0x540:  // odometer in KM
                 {
                     StandardMetrics.ms_v_pos_odometer->SetValue(d[0] << 16 | d[1] << 8 | d[2]);// odometer
