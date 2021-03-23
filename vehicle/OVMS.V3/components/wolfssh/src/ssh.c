@@ -540,7 +540,7 @@ int wolfSSH_accept(WOLFSSH* ssh)
                     const char* cmd = wolfSSH_GetSessionCommand(ssh);
                     if (cmd != NULL &&
                         WOLFSSH_SESSION_SUBSYSTEM == wolfSSH_GetSessionType(ssh)
-                        && (WMEMCMP(cmd, "sftp", sizeof("sftp")) == 0)) {
+                        && (WSTRNCMP(cmd, "sftp", 4) == 0)) {
                         ssh->acceptState = ACCEPT_INIT_SFTP;
                         return wolfSSH_SFTP_accept(ssh);
                     }
@@ -591,6 +591,9 @@ int wolfSSH_accept(WOLFSSH* ssh)
                         ssh->ctx->agentCb(WOLFSSH_AGENT_LOCAL_SETUP,
                                 ssh->agentCbCtx);
                     }
+                    if (ssh->agent != NULL)
+                        wolfSSH_AGENT_free(ssh->agent);
+                    ssh->agent = newAgent;
                 }
 #endif /* WOLFSSH_AGENT */
                 ssh->acceptState = ACCEPT_CLIENT_SESSION_ESTABLISHED;
@@ -722,8 +725,11 @@ int wolfSSH_connect(WOLFSSH* ssh)
                 return WS_FATAL_ERROR;
             }
 
-            if (ssh->handshake->kexId == ID_DH_GEX_SHA256)
+            if (ssh->handshake->kexId == ID_DH_GEX_SHA256) {
+#ifndef WOLFSSH_NO_DH
                 ssh->error = SendKexDhGexRequest(ssh);
+#endif
+            }
             else
                 ssh->error = SendKexDhInit(ssh);
             if (ssh->error < WS_SUCCESS) {
@@ -957,7 +963,7 @@ int wolfSSH_TriggerKeyExchange(WOLFSSH* ssh)
         ret = WS_BAD_ARGUMENT;
 
     if (ret == WS_SUCCESS)
-        ret = SendKexInit(ssh);
+        ret = ssh->error = SendKexInit(ssh);
 
     WLOG(WS_LOG_DEBUG, "Leaving wolfSSH_TriggerKeyExchange(), ret = %d", ret);
     return ret;
@@ -1403,31 +1409,20 @@ int wolfSSH_ReadKey_buffer(const byte* in, word32 inSz, int format,
            SSH format is:
            type AAAABASE64ENCODEDKEYDATA comment
         */
-        c = WSTRDUP((const char*)in, heap);
+        c = WSTRDUP((const char*)in, heap, DYNTYPE_STRING);
         type = WSTRTOK(c, " \n", &last);
         key = WSTRTOK(NULL, " \n", &last);
 
         if (type != NULL && key != NULL) {
             const char* name;
             word32 typeSz;
+            byte nameId;
 
             typeSz = (word32)WSTRLEN(type);
 
-            name = IdToName(ID_SSH_RSA);
-            if (WSTRNCMP(type, name, typeSz) == 0) {
-                *outType = (const byte*)name;
-            }
-            else {
-                name = IdToName(ID_ECDSA_SHA2_NISTP256);
-                if (WSTRNCMP(type, name, typeSz) == 0) {
-                    *outType = (const byte*)name;
-                }
-                else {
-                    name = IdToName(ID_UNKNOWN);
-                    *outType = (const byte*)name;
-                    typeSz = (word32)WSTRLEN(name);
-                }
-            }
+            nameId = NameToId(type, typeSz);
+            name = IdToName(nameId);
+            *outType = (const byte*)name;
             *outTypeSz = typeSz;
 
             ret = Base64_Decode((byte*)key, (word32)WSTRLEN(key), *out, outSz);
@@ -1441,8 +1436,12 @@ int wolfSSH_ReadKey_buffer(const byte* in, word32 inSz, int format,
     else if (format == WOLFSSH_FORMAT_ASN1) {
         byte* newKey;
         union {
-            RsaKey rsa;
-            ecc_key ecc;
+            #ifndef WOLFSSH_NO_RSA
+                RsaKey rsa;
+            #endif
+            #ifndef WOLFSSH_NO_ECDSA
+                ecc_key ecc;
+            #endif
         } testKey;
         word32 scratch = 0;
 
@@ -1459,7 +1458,7 @@ int wolfSSH_ReadKey_buffer(const byte* in, word32 inSz, int format,
         }
         *outSz = inSz;
         WMEMCPY(newKey, in, inSz);
-
+#ifndef WOLFSSH_NO_RSA
         /* TODO: This is copied and modified from a function in src/internal.c.
            This and that code should be combined into a single function. */
         if (wc_InitRsaKey(&testKey.rsa, heap) < 0)
@@ -1474,6 +1473,10 @@ int wolfSSH_ReadKey_buffer(const byte* in, word32 inSz, int format,
             *outTypeSz = (word32)WSTRLEN((const char*)*outType);
         }
         else {
+#endif
+#ifndef WOLFSSH_NO_ECDSA
+            byte curveId = ID_UNKNOWN;
+
             /* Couldn't decode as RSA testKey. Try decoding as ECC testKey. */
             scratch = 0;
             if (wc_ecc_init_ex(&testKey.ecc, heap, INVALID_DEVID) != 0)
@@ -1481,15 +1484,29 @@ int wolfSSH_ReadKey_buffer(const byte* in, word32 inSz, int format,
 
             ret = wc_EccPrivateKeyDecode(in, &scratch,
                                          &testKey.ecc, inSz);
+            switch (wc_ecc_get_curve_id(testKey.ecc.idx)) {
+                case ECC_SECP256R1:
+                    curveId = ID_ECDSA_SHA2_NISTP256;
+                    break;
+                case ECC_SECP384R1:
+                    curveId = ID_ECDSA_SHA2_NISTP384;
+                    break;
+                case ECC_SECP521R1:
+                    curveId = ID_ECDSA_SHA2_NISTP521;
+                    break;
+            }
             wc_ecc_free(&testKey.ecc);
 
             if (ret == 0) {
-                *outType = (const byte*)IdToName(ID_ECDH_SHA2_NISTP256);
+                *outType = (const byte*)IdToName(curveId);
                 *outTypeSz = (word32)WSTRLEN((const char*)*outType);
             }
             else
                 return WS_BAD_FILE_E;
+#endif
+#ifndef WOLFSSH_NO_RSA
         }
+#endif
     }
     else
         ret = WS_ERROR;

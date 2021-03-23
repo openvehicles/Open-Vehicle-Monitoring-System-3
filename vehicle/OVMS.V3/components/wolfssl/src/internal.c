@@ -37,6 +37,29 @@
  *     Default wolfSSL behavior is to require validation of all presented peer
  *     certificates. This also allows loading intermediate CA's as trusted
  *     and ignoring no signer failures for CA's up the chain to root.
+ * WOLFSSL_DTLS_RESEND_ONLY_TIMEOUT:
+ *     Enable resending the previous DTLS handshake flight only on a network
+ *     read timeout. By default we resend in two more cases, when we receive:
+ *     - an out of order last msg of the peer's flight
+ *     - a duplicate of the first msg from the peer's flight
+ * WOLFSSL_NO_DEF_TICKET_ENC_CB:
+ *     No default ticket encryption callback.
+ *     Server only.
+ *     Application must set its own callback to use session tickets.
+ * WOLFSSL_TICKET_ENC_CHACHA20_POLY1305
+ *     Use ChaCha20-Poly1305 to encrypt/decrypt session tickets in default
+ *     callback. Default algorithm if none defined and algorithms compiled in.
+ *     Server only.
+ * WOLFSSL_TICKET_ENC_AES128_GCM
+ *     Use AES128-GCM to encrypt/decrypt session tickets in default callback.
+ *     Server only. Default algorithm if ChaCha20/Poly1305 not compiled in.
+ * WOLFSSL_TICKET_ENC_AES256_GCM
+ *     Use AES256-GCM to encrypt/decrypt session tickets in default callback.
+ *     Server only.
+ * WOLFSSL_TICKET_DECRYPT_NO_CREATE
+ *     Default callback will not request creation of new ticket on successful
+ *     decryption.
+ *     Server only.
  */
 
 
@@ -72,7 +95,11 @@
 #if defined(DEBUG_WOLFSSL) || defined(SHOW_SECRETS) || \
     defined(CHACHA_AEAD_TEST) || defined(WOLFSSL_SESSION_EXPORT_DEBUG)
     #ifndef NO_STDIO_FILESYSTEM
-        #include <stdio.h>
+        #ifdef FUSION_RTOS
+            #include <fclstdio.h>
+        #else
+            #include <stdio.h>
+        #endif
     #endif
 #endif
 
@@ -124,9 +151,24 @@ WOLFSSL_CALLBACKS needs LARGE_STATIC_BUFFERS, please add LARGE_STATIC_BUFFERS
     #ifdef WOLFSSL_DTLS
         static int SendHelloVerifyRequest(WOLFSSL*, const byte*, byte);
     #endif /* WOLFSSL_DTLS */
-#endif
+
+#endif /* !NO_WOLFSSL_SERVER */
 
 #endif /* !WOLFSSL_NO_TLS12 */
+
+#ifndef NO_WOLFSSL_SERVER
+    #if defined(HAVE_SESSION_TICKET) && !defined(WOLFSSL_NO_DEF_TICKET_ENC_CB)
+        static int TicketEncCbCtx_Init(WOLFSSL_CTX* ctx,
+                                       TicketEncCbCtx* keyCtx);
+        static void TicketEncCbCtx_Free(TicketEncCbCtx* keyCtx);
+        static int DefTicketEncCb(WOLFSSL* ssl,
+                                  byte key_name[WOLFSSL_TICKET_NAME_SZ],
+                                  byte iv[WOLFSSL_TICKET_IV_SZ],
+                                  byte mac[WOLFSSL_TICKET_MAC_SZ],
+                                  int enc, byte* ticket, int inLen, int* outLen,
+                                  void* userCtx);
+    #endif
+#endif
 
 #ifdef WOLFSSL_DTLS
     static WC_INLINE int DtlsCheckWindow(WOLFSSL* ssl);
@@ -204,15 +246,14 @@ int IsAtLeastTLSv1_3(const ProtocolVersion pv)
 
 static WC_INLINE int IsEncryptionOn(WOLFSSL* ssl, int isSend)
 {
-    (void)isSend;
-
     #ifdef WOLFSSL_DTLS
     /* For DTLS, epoch 0 is always not encrypted. */
     if (ssl->options.dtls && !isSend && ssl->keys.curEpoch == 0)
         return 0;
     #endif /* WOLFSSL_DTLS */
 
-    return ssl->keys.encryptionOn;
+    return ssl->keys.encryptionOn &&
+        (isSend ? ssl->encrypt.setup : ssl->decrypt.setup);
 }
 
 
@@ -899,6 +940,7 @@ static int dtls_export_new(WOLFSSL* ssl, byte* exp, word32 len, byte ver)
 #ifdef HAVE_SESSION_TICKET
     exp[idx++] = options->createTicket;
     exp[idx++] = options->useTicket;
+    exp[idx++] = options->noTicketTls12;
 #ifdef WOLFSSL_TLS13
     if (ver > DTLS_EXPORT_VERSION_3) {
         exp[idx++] = options->noTicketTls13;
@@ -1064,6 +1106,7 @@ static int dtls_export_load(WOLFSSL* ssl, const byte* exp, word32 len, byte ver)
 #ifdef HAVE_SESSION_TICKET
     options->createTicket  = exp[idx++]; /* Server to create new Ticket */
     options->useTicket     = exp[idx++]; /* Use Ticket not session cache */
+    options->noTicketTls12 = exp[idx++]; /* Server won't create new Ticket */
 #ifdef WOLFSSL_TLS13
     if (ver > DTLS_EXPORT_VERSION_3) {
         options->noTicketTls13 = exp[idx++];/* Server won't create new Ticket */
@@ -1775,6 +1818,12 @@ int InitSSL_Ctx(WOLFSSL_CTX* ctx, WOLFSSL_METHOD* method, void* heap)
 #endif /* HAVE_EXTENDED_MASTER && !NO_WOLFSSL_CLIENT */
 
 #if defined(HAVE_SESSION_TICKET) && !defined(NO_WOLFSSL_SERVER)
+#ifndef WOLFSSL_NO_DEF_TICKET_ENC_CB
+    ret = TicketEncCbCtx_Init(ctx, &ctx->ticketKeyCtx);
+    if (ret != 0) return ret;
+    ctx->ticketEncCb = DefTicketEncCb;
+    ctx->ticketEncCtx = (void*)&ctx->ticketKeyCtx;
+#endif
     ctx->ticketHint = SESSION_TICKET_HINT_DEFAULT;
 #endif
 
@@ -1845,8 +1894,7 @@ void SSL_CtxResourceFree(WOLFSSL_CTX* ctx)
     FreeDer(&ctx->certificate);
     #ifdef KEEP_OUR_CERT
         if (ctx->ourCert && ctx->ownOurCert) {
-            FreeX509(ctx->ourCert);
-            XFREE(ctx->ourCert, ctx->heap, DYNAMIC_TYPE_X509);
+            wolfSSL_X509_free(ctx->ourCert);
             ctx->ourCert = NULL;
         }
     #endif /* KEEP_OUR_CERT */
@@ -1908,7 +1956,7 @@ void SSL_CtxResourceFree(WOLFSSL_CTX* ctx)
     #ifdef HAVE_ECC
     if (ctx->staticKE.ecKey)
         FreeDer(&ctx->staticKE.ecKey);
-    #endif    
+    #endif
 #endif
 #ifdef WOLFSSL_STATIC_MEMORY
     if (ctx->heap != NULL) {
@@ -1944,6 +1992,10 @@ void FreeSSL_Ctx(WOLFSSL_CTX* ctx)
         void* heap = ctx->heap;
         WOLFSSL_MSG("CTX ref count down to 0, doing full free");
         SSL_CtxResourceFree(ctx);
+#if defined(HAVE_SESSION_TICKET) && !defined(NO_WOLFSSL_SERVER) && \
+    !defined(WOLFSSL_NO_DEF_TICKET_ENC_CB)
+        TicketEncCbCtx_Free(&ctx->ticketKeyCtx);
+#endif
         wc_FreeMutex(&ctx->countMutex);
 #ifdef WOLFSSL_STATIC_MEMORY
         if (ctx->onHeap == 0) {
@@ -5333,6 +5385,7 @@ int SetSSL_CTX(WOLFSSL* ssl, WOLFSSL_CTX* ctx, int writeDup)
 #if defined(HAVE_ECC) || defined(HAVE_ED25519) || defined(HAVE_ED448)
     ssl->pkCurveOID = ctx->pkCurveOID;
 #endif
+
 #ifdef OPENSSL_EXTRA
     ssl->CBIS         = ctx->CBIS;
 #endif
@@ -5457,6 +5510,13 @@ int SetSSL_CTX(WOLFSSL* ssl, WOLFSSL_CTX* ctx, int writeDup)
             ret = InitSSL_Suites(ssl);
         }
     }  /* writeDup check */
+
+#if defined(OPENSSL_EXTRA) || defined(WOLFSSL_WPAS_SMALL)
+    if (ctx->mask != 0 && wolfSSL_set_options(ssl, ctx->mask) == 0) {
+        WOLFSSL_MSG("wolfSSL_set_options error");
+        return BAD_FUNC_ARG;
+    }
+#endif
 
 #ifdef WOLFSSL_SESSION_EXPORT
     #ifdef WOLFSSL_DTLS
@@ -5753,6 +5813,10 @@ int InitSSL(WOLFSSL* ssl, WOLFSSL_CTX* ctx, int writeDup)
     #endif
 #endif
 
+#if defined(WOLFSSL_OPENVPN) && defined(HAVE_KEYING_MATERIAL)
+    /* Save arrays by default for OpenVPN */
+    ssl->options.saveArrays = 1;
+#endif
 
     ssl->cipher.ssl = ssl;
 
@@ -5941,6 +6005,7 @@ int InitSSL(WOLFSSL* ssl, WOLFSSL_CTX* ctx, int writeDup)
 #endif
 
 #ifdef HAVE_SESSION_TICKET
+    ssl->options.noTicketTls12 = ctx->noTicketTls12;
     ssl->session.ticket = ssl->session.staticTicket;
 #endif
 
@@ -6554,6 +6619,7 @@ void SSL_ResourceFree(WOLFSSL* ssl)
 /* Free any handshake resources no longer needed */
 void FreeHandshakeResources(WOLFSSL* ssl)
 {
+    WOLFSSL_ENTER("FreeHandshakeResources");
 
 #ifdef WOLFSSL_DTLS
     /* DTLS_POOL */
@@ -6924,6 +6990,7 @@ void WriteSEQ(WOLFSSL* ssl, int verifyOrder, byte* out)
 DtlsMsg* DtlsMsgNew(word32 sz, void* heap)
 {
     DtlsMsg* msg;
+    WOLFSSL_ENTER("DtlsMsgNew()");
 
     (void)heap;
     msg = (DtlsMsg*)XMALLOC(sizeof(DtlsMsg), heap, DYNAMIC_TYPE_DTLS_MSG);
@@ -6949,6 +7016,7 @@ DtlsMsg* DtlsMsgNew(word32 sz, void* heap)
 void DtlsMsgDelete(DtlsMsg* item, void* heap)
 {
     (void)heap;
+    WOLFSSL_ENTER("DtlsMsgDelete()");
 
     if (item != NULL) {
         DtlsFrag* cur = item->fragList;
@@ -6967,6 +7035,7 @@ void DtlsMsgDelete(DtlsMsg* item, void* heap)
 void DtlsMsgListDelete(DtlsMsg* head, void* heap)
 {
     DtlsMsg* next;
+    WOLFSSL_ENTER("DtlsMsgListDelete()");
     while (head) {
         next = head->next;
         DtlsMsgDelete(head, heap);
@@ -6981,6 +7050,7 @@ void DtlsTxMsgListClean(WOLFSSL* ssl)
 {
     DtlsMsg* head = ssl->dtls_tx_msg_list;
     DtlsMsg* next;
+    WOLFSSL_ENTER("DtlsTxMsgListClean()");
     while (head) {
         next = head->next;
         if (VerifyForTxDtlsMsgDelete(ssl, head))
@@ -7004,6 +7074,8 @@ static DtlsFrag* CreateFragment(word32* begin, word32 end, const byte* data,
     DtlsFrag* newFrag;
     word32 added = end - *begin + 1;
 
+    WOLFSSL_ENTER("CreateFragment()");
+
     (void)heap;
     newFrag = (DtlsFrag*)XMALLOC(sizeof(DtlsFrag), heap,
                                  DYNAMIC_TYPE_DTLS_FRAG);
@@ -7024,6 +7096,7 @@ static DtlsFrag* CreateFragment(word32* begin, word32 end, const byte* data,
 int DtlsMsgSet(DtlsMsg* msg, word32 seq, word16 epoch, const byte* data, byte type,
                                    word32 fragOffset, word32 fragSz, void* heap)
 {
+    WOLFSSL_ENTER("DtlsMsgSet()");
     if (msg != NULL && data != NULL && msg->fragSz <= msg->sz &&
                                              (fragOffset + fragSz) <= msg->sz) {
         DtlsFrag* cur = msg->fragList;
@@ -7125,6 +7198,7 @@ int DtlsMsgSet(DtlsMsg* msg, word32 seq, word16 epoch, const byte* data, byte ty
 
 DtlsMsg* DtlsMsgFind(DtlsMsg* head, word32 epoch, word32 seq)
 {
+    WOLFSSL_ENTER("DtlsMsgFind()");
     while (head != NULL && !(head->epoch == epoch && head->seq == seq)) {
         head = head->next;
     }
@@ -7153,6 +7227,7 @@ void DtlsMsgStore(WOLFSSL* ssl, word32 epoch, word32 seq, const byte* data,
      */
 
     DtlsMsg* head = ssl->dtls_rx_msg_list;
+    WOLFSSL_ENTER("DtlsMsgStore()");
 
     if (head != NULL) {
         DtlsMsg* cur = DtlsMsgFind(head, epoch, seq);
@@ -7194,6 +7269,7 @@ void DtlsMsgStore(WOLFSSL* ssl, word32 epoch, word32 seq, const byte* data,
 /* DtlsMsgInsert() is an in-order insert. */
 DtlsMsg* DtlsMsgInsert(DtlsMsg* head, DtlsMsg* item)
 {
+    WOLFSSL_ENTER("DtlsMsgInsert()");
     if (head == NULL || (item->epoch <= head->epoch &&
                          item->seq   <  head->seq)) {
         item->next = head;
@@ -7206,8 +7282,8 @@ DtlsMsg* DtlsMsgInsert(DtlsMsg* head, DtlsMsg* item)
         DtlsMsg* cur = head->next;
         DtlsMsg* prev = head;
         while (cur) {
-            if (item->epoch <= head->epoch &&
-                item->seq   <  head->seq) {
+            if (item->epoch <= cur->epoch &&
+                item->seq   <  cur->seq) {
                 item->next = cur;
                 prev->next = item;
                 break;
@@ -7274,6 +7350,7 @@ int DtlsMsgPoolSave(WOLFSSL* ssl, const byte* data, word32 dataSz,
 int DtlsMsgPoolTimeout(WOLFSSL* ssl)
 {
     int result = -1;
+    WOLFSSL_ENTER("DtlsMsgPoolTimeout()");
     if (ssl->dtls_timeout <  ssl->dtls_timeout_max) {
         ssl->dtls_timeout *= DTLS_TIMEOUT_MULTIPLIER;
         result = 0;
@@ -7311,7 +7388,7 @@ int VerifyForDtlsMsgPoolSend(WOLFSSL* ssl, byte type, word32 fragOffset)
              ((ssl->options.verifyPeer) && (type == certificate)) ||
              ((!ssl->options.verifyPeer) && (type == client_key_exchange)))) ||
             ((ssl->options.side == WOLFSSL_CLIENT_END) &&
-             (type == server_hello))));
+             (type == hello_request || type == server_hello))));
 }
 
 
@@ -7321,6 +7398,7 @@ int VerifyForDtlsMsgPoolSend(WOLFSSL* ssl, byte type, word32 fragOffset)
  */
 int VerifyForTxDtlsMsgDelete(WOLFSSL* ssl, DtlsMsg* item)
 {
+    WOLFSSL_ENTER("VerifyForTxDtlsMsgDelete()");
     if (item->epoch < ssl->keys.dtls_epoch - 1)
         /* Messages not from current or previous epoch can be deleted */
         return 1;
@@ -7587,8 +7665,8 @@ ProtocolVersion MakeDTLSv1_2(void)
 
     word32 LowResTimer(void)
     {
-        const uint32_t systemTickTimeInHz = 1000000 / systemTickInMicroseconds();
-        uint32_t *systemTickPtr = systemTickPointer();
+        const word32 systemTickTimeInHz = 1000000 / systemTickInMicroseconds();
+        word32 *systemTickPtr = systemTickPointer();
 
         return (word32) *systemTickPtr/systemTickTimeInHz;
     }
@@ -9918,6 +9996,7 @@ static int ProcessCSR(WOLFSSL* ssl, byte* input, word32* inOutIdx,
 {
     int ret = 0;
     OcspRequest* request;
+    WOLFSSL_ENTER("ProcessCSR");
 
     #ifdef WOLFSSL_SMALL_STACK
         CertStatus* status;
@@ -9999,6 +10078,7 @@ static int ProcessCSR(WOLFSSL* ssl, byte* input, word32* inOutIdx,
         XFREE(response, ssl->heap, DYNAMIC_TYPE_OCSP_REQUEST);
     #endif
 
+    WOLFSSL_LEAVE("ProcessCSR", ret);
     return ret;
 }
 #endif
@@ -10777,21 +10857,12 @@ int ProcessPeerCerts(WOLFSSL* ssl, byte* input, word32* inOutIdx,
         #endif
 
             /* allocate buffer for certs */
-        #if defined(OPENSSL_EXTRA) || defined(OPENSSL_EXTRA_X509_SMALL)
-            args->certs = (buffer*)XMALLOC(sizeof(buffer) *
-                    (ssl->verifyDepth + 1), ssl->heap, DYNAMIC_TYPE_DER);
-            if (args->certs == NULL) {
-                ERROR_OUT(MEMORY_E, exit_ppc);
-            }
-            XMEMSET(args->certs, 0, sizeof(buffer) * (ssl->verifyDepth + 1));
-        #else
             args->certs = (buffer*)XMALLOC(sizeof(buffer) * MAX_CHAIN_DEPTH,
                                             ssl->heap, DYNAMIC_TYPE_DER);
             if (args->certs == NULL) {
                 ERROR_OUT(MEMORY_E, exit_ppc);
             }
             XMEMSET(args->certs, 0, sizeof(buffer) * MAX_CHAIN_DEPTH);
-        #endif /* OPENSSL_EXTRA */
 
             /* Certificate List */
             if ((args->idx - args->begin) + OPAQUE24_LEN > totalSz) {
@@ -10812,10 +10883,14 @@ int ProcessPeerCerts(WOLFSSL* ssl, byte* input, word32* inOutIdx,
             while (listSz) {
                 word32 certSz;
 
+
             #if defined(OPENSSL_EXTRA) || defined(OPENSSL_EXTRA_X509_SMALL)
-                if (args->totalCerts > ssl->verifyDepth) {
+                if (args->totalCerts >= MAX_CHAIN_DEPTH) {
                     ssl->peerVerifyRet = X509_V_ERR_CERT_CHAIN_TOO_LONG;
-                    ERROR_OUT(MAX_CHAIN_ERROR, exit_ppc);
+                    ret = MAX_CHAIN_ERROR;
+                    WOLFSSL_MSG("Too many certs for MAX_CHAIN_DEPTH");
+                    break; /* break out to avoid reading more certs then buffer
+                            * can hold */
                 }
             #else
                 if (args->totalCerts >= ssl->verifyDepth ||
@@ -11056,7 +11131,15 @@ int ProcessPeerCerts(WOLFSSL* ssl, byte* input, word32* inOutIdx,
                         (void)doCrlLookup;
                     }
             #endif /* HAVE_OCSP || HAVE_CRL */
-
+            #if defined(OPENSSL_EXTRA) || defined(OPENSSL_EXTRA_X509_SMALL)
+                    if (ret == 0 &&
+                        /* extend the limit "+1" until reaching
+                         * an ultimately trusted issuer.*/
+                        args->count > (ssl->verifyDepth + 1)) {
+                        ssl->peerVerifyRet = X509_V_ERR_CERT_CHAIN_TOO_LONG;
+                        ret = MAX_CHAIN_ERROR;
+                    }
+            #endif
                     /* Do verify callback */
                     ret = DoVerifyCallback(ssl->ctx->cm, ssl, ret, args);
                     if (ssl->options.verifyNone &&
@@ -11289,7 +11372,7 @@ int ProcessPeerCerts(WOLFSSL* ssl, byte* input, word32* inOutIdx,
                             args->fatal = TLSX_CSR_InitRequest(ssl->extensions,
                                                     args->dCert, ssl->heap);
                             doLookup = 0;
-                        #if defined(WOLFSSL_TLS13) && !defined(NO_WOLFSSL_CLIENT)
+                        #if defined(WOLFSSL_TLS13)
                             if (ssl->options.tls1_3) {
                                 TLSX* ext = TLSX_Find(ssl->extensions,
                                                            TLSX_STATUS_REQUEST);
@@ -12928,7 +13011,24 @@ static int DoHandShakeMsgType(WOLFSSL* ssl, byte* input, word32* inOutIdx,
         && ssl->error != WC_PENDING_E && ssl->error != OCSP_WANT_READ
     #endif
     ) {
-        ShrinkInputBuffer(ssl, NO_FORCED_FREE);
+        if (IsEncryptionOn(ssl, 0)) {
+            word32 extra = ssl->keys.padSz;
+
+        #if defined(HAVE_ENCRYPT_THEN_MAC) && !defined(WOLFSSL_AEAD_ONLY)
+            if (ssl->options.startedETMRead)
+                extra += MacSize(ssl);
+        #endif
+
+            if (extra > ssl->buffers.inputBuffer.idx)
+                return BUFFER_E;
+
+            ssl->buffers.inputBuffer.idx -= extra;
+            ShrinkInputBuffer(ssl, NO_FORCED_FREE);
+            ssl->buffers.inputBuffer.idx += extra;
+        }
+        else {
+            ShrinkInputBuffer(ssl, NO_FORCED_FREE);
+        }
     }
 
 #if defined(WOLFSSL_ASYNC_CRYPT) || defined(WOLFSSL_NONBLOCK_OCSP)
@@ -13250,11 +13350,11 @@ static WC_INLINE int DtlsUpdateWindow(WOLFSSL* ssl)
 
     if (cur_hi == *next_hi) {
         curLT = cur_lo < *next_lo;
-        diff = curLT ? *next_lo - cur_lo : cur_lo - *next_lo;
+        diff = curLT ? *next_lo - cur_lo - 1 : cur_lo - *next_lo + 1;
     }
     else {
         curLT = cur_hi < *next_hi;
-        diff = curLT ? cur_lo - *next_lo : *next_lo - cur_lo;
+        diff = curLT ? cur_lo - *next_lo - 1 : *next_lo - cur_lo + 1;
     }
 
     if (curLT) {
@@ -13272,7 +13372,6 @@ static WC_INLINE int DtlsUpdateWindow(WOLFSSL* ssl)
             word32 oldWindow[WOLFSSL_DTLS_WINDOW_WORDS];
 
             temp = 0;
-            diff++;
             idx = diff / DTLS_WORD_BITS;
             newDiff = diff % DTLS_WORD_BITS;
 
@@ -13431,10 +13530,12 @@ static int DoDtlsHandShakeMsg(WOLFSSL* ssl, byte* input, word32* inOutIdx,
             }
             *inOutIdx += ssl->keys.padSz;
             ret = 0;
+            #ifndef WOLFSSL_DTLS_RESEND_ONLY_TIMEOUT
             /* If we receive an out of order last flight msg then retransmit */
             if (type == server_hello_done || type == finished) {
                 ret = DtlsMsgPoolSend(ssl, 0);
             }
+            #endif
         }
         else {
             ret = DoHandShakeMsgType(ssl, input, inOutIdx, type, size, totalSz);
@@ -13470,11 +13571,13 @@ static int DoDtlsHandShakeMsg(WOLFSSL* ssl, byte* input, word32* inOutIdx,
                 return BUFFER_E;
             }
         }
+        #ifndef WOLFSSL_DTLS_RESEND_ONLY_TIMEOUT
         if (IsDtlsNotSctpMode(ssl) &&
             VerifyForDtlsMsgPoolSend(ssl, type, fragOffset)) {
 
             ret = DtlsMsgPoolSend(ssl, 0);
         }
+        #endif
         *inOutIdx += ssl->keys.padSz;
     }
     else if (fragSz < size) {
@@ -15871,8 +15974,21 @@ int ProcessReply(WOLFSSL* ssl)
                     WOLFSSL_MSG("got app DATA");
                     #ifdef WOLFSSL_DTLS
                         if (ssl->options.dtls && ssl->options.dtlsHsRetain) {
+                        #ifdef HAVE_SECURE_RENEGOTIATION
+                            /*
+                             * Only free HS resources when not in the process of a
+                             * secure renegotiation and we have received APP DATA
+                             * from the current epoch
+                             */
+                            if (!IsSCR(ssl) && (DtlsUseSCRKeys(ssl)
+                                    || !DtlsSCRKeysSet(ssl))) {
+                                FreeHandshakeResources(ssl);
+                                ssl->options.dtlsHsRetain = 0;
+                            }
+                        #else
                             FreeHandshakeResources(ssl);
                             ssl->options.dtlsHsRetain = 0;
+                        #endif
                         }
                     #endif
                     #ifdef WOLFSSL_TLS13
@@ -16065,13 +16181,18 @@ int SendChangeCipher(WOLFSSL* ssl)
     #endif
     ssl->buffers.outputBuffer.length += sendSz;
 
-    /* setup encrypt keys */
-    if ((ret = SetKeysSide(ssl, ENCRYPT_SIDE_ONLY)) != 0)
-        return ret;
+#ifdef WOLFSSL_TLS13
+    if (!ssl->options.tls1_3)
+#endif
+    {
+        /* setup encrypt keys */
+        if ((ret = SetKeysSide(ssl, ENCRYPT_SIDE_ONLY)) != 0)
+            return ret;
 
     #if defined(HAVE_ENCRYPT_THEN_MAC) && !defined(WOLFSSL_AEAD_ONLY)
         ssl->options.startedETMWrite = ssl->options.encThenMac;
     #endif
+    }
 
     if (ssl->options.groupMessages)
         return 0;
@@ -17075,7 +17196,7 @@ int CreateOcspResponse(WOLFSSL* ssl, OcspRequest** ocspRequest,
 #endif /* !NO_WOLFSSL_SERVER */
 
 #if (!defined(WOLFSSL_NO_TLS12) && !defined(NO_CERTS)) \
-    || defined(HAVE_SESSION_TICKET)
+    || (defined(HAVE_SESSION_TICKET) && !defined(NO_WOLFSSL_SERVER))
 static int cipherExtraData(WOLFSSL* ssl)
 {
     /* Cipher data that may be added by BuildMessage */
@@ -18833,7 +18954,8 @@ void SetErrorString(int error, char* str)
      */
 
     #ifndef NO_ERROR_STRINGS
-        #if defined(OPENSSL_ALL) || defined(WOLFSSL_QT)
+        #if defined(OPENSSL_ALL) || defined(WOLFSSL_QT) || \
+            defined(WOLFSSL_HAPROXY) || defined(WOLFSSL_NGINX)
             #define SUITE_INFO(x,y,z,w,v,u) {(x),(y),(z),(w),(v),(u),WOLFSSL_CIPHER_SUITE_FLAG_NONE}
             #define SUITE_ALIAS(x,z,w,v,u) {(x),"",(z),(w),(v),(u),WOLFSSL_CIPHER_SUITE_FLAG_NAMEALIAS},
         #else
@@ -18841,7 +18963,8 @@ void SetErrorString(int error, char* str)
             #define SUITE_ALIAS(x,z,w,v,u) {(x),"",(z),(w),WOLFSSL_CIPHER_SUITE_FLAG_NAMEALIAS},
         #endif
     #else
-        #if defined(OPENSSL_ALL) || defined(WOLFSSL_QT)
+        #if defined(OPENSSL_ALL) || defined(WOLFSSL_QT) || \
+            defined(WOLFSSL_HAPROXY) || defined(WOLFSSL_NGINX)
             #define SUITE_INFO(x,y,z,w,v,u) {(x),(z),(w),(v),(u),WOLFSSL_CIPHER_SUITE_FLAG_NONE}
             #define SUITE_ALIAS(x,z,w,v,u) {(x),(z),(w),(v),(u),WOLFSSL_CIPHER_SUITE_FLAG_NAMEALIAS},
         #else
@@ -29083,6 +29206,435 @@ static int DoSessionTicket(WOLFSSL* ssl, const byte* input, word32* inOutIdx,
         return ret;
     }
 
+#ifndef WOLFSSL_NO_DEF_TICKET_ENC_CB
+
+/* Initialize the context for session ticket encryption.
+ *
+ * @param [in]  ctx     SSL context.
+ * @param [in]  keyCtx  Context for session ticket encryption.
+ * @return  0 on success.
+ * @return  BAD_MUTEX_E when initializing mutex fails.
+ */
+static int TicketEncCbCtx_Init(WOLFSSL_CTX* ctx, TicketEncCbCtx* keyCtx)
+{
+    int ret = 0;
+
+    XMEMSET(keyCtx, 0, sizeof(*keyCtx));
+    keyCtx->ctx = ctx;
+
+#ifndef SINGLE_THREADED
+    ret = wc_InitMutex(&keyCtx->mutex);
+#endif
+
+    return ret;
+}
+
+/* Setup the session ticket encryption context for this.
+ *
+ * Initialize RNG, generate name, generate primeary key and set primary key
+ * expirary.
+ *
+ * @param [in]  keyCtx  Context for session ticket encryption.
+ * @param [in]  heap    Dynamic memory allocation hint.
+ * @param [in]  devId   Device identifier.
+ * @return  0 on success.
+ * @return  Other value when random number generator fails.
+ */
+static int TicketEncCbCtx_Setup(TicketEncCbCtx* keyCtx, void* heap, int devId)
+{
+    int ret;
+
+#ifndef SINGLE_THREADED
+    ret = 0;
+
+    /* Check that key wasn't set up while waiting. */
+    if (keyCtx->expirary[0] == 0)
+#endif
+    {
+        ret = wc_InitRng_ex(&keyCtx->rng, heap, devId);
+        if (ret == 0) {
+            ret = wc_RNG_GenerateBlock(&keyCtx->rng, keyCtx->name,
+                                       sizeof(keyCtx->name));
+        }
+        if (ret == 0) {
+            /* Mask of the bottom bit - used for index of key. */
+            keyCtx->name[WOLFSSL_TICKET_NAME_SZ - 1] &= 0xfe;
+
+            /* Generate initial primary key. */
+            ret = wc_RNG_GenerateBlock(&keyCtx->rng, keyCtx->key[0],
+                                       WOLFSSL_TICKET_KEY_SZ);
+        }
+        if (ret == 0) {
+            keyCtx->expirary[0] = LowResTimer() + WOLFSSL_TICKET_KEY_LIFETIME;
+        }
+    }
+
+    return ret;
+}
+/* Free the context for session ticket encryption.
+ *
+ * Zeroize keys and name.
+ *
+ * @param [in]  keyCtx  Context for session ticket encryption.
+ */
+static void TicketEncCbCtx_Free(TicketEncCbCtx* keyCtx)
+{
+    /* Zeroize sensitive data. */
+    ForceZero(keyCtx->name, sizeof(keyCtx->name));
+    ForceZero(keyCtx->key[0], sizeof(keyCtx->key[0]));
+    ForceZero(keyCtx->key[1], sizeof(keyCtx->key[1]));
+
+#ifndef SINGLE_THREADED
+    wc_FreeMutex(&keyCtx->mutex);
+#endif
+    wc_FreeRng(&keyCtx->rng);
+}
+
+#if defined(HAVE_CHACHA) && defined(HAVE_POLY1305) && \
+    !defined(WOLFSSL_TICKET_ENC_AES128_GCM) && \
+    !defined(WOLFSSL_TICKET_ENC_AES256_GCM)
+/* Ticket encryption/decryption implementation.
+ *
+ * @param [in]   key     Key for encryption/decryption.
+ * @param [in]   keyLen  Length of key in bytes.
+ * @param [in]   iv      IV/Nonce for encryption/decryption.
+ * @param [in]   aad     Additional authentication data.
+ * @param [in]   aadSz   Length of additional authentication data.
+ * @param [in]   in      Data to encrypt/decrypt.
+ * @param [in]   inLen   Length of encrypted data.
+ * @param [out]  out     Resulting data from encrypt/decrypt.
+ * @param [out]  outLen  Size of resulting data.
+ * @param [in]   tag     Authentication tag for encrypted data.
+ * @param [in]   heap    Dynamic memory allocation data hint.
+ * @param [in]   enc     1 when encrypting, 0 when decrypting.
+ * @return  0 on success.
+ * @return  Other value when encryption/decryption fails.
+ */
+static int TicketEncDec(byte* key, int keyLen, byte* iv, byte* aad, int aadSz,
+                        byte* in, int inLen, byte* out, int* outLen, byte* tag,
+                        void* heap, int enc)
+{
+    int ret;
+
+    (void)keyLen;
+    (void)heap;
+
+    if (enc) {
+        ret = wc_ChaCha20Poly1305_Encrypt(key, iv, aad, aadSz, in, inLen, out,
+                                          tag);
+    }
+    else {
+        ret = wc_ChaCha20Poly1305_Decrypt(key, iv, aad, aadSz, in, inLen, tag,
+                                          out);
+    }
+
+    *outLen = inLen;
+
+    return ret;
+}
+#elif defined(HAVE_AESGCM)
+/* Ticket encryption/decryption implementation.
+ *
+ * @param [in]   key     Key for encryption/decryption.
+ * @param [in]   keyLen  Length of key in bytes.
+ * @param [in]   iv      IV/Nonce for encryption/decryption.
+ * @param [in]   aad     Additional authentication data.
+ * @param [in]   aadSz   Length of additional authentication data.
+ * @param [in]   in      Data to encrypt/decrypt.
+ * @param [in]   inLen   Length of encrypted data.
+ * @param [out]  out     Resulting data from encrypt/decrypt.
+ * @param [out]  outLen  Size of resulting data.
+ * @param [in]   tag     Authentication tag for encrypted data.
+ * @param [in]   heap    Dynamic memory allocation data hint.
+ * @param [in]   enc     1 when encrypting, 0 when decrypting.
+ * @return  0 on success.
+ * @return  MEMORY_E when dynamic memory allocation fails.
+ * @return  Other value when encryption/decryption fails.
+ */
+static int TicketEncDec(byte* key, int keyLen, byte* iv, byte* aad, int aadSz,
+                        byte* in, int inLen, byte* out, int* outLen, byte* tag,
+                        void* heap, int enc)
+{
+    int ret;
+#ifdef WOLFSSL_SMALL_STACK
+    Aes* aes;
+#else
+    Aes aes[1];
+#endif
+
+    (void)heap;
+
+#ifdef WOLFSSL_SMALL_STACK
+    aes = (Aes*)XMALLOC(sizeof(Aes), heap, DYNAMIC_TYPE_TMP_BUFFER);
+    if (aes == NULL)
+        return MEMORY_E;
+#endif
+
+    if (enc) {
+        ret = wc_AesInit(aes, NULL, INVALID_DEVID);
+        if (ret == 0) {
+            ret = wc_AesGcmSetKey(aes, key, keyLen);
+        }
+        if (ret == 0) {
+            ret = wc_AesGcmEncrypt(aes, in, out, inLen, iv, GCM_NONCE_MID_SZ,
+                                   tag, AES_BLOCK_SIZE, aad, aadSz);
+        }
+        wc_AesFree(aes);
+    }
+    else {
+        ret = wc_AesInit(aes, NULL, INVALID_DEVID);
+        if (ret == 0) {
+            ret = wc_AesGcmSetKey(aes, key, keyLen);
+        }
+        if (ret == 0) {
+            ret = wc_AesGcmDecrypt(aes, in, out, inLen, iv, GCM_NONCE_MID_SZ,
+                                   tag, AES_BLOCK_SIZE, aad, aadSz);
+        }
+        wc_AesFree(aes);
+    }
+
+#ifdef WOLFSSL_SMALL_STACK
+    XFREE(aes, heap, DYNAMIC_TYPE_TMP_BUFFER);
+#endif
+
+    *outLen = inLen;
+
+    return ret;
+}
+#else
+    #error "No encryption algorithm available for default ticket encryption."
+#endif
+
+/* Choose a key to use for encryption.
+ *
+ * Generate a new key if the current ones are expired.
+ * If the secondary key has not been used and the primary key has expired then
+ * generate a new primary key.
+ * 
+ * @param [in]   Ticket encryption callback context.
+ * @param [in]   Session ticket lifetime.
+ * @param [out]  Index of key to use for encryption.
+ * @return  0 on success.
+ * @return  Other value when random number generation fails.
+ */
+static int TicketEncCbCtx_ChooseKey(TicketEncCbCtx* keyCtx, int ticketHint,
+                                    int* keyIdx)
+{
+    int ret = 0;
+
+    /* Get new current time as lock may have taken some time. */
+    word32 now = LowResTimer();
+
+    /* Check expirary of primary key for encrypt. */
+    if (keyCtx->expirary[0] >= now + ticketHint) {
+        *keyIdx = 0;
+    }
+    /* Check expirary of primary key for encrypt. */
+    else if (keyCtx->expirary[1] >= now + ticketHint) {
+        *keyIdx = 1;
+    }
+    /* No key available to use. */
+    else {
+        int genKey;
+
+        /* Generate which ever key is expired for decrypt - primary first. */
+        if (keyCtx->expirary[0] < now) {
+            genKey = 0;
+        }
+        else if (keyCtx->expirary[1] < now) {
+            genKey = 1;
+        }
+        /* Timeouts and expirary should not allow this to happen. */
+        else {
+            return BAD_STATE_E;
+        }
+
+        /* Generate the required key */
+        ret = wc_RNG_GenerateBlock(&keyCtx->rng, keyCtx->key[genKey],
+                                   WOLFSSL_TICKET_KEY_SZ);
+        if (ret == 0) {
+            keyCtx->expirary[genKey] = now + WOLFSSL_TICKET_KEY_LIFETIME;
+            *keyIdx = genKey;
+        }
+    }
+
+    return ret;
+}
+
+/* Default Session Ticket encryption/decryption callback.
+ *
+ * Use ChaCha20-Poly1305 or AES-GCM to encrypt/decrypt the ticket.
+ * Two keys are used:
+ *  - When the first expires for encryption, then use the other.
+ *  - Don't encrypt with key if the ticket lifetime will go beyond expirary.
+ *  - Generate a new primary key when primary key expired for decrypt and
+ *    no secondary key is activate for encryption.
+ *  - Generate a new secondary key when expired and needed.
+ *  - Calculate expirary starting from first encrypted ticket.
+ *  - Key name has last bit set to indicate index of key.
+ * Keys expire for decryption after ticket key lifetime from the first encrypted
+ * ticket.
+ * Keys can only be use for encryption while the ticket hint does not exceed
+ * the key lifetime.
+ * Lifetime of a key must be greater than the lifetime of a ticket. This means
+ * that if one ticket is only valid for decryption, then the other will be
+ * valid for encryption.
+ * AAD = key_name | iv | ticket len (16-bits network order)
+ *
+ * @param [in]      ssl       SSL connection.
+ * @param [in,out]  key_name  Name of key from client.
+ *                            Encrypt: name of key returned.
+ *                            Decrypt: name from ticket message to check.
+ * @param [in]      iv        IV to use in encryption/decryption.
+ * @param [in]      mac       MAC for authentication of encrypted data.
+ * @param [in]      enc       1 when encrypting ticket, 0 when decrypting.
+ * @param [in,out]  ticket    Encrypted/decrypted session ticket bytes.
+ * @param [in]      inLen     Length of incoming ticket.
+ * @param [out]     outLen    Length of outgoing ticket.
+ * @param [in]      userCtx   Context for encryption/decryption of ticket.
+ * @return  WOLFSSL_TICKET_RET_OK when successful.
+ * @return  WOLFSSL_TICKET_RET_CREATE when successful and a new ticket is to
+ *          be created for TLS 1.2 and below.
+ * @return  WOLFSSL_TICKET_RET_REJECT when failed to produce valid encrypted or
+ *          decrypted ticket.
+ * @return  WOLFSSL_TICKET_RET_FATAL when key name does not match.
+ */
+static int DefTicketEncCb(WOLFSSL* ssl, byte key_name[WOLFSSL_TICKET_NAME_SZ],
+                          byte iv[WOLFSSL_TICKET_IV_SZ],
+                          byte mac[WOLFSSL_TICKET_MAC_SZ],
+                          int enc, byte* ticket, int inLen, int* outLen,
+                          void* userCtx)
+{
+    int ret;
+    TicketEncCbCtx* keyCtx = (TicketEncCbCtx*)userCtx;
+    WOLFSSL_CTX* ctx = keyCtx->ctx;
+    word16 sLen = XHTONS(inLen);
+    byte aad[WOLFSSL_TICKET_NAME_SZ + WOLFSSL_TICKET_IV_SZ + sizeof(sLen)];
+    int  aadSz = WOLFSSL_TICKET_NAME_SZ + WOLFSSL_TICKET_IV_SZ + sizeof(sLen);
+    byte* p = aad;
+    int keyIdx = 0;
+
+    /* Check we have setup the RNG, name and primary key. */
+    if (keyCtx->expirary[0] == 0) {
+#ifndef SINGLE_THREADED
+        /* Lock around access to expirary and key - stop initial key being
+         * generated twice at the same time. */
+        if (wc_LockMutex(&keyCtx->mutex) != 0) {
+            WOLFSSL_MSG("Couldn't lock key context mutex");
+            return WOLFSSL_TICKET_RET_REJECT;
+        }
+#endif
+        /* Sets expirary of primary key in setup. */
+        ret = TicketEncCbCtx_Setup(keyCtx, ssl->ctx->heap, ssl->ctx->devId);
+#ifndef SINGLE_THREADED
+        wc_UnLockMutex(&keyCtx->mutex);
+#endif
+        if (ret != 0)
+            return ret;
+    }
+
+    if (enc) {
+        /* Return the name of the key - missing key index. */
+        XMEMCPY(key_name, keyCtx->name, WOLFSSL_TICKET_NAME_SZ);
+
+        /* Generate a new IV into buffer to be returned.
+         * Don't use the RNG in keyCtx as it's for generating private data. */
+        ret = wc_RNG_GenerateBlock(ssl->rng, iv, WOLFSSL_TICKET_IV_SZ);
+        if (ret != 0) {
+            return WOLFSSL_TICKET_RET_REJECT;
+        }
+    }
+    else {
+        /* Mask of last bit that is the key index. */
+        byte lastByte = key_name[WOLFSSL_TICKET_NAME_SZ - 1] & 0xfe;
+
+        /* For decryption, see if we know this key - check all but last byte. */
+        if (XMEMCMP(key_name, keyCtx->name, WOLFSSL_TICKET_NAME_SZ - 1) != 0) {
+            return WOLFSSL_TICKET_RET_FATAL;
+        }
+        /* Ensure last byte without index bit matches too. */
+        if (lastByte != keyCtx->name[WOLFSSL_TICKET_NAME_SZ - 1]) {
+            return WOLFSSL_TICKET_RET_FATAL;
+        }
+    }
+
+    /* Build AAD from: key name, iv, and length of ticket. */
+    XMEMCPY(p, keyCtx->name, WOLFSSL_TICKET_NAME_SZ);
+    p += WOLFSSL_TICKET_NAME_SZ;
+    XMEMCPY(p, iv, WOLFSSL_TICKET_IV_SZ);
+    p += WOLFSSL_TICKET_IV_SZ;
+    XMEMCPY(p, &sLen, sizeof(sLen));
+
+    /* Encrypt ticket. */
+    if (enc) {
+        word32 now;
+
+        now = LowResTimer();
+        /* As long as encryption expirary isn't imminent - no lock. */
+        if (keyCtx->expirary[0] > now + ctx->ticketHint) {
+            keyIdx = 0;
+        }
+        else if (keyCtx->expirary[1] > now + ctx->ticketHint) {
+            keyIdx = 1;
+        }
+        else {
+#ifndef SINGLE_THREADED
+            /* Lock around access to expirary and key - stop key being generated
+             * twice at the same time. */
+            if (wc_LockMutex(&keyCtx->mutex) != 0) {
+                WOLFSSL_MSG("Couldn't lock key context mutex");
+                return WOLFSSL_TICKET_RET_REJECT;
+            }
+#endif
+            ret = TicketEncCbCtx_ChooseKey(keyCtx, ctx->ticketHint, &keyIdx);
+#ifndef SINGLE_THREADED
+            wc_UnLockMutex(&keyCtx->mutex);
+#endif
+            if (ret != 0) {
+                return WOLFSSL_TICKET_RET_REJECT;
+            }
+        }
+        /* Set the name of the key to the index chosen. */
+        key_name[WOLFSSL_TICKET_NAME_SZ - 1] |= keyIdx;
+        /* Update AAD too. */
+        aad[WOLFSSL_TICKET_NAME_SZ - 1] |= keyIdx;
+
+        /* Encrypt ticket data. */
+        ret = TicketEncDec(keyCtx->key[keyIdx], WOLFSSL_TICKET_KEY_SZ, iv, aad,
+                           aadSz, ticket, inLen, ticket, outLen, mac, ssl->heap,
+                           1);
+        if (ret != 0) return WOLFSSL_TICKET_RET_REJECT;
+    }
+    /* Decrypt ticket. */
+    else {
+        /* Get index of key from name. */
+        keyIdx = key_name[WOLFSSL_TICKET_NAME_SZ - 1] & 0x1;
+        /* Update AAD with index. */
+        aad[WOLFSSL_TICKET_NAME_SZ - 1] |= keyIdx;
+
+        /* Check expirary */
+        if (keyCtx->expirary[keyIdx] <= LowResTimer()) {
+            return WOLFSSL_TICKET_RET_REJECT;
+        }
+
+        /* Decrypt ticket data. */
+        ret = TicketEncDec(keyCtx->key[keyIdx], WOLFSSL_TICKET_KEY_SZ, iv, aad,
+                           aadSz, ticket, inLen, ticket, outLen, mac, ssl->heap,
+                           0);
+        if (ret != 0) {
+            return WOLFSSL_TICKET_RET_REJECT;
+        }
+    }
+
+#ifndef WOLFSSL_TICKET_DECRYPT_NO_CREATE
+    if (!IsAtLeastTLSv1_3(ssl->version) && !enc)
+        return WOLFSSL_TICKET_RET_CREATE;
+#endif
+    return WOLFSSL_TICKET_RET_OK;
+}
+
+#endif /* !WOLFSSL_NO_DEF_TICKET_ENC_CB */
+
 #endif /* HAVE_SESSION_TICKET */
 
 #ifndef WOLFSSL_NO_TLS12
@@ -29518,7 +30070,8 @@ static int DoSessionTicket(WOLFSSL* ssl, const byte* input, word32* inOutIdx,
 
                         if (ssl->arrays->psk_keySz == 0 ||
                                 ssl->arrays->psk_keySz > MAX_PSK_KEY_LEN) {
-                            #ifdef WOLFSSL_EXTRA_ALERTS
+                            #if defined(WOLFSSL_EXTRA_ALERTS) || \
+                                defined(WOLFSSL_PSK_IDENTITY_ALERT)
                                 SendAlert(ssl, alert_fatal,
                                         unknown_psk_identity);
                             #endif
@@ -29775,9 +30328,9 @@ static int DoSessionTicket(WOLFSSL* ssl, const byte* input, word32* inOutIdx,
                         ssl->arrays->preMasterSz = private_key->dp->size;
 
                         ssl->peerEccKeyPresent = 1;
-                        
+
                     #if defined(WOLFSSL_TLS13) || defined(HAVE_FFDHE)
-                        /* client_hello may have sent FFEDH2048, which sets namedGroup, 
+                        /* client_hello may have sent FFEDH2048, which sets namedGroup,
                             but that is not being used, so clear it */
                         /* resolves issue with server side wolfSSL_get_curve_name */
                         ssl->namedGroup = 0;
@@ -30402,7 +30955,8 @@ static int DoSessionTicket(WOLFSSL* ssl, const byte* input, word32* inOutIdx,
 
                         if (ssl->arrays->psk_keySz == 0 ||
                                 ssl->arrays->psk_keySz > MAX_PSK_KEY_LEN) {
-                            #ifdef WOLFSSL_EXTRA_ALERTS
+                            #if defined(WOLFSSL_EXTRA_ALERTS) || \
+                                defined(WOLFSSL_PSK_IDENTITY_ALERT)
                                 SendAlert(ssl, alert_fatal,
                                         unknown_psk_identity);
                             #endif

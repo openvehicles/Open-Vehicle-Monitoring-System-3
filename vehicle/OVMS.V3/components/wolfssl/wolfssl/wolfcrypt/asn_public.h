@@ -332,7 +332,8 @@ typedef struct Cert {
     char    certPolicies[CTC_MAX_CERTPOL_NB][CTC_MAX_CERTPOL_SZ];
     word16  certPoliciesNb;              /* Number of Cert Policy */
 #endif
-#if defined(WOLFSSL_CERT_EXT) || defined(OPENSSL_EXTRA)
+#if defined(WOLFSSL_CERT_EXT) || defined(OPENSSL_EXTRA) || \
+    defined(WOLFSSL_CERT_REQ)
     byte     issRaw[sizeof(CertName)];   /* raw issuer info */
     byte     sbjRaw[sizeof(CertName)];   /* raw subject info */
 #endif
@@ -517,6 +518,8 @@ WOLFSSL_API void wc_FreeDer(DerBuffer** pDer);
                                           word32 inLen);
     WOLFSSL_API int wc_EccPrivateKeyToPKCS8(ecc_key* key, byte* output,
                                             word32* outLen);
+    WOLFSSL_API int wc_EccKeyToPKCS8(ecc_key* key, byte* output,
+                                     word32* outLen);
 
     /* public key helper */
     WOLFSSL_API int wc_EccPublicKeyDecode(const byte*, word32*,

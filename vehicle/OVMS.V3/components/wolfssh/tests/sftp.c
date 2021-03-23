@@ -56,7 +56,28 @@ static char inBuf[1024] = {0};
 /* return 0 on success */
 static int Expected(int command)
 {
+    int i;
+
     switch (command) {
+        case 3: /* pwd */
+            /* working directory should not contain a '.' at the end */
+            for (i = 0; i < (int)sizeof(inBuf); i++) {
+                if (inBuf[i] == '\n') {
+                    inBuf[i] = '\0';
+                    break;
+                }
+            }
+
+            if (inBuf[WSTRLEN(inBuf) - 2] != '/') {
+                printf("unexpected pwd of %s\n looking for '/'\n", inBuf);
+                return -1;
+            }
+            if (inBuf[WSTRLEN(inBuf) - 1] != 'a') {
+                printf("unexpected pwd of %s\n looking for 'a'\n", inBuf);
+                return -1;
+            }
+            break;
+
         case 4:
             {
                 char expt1[] = ".\n..\nwolfSSH sftp> ";

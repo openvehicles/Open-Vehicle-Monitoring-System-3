@@ -1998,6 +1998,8 @@ static int wc_DhAgree_Sync(DhKey* key, byte* agree, word32* agreeSz,
     mp_clear(z);
     mp_clear(y);
     mp_forcezero(x);
+#else
+    ret = WC_KEY_SIZE_E;
 #endif
 
 #ifdef WOLFSSL_SMALL_STACK
@@ -2456,7 +2458,12 @@ int wc_DhGenerateParams(WC_RNG *rng, int modSz, DhKey *dh)
 
     if (ret == 0) {
         /* at this point tmp generates a group of order q mod p */
+#ifndef USE_FAST_MATH
+        /* Exchanging is quick when the data pointer can be copied. */
         mp_exch(&tmp, &dh->g);
+#else
+        mp_copy(&tmp, &dh->g);
+#endif
     }
 
     /* clear the parameters if there was an error */

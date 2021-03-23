@@ -18,10 +18,10 @@
  * along with wolfSSH.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
 
-#ifndef WOLFSSH_WOLFSCP_H
-#define WOLFSSH_WOLFSCP_H
+#ifndef _WOLFSSH_WOLFSCP_H_
+#define _WOLFSSH_WOLFSCP_H_
+
 
 #include <wolfssh/settings.h>
 #include <wolfssh/ssh.h>
@@ -139,5 +139,5 @@ WOLFSSH_API int   wolfSSH_SCP_from(WOLFSSH*, const char*, const char*);
 
 #endif /* WOLFSSH_SCP */
 
-#endif /* WOLFSSH_WOLFSCP_H */
+#endif /* _WOLFSSH_WOLFSCP_H_ */
 
