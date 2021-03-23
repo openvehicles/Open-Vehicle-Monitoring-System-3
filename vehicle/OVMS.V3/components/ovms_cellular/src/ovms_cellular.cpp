@@ -1265,7 +1265,7 @@ void modem::StartTask()
   if (!m_task)
     {
     ESP_LOGV(TAG, "Starting modem task");
-    xTaskCreatePinnedToCore(MODEM_task, "OVMS MODEM", CONFIG_OVMS_HW_CELLULAR_MODEM_STACK_SIZE, (void*)this, 20, &m_task, CORE(0));
+    xTaskCreatePinnedToCore(MODEM_task, "OVMS Cellular", CONFIG_OVMS_HW_CELLULAR_MODEM_STACK_SIZE, (void*)this, 20, &m_task, CORE(0));
     }
   }
 
