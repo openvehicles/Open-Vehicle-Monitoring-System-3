@@ -799,19 +799,10 @@ void OvmsVehicleSmartED::RestartNetwork() {
 }
 
 void OvmsVehicleSmartED::AutoSetRecu() {
-  int i=0, x=20;
   if (StandardMetrics.ms_v_env_on->AsBool() && mt_CEPC_Wippen->AsBool() && m_auto_set_recu && m_enable_write) {
     if (StandardMetrics.ms_v_env_drivemode->AsInt(1) != m_auto_set_recu+1 && !recuSet) {
-      while(StandardMetrics.ms_v_env_drivemode->AsInt(1) != m_auto_set_recu+1) {
-        CommandSetRecu(true);
-        vTaskDelay(500 / portTICK_PERIOD_MS);
-        i++;
-        if (i==x) break;
-      }
-      MyEvents.SignalEvent("v-smarted.xse.recu.up",NULL);
-      if (StandardMetrics.ms_v_env_drivemode->AsInt(1) == m_auto_set_recu+1)
-        recuSet = true;
-      else recuSet = false;
+      recuSet = SetRecu(m_auto_set_recu+1);
+      MyEvents.SignalEvent("v-smarted.recu.set",NULL);
     }
   } else recuSet = false;
 }
@@ -872,7 +863,7 @@ bool OvmsVehicleSmartED::SetFeature(int key, const char *value)
     case 4:
     {
       int v = atoi(value);
-      if (v < 0 || v > 2)
+      if (v < -1 || v > 2)
         MyConfig.SetParamValueInt("xse", "autosetrecu", 0);
       else MyConfig.SetParamValueInt("xse", "autosetrecu", v);
       return true;
