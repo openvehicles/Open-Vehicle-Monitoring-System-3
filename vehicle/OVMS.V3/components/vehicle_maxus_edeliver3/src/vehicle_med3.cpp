@@ -42,11 +42,14 @@ static const char *TAG = "v-maxed3";
 
 static const OvmsVehicle::poll_pid_t obdii_polls[] =
     {
-        { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xe002u, {  0, 120, 120, 120  }, 0, ISOTP_STD }, //soc?? +1 may need scaling
-        { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xe001u, {  0, 120, 120, 120  }, 0, ISOTP_STD }, //SOH
-        { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xe005u, {  0, 120, 120, 120  }, 0, ISOTP_STD }, //temp
-        { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xe006u, {  0, 120, 120, 120  }, 0, ISOTP_STD }, //temp
-        { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xe019u, {  0, 120, 120, 120  }, 0, ISOTP_STD }, //Pack Voltage
+        { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xe001u, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //SOH
+        { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xe002u, {  360, 30, 30, 30  }, 0, ISOTP_STD }, //SOC Scaled below
+        { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xe005u, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //temp
+        { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xe006u, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //temp
+        { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xe019u, {  360, 30, 30, 30  }, 0, ISOTP_STD }, //Pack Voltage
+        { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xe022u, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //12v amps?
+        { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xe036u, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //charger volts at a guess?
+        { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xe039u, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //charger amps?
         { 0, 0, 0x00, 0x00, { 0, 0, 0, 0 }, 0, 0 }
     };
 
@@ -59,7 +62,7 @@ OvmsVehicleMaxed3::OvmsVehicleMaxed3()
       
         RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
         PollSetPidList(m_can1,obdii_polls);
-        PollSetState(1);
+        PollSetState(0);//was 1
     }
 
 OvmsVehicleMaxed3::~OvmsVehicleMaxed3()
@@ -74,7 +77,10 @@ void OvmsVehicleMaxed3::IncomingPollReply(canbus* bus, uint16_t type, uint16_t p
         string& rxbuf = med_obd_rxbuf;
         int value1 = (int)data[0];
         int value2 = ((int)data[0] << 8) + (int)data[1];
-
+        
+        StandardMetrics.ms_v_env_charging12v->SetValue(StandardMetrics.ms_v_bat_12v_voltage->AsFloat() >= 12.9);
+//        StandardMetrics.ms_v_bat_temp->SetValue(m_poll_state); // temp to view poll state
+        
         switch (pid)
             {
                 case 0xf190:  // VIN
@@ -85,11 +91,11 @@ void OvmsVehicleMaxed3::IncomingPollReply(canbus* bus, uint16_t type, uint16_t p
                         m_vin[0] = 0;
                     }
                     break;
-                case 0xe002: //soc scaled from 2 - 99
-                    StandardMetrics.ms_v_bat_soc->SetValue(((value1 - 2) * 100.0f) / (99 - 2);
-                    break;
                 case 0xe001: //soh
                     StandardMetrics.ms_v_bat_soh->SetValue(value1);
+                    break;
+                case 0xe002: //soc scaled from 2 - 99
+                    StandardMetrics.ms_v_bat_soc->SetValue(value1);
                     break;
                 case 0xe005:  // temperature??
                     StandardMetrics.ms_v_mot_temp->SetValue(value1 / 10.0f);
@@ -98,7 +104,22 @@ void OvmsVehicleMaxed3::IncomingPollReply(canbus* bus, uint16_t type, uint16_t p
                     StandardMetrics.ms_v_env_temp->SetValue(value1 / 10.0f);
                     break;
                 case 0xe019:  // Pack Voltage
-                    StandardMetrics.ms_v_bat_voltage->SetValue(value2 / 10.0f);  ///if(soc>100)soc=100;???????
+                    StandardMetrics.ms_v_bat_voltage->SetValue(value2 / 10.0f);
+                    break;
+                case 0xe022:
+                    StandardMetrics.ms_v_bat_12v_current->SetValue(value1 / 10.0f);
+                    break;
+                case 0xe036:
+                    StandardMetrics.ms_v_charge_voltage->SetValue(value1); // only maybe
+                    break;
+                case 0xe039:
+                    StandardMetrics.ms_v_charge_current->SetValue(value1);
+                    StandardMetrics.ms_v_charge_power->SetValue((StandardMetrics.ms_v_charge_current->AsFloat() * (StandardMetrics.ms_v_charge_voltage->AsFloat() )) / 1000); // work out current untill pid found
+                    break;
+                if (StandardMetrics.ms_v_env_charging12v->AsBool())
+                    StandardMetrics.ms_v_env_awake->SetValue(true);
+                    else
+                        StandardMetrics.ms_v_env_awake->SetValue(false);
                     break;
             }
     
@@ -161,10 +182,11 @@ void OvmsVehicleMaxed3::IncomingFrameCan1(CAN_frame_t* p_frame)
                 StandardMetrics.ms_v_bat_power->SetValue((power * 42) / 1000);// actual power in watts on AC converted to kw
                 if (StandardMetrics.ms_v_bat_power->AsFloat() >=  1.000f)
                     {
-                        StandardMetrics.ms_v_charge_inprogress->SetValue(true);
                         StandardMetrics.ms_v_door_chargeport->SetValue (true);
-                        StandardMetrics.ms_v_charge_type->SetValue("Standard");
-                        StandardMetrics.ms_v_charge_mode->SetValue("Type2");
+                        StandardMetrics.ms_v_charge_pilot->SetValue(true);
+                        StandardMetrics.ms_v_charge_inprogress->SetValue(true);
+                        StandardMetrics.ms_v_charge_type->SetValue("Type 2");
+                        StandardMetrics.ms_v_charge_mode->SetValue("Standard");
                         StandardMetrics.ms_v_charge_state->SetValue("Charging");
                         PollSetState(3);
                     }
@@ -172,9 +194,9 @@ void OvmsVehicleMaxed3::IncomingFrameCan1(CAN_frame_t* p_frame)
                     {
                         StandardMetrics.ms_v_charge_inprogress->SetValue(false);
                         StandardMetrics.ms_v_door_chargeport->SetValue (false);
-                        StandardMetrics.ms_v_charge_state->SetValue("Off");
-                        StandardMetrics.ms_v_charge_type->SetValue("Off");
-                        StandardMetrics.ms_v_charge_mode->SetValue("Off");
+                        StandardMetrics.ms_v_charge_state->SetValue("standard");
+                        StandardMetrics.ms_v_charge_type->SetValue("stopped");
+                        StandardMetrics.ms_v_charge_mode->SetValue("stopped");
                         PollSetState(0);
                     }
                 break;
@@ -199,11 +221,18 @@ void OvmsVehicleMaxed3::IncomingFrameCan1(CAN_frame_t* p_frame)
             case 0x540:  // odometer in KM
                 {
                     StandardMetrics.ms_v_pos_odometer->SetValue(d[0] << 16 | d[1] << 8 | d[2]);// odometer
-                }
                 break;
             }
-    }
+      
+            case 0x389:  // charger or battery temp
+                {
+                float invtemp = d[1];
+                StandardMetrics.ms_v_inv_temp->SetValue(invtemp / 10);
+                break;
+            }
 
+    }
+}
 
 
 void OvmsVehicleMaxed3::HandleVinMessage(uint8_t* data, uint8_t length, uint16_t remain)
