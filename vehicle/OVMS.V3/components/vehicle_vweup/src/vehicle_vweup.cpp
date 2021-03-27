@@ -72,7 +72,7 @@
 #include <string>
 static const char *TAG = "v-vweup";
 
-#define VERSION "0.13.0"
+#define VERSION "0.14.0"
 
 #include <stdio.h>
 #include <string>
@@ -138,6 +138,7 @@ OvmsVehicleVWeUp::OvmsVehicleVWeUp()
   vweup_con = 0;
   vweup_modelyear = 0;
 
+  m_use_phase = UP_None;
   m_obd_state = OBDS_Init;
 
   // Init metrics:
@@ -376,6 +377,24 @@ int OvmsVehicleVWeUp::GetNotifyChargeStateDelay(const char *state)
   else {
     return 3;
   }
+}
+
+
+/**
+ * SetUsePhase: track phase transitions between charging & driving
+ */
+void OvmsVehicleVWeUp::SetUsePhase(use_phase_t use_phase)
+{
+  if (m_use_phase == use_phase)
+    return;
+
+  // Phase transition: reset BMS statistics?
+  if (MyConfig.GetParamValueBool("xvu", "bms.autoreset")) {
+    ESP_LOGD(TAG, "SetUsePhase %d: resetting BMS statistics", use_phase);
+    BmsResetCellStats();
+  }
+
+  m_use_phase = use_phase;
 }
 
 

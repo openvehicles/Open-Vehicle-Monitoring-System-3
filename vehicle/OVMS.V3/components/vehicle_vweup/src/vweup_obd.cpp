@@ -424,6 +424,7 @@ void OvmsVehicleVWeUp::PollerStateTicker()
       ESP_LOGI(TAG, "PollerStateTicker: Setting car state to CHARGING");
 
       // Start new charge:
+      SetUsePhase(UP_Charging);
       ResetChargeCounters();
 
       // TODO: get real port & pilot states, fake for now:
@@ -451,6 +452,7 @@ void OvmsVehicleVWeUp::PollerStateTicker()
       ESP_LOGI(TAG, "PollerStateTicker: Setting car state to ON");
 
       // Start new trip:
+      SetUsePhase(UP_Driving);
       ResetTripCounters();
 
       // Fetch VIN once:
