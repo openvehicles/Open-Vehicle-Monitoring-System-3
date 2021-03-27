@@ -62,7 +62,9 @@ OvmsVehicleMaxed3::OvmsVehicleMaxed3()
       
         RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
         PollSetPidList(m_can1,obdii_polls);
-        PollSetState(0);//was 1
+        PollSetState(0);
+        
+        med3_cum_energy_charge_wh = 0;
     }
 
 OvmsVehicleMaxed3::~OvmsVehicleMaxed3()
@@ -77,10 +79,7 @@ void OvmsVehicleMaxed3::IncomingPollReply(canbus* bus, uint16_t type, uint16_t p
         string& rxbuf = med_obd_rxbuf;
         int value1 = (int)data[0];
         int value2 = ((int)data[0] << 8) + (int)data[1];
-        
-        StandardMetrics.ms_v_env_charging12v->SetValue(StandardMetrics.ms_v_bat_12v_voltage->AsFloat() >= 12.9);
-//        StandardMetrics.ms_v_bat_temp->SetValue(m_poll_state); // temp to view poll state
-        
+                
         switch (pid)
             {
                 case 0xf190:  // VIN
@@ -114,16 +113,12 @@ void OvmsVehicleMaxed3::IncomingPollReply(canbus* bus, uint16_t type, uint16_t p
                     break;
                 case 0xe039:
                     StandardMetrics.ms_v_charge_current->SetValue(value1);
+                    StandardMetrics.ms_v_charge_climit->SetValue(value1);
                     StandardMetrics.ms_v_charge_power->SetValue((StandardMetrics.ms_v_charge_current->AsFloat() * (StandardMetrics.ms_v_charge_voltage->AsFloat() )) / 1000); // work out current untill pid found
                     break;
-                if (StandardMetrics.ms_v_env_charging12v->AsBool())
-                    StandardMetrics.ms_v_env_awake->SetValue(true);
-                    else
-                        StandardMetrics.ms_v_env_awake->SetValue(false);
-                    break;
+                
             }
     
-
         // init / fill rx buffer:
         if (m_poll_ml_frame == 0)
             {
@@ -132,19 +127,35 @@ void OvmsVehicleMaxed3::IncomingPollReply(canbus* bus, uint16_t type, uint16_t p
             }
                 rxbuf.append((char*)data, length);
         if (mlremain)
-            return;
-
+        {}
     }
 
-
 // end testing polls
-
-
 
 void OvmsVehicleMaxed3::IncomingFrameCan1(CAN_frame_t* p_frame)
   {
       
-//testing
+//setup
+      StandardMetrics.ms_v_env_charging12v->SetValue(StandardMetrics.ms_v_bat_12v_voltage->AsFloat() >= 12.9);
+      StandardMetrics.ms_v_bat_temp->SetValue(m_poll_state); // temp to view poll state
+      
+      if (StandardMetrics.ms_v_env_charging12v->AsBool())
+          StandardMetrics.ms_v_env_awake->SetValue(true);
+      else
+          StandardMetrics.ms_v_env_awake->SetValue(false);
+      
+// count cumalitive energy
+      if(StandardMetrics.ms_v_charge_inprogress->AsBool())
+      {
+          med3_cum_energy_charge_wh += StandardMetrics.ms_v_charge_power->AsFloat()*1000/3600;
+          StandardMetrics.ms_v_charge_kwh->SetValue(med3_cum_energy_charge_wh/1000);
+      // When we are not charging set back to zero ready for next charge.
+      }
+      else
+      {
+          med3_cum_energy_charge_wh=0;
+      }
+// end count cumalitive energy
       
       uint8_t *d = p_frame->data.u8;
 
@@ -164,14 +175,13 @@ void OvmsVehicleMaxed3::IncomingFrameCan1(CAN_frame_t* p_frame)
           
               
           //Set ideal, est and amps when CANdata received
-          float soc = StandardMetrics.ms_v_bat_soc->AsFloat();
+              float soc = StandardMetrics.ms_v_bat_soc->AsFloat();
+              float vbp = (StandardMetrics.ms_v_bat_power->AsFloat()  / (StandardMetrics.ms_v_bat_voltage->AsFloat() ) * 1000); // work out current untill pid found
                 StandardMetrics.ms_v_bat_range_ideal->SetValue(241 * soc / 100);
                 StandardMetrics.ms_v_bat_range_est->SetValue(241 * soc / 108);
-                StandardMetrics.ms_v_bat_current->SetValue((StandardMetrics.ms_v_bat_power->AsFloat() / (StandardMetrics.ms_v_bat_voltage->AsFloat() )) * 1000); // work out current untill pid found
-      
+                StandardMetrics.ms_v_bat_current->SetValue(vbp - (vbp * 2)); // convert to negative
               break;
-        
-            }
+        }
         default:
           break;
                 
@@ -180,14 +190,14 @@ void OvmsVehicleMaxed3::IncomingFrameCan1(CAN_frame_t* p_frame)
                 {
                 float power = d[5];
                 StandardMetrics.ms_v_bat_power->SetValue((power * 42) / 1000);// actual power in watts on AC converted to kw
-                if (StandardMetrics.ms_v_bat_power->AsFloat() >=  1.000f)
+                    if (StandardMetrics.ms_v_bat_power->AsFloat() >=  1.000f)
                     {
                         StandardMetrics.ms_v_door_chargeport->SetValue (true);
                         StandardMetrics.ms_v_charge_pilot->SetValue(true);
                         StandardMetrics.ms_v_charge_inprogress->SetValue(true);
-                        StandardMetrics.ms_v_charge_type->SetValue("Type 2");
-                        StandardMetrics.ms_v_charge_mode->SetValue("Standard");
-                        StandardMetrics.ms_v_charge_state->SetValue("Charging");
+                        StandardMetrics.ms_v_charge_type->SetValue("type2");
+                        StandardMetrics.ms_v_charge_mode->SetValue("standard");
+                        StandardMetrics.ms_v_charge_state->SetValue("charging");
                         PollSetState(3);
                     }
                 else
@@ -204,11 +214,11 @@ void OvmsVehicleMaxed3::IncomingFrameCan1(CAN_frame_t* p_frame)
                 }
             case 0x373: // set status to on
                   {
-                    StandardMetrics.ms_v_env_on->SetValue(bool( d[7] & 0x10 ));
+                      StandardMetrics.ms_v_env_on->SetValue(bool( d[7] & 0x10 ));
                       if (StandardMetrics.ms_v_env_on->AsBool())
                           PollSetState(1);
                       
-                    break;
+                      break;
                   }
 
 //            case 0x375:  // set status to driving
@@ -221,16 +231,15 @@ void OvmsVehicleMaxed3::IncomingFrameCan1(CAN_frame_t* p_frame)
             case 0x540:  // odometer in KM
                 {
                     StandardMetrics.ms_v_pos_odometer->SetValue(d[0] << 16 | d[1] << 8 | d[2]);// odometer
-                break;
-            }
+                    break;
+                }
       
             case 0x389:  // charger or battery temp
                 {
                 float invtemp = d[1];
-                StandardMetrics.ms_v_inv_temp->SetValue(invtemp / 10);
+                    StandardMetrics.ms_v_inv_temp->SetValue(invtemp / 10);
                 break;
-            }
-
+                }
     }
 }
 

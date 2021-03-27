@@ -59,6 +59,8 @@ class OvmsVehicleMaxed3 : public OvmsVehicle
       void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
       /// A temporary store for the VIN
       char m_vin[17];
+      float med3_cum_energy_charge_wh;
+
  
   };
 #endif //#ifndef __VEHICLE_MAXED3_H__
