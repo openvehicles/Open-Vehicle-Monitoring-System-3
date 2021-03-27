@@ -430,6 +430,7 @@ void OvmsVehicleVWeUp::PollerStateTicker()
       StdMetrics.ms_v_door_chargeport->SetValue(true);
       StdMetrics.ms_v_charge_pilot->SetValue(true);
 
+      UpdateChargeParams();
       SetChargeState(true);
 
       PollSetState(VWEUP_CHARGING);
@@ -576,9 +577,10 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
       }
       if (PollReply.FromUint8("VWUP_CHG_MGMT_TIMERMODE", ivalue, 1)) {
         bool timermode = (ivalue != 0);
-        StdMetrics.ms_v_charge_timermode->SetValue(timermode);
+        bool modified = StdMetrics.ms_v_charge_timermode->SetValue(timermode);
         VALUE_LOG(TAG, "VWUP_CHG_MGMT_TIMERMODE=%d", ivalue);
-        UpdateChargeParams();
+        if (modified)
+          UpdateChargeParams();
       }
       break;
 
@@ -594,10 +596,12 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
       int socmin, socmax;
       if (PollReply.FromUint8("VWUP_CHG_MGMT_SOC_LIMIT_MAX", socmax, 1)) {
         PollReply.FromUint8("VWUP_CHG_MGMT_SOC_LIMIT_MIN", socmin);
-        m_chg_timer_socmin->SetValue(socmin);
-        m_chg_timer_socmax->SetValue(socmax);
+        bool modified =
+          m_chg_timer_socmin->SetValue(socmin) |
+          m_chg_timer_socmax->SetValue(socmax);
         VALUE_LOG(TAG, "VWUP_CHG_MGMT_SOC_LIMITS MIN=%d%% MAX=%d%%", socmin, socmax);
-        UpdateChargeParams();
+        if (modified)
+          UpdateChargeParams();
       }
       break;
     }
