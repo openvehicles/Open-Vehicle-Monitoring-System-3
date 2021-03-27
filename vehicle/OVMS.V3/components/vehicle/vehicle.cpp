@@ -1087,15 +1087,14 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
         if (m_vehicleoff_ticker == 0)
           NotifyVehicleOff();
         }
-      NotifiedVehicleOff();
       }
     }
   else if (metric == StandardMetrics.ms_v_env_awake)
     {
     if (StandardMetrics.ms_v_env_awake->AsBool())
       {
-      NotifiedVehicleAwake();
       MyEvents.SignalEvent("vehicle.awake",NULL);
+      NotifiedVehicleAwake();
       }
     else
       {
@@ -1279,7 +1278,6 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
       if (m_chargestate_ticker == 0)
         NotifyChargeState();
       }
-    NotifiedVehicleChargeState(mc);
     }
   else if (metric == StandardMetrics.ms_v_gen_state)
     {
@@ -1287,7 +1285,6 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
     MyEvents.SignalEvent("vehicle.gen.state", (void*)state.c_str(), state.size()+1);
     if (m_autonotifications)
       NotifyGenState();
-    NotifiedVehicleGenState(state);
     }
   else if (metric == StandardMetrics.ms_v_pos_acceleration)
     {
@@ -1427,6 +1424,8 @@ void OvmsVehicle::NotifyChargeState()
 
   if (m != "")
     NotifyGridLog();
+
+  NotifiedVehicleChargeState(m.c_str());
   }
 
 void OvmsVehicle::NotifyGenState()
@@ -1436,6 +1435,8 @@ void OvmsVehicle::NotifyGenState()
 
   if (m != "")
     NotifyGridLog();
+
+  NotifiedVehicleGenState(m);
   }
 
 void OvmsVehicle::NotifyGridLog()
@@ -1519,6 +1520,7 @@ void OvmsVehicle::NotifyVehicleOff()
   float min_trip_length = MyConfig.GetParamValueFloat("notify", "log.trip.minlength", 0.2);
   if (StdMetrics.ms_v_pos_trip->AsFloat() >= min_trip_length)
     NotifyTripLog();
+  NotifiedVehicleOff();
   }
 
 void OvmsVehicle::NotifyTripLog()
