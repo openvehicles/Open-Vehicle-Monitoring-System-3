@@ -154,8 +154,8 @@ class OvmsMetric
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
     virtual void DukPush(DukContext &dc);
 #endif
-    virtual void SetValue(std::string value);
-    virtual void SetValue(dbcNumber& value);
+    virtual bool SetValue(std::string value);
+    virtual bool SetValue(dbcNumber& value);
     virtual void operator=(std::string value);
     virtual uint32_t LastModified();
     virtual uint32_t Age();
@@ -201,10 +201,10 @@ class OvmsMetricBool : public OvmsMetric
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
     void DukPush(DukContext &dc);
 #endif
-    void SetValue(bool value);
+    bool SetValue(bool value);
     void operator=(bool value) { SetValue(value); }
-    void SetValue(std::string value);
-    void SetValue(dbcNumber& value);
+    bool SetValue(std::string value);
+    bool SetValue(dbcNumber& value);
     void operator=(std::string value) { SetValue(value); }
     void Clear();
     bool CheckPersist();
@@ -229,10 +229,10 @@ class OvmsMetricInt : public OvmsMetric
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
     void DukPush(DukContext &dc);
 #endif
-    void SetValue(int value, metric_unit_t units = Other);
+    bool SetValue(int value, metric_unit_t units = Other);
     void operator=(int value) { SetValue(value); }
-    void SetValue(std::string value);
-    void SetValue(dbcNumber& value);
+    bool SetValue(std::string value);
+    bool SetValue(dbcNumber& value);
     void operator=(std::string value) { SetValue(value); }
     void Clear();
     bool CheckPersist();
@@ -257,10 +257,10 @@ class OvmsMetricFloat : public OvmsMetric
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
     void DukPush(DukContext &dc);
 #endif
-    void SetValue(float value, metric_unit_t units = Other);
+    bool SetValue(float value, metric_unit_t units = Other);
     void operator=(float value) { SetValue(value); }
-    void SetValue(std::string value);
-    void SetValue(dbcNumber& value);
+    bool SetValue(std::string value);
+    bool SetValue(dbcNumber& value);
     void operator=(std::string value) { SetValue(value); }
     void Clear();
     virtual bool CheckPersist();
@@ -282,7 +282,7 @@ class OvmsMetricString : public OvmsMetric
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
     void DukPush(DukContext &dc);
 #endif
-    void SetValue(std::string value);
+    bool SetValue(std::string value);
     void operator=(std::string value) { SetValue(value); }
     void Clear();
 
@@ -335,7 +335,7 @@ class OvmsMetricBitset : public OvmsMetric
       return json;
       }
 
-    void SetValue(std::string value)
+    bool SetValue(std::string value)
       {
       std::bitset<N> n_value;
       std::istringstream vs(value);
@@ -349,7 +349,7 @@ class OvmsMetricBitset : public OvmsMetric
         if (elem >= 0 && elem < N)
           n_value[elem] = 1;
         }
-      SetValue(n_value);
+      return SetValue(n_value);
       }
     void operator=(std::string value) { SetValue(value); }
 
@@ -382,7 +382,7 @@ class OvmsMetricBitset : public OvmsMetric
       }
 #endif
 
-    void SetValue(std::bitset<N> value, metric_unit_t units = Other)
+    bool SetValue(std::bitset<N> value, metric_unit_t units = Other)
       {
       if (m_mutex.Lock())
         {
@@ -394,7 +394,9 @@ class OvmsMetricBitset : public OvmsMetric
           }
         m_mutex.Unlock();
         SetModified(modified);
+        return modified;
         }
+      return false;
       }
     void operator=(std::bitset<N> value) { SetValue(value); }
 
@@ -445,7 +447,7 @@ class OvmsMetricSet : public OvmsMetric
       return json;
       }
 
-    void SetValue(std::string value)
+    bool SetValue(std::string value)
       {
       std::set<ElemType> n_value;
       std::istringstream vs(value);
@@ -457,7 +459,7 @@ class OvmsMetricSet : public OvmsMetric
         ts >> elem;
         n_value.insert(elem);
         }
-      SetValue(n_value);
+      return SetValue(n_value);
       }
     void operator=(std::string value) { SetValue(value); }
 
@@ -487,7 +489,7 @@ class OvmsMetricSet : public OvmsMetric
       }
 #endif
 
-    void SetValue(std::set<ElemType> value, metric_unit_t units = Other)
+    bool SetValue(std::set<ElemType> value, metric_unit_t units = Other)
       {
       if (m_mutex.Lock())
         {
@@ -499,7 +501,9 @@ class OvmsMetricSet : public OvmsMetric
           }
         m_mutex.Unlock();
         SetModified(modified);
+        return modified;
         }
+      return false;
       }
     void operator=(std::set<ElemType> value) { SetValue(value); }
 
@@ -745,7 +749,7 @@ class OvmsMetricVector : public OvmsMetric
       }
 #endif
 
-    virtual void SetValue(std::string value)
+    virtual bool SetValue(std::string value)
       {
       std::vector<ElemType, Allocator> n_value;
       std::istringstream vs(value);
@@ -757,11 +761,11 @@ class OvmsMetricVector : public OvmsMetric
         ts >> elem;
         n_value.push_back(elem);
         }
-      SetValue(n_value);
+      return SetValue(n_value);
       }
     void operator=(std::string value) { SetValue(value); }
 
-    void SetValue(const std::vector<ElemType, Allocator>& value, metric_unit_t units = Other)
+    bool SetValue(const std::vector<ElemType, Allocator>& value, metric_unit_t units = Other)
       {
       bool modified = false, resized = false;
       if (m_mutex.Lock())
@@ -791,6 +795,7 @@ class OvmsMetricVector : public OvmsMetric
         m_mutex.Unlock();
         SetModified(modified);
         }
+      return modified;
       }
     void operator=(std::vector<ElemType, Allocator> value) { SetValue(value); }
 

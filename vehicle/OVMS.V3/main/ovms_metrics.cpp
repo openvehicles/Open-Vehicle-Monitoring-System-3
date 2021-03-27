@@ -722,12 +722,14 @@ void OvmsMetric::DukPush(DukContext &dc)
   }
 #endif
 
-void OvmsMetric::SetValue(std::string value)
+bool OvmsMetric::SetValue(std::string value)
   {
+  return false;
   }
 
-void OvmsMetric::SetValue(dbcNumber& value)
+bool OvmsMetric::SetValue(dbcNumber& value)
   {
+  return false;
   }
 
 void OvmsMetric::operator=(std::string value)
@@ -976,7 +978,7 @@ void OvmsMetricInt::DukPush(DukContext &dc)
   }
 #endif
 
-void OvmsMetricInt::SetValue(int value, metric_unit_t units)
+bool OvmsMetricInt::SetValue(int value, metric_unit_t units)
   {
   int nvalue = value;
   if ((units != Other)&&(units != m_units)) nvalue=UnitConvert(units,m_units,value);
@@ -987,12 +989,16 @@ void OvmsMetricInt::SetValue(int value, metric_unit_t units)
     if (m_valuep)
       *m_valuep = m_value;
     SetModified(true);
+    return true;
     }
   else
+    {
     SetModified(false);
+    return false;
+    }
   }
 
-void OvmsMetricInt::SetValue(std::string value)
+bool OvmsMetricInt::SetValue(std::string value)
   {
   int nvalue = atoi(value.c_str());
   if (m_value != nvalue)
@@ -1001,14 +1007,18 @@ void OvmsMetricInt::SetValue(std::string value)
     if (m_valuep)
       *m_valuep = m_value;
     SetModified(true);
+    return true;
     }
   else
+    {
     SetModified(false);
+    return false;
+    }
   }
 
-void OvmsMetricInt::SetValue(dbcNumber& value)
+bool OvmsMetricInt::SetValue(dbcNumber& value)
   {
-  SetValue(value.GetSignedInteger());
+  return SetValue(value.GetSignedInteger());
   }
 
 void OvmsMetricInt::Clear()
@@ -1130,7 +1140,7 @@ void OvmsMetricBool::DukPush(DukContext &dc)
   }
 #endif
 
-void OvmsMetricBool::SetValue(bool value)
+bool OvmsMetricBool::SetValue(bool value)
   {
   if (m_value != value)
     {
@@ -1138,12 +1148,16 @@ void OvmsMetricBool::SetValue(bool value)
     if (m_valuep)
       *m_valuep = m_value;
     SetModified(true);
+    return true;
     }
   else
+    {
     SetModified(false);
+    return false;
+    }
   }
 
-void OvmsMetricBool::SetValue(std::string value)
+bool OvmsMetricBool::SetValue(std::string value)
   {
   bool nvalue = strtobool(value);
   if (m_value != nvalue)
@@ -1152,14 +1166,18 @@ void OvmsMetricBool::SetValue(std::string value)
     if (m_valuep)
       *m_valuep = m_value;
     SetModified(true);
+    return true;
     }
   else
+    {
     SetModified(false);
+    return false;
+    }
   }
 
-void OvmsMetricBool::SetValue(dbcNumber& value)
+bool OvmsMetricBool::SetValue(dbcNumber& value)
   {
-  SetValue((bool)value.GetUnsignedInteger());
+  return SetValue((bool)value.GetUnsignedInteger());
   }
 
 void OvmsMetricBool::Clear()
@@ -1284,7 +1302,7 @@ void OvmsMetricFloat::DukPush(DukContext &dc)
   }
 #endif
 
-void OvmsMetricFloat::SetValue(float value, metric_unit_t units)
+bool OvmsMetricFloat::SetValue(float value, metric_unit_t units)
   {
   float nvalue = value;
   if ((units != Other)&&(units != m_units)) nvalue=UnitConvert(units,m_units,value);
@@ -1294,12 +1312,16 @@ void OvmsMetricFloat::SetValue(float value, metric_unit_t units)
     if (m_valuep)
       *m_valuep = m_value;
     SetModified(true);
+    return true;
     }
   else
+    {
     SetModified(false);
+    return false;
+    }
   }
 
-void OvmsMetricFloat::SetValue(std::string value)
+bool OvmsMetricFloat::SetValue(std::string value)
   {
   float nvalue = atof(value.c_str());
   if (m_value != nvalue)
@@ -1308,14 +1330,18 @@ void OvmsMetricFloat::SetValue(std::string value)
     if (m_valuep)
       *m_valuep = m_value;
     SetModified(true);
+    return true;
     }
   else
+    {
     SetModified(false);
+    return false;
+    }
   }
 
-void OvmsMetricFloat::SetValue(dbcNumber& value)
+bool OvmsMetricFloat::SetValue(dbcNumber& value)
   {
-  SetValue((float)value.GetDouble());
+  return SetValue((float)value.GetDouble());
   }
 
 void OvmsMetricFloat::Clear()
@@ -1354,7 +1380,7 @@ void OvmsMetricString::DukPush(DukContext &dc)
   }
 #endif
 
-void OvmsMetricString::SetValue(std::string value)
+bool OvmsMetricString::SetValue(std::string value)
   {
   if (m_mutex.Lock())
     {
@@ -1366,7 +1392,9 @@ void OvmsMetricString::SetValue(std::string value)
       }
     m_mutex.Unlock();
     SetModified(modified);
+    return modified;
     }
+  return false;
   }
 
 void OvmsMetricString::Clear()
