@@ -519,15 +519,15 @@ void OvmsVehicleVWeUp::SetChargeState(bool charging)
       // Scheduled charge;
       int socmin = m_chg_timer_socmin->AsInt();
       int socmax = m_chg_timer_socmax->AsInt();
-      // if stopped at minimum SOC, we're waiting for the second phase:
-      if (soc >= socmin-1 && soc <= socmin+1) {
-        StdMetrics.ms_v_charge_substate->SetValue("timerwait");
-        StdMetrics.ms_v_charge_state->SetValue("stopped");
-      }
-      // …if stopped at maximum SOC, we've finished as scheduled:
-      else if (soc >= socmax-1 && soc <= socmax+1) {
+      // if stopped at maximum SOC, we've finished as scheduled:
+      if (soc >= socmax-1 && soc <= socmax+1) {
         StdMetrics.ms_v_charge_substate->SetValue("scheduledstop");
         StdMetrics.ms_v_charge_state->SetValue("done");
+      }
+      // …if stopped at minimum SOC, we're waiting for the second phase:
+      else if (soc >= socmin-1 && soc <= socmin+1) {
+        StdMetrics.ms_v_charge_substate->SetValue("timerwait");
+        StdMetrics.ms_v_charge_state->SetValue("stopped");
       }
       // …else the charge has been interrupted:
       else {
