@@ -707,7 +707,8 @@ void OvmsVehicle::NotifyChargeStopped()
   {
   StringWriter buf(200);
   CommandStat(COMMAND_RESULT_NORMAL, &buf);
-  if (StdMetrics.ms_v_charge_substate->AsString() == "scheduledstop")
+  if (StdMetrics.ms_v_charge_substate->AsString() == "scheduledstop" ||
+      StdMetrics.ms_v_charge_substate->AsString() == "timerwait")
     MyNotify.NotifyString("info","charge.stopped",buf.c_str());
   else
     MyNotify.NotifyString("alert","charge.stopped",buf.c_str());
