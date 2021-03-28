@@ -108,7 +108,7 @@ void GsmNMEA::IncomingLine(const std::string line)
 
   if (!std::getline(sentence, token, ','))
     return;
-  if (token[0] != '$')
+  if (token.length() < 6 || token[0] != '$')
     return;
 
   if (token.substr(3) == "GNS")

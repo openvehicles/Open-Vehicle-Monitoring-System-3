@@ -86,6 +86,7 @@ void OvmsVehicleVWeUp::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
     nmap["con_obd"] = (c.getvar("con_obd") == "yes") ? "yes" : "no";
     nmap["con_t26"] = (c.getvar("con_t26") == "yes") ? "yes" : "no";
     nmap["canwrite"] = (c.getvar("canwrite") == "yes") ? "yes" : "no";
+    nmap["bms.autoreset"] = (c.getvar("bms.autoreset") == "yes") ? "yes" : "no";
     nmap["cell_interval_drv"] = c.getvar("cell_interval_drv");
     nmap["cell_interval_chg"] = c.getvar("cell_interval_chg");
     nmap["cell_interval_awk"] = c.getvar("cell_interval_awk");
@@ -186,6 +187,8 @@ void OvmsVehicleVWeUp::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
     -1, nmap["cell_interval_awk"].empty() ? 60 : std::stof(nmap["cell_interval_awk"]),
     60, 0, 300, 1,
     "<p>Default 60 seconds, 0=off. Note: an interval below 30 seconds may keep the car awake indefinitely.</p>");
+  c.input_checkbox("Auto reset", "bms.autoreset", strtobool(nmap["bms.autoreset"]),
+    "<p>Reset cell statistics automatically between driving &amp; charging?</p>");
   c.fieldset_end();
 
   c.print("<hr>");
