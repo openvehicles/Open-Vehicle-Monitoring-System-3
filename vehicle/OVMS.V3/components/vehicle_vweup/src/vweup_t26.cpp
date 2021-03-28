@@ -258,11 +258,13 @@ void OvmsVehicleVWeUp::vehicle_vweup_car_on(bool turnOn)
     ESP_LOGI(TAG, "CAR IS ON");
     StandardMetrics.ms_v_env_on->SetValue(true);
     if (!StandardMetrics.ms_v_charge_inprogress->AsBool()) {
-       t26_12v_boost_cnt = 0;
-       t26_12v_wait_off = 0;
-       PollSetState(VWEUP_ON);
+      t26_12v_boost_cnt = 0;
+      t26_12v_wait_off = 0;
+      SetUsePhase(UP_Driving);
+      StdMetrics.ms_v_door_chargeport->SetValue(false);
+      PollSetState(VWEUP_ON);
     } else {
-       PollSetState(VWEUP_CHARGING);
+      PollSetState(VWEUP_CHARGING);
     }
     ResetTripCounters();
     // Turn off possibly running climate control timer
@@ -459,6 +461,7 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
         // count till 3 messages in a row to stop ghost triggering
         if (isCharging && cd_count == 3) {
           cd_count = 0;
+          SetUsePhase(UP_Charging);
           ResetChargeCounters();
           StandardMetrics.ms_v_door_chargeport->SetValue(true);
           StandardMetrics.ms_v_charge_pilot->SetValue(true);
@@ -473,12 +476,13 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
         if (!isCharging && cd_count == 3) {
           cd_count = 0;
           StandardMetrics.ms_v_charge_pilot->SetValue(false);
-          StandardMetrics.ms_v_door_chargeport->SetValue(false);
           SetChargeState(false);
           if (StandardMetrics.ms_v_env_on->AsBool()) {
-             PollSetState(VWEUP_ON);
+            SetUsePhase(UP_Driving);
+            StdMetrics.ms_v_door_chargeport->SetValue(false);
+            PollSetState(VWEUP_ON);
           } else {
-             PollSetState(VWEUP_AWAKE);
+            PollSetState(VWEUP_AWAKE);
           }
           ESP_LOGI(TAG, "Car charge session ended");
         }

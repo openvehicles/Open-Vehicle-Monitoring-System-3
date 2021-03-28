@@ -94,6 +94,12 @@ typedef enum {
   CHGTYPE_DC,
 } chg_type_t;
 
+typedef enum {
+  UP_None = 0,
+  UP_Charging,
+  UP_Driving,
+} use_phase_t;
+
 class OvmsVehicleVWeUp : public OvmsVehicle
 {
   // --------------------------------------------------------------------------
@@ -132,6 +138,7 @@ protected:
   void ResetChargeCounters();
   void SetChargeType(chg_type_t chgtype);
   void SetChargeState(bool charging);
+  void SetUsePhase(use_phase_t usephase);
 
 public:
   bool IsOff() {
@@ -183,6 +190,7 @@ public:
   int vweup_modelyear;
 
 private:
+  use_phase_t m_use_phase;
   float m_odo_start;
   float m_soc_norm_start;
   float m_soc_abs_start;
