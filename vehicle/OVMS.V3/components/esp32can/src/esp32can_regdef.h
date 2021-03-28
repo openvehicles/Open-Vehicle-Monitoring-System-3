@@ -88,6 +88,7 @@ typedef enum
   __CAN_IRQ_ERR_PASSIVE=        BIT(5),             // IR.5 Error Passive Interrupt (passive state change)
   __CAN_IRQ_ARB_LOST=           BIT(6),             // IR.6 Arbitration Lost Interrupt
   __CAN_IRQ_BUS_ERR=            BIT(7),             // IR.7 Bus Error Interrupt
+  __CAN_IRQ_INVALID_RX=         BIT(8),             // Invalid RX Frame (synthetic)
   } ESP32CAN_IRQ_t;
 
 /* 
