@@ -152,6 +152,7 @@ typedef struct
   uint32_t error_flags;             // driver specific bitset
   uint16_t errors_rx;               // RX error counter
   uint16_t errors_tx;               // TX error counter
+  uint16_t invalid_rx;              // RX invalid frame counter
   uint16_t watchdog_resets;         // Watchdog reset counter
   uint16_t error_resets;            // Error resolving reset counter
   } CAN_status_t;
