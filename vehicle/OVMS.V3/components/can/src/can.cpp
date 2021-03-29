@@ -293,6 +293,7 @@ void can_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
   writer->printf("\nErr flags: 0x%08x\n",sbus->m_status.error_flags);
   writer->printf("Rx err:    %20d\n",sbus->m_status.errors_rx);
   writer->printf("Tx err:    %20d\n",sbus->m_status.errors_tx);
+  writer->printf("Rx invalid:%20d\n",sbus->m_status.invalid_rx);
   writer->printf("Wdg Resets:%20d\n",sbus->m_status.watchdog_resets);
   if (sbus->m_watchdog_timer>0)
     {
@@ -568,12 +569,13 @@ void canbus::LogStatus(CAN_log_type_t type)
     if (!StatusChanged())
       return;
     ESP_LOGE(TAG,
-      "%s: intr=%d rxpkt=%d txpkt=%d errflags=%#x rxerr=%d txerr=%d rxovr=%d txovr=%d"
-      " txdelay=%d txfail=%d wdgreset=%d errreset=%d",
+      "%s: intr=%d rxpkt=%d txpkt=%d errflags=%#x rxerr=%d txerr=%d rxinval=%d"
+      " rxovr=%d txovr=%d txdelay=%d txfail=%d wdgreset=%d errreset=%d",
       m_name, m_status.interrupts, m_status.packets_rx, m_status.packets_tx,
       m_status.error_flags, m_status.errors_rx, m_status.errors_tx,
-      m_status.rxbuf_overflow, m_status.txbuf_overflow, m_status.txbuf_delay,
-      m_status.tx_fails, m_status.watchdog_resets, m_status.error_resets);
+      m_status.invalid_rx, m_status.rxbuf_overflow, m_status.txbuf_overflow,
+      m_status.txbuf_delay, m_status.tx_fails, m_status.watchdog_resets,
+      m_status.error_resets);
     }
   if (MyCan.HasLogger())
     MyCan.LogStatus(this, type, &m_status);
@@ -588,7 +590,7 @@ bool canbus::StatusChanged()
   {
   // simple checksum to prevent log flooding:
   uint32_t chksum = m_status.errors_rx + m_status.errors_tx
-    + m_status.rxbuf_overflow + m_status.txbuf_overflow
+    + m_status.invalid_rx + m_status.rxbuf_overflow + m_status.txbuf_overflow
     + m_status.error_flags + m_status.txbuf_delay + m_status.tx_fails
     + m_status.watchdog_resets + m_status.error_resets;
   if (chksum != m_status_chksum)
