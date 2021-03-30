@@ -87,6 +87,7 @@ class OvmsVehicleMgEv : public OvmsVehicle
     static void WakeUp(void* self);
     
     void processEnergy();
+    float calculateSoc(uint16_t value);
 
     void IncomingPollFrame(CAN_frame_t* frame);
     bool SendPollMessage(canbus* bus, uint16_t id, uint8_t type, uint16_t pid);
@@ -176,7 +177,8 @@ class OvmsVehicleMgEv : public OvmsVehicle
     //
   public:
     void WebInit();
-    //static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
+    void WebDeInit();
+    static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
     void GetDashboardConfig(DashboardConfig& cfg);
     static void WebDispChgMetrics(PageEntry_t &p, PageContext_t &c);
 #endif //CONFIG_OVMS_COMP_WEBSERVER
