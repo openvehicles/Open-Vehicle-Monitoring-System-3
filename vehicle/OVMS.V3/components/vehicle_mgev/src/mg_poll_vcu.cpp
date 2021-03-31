@@ -76,8 +76,16 @@ void OvmsVehicleMgEv::IncomingVcuPoll(
             );
             break;
         case vcuChargerConnectedPid:
-            StandardMetrics.ms_v_door_chargeport->SetValue(data[0] & 1);
-            StandardMetrics.ms_v_charge_pilot->SetValue(data[0] & 1);
+            if (StandardMetrics.ms_v_charge_type->AsString() == "ccs")
+            {
+                StandardMetrics.ms_v_door_chargeport->SetValue(1);
+                StandardMetrics.ms_v_charge_pilot->SetValue(1);
+            }
+            else
+            {
+                StandardMetrics.ms_v_door_chargeport->SetValue(data[0] & 1);
+                StandardMetrics.ms_v_charge_pilot->SetValue(data[0] & 1);
+            }
             break;
         case vcuIgnitionStatePid:
             // Aux only is 1, but we'll say it's on when the ignition is too
