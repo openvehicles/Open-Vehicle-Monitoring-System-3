@@ -42,6 +42,7 @@ static const char *TAG = "v-maxed3";
 
 static const OvmsVehicle::poll_pid_t obdii_polls[] =
     {
+        // VCU Polls
         { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xe001u, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //SOH
         { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xe002u, {  360, 30, 30, 30  }, 0, ISOTP_STD }, //SOC Scaled below
         { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xe005u, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //temp
@@ -50,6 +51,10 @@ static const OvmsVehicle::poll_pid_t obdii_polls[] =
         { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xe022u, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //12v amps?
         { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xe036u, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //charger volts at a guess?
         { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xe039u, {  0, 60, 60, 60  }, 0, ISOTP_STD }, //charger amps?
+        // BMS Polls
+//        { 0x748, 0x7c8, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xe015u, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //cell max
+//        { 0x748, 0x7c8, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xe017u, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //cell min
+//        { 0x748, 0x7c8, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xe019u, {  0, 60, 60, 60  }, 0, ISOTP_STD }, //cell avg
         { 0, 0, 0x00, 0x00, { 0, 0, 0, 0 }, 0, 0 }
     };
 
@@ -65,6 +70,10 @@ OvmsVehicleMaxed3::OvmsVehicleMaxed3()
         PollSetState(0);
         
         med3_cum_energy_charge_wh = 0;
+        
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
+  WebInit();
+#endif
     }
 
 OvmsVehicleMaxed3::~OvmsVehicleMaxed3()
