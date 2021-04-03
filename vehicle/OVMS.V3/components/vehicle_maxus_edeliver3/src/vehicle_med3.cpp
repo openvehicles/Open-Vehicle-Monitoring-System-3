@@ -33,31 +33,35 @@ static const char *TAG = "v-maxed3";
 #include "metrics_standard.h"
 #include "ovms_metrics.h"
 #include <string>
-#include "ovms_metrics.h"
 #include "ovms_events.h"
 #include "ovms_config.h"
 #include "ovms_command.h"
 #include "ovms_notify.h"
+#include "med3_pids.h"
 
+namespace
+{
 
 static const OvmsVehicle::poll_pid_t obdii_polls[] =
     {
         // VCU Polls
-        { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xe001u, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //SOH
-        { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xe002u, {  360, 30, 30, 30  }, 0, ISOTP_STD }, //SOC Scaled below
-        { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xe005u, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //temp
-        { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xe006u, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //temp
-        { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xe019u, {  360, 30, 30, 30  }, 0, ISOTP_STD }, //Pack Voltage
-        { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xe022u, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //12v amps?
-        { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xe036u, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //charger volts at a guess?
-        { 0x7e3, 0x7eb, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xe039u, {  0, 60, 60, 60  }, 0, ISOTP_STD }, //charger amps?
+        { vcutx, vcutx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcusoh, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //SOH
+        { vcutx, vcutx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcusoc, {  360, 30, 30, 30  }, 0, ISOTP_STD }, //SOC Scaled below
+        { vcutx, vcutx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcutemp1, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //temp
+        { vcutx, vcutx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcutemp2, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //temp
+        { vcutx, vcutx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcupackvolts, {  360, 30, 30, 30  }, 0, ISOTP_STD }, //Pack Voltage
+        { vcutx, vcutx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcu12vamps, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //12v amps?
+        { vcutx, vcutx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcuchargervolts, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //charger volts at a guess?
+        { vcutx, vcutx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcuchargeramps, {  0, 60, 60, 60  }, 0, ISOTP_STD }, //charger amps?
         // BMS Polls
-//        { 0x748, 0x7c8, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xe015u, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //cell max
-//        { 0x748, 0x7c8, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xe017u, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //cell min
-//        { 0x748, 0x7c8, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xe019u, {  0, 60, 60, 60  }, 0, ISOTP_STD }, //cell avg
+        { bmstx, bmsrx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, cellvoltsmax, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //cell max
+        { bmstx, bmsrx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, cellvoltsmin, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //cell min
+        { bmstx, bmsrx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, cellvoltsavg, {  0, 60, 60, 60  }, 0, ISOTP_STD }, //cell avg
+        { bmstx, bmsrx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, cellvolts, {  0, 60, 60, 60  }, 0, ISOTP_STD }, //cell volts
+        { bmstx, bmsrx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, celltemps, {  0, 60, 60, 60  }, 0, ISOTP_STD }, //cell temps
         { 0, 0, 0x00, 0x00, { 0, 0, 0, 0 }, 0, 0 }
     };
-
+}  // anon namespace
 
 OvmsVehicleMaxed3::OvmsVehicleMaxed3()
     {
@@ -85,13 +89,14 @@ OvmsVehicleMaxed3::~OvmsVehicleMaxed3()
 
 void OvmsVehicleMaxed3::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
     {
+        
         string& rxbuf = med_obd_rxbuf;
         int value1 = (int)data[0];
         int value2 = ((int)data[0] << 8) + (int)data[1];
                 
         switch (pid)
             {
-                case 0xf190:  // VIN
+                case vcuvin:  // VIN
                     strncat(m_vin,(char*)data,length);
                     if (mlremain==0)
                     {
@@ -99,33 +104,41 @@ void OvmsVehicleMaxed3::IncomingPollReply(canbus* bus, uint16_t type, uint16_t p
                         m_vin[0] = 0;
                     }
                     break;
-                case 0xe001: //soh
+                case vcusoh: //soh
                     StandardMetrics.ms_v_bat_soh->SetValue(value1);
                     break;
-                case 0xe002: //soc scaled from 2 - 99
+                case vcusoc: //soc scaled from 2 - 99
                     StandardMetrics.ms_v_bat_soc->SetValue(value1);
                     break;
-                case 0xe005:  // temperature??
+                case vcutemp1:  // temperature??
                     StandardMetrics.ms_v_mot_temp->SetValue(value1 / 10.0f);
                     break;
-                case 0xe006:  // temperature??
+                case vcutemp2:  // temperature??
                     StandardMetrics.ms_v_env_temp->SetValue(value1 / 10.0f);
                     break;
-                case 0xe019:  // Pack Voltage
+                case vcupackvolts:  // Pack Voltage
                     StandardMetrics.ms_v_bat_voltage->SetValue(value2 / 10.0f);
                     break;
-                case 0xe022:
+                case vcu12vamps:
                     StandardMetrics.ms_v_bat_12v_current->SetValue(value1 / 10.0f);
                     break;
-                case 0xe036:
+                case vcuchargervolts:
                     StandardMetrics.ms_v_charge_voltage->SetValue(value1); // possible but always 224 untill found only
                     break;
-                case 0xe039:
+                case vcuchargeramps:
                     StandardMetrics.ms_v_charge_current->SetValue(value1);
                     StandardMetrics.ms_v_charge_climit->SetValue(value1);
                     StandardMetrics.ms_v_charge_power->SetValue((StandardMetrics.ms_v_charge_current->AsFloat() * (StandardMetrics.ms_v_charge_voltage->AsFloat() )) / 1000); // work out current untill pid found * (value / 10.0f) / 1000.0f
                     break;
-                
+                case cellvoltsmax: //cell volts max
+                    StandardMetrics.ms_v_bat_cell_vmax->SetValue(value2 / 1000.0f);
+                    break;
+                case cellvoltsmin:  // cell volts min
+                    StandardMetrics.ms_v_bat_cell_vmin->SetValue(value2 / 1000.0f);
+                    break;
+                case cellvoltsavg:  // cell volts average
+                    StandardMetrics.ms_v_bat_cell_vavg->SetValue(value2 / 1000.0f);
+                    break;
             }
     
         // init / fill rx buffer:
@@ -195,7 +208,7 @@ void OvmsVehicleMaxed3::IncomingFrameCan1(CAN_frame_t* p_frame)
           break;
                 
                 
-            case 0x604:  // Setup
+            case 0x604:  // power
                 {
                 float power = d[5];
                 StandardMetrics.ms_v_bat_power->SetValue((power * 42.0f) / 1000.0f);// actual power in watts on AC converted to kw
