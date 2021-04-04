@@ -88,7 +88,7 @@ void metrics_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
           verbose = true;
           break;
         default:
-          writer->puts("usage: metrics list [-psSv] [METRIC ...]");
+          cmd->PutUsage(writer);
           return;
         }
       }
@@ -423,7 +423,7 @@ OvmsMetrics::OvmsMetrics()
 
   // Register our commands
   OvmsCommand* cmd_metric = MyCommandApp.RegisterCommand("metrics","METRICS framework");
-  cmd_metric->RegisterCommand("list","Show all metrics", metrics_list, "[<metric>] [-ps]", 0, 2);
+  cmd_metric->RegisterCommand("list","Show all metrics", metrics_list, "[<metric>] [-psSv]", 0, 2);
   cmd_metric->RegisterCommand("persist","Show persistent metrics info", metrics_persist, "[-r]", 0, 1);
   cmd_metric->RegisterCommand("set","Set the value of a metric",metrics_set, "<metric> <value>", 2, 2);
   OvmsCommand* cmd_metrictrace = cmd_metric->RegisterCommand("trace","METRIC trace framework");
