@@ -64,7 +64,6 @@ void metrics_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
   bool show_staleness = false;
   bool show_set = false;
   bool only_persist = false;
-  bool verbose = false;
   int i;
   for (i=0;i<argc;i++)
     {
@@ -75,20 +74,17 @@ void metrics_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
       {
       switch (*cp)
         {
-        case 'p':
-          only_persist = true;
-          break;
         case 's':
           show_staleness = true;
           break;
         case 'S':
           show_set = true;
           break;
-        case 'v':
-          verbose = true;
+        case 'p':
+          only_persist = true;
           break;
         default:
-          cmd->PutUsage(writer);
+          writer->puts("Invalid flag");
           return;
         }
       }
@@ -128,30 +124,9 @@ void metrics_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
         writer->printf("[%02d%c] ", age, (m->IsStale() ? 'S' : '-' ));
       }
     if (v.empty())
-      {
       writer->printf("%s\n",k);
-      continue;
-      }
-    if (!verbose)
-      {
+    else
       writer->printf("%-40.40s %s\n", k, v.c_str());
-      continue;
-      }
-    writer->printf("%-40.40s ", k);
-    for (const char *cp = v.c_str(); *cp != '\0'; ++cp)
-      {
-      if (isprint(*cp))
-        writer->printf("%c", *cp);
-      else if (*cp == '\n')
-        writer->puts("\\n");
-      else if (*cp == '\r')
-        writer->puts("\\r");
-      else if ((*cp & 0x80) != 0)
-        writer->puts(".");
-      else
-        writer->printf("^%c", *cp ^ 0x40);       // DEL to ?, others to alpha
-      }
-    writer->puts("");
     }
   if (show_only && !found)
     writer->puts("Unrecognised metric name");
@@ -423,7 +398,7 @@ OvmsMetrics::OvmsMetrics()
 
   // Register our commands
   OvmsCommand* cmd_metric = MyCommandApp.RegisterCommand("metrics","METRICS framework");
-  cmd_metric->RegisterCommand("list","Show all metrics", metrics_list, "[<metric>] [-psSv]", 0, 2);
+  cmd_metric->RegisterCommand("list","Show all metrics", metrics_list, "[<metric>] [-ps]", 0, 2);
   cmd_metric->RegisterCommand("persist","Show persistent metrics info", metrics_persist, "[-r]", 0, 1);
   cmd_metric->RegisterCommand("set","Set the value of a metric",metrics_set, "<metric> <value>", 2, 2);
   OvmsCommand* cmd_metrictrace = cmd_metric->RegisterCommand("trace","METRIC trace framework");
