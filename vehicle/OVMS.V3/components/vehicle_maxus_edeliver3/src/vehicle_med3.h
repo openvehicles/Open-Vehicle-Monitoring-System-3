@@ -26,12 +26,13 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __VEHICLE_MAXED3_H__
-#define __VEHICLE_MAXED3_H__
+#ifndef __VEHICLE_MED3_H__
+#define __VEHICLE_MED3_H__
 
 #include "vehicle.h"
 #include "ovms_metrics.h"
 #include "freertos/timers.h"
+#include "ovms_webserver.h"
 #include <vector>
 
 using namespace std;
@@ -57,9 +58,25 @@ class OvmsVehicleMaxed3 : public OvmsVehicle
 
       void HandleVinMessage(uint8_t* data, uint8_t length, uint16_t remain);
       void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
+//      void IncomingPollBms(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
       /// A temporary store for the VIN
-      char m_vin[18];
- 
-  };
-#endif //#ifndef __VEHICLE_MAXED3_H__
+      char m_vin[17];
+      float med3_cum_energy_charge_wh;
+
+
+
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
+    // --------------------------------------------------------------------------
+    // Webserver subsystem
+    //
+  public:
+    void WebInit();
+    //static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
+    void GetDashboardConfig(DashboardConfig& cfg);
+    static void WebDispChgMetrics(PageEntry_t &p, PageContext_t &c);
+#endif //CONFIG_OVMS_COMP_WEBSERVER
+      
+       };
+
+#endif //#ifndef __VEHICLE_MED3_H__
 

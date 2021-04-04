@@ -286,23 +286,28 @@ void OvmsVehicleVWeUp::OBDInit()
     //  Gen2 (2020): 2P84S in 14 modules
     //  Gen1 (2013): 2P102S in 16+1 modules
     int volts = (vweup_modelyear > 2019) ? 84 : 102;
-    int temps = (vweup_modelyear > 2019) ? 14 : 16;
+    int cmods = (vweup_modelyear > 2019) ? 14 : 17;
 
     // Add PIDs to poll list:
     OvmsVehicle::poll_pid_t p = { VWUP_BAT_MGMT, UDS_READ, 0, {0,0,0,0}, 1, ISOTP_STD };
     p.polltime[VWEUP_ON]        = m_cfg_cell_interval_drv;
     p.polltime[VWEUP_CHARGING]  = m_cfg_cell_interval_chg;
     p.polltime[VWEUP_AWAKE]     = m_cfg_cell_interval_awk;
-    for (int i = 0; i < volts; i++) {
-      p.pid = VWUP_BAT_MGMT_CELL_VBASE + i;
+
+    // From voltages & deviation under load, it seems voltages are numbered across the
+    // cell modules, with the first group of values corresponding to the cell packs
+    // at the outer edges of the modules (tend to show lower values & negative deviation).
+    // As the gradient analysis relies on cell index matching read index, we need
+    // to rearrange the voltage poll sequence:
+    for (int vi = 0; vi < volts; vi++) {
+      int pi = (vi % 6) * cmods + (vi / 6);
+      p.pid = VWUP_BAT_MGMT_CELL_VBASE + pi;
       m_poll_vector.push_back(p);
     }
-    for (int i = 0; i < temps; i++) {
-      p.pid = VWUP_BAT_MGMT_CELL_TBASE + i;
-      m_poll_vector.push_back(p);
-    }
-    if (vweup_modelyear <= 2019) {
-      p.pid = VWUP_BAT_MGMT_CELL_T17;
+
+    // Add temperature polls (one per cell module):
+    for (int ti = 0; ti < cmods; ti++) {
+      p.pid = (ti < 16) ? VWUP_BAT_MGMT_CELL_TBASE + ti : VWUP_BAT_MGMT_CELL_T17;
       m_poll_vector.push_back(p);
     }
 
@@ -521,7 +526,12 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
 
   if (pid >= VWUP_BAT_MGMT_CELL_VBASE && pid <= VWUP_BAT_MGMT_CELL_VLAST)
   {
-    uint16_t vi = pid - VWUP_BAT_MGMT_CELL_VBASE;
+    uint16_t pi = pid - VWUP_BAT_MGMT_CELL_VBASE;
+
+    // get cell index from poll index:
+    uint16_t cmods = (vweup_modelyear > 2019) ? 14 : 17;
+    uint16_t vi = (pi % cmods) * 6 + (pi / cmods);
+
     if (vi < m_cell_last_vi) {
       BmsRestartCellVoltages();
     }

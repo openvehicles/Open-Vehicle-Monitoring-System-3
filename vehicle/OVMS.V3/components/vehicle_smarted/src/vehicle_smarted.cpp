@@ -489,7 +489,7 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
       float HVA = StandardMetrics.ms_v_bat_current->AsFloat();
       HV = ((float) d[6] * 256 + (float) d[7]);
       HV = HV / 10.0;
-      float HVP = (HV * HVA) / 1000.0;
+      float HVP = ((HV * HVA) / 1000.0) * -1.0f;
       StandardMetrics.ms_v_bat_voltage->SetValue(HV, Volts);
       StandardMetrics.ms_v_bat_power->SetValue(HVP);
       break;

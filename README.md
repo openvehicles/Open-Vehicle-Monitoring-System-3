@@ -162,6 +162,16 @@ status and control the car. This is a foundation that others hopefully will inte
 - Provide documentation in the user guide
 - Use pull requests to submit your code for inclusion
 
+**A note on pull requests:**
+
+Pull requests shall focus on one specific issue / feature / vehicle at a time and shall only mix 
+vehicle specific changes with framework changes if they depend on each other. If changes are not 
+or only loosely related, split them into multiple PRs (just as you would do with commits).
+
+Usage hint: create a branch for each pull request, include only those commits in that branch (by 
+cherry-picking if necessary) that shall be included in the pull request. That way you can push 
+further commits to that branch, Github will automatically add them to an open pull request.
+
 
 ## Donations
 
