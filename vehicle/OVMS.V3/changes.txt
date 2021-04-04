@@ -1,6 +1,7 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+=======
 - MG ZS EV: Display CCS Charging on App.
 - Maxus eDeliver3: Web interface page added for charging and cell metrics
 - MG ZS EV: Add new features page to select car's BMS firmware release to adjust SOC display.
