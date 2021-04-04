@@ -72,7 +72,7 @@
 #include <string>
 static const char *TAG = "v-vweup";
 
-#define VERSION "0.13.0"
+#define VERSION "0.14.1"
 
 #include <stdio.h>
 #include <string>
@@ -138,6 +138,7 @@ OvmsVehicleVWeUp::OvmsVehicleVWeUp()
   vweup_con = 0;
   vweup_modelyear = 0;
 
+  m_use_phase = UP_None;
   m_obd_state = OBDS_Init;
 
   // Init metrics:
@@ -380,6 +381,24 @@ int OvmsVehicleVWeUp::GetNotifyChargeStateDelay(const char *state)
 
 
 /**
+ * SetUsePhase: track phase transitions between charging & driving
+ */
+void OvmsVehicleVWeUp::SetUsePhase(use_phase_t use_phase)
+{
+  if (m_use_phase == use_phase)
+    return;
+
+  // Phase transition: reset BMS statistics?
+  if (MyConfig.GetParamValueBool("xvu", "bms.autoreset")) {
+    ESP_LOGD(TAG, "SetUsePhase %d: resetting BMS statistics", use_phase);
+    BmsResetCellStats();
+  }
+
+  m_use_phase = use_phase;
+}
+
+
+/**
  * ResetTripCounters: called at trip start to set reference points
  *  Called by the connector subsystem detecting vehicle state changes,
  *  i.e. T26 has priority if available.
@@ -519,15 +538,15 @@ void OvmsVehicleVWeUp::SetChargeState(bool charging)
       // Scheduled charge;
       int socmin = m_chg_timer_socmin->AsInt();
       int socmax = m_chg_timer_socmax->AsInt();
-      // if stopped at minimum SOC, we're waiting for the second phase:
-      if (soc >= socmin-1 && soc <= socmin+1) {
-        StdMetrics.ms_v_charge_substate->SetValue("timerwait");
-        StdMetrics.ms_v_charge_state->SetValue("stopped");
-      }
-      // …if stopped at maximum SOC, we've finished as scheduled:
-      else if (soc >= socmax-1 && soc <= socmax+1) {
+      // if stopped at maximum SOC, we've finished as scheduled:
+      if (soc >= socmax-1 && soc <= socmax+1) {
         StdMetrics.ms_v_charge_substate->SetValue("scheduledstop");
         StdMetrics.ms_v_charge_state->SetValue("done");
+      }
+      // …if stopped at minimum SOC, we're waiting for the second phase:
+      else if (soc >= socmin-1 && soc <= socmin+1) {
+        StdMetrics.ms_v_charge_substate->SetValue("timerwait");
+        StdMetrics.ms_v_charge_state->SetValue("stopped");
       }
       // …else the charge has been interrupted:
       else {

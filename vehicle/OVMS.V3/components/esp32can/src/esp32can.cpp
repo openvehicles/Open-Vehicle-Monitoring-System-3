@@ -98,13 +98,13 @@ static inline uint32_t ESP32CAN_rxframe(esp32can *me, BaseType_t* task_woken)
       // RMC overflow => reset controller:
       MODULE_ESP32CAN->MOD.B.RM = 1;
       MODULE_ESP32CAN->MOD.B.RM = 0;
-      error_irqs = __CAN_IRQ_DATA_OVERRUN;
+      error_irqs |= __CAN_IRQ_DATA_OVERRUN;
       me->m_status.error_resets++;
       }
     else if (MODULE_ESP32CAN->SR.B.DOS)
       {
       // FIFO overflow => clear overflow & discard <RMC> messages to resync:
-      error_irqs = __CAN_IRQ_DATA_OVERRUN;
+      error_irqs |= __CAN_IRQ_DATA_OVERRUN;
       MODULE_ESP32CAN->CMR.B.CDO = 1;
       int8_t discard = MODULE_ESP32CAN->RMC.B.RMC;
       while (discard--)
@@ -122,6 +122,17 @@ static inline uint32_t ESP32CAN_rxframe(esp32can *me, BaseType_t* task_woken)
 
       // get FIR
       msg.body.frame.FIR.U = MODULE_ESP32CAN->MBX_CTRL.FCTRL.FIR.U;
+
+      // Detect invalid frames
+      if (msg.body.frame.FIR.B.DLC > sizeof(msg.body.frame.data.u8))
+        {
+        error_irqs |= __CAN_IRQ_INVALID_RX;
+        me->m_status.invalid_rx++;
+
+        // Request next frame:
+        MODULE_ESP32CAN->CMR.B.RRB = 1;
+        continue;
+        }
 
       // check if this is a standard or extended CAN frame
       if (msg.body.frame.FIR.B.FF == CAN_frame_std)
@@ -204,6 +215,7 @@ static IRAM_ATTR void ESP32CAN_isr(void *pvParameters)
         |__CAN_IRQ_DATA_OVERRUN	  // IR.3 Data Overrun Interrupt
         |__CAN_IRQ_ERR_PASSIVE    // IR.5 Error Passive Interrupt (passive state change)
         |__CAN_IRQ_BUS_ERR        // IR.7 Bus Error Interrupt
+        |__CAN_IRQ_INVALID_RX     // Invalid RX Frame (synthetic)
         );
 
     // Handle wakeup interrupt:
@@ -256,7 +268,7 @@ static IRAM_ATTR void ESP32CAN_isr(void *pvParameters)
       if (!me->m_tx_abort)
         {
         CAN_queue_msg_t msg;
-        if (ecc != 0 || (status & (__CAN_STS_DATA_OVERRUN|__CAN_STS_BUS_OFF)) != 0)
+        if (ecc != 0 || (status & (__CAN_STS_DATA_OVERRUN|__CAN_STS_BUS_OFF|__CAN_IRQ_INVALID_RX)) != 0)
           msg.type = CAN_logerror;
         else
           msg.type = CAN_logstatus;

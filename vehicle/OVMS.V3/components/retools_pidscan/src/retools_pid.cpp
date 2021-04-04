@@ -469,9 +469,9 @@ void OvmsReToolsPidScanner::IncomingPollFrame(const CAN_frame_t* frame)
     }
 
     uint8_t frameType = frame->data.u8[0] >> 4;
-    uint8_t frameLength = frame->data.u8[0] & 0x0f;
+    uint16_t frameLength = frame->data.u8[0] & 0x0f;
     const uint8_t* data = &frame->data.u8[1];
-    uint8_t dataLength = frameLength;
+    uint16_t dataLength = frameLength;
 
     if (frame->MsgID < m_rxid_low || frame->MsgID > m_rxid_high)
     {
