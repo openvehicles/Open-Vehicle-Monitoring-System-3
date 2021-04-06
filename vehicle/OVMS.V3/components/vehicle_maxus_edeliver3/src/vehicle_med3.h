@@ -6,6 +6,8 @@
 ;    1.0  Initial release
 ;
 ;    (C) 2021       Shane Hunns
+;    (C) 2021       Peter Harry
+;    (C) 2021       Michael Balzer
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -30,10 +32,8 @@
 #define __VEHICLE_MED3_H__
 
 #include "vehicle.h"
-#include "ovms_metrics.h"
-#include "freertos/timers.h"
 #include "ovms_webserver.h"
-#include <vector>
+
 
 using namespace std;
 
@@ -44,25 +44,22 @@ class OvmsVehicleMaxed3 : public OvmsVehicle
   public:
     OvmsVehicleMaxed3();
     ~OvmsVehicleMaxed3();
-      
-  public:
-      void IncomingFrameCan1(CAN_frame_t* p_frame);
 
   protected:
-      virtual void Ticker1(uint32_t ticker);
-      string              med_obd_rxbuf;
-      
-  private:
-      void IncomingPollFrame(CAN_frame_t* frame);
-   
+      std::string         m_rxbuf;
 
+      
+  protected:
+    void PollerStateTicker();
+    void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
+
+  private:
+      void IncomingFrameCan1(CAN_frame_t* p_frame);
+      void IncomingPollFrame(CAN_frame_t* frame);
       void HandleVinMessage(uint8_t* data, uint8_t length, uint16_t remain);
-      void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
-//      void IncomingPollBms(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
       /// A temporary store for the VIN
       char m_vin[17];
       float med3_cum_energy_charge_wh;
-
 
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER

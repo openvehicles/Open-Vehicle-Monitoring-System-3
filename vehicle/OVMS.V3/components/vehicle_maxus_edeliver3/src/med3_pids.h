@@ -41,10 +41,6 @@ constexpr uint32_t gwmrx = 0x790u;
 // BMS PIDs
 constexpr uint16_t cellvolts = 0xe113u;
 constexpr uint16_t celltemps = 0xe114u;
-constexpr uint16_t cellvoltsmax = 0xe015u;
-constexpr uint16_t cellvoltsmin = 0xe017u;
-constexpr uint16_t cellvoltsavg = 0xe019u;
-
 
 // VCU PIDs
 constexpr uint16_t vcusoh = 0xe001u;
