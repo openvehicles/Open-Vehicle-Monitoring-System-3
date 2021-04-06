@@ -51,7 +51,6 @@
 #include "metrics_standard.h"
 #include "ovms_notify.h"
 #include "ovms_webserver.h"
-
 #include "vehicle_med3.h"
 
 using namespace std;
