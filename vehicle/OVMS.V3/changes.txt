@@ -1,11 +1,12 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
-- Maxus eDeliver3: cell volts and temps added to metrics and polling update.
-- Maxus eDeliver3: Web interface page added for charging and cell metrics
+- MG ZS EV: Display CCS Charging on App.
 - MG ZS EV: Add new features page to select car's BMS firmware release to adjust SOC display.
 - New vehicle: Maxus eDeliver 3 via OBD-II Port (MED3)
   https://docs.openvehicles.com/en/latest/components/vehicle_maxus_edeliver3/docs/index.html
+- Maxus eDeliver3: cell volts and temps added to metrics and polling update.
+- Maxus eDeliver3: Web interface page added for charging and cell metrics
 - Vehicle: emit standard events on changing v.c.timermode
   New events:
     vehicle.charge.timermode.off   -- Vehicle charge timer mode has been switched off

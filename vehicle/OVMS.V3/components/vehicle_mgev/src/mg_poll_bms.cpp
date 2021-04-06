@@ -210,6 +210,10 @@ void OvmsVehicleMgEv::SetBmsStatus(uint8_t status)
         case CcsCharging:
             StandardMetrics.ms_v_charge_inprogress->SetValue(true);
             StandardMetrics.ms_v_charge_type->SetValue("ccs");
+            StandardMetrics.ms_v_charge_current->SetValue(-StandardMetrics.ms_v_bat_current->AsFloat());
+            StandardMetrics.ms_v_charge_power->SetValue(StandardMetrics.ms_v_bat_power->AsFloat());
+            StandardMetrics.ms_v_charge_climit->SetValue(82);
+            StandardMetrics.ms_v_charge_voltage->SetValue(StandardMetrics.ms_v_bat_voltage->AsFloat());
             break;
         default:
             if (StandardMetrics.ms_v_charge_inprogress->AsBool() )
