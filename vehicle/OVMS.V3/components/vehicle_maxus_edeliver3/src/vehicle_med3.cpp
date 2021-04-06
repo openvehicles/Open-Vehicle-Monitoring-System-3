@@ -84,7 +84,7 @@ OvmsVehicleMaxed3::OvmsVehicleMaxed3()
         RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
 
         // Init BMS:
-        BmsSetCellArrangementVoltage(96, 12);
+        BmsSetCellArrangementVoltage(96, 16);
         BmsSetCellArrangementTemperature(16, 1);
         BmsSetCellLimitsVoltage(2.0, 5.0);
         BmsSetCellLimitsTemperature(-39, 200);
@@ -139,12 +139,7 @@ void OvmsVehicleMaxed3::IncomingPollReply(canbus* bus, uint16_t type, uint16_t p
   switch (pid)
   {
       case vcuvin:  // VIN
-          strncat(m_vin,(char*)data,length);
-          if (mlremain==0)
-          {
-              StandardMetrics.ms_v_vin->SetValue(m_vin);
-              m_vin[0] = 0;
-          }
+          StandardMetrics.ms_v_vin->SetValue(m_rxbuf);
           break;
       case vcusoh: //soh
           StandardMetrics.ms_v_bat_soh->SetValue(value1);
@@ -260,28 +255,7 @@ void OvmsVehicleMaxed3::IncomingFrameCan1(CAN_frame_t* p_frame)
                 {
                 float power = d[5];
                 StandardMetrics.ms_v_bat_power->SetValue((power * 42.0f) / 1000.0f);// actual power in watts on AC converted to kw
-/*                    if (StandardMetrics.ms_v_bat_power->AsFloat() >=  1.000f)
-                    {
-                        StandardMetrics.ms_v_door_chargeport->SetValue (true);
-                        StandardMetrics.ms_v_charge_pilot->SetValue(true);
-                        StandardMetrics.ms_v_charge_inprogress->SetValue(true);
-                        StandardMetrics.ms_v_charge_type->SetValue("type2");
-                        StandardMetrics.ms_v_charge_mode->SetValue("standard");
-                        StandardMetrics.ms_v_charge_state->SetValue("charging");
-                        PollSetState(3);
-                    }
-                else
-                    {
-                        StandardMetrics.ms_v_charge_inprogress->SetValue(false);
-                        StandardMetrics.ms_v_door_chargeport->SetValue (false);
-                        StandardMetrics.ms_v_charge_state->SetValue("standard");
-                        StandardMetrics.ms_v_charge_type->SetValue("stopped");
-                        StandardMetrics.ms_v_charge_mode->SetValue("stopped");
-                        PollSetState(0);
-                    }
-                break;
-            
- */                }
+                }
 
             case 0x373: // set status to on
                   {
@@ -314,37 +288,21 @@ void OvmsVehicleMaxed3::IncomingFrameCan1(CAN_frame_t* p_frame)
     }
 }
 
-
-void OvmsVehicleMaxed3::HandleVinMessage(uint8_t* data, uint8_t length, uint16_t remain)
-    {
-   
-        {
-            // Vin
-            StandardMetrics.ms_v_vin->SetValue(&m_vin[1]);
-            memset(m_vin, 0, sizeof(m_vin));
-        }
-    }
-
-
 // PollerStateTicker: framework callback: check for state changes
 // This is called by VehicleTicker1() just before the next PollerSend().
 
 void OvmsVehicleMaxed3::PollerStateTicker()
 {
-//  bool car_online = (m_can1->GetErrorState() < CAN_errorstate_passive && !m_xhi_charge_state->IsStale());
     bool charging12v = StandardMetrics.ms_v_env_charging12v->AsBool();
     bool vanIsCharging = StandardMetrics.ms_v_charge_inprogress->AsBool();
     StandardMetrics.ms_v_env_charging12v->SetValue(StandardMetrics.ms_v_bat_12v_voltage->AsFloat() >= 12.9);
     StandardMetrics.ms_v_charge_inprogress->SetValue(StandardMetrics.ms_v_bat_power->AsFloat() >=  1.000f);
-//  int charge_state = m_xhi_charge_state->AsInt();
 
   // Determine new polling state:
   int poll_state;
   if (!charging12v)
-//if (!car_online)
     poll_state = STATE_OFF;
   else if (vanIsCharging)
-//else if (charge_state & 0x80)
     poll_state = STATE_CHARGING;
   else
     poll_state = STATE_ON;
@@ -354,12 +312,6 @@ void OvmsVehicleMaxed3::PollerStateTicker()
   StdMetrics.ms_v_env_on->SetValue(poll_state == STATE_ON);
 
   // Handle polling state change
-
-/*  if (poll_state != m_poll_state)
-  {
-    ESP_LOGI(TAG, m_poll_state, poll_state);
-  }
-*/
   if (poll_state == STATE_CHARGING)
   {
     if (m_poll_state != STATE_CHARGING)

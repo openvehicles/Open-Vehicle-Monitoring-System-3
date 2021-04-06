@@ -56,7 +56,6 @@ class OvmsVehicleMaxed3 : public OvmsVehicle
   private:
       void IncomingFrameCan1(CAN_frame_t* p_frame);
       void IncomingPollFrame(CAN_frame_t* frame);
-      void HandleVinMessage(uint8_t* data, uint8_t length, uint16_t remain);
       /// A temporary store for the VIN
       char m_vin[17];
       float med3_cum_energy_charge_wh;
