@@ -72,7 +72,7 @@
 #include <string>
 static const char *TAG = "v-vweup";
 
-#define VERSION "0.14.1"
+#define VERSION "0.14.2"
 
 #include <stdio.h>
 #include <string>
@@ -336,17 +336,18 @@ void OvmsVehicleVWeUp::ConfigChanged(OvmsConfigParam *param)
     BmsSetCellDefaultThresholdsTemperature(2.0, 3.0);
   }
 
-  // Init T26 subsystem:
-  if (vweup_enable_t26) {
-    T26Init();
-  }
-
   // Init OBD subsystem:
+  // (needs to be initialized first as the T26 module depends on OBD being ready)
   if (vweup_enable_obd && do_obd_init) {
     OBDInit();
   }
   else if (!vweup_enable_obd) {
     OBDDeInit();
+  }
+
+  // Init T26 subsystem:
+  if (vweup_enable_t26) {
+    T26Init();
   }
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
