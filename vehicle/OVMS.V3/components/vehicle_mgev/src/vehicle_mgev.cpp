@@ -731,7 +731,9 @@ void OvmsVehicleMgEv::processEnergy()
                 StandardMetrics.ms_v_bat_energy_used->SetValue(0);
                 StandardMetrics.ms_v_bat_energy_recd->SetValue(0);
             // Otherwise we are already moving so do calculations
-            } else {
+            }
+            else
+            {
                 // Calculate regeneration power
                 if (bat_power < 0) {
                     StandardMetrics.ms_v_bat_energy_recd->SetValue
@@ -741,7 +743,9 @@ void OvmsVehicleMgEv::processEnergy()
                     (StandardMetrics.ms_v_bat_coulomb_recd->AsFloat() + -(coulombs));
                     
                 // Calculate power usage. Add power used each second
-                } else {
+                }
+                else
+                {
                     StandardMetrics.ms_v_bat_energy_used->SetValue
                     (StandardMetrics.ms_v_bat_energy_used->AsFloat() + energy);
                     
@@ -750,7 +754,9 @@ void OvmsVehicleMgEv::processEnergy()
                 }
             }
         // Not in READY so must have been turned off
-        } else {
+        }
+        else
+        {
             // We have only just stopped so add trip values to the totals
             if (StandardMetrics.ms_v_env_parktime->AsInt() == 0) {
                 ESP_LOGI(TAG, "Trip has ended");
@@ -778,11 +784,58 @@ void OvmsVehicleMgEv::processEnergy()
     {
         mg_cum_energy_charge_wh += StandardMetrics.ms_v_charge_power->AsFloat()*1000/3600;
         StandardMetrics.ms_v_charge_kwh->SetValue(mg_cum_energy_charge_wh/1000);
+        // Calculate time to reach 100% charge
+        StandardMetrics.ms_v_charge_duration_full->SetValue(calcMinutesRemaining(100));
+        // Calculate time to charge to SoC Limit
+        StandardMetrics.ms_v_charge_duration_soc->SetValue(calcMinutesRemaining(
+                                            StandardMetrics.ms_v_charge_limit_soc->AsInt()));
     // When we are not charging set back to zero ready for next charge.
-    } else {
+    }
+    else
+    {
         mg_cum_energy_charge_wh=0;
+        StandardMetrics.ms_v_charge_duration_full->SetValue(0);
+        StandardMetrics.ms_v_charge_duration_soc->SetValue(0);
     }
 
+}
+
+// Calculate the time to reach the Target and return in minutes
+int OvmsVehicleMgEv::calcMinutesRemaining(float target_soc)
+{
+    float bat_soc = StandardMetrics.ms_v_bat_soc->AsFloat(100);
+    float charge_loss = 1.068;
+    float bat_cap_kwh = 44.5;
+    float top_up_time = 11.0;
+    float top_up_soc = 97.5;
+    float remaining_kwh;
+    float remaining_hours;
+    int remaining_mins;
+    // No top up time for CCS
+    if (StandardMetrics.ms_v_charge_type->AsString() == "ccs") {
+        top_up_soc = 85.0;
+    }
+    // If we have reached the target or over 99.9% just return 0
+    if (bat_soc > target_soc || bat_soc > 99.9)
+    {
+        return 0;   // Done!
+    }
+    // If the Target SoC is above the Top Up Value and Top Up has not started
+    // Calculate time left before top up starts and add Top Up time
+    if (bat_soc < top_up_soc && target_soc > top_up_soc){
+        remaining_kwh = bat_cap_kwh * (top_up_soc - bat_soc) / 100.0;
+        remaining_hours = remaining_kwh / StandardMetrics.ms_v_bat_power->AsFloat() * charge_loss;
+        remaining_mins  = (int) roundf(remaining_hours * 60.0) + top_up_time;
+    }
+    // Top up calculation
+    else
+    {
+        remaining_kwh = bat_cap_kwh * (target_soc - bat_soc) / 100.0;
+        remaining_hours = remaining_kwh / StandardMetrics.ms_v_bat_power->AsFloat();
+        remaining_mins  = (int) roundf(remaining_hours * 60.0);
+        //remaining_mins = (target_soc - bat_soc) / (target_soc - top_up_soc) * top_up_time;
+    }
+    return MIN( 1440, remaining_mins);
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleMgEv::CommandWakeup()

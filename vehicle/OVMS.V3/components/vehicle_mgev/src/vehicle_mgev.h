@@ -88,6 +88,7 @@ class OvmsVehicleMgEv : public OvmsVehicle
     
     void processEnergy();
     float calculateSoc(uint16_t value);
+    int calcMinutesRemaining(float target_soc);
 
     void IncomingPollFrame(CAN_frame_t* frame);
     bool SendPollMessage(canbus* bus, uint16_t id, uint8_t type, uint16_t pid);
