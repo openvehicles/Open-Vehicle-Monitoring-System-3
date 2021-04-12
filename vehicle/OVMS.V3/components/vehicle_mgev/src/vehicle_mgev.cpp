@@ -124,6 +124,8 @@ OvmsVehicleMgEv::OvmsVehicleMgEv()
     StandardMetrics.ms_v_charge_mode->SetValue("standard");
 
     mg_cum_energy_charge_wh = 0;
+    // Initialise ms_v_charge_limit_soc to 80%
+    StandardMetrics.ms_v_charge_limit_soc->SetValue(80);
     
     memset(m_vin, 0, sizeof(m_vin));
 
