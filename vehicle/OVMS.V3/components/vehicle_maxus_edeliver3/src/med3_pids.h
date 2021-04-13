@@ -6,8 +6,6 @@
 ;    1.0  Initial release
 ;
 ;    (C) 2021       Shane Hunns
-;    (C) 2021       Peter Harry
-;    (C) 2021       Michael Balzer
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -28,51 +26,31 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __VEHICLE_MED3_H__
-#define __VEHICLE_MED3_H__
+#ifndef MED3_PIDS_H_
+#define MED3_PIDS_H_
 
-#include "vehicle.h"
-#include "ovms_webserver.h"
+// Module IDs
+constexpr uint32_t broadcastId = 0x7dfu;
+constexpr uint32_t bmstx = 0x748u;
+constexpr uint32_t bmsrx = 0x7c8u;
+constexpr uint32_t vcutx = 0x7e3u;
+constexpr uint32_t vcurx = 0x7ebu;
+constexpr uint32_t gwmtx = 0x710u;
+constexpr uint32_t gwmrx = 0x790u;
 
+// BMS PIDs
+constexpr uint16_t cellvolts = 0xe113u;
+constexpr uint16_t celltemps = 0xe114u;
 
-using namespace std;
+// VCU PIDs
+constexpr uint16_t vcusoh = 0xe001u;
+constexpr uint16_t vcusoc = 0xe002u;
+constexpr uint16_t vcutemp1 = 0xe005u;
+constexpr uint16_t vcutemp2 = 0xe006u;
+constexpr uint16_t vcupackvolts = 0xe019u;
+constexpr uint16_t vcuvin = 0xf190u;
+constexpr uint16_t vcu12vamps = 0xe022u;
+constexpr uint16_t vcuchargervolts = 0xe036u;
+constexpr uint16_t vcuchargeramps = 0xe039u;
 
-class OvmsCommand;
-
-class OvmsVehicleMaxed3 : public OvmsVehicle
-  {
-  public:
-    OvmsVehicleMaxed3();
-    ~OvmsVehicleMaxed3();
-
-  protected:
-      std::string         m_rxbuf;
-
-      
-  protected:
-    void PollerStateTicker();
-    void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
-
-  private:
-      void IncomingFrameCan1(CAN_frame_t* p_frame);
-      void IncomingPollFrame(CAN_frame_t* frame);
-      /// A temporary store for the VIN
-      char m_vin[17];
-      float med3_cum_energy_charge_wh;
-
-
-#ifdef CONFIG_OVMS_COMP_WEBSERVER
-    // --------------------------------------------------------------------------
-    // Webserver subsystem
-    //
-  public:
-    void WebInit();
-    //static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
-    void GetDashboardConfig(DashboardConfig& cfg);
-    static void WebDispChgMetrics(PageEntry_t &p, PageContext_t &c);
-#endif //CONFIG_OVMS_COMP_WEBSERVER
-      
-       };
-
-#endif //#ifndef __VEHICLE_MED3_H__
-
+#endif  // MED3_PIDS_H_

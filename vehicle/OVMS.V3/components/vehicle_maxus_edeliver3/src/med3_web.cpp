@@ -51,8 +51,7 @@
 #include "metrics_standard.h"
 #include "ovms_notify.h"
 #include "ovms_webserver.h"
-
-#include "vehicle_mgev.h"
+#include "vehicle_med3.h"
 
 using namespace std;
 
@@ -62,73 +61,18 @@ using namespace std;
 /**
  * WebInit: register pages
  */
-void OvmsVehicleMgEv::WebInit()
+void OvmsVehicleMaxed3::WebInit()
 {
     // vehicle menu:
-    MyWebServer.RegisterPage("/xmg/features", "Features", WebCfgFeatures, PageMenu_Vehicle, PageAuth_Cookie);
+    
     MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
     MyWebServer.RegisterPage("/bms/metrics_charger", "Charging Metrics", WebDispChgMetrics, PageMenu_Vehicle, PageAuth_Cookie);
 }
 
 /**
- * WebDeInit: deregister pages
+ * GetDashboardConfig: Maxus eDeliver3 specific dashboard setup
  */
-void OvmsVehicleMgEv::WebDeInit()
-{
-  MyWebServer.DeregisterPage("/xmg/features");
-  MyWebServer.DeregisterPage("/xmg/metrics_charger");
-  MyWebServer.DeregisterPage("/xmg/battmon");
-}
-
-/**
- * WebCfgFeatures: configure general parameters (URL /xmg/config)
- */
-void OvmsVehicleMgEv::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
-{
-    std::string error;
-    bool updatedbmu;
-    
-    if (c.method == "POST") {
-        updatedbmu = (c.getvar("updatedbmu") == "yes");
-        
-        if (error == "") {
-          // store:
-          MyConfig.SetParamValueBool("xmg", "updatedbmu", updatedbmu);
-          
-          c.head(200);
-          c.alert("success", "<p class=\"lead\">MG ZS EV / MG5 feature configuration saved.</p>");
-          MyWebServer.OutputHome(p, c);
-          c.done();
-          return;
-        }
-        // output error, return to form:
-        error = "<p class=\"lead\">Error!</p><ul class=\"errorlist\">" + error + "</ul>";
-        c.head(400);
-        c.alert("danger", error.c_str());
-    } else {
-        // read configuration:
-        updatedbmu = MyConfig.GetParamValueBool("xmg", "updatedbmu", false);
-        c.head(200);
-    }
-    // generate form:
-    c.panel_start("primary", "MG ZS EV / MG5 feature configuration");
-    c.form_start(p.uri);
-
-    c.fieldset_start("General");
-    c.input_checkbox("Updated BMU Firmware", "updatedbmu", updatedbmu,
-      "<p>Select this if you have BMU Firmware later than Jan 2021</p>");
-    c.fieldset_end();
-    c.print("<hr>");
-    c.input_button("default", "Save");
-    c.form_end();
-    c.panel_end();
-    c.done();
-}
-
-/**
- * GetDashboardConfig: MG ZS EV specific dashboard setup
- */
-void OvmsVehicleMgEv::GetDashboardConfig(DashboardConfig& cfg)
+void OvmsVehicleMaxed3::GetDashboardConfig(DashboardConfig& cfg)
 {
     cfg.gaugeset1 =
     "yAxis: [{"
@@ -198,7 +142,7 @@ void OvmsVehicleMgEv::GetDashboardConfig(DashboardConfig& cfg)
 /**
  * WebPlugin to display charging metrics
  */
-void OvmsVehicleMgEv::WebDispChgMetrics(PageEntry_t &p, PageContext_t &c)
+void OvmsVehicleMaxed3::WebDispChgMetrics(PageEntry_t &p, PageContext_t &c)
 {
   std::string cmd, output;
 
@@ -223,7 +167,7 @@ void OvmsVehicleMgEv::WebDispChgMetrics(PageEntry_t &p, PageContext_t &c)
     "}\n"
     "</style>\n"
     "<div class=\"panel panel-primary\">"
-      "<div class=\"panel-heading\">MG ZS EV Charging Metrics</div>"
+      "<div class=\"panel-heading\">eDeliver3 Charging Metrics</div>"
       "<div class=\"panel-body\">"
         "<div class=\"receiver\">"
 

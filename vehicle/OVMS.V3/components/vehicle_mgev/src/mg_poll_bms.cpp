@@ -162,10 +162,12 @@ void OvmsVehicleMgEv::IncomingBmsPoll(
             break;
         case batterySoCPid:
             {
-                auto soc = value / 10.0;
+                // Get raw value to display on Charging Metrics Page
+                m_soc_raw->SetValue(value / 10.0f);
+                auto scaledSoc = calculateSoc(value);
                 if (StandardMetrics.ms_v_charge_inprogress->AsBool())
                 {
-                    if (soc < 96.5)
+                    if (scaledSoc < 99.5)
                     {
                         StandardMetrics.ms_v_charge_state->SetValue("charging");
                     }
@@ -175,12 +177,10 @@ void OvmsVehicleMgEv::IncomingBmsPoll(
                     }
                 }
                 
-                // DoD is approx 6% - 97%, so we need to scale it
-                auto scaledSoc = ((soc * 106.0) / 97.0) - 6.0;
+                // Save SOC for display
                 StandardMetrics.ms_v_bat_soc->SetValue(scaledSoc);
                 // Ideal range set to SoC percentage of 262 km (WLTP Range)
                 StandardMetrics.ms_v_bat_range_ideal->SetValue(262 * (scaledSoc / 100));
-                m_soc_raw->SetValue(soc);
             }
             break;
         case bmsStatusPid:
@@ -210,6 +210,10 @@ void OvmsVehicleMgEv::SetBmsStatus(uint8_t status)
         case CcsCharging:
             StandardMetrics.ms_v_charge_inprogress->SetValue(true);
             StandardMetrics.ms_v_charge_type->SetValue("ccs");
+            StandardMetrics.ms_v_charge_current->SetValue(-StandardMetrics.ms_v_bat_current->AsFloat());
+            StandardMetrics.ms_v_charge_power->SetValue(StandardMetrics.ms_v_bat_power->AsFloat());
+            StandardMetrics.ms_v_charge_climit->SetValue(82);
+            StandardMetrics.ms_v_charge_voltage->SetValue(StandardMetrics.ms_v_bat_voltage->AsFloat());
             break;
         default:
             if (StandardMetrics.ms_v_charge_inprogress->AsBool() )
@@ -228,4 +232,26 @@ void OvmsVehicleMgEv::SetBmsStatus(uint8_t status)
             } 
             break;
     }
+}
+
+float OvmsVehicleMgEv::calculateSoc(uint16_t value)
+{
+    int lowerlimit;
+    int upperlimit;
+    
+    // Setup upper and lower limits from selection on features page
+    if (MyConfig.GetParamValueBool("xmg", "updatedbmu", true))
+    {
+        //New BMU firmware DoD range 25 - 940
+        lowerlimit = 25;
+        upperlimit = 940;
+    }
+    else
+    {
+        //Original BMU firmware DoD range 60 - 970
+        lowerlimit = 60;
+        upperlimit = 970;
+    }
+    // Calculate SOC from upper and lower limits
+    return (value - lowerlimit) * 100.0f / (upperlimit - lowerlimit);
 }

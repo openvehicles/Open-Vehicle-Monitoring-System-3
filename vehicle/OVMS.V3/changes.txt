@@ -1,8 +1,12 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- MG ZS EV: Display CCS Charging on App.
+- MG ZS EV: Add new features page to select car's BMS firmware release to adjust SOC display.
 - New vehicle: Maxus eDeliver 3 via OBD-II Port (MED3)
   https://docs.openvehicles.com/en/latest/components/vehicle_maxus_edeliver3/docs/index.html
+- Maxus eDeliver3: cell volts and temps added to metrics and polling update.
+- Maxus eDeliver3: Web interface page added for charging and cell metrics
 - Vehicle: emit standard events on changing v.c.timermode
   New events:
     vehicle.charge.timermode.off   -- Vehicle charge timer mode has been switched off
@@ -18,6 +22,7 @@ Open Vehicle Monitor System v3 - Change log
 - New vehicle: Hyundai Ioniq vFL (HIONVFL)
   https://docs.openvehicles.com/en/latest/components/vehicle_hyundai_ioniqvfl/docs/index.html
 - Webserver: support TLS (https, wss) using self-signed certificates
+- New vehicle: Jaguar Ipace (JLRI)
 
 2021-03-05 MB  3.2.016  OTA release
 - VW e-Up: CCS (DC) charge detection & data

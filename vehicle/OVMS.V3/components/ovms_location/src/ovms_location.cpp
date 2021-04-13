@@ -47,6 +47,7 @@ const char *LOCATIONS_PARAM = "locations";
 #define LOCATION_R 6371
 #define LOCATION_TO_RAD (3.1415926536 / 180)
 
+// Calculate haversine distance in meters
 double OvmsLocationDistance(double th1, double ph1, double th2, double ph2)
   {
   double dx, dy, dz;
@@ -840,12 +841,22 @@ void OvmsLocations::CheckTheft()
   if (alarm == 0) return;
 
   double dist = fabs(OvmsLocationDistance((double)m_latitude,(double)m_longitude,(double)m_park_latitude,(double)m_park_longitude));
+  // Park distance is the smoothed version
   m_park_distance = (m_park_distance * 4 + dist) / 5;
   if (last_dist != round(dist/10))
     {
     last_dist = round(dist/10);
     ESP_LOGV(TAG, "CheckTheft: vehicle parked @%0.6f,%0.6f now @%0.6f,%0.6f dist=%.0f smoothed=%.0f alarm=%d",
       m_park_latitude, m_park_longitude, m_latitude, m_longitude, dist, m_park_distance, alarm);
+    }
+  // Suppress false theft alerts due to a suspected SIMCOM GPS bug,
+  // the reported location goes from: A,B -> A,B -> 0,B -> 0,A -> A,B -> A,B
+  int simcombugdist = MyConfig.GetParamValueInt("vehicle", "flatbed.simcombugdistance", 500 * 1000);
+  if (simcombugdist > 0 && m_latitude == 0.0 && m_park_distance > simcombugdist)
+    {
+    ESP_LOGE(TAG, "CheckTheft: Invalid SIMCOM GPS position @%0.6f,%0.6f dist=%.0f smoothed=%.0f",
+      m_latitude, m_longitude, dist, m_park_distance);
+    return;
     }
 
   if (m_park_distance > alarm)

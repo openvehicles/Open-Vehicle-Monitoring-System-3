@@ -46,6 +46,7 @@ provides data logging to SD card and to a server.
   - [BMW i3 / i3s](https://docs.openvehicles.com/en/latest/components/vehicle_bmwi3/docs/index.html)
   - [Fiat 500e](https://docs.openvehicles.com/en/latest/components/vehicle_fiat500/docs/index.html)
   - [Hyundai Ioniq vFL](https://docs.openvehicles.com/en/latest/components/vehicle_hyundai_ioniqvfl/docs/index.html)
+  - [Jaguar Ipace](https://docs.openvehicles.com/en/latest/components/vehicle_jaguaripace/docs/index.html)
   - [Kia e-Niro / Hyundai Kona](https://docs.openvehicles.com/en/latest/components/vehicle_kianiroev/docs/index.html)
   - [Kia Soul EV](https://docs.openvehicles.com/en/latest/components/vehicle_kiasoulev/docs/index.html)
   - [Maxus eDeliver 3](https://docs.openvehicles.com/en/latest/components/vehicle_maxus_edeliver3/docs/index.html)
@@ -161,6 +162,16 @@ status and control the car. This is a foundation that others hopefully will inte
 - Add user level descriptions to the change history
 - Provide documentation in the user guide
 - Use pull requests to submit your code for inclusion
+
+**A note on pull requests:**
+
+Pull requests shall focus on one specific issue / feature / vehicle at a time and shall only mix 
+vehicle specific changes with framework changes if they depend on each other. If changes are not 
+or only loosely related, split them into multiple PRs (just as you would do with commits).
+
+Usage hint: create a branch for each pull request, include only those commits in that branch (by 
+cherry-picking if necessary) that shall be included in the pull request. That way you can push 
+further commits to that branch, Github will automatically add them to an open pull request.
 
 
 ## Donations
