@@ -713,8 +713,8 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
       break;
 
     case VWUP_BAT_MGMT_ENERGY_COUNTERS: {
-      const float coulomb_factor = 4000000.0 / std::pow(2, 31);
-      const float energy_factor  =  250000.0 / std::pow(2, 31);
+      const float coulomb_factor = 3909375.0 / std::pow(2, 31);
+      const float energy_factor  =  250200.0 / std::pow(2, 31);
       bool charge_inprogress = StdMetrics.ms_v_charge_inprogress->AsBool();
       if (PollReply.FromInt32("VWUP_BAT_MGMT_COULOMB_COUNTERS_RECD", value, 0)) {
         float coulomb_recd_total = value * coulomb_factor;
