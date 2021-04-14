@@ -125,7 +125,11 @@ OvmsVehicleMgEv::OvmsVehicleMgEv()
 
     mg_cum_energy_charge_wh = 0;
     // Initialise ms_v_charge_limit_soc to 80%
-    StandardMetrics.ms_v_charge_limit_soc->SetValue(80);
+    StandardMetrics.ms_v_charge_limit_soc->SetValue(80.0);
+    // Set Max Range to WLTP Range
+    StandardMetrics.ms_v_bat_range_full->SetValue(263.0);
+    // Initialise ms_v_charge_limit_range to 100km for testing
+    StandardMetrics.ms_v_charge_limit_range->SetValue(160.0);
     
     memset(m_vin, 0, sizeof(m_vin));
 
@@ -786,11 +790,36 @@ void OvmsVehicleMgEv::processEnergy()
     {
         mg_cum_energy_charge_wh += StandardMetrics.ms_v_charge_power->AsFloat()*1000/3600;
         StandardMetrics.ms_v_charge_kwh->SetValue(mg_cum_energy_charge_wh/1000);
+        
+        float limit_soc      = StandardMetrics.ms_v_charge_limit_soc->AsFloat(0);
+        float limit_range    = StandardMetrics.ms_v_charge_limit_range->AsFloat(0, Kilometers);
+        float max_range      = StandardMetrics.ms_v_bat_range_full->AsFloat(0, Kilometers);
+        
         // Calculate time to reach 100% charge
-        StandardMetrics.ms_v_charge_duration_full->SetValue(calcMinutesRemaining(100));
+        int minsremaining_full = calcMinutesRemaining(100.0);
+        StandardMetrics.ms_v_charge_duration_full->SetValue(minsremaining_full);
+        ESP_LOGV(TAG, "Time remaining: %d mins to full", minsremaining_full);
+        
         // Calculate time to charge to SoC Limit
-        StandardMetrics.ms_v_charge_duration_soc->SetValue(calcMinutesRemaining(
-                                            StandardMetrics.ms_v_charge_limit_soc->AsInt()));
+        if (limit_soc > 0)
+          {
+          // if limit_soc is set, then calculate remaining time to limit_soc
+          int minsremaining_soc = calcMinutesRemaining(limit_soc);
+
+          StandardMetrics.ms_v_charge_duration_soc->SetValue(minsremaining_soc, Minutes);
+          ESP_LOGV(TAG, "Time remaining: %d mins to %0.0f%% soc", minsremaining_soc, limit_soc);
+          }
+
+        // Calculate time to charge to Range Limit
+        if (limit_range > 0 && max_range > 0.0)
+          {
+          // if range limit is set, then compute required soc and then calculate remaining time to that soc
+          float range_soc = limit_range / max_range * 100.0;
+          int   minsremaining_range = calcMinutesRemaining(range_soc);
+
+          StandardMetrics.ms_v_charge_duration_range->SetValue(minsremaining_range, Minutes);
+          ESP_LOGV(TAG, "Time remaining: %d mins for %0.0f km (%0.0f%% soc)", minsremaining_range, limit_range, range_soc);
+          }
     // When we are not charging set back to zero ready for next charge.
     }
     else
