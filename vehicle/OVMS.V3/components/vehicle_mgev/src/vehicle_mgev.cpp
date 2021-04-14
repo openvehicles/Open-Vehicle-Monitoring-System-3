@@ -124,12 +124,9 @@ OvmsVehicleMgEv::OvmsVehicleMgEv()
     StandardMetrics.ms_v_charge_mode->SetValue("standard");
 
     mg_cum_energy_charge_wh = 0;
-    // Initialise ms_v_charge_limit_soc to 80%
-    StandardMetrics.ms_v_charge_limit_soc->SetValue(80.0);
+    
     // Set Max Range to WLTP Range
     StandardMetrics.ms_v_bat_range_full->SetValue(263.0);
-    // Initialise ms_v_charge_limit_range to 100km for testing
-    StandardMetrics.ms_v_charge_limit_range->SetValue(160.0);
     
     memset(m_vin, 0, sizeof(m_vin));
 
