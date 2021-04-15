@@ -115,7 +115,6 @@ canlog_udpclient::canlog_udpclient(std::string path, std::string format, canform
   : canlog("udpclient", format, mode)
   {
   MyCanLogUdpClient = this;
-  m_mgconn = NULL;
   m_isopen = false;
   m_path = path;
   }
@@ -142,8 +141,13 @@ bool canlog_udpclient::Open()
       dest.append(m_path);
       memset(&opts, 0, sizeof(opts));
       opts.error_string = &err;
-      if ((m_mgconn = mg_connect_opt(mgr, dest.c_str(), tcMongooseHandler, opts)) != NULL)
+      mg_connection* nc;
+      if ((nc = mg_connect_opt(mgr, dest.c_str(), tcMongooseHandler, opts)) != NULL)
         {
+        canlogconnection* clc = new canlogconnection(this);
+        clc->m_nc = nc;
+        clc->m_peer = m_path;
+        m_connmap[nc] = clc;
         m_isopen = true;
         return true;
         }
@@ -168,18 +172,22 @@ bool canlog_udpclient::Open()
 
 void canlog_udpclient::Close()
   {
-  if ((m_isopen)&&(m_mgconn != NULL))
+  if (m_isopen)
     {
     ESP_LOGI(TAG, "Closed UDP client log: %s", GetStats().c_str());
-    m_mgconn->flags |= MG_F_CLOSE_IMMEDIATELY;
-    m_mgconn = NULL;
+    if (m_connmap.size() > 0)
+      {
+      OvmsMutexLock lock(&m_cmmutex);
+      for (conn_map_t::iterator it=m_connmap.begin(); it!=m_connmap.end(); ++it)
+        {
+        it->first->flags |= MG_F_CLOSE_IMMEDIATELY;
+        delete it->second;
+        }
+      m_connmap.clear();
+      }
     m_isopen = false;
-    }
-  }
 
-bool canlog_udpclient::IsOpen()
-  {
-  return m_isopen;
+    }
   }
 
 std::string canlog_udpclient::GetInfo()
@@ -190,31 +198,9 @@ std::string canlog_udpclient::GetInfo()
   return result;
   }
 
-void canlog_udpclient::OutputMsg(CAN_log_message_t& msg)
-  {
-  if (m_formatter == NULL) return;
-
-  if ((m_mgconn != NULL)&&(m_isopen))
-    {
-    std::string result = m_formatter->get(&msg);
-    if (result.length()>0)
-      {
-      OvmsMutexLock lock(&m_mgmutex);
-      if (m_mgconn->send_mbuf.len < 4096)
-        {
-        mg_send(m_mgconn, (const char*)result.c_str(), result.length());
-        }
-      else
-        {
-        m_dropcount++;
-        }
-      }
-    }
-  }
-
 void canlog_udpclient::MongooseHandler(struct mg_connection *nc, int ev, void *p)
   {
-  OvmsMutexLock lock(&m_mgmutex);
+  OvmsMutexLock lock(&m_cmmutex);
 
   switch (ev)
     {
@@ -223,8 +209,13 @@ void canlog_udpclient::MongooseHandler(struct mg_connection *nc, int ev, void *p
       if (m_isopen)
         {
         ESP_LOGE(TAG,"Disconnected from %s",m_path.c_str());
-        m_mgconn = NULL;
         m_isopen = false;
+        auto k = m_connmap.find(nc);
+        if (k != m_connmap.end())
+          {
+          delete k->second;
+          m_connmap.erase(k);
+          }
         }
       break;
     case MG_EV_RECV:
@@ -233,7 +224,10 @@ void canlog_udpclient::MongooseHandler(struct mg_connection *nc, int ev, void *p
       size_t used = nc->recv_mbuf.len;
       if (m_formatter != NULL)
         {
-        used = m_formatter->Serve((uint8_t*)nc->recv_mbuf.buf, used);
+        canlogconnection* clc = NULL;
+        auto k = m_connmap.find(nc);
+        if (k != m_connmap.end()) clc = k->second;
+        used = m_formatter->Serve((uint8_t*)nc->recv_mbuf.buf, used, clc);
         }
       if (used > 0)
         {

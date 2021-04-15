@@ -135,14 +135,6 @@ static void tsMongooseHandler(struct mg_connection *nc, int ev, void *p)
     }
   }
 
-void tsPutCallback(uint8_t *buffer, size_t len, void* data)
-  {
-  struct mg_connection *nc = (struct mg_connection *)data;
-
-  //ESP_LOGD(TAG,"Sent %d bytes of put callback response",len);
-  mg_send(nc, buffer, len);
-  }
-
 canlog_tcpserver::canlog_tcpserver(std::string path, std::string format, canformat::canformat_serve_mode_t mode)
   : canlog("tcpserver", format, mode)
   {
@@ -154,11 +146,6 @@ canlog_tcpserver::canlog_tcpserver(std::string path, std::string format, canform
     }
   m_isopen = false;
   m_mgconn = NULL;
-
-  if (m_formatter)
-    {
-    m_formatter->SetPutCallback(tsPutCallback);
-    }
   }
 
 canlog_tcpserver::~canlog_tcpserver()
@@ -206,24 +193,21 @@ void canlog_tcpserver::Close()
   {
   if (m_isopen)
     {
-    if (m_smap.size() > 0)
+    if (m_connmap.size() > 0)
       {
-      for (ts_map_t::iterator it=m_smap.begin(); it!=m_smap.end(); ++it)
+      OvmsMutexLock lock(&m_cmmutex);
+      for (conn_map_t::iterator it=m_connmap.begin(); it!=m_connmap.end(); ++it)
         {
         it->first->flags |= MG_F_CLOSE_IMMEDIATELY;
+        delete it->second;
         }
-      m_smap.clear();
+      m_connmap.clear();
       }
     ESP_LOGI(TAG, "Closed TCP server log: %s", GetStats().c_str());
     m_mgconn->flags |= MG_F_CLOSE_IMMEDIATELY;
     m_mgconn = NULL;
     m_isopen = false;
     }
-  }
-
-bool canlog_tcpserver::IsOpen()
-  {
-  return m_isopen;
   }
 
 std::string canlog_tcpserver::GetInfo()
@@ -234,34 +218,11 @@ std::string canlog_tcpserver::GetInfo()
   return result;
   }
 
-void canlog_tcpserver::OutputMsg(CAN_log_message_t& msg)
-  {
-  if (m_formatter == NULL) return;
-
-  std::string result = m_formatter->get(&msg);
-  if (result.length()>0)
-    {
-    OvmsMutexLock lock(&m_mgmutex);
-    for (ts_map_t::iterator it=m_smap.begin(); it!=m_smap.end(); ++it)
-      {
-      if (it->first->send_mbuf.len < 4096)
-        {
-        // Limit to 4KB queue on output buffer
-        mg_send(it->first, (const char*)result.c_str(), result.length());
-        }
-      else
-        {
-        m_dropcount++;
-        }
-      }
-    }
-  }
-
 void canlog_tcpserver::MongooseHandler(struct mg_connection *nc, int ev, void *p)
   {
   char addr[32];
 
-  OvmsMutexLock lock(&m_mgmutex);
+  OvmsMutexLock lock(&m_cmmutex);
 
   switch (ev)
     {
@@ -270,7 +231,10 @@ void canlog_tcpserver::MongooseHandler(struct mg_connection *nc, int ev, void *p
       // New network connection has arrived
       mg_sock_addr_to_str(&nc->sa, addr, sizeof(addr), MG_SOCK_STRINGIFY_IP);
       ESP_LOGI(TAG, "Log service connection from %s",addr);
-      m_smap[nc] = 1;
+      canlogconnection* clc = new canlogconnection(this);
+      clc->m_nc = nc;
+      clc->m_peer = std::string(addr);
+      m_connmap[nc] = clc;
       if (m_formatter != NULL)
         {
         std::string result = m_formatter->getheader();
@@ -285,12 +249,13 @@ void canlog_tcpserver::MongooseHandler(struct mg_connection *nc, int ev, void *p
     case MG_EV_CLOSE:
       {
       // Network connection has gone
-      auto k = m_smap.find(nc);
-      if (k != m_smap.end())
+      auto k = m_connmap.find(nc);
+      if (k != m_connmap.end())
         {
         mg_sock_addr_to_str(&nc->sa, addr, sizeof(addr), MG_SOCK_STRINGIFY_IP);
         ESP_LOGI(TAG, "Log service disconnection from %s",addr);
-        m_smap.erase(k);
+        delete k->second;
+        m_connmap.erase(k);
         }
       break;
       }
@@ -302,7 +267,10 @@ void canlog_tcpserver::MongooseHandler(struct mg_connection *nc, int ev, void *p
       //ESP_LOGD(TAG,"Received %d bytes of data",used);
       if (m_formatter != NULL)
         {
-        used = m_formatter->Serve((uint8_t*)nc->recv_mbuf.buf, used, nc);
+        canlogconnection* clc = NULL;
+        auto k = m_connmap.find(nc);
+        if (k != m_connmap.end()) clc = k->second;
+        used = m_formatter->Serve((uint8_t*)nc->recv_mbuf.buf, used, clc);
         }
       if (used > 0)
         {
