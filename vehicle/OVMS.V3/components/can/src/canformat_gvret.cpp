@@ -28,6 +28,7 @@
 static const char *TAG = "canformat-gvret";
 
 #include "canformat_gvret.h"
+#include "canlog.h"
 #include <errno.h>
 #include <endian.h>
 #include "pcp.h"
@@ -72,7 +73,7 @@ std::string canformat_gvret::getheader(struct timeval *time)
   return std::string("");
   }
 
-size_t canformat_gvret::put(CAN_log_message_t* message, uint8_t *buffer, size_t len, void* userdata)
+size_t canformat_gvret::put(CAN_log_message_t* message, uint8_t *buffer, size_t len, canlogconnection* clc)
   {
   return len;
   }
@@ -111,7 +112,7 @@ std::string canformat_gvret_ascii::get(CAN_log_message_t* message)
   return std::string(buf);
   }
 
-size_t canformat_gvret_ascii::put(CAN_log_message_t* message, uint8_t *buffer, size_t len, void* userdata)
+size_t canformat_gvret_ascii::put(CAN_log_message_t* message, uint8_t *buffer, size_t len, canlogconnection* clc)
   {
   if (m_buf.FreeSpace()==0) SetServeDiscarding(true); // Buffer full, so discard from now on
   if (IsServeDiscarding()) return len;  // Quick return if discarding
@@ -212,7 +213,7 @@ std::string canformat_gvret_binary::get(CAN_log_message_t* message)
   return std::string((const char*)&frame,12 + message->frame.FIR.B.DLC);
   }
 
-size_t canformat_gvret_binary::put(CAN_log_message_t* message, uint8_t *buffer, size_t len, void* userdata)
+size_t canformat_gvret_binary::put(CAN_log_message_t* message, uint8_t *buffer, size_t len, canlogconnection* clc)
   {
   if (m_buf.FreeSpace()==0) SetServeDiscarding(true); // Buffer full, so discard from now on
   if (IsServeDiscarding()) return len;  // Quick return if discarding
@@ -280,15 +281,15 @@ size_t canformat_gvret_binary::put(CAN_log_message_t* message, uint8_t *buffer, 
       case TIME_SYNC:
         m_buf.Pop(2,(uint8_t*)&m);
         r.body.time_sync.microseconds = 0;
-        if (m_putcallback_fn) m_putcallback_fn((uint8_t*)&r,6,userdata);
+        if (clc) clc->TransmitCallback((uint8_t*)&r,6);
         break;
       case GET_DIG_INPUTS:
         m_buf.Pop(2,(uint8_t*)&m);
-        if (m_putcallback_fn) m_putcallback_fn((uint8_t*)&r,4,userdata);
+        if (clc) clc->TransmitCallback((uint8_t*)&r,4);
         break;
       case GET_ANALOG_INPUTS:
         m_buf.Pop(2,(uint8_t*)&m);
-        if (m_putcallback_fn) m_putcallback_fn((uint8_t*)&r,11,userdata);
+        if (clc) clc->TransmitCallback((uint8_t*)&r,11);
         break;
       case SET_DIG_OUTPUTS:
         m_buf.Pop(2,(uint8_t*)&m);
@@ -302,7 +303,7 @@ size_t canformat_gvret_binary::put(CAN_log_message_t* message, uint8_t *buffer, 
         r.body.get_canbus_params.can1_speed = 1000000;
         r.body.get_canbus_params.can2_mode = 1;
         r.body.get_canbus_params.can2_speed = 1000000;
-        if (m_putcallback_fn) m_putcallback_fn((uint8_t*)&r,12,userdata);
+        if (clc) clc->TransmitCallback((uint8_t*)&r,12);
         break;
       case GET_DEVICE_INFO:
         m_buf.Pop(2,(uint8_t*)&m);
@@ -311,7 +312,7 @@ size_t canformat_gvret_binary::put(CAN_log_message_t* message, uint8_t *buffer, 
         r.body.get_device_info.filetype = 0;
         r.body.get_device_info.autolog = 0;
         r.body.get_device_info.singlewire = 0;
-        if (m_putcallback_fn) m_putcallback_fn((uint8_t*)&r,8,userdata);
+        if (clc) clc->TransmitCallback((uint8_t*)&r,8);
         break;
       case SET_SINGLEWIRE_MODE:
         m_buf.Pop(2,(uint8_t*)&m);
@@ -320,7 +321,7 @@ size_t canformat_gvret_binary::put(CAN_log_message_t* message, uint8_t *buffer, 
         m_buf.Pop(2,(uint8_t*)&m);
         r.body.keep_alive.notdead1 = GVRET_NOTDEAD_1;
         r.body.keep_alive.notdead2 = GVRET_NOTDEAD_2;
-        if (m_putcallback_fn) m_putcallback_fn((uint8_t*)&r,4,userdata);
+        if (clc) clc->TransmitCallback((uint8_t*)&r,4);
         break;
       case SET_SYSTEM_TYPE:
         m_buf.Pop(2,(uint8_t*)&m);
@@ -331,11 +332,11 @@ size_t canformat_gvret_binary::put(CAN_log_message_t* message, uint8_t *buffer, 
       case GET_NUM_BUSES:
         m_buf.Pop(2,(uint8_t*)&m);
         r.body.get_num_buses.buses = 3;
-        if (m_putcallback_fn) m_putcallback_fn((uint8_t*)&r,3,userdata);
+        if (clc) clc->TransmitCallback((uint8_t*)&r,3);
         break;
       case GET_EXT_BUSES:
         m_buf.Pop(2,(uint8_t*)&m);
-        if (m_putcallback_fn) m_putcallback_fn((uint8_t*)&r,17,userdata);
+        if (clc) clc->TransmitCallback((uint8_t*)&r,17);
         break;
       default:
         ESP_LOGW(TAG,"Unrecognised GVRET command %02x - skipping",m.command);

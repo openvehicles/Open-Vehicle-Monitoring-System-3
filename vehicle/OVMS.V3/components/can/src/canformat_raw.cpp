@@ -66,7 +66,7 @@ std::string canformat_raw::getheader(struct timeval *time)
   return std::string("");
   }
 
-size_t canformat_raw::put(CAN_log_message_t* message, uint8_t *buffer, size_t len, void* userdata)
+size_t canformat_raw::put(CAN_log_message_t* message, uint8_t *buffer, size_t len, canlogconnection* clc)
   {
   if (m_buf.FreeSpace()==0) SetServeDiscarding(true); // Buffer full, so discard from now on
   if (IsServeDiscarding()) return len;  // Quick return if discarding

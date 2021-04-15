@@ -101,7 +101,7 @@ std::string canformat_pcap::getheader(struct timeval *time)
   return std::string((const char*)&h, sizeof(h));
   }
 
-size_t canformat_pcap::put(CAN_log_message_t* message, uint8_t *buffer, size_t len, void* userdata)
+size_t canformat_pcap::put(CAN_log_message_t* message, uint8_t *buffer, size_t len, canlogconnection* clc)
   {
   union
     {
