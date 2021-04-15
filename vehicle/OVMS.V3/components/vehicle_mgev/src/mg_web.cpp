@@ -182,7 +182,7 @@ void OvmsVehicleMgEv::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
 
   // generate form:
 
-  c.panel_start("primary", "Nissan Leaf battery setup");
+  c.panel_start("primary", "MG battery setup");
   c.form_start(p.uri);
 
   c.fieldset_start("Charge control");
