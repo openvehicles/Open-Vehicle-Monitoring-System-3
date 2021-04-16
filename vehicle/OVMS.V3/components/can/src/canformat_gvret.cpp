@@ -263,6 +263,8 @@ size_t canformat_gvret_binary::put(CAN_log_message_t* message, uint8_t *buffer, 
               }
             msg.FIR.B.DLC = m.body.build_can_frame.length;
             memcpy(&msg.data, &m.body.build_can_frame.data, m.body.build_can_frame.length);
+
+            ESP_LOGD(TAG,"Rx BUILD_CAN_FRAME ID=%0x",msg.MsgID);
             // We have a frame to be transmitted / simulated
             switch (m_servemode)
               {
@@ -279,25 +281,31 @@ size_t canformat_gvret_binary::put(CAN_log_message_t* message, uint8_t *buffer, 
           }
         break;
       case TIME_SYNC:
+        ESP_LOGD(TAG,"Rx TIME_SYNC");
         m_buf.Pop(2,(uint8_t*)&m);
         r.body.time_sync.microseconds = 0;
         if (clc) clc->TransmitCallback((uint8_t*)&r,6);
         break;
       case GET_DIG_INPUTS:
+        ESP_LOGD(TAG,"Rx GET_DIG_INPUTS");
         m_buf.Pop(2,(uint8_t*)&m);
         if (clc) clc->TransmitCallback((uint8_t*)&r,4);
         break;
       case GET_ANALOG_INPUTS:
+        ESP_LOGD(TAG,"Rx GET_ANALOG_INPUTS");
         m_buf.Pop(2,(uint8_t*)&m);
         if (clc) clc->TransmitCallback((uint8_t*)&r,11);
         break;
       case SET_DIG_OUTPUTS:
+        ESP_LOGD(TAG,"Rx GET_DIG_OUTPUTS");
         m_buf.Pop(2,(uint8_t*)&m);
         break;
       case SETUP_CANBUS:
+        ESP_LOGD(TAG,"Rx SETUP_CANBUS");
         m_buf.Pop(2,(uint8_t*)&m);
         break;
       case GET_CANBUS_PARAMS:
+        ESP_LOGD(TAG,"Rx GET_CANBUS_PARAMS");
         m_buf.Pop(2,(uint8_t*)&m);
         r.body.get_canbus_params.can1_mode = 1;
         r.body.get_canbus_params.can1_speed = 1000000;
@@ -306,6 +314,7 @@ size_t canformat_gvret_binary::put(CAN_log_message_t* message, uint8_t *buffer, 
         if (clc) clc->TransmitCallback((uint8_t*)&r,12);
         break;
       case GET_DEVICE_INFO:
+        ESP_LOGD(TAG,"Rx GET_DEVICE_INFO");
         m_buf.Pop(2,(uint8_t*)&m);
         r.body.get_device_info.build = 0;
         r.body.get_device_info.eeprom = 0;
@@ -315,31 +324,37 @@ size_t canformat_gvret_binary::put(CAN_log_message_t* message, uint8_t *buffer, 
         if (clc) clc->TransmitCallback((uint8_t*)&r,8);
         break;
       case SET_SINGLEWIRE_MODE:
+        ESP_LOGD(TAG,"Rx SET_SINGLEWIRE_MODE");
         m_buf.Pop(2,(uint8_t*)&m);
         break;
       case KEEP_ALIVE:
+        ESP_LOGD(TAG,"Rx KEEP_ALIVE");
         m_buf.Pop(2,(uint8_t*)&m);
         r.body.keep_alive.notdead1 = GVRET_NOTDEAD_1;
         r.body.keep_alive.notdead2 = GVRET_NOTDEAD_2;
         if (clc) clc->TransmitCallback((uint8_t*)&r,4);
         break;
       case SET_SYSTEM_TYPE:
+        ESP_LOGD(TAG,"Rx SET_SYSTEM_TYPE");
         m_buf.Pop(2,(uint8_t*)&m);
         break;
       case ECHO_CAN_FRAME:
+        ESP_LOGD(TAG,"Rx ECHO_CAN_FRAME");
         m_buf.Pop(2,(uint8_t*)&m);
         break;
       case GET_NUM_BUSES:
+        ESP_LOGD(TAG,"Rx GET_NUM_BUSES");
         m_buf.Pop(2,(uint8_t*)&m);
         r.body.get_num_buses.buses = 3;
         if (clc) clc->TransmitCallback((uint8_t*)&r,3);
         break;
       case GET_EXT_BUSES:
+        ESP_LOGD(TAG,"Rx GET_EXT_BUSES");
         m_buf.Pop(2,(uint8_t*)&m);
         if (clc) clc->TransmitCallback((uint8_t*)&r,17);
         break;
       default:
-        ESP_LOGW(TAG,"Unrecognised GVRET command %02x - skipping",m.command);
+        ESP_LOGW(TAG,"Rx GVRET %02x unrecognised - skipping",m.command);
         m_buf.Pop(2,(uint8_t*)&m);
       }
     }
