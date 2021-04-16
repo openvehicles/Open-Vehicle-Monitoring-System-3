@@ -79,7 +79,6 @@ canformat::canformat(const char* type, canformat_serve_mode_t mode)
   m_type = type;
   m_servemode = mode;
   m_servediscarding = false;
-  m_putcallback_fn = NULL;
   }
 
 canformat::~canformat()
@@ -101,12 +100,12 @@ std::string canformat::getheader(struct timeval *time)
   return std::string("");
   }
 
-size_t canformat::put(CAN_log_message_t* message, uint8_t *buffer, size_t len, void* userdata)
+size_t canformat::put(CAN_log_message_t* message, uint8_t *buffer, size_t len, canlogconnection* clc)
   {
   return 0;
   }
 
-size_t canformat::Serve(uint8_t *buffer, size_t len, void* userdata)
+size_t canformat::Serve(uint8_t *buffer, size_t len, canlogconnection* clc)
   {
   if ((m_servediscarding)||(m_servemode == Discard))
     {
@@ -119,7 +118,7 @@ size_t canformat::Serve(uint8_t *buffer, size_t len, void* userdata)
     CAN_log_message_t msg;
     memset(&msg,0,sizeof(msg));
 
-    size_t used = put(&msg, buffer, len, userdata);
+    size_t used = put(&msg, buffer, len, clc);
     if (used > 0)
       {
       consumed += used;
@@ -190,9 +189,4 @@ bool canformat::IsServeDiscarding()
 void canformat::SetServeDiscarding(bool discarding)
   {
   m_servediscarding = discarding;
-  }
-
-void canformat::SetPutCallback(canformat_put_write_fn callback)
-  {
-  m_putcallback_fn = callback;
   }
