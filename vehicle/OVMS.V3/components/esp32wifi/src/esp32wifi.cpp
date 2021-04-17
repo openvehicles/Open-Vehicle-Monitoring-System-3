@@ -251,8 +251,15 @@ void wifi_scan(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
     }
 
   bool json = false;
-  if (argc >= 1 && strcmp(argv[0], "-j") == 0)
+  if (argc > 0)
+    {
+    if (strcmp(argv[0], "-j") != 0)
+      {
+      cmd->PutUsage(writer);
+      return;
+      }
     json = true;
+    }
 
   me->Scan(writer, json);
   }

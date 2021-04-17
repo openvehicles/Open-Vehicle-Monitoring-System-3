@@ -215,7 +215,50 @@ std::string json_encode(const src_string text)
         break;
       }
     }
-	return buf;
+  return buf;
+  }
+
+/**
+ * display_encode: encode string displaying unprintablel characters
+ * Emulates (linux) "cat -t" semantics
+ */
+template <class src_string>
+std::string display_encode(const src_string text)
+  {
+  std::string buf;
+  buf.reserve(text.size() + (text.size() >> 3));
+  for (int i = 0; i < text.size(); i++)
+    {
+    char ch = text[i];
+    if (!isascii(ch))
+      {
+      buf += "M-";
+      ch = toascii(ch);
+      }
+    if (ch == '\177')
+      {
+      buf += "^?";
+      continue;
+      }
+    if (ch == '\t')
+      {
+      buf += "^I";
+      continue;
+      }
+    if (ch == '\n')
+      {
+      // deviation from "cat -t"
+      buf += "^J";
+      continue;
+      }
+    if (!isprint(ch))
+      {
+      ch = ch ^ 0x40;
+      buf += "^";
+      }
+    buf += ch;
+    }
+  return buf;
   }
 
 
