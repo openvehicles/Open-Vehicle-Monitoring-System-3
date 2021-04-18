@@ -54,7 +54,7 @@ provides data logging to SD card and to a server.
   - [Mitsubishi Trio (i-MiEV et al)](https://docs.openvehicles.com/en/latest/components/vehicle_mitsubishi/docs/index.html)
   - [Nissan Leaf / e-NV200](https://docs.openvehicles.com/en/latest/components/vehicle_nissanleaf/docs/index.html)
   - [Renault Twizy](https://docs.openvehicles.com/en/latest/components/vehicle_renaulttwizy/docs/index.html)
-  - [Renault Zoe](https://docs.openvehicles.com/en/latest/components/vehicle_renaultzoe/docs/index.html)
+  - [Renault Zoe / Kangoo](https://docs.openvehicles.com/en/latest/components/vehicle_renaultzoe/docs/index.html)
   - [Smart ED Gen.3](https://docs.openvehicles.com/en/latest/components/vehicle_smarted/docs/index.html)
   - [Smart ED/EQ Gen.4 (453)](https://docs.openvehicles.com/en/latest/components/vehicle_smarteq/docs/index.html)
   - [Tesla Model S](https://docs.openvehicles.com/en/latest/components/vehicle_teslamodels/docs/index.html)

@@ -95,6 +95,10 @@ class OvmsVehicleRenaultZoe : public OvmsVehicle {
     OvmsMetricFloat  *mt_pos_odometer_start;  // ODOmeter at Start
     OvmsMetricBool   *mt_bus_awake;           // can-bus awake status
     OvmsMetricFloat  *mt_available_energy;    // Available Energy
+    OvmsMetricFloat  *mt_main_power_consumed; // Mains active power consumed
+    
+    // Rnault Kangoo metrics
+    OvmsMetricFloat  *mt_heatwater_temp;      // Heat Water Temp
 
   public:
     void WebInit();
@@ -126,6 +130,7 @@ class OvmsVehicleRenaultZoe : public OvmsVehicle {
     int m_battery_capacity;                 // Battery Capacity (default 27000)
     bool m_enable_egpio;                    // enable EGPIO for Homelink commands
     bool m_reset_trip;                      // Reset trip when charging else when env on
+    int m_vehicle_type;                     // Vehicle type (Zoe, Kangoo...)
     int m_reboot_ticker;
 
   private:
@@ -137,6 +142,14 @@ class OvmsVehicleRenaultZoe : public OvmsVehicle {
   
   protected:
     string zoe_obd_rxbuf;
+  
+  public:
+    bool IsZoe() {
+      return m_vehicle_type == 0;
+    }
+    bool IsKangoo() {
+      return m_vehicle_type == 1;
+    }
 };
 
 #endif //#ifndef __VEHICLE_RENAUTZOE_H__
