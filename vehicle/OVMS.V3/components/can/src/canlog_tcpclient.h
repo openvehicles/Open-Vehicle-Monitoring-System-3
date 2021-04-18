@@ -41,19 +41,10 @@ class canlog_tcpclient : public canlog
   public:
     virtual bool Open();
     virtual void Close();
-    virtual bool IsOpen();
     virtual std::string GetInfo();
 
   public:
-    virtual void OutputMsg(CAN_log_message_t& msg);
-
-  public:
     void MongooseHandler(struct mg_connection *nc, int ev, void *p);
-
-  public:
-    OvmsMutex m_mgmutex;
-    struct mg_connection *m_mgconn;
-    bool m_isopen;
 
   public:
     std::string         m_path;

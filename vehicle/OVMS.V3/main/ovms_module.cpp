@@ -971,8 +971,13 @@ bool module_factory_reset_yesno(OvmsWriter* writer, void* ctx, char ch)
 
 static void module_factory_reset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  if (argc == 1 && strcmp(argv[0], "-noconfirm") == 0)
+  if (argc > 0)
     {
+    if (strcmp(argv[0], "-noconfirm") != 0)
+      {
+      cmd->PutUsage(writer);
+      return;
+      }
     module_perform_factoryreset(writer);
     }
   else

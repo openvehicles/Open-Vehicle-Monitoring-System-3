@@ -1,10 +1,11 @@
 /*
 ;    Project:       Open Vehicle Monitor System
-;    Module:        CAN logging framework
-;    Date:          18th January 2018
+;    Date:          8th March 2021
 ;
-;    (C) 2018       Michael Balzer
-;    (C) 2019       Mark Webb-Johnson
+;    Changes:
+;    1.0  Initial release
+;
+;    (C) 2021       Shane Hunns
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -25,44 +26,31 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __CANLOG_VFS_H__
-#define __CANLOG_VFS_H__
+#ifndef MED3_PIDS_H_
+#define MED3_PIDS_H_
 
-#include "canlog.h"
+// Module IDs
+constexpr uint32_t broadcastId = 0x7dfu;
+constexpr uint32_t bmstx = 0x748u;
+constexpr uint32_t bmsrx = 0x7c8u;
+constexpr uint32_t vcutx = 0x7e3u;
+constexpr uint32_t vcurx = 0x7ebu;
+constexpr uint32_t gwmtx = 0x710u;
+constexpr uint32_t gwmrx = 0x790u;
 
-#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+// BMS PIDs
+constexpr uint16_t cellvolts = 0xe113u;
+constexpr uint16_t celltemps = 0xe114u;
 
-class canlog_vfs_conn: public canlogconnection
-  {
-  public:
-    canlog_vfs_conn(canlog* logger);
-    virtual ~canlog_vfs_conn();
+// VCU PIDs
+constexpr uint16_t vcusoh = 0xe001u;
+constexpr uint16_t vcusoc = 0xe002u;
+constexpr uint16_t vcutemp1 = 0xe005u;
+constexpr uint16_t vcutemp2 = 0xe006u;
+constexpr uint16_t vcupackvolts = 0xe019u;
+constexpr uint16_t vcuvin = 0xf190u;
+constexpr uint16_t vcu12vamps = 0xe022u;
+constexpr uint16_t vcuchargervolts = 0xe036u;
+constexpr uint16_t vcuchargeramps = 0xe039u;
 
-  public:
-    virtual void OutputMsg(CAN_log_message_t& msg, std::string &result);
-
-  public:
-    FILE*               m_file;
-  };
-
-#endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
-
-class canlog_vfs : public canlog
-  {
-  public:
-    canlog_vfs(std::string path, std::string format);
-    virtual ~canlog_vfs();
-
-  public:
-    virtual bool Open();
-    virtual void Close();
-    virtual std::string GetInfo();
-
-  public:
-    virtual void MountListener(std::string event, void* data);
-
-  public:
-    std::string         m_path;
-  };
-
-#endif // __CANLOG_VFS_H__
+#endif  // MED3_PIDS_H_

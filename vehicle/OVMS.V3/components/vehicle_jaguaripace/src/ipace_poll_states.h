@@ -1,10 +1,11 @@
 /*
 ;    Project:       Open Vehicle Monitor System
-;    Module:        CAN logging framework
-;    Date:          18th January 2018
+;    Date:          1st April 2021
 ;
-;    (C) 2018       Michael Balzer
-;    (C) 2019       Mark Webb-Johnson
+;    Changes:
+;    0.0.1  Initial release
+;
+;    (C) 2021       Didier Ernotte
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -25,44 +26,15 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __CANLOG_VFS_H__
-#define __CANLOG_VFS_H__
+#ifndef IPACE_POLL_STATES_H_
+#define IPACE_POLL_STATES_H_
 
-#include "canlog.h"
+// The states that change how many seconds between polling for different values
+enum PollStates {
+    PollStateListenOnly = 0,  // No Polling, listen only
+    PollStateCharging,  // Only Polling charging related ECUs
+    PollStateRunning,  // Polling all ECUs related to running (ignition on)
+    PollStateBackup,  // Failed Zombie Mode Just Polling SoC every 60s
+};
 
-#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
-
-class canlog_vfs_conn: public canlogconnection
-  {
-  public:
-    canlog_vfs_conn(canlog* logger);
-    virtual ~canlog_vfs_conn();
-
-  public:
-    virtual void OutputMsg(CAN_log_message_t& msg, std::string &result);
-
-  public:
-    FILE*               m_file;
-  };
-
-#endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
-
-class canlog_vfs : public canlog
-  {
-  public:
-    canlog_vfs(std::string path, std::string format);
-    virtual ~canlog_vfs();
-
-  public:
-    virtual bool Open();
-    virtual void Close();
-    virtual std::string GetInfo();
-
-  public:
-    virtual void MountListener(std::string event, void* data);
-
-  public:
-    std::string         m_path;
-  };
-
-#endif // __CANLOG_VFS_H__
+#endif  // IPACE_POLL_STATES_H_

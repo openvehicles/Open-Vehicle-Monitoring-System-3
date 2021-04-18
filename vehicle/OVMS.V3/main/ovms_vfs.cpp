@@ -141,7 +141,16 @@ void vfs_head(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
   for (int i=0; i<argc; i++)
     {
     if (argv[i][0] == '-')
-      nrlines = atoi(argv[i]+1);
+      {
+      char* ep;
+      int32_t v = strtol(argv[i] + 1, &ep, 10);
+      if (*ep != '\0')
+        {
+        cmd->PutUsage(writer);
+        return;
+        }
+      nrlines = v;
+      }
     else
       filename = argv[i];
     }
@@ -350,7 +359,16 @@ class VfsTailCommand : public OvmsCommandTask
       for (int i=0; i<argc; i++)
         {
         if (argv[i][0] == '-')
-          nrlines = atoi(argv[i]+1);
+          {
+          char* ep;
+          int32_t v = strtol(argv[i] + 1, &ep, 10);
+          if (*ep != '\0')
+            {
+            cmd->PutUsage(writer);
+            return OCS_Error;
+            }
+          nrlines = v;
+          }
         else
           filename = argv[i];
         }
