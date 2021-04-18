@@ -94,8 +94,8 @@ static const char *TAG = "v-smarted";
 static const OvmsVehicle::poll_pid_t smarted_polls[] =
 {
   { 0x61A, 0x483, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xF111, {  0,300,600,600 }, 0, ISOTP_STD }, // rqChargerPN_HW
-  { 0x61A, 0x483, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0226, {  0,300,0,60 }, 0, ISOTP_STD }, // rqChargerVoltages
-  { 0x61A, 0x483, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0225, {  0,300,0,60 }, 0, ISOTP_STD }, // rqChargerAmps
+  { 0x61A, 0x483, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0226, {  0,300,0,3 }, 0, ISOTP_STD }, // rqChargerVoltages
+  { 0x61A, 0x483, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0225, {  0,300,0,3 }, 0, ISOTP_STD }, // rqChargerAmps
   { 0x61A, 0x483, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x022A, {  0,300,0,60 }, 0, ISOTP_STD }, // rqChargerSelCurrent
   { 0x61A, 0x483, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0223, {  0,300,0,60 }, 0, ISOTP_STD }, // rqChargerTemperatures
   { 0x7E7, 0x7EF, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xF190, {  0,300,600,600 }, 0, ISOTP_STD }, // rqBattVIN
@@ -670,7 +670,20 @@ void OvmsVehicleSmartED::PollReply_NLG6_ChargerVoltages(const char* reply_data, 
     NLG6MainsVoltage[2] = 0;
   }
   mt_nlg6_main_volts->SetElemValues(0, 3, NLG6MainsVoltage);
-  if (NLG6MainsVoltage[0] != 0) StandardMetrics.ms_v_charge_voltage->SetValue(NLG6MainsVoltage[0]);
+  
+  int phasecnt = 0, i = 0;
+  float voltagesum = 0;
+  
+  for(i = 0; i < 2; i++) {
+    if (NLG6MainsVoltage[i] > 90) {
+      phasecnt++;
+      voltagesum += NLG6MainsVoltage[i];
+    }
+  }
+  if (phasecnt > 1) {
+    voltagesum /= phasecnt;
+  }  
+  StandardMetrics.ms_v_charge_voltage->SetValue(voltagesum);
 }
 
 void OvmsVehicleSmartED::PollReply_NLG6_ChargerAmps(const char* reply_data, uint16_t reply_len) {
@@ -702,7 +715,19 @@ void OvmsVehicleSmartED::PollReply_NLG6_ChargerAmps(const char* reply_data, uint
     //NLG6AmpsCableCode = data[12]; //12
   }
   mt_nlg6_main_amps->SetElemValues(0, 3, NLG6MainsAmps);
-  if (NLG6MainsAmps[0] != 0) StandardMetrics.ms_v_charge_current->SetValue(NLG6MainsAmps[0]);
+  if (NLG6MainsAmps[0] != 0) {
+    int n = 3;
+    float sum = 0;
+    sum = accumulate(NLG6MainsAmps, NLG6MainsAmps+n, sum);
+    StandardMetrics.ms_v_charge_current->SetValue(sum);
+    float power = (StandardMetrics.ms_v_charge_voltage->AsFloat() * sum) / 1000.0f;
+    float efficiency = (power == 0)
+                       ? 0
+                       : ((StandardMetrics.ms_v_bat_power->AsFloat() * -1) / power) * 100;
+    StandardMetrics.ms_v_charge_efficiency->SetValue(efficiency);
+    ESP_LOGD(TAG, "SmartED_CHG_EFF_STD=%f", efficiency);
+    StandardMetrics.ms_v_charge_power->SetValue(power);
+  }
 }
 
 void OvmsVehicleSmartED::PollReply_NLG6_ChargerSelCurrent(const char* reply_data, uint16_t reply_len) {
