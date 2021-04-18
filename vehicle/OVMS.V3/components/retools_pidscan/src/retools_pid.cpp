@@ -538,20 +538,26 @@ void OvmsReToolsPidScanner::IncomingPollFrame(const CAN_frame_t* frame)
     {
         // Success
         uint16_t responsePid;
+        const uint8_t* payload;
+        uint16_t payloadLength;
         if (POLL_TYPE_HAS_16BIT_PID(m_pollType))
         {
             responsePid = data[1] << 8 | data[2];
+            payload = &data[3];
+            payloadLength = dataLength - 3;
         }
         else
         {
             responsePid = data[1];
+            payload = &data[2];
+            payloadLength = dataLength - 2;
         }
         if (responsePid == m_currentPid)
         {
             ESP_LOGD(
                 TAG,
                 "Success response from %x[%x]:%x length %d (0x%02x 0x%02x 0x%02x 0x%02x%s)",
-                m_id, frame->MsgID, m_currentPid, frameLength - 3, data[3], data[4], data[5], data[6],
+                m_id, frame->MsgID, m_currentPid, payloadLength, payload[0], payload[1], payload[2], payload[3],
                 (frameType == 0 ? "" : " ...")
             );
             time(&m_lastResponseTime);
@@ -578,7 +584,7 @@ void OvmsReToolsPidScanner::IncomingPollFrame(const CAN_frame_t* frame)
                 }
                 std::vector<uint8_t> response;
                 response.reserve(frameLength);
-                std::copy(&data[3], &data[dataLength], std::back_inserter(response));
+                std::copy(payload, &payload[payloadLength], std::back_inserter(response));
                 OvmsMutexLock lock(&m_foundMutex);
                 m_found.push_back(std::make_tuple(frame->MsgID, responsePid, std::move(response)));
             }
@@ -586,7 +592,7 @@ void OvmsReToolsPidScanner::IncomingPollFrame(const CAN_frame_t* frame)
             {
                 OvmsMutexLock lock(&m_foundMutex);
                 m_found.push_back(std::make_tuple(frame->MsgID,
-                    responsePid, std::vector<uint8_t>(&data[3], &data[dataLength])
+                    responsePid, std::vector<uint8_t>(payload, &payload[payloadLength])
                 ));
             }
             if (m_mfRemain == 0u)

@@ -1,10 +1,11 @@
 /*
 ;    Project:       Open Vehicle Monitor System
-;    Module:        CAN logging framework
-;    Date:          18th January 2018
+;    Date:          1st April 2021
 ;
-;    (C) 2018       Michael Balzer
-;    (C) 2019       Mark Webb-Johnson
+;    Changes:
+;    0.0.1  Initial release
+;
+;    (C) 2021       Didier Ernotte
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -25,44 +26,34 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __CANLOG_VFS_H__
-#define __CANLOG_VFS_H__
+#include "vehicle_jaguaripace.h"
+#include "ipace_obd_pids.h"
+#include "metrics_standard.h"
 
-#include "canlog.h"
+#include <algorithm>
+static const char *TAG = "v-jaguaripace";
 
-#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
 
-class canlog_vfs_conn: public canlogconnection
-  {
-  public:
-    canlog_vfs_conn(canlog* logger);
-    virtual ~canlog_vfs_conn();
+void OvmsVehicleJaguarIpace::IncomingBcmPoll(uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain) {
+    uint8_t value8 = data[0];
+    //uint16_t value16 = (data[0] << 8 | data[1]);
+    //uint32_t value24 = (data[0] << 16 | data[1] << 8 | data[2]);
 
-  public:
-    virtual void OutputMsg(CAN_log_message_t& msg, std::string &result);
 
-  public:
-    FILE*               m_file;
-  };
+    ESP_LOGD(TAG, "IncomingBcmPoll, pid=%d, length=%d, remain=%d", pid, length, remain);
+    switch (pid)
+    {
+        case vehicleSpeedPid:
+            StandardMetrics.ms_v_pos_speed->SetValue(value8);
+            ESP_LOGD(TAG, "Speed=%d", value8);
+            break;
+        // case batterySoHPid:
+        //     StandardMetrics.ms_v_bat_soh->SetValue(value8 / 2.0f);
+        //     ESP_LOGD(TAG, "SOH=%f", value8 / 2.0f);
+        //     break;
+        default:
+            ESP_LOGD(TAG, "Unknown PID, pid=%d", pid);
+    }
+}
 
-#endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
 
-class canlog_vfs : public canlog
-  {
-  public:
-    canlog_vfs(std::string path, std::string format);
-    virtual ~canlog_vfs();
-
-  public:
-    virtual bool Open();
-    virtual void Close();
-    virtual std::string GetInfo();
-
-  public:
-    virtual void MountListener(std::string event, void* data);
-
-  public:
-    std::string         m_path;
-  };
-
-#endif // __CANLOG_VFS_H__
