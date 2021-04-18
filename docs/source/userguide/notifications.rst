@@ -223,7 +223,7 @@ degradation over time.
 
 Entries are created at the end of a trip (specifically ``v.e.on`` transition to off). Configure a 
 minimum trip length for logging by the config variable ``notify log.trip.minlength`` or via the web 
-UI.
+UI. If your vehicle does not support the ``v.p.trip`` metric, set the minimum trip length to 0.
 
 You need to enable this log explicitly by configuring a storage time via config param ``notify 
 log.trip.storetime`` (in days) or via the web configuration page. Set to 0/empty to disable the log. 
