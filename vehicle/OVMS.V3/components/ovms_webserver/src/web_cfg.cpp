@@ -1663,7 +1663,8 @@ void OvmsWebServer::HandleCfgNotifications(PageEntry_t& p, PageContext_t& c)
     "\">user manual</a> for details.</p>",
     "min=\"0\" max=\"365\" step=\"1\"", "days");
   c.input("number", "Trip min length", "log_trip_minlength", log_trip_minlength.c_str(), "Default: 0.2 km",
-    "<p>Only trips over at least this distance will be logged.</p>",
+    "<p>Only trips over at least this distance will be logged. If your vehicle does not support the "
+    "<code>v.p.trip</code> metric, set this to 0.</p>",
     "min=\"0\" step=\"0.1\"", "km");
 
   c.input("number", "Grid history log", "log_grid_storetime", log_grid_storetime.c_str(), "Default: empty/0 = disabled",

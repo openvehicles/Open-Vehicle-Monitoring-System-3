@@ -257,9 +257,9 @@ class OvmsCommand : public ExternalRamAllocated
     OvmsCommand* FindCommand(const char* name);
     bool IsSecure() { return m_secure; }
     void Display(OvmsWriter* writer, int level);
+    void PutUsage(OvmsWriter* writer);
 
   private:
-    void PutUsage(OvmsWriter* writer);
     void ExpandUsage(const char* templ, OvmsWriter* writer, std::string& result);
 
   protected:

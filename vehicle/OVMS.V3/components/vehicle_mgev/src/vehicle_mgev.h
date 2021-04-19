@@ -170,6 +170,8 @@ class OvmsVehicleMgEv : public OvmsVehicle
     /// The responses from the software version queries
     std::vector<std::pair<uint32_t, std::vector<char>>> m_versions;
     float mg_cum_energy_charge_wh;
+    bool soc_limit_reached;
+    bool range_limit_reached;
     
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
     // --------------------------------------------------------------------------
