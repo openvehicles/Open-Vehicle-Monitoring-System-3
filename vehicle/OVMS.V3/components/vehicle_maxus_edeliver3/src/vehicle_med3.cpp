@@ -59,17 +59,21 @@ namespace
 static const OvmsVehicle::poll_pid_t obdii_polls[] =
     {
         // VCU Polls
-        { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcusoh, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //SOH
-        { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcusoc, {  360, 30, 30, 30  }, 0, ISOTP_STD }, //SOC Scaled below
+//        { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcusoh, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //SOH
+        { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcusoc, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //SOC Scaled below
         { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcutemp1, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //temp
         { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcutemp2, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //temp
-        { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcupackvolts, {  360, 30, 30, 30  }, 0, ISOTP_STD }, //Pack Voltage
+        { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcupackvolts, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //Pack Voltage
         { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcu12vamps, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //12v amps?
         { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcuchargervolts, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //charger volts at a guess?
         { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcuchargeramps, {  0, 60, 60, 60  }, 0, ISOTP_STD }, //charger amps?
         // BMS Polls
         { bmstx, bmsrx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, cellvolts, {  0, 60, 60, 60  }, 0, ISOTP_STD }, //cell volts
         { bmstx, bmsrx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, celltemps, {  0, 60, 60, 60  }, 0, ISOTP_STD }, //cell temps
+        { bmstx, bmsrx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmssoc, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //bms SOC
+        { bmstx, bmsrx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmssoh, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //bms SOH??
+        { bmstx, bmsrx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmssocraw, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //bms raw SOC
+        { bmstx, bmsrx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, packamps, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //bms hv amps to pack        
         { 0, 0, 0x00, 0x00, { 0, 0, 0, 0 }, 0, 0 }
     };
 }  // anon namespace
@@ -99,6 +103,10 @@ OvmsVehicleMaxed3::OvmsVehicleMaxed3()
         
         // Init VIN:
         memset(m_vin, 0, sizeof(m_vin));
+        
+        // Init Raw Soc:
+        m_soc_raw = MyMetrics.InitFloat("xmg.v.soc.raw", 0, SM_STALE_HIGH, Percentage);
+
         
         // Init Energy:
         med3_cum_energy_charge_wh = 0;
@@ -144,8 +152,14 @@ void OvmsVehicleMaxed3::IncomingPollReply(canbus* bus, uint16_t type, uint16_t p
       case vcusoh: //soh
           StandardMetrics.ms_v_bat_soh->SetValue(value1);
           break;
-      case vcusoc: //soc scaled from 2 - 99
+/*      case vcusoc: //soc scaled from 2 - 99
           StandardMetrics.ms_v_bat_soc->SetValue(value1);
+          break; */
+      case bmssoc: //soc from bms
+          StandardMetrics.ms_v_bat_soc->SetValue(value2 / 100.0f);
+          break;
+      case bmssocraw: //soc from bms
+          m_soc_raw->SetValue(value2 / 100.0f);
           break;
       case vcutemp1:  // temperature??
           StandardMetrics.ms_v_mot_temp->SetValue(value1 / 10.0f);
@@ -156,6 +170,10 @@ void OvmsVehicleMaxed3::IncomingPollReply(canbus* bus, uint16_t type, uint16_t p
       case vcupackvolts:  // Pack Voltage
           StandardMetrics.ms_v_bat_voltage->SetValue(value2 / 10.0f);
           break;
+      case packamps:
+          StandardMetrics.ms_v_bat_current->SetValue(((value2 / 10.0f) - ((value2 / 10.0f) * 2))); // converted to negative
+          StandardMetrics.ms_v_bat_power->SetValue(((value2 / 10.0f) * StandardMetrics.ms_v_bat_voltage->AsFloat()) / 1000.0f);// actual power in watts on AC converted to kw calculated via actual pack data
+          break;
       case vcu12vamps:
           StandardMetrics.ms_v_bat_12v_current->SetValue(value1 / 10.0f);
           break;
@@ -165,7 +183,7 @@ void OvmsVehicleMaxed3::IncomingPollReply(canbus* bus, uint16_t type, uint16_t p
       case vcuchargeramps:
           StandardMetrics.ms_v_charge_current->SetValue(value1);
           StandardMetrics.ms_v_charge_climit->SetValue(value1);
-          StandardMetrics.ms_v_charge_power->SetValue((StandardMetrics.ms_v_charge_current->AsFloat() * (StandardMetrics.ms_v_charge_voltage->AsFloat() )) / 1000); // work out current untill pid found * (value / 10.0f) / 1000.0f
+          StandardMetrics.ms_v_charge_power->SetValue((StandardMetrics.ms_v_charge_current->AsFloat() * (StandardMetrics.ms_v_charge_voltage->AsFloat() )) / 1000.0f); // work out current untill pid found * (value / 10.0f) / 1000.0f
           break;
       case cellvolts:
         {
@@ -201,13 +219,7 @@ void OvmsVehicleMaxed3::IncomingFrameCan1(CAN_frame_t* p_frame)
   {
       
 //setup
-      StandardMetrics.ms_v_env_charging12v->SetValue(StandardMetrics.ms_v_bat_12v_voltage->AsFloat() >= 12.9);
-      StandardMetrics.ms_v_bat_temp->SetValue(m_poll_state); // temp to view poll state
-      
-      if (StandardMetrics.ms_v_env_charging12v->AsBool())
-          StandardMetrics.ms_v_env_awake->SetValue(true);
-      else
-          StandardMetrics.ms_v_env_awake->SetValue(false);
+      StandardMetrics.ms_v_bat_temp->SetValue(StandardMetrics.ms_v_bat_pack_tavg->AsFloat());
       
 // count cumalitive energy
       if(StandardMetrics.ms_v_charge_inprogress->AsBool())
@@ -239,33 +251,31 @@ void OvmsVehicleMaxed3::IncomingFrameCan1(CAN_frame_t* p_frame)
               break;
           
               
-          //Set ideal, est and amps when CANdata received
+          //Set ideal, est  when CANdata received
               float soc = StandardMetrics.ms_v_bat_soc->AsFloat();
-              float vbp = (StandardMetrics.ms_v_bat_power->AsFloat()  / (StandardMetrics.ms_v_bat_voltage->AsFloat() ) * 1000); // work out current untill pid found
                 StandardMetrics.ms_v_bat_range_ideal->SetValue(241 * soc / 100);
                 StandardMetrics.ms_v_bat_range_est->SetValue(241 * soc / 108);
-                StandardMetrics.ms_v_bat_current->SetValue(vbp - (vbp * 2)); // convert to negative
               break;
         }
         default:
           break;
                 
                 
-            case 0x604:  // power
+/*            case 0x604:  // power
                 {
                 float power = d[5];
                 StandardMetrics.ms_v_bat_power->SetValue((power * 42.0f) / 1000.0f);// actual power in watts on AC converted to kw
                 }
-
-            case 0x373: // set status to on
+*/
+ /*           case 0x373: // set status to on
                   {
                       StandardMetrics.ms_v_env_on->SetValue(bool( d[7] & 0x10 ));
                       if (StandardMetrics.ms_v_env_on->AsBool())
                           PollSetState(1);
-                      
+ Shouldnt be needed now
                       break;
                   }
-
+*/
 //            case 0x375:  // set status to driving
 //                {
 //                    StandardMetrics.ms_v_env_on->SetValue(bool( d[5] & 0x10 ));

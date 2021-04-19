@@ -39,11 +39,15 @@ constexpr uint32_t gwmtx = 0x710u;
 constexpr uint32_t gwmrx = 0x790u;
 
 // BMS PIDs
+constexpr uint16_t bmssoh = 0xe053u;
+constexpr uint16_t bmssoc = 0xe095u;
+constexpr uint16_t bmssocraw = 0xe096u;
 constexpr uint16_t cellvolts = 0xe113u;
 constexpr uint16_t celltemps = 0xe114u;
+constexpr uint16_t packamps = 0xe131u;
 
 // VCU PIDs
-constexpr uint16_t vcusoh = 0xe001u;
+//constexpr uint16_t vcusoh = 0xe001u;
 constexpr uint16_t vcusoc = 0xe002u;
 constexpr uint16_t vcutemp1 = 0xe005u;
 constexpr uint16_t vcutemp2 = 0xe006u;

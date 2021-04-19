@@ -44,6 +44,8 @@ class OvmsVehicleMaxed3 : public OvmsVehicle
   public:
     OvmsVehicleMaxed3();
     ~OvmsVehicleMaxed3();
+      
+    OvmsMetricFloat* m_soc_raw;
 
   protected:
       std::string         m_rxbuf;
