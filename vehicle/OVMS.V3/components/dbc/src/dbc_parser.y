@@ -183,6 +183,8 @@ dbc_section:
   | message_section
   | signal_section
   | value_section
+  | attribute_section
+  | attribute_default_section
   | comment_section
   ;
 
@@ -458,6 +460,26 @@ value_list:
     free($3);
     }
     ;
+
+/************************************************************************/
+/* attribute_section_list (BA_DEF_)                                     */
+/************************************************************************/
+
+/* BA_DEF_ BO_ "GenMsgBackgroundColor" STRING ; */
+attribute_section:
+    T_BA_DEF attribute_object_type T_STRING_VAL T_STRING T_SEMICOLON
+  | T_BA_DEF attribute_object_type T_STRING_VAL T_INT T_INT_VAL T_INT_VAL T_SEMICOLON
+
+attribute_object_type: T_BU | T_BO | T_SG | T_EV
+
+/************************************************************************/
+/* attribute_default_section_list (BA_DEF_DEF_)                         */
+/************************************************************************/
+
+/* BA_DEF_DEF_ "GenMsgBackgroundColor" "#1e1e1e"; */
+attribute_default_section:
+    T_BA_DEF_DEF T_STRING_VAL T_STRING_VAL T_SEMICOLON
+  | T_BA_DEF_DEF T_STRING_VAL T_INT_VAL T_SEMICOLON
 
 /************************************************************************/
 /* comment_section_list (CM_)                                           */
