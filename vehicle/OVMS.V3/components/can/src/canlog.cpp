@@ -231,7 +231,7 @@ void canlogconnection::OutputMsg(CAN_log_message_t& msg, std::string &result)
     {
     if (result.length()>0)
       {
-      if (m_nc->send_mbuf.len < 4096)
+      if (m_nc->send_mbuf.len < 32768)
         {
         mg_send(m_nc, (const char*)result.c_str(), result.length());
         }
@@ -252,7 +252,7 @@ void canlogconnection::TransmitCallback(uint8_t *buffer, size_t len)
   ESP_LOGD(TAG,"TransmitCallback on %s (%d bytes)",m_peer.c_str(),len);
 
   m_msgcount++;
-  if ((m_nc != NULL)&&(m_nc->send_mbuf.len < 4096))
+  if ((m_nc != NULL)&&(m_nc->send_mbuf.len < 32768))
     {
     mg_send(m_nc, buffer, len);
     }
