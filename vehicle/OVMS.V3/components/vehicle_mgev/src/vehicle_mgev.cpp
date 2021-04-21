@@ -799,31 +799,43 @@ void OvmsVehicleMgEv::processEnergy()
         
         // Calculate time to charge to SoC Limit
         if (limit_soc > 0)
-          {
-          // if limit_soc is set, then calculate remaining time to limit_soc
-          int minsremaining_soc = calcMinutesRemaining(limit_soc);
-
-          StandardMetrics.ms_v_charge_duration_soc->SetValue(minsremaining_soc, Minutes);
-          //ESP_LOGV(TAG, "Time remaining: %d mins to %0.0f%% soc", minsremaining_soc, limit_soc);
-          }
-
+        {
+            // if limit_soc is set, then calculate remaining time to limit_soc
+            int minsremaining_soc = calcMinutesRemaining(limit_soc);
+            StandardMetrics.ms_v_charge_duration_soc->SetValue(minsremaining_soc, Minutes);
+            if ( minsremaining_soc == 0 && !soc_limit_reached && limit_soc >= StandardMetrics.ms_v_bat_soc->AsFloat(100))
+            {
+                if (!soc_limit_reached)
+                {
+                    MyNotify.NotifyStringf("info", "charge.limit.soc", "Charge limit of %d%% reached", (int) limit_soc);
+                    soc_limit_reached = true;
+                }
+            }
+            //ESP_LOGV(TAG, "Time remaining: %d mins to %0.0f%% soc", minsremaining_soc, limit_soc);
+        }
+        
         // Calculate time to charge to Range Limit
-        if (limit_range > 0 && max_range > 0.0)
-          {
-          // if range limit is set, then compute required soc and then calculate remaining time to that soc
-          float range_soc = limit_range / max_range * 100.0;
-          int   minsremaining_range = calcMinutesRemaining(range_soc);
-
-          StandardMetrics.ms_v_charge_duration_range->SetValue(minsremaining_range, Minutes);
-          //ESP_LOGV(TAG, "Time remaining: %d mins for %0.0f km (%0.0f%% soc)", minsremaining_range, limit_range, range_soc);
-          }
-    // When we are not charging set back to zero ready for next charge.
+        if (limit_range > 0.0 && max_range > 0.0)
+        {
+            // if range limit is set, then compute required soc and then calculate remaining time to that soc
+            float range_soc = limit_range / max_range * 100.0;
+            int   minsremaining_range = calcMinutesRemaining(range_soc);
+            StandardMetrics.ms_v_charge_duration_range->SetValue(minsremaining_range, Minutes);
+            if ( minsremaining_range == 0 && !range_limit_reached && range_soc >= StandardMetrics.ms_v_bat_soc->AsFloat(100))
+            {
+                MyNotify.NotifyStringf("info", "charge.limit.soc", "Charge limit of %dkm reached", (int) limit_range);
+                range_limit_reached = true;
+            }
+            ESP_LOGV(TAG, "Time remaining: %d mins for %0.0f km (%0.0f%% soc)", minsremaining_range, limit_range, range_soc);
+        }
+        // When we are not charging set back to zero ready for next charge.
     }
     else
     {
         mg_cum_energy_charge_wh=0;
         StandardMetrics.ms_v_charge_duration_full->SetValue(0);
         StandardMetrics.ms_v_charge_duration_soc->SetValue(0);
+        StandardMetrics.ms_v_charge_duration_range->SetValue(0);
         soc_limit_reached = false;
         range_limit_reached = false;
     }
@@ -848,25 +860,7 @@ int OvmsVehicleMgEv::calcMinutesRemaining(float target_soc)
     // If we have reached the target or over 99.9% just return 0
     if (bat_soc > target_soc || bat_soc > 99.9)
     {
-        // Check if calculating mins remaining for SOC
-        if (target_soc == StandardMetrics.ms_v_charge_limit_soc->AsFloat(0))
-        {
-            if (!soc_limit_reached)
-            {
-                MyNotify.NotifyString("info", "charge.limit.soc", "Charge Limit SOC Reached");
-                soc_limit_reached = true;
-            }
-        }
-        // Check if calculating mins remaining for Range
-        if (target_soc == StandardMetrics.ms_v_charge_limit_range->AsFloat(0))
-        {
-            if (!range_limit_reached)
-            {
-                MyNotify.NotifyString("info", "charge.limit.soc", "Charge Limit Range Reached");
-                range_limit_reached = true;
-            }
-        }
-        return 0;   // Done!
+                return 0;   // Done!
     }
     // If the Target SoC is above the Top Up Value and Top Up has not started
     // Calculate time left before top up starts and add Top Up time

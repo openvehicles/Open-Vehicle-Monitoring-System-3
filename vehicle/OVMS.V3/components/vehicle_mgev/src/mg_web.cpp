@@ -189,11 +189,11 @@ void OvmsVehicleMgEv::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
 
   c.input_slider("Sufficient range", "suffrange", 3, "km",
     atof(suffrange.c_str()) > 0, atof(suffrange.c_str()), 0, 0, 300, 1,
-    "<p>Default 0=off. Notify/stop charge when reaching this level.</p>");
+    "<p>Default 0=off. Notify when reaching this level.</p>");
 
   c.input_slider("Sufficient SOC", "suffsoc", 3, "%",
     atof(suffsoc.c_str()) > 0, atof(suffsoc.c_str()), 0, 0, 100, 1,
-    "<p>Default 0=off. Notify/stop charge when reaching this level.</p>");
+    "<p>Default 0=off. Notify when reaching this level.</p>");
 
   c.fieldset_end();
 
