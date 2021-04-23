@@ -102,9 +102,10 @@ OvmsVehicleFactory::OvmsVehicleFactory()
       "request", "Send OBD2/UDS request, output response");
     cmd_obdreq->RegisterCommand(
       "device", "Send OBD2/ISOTP request to a device", obdii_request,
-      "[-e] [-t<timeout_ms>] <txid> <rxid> <request>\n"
+      "[-e|-E] [-t<timeout_ms>] <txid> <rxid> <request>\n"
       "Give <txid> and <rxid> as hexadecimal CAN IDs,"
-      " add -e to use ISO-TP extended addressing (19 bit IDs).\n"
+      " add -e to use ISO-TP extended addressing (19 bit IDs via standard frames)\n"
+      " or -E to use ISO-TP via extended frames (29 bit IDs).\n"
       "<request> is the hex string of the request type + arguments,"
       " e.g. '223a4b' = read data from PID 0x3a4b.\n"
       "Default timeout is 100 ms.",
