@@ -58,6 +58,7 @@ struct DashboardConfig;
 // Protocol variant:
 #define ISOTP_STD                       0     // standard addressing (11 bit IDs)
 #define ISOTP_EXTADR                    1     // extended addressing (19 bit IDs)
+#define ISOTP_EXTFRAME                  2     // extended frame mode (29 bit IDs)
 
 // OBD2/UDS Polling types supported:
 //  (see https://en.wikipedia.org/wiki/OBD-II_PIDs
@@ -413,7 +414,7 @@ class OvmsVehicle : public InternalRamAllocated
         };
       uint16_t polltime[VEHICLE_POLL_NSTATES];  // poll intervals in seconds for used poll states
       uint8_t  pollbus;                         // 0 = default CAN bus from PollSetPidList(), 1…4 = specific
-      uint8_t  protocol;                        // ISOTP_STD / ISOTP_EXTADR
+      uint8_t  protocol;                        // ISOTP_STD / ISOTP_EXTADR / ISOTP_EXTFRAME
       } poll_pid_t;
 
   protected:
@@ -424,7 +425,7 @@ class OvmsVehicle : public InternalRamAllocated
     const poll_pid_t* m_poll_plist;           // Head of poll list
     const poll_pid_t* m_poll_plcur;           // Current position in poll list
     uint32_t          m_poll_ticker;          // Polling ticker
-    uint8_t           m_poll_protocol;        // ISOTP_STD / ISOTP_EXTADR
+    uint8_t           m_poll_protocol;        // ISOTP_STD / ISOTP_EXTADR / ISOTP_EXTFRAME
     uint32_t          m_poll_moduleid_sent;   // ModuleID last sent
     uint32_t          m_poll_moduleid_low;    // Expected response moduleid low mark
     uint32_t          m_poll_moduleid_high;   // Expected response moduleid high mark

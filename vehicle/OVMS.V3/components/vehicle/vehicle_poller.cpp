@@ -303,8 +303,12 @@ void OvmsVehicle::PollerSend(bool fromTicker)
       memset(&txframe,0,sizeof(txframe));
       txframe.origin = m_poll_bus;
       txframe.callback = &m_poll_txcallback;
-      txframe.FIR.B.FF = CAN_frame_std;
       txframe.FIR.B.DLC = 8;
+
+      if (m_poll_protocol == ISOTP_EXTFRAME)
+        txframe.FIR.B.FF = CAN_frame_ext;
+      else
+        txframe.FIR.B.FF = CAN_frame_std;
 
       if (m_poll_protocol == ISOTP_EXTADR)
         {
@@ -621,8 +625,12 @@ void OvmsVehicle::PollerReceive(CAN_frame_t* frame, uint32_t msgid)
       uint32_t txid;
       memset(&txframe,0,sizeof(txframe));
       txframe.origin = frame->origin;
-      txframe.FIR.B.FF = CAN_frame_std;
       txframe.FIR.B.DLC = 8;
+
+      if (m_poll_protocol == ISOTP_EXTFRAME)
+        txframe.FIR.B.FF = CAN_frame_ext;
+      else
+        txframe.FIR.B.FF = CAN_frame_std;
 
       if (m_poll_moduleid_sent == 0x7df)
         {
@@ -700,7 +708,7 @@ void OvmsVehicle::PollerReceive(CAN_frame_t* frame, uint32_t msgid)
  *  @param request      Request to send (binary string) (only single frame requests supported)
  *  @param response     Response buffer (binary string) (multiple response frames assembled)
  *  @param timeout_ms   Timeout for poller/response in milliseconds
- *  @param protocol     Protocol variant: ISOTP_STD / ISOTP_EXTADR
+ *  @param protocol     Protocol variant: ISOTP_STD / ISOTP_EXTADR / ISOTP_EXTFRAME
  *  
  *  @return             POLLSINGLE_OK         (0)   -- success, response is valid
  *                      POLLSINGLE_TIMEOUT    (-1)  -- timeout/poller unavailable
@@ -799,7 +807,7 @@ int OvmsVehicle::PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
  *  @param pid          … and PID to poll
  *  @param response     Response buffer (binary string) (multiple response frames assembled)
  *  @param timeout_ms   Timeout for poller/response in milliseconds
- *  @param protocol     Protocol variant: ISOTP_STD / ISOTP_EXTADR
+ *  @param protocol     Protocol variant: ISOTP_STD / ISOTP_EXTADR / ISOTP_EXTFRAME
  *  
  *  @return             POLLSINGLE_OK         ( 0)  -- success, response is valid
  *                      POLLSINGLE_TIMEOUT    (-1)  -- timeout/poller unavailable
