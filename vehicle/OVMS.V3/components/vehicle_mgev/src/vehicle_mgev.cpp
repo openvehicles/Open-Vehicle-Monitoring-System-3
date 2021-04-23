@@ -877,7 +877,7 @@ int OvmsVehicleMgEv::calcMinutesRemaining(float target_soc)
         remaining_mins  = (int) roundf(remaining_hours * 60.0);
         //remaining_mins = (target_soc - bat_soc) / (target_soc - top_up_soc) * top_up_time;
     }
-    return MIN( 1440, remaining_mins);
+    return MIN( 2880, remaining_mins);
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleMgEv::CommandWakeup()
