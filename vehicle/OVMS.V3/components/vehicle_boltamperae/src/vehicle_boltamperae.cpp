@@ -1,6 +1,6 @@
 /*
 ;    Project:       Open Vehicle Monitor System
-;    Module:        Vehicle Chevrolet Bolt & Opel Ampera-E
+;    Module:        Vehicle Chevrolet Bolt & Opel Ampera-e
 ;    Date:          2021-04-23
 ;
 ;    Changes:
@@ -32,7 +32,7 @@
 static const char *TAG = "v-bae";
 
 #include <stdio.h>
-#include "vehicle_boltamperae.h"
+#include "vehicle_boltAmperae.h"
 #include "ovms_webserver.h"
 
 // Vehicle states:
@@ -53,7 +53,7 @@ static const char *TAG = "v-bae";
 
 
 /**
- * OvmsVehicleChevroletBoltOpelAmperaE PID list
+ * OvmsVehicleChevroletBoltOpelAmperae PID list
  */
 
 #define UDS_READ8             0x21
@@ -73,11 +73,11 @@ static const OvmsVehicle::poll_pid_t standard_polls[] =
 
 
 /**
- * OvmsVehicleChevroletBoltOpelAmperaE constructor
+ * OvmsVehicleChevroletBoltOpelAmperae constructor
  */
-OvmsVehicleChevroletBoltOpelAmperaE::OvmsVehicleChevroletBoltOpelAmperaE()
+OvmsVehicleChevroletBoltOpelAmperae::OvmsVehicleChevroletBoltOpelAmperae()
 {
-  ESP_LOGI(TAG, "Chevrolet Bolt / Opel Ampera-E vehicle module");
+  ESP_LOGI(TAG, "Chevrolet Bolt / Opel Ampera-e vehicle module");
 
   // Init CAN:
   RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
@@ -106,11 +106,11 @@ OvmsVehicleChevroletBoltOpelAmperaE::OvmsVehicleChevroletBoltOpelAmperaE()
 
 
 /**
- * OvmsVehicleChevroletBoltOpelAmperaE destructor
+ * OvmsVehicleChevroletBoltOpelAmperae destructor
  */
-OvmsVehicleChevroletBoltOpelAmperaE::~OvmsVehicleChevroletBoltOpelAmperaE()
+OvmsVehicleChevroletBoltOpelAmperae::~OvmsVehicleChevroletBoltOpelAmperae()
 {
-  ESP_LOGI(TAG, "Shutdown Opel Ampera-E 2017-2018 vehicle module");
+  ESP_LOGI(TAG, "Shutdown Bolt Ampera-e vehicle module");
   PollSetPidList(m_can1, NULL);
   MyWebServer.DeregisterPage("/xbae/battmon");
   MyMetrics.DeregisterMetric(m_xbae_charge_state);
@@ -121,7 +121,7 @@ OvmsVehicleChevroletBoltOpelAmperaE::~OvmsVehicleChevroletBoltOpelAmperaE()
 /**
  * IncomingPollReply: framework callback: process response
  */
-void OvmsVehicleChevroletBoltOpelAmperaE::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
+void OvmsVehicleChevroletBoltOpelAmperae::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
 {
   // init / fill rx buffer:
   if (m_poll_ml_frame == 0) {
@@ -237,7 +237,7 @@ void OvmsVehicleChevroletBoltOpelAmperaE::IncomingPollReply(canbus* bus, uint16_
  * PollerStateTicker: framework callback: check for state changes
  *  This is called by VehicleTicker1() just before the next PollerSend().
  */
-void OvmsVehicleChevroletBoltOpelAmperaE::PollerStateTicker()
+void OvmsVehicleChevroletBoltOpelAmperae::PollerStateTicker()
 {
   bool car_online = (m_can1->GetErrorState() < CAN_errorstate_passive && !m_xbae_charge_state->IsStale());
   int charge_state = m_xbae_charge_state->AsInt();
@@ -323,13 +323,13 @@ void OvmsVehicleChevroletBoltOpelAmperaE::PollerStateTicker()
  * Vehicle framework registration
  */
 
-class OvmsVehicleChevroletBoltOpelAmperaEInit
+class OvmsVehicleChevroletBoltOpelAmperaeInit
 {
-  public: OvmsVehicleChevroletBoltOpelAmperaEInit();
-} MyOvmsVehicleChevroletBoltOpelAmperaEInit  __attribute__ ((init_priority (9000)));
+  public: OvmsVehicleChevroletBoltOpelAmperaeInit();
+} MyOvmsVehicleChevroletBoltOpelAmperaeInit  __attribute__ ((init_priority (9000)));
 
-OvmsVehicleChevroletBoltOpelAmperaEInit::OvmsVehicleChevroletBoltOpelAmperaEInit()
+OvmsVehicleChevroletBoltOpelAmperaeInit::OvmsVehicleChevroletBoltOpelAmperaeInit()
 {
-  ESP_LOGI(TAG, "Chevrolet Bolt / Opel Ampera-E (9000)");
-  MyVehicleFactory.RegisterVehicle<OvmsVehicleChevroletBoltOpelAmperaE>("BAE","Bolt/Ampera-E");
+  ESP_LOGI(TAG, "Chevrolet Bolt / Opel Ampera-e (9000)");
+  MyVehicleFactory.RegisterVehicle<OvmsVehicleChevroletBoltOpelAmperae>("BAE","Bolt/Ampera-e");
 }

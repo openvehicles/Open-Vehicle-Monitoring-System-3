@@ -1,11 +1,11 @@
 /*
 ;    Project:       Open Vehicle Monitor System
-;    Module:        Vehicle Chevrolet Bolt & Opel Ampera-E
+;    Module:        Vehicle Chevrolet Bolt & Opel Ampera-e
 ;    Date:          2021-03-12
 ;
 ;    Changes:
 ;    1.0  Initial release
-;    1.5  Update to support Chevrolet Bolt & Opel Ampera-E
+;    1.5  Update to support Chevrolet Bolt & Opel Ampera-e
 ;
 ;    (c) 2021       Michael Balzer <dexter@dexters-web.de>
 ;
@@ -28,18 +28,18 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __VEHICLE_BOLTAMPERAE_H__
-#define __VEHICLE_BOLTAMPERAE_H__
+#ifndef __VEHICLE_BOLTAmperae_H__
+#define __VEHICLE_BOLTAmperae_H__
 
 #include "vehicle.h"
 
 using namespace std;
 
-class OvmsVehicleChevroletBoltOpelAmperaE : public OvmsVehicle
+class OvmsVehicleChevroletBoltOpelAmperae : public OvmsVehicle
 {
   public:
-    OvmsVehicleChevroletBoltOpelAmperaE();
-    ~OvmsVehicleChevroletBoltOpelAmperaE();
+    OvmsVehicleChevroletBoltOpelAmperae();
+    ~OvmsVehicleChevroletBoltOpelAmperae();
 
   protected:
     void PollerStateTicker();
