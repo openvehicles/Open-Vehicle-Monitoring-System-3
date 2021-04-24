@@ -322,6 +322,13 @@ config OVMS_VEHICLE_VOLTAMPERA
     help
         Enable to include support for Volt/Ampera vehicles.
 
+config OVMS_VEHICLE_BOLTAMPERAE
+    bool "Include support for Bolt/Ampera-E vehicles"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for Bolt/Ampera-E vehicles.
+
 config OVMS_VEHICLE_THINKCITY
     bool "Include support for Think City vehicles"
     default y
