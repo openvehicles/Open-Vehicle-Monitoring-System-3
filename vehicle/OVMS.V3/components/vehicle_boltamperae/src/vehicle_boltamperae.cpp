@@ -331,5 +331,5 @@ class OvmsVehicleChevroletBoltOpelAmperaEInit
 OvmsVehicleChevroletBoltOpelAmperaEInit::OvmsVehicleChevroletBoltOpelAmperaEInit()
 {
   ESP_LOGI(TAG, "Chevrolet Bolt / Opel Ampera-E (9000)");
-  MyVehicleFactory.RegisterVehicle<OvmsVehicleChevroletBoltOpelAmperaE>("BAE","Chevrolet Bolt / Opel Ampera-E");
+  MyVehicleFactory.RegisterVehicle<OvmsVehicleChevroletBoltOpelAmperaE>("BAE","Bolt/Ampera-E");
 }
