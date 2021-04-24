@@ -62,11 +62,11 @@ static const char *TAG = "v-bae";
 static const OvmsVehicle::poll_pid_t standard_polls[] =
 {
   { 0x7e4, 0x7ec, UDS_READ16,    0x8334, {   0,   10,   10 }, 0, ISOTP_STD }, //SOC
- // { 0x7e4, 0x7ec, UDS_READ8,    0x02, {   0,  15,  15 }, 0, ISOTP_STD },
- // { 0x7e4, 0x7ec, UDS_READ8,    0x03, {   0,  15,  15 }, 0, ISOTP_STD },
- // { 0x7e4, 0x7ec, UDS_READ8,    0x04, {   0,  15,  15 }, 0, ISOTP_STD },
- // { 0x7e4, 0x7ec, UDS_READ8,    0x05, {   0,  15,  15 }, 0, ISOTP_STD },
-  { 0x7e6, 0x7ee, UDS_READ16,    0x801F, {   0,  60, 120 }, 0, ISOTP_STD }, //ambient temp
+  { 0x7e4, 0x7ec, UDS_READ8,    0x4181, {   0,  15,  15 }, 0, ISOTP_STD },    // Read battery cell voltages 1-32
+  { 0x7e4, 0x7ec, UDS_READ8,   0x4201, {   0,  15,  15 }, 0, ISOTP_STD },     // Read battery cell voltages 33-64
+  { 0x7e4, 0x7ec, UDS_READ8,   0x4221, {   0,  15,  15 }, 0, ISOTP_STD },     // Read battery cell voltages 65-96
+  { 0x7e4, 0x7ec, UDS_READ8,    0x40D7, {   0,  15,  15 }, 0, ISOTP_STD },    // Read battery module temperatures 6-12
+  { 0x7e6, 0x7ee, UDS_READ16,    0x801F, {   0,  60, 120 }, 0, ISOTP_STD },   //ambient temp
  // { 0x7c6, 0x7ce, UDS_READ16, 0xb002, {   0,  30,   0 }, 0, ISOTP_STD },
   POLL_LIST_END
 };
@@ -167,7 +167,7 @@ void OvmsVehicleChevroletBoltOpelAmperaE::IncomingPollReply(canbus* bus, uint16_
       break;
     }
 
-    case 0x02:
+    case 0x4181:
     {
       // Read battery cell voltages 1-32:
       BmsRestartCellVoltages();
@@ -176,7 +176,7 @@ void OvmsVehicleChevroletBoltOpelAmperaE::IncomingPollReply(canbus* bus, uint16_
       }
       break;
     }
-    case 0x03:
+    case 0x4201:
     {
       // Read battery cell voltages 33-64:
       for (int i = 0; i < 32; i++) {
@@ -184,7 +184,7 @@ void OvmsVehicleChevroletBoltOpelAmperaE::IncomingPollReply(canbus* bus, uint16_
       }
       break;
     }
-    case 0x04:
+    case 0x4221:
     {
       // Read battery cell voltages 65-96:
       for (int i = 0; i < 32; i++) {
@@ -193,7 +193,7 @@ void OvmsVehicleChevroletBoltOpelAmperaE::IncomingPollReply(canbus* bus, uint16_
       break;
     }
 
-    case 0x05:
+    case 0x40D7:
     {
       // Read battery module temperatures 6-12:
       for (int i = 0; i < 7; i++) {
