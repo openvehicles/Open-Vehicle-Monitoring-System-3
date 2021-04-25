@@ -88,6 +88,7 @@ class OvmsVehicleMgEv : public OvmsVehicle
     
     void processEnergy();
     float calculateSoc(uint16_t value);
+    int calcMinutesRemaining(float target_soc);
 
     void IncomingPollFrame(CAN_frame_t* frame);
     bool SendPollMessage(canbus* bus, uint16_t id, uint8_t type, uint16_t pid);
@@ -169,6 +170,8 @@ class OvmsVehicleMgEv : public OvmsVehicle
     /// The responses from the software version queries
     std::vector<std::pair<uint32_t, std::vector<char>>> m_versions;
     float mg_cum_energy_charge_wh;
+    bool soc_limit_reached;
+    bool range_limit_reached;
     
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
     // --------------------------------------------------------------------------
@@ -179,6 +182,7 @@ class OvmsVehicleMgEv : public OvmsVehicle
     void WebInit();
     void WebDeInit();
     static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
+    static void WebCfgBattery(PageEntry_t& p, PageContext_t& c);
     void GetDashboardConfig(DashboardConfig& cfg);
     static void WebDispChgMetrics(PageEntry_t &p, PageContext_t &c);
 #endif //CONFIG_OVMS_COMP_WEBSERVER
