@@ -395,16 +395,16 @@ void canformat_gvret_binary::PopulateBusList12(gvret_replymsg_t* r)
 
   canbus* bus = (canbus*)MyPcpApp.FindDeviceByName("can1");
   r->body.get_canbus_params.can1_mode = (bus->m_mode != CAN_MODE_OFF) | ((bus->m_mode == CAN_MODE_LISTEN)<<4);
-  r->body.get_canbus_params.can1_speed = (int)bus->m_speed * 1000;
+  r->body.get_canbus_params.can1_speed = MAP_CAN_SPEED(bus->m_speed);
 
   bus = (canbus*)MyPcpApp.FindDeviceByName("can2");
   r->body.get_canbus_params.can2_mode = (bus->m_mode != CAN_MODE_OFF) | ((bus->m_mode == CAN_MODE_LISTEN)<<4);
-  r->body.get_canbus_params.can2_speed = (int)bus->m_speed * 1000;
+  r->body.get_canbus_params.can2_speed = MAP_CAN_SPEED(bus->m_speed);
   }
 
 void canformat_gvret_binary::PopulateBusList3(gvret_replymsg_t* r)
   {
   canbus* bus = (canbus*)MyPcpApp.FindDeviceByName("can3");
   r->body.get_ext_buses.swcan_mode = (bus->m_mode != CAN_MODE_OFF) | ((bus->m_mode == CAN_MODE_LISTEN)<<4);
-  r->body.get_ext_buses.swcan_speed = (int)bus->m_speed * 1000;
+  r->body.get_ext_buses.swcan_speed = MAP_CAN_SPEED(bus->m_speed);
   }
