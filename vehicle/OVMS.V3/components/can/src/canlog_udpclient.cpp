@@ -144,7 +144,7 @@ bool canlog_udpclient::Open()
       mg_connection* nc;
       if ((nc = mg_connect_opt(mgr, dest.c_str(), tcMongooseHandler, opts)) != NULL)
         {
-        canlogconnection* clc = new canlogconnection(this);
+        canlogconnection* clc = new canlogconnection(this, m_format, m_mode);
         clc->m_nc = nc;
         clc->m_peer = m_path;
         m_connmap[nc] = clc;
@@ -177,7 +177,7 @@ void canlog_udpclient::Close()
     ESP_LOGI(TAG, "Closed UDP client log: %s", GetStats().c_str());
     if (m_connmap.size() > 0)
       {
-      OvmsMutexLock lock(&m_cmmutex);
+      OvmsRecMutexLock lock(&m_cmmutex);
       for (conn_map_t::iterator it=m_connmap.begin(); it!=m_connmap.end(); ++it)
         {
         it->first->flags |= MG_F_CLOSE_IMMEDIATELY;
@@ -200,14 +200,13 @@ std::string canlog_udpclient::GetInfo()
 
 void canlog_udpclient::MongooseHandler(struct mg_connection *nc, int ev, void *p)
   {
-  OvmsMutexLock lock(&m_cmmutex);
-
   switch (ev)
     {
     case MG_EV_CLOSE:
       ESP_LOGV(TAG, "MongooseHandler(MG_EV_CLOSE)");
       if (m_isopen)
         {
+        OvmsRecMutexLock lock(&m_cmmutex);
         ESP_LOGE(TAG,"Disconnected from %s",m_path.c_str());
         m_isopen = false;
         auto k = m_connmap.find(nc);
@@ -224,6 +223,7 @@ void canlog_udpclient::MongooseHandler(struct mg_connection *nc, int ev, void *p
       size_t used = nc->recv_mbuf.len;
       if (m_formatter != NULL)
         {
+        OvmsRecMutexLock lock(&m_cmmutex);
         canlogconnection* clc = NULL;
         auto k = m_connmap.find(nc);
         if (k != m_connmap.end()) clc = k->second;

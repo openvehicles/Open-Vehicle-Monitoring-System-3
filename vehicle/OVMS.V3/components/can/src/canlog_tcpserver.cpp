@@ -195,7 +195,7 @@ void canlog_tcpserver::Close()
     {
     if (m_connmap.size() > 0)
       {
-      OvmsMutexLock lock(&m_cmmutex);
+      OvmsRecMutexLock lock(&m_cmmutex);
       for (conn_map_t::iterator it=m_connmap.begin(); it!=m_connmap.end(); ++it)
         {
         it->first->flags |= MG_F_CLOSE_IMMEDIATELY;
@@ -222,26 +222,22 @@ void canlog_tcpserver::MongooseHandler(struct mg_connection *nc, int ev, void *p
   {
   char addr[32];
 
-  OvmsMutexLock lock(&m_cmmutex);
-
   switch (ev)
     {
     case MG_EV_ACCEPT:
       {
       // New network connection has arrived
+      OvmsRecMutexLock lock(&m_cmmutex);
       mg_sock_addr_to_str(&nc->sa, addr, sizeof(addr), MG_SOCK_STRINGIFY_IP);
       ESP_LOGI(TAG, "Log service connection from %s",addr);
-      canlogconnection* clc = new canlogconnection(this);
+      canlogconnection* clc = new canlogconnection(this, m_format, m_mode);
       clc->m_nc = nc;
       clc->m_peer = std::string(addr);
       m_connmap[nc] = clc;
-      if (m_formatter != NULL)
+      std::string result = clc->m_formatter->getheader();
+      if (result.length()>0)
         {
-        std::string result = m_formatter->getheader();
-        if (result.length()>0)
-          {
-          mg_send(nc, (const char*)result.c_str(), result.length());
-          }
+        mg_send(nc, (const char*)result.c_str(), result.length());
         }
       break;
       }
@@ -249,6 +245,7 @@ void canlog_tcpserver::MongooseHandler(struct mg_connection *nc, int ev, void *p
     case MG_EV_CLOSE:
       {
       // Network connection has gone
+      OvmsRecMutexLock lock(&m_cmmutex);
       auto k = m_connmap.find(nc);
       if (k != m_connmap.end())
         {
@@ -270,7 +267,7 @@ void canlog_tcpserver::MongooseHandler(struct mg_connection *nc, int ev, void *p
         canlogconnection* clc = NULL;
         auto k = m_connmap.find(nc);
         if (k != m_connmap.end()) clc = k->second;
-        used = m_formatter->Serve((uint8_t*)nc->recv_mbuf.buf, used, clc);
+        used = clc->m_formatter->Serve((uint8_t*)nc->recv_mbuf.buf, used, clc);
         }
       if (used > 0)
         {
