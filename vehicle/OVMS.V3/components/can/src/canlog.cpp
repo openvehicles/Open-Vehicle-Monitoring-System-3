@@ -92,7 +92,7 @@ void can_log_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
       #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
       if (cl->m_connmap.size() > 0)
         {
-        OvmsMutexLock lock(&cl->m_cmmutex);
+        OvmsRecMutexLock lock(&cl->m_cmmutex);
         for (canlog::conn_map_t::iterator it=cl->m_connmap.begin(); it!=cl->m_connmap.end(); ++it)
           {
           canlogconnection* clc = it->second;
@@ -115,7 +115,7 @@ void can_log_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
   else
     {
     // Show the status of all loggers
-    OvmsMutexLock lock(&MyCan.m_loggermap_mutex);
+    OvmsRecMutexLock lock(&MyCan.m_loggermap_mutex);
     for (can::canlog_map_t::iterator it=MyCan.m_loggermap.begin(); it!=MyCan.m_loggermap.end(); ++it)
       {
       canlog* cl = it->second;
@@ -126,7 +126,7 @@ void can_log_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
       #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
       if (cl->m_connmap.size() > 0)
         {
-        OvmsMutexLock lock(&cl->m_cmmutex);
+        OvmsRecMutexLock lock(&cl->m_cmmutex);
         for (canlog::conn_map_t::iterator it=cl->m_connmap.begin(); it!=cl->m_connmap.end(); ++it)
           {
           canlogconnection* clc = it->second;
@@ -153,7 +153,7 @@ void can_log_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
   else
     {
     // Show the list of all loggers
-    OvmsMutexLock lock(&MyCan.m_loggermap_mutex);
+    OvmsRecMutexLock lock(&MyCan.m_loggermap_mutex);
     for (can::canlog_map_t::iterator it=MyCan.m_loggermap.begin(); it!=MyCan.m_loggermap.end(); ++it)
       {
       canlog* cl = it->second;
@@ -195,9 +195,11 @@ OvmsCanLogInit::OvmsCanLogInit()
 
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
 
-canlogconnection::canlogconnection(canlog* logger)
+canlogconnection::canlogconnection(canlog* logger, std::string format, canformat::canformat_serve_mode_t mode)
   {
   m_logger = logger;
+  m_formatter = MyCanFormatFactory.NewFormat(format.c_str());
+  m_formatter->SetServeMode(mode);
   m_nc = NULL;
   m_ispaused = false;
   m_filters = NULL;
@@ -213,6 +215,11 @@ canlogconnection::~canlogconnection()
     {
     delete m_filters;
     m_filters = NULL;
+    }
+  if (m_formatter != NULL)
+    {
+    delete m_formatter;
+    m_formatter = NULL;
     }
   }
 
@@ -330,6 +337,7 @@ canlog::canlog(const char* type, std::string format, canformat::canformat_serve_
   {
   m_type = type;
   m_format = format;
+  m_mode = mode;
   m_formatter = MyCanFormatFactory.NewFormat(format.c_str());
   m_formatter->SetServeMode(mode);
   m_filter = NULL;
@@ -452,7 +460,7 @@ void canlog::OutputMsg(CAN_log_message_t& msg)
   std::string result = m_formatter->get(&msg);
   if (result.length()>0)
     {
-    OvmsMutexLock lock(&m_cmmutex);
+    OvmsRecMutexLock lock(&m_cmmutex);
     for (conn_map_t::iterator it=m_connmap.begin(); it!=m_connmap.end(); ++it)
       {
       if (it->second->m_ispaused)

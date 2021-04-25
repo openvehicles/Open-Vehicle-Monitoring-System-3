@@ -170,7 +170,7 @@ class canformat_gvret : public canformat
   public:
     virtual std::string get(CAN_log_message_t* message);
     virtual std::string getheader(struct timeval *time);
-    virtual size_t put(CAN_log_message_t* message, uint8_t *buffer, size_t len, canlogconnection* clc=NULL);
+    virtual size_t put(CAN_log_message_t* message, uint8_t *buffer, size_t len, bool* hasmore, canlogconnection* clc=NULL);
   };
 
 class canformat_gvret_ascii : public canformat_gvret
@@ -178,7 +178,7 @@ class canformat_gvret_ascii : public canformat_gvret
   public:
     canformat_gvret_ascii(const char* type);
     virtual std::string get(CAN_log_message_t* message);
-    virtual size_t put(CAN_log_message_t* message, uint8_t *buffer, size_t len, canlogconnection* clc=NULL);
+    virtual size_t put(CAN_log_message_t* message, uint8_t *buffer, size_t len, bool* hasmore, canlogconnection* clc=NULL);
   };
 
 class canformat_gvret_binary : public canformat_gvret
@@ -187,7 +187,7 @@ class canformat_gvret_binary : public canformat_gvret
     canformat_gvret_binary(const char* type);
     virtual std::string get(CAN_log_message_t* message);
     virtual std::string getheader(struct timeval *time);
-    virtual size_t put(CAN_log_message_t* message, uint8_t *buffer, size_t len, canlogconnection* clc=NULL);
+    virtual size_t put(CAN_log_message_t* message, uint8_t *buffer, size_t len, bool* hasmore, canlogconnection* clc=NULL);
 
   private:
     void PopulateBusList12(gvret_replymsg_t* r);

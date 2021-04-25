@@ -89,8 +89,8 @@ OvmsCanLogVFSInit::OvmsCanLogVFSInit()
 
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
 
-canlog_vfs_conn::canlog_vfs_conn(canlog* logger)
-  : canlogconnection(logger)
+canlog_vfs_conn::canlog_vfs_conn(canlog* logger, std::string format, canformat::canformat_serve_mode_t mode)
+  : canlogconnection(logger, format, mode)
   {
   m_file = NULL;
   }
@@ -142,7 +142,7 @@ canlog_vfs::~canlog_vfs()
 
 bool canlog_vfs::Open()
   {
-  OvmsMutexLock lock(&m_cmmutex);
+  OvmsRecMutexLock lock(&m_cmmutex);
 
   if (m_isopen)
     {
@@ -168,7 +168,7 @@ bool canlog_vfs::Open()
     }
 #endif // #ifdef CONFIG_OVMS_COMP_SDCARD
 
-  canlog_vfs_conn* clc = new canlog_vfs_conn(this);
+  canlog_vfs_conn* clc = new canlog_vfs_conn(this, m_format, m_mode);
   clc->m_nc = NULL;
   clc->m_peer = m_path;
 
@@ -199,7 +199,7 @@ void canlog_vfs::Close()
     ESP_LOGI(TAG, "Closed vfs log '%s': %s",
       m_path.c_str(), GetStats().c_str());
 
-    OvmsMutexLock lock(&m_cmmutex);
+    OvmsRecMutexLock lock(&m_cmmutex);
     for (conn_map_t::iterator it=m_connmap.begin(); it!=m_connmap.end(); ++it)
       {
       delete it->second;
