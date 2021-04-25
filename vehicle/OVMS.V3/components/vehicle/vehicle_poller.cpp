@@ -298,12 +298,36 @@ void OvmsVehicle::PollerSend(bool fromTicker)
                fromTicker, m_poll_plcur->pollbus, m_poll_type, m_poll_pid, m_poll_moduleid_sent,
                m_poll_moduleid_low, m_poll_moduleid_high);
 
-      CAN_frame_t txframe;
-      uint8_t* txdata;
-      memset(&txframe,0,sizeof(txframe));
+      //
+      // Assemble ISO-TP single/first frame
+      //
+
+      uint8_t* fr_data;               // Frame data address
+      uint8_t  fr_maxlen;             // Frame data max length
+      uint16_t tp_len;                // TP payload length including this frame (0…4095)
+      uint8_t* tp_data;               // TP frame data section address
+      uint8_t  tp_datalen;            // TP frame data section length (0…7)
+
+      const uint8_t* tx_data;         // Payload data
+      uint16_t tx_datalen;            // Payload data length
+      uint16_t tx_datasent;           // Payload data length sent with this frame
+
+      if (m_poll_plcur->xargs.tag == POLL_TXDATA)
+        {
+        tx_data = m_poll_plcur->xargs.data;
+        tx_datalen = m_poll_plcur->xargs.datalen;
+        }
+      else
+        {
+        tx_data = m_poll_plcur->args.data;
+        tx_datalen = m_poll_plcur->args.datalen;
+        }
+
+      CAN_frame_t txframe = {};
       txframe.origin = m_poll_bus;
       txframe.callback = &m_poll_txcallback;
       txframe.FIR.B.DLC = 8;
+      std::fill_n(txframe.data.u8, sizeof_array(txframe.data.u8), 0x55);
 
       if (m_poll_protocol == ISOTP_EXTFRAME)
         txframe.FIR.B.FF = CAN_frame_ext;
@@ -314,46 +338,73 @@ void OvmsVehicle::PollerSend(bool fromTicker)
         {
         txframe.MsgID = m_poll_moduleid_sent >> 8;
         txframe.data.u8[0] = m_poll_moduleid_sent & 0xff;
-        txdata = &txframe.data.u8[1];
+        fr_data = &txframe.data.u8[1];
+        fr_maxlen = 7;
         }
       else
         {
         txframe.MsgID = m_poll_moduleid_sent;
-        txdata = &txframe.data.u8[0];
+        fr_data = &txframe.data.u8[0];
+        fr_maxlen = 8;
         }
 
+      // Do we need to split this request into multiple frames?
       if (POLL_TYPE_HAS_16BIT_PID(m_poll_plcur->type))
-        {
-        uint8_t datalen = LIMIT_MAX(m_poll_plcur->args.datalen, 4);
-        txdata[0] = (ISOTP_FT_SINGLE << 4) + 3 + datalen;
-        txdata[1] = m_poll_type;
-        txdata[2] = m_poll_pid >> 8;
-        txdata[3] = m_poll_pid & 0xff;
-        memcpy(&txdata[4], m_poll_plcur->args.data, datalen);
-        }
+        tp_len = 3 + tx_datalen;
       else if (POLL_TYPE_HAS_8BIT_PID(m_poll_plcur->type))
+        tp_len = 2 + tx_datalen;
+      else
+        tp_len = 1 + tx_datalen;
+
+      if (tp_len <= fr_maxlen - 1)
         {
-        uint8_t datalen = LIMIT_MAX(m_poll_plcur->args.datalen, 5);
-        txdata[0] = (ISOTP_FT_SINGLE << 4) + 2 + datalen;
-        txdata[1] = m_poll_type;
-        txdata[2] = m_poll_pid;
-        memcpy(&txdata[3], m_poll_plcur->args.data, datalen);
+        fr_data[0] = (ISOTP_FT_SINGLE << 4) + tp_len;
+        tp_data = &fr_data[1];
+        tp_datalen = fr_maxlen - 1;
         }
       else
         {
-        uint8_t datalen = LIMIT_MAX(m_poll_plcur->args.datalen, 6);
-        txdata[0] = (ISOTP_FT_SINGLE << 4) + 1 + datalen;
-        txdata[1] = m_poll_type;
-        memcpy(&txdata[2], m_poll_plcur->args.data, datalen);
+        fr_data[0] = (ISOTP_FT_FIRST << 4) + ((tp_len & 0x0f00) >> 8);
+        fr_data[1] = tp_len & 0xff;
+        tp_data = &fr_data[2];
+        tp_datalen = fr_maxlen - 2;
+        }
+
+      // Add TP data:
+      if (POLL_TYPE_HAS_16BIT_PID(m_poll_plcur->type))
+        {
+        tp_data[0] = m_poll_type;
+        tp_data[1] = m_poll_pid >> 8;
+        tp_data[2] = m_poll_pid & 0xff;
+        tx_datasent = LIMIT_MAX(tx_datalen, tp_datalen - 3);
+        memcpy(&tp_data[3], tx_data, tx_datasent);
+        }
+      else if (POLL_TYPE_HAS_8BIT_PID(m_poll_plcur->type))
+        {
+        tp_data[0] = m_poll_type;
+        tp_data[1] = m_poll_pid;
+        tx_datasent = LIMIT_MAX(tx_datalen, tp_datalen - 2);
+        memcpy(&tp_data[2], tx_data, tx_datasent);
+        }
+      else
+        {
+        tp_data[0] = m_poll_type;
+        tx_datasent = LIMIT_MAX(tx_datalen, tp_datalen - 1);
+        memcpy(&tp_data[1], tx_data, tx_datasent);
         }
 
       m_poll_txmsgid = txframe.MsgID;
+      m_poll_tx_frame = 0;
+      m_poll_tx_data = tx_data;
+      m_poll_tx_offset = tx_datasent;
+      m_poll_tx_remain = tx_datalen - tx_datasent;
       m_poll_ml_frame = 0;
       m_poll_ml_offset = 0;
       m_poll_ml_remain = 0;
       m_poll_wait = 2;
       m_poll_plcur++;
       m_poll_sequence_cnt++;
+
       m_poll_bus->Write(&txframe);
 
       return;
@@ -428,6 +479,10 @@ void OvmsVehicle::PollerReceive(CAN_frame_t* frame, uint32_t msgid)
   uint8_t* tp_data;               // TP frame data section address
   uint8_t  tp_datalen;            // TP frame data section length (0…7)
 
+  uint8_t  tp_fc_command;         // Flow control command (0 = continue, 1 = wait, 2 = abort)
+  uint8_t  tp_fc_framecnt;        // Flow control max frame count (0 = unlimited)
+  uint8_t  tp_fc_septime;         // Flow control frame separation time
+
   if (m_poll_protocol == ISOTP_EXTADR)
     {
     fr_data = &frame->data.u8[1];
@@ -461,6 +516,11 @@ void OvmsVehicle::PollerReceive(CAN_frame_t* frame, uint32_t msgid)
       tp_data = &fr_data[1];
       tp_datalen = (tp_len > fr_maxlen-1) ? fr_maxlen-1 : tp_len;
       break;
+    case ISOTP_FT_FLOWCTRL:
+      tp_fc_command  = fr_data[0] & 0x0f;
+      tp_fc_framecnt = fr_data[1];
+      tp_fc_septime  = fr_data[2];
+      break;
     default:
       {
       // This is most likely an indication there is a non ISO-TP device sending
@@ -472,6 +532,107 @@ void OvmsVehicle::PollerReceive(CAN_frame_t* frame, uint32_t msgid)
       return;
       }
     }
+
+  // Handle TX flow control:
+  if (tp_frametype == ISOTP_FT_FLOWCTRL)
+    {
+    if (tp_fc_command > 2 || m_poll_tx_remain == 0)
+      {
+      FormatHexDump(&hexdump, (const char*)frame->data.u8, 8, 8);
+      ESP_LOGW(TAG, "PollerReceive[%03X]: ignoring unexpected/invalid ISO TP flow control frame: %s",
+              msgid, hexdump ? hexdump : "-");
+      if (hexdump) free(hexdump);
+      return;
+      }
+
+    if (tp_fc_command == 1)
+      {
+      // add some wait time:
+      m_poll_wait++;
+      }
+    else if (tp_fc_command == 2)
+      {
+      // abort TX:
+      m_poll_tx_remain = 0;
+      // (but still wait for response)
+      }
+    else
+      {
+      // continue TX:
+      CAN_frame_t tx_frame = {};
+      uint8_t* tx_data;
+      uint8_t tx_datalen;
+      uint8_t tx_datasent;
+      uint32_t txid;
+      tx_frame.origin = frame->origin;
+      tx_frame.FIR.B.DLC = 8;
+
+      if (m_poll_protocol == ISOTP_EXTFRAME)
+        tx_frame.FIR.B.FF = CAN_frame_ext;
+      else
+        tx_frame.FIR.B.FF = CAN_frame_std;
+
+      if (m_poll_moduleid_sent == 0x7df)
+        {
+        // broadcast request: derive module ID from response ID:
+        // (Note: this only works for the SAE standard ID scheme)
+        txid = frame->MsgID - 8;
+        }
+      else
+        {
+        // use known module ID:
+        txid = m_poll_moduleid_sent;
+        }
+
+      if (m_poll_protocol == ISOTP_EXTADR)
+        {
+        tx_frame.MsgID = txid >> 8;
+        tx_frame.data.u8[0] = txid & 0xff;
+        tx_data = &tx_frame.data.u8[1];
+        tx_datalen = 6;
+        }
+      else
+        {
+        tx_frame.MsgID = txid;
+        tx_data = &tx_frame.data.u8[0];
+        tx_datalen = 7;
+        }
+
+      // Send next chunk of frames:
+      while (m_poll_tx_remain > 0)
+        {
+        ++m_poll_tx_frame;
+        tx_data[0] = (ISOTP_FT_CONSECUTIVE << 4) + (m_poll_tx_frame & 0x0f);
+        tx_datasent = LIMIT_MAX(m_poll_tx_remain, tx_datalen);
+        memcpy(&tx_data[1], m_poll_tx_data+m_poll_tx_offset, tx_datasent);
+        if (tx_datasent < tx_datalen)
+          memset(&tx_data[1+tx_datasent], 0x55, tx_datalen-tx_datasent);
+        tx_frame.Write();
+        m_poll_tx_offset += tx_datasent;
+        m_poll_tx_remain -= tx_datasent;
+
+        if (m_poll_tx_remain == 0)
+          break;
+        if (tp_fc_framecnt > 0 && --tp_fc_framecnt == 0)
+          break;
+
+        if (tp_fc_septime > 0)
+          {
+          // Note: vTaskDelay resolution is 1 FreeRTOS tick = currently 10 ms
+          if (tp_fc_septime <= 127)
+            vTaskDelay(pdMS_TO_TICKS(tp_fc_septime) + ((tp_fc_septime % portTICK_PERIOD_MS == 0) ? 0 : 1));
+          else
+            vTaskDelay(1);
+          }
+        }
+
+      if (m_poll_tx_remain > 0)
+        m_poll_wait = 2;
+      }
+
+    return;
+    } // if (tp_frametype == ISOTP_FT_FLOWCTRL)
+
 
   // Check frame index:
   if (tp_frametype == ISOTP_FT_CONSECUTIVE)
@@ -705,7 +866,7 @@ void OvmsVehicle::PollerReceive(CAN_frame_t* frame, uint32_t msgid)
  *  @param bus          CAN bus to use for the request
  *  @param txid         CAN ID to send to (0x7df = broadcast)
  *  @param rxid         CAN ID to expect response from (broadcast: 0)
- *  @param request      Request to send (binary string) (only single frame requests supported)
+ *  @param request      Request to send (binary string) (type + pid + up to 4095 bytes payload)
  *  @param response     Response buffer (binary string) (multiple response frames assembled)
  *  @param timeout_ms   Timeout for poller/response in milliseconds
  *  @param protocol     Protocol variant: ISOTP_STD / ISOTP_EXTADR / ISOTP_EXTFRAME
@@ -742,26 +903,27 @@ int OvmsVehicle::PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
 
   assert(request.size() > 0);
   poll[0].type = request[0];
+  poll[0].xargs.tag = POLL_TXDATA;
 
   if (POLL_TYPE_HAS_16BIT_PID(poll[0].type))
     {
     assert(request.size() >= 3);
-    poll[0].args.pid = request[1] << 8 | request[2];
-    poll[0].args.datalen = LIMIT_MAX(request.size()-3, sizeof(poll[0].args.data));
-    memcpy(poll[0].args.data, request.data()+3, poll[0].args.datalen);
+    poll[0].xargs.pid = request[1] << 8 | request[2];
+    poll[0].xargs.datalen = LIMIT_MAX(request.size()-3, 4095);
+    poll[0].xargs.data = (const uint8_t*)request.data()+3;
     }
   else if (POLL_TYPE_HAS_8BIT_PID(poll[0].type))
     {
     assert(request.size() >= 2);
-    poll[0].args.pid = request.at(1);
-    poll[0].args.datalen = LIMIT_MAX(request.size()-2, sizeof(poll[0].args.data));
-    memcpy(poll[0].args.data, request.data()+2, poll[0].args.datalen);
+    poll[0].xargs.pid = request.at(1);
+    poll[0].xargs.datalen = LIMIT_MAX(request.size()-2, 4095);
+    poll[0].xargs.data = (const uint8_t*)request.data()+2;
     }
   else
     {
-    poll[0].args.pid = 0;
-    poll[0].args.datalen = LIMIT_MAX(request.size()-1, sizeof(poll[0].args.data));
-    memcpy(poll[0].args.data, request.data()+1, poll[0].args.datalen);
+    poll[0].xargs.pid = 0;
+    poll[0].xargs.datalen = LIMIT_MAX(request.size()-1, 4095);
+    poll[0].xargs.data = (const uint8_t*)request.data()+1;
     }
 
   // acquire poller access:

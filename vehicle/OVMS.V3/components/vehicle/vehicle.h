@@ -60,6 +60,10 @@ struct DashboardConfig;
 #define ISOTP_EXTADR                    1     // extended addressing (19 bit IDs)
 #define ISOTP_EXTFRAME                  2     // extended frame mode (29 bit IDs)
 
+// Argument tag:
+#define POLL_TXDATA                     0xff  // poll_pid_t using xargs for external payload up to 4095 bytes
+
+
 // OBD2/UDS Polling types supported:
 //  (see https://en.wikipedia.org/wiki/OBD-II_PIDs
 //   and https://en.wikipedia.org/wiki/Unified_Diagnostic_Services)
@@ -71,14 +75,26 @@ struct DashboardConfig;
 // alternatively to the single PID in the poll_pid_t.args field, which extends the pid by a data
 // length and up to 6 data bytes. A common example is reading a DTC info, the service has an
 // 8 bit PID (subtype) and depending on the subtype 1-4 additional parameter bytes:
-// const OvmsVehicle::poll_pid_t twizy_poll_default[] = {
-//  { TXID, RXID, VEHICLE_POLL_TYPE_READDTC, {.args={ PID, DATALEN, DATA1, … }}, { 0, 10, 60, 0 }, 0 },
-//  …
-// See OvmsVehicleRenaultTwizy::ObdRequest() for an example on how to send dynamic requests
-// with additional arguments.
-
+//  { TXID, RXID, POLLTYPE, {.args={ PID, DATALEN, DATA1, … }}, {…TIMES…}, 0, ISOTP_STD }
+// 
+// Since version 3.2.016-140 the poller supports multi-frame requests and adds a more versatile way
+// to pass additional arguments / TX data of up to 4095 bytes using the new 'xargs' union member,
+// which takes a data length and a pointer to an uint8_t array. The xargs.tag member needs to
+// be set to POLL_TXDATA for this.
+// 
+// Use the utility macro POLL_PID_DATA (see below) to create poll_pid_t entries like this:
+//  { TXID, RXID, POLLTYPE, POLL_PID_DATA(PID, DATASTRING), {…TIMES…}, 0, ISOTP_STD }
+// 
+// DATASTRING is a C string for ease of use, the terminating NUL char is excluded by the macro.
+// To pass hexadecimal values, simply define them by '\x..', example:
+//  POLL_PID_DATA(0x21D4, "\x0F\x02\0x00\xAB\xCD")
+// 
+// The poller automatically uses a single or multi frame request as needed.
+// 
+// See OvmsVehicle::PollSingleRequest() on how to send dynamic requests with additional arguments.
 
 #define VEHICLE_POLL_TYPE_NONE          0x00
+
 
 // OBD (ISO 15031) service identifiers supported:
 #define VEHICLE_POLL_TYPE_OBDIICURRENT  0x01 // Mode 01 "current data" (8 bit PID)
@@ -138,6 +154,10 @@ struct DashboardConfig;
 
 // Macro for poll_pid_t termination
 #define POLL_LIST_END                   { 0, 0, 0x00, 0x00, { 0, 0, 0 }, 0, 0 }
+
+// Poll list PID xargs utility (see info above):
+#define POLL_PID_DATA(pid, datastring) \
+  {.xargs={ (pid), POLL_TXDATA, sizeof(datastring)-1, reinterpret_cast<const uint8_t*>(datastring) }}
 
 // PollSingleRequest specific result codes:
 #define POLLSINGLE_OK                   0 
@@ -408,9 +428,16 @@ class OvmsVehicle : public InternalRamAllocated
         struct
           {
           uint16_t pid;                         // PID for requests with additional payload
-          uint8_t datalen;                      // payload length
-          uint8_t data[6];                      // payload data
+          uint8_t datalen;                      // payload length (bytes)
+          uint8_t data[6];                      // inline payload data (single frame request)
           } args;
+        struct
+          {
+          uint16_t pid;                         // PID for requests with additional payload
+          uint8_t tag;                          // needs to be POLL_TXDATA
+          uint16_t datalen;                     // payload length (bytes, max 4095)
+          const uint8_t* data;                  // pointer to payload data (single/multi frame request)
+          } xargs;
         };
       uint16_t polltime[VEHICLE_POLL_NSTATES];  // poll intervals in seconds for used poll states
       uint8_t  pollbus;                         // 0 = default CAN bus from PollSetPidList(), 1…4 = specific
@@ -431,9 +458,13 @@ class OvmsVehicle : public InternalRamAllocated
     uint32_t          m_poll_moduleid_high;   // Expected response moduleid high mark
     uint16_t          m_poll_type;            // Expected type
     uint16_t          m_poll_pid;             // Expected PID
-    uint16_t          m_poll_ml_remain;       // Bytes remaining for ML poll
-    uint16_t          m_poll_ml_offset;       // Offset of ML poll
-    uint16_t          m_poll_ml_frame;        // Frame number for ML poll
+    const uint8_t*    m_poll_tx_data;         // Payload data for multi frame request
+    uint16_t          m_poll_tx_remain;       // Payload bytes remaining for multi frame request
+    uint16_t          m_poll_tx_offset;       // Payload offset of multi frame request
+    uint16_t          m_poll_tx_frame;        // Frame number for multi frame request
+    uint16_t          m_poll_ml_remain;       // Bytes remaining for multi frame response
+    uint16_t          m_poll_ml_offset;       // Offset of multi frame response
+    uint16_t          m_poll_ml_frame;        // Frame number for multi frame response
     uint8_t           m_poll_wait;            // Wait counter for a reply from a sent poll or bytes remaining.
                                               // Gets set = 2 when a poll is sent OR when bytes are remaining after receiving.
                                               // Gets set = 0 when a poll is received.
