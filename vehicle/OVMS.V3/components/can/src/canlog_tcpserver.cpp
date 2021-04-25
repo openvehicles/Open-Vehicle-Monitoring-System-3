@@ -43,9 +43,8 @@ void can_log_tcpserver_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd
   std::string format(cmd->GetName());
   std::string mode(cmd->GetParent()->GetName());
   canlog_tcpserver* logger = new canlog_tcpserver(argv[0],format,GetFormatModeType(mode));
-  logger->Open();
 
-  if (logger->IsOpen())
+  if (logger->Open())
     {
     if (argc>1)
       { MyCan.AddLogger(logger, argc-1, &argv[1]); }
