@@ -1,0 +1,14 @@
+Source/credits:
+  - http://bit.ly/ChevyBoltPIDs
+
+Notes:
+  - default timeout of 100ms on manual requests is insufficient
+  - initial fields padding includes the UDS/OBD response header,
+      i.e. 2 bytes for a type 21 request / 3 bytes for type 22
+  - CAN bus being switched off by the vehicle can be detected via CAN status turning error-passive
+
+Manual request examples:
+  - obd can1 req dev -t1000 7e4 7ec 2101
+  - obd can1 req dev -t1000 7e4 7ec 2105
+  - obd can1 req dev -t1000 7e4 7ec 22b002
+

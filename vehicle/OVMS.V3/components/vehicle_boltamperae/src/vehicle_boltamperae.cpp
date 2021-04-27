@@ -32,7 +32,7 @@
 static const char *TAG = "v-bae";
 
 #include <stdio.h>
-#include "vehicle_boltAmperae.h"
+#include "vehicle_boltamperae.h"
 #include "ovms_webserver.h"
 
 // Vehicle states:

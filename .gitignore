@@ -65,3 +65,5 @@ docs/build/
 .vscode/
 vehicle/OVMS.V3/components/ovms_webserver/assets/charts.js.gz
 *.gz
+vehicle/OVMS.V3/components/vehicle_voltampera/src/vehicle_voltampera.cpp
+vehicle/OVMS.V3/components/vehicle_voltampera/src/vehicle_voltampera.cpp

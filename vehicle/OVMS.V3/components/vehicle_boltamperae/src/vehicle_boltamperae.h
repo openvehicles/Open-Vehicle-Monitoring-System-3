@@ -28,8 +28,8 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __VEHICLE_BOLTAmperae_H__
-#define __VEHICLE_BOLTAmperae_H__
+#ifndef __VEHICLE_BOLTAMPERAE_H__
+#define __VEHICLE_BOLTAMPERAE_H__
 
 #include "vehicle.h"
 
