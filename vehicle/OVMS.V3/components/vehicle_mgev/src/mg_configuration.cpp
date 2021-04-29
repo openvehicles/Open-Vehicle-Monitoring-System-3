@@ -70,8 +70,16 @@ void OvmsVehicleMgEv::ConfigChanged(OvmsConfigParam* param)
 
     StandardMetrics.ms_v_charge_limit_soc->SetValue(
             (float) MyConfig.GetParamValueInt("xmg", "suffsoc"),   Percentage );
-    StandardMetrics.ms_v_charge_limit_range->SetValue(
-            (float) MyConfig.GetParamValueInt("xmg", "suffrange"), Kilometers );
+    if (MyConfig.GetParamValue("vehicle", "units.distance") == "K")
+    {
+        StandardMetrics.ms_v_charge_limit_range->SetValue(
+                (float) MyConfig.GetParamValueInt("xmg", "suffrange"), Kilometers );
+    }
+    else
+    {
+        StandardMetrics.ms_v_charge_limit_range->SetValue(
+            (float) MyConfig.GetParamValueInt("xmg", "suffrange"), Miles );
+    }
 }
 
 bool OvmsVehicleMgEv::SetFeature(int key, const char *value) {
