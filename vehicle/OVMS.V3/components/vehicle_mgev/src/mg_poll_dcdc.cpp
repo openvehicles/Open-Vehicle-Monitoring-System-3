@@ -30,8 +30,6 @@
 */
 
 #include "vehicle_mgev.h"
-#include "mg_obd_pids.h"
-#include "metrics_standard.h"
 
 void OvmsVehicleMgEv::IncomingDcdcPoll(uint16_t pid, uint8_t* data, uint8_t length)
 {
@@ -39,11 +37,12 @@ void OvmsVehicleMgEv::IncomingDcdcPoll(uint16_t pid, uint8_t* data, uint8_t leng
 
     switch (pid)
     {
-        case dcdcLvCurrentPid:
-            // A massive guess that is probably very wrong
-            StandardMetrics.ms_v_env_charging12v->SetValue(value > 1);
-            StandardMetrics.ms_v_bat_12v_current->SetValue(value + 1);
-            break;
+        // case dcdcLvCurrentPid:
+        //     // A massive guess that is probably very wrong
+        //     //16-04-21 Ohm: Confirmed incorrect. 5-6A corresponds to 00 00 to 00 01. Negative 5-6A corresponds to 00 0d to 00 0f. Seems to suggest that if value is negative, 12V battery is charging. But can also use vcuHvContactorPid to determine if 12V battery is charging.
+        //     StandardMetrics.ms_v_env_charging12v->SetValue(data[1] & 0x08);
+        //     StandardMetrics.ms_v_bat_12v_current->SetValue(value + 1);
+        //     break;
         case dcdcPowerLoadPid:
             m_dcdc_load->SetValue(value * 0.25);
             break;
