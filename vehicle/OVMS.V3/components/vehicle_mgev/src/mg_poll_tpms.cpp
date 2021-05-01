@@ -30,8 +30,6 @@
 */
 
 #include "vehicle_mgev.h"
-#include "mg_obd_pids.h"
-#include "metrics_standard.h"
 
 void OvmsVehicleMgEv::IncomingTpmsPoll(uint16_t pid, uint8_t* data, uint8_t length)
 {
@@ -43,7 +41,7 @@ void OvmsVehicleMgEv::IncomingTpmsPoll(uint16_t pid, uint8_t* data, uint8_t leng
             StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RR, data[2] * 4);
             StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RL, data[3] * 4);
             break;
-        case typeTemperaturePid:
+        case tyreTemperaturePid:
             StandardMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_FL, data[0] * 0.5);
             StandardMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_FR, data[1] * 0.5);
             StandardMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_RR, data[2] * 0.5);

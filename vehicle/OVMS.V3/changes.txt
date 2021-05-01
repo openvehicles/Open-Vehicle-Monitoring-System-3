@@ -1,11 +1,50 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
-- MG ZS EV: Added notifications when reaching SOC & Range Limit.
-- MG ZS EV: Display charge time to reach Full/SOC/Range limit.
+- Added VEHICLE_POLL_TYPE_ROUTINECONTROL to UDS (ISO 14229) service identifiers list
+- MG ZS EV: 
+  - Moved to 2 car variants architecture: MG EV A (✔ Zombie mode | ❌ GWM authentication | ❌ Poll BCM) and MG EV B (❌ Zombie mode | ✔ GWM authentication | ✔ Poll BCM)
+  - New commands:
+      drl [on | off]            Turn on/off daytime running lights
+      drlauth [on | off]        (Only for MG EV A) Do BCM authentication then turn on/off daytime running lights
+      auth [all | gwm | bcm]    Authenticate with specified ECU
+  - New metrics:
+      v.e.headlights
+      v.e.cooling
+      xmg.v.bat.voltage.vcu
+      xmg.v.bat.coolant.temp
+      xmg.v.bat.resistance
+      xmg.v.bms.cell.voltage.max
+      xmg.v.bms.cell.voltage.min
+      xmg.v.bms.mainrelay.b
+      xmg.v.bms.mainrelay.g
+      xmg.v.bms.mainrelay.p
+      xmg.v.bms.time
+      xmg.v.bat.error
+      xmg.v.radiator.fan
+      xmg.v.dcdc.load
+      xmg.v.vcu.dcdc.mode
+      xmg.v.vcu.dcdc.input.current
+      xmg.v.vcu.dcdc.input.voltage
+      xmg.v.vcu.dcdc.output.current
+      xmg.v.vcu.dcdc.output.voltage
+      xmg.v.vcu.dcdc.temp
+      xmg.v.m.coolant.temp
+      xmg.v.m.torque
+      xmg.v.ignition.state
+  - Modified metrics calculation:
+      v.e.charging12v
+      v.e.on
+      v.m.rpm
+      v.m.temp
+      v.b.temp
+  - Decreased poll intervals for some PIDs for better performance
+  - Fixed issue where Features page shows unchecked check box but value is actually true
+  - Added notifications when reaching SOC & Range Limit.
+  - Display charge time to reach Full/SOC/Range limit.
+  - Display CCS Charging on App.
+  - Add new features page to select car's BMS firmware release to adjust SOC display.
 - Zoe: add Kangoo to Renault Zoe vehicle module.
-- MG ZS EV: Display CCS Charging on App.
-- MG ZS EV: Add new features page to select car's BMS firmware release to adjust SOC display.
 - New vehicle: Maxus eDeliver 3 via OBD-II Port (MED3)
   https://docs.openvehicles.com/en/latest/components/vehicle_maxus_edeliver3/docs/index.html
 - Maxus eDeliver3: cell volts and temps added to metrics and polling update.
