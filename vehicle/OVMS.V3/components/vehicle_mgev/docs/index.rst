@@ -11,17 +11,6 @@ MG ZS EVs sold in different countries seem to possess different behaviours. This
 Known Countries
 ^^^^^^^^^^^^^^^
 
-+-----------+--------------+-----------------+--------------+--------------------+
-| Country   | Zombie mode  | Requires GWM    | Poll BCM     | Suggested vehicle  |
-|           |              | authentication  | causes alarm | type to use        |
-+===========+==============+=================+==============+====================+
-| UK/EU     | Y            | N               | Y            | UK/EU              |
-+-----------+--------------+-----------------+--------------+--------------------+
-| Thailand  | N            | Y               | N            | TH                 |
-+-----------+--------------+-----------------+--------------+--------------------+
-| Australia | N            | N               | N            | TH                 |
-+-----------+--------------+-----------------+--------------+--------------------+
-
 =========   =========== ===========================   =====================   =
 Country     Zombie mode Requires GWM authentication   Poll BCM causes alarm   Suggested vehicle type to use
 =========   =========== ===========================   =====================   =
@@ -34,9 +23,9 @@ Zombie mode is when the gateway module (GWM) enters the locked state and no PIDs
    1. Charger is plugged in without power, car is locked and goes to sleep.
    2. Charger is then powered on and car starts charging.
 
-GWM authentication is required for Thai cars as GWM will be locked and no PIDs can be accessed (simiarly to Zombie mode but this happens all the time rather than just during the above scenario). Note: GWM authentication does not work with UK/EU's Zombie mode.
+GWM authentication is required for Thai cars as GWM will be locked and no PIDs can be accessed (simiarly to Zombie mode but this happens all the time rather than just during the above scenario). Note: GWM authentication does not work as a mitigation for UK/EU's Zombie mode.
 
-When the BCM is polled, UK/EU cars' alarm (horn) can go off so this is disabled in the UK/EU vehicle type.
+When the BCM is polled, UK/EU cars' alarm (horn) can go off so this is disabled in the UK/EU code.
 
 Other Countries
 ^^^^^^^^^^^^^^^
@@ -83,7 +72,7 @@ Shell Commands
 ==========================  =
 ``softver``                 Get software version of ECUs
 ``drl [on | off]``          Turn on/off daytime running lights (without doing BCM authentication first)
-``drlauth [on | off]``      (Only for MG EV A) Do BCM authentication first then turn on/off daytime running lights. Subsequent DRL commands can use drl (or drlauth).
+``drlauth [on | off]``      (Only for MG EV (UK/EU)) Do BCM authentication first then turn on/off daytime running lights. Subsequent DRL commands can use drl (or drlauth).
 ``auth [all | gwm | bcm]``  Authenticate with specified ECU. 'auth all' will authenticate GWM then BCM.
 ==========================  =
 
@@ -105,10 +94,10 @@ The MG EV module now monitors (and automatically calibrates) the 12V status and 
 **Poll states:**
 
 =  ==========  =
-0  ListenOnly  the OVMS module is quiet and stops sending polls. Variant A will enter this state after 50s of being < 12.9V. Variant B will enter this state immediately of being < 12.9V.
+0  ListenOnly  the OVMS module is quiet and stops sending polls. UK/EU code will enter this state after 50s of being < 12.9V. TH code will enter this state immediately of being < 12.9V.
 1  Charging    the OVMS module sends charging specific queries.
 2  Driving     the OVMS module sends driving specific queries.
-3  Backup      the OVMS module cannot get data from the car when it is charging so just retries SoC queries. This is unused in variant B.
+3  Backup      the OVMS module cannot get data from the car when it is charging so just retries SoC queries. This is unused in TH code.
 =  ==========  =
 
 UK/EU spec
