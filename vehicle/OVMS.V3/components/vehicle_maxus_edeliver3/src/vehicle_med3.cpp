@@ -59,23 +59,27 @@ namespace
 static const OvmsVehicle::poll_pid_t obdii_polls[] =
     {
         // VCU Polls
-//        { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcusoh, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //SOH
-        { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcusoc, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //SOC Scaled below
+//        { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcusoc, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //SOC Scaled below
         { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcutemp1, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //temp
         { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcutemp2, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //temp
         { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcupackvolts, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //Pack Voltage
         { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcu12vamps, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //12v amps?
-        { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcuchargervolts, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //charger volts at a guess?
-        { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcuchargeramps, {  0, 60, 60, 60  }, 0, ISOTP_STD }, //charger amps?
+        { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcuchargervolts, {  0, 15, 15, 15  }, 0, ISOTP_STD }, //charger volts at a guess?
+        { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcuchargeramps, {  0, 5, 5, 5  }, 0, ISOTP_STD }, //charger amps?
         // BMS Polls
-        { bmstx, bmsrx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, cellvolts, {  0, 60, 60, 60  }, 0, ISOTP_STD }, //cell volts
-        { bmstx, bmsrx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, celltemps, {  0, 60, 60, 60  }, 0, ISOTP_STD }, //cell temps
+        { bmstx, bmsrx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, cellvolts, {  0, 15, 15, 15  }, 0, ISOTP_STD }, //cell volts
+        { bmstx, bmsrx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, celltemps, {  0, 15, 15, 15  }, 0, ISOTP_STD }, //cell temps
         { bmstx, bmsrx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmssoc, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //bms SOC
         { bmstx, bmsrx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmssoh, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //bms SOH??
         { bmstx, bmsrx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmssocraw, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //bms raw SOC
-        { bmstx, bmsrx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, packamps, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //bms hv amps to pack        
+//        { bmstx, bmsrx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, packamps, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //bms hv amps to pack
+        { bmstx, bmsrx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmsccsamps, {  0, 15, 15, 15  }, 0, ISOTP_STD }, // looks CCS state
+        { bmstx, bmsrx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmsacamps, {  0, 15, 15, 15  }, 0, ISOTP_STD }, // looks CCS state
+        { bmstx, bmsrx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmsccschargeon, {  0, 15, 15, 15  }, 0, ISOTP_STD }, // looks CCS state
+        { bmstx, bmsrx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmsacchargeon, {  0, 15, 15, 15  }, 0, ISOTP_STD }, // looks CCS state
         { 0, 0, 0x00, 0x00, { 0, 0, 0, 0 }, 0, 0 }
     };
+
 }  // anon namespace
 
 // OvmsVehicleMaxed3 constructor
@@ -149,7 +153,7 @@ void OvmsVehicleMaxed3::IncomingPollReply(canbus* bus, uint16_t type, uint16_t p
       case vcuvin:  // VIN
           StandardMetrics.ms_v_vin->SetValue(m_rxbuf);
           break;
-      case vcusoh: //soh
+      case bmssoh: //soh
           StandardMetrics.ms_v_bat_soh->SetValue(value1);
           break;
 /*      case vcusoc: //soc scaled from 2 - 99
@@ -170,15 +174,47 @@ void OvmsVehicleMaxed3::IncomingPollReply(canbus* bus, uint16_t type, uint16_t p
       case vcupackvolts:  // Pack Voltage
           StandardMetrics.ms_v_bat_voltage->SetValue(value2 / 10.0f);
           break;
-      case packamps:
+/*      case packamps:
           StandardMetrics.ms_v_bat_current->SetValue(((value2 / 10.0f) - ((value2 / 10.0f) * 2))); // converted to negative
           StandardMetrics.ms_v_bat_power->SetValue(((value2 / 10.0f) * StandardMetrics.ms_v_bat_voltage->AsFloat()) / 1000.0f);// actual power in watts on AC converted to kw calculated via actual pack data
+          break;
+ */
+      case bmsccschargeon:
+      {
+          StandardMetrics.ms_v_charge_pilot->SetValue(data[0] & 1);
+          bool ccschargeon = data[0] & 1;
+          if (ccschargeon == true) // contains AC on bit
+              StdMetrics.ms_v_charge_type->SetValue("ccs");
+      }
+          break;
+      case bmsccsamps:
+        {
+            if (StandardMetrics.ms_v_charge_type->AsString() == "ccs")
+                StandardMetrics.ms_v_bat_current->SetValue(((value2 / 10.0f) - ((value2 / 10.0f) * 2))); // converted to negative
+                StandardMetrics.ms_v_bat_power->SetValue(((value2 / 10.0f) * StandardMetrics.ms_v_bat_voltage->AsFloat()) / 1000.0f);// actual power in watts on AC converted to kw calculated via actual pack data
+        }
+          break;
+      case bmsacchargeon:
+        {
+            StandardMetrics.ms_v_charge_pilot->SetValue(data[0] & 1);
+            bool acchargeon = data[0] & 1;
+            if (acchargeon == true) // contains AC on bit
+                StdMetrics.ms_v_charge_type->SetValue("type2");
+        }
+          break;
+      case bmsacamps:
+      {
+          if (StandardMetrics.ms_v_charge_type->AsString() == "type2")
+              StandardMetrics.ms_v_bat_current->SetValue(((value2 / 10.0f) - ((value2 / 10.0f) * 2))); // converted to negative
+              StandardMetrics.ms_v_bat_power->SetValue(((value2 / 10.0f) * StandardMetrics.ms_v_bat_voltage->AsFloat()) / 1000.0f);// actual power in watts on AC converted to kw calculated via actual pack data
+      }
+          
           break;
       case vcu12vamps:
           StandardMetrics.ms_v_bat_12v_current->SetValue(value1 / 10.0f);
           break;
       case vcuchargervolts:
-          StandardMetrics.ms_v_charge_voltage->SetValue(value1); // possible but always 224 untill found only
+          StandardMetrics.ms_v_charge_voltage->SetValue(value2 - 16150); // possible but always 224 untill found only
           break;
       case vcuchargeramps:
           StandardMetrics.ms_v_charge_current->SetValue(value1);
@@ -218,7 +254,7 @@ void OvmsVehicleMaxed3::IncomingPollReply(canbus* bus, uint16_t type, uint16_t p
 void OvmsVehicleMaxed3::IncomingFrameCan1(CAN_frame_t* p_frame)
   {
       
-//setup
+//set batt temp
       StandardMetrics.ms_v_bat_temp->SetValue(StandardMetrics.ms_v_bat_pack_tavg->AsFloat());
       
 // count cumalitive energy
@@ -259,29 +295,6 @@ void OvmsVehicleMaxed3::IncomingFrameCan1(CAN_frame_t* p_frame)
         }
         default:
           break;
-                
-                
-/*            case 0x604:  // power
-                {
-                float power = d[5];
-                StandardMetrics.ms_v_bat_power->SetValue((power * 42.0f) / 1000.0f);// actual power in watts on AC converted to kw
-                }
-*/
- /*           case 0x373: // set status to on
-                  {
-                      StandardMetrics.ms_v_env_on->SetValue(bool( d[7] & 0x10 ));
-                      if (StandardMetrics.ms_v_env_on->AsBool())
-                          PollSetState(1);
- Shouldnt be needed now
-                      break;
-                  }
-*/
-//            case 0x375:  // set status to driving
-//                {
-//                    StandardMetrics.ms_v_env_on->SetValue(bool( d[5] & 0x10 ));
-//                          PollSetState(2);
-//                    break;
-//                }
                 
             case 0x540:  // odometer in KM
                 {
@@ -325,15 +338,26 @@ void OvmsVehicleMaxed3::PollerStateTicker()
   if (poll_state == STATE_CHARGING)
   {
     if (m_poll_state != STATE_CHARGING)
-    {
-      // Charge started:
-      StdMetrics.ms_v_door_chargeport->SetValue(true);
-      StdMetrics.ms_v_charge_pilot->SetValue(true);
-      StdMetrics.ms_v_charge_inprogress->SetValue(true);
-      StdMetrics.ms_v_charge_substate->SetValue("onrequest");
-      StdMetrics.ms_v_charge_state->SetValue("charging");
-      PollSetState(STATE_CHARGING);
-    }
+        {
+        // Charge started:
+            if (StandardMetrics.ms_v_charge_type->AsString() == "type2")
+            {
+            StdMetrics.ms_v_door_chargeport->SetValue(true);
+            // StdMetrics.ms_v_charge_pilot->SetValue(true);
+            StdMetrics.ms_v_charge_inprogress->SetValue(true);
+            StdMetrics.ms_v_charge_substate->SetValue("onrequest");
+            StdMetrics.ms_v_charge_state->SetValue("charging");
+            PollSetState(STATE_CHARGING);
+            }
+            if (StandardMetrics.ms_v_charge_type->AsString() == "ccs")
+            {
+            StdMetrics.ms_v_door_chargeport->SetValue(true);
+            // StdMetrics.ms_v_charge_pilot->SetValue(true);
+            StdMetrics.ms_v_charge_inprogress->SetValue(true);
+            StdMetrics.ms_v_charge_state->SetValue("charging");
+            PollSetState(STATE_CHARGING);
+            }
+        }
   }
   else
   {
