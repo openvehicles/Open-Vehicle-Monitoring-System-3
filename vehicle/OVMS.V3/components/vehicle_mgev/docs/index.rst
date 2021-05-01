@@ -6,8 +6,13 @@ Vehicle Types: **MG EV (UK/EU)** & **MG EV (TH)**
 
 These vehicle types support the MG ZS EV (2019-). MG5 is not yet supported in this build. 
 
+--------
+Variants
+--------
+
 MG ZS EVs sold in different countries seem to possess different behaviours. This is why we have developed 2 different vehicle types to support the different requirements.
 
+^^^^^^^^^^^^^^^
 Known Countries
 ^^^^^^^^^^^^^^^
 
@@ -27,6 +32,7 @@ GWM authentication is required for Thai cars as GWM will be locked and no PIDs c
 
 When the BCM is polled, UK/EU cars' alarm (horn) can go off so this is disabled in the UK/EU code.
 
+^^^^^^^^^^^^^^^
 Other Countries
 ^^^^^^^^^^^^^^^
 
@@ -100,8 +106,10 @@ The MG EV module now monitors (and automatically calibrates) the 12V status and 
 3  Backup      the OVMS module cannot get data from the car when it is charging so just retries SoC queries. This is unused in TH code.
 =  ==========  =
 
+^^^^^^^^^^
 UK/EU spec
 ^^^^^^^^^^
+
 The car is accessible over the OBD port when it is running (ignition on) and for around
 40 seconds after it is turned off or the car is "tweaked" (lock button pushed, etc).
 
