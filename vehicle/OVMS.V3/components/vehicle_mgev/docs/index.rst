@@ -77,8 +77,8 @@ Shell Commands
 
 ==========================  =
 ``softver``                 Get software version of ECUs
-``drl [on | off]``          Turn on/off daytime running lights (without doing BCM authentication first). Cars running MG EV (TH) can use this command while cars running MG EV (UK/EU) should use ``drlauth`` below.
-``drlauth [on | off]``      (Only for MG EV (UK/EU)) Do BCM authentication first then turn on/off daytime running lights. Subsequent DRL commands can use ``drl`` (or ``drlauth``).
+``drl [on | off]``          Turn on/off daytime running lights
+``drln [on | off]``         Turn on/off daytime running lights without doing BCM authentication first (for debugging purposes)
 ``auth [all | gwm | bcm]``  Authenticate with specified ECU. 'auth all' will authenticate GWM then BCM.
 ==========================  =
 

@@ -39,7 +39,6 @@ class OvmsVehicleMgEvA : public OvmsVehicleMgEv
   public:
     OvmsVehicleMgEvA();
     ~OvmsVehicleMgEvA();
-    OvmsMetricBool *m_bcm_auth;
 
   protected:
     void Ticker1(uint32_t ticker) override;
@@ -50,8 +49,6 @@ class OvmsVehicleMgEvA : public OvmsVehicleMgEv
     void DeterminePollState(canbus* currentBus, uint32_t ticker);
     void SendAlarmSensitive(canbus* currentBus);
 
-    static void DRLCommandWithAuthShell(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv); 
-
     /// The states that the gateway CAN can be in
     enum GwmState
     {
@@ -61,8 +58,6 @@ class OvmsVehicleMgEvA : public OvmsVehicleMgEv
         Undefined    // We are not controlling GWM
     };
 
-    /// OVMS shell commands
-    OvmsCommand *m_cmdDRLAuth;
     /// The last ticker that we saw RX packets on
     uint32_t m_rxPacketTicker;
     /// The last number of packets received on the CAN

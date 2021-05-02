@@ -100,6 +100,7 @@ class OvmsVehicleMgEv : public OvmsVehicle
     OvmsMetricBool* m_radiator_fan;
     OvmsMetricInt *m_poll_state_metric; // Kept equal to m_poll_state for debugging purposes
     OvmsMetricInt *m_gwm_state; // Kept equal to m_gwmState for variant A for debugging purposes and used to store actual GWM state for variant B
+    OvmsMetricBool *m_bcm_auth; // True if BCM is authenticated, false if not
     OvmsMetricInt *m_gwm_task, *m_bcm_task; // Current ECU tasks that we are awaiting response for manual frame handling so we know which function to use to handle the responses.
     OvmsMetricInt *m_ignition_state; // For storing state of start switch
 
@@ -168,6 +169,7 @@ class OvmsVehicleMgEv : public OvmsVehicle
             int, OvmsWriter* writer, OvmsCommand*, int, const char* const*);
     static void AuthenticateECUShell(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void DRLCommandShell(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void DRLCommandWithAuthShell(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv); 
 
     enum class GWMTasks
     {
@@ -212,7 +214,7 @@ class OvmsVehicleMgEv : public OvmsVehicle
 
   private:
     // OVMS shell commands
-    OvmsCommand *m_cmdSoftver, *m_cmdAuth, *m_cmdDRL;
+    OvmsCommand *m_cmdSoftver, *m_cmdAuth, *m_cmdDRL, *m_cmdDRLNoAuth;
     // The responses from the software version queries. First element of tuple = ECU ID. Second element of tuple = software version character vector response. Third element of tuple = response data bytes remaining, should be 0 after finished.
     std::vector<std::tuple<uint32_t, std::vector<char>, uint16_t>> m_versions;
     // True when getting software versions from ECUs
