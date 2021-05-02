@@ -41,7 +41,7 @@ const OvmsVehicle::poll_pid_t obdii_polls_b[] =
 {
     { bcmId, bcmId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bcmDoorPid, {  0, 1, 1, 0  }, 0, ISOTP_STD },
     { bcmId, bcmId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bcmDrlPid, {  0, 5, 5, 0  }, 0, ISOTP_STD },
-    { bcmId, bcmId | rxFlag, VEHICLE_POLL_TYPE_TESTERPRESENT, 0, {  0, 2, 2, 0  }, 0, ISOTP_STD}
+    { bcmId, bcmId | rxFlag, VEHICLE_POLL_TYPE_TESTERPRESENT, 0, {  0, 2, 2, 0  }, 0, ISOTP_STD} //This is required for keeping BCM authentication. Technically it is only needed if BCM is authenticated but it doesn't seem to cause any side effects when BCM is not authenticated so it is put here for simplicity sake so that we don't have to add/remove this line depending on whether BCM is authenticated or not.
 };
 
 }
@@ -212,29 +212,40 @@ void OvmsVehicleMgEvB::MainStateMachine(canbus* currentBus, uint32_t ticker)
 
 void OvmsVehicleMgEvB::GWMAwake(canbus* currentBus)
 {
-    ESP_LOGI(TAG, "GWM responded to tester present. GWM is awake. Starting authentication.");	
-    m_gwm_state->SetValue(static_cast<int>(GWMStates::Awake));                    
-    if (AuthenticateECU({ECUAuth::GWM, ECUAuth::BCM}))
+    ESP_LOGI(TAG, "GWM responded to tester present. GWM is awake. Checking if GWM is unlocked.");
+    m_gwm_state->SetValue(static_cast<int>(GWMStates::Awake));   
+    std::string Response;
+    int PollStatus = PollSingleRequest(currentBus, bcmId, bcmId | rxFlag, hexdecode("3e00"), Response, SYNC_REQUEST_TIMEOUT, ISOTP_STD);
+    ESP_LOGI(TAG, "Response (%d): %s", PollStatus, hexencode(Response).c_str());
+    if (PollStatus == 0)
     {
-        ESP_LOGI(TAG, "Authentication successful. Try send tester present to BCM");
-        std::string Response;
-        int PollStatus = PollSingleRequest(currentBus, bcmId, bcmId | rxFlag, hexdecode("3e00"), Response, SYNC_REQUEST_TIMEOUT, ISOTP_STD);
-        ESP_LOGI(TAG, "Response (%d): %s", PollStatus, hexencode(Response).c_str());
-        if (PollStatus == 0)
-        {
-            ESP_LOGI(TAG, "BCM responded to tester present. GWM is unlocked.");	
-            GWMUnlocked();
-        }
-        else
-        {
-            ESP_LOGI(TAG, "BCM did not respond to tester present, will retry in %ds", GWM_RETRY_CHECK_STATE_TIMEOUT);
-            RetryCheckState();	
-        }   
+        ESP_LOGI(TAG, "BCM responded to tester present. GWM is unlocked.");	
+        GWMUnlocked();
     }
     else
     {
-        ESP_LOGI(TAG, "Authentication failed. Retrying in %ds", GWM_RETRY_CHECK_STATE_TIMEOUT);
-        RetryCheckState();
+        ESP_LOGI(TAG, "BCM did not respond to tester present, will start GWM authentication");
+        if (AuthenticateECU({ECUAuth::GWM}))
+        {
+            ESP_LOGI(TAG, "Authentication successful. Try send tester present to BCM again.");
+            PollStatus = PollSingleRequest(currentBus, bcmId, bcmId | rxFlag, hexdecode("3e00"), Response, SYNC_REQUEST_TIMEOUT, ISOTP_STD);
+            ESP_LOGI(TAG, "Response (%d): %s", PollStatus, hexencode(Response).c_str());
+            if (PollStatus == 0)
+            {
+                ESP_LOGI(TAG, "BCM responded to tester present. GWM is unlocked.");	
+                GWMUnlocked();
+            }
+            else
+            {
+                ESP_LOGI(TAG, "BCM did not respond to tester present, will retry in %ds", GWM_RETRY_CHECK_STATE_TIMEOUT);
+                RetryCheckState();	
+            }              
+        }
+        else
+        {
+            ESP_LOGI(TAG, "Authentication failed. Retrying in %ds", GWM_RETRY_CHECK_STATE_TIMEOUT);
+            RetryCheckState();
+        }        
     }
 }
 
@@ -242,7 +253,6 @@ void OvmsVehicleMgEvB::GWMUnlocked()
 {
 	ESP_LOGI(TAG, "Setting GWM state to Unlocked");
     m_gwm_state->SetValue(static_cast<int>(GWMStates::Unlocked));
-    m_bcm_auth->SetValue(true);
 	m_GWMUnresponsiveCount = 0;
     StandardMetrics.ms_v_env_awake->SetValue(true);
     StandardMetrics.ms_v_env_ctrl_login->SetValue(true);
