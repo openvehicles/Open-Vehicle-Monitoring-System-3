@@ -146,7 +146,21 @@ void OvmsVehicleMgEv::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
   std::string error;
   //  suffsoc              Sufficient SOC [%] (Default: 0=disabled)
   //  suffrange            Sufficient range [km] (Default: 0=disabled)
-  std::string suffrange, suffsoc;
+  std::string suffrange, suffsoc, units_distance;
+  float max_range;
+  std::string units;
+  units_distance = MyConfig.GetParamValue("vehicle", "units.distance");
+  
+  if (units_distance == "K")
+  {
+      max_range = StandardMetrics.ms_v_bat_range_full->AsFloat(0, Kilometers);
+      units = "km";
+  }
+  else
+  {
+      max_range = StandardMetrics.ms_v_bat_range_full->AsFloat(0, Miles);
+      units = "miles";
+  }
 
   if (c.method == "POST") {
     // process form submission:
@@ -197,8 +211,8 @@ void OvmsVehicleMgEv::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
 
   c.fieldset_start("Charge control");
 
-  c.input_slider("Sufficient range", "suffrange", 3, "km",
-    atof(suffrange.c_str()) > 0, atof(suffrange.c_str()), 0, 0, 300, 1,
+  c.input_slider("Sufficient range", "suffrange", 3, units.c_str(),
+    atof(suffrange.c_str()) > 0, atof(suffrange.c_str()), 0, 0, max_range, 1,
     "<p>Default 0=off. Notify when reaching this level.</p>");
 
   c.input_slider("Sufficient SOC", "suffsoc", 3, "%",
@@ -340,8 +354,12 @@ void OvmsVehicleMgEv::WebDispChgMetrics(PageEntry_t &p, PageContext_t &c)
           "</div>"
           "<div class=\"clearfix\">"
             "<h6 class=\"metric-head\">Current Status:</h6>"
-            "<div class=\"metric number\" data-metric=\"v.b.range.est\" data-prec=\"0\">"
+            "<div class=\"metric number\" data-metric=\"v.b.range.est\" data-prec=\"0\" data-scale=\"0.621371192\">"
               "<span class=\"label\">Range</span>"
+              "<span class=\"value\">?</span>"
+              "<span class=\"unit\">miles</span>"
+            "</div>"
+            "<div class=\"metric number\" data-metric=\"v.b.range.est\" data-prec=\"0\">"
               "<span class=\"value\">?</span>"
               "<span class=\"unit\">km</span>"
             "</div>"
@@ -383,8 +401,11 @@ void OvmsVehicleMgEv::WebDispChgMetrics(PageEntry_t &p, PageContext_t &c)
               "<span class=\"value\">?</span>"
               "<span class=\"unit\">Ah</span>"
             "</div>"
-            "<div class=\"metric number\" data-metric=\"v.p.odometer\" data-prec=\"0\">"
+            "<div class=\"metric number\" data-metric=\"v.p.odometer\" data-prec=\"0\" data-scale=\"0.621371192\">"
               "<span class=\"label\">Odometer</span>"
+              "<span class=\"value\">?</span>"
+              "<span class=\"unit\">miles</span>"
+              "</div>""<div class=\"metric number\" data-metric=\"v.p.odometer\" data-prec=\"0\">"
               "<span class=\"value\">?</span>"
               "<span class=\"unit\">km</span>"
             "</div>"

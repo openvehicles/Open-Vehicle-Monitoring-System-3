@@ -67,8 +67,17 @@ void OvmsVehicleMgEv::ConfigChanged(OvmsConfigParam* param)
     //  suffrange            Sufficient range [km] (Default: 0=disabled)
     StandardMetrics.ms_v_charge_limit_soc->SetValue(
             (float) MyConfig.GetParamValueInt("xmg", "suffsoc"),   Percentage );
-    StandardMetrics.ms_v_charge_limit_range->SetValue(
-            (float) MyConfig.GetParamValueInt("xmg", "suffrange"), Kilometers );
+    
+    if (MyConfig.GetParamValue("vehicle", "units.distance") == "K")
+    {
+        StandardMetrics.ms_v_charge_limit_range->SetValue(
+                (float) MyConfig.GetParamValueInt("xmg", "suffrange"), Kilometers );
+    }
+    else
+    {
+        StandardMetrics.ms_v_charge_limit_range->SetValue(
+            (float) MyConfig.GetParamValueInt("xmg", "suffrange"), Miles );
+    }
 }
 
 // Called by OVMS when server requests to set feature
