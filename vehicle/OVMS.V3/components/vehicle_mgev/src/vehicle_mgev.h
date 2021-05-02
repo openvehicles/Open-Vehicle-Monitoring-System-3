@@ -60,11 +60,18 @@ typedef struct
     float Lower;
     float Upper;
 } BMSDoDLimits_t;
+
 const BMSDoDLimits_t BMSDoDLimits[] = 
 {
     {6, 97}, //Pre Jan 2021 BMS firmware DoD range 6 - 97
     {2.5, 94} //Jan 2021 BMS firmware DoD range 2.5 - 94
 };
+
+typedef struct{
+       int fromPercent;
+       int toPercent;
+       float maxChargeSpeed;
+}charging_profile;
 
 }
 
@@ -224,7 +231,7 @@ class OvmsVehicleMgEv : public OvmsVehicle
     // Response from BCM after sending DRL command
     uint8_t m_DRLResponse[5];	
 
-    int calcMinutesRemaining(float target_soc);
+    int calcMinutesRemaining(int target_soc, charging_profile charge_steps[]);
     bool soc_limit_reached;
     bool range_limit_reached;   
 
