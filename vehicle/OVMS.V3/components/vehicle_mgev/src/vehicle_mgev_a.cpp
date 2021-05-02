@@ -80,11 +80,6 @@ OvmsVehicleMgEvA::OvmsVehicleMgEvA()
     m_preZombieOverrideTicker = 0u;
     carIsResponsiveToQueries = true;
 
-    m_bcm_auth = MyMetrics.InitBool("xmg.auth.bcm", SM_STALE_MAX, false);
-
-    // Register shell commands
-    m_cmdDRLAuth = MyCommandApp.RegisterCommand("drlauth", "Daytime running light control (runs BCM authentication before hand)", DRLCommandWithAuthShell, "<command>\non\tTurn on\noff\tTurn off", 1, 1);
-
     //Add variant specific poll data
     ConfigurePollData(obdii_polls_a, sizeof(obdii_polls_a));
 }
@@ -93,10 +88,6 @@ OvmsVehicleMgEvA::OvmsVehicleMgEvA()
 OvmsVehicleMgEvA::~OvmsVehicleMgEvA()
 {
     ESP_LOGI(TAG, "Shutdown MG EV variant A");
-    if (m_cmdDRLAuth)
-	{
-		MyCommandApp.UnregisterCommand(m_cmdDRLAuth->GetName());
-	} 	  
 }
 
 // This is the only place we evaluate the vehicle state to change the action of OVMS
@@ -336,7 +327,7 @@ void OvmsVehicleMgEvA::Ticker1(uint32_t ticker)
         }           
         
         // If BCM is authenticated and not busy, send tester present to keep authentication. 
-        // If we have other PID requests, we must make sure that this doesn't get sent while we are still waiting for a PID response. Can use SendManualPolls() for that.
+        // If we have other PID requests to the BCM, we must make sure that tester present doesn't get sent while we are still waiting for a PID response. We can either use SendManualPolls() or add tester present to poll table (like variant B).
         if (m_bcm_auth->AsBool())
         {
             if (m_bcm_task->AsInt() == static_cast<int>(BCMTasks::None))
@@ -412,28 +403,6 @@ OvmsVehicle::vehicle_command_t OvmsVehicleMgEvA::CommandWakeup()
     m_rxPackets = 0u;
     m_gwmState = Undefined;
     return OvmsVehicle::Success;
-}
-
-void OvmsVehicleMgEvA::DRLCommandWithAuthShell(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-{
-    OvmsVehicleMgEvA* vehicle = reinterpret_cast<OvmsVehicleMgEvA*>(MyVehicleFactory.ActiveVehicle());
-    //If BCM has not been authenticated, do that first. Otherwise we can skip and go straight to the actual DRL command.
-    if (!vehicle->m_bcm_auth->AsBool())
-    {
-        ESP_LOGI(TAG, "BCM has not been authenticated, will do that first");
-        if (vehicle->AuthenticateECU({ECUAuth::BCM}))
-        {
-            vehicle->m_bcm_auth->SetValue(true);
-        }
-        else
-        {
-            writer->puts("Failed to authenticate BCM");
-        }
-    }
-    if (vehicle->m_bcm_auth->AsBool())
-    {
-        OvmsVehicleMgEv::DRLCommandShell(verbosity, writer, cmd, argc, argv);  
-    }
 }
 
 //This registers a new vehicle type in the vehicle configuration page drop down menu

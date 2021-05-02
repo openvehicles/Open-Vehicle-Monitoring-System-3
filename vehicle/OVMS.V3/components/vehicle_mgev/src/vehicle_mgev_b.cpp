@@ -158,7 +158,7 @@ void OvmsVehicleMgEvB::MainStateMachine(canbus* currentBus, uint32_t ticker)
                     ESP_LOGI(TAG, "GWM did not respond to tester present (%d)", m_GWMUnresponsiveCount);
                     if (m_GWMUnresponsiveCount >= CAR_UNRESPONSIVE_THRESHOLD)
                     {
-                        CarUnresponsive();
+                        GWMUnknown();
                         return;
                     }
                 }           
@@ -187,14 +187,11 @@ void OvmsVehicleMgEvB::MainStateMachine(canbus* currentBus, uint32_t ticker)
         //12V level too low, going to sleep
         if (m_OVMSActive)
         {
-            ESP_LOGI(TAG, "12V level lower than threshold. Resetting GWM state to Unknown.");
+            ESP_LOGI(TAG, "12V level lower than threshold.");
+            GWMUnknown();
         }   
-        m_OVMSActive = false;         
-        PollSetState(PollStateListenOnly);
-        m_gwm_state->SetValue(static_cast<int>(GWMStates::Unknown));
-        StandardMetrics.ms_v_env_awake->SetValue(false);        
+        m_OVMSActive = false;             
         StandardMetrics.ms_v_env_on->SetValue(false);
-        StandardMetrics.ms_v_env_ctrl_login->SetValue(false);
         //It is possible that when the car stops charging, we go straight from charging to 12V level too low and so OVMS won't know that we have stopped charging.
         //So we manually set charging metrics here
         if (StandardMetrics.ms_v_charge_inprogress->AsBool())
@@ -245,6 +242,7 @@ void OvmsVehicleMgEvB::GWMUnlocked()
 {
 	ESP_LOGI(TAG, "Setting GWM state to Unlocked");
     m_gwm_state->SetValue(static_cast<int>(GWMStates::Unlocked));
+    m_bcm_auth->SetValue(true);
 	m_GWMUnresponsiveCount = 0;
     StandardMetrics.ms_v_env_awake->SetValue(true);
     StandardMetrics.ms_v_env_ctrl_login->SetValue(true);
@@ -257,11 +255,14 @@ void OvmsVehicleMgEvB::RetryCheckState()
     m_RetryCheckStateWaitCount = 0;
 }
 
-void OvmsVehicleMgEvB::CarUnresponsive()
+void OvmsVehicleMgEvB::GWMUnknown()
 {
-    ESP_LOGI(TAG, "Resetting GWM state to Unknown");
+    ESP_LOGI(TAG, "Setting GWM state to Unknown");
     m_gwm_state->SetValue(static_cast<int>(GWMStates::Unknown));
+    m_bcm_auth->SetValue(false);
     PollSetState(PollStateListenOnly);
+    StandardMetrics.ms_v_env_awake->SetValue(false);
+    StandardMetrics.ms_v_env_ctrl_login->SetValue(false);
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleMgEvB::CommandWakeup()
