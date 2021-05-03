@@ -41,10 +41,6 @@ constexpr uint32_t ZOMBIE_DETECT_TIMEOUT = 30u;
 /// The number of seconds to wait to allow the car to sleep until Zombie Mode Override is used
 constexpr uint32_t ZOMBIE_TIMEOUT = 50u;
 
-/// The number of seconds trying to keep awake without success before allowing it to
-/// go to sleep
-constexpr uint32_t TRANSITION_TIMEOUT = 50u;
-
 /// The number of seconds the car has to be unlocked for before transitioning from session
 /// keep alive to TP keep alive
 constexpr uint32_t UNLOCKED_CHARGING_TIMEOUT = 5u;

@@ -90,15 +90,17 @@ void OvmsVehicleMgEvB::Ticker1(uint32_t ticker)
 // This is the only place we evaluate the vehicle state to change the action of OVMS
 void OvmsVehicleMgEvB::MainStateMachine(canbus* currentBus, uint32_t ticker)
 {
-    //Check if 12V is high enough for OVMS to run otherwise we will drain the battery too much
+    //Check if 12V is high enough for OVMS to poll otherwise we will drain the battery too much
     if (StandardMetrics.ms_v_bat_12v_voltage->AsFloat() >= CHARGING_THRESHOLD)
     {
-        //12V level is high enough for OVMS to run
+        //12V level is high enough for OVMS to poll
         m_OVMSActive = true;
+        m_afterRunTicker = 0;
         switch (static_cast<GWMStates>(m_gwm_state->AsInt()))
         {
             //Unknown state. Will see if GWM is awake by sending a tester present. If no reply, try waking GWM up by sending another tester present.
-            //Once GWM is awake, attempt authentication with GWM and BCM. If successful, set to Unlocked state and start polling.
+            //Once GWM is awake, check if BCM responds to tester present. If it does, GWM is unlocked. If no reply, attempt authentication with GWM.
+            //If successful, GWM is unlocked. When GWM is unlocked, set to Unlocked state and start polling.
             //If we cannot wake GWM, set state to WaitToRetryCheckState and wait to retry in GWM_RETRY_CHECK_STATE_TIMEOUT seconds.
             case GWMStates::Unknown:
             {
@@ -184,11 +186,10 @@ void OvmsVehicleMgEvB::MainStateMachine(canbus* currentBus, uint32_t ticker)
     } 
     else
     {
-        //12V level too low, going to sleep
+        //12V level too low, going to sleep in TRANSITION_TIMEOUT seconds
         if (m_OVMSActive)
         {
-            ESP_LOGI(TAG, "12V level lower than threshold.");
-            GWMUnknown();
+            ESP_LOGI(TAG, "12V level lower than threshold, going to sleep in %us.", TRANSITION_TIMEOUT);
         }   
         m_OVMSActive = false;             
         StandardMetrics.ms_v_env_on->SetValue(false);
@@ -206,7 +207,18 @@ void OvmsVehicleMgEvB::MainStateMachine(canbus* currentBus, uint32_t ticker)
             }   
         }
         StandardMetrics.ms_v_charge_type->SetValue("undefined");
-        StandardMetrics.ms_v_charge_inprogress->SetValue(false);           
+        StandardMetrics.ms_v_charge_inprogress->SetValue(false);
+        if (m_afterRunTicker < TRANSITION_TIMEOUT)
+        {
+            ESP_LOGV(TAG, "(%u) Waiting %us before going to sleep", m_afterRunTicker, TRANSITION_TIMEOUT);
+            m_afterRunTicker++;
+        }
+        else if (m_afterRunTicker == TRANSITION_TIMEOUT)      
+        {
+            ESP_LOGI(TAG, "%us has elasped after 12V level is lower than threshold, going to sleep", TRANSITION_TIMEOUT);
+            m_afterRunTicker++; //Increment one more so we don't enter this if statement next time round
+            GWMUnknown();
+        }        
     }
 }
 
