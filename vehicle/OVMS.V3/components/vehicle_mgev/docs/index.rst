@@ -95,12 +95,12 @@ UK/EU          Y                       N                    N
 TH             N                       Y                    Y
 =============  ======================  ==================   ========
 
-The MG EV module now monitors (and automatically calibrates) the 12V status and will automatically start polling the car for data when the 12V battery voltage is equal to or greater than 12.9V. When it is below 12.9V, it will automatically stop polling to not drain the 12V battery.
+The MG EV module now monitors (and automatically calibrates) the 12V status and will automatically start polling the car for data when the 12V battery voltage is equal to or greater than 12.9V. When it is below 12.9V, it will automatically stop polling (after a 50s delay) to not drain the 12V battery.
 
 **Poll states:**
 
 =  ==========  =
-0  ListenOnly  the OVMS module is quiet and stops sending polls. UK/EU code will enter this state after 50s of being < 12.9V. TH code will enter this state immediately of being < 12.9V.
+0  ListenOnly  the OVMS module is quiet and stops sending polls.
 1  Charging    the OVMS module sends charging specific queries.
 2  Driving     the OVMS module sends driving specific queries.
 3  Backup      the OVMS module cannot get data from the car when it is charging so just retries SoC queries. This is unused in TH code.

@@ -51,6 +51,7 @@
 #define CHARGING_THRESHOLD 12.9 //Volts. If voltage is lower than this, we say 1. 12V battery is not charging and 2. we should sleep OVMS to avoid draining battery too low
 #define DEFAULT_BMS_VERSION 1 //Corresponding to the BMSDoDLimits array element
 #define WLTP_RANGE 263.0 //km
+#define TRANSITION_TIMEOUT 50 //s. Number of seconds after 12V goes below CHARGING_THRESHOLD to stay in current state before going to sleep.
 
 namespace 
 {
@@ -211,6 +212,8 @@ class OvmsVehicleMgEv : public OvmsVehicle
     bool m_WaitingGWMTesterPresentResponse = false;
     // Count number of times a tester present message is not responded by the GWM
     uint8_t m_GWMUnresponsiveCount = 0;
+    // The ticker time for after-run of charging and running sessions
+    uint32_t m_afterRunTicker = 0;    
 
   private:
     // OVMS shell commands

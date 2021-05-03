@@ -66,8 +66,6 @@ class OvmsVehicleMgEvA : public OvmsVehicleMgEv
     uint32_t m_noRxCount;
     /// The current state of control commands we are sending to the gateway
     GwmState m_gwmState;
-    /// The ticker time for after-run of charging and running sessions
-    uint32_t m_afterRunTicker;
     /// The ticker time for Zombie Mode Sleep Timeout before attempting to wake.
     uint32_t m_preZombieOverrideTicker;
     /// Boolean for Car State
