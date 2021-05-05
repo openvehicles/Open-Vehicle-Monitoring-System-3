@@ -354,7 +354,7 @@ void OvmsVehicleVoltAmpera::IncomingFrameCan1(CAN_frame_t* p_frame)
         m_type[4] = (m_modelyear % 10) + '0';
         StandardMetrics.ms_v_vin->SetValue(m_vin);
         StandardMetrics.ms_v_type->SetValue(m_type);
-        if (m_range_rated_km == 0)
+         if (m_range_rated_km == 0)
           {
           switch (m_modelyear)
             {
@@ -373,6 +373,7 @@ void OvmsVehicleVoltAmpera::IncomingFrameCan1(CAN_frame_t* p_frame)
             }
           }
         }
+
       if (mt_charging_limits->AsString()=="0")
         {
         // Set defaults
@@ -388,7 +389,7 @@ void OvmsVehicleVoltAmpera::IncomingFrameCan1(CAN_frame_t* p_frame)
       break;
       }
 
-    case 0x1f5: // Byte 4: Shift Position PRNDL 1=Park, 2=Reverse, 3=Neutral, 4=Drive, 5=Low
+    case 0x1B1A: // Byte 4: Shift Position PRNDL 1=Park, 2=Reverse, 3=Neutral, 4=Drive, 5=Low
       {
       if (d[3]==1) 
         StandardMetrics.ms_v_env_gear->SetValue(-2); // Park
@@ -614,7 +615,7 @@ void OvmsVehicleVoltAmpera::IncomingFrameCan4(CAN_frame_t* p_frame)
       } 
 
     // Hood
-    case 0x10728040: 
+    case 0x247A: //0x10728040
       {
       StdMetrics.ms_v_door_hood->SetValue(d[0] & 1<<1);
       break;
@@ -645,7 +646,7 @@ void OvmsVehicleVoltAmpera::IncomingFrameCan4(CAN_frame_t* p_frame)
     // This Charge kWh statistic
     case 0x102820CB: 
       {
-      StdMetrics.ms_v_bat_energy_used->SetValue((float)((d[2]<<8 | d[3]) & 0x3fff)/10, kWh);
+      StdMetrics.ms_v_bat_energy_used->SetValue((float)((d[2]<<8 | d[3]) & 0x3fff) * 0.01, kWh);
       break;
       } 
 
@@ -717,13 +718,14 @@ void OvmsVehicleVoltAmpera::IncomingPollReply(canbus* bus, uint16_t type, uint16
       int soc = ((int)value * 39)/99;
       StandardMetrics.ms_v_bat_soc->SetValue(soc);
       if (m_range_rated_km != 0)
-        StandardMetrics.ms_v_bat_range_ideal->SetValue((soc * m_range_rated_km)/100, Kilometers);
+        StandardMetrics.ms_v_bat_range_ideal->SetValue((soc * m_range_rated_km)/100 * 4 , Kilometers);
       break;
       }
     case 0x000d:  // Vehicle speed
       StandardMetrics.ms_v_pos_speed->SetValue(value,Kilometers);
       break;
     /* 
+     
     //ms_v_bat_range_est set from swcan message
     case 0x2487:  //Distance Traveled on Battery Energy This Drive Cycle
       {
@@ -734,6 +736,7 @@ void OvmsVehicleVoltAmpera::IncomingPollReply(canbus* bus, uint16_t type, uint16
       break;
       }
     */
+    
     case 0x41a3:  // High-voltage Battery Capacity  
       StandardMetrics.ms_v_bat_cac->SetValue((float)(data[0]<<8 | data[1]) / 10, AmpHours);
       break;
@@ -859,7 +862,7 @@ void OvmsVehicleVoltAmpera::Ticker1(uint32_t ticker)
         if (m_charge_wm > 60000)
           {
           StandardMetrics.ms_v_charge_kwh->SetValue(
-            StandardMetrics.ms_v_charge_kwh->AsInt() + 10);
+            StandardMetrics.ms_v_charge_kwh->AsInt() + 1);
           m_charge_wm -= 60000;
           }
         }
@@ -875,7 +878,7 @@ void OvmsVehicleVoltAmpera::Ticker1(uint32_t ticker)
       StandardMetrics.ms_v_charge_inprogress->SetValue(false);
       StandardMetrics.ms_v_door_chargeport->SetValue(false);
       StandardMetrics.ms_v_charge_mode->SetValue("standard");
-      if (StandardMetrics.ms_v_bat_soc->AsInt() < 95)
+      if (StandardMetrics.ms_v_bat_soc->AsInt() < 93)
         {
         // Assume the charge was interrupted
         ESP_LOGI(TAG,"Car charge session was interrupted");
