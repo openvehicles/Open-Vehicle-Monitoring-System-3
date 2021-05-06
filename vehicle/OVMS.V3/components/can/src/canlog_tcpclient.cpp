@@ -189,7 +189,7 @@ void canlog_tcpclient::Close()
     ESP_LOGI(TAG, "Closed TCP client log: %s", GetStats().c_str());
     if (m_connmap.size() > 0)
       {
-      OvmsMutexLock lock(&m_cmmutex);
+      OvmsRecMutexLock lock(&m_cmmutex);
       for (conn_map_t::iterator it=m_connmap.begin(); it!=m_connmap.end(); ++it)
         {
         it->first->flags |= MG_F_CLOSE_IMMEDIATELY;
@@ -211,8 +211,6 @@ std::string canlog_tcpclient::GetInfo()
 
 void canlog_tcpclient::MongooseHandler(struct mg_connection *nc, int ev, void *p)
   {
-  OvmsMutexLock lock(&m_cmmutex);
-
   switch (ev)
     {
     case MG_EV_CONNECT:
@@ -220,21 +218,18 @@ void canlog_tcpclient::MongooseHandler(struct mg_connection *nc, int ev, void *p
       int *success = (int*)p;
       ESP_LOGV(TAG, "MongooseHandler(MG_EV_CONNECT=%d)",*success);
       if (*success == 0)
-        {
-        // Successful connection
+        { // Successful connection
+        OvmsRecMutexLock lock(&m_cmmutex);
         ESP_LOGI(TAG, "Connection successful to %s",m_path.c_str());
-        canlogconnection* clc = new canlogconnection(this);
+        canlogconnection* clc = new canlogconnection(this, m_format, m_mode);
         clc->m_nc = nc;
         clc->m_peer = m_path;
         m_connmap[nc] = clc;
         m_isopen = true;
-        if (m_formatter != NULL)
+        std::string result = clc->m_formatter->getheader();
+        if (result.length()>0)
           {
-          std::string result = m_formatter->getheader();
-          if (result.length()>0)
-            {
-            mg_send(nc, (const char*)result.c_str(), result.length());
-            }
+          mg_send(nc, (const char*)result.c_str(), result.length());
           }
         }
       else
@@ -249,6 +244,7 @@ void canlog_tcpclient::MongooseHandler(struct mg_connection *nc, int ev, void *p
       ESP_LOGV(TAG, "MongooseHandler(MG_EV_CLOSE)");
       if (m_isopen)
         {
+        OvmsRecMutexLock lock(&m_cmmutex);
         ESP_LOGE(TAG,"Disconnected from %s",m_path.c_str());
         m_isopen = false;
         auto k = m_connmap.find(nc);
@@ -265,6 +261,7 @@ void canlog_tcpclient::MongooseHandler(struct mg_connection *nc, int ev, void *p
       size_t used = nc->recv_mbuf.len;
       if (m_formatter != NULL)
         {
+        OvmsRecMutexLock lock(&m_cmmutex);
         canlogconnection* clc = NULL;
         auto k = m_connmap.find(nc);
         if (k != m_connmap.end()) clc = k->second;

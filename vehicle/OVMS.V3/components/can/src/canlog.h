@@ -62,7 +62,7 @@ class canlog;
 class canlogconnection: public InternalRamAllocated
   {
   public:
-    canlogconnection(canlog* logger);
+    canlogconnection(canlog* logger, std::string format, canformat::canformat_serve_mode_t mode);
     virtual ~canlogconnection();
 
   public:
@@ -82,6 +82,7 @@ class canlogconnection: public InternalRamAllocated
 
   public:
     canlog*        m_logger;
+    canformat*     m_formatter;
     mg_connection* m_nc;
     std::string    m_peer;
     bool           m_ispaused;
@@ -131,13 +132,14 @@ class canlog : public InternalRamAllocated
     const char*         m_type;
     std::string         m_format;
     canformat*          m_formatter;
+    canformat::canformat_serve_mode_t m_mode;
     canfilter*          m_filter;
 
   public:
     #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
     typedef std::map<mg_connection*, canlogconnection*> conn_map_t;
     conn_map_t m_connmap;
-    OvmsMutex m_cmmutex;
+    OvmsRecMutex m_cmmutex;
     #endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
 
   public:

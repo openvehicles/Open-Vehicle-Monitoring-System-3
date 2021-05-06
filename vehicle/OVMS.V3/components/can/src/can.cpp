@@ -529,7 +529,7 @@ const char* GetCanLogTypeName(CAN_log_type_t type)
 
 void can::LogFrame(canbus* bus, CAN_log_type_t type, const CAN_frame_t* frame)
   {
-  OvmsMutexLock lock(&m_loggermap_mutex);
+  OvmsRecMutexLock lock(&m_loggermap_mutex);
 
   for (canlog_map_t::iterator it=m_loggermap.begin(); it!=m_loggermap.end(); ++it)
     {
@@ -539,7 +539,7 @@ void can::LogFrame(canbus* bus, CAN_log_type_t type, const CAN_frame_t* frame)
 
 void can::LogStatus(canbus* bus, CAN_log_type_t type, const CAN_status_t* status)
   {
-  OvmsMutexLock lock(&m_loggermap_mutex);
+  OvmsRecMutexLock lock(&m_loggermap_mutex);
 
   for (canlog_map_t::iterator it=m_loggermap.begin(); it!=m_loggermap.end(); ++it)
     {
@@ -549,7 +549,7 @@ void can::LogStatus(canbus* bus, CAN_log_type_t type, const CAN_status_t* status
 
 void can::LogInfo(canbus* bus, CAN_log_type_t type, const char* text)
   {
-  OvmsMutexLock lock(&m_loggermap_mutex);
+  OvmsRecMutexLock lock(&m_loggermap_mutex);
 
   for (canlog_map_t::iterator it=m_loggermap.begin(); it!=m_loggermap.end(); ++it)
     {
@@ -646,7 +646,7 @@ uint32_t can::AddLogger(canlog* logger, int filterc, const char* const* filterv)
     logger->SetFilter(filter);
     }
 
-  OvmsMutexLock lock(&m_loggermap_mutex);
+  OvmsRecMutexLock lock(&m_loggermap_mutex);
   uint32_t id = m_logger_id++;
   m_loggermap[id] = logger;
 
@@ -660,7 +660,7 @@ bool can::HasLogger()
 
 canlog* can::GetLogger(uint32_t id)
   {
-  OvmsMutexLock lock(&m_loggermap_mutex);
+  OvmsRecMutexLock lock(&m_loggermap_mutex);
 
   auto k = m_loggermap.find(id);
   if (k != m_loggermap.end())
@@ -671,7 +671,7 @@ canlog* can::GetLogger(uint32_t id)
 
 bool can::RemoveLogger(uint32_t id)
   {
-  OvmsMutexLock lock(&m_loggermap_mutex);
+  OvmsRecMutexLock lock(&m_loggermap_mutex);
 
   auto k = m_loggermap.find(id);
   if (k != m_loggermap.end())
@@ -687,7 +687,7 @@ bool can::RemoveLogger(uint32_t id)
 
 void can::RemoveLoggers()
   {
-  OvmsMutexLock lock(&m_loggermap_mutex);
+  OvmsRecMutexLock lock(&m_loggermap_mutex);
 
   for (canlog_map_t::iterator it=m_loggermap.begin(); it!=m_loggermap.end();)
     {

@@ -60,6 +60,10 @@ struct DashboardConfig;
 #define ISOTP_EXTADR                    1     // extended addressing (19 bit IDs)
 #define ISOTP_EXTFRAME                  2     // extended frame mode (29 bit IDs)
 
+// Argument tag:
+#define POLL_TXDATA                     0xff  // poll_pid_t using xargs for external payload up to 4095 bytes
+
+
 // OBD2/UDS Polling types supported:
 //  (see https://en.wikipedia.org/wiki/OBD-II_PIDs
 //   and https://en.wikipedia.org/wiki/Unified_Diagnostic_Services)
@@ -71,46 +75,59 @@ struct DashboardConfig;
 // alternatively to the single PID in the poll_pid_t.args field, which extends the pid by a data
 // length and up to 6 data bytes. A common example is reading a DTC info, the service has an
 // 8 bit PID (subtype) and depending on the subtype 1-4 additional parameter bytes:
-// const OvmsVehicle::poll_pid_t twizy_poll_default[] = {
-//  { TXID, RXID, VEHICLE_POLL_TYPE_READDTC, {.args={ PID, DATALEN, DATA1, … }}, { 0, 10, 60, 0 }, 0 },
-//  …
-// See OvmsVehicleRenaultTwizy::ObdRequest() for an example on how to send dynamic requests
-// with additional arguments.
-
+//  { TXID, RXID, POLLTYPE, {.args={ PID, DATALEN, DATA1, … }}, {…TIMES…}, 0, ISOTP_STD }
+// 
+// Since version 3.2.016-140 the poller supports multi-frame requests and adds a more versatile way
+// to pass additional arguments / TX data of up to 4095 bytes using the new 'xargs' union member,
+// which takes a data length and a pointer to an uint8_t array. The xargs.tag member needs to
+// be set to POLL_TXDATA for this.
+// 
+// Use the utility macro POLL_PID_DATA (see below) to create poll_pid_t entries like this:
+//  { TXID, RXID, POLLTYPE, POLL_PID_DATA(PID, DATASTRING), {…TIMES…}, 0, ISOTP_STD }
+// 
+// DATASTRING is a C string for ease of use, the terminating NUL char is excluded by the macro.
+// To pass hexadecimal values, simply define them by '\x..', example:
+//  POLL_PID_DATA(0x21D4, "\x0F\x02\0x00\xAB\xCD")
+// 
+// The poller automatically uses a single or multi frame request as needed.
+// 
+// See OvmsVehicle::PollSingleRequest() on how to send dynamic requests with additional arguments.
 
 #define VEHICLE_POLL_TYPE_NONE          0x00
 
+
 // OBD (ISO 15031) service identifiers supported:
-#define VEHICLE_POLL_TYPE_OBDIICURRENT  0x01 // Mode 01 "current data" (8 bit PID)
-#define VEHICLE_POLL_TYPE_OBDIIFREEZE   0x02 // Mode 02 "freeze frame data" (8 bit PID)
-#define VEHICLE_POLL_TYPE_READ_ERDTC    0x03 // Mode 03 read emission-related DTC (no PID)
-#define VEHICLE_POLL_TYPE_CLEAR_ERDTC   0x04 // Mode 04 clear/reset emission-related DTC (no PID)
-#define VEHICLE_POLL_TYPE_READOXSTEST   0x05 // Mode 05 read oxygen sensor monitoring test results (16 bit PID)
-#define VEHICLE_POLL_TYPE_READOBMTEST   0x06 // Mode 06 read on-board monitoring test results (8 bit PID)
-#define VEHICLE_POLL_TYPE_READ_DCERDTC  0x07 // Mode 07 read driving cycle emission-related DTC (no PID)
-#define VEHICLE_POLL_TYPE_REQOBUCTRL    0x08 // Mode 08 request on-board unit control (8 bit PID)
-#define VEHICLE_POLL_TYPE_OBDIIVEHICLE  0x09 // Mode 09 "vehicle information" (8 bit PID)
-#define VEHICLE_POLL_TYPE_READ_PERMDTC  0x0A // Mode 0A read permanent (cleared) DTC (no PID)
+#define VEHICLE_POLL_TYPE_OBDIICURRENT    0x01 // Mode 01 "current data" (8 bit PID)
+#define VEHICLE_POLL_TYPE_OBDIIFREEZE     0x02 // Mode 02 "freeze frame data" (8 bit PID)
+#define VEHICLE_POLL_TYPE_READ_ERDTC      0x03 // Mode 03 read emission-related DTC (no PID)
+#define VEHICLE_POLL_TYPE_CLEAR_ERDTC     0x04 // Mode 04 clear/reset emission-related DTC (no PID)
+#define VEHICLE_POLL_TYPE_READOXSTEST     0x05 // Mode 05 read oxygen sensor monitoring test results (16 bit PID)
+#define VEHICLE_POLL_TYPE_READOBMTEST     0x06 // Mode 06 read on-board monitoring test results (8 bit PID)
+#define VEHICLE_POLL_TYPE_READ_DCERDTC    0x07 // Mode 07 read driving cycle emission-related DTC (no PID)
+#define VEHICLE_POLL_TYPE_REQOBUCTRL      0x08 // Mode 08 request on-board unit control (8 bit PID)
+#define VEHICLE_POLL_TYPE_OBDIIVEHICLE    0x09 // Mode 09 "vehicle information" (8 bit PID)
+#define VEHICLE_POLL_TYPE_READ_PERMDTC    0x0A // Mode 0A read permanent (cleared) DTC (no PID)
 
 // UDS (ISO 14229) service identifiers supported:
-#define VEHICLE_POLL_TYPE_OBDIISESSION  0x10 // UDS: Diagnostic Session Control (8 bit PID)
-#define VEHICLE_POLL_TYPE_TESTERPRESENT 0x3E // UDS: TesterPresent (8 bit PID)
-#define VEHICLE_POLL_TYPE_SECACCESS     0x27 // UDS: SecurityAccess (8 bit PID)
-#define VEHICLE_POLL_TYPE_COMCONTROL    0x28 // UDS: CommunicationControl (8 bit PID)
-#define VEHICLE_POLL_TYPE_ECURESET      0x11 // UDS: ECUReset (8 bit PID)
-#define VEHICLE_POLL_TYPE_CLEARDTC      0x14 // UDS: ClearDiagnosticInformation (no PID)
-#define VEHICLE_POLL_TYPE_READDTC       0x19 // UDS: ReadDTCInformation (8 bit PID)
-#define VEHICLE_POLL_TYPE_OBDIIEXTENDED 0x22 // UDS: ReadDataByIdentifier (16 bit PID) (legacy alias for READDATA)
-#define VEHICLE_POLL_TYPE_READDATA      0x22 // UDS: ReadDataByIdentifier (16 bit PID)
-#define VEHICLE_POLL_TYPE_READMEMORY    0x23 // UDS: ReadMemoryByAddress (no PID)
-#define VEHICLE_POLL_TYPE_READSCALING   0x24 // UDS: ReadScalingDataByIdentifier (16 bit PID)
-#define VEHICLE_POLL_TYPE_WRITEDATA     0x2E // UDS: WriteDataByIdentifier (16 bit PID)
-#define VEHICLE_POLL_TYPE_WRITEMEMORY   0x3D // UDS: WriteMemoryByAddress (8 bit PID)
-#define VEHICLE_POLL_TYPE_IOCONTROL     0x2F // UDS: InputOutputControlByIdentifier (16 bit PID)
+#define VEHICLE_POLL_TYPE_OBDIISESSION    0x10 // UDS: Diagnostic Session Control (8 bit PID)
+#define VEHICLE_POLL_TYPE_TESTERPRESENT   0x3E // UDS: TesterPresent (8 bit PID)
+#define VEHICLE_POLL_TYPE_SECACCESS       0x27 // UDS: SecurityAccess (8 bit PID)
+#define VEHICLE_POLL_TYPE_COMCONTROL      0x28 // UDS: CommunicationControl (8 bit PID)
+#define VEHICLE_POLL_TYPE_ECURESET        0x11 // UDS: ECUReset (8 bit PID)
+#define VEHICLE_POLL_TYPE_CLEARDTC        0x14 // UDS: ClearDiagnosticInformation (no PID)
+#define VEHICLE_POLL_TYPE_READDTC         0x19 // UDS: ReadDTCInformation (8 bit PID)
+#define VEHICLE_POLL_TYPE_OBDIIEXTENDED   0x22 // UDS: ReadDataByIdentifier (16 bit PID) (legacy alias for READDATA)
+#define VEHICLE_POLL_TYPE_READDATA        0x22 // UDS: ReadDataByIdentifier (16 bit PID)
+#define VEHICLE_POLL_TYPE_READMEMORY      0x23 // UDS: ReadMemoryByAddress (no PID)
+#define VEHICLE_POLL_TYPE_READSCALING     0x24 // UDS: ReadScalingDataByIdentifier (16 bit PID)
+#define VEHICLE_POLL_TYPE_WRITEDATA       0x2E // UDS: WriteDataByIdentifier (16 bit PID)
+#define VEHICLE_POLL_TYPE_ROUTINECONTROL  0x31 // UDS: Routine Control (16 bit PID)
+#define VEHICLE_POLL_TYPE_WRITEMEMORY     0x3D // UDS: WriteMemoryByAddress (8 bit PID)
+#define VEHICLE_POLL_TYPE_IOCONTROL       0x2F // UDS: InputOutputControlByIdentifier (16 bit PID)
 
 // Other service identifiers supported:
-#define VEHICLE_POLL_TYPE_OBDII_1A      0x1A // Custom: Mode 1A (8 bit PID)
-#define VEHICLE_POLL_TYPE_OBDIIGROUP    0x21 // Custom: Read data by 8 bit PID
+#define VEHICLE_POLL_TYPE_OBDII_1A        0x1A // Custom: Mode 1A (8 bit PID)
+#define VEHICLE_POLL_TYPE_OBDIIGROUP      0x21 // Custom: Read data by 8 bit PID
 
 // Utils:
 #define POLL_TYPE_HAS_16BIT_PID(type) \
@@ -125,7 +142,8 @@ struct DashboardConfig;
    (type) == VEHICLE_POLL_TYPE_READ_ERDTC || \
    (type) == VEHICLE_POLL_TYPE_CLEAR_ERDTC || \
    (type) == VEHICLE_POLL_TYPE_READ_DCERDTC || \
-   (type) == VEHICLE_POLL_TYPE_READ_PERMDTC)
+   (type) == VEHICLE_POLL_TYPE_READ_PERMDTC || \
+   (type) == VEHICLE_POLL_TYPE_ROUTINECONTROL)
 #define POLL_TYPE_HAS_8BIT_PID(type) \
   (!POLL_TYPE_HAS_NO_PID(type) && !POLL_TYPE_HAS_16BIT_PID(type))
 
@@ -138,6 +156,10 @@ struct DashboardConfig;
 
 // Macro for poll_pid_t termination
 #define POLL_LIST_END                   { 0, 0, 0x00, 0x00, { 0, 0, 0 }, 0, 0 }
+
+// Poll list PID xargs utility (see info above):
+#define POLL_PID_DATA(pid, datastring) \
+  {.xargs={ (pid), POLL_TXDATA, sizeof(datastring)-1, reinterpret_cast<const uint8_t*>(datastring) }}
 
 // PollSingleRequest specific result codes:
 #define POLLSINGLE_OK                   0 
@@ -408,9 +430,16 @@ class OvmsVehicle : public InternalRamAllocated
         struct
           {
           uint16_t pid;                         // PID for requests with additional payload
-          uint8_t datalen;                      // payload length
-          uint8_t data[6];                      // payload data
+          uint8_t datalen;                      // payload length (bytes)
+          uint8_t data[6];                      // inline payload data (single frame request)
           } args;
+        struct
+          {
+          uint16_t pid;                         // PID for requests with additional payload
+          uint8_t tag;                          // needs to be POLL_TXDATA
+          uint16_t datalen;                     // payload length (bytes, max 4095)
+          const uint8_t* data;                  // pointer to payload data (single/multi frame request)
+          } xargs;
         };
       uint16_t polltime[VEHICLE_POLL_NSTATES];  // poll intervals in seconds for used poll states
       uint8_t  pollbus;                         // 0 = default CAN bus from PollSetPidList(), 1…4 = specific
@@ -431,9 +460,13 @@ class OvmsVehicle : public InternalRamAllocated
     uint32_t          m_poll_moduleid_high;   // Expected response moduleid high mark
     uint16_t          m_poll_type;            // Expected type
     uint16_t          m_poll_pid;             // Expected PID
-    uint16_t          m_poll_ml_remain;       // Bytes remaining for ML poll
-    uint16_t          m_poll_ml_offset;       // Offset of ML poll
-    uint16_t          m_poll_ml_frame;        // Frame number for ML poll
+    const uint8_t*    m_poll_tx_data;         // Payload data for multi frame request
+    uint16_t          m_poll_tx_remain;       // Payload bytes remaining for multi frame request
+    uint16_t          m_poll_tx_offset;       // Payload offset of multi frame request
+    uint16_t          m_poll_tx_frame;        // Frame number for multi frame request
+    uint16_t          m_poll_ml_remain;       // Bytes remaining for multi frame response
+    uint16_t          m_poll_ml_offset;       // Offset of multi frame response
+    uint16_t          m_poll_ml_frame;        // Frame number for multi frame response
     uint8_t           m_poll_wait;            // Wait counter for a reply from a sent poll or bytes remaining.
                                               // Gets set = 2 when a poll is sent OR when bytes are remaining after receiving.
                                               // Gets set = 0 when a poll is received.

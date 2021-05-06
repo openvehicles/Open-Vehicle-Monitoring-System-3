@@ -35,7 +35,7 @@
 class canlog_vfs_conn: public canlogconnection
   {
   public:
-    canlog_vfs_conn(canlog* logger);
+    canlog_vfs_conn(canlog* logger, std::string format, canformat::canformat_serve_mode_t mode);
     virtual ~canlog_vfs_conn();
 
   public:

@@ -1,9 +1,11 @@
 /*
 ;    Project:       Open Vehicle Monitor System
-;    Module:        CAN dump CRTD format
-;    Date:          18th January 2018
+;    Date:          25th February 2021
 ;
-;    (C) 2018       Mark Webb-Johnson
+;    Changes:
+;    1.0  Initial release
+;
+;    (C) 2021       Chris Staite
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -24,23 +26,15 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __CANFORMAT_CRTD_H__
-#define __CANFORMAT_CRTD_H__
+#include <stdint.h>
 
-#include "canformat.h"
-
-#define CANFORMAT_CRTD_MAXLEN 192
-
-class canformat_crtd : public canformat
-  {
-  public:
-    canformat_crtd(const char* type);
-    virtual ~canformat_crtd();
-
-  public:
-    virtual std::string get(CAN_log_message_t* message);
-    virtual std::string getheader(struct timeval *time);
-    virtual size_t put(CAN_log_message_t* message, uint8_t *buffer, size_t len, bool* hasmore, canlogconnection* clc=NULL);
-  };
-
-#endif // __CANFORMAT_CRTD_H__
+class MgEvPasscode
+{
+    public:
+        static uint32_t GWMKey1(uint32_t seed);
+        static uint32_t GWMKey2(uint32_t seed);
+        static uint32_t BCMKey(uint32_t seed);
+    private:
+        static uint32_t umul_lsr45(uint32_t a, uint32_t b);
+        static uint32_t iterate(uint32_t seed, uint32_t count);
+};

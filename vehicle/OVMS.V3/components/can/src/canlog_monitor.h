@@ -35,7 +35,7 @@
 class canlog_monitor_conn: public canlogconnection
   {
   public:
-    canlog_monitor_conn(canlog* logger);
+    canlog_monitor_conn(canlog* logger, std::string format, canformat::canformat_serve_mode_t mode);
     virtual ~canlog_monitor_conn();
 
   public:

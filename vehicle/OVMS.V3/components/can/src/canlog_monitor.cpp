@@ -74,8 +74,8 @@ OvmsCanLogMonitorInit::OvmsCanLogMonitorInit()
 
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
 
-canlog_monitor_conn::canlog_monitor_conn(canlog* logger)
-  : canlogconnection(logger)
+canlog_monitor_conn::canlog_monitor_conn(canlog* logger, std::string format, canformat::canformat_serve_mode_t mode)
+  : canlogconnection(logger, format, mode)
   {
   }
 
@@ -133,8 +133,8 @@ bool canlog_monitor::Open()
   {
   ESP_LOGI(TAG, "Now logging CAN messages to monitor");
 
-  OvmsMutexLock lock(&m_cmmutex);
-  canlog_monitor_conn* clc = new canlog_monitor_conn(this);
+  OvmsRecMutexLock lock(&m_cmmutex);
+  canlog_monitor_conn* clc = new canlog_monitor_conn(this, m_format, m_mode);
   clc->m_nc = NULL;
   clc->m_peer = std::string("MONITOR");
   m_connmap[NULL] = clc;
@@ -151,7 +151,7 @@ void canlog_monitor::Close()
   {
   ESP_LOGI(TAG, "Closed monitor log: %s", GetStats().c_str());
 
-  OvmsMutexLock lock(&m_cmmutex);
+  OvmsRecMutexLock lock(&m_cmmutex);
   for (conn_map_t::iterator it=m_connmap.begin(); it!=m_connmap.end(); ++it)
     {
     delete it->second;

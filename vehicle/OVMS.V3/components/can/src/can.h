@@ -193,7 +193,7 @@ typedef struct
   union
     {
     CAN_frame_t frame;  // CAN_frame
-    canbus* bus;        
+    canbus* bus;
     } body;
   } CAN_queue_msg_t;
 
@@ -408,7 +408,7 @@ class can : public InternalRamAllocated
   public:
     typedef std::map<uint32_t, canlog*> canlog_map_t;
     canlog_map_t m_loggermap;
-    OvmsMutex m_loggermap_mutex;
+    OvmsRecMutex m_loggermap_mutex;
     uint32_t m_logger_id;
 
   public:
