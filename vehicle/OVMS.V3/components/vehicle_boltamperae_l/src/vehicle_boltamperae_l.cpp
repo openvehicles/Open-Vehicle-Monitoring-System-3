@@ -31,24 +31,24 @@
 */
 
 #include "ovms_log.h"
-static const char *TAG = "v-voltampera";
+static const char *TAG = "v-boltamperae_l";
 
 #include <stdio.h>
 #include "ovms_config.h"
-#include "vehicle_voltampera.h"
+#include "vehicle_boltamperae_l.h"
 #include "canutils.h"
 
-#define VA_CANDATA_TIMEOUT 10
+#define BAEL_CANDATA_TIMEOUT 10
 
-#define VA_CHARGING_12V_THRESHOLD (float)12.7
+#define BAEL_CHARGING_12V_THRESHOLD (float)12.7
 
 
-#define VA_BCM 0x241
-#define VA_TESTER_PRESENT_TIMEOUT 30*60 //  seconds
+#define BAEL_BCM 0x241
+#define BAEL_TESTER_PRESENT_TIMEOUT 30*60 //  seconds
 
-#define VA_POLLING_START_DELAY 2 // seconds
-#define VA_POLLING_NORMAL_THROTTLING 1 
-#define VA_POLLING_HIGH_THROTTLING 20 
+#define BAEL_POLLING_START_DELAY 2 // seconds
+#define BAEL_POLLING_NORMAL_THROTTLING 1 
+#define BAEL_POLLING_HIGH_THROTTLING 20 
 
 
 // Use states:
@@ -96,7 +96,7 @@ OvmsVehicleVoltAmpera::OvmsVehicleVoltAmpera()
   m_modelyear = 0;
   m_charge_timer = 0;
   m_charge_wm = 0;
-  m_candata_timer = VA_CANDATA_TIMEOUT;
+  m_candata_timer = BAEL_CANDATA_TIMEOUT;
   m_tx_retry_counter = 0;
   m_tester_present_timer = 0;
   m_controlled_lights = 0;
@@ -110,7 +110,7 @@ OvmsVehicleVoltAmpera::OvmsVehicleVoltAmpera()
   BmsSetCellDefaultThresholdsVoltage(0.020, 0.030);
   BmsSetCellDefaultThresholdsTemperature(4.0, 8.0);
 
-  // VA metrics
+  // BAEL metrics
   mt_charging_limits = MyMetrics.InitVector<int>("xva.v.b.charging_limits", SM_STALE_HIGH, "0");
   mt_coolant_temp = new OvmsMetricInt("xva.v.e.coolant_temp", SM_STALE_MIN, Celcius);
   mt_coolant_heater_pwr = new OvmsMetricFloat("xva.v.e.coolant_heater_pwr", SM_STALE_MIN, kWh);
@@ -118,7 +118,7 @@ OvmsVehicleVoltAmpera::OvmsVehicleVoltAmpera()
   mt_v_trip_ev = new OvmsMetricFloat("xva.v.p.trip.ev", SM_STALE_HIGH, Kilometers);
 
   // Config parameters
-  MyConfig.RegisterParam("xva", "Volt/Ampera", true, true);
+  MyConfig.RegisterParam("xbael", "Bolt/Amperae_l", true, true);
   ConfigChanged(NULL);
 
   ClimateControlInit();
@@ -175,7 +175,7 @@ OvmsVehicleVoltAmpera::OvmsVehicleVoltAmpera()
 #endif  
   }
 
-OvmsVehicleVoltAmpera::~OvmsVehicleVoltAmpera()
+OvmsVehicleBoltAmperae_l::~OvmsVehicleBoltAmperae_l()
   {
   ESP_LOGI(TAG, "Shutdown Volt/Ampera vehicle module");
   MyCan.DeregisterCallback(TAG);
@@ -194,18 +194,18 @@ OvmsVehicleVoltAmpera::~OvmsVehicleVoltAmpera()
 /**
  * ConfigChanged: reload single/all configuration variables
  */
-void OvmsVehicleVoltAmpera::ConfigChanged(OvmsConfigParam* param)
+void OvmsVehicleBoltAmperae_l::ConfigChanged(OvmsConfigParam* param)
   {
-  if (param && param->GetName() != "xva")
+  if (param && param->GetName() != "xbael")
     return;
 
   ESP_LOGD(TAG, "Volt/Ampera reload configuration");
 
-  m_range_rated_km = MyConfig.GetParamValueInt("xva", "range.km", 0);
-  m_extended_wakeup = MyConfig.GetParamValueBool("xva", "extended_wakeup", false);
+  m_range_rated_km = MyConfig.GetParamValueInt("xbael", "range.km", 0);
+  m_extended_wakeup = MyConfig.GetParamValueBool("xbael", "extended_wakeup", false);
   }
 
-void OvmsVehicleVoltAmpera::Status(int verbosity, OvmsWriter* writer)
+void OvmsVehicleBoltAmperae_l::Status(int verbosity, OvmsWriter* writer)
   {
   writer->printf("Vehicle:  Volt Ampera (%s %d)\n", m_type, m_modelyear+2000);
   writer->printf("VIN:      %s\n",m_vin);
@@ -218,7 +218,7 @@ void OvmsVehicleVoltAmpera::Status(int verbosity, OvmsWriter* writer)
   }
 
 
-void OvmsVehicleVoltAmpera::TxCallback(const CAN_frame_t* p_frame, bool success)
+void OvmsVehicleBoltAmperae_l::TxCallback(const CAN_frame_t* p_frame, bool success)
   {
   const uint8_t *d = p_frame->data.u8;
   if (p_frame->MsgID == 0x7e4)
@@ -241,12 +241,12 @@ void OvmsVehicleVoltAmpera::TxCallback(const CAN_frame_t* p_frame, bool success)
   }
 
 
-void OvmsVehicleVoltAmpera::IncomingFrameCan1(CAN_frame_t* p_frame)
+void OvmsVehicleBoltAmperae_l::IncomingFrameCan1(CAN_frame_t* p_frame)
   {
   uint8_t *d = p_frame->data.u8;
   int k;
 
-  m_candata_timer = VA_CANDATA_TIMEOUT;
+  m_candata_timer = BAEL_CANDATA_TIMEOUT;
 
   ESP_LOGV(TAG,"CAN1 message received: %08x: [%02x %02x %02x %02x %02x %02x %02x %02x]", 
     p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7] );
@@ -259,7 +259,7 @@ void OvmsVehicleVoltAmpera::IncomingFrameCan1(CAN_frame_t* p_frame)
     {
     ESP_LOGI(TAG,"Car has woken (CAN bus activity)");
     StandardMetrics.ms_v_env_awake->SetValue(true);
-    m_startPolling_timer = VA_POLLING_START_DELAY;
+    m_startPolling_timer = BAEL_POLLING_START_DELAY;
     }
 
   // Process the incoming message
@@ -354,7 +354,7 @@ void OvmsVehicleVoltAmpera::IncomingFrameCan1(CAN_frame_t* p_frame)
         m_type[4] = (m_modelyear % 10) + '0';
         StandardMetrics.ms_v_vin->SetValue(m_vin);
         StandardMetrics.ms_v_type->SetValue(m_type);
-        if (m_range_rated_km == 0)
+         if (m_range_rated_km == 0)
           {
           switch (m_modelyear)
             {
@@ -373,6 +373,7 @@ void OvmsVehicleVoltAmpera::IncomingFrameCan1(CAN_frame_t* p_frame)
             }
           }
         }
+
       if (mt_charging_limits->AsString()=="0")
         {
         // Set defaults
@@ -388,7 +389,7 @@ void OvmsVehicleVoltAmpera::IncomingFrameCan1(CAN_frame_t* p_frame)
       break;
       }
 
-    case 0x1f5: // Byte 4: Shift Position PRNDL 1=Park, 2=Reverse, 3=Neutral, 4=Drive, 5=Low
+    case 0x1B1A: // Byte 4: Shift Position PRNDL 1=Park, 2=Reverse, 3=Neutral, 4=Drive, 5=Low
       {
       if (d[3]==1) 
         StandardMetrics.ms_v_env_gear->SetValue(-2); // Park
@@ -408,23 +409,23 @@ void OvmsVehicleVoltAmpera::IncomingFrameCan1(CAN_frame_t* p_frame)
     }
   }
 
-void OvmsVehicleVoltAmpera::IncomingFrameCan2(CAN_frame_t* p_frame)
+void OvmsVehicleBoltAmperae_l::IncomingFrameCan2(CAN_frame_t* p_frame)
   {
   //uint8_t *d = p_frame->data.u8;
   //ESP_LOGI(TAG,"CAN2 message received: %08x: %02x %02x %02x %02x %02x %02x %02x %02x", 
   //  p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7] );
   }
 
-void OvmsVehicleVoltAmpera::IncomingFrameCan3(CAN_frame_t* p_frame)
+void OvmsVehicleBoltAmperae_l::IncomingFrameCan3(CAN_frame_t* p_frame)
   {
   IncomingFrameCan4(p_frame);  // assume third can bus messages coming from SWCAN bus
   }
 
-void OvmsVehicleVoltAmpera::IncomingFrameCan4(CAN_frame_t* p_frame)
+void OvmsVehicleBoltAmperae_l::IncomingFrameCan4(CAN_frame_t* p_frame)
   {
   uint8_t *d = p_frame->data.u8;
 
-  m_candata_timer = VA_CANDATA_TIMEOUT;
+  m_candata_timer = BAEL_CANDATA_TIMEOUT;
 
   ESP_LOGV(TAG,"SW CAN message received: %08x: [%02x %02x %02x %02x %02x %02x %02x %02x]", 
     p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7] );
@@ -434,7 +435,7 @@ void OvmsVehicleVoltAmpera::IncomingFrameCan4(CAN_frame_t* p_frame)
     {
     ESP_LOGI(TAG,"Car has woken (SWCAN bus activity)");
     StandardMetrics.ms_v_env_awake->SetValue(true);
-    m_startPolling_timer = VA_POLLING_START_DELAY;
+    m_startPolling_timer = BAEL_POLLING_START_DELAY;
     }
 
   // Process the incoming message
@@ -614,7 +615,7 @@ void OvmsVehicleVoltAmpera::IncomingFrameCan4(CAN_frame_t* p_frame)
       } 
 
     // Hood
-    case 0x10728040: 
+    case 0x247A: //0x10728040
       {
       StdMetrics.ms_v_door_hood->SetValue(d[0] & 1<<1);
       break;
@@ -645,7 +646,7 @@ void OvmsVehicleVoltAmpera::IncomingFrameCan4(CAN_frame_t* p_frame)
     // This Charge kWh statistic
     case 0x102820CB: 
       {
-      StdMetrics.ms_v_bat_energy_used->SetValue((float)((d[2]<<8 | d[3]) & 0x3fff)/10, kWh);
+      StdMetrics.ms_v_bat_energy_used->SetValue((float)((d[2]<<8 | d[3]) & 0x3fff) * 0.01, kWh);
       break;
       } 
 
@@ -664,7 +665,7 @@ void OvmsVehicleVoltAmpera::IncomingFrameCan4(CAN_frame_t* p_frame)
     ClimateControlIncomingSWCAN(p_frame);
   }
 
-void OvmsVehicleVoltAmpera::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
+void OvmsVehicleBoltAmperae_l::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
   {
   uint8_t value = *data;
 
@@ -717,13 +718,14 @@ void OvmsVehicleVoltAmpera::IncomingPollReply(canbus* bus, uint16_t type, uint16
       int soc = ((int)value * 39)/99;
       StandardMetrics.ms_v_bat_soc->SetValue(soc);
       if (m_range_rated_km != 0)
-        StandardMetrics.ms_v_bat_range_ideal->SetValue((soc * m_range_rated_km)/100, Kilometers);
+        StandardMetrics.ms_v_bat_range_ideal->SetValue((soc * m_range_rated_km)/100 * 4 , Kilometers);
       break;
       }
     case 0x000d:  // Vehicle speed
       StandardMetrics.ms_v_pos_speed->SetValue(value,Kilometers);
       break;
     /* 
+     
     //ms_v_bat_range_est set from swcan message
     case 0x2487:  //Distance Traveled on Battery Energy This Drive Cycle
       {
@@ -734,6 +736,7 @@ void OvmsVehicleVoltAmpera::IncomingPollReply(canbus* bus, uint16_t type, uint16
       break;
       }
     */
+    
     case 0x41a3:  // High-voltage Battery Capacity  
       StandardMetrics.ms_v_bat_cac->SetValue((float)(data[0]<<8 | data[1]) / 10, AmpHours);
       break;
@@ -764,7 +767,7 @@ void OvmsVehicleVoltAmpera::IncomingPollReply(canbus* bus, uint16_t type, uint16
     }
   }
 
-void OvmsVehicleVoltAmpera::Ticker10(uint32_t ticker)
+void OvmsVehicleBoltAmperae_l::Ticker10(uint32_t ticker)
   {
   if (m_tx_retry_counter>0) 
     {
@@ -773,7 +776,7 @@ void OvmsVehicleVoltAmpera::Ticker10(uint32_t ticker)
     }
   }
 
-void OvmsVehicleVoltAmpera::Ticker1(uint32_t ticker)
+void OvmsVehicleBoltAmperae_l::Ticker1(uint32_t ticker)
   {
   // Check if the car has gone to sleep
   if (m_candata_timer > 0)
@@ -796,7 +799,7 @@ void OvmsVehicleVoltAmpera::Ticker1(uint32_t ticker)
       if(m_poll_state == 0)
         {
         // Start polling with delay (battery module need time to wake up)
-        PollSetThrottling(VA_POLLING_HIGH_THROTTLING);  // get all cells info before sleep
+        PollSetThrottling(BAEL_POLLING_HIGH_THROTTLING);  // get all cells info before sleep
         PollSetState(2);
         }
       }
@@ -806,7 +809,7 @@ void OvmsVehicleVoltAmpera::Ticker1(uint32_t ticker)
     {
     // polling complete one time for state 2. Switch to state 1.
     PollSetState(1);
-    PollSetThrottling(VA_POLLING_NORMAL_THROTTLING);
+    PollSetThrottling(BAEL_POLLING_NORMAL_THROTTLING);
     }
 
   PreheatWatchdog();
@@ -814,7 +817,7 @@ void OvmsVehicleVoltAmpera::Ticker1(uint32_t ticker)
   if (m_controlled_lights)
     {
     m_tester_present_timer++;
-    if ( (m_tester_present_timer > VA_TESTER_PRESENT_TIMEOUT) || (StandardMetrics.ms_v_env_gear->AsInt(-2) > -2) )
+    if ( (m_tester_present_timer > BAEL_TESTER_PRESENT_TIMEOUT) || (StandardMetrics.ms_v_env_gear->AsInt(-2) > -2) )
       {
       // Lights have been on too long or the car isn't parked anymore -> prevent Tester Present message (lights will go off after few secs)
       ESP_LOGI(TAG,"Lights on timeout OR car not parked -> turning off");
@@ -822,7 +825,7 @@ void OvmsVehicleVoltAmpera::Ticker1(uint32_t ticker)
       m_controlled_lights = (va_light_t)0;
       }
     else
-      SendTesterPresentMessage(VA_BCM);
+      SendTesterPresentMessage(BAEL_BCM);
     }
 
   int cc = StandardMetrics.ms_v_charge_current->AsInt();
@@ -859,7 +862,7 @@ void OvmsVehicleVoltAmpera::Ticker1(uint32_t ticker)
         if (m_charge_wm > 60000)
           {
           StandardMetrics.ms_v_charge_kwh->SetValue(
-            StandardMetrics.ms_v_charge_kwh->AsInt() + 10);
+            StandardMetrics.ms_v_charge_kwh->AsInt() + 1);
           m_charge_wm -= 60000;
           }
         }
@@ -897,7 +900,7 @@ void OvmsVehicleVoltAmpera::Ticker1(uint32_t ticker)
       }
 
     // 12V battery may be charging via High Voltage battery when car is on, or via external battery charger
-    if (StandardMetrics.ms_v_bat_12v_voltage->AsFloat() > VA_CHARGING_12V_THRESHOLD)
+    if (StandardMetrics.ms_v_bat_12v_voltage->AsFloat() > BAEL_CHARGING_12V_THRESHOLD)
       StandardMetrics.ms_v_env_charging12v->SetValue(true);
     else
       StandardMetrics.ms_v_env_charging12v->SetValue(false);
@@ -905,23 +908,23 @@ void OvmsVehicleVoltAmpera::Ticker1(uint32_t ticker)
 
   }
 
-void OvmsVehicleVoltAmpera::NotifiedVehicleOn()
+void OvmsVehicleBoltAmperae_l::NotifiedVehicleOn()
   {
   ESP_LOGI(TAG,"Powertrain enabled");
   PollSetState(1); // abort state 2 if not complete yet
-  PollSetThrottling(VA_POLLING_NORMAL_THROTTLING);
+  PollSetThrottling(BAEL_POLLING_NORMAL_THROTTLING);
   }
 
-void OvmsVehicleVoltAmpera::NotifiedVehicleOff()
+void OvmsVehicleBoltAmperae_l::NotifiedVehicleOff()
   {
   ESP_LOGI(TAG,"Powertrain disabled");
   
   // update all cells info without HV load
-  PollSetThrottling(VA_POLLING_HIGH_THROTTLING);  
+  PollSetThrottling(BAEL_POLLING_HIGH_THROTTLING);  
   PollSetState(2);
   }
 
-void OvmsVehicleVoltAmpera::CommandWakeupComplete( const CAN_frame_t* p_frame, bool success )
+void OvmsVehicleBoltAmperae_l::CommandWakeupComplete( const CAN_frame_t* p_frame, bool success )
   {
 #ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
   ESP_LOGI(TAG,"CommandWakeupComplete. Success: %d", success);
@@ -938,7 +941,7 @@ void OvmsVehicleVoltAmpera::CommandWakeupComplete( const CAN_frame_t* p_frame, b
 #define WAKEUP_DELAY_2 360
 #define WAKEUP_DELAY_3 180
 
-OvmsVehicle::vehicle_command_t OvmsVehicleVoltAmpera::CommandWakeup()
+OvmsVehicle::vehicle_command_t OvmsVehicleBoltAmperae_l::CommandWakeup()
   {
 #ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
   CAN_frame_t txframe;
@@ -1014,7 +1017,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVoltAmpera::CommandWakeup()
 
 
 
-OvmsVehicle::vehicle_command_t OvmsVehicleVoltAmpera::CommandLock(const char* pin)
+OvmsVehicle::vehicle_command_t OvmsVehicleBoltAmperae_l::CommandLock(const char* pin)
   {
 #ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
   CommandWakeup();
@@ -1044,7 +1047,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVoltAmpera::CommandLock(const char* pi
 #endif // #ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
   }
 
-OvmsVehicle::vehicle_command_t OvmsVehicleVoltAmpera::CommandUnlock(const char* pin)
+OvmsVehicle::vehicle_command_t OvmsVehicleBoltAmperae_l::CommandUnlock(const char* pin)
   {
 #ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
   CommandWakeup();
@@ -1077,10 +1080,10 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVoltAmpera::CommandUnlock(const char* 
 #endif // #ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
   }
 
-OvmsVehicle::vehicle_command_t OvmsVehicleVoltAmpera::CommandLights(va_light_t lights, bool turn_on)
+OvmsVehicle::vehicle_command_t OvmsVehicleBoltAmperae_l::CommandLights(va_light_t lights, bool turn_on)
   {
   ESP_LOGI(TAG,"CommandLights: lights 0x%x:%d",(uint32_t)lights,turn_on);
-  SendTesterPresentMessage(VA_BCM);
+  SendTesterPresentMessage(BAEL_BCM);
   vTaskDelay(200 / portTICK_PERIOD_MS);  
 
   CAN_frame_t txframe;
@@ -1088,32 +1091,32 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVoltAmpera::CommandLights(va_light_t l
   if (lights & Park)
       {
       if (turn_on)
-        SEND_STD_FRAME(m_can1, txframe, VA_BCM, 8, 0x07, 0xae, 0x07, 0xff, 0x2f, 0xff, 0x2f, 0xff)
+        SEND_STD_FRAME(m_can1, txframe, BAEL_BCM, 8, 0x07, 0xae, 0x07, 0xff, 0x2f, 0xff, 0x2f, 0xff)
       else
-        SEND_STD_FRAME(m_can1, txframe, VA_BCM, 8, 0x07, 0xae, 0x07, 0xff, 0x00, 0x00, 0x00, 0x00)
+        SEND_STD_FRAME(m_can1, txframe, BAEL_BCM, 8, 0x07, 0xae, 0x07, 0xff, 0x00, 0x00, 0x00, 0x00)
       }
 
   if (lights & Charging_indicator)
       {
       if (turn_on)
-        SEND_STD_FRAME(m_can1, txframe, VA_BCM, 8, 0x07, 0xae, 0x14, 0x00, 0x00, 0x02, 0x00, 0x02)
+        SEND_STD_FRAME(m_can1, txframe, BAEL_BCM, 8, 0x07, 0xae, 0x14, 0x00, 0x00, 0x02, 0x00, 0x02)
       else
-        SEND_STD_FRAME(m_can1, txframe, VA_BCM, 8, 0x07, 0xae, 0x14, 0x00, 0x00, 0x02, 0x00, 0x00)
+        SEND_STD_FRAME(m_can1, txframe, BAEL_BCM, 8, 0x07, 0xae, 0x14, 0x00, 0x00, 0x02, 0x00, 0x00)
       }
 
   if (lights & Interior_lamp)
       {
       if (turn_on)
-        SEND_STD_FRAME(m_can1, txframe, VA_BCM, 8, 0x07, 0xae, 0x08, 0x01, 0x7f, 0xff, 0x00, 0x00)
+        SEND_STD_FRAME(m_can1, txframe, BAEL_BCM, 8, 0x07, 0xae, 0x08, 0x01, 0x7f, 0xff, 0x00, 0x00)
       else
-        SEND_STD_FRAME(m_can1, txframe, VA_BCM, 8, 0x07, 0xae, 0x08, 0x01, 0x00, 0x00, 0x00, 0x00)
+        SEND_STD_FRAME(m_can1, txframe, BAEL_BCM, 8, 0x07, 0xae, 0x08, 0x01, 0x00, 0x00, 0x00, 0x00)
       }
 
   if ( (lights & Left_rear_signal) || (lights & Right_rear_signal) || (lights & Driver_front_signal) || (lights & Passenger_front_signal) 
       || (lights & Center_stop_lamp) )
     {
     // Light group 0x02
-    FRAME_FILL(0, m_can1, txframe, VA_BCM, 8, 0x07,0xae,0x02,0x00,0x00,0x00,0x00,0x00)
+    FRAME_FILL(0, m_can1, txframe, BAEL_BCM, 8, 0x07,0xae,0x02,0x00,0x00,0x00,0x00,0x00)
 
     if (lights & Left_rear_signal)
         {
@@ -1160,7 +1163,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVoltAmpera::CommandLights(va_light_t l
   return Success;
   }
 
-void OvmsVehicleVoltAmpera::FlashLights(va_light_t light, int interval, int count)
+void OvmsVehicleBoltAmperae_l::FlashLights(va_light_t light, int interval, int count)
   {
   for (int i=0;i<count;i++)
     {
@@ -1173,7 +1176,7 @@ void OvmsVehicleVoltAmpera::FlashLights(va_light_t light, int interval, int coun
   }
 
 
-OvmsVehicle::vehicle_command_t OvmsVehicleVoltAmpera::CommandHomelink(int button, int durationms)
+OvmsVehicle::vehicle_command_t OvmsVehicleBoltAmperae_l::CommandHomelink(int button, int durationms)
   {
   switch (button)
     {
@@ -1193,7 +1196,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVoltAmpera::CommandHomelink(int button
   }
 
 
-OvmsVehicle::vehicle_command_t OvmsVehicleVoltAmpera::CommandSetChargeCurrent(uint16_t limit)
+OvmsVehicle::vehicle_command_t OvmsVehicleBoltAmperae_l::CommandSetChargeCurrent(uint16_t limit)
   {
   ESP_LOGI(TAG,"CommandSetChargeCurrent: %d amps",limit);
   CommandWakeup();
@@ -1223,21 +1226,21 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVoltAmpera::CommandSetChargeCurrent(ui
   return Success;
   }
 
-void OvmsVehicleVoltAmpera::SendTesterPresentMessage( uint32_t id )
+void OvmsVehicleBoltAmperae_l::SendTesterPresentMessage( uint32_t id )
   {
   CAN_frame_t txframe;
   SEND_STD_FRAME(m_can1, txframe, id, 8, 0x01, 0x3e, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00)
   }
 
 
-class OvmsVehicleVoltAmperaInit
+class OvmsVehicleBoltAmperae_lInit
   {
-  public: OvmsVehicleVoltAmperaInit();
-} MyOvmsVehicleVoltAmperaInit  __attribute__ ((init_priority (9000)));
+  public: OvmsVehicleBoltAmperae_lInit();
+} MyOvmsVehicleBoltAmperae_lInit  __attribute__ ((init_priority (9000)));
 
-OvmsVehicleVoltAmperaInit::OvmsVehicleVoltAmperaInit()
+OvmsVehicleBoltAmperae_lInit::OvmsVehicleBoltAmperae_lInit()
   {
-  ESP_LOGI(TAG, "Registering Vehicle: Volt/Ampera (9000)");
+  ESP_LOGI(TAG, "Registering Vehicle: Bolt/Amperae_l (9000)");
 
-  MyVehicleFactory.RegisterVehicle<OvmsVehicleVoltAmpera>("VA","Volt/Ampera");
+  MyVehicleFactory.RegisterVehicle<OvmsVehicleBoltAmperae_l>("BAEL","Volt/Ampera");
   }
