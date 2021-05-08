@@ -55,7 +55,9 @@ using namespace std;
 #define VWUP_ELD_TX                     0x7E6   // ECU 51 electric drive                  [DRV,CHG]
 #define VWUP_ELD_RX                     0x7EE
 #define VWUP_INF_TX                     0x773   // ECU 5F information electronics         [DRV]
-#define VWUP_INF_RX                     0x77B
+#define VWUP_INF_RX                     0x7DD
+#define VWUP_IMMO_TX                    0x711   // ECU 25 Immobilizer unit                [DRV]
+#define VWUP_IMMO_RX                    0x77B
 #define VWUP_BAT_MGMT_TX                0x7E5   // ECU 8C hybrid battery management       [DRV,CHG]
 #define VWUP_BAT_MGMT_RX                0x7ED
 #define VWUP_BRKSENS_TX                 0x762   // ECU AD sensors for braking system      [DRV]
@@ -75,6 +77,7 @@ using namespace std;
 #define VWUP_STEER                      VWUP_STEER_TX,    VWUP_STEER_RX               //  [DRV,CHG]
 #define VWUP_ELD                        VWUP_ELD_TX,      VWUP_ELD_RX                 //  [DRV,CHG]
 #define VWUP_INF                        VWUP_INF_TX,      VWUP_INF_RX                 //  [DRV]
+#define VWUP_IMMO                       VWUP_IMMO_TX,     VWUP_IMMO_RX                //  [DRV]
 #define VWUP_BAT_MGMT                   VWUP_BAT_MGMT_TX, VWUP_BAT_MGMT_RX            //  [DRV,CHG]
 #define VWUP_BRKSENS                    VWUP_BRKSENS_TX,  VWUP_BRKSENS_RX             //  [DRV]
 #define VWUP_CHG                        VWUP_CHG_TX,      VWUP_CHG_RX                 //  [DRV,CHG]
