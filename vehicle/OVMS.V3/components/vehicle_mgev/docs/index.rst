@@ -6,8 +6,13 @@ Vehicle Types: **MG EV (UK/EU)** & **MG EV (TH)**
 
 These vehicle types support the MG ZS EV (2019-). MG5 is not yet supported in this build. 
 
+--------
+Variants
+--------
+
 MG ZS EVs sold in different countries seem to possess different behaviours. This is why we have developed 2 different vehicle types to support the different requirements.
 
+^^^^^^^^^^^^^^^
 Known Countries
 ^^^^^^^^^^^^^^^
 
@@ -27,6 +32,7 @@ GWM authentication is required for Thai cars as GWM will be locked and no PIDs c
 
 When the BCM is polled, UK/EU cars' alarm (horn) can go off so this is disabled in the UK/EU code.
 
+^^^^^^^^^^^^^^^
 Other Countries
 ^^^^^^^^^^^^^^^
 
@@ -71,8 +77,8 @@ Shell Commands
 
 ==========================  =
 ``softver``                 Get software version of ECUs
-``drl [on | off]``          Turn on/off daytime running lights (without doing BCM authentication first)
-``drlauth [on | off]``      (Only for MG EV (UK/EU)) Do BCM authentication first then turn on/off daytime running lights. Subsequent DRL commands can use ``drl`` (or ``drlauth``).
+``drl [on | off]``          Turn on/off daytime running lights
+``drln [on | off]``         Turn on/off daytime running lights without doing BCM authentication first (for debugging purposes)
 ``auth [all | gwm | bcm]``  Authenticate with specified ECU. 'auth all' will authenticate GWM then BCM.
 ==========================  =
 
@@ -89,19 +95,21 @@ UK/EU          Y                       N                    N
 TH             N                       Y                    Y
 =============  ======================  ==================   ========
 
-The MG EV module now monitors (and automatically calibrates) the 12V status and will automatically start polling the car for data when the 12V battery voltage is equal to or greater than 12.9V. When it is below 12.9V, it will automatically stop polling to not drain the 12V battery.
+The MG EV module now monitors (and automatically calibrates) the 12V status and will automatically start polling the car for data when the 12V battery voltage is equal to or greater than 12.9V. When it is below 12.9V, it will automatically stop polling (after a 50s delay) to not drain the 12V battery.
 
 **Poll states:**
 
 =  ==========  =
-0  ListenOnly  the OVMS module is quiet and stops sending polls. UK/EU code will enter this state after 50s of being < 12.9V. TH code will enter this state immediately of being < 12.9V.
+0  ListenOnly  the OVMS module is quiet and stops sending polls.
 1  Charging    the OVMS module sends charging specific queries.
 2  Driving     the OVMS module sends driving specific queries.
 3  Backup      the OVMS module cannot get data from the car when it is charging so just retries SoC queries. This is unused in TH code.
 =  ==========  =
 
+^^^^^^^^^^
 UK/EU spec
 ^^^^^^^^^^
+
 The car is accessible over the OBD port when it is running (ignition on) and for around
 40 seconds after it is turned off or the car is "tweaked" (lock button pushed, etc).
 

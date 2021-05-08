@@ -41,7 +41,7 @@ const OvmsVehicle::poll_pid_t obdii_polls_b[] =
 {
     { bcmId, bcmId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bcmDoorPid, {  0, 1, 1, 0  }, 0, ISOTP_STD },
     { bcmId, bcmId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bcmDrlPid, {  0, 5, 5, 0  }, 0, ISOTP_STD },
-    { bcmId, bcmId | rxFlag, VEHICLE_POLL_TYPE_TESTERPRESENT, 0, {  0, 2, 2, 0  }, 0, ISOTP_STD}
+    { bcmId, bcmId | rxFlag, VEHICLE_POLL_TYPE_TESTERPRESENT, 0, {  0, 2, 2, 0  }, 0, ISOTP_STD} //This is required for keeping BCM authentication. Technically it is only needed if BCM is authenticated but it doesn't seem to cause any side effects when BCM is not authenticated so it is put here for simplicity sake so that we don't have to add/remove this line depending on whether BCM is authenticated or not.
 };
 
 }
@@ -90,15 +90,17 @@ void OvmsVehicleMgEvB::Ticker1(uint32_t ticker)
 // This is the only place we evaluate the vehicle state to change the action of OVMS
 void OvmsVehicleMgEvB::MainStateMachine(canbus* currentBus, uint32_t ticker)
 {
-    //Check if 12V is high enough for OVMS to run otherwise we will drain the battery too much
+    //Check if 12V is high enough for OVMS to poll otherwise we will drain the battery too much
     if (StandardMetrics.ms_v_bat_12v_voltage->AsFloat() >= CHARGING_THRESHOLD)
     {
-        //12V level is high enough for OVMS to run
+        //12V level is high enough for OVMS to poll
         m_OVMSActive = true;
+        m_afterRunTicker = 0;
         switch (static_cast<GWMStates>(m_gwm_state->AsInt()))
         {
             //Unknown state. Will see if GWM is awake by sending a tester present. If no reply, try waking GWM up by sending another tester present.
-            //Once GWM is awake, attempt authentication with GWM and BCM. If successful, set to Unlocked state and start polling.
+            //Once GWM is awake, check if BCM responds to tester present. If it does, GWM is unlocked. If no reply, attempt authentication with GWM.
+            //If successful, GWM is unlocked. When GWM is unlocked, set to Unlocked state and start polling.
             //If we cannot wake GWM, set state to WaitToRetryCheckState and wait to retry in GWM_RETRY_CHECK_STATE_TIMEOUT seconds.
             case GWMStates::Unknown:
             {
@@ -158,7 +160,7 @@ void OvmsVehicleMgEvB::MainStateMachine(canbus* currentBus, uint32_t ticker)
                     ESP_LOGI(TAG, "GWM did not respond to tester present (%d)", m_GWMUnresponsiveCount);
                     if (m_GWMUnresponsiveCount >= CAR_UNRESPONSIVE_THRESHOLD)
                     {
-                        CarUnresponsive();
+                        GWMUnknown();
                         return;
                     }
                 }           
@@ -184,17 +186,13 @@ void OvmsVehicleMgEvB::MainStateMachine(canbus* currentBus, uint32_t ticker)
     } 
     else
     {
-        //12V level too low, going to sleep
+        //12V level too low, going to sleep in TRANSITION_TIMEOUT seconds
         if (m_OVMSActive)
         {
-            ESP_LOGI(TAG, "12V level lower than threshold. Resetting GWM state to Unknown.");
+            ESP_LOGI(TAG, "12V level lower than threshold, going to sleep in %us.", TRANSITION_TIMEOUT);
         }   
-        m_OVMSActive = false;         
-        PollSetState(PollStateListenOnly);
-        m_gwm_state->SetValue(static_cast<int>(GWMStates::Unknown));
-        StandardMetrics.ms_v_env_awake->SetValue(false);        
+        m_OVMSActive = false;             
         StandardMetrics.ms_v_env_on->SetValue(false);
-        StandardMetrics.ms_v_env_ctrl_login->SetValue(false);
         //It is possible that when the car stops charging, we go straight from charging to 12V level too low and so OVMS won't know that we have stopped charging.
         //So we manually set charging metrics here
         if (StandardMetrics.ms_v_charge_inprogress->AsBool())
@@ -209,35 +207,57 @@ void OvmsVehicleMgEvB::MainStateMachine(canbus* currentBus, uint32_t ticker)
             }   
         }
         StandardMetrics.ms_v_charge_type->SetValue("undefined");
-        StandardMetrics.ms_v_charge_inprogress->SetValue(false);           
+        StandardMetrics.ms_v_charge_inprogress->SetValue(false);
+        if (m_afterRunTicker < TRANSITION_TIMEOUT)
+        {
+            ESP_LOGV(TAG, "(%u) Waiting %us before going to sleep", m_afterRunTicker, TRANSITION_TIMEOUT);
+            m_afterRunTicker++;
+        }
+        else if (m_afterRunTicker == TRANSITION_TIMEOUT)      
+        {
+            ESP_LOGI(TAG, "%us has elasped after 12V level is lower than threshold, going to sleep", TRANSITION_TIMEOUT);
+            m_afterRunTicker++; //Increment one more so we don't enter this if statement next time round
+            GWMUnknown();
+        }        
     }
 }
 
 void OvmsVehicleMgEvB::GWMAwake(canbus* currentBus)
 {
-    ESP_LOGI(TAG, "GWM responded to tester present. GWM is awake. Starting authentication.");	
-    m_gwm_state->SetValue(static_cast<int>(GWMStates::Awake));                    
-    if (AuthenticateECU({ECUAuth::GWM, ECUAuth::BCM}))
+    ESP_LOGI(TAG, "GWM responded to tester present. GWM is awake. Checking if GWM is unlocked.");
+    m_gwm_state->SetValue(static_cast<int>(GWMStates::Awake));   
+    std::string Response;
+    int PollStatus = PollSingleRequest(currentBus, bcmId, bcmId | rxFlag, hexdecode("3e00"), Response, SYNC_REQUEST_TIMEOUT, ISOTP_STD);
+    ESP_LOGI(TAG, "Response (%d): %s", PollStatus, hexencode(Response).c_str());
+    if (PollStatus == 0)
     {
-        ESP_LOGI(TAG, "Authentication successful. Try send tester present to BCM");
-        std::string Response;
-        int PollStatus = PollSingleRequest(currentBus, bcmId, bcmId | rxFlag, hexdecode("3e00"), Response, SYNC_REQUEST_TIMEOUT, ISOTP_STD);
-        ESP_LOGI(TAG, "Response (%d): %s", PollStatus, hexencode(Response).c_str());
-        if (PollStatus == 0)
-        {
-            ESP_LOGI(TAG, "BCM responded to tester present. GWM is unlocked.");	
-            GWMUnlocked();
-        }
-        else
-        {
-            ESP_LOGI(TAG, "BCM did not respond to tester present, will retry in %ds", GWM_RETRY_CHECK_STATE_TIMEOUT);
-            RetryCheckState();	
-        }   
+        ESP_LOGI(TAG, "BCM responded to tester present. GWM is unlocked.");	
+        GWMUnlocked();
     }
     else
     {
-        ESP_LOGI(TAG, "Authentication failed. Retrying in %ds", GWM_RETRY_CHECK_STATE_TIMEOUT);
-        RetryCheckState();
+        ESP_LOGI(TAG, "BCM did not respond to tester present, will start GWM authentication");
+        if (AuthenticateECU({ECUAuth::GWM}))
+        {
+            ESP_LOGI(TAG, "Authentication successful. Try send tester present to BCM again.");
+            PollStatus = PollSingleRequest(currentBus, bcmId, bcmId | rxFlag, hexdecode("3e00"), Response, SYNC_REQUEST_TIMEOUT, ISOTP_STD);
+            ESP_LOGI(TAG, "Response (%d): %s", PollStatus, hexencode(Response).c_str());
+            if (PollStatus == 0)
+            {
+                ESP_LOGI(TAG, "BCM responded to tester present. GWM is unlocked.");	
+                GWMUnlocked();
+            }
+            else
+            {
+                ESP_LOGI(TAG, "BCM did not respond to tester present, will retry in %ds", GWM_RETRY_CHECK_STATE_TIMEOUT);
+                RetryCheckState();	
+            }              
+        }
+        else
+        {
+            ESP_LOGI(TAG, "Authentication failed. Retrying in %ds", GWM_RETRY_CHECK_STATE_TIMEOUT);
+            RetryCheckState();
+        }        
     }
 }
 
@@ -257,11 +277,14 @@ void OvmsVehicleMgEvB::RetryCheckState()
     m_RetryCheckStateWaitCount = 0;
 }
 
-void OvmsVehicleMgEvB::CarUnresponsive()
+void OvmsVehicleMgEvB::GWMUnknown()
 {
-    ESP_LOGI(TAG, "Resetting GWM state to Unknown");
+    ESP_LOGI(TAG, "Setting GWM state to Unknown");
     m_gwm_state->SetValue(static_cast<int>(GWMStates::Unknown));
+    m_bcm_auth->SetValue(false);
     PollSetState(PollStateListenOnly);
+    StandardMetrics.ms_v_env_awake->SetValue(false);
+    StandardMetrics.ms_v_env_ctrl_login->SetValue(false);
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleMgEvB::CommandWakeup()

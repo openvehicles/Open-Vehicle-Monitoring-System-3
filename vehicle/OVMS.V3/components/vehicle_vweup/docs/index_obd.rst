@@ -198,13 +198,22 @@ There are currently two ways to get an estimation of the remaining capacity of t
 1. By deriving a usable energy capacity from the MFD range estimation.
 2. By deriving a total coulomb capacity from the coulombs charged.
 
+You can configure which of the estimations you want to use as the standard SOH from the
+"Features" web page or by setting the config parameter ``xvu bat.soh.source`` to either
+``charge`` (default) or ``range``.
+
 .. note:: **Consider the capacity estimations as experimental / preliminary.**
   We need field data to optimize the readings. If you'd like to help us, see below.
 
 The **MFD range estimation** seems to include some psychological factors with an SOC below 30%, so we 
 only provide this and the derived capacity in two custom metrics. The capacity derivation is only
-calculated with SOC >= 30%, but if so is available immediately after switching the car on. This can 
-serve as a quick first estimation, relate it to the usable capacity of your model.
+calculated with SOC >= 30% (initial value needs SOC >= 70%), but if so is available immediately 
+after switching the car on. This can serve as a quick first estimation, relate it to the usable 
+capacity of your model.
+
+The range based SOH is taken at it's maximum peaks observed and copied if higher than the
+previously observed value or added smoothed if lower. So to take the next reading directly,
+set metric ``xvu.b.soh.range`` to 0 before switching on the car.
 
 The **charge coulomb based estimation** provides a better estimation but will need a little more 
 time to settle. Usable measurements need charges of at least 30% SOC, the more the better. Estimations
@@ -239,6 +248,8 @@ Capacity and SOH metrics
 ======================================== ======================== ============================================
 Metric name                              Example value            Description
 ======================================== ======================== ============================================
+xvu.b.soh.charge                         99.23%                   SOH based on charge energy sum
+xvu.b.soh.range                          98.89%                   SOH based on MFD range estimation
 xvu.b.cap.ah.abs                         122.71Ah                 Total coulomb capacity estimation
 xvu.b.cap.ah.norm                        113.63Ah                 Usable coulomb capacity estimation
 xvu.b.cap.kwh.abs                        39.1kWh                  Total energy capacity estimation
