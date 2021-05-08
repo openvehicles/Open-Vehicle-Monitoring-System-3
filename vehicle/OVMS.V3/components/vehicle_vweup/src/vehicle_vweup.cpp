@@ -1,14 +1,10 @@
 /*
-;    Project:       Open Vehicle Monitor System
-;    Date:          5th July 2018
+; Project:        Open Vehicle Monitor System
+; Subproject:     Integration of support for the VW e-UP
 ;
-;    Changes:
-;    1.0  Initial release
+; (c) 2021 sharkcow <sharkcow@gmx.de>, Chris van der Meijden, SokoFromNZ, Michael Balzer <dexter@dexters-web.de>
 ;
-;    (C) 2011       Michael Stegen / Stegen Electronics
-;    (C) 2011-2018  Mark Webb-Johnson
-;    (C) 2011       Sonny Chen @ EPRO/DX
-
+; Biggest thanks to Dimitrie78, E-Imo and 'der kleine Nik'.
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -29,50 +25,11 @@
 ; THE SOFTWARE.
 */
 
-/*
-;    Subproject:    Integration of support for the VW e-UP
-;    Date:          30 December 2020
-;
-;    Changes:
-;    0.1.0  Initial code
-:           Crude merge of code from Chris van der Meijden (KCAN) and SokoFromNZ (OBD2)
-;
-;    0.1.1  make OBD code depend on car status from KCAN, no more OBD polling in off state
-;
-;    0.1.2  common namespace, metrics webinterface
-;
-;    0.1.3  bugfixes gen1/gen2, new metrics: temperatures & maintenance
-;
-;    0.1.4  bugfixes gen1/gen2, OBD refactoring
-;
-;    0.1.5  refactoring
-;
-;    0.1.6  Standard SoC now from OBD (more resolution), switch between car on and charging
-;
-;    0.2.0  refactoring: this is now plain VWEUP-module, KCAN-version moved to VWEUP_T26
-;
-;    0.2.1  SoC from OBD/KCAN depending on config & state
-;
-;    0.3.0  car state determined depending on connection
-;
-;    0.3.1  added charger standard metrics
-;
-;    0.3.2  refactoring; init CAN buses depending on connection; transmit charge current as float (server V2)
-;
-;    0.3.3  new standard metrics for maintenance range & days; added trip distance & energies as deltas
-;
-;    0.4.0  update changes in t26 code by devmarxx, update docs
-;
-;    (C) 2020 sharkcow <sharkcow@gmx.de> / Chris van der Meijden / SokoFromNZ
-;
-;    Biggest thanks to Dexter, Dimitrie78, E-Imo and 'der kleine Nik'.
-*/
-
 #include "ovms_log.h"
 #include <string>
 static const char *TAG = "v-vweup";
 
-#define VERSION "0.14.2"
+#define VERSION "0.14.3"
 
 #include <stdio.h>
 #include <string>
@@ -140,6 +97,7 @@ OvmsVehicleVWeUp::OvmsVehicleVWeUp()
 
   m_use_phase = UP_None;
   m_obd_state = OBDS_Init;
+  m_chargestop_ticker = 0;
 
   // Init metrics:
   m_version = MyMetrics.InitString("xvu.m.version", 0, VERSION " " __DATE__ " " __TIME__);

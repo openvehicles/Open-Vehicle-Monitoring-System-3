@@ -414,10 +414,10 @@ void OvmsVehicleVWeUp::PollerStateTicker()
 
   if (poll_state != m_poll_state) {
     ESP_LOGD(TAG,
-      "PollerStateTicker: [%s] LVPwrState=%d HVChgMode=%d LVAutoChg=%d "
+      "PollerStateTicker: [%s] LVPwrState=%d HVChgMode=%d SOC=%.1f%% LVAutoChg=%d "
       "12V=%.1f DCDC_U=%.1f DCDC_I=%.1f ChgEff=%.1f BatI=%.1f BatIAge=%u => PollState %d->%d",
-      car_online ? "online" : "offline", lv_pwrstate, hv_chgmode, m_lv_autochg->AsInt(),
-      StdMetrics.ms_v_bat_12v_voltage->AsFloat(),
+      car_online ? "online" : "offline", lv_pwrstate, hv_chgmode, StdMetrics.ms_v_bat_soc->AsFloat(),
+      m_lv_autochg->AsInt(), StdMetrics.ms_v_bat_12v_voltage->AsFloat(),
       dcdc_voltage, StdMetrics.ms_v_charge_12v_current->AsFloat(),
       ChargerPowerEffEcu->AsFloat(),
       StdMetrics.ms_v_bat_current->AsFloat(), StdMetrics.ms_v_bat_current->Age(),
@@ -438,6 +438,7 @@ void OvmsVehicleVWeUp::PollerStateTicker()
 
       UpdateChargeParams();
       SetChargeState(true);
+      m_chargestop_ticker = 0;
 
       PollSetState(VWEUP_CHARGING);
     }
@@ -449,6 +450,11 @@ void OvmsVehicleVWeUp::PollerStateTicker()
     // TODO: get real charge pilot states, fake for now:
     StdMetrics.ms_v_charge_pilot->SetValue(false);
 
+    // On charge stop, we need to delay the actual state change to collect the final SOC first
+    // (SOC is needed to determine if the charge is done or was interrupted):
+    m_chargestop_ticker = 3;
+  }
+  else if (m_chargestop_ticker && --m_chargestop_ticker == 0) {
     SetChargeState(false);
   }
 
