@@ -113,6 +113,7 @@ public:
 
 public:
   void ConfigChanged(OvmsConfigParam *param);
+  void MetricModified(OvmsMetric* metric);
   bool SetFeature(int key, const char *value);
   const std::string GetFeature(int key);
 
@@ -139,6 +140,7 @@ protected:
   void SetChargeType(chg_type_t chgtype);
   void SetChargeState(bool charging);
   void SetUsePhase(use_phase_t usephase);
+  void SetSOH(float soh_new);
 
 public:
   bool IsOff() {
@@ -337,6 +339,9 @@ protected:
   OvmsMetricInt       *m_chg_timer_socmax;        // Scheduled maximum SOC
   OvmsMetricBool      *m_chg_timer_def;           // true = Scheduled charging is default
 
+  OvmsMetricFloat     *m_bat_soh_range = 0;       // Battery SOH based on MFD range estimation [%]
+  OvmsMetricFloat     *m_bat_soh_charge = 0;      // Battery SOH based on coulomb charge count [%]
+
   OvmsMetricFloat     *m_bat_energy_range;        // Battery energy available from MFD range estimation [kWh]
   OvmsMetricFloat     *m_bat_cap_kwh_range;       // Battery usable capacity derived from MFD range estimation [kWh]
 
@@ -361,6 +366,7 @@ protected:
   uint16_t            m_cell_last_ti;             // … temperature
 
   float               m_range_est_factor;         // For range calculation during charge
+  float               m_bat_cap_range_hist[3];    // Range capacity maximum detection for SOH calculation
 
   chg_type_t          m_chg_type;                 // CHGTYPE_None / _AC / _DC
   int                 m_cfg_dc_interval;          // Interval for DC fast charge test/log PIDs
