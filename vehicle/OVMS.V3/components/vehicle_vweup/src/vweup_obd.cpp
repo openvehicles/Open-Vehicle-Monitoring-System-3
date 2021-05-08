@@ -1255,8 +1255,13 @@ void OvmsVehicleVWeUp::UpdateChargeCap(bool charging)
   //  To get a good capacity estimation, do at least three charges with each covering 60%
   //  or more normalized SOC difference.
 
-  const int checkpoint_step = 24;         // 2.4% absolute SOC diff
-  const int charged_min_valid = 272;      // 27.2% absolute SOC diff = ~30% normalized SOC diff
+  int checkpoint_step = MyConfig.GetParamValueInt("xvu", "log.chargecap.cpstep", 24);
+  if (checkpoint_step <= 0) checkpoint_step = 24;
+  int charged_min_valid = MyConfig.GetParamValueInt("xvu", "log.chargecap.minvalid", 272);
+  if (charged_min_valid <= 0) charged_min_valid = 272;
+  // 24 = 2.4% absolute SOC diff
+  // 272 = 27.2% absolute SOC diff = ~30% normalized SOC diff
+  // Note: debug/test config params, not meant to be documented
 
   static int checkpoint = 9999;
   bool log_data = false, update_caps = false, update_soh = false;
@@ -1275,7 +1280,7 @@ void OvmsVehicleVWeUp::UpdateChargeCap(bool charging)
   }
   if (charged >= checkpoint + checkpoint_step) {
     // next checkpoint reached:
-    checkpoint += checkpoint_step;
+    checkpoint = charged;
     log_data = true;
     if (charged >= charged_min_valid)
       update_caps = true;
