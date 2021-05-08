@@ -90,6 +90,7 @@ void OvmsVehicleVWeUp::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
     nmap["cell_interval_drv"] = c.getvar("cell_interval_drv");
     nmap["cell_interval_chg"] = c.getvar("cell_interval_chg");
     nmap["cell_interval_awk"] = c.getvar("cell_interval_awk");
+    nmap["bat.soh.source"] = c.getvar("bat.soh.source");
 
     // check:
     if (nmap["modelyear"] != "")
@@ -145,13 +146,15 @@ void OvmsVehicleVWeUp::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
       nmap["con_obd"] = "yes";
     if (nmap["con_t26"] == "")
       nmap["con_t26"] = "yes";
+    if (nmap["bat.soh.source"] == "")
+      nmap["bat.soh.source"] = "charge";
 
     c.head(200);
   }
 
   // generate form:
 
-  c.panel_start("primary", "VW e-Up feature configuration");
+  c.panel_start("primary receiver", "VW e-Up feature configuration");
   c.form_start(p.uri);
 
   c.fieldset_start("Vehicle Settings");
@@ -172,6 +175,22 @@ void OvmsVehicleVWeUp::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
   c.input_checkbox("Enable CAN writes", "canwrite", strtobool(nmap["canwrite"]),
     "<p>Controls overall CAN write access, OBD2 and climate control depends on this.</p>"
     "<p>This parameter can also be set in the app under FEATURES 15.</p>");
+  c.fieldset_end();
+
+  c.fieldset_start("Battery Health", "needs-con-obd");
+  c.input_radiobtn_start("SOH source", "bat.soh.source");
+  c.input_radiobtn_option("bat.soh.source", "Charge capacity", "charge", (nmap["bat.soh.source"] == "charge"));
+  c.input_radiobtn_option("bat.soh.source", "Range estimation", "range", (nmap["bat.soh.source"] == "range"));
+  c.input_radiobtn_end(
+    "<p><b>Charge capacity SOH</b> "
+    "(currently <span class=\"metric\" data-metric=\"xvu.b.soh.charge\" data-prec=\"1\">?</span>%) "
+    "needs a couple of full charges to settle but tends to be more precise.</p>"
+    "<p><b>Range estimation SOH</b> "
+    "(currently <span class=\"metric\" data-metric=\"xvu.b.soh.range\" data-prec=\"1\">?</span>%) "
+    "is available immediately when switching the car on with at least 70% SOC, but needs a high SOC "
+    "for accuracy and is more temperature dependent.</p><p>For more details, see <a target=\"_blank\" "
+    "href=\"https://docs.openvehicles.com/en/latest/components/vehicle_vweup/docs/index_obd.html#battery-capacity-soh\""
+    ">Battery Capacity &amp; SOH</a>.</p>");
   c.fieldset_end();
 
   c.fieldset_start("BMS Cell Monitoring", "needs-con-obd");

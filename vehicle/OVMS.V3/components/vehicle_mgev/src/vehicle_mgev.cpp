@@ -129,7 +129,7 @@ charging_profile ccs_steps[] = {
 //Called by OVMS when an MG EV variant is chosen as vehicle type (and on startup when an MG EV variant is chosen)
 OvmsVehicleMgEv::OvmsVehicleMgEv()
 {
-    ESP_LOGI(TAG, "MG EV vehicle module");
+    ESP_LOGI(TAG, "Starting MG EV vehicle module");
 
     StandardMetrics.ms_v_charge_inprogress->SetValue(false);
     // Don't support any other mode
@@ -172,6 +172,7 @@ OvmsVehicleMgEv::OvmsVehicleMgEv()
     m_ignition_state = MyMetrics.InitInt("xmg.v.ignition.state", SM_STALE_MAX, SM_STALE_MAX);
     m_poll_state_metric = MyMetrics.InitInt("xmg.state.poll", SM_STALE_MAX, m_poll_state);
     m_gwm_state = MyMetrics.InitInt("xmg.state.gwm", SM_STALE_MAX, SM_STALE_MAX);
+    m_bcm_auth = MyMetrics.InitBool("xmg.auth.bcm", SM_STALE_MAX, false);
     m_gwm_task = MyMetrics.InitInt("xmg.task.gwm", SM_STALE_MAX, static_cast<int>(GWMTasks::None));
     m_bcm_task = MyMetrics.InitInt("xmg.task.bcm", SM_STALE_MAX, static_cast<int>(BCMTasks::None));
 
@@ -185,7 +186,8 @@ OvmsVehicleMgEv::OvmsVehicleMgEv()
     // Register shell commands
     m_cmdSoftver = MyCommandApp.RegisterCommand("softver", "MG EV Software", SoftwareVersions);
 	m_cmdAuth = MyCommandApp.RegisterCommand("auth", "Authenticate with ECUs", AuthenticateECUShell, "<ECU>\nall\tAll ECUs\ngwm\tGWM only\nbcm\tBCM only", 1, 1);    
-	m_cmdDRL = MyCommandApp.RegisterCommand("drl", "Daytime running light control", DRLCommandShell, "<command>\non\tTurn on\noff\tTurn off", 1, 1);
+    m_cmdDRL = MyCommandApp.RegisterCommand("drl", "Daytime running light control", DRLCommandWithAuthShell, "<command>\non\tTurn on\noff\tTurn off", 1, 1);    
+    m_cmdDRLNoAuth = MyCommandApp.RegisterCommand("drln", "Daytime running light control (no BCM authentication)", DRLCommandShell, "<command>\non\tTurn on\noff\tTurn off", 1, 1);
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
     WebInit();
 #endif
@@ -219,6 +221,10 @@ OvmsVehicleMgEv::~OvmsVehicleMgEv()
 	{
 		MyCommandApp.UnregisterCommand(m_cmdDRL->GetName());
 	} 	  
+    if (m_cmdDRLNoAuth)
+	{
+		MyCommandApp.UnregisterCommand(m_cmdDRLNoAuth->GetName());
+	} 	      
     // MyConfig.DeregisterParam("xmg"); //Seem to sometimes cause OVMS to factory reset
 }
 
@@ -705,6 +711,28 @@ void OvmsVehicleMgEv::DRLCommandShell(int verbosity, OvmsWriter* writer, OvmsCom
     {
         writer->puts("Unknown authentication command");
     }    
+}
+
+void OvmsVehicleMgEv::DRLCommandWithAuthShell(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+{
+    OvmsVehicleMgEv* vehicle = reinterpret_cast<OvmsVehicleMgEv*>(MyVehicleFactory.ActiveVehicle());
+    //If BCM has not been authenticated, do that first. Otherwise we can skip and go straight to the actual DRL command.
+    if (!vehicle->m_bcm_auth->AsBool())
+    {
+        ESP_LOGI(TAG, "BCM has not been authenticated, will do that first");
+        if (vehicle->AuthenticateECU({ECUAuth::BCM}))
+        {
+            vehicle->m_bcm_auth->SetValue(true);
+        }
+        else
+        {
+            writer->puts("Failed to authenticate BCM");
+        }
+    }
+    if (vehicle->m_bcm_auth->AsBool())
+    {
+        OvmsVehicleMgEv::DRLCommandShell(verbosity, writer, cmd, argc, argv);  
+    }
 }
 
 bool OvmsVehicleMgEv::AuthenticateECU(vector<ECUAuth> ECUsToAuth)

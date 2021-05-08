@@ -49,7 +49,7 @@ class OvmsVehicleMgEvB : public OvmsVehicleMgEv
         void GWMAwake(canbus* currentBus);
         void GWMUnlocked();	
         void RetryCheckState();
-        void CarUnresponsive();
+        void GWMUnknown();
 
         enum class GWMStates
         {

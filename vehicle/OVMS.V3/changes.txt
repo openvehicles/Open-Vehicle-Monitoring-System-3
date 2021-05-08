@@ -61,6 +61,12 @@ Open Vehicle Monitor System v3 - Change log
 - VW e-Up/OBD: optional BMS auto statistics reset between driving & charging
   New config:
     [xvu] bms.autoreset            -- yes = enable statistics reset, default no
+- VW e-Up/OBD: add MFD range estimation as SOH source, add config option for SOH source
+  New metrics:
+    xvu.b.soh.charge               -- SOH based on charge energy sum [%]
+    xvu.b.soh.range                -- SOH based on MFD range estimation [%]
+  New configs:
+    [xvu] bat.soh.source           -- 'charge' (default) or 'range' [string]
 - New vehicle: Hyundai Ioniq vFL (HIONVFL)
   https://docs.openvehicles.com/en/latest/components/vehicle_hyundai_ioniqvfl/docs/index.html
 - Webserver: support TLS (https, wss) using self-signed certificates

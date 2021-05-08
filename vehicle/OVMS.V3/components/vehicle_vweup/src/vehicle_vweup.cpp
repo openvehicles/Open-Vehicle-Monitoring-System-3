@@ -1,14 +1,10 @@
 /*
-;    Project:       Open Vehicle Monitor System
-;    Date:          5th July 2018
+; Project:        Open Vehicle Monitor System
+; Subproject:     Integration of support for the VW e-UP
 ;
-;    Changes:
-;    1.0  Initial release
+; (c) 2021 sharkcow <sharkcow@gmx.de>, Chris van der Meijden, SokoFromNZ, Michael Balzer <dexter@dexters-web.de>
 ;
-;    (C) 2011       Michael Stegen / Stegen Electronics
-;    (C) 2011-2018  Mark Webb-Johnson
-;    (C) 2011       Sonny Chen @ EPRO/DX
-
+; Biggest thanks to Dimitrie78, E-Imo and 'der kleine Nik'.
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -29,50 +25,11 @@
 ; THE SOFTWARE.
 */
 
-/*
-;    Subproject:    Integration of support for the VW e-UP
-;    Date:          30 December 2020
-;
-;    Changes:
-;    0.1.0  Initial code
-:           Crude merge of code from Chris van der Meijden (KCAN) and SokoFromNZ (OBD2)
-;
-;    0.1.1  make OBD code depend on car status from KCAN, no more OBD polling in off state
-;
-;    0.1.2  common namespace, metrics webinterface
-;
-;    0.1.3  bugfixes gen1/gen2, new metrics: temperatures & maintenance
-;
-;    0.1.4  bugfixes gen1/gen2, OBD refactoring
-;
-;    0.1.5  refactoring
-;
-;    0.1.6  Standard SoC now from OBD (more resolution), switch between car on and charging
-;
-;    0.2.0  refactoring: this is now plain VWEUP-module, KCAN-version moved to VWEUP_T26
-;
-;    0.2.1  SoC from OBD/KCAN depending on config & state
-;
-;    0.3.0  car state determined depending on connection
-;
-;    0.3.1  added charger standard metrics
-;
-;    0.3.2  refactoring; init CAN buses depending on connection; transmit charge current as float (server V2)
-;
-;    0.3.3  new standard metrics for maintenance range & days; added trip distance & energies as deltas
-;
-;    0.4.0  update changes in t26 code by devmarxx, update docs
-;
-;    (C) 2020 sharkcow <sharkcow@gmx.de> / Chris van der Meijden / SokoFromNZ
-;
-;    Biggest thanks to Dexter, Dimitrie78, E-Imo and 'der kleine Nik'.
-*/
-
 #include "ovms_log.h"
 #include <string>
 static const char *TAG = "v-vweup";
 
-#define VERSION "0.14.2"
+#define VERSION "0.15.1"
 
 #include <stdio.h>
 #include <string>
@@ -140,6 +97,7 @@ OvmsVehicleVWeUp::OvmsVehicleVWeUp()
 
   m_use_phase = UP_None;
   m_obd_state = OBDS_Init;
+  m_chargestop_ticker = 0;
 
   // Init metrics:
   m_version = MyMetrics.InitString("xvu.m.version", 0, VERSION " " __DATE__ " " __TIME__);
@@ -355,6 +313,59 @@ void OvmsVehicleVWeUp::ConfigChanged(OvmsConfigParam *param)
   WebDeInit();    // this can probably be done more elegantly... :-/
   WebInit();
 #endif
+
+  // Set standard SOH from configured source:
+  if (IsOBDReady())
+  {
+    std::string soh_source = MyConfig.GetParamValue("xvu", "bat.soh.source", "charge");
+    if (soh_source == "range" && m_bat_soh_range->IsDefined())
+      SetSOH(m_bat_soh_range->AsFloat());
+    else if (soh_source == "charge" && m_bat_soh_charge->IsDefined())
+      SetSOH(m_bat_soh_charge->AsFloat());
+  }
+}
+
+
+/**
+ * MetricModified: hook into general listener for metrics changes
+ */
+void OvmsVehicleVWeUp::MetricModified(OvmsMetric* metric)
+{
+  // If one of our SOH sources got updated, derive standard SOH, CAC and ranges from it
+  // if it's the configured SOH source:
+  if (metric == m_bat_soh_range || metric == m_bat_soh_charge)
+  {
+    // Check SOH source configuration:
+    float soh_new = 0;
+    std::string soh_source = MyConfig.GetParamValue("xvu", "bat.soh.source", "charge");
+    if (metric == m_bat_soh_range && soh_source == "range")
+      soh_new = metric->AsFloat();
+    else if (metric == m_bat_soh_charge && soh_source == "charge")
+      soh_new = metric->AsFloat();
+
+    // Update metrics:
+    if (soh_new)
+      SetSOH(soh_new);
+  }
+
+  // Pass update on to standard handler:
+  OvmsVehicle::MetricModified(metric);
+}
+
+
+/**
+ * SetSOH: set SOH, derive standard SOH, CAC and ranges
+ */
+void OvmsVehicleVWeUp::SetSOH(float soh_new)
+{
+  float soh_fct    = soh_new / 100;
+  float cap_ah     = soh_fct * ((vweup_modelyear > 2019) ? 120.0f :  50.0f);
+  float range_full = soh_fct * ((vweup_modelyear > 2019) ? 260.0f : 160.0f);
+  float soc_fct    = StdMetrics.ms_v_bat_soc->AsFloat() / 100;
+  StdMetrics.ms_v_bat_soh->SetValue(soh_new);
+  StdMetrics.ms_v_bat_cac->SetValue(cap_ah);
+  StdMetrics.ms_v_bat_range_full->SetValue(range_full);
+  StdMetrics.ms_v_bat_range_ideal->SetValue(range_full * soc_fct);
 }
 
 
