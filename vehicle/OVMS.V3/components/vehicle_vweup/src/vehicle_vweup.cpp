@@ -29,7 +29,7 @@
 #include <string>
 static const char *TAG = "v-vweup";
 
-#define VERSION "0.14.3"
+#define VERSION "0.15.0"
 
 #include <stdio.h>
 #include <string>
@@ -313,6 +313,59 @@ void OvmsVehicleVWeUp::ConfigChanged(OvmsConfigParam *param)
   WebDeInit();    // this can probably be done more elegantly... :-/
   WebInit();
 #endif
+
+  // Set standard SOH from configured source:
+  if (IsOBDReady())
+  {
+    std::string soh_source = MyConfig.GetParamValue("xvu", "bat.soh.source", "charge");
+    if (soh_source == "range" && m_bat_soh_range->IsDefined())
+      SetSOH(m_bat_soh_range->AsFloat());
+    else if (soh_source == "charge" && m_bat_soh_charge->IsDefined())
+      SetSOH(m_bat_soh_charge->AsFloat());
+  }
+}
+
+
+/**
+ * MetricModified: hook into general listener for metrics changes
+ */
+void OvmsVehicleVWeUp::MetricModified(OvmsMetric* metric)
+{
+  // If one of our SOH sources got updated, derive standard SOH, CAC and ranges from it
+  // if it's the configured SOH source:
+  if (metric == m_bat_soh_range || metric == m_bat_soh_charge)
+  {
+    // Check SOH source configuration:
+    float soh_new = 0;
+    std::string soh_source = MyConfig.GetParamValue("xvu", "bat.soh.source", "charge");
+    if (metric == m_bat_soh_range && soh_source == "range")
+      soh_new = metric->AsFloat();
+    else if (metric == m_bat_soh_charge && soh_source == "charge")
+      soh_new = metric->AsFloat();
+
+    // Update metrics:
+    if (soh_new)
+      SetSOH(soh_new);
+  }
+
+  // Pass update on to standard handler:
+  OvmsVehicle::MetricModified(metric);
+}
+
+
+/**
+ * SetSOH: set SOH, derive standard SOH, CAC and ranges
+ */
+void OvmsVehicleVWeUp::SetSOH(float soh_new)
+{
+  float soh_fct    = soh_new / 100;
+  float cap_ah     = soh_fct * ((vweup_modelyear > 2019) ? 120.0f :  50.0f);
+  float range_full = soh_fct * ((vweup_modelyear > 2019) ? 260.0f : 160.0f);
+  float soc_fct    = StdMetrics.ms_v_bat_soc->AsFloat() / 100;
+  StdMetrics.ms_v_bat_soh->SetValue(soh_new);
+  StdMetrics.ms_v_bat_cac->SetValue(cap_ah);
+  StdMetrics.ms_v_bat_range_full->SetValue(range_full);
+  StdMetrics.ms_v_bat_range_ideal->SetValue(range_full * soc_fct);
 }
 
 
