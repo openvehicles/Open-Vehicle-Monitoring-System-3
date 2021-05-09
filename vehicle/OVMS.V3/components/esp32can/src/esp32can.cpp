@@ -177,19 +177,6 @@ static IRAM_ATTR void ESP32CAN_isr(void *pvParameters)
   while ((interrupt = MODULE_ESP32CAN->IR.U & 0xff) != 0)
     {
     me->m_status.interrupts++;
-    // Errata workaround: CONFIG_TWAI_ERRATA_FIX_BUS_OFF_REC
-    // "Force REC to 0 by re-triggering bus-off (by setting TEC to 0 then 255)"
-    if ((interrupt & __CAN_IRQ_ERR_WARNING) != 0)
-      {
-      uint32_t status = MODULE_ESP32CAN->SR.U;
-      if ((status & __CAN_STS_BUS_OFF) != 0 && (status & __CAN_STS_ERR_WARNING) != 0)
-        {
-        MODULE_ESP32CAN->TXERR.B.TXERR = 0;
-        MODULE_ESP32CAN->TXERR.B.TXERR = 0xff;
-        // Clear the re-triggered bus-off interrupt
-        interrupt = MODULE_ESP32CAN->IR.U & 0xff;
-        }
-      }
 
     // Handle RX frame(s) available & FIFO overflow interrupts:
     if ((interrupt & (__CAN_IRQ_RX|__CAN_IRQ_DATA_OVERRUN)) != 0)
@@ -220,6 +207,28 @@ static IRAM_ATTR void ESP32CAN_isr(void *pvParameters)
       msg.body.frame = me->m_tx_frame;
       msg.body.bus = me;
       xQueueSendFromISR(MyCan.m_rxqueue, &msg, &task_woken);
+      }
+
+    // Errata workaround: CONFIG_TWAI_ERRATA_FIX_BUS_OFF_REC
+    // "Force REC to 0 by re-triggering bus-off (by setting TEC to 0 then 255)"
+    if ((interrupt & __CAN_IRQ_ERR_WARNING) != 0)
+      {
+      uint32_t status = MODULE_ESP32CAN->SR.U;
+      if ((status & __CAN_STS_BUS_OFF) != 0 && (status & __CAN_STS_ERR_WARNING) != 0)
+        {
+        // Explicitly enter reset mode
+        MODULE_ESP32CAN->MOD.B.RM = 1;
+
+        // Re-trigger bus-off
+        MODULE_ESP32CAN->TXERR.B.TXERR = 0;
+        MODULE_ESP32CAN->TXERR.B.TXERR = 0xff;
+
+        // Exit reset mode
+        MODULE_ESP32CAN->MOD.B.RM = 0;
+
+        // Clear the re-triggered bus-off interrupt
+        interrupt = MODULE_ESP32CAN->IR.U & 0xff;
+        }
       }
 
     // Collect error interrupts:
