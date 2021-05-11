@@ -82,9 +82,19 @@ typedef enum
   CHARGER_STATUS_PLUGGED_IN_TIMER_WAIT,
   CHARGER_STATUS_CHARGING,
   CHARGER_STATUS_QUICK_CHARGING,
-  CHARGER_STATUS_FINISHED
+  CHARGER_STATUS_FINISHED,
+  CHARGER_STATUS_INTERRUPTED
   } ChargerStatus;
-
+  
+typedef enum 
+  {
+  NORMAL,      
+  CAPACITY_DROP,       
+  LBC_MALFUNCTION,  
+  HIGH_TEMP,
+  LOW_TEMP  
+  } PowerLimitStates;
+    
 class OvmsVehicleNissanLeaf : public OvmsVehicle
   {
   public:
@@ -167,6 +177,9 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     OvmsMetricFloat *m_battery_energy_available;
     OvmsMetricInt *m_battery_type;
     OvmsMetricBool *m_battery_heaterpresent;
+    OvmsMetricFloat *m_battery_dis_power_limit;
+    OvmsMetricFloat *m_battery_charge_power_limit; 
+    OvmsMetricString *m_charge_limit;    
     OvmsMetricVector<int> *m_charge_duration;
     OvmsMetricVector<string> *m_charge_duration_label;
     OvmsMetricInt *m_quick_charge;
@@ -182,7 +195,6 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     OvmsMetricInt *m_climate_fan_speed_limit;
     OvmsMetricFloat *m_climate_setpoint;
     OvmsMetricBool *m_climate_auto;
-
 
     float m_cum_energy_used_wh;				    // Cumulated energy (in wh) used within 1 second ticker interval
     float m_cum_energy_recd_wh; 					// Cumulated energy (in wh) recovered  within 1 second ticker interval

@@ -151,6 +151,9 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   // m_charge_duration_label->SetElemValue(CHARGE_DURATION_RANGE_L0, "range.l0");
   m_quick_charge = MyMetrics.InitInt("xnl.v.c.quick", SM_STALE_HIGH, 0);
   m_soc_nominal = MyMetrics.InitFloat("xnl.v.b.soc.nominal", SM_STALE_HIGH, 0, Percentage);
+  m_battery_dis_power_limit = MyMetrics.InitFloat("xnl.v.b.dischargelimit.power", SM_STALE_HIGH, 0, kW);
+  m_battery_charge_power_limit = MyMetrics.InitFloat("xnl.v.b.chargelimit.power", SM_STALE_HIGH, 0, kW);
+  m_charge_limit = MyMetrics.InitString("xnl.v.c.limit.reason", SM_STALE_MIN, 0);
   m_charge_count_qc     = MyMetrics.InitInt("xnl.v.c.count.qc",     SM_STALE_NONE, 0);
   m_charge_count_l0l1l2 = MyMetrics.InitInt("xnl.v.c.count.l0l1l2", SM_STALE_NONE, 0);
   m_climate_vent = MyMetrics.InitString("v.e.cabinvent", SM_STALE_MIN, 0);
@@ -252,6 +255,8 @@ void OvmsVehicleNissanLeaf::vehicle_nissanleaf_car_on(bool isOn)
     // Log once that car is being turned on
     ESP_LOGI(TAG,"CAR IS ON");
     if (m_enable_write) PollSetState(POLLSTATE_ON);
+    // if a can message is found with the state of charge port this can removed
+    StandardMetrics.ms_v_door_chargeport->SetValue(false); 
     // Reset trip values
     StandardMetrics.ms_v_bat_energy_recd->SetValue(0);
     StandardMetrics.ms_v_bat_energy_used->SetValue(0);
@@ -342,6 +347,22 @@ void OvmsVehicleNissanLeaf::vehicle_nissanleaf_charger_status(ChargerStatus stat
         StandardMetrics.ms_v_charge_current->SetValue(StandardMetrics.ms_v_bat_current->AsFloat());
         }
       break;
+    case CHARGER_STATUS_INTERRUPTED:
+      // Charging stopped during charge by user
+      if (m_gen1_charger)
+        {
+        StandardMetrics.ms_v_charge_current->SetValue(0);
+        StandardMetrics.ms_v_charge_voltage->SetValue(0);
+        // TODO set this in ovms v2
+        // TODO the charger probably knows the line voltage, when we find where it's
+        // coded, don't zero it out when we're plugged in but not charging
+        }
+      StandardMetrics.ms_v_charge_inprogress->SetValue(false);
+      //StandardMetrics.ms_v_door_chargeport->SetValue(false);
+      StandardMetrics.ms_v_charge_substate->SetValue("interrupted");
+      StandardMetrics.ms_v_charge_state->SetValue("stopped");
+      PollSetState(POLLSTATE_OFF);
+      break;
     case CHARGER_STATUS_FINISHED:
       // Charging finished
       if (m_gen1_charger)
@@ -353,7 +374,7 @@ void OvmsVehicleNissanLeaf::vehicle_nissanleaf_charger_status(ChargerStatus stat
         // coded, don't zero it out when we're plugged in but not charging
         }
       StandardMetrics.ms_v_charge_inprogress->SetValue(false);
-      StandardMetrics.ms_v_door_chargeport->SetValue(false);
+      //StandardMetrics.ms_v_door_chargeport->SetValue(false);
       StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
       StandardMetrics.ms_v_charge_state->SetValue("done");
       PollSetState(POLLSTATE_OFF);
@@ -747,6 +768,14 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
 
   switch (p_frame->MsgID)
     {
+    case 0x1d4:
+    { // additional charge status see https://github.com/dalathegreat/leaf_can_bus_messages
+      if ( (d[6] >> 7) == 0 && StandardMetrics.ms_v_charge_inprogress->AsBool() ) 
+        {
+          vehicle_nissanleaf_charger_status(CHARGER_STATUS_INTERRUPTED);
+        }
+    }
+    break;
     case 0x1da:
     { // Motor and inverter messages
       // Signed value, negative for reverse
@@ -819,6 +848,12 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
           StandardMetrics.ms_v_bat_soc->SetValue(soc);
           }
         }
+    }
+      break;
+    case 0x1dc:
+    { // additional HVBAT messages see https://github.com/dalathegreat/leaf_can_bus_messages
+      m_battery_dis_power_limit->SetValue( ( d[0] << 2 | d[1] >> 6 ) / 4.0 ); 
+      m_battery_charge_power_limit->SetValue( ( (d[1] & 0x3f) << 2 | d[2] >> 4 ) / 4.0 );
     }
       break;
     case 0x284:
@@ -1145,6 +1180,24 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       break;
     case 0x5bc:
       {
+      switch (d[5] >> 5)
+        { // additional charge messages see https://github.com/dalathegreat/leaf_can_bus_messages
+        case NORMAL:
+          m_charge_limit->SetValue("normal");
+          break;
+        case CAPACITY_DROP:
+          m_charge_limit->SetValue("capacity drop");
+          break;
+        case LBC_MALFUNCTION:
+          m_charge_limit->SetValue("malfunction");
+          break;
+        case HIGH_TEMP:
+          m_charge_limit->SetValue("high temp");
+          break;
+        case LOW_TEMP:
+          m_charge_limit->SetValue("low temp");
+          break;
+        }
       uint16_t nl_gids = ((uint16_t) d[0] << 2) | ((d[1] & 0xc0) >> 6);
       uint8_t  mx_gids = (d[5] & 0x10) >> 4;
       int type = -1;
