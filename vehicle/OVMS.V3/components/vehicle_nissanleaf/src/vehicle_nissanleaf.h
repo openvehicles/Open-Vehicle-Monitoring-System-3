@@ -177,8 +177,9 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     OvmsMetricFloat *m_battery_energy_available;
     OvmsMetricInt *m_battery_type;
     OvmsMetricBool *m_battery_heaterpresent;
-    OvmsMetricFloat *m_battery_dis_power_limit;
-    OvmsMetricFloat *m_battery_charge_power_limit; 
+    OvmsMetricFloat *m_battery_out_power_limit;
+    OvmsMetricFloat *m_battery_in_power_limit; 
+    OvmsMetricFloat *m_battery_chargerate_max;
     OvmsMetricString *m_charge_limit;    
     OvmsMetricVector<int> *m_charge_duration;
     OvmsMetricVector<string> *m_charge_duration_label;

@@ -151,8 +151,9 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   // m_charge_duration_label->SetElemValue(CHARGE_DURATION_RANGE_L0, "range.l0");
   m_quick_charge = MyMetrics.InitInt("xnl.v.c.quick", SM_STALE_HIGH, 0);
   m_soc_nominal = MyMetrics.InitFloat("xnl.v.b.soc.nominal", SM_STALE_HIGH, 0, Percentage);
-  m_battery_dis_power_limit = MyMetrics.InitFloat("xnl.v.b.dischargelimit.power", SM_STALE_HIGH, 0, kW);
-  m_battery_charge_power_limit = MyMetrics.InitFloat("xnl.v.b.chargelimit.power", SM_STALE_HIGH, 0, kW);
+  m_battery_out_power_limit = MyMetrics.InitFloat("xnl.v.b.output.limit", SM_STALE_HIGH, 0, kW);
+  m_battery_in_power_limit = MyMetrics.InitFloat("xnl.v.b.regen.limit", SM_STALE_HIGH, 0, kW);
+  m_battery_chargerate_max = MyMetrics.InitFloat("xnl.v.b.charge.limit", SM_STALE_HIGH, 0, kW);
   m_charge_limit = MyMetrics.InitString("xnl.v.c.limit.reason", SM_STALE_MIN, 0);
   m_charge_count_qc     = MyMetrics.InitInt("xnl.v.c.count.qc",     SM_STALE_NONE, 0);
   m_charge_count_l0l1l2 = MyMetrics.InitInt("xnl.v.c.count.l0l1l2", SM_STALE_NONE, 0);
@@ -852,8 +853,11 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       break;
     case 0x1dc:
     { // additional HVBAT messages see https://github.com/dalathegreat/leaf_can_bus_messages
-      m_battery_dis_power_limit->SetValue( ( d[0] << 2 | d[1] >> 6 ) / 4.0 ); 
-      m_battery_charge_power_limit->SetValue( ( (d[1] & 0x3f) << 2 | d[2] >> 4 ) / 4.0 );
+      // power into and out of battery while driving
+      m_battery_out_power_limit->SetValue( ( d[0] << 2 | d[1] >> 6 ) / 4.0 ); 
+      m_battery_in_power_limit->SetValue( ( (d[1] & 0x3f) << 2 | d[2] >> 4 ) / 4.0 );
+      // max allowed power into battery whilst charging, changes with SOC, temp etc
+      m_battery_chargerate_max->SetValue( ( (d[2] & 0x0f) << 6 | d[3] >> 2 ) / 10.0 );
     }
       break;
     case 0x284:
