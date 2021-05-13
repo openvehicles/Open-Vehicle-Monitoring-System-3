@@ -880,9 +880,10 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       
       float charge_power =     ( (d[0] & 0x01) << 8 | d[1] ) * 100; // in W
       float max_charge_power = ( (d[5] & 0x01) << 8 | d[6] ) * 100; // in W
-      bool  qc_state = (d[4] & 0x20) == 0x20; // indicates chademo relay state
+      bool  ac_state = (d[3] & 0x20) == 0x20; // indicates ac charge state
+      bool  qc_state = (d[4] & 0x40) == 0x40; // indicates chademo relay state
       
-      if (d[3] > 90 || d[4] > 90) // 90 is arbitrary to signal data d[3] for AC and d[4] for QC
+      if (qc_state || ac_state) 
         {
         StandardMetrics.ms_v_charge_pilot->SetValue(true);
         }
@@ -912,7 +913,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         }
 
       switch ( (d[5] >> 1) & 0x3f ) 
-        { // this appears to be ac/dc charger status
+        { // this appears to be ac charger status only, if qc then ac charger is idle
         case 0x01: 
           if (qc_state)
             {
