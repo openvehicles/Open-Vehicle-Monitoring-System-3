@@ -77,7 +77,6 @@ void OvmsVehicleNissanLeaf::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   std::string cabintempoffset;
   std::string maxgids;
   std::string newcarah;
-  std::string acvoltagemultiplier;
 
   if (c.method == "POST") {
     // process form submission:
@@ -88,7 +87,6 @@ void OvmsVehicleNissanLeaf::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     socnewcar       = (c.getvar("socnewcar") == "yes");
     sohnewcar       = (c.getvar("sohnewcar") == "yes");
     canwrite        = (c.getvar("canwrite") == "yes");
-    acvoltagemultiplier = c.getvar("acvoltagemultiplier");
 
     // check:
     if (!modelyear.empty()) {
@@ -110,7 +108,6 @@ void OvmsVehicleNissanLeaf::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValueBool("xnl", "soc.newcar", socnewcar);
       MyConfig.SetParamValueBool("xnl", "soh.newcar", sohnewcar);
       MyConfig.SetParamValueBool("xnl", "canwrite",   canwrite);
-      MyConfig.SetParamValue("xnl", "acvoltagemultiplier", acvoltagemultiplier);
 
       c.head(200);
       c.alert("success", "<p class=\"lead\">Nissan Leaf feature configuration saved.</p>");
@@ -133,7 +130,6 @@ void OvmsVehicleNissanLeaf::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
     socnewcar       = MyConfig.GetParamValueBool("xnl", "soc.newcar", false);
     sohnewcar       = MyConfig.GetParamValueBool("xnl", "soh.newcar", false);
     canwrite        = MyConfig.GetParamValueBool("xnl", "canwrite", false);
-    acvoltagemultiplier = MyConfig.GetParamValue("xnl", "acvoltagemultiplier", STR(DEFAULT_AC_VOLTAGE_MULTIPLIER));
 
     c.head(200);
   }
@@ -162,9 +158,6 @@ void OvmsVehicleNissanLeaf::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   c.input("number", "Cabin Temperature Offset", "cabintempoffset", cabintempoffset.c_str(), "Default: " STR(DEFAULT_CABINTEMP_OFFSET),
       "<p>This allows an offset adjustment to the cabin temperature sensor readings in Celcius.</p>",
       "step=\"0.1\"", "");
-  c.input("number", "AC Charge Voltage Multiplier", "acvoltagemultiplier", acvoltagemultiplier.c_str(), "Default: " STR(DEFAULT_AC_VOLTAGE_MULTIPLIER),
-      "<p>This allows scaling of the voltage presence reading when AC charging on newer vehicles (default value scales to 200V from 179 value reported).</p>",
-      "step=\"0.001\"", "");
   c.fieldset_end();
 
   c.fieldset_start("Remote Control");
