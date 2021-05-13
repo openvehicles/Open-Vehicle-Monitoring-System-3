@@ -878,8 +878,8 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       // Gen 2 Charger
       // see https://github.com/dalathegreat/leaf_can_bus_messages
       
-      float charge_power =     ( (d[0] & 0x01) << 8 | d[1] ) * 0.1;
-      float max_charge_power = ( (d[5] & 0x01) << 8 | d[6] ) * 0.1;
+      float charge_power =     ( (d[0] & 0x01) << 8 | d[1] ) * 100; // in W
+      float max_charge_power = ( (d[5] & 0x01) << 8 | d[6] ) * 100; // in W
       bool  qc_state = (d[4] & 0x20) == 0x20; // indicates chademo relay state
       
       if (d[3] > 90 || d[4] > 90) // 90 is arbitrary to signal data d[3] for AC and d[4] for QC
@@ -897,7 +897,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         }
       else
         {
-        StandardMetrics.ms_v_charge_voltage->SetValue( (d[3] >> 3) & 0x03 * 100 );
+        StandardMetrics.ms_v_charge_voltage->SetValue( ((d[3] >> 3) & 0x03) * 100 );
         }
       
       StandardMetrics.ms_v_charge_current->SetValue(charge_power / StandardMetrics.ms_v_charge_voltage->AsFloat());
