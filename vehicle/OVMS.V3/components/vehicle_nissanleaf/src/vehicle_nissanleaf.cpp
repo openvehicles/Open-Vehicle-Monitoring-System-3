@@ -926,8 +926,15 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         case 0x02:
           vehicle_nissanleaf_charger_status(CHARGER_STATUS_FINISHED);
           break;
-        case 0x04: 
-          vehicle_nissanleaf_charger_status(CHARGER_STATUS_CHARGING);
+        case 0x04:
+          if (StandardMetrics.ms_v_charge_voltage->AsFloat() > 0) 
+            {
+            vehicle_nissanleaf_charger_status(CHARGER_STATUS_CHARGING);
+            }
+          else
+            {
+            vehicle_nissanleaf_charger_status(CHARGER_STATUS_INTERRUPTED);  
+            }
           break;
         case 0x08: 
         case 0x09:
