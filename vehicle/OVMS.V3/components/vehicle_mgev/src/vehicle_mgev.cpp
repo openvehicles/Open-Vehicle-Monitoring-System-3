@@ -376,11 +376,8 @@ void OvmsVehicleMgEv::processEnergy()
             StandardMetrics.ms_v_charge_duration_soc->SetValue(minsremaining_soc, Minutes);
             if ( minsremaining_soc == 0 && !soc_limit_reached && limit_soc >= StandardMetrics.ms_v_bat_soc->AsFloat(100))
             {
-                if (!soc_limit_reached)
-                {
-                    MyNotify.NotifyStringf("info", "charge.limit.soc", "Charge limit of %d%% reached", limit_soc);
-                    soc_limit_reached = true;
-                }
+                  MyNotify.NotifyStringf("info", "charge.limit.soc", "Charge limit of %d%% reached", limit_soc);
+                  soc_limit_reached = true;
             }
             ESP_LOGV(TAG, "Time remaining: %d mins to %d%% soc", minsremaining_soc, limit_soc);
         }
@@ -394,7 +391,7 @@ void OvmsVehicleMgEv::processEnergy()
             StandardMetrics.ms_v_charge_duration_range->SetValue(minsremaining_range, Minutes);
             if ( minsremaining_range == 0 && !range_limit_reached && range_soc >= StandardMetrics.ms_v_bat_soc->AsFloat(100))
             {
-                MyNotify.NotifyStringf("info", "charge.limit.soc", "Charge limit of %dkm reached", (int) limit_range);
+                MyNotify.NotifyStringf("info", "charge.limit.range", "Charge limit of %dkm reached", (int) limit_range);
                 range_limit_reached = true;
             }
             ESP_LOGV(TAG, "Time remaining: %d mins for %0.0f km (%d%% soc)", minsremaining_range, limit_range, range_soc);
