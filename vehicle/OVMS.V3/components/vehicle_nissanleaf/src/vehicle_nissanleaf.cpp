@@ -876,50 +876,14 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
     case 0x390:
     {
       // Gen 2 Charger
-      //
-      // When the data is valid, can_databuffer[6] is the J1772 maximum
-      // available current if we're plugged in, and 0 when we're not.
-      // can_databuffer[3] seems to govern when it's valid, and is probably a
-      // bit field, but I don't have a full decoding
-      //
-      // specifically the last few frames before shutdown to wait for the charge
-      // timer contain zero in can_databuffer[6] so we ignore them and use the
-      // valid data in the earlier frames
-      //
-      // During plug in with charge timer activated, byte 3 & 6:
-      //
-      // 0x390 messages start
-      // 0x00 0x21
-      // 0x60 0x21
-      // 0x60 0x00
-      // 0xa0 0x00
-      // 0xb0 0x00
-      // 0xb2 0x15 -- byte 6 now contains valid j1772 pilot amps
-      // 0xb3 0x15
-      // 0xb1 0x00
-      // 0x71 0x00
-      // 0x69 0x00
-      // 0x61 0x00
-      // 0x390 messages stop
-      //
-      // byte 3 is 0xb3 during charge, and byte 6 contains the valid pilot amps
-      //
-      // so far, except briefly during startup, when byte 3 is 0x00 or 0x03,
-      // byte 6 is 0x00, correctly indicating we're unplugged, so we use that
-      // for unplugged detection.
-      //
-      // d[3] appears to be analog voltage signal, whilst d[1] is charge current
-      //if (d[3] == 0xb3 ||
-      //  d[3] == 0x00 ||
-      //  d[3] == 0x03)
-      //  {
-        // can_databuffer[6] is the J1772 pilot current, 0.5A per bit
-        // TODO enum?
-      StandardMetrics.ms_v_charge_climit->SetValue(d[6] / 2.0f);
-      //d[3] ramps from 0 to 0xB3 (179) but can sit at 1 due to capacitance?? set >90 to ensure valid signal
-      //use to set pilot signal
-      //d[4] appears to be chademo charge voltage
-      if (d[3] > 90 || d[4] > 90)
+      // see https://github.com/dalathegreat/leaf_can_bus_messages
+      
+      float charge_power =     ( (d[0] & 0x01) << 8 | d[1] ) * 100; // in W
+      float max_charge_power = ( (d[5] & 0x01) << 8 | d[6] ) * 100; // in W
+      bool  ac_state = (d[3] & 0x20) == 0x20; // indicates ac charge state
+      bool  qc_state = (d[4] & 0x40) == 0x40; // indicates chademo relay state
+      
+      if (qc_state || ac_state) 
         {
         StandardMetrics.ms_v_charge_pilot->SetValue(true);
         }
@@ -927,48 +891,57 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         {
         StandardMetrics.ms_v_charge_pilot->SetValue(false);
         }
-      // use battery voltage until d[3] d[4] fully understood, possibly little endian encoded d[3]=205
-      float batt_volt   = StandardMetrics.ms_v_bat_voltage->AsFloat();
-      float batt_curr   = abs(StandardMetrics.ms_v_bat_current->AsFloat());
-      float charge_curr = ( (d[0] & 0x01) << 8 | d[1] ) / 2.0f;
-      float volt_scaling = MyConfig.GetParamValueFloat("xnl", "acvoltagemultiplier", DEFAULT_AC_VOLTAGE_MULTIPLIER);
-      switch (d[5])
+      
+      if (qc_state)
         {
-        case 0x80:
-        case 0x82: // V2X 
-          StandardMetrics.ms_v_charge_voltage->SetValue(d[3] * volt_scaling);
-          StandardMetrics.ms_v_charge_current->SetValue(charge_curr);
-          vehicle_nissanleaf_charger_status(CHARGER_STATUS_IDLE);
+        StandardMetrics.ms_v_charge_voltage->SetValue(StandardMetrics.ms_v_bat_voltage->AsFloat());
+        }
+      else
+        {
+        StandardMetrics.ms_v_charge_voltage->SetValue( ((d[3] >> 3) & 0x03) * 100 );
+        }
+      
+      if (StandardMetrics.ms_v_charge_voltage->AsFloat() > 0)
+        {
+        StandardMetrics.ms_v_charge_current->SetValue(charge_power / StandardMetrics.ms_v_charge_voltage->AsFloat());
+        StandardMetrics.ms_v_charge_climit->SetValue(max_charge_power / StandardMetrics.ms_v_charge_voltage->AsFloat());
+        }
+      else
+        {
+        StandardMetrics.ms_v_charge_current->SetValue(0);
+        StandardMetrics.ms_v_charge_climit->SetValue(0);
+        }
+
+      switch ( (d[5] >> 1) & 0x3f ) 
+        { // this appears to be ac charger status only, if qc then ac charger is idle
+        case 0x01: 
+          if (qc_state)
+            {
+            vehicle_nissanleaf_charger_status(CHARGER_STATUS_QUICK_CHARGING);
+            }
+          else 
+            {
+            vehicle_nissanleaf_charger_status(CHARGER_STATUS_IDLE);  
+            }
           break;
-        case 0x83:
-          StandardMetrics.ms_v_charge_voltage->SetValue(batt_volt);
-          StandardMetrics.ms_v_charge_current->SetValue(batt_curr);
-          vehicle_nissanleaf_charger_status(CHARGER_STATUS_QUICK_CHARGING);
-          break;
-        case 0x84:
+        case 0x02:
           vehicle_nissanleaf_charger_status(CHARGER_STATUS_FINISHED);
           break;
-        case 0x88: // on evse power loss car still reports 0x88
-          if (StandardMetrics.ms_v_charge_pilot->AsBool())
-            { // voltage scaling to approx. evse kWh output
-            StandardMetrics.ms_v_charge_voltage->SetValue(d[3] * volt_scaling);
-            StandardMetrics.ms_v_charge_current->SetValue(charge_curr);
+        case 0x04:
+          if (StandardMetrics.ms_v_charge_voltage->AsFloat() > 0) 
+            {
             vehicle_nissanleaf_charger_status(CHARGER_STATUS_CHARGING);
             }
           else
             {
-            vehicle_nissanleaf_charger_status(CHARGER_STATUS_FINISHED);
+            vehicle_nissanleaf_charger_status(CHARGER_STATUS_INTERRUPTED);  
             }
           break;
-        case 0x90: //this state appears just before 0x88 and after evse removed (prepare/finish)
-        case 0x92:
-          StandardMetrics.ms_v_charge_voltage->SetValue(d[3] * volt_scaling);
-          StandardMetrics.ms_v_charge_current->SetValue(charge_curr);
+        case 0x08: 
+        case 0x09:
           vehicle_nissanleaf_charger_status(CHARGER_STATUS_IDLE);
           break;
-        case 0x98:
-          StandardMetrics.ms_v_charge_voltage->SetValue(d[3] * volt_scaling);
-          StandardMetrics.ms_v_charge_current->SetValue(charge_curr);
+        case 0x0c:
           vehicle_nissanleaf_charger_status(CHARGER_STATUS_PLUGGED_IN_TIMER_WAIT);
           break;
         }
