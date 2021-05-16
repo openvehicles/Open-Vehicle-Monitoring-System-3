@@ -29,7 +29,7 @@
 #include <string>
 static const char *TAG = "v-vweup";
 
-#define VERSION "0.15.1"
+#define VERSION "0.15.2"
 
 #include <stdio.h>
 #include <string>
@@ -97,6 +97,7 @@ OvmsVehicleVWeUp::OvmsVehicleVWeUp()
 
   m_use_phase = UP_None;
   m_obd_state = OBDS_Init;
+  m_chargestart_ticker = 0;
   m_chargestop_ticker = 0;
 
   // Init metrics:
@@ -382,13 +383,7 @@ void OvmsVehicleVWeUp::Ticker1(uint32_t ticker)
  */
 int OvmsVehicleVWeUp::GetNotifyChargeStateDelay(const char *state)
 {
-  // With OBD data, wait for first voltage & current when starting the charge:
-  if (HasOBD() && strcmp(state, "charging") == 0) {
-    return 6;
-  }
-  else {
-    return 3;
-  }
+  return 3;
 }
 
 

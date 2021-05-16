@@ -204,6 +204,7 @@ private:
   float m_coulomb_charged_start;
   float m_charge_kwh_grid_start;
   double m_charge_kwh_grid;
+  int m_chargestart_ticker;
   int m_chargestop_ticker;
 
 
