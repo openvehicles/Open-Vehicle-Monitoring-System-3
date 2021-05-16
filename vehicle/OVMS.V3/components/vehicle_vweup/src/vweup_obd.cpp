@@ -440,17 +440,21 @@ void OvmsVehicleVWeUp::PollerStateTicker()
 
       // Start new charge:
       SetUsePhase(UP_Charging);
-      ResetChargeCounters();
 
       // TODO: get real port & pilot states, fake for now:
       StdMetrics.ms_v_door_chargeport->SetValue(true);
       StdMetrics.ms_v_charge_pilot->SetValue(true);
 
+      PollSetState(VWEUP_CHARGING);
+
+      // Take charge counter references after 3 seconds to collect an initial SOC correction:
+      m_chargestop_ticker = 0;
+      m_chargestart_ticker = 3;
+    }
+    else if (m_chargestart_ticker && --m_chargestart_ticker == 0) {
+      ResetChargeCounters();
       UpdateChargeParams();
       SetChargeState(true);
-      m_chargestop_ticker = 0;
-
-      PollSetState(VWEUP_CHARGING);
     }
     return;
   }
@@ -462,6 +466,7 @@ void OvmsVehicleVWeUp::PollerStateTicker()
 
     // On charge stop, we need to delay the actual state change to collect the final SOC first
     // (SOC is needed to determine if the charge is done or was interrupted):
+    m_chargestart_ticker = 0;
     m_chargestop_ticker = 3;
   }
   else if (m_chargestop_ticker && --m_chargestop_ticker == 0) {
