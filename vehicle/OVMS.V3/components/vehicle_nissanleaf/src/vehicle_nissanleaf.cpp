@@ -293,8 +293,11 @@ void OvmsVehicleNissanLeaf::vehicle_nissanleaf_charger_status(ChargerStatus stat
     {
     case CHARGER_STATUS_IDLE:
       StandardMetrics.ms_v_charge_inprogress->SetValue(false);
+      StandardMetrics.ms_v_gen_inprogress->SetValue(false);
       StandardMetrics.ms_v_charge_substate->SetValue("stopped");
       StandardMetrics.ms_v_charge_state->SetValue("stopped");
+      StandardMetrics.ms_v_gen_substate->SetValue("stopped");
+      StandardMetrics.ms_v_gen_state->SetValue("stopped");
       break;
     case CHARGER_STATUS_PLUGGED_IN_TIMER_WAIT:
       StandardMetrics.ms_v_door_chargeport->SetValue(true); //see 0x35d, can't use as only open signal
@@ -851,6 +854,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       else
         {
         m_cum_energy_used_wh += energy;
+        m_cum_energy_gen_wh += energy;
         }
 
       // soc displayed on the instrument cluster
@@ -900,82 +904,70 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       bool  vg_state = (d[0] >> 4 == 0x09);   // indicates v2x exporting state
       
       if ( (qc_state || ac_state) && !vg_state ) 
-        {
         StandardMetrics.ms_v_charge_pilot->SetValue(true);
-        }
       else
         {
         StandardMetrics.ms_v_charge_pilot->SetValue(false);
+        StandardMetrics.ms_v_charge_voltage->SetValue(0);
         }
-      
+        
       if (vg_state) 
         {
         StandardMetrics.ms_v_gen_pilot->SetValue(true);
+        StandardMetrics.ms_v_gen_voltage->SetValue(StandardMetrics.ms_v_bat_voltage->AsFloat());
         }
       else
         {
         StandardMetrics.ms_v_gen_pilot->SetValue(false);
+        StandardMetrics.ms_v_gen_voltage->SetValue(0);
         }
       
       if (qc_state && !vg_state)
-        {
         StandardMetrics.ms_v_charge_voltage->SetValue(StandardMetrics.ms_v_bat_voltage->AsFloat());
-        }
+        
       if (ac_state)
-        {
         StandardMetrics.ms_v_charge_voltage->SetValue( ((d[3] >> 3) & 0x03) * 100 );
-        }
-      if (vg_state)
-        {
-        StandardMetrics.ms_v_gen_voltage->SetValue(StandardMetrics.ms_v_bat_voltage->AsFloat());
-        }
-      
+
       if (StandardMetrics.ms_v_charge_voltage->AsFloat() > 0 && !vg_state)
         {
         StandardMetrics.ms_v_charge_current->SetValue(charge_power / StandardMetrics.ms_v_charge_voltage->AsFloat());
         StandardMetrics.ms_v_charge_climit->SetValue(max_charge_power / StandardMetrics.ms_v_charge_voltage->AsFloat());
+        StandardMetrics.ms_v_charge_power->SetValue(charge_power / 1000.0);
         }
       else if (StandardMetrics.ms_v_gen_voltage->AsFloat() > 0 && vg_state) 
         { // may need modifying
         StandardMetrics.ms_v_gen_current->SetValue(StandardMetrics.ms_v_bat_current->AsFloat());
         StandardMetrics.ms_v_gen_climit->SetValue(max_charge_power / StandardMetrics.ms_v_gen_voltage->AsFloat());
+        StandardMetrics.ms_v_gen_power->SetValue(StandardMetrics.ms_v_gen_voltage->AsFloat() * StandardMetrics.ms_v_gen_current->AsFloat() / 1000.0);
         }
       else
         {
         StandardMetrics.ms_v_charge_current->SetValue(0);
         StandardMetrics.ms_v_charge_climit->SetValue(0);
+        StandardMetrics.ms_v_charge_power->SetValue(0);
         StandardMetrics.ms_v_gen_current->SetValue(0);
         StandardMetrics.ms_v_gen_climit->SetValue(0);
+        StandardMetrics.ms_v_gen_power->SetValue(0);
         }
 
       switch ( (d[5] >> 1) & 0x3f ) 
         { // this appears to be ac charger status only, if qc then ac charger is idle
         case 0x01: 
           if (qc_state && !vg_state)
-            {
             vehicle_nissanleaf_charger_status(CHARGER_STATUS_QUICK_CHARGING);
-            }
           else if (qc_state && vg_state)
-            {
             vehicle_nissanleaf_charger_status(CHARGER_STATUS_V2X);
-            }
           else 
-            {
             vehicle_nissanleaf_charger_status(CHARGER_STATUS_IDLE);  
-            }
           break;
         case 0x02:
           vehicle_nissanleaf_charger_status(CHARGER_STATUS_FINISHED);
           break;
         case 0x04:
           if (StandardMetrics.ms_v_charge_voltage->AsFloat() > 0) 
-            {
             vehicle_nissanleaf_charger_status(CHARGER_STATUS_CHARGING);
-            }
           else
-            {
             vehicle_nissanleaf_charger_status(CHARGER_STATUS_INTERRUPTED);  
-            }
           break;
         case 0x08: 
         case 0x09:
@@ -1773,7 +1765,6 @@ void OvmsVehicleNissanLeaf::HandleExporting()
       ESP_LOGV(TAG, "Time remaining: %d mins for %0.0f km (%0.0f%% soc)", minsremaining_range, limit_range, range_soc);
       }
     }
-    StandardMetrics.ms_v_gen_power->SetValue(gen_power_w / 1000.0);
   }
 
 /**
@@ -1832,7 +1823,7 @@ void OvmsVehicleNissanLeaf::HandleCharging()
       }
     }
   // calculate charger power and efficiency
-  float m_charge_power   = charge_power_w / 1000.0;
+  float m_charge_power   = StandardMetrics.ms_v_charge_power->AsFloat();
   float m_batt_power     = StandardMetrics.ms_v_bat_power->AsFloat();
   if (m_charge_power != 0)
     {
@@ -1850,23 +1841,26 @@ void OvmsVehicleNissanLeaf::HandleCharging()
  * TODO: Should be calculated based on actual charge curve. Maybe in a later version?
  */
 int OvmsVehicleNissanLeaf::calcMinutesRemaining(float target_soc, float charge_power_w)
-  {
+  { // updated to allow for V2X calculation
   float bat_soc = m_soc_instrument->AsFloat(100);
-  if (bat_soc > target_soc)
+  if ( (bat_soc > target_soc && charge_power_w > 0) || (bat_soc < target_soc && charge_power_w < 0) )
     {
     return 0;   // Done!
     }
 
-  if (charge_power_w <= 0.0f)
-    {
-    return 1440;
-    }
+  //if (charge_power_w <= 0.0f)
+  //  {
+  //  return 1440;
+  //  }
 
   float bat_cap_kwh     = m_battery_energy_capacity->AsFloat(24, kWh);
   float remaining_wh    = bat_cap_kwh * 1000.0 * (target_soc - bat_soc) / 100.0;
   float remaining_hours = remaining_wh / charge_power_w;
   float remaining_mins  = remaining_hours * 60.0;
-
+  
+  if (remaining_mins < 0)
+    remaining_mins = 1440;
+    
   return MIN( 1440, (int)remaining_mins );
   }
 

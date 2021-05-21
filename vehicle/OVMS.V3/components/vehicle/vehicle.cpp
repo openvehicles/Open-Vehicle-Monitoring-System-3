@@ -557,6 +557,11 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
     StandardMetrics.ms_v_charge_time->SetValue(StandardMetrics.ms_v_charge_time->AsInt() + 1);
   else
     StandardMetrics.ms_v_charge_time->SetValue(0);
+  
+  if (StandardMetrics.ms_v_gen_inprogress->AsBool())
+    StandardMetrics.ms_v_gen_time->SetValue(StandardMetrics.ms_v_gen_time->AsInt() + 1);
+  else
+    StandardMetrics.ms_v_gen_time->SetValue(0);
 
   if (m_chargestate_ticker > 0 && --m_chargestate_ticker == 0)
     NotifyChargeState();
