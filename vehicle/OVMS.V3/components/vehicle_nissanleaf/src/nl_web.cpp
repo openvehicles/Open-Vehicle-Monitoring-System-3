@@ -184,12 +184,14 @@ void OvmsVehicleNissanLeaf::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
   std::string error;
   //  suffsoc          	Sufficient SOC [%] (Default: 0=disabled)
   //  suffrange        	Sufficient range [km] (Default: 0=disabled)
-  std::string suffrange, suffsoc;
+  std::string suffrange, suffsoc, minrange, minsoc;
 
   if (c.method == "POST") {
     // process form submission:
     suffrange = c.getvar("suffrange");
     suffsoc = c.getvar("suffsoc");
+    minrange = c.getvar("minrange");
+    minsoc = c.getvar("minsoc");
 
     // check:
     if (!suffrange.empty()) {
@@ -202,11 +204,23 @@ void OvmsVehicleNissanLeaf::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
       if (n < 0 || n > 100)
         error += "<li data-input=\"suffsoc\">Sufficient SOC invalid, must be 0…100</li>";
     }
-
+    if (!minrange.empty()) {
+      float n = atof(minrange.c_str());
+      if (n < 0)
+        error += "<li data-input=\"minrange\">Minimum range invalid, must be &ge; 0</li>";
+    }
+    if (!minsoc.empty()) {
+      float n = atof(minsoc.c_str());
+      if (n < 0 || n > 100)
+        error += "<li data-input=\"minsoc\">Minimum SOC invalid, must be 0…100</li>";
+    }
+    
     if (error == "") {
       // store:
       MyConfig.SetParamValue("xnl", "suffrange", suffrange);
       MyConfig.SetParamValue("xnl", "suffsoc", suffsoc);
+      MyConfig.SetParamValue("xnl", "minrange", minrange);
+      MyConfig.SetParamValue("xnl", "minsoc", minsoc);
 
       c.head(200);
       c.alert("success", "<p class=\"lead\">Nissan Leaf battery setup saved.</p>");
@@ -224,7 +238,8 @@ void OvmsVehicleNissanLeaf::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
     // read configuration:
     suffrange = MyConfig.GetParamValue("xnl", "suffrange", "0");
     suffsoc = MyConfig.GetParamValue("xnl", "suffsoc", "0");
-
+    minrange = MyConfig.GetParamValue("xnl", "minrange", "0");
+    minsoc = MyConfig.GetParamValue("xnl", "minsoc", "0");
     c.head(200);
   }
 
@@ -242,6 +257,18 @@ void OvmsVehicleNissanLeaf::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
   c.input_slider("Sufficient SOC", "suffsoc", 3, "%",
     atof(suffsoc.c_str()) > 0, atof(suffsoc.c_str()), 0, 0, 100, 1,
     "<p>Default 0=off. Notify/stop charge when reaching this level.</p>");
+
+  c.fieldset_end();
+  
+  c.fieldset_start("V2X control");
+
+  c.input_slider("Minimum range", "minrange", 3, "km",
+    atof(minrange.c_str()) > 0, atof(minrange.c_str()), 0, 0, 300, 1,
+    "<p>Default 0=off. Notify/stop discharge when reaching this level.</p>");
+
+  c.input_slider("Minimum SOC", "minsoc", 3, "%",
+    atof(minsoc.c_str()) > 0, atof(minsoc.c_str()), 0, 0, 100, 1,
+    "<p>Default 0=off. Notify/stop discharge when reaching this level.</p>");
 
   c.fieldset_end();
 
