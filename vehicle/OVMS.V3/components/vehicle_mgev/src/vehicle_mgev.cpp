@@ -106,8 +106,8 @@ const OvmsVehicle::poll_pid_t common_obdii_polls[] =
 };
 
 charging_profile granny_steps[]  = {
-    {0,97,7200},
-    {97,100,3000},
+    {0,98,6375}, // Max charge rate (7200) less charge loss
+    {98,100,2700}, // Observed charge rate
     {0,0,0},
     };
 
@@ -123,6 +123,7 @@ charging_profile ccs_steps[] = {
     {95,100,5700},
     {0,0,0},
 };
+// From table found here https://ev-database.org/car/1201/MG-ZS-EV
 
 }
 
