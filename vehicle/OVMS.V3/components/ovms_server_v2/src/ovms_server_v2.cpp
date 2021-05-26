@@ -1073,6 +1073,88 @@ void OvmsServerV2::TransmitMsgStat(bool always)
   Transmit(buffer.str().c_str());
   }
 
+void OvmsServerV2::TransmitMsgGen(bool always)
+  {
+  m_now_gen = false;
+
+  bool modified =
+    StandardMetrics.ms_v_gen_voltage->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_current->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_state->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_substate->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_mode->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_climit->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_kwh->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_timermode->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_timerstart->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_duration_empty->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_duration_range->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_duration_soc->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_inprogress->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_limit_range->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_limit_soc->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_power->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_efficiency->IsModifiedAndClear(MyOvmsServerV2Modifier);
+
+  // Quick exit if nothing modified
+  if ((!always)&&(!modified)) return;
+
+  int mins_range = StandardMetrics.ms_v_gen_duration_range->AsInt();
+  int mins_soc = StandardMetrics.ms_v_gen_duration_soc->AsInt();
+  // bool generating = StandardMetrics.ms_v_gen_inprogress->AsBool();
+
+  extram::ostringstream buffer;
+  buffer
+    << std::fixed
+    << std::setprecision(2)
+    << "MP-0 G"
+    << ((m_units_distance == Kilometers) ? "K" : "M")
+    << ","
+    << StandardMetrics.ms_v_gen_voltage->AsInt()
+    << ","
+    << StandardMetrics.ms_v_gen_current->AsFloat()
+    << ","
+    << StandardMetrics.ms_v_gen_state->AsString("stopped")
+    << ","
+    << StandardMetrics.ms_v_gen_mode->AsString("standard")
+    << ","
+    << StandardMetrics.ms_v_gen_climit->AsInt()
+    << ","
+    << StandardMetrics.ms_v_gen_time->AsInt(0,Seconds)
+    << ","
+    << (int)(StandardMetrics.ms_v_gen_kwh->AsFloat() * 10)
+    << ","
+    << chargesubstate_key(StandardMetrics.ms_v_gen_substate->AsString(""))
+    << ","
+    << chargestate_key(StandardMetrics.ms_v_gen_state->AsString("stopped"))
+    << ","
+    << chargemode_key(StandardMetrics.ms_v_gen_mode->AsString("standard"))
+    << ","
+    << StandardMetrics.ms_v_gen_timermode->AsBool()
+    << ","
+    << StandardMetrics.ms_v_gen_timerstart->AsInt()
+    << ","
+    << StandardMetrics.ms_v_gen_duration_empty->AsInt()
+    << ","
+    << (((mins_range >= 0) && (mins_range < mins_soc)) ? mins_range : mins_soc)
+    << ","
+    << (int) StandardMetrics.ms_v_gen_limit_range->AsFloat(0, m_units_distance)
+    << ","
+    << StandardMetrics.ms_v_gen_limit_soc->AsInt()
+    << ","
+    << mins_range
+    << ","
+    << mins_soc
+    << ","
+    << StandardMetrics.ms_v_gen_power->AsFloat()
+    << ","
+    << StandardMetrics.ms_v_gen_efficiency->AsFloat()
+    ;
+
+  Transmit(buffer.str().c_str());
+  }
+
+
 void OvmsServerV2::TransmitMsgGPS(bool always)
   {
   m_now_gps = false;
@@ -1854,6 +1936,7 @@ void OvmsServerV2::Ticker1(std::string event, void* data)
     if ((m_lasttx==0)||(now>(m_lasttx+next)))
       {
       TransmitMsgStat(true);          // Send always, periodically
+      TransmitMsgGen(true);          // Send always, periodically
       TransmitMsgEnvironment(true);   // Send always, periodically
       TransmitMsgGPS(m_lasttx==0);
       TransmitMsgGroup(m_lasttx==0);
@@ -1869,6 +1952,7 @@ void OvmsServerV2::Ticker1(std::string event, void* data)
       }
 
     if (m_now_stat) TransmitMsgStat();
+    if (m_now_gen) TransmitMsgGen();
     if (m_now_environment) TransmitMsgEnvironment();
     if (m_now_gps) TransmitMsgGPS();
     if (m_now_group) TransmitMsgGroup();
@@ -1906,6 +1990,7 @@ OvmsServerV2::OvmsServerV2(const char* name)
   m_buffer = new OvmsBuffer(1024);
   SetStatus("Server has been started", false, WaitNetwork);
   m_now_stat = false;
+  m_now_gen = false;
   m_now_gps = false;
   m_now_tpms = false;
   m_now_firmware = false;
