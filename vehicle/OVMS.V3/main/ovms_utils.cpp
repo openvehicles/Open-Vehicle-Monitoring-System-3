@@ -54,6 +54,7 @@ std::string chargestate_code(const int key)
     case 14: code = "timerwait";  break;
     case 15: code = "heating";    break;
     case 21: code = "stopped";    break;
+    case 22: code = "exporting";  break;
     default: code = "";
     }
   return code;
@@ -72,6 +73,7 @@ int chargestate_key(const std::string code)
   else if (code == "timerwait")   key = 14;
   else if (code == "heating")     key = 15;
   else if (code == "stopped")     key = 21;
+  else if (code == "exporting")   key = 22;
   else key = 0;
   return key;
   }
