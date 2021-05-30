@@ -102,13 +102,14 @@ OvmsVehicleFactory::OvmsVehicleFactory()
       "request", "Send OBD2/UDS request, output response");
     cmd_obdreq->RegisterCommand(
       "device", "Send OBD2/ISOTP request to a device", obdii_request,
-      "[-e|-E] [-t<timeout_ms>] <txid> <rxid> <request>\n"
+      "[-e|-E|-v] [-t<timeout_ms>] <txid> <rxid> <request>\n"
       "Give <txid> and <rxid> as hexadecimal CAN IDs,"
       " add -e to use ISO-TP extended addressing (19 bit IDs via standard frames)\n"
-      " or -E to use ISO-TP via extended frames (29 bit IDs).\n"
+      " or -E to use ISO-TP via extended frames (29 bit IDs)\n"
+      " or -v to use VW-TP 2.0 (VW/VAG specific transport protocol, txid=200, rxid=ECUID).\n"
       "<request> is the hex string of the request type + arguments,"
       " e.g. '223a4b' = read data from PID 0x3a4b.\n"
-      "Default timeout is 100 ms.",
+      "Default timeout is 3000 ms.",
       3, 5);
     cmd_obdreq->RegisterCommand(
       "broadcast", "Send OBD2/UDS request as broadcast", obdii_request,
@@ -117,7 +118,7 @@ OvmsVehicleFactory::OvmsVehicleFactory()
       "Note: only the first response will be shown, enable CAN log to check for more.\n"
       "<request> is the hex string of the request type + arguments,"
       " e.g. '223a4b' = read data from PID 0x3a4b.\n"
-      "Default timeout is 100 ms.",
+      "Default timeout is 3000 ms.",
       1, 2);
     }
 
@@ -256,6 +257,8 @@ OvmsVehicle::OvmsVehicle()
   m_poll_txcallback = std::bind(&OvmsVehicle::PollerTxCallback, this, _1, _2);
   m_poll_plist = NULL;
   m_poll_plcur = NULL;
+  m_poll_entry = {};
+  m_poll_vwtp = {};
   m_poll_ticker = 0;
   m_poll_single_rxbuf = NULL;
   m_poll_single_rxerr = 0;
@@ -271,6 +274,7 @@ OvmsVehicle::OvmsVehicle()
   m_poll_sequence_max = 1;
   m_poll_sequence_cnt = 0;
   m_poll_fc_septime = 25;       // response default timing: 25 milliseconds
+  m_poll_ch_keepalive = 60;     // channel keepalive default: 60 seconds
 
   m_bms_voltages = NULL;
   m_bms_vmins = NULL;
@@ -438,11 +442,14 @@ void OvmsVehicle::RxTask()
       {
       if (!m_ready)
         continue;
-      if (m_poll_wait && frame.origin == m_poll_bus && m_poll_plist)
+
+      // Pass frame to poller protocol handlers:
+      if (frame.origin == m_poll_vwtp.bus && frame.MsgID == m_poll_vwtp.rxid)
         {
-        // This is a quick filter check to see if the frame is possibly intended for our poller.
-        // The filter will be checked again in PollerReceive() after locking the mutex.
-        // ESP_LOGI(TAG, "Poller Rx candidate ID=%03x (expecting %03x-%03x)",frame.MsgID,m_poll_moduleid_low,m_poll_moduleid_high);
+        PollerVWTPReceive(&frame, frame.MsgID);
+        }
+      else if (m_poll_wait && frame.origin == m_poll_bus && m_poll_plist)
+        {
         uint32_t msgid;
         if (m_poll_protocol == ISOTP_EXTADR)
           msgid = frame.MsgID << 8 | frame.data.u8[0];
@@ -450,9 +457,11 @@ void OvmsVehicle::RxTask()
           msgid = frame.MsgID;
         if (msgid >= m_poll_moduleid_low && msgid <= m_poll_moduleid_high)
           {
-          PollerReceive(&frame, msgid);
+          PollerISOTPReceive(&frame, msgid);
           }
         }
+
+      // Pass frame to standard handlers:
       if (m_can1 == frame.origin) IncomingFrameCan1(&frame);
       else if (m_can2 == frame.origin) IncomingFrameCan2(&frame);
       else if (m_can3 == frame.origin) IncomingFrameCan3(&frame);
