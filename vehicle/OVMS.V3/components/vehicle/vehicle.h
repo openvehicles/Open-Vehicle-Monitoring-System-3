@@ -59,6 +59,7 @@ struct DashboardConfig;
 #define ISOTP_STD                       0     // standard addressing (11 bit IDs)
 #define ISOTP_EXTADR                    1     // extended addressing (19 bit IDs)
 #define ISOTP_EXTFRAME                  2     // extended frame mode (29 bit IDs)
+#define VWTP_20                         16    // VW/VAG Transport Protocol 2.0
 
 // Argument tag:
 #define POLL_TXDATA                     0xff  // poll_pid_t using xargs for external payload up to 4095 bytes
@@ -92,6 +93,28 @@ struct DashboardConfig;
 // The poller automatically uses a single or multi frame request as needed.
 // 
 // See OvmsVehicle::PollSingleRequest() on how to send dynamic requests with additional arguments.
+// 
+// VWTP_20: this protocol implements the VW (VAG) specific "TP 2.0", which establishes
+// OSI layer 5 communication channels to devices (ECU modules) via a CAN gateway.
+// On VWTP_20 poll entries, simply set the TXID to the gateway base ID (normally 0x200)
+// and the RXID to the logical 8 bit ECU ID you want to address.
+// TP 2.0 transports standard OBD/UDS requests, so everything else works the same way
+// as with ISO-TP.
+// 
+// VW TP 2.0 poll entry examples:
+//   // TXID, RXID,  TYPE,    PID,      TIMES,  BUS,  PROT
+//   { 0x200, 0x1f,  0x10,   0x89,  {…times…},    0,  VWTP_20 }
+//   { 0x200, 0x1f,  0x22, 0x04a1,  {…times…},    0 , VWTP_20 }
+// 
+// VW gateways currently do not support multiple open channels. To minimize connection
+// overhead for successive polls to an ECU, the VWTP_20 engine keeps an idle connection open
+// until the keepalive timeout occurs. So you should try to arrange your polls in interval
+// blocks/sequences to the same devices if possible.
+// 
+// To explicitly close a VWTP_20 channel, send a poll (any type) to RXID 0, that just
+// closes the channel (ECU ID 0 is an invalid destination):
+//   { 0x200,    0,     0,      0,  {…times…},    0 , VWTP_20 }
+
 
 #define VEHICLE_POLL_TYPE_NONE          0x00
 
@@ -205,6 +228,38 @@ struct DashboardConfig;
 #define BMS_DEFTHR_VALERT               0.030   // [V]
 #define BMS_DEFTHR_TWARN                2.00    // [°C]
 #define BMS_DEFTHR_TALERT               3.00    // [°C]
+
+
+// VWTP_20 channel states:
+typedef enum
+  {
+  VWTP_Closed = 0,                          // Channel not connecting/connected
+  VWTP_ChannelClose,                        // Close request has been sent
+  VWTP_ChannelSetup,                        // Setup request has been sent
+  VWTP_ChannelParams,                       // Params request has been sent
+  VWTP_Idle,                                // Connection established, idle
+  VWTP_StartPoll,                           // Transit state: begin request transmission
+  VWTP_Transmit,                            // Request transmission phase
+  VWTP_Receive,                             // Response reception phase
+  VWTP_AbortXfer,                           // Transit state: abort request/response
+  } vwtp_channelstate_t;
+
+// VWTP_20 channel:
+typedef struct
+  {
+  vwtp_channelstate_t     state;            // VWTP channel state
+  canbus*                 bus;              // CAN bus
+  uint16_t                baseid;           // Protocol base CAN MsgID (usually 0x200)
+  uint8_t                 moduleid;         // Logical address (ID) of destination module
+  uint16_t                txid;             // CAN MsgID we transmit on
+  uint16_t                rxid;             // CAN MsgID we listen to
+  uint8_t                 blocksize;        // Number of blocks (data frames) to send between ACKs
+  uint32_t                acktime;          // Max time [us] to wait for ACK (not yet implemented)
+  uint32_t                septime;          // Min separation time [us] between blocks (data frames)
+  uint32_t                txseqnr;          // TX packet sequence number
+  uint32_t                rxseqnr;          // RX packet sequence number
+  uint32_t                lastused;         // Timestamp of last channel access
+  } vwtp_channel_t;
 
 
 class OvmsVehicle : public InternalRamAllocated
@@ -443,7 +498,7 @@ class OvmsVehicle : public InternalRamAllocated
         };
       uint16_t polltime[VEHICLE_POLL_NSTATES];  // poll intervals in seconds for used poll states
       uint8_t  pollbus;                         // 0 = default CAN bus from PollSetPidList(), 1…4 = specific
-      uint8_t  protocol;                        // ISOTP_STD / ISOTP_EXTADR / ISOTP_EXTFRAME
+      uint8_t  protocol;                        // ISOTP_STD / ISOTP_EXTADR / ISOTP_EXTFRAME / VWTP_20
       } poll_pid_t;
 
   protected:
@@ -452,9 +507,10 @@ class OvmsVehicle : public InternalRamAllocated
     canbus*           m_poll_bus;             // Bus to poll on
     canbus*           m_poll_bus_default;     // Bus default to poll on
     const poll_pid_t* m_poll_plist;           // Head of poll list
-    const poll_pid_t* m_poll_plcur;           // Current position in poll list
+    const poll_pid_t* m_poll_plcur;           // Poll list loop cursor
+    poll_pid_t        m_poll_entry;           // Currently processed entry of poll list (copy)
     uint32_t          m_poll_ticker;          // Polling ticker
-    uint8_t           m_poll_protocol;        // ISOTP_STD / ISOTP_EXTADR / ISOTP_EXTFRAME
+    uint8_t           m_poll_protocol;        // ISOTP_STD / ISOTP_EXTADR / ISOTP_EXTFRAME / VWTP_20
     uint32_t          m_poll_moduleid_sent;   // ModuleID last sent
     uint32_t          m_poll_moduleid_low;    // Expected response moduleid low mark
     uint32_t          m_poll_moduleid_high;   // Expected response moduleid high mark
@@ -481,6 +537,7 @@ class OvmsVehicle : public InternalRamAllocated
     uint8_t           m_poll_sequence_max;    // Polls allowed to be sent in sequence per time tick (second), default 1, 0 = no limit
     uint8_t           m_poll_sequence_cnt;    // Polls already sent in the current time tick (second)
     uint8_t           m_poll_fc_septime;      // Flow control separation time for multi frame responses
+    uint16_t          m_poll_ch_keepalive;    // Seconds to keep an inactive channel (e.g. VWTP) alive (default: 60)
 
   private:
     OvmsRecMutex      m_poll_single_mutex;    // PollSingleRequest() concurrency protection
@@ -489,16 +546,31 @@ class OvmsVehicle : public InternalRamAllocated
     OvmsSemaphore     m_poll_single_rxdone;   // … response done (ok/error)
 
   protected:
+    vwtp_channel_t    m_poll_vwtp;            // VWTP channel state
+
+  protected:
     void PollSetPidList(canbus* bus, const poll_pid_t* plist);
     void PollSetState(uint8_t state);
     void PollSetThrottling(uint8_t sequence_max);
     void PollSetResponseSeparationTime(uint8_t septime);
+    void PollSetChannelKeepalive(uint16_t keepalive_seconds);
     int PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
                       std::string request, std::string& response,
-                      int timeout_ms=100, uint8_t protocol=ISOTP_STD);
+                      int timeout_ms=3000, uint8_t protocol=ISOTP_STD);
     int PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
                       uint8_t polltype, uint16_t pid, std::string& response,
-                      int timeout_ms=100, uint8_t protocol=ISOTP_STD);
+                      int timeout_ms=3000, uint8_t protocol=ISOTP_STD);
+
+  private:
+    void PollerISOTPStart(bool fromTicker);
+    bool PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid);
+
+  private:
+    void PollerVWTPStart(bool fromTicker);
+    bool PollerVWTPReceive(CAN_frame_t* frame, uint32_t msgid);
+    void PollerVWTPEnter(vwtp_channelstate_t state);
+    void PollerVWTPTicker();
+    void PollerVWTPTxCallback(const CAN_frame_t* frame, bool success);
 
   private:
     CanFrameCallback  m_poll_txcallback;      // Poller CAN TxCallback
