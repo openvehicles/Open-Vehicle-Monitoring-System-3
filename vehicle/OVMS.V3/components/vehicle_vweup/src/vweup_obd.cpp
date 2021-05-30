@@ -1209,7 +1209,8 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
       break;
 
     default:
-      VALUE_LOG(TAG, "IncomingPollReply: unhandled PID %X: %s", pid, PollReply.GetHexString().c_str());
+      VALUE_LOG(TAG, "IncomingPollReply: ECU %X/%X unhandled PID %02X %04X: %s",
+        m_poll_entry.txmoduleid, m_poll_entry.rxmoduleid, type, pid, PollReply.GetHexString().c_str());
       break;
   }
 }
