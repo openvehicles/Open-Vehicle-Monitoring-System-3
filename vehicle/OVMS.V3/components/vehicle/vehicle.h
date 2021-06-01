@@ -149,8 +149,10 @@ struct DashboardConfig;
 #define VEHICLE_POLL_TYPE_IOCONTROL       0x2F // UDS: InputOutputControlByIdentifier (16 bit PID)
 
 // Other service identifiers supported:
+#define VEHICLE_POLL_TYPE_OBDII_18        0x18 // Custom: VW request type 18 (no PID)
 #define VEHICLE_POLL_TYPE_OBDII_1A        0x1A // Custom: Mode 1A (8 bit PID)
 #define VEHICLE_POLL_TYPE_OBDIIGROUP      0x21 // Custom: Read data by 8 bit PID
+#define VEHICLE_POLL_TYPE_OBDII_32        0x32 // Custom: VW request type 32 (8 bit PID)
 
 // Utils:
 #define POLL_TYPE_HAS_16BIT_PID(type) \
@@ -166,7 +168,8 @@ struct DashboardConfig;
    (type) == VEHICLE_POLL_TYPE_CLEAR_ERDTC || \
    (type) == VEHICLE_POLL_TYPE_READ_DCERDTC || \
    (type) == VEHICLE_POLL_TYPE_READ_PERMDTC || \
-   (type) == VEHICLE_POLL_TYPE_ROUTINECONTROL)
+   (type) == VEHICLE_POLL_TYPE_ROUTINECONTROL || \
+   (type) == VEHICLE_POLL_TYPE_OBDII_18)
 #define POLL_TYPE_HAS_8BIT_PID(type) \
   (!POLL_TYPE_HAS_NO_PID(type) && !POLL_TYPE_HAS_16BIT_PID(type))
 
