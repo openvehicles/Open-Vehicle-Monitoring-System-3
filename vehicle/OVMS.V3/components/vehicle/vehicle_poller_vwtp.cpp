@@ -408,6 +408,19 @@ bool OvmsVehicle::PollerVWTPReceive(CAN_frame_t* frame, uint32_t msgid)
     m_poll_vwtp.bus->Write(&txframe);
     };
 
+  // Send ACK:
+  auto sendAck = [=]()
+    {
+    CAN_frame_t txframe = {};
+    txframe.callback = &m_poll_txcallback;
+    txframe.FIR.B.FF = CAN_frame_std;
+    txframe.MsgID = m_poll_vwtp.txid;
+    txframe.FIR.B.DLC = 1;
+    txframe.data.u8[0] = 0xB0 | (m_poll_vwtp.rxseqnr & 0x0f); // ACK, continue
+    m_poll_vwtp.bus->Write(&txframe);
+    };
+
+
   // After locking the mutex, check again for poll expectance match:
   if (m_poll_vwtp.state == VWTP_Closed || !m_poll_vwtp.bus || msgid != m_poll_vwtp.rxid)
     {
@@ -620,7 +633,9 @@ bool OvmsVehicle::PollerVWTPReceive(CAN_frame_t* frame, uint32_t msgid)
         if (m_poll_ml_frame == 0)
           {
           // First frame: extract & validate meta data
-          m_poll_ml_remain = frame->data.u8[1] << 8 | frame->data.u8[2];
+          // Note: upper nibble of byte 1 masked out, length assumed to by 12 bit
+          //  and we've seen 0x80 on byte 1 for response type UDS_RESP_NRC_RCRRP
+          m_poll_ml_remain = (frame->data.u8[1] & 0x0f) << 8 | frame->data.u8[2];
           tp_data = &frame->data.u8[3];
           tp_datalen = frame->FIR.B.DLC - 3;
           response_type = tp_data[0];
@@ -665,14 +680,18 @@ bool OvmsVehicle::PollerVWTPReceive(CAN_frame_t* frame, uint32_t msgid)
 
         if (response_type == UDS_RESP_TYPE_NRC && error_type == m_poll_type)
           {
+          // Send ACK?
+          if ((opcode & 0xf0) <= 0x10)
+            sendAck();
+
           // Negative Response Code:
           if (error_code == UDS_RESP_NRC_RCRRP)
             {
             // Info: requestCorrectlyReceived-ResponsePending (server busy processing the request)
             ESP_LOGD(TAG, "PollerVWTPReceive[%02X]: got OBD/UDS info %02X(%X) code=%02X (pending)",
                       m_poll_vwtp.moduleid, m_poll_type, m_poll_pid, error_code);
-            // add some wait time:
-            m_poll_wait++;
+            // reset wait time:
+            m_poll_wait = 2;
             return true;
             }
           else
@@ -698,6 +717,10 @@ bool OvmsVehicle::PollerVWTPReceive(CAN_frame_t* frame, uint32_t msgid)
           }
         else if (response_type == 0x40+m_poll_type && response_pid == m_poll_pid)
           {
+          // Send ACK?
+          if ((opcode & 0xf0) <= 0x10)
+            sendAck();
+
           // Normal matching poll response, forward to application:
           m_poll_ml_remain -= tp_datalen;
           ESP_LOGD(TAG, "PollerVWTPReceive[%02X]: process OBD/UDS response %02X(%X) frm=%u len=%u off=%u rem=%u",
@@ -736,18 +759,6 @@ bool OvmsVehicle::PollerVWTPReceive(CAN_frame_t* frame, uint32_t msgid)
           return false;
           }
         
-        // Send ACK?
-        if ((opcode & 0xf0) <= 0x10)
-          {
-          CAN_frame_t txframe = {};
-          txframe.callback = &m_poll_txcallback;
-          txframe.FIR.B.FF = CAN_frame_std;
-          txframe.MsgID = m_poll_vwtp.txid;
-          txframe.FIR.B.DLC = 1;
-          txframe.data.u8[0] = 0xB0 | (m_poll_vwtp.rxseqnr & 0x0f); // ACK, continue
-          m_poll_vwtp.bus->Write(&txframe);
-          }
-
         // Do we expect more data?
         if (m_poll_ml_remain)
           {

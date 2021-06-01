@@ -219,6 +219,9 @@ Field description
   │ Payload │ KWP2000 payload. The first 2 bytes of the first packet sent contain the length of the message.       │
   └─────────┴──────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
+Note: the high nibble of byte 1 in the first response frame is assumed to contain flags, with the
+  length being just 12 bit. Byte 1 = 0x80 is sent on NRC type 0x78 (ResponsePending).
+
 
 =======
 Example
