@@ -67,7 +67,6 @@ std::string canformat_cs11::get(CAN_log_message_t* message)
   switch (message->type)
     {
     case CAN_LogFrame_RX:
-    case CAN_LogFrame_TX:
       if (message->frame.FIR.B.FF == CAN_frame_std)
         {
         buf[0] = message->frame.FIR.B.DLC + 3;
