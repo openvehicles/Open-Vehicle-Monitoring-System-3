@@ -1078,57 +1078,73 @@ void OvmsServerV2::TransmitMsgGen(bool always)
   m_now_gen = false;
 
   bool modified =
+    StandardMetrics.ms_v_gen_inprogress->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_pilot->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_gen_voltage->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_gen_current->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_power->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_efficiency->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_type->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_gen_state->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_gen_substate->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_gen_mode->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_gen_climit->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_limit_range->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_limit_soc->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_gen_kwh->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_limit_range->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_limit_soc->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_kwh_grid->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_kwh_grid_total->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_time->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_gen_timermode->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_gen_timerstart->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_gen_duration_empty->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_gen_duration_range->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_gen_duration_soc->IsModifiedAndClear(MyOvmsServerV2Modifier) |
-    StandardMetrics.ms_v_gen_inprogress->IsModifiedAndClear(MyOvmsServerV2Modifier) |
-    StandardMetrics.ms_v_gen_limit_range->IsModifiedAndClear(MyOvmsServerV2Modifier) |
-    StandardMetrics.ms_v_gen_limit_soc->IsModifiedAndClear(MyOvmsServerV2Modifier) |
-    StandardMetrics.ms_v_gen_power->IsModifiedAndClear(MyOvmsServerV2Modifier) |
-    StandardMetrics.ms_v_gen_efficiency->IsModifiedAndClear(MyOvmsServerV2Modifier);
+    StandardMetrics.ms_v_gen_temp->IsModifiedAndClear(MyOvmsServerV2Modifier);
 
   // Quick exit if nothing modified
   if ((!always)&&(!modified)) return;
 
-  int mins_range = StandardMetrics.ms_v_gen_duration_range->AsInt();
-  int mins_soc = StandardMetrics.ms_v_gen_duration_soc->AsInt();
-  // bool generating = StandardMetrics.ms_v_gen_inprogress->AsBool();
-
   extram::ostringstream buffer;
   buffer
     << std::fixed
-    << std::setprecision(2)
+    << std::setprecision(1)
     << "MP-0 G"
-    << ((m_units_distance == Kilometers) ? "K" : "M")
+    << StandardMetrics.ms_v_gen_inprogress->AsBool()
+    << ";"
+    << StandardMetrics.ms_v_gen_pilot->AsBool()
     << ","
     << StandardMetrics.ms_v_gen_voltage->AsInt()
     << ","
     << StandardMetrics.ms_v_gen_current->AsFloat()
     << ","
+    << StandardMetrics.ms_v_gen_power->AsFloat()
+    << ","
+    << StandardMetrics.ms_v_gen_efficiency->AsFloat()
+    << ","
+    << StandardMetrics.ms_v_gen_type->AsString("")
+    << ","
     << StandardMetrics.ms_v_gen_state->AsString("stopped")
+    << ","
+    << StandardMetrics.ms_v_gen_substate->AsString("")
     << ","
     << StandardMetrics.ms_v_gen_mode->AsString("standard")
     << ","
-    << StandardMetrics.ms_v_gen_climit->AsInt()
+    << StandardMetrics.ms_v_gen_climit->AsFloat()
+    << ","
+    << StandardMetrics.ms_v_gen_limit_range->AsFloat(0, m_units_distance)
+    << ","
+    << StandardMetrics.ms_v_gen_limit_soc->AsInt()
+    << ","
+    << StandardMetrics.ms_v_gen_kwh->AsFloat()
+    << ","
+    << StandardMetrics.ms_v_gen_kwh_grid->AsFloat()
+    << ","
+    << StandardMetrics.ms_v_gen_kwh_grid_total->AsFloat()
     << ","
     << StandardMetrics.ms_v_gen_time->AsInt(0,Seconds)
-    << ","
-    << (int)(StandardMetrics.ms_v_gen_kwh->AsFloat() * 10)
-    << ","
-    << chargesubstate_key(StandardMetrics.ms_v_gen_substate->AsString(""))
-    << ","
-    << chargestate_key(StandardMetrics.ms_v_gen_state->AsString("stopped"))
-    << ","
-    << chargemode_key(StandardMetrics.ms_v_gen_mode->AsString("standard"))
     << ","
     << StandardMetrics.ms_v_gen_timermode->AsBool()
     << ","
@@ -1136,19 +1152,11 @@ void OvmsServerV2::TransmitMsgGen(bool always)
     << ","
     << StandardMetrics.ms_v_gen_duration_empty->AsInt()
     << ","
-    << (((mins_range >= 0) && (mins_range < mins_soc)) ? mins_range : mins_soc)
+    << StandardMetrics.ms_v_gen_duration_range->AsInt()
     << ","
-    << (int) StandardMetrics.ms_v_gen_limit_range->AsFloat(0, m_units_distance)
-    << ","
-    << StandardMetrics.ms_v_gen_limit_soc->AsInt()
-    << ","
-    << mins_range
-    << ","
-    << mins_soc
-    << ","
-    << StandardMetrics.ms_v_gen_power->AsFloat()
-    << ","
-    << StandardMetrics.ms_v_gen_efficiency->AsFloat()
+    << StandardMetrics.ms_v_gen_duration_soc->AsInt()
+    << ";"
+    << StandardMetrics.ms_v_gen_temp->AsFloat()
     ;
 
   Transmit(buffer.str().c_str());
