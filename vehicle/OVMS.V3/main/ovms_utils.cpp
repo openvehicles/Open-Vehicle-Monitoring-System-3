@@ -73,7 +73,6 @@ int chargestate_key(const std::string code)
   else if (code == "timerwait")   key = 14;
   else if (code == "heating")     key = 15;
   else if (code == "stopped")     key = 21;
-  else if (code == "exporting")   key = 22;
   else key = 0;
   return key;
   }
