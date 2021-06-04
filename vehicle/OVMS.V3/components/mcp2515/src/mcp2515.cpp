@@ -212,7 +212,7 @@ esp_err_t mcp2515::Start(CAN_mode_t mode, CAN_speed_t speed)
       cnf1=0x00; cnf2=0xf0; cnf3=0x86;
       break;
     case CAN_SPEED_1000KBPS:
-      cnf1=0x00; cnf2=0xd0; cnf3=0x82;
+      cnf1=0x00; cnf2=0xca; cnf3=0x81;
       break;
     }
   m_spibus->spi_cmd(m_spi, buf, 0, 5, CMD_WRITE, REG_CNF3, cnf3, cnf2, cnf1);

@@ -575,3 +575,90 @@ void OvmsVehicleVWeUp::WebDispChgMetrics(PageEntry_t &p, PageContext_t &c)
   PAGE_HOOK("body.post");
   c.done();
 }
+
+
+/**
+ * GetDashboardConfig: VW eUp specific dashboard setup
+ */
+void OvmsVehicleVWeUp::GetDashboardConfig(DashboardConfig& cfg)
+{
+  // Get model specific battery voltage range:
+  int cells = (vweup_modelyear > 2019) ? 84 : 102;
+  float
+    bat_volt_max      = cells * 4.2,
+    bat_volt_yellow   = cells * 3.5,
+    bat_volt_red      = cells * 3.4,
+    bat_volt_min      = cells * 3.3;
+
+  StringWriter buf;
+  buf.printf(
+    "yAxis: [{"
+      // Speed:
+      "min: 0, max: 140,"
+      "plotBands: ["
+        "{ from: 0, to: 100, className: 'green-band' },"
+        "{ from: 100, to: 120, className: 'yellow-band' },"
+        "{ from: 120, to: 140, className: 'red-band' }]"
+    "},{"
+      // Voltage:
+      "min: %.0f, max: %.0f,"
+      "plotBands: ["
+        "{ from: %.0f, to: %.1f, className: 'red-band' },"
+        "{ from: %.1f, to: %.1f, className: 'yellow-band' },"
+        "{ from: %.1f, to: %.0f, className: 'green-band' }]"
+    "},{"
+      // SOC:
+      "min: 0, max: 100,"
+      "plotBands: ["
+        "{ from: 0, to: 12.5, className: 'red-band' },"
+        "{ from: 12.5, to: 25, className: 'yellow-band' },"
+        "{ from: 25, to: 100, className: 'green-band' }]"
+    "},{"
+      // Efficiency:
+      "min: 0, max: 300,"
+      "plotBands: ["
+        "{ from: 0, to: 150, className: 'green-band' },"
+        "{ from: 150, to: 250, className: 'yellow-band' },"
+        "{ from: 250, to: 300, className: 'red-band' }]"
+    "},{"
+      // Power:
+      "min: -40, max: 80,"
+      "plotBands: ["
+        "{ from: -40, to: 0, className: 'violet-band' },"
+        "{ from: 0, to: 40, className: 'green-band' },"
+        "{ from: 40, to: 60, className: 'yellow-band' },"
+        "{ from: 60, to: 80, className: 'red-band' }]"
+    "},{"
+      // Charger temperature:
+      "min: 20, max: 80, tickInterval: 20,"
+      "plotBands: ["
+        "{ from: 20, to: 65, className: 'normal-band border' },"
+        "{ from: 65, to: 80, className: 'red-band border' }]"
+    "},{"
+      // Battery temperature:
+      "min: -15, max: 65, tickInterval: 25,"
+      "plotBands: ["
+        "{ from: -15, to: 0, className: 'red-band border' },"
+        "{ from: 0, to: 50, className: 'normal-band border' },"
+        "{ from: 50, to: 65, className: 'red-band border' }]"
+    "},{"
+      // Inverter temperature:
+      "min: 20, max: 80, tickInterval: 20,"
+      "plotBands: ["
+        "{ from: 20, to: 70, className: 'normal-band border' },"
+        "{ from: 70, to: 80, className: 'red-band border' }]"
+    "},{"
+      // Motor temperature:
+      "min: 50, max: 125, tickInterval: 25,"
+      "plotBands: ["
+        "{ from: 50, to: 110, className: 'normal-band border' },"
+        "{ from: 110, to: 125, className: 'red-band border' }]"
+    "}]",
+    bat_volt_min, bat_volt_max,
+    bat_volt_min, bat_volt_red,
+    bat_volt_red, bat_volt_yellow,
+    bat_volt_yellow, bat_volt_max
+  );
+
+  cfg.gaugeset1 = buf;
+}
