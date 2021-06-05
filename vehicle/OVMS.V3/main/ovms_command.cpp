@@ -704,6 +704,22 @@ void disable(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
   writer->SetSecure(false);
   }
 
+void cmd_sleep(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  int milliseconds = atof(argv[0]) * 1000;
+  if (milliseconds >= 0)
+    vTaskDelay(pdMS_TO_TICKS(milliseconds));
+  }
+
+void cmd_echo(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  int i;
+  for (i = 0; i < argc; i++)
+    writer->puts(argv[i]);
+  if (!i)
+    writer->puts("");
+  }
+
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 
 static duk_ret_t DukOvmsCommandExec(duk_context *ctx)
@@ -822,6 +838,10 @@ OvmsCommandApp::OvmsCommandApp()
   monitor->RegisterCommand("no", "Don't monitor log", log_monitor);
   m_root.RegisterCommand("enable","Enter secure mode (enable access to all commands)", enable, "[<password>]", 0, 1, false);
   m_root.RegisterCommand("disable","Leave secure mode (disable access to most commands)", disable);
+  m_root.RegisterCommand("sleep", "Script utility: pause execution", cmd_sleep,
+    "<seconds>\nFractions of seconds are supported, e.g. 0.2 = 200 ms", 1, 1);
+  m_root.RegisterCommand("echo", "Script utility: output text", cmd_echo,
+    "[<text>] […]\nOutputs up to 10 arguments as separate lines, just a newline if no text is given.", 0, 10);
   }
 
 OvmsCommandApp::~OvmsCommandApp()
