@@ -59,7 +59,8 @@ struct DashboardConfig;
 #define ISOTP_STD                       0     // standard addressing (11 bit IDs)
 #define ISOTP_EXTADR                    1     // extended addressing (19 bit IDs)
 #define ISOTP_EXTFRAME                  2     // extended frame mode (29 bit IDs)
-#define VWTP_20                         16    // VW/VAG Transport Protocol 2.0
+#define VWTP_16                         16    // VW/VAG Transport Protocol 1.6 (placeholder, unsupported)
+#define VWTP_20                         20    // VW/VAG Transport Protocol 2.0
 
 // Argument tag:
 #define POLL_TXDATA                     0xff  // poll_pid_t using xargs for external payload up to 4095 bytes
@@ -736,6 +737,7 @@ class OvmsVehicleFactory
     static duk_ret_t DukOvmsVehicleStopCharge(duk_context *ctx);
     static duk_ret_t DukOvmsVehicleStartCooldown(duk_context *ctx);
     static duk_ret_t DukOvmsVehicleStopCooldown(duk_context *ctx);
+    static duk_ret_t DukOvmsVehicleObdRequest(duk_context *ctx);
 #endif // CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   };
 

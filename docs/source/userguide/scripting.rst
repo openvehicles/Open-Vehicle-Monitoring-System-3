@@ -731,6 +731,37 @@ The OvmsVehicle object is the most comprehensive, and exposes several methods to
 - ``success = OvmsVehicle.StopCooldown()``
     Stop the cooldown charge
 
+- ``result = OvmsVehicle.ObdRequest(arguments)``
+    Perform OBD/UDS request (synchronous)
+
+    Pass the request parameters using the ``arguments`` object:
+
+    - ``txid``: the CAN ID to send the request to (or 0x7df for broadcast)
+    - ``rxid``: the CAN ID to expect the response at (or 0 for broadcast)
+    - ``request``: the request to send, either a hex encoded string or an Uint8Array
+    - ``bus``: optional CAN bus device name, default "can1"
+    - ``timeout``: optional timeout in milliseconds, default 3000
+    - ``protocol``: optional protocol to use, default 0 = ``ISOTP_STD`` -- see ``vehicle.h`` for other protocols
+
+    The ``result`` object will have these properties:
+
+    - ``error``: 0 = no error, else the error code, with negative ranges being system errors,
+      positive codes are OBD/UDS response error codes (NRCs)
+    - ``errordesc``: a human readable error description
+    - ``response``: only on success: the binary response (Uint8Array)
+    - ``response_hex``: only on success: hex encoded response (string)
+
+    **Example**:
+
+    .. code-block:: javascript
+      
+      // Establish diagnostic session with an ECU:
+      var res = OvmsVehicle.ObdRequest({ txid: 0x765, rxid: 0x7cf, request: "1003" });
+      if (res.error)
+        print(res.errortext);
+      else
+        print(res.response_hex);
+
 
 --------------
 Test Utilities

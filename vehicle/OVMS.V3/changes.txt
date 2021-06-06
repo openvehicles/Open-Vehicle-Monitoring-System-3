@@ -74,6 +74,7 @@ Open Vehicle Monitor System v3 - Change log
 - New commands:
     echo [<text>] […] -- output text
     sleep <seconds> -- pause script execution
+- Scripting API: added OvmsVehicle.ObdRequest()
 
 2021-03-05 MB  3.2.016  OTA release
 - VW e-Up: CCS (DC) charge detection & data
