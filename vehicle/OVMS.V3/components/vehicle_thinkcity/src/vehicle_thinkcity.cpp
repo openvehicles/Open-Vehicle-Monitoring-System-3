@@ -400,7 +400,7 @@ void OvmsVehicleThinkCity::Ticker10(uint32_t ticker)
   }
 
 
-void OvmsVehicleThinkCity::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
+void OvmsVehicleThinkCity::IncomingPollReply(canbus* bus, uint16_t type, uint32_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
   {
     ESP_LOGI(TAG,"Poll replay arrived");
      

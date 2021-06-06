@@ -571,7 +571,7 @@ bool OvmsVehicleMgEv::SendDiagSessionTo(canbus* currentBus, uint16_t id, uint8_t
 }
 
 bool OvmsVehicleMgEv::SendPollMessage(
-        canbus* bus, uint16_t id, uint8_t type, uint16_t pid)
+        canbus* bus, uint16_t id, uint8_t type, uint32_t pid)
 {
     CAN_frame_t sendFrame = {
         bus,

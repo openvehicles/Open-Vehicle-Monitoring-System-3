@@ -292,7 +292,7 @@ OvmsVehicleBMWi3::~OvmsVehicleBMWi3()
     ESP_LOGI(TAG, "Shutdown BMW i3/i3s vehicle module");
 }
 
-void hexdump(string &rxbuf, uint16_t type, uint16_t pid)
+void hexdump(string &rxbuf, uint16_t type, uint32_t pid)
 {
     char *buf = NULL;
     size_t rlen = rxbuf.size(), offset = 0;
@@ -385,7 +385,7 @@ void OvmsVehicleBMWi3::Ticker10(uint32_t ticker)
     }
 }
 
-void OvmsVehicleBMWi3::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
+void OvmsVehicleBMWi3::IncomingPollReply(canbus* bus, uint16_t type, uint32_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
 {
     string& rxbuf = bmwi3_obd_rxbuf;
   

@@ -590,7 +590,8 @@ void OvmsVehicleFactory::obdii_request(int verbosity, OvmsWriter* writer, OvmsCo
   else
     {
     uint8_t type = request.at(0);
-    if ((POLL_TYPE_HAS_16BIT_PID(type) && request.size() < 3) ||
+    if ((POLL_TYPE_HAS_24BIT_PID(type) && request.size() < 4) ||
+        (POLL_TYPE_HAS_16BIT_PID(type) && request.size() < 3) ||
         (POLL_TYPE_HAS_8BIT_PID(type) && request.size() < 2))
       {
       writer->printf("ERROR: request too short for type %02X\n", type);

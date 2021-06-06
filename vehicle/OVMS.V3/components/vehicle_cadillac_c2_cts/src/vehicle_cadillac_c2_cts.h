@@ -42,7 +42,7 @@ class OvmsVehicleCadillaccC2CTS : public OvmsVehicle
     ~OvmsVehicleCadillaccC2CTS();
 
   protected:
-      void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid,
+      void IncomingPollReply(canbus* bus, uint16_t type, uint32_t pid,
         uint8_t* data, uint8_t length, uint16_t mlremain);
 
   public:

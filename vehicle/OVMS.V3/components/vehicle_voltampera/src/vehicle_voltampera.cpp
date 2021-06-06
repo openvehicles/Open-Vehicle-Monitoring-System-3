@@ -131,7 +131,7 @@ OvmsVehicleVoltAmpera::OvmsVehicleVoltAmpera()
   const int nCellListSize = 96; 
   const int va_pollsSize = sizeof(va_polls)/sizeof(va_polls[0]);
   m_pPollingList = new poll_pid_t[va_pollsSize + nCellListSize];
-  uint16_t pid = 0x4181;
+  uint32_t pid = 0x4181;
   
   int iPoll=0;
   for(iPoll=0; iPoll<nCellListSize; iPoll++)
@@ -664,12 +664,12 @@ void OvmsVehicleVoltAmpera::IncomingFrameCan4(CAN_frame_t* p_frame)
     ClimateControlIncomingSWCAN(p_frame);
   }
 
-void OvmsVehicleVoltAmpera::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
+void OvmsVehicleVoltAmpera::IncomingPollReply(canbus* bus, uint16_t type, uint32_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
   {
   uint8_t value = *data;
 
   //Cell voltage
-  const uint16_t pid_cellv1 = 0x4181;
+  const uint32_t pid_cellv1 = 0x4181;
   if((pid>=pid_cellv1 && pid<=pid_cellv1+30) || (pid>=pid_cellv1+127 && pid<=pid_cellv1+191)){
     if(length <2)
       return;

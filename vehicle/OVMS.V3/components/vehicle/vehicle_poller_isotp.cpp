@@ -112,7 +112,9 @@ void OvmsVehicle::PollerISOTPStart(bool fromTicker)
     }
 
   // Do we need to split this request into multiple frames?
-  if (POLL_TYPE_HAS_16BIT_PID(m_poll_plcur->type))
+  if (POLL_TYPE_HAS_24BIT_PID(m_poll_plcur->type))
+    tp_len = 4 + tx_datalen;
+  else if (POLL_TYPE_HAS_16BIT_PID(m_poll_plcur->type))
     tp_len = 3 + tx_datalen;
   else if (POLL_TYPE_HAS_8BIT_PID(m_poll_plcur->type))
     tp_len = 2 + tx_datalen;
@@ -134,7 +136,16 @@ void OvmsVehicle::PollerISOTPStart(bool fromTicker)
     }
 
   // Add TP data:
-  if (POLL_TYPE_HAS_16BIT_PID(m_poll_plcur->type))
+  if (POLL_TYPE_HAS_24BIT_PID(m_poll_plcur->type))
+    {
+    tp_data[0] = m_poll_type;
+    tp_data[1] = m_poll_pid >> 16;
+    tp_data[2] = (m_poll_pid & 0xff00) >> 8;
+    tp_data[3] = m_poll_pid & 0xff;
+    tx_datasent = LIMIT_MAX(tx_datalen, tp_datalen - 4);
+    memcpy(&tp_data[4], tx_data, tx_datasent);
+    }
+  else if (POLL_TYPE_HAS_16BIT_PID(m_poll_plcur->type))
     {
     tp_data[0] = m_poll_type;
     tp_data[1] = m_poll_pid >> 8;
@@ -376,7 +387,7 @@ bool OvmsVehicle::PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid)
   // 
 
   uint8_t  response_type = 0;         // OBD/UDS response type tag (expected: 0x40 + request type)
-  uint16_t response_pid = 0;          // OBD/UDS response PID (expected: request PID)
+  uint32_t response_pid = 0;          // OBD/UDS response PID (expected: request PID)
   uint8_t* response_data = NULL;      // OBD/UDS frame payload address
   uint16_t response_datalen = 0;      // OBD/UDS frame payload length (0…7)
   uint8_t  error_type = 0;            // OBD/UDS error response service type (expected: request type)
@@ -396,6 +407,12 @@ bool OvmsVehicle::PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid)
       {
       error_type = tp_data[1];
       error_code = tp_data[2];
+      }
+    else if (POLL_TYPE_HAS_24BIT_PID(response_type-0x40))
+      {
+      response_pid = tp_data[1] << 16 | tp_data[2] << 8 | tp_data[3];
+      response_data = &tp_data[4];
+      response_datalen = tp_datalen - 4;
       }
     else if (POLL_TYPE_HAS_16BIT_PID(response_type-0x40))
       {
