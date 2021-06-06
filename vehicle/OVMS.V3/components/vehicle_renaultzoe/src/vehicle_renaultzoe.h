@@ -73,15 +73,15 @@ class OvmsVehicleRenaultZoe : public OvmsVehicle {
     ~OvmsVehicleRenaultZoe();
 		static OvmsVehicleRenaultZoe* GetInstance(OvmsWriter* writer=NULL);
 		void IncomingFrameCan1(CAN_frame_t* p_frame);
-		void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain);
+		void IncomingPollReply(canbus* bus, uint16_t type, uint32_t pid, uint8_t* data, uint8_t length, uint16_t remain);
 
 	protected:
-		void IncomingEPS(uint16_t type, uint16_t pid, const char* data, uint16_t len);
-		void IncomingEVC(uint16_t type, uint16_t pid, const char* data, uint16_t len);
-		void IncomingBCB(uint16_t type, uint16_t pid, const char* data, uint16_t len);
-		void IncomingLBC(uint16_t type, uint16_t pid, const char* data, uint16_t len);
-		void IncomingUBP(uint16_t type, uint16_t pid, const char* data, uint16_t len);
-		void IncomingPEB(uint16_t type, uint16_t pid, const char* data, uint16_t len);
+		void IncomingEPS(uint16_t type, uint32_t pid, const char* data, uint16_t len);
+		void IncomingEVC(uint16_t type, uint32_t pid, const char* data, uint16_t len);
+		void IncomingBCB(uint16_t type, uint32_t pid, const char* data, uint16_t len);
+		void IncomingLBC(uint16_t type, uint32_t pid, const char* data, uint16_t len);
+		void IncomingUBP(uint16_t type, uint32_t pid, const char* data, uint16_t len);
+		void IncomingPEB(uint16_t type, uint32_t pid, const char* data, uint16_t len);
 		void car_on(bool isOn);
     virtual void Ticker1(uint32_t ticker);
     virtual void Ticker10(uint32_t ticker);

@@ -108,7 +108,7 @@ class OvmsVehicleMgEv : public OvmsVehicle
   protected:
     void ConfigChanged(OvmsConfigParam* param) override;
 
-    void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain) override;    
+    void IncomingPollReply(canbus* bus, uint16_t type, uint32_t pid, uint8_t* data, uint8_t length, uint16_t remain) override;    
 
     void IncomingFrameCan1(CAN_frame_t* p_frame) override;
     void IncomingFrameCan2(CAN_frame_t* p_frame) override;
@@ -146,7 +146,7 @@ class OvmsVehicleMgEv : public OvmsVehicle
     bool SendTesterPresentTo(canbus* currentBus, uint16_t id); 
     // Signal to an ECU to enter Diagnostic session defined by mode
     bool SendDiagSessionTo(canbus* currentBus, uint16_t id, uint8_t mode); 		
-    bool SendPollMessage(canbus* bus, uint16_t id, uint8_t type, uint16_t pid);     
+    bool SendPollMessage(canbus* bus, uint16_t id, uint8_t type, uint32_t pid);     
 
     // typedef struct
     // {
@@ -243,7 +243,7 @@ class OvmsVehicleMgEv : public OvmsVehicle
     void SoftwareVersions(OvmsWriter* writer);
 
     // mg_poll_bms.cpp
-    void IncomingBmsPoll(uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain);
+    void IncomingBmsPoll(uint32_t pid, uint8_t* data, uint8_t length, uint16_t remain);
     void SetBmsStatus(uint8_t status);
     void ProcessBatteryStats(int index, uint8_t* data, uint16_t remain);
     float calculateSoc(uint16_t value);    
@@ -252,30 +252,30 @@ class OvmsVehicleMgEv : public OvmsVehicle
     string m_bmsTimeTemp;
 
     // mg_poll_dcdc.cpp
-    void IncomingDcdcPoll(uint16_t pid, uint8_t* data, uint8_t length);
+    void IncomingDcdcPoll(uint32_t pid, uint8_t* data, uint8_t length);
 
     // mg_poll_vcu.cpp
-    void IncomingVcuPoll(uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain);
+    void IncomingVcuPoll(uint32_t pid, uint8_t* data, uint8_t length, uint16_t remain);
     void HandleVinMessage(uint8_t* data, uint8_t length, uint16_t remain);
     void SetEnvOn();
 
     // mg_poll_atc.cpp
-    void IncomingAtcPoll(uint16_t pid, uint8_t* data, uint8_t length);
+    void IncomingAtcPoll(uint32_t pid, uint8_t* data, uint8_t length);
 
     // mg_poll_bcm.cpp
-    void IncomingBcmPoll(uint16_t pid, uint8_t* data, uint8_t length);
+    void IncomingBcmPoll(uint32_t pid, uint8_t* data, uint8_t length);
 
     // mg_poll_tpms.cpp
-    void IncomingTpmsPoll(uint16_t pid, uint8_t* data, uint8_t length);
+    void IncomingTpmsPoll(uint32_t pid, uint8_t* data, uint8_t length);
 
     // mg_poll_ipk.cpp
-    void IncomingIpkPoll(uint16_t pid, uint8_t* data, uint8_t length);
+    void IncomingIpkPoll(uint32_t pid, uint8_t* data, uint8_t length);
 
     // mg_poll_peps.cpp
-    void IncomingPepsPoll(uint16_t pid, uint8_t* data, uint8_t length);
+    void IncomingPepsPoll(uint32_t pid, uint8_t* data, uint8_t length);
 
     // mg_poll_evcc.cpp
-    void IncomingEvccPoll(uint16_t pid, uint8_t* data, uint8_t length);
+    void IncomingEvccPoll(uint32_t pid, uint8_t* data, uint8_t length);
 
     // mg_gwm.cpp
     bool AuthenticateGWM(canbus* currentBus);

@@ -254,7 +254,7 @@ void OvmsVehicleSmartED::ObdInitPoll() {
 /**
  * Incoming poll reply messages
  */
-void OvmsVehicleSmartED::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain) {
+void OvmsVehicleSmartED::IncomingPollReply(canbus* bus, uint16_t type, uint32_t pid, uint8_t* data, uint8_t length, uint16_t remain) {
   string& rxbuf = smarted_obd_rxbuf;
   static uint16_t last_pid = -1;
   
@@ -418,7 +418,7 @@ void OvmsVehicleSmartED::IncomingPollReply(canbus* bus, uint16_t type, uint16_t 
   }
 }
 
-void OvmsVehicleSmartED::IncomingPollError(canbus* bus, uint16_t type, uint16_t pid, uint16_t code)
+void OvmsVehicleSmartED::IncomingPollError(canbus* bus, uint16_t type, uint32_t pid, uint16_t code)
 {
   // single poll?
   if (!smarted_obd_rxwait.IsAvail()) {
@@ -441,7 +441,13 @@ int OvmsVehicleSmartED::ObdRequest(uint16_t txid, uint16_t rxid, string request,
   assert(request.size() > 0);
   poll[0].type = request[0];
 
-  if (POLL_TYPE_HAS_16BIT_PID(poll[0].type)) {
+  if (POLL_TYPE_HAS_24BIT_PID(poll[0].type)) {
+    assert(request.size() >= 4);
+    poll[0].args.pid = request[1] << 16 | request[2] << 8 | request[3];
+    poll[0].args.datalen = LIMIT_MAX(request.size()-4, sizeof(poll[0].args.data));
+    memcpy(poll[0].args.data, request.data()+4, poll[0].args.datalen);
+  }
+  else if (POLL_TYPE_HAS_16BIT_PID(poll[0].type)) {
     assert(request.size() >= 3);
     poll[0].args.pid = request[1] << 8 | request[2];
     poll[0].args.datalen = LIMIT_MAX(request.size()-3, sizeof(poll[0].args.data));
