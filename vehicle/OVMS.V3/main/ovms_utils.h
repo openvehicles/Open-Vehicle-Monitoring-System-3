@@ -190,7 +190,7 @@ template <typename T>
 std::string int_to_hex(T i)
   {
   std::stringstream stream;
-  stream << std::setfill('0') << std::setw(sizeof(T)*2) << std::hex << i;
+  stream << std::setfill('0') << std::setw(sizeof(T)*2) << std::hex << (unsigned)i;
   return stream.str();
   }
 
