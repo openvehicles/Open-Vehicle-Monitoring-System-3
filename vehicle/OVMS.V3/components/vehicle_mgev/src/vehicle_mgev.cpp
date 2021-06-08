@@ -147,7 +147,9 @@ OvmsVehicleMgEv::OvmsVehicleMgEv()
     m_vcu_dcdc_output_current = MyMetrics.InitFloat("xmg.v.vcu.dcdc.output.current", 0, SM_STALE_HIGH, Amps);
     m_vcu_dcdc_output_voltage = MyMetrics.InitFloat("xmg.v.vcu.dcdc.output.voltage", 0, SM_STALE_HIGH, Volts);
     m_vcu_dcdc_temp = MyMetrics.InitFloat("xmg.v.vcu.dcdc.temp", 0, SM_STALE_HIGH, Celcius);
-    m_soc_raw = MyMetrics.InitFloat("xmg.v.soc.raw", 0, SM_STALE_HIGH, Percentage);
+    m_soc_raw = MyMetrics.InitInt("xmg.v.soc.raw", 0, SM_STALE_MAX);
+    m_soc_upper = MyMetrics.InitInt("xmg.v.soc.upper", 0, SM_STALE_HIGH);
+    m_soc_lower = MyMetrics.InitInt("xmg.v.soc.lower", 0, SM_STALE_HIGH);
     m_motor_coolant_temp = MyMetrics.InitFloat("xmg.v.m.coolant.temp", 0, SM_STALE_HIGH, Celcius);
     m_motor_torque = MyMetrics.InitFloat("xmg.v.m.torque", 0, SM_STALE_HIGH, Nm);
     m_ignition_state = MyMetrics.InitInt("xmg.v.ignition.state", SM_STALE_MAX, SM_STALE_MAX);
@@ -169,9 +171,17 @@ OvmsVehicleMgEv::OvmsVehicleMgEv()
 	m_cmdAuth = MyCommandApp.RegisterCommand("auth", "Authenticate with ECUs", AuthenticateECUShell, "<ECU>\nall\tAll ECUs\ngwm\tGWM only\nbcm\tBCM only", 1, 1);    
     m_cmdDRL = MyCommandApp.RegisterCommand("drl", "Daytime running light control", DRLCommandWithAuthShell, "<command>\non\tTurn on\noff\tTurn off", 1, 1);    
     m_cmdDRLNoAuth = MyCommandApp.RegisterCommand("drln", "Daytime running light control (no BCM authentication)", DRLCommandShell, "<command>\non\tTurn on\noff\tTurn off", 1, 1);
+    
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
     WebInit();
 #endif
+    
+    // Initialise soc.upper and soc.lower if needed
+    if (!MyConfig.GetParamValueInt("xmg", "soc.upper"))
+        MyConfig.SetParamValueInt("xmg", "soc.upper", 900);
+    if (!MyConfig.GetParamValueInt("xmg", "soc.lower"))
+        MyConfig.SetParamValueInt("xmg", "soc.lower", 100);
+
 }
 
 //Called by OVMS when vehicle type is changed from current
@@ -263,10 +273,14 @@ void OvmsVehicleMgEv::ConfigurePollData()
 
 void OvmsVehicleMgEv::processEnergy()
 {
-    // When called each to battery power for a second is calculated.
+    // When called: Battery power for each second is calculated.
     // This is added to ms_v_bat_energy_recd if regenerating or
     // ms_v_bat_energy_used if power is being drawn from the battery
     
+    // To be removed when SOC calculation testing is completed
+    m_soc_upper->SetValue(MyConfig.GetParamValueFloat("xmg", "soc.upper"));
+    m_soc_lower->SetValue(MyConfig.GetParamValueFloat("xmg", "soc.lower"));
+
     // Only calculate if the car is turned on and not charging.
     if (StandardMetrics.ms_v_env_awake->AsBool() &&
         !StandardMetrics.ms_v_charge_inprogress->AsBool()) {

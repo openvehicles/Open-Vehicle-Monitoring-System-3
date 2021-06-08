@@ -95,7 +95,7 @@ class OvmsVehicleMgEv : public OvmsVehicle
     OvmsMetricInt* m_vcu_dcdc_mode;
     OvmsMetricFloat *m_vcu_dcdc_input_current, *m_vcu_dcdc_input_voltage, *m_vcu_dcdc_output_current, *m_vcu_dcdc_output_voltage;
     OvmsMetricFloat *m_vcu_dcdc_temp;
-    OvmsMetricFloat* m_soc_raw;
+    OvmsMetricInt* m_soc_raw;
     OvmsMetricFloat* m_motor_coolant_temp;
     OvmsMetricFloat* m_motor_torque;
     OvmsMetricBool* m_radiator_fan;
@@ -104,6 +104,8 @@ class OvmsVehicleMgEv : public OvmsVehicle
     OvmsMetricBool *m_bcm_auth; // True if BCM is authenticated, false if not
     OvmsMetricInt *m_gwm_task, *m_bcm_task; // Current ECU tasks that we are awaiting response for manual frame handling so we know which function to use to handle the responses.
     OvmsMetricInt *m_ignition_state; // For storing state of start switch
+    OvmsMetricInt* m_soc_upper;
+    OvmsMetricInt* m_soc_lower;
 
   protected:
     void ConfigChanged(OvmsConfigParam* param) override;

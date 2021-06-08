@@ -29,6 +29,8 @@
 ; THE SOFTWARE.
 */
 
+static const char *TAG = "v-mgev";
+
 #include "vehicle_mgev.h"
 
 #include <algorithm>
@@ -166,7 +168,7 @@ void OvmsVehicleMgEv::IncomingBmsPoll(
         case batterySoCPid:
             {
                 // Get raw value to display on Charging Metrics Page
-                m_soc_raw->SetValue(value / 10.0f);
+                m_soc_raw->SetValue(value);
                 auto scaledSoc = calculateSoc(value);
                 if (StandardMetrics.ms_v_charge_inprogress->AsBool())
                 {
@@ -241,6 +243,7 @@ void OvmsVehicleMgEv::SetBmsStatus(uint8_t status)
 {
     switch (status) {
         case StartingCharge:
+            break;
         case Charging:
             StandardMetrics.ms_v_charge_inprogress->SetValue(true);
             StandardMetrics.ms_v_charge_type->SetValue("type2");
@@ -248,7 +251,8 @@ void OvmsVehicleMgEv::SetBmsStatus(uint8_t status)
         case CcsCharging:
             StandardMetrics.ms_v_charge_inprogress->SetValue(true);
             StandardMetrics.ms_v_charge_type->SetValue("ccs");
-            //These are normally set in mg_poll_evcc.cpp but while CCS charging, EVCC won't show up so we set these here
+            //These are normally set in mg_poll_evcc.cpp but while CCS charging,
+            // EVCC won't show up so we set these here
             StandardMetrics.ms_v_charge_current->SetValue(-StandardMetrics.ms_v_bat_current->AsFloat());
             StandardMetrics.ms_v_charge_power->SetValue(-StandardMetrics.ms_v_bat_power->AsFloat());
             StandardMetrics.ms_v_charge_climit->SetValue(82);
@@ -259,8 +263,16 @@ void OvmsVehicleMgEv::SetBmsStatus(uint8_t status)
             {
                 StandardMetrics.ms_v_charge_type->SetValue("undefined");
                 StandardMetrics.ms_v_charge_inprogress->SetValue(false);
-                if (StandardMetrics.ms_v_bat_soc->AsFloat() >= 99.9) //Set to 99.9 instead of 100 incase of mathematical errors
+                if (StandardMetrics.ms_v_bat_soc->AsFloat() >= 99.9) //Set to 99.9 instead of 100 in case of mathematical errors
                 {
+                    ESP_LOGI(TAG, "Charge Completed");
+                    // When latest value is greater increase soc.upper
+                    if (m_soc_raw->AsInt() > MyConfig.GetParamValueInt("xmg", "soc.upper"))
+                    {
+                        MyConfig.SetParamValueInt("xmg", "soc.upper", m_soc_raw->AsInt());
+                        MyConfig.SetParamValueInt("xmg", "soc.lower",
+                                                  m_soc_raw->AsInt() > 940 ? 60 : 25);
+                    }
                     StandardMetrics.ms_v_charge_state->SetValue("done");
                 }
                 else
@@ -274,6 +286,13 @@ void OvmsVehicleMgEv::SetBmsStatus(uint8_t status)
 
 float OvmsVehicleMgEv::calculateSoc(uint16_t value)
 {
+    // Calculate SOC from upper and lower limits
+    return (value - MyConfig.GetParamValueInt("xmg", "soc.lower")) * 100.0f / (MyConfig.GetParamValueInt("xmg", "soc.upper") - MyConfig.GetParamValueInt("xmg", "soc.lower"));
+}
+
+/*
+float OvmsVehicleMgEv::calculateSoc(uint16_t value)
+{
     int BMSVersion = MyConfig.GetParamValueInt("xmg", "bms.version", DEFAULT_BMS_VERSION);
     float lowerlimit = BMSDoDLimits[BMSVersion].Lower*10;
     float upperlimit = BMSDoDLimits[BMSVersion].Upper*10;
@@ -281,3 +300,4 @@ float OvmsVehicleMgEv::calculateSoc(uint16_t value)
     // Calculate SOC from upper and lower limits
     return (value - lowerlimit) * 100.0f / (upperlimit - lowerlimit);
 }
+ */
