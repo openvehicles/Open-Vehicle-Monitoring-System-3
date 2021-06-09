@@ -140,7 +140,7 @@ void OvmsVehicleJaguarIpace::IncomingPollFrame(CAN_frame_t* frame)
 }
 
 bool OvmsVehicleJaguarIpace::SendPollMessage(
-        canbus* bus, uint16_t id, uint8_t type, uint32_t pid)
+        canbus* bus, uint16_t id, uint8_t type, uint16_t pid)
 {
     CAN_frame_t sendFrame = {
         bus,
@@ -158,7 +158,7 @@ bool OvmsVehicleJaguarIpace::SendPollMessage(
 }
 
 void OvmsVehicleJaguarIpace::IncomingPollReply(
-        canbus* bus, uint16_t type, uint32_t pid, uint8_t* data, uint8_t length,
+        canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length,
         uint16_t remain)
 {
     ESP_LOGD(

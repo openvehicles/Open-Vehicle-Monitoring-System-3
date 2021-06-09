@@ -58,7 +58,7 @@ void Calibrate12v(float voltage)
 }  // anon namespace
 
 void OvmsVehicleMgEv::IncomingVcuPoll(
-        uint32_t pid, uint8_t* data, uint8_t length, uint16_t remain)
+        uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain)
 {
     uint16_t value = (data[0] << 8 | data[1]);
 
