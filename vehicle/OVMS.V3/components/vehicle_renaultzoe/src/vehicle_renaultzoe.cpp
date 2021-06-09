@@ -797,7 +797,7 @@ void OvmsVehicleRenaultZoe::IncomingFrameCan1(CAN_frame_t* p_frame) {
 /**
  * Handles incoming poll results
  */
-void OvmsVehicleRenaultZoe::IncomingPollReply(canbus* bus, uint16_t type, uint32_t pid, uint8_t* data, uint8_t length, uint16_t remain) {
+void OvmsVehicleRenaultZoe::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain) {
 	string& rxbuf = zoe_obd_rxbuf;
   static uint16_t last_pid = -1;
   
@@ -848,7 +848,7 @@ void OvmsVehicleRenaultZoe::IncomingPollReply(canbus* bus, uint16_t type, uint32
 /**
  * Handle incoming polls from the EPS Computer
  */
-void OvmsVehicleRenaultZoe::IncomingEPS(uint16_t type, uint32_t pid, const char* data, uint16_t len) {
+void OvmsVehicleRenaultZoe::IncomingEPS(uint16_t type, uint16_t pid, const char* data, uint16_t len) {
   switch (pid) {
     case 0x012D: {			// Motor temperature
       //762,24,31,2,0,0,°C,22012D,62012D,ff,DID - Motor temperature
@@ -860,7 +860,7 @@ void OvmsVehicleRenaultZoe::IncomingEPS(uint16_t type, uint32_t pid, const char*
 /**
  * Handle incoming polls from the EVC Computer
  */
-void OvmsVehicleRenaultZoe::IncomingEVC(uint16_t type, uint32_t pid, const char* data, uint16_t len) {
+void OvmsVehicleRenaultZoe::IncomingEVC(uint16_t type, uint16_t pid, const char* data, uint16_t len) {
 	switch (pid) {
     case 0x2001: {			// Bat. rack Temperature
       //StandardMetrics.ms_v_bat_temp->SetValue((float) CAN_BYTE(0)-40, Celcius);
@@ -921,7 +921,7 @@ void OvmsVehicleRenaultZoe::IncomingEVC(uint16_t type, uint32_t pid, const char*
 /**
  * Handle incoming polls from the BCB Computer
  */
-void OvmsVehicleRenaultZoe::IncomingBCB(uint16_t type, uint32_t pid, const char* data, uint16_t len) {
+void OvmsVehicleRenaultZoe::IncomingBCB(uint16_t type, uint16_t pid, const char* data, uint16_t len) {
 	switch (pid) {
     case 0x504A: {
       // 793,24,39,1,20000,0,W,22504A,62504A,ff\n" // Mains active power consumed
@@ -972,7 +972,7 @@ void OvmsVehicleRenaultZoe::IncomingBCB(uint16_t type, uint32_t pid, const char*
 /**
  * Handle incoming polls from the LBC Computer
  */
-void OvmsVehicleRenaultZoe::IncomingLBC(uint16_t type, uint32_t pid, const char* data, uint16_t len) {
+void OvmsVehicleRenaultZoe::IncomingLBC(uint16_t type, uint16_t pid, const char* data, uint16_t len) {
 	switch (pid) {
     case 0x01: {
       // Todo
@@ -1047,7 +1047,7 @@ void OvmsVehicleRenaultZoe::IncomingLBC(uint16_t type, uint32_t pid, const char*
 /**
  * Handle incoming polls from the UBP Computer
  */
-void OvmsVehicleRenaultZoe::IncomingUBP(uint16_t type, uint32_t pid, const char* data, uint16_t len) {
+void OvmsVehicleRenaultZoe::IncomingUBP(uint16_t type, uint16_t pid, const char* data, uint16_t len) {
 	switch (pid) {
     case 0x4B7C: {
       // Todo
@@ -1065,7 +1065,7 @@ void OvmsVehicleRenaultZoe::IncomingUBP(uint16_t type, uint32_t pid, const char*
 /**
  * Handle incoming polls from the PEB Computer
  */
-void OvmsVehicleRenaultZoe::IncomingPEB(uint16_t type, uint32_t pid, const char* data, uint16_t len) {
+void OvmsVehicleRenaultZoe::IncomingPEB(uint16_t type, uint16_t pid, const char* data, uint16_t len) {
 	switch (pid) {
     case 0x3018: {
       // 77e,24,39,0.015625,0,2,ºC,223018,623018,ff\n" // DCDC converter temperature

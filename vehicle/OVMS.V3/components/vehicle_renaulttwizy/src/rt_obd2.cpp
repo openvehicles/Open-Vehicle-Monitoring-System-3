@@ -154,7 +154,7 @@ void OvmsVehicleRenaultTwizy::ObdTicker1()
 
 
 void OvmsVehicleRenaultTwizy::IncomingPollReply(
-  canbus* bus, uint16_t type, uint32_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
+  canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
 {
   string& rxbuf = twizy_obd_rxbuf;
 
@@ -218,7 +218,7 @@ void OvmsVehicleRenaultTwizy::IncomingPollReply(
 }
 
 
-void OvmsVehicleRenaultTwizy::IncomingPollError(canbus* bus, uint16_t type, uint32_t pid, uint16_t code)
+void OvmsVehicleRenaultTwizy::IncomingPollError(canbus* bus, uint16_t type, uint16_t pid, uint16_t code)
 {
   // single poll?
   if (!twizy_obd_rxwait.IsAvail()) {
@@ -243,13 +243,7 @@ int OvmsVehicleRenaultTwizy::ObdRequest(uint16_t txid, uint16_t rxid, string req
   assert(request.size() > 0);
   poll[0].type = request[0];
 
-  if (POLL_TYPE_HAS_24BIT_PID(poll[0].type)) {
-    assert(request.size() >= 4);
-    poll[0].args.pid = request[1] << 16 | request[2] << 8 | request[3];
-    poll[0].args.datalen = LIMIT_MAX(request.size()-4, sizeof(poll[0].args.data));
-    memcpy(poll[0].args.data, request.data()+4, poll[0].args.datalen);
-  }
-  else if (POLL_TYPE_HAS_16BIT_PID(poll[0].type)) {
+  if (POLL_TYPE_HAS_16BIT_PID(poll[0].type)) {
     assert(request.size() >= 3);
     poll[0].args.pid = request[1] << 8 | request[2];
     poll[0].args.datalen = LIMIT_MAX(request.size()-3, sizeof(poll[0].args.data));
@@ -568,8 +562,7 @@ void OvmsVehicleRenaultTwizy::shell_obd_request(int verbosity, OvmsWriter* write
     return;
   } else {
     uint8_t type = request.at(0);
-    if ((POLL_TYPE_HAS_24BIT_PID(type) && request.size() < 4) ||
-        (POLL_TYPE_HAS_16BIT_PID(type) && request.size() < 3) ||
+    if ((POLL_TYPE_HAS_16BIT_PID(type) && request.size() < 3) ||
         (POLL_TYPE_HAS_8BIT_PID(type) && request.size() < 2)) {
       writer->printf("ERROR: request too short for type %02X\n", type);
       return;

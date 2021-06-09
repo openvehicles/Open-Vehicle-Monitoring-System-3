@@ -145,7 +145,7 @@ struct DashboardConfig;
 #define VEHICLE_POLL_TYPE_READMEMORY      0x23 // UDS: ReadMemoryByAddress (no PID)
 #define VEHICLE_POLL_TYPE_READSCALING     0x24 // UDS: ReadScalingDataByIdentifier (16 bit PID)
 #define VEHICLE_POLL_TYPE_WRITEDATA       0x2E // UDS: WriteDataByIdentifier (16 bit PID)
-#define VEHICLE_POLL_TYPE_ROUTINECONTROL  0x31 // UDS: Routine Control (24 bit PID: 8 bit subfunction + 16 bit routine ID)
+#define VEHICLE_POLL_TYPE_ROUTINECONTROL  0x31 // UDS: Routine Control (16 bit PID)
 #define VEHICLE_POLL_TYPE_WRITEMEMORY     0x3D // UDS: WriteMemoryByAddress (8 bit PID)
 #define VEHICLE_POLL_TYPE_IOCONTROL       0x2F // UDS: InputOutputControlByIdentifier (16 bit PID)
 
@@ -153,12 +153,9 @@ struct DashboardConfig;
 #define VEHICLE_POLL_TYPE_OBDII_18        0x18 // Custom: VW request type 18 (no PID)
 #define VEHICLE_POLL_TYPE_OBDII_1A        0x1A // Custom: Mode 1A (8 bit PID)
 #define VEHICLE_POLL_TYPE_OBDIIGROUP      0x21 // Custom: Read data by 8 bit PID
-#define VEHICLE_POLL_TYPE_OBDII_32        0x32 // Custom: VW: Routine Commit? (24 bit PID: 8 bit subfunction + 16 bit routine ID)
+#define VEHICLE_POLL_TYPE_OBDII_32        0x32 // Custom: VW request type 32 (8 bit PID)
 
 // Utils:
-#define POLL_TYPE_HAS_24BIT_PID(type) \
-  ((type) == VEHICLE_POLL_TYPE_ROUTINECONTROL || \
-   (type) == VEHICLE_POLL_TYPE_OBDII_32)
 #define POLL_TYPE_HAS_16BIT_PID(type) \
   ((type) == VEHICLE_POLL_TYPE_READDATA || \
    (type) == VEHICLE_POLL_TYPE_READSCALING || \
@@ -172,9 +169,10 @@ struct DashboardConfig;
    (type) == VEHICLE_POLL_TYPE_CLEAR_ERDTC || \
    (type) == VEHICLE_POLL_TYPE_READ_DCERDTC || \
    (type) == VEHICLE_POLL_TYPE_READ_PERMDTC || \
+   (type) == VEHICLE_POLL_TYPE_ROUTINECONTROL || \
    (type) == VEHICLE_POLL_TYPE_OBDII_18)
 #define POLL_TYPE_HAS_8BIT_PID(type) \
-  (!POLL_TYPE_HAS_NO_PID(type) && !POLL_TYPE_HAS_16BIT_PID(type) && !POLL_TYPE_HAS_24BIT_PID(type))
+  (!POLL_TYPE_HAS_NO_PID(type) && !POLL_TYPE_HAS_16BIT_PID(type))
 
 // OBD/UDS Negative Response Code
 #define UDS_RESP_TYPE_NRC               0x7F  // see ISO 14229 Annex A.1
@@ -305,8 +303,8 @@ class OvmsVehicle : public InternalRamAllocated
 
   protected:
     virtual void PollerStateTicker();
-    virtual void IncomingPollReply(canbus* bus, uint16_t type, uint32_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
-    virtual void IncomingPollError(canbus* bus, uint16_t type, uint32_t pid, uint16_t code);
+    virtual void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
+    virtual void IncomingPollError(canbus* bus, uint16_t type, uint16_t pid, uint16_t code);
 
   protected:
     int m_minsoc;            // The minimum SOC level before alert
@@ -487,16 +485,16 @@ class OvmsVehicle : public InternalRamAllocated
       uint16_t type;                            // UDS poll type / OBD2 "mode", see VEHICLE_POLL_TYPE_…
       union
         {
-        uint32_t pid;                           // PID (shortcut for requests w/o payload)
+        uint16_t pid;                           // PID (shortcut for requests w/o payload)
         struct
           {
-          uint32_t pid;                         // PID for requests with additional payload
+          uint16_t pid;                         // PID for requests with additional payload
           uint8_t datalen;                      // payload length (bytes)
           uint8_t data[6];                      // inline payload data (single frame request)
           } args;
         struct
           {
-          uint32_t pid;                         // PID for requests with additional payload
+          uint16_t pid;                         // PID for requests with additional payload
           uint8_t tag;                          // needs to be POLL_TXDATA
           uint16_t datalen;                     // payload length (bytes, max 4095)
           const uint8_t* data;                  // pointer to payload data (single/multi frame request)
@@ -521,7 +519,7 @@ class OvmsVehicle : public InternalRamAllocated
     uint32_t          m_poll_moduleid_low;    // Expected response moduleid low mark
     uint32_t          m_poll_moduleid_high;   // Expected response moduleid high mark
     uint16_t          m_poll_type;            // Expected type
-    uint32_t          m_poll_pid;             // Expected PID
+    uint16_t          m_poll_pid;             // Expected PID
     const uint8_t*    m_poll_tx_data;         // Payload data for multi frame request
     uint16_t          m_poll_tx_remain;       // Payload bytes remaining for multi frame request
     uint16_t          m_poll_tx_offset;       // Payload offset of multi frame request
@@ -564,7 +562,7 @@ class OvmsVehicle : public InternalRamAllocated
                       std::string request, std::string& response,
                       int timeout_ms=3000, uint8_t protocol=ISOTP_STD);
     int PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
-                      uint8_t polltype, uint32_t pid, std::string& response,
+                      uint8_t polltype, uint16_t pid, std::string& response,
                       int timeout_ms=3000, uint8_t protocol=ISOTP_STD);
 
   private:
@@ -585,7 +583,7 @@ class OvmsVehicle : public InternalRamAllocated
   private:
     void PollerTxCallback(const CAN_frame_t* frame, bool success);
   protected:
-    virtual void IncomingPollTxCallback(canbus* bus, uint32_t txid, uint16_t type, uint32_t pid, bool success);
+    virtual void IncomingPollTxCallback(canbus* bus, uint32_t txid, uint16_t type, uint16_t pid, bool success);
 
 
   // BMS helpers

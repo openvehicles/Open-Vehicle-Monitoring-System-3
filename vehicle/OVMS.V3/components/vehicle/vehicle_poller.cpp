@@ -85,7 +85,7 @@ void OvmsVehicle::PollerStateTicker()
  *  @member m_poll_plcur
  *    Pointer to the currently processed poll entry
  */
-void OvmsVehicle::IncomingPollReply(canbus* bus, uint16_t type, uint32_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
+void OvmsVehicle::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
   {
   }
 
@@ -110,7 +110,7 @@ void OvmsVehicle::IncomingPollReply(canbus* bus, uint16_t type, uint32_t pid, ui
  *  @member m_poll_plcur
  *    Pointer to the currently processed poll entry
  */
-void OvmsVehicle::IncomingPollError(canbus* bus, uint16_t type, uint32_t pid, uint16_t code)
+void OvmsVehicle::IncomingPollError(canbus* bus, uint16_t type, uint16_t pid, uint16_t code)
   {
   }
 
@@ -134,7 +134,7 @@ void OvmsVehicle::IncomingPollError(canbus* bus, uint16_t type, uint32_t pid, ui
  *  @param success
  *    Frame transmission success
  */
-void OvmsVehicle::IncomingPollTxCallback(canbus* bus, uint32_t txid, uint16_t type, uint32_t pid, bool success)
+void OvmsVehicle::IncomingPollTxCallback(canbus* bus, uint32_t txid, uint16_t type, uint16_t pid, bool success)
   {
   }
 
@@ -427,14 +427,7 @@ int OvmsVehicle::PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
   poll[0].type = request[0];
   poll[0].xargs.tag = POLL_TXDATA;
 
-  if (POLL_TYPE_HAS_24BIT_PID(poll[0].type))
-    {
-    assert(request.size() >= 4);
-    poll[0].xargs.pid = request[1] << 16 | request[2] << 8 | request[3];
-    poll[0].xargs.datalen = LIMIT_MAX(request.size()-4, 4095);
-    poll[0].xargs.data = (const uint8_t*)request.data()+4;
-    }
-  else if (POLL_TYPE_HAS_16BIT_PID(poll[0].type))
+  if (POLL_TYPE_HAS_16BIT_PID(poll[0].type))
     {
     assert(request.size() >= 3);
     poll[0].xargs.pid = request[1] << 8 | request[2];
@@ -507,18 +500,12 @@ int OvmsVehicle::PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
  *                      Note: response is only valid with return value 0
  */
 int OvmsVehicle::PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
-                                   uint8_t polltype, uint32_t pid, std::string& response,
+                                   uint8_t polltype, uint16_t pid, std::string& response,
                                    int timeout_ms /*=3000*/, uint8_t protocol /*=ISOTP_STD*/)
   {
   std::string request;
   request = (char) polltype;
-  if (POLL_TYPE_HAS_24BIT_PID(polltype))
-    {
-    request += (char) (pid >> 16);
-    request += (char) ((pid & 0xff00) >> 8);
-    request += (char) (pid & 0xff);
-    }
-  else if (POLL_TYPE_HAS_16BIT_PID(polltype))
+  if (POLL_TYPE_HAS_16BIT_PID(polltype))
     {
     request += (char) (pid >> 8);
     request += (char) (pid & 0xff);

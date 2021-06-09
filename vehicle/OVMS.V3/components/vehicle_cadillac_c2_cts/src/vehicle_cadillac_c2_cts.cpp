@@ -240,7 +240,7 @@ ESP_LOGI(TAG, "now awake");
 
 void
 OvmsVehicleCadillaccC2CTS::IncomingPollReply(canbus* bus, uint16_t type,
-  uint32_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
+  uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
   {
   int value1 = (int)data[0];
   int value2 = ((int)data[0] << 8) + (int)data[1];

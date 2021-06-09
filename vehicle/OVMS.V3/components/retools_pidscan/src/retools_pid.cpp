@@ -212,16 +212,6 @@ void scanStart(int, OvmsWriter* writer, OvmsCommand*, int argc, const char* cons
         writer->printf("Error: Poll type %x PID range is 00..ff\n");
         valid = false;
     }
-    else if (POLL_TYPE_HAS_16BIT_PID(polltype) && end > 0xffff)
-    {
-        writer->printf("Error: Poll type %x PID range is 00..ffff\n");
-        valid = false;
-    }
-    else if (POLL_TYPE_HAS_24BIT_PID(polltype) && end > 0xffffff)
-    {
-        writer->printf("Error: Poll type %x PID range is 00..ffffff\n");
-        valid = false;
-    }
     if (!valid)
     {
         return;
@@ -442,16 +432,7 @@ void OvmsReToolsPidScanner::SendNextFrame()
         0
     };
 
-    if (POLL_TYPE_HAS_24BIT_PID(m_pollType))
-    {
-        sendFrame.data = { .u8 = {
-            (ISOTP_FT_SINGLE << 4) + 4, m_pollType,
-            static_cast<uint8_t>(m_currentPid >> 16),
-            static_cast<uint8_t>((m_currentPid & 0xff00) >> 8),
-            static_cast<uint8_t>(m_currentPid & 0xff)
-        } };
-    }
-    else if (POLL_TYPE_HAS_16BIT_PID(m_pollType))
+    if (POLL_TYPE_HAS_16BIT_PID(m_pollType))
     {
         sendFrame.data = { .u8 = {
             (ISOTP_FT_SINGLE << 4) + 3, m_pollType,
@@ -559,13 +540,7 @@ void OvmsReToolsPidScanner::IncomingPollFrame(const CAN_frame_t* frame)
         uint16_t responsePid;
         const uint8_t* payload;
         uint16_t payloadLength;
-        if (POLL_TYPE_HAS_24BIT_PID(m_pollType))
-        {
-            responsePid = data[1] << 16 | data[2] << 8 | data[3];
-            payload = &data[4];
-            payloadLength = dataLength - 4;
-        }
-        else if (POLL_TYPE_HAS_16BIT_PID(m_pollType))
+        if (POLL_TYPE_HAS_16BIT_PID(m_pollType))
         {
             responsePid = data[1] << 8 | data[2];
             payload = &data[3];
