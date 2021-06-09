@@ -145,7 +145,7 @@ struct DashboardConfig;
 #define VEHICLE_POLL_TYPE_READMEMORY      0x23 // UDS: ReadMemoryByAddress (no PID)
 #define VEHICLE_POLL_TYPE_READSCALING     0x24 // UDS: ReadScalingDataByIdentifier (16 bit PID)
 #define VEHICLE_POLL_TYPE_WRITEDATA       0x2E // UDS: WriteDataByIdentifier (16 bit PID)
-#define VEHICLE_POLL_TYPE_ROUTINECONTROL  0x31 // UDS: Routine Control (16 bit PID)
+#define VEHICLE_POLL_TYPE_ROUTINECONTROL  0x31 // UDS: Routine Control (8 bit PID)
 #define VEHICLE_POLL_TYPE_WRITEMEMORY     0x3D // UDS: WriteMemoryByAddress (8 bit PID)
 #define VEHICLE_POLL_TYPE_IOCONTROL       0x2F // UDS: InputOutputControlByIdentifier (16 bit PID)
 
@@ -153,7 +153,16 @@ struct DashboardConfig;
 #define VEHICLE_POLL_TYPE_OBDII_18        0x18 // Custom: VW request type 18 (no PID)
 #define VEHICLE_POLL_TYPE_OBDII_1A        0x1A // Custom: Mode 1A (8 bit PID)
 #define VEHICLE_POLL_TYPE_OBDIIGROUP      0x21 // Custom: Read data by 8 bit PID
-#define VEHICLE_POLL_TYPE_OBDII_32        0x32 // Custom: VW request type 32 (8 bit PID)
+#define VEHICLE_POLL_TYPE_OBDII_32        0x32 // Custom: VW routine control extension (8 bit PID)
+
+// A note on "PID" and their sizes here:
+//  By "PID" for the service types we mean the part of the request parameters
+//  after the service type that is reflected in _every_ valid response to the request.
+//  That part is used to validate the response by the poller, if it doesn't match,
+//  the response won't be forwarded to the application.
+//  Some requests require additional parameters as specified in ISO 14229, but implementations
+//  may differ. For example, a 31b8 request on a VW ECU does not necessarily copy the routine
+//  ID in the response (e.g. with 0000), so the routine ID isn't part of our "PID" here.
 
 // Utils:
 #define POLL_TYPE_HAS_16BIT_PID(type) \
@@ -169,7 +178,6 @@ struct DashboardConfig;
    (type) == VEHICLE_POLL_TYPE_CLEAR_ERDTC || \
    (type) == VEHICLE_POLL_TYPE_READ_DCERDTC || \
    (type) == VEHICLE_POLL_TYPE_READ_PERMDTC || \
-   (type) == VEHICLE_POLL_TYPE_ROUTINECONTROL || \
    (type) == VEHICLE_POLL_TYPE_OBDII_18)
 #define POLL_TYPE_HAS_8BIT_PID(type) \
   (!POLL_TYPE_HAS_NO_PID(type) && !POLL_TYPE_HAS_16BIT_PID(type))
