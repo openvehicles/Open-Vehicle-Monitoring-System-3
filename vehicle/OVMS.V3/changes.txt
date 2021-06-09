@@ -71,6 +71,9 @@ Open Vehicle Monitor System v3 - Change log
   https://docs.openvehicles.com/en/latest/components/vehicle_hyundai_ioniqvfl/docs/index.html
 - Webserver: support TLS (https, wss) using self-signed certificates
 - New vehicle: Jaguar Ipace (JLRI)
+- New commands:
+    echo [<text>] […] -- output text
+    sleep <seconds> -- pause script execution
 
 2021-03-05 MB  3.2.016  OTA release
 - VW e-Up: CCS (DC) charge detection & data
