@@ -516,3 +516,37 @@ int OvmsVehicle::PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
     }
   return PollSingleRequest(bus, txid, rxid, request, response, timeout_ms, protocol);
   }
+
+
+/**
+ * PollResultCodeName: get text representation of result code
+ */
+const char* OvmsVehicle::PollResultCodeName(int code)
+  {
+  switch (code)
+    {
+    case 0x10:  return "generalReject";
+    case 0x11:  return "serviceNotSupported";
+    case 0x12:  return "subFunctionNotSupported";
+    case 0x13:  return "incorrectMessageLengthOrInvalidFormat";
+    case 0x14:  return "responseTooLong";
+    case 0x21:  return "busyRepeatRequest";
+    case 0x22:  return "conditionsNotCorrect";
+    case 0x24:  return "requestSequenceError";
+    case 0x25:  return "noResponseFromSubnetComponent";
+    case 0x26:  return "failurePreventsExecutionOfRequestedAction";
+    case 0x31:  return "requestOutOfRange";
+    case 0x33:  return "securityAccessDenied";
+    case 0x35:  return "invalidKey";
+    case 0x36:  return "exceedNumberOfAttempts";
+    case 0x37:  return "requiredTimeDelayNotExpired";
+    case 0x70:  return "uploadDownloadNotAccepted";
+    case 0x71:  return "transferDataSuspended";
+    case 0x72:  return "generalProgrammingFailure";
+    case 0x73:  return "wrongBlockSequenceCounter";
+    case 0x78:  return "requestCorrectlyReceived-ResponsePending";
+    case 0x7e:  return "subFunctionNotSupportedInActiveSession";
+    case 0x7f:  return "serviceNotSupportedInActiveSession";
+    default:    return NULL;
+    }
+  }

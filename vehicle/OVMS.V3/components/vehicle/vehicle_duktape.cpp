@@ -482,7 +482,15 @@ duk_ret_t OvmsVehicleFactory::DukOvmsVehicleObdRequest(duk_context *ctx)
       else if (error < 0)
         errordesc = "Timeout waiting for poller/response";
       else if (error)
+        {
         errordesc = "Request failed with response error code " + int_to_hex((uint8_t)error);
+        const char* errname = MyVehicleFactory.m_currentvehicle->PollResultCodeName(error);
+        if (errname)
+          {
+          errordesc += ' ';
+          errordesc += errname;
+          }
+        }
       }
     }
 
