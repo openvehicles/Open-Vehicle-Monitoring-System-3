@@ -178,37 +178,6 @@ static IRAM_ATTR void ESP32CAN_isr(void *pvParameters)
     {
     me->m_status.interrupts++;
 
-    // Handle RX frame(s) available & FIFO overflow interrupts:
-    if ((interrupt & (__CAN_IRQ_RX|__CAN_IRQ_DATA_OVERRUN)) != 0)
-      {
-      interrupt |= ESP32CAN_rxframe(me, &task_woken);
-      }
-
-    // Handle TX interrupt:
-    if ((interrupt & __CAN_IRQ_TX) != 0)
-      {
-      CAN_queue_msg_t msg;
-      // The TX interrupt occurs when the TX buffer becomes available, which may be due
-      //  to transmission success or abortion. A real SJA1000 would tell the actual result
-      //  by the SR.3 TCS bit, but the ESP32CAN also sets TCS on aborts. So there is no
-      //  way to tell if the frame was really aborted, we can only rely on our own abort
-      //  request status:
-      if (me->m_tx_abort)
-        {
-        // Clear abort command:
-        MODULE_ESP32CAN->CMR.B.AT = 0;
-        me->m_tx_abort = false;
-        msg.type = CAN_txfailedcallback;
-        }
-      else
-        {
-        msg.type = CAN_txcallback;
-        }
-      msg.body.frame = me->m_tx_frame;
-      msg.body.bus = me;
-      xQueueSendFromISR(MyCan.m_rxqueue, &msg, &task_woken);
-      }
-
     // Errata workaround: TWAI_ERRATA_FIX_BUS_OFF_REC
     //
     // Add SW workaround for REC change during bus-off
@@ -243,6 +212,37 @@ static IRAM_ATTR void ESP32CAN_isr(void *pvParameters)
         // Clear the re-triggered bus-off interrupt, collect any new bits
         interrupt |= MODULE_ESP32CAN->IR.U & 0xff;
         }
+      }
+
+    // Handle RX frame(s) available & FIFO overflow interrupts:
+    if ((interrupt & (__CAN_IRQ_RX|__CAN_IRQ_DATA_OVERRUN)) != 0)
+      {
+      interrupt |= ESP32CAN_rxframe(me, &task_woken);
+      }
+
+    // Handle TX interrupt:
+    if ((interrupt & __CAN_IRQ_TX) != 0)
+      {
+      CAN_queue_msg_t msg;
+      // The TX interrupt occurs when the TX buffer becomes available, which may be due
+      //  to transmission success or abortion. A real SJA1000 would tell the actual result
+      //  by the SR.3 TCS bit, but the ESP32CAN also sets TCS on aborts. So there is no
+      //  way to tell if the frame was really aborted, we can only rely on our own abort
+      //  request status:
+      if (me->m_tx_abort)
+        {
+        // Clear abort command:
+        MODULE_ESP32CAN->CMR.B.AT = 0;
+        me->m_tx_abort = false;
+        msg.type = CAN_txfailedcallback;
+        }
+      else
+        {
+        msg.type = CAN_txcallback;
+        }
+      msg.body.frame = me->m_tx_frame;
+      msg.body.bus = me;
+      xQueueSendFromISR(MyCan.m_rxqueue, &msg, &task_woken);
       }
 
     // Collect error interrupts:
