@@ -178,6 +178,42 @@ static IRAM_ATTR void ESP32CAN_isr(void *pvParameters)
     {
     me->m_status.interrupts++;
 
+    // Errata workaround: TWAI_ERRATA_FIX_BUS_OFF_REC
+    //
+    // Add SW workaround for REC change during bus-off
+    //
+    // When the bus-off condition is reached, the REC should be
+    // reset to 0 and frozen (via LOM) by the driver's ISR. However
+    // on the ESP32, there is an edge case where the REC will
+    // increase before the driver's ISR can respond in time (e.g.,
+    // due to the rapid occurrence of bus errors), thus causing the
+    // REC to be non-zero after bus-off. A non-zero REC can prevent
+    // bus-off recovery as the bus-off recovery condition is that
+    // both TEC and REC become Enabling this option will add a
+    // workaround in the driver to forcibly reset REC to zero on
+    // reaching bus-off.
+
+    // "Force REC to 0 by re-triggering bus-off (by setting TEC to 0 then 255)"
+    if ((interrupt & __CAN_IRQ_ERR_WARNING) != 0)
+      {
+      uint32_t status = MODULE_ESP32CAN->SR.U;
+      if ((status & __CAN_STS_BUS_OFF) != 0 && (status & __CAN_STS_ERR_WARNING) != 0)
+        {
+        // Freeze TEC/REC by entering listen only mode
+        MODULE_ESP32CAN->MOD.B.LOM = 1;
+
+        // Re-trigger bus-off
+        MODULE_ESP32CAN->TXERR.B.TXERR = 0;
+        MODULE_ESP32CAN->TXERR.B.TXERR = 0xff;
+
+        // Exit reset mode
+        MODULE_ESP32CAN->MOD.B.RM = 0;
+
+        // Clear the re-triggered bus-off interrupt, collect any new bits
+        interrupt |= MODULE_ESP32CAN->IR.U & 0xff;
+        }
+      }
+
     // Handle RX frame(s) available & FIFO overflow interrupts:
     if ((interrupt & (__CAN_IRQ_RX|__CAN_IRQ_DATA_OVERRUN)) != 0)
       {
