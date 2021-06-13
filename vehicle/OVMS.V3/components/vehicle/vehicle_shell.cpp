@@ -615,7 +615,9 @@ void OvmsVehicleFactory::obdii_request(int verbosity, OvmsWriter* writer, OvmsCo
     }
   else if (err)
     {
-    writer->printf("ERROR: request failed with response error code %02X\n", err);
+    const char* errname = MyVehicleFactory.m_currentvehicle->PollResultCodeName(err);
+    writer->printf("ERROR: request failed with response error code %02X%s%s\n", err,
+      errname ? " " : "", errname ? errname : "");
     return;
     }
 

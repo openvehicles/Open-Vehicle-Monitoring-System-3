@@ -572,6 +572,7 @@ class OvmsVehicle : public InternalRamAllocated
     int PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
                       uint8_t polltype, uint16_t pid, std::string& response,
                       int timeout_ms=3000, uint8_t protocol=ISOTP_STD);
+    const char* PollResultCodeName(int code);
 
   private:
     void PollerISOTPStart(bool fromTicker);
