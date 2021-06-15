@@ -787,10 +787,8 @@ void can::CAN_rxtask(void *pvParameters)
           bool loop;
           // Loop until all interrupts are handled
           do {
-            bool receivedFrame;
-            loop = msg.body.bus->AsynchronousInterruptHandler(&msg.body.frame, &receivedFrame);
-            if (receivedFrame)
-              me->IncomingFrame(&msg.body.frame);
+            uint32_t receivedFrames;
+            loop = msg.body.bus->AsynchronousInterruptHandler(&msg.body.frame, &receivedFrames);
             } while (loop);
           break;
           }
@@ -1080,7 +1078,7 @@ void canbus::BusTicker10(std::string event, void* data)
     }
   }
 
-bool canbus::AsynchronousInterruptHandler(CAN_frame_t* frame, bool * frameReceived)
+bool canbus::AsynchronousInterruptHandler(CAN_frame_t* frame, uint32_t* framesReceived)
   {
   return false;
   }

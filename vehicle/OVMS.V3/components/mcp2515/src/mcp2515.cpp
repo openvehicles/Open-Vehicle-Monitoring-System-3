@@ -416,11 +416,11 @@ esp_err_t mcp2515::Write(const CAN_frame_t* p_frame, TickType_t maxqueuewait /*=
 
 // This function serves as asynchronous interrupt handler for both rx and tx tasks as well as error states
 // Returns true if this function needs to be called again (another frame may need handling or all error interrupts are not yet handled)
-bool mcp2515::AsynchronousInterruptHandler(CAN_frame_t* frame, bool * frameReceived)
+bool mcp2515::AsynchronousInterruptHandler(CAN_frame_t* frame, uint32_t* framesReceived)
   {
   uint8_t buf[16];
 
-  *frameReceived = false;
+  *framesReceived = 0;
   CAN_log_type_t log_status = CAN_LogNone;
 
   // read interrupts (CANINTF 0x2c), errors (EFLG 0x2d) and transmission status (TXB0CTRL 0x30):
@@ -482,7 +482,8 @@ bool mcp2515::AsynchronousInterruptHandler(CAN_frame_t* frame, bool * frameRecei
     frame->FIR.B.DLC = p[4] & 0x0f;
 
     memcpy(&frame->data,p+5,8);
-    *frameReceived=true;
+    *framesReceived = *framesReceived + 1;
+    MyCan.IncomingFrame(frame);
     }
 
   // handle other interrupts that came in at the same time:
