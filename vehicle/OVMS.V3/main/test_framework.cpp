@@ -278,7 +278,7 @@ void test_can(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
 
   for (int k=0;k<frames;k++)
     {
-    frame.MsgID = (rand()%64)+256;
+    frame.MsgID = k % 2048;
     frame.data.u64 = k+1;
     if (tx)
       can->Write(&frame, pdMS_TO_TICKS(10));
