@@ -1764,6 +1764,18 @@ void OvmsServerV2::MetricModified(OvmsMetric* metric)
     {
     m_now_tpms = true;
     }
+    
+  if ((metric == StandardMetrics.ms_v_gen_kwh)||
+      (metric == StandardMetrics.ms_v_gen_climit)||
+      (metric == StandardMetrics.ms_v_gen_limit_range)||
+      (metric == StandardMetrics.ms_v_gen_limit_soc)||
+      (metric == StandardMetrics.ms_v_gen_state)||
+      (metric == StandardMetrics.ms_v_gen_substate)||
+      (metric == StandardMetrics.ms_v_gen_mode)||
+      (metric == StandardMetrics.ms_v_gen_inprogress))
+    {
+    m_now_gen = true;
+    }
   }
 
 bool OvmsServerV2::NotificationFilter(OvmsNotifyType* type, const char* subtype)
@@ -1944,7 +1956,7 @@ void OvmsServerV2::Ticker1(std::string event, void* data)
     if ((m_lasttx==0)||(now>(m_lasttx+next)))
       {
       TransmitMsgStat(true);          // Send always, periodically
-      TransmitMsgGen(true);          // Send always, periodically
+      TransmitMsgGen(m_lasttx==0);          
       TransmitMsgEnvironment(true);   // Send always, periodically
       TransmitMsgGPS(m_lasttx==0);
       TransmitMsgGroup(m_lasttx==0);
