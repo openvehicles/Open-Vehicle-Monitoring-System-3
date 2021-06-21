@@ -851,8 +851,10 @@ void OvmsLocations::CheckTheft()
     }
   // Suppress false theft alerts due to a suspected SIMCOM GPS bug,
   // the reported location goes from: A,B -> A,B -> 0,B -> 0,A -> A,B -> A,B
+  // Also seen: A,B -> A,B -> A,0 -> A,B -> A,B
   int simcombugdist = MyConfig.GetParamValueInt("vehicle", "flatbed.simcombugdistance", 500 * 1000);
-  if (simcombugdist > 0 && m_latitude == 0.0 && m_park_distance > simcombugdist)
+  if (simcombugdist > 0 && (m_latitude == 0.0 || m_longitude == 0.0) &&
+      m_park_distance > simcombugdist)
     {
     ESP_LOGE(TAG, "CheckTheft: Invalid SIMCOM GPS position @%0.6f,%0.6f dist=%.0f smoothed=%.0f",
       m_latitude, m_longitude, dist, m_park_distance);
