@@ -1765,8 +1765,7 @@ void OvmsServerV2::MetricModified(OvmsMetric* metric)
     m_now_tpms = true;
     }
     
-  if ((metric == StandardMetrics.ms_v_gen_kwh)||
-      (metric == StandardMetrics.ms_v_gen_climit)||
+  if ((metric == StandardMetrics.ms_v_gen_climit)||
       (metric == StandardMetrics.ms_v_gen_limit_range)||
       (metric == StandardMetrics.ms_v_gen_limit_soc)||
       (metric == StandardMetrics.ms_v_gen_state)||
@@ -1955,14 +1954,14 @@ void OvmsServerV2::Ticker1(std::string event, void* data)
     int next = (m_peers==0) ? m_updatetime_idle : m_updatetime_connected;
     if ((m_lasttx==0)||(now>(m_lasttx+next)))
       {
-      TransmitMsgStat(true);          // Send always, periodically
-      TransmitMsgGen(m_lasttx==0);          
+      TransmitMsgStat(true);          // Send always, periodically         
       TransmitMsgEnvironment(true);   // Send always, periodically
       TransmitMsgGPS(m_lasttx==0);
       TransmitMsgGroup(m_lasttx==0);
       TransmitMsgTPMS(m_lasttx==0);
       TransmitMsgFirmware(m_lasttx==0);
       TransmitMsgCapabilities(m_lasttx==0);
+      if (StandardMetrics.ms_v_gen_current->AsFloat() > 0) TransmitMsgGen(true); 
       m_lasttx = m_lasttx_stream = now;
       }
     else if (m_streaming && caron && m_peers && now > m_lasttx_stream+m_streaming)
