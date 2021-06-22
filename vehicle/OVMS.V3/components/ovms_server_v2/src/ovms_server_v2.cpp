@@ -1073,6 +1073,96 @@ void OvmsServerV2::TransmitMsgStat(bool always)
   Transmit(buffer.str().c_str());
   }
 
+void OvmsServerV2::TransmitMsgGen(bool always)
+  {
+  m_now_gen = false;
+
+  bool modified =
+    StandardMetrics.ms_v_gen_inprogress->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_pilot->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_voltage->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_current->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_power->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_efficiency->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_type->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_state->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_substate->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_mode->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_climit->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_limit_range->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_limit_soc->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_kwh->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_limit_range->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_limit_soc->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_kwh_grid->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_kwh_grid_total->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_time->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_timermode->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_timerstart->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_duration_empty->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_duration_range->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_duration_soc->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_temp->IsModifiedAndClear(MyOvmsServerV2Modifier);
+
+  // Quick exit if nothing modified
+  if ((!always)&&(!modified)) return;
+
+  extram::ostringstream buffer;
+  buffer
+    << std::fixed
+    << std::setprecision(1)
+    << "MP-0 G"
+    << StandardMetrics.ms_v_gen_inprogress->AsBool()
+    << ";"
+    << StandardMetrics.ms_v_gen_pilot->AsBool()
+    << ","
+    << StandardMetrics.ms_v_gen_voltage->AsInt()
+    << ","
+    << StandardMetrics.ms_v_gen_current->AsFloat()
+    << ","
+    << StandardMetrics.ms_v_gen_power->AsFloat()
+    << ","
+    << StandardMetrics.ms_v_gen_efficiency->AsFloat()
+    << ","
+    << StandardMetrics.ms_v_gen_type->AsString("")
+    << ","
+    << StandardMetrics.ms_v_gen_state->AsString("stopped")
+    << ","
+    << StandardMetrics.ms_v_gen_substate->AsString("")
+    << ","
+    << StandardMetrics.ms_v_gen_mode->AsString("standard")
+    << ","
+    << StandardMetrics.ms_v_gen_climit->AsFloat()
+    << ","
+    << StandardMetrics.ms_v_gen_limit_range->AsFloat(0, m_units_distance)
+    << ","
+    << StandardMetrics.ms_v_gen_limit_soc->AsInt()
+    << ","
+    << StandardMetrics.ms_v_gen_kwh->AsFloat()
+    << ","
+    << StandardMetrics.ms_v_gen_kwh_grid->AsFloat()
+    << ","
+    << StandardMetrics.ms_v_gen_kwh_grid_total->AsFloat()
+    << ","
+    << StandardMetrics.ms_v_gen_time->AsInt(0,Seconds)
+    << ","
+    << StandardMetrics.ms_v_gen_timermode->AsBool()
+    << ","
+    << StandardMetrics.ms_v_gen_timerstart->AsInt()
+    << ","
+    << StandardMetrics.ms_v_gen_duration_empty->AsInt()
+    << ","
+    << StandardMetrics.ms_v_gen_duration_range->AsInt()
+    << ","
+    << StandardMetrics.ms_v_gen_duration_soc->AsInt()
+    << ";"
+    << StandardMetrics.ms_v_gen_temp->AsFloat()
+    ;
+
+  Transmit(buffer.str().c_str());
+  }
+
+
 void OvmsServerV2::TransmitMsgGPS(bool always)
   {
   m_now_gps = false;
@@ -1674,6 +1764,17 @@ void OvmsServerV2::MetricModified(OvmsMetric* metric)
     {
     m_now_tpms = true;
     }
+    
+  if ((metric == StandardMetrics.ms_v_gen_climit)||
+      (metric == StandardMetrics.ms_v_gen_limit_range)||
+      (metric == StandardMetrics.ms_v_gen_limit_soc)||
+      (metric == StandardMetrics.ms_v_gen_state)||
+      (metric == StandardMetrics.ms_v_gen_substate)||
+      (metric == StandardMetrics.ms_v_gen_mode)||
+      (metric == StandardMetrics.ms_v_gen_inprogress))
+    {
+    m_now_gen = true;
+    }
   }
 
 bool OvmsServerV2::NotificationFilter(OvmsNotifyType* type, const char* subtype)
@@ -1853,13 +1954,14 @@ void OvmsServerV2::Ticker1(std::string event, void* data)
     int next = (m_peers==0) ? m_updatetime_idle : m_updatetime_connected;
     if ((m_lasttx==0)||(now>(m_lasttx+next)))
       {
-      TransmitMsgStat(true);          // Send always, periodically
+      TransmitMsgStat(true);          // Send always, periodically         
       TransmitMsgEnvironment(true);   // Send always, periodically
       TransmitMsgGPS(m_lasttx==0);
       TransmitMsgGroup(m_lasttx==0);
       TransmitMsgTPMS(m_lasttx==0);
       TransmitMsgFirmware(m_lasttx==0);
       TransmitMsgCapabilities(m_lasttx==0);
+      if (StandardMetrics.ms_v_gen_current->AsFloat() > 0) TransmitMsgGen(true); 
       m_lasttx = m_lasttx_stream = now;
       }
     else if (m_streaming && caron && m_peers && now > m_lasttx_stream+m_streaming)
@@ -1869,6 +1971,7 @@ void OvmsServerV2::Ticker1(std::string event, void* data)
       }
 
     if (m_now_stat) TransmitMsgStat();
+    if (m_now_gen) TransmitMsgGen();
     if (m_now_environment) TransmitMsgEnvironment();
     if (m_now_gps) TransmitMsgGPS();
     if (m_now_group) TransmitMsgGroup();
@@ -1906,6 +2009,7 @@ OvmsServerV2::OvmsServerV2(const char* name)
   m_buffer = new OvmsBuffer(1024);
   SetStatus("Server has been started", false, WaitNetwork);
   m_now_stat = false;
+  m_now_gen = false;
   m_now_gps = false;
   m_now_tpms = false;
   m_now_firmware = false;
