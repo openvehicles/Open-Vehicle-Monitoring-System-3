@@ -119,6 +119,7 @@ public:
 
 protected:
   void Ticker1(uint32_t ticker);
+  void Ticker60(uint32_t ticker);
 
 public:
   vehicle_command_t CommandHomelink(int button, int durationms = 1000);
@@ -133,6 +134,8 @@ public:
 
 protected:
   int GetNotifyChargeStateDelay(const char *state);
+  int CalcChargeTime(float capacity, float max_pwr, int from_soc, int to_soc);
+  void UpdateChargeTimes();
 
 protected:
   void ResetTripCounters();
@@ -374,6 +377,8 @@ protected:
 
   chg_type_t          m_chg_type;                 // CHGTYPE_None / _AC / _DC
   int                 m_cfg_dc_interval;          // Interval for DC fast charge test/log PIDs
+
+  int                 m_chg_ctp_car;              // Charge time prediction by car
 
 private:
   PollReplyHelper     PollReply;
