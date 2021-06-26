@@ -67,6 +67,10 @@ Open Vehicle Monitor System v3 - Change log
     xvu.b.soh.range                -- SOH based on MFD range estimation [%]
   New configs:
     [xvu] bat.soh.source           -- 'charge' (default) or 'range' [string]
+- VW e-Up/OBD: charge time prediction while not charging & full charge with limit
+  New configs:
+    [xvu] ctp.maxpower             -- in kW, 0 = unlimited except by car, used when not charging
+    [xvu] ctp.soclimit             -- in %, used as informative limit w/o OBD connection
 - New vehicle: Hyundai Ioniq vFL (HIONVFL)
   https://docs.openvehicles.com/en/latest/components/vehicle_hyundai_ioniqvfl/docs/index.html
 - Webserver: support TLS (https, wss) using self-signed certificates

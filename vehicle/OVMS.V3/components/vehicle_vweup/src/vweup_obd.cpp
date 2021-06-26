@@ -447,9 +447,10 @@ void OvmsVehicleVWeUp::PollerStateTicker()
 
       PollSetState(VWEUP_CHARGING);
 
-      // Take charge counter references after 3 seconds to collect an initial SOC correction:
+      // Take charge counter references after 6 seconds to collect an initial SOC correction
+      // and initial charge power reading:
       m_chargestop_ticker = 0;
-      m_chargestart_ticker = 3;
+      m_chargestart_ticker = 6;
     }
     else if (m_chargestart_ticker && --m_chargestart_ticker == 0) {
       ResetChargeCounters();
@@ -467,7 +468,7 @@ void OvmsVehicleVWeUp::PollerStateTicker()
     // On charge stop, we need to delay the actual state change to collect the final SOC first
     // (SOC is needed to determine if the charge is done or was interrupted):
     m_chargestart_ticker = 0;
-    m_chargestop_ticker = 3;
+    m_chargestop_ticker = 6;
   }
   else if (m_chargestop_ticker && --m_chargestop_ticker == 0) {
     SetChargeState(false);
@@ -652,8 +653,12 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
         VALUE_LOG(TAG, "VWUP_BAT_MGMT_I=%f => %f", value, StdMetrics.ms_v_bat_current->AsFloat());
 
         value = StdMetrics.ms_v_bat_voltage->AsFloat() * StdMetrics.ms_v_bat_current->AsFloat() / 1000.0f;
-        StdMetrics.ms_v_bat_power->SetValue(value);
+        bool changed = StdMetrics.ms_v_bat_power->SetValue(value);
         VALUE_LOG(TAG, "VWUP_BAT_MGMT_POWER=%f => %f", value, StdMetrics.ms_v_bat_power->AsFloat());
+        // Translate power changes into charge time predictions immediately, this is important
+        // for the initial charge notification:
+        if (changed && IsCharging())
+          UpdateChargeTimes();
       }
       break;
 
@@ -1157,10 +1162,12 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
       break;
 
     case VWUP_CHG_MGMT_REM:
+      // This only gets updates while charging.
       // Ignore charge shutdown value of 127 to keep last estimation:
       if (PollReply.FromUint8("VWUP_CHG_MGMT_REM", value) && value != 127) {
-        StdMetrics.ms_v_charge_duration_full->SetValue(value * 5.0f);
-        VALUE_LOG(TAG, "VWUP_CHG_MGMT_REM=%f => %f", value, StdMetrics.ms_v_charge_duration_full->AsFloat());
+        m_chg_ctp_car = value * 5;
+        VALUE_LOG(TAG, "VWUP_CHG_MGMT_REM=%f => %d", value, m_chg_ctp_car);
+        UpdateChargeTimes();
       }
       break;
 
@@ -1384,20 +1391,17 @@ void OvmsVehicleVWeUp::UpdateChargeParams()
   int socmin = m_chg_timer_socmin->AsInt();
   int socmax = m_chg_timer_socmax->AsInt();
 
-  // Set v.c.limit.soc to either min or max SOC, or 100% depending on the state:
-  int soclim = 100;
-  if (timermode)
-  {
-    if (soc < socmin)
-      soclim = socmin;
-    else if (soc < socmax)
-      soclim = socmax;
-  }
+  // Set v.c.limit.soc to either min or max SOC depending on the current SOC:
+  int soclim = socmin;
+  if (soc >= socmin && soc < socmax)
+    soclim = socmax;
   StdMetrics.ms_v_charge_limit_soc->SetValue(soclim);
 
   // Derive charge mode from final SOC destination:
-  if (soclim == 100 || socmax == 100)
+  if (!timermode || soclim == 100 || socmax == 100)
     StdMetrics.ms_v_charge_mode->SetValue("range");
   else
     StdMetrics.ms_v_charge_mode->SetValue("standard");
+
+  UpdateChargeTimes();
 }

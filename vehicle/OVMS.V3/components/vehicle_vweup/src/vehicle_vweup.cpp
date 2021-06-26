@@ -29,7 +29,7 @@
 #include <string>
 static const char *TAG = "v-vweup";
 
-#define VERSION "0.15.2"
+#define VERSION "0.16.1"
 
 #include <stdio.h>
 #include <string>
@@ -99,6 +99,8 @@ OvmsVehicleVWeUp::OvmsVehicleVWeUp()
   m_obd_state = OBDS_Init;
   m_chargestart_ticker = 0;
   m_chargestop_ticker = 0;
+
+  m_chg_ctp_car = -1;
 
   // Init metrics:
   m_version = MyMetrics.InitString("xvu.m.version", 0, VERSION " " __DATE__ " " __TIME__);
@@ -324,6 +326,11 @@ void OvmsVehicleVWeUp::ConfigChanged(OvmsConfigParam *param)
     else if (soh_source == "charge" && m_bat_soh_charge->IsDefined())
       SetSOH(m_bat_soh_charge->AsFloat());
   }
+
+  // Update charge time predictions:
+  if (!IsCharging() || HasNoOBD()) {
+    UpdateChargeTimes();
+  }
 }
 
 
@@ -374,6 +381,14 @@ void OvmsVehicleVWeUp::Ticker1(uint32_t ticker)
 {
   if (HasT26()) {
     T26Ticker1(ticker);
+  }
+}
+
+
+void OvmsVehicleVWeUp::Ticker60(uint32_t ticker)
+{
+  if (!IsCharging() || HasNoOBD()) {
+    UpdateChargeTimes();
   }
 }
 
@@ -574,5 +589,133 @@ void OvmsVehicleVWeUp::SetChargeState(bool charging)
         StdMetrics.ms_v_charge_state->SetValue("stopped");
       }
     }
+  }
+}
+
+
+/**
+ * CalcChargeTime: charge time prediction
+ */
+int OvmsVehicleVWeUp::CalcChargeTime(float capacity, float max_pwr, int from_soc, int to_soc)
+{
+  struct {
+    int soc;  float pwr;    float grd;
+  } ccurve[] = {
+    {     0,       30.0,    (32.5-30.0) / ( 30-  0) },
+    {    30,       32.5,    (26.5-32.5) / ( 55- 30) },
+    {    55,       26.5,    (18.5-26.5) / ( 76- 55) },
+    {    76,       18.5,    (11.0-18.5) / ( 81- 76) },
+    {    81,       11.0,    ( 6.5-11.0) / ( 91- 81) },
+    {    91,        6.5,    ( 3.0- 6.5) / (100- 91) },
+    {   100,        3.0,    0                       },
+  };
+  const int csize = sizeof_array(ccurve);
+
+  if (capacity <= 0 || to_soc <= from_soc)
+    return 0;
+
+  // Find curve section for a given SOC:
+  auto find_csection = [&](int soc) {
+    if (soc == 0) return 0;
+    int i;
+    for (i = 0; i < csize; i++) {
+      if (ccurve[i].soc < soc && ccurve[i+1].soc >= soc)
+        break;
+    }
+    return i;
+  };
+
+  // Calculate the theoretical max power at a curve section SOC point:
+  auto calc_cpwr = [&](int ci, int soc) {
+    return ccurve[ci].pwr + (soc - ccurve[ci].soc) * ccurve[ci].grd;
+  };
+
+  // Calculate the theoretical max power at a curve section SOC point:
+  auto pwr_limit = [&](float pwr) {
+    return (max_pwr > 0) ? std::min(pwr, max_pwr) : pwr;
+  };
+
+  // Sum charge curve section parts involved:
+  
+  int from_section = find_csection(from_soc),
+      to_section   = find_csection(to_soc);
+  float charge_time = 0;
+
+  int s1, s2;
+  float p1, p2;
+  float section_energy, section_time;
+
+  for (int section = from_section; section <= to_section; section++)
+  {
+    if (section == from_section) {
+      s1 = from_soc;
+      p1 = calc_cpwr(from_section, from_soc);
+    } else {
+      s1 = ccurve[section].soc;
+      p1 = ccurve[section].pwr;
+    }
+
+    if (section == to_section) {
+      s2 = to_soc;
+      p2 = calc_cpwr(to_section, to_soc);
+    } else {
+      s2 = ccurve[section+1].soc;
+      p2 = ccurve[section+1].pwr;
+    }
+    
+    p1 = pwr_limit(p1);
+    p2 = pwr_limit(p2);
+    
+    section_energy = capacity * (s2 - s1) / 100.0;
+    section_time = section_energy / ((p1 + p2) / 2);
+    charge_time += section_time;
+  }
+
+  // return full minutes:
+  return std::ceil(charge_time * 60);
+}
+
+/**
+ * UpdateChargeTimes: update all charge time predictions
+ *  This is called by Ticker60() and by IncomingPollReply(), and on config changes.
+ *  While charging, the car delivers a CTP for the current SOC limit if set, or 100%,
+ *  but only if the OBD connection is available.
+ */
+void OvmsVehicleVWeUp::UpdateChargeTimes()
+{
+  float capacity = 0, max_pwr = 0;
+  int from_soc = 0, to_soc = 0;
+
+  if (IsOBDReady())
+    capacity = m_bat_cap_kwh_norm->AsFloat();
+  if (capacity <= 0)
+    capacity = (vweup_modelyear > 2019) ? 32.3 : 16.4;
+
+  if (IsCharging())
+    max_pwr = -StdMetrics.ms_v_bat_power->AsFloat();
+  if (max_pwr <= 0)
+    max_pwr = MyConfig.GetParamValueFloat("xvu", "ctp.maxpower", 0);
+
+  bool timermode = StdMetrics.ms_v_charge_timermode->AsBool();
+  int soc_limit = StdMetrics.ms_v_charge_limit_soc->AsInt();
+  if (HasNoOBD()) {
+    soc_limit = MyConfig.GetParamValueFloat("xvu", "ctp.soclimit", 80);
+    StdMetrics.ms_v_charge_limit_soc->SetValue(soc_limit);
+  }
+
+  from_soc = StdMetrics.ms_v_bat_soc->AsInt();
+  to_soc = soc_limit;
+
+  if (IsCharging() && m_chg_ctp_car >= 0) {
+    if (timermode && soc_limit > 0 && soc_limit < 100) {
+      *StdMetrics.ms_v_charge_duration_soc = m_chg_ctp_car;
+      *StdMetrics.ms_v_charge_duration_full = CalcChargeTime(capacity, max_pwr, from_soc, 100);
+    } else {
+      *StdMetrics.ms_v_charge_duration_soc = CalcChargeTime(capacity, max_pwr, from_soc, to_soc);
+      *StdMetrics.ms_v_charge_duration_full = m_chg_ctp_car;
+    }
+  } else {
+    *StdMetrics.ms_v_charge_duration_soc = CalcChargeTime(capacity, max_pwr, from_soc, to_soc);
+    *StdMetrics.ms_v_charge_duration_full = CalcChargeTime(capacity, max_pwr, from_soc, 100);
   }
 }
