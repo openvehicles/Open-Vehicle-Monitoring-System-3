@@ -212,6 +212,13 @@ static IRAM_ATTR void ESP32CAN_isr(void *pvParameters)
         // Clear the re-triggered bus-off interrupt, collect any new bits
         interrupt |= MODULE_ESP32CAN->IR.U & 0xff;
         }
+
+      if ((status & __CAN_STS_BUS_OFF) == 0 &&
+          (status & __CAN_STS_ERR_WARNING) != 0)
+        {
+        // Entering bus off halts in progress tx
+        MyESP32can->m_state &= ~CAN_M_STATE_TX_BUF_OCCUPIED;
+        }
       }
 
     // Handle RX frame(s) available & FIFO overflow interrupts:
@@ -220,9 +227,24 @@ static IRAM_ATTR void ESP32CAN_isr(void *pvParameters)
       interrupt |= ESP32CAN_rxframe(me, &task_woken);
       }
 
+    //
+    // Errata workaround: TWAI_ERRATA_FIX_TX_INTR_LOST
+    //
+    // Add SW workaround for TX interrupt lost
+    //
+    // On the ESP32, when a transmit interrupt occurs, and interrupt
+    // register is read on the same APB clock cycle, the transmit
+    // interrupt could be lost. Enabling this option will add a
+    // workaround that checks the transmit buffer status bit to
+    // recover any lost transmit interrupt.
+
     // Handle TX interrupt:
-    if ((interrupt & __CAN_IRQ_TX) != 0)
+    uint32_t status;
+    if ((interrupt & __CAN_IRQ_TX) != 0 ||
+        ((MyESP32can->m_state & CAN_M_STATE_TX_BUF_OCCUPIED) != 0 &&
+        ((status = MODULE_ESP32CAN->SR.U) & __CAN_STS_TXDONE) != 0))
       {
+      MyESP32can->m_state &= ~CAN_M_STATE_TX_BUF_OCCUPIED;
       CAN_queue_msg_t msg;
       // The TX interrupt occurs when the TX buffer becomes available, which may be due
       //  to transmission success or abortion. A real SJA1000 would tell the actual result
@@ -579,6 +601,7 @@ esp_err_t esp32can::WriteFrame(const CAN_frame_t* p_frame)
   MODULE_ESP32CAN->CMR.B.TR=1;
 
   ESP32CAN_EXIT_CRITICAL();
+  MyESP32can->m_state |= CAN_M_STATE_TX_BUF_OCCUPIED;
   return ESP_OK;
   }
 
