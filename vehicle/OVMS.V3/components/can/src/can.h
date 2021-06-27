@@ -329,12 +329,15 @@ class canbus : public pcp, public InternalRamAllocated
     CAN_frame_t m_tx_frame;       // saved copy of last TX frame to be used in txcallback
     uint32_t m_status_chksum;
     uint32_t m_watchdog_timer;
+    uint32_t m_state;             // state bitset
     QueueHandle_t m_txqueue;
     int m_busnumber;
 
   protected:
     dbcfile *m_dbcfile;
   };
+
+#define CAN_M_STATE_TX_BUF_OCCUPIED   BIT(0) // transmit buffer is in use
 
 ////////////////////////////////////////////////////////////////////////
 // can - the CAN system controller
