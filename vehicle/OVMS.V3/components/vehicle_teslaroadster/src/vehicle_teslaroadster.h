@@ -116,6 +116,12 @@ class OvmsVehicleTeslaRoadster : public OvmsVehicle
     char m_type[5];
     bool m_aux12v; // True if auxiliary 12v system is on
     bool m_requesting_cac;
+    enum StartingCharge {
+      INACTIVE,
+      SCHEDULED,
+      POWERWAIT,
+      STARTED
+      } m_starting_charge;
   };
 
 #endif //#ifndef __VEHICLE_TESLAROADSTER_H__

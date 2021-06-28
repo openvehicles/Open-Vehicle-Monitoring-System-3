@@ -93,6 +93,7 @@ OvmsVehicleTeslaRoadster::OvmsVehicleTeslaRoadster()
   memset(m_vin,0,sizeof(m_vin));
   m_aux12v = false;
   m_requesting_cac = false;
+  m_starting_charge = INACTIVE;
 
   m_cooldown_running = false;
   m_cooldown_prev_chargemode = Standard;
@@ -339,24 +340,42 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
             case 0x0e: // timer wait
               // Apps don't currently support 'timerwait' charge state correctly
               // (they don't allow a charge to be manually started in that mode)
-              // so for the moment just report it as 'stopped'.
+              // so for the moment just report it as 'stopped' until the user
+              // manually requests to start, then report "prepare".
               //StandardMetrics.ms_v_charge_state->SetValue("timerwait"); break;
-              StandardMetrics.ms_v_charge_state->SetValue("stopped"); break;
+              StandardMetrics.ms_v_charge_state->SetValue(m_starting_charge == INACTIVE ?
+                "stopped" : "prepare"); break;
             case 0x0f: // heating
               StandardMetrics.ms_v_charge_state->SetValue("heating"); break;
             default:
               break;
             }
+          // Once charging has been started or aborted, return to the idle state.
+          if (d[1] != 0x0e)
+            m_starting_charge = INACTIVE;
           switch (d[2]) // Charge sub-state
             {
             case 0x02: // Scheduled start
-              StandardMetrics.ms_v_charge_substate->SetValue("scheduledstart"); break;
+              StandardMetrics.ms_v_charge_substate->SetValue("scheduledstart");
+              if (m_starting_charge == POWERWAIT)
+                CommandStartCharge();
+              break;
             case 0x03: // On request
               StandardMetrics.ms_v_charge_substate->SetValue("onrequest"); break;
             case 0x05: // Timer wait
               StandardMetrics.ms_v_charge_substate->SetValue("timerwait"); break;
             case 0x07: // Power wait
-              StandardMetrics.ms_v_charge_substate->SetValue("powerwait"); break;
+              // If charging is manually started while the car is waiting for a
+              // scheduled start time then the substate will temporarily change
+              // to 'powerwait' while the car checks for a pilot signal.  This
+              // would cause app to hide the charge connector icon, so when
+              // manually starting a charge from the app we continue to report
+              // 'scheduledstart' instead and advance to next state.
+              StandardMetrics.ms_v_charge_substate->SetValue(m_starting_charge == INACTIVE ?
+                "powerwait" : "scheduledstart");
+              if (m_starting_charge == SCHEDULED)
+                m_starting_charge = POWERWAIT;
+              break;
             case 0x0d: // interrupted
               StandardMetrics.ms_v_charge_substate->SetValue("stopped"); break;
             case 0x09: // xxMinutes - yykWh
@@ -840,6 +859,24 @@ OvmsVehicle::vehicle_command_t OvmsVehicleTeslaRoadster::CommandStartCharge()
   {
   CAN_frame_t frame;
   memset(&frame,0,sizeof(frame));
+  // If the car is asleep waiting for a scheduled start time we will need to
+  // repeat the command to start charging after the car wakes up and detects
+  // the pilot signal.  We need to sequence through states to track that.
+  if (StandardMetrics.ms_v_charge_substate->AsString() == "scheduledstart")
+    {
+    if (m_starting_charge == INACTIVE)
+      m_starting_charge = SCHEDULED;
+    else if (m_starting_charge == POWERWAIT)
+      m_starting_charge = STARTED;
+    }
+  frame.origin = m_can1;
+  frame.FIR.U = 0;
+  frame.FIR.B.DLC = 1;
+  frame.FIR.B.FF = CAN_frame_std;
+  frame.MsgID = 0x102;
+  frame.data.u8[0] = 0x0a;
+  m_can1->Write(&frame);
+  vTaskDelay(150 / portTICK_PERIOD_MS);
 
   frame.origin = m_can1;
   frame.FIR.U = 0;
@@ -861,6 +898,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleTeslaRoadster::CommandStartCharge()
 
 OvmsVehicle::vehicle_command_t OvmsVehicleTeslaRoadster::CommandStopCharge()
   {
+  m_starting_charge = INACTIVE;
   CAN_frame_t frame;
   memset(&frame,0,sizeof(frame));
 
