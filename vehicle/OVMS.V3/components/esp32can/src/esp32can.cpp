@@ -239,10 +239,9 @@ static IRAM_ATTR void ESP32CAN_isr(void *pvParameters)
     // recover any lost transmit interrupt.
 
     // Handle TX interrupt:
-    uint32_t status;
     if ((interrupt & __CAN_IRQ_TX) != 0 ||
         ((MyESP32can->m_state & CAN_M_STATE_TX_BUF_OCCUPIED) != 0 &&
-        ((status = MODULE_ESP32CAN->SR.U) & __CAN_STS_TXDONE) != 0))
+        (MODULE_ESP32CAN->SR.U & __CAN_STS_TXDONE) != 0))
       {
       MyESP32can->m_state &= ~CAN_M_STATE_TX_BUF_OCCUPIED;
       CAN_queue_msg_t msg;
@@ -599,9 +598,9 @@ esp_err_t esp32can::WriteFrame(const CAN_frame_t* p_frame)
 
   // Transmit frame
   MODULE_ESP32CAN->CMR.B.TR=1;
+  MyESP32can->m_state |= CAN_M_STATE_TX_BUF_OCCUPIED;
 
   ESP32CAN_EXIT_CRITICAL();
-  MyESP32can->m_state |= CAN_M_STATE_TX_BUF_OCCUPIED;
   return ESP_OK;
   }
 
