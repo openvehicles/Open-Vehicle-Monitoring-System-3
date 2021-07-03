@@ -99,6 +99,23 @@ static unsigned long utc_to_timestamp(const char* date, const char* time)
   }
 
 
+static bool valid_nmea_cksum(const std::string line)
+  {
+  const char *cp = line.c_str();
+  if (*cp != '$')
+    return 0;
+  ++cp;
+  const char *ep = strchr(cp, '*');
+  if (ep == NULL)
+    return 0;
+  unsigned char chk = 0;
+  while (cp < ep)
+    chk ^= (const unsigned char)*cp++;
+  unsigned char chk2 = (unsigned char)strtoul(ep + 1, NULL, 16);
+  return (chk == chk2);
+  }
+
+
 void GsmNMEA::IncomingLine(const std::string line)
   {
   ESP_LOGV(TAG, "IncomingLine: %s", line.c_str());
@@ -110,6 +127,11 @@ void GsmNMEA::IncomingLine(const std::string line)
     return;
   if (token.length() < 6 || token[0] != '$')
     return;
+  if (!valid_nmea_cksum(line))
+    {
+    ESP_LOGE(TAG, "IncomingLine: bad checksum: %s", line.c_str());
+    return;
+    }
 
   if (token.substr(3) == "GNS")
     {
