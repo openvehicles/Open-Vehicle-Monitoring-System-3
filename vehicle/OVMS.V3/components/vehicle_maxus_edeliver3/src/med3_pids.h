@@ -55,6 +55,7 @@ constexpr uint16_t bmsacchargeon = 0xe091u;
 //constexpr uint16_t vcusoc = 0xe002u;
 constexpr uint16_t vcutemp1 = 0xe005u;
 constexpr uint16_t vcutemp2 = 0xe006u;
+constexpr uint16_t vcuspeed = 0xe009u;
 constexpr uint16_t vcupackvolts = 0xe019u;
 constexpr uint16_t vcuvin = 0xf190u;
 constexpr uint16_t vcu12vamps = 0xe022u;

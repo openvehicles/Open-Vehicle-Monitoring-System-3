@@ -36,6 +36,7 @@ static const char *TAG = "v-maxed3";
 #include "med3_pids.h"
 #include "ovms_webserver.h"
 #include <algorithm>
+#include "metrics_standard.h"
 
 // Vehicle states:
 #define STATE_OFF             0     // Pollstate 0 - POLLSTATE_OFF      - car is off
@@ -66,6 +67,7 @@ static const OvmsVehicle::poll_pid_t obdii_polls[] =
 //        { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcusoc, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //SOC Scaled below
         { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcutemp1, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //temp
         { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcutemp2, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //temp
+        { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcuspeed, {  0, 1, 1, 30  }, 0, ISOTP_STD }, //Possible speed 660 - value
         { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcupackvolts, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //Pack Voltage
         { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcu12vamps, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //12v amps?
         { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcuchargervolts, {  0, 15, 15, 15  }, 0, ISOTP_STD }, //charger volts at a guess?
@@ -83,7 +85,6 @@ static const OvmsVehicle::poll_pid_t obdii_polls[] =
         { bmstx, bmsrx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmsacchargeon, {  0, 15, 15, 15  }, 0, ISOTP_STD }, // looks CCS state
         { 0, 0, 0x00, 0x00, { 0, 0, 0, 0 }, 0, 0 }
     };
-
 charging_profile granny_steps[]  = {
     {0,98,6375}, // Max charge rate (7200) less charge loss
     {98,100,2700}, // Observed charge rate
@@ -134,6 +135,8 @@ OvmsVehicleMaxed3::OvmsVehicleMaxed3()
         // Init Raw Soc:
         m_poll_state_metric = MyMetrics.InitInt("xmg.state.poll", SM_STALE_MAX, m_poll_state);
         m_soc_raw = MyMetrics.InitFloat("xmg.v.soc.raw", 0, SM_STALE_HIGH, Percentage);
+        m_consump_raw = MyMetrics.InitFloat("xmg.v.consump.raw", 0, SM_STALE_HIGH); // temp to monitor bms range
+        m_consumprange_raw = MyMetrics.InitFloat("xmg.v.consumprange.raw", 0, SM_STALE_HIGH); // temp to monitor bms range
         m_watt_hour_raw = MyMetrics.InitFloat("xmg.v.watt.hour.raw", 0, SM_STALE_HIGH); // temp to monitor bms range
     
         // Register config params
@@ -202,6 +205,11 @@ void OvmsVehicleMaxed3::IncomingPollReply(canbus* bus, uint16_t type, uint16_t p
           break;
       case vcutemp2:  // temperature??
           StandardMetrics.ms_v_env_temp->SetValue(value1 / 10.0f);
+          break;
+      case vcuspeed:  // Possible speed 660 - value with 32 off set
+          StandardMetrics.ms_v_pos_speed->SetValue(628-(value2-32));
+          //StandardMetrics.ms_v_pos_speed->SetValue(660-(value2));
+          //StandardMetrics.ms_v_pos_speed->SetValue((100 - ((value2 - 512) * 100 / (640 - 512))) * 1.60934);
           break;
       case vcupackvolts:  // Pack Voltage
           StandardMetrics.ms_v_bat_voltage->SetValue(value2 / 10.0f);
@@ -309,8 +317,9 @@ void OvmsVehicleMaxed3::IncomingFrameCan1(CAN_frame_t* p_frame)
                     float batTemp = StandardMetrics.ms_v_bat_temp->AsFloat();
                     float effSoh = StandardMetrics.ms_v_bat_soh->AsFloat();
                     float kmPerKwh = 1000/(consumpRange * 59 + consumpRange) / 60;
-                    float kmPerKwhAvg = (kmPerKwh * 59 + kmPerKwh) / 60;
-                    m_watt_hour_raw->SetValue(-kmPerKwhAvg);
+                    //float kmPerKwhAvg = (kmPerKwh * 59 + kmPerKwh) / 60;
+                    m_watt_hour_raw->SetValue(kmPerKwh);
+                    m_consump_raw->SetValue(consumpRange);
                         
                     if(kmPerKwh<4.5)kmPerKwh=4.5;
                     if(kmPerKwh>6.4)kmPerKwh=6.6;
@@ -319,7 +328,7 @@ void OvmsVehicleMaxed3::IncomingFrameCan1(CAN_frame_t* p_frame)
               StandardMetrics.ms_v_bat_range_full->SetValue(241);
               StandardMetrics.ms_v_bat_range_ideal->SetValue(241 * soc / 100);
                 //StandardMetrics.ms_v_bat_range_est->SetValue(241 * soc / 108);
-              StandardMetrics.ms_v_bat_range_est->SetValue(52.5*((-kmPerKwhAvg * (1-((20-batTemp)*1.3)/100)*(soc/100))*(effSoh/100)));
+              StandardMetrics.ms_v_bat_range_est->SetValue(52.5*((kmPerKwh * (1-((20-batTemp)*1.3)/100)*(soc/100))*(effSoh/100)));
         
               break;
         }
@@ -339,6 +348,11 @@ void OvmsVehicleMaxed3::IncomingFrameCan1(CAN_frame_t* p_frame)
                 break;
                 }
     }
+}
+
+void OvmsVehicleMaxed3::Ticker1(uint32_t ticker)
+{
+    processEnergy();
 }
 
 // PollerStateTicker: framework callback: check for state changes
@@ -505,10 +519,12 @@ void OvmsVehicleMaxed3::processEnergy()
     }
     
     // Add cumulative charge energy each second to ms_v_charge_power
-    if (StandardMetrics.ms_v_charge_inprogress->AsBool())
+    if(StandardMetrics.ms_v_charge_inprogress->AsBool())
     {
         med3_cum_energy_charge_wh += StandardMetrics.ms_v_charge_power->AsFloat()*1000/3600;
         StandardMetrics.ms_v_charge_kwh->SetValue(med3_cum_energy_charge_wh/1000);
+//        med3_cum_energy_charge_wh += StandardMetrics.ms_v_charge_power->AsFloat()/3600;
+//        StandardMetrics.ms_v_charge_kwh->SetValue((med3_cum_energy_charge_wh/1000) * 1.609f);
         
         int limit_soc      = StandardMetrics.ms_v_charge_limit_soc->AsInt(0);
         float limit_range    = StandardMetrics.ms_v_charge_limit_range->AsFloat(0, Kilometers);
@@ -551,7 +567,7 @@ void OvmsVehicleMaxed3::processEnergy()
     }
     else
     {
-        med3_cum_energy_charge_wh = 0;
+        med3_cum_energy_charge_wh=0;
         StandardMetrics.ms_v_charge_duration_full->SetValue(0);
         StandardMetrics.ms_v_charge_duration_soc->SetValue(0);
         StandardMetrics.ms_v_charge_duration_range->SetValue(0);
@@ -579,14 +595,16 @@ int OvmsVehicleMaxed3::calcMinutesRemaining(int toSoc, charging_profile charge_s
     return minutes;
 }
 
+
 // Calculate wh/km
 void OvmsVehicleMaxed3::calculateEfficiency()
     {
     float consumption = 0;
-        if (StdMetrics.ms_v_pos_speed->AsFloat() >= 5)
-            consumption = ABS(StdMetrics.ms_v_bat_power->AsFloat(0, Watts)) / StdMetrics.ms_v_pos_speed->AsFloat();
-        StdMetrics.ms_v_bat_consumption->SetValue((StdMetrics.ms_v_bat_consumption->AsFloat() * 29 + consumption) / 30);
-        consumpRange = ABS(StdMetrics.ms_v_bat_consumption->AsFloat());
+        if (StandardMetrics.ms_v_pos_speed->AsFloat() >= 5) //temp removed till speed found
+        //if (StandardMetrics.ms_v_env_on->AsBool()) //Temp till speed found
+            consumption = ABS(StdMetrics.ms_v_bat_power->AsFloat(0, Watts)) / StandardMetrics.ms_v_pos_speed->AsFloat();
+    StandardMetrics.ms_v_bat_consumption->SetValue((StandardMetrics.ms_v_bat_consumption->AsFloat() * 29 + consumption) / 30);
+        consumpRange = ABS(StandardMetrics.ms_v_bat_consumption->AsFloat());
         
     
     }

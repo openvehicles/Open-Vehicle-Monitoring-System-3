@@ -180,11 +180,11 @@ void OvmsVehicleMaxed3::GetDashboardConfig(DashboardConfig& cfg)
     "{ from: 100, to: 135, className: 'red-band' }]"
     "},{"
     // Voltage:
-    "min: 340, max: 460,"
+    "min: 300, max: 420,"
     "plotBands: ["
-    "{ from: 340, to: 380, className: 'red-band' },"
-    "{ from: 380, to: 420, className: 'yellow-band' },"
-    "{ from: 410, to: 460, className: 'green-band' }]"
+    "{ from: 300, to: 340, className: 'red-band' },"
+    "{ from: 340, to: 380, className: 'yellow-band' },"
+    "{ from: 380, to: 420, className: 'green-band' }]"
     "},{"
     // SOC:
     "min: 10, max: 100,"

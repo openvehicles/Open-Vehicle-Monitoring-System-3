@@ -60,6 +60,8 @@ class OvmsVehicleMaxed3 : public OvmsVehicle
     OvmsMetricInt *m_poll_state_metric; // Kept equal to m_poll_state for debugging purposes
     OvmsMetricFloat* m_soc_raw;
     OvmsMetricFloat* m_watt_hour_raw;
+    OvmsMetricFloat* m_consump_raw;
+    OvmsMetricFloat* m_consumprange_raw;
       
 
   protected:
@@ -69,22 +71,25 @@ class OvmsVehicleMaxed3 : public OvmsVehicle
   protected:
     void ConfigChanged(OvmsConfigParam* param) override;
     void PollerStateTicker();
-    void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
+      void Ticker1(uint32_t ticker);
+      void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
     void processEnergy();
-    float med3_cum_energy_charge_wh;
-
+    float consumpRange;
+    char m_vin[17];
+      
   private:
       void IncomingFrameCan1(CAN_frame_t* p_frame);
       void IncomingPollFrame(CAN_frame_t* frame);
       /// A temporary store for the VIN
-      char m_vin[17];
-      int calcMinutesRemaining(int target_soc, charging_profile charge_steps[]);
+     
+      int calcMinutesRemaining(int toSoc, charging_profile charge_steps[]);
+      float med3_cum_energy_charge_wh;
       bool soc_limit_reached;
       bool range_limit_reached;
       
       virtual void calculateEfficiency();
       
-      float consumpRange;
+      
 
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
