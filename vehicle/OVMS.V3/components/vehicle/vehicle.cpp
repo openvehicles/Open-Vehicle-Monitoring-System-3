@@ -985,19 +985,19 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStat(int verbosity, OvmsWrite
 
       int duration_full = StdMetrics.ms_v_charge_duration_full->AsInt();
       if (duration_full > 0)
-        writer->printf("Full: %d mins\n", duration_full);
+        writer->printf("Full: %d:%02dh\n", duration_full / 60, duration_full % 60);
 
       int duration_soc = StdMetrics.ms_v_charge_duration_soc->AsInt();
       if (duration_soc > 0)
-        writer->printf("%s: %d mins\n",
+        writer->printf("%s: %d:%02dh\n",
           (char*) StdMetrics.ms_v_charge_limit_soc->AsUnitString("SOC", Native, 0).c_str(),
-          duration_soc);
+          duration_soc / 60, duration_soc % 60);
 
       int duration_range = StdMetrics.ms_v_charge_duration_range->AsInt();
       if (duration_range > 0)
-        writer->printf("%s: %d mins\n",
+        writer->printf("%s: %d:%02dh\n",
           (char*) StdMetrics.ms_v_charge_limit_range->AsUnitString("Range", rangeUnit, 0).c_str(),
-          duration_range);
+          duration_range / 60, duration_range % 60);
       }
 
     // Energy sums:
