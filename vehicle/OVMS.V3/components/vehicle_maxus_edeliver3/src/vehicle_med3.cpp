@@ -207,9 +207,15 @@ void OvmsVehicleMaxed3::IncomingPollReply(canbus* bus, uint16_t type, uint16_t p
           StandardMetrics.ms_v_env_temp->SetValue(value1 / 10.0f);
           break;
       case vcuspeed:  // Possible speed 660 - value with 32 off set
-          StandardMetrics.ms_v_pos_speed->SetValue(628-(value2-32));
-          //StandardMetrics.ms_v_pos_speed->SetValue(660-(value2));
+      {
+          vanIsOn = StandardMetrics.ms_v_env_on->AsBool();
+          if (vanIsOn)
+          //StandardMetrics.ms_v_pos_speed->SetValue(628-(value2-32));
+          StandardMetrics.ms_v_pos_speed->SetValue(660-(value2));
           //StandardMetrics.ms_v_pos_speed->SetValue((100 - ((value2 - 512) * 100 / (640 - 512))) * 1.60934);
+          else
+              StandardMetrics.ms_v_pos_speed->SetValue(0);
+      }
           break;
       case vcupackvolts:  // Pack Voltage
           StandardMetrics.ms_v_bat_voltage->SetValue(value2 / 10.0f);
@@ -222,13 +228,14 @@ void OvmsVehicleMaxed3::IncomingPollReply(canbus* bus, uint16_t type, uint16_t p
           bool ccschargeon = value1;
           if (ccschargeon == true) // contains AC on bit
               StdMetrics.ms_v_charge_type->SetValue("ccs");
+          //StandardMetrics.ms_v_charge_inprogress->SetValue(true);
       }
           break;
       case bmsccsamps:
         {
             if (StandardMetrics.ms_v_charge_type->AsString() == "ccs")
                 StandardMetrics.ms_v_bat_current->SetValue((value2 / 10.0f) - ((value2 / 10.0f) * 2)); // converted to negative
-                StandardMetrics.ms_v_bat_power->SetValue(((value2 / 10.0f) * StandardMetrics.ms_v_bat_voltage->AsFloat()) / 1000.0f);
+            StandardMetrics.ms_v_bat_power->SetValue((((value2 / 10.0f) - ((value2 / 10.0f) * 2)) * StandardMetrics.ms_v_bat_voltage->AsFloat()) / 1000.0f);// converted to negtive
         }
           break;
       case bmsacchargeon:
@@ -237,6 +244,7 @@ void OvmsVehicleMaxed3::IncomingPollReply(canbus* bus, uint16_t type, uint16_t p
             bool acchargeon = value1;
             if (acchargeon == true) // contains AC on bit
                 StdMetrics.ms_v_charge_type->SetValue("type2");
+            //StandardMetrics.ms_v_charge_inprogress->SetValue(true);
         }
           break;
       case bmsacamps:
@@ -361,7 +369,7 @@ void OvmsVehicleMaxed3::Ticker1(uint32_t ticker)
 void OvmsVehicleMaxed3::PollerStateTicker()
 {
     bool charging12v = StandardMetrics.ms_v_env_charging12v->AsBool();
-    bool vanIsCharging = StandardMetrics.ms_v_charge_inprogress->AsBool();
+    vanIsCharging = StandardMetrics.ms_v_charge_inprogress->AsBool();
     StandardMetrics.ms_v_env_charging12v->SetValue(StandardMetrics.ms_v_bat_12v_voltage->AsFloat() >= 12.9);
     StandardMetrics.ms_v_charge_inprogress->SetValue(-StandardMetrics.ms_v_bat_power->AsFloat() >=  1.000f);
     m_poll_state_metric->SetValue(m_poll_state);
@@ -388,7 +396,7 @@ void OvmsVehicleMaxed3::PollerStateTicker()
             {
             StdMetrics.ms_v_door_chargeport->SetValue(true);
             StdMetrics.ms_v_charge_pilot->SetValue(true);
-            StdMetrics.ms_v_charge_inprogress->SetValue(true);
+            //StdMetrics.ms_v_charge_inprogress->SetValue(true);
             //StdMetrics.ms_v_charge_substate->SetValue("onrequest");
             StdMetrics.ms_v_charge_state->SetValue("charging");
             PollSetState(STATE_CHARGING);
@@ -397,7 +405,7 @@ void OvmsVehicleMaxed3::PollerStateTicker()
             {
             StdMetrics.ms_v_door_chargeport->SetValue(true);
             StdMetrics.ms_v_charge_pilot->SetValue(true);
-            StdMetrics.ms_v_charge_inprogress->SetValue(true);
+            //StdMetrics.ms_v_charge_inprogress->SetValue(true);
             StdMetrics.ms_v_charge_state->SetValue("charging");
             PollSetState(STATE_CHARGING);
             }

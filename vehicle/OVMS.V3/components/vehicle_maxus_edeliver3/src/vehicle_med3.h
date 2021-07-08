@@ -69,13 +69,13 @@ class OvmsVehicleMaxed3 : public OvmsVehicle
 
       
   protected:
-    void ConfigChanged(OvmsConfigParam* param) override;
-    void PollerStateTicker();
+      void ConfigChanged(OvmsConfigParam* param) override;
+      void PollerStateTicker();
       void Ticker1(uint32_t ticker);
       void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
-    void processEnergy();
-    float consumpRange;
-    char m_vin[17];
+      void processEnergy();
+      float consumpRange;
+      char m_vin[17];
       
   private:
       void IncomingFrameCan1(CAN_frame_t* p_frame);
@@ -86,6 +86,8 @@ class OvmsVehicleMaxed3 : public OvmsVehicle
       float med3_cum_energy_charge_wh;
       bool soc_limit_reached;
       bool range_limit_reached;
+      bool vanIsOn;
+      bool vanIsCharging;
       
       virtual void calculateEfficiency();
       
