@@ -53,10 +53,12 @@ OvmsVehicleToyotaRav4Ev::OvmsVehicleToyotaRav4Ev()
 
   m_v_bat_cool_in_temp = MyMetrics.InitFloat("xr4.v.b.t.cltin", SM_STALE_MIN, 0, Celcius);
   m_v_bat_cool_out_temp = MyMetrics.InitFloat("xr4.v.b.t.cltout", SM_STALE_MIN, 0, Celcius);
-  m_v_bat_cool_pump_1  = MyMetrics.InitInt("xr4.v.b.p.in", SM_STALE_HIGH, 0, Percentage);
-  m_v_bat_cool_pump_2  = MyMetrics.InitInt("xr4.v.b.p.out", SM_STALE_HIGH, 0, Percentage);
+  m_v_bat_cool_pump_1  = MyMetrics.InitInt("xr4.v.b.p.one", SM_STALE_HIGH, 0, Percentage);
+  m_v_bat_cool_pump_2  = MyMetrics.InitInt("xr4.v.b.p.two", SM_STALE_HIGH, 0, Percentage);
+  m_v_bat_energy_avail = MyMetrics.InitFloat("xr4.v.b.en.avail", SM_STALE_MIN, 0, kWh);
   m_v_mot_cool_in_temp = MyMetrics.InitFloat("xr4.v.m.t.cltin", SM_STALE_MIN, 0, Celcius);
-  m_v_mot_cool_out_temp = MyMetrics.InitFloat("xr4.v.m.t.cltout", SM_STALE_MIN, 0, Celcius);
+  // m_v_mot_cool_out_temp = MyMetrics.InitFloat("xr4.v.m.t.cltout", SM_STALE_MIN, 0, Celcius);
+  // it turns out this is value is not populated by the RAV4 Thermal Control ECU, it came from a Model S DBC
   m_v_mot_cool_pump = MyMetrics.InitInt("xr4.v.m.pump", SM_STALE_HIGH, 0, Percentage);
 
 /*
@@ -69,55 +71,24 @@ OvmsVehicleToyotaRav4Ev::OvmsVehicleToyotaRav4Ev()
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);  // Tesla Bus at vehicle rear
   RegisterCanBus(2,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);  // Toyota Bus under dash
 
-  BmsSetCellArrangementVoltage(96, 6);
+  BmsSetCellArrangementVoltage(92, 6);
   BmsSetCellArrangementTemperature(32, 2);
   BmsSetCellLimitsVoltage(1,4.9);
   BmsSetCellLimitsTemperature(-90,90);
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
   MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
-  MyWebServer.RegisterPage("/xr4/Cooling", "Cooling", WebCooling, PageMenu_Vehicle, PageAuth_Cookie);
 #endif
   }
 
 OvmsVehicleToyotaRav4Ev::~OvmsVehicleToyotaRav4Ev()
   {
-  ESP_LOGI(TAG, "Shutdown Tesla Model S vehicle module");
-  MyCommandApp.UnregisterCommand("xts");
+  ESP_LOGI(TAG, "Shutdown Toyota RAV4 EV vehicle module");
+  MyCommandApp.UnregisterCommand("xr4");
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
   MyWebServer.DeregisterPage("/bms/cellmon");
-  MyWebServer.DeregisterPage("/xr4/Cooling");
 #endif
   }
-
-// WebCooling: Display cooling data in vehicle web page
-void OvmsVehicleToyotaRav4Ev::WebCooling(PageEntry_t& p, PageContext_t& c)
-{
-  c.head(200);
-  c.panel_start("primary", "Toyota RAV4 EV Cooling System");
-//  c.form_start(p.uri);
-  c.fieldset_start("Temperatures");
-//  c.printf("<p>Battery Coolant Inlet: %.1f C</p>", m_v_bat_cool_in_temp->AsFloat());
-  c.printf("<p>Battery Coolant Inlet: %.1f C</p>", 23.5);
-//  c.printf("<p>Battery Coolant Outlet: %.1f C</p>", m_v_bat_cool_out_temp->AsFloat());
-  c.printf("<p>Battery Coolant Outlet: %.1f C</p>", 26.0);
-//  c.printf("<p>Motor Coolant Inlet: %.1f C</p>", m_v_mot_cool_in_temp->AsFloat());
-  c.printf("<p>Motor Coolant Inlet: %.1f C</p>", 23.5);
-//  c.printf("<p>Motor Coolant Outlet: %.1f C</p>", m_v_mot_cool_out_temp->AsFloat());
-  c.printf("<p>Motor Coolant Outlet: %.1f C</p>", 27.5);
-  c.fieldset_end();
-  c.fieldset_start("Pumps");
-//  c.printf("<p>Battery Coolant Pump 1: %d %%</p>", m_v_bat_cool_pump_1->AsInt());
-  c.printf("<p>Battery Coolant Pump 1: %d %%</p>", 30);
-//  c.printf("<p>Battery Coolant Pump 2: %d %%</p>", m_v_bat_cool_pump_2->AsInt());
-  c.printf("<p>Battery Coolant Pump 2: %d %%</p>", 30);
-//  c.printf("<p>Motor Coolant Pump: %d %%</p>", m_v_mot_cool_pump->AsInt());
-  c.printf("<p>Motor Coolant Pump: %d %%</p>", 36);
-  c.fieldset_end();
-//  c.form_end();
-  c.panel_end();
-  c.done();
-}
 
 void OvmsVehicleToyotaRav4Ev::Ticker1(uint32_t ticker)
   {
@@ -129,13 +100,19 @@ void OvmsVehicleToyotaRav4Ev::Ticker1(uint32_t ticker)
     }
   }
 
+void OvmsVehicleToyotaRav4Ev::Ticker60(uint32_t ticker)
+{
+  StandardMetrics.ms_v_bat_temp->SetValue(StandardMetrics.ms_v_bat_cell_temp->AsFloat());
+}
+
 // IncomingFrameCan1 (Tesla)
 void OvmsVehicleToyotaRav4Ev::IncomingFrameCan1(CAN_frame_t* p_frame)
   {
   
   uint8_t *d = p_frame->data.u8;
-  float Pack_V;
-  float Pack_A;
+  static float fPackVolts;
+  static float fPackAmps;
+  static uint16_t iPackAmps;
 
   switch (p_frame->MsgID)
     {
@@ -144,13 +121,16 @@ void OvmsVehicleToyotaRav4Ev::IncomingFrameCan1(CAN_frame_t* p_frame)
       // Don't update battery voltage too quickly (as it jumps around like crazy)
       if (StandardMetrics.ms_v_bat_voltage->Age() > 10)
       {
-        Pack_V = ((float)((int)d[1]<<8)+d[0])/100;
-        Pack_A = (float)(((int16_t)(((d[3]&0x7F)<<8)&d[2]))<<1)/20;
-        StandardMetrics.ms_v_bat_voltage->SetValue(Pack_V);
-        StandardMetrics.ms_v_bat_current->SetValue(-1.0f * Pack_A);
-        StandardMetrics.ms_v_bat_power->SetValue(Pack_V * -1.0f * Pack_A / 1000);
+        fPackVolts = ((float)((int)d[1]<<8)+d[0])/100;
+        iPackAmps = ((d[3]&0x3F)<<8) + d[2];
+        if (d[3] & 0x40) fPackAmps = -0.1 * float(iPackAmps - 16384);
+        else fPackAmps = -0.1 * float(iPackAmps);
+        StandardMetrics.ms_v_bat_voltage->SetValue(fPackVolts);
+        StandardMetrics.ms_v_bat_current->SetValue(fPackAmps);
+        StandardMetrics.ms_v_bat_power->SetValue(fPackVolts * fPackAmps / 1000);
       }
-//        StandardMetrics.ms_v_bat_temp->SetValue((float)((((int)d[7]&0x07)<<8)+d[6])/10);
+//      StandardMetrics.ms_v_bat_temp->SetValue((float)((((int)d[7]&0x07)<<8)+d[6])/10);
+      // This signal is from the Model S code. RAV4 EV is only 6 bytes in Frame 0x102, so it doesn't have this signal.
       break;
       }
     case 0x116: // Gear selector
@@ -186,6 +166,12 @@ void OvmsVehicleToyotaRav4Ev::IncomingFrameCan1(CAN_frame_t* p_frame)
         }
       break;
       }
+    case 0x210:
+      {
+        StandardMetrics.ms_v_charge_12v_current->SetValue(float(d[4]));
+        StandardMetrics.ms_v_charge_12v_voltage->SetValue(float(d[5])*0.1);
+        StandardMetrics.ms_v_charge_12v_power->SetValue(float(d[4])*float(d[5])*0.1);
+      }  
     case 0x222: // Charging related
       {
       m_charge_w = uint16_t(d[1]<<8)+d[0];
@@ -231,6 +217,7 @@ void OvmsVehicleToyotaRav4Ev::IncomingFrameCan1(CAN_frame_t* p_frame)
       //  StandardMetrics.ms_v_bat_soc->SetValue( (((int)d[1]>>2) + (((int)d[2] & 0x0f)<<6))/10 );
         // BMS_socMin 
         StandardMetrics.ms_v_bat_soc->SetValue( ((((int)d[1] & 0x03)<<8) + d[0])/10 );
+        m_v_bat_energy_avail->SetValue( float((((int)d[4]&0x0F)<<6)+((d[3]&0xFC)>>2))/10 );
       break;
       }
     case 0x306: // Temperatures
@@ -244,7 +231,7 @@ void OvmsVehicleToyotaRav4Ev::IncomingFrameCan1(CAN_frame_t* p_frame)
         m_v_bat_cool_in_temp->SetValue(float(((int)(d[1]&0x03)<<8)+d[0])*0.125f-40.0f);
         m_v_bat_cool_out_temp->SetValue(float(((int)(d[3]&0x03)<<8)+d[2])*0.125f-40.0f);
         m_v_mot_cool_in_temp->SetValue(float(((int)(d[5]&0x07)<<8)+d[4])*0.125f-40.0f);
-        m_v_mot_cool_out_temp->SetValue(float(((int)(d[7]&0x07)<<8)+d[6])*0.125f-40.0f);
+//        m_v_mot_cool_out_temp->SetValue(float(((int)(d[7]&0x07)<<8)+d[6])*0.125f-40.0f);
       break;
       }
     case 0x32A: // Coolant Pumps
@@ -322,5 +309,5 @@ OvmsVehicleToyotaRav4EvInit::OvmsVehicleToyotaRav4EvInit()
   {
   ESP_LOGI(TAG, "Registering Vehicle: Toyota RAV4 EV (9000)");
 
-  MyVehicleFactory.RegisterVehicle<OvmsVehicleToyotaRav4Ev>("TY","Toyota RAV4 EV");
+  MyVehicleFactory.RegisterVehicle<OvmsVehicleToyotaRav4Ev>("TYR4","Toyota RAV4 EV");
   }

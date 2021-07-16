@@ -49,10 +49,10 @@ class OvmsVehicleToyotaRav4Ev: public OvmsVehicle
     void IncomingFrameCan1(CAN_frame_t* p_frame);
     void IncomingFrameCan2(CAN_frame_t* p_frame);
     void IncomingFrameCan3(CAN_frame_t* p_frame);
-    static void WebCooling(PageEntry_t& p, PageContext_t& c);
 
   protected:
     virtual void Ticker1(uint32_t ticker);
+    virtual void Ticker60(uint32_t ticker);
     virtual void Notify12vCritical();
     virtual void Notify12vRecovered();
     virtual void NotifyBmsAlerts();
@@ -91,6 +91,7 @@ class OvmsVehicleToyotaRav4Ev: public OvmsVehicle
     OvmsMetricFloat *m_v_bat_cool_out_temp;
     OvmsMetricFloat *m_v_mot_cool_in_temp;
     OvmsMetricFloat *m_v_mot_cool_out_temp;
+    OvmsMetricFloat *m_v_bat_energy_avail;
     OvmsMetricInt *m_v_bat_cool_pump_1;
     OvmsMetricInt *m_v_bat_cool_pump_2;
     OvmsMetricInt *m_v_mot_cool_pump;
