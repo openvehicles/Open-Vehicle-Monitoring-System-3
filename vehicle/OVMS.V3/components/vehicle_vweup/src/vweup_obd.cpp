@@ -211,18 +211,23 @@ void OvmsVehicleVWeUp::OBDInit()
   // Init/reconfigure poller
   //
 
+  OvmsRecMutexLock lock(&m_poll_mutex);
+  obd_state_t previous_state = m_obd_state;
   m_obd_state = OBDS_Config;
 
-  PollSetPidList(m_can1, NULL);
-  PollSetThrottling(0);
-  PollSetResponseSeparationTime(1);
+  if (previous_state != OBDS_Pause)
+  {
+    PollSetPidList(m_can1, NULL);
+    PollSetThrottling(0);
+    PollSetResponseSeparationTime(1);
 
-  if (StandardMetrics.ms_v_charge_inprogress->AsBool())
-    PollSetState(VWEUP_CHARGING);
-  else if (StandardMetrics.ms_v_env_on->AsBool())
-    PollSetState(VWEUP_ON);
-  else
-    PollSetState(VWEUP_OFF);
+    if (StandardMetrics.ms_v_charge_inprogress->AsBool())
+      PollSetState(VWEUP_CHARGING);
+    else if (StandardMetrics.ms_v_env_on->AsBool())
+      PollSetState(VWEUP_ON);
+    else
+      PollSetState(VWEUP_OFF);
+  }
 
   m_poll_vector.clear();
 
@@ -331,17 +336,50 @@ void OvmsVehicleVWeUp::OBDInit()
   // Terminate poll list:
   m_poll_vector.push_back(POLL_LIST_END);
   ESP_LOGD(TAG, "Poll vector: size=%d cap=%d", m_poll_vector.size(), m_poll_vector.capacity());
-  PollSetPidList(m_can1, m_poll_vector.data());
 
-  m_obd_state = OBDS_Run;
+  if (previous_state == OBDS_Pause)
+  {
+    m_obd_state = OBDS_Pause;
+  }
+  else
+  {
+    PollSetPidList(m_can1, m_poll_vector.data());
+    m_obd_state = OBDS_Run;
+  }
 }
 
 
 void OvmsVehicleVWeUp::OBDDeInit()
 {
-  m_obd_state = OBDS_DeInit;
   ESP_LOGI(TAG, "Stopping connection: OBDII");
+  OvmsRecMutexLock lock(&m_poll_mutex);
+  m_obd_state = OBDS_DeInit;
   PollSetPidList(m_can1, NULL);
+  m_poll_vector.clear();
+}
+
+
+/**
+ * OBDSetState: set the OBD state, log the change
+ */
+bool OvmsVehicleVWeUp::OBDSetState(obd_state_t state)
+{
+  if (m_obd_state == OBDS_Run && state == OBDS_Pause)
+  {
+    ESP_LOGW(TAG, "OBDSetState: %s -> %s", GetOBDStateName(m_obd_state), GetOBDStateName(state));
+    OvmsRecMutexLock lock(&m_poll_mutex);
+    PollSetPidList(m_can1, NULL);
+    m_obd_state = OBDS_Pause;
+  }
+  else if (m_obd_state == OBDS_Pause && state == OBDS_Run)
+  {
+    ESP_LOGI(TAG, "OBDSetState: %s -> %s", GetOBDStateName(m_obd_state), GetOBDStateName(state));
+    OvmsRecMutexLock lock(&m_poll_mutex);
+    PollSetPidList(m_can1, m_poll_vector.data());
+    m_obd_state = OBDS_Run;
+  }
+
+  return m_obd_state == state;
 }
 
 
@@ -350,8 +388,7 @@ void OvmsVehicleVWeUp::OBDDeInit()
  */
 void OvmsVehicleVWeUp::PollSetState(uint8_t state)
 {
-  const char *statename[] = { "OFF", "AWAKE", "CHARGING", "ON" };
-  ESP_LOGI(TAG, "PollSetState: %s -> %s", statename[m_poll_state], statename[state]);
+  ESP_LOGI(TAG, "PollSetState: %s -> %s", GetPollStateName(m_poll_state), GetPollStateName(state));
   OvmsVehicle::PollSetState(state);
 }
 

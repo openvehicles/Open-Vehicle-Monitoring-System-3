@@ -29,7 +29,7 @@
 #include <string>
 static const char *TAG = "v-vweup";
 
-#define VERSION "0.16.1"
+#define VERSION "0.17.1"
 
 #include <stdio.h>
 #include <string>
@@ -108,6 +108,16 @@ OvmsVehicleVWeUp::OvmsVehicleVWeUp()
   // init configs:
   MyConfig.RegisterParam("xvu", "VW e-Up", true, true);
 
+  // Init commands:
+  OvmsCommand *cmd;
+  cmd_xvu = MyCommandApp.RegisterCommand("xvu", "VW e-Up");
+
+  cmd = cmd_xvu->RegisterCommand("polling", "OBD2 poller control");
+  cmd->RegisterCommand("status", "Get current polling status", ShellPollControl);
+  cmd->RegisterCommand("pause", "Pause polling if running", ShellPollControl);
+  cmd->RegisterCommand("continue", "Continue polling if paused", ShellPollControl);
+
+  // Load initial config:
   ConfigChanged(NULL);
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
