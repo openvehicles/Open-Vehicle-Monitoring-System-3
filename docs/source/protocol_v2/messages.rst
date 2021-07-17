@@ -398,6 +398,8 @@ This message is sent <cartoserver> "C", or <servertoapp> "s", and transmits the 
 * Battery SOH (state of health) (%)
 * Charge power input (kW)
 * Charger efficiency (%)
+* Battery current (A)
+* Battery ideal range gain/loss speed (mph/kph, gain=positive)
 
 --------------------------------
 Car update time message 0x53 "T"
@@ -531,9 +533,9 @@ Batch client connections do not trigger any peer count change for the car, but t
 
 * Number of peers connected, expressed as a decimal string
 
------------------------------
+---------------------------------
 Car export power message 0x47 "G"
------------------------------
+---------------------------------
 
 This message is sent <cartoserver> "C", or <servertoapp> "s" and transmits "v.g" metrics from the vehicle.
 

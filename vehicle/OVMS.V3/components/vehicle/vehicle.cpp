@@ -976,13 +976,27 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStat(int verbosity, OvmsWrite
 
     if (show_details)
       {
-      if (StdMetrics.ms_v_charge_voltage->AsFloat() > 0 || StdMetrics.ms_v_charge_current->AsFloat() > 0)
+      // Voltage & current:
+      bool show_vc = (StdMetrics.ms_v_charge_voltage->AsFloat() > 0 || StdMetrics.ms_v_charge_current->AsFloat() > 0);
+      if (show_vc)
         {
-        writer->printf("%s/%s\n",
+        writer->printf("%s/%s ",
           (char*) StdMetrics.ms_v_charge_voltage->AsUnitString("-", Native, 1).c_str(),
           (char*) StdMetrics.ms_v_charge_current->AsUnitString("-", Native, 1).c_str());
         }
 
+      // Charge speed:
+      if (StdMetrics.ms_v_bat_range_speed->AsFloat() != 0)
+        {
+        metric_unit_t speedUnit = (rangeUnit == Miles) ? Mph : Kph;
+        writer->printf("%s\n", StdMetrics.ms_v_bat_range_speed->AsUnitString("-", speedUnit, 1).c_str());
+        }
+      else if (show_vc)
+        {
+        writer->puts("");
+        }
+
+      // Estimated time(s) remaining:
       int duration_full = StdMetrics.ms_v_charge_duration_full->AsInt();
       if (duration_full > 0)
         writer->printf("Full: %d:%02dh\n", duration_full / 60, duration_full % 60);
@@ -1313,6 +1327,11 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
     else
       m_batpwr_smoothed = metric->AsFloat();
     }
+  else if (metric == StdMetrics.ms_v_bat_current || metric == StdMetrics.ms_v_bat_cac ||
+      metric == StdMetrics.ms_v_bat_range_full)
+    {
+    CalculateRangeSpeed();
+    }
   }
 
 /**
@@ -1421,6 +1440,22 @@ bool OvmsVehicle::SetBrakelight(int on)
   ESP_LOGE(TAG, "SetBrakelight: OVMS_COMP_MAX7317 missing");
   return false;
 #endif // CONFIG_OVMS_COMP_MAX7317
+  }
+
+/**
+ * CalculateRangeSpeed: derive momentary charge gain/loss speed (range charged/discharged per hour)
+ */
+void OvmsVehicle::CalculateRangeSpeed()
+  {
+  float
+    bat_current = StdMetrics.ms_v_bat_current->AsFloat(),
+    bat_capacity = StdMetrics.ms_v_bat_cac->AsFloat(),
+    range_full = StdMetrics.ms_v_bat_range_full->AsFloat();
+
+  if (bat_capacity > 0 && range_full > 0)
+    {
+    *StdMetrics.ms_v_bat_range_speed = TRUNCPREC(-bat_current / bat_capacity * range_full, 1);
+    }
   }
 
 void OvmsVehicle::NotifyChargeState()

@@ -340,6 +340,9 @@ class OvmsVehicle : public InternalRamAllocated
     virtual bool SetBrakelight(int on);     // … hardware control method (override for non MAX7317 control)
 
   protected:
+    virtual void CalculateRangeSpeed();     // Derive momentary range gain/loss speed in kph
+
+  protected:
     uint32_t m_ticker;
     int m_12v_ticker;
     int m_chargestate_ticker;
