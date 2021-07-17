@@ -86,6 +86,7 @@ typedef enum {
   OBDS_DeInit,
   OBDS_Config,
   OBDS_Run,
+  OBDS_Pause,
 } obd_state_t;
 
 typedef enum {
@@ -296,7 +297,16 @@ protected:
   void OBDDeInit();
 
 protected:
+  bool OBDSetState(obd_state_t state);
+  static const char *GetOBDStateName(obd_state_t state) {
+    const char *statename[] = { "INIT", "DEINIT", "CONFIG", "RUN", "PAUSE" };
+    return statename[state];
+  }
   void PollSetState(uint8_t state);
+  static const char *GetPollStateName(uint8_t state) {
+    const char *statename[4] = { "OFF", "AWAKE", "CHARGING", "ON" };
+    return statename[state];
+  }
   void PollerStateTicker();
   void IncomingPollReply(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length, uint16_t mlremain);
 
@@ -304,6 +314,9 @@ protected:
   void UpdateChargePower(float power_kw);
   void UpdateChargeCap(bool charging);
   void UpdateChargeParams();
+
+public:
+  static void ShellPollControl(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 
 protected:
   OvmsMetricFloat *MotElecSoCAbs;                 // Absolute SoC of main battery from motor electrics ECU

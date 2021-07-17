@@ -325,6 +325,21 @@ notify.charge.start.delay           24                  Charge start notificatio
   reduce the value.
 
 
+--------------
+Shell Commands
+--------------
+
+- ``xvu polling <status|pause|continue>`` -- control OBD2 polling
+  
+  The OBD2 polling is normally continuously active as long as the vehicle module is loaded.
+  To free the CAN bus from this load during an extended OBD2 diagnostics or modification
+  (coding / adaptation) session, you can temporarily pause the polling using this command.
+  
+  There is no time limit for a pause, keep in mind you need to explicitly continue the
+  polling when you're done. During a polling pause, no vehicle state changes can be detected.
+
+
+
 -----------------------------
 Custom Status Page for Web UI
 -----------------------------
