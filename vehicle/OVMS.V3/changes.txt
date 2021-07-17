@@ -79,6 +79,10 @@ Open Vehicle Monitor System v3 - Change log
     echo [<text>] […] -- output text
     sleep <seconds> -- pause script execution
 - Scripting API: added OvmsVehicle.ObdRequest()
+- Vehicle: provide momentary ideal range gain/loss speed as a metric,
+    add charge speed to "stat" output, output "stat" charge ETRs in hh:mm format
+  New metric:
+    v.b.range.speed                -- Momentary ideal range gain/loss (charge/discharge) speed [kph]
 
 2021-03-05 MB  3.2.016  OTA release
 - VW e-Up: CCS (DC) charge detection & data
