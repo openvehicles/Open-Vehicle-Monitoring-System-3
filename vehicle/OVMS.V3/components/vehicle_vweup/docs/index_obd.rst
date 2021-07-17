@@ -284,6 +284,47 @@ as well.
 **Thanks!**
 
 
+-----------------------
+Configuration Variables
+-----------------------
+
+The main configuration variables can be set through the web configuration page:
+
+- VW e-Up → Features
+
+Some configuration variables are kept "under the hood", as these will normally not need to be
+changed, except for some special use cases or for development / debugging.
+
+Configuration variables can be listed using command ``config list xvu`` and changed using
+command ``config set xvu <variable> <value>``.
+
+
+=================================== =================== ========================================================
+Configuration variable              Default value       Description                                           
+=================================== =================== ========================================================
+bat.soh.source                      charge              SOH source -- see above
+bms.autoreset                       no                  Reset BMS statistics on use phase transitions
+canwrite                            no                  Allow CAN write access
+cell_interval_awk                   60                  BMS cell query interval in awake state [s]
+cell_interval_chg                   60                  BMS cell query interval in charge state [s]
+cell_interval_drv                   15                  BMS cell query interval in drive state [s]
+con_obd                             yes                 Enable OBDII connection
+con_t26                             yes                 Enable T26 connection
+ctp.maxpower                        0                   Charge time prediction: fallback power limit [kW] (0=none)
+ctp.soclimit                        80                  Charge time prediction: fallback SOC limit [%]
+dc_interval                         0                   Development: additional DC charge PID query interval [s] (0=off)
+log.chargecap.cpstep                24                  Charge capacity: checkpoint interval [1/10%]
+log.chargecap.minvalid              272                 Charge capacity: min SOC hub for SOH change [1/10%]
+log.chargecap.storetime             0                   Charge capacity: server log archive time [days] (0=off)
+modelyear                           2012                Vehicle model year
+notify.charge.start.delay           24                  Charge start notification delay [s] [5]_
+=================================== =================== ========================================================
+
+.. [5] Charge start needs some time to ramp up the charge current, which implies charge
+  speed & time estimations. If you want the start notification as fast as possible,
+  reduce the value.
+
+
 -----------------------------
 Custom Status Page for Web UI
 -----------------------------
