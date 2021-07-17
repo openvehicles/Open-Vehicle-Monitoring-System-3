@@ -71,6 +71,9 @@ Open Vehicle Monitor System v3 - Change log
   New configs:
     [xvu] ctp.maxpower             -- in kW, 0 = unlimited except by car, used when not charging
     [xvu] ctp.soclimit             -- in %, used as informative limit w/o OBD connection
+- VW e-Up/OBD: charge start notification delay configuration to accomodate current ramp-up
+  New configs:
+    [xvu] notify.charge.start.delay       -- in seconds, default 24
 - New vehicle: Hyundai Ioniq vFL (HIONVFL)
   https://docs.openvehicles.com/en/latest/components/vehicle_hyundai_ioniqvfl/docs/index.html
 - Webserver: support TLS (https, wss) using self-signed certificates

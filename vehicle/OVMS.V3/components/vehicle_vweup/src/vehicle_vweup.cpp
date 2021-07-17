@@ -398,7 +398,18 @@ void OvmsVehicleVWeUp::Ticker60(uint32_t ticker)
  */
 int OvmsVehicleVWeUp::GetNotifyChargeStateDelay(const char *state)
 {
-  return 3;
+  if (strcmp(state, "charging") == 0) {
+    // On charge start, we need to delay the notification by 24 seconds to get the first
+    // stable battery current (→ charge durations & speed) reading after ramp up.
+    // Including the 6 second state change delay, this means the notification
+    // will be sent 30 seconds after the charge start.
+    // In case a user is interested in getting the notification as fast as possible,
+    // we provide a configuration option.
+    return MyConfig.GetParamValueInt("xvu", "notify.charge.start.delay", 24);
+  }
+  else {
+    return 3;
+  }
 }
 
 
