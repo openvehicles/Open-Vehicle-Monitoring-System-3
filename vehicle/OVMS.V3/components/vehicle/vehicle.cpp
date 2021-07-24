@@ -243,9 +243,15 @@ OvmsVehicle::OvmsVehicle()
   m_can3 = NULL;
   m_can4 = NULL;
 
+  m_last_chargetime = 0;
+  m_last_drivetime = 0;
+  m_last_gentime = 0;
+  m_last_parktime = 0;
+
   m_ticker = 0;
   m_12v_ticker = 0;
   m_chargestate_ticker = 0;
+  m_vehicleon_ticker = 0;
   m_vehicleoff_ticker = 0;
   m_idle_ticker = 0;
   m_registeredlistener = false;
@@ -555,26 +561,40 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
   if (StandardMetrics.ms_v_env_on->AsBool())
     {
     StandardMetrics.ms_v_env_parktime->SetValue(0);
-    StandardMetrics.ms_v_env_drivetime->SetValue(StandardMetrics.ms_v_env_drivetime->AsInt() + 1);
+    m_last_drivetime = StandardMetrics.ms_v_env_drivetime->AsInt() + 1;
+    StandardMetrics.ms_v_env_drivetime->SetValue(m_last_drivetime);
     }
   else
     {
     StandardMetrics.ms_v_env_drivetime->SetValue(0);
-    StandardMetrics.ms_v_env_parktime->SetValue(StandardMetrics.ms_v_env_parktime->AsInt() + 1);
+    m_last_parktime = StandardMetrics.ms_v_env_parktime->AsInt() + 1;
+    StandardMetrics.ms_v_env_parktime->SetValue(m_last_parktime);
     }
 
   if (StandardMetrics.ms_v_charge_inprogress->AsBool())
-    StandardMetrics.ms_v_charge_time->SetValue(StandardMetrics.ms_v_charge_time->AsInt() + 1);
+    {
+    m_last_chargetime = StandardMetrics.ms_v_charge_time->AsInt() + 1;
+    StandardMetrics.ms_v_charge_time->SetValue(m_last_chargetime);
+    }
   else
+    {
     StandardMetrics.ms_v_charge_time->SetValue(0);
+    }
   
   if (StandardMetrics.ms_v_gen_inprogress->AsBool())
-    StandardMetrics.ms_v_gen_time->SetValue(StandardMetrics.ms_v_gen_time->AsInt() + 1);
+    {
+    m_last_gentime = StandardMetrics.ms_v_gen_time->AsInt() + 1;
+    StandardMetrics.ms_v_gen_time->SetValue(m_last_gentime);
+    }
   else
+    {
     StandardMetrics.ms_v_gen_time->SetValue(0);
+    }
 
   if (m_chargestate_ticker > 0 && --m_chargestate_ticker == 0)
     NotifyChargeState();
+  if (m_vehicleon_ticker > 0 && --m_vehicleon_ticker == 0)
+    NotifyVehicleOn();
   if (m_vehicleoff_ticker > 0 && --m_vehicleoff_ticker == 0)
     NotifyVehicleOff();
 
@@ -1099,7 +1119,12 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
     if (StandardMetrics.ms_v_env_on->AsBool())
       {
       MyEvents.SignalEvent("vehicle.on",NULL);
-      NotifiedVehicleOn();
+      if (m_autonotifications)
+        {
+        m_vehicleon_ticker = GetNotifyVehicleStateDelay("on");
+        if (m_vehicleon_ticker == 0)
+          NotifyVehicleOn();
+        }
       }
     else
       {
@@ -1529,15 +1554,19 @@ void OvmsVehicle::NotifyGridLog()
     << "," << StdMetrics.ms_v_gen_limit_range->AsFloat()
     << "," << StdMetrics.ms_v_gen_limit_soc->AsFloat()
 
-    << "," << StdMetrics.ms_v_charge_time->AsInt()
+    << std::setprecision(3)
+
+    << "," << m_last_chargetime
     << "," << StdMetrics.ms_v_charge_kwh->AsFloat()
     << "," << StdMetrics.ms_v_charge_kwh_grid->AsFloat()
     << "," << StdMetrics.ms_v_charge_kwh_grid_total->AsFloat()
 
-    << "," << StdMetrics.ms_v_gen_time->AsInt()
+    << "," << m_last_gentime
     << "," << StdMetrics.ms_v_gen_kwh->AsFloat()
     << "," << StdMetrics.ms_v_gen_kwh_grid->AsFloat()
     << "," << StdMetrics.ms_v_gen_kwh_grid_total->AsFloat()
+
+    << std::setprecision(1)
 
     << "," << StdMetrics.ms_v_bat_soc->AsFloat()
     << "," << StdMetrics.ms_v_bat_range_est->AsFloat()
@@ -1552,6 +1581,8 @@ void OvmsVehicle::NotifyGridLog()
     << "," << StdMetrics.ms_v_env_temp->AsFloat()
     << "," << StdMetrics.ms_v_env_cabintemp->AsFloat()
 
+    << std::setprecision(3)
+
     << "," << StdMetrics.ms_v_bat_soh->AsFloat()
     << "," << mp_encode(StdMetrics.ms_v_bat_health->AsString())
     << "," << StdMetrics.ms_v_bat_cac->AsFloat()
@@ -1563,6 +1594,12 @@ void OvmsVehicle::NotifyGridLog()
     ;
 
   MyNotify.NotifyString("data", "log.grid", buf.str().c_str());
+  }
+
+void OvmsVehicle::NotifyVehicleOn()
+  {
+  NotifyTripLog();
+  NotifiedVehicleOn();
   }
 
 void OvmsVehicle::NotifyVehicleOff()
@@ -1608,13 +1645,15 @@ void OvmsVehicle::NotifyTripLog()
     << "," << StdMetrics.ms_v_pos_odometer->AsFloat()
 
     << "," << StdMetrics.ms_v_pos_trip->AsFloat()
-    << "," << StdMetrics.ms_v_env_drivetime->AsInt()
+    << "," << m_last_drivetime
     << "," << StdMetrics.ms_v_env_drivemode->AsInt()
 
     << "," << StdMetrics.ms_v_bat_soc->AsFloat()
     << "," << StdMetrics.ms_v_bat_range_est->AsFloat()
     << "," << StdMetrics.ms_v_bat_range_ideal->AsFloat()
     << "," << StdMetrics.ms_v_bat_range_full->AsFloat()
+
+    << std::setprecision(3)
 
     << "," << StdMetrics.ms_v_bat_energy_used->AsFloat()
     << "," << StdMetrics.ms_v_bat_energy_recd->AsFloat()
@@ -1629,6 +1668,8 @@ void OvmsVehicle::NotifyTripLog()
     << "," << StdMetrics.ms_v_bat_energy_recd_total->AsFloat()
     << "," << StdMetrics.ms_v_bat_coulomb_used_total->AsFloat()
     << "," << StdMetrics.ms_v_bat_coulomb_recd_total->AsFloat()
+
+    << std::setprecision(1)
 
     << "," << StdMetrics.ms_v_env_temp->AsFloat()
     << "," << StdMetrics.ms_v_env_cabintemp->AsFloat()
