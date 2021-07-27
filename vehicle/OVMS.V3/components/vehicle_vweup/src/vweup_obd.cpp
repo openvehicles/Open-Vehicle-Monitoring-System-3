@@ -78,7 +78,7 @@ const OvmsVehicle::poll_pid_t vweup_polls[] = {
   {VWUP_CHG,      UDS_READ, VWUP_CHG_POWER_EFF,             {  0,  0, 10,  0}, 1, ISOTP_STD},
   {VWUP_CHG,      UDS_READ, VWUP_CHG_POWER_LOSS,            {  0,  0, 10,  0}, 1, ISOTP_STD},
 
-  {VWUP_MFD,      UDS_READ, VWUP_MFD_ODOMETER,              {  0,  0,  0, 60}, 1, ISOTP_STD},
+  {VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_ODOMETER,         {  0,999,  0, 15}, 1, ISOTP_STD},
   {VWUP_MFD,      UDS_READ, VWUP_MFD_RANGE_CAP,             {  0,  0,  0, 60}, 1, ISOTP_STD},
 
   {VWUP_MFD,      UDS_READ, VWUP_MFD_SERV_RANGE,            {  0,  0,  0, 60}, 1, ISOTP_STD},
@@ -1110,15 +1110,14 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
         VALUE_LOG(TAG, "VWUP_MOT_ELEC_POWER_MOT=%f => %f", value, StdMetrics.ms_v_inv_power->AsFloat());
       }
       break;
-    case VWUP_MFD_ODOMETER:
-      if (PollReply.FromUint16("VWUP_MFD_ODOMETER", value)) {
-        float odo = value * 10.0f;
-        StdMetrics.ms_v_pos_odometer->SetValue(odo);
+    case VWUP_BAT_MGMT_ODOMETER:
+      if (PollReply.FromUint24("VWUP_BAT_MGMT_ODOMETER", value, 1)) {
+        StdMetrics.ms_v_pos_odometer->SetValue(value);
         // Set trip reference / difference:
         if (m_odo_start <= 0)
-          m_odo_start = odo;
-        StdMetrics.ms_v_pos_trip->SetValue(odo - m_odo_start);
-        VALUE_LOG(TAG, "VWUP_MFD_ODOMETER=%f => %f", value, odo);
+          m_odo_start = value;
+        StdMetrics.ms_v_pos_trip->SetValue(value - m_odo_start);
+        VALUE_LOG(TAG, "VWUP_BAT_MGMT_ODOMETER=%f", value);
       }
       break;
 

@@ -145,6 +145,7 @@ using namespace std;
 #define VWUP_BAT_MGMT_U                 0x1E3B
 #define VWUP_BAT_MGMT_I                 0x1E3D
 #define VWUP_BAT_MGMT_SOC_ABS           0x028C
+#define VWUP_BAT_MGMT_ODOMETER          0x02BD
 #define VWUP_BAT_MGMT_ENERGY_COUNTERS   0x1E32
 #define VWUP_BAT_MGMT_CELL_MAX          0x1E33    // max battery voltage
 #define VWUP_BAT_MGMT_CELL_MIN          0x1E34    // min battery voltage
