@@ -1111,7 +1111,7 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
       }
       break;
     case VWUP_BAT_MGMT_ODOMETER:
-      if (PollReply.FromUint24("VWUP_BAT_MGMT_ODOMETER", value, 1)) {
+      if (PollReply.FromUint24("VWUP_BAT_MGMT_ODOMETER", value, 1) && value < 10000000) {
         StdMetrics.ms_v_pos_odometer->SetValue(value);
         // Set trip reference / difference:
         if (m_odo_start <= 0)
