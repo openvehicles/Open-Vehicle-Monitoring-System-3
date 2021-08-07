@@ -120,6 +120,7 @@ public:
 
 protected:
   void Ticker1(uint32_t ticker);
+  void Ticker10(uint32_t ticker);
   void Ticker60(uint32_t ticker);
 
 public:

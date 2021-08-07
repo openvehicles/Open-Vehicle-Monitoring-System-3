@@ -29,7 +29,7 @@
 #include <string>
 static const char *TAG = "v-vweup";
 
-#define VERSION "0.17.3"
+#define VERSION "0.18.1"
 
 #include <stdio.h>
 #include <string>
@@ -391,6 +391,44 @@ void OvmsVehicleVWeUp::Ticker1(uint32_t ticker)
 {
   if (HasT26()) {
     T26Ticker1(ticker);
+  }
+}
+
+
+void OvmsVehicleVWeUp::Ticker10(uint32_t ticker)
+{
+  // Send SOC monitoring log?
+  if (!IsOff())
+  {
+    static float last_soc = -1;
+    int storetime_days = MyConfig.GetParamValueInt("xvu", "log.socmon.storetime", 0);
+    if (storetime_days > 0 && (IsOn() || StdMetrics.ms_v_bat_soc->AsFloat() != last_soc))
+    {
+      MyNotify.NotifyStringf("data", "xvu.log.socmon",
+        "XVU-LOG-SOCMon,2,%d,%.1f,%d,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.5f,%.5f",
+        storetime_days * 86400,
+        StdMetrics.ms_v_bat_temp->AsFloat(),
+        IsCharging(),
+        IsOBDReady() ? BatMgmtSoCAbs->AsFloat() : 0,
+        IsOBDReady() ? MotElecSoCAbs->AsFloat() : 0,
+        IsOBDReady() ? ChgMgmtSoCNorm->AsFloat() : 0,
+        IsOBDReady() ? MotElecSoCNorm->AsFloat() : 0,
+        StdMetrics.ms_v_bat_soc->AsFloat(),
+        StdMetrics.ms_v_bat_voltage->AsFloat(),
+        StdMetrics.ms_v_bat_current->AsFloat(),
+        StdMetrics.ms_v_bat_soh->AsFloat(),
+        StdMetrics.ms_v_bat_cac->AsFloat(),
+        StdMetrics.ms_v_bat_energy_used_total->AsFloat(),
+        StdMetrics.ms_v_bat_energy_recd_total->AsFloat(),
+        StdMetrics.ms_v_bat_coulomb_used_total->AsFloat(),
+        StdMetrics.ms_v_bat_coulomb_recd_total->AsFloat(),
+        StdMetrics.ms_v_bat_pack_vavg->AsFloat(),
+        StdMetrics.ms_v_bat_pack_vmin->AsFloat(),
+        StdMetrics.ms_v_bat_pack_vmax->AsFloat(),
+        StdMetrics.ms_v_bat_pack_vstddev->AsFloat(),
+        StdMetrics.ms_v_bat_pack_vgrad->AsFloat());
+      last_soc = StdMetrics.ms_v_bat_soc->AsFloat();
+    }
   }
 }
 

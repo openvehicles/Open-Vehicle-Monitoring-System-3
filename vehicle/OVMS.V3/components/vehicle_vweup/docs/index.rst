@@ -392,3 +392,53 @@ Example Code for Web Plugin with some custom metrics:
     </div>
    </div>
   </div>
+
+
+----------------
+Custom Data Logs
+----------------
+
+^^^^^^^^^^^^^^^^^^
+SOC Monitoring Log
+^^^^^^^^^^^^^^^^^^
+
+The SOC monitoring log provides detailed data about the correlations
+and connections between the various SOCs, voltage level & energy/coulomb
+charge/discharge amounts.
+
+You need to enable this log explicitly by configuring a storage time via
+config param ``xvu log.socmon.storetime`` (in days). Set to 0/empty to
+disable the log. Already stored log entries will be kept on the server 
+until expiry or manual deletion.
+
+Log entries are created on SOC changes while charging and every 10 seconds
+while driving.
+
+  - Notification subtype: ``xvu.log.socmon``
+  - History record type: ``XVU-LOG-SOCMon``
+  - Format: CSV
+  - Archive time: config ``xvu log.socmon.storetime`` (days, 0=off)
+  - Fields/columns:
+
+    * temp
+    * charging
+    * soc_abs_bms
+    * soc_abs_eng
+    * soc_norm_cmg
+    * soc_norm_eng
+    * soc_norm
+    * voltage
+    * current
+    * soh
+    * cac
+    * energy_used
+    * energy_recd
+    * coulomb_used
+    * coulomb_recd
+    * pack_vavg
+    * pack_vmin
+    * pack_vmax
+    * pack_vstddev
+    * pack_vgrad
+
+
