@@ -65,7 +65,7 @@ const OvmsVehicle::poll_pid_t vweup_polls[] = {
   {VWUP_MOT_ELEC, UDS_READ, VWUP_MOT_ELEC_SOC_NORM,         {  0,  0,  0, 20}, 1, ISOTP_STD},
   {VWUP_MOT_ELEC, UDS_READ, VWUP_MOT_ELEC_SOC_ABS,          {  0,  0,  0, 20}, 1, ISOTP_STD},
   {VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_SOC_ABS,          {  0, 20, 20, 20}, 1, ISOTP_STD},
-  {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_SOC_NORM,         {  0, 20, 20,  0}, 1, ISOTP_STD},
+  {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_SOC_NORM,         {  0, 20, 20, 20}, 1, ISOTP_STD},
   {VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_ENERGY_COUNTERS,  {  0, 20, 20, 20}, 1, ISOTP_STD},
   // Energy counters need to be polled directly after the SOCs and at the same interval
 
@@ -702,12 +702,15 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
     case VWUP_MOT_ELEC_SOC_NORM:
       // Gets updates while driving
       if (PollReply.FromUint16("VWUP_MOT_ELEC_SOC_NORM", value)) {
-        StdMetrics.ms_v_bat_soc->SetValue(value / 100.0f);
-        MotElecSoCNorm->SetValue(value / 100.0f);
-        VALUE_LOG(TAG, "VWUP_MOT_ELEC_SOC_NORM=%f => %f", value, StdMetrics.ms_v_bat_soc->AsFloat());
-        // Update range:
-        StandardMetrics.ms_v_bat_range_ideal->SetValue(
-          StdMetrics.ms_v_bat_range_full->AsFloat() * (StdMetrics.ms_v_bat_soc->AsFloat() / 100));
+        float soc = value / 100;
+        VALUE_LOG(TAG, "VWUP_MOT_ELEC_SOC_NORM=%f => %f", value, soc);
+        MotElecSoCNorm->SetValue(soc);
+        if (IsOn()) {
+          StdMetrics.ms_v_bat_soc->SetValue(soc);
+          // Update range:
+          StandardMetrics.ms_v_bat_range_ideal->SetValue(
+            StdMetrics.ms_v_bat_range_full->AsFloat() * (soc / 100));
+        }
       }
       break;
 
@@ -715,15 +718,17 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
       // Gets updates while charging
       if (PollReply.FromUint8("VWUP_CHG_MGMT_SOC_NORM", value)) {
         float soc = value / 2.0f;
-        StdMetrics.ms_v_bat_soc->SetValue(soc);
-        ChgMgmtSoCNorm->SetValue(soc);
         VALUE_LOG(TAG, "VWUP_CHG_MGMT_SOC_NORM=%f => %f", value, soc);
-        // Update range:
-        StdMetrics.ms_v_bat_range_ideal->SetValue(
-          StdMetrics.ms_v_bat_range_full->AsFloat() * (soc / 100));
-        if (HasNoT26()) {
-          // Calculate estimated range from last known factor:
-          StdMetrics.ms_v_bat_range_est->SetValue(soc * m_range_est_factor);
+        ChgMgmtSoCNorm->SetValue(soc);
+        if (!IsOn()) {
+          StdMetrics.ms_v_bat_soc->SetValue(soc);
+          // Update range:
+          StdMetrics.ms_v_bat_range_ideal->SetValue(
+            StdMetrics.ms_v_bat_range_full->AsFloat() * (soc / 100));
+          if (HasNoT26()) {
+            // Calculate estimated range from last known factor:
+            StdMetrics.ms_v_bat_range_est->SetValue(soc * m_range_est_factor);
+          }
         }
       }
       break;
