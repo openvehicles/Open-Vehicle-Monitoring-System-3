@@ -727,7 +727,7 @@ void OvmsVehicleVWeUp::UpdateChargeTimes()
   from_soc = StdMetrics.ms_v_bat_soc->AsInt();
   to_soc = soc_limit;
 
-  if (IsCharging() && m_chg_ctp_car >= 0) {
+  if (IsCharging() && m_chg_ctp_car >= 0 && m_chg_ctp_car < 630) {
     if (timermode && soc_limit > 0 && soc_limit < 100) {
       *StdMetrics.ms_v_charge_duration_soc = m_chg_ctp_car;
       *StdMetrics.ms_v_charge_duration_full = CalcChargeTime(capacity, max_pwr, from_soc, 100);
