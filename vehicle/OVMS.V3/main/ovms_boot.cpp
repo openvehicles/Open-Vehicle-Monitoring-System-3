@@ -205,6 +205,7 @@ Boot::Boot()
 
   m_restart_timer = 0;
   m_restart_pending = 0;
+  m_shutting_down = false;
 
   m_resetreason = esp_reset_reason(); // Note: necessary to link reset_reason module
 
@@ -340,6 +341,7 @@ void Boot::Restart(bool hard)
 
   ESP_LOGI(TAG,"Shutting down for restart...");
   OvmsMutexLock lock(&m_restart_mutex);
+  m_shutting_down = true;
   m_restart_pending = 0;
   m_restart_timer = 60; // Give them 60 seconds to shutdown
   MyEvents.SignalEvent("system.shuttingdown", NULL, boot_shuttingdown_done);
@@ -354,12 +356,14 @@ void Boot::RestartPending(const char* tag)
   {
   OvmsMutexLock lock(&m_restart_mutex);
   m_restart_pending++;
+  ESP_LOGW(TAG, "Restart: %s pending, %d total", tag, m_restart_pending);
   }
 
 void Boot::RestartReady(const char* tag)
   {
   OvmsMutexLock lock(&m_restart_mutex);
   m_restart_pending--;
+  ESP_LOGI(TAG, "Restart: %s ready, %d pending", tag, m_restart_pending);
   if (m_restart_pending == 0)
     m_restart_timer = 2;
   }
@@ -386,7 +390,7 @@ void Boot::Ticker1(std::string event, void* data)
 
 bool Boot::IsShuttingDown()
   {
-  return (m_restart_timer > 0);
+  return m_shutting_down;
   }
 
 void Boot::ErrorCallback(XtExcFrame *frame, int core_id, bool is_abort)
