@@ -48,6 +48,7 @@ static const char *TAG = "script";
 #include "buffered_shell.h"
 #include "ovms_netmanager.h"
 #include "ovms_tls.h"
+#include "ovms_boot.h"
 
 OvmsScripts MyScripts __attribute__ ((init_priority (1600)));
 
@@ -1802,6 +1803,14 @@ duk_ret_t DuktapeVFSSave::Create(duk_context *ctx)
 DuktapeVFSSave::DuktapeVFSSave(duk_context *ctx, int obj_idx)
   : DuktapeObject(ctx, obj_idx)
   {
+  // inhibit file I/O when system is about to reboot:
+  if (MyBoot.IsShuttingDown())
+    {
+    m_error = "shutting down";
+    CallMethod(ctx, "fail");
+    return;
+    }
+
   // get args:
   duk_require_stack(ctx, 5);
   if (duk_get_prop_string(ctx, 0, "path"))
@@ -1866,8 +1875,24 @@ DuktapeVFSSave::DuktapeVFSSave(duk_context *ctx, int obj_idx)
 void DuktapeVFSSave::SaveTask(void *param)
   {
   DuktapeVFSSave *me = (DuktapeVFSSave*)param;
+
+  // listen for system shutdown:
+  std::string tag;
+  bool shuttingdown = false;
+  tag = idtag("DuktapeVFSSave", me);
+  MyEvents.RegisterEvent(tag, "system.shuttingdown",
+    [&](std::string event, void* data)
+      {
+      MyBoot.RestartPending(tag.c_str());
+      shuttingdown = true;
+      });
+
   me->Save();
   me->Unref();
+
+  MyEvents.DeregisterEvent(tag);
+  if (shuttingdown) MyBoot.RestartReady(tag.c_str());
+
   vTaskDelete(NULL);
   }
 
