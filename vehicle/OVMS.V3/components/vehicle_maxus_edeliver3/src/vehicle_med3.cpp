@@ -324,9 +324,11 @@ void OvmsVehicleMaxed3::IncomingFrameCan1(CAN_frame_t* p_frame)
               // Setup Calculates for Efficient Range
                     float batTemp = StandardMetrics.ms_v_bat_temp->AsFloat();
                     float effSoh = StandardMetrics.ms_v_bat_soh->AsFloat();
-                    float kmPerKwh = 1000/(consumpRange * 59 + consumpRange) / 60;
+                    float kwhPerKm = 1000/(consumpRange * 59 + consumpRange) / 60;
+                    float kmPerKwh = (1000/kwhPerKm) * 1.609;
                     //float kmPerKwhAvg = (kmPerKwh * 59 + kmPerKwh) / 60;
                     m_watt_hour_raw->SetValue(kmPerKwh);
+                    m_consumprange_raw->SetValue(kwhPerKm);
                     m_consump_raw->SetValue(consumpRange);
                         
                     if(kmPerKwh<4.5)kmPerKwh=4.5;
