@@ -1,7 +1,7 @@
 /**
  * Module plugin:
  *  Auxiliary (12V) Battery History Chart
- *  Version 2.1 by Michael Balzer <dexter@dexters-web.de>
+ *  Version 2.2 by Michael Balzer <dexter@dexters-web.de>
  * 
  * This module records a set of metrics with a fixed time interval.
  * History data is stored in a file and automatically restored on reboot/reload.
@@ -37,6 +37,8 @@ var history = {
   "v.e.temp": [],
 };
 
+var listen_sdmount = null;
+
 // Saving to VFS may cause short blockings, so only allow when vehicle is off:
 function allowSave() {
   return !OvmsMetrics.Value("v.e.on") && !OvmsMetrics.Value("v.c.charging");
@@ -65,18 +67,39 @@ function dump() {
 }
 
 // Init:
-if (storeFile) {
+
+function loadStoreFile() {
   VFS.Load({
     path: storeFile,
     done: function(data) {
+      print(storeFile + " loaded\n");
       history = Duktape.dec('jx', data);
+      startRecording();
     },
-    always: function() {
-      PubSub.subscribe(tickerEvent, ticker);
+    fail: function(error) {
+      print(storeFile + ": " + this.error + "\n");
+      if (!listen_sdmount && storeFile.startsWith("/sd/")) {
+        // retry after SD mount:
+        listen_sdmount = PubSub.subscribe("sd.mounted", loadStoreFile);
+      } else {
+        startRecording();
+      }
     }
   });
-} else {
+}
+
+function startRecording() {
+  if (listen_sdmount) {
+    PubSub.unsubscribe(listen_sdmount);
+    listen_sdmount = null;
+  }
   PubSub.subscribe(tickerEvent, ticker);
+}
+
+if (storeFile) {
+  loadStoreFile();
+} else {
+  startRecording();
 }
 
 // API methods:
