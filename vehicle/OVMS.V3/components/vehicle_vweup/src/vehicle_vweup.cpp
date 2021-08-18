@@ -29,7 +29,7 @@
 #include <string>
 static const char *TAG = "v-vweup";
 
-#define VERSION "0.19.1"
+#define VERSION "0.19.2"
 
 #include <stdio.h>
 #include <string>
@@ -522,6 +522,18 @@ int OvmsVehicleVWeUp::GetNotifyChargeStateDelay(const char *state)
   }
   else {
     return 3;
+  }
+}
+
+
+/**
+ * NotifiedVehicleChargeState: framework hook; charge state notifications have been sent
+ */
+void OvmsVehicleVWeUp::NotifiedVehicleChargeState(const char* state)
+{
+  // Delayed clearing of the charge type (type2/ccs) after charging has stopped:
+  if (!StdMetrics.ms_v_charge_inprogress->AsBool()) {
+    SetChargeType(CHGTYPE_None);
   }
 }
 

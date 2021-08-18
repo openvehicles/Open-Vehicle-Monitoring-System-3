@@ -637,14 +637,14 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
 
     case VWUP_CHG_MGMT_HV_CHGMODE:
       if (PollReply.FromUint8("VWUP_CHG_MGMT_HV_CHGMODE", ivalue)) {
+        VALUE_LOG(TAG, "VWUP_CHG_MGMT_HV_CHGMODE=%d", ivalue);
         m_hv_chgmode->SetValue(ivalue);
         if (ivalue >= 4)
           SetChargeType(CHGTYPE_DC);
         else if (ivalue >= 1)
           SetChargeType(CHGTYPE_AC);
-        else
-          SetChargeType(CHGTYPE_None);
-        VALUE_LOG(TAG, "VWUP_CHG_MGMT_HV_CHGMODE=%d", ivalue);
+        // …else: delay clearing of the charge type until the charge stop/done
+        // notification & log entry have been created, see NotifiedVehicleChargeState()
       }
       if (PollReply.FromUint8("VWUP_CHG_MGMT_TIMERMODE", ivalue, 1)) {
         VALUE_LOG(TAG, "VWUP_CHG_MGMT_TIMERMODE=%d", ivalue);
