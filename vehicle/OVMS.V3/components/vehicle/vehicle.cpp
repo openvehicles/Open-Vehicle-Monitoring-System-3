@@ -644,7 +644,7 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
   if ((m_ticker % 10)==0)
     {
     // Check MINSOC
-    int soc = (int)StandardMetrics.ms_v_bat_soc->AsFloat();
+    int soc = (int) ceil(StandardMetrics.ms_v_bat_soc->AsFloat());
     m_minsoc = MyConfig.GetParamValueInt("vehicle", "minsoc", 0);
     if (m_minsoc <= 0)
       {
