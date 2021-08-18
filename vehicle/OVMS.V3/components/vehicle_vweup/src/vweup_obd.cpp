@@ -477,6 +477,7 @@ void OvmsVehicleVWeUp::PollerStateTicker()
 
       // Start new charge:
       SetUsePhase(UP_Charging);
+      ResetChargeCounters();
 
       // TODO: get real port & pilot states, fake for now:
       StdMetrics.ms_v_door_chargeport->SetValue(true);
@@ -490,7 +491,6 @@ void OvmsVehicleVWeUp::PollerStateTicker()
       m_chargestart_ticker = 6;
     }
     else if (m_chargestart_ticker && --m_chargestart_ticker == 0) {
-      ResetChargeCounters();
       UpdateChargeParams();
       SetChargeState(true);
     }
