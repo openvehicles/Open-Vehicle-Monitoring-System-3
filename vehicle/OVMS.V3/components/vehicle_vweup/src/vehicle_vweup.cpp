@@ -29,7 +29,7 @@
 #include <string>
 static const char *TAG = "v-vweup";
 
-#define VERSION "0.18.1"
+#define VERSION "0.19.1"
 
 #include <stdio.h>
 #include <string>
@@ -99,6 +99,9 @@ OvmsVehicleVWeUp::OvmsVehicleVWeUp()
   m_obd_state = OBDS_Init;
   m_chargestart_ticker = 0;
   m_chargestop_ticker = 0;
+  m_chargestate_lastsoc = 100;
+  m_timermode_ticker = 0;
+  m_timermode_new = false;
 
   m_chg_ctp_car = -1;
 
@@ -338,9 +341,7 @@ void OvmsVehicleVWeUp::ConfigChanged(OvmsConfigParam *param)
   }
 
   // Update charge time predictions:
-  if (!IsCharging() || HasNoOBD()) {
-    UpdateChargeTimes();
-  }
+  UpdateChargeTimes();
 }
 
 
@@ -392,6 +393,55 @@ void OvmsVehicleVWeUp::Ticker1(uint32_t ticker)
   if (HasT26()) {
     T26Ticker1(ticker);
   }
+
+  // Entered charge phase topping off (v.b.soc > v.c.limit.soc)?
+  // Note: this is considered topping off also without timermode enabled,
+  //  so we get a notification at our usual charge stop during range
+  //  charging as well.
+  // Fallback for v.c.limit.soc is config xvu ctp.soclimit
+  if (StdMetrics.ms_v_charge_state->AsString() == "charging")
+  {
+    float soc = StdMetrics.ms_v_bat_soc->AsFloat();
+    int suff_soc = StdMetrics.ms_v_charge_limit_soc->AsInt();
+    if (m_chargestate_lastsoc <= suff_soc && soc > suff_soc) {
+      ESP_LOGI(TAG, "Ticker1: SOC crossed sufficient SOC limit (%d%%), entering topping off charge phase", suff_soc);
+      StdMetrics.ms_v_charge_state->SetValue("topoff");
+    }
+    m_chargestate_lastsoc = soc;
+  }
+
+  // Process a delayed timer mode change?
+  if (m_chargestate_ticker == 0 && m_chargestart_ticker == 0 && m_chargestop_ticker == 0 &&
+      m_timermode_ticker > 1 && --m_timermode_ticker == 1)
+  {
+    ESP_LOGI(TAG, "Ticker1: processing delayed charge timer mode update, new mode: %d", m_timermode_new);
+    bool modified = StdMetrics.ms_v_charge_timermode->SetValue(m_timermode_new);
+    UpdateChargeTimes();
+
+    // Send a notification if the timer mode is changed during a running charge:
+    if (modified && StdMetrics.ms_v_charge_inprogress->AsBool())
+    {
+      // Change charge state?
+      float soc = StdMetrics.ms_v_bat_soc->AsFloat();
+      int suff_soc = StdMetrics.ms_v_charge_limit_soc->AsInt();
+      bool modified_chargestate;
+      if (suff_soc > 0 && soc > suff_soc)
+        modified_chargestate = StdMetrics.ms_v_charge_state->SetValue("topoff");
+      else
+        modified_chargestate = StdMetrics.ms_v_charge_state->SetValue("charging");
+      m_chargestate_lastsoc = soc;
+      
+      // If we changed the charge state, a state notification will be sent already.
+      // If not, send the dedicated timermode notification:
+      if (!modified_chargestate) {
+        StringWriter buf(200);
+        CommandStat(COMMAND_RESULT_NORMAL, &buf);
+        MyNotify.NotifyString("info", "charge.timermode", buf.c_str());
+      }
+    }
+
+    m_timermode_ticker = 0;
+  }
 }
 
 
@@ -435,7 +485,7 @@ void OvmsVehicleVWeUp::Ticker10(uint32_t ticker)
 
 void OvmsVehicleVWeUp::Ticker60(uint32_t ticker)
 {
-  if (!IsCharging() || HasNoOBD()) {
+  if (HasNoOBD()) {
     UpdateChargeTimes();
   }
 }
@@ -453,7 +503,22 @@ int OvmsVehicleVWeUp::GetNotifyChargeStateDelay(const char *state)
     // will be sent 30 seconds after the charge start.
     // In case a user is interested in getting the notification as fast as possible,
     // we provide a configuration option.
-    return MyConfig.GetParamValueInt("xvu", "notify.charge.start.delay", 24);
+    // If a timer mode change during a running charge implied switching topoff→charging,
+    // we allow an immediate notification (or with a running state ticker).
+    if (StdMetrics.ms_v_charge_time->AsInt() == 0)
+      return MyConfig.GetParamValueInt("xvu", "notify.charge.start.delay", 24);
+    else
+      return m_chargestate_ticker;
+  }
+  else if (strcmp(state, "topoff") == 0) {
+    // If the charge starts in the topping off section, use the standard start delay,
+    // if the charge is already in progress deliver the phase change notification
+    // immediately or using an already scheduled state change (to catch a topoff
+    // detection during a charge initialization phase):
+    if (StdMetrics.ms_v_charge_time->AsInt() == 0)
+      return MyConfig.GetParamValueInt("xvu", "notify.charge.start.delay", 24);
+    else
+      return m_chargestate_ticker;
   }
   else {
     return 3;
@@ -595,30 +660,38 @@ void OvmsVehicleVWeUp::SetChargeType(chg_type_t chgtype)
  */
 void OvmsVehicleVWeUp::SetChargeState(bool charging)
 {
+  bool timermode = StdMetrics.ms_v_charge_timermode->AsBool();
+  int soc = StdMetrics.ms_v_bat_soc->AsInt();
+  int socmin = IsOBDReady() ? m_chg_timer_socmin->AsInt() : 0;
+  int socmax = IsOBDReady() ? m_chg_timer_socmax->AsInt() : 0;
+  int suff_soc = StdMetrics.ms_v_charge_limit_soc->AsInt();
+
   if (charging)
   {
     // Charge in progress:
     StdMetrics.ms_v_charge_inprogress->SetValue(true);
 
-    if (StdMetrics.ms_v_charge_timermode->AsBool())
+    if (timermode)
       StdMetrics.ms_v_charge_substate->SetValue("scheduledstart");
     else
       StdMetrics.ms_v_charge_substate->SetValue("onrequest");
 
-    StdMetrics.ms_v_charge_state->SetValue("charging");
+    // Topping off?
+    if (suff_soc > 0 && soc > suff_soc)
+      StdMetrics.ms_v_charge_state->SetValue("topoff");
+    else
+      StdMetrics.ms_v_charge_state->SetValue("charging");
+
+    m_chargestate_lastsoc = soc;
   }
   else
   {
     // Charge stopped:
     StdMetrics.ms_v_charge_inprogress->SetValue(false);
 
-    int soc = StdMetrics.ms_v_bat_soc->AsInt();
-
-    if (IsOBDReady() && StdMetrics.ms_v_charge_timermode->AsBool())
+    if (timermode)
     {
       // Scheduled charge;
-      int socmin = m_chg_timer_socmin->AsInt();
-      int socmax = m_chg_timer_socmax->AsInt();
       // if stopped at maximum SOC, we've finished as scheduled:
       if (soc >= socmax-1 && soc <= socmax+1) {
         StdMetrics.ms_v_charge_substate->SetValue("scheduledstop");
@@ -755,18 +828,26 @@ void OvmsVehicleVWeUp::UpdateChargeTimes()
   if (max_pwr <= 0)
     max_pwr = MyConfig.GetParamValueFloat("xvu", "ctp.maxpower", 0);
 
-  bool timermode = StdMetrics.ms_v_charge_timermode->AsBool();
-  int soc_limit = StdMetrics.ms_v_charge_limit_soc->AsInt();
-  if (HasNoOBD()) {
-    soc_limit = MyConfig.GetParamValueFloat("xvu", "ctp.soclimit", 80);
-    StdMetrics.ms_v_charge_limit_soc->SetValue(soc_limit);
-  }
+  // If timermode is configured for a maximum SOC < 100%, that will also be the
+  // sufficient SOC for the charge. With timer mode disabled or destination SOC
+  // at 100%, the sufficient SOC limit will be used from the user preferences.
 
+  bool timermode = StdMetrics.ms_v_charge_timermode->AsBool();
+  int timer_socmax = IsOBDReady() ? m_chg_timer_socmax->AsInt() : 0;
+
+  // Set v.c.limit.soc (sufficient SOC for current charge):
+  int suff_soc = timer_socmax;
+  if (timer_socmax == 0 || timer_socmax == 100)
+    suff_soc = MyConfig.GetParamValueFloat("xvu", "ctp.soclimit", 80);
+  StdMetrics.ms_v_charge_limit_soc->SetValue(suff_soc);
+
+  // Calculate charge times for 100% and…
   from_soc = StdMetrics.ms_v_bat_soc->AsInt();
-  to_soc = soc_limit;
+  to_soc = suff_soc;
 
   if (IsCharging() && m_chg_ctp_car >= 0 && m_chg_ctp_car < 630) {
-    if (timermode && soc_limit > 0 && soc_limit < 100) {
+    // The car's CTP always relates to the effective charge destination SOC:
+    if (timermode && timer_socmax < 100) {
       *StdMetrics.ms_v_charge_duration_soc = m_chg_ctp_car;
       *StdMetrics.ms_v_charge_duration_full = CalcChargeTime(capacity, max_pwr, from_soc, 100);
     } else {
@@ -774,7 +855,14 @@ void OvmsVehicleVWeUp::UpdateChargeTimes()
       *StdMetrics.ms_v_charge_duration_full = m_chg_ctp_car;
     }
   } else {
+    // Car CTP not available, do our calculation for both:
     *StdMetrics.ms_v_charge_duration_soc = CalcChargeTime(capacity, max_pwr, from_soc, to_soc);
     *StdMetrics.ms_v_charge_duration_full = CalcChargeTime(capacity, max_pwr, from_soc, 100);
   }
+
+  // Derive charge mode from final SOC destination:
+  if (!timermode || timer_socmax == 100)
+    StdMetrics.ms_v_charge_mode->SetValue("range");
+  else
+    StdMetrics.ms_v_charge_mode->SetValue("standard");
 }

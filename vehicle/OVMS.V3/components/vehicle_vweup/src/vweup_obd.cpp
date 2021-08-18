@@ -93,9 +93,11 @@ const OvmsVehicle::poll_pid_t vweup_polls[] = {
 //{VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_TEMP_MAX,         {  0,  0,  0, 20}, 1, ISOTP_STD},
 //{VWUP_BAT_MGMT, UDS_READ, VWUP_BAT_MGMT_TEMP_MIN,         {  0,  0,  0, 20}, 1, ISOTP_STD},
 
-  {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_SOC_LIMITS,       {  0, 30, 30, 30}, 1, ISOTP_STD},
-  {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_TIMER_DEF,        {  0, 30, 30, 30}, 1, ISOTP_STD},
-  {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_REM,              {  0,  0, 30,  0}, 1, ISOTP_STD},
+  {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_REM,              {  0,  0, 12,  0}, 1, ISOTP_STD},
+  {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_TIMER_DEF,        {  0, 12, 12, 12}, 1, ISOTP_STD},
+  {VWUP_CHG_MGMT, UDS_READ, VWUP_CHG_MGMT_SOC_LIMITS,       {  0, 12, 12, 12}, 1, ISOTP_STD},
+  // Note: m_timermode_ticker needs to be the polling interval for VWUP_CHG_MGMT_SOC_LIMITS + 1
+  //  (see response handler for VWUP_CHG_MGMT_HV_CHGMODE)
 
   {VWUP_BRK,      UDS_SESSION, VWUP_EXTDIAG_START,          {  0,  0,  0, 30}, 1, ISOTP_STD},
   {VWUP_BRK,      UDS_READ, VWUP_BRK_TPMS,                  {  0,  0,  0, 30}, 1, ISOTP_STD},
@@ -143,11 +145,10 @@ void OvmsVehicleVWeUp::OBDInit()
     m_hv_chgmode  = MyMetrics.InitInt("xvu.e.hv.chgmode", 30, 0, Other, true);
     m_lv_autochg  = MyMetrics.InitInt("xvu.e.lv.autochg", 30, 0);
 
-    bool timermode = StdMetrics.ms_v_charge_timermode->AsBool();
-    int soclim = StdMetrics.ms_v_charge_limit_soc->AsInt();
-    m_chg_timer_socmin = MyMetrics.InitInt("xvu.c.limit.soc.min", SM_STALE_NONE, soclim, Percentage);
-    m_chg_timer_socmax = MyMetrics.InitInt("xvu.c.limit.soc.max", SM_STALE_NONE, soclim, Percentage);
-    m_chg_timer_def = MyMetrics.InitBool("xvu.c.timermode.def", SM_STALE_NONE, timermode);
+    m_timermode_new = StdMetrics.ms_v_charge_timermode->AsBool();
+    m_chg_timer_socmin = MyMetrics.InitInt("xvu.c.limit.soc.min", SM_STALE_NONE, 0, Percentage);
+    m_chg_timer_socmax = MyMetrics.InitInt("xvu.c.limit.soc.max", SM_STALE_NONE, 0, Percentage);
+    m_chg_timer_def = MyMetrics.InitBool("xvu.c.timermode.def", SM_STALE_NONE, m_timermode_new);
 
     BatMgmtSoCAbs = MyMetrics.InitFloat("xvu.b.soc.abs", 100, 0, Percentage);
     MotElecSoCAbs = MyMetrics.InitFloat("xvu.m.soc.abs", 100, 0, Percentage);
@@ -448,7 +449,6 @@ void OvmsVehicleVWeUp::PollerStateTicker()
   else if (StdMetrics.ms_v_env_on->AsBool() == false && dcdc_voltage > 14) {
     // TODO: get real charge port state
     // For now, we assume the port has been closed when the car is started:
-    StdMetrics.ms_v_charge_duration_full->SetValue(0);
     StdMetrics.ms_v_door_chargeport->SetValue(false);
     StdMetrics.ms_v_charge_substate->SetValue("");
     StdMetrics.ms_v_charge_state->SetValue("");
@@ -491,7 +491,7 @@ void OvmsVehicleVWeUp::PollerStateTicker()
       m_chargestart_ticker = 6;
     }
     else if (m_chargestart_ticker && --m_chargestart_ticker == 0) {
-      UpdateChargeParams();
+      UpdateChargeTimes(); // also sets the charge mode
       SetChargeState(true);
     }
     return;
@@ -647,11 +647,21 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
         VALUE_LOG(TAG, "VWUP_CHG_MGMT_HV_CHGMODE=%d", ivalue);
       }
       if (PollReply.FromUint8("VWUP_CHG_MGMT_TIMERMODE", ivalue, 1)) {
-        bool timermode = (ivalue != 0);
-        bool modified = StdMetrics.ms_v_charge_timermode->SetValue(timermode);
         VALUE_LOG(TAG, "VWUP_CHG_MGMT_TIMERMODE=%d", ivalue);
-        if (modified)
-          UpdateChargeParams();
+        m_timermode_new = (ivalue != 0);
+        // VWUP_CHG_MGMT_HV_CHGMODE is polled per second.
+        // Timer mode SOC limits are polled separately with a larger
+        // interval. To get a consistent update, the actual mode update
+        // is done by the VWUP_CHG_MGMT_SOC_LIMITS handler (see below).
+      }
+      break;
+
+    case VWUP_CHG_MGMT_REM:
+      // This only gets updates while charging.
+      // Ignore charge shutdown value of 127 to keep last estimation:
+      if (PollReply.FromUint8("VWUP_CHG_MGMT_REM", value) && value != 127) {
+        m_chg_ctp_car = value * 5;
+        VALUE_LOG(TAG, "VWUP_CHG_MGMT_REM=%f => %d", value, m_chg_ctp_car);
       }
       break;
 
@@ -667,15 +677,42 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
       int socmin, socmax;
       if (PollReply.FromUint8("VWUP_CHG_MGMT_SOC_LIMIT_MAX", socmax, 1)) {
         PollReply.FromUint8("VWUP_CHG_MGMT_SOC_LIMIT_MIN", socmin);
+        VALUE_LOG(TAG, "VWUP_CHG_MGMT_SOC_LIMITS MIN=%d%% MAX=%d%%", socmin, socmax);
+
         bool modified =
           m_chg_timer_socmin->SetValue(socmin) |
           m_chg_timer_socmax->SetValue(socmax);
-        VALUE_LOG(TAG, "VWUP_CHG_MGMT_SOC_LIMITS MIN=%d%% MAX=%d%%", socmin, socmax);
-        if (modified)
-          UpdateChargeParams();
+
+        // Timer mode is disabled by the car before a DC charge, but re-enabled
+        // just before the actual charge stop. We want the charge stop
+        // notification & log entries to contain the mode used for the charge,
+        // so we delegate the mode change to the ticker in this case.
+        // On a DC charge start, the mode update comes with the charge
+        // start signal, and we will get an SOC_LIMITS update right after
+        // the poll state is changed to CHARGING, so charge_inprogress will
+        // still be false and the mode is updated immediately and without
+        // a notification.
+        if (m_timermode_ticker == 0 &&
+            m_timermode_new != StdMetrics.ms_v_charge_timermode->AsBool() &&
+            StdMetrics.ms_v_charge_inprogress->AsBool())
+        {
+          ESP_LOGI(TAG, "IncomingPollReply: starting delayed charge timer mode update, new mode: %d", m_timermode_new);
+          m_timermode_ticker = 6;
+          // Note: this ticker is additionally paused while another charge
+          // ticker is running, so the delay adds to those.
+        }
+
+        // If no ticker has been started, we can update immediately:
+        else if (m_timermode_ticker == 0)
+        {
+          modified |= StdMetrics.ms_v_charge_timermode->SetValue(m_timermode_new);
+          if (modified)
+            UpdateChargeTimes();
+        }
       }
       break;
     }
+
 
     case VWUP_BAT_MGMT_U:
       if (PollReply.FromUint16("VWUP_BAT_MGMT_U", value)) {
@@ -1202,16 +1239,6 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
       }
       break;
 
-    case VWUP_CHG_MGMT_REM:
-      // This only gets updates while charging.
-      // Ignore charge shutdown value of 127 to keep last estimation:
-      if (PollReply.FromUint8("VWUP_CHG_MGMT_REM", value) && value != 127) {
-        m_chg_ctp_car = value * 5;
-        VALUE_LOG(TAG, "VWUP_CHG_MGMT_REM=%f => %d", value, m_chg_ctp_car);
-        UpdateChargeTimes();
-      }
-      break;
-
     case VWUP_BRK_TPMS:
       if (PollReply.FromUint8("VWUP_BRK_TPMS", value, 43)) {
         std::vector<float> tpms_health(4);
@@ -1419,30 +1446,4 @@ void OvmsVehicleVWeUp::UpdateChargeCap(bool charging)
     // Update metrics:
     m_bat_soh_charge->SetValue(soh);
   }
-}
-
-
-/**
- * UpdateChargeParams: update charge SOC limit and charge mode
- */
-void OvmsVehicleVWeUp::UpdateChargeParams()
-{
-  bool timermode = StdMetrics.ms_v_charge_timermode->AsBool();
-  int soc = StdMetrics.ms_v_bat_soc->AsInt();
-  int socmin = m_chg_timer_socmin->AsInt();
-  int socmax = m_chg_timer_socmax->AsInt();
-
-  // Set v.c.limit.soc to either min or max SOC depending on the current SOC:
-  int soclim = socmin;
-  if (soc >= socmin && soc < socmax)
-    soclim = socmax;
-  StdMetrics.ms_v_charge_limit_soc->SetValue(soclim);
-
-  // Derive charge mode from final SOC destination:
-  if (!timermode || soclim == 100 || socmax == 100)
-    StdMetrics.ms_v_charge_mode->SetValue("range");
-  else
-    StdMetrics.ms_v_charge_mode->SetValue("standard");
-
-  UpdateChargeTimes();
 }

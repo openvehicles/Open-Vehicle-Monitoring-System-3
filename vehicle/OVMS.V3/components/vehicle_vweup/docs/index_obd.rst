@@ -70,7 +70,7 @@ Metric name                              Example value            Description
 ======================================== ======================== ============================================
 v.e.on                                   yes                      Is ignition on and drivable (true = "Vehicle ON", false = "Vehicle OFF" state)
 v.c.charging                             yes                      Is vehicle charging (true = "Vehicle CHARGING" state. v.e.on=false if this is true)
-v.c.limit.soc                            100%                     Current/next charge timer mode SOC destination
+v.c.limit.soc                            100%                     Sufficient SOC: timer mode SOC destination or user CTP configuration (see below)
 v.c.mode                                 range                    "range" = charging to 100% SOC, else "standard"
 v.c.timermode                            no                       Yes = current/next charge under timer control
 v.c.state                                done                     charging, stopped, done
@@ -139,9 +139,12 @@ actually be used for the current or next charge, i.e. reflects the mode selected
 
 With timed charging, the car first charges to the minimum SOC as soon as possible (when connected). If the
 maximum SOC configured for the schedule hasn't been reached by then, it will then wait for the timer to signal
-the second phase to charge up to the maximum SOC. ``v.c.limit.soc`` reflects the current phase, i.e. will be
-the minimum SOC during phase 1, the maximum (if configured) during phase 2. After reaching the timer defined
-final SOC, it will switch to 100%.
+the second phase to charge up to the maximum SOC. The "sufficient SOC" ``v.c.limit.soc`` will be the maximum
+SOC if less than 100%. If the timer is disabled or set to charge up to 100%, the sufficient SOC is set to the
+user configured charge time prediction SOC limit (config ``xvu ctp.soclimit``).
+
+Charging above ``v.c.limit.soc`` is classified as the "topping off" charge phase. When crossing that SOC
+threshold, an intermediate charge status notification is sent.
 
 Note: ``xvu.c.limit.soc.min`` will show the configured minimum SOC also if no schedule is currently enabled.
 ``xvu.c.limit.soc.max`` shows the maximum for the current/next schedule to apply. If no schedule is enabled,

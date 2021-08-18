@@ -189,7 +189,7 @@ void OvmsVehicleVWeUp::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
   c.input_slider("Default SOC limit", "ctp_soclimit", 3, "%",
     -1, nmap["ctp.soclimit"].empty() ? 80 : std::stof(nmap["ctp.soclimit"]),
     80, 10, 100, 5,
-    "<p>Used if no timer mode limits are available, i.e. without OBD connection.</p>");
+    "<p>Used if no timer mode limits are available, i.e. without OBD connection or without timer schedule.</p>");
   c.fieldset_end();
 
   c.fieldset_start("Battery Health", "needs-con-obd");

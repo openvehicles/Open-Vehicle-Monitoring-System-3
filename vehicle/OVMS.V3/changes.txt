@@ -80,6 +80,7 @@ Open Vehicle Monitor System v3 - Change log
 - VW e-Up: added SOC monitoring log
   New configs:
     [xvu] log.socmon.storetime            -- days, 0=off
+- VW e-Up: add topping off charge phase support & timer mode change notification
 - New vehicle: Hyundai Ioniq vFL (HIONVFL)
   https://docs.openvehicles.com/en/latest/components/vehicle_hyundai_ioniqvfl/docs/index.html
 - Webserver: support TLS (https, wss) using self-signed certificates
