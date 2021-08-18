@@ -1551,7 +1551,7 @@ void OvmsCommandApp::Display(OvmsWriter* writer)
 
 
 OvmsCommandTask::OvmsCommandTask(int _verbosity, OvmsWriter* _writer, OvmsCommand* _cmd, int _argc, const char* const* _argv)
-  : TaskBase(_cmd->GetName(), CONFIG_OVMS_SYS_COMMAND_STACK_SIZE)
+  : TaskBase(_cmd->GetName(), CONFIG_OVMS_SYS_COMMAND_STACK_SIZE, CONFIG_OVMS_SYS_COMMAND_PRIORITY)
   {
   m_state = OCS_Init;
 
