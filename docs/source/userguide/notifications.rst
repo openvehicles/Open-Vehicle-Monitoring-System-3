@@ -122,6 +122,7 @@ alert   batt.bms.alert              Battery pack/cell alert (critical voltage/te
 alert   batt.soc.alert              Battery SOC critical
 info    charge.done                 ``stat`` on charge finished
 info    charge.started              ``stat`` on start of charge
+info    charge.toppingoff           ``stat`` on start of topping off charge/phase
 info    charge.stopped              ``stat`` on planned charge stop
 alert   charge.stopped              ``stat`` on unplanned charge stop
 data    debug.crash                 Transmit crash backtraces (→ ``*-OVM-DebugCrash``)

@@ -365,6 +365,7 @@ class OvmsVehicle : public InternalRamAllocated
   protected:
     virtual void NotifyChargeState();
     virtual void NotifyChargeStart();
+    virtual void NotifyChargeTopOff();
     virtual void NotifyHeatingStart();
     virtual void NotifyChargeStopped();
     virtual void NotifyChargeDone();
