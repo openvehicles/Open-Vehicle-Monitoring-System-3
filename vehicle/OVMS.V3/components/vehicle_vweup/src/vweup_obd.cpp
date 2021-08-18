@@ -737,32 +737,33 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
       break;
 
     case VWUP_MOT_ELEC_SOC_NORM:
-      // Gets updates while driving
+      // (Gets updates only while driving)
+      // This SOC only losely correlates to the instrument cluster SOC; on high SOC
+      // it lowers faster initially, but on low SOC it stays higher.
+      // Data analysis indicates this SOC is mainly coulomb counting based.
       if (PollReply.FromUint16("VWUP_MOT_ELEC_SOC_NORM", value)) {
         float soc = value / 100;
         VALUE_LOG(TAG, "VWUP_MOT_ELEC_SOC_NORM=%f => %f", value, soc);
         MotElecSoCNorm->SetValue(soc);
-        if (IsOn()) {
-          StdMetrics.ms_v_bat_soc->SetValue(soc);
-          // Update range:
-          StandardMetrics.ms_v_bat_range_ideal->SetValue(
-            StdMetrics.ms_v_bat_range_full->AsFloat() * (soc / 100));
-        }
       }
       break;
 
     case VWUP_CHG_MGMT_SOC_NORM:
-      // Gets updates while charging
+      // This SOC matches the instrument cluster SOC and is available while
+      // driving and while charging, so we use this as the standard user SOC.
+      // Note: according to the telemetry analysis, this is not linear
+      // with available energy or coulomb, does not compensate the voltage
+      // characteristics and shows some calibration point(s) during charging;
+      // be aware this SOC can run backwards during a charge.
       if (PollReply.FromUint8("VWUP_CHG_MGMT_SOC_NORM", value)) {
         float soc = value / 2.0f;
         VALUE_LOG(TAG, "VWUP_CHG_MGMT_SOC_NORM=%f => %f", value, soc);
         ChgMgmtSoCNorm->SetValue(soc);
-        if (!IsOn()) {
-          StdMetrics.ms_v_bat_soc->SetValue(soc);
-          // Update range:
-          StdMetrics.ms_v_bat_range_ideal->SetValue(
+        if (StdMetrics.ms_v_bat_soc->SetValue(soc)) {
+          UpdateChargeTimes();
+          StandardMetrics.ms_v_bat_range_ideal->SetValue(
             StdMetrics.ms_v_bat_range_full->AsFloat() * (soc / 100));
-          if (HasNoT26()) {
+          if (IsCharging() && HasNoT26()) {
             // Calculate estimated range from last known factor:
             StdMetrics.ms_v_bat_range_est->SetValue(soc * m_range_est_factor);
           }
