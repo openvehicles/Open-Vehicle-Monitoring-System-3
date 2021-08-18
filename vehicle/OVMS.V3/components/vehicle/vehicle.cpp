@@ -732,6 +732,13 @@ void OvmsVehicle::NotifyChargeStart()
   MyNotify.NotifyString("info","charge.started",buf.c_str());
   }
 
+void OvmsVehicle::NotifyChargeTopOff()
+  {
+  StringWriter buf(200);
+  CommandStat(COMMAND_RESULT_NORMAL, &buf);
+  MyNotify.NotifyString("info","charge.toppingoff",buf.c_str());
+  }
+
 void OvmsVehicle::NotifyHeatingStart()
   {
   StringWriter buf(200);
@@ -1493,7 +1500,7 @@ void OvmsVehicle::NotifyChargeState()
   else if (m == "charging")
     NotifyChargeStart();
   else if (m == "topoff")
-    NotifyChargeStart();
+    NotifyChargeTopOff();
   else if (m == "heating")
     NotifyHeatingStart();
 
