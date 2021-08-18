@@ -29,7 +29,7 @@
 #include <string>
 static const char *TAG = "v-vweup";
 
-#define VERSION "0.19.2"
+#define VERSION "0.19.3"
 
 #include <stdio.h>
 #include <string>
