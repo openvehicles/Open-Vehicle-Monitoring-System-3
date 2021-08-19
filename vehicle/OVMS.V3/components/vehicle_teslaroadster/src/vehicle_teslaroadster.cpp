@@ -860,10 +860,12 @@ OvmsVehicle::vehicle_command_t OvmsVehicleTeslaRoadster::CommandStartCharge()
   {
   CAN_frame_t frame;
   memset(&frame,0,sizeof(frame));
-  // If the car is asleep waiting for a scheduled start time we will need to
-  // repeat the command to start charging after the car wakes up and detects
-  // the pilot signal.  We need to sequence through states to track that.
-  if (StandardMetrics.ms_v_charge_substate->AsString() == "scheduledstart")
+  // If the car is asleep waiting for a scheduled start time or after charging
+  // has been stopped by requeist we will need to repeat the command to start
+  // charging after the car wakes up and detects the pilot signal.  We need to
+  // sequence through states to track that.
+  if (StandardMetrics.ms_v_charge_substate->AsString() == "scheduledstart" ||
+      StandardMetrics.ms_v_charge_substate->AsString() == "onrequest")
     {
     if (m_starting_charge == INACTIVE)
       m_starting_charge = SCHEDULED;
