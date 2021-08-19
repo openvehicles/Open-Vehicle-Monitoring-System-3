@@ -323,10 +323,13 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
           switch (d[1]) // Charge state
             {
             case 0x01: // Charging
+              m_starting_charge = INACTIVE; // Charging started, return to idle state.
               StandardMetrics.ms_v_charge_state->SetValue("charging"); break;
             case 0x02: // Top-off
+              m_starting_charge = INACTIVE; // Charging started, return to idle state.
               StandardMetrics.ms_v_charge_state->SetValue("topoff"); break;
             case 0x04: // done
+              // Don't change state, we see this while preparing to restart after done.
               StandardMetrics.ms_v_charge_state->SetValue("done"); break;
             case 0x0c: // interrupted
             case 0x15: // interrupted
@@ -334,6 +337,7 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
             case 0x17: // interrupted
             case 0x18: // interrupted
             case 0x19: // interrupted
+              m_starting_charge = INACTIVE; // Charging stopped, return to idle state.
               StandardMetrics.ms_v_charge_state->SetValue("stopped"); break;
             case 0x0d: // preparing
               StandardMetrics.ms_v_charge_state->SetValue("prepare"); break;
@@ -350,9 +354,6 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
             default:
               break;
             }
-          // Once charging has been started or aborted, return to the idle state.
-          if (d[1] != 0x0e)
-            m_starting_charge = INACTIVE;
           switch (d[2]) // Charge sub-state
             {
             case 0x02: // Scheduled start
