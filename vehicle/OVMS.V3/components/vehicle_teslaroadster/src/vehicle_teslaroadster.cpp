@@ -332,7 +332,6 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
               // Don't change state, we see this while preparing to restart after done.
               StandardMetrics.ms_v_charge_state->SetValue("done"); break;
             case 0x0c: // interrupted
-            case 0x15: // interrupted
             case 0x16: // interrupted
             case 0x17: // interrupted
             case 0x18: // interrupted
@@ -351,6 +350,13 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
                 "stopped" : "prepare"); break;
             case 0x0f: // heating
               StandardMetrics.ms_v_charge_state->SetValue("heating"); break;
+            case 0x15: // interrupted
+              // Don't change state when charging has been stopped by request,
+              // we see this while preparing to restart.  State will already
+              // have been reset when charging started.
+              if (d[2] != 0x03)
+                m_starting_charge = INACTIVE; // Charging stopped, return to idle state.
+              StandardMetrics.ms_v_charge_state->SetValue("stopped"); break;
             default:
               break;
             }
@@ -861,17 +867,15 @@ OvmsVehicle::vehicle_command_t OvmsVehicleTeslaRoadster::CommandStartCharge()
   CAN_frame_t frame;
   memset(&frame,0,sizeof(frame));
   // If the car is asleep waiting for a scheduled start time or after charging
-  // has been stopped by requeist we will need to repeat the command to start
-  // charging after the car wakes up and detects the pilot signal.  We need to
-  // sequence through states to track that.
-  if (StandardMetrics.ms_v_charge_substate->AsString() == "scheduledstart" ||
-      StandardMetrics.ms_v_charge_substate->AsString() == "onrequest")
-    {
-    if (m_starting_charge == INACTIVE)
-      m_starting_charge = SCHEDULED;
-    else if (m_starting_charge == POWERWAIT)
-      m_starting_charge = STARTED;
-    }
+  // has finished or been stopped by request we will need to repeat the command
+  // to start charging after the car wakes up and detects the pilot signal.  We
+  // need to sequence through states to track that.
+  enum StartingCharge state = m_starting_charge;
+  if (!StandardMetrics.ms_v_env_cooling->AsBool() && state == INACTIVE)
+    state = SCHEDULED;
+  // If this is the repeat of the command to start charging, advance the state.
+  if (state == POWERWAIT)
+    state = STARTED;
   frame.origin = m_can1;
   frame.FIR.U = 0;
   frame.FIR.B.DLC = 1;
@@ -896,6 +900,10 @@ OvmsVehicle::vehicle_command_t OvmsVehicleTeslaRoadster::CommandStartCharge()
   frame.data.u8[7] = 0x00;
   m_can1->Write(&frame);
 
+  // Set the StartingCharge state after issuing the command to start the charge
+  // in case a CAN status message that could change the state was issued since
+  // we selected the next state above.
+  m_starting_charge = state;
   return Success;
   }
 
