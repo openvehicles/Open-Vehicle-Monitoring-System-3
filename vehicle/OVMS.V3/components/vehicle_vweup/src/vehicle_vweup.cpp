@@ -29,7 +29,7 @@
 #include <string>
 static const char *TAG = "v-vweup";
 
-#define VERSION "0.19.3"
+#define VERSION "0.19.4"
 
 #include <stdio.h>
 #include <string>
@@ -455,7 +455,7 @@ void OvmsVehicleVWeUp::Ticker10(uint32_t ticker)
     if (storetime_days > 0 && (IsOn() || StdMetrics.ms_v_bat_soc->AsFloat() != last_soc))
     {
       MyNotify.NotifyStringf("data", "xvu.log.socmon",
-        "XVU-LOG-SOCMon,2,%d,%.1f,%d,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.5f,%.5f",
+        "XVU-LOG-SOCMon,3,%d,%.1f,%d,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.2f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.3f,%.5f,%.5f,%.1f",
         storetime_days * 86400,
         StdMetrics.ms_v_bat_temp->AsFloat(),
         IsCharging(),
@@ -476,7 +476,8 @@ void OvmsVehicleVWeUp::Ticker10(uint32_t ticker)
         StdMetrics.ms_v_bat_pack_vmin->AsFloat(),
         StdMetrics.ms_v_bat_pack_vmax->AsFloat(),
         StdMetrics.ms_v_bat_pack_vstddev->AsFloat(),
-        StdMetrics.ms_v_bat_pack_vgrad->AsFloat());
+        StdMetrics.ms_v_bat_pack_vgrad->AsFloat(),
+        IsOBDReady() ? m_bat_energy_range->AsFloat() : 0);
       last_soc = StdMetrics.ms_v_bat_soc->AsFloat();
     }
   }
