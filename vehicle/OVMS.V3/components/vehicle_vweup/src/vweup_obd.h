@@ -95,6 +95,9 @@ using namespace std;
 //
 // PIDs of ECUs
 //
+#define VWUP_MOT_ELEC_STATE             0x14D9    // 1/2=booting, 3=ready, 4=ignition on, 7=switched off
+#define VWUP_MOT_ELEC_GEAR              0x14CB    // Gen2 only: -1=reverse, 0=neutral, 1=forward
+#define VWUP_MOT_ELEC_DRIVEMODE         0x1616    // 1=STD, 2=ECO, 3=ECO+
 #define VWUP_MOT_ELEC_SOC_NORM          0x1164
 #define VWUP_MOT_ELEC_SOC_ABS           0xF45B
 #define VWUP_MOT_ELEC_TEMP_AMB          0xF446    // Ambient temperature

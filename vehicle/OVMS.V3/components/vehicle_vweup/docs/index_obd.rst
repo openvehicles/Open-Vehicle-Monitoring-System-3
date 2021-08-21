@@ -93,6 +93,8 @@ v.p.odometer                             2340 km                  Total distance
 Metric name                              Example value            Description
 ======================================== ======================== ============================================
 v.b.soc [2]_                             88.2 %                   Current usable State of Charge (SoC) of the main battery
+v.e.drivemode                            2                        1=STD, 2=ECO, 3=ECO+
+v.e.gear                                 1                        1=forward, 0=neutral, -1=reverse (2020 model only)
 ======================================== ======================== ============================================
 
 .. [2] Restriction by the ECU. Supplied when the ignition is on during charging. Use xvu.b.soc as an alternative when charging with ignition off.
