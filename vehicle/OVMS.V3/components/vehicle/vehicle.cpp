@@ -1315,6 +1315,23 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
       NotifiedVehicleAlarmOff();
       }
     }
+  else if (metric == StandardMetrics.ms_v_env_gear)
+    {
+    int gear = StandardMetrics.ms_v_env_gear->AsInt();
+    if (gear < 0)
+      MyEvents.SignalEvent("vehicle.gear.reverse", NULL);
+    else if (gear > 0)
+      MyEvents.SignalEvent("vehicle.gear.forward", NULL);
+    else
+      MyEvents.SignalEvent("vehicle.gear.neutral", NULL);
+    NotifiedVehicleGear(gear);
+    }
+  else if (metric == StandardMetrics.ms_v_env_drivemode)
+    {
+    std::string event = "vehicle.drivemode." + StandardMetrics.ms_v_env_drivemode->AsString();
+    MyEvents.SignalEvent(event, NULL);
+    NotifiedVehicleDrivemode(StandardMetrics.ms_v_env_drivemode->AsInt());
+    }
   else if (metric == StandardMetrics.ms_v_charge_mode)
     {
     std::string m = metric->AsString();

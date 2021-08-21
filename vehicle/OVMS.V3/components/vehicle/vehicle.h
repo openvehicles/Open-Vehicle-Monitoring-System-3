@@ -418,6 +418,8 @@ class OvmsVehicle : public InternalRamAllocated
     virtual void NotifiedVehicleHeadlightsOff() {}
     virtual void NotifiedVehicleAlarmOn() {}
     virtual void NotifiedVehicleAlarmOff() {}
+    virtual void NotifiedVehicleGear(int gear) {}
+    virtual void NotifiedVehicleDrivemode(int drivemode) {}
     virtual void NotifiedVehicleChargeMode(const char* m) {}
     virtual void NotifiedVehicleChargeState(const char* s) {}
     virtual void NotifiedVehicleGenState(const std::string& state) {}

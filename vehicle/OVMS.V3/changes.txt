@@ -95,6 +95,12 @@ Open Vehicle Monitor System v3 - Change log
     add charge speed to "stat" output, output "stat" charge ETRs in hh:mm format
   New metric:
     v.b.range.speed                -- Momentary ideal range gain/loss (charge/discharge) speed [kph]
+- Vehicle: emit standard events on changing v.e.gear & v.e.drivemode
+  New events:
+    vehicle.drivemode.<n>          -- Vehicle drivemode has been set to profile <n> (vehicle specific)
+    vehicle.gear.forward           -- Vehicle has been put in forward gear
+    vehicle.gear.neutral           -- Vehicle has been put in neutral gear
+    vehicle.gear.reverse           -- Vehicle has been put in reverse gear
 
 2021-03-05 MB  3.2.016  OTA release
 - VW e-Up: CCS (DC) charge detection & data
