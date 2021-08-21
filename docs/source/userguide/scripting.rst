@@ -519,6 +519,18 @@ The above example created a function ``myTicker`` in global context, to print ou
 Then, the ``PubSub.subscribe`` module method is used to subscribe to the ``ticker.10`` event and have it call
 ``myTicker`` every ten seconds. The result is "Event: ticker.10" printed once every ten seconds.
 
+PubSub interprets events similar to MQTT as **hierarchical topics**, with dots separating the levels.
+It delivers the events in multiple passes, with each new pass removing the last dotted part of the topic
+(i.e. bottom-up), so the most specific subscriptions will be called first. The handler is always called
+with the original event/topic name. So to e.g. catch all events ``vehicle.charge.…``, you can simply
+subscribe to ``vehicle.charge`` and inspect the actual event name in your handler:
+
+.. code-block:: javascript
+
+  PubSub.subscribe("vehicle.charge", function (event) {
+    print("Got charging related event: " + event);
+  });
+
 - ``id = PubSub.subscribe(topic, handler)``
     Subscribe the function ``handler`` to messages of the given topic. Note that types are not limited to
     OVMS events. The method returns an ``id`` to be used to unsubscribe the handler.
