@@ -46,6 +46,7 @@ public:
   bool FromUint24(const std::string &info, float &value, uint8_t bytesToSkip = 0);
   bool FromInt32(const std::string &info, float &value, uint8_t bytesToSkip = 0);
   bool FromInt16(const std::string &info, float &value, uint8_t bytesToSkip = 0);
+  bool FromInt8(const std::string &info, int &value, uint8_t bytesToSkip = 0);
 
 private:
   string Store;

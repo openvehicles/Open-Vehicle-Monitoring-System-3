@@ -81,6 +81,8 @@ Open Vehicle Monitor System v3 - Change log
   New configs:
     [xvu] log.socmon.storetime            -- days, 0=off
 - VW e-Up: add topping off charge phase support & timer mode change notification
+- VW e-Up/OBD: read ignition state from ECU, support v.e.gear & v.e.drivemode
+    (v.e.gear only on 2020 model)
 - New vehicle: Hyundai Ioniq vFL (HIONVFL)
   https://docs.openvehicles.com/en/latest/components/vehicle_hyundai_ioniqvfl/docs/index.html
 - Webserver: support TLS (https, wss) using self-signed certificates

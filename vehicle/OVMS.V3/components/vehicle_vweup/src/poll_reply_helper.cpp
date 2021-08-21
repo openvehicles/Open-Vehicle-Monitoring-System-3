@@ -146,3 +146,15 @@ bool PollReplyHelper::FromInt16(const std::string &info, float &value, uint8_t b
             (Store[1 + bytesToSkip])));
   return true;
 }
+
+bool PollReplyHelper::FromInt8(const std::string &info, int &value, uint8_t bytesToSkip /*= 0*/)
+{
+  if (Store.size() < (1 + bytesToSkip)) {
+    ESP_LOGE(TAG, "%s: Data length=%d is too short for FromInt8(skippedBytes=%u)",
+      info.c_str(), Store.size(), bytesToSkip);
+    return false;
+  }
+
+  value = static_cast<int>((int8_t)Store[0 + bytesToSkip]);
+  return true;
+}
