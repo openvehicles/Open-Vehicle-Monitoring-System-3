@@ -43,18 +43,21 @@ provides data logging to SD card and to a server.
 
 - _Native Integration_
   - Chevrolet Volt / Opel Ampera
+  - [BMW i3 / i3s](https://docs.openvehicles.com/en/latest/components/vehicle_bmwi3/docs/index.html)
   - [Fiat 500e](https://docs.openvehicles.com/en/latest/components/vehicle_fiat500/docs/index.html)
+  - [Hyundai Ioniq vFL](https://docs.openvehicles.com/en/latest/components/vehicle_hyundai_ioniqvfl/docs/index.html)
+  - [Jaguar Ipace](https://docs.openvehicles.com/en/latest/components/vehicle_jaguaripace/docs/index.html)
   - [Kia e-Niro / Hyundai Kona](https://docs.openvehicles.com/en/latest/components/vehicle_kianiroev/docs/index.html)
   - [Kia Soul EV](https://docs.openvehicles.com/en/latest/components/vehicle_kiasoulev/docs/index.html)
+  - [Maxus eDeliver 3](https://docs.openvehicles.com/en/latest/components/vehicle_maxus_edeliver3/docs/index.html)
   - [Mercedes-Benz B250E](https://docs.openvehicles.com/en/latest/components/vehicle_mercedesb250e/docs/index.html)
-  - [Mitsubishi Trio (i-MiEV et 
-  al)](https://docs.openvehicles.com/en/latest/components/vehicle_mitsubishi/docs/index.html)
-  - [Nissan Leaf](https://docs.openvehicles.com/en/latest/components/vehicle_nissanleaf/docs/index.html)
+  - [MG ZS EV](https://docs.openvehicles.com/en/latest/components/vehicle_mgev/docs/index.html)
+  - [Mitsubishi Trio (i-MiEV et al)](https://docs.openvehicles.com/en/latest/components/vehicle_mitsubishi/docs/index.html)
+  - [Nissan Leaf / e-NV200](https://docs.openvehicles.com/en/latest/components/vehicle_nissanleaf/docs/index.html)
   - [Renault Twizy](https://docs.openvehicles.com/en/latest/components/vehicle_renaulttwizy/docs/index.html)
-  - [Renault Zoe](https://docs.openvehicles.com/en/latest/components/vehicle_renaultzoe/docs/index.html)
+  - [Renault Zoe / Kangoo](https://docs.openvehicles.com/en/latest/components/vehicle_renaultzoe/docs/index.html)
   - [Smart ED Gen.3](https://docs.openvehicles.com/en/latest/components/vehicle_smarted/docs/index.html)
-  - [Smart ED/EQ Gen.4 
-  (453)](https://docs.openvehicles.com/en/latest/components/vehicle_smarteq/docs/index.html)
+  - [Smart ED/EQ Gen.4 (453)](https://docs.openvehicles.com/en/latest/components/vehicle_smarteq/docs/index.html)
   - [Tesla Model S](https://docs.openvehicles.com/en/latest/components/vehicle_teslamodels/docs/index.html)
   - [Tesla Roadster](https://docs.openvehicles.com/en/latest/components/vehicle_teslaroadster/docs/index.html)
   - Think City
@@ -160,6 +163,16 @@ status and control the car. This is a foundation that others hopefully will inte
 - Provide documentation in the user guide
 - Use pull requests to submit your code for inclusion
 
+**A note on pull requests:**
+
+Pull requests shall focus on one specific issue / feature / vehicle at a time and shall only mix 
+vehicle specific changes with framework changes if they depend on each other. If changes are not 
+or only loosely related, split them into multiple PRs (just as you would do with commits).
+
+Usage hint: create a branch for each pull request, include only those commits in that branch (by 
+cherry-picking if necessary) that shall be included in the pull request. That way you can push 
+further commits to that branch, Github will automatically add them to an open pull request.
+
 
 ## Donations
 
@@ -180,7 +193,7 @@ apply, see component sources for details.
 
 The project itself is published under the MIT license:
 
-Copyright (c) 2011-2019 Open Vehicles
+Copyright (c) 2011-2020 Open Vehicles
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

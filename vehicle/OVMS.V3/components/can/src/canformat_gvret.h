@@ -38,20 +38,21 @@
 
 typedef enum
   {
-  BUILD_CAN_FRAME = 0,
-  TIME_SYNC,
-  GET_DIG_INPUTS,
-  GET_ANALOG_INPUTS,
-  SET_DIG_OUTPUTS,
-  SETUP_CANBUS,
-  GET_CANBUS_PARAMS,
-  GET_DEVICE_INFO,
-  SET_SINGLEWIRE_MODE,
-  KEEP_ALIVE,
-  SET_SYSTEM_TYPE,
-  ECHO_CAN_FRAME,
-  GET_NUM_BUSES,
-  GET_EXT_BUSES
+  BUILD_CAN_FRAME      = 0,
+  TIME_SYNC            = 1,
+  GET_DIG_INPUTS       = 2,
+  GET_ANALOG_INPUTS    = 3,
+  SET_DIG_OUTPUTS      = 4,
+  SETUP_CANBUS         = 5,
+  GET_CANBUS_PARAMS    = 6,
+  GET_DEVICE_INFO      = 7,
+  SET_SINGLEWIRE_MODE  = 8,
+  KEEP_ALIVE           = 9,
+  SET_SYSTEM_TYPE      = 10,
+  ECHO_CAN_FRAME       = 11,
+  GET_NUM_BUSES        = 12,
+  GET_EXT_BUSES        = 13,
+  SET_EXT_BUSES        = 14
   } gvret_cmd_t;
 
 typedef struct __attribute__ ((__packed__))
@@ -100,28 +101,28 @@ typedef struct __attribute__ ((__packed__))
   uint8_t command;
   union
     {
-    struct // 1 - Time Sync
+    struct __attribute__ ((__packed__)) // 1 - Time Sync
       {
       uint32_t microseconds; // Microseconds since start up LSB to MSB
       } time_sync;
-    struct // 2 - Set state of digital inputs
+    struct __attribute__ ((__packed__)) // 2 - Set state of digital inputs
       {
       uint8_t inputvals;     // Bitfield of inputs (Bit 0 = Input 0, etc) 0 = Low, 1 = High
       uint8_t checksum;      // Checksum byte
       } get_dig_inputs;
-    struct // 3 - Get state of analog input pins
+    struct __attribute__ ((__packed__)) // 3 - Get state of analog input pins
       {
       uint16_t inputvals[4]; // Analog input LSB then MSB
       uint8_t checksum;      // Checksum byte
       } get_analog_inputs;
-    struct // 6 - Get CAN bus config
+    struct __attribute__ ((__packed__)) // 6 - Get CAN bus config
       {
       uint8_t can1_mode;     // Bit 0 - Enable  Bit 4 - Listen only
       uint32_t can1_speed;   // CAN0 Speed LSB to MSB
       uint8_t can2_mode;     // Bit 0 - Enable  Bit 4 - ListenOnly
       uint32_t can2_speed;   // CAN1 Speed LSB to MSB
       } get_canbus_params;
-    struct // 7 - Get device info
+    struct __attribute__ ((__packed__)) // 7 - Get device info
       {
       uint16_t build;        // Build number LSB to MSB
       uint8_t eeprom;        // EEPROM version
@@ -129,16 +130,16 @@ typedef struct __attribute__ ((__packed__))
       uint8_t autolog;       // Auto start logging
       uint8_t singlewire;    // Single wire mode
       } get_device_info;
-    struct // 9 - Keep alive
+    struct __attribute__ ((__packed__)) // 9 - Keep alive
       {
       uint8_t notdead1;      // 0xDE
       uint8_t notdead2;      // 0xAD - So, if it isn't dead it responds with DEAD.
       } keep_alive;
-    struct // 12 - Get number of buses
+    struct __attribute__ ((__packed__)) // 12 - Get number of buses
       {
       uint8_t buses;         // Number of buses
       } get_num_buses;
-    struct // 13 - Get extended buses
+    struct __attribute__ ((__packed__)) // 13 - Get extended buses
       {
       uint8_t swcan_mode;    // Bit 0 - Enable  Bit 4 - Listen only
       uint32_t swcan_speed;  // CAN0 Speed LSB to MSB
@@ -169,7 +170,7 @@ class canformat_gvret : public canformat
   public:
     virtual std::string get(CAN_log_message_t* message);
     virtual std::string getheader(struct timeval *time);
-    virtual size_t put(CAN_log_message_t* message, uint8_t *buffer, size_t len, void* userdata=NULL);
+    virtual size_t put(CAN_log_message_t* message, uint8_t *buffer, size_t len, bool* hasmore, canlogconnection* clc=NULL);
   };
 
 class canformat_gvret_ascii : public canformat_gvret
@@ -177,7 +178,7 @@ class canformat_gvret_ascii : public canformat_gvret
   public:
     canformat_gvret_ascii(const char* type);
     virtual std::string get(CAN_log_message_t* message);
-    virtual size_t put(CAN_log_message_t* message, uint8_t *buffer, size_t len, void* userdata=NULL);
+    virtual size_t put(CAN_log_message_t* message, uint8_t *buffer, size_t len, bool* hasmore, canlogconnection* clc=NULL);
   };
 
 class canformat_gvret_binary : public canformat_gvret
@@ -185,7 +186,12 @@ class canformat_gvret_binary : public canformat_gvret
   public:
     canformat_gvret_binary(const char* type);
     virtual std::string get(CAN_log_message_t* message);
-    virtual size_t put(CAN_log_message_t* message, uint8_t *buffer, size_t len, void* userdata=NULL);
+    virtual std::string getheader(struct timeval *time);
+    virtual size_t put(CAN_log_message_t* message, uint8_t *buffer, size_t len, bool* hasmore, canlogconnection* clc=NULL);
+
+  private:
+    void PopulateBusList12(gvret_replymsg_t* r);
+    void PopulateBusList3(gvret_replymsg_t* r);
   };
 
 #endif // __CANFORMAT_GVRET_H__

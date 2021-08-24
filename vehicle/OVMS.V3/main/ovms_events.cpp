@@ -40,10 +40,33 @@ static const char *TAG = "events";
 #include "ovms_command.h"
 #include "ovms_script.h"
 #include "ovms_boot.h"
+#include "ovms_ota.h"
 
 OvmsEvents MyEvents __attribute__ ((init_priority (1200)));
 
 typedef void (*event_signal_done_fn)(const char* event, void* data);
+
+bool EventMap::GetCompletion(OvmsWriter* writer, const char* token) const
+  {
+  unsigned int index = 0;
+  bool match = false;
+  writer->SetCompletion(index, NULL);
+  if (token)
+    {
+    size_t len = strlen(token);
+    for (const_iterator it = begin(); it != end(); ++it)
+      {
+      if (it->first.compare("*") == 0)
+        continue;
+      if (it->first.compare(0, len, token) == 0)
+        {
+        writer->SetCompletion(index++, it->first.c_str());
+        match = true;
+        }
+      }
+    }
+  return match;
+  }
 
 void EventStdFree(const char* event, void* data)
   {
@@ -108,7 +131,12 @@ void event_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
 
 int event_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool complete)
   {
-  return MyEvents.Map().Validate(writer, argc, argv[0], complete);
+  int argpos = 0;
+  for (int i=0; i < argc; i++)
+    argpos += (argv[i][0] != '-') ? 1 : 0;
+  if (argpos == 1 && MyEvents.Map().GetCompletion(writer, argv[argc-1]))
+    return argc;
+  return -1;
   }
 
 void event_raise(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -118,20 +146,27 @@ void event_raise(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
 
   for (int i=0; i<argc; i++)
     {
-    if (argv[i][0]=='-' && argv[i][1]=='d')
+    if (argv[i][0] == '-')
+      {
+      if (argv[i][1] != 'd')
+        {
+        cmd->PutUsage(writer);
+        return;
+        }
       delay_ms = atol(argv[i]+2);
+      }
     else
       event = argv[i];
     }
 
   if (delay_ms)
     {
-    writer->printf("Raising event in %u ms: %s\n", delay_ms, argv[0]);
+    writer->printf("Raising event in %u ms: %s\n", delay_ms, event.c_str());
     MyEvents.SignalEvent(event, NULL, (size_t)0, delay_ms);
     }
   else
     {
-    writer->printf("Raising event: %s\n", argv[0]);
+    writer->printf("Raising event: %s\n", event.c_str());
     MyEvents.SignalEvent(event, NULL);
     }
   }
@@ -194,7 +229,11 @@ void OvmsEvents::EventTask()
       }
     else
       {
-      // timeout on xQueueReceive means:
+      // Timeout on xQueueReceive: ignore during OTA flash job:
+      OvmsMutexLock m_lock(&MyOTA.m_flashing, 0);
+      if (!m_lock.IsLocked())
+        continue;
+      // …no OTA flashing in progress => abort:
       ESP_LOGE(TAG, "EventTask: [QueueTimeout] timer service / ticker timer has died => aborting");
       m_current_event = "[QueueTimeout]";
       m_current_started = monotonictime - 5;
@@ -207,8 +246,8 @@ void OvmsEvents::EventTask()
 
 void OvmsEvents::HandleQueueSignalEvent(event_queue_t* msg)
   {
-  // Log everything but the excessively verbose ticker signals
-  if (m_current_event.compare(0,7,"ticker.") != 0)
+  // Log everything but the ticker & clock signals
+  if (!startsWith(m_current_event, "ticker.") && !startsWith(m_current_event, "clock."))
     {
     if (m_trace)
       ESP_LOGI(TAG, "Signal(%s)",m_current_event.c_str());
@@ -333,6 +372,9 @@ static void CheckQueueOverflow(const char* from, char* event)
     {
     // We've dropped a potentially important event, system is instable now.
     // As the event queue is full, a normal reboot is no option, so…
+    // …wait for a running OTA job to finish…
+    OvmsMutexLock m_lock(&MyOTA.m_flashing);
+    // …then abort:
     ESP_LOGE(TAG, "%s: lost important event => aborting", from);
     MyCommandApp.CloseLogfile();
     vTaskDelay(pdMS_TO_TICKS(100));

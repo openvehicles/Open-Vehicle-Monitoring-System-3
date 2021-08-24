@@ -141,12 +141,28 @@ SevconClient::SevconClient(OvmsVehicleRenaultTwizy* twizy)
 
 SevconClient::~SevconClient()
 {
+  ESP_LOGI(TAG, "sevcon subsystem shutdown");
+
+  m_twizy->cmd_xrt->UnregisterCommand("mon");
+  m_twizy->cmd_xrt->UnregisterCommand("cfg");
+
   if (m_kickdown_timer)
     xTimerDelete(m_kickdown_timer, 0);
   if (m_faultqueue)
     vQueueDelete(m_faultqueue);
   if (m_asynctask)
     vTaskDelete(m_asynctask);
+
+  ShutdownMonitoring();
+
+  // metrics:
+  MyMetrics.DeregisterMetric(ms_cfg_profile);
+  MyMetrics.DeregisterMetric(ms_cfg_user);
+  MyMetrics.DeregisterMetric(ms_cfg_base);
+  MyMetrics.DeregisterMetric(ms_cfg_ws);
+  MyMetrics.DeregisterMetric(ms_cfg_unsaved);
+  MyMetrics.DeregisterMetric(ms_cfg_applied);
+  MyMetrics.DeregisterMetric(ms_cfg_type);
 }
 
 SevconClient* SevconClient::GetInstance(OvmsWriter* writer /*=NULL*/)

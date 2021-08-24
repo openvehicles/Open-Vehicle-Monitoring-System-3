@@ -2,24 +2,24 @@
 Events
 ======
 
-Internally, OVMS raises events whenever significant events occur. An event is a lightweight message 
-of a name plus optionally associated internal binary data. Event names are top-down structured (so 
-can be filtered by prefix) and sufficient to identify the source and type of the event. Individual 
+Internally, OVMS raises events whenever significant events occur. An event is a lightweight message
+of a name plus optionally associated internal binary data. Event names are top-down structured (so
+can be filtered by prefix) and sufficient to identify the source and type of the event. Individual
 vehicle types may also issue their own events, and custom user events are also possible.
 
-To **bind a script to an event**, save the script in directory ``/store/events/<eventname>`` (hint: 
-directories can be created using the web UI editor). Whenever events are triggered, all the scripts 
-in the corresponding ``/store/events/<eventname>`` directory are executed. Event scripts are 
-executed in alphanumerical order of their names. Good practice is to prefix script names with 2-3 
-digit numbers in steps of 10 or 100 (i.e. first script named ``50-…``), so new scripts can easily be 
-integrated at a specific place. If the event script is written in Javascript, be sure to add the 
+To **bind a script to an event**, save the script in directory ``/store/events/<eventname>`` (hint:
+directories can be created using the web UI editor). Whenever events are triggered, all the scripts
+in the corresponding ``/store/events/<eventname>`` directory are executed. Event scripts are
+executed in alphanumerical order of their names. Good practice is to prefix script names with 2-3
+digit numbers in steps of 10 or 100 (i.e. first script named ``50-…``), so new scripts can easily be
+integrated at a specific place. If the event script is written in Javascript, be sure to add the
 suffix ``.js`` to the name. Other names will be executed using the standard command interpreter.
 
-If you want to **introduce a custom event** (e.g. for a plugin), prefix the event name by 
+If you want to **introduce a custom event** (e.g. for a plugin), prefix the event name by
 ``usr.<pluginname>.`` followed by the event purpose. :doc:`../components/ovms_script/docs/foglight`
 
-Be aware **events are processed in series** from a queue, so depending on the system load and the 
-list of registered event listeners, there may be some delay from event generation to e.g. a script 
+Be aware **events are processed in series** from a queue, so depending on the system load and the
+list of registered event listeners, there may be some delay from event generation to e.g. a script
 execution.
 
 --------
@@ -49,6 +49,8 @@ canopen.node.emcy                   <event>   CANopen node emergency received
 canopen.node.state                  <event>   CANopen node state change received
 canopen.worker.start                <worker>  CANopen bus worker task started
 canopen.worker.stop                 <worker>  CANopen bus worker task stopping
+clock.HHMM                                    Per-minute local time, hour HH, minute MM
+clock.dayN                                    Per-day local time, day N (0=Sun, 6=Sat)
 config.changed                                Configuration has changed
 config.mounted                                Configuration is mounted and available
 config.unmounted                              Configuration is unmounted and unavailable
@@ -80,6 +82,9 @@ retools.mode.analyse                          RE switched to analysis mode
 retools.mode.discover                         RE switched to discovery mode
 retools.started                               RE (reverse engineering) toolkit started
 retools.stopped                               RE toolkit stopped
+retools.pidscan.start                         RE OBD2 PID scan started
+retools.pidscan.stop                          RE OBD2 PID scan stopped
+retools.pidscan.done                          RE OBD2 PID scan completed
 sd.insert                                     The SD card has just been inserted
 sd.mounted                                    The SD card is mounted and ready to use
 sd.remove                                     The SD card has just been removed
@@ -147,6 +152,8 @@ vehicle.alert.12v.on                          12V system voltage is below alert 
 vehicle.alert.bms                             BMS cell/pack volts/temps exceeded thresholds
 vehicle.asleep                                Vehicle systems are asleep
 vehicle.awake                                 Vehicle systems are awake
+vehicle.aux.12v.on                            Vehicle 12V auxiliary system is on (base system awake)
+vehicle.aux.12v.off                           Vehicle 12V auxiliary system is off
 vehicle.charge.12v.start                      Vehicle 12V battery is charging
 vehicle.charge.12v.stop                       Vehicle 12V battery has stopped charging
 vehicle.charge.finished                       Vehicle charge has completed normally
@@ -157,6 +164,12 @@ vehicle.charge.prepare                        Vehicle is preparing to charge
 vehicle.charge.start                          Vehicle has started to charge
 vehicle.charge.state                <state>   Vehicle charge state has changed
 vehicle.charge.stop                           Vehicle has stopped charging
+vehicle.charge.timermode.off                  Vehicle charge timer mode has been switched off
+vehicle.charge.timermode.on                   Vehicle charge timer mode has been switched on
+vehicle.drivemode.<n>                         Vehicle drivemode has been set to profile <n> (vehicle specific)
+vehicle.gear.forward                          Vehicle has been put in forward gear
+vehicle.gear.neutral                          Vehicle has been put in neutral gear
+vehicle.gear.reverse                          Vehicle has been put in reverse gear
 vehicle.headlights.off                        Vehicle headlights are off
 vehicle.headlights.on                         Vehicle headlights are on
 vehicle.locked                                Vehicle has been locked

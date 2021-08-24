@@ -141,7 +141,16 @@ void vfs_head(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
   for (int i=0; i<argc; i++)
     {
     if (argv[i][0] == '-')
-      nrlines = atoi(argv[i]+1);
+      {
+      char* ep;
+      int32_t v = strtol(argv[i] + 1, &ep, 10);
+      if (*ep != '\0')
+        {
+        cmd->PutUsage(writer);
+        return;
+        }
+      nrlines = v;
+      }
     else
       filename = argv[i];
     }
@@ -350,7 +359,16 @@ class VfsTailCommand : public OvmsCommandTask
       for (int i=0; i<argc; i++)
         {
         if (argv[i][0] == '-')
-          nrlines = atoi(argv[i]+1);
+          {
+          char* ep;
+          int32_t v = strtol(argv[i] + 1, &ep, 10);
+          if (*ep != '\0')
+            {
+            cmd->PutUsage(writer);
+            return OCS_Error;
+            }
+          nrlines = v;
+          }
         else
           filename = argv[i];
         }
@@ -485,7 +503,7 @@ VfsInit::VfsInit()
   {
   ESP_LOGI(TAG, "Initialising VFS (5200)");
 
-  OvmsCommand* cmd_vfs = MyCommandApp.RegisterCommand("vfs","Virtual File System framework",NULL,"$C <file(s)>");
+  OvmsCommand* cmd_vfs = MyCommandApp.RegisterCommand("vfs","Virtual File System framework");
   cmd_vfs->RegisterCommand("ls","VFS Directory Listing",vfs_ls, "[<file>]", 0, 1);
   cmd_vfs->RegisterCommand("cat","VFS Display a file",vfs_cat, "<file>", 1, 1);
   cmd_vfs->RegisterCommand("head","VFS Display first 20 lines of a file",vfs_head, "[-nrlines] <file>", 1, 2);

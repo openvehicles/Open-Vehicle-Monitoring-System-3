@@ -41,24 +41,24 @@ OvmsVehicleCadillaccC2CTS* MyCadillaccC2CTS = NULL;
 static const OvmsVehicle::poll_pid_t obdii_polls[] =
   {
     // Engine coolant temp
-    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x05, {  0, 30, 30 }, 0 },
+    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x05, {  0, 30, 30 }, 0, ISOTP_STD },
     // Engine RPM
-    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x0c, { 10, 10, 10 }, 0 },
+    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x0c, { 10, 10, 10 }, 0, ISOTP_STD },
     // Speed
-    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x0d, {  0, 10, 10 }, 0 },
+    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x0d, {  0, 10, 10 }, 0, ISOTP_STD },
     // Engine air intake temp
-    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x0f, {  0, 30, 30 }, 0 },
+    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x0f, {  0, 30, 30 }, 0, ISOTP_STD },
     // Fuel level
-    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x2f, {  0, 30, 30 }, 0 },
+    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x2f, {  0, 30, 30 }, 0, ISOTP_STD },
     // Ambiant temp
-    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x46, {  0, 30, 30 }, 0 },
+    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x46, {  0, 30, 30 }, 0, ISOTP_STD },
     // Engine oil temp
-    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x5c, {  0, 30, 30 }, 0 },
+    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x5c, {  0, 30, 30 }, 0, ISOTP_STD },
 #ifdef notdef
     // VIN
     // { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIIVEHICLE, 0x02, {999,999,999 } },
 #endif
-    { 0, 0, 0x00, 0x00, { 0, 0, 0 }, 0 }
+    POLL_LIST_END
   };
 
 static volatile bool processing;
@@ -229,15 +229,6 @@ ESP_LOGI(TAG, "now awake");
 #ifdef notdef
     case 0x???:
       /* ??? TMPS */
-      StandardMetrics.ms_v_tpms_fl_t->SetValue(?);
-      StandardMetrics.ms_v_tpms_fr_t->SetValue(?);
-      StandardMetrics.ms_v_tpms_rr_t->SetValue(?);
-      StandardMetrics.ms_v_tpms_rl_t->SetValue(?);
-
-      StandardMetrics.ms_v_tpms_fl_p->SetValue(?);
-      StandardMetrics.ms_v_tpms_fr_p->SetValue(?);
-      StandardMetrics.ms_v_tpms_rr_p->SetValue(?);
-      StandardMetrics.ms_v_tpms_rl_p->SetValue(?);
       break;
 #endif
 
@@ -295,16 +286,16 @@ OvmsVehicleCadillaccC2CTS::IncomingPollReply(canbus* bus, uint16_t type,
       if (value2 == 0)
         { // Car engine is OFF
         PollSetState(0);
-        // StandardMetrics.ms_v_env_handbrake->SetValue(true);
-        // StandardMetrics.ms_v_env_on->SetValue(false);
-        // StandardMetrics.ms_v_pos_speed->SetValue(0);
+        StandardMetrics.ms_v_env_handbrake->SetValue(true);
+        StandardMetrics.ms_v_env_on->SetValue(false);
+        StandardMetrics.ms_v_pos_speed->SetValue(0);
         StandardMetrics.ms_v_env_charging12v->SetValue(false);
         }
       else
         { // Car engine is ON
         PollSetState(1);
-        // StandardMetrics.ms_v_env_handbrake->SetValue(false);
-        // StandardMetrics.ms_v_env_on->SetValue(true);
+        StandardMetrics.ms_v_env_handbrake->SetValue(false);
+        StandardMetrics.ms_v_env_on->SetValue(true);
         StandardMetrics.ms_v_env_charging12v->SetValue(true);
         }
       break;
@@ -322,6 +313,8 @@ OvmsVehicleCadillaccC2CTSInit::OvmsVehicleCadillaccC2CTSInit()
 
   MyVehicleFactory.RegisterVehicle<OvmsVehicleCadillaccC2CTS>("C2CTS",
     "Cadillac 2nd gen CTS");
+  if (!StandardMetrics.ms_v_env_on->AsBool())
+      StandardMetrics.ms_v_env_on->SetValue(false);
   }
 
 // XXX from vehicle_nissanleaf.cpp

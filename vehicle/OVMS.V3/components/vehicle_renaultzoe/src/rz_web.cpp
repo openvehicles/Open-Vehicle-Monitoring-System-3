@@ -59,6 +59,7 @@ void OvmsVehicleRenaultZoe::WebInit()
   // vehicle menu:
   MyWebServer.RegisterPage("/xrz/features", "Features",       WebCfgFeatures, PageMenu_Vehicle, PageAuth_Cookie);
   MyWebServer.RegisterPage("/xrz/battery",  "Battery config", WebCfgBattery,  PageMenu_Vehicle, PageAuth_Cookie);
+  MyWebServer.RegisterPage("/xrz/battmon",  "Battery Monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
 }
 
 /**
@@ -68,6 +69,7 @@ void OvmsVehicleRenaultZoe::WebDeInit()
 {
   MyWebServer.DeregisterPage("/xrz/features");
   MyWebServer.DeregisterPage("/xrz/battery");
+  MyWebServer.DeregisterPage("/xrz/battmon");
 }
 
 /**
@@ -77,14 +79,25 @@ void OvmsVehicleRenaultZoe::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 {
   std::string error, info;
   bool canwrite;
+  std::string vehicle_type;
 
   if (c.method == "POST") {
     // process form submission:
-    canwrite  = (c.getvar("canwrite") == "yes");
+    canwrite     = (c.getvar("canwrite") == "yes");
+    vehicle_type = c.getvar("vehicle_type");
+    
+    // validate:
+    if (vehicle_type != "") {
+      int v = atoi(vehicle_type.c_str());
+      if (v < 0 || v > 1) {
+        error += "<li data-input=\"vehicle_type\">Something went wrong</li>";
+      }
+    }
 
     if (error == "") {
       // success:
       MyConfig.SetParamValueBool("xrz", "canwrite",   canwrite);
+      MyConfig.SetParamValue("xrz", "vehicle.type", vehicle_type);
 
       info = "<p class=\"lead\">Success!</p><ul class=\"infolist\">" + info + "</ul>";
       c.head(200);
@@ -101,16 +114,22 @@ void OvmsVehicleRenaultZoe::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   }
   else {
     // read configuration:
-    canwrite  = MyConfig.GetParamValueBool("xrz", "canwrite", false);
+    canwrite     = MyConfig.GetParamValueBool("xrz", "canwrite", false);
+    vehicle_type = MyConfig.GetParamValue("xrz", "vehicle.type", "0");
     c.head(200);
   }
 
   // generate form:
-  c.panel_start("primary", "Renault Zoe feature configuration");
+  c.panel_start("primary", "Renault Zoe/Kangoo feature configuration");
   c.form_start(p.uri);
   
   c.input_checkbox("Enable CAN write(Poll)", "canwrite", canwrite,
     "<p>Controls overall CAN write access, some functions depend on this.</p>");
+  
+  c.input_select_start("Vehicle type", "vehicle_type");
+  c.input_select_option("Zoe R240 (PH1)", "0", vehicle_type == "0");
+  c.input_select_option("Kangoo",    "1", vehicle_type == "1");
+  c.input_select_end();
   
   c.print("<hr>");
   c.input_button("default", "Save");
@@ -168,7 +187,7 @@ void OvmsVehicleRenaultZoe::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValue("xrz", "suffsoc", suffsoc);
 
       c.head(200);
-      c.alert("success", "<p class=\"lead\">Renault Zoe battery setup saved.</p>");
+      c.alert("success", "<p class=\"lead\">Renault Zoe/Kangoo battery setup saved.</p>");
       MyWebServer.OutputHome(p, c);
       c.done();
       return;
@@ -191,7 +210,7 @@ void OvmsVehicleRenaultZoe::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
 
   // generate form:
 
-  c.panel_start("primary", "Renault Zoe Battery Setup");
+  c.panel_start("primary", "Renault Zoe/Kangoo Battery Setup");
   c.form_start(p.uri);
 
   c.fieldset_start("Charge control");

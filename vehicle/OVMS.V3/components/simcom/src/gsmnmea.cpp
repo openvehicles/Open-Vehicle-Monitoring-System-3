@@ -99,6 +99,23 @@ static unsigned long utc_to_timestamp(const char* date, const char* time)
   }
 
 
+static bool valid_nmea_cksum(const std::string line)
+  {
+  const char *cp = line.c_str();
+  if (*cp != '$')
+    return 0;
+  ++cp;
+  const char *ep = strchr(cp, '*');
+  if (ep == NULL)
+    return 0;
+  unsigned char chk = 0;
+  while (cp < ep)
+    chk ^= (const unsigned char)*cp++;
+  unsigned char chk2 = (unsigned char)strtoul(ep + 1, NULL, 16);
+  return (chk == chk2);
+  }
+
+
 void GsmNMEA::IncomingLine(const std::string line)
   {
   ESP_LOGV(TAG, "IncomingLine: %s", line.c_str());
@@ -108,8 +125,13 @@ void GsmNMEA::IncomingLine(const std::string line)
 
   if (!std::getline(sentence, token, ','))
     return;
-  if (token[0] != '$')
+  if (token.length() < 6 || token[0] != '$')
     return;
+  if (!valid_nmea_cksum(line))
+    {
+    ESP_LOGE(TAG, "IncomingLine: bad checksum: %s", line.c_str());
+    return;
+    }
 
   if (token.substr(3) == "GNS")
     {
@@ -234,7 +256,6 @@ void GsmNMEA::IncomingLine(const std::string line)
       int tm = utc_to_timestamp(date, time);
       if (tm < 1572735600) // 2019-11-03 00:00:00
         tm += (1024*7*86400); // Nasty kludge to workaround SIM5360 week rollover
-      *StdMetrics.ms_m_timeutc = (int) tm;
       MyTime.Set(TAG, 2, true, tm);
       }
 

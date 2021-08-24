@@ -205,6 +205,46 @@ void SevconClient::InitMonitoring()
 
 
 /**
+ * ShutdownMonitoring:
+ */
+void SevconClient::ShutdownMonitoring()
+{
+  // close file:
+  if (m_mon_enable) {
+    FILE* fp = (FILE*)m_mon_file;
+    m_mon_enable = false;
+    if (fp) {
+      OvmsMutexLock lock(&m_mon_mutex);
+      m_mon_file = NULL;
+      fclose(fp);
+    }
+  }
+
+  // delete metrics:
+  MyMetrics.DeregisterMetric(m_mon.mot_current);
+  MyMetrics.DeregisterMetric(m_mon.mot_voltage);
+  MyMetrics.DeregisterMetric(m_mon.mot_power);
+  MyMetrics.DeregisterMetric(m_mon.mot_voltmod);
+
+  MyMetrics.DeregisterMetric(m_mon.mot_slipfreq);
+  MyMetrics.DeregisterMetric(m_mon.mot_outputfreq);
+
+  MyMetrics.DeregisterMetric(m_mon.mot_torque_demand);
+  MyMetrics.DeregisterMetric(m_mon.mot_torque);
+  MyMetrics.DeregisterMetric(m_mon.mot_torque_limit);
+
+  MyMetrics.DeregisterMetric(m_mon.bat_voltage);
+  MyMetrics.DeregisterMetric(m_mon.cap_voltage);
+  
+  MyMetrics.DeregisterMetric(m_mon.m_bat_power_drv);
+  MyMetrics.DeregisterMetric(m_mon.m_bat_power_rec);
+
+  MyMetrics.DeregisterMetric(m_mon.m_mot_torque_drv);
+  MyMetrics.DeregisterMetric(m_mon.m_mot_torque_rec);
+}
+
+
+/**
  * QueryMonitoringData: request monitored SDOs from SEVCON
  *  - called by IncomingFrameCan1 (triggered by PDO 0x629, 100ms interval)
  *  - running in vehicle task context

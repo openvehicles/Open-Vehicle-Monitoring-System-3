@@ -112,7 +112,7 @@ typedef union {
   unsigned Frunk:1;             // 0x04
   unsigned :1;                  // 0x08
   unsigned Charging12V:1;       // 0x10
-  unsigned :1;                  // 0x20
+  unsigned Aux12V:1;            // 0x20
   unsigned :1;                  // 0x40
   unsigned HVAC:1;              // 0x80
   } bits;
@@ -967,6 +967,7 @@ void OvmsServerV2::TransmitMsgStat(bool always)
     StandardMetrics.ms_v_bat_range_ideal->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_bat_range_est->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_charge_climit->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_charge_kwh->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_charge_timermode->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_charge_timerstart->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_bat_cac->IsModifiedAndClear(MyOvmsServerV2Modifier) |
@@ -980,7 +981,11 @@ void OvmsServerV2::TransmitMsgStat(bool always)
     StandardMetrics.ms_v_bat_range_full->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_bat_power->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_bat_voltage->IsModifiedAndClear(MyOvmsServerV2Modifier) |
-    StandardMetrics.ms_v_bat_soh->IsModifiedAndClear(MyOvmsServerV2Modifier);
+    StandardMetrics.ms_v_bat_soh->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_charge_power->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_charge_efficiency->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_bat_current->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_bat_range_speed->IsModifiedAndClear(MyOvmsServerV2Modifier);
 
   // Quick exit if nothing modified
   if ((!always)&&(!modified)) return;
@@ -988,6 +993,7 @@ void OvmsServerV2::TransmitMsgStat(bool always)
   int mins_range = StandardMetrics.ms_v_charge_duration_range->AsInt();
   int mins_soc = StandardMetrics.ms_v_charge_duration_soc->AsInt();
   bool charging = StandardMetrics.ms_v_charge_inprogress->AsBool();
+  metric_unit_t units_speed = (m_units_distance == Miles) ? Mph : Kph;
 
   extram::ostringstream buffer;
   buffer
@@ -1000,7 +1006,7 @@ void OvmsServerV2::TransmitMsgStat(bool always)
     << ","
     << StandardMetrics.ms_v_charge_voltage->AsInt()
     << ","
-    << StandardMetrics.ms_v_charge_current->AsInt()
+    << StandardMetrics.ms_v_charge_current->AsFloat()
     << ","
     << StandardMetrics.ms_v_charge_state->AsString("stopped")
     << ","
@@ -1061,10 +1067,109 @@ void OvmsServerV2::TransmitMsgStat(bool always)
     << StandardMetrics.ms_v_bat_voltage->AsFloat()
     << ","
     << StandardMetrics.ms_v_bat_soh->AsInt()
+    << ","
+    << StandardMetrics.ms_v_charge_power->AsFloat()
+    << ","
+    << StandardMetrics.ms_v_charge_efficiency->AsFloat()
+    << ","
+    << StandardMetrics.ms_v_bat_current->AsFloat()
+    << ","
+    << std::setprecision(1)
+    << StandardMetrics.ms_v_bat_range_speed->AsFloat(0, units_speed)
     ;
 
   Transmit(buffer.str().c_str());
   }
+
+void OvmsServerV2::TransmitMsgGen(bool always)
+  {
+  m_now_gen = false;
+
+  bool modified =
+    StandardMetrics.ms_v_gen_inprogress->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_pilot->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_voltage->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_current->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_power->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_efficiency->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_type->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_state->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_substate->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_mode->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_climit->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_limit_range->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_limit_soc->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_kwh->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_limit_range->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_limit_soc->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_kwh_grid->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_kwh_grid_total->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_time->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_timermode->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_timerstart->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_duration_empty->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_duration_range->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_duration_soc->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_gen_temp->IsModifiedAndClear(MyOvmsServerV2Modifier);
+
+  // Quick exit if nothing modified
+  if ((!always)&&(!modified)) return;
+
+  extram::ostringstream buffer;
+  buffer
+    << std::fixed
+    << std::setprecision(1)
+    << "MP-0 G"
+    << StandardMetrics.ms_v_gen_inprogress->AsBool()
+    << ";"
+    << StandardMetrics.ms_v_gen_pilot->AsBool()
+    << ","
+    << StandardMetrics.ms_v_gen_voltage->AsInt()
+    << ","
+    << StandardMetrics.ms_v_gen_current->AsFloat()
+    << ","
+    << StandardMetrics.ms_v_gen_power->AsFloat()
+    << ","
+    << StandardMetrics.ms_v_gen_efficiency->AsFloat()
+    << ","
+    << StandardMetrics.ms_v_gen_type->AsString("")
+    << ","
+    << StandardMetrics.ms_v_gen_state->AsString("stopped")
+    << ","
+    << StandardMetrics.ms_v_gen_substate->AsString("")
+    << ","
+    << StandardMetrics.ms_v_gen_mode->AsString("standard")
+    << ","
+    << StandardMetrics.ms_v_gen_climit->AsFloat()
+    << ","
+    << StandardMetrics.ms_v_gen_limit_range->AsFloat(0, m_units_distance)
+    << ","
+    << StandardMetrics.ms_v_gen_limit_soc->AsInt()
+    << ","
+    << StandardMetrics.ms_v_gen_kwh->AsFloat()
+    << ","
+    << StandardMetrics.ms_v_gen_kwh_grid->AsFloat()
+    << ","
+    << StandardMetrics.ms_v_gen_kwh_grid_total->AsFloat()
+    << ","
+    << StandardMetrics.ms_v_gen_time->AsInt(0,Seconds)
+    << ","
+    << StandardMetrics.ms_v_gen_timermode->AsBool()
+    << ","
+    << StandardMetrics.ms_v_gen_timerstart->AsInt()
+    << ","
+    << StandardMetrics.ms_v_gen_duration_empty->AsInt()
+    << ","
+    << StandardMetrics.ms_v_gen_duration_range->AsInt()
+    << ","
+    << StandardMetrics.ms_v_gen_duration_soc->AsInt()
+    << ";"
+    << StandardMetrics.ms_v_gen_temp->AsFloat()
+    ;
+
+  Transmit(buffer.str().c_str());
+  }
+
 
 void OvmsServerV2::TransmitMsgGPS(bool always)
   {
@@ -1076,11 +1181,17 @@ void OvmsServerV2::TransmitMsgGPS(bool always)
     StandardMetrics.ms_v_pos_direction->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_pos_altitude->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_pos_gpslock->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_pos_gpsmode->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_pos_gpshdop->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_pos_satcount->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_pos_gpsspeed->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_pos_speed->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_env_drivemode->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_bat_power->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_bat_energy_used->IsModifiedAndClear(MyOvmsServerV2Modifier) |
-    StandardMetrics.ms_v_bat_energy_recd->IsModifiedAndClear(MyOvmsServerV2Modifier);
+    StandardMetrics.ms_v_bat_energy_recd->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_inv_power->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_inv_efficiency->IsModifiedAndClear(MyOvmsServerV2Modifier);
 
   // Quick exit if nothing modified
   if ((!always)&&(!modified)) return;
@@ -1093,6 +1204,8 @@ void OvmsServerV2::TransmitMsgGPS(bool always)
 
   char drivemode[10];
   sprintf(drivemode, "%x", StandardMetrics.ms_v_env_drivemode->AsInt());
+
+  metric_unit_t units_speed = (m_units_distance == Kilometers) ? Kph : Mph;
 
   extram::ostringstream buffer;
   buffer
@@ -1107,7 +1220,7 @@ void OvmsServerV2::TransmitMsgGPS(bool always)
     << ","
     << StandardMetrics.ms_v_pos_gpslock->AsBool(false)
     << ((stale)?",0,":",1,")
-    << ((m_units_distance == Kilometers)? StandardMetrics.ms_v_pos_speed->AsString("0") : StandardMetrics.ms_v_pos_speed->AsString("0",Mph))
+    << StandardMetrics.ms_v_pos_speed->AsString("0", units_speed, 1)
     << ","
     << int(StandardMetrics.ms_v_pos_trip->AsFloat(0, m_units_distance)*10)
     << ","
@@ -1118,6 +1231,18 @@ void OvmsServerV2::TransmitMsgGPS(bool always)
     << StandardMetrics.ms_v_bat_energy_used->AsString("0",Other,3)
     << ","
     << StandardMetrics.ms_v_bat_energy_recd->AsString("0",Other,3)
+    << ","
+    << StandardMetrics.ms_v_inv_power->AsFloat()
+    << ","
+    << StandardMetrics.ms_v_inv_efficiency->AsFloat()
+    << ","
+    << StandardMetrics.ms_v_pos_gpsmode->AsString()
+    << ","
+    << StandardMetrics.ms_v_pos_satcount->AsInt()
+    << ","
+    << StandardMetrics.ms_v_pos_gpshdop->AsString("0", Native, 1)
+    << ","
+    << StandardMetrics.ms_v_pos_gpsspeed->AsString("0", units_speed, 1)
     ;
 
   Transmit(buffer.str().c_str());
@@ -1128,33 +1253,83 @@ void OvmsServerV2::TransmitMsgTPMS(bool always)
   m_now_tpms = false;
 
   bool modified =
-    StandardMetrics.ms_v_tpms_fl_t->IsModifiedAndClear(MyOvmsServerV2Modifier) |
-    StandardMetrics.ms_v_tpms_fr_t->IsModifiedAndClear(MyOvmsServerV2Modifier) |
-    StandardMetrics.ms_v_tpms_rl_t->IsModifiedAndClear(MyOvmsServerV2Modifier) |
-    StandardMetrics.ms_v_tpms_rr_t->IsModifiedAndClear(MyOvmsServerV2Modifier) |
-    StandardMetrics.ms_v_tpms_fl_p->IsModifiedAndClear(MyOvmsServerV2Modifier) |
-    StandardMetrics.ms_v_tpms_fr_p->IsModifiedAndClear(MyOvmsServerV2Modifier) |
-    StandardMetrics.ms_v_tpms_rl_p->IsModifiedAndClear(MyOvmsServerV2Modifier) |
-    StandardMetrics.ms_v_tpms_rr_p->IsModifiedAndClear(MyOvmsServerV2Modifier);
+    StandardMetrics.ms_v_tpms_pressure->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_tpms_temp->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_tpms_health->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_tpms_alert->IsModifiedAndClear(MyOvmsServerV2Modifier);
 
   // Quick exit if nothing modified
   if ((!always)&&(!modified)) return;
 
+  extram::ostringstream buffer;
+
+  // Transmit new "Y" message:
+
+  int defstale_pressure =
+    StandardMetrics.ms_v_tpms_pressure->IsDefined()
+    ? (StandardMetrics.ms_v_tpms_pressure->IsStale() ? 0 : 1)
+    : -1;
+  int defstale_temp =
+    StandardMetrics.ms_v_tpms_temp->IsDefined()
+    ? (StandardMetrics.ms_v_tpms_temp->IsStale() ? 0 : 1)
+    : -1;
+  int defstale_health =
+    StandardMetrics.ms_v_tpms_health->IsDefined()
+    ? (StandardMetrics.ms_v_tpms_health->IsStale() ? 0 : 1)
+    : -1;
+  int defstale_alert =
+    StandardMetrics.ms_v_tpms_alert->IsDefined()
+    ? (StandardMetrics.ms_v_tpms_alert->IsStale() ? 0 : 1)
+    : -1;
+
+  std::vector<std::string> wheels;
+  if (MyVehicleFactory.m_currentvehicle)
+    wheels = MyVehicleFactory.m_currentvehicle->GetTpmsLayout();
+
+  buffer
+    << "MP-0 Y"
+    << wheels.size();
+  for (auto wheel : wheels)
+    {
+    buffer << "," << wheel;
+    }
+  buffer
+    << ","
+    << StandardMetrics.ms_v_tpms_pressure->GetSize()
+    << (StandardMetrics.ms_v_tpms_pressure->GetSize() ? "," : "")
+    << StandardMetrics.ms_v_tpms_pressure->AsString("", kPa, 1)
+    << "," << defstale_pressure
+    << ","
+    << StandardMetrics.ms_v_tpms_temp->GetSize()
+    << (StandardMetrics.ms_v_tpms_temp->GetSize() ? "," : "")
+    << StandardMetrics.ms_v_tpms_temp->AsString("", Celcius, 1)
+    << "," << defstale_temp
+    << ","
+    << StandardMetrics.ms_v_tpms_health->GetSize()
+    << (StandardMetrics.ms_v_tpms_health->GetSize() ? "," : "")
+    << StandardMetrics.ms_v_tpms_health->AsString("", Percentage, 1)
+    << "," << defstale_health
+    << ","
+    << StandardMetrics.ms_v_tpms_alert->GetSize()
+    << (StandardMetrics.ms_v_tpms_alert->GetSize() ? "," : "")
+    << StandardMetrics.ms_v_tpms_alert->AsString("")
+    << "," << defstale_alert
+    ;
+  Transmit(buffer.str().c_str());
+  
+  // Transmit legacy "W" message (fixed four tyres, only pressures & temperatures):
+
   bool stale =
-    StandardMetrics.ms_v_tpms_fl_t->IsStale() ||
-    StandardMetrics.ms_v_tpms_fr_t->IsStale() ||
-    StandardMetrics.ms_v_tpms_rl_t->IsStale() ||
-    StandardMetrics.ms_v_tpms_rr_t->IsStale() ||
-    StandardMetrics.ms_v_tpms_fl_p->IsStale() ||
-    StandardMetrics.ms_v_tpms_fr_p->IsStale() ||
-    StandardMetrics.ms_v_tpms_rl_p->IsStale() ||
-    StandardMetrics.ms_v_tpms_rr_p->IsStale();
+    StandardMetrics.ms_v_tpms_pressure->IsStale() ||
+    StandardMetrics.ms_v_tpms_temp->IsStale() ||
+    StandardMetrics.ms_v_tpms_health->IsStale() ||
+    StandardMetrics.ms_v_tpms_alert->IsStale();
 
   bool defined =
-    StandardMetrics.ms_v_tpms_fl_p->IsDefined() ||
-    StandardMetrics.ms_v_tpms_fr_p->IsDefined() ||
-    StandardMetrics.ms_v_tpms_rl_p->IsDefined() ||
-    StandardMetrics.ms_v_tpms_rr_p->IsDefined();
+    StandardMetrics.ms_v_tpms_pressure->IsDefined() ||
+    StandardMetrics.ms_v_tpms_temp->IsDefined() ||
+    StandardMetrics.ms_v_tpms_health->IsDefined() ||
+    StandardMetrics.ms_v_tpms_alert->IsDefined();
 
   int defstale;
   if (!defined)
@@ -1164,28 +1339,28 @@ void OvmsServerV2::TransmitMsgTPMS(bool always)
   else
     { defstale = 1; }
 
-  extram::ostringstream buffer;
+  buffer.str("");
+  buffer.clear();
   buffer
     << "MP-0 W"
-    << StandardMetrics.ms_v_tpms_fr_p->AsString("0",PSI)
+    << StandardMetrics.ms_v_tpms_pressure->ElemAsString(MS_V_TPMS_IDX_FR, "0", PSI)
     << ","
-    << StandardMetrics.ms_v_tpms_fr_t->AsString("0")
+    << StandardMetrics.ms_v_tpms_temp->ElemAsString(MS_V_TPMS_IDX_FR, "0")
     << ","
-    << StandardMetrics.ms_v_tpms_rr_p->AsString("0",PSI)
+    << StandardMetrics.ms_v_tpms_pressure->ElemAsString(MS_V_TPMS_IDX_RR, "0", PSI)
     << ","
-    << StandardMetrics.ms_v_tpms_rr_t->AsString("0")
+    << StandardMetrics.ms_v_tpms_temp->ElemAsString(MS_V_TPMS_IDX_RR, "0")
     << ","
-    << StandardMetrics.ms_v_tpms_fl_p->AsString("0",PSI)
+    << StandardMetrics.ms_v_tpms_pressure->ElemAsString(MS_V_TPMS_IDX_FL, "0", PSI)
     << ","
-    << StandardMetrics.ms_v_tpms_fl_t->AsString("0")
+    << StandardMetrics.ms_v_tpms_temp->ElemAsString(MS_V_TPMS_IDX_FL, "0")
     << ","
-    << StandardMetrics.ms_v_tpms_rl_p->AsString("0",PSI)
+    << StandardMetrics.ms_v_tpms_pressure->ElemAsString(MS_V_TPMS_IDX_RL, "0", PSI)
     << ","
-    << StandardMetrics.ms_v_tpms_rl_t->AsString("0")
+    << StandardMetrics.ms_v_tpms_temp->ElemAsString(MS_V_TPMS_IDX_RL, "0")
     << ","
     << defstale
     ;
-
   Transmit(buffer.str().c_str());
   }
 
@@ -1198,7 +1373,9 @@ void OvmsServerV2::TransmitMsgFirmware(bool always)
     StandardMetrics.ms_v_vin->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_m_net_sq->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_type->IsModifiedAndClear(MyOvmsServerV2Modifier) |
-    StandardMetrics.ms_m_net_provider->IsModifiedAndClear(MyOvmsServerV2Modifier);
+    StandardMetrics.ms_m_net_provider->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_env_service_range->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_env_service_time->IsModifiedAndClear(MyOvmsServerV2Modifier);
 
   // Quick exit if nothing modified
   if ((!always)&&(!modified)) return;
@@ -1215,6 +1392,10 @@ void OvmsServerV2::TransmitMsgFirmware(bool always)
     << StandardMetrics.ms_v_type->AsString("")
     << ","
     << StandardMetrics.ms_m_net_provider->AsString("")
+    << ","
+    << StandardMetrics.ms_v_env_service_range->AsString("-1", Kilometers, 0)
+    << ","
+    << StandardMetrics.ms_v_env_service_time->AsString("-1", Seconds, 0)
     ;
 
   Transmit(buffer.str().c_str());
@@ -1272,6 +1453,7 @@ uint8_t Doors5()
   car_doors5.bits.RearRightDoor = StandardMetrics.ms_v_door_rr->AsBool();
   car_doors5.bits.Frunk = false; // should this be hood or something else?
   car_doors5.bits.Charging12V = StandardMetrics.ms_v_env_charging12v->AsBool();
+  car_doors5.bits.Aux12V = StandardMetrics.ms_v_env_aux12v->AsBool();
   car_doors5.bits.HVAC = StandardMetrics.ms_v_env_hvac->AsBool();
 
   return car_doors5.flags;
@@ -1317,6 +1499,7 @@ void OvmsServerV2::TransmitMsgEnvironment(bool always)
     StandardMetrics.ms_v_door_rl->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_door_rr->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_env_charging12v->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_env_aux12v->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_env_hvac->IsModifiedAndClear(MyOvmsServerV2Modifier) |
 
     StandardMetrics.ms_v_charge_temp->IsModifiedAndClear(MyOvmsServerV2Modifier) |
@@ -1572,15 +1755,33 @@ void OvmsServerV2::MetricModified(OvmsMetric* metric)
       (metric == StandardMetrics.ms_v_door_rl)||
       (metric == StandardMetrics.ms_v_door_rr)||
       (metric == StandardMetrics.ms_v_env_charging12v)||
+      (metric == StandardMetrics.ms_v_env_aux12v)||
       (metric == StandardMetrics.ms_v_env_hvac))
     {
     m_now_environment = true;
     }
 
   if ((metric == StandardMetrics.ms_v_env_drivemode)||
-      (metric == StandardMetrics.ms_v_pos_gpslock))
+      (metric == StandardMetrics.ms_v_pos_gpslock)||
+      (metric == StandardMetrics.ms_v_pos_gpsmode))
     {
     m_now_gps = true;
+    }
+
+  if ((metric == StandardMetrics.ms_v_tpms_alert))
+    {
+    m_now_tpms = true;
+    }
+    
+  if ((metric == StandardMetrics.ms_v_gen_climit)||
+      (metric == StandardMetrics.ms_v_gen_limit_range)||
+      (metric == StandardMetrics.ms_v_gen_limit_soc)||
+      (metric == StandardMetrics.ms_v_gen_state)||
+      (metric == StandardMetrics.ms_v_gen_substate)||
+      (metric == StandardMetrics.ms_v_gen_mode)||
+      (metric == StandardMetrics.ms_v_gen_inprogress))
+    {
+    m_now_gen = true;
     }
   }
 
@@ -1667,6 +1868,10 @@ void OvmsServerV2::EventListener(std::string event, void* data)
   else if (event == "config.changed" || event == "config.mounted")
     {
     ConfigChanged((OvmsConfigParam*) data);
+    }
+  else if (event == "location.alert.flatbed.moved")
+    {
+    m_now_gps = true;
     }
   }
 
@@ -1757,13 +1962,14 @@ void OvmsServerV2::Ticker1(std::string event, void* data)
     int next = (m_peers==0) ? m_updatetime_idle : m_updatetime_connected;
     if ((m_lasttx==0)||(now>(m_lasttx+next)))
       {
-      TransmitMsgStat(true);          // Send always, periodically
+      TransmitMsgStat(true);          // Send always, periodically         
       TransmitMsgEnvironment(true);   // Send always, periodically
       TransmitMsgGPS(m_lasttx==0);
       TransmitMsgGroup(m_lasttx==0);
       TransmitMsgTPMS(m_lasttx==0);
       TransmitMsgFirmware(m_lasttx==0);
       TransmitMsgCapabilities(m_lasttx==0);
+      if (StandardMetrics.ms_v_gen_current->AsFloat() > 0) TransmitMsgGen(true); 
       m_lasttx = m_lasttx_stream = now;
       }
     else if (m_streaming && caron && m_peers && now > m_lasttx_stream+m_streaming)
@@ -1773,6 +1979,7 @@ void OvmsServerV2::Ticker1(std::string event, void* data)
       }
 
     if (m_now_stat) TransmitMsgStat();
+    if (m_now_gen) TransmitMsgGen();
     if (m_now_environment) TransmitMsgEnvironment();
     if (m_now_gps) TransmitMsgGPS();
     if (m_now_group) TransmitMsgGroup();
@@ -1810,6 +2017,7 @@ OvmsServerV2::OvmsServerV2(const char* name)
   m_buffer = new OvmsBuffer(1024);
   SetStatus("Server has been started", false, WaitNetwork);
   m_now_stat = false;
+  m_now_gen = false;
   m_now_gps = false;
   m_now_tpms = false;
   m_now_firmware = false;
@@ -1865,6 +2073,7 @@ OvmsServerV2::OvmsServerV2(const char* name)
   MyEvents.RegisterEvent(TAG,"system.modem.received.ussd", std::bind(&OvmsServerV2::EventListener, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"config.changed", std::bind(&OvmsServerV2::EventListener, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"config.mounted", std::bind(&OvmsServerV2::EventListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"location.alert.flatbed.moved", std::bind(&OvmsServerV2::EventListener, this, _1, _2));
 
   // read config:
   ConfigChanged(NULL);

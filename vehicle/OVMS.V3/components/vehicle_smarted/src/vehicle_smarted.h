@@ -81,6 +81,7 @@ class OvmsVehicleSmartED : public OvmsVehicle
     bool SetFeature(int key, const char* value);
     const std::string GetFeature(int key);
     bool CommandSetRecu(bool on);
+    bool SetRecu(int mode);
 
   public:
     virtual vehicle_command_t CommandSetChargeCurrent(uint16_t limit);
@@ -99,6 +100,7 @@ class OvmsVehicleSmartED : public OvmsVehicle
 
   public:
     static void xse_recu(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void xse_drivemode(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xse_chargetimer(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xse_trip(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void xse_bmsdiag(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
@@ -145,6 +147,21 @@ class OvmsVehicleSmartED : public OvmsVehicle
     void PollReply_NLG6_ChargerAmps(const char* reply_data, uint16_t reply_len);
     void PollReply_NLG6_ChargerSelCurrent(const char* reply_data, uint16_t reply_len);
     void PollReply_NLG6_ChargerTemperatures(const char* reply_data, uint16_t reply_len);
+    void PollReply_CEPC_VC(const char* reply_data, uint16_t reply_len);
+    void PollReply_CEPC_CoolingTemp(const char* reply_data, uint16_t reply_len);
+    void PollReply_CEPC_CoolingPumpTemp(const char* reply_data, uint16_t reply_len);
+    void PollReply_CEPC_CoolingPumpLV(const char* reply_data, uint16_t reply_len);
+    void PollReply_CEPC_CoolingPumpAmps(const char* reply_data, uint16_t reply_len);
+    void PollReply_CEPC_CoolingPumpRPM(const char* reply_data, uint16_t reply_len);
+    void PollReply_CEPC_CoolingPumpOTR(const char* reply_data, uint16_t reply_len);
+    void PollReply_CEPC_CoolingFanRPM(const char* reply_data, uint16_t reply_len);
+    void PollReply_CEPC_CoolingFanOTR(const char* reply_data, uint16_t reply_len);
+    void PollReply_CEPC_BatteryHeaterOTR(const char* reply_data, uint16_t reply_len);
+    void PollReply_CEPC_BatteryHeaterON(const char* reply_data, uint16_t reply_len);
+    void PollReply_CEPC_VacuumPumpOTR(const char* reply_data, uint16_t reply_len);
+    void PollReply_CEPC_VacuumPumpPress1(const char* reply_data, uint16_t reply_len);
+    void PollReply_CEPC_VacuumPumpPress2(const char* reply_data, uint16_t reply_len);
+    void PollReply_CEPC_BatteryAgeCondition(const char* reply_data, uint16_t reply_len);
 
     OvmsCommand *cmd_xse;
     
@@ -235,8 +252,25 @@ class OvmsVehicleSmartED : public OvmsVehicle
     
     OvmsMetricString* mt_myBMS_BattVIN;           //!< VIN stored in BMS
     
-    OvmsMetricVector<int> *mt_myBMS_HWrev;         //!< hardware-revision
-    OvmsMetricVector<int> *mt_myBMS_SWrev;         //!< soft-revision
+    OvmsMetricVector<int> *mt_myBMS_HWrev;        //!< hardware-revision
+    OvmsMetricVector<int> *mt_myBMS_SWrev;        //!< soft-revision
+    
+    OvmsMetricBool* mt_CEPC_Wippen;               //!< Recu Wippen installed
+    
+    OvmsMetricFloat* mt_CEPC_CoolingTemp;         //!< main cooling temperatur measurement / 8
+    OvmsMetricFloat* mt_CEPC_CoolingPumpTemp;     //!< temperature at cooling pump, offset 50
+    OvmsMetricFloat* mt_CEPC_CoolingPumpLV;       //!< 12V onboard voltage of cooling pump / 10
+    OvmsMetricFloat* mt_CEPC_CoolingPumpAmps;     //!< current measured at cooling pump / 5
+    OvmsMetricFloat* mt_CEPC_CoolingPumpRPM;      //!< RPM in % of cooling pump (value / 255 * 100%)
+    OvmsMetricInt* mt_CEPC_CoolingPumpOTR;        //!< operating time record of cooling pump in hours
+    OvmsMetricFloat* mt_CEPC_CoolingFanRPM;       //!< RPM in % of cooling fan (value / 255 * 100%)
+    OvmsMetricInt* mt_CEPC_CoolingFanOTR;         //!< operating time record of cooling fan in hours
+    OvmsMetricInt* mt_CEPC_BatteryHeaterOTR;      //!< operating time record of PTC heater of battery
+    OvmsMetricInt* mt_CEPC_BatteryHeaterON;       //!< Status of the PTC heater of the battery
+    OvmsMetricFloat* mt_CEPC_VaccumPumpOTR;       //!< operating time record of vaccum pump
+    OvmsMetricInt* mt_CEPC_VaccumPumpPress1;      //!< pressure of vaccum pump measuerement #1 in mbar?
+    OvmsMetricInt* mt_CEPC_VaccumPumpPress2;      //!< pressure of vaccum pump measuerement #2 in mbar?
+    OvmsMetricFloat* mt_CEPC_BatteryAgeCondition; //!< DT_Batterie_Alterszustand: PRES_EBAP_BattAge_CapaLoss [%]
 
     #define DEFAULT_BATTERY_CAPACITY 17600
     #define DEFAULT_BATTERY_AMPHOURS 52
@@ -297,7 +331,8 @@ class OvmsVehicleSmartED : public OvmsVehicle
   
   private:
     void AutoSetRecu();
-    bool m_auto_set_recu;
+    int m_auto_set_recu;
+    bool recuSet = false;
   
   protected:
     void RestartNetwork();
@@ -305,9 +340,8 @@ class OvmsVehicleSmartED : public OvmsVehicle
     int m_shutdown_ticker;
   
   public:
-    int ObdRequest(uint16_t txid, uint16_t rxid, uint32_t request, string& response, int timeout_ms=3000);
+    int ObdRequest(uint16_t txid, uint16_t rxid, string request, string& response, int timeout_ms=3000);
     static void shell_obd_request(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
-    static void shell_obd_request_volts(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
   
   protected:
     string              smarted_obd_rxbuf;

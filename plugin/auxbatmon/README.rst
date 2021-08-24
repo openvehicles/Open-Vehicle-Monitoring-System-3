@@ -4,7 +4,7 @@ AuxBatMon: 12V History Chart
 
 **Web chart showing last 24 hours of 12V battery metrics (similar to Android App)**
 
-Version 2.0 by Michael Balzer <dexter@dexters-web.de>
+Version 2.2 by Michael Balzer <dexter@dexters-web.de>
 
 .. image:: auxbatmon-screenshot.png
 

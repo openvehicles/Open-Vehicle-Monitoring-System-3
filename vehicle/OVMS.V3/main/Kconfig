@@ -102,6 +102,13 @@ config OVMS_SYS_COMMAND_STACK_SIZE
     help
         The stack size of the OVMS Console and dynamic command tasks.
 
+config OVMS_SYS_COMMAND_PRIORITY
+    int "Task priority for command execution"
+    default 5
+    depends on OVMS
+    help
+        The RTOS priority for the OVMS Console and dynamic command tasks.
+
 config OVMS_LOGFILE_QUEUE_SIZE
     int "Queue size for file logging"
     default 100
@@ -216,7 +223,7 @@ config OVMS_SC_JAVASCRIPT_DUKTAPE_QUEUE_SIZE
 
 config OVMS_SC_JAVASCRIPT_DUKTAPE_PRIORITY
     int "JavaScript (DukTape) task priority"
-    default 3
+    default 5
     depends on OVMS_SC_JAVASCRIPT_DUKTAPE
     help
         Priority for the DukTape task ("OVMS DukTape").
@@ -301,6 +308,13 @@ config OVMS_VEHICLE_RENAULTZOE
     help
         Enable to include support for Renault Zoe vehicles.
 
+config OVMS_VEHICLE_MAXED3
+    bool "Include support for Maxus eDeliver3 vehicle"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for Maxus eDeliver3 vehicle.
+
 config OVMS_VEHICLE_KIASOULEV
     bool "Include support for Kia Soul EV vehicles"
     default y
@@ -366,18 +380,11 @@ config OVMS_VEHICLE_FIAT500
         Enable to include support for FIAT 500 vehicle.
 
 config OVMS_VEHICLE_VWEUP
-    bool "Include support for VW e-Up vehicle"
+    bool "Include support for VW e-up! vehicle"
     default y
     depends on OVMS
     help
-        Enable to include support for VW e-Up vehicle.
-
-config OVMS_VEHICLE_VWEUP_OBD
-    bool "Include support for VW e-Up vehicle via OBD2"
-    default y
-    depends on OVMS
-    help
-        Enable to include support for VW e-Up vehicle via OBD2.
+        Enable to include support for vehicles VW e-up! (all model years), Seat Mii electric, and Skoda Citigo-e iV.
 
 config OVMS_VEHICLE_MERCEDESB250E
     bool "Include support for Mercedes-Benz B250E (W242) vehicle"
@@ -399,6 +406,34 @@ config OVMS_VEHICLE_CHEVROLET_C6_CORVETTE
     depends on OVMS
     help
         Enable to include support for Chevrolet C6 Corvette vehicle.
+
+config OVMS_VEHICLE_MG_EV
+    bool "Include support for MG ZS EV vehicles"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for MG ZS EV vehicles.
+
+config OVMS_VEHICLE_BMWI3
+    bool "Include support for BMW i3/i3s"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for BMW i3 or i3s vehicles
+
+config OVMS_VEHICLE_HYUNDAI_IONIQVFL
+    bool "Include support for Hyundai Ioniq Electric 28kWh (vFL)"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for Hyundai Ioniq Electric 28kWh (vFL).
+
+config OVMS_VEHICLE_JAGUARIPACE
+    bool "Include support for Jaguar Ipace"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for Jaguar Ipace.
 
 config OVMS_VEHICLE_RXTASK_STACK
     int "Stack size for vehicle RX task"
@@ -596,6 +631,20 @@ config OVMS_COMP_RE_TOOLS
     help
         Enable to include support for Reverse Engineering tools
 
+config OVMS_COMP_RE_TOOLS_PID
+    bool "Include support for ECU PID scanning"
+    default y
+    depends on OVMS
+    help
+        Enable to include research module for scanning an ECU for PIDs.
+
+config OVMS_COMP_RE_TOOLS_TESTERPRESENT
+    bool "Include support for ECU tester present signalling"
+    default y
+    depends on OVMS
+    help
+        Enable to include research module for sending tester present to an ECU.
+
 config OVMS_COMP_EDITOR
     bool "Include support for Simple file editor"
     default y
@@ -639,6 +688,13 @@ endmenu # Component Options
 
 menu "Developer Options"
     depends on OVMS
+
+config OVMS_DEV_SECUREASYNC
+    bool "Initialize async console in enabled mode"
+    default n
+    depends on OVMS
+    help
+        Enable for async console to be automatically logged in (danger: insecure)
 
 config OVMS_DEV_CONFIGVFS
     bool "Disable the usual protections for configuration visibility in VFS"

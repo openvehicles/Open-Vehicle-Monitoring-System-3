@@ -66,7 +66,7 @@ std::string canformat_raw::getheader(struct timeval *time)
   return std::string("");
   }
 
-size_t canformat_raw::put(CAN_log_message_t* message, uint8_t *buffer, size_t len, void* userdata)
+size_t canformat_raw::put(CAN_log_message_t* message, uint8_t *buffer, size_t len, bool* hasmore, canlogconnection* clc)
   {
   if (m_buf.FreeSpace()==0) SetServeDiscarding(true); // Buffer full, so discard from now on
   if (IsServeDiscarding()) return len;  // Quick return if discarding
@@ -75,6 +75,7 @@ size_t canformat_raw::put(CAN_log_message_t* message, uint8_t *buffer, size_t le
 
   if (m_buf.UsedSpace() < sizeof(CAN_log_message_t)) return consumed; // Insufficient data so far
 
+  *hasmore = true;  // Call us again to see if we have more frames to process
   m_buf.Pop(sizeof(CAN_log_message_t), (uint8_t*)message);
   message->origin = MyCan.GetBus((int)message->origin);
   return consumed;

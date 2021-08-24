@@ -74,17 +74,19 @@ void OvmsVehicleNissanLeaf::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   bool socnewcar;
   bool sohnewcar;
   std::string modelyear;
+  std::string cabintempoffset;
   std::string maxgids;
   std::string newcarah;
 
   if (c.method == "POST") {
     // process form submission:
-    modelyear = c.getvar("modelyear");
-    maxgids   = c.getvar("maxgids");
-    newcarah  = c.getvar("newcarah");
-    socnewcar = (c.getvar("socnewcar") == "yes");
-    sohnewcar = (c.getvar("sohnewcar") == "yes");
-    canwrite  = (c.getvar("canwrite") == "yes");
+    modelyear       = c.getvar("modelyear");
+    cabintempoffset = c.getvar("cabintempoffset");
+    maxgids         = c.getvar("maxgids");
+    newcarah        = c.getvar("newcarah");
+    socnewcar       = (c.getvar("socnewcar") == "yes");
+    sohnewcar       = (c.getvar("sohnewcar") == "yes");
+    canwrite        = (c.getvar("canwrite") == "yes");
 
     // check:
     if (!modelyear.empty()) {
@@ -92,10 +94,15 @@ void OvmsVehicleNissanLeaf::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       if (n < 2011)
         error += "<li data-input=\"modelyear\">Model year must be &ge; 2011</li>";
     }
+    
+    if (cabintempoffset.empty()) {
+      error += "<li data-input=\"cabintempoffset\">Cabin Temperature Offset can not be empty</li>";
+    }
 
     if (error == "") {
       // store:
       MyConfig.SetParamValue("xnl", "modelyear", modelyear);
+      MyConfig.SetParamValue("xnl", "cabintempoffset", cabintempoffset);
       MyConfig.SetParamValue("xnl", "maxGids",   maxgids);
       MyConfig.SetParamValue("xnl", "newCarAh",  newcarah);
       MyConfig.SetParamValueBool("xnl", "soc.newcar", socnewcar);
@@ -116,12 +123,13 @@ void OvmsVehicleNissanLeaf::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   }
   else {
     // read configuration:
-    modelyear = MyConfig.GetParamValue("xnl", "modelyear", STR(DEFAULT_MODEL_YEAR));
-    maxgids   = MyConfig.GetParamValue("xnl", "maxGids", STR(GEN_1_NEW_CAR_GIDS));
-    newcarah  = MyConfig.GetParamValue("xnl", "newCarAh", STR(GEN_1_NEW_CAR_AH));
-    socnewcar = MyConfig.GetParamValueBool("xnl", "soc.newcar", false);
-    sohnewcar = MyConfig.GetParamValueBool("xnl", "soh.newcar", false);
-    canwrite  = MyConfig.GetParamValueBool("xnl", "canwrite", false);
+    modelyear       = MyConfig.GetParamValue("xnl", "modelyear", STR(DEFAULT_MODEL_YEAR));
+    cabintempoffset = MyConfig.GetParamValue("xnl", "cabintempoffset", STR(DEFAULT_CABINTEMP_OFFSET));
+    maxgids         = MyConfig.GetParamValue("xnl", "maxGids", STR(GEN_1_NEW_CAR_GIDS));
+    newcarah        = MyConfig.GetParamValue("xnl", "newCarAh", STR(GEN_1_NEW_CAR_AH));
+    socnewcar       = MyConfig.GetParamValueBool("xnl", "soc.newcar", false);
+    sohnewcar       = MyConfig.GetParamValueBool("xnl", "soh.newcar", false);
+    canwrite        = MyConfig.GetParamValueBool("xnl", "canwrite", false);
 
     c.head(200);
   }
@@ -147,6 +155,9 @@ void OvmsVehicleNissanLeaf::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   c.input("number", NULL, "newcarah", newcarah.c_str(), "Default: " STR(GEN_1_NEW_CAR_AH),
       "<p>This is the usable capacity of your battery when new. Default values are " STR(GEN_1_NEW_CAR_AH) " (24kWh) or " STR(GEN_1_30_NEW_CAR_AH) " (30kWh) or " STR(GEN_2_40_NEW_CAR_AH) " (40kWh)</p>",
       "min=\"1\" step=\"1\"", "Ah");
+  c.input("number", "Cabin Temperature Offset", "cabintempoffset", cabintempoffset.c_str(), "Default: " STR(DEFAULT_CABINTEMP_OFFSET),
+      "<p>This allows an offset adjustment to the cabin temperature sensor readings in Celcius.</p>",
+      "step=\"0.1\"", "");
   c.fieldset_end();
 
   c.fieldset_start("Remote Control");
@@ -173,12 +184,14 @@ void OvmsVehicleNissanLeaf::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
   std::string error;
   //  suffsoc          	Sufficient SOC [%] (Default: 0=disabled)
   //  suffrange        	Sufficient range [km] (Default: 0=disabled)
-  std::string suffrange, suffsoc;
+  std::string suffrange, suffsoc, minrange, minsoc;
 
   if (c.method == "POST") {
     // process form submission:
     suffrange = c.getvar("suffrange");
     suffsoc = c.getvar("suffsoc");
+    minrange = c.getvar("minrange");
+    minsoc = c.getvar("minsoc");
 
     // check:
     if (!suffrange.empty()) {
@@ -191,11 +204,23 @@ void OvmsVehicleNissanLeaf::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
       if (n < 0 || n > 100)
         error += "<li data-input=\"suffsoc\">Sufficient SOC invalid, must be 0…100</li>";
     }
-
+    if (!minrange.empty()) {
+      float n = atof(minrange.c_str());
+      if (n < 0)
+        error += "<li data-input=\"minrange\">Minimum range invalid, must be &ge; 0</li>";
+    }
+    if (!minsoc.empty()) {
+      float n = atof(minsoc.c_str());
+      if (n < 0 || n > 100)
+        error += "<li data-input=\"minsoc\">Minimum SOC invalid, must be 0…100</li>";
+    }
+    
     if (error == "") {
       // store:
       MyConfig.SetParamValue("xnl", "suffrange", suffrange);
       MyConfig.SetParamValue("xnl", "suffsoc", suffsoc);
+      MyConfig.SetParamValue("xnl", "minrange", minrange);
+      MyConfig.SetParamValue("xnl", "minsoc", minsoc);
 
       c.head(200);
       c.alert("success", "<p class=\"lead\">Nissan Leaf battery setup saved.</p>");
@@ -213,7 +238,8 @@ void OvmsVehicleNissanLeaf::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
     // read configuration:
     suffrange = MyConfig.GetParamValue("xnl", "suffrange", "0");
     suffsoc = MyConfig.GetParamValue("xnl", "suffsoc", "0");
-
+    minrange = MyConfig.GetParamValue("xnl", "minrange", "0");
+    minsoc = MyConfig.GetParamValue("xnl", "minsoc", "0");
     c.head(200);
   }
 
@@ -231,6 +257,18 @@ void OvmsVehicleNissanLeaf::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
   c.input_slider("Sufficient SOC", "suffsoc", 3, "%",
     atof(suffsoc.c_str()) > 0, atof(suffsoc.c_str()), 0, 0, 100, 1,
     "<p>Default 0=off. Notify/stop charge when reaching this level.</p>");
+
+  c.fieldset_end();
+  
+  c.fieldset_start("V2X control");
+
+  c.input_slider("Minimum range", "minrange", 3, "km",
+    atof(minrange.c_str()) > 0, atof(minrange.c_str()), 0, 0, 300, 1,
+    "<p>Default 0=off. Notify/stop discharge when reaching this level.</p>");
+
+  c.input_slider("Minimum SOC", "minsoc", 3, "%",
+    atof(minsoc.c_str()) > 0, atof(minsoc.c_str()), 0, 0, 100, 1,
+    "<p>Default 0=off. Notify/stop discharge when reaching this level.</p>");
 
   c.fieldset_end();
 

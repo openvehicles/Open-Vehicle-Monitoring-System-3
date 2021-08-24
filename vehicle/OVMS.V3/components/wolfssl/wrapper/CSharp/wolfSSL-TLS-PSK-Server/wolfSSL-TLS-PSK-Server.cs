@@ -1,6 +1,6 @@
 /* wolfSSL-TLS-PSK-Server.cs
  *
- * Copyright (C) 2006-2016 wolfSSL Inc.
+ * Copyright (C) 2006-2020 wolfSSL Inc.
  *
  * This file is part of wolfSSL.
  *
@@ -18,6 +18,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335, USA
  */
+
 
 using System;
 using System.Runtime.InteropServices;
@@ -164,7 +165,7 @@ public class wolfSSL_TLS_PSK_Server
         if (wolfssl.set_fd(ssl, fd) != wolfssl.SUCCESS)
         {
             /* get and print out the error */
-            Console.Write(wolfssl.get_error(ssl));
+            Console.WriteLine(wolfssl.get_error(ssl));
             tcp.Stop();
             clean(ssl, ctx);
             return;
@@ -175,7 +176,7 @@ public class wolfSSL_TLS_PSK_Server
         if (wolfssl.accept(ssl) != wolfssl.SUCCESS)
         {
             /* get and print out the error */
-            Console.Write(wolfssl.get_error(ssl));
+            Console.WriteLine(wolfssl.get_error(ssl));
             tcp.Stop();
             clean(ssl, ctx);
             return;

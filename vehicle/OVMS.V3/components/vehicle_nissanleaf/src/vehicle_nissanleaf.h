@@ -42,6 +42,7 @@
 #include "nl_types.h"
 
 #define DEFAULT_MODEL_YEAR 2012
+#define DEFAULT_CABINTEMP_OFFSET .0
 #define GEN_1_NEW_CAR_GIDS 281
 #define GEN_1_NEW_CAR_AH 66
 #define GEN_1_KM_PER_KWH 7.1
@@ -80,9 +81,20 @@ typedef enum
   CHARGER_STATUS_PLUGGED_IN_TIMER_WAIT,
   CHARGER_STATUS_CHARGING,
   CHARGER_STATUS_QUICK_CHARGING,
-  CHARGER_STATUS_FINISHED
+  CHARGER_STATUS_FINISHED,
+  CHARGER_STATUS_INTERRUPTED,
+  CHARGER_STATUS_V2X
   } ChargerStatus;
-
+  
+typedef enum 
+  {
+  NORMAL,      
+  CAPACITY_DROP,       
+  LBC_MALFUNCTION,  
+  HIGH_TEMP,
+  LOW_TEMP  
+  } PowerLimitStates;
+    
 class OvmsVehicleNissanLeaf : public OvmsVehicle
   {
   public:
@@ -132,6 +144,7 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     void Ticker10(uint32_t ticker);
     void HandleEnergy();
     void HandleCharging();
+    void HandleExporting();
     void HandleRange();
     int  calcMinutesRemaining(float target, float charge_power_w);
     void SendCommand(RemoteCommand);
@@ -164,6 +177,11 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     OvmsMetricFloat *m_battery_energy_capacity;
     OvmsMetricFloat *m_battery_energy_available;
     OvmsMetricInt *m_battery_type;
+    OvmsMetricBool *m_battery_heaterpresent;
+    OvmsMetricFloat *m_battery_out_power_limit;
+    OvmsMetricFloat *m_battery_in_power_limit; 
+    OvmsMetricFloat *m_battery_chargerate_max;
+    OvmsMetricString *m_charge_limit;    
     OvmsMetricVector<int> *m_charge_duration;
     OvmsMetricVector<string> *m_charge_duration_label;
     OvmsMetricInt *m_quick_charge;
@@ -178,11 +196,12 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     OvmsMetricInt *m_climate_fan_speed;
     OvmsMetricInt *m_climate_fan_speed_limit;
     OvmsMetricFloat *m_climate_setpoint;
-
+    OvmsMetricBool *m_climate_auto;
 
     float m_cum_energy_used_wh;				    // Cumulated energy (in wh) used within 1 second ticker interval
     float m_cum_energy_recd_wh; 					// Cumulated energy (in wh) recovered  within 1 second ticker interval
     float m_cum_energy_charge_wh;					// Cumulated energy (in wh) charged within 10 second ticker interval
+    float m_cum_energy_gen_wh;					  // Cumulated energy (in wh) exported within 10 second ticker interval
     bool  m_gen1_charger;					        // True if using original charger and 0x5bf messages, false if using 0x390 messages
     bool  m_enable_write;                 // Enable/disable can write (polling and commands
 

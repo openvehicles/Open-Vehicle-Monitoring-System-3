@@ -85,7 +85,26 @@ void can_log_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     canlog* cl = MyCan.GetLogger(atoi(argv[0]));
     if (cl)
       {
-      writer->printf("CAN logging active: %s\n  Statistics: %s\n", cl->GetInfo().c_str(), cl->GetStats().c_str());
+      writer->printf("#%d: %s %s %s",
+        atoi(argv[0]),
+        (cl->m_isopen)?"open":"closed",
+        cl->GetInfo().c_str(), cl->GetStats().c_str());
+      #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+      if (cl->m_connmap.size() > 0)
+        {
+        OvmsRecMutexLock lock(&cl->m_cmmutex);
+        for (canlog::conn_map_t::iterator it=cl->m_connmap.begin(); it!=cl->m_connmap.end(); ++it)
+          {
+          canlogconnection* clc = it->second;
+          writer->printf("  %s: %s %s%s%s\n",
+            clc->GetSummary().c_str(),
+            (clc->m_ispaused)?"paused":"running",
+            (clc->m_filters != NULL)?" filter:":"",
+            (clc->m_filters != NULL)?clc->m_filters->Info().c_str():"",
+            clc->GetStats().c_str());
+          }
+        }
+      #endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
       }
     else
       {
@@ -96,12 +115,30 @@ void can_log_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
   else
     {
     // Show the status of all loggers
-    OvmsMutexLock lock(&MyCan.m_loggermap_mutex);
+    OvmsRecMutexLock lock(&MyCan.m_loggermap_mutex);
     for (can::canlog_map_t::iterator it=MyCan.m_loggermap.begin(); it!=MyCan.m_loggermap.end(); ++it)
       {
       canlog* cl = it->second;
-      writer->printf("CAN logger #%d: %s\n  Statistics: %s\n",
-        it->first, cl->GetInfo().c_str(), cl->GetStats().c_str());
+      writer->printf("#%d: %s %s %s\n",
+        it->first,
+        (cl->m_isopen)?"open":"closed",
+        cl->GetInfo().c_str(), cl->GetStats().c_str());
+      #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+      if (cl->m_connmap.size() > 0)
+        {
+        OvmsRecMutexLock lock(&cl->m_cmmutex);
+        for (canlog::conn_map_t::iterator it=cl->m_connmap.begin(); it!=cl->m_connmap.end(); ++it)
+          {
+          canlogconnection* clc = it->second;
+          writer->printf("  %s: %s %s%s%s\n",
+            clc->GetSummary().c_str(),
+            (clc->m_ispaused)?"paused":"running",
+            (clc->m_filters != NULL)?" filter:":"",
+            (clc->m_filters != NULL)?clc->m_filters->Info().c_str():"",
+            clc->GetStats().c_str());
+          }
+        }
+      #endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
       }
     }
   }
@@ -116,7 +153,7 @@ void can_log_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
   else
     {
     // Show the list of all loggers
-    OvmsMutexLock lock(&MyCan.m_loggermap_mutex);
+    OvmsRecMutexLock lock(&MyCan.m_loggermap_mutex);
     for (can::canlog_map_t::iterator it=MyCan.m_loggermap.begin(); it!=MyCan.m_loggermap.end(); ++it)
       {
       canlog* cl = it->second;
@@ -153,6 +190,146 @@ OvmsCanLogInit::OvmsCanLogInit()
   }
 
 ////////////////////////////////////////////////////////////////////////
+// CAN Logger Connection class
+////////////////////////////////////////////////////////////////////////
+
+#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+
+canlogconnection::canlogconnection(canlog* logger, std::string format, canformat::canformat_serve_mode_t mode)
+  {
+  m_logger = logger;
+  m_formatter = MyCanFormatFactory.NewFormat(format.c_str());
+  m_formatter->SetServeMode(mode);
+  m_nc = NULL;
+  m_ispaused = false;
+  m_filters = NULL;
+  m_msgcount = 0;
+  m_dropcount = 0;
+  m_discardcount = 0;
+  m_filtercount = 0;
+  }
+
+canlogconnection::~canlogconnection()
+  {
+  if (m_filters != NULL)
+    {
+    delete m_filters;
+    m_filters = NULL;
+    }
+  if (m_formatter != NULL)
+    {
+    delete m_formatter;
+    m_formatter = NULL;
+    }
+  }
+
+void canlogconnection::OutputMsg(CAN_log_message_t& msg, std::string &result)
+  {
+  m_msgcount++;
+
+  if ((m_filters != NULL) && (! m_filters->IsFiltered(&msg.frame)))
+    {
+    m_filtercount++;
+    return;
+    }
+
+  // The standard base implemention here is for mongoose network connections
+  if (m_nc != NULL)
+    {
+    if (result.length()>0)
+      {
+      if (m_nc->send_mbuf.len < 32768)
+        {
+        mg_send(m_nc, (const char*)result.c_str(), result.length());
+        }
+      else
+        {
+        m_dropcount++;
+        }
+      }
+    }
+  else
+    {
+    m_dropcount++;
+    }
+  }
+
+void canlogconnection::TransmitCallback(uint8_t *buffer, size_t len)
+  {
+  ESP_LOGD(TAG,"TransmitCallback on %s (%d bytes)",m_peer.c_str(),len);
+
+  m_msgcount++;
+  if ((m_nc != NULL)&&(m_nc->send_mbuf.len < 32768))
+    {
+    mg_send(m_nc, buffer, len);
+    }
+  else
+    {
+    m_dropcount++;
+    }
+  }
+
+void canlogconnection::ControlBusConfigure(canbus* bus, CAN_mode_t mode, CAN_speed_t speed)
+  {
+  ESP_LOGI(TAG,"Remote CAN bus configure: %s %s %dKbps",
+    bus->GetName(),
+    (mode == CAN_MODE_LISTEN)?"listen":"active",
+    (int)speed);
+  bus->Start(mode, speed);
+  }
+
+void canlogconnection::PauseTransmission()
+  {
+  ESP_LOGI(TAG,"Remote CAN bus pause transmission");
+  m_ispaused = true;
+  }
+
+void canlogconnection::ResumeTransmission()
+  {
+  ESP_LOGI(TAG,"Remote CAN bus resume transmission");
+  m_ispaused = false;
+  }
+
+void canlogconnection::ClearFilters()
+  {
+  ESP_LOGI(TAG,"Remote CAN bus clear filters");
+  if (m_filters)
+    {
+    delete m_filters;
+    m_filters = NULL;
+    }
+  }
+
+void canlogconnection::AddFilter(std::string& filter)
+  {
+  ESP_LOGI(TAG,"Remote CAN bus add filter: %s", filter.c_str());
+  if (!m_filters) m_filters = new canfilter();
+  m_filters->AddFilter(filter.c_str());
+  }
+
+std::string canlogconnection::GetSummary()
+  {
+  return m_peer;
+  }
+
+std::string canlogconnection::GetStats()
+  {
+  std::ostringstream buf;
+
+  float droprate = (m_msgcount > 0) ? ((float) m_dropcount/m_msgcount*100) : 0;
+
+  buf << "Messages:" << m_msgcount
+    << " Discarded:" << m_discardcount
+    << " Dropped:" << m_dropcount
+    << " Filtered:" << m_filtercount
+    << " Rate:" << std::fixed << std::setprecision(1) << droprate << "%";
+
+  return buf.str();
+  }
+
+#endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+
+////////////////////////////////////////////////////////////////////////
 // CAN Logger class
 ////////////////////////////////////////////////////////////////////////
 
@@ -160,9 +337,11 @@ canlog::canlog(const char* type, std::string format, canformat::canformat_serve_
   {
   m_type = type;
   m_format = format;
+  m_mode = mode;
   m_formatter = MyCanFormatFactory.NewFormat(format.c_str());
   m_formatter->SetServeMode(mode);
   m_filter = NULL;
+  m_isopen = false;
 
   m_msgcount = 0;
   m_dropcount = 0;
@@ -266,30 +445,64 @@ const char* canlog::GetFormat()
 
 void canlog::OutputMsg(CAN_log_message_t& msg)
   {
+  if (m_formatter == NULL)
+    {
+    m_dropcount++;
+    return;
+    }
+
+  if (!m_isopen)
+    {
+    m_dropcount++;
+    return;
+    }
+
+  std::string result = m_formatter->get(&msg);
+  if (result.length()>0)
+    {
+    OvmsRecMutexLock lock(&m_cmmutex);
+    for (conn_map_t::iterator it=m_connmap.begin(); it!=m_connmap.end(); ++it)
+      {
+      if (it->second->m_ispaused)
+        {
+        it->second->m_msgcount++;
+        it->second->m_discardcount++;
+        }
+      else
+        {
+        it->second->OutputMsg(msg, result);
+        }
+      }
+    }
   }
 
 std::string canlog::GetInfo()
   {
   std::ostringstream buf;
 
-  buf << "Type:" << m_type << " Format:" << m_format;
+  buf << "Type:" << m_type;
+
   if (m_formatter)
     {
-    buf << "(" << m_formatter->GetServeModeName() << ")";
+    buf << " Format:" << m_format << "(" << m_formatter->GetServeModeName() << ")";
     }
 
   if (m_filter)
     {
     buf << " Filter:" << m_filter->Info();
     }
-  else
+
+  if (StdMetrics.ms_v_type->IsDefined())
     {
-    buf << " Filter:off";
+    buf << " Vehicle:" << StdMetrics.ms_v_type->AsString();
     }
 
-  buf << " Vehicle:" << StdMetrics.ms_v_type->AsString();
-
   return buf.str();
+  }
+
+bool canlog::IsOpen()
+  {
+  return m_isopen;
   }
 
 std::string canlog::GetStats()
@@ -299,13 +512,13 @@ std::string canlog::GetStats()
   float droprate = (m_msgcount > 0) ? ((float) m_dropcount/m_msgcount*100) : 0;
   uint32_t waiting = uxQueueMessagesWaiting(m_queue);
 
-  buf << "total messages: " << m_msgcount
-    << ", dropped: " << m_dropcount
-    << ", filtered: " << m_filtercount
-    << " = " << std::fixed << std::setprecision(1) << droprate << "%";
+  buf << "Messages:" << m_msgcount
+    << " Dropped:" << m_dropcount
+    << " Filtered:" << m_filtercount
+    << " Rate:" << std::fixed << std::setprecision(1) << droprate << "%";
 
   if (waiting > 0)
-    buf << ", waiting: " << waiting;
+    buf << " Queued:" << waiting;
 
   return buf.str();
   }

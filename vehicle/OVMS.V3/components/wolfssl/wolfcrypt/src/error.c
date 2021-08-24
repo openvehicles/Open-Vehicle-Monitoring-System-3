@@ -1,6 +1,6 @@
 /* error.c
  *
- * Copyright (C) 2006-2016 wolfSSL Inc.
+ * Copyright (C) 2006-2020 wolfSSL Inc.
  *
  * This file is part of wolfSSL.
  *
@@ -33,15 +33,9 @@
     #pragma warning(disable: 4996)
 #endif
 
+#ifndef NO_ERROR_STRINGS
 const char* wc_GetErrorString(int error)
 {
-#ifdef NO_ERROR_STRINGS
-
-    (void)error;
-    return "no support for error strings built in";
-
-#else
-
     switch (error) {
 
     case OPEN_RAN_E :
@@ -206,6 +200,9 @@ const char* wc_GetErrorString(int error)
     case ASN_CRIT_EXT_E:
         return "X.509 Critical extension ignored or invalid";
 
+    case ASN_ALT_NAME_E:
+        return "ASN alternate name error";
+
     case ECC_BAD_ARG_E :
         return "ECC input argument wrong type, invalid input";
 
@@ -266,6 +263,9 @@ const char* wc_GetErrorString(int error)
     case ASN_OCSP_CONFIRM_E :
         return "ASN OCSP sig error, confirm failure";
 
+    case ASN_NO_PEM_HEADER:
+        return "ASN no PEM Header Error";
+
     case BAD_STATE_E:
         return "Bad state operation";
 
@@ -280,6 +280,9 @@ const char* wc_GetErrorString(int error)
 
     case PKCS7_RECIP_E:
         return "PKCS#7 error: no matching recipient found";
+
+    case WC_PKCS7_WANT_READ_E:
+        return "PKCS#7 operations wants more input, call again";
 
     case FIPS_NOT_ALLOWED_E:
         return "FIPS mode not allowed error";
@@ -369,7 +372,10 @@ const char* wc_GetErrorString(int error)
         return "Setting Authority Key Identifier error";
 
     case KEYUSAGE_E:
-        return "Bad Key Usage value error";
+        return "Key Usage value error";
+
+    case EXTKEYUSAGE_E:
+        return "Extended Key Usage value error";
 
     case CERTPOLICIES_E:
         return "Setting Certificate Policies error";
@@ -428,16 +434,100 @@ const char* wc_GetErrorString(int error)
     case BAD_OCSP_RESPONDER:
         return "Invalid OCSP Responder, missing specific key usage extensions";
 
+    case ECC_PRIVATEONLY_E:
+        return "Invalid use of private only ECC key";
+
+    case WC_HW_E:
+        return "Error with hardware crypto use";
+
+    case WC_HW_WAIT_E:
+        return "Hardware waiting on resource";
+
+    case PSS_SALTLEN_E:
+        return "PSS - Length of salt is too big for hash algorithm";
+
+    case PRIME_GEN_E:
+        return "Unable to find a prime for RSA key";
+
+    case BER_INDEF_E:
+        return "Unable to decode an indefinite length encoded message";
+
+    case RSA_OUT_OF_RANGE_E:
+        return "Ciphertext to decrypt is out of range";
+
+    case RSAPSS_PAT_FIPS_E:
+        return "wolfcrypt FIPS RSA-PSS Pairwise Agreement Test Failure";
+
+    case ECDSA_PAT_FIPS_E:
+        return "wolfcrypt FIPS ECDSA Pairwise Agreement Test Failure";
+
+    case DH_KAT_FIPS_E:
+        return "wolfcrypt FIPS DH Known Answer Test Failure";
+
+    case AESCCM_KAT_FIPS_E:
+        return "AESCCM Known Answer Test check FIPS error";
+
+    case SHA3_KAT_FIPS_E:
+        return "SHA-3 Known Answer Test check FIPS error";
+
+    case ECDHE_KAT_FIPS_E:
+        return "wolfcrypt FIPS ECDHE Known Answer Test Failure";
+
+    case AES_GCM_OVERFLOW_E:
+        return "AES-GCM invocation counter overflow";
+
+    case AES_CCM_OVERFLOW_E:
+        return "AES-CCM invocation counter overflow";
+
+    case RSA_KEY_PAIR_E:
+        return "RSA Key Pair-Wise Consistency check fail";
+
+    case DH_CHECK_PRIV_E:
+        return "DH Check Private Key failure";
+
+    case WC_AFALG_SOCK_E:
+        return "AF_ALG socket error";
+
+    case WC_DEVCRYPTO_E:
+        return "Error with /dev/crypto";
+
+    case ZLIB_INIT_ERROR:
+        return "zlib init error";
+
+    case ZLIB_COMPRESS_ERROR:
+        return "zlib compress error";
+
+    case ZLIB_DECOMPRESS_ERROR:
+        return "zlib decompress error";
+
+    case PKCS7_NO_SIGNER_E:
+        return "No signer in PKCS#7 signed data";
+
+    case CRYPTOCB_UNAVAILABLE:
+        return "Crypto callback unavailable";
+
+    case PKCS7_SIGNEEDS_CHECK:
+        return "Signature found but no certificate to verify";
+
+    case PSS_SALTLEN_RECOVER_E:
+        return "PSS - Salt length unable to be recovered";
+
+    case CHACHA_POLY_OVERFLOW:
+        return "wolfcrypt - ChaCha20_Poly1305 limit overflow 4GB";
+
+    case ASN_SELF_SIGNED_E:
+        return "ASN self-signed certificate error";
+
     default:
         return "unknown error number";
 
     }
-
-#endif /* NO_ERROR_STRINGS */
-
 }
 
 void wc_ErrorString(int error, char* buffer)
 {
     XSTRNCPY(buffer, wc_GetErrorString(error), WOLFSSL_MAX_ERROR_SZ);
+    buffer[WOLFSSL_MAX_ERROR_SZ-1] = 0;
 }
+#endif /* !NO_ERROR_STRINGS */
+

@@ -519,6 +519,18 @@ The above example created a function ``myTicker`` in global context, to print ou
 Then, the ``PubSub.subscribe`` module method is used to subscribe to the ``ticker.10`` event and have it call
 ``myTicker`` every ten seconds. The result is "Event: ticker.10" printed once every ten seconds.
 
+PubSub interprets events similar to MQTT as **hierarchical topics**, with dots separating the levels.
+It delivers the events in multiple passes, with each new pass removing the last dotted part of the topic
+(i.e. bottom-up), so the most specific subscriptions will be called first. The handler is always called
+with the original event/topic name. So to e.g. catch all events ``vehicle.charge.…``, you can simply
+subscribe to ``vehicle.charge`` and inspect the actual event name in your handler:
+
+.. code-block:: javascript
+
+  PubSub.subscribe("vehicle.charge", function (event) {
+    print("Got charging related event: " + event);
+  });
+
 - ``id = PubSub.subscribe(topic, handler)``
     Subscribe the function ``handler`` to messages of the given topic. Note that types are not limited to
     OVMS events. The method returns an ``id`` to be used to unsubscribe the handler.
@@ -730,6 +742,37 @@ The OvmsVehicle object is the most comprehensive, and exposes several methods to
     Start a cooldown charge
 - ``success = OvmsVehicle.StopCooldown()``
     Stop the cooldown charge
+
+- ``result = OvmsVehicle.ObdRequest(arguments)``
+    Perform OBD/UDS request (synchronous)
+
+    Pass the request parameters using the ``arguments`` object:
+
+    - ``txid``: the CAN ID to send the request to (or 0x7df for broadcast)
+    - ``rxid``: the CAN ID to expect the response at (or 0 for broadcast)
+    - ``request``: the request to send, either a hex encoded string or an Uint8Array
+    - ``bus``: optional CAN bus device name, default "can1"
+    - ``timeout``: optional timeout in milliseconds, default 3000
+    - ``protocol``: optional protocol to use, default 0 = ``ISOTP_STD`` -- see ``vehicle.h`` for other protocols
+
+    The ``result`` object will have these properties:
+
+    - ``error``: 0 = no error, else the error code, with negative ranges being system errors,
+      positive codes are OBD/UDS response error codes (NRCs)
+    - ``errordesc``: a human readable error description
+    - ``response``: only on success: the binary response (Uint8Array)
+    - ``response_hex``: only on success: hex encoded response (string)
+
+    **Example**:
+
+    .. code-block:: javascript
+      
+      // Establish diagnostic session with an ECU:
+      var res = OvmsVehicle.ObdRequest({ txid: 0x765, rxid: 0x7cf, request: "1003" });
+      if (res.error)
+        print(res.errortext);
+      else
+        print(res.response_hex);
 
 
 --------------

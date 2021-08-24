@@ -1,6 +1,6 @@
 /* misc.h
  *
- * Copyright (C) 2014-2016 wolfSSL Inc.
+ * Copyright (C) 2014-2020 wolfSSL Inc.
  *
  * This file is part of wolfSSH.
  *
@@ -18,10 +18,9 @@
  * along with wolfSSH.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once
 
-#ifndef WOLFSSH_MISC_H
-#define WOLFSSH_MISC_H
+#ifndef _WOLFSSH_MISC_H_
+#define _WOLFSSH_MISC_H_
 
 
 #ifdef __cplusplus
@@ -29,6 +28,8 @@
 #endif
 
 
+#include <wolfssl/wolfcrypt/types.h>
+#include <wolfssh/settings.h>
 #include <wolfssh/port.h>
 
 
@@ -36,13 +37,14 @@
 
 
 #ifndef min
-WOLFSSH_LOCAL uint32_t min(uint32_t, uint32_t);
+WOLFSSH_LOCAL word32 min(word32, word32);
 #endif /* min */
 
-WOLFSSH_LOCAL void ato32(const uint8_t*, uint32_t*);
-WOLFSSH_LOCAL void c32toa(uint32_t, uint8_t*);
-WOLFSSH_LOCAL void ForceZero(const void*, uint32_t);
-WOLFSSH_LOCAL int ConstantCompare(const uint8_t*, const uint8_t*, uint32_t);
+WOLFSSH_LOCAL void ato32(const byte*, word32*);
+WOLFSSH_LOCAL void c32toa(word32, byte*);
+WOLFSSH_LOCAL void ForceZero(const void*, word32);
+WOLFSSH_LOCAL int ConstantCompare(const byte*, const byte*, word32);
+WOLFSSH_LOCAL void CreateMpint(byte*, word32*, byte*);
 
 
 #endif /* NO_INLINE */
@@ -52,6 +54,5 @@ WOLFSSH_LOCAL int ConstantCompare(const uint8_t*, const uint8_t*, uint32_t);
     }   /* extern "C" */
 #endif
 
-
-#endif /* WOLFSSH_MISC_H */
+#endif /* _WOLFSSH_MISC_H_ */
 

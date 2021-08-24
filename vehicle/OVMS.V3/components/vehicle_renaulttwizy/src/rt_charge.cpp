@@ -74,6 +74,17 @@ void OvmsVehicleRenaultTwizy::ChargeInit()
 }
 
 
+/**
+ * ChargeShutdown:
+ */
+void OvmsVehicleRenaultTwizy::ChargeShutdown()
+{
+  ESP_LOGI(TAG, "charge subsystem shutdown");
+  
+  cmd_xrt->UnregisterCommand("ca");
+}
+
+
 OvmsVehicleRenaultTwizy::vehicle_command_t OvmsVehicleRenaultTwizy::CommandCA(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
 {
   metric_unit_t rangeUnit = (MyConfig.GetParamValue("vehicle", "units.distance") == "M") ? Miles : Kilometers;

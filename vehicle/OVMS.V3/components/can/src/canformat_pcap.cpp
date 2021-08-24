@@ -101,7 +101,7 @@ std::string canformat_pcap::getheader(struct timeval *time)
   return std::string((const char*)&h, sizeof(h));
   }
 
-size_t canformat_pcap::put(CAN_log_message_t* message, uint8_t *buffer, size_t len, void* userdata)
+size_t canformat_pcap::put(CAN_log_message_t* message, uint8_t *buffer, size_t len, bool* hasmore, canlogconnection* clc)
   {
   union
     {
@@ -117,6 +117,7 @@ size_t canformat_pcap::put(CAN_log_message_t* message, uint8_t *buffer, size_t l
   if (m_buf.UsedSpace() < 24) return consumed; // Insufficient data so far
 
   // At this point, we have our 24 bytes...
+  *hasmore = true;  // Call us again to see if we have more frames to process
   m_buf.Peek(24,(uint8_t*)&m);
   uint32_t magic = be32toh(m.header.magic_number);
   if (magic == 0xa1b2c3d4)

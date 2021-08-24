@@ -1,0 +1,288 @@
+Source: https://jazdw.net/tp20
+
+==============================================
+VW Transport Protocol 2.0 (TP 2.0) for CAN bus
+==============================================
+
+CAN allows for data packets with a payload of up to 8 bytes, to send messages longer than 8 bytes it is necessary to
+use a transport protocol. The OBD-II specification for example makes use of ISO-TP (ISO 15765-2). Volkswagen however
+uses it's own transport protocol in its vehicles, known as VW TP 2.0.
+
+This page gives a run down on how TP 2.0 works. Please note that there is an older VW TP 1.6 which was used in some
+vehicles. TP 1.6 is fairly similar but some of the parameters are fixed. Its also worth noting that I have worked all
+of this out from various presentations and documents that I have found on the net and from logging data. I have not had
+any access to the official documentation from VW so take any information with a grain of salt.
+
+Typically the payload of TP 2.0 will be ISO 14230-3, Keyword Protocol 2000 (KWP2000) application layer messages.
+
+======================
+The four message types
+======================
+
+TP 2.0 works by opening data "channels" between two communicating devices. Once a channel is opened data packets can be
+exchanged by the two devices. To do this TP 2.0 uses four message types - broadcast, channel setup, channel parameters
+and data transmission.
+
+
+=========
+Broadcast
+=========
+
+The broadcast type has a fixed length of 7 bytes. It is sent 5 times in case of packet loss. Not sure what it is
+actually used for yet.
+
+  ┌──────────────┬──────┬────────┬───┬───┬───┬──────────┬──────────┐
+  │     Byte     │  0   │   1    │ 2 │ 3 │ 4 │    5     │    6     │
+  ├──────────────┼──────┼────────┼───┴───┴───┼──────────┼──────────┤
+  │ Description  │ Dest │ Opcode │ KWP Data  │ Resp Req │ Resp Req │
+  └──────────────┴──────┴────────┴───────────┴──────────┴──────────┘
+
+Field description
+
+  ┌──────────┬──────────────────────────────────────────────────────────────────────────────┐
+  │  Field   │                                 Description                                  │
+  ├──────────┼──────────────────────────────────────────────────────────────────────────────┤
+  │ Dest     │ Logical address of destination module, e.g. 0x01 for the engine control unit │
+  ├──────────┼─────────────────────────────┬────────────────────────────────────────────────┤
+  │          │ 0x23                        │ Broadcast request                              │
+  │Opcode    ├─────────────────────────────┼────────────────────────────────────────────────┤
+  │          │ 0x24                        │ Broadcast response                             │
+  ├──────────┼─────────────────────────────┴────────────────────────────────────────────────┤
+  │ KWP Data │ KWP2000 SID and parameters                                                   │
+  ├──────────┼─────────────────────────────┬────────────────────────────────────────────────┤
+  │          │ 0x00                        │ Response expected                              │
+  │Resp Req  ├─────────────────────────────┼────────────────────────────────────────────────┤
+  │          │ 0x55 or 0xAA                │ No response expected                           │
+  └──────────┴─────────────────────────────┴────────────────────────────────────────────────┘
+
+
+=============
+Channel setup
+=============
+
+The channel setup type has a fixed length of 7 bytes. It is used to establish a data channel between two modules.
+
+The channel setup request message should be sent from CAN ID 0x200 and the response will sent with CAN ID 0x200 + the
+destination modules logical address e.g. for the engine control unit (0x01) the response would be 0x201.
+
+The communication then switches to using the CAN IDs which were negotiated during channel setup.
+
+You should request the destination module to transmit using CAN ID 0x300 to 0x310 and set the validity nibble for RX ID
+to invalid. The VW modules seem to respond that you should transmit using CAN ID 0x740.
+
+  ┌──────────────┬──────┬────────┬───────┬─────────────┬───────┬─────────────┬─────┐
+  │     Byte     │  0   │   1    │   2   │      3      │   4   │      5      │  6  │
+  ├──────────────┼──────┼────────┼───────┼───┬─────────┼───────┼───┬─────────┼─────┤
+  │ Description  │ Dest │ Opcode │ RX ID │ V │ RX Pref │ TX ID │ V │ TX Pref │ App │
+  └──────────────┴──────┴────────┴───────┴───┴─────────┴───────┴───┴─────────┴─────┘
+
+Note: "Pref" = "Prefix" = MSB of ID, with high nibble = ID validity flag (1=invalid)
+  e.g. 2+3 = 34 12 → invalid ID 0x234
+       4+5 = 45 03 → valid ID 0x345
+
+Field description
+
+  ┌─────────┬──────────────────────────────────────────────────────────────────────────────┐
+  │  Field  │                                 Description                                  │
+  ├─────────┼──────────────────────────────────────────────────────────────────────────────┤
+  │ Dest    │ Logical address of destination module, e.g. 0x01 for the engine control unit │
+  ├─────────┼─────────────────────────────┬────────────────────────────────────────────────┤
+  │         │ 0xC0                        │ Setup request                                  │
+  │         ├─────────────────────────────┼────────────────────────────────────────────────┤
+  │ Opcode  │ 0xD0                        │ Positive response                              │
+  │         ├─────────────────────────────┼────────────────────────────────────────────────┤
+  │         │ 0xD6..0xD8                  │ Negative response                              │
+  ├─────────┼─────────────────────────────┴────────────────────────────────────────────────┤
+  │ RX ID   │ Tells destination module which CAN ID to listen to                           │
+  ├─────────┼──────────────────────────────────────────────────────────────────────────────┤
+  │ RX Pref │ RX ID Prefix                                                                 │
+  ├─────────┼──────────────────────────────────────────────────────────────────────────────┤
+  │ TX ID   │ Tells destination module which CAN ID to transmit from                       │
+  ├─────────┼──────────────────────────────────────────────────────────────────────────────┤
+  │ TX Pref │ TX ID Prefix                                                                 │
+  ├─────────┼─────────────────────────────┬────────────────────────────────────────────────┤
+  │         │ 0x0                         │ CAN ID is valid                                │
+  │V        ├─────────────────────────────┼────────────────────────────────────────────────┤
+  │         │ 0x1                         │ CAN ID is invalid                              │
+  ├─────────┼─────────────────────────────┴────────────────────────────────────────────────┤
+  │ App     │ Application type, seems to always be 0x01 (maybe only for KWP)               │
+  └─────────┴──────────────────────────────────────────────────────────────────────────────┘
+
+
+==================
+Channel parameters
+==================
+
+The channel parameters type has a length of 1 or 6 bytes. It is used to setup parameters for an open channel and to
+send test, break and disconnect signals
+
+You should send a parameters request straight after channel setup using the CAN IDs negotiated.
+
+  ┌──────────────┬────────┐
+  │     Byte     │   0    │
+  ├──────────────┼────────┤
+  │ Description  │ Opcode │
+  └──────────────┴────────┘
+
+OR
+
+  ┌──────────────┬────────┬────┬────┬────┬────┬────┐
+  │     Byte     │   0    │ 1  │ 2  │ 3  │ 4  │ 5  │
+  ├──────────────┼────────┼────┼────┼────┼────┼────┤
+  │ Description  │ Opcode │ BS │ T1 │ T2 │ T3 │ T4 │
+  └──────────────┴────────┴────┴────┴────┴────┴────┘
+
+Field description
+
+  ┌────────┬────────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Field  │                                            Description                                             │
+  ├────────┼──────┬─────────────────────────────────────────────────────────────────────────────────────────────┤
+  │        │ 0xA0 │ Parameters request, used for destination module to initiator (6 byte)                       │
+  │        ├──────┼─────────────────────────────────────────────────────────────────────────────────────────────┤
+  │        │ 0xA1 │ Parameters respsonse, used for initiator to destination module (6 byte)                     │
+  │        ├──────┼─────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ Opcode │ 0xA3 │ Channel test, response is same as parameters response. Used to keep channel alive. (1 byte) │
+  │        ├──────┼─────────────────────────────────────────────────────────────────────────────────────────────┤
+  │        │ 0xA4 │ Break, receiver discards all data since last ACK (1 byte)                                   │
+  │        ├──────┼─────────────────────────────────────────────────────────────────────────────────────────────┤
+  │        │ 0xA8 │ Disconnect, channel is no longer open. Receiver should reply with a disconnect (1 byte)     │
+  ├────────┼──────┴─────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ BS     │ Block size, number of packets to send before expecting a ACK response                              │
+  ├────────┼────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ T1     │ Timing parameter 1, time to wait for ACK. T1 should be greater than 4*T3                           │
+  ├────────┼────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ T2     │ Timing parameter 2, always 0xFF                                                                    │
+  ├────────┼────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ T3     │ Timing parameter 3, interval between two packets                                                   │
+  ├────────┼────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ T4     │ Timing parameter 4, always 0xFF                                                                    │
+  └────────┴────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+Timing parameters
+
+  ┌──────────────┬───┬───┬───┬───┬───┬───┬───┬───┐
+  │     Bits     │ 7 │ 6 │ 5 │ 4 │ 3 │ 2 │ 1 │ 0 │
+  ├──────────────┼───┴───┼───┴───┴───┴───┴───┴───┤
+  │ Description  │ Units │ Scale                 │
+  └──────────────┴───────┴───────────────────────┘
+
+Field description
+
+  ┌───────┬───────────────────────────────┐
+  │ Field │          Description          │
+  ├───────┼────────────┬──────────────────┤
+  │       │ 0x0        │ 0.1ms            │
+  │       ├────────────┼──────────────────┤
+  │       │ 0x1        │ 1ms              │
+  │Units  ├────────────┼──────────────────┤
+  │       │ 0x2        │ 10ms             │
+  │       ├────────────┼──────────────────┤
+  │       │ 0x3        │ 100ms            │
+  ├───────┼────────────┴──────────────────┤
+  │ Scale │ Number to scale the units by  │
+  └───────┴───────────────────────────────┘
+
+
+=================
+Data transmission
+=================
+
+The data transmission type has a length of 2 to 8 bytes. It is used for the transmission of actual data/payload bytes.
+
+Data transmission should only occur after channel setup and parameter negotiation.
+
+  ┌──────────────┬──────────┬───┬───┬───┬───┬───┬───┬───┐
+  │     Byte     │    0     │ 1 │ 2 │ 3 │ 4 │ 5 │ 6 │ 7 │
+  ├──────────────┼────┬─────┼───┴───┴───┴───┴───┴───┴───┤
+  │ Description  │ Op │ Seq │ Payload                   │
+  └──────────────┴────┴─────┴───────────────────────────┘
+
+Field description
+
+  ┌─────────┬──────────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │  Field  │                                             Description                                              │
+  ├─────────┼─────┬────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │         │ 0x0 │ Waiting for ACK, more packets to follow (i.e. reached max block size value as specified above) │
+  │         ├─────┼────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │         │ 0x1 │ Waiting for ACK, this is last packet                                                           │
+  │         ├─────┼────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │         │ 0x2 │ Not waiting for ACK, more packets to follow                                                    │
+  │Op       ├─────┼────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │         │ 0x3 │ Not waiting for ACK, this is last packet                                                       │
+  │         ├─────┼────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │         │ 0xB │ ACK, ready for next packet                                                                     │
+  │         ├─────┼────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │         │ 0x9 │ ACK, not ready for next packet                                                                 │
+  ├─────────┼─────┴────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ Seq     │ Sequence number, increments up to 0xF then back to 0x0                                               │
+  ├─────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ Payload │ KWP2000 payload. The first 2 bytes of the first packet sent contain the length of the message.       │
+  └─────────┴──────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+Note: the high nibble of byte 1 in the first response frame is assumed to contain flags, with the
+  length being just 12 bit. Byte 1 = 0x80 is sent on NRC type 0x78 (ResponsePending).
+
+
+=======
+Example
+=======
+
+This example shows how to open a channel to and read measuring block 1 from the engine control unit. Data values and
+the CAN IDs are in hex.
+
+  ┌─────┬───────────────┬────────┬──────────────────────────────────────────────────────────────────────────────────────┐
+  │ CAN │     Data      │ Format │                                     Description                                      │
+  │ ID  │               │        │                                                                                      │
+  ├─────┼───────────────┼────────┼──────────────────────────────────────────────────────────────────────────────────────┤
+  │ 200 │ 01 C0 00 10   │ Chan   │ Initiate channel setup with ECU module, request it use CAN ID 0x300                  │
+  │     │ 00 03 01      │ setup  │                                                                                      │
+  ├─────┼───────────────┼────────┼──────────────────────────────────────────────────────────────────────────────────────┤
+  │ 201 │ 00 D0 00 03   │ Chan   │ ECU module replies, says to use CAN ID 0x740                                         │
+  │     │ 40 07 01      │ setup  │                                                                                      │
+  ├─────┼───────────────┼────────┼──────────────────────────────────────────────────────────────────────────────────────┤
+  │ 740 │ A0 0F 8A FF   │ Chan   │ Tell ECU module to send 16 packets at a time, and set timing parameters              │
+  │     │ 32 FF         │ param  │                                                                                      │
+  ├─────┼───────────────┼────────┼──────────────────────────────────────────────────────────────────────────────────────┤
+  │ 300 │ A1 0F 8A FF   │ Chan   │ ECU module responds with its parameters                                              │
+  │     │ 4A FF         │ param  │                                                                                      │
+  ├─────┼───────────────┼────────┼──────────────────────────────────────────────────────────────────────────────────────┤
+  │ 740 │ 10 00 02 10   │ Data   │ Last packet, expecting ACK. Length is 2 bytes. Send KWP2000 startDiagnosticSession   │
+  │     │ 89            │        │ request 0x10 with 0x89 as a parameter                                                │
+  ├─────┼───────────────┼────────┼──────────────────────────────────────────────────────────────────────────────────────┤
+  │ 300 │ B1            │ Data   │ ECU sends ACK response.                                                              │
+  ├─────┼───────────────┼────────┼──────────────────────────────────────────────────────────────────────────────────────┤
+  │ 300 │ 10 00 02 50   │ Data   │ Last packet, expecting ACK. Length is 2 bytes. ECU sends KWP2000 positive response   │
+  │     │ 89            │        │ to startDiagnosticSession                                                            │
+  ├─────┼───────────────┼────────┼──────────────────────────────────────────────────────────────────────────────────────┤
+  │ 740 │ B1            │ Data   │ We send ACK response.                                                                │
+  ├─────┼───────────────┼────────┼──────────────────────────────────────────────────────────────────────────────────────┤
+  │ 740 │ 11 00 02 21   │ Data   │ Last packet, expecting ACK. Length is 2 bytes. Send KWP2000                          │
+  │     │ 01            │        │ readDataByLocalIdentifier request 0x21 with 0x01 as a parameter                      │
+  ├─────┼───────────────┼────────┼──────────────────────────────────────────────────────────────────────────────────────┤
+  │ 300 │ B2            │ Data   │ ECU sends ACK response.                                                              │
+  ├─────┼───────────────┼────────┼──────────────────────────────────────────────────────────────────────────────────────┤
+  │ 300 │ 21 00 1A 61   │ Data   │ Packet to follow, not expecting ACK. Length is 26 bytes. ECU sends KWP2000 positive  │
+  │     │ 01 01 00 00   │        │ response to readDataByLocalIdentifier followed by the requested data                 │
+  ├─────┼───────────────┼────────┼──────────────────────────────────────────────────────────────────────────────────────┤
+  │ 300 │ 22 27 00 00   │ Data   │ Packet to follow, not expecting ACK. KWP2000 data continued.                         │
+  │     │ 22 00 80 1A   │        │                                                                                      │
+  ├─────┼───────────────┼────────┼──────────────────────────────────────────────────────────────────────────────────────┤
+  │ 300 │ 23 32 4B 25   │ Data   │ Packet to follow, not expecting ACK. KWP2000 data continued.                         │
+  │     │ 02 7A 25 00   │        │                                                                                      │
+  ├─────┼───────────────┼────────┼──────────────────────────────────────────────────────────────────────────────────────┤
+  │ 300 │ 14 00 25 00   │ Data   │ Last packet, expecting ACK. KWP2000 data continued.                                  │
+  │     │ 00 25 00 00   │        │                                                                                      │
+  ├─────┼───────────────┼────────┼──────────────────────────────────────────────────────────────────────────────────────┤
+  │ 740 │ B5            │ Data   │ We send ACK response.                                                                │
+  ├─────┼───────────────┼────────┼──────────────────────────────────────────────────────────────────────────────────────┤
+  │ 740 │ A8            │ Chan   │ We send disconnect.                                                                  │
+  │     │               │ param  │                                                                                      │
+  └─────┴───────────────┴────────┴──────────────────────────────────────────────────────────────────────────────────────┘
+
+
+==========
+References
+==========
+
+ * https://www.sti-innsbruck.at/sites/default/files/courses/fileadmin/documents/vn-ws0809/03-vn-CAN-HLP.pdf
+

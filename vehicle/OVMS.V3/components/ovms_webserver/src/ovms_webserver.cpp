@@ -97,6 +97,7 @@ OvmsWebServer::OvmsWebServer()
 
   // register standard API calls:
   RegisterPage("/api/execute", "Execute command", HandleCommand, PageMenu_None, PageAuth_Cookie);
+  RegisterPage("/api/file", "Load/Save file", HandleFile, PageMenu_None, PageAuth_Cookie);
 
   // register standard public pages:
   RegisterPage("/dashboard", "Dashboard", HandleDashboard, PageMenu_Main, PageAuth_None);
@@ -119,9 +120,10 @@ OvmsWebServer::OvmsWebServer()
 #ifdef CONFIG_OVMS_COMP_SERVER_V3
   RegisterPage("/cfg/server/v3", "Server V3 (MQTT)", HandleCfgServerV3, PageMenu_Config, PageAuth_Cookie);
 #endif
+  RegisterPage("/cfg/notifications", "Notifications", HandleCfgNotifications, PageMenu_Config, PageAuth_Cookie);
 #endif
 #ifdef CONFIG_OVMS_COMP_PUSHOVER
-  RegisterPage("/cfg/notification", "Notification", HandleCfgNotification, PageMenu_Config, PageAuth_Cookie);
+  RegisterPage("/cfg/pushover", "Pushover", HandleCfgPushover, PageMenu_Config, PageAuth_Cookie);
 #endif
   RegisterPage("/cfg/webserver", "Webserver", HandleCfgWebServer, PageMenu_Config, PageAuth_Cookie);
   RegisterPage("/cfg/plugins", "Web Plugins", HandleCfgPlugins, PageMenu_Config, PageAuth_Cookie);
@@ -156,12 +158,28 @@ void OvmsWebServer::NetManInit(std::string event, void* data)
   struct mg_bind_opts bind_opts = {};
   memset(&bind_opts, 0, sizeof(bind_opts));
   bind_opts.error_string = (const char**) &error_string;
+
+  // bind http:
+  ESP_LOGI(TAG, "Binding to port 80 (http)");
   struct mg_connection *nc = mg_bind_opt(mgr, ":80", EventHandler, bind_opts);
-  if (!nc)
-    ESP_LOGE(TAG, "Cannot bind to port 80: %s", error_string);
-  else {
+  if (!nc) {
+    ESP_LOGE(TAG, "Cannot bind to port 80 (http): %s", error_string);
+  } else {
     mg_set_protocol_http_websocket(nc);
     mg_set_timer(nc, mg_time() + SESSION_CHECK_INTERVAL);
+  }
+
+  // bind https:
+  if (path_exists("/store/tls/webserver.crt") && path_exists("/store/tls/webserver.key")) {
+    ESP_LOGI(TAG, "Binding to port 443 (https)");
+    bind_opts.ssl_cert = "/store/tls/webserver.crt";
+    bind_opts.ssl_key = "/store/tls/webserver.key";
+    nc = mg_bind_opt(mgr, ":443", EventHandler, bind_opts);
+    if (!nc) {
+      ESP_LOGE(TAG, "Cannot bind to port 443 (https): %s", error_string);
+    } else {
+      mg_set_protocol_http_websocket(nc);
+    }
   }
 }
 

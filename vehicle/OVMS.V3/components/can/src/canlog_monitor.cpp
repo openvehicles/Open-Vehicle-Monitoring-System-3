@@ -72,41 +72,27 @@ OvmsCanLogMonitorInit::OvmsCanLogMonitorInit()
     }
   }
 
-canlog_monitor::canlog_monitor(std::string format)
-  : canlog("monitor", format)
+#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+
+canlog_monitor_conn::canlog_monitor_conn(canlog* logger, std::string format, canformat::canformat_serve_mode_t mode)
+  : canlogconnection(logger, format, mode)
   {
   }
 
-canlog_monitor::~canlog_monitor()
+canlog_monitor_conn::~canlog_monitor_conn()
   {
   }
 
-bool canlog_monitor::Open()
+void canlog_monitor_conn::OutputMsg(CAN_log_message_t& msg, std::string &result)
   {
-  ESP_LOGI(TAG, "Now logging CAN messages to monitor");
+  m_msgcount++;
 
-  std::string header = m_formatter->getheader();
-  if (header.length()>0)
-    { ESP_LOGD(TAG,"%s",header.c_str()); }
+  if ((m_filters != NULL) && (! m_filters->IsFiltered(&msg.frame)))
+    {
+    m_filtercount++;
+    return;
+    }
 
-  return true;
-  }
-
-void canlog_monitor::Close()
-  {
-  ESP_LOGI(TAG, "Closed monitor log: %s", GetStats().c_str());
-  }
-
-bool canlog_monitor::IsOpen()
-  {
-  return true;
-  }
-
-void canlog_monitor::OutputMsg(CAN_log_message_t& msg)
-  {
-  if (m_formatter == NULL) return;
-
-  std::string result = m_formatter->get(&msg);
   if (result.length()>0)
     {
     switch (msg.type)
@@ -130,4 +116,46 @@ void canlog_monitor::OutputMsg(CAN_log_message_t& msg)
         break;
       }
     }
+  }
+
+#endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+
+canlog_monitor::canlog_monitor(std::string format)
+  : canlog("monitor", format)
+  {
+  }
+
+canlog_monitor::~canlog_monitor()
+  {
+  }
+
+bool canlog_monitor::Open()
+  {
+  ESP_LOGI(TAG, "Now logging CAN messages to monitor");
+
+  OvmsRecMutexLock lock(&m_cmmutex);
+  canlog_monitor_conn* clc = new canlog_monitor_conn(this, m_format, m_mode);
+  clc->m_nc = NULL;
+  clc->m_peer = std::string("MONITOR");
+  m_connmap[NULL] = clc;
+  m_isopen = true;
+
+  std::string header = m_formatter->getheader();
+  if (header.length()>0)
+    { ESP_LOGD(TAG,"%s",header.c_str()); }
+
+  return true;
+  }
+
+void canlog_monitor::Close()
+  {
+  ESP_LOGI(TAG, "Closed monitor log: %s", GetStats().c_str());
+
+  OvmsRecMutexLock lock(&m_cmmutex);
+  for (conn_map_t::iterator it=m_connmap.begin(); it!=m_connmap.end(); ++it)
+    {
+    delete it->second;
+    }
+  m_connmap.clear();
+  m_isopen = false;
   }

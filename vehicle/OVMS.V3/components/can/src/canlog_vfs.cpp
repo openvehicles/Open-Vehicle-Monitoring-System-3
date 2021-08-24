@@ -87,10 +87,42 @@ OvmsCanLogVFSInit::OvmsCanLogVFSInit()
     }
   }
 
+#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+
+canlog_vfs_conn::canlog_vfs_conn(canlog* logger, std::string format, canformat::canformat_serve_mode_t mode)
+  : canlogconnection(logger, format, mode)
+  {
+  m_file = NULL;
+  }
+
+canlog_vfs_conn::~canlog_vfs_conn()
+  {
+  if (m_file)
+    {
+    fclose(m_file);
+    m_file = NULL;
+    }
+  }
+
+void canlog_vfs_conn::OutputMsg(CAN_log_message_t& msg, std::string &result)
+  {
+  m_msgcount++;
+
+  if ((m_filters != NULL) && (! m_filters->IsFiltered(&msg.frame)))
+    {
+    m_filtercount++;
+    return;
+    }
+
+  if (result.length()>0)
+    fwrite(result.c_str(),result.length(),1,m_file);
+  }
+
+#endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+
 canlog_vfs::canlog_vfs(std::string path, std::string format)
   : canlog("vfs", format)
   {
-  m_file = NULL;
   m_path = path;
   using std::placeholders::_1;
   using std::placeholders::_2;
@@ -102,7 +134,7 @@ canlog_vfs::~canlog_vfs()
   {
   MyEvents.DeregisterEvent(IDTAG);
 
-  if (m_file != NULL)
+  if (m_isopen)
     {
     Close();
     }
@@ -110,10 +142,16 @@ canlog_vfs::~canlog_vfs()
 
 bool canlog_vfs::Open()
   {
-  if (m_file)
+  OvmsRecMutexLock lock(&m_cmmutex);
+
+  if (m_isopen)
     {
-    fclose(m_file);
-    m_file = NULL;
+    for (conn_map_t::iterator it=m_connmap.begin(); it!=m_connmap.end(); ++it)
+      {
+      delete it->second;
+      }
+    m_connmap.clear();
+    m_isopen = false;
     }
 
   if (MyConfig.ProtectedPath(m_path))
@@ -130,10 +168,15 @@ bool canlog_vfs::Open()
     }
 #endif // #ifdef CONFIG_OVMS_COMP_SDCARD
 
-  m_file = fopen(m_path.c_str(), "w");
-  if (!m_file)
+  canlog_vfs_conn* clc = new canlog_vfs_conn(this, m_format, m_mode);
+  clc->m_nc = NULL;
+  clc->m_peer = m_path;
+
+  clc->m_file = fopen(m_path.c_str(), "w");
+  if (!clc->m_file)
     {
     ESP_LOGE(TAG, "Error: Can't write to '%s'", m_path.c_str());
+    delete clc;
     return false;
     }
 
@@ -141,25 +184,30 @@ bool canlog_vfs::Open()
 
   std::string header = m_formatter->getheader();
   if (header.length()>0)
-    fwrite(header.c_str(),header.length(),1,m_file);
+    fwrite(header.c_str(),header.length(),1,clc->m_file);
+
+  m_connmap[NULL] = clc;
+  m_isopen = true;
 
   return true;
   }
 
 void canlog_vfs::Close()
   {
-  if (m_file)
+  if (m_isopen)
     {
-    fclose(m_file);
-    m_file = NULL;
     ESP_LOGI(TAG, "Closed vfs log '%s': %s",
       m_path.c_str(), GetStats().c_str());
-    }
-  }
 
-bool canlog_vfs::IsOpen()
-  {
-  return (m_file != NULL);
+    OvmsRecMutexLock lock(&m_cmmutex);
+    for (conn_map_t::iterator it=m_connmap.begin(); it!=m_connmap.end(); ++it)
+      {
+      delete it->second;
+      }
+    m_connmap.clear();
+
+    m_isopen = false;
+    }
   }
 
 std::string canlog_vfs::GetInfo()
@@ -176,14 +224,4 @@ void canlog_vfs::MountListener(std::string event, void* data)
     Close();
   else if (event == "sd.mounted" && startsWith(m_path, "/sd"))
     Open();
-  }
-
-void canlog_vfs::OutputMsg(CAN_log_message_t& msg)
-  {
-  if (m_file == NULL) return;
-  if (m_formatter == NULL) return;
-
-  std::string result = m_formatter->get(&msg);
-  if (result.length()>0)
-    fwrite(result.c_str(),result.length(),1,m_file);
   }

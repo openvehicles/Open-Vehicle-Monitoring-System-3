@@ -70,6 +70,28 @@ void OvmsVehicleRenaultTwizy::WebInit()
 
 
 /**
+ * WebShutdown: deregister pages
+ */
+void OvmsVehicleRenaultTwizy::WebShutdown()
+{
+  // vehicle menu:
+  MyWebServer.DeregisterPage("/xrt/features");
+  MyWebServer.DeregisterPage("/xrt/brakelight");
+  MyWebServer.DeregisterPage("/xrt/profed");
+  MyWebServer.DeregisterPage("/xrt/dmconfig");
+  MyWebServer.DeregisterPage("/xrt/battery");
+  MyWebServer.DeregisterPage("/xrt/battmon");
+  MyWebServer.DeregisterPage("/xrt/scmon");
+
+  // main menu:
+  MyWebServer.DeregisterPage("/xrt/drivemode");
+
+  // page callbacks:
+  MyWebServer.DeregisterCallbacks("xrt");
+}
+
+
+/**
  * WebCfgFeatures: configure general parameters (URL /xrt/config)
  */
 void OvmsVehicleRenaultTwizy::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)

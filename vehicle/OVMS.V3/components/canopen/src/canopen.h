@@ -35,7 +35,7 @@
 #include "ovms_metrics.h"
 #include "ovms_command.h"
 
-#define CAN_INTERFACE_CNT         3
+#define CAN_INTERFACE_CNT         4
 
 #define CANopen_GeneralError      0x08000000  // check for device specific error details
 #define CANopen_BusCollision      0xffffffff  // another master is active / non-CANopen frame received

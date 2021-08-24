@@ -1,0 +1,4474 @@
+{
+   "ovmscode": "LIM",
+   "ovmsextaddr": "14",
+   "ovmsdesc": "Charging interface module",
+   "tables" : {
+      "FDETAILSTRUKTUR" : [
+         {
+            "NAME" : "F_UWB_ERW",
+            "TYP" : "ja"
+         },
+         {
+            "TYP" : "nein",
+            "NAME" : "SAE_CODE"
+         },
+         {
+            "TYP" : "nein",
+            "NAME" : "F_HLZ"
+         },
+         {
+            "TYP" : "nein",
+            "NAME" : "F_SEVERITY"
+         },
+         {
+            "NAME" : "F_UWB_SATZ",
+            "TYP" : "2"
+         },
+         {
+            "NAME" : "F_HLZ_VIEW",
+            "TYP" : "nein"
+         }
+      ],
+      "IUMWELTTEXTE" : [
+         {
+            "L/H" : "High",
+            "UW_EINH" : "0-n",
+            "DIV" : "-",
+            "UWTEXT" : "PLC_ERROR_CODE",
+            "ADD" : "-",
+            "UWNR" : "0x2003",
+            "NAME" : "PLC_ERROR_COD_VALUES",
+            "UWTYP" : "0xFF",
+            "MUL" : "-"
+         },
+         {
+            "UWNR" : "0x2004",
+            "ADD" : "-",
+            "NAME" : "PLC_ERROR_VALUE_VALUES",
+            "UWTYP" : "0xFF",
+            "MUL" : "-",
+            "L/H" : "High",
+            "UW_EINH" : "0-n",
+            "DIV" : "-",
+            "UWTEXT" : "PLC_ERROR_VALUE"
+         },
+         {
+            "UWTYP" : "0xFF",
+            "MUL" : "-",
+            "NAME" : "HOSPITALITY_VALUE",
+            "ADD" : "-",
+            "UWNR" : "0x4000",
+            "UWTEXT" : "HOSPITALITY_VALUE",
+            "DIV" : "-",
+            "UW_EINH" : "0-n",
+            "L/H" : "High"
+         },
+         {
+            "UWNR" : "0xXYXY",
+            "ADD" : "-",
+            "NAME" : "-",
+            "UWTYP" : "-",
+            "MUL" : "-",
+            "L/H" : "-",
+            "UW_EINH" : "-",
+            "DIV" : "-",
+            "UWTEXT" : "unbekannte Umweltbedingung"
+         }
+      ],
+      "TAB_ZV_LADEKLAPPE" : [
+         {
+            "TEXT_EN" : "unlocked",
+            "TEXT" : "entriegelt",
+            "WERT" : "0"
+         },
+         {
+            "WERT" : "1",
+            "TEXT" : "verriegelt",
+            "TEXT_EN" : "locked"
+         },
+         {
+            "WERT" : "3",
+            "TEXT_EN" : "Error - not installed",
+            "TEXT" : "Fehler - nicht verbaut"
+         }
+      ],
+      "ARG_0XDEF1_D" : [
+         {
+            "MIN" : "-",
+            "DATENTYP" : "unsigned char",
+            "ADD" : "-",
+            "NAME" : "-",
+            "INFO" : "Ansteuern der Ladeklappe (0 = entriegeln, 1 = verriegeln)",
+            "MAX" : "-",
+            "EINHEIT" : "0/1",
+            "INFO_EN" : "Activate the loading flap (0 = unlock, 1 = lock)",
+            "MASKE" : "-",
+            "MUL" : "-",
+            "L/H" : "high",
+            "ARG" : "ARG_ZV_LADEKLAPPE",
+            "DIV" : "-"
+         }
+      ],
+      "RES_0XDEF7_D" : [
+         {
+            "DIV" : "1.0",
+            "L/H" : "high",
+            "MASKE" : "-",
+            "MUL" : "1.0",
+            "EINHEIT" : "0/1",
+            "INFO_EN" : "Charge control status 1 line (0 = not active, 1 = active)",
+            "INFO" : "Zustand Charge control 1 Leitung (0 = nicht aktiv, 1 = aktiv)",
+            "NAME" : "-",
+            "ADD" : "0.0",
+            "RESULTNAME" : "STAT_CHARGE_CONTROL_1",
+            "DATENTYP" : "unsigned char"
+         },
+         {
+            "L/H" : "high",
+            "DIV" : "1.0",
+            "RESULTNAME" : "STAT_CHARGE_CONTROL_2",
+            "ADD" : "0.0",
+            "DATENTYP" : "unsigned char",
+            "MASKE" : "-",
+            "MUL" : "1.0",
+            "INFO" : "Zustand Charge control 2 Leitung (0 = nicht aktiv, 1 = aktiv)",
+            "NAME" : "-",
+            "EINHEIT" : "0/1",
+            "INFO_EN" : "Charge control status 2 line (0 = not active, 1 = active)"
+         },
+         {
+            "L/H" : "high",
+            "DIV" : "1.0",
+            "ADD" : "0.0",
+            "DATENTYP" : "unsigned char",
+            "RESULTNAME" : "STAT_CHARGE_PERMISSION",
+            "EINHEIT" : "0/1",
+            "INFO_EN" : "Charge permission line status (0 = not active, 1 = active)",
+            "NAME" : "-",
+            "INFO" : "Zustand Charge Permission Leitung (0 = nicht aktiv, 1 = aktiv)",
+            "MUL" : "1.0",
+            "MASKE" : "-"
+         },
+         {
+            "DIV" : "-",
+            "L/H" : "high",
+            "MUL" : "-",
+            "MASKE" : "-",
+            "EINHEIT" : "0/1",
+            "INFO_EN" : "State of charging plug (0 = not plugged in, 1 = plugged in)",
+            "INFO" : "Zustand Ladestecker (0 = nicht gesteckt, 1 = gesteckt)",
+            "NAME" : "-",
+            "RESULTNAME" : "STAT_LADESTECKER",
+            "ADD" : "-",
+            "DATENTYP" : "unsigned char"
+         }
+      ],
+      "RES_0XDE6B_D" : [
+         {
+            "DIV" : "-",
+            "L/H" : "high",
+            "INFO_EN" : "0x00: not active 0x01: active",
+            "EINHEIT" : "0/1",
+            "INFO" : "0x00: nicht aktiv 0x01: aktiv",
+            "NAME" : "-",
+            "MASKE" : "-",
+            "MUL" : "-",
+            "RESULTNAME" : "STAT_HOSPITALITY_FUNKTION",
+            "ADD" : "-",
+            "DATENTYP" : "unsigned char"
+         }
+      ],
+      "TAB_LIM_STECKER" : [
+         {
+            "TEXT_EN" : "no charging plug connected",
+            "TEXT" : "kein Ladestecker angesteckt",
+            "WERT" : "0x00"
+         },
+         {
+            "TEXT_EN" : "Charging plug connected",
+            "TEXT" : "Ladestecker angesteckt",
+            "WERT" : "0x01"
+         },
+         {
+            "WERT" : "0x02",
+            "TEXT" : "Ladestecker angesteckt und Entriegelungstaste betätigt",
+            "TEXT_EN" : "Charging plug connected and unlocking button pressed"
+         },
+         {
+            "TEXT" : "ungültiger Zustand",
+            "TEXT_EN" : "invalid state",
+            "WERT" : "0x03"
+         }
+      ],
+      "JOBRESULT" : [
+         {
+            "SB" : "0x10",
+            "STATUS_TEXT" : "ERROR_ECU_GENERAL_REJECT"
+         },
+         {
+            "SB" : "0x11",
+            "STATUS_TEXT" : "ERROR_ECU_SERVICE_NOT_SUPPORTED"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_SUB_FUNCTION_NOT_SUPPORTED",
+            "SB" : "0x12"
+         },
+         {
+            "SB" : "0x13",
+            "STATUS_TEXT" : "ERROR_ECU_INCORRECT_MESSAGE_LENGTH_OR_INVALID_FORMAT"
+         },
+         {
+            "SB" : "0x14",
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_TOO_LONG"
+         },
+         {
+            "SB" : "0x21",
+            "STATUS_TEXT" : "ERROR_ECU_BUSY_REPEAT_REQUEST"
+         },
+         {
+            "SB" : "0x22",
+            "STATUS_TEXT" : "ERROR_ECU_CONDITIONS_NOT_CORRECT"
+         },
+         {
+            "SB" : "0x24",
+            "STATUS_TEXT" : "ERROR_ECU_REQUEST_SEQUENCE_ERROR"
+         },
+         {
+            "SB" : "0x25",
+            "STATUS_TEXT" : "ERROR_ECU_NO_RESPONSE_FROM_SUBNET_COMPONENT"
+         },
+         {
+            "SB" : "0x26",
+            "STATUS_TEXT" : "ERROR_ECU_FAILURE_PREVENTS_EXECUTION_OF_REQUESTED_ACTION"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_REQUEST_OUT_OF_RANGE",
+            "SB" : "0x31"
+         },
+         {
+            "SB" : "0x33",
+            "STATUS_TEXT" : "ERROR_ECU_SECURITY_ACCESS_DENIED"
+         },
+         {
+            "SB" : "0x35",
+            "STATUS_TEXT" : "ERROR_ECU_INVALID_KEY"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_EXCEED_NUMBER_OF_ATTEMPTS",
+            "SB" : "0x36"
+         },
+         {
+            "SB" : "0x37",
+            "STATUS_TEXT" : "ERROR_ECU_REQUIRED_TIME_DELAY_NOT_EXPIRED"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_UPLOAD_DOWNLOAD_NOT_ACCEPTED",
+            "SB" : "0x70"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_TRANSFER_DATA_SUSPENDED",
+            "SB" : "0x71"
+         },
+         {
+            "SB" : "0x72",
+            "STATUS_TEXT" : "ERROR_ECU_GENERAL_PROGRAMMING_FAILURE"
+         },
+         {
+            "SB" : "0x73",
+            "STATUS_TEXT" : "ERROR_ECU_WRONG_BLOCK_SEQUENCE_COUNTER"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_REQUEST_CORRECTLY_RECEIVED__RESPONSE_PENDING",
+            "SB" : "0x78"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_SUB_FUNCTION_NOT_SUPPORTED_IN_ACTIVE_SESSION",
+            "SB" : "0x7E"
+         },
+         {
+            "SB" : "0x7F",
+            "STATUS_TEXT" : "ERROR_ECU_SERVICE_NOT_SUPPORTED_IN_ACTIVE_SESSION"
+         },
+         {
+            "SB" : "0x81",
+            "STATUS_TEXT" : "ERROR_ECU_RPM_TOO_HIGH"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RPM_TOO_LOW",
+            "SB" : "0x82"
+         },
+         {
+            "SB" : "0x83",
+            "STATUS_TEXT" : "ERROR_ECU_ENGINE_IS_RUNNING"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_ENGINE_IS_NOT_RUNNING",
+            "SB" : "0x84"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_ENGINE_RUN_TIME_TOO_LOW",
+            "SB" : "0x85"
+         },
+         {
+            "SB" : "0x86",
+            "STATUS_TEXT" : "ERROR_ECU_TEMPERATURE_TOO_HIGH"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_TEMPERATURE_TOO_LOW",
+            "SB" : "0x87"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_VEHICLE_SPEED_TOO_HIGH",
+            "SB" : "0x88"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_VEHICLE_SPEED_TOO_LOW",
+            "SB" : "0x89"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_THROTTLE_PEDAL_TOO_HIGH",
+            "SB" : "0x8A"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_THROTTLE_PEDAL_TOO_LOW",
+            "SB" : "0x8B"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_TRANSMISSION_RANGE_NOT_IN_NEUTRAL",
+            "SB" : "0x8C"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_TRANSMISSION_RANGE_NOT_IN_GEAR",
+            "SB" : "0x8D"
+         },
+         {
+            "SB" : "0x8F",
+            "STATUS_TEXT" : "ERROR_ECU_BRAKE_SWITCH_NOT_CLOSED"
+         },
+         {
+            "SB" : "0x90",
+            "STATUS_TEXT" : "ERROR_ECU_SHIFTER_LEVER_NOT_IN_PARK"
+         },
+         {
+            "SB" : "0x91",
+            "STATUS_TEXT" : "ERROR_ECU_TORQUE_CONVERTER_CLUTCH_LOCKED"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_VOLTAGE_TOO_HIGH",
+            "SB" : "0x92"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_VOLTAGE_TOO_LOW",
+            "SB" : "0x93"
+         },
+         {
+            "SB" : "?00?",
+            "STATUS_TEXT" : "OKAY"
+         },
+         {
+            "SB" : "?01?",
+            "STATUS_TEXT" : "ERROR_ECU_NO_RESPONSE"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_INCORRECT_LEN",
+            "SB" : "?02?"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_INCORRECT_RESPONSE_ID",
+            "SB" : "?03?"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_TA_RESPONSE_NOT_SA_REQUEST",
+            "SB" : "?04?"
+         },
+         {
+            "SB" : "?05?",
+            "STATUS_TEXT" : "ERROR_ECU_SA_RESPONSE_NOT_TA_REQUEST"
+         },
+         {
+            "SB" : "?06?",
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_DATA_IDENTIFIER"
+         },
+         {
+            "SB" : "?07?",
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_TOO_MUCH_DATA"
+         },
+         {
+            "SB" : "?08?",
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_TOO_LESS_DATA"
+         },
+         {
+            "SB" : "?09?",
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_VALUE_OUT_OF_RANGE"
+         },
+         {
+            "SB" : "?0A?",
+            "STATUS_TEXT" : "ERROR_TABLE"
+         },
+         {
+            "SB" : "?10?",
+            "STATUS_TEXT" : "ERROR_F_CODE"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_INTERPRETATION",
+            "SB" : "?12?"
+         },
+         {
+            "SB" : "?13?",
+            "STATUS_TEXT" : "ERROR_F_POS"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_IO_CONTROL_PARAMETER",
+            "SB" : "?14?"
+         },
+         {
+            "SB" : "?15?",
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_ROUTINE_CONTROL_TYPE"
+         },
+         {
+            "SB" : "?16?",
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_SUB_FUNCTION"
+         },
+         {
+            "SB" : "?17?",
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_DYNAMICALLY_DEFINED_DATA_IDENTIFIER"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_NO_STRING_END_CHAR",
+            "SB" : "?18?"
+         },
+         {
+            "SB" : "?19?",
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_ROUTINE_IDENTIFIER"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_RESET_TYPE",
+            "SB" : "?1A?"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_SERIAL_NUMBER_FORMAT",
+            "SB" : "?1B?"
+         },
+         {
+            "SB" : "?1C?",
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_DTC_BY_STATUS_MASK"
+         },
+         {
+            "SB" : "?1D?",
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_DTC_STATUS_AVAILABILITY_MASK"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_INCORRECT_ROUTINE_CONTROL_IDENTIFIER",
+            "SB" : "?1E?"
+         },
+         {
+            "SB" : "?50?",
+            "STATUS_TEXT" : "ERROR_BYTE1"
+         },
+         {
+            "SB" : "?51?",
+            "STATUS_TEXT" : "ERROR_BYTE2"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_BYTE3",
+            "SB" : "?52?"
+         },
+         {
+            "SB" : "?60?",
+            "STATUS_TEXT" : "ERROR_VERIFY"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_ZGW",
+            "SB" : "?61?"
+         },
+         {
+            "SB" : "?62?",
+            "STATUS_TEXT" : "ERROR_ECU_RESPONSE_BACKUP"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_CALID_CVN_INCORRECT_LEN",
+            "SB" : "?70?"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_SVK_INCORRECT_LEN",
+            "SB" : "?80?"
+         },
+         {
+            "SB" : "?81?",
+            "STATUS_TEXT" : "ERROR_SVK_INCORRECT_FINGERPRINT"
+         },
+         {
+            "STATUS_TEXT" : "ERROR_ARGUMENT",
+            "SB" : "?F0?"
+         },
+         {
+            "SB" : "0xXY",
+            "STATUS_TEXT" : "ERROR_ECU_UNKNOWN_NEGATIVE_RESPONSE"
+         }
+      ],
+      "TAB_DC_SCHUETZ_SCHALTER" : [
+         {
+            "TEXT" : "offen",
+            "TEXT_EN" : "open",
+            "WERT" : "0x00"
+         },
+         {
+            "TEXT" : "geschlossen",
+            "TEXT_EN" : "closed",
+            "WERT" : "0x01"
+         },
+         {
+            "WERT" : "0x02",
+            "TEXT_EN" : "welded contacts",
+            "TEXT" : "verschweisste Kontakte"
+         },
+         {
+            "WERT" : "0x03",
+            "TEXT" : "Diagnose läuft",
+            "TEXT_EN" : "Diagnosis is running"
+         }
+      ],
+      "PLC_ERROR_COD_VALUES" : [
+         {
+            "TEXT" : "STAGE_PLUG_DETECTION",
+            "TEXT_EN" : "STAGE_PLUG_DETECTION",
+            "WERT" : "0"
+         },
+         {
+            "WERT" : "1",
+            "TEXT_EN" : "STAGE_PLC_ENABLE",
+            "TEXT" : "STAGE_PLC_ENABLE"
+         },
+         {
+            "WERT" : "2",
+            "TEXT_EN" : "STAGE_SLAC",
+            "TEXT" : "STAGE_SLAC"
+         },
+         {
+            "TEXT" : "STAGE_IPv6_SLAAC",
+            "TEXT_EN" : "STAGE_IPv6_SLAAC",
+            "WERT" : "3"
+         },
+         {
+            "TEXT" : "STAGE_GET_SOCKET",
+            "TEXT_EN" : "STAGE_GET_SOCKET",
+            "WERT" : "4"
+         },
+         {
+            "TEXT" : "STAGE_TCP_CONNECT",
+            "TEXT_EN" : "STAGE_TCP_CONNECT",
+            "WERT" : "5"
+         },
+         {
+            "TEXT_EN" : "STAGE_HANDSHAKE",
+            "TEXT" : "STAGE_HANDSHAKE",
+            "WERT" : "6"
+         },
+         {
+            "TEXT" : "STAGE_SESSION_SETUP",
+            "TEXT_EN" : "STAGE_SESSION_SETUP",
+            "WERT" : "7"
+         },
+         {
+            "WERT" : "8",
+            "TEXT_EN" : "STAGE_SERVICE_DISCOVERY",
+            "TEXT" : "STAGE_SERVICE_DISCOVERY"
+         },
+         {
+            "TEXT_EN" : "STAGE_SERVICE_PAYMENT_SELECTION",
+            "TEXT" : "STAGE_SERVICE_PAYMENT_SELECTION",
+            "WERT" : "9"
+         },
+         {
+            "TEXT_EN" : "STAGE_CONTRACT_AUTHENTICATION",
+            "TEXT" : "STAGE_CONTRACT_AUTHENTICATION",
+            "WERT" : "10"
+         },
+         {
+            "TEXT_EN" : "STAGE_CHARGE_PARAMETER_DISCOVERY",
+            "TEXT" : "STAGE_CHARGE_PARAMETER_DISCOVERY",
+            "WERT" : "11"
+         },
+         {
+            "WERT" : "12",
+            "TEXT_EN" : "STAGE_CABLE_CHECK",
+            "TEXT" : "STAGE_CABLE_CHECK"
+         },
+         {
+            "TEXT_EN" : "STAGE_PRE_CHARGE",
+            "TEXT" : "STAGE_PRE_CHARGE",
+            "WERT" : "13"
+         },
+         {
+            "TEXT_EN" : "STAGE_CURRENT_DEMAND",
+            "TEXT" : "STAGE_CURRENT_DEMAND",
+            "WERT" : "14"
+         },
+         {
+            "TEXT_EN" : "STAGE_POWER_DELIVERY",
+            "TEXT" : "STAGE_POWER_DELIVERY",
+            "WERT" : "15"
+         },
+         {
+            "TEXT" : "STAGE_WELDING_DETECTION",
+            "TEXT_EN" : "STAGE_WELDING_DETECTION",
+            "WERT" : "16"
+         },
+         {
+            "TEXT_EN" : "STAGE_TERMINATE_CHARGING",
+            "TEXT" : "STAGE_TERMINATE_CHARGING",
+            "WERT" : "17"
+         },
+         {
+            "TEXT_EN" : "STAGE_CHARGING_COMPLETED",
+            "TEXT" : "STAGE_CHARGING_COMPLETED",
+            "WERT" : "18"
+         }
+      ],
+      "ST_CHGNHG_VALUES" : [
+         {
+            "WERT" : "0",
+            "TEXT_EN" : "No charging",
+            "TEXT" : "No Charging"
+         },
+         {
+            "TEXT" : "Initialization",
+            "TEXT_EN" : "Initialization",
+            "WERT" : "1"
+         },
+         {
+            "TEXT_EN" : "Charging",
+            "TEXT" : "Charging",
+            "WERT" : "2"
+         },
+         {
+            "WERT" : "3",
+            "TEXT_EN" : "Charge break",
+            "TEXT" : "Charge Pause"
+         },
+         {
+            "WERT" : "4",
+            "TEXT" : "Charge Completed",
+            "TEXT_EN" : "Charge Completed"
+         },
+         {
+            "WERT" : "5",
+            "TEXT_EN" : "Error",
+            "TEXT" : "Error"
+         }
+      ],
+      "FARTTEXTE" : [
+         {
+            "ARTTEXT_EN" : "no error type available",
+            "ARTTEXT" : "keine Fehlerart verfügbar",
+            "ARTNR" : "0x00"
+         },
+         {
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved",
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert",
+            "ARTNR" : "0x04"
+         },
+         {
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert",
+            "ARTTEXT_EN" : "Error currently present and already saved",
+            "ARTNR" : "0x05"
+         },
+         {
+            "ARTNR" : "0x08",
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert",
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved"
+         },
+         {
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert",
+            "ARTTEXT_EN" : "Error currently present and already saved",
+            "ARTNR" : "0x09"
+         },
+         {
+            "ARTNR" : "0x0C",
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved",
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert"
+         },
+         {
+            "ARTNR" : "0x0D",
+            "ARTTEXT_EN" : "Error currently present and already saved",
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert"
+         },
+         {
+            "ARTNR" : "0x20",
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert",
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved"
+         },
+         {
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert",
+            "ARTTEXT_EN" : "Error currently present and already saved",
+            "ARTNR" : "0x21"
+         },
+         {
+            "ARTNR" : "0x24",
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved",
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert"
+         },
+         {
+            "ARTNR" : "0x25",
+            "ARTTEXT_EN" : "Error currently present and already saved",
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert"
+         },
+         {
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved",
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert",
+            "ARTNR" : "0x28"
+         },
+         {
+            "ARTNR" : "0x29",
+            "ARTTEXT_EN" : "Error currently present and already saved",
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert"
+         },
+         {
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert",
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved",
+            "ARTNR" : "0x2C"
+         },
+         {
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert",
+            "ARTTEXT_EN" : "Error currently present and already saved",
+            "ARTNR" : "0x2D"
+         },
+         {
+            "ARTTEXT" : "unbekannte Fehlerart",
+            "ARTTEXT_EN" : "unknown type of error",
+            "ARTNR" : "0x40"
+         },
+         {
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTNR" : "0x44"
+         },
+         {
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTNR" : "0x45"
+         },
+         {
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTNR" : "0x48"
+         },
+         {
+            "ARTNR" : "0x49",
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTTEXT" : "Fehler gespeichert"
+         },
+         {
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTNR" : "0x4C"
+         },
+         {
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTNR" : "0x4D"
+         },
+         {
+            "ARTNR" : "0x60",
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTTEXT" : "Fehler gespeichert"
+         },
+         {
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTNR" : "0x61"
+         },
+         {
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTNR" : "0x64"
+         },
+         {
+            "ARTNR" : "0x65",
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTTEXT_EN" : "Errors saved"
+         },
+         {
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTNR" : "0x68"
+         },
+         {
+            "ARTNR" : "0x69",
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTTEXT" : "Fehler gespeichert"
+         },
+         {
+            "ARTNR" : "0x6C",
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTTEXT_EN" : "Errors saved"
+         },
+         {
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTNR" : "0x6D"
+         },
+         {
+            "ARTTEXT" : "Testbedingungen erfüllt",
+            "ARTTEXT_EN" : "Test conditions met",
+            "ARTNR" : "0x10"
+         },
+         {
+            "ARTNR" : "0x11",
+            "ARTTEXT_EN" : "Test conditions not yet met",
+            "ARTTEXT" : "Testbedingungen noch nicht erfüllt"
+         },
+         {
+            "ARTTEXT_EN" : "Failure would not cause a warning lamp to light up",
+            "ARTTEXT" : "Fehler würde kein Aufleuchten einer Warnlampe verursachen",
+            "ARTNR" : "0x80"
+         },
+         {
+            "ARTNR" : "0x81",
+            "ARTTEXT_EN" : "Failure would cause a warning lamp to light up",
+            "ARTTEXT" : "Fehler würde das Aufleuchten einer Warnlampe verursachen"
+         },
+         {
+            "ARTNR" : "0xFF",
+            "ARTTEXT" : "unbekannte Fehlerart",
+            "ARTTEXT_EN" : "unknown type of error"
+         }
+      ],
+      "RES_0XDEF3_D" : [
+         {
+            "L/H" : "high",
+            "DIV" : "-",
+            "RESULTNAME" : "STAT_LED_LADESTATUS_EIN",
+            "ADD" : "-",
+            "DATENTYP" : "unsigned char",
+            "INFO" : "Zustand LED für Ladestatus (0 = nicht angesteuert, 1 = angesteuert)",
+            "NAME" : "LADEN_LED_STATUSANZEIGE",
+            "INFO_EN" : "State LED for charging status (0 = not activated, 1 = activated)",
+            "EINHEIT" : "0-n",
+            "MUL" : "-",
+            "MASKE" : "-"
+         }
+      ],
+      "IARTTEXTE" : [
+         {
+            "ARTNR" : "0x00",
+            "ARTTEXT_EN" : "no error type available",
+            "ARTTEXT" : "keine Fehlerart verfügbar"
+         },
+         {
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved",
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert",
+            "ARTNR" : "0x04"
+         },
+         {
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert",
+            "ARTTEXT_EN" : "Error currently present and already saved",
+            "ARTNR" : "0x05"
+         },
+         {
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved",
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert",
+            "ARTNR" : "0x08"
+         },
+         {
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert",
+            "ARTTEXT_EN" : "Error currently present and already saved",
+            "ARTNR" : "0x09"
+         },
+         {
+            "ARTNR" : "0x0C",
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved",
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert"
+         },
+         {
+            "ARTNR" : "0x0D",
+            "ARTTEXT_EN" : "Error currently present and already saved",
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert"
+         },
+         {
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved",
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert",
+            "ARTNR" : "0x20"
+         },
+         {
+            "ARTNR" : "0x21",
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert",
+            "ARTTEXT_EN" : "Error currently present and already saved"
+         },
+         {
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved",
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert",
+            "ARTNR" : "0x24"
+         },
+         {
+            "ARTTEXT_EN" : "Error currently present and already saved",
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert",
+            "ARTNR" : "0x25"
+         },
+         {
+            "ARTNR" : "0x28",
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved",
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert"
+         },
+         {
+            "ARTTEXT_EN" : "Error currently present and already saved",
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert",
+            "ARTNR" : "0x29"
+         },
+         {
+            "ARTNR" : "0x2C",
+            "ARTTEXT" : "Fehler momentan nicht vorhanden, aber bereits gespeichert",
+            "ARTTEXT_EN" : "Error does not currently exist, but has already been saved"
+         },
+         {
+            "ARTTEXT" : "Fehler momentan vorhanden und bereits gespeichert",
+            "ARTTEXT_EN" : "Error currently present and already saved",
+            "ARTNR" : "0x2D"
+         },
+         {
+            "ARTTEXT_EN" : "unknown type of error",
+            "ARTTEXT" : "unbekannte Fehlerart",
+            "ARTNR" : "0x40"
+         },
+         {
+            "ARTNR" : "0x44",
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTTEXT_EN" : "Errors saved"
+         },
+         {
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTNR" : "0x45"
+         },
+         {
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTNR" : "0x48"
+         },
+         {
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTNR" : "0x49"
+         },
+         {
+            "ARTNR" : "0x4C",
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTTEXT_EN" : "Errors saved"
+         },
+         {
+            "ARTNR" : "0x4D",
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTTEXT" : "Fehler gespeichert"
+         },
+         {
+            "ARTNR" : "0x60",
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTTEXT" : "Fehler gespeichert"
+         },
+         {
+            "ARTNR" : "0x61",
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTTEXT_EN" : "Errors saved"
+         },
+         {
+            "ARTNR" : "0x64",
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTTEXT_EN" : "Errors saved"
+         },
+         {
+            "ARTNR" : "0x65",
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTTEXT_EN" : "Errors saved"
+         },
+         {
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTNR" : "0x68"
+         },
+         {
+            "ARTNR" : "0x69",
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTTEXT" : "Fehler gespeichert"
+         },
+         {
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTNR" : "0x6C"
+         },
+         {
+            "ARTTEXT_EN" : "Errors saved",
+            "ARTTEXT" : "Fehler gespeichert",
+            "ARTNR" : "0x6D"
+         },
+         {
+            "ARTNR" : "0x10",
+            "ARTTEXT_EN" : "Test conditions met",
+            "ARTTEXT" : "Testbedingungen erfüllt"
+         },
+         {
+            "ARTTEXT_EN" : "Test conditions not yet met",
+            "ARTTEXT" : "Testbedingungen noch nicht erfüllt",
+            "ARTNR" : "0x11"
+         },
+         {
+            "ARTTEXT_EN" : "Failure would not cause a warning lamp to light up",
+            "ARTTEXT" : "Fehler würde kein Aufleuchten einer Warnlampe verursachen",
+            "ARTNR" : "0x80"
+         },
+         {
+            "ARTTEXT_EN" : "Failure would cause a warning lamp to light up",
+            "ARTTEXT" : "Fehler würde das Aufleuchten einer Warnlampe verursachen",
+            "ARTNR" : "0x81"
+         },
+         {
+            "ARTTEXT" : "unbekannte Fehlerart",
+            "ARTTEXT_EN" : "unknown type of error",
+            "ARTNR" : "0xFF"
+         }
+      ],
+      "LIEFERANTEN" : [
+         {
+            "LIEF_TEXT" : "Reinshagen / Delphi",
+            "LIEF_NR" : "0x000001"
+         },
+         {
+            "LIEF_TEXT" : "Leopold Kostal GmbH & Co. KG",
+            "LIEF_NR" : "0x000002"
+         },
+         {
+            "LIEF_NR" : "0x000003",
+            "LIEF_TEXT" : "Hella Fahrzeugkomponenten GmbH"
+         },
+         {
+            "LIEF_NR" : "0x000004",
+            "LIEF_TEXT" : "Siemens"
+         },
+         {
+            "LIEF_NR" : "0x000005",
+            "LIEF_TEXT" : "Eaton"
+         },
+         {
+            "LIEF_TEXT" : "UTA",
+            "LIEF_NR" : "0x000006"
+         },
+         {
+            "LIEF_NR" : "0x000007",
+            "LIEF_TEXT" : "Helbako GmbH"
+         },
+         {
+            "LIEF_NR" : "0x000008",
+            "LIEF_TEXT" : "Robert Bosch GmbH"
+         },
+         {
+            "LIEF_NR" : "0x000009",
+            "LIEF_TEXT" : "Lear Corporation"
+         },
+         {
+            "LIEF_TEXT" : "VDO",
+            "LIEF_NR" : "0x000010"
+         },
+         {
+            "LIEF_NR" : "0x000011",
+            "LIEF_TEXT" : "Valeo GmbH"
+         },
+         {
+            "LIEF_NR" : "0x000012",
+            "LIEF_TEXT" : "MBB"
+         },
+         {
+            "LIEF_NR" : "0x000013",
+            "LIEF_TEXT" : "Kammerer"
+         },
+         {
+            "LIEF_TEXT" : "SWF",
+            "LIEF_NR" : "0x000014"
+         },
+         {
+            "LIEF_TEXT" : "Blaupunkt",
+            "LIEF_NR" : "0x000015"
+         },
+         {
+            "LIEF_NR" : "0x000016",
+            "LIEF_TEXT" : "Philips"
+         },
+         {
+            "LIEF_TEXT" : "Alpine Electronics GmbH",
+            "LIEF_NR" : "0x000017"
+         },
+         {
+            "LIEF_TEXT" : "Continental Teves AG & Co. OHG",
+            "LIEF_NR" : "0x000018"
+         },
+         {
+            "LIEF_TEXT" : "Elektromatik Südafrika",
+            "LIEF_NR" : "0x000019"
+         },
+         {
+            "LIEF_TEXT" : "Harman Becker Automotive Systems",
+            "LIEF_NR" : "0x000020"
+         },
+         {
+            "LIEF_TEXT" : "Preh GmbH",
+            "LIEF_NR" : "0x000021"
+         },
+         {
+            "LIEF_TEXT" : "Alps Electric Co. Ltd.",
+            "LIEF_NR" : "0x000022"
+         },
+         {
+            "LIEF_NR" : "0x000023",
+            "LIEF_TEXT" : "Motorola"
+         },
+         {
+            "LIEF_TEXT" : "Temic",
+            "LIEF_NR" : "0x000024"
+         },
+         {
+            "LIEF_TEXT" : "Webasto SE",
+            "LIEF_NR" : "0x000025"
+         },
+         {
+            "LIEF_NR" : "0x000026",
+            "LIEF_TEXT" : "MotoMeter"
+         },
+         {
+            "LIEF_NR" : "0x000027",
+            "LIEF_TEXT" : "Delphi Automotive PLC"
+         },
+         {
+            "LIEF_TEXT" : "DODUCO (Beru)",
+            "LIEF_NR" : "0x000028"
+         },
+         {
+            "LIEF_NR" : "0x000029",
+            "LIEF_TEXT" : "DENSO"
+         },
+         {
+            "LIEF_TEXT" : "NEC",
+            "LIEF_NR" : "0x000030"
+         },
+         {
+            "LIEF_TEXT" : "DASA",
+            "LIEF_NR" : "0x000031"
+         },
+         {
+            "LIEF_TEXT" : "Pioneer Corporation",
+            "LIEF_NR" : "0x000032"
+         },
+         {
+            "LIEF_NR" : "0x000033",
+            "LIEF_TEXT" : "Jatco"
+         },
+         {
+            "LIEF_NR" : "0x000034",
+            "LIEF_TEXT" : "FUBA Automotive GmbH & Co. KG"
+         },
+         {
+            "LIEF_TEXT" : "UK-NSI",
+            "LIEF_NR" : "0x000035"
+         },
+         {
+            "LIEF_NR" : "0x000036",
+            "LIEF_TEXT" : "AABG"
+         },
+         {
+            "LIEF_TEXT" : "Dunlop",
+            "LIEF_NR" : "0x000037"
+         },
+         {
+            "LIEF_TEXT" : "Sachs",
+            "LIEF_NR" : "0x000038"
+         },
+         {
+            "LIEF_NR" : "0x000039",
+            "LIEF_TEXT" : "ITT"
+         },
+         {
+            "LIEF_TEXT" : "FTE (Fahrzeugtechnik Ebern)",
+            "LIEF_NR" : "0x000040"
+         },
+         {
+            "LIEF_TEXT" : "Megamos",
+            "LIEF_NR" : "0x000041"
+         },
+         {
+            "LIEF_NR" : "0x000042",
+            "LIEF_TEXT" : "TRW Automotive GmbH"
+         },
+         {
+            "LIEF_TEXT" : "WABCO Fahrzeugsysteme GmbH",
+            "LIEF_NR" : "0x000043"
+         },
+         {
+            "LIEF_TEXT" : "ISAD Electronic Systems",
+            "LIEF_NR" : "0x000044"
+         },
+         {
+            "LIEF_TEXT" : "HEC Hella Electronics Corporation",
+            "LIEF_NR" : "0x000045"
+         },
+         {
+            "LIEF_NR" : "0x000046",
+            "LIEF_TEXT" : "Gemel"
+         },
+         {
+            "LIEF_NR" : "0x000047",
+            "LIEF_TEXT" : "ZF Friedrichshafen AG"
+         },
+         {
+            "LIEF_NR" : "0x000048",
+            "LIEF_TEXT" : "GMPT"
+         },
+         {
+            "LIEF_NR" : "0x000049",
+            "LIEF_TEXT" : "Harman Becker Automotive Systems GmbH"
+         },
+         {
+            "LIEF_TEXT" : "Remes GmbH",
+            "LIEF_NR" : "0x000050"
+         },
+         {
+            "LIEF_TEXT" : "ZF Lenksysteme GmbH",
+            "LIEF_NR" : "0x000051"
+         },
+         {
+            "LIEF_TEXT" : "Magneti Marelli S.p.A.",
+            "LIEF_NR" : "0x000052"
+         },
+         {
+            "LIEF_NR" : "0x000053",
+            "LIEF_TEXT" : "Johnson Controls Inc."
+         },
+         {
+            "LIEF_NR" : "0x000054",
+            "LIEF_TEXT" : "GETRAG Getriebe- und Zahnradf. Hermann Hagenmeyer GmbH & Co. KG"
+         },
+         {
+            "LIEF_TEXT" : "Behr-Hella Thermocontrol GmbH",
+            "LIEF_NR" : "0x000055"
+         },
+         {
+            "LIEF_NR" : "0x000056",
+            "LIEF_TEXT" : "Siemens VDO Automotive"
+         },
+         {
+            "LIEF_NR" : "0x000057",
+            "LIEF_TEXT" : "Visteon Innovation & Technology GmbH"
+         },
+         {
+            "LIEF_NR" : "0x000058",
+            "LIEF_TEXT" : "Autoliv AB"
+         },
+         {
+            "LIEF_TEXT" : "Haberl Electronic GmbH & Co. KG",
+            "LIEF_NR" : "0x000059"
+         },
+         {
+            "LIEF_TEXT" : "Magna International Inc.",
+            "LIEF_NR" : "0x000060"
+         },
+         {
+            "LIEF_TEXT" : "Marquardt GmbH",
+            "LIEF_NR" : "0x000061"
+         },
+         {
+            "LIEF_NR" : "0x000062",
+            "LIEF_TEXT" : "AB Elektronik GmbH"
+         },
+         {
+            "LIEF_NR" : "0x000063",
+            "LIEF_TEXT" : "SDVO/BORG"
+         },
+         {
+            "LIEF_TEXT" : "Hirschmann Car Communication GmbH",
+            "LIEF_NR" : "0x000064"
+         },
+         {
+            "LIEF_NR" : "0x000065",
+            "LIEF_TEXT" : "hoerbiger-electronics"
+         },
+         {
+            "LIEF_TEXT" : "Thyssen Krupp Automotive",
+            "LIEF_NR" : "0x000066"
+         },
+         {
+            "LIEF_NR" : "0x000067",
+            "LIEF_TEXT" : "Gentex Corporation"
+         },
+         {
+            "LIEF_NR" : "0x000068",
+            "LIEF_TEXT" : "Atena GmbH"
+         },
+         {
+            "LIEF_TEXT" : "Magna-Donelly",
+            "LIEF_NR" : "0x000069"
+         },
+         {
+            "LIEF_TEXT" : "Koyo Steeting Europe",
+            "LIEF_NR" : "0x000070"
+         },
+         {
+            "LIEF_NR" : "0x000071",
+            "LIEF_TEXT" : "NSI Beheer B.V."
+         },
+         {
+            "LIEF_NR" : "0x000072",
+            "LIEF_TEXT" : "Aisin AW Co. Ltd."
+         },
+         {
+            "LIEF_TEXT" : "Schorlock",
+            "LIEF_NR" : "0x000073"
+         },
+         {
+            "LIEF_NR" : "0x000074",
+            "LIEF_TEXT" : "Schrader Electronics Ltd."
+         },
+         {
+            "LIEF_TEXT" : "Huf-Electronics Bretten GmbH",
+            "LIEF_NR" : "0x000075"
+         },
+         {
+            "LIEF_TEXT" : "CEL",
+            "LIEF_NR" : "0x000076"
+         },
+         {
+            "LIEF_NR" : "0x000077",
+            "LIEF_TEXT" : "AUDIO MOBIL Elektronik GmbH"
+         },
+         {
+            "LIEF_NR" : "0x000078",
+            "LIEF_TEXT" : "rd electronic"
+         },
+         {
+            "LIEF_NR" : "0x000079",
+            "LIEF_TEXT" : "iSYS RTS GmbH"
+         },
+         {
+            "LIEF_TEXT" : "Westfalia-Automotive GmbH",
+            "LIEF_NR" : "0x000080"
+         },
+         {
+            "LIEF_TEXT" : "Tyco Electronics",
+            "LIEF_NR" : "0x000081"
+         },
+         {
+            "LIEF_NR" : "0x000082",
+            "LIEF_TEXT" : "Paragon AG"
+         },
+         {
+            "LIEF_TEXT" : "IEE S.A.",
+            "LIEF_NR" : "0x000083"
+         },
+         {
+            "LIEF_TEXT" : "TEMIC AUTOMOTIVE of NA",
+            "LIEF_NR" : "0x000084"
+         },
+         {
+            "LIEF_TEXT" : "Sonceboz S.A.",
+            "LIEF_NR" : "0x000085"
+         },
+         {
+            "LIEF_TEXT" : "Meta System S.p.A.",
+            "LIEF_NR" : "0x000086"
+         },
+         {
+            "LIEF_NR" : "0x000087",
+            "LIEF_TEXT" : "Huf Hülsbeck & Fürst GmbH & Co. KG"
+         },
+         {
+            "LIEF_NR" : "0x000088",
+            "LIEF_TEXT" : "MANN+HUMMEL GmbH"
+         },
+         {
+            "LIEF_NR" : "0x000089",
+            "LIEF_TEXT" : "Brose Fahrzeugteile GmbH & Co."
+         },
+         {
+            "LIEF_NR" : "0x000090",
+            "LIEF_TEXT" : "Keihin"
+         },
+         {
+            "LIEF_TEXT" : "Vimercati S.p.a",
+            "LIEF_NR" : "0x000091"
+         },
+         {
+            "LIEF_TEXT" : "CRH",
+            "LIEF_NR" : "0x000092"
+         },
+         {
+            "LIEF_NR" : "0x000093",
+            "LIEF_TEXT" : "TPO Display Corp"
+         },
+         {
+            "LIEF_NR" : "0x000094",
+            "LIEF_TEXT" : "Küster Automotive GmbH"
+         },
+         {
+            "LIEF_TEXT" : "Hitachi Automotive",
+            "LIEF_NR" : "0x000095"
+         },
+         {
+            "LIEF_TEXT" : "Continental AG",
+            "LIEF_NR" : "0x000096"
+         },
+         {
+            "LIEF_TEXT" : "TI-Automotive",
+            "LIEF_NR" : "0x000097"
+         },
+         {
+            "LIEF_NR" : "0x000098",
+            "LIEF_TEXT" : "Hydro"
+         },
+         {
+            "LIEF_NR" : "0x000099",
+            "LIEF_TEXT" : "Johnson Controls Inc."
+         },
+         {
+            "LIEF_NR" : "0x00009A",
+            "LIEF_TEXT" : "Takata-Petri"
+         },
+         {
+            "LIEF_TEXT" : "Mitsubishi Electric B.V. (Melco)",
+            "LIEF_NR" : "0x00009B"
+         },
+         {
+            "LIEF_NR" : "0x00009C",
+            "LIEF_TEXT" : "Autokabel"
+         },
+         {
+            "LIEF_NR" : "0x00009D",
+            "LIEF_TEXT" : "GKN Plc"
+         },
+         {
+            "LIEF_TEXT" : "Zollner Elektronik AG",
+            "LIEF_NR" : "0x00009E"
+         },
+         {
+            "LIEF_TEXT" : "peiker acustic GmbH & Co. KG",
+            "LIEF_NR" : "0x00009F"
+         },
+         {
+            "LIEF_TEXT" : "Bosal-Oris",
+            "LIEF_NR" : "0x0000A0"
+         },
+         {
+            "LIEF_NR" : "0x0000A1",
+            "LIEF_TEXT" : "Cobasys"
+         },
+         {
+            "LIEF_NR" : "0x0000A2",
+            "LIEF_TEXT" : "Automotive Lighting Reutlingen GmbH"
+         },
+         {
+            "LIEF_NR" : "0x0000A3",
+            "LIEF_TEXT" : "CONTI VDO"
+         },
+         {
+            "LIEF_TEXT" : "A.D.C. Automotive Distance Control Systems GmbH",
+            "LIEF_NR" : "0x0000A4"
+         },
+         {
+            "LIEF_TEXT" : "Novero Dabendorf GmbH",
+            "LIEF_NR" : "0x0000A5"
+         },
+         {
+            "LIEF_NR" : "0x0000A6",
+            "LIEF_TEXT" : "LAMES S.p.a."
+         },
+         {
+            "LIEF_TEXT" : "Magna/Closures",
+            "LIEF_NR" : "0x0000A7"
+         },
+         {
+            "LIEF_NR" : "0x0000A8",
+            "LIEF_TEXT" : "Harbin Wan Yu Technology Co"
+         },
+         {
+            "LIEF_TEXT" : "ThyssenKrupp Presta AG",
+            "LIEF_NR" : "0x0000A9"
+         },
+         {
+            "LIEF_TEXT" : "ArvinMeritor",
+            "LIEF_NR" : "0x0000AA"
+         },
+         {
+            "LIEF_TEXT" : "Kongsberg Automotive GmbH",
+            "LIEF_NR" : "0x0000AB"
+         },
+         {
+            "LIEF_NR" : "0x0000AC",
+            "LIEF_TEXT" : "SMR Automotive Mirrors Stuttgart GmbH"
+         },
+         {
+            "LIEF_NR" : "0x0000AD",
+            "LIEF_TEXT" : "So.Ge.Mi."
+         },
+         {
+            "LIEF_TEXT" : "MTA S.p.A.",
+            "LIEF_NR" : "0x0000AE"
+         },
+         {
+            "LIEF_NR" : "0x0000AF",
+            "LIEF_TEXT" : "Alfmeier Präzision AG"
+         },
+         {
+            "LIEF_TEXT" : "Eltek Deutechland GmbH",
+            "LIEF_NR" : "0x0000B0"
+         },
+         {
+            "LIEF_TEXT" : "OMRON Automotive Electronics Europe GmbH",
+            "LIEF_NR" : "0x0000B1"
+         },
+         {
+            "LIEF_TEXT" : "ASK Industries GmbH",
+            "LIEF_NR" : "0x0000B2"
+         },
+         {
+            "LIEF_TEXT" : "CML Innovative Technologies GmbH & Co. KG",
+            "LIEF_NR" : "0x0000B3"
+         },
+         {
+            "LIEF_TEXT" : "APAG Elektronik AG",
+            "LIEF_NR" : "0x0000B4"
+         },
+         {
+            "LIEF_TEXT" : "Nexteer Automotive",
+            "LIEF_NR" : "0x0000B5"
+         },
+         {
+            "LIEF_NR" : "0x0000B6",
+            "LIEF_TEXT" : "Hans Widmaier Fernmelde- und Feinwerktechnik"
+         },
+         {
+            "LIEF_TEXT" : "Robert Bosch Battery Systems GmbH",
+            "LIEF_NR" : "0x0000B7"
+         },
+         {
+            "LIEF_TEXT" : "Kyocera Display Europe GmbH",
+            "LIEF_NR" : "0x0000B8"
+         },
+         {
+            "LIEF_NR" : "0x0000B9",
+            "LIEF_TEXT" : "Magna Powertrain AG & Co. KG"
+         },
+         {
+            "LIEF_NR" : "0x0000BA",
+            "LIEF_TEXT" : "BorgWarner Beru Systems GmbH"
+         },
+         {
+            "LIEF_TEXT" : "BMW AG",
+            "LIEF_NR" : "0x0000BB"
+         },
+         {
+            "LIEF_TEXT" : "Benteler Duncan Plant",
+            "LIEF_NR" : "0x0000BC"
+         },
+         {
+            "LIEF_NR" : "0x0000BD",
+            "LIEF_TEXT" : "U-Shin Deutschland Zugangssysteme GmbH"
+         },
+         {
+            "LIEF_NR" : "0x0000BE",
+            "LIEF_TEXT" : "Schaeffler Technologies AG & Co. KG"
+         },
+         {
+            "LIEF_TEXT" : "JTEKT Corporation",
+            "LIEF_NR" : "0x0000BF"
+         },
+         {
+            "LIEF_NR" : "0x0000C0",
+            "LIEF_TEXT" : "VLF"
+         },
+         {
+            "LIEF_TEXT" : "Flextronics",
+            "LIEF_NR" : "0x0000C1"
+         },
+         {
+            "LIEF_NR" : "0x0000C2",
+            "LIEF_TEXT" : "LG Chem"
+         },
+         {
+            "LIEF_TEXT" : "Panasonic",
+            "LIEF_NR" : "0x0000C3"
+         },
+         {
+            "LIEF_TEXT" : "Alpitronic GmbH",
+            "LIEF_NR" : "0x0000C4"
+         },
+         {
+            "LIEF_TEXT" : "Telemotive AG",
+            "LIEF_NR" : "0x0000C5"
+         },
+         {
+            "LIEF_TEXT" : "Garmin",
+            "LIEF_NR" : "0x0000C6"
+         },
+         {
+            "LIEF_TEXT" : "RSG Elotech Elektronische Baugruppen GmbH",
+            "LIEF_NR" : "0x0000C7"
+         },
+         {
+            "LIEF_TEXT" : "KEBODA TECHNOLOGY CORP",
+            "LIEF_NR" : "0x0000C8"
+         },
+         {
+            "LIEF_NR" : "0x0000C9",
+            "LIEF_TEXT" : "Aptiv"
+         },
+         {
+            "LIEF_NR" : "0xFFFFFF",
+            "LIEF_TEXT" : "unbekannter Hersteller"
+         }
+      ],
+      "RES_0XDEF9_D" : [
+         {
+            "MASKE" : "-",
+            "MUL" : "1.0",
+            "INFO_EN" : "Voltage at the input of the relay box (contactors) for DC charging",
+            "EINHEIT" : "V",
+            "INFO" : "Spannung am Eingang der Relaisbox (Schaltschütze) für DC-Laden",
+            "NAME" : "-",
+            "ADD" : "0.0",
+            "RESULTNAME" : "STAT_DC_SCHUETZ_SPANNUNG_EINGANG_WERT",
+            "DATENTYP" : "unsigned int",
+            "DIV" : "1.0",
+            "L/H" : "high"
+         },
+         {
+            "L/H" : "high",
+            "DIV" : "-",
+            "RESULTNAME" : "STAT_DC_SCHUETZ_SPANNUNG_NEGATIV",
+            "ADD" : "-",
+            "DATENTYP" : "unsigned char",
+            "NAME" : "-",
+            "INFO" : "Erkennung einer negativen Spannung (0 = keine oder positive Spannung / 1 = negative Spannung)",
+            "INFO_EN" : "Detection of a negative voltage (0 = no or positive voltage / 1 = negative voltage)",
+            "EINHEIT" : "0/1",
+            "MUL" : "-",
+            "MASKE" : "-"
+         }
+      ],
+      "LADEN_LED_STATUSANZEIGE" : [
+         {
+            "WERT" : "0x00",
+            "TEXT" : "Aus",
+            "TEXT_EN" : "Out"
+         },
+         {
+            "WERT" : "0x01",
+            "TEXT" : "Initialisierung (Blinken Orange)",
+            "TEXT_EN" : "Initialization (flashing orange)"
+         },
+         {
+            "WERT" : "0x02",
+            "TEXT_EN" : "Charge readiness (duration on blue)",
+            "TEXT" : "Ladebereitschaft (Dauer Ein Blau)"
+         },
+         {
+            "WERT" : "0x03",
+            "TEXT" : "Laden (Blinken Blau)",
+            "TEXT_EN" : "Charging (blinking blue)"
+         },
+         {
+            "TEXT" : "Ladeende (Dauer Ein Grün)",
+            "TEXT_EN" : "End of charging (duration on green)",
+            "WERT" : "0x04"
+         },
+         {
+            "TEXT" : "Fehler (Blinken in Gruppen Rot)",
+            "TEXT_EN" : "Error (flashing red in groups)",
+            "WERT" : "0x05"
+         },
+         {
+            "TEXT_EN" : "Search light (permanent on white)",
+            "TEXT" : "Suchbeleuchtung (Dauer Ein Weiß)",
+            "WERT" : "0x06"
+         }
+      ],
+      "TAB_LADEKLAPPE" : [
+         {
+            "WERT" : "0x00",
+            "TEXT" : "Offen",
+            "TEXT_EN" : "Open"
+         },
+         {
+            "TEXT_EN" : "Closed",
+            "TEXT" : "Geschlossen",
+            "WERT" : "0x01"
+         },
+         {
+            "TEXT" : "Fehler - nicht verbaut",
+            "TEXT_EN" : "Error - not installed",
+            "WERT" : "0x02"
+         },
+         {
+            "TEXT_EN" : "Invalid value",
+            "TEXT" : "Wert ungültig",
+            "WERT" : "0xFF"
+         }
+      ],
+      "DIGITALARGUMENT" : [
+         {
+            "WERT" : "1",
+            "TEXT_EN" : "a",
+            "TEXT" : "ein"
+         },
+         {
+            "WERT" : "0",
+            "TEXT" : "aus",
+            "TEXT_EN" : "out"
+         },
+         {
+            "TEXT_EN" : "Yes",
+            "TEXT" : "ja",
+            "WERT" : "1"
+         },
+         {
+            "TEXT" : "nein",
+            "TEXT_EN" : "No",
+            "WERT" : "0"
+         },
+         {
+            "WERT" : "1",
+            "TEXT_EN" : "on",
+            "TEXT" : "auf"
+         },
+         {
+            "TEXT" : "ab",
+            "TEXT_EN" : "from",
+            "WERT" : "0"
+         },
+         {
+            "TEXT" : "an",
+            "TEXT_EN" : "at",
+            "WERT" : "1"
+         },
+         {
+            "WERT" : "1",
+            "TEXT_EN" : "yes",
+            "TEXT" : "yes"
+         },
+         {
+            "TEXT" : "no",
+            "TEXT_EN" : "no",
+            "WERT" : "0"
+         },
+         {
+            "TEXT" : "on",
+            "TEXT_EN" : "on",
+            "WERT" : "1"
+         },
+         {
+            "WERT" : "0",
+            "TEXT" : "off",
+            "TEXT_EN" : "off"
+         },
+         {
+            "WERT" : "1",
+            "TEXT_EN" : "up",
+            "TEXT" : "up"
+         },
+         {
+            "TEXT" : "down",
+            "TEXT_EN" : "down",
+            "WERT" : "0"
+         },
+         {
+            "WERT" : "1",
+            "TEXT" : "true",
+            "TEXT_EN" : "true"
+         },
+         {
+            "WERT" : "0",
+            "TEXT" : "false",
+            "TEXT_EN" : "false"
+         },
+         {
+            "TEXT" : "1",
+            "TEXT_EN" : "1",
+            "WERT" : "1"
+         },
+         {
+            "TEXT" : "0",
+            "WERT" : "0"
+         }
+      ],
+      "FORTTEXTE" : [
+         {
+            "ORTTEXT_EN" : "Energy saving mode active",
+            "ORTTEXT" : "Energiesparmode aktiv",
+            "FEHLERKLASSE" : "-",
+            "ORT" : "0x021400",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0x021408",
+            "ORTTEXT" : "Codierung: Steuergerät ist nicht codiert",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT_EN" : "Coding: Control unit is not coded"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "Coding: Error occurred during coding data transaction",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Codierung: Fehler bei Codierdatentransaktion aufgetreten",
+            "ORT" : "0x021409"
+         },
+         {
+            "ORTTEXT" : "Codierung: Signatur der Codierdaten ungültig",
+            "FEHLERKLASSE" : "-",
+            "ORT" : "0x02140A",
+            "ORTTEXT_EN" : "Coding: Signature of the coding data is invalid",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Codierung: Codierdaten passen nicht zum Fahrzeug",
+            "ORT" : "0x02140B",
+            "ORTTEXT_EN" : "Coding: Coding data does not match the vehicle"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Codierung: Unplausible Daten während Codierdatentransaktion",
+            "ORT" : "0x02140C",
+            "ORTTEXT_EN" : "Coding: Implausible data during coding data transaction"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "Codierung: Codierdaten nicht qualifiziert",
+            "FEHLERKLASSE" : "-",
+            "ORT" : "0x02140D",
+            "ORTTEXT_EN" : "Coding: Coding data not qualified"
+         },
+         {
+            "ORTTEXT" : "Dummy-Fehlerspeichereintrag im Komponentenfehlerbereich nur für Testzwecke",
+            "FEHLERKLASSE" : "-",
+            "ORT" : "0x02FF14",
+            "ORTTEXT_EN" : "Dummy error memory entry in the component error area for test purposes only",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "ORTTEXT" : "Ladeanschlussklappe: Verriegelung, Leitungsunterbrechung",
+            "FEHLERKLASSE" : "-",
+            "ORT" : "0x805500",
+            "ORTTEXT_EN" : "Charging connection flap: locking, line break",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "ORT" : "0x805501",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Ladeanschlussklappe: Verriegelung, Kurzschluss nach Masse",
+            "ORTTEXT_EN" : "Charging connection flap: locking, short circuit to ground",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "ORTTEXT_EN" : "Charging connection flap: locking, short circuit to positive",
+            "ORTTEXT" : "Ladeanschlussklappe: Verriegelung, Kurzschluss nach Plus",
+            "FEHLERKLASSE" : "-",
+            "ORT" : "0x805502",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0x805503",
+            "ORTTEXT" : "Ladeanschluss: Verriegelung des Ladesteckers, Leitungsunterbrechung",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT_EN" : "Charging connection: locking of the charging plug, line break"
+         },
+         {
+            "ORTTEXT_EN" : "Charging connection: locking of the charging plug, short circuit to ground",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Ladeanschluss: Verriegelung des Ladesteckers, Kurzschluss nach Masse",
+            "ORT" : "0x805504",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0x805505",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Ladeanschluss: Verriegelung des Ladesteckers, Kurzschluss nach Plus",
+            "ORTTEXT_EN" : "Charging connection: locking of the charging plug, short circuit to positive"
+         },
+         {
+            "ORTTEXT_EN" : "Signal line charging readiness, line interruption",
+            "ORTTEXT" : "Signalleitung Ladebereitschaft, Leitungsunterbrechung",
+            "FEHLERKLASSE" : "-",
+            "ORT" : "0x805506",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Signalleitung Ladebereitschaft, Kurzschluss nach Masse",
+            "ORT" : "0x805507",
+            "ORTTEXT_EN" : "Signal line ready to charge, short circuit to ground"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "Signal line charging readiness, short circuit to positive",
+            "ORT" : "0x805508",
+            "ORTTEXT" : "Signalleitung Ladebereitschaft, Kurzschluss nach Plus",
+            "FEHLERKLASSE" : "-"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Suchbeleuchtung Ladeanschluss: Ansteuerung, Kurzschluss nach Masse",
+            "ORT" : "0x80550B",
+            "ORTTEXT_EN" : "Search lighting charging connection: activation, short circuit to ground"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Suchbeleuchtung Ladeanschluss: Ansteuerung, Kurzschluss nach Plus oder Leitungsunterbrechung",
+            "ORT" : "0x80550C",
+            "ORTTEXT_EN" : "Search lighting charging connection: activation, short circuit to positive or line interruption"
+         },
+         {
+            "ORTTEXT_EN" : "Charging status display: activation, short circuit to plus or line interruption",
+            "ORT" : "0x80550D",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Statusanzeige Laden: Ansteuerung, Kurzschluss nach Plus oder Leitungsunterbrechung",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "Charging status display: activation, short circuit to ground",
+            "ORTTEXT" : "Statusanzeige Laden: Ansteuerung, Kurzschluss nach Masse",
+            "FEHLERKLASSE" : "-",
+            "ORT" : "0x80550E"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "AC-Laden: PWM-Signal, Pegel kleiner als 1 Volt, Ladestrom unterbrochen",
+            "ORT" : "0x805510",
+            "ORTTEXT_EN" : "AC charging: PWM signal, level less than 1 volt, charging current interrupted"
+         },
+         {
+            "ORTTEXT" : "AC-Laden: PWM-Signal, Pegel ausserhalb Sollbereich",
+            "FEHLERKLASSE" : "-",
+            "ORT" : "0x805511",
+            "ORTTEXT_EN" : "AC charging: PWM signal, level outside the target range",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT_EN" : "AC charging: PWM signal, frequency outside the target range",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "AC-Laden: PWM-Signal, Frequenz ausserhalb Sollbereich",
+            "ORT" : "0x805512"
+         },
+         {
+            "ORTTEXT" : "AC-Laden: PWM-Signal, Tastverhältnis ausserhalb Sollbereich",
+            "FEHLERKLASSE" : "-",
+            "ORT" : "0x805513",
+            "ORTTEXT_EN" : "AC charging: PWM signal, duty cycle outside the target range",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0x805514",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "AC-Laden, Ladeanschluss an Steuergerät nicht angeschlossen",
+            "ORTTEXT_EN" : "AC charging, charging connection to control unit not connected"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "DC charging, charging connection to LIM not connected",
+            "ORTTEXT" : "DC-Laden, Ladeanschluss an LIM nicht angeschlossen",
+            "FEHLERKLASSE" : "-",
+            "ORT" : "0x805515"
+         },
+         {
+            "ORT" : "0x805516",
+            "ORTTEXT" : "Entriegelung des Ladesteckers (Typ 1): Dauerbetätigung",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT_EN" : "Unlocking the charging plug (type 1): continuous actuation",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT_EN" : "AC charging: charging plug detection implausible",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "AC-Laden: Ladesteckererkennung unplausibel",
+            "ORT" : "0x805517"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "DC-Laden: Ladesteckererkennung unplausibel",
+            "ORT" : "0x805518",
+            "ORTTEXT_EN" : "DC charging: charging plug detection implausible"
+         },
+         {
+            "ORTTEXT_EN" : "PLC data line, communication error",
+            "ORTTEXT" : "PLC Datenleitung, Kommunikationsfehler",
+            "FEHLERKLASSE" : "-",
+            "ORT" : "0x805519",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT_EN" : "DC charging: Error when starting the charging process",
+            "ORT" : "0x80551A",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "DC-Laden: Fehler beim Start des Ladevorgangs"
+         },
+         {
+            "ORTTEXT_EN" : "DC charging, relay box: control of contactor minus pole, line interruption",
+            "ORTTEXT" : "DC-Laden, Relaisbox: Ansteuerung Schaltschütz Minuspol, Leitungsunterbechung",
+            "FEHLERKLASSE" : "-",
+            "ORT" : "0x80551D",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "DC charging, relay box: control contactor negative pole, short circuit to ground",
+            "ORT" : "0x80551E",
+            "ORTTEXT" : "DC-Laden, Relaisbox: Ansteuerung Schaltschütz Minuspol, Kurzschluss nach Masse",
+            "FEHLERKLASSE" : "-"
+         },
+         {
+            "ORTTEXT_EN" : "DC charging, relay box: control contactor negative pole, short circuit to positive",
+            "ORT" : "0x80551F",
+            "ORTTEXT" : "DC-Laden, Relaisbox: Ansteuerung Schaltschütz Minuspol, Kurzschluss nach Plus",
+            "FEHLERKLASSE" : "-",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "ORTTEXT_EN" : "DC charging, relay box: control of contactor positive pole, line interruption",
+            "ORT" : "0x805520",
+            "ORTTEXT" : "DC-Laden, Relaisbox: Ansteuerung Schaltschütz Pluspol, Leitungsunterbechung",
+            "FEHLERKLASSE" : "-",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0x805521",
+            "ORTTEXT" : "DC-Laden, Relaisbox: Ansteuerung Schaltschütz Pluspol, Kurzschluss nach Masse",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT_EN" : "DC charging, relay box: control contactor positive pole, short circuit to ground"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "DC charging, relay box: control contactor positive pole, short circuit to positive",
+            "ORT" : "0x805522",
+            "ORTTEXT" : "DC-Laden, Relaisbox: Ansteuerung Schaltschütz Pluspol, Kurzschluss nach Plus",
+            "FEHLERKLASSE" : "-"
+         },
+         {
+            "ORTTEXT" : "DC-Laden, Relaisbox: Minuspol, Schaltschütz klebt",
+            "FEHLERKLASSE" : "-",
+            "ORT" : "0x805523",
+            "ORTTEXT_EN" : "DC charging, relay box: negative pole, contactor sticks",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "DC charging, relay box: positive pole, contactor sticks",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "DC-Laden, Relaisbox: Pluspol, Schaltschütz klebt",
+            "ORT" : "0x805524"
+         },
+         {
+            "ORT" : "0x805525",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "DC-Laden, Relaisbox: Spannungsmessung, Kurzschluss nach Masse oder Leitungsunterbrechung",
+            "ORTTEXT_EN" : "DC charging, relay box: voltage measurement, short circuit to ground or open circuit",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "DC charging, relay box: voltage measurement, short circuit to positive",
+            "ORT" : "0x805526",
+            "ORTTEXT" : "DC-Laden, Relaisbox: Spannungsmessung, Kurzschluss nach Plus",
+            "FEHLERKLASSE" : "-"
+         },
+         {
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "DC-Laden, Relaisbox: Spannungsmessung unplausibel",
+            "ORT" : "0x805527",
+            "ORTTEXT_EN" : "DC charging, relay box: voltage measurement implausible",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "ORT" : "0x805528",
+            "ORTTEXT" : "AC-Laden, Notbetrieb detektiert",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT_EN" : "AC charging, emergency operation detected",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "ORTTEXT_EN" : "DC charging: unexpected high-voltage voltage detected at the charging connection",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "DC-Laden: unerwartete Hochvolt-Spannung an der Ladeanschluss erkannt",
+            "ORT" : "0x805529",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "ORTTEXT" : "DC-Laden, Relaisbox: Notöffnung der Schaltschütze",
+            "FEHLERKLASSE" : "-",
+            "ORT" : "0x80552A",
+            "ORTTEXT_EN" : "DC charging, relay box: emergency opening of the contactors",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "ORT" : "0x80552B",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Ladeanschlussklappe und Ladeanschluss: Status unplausibel",
+            "ORTTEXT_EN" : "Charging connection flap and charging connection: status implausible",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT_EN" : "AC charging: unexpected voltage detected on the charging device",
+            "ORT" : "0x80552C",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "AC-Laden: unerwartete Spannung an der Ladevorrichtung detektiert"
+         },
+         {
+            "ORTTEXT" : "AC-Laden und DC-Laden: Stecker gleichzeitig an beiden Ladeanschlüsse gesteckt.",
+            "FEHLERKLASSE" : "-",
+            "ORT" : "0x80552D",
+            "ORTTEXT_EN" : "AC charging and DC charging: plugs plugged into both charging connections at the same time.",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "ORTTEXT_EN" : "Charging connection flap, Hall sensor: short circuit to ground",
+            "ORT" : "0x80552E",
+            "ORTTEXT" : "Ladeanschlussklappe, Hallsensor: Kurzschluss nach Masse",
+            "FEHLERKLASSE" : "-",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "Charging connection flap, Hall sensor: short circuit to positive",
+            "ORT" : "0x80552F",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Ladeanschlussklappe, Hallsensor: Kurzschluss nach Plus"
+         },
+         {
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "LIM: Steuergeräte interner Fehler",
+            "ORT" : "0x805530",
+            "ORTTEXT_EN" : "LIM: Control unit internal error",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "AC charging: PWM signal, short circuit to positive",
+            "ORTTEXT" : "AC-Laden: PWM-Signal, Kurzschluss nach Plus",
+            "FEHLERKLASSE" : "-",
+            "ORT" : "0x805531"
+         },
+         {
+            "ORT" : "0x805532",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Ladeanschluss: Verriegelung des Ladesteckers, Zustand unplausibel",
+            "ORTTEXT_EN" : "Charging connection: locking of the charging plug, condition implausible",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "DC charging, signal line charging permission: short circuit to ground or open circuit",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "DC-Laden, Signalleitung Laden-Erlaubnis: Kurzschluss nach Masse oder Leitungsunterbrechung",
+            "ORT" : "0x805533"
+         },
+         {
+            "ORTTEXT_EN" : "DC charging, signal line charging permission: short circuit to positive",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "DC-Laden, Signalleitung Laden-Erlaubnis: Kurzschluss nach Plus",
+            "ORT" : "0x805534",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "ORT" : "0x805535",
+            "ORTTEXT" : "AC-Laden: kein Ladestecker erkannt obwohl Ladesterckerverriegelung aktiv",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT_EN" : "AC charging: no charging plug recognized although charging plug lock is active",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "ORT" : "0x805536",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Ladeanschluss: Sensor der Ladesteckerverriegelung, Kurzschluss nach Masse",
+            "ORTTEXT_EN" : "Charging connection: sensor of the charging plug lock, short circuit to ground",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "Charging connection: sensor of the charging connector lock, short circuit to positive",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Ladeanschluss: Sensor der Ladesteckerverriegelung, Kurzschluss nach Plus",
+            "ORT" : "0x805537"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "DC charging: charging voltage implausible",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "DC-Laden: Ladespannung unplausibel",
+            "ORT" : "0x805538"
+         },
+         {
+            "ORTTEXT_EN" : "DC charging: No charging voltage although control for closing the contactors is active",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "DC-Laden: Keine Ladespannung obwohl Ansteuerung zum Schliessen der Schaltschütze aktiv",
+            "ORT" : "0x805539",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "ORTTEXT_EN" : "AC charging: PWM signal implausible",
+            "ORT" : "0x80553A",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "AC-Laden: PWM-Signal unplausibel",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "ORTTEXT_EN" : "Charging connection: sensor of the charging connector lock, line interruption",
+            "ORT" : "0x80553B",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Ladeanschluss: Sensor der Ladesteckerverriegelung, Leitungsunterbrechung",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "ORTTEXT_EN" : "AC charging: charging plug detection, short circuit to positive",
+            "ORT" : "0x80553C",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "AC-Laden: Ladesteckererkennung, Kurzschluss nach Plus",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "Wake-up line terminal 15, short circuit to ground",
+            "ORTTEXT" : "Weckleitung Klemme 15, Kurzschluss nach Masse",
+            "FEHLERKLASSE" : "-",
+            "ORT" : "0x80553D"
+         },
+         {
+            "ORTTEXT_EN" : "Charging connection: sensor of the charging plug lock, short circuit to ground",
+            "ORT" : "0x80553E",
+            "ORTTEXT" : "Ladeanschluss: Sensor der Ladesteckerverriegelung, Kurzschluss nach Masse",
+            "FEHLERKLASSE" : "-",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "ORT" : "0x80553F",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Ladeanschluss: Sensor der Ladesteckerverriegelung, Kurzschluss nach Plus",
+            "ORTTEXT_EN" : "Charging connection: sensor of the charging connector lock, short circuit to positive",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Ladeanschluss: Verriegelung des Ladesteckers, Leitungsunterbrechung",
+            "ORT" : "0x805540",
+            "ORTTEXT_EN" : "Charging connection: locking of the charging plug, line break"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0x805541",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Ladeanschluss: Verriegelung des Ladesteckers, Kurzschluss nach Masse",
+            "ORTTEXT_EN" : "Charging connection: locking of the charging plug, short circuit to ground"
+         },
+         {
+            "ORTTEXT_EN" : "Charging connection: locking of the charging plug, short circuit to positive",
+            "ORT" : "0x805542",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Ladeanschluss: Verriegelung des Ladesteckers, Kurzschluss nach Plus",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "Front charging connection (China): actuator front flap catch hook lock, short circuit to positive",
+            "ORT" : "0x805545",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Ladeanschluss vorn (China): Aktuator Frontklappe Fanghakenverriegelung, Kurzschluss nach Plus"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT_EN" : "DC charging (China): Interruption of the charging process due to excessive temperature at the charging connection",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "DC-Laden (China): Unterbrechung des Ladevorgangs wegen Übertemperatur am Ladeanschluss",
+            "ORT" : "0x805546"
+         },
+         {
+            "ORT" : "0x805547",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "DC-Laden (China): Reduzierung der Ladeleistung wegen Übertemperatur am Ladeanschluss",
+            "ORTTEXT_EN" : "DC charging (China): Reduction of the charging power due to excess temperature at the charging connection",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "ORTTEXT_EN" : "Front charging connection (China): Actuator front flap catch hook lock, line break",
+            "ORT" : "0x805548",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Ladeanschluss vorn (China): Aktuator Frontklappe Fanghakenverriegelung, Leitungsunterbrechung",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Ladeanschluss vorn (China): Aktuator Frontklappe Fanghakenverriegelung, Kurzschluss nach Masse",
+            "ORT" : "0x805549",
+            "ORTTEXT_EN" : "Front charging connection (China): Actuator front flap catch hook lock, short circuit to ground"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "FA-CAN Control Module Bus OFF",
+            "ORT" : "0xCE040A",
+            "ORTTEXT_EN" : "FA-CAN Control Module Bus OFF"
+         },
+         {
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "A-CAN Control Module Bus OFF",
+            "ORT" : "0xCE0486",
+            "ORTTEXT_EN" : "A-CAN Control Module Bus OFF",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORT" : "0xCE0BFF",
+            "ORTTEXT" : "Dummy-Fehlerspeichereintrag im Netzwerkfehlerbereich nur für Testzwecke",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT_EN" : "Dummy error memory entry in the network error area for test purposes only"
+         },
+         {
+            "ORT" : "0xCE0C09",
+            "ORTTEXT" : "DC-CAN Control Module Bus OFF",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT_EN" : "DC-CAN Control Module Bus OFF",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "DC-Laden: DC-CAN-Bus, Signal ungültig",
+            "ORT" : "0xCE1400",
+            "ORTTEXT_EN" : "DC charging: DC CAN bus, signal invalid"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT_EN" : "DC charging: DC CAN bus, message from the charging station is missing",
+            "ORTTEXT" : "DC-Laden: DC-CAN-Bus, Botschaft von der Ladestation fehlt",
+            "FEHLERKLASSE" : "-",
+            "ORT" : "0xCE1401"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORT" : "0xCE1402",
+            "ORTTEXT" : "Botschaft (Zustand Fahrzeug, 0x3C) fehlt, Empfänger LIM, Sender ZGW",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT_EN" : "Message (status vehicle, 0x3C) missing, receiver LIM, sender ZGW"
+         },
+         {
+            "ORTTEXT_EN" : "Message (actual data for charging electronics, 0x108) missing, receiver LIM, transmitter AE",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Botschaft (Ist Daten Ladeelektronik, 0x108) fehlt, Empfänger LIM, Sender AE",
+            "ORT" : "0xCE1403",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "ORTTEXT_EN" : "Message (status high-voltage battery unit 2, 0x112) missing, receiver LIM, sender SME",
+            "ORT" : "0xCE1404",
+            "ORTTEXT" : "Botschaft (Status Hochvolt-Batterieeinheit 2, 0x112) fehlt, Empfänger LIM, Sender SME",
+            "FEHLERKLASSE" : "-",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "ORTTEXT_EN" : "Message (terminals, 0x12F) missing, receiver LIM, sender BDC",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Botschaft (Klemmen, 0x12F) fehlt, Empfänger LIM, Sender BDC",
+            "ORT" : "0xCE1405",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "ORTTEXT_EN" : "Message (vehicle speed, 0x1A1) missing, receiver LIM, transmitter DSC",
+            "ORT" : "0xCE1406",
+            "ORTTEXT" : "Botschaft (Fahrzeugsgeschwindigkeit, 0x1A1) fehlt, Empfänger LIM, Sender DSC",
+            "FEHLERKLASSE" : "-",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT" : "Botschaft (Ladestatus 3, 0x2F1) fehlt, Empfänger LIM, Sender AE",
+            "FEHLERKLASSE" : "-",
+            "ORT" : "0xCE1407",
+            "ORTTEXT_EN" : "Message (charging status 3, 0x2F1) missing, receiver LIM, sender AE"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT_EN" : "Message (limit charge discharge high-voltage battery, 0x2F5) is missing, receiver LIM, sender SME",
+            "ORT" : "0xCE1408",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Botschaft (Begrenzung Ladung Entladung Hochvolt-Batterie, 0x2F5) fehlt, Empfänger LIM, Sender SME"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Botschaft (Zentralverriegelung und Klappenzustand, 0x2FC) fehlt, Empfänger LIM, Sender BDC",
+            "ORT" : "0xCE1409",
+            "ORTTEXT_EN" : "Message (central locking and flap status, 0x2FC) missing, receiver LIM, sender BDC"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT_EN" : "Message (LCD brightness control, 0x393) missing, receiver LIM, transmitter KOMBI",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Botschaft (LCD Helligkeit Regelung, 0x393) fehlt, Empfänger LIM, Sender KOMBI",
+            "ORT" : "0xCE140A"
+         },
+         {
+            "ORTTEXT_EN" : "Message (central locking control, 0x2A0) missing, receiver LIM, transmitter BDC",
+            "ORT" : "0xCE140B",
+            "ORTTEXT" : "Botschaft (Steuerung Zentralverriegelung, 0x2A0) fehlt, Empfänger LIM, Sender BDC",
+            "FEHLERKLASSE" : "-",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Botschaft (Ladestatus 2, 0x2FA) fehlt, Empfänger LIM, Sender AE",
+            "ORT" : "0xCE140C",
+            "ORTTEXT_EN" : "Message (charging status 2, 0x2FA) missing, receiver LIM, sender AE"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT" : "Botschaft (Relativzeit, 0x328) fehlt, Empfänger LIM, Sender KOMBI",
+            "FEHLERKLASSE" : "-",
+            "ORT" : "0xCE140D",
+            "ORTTEXT_EN" : "Message (relative time, 0x328) missing, receiver LIM, sender KOMBI"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORT" : "0xCE140E",
+            "ORTTEXT" : "Botschaft (Kilometerstand und Reichweite, 0x330) fehlt, Empfänger LIM, Sender KOMBI",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT_EN" : "Message (mileage and range, 0x330) missing, receiver LIM, sender KOMBI"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT_EN" : "Message (vehicle status, 0x3A0) missing, receiver LIM, sender ZGW",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Botschaft (Fahrzeugzustand, 0x3A0) fehlt, Empfänger LIM, Sender ZGW",
+            "ORT" : "0xCE140F"
+         },
+         {
+            "ORTTEXT" : "Botschaft (Ladestatus, 0x3E9) fehlt, Empfänger LIM, Sender AE",
+            "FEHLERKLASSE" : "-",
+            "ORT" : "0xCE1410",
+            "ORTTEXT_EN" : "Message (charging status, 0x3E9) missing, receiver LIM, sender AE",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "ORT" : "0xCE1411",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Botschaft (Daten Antriebsstrang 2, 0x3F9) fehlt, Empfänger LIM, Sender EDME",
+            "ORTTEXT_EN" : "Message (data drive train 2, 0x3F9) missing, receiver LIM, sender EDME",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT_EN" : "Message (voltage-controlled mode, 0x432) missing, receiver LIM, transmitter SME",
+            "ORT" : "0xCE1412",
+            "ORTTEXT" : "Botschaft (Modus Spannungsgesteuert, 0x432) fehlt, Empfänger LIM, Sender SME",
+            "FEHLERKLASSE" : "-"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT" : "Botschaft (Hochvolt-Batterie, 0x431) fehlt, Empfänger LIM, Sender SME",
+            "FEHLERKLASSE" : "-",
+            "ORT" : "0xCE1413",
+            "ORTTEXT_EN" : "Message (high-voltage battery, 0x431) missing, receiver LIM, sender SME"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0xFFFFFF",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "unbekannter Fehlerort",
+            "ORTTEXT_EN" : "unknown error location"
+         }
+      ],
+      "BETRIEBSMODE" : [
+         {
+            "WERT" : "0x00",
+            "BEDEUTUNG" : "Hier deaktivierte Funktionen gemäß FeTra-Liste festhalten",
+            "TEXT_EN" : "General manufacturing and energy saving fashion",
+            "TEXT" : "Allgemeiner Fertigungs- und Energiesparmode"
+         },
+         {
+            "TEXT" : "Spezieller Energiesparmode",
+            "BEDEUTUNG" : "-",
+            "TEXT_EN" : "Special energy saving mode",
+            "WERT" : "0x01"
+         },
+         {
+            "WERT" : "0x02",
+            "TEXT_EN" : "ECOS mode",
+            "BEDEUTUNG" : "-",
+            "TEXT" : "ECOS-Mode"
+         },
+         {
+            "WERT" : "0x03",
+            "BEDEUTUNG" : "-",
+            "TEXT_EN" : "MOST mode",
+            "TEXT" : "MOST-Mode"
+         },
+         {
+            "TEXT" : "Rollenmode",
+            "BEDEUTUNG" : "-",
+            "TEXT_EN" : "Role fashion",
+            "WERT" : "0x04"
+         },
+         {
+            "TEXT" : "ungültiger Betriebsmode",
+            "TEXT_EN" : "invalid operating mode",
+            "BEDEUTUNG" : "ungültig",
+            "WERT" : "0xFF"
+         }
+      ],
+      "RES_0XDEF1_D" : [
+         {
+            "L/H" : "high",
+            "DIV" : "-",
+            "ADD" : "-",
+            "DATENTYP" : "unsigned char",
+            "RESULTNAME" : "STAT_ZV_LADEKLAPPE_EIN",
+            "MASKE" : "-",
+            "MUL" : "-",
+            "EINHEIT" : "0-n",
+            "INFO_EN" : "State of locking loading flap",
+            "NAME" : "TAB_ZV_LADEKLAPPE",
+            "INFO" : "Zustand Verriegelung Ladeklappe"
+         },
+         {
+            "DIV" : "-",
+            "L/H" : "high",
+            "MUL" : "-",
+            "MASKE" : "-",
+            "INFO" : "Zustand der Ladeklappe",
+            "NAME" : "TAB_LADEKLAPPE",
+            "EINHEIT" : "0-n",
+            "INFO_EN" : "State of the loading flap",
+            "RESULTNAME" : "STAT_LADEKLAPPE",
+            "ADD" : "-",
+            "DATENTYP" : "unsigned char"
+         }
+      ],
+      "ST_CHGRDY_VALUE" : [
+         {
+            "WERT" : "0",
+            "TEXT" : "Inactive",
+            "TEXT_EN" : "Inactive"
+         },
+         {
+            "TEXT_EN" : "Active",
+            "TEXT" : "Active",
+            "WERT" : "1"
+         },
+         {
+            "WERT" : "3",
+            "TEXT" : "Invalid",
+            "TEXT_EN" : "Invalid"
+         }
+      ],
+      "FUMWELTTEXTE" : [
+         {
+            "L/H" : "Low",
+            "DIV" : "-",
+            "UWTEXT" : "ChargeReadiness",
+            "UW_EINH" : "0-n",
+            "ADD" : "-",
+            "UWNR" : "0x2001",
+            "UWTYP" : "0xFF",
+            "MUL" : "-",
+            "NAME" : "ST_CHGRDY_VALUE"
+         },
+         {
+            "ADD" : "-",
+            "UWNR" : "0x2002",
+            "MUL" : "-",
+            "UWTYP" : "0xFF",
+            "NAME" : "ST_CHGNHG_VALUES",
+            "L/H" : "Low",
+            "DIV" : "-",
+            "UWTEXT" : "ChargeStatus",
+            "UW_EINH" : "0-n"
+         },
+         {
+            "UWTYP" : "unsigned char",
+            "MUL" : "4.0",
+            "NAME" : "-",
+            "UWNR" : "0x4001",
+            "ADD" : "0.0",
+            "DIV" : "1.0",
+            "UWTEXT" : "AVL_U_LINK",
+            "UW_EINH" : "V",
+            "L/H" : "High"
+         },
+         {
+            "UW_EINH" : "V",
+            "DIV" : "1.0",
+            "UWTEXT" : "U_DC_IN",
+            "L/H" : "High",
+            "NAME" : "-",
+            "MUL" : "2.0",
+            "UWTYP" : "unsigned char",
+            "ADD" : "0.0",
+            "UWNR" : "0x4002"
+         },
+         {
+            "UW_EINH" : "-",
+            "DIV" : "-",
+            "UWTEXT" : "unbekannte Umweltbedingung",
+            "L/H" : "-",
+            "NAME" : "-",
+            "MUL" : "-",
+            "UWTYP" : "-",
+            "ADD" : "-",
+            "UWNR" : "0xXYXY"
+         }
+      ],
+      "DIAGMODE" : [
+         {
+            "MODE" : "UNGUELTIG",
+            "NR" : "0x00",
+            "MODE_TEXT" : "DefaultMode"
+         },
+         {
+            "NR" : "0x01",
+            "MODE_TEXT" : "DefaultMode",
+            "MODE" : "DEFAULT"
+         },
+         {
+            "MODE" : "ECUPM",
+            "NR" : "0x02",
+            "MODE_TEXT" : "ECUProgrammingMode"
+         },
+         {
+            "MODE" : "ECUEXTDIAG",
+            "NR" : "0x03",
+            "MODE_TEXT" : "ECUExtendedDiagnosticSession"
+         },
+         {
+            "MODE" : "ECUSSDS",
+            "NR" : "0x04",
+            "MODE_TEXT" : "ECUSafetySystemDiagnosticSession"
+         },
+         {
+            "MODE" : "ECUEOL",
+            "NR" : "0x40",
+            "MODE_TEXT" : "ECUEndOfLineSession"
+         },
+         {
+            "NR" : "0x41",
+            "MODE_TEXT" : "ECUCodingSession",
+            "MODE" : "ECUCODE"
+         },
+         {
+            "MODE" : "ECUSWT",
+            "MODE_TEXT" : "ECUSwtSession",
+            "NR" : "0x42"
+         },
+         {
+            "NR" : "0x43",
+            "MODE_TEXT" : "ECUHDDDownloadSession",
+            "MODE" : "ECUHDD"
+         },
+         {
+            "MODE" : "ECUDEVELOP",
+            "NR" : "0x4F",
+            "MODE_TEXT" : "ECUDevelopmentSession"
+         },
+         {
+            "MODE_TEXT" : "ECUGarageDiagnoseMode",
+            "NR" : "0x5F",
+            "MODE" : "ECUGDM"
+         },
+         {
+            "MODE" : "--",
+            "MODE_TEXT" : "unbekannter Diagnose-Mode",
+            "NR" : "0xXY"
+         }
+      ],
+      "PROZESSKLASSEN" : [
+         {
+            "WERT" : "0x00",
+            "BEZEICHNUNG" : "ungueltig",
+            "PROZESSKLASSE" : "-"
+         },
+         {
+            "WERT" : "0x01",
+            "BEZEICHNUNG" : "Hardware (Elektronik)",
+            "PROZESSKLASSE" : "HWEL"
+         },
+         {
+            "PROZESSKLASSE" : "HWAP",
+            "WERT" : "0x02",
+            "BEZEICHNUNG" : "Hardwareauspraegung"
+         },
+         {
+            "BEZEICHNUNG" : "Hardwarefarbe",
+            "WERT" : "0x03",
+            "PROZESSKLASSE" : "HWFR"
+         },
+         {
+            "PROZESSKLASSE" : "CAFD",
+            "WERT" : "0x05",
+            "BEZEICHNUNG" : "Codierdaten"
+         },
+         {
+            "WERT" : "0x06",
+            "BEZEICHNUNG" : "Bootloader",
+            "PROZESSKLASSE" : "BTLD"
+         },
+         {
+            "BEZEICHNUNG" : "Software ECU Speicherimage",
+            "WERT" : "0x08",
+            "PROZESSKLASSE" : "SWFL"
+         },
+         {
+            "BEZEICHNUNG" : "Flash File Software",
+            "WERT" : "0x09",
+            "PROZESSKLASSE" : "SWFF"
+         },
+         {
+            "WERT" : "0x0A",
+            "BEZEICHNUNG" : "Pruefsoftware",
+            "PROZESSKLASSE" : "SWPF"
+         },
+         {
+            "WERT" : "0x0B",
+            "BEZEICHNUNG" : "Onboard Programmiersystem",
+            "PROZESSKLASSE" : "ONPS"
+         },
+         {
+            "WERT" : "0x0F",
+            "BEZEICHNUNG" : "FA2FP",
+            "PROZESSKLASSE" : "FAFP"
+         },
+         {
+            "PROZESSKLASSE" : "TLRT",
+            "BEZEICHNUNG" : "Temporaere Loeschroutine",
+            "WERT" : "0x1A"
+         },
+         {
+            "BEZEICHNUNG" : "Temporaere Programmierroutine",
+            "WERT" : "0x1B",
+            "PROZESSKLASSE" : "TPRG"
+         },
+         {
+            "PROZESSKLASSE" : "FLSL",
+            "WERT" : "0x07",
+            "BEZEICHNUNG" : "Flashloader Slave"
+         },
+         {
+            "PROZESSKLASSE" : "IBAD",
+            "WERT" : "0x0C",
+            "BEZEICHNUNG" : "Interaktive Betriebsanleitung Daten"
+         },
+         {
+            "WERT" : "0x10",
+            "BEZEICHNUNG" : "Freischaltcode Fahrzeug-Auftrag",
+            "PROZESSKLASSE" : "FCFA"
+         },
+         {
+            "PROZESSKLASSE" : "BLUP",
+            "BEZEICHNUNG" : "Bootloader-Update Applikation",
+            "WERT" : "0x1C"
+         },
+         {
+            "PROZESSKLASSE" : "FLUP",
+            "WERT" : "0x1D",
+            "BEZEICHNUNG" : "Flashloader-Update Applikation"
+         },
+         {
+            "PROZESSKLASSE" : "SWUP",
+            "WERT" : "0xC0",
+            "BEZEICHNUNG" : "Software-Update Package"
+         },
+         {
+            "WERT" : "0xC1",
+            "BEZEICHNUNG" : "Index Software-Update Package",
+            "PROZESSKLASSE" : "SWIP"
+         },
+         {
+            "PROZESSKLASSE" : "ENTD",
+            "BEZEICHNUNG" : "Entertainment Daten",
+            "WERT" : "0xA0"
+         },
+         {
+            "BEZEICHNUNG" : "Navigation Daten",
+            "WERT" : "0xA1",
+            "PROZESSKLASSE" : "NAVD"
+         },
+         {
+            "BEZEICHNUNG" : "Freischaltcode Funktion",
+            "WERT" : "0xA2",
+            "PROZESSKLASSE" : "FCFN"
+         },
+         {
+            "WERT" : "0x04",
+            "BEZEICHNUNG" : "Gateway-Tabelle",
+            "PROZESSKLASSE" : "GWTB"
+         },
+         {
+            "PROZESSKLASSE" : "SWFK",
+            "WERT" : "0x0D",
+            "BEZEICHNUNG" : "BEGU: Detaillierung auf SWE-Ebene"
+         },
+         {
+            "BEZEICHNUNG" : "ungueltig",
+            "WERT" : "0xFF",
+            "PROZESSKLASSE" : "-"
+         }
+      ],
+      "RES_0XDB0E_D" : [
+         {
+            "NAME" : "-",
+            "INFO" : "Status Aktuator AC-Steckerverriegelung vorn (0 = entriegelt, 1 = verriegelt).",
+            "INFO_EN" : "Actuator status AC plug lock front (0 = unlocked, 1 = locked).",
+            "EINHEIT" : "0/1",
+            "MASKE" : "-",
+            "MUL" : "-",
+            "ADD" : "-",
+            "DATENTYP" : "unsigned char",
+            "RESULTNAME" : "STAT_ZV_LADESTECKER_EIN",
+            "DIV" : "-",
+            "L/H" : "high"
+         },
+         {
+            "L/H" : "high",
+            "DIV" : "-",
+            "ADD" : "-",
+            "RESULTNAME" : "STAT_LADESTECKER_EIN",
+            "DATENTYP" : "unsigned char",
+            "NAME" : "ZV_LADESTECKER",
+            "INFO" : "Status Sensor AC-Steckerverriegelung vorn (0 = entriegelt, 1 = verriegelt).",
+            "INFO_EN" : "Status sensor AC connector lock front (0 = unlocked, 1 = locked).",
+            "EINHEIT" : "0-n",
+            "MUL" : "-",
+            "MASKE" : "-"
+         }
+      ],
+      "HOSPITALITY_VALUE" : [
+         {
+            "WERT" : "0",
+            "TEXT_EN" : "Inactive",
+            "TEXT" : "Inactive"
+         },
+         {
+            "WERT" : "1",
+            "TEXT" : "Active",
+            "TEXT_EN" : "Active"
+         }
+      ],
+      "RES_0XDEF4_D" : [
+         {
+            "RESULTNAME" : "STAT_LED_SUCHBELEUCHTUNG_EIN",
+            "ADD" : "-",
+            "DATENTYP" : "unsigned char",
+            "MASKE" : "-",
+            "MUL" : "-",
+            "INFO_EN" : "LED status for search lighting (0 = not activated, 1 = activated)",
+            "EINHEIT" : "0/1",
+            "NAME" : "-",
+            "INFO" : "Zustand LED für Suchbeleuchtung (0 = nicht angesteuert, 1 = angesteuert)",
+            "L/H" : "high",
+            "DIV" : "-"
+         }
+      ],
+      "DTCEXTENDEDDATARECORDNUMBER" : [
+         {
+            "ANZ_BYTE" : "0",
+            "WERT" : "0x00",
+            "TEXT_EN" : "ISO_RESERVED",
+            "TEXT" : "ISO_RESERVED"
+         },
+         {
+            "TEXT" : "CONDITION_BYTE",
+            "TEXT_EN" : "CONDITION_BYTE",
+            "WERT" : "0x01",
+            "ANZ_BYTE" : "1"
+         },
+         {
+            "ANZ_BYTE" : "1",
+            "WERT" : "0x02",
+            "TEXT_EN" : "HFK",
+            "TEXT" : "HFK"
+         },
+         {
+            "TEXT_EN" : "HLZ",
+            "TEXT" : "HLZ",
+            "ANZ_BYTE" : "1",
+            "WERT" : "0x03"
+         },
+         {
+            "WERT" : "0xFF",
+            "ANZ_BYTE" : "0",
+            "TEXT" : "RECORD_UNKNOWN",
+            "TEXT_EN" : "RECORD_UNKNOWN"
+         }
+      ],
+      "IDETAILSTRUKTUR" : [
+         {
+            "TYP" : "ja",
+            "NAME" : "F_UWB_ERW"
+         },
+         {
+            "NAME" : "SAE_CODE",
+            "TYP" : "nein"
+         },
+         {
+            "NAME" : "F_HLZ",
+            "TYP" : "nein"
+         },
+         {
+            "NAME" : "F_SEVERITY",
+            "TYP" : "nein"
+         },
+         {
+            "TYP" : "2",
+            "NAME" : "F_UWB_SATZ"
+         }
+      ],
+      "ARG_0XDE6B_D" : [
+         {
+            "DATENTYP" : "unsigned char",
+            "ADD" : "-",
+            "MIN" : "-",
+            "MASKE" : "-",
+            "MUL" : "-",
+            "INFO_EN" : "0x00: not active 0x01: active",
+            "EINHEIT" : "0/1",
+            "NAME" : "-",
+            "INFO" : "0x00: nicht aktiv 0x01: aktiv",
+            "MAX" : "-",
+            "L/H" : "high",
+            "DIV" : "-",
+            "ARG" : "STAT_HOSPITALITY_FUNKTION"
+         }
+      ],
+      "FEHLERKLASSE" : [
+         {
+            "TEXT" : "Keine Fehlerklasse verfuegbar",
+            "NR" : "0x00",
+            "TEXT_EN" : "No fault class available"
+         },
+         {
+            "TEXT_EN" : "Check when you next visit the workshop",
+            "NR" : "0x01",
+            "TEXT" : "Ueberpruefung bei naechstem Werkstattbesuch"
+         },
+         {
+            "TEXT_EN" : "Check at the next stop",
+            "NR" : "0x02",
+            "TEXT" : "Ueberpruefung bei naechstem Halt"
+         },
+         {
+            "NR" : "0x04",
+            "TEXT" : "Ueberpruefung sofort erforderlich !",
+            "TEXT_EN" : "Check required immediately!"
+         },
+         {
+            "TEXT" : "unbekannte Fehlerklasse",
+            "NR" : "0xFF",
+            "TEXT_EN" : "unknown error class"
+         }
+      ],
+      "SVK_ID" : [
+         {
+            "WERT" : "0x01",
+            "BEZEICHNUNG" : "SVK_AKTUELL"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_SUPPLIER",
+            "WERT" : "0x02"
+         },
+         {
+            "WERT" : "0x03",
+            "BEZEICHNUNG" : "SVK_WERK"
+         },
+         {
+            "WERT" : "0x04",
+            "BEZEICHNUNG" : "SVK_BACKUP_01"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_02",
+            "WERT" : "0x05"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_03",
+            "WERT" : "0x06"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_04",
+            "WERT" : "0x07"
+         },
+         {
+            "WERT" : "0x08",
+            "BEZEICHNUNG" : "SVK_BACKUP_05"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_06",
+            "WERT" : "0x09"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_07",
+            "WERT" : "0x0A"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_08",
+            "WERT" : "0x0B"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_09",
+            "WERT" : "0x0C"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_10",
+            "WERT" : "0x0D"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_11",
+            "WERT" : "0x0E"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_12",
+            "WERT" : "0x0F"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_13",
+            "WERT" : "0x10"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_14",
+            "WERT" : "0x11"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_15",
+            "WERT" : "0x12"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_16",
+            "WERT" : "0x13"
+         },
+         {
+            "WERT" : "0x14",
+            "BEZEICHNUNG" : "SVK_BACKUP_17"
+         },
+         {
+            "WERT" : "0x15",
+            "BEZEICHNUNG" : "SVK_BACKUP_18"
+         },
+         {
+            "WERT" : "0x16",
+            "BEZEICHNUNG" : "SVK_BACKUP_19"
+         },
+         {
+            "WERT" : "0x17",
+            "BEZEICHNUNG" : "SVK_BACKUP_20"
+         },
+         {
+            "WERT" : "0x18",
+            "BEZEICHNUNG" : "SVK_BACKUP_21"
+         },
+         {
+            "WERT" : "0x19",
+            "BEZEICHNUNG" : "SVK_BACKUP_22"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_23",
+            "WERT" : "0x1A"
+         },
+         {
+            "WERT" : "0x1B",
+            "BEZEICHNUNG" : "SVK_BACKUP_24"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_25",
+            "WERT" : "0x1C"
+         },
+         {
+            "WERT" : "0x1D",
+            "BEZEICHNUNG" : "SVK_BACKUP_26"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_27",
+            "WERT" : "0x1E"
+         },
+         {
+            "WERT" : "0x1F",
+            "BEZEICHNUNG" : "SVK_BACKUP_28"
+         },
+         {
+            "WERT" : "0x20",
+            "BEZEICHNUNG" : "SVK_BACKUP_29"
+         },
+         {
+            "WERT" : "0x21",
+            "BEZEICHNUNG" : "SVK_BACKUP_30"
+         },
+         {
+            "WERT" : "0x22",
+            "BEZEICHNUNG" : "SVK_BACKUP_31"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_32",
+            "WERT" : "0x23"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_33",
+            "WERT" : "0x24"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_34",
+            "WERT" : "0x25"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_35",
+            "WERT" : "0x26"
+         },
+         {
+            "WERT" : "0x27",
+            "BEZEICHNUNG" : "SVK_BACKUP_36"
+         },
+         {
+            "WERT" : "0x28",
+            "BEZEICHNUNG" : "SVK_BACKUP_37"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_38",
+            "WERT" : "0x29"
+         },
+         {
+            "WERT" : "0x2A",
+            "BEZEICHNUNG" : "SVK_BACKUP_39"
+         },
+         {
+            "WERT" : "0x2B",
+            "BEZEICHNUNG" : "SVK_BACKUP_40"
+         },
+         {
+            "WERT" : "0x2C",
+            "BEZEICHNUNG" : "SVK_BACKUP_41"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_42",
+            "WERT" : "0x2D"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_43",
+            "WERT" : "0x2E"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_44",
+            "WERT" : "0x2F"
+         },
+         {
+            "WERT" : "0x30",
+            "BEZEICHNUNG" : "SVK_BACKUP_45"
+         },
+         {
+            "WERT" : "0x31",
+            "BEZEICHNUNG" : "SVK_BACKUP_46"
+         },
+         {
+            "WERT" : "0x32",
+            "BEZEICHNUNG" : "SVK_BACKUP_47"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_48",
+            "WERT" : "0x33"
+         },
+         {
+            "WERT" : "0x34",
+            "BEZEICHNUNG" : "SVK_BACKUP_49"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_50",
+            "WERT" : "0x35"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_51",
+            "WERT" : "0x36"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_52",
+            "WERT" : "0x37"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_53",
+            "WERT" : "0x38"
+         },
+         {
+            "WERT" : "0x39",
+            "BEZEICHNUNG" : "SVK_BACKUP_54"
+         },
+         {
+            "WERT" : "0x3A",
+            "BEZEICHNUNG" : "SVK_BACKUP_55"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_56",
+            "WERT" : "0x3B"
+         },
+         {
+            "WERT" : "0x3C",
+            "BEZEICHNUNG" : "SVK_BACKUP_57"
+         },
+         {
+            "BEZEICHNUNG" : "SVK_BACKUP_58",
+            "WERT" : "0x3D"
+         },
+         {
+            "WERT" : "0x3E",
+            "BEZEICHNUNG" : "SVK_BACKUP_59"
+         },
+         {
+            "WERT" : "0x3F",
+            "BEZEICHNUNG" : "SVK_BACKUP_60"
+         },
+         {
+            "WERT" : "0x40",
+            "BEZEICHNUNG" : "SVK_BACKUP_61"
+         },
+         {
+            "BEZEICHNUNG" : "ERROR_UNKNOWN",
+            "WERT" : "0xXY"
+         }
+      ],
+      "ARG_0XDEF0_D" : [
+         {
+            "MIN" : "-",
+            "ADD" : "-",
+            "DATENTYP" : "unsigned char",
+            "INFO_EN" : "Activation of the charging plug (only with type 2 plug, China DC = front catch hook lock): 0 = unlock, 1 = lock",
+            "EINHEIT" : "0/1",
+            "INFO" : "Ansteuern des Ladestecker (nur bei Typ 2 Stecker, China DC = Fanghakenverriegelung vorn): 0 = entriegeln, 1 = verriegeln",
+            "NAME" : "-",
+            "MAX" : "-",
+            "MUL" : "-",
+            "MASKE" : "-",
+            "L/H" : "high",
+            "ARG" : "ARG_ZV_LADESTECKER",
+            "DIV" : "-"
+         }
+      ],
+      "SG_FUNKTIONEN" : [
+         {
+            "ARG_TABELLE" : "-",
+            "LABEL" : "-",
+            "DATENTYP" : "-",
+            "RESULTNAME" : "-",
+            "SERVICE" : "22",
+            "EINHEIT" : "-",
+            "INFO" : "Cal-ID (Calibration-ID) und CVN(Calibration Verification Number) auslesen. (OBD-Umfänge)   Byte-Layout: 20 Byte lang 00-15 = STAT_CALID_WERT 16-19 = STAT_CVN_EINH als Hex  unit32 im Intel Format",
+            "SG_ADR" : "-",
+            "L/H" : "-",
+            "DIV" : "-",
+            "ARG" : "STATUS_CALCVN",
+            "ADD" : "-",
+            "ID" : "0x2541",
+            "RES_TABELLE" : "RES_0x2541_D",
+            "MUL" : "-",
+            "INFO_EN" : "Read out Cal-ID (Calibration-ID) and CVN (Calibration Verification Number). (OBD scopes) Byte layout: 20 bytes long 00-15 = STAT_CALID_WERT 16-19 = STAT_CVN_EINH as Hex unit32 in Intel format",
+            "NAME" : "-"
+         },
+         {
+            "ARG" : "ZV_LADESTECKER_CN",
+            "DIV" : "-",
+            "SG_ADR" : "-",
+            "L/H" : "-",
+            "NAME" : "-",
+            "INFO_EN" : "Actuator AC plug lock (China front)",
+            "RES_TABELLE" : "RES_0xDB0E_D",
+            "MUL" : "-",
+            "ADD" : "-",
+            "ID" : "0xDB0E",
+            "LABEL" : "-",
+            "ARG_TABELLE" : "ARG_0xDB0E_D",
+            "INFO" : "Aktuator AC-Steckerverriegelung (China vorn)",
+            "EINHEIT" : "-",
+            "SERVICE" : "2E;22",
+            "RESULTNAME" : "-",
+            "DATENTYP" : "-"
+         },
+         {
+            "SG_ADR" : "-",
+            "L/H" : "High",
+            "ARG" : "LADESTECKDOSE_TEMPERATUR",
+            "DIV" : "10.0",
+            "ADD" : "-40.0",
+            "ID" : "0xDB0F",
+            "NAME" : "-",
+            "INFO_EN" : "Temperature of the DC charging connection in ° C (China)",
+            "MUL" : "1.0",
+            "RES_TABELLE" : "-",
+            "ARG_TABELLE" : "-",
+            "LABEL" : "-",
+            "SERVICE" : "22",
+            "RESULTNAME" : "STAT_LADESTECKDOSE_TEMP_WERT",
+            "DATENTYP" : "unsigned int",
+            "INFO" : "Temperatur der DC-Ladeanschluss in °C (China)",
+            "EINHEIT" : "°C"
+         },
+         {
+            "ADD" : "-",
+            "ID" : "0xDE6B",
+            "NAME" : "-",
+            "INFO_EN" : "Hospitality function (automatic unlocking of the charging plug at the end of the charging process).",
+            "RES_TABELLE" : "RES_0xDE6B_D",
+            "MUL" : "-",
+            "L/H" : "-",
+            "SG_ADR" : "-",
+            "ARG" : "LADEN_HOSPITALITY_FUNKTION",
+            "DIV" : "-",
+            "SERVICE" : "22;2E",
+            "RESULTNAME" : "-",
+            "DATENTYP" : "-",
+            "INFO" : "Hospitality-Funktion (Automatisches Entriegeln des Ladesteckers nach Ende des Ladevorgangs).",
+            "EINHEIT" : "-",
+            "ARG_TABELLE" : "ARG_0xDE6B_D",
+            "LABEL" : "-"
+         },
+         {
+            "ARG_TABELLE" : "ARG_0xDEF0_D",
+            "LABEL" : "-",
+            "RESULTNAME" : "-",
+            "DATENTYP" : "-",
+            "SERVICE" : "22;2E",
+            "EINHEIT" : "-",
+            "INFO" : "Status und Steuern Ladestecker (Steckertyp- und Marktabhängig) 0 = entriegelt, 1 = verriegelt",
+            "SG_ADR" : "-",
+            "L/H" : "-",
+            "DIV" : "-",
+            "ARG" : "ZV_LADESTECKER",
+            "ADD" : "-",
+            "ID" : "0xDEF0",
+            "MUL" : "-",
+            "RES_TABELLE" : "RES_0xDEF0_D",
+            "INFO_EN" : "Status and control of charging plug (depending on plug type and market) 0 = unlocked, 1 = locked",
+            "NAME" : "-"
+         },
+         {
+            "SERVICE" : "22;2E",
+            "DATENTYP" : "-",
+            "RESULTNAME" : "-",
+            "EINHEIT" : "-",
+            "INFO" : "Status oder Steuern loading flap (0 = entriegelt, 1 = verriegelt)",
+            "ARG_TABELLE" : "ARG_0xDEF1_D",
+            "LABEL" : "-",
+            "ADD" : "-",
+            "ID" : "0xDEF1",
+            "INFO_EN" : "Status or control loading flap (0 = unlocked, 1 = locked)",
+            "NAME" : "-",
+            "MUL" : "-",
+            "RES_TABELLE" : "RES_0xDEF1_D",
+            "SG_ADR" : "-",
+            "L/H" : "-",
+            "ARG" : "ZV_LADEKLAPPE",
+            "DIV" : "-"
+         },
+         {
+            "ARG" : "LADEBEREITSCHAFT_LIM",
+            "DIV" : "-",
+            "L/H" : "High",
+            "SG_ADR" : "-",
+            "INFO_EN" : "Ready to charge (HW line), (1 = yes, 0 = no) sent from LIM to SLE",
+            "NAME" : "-",
+            "MUL" : "-",
+            "RES_TABELLE" : "-",
+            "ADD" : "-",
+            "ID" : "0xDEF2",
+            "LABEL" : "-",
+            "ARG_TABELLE" : "-",
+            "EINHEIT" : "0/1",
+            "INFO" : "Ladebereitschaft (HW-Leitung), (1 = ja, 0 = nein) vom LIM an SLE gesendet",
+            "SERVICE" : "22",
+            "RESULTNAME" : "STAT_LADEBEREITSCHAFT_LIM",
+            "DATENTYP" : "unsigned char"
+         },
+         {
+            "L/H" : "-",
+            "SG_ADR" : "-",
+            "ARG" : "LED_LADESTATUS",
+            "DIV" : "-",
+            "ADD" : "-",
+            "ID" : "0xDEF3",
+            "NAME" : "-",
+            "INFO_EN" : "Status or control LED for charging status (RGB light ring)",
+            "MUL" : "-",
+            "RES_TABELLE" : "RES_0xDEF3_D",
+            "ARG_TABELLE" : "ARG_0xDEF3_D",
+            "LABEL" : "-",
+            "SERVICE" : "22;2E",
+            "RESULTNAME" : "-",
+            "DATENTYP" : "-",
+            "INFO" : "Zustand oder Ansteuern LED für Ladestatus (RGB-Leuchtring)",
+            "EINHEIT" : "-"
+         },
+         {
+            "ID" : "0xDEF4",
+            "ADD" : "-",
+            "MUL" : "-",
+            "RES_TABELLE" : "RES_0xDEF4_D",
+            "INFO_EN" : "Status or activation of the LED for search lighting (0 = not activated, 1 = activated) - only for separate DC charging socket",
+            "NAME" : "-",
+            "L/H" : "-",
+            "SG_ADR" : "-",
+            "DIV" : "-",
+            "ARG" : "LED_SUCHBELEUCHTUNG",
+            "DATENTYP" : "-",
+            "RESULTNAME" : "-",
+            "SERVICE" : "22;2E",
+            "EINHEIT" : "-",
+            "INFO" : "Zustand oder Ansteuern der LED für Suchbeleuchtung (0 = nicht angesteuert, 1 = angesteuert) - nur für separate DC-Ladedose",
+            "ARG_TABELLE" : "ARG_0xDEF4_D",
+            "LABEL" : "-"
+         },
+         {
+            "ARG_TABELLE" : "-",
+            "LABEL" : "-",
+            "SERVICE" : "22",
+            "DATENTYP" : "-",
+            "RESULTNAME" : "-",
+            "INFO" : "Aktueller Zustand des Proximity",
+            "EINHEIT" : "-",
+            "SG_ADR" : "-",
+            "L/H" : "-",
+            "ARG" : "PROXIMITY",
+            "DIV" : "-",
+            "ADD" : "-",
+            "ID" : "0xDEF5",
+            "NAME" : "-",
+            "INFO_EN" : "Current status of the proximity",
+            "RES_TABELLE" : "RES_0xDEF5_D",
+            "MUL" : "-"
+         },
+         {
+            "NAME" : "-",
+            "INFO_EN" : "current data of the pilot signal about the charging current",
+            "MUL" : "-",
+            "RES_TABELLE" : "RES_0xDEF6_D",
+            "ID" : "0xDEF6",
+            "ADD" : "-",
+            "ARG" : "PILOTSIGNAL",
+            "DIV" : "-",
+            "SG_ADR" : "-",
+            "L/H" : "-",
+            "INFO" : "aktuelle Daten des Pilotsignals über den Ladestrom",
+            "EINHEIT" : "-",
+            "SERVICE" : "22",
+            "RESULTNAME" : "-",
+            "DATENTYP" : "-",
+            "LABEL" : "-",
+            "ARG_TABELLE" : "-"
+         },
+         {
+            "RESULTNAME" : "-",
+            "DATENTYP" : "-",
+            "SERVICE" : "22",
+            "EINHEIT" : "-",
+            "INFO" : "Status der Chargecontroll Leitungen",
+            "ARG_TABELLE" : "-",
+            "LABEL" : "-",
+            "ADD" : "-",
+            "ID" : "0xDEF7",
+            "RES_TABELLE" : "RES_0xDEF7_D",
+            "MUL" : "-",
+            "INFO_EN" : "Status of the batch control lines",
+            "NAME" : "-",
+            "L/H" : "-",
+            "SG_ADR" : "-",
+            "DIV" : "-",
+            "ARG" : "LADESCHNITTSTELLE_DC_TEPCO"
+         },
+         {
+            "SERVICE" : "22",
+            "DATENTYP" : "unsigned char",
+            "RESULTNAME" : "STAT_DC_SCHUETZ_SCHALTER",
+            "EINHEIT" : "0-n",
+            "INFO" : "Status Schützschalter (DC-Laden)",
+            "ARG_TABELLE" : "-",
+            "LABEL" : "-",
+            "ADD" : "-",
+            "ID" : "0xDEF8",
+            "INFO_EN" : "Contactor switch status (DC charging)",
+            "NAME" : "TAB_DC_SCHUETZ_SCHALTER",
+            "RES_TABELLE" : "-",
+            "MUL" : "-",
+            "SG_ADR" : "-",
+            "L/H" : "High",
+            "ARG" : "DC_SCHUETZ_SCHALTER",
+            "DIV" : "-"
+         },
+         {
+            "ARG_TABELLE" : "-",
+            "LABEL" : "-",
+            "RESULTNAME" : "-",
+            "DATENTYP" : "-",
+            "SERVICE" : "22",
+            "INFO" : "Spannung am Eingang der Relaisbox (Schaltschütze) für DC-Laden",
+            "EINHEIT" : "-",
+            "SG_ADR" : "-",
+            "L/H" : "-",
+            "DIV" : "-",
+            "ARG" : "DC_SCHUETZ_SPANNUNG_EINGANG",
+            "ADD" : "-",
+            "ID" : "0xDEF9",
+            "MUL" : "-",
+            "RES_TABELLE" : "RES_0xDEF9_D",
+            "NAME" : "-",
+            "INFO_EN" : "Voltage at the input of the relay box (contactors) for DC charging"
+         },
+         {
+            "DATENTYP" : "unsigned char",
+            "RESULTNAME" : "STAT_DC_PINABDECKUNG",
+            "SERVICE" : "22",
+            "EINHEIT" : "0/1",
+            "INFO" : "Zustand der DC Pinabdeckung bei Combo-Steckdose (0 = geschlossen, 1 = geöffnet)",
+            "ARG_TABELLE" : "-",
+            "LABEL" : "-",
+            "ADD" : "-",
+            "ID" : "0xDEFA",
+            "MUL" : "-",
+            "RES_TABELLE" : "-",
+            "INFO_EN" : "State of the DC pin cover for combo socket (0 = closed, 1 = open)",
+            "NAME" : "-",
+            "SG_ADR" : "-",
+            "L/H" : "High",
+            "DIV" : "-",
+            "ARG" : "DC_PINABDECKUNG_COMBO"
+         }
+      ],
+      "RES_0XDEF5_D" : [
+         {
+            "EINHEIT" : "0-n",
+            "INFO_EN" : "Condition of the plug",
+            "NAME" : "TAB_LIM_STECKER",
+            "INFO" : "Zustand des Steckers",
+            "MASKE" : "-",
+            "MUL" : "-",
+            "ADD" : "-",
+            "DATENTYP" : "unsigned char",
+            "RESULTNAME" : "STAT_STECKER_NR",
+            "DIV" : "-",
+            "L/H" : "high"
+         },
+         {
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "EINHEIT" : "A",
+            "INFO_EN" : "Current carrying capacity of the connected cable",
+            "INFO" : "Stromtragfähigkeit des angeschlossenen Kabels",
+            "NAME" : "-",
+            "ADD" : "0.0",
+            "RESULTNAME" : "STAT_STROMTRAGFAEHIGKEIT_WERT",
+            "DATENTYP" : "unsigned char",
+            "DIV" : "1.0",
+            "L/H" : "high"
+         }
+      ],
+      "ARG_0XDEF3_D" : [
+         {
+            "L/H" : "high",
+            "DIV" : "-",
+            "ARG" : "ARG_LED_LADESTATUS",
+            "DATENTYP" : "unsigned char",
+            "ADD" : "-",
+            "MIN" : "-",
+            "MASKE" : "-",
+            "MUL" : "-",
+            "INFO_EN" : "Control LED for charging status (light profiles)",
+            "EINHEIT" : "0-n",
+            "INFO" : "Ansteuern LED für Ladestatus (Leuchtprofile)",
+            "MAX" : "-",
+            "NAME" : "LADEN_LED_STATUSANZEIGE"
+         }
+      ],
+      "JOBRESULTEXTENDED" : [
+         {
+            "SB" : "0xXY",
+            "STATUS_TEXT" : "ERROR_UNKNOWN"
+         }
+      ],
+      "UDS_TAB_ROE_AKTIV" : [
+         {
+            "TEXT_EN" : "Active error message deactivated",
+            "TEXT" : "Aktive Fehlermeldung deaktiviert",
+            "NR" : "0x00"
+         },
+         {
+            "TEXT_EN" : "Active error message activated",
+            "TEXT" : "Aktive Fehlermeldung aktiviert",
+            "NR" : "0x01"
+         },
+         {
+            "TEXT_EN" : "Status of the active error message cannot be determined",
+            "TEXT" : "Status der aktiven Fehlermeldung nicht feststellbar",
+            "NR" : "0xFF"
+         }
+      ],
+      "RES_0XDEF6_D" : [
+         {
+            "MASKE" : "-",
+            "MUL" : "-",
+            "INFO" : "Zustand des Pilotsignals (0 = nicht aktiv, 1 = aktiv)",
+            "NAME" : "-",
+            "INFO_EN" : "State of the pilot signal (0 = not active, 1 = active)",
+            "EINHEIT" : "0/1",
+            "ADD" : "-",
+            "DATENTYP" : "unsigned char",
+            "RESULTNAME" : "STAT_PILOT_AKTIV",
+            "DIV" : "-",
+            "L/H" : "high"
+         },
+         {
+            "DIV" : "1.0",
+            "L/H" : "high",
+            "INFO" : "Tastverhältnis PWM Pilotsignal",
+            "NAME" : "-",
+            "INFO_EN" : "Pulse duty factor PWM pilot signal",
+            "EINHEIT" : "%",
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_PILOT_PWM_DUTYCYCLE_WERT",
+            "ADD" : "0.0",
+            "DATENTYP" : "unsigned char"
+         },
+         {
+            "EINHEIT" : "A",
+            "INFO_EN" : "Current value calculated from the pilot signal",
+            "NAME" : "-",
+            "INFO" : "Errechneter Stromwert aus Pilotsignal",
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "ADD" : "0.0",
+            "RESULTNAME" : "STAT_PILOT_CURRENT_WERT",
+            "DATENTYP" : "unsigned char",
+            "DIV" : "1.0",
+            "L/H" : "high"
+         },
+         {
+            "RESULTNAME" : "STAT_PILOT_LADEBEREIT",
+            "ADD" : "0.0",
+            "DATENTYP" : "unsigned char",
+            "INFO_EN" : "Vehicle ready to charge state (0 = not ready to charge, 1 = ready to charge)",
+            "EINHEIT" : "0/1",
+            "NAME" : "-",
+            "INFO" : "Zustand Ladebereitschaft Fahrzeug (0 = nicht ladebereit, 1 = ladebereit)",
+            "MASKE" : "-",
+            "MUL" : "1.0",
+            "L/H" : "high",
+            "DIV" : "1.0"
+         },
+         {
+            "NAME" : "-",
+            "INFO" : "Frequenz des Pilotsignals",
+            "INFO_EN" : "Frequency of the pilot signal",
+            "EINHEIT" : "Hz",
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "RESULTNAME" : "STAT_PILOT_FREQUENZ_WERT",
+            "ADD" : "0.0",
+            "DATENTYP" : "unsigned int",
+            "DIV" : "1.0",
+            "L/H" : "high"
+         },
+         {
+            "DIV" : "10.0",
+            "L/H" : "high",
+            "MASKE" : "-",
+            "MUL" : "1.0",
+            "NAME" : "-",
+            "INFO" : "Pegel des Pilotsignals",
+            "INFO_EN" : "Pilot signal level",
+            "EINHEIT" : "V",
+            "ADD" : "0.0",
+            "RESULTNAME" : "STAT_PILOT_PEGEL_WERT",
+            "DATENTYP" : "unsigned char"
+         }
+      ],
+      "RES_0X2541_D" : [
+         {
+            "ADD" : "0.0",
+            "DATENTYP" : "string[16]",
+            "RESULTNAME" : "STAT_CALID_TEXT",
+            "MUL" : "1.0",
+            "MASKE" : "-",
+            "INFO_EN" : "Read out Cal ID (here the Cal ID must be output as in mode $ 09 (PID $ 04))",
+            "EINHEIT" : "TEXT",
+            "NAME" : "-",
+            "INFO" : "Cal-ID auslesen (hier muss die Cal-ID wie bei Mode $09 (PID $04) ausgegeben werden).",
+            "L/H" : "high",
+            "DIV" : "1.0"
+         },
+         {
+            "DATENTYP" : "unsigned long",
+            "ADD" : "-",
+            "RESULTNAME" : "STAT_CVN_WERT",
+            "NAME" : "-",
+            "INFO" : "CVN auslesen (hier muss die CVN wie bei Mode $09 (PID $06) ausgegeben werden)",
+            "EINHEIT" : "HEX",
+            "INFO_EN" : "Read out CVN (here the CVN must be output as in mode $ 09 (PID $ 06))",
+            "MUL" : "-",
+            "MASKE" : "-",
+            "L/H" : "high",
+            "DIV" : "-"
+         }
+      ],
+      "PLC_ERROR_VALUE_VALUES" : [
+         {
+            "TEXT_EN" : "ERROR_CAN_SIGNAL_FAILED",
+            "TEXT" : "ERROR_CAN_SIGNAL_FAILED",
+            "WERT" : "0"
+         },
+         {
+            "WERT" : "1",
+            "TEXT_EN" : "ERROR_CHARGE_READY_FAILED",
+            "TEXT" : "ERROR_CHARGE_READY_FAILED"
+         },
+         {
+            "WERT" : "2",
+            "TEXT" : "ERROR_CHARGING_CABLE_NOT_LOCKED",
+            "TEXT_EN" : "ERROR_CHARGING_CABLE_NOT_LOCKED"
+         },
+         {
+            "WERT" : "3",
+            "TEXT_EN" : "ERROR_CHARGING_PHASE_NOT_EXPECTED",
+            "TEXT" : "ERROR_CHARGING_PHASE_NOT_EXPECTED"
+         },
+         {
+            "TEXT_EN" : "ERROR_CHARGING_PHASE_SHUTDOWN",
+            "TEXT" : "ERROR_CHARGING_PHASE_SHUTDOWN",
+            "WERT" : "4"
+         },
+         {
+            "TEXT_EN" : "ERROR_COMBO_MODE_INTERRUPTED",
+            "TEXT" : "ERROR_COMBO_MODE_INTERRUPTED",
+            "WERT" : "5"
+         },
+         {
+            "WERT" : "6",
+            "TEXT_EN" : "ERROR_CONTACTOR_STATUS",
+            "TEXT" : "ERROR_CONTACTOR_STATUS"
+         },
+         {
+            "WERT" : "7",
+            "TEXT" : "ERROR_CONTACTORS_FAILED_TO_CLOSE",
+            "TEXT_EN" : "ERROR_CONTACTORS_FAILED_TO_CLOSE"
+         },
+         {
+            "WERT" : "8",
+            "TEXT" : "ERROR_CONTACTORS_OVERVOLTAGE",
+            "TEXT_EN" : "ERROR_CONTACTORS_OVERVOLTAGE"
+         },
+         {
+            "WERT" : "9",
+            "TEXT_EN" : "ERROR_FAILED_TO_LINK",
+            "TEXT" : "ERROR_FAILED_TO_LINK"
+         },
+         {
+            "WERT" : "10",
+            "TEXT" : "ERROR_HW",
+            "TEXT_EN" : "ERROR_HW"
+         },
+         {
+            "WERT" : "11",
+            "TEXT_EN" : "ERROR_OK",
+            "TEXT" : "ERROR_OK"
+         },
+         {
+            "WERT" : "12",
+            "TEXT" : "ERROR_PILOT_FUNCTIONAL_CHECK",
+            "TEXT_EN" : "ERROR_PILOT_FUNCTIONAL_CHECK"
+         },
+         {
+            "WERT" : "13",
+            "TEXT_EN" : "ERROR_PLC_ERROR",
+            "TEXT" : "ERROR_PLC_ERROR"
+         },
+         {
+            "WERT" : "14",
+            "TEXT" : "ERROR_PLC_FAILED_TO_BOOT",
+            "TEXT_EN" : "ERROR_PLC_FAILED_TO_BOOT"
+         },
+         {
+            "TEXT" : "ERROR_REQUEST_FAILED",
+            "TEXT_EN" : "ERROR_REQUEST_FAILED",
+            "WERT" : "15"
+         },
+         {
+            "TEXT" : "ERROR_RESPONSE_NOK",
+            "TEXT_EN" : "ERROR_RESPONSE_NOK",
+            "WERT" : "16"
+         },
+         {
+            "TEXT" : "ERROR_RESPONSE_TIMEOUT",
+            "TEXT_EN" : "ERROR_RESPONSE_TIMEOUT",
+            "WERT" : "17"
+         },
+         {
+            "TEXT_EN" : "ERROR_RQ_OPEN_CONTACTORS",
+            "TEXT" : "ERROR_RQ_OPEN_CONTACTORS",
+            "WERT" : "18"
+         },
+         {
+            "TEXT_EN" : "ERROR_RX_SYNC_FAILED",
+            "TEXT" : "ERROR_RX_SYNC_FAILED",
+            "WERT" : "19"
+         },
+         {
+            "WERT" : "20",
+            "TEXT" : "ERROR_SEQUENCE_TIMEOUT",
+            "TEXT_EN" : "ERROR_SEQUENCE_TIMEOUT"
+         },
+         {
+            "TEXT_EN" : "ERROR_SET_MAC_FAILED",
+            "TEXT" : "ERROR_SET_MAC_FAILED",
+            "WERT" : "21"
+         },
+         {
+            "TEXT" : "ERROR_SLAC_FAILED",
+            "TEXT_EN" : "ERROR_SLAC_FAILED",
+            "WERT" : "22"
+         },
+         {
+            "TEXT_EN" : "ERROR_WRONG_STAGE",
+            "TEXT" : "ERROR_WRONG_STAGE",
+            "WERT" : "23"
+         },
+         {
+            "TEXT" : "ERROR_WRONG_SUPPORTED_CHARGE_TYPE",
+            "TEXT_EN" : "ERROR_WRONG_SUPPORTED_CHARGE_TYPE",
+            "WERT" : "24"
+         },
+         {
+            "WERT" : "25",
+            "TEXT_EN" : "ERROR_EMERGENCY_SHUTDOWN_FROM_EVSE",
+            "TEXT" : "ERROR_EMERGENCY_SHUTDOWN_FROM_EVSE"
+         },
+         {
+            "WERT" : "250",
+            "TEXT" : "(in SLAC stage) ERROR_TOO_HIGH_SLAC_ATTENUATION in dB",
+            "TEXT_EN" : "(in SLAC stage) ERROR_TOO_HIGH_SLAC_ATTENUATION in dB"
+         },
+         {
+            "TEXT_EN" : "(in SLAC stage) ERROR_NO_RESPONSE",
+            "TEXT" : "(in SLAC stage) ERROR_NO_RESPONSE",
+            "WERT" : "251"
+         },
+         {
+            "TEXT" : "(in SLAC stage) ERROR_GENERAL_FAILURE",
+            "TEXT_EN" : "(in SLAC stage) ERROR_GENERAL_FAILURE",
+            "WERT" : "252"
+         }
+      ],
+      "ZV_LADESTECKER" : [
+         {
+            "TEXT_EN" : "Not locked",
+            "TEXT" : "Nicht verriegelt",
+            "WERT" : "0"
+         },
+         {
+            "WERT" : "1",
+            "TEXT" : "Verriegelt",
+            "TEXT_EN" : "Locked"
+         },
+         {
+            "WERT" : "2",
+            "TEXT" : "Fehler",
+            "TEXT_EN" : "error"
+         },
+         {
+            "TEXT" : "Signal ungültig",
+            "TEXT_EN" : "invalid signal",
+            "WERT" : "3"
+         }
+      ],
+      "RES_0XDEF0_D" : [
+         {
+            "L/H" : "high",
+            "DIV" : "-",
+            "ADD" : "-",
+            "DATENTYP" : "unsigned char",
+            "RESULTNAME" : "STAT_ZV_LADESTECKER_EIN",
+            "EINHEIT" : "0/1",
+            "INFO_EN" : "Actuator charging plug status (0 = unlocked, 1 = locked). Plug type and market dependent (China DC = catch hook lock at the front)",
+            "INFO" : "Status Aktuator Ladestecker (0 = entriegelt, 1 = verriegelt). Steckertyp- und Marktabhängig (China DC = Fanghakenverriegelung vorn)",
+            "NAME" : "-",
+            "MUL" : "-",
+            "MASKE" : "-"
+         },
+         {
+            "ADD" : "-",
+            "RESULTNAME" : "STAT_LADESTECKER_EIN",
+            "DATENTYP" : "unsigned char",
+            "MASKE" : "-",
+            "MUL" : "-",
+            "INFO" : "Status Sensor Ladestecker (0 = entriegelt, 1 = verriegelt). Steckertyp- und Marktabhängig (China DC = Fanghakenverriegelung vorn).",
+            "NAME" : "ZV_LADESTECKER",
+            "EINHEIT" : "0-n",
+            "INFO_EN" : "Status sensor charging connector (0 = unlocked, 1 = locked). Plug type and market dependent (China DC = catch hook lock in front).",
+            "L/H" : "high",
+            "DIV" : "-"
+         }
+      ],
+      "ARG_0XDEF4_D" : [
+         {
+            "ADD" : "-",
+            "DATENTYP" : "unsigned char",
+            "MIN" : "-",
+            "MASKE" : "-",
+            "MUL" : "-",
+            "INFO_EN" : "Control LED for search lighting (0 = not activated, 1 = activated)",
+            "EINHEIT" : "0/1",
+            "MAX" : "-",
+            "INFO" : "Ansteuern LED für Suchbeleuchtung (0 = nicht angesteuert, 1 = angesteuert)",
+            "NAME" : "-",
+            "L/H" : "high",
+            "DIV" : "-",
+            "ARG" : "ARG_LED_SUCHBELEUCHTUNG"
+         }
+      ],
+      "IORTTEXTE" : [
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "CANTRCV_TJA1041_E_NO_TRCV_CTRL",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "CANTRCV_TJA1041_E_NO_TRCV_CTRL",
+            "ORT" : "0x000001"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "ECUM_E_RAM_CHECKED_FAILED",
+            "FEHLERKLASSE" : "-",
+            "ORT" : "0x000002",
+            "ORTTEXT_EN" : "ECUM_E_RAM_CHECKED_FAILED"
+         },
+         {
+            "ORT" : "0x000006",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "PDUR_E_INIT_FAILED",
+            "ORTTEXT_EN" : "PDUR_E_INIT_FAILED",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "ORTTEXT" : "PDUR_E_PDU_INSTANCE_LOST",
+            "FEHLERKLASSE" : "-",
+            "ORT" : "0x000007",
+            "ORTTEXT_EN" : "PDUR_E_PDU_INSTANCE_LOST",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "CANTP_E_OPER_NOT_SUPPORTED",
+            "ORT" : "0x000032",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "CANTP_E_OPER_NOT_SUPPORTED"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "CANSM_E_MODE_CHANGE_NETWORK_0",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "CANSM_E_MODE_CHANGE_NETWORK_0",
+            "ORT" : "0x000033"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "CANSM_E_BUSOFF_NETWORK_0",
+            "ORT" : "0x000034",
+            "ORTTEXT" : "CANSM_E_BUSOFF_NETWORK_0",
+            "FEHLERKLASSE" : "-"
+         },
+         {
+            "ORTTEXT_EN" : "CANSM_E_SETTRSCVMODE_NETWORK_0",
+            "ORTTEXT" : "CANSM_E_SETTRSCVMODE_NETWORK_0",
+            "FEHLERKLASSE" : "-",
+            "ORT" : "0x000035",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "CANIF_E_INVALID_DLC",
+            "ORTTEXT" : "CANIF_E_INVALID_DLC",
+            "FEHLERKLASSE" : "-",
+            "ORT" : "0x000036"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0x000037",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "FRSM_E_CLUSTER_STARTUP",
+            "ORTTEXT_EN" : "FRSM_E_CLUSTER_STARTUP"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0x000038",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "FRNM_E_INIT_FAILED",
+            "ORTTEXT_EN" : "FRNM_E_INIT_FAILED"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "FEE_FORMAT_FAILED",
+            "FEHLERKLASSE" : "-",
+            "ORT" : "0x0000BC",
+            "ORTTEXT_EN" : "FEE_FORMAT_FAILED"
+         },
+         {
+            "ORTTEXT_EN" : "FEE_STARTUP_FAILED",
+            "ORT" : "0x0000BD",
+            "ORTTEXT" : "FEE_STARTUP_FAILED",
+            "FEHLERKLASSE" : "-",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0x00021D",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "CANSM_E_MODE_CHANGE_NETWORK_1",
+            "ORTTEXT_EN" : "CANSM_E_MODE_CHANGE_NETWORK_1"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "CANSM_E_SETTRSCVMODE_NETWORK_1",
+            "ORT" : "0x000231",
+            "ORTTEXT" : "CANSM_E_SETTRSCVMODE_NETWORK_1",
+            "FEHLERKLASSE" : "-"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT" : "Signal (Zeit_Sekunde_Zaehler_Relativ, 0x328): ungültig",
+            "FEHLERKLASSE" : "-",
+            "ORT" : "0x001001",
+            "ORTTEXT_EN" : "Signal (Zeit_Sekunde_Zaehler_Relativ, 0x328): invalid"
+         },
+         {
+            "ORT" : "0x002BDA",
+            "ORTTEXT" : "MCU_E_WRITE_FAILURE",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT_EN" : "MCU_E_WRITE_FAILURE",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "MCU_E_POWER_DOWN_MODE_FAILURE",
+            "FEHLERKLASSE" : "-",
+            "ORT" : "0x002BDB",
+            "ORTTEXT_EN" : "MCU_E_POWER_DOWN_MODE_FAILURE"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0x002BE2",
+            "ORTTEXT" : "ADC_E_TIMEOUT",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT_EN" : "ADC_E_TIMEOUT"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0x002BE4",
+            "ORTTEXT" : "MCU_E_TIMEOUT_TRANSITION",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT_EN" : "MCU_E_TIMEOUT_TRANSITION"
+         },
+         {
+            "ORTTEXT_EN" : "PORT_E_WRITE_FAILURE",
+            "ORT" : "0x002C23",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "PORT_E_WRITE_FAILURE",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "ORTTEXT_EN" : "SPI_E_TIMEOUT",
+            "ORTTEXT" : "SPI_E_TIMEOUT",
+            "FEHLERKLASSE" : "-",
+            "ORT" : "0x01B6DE",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "SPI_E_SEQ_FAILED",
+            "ORTTEXT" : "SPI_E_SEQ_FAILED",
+            "FEHLERKLASSE" : "-",
+            "ORT" : "0x01B6DF"
+         },
+         {
+            "ORTTEXT_EN" : "PLC_ERROR_REASON",
+            "ORT" : "0x805543",
+            "ORTTEXT" : "PLC_ERROR_REASON",
+            "FEHLERKLASSE" : "-",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "HOSPITALITY_FUNCTION",
+            "ORT" : "0x805544",
+            "ORTTEXT_EN" : "HOSPITALITY_FUNCTION",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT" : "Fehler konnte nach maximaler Anzahl von Versuchen nicht gesendet werden",
+            "FEHLERKLASSE" : "-",
+            "ORT" : "0x80557E",
+            "ORTTEXT_EN" : "Error could not be sent after the maximum number of attempts"
+         },
+         {
+            "ORT" : "0x80557F",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "Puffer für ausgehende Fehlermeldungen ist voll",
+            "ORTTEXT_EN" : "Outbound error message buffer is full",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "ORTTEXT_EN" : "CAN_E_TIMEOUT",
+            "ORT" : "0x8BAC04",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "CAN_E_TIMEOUT",
+            "EREIGNIS_DTC" : "1"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "CANIF_E_FULL_TX_BUFFER",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "CANIF_E_FULL_TX_BUFFER",
+            "ORT" : "0x8BAC05"
+         },
+         {
+            "ORTTEXT_EN" : "CANIF_E_STOPPED",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "CANIF_E_STOPPED",
+            "ORT" : "0x8BAC08",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "CANNM_E_CANIF_TRANSMIT_ERROR_FORMER",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "CANNM_E_CANIF_TRANSMIT_ERROR_FORMER",
+            "ORT" : "0x8BAC09"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "CANNM_E_INIT_FAILED_FORMER",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "CANNM_E_INIT_FAILED_FORMER",
+            "ORT" : "0x8BAC10"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "CANTP_E_COM",
+            "ORT" : "0x8BAC11",
+            "ORTTEXT" : "CANTP_E_COM",
+            "FEHLERKLASSE" : "-"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORT" : "0x8BAC12",
+            "ORTTEXT" : "CANNM_E_NETWORK_TIMEOUT",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT_EN" : "CANNM_E_NETWORK_TIMEOUT"
+         },
+         {
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "CANNM_E_TX_PATH_FAILED",
+            "ORT" : "0x8BAC13",
+            "ORTTEXT_EN" : "CANNM_E_TX_PATH_FAILED",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "ORTTEXT_EN" : "CSM_E_ERROR_EVENT",
+            "ORT" : "0x8BAC30",
+            "ORTTEXT" : "CSM_E_ERROR_EVENT",
+            "FEHLERKLASSE" : "-",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "ORTTEXT" : "ECUM_E_ALL_RUN_REQUESTS_KILLED",
+            "FEHLERKLASSE" : "-",
+            "ORT" : "0x8BAC50",
+            "ORTTEXT_EN" : "ECUM_E_ALL_RUN_REQUESTS_KILLED",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "ORT" : "0x8BAC51",
+            "ORTTEXT" : "FEE_E_WRITE_FAILED",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT_EN" : "FEE_E_WRITE_FAILED",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "ORTTEXT_EN" : "FEE_E_STARTUP_FAILED",
+            "ORT" : "0x8BAC52",
+            "ORTTEXT" : "FEE_E_STARTUP_FAILED",
+            "FEHLERKLASSE" : "-",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "FLS_E_COMPARE_FAILED",
+            "ORT" : "0x8BAC53",
+            "ORTTEXT_EN" : "FLS_E_COMPARE_FAILED",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "FLS_E_ERASE_FAILED",
+            "ORT" : "0x8BAC55",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "FLS_E_ERASE_FAILED"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "FLS_E_READ_FAILED",
+            "FEHLERKLASSE" : "-",
+            "ORT" : "0x8BAC57",
+            "ORTTEXT_EN" : "FLS_E_READ_FAILED"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "FLS_E_WRITE_FAILED",
+            "ORTTEXT" : "FLS_E_WRITE_FAILED",
+            "FEHLERKLASSE" : "-",
+            "ORT" : "0x8BAC59"
+         },
+         {
+            "ORTTEXT_EN" : "FRIF_E_JLE_SYNC",
+            "ORT" : "0x8BAC61",
+            "ORTTEXT" : "FRIF_E_JLE_SYNC",
+            "FEHLERKLASSE" : "-",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "ORT" : "0x8BAC63",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "IPDUM_E_TRANSMIT_FAILED",
+            "ORTTEXT_EN" : "IPDUM_E_TRANSMIT_FAILED",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "LINIF_E_NC_NO_RESPONSE",
+            "ORT" : "0x8BAC64",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "LINIF_E_NC_NO_RESPONSE"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "LINIF_E_RESPONSE",
+            "ORT" : "0x8BAC65",
+            "ORTTEXT" : "LINIF_E_RESPONSE",
+            "FEHLERKLASSE" : "-"
+         },
+         {
+            "ORTTEXT" : "MCU_E_CLOCK_FAILURE",
+            "FEHLERKLASSE" : "-",
+            "ORT" : "0x8BAC66",
+            "ORTTEXT_EN" : "MCU_E_CLOCK_FAILURE",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0x8BAC70",
+            "ORTTEXT" : "NVM_E_INTEGRITY_FAILED",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT_EN" : "NVM_E_INTEGRITY_FAILED"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT" : "NVM_E_REQ_FAILED",
+            "FEHLERKLASSE" : "-",
+            "ORT" : "0x8BAC73",
+            "ORTTEXT_EN" : "NVM_E_REQ_FAILED"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT_EN" : "PIA_E_IO_ERROR",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "PIA_E_IO_ERROR",
+            "ORT" : "0x8BAC78"
+         },
+         {
+            "ORT" : "0x8BAC82",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "VSM_EVENT_VEHICLESTATE",
+            "ORTTEXT_EN" : "VSM_EVENT_VEHICLESTATE",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0x8BAC83",
+            "ORTTEXT" : "WDG_E_DISABLE_REJECTED",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT_EN" : "WDG_E_DISABLE_REJECTED"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "WDG_E_MODE_SWITCH_FAILED",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "WDG_E_MODE_SWITCH_FAILED",
+            "ORT" : "0x8BAC84"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "WDGM_E_ALIVE_SUPERVISION",
+            "ORT" : "0x8BAC85",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "WDGM_E_ALIVE_SUPERVISION"
+         },
+         {
+            "ORTTEXT_EN" : "WDGM_E_SET_MODE",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "WDGM_E_SET_MODE",
+            "ORT" : "0x8BAC86",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "WDG_23_DRVA_E_DISABLE_REJECTED",
+            "ORT" : "0x8BAC8E",
+            "ORTTEXT" : "WDG_23_DRVA_E_DISABLE_REJECTED",
+            "FEHLERKLASSE" : "-"
+         },
+         {
+            "ORTTEXT_EN" : "WDG_23_DRVB_E_DISABLE_REJECTED",
+            "ORT" : "0x8BAC8F",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "WDG_23_DRVB_E_DISABLE_REJECTED",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORT" : "0x8BACA1",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "WDG_23_DRVB_E_MODE_SWITCH_FAILED",
+            "ORTTEXT_EN" : "WDG_23_DRVB_E_MODE_SWITCH_FAILED"
+         },
+         {
+            "ORTTEXT_EN" : "WDG_23_DRVA_E_MODE_SWITCH_FAILED",
+            "ORT" : "0x8BACA2",
+            "FEHLERKLASSE" : "-",
+            "ORTTEXT" : "WDG_23_DRVA_E_MODE_SWITCH_FAILED",
+            "EREIGNIS_DTC" : "0"
+         },
+         {
+            "EREIGNIS_DTC" : "1",
+            "ORTTEXT_EN" : "Message (vehicle status, 0x3A0) is missing",
+            "ORTTEXT" : "Botschaft (Fahrzeugzustand, 0x3A0) fehlt",
+            "FEHLERKLASSE" : "-",
+            "ORT" : "0xE89400"
+         },
+         {
+            "EREIGNIS_DTC" : "0",
+            "ORTTEXT_EN" : "unknown error location",
+            "ORT" : "0xFFFFFF",
+            "ORTTEXT" : "unbekannter Fehlerort",
+            "FEHLERKLASSE" : "-"
+         }
+      ],
+      "ARG_0XDB0E_D" : [
+         {
+            "INFO_EN" : "Control actuator AC plug lock (China front) 0 = unlock, 1 = lock",
+            "EINHEIT" : "0/1",
+            "INFO" : "Steuern Aktuator AC-Steckerverriegelung (China vorn) 0 = entriegeln, 1 = verriegeln",
+            "MAX" : "-",
+            "NAME" : "-",
+            "MUL" : "-",
+            "MASKE" : "-",
+            "MIN" : "-",
+            "DATENTYP" : "unsigned char",
+            "ADD" : "-",
+            "ARG" : "ARG_ZV_LADESTECKER",
+            "DIV" : "-",
+            "L/H" : "high"
+         }
+      ],
+      "DTCSNAPSHOTIDENTIFIER" : [
+         {
+            "ADD" : "0.000000",
+            "UWNR" : "0x1700",
+            "NAME" : "-",
+            "UWTYP" : "0xFFFFFF",
+            "MUL" : "1",
+            "L/H" : "-",
+            "UW_EINH" : "0-n",
+            "DIV" : "1",
+            "UWTEXT" : "KM_STAND"
+         },
+         {
+            "UW_EINH" : "0-n",
+            "DIV" : "1",
+            "UWTEXT" : "ABS_ZEIT",
+            "L/H" : "-",
+            "NAME" : "-",
+            "MUL" : "1",
+            "UWTYP" : "0xFFFFFFFF",
+            "ADD" : "0.000000",
+            "UWNR" : "0x1701"
+         },
+         {
+            "UWNR" : "0x1702",
+            "ADD" : "0.000000",
+            "MUL" : "1",
+            "UWTYP" : "0xFFFFFF",
+            "NAME" : "-",
+            "L/H" : "-",
+            "DIV" : "1",
+            "UWTEXT" : "SAE_CODE",
+            "UW_EINH" : "0-n"
+         },
+         {
+            "UW_EINH" : "-",
+            "DIV" : "1",
+            "UWTEXT" : "Fehlerklasse_DTC",
+            "L/H" : "-",
+            "NAME" : "-",
+            "UWTYP" : "u char",
+            "MUL" : "1",
+            "ADD" : "0.000000",
+            "UWNR" : "0x1731"
+         },
+         {
+            "L/H" : "-",
+            "DIV" : "1",
+            "UWTEXT" : "PWF_Basinetz",
+            "UW_EINH" : "0-n",
+            "UWNR" : "0x1750",
+            "ADD" : "0.000000",
+            "UWTYP" : "0xFF",
+            "MUL" : "1",
+            "NAME" : "-"
+         },
+         {
+            "NAME" : "-",
+            "MUL" : "1",
+            "UWTYP" : "0xFFFFFF",
+            "UWNR" : "0x1751",
+            "ADD" : "0.000000",
+            "UW_EINH" : "0-n",
+            "DIV" : "1",
+            "UWTEXT" : "PWF_Teilnetz",
+            "L/H" : "-"
+         },
+         {
+            "L/H" : "-",
+            "UW_EINH" : "-",
+            "DIV" : "1",
+            "UWTEXT" : "IDENTIFIER_UNKNOWN",
+            "UWNR" : "0xFFFF",
+            "ADD" : "0.000000",
+            "NAME" : "-",
+            "UWTYP" : "0xFFFFFF",
+            "MUL" : "1"
+         }
+      ]
+   }
+}

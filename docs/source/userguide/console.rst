@@ -10,7 +10,7 @@ OVMS v3 includes a powerful command line console that can be accessed in various
 
 1. Using a micro USB cable to a host computer.
 
-  If the OVMS is not recognised via USB download the driver from `SILABS website <https://www.silabs.com/products/development-tools/software/usb-to-uart-bridge-vcp-drivers>`_). You will also need a suitable terminal emulator. The baud rate is 115200, and you should not enable hardware flow control.
+  If the OVMS is not recognised via USB download the driver from `SILABS website <https://www.silabs.com/products/development-tools/software/usb-to-uart-bridge-vcp-drivers>`_. You will also need a suitable terminal emulator. The baud rate is 115200, and you should not enable hardware flow control.
 
 2. TELNET (over wifi).
 
@@ -171,8 +171,19 @@ You can also use “?” as part of a command to expand on the available options
   OVMS# wifi mode client ?
   Usage: wifi mode client <ssid> <bssid>
 
-The TAB key can also be used to expand on commands or parameter options::
+Command tokens can be abbreviated so long as enough characters are
+entered to uniquely identify the command.  Optionally pressing
+TAB at that point will auto-complete the token.  If the abbreviated form is not
+sufficient to be unique (in particular if no characters have been
+entered yet) then TAB will show a concise list of the possible
+subcommands and retype the portion of the command line already
+entered so it can be completed::
 
   OVMS# wifi <TAB>
   mode scan status
+  OVMS# wifi █
+
+Pressing TAB is legal at any point in the command; if there is nothing
+more that can be completed automatically then there will just be no
+response to the TAB.
 

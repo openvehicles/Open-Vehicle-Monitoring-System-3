@@ -1,10 +1,21 @@
 #!/bin/sh
 
-#reusme.test
+#resume.test
+
+# if we can, isolate the network namespace to eliminate port collisions.
+if [ "${AM_BWRAPPED-}" != "yes" ]; then
+    bwrap_path="$(command -v bwrap)"
+    if [ -n "$bwrap_path" ]; then
+        export AM_BWRAPPED=yes
+        exec "$bwrap_path" --unshare-net --dev-bind / / "$0" "$@"
+    fi
+    unset AM_BWRAPPED
+fi
 
 # need a unique resume port since may run the same time as testsuite
 # use server port zero hack to get one
 resume_string="reused"
+resume_sup_string="Resume session"
 ems_string="Extended\ Master\ Secret"
 resume_port=0
 no_pid=-1
@@ -45,6 +56,18 @@ do_trap() {
 do_test() {
     echo -e "\nStarting example server for resume test...\n"
 
+    #make sure we support session resumption (!NO_SESSION_CACHE)
+    # Check the client for the extended master secret disable option. If
+    # present we need to run the test twice.
+    options_check=`./examples/client/client '-?'`
+    case "$options_check" in
+    *$resume_sup_string*)
+        echo -e "\nResume test supported";;
+    *)
+        echo -e "\nResume test not supported with build"
+        return;;
+    esac
+
     remove_ready_file
     ./examples/server/server -r -R $ready_file -p $resume_port &
     server_pid=$!
@@ -63,6 +86,9 @@ do_test() {
         exit 1
     fi
 
+    # sleep for an additional 0.1 to mitigate race on write/read of $ready_file:
+    sleep 0.1
+
     # get created port 0 ephemeral port
     resume_port=`cat $ready_file`
 
@@ -71,7 +97,7 @@ do_test() {
 
     if [ $client_result != 0 ]
     then
-        echo -e "client failed!"
+        echo -e "client failed!\ncapture_out=$capture_out\nclient_result=$client_result"
         do_cleanup
         exit 1
     fi
@@ -98,18 +124,33 @@ do_test() {
 
 trap do_trap INT TERM
 
-do_test
+./examples/client/client '-?' 2>&1 | grep -- 'Client not compiled in!'
+if [ $? -ne 0 ]; then
+    ./examples/server/server '-?' 2>&1 | grep -- 'Server not compiled in!'
+    if [ $? -ne 0 ]; then
+        RUN_TEST="Y"
+    fi
+fi
 
-# Check the client for the extended master secret disable option. If
-# present we need to run the test twice.
-options_check=`./examples/client/client -?`
-case "$options_check" in
-*$ems_string*)
-    echo -e "\nRepeating resume test without extended master secret..."
-    do_test -n ;;
-*)
-    ;;
-esac
+./examples/client/client '-?' 2>&1 | grep -- 'Resume session'
+if [ $? -ne 0 ]; then
+    RUN_TEST="Y"
+fi
+
+if [ "$RUN_TEST" = "Y" ]; then
+    do_test
+
+    # Check the client for the extended master secret disable option. If
+    # present we need to run the test twice.
+    options_check=`./examples/client/client -?`
+    case "$options_check" in
+    *$ems_string*)
+        echo -e "\nRepeating resume test without extended master secret..."
+        do_test -n ;;
+    *)
+        ;;
+    esac
+fi
 
 echo -e "\nSuccess!\n"
 

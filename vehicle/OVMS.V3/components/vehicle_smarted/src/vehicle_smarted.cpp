@@ -67,9 +67,9 @@ OvmsVehicleSmartED* OvmsVehicleSmartED::GetInstance(OvmsWriter* writer /*=NULL*/
  */
 OvmsVehicleSmartED::OvmsVehicleSmartED() : smarted_obd_rxwait(1,1) {
   ESP_LOGI(TAG, "Start Smart ED vehicle module");
-  
+
   //memset(m_vin, 0, sizeof(m_vin));
-  
+
   // init metrics:
   mt_vehicle_time          = MyMetrics.InitInt("xse.v.display.time", SM_STALE_MIN, 0, Minutes);
   mt_trip_start            = MyMetrics.InitFloat("xse.v.display.trip.start", SM_STALE_MID, 0, Kilometers);
@@ -86,36 +86,35 @@ OvmsVehicleSmartED::OvmsVehicleSmartED() : smarted_obd_rxwait(1,1) {
   mt_ed_eco_const          = MyMetrics.InitInt("xse.v.display.const", SM_STALE_MIN, 50, Percentage);
   mt_ed_eco_coast          = MyMetrics.InitInt("xse.v.display.coast", SM_STALE_MIN, 50, Percentage);
   mt_ed_eco_score          = MyMetrics.InitInt("xse.v.display.ecoscore", SM_STALE_MIN, 50, Percentage);
-  
+
   mt_ed_hv_off_time        = MyMetrics.InitInt("xse.hv.off.time", SM_STALE_MID, 0, Seconds);
-  
+
   mt_12v_batt_voltage      = MyMetrics.InitFloat("xse.v.b.12v.voltage", SM_STALE_MID, 0, Volts);
 
   m_candata_timer     = 0;
   m_candata_poll      = 0;
   m_egpio_timer       = 0;
-  
+
   m_shutdown_ticker   = 15*60;
-  
+
   // 12v charging
   m_charging_timer    = 0;
-  
+
   // init commands:
   cmd_xse = MyCommandApp.RegisterCommand("xse","SmartED 451 Gen.3");
   cmd_xse->RegisterCommand("recu","Set recu..", xse_recu, "<up/down>",1,1);
+  cmd_xse->RegisterCommand("drivemode","Set drivemode", xse_drivemode, "<d-/d/d+/ds>",1,1);
   cmd_xse->RegisterCommand("charge","Set charging Timer..", xse_chargetimer, "<hour> <minutes> <on/off>", 3, 3);
   cmd_xse->RegisterCommand("trip", "Show vehicle trip", xse_trip);
   cmd_xse->RegisterCommand("bmsdiag", "Show BMS diagnostic", xse_bmsdiag);
   cmd_xse->RegisterCommand("rptdata", "Show BMS RPTdata", xse_RPTdata);
-  cmd_xse->RegisterCommand("obd2", "Send OBD2 request", shell_obd_request, "<txid> <rxid> <request>", 3, 3);
-  cmd_xse->RegisterCommand("getvolts", "Send OBD2 request to get Cell Volts", shell_obd_request_volts);
-  
+
   MyConfig.RegisterParam("xse", "Smart ED", true, true);
   ConfigChanged(NULL);
-  
+
   RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
   RegisterCanBus(2, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
-  
+
   // init OBD2 poller:
   ObdInitPoll();
 
@@ -161,7 +160,7 @@ void OvmsVehicleSmartED::ConfigChanged(OvmsConfigParam* param) {
   m_reboot_time     = MyConfig.GetParamValueInt("xse", "reboot", 0);
   m_reboot          = MyConfig.GetParamValueBool("xse", "doreboot", false);
   
-  m_auto_set_recu   = MyConfig.GetParamValueBool("xse", "autosetrecu", false);
+  m_auto_set_recu   = MyConfig.GetParamValueInt("xse", "autosetrecu", 0);
   
   StandardMetrics.ms_v_charge_limit_soc->SetValue((float) MyConfig.GetParamValueInt("xse", "suffsoc", 0), Percentage );
   StandardMetrics.ms_v_charge_limit_range->SetValue((float) MyConfig.GetParamValueInt("xse", "suffrange", 0), Kilometers );
@@ -449,6 +448,9 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
         case 0x60: // D+
           StandardMetrics.ms_v_env_drivemode->SetValue(2);
           break;
+        case 0x80: // Ds Brabus
+          StandardMetrics.ms_v_env_drivemode->SetValue(3);
+          break;
       }
       break;
     }
@@ -487,7 +489,7 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
       float HVA = StandardMetrics.ms_v_bat_current->AsFloat();
       HV = ((float) d[6] * 256 + (float) d[7]);
       HV = HV / 10.0;
-      float HVP = (HV * HVA) / 1000.0;
+      float HVP = ((HV * HVA) / 1000.0) * -1.0f;
       StandardMetrics.ms_v_bat_voltage->SetValue(HV, Volts);
       StandardMetrics.ms_v_bat_power->SetValue(HVP);
       break;
@@ -650,13 +652,15 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
     // Polling IDs
     case 0x7a3:
     {
-      // 7a3 8 04 61 12 64 00 00 00 00
+      // 7a3 8 04 61 12 64 00 00 00 00 || 7A3 04 61 12 c2 ff 00 00 00
       if (d[0] == 0x04 && d[1] == 0x61 && d[2] == 0x12) {
-        //StandardMetrics.ms_v_env_cabintemp->SetValue(d[3]/10.0);
-        StandardMetrics.ms_v_env_cabintemp->SetValue((float) CAN_UINT(3) / 10.0);
-        //ESP_LOGD(TAG, "%04x ", CAN_UINT(3));
+        if (d[4] == 0xff) {
+          int temp = CAN_UINT(3)-0xffff;
+          StandardMetrics.ms_v_env_cabintemp->SetValue((float) temp / 10.0);
+        } else
+          StandardMetrics.ms_v_env_cabintemp->SetValue((float) CAN_UINT(3) / 10.0);
       }
-      ESP_LOGD(TAG, "%03x 8 %02x %02x %02x %02x %02x %02x %02x %02x", p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
+      // ESP_LOGD(TAG, "%03x 8 %02x %02x %02x %02x %02x %02x %02x %02x", p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
       break;
     }
     default: {
@@ -759,7 +763,7 @@ void OvmsVehicleSmartED::Ticker10(uint32_t ticker) {
 
 void OvmsVehicleSmartED::Ticker60(uint32_t ticker) {
   if (StandardMetrics.ms_v_bat_soc->AsFloat(0) == 0) RestoreStatus();
-  if (mt_bus_awake->AsBool()) TempPoll();
+  if (mt_bus_awake->AsBool() && m_enable_write) TempPoll();
 #ifdef CONFIG_OVMS_COMP_MAX7317
   if (m_egpio_timer > 0) {
     if (--m_egpio_timer == 0) {
@@ -795,15 +799,12 @@ void OvmsVehicleSmartED::RestartNetwork() {
 }
 
 void OvmsVehicleSmartED::AutoSetRecu() {
-  if (StandardMetrics.ms_v_env_on->AsBool() && m_auto_set_recu && m_enable_write) {
-    if (StandardMetrics.ms_v_env_drivemode->AsInt(1) != 2) {
-      while(StandardMetrics.ms_v_env_drivemode->AsInt(1) != 2) {
-        CommandSetRecu(true);
-        vTaskDelay(50 / portTICK_PERIOD_MS);
-      }
-      MyEvents.SignalEvent("v-smarted.xse.recu.up",NULL);
+  if (StandardMetrics.ms_v_env_on->AsBool() && mt_CEPC_Wippen->AsBool() && m_auto_set_recu && m_enable_write) {
+    if (StandardMetrics.ms_v_env_drivemode->AsInt(1) != m_auto_set_recu+1 && !recuSet) {
+      recuSet = SetRecu(m_auto_set_recu+1);
+      MyEvents.SignalEvent("v-smarted.recu.set",NULL);
     }
-  }
+  } else recuSet = false;
 }
 
 void OvmsVehicleSmartED::ShutDown() {
@@ -861,8 +862,10 @@ bool OvmsVehicleSmartED::SetFeature(int key, const char *value)
       return true;
     case 4:
     {
-      int bits = atoi(value);
-      MyConfig.SetParamValueBool("xse", "autosetrecu", (bits& 1)!=0);
+      int v = atoi(value);
+      if (v < -1 || v > 2)
+        MyConfig.SetParamValueInt("xse", "autosetrecu", 0);
+      else MyConfig.SetParamValueInt("xse", "autosetrecu", v);
       return true;
     }
     case 5:
@@ -913,12 +916,7 @@ const std::string OvmsVehicleSmartED::GetFeature(int key)
     case 3:
       return MyConfig.GetParamValue("xse", "egpio_timout", STR(5));
     case 4:
-    {
-      int bits = ( MyConfig.GetParamValueBool("xse", "autosetrecu",  false) ?  1 : 0);
-      char buf[4];
-      sprintf(buf, "%d", bits);
-      return std::string(buf);
-    }
+      return MyConfig.GetParamValue("xse", "autosetrecu", STR(0));
     case 5:
     {
       int bits = ( MyConfig.GetParamValueBool("xse", "reset.trip.charge",  false) ?  1 : 0);

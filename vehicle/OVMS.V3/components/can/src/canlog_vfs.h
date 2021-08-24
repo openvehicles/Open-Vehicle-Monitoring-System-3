@@ -30,6 +30,23 @@
 
 #include "canlog.h"
 
+#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+
+class canlog_vfs_conn: public canlogconnection
+  {
+  public:
+    canlog_vfs_conn(canlog* logger, std::string format, canformat::canformat_serve_mode_t mode);
+    virtual ~canlog_vfs_conn();
+
+  public:
+    virtual void OutputMsg(CAN_log_message_t& msg, std::string &result);
+
+  public:
+    FILE*               m_file;
+  };
+
+#endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+
 class canlog_vfs : public canlog
   {
   public:
@@ -39,18 +56,13 @@ class canlog_vfs : public canlog
   public:
     virtual bool Open();
     virtual void Close();
-    virtual bool IsOpen();
     virtual std::string GetInfo();
-
-  public:
-    virtual void OutputMsg(CAN_log_message_t& msg);
 
   public:
     virtual void MountListener(std::string event, void* data);
 
   public:
     std::string         m_path;
-    FILE*               m_file;
   };
 
 #endif // __CANLOG_VFS_H__

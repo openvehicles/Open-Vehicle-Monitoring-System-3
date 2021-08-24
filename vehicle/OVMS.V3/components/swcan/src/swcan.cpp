@@ -30,6 +30,7 @@
 static const char *TAG = "swcan";
 
 #include "swcan.h"
+#include "mcp2515_regdef.h"
 #include "ovms_peripherals.h"
 #include "ovms_config.h"
 #include <metrics_standard.h>
@@ -109,10 +110,10 @@ void swcan::SystemUp(std::string event, void* data)
   m_status_led->Blink(500,500,-1);
   }
 
-bool swcan::AsynchronousInterruptHandler(CAN_frame_t* frame, bool* frameReceived)
+bool swcan::AsynchronousInterruptHandler(CAN_frame_t* frame, uint32_t* framesReceived)
   {
-  bool res = mcp2515::AsynchronousInterruptHandler(frame, frameReceived);
-  if (*frameReceived)
+  bool res = mcp2515::AsynchronousInterruptHandler(frame, framesReceived);
+  if (*framesReceived > 0)
     {
     // frame was received -> blink led
     m_rx_led->Blink(LED_BLINK_TIME);
@@ -123,7 +124,7 @@ bool swcan::AsynchronousInterruptHandler(CAN_frame_t* frame, bool* frameReceived
 
 void swcan::TxCallback(CAN_frame_t* frame, bool success)
   {
-  canbus::TxCallback(frame,success);
+  mcp2515::TxCallback(frame,success);
 
   m_tx_led->Blink(LED_BLINK_TIME);
   if (!success)

@@ -1,6 +1,6 @@
 /* tfm.h
  *
- * Copyright (C) 2006-2016 wolfSSL Inc.
+ * Copyright (C) 2006-2020 wolfSSL Inc.
  *
  * This file is part of wolfSSL.
  *
@@ -28,7 +28,7 @@
 
 
 /**
- *  Edited by MoisÈs Guimar„es (moises.guimaraes@phoebus.com.br)
+ *  Edited by Mois√©s Guimar√£es (moises.guimaraes@phoebus.com.br)
  *  to fit CyaSSL's needs.
  */
 

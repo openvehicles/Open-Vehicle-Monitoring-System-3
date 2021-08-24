@@ -971,8 +971,13 @@ bool module_factory_reset_yesno(OvmsWriter* writer, void* ctx, char ch)
 
 static void module_factory_reset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  if (argc == 1 && strcmp(argv[0], "-noconfirm") == 0)
+  if (argc > 0)
     {
+    if (strcmp(argv[0], "-noconfirm") != 0)
+      {
+      cmd->PutUsage(writer);
+      return;
+      }
     module_perform_factoryreset(writer);
     }
   else
@@ -1060,7 +1065,7 @@ class OvmsModuleInit
     OvmsCommand* cmd_module = MyCommandApp.RegisterCommand("module","MODULE framework");
     cmd_module->RegisterCommand("memory","Show module memory usage",module_memory,"[<task names or ids>|*|=]",0,TASKLIST);
     cmd_module->RegisterCommand("leaks","Show module memory changes",module_memory,"[<task names or ids>|*|=]",0,TASKLIST);
-    OvmsCommand* cmd_tasks = cmd_module->RegisterCommand("tasks","Show module task usage",module_tasks,"[stack]",0,1);
+    OvmsCommand* cmd_tasks = cmd_module->RegisterCommand("tasks","Show module task usage",module_tasks);
     cmd_tasks->RegisterCommand("stack","Show module task usage with stack",module_tasks);
     cmd_tasks->RegisterCommand("data","Output module task stats record",module_tasks_data);
     cmd_module->RegisterCommand("fault","Abort fault the module",module_fault);
