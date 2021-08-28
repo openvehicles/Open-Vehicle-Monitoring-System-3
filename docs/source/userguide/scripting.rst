@@ -566,6 +566,62 @@ See :doc:`/plugin/auxbatmon/README` for a complete application usage example.
     }
 
 
+.. note:: **Saving to and loading from SD card:**
+  
+  When storing plugin data on an SD card, the plugin needs to take care of the SD card
+  being mounted later in the boot process than the scripts are loaded. Plugins
+  additionally may need to take into account, that the user may replace the SD card
+  any time.
+  
+  When trying to save or load from an unmounted SD, ``error`` will be set to
+  ``volume not mounted``. If this happens during plugin initialization, the plugin
+  should subscribe to the SD mount event to retry the load/save as soon as the SD card
+  becomes available.
+  
+  **Code scheme:**
+
+  .. code-block:: javascript
+    
+    var storeFile = "/sd/usr/history.cbor";
+    var listen_sdmount = null;
+    var history = {};
+    
+    function loadStoreFile() {
+      VFS.Load({
+        path: storeFile,
+        binary: true,
+        done: function(data) {
+          print(storeFile + " loaded\n");
+          history = CBOR.decode(data);
+          startRecording();
+        },
+        fail: function(error) {
+          print(storeFile + ": " + this.error + "\n");
+          if (!listen_sdmount && this.error == "volume not mounted") {
+            // retry once after SD mount:
+            listen_sdmount = PubSub.subscribe("sd.mounted", loadStoreFile);
+          } else {
+            startRecording();
+          }
+        }
+      });
+    }
+    
+    function startRecording() {
+      if (listen_sdmount) {
+        PubSub.unsubscribe(listen_sdmount);
+        listen_sdmount = null;
+      }
+      PubSub.subscribe(tickerEvent, ticker); // for example
+    }
+    
+    if (storeFile) {
+      loadStoreFile();
+    } else {
+      startRecording();
+    }
+
+
 
 PubSub
 ^^^^^^
