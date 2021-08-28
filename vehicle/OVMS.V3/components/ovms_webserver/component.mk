@@ -35,6 +35,7 @@ COMPONENT_EMBED_FILES := \
 $(COMPONENT_PATH)/assets/script.js : \
 	$(COMPONENT_PATH)/assets/jquery.min.js \
 	$(COMPONENT_PATH)/assets/bootstrap.min.js \
+	$(COMPONENT_PATH)/assets/cbor.js \
 	$(COMPONENT_PATH)/assets/ovms.js
 	cat $^ > $@ && dos2unix $@
 

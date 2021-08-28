@@ -619,6 +619,24 @@ static duk_ret_t DukOvmsPrint(duk_context *ctx)
   return 0;
   }
 
+static duk_ret_t DukOvmsWrite(duk_context *ctx)
+  {
+  if (!duktapewriter) return 0;
+
+  size_t size;
+  const void *data;
+
+  if (duk_is_buffer_data(ctx, 0))
+    data = duk_get_buffer_data(ctx, 0, &size);
+  else
+    data = duk_to_lstring(ctx, 0, &size);
+
+  if (data)
+    duktapewriter->write(data, size);
+
+  return 0;
+  }
+
 static duk_ret_t DukOvmsAssert(duk_context *ctx)
   {
   if (duk_to_boolean(ctx, 0))
@@ -2638,6 +2656,7 @@ OvmsScripts::OvmsScripts()
   // Register standard functions
   DuktapeObjectRegistration* dto;
   RegisterDuktapeFunction(DukOvmsPrint, 1, "print");
+  RegisterDuktapeFunction(DukOvmsWrite, 1, "write");
   RegisterDuktapeFunction(DukOvmsAssert, 2, "assert");
   dto = new DuktapeObjectRegistration("OvmsEvents");
   dto->RegisterDuktapeFunction(DukOvmsRaiseEvent, 2, "Raise");
