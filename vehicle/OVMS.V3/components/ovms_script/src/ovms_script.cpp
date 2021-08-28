@@ -49,6 +49,7 @@ static const char *TAG = "script";
 #include "ovms_netmanager.h"
 #include "ovms_tls.h"
 #include "ovms_boot.h"
+#include "ovms_peripherals.h"
 
 OvmsScripts MyScripts __attribute__ ((init_priority (1600)));
 
@@ -1622,6 +1623,16 @@ void DuktapeVFSLoad::LoadTask(void *param)
 
 void DuktapeVFSLoad::Load()
   {
+#ifdef CONFIG_OVMS_COMP_SDCARD
+  // verify volume:
+  if (startsWith(m_path, "/sd/") && (!MyPeripherals->m_sdcard || !MyPeripherals->m_sdcard->isavailable()))
+    {
+    m_error = "volume not mounted";
+    RequestCallback("fail");
+    return;
+    }
+#endif // CONFIG_OVMS_COMP_SDCARD
+
   // check file & size:
   if (stat(m_path.c_str(), &m_stat) != 0)
     {
@@ -1916,6 +1927,16 @@ void DuktapeVFSSave::SaveTask(void *param)
 
 void DuktapeVFSSave::Save()
   {
+#ifdef CONFIG_OVMS_COMP_SDCARD
+  // verify volume:
+  if (startsWith(m_path, "/sd/") && (!MyPeripherals->m_sdcard || !MyPeripherals->m_sdcard->isavailable()))
+    {
+    m_error = "volume not mounted";
+    RequestCallback("fail");
+    return;
+    }
+#endif // CONFIG_OVMS_COMP_SDCARD
+
   // create path:
   size_t n = m_path.rfind('/');
   if (n != 0 && n != std::string::npos)
