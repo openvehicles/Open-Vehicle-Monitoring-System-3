@@ -3,7 +3,7 @@
  * 
  * Module plugin: VW e-Up / Seat Mii / Skoda Citigo ECU communication
  * 
- * Version 0.5
+ * Version 0.5.1
  * Author: Michael Balzer <dexter@dexters-web.de>
  * 
  * Enable:
@@ -747,7 +747,7 @@ function printResult(res)
   else if (typeof res == "object" && res.error)
     print("ERROR: " + res.error + "\n");
   else if (typeof res == "object")
-    JSON.print(res);
+    print(JSON.stringify(res, null, 2) + "\n");
   else if (typeof res == "string" || typeof res == "number")
     print(res + "\n");
   else if (res)
@@ -786,7 +786,7 @@ function printOBDResult(res)
 
 exports.$debug = function () { println(setDebug.apply(null, arguments)) };
 exports.$readonly = function () { println(setReadOnly.apply(null, arguments)) };
-exports.$config = function () { JSON.print(configure.apply(null, arguments)) };
+exports.$config = function () { println(JSON.stringify(configure.apply(null, arguments), null, 2)) };
 
 exports.$select = function () { printResult(select.apply(null, arguments)) };
 exports.$get = function () { printOBDResult(exports.getRes.apply(null, arguments)) };
@@ -815,7 +815,7 @@ exports.$scanall = function () {
 
   print("[");
   getInstalledDevices().list.forEach(function (ecuid) {
-    JSON.print(scan(ecuid)); print(",");
+    print(JSON.stringify(scan(ecuid), null, 2)); print(",");
   });
   print("]\n");
 
