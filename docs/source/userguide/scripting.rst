@@ -203,6 +203,7 @@ method::
     },
     "assert": function () { [native code] },
     "print": function () { [native code] },
+    "write": function () { [native code] },
     "OvmsCommand": {
       "Exec": function Exec() { [native code] }
     },
@@ -268,6 +269,10 @@ Global Context
     Print the given string on the current terminal. If no terminal (for example a background script) then
     print to the system console as an informational message.
 
+- ``write(string/Uint8Array)``
+    Write the given string or Uint8Array to the current output channel (i.e. terminal/HTTP connection).
+    Use this to transfer binary data to a reader.
+
 - ``performance.now()``
     Returns monotonic time since boot in milliseconds, with microsecond resolution.
 
@@ -301,6 +306,66 @@ format. Both by default insert spacing and indentation for readability and accep
   
   For example, ``Duktape.enc('JC', data)`` is equivalent to ``JSON.format(data, false)`` except for
   the representation of functions. Using the ``JX`` encoding will omit unnecessary quotings.
+
+
+.. warning:: All Duktape JSON encoders and decoders have a very high performance penalty
+  and **should be avoided for large objects or frequent encoding/decoding**, with large
+  being any object larger than a handful of configuration or state variables.
+  
+  For general data storage and exchange with the web UI, **use the CBOR serialization instead**.
+
+
+CBOR
+^^^^
+
+**CBOR** is a binary serialization format, and especially with Duktape the better alternative
+over JSON for storage and data transmission, if human readability isn't required.
+
+"CBOR" stands for "Concise Binary Object Representation". See https://cbor.io/
+for details on the specification and available implementations. CBOR isn't necessarily more
+compact in storage space, but can be encoded and decoded much faster and with much less memory
+overhead as JSON.
+
+Duktape implements CBOR support by the builtin ``CBOR.encode()`` and ``CBOR.decode()`` methods:
+
+- ``enc = CBOR.encode(data)``
+    Encode data (any Javascript data) to CBOR format (result is an ArrayBuffer)
+- ``data = CBOR.decode(enc)``
+    Decode CBOR format (ArrayBuffer/Uint8Array) to Javascript data
+
+CBOR support in Duktape is still `considered experimental <https://duktape.org/guide.html#builtin-cbor>`_,
+but the underlying implementation is mature.
+
+CBOR also isn't part of the standard browser builtin Javascript APIs yet, so the OVMS
+web framework includes the `cbor-js library by Patrick Gansterer <https://github.com/paroga/cbor-js>`_
+(same API as on the Duktape side).
+
+The webserver command API supports binary output from commands & Javascript API methods,
+and the output can be passed to ``CBOR.decode()`` directly.
+
+**Example:**
+
+The following scheme shows how to transmit a javascript data object from the module
+backend into the web frontend:
+
+.. code-block:: javascript
+  
+  // Module backend:
+  backend.getdata = function () {
+    var mydata = { pi: 3.141, fib: [ 0,1,1,2,3,5,8,13 ] };
+    write(CBOR.encode(mydata));
+  };
+  
+  // Web frontend:
+  loadjs({ command: "backend.getdata()", output: "binary" }).done((stream) => {
+    var mydata = CBOR.decode(stream);
+  });
+
+For full examples, see the "AuxBatMon" and "PwrMon" plugins.
+
+.. note:: When loading CBOR data via ``VFS.Load()``, you need to set the ``binary`` option
+  to true, so the loader will return a ``Uint8Array`` instead of a standard string.
+
 
 
 HTTP

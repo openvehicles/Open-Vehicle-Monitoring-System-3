@@ -49,6 +49,60 @@ function getPathURL(path) {
 
 
 /**
+ * Hexadecimal encoding & decoding
+ * based on: https://stackoverflow.com/a/54099484 by Aaron Watters
+ */
+
+var HEX = {
+  to_hex_array: [],
+  to_byte_map: {},
+
+  // Init lookup tables:
+  init: function () {
+    for (var ord=0; ord<=0xff; ord++) {
+      var s = ord.toString(16);
+      if (s.length < 2) {
+        s = "0" + s;
+      }
+      this.to_hex_array.push(s);
+      this.to_byte_map[s] = ord;
+    }
+  },
+
+  // Encode ArrayBuffer to hexadecimal string:
+  // Usage example: HEX.encode(CBOR.encode({a: 42})) = "a16161182a"
+  encode: function (arraybuffer) {
+    if (!this.to_hex_array.length) this.init();
+    var buffer = new Uint8Array(arraybuffer);
+    var hex_array = [];
+    for (var i=0; i<buffer.length; i++) {
+      hex_array.push(this.to_hex_array[buffer[i]]);
+    }
+    return hex_array.join('');
+  },
+
+  // Decode hexadecimal string into ArrayBuffer:
+  // Usage example: CBOR.decode(HEX.decode("a16161182a")) = {a: 42}
+  decode: function (s) {
+    if (!this.to_hex_array.length) this.init();
+    var length2 = s.length;
+    if ((length2 % 2) != 0) {
+      console.error("HEX.decode: string must have length a multiple of 2");
+      return null;
+    }
+    var length = length2 / 2;
+    var buffer = new Uint8Array(length);
+    for (var i=0; i<length; i++) {
+      var i2 = i * 2;
+      var b = s.substring(i2, i2 + 2);
+      buffer[i] = this.to_byte_map[b];
+    }
+    return buffer.buffer;
+  }
+};
+
+
+/**
  * AJAX Pages & Commands
  */
 
@@ -218,7 +272,15 @@ function standardTextFilter(msg) {
 }
 
 function loadjs(command, target, filter, timeout) {
-  return loadcmd({ "command": command, type: "js" }, target, filter, timeout);
+  if (!command) return null;
+  var args = {};
+  if (typeof command == "object") {
+    args = command;
+  } else {
+    args.command = command;
+  }
+  args.type = "js";
+  return loadcmd(args, target, filter, timeout);
 }
 
 function loadcmd(command, target, filter, timeout) {

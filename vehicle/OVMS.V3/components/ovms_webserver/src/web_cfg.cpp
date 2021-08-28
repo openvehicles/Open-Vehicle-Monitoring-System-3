@@ -287,6 +287,14 @@ void OvmsWebServer::HandleCommand(PageEntry_t& p, PageContext_t& c)
     c.head(200,
       "Content-Type: application/json; charset=utf-8\r\n"
       "Cache-Control: no-cache");
+  } else if (output == "binary") {
+    // As Safari on iOS still doesn't support responseType=ArrayBuffer on XMLHttpRequests,
+    // this is meant to be used for binary data transmissions.
+    // Based on Marcus Granado's approach, see…
+    // https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/Sending_and_Receiving_Binary_Data
+    c.head(200,
+      "Content-Type: application/octet-stream; charset=x-user-defined\r\n"
+      "Cache-Control: no-cache");
   } else {
     c.head(200,
       "Content-Type: application/octet-stream; charset=utf-8\r\n"
