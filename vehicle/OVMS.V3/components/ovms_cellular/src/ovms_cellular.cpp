@@ -767,7 +767,7 @@ modem::modem_state1_t modem::State1Activity()
 
 modem::modem_state1_t modem::State1Ticker1()
   {
-  if ((m_mux != NULL)&&(m_mux->GoodFrameAge() > 180))
+  if ((m_mux != NULL)&&(m_mux->GoodFrameAge() > 180)&&(m_state1 != Development))
     {
     // Mux is up, but we haven't had a good MUX frame in 3 minutes.
     // Let's assume the MUX has failed
@@ -1291,6 +1291,7 @@ void modem::StartNMEA()
     ESP_LOGV(TAG, "Starting NMEA");
     m_nmea = new GsmNMEA(m_mux, m_mux_channel_NMEA, m_mux_channel_CMD);
     m_nmea->Startup();
+    m_driver->StartupNMEA();
     }
   }
 
@@ -1299,6 +1300,7 @@ void modem::StopNMEA()
   if (m_nmea != NULL)
     {
     ESP_LOGV(TAG, "Stopping NMEA");
+    m_driver->ShutdownNMEA();
     m_nmea->Shutdown();
     delete m_nmea;
     m_nmea = NULL;

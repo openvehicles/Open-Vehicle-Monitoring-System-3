@@ -122,6 +122,26 @@ int modemdriver::GetMuxChannelDATA() { return 2; }
 int modemdriver::GetMuxChannelPOLL() { return 3; }
 int modemdriver::GetMuxChannelCMD()  { return 4; }
 
+void modemdriver::StartupNMEA()
+  {
+  // Switch on GPS, subscribe to NMEA sentences…
+  //   2 = $..RMC -- UTC time & date
+  //  64 = $..GNS -- Position & fix data
+  if (m_modem->m_mux != NULL)
+    { m_modem->m_mux->tx(GetMuxChannelCMD(), "AT+CGPSNMEA=66;+CGPS=1,1\r\n"); }
+  else
+    { ESP_LOGE(TAG, "Attempt to transmit on non running mux"); }
+  }
+
+void modemdriver::ShutdownNMEA()
+  {
+  // Switch off GPS:
+  if (m_modem->m_mux != NULL)
+    { m_modem->m_mux->tx(GetMuxChannelCMD(), "AT+CGPS=0\r\n"); }
+  else
+    { ESP_LOGE(TAG, "Attempt to transmit on non running mux"); }
+  }
+
 bool modemdriver::State1Leave(modem::modem_state1_t oldstate)
   {
   return false;

@@ -67,6 +67,24 @@ const char* simcom7600::GetName()
   return name;
   }
 
+void simcom7600::StartupNMEA()
+  {
+  // Switch on GPS, subscribe to NMEA sentences…
+  //   2 = $..RMC -- UTC time & date
+  //  64 = $..GNS -- Position & fix data
+
+  // We need to do this a little differently from the standard, as SIM7600
+  // may start GPS on power up, and doesn't like us using CGPS=1,1 when
+  // it is already on. So workaround is to first CGPS=0.
+  if (m_modem->m_mux != NULL)
+    {
+    m_modem->m_mux->tx(GetMuxChannelCMD(), "AT+CGPS=0\r\n");
+    m_modem->m_mux->tx(GetMuxChannelCMD(), "AT+CGPSNMEA=66;+CGPS=1,1\r\n");
+    }
+  else
+    { ESP_LOGE(TAG, "Attempt to transmit on non running mux"); }
+  }
+
 void simcom7600::PowerCycle()
   {
   ESP_LOGI(TAG, "Power Cycle (SIM7600)");

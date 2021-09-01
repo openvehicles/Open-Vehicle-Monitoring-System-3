@@ -251,15 +251,6 @@ void GsmNMEA::Startup()
   ESP_LOGI(TAG, "Startup");
 
   m_gpstime_enabled = MyConfig.GetParamValueBool("modem", "enable.gpstime", false);
-
-  // Switch on GPS, subscribe to NMEA sentences…
-  //   2 = $..RMC -- UTC time & date
-  //  64 = $..GNS -- Position & fix data
-  if (m_mux != NULL)
-    { m_mux->tx(m_channel_cmd, "AT+CGPSNMEA=66;+CGPS=1,1\r\n"); }
-  else
-    { ESP_LOGE(TAG, "Attempt to transmit on non running mux"); }
-
   m_connected = true;
   }
 
@@ -267,12 +258,6 @@ void GsmNMEA::Startup()
 void GsmNMEA::Shutdown(bool hard)
   {
   ESP_LOGI(TAG, "Shutdown (direct)");
-
-  // Switch off GPS:
-  if (m_mux != NULL)
-    { m_mux->tx(m_channel_cmd, "AT+CGPS=0\r\n"); }
-  else
-    { ESP_LOGE(TAG, "Attempt to transmit on non running mux"); }
 
   if (StdMetrics.ms_v_pos_gpslock->AsBool())
     {
