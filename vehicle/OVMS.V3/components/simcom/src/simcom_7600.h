@@ -50,6 +50,7 @@ class simcom7600 : public modemdriver
     int GetMuxChannelPOLL() { return 3; }
     int GetMuxChannelCMD()  { return 4; }
     void StartupNMEA();
+    void StatusPoller();
 
     void PowerCycle();
     bool State1Leave(modem::modem_state1_t oldstate);

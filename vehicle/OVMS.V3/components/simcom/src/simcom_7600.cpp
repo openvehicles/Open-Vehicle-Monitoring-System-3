@@ -89,6 +89,12 @@ void simcom7600::StartupNMEA()
     { ESP_LOGE(TAG, "Attempt to transmit on non running mux"); }
   }
 
+void simcom7600::StatusPoller()
+  {
+  if (m_modem->m_mux != NULL)
+    { m_modem->muxtx(GetMuxChannelPOLL(), "AT+CREG?;+CCLK?;+CSQ;+CPSI?;+COPS?\r\n"); }
+  }
+
 void simcom7600::PowerCycle()
   {
   unsigned int psd = 2000 * (++m_powercyclefactor);

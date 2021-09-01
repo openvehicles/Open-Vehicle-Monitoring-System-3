@@ -397,10 +397,11 @@ void modem::SupportSummary(OvmsWriter* writer, bool debug /*=FALSE*/)
 
   if (m_powermode != Off)
     {
-    writer->printf("  Network Registration: %s\n    Provider: %s\n    Signal: %d dBm\n",
+    writer->printf("  Network Registration: %s\n    Provider: %s\n    Signal: %d dBm\n    Mode: %s\n",
       ModemNetRegName(m_netreg),
       m_provider.c_str(),
-      UnitConvert(sq, dbm, m_sq));
+      UnitConvert(sq, dbm, m_sq),
+      StandardMetrics.ms_m_net_mdm_mode->AsString().c_str());
     }
 
   writer->printf("  State: %s\n", ModemState1Name(m_state1));
@@ -917,7 +918,7 @@ modem::modem_state1_t modem::State1Ticker1()
         return NetLoss;
         }
       if ((m_mux != NULL)&&(m_state1_ticker>5)&&((m_state1_ticker % 30) == 0))
-        { muxtx(m_mux_channel_POLL, "AT+CREG?;+CCLK?;+CSQ;+COPS?\r\n"); }
+        { m_driver->StatusPoller(); }
       break;
 
     case NetDeepSleep:
@@ -1066,6 +1067,14 @@ void modem::StandardLineHandler(int channel, OvmsBuffer* buf, std::string line)
         break;
       }
     SetNetworkRegistration(nreg);
+    }
+  else if (line.compare(0, 7, "+CPSI: ") == 0)
+    {
+    size_t qp = line.find(',');
+    if (qp != string::npos)
+      { qp = line.find(',',qp+1); }
+    if (qp != string::npos)
+      { StandardMetrics.ms_m_net_mdm_mode->SetValue(line.substr(7,qp-7)); }
     }
   else if (line.compare(0, 7, "+COPS: ") == 0)
     {

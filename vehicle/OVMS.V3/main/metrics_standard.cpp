@@ -55,6 +55,7 @@ MetricsStandard::MetricsStandard()
   ms_m_net_mdm_network = new OvmsMetricString(MS_N_MDM_NETWORK, SM_STALE_MAX);
   ms_m_net_mdm_iccid = new OvmsMetricString(MS_N_MDM_ICCID, SM_STALE_MAX);
   ms_m_net_mdm_model = new OvmsMetricString(MS_N_MDM_MODEL, SM_STALE_MAX);
+  ms_m_net_mdm_mode = new OvmsMetricString(MS_N_MDM_MODE, SM_STALE_MAX);
 
 #ifdef CONFIG_OVMS_COMP_MAX7317
   ms_m_egpio_input = new OvmsMetricBitset<10,0>(MS_M_EGPIO_INPUT, SM_STALE_MAX);

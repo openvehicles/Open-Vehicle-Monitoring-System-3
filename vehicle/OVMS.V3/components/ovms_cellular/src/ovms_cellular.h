@@ -231,6 +231,7 @@ class modemdriver : public InternalRamAllocated
     virtual int GetMuxChannelCMD();
     virtual void StartupNMEA();
     virtual void ShutdownNMEA();
+    virtual void StatusPoller();
 
     virtual bool State1Leave(modem::modem_state1_t oldstate);
     virtual bool State1Enter(modem::modem_state1_t newstate);
