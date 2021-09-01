@@ -238,6 +238,7 @@ class modemdriver : public InternalRamAllocated
     virtual modem::modem_state1_t State1Ticker1(modem::modem_state1_t curstate);
 
   protected:
+    unsigned int m_powercyclefactor;
     modem* m_modem;
   };
 

@@ -78,8 +78,12 @@ void simcom7600::StartupNMEA()
   // it is already on. So workaround is to first CGPS=0.
   if (m_modem->m_mux != NULL)
     {
-    m_modem->m_mux->tx(GetMuxChannelCMD(), "AT+CGPS=0\r\n");
-    m_modem->m_mux->tx(GetMuxChannelCMD(), "AT+CGPSNMEA=66;+CGPS=1,1\r\n");
+    m_modem->muxtx(GetMuxChannelCMD(), "AT+CGPS=0\r\n");
+    vTaskDelay(500 / portTICK_PERIOD_MS);
+    m_modem->muxtx(GetMuxChannelCMD(), "AT+CGPSNMEA=258\r\n");
+    m_modem->muxtx(GetMuxChannelCMD(), "AT+CGPSINFOCFG=5,258\r\n");
+    vTaskDelay(500 / portTICK_PERIOD_MS);
+    m_modem->muxtx(GetMuxChannelCMD(), "AT+CGPS=1,1\r\n");
     }
   else
     { ESP_LOGE(TAG, "Attempt to transmit on non running mux"); }
@@ -87,12 +91,15 @@ void simcom7600::StartupNMEA()
 
 void simcom7600::PowerCycle()
   {
-  ESP_LOGI(TAG, "Power Cycle (SIM7600)");
+  unsigned int psd = 2000 * (++m_powercyclefactor);
+  m_powercyclefactor = m_powercyclefactor % 3;
+  ESP_LOGI(TAG, "Power Cycle (SIM7600) %dms",psd);
+
   uart_flush(m_modem->m_uartnum); // Flush the ring buffer, to try to address MUX start issues
 #ifdef CONFIG_OVMS_COMP_MAX7317
   MyPeripherals->m_max7317->Output(MODEM_EGPIO_PWR, 0); // Modem EN/PWR line low
   MyPeripherals->m_max7317->Output(MODEM_EGPIO_PWR, 1); // Modem EN/PWR line high
-  vTaskDelay(2000 / portTICK_PERIOD_MS);
+  vTaskDelay(psd / portTICK_PERIOD_MS);
   MyPeripherals->m_max7317->Output(MODEM_EGPIO_PWR, 0); // Modem EN/PWR line low
 #endif // #ifdef CONFIG_OVMS_COMP_MAX7317
   }

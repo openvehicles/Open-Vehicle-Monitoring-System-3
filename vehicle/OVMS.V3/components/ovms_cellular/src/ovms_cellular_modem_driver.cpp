@@ -60,6 +60,7 @@ autoInit::autoInit()
 modemdriver::modemdriver()
   {
   m_modem = MyPeripherals->m_cellular_modem;
+  m_powercyclefactor = 0;
   }
 
 modemdriver::~modemdriver()
@@ -95,12 +96,15 @@ void modemdriver::PowerOff()
 
 void modemdriver::PowerCycle()
   {
-  ESP_LOGI(TAG, "Power Cycle");
+  unsigned int psd = 2000 * (++m_powercyclefactor);
+  m_powercyclefactor = m_powercyclefactor % 3;
+  ESP_LOGI(TAG, "Power Cycle %dms", psd);
+
   uart_flush(m_modem->m_uartnum); // Flush the ring buffer, to try to address MUX start issues
 #ifdef CONFIG_OVMS_COMP_MAX7317
   MyPeripherals->m_max7317->Output(MODEM_EGPIO_PWR, 0); // Modem EN/PWR line low
   MyPeripherals->m_max7317->Output(MODEM_EGPIO_PWR, 1); // Modem EN/PWR line high
-  vTaskDelay(2000 / portTICK_PERIOD_MS);
+  vTaskDelay(psd / portTICK_PERIOD_MS);
   MyPeripherals->m_max7317->Output(MODEM_EGPIO_PWR, 0); // Modem EN/PWR line low
 #endif // #ifdef CONFIG_OVMS_COMP_MAX7317
   }

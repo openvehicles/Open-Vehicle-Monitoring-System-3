@@ -573,12 +573,12 @@ void modem::State1Enter(modem_state1_t newstate)
       ClearNetMetrics();
       MyEvents.SignalEvent("system.modem.poweringon", NULL);
       PowerCycle();
-      m_state1_timeout_ticks = 20;
+      m_state1_timeout_ticks = 30;
       m_state1_timeout_goto = PoweringOn;
       break;
 
     case Identify:
-      m_state1_timeout_ticks = 60;
+      m_state1_timeout_ticks = 30;
       m_state1_timeout_goto = PowerOffOn;
       break;
 
@@ -612,7 +612,7 @@ void modem::State1Enter(modem_state1_t newstate)
       m_state1_timeout_ticks = 10;
       m_state1_timeout_goto = NetWait;
       if (m_mux != NULL)
-        { m_mux->tx(m_mux_channel_POLL, "AT+CGATT=0\r\n"); }
+        { muxtx(m_mux_channel_POLL, "AT+CGATT=0\r\n"); }
       StopPPP();
       break;
 
@@ -831,7 +831,7 @@ modem::modem_state1_t modem::State1Ticker1()
       if (m_mux != NULL)
         {
         if ((m_state1_ticker>5)&&((m_state1_ticker % 30) == 0))
-          { m_mux->tx(m_mux_channel_POLL, "AT+CREG?;+CCLK?;+CSQ;+COPS?\r\n"); }
+          { muxtx(m_mux_channel_POLL, "AT+CREG?;+CCLK?;+CSQ;+COPS?\r\n"); }
         if (m_mux->IsMuxUp())
           return NetWait;
         }
@@ -852,7 +852,7 @@ modem::modem_state1_t modem::State1Ticker1()
       else if ((m_state1_ticker > 3)&&((m_netreg==RegisteredHome)||(m_netreg==RegisteredRoaming)))
         return NetStart; // We have GSM, so start the network
       if ((m_mux != NULL)&&(m_state1_ticker>3)&&((m_state1_ticker % 10) == 0))
-        { m_mux->tx(m_mux_channel_POLL, "AT+CREG?;+CCLK?;+CSQ;+COPS?\r\n"); }
+        { muxtx(m_mux_channel_POLL, "AT+CREG?;+CCLK?;+CSQ;+COPS?\r\n"); }
       break;
 
     case NetStart:
@@ -868,7 +868,8 @@ modem::modem_state1_t modem::State1Ticker1()
           std::string apncmd("AT+CGDCONT=1,\"IP\",\"");
           apncmd.append(MyConfig.GetParamValue("modem", "apn"));
           apncmd.append("\";+CGDATA=\"PPP\",1\r\n");
-          m_mux->tx(m_mux_channel_DATA,apncmd.c_str());
+          ESP_LOGD(TAG,"Netstart %s",apncmd.c_str());
+          muxtx(m_mux_channel_DATA,apncmd.c_str());
           }
         }
       if (m_state1_userdata == 2)
@@ -887,14 +888,14 @@ modem::modem_state1_t modem::State1Ticker1()
 
     case NetHold:
       if ((m_mux != NULL)&&(m_state1_ticker>5)&&((m_state1_ticker % 30) == 0))
-        { m_mux->tx(m_mux_channel_POLL, "AT+CREG?;+CCLK?;+CSQ;+COPS?\r\n"); }
+        { muxtx(m_mux_channel_POLL, "AT+CREG?;+CCLK?;+CSQ;+COPS?\r\n"); }
       break;
 
     case NetSleep:
       if (m_powermode == On) return NetWait;
       if (m_powermode != Sleep) return PoweringOn;
       if ((m_mux != NULL)&&(m_state1_ticker>5)&&((m_state1_ticker % 30) == 0))
-        { m_mux->tx(m_mux_channel_POLL, "AT+CREG?;+CCLK?;+CSQ;+COPS?\r\n"); }
+        { muxtx(m_mux_channel_POLL, "AT+CREG?;+CCLK?;+CSQ;+COPS?\r\n"); }
       break;
 
     case NetMode:
@@ -916,7 +917,7 @@ modem::modem_state1_t modem::State1Ticker1()
         return NetLoss;
         }
       if ((m_mux != NULL)&&(m_state1_ticker>5)&&((m_state1_ticker % 30) == 0))
-        { m_mux->tx(m_mux_channel_POLL, "AT+CREG?;+CCLK?;+CSQ;+COPS?\r\n"); }
+        { muxtx(m_mux_channel_POLL, "AT+CREG?;+CCLK?;+CSQ;+COPS?\r\n"); }
       break;
 
     case NetDeepSleep:
@@ -1000,7 +1001,12 @@ void modem::StandardLineHandler(int channel, OvmsBuffer* buf, std::string line)
     line = m_line_buffer;
     }
 
-  ESP_LOGD(TAG, "rx line ch=%d len=%-4d: %s", channel, line.length(), line.c_str());
+  const char *cp = line.c_str();
+  if ((line.length()>2)&&(cp[0]!='$')&&(cp[1])!='G')
+    {
+    // Log incoming data other than GPS NMEA
+    ESP_LOGD(TAG, "mux-rx-line #%d: %s", channel, line.c_str());
+    }
 
   if ((line.compare(0, 8, "CONNECT ") == 0)&&(m_state1 == NetStart)&&(m_state1_userdata == 1))
     {
@@ -1192,7 +1198,7 @@ void modem::tx(const char* data, ssize_t size)
     { DevelopmentHexDump("tx", data, size); }
 
   if (size > 0)
-    ESP_LOGD(TAG, "tx scmd ch=0 len=%-4d: %s", size, data);
+    ESP_LOGD(TAG, "tx-cmd: %s", data);
 
   uart_write_bytes(m_uartnum, data, size);
   }
@@ -1215,11 +1221,11 @@ void modem::muxtx(int channel, const char* data, ssize_t size)
   if (!m_task) return; // Quick exit if not task (we are stopped)
   if (size == -1) size = strlen(data);
 
+  if (size > 0 && (channel == m_mux_channel_POLL || channel == m_mux_channel_CMD))
+    ESP_LOGD(TAG, "mux-tx #%d: %s", channel, data);
+
   if (m_state1 == Development)
     { DevelopmentHexDump("mux-tx", data, size); }
-
-  if (size > 0 && (channel == m_mux_channel_POLL || channel == m_mux_channel_CMD))
-    ESP_LOGD(TAG, "tx mcmd ch=%d len=%-4d: %s", channel, size, data);
 
   if (m_mux != NULL)
     { m_mux->tx(channel, (uint8_t*)data, size); }
@@ -1238,7 +1244,7 @@ bool modem::txcmd(const char* data, ssize_t size)
     if (m_state1 == Development)
       { DevelopmentHexDump("tx-cmd", (const char*)data, size); }
 
-    ESP_LOGD(TAG, "tx scmd ch=0 len=%-4d: %s", size, data);
+    ESP_LOGD(TAG, "txcmd: %s", data);
 
     tx((uint8_t*)data, size);
     return true;
@@ -1248,7 +1254,7 @@ bool modem::txcmd(const char* data, ssize_t size)
     if (m_state1 == Development)
       { DevelopmentHexDump("mux-tx-cmd", (const char*)data, size); }
 
-    ESP_LOGD(TAG, "tx mcmd ch=%d len=%-4d: %s", m_mux_channel_CMD, size, data);
+    ESP_LOGD(TAG, "mux-tx-cmd #%d: %s", m_mux_channel_CMD, data);
 
     m_mux->tx(m_mux_channel_CMD, (uint8_t*)data, size);
     return true;
