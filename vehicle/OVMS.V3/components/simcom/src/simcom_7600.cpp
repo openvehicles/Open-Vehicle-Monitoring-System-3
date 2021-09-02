@@ -79,10 +79,9 @@ void simcom7600::StartupNMEA()
   if (m_modem->m_mux != NULL)
     {
     m_modem->muxtx(GetMuxChannelCMD(), "AT+CGPS=0\r\n");
-    vTaskDelay(500 / portTICK_PERIOD_MS);
+    vTaskDelay(2000 / portTICK_PERIOD_MS);
     m_modem->muxtx(GetMuxChannelCMD(), "AT+CGPSNMEA=258\r\n");
     m_modem->muxtx(GetMuxChannelCMD(), "AT+CGPSINFOCFG=5,258\r\n");
-    vTaskDelay(500 / portTICK_PERIOD_MS);
     m_modem->muxtx(GetMuxChannelCMD(), "AT+CGPS=1,1\r\n");
     }
   else
