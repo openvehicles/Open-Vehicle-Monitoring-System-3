@@ -29,7 +29,6 @@
 ; THE SOFTWARE.
 */
 
-#include "ovms_log.h"
 static const char *TAG = "v-mgev";
 
 #include "vehicle_mgev.h"
@@ -45,13 +44,14 @@ const char CAN_INTERFACE[] = "caninterface";
 // The default CAN bus to use (if you're using a standard cable)
 constexpr int DEFAULT_CAN = 1;
 
-int CanInterface()
+}  // anon namespace
+
+int OvmsVehicleMgEv::CanInterface()
 {
     return MyConfig.GetParamValueInt(PARAM_NAME, CAN_INTERFACE, DEFAULT_CAN);
 }
 
-}  // anon namespace
-
+//Called by OVMS when a config param is changed
 void OvmsVehicleMgEv::ConfigChanged(OvmsConfigParam* param)
 {
     if (param && param->GetName() != PARAM_NAME)
@@ -59,11 +59,28 @@ void OvmsVehicleMgEv::ConfigChanged(OvmsConfigParam* param)
         return;
     }
 
-    ESP_LOGI(TAG, "MG EV reload configuration");
+    ESP_LOGI(TAG, "%s config changed", PARAM_NAME);
 
-    ConfigurePollInterface(CanInterface());
+    // Instances:
+    // xmg
+    //  suffsoc              Sufficient SOC [%] (Default: 0=disabled)
+    //  suffrange            Sufficient range [km] (Default: 0=disabled)
+    StandardMetrics.ms_v_charge_limit_soc->SetValue(
+            (float) MyConfig.GetParamValueInt("xmg", "suffsoc"),   Percentage );
+    
+    if (MyConfig.GetParamValue("vehicle", "units.distance") == "K")
+    {
+        StandardMetrics.ms_v_charge_limit_range->SetValue(
+                (float) MyConfig.GetParamValueInt("xmg", "suffrange"), Kilometers );
+    }
+    else
+    {
+        StandardMetrics.ms_v_charge_limit_range->SetValue(
+            (float) MyConfig.GetParamValueInt("xmg", "suffrange"), Miles );
+    }
 }
 
+// Called by OVMS when server requests to set feature
 bool OvmsVehicleMgEv::SetFeature(int key, const char *value) {
     switch (key) {
         case 10:
@@ -81,6 +98,7 @@ bool OvmsVehicleMgEv::SetFeature(int key, const char *value) {
     }
 }
 
+// Called by OVMS when server requests to get feature
 const std::string OvmsVehicleMgEv::GetFeature(int key) {
     switch (key) {
         case 10:

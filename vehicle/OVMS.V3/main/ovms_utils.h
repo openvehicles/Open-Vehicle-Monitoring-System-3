@@ -35,6 +35,7 @@
 #include "freertos/task.h"
 #include <cstring>
 #include <string>
+#include <iomanip>
 #include "ovms.h"
 
 // Macro utils:
@@ -181,6 +182,17 @@ std::string hexencode(const std::string value);
  */
 std::string hexdecode(const std::string encval);
 
+/**
+ * int_to_hex: hex encode an integer value
+ *  Source: https://kodlogs.com/68574/int-to-hex-string-c
+ */
+template <typename T>
+std::string int_to_hex(T i)
+  {
+  std::stringstream stream;
+  stream << std::setfill('0') << std::setw(sizeof(T)*2) << std::hex << (unsigned)i;
+  return stream.str();
+  }
 
 /**
  * json_encode: encode string for JSON transport (see http://www.json.org/)
@@ -215,7 +227,50 @@ std::string json_encode(const src_string text)
         break;
       }
     }
-	return buf;
+  return buf;
+  }
+
+/**
+ * display_encode: encode string displaying unprintablel characters
+ * Emulates (linux) "cat -t" semantics
+ */
+template <class src_string>
+std::string display_encode(const src_string text)
+  {
+  std::string buf;
+  buf.reserve(text.size() + (text.size() >> 3));
+  for (int i = 0; i < text.size(); i++)
+    {
+    char ch = text[i];
+    if (!isascii(ch))
+      {
+      buf += "M-";
+      ch = toascii(ch);
+      }
+    if (ch == '\177')
+      {
+      buf += "^?";
+      continue;
+      }
+    if (ch == '\t')
+      {
+      buf += "^I";
+      continue;
+      }
+    if (ch == '\n')
+      {
+      // deviation from "cat -t"
+      buf += "^J";
+      continue;
+      }
+    if (!isprint(ch))
+      {
+      ch = ch ^ 0x40;
+      buf += "^";
+      }
+    buf += ch;
+    }
+  return buf;
   }
 
 

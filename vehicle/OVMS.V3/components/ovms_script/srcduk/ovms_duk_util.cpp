@@ -78,6 +78,29 @@ static duk_ret_t DukOvmsPrint(duk_context *ctx)
   return 0;
   }
 
+  ////////////////////////////////////////////////////////////////////////////////
+  // DukOvmsWrite
+
+static duk_ret_t DukOvmsWrite(duk_context *ctx)
+  {
+  OvmsWriter* duktapewriter = MyDuktape.GetDuktapeWriter();
+
+  if (!duktapewriter) return 0;
+
+  size_t size;
+  const void *data;
+
+  if (duk_is_buffer_data(ctx, 0))
+   data = duk_get_buffer_data(ctx, 0, &size);
+  else
+   data = duk_to_lstring(ctx, 0, &size);
+
+  if (data)
+   duktapewriter->write(data, size);
+
+  return 0;
+  }
+
 ////////////////////////////////////////////////////////////////////////////////
 // DukOvmsAssert
 
@@ -103,5 +126,6 @@ DuktapeUtilInit::DuktapeUtilInit()
   {
   ESP_LOGI(TAG, "Installing DUKTAPE Utilities (1710)");
   MyDuktape.RegisterDuktapeFunction(DukOvmsPrint, 1, "print");
+  MyDuktape.RegisterDuktapeFunction(DukOvmsWrite, 1, "write");
   MyDuktape.RegisterDuktapeFunction(DukOvmsAssert, 2, "assert");
   }

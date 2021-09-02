@@ -29,11 +29,9 @@
 ; THE SOFTWARE.
 */
 
-#include "ovms_log.h"
 static const char *TAG = "v-mgev";
 
 #include "vehicle_mgev.h"
-#include "mg_obd_pids.h"
 
 void OvmsVehicleMgEv::IncomingFrameCan1(CAN_frame_t* p_frame)
 {
@@ -90,127 +88,101 @@ void OvmsVehicleMgEv::IncomingPollFrame(CAN_frame_t* frame)
     }
 
     uint8_t frameType = frame->data.u8[0] >> 4;
-    uint8_t frameLength = frame->data.u8[0] & 0x0f;
+    uint16_t frameLength = 0;
     uint8_t* data = &frame->data.u8[1];
-    uint8_t dataLength = frameLength;
 
-    if (frameType == ISOTP_FT_SINGLE)
+    switch (frameType)
     {
-        if ((data[0] & 0x40) == 0)
+        case ISOTP_FT_SINGLE:
         {
-            // Unsuccessful response, ignore it
-            return;
+            frameLength = frame->data.u8[0] & 0x0f;
+            break;
         }
-        if ((data[0] - 0x40) == VEHICLE_POLL_TYPE_TESTERPRESENT)
+        case ISOTP_FT_FIRST:
         {
-            // Tester present response, can do something else now
-            if (frame->MsgID == (bcmId | rxFlag))
-            {
-                // BCM has replied to tester present, send queries to it
-                ESP_LOGV(TAG, "BCM has responed to Tester Present, safe to query Lock/Door State");
-                // SendAlarmSensitive(frame->origin);
-            }
-            else if (frame->MsgID == (gwmId | rxFlag))
-            {
-                // GWM has responsed to Tester present
-
-                //ESP_LOGV(TAG, "Got response from gateway, wake up complete");
-
-
-                // m_gwmState = Tester;
-                // // If we are currently unlocked, then send to BCM
-                // if (StandardMetrics.ms_v_env_locked->AsBool() == false &&
-                //     monotonictime - StandardMetrics.ms_v_env_locked->LastModified() <= 2)
-                // {
-                //     // FIXME: Disabled until we are happy that the alarm won't go off
-                //     //SendTesterPresentTo(frame->origin, bcmId);
-                // }
-            }
-            return;
+            frameLength = (frame->data.u8[0] & 0x0f) << 8 | frame->data.u8[1];
+            data = &frame->data.u8[2];
+            break;         
         }
     }
-    if (frameType == ISOTP_FT_SINGLE || frameType == ISOTP_FT_FIRST)
+    uint8_t serviceId = data[0] == 0x7f ? 0x7f : data[0] & 0xbfu; //If negative response keep as 7f, otherwise mask out reply flag
+    uint16_t responsePid = data[1] << 8 | data[2];    
+
+    // if (frame->MsgID - rxFlag >= 0x700u && frame->MsgID <= 0x7ffu)
+    // {
+    //     ESP_LOGI(TAG, "Incoming CAN frame from ECU %03x: %02x %02x %02x %02x %02x %02x %02x %02x",
+    //         frame->MsgID, 
+    //         frame->data.u8[0], frame->data.u8[1], frame->data.u8[2], frame->data.u8[3], 
+    //         frame->data.u8[4], frame->data.u8[5], frame->data.u8[6], frame->data.u8[7]
+    //     );  
+    // }  
+    switch (frame->MsgID - rxFlag)
     {
-        if (frameType == ISOTP_FT_FIRST)
+        case gwmId:
         {
-            dataLength = (dataLength << 8) | data[0];
-            ++data;
-        }
-
-        if (!POLL_TYPE_HAS_16BIT_PID(data[0] - 0x40))
-        {
-            // Only support 16-bit PIDs as in SendAlarmSensitive
-            return;
-        }
-
-        uint16_t responsePid = data[1] << 8 | data[2];
-        data = &data[3];
-        dataLength -= 3;
-        if (frameType == ISOTP_FT_SINGLE && frame->MsgID == (bcmId | rxFlag))
-        {
-            IncomingBcmPoll(responsePid, data, dataLength);
-        }
-
-        if (responsePid == softwarePid)
-        {
-            std::vector<char> version(dataLength + 1, '0');
-            version.back() = '\0';
-            std::copy(
-                data,
-                &data[frameType == ISOTP_FT_SINGLE ? dataLength : 3],
-                version.begin()
-            );
-            if (frameType == ISOTP_FT_FIRST)
+            // ESP_LOGI(TAG, "Got a GWM response: %02x %02x %02x %02x %02x %02x %02x %02x",
+            //     frame->data.u8[0], frame->data.u8[1], frame->data.u8[2], frame->data.u8[3], 
+            //     frame->data.u8[4], frame->data.u8[5], frame->data.u8[6], frame->data.u8[7]
+            // );            
+            switch (static_cast<GWMTasks>(m_gwm_task->AsInt()))
             {
-                CAN_frame_t flowControl = {
-                    frame->origin,
-                    nullptr,
-                    { .B = { 8, 0, CAN_no_RTR, CAN_frame_std, 0 } },
-                    frame->MsgID - rxFlag,
-                    { .u8 = { 0x30, 0, 25, 0, 0, 0, 0, 0 } }
-                };
-                frame->origin->Write(&flowControl);
-            }
-            m_versions.push_back(std::make_pair(
-                frame->MsgID - rxFlag, std::move(version)
-            ));
+                case GWMTasks::SoftwareVersion:
+                {
+                    IncomingSoftwareVersionFrame(frame, frameType, frameLength, responsePid, data);
+                    break;
+                }
+                case GWMTasks::Authentication:
+                {
+                    IncomingGWMAuthFrame(frame, serviceId, data);
+                    break;                      
+                }
+                default: 
+                {
+                    IncomingGWMFrame(frame, frameType, frameLength, serviceId, responsePid, data);
+                    break;
+                }
+            }            
+            break;
+        }
+        case bcmId:
+        {
+            // ESP_LOGI(TAG, "Got a BCM response: %02x %02x %02x %02x %02x %02x %02x %02x",
+            //     frame->data.u8[0], frame->data.u8[1], frame->data.u8[2], frame->data.u8[3], 
+            //     frame->data.u8[4], frame->data.u8[5], frame->data.u8[6], frame->data.u8[7]
+            // );              
+            switch (static_cast<BCMTasks>(m_bcm_task->AsInt()))
+            {
+                case BCMTasks::SoftwareVersion:
+                {
+                    IncomingSoftwareVersionFrame(frame, frameType, frameLength, responsePid, data);
+                    break;
+                }
+                case BCMTasks::Authentication:
+                {
+                    IncomingBCMAuthFrame(frame, serviceId, data);
+                    break;                      
+                }
+                case BCMTasks::DRL:
+                {
+                    IncomingBCMDRLFrame(frame, frameType, serviceId, responsePid, data);
+                    break;
+                }
+                default: 
+                {
+                    IncomingBCMFrame(frame, frameType, frameLength, serviceId, responsePid, data);
+                    break;
+                }
+            }     
+            break;       
+        }
+        default:
+        {
+            if (frame->MsgID >= 0x700u && frame->MsgID <= 0x7ffu && m_GettingSoftwareVersions)
+            {
+                IncomingSoftwareVersionFrame(frame, frameType, frameLength, responsePid, data);
+            }              
         }
     }
-    // Handle multi-line version responses
-    else if (m_poll_plist == nullptr && frameType == ISOTP_FT_CONSECUTIVE)
-    {
-        auto start = ((dataLength - 1) * 7) + 3;
-        for (auto& version : m_versions)
-        {
-            if (version.first == frame->MsgID - rxFlag)
-            {
-                auto end = version.second.size() - 1;
-                std::copy(
-                    data,
-                    &data[end - start > 7 ? 7 : (end - start)],
-                    version.second.begin() + start
-                );
-            }
-        }
-    }
-}
-
-bool OvmsVehicleMgEv::SendPollMessage(
-        canbus* bus, uint16_t id, uint8_t type, uint16_t pid)
-{
-    CAN_frame_t sendFrame = {
-        bus,
-        nullptr,  // send callback (ignore)
-        { .B = { 8, 0, CAN_no_RTR, CAN_frame_std, 0 } },
-        id,
-        // Only support for 16-bit PIDs because that's all we use
-        { .u8 = {
-            (ISOTP_FT_SINGLE << 4) + 3, static_cast<uint8_t>(type),
-            static_cast<uint8_t>(pid >> 8),
-            static_cast<uint8_t>(pid & 0xff), 0, 0, 0, 0
-        } }
-    };
-    return bus->Write(&sendFrame) != ESP_FAIL;
 }
 
 void OvmsVehicleMgEv::IncomingPollReply(
@@ -250,6 +222,8 @@ void OvmsVehicleMgEv::IncomingPollReply(
         case (evccId | rxFlag):
             IncomingEvccPoll(pid, data, length);
             break;
-        // BCM poll type handled in IncomingPollFrame
+        case (bcmId | rxFlag):
+            IncomingBcmPoll(pid, data, length);
+            break;            
     }
 }

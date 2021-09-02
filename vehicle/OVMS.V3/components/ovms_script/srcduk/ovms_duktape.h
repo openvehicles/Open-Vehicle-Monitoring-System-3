@@ -63,6 +63,18 @@ class DukContext
     void Push(const std::string &val)     { duk_push_lstring(m_ctx, val.data(), val.size()); }
     void Push(const extram::string &val)  { duk_push_lstring(m_ctx, val.data(), val.size()); }
 
+    // Push string as Uint8Array:
+    void PushBinary(const std::string &val)
+      {
+      void* p = duk_push_fixed_buffer(m_ctx, val.size());
+      if (p) memcpy(p, val.data(), val.size());
+      }
+    void PushBinary(const extram::string &val)
+      {
+      void* p = duk_push_fixed_buffer(m_ctx, val.size());
+      if (p) memcpy(p, val.data(), val.size());
+      }
+
     duk_idx_t PushArray()                 { return duk_push_array(m_ctx); }
     duk_idx_t PushObject()                { return duk_push_object(m_ctx); }
     duk_bool_t PutProp(duk_idx_t obj_idx, duk_uarridx_t arr_idx)

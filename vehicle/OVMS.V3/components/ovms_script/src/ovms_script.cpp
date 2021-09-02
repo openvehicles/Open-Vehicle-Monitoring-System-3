@@ -48,6 +48,8 @@ static const char *TAG = "script";
 #include "buffered_shell.h"
 #include "ovms_netmanager.h"
 #include "ovms_tls.h"
+#include "ovms_boot.h"
+#include "ovms_peripherals.h"
 
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 #include "ovms_duktape.h"

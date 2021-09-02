@@ -64,47 +64,51 @@ void metrics_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
   bool show_staleness = false;
   bool show_set = false;
   bool only_persist = false;
+  bool display_strings = false;
+  const char* show_only = NULL;
   int i;
   for (i=0;i<argc;i++)
     {
     const char *cp = argv[i];
     if (*cp != '-')
-      break;
+      {
+      if (show_only != NULL)
+        {
+        cmd->PutUsage(writer);
+        return;
+        }
+      show_only = cp;
+      continue;
+      }
     for (++cp; *cp != '\0'; ++cp)
       {
       switch (*cp)
         {
-        case 's':
-          show_staleness = true;
-          break;
-        case 'S':
+        case 'c':
           show_set = true;
           break;
         case 'p':
           only_persist = true;
           break;
+        case 's':
+          show_staleness = true;
+          break;
+        case 't':
+          display_strings = true;
+          break;
         default:
-          writer->puts("Invalid flag");
+          cmd->PutUsage(writer);
           return;
         }
       }
     }
-  int firstmetric = i;
-  bool show_only = (firstmetric < argc);
   for (OvmsMetric* m=MyMetrics.m_first; m != NULL; m=m->m_next)
     {
     if (only_persist && !m->m_persist)
       continue;
     const char *k = m->m_name;
-    if (show_only)
-      {
-      bool match = false;
-      for (i=firstmetric;i<argc;i++)
-        if (strstr(k,argv[i]))
-          match = true;
-      if (!match)
-        continue;
-      }
+    if (show_only != NULL && strstr(k, show_only) == NULL)
+      continue;
     found = true;
     if (show_set)
       {
@@ -124,9 +128,17 @@ void metrics_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
         writer->printf("[%02d%c] ", age, (m->IsStale() ? 'S' : '-' ));
       }
     if (v.empty())
+      {
       writer->printf("%s\n",k);
+      continue;
+      }
+    // Apply (linux) "cat -t" semantics to strings
+    const char *s;
+    if (!display_strings || !m->IsString())
+      s = v.c_str();
     else
-      writer->printf("%-40.40s %s\n", k, v.c_str());
+      s = display_encode(v).c_str();
+    writer->printf("%-40.40s %s\n", k, s);
     }
   if (show_only && !found)
     writer->puts("Unrecognised metric name");
@@ -134,8 +146,15 @@ void metrics_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
 
 void metrics_persist(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  if (argc > 0 && strcmp(argv[0], "-r") == 0)
+  if (argc > 0)
+    {
+    if (strcmp(argv[0], "-r") != 0)
+      {
+      cmd->PutUsage(writer);
+      return;
+      }
     pmetrics.magic = 0;
+    }
   if (pmetrics.magic != PERSISTENT_METRICS_MAGIC)
     writer->puts("Persistent metrics will be reset on the next boot");
   writer->printf("version %d, ", pmetrics.version);
@@ -398,8 +417,15 @@ OvmsMetrics::OvmsMetrics()
 
   // Register our commands
   OvmsCommand* cmd_metric = MyCommandApp.RegisterCommand("metrics","METRICS framework");
-  cmd_metric->RegisterCommand("list","Show all metrics", metrics_list, "[<metric>] [-ps]", 0, 2);
-  cmd_metric->RegisterCommand("persist","Show persistent metrics info", metrics_persist, "[-r]", 0, 1);
+  cmd_metric->RegisterCommand("list","Show all metrics", metrics_list,
+      "[-cpst] [<metric>]\n"
+      "Display a metric, show all by default\n"
+      "-c = display persistent metrics set commands\n"
+      "-p = display only persistent metrics\n"
+      "-s = show metric staleness\n"
+      "-t = display non-printing characters and tabs in string metrics", 0, 2);
+  cmd_metric->RegisterCommand("persist","Show persistent metrics info", metrics_persist, "[-r]\n"
+      "-r = reset persistent metrics", 0, 1);
   cmd_metric->RegisterCommand("set","Set the value of a metric",metrics_set, "<metric> <value>", 2, 2);
   OvmsCommand* cmd_metrictrace = cmd_metric->RegisterCommand("trace","METRIC trace framework");
   cmd_metrictrace->RegisterCommand("on","Turn metric tracing ON",metrics_trace);

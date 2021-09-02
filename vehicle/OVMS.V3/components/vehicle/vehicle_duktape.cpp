@@ -377,4 +377,138 @@ duk_ret_t OvmsVehicleFactory::DukOvmsVehicleStopCooldown(duk_context *ctx)
   return 1;
   }
 
+
+/**
+ * DukOvmsVehicleObdRequest: OBD/UDS PollSingleRequest wrapper (synchronous)
+ * 
+ * Javascript API:
+ *    var obdResult = OvmsVehicle.ObdRequest({
+ *      txid: <int>,
+ *      rxid: <int>,
+ *      request: <string>|<Uint8Array>,   // hex encoded string or binary byte array
+ *      [bus: <string>,]                  // default: "can1"
+ *      [timeout: <int>,]                 // in ms, default: 3000
+ *      [protocol: <int>,]                // default: 0 = ISOTP_STD, see vehicle.h
+ *    });
+ * 
+ *    obdResult = {
+ *      error: <int>,                     // see PollSingleRequest, 0 = success
+ *      errordesc: <string>,              // error description / emtpy on success
+ *      response: <Uint8Array>,           // only if error = 0: binary response byte array
+ *      response_hex: <string>,           // only if error = 0: hex encoded response string
+ *    }
+ */
+duk_ret_t OvmsVehicleFactory::DukOvmsVehicleObdRequest(duk_context *ctx)
+  {
+  DukContext dc(ctx);
+
+  int error = 0;
+  std::string errordesc;
+  std::string bus = "can1";
+  uint32_t txid = 0, rxid = 0;
+  std::string request, response;
+  int timeout = 3000;
+  uint8_t protocol = ISOTP_STD;
+
+  if (!MyVehicleFactory.m_currentvehicle)
+    {
+    error = -1000;
+    errordesc = "No vehicle module selected";
+    }
+  else if (!duk_is_object(ctx, 0))
+    {
+    error = -1001;
+    errordesc = "No request object given";
+    }
+  else
+    {
+    // Read arguments:
+    if (duk_get_prop_string(ctx, 0, "bus"))
+      bus = duk_to_string(ctx, -1);
+    duk_pop(ctx);
+    if (duk_get_prop_string(ctx, 0, "timeout"))
+      timeout = duk_to_int(ctx, -1);
+    duk_pop(ctx);
+    if (duk_get_prop_string(ctx, 0, "protocol"))
+      protocol = duk_to_int(ctx, -1);
+    duk_pop(ctx);
+    if (duk_get_prop_string(ctx, 0, "txid"))
+      txid = duk_to_int(ctx, -1);
+    else
+      error = -1002;
+    duk_pop(ctx);
+    if (duk_get_prop_string(ctx, 0, "rxid"))
+      rxid = duk_to_int(ctx, -1);
+    else
+      error = -1002;
+    duk_pop(ctx);
+    if (duk_get_prop_string(ctx, 0, "request"))
+      {
+      if (duk_is_buffer_data(ctx, -1))
+        {
+        size_t size;
+        void *data = duk_get_buffer_data(ctx, -1, &size);
+        request.resize(size, '\0');
+        memcpy(&request[0], data, size);
+        }
+      else
+        {
+        request = hexdecode(duk_to_string(ctx, -1));
+        }
+      }
+    duk_pop(ctx);
+
+    // Validate arguments:
+    canbus* device = (canbus*)MyPcpApp.FindDeviceByName(bus.c_str());
+    if (error != 0)
+      {
+      errordesc = "Missing mandatory argument";
+      }
+    else if (device == NULL || (txid <= 0 || (txid != 0x7df && rxid <= 0) ||
+        request.size() == 0) || timeout <= 0)
+      {
+      error = -1003;
+      errordesc = "Invalid argument";
+      }
+
+    // Execute request:
+    if (error == 0)
+      {
+      error = MyVehicleFactory.m_currentvehicle->PollSingleRequest(
+        device, txid, rxid, request, response, timeout, protocol);
+
+      if (error == POLLSINGLE_TXFAILURE)
+        errordesc = "Transmission failure (CAN bus error)";
+      else if (error < 0)
+        errordesc = "Timeout waiting for poller/response";
+      else if (error)
+        {
+        errordesc = "Request failed with response error code " + int_to_hex((uint8_t)error);
+        const char* errname = MyVehicleFactory.m_currentvehicle->PollResultCodeName(error);
+        if (errname)
+          {
+          errordesc += ' ';
+          errordesc += errname;
+          }
+        }
+      }
+    }
+
+  // Push result object:
+  duk_idx_t obj_idx = dc.PushObject();
+  dc.Push(error);
+  dc.PutProp(obj_idx, "error");
+  dc.Push(errordesc);
+  dc.PutProp(obj_idx, "errordesc");
+  if (!error)
+    {
+    dc.PushBinary(response);
+    dc.PutProp(obj_idx, "response");
+    dc.Push(hexencode(response));
+    dc.PutProp(obj_idx, "response_hex");
+    }
+
+  return 1;
+  }
+
 #endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE

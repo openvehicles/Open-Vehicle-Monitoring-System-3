@@ -138,6 +138,7 @@ v.b.power                                0kW                      Main battery m
 v.b.range.est                            99km                     Estimated range
 v.b.range.full                           50.8km                   Ideal range at 100% SOC & current conditions
 v.b.range.ideal                          48km                     Ideal range
+v.b.range.speed                          21.6km/h                 Momentary ideal range gain/loss (charge/discharge) speed
 v.b.soc                                  96.3%                    State of charge
 v.b.soh                                  85%                      State of health
 v.b.temp                                 13°C                     Main battery momentary temperature

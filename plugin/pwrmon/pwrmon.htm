@@ -1,6 +1,6 @@
 <!--
   Web UI page plugin: Trip Power/Energy History Chart
-    Version 1.0  Michael Balzer <dexter@dexters-web.de>
+    Version 1.2  Michael Balzer <dexter@dexters-web.de>
   
   Dependencies:
     - OVMS firmware >= 3.2.008-250
@@ -128,13 +128,13 @@
     pwrchart = chart;
     pwrchart.showLoading();
     // Load data:
-    loadjs('pwrmon.dump()').done((data) => {
+    loadjs({ command: "pwrmon.dump('CBOR')", output: "binary" }).done((data) => {
       console.log("loadChart: read " + data.length + " bytes");
       if (data.startsWith("ERROR")) {
         console.error(data);
       } else {
         try {
-          history = JSON.parse(data);
+          history = CBOR.decode(data);
           console.log("loadChart: got " + history["time"].length + " samples");
           loadHistory();
         } catch (error) {

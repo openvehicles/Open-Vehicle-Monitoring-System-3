@@ -774,6 +774,7 @@ static struct
     { "plugin", true },
     { "tls", true },
     { "trustedca", true },
+    { "usr", true },
     { NULL, false }
   };
 

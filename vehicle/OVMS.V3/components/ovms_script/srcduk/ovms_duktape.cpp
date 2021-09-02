@@ -986,8 +986,19 @@ void OvmsDuktape::EventScript(std::string event, void* data)
   dmsg.body.dt_event.data = NULL; // data unused, may also be invalid in async script execution
   if (!DuktapeDispatch(&dmsg, 0))
     {
+    ESP_LOGE(TAG, "EventScript: event '%s' lost (queue overflow)", event.c_str());
     free((void*)dmsg.body.dt_event.name);
     }
+  else
+   {
+   // event processing delayed?
+   int qwait = uxQueueMessagesWaiting(m_duktaskqueue);
+   if (qwait > 10)
+     {
+     ESP_LOGW(TAG, "EventScript: event '%s' delayed, queued at position %d/%d", event.c_str(),
+       qwait, CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE_QUEUE_SIZE);
+     }
+   }
 
   if (event == "ticker.60")
     {
@@ -1375,6 +1386,7 @@ void OvmsDuktape::DukTapeTask()
           if (m_dukctx != NULL)
             {
             // Deliver the event to DUKTAPE
+            uint32_t ts = esp_log_timestamp();
             duk_require_stack(m_dukctx, 5);
             duk_get_global_string(m_dukctx, "PubSub");
             duk_get_prop_string(m_dukctx, -1, "publish");
@@ -1386,6 +1398,9 @@ void OvmsDuktape::DukTapeTask()
               DukOvmsErrorHandler(m_dukctx, -1);
               }
             duk_pop_2(m_dukctx);
+            ts = esp_log_timestamp() - ts;
+            if (ts > 1000)
+              ESP_LOGW(TAG, "Duktape: event handling for '%s' took %u ms", msg.body.dt_event.name, ts);
             }
           }
           free((void*)msg.body.dt_event.name);

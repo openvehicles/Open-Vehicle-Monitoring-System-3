@@ -1,0 +1,669 @@
+<!--
+  Web UI page plugin:
+    VW e-Up / Seat Mii / Skoda Citigo ECU Toolkit
+    Author:     Michael Balzer <dexter@dexters-web.de>
+    Version:    0.5.1
+  
+  Dependencies:
+    - Module plugin: XVU ECU Lib (lib/xvu-ecu.js) Version >= 0.5
+  
+  Installation:
+    - Type:    Page
+    - Page:    /xvu/ecutoolkit
+    - Label:   ECU Toolkit
+    - Menu:    Vehicle
+    - Auth:    Cookie
+-->
+
+<style>
+.sidebox {
+  padding: 5px;
+  margin-bottom: 5px;
+  background-color: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+}
+.sidebox-heading {
+  border-bottom: 1px solid #ddd;
+  margin: -5px -5px 5px;
+  padding: 5px 5px;
+  background-color: #eee;
+  cursor: pointer;
+}
+.caret.collapsed {
+  transform: rotate(270deg);
+}
+.sidebox hr {
+  margin-top: 8px;
+  margin-bottom: 8px;
+  border-top: 1px solid #ddd;
+}
+.mainbox {
+  padding: 5px;
+  margin-bottom: 10px;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+}
+.mainbox-heading {
+  border-bottom: 1px solid #ddd;
+  margin: -5px -5px 5px;
+  padding: 5px 5px;
+  background-color: #eee;
+}
+.night .sidebox {
+  background-color: #252525;
+}
+.night .sidebox-heading,
+.night .mainbox-heading {
+  background-color: #353535;
+}
+.action-menu {
+  padding-top: 10px;
+}
+.config-menu .checkbox {
+  display: inline-block;
+  margin-right: 20px;
+}
+#input-ecu {
+  height: 150px;
+  resize: vertical;
+}
+@media (min-width: 768px) {
+  #input-ecu {
+    height: 40vh;
+  }
+}
+@media (max-width: 767px) {
+  .file-menu, .config-menu {
+    display: inline-block;
+  }
+  .file-menu {
+    margin-right: 20px;
+  }
+}
+#input-ecu option {
+  padding: 8px 6px;
+}
+#log {
+  font-size: 10px;
+  color: darkgoldenrod;
+  max-height: 150px;
+  overflow: auto;
+}
+#tool-tabs .btn.close {
+  color: indianred;
+  padding-right: 0;
+  margin-left: 10px;
+  float: none;
+  opacity: .8;
+  font-weight: normal;
+}
+#tool-tabs .btn.close.focus,
+#tool-tabs .btn.close:focus,
+#tool-tabs .btn.close:hover {
+  color: red;
+  text-decoration: none;
+}
+#tool-tabs > li > a {
+  padding: 5px 15px;
+}
+.coding .input-coding {
+  font-size: 15px;
+  white-space: pre-line;
+  height: 102px;
+  resize: vertical;
+}
+.coding .input-seccode {
+  display: inline;
+  width: 8em;
+}
+.coding .input-bits label {
+  display: block;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #ccc;
+}
+</style>
+
+<div class="panel panel-primary receiver" id="ecutoolkit">
+  <div class="panel-heading">ECU Toolkit</div>
+  <div class="panel-body">
+    <div class="row">
+      <div class="col-sm-4 col-lg-3">
+        <div class="sidebox">
+          <div class="sidebox-heading">
+            <span class="caret"></span> Menu
+          </div>
+          <div class="sidebox-body">
+            <div>
+              <select class="form-control font-monospace" size="10" id="input-ecu" />
+            </div>
+            <div class="action-menu">
+              <button type="button" class="btn btn-default action-filtereculist" title="Filter installed ECUs"><b>⛉</b></button>
+              <button type="button" class="btn btn-default action-addtool" data-tool="scan">✚ Scan</button>
+              <button type="button" class="btn btn-default action-addtool" data-tool="coding">✚ Coding</button>
+            </div>
+            <hr>
+            <div class="file-menu">
+              <button type="button" class="btn btn-default action-load" accesskey="O">L<u>o</u>ad…</button>
+              <button type="button" class="btn btn-default action-save" accesskey="A">S<u>a</u>ve…</button>
+            </div>
+            <div class="config-menu">
+              <div class="checkbox"><label><input type="checkbox" data-cfg="debug"> Debug log</label></div>
+              <div class="checkbox"><label><input type="checkbox" data-cfg="readonly"> Read only</label></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-sm-8 col-lg-9">
+        <div class="mainbox">
+          <div class="mainbox-heading">Tools</div>
+          <ul class="nav nav-tabs" id="tool-tabs" />
+          <div class="tab-content" id="tool-panes" />
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="panel-footer">
+    <samp class="monitor" id="log" />
+  </div>
+</div>
+
+<div class="filedialog" id="fileselect"/>
+
+<template id="template-scan">
+  <div class="ecutool scan">
+    <div class="scan-result font-monospace">
+      <p>Scanning, please wait…</p>
+    </div>
+    <div class="action-menu">
+      <button type="button" class="btn btn-default action-scan">Rescan</button>
+    </div>
+  </div>
+</template>
+
+<template id="template-coding">
+  <div class="ecutool coding">
+    
+    <div class="form-group">
+      <label>Full coding:</label>
+      <textarea class="form-control fullwidth font-monospace input-coding" rows="5" autocapitalize="none" autocorrect="off" autocomplete="off" spellcheck="false"></textarea>
+    </div>
+    <div class="form-group">
+      <div class="pull-right">
+        <button type="button" class="btn btn-default action-coding-read">Read</button>
+        <button type="button" class="btn btn-warning action-coding-write">Write</button>
+      </div>
+      <input type="number" class="form-control font-monospace input-seccode" size="12" placeholder="Sec.Code" min="0" max="99999">
+    </div>
+
+    <div class="form-group">
+      <label>Byte:</label>
+      <div class="form-control slider">
+        <div class="slider-control form-inline">
+          <input class="form-control slider-value input-bytenr" type="number" value="0">
+          <input class="btn btn-default slider-down" type="button" value="➖">
+          <input class="btn btn-default slider-up" type="button" value="➕">
+        </div>
+        <input class="slider-input" type="range">
+      </div>
+    </div>
+    <div class="input-bits">
+      <div class="checkbox"><label><input type="checkbox" class="input-bit" value="1"><span>Bit 0</span></label></div>
+      <div class="checkbox"><label><input type="checkbox" class="input-bit" value="2"><span>Bit 1</span></label></div>
+      <div class="checkbox"><label><input type="checkbox" class="input-bit" value="4"><span>Bit 2</span></label></div>
+      <div class="checkbox"><label><input type="checkbox" class="input-bit" value="8"><span>Bit 3</span></label></div>
+      <div class="checkbox"><label><input type="checkbox" class="input-bit" value="16"><span>Bit 4</span></label></div>
+      <div class="checkbox"><label><input type="checkbox" class="input-bit" value="32"><span>Bit 5</span></label></div>
+      <div class="checkbox"><label><input type="checkbox" class="input-bit" value="64"><span>Bit 6</span></label></div>
+      <div class="checkbox"><label><input type="checkbox" class="input-bit" value="128"><span>Bit 7</span></label></div>
+    </div>
+    
+    <div class="help-block">
+      <p>Changing the coding or bits has has no effect on the vehicle until you click "Write".</p>
+      <p>You can copy &amp; paste the coding, but be aware it may be vehicle specific.</p>
+      <p>Leave the security code field empty unless you actually need one to change a coding.
+        Some ECUs block further attempts for 10 minutes or need a power cycle on submitting
+        a wrong security code.</p>
+    </div>
+
+  </div>
+</template>
+
+<script>
+(function(){
+
+  /*******************************************************************
+   * Tools Management
+   */
+
+  var tool_data = { cnt: 0 };
+  var $ecu_select = $('#input-ecu');
+  var $tools = $('.mainbox');
+
+  // Create tool:
+  function createTool(td) {
+    console.log("createTool:", td);
+    var template = $("#template-"+td.tooltype).html();
+    if (!template) return undefined;
+    var $tool = $(template);
+    var $tab = $('<li><a data-toggle="tab" href="#'+td.toolid+'" aria-expanded="false">'
+      + '<span class="title">' + encode_html(td.title) + '</span><span class="btn close">✖</span></a></li>');
+    var $pane = $('<div id="'+td.toolid+'" class="tab-pane section-vehicle" />');
+    $tool.appendTo($pane);
+    $pane.appendTo('#tool-panes');
+    $tab.appendTo('#tool-tabs').children().tab("show");
+    $tool.trigger('init');
+    return $tool;
+  }
+
+  // Remove tool:
+  $tools.on('click', '#tool-tabs .btn.close', function (ev) {
+    var tabpane = $(this).parent().attr("href");
+    $(this).parent().parent().remove();
+    if ($(tabpane).is(":visible")) $('#tool-tabs a').eq(0).tab("show");
+    $(tabpane).remove();
+    ev.preventDefault();
+  });
+
+  // Utils:
+  function getTabPane(el) {
+    return $(el).closest('.tab-pane');
+  }
+  function getTabTool(el) {
+    return $(el).closest('.ecutool');
+  }
+  function getToolData(el) {
+    return tool_data[$(el).closest('.tab-pane').attr('id')];
+  }
+  function setTabTitle(el, title) {
+    var tabid = getTabPane(el).attr("id");
+    $('#tool-tabs a[href="#' + tabid + '"] .title').text(title);
+  }
+
+  // Sidebox toggling:
+  $('.sidebox-heading').on('click', function (ev) {
+    $('.sidebox-heading .caret').toggleClass('collapsed');
+    $('.sidebox-body').toggle();
+  });
+
+  // Tool creation:
+  $('.action-addtool').on('click', function (ev) {
+    tool_data.cnt++;
+    var td = {
+      toolid: "tab-" + tool_data.cnt,
+      tooltype: $(this).data("tool"),
+      title: $(this).text().substr(2)
+    };
+    tool_data[td.toolid] = td;
+    createTool(td);
+  });
+
+  // Config options:
+  function setConfig(json) {
+    try {
+      var cfg = JSON.parse(json);
+      $('.config-menu input[data-cfg="debug"]').prop('checked', cfg.debug);
+      $('.config-menu input[data-cfg="readonly"]').prop('checked', cfg.readonly);
+    } catch (e) {
+      confirmdialog("Cannot read configuration", e.toString(), ["OK"]);
+    }
+  }
+  $('.config-menu input').on('change', function (ev) {
+    var cfg = $(this).data('cfg'), val = $(this).prop('checked');
+    loadjs('xvu.ecu.$config({'+cfg+':'+val+'})').done(setConfig);
+  });
+  loadjs('xvu.ecu.$config()').done(setConfig);
+
+  // Parse ECU list & populate select:
+  function loadECUList(output) {
+    try {
+      output = stripDebugLines(output);
+      if (output[0] != '{' && output[0] != '[') throw output;
+      $ecu_select.empty();
+      var devices = JSON.parse(output);
+      for (i = 0; i < devices.list.length; i++) {
+        var ecuid = devices.list[i], name = devices[ecuid].name || "unknown";
+        $('<option value="'+ecuid+'">'+ecuid+': '+encode_html(name)+'</option>')
+          .appendTo($ecu_select);
+      }
+      $ecu_select.val(devices.list[0]);
+    } catch (e) {
+      confirmdialog("ECU List Load Error", e.toString(), ["OK"]);
+    }
+  }
+
+  // Load installed ECUs:
+  $('.action-filtereculist').on('click', function (ev) {
+    $('#ecutoolkit').addClass("loading disabled");
+    loadjs('xvu.ecu.$devices({query_installed:true})')
+      .done(loadECUList)
+      .always(() => $('#ecutoolkit').removeClass("loading disabled"));
+  });
+
+  // Init: load known ECUs:
+  $('#ecutoolkit').addClass("loading disabled");
+  loadjs('xvu.ecu.$devices()')
+    .done(loadECUList)
+    .always(() => $('#ecutoolkit').removeClass("loading disabled"));
+
+  // Split command result into debug & regular output:
+  function stripDebugLines(text) {
+    var lines = text.split("\n"), line;
+    var debug = [], res = [];
+    while (line = lines.shift()) {
+      if (line[0] == '#') debug.push(line.substr(2));
+      else res.push(line);
+    }
+    $('#log').text(debug.join("\n"));
+    return res.join("\n");
+  }
+
+
+  /*******************************************************************
+   * Toolkit State Load & Save
+   */
+
+  // Init file dialog:
+  $('#fileselect').filedialog({
+    path: '/sd/ecutoolkit/',
+    quicknav: ['/sd/ecutoolkit/', '/store/ecutoolkit/', '/sd/', '/store/']
+  });
+
+  // Get state:
+  function getData() {
+    return tool_data;
+  }
+
+  // Set state:
+  function setData(data) {
+    var created = 0;
+    tool_data = data || { cnt: 0 };
+    console.log("Loaded:", tool_data);
+    $('#tool-tabs').empty();
+    $('#tool-panes').empty();
+    var i, td, $tool;
+    for (i = 1; i <= tool_data.cnt; i++) {
+      td = tool_data["tab-"+i];
+      if (td && createTool(td)) created++;
+    }
+    return created;
+  }
+
+  // Save:
+  $('.action-save').on('click', function(){
+    $('#fileselect').filedialog('show', {
+      title: "Save Toolkit State",
+      submit: "Save",
+      onSubmit: function(input) {
+        if (input.file) {
+          var json = JSON.stringify(getData(), null, 1);
+          $.post("/api/file", { "path": input.path, "content": json })
+            .done(function() {
+              confirmdialog('<span class="text-success">State saved</span>',
+                '<p>Toolkit state has been saved as <code>'+input.path+'</code>.</p>', ["OK"], 2);
+            })
+            .fail(function(jqXHR) {
+              confirmdialog('<span class="text-danger">Save failed</span>',
+                '<p>'+jqXHR.responseText+'</p>', ["OK"]);
+            });
+        }
+      },
+    });
+  });
+
+  // Load:
+  $('.action-load').on('click', function(){
+    $('#fileselect').filedialog('show', {
+      title: "Load Toolkit State",
+      submit: "Load",
+      onSubmit: function(input) {
+        if (input.file) {
+          $.get("/api/file", { "path": input.path })
+            .done(function(responseText) {
+              var data = JSON.parse(responseText);
+              if (setData(data) && window.outerWidth < 768)
+                $('.sidebox-heading').trigger('click');
+            })
+            .fail(function(jqXHR) {
+              confirmdialog('<span class="text-danger">Load failed</span>',
+                '<p>'+jqXHR.responseText+'</p>', ["OK"]);
+            });
+        }
+      },
+    });
+  });
+
+
+  /*******************************************************************
+   * Tool: Scan
+   */
+
+  // Initialize scan tool:
+  $tools.on('init', '.ecutool.scan', function (ev) {
+    var $tool = $(this), td = getToolData($tool);
+    console.log("init scan:", td);
+    if (td.ecuid == undefined) {
+      td.ecuid = $ecu_select.val();
+      td.title = "Scan " + td.ecuid;
+      setTabTitle($tool, td.title);
+      td.scanresult = "";
+    }
+    console.log("Init tool: " + td.title);
+    if (td.scanresult == "")
+      $tool.find('.action-scan').trigger('click');
+    else
+      renderResult($tool.find('.scan-result'), td.scanresult);
+  });
+
+  // Perform a scan:
+  $tools.on('click', '.action-scan', function (ev) {
+    var $tool = getTabTool(this), td = getToolData(this);
+    $tool.addClass("loading disabled");
+    loadjs('xvu.ecu.$scan("'+td.ecuid+'")')
+      .done(function (output) {
+        td.scanresult = stripDebugLines(output);
+        renderResult($tool.find('.scan-result'), td.scanresult);
+      })
+      .always(function () {
+        $tool.removeClass("loading disabled");
+      });
+  });
+
+  // Render command result:
+  function renderResult($out, msg) {
+    console.log(msg);
+    if (msg[0] != '{' && msg[0] != '[') {
+      $out.text(msg);
+    } else {
+      try {
+        $out.empty();
+        renderData($out, JSON.parse(msg));
+      } catch (e) {
+        $out.text(e);
+      }
+    }
+  }
+
+  // Render data:
+  function renderData($out, data) {
+    if (Array.isArray(data)) {
+      var i, $list = $('<ol />').appendTo($out);
+      for (i = 0; i < data.length; i++) {
+        var $li = $('<li />');
+        renderData($li, data[i]);
+        $li.appendTo($list);
+      }
+    }
+    else if (typeof data == "object") {
+      var key, $table = $('<table class="table table-striped table-condensed" />');
+      $table.wrap('<div class="table-responsive" />').parent().appendTo($out);
+      for (key in data) {
+        var val = data[key];
+        var $td = $('<td class="col-xs-9 val" />');
+        renderData($td, val);
+        $td.wrap('<tr />').parent().prepend('<th class="col-xs-3">'+key+'</th>').appendTo($table);
+      }
+    }
+    else {
+      $out.text(data);
+    }
+  }
+
+
+  /*******************************************************************
+   * Tool: Coding
+   */
+
+  // Initialize coding tool:
+  $tools.on('init', '.ecutool.coding', function (ev) {
+    var $tool = $(this), td = getToolData($tool);
+    console.log("init coding:", td);
+    if (td.ecuid == undefined) {
+      td.ecuid = $ecu_select.val();
+      td.title = "Coding " + td.ecuid;
+      setTabTitle($tool, td.title);
+      td.coding = { hex: "", bin: [], fmt: "" };
+      td.bytenr = td.maxbytenr = 0;
+      td.seccode = "";
+    }
+    console.log("Init tool: " + td.title);
+    $tool.find('.input-coding').val(td.coding.fmt);
+    $tool.find('.input-seccode').val(td.seccode);
+    $tool.find('.input-bytenr').slider({ "min":0, "max":td.maxbytenr, "value":td.bytenr }).trigger('change');
+    if (td.coding.hex == "")
+      $tool.find('.action-coding-read').trigger('click');
+  });
+
+  // Parse coding string:
+  function parseCoding(str) {
+    var res = {};
+    res.hex = str.replace(/[^0-9a-f]/gi, "");
+    if (res.hex) {
+      res.bin = res.hex.match(/../g).map(h => parseInt(h,16));
+      // Format input to 10 bytes per line for readability & easy counting:
+      res.fmt = res.hex.replace(/(..)/g, "$1 ").replace(/(.{29}) /g, "$1\n");
+    } else {
+      res.bin = [];
+      res.fmt = "";
+    }
+    return res;
+  }
+
+  // Full coding input:
+  $tools.on('change', '.coding .input-coding', function (ev) {
+    var $this = $(this), td = getToolData($this), $tool = getTabTool(this);
+    td.coding = parseCoding($this.val());
+    $this.val(td.coding.fmt);
+    // update bits:
+    td.maxbytenr = Math.max(td.coding.bin.length-1, 0);
+    td.bytenr = Math.min(td.bytenr||0, td.maxbytenr);
+    console.log(td);
+    $tool.find('.input-bytenr').slider({ "min":0, "max":td.maxbytenr, "value":td.bytenr }).trigger('change');
+  });
+
+  // Security code input:
+  $tools.on('change', '.coding .input-seccode', function (ev) {
+    var $this = $(this), td = getToolData($this);
+    td.seccode = (this.value !== "") ? Math.max(this.min, Math.min(this.max, 1*this.value)) : "";
+    $this.val(td.seccode);
+  });
+
+  // Select byte position:
+  $tools.on('input change', '.ecutool.coding .input-bytenr', function (ev) {
+    var $this = $(this), td = getToolData($this), $tool = getTabTool(this);
+    td.bytenr = Math.max(this.min, Math.min(this.max, 1*this.value));
+    var byteval = (td.coding && td.coding.bin[td.bytenr]) || 0;
+    var el, label, labels = bitlabels[td.ecuid] || {};
+    $tool.find('.input-bits label').each(function (i) {
+      el = $(this).children();
+      $(el[0]).prop('checked', (byteval & el[0].value) != 0);
+      label = labels[td.bytenr+"."+i];
+      $(el[1]).html("Bit " + i + (label ? ": " + label : ""));
+    });
+  });
+
+  // Modify bit:
+  $tools.on('change', '.ecutool.coding .input-bit', function (ev) {
+    var $this = $(this), td = getToolData($this), $tool = getTabTool(this);
+    if (td.coding.bin[td.bytenr] == undefined) return;
+    var bval = 0;
+    $tool.find('.input-bit:checked').each((i,el) => bval += parseInt(el.value));
+    td.coding.bin[td.bytenr] = bval;
+    var hex = td.coding.bin.map((b) => ("0"+b.toString(16)).substr(-2)).join("");
+    td.coding = parseCoding(hex);
+    $tool.find('.input-coding').val(td.coding.fmt);
+  });
+
+  // Button "Read":
+  $tools.on('click', '.action-coding-read', function (ev) {
+    var $tool = getTabTool(this), td = getToolData(this), ecuid = td["ecuid"];
+    $tool.addClass("loading disabled");
+    loadjs('xvu.ecu.$coding("'+ecuid+'")')
+      .done(function (output) {
+        output = stripDebugLines(output);
+        if (output.indexOf("ERROR") >= 0) {
+          confirmdialog("Read Coding Error", output, ["OK"]);
+        } else {
+          $tool.find(".input-coding").val(output).trigger('change');
+          confirmdialog("Success", "Current coding read successfully.", ["OK"], 2);
+        }
+      })
+      .always(function () {
+        $tool.removeClass("loading disabled");
+      });
+  });
+
+  // Button "Write":
+  $tools.on('click', '.action-coding-write', function (ev) {
+    var $tool = getTabTool(this), td = getToolData(this);
+    $tool.addClass("loading disabled");
+    loadjs('xvu.ecu.$coding("'+td.ecuid+'","'+td.coding.hex+'","'+td.seccode+'")')
+      .done(function (output) {
+        output = stripDebugLines(output);
+        if (output.indexOf("ERROR") >= 0) {
+          confirmdialog("Write Coding Error", output, ["OK"]);
+        } else {
+          $tool.find(".input-coding").val(output).trigger('change');
+          confirmdialog("Success", "Current coding written successfully.", ["OK"], 2);
+        }
+      })
+      .always(function () {
+        $tool.removeClass("loading disabled");
+      });
+  });
+
+  // Known bits by ECU ID, byte & bit number:
+  var bitlabels = {
+    "09": {
+      "0.0": "Driver door separate unlock",
+      "0.3": "Doors auto unlock on key unplug",
+      "0.4": "Doors auto lock above 15 kph",
+      "2.0": "Tailgate soft touch button enabled",  
+      "5.0": "Flash indicators on lock/unlock",
+      "5.1": "Sound horn on locking <i>(also needs horn enabled (bit 7))</i>",
+      "5.4": "Sound horn on unlocking <i>(also needs horn enabled (bit 7))</i>",
+      "5.7": "Horn enabled for lock/unlock",
+      "10.2": "Coming home enabled (via hl flasher)",
+      "12.0": "Supplement DRL by parking lights",
+      "13.6": "Supplement coming home by regular FL",
+      "14.3": "Tear wiping rear enabled",
+      "14.4": "Tear wiping front enabled",
+      "14.7": "Wiper auto speed adjust",
+      "23.4": "Inhibit DRL via parking brake",
+      "23.5": "Keep DRL on with parking lights",
+      "23.6": "DRL enabled",
+      "23.7": "DRL l/r off while indicating",
+      "27.0": "Plate lamps are LED",
+    },
+    "17": {
+      "1.1": "Seat belt warning",
+    },
+    "A5": {
+      "14.2": "Lane assist on by default",
+      "14.3": "Lane assist remember on/off state <i>(bit 2 must be off)</i>",
+    },
+  };
+
+})();
+</script>

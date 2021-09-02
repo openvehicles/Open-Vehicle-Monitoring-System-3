@@ -137,6 +137,13 @@ config OVMS_SYS_COMMAND_STACK_SIZE
     help
         The stack size of the OVMS Console and dynamic command tasks.
 
+config OVMS_SYS_COMMAND_PRIORITY
+    int "Task priority for command execution"
+    default 5
+    depends on OVMS
+    help
+        The RTOS priority for the OVMS Console and dynamic command tasks.
+
 config OVMS_LOGFILE_QUEUE_SIZE
     int "Queue size for file logging"
     default 100
@@ -251,7 +258,7 @@ config OVMS_SC_JAVASCRIPT_DUKTAPE_QUEUE_SIZE
 
 config OVMS_SC_JAVASCRIPT_DUKTAPE_PRIORITY
     int "JavaScript (DukTape) task priority"
-    default 3
+    default 5
     depends on OVMS_SC_JAVASCRIPT_DUKTAPE
     help
         Priority for the DukTape task ("OVMS DukTape").

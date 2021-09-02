@@ -164,6 +164,7 @@ class OvmsMetric
     virtual bool IsFirstDefined();
     virtual bool IsPersistent();
     virtual bool IsStale();
+    virtual bool IsString() { return false; };
     virtual bool IsFresh();
     virtual void RefreshPersist();
     virtual void SetStale(bool stale);
@@ -285,6 +286,7 @@ class OvmsMetricString : public OvmsMetric
     bool SetValue(std::string value);
     void operator=(std::string value) { SetValue(value); }
     void Clear();
+    virtual bool IsString() { return true; };
 
   protected:
     OvmsMutex m_mutex;

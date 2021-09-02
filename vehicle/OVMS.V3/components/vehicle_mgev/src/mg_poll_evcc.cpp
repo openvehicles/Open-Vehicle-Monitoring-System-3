@@ -30,8 +30,6 @@
 */
 
 #include "vehicle_mgev.h"
-#include "mg_obd_pids.h"
-#include "metrics_standard.h"
 
 void OvmsVehicleMgEv::IncomingEvccPoll(uint16_t pid, uint8_t* data, uint8_t length)
 {
@@ -50,6 +48,9 @@ void OvmsVehicleMgEv::IncomingEvccPoll(uint16_t pid, uint8_t* data, uint8_t leng
             break;
         case evccVoltagePid:
             StandardMetrics.ms_v_charge_voltage->SetValue(value / 100.0f);
+            StandardMetrics.ms_v_charge_power->SetValue(
+                (value / 100.0f)  * StandardMetrics.ms_v_charge_current->AsFloat() / 1000.0f
+            );            
             break;
     }
 }

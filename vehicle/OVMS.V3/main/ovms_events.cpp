@@ -146,8 +146,15 @@ void event_raise(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
 
   for (int i=0; i<argc; i++)
     {
-    if (argv[i][0]=='-' && argv[i][1]=='d')
+    if (argv[i][0] == '-')
+      {
+      if (argv[i][1] != 'd')
+        {
+        cmd->PutUsage(writer);
+        return;
+        }
       delay_ms = atol(argv[i]+2);
+      }
     else
       event = argv[i];
     }

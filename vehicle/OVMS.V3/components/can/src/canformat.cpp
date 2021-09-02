@@ -100,7 +100,7 @@ std::string canformat::getheader(struct timeval *time)
   return std::string("");
   }
 
-size_t canformat::put(CAN_log_message_t* message, uint8_t *buffer, size_t len, canlogconnection* clc)
+size_t canformat::put(CAN_log_message_t* message, uint8_t *buffer, size_t len, bool* hasmore, canlogconnection* clc)
   {
   return 0;
   }
@@ -113,12 +113,14 @@ size_t canformat::Serve(uint8_t *buffer, size_t len, canlogconnection* clc)
     }
 
   size_t consumed = 0;
-  while(len>0)
+  bool hasmore = true;
+  while(hasmore)
     {
     CAN_log_message_t msg;
     memset(&msg,0,sizeof(msg));
 
-    size_t used = put(&msg, buffer, len, clc);
+    hasmore = false;
+    size_t used = put(&msg, buffer, len, &hasmore, clc);
     if (used > 0)
       {
       consumed += used;

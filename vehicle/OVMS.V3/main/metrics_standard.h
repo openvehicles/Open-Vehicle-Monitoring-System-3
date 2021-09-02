@@ -94,6 +94,7 @@
 #define MS_V_BAT_RANGE_FULL         "v.b.range.full"
 #define MS_V_BAT_RANGE_IDEAL        "v.b.range.ideal"
 #define MS_V_BAT_RANGE_EST          "v.b.range.est"
+#define MS_V_BAT_RANGE_SPEED        "v.b.range.speed"
 #define MS_V_BAT_12V_VOLTAGE        "v.b.12v.voltage"
 #define MS_V_BAT_12V_CURRENT        "v.b.12v.current"
 #define MS_V_BAT_12V_VOLTAGE_REF    "v.b.12v.voltage.ref"
@@ -328,6 +329,7 @@ class MetricsStandard
     OvmsMetricFloat*  ms_v_bat_range_full;                // Ideal range at 100% SOC & current conditions [km]
     OvmsMetricFloat*  ms_v_bat_range_ideal;               // Ideal range [km]
     OvmsMetricFloat*  ms_v_bat_range_est;                 // Estimated range [km]
+    OvmsMetricFloat*  ms_v_bat_range_speed;               // Momentary ideal range gain/loss speed [kph] (gain=positive)
     OvmsMetricFloat*  ms_v_bat_temp;                      // Battery temperature [°C]
 
     OvmsMetricFloat*  ms_v_bat_12v_voltage;               // Auxiliary 12V battery momentary voltage [V]

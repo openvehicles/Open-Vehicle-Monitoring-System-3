@@ -58,7 +58,7 @@ class canformat
     virtual std::string getheader(struct timeval *time = NULL);
 
   public: // Conversion from specific format to OVMS CAN log messages
-    virtual size_t put(CAN_log_message_t* message, uint8_t *buffer, size_t len, canlogconnection* clc=NULL);
+    virtual size_t put(CAN_log_message_t* message, uint8_t *buffer, size_t len, bool* hasmore, canlogconnection* clc=NULL);
 
   private:
     const char* m_type;

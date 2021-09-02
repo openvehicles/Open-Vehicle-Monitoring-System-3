@@ -122,6 +122,7 @@ alert   batt.bms.alert              Battery pack/cell alert (critical voltage/te
 alert   batt.soc.alert              Battery SOC critical
 info    charge.done                 ``stat`` on charge finished
 info    charge.started              ``stat`` on start of charge
+info    charge.toppingoff           ``stat`` on start of topping off charge/phase
 info    charge.stopped              ``stat`` on planned charge stop
 alert   charge.stopped              ``stat`` on unplanned charge stop
 data    debug.crash                 Transmit crash backtraces (→ ``*-OVM-DebugCrash``)
@@ -221,9 +222,14 @@ The trip history log can be used as a source for long term statistics on your tr
 trip power usages, as well as your battery performance in different environmental conditions and 
 degradation over time.
 
-Entries are created at the end of a trip (specifically ``v.e.on`` transition to off). Configure a 
-minimum trip length for logging by the config variable ``notify log.trip.minlength`` or via the web 
-UI.
+Entries are created at the beginning and end of each "ignition" cycle (``v.e.on`` change). Configure 
+a minimum trip length for logging by the config variable ``notify log.trip.minlength`` or via the web 
+UI. If your vehicle does not support the ``v.p.trip`` metric, set the minimum trip length to 0.
+
+The log entry at the beginning of a trip is created to track non-driving SOC changes, vampire drains
+and BMS SOC corrections that occurred in between. If you're just interested in the actual drive results,
+filter the records e.g. by ``pos_trip > 0.1`` or ``env_drivetime > 10`` (by default log entries
+will be created 3 seconds after the ``v.e.on`` state change).
 
 You need to enable this log explicitly by configuring a storage time via config param ``notify 
 log.trip.storetime`` (in days) or via the web configuration page. Set to 0/empty to disable the log. 
