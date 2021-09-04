@@ -199,7 +199,10 @@ function setcontent(tgt, uri, text){
     $("#nav li").removeClass("active");
     var mi = $("#nav [href='"+uri+"']");
     mi.parents("li").addClass("active");
-    tgt[0].scrollIntoView();
+    if (tgt[0].id == "main")
+      window.scrollTo(0,0);
+    else
+      tgt[0].scrollIntoView();
     tgt.html(text);
     var $p = tgt.find(">.panel");
     if ($p.length == 1) $p.addClass("panel-single");
@@ -209,7 +212,10 @@ function setcontent(tgt, uri, text){
     else
       document.title = moduleid + " Console";
   } else {
-    tgt[0].scrollIntoView();
+    if (tgt[0].id == "main")
+      window.scrollTo(0,0);
+    else
+      tgt[0].scrollIntoView();
     tgt.html(text);
   }
 
