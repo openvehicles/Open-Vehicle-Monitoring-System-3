@@ -183,6 +183,67 @@ As the module is actually loaded into the global context this way just like usin
 anything else using the module API (e.g. a web plugin) will also work after evaluation.
 
 
+-----------
+Heap Memory
+-----------
+
+Due to limitations of the general esp-idf system memory management, Duktape will normally use
+the custom memory manager `umm_malloc by Ralph Hempel <https://github.com/rhempel/umm_malloc>`_.
+
+``umm_malloc`` needs a dedicated chunk of the system memory to work with. The default for Duktape
+is 512 KB (taken from SPIRAM), which is normally sufficient even for extended scripting. If you
+need more RAM, the size can be changed by ``config set module duktape.heapsize <size_in_KB>``.
+Maximum allowed size is 1024 KB. The heap size needs to be configured at Duktape startup and
+cannot be changed while Duktape is running. To reconfigure the heap size, set the new configuration
+and do a ``script reload``.
+
+Call ``meminfo()`` to query the current heap memory usage status. The function returns an object
+containing some standard and some memory library internal info. The shell command ``script meminfo``
+outputs the object in JSON format. Example::
+
+  OVMS# script meminfo
+  {
+    "totalBytes": 524224,
+    "usedBytes": 273344,
+    "freeBytes": 250880,
+    "largestFreeBytes": 180608,
+    "memlib": "umm",
+    "ummTotalEntries": 2723,
+    "ummUsedEntries": 2615,
+    "ummFreeEntries": 108,
+    "ummTotalBlocks": 16382,
+    "ummUsedBlocks": 8542,
+    "ummFreeBlocks": 7840,
+    "ummMaxFreeContiguousBlocks": 5644,
+    "ummUsageMetric": 108,
+    "ummFragmentationMetric": 27
+  }
+
+"largestFreeBytes" is the largest block of contiguous memory available. Note these values will
+change by some amount between the garbage collection runs done every 60 seconds, the maximum
+usage will be just before the garbage collection, and the base line just after.
+
+"memlib" tells about the memory manager in use, the following fields are the internal state
+variables and statistics of that manager (having the memlib name as a name prefix). These
+can be useful to monitor the memory management load and performance.
+
+If running a firmware configured to use the default system memory manager, the output will
+look like this::
+
+  OVMS# script meminfo
+  {
+    "totalBytes": 4072176,
+    "usedBytes": 415996,
+    "freeBytes": 3656180,
+    "largestFreeBytes": 3635864,
+    "memlib": "sys",
+    "sysMinimumFreeBytes": 3653072,
+    "sysAllocatedBlocks": 6013,
+    "sysFreeBlocks": 454,
+    "sysTotalBlocks": 6467
+  }
+
+
 --------------------------------------
 Internal Objects and Functions/Methods
 --------------------------------------
@@ -204,6 +265,7 @@ method::
     "assert": function () { [native code] },
     "print": function () { [native code] },
     "write": function () { [native code] },
+    "meminfo": function () { [native code] },
     "OvmsCommand": {
       "Exec": function Exec() { [native code] }
     },
@@ -272,6 +334,9 @@ Global Context
 - ``write(string/Uint8Array)``
     Write the given string or Uint8Array to the current output channel (i.e. terminal/HTTP connection).
     Use this to transfer binary data to a reader.
+
+- ``meminfo()``
+    Returns an object containing the current heap memory status (see `Heap Memory`_).
 
 - ``performance.now()``
     Returns monotonic time since boot in milliseconds, with microsecond resolution.

@@ -101,6 +101,13 @@ Open Vehicle Monitor System v3 - Change log
     vehicle.gear.forward           -- Vehicle has been put in forward gear
     vehicle.gear.neutral           -- Vehicle has been put in neutral gear
     vehicle.gear.reverse           -- Vehicle has been put in reverse gear
+- Scripting/Duktape: new heap memory management using fixed amount of system RAM
+  New config:
+    [module] duktape.heapsize    -- in KB, default 512, max 1024
+  New commands:
+    script meminfo               -- output heap memory status (JSON)
+  New API calls:
+    meminfo()                    -- return heap memory status
 
 2021-03-05 MB  3.2.016  OTA release
 - VW e-Up: CCS (DC) charge detection & data
