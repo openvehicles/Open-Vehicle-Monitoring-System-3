@@ -56,6 +56,11 @@ static const char *TAG = "ovms-duktape";
 OvmsDuktape MyDuktape __attribute__ ((init_priority (1000)));
 OvmsWriter* duktapewriter = NULL;
 
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE_HEAP_UMM
+  #include "umm_malloc.c"
+  static void *umm_memory = NULL;
+#endif
+
 ////////////////////////////////////////////////////////////////////////////////
 // Duktape utility functions
 
@@ -392,17 +397,29 @@ void DukTapeLaunchTask(void *pvParameters)
 
 void* DukOvmsAlloc(void *udata, duk_size_t size)
   {
-  return ExternalRamMalloc(size);
+  #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE_HEAP_UMM
+    return umm_malloc(size);
+  #else
+    return ExternalRamMalloc(size);
+  #endif
   }
 
 void* DukOvmsRealloc(void *udata, void *ptr, duk_size_t size)
   {
-  return ExternalRamRealloc(ptr, size);
+  #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE_HEAP_UMM
+    return umm_realloc(ptr, size);
+  #else
+    return ExternalRamRealloc(ptr, size);
+  #endif
   }
 
 void DukOvmsFree(void *udata, void *ptr)
   {
-  free(ptr);
+  #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE_HEAP_UMM
+    umm_free(ptr);
+  #else
+    free(ptr);
+  #endif
   }
 
 void DukOvmsFatalHandler(void *udata, const char *msg)
@@ -930,6 +947,13 @@ OvmsDuktape::OvmsDuktape()
 OvmsDuktape::~OvmsDuktape()
   {
   duk_destroy_heap(m_dukctx);
+  #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE_HEAP_UMM
+    if (umm_memory != NULL)
+      {
+      free(umm_memory);
+      umm_memory = NULL;
+      }
+  #endif
   m_dukctx = NULL;
   }
 
@@ -1246,7 +1270,26 @@ bool OvmsDuktape::RegisterDuktapeConsoleCommand(
 
 void OvmsDuktape::DukTapeInit()
   {
-  ESP_LOGI(TAG,"Duktape: Creating heap");
+  #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE_HEAP_UMM
+    // Allocate dedicated UMM heap space:
+    int memsize = MyConfig.GetParamValueInt("module", "duktape.heapsize",
+      CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE_HEAP_UMM_DEFAULTSIZE) * 1024;
+    if (memsize <= 0)
+      memsize = 512 * 1024;
+    else if (memsize > UMM_MAX_BLOCKS * UMM_BLOCK_BODY_SIZE)
+      memsize = UMM_MAX_BLOCKS * UMM_BLOCK_BODY_SIZE;
+    ESP_LOGI(TAG, "Duktape: Creating heap (size: %u bytes)", memsize);
+    umm_memory = ExternalRamMalloc(memsize);
+    if (!umm_memory)
+      {
+      ESP_LOGE(TAG, "Duktape: unable to allocate %u bytes for the heap", memsize);
+      return;
+      }
+    umm_init_heap(umm_memory, memsize);
+  #else
+    ESP_LOGI(TAG, "Duktape: Creating heap");
+  #endif
+
   m_dukctx = duk_create_heap(DukOvmsAlloc,
     DukOvmsRealloc,
     DukOvmsFree,
@@ -1362,6 +1405,13 @@ void OvmsDuktape::DukTapeTask()
             {
             ESP_LOGI(TAG,"Duktape: Clearing existing context");
             duk_destroy_heap(m_dukctx);
+            #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE_HEAP_UMM
+              if (umm_memory != NULL)
+                {
+                free(umm_memory);
+                umm_memory = NULL;
+                }
+            #endif
             m_dukctx = NULL;
             }
           DukTapeInit();

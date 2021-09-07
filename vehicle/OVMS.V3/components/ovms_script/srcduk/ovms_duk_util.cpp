@@ -49,6 +49,10 @@ static const char *TAG = "ovms-duk-util";
 #include "ovms_netmanager.h"
 #include "ovms_tls.h"
 
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE_HEAP_UMM
+  #include "umm_malloc_cfg.h"
+#endif
+
 ////////////////////////////////////////////////////////////////////////////////
 // DukOvmsPrint
 
@@ -115,6 +119,63 @@ static duk_ret_t DukOvmsAssert(duk_context *ctx)
   }
 
 ////////////////////////////////////////////////////////////////////////////////
+// DukOvmsMemInfo
+
+static duk_ret_t DukOvmsMemInfo(duk_context *ctx)
+  {
+  #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE_HEAP_UMM
+    // Using umm_malloc:
+    umm_info(NULL, false);
+    DukContext dc(ctx);
+    duk_idx_t obj_idx = dc.PushObject();
+
+    // Standard info:
+    dc.Push(ummHeapInfo.totalBlocks * CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE_HEAP_UMM_BLOCKSIZE);
+                                                  dc.PutProp(obj_idx, "totalBytes");
+    dc.Push(ummHeapInfo.usedBlocks * CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE_HEAP_UMM_BLOCKSIZE);
+                                                  dc.PutProp(obj_idx, "usedBytes");
+    dc.Push(ummHeapInfo.freeBlocks * CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE_HEAP_UMM_BLOCKSIZE);
+                                                  dc.PutProp(obj_idx, "freeBytes");
+    dc.Push(ummHeapInfo.maxFreeContiguousBlocks * CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE_HEAP_UMM_BLOCKSIZE);
+                                                  dc.PutProp(obj_idx, "largestFreeBytes");
+
+    // Allocator specific info:
+    dc.Push("umm");                               dc.PutProp(obj_idx, "memlib");
+    dc.Push(ummHeapInfo.totalEntries);            dc.PutProp(obj_idx, "ummTotalEntries");
+    dc.Push(ummHeapInfo.usedEntries);             dc.PutProp(obj_idx, "ummUsedEntries");
+    dc.Push(ummHeapInfo.freeEntries);             dc.PutProp(obj_idx, "ummFreeEntries");
+    dc.Push(ummHeapInfo.totalBlocks);             dc.PutProp(obj_idx, "ummTotalBlocks");
+    dc.Push(ummHeapInfo.usedBlocks);              dc.PutProp(obj_idx, "ummUsedBlocks");
+    dc.Push(ummHeapInfo.freeBlocks);              dc.PutProp(obj_idx, "ummFreeBlocks");
+    dc.Push(ummHeapInfo.maxFreeContiguousBlocks); dc.PutProp(obj_idx, "ummMaxFreeContiguousBlocks");
+    dc.Push(ummHeapInfo.usage_metric);            dc.PutProp(obj_idx, "ummUsageMetric");
+    dc.Push(ummHeapInfo.fragmentation_metric);    dc.PutProp(obj_idx, "ummFragmentationMetric");
+  #else
+    // Using system default allocator:
+    multi_heap_info_t heapinfo;
+    heap_caps_get_info(&heapinfo, MALLOC_CAP_SPIRAM);
+    DukContext dc(ctx);
+    duk_idx_t obj_idx = dc.PushObject();
+
+    // Standard info:
+    dc.Push(heapinfo.total_free_bytes + heapinfo.total_allocated_bytes);
+                                                  dc.PutProp(obj_idx, "totalBytes");
+    dc.Push(heapinfo.total_allocated_bytes);      dc.PutProp(obj_idx, "usedBytes");
+    dc.Push(heapinfo.total_free_bytes);           dc.PutProp(obj_idx, "freeBytes");
+    dc.Push(heapinfo.largest_free_block);         dc.PutProp(obj_idx, "largestFreeBytes");
+
+    // Allocator specific info:
+    dc.Push("sys");                               dc.PutProp(obj_idx, "memlib");
+    dc.Push(heapinfo.minimum_free_bytes);         dc.PutProp(obj_idx, "sysMinimumFreeBytes");
+    dc.Push(heapinfo.allocated_blocks);           dc.PutProp(obj_idx, "sysAllocatedBlocks");
+    dc.Push(heapinfo.free_blocks);                dc.PutProp(obj_idx, "sysFreeBlocks");
+    dc.Push(heapinfo.total_blocks);               dc.PutProp(obj_idx, "sysTotalBlocks");
+  #endif
+
+  return 1;
+  }
+
+////////////////////////////////////////////////////////////////////////////////
 // DuktapeHTTPInit registration
 
 class DuktapeUtilInit
@@ -128,4 +189,5 @@ DuktapeUtilInit::DuktapeUtilInit()
   MyDuktape.RegisterDuktapeFunction(DukOvmsPrint, 1, "print");
   MyDuktape.RegisterDuktapeFunction(DukOvmsWrite, 1, "write");
   MyDuktape.RegisterDuktapeFunction(DukOvmsAssert, 2, "assert");
+  MyDuktape.RegisterDuktapeFunction(DukOvmsMemInfo, 0, "meminfo");
   }

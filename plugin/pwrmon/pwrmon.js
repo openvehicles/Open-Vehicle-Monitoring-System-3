@@ -1,6 +1,6 @@
 /**
  * Module plugin: PwrMon – Trip Power/Energy Chart
- *  Version 1.2 by Michael Balzer <dexter@dexters-web.de>
+ *  Version 1.3 by Michael Balzer <dexter@dexters-web.de>
  * 
  * This module records trip metrics by odometer distance.
  * History data is stored in a file and automatically restored on reboot/reload.
@@ -21,7 +21,7 @@
  */
 
 const minSampleDistance = 0.3;              // [km]
-const minRecordDistance = 20;               // [km]
+const minRecordDistance = 50;               // [km]
 
 const storeDistance = 1;                    // [km]
 const storeFile = "/store/usr/pwrmon.cbor"; // empty = no storage
@@ -48,7 +48,7 @@ function allowSave() {
 
 // Ticker:
 function ticker() {
-  if (OvmsMetrics.Value("v.e.on") == "no") {
+  if (!OvmsMetrics.Value("v.e.on")) {
     lastOdo = 0;
     return;
   }
@@ -71,7 +71,7 @@ function ticker() {
 
 // History dump:
 function dump(fmt) {
-  fmt = fmt.toUpperCase();
+  fmt = String(fmt).toUpperCase();
   if (fmt == "CBOR")
     write(CBOR.encode(history));
   else if (fmt == "HEX")

@@ -55,6 +55,7 @@ class DukContext
     void Push(int val)                    { duk_push_number(m_ctx, val); }
     void Push(short val)                  { duk_push_number(m_ctx, val); }
     void Push(long val)                   { duk_push_number(m_ctx, val); }
+    void Push(unsigned int val)           { duk_push_uint(m_ctx, val); }
     void Push(unsigned short val)         { duk_push_uint(m_ctx, val); }
     void Push(unsigned long val)          { duk_push_uint(m_ctx, val); }
     void Push(float val)                  { duk_push_number(m_ctx, float2double(val)); }

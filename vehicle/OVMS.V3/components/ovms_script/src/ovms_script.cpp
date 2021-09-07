@@ -71,6 +71,11 @@ static void script_compact(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, 
   MyDuktape.DuktapeCompact();
   }
 
+static void script_meminfo(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  MyDuktape.DuktapeEvalNoResult("JSON.print(meminfo())", writer);
+  }
+
 #endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 
 OvmsScripts MyScripts __attribute__ ((init_priority (1600)));
@@ -235,6 +240,7 @@ OvmsScripts::OvmsScripts()
   cmd_script->RegisterCommand("reload","Reload javascript framework",script_reload);
   cmd_script->RegisterCommand("eval","Eval some javascript code",script_eval,"<code>",1,1);
   cmd_script->RegisterCommand("compact","Compact javascript heap",script_compact);
+  cmd_script->RegisterCommand("meminfo","Show heap memory status",script_meminfo);
 #endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   MyCommandApp.RegisterCommand(".","Run a script",script_run,"<path>",1,1);
   }
