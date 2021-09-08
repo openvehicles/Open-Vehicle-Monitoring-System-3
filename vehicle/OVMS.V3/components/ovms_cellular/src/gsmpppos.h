@@ -53,7 +53,7 @@ class GsmPPPOS : public InternalRamAllocated
 
   public:
     void IncomingData(uint8_t *data, size_t len);
-    void Initialise();
+    void Initialise(GsmMux* mux, int channel);
     void Startup();
     void Shutdown(bool hard=false);
     const char* ErrCodeName(int errcode);

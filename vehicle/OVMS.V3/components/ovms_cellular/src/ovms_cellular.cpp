@@ -1347,11 +1347,12 @@ void modem::StartPPP()
   {
   if (m_ppp == NULL)
     {
-    ESP_LOGV(TAG, "Starting PPP");
+    ESP_LOGV(TAG, "Launching PPP");
     m_ppp = new GsmPPPOS(m_mux, m_mux_channel_DATA);
-    m_ppp->Initialise();
-    m_ppp->Startup();
     }
+  ESP_LOGV(TAG, "Starting PPP");
+  m_ppp->Initialise(m_mux, m_mux_channel_DATA);
+  m_ppp->Startup();
   }
 
 void modem::StopPPP()
@@ -1360,8 +1361,6 @@ void modem::StopPPP()
     {
     ESP_LOGV(TAG, "Stopping PPP");
     m_ppp->Shutdown(true);
-    delete m_ppp;
-    m_ppp = NULL;
     }
   }
 

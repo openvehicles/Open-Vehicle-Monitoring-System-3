@@ -188,9 +188,12 @@ void GsmPPPOS::IncomingData(uint8_t *data, size_t len)
   pppos_input_tcpip(m_ppp, (u8_t*)data, (int)len);
   }
 
-void GsmPPPOS::Initialise()
+void GsmPPPOS::Initialise(GsmMux* mux, int channel)
   {
   ESP_LOGI(TAG, "Initialising...");
+
+  m_mux = mux;
+  m_channel = channel;
 
   if (m_ppp == NULL)
     {
