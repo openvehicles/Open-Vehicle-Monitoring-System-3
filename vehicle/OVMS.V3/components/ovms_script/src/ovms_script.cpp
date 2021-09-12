@@ -1672,8 +1672,9 @@ DuktapeVFSLoad::DuktapeVFSLoad(duk_context *ctx, int obj_idx)
   // start loader:
   Ref();
   Register(ctx);
+  TaskHandle_t task = NULL;
   if (xTaskCreatePinnedToCore(LoadTask, "DuktapeVFSLoad", 5*512, this,
-      CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE_PRIORITY-1, NULL, CORE(1)) != pdPASS)
+      CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE_PRIORITY-1, &task, CORE(1)) != pdPASS)
     {
     Deregister(ctx);
     Unref();
@@ -1681,6 +1682,7 @@ DuktapeVFSLoad::DuktapeVFSLoad(duk_context *ctx, int obj_idx)
     CallMethod(ctx, "fail");
     return;
     }
+  AddTaskToMap(task);
   //ESP_LOGD(TAG, "DuktapeVFSLoad('%s'): started", m_path.c_str());
   }
 
@@ -1960,8 +1962,9 @@ DuktapeVFSSave::DuktapeVFSSave(duk_context *ctx, int obj_idx)
   // start saver:
   Ref();
   Register(ctx);
+  TaskHandle_t task = NULL;
   if (xTaskCreatePinnedToCore(SaveTask, "DuktapeVFSSave", 5*512, this,
-      CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE_PRIORITY-1, NULL, CORE(1)) != pdPASS)
+      CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE_PRIORITY-1, &task, CORE(1)) != pdPASS)
     {
     Deregister(ctx);
     Unref();
@@ -1969,6 +1972,7 @@ DuktapeVFSSave::DuktapeVFSSave(duk_context *ctx, int obj_idx)
     CallMethod(ctx, "fail");
     return;
     }
+  AddTaskToMap(task);
   //ESP_LOGD(TAG, "DuktapeVFSSave('%s'): started", m_path.c_str());
   }
 
