@@ -1669,6 +1669,16 @@ DuktapeVFSLoad::DuktapeVFSLoad(duk_context *ctx, int obj_idx)
     return;
     }
 
+#ifdef CONFIG_OVMS_COMP_SDCARD
+  // verify volume:
+  if (startsWith(m_path, "/sd/") && (!MyPeripherals->m_sdcard || !MyPeripherals->m_sdcard->isavailable()))
+    {
+    m_error = "volume not mounted";
+    CallMethod(ctx, "fail");
+    return;
+    }
+ #endif // CONFIG_OVMS_COMP_SDCARD
+
   // start loader:
   Ref();
   Register(ctx);
@@ -1696,16 +1706,6 @@ void DuktapeVFSLoad::LoadTask(void *param)
 
 void DuktapeVFSLoad::Load()
   {
-#ifdef CONFIG_OVMS_COMP_SDCARD
-  // verify volume:
-  if (startsWith(m_path, "/sd/") && (!MyPeripherals->m_sdcard || !MyPeripherals->m_sdcard->isavailable()))
-    {
-    m_error = "volume not mounted";
-    RequestCallback("fail");
-    return;
-    }
-#endif // CONFIG_OVMS_COMP_SDCARD
-
   // check file & size:
   if (stat(m_path.c_str(), &m_stat) != 0)
     {
@@ -1959,6 +1959,16 @@ DuktapeVFSSave::DuktapeVFSSave(duk_context *ctx, int obj_idx)
     return;
     }
 
+#ifdef CONFIG_OVMS_COMP_SDCARD
+  // verify volume:
+  if (startsWith(m_path, "/sd/") && (!MyPeripherals->m_sdcard || !MyPeripherals->m_sdcard->isavailable()))
+    {
+    m_error = "volume not mounted";
+    CallMethod(ctx, "fail");
+    return;
+    }
+ #endif // CONFIG_OVMS_COMP_SDCARD
+
   // start saver:
   Ref();
   Register(ctx);
@@ -2002,16 +2012,6 @@ void DuktapeVFSSave::SaveTask(void *param)
 
 void DuktapeVFSSave::Save()
   {
-#ifdef CONFIG_OVMS_COMP_SDCARD
-  // verify volume:
-  if (startsWith(m_path, "/sd/") && (!MyPeripherals->m_sdcard || !MyPeripherals->m_sdcard->isavailable()))
-    {
-    m_error = "volume not mounted";
-    RequestCallback("fail");
-    return;
-    }
-#endif // CONFIG_OVMS_COMP_SDCARD
-
   // create path:
   size_t n = m_path.rfind('/');
   if (n != 0 && n != std::string::npos)
