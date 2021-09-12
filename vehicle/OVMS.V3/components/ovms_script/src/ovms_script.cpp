@@ -1698,9 +1698,12 @@ DuktapeVFSLoad::DuktapeVFSLoad(duk_context *ctx, int obj_idx)
 
 void DuktapeVFSLoad::LoadTask(void *param)
   {
-  DuktapeVFSLoad *me = (DuktapeVFSLoad*)param;
-  me->Load();
-  me->Unref();
+  // encapsulate local variables, as vTaskDelete() won't return:
+    {
+    DuktapeVFSLoad *me = (DuktapeVFSLoad*)param;
+    me->Load();
+    me->Unref();
+    }
   vTaskDelete(NULL);
   }
 
@@ -1988,24 +1991,27 @@ DuktapeVFSSave::DuktapeVFSSave(duk_context *ctx, int obj_idx)
 
 void DuktapeVFSSave::SaveTask(void *param)
   {
-  DuktapeVFSSave *me = (DuktapeVFSSave*)param;
+  // encapsulate local variables, as vTaskDelete() won't return:
+    {
+    DuktapeVFSSave *me = (DuktapeVFSSave*)param;
 
-  // listen for system shutdown:
-  std::string tag;
-  bool shuttingdown = false;
-  tag = idtag("DuktapeVFSSave", me);
-  MyEvents.RegisterEvent(tag, "system.shuttingdown",
-    [&](std::string event, void* data)
-      {
-      MyBoot.RestartPending(tag.c_str());
-      shuttingdown = true;
-      });
+    // listen for system shutdown:
+    std::string tag;
+    bool shuttingdown = false;
+    tag = idtag("DuktapeVFSSave", me);
+    MyEvents.RegisterEvent(tag, "system.shuttingdown",
+      [&](std::string event, void* data)
+        {
+        MyBoot.RestartPending(tag.c_str());
+        shuttingdown = true;
+        });
 
-  me->Save();
-  me->Unref();
+    me->Save();
+    me->Unref();
 
-  MyEvents.DeregisterEvent(tag);
-  if (shuttingdown) MyBoot.RestartReady(tag.c_str());
+    MyEvents.DeregisterEvent(tag);
+    if (shuttingdown) MyBoot.RestartReady(tag.c_str());
+    }
 
   vTaskDelete(NULL);
   }
