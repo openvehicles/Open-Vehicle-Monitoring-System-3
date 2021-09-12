@@ -40,6 +40,7 @@ static const char *TAG = "webcommand";
 #include "log_buffers.h"
 #include "ovms_webserver.h"
 #include "ovms_script.h"
+#include "ovms_module.h"
 
 
 struct hcs_writebuf
@@ -75,6 +76,7 @@ HttpCommandStream::HttpCommandStream(mg_connection* nc, extram::string command,
   xTaskCreatePinnedToCore(CommandTask, name,
     CONFIG_OVMS_SYS_COMMAND_STACK_SIZE, (void*)this,
     CONFIG_OVMS_SYS_COMMAND_PRIORITY, &m_cmdtask, CORE(1));
+  AddTaskToMap(m_cmdtask);
 }
 
 HttpCommandStream::~HttpCommandStream()
