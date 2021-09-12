@@ -42,6 +42,7 @@ static const char *TAG = "esp32can";
 #include "esp32can.h"
 #include "esp32can_regdef.h"
 #include "ovms_peripherals.h"
+#include "ovms_module.h"
 
 esp32can* MyESP32can = NULL;
 
@@ -376,7 +377,9 @@ esp32can::esp32can(const char* name, int txpin, int rxpin)
   MODULE_ESP32CAN->MOD.B.RM = 1;
 
   // Launch ISR allocator task on core 0:
-  xTaskCreatePinnedToCore(ESP32CAN_init, "esp32can init", 2048, (void*)this, 23, NULL, CORE(0));
+  TaskHandle_t task = NULL;
+  xTaskCreatePinnedToCore(ESP32CAN_init, "esp32can init", 2048, (void*)this, 23, &task, CORE(0));
+  AddTaskToMap(task);
   }
 
 esp32can::~esp32can()
