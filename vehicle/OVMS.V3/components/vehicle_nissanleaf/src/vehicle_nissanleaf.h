@@ -119,6 +119,7 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     vehicle_command_t CommandWakeup();
     void RemoteCommandTimer();
     void CcDisableTimer();
+    void MITMDisableTimer();
 
   // --------------------------------------------------------------------------
   // Webserver subsystem
@@ -150,6 +151,7 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     void SendCommand(RemoteCommand);
     OvmsVehicle::vehicle_command_t RemoteCommandHandler(RemoteCommand command);
     OvmsVehicle::vehicle_command_t CommandStartCharge();
+    OvmsVehicle::vehicle_command_t CommandStopCharge();
     virtual int GetNotifyChargeStateDelay(const char* state);
     RemoteCommand nl_remote_command; // command to send, see RemoteCommandTimer()
     uint8_t nl_remote_command_ticker; // number remaining remote command frames to send
@@ -163,6 +165,7 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
 
     TimerHandle_t m_remoteCommandTimer;
     TimerHandle_t m_ccDisableTimer;
+    TimerHandle_t MITMstop;
     metric_unit_t m_odometer_units = Other;
     OvmsMetricInt *m_gids;
     OvmsMetricFloat *m_hx;
@@ -188,6 +191,8 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     OvmsMetricFloat *m_soc_nominal;
     OvmsMetricInt *m_charge_count_qc;
     OvmsMetricInt *m_charge_count_l0l1l2;
+    unsigned char last1db[8];
+    int MITM = 0;
     OvmsMetricBool *m_climate_fan_only;
     OvmsMetricBool *m_climate_remoteheat;
     OvmsMetricBool *m_climate_remotecool;
