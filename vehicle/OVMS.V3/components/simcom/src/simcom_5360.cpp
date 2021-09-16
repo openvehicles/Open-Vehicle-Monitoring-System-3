@@ -66,6 +66,12 @@ const char* simcom5360::GetName()
   return name;
   }
 
+void simcom5360::StatusPoller()
+  {
+  if (m_modem->m_mux != NULL)
+    { m_modem->muxtx(GetMuxChannelPOLL(), "AT+CREG?;+CCLK?;+CSQ;+CPSI?;+COPS?\r\n"); }
+  }
+
 bool simcom5360::State1Leave(modem::modem_state1_t oldstate)
   {
   return false;

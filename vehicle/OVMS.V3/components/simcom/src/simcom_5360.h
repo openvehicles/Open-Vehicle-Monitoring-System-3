@@ -49,6 +49,7 @@ class simcom5360 : public modemdriver
     int GetMuxChannelDATA() { return 2; }
     int GetMuxChannelPOLL() { return 3; }
     int GetMuxChannelCMD()  { return 4; }
+    void StatusPoller();
 
     bool State1Leave(modem::modem_state1_t oldstate);
     bool State1Enter(modem::modem_state1_t newstate);
