@@ -4049,7 +4049,7 @@ void OvmsWebServer::HandleEditor(PageEntry_t& p, PageContext_t& c)
       "});\n"
       "$output.on(\"msg:log\", function(ev, msg){\n"
         "if ($output.css(\"display\") == \"none\") return;\n"
-        "if (!/^..[0-9()]+ script: /.test(msg)) return;\n"
+        "if (!/^..[0-9()]+ (script|ovms-duk)/.test(msg)) return;\n"
         "var autoscroll = ($output.get(0).scrollTop + $output.innerHeight()) >= $output.get(0).scrollHeight;\n"
         "htmsg = '<div class=\"log log-'+msg[0]+'\">'+encode_html(unwrapLogLine(msg))+'</div>';\n"
         "$output.append(htmsg);\n"
