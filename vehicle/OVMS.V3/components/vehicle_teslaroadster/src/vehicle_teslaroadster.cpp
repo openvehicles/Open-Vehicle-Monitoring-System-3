@@ -341,13 +341,12 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
             case 0x0d: // preparing
               StandardMetrics.ms_v_charge_state->SetValue("prepare"); break;
             case 0x0e: // timer wait
-              // Apps don't currently support 'timerwait' charge state correctly
-              // (they don't allow a charge to be manually started in that mode)
-              // so for the moment just report it as 'stopped' until the user
-              // manually requests to start, then report "prepare".
-              //StandardMetrics.ms_v_charge_state->SetValue("timerwait"); break;
+              // If charging is manually started while the car is asleep and
+              // waiting for a scheduled start time then we need to report the
+              // state as "prepare" while the car wakes up and checks for a
+              // pilot signal.
               StandardMetrics.ms_v_charge_state->SetValue(m_starting_charge == INACTIVE ?
-                "stopped" : "prepare"); break;
+                "timerwait" : "prepare"); break;
             case 0x0f: // heating
               StandardMetrics.ms_v_charge_state->SetValue("heating"); break;
             case 0x15: // interrupted
