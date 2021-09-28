@@ -6,7 +6,8 @@ SSL/TLS
 
 .. warning:: **Let's Encrypt root certificate expiration on September 30, 2021:**
   
-  To prevent losing TLS connectivity with an LE secured server (like ``dexters-web.de``),
+  To prevent losing TLS connectivity with an LE secured server (like ``dexters-web.de``)
+  with **module firmware versions 3.2.016 or earlier**,
   you need to install the new root certificate manually. Sorry for the inconvenience!
   
   See below: `Let's Encrypt Root Certificate Update`_
@@ -99,9 +100,9 @@ the editor, take care to include the BEGIN and END lines.
 Let's Encrypt Root Certificate Update
 -------------------------------------
 
-To enable TLS with sites secured by a Let's Encrypt certificate after
-September 30, 2021, you need to install the new ISRG Root X1 certificate
-manually.
+**If running firmware version 3.2.016 or earlier**, you need to install the new Let's Encrypt 
+root certificate ("ISRG Root X1") manually to enable encrypted connections to servers
+secured by a Let's Encrypt certificate.
 
 1. Save the certificate text shown below to file ``/store/trustedca/isrgx1``
 2. Issue command ``tls trust reload`` or reboot the module
