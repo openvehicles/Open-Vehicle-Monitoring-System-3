@@ -58,6 +58,7 @@ class OvmsTimer
     TickType_t m_maxwait;
     TimerHandle_t m_timer;
     std::function<void()> m_callback;
+    bool m_active;
   };
 
 class OvmsTimeout : public OvmsTimer
