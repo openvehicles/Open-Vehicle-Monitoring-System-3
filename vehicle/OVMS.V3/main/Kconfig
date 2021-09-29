@@ -173,12 +173,33 @@ config MG_ENABLE_DIRECTORY_LISTING
         Enable MONGOOSE directory listing support
 
 config MG_ENABLE_SSL
-    bool "Enable MONGOOSE SSL/TSL support"
+    bool "Enable MONGOOSE SSL/TLS support"
     default n
     depends on OVMS_SC_GPL_MONGOOSE
     depends on MBEDTLS_PSK_MODES
     help
-        Enable MONGOOSE SSL/TSL support
+        Enable MONGOOSE SSL/TLS support
+
+choice MG_SSL_IF
+    prompt "Select the MONGOOSE SSL/TLS library to use"
+        default MG_SSL_IF_MBEDTLS
+        depends on MG_ENABLE_SSL
+        help
+                MG_SSL_IF_MBEDTLS      Use mbedTLS (esp-idf default)
+                MG_SSL_IF_WOLFSSL      Use WolfSSL
+
+config MG_SSL_IF_MBEDTLS
+    bool "mbedTLS"
+    help
+        Use mbedTLS (esp-idf default)
+
+config MG_SSL_IF_WOLFSSL
+    bool "WolfSSL"
+    depends on OVMS_SC_GPL_WOLF
+    help
+        Use WolfSSL
+
+endchoice # MG_SSL_IF
 
 config MG_ENABLE_DEBUG
     bool "Enable MONGOOSE debug logging"
