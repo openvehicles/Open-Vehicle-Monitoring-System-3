@@ -34,7 +34,7 @@
 #include "sdkconfig.h"
 #include "ovms_log.h"
 #include "ovms_malloc.h"
-#if CONFIG_MG_ENABLE_SSL && CONFIG_MG_SSL_IF_WOLFTLS
+#if CONFIG_MG_ENABLE_SSL && CONFIG_MG_SSL_IF_WOLFSSL
   #include "user_settings.h"
 #endif
 
@@ -70,9 +70,9 @@
     #define MG_SSL_IF_MBEDTLS_FREE_CERTS 1
   #endif // CONFIG_MG_SSL_IF_MBEDTLS
 
-  #ifdef CONFIG_MG_SSL_IF_WOLFTLS
+  #ifdef CONFIG_MG_SSL_IF_WOLFSSL
     #define MG_SSL_IF MG_SSL_IF_OPENSSL
-  #endif // CONFIG_MG_SSL_IF_WOLFTLS
+  #endif // CONFIG_MG_SSL_IF_WOLFSSL
 
   //#define CS_ENABLE_DEBUG
 
