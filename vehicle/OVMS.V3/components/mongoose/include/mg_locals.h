@@ -34,7 +34,9 @@
 #include "sdkconfig.h"
 #include "ovms_log.h"
 #include "ovms_malloc.h"
-#include "user_settings.h"
+#if CONFIG_MG_ENABLE_SSL && CONFIG_MG_SSL_IF_WOLFTLS
+  #include "user_settings.h"
+#endif
 
 #define ESP_PLATFORM 1
 #define MG_ENABLE_HTTP 1
@@ -59,9 +61,21 @@
 #endif
 
 #ifdef CONFIG_MG_ENABLE_SSL
-#define MG_ENABLE_SSL 1
-#define MG_SSL_IF MG_SSL_IF_OPENSSL
-//#define CS_ENABLE_DEBUG
+
+  #define MG_ENABLE_SSL 1
+
+  #ifdef CONFIG_MG_SSL_IF_MBEDTLS
+    #define MG_SSL_IF MG_SSL_IF_MBEDTLS
+    #define MG_SSL_MBED_DUMMY_RANDOM 1
+    #define MG_SSL_IF_MBEDTLS_FREE_CERTS 1
+  #endif // CONFIG_MG_SSL_IF_MBEDTLS
+
+  #ifdef CONFIG_MG_SSL_IF_WOLFTLS
+    #define MG_SSL_IF MG_SSL_IF_OPENSSL
+  #endif // CONFIG_MG_SSL_IF_WOLFTLS
+
+  //#define CS_ENABLE_DEBUG
+
 #endif
 
 // Override memory allocation macros in mongoose.c
