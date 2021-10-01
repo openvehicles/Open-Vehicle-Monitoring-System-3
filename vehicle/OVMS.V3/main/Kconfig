@@ -217,7 +217,7 @@ config MG_ENABLE_SSL
 
 choice MG_SSL_IF
     prompt "Select the MONGOOSE SSL/TLS library to use"
-        default MG_SSL_IF_MBEDTLS
+        default MG_SSL_IF_WOLFSSL
         depends on MG_ENABLE_SSL
         help
                 MG_SSL_IF_MBEDTLS      Use mbedTLS (esp-idf default)
