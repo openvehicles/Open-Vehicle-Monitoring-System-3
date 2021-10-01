@@ -404,7 +404,7 @@ static void CheckQueueOverflow(const char* from, char* event)
     }
   }
 
-static void SignalScheduledEvent(TimerHandle_t timer)
+void OvmsEvents::SignalScheduledEvent(TimerHandle_t timer)
   {
   event_queue_t* msg = (event_queue_t*) pvTimerGetTimerID(timer);
   if (xQueueSend(MyEvents.m_taskqueue, msg, 0) != pdTRUE)
@@ -413,6 +413,8 @@ static void SignalScheduledEvent(TimerHandle_t timer)
     MyEvents.FreeQueueSignalEvent(msg);
     }
   delete msg;
+  OvmsMutexLock lock(&MyEvents.m_timers_mutex);
+  MyEvents.m_timer_active[timer] = false;
   }
 
 bool OvmsEvents::ScheduleEvent(event_queue_t* msg, uint32_t delay_ms)
@@ -424,20 +426,31 @@ bool OvmsEvents::ScheduleEvent(event_queue_t* msg, uint32_t delay_ms)
   int timerticks = pdMS_TO_TICKS(delay_ms); if (timerticks<1) timerticks=1;
 
   if (!msgdup)
+    {
+    ESP_LOGE(TAG, "ScheduleEvent: message duplication failed, event dropped");
     return false;
+    }
   // find available timer:
   for (it = m_timers.begin(); it != m_timers.end(); it++)
     {
     timer = *it;
-    if (xTimerIsTimerActive(timer) == pdFALSE)
+    // Note: xTimerIsTimerActive() must not be used here, it has a
+    //  multicore race condition with FreeRTOS V8.2.0 (esp-idf 3.3):
+    //  an expired timer is removed from the active list before its
+    //  callback is executed, so while the callback is running, the
+    //  timer already appears to be free. Workaround is to use our
+    //  own timer status map:
+    if (!m_timer_active[timer])
       break;
     }
   if (it == m_timers.end())
     {
     // create new timer:
+    ESP_LOGI(TAG, "ScheduleEvent: creating new timer");
     timer = xTimerCreate("ScheduleEvent", timerticks, pdFALSE, msgdup, SignalScheduledEvent);
     if (!timer)
       {
+      ESP_LOGE(TAG, "ScheduleEvent: xTimerCreate failed, event dropped");
       delete msgdup;
       return false;
       }
@@ -448,6 +461,7 @@ bool OvmsEvents::ScheduleEvent(event_queue_t* msg, uint32_t delay_ms)
     // update timer:
     if (xTimerChangePeriod(timer, timerticks, 0) != pdPASS)
       {
+      ESP_LOGE(TAG, "ScheduleEvent: xTimerChangePeriod failed, event dropped");
       delete msgdup;
       return false;
       }
@@ -456,9 +470,11 @@ bool OvmsEvents::ScheduleEvent(event_queue_t* msg, uint32_t delay_ms)
   // start timer:
   if (xTimerStart(timer, 0) != pdPASS)
     {
+    ESP_LOGE(TAG, "ScheduleEvent: xTimerStart failed, event dropped");
     delete msgdup;
     return false;
     }
+  m_timer_active[timer] = true;
   return true;
   }
 

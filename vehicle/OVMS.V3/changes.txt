@@ -1,6 +1,8 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+
+2021-09-29 MB  3.2.017  OTA release
 - Added VEHICLE_POLL_TYPE_ROUTINECONTROL to UDS (ISO 14229) service identifiers list
 - MG ZS EV: 
   - Moved to 2 car variants architecture: MG EV A (✔ Zombie mode | ❌ GWM authentication | ❌ Poll BCM) and MG EV B (❌ Zombie mode | ✔ GWM authentication | ✔ Poll BCM)
@@ -108,6 +110,8 @@ Open Vehicle Monitor System v3 - Change log
     script meminfo               -- output heap memory status (JSON)
   New API calls:
     meminfo()                    -- return heap memory status
+- TLS: removed expired DST root certificate, added new ISRG root certificate
+    for Let's Encrypt
 
 2021-03-05 MB  3.2.016  OTA release
 - VW e-Up: CCS (DC) charge detection & data

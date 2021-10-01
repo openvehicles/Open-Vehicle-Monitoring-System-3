@@ -148,10 +148,6 @@ void OvmsTLS::Reload()
   extern const unsigned char usertrust_end[] asm("_binary_usertrust_crt_end");
   m_trustlist["USERTrust RSA Certification Authority"] = new OvmsTrustedCert(usertrust, usertrust_end - usertrust);
 
-  extern const unsigned char dst[] asm("_binary_dst_crt_start");
-  extern const unsigned char dst_end[] asm("_binary_dst_crt_end");
-  m_trustlist["DST Root CA X3"] = new OvmsTrustedCert(dst, dst_end - dst);
-
   extern const unsigned char digicert_global[] asm("_binary_digicert_global_crt_start");
   extern const unsigned char digicert_global_end[] asm("_binary_digicert_global_crt_end");
   m_trustlist["DigiCert Global Root CA"] = new OvmsTrustedCert(digicert_global, digicert_global_end - digicert_global);
@@ -163,6 +159,10 @@ void OvmsTLS::Reload()
   extern const unsigned char baltimore_cybertrust[] asm("_binary_baltimore_cybertrust_crt_start");
   extern const unsigned char baltimore_cybertrust_end[] asm("_binary_baltimore_cybertrust_crt_end");
   m_trustlist["Baltimore CyberTrust Root CA"] = new OvmsTrustedCert(baltimore_cybertrust, baltimore_cybertrust_end - baltimore_cybertrust);
+
+  extern const unsigned char isrg_x1[] asm("_binary_isrg_x1_crt_start");
+  extern const unsigned char isrg_x1_end[] asm("_binary_isrg_x1_crt_end");
+  m_trustlist["ISRG X1 CA"] = new OvmsTrustedCert(isrg_x1, isrg_x1_end - isrg_x1);
 
   // Add trusted certs on disk (/store/trustedca)
   DIR *dir;

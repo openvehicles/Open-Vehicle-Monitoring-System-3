@@ -42,6 +42,7 @@ OvmsTimer::OvmsTimer(const char* name /*=NULL*/, int maxwait_ms /*=-1*/, bool au
   m_timer = xTimerCreate(m_name, portMAX_DELAY, autoreload, (void*)this, Callback);
   if (!m_timer)
     ESP_LOGE(TAG, "Timer '%s' could not be created", m_name);
+  m_active = false;
   }
 
 OvmsTimer::~OvmsTimer()
@@ -83,7 +84,7 @@ bool OvmsTimer::Start(int time_ms, std::function<void()> callback)
 
 bool OvmsTimer::IsActive()
   {
-  return (m_timer && xTimerIsTimerActive(m_timer));
+  return (m_timer && m_active);
   }
 
 bool OvmsTimer::Start()
@@ -92,7 +93,8 @@ bool OvmsTimer::Start()
     return false;
   if (IsActive())
     return Reset();
-  return (xTimerStart(m_timer, m_maxwait) == pdPASS);
+  m_active = (xTimerStart(m_timer, m_maxwait) == pdPASS);
+  return m_active;
   }
 
 bool OvmsTimer::Stop()
@@ -101,7 +103,13 @@ bool OvmsTimer::Stop()
     return false;
   if (!IsActive())
     return true;
-  return (xTimerStop(m_timer, m_maxwait) == pdPASS);
+  if (xTimerStop(m_timer, m_maxwait) == pdPASS)
+    {
+    m_active = false;
+    return true;
+    }
+  else
+    return false;
   }
 
 bool OvmsTimer::Reset()
