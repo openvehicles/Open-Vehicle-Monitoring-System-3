@@ -152,8 +152,8 @@ void OvmsTLS::Reload()
   extern const char usertrust[] asm("_binary_usertrust_crt_start");
   m_trustlist["USERTrust RSA Certification Authority"] = new OvmsTrustedCert((char*)usertrust, false);
 
-  extern const char dst[] asm("_binary_dst_crt_start");
-  m_trustlist["DST Root CA X3"] = new OvmsTrustedCert((char*)dst, false);
+  extern const char isrg_x1[] asm("_binary_isrg_x1_crt_start");
+  m_trustlist["ISRG Root X1"] = new OvmsTrustedCert((char*)isrg_x1, false);
 
   extern const char digicert_global[] asm("_binary_digicert_global_crt_start");
   m_trustlist["DigiCert Global Root CA"] = new OvmsTrustedCert((char*)digicert_global, false);

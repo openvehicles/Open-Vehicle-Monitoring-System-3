@@ -91,6 +91,8 @@ void OvmsVehicleVWeUp::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
     nmap["cell_interval_chg"] = c.getvar("cell_interval_chg");
     nmap["cell_interval_awk"] = c.getvar("cell_interval_awk");
     nmap["bat.soh.source"] = c.getvar("bat.soh.source");
+    nmap["ctp.maxpower"] = c.getvar("ctp_maxpower");
+    nmap["ctp.soclimit"] = c.getvar("ctp_soclimit");
 
     // check:
     if (nmap["modelyear"] != "")
@@ -175,6 +177,19 @@ void OvmsVehicleVWeUp::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
   c.input_checkbox("Enable CAN writes", "canwrite", strtobool(nmap["canwrite"]),
     "<p>Controls overall CAN write access, OBD2 and climate control depends on this.</p>"
     "<p>This parameter can also be set in the app under FEATURES 15.</p>");
+  c.fieldset_end();
+
+  c.fieldset_start("Charge Time Prediction");
+  c.input_slider("Default power limit", "ctp_maxpower", 3, "kW",
+    -1, nmap["ctp.maxpower"].empty() ? 0 : std::stof(nmap["ctp.maxpower"]),
+    0, 0, 30, 0.1,
+    "<p>Used while not charging, default 0 = unlimited (except by car).</p>"
+    "<p>Note: this needs to be the power level at the battery, i.e. after losses.</p>"
+    "<p>Typical values: 6.5 kW for 2-phase charging, 3.2 kW for 1-phase, 2 kW for ICCB/Schuko.</p>");
+  c.input_slider("Default SOC limit", "ctp_soclimit", 3, "%",
+    -1, nmap["ctp.soclimit"].empty() ? 80 : std::stof(nmap["ctp.soclimit"]),
+    80, 10, 100, 5,
+    "<p>Used if no timer mode limits are available, i.e. without OBD connection or without timer schedule.</p>");
   c.fieldset_end();
 
   c.fieldset_start("Battery Health", "needs-con-obd");

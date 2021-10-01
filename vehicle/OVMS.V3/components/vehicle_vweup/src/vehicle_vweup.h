@@ -86,6 +86,7 @@ typedef enum {
   OBDS_DeInit,
   OBDS_Config,
   OBDS_Run,
+  OBDS_Pause,
 } obd_state_t;
 
 typedef enum {
@@ -119,6 +120,8 @@ public:
 
 protected:
   void Ticker1(uint32_t ticker);
+  void Ticker10(uint32_t ticker);
+  void Ticker60(uint32_t ticker);
 
 public:
   vehicle_command_t CommandHomelink(int button, int durationms = 1000);
@@ -133,6 +136,9 @@ public:
 
 protected:
   int GetNotifyChargeStateDelay(const char *state);
+  void NotifiedVehicleChargeState(const char* s);
+  int CalcChargeTime(float capacity, float max_pwr, int from_soc, int to_soc);
+  void UpdateChargeTimes();
 
 protected:
   void ResetTripCounters();
@@ -206,6 +212,9 @@ private:
   double m_charge_kwh_grid;
   int m_chargestart_ticker;
   int m_chargestop_ticker;
+  float m_chargestate_lastsoc;
+  int m_timermode_ticker;
+  bool m_timermode_new;
 
 
   // --------------------------------------------------------------------------
@@ -293,14 +302,25 @@ protected:
   void OBDDeInit();
 
 protected:
+  bool OBDSetState(obd_state_t state);
+  static const char *GetOBDStateName(obd_state_t state) {
+    const char *statename[] = { "INIT", "DEINIT", "CONFIG", "RUN", "PAUSE" };
+    return statename[state];
+  }
   void PollSetState(uint8_t state);
+  static const char *GetPollStateName(uint8_t state) {
+    const char *statename[4] = { "OFF", "AWAKE", "CHARGING", "ON" };
+    return statename[state];
+  }
   void PollerStateTicker();
   void IncomingPollReply(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length, uint16_t mlremain);
 
 protected:
   void UpdateChargePower(float power_kw);
   void UpdateChargeCap(bool charging);
-  void UpdateChargeParams();
+
+public:
+  static void ShellPollControl(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 
 protected:
   OvmsMetricFloat *MotElecSoCAbs;                 // Absolute SoC of main battery from motor electrics ECU
@@ -374,6 +394,8 @@ protected:
 
   chg_type_t          m_chg_type;                 // CHGTYPE_None / _AC / _DC
   int                 m_cfg_dc_interval;          // Interval for DC fast charge test/log PIDs
+
+  int                 m_chg_ctp_car;              // Charge time prediction by car
 
 private:
   PollReplyHelper     PollReply;

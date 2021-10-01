@@ -1,7 +1,7 @@
 /**
  * Module plugin:
  *  Auxiliary (12V) Battery History Chart
- *  Version 2.1 by Michael Balzer <dexter@dexters-web.de>
+ *  Version 2.3.1 by Michael Balzer <dexter@dexters-web.de>
  * 
  * This module records a set of metrics with a fixed time interval.
  * History data is stored in a file and automatically restored on reboot/reload.
@@ -17,7 +17,9 @@
  *  and the history size (default: 24 hours). Take care to match this in the web plugin.
  * 
  * Usage:
- *  - [script eval] auxbatmon.dump()  -- dump recorded history data in JSON format
+ *  - auxbatmon.dump("CBOR")  -- dump recorded history data in CBOR format (binary)
+ *  - auxbatmon.dump()  -- dump recorded history data in JSON format
+ *  - auxbatmon.data()  -- get a copy of the history data object
  */
 
 // Customization (needs to match web plugin):
@@ -26,7 +28,7 @@ const historyHours = 24;    // RAM ~ historyHours / sampleInterval
 
 const tickerEvent = 'ticker.' + sampleInterval;
 const maxEntries = historyHours * 3600 / sampleInterval;
-const storeFile = "/store/usr/auxbatmon.jx";  // empty string = no storage
+const storeFile = "/store/usr/auxbatmon.cbor";  // empty string = no storage
 
 var history = {
   "time": null,
@@ -36,6 +38,8 @@ var history = {
   "v.c.temp": [],
   "v.e.temp": [],
 };
+
+var listen_sdmount = null;
 
 // Saving to VFS may cause short blockings, so only allow when vehicle is off:
 function allowSave() {
@@ -54,30 +58,64 @@ function ticker() {
   if (storeFile && allowSave()) {
     VFS.Save({
       path: storeFile,
-      data: Duktape.enc('jx', history)
+      data: CBOR.encode(history)
     });
   }
 }
 
 // History dump:
-function dump() {
-  print(Duktape.enc('jc', history));
+function dump(fmt) {
+  fmt = String(fmt).toUpperCase();
+  if (fmt == "CBOR")
+    write(CBOR.encode(history));
+  else if (fmt == "HEX")
+    print(Duktape.enc('hex', CBOR.encode(history)));
+  else
+    print(Duktape.enc('jc', history));
+}
+
+// History copy:
+function data() {
+  return Object.assign({}, history);
 }
 
 // Init:
-if (storeFile) {
+
+function loadStoreFile() {
   VFS.Load({
     path: storeFile,
+    binary: true,
     done: function(data) {
-      history = Duktape.dec('jx', data);
+      print(storeFile + " loaded\n");
+      history = CBOR.decode(data);
+      startRecording();
     },
-    always: function() {
-      PubSub.subscribe(tickerEvent, ticker);
+    fail: function(error) {
+      print(storeFile + ": " + this.error + "\n");
+      if (!listen_sdmount && storeFile.startsWith("/sd/") && this.error == "volume not mounted") {
+        // retry once after SD mount:
+        listen_sdmount = PubSub.subscribe("sd.mounted", loadStoreFile);
+      } else {
+        startRecording();
+      }
     }
   });
-} else {
+}
+
+function startRecording() {
+  if (listen_sdmount) {
+    PubSub.unsubscribe(listen_sdmount);
+    listen_sdmount = null;
+  }
   PubSub.subscribe(tickerEvent, ticker);
+}
+
+if (storeFile) {
+  loadStoreFile();
+} else {
+  startRecording();
 }
 
 // API methods:
 exports.dump = dump;
+exports.data = data;

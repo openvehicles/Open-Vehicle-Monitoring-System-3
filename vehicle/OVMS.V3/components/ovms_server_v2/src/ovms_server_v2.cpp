@@ -983,7 +983,9 @@ void OvmsServerV2::TransmitMsgStat(bool always)
     StandardMetrics.ms_v_bat_voltage->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_bat_soh->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_charge_power->IsModifiedAndClear(MyOvmsServerV2Modifier) |
-    StandardMetrics.ms_v_charge_efficiency->IsModifiedAndClear(MyOvmsServerV2Modifier);
+    StandardMetrics.ms_v_charge_efficiency->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_bat_current->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_bat_range_speed->IsModifiedAndClear(MyOvmsServerV2Modifier);
 
   // Quick exit if nothing modified
   if ((!always)&&(!modified)) return;
@@ -991,6 +993,7 @@ void OvmsServerV2::TransmitMsgStat(bool always)
   int mins_range = StandardMetrics.ms_v_charge_duration_range->AsInt();
   int mins_soc = StandardMetrics.ms_v_charge_duration_soc->AsInt();
   bool charging = StandardMetrics.ms_v_charge_inprogress->AsBool();
+  metric_unit_t units_speed = (m_units_distance == Miles) ? Mph : Kph;
 
   extram::ostringstream buffer;
   buffer
@@ -1068,6 +1071,11 @@ void OvmsServerV2::TransmitMsgStat(bool always)
     << StandardMetrics.ms_v_charge_power->AsFloat()
     << ","
     << StandardMetrics.ms_v_charge_efficiency->AsFloat()
+    << ","
+    << StandardMetrics.ms_v_bat_current->AsFloat()
+    << ","
+    << std::setprecision(1)
+    << StandardMetrics.ms_v_bat_range_speed->AsFloat(0, units_speed)
     ;
 
   Transmit(buffer.str().c_str());

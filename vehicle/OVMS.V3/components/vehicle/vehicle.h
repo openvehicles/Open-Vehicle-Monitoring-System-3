@@ -340,9 +340,19 @@ class OvmsVehicle : public InternalRamAllocated
     virtual bool SetBrakelight(int on);     // … hardware control method (override for non MAX7317 control)
 
   protected:
+    virtual void CalculateRangeSpeed();     // Derive momentary range gain/loss speed in kph
+
+  protected:
+    int m_last_drivetime;                   // duration of current/most recent drive [s]
+    int m_last_parktime;                    // duration of current/most recent parking period [s]
+    int m_last_chargetime;                  // duration of current/most recent charge [s]
+    int m_last_gentime;                     // duration of current/most recent generator run [s]
+
+  protected:
     uint32_t m_ticker;
     int m_12v_ticker;
     int m_chargestate_ticker;
+    int m_vehicleon_ticker;
     int m_vehicleoff_ticker;
     int m_idle_ticker;
     virtual void Ticker1(uint32_t ticker);
@@ -355,6 +365,7 @@ class OvmsVehicle : public InternalRamAllocated
   protected:
     virtual void NotifyChargeState();
     virtual void NotifyChargeStart();
+    virtual void NotifyChargeTopOff();
     virtual void NotifyHeatingStart();
     virtual void NotifyChargeStopped();
     virtual void NotifyChargeDone();
@@ -368,6 +379,7 @@ class OvmsVehicle : public InternalRamAllocated
     virtual void Notify12vRecovered();
     virtual void NotifyMinSocCritical();
     virtual void NotifyVehicleIdling();
+    virtual void NotifyVehicleOn();
     virtual void NotifyVehicleOff();
 
   protected:
@@ -406,6 +418,8 @@ class OvmsVehicle : public InternalRamAllocated
     virtual void NotifiedVehicleHeadlightsOff() {}
     virtual void NotifiedVehicleAlarmOn() {}
     virtual void NotifiedVehicleAlarmOff() {}
+    virtual void NotifiedVehicleGear(int gear) {}
+    virtual void NotifiedVehicleDrivemode(int drivemode) {}
     virtual void NotifiedVehicleChargeMode(const char* m) {}
     virtual void NotifiedVehicleChargeState(const char* s) {}
     virtual void NotifiedVehicleGenState(const std::string& state) {}

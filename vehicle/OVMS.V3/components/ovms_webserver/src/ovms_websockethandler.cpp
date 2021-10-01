@@ -462,7 +462,7 @@ WebSocketHandler* OvmsWebServer::CreateWebSocketHandler(mg_connection* nc)
   
   // start ticker:
   m_client_cnt++;
-  if (xTimerIsTimerActive(m_update_ticker) == pdFALSE)
+  if (m_client_cnt == 1)
     xTimerStart(m_update_ticker, 0);
   
   ESP_LOGD(TAG, "WebSocket[%p] handler %p opened; %d clients active", nc, handler, m_client_cnt);

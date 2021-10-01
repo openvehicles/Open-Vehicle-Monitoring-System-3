@@ -48,10 +48,17 @@ static const char *TAG = "script";
 #include "buffered_shell.h"
 #include "ovms_netmanager.h"
 #include "ovms_tls.h"
+#include "ovms_boot.h"
+#include "ovms_peripherals.h"
 
 OvmsScripts MyScripts __attribute__ ((init_priority (1600)));
 
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE_HEAP_UMM
+  #include "umm_malloc.c"
+  static void *umm_memory = NULL;
+#endif
 
 OvmsWriter* duktapewriter = NULL;
 
@@ -428,17 +435,29 @@ void DukTapeLaunchTask(void *pvParameters)
 
 void* DukOvmsAlloc(void *udata, duk_size_t size)
   {
-  return ExternalRamMalloc(size);
+  #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE_HEAP_UMM
+    return umm_malloc(size);
+  #else
+    return ExternalRamMalloc(size);
+  #endif
   }
 
 void* DukOvmsRealloc(void *udata, void *ptr, duk_size_t size)
   {
-  return ExternalRamRealloc(ptr, size);
+  #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE_HEAP_UMM
+    return umm_realloc(ptr, size);
+  #else
+    return ExternalRamRealloc(ptr, size);
+  #endif
   }
 
 void DukOvmsFree(void *udata, void *ptr)
   {
-  free(ptr);
+  #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE_HEAP_UMM
+    umm_free(ptr);
+  #else
+    free(ptr);
+  #endif
   }
 
 void DukOvmsFatalHandler(void *udata, const char *msg)
@@ -618,6 +637,24 @@ static duk_ret_t DukOvmsPrint(duk_context *ctx)
   return 0;
   }
 
+static duk_ret_t DukOvmsWrite(duk_context *ctx)
+  {
+  if (!duktapewriter) return 0;
+
+  size_t size;
+  const void *data;
+
+  if (duk_is_buffer_data(ctx, 0))
+    data = duk_get_buffer_data(ctx, 0, &size);
+  else
+    data = duk_to_lstring(ctx, 0, &size);
+
+  if (data)
+    duktapewriter->write(data, size);
+
+  return 0;
+  }
+
 static duk_ret_t DukOvmsAssert(duk_context *ctx)
   {
   if (duk_to_boolean(ctx, 0))
@@ -626,6 +663,60 @@ static duk_ret_t DukOvmsAssert(duk_context *ctx)
     }
   duk_error(ctx, DUK_ERR_ERROR, "assertion failed: %s", duk_safe_to_string(ctx, 1));
   return 0;
+  }
+
+static duk_ret_t DukOvmsMemInfo(duk_context *ctx)
+  {
+  #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE_HEAP_UMM
+    // Using umm_malloc:
+    umm_info(NULL, false);
+    DukContext dc(ctx);
+    duk_idx_t obj_idx = dc.PushObject();
+
+    // Standard info:
+    dc.Push(ummHeapInfo.totalBlocks * CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE_HEAP_UMM_BLOCKSIZE);
+                                                  dc.PutProp(obj_idx, "totalBytes");
+    dc.Push(ummHeapInfo.usedBlocks * CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE_HEAP_UMM_BLOCKSIZE);
+                                                  dc.PutProp(obj_idx, "usedBytes");
+    dc.Push(ummHeapInfo.freeBlocks * CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE_HEAP_UMM_BLOCKSIZE);
+                                                  dc.PutProp(obj_idx, "freeBytes");
+    dc.Push(ummHeapInfo.maxFreeContiguousBlocks * CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE_HEAP_UMM_BLOCKSIZE);
+                                                  dc.PutProp(obj_idx, "largestFreeBytes");
+
+    // Allocator specific info:
+    dc.Push("umm");                               dc.PutProp(obj_idx, "memlib");
+    dc.Push(ummHeapInfo.totalEntries);            dc.PutProp(obj_idx, "ummTotalEntries");
+    dc.Push(ummHeapInfo.usedEntries);             dc.PutProp(obj_idx, "ummUsedEntries");
+    dc.Push(ummHeapInfo.freeEntries);             dc.PutProp(obj_idx, "ummFreeEntries");
+    dc.Push(ummHeapInfo.totalBlocks);             dc.PutProp(obj_idx, "ummTotalBlocks");
+    dc.Push(ummHeapInfo.usedBlocks);              dc.PutProp(obj_idx, "ummUsedBlocks");
+    dc.Push(ummHeapInfo.freeBlocks);              dc.PutProp(obj_idx, "ummFreeBlocks");
+    dc.Push(ummHeapInfo.maxFreeContiguousBlocks); dc.PutProp(obj_idx, "ummMaxFreeContiguousBlocks");
+    dc.Push(ummHeapInfo.usage_metric);            dc.PutProp(obj_idx, "ummUsageMetric");
+    dc.Push(ummHeapInfo.fragmentation_metric);    dc.PutProp(obj_idx, "ummFragmentationMetric");
+  #else
+    // Using system default allocator:
+    multi_heap_info_t heapinfo;
+    heap_caps_get_info(&heapinfo, MALLOC_CAP_SPIRAM);
+    DukContext dc(ctx);
+    duk_idx_t obj_idx = dc.PushObject();
+
+    // Standard info:
+    dc.Push(heapinfo.total_free_bytes + heapinfo.total_allocated_bytes);
+                                                  dc.PutProp(obj_idx, "totalBytes");
+    dc.Push(heapinfo.total_allocated_bytes);      dc.PutProp(obj_idx, "usedBytes");
+    dc.Push(heapinfo.total_free_bytes);           dc.PutProp(obj_idx, "freeBytes");
+    dc.Push(heapinfo.largest_free_block);         dc.PutProp(obj_idx, "largestFreeBytes");
+
+    // Allocator specific info:
+    dc.Push("sys");                               dc.PutProp(obj_idx, "memlib");
+    dc.Push(heapinfo.minimum_free_bytes);         dc.PutProp(obj_idx, "sysMinimumFreeBytes");
+    dc.Push(heapinfo.allocated_blocks);           dc.PutProp(obj_idx, "sysAllocatedBlocks");
+    dc.Push(heapinfo.free_blocks);                dc.PutProp(obj_idx, "sysFreeBlocks");
+    dc.Push(heapinfo.total_blocks);               dc.PutProp(obj_idx, "sysTotalBlocks");
+  #endif
+
+  return 1;
   }
 
 static duk_ret_t DukOvmsRaiseEvent(duk_context *ctx)
@@ -1578,11 +1669,22 @@ DuktapeVFSLoad::DuktapeVFSLoad(duk_context *ctx, int obj_idx)
     return;
     }
 
+#ifdef CONFIG_OVMS_COMP_SDCARD
+  // verify volume:
+  if (startsWith(m_path, "/sd/") && (!MyPeripherals->m_sdcard || !MyPeripherals->m_sdcard->isavailable()))
+    {
+    m_error = "volume not mounted";
+    CallMethod(ctx, "fail");
+    return;
+    }
+ #endif // CONFIG_OVMS_COMP_SDCARD
+
   // start loader:
   Ref();
   Register(ctx);
+  TaskHandle_t task = NULL;
   if (xTaskCreatePinnedToCore(LoadTask, "DuktapeVFSLoad", 5*512, this,
-      CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE_PRIORITY-1, NULL, CORE(1)) != pdPASS)
+      CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE_PRIORITY-1, &task, CORE(1)) != pdPASS)
     {
     Deregister(ctx);
     Unref();
@@ -1590,14 +1692,18 @@ DuktapeVFSLoad::DuktapeVFSLoad(duk_context *ctx, int obj_idx)
     CallMethod(ctx, "fail");
     return;
     }
+  AddTaskToMap(task);
   //ESP_LOGD(TAG, "DuktapeVFSLoad('%s'): started", m_path.c_str());
   }
 
 void DuktapeVFSLoad::LoadTask(void *param)
   {
-  DuktapeVFSLoad *me = (DuktapeVFSLoad*)param;
-  me->Load();
-  me->Unref();
+  // encapsulate local variables, as vTaskDelete() won't return:
+    {
+    DuktapeVFSLoad *me = (DuktapeVFSLoad*)param;
+    me->Load();
+    me->Unref();
+    }
   vTaskDelete(NULL);
   }
 
@@ -1802,6 +1908,14 @@ duk_ret_t DuktapeVFSSave::Create(duk_context *ctx)
 DuktapeVFSSave::DuktapeVFSSave(duk_context *ctx, int obj_idx)
   : DuktapeObject(ctx, obj_idx)
   {
+  // inhibit file I/O when system is about to reboot:
+  if (MyBoot.IsShuttingDown())
+    {
+    m_error = "shutting down";
+    CallMethod(ctx, "fail");
+    return;
+    }
+
   // get args:
   duk_require_stack(ctx, 5);
   if (duk_get_prop_string(ctx, 0, "path"))
@@ -1848,11 +1962,22 @@ DuktapeVFSSave::DuktapeVFSSave(duk_context *ctx, int obj_idx)
     return;
     }
 
+#ifdef CONFIG_OVMS_COMP_SDCARD
+  // verify volume:
+  if (startsWith(m_path, "/sd/") && (!MyPeripherals->m_sdcard || !MyPeripherals->m_sdcard->isavailable()))
+    {
+    m_error = "volume not mounted";
+    CallMethod(ctx, "fail");
+    return;
+    }
+ #endif // CONFIG_OVMS_COMP_SDCARD
+
   // start saver:
   Ref();
   Register(ctx);
+  TaskHandle_t task = NULL;
   if (xTaskCreatePinnedToCore(SaveTask, "DuktapeVFSSave", 5*512, this,
-      CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE_PRIORITY-1, NULL, CORE(1)) != pdPASS)
+      CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE_PRIORITY-1, &task, CORE(1)) != pdPASS)
     {
     Deregister(ctx);
     Unref();
@@ -1860,14 +1985,34 @@ DuktapeVFSSave::DuktapeVFSSave(duk_context *ctx, int obj_idx)
     CallMethod(ctx, "fail");
     return;
     }
+  AddTaskToMap(task);
   //ESP_LOGD(TAG, "DuktapeVFSSave('%s'): started", m_path.c_str());
   }
 
 void DuktapeVFSSave::SaveTask(void *param)
   {
-  DuktapeVFSSave *me = (DuktapeVFSSave*)param;
-  me->Save();
-  me->Unref();
+  // encapsulate local variables, as vTaskDelete() won't return:
+    {
+    DuktapeVFSSave *me = (DuktapeVFSSave*)param;
+
+    // listen for system shutdown:
+    std::string tag;
+    bool shuttingdown = false;
+    tag = idtag("DuktapeVFSSave", me);
+    MyEvents.RegisterEvent(tag, "system.shuttingdown",
+      [&](std::string event, void* data)
+        {
+        MyBoot.RestartPending(tag.c_str());
+        shuttingdown = true;
+        });
+
+    me->Save();
+    me->Unref();
+
+    MyEvents.DeregisterEvent(tag);
+    if (shuttingdown) MyBoot.RestartReady(tag.c_str());
+    }
+
   vTaskDelete(NULL);
   }
 
@@ -2138,7 +2283,26 @@ void *DukAlloc(void *udata, duk_size_t size)
 
 void OvmsScripts::DukTapeInit()
   {
-  ESP_LOGI(TAG,"Duktape: Creating heap");
+  #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE_HEAP_UMM
+    // Allocate dedicated UMM heap space:
+    int memsize = MyConfig.GetParamValueInt("module", "duktape.heapsize",
+      CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE_HEAP_UMM_DEFAULTSIZE) * 1024;
+    if (memsize <= 0)
+      memsize = 512 * 1024;
+    else if (memsize > UMM_MAX_BLOCKS * UMM_BLOCK_BODY_SIZE)
+      memsize = UMM_MAX_BLOCKS * UMM_BLOCK_BODY_SIZE;
+    ESP_LOGI(TAG, "Duktape: Creating heap (size: %u bytes)", memsize);
+    umm_memory = ExternalRamMalloc(memsize);
+    if (!umm_memory)
+      {
+      ESP_LOGE(TAG, "Duktape: unable to allocate %u bytes for the heap", memsize);
+      return;
+      }
+    umm_init_heap(umm_memory, memsize);
+  #else
+    ESP_LOGI(TAG, "Duktape: Creating heap");
+  #endif
+
   m_dukctx = duk_create_heap(DukOvmsAlloc,
     DukOvmsRealloc,
     DukOvmsFree,
@@ -2249,6 +2413,13 @@ void OvmsScripts::DukTapeTask()
             {
             ESP_LOGI(TAG,"Duktape: Clearing existing context");
             duk_destroy_heap(m_dukctx);
+            #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE_HEAP_UMM
+              if (umm_memory != NULL)
+                {
+                free(umm_memory);
+                umm_memory = NULL;
+                }
+            #endif
             m_dukctx = NULL;
             }
           DukTapeInit();
@@ -2273,6 +2444,7 @@ void OvmsScripts::DukTapeTask()
           if (m_dukctx != NULL)
             {
             // Deliver the event to DUKTAPE
+            uint32_t ts = esp_log_timestamp();
             duk_require_stack(m_dukctx, 5);
             duk_get_global_string(m_dukctx, "PubSub");
             duk_get_prop_string(m_dukctx, -1, "publish");
@@ -2284,6 +2456,9 @@ void OvmsScripts::DukTapeTask()
               DukOvmsErrorHandler(m_dukctx, -1);
               }
             duk_pop_2(m_dukctx);
+            ts = esp_log_timestamp() - ts;
+            if (ts > 1000)
+              ESP_LOGW(TAG, "Duktape: event handling for '%s' took %u ms", msg.body.dt_event.name, ts);
             }
           }
           free((void*)msg.body.dt_event.name);
@@ -2403,6 +2578,11 @@ static void script_compact(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, 
   {
   writer->puts("Compacting javascript memory");
   MyScripts.DuktapeCompact();
+  }
+
+static void script_meminfo(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  MyScripts.DuktapeEvalNoResult("JSON.print(meminfo())", writer);
   }
 
 #endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
@@ -2545,7 +2725,18 @@ void OvmsScripts::EventScript(std::string event, void* data)
   dmsg.body.dt_event.data = NULL; // data unused, may also be invalid in async script execution
   if (!DuktapeDispatch(&dmsg, 0))
     {
+    ESP_LOGE(TAG, "EventScript: event '%s' lost (queue overflow)", event.c_str());
     free((void*)dmsg.body.dt_event.name);
+    }
+  else
+    {
+    // event processing delayed?
+    int qwait = uxQueueMessagesWaiting(m_duktaskqueue);
+    if (qwait > 10)
+      {
+      ESP_LOGW(TAG, "EventScript: event '%s' delayed, queued at position %d/%d", event.c_str(),
+        qwait, CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE_QUEUE_SIZE);
+      }
     }
 #endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 
@@ -2598,7 +2789,9 @@ OvmsScripts::OvmsScripts()
   // Register standard functions
   DuktapeObjectRegistration* dto;
   RegisterDuktapeFunction(DukOvmsPrint, 1, "print");
+  RegisterDuktapeFunction(DukOvmsWrite, 1, "write");
   RegisterDuktapeFunction(DukOvmsAssert, 2, "assert");
+  RegisterDuktapeFunction(DukOvmsMemInfo, 0, "meminfo");
   dto = new DuktapeObjectRegistration("OvmsEvents");
   dto->RegisterDuktapeFunction(DukOvmsRaiseEvent, 2, "Raise");
   RegisterDuktapeObject(dto);
@@ -2637,6 +2830,7 @@ OvmsScripts::OvmsScripts()
   cmd_script->RegisterCommand("reload","Reload javascript framework",script_reload);
   cmd_script->RegisterCommand("eval","Eval some javascript code",script_eval,"<code>",1,1);
   cmd_script->RegisterCommand("compact","Compact javascript heap",script_compact);
+  cmd_script->RegisterCommand("meminfo","Show heap memory status",script_meminfo);
 #endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   MyCommandApp.RegisterCommand(".","Run a script",script_run,"<path>",1,1);
   }
@@ -2645,6 +2839,13 @@ OvmsScripts::~OvmsScripts()
   {
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   duk_destroy_heap(m_dukctx);
+  #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE_HEAP_UMM
+    if (umm_memory != NULL)
+      {
+      free(umm_memory);
+      umm_memory = NULL;
+      }
+  #endif
   m_dukctx = NULL;
 #endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   }
