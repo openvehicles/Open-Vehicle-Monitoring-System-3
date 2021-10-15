@@ -738,6 +738,7 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
       // This SOC only losely correlates to the instrument cluster SOC; on high SOC
       // it lowers faster initially, but on low SOC it stays higher.
       // Data analysis indicates this SOC is mainly coulomb counting based.
+      // MFD range capacity correlates linearly to this SOC.
       if (PollReply.FromUint16("VWUP_MOT_ELEC_SOC_NORM", value)) {
         float soc = value / 100;
         VALUE_LOG(TAG, "VWUP_MOT_ELEC_SOC_NORM=%f => %f", value, soc);
@@ -796,9 +797,12 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
         //  The value may include a battery temperature compensation, so may change
         //  from summer to winter, this isn't known yet. There also may be a separate
         //  actual SOH reading available (to be discovered).
-        // Value resolution is at only 0.1 kWh, also capacity is artificially reduced by the
+
+        // Analysis of the SOC monitor log indicates this capacity relates to the engine ECU SOC:
+        float soc_fct = MotElecSoCNorm->AsFloat() / 100;
+
+        // Value resolution is at only 0.1 kWh, also capacity seems artificially reduced by the
         //  car below 30% SOC, so we limit the calculation to…
-        float soc_fct = StdMetrics.ms_v_bat_soc->AsFloat() / 100;
         if (energy_avail > 3.0 && soc_fct >= 0.30)
         {
           float energy_full = energy_avail / soc_fct;

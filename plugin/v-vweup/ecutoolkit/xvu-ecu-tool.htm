@@ -2,7 +2,7 @@
   Web UI page plugin:
     VW e-Up / Seat Mii / Skoda Citigo ECU Toolkit
     Author:     Michael Balzer <dexter@dexters-web.de>
-    Version:    0.1
+    Version:    0.5.1
   
   Dependencies:
     - Module plugin: XVU ECU Lib (lib/xvu-ecu.js) Version >= 0.5
@@ -602,10 +602,12 @@
     loadjs('xvu.ecu.$coding("'+ecuid+'")')
       .done(function (output) {
         output = stripDebugLines(output);
-        if (output.indexOf("ERROR") >= 0)
+        if (output.indexOf("ERROR") >= 0) {
           confirmdialog("Read Coding Error", output, ["OK"]);
-        else
+        } else {
           $tool.find(".input-coding").val(output).trigger('change');
+          confirmdialog("Success", "Current coding read successfully.", ["OK"], 2);
+        }
       })
       .always(function () {
         $tool.removeClass("loading disabled");
@@ -619,10 +621,12 @@
     loadjs('xvu.ecu.$coding("'+td.ecuid+'","'+td.coding.hex+'","'+td.seccode+'")')
       .done(function (output) {
         output = stripDebugLines(output);
-        if (output.indexOf("ERROR") >= 0)
+        if (output.indexOf("ERROR") >= 0) {
           confirmdialog("Write Coding Error", output, ["OK"]);
-        else
+        } else {
           $tool.find(".input-coding").val(output).trigger('change');
+          confirmdialog("Success", "Current coding written successfully.", ["OK"], 2);
+        }
       })
       .always(function () {
         $tool.removeClass("loading disabled");
