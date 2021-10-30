@@ -33,6 +33,7 @@ static const char *TAG = "powermgmt";
 #include "ovms_config.h"
 #include "powermgmt.h"
 #include "ovms_peripherals.h"
+#include "ovms_boot.h"
 #include "metrics_standard.h"
 
 powermgmt MyPowerMgmt __attribute__ ((init_priority (8500)));
@@ -155,31 +156,24 @@ void powermgmt::Ticker1(std::string event, void* data)
   if (StandardMetrics.ms_v_bat_12v_voltage_alert->AsBool())
     {
     m_12v_alert_timer++;
-    if (m_12v_alert_timer > m_12v_shutdown_delay*60) // minutes to seconds
+    if (m_12v_shutdown_delay && m_12v_alert_timer == 1)
+      {
+      ESP_LOGW(TAG, "12V battery alert detected, will shutdown in %d minutes", m_12v_shutdown_delay);
+      }
+    if (m_12v_shutdown_delay && m_12v_alert_timer > m_12v_shutdown_delay*60) // minutes to seconds
       {
       ESP_LOGE(TAG,"Ongoing 12V battery alert time limit exceeded! Shutting down OVMS..");
       MyEvents.SignalEvent("powermgmt.ovms.shutdown",NULL);
-      vTaskDelay(500 / portTICK_PERIOD_MS); // make sure all notifications all transmitted before powerring down OVMS
-#ifdef CONFIG_OVMS_COMP_WIFI
-      MyPeripherals->m_esp32wifi->SetPowerMode(Off);
-#endif
-#ifdef CONFIG_OVMS_COMP_CELLULAR
-      MyPeripherals->m_cellular_modem->SetPowerMode(Off);
-#endif
-#ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN
-      MyPeripherals->m_mcp2515_swcan->SetPowerMode(Off);
-#endif
-#ifdef CONFIG_OVMS_COMP_ESP32CAN
-      MyPeripherals->m_esp32can->SetPowerMode(Off);
-#endif
-#ifdef CONFIG_OVMS_COMP_EXT12V
-      MyPeripherals->m_ext12v->SetPowerMode(Off);
-#endif
-      MyPeripherals->m_esp32->SetPowerMode(DeepSleep);
+      MyBoot.DeepSleep();
+      m_12v_shutdown_delay = 0;
       }
     }
   else
     {
+    if (m_12v_shutdown_delay && m_12v_alert_timer)
+      {
+      ESP_LOGI(TAG, "12V battery alert resolved, shutdown cancelled");
+      }
     m_12v_alert_timer = 0;
     }
   }

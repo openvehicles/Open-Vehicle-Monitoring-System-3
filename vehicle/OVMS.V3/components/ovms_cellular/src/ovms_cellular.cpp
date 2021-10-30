@@ -652,7 +652,7 @@ void modem::State1Enter(modem_state1_t newstate)
     case PoweredOff:
       ClearNetMetrics();
       MyEvents.SignalEvent("system.modem.poweredoff", NULL);
-      if (MyBoot.IsShuttingDown()) MyBoot.RestartReady(TAG);
+      if (MyBoot.IsShuttingDown()) MyBoot.ShutdownReady(TAG);
       StopMux();
       if (m_driver)
         {
@@ -1399,7 +1399,7 @@ void modem::EventListener(std::string event, void* data)
     {
     if (m_state1 != PoweredOff)
       {
-      MyBoot.RestartPending(TAG);
+      MyBoot.ShutdownPending(TAG);
       SendSetState1(PoweringOff); // We are not in the task, so queue the state change
       }
     }

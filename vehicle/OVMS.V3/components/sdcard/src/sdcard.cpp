@@ -68,7 +68,7 @@ void sdcard::Ticker1(std::string event, void* data)
         {
         MyEvents.SignalEvent("sd.unmounted", NULL);
         if (MyBoot.IsShuttingDown())
-          MyBoot.RestartReady(TAG);
+          MyBoot.ShutdownReady(TAG);
         }
       }
     }
@@ -78,7 +78,7 @@ void sdcard::EventSystemShutDown(std::string event, void* data)
   {
   if (m_mounted && event == "system.shuttingdown")
     {
-    MyBoot.RestartPending(TAG);
+    MyBoot.ShutdownPending(TAG);
     ESP_LOGI(TAG,"Unmounting SDCARD for reset");
     unmount();
     }
