@@ -2002,7 +2002,7 @@ void DuktapeVFSSave::SaveTask(void *param)
     MyEvents.RegisterEvent(tag, "system.shuttingdown",
       [&](std::string event, void* data)
         {
-        MyBoot.RestartPending(tag.c_str());
+        MyBoot.ShutdownPending(tag.c_str());
         shuttingdown = true;
         });
 
@@ -2010,7 +2010,7 @@ void DuktapeVFSSave::SaveTask(void *param)
     me->Unref();
 
     MyEvents.DeregisterEvent(tag);
-    if (shuttingdown) MyBoot.RestartReady(tag.c_str());
+    if (shuttingdown) MyBoot.ShutdownReady(tag.c_str());
     }
 
   vTaskDelete(NULL);
