@@ -266,6 +266,7 @@ void OvmsVehicleVWeUp::OBDInit()
   // Add high priority PIDs:
   m_poll_vector.insert(m_poll_vector.end(), {
     {VWUP_MOT_ELEC, UDS_READ, VWUP_MOT_ELEC_POWER_MOT,  {  0,  0,  0,  1}, 1, ISOTP_STD},
+    {VWUP_MOT_ELEC, UDS_READ, VWUP_MOT_ELEC_ACCEL,      {  0,  0,  0,  1}, 1, ISOTP_STD},
   });
 
   // Add model year specific AC charger PIDs:
@@ -1152,6 +1153,13 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
       if (PollReply.FromInt16("VWUP_MOT_ELEC_POWER_MOT", value)) {
         StdMetrics.ms_v_inv_power->SetValue(value / 250);
         VALUE_LOG(TAG, "VWUP_MOT_ELEC_POWER_MOT=%f => %f", value, StdMetrics.ms_v_inv_power->AsFloat());
+      }
+      break;
+    case VWUP_MOT_ELEC_ACCEL:
+      if (PollReply.FromInt16("VWUP_MOT_ELEC_ACCEL", value)) {
+        float accel = value / 1000;
+        StdMetrics.ms_v_pos_acceleration->SetValue(accel);
+        VALUE_LOG(TAG, "VWUP_MOT_ELEC_ACCEL=%f => %f", value, accel);
       }
       break;
 
