@@ -1600,6 +1600,8 @@ void OvmsWebServer::HandleCfgNotifications(PageEntry_t& p, PageContext_t& c)
   std::string error;
   std::string vehicle_minsoc, vehicle_stream;
   std::string log_trip_storetime, log_trip_minlength, log_grid_storetime;
+  bool report_trip_enable;
+  std::string report_trip_minlength;
 
   if (c.method == "POST") {
     // process form submission:
@@ -1608,6 +1610,8 @@ void OvmsWebServer::HandleCfgNotifications(PageEntry_t& p, PageContext_t& c)
     log_trip_storetime = c.getvar("log_trip_storetime");
     log_trip_minlength = c.getvar("log_trip_minlength");
     log_grid_storetime = c.getvar("log_grid_storetime");
+    report_trip_enable = (c.getvar("report_trip_enable") == "yes");
+    report_trip_minlength = c.getvar("report_trip_minlength");
 
     if (vehicle_minsoc != "") {
       if (atoi(vehicle_minsoc.c_str()) < 0 || atoi(vehicle_minsoc.c_str()) > 100) {
@@ -1636,6 +1640,12 @@ void OvmsWebServer::HandleCfgNotifications(PageEntry_t& p, PageContext_t& c)
       }
     }
 
+    if (report_trip_minlength != "") {
+      if (atoi(report_trip_minlength.c_str()) < 0) {
+        error += "<li data-input=\"report_trip_minlength\">Trip report min length must not be negative</li>";
+      }
+    }
+
     if (error == "") {
       // success:
       if (vehicle_minsoc == "")
@@ -1660,6 +1670,12 @@ void OvmsWebServer::HandleCfgNotifications(PageEntry_t& p, PageContext_t& c)
       else
         MyConfig.SetParamValue("notify", "log.grid.storetime", log_grid_storetime);
 
+      MyConfig.SetParamValueBool("notify", "report.trip.enable", report_trip_enable);
+      if (report_trip_minlength == "")
+        MyConfig.DeleteInstance("notify", "report.trip.minlength");
+      else
+        MyConfig.SetParamValue("notify", "report.trip.minlength", report_trip_minlength);
+
       c.head(200);
       c.alert("success", "<p class=\"lead\">Notifications configured.</p>");
       OutputHome(p, c);
@@ -1680,6 +1696,8 @@ void OvmsWebServer::HandleCfgNotifications(PageEntry_t& p, PageContext_t& c)
     log_trip_storetime = MyConfig.GetParamValue("notify", "log.trip.storetime");
     log_trip_minlength = MyConfig.GetParamValue("notify", "log.trip.minlength");
     log_grid_storetime = MyConfig.GetParamValue("notify", "log.grid.storetime");
+    report_trip_enable = MyConfig.GetParamValueBool("notify", "report.trip.enable");
+    report_trip_minlength = MyConfig.GetParamValue("notify", "report.trip.minlength");
 
     // generate form:
     c.head(200);
@@ -1698,6 +1716,17 @@ void OvmsWebServer::HandleCfgNotifications(PageEntry_t& p, PageContext_t& c)
   c.input_slider("Minimum SOC", "vehicle_minsoc", 3, "%",
     -1, atoi(vehicle_minsoc.c_str()), 0, 0, 100, 1,
     "<p>Send an alert when SOC drops below this level, 0 = off. Same as App feature #9.</p>");
+
+  c.fieldset_end();
+
+  c.fieldset_start("Vehicle Reports");
+
+  c.input_checkbox("Enable trip report", "report_trip_enable", report_trip_enable,
+    "<p>This will send a textual report on driving statistics after each trip.</p>");
+  c.input("number", "Report min trip length", "report_trip_minlength", report_trip_minlength.c_str(), "Default: 0.2 km",
+    "<p>Only trips over at least this distance will produce a report. If your vehicle does not support the "
+    "<code>v.p.trip</code> metric, set this to 0.</p>",
+    "min=\"0\" step=\"0.1\"", "km");
 
   c.fieldset_end();
 

@@ -63,6 +63,7 @@ typedef enum : uint8_t
   Kilometers    = 10,
   Miles         = 11,
   Meters        = 12,
+  Feet          = 13,
 
   Celcius       = 20,
   Fahrenheit    = 21,

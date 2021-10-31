@@ -85,7 +85,8 @@ OvmsVehicleFactory::OvmsVehicleFactory()
   cmd_charge->RegisterCommand("current","Limit charge current",vehicle_charge_current,"<amps>",1,1);
   cmd_charge->RegisterCommand("cooldown","Start a vehicle cooldown",vehicle_charge_cooldown);
 
-  MyCommandApp.RegisterCommand("stat","Show vehicle status",vehicle_stat);
+  OvmsCommand* cmd_stat = MyCommandApp.RegisterCommand("stat","Show vehicle status",vehicle_stat);
+  cmd_stat->RegisterCommand("trip","Show trip status",vehicle_stat_trip);
 
   OvmsCommand* cmd_bms = MyCommandApp.RegisterCommand("bms","BMS framework", bms_status, "", 0, 0, false);
   cmd_bms->RegisterCommand("status","Show BMS status",bms_status);
@@ -248,6 +249,16 @@ OvmsVehicle::OvmsVehicle()
   m_last_drivetime = 0;
   m_last_gentime = 0;
   m_last_parktime = 0;
+
+  m_drive_startsoc = StdMetrics.ms_v_bat_soc->AsFloat();
+  m_drive_startrange = StdMetrics.ms_v_bat_range_est->AsFloat();
+  m_drive_startaltitude = StdMetrics.ms_v_pos_altitude->AsFloat();
+  m_drive_speedcnt = 0;
+  m_drive_speedsum = 0;
+  m_drive_accelcnt = 0;
+  m_drive_accelsum = 0;
+  m_drive_decelcnt = 0;
+  m_drive_decelsum = 0;
 
   m_ticker = 0;
   m_12v_ticker = 0;
@@ -1084,6 +1095,96 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStat(int verbosity, OvmsWrite
   return Success;
   }
 
+/**
+ * CommandStatTrip: default implementation of vehicle trip status report
+ */
+OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStatTrip(int verbosity, OvmsWriter* writer)
+  {
+  metric_unit_t rangeUnit = (MyConfig.GetParamValue("vehicle", "units.distance") == "M") ? Miles : Kilometers;
+  metric_unit_t speedUnit = (rangeUnit == Miles) ? Mph : Kph;
+  metric_unit_t accelUnit = (rangeUnit == Miles) ? MphPS : KphPS;
+  metric_unit_t energyUnit = (rangeUnit == Miles) ? WattHoursPM : WattHoursPK;
+  metric_unit_t altitudeUnit = (rangeUnit == Miles) ? Feet : Meters;
+  const char* rangeUnitLabel = OvmsMetricUnitLabel(rangeUnit);
+  const char* speedUnitLabel = OvmsMetricUnitLabel(speedUnit);
+  const char* accelUnitLabel = OvmsMetricUnitLabel(accelUnit);
+  const char* energyUnitLabel = OvmsMetricUnitLabel(energyUnit);
+  const char* altitudeUnitLabel = OvmsMetricUnitLabel(altitudeUnit);
+
+  float trip_length = StdMetrics.ms_v_pos_trip->AsFloat(0, rangeUnit);
+
+  float speed_avg = (m_drive_speedcnt > 0)
+    ? UnitConvert(Kph, speedUnit, (float)(m_drive_speedsum / m_drive_speedcnt))
+    : 0;
+  float accel_avg = (m_drive_accelcnt > 0)
+    ? UnitConvert(MetersPSS, accelUnit, (float)(m_drive_accelsum / m_drive_accelcnt))
+    : 0;
+  float decel_avg = (m_drive_decelcnt > 0)
+    ? UnitConvert(MetersPSS, accelUnit, (float)(m_drive_decelsum / m_drive_decelcnt))
+    : 0;
+
+  float energy_used = StdMetrics.ms_v_bat_energy_used->AsFloat();
+  float energy_recd = StdMetrics.ms_v_bat_energy_recd->AsFloat();
+  float energy_recd_perc = (energy_used > 0) ? energy_recd / energy_used * 100 : 0;
+  float wh_per_rangeunit = (trip_length > 0) ? (energy_used - energy_recd) * 1000 / trip_length : 0;
+
+  float soc = StdMetrics.ms_v_bat_soc->AsFloat();
+  float soc_diff = soc - m_drive_startsoc;
+  float range = StdMetrics.ms_v_bat_range_est->AsFloat();
+  float range_diff = range - m_drive_startrange;
+  float alt = StdMetrics.ms_v_pos_altitude->AsFloat();
+  float alt_diff = UnitConvert(Meters, altitudeUnit, alt - m_drive_startaltitude);
+
+  std::ostringstream buf;
+  buf
+    << "Trip "
+    << std::fixed
+    << std::setprecision(1)
+    << trip_length << rangeUnitLabel
+    << " Avg "
+    << std::setprecision(0)
+    << speed_avg << speedUnitLabel
+    << " Alt "
+    << ((alt_diff >= 0) ? "+" : "")
+    << alt_diff << altitudeUnitLabel
+    ;
+  if (wh_per_rangeunit != 0)
+    {
+    buf
+      << "\nEnergy "
+      << wh_per_rangeunit << energyUnitLabel
+      << ", "
+      << energy_recd_perc << "% recd"
+      ;
+    }
+  buf
+    << std::setprecision(1)
+    << "\nSOC "
+    << ((soc_diff >= 0) ? "+" : "")
+    << soc_diff << "%"
+    << " = "
+    << soc << "%"
+    << "\nRange "
+    << ((range_diff >= 0) ? "+" : "")
+    << range_diff << rangeUnitLabel
+    << " = "
+    << range << rangeUnitLabel
+    ;
+  if (accel_avg > 0)
+    {
+    buf
+      << "\nAccel +"
+      << accel_avg
+      << " / "
+      << decel_avg << accelUnitLabel
+      ;
+    }
+
+  writer->puts(buf.str().c_str());
+
+  return Success;
+  }
+
 void OvmsVehicle::VehicleConfigChanged(std::string event, void* data)
   {
   OvmsConfigParam* param = (OvmsConfigParam*) data;
@@ -1126,6 +1227,15 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
     {
     if (StandardMetrics.ms_v_env_on->AsBool())
       {
+      m_drive_startsoc = StdMetrics.ms_v_bat_soc->AsFloat();
+      m_drive_startrange = StdMetrics.ms_v_bat_range_est->AsFloat();
+      m_drive_startaltitude = StdMetrics.ms_v_pos_altitude->AsFloat();
+      m_drive_speedcnt = 0;
+      m_drive_speedsum = 0;
+      m_drive_accelcnt = 0;
+      m_drive_accelsum = 0;
+      m_drive_decelcnt = 0;
+      m_drive_decelsum = 0;
       MyEvents.SignalEvent("vehicle.on",NULL);
       if (m_autonotifications)
         {
@@ -1365,10 +1475,35 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
     if (m_autonotifications)
       NotifyGenState();
     }
+  else if (metric == StandardMetrics.ms_v_pos_speed)
+    {
+    // Collect data for trip speed average:
+    const float min_speed = 5.0;          // slow speed exclusion [kph]
+    float speed = StandardMetrics.ms_v_pos_speed->AsFloat();
+    if (speed > min_speed)
+      {
+      m_drive_speedcnt++;
+      m_drive_speedsum += speed;
+      }
+    }
   else if (metric == StandardMetrics.ms_v_pos_acceleration)
     {
     if (m_brakelight_enable)
       CheckBrakelight();
+
+    // Collect data for trip acceleration/deceleration average:
+    const float min_accel = 2.5 / 3.6;    // cruising range exclusion [m/s²]
+    float accel = StandardMetrics.ms_v_pos_acceleration->AsFloat();
+    if (accel > min_accel)
+      {
+      m_drive_accelcnt++;
+      m_drive_accelsum += accel;
+      }
+    else if (accel < -min_accel)
+      {
+      m_drive_decelcnt++;
+      m_drive_decelsum += accel;
+      }
     }
   else if (metric == StandardMetrics.ms_v_bat_power)
     {
@@ -1629,9 +1764,11 @@ void OvmsVehicle::NotifyVehicleOn()
 
 void OvmsVehicle::NotifyVehicleOff()
   {
-  float min_trip_length = MyConfig.GetParamValueFloat("notify", "log.trip.minlength", 0.2);
-  if (StdMetrics.ms_v_pos_trip->AsFloat() >= min_trip_length)
+  float trip = StdMetrics.ms_v_pos_trip->AsFloat();
+  if (trip >= MyConfig.GetParamValueFloat("notify", "log.trip.minlength", 0.2))
     NotifyTripLog();
+  if (trip >= MyConfig.GetParamValueFloat("notify", "report.trip.minlength", 0.2))
+    NotifyTripReport();
   NotifiedVehicleOff();
   }
 
@@ -1718,6 +1855,19 @@ void OvmsVehicle::NotifyTripLog()
     buf << "," << *std::get<0>(t_hlth_minmax) << "," << *std::get<1>(t_hlth_minmax);
 
   MyNotify.NotifyString("data", "log.trip", buf.str().c_str());
+  }
+
+void OvmsVehicle::NotifyTripReport()
+  {
+  // Send trip report notification
+  //  Notification type "info", subtype "drive.trip.report" 
+  bool send_report = MyConfig.GetParamValueBool("notify", "report.trip.enable", false);
+  if (send_report)
+    {
+    StringWriter buf(200);
+    CommandStatTrip(COMMAND_RESULT_NORMAL, &buf);
+    MyNotify.NotifyString("info", "drive.trip.report", buf.c_str());
+    }
   }
 
 OvmsVehicle::vehicle_mode_t OvmsVehicle::VehicleModeKey(const std::string code)
