@@ -394,6 +394,7 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
 
     case 0x320: // Speed
       StandardMetrics.ms_v_pos_speed->SetValue(((d[4] << 8) + d[3] - 1) / 190);
+      CalculateAcceleration(); // only necessary until we find acceleration on T26
       break;
 
     case 0x527: // Outdoor temperature
