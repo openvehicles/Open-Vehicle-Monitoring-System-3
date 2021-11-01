@@ -29,7 +29,7 @@
 #include <string>
 static const char *TAG = "v-vweup";
 
-#define VERSION "0.21.1"
+#define VERSION "0.22.1"
 
 #include <stdio.h>
 #include <string>
@@ -104,6 +104,10 @@ OvmsVehicleVWeUp::OvmsVehicleVWeUp()
   m_timermode_new = false;
 
   m_chg_ctp_car = -1;
+
+  m_odo_trip = 0;
+  m_tripfrac_reftime = 0;
+  m_tripfrac_refspeed = 0;
 
   // Init metrics:
   m_version = MyMetrics.InitString("xvu.m.version", 0, VERSION " " __DATE__ " " __TIME__);
@@ -366,7 +370,7 @@ void OvmsVehicleVWeUp::MetricModified(OvmsMetric* metric)
     if (soh_new)
       SetSOH(soh_new);
   }
-
+  
   // Pass update on to standard handler:
   OvmsVehicle::MetricModified(metric);
 }
@@ -566,6 +570,10 @@ void OvmsVehicleVWeUp::ResetTripCounters()
 {
   // Clear per trip counters:
   StdMetrics.ms_v_pos_trip->SetValue(0);
+  m_odo_trip            = 0;
+  m_tripfrac_reftime    = esp_log_timestamp();
+  m_tripfrac_refspeed   = StdMetrics.ms_v_pos_speed->AsFloat();
+
   StdMetrics.ms_v_bat_energy_recd->SetValue(0);
   StdMetrics.ms_v_bat_energy_used->SetValue(0);
   StdMetrics.ms_v_bat_coulomb_recd->SetValue(0);
@@ -576,16 +584,39 @@ void OvmsVehicleVWeUp::ResetTripCounters()
   if (IsOBDReady()) {
     m_soc_abs_start       = BatMgmtSoCAbs->AsFloat();
   }
-  m_odo_start           = StdMetrics.ms_v_pos_odometer->AsFloat();
   m_soc_norm_start      = StdMetrics.ms_v_bat_soc->AsFloat();
   m_energy_recd_start   = StdMetrics.ms_v_bat_energy_recd_total->AsFloat();
   m_energy_used_start   = StdMetrics.ms_v_bat_energy_used_total->AsFloat();
   m_coulomb_recd_start  = StdMetrics.ms_v_bat_coulomb_recd_total->AsFloat();
   m_coulomb_used_start  = StdMetrics.ms_v_bat_coulomb_used_total->AsFloat();
 
-  ESP_LOGD(TAG, "Trip start ref: socnrm=%f socabs=%f odo=%f, er=%f, eu=%f, cr=%f, cu=%f",
-    m_soc_norm_start, m_soc_abs_start, m_odo_start,
+  ESP_LOGD(TAG, "Trip start ref: socnrm=%f socabs=%f, er=%f, eu=%f, cr=%f, cu=%f",
+    m_soc_norm_start, m_soc_abs_start,
     m_energy_recd_start, m_energy_used_start, m_coulomb_recd_start, m_coulomb_used_start);
+}
+
+
+/**
+ * UpdateTripOdo: odometer resolution is only 1 km, so trip distances lack
+ *  precision. To compensate, this method derives trip distance from speed.
+ */
+void OvmsVehicleVWeUp::UpdateTripOdo()
+{
+  // Process speed update:
+  uint32_t now = esp_log_timestamp();
+  float speed = StdMetrics.ms_v_pos_speed->AsFloat();
+
+  if (m_tripfrac_reftime && now > m_tripfrac_reftime)
+  {
+    float speed_avg = ABS(speed + m_tripfrac_refspeed) / 2;
+    uint32_t time_ms = now - m_tripfrac_reftime;
+    double meters = speed_avg / 3.6 * time_ms / 1000;
+    m_odo_trip += meters / 1000;
+    StdMetrics.ms_v_pos_trip->SetValue(TRUNCPREC(m_odo_trip,3));
+  }
+
+  m_tripfrac_reftime = now;
+  m_tripfrac_refspeed = speed;
 }
 
 
