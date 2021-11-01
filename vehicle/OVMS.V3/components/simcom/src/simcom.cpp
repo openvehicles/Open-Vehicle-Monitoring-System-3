@@ -398,7 +398,7 @@ void simcom::EventListener(std::string event, void* data)
     {
     if (m_state1 != PoweredOff)
       {
-      MyBoot.RestartPending(TAG);
+      MyBoot.ShutdownPending(TAG);
       SetState1(PoweringOff);
       }
     }
@@ -578,7 +578,7 @@ void simcom::State1Enter(SimcomState1 newstate)
     case PoweredOff:
       ESP_LOGI(TAG,"State: Enter PoweredOff state");
       MyEvents.SignalEvent("system.modem.poweredoff", NULL);
-      if (MyBoot.IsShuttingDown()) MyBoot.RestartReady(TAG);
+      if (MyBoot.IsShuttingDown()) MyBoot.ShutdownReady(TAG);
       m_mux.Stop();
       break;
     case PowerOffOn:
