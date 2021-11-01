@@ -53,7 +53,7 @@ class mcp2515 : public canbus
 
   public:
     esp_err_t Write(const CAN_frame_t* p_frame, TickType_t maxqueuewait=0);
-    bool AsynchronousInterruptHandler(CAN_frame_t* frame, bool * frameReceived);
+    bool AsynchronousInterruptHandler(CAN_frame_t* frame, uint32_t* framesReceived);
     void TxCallback(CAN_frame_t* p_frame, bool success);
 
   protected:

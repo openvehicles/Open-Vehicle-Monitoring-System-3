@@ -35,6 +35,7 @@
 #include "freertos/task.h"
 #include <cstring>
 #include <string>
+#include <iomanip>
 #include "ovms.h"
 
 // Macro utils:
@@ -181,6 +182,17 @@ std::string hexencode(const std::string value);
  */
 std::string hexdecode(const std::string encval);
 
+/**
+ * int_to_hex: hex encode an integer value
+ *  Source: https://kodlogs.com/68574/int-to-hex-string-c
+ */
+template <typename T>
+std::string int_to_hex(T i)
+  {
+  std::stringstream stream;
+  stream << std::setfill('0') << std::setw(sizeof(T)*2) << std::hex << (unsigned)i;
+  return stream.str();
+  }
 
 /**
  * json_encode: encode string for JSON transport (see http://www.json.org/)

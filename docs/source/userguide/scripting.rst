@@ -183,6 +183,67 @@ As the module is actually loaded into the global context this way just like usin
 anything else using the module API (e.g. a web plugin) will also work after evaluation.
 
 
+-----------
+Heap Memory
+-----------
+
+Due to limitations of the general esp-idf system memory management, Duktape will normally use
+the custom memory manager `umm_malloc by Ralph Hempel <https://github.com/rhempel/umm_malloc>`_.
+
+``umm_malloc`` needs a dedicated chunk of the system memory to work with. The default for Duktape
+is 512 KB (taken from SPIRAM), which is normally sufficient even for extended scripting. If you
+need more RAM, the size can be changed by ``config set module duktape.heapsize <size_in_KB>``.
+Maximum allowed size is 1024 KB. The heap size needs to be configured at Duktape startup and
+cannot be changed while Duktape is running. To reconfigure the heap size, set the new configuration
+and do a ``script reload``.
+
+Call ``meminfo()`` to query the current heap memory usage status. The function returns an object
+containing some standard and some memory library internal info. The shell command ``script meminfo``
+outputs the object in JSON format. Example::
+
+  OVMS# script meminfo
+  {
+    "totalBytes": 524224,
+    "usedBytes": 273344,
+    "freeBytes": 250880,
+    "largestFreeBytes": 180608,
+    "memlib": "umm",
+    "ummTotalEntries": 2723,
+    "ummUsedEntries": 2615,
+    "ummFreeEntries": 108,
+    "ummTotalBlocks": 16382,
+    "ummUsedBlocks": 8542,
+    "ummFreeBlocks": 7840,
+    "ummMaxFreeContiguousBlocks": 5644,
+    "ummUsageMetric": 108,
+    "ummFragmentationMetric": 27
+  }
+
+"largestFreeBytes" is the largest block of contiguous memory available. Note these values will
+change by some amount between the garbage collection runs done every 60 seconds, the maximum
+usage will be just before the garbage collection, and the base line just after.
+
+"memlib" tells about the memory manager in use, the following fields are the internal state
+variables and statistics of that manager (having the memlib name as a name prefix). These
+can be useful to monitor the memory management load and performance.
+
+If running a firmware configured to use the default system memory manager, the output will
+look like this::
+
+  OVMS# script meminfo
+  {
+    "totalBytes": 4072176,
+    "usedBytes": 415996,
+    "freeBytes": 3656180,
+    "largestFreeBytes": 3635864,
+    "memlib": "sys",
+    "sysMinimumFreeBytes": 3653072,
+    "sysAllocatedBlocks": 6013,
+    "sysFreeBlocks": 454,
+    "sysTotalBlocks": 6467
+  }
+
+
 --------------------------------------
 Internal Objects and Functions/Methods
 --------------------------------------
@@ -203,6 +264,8 @@ method::
     },
     "assert": function () { [native code] },
     "print": function () { [native code] },
+    "write": function () { [native code] },
+    "meminfo": function () { [native code] },
     "OvmsCommand": {
       "Exec": function Exec() { [native code] }
     },
@@ -268,6 +331,13 @@ Global Context
     Print the given string on the current terminal. If no terminal (for example a background script) then
     print to the system console as an informational message.
 
+- ``write(string/Uint8Array)``
+    Write the given string or Uint8Array to the current output channel (i.e. terminal/HTTP connection).
+    Use this to transfer binary data to a reader.
+
+- ``meminfo()``
+    Returns an object containing the current heap memory status (see `Heap Memory`_).
+
 - ``performance.now()``
     Returns monotonic time since boot in milliseconds, with microsecond resolution.
 
@@ -301,6 +371,66 @@ format. Both by default insert spacing and indentation for readability and accep
   
   For example, ``Duktape.enc('JC', data)`` is equivalent to ``JSON.format(data, false)`` except for
   the representation of functions. Using the ``JX`` encoding will omit unnecessary quotings.
+
+
+.. warning:: All Duktape JSON encoders and decoders have a very high performance penalty
+  and **should be avoided for large objects or frequent encoding/decoding**, with large
+  being any object larger than a handful of configuration or state variables.
+  
+  For general data storage and exchange with the web UI, **use the CBOR serialization instead**.
+
+
+CBOR
+^^^^
+
+**CBOR** is a binary serialization format, and especially with Duktape the better alternative
+over JSON for storage and data transmission, if human readability isn't required.
+
+"CBOR" stands for "Concise Binary Object Representation". See https://cbor.io/
+for details on the specification and available implementations. CBOR isn't necessarily more
+compact in storage space, but can be encoded and decoded much faster and with much less memory
+overhead as JSON.
+
+Duktape implements CBOR support by the builtin ``CBOR.encode()`` and ``CBOR.decode()`` methods:
+
+- ``enc = CBOR.encode(data)``
+    Encode data (any Javascript data) to CBOR format (result is an ArrayBuffer)
+- ``data = CBOR.decode(enc)``
+    Decode CBOR format (ArrayBuffer/Uint8Array) to Javascript data
+
+CBOR support in Duktape is still `considered experimental <https://duktape.org/guide.html#builtin-cbor>`_,
+but the underlying implementation is mature.
+
+CBOR also isn't part of the standard browser builtin Javascript APIs yet, so the OVMS
+web framework includes the `cbor-js library by Patrick Gansterer <https://github.com/paroga/cbor-js>`_
+(same API as on the Duktape side).
+
+The webserver command API supports binary output from commands & Javascript API methods,
+and the output can be passed to ``CBOR.decode()`` directly.
+
+**Example:**
+
+The following scheme shows how to transmit a javascript data object from the module
+backend into the web frontend:
+
+.. code-block:: javascript
+  
+  // Module backend:
+  backend.getdata = function () {
+    var mydata = { pi: 3.141, fib: [ 0,1,1,2,3,5,8,13 ] };
+    write(CBOR.encode(mydata));
+  };
+  
+  // Web frontend:
+  loadjs({ command: "backend.getdata()", output: "binary" }).done((stream) => {
+    var mydata = CBOR.decode(stream);
+  });
+
+For full examples, see the "AuxBatMon" and "PwrMon" plugins.
+
+.. note:: When loading CBOR data via ``VFS.Load()``, you need to set the ``binary`` option
+  to true, so the loader will return a ``Uint8Array`` instead of a standard string.
+
 
 
 HTTP
@@ -501,6 +631,62 @@ See :doc:`/plugin/auxbatmon/README` for a complete application usage example.
     }
 
 
+.. note:: **Saving to and loading from SD card:**
+  
+  When storing plugin data on an SD card, the plugin needs to take care of the SD card
+  being mounted later in the boot process than the scripts are loaded. Plugins
+  additionally may need to take into account, that the user may replace the SD card
+  any time.
+  
+  When trying to save or load from an unmounted SD, ``error`` will be set to
+  ``volume not mounted``. If this happens during plugin initialization, the plugin
+  should subscribe to the SD mount event to retry the load/save as soon as the SD card
+  becomes available.
+  
+  **Code scheme:**
+
+  .. code-block:: javascript
+    
+    var storeFile = "/sd/usr/history.cbor";
+    var listen_sdmount = null;
+    var history = {};
+    
+    function loadStoreFile() {
+      VFS.Load({
+        path: storeFile,
+        binary: true,
+        done: function(data) {
+          print(storeFile + " loaded\n");
+          history = CBOR.decode(data);
+          startRecording();
+        },
+        fail: function(error) {
+          print(storeFile + ": " + this.error + "\n");
+          if (!listen_sdmount && this.error == "volume not mounted") {
+            // retry once after SD mount:
+            listen_sdmount = PubSub.subscribe("sd.mounted", loadStoreFile);
+          } else {
+            startRecording();
+          }
+        }
+      });
+    }
+    
+    function startRecording() {
+      if (listen_sdmount) {
+        PubSub.unsubscribe(listen_sdmount);
+        listen_sdmount = null;
+      }
+      PubSub.subscribe(tickerEvent, ticker); // for example
+    }
+    
+    if (storeFile) {
+      loadStoreFile();
+    } else {
+      startRecording();
+    }
+
+
 
 PubSub
 ^^^^^^
@@ -518,6 +704,18 @@ to print out the ticker.10 event is:
 The above example created a function ``myTicker`` in global context, to print out the provided event name.
 Then, the ``PubSub.subscribe`` module method is used to subscribe to the ``ticker.10`` event and have it call
 ``myTicker`` every ten seconds. The result is "Event: ticker.10" printed once every ten seconds.
+
+PubSub interprets events similar to MQTT as **hierarchical topics**, with dots separating the levels.
+It delivers the events in multiple passes, with each new pass removing the last dotted part of the topic
+(i.e. bottom-up), so the most specific subscriptions will be called first. The handler is always called
+with the original event/topic name. So to e.g. catch all events ``vehicle.charge.…``, you can simply
+subscribe to ``vehicle.charge`` and inspect the actual event name in your handler:
+
+.. code-block:: javascript
+
+  PubSub.subscribe("vehicle.charge", function (event) {
+    print("Got charging related event: " + event);
+  });
 
 - ``id = PubSub.subscribe(topic, handler)``
     Subscribe the function ``handler`` to messages of the given topic. Note that types are not limited to
@@ -730,6 +928,37 @@ The OvmsVehicle object is the most comprehensive, and exposes several methods to
     Start a cooldown charge
 - ``success = OvmsVehicle.StopCooldown()``
     Stop the cooldown charge
+
+- ``result = OvmsVehicle.ObdRequest(arguments)``
+    Perform OBD/UDS request (synchronous)
+
+    Pass the request parameters using the ``arguments`` object:
+
+    - ``txid``: the CAN ID to send the request to (or 0x7df for broadcast)
+    - ``rxid``: the CAN ID to expect the response at (or 0 for broadcast)
+    - ``request``: the request to send, either a hex encoded string or an Uint8Array
+    - ``bus``: optional CAN bus device name, default "can1"
+    - ``timeout``: optional timeout in milliseconds, default 3000
+    - ``protocol``: optional protocol to use, default 0 = ``ISOTP_STD`` -- see ``vehicle.h`` for other protocols
+
+    The ``result`` object will have these properties:
+
+    - ``error``: 0 = no error, else the error code, with negative ranges being system errors,
+      positive codes are OBD/UDS response error codes (NRCs)
+    - ``errordesc``: a human readable error description
+    - ``response``: only on success: the binary response (Uint8Array)
+    - ``response_hex``: only on success: hex encoded response (string)
+
+    **Example**:
+
+    .. code-block:: javascript
+      
+      // Establish diagnostic session with an ECU:
+      var res = OvmsVehicle.ObdRequest({ txid: 0x765, rxid: 0x7cf, request: "1003" });
+      if (res.error)
+        print(res.errortext);
+      else
+        print(res.response_hex);
 
 
 --------------

@@ -478,7 +478,7 @@ void OvmsVehicleFactory::obdii_request(int verbosity, OvmsWriter* writer, OvmsCo
 
   uint32_t txid = 0, rxid = 0;
   uint8_t protocol = ISOTP_STD;
-  int timeout_ms = 100;
+  int timeout_ms = 3000;
   std::string request;
   std::string response;
 
@@ -486,7 +486,7 @@ void OvmsVehicleFactory::obdii_request(int verbosity, OvmsWriter* writer, OvmsCo
   const char* target = cmd->GetName();
   if (strcmp(target, "device") == 0)
     {
-    // device: [-e] [-t<timeout_ms>] txid rxid request
+    // device: [-e|-E|-v] [-t<timeout_ms>] txid rxid request
     int argpos = 0;
     for (int i = 0; i < argc; i++)
       {
@@ -496,6 +496,12 @@ void OvmsVehicleFactory::obdii_request(int verbosity, OvmsWriter* writer, OvmsCo
           {
           case 'e':
             protocol = ISOTP_EXTADR;
+            break;
+          case 'E':
+            protocol = ISOTP_EXTFRAME;
+            break;
+          case 'v':
+            protocol = VWTP_20;
             break;
           case 't':
             timeout_ms = atoi(argv[i]+2);
@@ -609,7 +615,9 @@ void OvmsVehicleFactory::obdii_request(int verbosity, OvmsWriter* writer, OvmsCo
     }
   else if (err)
     {
-    writer->printf("ERROR: request failed with response error code %02X\n", err);
+    const char* errname = MyVehicleFactory.m_currentvehicle->PollResultCodeName(err);
+    writer->printf("ERROR: request failed with response error code %02X%s%s\n", err,
+      errname ? " " : "", errname ? errname : "");
     return;
     }
 

@@ -287,6 +287,14 @@ void OvmsWebServer::HandleCommand(PageEntry_t& p, PageContext_t& c)
     c.head(200,
       "Content-Type: application/json; charset=utf-8\r\n"
       "Cache-Control: no-cache");
+  } else if (output == "binary") {
+    // As Safari on iOS still doesn't support responseType=ArrayBuffer on XMLHttpRequests,
+    // this is meant to be used for binary data transmissions.
+    // Based on Marcus Granado's approach, see…
+    // https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/Sending_and_Receiving_Binary_Data
+    c.head(200,
+      "Content-Type: application/octet-stream; charset=x-user-defined\r\n"
+      "Cache-Control: no-cache");
   } else {
     c.head(200,
       "Content-Type: application/octet-stream; charset=utf-8\r\n"
@@ -1585,18 +1593,32 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
 
 
 /**
- * HandleCfgNotifications: configure notifications (URL /cfg/notifications)
+ * HandleCfgNotifications: configure notifications & data logging (URL /cfg/notifications)
  */
 void OvmsWebServer::HandleCfgNotifications(PageEntry_t& p, PageContext_t& c)
 {
   std::string error;
+  std::string vehicle_minsoc, vehicle_stream;
   std::string log_trip_storetime, log_trip_minlength, log_grid_storetime;
 
   if (c.method == "POST") {
     // process form submission:
+    vehicle_minsoc = c.getvar("vehicle_minsoc");
+    vehicle_stream = c.getvar("vehicle_stream");
     log_trip_storetime = c.getvar("log_trip_storetime");
     log_trip_minlength = c.getvar("log_trip_minlength");
     log_grid_storetime = c.getvar("log_grid_storetime");
+
+    if (vehicle_minsoc != "") {
+      if (atoi(vehicle_minsoc.c_str()) < 0 || atoi(vehicle_minsoc.c_str()) > 100) {
+        error += "<li data-input=\"vehicle_minsoc\">Min SOC must be in the range 0…100 %</li>";
+      }
+    }
+    if (vehicle_stream != "") {
+      if (atoi(vehicle_stream.c_str()) < 0 || atoi(vehicle_stream.c_str()) > 60) {
+        error += "<li data-input=\"vehicle_stream\">GPS log interval must be in the range 0…60 seconds</li>";
+      }
+    }
 
     if (log_trip_storetime != "") {
       if (atoi(log_trip_storetime.c_str()) < 0 || atoi(log_trip_storetime.c_str()) > 365) {
@@ -1616,6 +1638,15 @@ void OvmsWebServer::HandleCfgNotifications(PageEntry_t& p, PageContext_t& c)
 
     if (error == "") {
       // success:
+      if (vehicle_minsoc == "")
+        MyConfig.DeleteInstance("vehicle", "minsoc");
+      else
+        MyConfig.SetParamValue("vehicle", "minsoc", vehicle_minsoc);
+      if (vehicle_stream == "")
+        MyConfig.DeleteInstance("vehicle", "stream");
+      else
+        MyConfig.SetParamValue("vehicle", "stream", vehicle_stream);
+
       if (log_trip_storetime == "")
         MyConfig.DeleteInstance("notify", "log.trip.storetime");
       else
@@ -1643,6 +1674,9 @@ void OvmsWebServer::HandleCfgNotifications(PageEntry_t& p, PageContext_t& c)
   }
   else {
     // read configuration:
+    vehicle_minsoc = MyConfig.GetParamValue("vehicle", "minsoc");
+    vehicle_stream = MyConfig.GetParamValue("vehicle", "stream");
+    log_trip_storetime = MyConfig.GetParamValue("notify", "log.trip.storetime");
     log_trip_storetime = MyConfig.GetParamValue("notify", "log.trip.storetime");
     log_trip_minlength = MyConfig.GetParamValue("notify", "log.trip.minlength");
     log_grid_storetime = MyConfig.GetParamValue("notify", "log.grid.storetime");
@@ -1651,8 +1685,21 @@ void OvmsWebServer::HandleCfgNotifications(PageEntry_t& p, PageContext_t& c)
     c.head(200);
   }
 
-  c.panel_start("primary", "Notifications configuration");
+  c.panel_start("primary", "Notifications &amp; Data Logging");
   c.form_start(p.uri);
+
+  c.fieldset_start("Vehicle Monitoring");
+
+  c.input_slider("Location streaming", "vehicle_stream", 3, "sec",
+    -1, atoi(vehicle_stream.c_str()), 0, 0, 60, 1,
+    "<p>While driving send location updates to server every n seconds, 0 = use default update interval "
+    "from server configuration. Same as App feature #8.</p>");
+
+  c.input_slider("Minimum SOC", "vehicle_minsoc", 3, "%",
+    -1, atoi(vehicle_minsoc.c_str()), 0, 0, 100, 1,
+    "<p>Send an alert when SOC drops below this level, 0 = off. Same as App feature #9.</p>");
+
+  c.fieldset_end();
 
   c.fieldset_start("Data Log Storage Times");
 
@@ -3282,7 +3329,7 @@ void OvmsWebServer::HandleCfgBackup(PageEntry_t& p, PageContext_t& c)
         "promptdialog(\"password\", \"Create backup\", \"ZIP password / empty = use module password\", [\"Cancel\", \"Create backup\"], function(ok, password) {\n"
           "if (ok) {\n"
             "updateButtons(false);\n"
-            "loadcmd(\"config backup \" + zip.path + ((password) ? \" \" + password : \"\"), \"#log\").done(function(output) {\n"
+            "loadcmd(\"config backup \" + zip.path + ((password) ? \" \" + password : \"\"), \"#log\", 120).done(function(output) {\n"
               "if (output.indexOf(\"Error\") < 0) {\n"
                 "zip.exists = true;\n"
                 "zip.url = getPathURL(zip.path);\n"
@@ -3308,7 +3355,7 @@ void OvmsWebServer::HandleCfgBackup(PageEntry_t& p, PageContext_t& c)
                 "msg.request.abort();\n"
               "}\n"
               "return rebooting ? null : standardTextFilter(msg);\n"
-            "}).always(function(data, status) {\n"
+            "}, 120).always(function(data, status) {\n"
               "updateButtons();\n"
               "if (rebooting) $('#log').reconnectTicker();\n"
             "});\n"

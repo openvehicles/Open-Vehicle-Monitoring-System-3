@@ -70,7 +70,7 @@ Metric name                              Example value            Description
 ======================================== ======================== ============================================
 v.e.on                                   yes                      Is ignition on and drivable (true = "Vehicle ON", false = "Vehicle OFF" state)
 v.c.charging                             yes                      Is vehicle charging (true = "Vehicle CHARGING" state. v.e.on=false if this is true)
-v.c.limit.soc                            100%                     Current/next charge timer mode SOC destination
+v.c.limit.soc                            100%                     Sufficient SOC: timer mode SOC destination or user CTP configuration (see below)
 v.c.mode                                 range                    "range" = charging to 100% SOC, else "standard"
 v.c.timermode                            no                       Yes = current/next charge under timer control
 v.c.state                                done                     charging, stopped, done
@@ -93,6 +93,8 @@ v.p.odometer                             2340 km                  Total distance
 Metric name                              Example value            Description
 ======================================== ======================== ============================================
 v.b.soc [2]_                             88.2 %                   Current usable State of Charge (SoC) of the main battery
+v.e.drivemode                            2                        1=STD, 2=ECO, 3=ECO+
+v.e.gear                                 1                        1=forward, 0=neutral, -1=reverse (2020 model only)
 ======================================== ======================== ============================================
 
 .. [2] Restriction by the ECU. Supplied when the ignition is on during charging. Use xvu.b.soc as an alternative when charging with ignition off.
@@ -139,9 +141,12 @@ actually be used for the current or next charge, i.e. reflects the mode selected
 
 With timed charging, the car first charges to the minimum SOC as soon as possible (when connected). If the
 maximum SOC configured for the schedule hasn't been reached by then, it will then wait for the timer to signal
-the second phase to charge up to the maximum SOC. ``v.c.limit.soc`` reflects the current phase, i.e. will be
-the minimum SOC during phase 1, the maximum (if configured) during phase 2. After reaching the timer defined
-final SOC, it will switch to 100%.
+the second phase to charge up to the maximum SOC. The "sufficient SOC" ``v.c.limit.soc`` will be the maximum
+SOC if less than 100%. If the timer is disabled or set to charge up to 100%, the sufficient SOC is set to the
+user configured charge time prediction SOC limit (config ``xvu ctp.soclimit``).
+
+Charging above ``v.c.limit.soc`` is classified as the "topping off" charge phase. When crossing that SOC
+threshold, an intermediate charge status notification is sent.
 
 Note: ``xvu.c.limit.soc.min`` will show the configured minimum SOC also if no schedule is currently enabled.
 ``xvu.c.limit.soc.max`` shows the maximum for the current/next schedule to apply. If no schedule is enabled,
@@ -198,13 +203,22 @@ There are currently two ways to get an estimation of the remaining capacity of t
 1. By deriving a usable energy capacity from the MFD range estimation.
 2. By deriving a total coulomb capacity from the coulombs charged.
 
+You can configure which of the estimations you want to use as the standard SOH from the
+"Features" web page or by setting the config parameter ``xvu bat.soh.source`` to either
+``charge`` (default) or ``range``.
+
 .. note:: **Consider the capacity estimations as experimental / preliminary.**
   We need field data to optimize the readings. If you'd like to help us, see below.
 
 The **MFD range estimation** seems to include some psychological factors with an SOC below 30%, so we 
 only provide this and the derived capacity in two custom metrics. The capacity derivation is only
-calculated with SOC >= 30%, but if so is available immediately after switching the car on. This can 
-serve as a quick first estimation, relate it to the usable capacity of your model.
+calculated with SOC >= 30% (initial value needs SOC >= 70%), but if so is available immediately 
+after switching the car on. This can serve as a quick first estimation, relate it to the usable 
+capacity of your model.
+
+The range based SOH is taken at it's maximum peaks observed and copied if higher than the
+previously observed value or added smoothed if lower. So to take the next reading directly,
+set metric ``xvu.b.soh.range`` to 0 before switching on the car.
 
 The **charge coulomb based estimation** provides a better estimation but will need a little more 
 time to settle. Usable measurements need charges of at least 30% SOC, the more the better. Estimations
@@ -239,6 +253,8 @@ Capacity and SOH metrics
 ======================================== ======================== ============================================
 Metric name                              Example value            Description
 ======================================== ======================== ============================================
+xvu.b.soh.charge                         99.23%                   SOH based on charge energy sum
+xvu.b.soh.range                          98.89%                   SOH based on MFD range estimation
 xvu.b.cap.ah.abs                         122.71Ah                 Total coulomb capacity estimation
 xvu.b.cap.ah.norm                        113.63Ah                 Usable coulomb capacity estimation
 xvu.b.cap.kwh.abs                        39.1kWh                  Total energy capacity estimation
@@ -271,6 +287,62 @@ Note: if you forgot enabling the local log but still have chargecap logs on the 
 as well.
 
 **Thanks!**
+
+
+-----------------------
+Configuration Variables
+-----------------------
+
+The main configuration variables can be set through the web configuration page:
+
+- VW e-Up → Features
+
+Some configuration variables are kept "under the hood", as these will normally not need to be
+changed, except for some special use cases or for development / debugging.
+
+Configuration variables can be listed using command ``config list xvu`` and changed using
+command ``config set xvu <variable> <value>``.
+
+
+=================================== =================== ========================================================
+Configuration variable              Default value       Description                                           
+=================================== =================== ========================================================
+bat.soh.source                      charge              SOH source -- see above
+bms.autoreset                       no                  Reset BMS statistics on use phase transitions
+canwrite                            no                  Allow CAN write access
+cell_interval_awk                   60                  BMS cell query interval in awake state [s]
+cell_interval_chg                   60                  BMS cell query interval in charge state [s]
+cell_interval_drv                   15                  BMS cell query interval in drive state [s]
+con_obd                             yes                 Enable OBDII connection
+con_t26                             yes                 Enable T26 connection
+ctp.maxpower                        0                   Charge time prediction: fallback power limit [kW] (0=none)
+ctp.soclimit                        80                  Charge time prediction: fallback SOC limit [%]
+dc_interval                         0                   Development: additional DC charge PID query interval [s] (0=off)
+log.chargecap.cpstep                24                  Charge capacity: checkpoint interval [1/10%]
+log.chargecap.minvalid              272                 Charge capacity: min SOC hub for SOH change [1/10%]
+log.chargecap.storetime             0                   Charge capacity: server log archive time [days] (0=off)
+modelyear                           2012                Vehicle model year
+notify.charge.start.delay           24                  Charge start notification delay [s] [5]_
+=================================== =================== ========================================================
+
+.. [5] Charge start needs some time to ramp up the charge current, which implies charge
+  speed & time estimations. If you want the start notification as fast as possible,
+  reduce the value.
+
+
+--------------
+Shell Commands
+--------------
+
+- ``xvu polling <status|pause|continue>`` -- control OBD2 polling
+  
+  The OBD2 polling is normally continuously active as long as the vehicle module is loaded.
+  To free the CAN bus from this load during an extended OBD2 diagnostics or modification
+  (coding / adaptation) session, you can temporarily pause the polling using this command.
+  
+  There is no time limit for a pause, keep in mind you need to explicitly continue the
+  polling when you're done. During a polling pause, no vehicle state changes can be detected.
+
 
 
 -----------------------------

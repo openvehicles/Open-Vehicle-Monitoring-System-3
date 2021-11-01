@@ -46,13 +46,10 @@
 
 #include <stdio.h>
 #include <string>
-#include "ovms_metrics.h"
 #include "ovms_events.h"
 #include "ovms_config.h"
 #include "ovms_command.h"
-#include "metrics_standard.h"
 #include "ovms_notify.h"
-#include "ovms_webserver.h"
 
 #include "vehicle_mgev.h"
 
@@ -68,7 +65,7 @@ void OvmsVehicleMgEv::WebInit()
 {
     // vehicle menu:
     MyWebServer.RegisterPage("/xmg/features", "Features", WebCfgFeatures, PageMenu_Vehicle, PageAuth_Cookie);
-    MyWebServer.RegisterPage("/xmg/battery",  "Battery config",   WebCfgBattery,                       PageMenu_Vehicle, PageAuth_Cookie);
+    MyWebServer.RegisterPage("/xmg/battery",  "Battery config",   WebCfgBattery, PageMenu_Vehicle, PageAuth_Cookie);
     //MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
     MyWebServer.RegisterPage("/bms/metrics_charger", "Charging Metrics", WebDispChgMetrics, PageMenu_Vehicle, PageAuth_Cookie);
 }
@@ -89,14 +86,16 @@ void OvmsVehicleMgEv::WebDeInit()
 void OvmsVehicleMgEv::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
 {
     std::string error;
-    bool updatedbmu;
+    //When we have more versions, need to change this to int and change from checkbox to select
+    bool updatedbms = DEFAULT_BMS_VERSION == 1 ? true : false;
     
     if (c.method == "POST") {
-        updatedbmu = (c.getvar("updatedbmu") == "yes");
+        updatedbms = (c.getvar("updatedbms") == "yes");
         
         if (error == "") {
           // store:
-          MyConfig.SetParamValueBool("xmg", "updatedbmu", updatedbmu);
+          //"Updated" BMS is version 1 (corresponding to BMSDoDLimits array element). "Original" BMS is version 0 (corresponding to BMSDoDLimits array element)
+          MyConfig.SetParamValueInt("xmg", "bms.version", updatedbms ? 1 : 0);
           
           c.head(200);
           c.alert("success", "<p class=\"lead\">MG ZS EV / MG5 feature configuration saved.</p>");
@@ -110,7 +109,17 @@ void OvmsVehicleMgEv::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
         c.alert("danger", error.c_str());
     } else {
         // read configuration:
-        updatedbmu = MyConfig.GetParamValueBool("xmg", "updatedbmu", false);
+        switch (MyConfig.GetParamValueInt("xmg", "bms.version", DEFAULT_BMS_VERSION))
+        {
+          case 0:
+            //"Updated" BMS is version 0 (corresponding to BMSDoDLimits array element)
+            updatedbms = false;
+            break;
+          case 1:
+            //"Original" BMS is version 1 (corresponding to BMSDoDLimits array element)
+            updatedbms = true;
+            break;
+        }
         c.head(200);
     }
     // generate form:
@@ -118,8 +127,9 @@ void OvmsVehicleMgEv::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
     c.form_start(p.uri);
 
     c.fieldset_start("General");
-    c.input_checkbox("Updated BMU Firmware", "updatedbmu", updatedbmu,
-      "<p>Select this if you have BMU Firmware later than Jan 2021</p>");
+    //When we have more versions, need to change this to select and updatedbms to int
+    c.input_checkbox("Updated BMS Firmware", "updatedbms", updatedbms,
+      "<p>Select this if you have BMS Firmware later than Jan 2021</p>");
     c.fieldset_end();
     c.print("<hr>");
     c.input_button("default", "Save");
@@ -136,7 +146,21 @@ void OvmsVehicleMgEv::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
   std::string error;
   //  suffsoc              Sufficient SOC [%] (Default: 0=disabled)
   //  suffrange            Sufficient range [km] (Default: 0=disabled)
-  std::string suffrange, suffsoc;
+  std::string suffrange, suffsoc, units_distance;
+  float max_range;
+  std::string units;
+  units_distance = MyConfig.GetParamValue("vehicle", "units.distance");
+  
+  if (units_distance == "K")
+  {
+      max_range = StandardMetrics.ms_v_bat_range_full->AsFloat(0, Kilometers);
+      units = "km";
+  }
+  else
+  {
+      max_range = StandardMetrics.ms_v_bat_range_full->AsFloat(0, Miles);
+      units = "miles";
+  }
 
   if (c.method == "POST") {
     // process form submission:
@@ -187,13 +211,13 @@ void OvmsVehicleMgEv::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
 
   c.fieldset_start("Charge control");
 
-  c.input_slider("Sufficient range", "suffrange", 3, "km",
-    atof(suffrange.c_str()) > 0, atof(suffrange.c_str()), 0, 0, 300, 1,
-    "<p>Default 0=off. Notify/stop charge when reaching this level.</p>");
+  c.input_slider("Sufficient range", "suffrange", 3, units.c_str(),
+    atof(suffrange.c_str()) > 0, atof(suffrange.c_str()), 0, 0, max_range, 1,
+    "<p>Default 0=off. Notify when reaching this level.</p>");
 
   c.input_slider("Sufficient SOC", "suffsoc", 3, "%",
     atof(suffsoc.c_str()) > 0, atof(suffsoc.c_str()), 0, 0, 100, 1,
-    "<p>Default 0=off. Notify/stop charge when reaching this level.</p>");
+    "<p>Default 0=off. Notify when reaching this level.</p>");
 
   c.fieldset_end();
 
@@ -330,8 +354,12 @@ void OvmsVehicleMgEv::WebDispChgMetrics(PageEntry_t &p, PageContext_t &c)
           "</div>"
           "<div class=\"clearfix\">"
             "<h6 class=\"metric-head\">Current Status:</h6>"
-            "<div class=\"metric number\" data-metric=\"v.b.range.est\" data-prec=\"0\">"
+            "<div class=\"metric number\" data-metric=\"v.b.range.est\" data-prec=\"0\" data-scale=\"0.621371192\">"
               "<span class=\"label\">Range</span>"
+              "<span class=\"value\">?</span>"
+              "<span class=\"unit\">miles</span>"
+            "</div>"
+            "<div class=\"metric number\" data-metric=\"v.b.range.est\" data-prec=\"0\">"
               "<span class=\"value\">?</span>"
               "<span class=\"unit\">km</span>"
             "</div>"
@@ -373,8 +401,11 @@ void OvmsVehicleMgEv::WebDispChgMetrics(PageEntry_t &p, PageContext_t &c)
               "<span class=\"value\">?</span>"
               "<span class=\"unit\">Ah</span>"
             "</div>"
-            "<div class=\"metric number\" data-metric=\"v.p.odometer\" data-prec=\"0\">"
+            "<div class=\"metric number\" data-metric=\"v.p.odometer\" data-prec=\"0\" data-scale=\"0.621371192\">"
               "<span class=\"label\">Odometer</span>"
+              "<span class=\"value\">?</span>"
+              "<span class=\"unit\">miles</span>"
+              "</div>""<div class=\"metric number\" data-metric=\"v.p.odometer\" data-prec=\"0\">"
               "<span class=\"value\">?</span>"
               "<span class=\"unit\">km</span>"
             "</div>"

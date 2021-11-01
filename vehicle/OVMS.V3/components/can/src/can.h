@@ -193,7 +193,7 @@ typedef struct
   union
     {
     CAN_frame_t frame;  // CAN_frame
-    canbus* bus;        
+    canbus* bus;
     } body;
   } CAN_queue_msg_t;
 
@@ -307,7 +307,7 @@ class canbus : public pcp, public InternalRamAllocated
     virtual esp_err_t Write(const CAN_frame_t* p_frame, TickType_t maxqueuewait=0);
     virtual esp_err_t WriteExtended(uint32_t id, uint8_t length, uint8_t *data, TickType_t maxqueuewait=0);
     virtual esp_err_t WriteStandard(uint16_t id, uint8_t length, uint8_t *data, TickType_t maxqueuewait=0);
-    virtual bool AsynchronousInterruptHandler(CAN_frame_t* frame, bool* frameReceived);
+    virtual bool AsynchronousInterruptHandler(CAN_frame_t* frame, uint32_t* framesReceived);
     virtual void TxCallback(CAN_frame_t* frame, bool success);
 
   protected:
@@ -329,12 +329,15 @@ class canbus : public pcp, public InternalRamAllocated
     CAN_frame_t m_tx_frame;       // saved copy of last TX frame to be used in txcallback
     uint32_t m_status_chksum;
     uint32_t m_watchdog_timer;
+    uint32_t m_state;             // state bitset
     QueueHandle_t m_txqueue;
     int m_busnumber;
 
   protected:
     dbcfile *m_dbcfile;
   };
+
+#define CAN_M_STATE_TX_BUF_OCCUPIED   BIT(0) // transmit buffer is in use
 
 ////////////////////////////////////////////////////////////////////////
 // can - the CAN system controller
@@ -408,7 +411,7 @@ class can : public InternalRamAllocated
   public:
     typedef std::map<uint32_t, canlog*> canlog_map_t;
     canlog_map_t m_loggermap;
-    OvmsMutex m_loggermap_mutex;
+    OvmsRecMutex m_loggermap_mutex;
     uint32_t m_logger_id;
 
   public:

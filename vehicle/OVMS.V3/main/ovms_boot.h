@@ -115,6 +115,7 @@ class Boot
     OvmsMutex m_restart_mutex;
     unsigned int m_restart_timer;
     unsigned int m_restart_pending;
+    bool m_shutting_down;
 
   public:
     static void ErrorCallback(XtExcFrame *frame, int core_id, bool is_abort);

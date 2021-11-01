@@ -63,6 +63,34 @@
       DOM element and read it via <code>$(…).text()</code>.</p>
 
 
+    <h3>Output Encoding &amp; Binary Streams</h3>
+
+    <p>To allow binary data to be sent by a command and to enable processing of the
+      result by Javascript on the browser without character encoding issues, the command
+      API supports output "binary" mode.</p>
+    
+    <p>Primary application for this is exchanging CBOR encoded objects between the
+      module and the web frontend. To fully support this, the OVMS web frontent includes
+      the CBOR library by Patrick Gansterer. Example use:</p>
+
+    <pre>
+    loadjs({ command: "auxbatmon.dump('CBOR')", output: "binary" }).done((data) => {
+      history = CBOR.decode(data);
+    });
+    </pre>
+
+    <p>See the AuxBatMon and PwrMon OVMS plugins for full examples.</p>
+
+    <p><code>output</code> modes supported by the command API are:</p>
+    
+    <ul>
+      <li><code>text</code> → Content-Type: text/plain; charset=utf-8</li>
+      <li><code>json</code> → Content-Type: application/json; charset=utf-8</li>
+      <li><code>binary</code> → Content-Type: application/octet-stream; charset=x-user-defined</li>
+      <li>default/other → Content-Type: application/octet-stream; charset=utf-8</li>
+    </ul>
+
+
     <h3>jqXHR Object</h3>
 
     <p><code>loadcmd()</code> returns the jqXHR (XMLHttpRequest) object in charge for

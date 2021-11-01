@@ -99,6 +99,22 @@ bool PollReplyHelper::FromUint16(const std::string &info, float &value, uint8_t 
   return true;
 }
 
+bool PollReplyHelper::FromUint24(const std::string &info, float &value, uint8_t bytesToSkip /*= 0*/)
+{
+  if (Store.size() < (3 + bytesToSkip)) {
+    ESP_LOGE(TAG, "%s: Data length=%d is too short for FromUint24(skippedBytes=%u)",
+      info.c_str(), Store.size(), bytesToSkip);
+    value = NAN;
+    return false;
+  }
+
+  value = static_cast<float>((uint32_t)(
+            (Store[0 + bytesToSkip] << 16) +
+            (Store[1 + bytesToSkip] << 8) +
+            ((uint16_t)Store[2 + bytesToSkip])));
+  return true;
+}
+
 bool PollReplyHelper::FromInt32(const std::string &info, float &value, uint8_t bytesToSkip /*= 0*/)
 {
   if (Store.size() < (4 + bytesToSkip)) {
@@ -128,5 +144,17 @@ bool PollReplyHelper::FromInt16(const std::string &info, float &value, uint8_t b
   value = static_cast<float>((int16_t)(
             (Store[0 + bytesToSkip] << 8) +
             (Store[1 + bytesToSkip])));
+  return true;
+}
+
+bool PollReplyHelper::FromInt8(const std::string &info, int &value, uint8_t bytesToSkip /*= 0*/)
+{
+  if (Store.size() < (1 + bytesToSkip)) {
+    ESP_LOGE(TAG, "%s: Data length=%d is too short for FromInt8(skippedBytes=%u)",
+      info.c_str(), Store.size(), bytesToSkip);
+    return false;
+  }
+
+  value = static_cast<int>((int8_t)Store[0 + bytesToSkip]);
   return true;
 }
