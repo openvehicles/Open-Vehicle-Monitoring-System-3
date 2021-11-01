@@ -112,6 +112,7 @@ using namespace std;
 #define VWUP_MOT_ELEC_VIN               0xF802    // Vehicle Identification Number
 #define VWUP_MOT_ELEC_SPEED             0xF40D    // Speed [kph]
 #define VWUP_MOT_ELEC_POWER_MOT         0x147E    // Inverter output / motor input power level [kW]
+#define VWUP_MOT_ELEC_ACCEL             0x12B0    // Acceleration/deceleration [m/s²]
 
 #define VWUP_BRK_TPMS                   0x1821
 

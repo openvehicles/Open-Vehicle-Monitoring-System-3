@@ -142,6 +142,7 @@ protected:
 
 protected:
   void ResetTripCounters();
+  void UpdateTripOdo();
   void ResetChargeCounters();
   void SetChargeType(chg_type_t chgtype);
   void SetChargeState(bool charging);
@@ -199,7 +200,9 @@ public:
 
 private:
   use_phase_t m_use_phase;
-  float m_odo_start;
+  double m_odo_trip;
+  uint32_t m_tripfrac_reftime;
+  float m_tripfrac_refspeed;
   float m_soc_norm_start;
   float m_soc_abs_start;
   float m_energy_recd_start;

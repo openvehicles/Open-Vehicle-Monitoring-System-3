@@ -134,19 +134,23 @@ void powermgmt::WebCleanup()
   c.input("number", "Delay before SIMCOM modem is turned off", "modemoff_delay", modemoff_delay.c_str(), 
     "Default: " STR(POWERMGMT_MODEMOFF_DELAY) " hours",
     "<p>0 = disabled</p>",
-    "min=\"1\" step=\"1\"", "hours");
+    "min=\"0\" step=\"1\"", "hours");
 #endif
   
   c.input("number", "Delay before WiFi is turned off", "wifioff_delay", wifioff_delay.c_str(), 
     "Default: " STR(POWERMGMT_WIFIOFF_DELAY) " hours",
     "<p>0 = disabled</p>",
-    "min=\"1\" step=\"1\"", "hours");
+    "min=\"0\" step=\"1\"", "hours");
 
   c.input("number", "Delay before OVMS is shut down (after initial 12V battery level alert)", "12v_shutdown_delay", b12v_shutdown_delay.c_str(), 
     "Default: " STR(POWERMGMT_12V_SHUTDOWN_DELAY) " minutes",
+    "<p>0 = disabled</p>"
+    "<p><b class=\"text-danger\">⚠</b> This depends on a proper 12V calibration "
+    "(see <a href=\"/cfg/vehicle\" target=\"#main\">vehicle configuration</a>).</p>"
     "<p>If 12V battery is depleted under certain threshold, an alarm is set. OVMS waits this time period during which user can begin charging the batteries. "
-    "If this period is exceeded without canceled alarm, OVMS will be shut down to prevent further battery depletion.</p>",
-    "min=\"1\" step=\"1\"", "minutes");
+    "If this period is exceeded without canceled alarm, OVMS will be shut down (sleep) to prevent further battery depletion.</p>"
+    "<p>The module will then check the 12V level once per minute, and automatically reboot when the voltage has ben restored.</p>",
+    "min=\"0\" step=\"1\"", "minutes");
 
   c.print("<hr>");
   c.input_button("default", "Save");

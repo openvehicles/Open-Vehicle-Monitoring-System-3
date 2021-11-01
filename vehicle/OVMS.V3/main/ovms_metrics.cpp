@@ -1405,6 +1405,7 @@ const char* OvmsMetricUnitLabel(metric_unit_t units)
     case Kilometers:   return "km";
     case Miles:        return "M";
     case Meters:       return "m";
+    case Feet:         return "ft";
     case Celcius:      return "°C";
     case Fahrenheit:   return "°F";
     case kPa:          return "kPa";
@@ -1449,13 +1450,23 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
       if (to == Kilometers) return (value*8)/5;
       else if (to == Meters) return (value*8000)/5;
       break;
+    case Meters:
+      if (to == Feet) return (int)(value * 3.28084);
+      break;
+    case Feet:
+      if (to == Meters) return (int)(value * 0.3048);
+      break;
     case KphPS:
       if (to == MphPS) return (value*5)/8;
-      else if (to == MetersPSS) return value/1000;
+      else if (to == MetersPSS) return (value*1000)/3600;
       break;
     case MphPS:
       if (to == KphPS) return (value*8)/5;
-      else if (to == MetersPSS) return (value*8000)/5;
+      else if (to == MetersPSS) return (value*8000)/(5*3600);
+      break;
+    case MetersPSS:
+      if (to == KphPS) return (int) (value*3.6);
+      else if (to == MphPS) return (int) (value*3.6/1.60934);
       break;
     case kW:
       if (to == Watts) return (value*1000);
@@ -1548,13 +1559,23 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
       if (to == Kilometers) return (value*1.60934);
       else if (to == Meters) return (value*1609.34);
       break;
+    case Meters:
+      if (to == Feet) return (value * 3.28084);
+      break;
+    case Feet:
+      if (to == Meters) return (value * 0.3048);
+      break;
     case KphPS:
       if (to == MphPS) return (value/1.60934);
-      else if (to == MetersPSS) return value/1000;
+      else if (to == MetersPSS) return value/3.6;
       break;
     case MphPS:
       if (to == KphPS) return (value*8)/5;
-      else if (to == MetersPSS) return (value*1.60934);
+      else if (to == MetersPSS) return (value*1.60934/3.6);
+      break;
+    case MetersPSS:
+      if (to == KphPS) return (value*3.6);
+      else if (to == MphPS) return (value*3.6/1.60934);
       break;
     case kW:
       if (to == Watts) return (value*1000);

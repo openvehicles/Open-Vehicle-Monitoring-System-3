@@ -1,6 +1,15 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Vehicle: added optional automatic trip report generation
+    Details: https://docs.openvehicles.com/en/latest/userguide/notifications.html
+  New configs:
+    [notify]  report.trip.enable        -- Send trip report on vehicle off (bool, default no)
+    [notify]  report.trip.minlength     -- … minimum trip length in km, default 0.2 km
+  New command:
+    stat trip                           -- Output statistics for current/finished trip
+- VW e-Up: added acceleration support; OBD by reading from ECU,
+    T26 deriving from speed changes
 
 2021-09-29 MB  3.2.017  OTA release
 - Added VEHICLE_POLL_TYPE_ROUTINECONTROL to UDS (ISO 14229) service identifiers list
