@@ -1144,8 +1144,9 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
       break;
 
     case VWUP_MOT_ELEC_SPEED:
-      if (PollReply.FromUint8("VWUP_MOT_ELEC_SPEED", value)) {
+      if (PollReply.FromUint8("VWUP_MOT_ELEC_SPEED", value) && value < 250) {
         StdMetrics.ms_v_pos_speed->SetValue(value);
+        UpdateTripOdo();
         VALUE_LOG(TAG, "VWUP_MOT_ELEC_SPEED=%f", value);
       }
       break;
@@ -1195,10 +1196,6 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
     case VWUP_BAT_MGMT_ODOMETER:
       if (PollReply.FromUint24("VWUP_BAT_MGMT_ODOMETER", value, 1) && value < 10000000) {
         StdMetrics.ms_v_pos_odometer->SetValue(value);
-        // Set trip reference / difference:
-        if (m_odo_start <= 0)
-          m_odo_start = value;
-        StdMetrics.ms_v_pos_trip->SetValue(value - m_odo_start);
         VALUE_LOG(TAG, "VWUP_BAT_MGMT_ODOMETER=%f", value);
       }
       break;
