@@ -32,10 +32,22 @@
 #define __VEHICLE_MED3_H__
 
 #include "vehicle.h"
+#include "metrics_standard.h"
 #include "ovms_webserver.h"
+#include "med3_pids.h"
+
+#include "freertos/timers.h"
+
+#include <vector>
 
 
 using namespace std;
+
+typedef struct{
+       int fromPercent;
+       int toPercent;
+       float maxChargeSpeed;
+}charging_profile;
 
 class OvmsCommand;
 
@@ -45,22 +57,41 @@ class OvmsVehicleMaxed3 : public OvmsVehicle
     OvmsVehicleMaxed3();
     ~OvmsVehicleMaxed3();
       
+    OvmsMetricInt *m_poll_state_metric; // Kept equal to m_poll_state for debugging purposes
     OvmsMetricFloat* m_soc_raw;
+    OvmsMetricFloat* m_watt_hour_raw;
+    OvmsMetricFloat* m_consump_raw;
+    OvmsMetricFloat* m_consumprange_raw;
+      
 
   protected:
       std::string         m_rxbuf;
 
       
   protected:
-    void PollerStateTicker();
-    void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
-
+      void ConfigChanged(OvmsConfigParam* param) override;
+      void PollerStateTicker();
+      void Ticker1(uint32_t ticker);
+      void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
+      void processEnergy();
+      float consumpRange;
+      char m_vin[17];
+      
   private:
       void IncomingFrameCan1(CAN_frame_t* p_frame);
       void IncomingPollFrame(CAN_frame_t* frame);
       /// A temporary store for the VIN
-      char m_vin[17];
+     
+      int calcMinutesRemaining(int toSoc, charging_profile charge_steps[]);
       float med3_cum_energy_charge_wh;
+      bool soc_limit_reached;
+      bool range_limit_reached;
+      bool vanIsOn;
+      bool vanIsCharging;
+      
+      virtual void calculateEfficiency();
+      
+      
 
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
@@ -69,9 +100,11 @@ class OvmsVehicleMaxed3 : public OvmsVehicle
     //
   public:
     void WebInit();
+    void WebDeInit();
     //static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
     void GetDashboardConfig(DashboardConfig& cfg);
     static void WebDispChgMetrics(PageEntry_t &p, PageContext_t &c);
+    static void WebCfgBattery(PageEntry_t& p, PageContext_t& c);
 #endif //CONFIG_OVMS_COMP_WEBSERVER
       
        };

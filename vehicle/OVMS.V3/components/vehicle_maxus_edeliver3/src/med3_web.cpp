@@ -65,10 +65,106 @@ void OvmsVehicleMaxed3::WebInit()
 {
     // vehicle menu:
     
+    MyWebServer.RegisterPage("/xmg/battery",  "Battery config", WebCfgBattery, PageMenu_Vehicle, PageAuth_Cookie);
     MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
     MyWebServer.RegisterPage("/bms/metrics_charger", "Charging Metrics", WebDispChgMetrics, PageMenu_Vehicle, PageAuth_Cookie);
 }
+/**
+ * WebDeInit: deregister pages
+ */
+void OvmsVehicleMaxed3::WebDeInit()
+{
+  MyWebServer.DeregisterPage("/bms/cellmon");
+  MyWebServer.DeregisterPage("/bms/metrics_charger");
+  MyWebServer.DeregisterPage("/xmg/battery");
+}
 
+void OvmsVehicleMaxed3::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
+{
+  std::string error;
+  //  suffsoc              Sufficient SOC [%] (Default: 0=disabled)
+  //  suffrange            Sufficient range [km] (Default: 0=disabled)
+  std::string suffrange, suffsoc, units_distance;
+  float max_range;
+  std::string units;
+  units_distance = MyConfig.GetParamValue("vehicle", "units.distance");
+  
+  if (units_distance == "K")
+  {
+      max_range = StandardMetrics.ms_v_bat_range_full->AsFloat(0, Kilometers);
+      units = "km";
+  }
+  else
+  {
+      max_range = StandardMetrics.ms_v_bat_range_full->AsFloat(0, Miles);
+      units = "miles";
+  }
+
+  if (c.method == "POST") {
+    // process form submission:
+    suffrange = c.getvar("suffrange");
+    suffsoc = c.getvar("suffsoc");
+
+    // check:
+    if (!suffrange.empty()) {
+      float n = atof(suffrange.c_str());
+      if (n < 0)
+        error += "<li data-input=\"suffrange\">Sufficient range invalid, must be &ge; 0</li>";
+    }
+    if (!suffsoc.empty()) {
+      float n = atof(suffsoc.c_str());
+      if (n < 0 || n > 100)
+        error += "<li data-input=\"suffsoc\">Sufficient SOC invalid, must be 0…100</li>";
+    }
+
+    if (error == "") {
+      // store:
+      MyConfig.SetParamValue("xmg", "suffrange", suffrange);
+      MyConfig.SetParamValue("xmg", "suffsoc", suffsoc);
+
+      c.head(200);
+      c.alert("success", "<p class=\"lead\">Maxus battery setup saved.</p>");
+      MyWebServer.OutputHome(p, c);
+      c.done();
+      return;
+    }
+
+    // output error, return to form:
+    error = "<p class=\"lead\">Error!</p><ul class=\"errorlist\">" + error + "</ul>";
+    c.head(400);
+    c.alert("danger", error.c_str());
+  }
+  else {
+    // read configuration:
+    suffrange = MyConfig.GetParamValue("xmg", "suffrange", "0");
+    suffsoc = MyConfig.GetParamValue("xmg", "suffsoc", "0");
+
+    c.head(200);
+  }
+
+  // generate form:
+
+  c.panel_start("primary", "MG battery setup");
+  c.form_start(p.uri);
+
+  c.fieldset_start("Charge control");
+
+  c.input_slider("Sufficient range", "suffrange", 3, units.c_str(),
+    atof(suffrange.c_str()) > 0, atof(suffrange.c_str()), 0, 0, max_range, 1,
+    "<p>Default 0=off. Notify when reaching this level.</p>");
+
+  c.input_slider("Sufficient SOC", "suffsoc", 3, "%",
+    atof(suffsoc.c_str()) > 0, atof(suffsoc.c_str()), 0, 0, 100, 1,
+    "<p>Default 0=off. Notify when reaching this level.</p>");
+
+  c.fieldset_end();
+
+  c.print("<hr>");
+  c.input_button("default", "Save");
+  c.form_end();
+  c.panel_end();
+  c.done();
+}
 /**
  * GetDashboardConfig: Maxus eDeliver3 specific dashboard setup
  */
@@ -84,11 +180,11 @@ void OvmsVehicleMaxed3::GetDashboardConfig(DashboardConfig& cfg)
     "{ from: 100, to: 135, className: 'red-band' }]"
     "},{"
     // Voltage:
-    "min: 340, max: 460,"
+    "min: 300, max: 420,"
     "plotBands: ["
-    "{ from: 340, to: 380, className: 'red-band' },"
-    "{ from: 380, to: 420, className: 'yellow-band' },"
-    "{ from: 410, to: 460, className: 'green-band' }]"
+    "{ from: 300, to: 340, className: 'red-band' },"
+    "{ from: 340, to: 380, className: 'yellow-band' },"
+    "{ from: 380, to: 420, className: 'green-band' }]"
     "},{"
     // SOC:
     "min: 10, max: 100,"
