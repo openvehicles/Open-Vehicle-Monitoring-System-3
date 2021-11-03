@@ -1384,6 +1384,9 @@ void OvmsVehicleVWeUp::UpdateChargeCap(bool charging)
   static int checkpoint = 9999;
   bool log_data = false, update_caps = false, update_soh = false;
 
+  if (m_soc_abs_start == 0 || m_coulomb_charged_start == 0)
+    return;
+
   int   charge_time   = StdMetrics.ms_v_charge_time->AsInt();
   float soc_abs_diff  = BatMgmtSoCAbs->AsFloat() - m_soc_abs_start;
   float soc_norm_diff = StdMetrics.ms_v_bat_soc->AsFloat() - m_soc_norm_start;
