@@ -29,7 +29,7 @@
 #include <string>
 static const char *TAG = "v-vweup";
 
-#define VERSION "0.22.1"
+#define VERSION "0.22.3"
 
 #include <stdio.h>
 #include <string>
@@ -97,6 +97,18 @@ OvmsVehicleVWeUp::OvmsVehicleVWeUp()
 
   m_use_phase = UP_None;
   m_obd_state = OBDS_Init;
+
+  m_soc_norm_start = 0;
+  m_soc_abs_start = 0;
+  m_energy_recd_start = 0;
+  m_energy_used_start = 0;
+  m_energy_charged_start = 0;
+  m_coulomb_recd_start = 0;
+  m_coulomb_used_start = 0;
+  m_coulomb_charged_start = 0;
+  m_charge_kwh_grid_start = 0;
+  m_charge_kwh_grid = 0;
+
   m_chargestart_ticker = 0;
   m_chargestop_ticker = 0;
   m_chargestate_lastsoc = 100;
