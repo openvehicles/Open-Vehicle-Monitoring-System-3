@@ -71,8 +71,9 @@ static const OvmsVehicle::poll_pid_t obdii_polls[] =
         { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcupackvolts, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //Pack Voltage
         { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcu12vamps, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //12v amps?
         { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcuchargervolts, {  0, 15, 15, 15  }, 0, ISOTP_STD }, //charger volts at a guess?
-        { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcuchargeramps, {  0, 5, 5, 5  }, 0, ISOTP_STD }, //charger amps?
+//        { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcuchargeramps, {  0, 5, 5, 5  }, 0, ISOTP_STD }, //charger amps?
         // BMS Polls
+        { bmstx, bmsrx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmsstatepid, {  0, 5, 5, 5  }, 0, ISOTP_STD }, //bms charger state???
         { bmstx, bmsrx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, cellvolts, {  0, 15, 15, 15  }, 0, ISOTP_STD }, //cell volts
         { bmstx, bmsrx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, celltemps, {  0, 15, 15, 15  }, 0, ISOTP_STD }, //cell temps
         { bmstx, bmsrx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmssoc, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //bms SOC
@@ -102,6 +103,18 @@ charging_profile ccs_steps[] = {
     {83,95,16200},
     {95,100,5700},
     {0,0,0},
+};
+
+// Responses to the BMS Status PID
+enum BmsStatus : unsigned char {
+    ConnectedNotCharging1 = 0x0,  // Seen when connected but not locked
+    Idle = 0x1,  // When the car does not have the ignition on
+    Running = 0x4,  // When the ignition is on aux or running
+    Charging = 0x3,  // When charging normally
+    CcsCharging = 0x2,  // When charging on a rapid CCS charger
+//    AboutToSleep = 0x8,  // Seen just before going to sleep
+//    Connected = 0xa,  // Connected but not charging
+    StartingCharge = 0xc  // Seen when the charge was about to start
 };
 
 }  // anon namespace
@@ -186,6 +199,9 @@ void OvmsVehicleMaxed3::IncomingPollReply(canbus* bus, uint16_t type, uint16_t p
       case vcuvin:  // VIN
           StandardMetrics.ms_v_vin->SetValue(m_rxbuf);
           break;
+      case bmsstatepid:
+          SetBmsStatus(data[0]);
+          break;
       case bmssoh: //soh
           StandardMetrics.ms_v_bat_soh->SetValue(value1);
           break;
@@ -221,51 +237,54 @@ void OvmsVehicleMaxed3::IncomingPollReply(canbus* bus, uint16_t type, uint16_t p
           StandardMetrics.ms_v_bat_voltage->SetValue(value2 / 10.0f);
           break;
 
-      case bmsccschargeon:
+/*      case bmsccschargeon:
       {
-          //StandardMetrics.ms_v_charge_pilot->SetValue(data[0]);
-          //StandardMetrics.ms_v_charge_pilot->SetValue(value1);
-          bool ccschargeon = value1;
+          ccschargeon = value1;
           if (ccschargeon == true) // contains AC on bit
               StdMetrics.ms_v_charge_type->SetValue("ccs");
           //StandardMetrics.ms_v_charge_inprogress->SetValue(true);
       }
           break;
+ */
       case bmsccsamps:
         {
-            if (StandardMetrics.ms_v_charge_type->AsString() == "ccs")
-                StandardMetrics.ms_v_bat_current->SetValue((value2 / 10.0f) - ((value2 / 10.0f) * 2)); // converted to negative
+            StandardMetrics.ms_v_bat_current->SetValue((value2 / 10.0f) - ((value2 / 10.0f) * 2)); // converted to negative
             StandardMetrics.ms_v_bat_power->SetValue((((value2 / 10.0f) - ((value2 / 10.0f) * 2)) * StandardMetrics.ms_v_bat_voltage->AsFloat()) / 1000.0f);// converted to negtive
         }
           break;
-      case bmsacchargeon:
+/*      case bmsacchargeon:
         {
             //StandardMetrics.ms_v_charge_pilot->SetValue(value1);
-            bool acchargeon = value1;
+            acchargeon = value1;
             if (acchargeon == true) // contains AC on bit
                 StdMetrics.ms_v_charge_type->SetValue("type2");
             //StandardMetrics.ms_v_charge_inprogress->SetValue(true);
         }
           break;
+ */
       case bmsacamps:
       {
-          if (StandardMetrics.ms_v_charge_type->AsString() == "type2")
-              StandardMetrics.ms_v_bat_current->SetValue(((value2 / 10.0f) - ((value2 / 10.0f) * 2))); // converted to negative
-          StandardMetrics.ms_v_bat_power->SetValue((((value2 / 10.0f) - ((value2 / 10.0f) * 2)) * StandardMetrics.ms_v_bat_voltage->AsFloat()) / 1000.0f);// above converted to negtive
+          StandardMetrics.ms_v_bat_current->SetValue((StandardMetrics.ms_v_bat_power->AsFloat() * 1000) / StandardMetrics.ms_v_bat_voltage->AsFloat() ); //
+          
+          //
+          StandardMetrics.ms_v_charge_current->SetValue((value2 *2) / 10.0f);
+          StandardMetrics.ms_v_charge_climit->SetValue((value2 *2) / 10.0f);
+          StandardMetrics.ms_v_charge_power->SetValue((StandardMetrics.ms_v_charge_current->AsFloat() * (StandardMetrics.ms_v_charge_voltage->AsFloat() )) / 1000.0f); // work out current untill pid found * (value / 10.0f) / 1000.0f
       }
           
           break;
+
       case vcu12vamps:
           StandardMetrics.ms_v_bat_12v_current->SetValue(value1 / 10.0f);
           break;
       case vcuchargervolts:
-          StandardMetrics.ms_v_charge_voltage->SetValue(value2 - 16150); // possible but always 224 untill found only
+          StandardMetrics.ms_v_charge_voltage->SetValue(value2 - 16140); // possible but always 224 untill found only
           break;
-      case vcuchargeramps:
+/*      case vcuchargeramps:
           StandardMetrics.ms_v_charge_current->SetValue(value1);
           StandardMetrics.ms_v_charge_climit->SetValue(value1);
           StandardMetrics.ms_v_charge_power->SetValue((StandardMetrics.ms_v_charge_current->AsFloat() * (StandardMetrics.ms_v_charge_voltage->AsFloat() )) / 1000.0f); // work out current untill pid found * (value / 10.0f) / 1000.0f
-          break;
+          break; */
       case cellvolts:
         {
             // Read battery cell voltages 1-96:
@@ -293,6 +312,46 @@ void OvmsVehicleMaxed3::IncomingPollReply(canbus* bus, uint16_t type, uint16_t p
     }
   }
 }
+
+void OvmsVehicleMaxed3::SetBmsStatus(uint8_t status)
+{
+    switch (status) {
+//        case StartingCharge:
+        case Charging:
+            StandardMetrics.ms_v_charge_pilot->SetValue(true);
+            //StandardMetrics.ms_v_charge_inprogress->SetValue(true);
+            StandardMetrics.ms_v_charge_type->SetValue("type2");
+            
+            break;
+        case CcsCharging:
+            StandardMetrics.ms_v_charge_pilot->SetValue(true);
+            //StandardMetrics.ms_v_charge_inprogress->SetValue(true);
+            StandardMetrics.ms_v_charge_type->SetValue("ccs");
+            //These are added while CCS charging, EVCC won't show up so we set these here
+            StandardMetrics.ms_v_charge_current->SetValue(-StandardMetrics.ms_v_bat_current->AsFloat());
+            StandardMetrics.ms_v_charge_power->SetValue(-StandardMetrics.ms_v_bat_power->AsFloat());
+            StandardMetrics.ms_v_charge_climit->SetValue(82);
+            StandardMetrics.ms_v_charge_voltage->SetValue(StandardMetrics.ms_v_bat_voltage->AsFloat());
+            break;
+        default:
+            if (StandardMetrics.ms_v_charge_inprogress->AsBool())
+            {
+                StandardMetrics.ms_v_charge_type->SetValue("undefined");
+                StandardMetrics.ms_v_charge_inprogress->SetValue(false);
+                if (StandardMetrics.ms_v_bat_soc->AsFloat() >= 99.9) //Set to 99.9 instead of 100 incase of mathematical errors
+                {
+                    StandardMetrics.ms_v_charge_state->SetValue("done");
+                }
+                else
+                {
+                    StandardMetrics.ms_v_charge_state->SetValue("stopped");
+                }
+            }
+            break;
+    }
+}
+
+
 
 // Can Frames
 
@@ -357,6 +416,13 @@ void OvmsVehicleMaxed3::IncomingFrameCan1(CAN_frame_t* p_frame)
                     StandardMetrics.ms_v_inv_temp->SetValue(invtemp / 10);
                 break;
                 }
+                
+            case 0x604:  // actual power to HV Battery
+                {
+                hvpower = d[5];
+                StandardMetrics.ms_v_bat_power->SetValue(-hvpower * 42 / 1000);
+                break;
+                }
     }
 }
 
@@ -379,7 +445,7 @@ void OvmsVehicleMaxed3::PollerStateTicker()
   int poll_state;
   if (!charging12v)
     poll_state = STATE_OFF;
-  else if (vanIsCharging)
+  else if (Charging || CcsCharging)
     poll_state = STATE_CHARGING;
   else
     poll_state = STATE_ON;
@@ -393,24 +459,12 @@ void OvmsVehicleMaxed3::PollerStateTicker()
   {
     if (m_poll_state != STATE_CHARGING)
         {
-        // Charge started:
-            if (StandardMetrics.ms_v_charge_type->AsString() == "type2")
-            {
             StdMetrics.ms_v_door_chargeport->SetValue(true);
             StdMetrics.ms_v_charge_pilot->SetValue(true);
             //StdMetrics.ms_v_charge_inprogress->SetValue(true);
             //StdMetrics.ms_v_charge_substate->SetValue("onrequest");
             StdMetrics.ms_v_charge_state->SetValue("charging");
             PollSetState(STATE_CHARGING);
-            }
-            if (StandardMetrics.ms_v_charge_type->AsString() == "ccs")
-            {
-            StdMetrics.ms_v_door_chargeport->SetValue(true);
-            StdMetrics.ms_v_charge_pilot->SetValue(true);
-            //StdMetrics.ms_v_charge_inprogress->SetValue(true);
-            StdMetrics.ms_v_charge_state->SetValue("charging");
-            PollSetState(STATE_CHARGING);
-            }
         }
   }
   else
