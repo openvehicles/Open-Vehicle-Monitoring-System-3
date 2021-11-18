@@ -1,1 +1,2 @@
 m2r
+docutils<0.18

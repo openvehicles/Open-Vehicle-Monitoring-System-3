@@ -10,6 +10,7 @@ Open Vehicle Monitor System v3 - Change log
     stat trip                           -- Output statistics for current/finished trip
 - VW e-Up: added acceleration support; OBD by reading from ECU,
     T26 deriving from speed changes
+- Fiat 500e: enhancements courtesy of Gunther Huck
 
 2021-09-29 MB  3.2.017  OTA release
 - Added VEHICLE_POLL_TYPE_ROUTINECONTROL to UDS (ISO 14229) service identifiers list
