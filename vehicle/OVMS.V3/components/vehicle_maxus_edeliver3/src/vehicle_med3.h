@@ -62,7 +62,7 @@ class OvmsVehicleMaxed3 : public OvmsVehicle
     OvmsMetricFloat* m_watt_hour_raw;
     OvmsMetricFloat* m_consump_raw;
     OvmsMetricFloat* m_consumprange_raw;
-      
+    OvmsMetricFloat* m_poll_bmsstate;
 
   protected:
       std::string         m_rxbuf;
@@ -89,7 +89,6 @@ class OvmsVehicleMaxed3 : public OvmsVehicle
       bool soc_limit_reached;
       bool range_limit_reached;
       bool vanIsOn;
-      bool vanIsCharging;
       bool ccschargeon;
       bool acchargeon;
       

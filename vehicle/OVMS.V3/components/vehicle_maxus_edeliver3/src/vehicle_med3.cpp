@@ -64,26 +64,26 @@ const char PARAM_NAME[] = "xmg";
 static const OvmsVehicle::poll_pid_t obdii_polls[] =
     {
         // VCU Polls
-//        { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcusoc, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //SOC Scaled below
-        { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcutemp1, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //temp
-        { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcutemp2, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //temp
-        { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcuspeed, {  0, 1, 1, 30  }, 0, ISOTP_STD }, //Possible speed 660 - value
-        { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcupackvolts, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //Pack Voltage
-        { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcu12vamps, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //12v amps?
-        { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcuchargervolts, {  0, 15, 15, 15  }, 0, ISOTP_STD }, //charger volts at a guess?
-//        { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcuchargeramps, {  0, 5, 5, 5  }, 0, ISOTP_STD }, //charger amps?
+//        { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcusoc, {  0, 0, 30, 30  }, 0, ISOTP_STD }, //SOC Scaled below
+        { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcutemp1, {  0, 0, 30, 30  }, 0, ISOTP_STD }, //temp
+        { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcutemp2, {  0, 0, 30, 30  }, 0, ISOTP_STD }, //temp
+        { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcuspeed, {  0, 0, 1, 30  }, 0, ISOTP_STD }, //Possible speed 660 - value
+        { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcupackvolts, {  0, 0, 30, 30  }, 0, ISOTP_STD }, //Pack Voltage
+        { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcu12vamps, {  0, 0, 30, 30  }, 0, ISOTP_STD }, //12v amps?
+        { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcuchargervolts, {  0, 0, 15, 15  }, 0, ISOTP_STD }, //charger volts at a guess?
+//        { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcuchargeramps, {  0, 0, 5, 5  }, 0, ISOTP_STD }, //charger amps?
         // BMS Polls
-        { bmstx, bmsrx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmsstatepid, {  0, 5, 5, 5  }, 0, ISOTP_STD }, //bms charger state???
-        { bmstx, bmsrx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, cellvolts, {  0, 15, 15, 15  }, 0, ISOTP_STD }, //cell volts
-        { bmstx, bmsrx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, celltemps, {  0, 15, 15, 15  }, 0, ISOTP_STD }, //cell temps
-        { bmstx, bmsrx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmssoc, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //bms SOC
-        { bmstx, bmsrx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmssoh, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //bms SOH??
-        { bmstx, bmsrx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmssocraw, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //bms raw SOC
-//        { bmstx, bmsrx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, packamps, {  0, 30, 30, 30  }, 0, ISOTP_STD }, //bms hv amps to pack
-        { bmstx, bmsrx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmsccsamps, {  0, 15, 15, 15  }, 0, ISOTP_STD }, // looks CCS state
-        { bmstx, bmsrx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmsacamps, {  0, 15, 15, 15  }, 0, ISOTP_STD }, // looks CCS state
-        { bmstx, bmsrx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmsccschargeon, {  0, 15, 15, 15  }, 0, ISOTP_STD }, // looks CCS state
-        { bmstx, bmsrx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmsacchargeon, {  0, 15, 15, 15  }, 0, ISOTP_STD }, // looks CCS state
+        { bmstx, bmsrx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmsStatusPid, {  0, 5, 5, 5  }, 0, ISOTP_STD }, //bms charger state???
+        { bmstx, bmsrx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, cellvolts, {  0, 0, 15, 15  }, 0, ISOTP_STD }, //cell volts
+        { bmstx, bmsrx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, celltemps, {  0, 0, 15, 15  }, 0, ISOTP_STD }, //cell temps
+        { bmstx, bmsrx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmssoc, {  0, 0, 30, 30  }, 0, ISOTP_STD }, //bms SOC
+        { bmstx, bmsrx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmssoh, {  0, 0, 30, 30  }, 0, ISOTP_STD }, //bms SOH??
+        { bmstx, bmsrx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmssocraw, {  0, 0, 30, 30  }, 0, ISOTP_STD }, //bms raw SOC
+//        { bmstx, bmsrx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, packamps, {  0, 0, 30, 30  }, 0, ISOTP_STD }, //bms hv amps to pack
+        { bmstx, bmsrx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmsccsamps, {  0, 0, 15, 15  }, 0, ISOTP_STD }, // looks CCS state
+        { bmstx, bmsrx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmsacamps, {  0, 0, 15, 15  }, 0, ISOTP_STD }, // looks CCS state
+//        { bmstx, bmsrx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmsccschargeon, {  0, 0, 15, 15  }, 0, ISOTP_STD }, // looks CCS state
+//        { bmstx, bmsrx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmsacchargeon, {  0, 0, 15, 15  }, 0, ISOTP_STD }, // looks CCS state
         { 0, 0, 0x00, 0x00, { 0, 0, 0, 0 }, 0, 0 }
     };
 charging_profile granny_steps[]  = {
@@ -107,14 +107,14 @@ charging_profile ccs_steps[] = {
 
 // Responses to the BMS Status PID
 enum BmsStatus : unsigned char {
-    ConnectedNotCharging1 = 0x0,  // Seen when connected but not locked
+    Off = 0x0,  // Seen when connected but not locked
     Idle = 0x1,  // When the car does not have the ignition on
-    Running = 0x4,  // When the ignition is on aux or running
-    Charging = 0x3,  // When charging normally
     CcsCharging = 0x2,  // When charging on a rapid CCS charger
+    Charging = 0x3,  // When charging normally
+    Running = 0x4,  // When the ignition is on aux or running
 //    AboutToSleep = 0x8,  // Seen just before going to sleep
 //    Connected = 0xa,  // Connected but not charging
-    StartingCharge = 0xc  // Seen when the charge was about to start
+//    StartingCharge = 0xc  // Seen when the charge was about to start
 };
 
 }  // anon namespace
@@ -151,14 +151,15 @@ OvmsVehicleMaxed3::OvmsVehicleMaxed3()
         m_consump_raw = MyMetrics.InitFloat("xmg.v.consump.raw", 0, SM_STALE_HIGH); // temp to monitor bms range
         m_consumprange_raw = MyMetrics.InitFloat("xmg.v.consumprange.raw", 0, SM_STALE_HIGH); // temp to monitor bms range
         m_watt_hour_raw = MyMetrics.InitFloat("xmg.v.watt.hour.raw", 0, SM_STALE_HIGH); // temp to monitor bms range
+        m_poll_bmsstate = MyMetrics.InitFloat("xmg.bmsstate.poll", SM_STALE_HIGH); //temp to monitor bms state
     
         // Register config params
         MyConfig.RegisterParam("xmg", "Maxus EV configuration", true, true);
 
         
         // Init Energy:
-        StandardMetrics.ms_v_charge_mode->SetValue("standard");
-        StandardMetrics.ms_v_env_ctrl_login->SetValue(true);
+        StdMetrics.ms_v_charge_mode->SetValue("standard");
+        StdMetrics.ms_v_env_ctrl_login->SetValue(true);
         med3_cum_energy_charge_wh = 0;
         
         // Init WebServer:
@@ -197,94 +198,72 @@ void OvmsVehicleMaxed3::IncomingPollReply(canbus* bus, uint16_t type, uint16_t p
   switch (pid)
   {
       case vcuvin:  // VIN
-          StandardMetrics.ms_v_vin->SetValue(m_rxbuf);
+          StdMetrics.ms_v_vin->SetValue(m_rxbuf);
           break;
-      case bmsstatepid:
+      case bmsStatusPid:
           SetBmsStatus(data[0]);
+          m_poll_bmsstate->SetValue(value1);
           break;
+          
+            // set status to on  StdMetrics.ms_v_env_on->SetValue(bool( d[7] & 0x10 ));
       case bmssoh: //soh
-          StandardMetrics.ms_v_bat_soh->SetValue(value1);
+          StdMetrics.ms_v_bat_soh->SetValue(value1);
           break;
-/*      case vcusoc: //soc scaled from 2 - 99
-          StandardMetrics.ms_v_bat_soc->SetValue(value1);
-          break; */
       case bmssoc: //soc from bms
-          StandardMetrics.ms_v_bat_soc->SetValue(value2 / 100.0f);
-          if(StandardMetrics.ms_v_bat_soc->AsFloat() >=99.35)StandardMetrics.ms_v_bat_soc->SetValue(100.0f);
+          StdMetrics.ms_v_bat_soc->SetValue(value2 / 100.0f);
+          if(StdMetrics.ms_v_bat_soc->AsFloat() >=99.35)StdMetrics.ms_v_bat_soc->SetValue(100.0f);
           break;
           
       case bmssocraw: //soc from bms
           m_soc_raw->SetValue(value2 / 100.0f);
           break;
       case vcutemp1:  // temperature??
-          StandardMetrics.ms_v_mot_temp->SetValue(value1 / 10.0f);
+          StdMetrics.ms_v_mot_temp->SetValue(value1 / 10.0f);
           break;
       case vcutemp2:  // temperature??
-          StandardMetrics.ms_v_env_temp->SetValue(value1 / 10.0f);
+          StdMetrics.ms_v_env_temp->SetValue(value1 / 10.0f);
           break;
       case vcuspeed:  // Possible speed 660 - value with 32 off set
       {
-          vanIsOn = StandardMetrics.ms_v_env_on->AsBool();
+          vanIsOn = StdMetrics.ms_v_env_on->AsBool();
           if (vanIsOn)
-          //StandardMetrics.ms_v_pos_speed->SetValue(628-(value2-32));
-          StandardMetrics.ms_v_pos_speed->SetValue(660-(value2));
-          //StandardMetrics.ms_v_pos_speed->SetValue((100 - ((value2 - 512) * 100 / (640 - 512))) * 1.60934);
+          //StdMetrics.ms_v_pos_speed->SetValue(628-(value2-32));
+          StdMetrics.ms_v_pos_speed->SetValue(660-(value2));
+          //StdMetrics.ms_v_pos_speed->SetValue((100 - ((value2 - 512) * 100 / (640 - 512))) * 1.60934);
           else
-              StandardMetrics.ms_v_pos_speed->SetValue(0);
+              StdMetrics.ms_v_pos_speed->SetValue(0);
       }
           break;
       case vcupackvolts:  // Pack Voltage
-          StandardMetrics.ms_v_bat_voltage->SetValue(value2 / 10.0f);
+          StdMetrics.ms_v_bat_voltage->SetValue(value2 / 10.0f);
           break;
 
-/*      case bmsccschargeon:
-      {
-          ccschargeon = value1;
-          if (ccschargeon == true) // contains AC on bit
-              StdMetrics.ms_v_charge_type->SetValue("ccs");
-          //StandardMetrics.ms_v_charge_inprogress->SetValue(true);
-      }
-          break;
- */
+
       case bmsccsamps:
         {
-            StandardMetrics.ms_v_bat_current->SetValue((value2 / 10.0f) - ((value2 / 10.0f) * 2)); // converted to negative
-            StandardMetrics.ms_v_bat_power->SetValue((((value2 / 10.0f) - ((value2 / 10.0f) * 2)) * StandardMetrics.ms_v_bat_voltage->AsFloat()) / 1000.0f);// converted to negtive
+            StdMetrics.ms_v_bat_current->SetValue((value2 / 10.0f) - ((value2 / 10.0f) * 2)); // converted to negative
+            //StdMetrics.ms_v_bat_power->SetValue((((value2 / 10.0f) - ((value2 / 10.0f) * 2)) * StdMetrics.ms_v_bat_voltage->AsFloat()) / 1000.0f);// converted to negtive
         }
           break;
-/*      case bmsacchargeon:
-        {
-            //StandardMetrics.ms_v_charge_pilot->SetValue(value1);
-            acchargeon = value1;
-            if (acchargeon == true) // contains AC on bit
-                StdMetrics.ms_v_charge_type->SetValue("type2");
-            //StandardMetrics.ms_v_charge_inprogress->SetValue(true);
-        }
-          break;
- */
+
       case bmsacamps:
       {
-          StandardMetrics.ms_v_bat_current->SetValue((StandardMetrics.ms_v_bat_power->AsFloat() * 1000) / StandardMetrics.ms_v_bat_voltage->AsFloat() ); //
+          StdMetrics.ms_v_bat_current->SetValue((StdMetrics.ms_v_bat_power->AsFloat() * 1000) / StdMetrics.ms_v_bat_voltage->AsFloat() ); //
           
           //
-          StandardMetrics.ms_v_charge_current->SetValue((value2 *2) / 10.0f);
-          StandardMetrics.ms_v_charge_climit->SetValue((value2 *2) / 10.0f);
-          StandardMetrics.ms_v_charge_power->SetValue((StandardMetrics.ms_v_charge_current->AsFloat() * (StandardMetrics.ms_v_charge_voltage->AsFloat() )) / 1000.0f); // work out current untill pid found * (value / 10.0f) / 1000.0f
+          StdMetrics.ms_v_charge_current->SetValue((value2 *2) / 10.0f);
+          
       }
           
           break;
 
       case vcu12vamps:
-          StandardMetrics.ms_v_bat_12v_current->SetValue(value1 / 10.0f);
+          StdMetrics.ms_v_bat_12v_current->SetValue(value1 / 10.0f);
           break;
       case vcuchargervolts:
-          StandardMetrics.ms_v_charge_voltage->SetValue(value2 - 16140); // possible but always 224 untill found only
+          StdMetrics.ms_v_charge_voltage->SetValue(value2 - 16140); // possible but always 224 untill found only
           break;
-/*      case vcuchargeramps:
-          StandardMetrics.ms_v_charge_current->SetValue(value1);
-          StandardMetrics.ms_v_charge_climit->SetValue(value1);
-          StandardMetrics.ms_v_charge_power->SetValue((StandardMetrics.ms_v_charge_current->AsFloat() * (StandardMetrics.ms_v_charge_voltage->AsFloat() )) / 1000.0f); // work out current untill pid found * (value / 10.0f) / 1000.0f
-          break; */
+
       case cellvolts:
         {
             // Read battery cell voltages 1-96:
@@ -318,34 +297,46 @@ void OvmsVehicleMaxed3::SetBmsStatus(uint8_t status)
     switch (status) {
 //        case StartingCharge:
         case Charging:
-            StandardMetrics.ms_v_charge_pilot->SetValue(true);
-            //StandardMetrics.ms_v_charge_inprogress->SetValue(true);
-            StandardMetrics.ms_v_charge_type->SetValue("type2");
+            StdMetrics.ms_v_charge_type->SetValue("type2");
+            StdMetrics.ms_v_door_chargeport->SetValue(true);
+            StdMetrics.ms_v_charge_pilot->SetValue(true);
+            StdMetrics.ms_v_charge_inprogress->SetValue(true);
+            //StdMetrics.ms_v_charge_substate->SetValue("onrequest");
+            StdMetrics.ms_v_charge_state->SetValue("charging");
+            StdMetrics.ms_v_charge_climit->SetValue(StdMetrics.ms_v_charge_current->AsFloat());
+            PollSetState(STATE_CHARGING);
             
             break;
         case CcsCharging:
-            StandardMetrics.ms_v_charge_pilot->SetValue(true);
-            //StandardMetrics.ms_v_charge_inprogress->SetValue(true);
-            StandardMetrics.ms_v_charge_type->SetValue("ccs");
+            StdMetrics.ms_v_charge_type->SetValue("ccs");
+            StdMetrics.ms_v_door_chargeport->SetValue(true);
+            StdMetrics.ms_v_charge_pilot->SetValue(true);
+            StdMetrics.ms_v_charge_inprogress->SetValue(true);
+            StdMetrics.ms_v_charge_state->SetValue("charging");
             //These are added while CCS charging, EVCC won't show up so we set these here
-            StandardMetrics.ms_v_charge_current->SetValue(-StandardMetrics.ms_v_bat_current->AsFloat());
-            StandardMetrics.ms_v_charge_power->SetValue(-StandardMetrics.ms_v_bat_power->AsFloat());
-            StandardMetrics.ms_v_charge_climit->SetValue(82);
-            StandardMetrics.ms_v_charge_voltage->SetValue(StandardMetrics.ms_v_bat_voltage->AsFloat());
+            StdMetrics.ms_v_charge_current->SetValue(-StdMetrics.ms_v_bat_current->AsFloat());
+            StdMetrics.ms_v_charge_power->SetValue(-StdMetrics.ms_v_bat_power->AsFloat());
+            StdMetrics.ms_v_charge_climit->SetValue(-StdMetrics.ms_v_bat_current->AsFloat());
+            StdMetrics.ms_v_charge_voltage->SetValue(StdMetrics.ms_v_bat_voltage->AsFloat());
+            PollSetState(STATE_CHARGING);
+            break;
+        case Running:
+            StdMetrics.ms_v_env_on->SetValue(true);
+            StdMetrics.ms_v_charge_pilot->SetValue(false);
+            StdMetrics.ms_v_charge_inprogress->SetValue(false);
+            StdMetrics.ms_v_charge_type->SetValue("");
+            PollSetState(STATE_RUNNING);
             break;
         default:
-            if (StandardMetrics.ms_v_charge_inprogress->AsBool())
+            StdMetrics.ms_v_charge_pilot->SetValue(false);
+            StdMetrics.ms_v_charge_inprogress->SetValue(false);
+            StdMetrics.ms_v_charge_type->SetValue("");
+            StdMetrics.ms_v_charge_state->SetValue("");
+            if (!StdMetrics.ms_v_charge_inprogress->AsBool())
             {
-                StandardMetrics.ms_v_charge_type->SetValue("undefined");
-                StandardMetrics.ms_v_charge_inprogress->SetValue(false);
-                if (StandardMetrics.ms_v_bat_soc->AsFloat() >= 99.9) //Set to 99.9 instead of 100 incase of mathematical errors
-                {
-                    StandardMetrics.ms_v_charge_state->SetValue("done");
-                }
-                else
-                {
-                    StandardMetrics.ms_v_charge_state->SetValue("stopped");
-                }
+                StdMetrics.ms_v_bat_current->SetValue(0);
+                StdMetrics.ms_v_bat_power->SetValue(0);
+                
             }
             break;
     }
@@ -359,7 +350,7 @@ void OvmsVehicleMaxed3::IncomingFrameCan1(CAN_frame_t* p_frame)
   {
       
 //set batt temp
-      StandardMetrics.ms_v_bat_temp->SetValue(StandardMetrics.ms_v_bat_pack_tavg->AsFloat());
+      StdMetrics.ms_v_bat_temp->SetValue(StdMetrics.ms_v_bat_pack_tavg->AsFloat());
       
       uint8_t *d = p_frame->data.u8;
 
@@ -368,7 +359,7 @@ void OvmsVehicleMaxed3::IncomingFrameCan1(CAN_frame_t* p_frame)
         case 0x6f2: // broadcast
           {
 
-          uint8_t meds_status = (d[0] & 0x07); // contains status bits
+          /*uint8_t meds_status = (d[0] & 0x07); // contains status bits
           
               switch (meds_status)
                   // Pollstate 0 - POLLSTATE_OFF      - car is off
@@ -376,13 +367,13 @@ void OvmsVehicleMaxed3::IncomingFrameCan1(CAN_frame_t* p_frame)
                   // Pollstate 2 - POLLSTATE_RUNNING  - car is driving
                   // Pollstate 3 - POLLSTATE_CHARGING - car is charging
               break;
-          
+          */
               
         //Set ideal, est  when CANdata received
-              float soc = StandardMetrics.ms_v_bat_soc->AsFloat();
+              float soc = StdMetrics.ms_v_bat_soc->AsFloat();
               // Setup Calculates for Efficient Range
-                    float batTemp = StandardMetrics.ms_v_bat_temp->AsFloat();
-                    float effSoh = StandardMetrics.ms_v_bat_soh->AsFloat();
+                    float batTemp = StdMetrics.ms_v_bat_temp->AsFloat();
+                    float effSoh = StdMetrics.ms_v_bat_soh->AsFloat();
                     float kwhPerKm = 1000/(consumpRange * 59 + consumpRange) / 60;
                     float kmPerKwh = (1000/kwhPerKm) * 1.609;
                     //float kmPerKwhAvg = (kmPerKwh * 59 + kmPerKwh) / 60;
@@ -394,10 +385,10 @@ void OvmsVehicleMaxed3::IncomingFrameCan1(CAN_frame_t* p_frame)
                     if(kmPerKwh>6.4)kmPerKwh=6.6;
                     if(batTemp>20)batTemp=20;
               
-              StandardMetrics.ms_v_bat_range_full->SetValue(241);
-              StandardMetrics.ms_v_bat_range_ideal->SetValue(241 * soc / 100);
-                //StandardMetrics.ms_v_bat_range_est->SetValue(241 * soc / 108);
-              StandardMetrics.ms_v_bat_range_est->SetValue(52.5*((kmPerKwh * (1-((20-batTemp)*1.3)/100)*(soc/100))*(effSoh/100)));
+              StdMetrics.ms_v_bat_range_full->SetValue(241);
+              StdMetrics.ms_v_bat_range_ideal->SetValue(241 * soc / 100);
+                //StdMetrics.ms_v_bat_range_est->SetValue(241 * soc / 108);
+              StdMetrics.ms_v_bat_range_est->SetValue(52.5*((kmPerKwh * (1-((20-batTemp)*1.3)/100)*(soc/100))*(effSoh/100)));
         
               break;
         }
@@ -406,21 +397,21 @@ void OvmsVehicleMaxed3::IncomingFrameCan1(CAN_frame_t* p_frame)
                 
             case 0x540:  // odometer in KM
                 {
-                    StandardMetrics.ms_v_pos_odometer->SetValue(d[0] << 16 | d[1] << 8 | d[2]);// odometer
+                    StdMetrics.ms_v_pos_odometer->SetValue(d[0] << 16 | d[1] << 8 | d[2]);// odometer
                     break;
                 }
       
             case 0x389:  // charger or battery temp
                 {
                 float invtemp = d[1];
-                    StandardMetrics.ms_v_inv_temp->SetValue(invtemp / 10);
+                    StdMetrics.ms_v_inv_temp->SetValue(invtemp / 10);
                 break;
                 }
                 
             case 0x604:  // actual power to HV Battery
                 {
                 hvpower = d[5];
-                StandardMetrics.ms_v_bat_power->SetValue(-hvpower * 42 / 1000);
+                StdMetrics.ms_v_bat_power->SetValue(-hvpower * 42 / 1000);
                 break;
                 }
     }
@@ -436,76 +427,26 @@ void OvmsVehicleMaxed3::Ticker1(uint32_t ticker)
 
 void OvmsVehicleMaxed3::PollerStateTicker()
 {
-    bool charging12v = StandardMetrics.ms_v_env_charging12v->AsBool();
-    vanIsCharging = StandardMetrics.ms_v_charge_inprogress->AsBool();
-    StandardMetrics.ms_v_env_charging12v->SetValue(StandardMetrics.ms_v_bat_12v_voltage->AsFloat() >= 12.9);
-    StandardMetrics.ms_v_charge_inprogress->SetValue(-StandardMetrics.ms_v_bat_power->AsFloat() >=  1.000f);
+    bool charging12v = StdMetrics.ms_v_env_charging12v->AsBool();
+    StdMetrics.ms_v_env_charging12v->SetValue(StdMetrics.ms_v_bat_12v_voltage->AsFloat() >= 12.9);
+    //StdMetrics.ms_v_charge_inprogress->SetValue(-StdMetrics.ms_v_bat_power->AsFloat() >=  1.000f);
     m_poll_state_metric->SetValue(m_poll_state);
+    
   // Determine new polling state:
-  int poll_state;
-  if (!charging12v)
-    poll_state = STATE_OFF;
-  else if (Charging || CcsCharging)
-    poll_state = STATE_CHARGING;
-  else
-    poll_state = STATE_ON;
-
-  // Set base state flags:
-  StdMetrics.ms_v_env_awake->SetValue(poll_state == (STATE_ON | STATE_CHARGING));
-  StdMetrics.ms_v_env_on->SetValue(poll_state == STATE_ON);
-
-  // Handle polling state change
-  if (poll_state == STATE_CHARGING)
-  {
-    if (m_poll_state != STATE_CHARGING)
+ // int poll_state;
+        if (charging12v)
         {
-            StdMetrics.ms_v_door_chargeport->SetValue(true);
-            StdMetrics.ms_v_charge_pilot->SetValue(true);
-            //StdMetrics.ms_v_charge_inprogress->SetValue(true);
-            //StdMetrics.ms_v_charge_substate->SetValue("onrequest");
-            StdMetrics.ms_v_charge_state->SetValue("charging");
-            PollSetState(STATE_CHARGING);
+          //  poll_state = STATE_ON;
+            PollSetState(STATE_ON);
+            StdMetrics.ms_v_env_awake->SetValue(true);
         }
-  }
-  else
-  {
-    if (m_poll_state == STATE_CHARGING) {
-      // Charge stopped:
-      StdMetrics.ms_v_charge_pilot->SetValue(false);
-      StdMetrics.ms_v_charge_inprogress->SetValue(false);
-      int soc = StdMetrics.ms_v_bat_soc->AsInt();
-      if (soc >= 99) {
-        StdMetrics.ms_v_charge_substate->SetValue("stopped");
-        StdMetrics.ms_v_charge_state->SetValue("done");
-      } else {
-        StdMetrics.ms_v_charge_substate->SetValue("interrupted");
-        StdMetrics.ms_v_charge_state->SetValue("stopped");
-      }
-    }
-  }
-
-  if (poll_state == STATE_ON)
-  {
-    if (m_poll_state != STATE_ON) {
-      // Switched on:
-      StdMetrics.ms_v_door_chargeport->SetValue(false);
-      StdMetrics.ms_v_charge_substate->SetValue("");
-      StdMetrics.ms_v_charge_state->SetValue("");
-      PollSetState(STATE_ON);
-    }
-  }
-
-  if (poll_state == STATE_OFF)
-  {
-    if (m_poll_state != STATE_OFF) {
-      // Switched off:
-      StdMetrics.ms_v_bat_current->SetValue(0);
-      StdMetrics.ms_v_bat_power->SetValue(0);
-      PollSetState(STATE_OFF);
-    }
-  }
+        else
+        {
+         //   poll_state = STATE_OFF;
+            PollSetState(STATE_OFF);
+            StdMetrics.ms_v_env_awake->SetValue(false);
+        }
 }
-
 
 // Vehicle framework registration
 
@@ -516,44 +457,44 @@ void OvmsVehicleMaxed3::processEnergy()
     // ms_v_bat_energy_used if power is being drawn from the battery
     
     // Only calculate if the car is turned on and not charging.
-    if (StandardMetrics.ms_v_env_awake->AsBool() &&
-        !StandardMetrics.ms_v_charge_inprogress->AsBool()) {
+    if (StdMetrics.ms_v_env_awake->AsBool() &&
+        !StdMetrics.ms_v_charge_inprogress->AsBool()) {
         // Are we in READY state? Ready to drive off.
-        if (StandardMetrics.ms_v_env_on->AsBool()) {
-            auto bat_power = StandardMetrics.ms_v_bat_power->AsFloat();
+        if (StdMetrics.ms_v_env_on->AsBool()) {
+            auto bat_power = StdMetrics.ms_v_bat_power->AsFloat();
             // Calculate battery power (kW) for one second
             auto energy = bat_power / 3600.0;
             // Calculate current (A) used for one second.
-            auto coulombs = (StandardMetrics.ms_v_bat_current->AsFloat() / 3600.0);
+            auto coulombs = (StdMetrics.ms_v_bat_current->AsFloat() / 3600.0);
             // Car is still parked so trip has not started.
             // Set all values to zero
-            if (StandardMetrics.ms_v_env_drivetime->AsInt() == 0) {
+            if (StdMetrics.ms_v_env_drivetime->AsInt() == 0) {
                 ESP_LOGI(TAG, "Trip has started");
-                StandardMetrics.ms_v_bat_coulomb_used->SetValue(0);
-                StandardMetrics.ms_v_bat_coulomb_recd->SetValue(0);
-                StandardMetrics.ms_v_bat_energy_used->SetValue(0);
-                StandardMetrics.ms_v_bat_energy_recd->SetValue(0);
+                StdMetrics.ms_v_bat_coulomb_used->SetValue(0);
+                StdMetrics.ms_v_bat_coulomb_recd->SetValue(0);
+                StdMetrics.ms_v_bat_energy_used->SetValue(0);
+                StdMetrics.ms_v_bat_energy_recd->SetValue(0);
             // Otherwise we are already moving so do calculations
             }
             else
             {
                 // Calculate regeneration power
                 if (bat_power < 0) {
-                    StandardMetrics.ms_v_bat_energy_recd->SetValue
-                    (StandardMetrics.ms_v_bat_energy_recd->AsFloat() + -(energy));
+                    StdMetrics.ms_v_bat_energy_recd->SetValue
+                    (StdMetrics.ms_v_bat_energy_recd->AsFloat() + -(energy));
                     
-                    StandardMetrics.ms_v_bat_coulomb_recd->SetValue
-                    (StandardMetrics.ms_v_bat_coulomb_recd->AsFloat() + -(coulombs));
+                    StdMetrics.ms_v_bat_coulomb_recd->SetValue
+                    (StdMetrics.ms_v_bat_coulomb_recd->AsFloat() + -(coulombs));
                     
                 // Calculate power usage. Add power used each second
                 }
                 else
                 {
-                    StandardMetrics.ms_v_bat_energy_used->SetValue
-                    (StandardMetrics.ms_v_bat_energy_used->AsFloat() + energy);
+                    StdMetrics.ms_v_bat_energy_used->SetValue
+                    (StdMetrics.ms_v_bat_energy_used->AsFloat() + energy);
                     
-                    StandardMetrics.ms_v_bat_coulomb_used->SetValue
-                    (StandardMetrics.ms_v_bat_coulomb_used->AsFloat() + coulombs);
+                    StdMetrics.ms_v_bat_coulomb_used->SetValue
+                    (StdMetrics.ms_v_bat_coulomb_used->AsFloat() + coulombs);
                 }
             }
         }
@@ -561,51 +502,51 @@ void OvmsVehicleMaxed3::processEnergy()
         else
         {
             // We have only just stopped so add trip values to the totals
-            if (StandardMetrics.ms_v_env_parktime->AsInt() == 0) {
+            if (StdMetrics.ms_v_env_parktime->AsInt() == 0) {
                 ESP_LOGI(TAG, "Trip has ended");
-                StandardMetrics.ms_v_bat_energy_used_total->SetValue
-                (StandardMetrics.ms_v_bat_energy_used_total->AsFloat()
-                    + StandardMetrics.ms_v_bat_energy_used->AsFloat());
+                StdMetrics.ms_v_bat_energy_used_total->SetValue
+                (StdMetrics.ms_v_bat_energy_used_total->AsFloat()
+                    + StdMetrics.ms_v_bat_energy_used->AsFloat());
                 
-                StandardMetrics.ms_v_bat_energy_recd_total->SetValue
-                (StandardMetrics.ms_v_bat_energy_recd_total->AsFloat()
-                 + StandardMetrics.ms_v_bat_energy_recd->AsFloat());
+                StdMetrics.ms_v_bat_energy_recd_total->SetValue
+                (StdMetrics.ms_v_bat_energy_recd_total->AsFloat()
+                 + StdMetrics.ms_v_bat_energy_recd->AsFloat());
                 
-                StandardMetrics.ms_v_bat_coulomb_used_total->SetValue
-                (StandardMetrics.ms_v_bat_coulomb_used_total->AsFloat()
-                 + StandardMetrics.ms_v_bat_coulomb_used->AsFloat());
+                StdMetrics.ms_v_bat_coulomb_used_total->SetValue
+                (StdMetrics.ms_v_bat_coulomb_used_total->AsFloat()
+                 + StdMetrics.ms_v_bat_coulomb_used->AsFloat());
                 
-                StandardMetrics.ms_v_bat_coulomb_recd_total->SetValue
-                (StandardMetrics.ms_v_bat_coulomb_recd_total->AsFloat()
-                 + StandardMetrics.ms_v_bat_coulomb_recd->AsFloat());
+                StdMetrics.ms_v_bat_coulomb_recd_total->SetValue
+                (StdMetrics.ms_v_bat_coulomb_recd_total->AsFloat()
+                 + StdMetrics.ms_v_bat_coulomb_recd->AsFloat());
             }
         }
     }
     
     // Add cumulative charge energy each second to ms_v_charge_power
-    if(StandardMetrics.ms_v_charge_inprogress->AsBool())
+    if(StdMetrics.ms_v_charge_inprogress->AsBool())
     {
-        med3_cum_energy_charge_wh += StandardMetrics.ms_v_charge_power->AsFloat()*1000/3600;
-        StandardMetrics.ms_v_charge_kwh->SetValue(med3_cum_energy_charge_wh/1000);
-//        med3_cum_energy_charge_wh += StandardMetrics.ms_v_charge_power->AsFloat()/3600;
-//        StandardMetrics.ms_v_charge_kwh->SetValue((med3_cum_energy_charge_wh/1000) * 1.609f);
+        med3_cum_energy_charge_wh += StdMetrics.ms_v_charge_power->AsFloat()*1000/3600;
+        StdMetrics.ms_v_charge_kwh->SetValue(med3_cum_energy_charge_wh/1000);
+//        med3_cum_energy_charge_wh += StdMetrics.ms_v_charge_power->AsFloat()/3600;
+//        StdMetrics.ms_v_charge_kwh->SetValue((med3_cum_energy_charge_wh/1000) * 1.609f);
         
-        int limit_soc      = StandardMetrics.ms_v_charge_limit_soc->AsInt(0);
-        float limit_range    = StandardMetrics.ms_v_charge_limit_range->AsFloat(0, Kilometers);
-        float max_range      = StandardMetrics.ms_v_bat_range_full->AsFloat(0, Kilometers);
+        int limit_soc      = StdMetrics.ms_v_charge_limit_soc->AsInt(0);
+        float limit_range    = StdMetrics.ms_v_charge_limit_range->AsFloat(0, Kilometers);
+        float max_range      = StdMetrics.ms_v_bat_range_full->AsFloat(0, Kilometers);
         
         // Calculate time to reach 100% charge
-        int minsremaining_full = StandardMetrics.ms_v_charge_type->AsString() == "ccs" ? calcMinutesRemaining(100, ccs_steps) : calcMinutesRemaining(100, granny_steps);
-        StandardMetrics.ms_v_charge_duration_full->SetValue(minsremaining_full);
+        int minsremaining_full = StdMetrics.ms_v_charge_type->AsString() == "ccs" ? calcMinutesRemaining(100, ccs_steps) : calcMinutesRemaining(100, granny_steps);
+        StdMetrics.ms_v_charge_duration_full->SetValue(minsremaining_full);
         ESP_LOGV(TAG, "Time remaining: %d mins to full", minsremaining_full);
         
         // Calculate time to charge to SoC Limit
         if (limit_soc > 0)
         {
             // if limit_soc is set, then calculate remaining time to limit_soc
-            int minsremaining_soc = StandardMetrics.ms_v_charge_type->AsString() == "ccs" ? calcMinutesRemaining(limit_soc, ccs_steps) : calcMinutesRemaining(limit_soc, granny_steps);
-            StandardMetrics.ms_v_charge_duration_soc->SetValue(minsremaining_soc, Minutes);
-            if ( minsremaining_soc == 0 && !soc_limit_reached && limit_soc >= StandardMetrics.ms_v_bat_soc->AsFloat(100))
+            int minsremaining_soc = StdMetrics.ms_v_charge_type->AsString() == "ccs" ? calcMinutesRemaining(limit_soc, ccs_steps) : calcMinutesRemaining(limit_soc, granny_steps);
+            StdMetrics.ms_v_charge_duration_soc->SetValue(minsremaining_soc, Minutes);
+            if ( minsremaining_soc == 0 && !soc_limit_reached && limit_soc >= StdMetrics.ms_v_bat_soc->AsFloat(100))
             {
                   MyNotify.NotifyStringf("info", "charge.limit.soc", "Charge limit of %d%% reached", limit_soc);
                   soc_limit_reached = true;
@@ -618,9 +559,9 @@ void OvmsVehicleMaxed3::processEnergy()
         {
             // if range limit is set, then compute required soc and then calculate remaining time to that soc
             int range_soc = limit_range / max_range * 100.0;
-            int minsremaining_range = StandardMetrics.ms_v_charge_type->AsString() == "ccs" ? calcMinutesRemaining(range_soc, ccs_steps) : calcMinutesRemaining(range_soc, granny_steps);
-            StandardMetrics.ms_v_charge_duration_range->SetValue(minsremaining_range, Minutes);
-            if ( minsremaining_range == 0 && !range_limit_reached && range_soc >= StandardMetrics.ms_v_bat_soc->AsFloat(100))
+            int minsremaining_range = StdMetrics.ms_v_charge_type->AsString() == "ccs" ? calcMinutesRemaining(range_soc, ccs_steps) : calcMinutesRemaining(range_soc, granny_steps);
+            StdMetrics.ms_v_charge_duration_range->SetValue(minsremaining_range, Minutes);
+            if ( minsremaining_range == 0 && !range_limit_reached && range_soc >= StdMetrics.ms_v_bat_soc->AsFloat(100))
             {
                 MyNotify.NotifyStringf("info", "charge.limit.range", "Charge limit of %dkm reached", (int) limit_range);
                 range_limit_reached = true;
@@ -632,9 +573,9 @@ void OvmsVehicleMaxed3::processEnergy()
     else
     {
         med3_cum_energy_charge_wh=0;
-        StandardMetrics.ms_v_charge_duration_full->SetValue(0);
-        StandardMetrics.ms_v_charge_duration_soc->SetValue(0);
-        StandardMetrics.ms_v_charge_duration_range->SetValue(0);
+        StdMetrics.ms_v_charge_duration_full->SetValue(0);
+        StdMetrics.ms_v_charge_duration_soc->SetValue(0);
+        StdMetrics.ms_v_charge_duration_range->SetValue(0);
         soc_limit_reached = false;
         range_limit_reached = false;
     }
@@ -646,9 +587,9 @@ int OvmsVehicleMaxed3::calcMinutesRemaining(int toSoc, charging_profile charge_s
     
     int minutes = 0;
     int percents_In_Step;
-    int fromSoc = StandardMetrics.ms_v_bat_soc->AsInt(100);
+    int fromSoc = StdMetrics.ms_v_bat_soc->AsInt(100);
     int batterySize = 52500;
-    float chargespeed = -StandardMetrics.ms_v_bat_power->AsFloat() * 1000;
+    float chargespeed = -StdMetrics.ms_v_bat_power->AsFloat() * 1000;
 
     for (int i = 0; charge_steps[i].toPercent != 0; i++) {
           if (charge_steps[i].toPercent > fromSoc && charge_steps[i].fromPercent<toSoc) {
@@ -664,11 +605,11 @@ int OvmsVehicleMaxed3::calcMinutesRemaining(int toSoc, charging_profile charge_s
 void OvmsVehicleMaxed3::calculateEfficiency()
     {
     float consumption = 0;
-        if (StandardMetrics.ms_v_pos_speed->AsFloat() >= 5) //temp removed till speed found
-        //if (StandardMetrics.ms_v_env_on->AsBool()) //Temp till speed found
-            consumption = ABS(StdMetrics.ms_v_bat_power->AsFloat(0, Watts)) / StandardMetrics.ms_v_pos_speed->AsFloat();
-    StandardMetrics.ms_v_bat_consumption->SetValue((StandardMetrics.ms_v_bat_consumption->AsFloat() * 29 + consumption) / 30);
-        consumpRange = ABS(StandardMetrics.ms_v_bat_consumption->AsFloat());
+        if (StdMetrics.ms_v_pos_speed->AsFloat() >= 5) //temp removed till speed found
+        //if (StdMetrics.ms_v_env_on->AsBool()) //Temp till speed found
+            consumption = ABS(StdMetrics.ms_v_bat_power->AsFloat(0, Watts)) / StdMetrics.ms_v_pos_speed->AsFloat();
+    StdMetrics.ms_v_bat_consumption->SetValue((StdMetrics.ms_v_bat_consumption->AsFloat() * 29 + consumption) / 30);
+        consumpRange = ABS(StdMetrics.ms_v_bat_consumption->AsFloat());
         
     
     }
@@ -687,17 +628,17 @@ void OvmsVehicleMaxed3::ConfigChanged(OvmsConfigParam* param)
     // xmg
     //  suffsoc              Sufficient SOC [%] (Default: 0=disabled)
     //  suffrange            Sufficient range [km] (Default: 0=disabled)
-    StandardMetrics.ms_v_charge_limit_soc->SetValue(
+    StdMetrics.ms_v_charge_limit_soc->SetValue(
             (float) MyConfig.GetParamValueInt("xmg", "suffsoc"),   Percentage );
     
     if (MyConfig.GetParamValue("vehicle", "units.distance") == "K")
     {
-        StandardMetrics.ms_v_charge_limit_range->SetValue(
+        StdMetrics.ms_v_charge_limit_range->SetValue(
                 (float) MyConfig.GetParamValueInt("xmg", "suffrange"), Kilometers );
     }
     else
     {
-        StandardMetrics.ms_v_charge_limit_range->SetValue(
+        StdMetrics.ms_v_charge_limit_range->SetValue(
             (float) MyConfig.GetParamValueInt("xmg", "suffrange"), Miles );
     }
 }
