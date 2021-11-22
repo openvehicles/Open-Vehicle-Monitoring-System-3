@@ -257,19 +257,20 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     {
     // Automatically build the URL based on firmware
     std::string tag = MyConfig.GetParamValue("ota","tag");
+
     url = MyConfig.GetParamValue("ota","server");
     if (url.empty())
       url = "api.openvehicles.com/firmware/ota";
-#ifdef CONFIG_OVMS_HW_BASE_3_0
-    url.append("/v3.0/");
-#endif //#ifdef CONFIG_OVMS_HW_BASE_3_0
-#ifdef CONFIG_OVMS_HW_BASE_3_1
-    url.append("/v3.1/");
-#endif //#ifdef CONFIG_OVMS_HW_BASE_3_1
+
+    url.append("/");
+    url.append(GetOVMSProduct());
+    url.append("/");
+
     if (tag.empty())
       url.append(CONFIG_OVMS_VERSION_TAG);
     else
       url.append(tag);
+
     url.append("/ovms3.bin");
     }
   else
@@ -591,12 +592,9 @@ void OvmsOTA::GetStatus(ota_info& info, bool check_update /*=true*/)
       std::string url = MyConfig.GetParamValue("ota","server");
       if (url.empty())
         url = "api.openvehicles.com/firmware/ota";
-#ifdef CONFIG_OVMS_HW_BASE_3_0
-      url.append("/v3.0/");
-#endif //#ifdef CONFIG_OVMS_HW_BASE_3_0
-#ifdef CONFIG_OVMS_HW_BASE_3_1
-      url.append("/v3.1/");
-#endif //#ifdef CONFIG_OVMS_HW_BASE_3_1
+      url.append("/");
+      url.append(GetOVMSProduct());
+      url.append("/");
       if (tag.empty())
         url.append(CONFIG_OVMS_VERSION_TAG);
       else
@@ -749,12 +747,11 @@ bool OvmsOTA::AutoFlash(bool force)
   std::string url = MyConfig.GetParamValue("ota","server");
   if (url.empty())
     url = "api.openvehicles.com/firmware/ota";
-#ifdef CONFIG_OVMS_HW_BASE_3_0
-  url.append("/v3.0/");
-#endif //#ifdef CONFIG_OVMS_HW_BASE_3_0
-#ifdef CONFIG_OVMS_HW_BASE_3_1
-  url.append("/v3.1/");
-#endif //#ifdef CONFIG_OVMS_HW_BASE_3_1
+
+  url.append("/");
+  url.append(GetOVMSProduct());
+  url.append("/");
+
   if (tag.empty())
     url.append(CONFIG_OVMS_VERSION_TAG);
   else

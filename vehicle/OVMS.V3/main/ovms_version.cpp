@@ -153,6 +153,22 @@ std::string GetOVMSBuild()
   return build;
   }
 
+std::string GetOVMSProduct()
+  {
+  #ifdef CONFIG_OVMS_HW_BASE_3_0
+  return std::string("v3.0");
+  #endif //#ifdef CONFIG_OVMS_HW_BASE_3_0
+
+  #ifdef CONFIG_OVMS_HW_BASE_3_1
+  esp_chip_info_t chip;
+  esp_chip_info(&chip);
+  if (chip.revision < 3)
+    { return std::string("v3.1"); }
+  else
+    { return std::string("v3.3"); }
+  #endif //#ifdef CONFIG_OVMS_HW_BASE_3_1
+  }
+
 std::string GetOVMSHardware()
   {
   std::string hardware("OVMS ");

@@ -1,6 +1,8 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+
+2021-11-22 MWJ  3.2.018  OTA release
 - Vehicle: added optional automatic trip report generation
     Details: https://docs.openvehicles.com/en/latest/userguide/notifications.html
   New configs:
@@ -11,6 +13,7 @@ Open Vehicle Monitor System v3 - Change log
 - VW e-Up: added acceleration support; OBD by reading from ECU,
     T26 deriving from speed changes
 - Fiat 500e: enhancements courtesy of Gunther Huck
+- OTA: Add support for v3.3 hardware (ESP32 rev3)
 
 2021-09-29 MB  3.2.017  OTA release
 - Added VEHICLE_POLL_TYPE_ROUTINECONTROL to UDS (ISO 14229) service identifiers list
