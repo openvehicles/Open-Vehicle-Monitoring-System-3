@@ -57,158 +57,6 @@ static const char *TAG = "ota";
 OvmsOTA MyOTA __attribute__ ((init_priority (4400)));
 
 ////////////////////////////////////////////////////////////////////////////////
-// OvmsOTAWriter
-//
-// Used to write OTA firmware to flash
-
-class OvmsOTAWriter : public OvmsSyncHttpClient
-  {
-  public:
-    OvmsOTAWriter(const esp_partition_t* target,
-                  OvmsWriter* writer);
-    ~OvmsOTAWriter();
-
-  public:
-    virtual void ConnectionBodyStart(struct mg_connection *nc);
-    virtual void ConnectionBodyData(struct mg_connection *nc, uint8_t* data, size_t len);
-    virtual void ConnectionBodyFinish(struct mg_connection *nc);
-
-  public:
-    const esp_partition_t* m_target;
-    OvmsWriter* m_writer;
-    esp_ota_handle_t m_otah;
-    size_t m_sofar;
-    size_t m_filesize;
-  };
-
-OvmsOTAWriter::OvmsOTAWriter(const esp_partition_t* target,
-              OvmsWriter* writer)
-  : OvmsSyncHttpClient(false) // Don't buffer body
-  {
-  m_target = target;
-  m_writer = writer;
-  m_sofar = 0;
-  m_filesize = 0;
-  }
-
-OvmsOTAWriter::~OvmsOTAWriter()
-  {
-  }
-
-void OvmsOTAWriter::ConnectionBodyStart(struct mg_connection *nc)
-  {
-  size_t expected = m_bodysize;
-
-  if (expected < 32)
-    {
-    if (m_writer)
-      m_writer->printf("Error: Invalid expected file size %d\n",expected);
-    else
-      ESP_LOGE(TAG,"Error: Invalid expected file size %d",expected);
-    nc->flags |= MG_F_CLOSE_IMMEDIATELY;
-    m_error = std::string("Invalid expected file size for firmware");
-    if (m_waitcompletion != NULL) xSemaphoreGive(m_waitcompletion);
-    return;
-    }
-  else
-    {
-    if (m_writer)
-      m_writer->printf("Expected file size is %d\n",expected);
-    else
-      ESP_LOGD(TAG, "Expected file size is %d",expected);
-    }
-
-  if (m_writer)
-    m_writer->puts("Preparing flash partition...");
-  else
-    ESP_LOGD(TAG, "Preparing flash partition...");
-
-  esp_err_t err = esp_ota_begin(m_target, expected, &m_otah);
-  if (err != ESP_OK)
-    {
-    if (m_writer)
-      m_writer->printf("Error: ESP32 error #%d when starting OTA operation\n",err);
-    else
-      ESP_LOGE(TAG,"Error: ESP32 error #%d when starting OTA operation",err);
-    nc->flags |= MG_F_CLOSE_IMMEDIATELY;
-    m_error = std::string("ESP32 error when starting OTA operation");
-    if (m_waitcompletion != NULL) xSemaphoreGive(m_waitcompletion);
-    return;
-    }
-  }
-
-void OvmsOTAWriter::ConnectionBodyData(struct mg_connection *nc, uint8_t* data, size_t len)
-  {
-  m_filesize += len;
-  m_sofar += len;
-  if (m_sofar > 100000)
-    {
-    if (m_writer)
-      m_writer->printf("Downloading... (%d bytes so far)\n",m_filesize);
-    else
-      ESP_LOGD(TAG, "Downloading... (%d bytes so far)",m_filesize);
-    m_sofar = 0;
-    }
-
-  if (m_filesize > m_target->size)
-    {
-    if (m_writer)
-      m_writer->printf("Error: Download firmware is bigger than available partition space - state is inconsistent\n");
-    else
-      ESP_LOGE(TAG, "Download firmware is bigger than available partition space - state is inconsistent");
-    esp_ota_end(m_otah);
-    nc->flags |= MG_F_CLOSE_IMMEDIATELY;
-    m_error = std::string("Download firmware is bigger than available partition space - state is inconsistent");
-    if (m_waitcompletion != NULL) xSemaphoreGive(m_waitcompletion);
-    return;
-    }
-
-  esp_err_t err = esp_ota_write(m_otah, data, len);
-  if (err != ESP_OK)
-    {
-    if (m_writer)
-      m_writer->printf("Error: ESP32 error #%d when writing to flash - state is inconsistent\n",err);
-    else
-      ESP_LOGE(TAG, "ESP32 error #%d when writing to flash - state is inconsistent",err);
-    esp_ota_end(m_otah);
-    nc->flags |= MG_F_CLOSE_IMMEDIATELY;
-    m_error = std::string("ESP32 error #%d when writing to flash - state is inconsistent");
-    if (m_waitcompletion != NULL) xSemaphoreGive(m_waitcompletion);
-    return;
-    }
-  }
-
-void OvmsOTAWriter::ConnectionBodyFinish(struct mg_connection *nc)
-  {
-  if (m_writer)
-    m_writer->printf("Download complete (at %d bytes)\n",m_filesize);
-  else
-    ESP_LOGD(TAG, "Download complete (at %d bytes)",m_filesize);
-
-  if (m_filesize != m_bodysize)
-    {
-    if (m_writer)
-      m_writer->printf("Error: Download file size (%d) does not match expected (%d)\n",m_filesize,m_bodysize);
-    else
-      ESP_LOGE(TAG, "Download file size (%d) does not match expected (%d)",m_filesize,m_bodysize);
-    m_error = std::string("Download file size does not match expected");
-    esp_ota_end(m_otah);
-    return;
-    }
-
-  esp_err_t err = esp_ota_end(m_otah);
-  if (err != ESP_OK)
-    {
-    if (m_writer)
-      m_writer->printf("Error: ESP32 error #%d finalising OTA operation - state is inconsistent\n",err);
-    else
-      ESP_LOGE(TAG, "ESP32 error #%d finalising OTA operation - state is inconsistent",err);
-    m_error = std::string("ESP32 error finalising OTA operation - state is inconsistent");
-    return;
-    }
-  }
-
-////////////////////////////////////////////////////////////////////////////////
 // Utility functions
 
 int buildverscmp(std::string v1, std::string v2)
@@ -418,7 +266,7 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
 
     url = MyConfig.GetParamValue("ota","server");
     if (url.empty())
-      url = "https://api.openvehicles.com/firmware/ota";
+      url = "api.openvehicles.com/firmware/ota";
 
     url.append("/");
     url.append(GetOVMSProduct());
@@ -437,21 +285,82 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     }
   writer->printf("Download firmware from %s to %s\n",url.c_str(),target->label);
 
-  // Download and flash...
-  OvmsOTAWriter http(target, writer);
-  if (!http.Request(url))
+  // HTTP client request...
+  OvmsHttpClient http(url);
+  if (!http.IsOpen())
     {
-    writer->printf("Error: Request failed: %s\n",http.GetError().c_str());
+    writer->puts("Error: Request failed");
+    return;
     }
 
-  if (http.HasError())
+  size_t expected = http.BodySize();
+  if (expected < 32)
     {
+    writer->printf("Error: Expected download file size (%d) is invalid\n",expected);
+    return;
+    }
+
+  writer->printf("Expected file size is %d\n",expected);
+
+  writer->puts("Preparing flash partition...");
+  esp_ota_handle_t otah;
+  esp_err_t err = esp_ota_begin(target, expected, &otah);
+  if (err != ESP_OK)
+    {
+      writer->printf("Error: ESP32 error #%d when starting OTA operation\n",err);
+      http.Disconnect();
+      return;
+    }
+
+  // Now, process the body
+  uint8_t rbuf[512];
+  size_t filesize = 0;
+  int sofar = 0;
+  while (int k = http.BodyRead(rbuf,512))
+    {
+    filesize += k;
+    sofar += k;
+    if (sofar > 100000)
+      {
+      writer->printf("Downloading... (%d bytes so far)\n",filesize);
+      sofar = 0;
+      }
+    if (filesize > target->size)
+      {
+      writer->printf("Error: Download firmware is bigger than available partition space - state is inconsistent\n");
+      esp_ota_end(otah);
+      http.Disconnect();
+      return;
+      }
+    err = esp_ota_write(otah, rbuf, k);
+    if (err != ESP_OK)
+      {
+      writer->printf("Error: ESP32 error #%d when writing to flash - state is inconsistent\n",err);
+      esp_ota_end(otah);
+      http.Disconnect();
+      return;
+      }
+    }
+  http.Disconnect();
+  writer->printf("Download complete (at %d bytes)\n",filesize);
+
+  if (filesize != expected)
+    {
+    writer->printf("Error: Download file size (%d) does not match expected (%d)\n",filesize,expected);
+    esp_ota_end(otah);
+    return;
+    }
+
+  err = esp_ota_end(otah);
+  if (err != ESP_OK)
+    {
+    writer->printf("Error: ESP32 error #%d finalising OTA operation - state is inconsistent\n",err);
     return;
     }
 
   // All done
   writer->puts("Setting boot partition...");
-  esp_err_t err = esp_ota_set_boot_partition(target);
+  err = esp_ota_set_boot_partition(target);
   if (err != ESP_OK)
     {
     writer->printf("Error: ESP32 error #%d setting boot partition - check before rebooting\n",err);
@@ -459,7 +368,7 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     }
 
   writer->printf("OTA flash was successful\n  Flashed %d bytes from %s\n  Next boot will be from '%s'\n",
-                 http.GetBodySize(),url.c_str(),target->label);
+                 http.BodySize(),url.c_str(),target->label);
   MyConfig.SetParamValue("ota", "http.mru", url);
   }
 
@@ -691,7 +600,7 @@ void OvmsOTA::GetStatus(ota_info& info, bool check_update /*=true*/)
       std::string tag = MyConfig.GetParamValue("ota","tag");
       std::string url = MyConfig.GetParamValue("ota","server");
       if (url.empty())
-        url = "https://api.openvehicles.com/firmware/ota";
+        url = "api.openvehicles.com/firmware/ota";
       url.append("/");
       url.append(GetOVMSProduct());
       url.append("/");
@@ -701,21 +610,16 @@ void OvmsOTA::GetStatus(ota_info& info, bool check_update /*=true*/)
         url.append(tag);
       url.append("/ovms3.ver");
 
-      OvmsSyncHttpClient http;
-      if (!http.Request(url))
+      OvmsHttpClient http(url);
+      if (http.IsOpen() && http.ResponseCode() == 200 && http.BodyHasLine())
         {
-        ESP_LOGE(TAG, "HTTP request for ota status failed: %s", http.GetError().c_str());
-        return;
-        }
-      OvmsBuffer *result = http.GetBodyAsBuffer();
-      if (result->HasLine())
-        {
-        info.version_server = result->ReadLine();
-        uint8_t rbuf[512];
-        while (size_t k = result->Pop(512,rbuf))
+        info.version_server = http.BodyReadLine();
+        char rbuf[512];
+        while (size_t k = http.BodyRead(rbuf,512))
           {
-          info.changelog_server.append((char*)rbuf,k);
+          info.changelog_server.append(rbuf,k);
           }
+        http.Disconnect();
         }
       }
 
@@ -851,7 +755,7 @@ bool OvmsOTA::AutoFlash(bool force)
   std::string tag = MyConfig.GetParamValue("ota","tag");
   std::string url = MyConfig.GetParamValue("ota","server");
   if (url.empty())
-    url = "https://api.openvehicles.com/firmware/ota";
+    url = "api.openvehicles.com/firmware/ota";
 
   url.append("/");
   url.append(GetOVMSProduct());
@@ -869,31 +773,83 @@ bool OvmsOTA::AutoFlash(bool force)
     url.c_str());
   MyNotify.NotifyStringf("info", "ota.update", "New OTA firmware %s is now being downloaded", info.version_server.c_str());
 
-  // Download and flash...
-  OvmsOTAWriter http(target, NULL);
-  if (!http.Request(url))
+  // HTTP client request...
+  OvmsHttpClient http(url);
+  if (!http.IsOpen())
     {
-    ESP_LOGE(TAG, "AutoFlash: HTTP Request failed: %s", http.GetError().c_str());
+    ESP_LOGE(TAG, "AutoFlash: http://%s request failed", url.c_str());
     m_lastcheckday = -1; // Allow to try again within the same day
     return false;
     }
 
-  if (http.HasError())
+  size_t expected = http.BodySize();
+  if (expected < 32)
     {
+    ESP_LOGE(TAG, "AutoFlash: Expected download file size (%d) is invalid", expected);
     m_lastcheckday = -1; // Allow to try again within the same day
+    return false;
+    }
+
+  ESP_LOGI(TAG, "AutoFlash: Preparing flash partition...");
+  esp_ota_handle_t otah;
+  esp_err_t err = esp_ota_begin(target, expected, &otah);
+  if (err != ESP_OK)
+    {
+    ESP_LOGE(TAG, "AutoFlash: ESP32 error #%d when starting OTA operation", err);
+    http.Disconnect();
+    return false;
+    }
+
+  // Now, process the body
+  uint8_t rbuf[512];
+  size_t filesize = 0;
+  while (int k = http.BodyRead(rbuf,512))
+    {
+    filesize += k;
+    if (filesize > target->size)
+      {
+      ESP_LOGE(TAG, "AutoFlash: Download firmware is bigger than available partition space - state is inconsistent");
+      esp_ota_end(otah);
+      http.Disconnect();
+      return false;
+      }
+    err = esp_ota_write(otah, rbuf, k);
+    if (err != ESP_OK)
+      {
+      ESP_LOGE(TAG, "AutoFlash: ESP32 error #%d when writing to flash - state is inconsistent", err);
+      esp_ota_end(otah);
+      http.Disconnect();
+      return false;
+      }
+    }
+  http.Disconnect();
+  ESP_LOGI(TAG, "AutoFlash:: Download complete (at %d bytes)", filesize);
+
+  if (filesize != expected)
+    {
+    ESP_LOGE(TAG, "AutoFlash: Download file size (%d) does not match expected (%d)", filesize, expected);
+    esp_ota_end(otah);
+    m_lastcheckday = -1; // Allow to try again within the same day
+    return false;
+    }
+
+  err = esp_ota_end(otah);
+  if (err != ESP_OK)
+    {
+    ESP_LOGE(TAG, "AutoFlash: ESP32 error #%d finalising OTA operation - state is inconsistent", err);
     return false;
     }
 
   // All done
   ESP_LOGI(TAG, "AutoFlash: Setting boot partition...");
-  esp_err_t err = esp_ota_set_boot_partition(target);
+  err = esp_ota_set_boot_partition(target);
   if (err != ESP_OK)
     {
     ESP_LOGE(TAG, "AutoFlash: ESP32 error #%d setting boot partition - check before rebooting", err);
     return false;
     }
 
-  ESP_LOGI(TAG, "AutoFlash: Success flash of %d bytes from %s", http.GetBodySize(), url.c_str());
+  ESP_LOGI(TAG, "AutoFlash: Success flash of %d bytes from %s", http.BodySize(), url.c_str());
   MyNotify.NotifyStringf("info", "ota.update", "OTA firmware %s has been updated (OVMS will restart)", info.version_server.c_str());
   MyConfig.SetParamValue("ota", "http.mru", url);
 

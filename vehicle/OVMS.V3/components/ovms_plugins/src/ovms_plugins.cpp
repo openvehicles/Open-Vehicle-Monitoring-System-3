@@ -918,13 +918,12 @@ bool OvmsPlugin::Download()
     url.append("/");
     url.append(p->m_path);
 
-    OvmsSyncHttpClient http;
+    OvmsHttpClient http;
     if (!http.Request(url))
       {
-      ESP_LOGE(TAG, "Element %s: HTTP request failed: %s",p->m_path.c_str(), http.GetError().c_str());
+      ESP_LOGE(TAG, "Element %s: HTTP request failed",p->m_path.c_str());
       return false;
       }
-
     std::string body = http.GetBodyAsString();
 
     std::string dest(pluginpath);
@@ -1014,20 +1013,19 @@ bool OvmsRepository::UpdateRepo()
   std::string url = m_path;
   url.append("/plugins.rev");
 
-  OvmsSyncHttpClient http;
+  OvmsHttpClient http;
   if (!http.Request(url))
     {
-    ESP_LOGE(TAG, "Repo %s: HTTP request failed: %s",m_name.c_str(), http.GetError().c_str());
+    ESP_LOGE(TAG, "Repo %s: HTTP request failed",m_name.c_str());
     return false;
     }
-  OvmsBuffer *result = http.GetBodyAsBuffer();
-  if (!result->HasLine())
+  if (!http.IsOpen() || (http.ResponseCode() != 200) || !http.BodyHasLine())
     {
     ESP_LOGE(TAG, "Repo %s:  HTTP response invalid",m_name.c_str());
     return false;
     }
 
-  std::string version = result->ReadLine();
+  std::string version = http.BodyReadLine();
 
   if (version.compare(m_version) == 0)
     {
@@ -1041,7 +1039,7 @@ bool OvmsRepository::UpdateRepo()
   http.Reset();
   if (!http.Request(url))
     {
-    ESP_LOGE(TAG, "Repo %s: HTTP request failed: %s",m_name.c_str(),http.GetError().c_str());
+    ESP_LOGE(TAG, "Repo %s: HTTP request failed",m_name.c_str());
     return false;
     }
 

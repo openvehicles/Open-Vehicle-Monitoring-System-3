@@ -28,37 +28,44 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __OVMS_HTTP_H__
-#define __OVMS_HTTP_H__
+#ifndef __OVMS_NET_H__
+#define __OVMS_NET_H__
 
-#include <string>
-#include "ovms_net.h"
-#include "ovms_buffer.h"
+#include <stdint.h>
+#include "lwip/err.h"
+#include "lwip/sockets.h"
+#include "lwip/sys.h"
+#include "lwip/netdb.h"
+#include "lwip/dns.h"
 
-class OvmsHttpClient : public OvmsNetTcpConnection
+class OvmsNetConnection
   {
   public:
-    OvmsHttpClient();
-    OvmsHttpClient(std::string url, const char* method = "GET");
-    virtual ~OvmsHttpClient();
+    OvmsNetConnection();
+    virtual ~OvmsNetConnection();
 
   public:
+    virtual bool IsOpen();
     virtual void Disconnect();
+    virtual int Socket();
 
   public:
-    bool Request(std::string url, const char* method = "GET");
-    size_t BodyRead(void *buf, size_t nbyte);
-    int BodyHasLine();
-    std::string BodyReadLine();
-    size_t BodySize();
-    int ResponseCode();
-    std::string GetBodyAsString();
-    void Reset();
+    virtual ssize_t Write(const void *buf, size_t nbyte);
+    virtual size_t Read(void *buf, size_t nbyte);
 
   protected:
-    OvmsBuffer* m_buf;
-    size_t m_bodysize;
-    int m_responsecode;
+    int m_sock;
   };
 
-#endif //#ifndef __OVMS_HTTP_H__
+class OvmsNetTcpConnection : public OvmsNetConnection
+  {
+  public:
+    OvmsNetTcpConnection();
+    OvmsNetTcpConnection(const char* host, const char* service);
+    virtual ~OvmsNetTcpConnection();
+
+  public:
+    virtual bool Connect(const char* host, const char* service);
+  };
+
+#endif //#ifndef __OVMS_NET_H__
