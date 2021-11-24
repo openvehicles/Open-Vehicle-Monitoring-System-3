@@ -1,7 +1,57 @@
-================
-General Warnings
-================
+====================
+Warnings and Notices
+====================
 
+-------------
+FCC Statement
+-------------
+
+This equipment has been tested and found to comply with the limits for a Class B digital device,
+pursuant to part 15 of the FCC Rules. These limits are designed to provide reasonable protection
+against harmful interference in a residential installation. This equipment generates, uses and
+can radiate radio frequency energy and, if not installed and used in accordance with the
+instructions, may cause harmful interference to radio communications. However, there is no
+guarantee that interference will not occur in a particular installation. If this equipment
+does cause harmful interference to radio or television reception, which can be determined by
+turning the equipment off and on, the user is encouraged to try to correct the interference
+by one or more of the following measures:
+
+  - Reorient or relocate the receiving antenna.
+  - Increase the separation between the equipment and receiver.
+  - Connect the equipment into an outlet on a circuit different from that to which the receiver is connected.
+  - Consult the dealer or an experienced radio/TV technician for help.
+
+Caution: Any changes or modiﬁcations to this device not explicitly approved by manufacturer
+could void your authority to operate this equipment.
+
+This device complies with part 15 of the FCC Rules. Operation is subject to the following two conditions:
+(1) This device may not cause harmful interference, and (2) this device must accept any interference
+received, including interference that may cause undesired operation.
+
+------------------------------------------
+Specific Absorption Rate (SAR) information
+------------------------------------------
+
+This OVMS-33-7600G meets the government's requirements for exposure to radio
+waves. The guidelines are based on standards that were developed by independent
+scientific organizations through periodic and thorough evaluation of scientific studies.
+The standards include a substantial safety margin designed to assure the safety of all
+persons regardless of age or health. FCC RF Exposure Information and Statement
+the SAR limit of USA (FCC) is 1.6 W/kg averaged over one gram of tissue. Device
+types: OVMS-33-7600G has also been tested against this SAR limit. This device
+was tested for typical body-worn operations with the back of the phone kept 0mm
+from the body. To maintain compliance with FCC RF exposure requirements, use
+accessories that maintain an 0mm separation distance between the user's body and
+the back of the phone. The use of belt clips, holsters and similar accessories should
+not contain metallic components in its assembly. The use of accessories that do not
+satisfy these requirements may not comply with FCC RF exposure requirements, and
+should be avoided.
+
+----------------
+General Warnings
+----------------
+
+---
 .. image:: warning.png
   :width: 100px
   :align: left
