@@ -51,7 +51,6 @@ should be avoided.
 General Warnings
 ----------------
 
----
 .. image:: warning.png
   :width: 100px
   :align: left
