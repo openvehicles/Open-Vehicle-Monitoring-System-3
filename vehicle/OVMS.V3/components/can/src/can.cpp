@@ -228,7 +228,7 @@ void can_tx(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const
       }
     frame.data.u8[k] = uv;
     }
-  sbus->Write(&frame);
+  sbus->Write(&frame, pdMS_TO_TICKS(500));
   }
 
 void can_rx(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
