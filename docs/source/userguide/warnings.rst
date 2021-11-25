@@ -53,12 +53,12 @@ OVMS-33-7600G CE Statement
 
 EU importer information：
 
-  OpenEnergyMonitor 
+  OpenEnergyMonitor
   InTec F9
   Ffordd y Parc, Parc Menai
   Bangor
   LL57 4FG
-  United Kingdom 
+  United Kingdom
 
 This product can be used across EU member states.
 
@@ -66,24 +66,25 @@ Manufacturer：Open Vehicles Ltd
 
 Specifications:
 
-Hardware Version: /
-Software Version：/
-Frequency Range
-* 2.4G WIFI: 2412MHz ~ 2472MHz(Max power: Rated 15.69dBm)
-* GSM 900: 880MHz ~ 915MHz(Max power: Rated 32.66dBm)
-* DCS 1800: 1710MHz ~ 1785MHz(Max power: Rated 29.75dBm)
-* WCDMA Band I: 1920MHz ~ 1980MHz(Max power: Rated 23.40dBm)
-* WCDMA Band VIII: 880MHz~915MHz(Max power: Rated 23.10dBm)
-* E-UTRA Band 1: 1920MHz ~ 1980MHz(Max power: Rated 22.80dBm)
-* E-UTRA Band 3: 1710MHz~1785MHz(Max power: Rated 22.40dBm)
-* E-UTRA Band 7: 2500MHz ~ 2570MHz(Max power: Rated 22.97dBm)
-* E-UTRA Band 8: 880MHz ~ 915MHz(Max power: Rated 22.40dBm)
-* E-UTRA Band 20: 832MHz ~ 862MHz(Max power: Rated 22.95dBm)
-* E-UTRA Band 28: 703MHz ~ 748MHz(Max power: Rated 22.37dBm)
-* E-UTRA Band 34: 2010MHz ~ 2025MHz(Max power: Rated 22.79dBm)
-* E-UTRA Band 38: 2570MHz ~ 2620MHz(Max power: Rated 22.96dBm)
-* E-UTRA Band 40: 2300MHz ~ 2400MHz(Max power: Rated 23.48dBm)
-Receiver category： 3  
+====================== ==============================================================
+Hardware Version       /
+Software Versio        /
+Frequency Range        2.4G WIFI: 2412MHz ~ 2472MHz(Max power: Rated 15.69dBm)
+                       GSM 900: 880MHz ~ 915MHz(Max power: Rated 32.66dBm)
+                       DCS 1800: 1710MHz ~ 1785MHz(Max power: Rated 29.75dBm)
+                       WCDMA Band I: 1920MHz ~ 1980MHz(Max power: Rated 23.40dBm)
+                       WCDMA Band VIII: 880MHz~915MHz(Max power: Rated 23.10dBm)
+                       E-UTRA Band 1: 1920MHz ~ 1980MHz(Max power: Rated 22.80dBm)
+                       E-UTRA Band 3: 1710MHz~1785MHz(Max power: Rated 22.40dBm)
+                       E-UTRA Band 7: 2500MHz ~ 2570MHz(Max power: Rated 22.97dBm)
+                       E-UTRA Band 8: 880MHz ~ 915MHz(Max power: Rated 22.40dBm)
+                       E-UTRA Band 20: 832MHz ~ 862MHz(Max power: Rated 22.95dBm)
+                       E-UTRA Band 28: 703MHz ~ 748MHz(Max power: Rated 22.37dBm)
+                       E-UTRA Band 34: 2010MHz ~ 2025MHz(Max power: Rated 22.79dBm)
+                       E-UTRA Band 38: 2570MHz ~ 2620MHz(Max power: Rated 22.96dBm)
+                       E-UTRA Band 40: 2300MHz ~ 2400MHz(Max power: Rated 23.48dBm)
+Receiver category      3
+====================== ==============================================================
 
 Members applicability:
 
