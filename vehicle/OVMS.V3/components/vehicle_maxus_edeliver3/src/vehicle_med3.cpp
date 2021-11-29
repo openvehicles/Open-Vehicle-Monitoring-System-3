@@ -240,9 +240,10 @@ void OvmsVehicleMaxed3::IncomingPollReply(canbus* bus, uint16_t type, uint16_t p
 
 
       case bmsccsamps:
+          if (StdMetrics.ms_v_charge_type->AsString() == "ccs")
         {
             StdMetrics.ms_v_bat_current->SetValue((value2 / 10.0f) - ((value2 / 10.0f) * 2)); // converted to negative
-            //StdMetrics.ms_v_bat_power->SetValue((((value2 / 10.0f) - ((value2 / 10.0f) * 2)) * StdMetrics.ms_v_bat_voltage->AsFloat()) / 1000.0f);// converted to negtive
+            StdMetrics.ms_v_bat_power->SetValue((((value2 / 10.0f) - ((value2 / 10.0f) * 2)) * StdMetrics.ms_v_bat_voltage->AsFloat()) / 1000.0f);// converted to negtive
         }
           break;
 
@@ -261,7 +262,10 @@ void OvmsVehicleMaxed3::IncomingPollReply(canbus* bus, uint16_t type, uint16_t p
           StdMetrics.ms_v_bat_12v_current->SetValue(value1 / 10.0f);
           break;
       case vcuchargervolts:
+          if (StdMetrics.ms_v_charge_type->AsString() == "type2")
+          {
           StdMetrics.ms_v_charge_voltage->SetValue(value2 - 16140); // possible but always 224 untill found only
+          }
           break;
 
       case cellvolts:
@@ -304,6 +308,7 @@ void OvmsVehicleMaxed3::SetBmsStatus(uint8_t status)
             //StdMetrics.ms_v_charge_substate->SetValue("onrequest");
             StdMetrics.ms_v_charge_state->SetValue("charging");
             StdMetrics.ms_v_charge_climit->SetValue(StdMetrics.ms_v_charge_current->AsFloat());
+            StdMetrics.ms_v_charge_power->SetValue((StdMetrics.ms_v_charge_current->AsFloat() * StdMetrics.ms_v_charge_voltage->AsFloat()) / 1000);
             PollSetState(STATE_CHARGING);
             
             break;
@@ -324,20 +329,22 @@ void OvmsVehicleMaxed3::SetBmsStatus(uint8_t status)
             StdMetrics.ms_v_env_on->SetValue(true);
             StdMetrics.ms_v_charge_pilot->SetValue(false);
             StdMetrics.ms_v_charge_inprogress->SetValue(false);
+            StdMetrics.ms_v_door_chargeport->SetValue(false);
             StdMetrics.ms_v_charge_type->SetValue("");
             PollSetState(STATE_RUNNING);
             break;
         default:
             StdMetrics.ms_v_charge_pilot->SetValue(false);
             StdMetrics.ms_v_charge_inprogress->SetValue(false);
+            StdMetrics.ms_v_door_chargeport->SetValue(false);
             StdMetrics.ms_v_charge_type->SetValue("");
             StdMetrics.ms_v_charge_state->SetValue("");
-            if (!StdMetrics.ms_v_charge_inprogress->AsBool())
+  /*          if (!StdMetrics.ms_v_charge_inprogress->AsBool())
             {
                 StdMetrics.ms_v_bat_current->SetValue(0);
                 StdMetrics.ms_v_bat_power->SetValue(0);
                 
-            }
+            } */
             break;
     }
 }
@@ -410,8 +417,9 @@ void OvmsVehicleMaxed3::IncomingFrameCan1(CAN_frame_t* p_frame)
                 
             case 0x604:  // actual power to HV Battery
                 {
-                hvpower = d[5];
-                StdMetrics.ms_v_bat_power->SetValue(-hvpower * 42 / 1000);
+              //  hvpower = d[5];
+              //      float hvbatpower = (hvpower * 42 / 1000);
+              //  StdMetrics.ms_v_bat_power->SetValue(-hvbatpower);
                 break;
                 }
     }
