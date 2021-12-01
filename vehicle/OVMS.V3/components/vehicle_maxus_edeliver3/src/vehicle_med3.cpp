@@ -248,13 +248,13 @@ void OvmsVehicleMaxed3::IncomingPollReply(canbus* bus, uint16_t type, uint16_t p
           break;
 
       case bmsacamps:
-      {
+          if (StdMetrics.ms_v_charge_type->AsString() == "type2")
+        {
           StdMetrics.ms_v_bat_current->SetValue((StdMetrics.ms_v_bat_power->AsFloat() * 1000) / StdMetrics.ms_v_bat_voltage->AsFloat() ); //
           
           //
           StdMetrics.ms_v_charge_current->SetValue((value2 *2) / 10.0f);
-          
-      }
+        }
           
           break;
 
@@ -364,18 +364,7 @@ void OvmsVehicleMaxed3::IncomingFrameCan1(CAN_frame_t* p_frame)
       switch (p_frame->MsgID)
         {
         case 0x6f2: // broadcast
-          {
-
-          /*uint8_t meds_status = (d[0] & 0x07); // contains status bits
-          
-              switch (meds_status)
-                  // Pollstate 0 - POLLSTATE_OFF      - car is off
-                  // Pollstate 1 - POLLSTATE_ON       - car is on
-                  // Pollstate 2 - POLLSTATE_RUNNING  - car is driving
-                  // Pollstate 3 - POLLSTATE_CHARGING - car is charging
-              break;
-          */
-              
+            {
         //Set ideal, est  when CANdata received
               float soc = StdMetrics.ms_v_bat_soc->AsFloat();
               // Setup Calculates for Efficient Range
@@ -415,7 +404,7 @@ void OvmsVehicleMaxed3::IncomingFrameCan1(CAN_frame_t* p_frame)
                 break;
                 }
                 
-            case 0x604:  // actual power to HV Battery
+            case 0x604:  // actual power to HV Battery ( does not work on ccs and maybe ac?\)
                 {
               //  hvpower = d[5];
               //      float hvbatpower = (hvpower * 42 / 1000);
