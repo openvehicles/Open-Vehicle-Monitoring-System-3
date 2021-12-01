@@ -358,6 +358,10 @@ class OvmsVehicle : public InternalRamAllocated
     uint32_t m_drive_decelcnt;              // Driving deceleration average data
     double m_drive_decelsum;                // Driving deceleration average data
 
+    bool m_recupering;                      // Driving detect resuperation
+    uint32_t m_recuplasttime;               // last time recupered power was measured
+    float m_drive_recupenergysum;           // Driving recupered energy sum
+
   protected:
     uint32_t m_ticker;
     int m_12v_ticker;
