@@ -62,7 +62,7 @@ class OvmsVehicleMaxed3 : public OvmsVehicle
     OvmsMetricFloat* m_watt_hour_raw;
     OvmsMetricFloat* m_consump_raw;
     OvmsMetricFloat* m_consumprange_raw;
-      
+    OvmsMetricFloat* m_poll_bmsstate;
 
   protected:
       std::string         m_rxbuf;
@@ -75,11 +75,13 @@ class OvmsVehicleMaxed3 : public OvmsVehicle
       void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
       void processEnergy();
       float consumpRange;
+      float hvpower;
       char m_vin[17];
       
   private:
       void IncomingFrameCan1(CAN_frame_t* p_frame);
       void IncomingPollFrame(CAN_frame_t* frame);
+      void SetBmsStatus(uint8_t status);
       /// A temporary store for the VIN
      
       int calcMinutesRemaining(int toSoc, charging_profile charge_steps[]);
@@ -87,7 +89,8 @@ class OvmsVehicleMaxed3 : public OvmsVehicle
       bool soc_limit_reached;
       bool range_limit_reached;
       bool vanIsOn;
-      bool vanIsCharging;
+      bool ccschargeon;
+      bool acchargeon;
       
       virtual void calculateEfficiency();
       
