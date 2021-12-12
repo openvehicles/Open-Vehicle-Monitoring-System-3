@@ -1,2 +1,3 @@
 m2r
 docutils<0.18
+mistune<2.0.0
