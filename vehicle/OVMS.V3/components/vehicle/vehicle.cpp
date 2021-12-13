@@ -1103,11 +1103,13 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStatTrip(int verbosity, OvmsW
   metric_unit_t rangeUnit = (MyConfig.GetParamValue("vehicle", "units.distance") == "M") ? Miles : Kilometers;
   metric_unit_t speedUnit = (rangeUnit == Miles) ? Mph : Kph;
   metric_unit_t accelUnit = (rangeUnit == Miles) ? MphPS : KphPS;
-  metric_unit_t energyUnit = (rangeUnit == Miles) ? WattHoursPM : WattHoursPK;
+  metric_unit_t consumUnit = (rangeUnit == Miles) ? WattHoursPM : WattHoursPK;
+  metric_unit_t energyUnit = kWh;
   metric_unit_t altitudeUnit = (rangeUnit == Miles) ? Feet : Meters;
   const char* rangeUnitLabel = OvmsMetricUnitLabel(rangeUnit);
   const char* speedUnitLabel = OvmsMetricUnitLabel(speedUnit);
   const char* accelUnitLabel = OvmsMetricUnitLabel(accelUnit);
+  const char* consumUnitLabel = OvmsMetricUnitLabel(consumUnit);
   const char* energyUnitLabel = OvmsMetricUnitLabel(energyUnit);
   const char* altitudeUnitLabel = OvmsMetricUnitLabel(altitudeUnit);
 
@@ -1122,13 +1124,14 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStatTrip(int verbosity, OvmsW
   float decel_avg = (m_drive_decelcnt > 0)
     ? UnitConvert(MetersPSS, accelUnit, (float)(m_drive_decelsum / m_drive_decelcnt))
     : 0;
+  motor_energy = motor_energy * 2.778E-4; // manual conversion kW*s -> kWh
+  recup_energy = recup_energy * 2.778E-4; // manual conversion kW*s -> kWh
+  float energy_recup_perc = (motor_energy > 0) ? - recup_energy / motor_energy * 100 : 0;
 
   float energy_used = StdMetrics.ms_v_bat_energy_used->AsFloat();
-  float energy_recup = m_drive_recupenergysum / 1000;
-  float energy_rechd = StdMetrics.ms_v_bat_energy_recd->AsFloat();
-  float energy_recup_perc = (energy_used > 0) ? energy_recup / energy_used * 100 : 0;
-  float energy_rechd_perc = (energy_used > 0) ? energy_rechd / energy_used * 100 : 0;
-  float wh_per_rangeunit = (trip_length > 0) ? (energy_used - energy_rechd) * 1000 / trip_length : 0;
+  float energy_recd = StdMetrics.ms_v_bat_energy_recd->AsFloat();
+  float energy_recd_perc = (energy_used > 0) ? energy_recd / energy_used * 100 : 0;
+  float wh_per_rangeunit = (trip_length > 0) ? (energy_used - energy_recd) * 1000 / trip_length : 0;
 
   float soc = StdMetrics.ms_v_bat_soc->AsFloat();
   float soc_diff = soc - m_drive_startsoc;
@@ -1154,10 +1157,9 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStatTrip(int verbosity, OvmsW
     {
     buf
       << "\nEnergy "
-      << wh_per_rangeunit << energyUnitLabel
+      << wh_per_rangeunit << consumUnitLabel
       << ", "
-      << energy_recup_perc << "% recup, "
-      << energy_rechd_perc << "% rechd"
+      << energy_recd_perc << "% recd"
       ;
     }
   buf
@@ -1180,6 +1182,18 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStatTrip(int verbosity, OvmsW
       << accel_avg
       << " / "
       << decel_avg << accelUnitLabel
+      ;
+    }
+  if (motor_energy > 0)
+    {
+    buf
+      << "\nMotor +"
+      << std::setprecision(2)
+      << motor_energy
+      << " / "
+      << recup_energy << energyUnitLabel
+      << std::setprecision(0)
+      << " (" << energy_recup_perc << "% recup)"
       ;
     }
 
@@ -1239,8 +1253,10 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
       m_drive_accelsum = 0;
       m_drive_decelcnt = 0;
       m_drive_decelsum = 0;
-      m_drive_recupenergysum = 0;
-      m_recuplasttime = esp_log_timestamp();
+      m_inv_reftime = esp_log_timestamp();
+      m_inv_lastpower = 0;
+      motor_energy = 0;
+      recup_energy = 0;
       MyEvents.SignalEvent("vehicle.on",NULL);
       if (m_autonotifications)
         {
@@ -1492,23 +1508,23 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
       }
     }
   else if (metric == StdMetrics.ms_v_inv_power)
+    // collect data for trip pos. and neg. (recuperated) motor energies
     {
-    // collect data for trip recovered energy from (negative) motor power
-    if (StdMetrics.ms_v_inv_power->AsFloat() < 0)
+    uint32_t now = esp_log_timestamp();
+    if (now > m_inv_reftime)
       {
-      if (m_recupering)
+      float invpower = StdMetrics.ms_v_inv_power->AsFloat();
+      float invenergy = (m_inv_lastpower + invpower) * (now - m_inv_reftime) * 5E-4; // average of last 2 values in kW*s
+      if ( invenergy < 0 )
         {
-        float m_recuptimedelta = (esp_log_timestamp() - m_recuplasttime) / 3600; // ms -> 0.001h so we get Wh from kW
-        float recup_power = StdMetrics.ms_v_inv_power->AsFloat();
-        m_drive_recupenergysum -= recup_power*m_recuptimedelta;
-        m_recuplasttime = esp_log_timestamp();
-        ESP_LOGD(TAG, "recuperation %.3f kW, timedelta %.3f mh", recup_power, m_recuptimedelta);
+        recup_energy += invenergy;
         }
-      m_recupering = true;
-      }
-    else
-      {
-      m_recupering = false; 
+      else
+        {
+        motor_energy += invenergy;
+        }
+      m_inv_lastpower = invpower;
+      m_inv_reftime = now;
       }
     }
   else if (metric == StandardMetrics.ms_v_pos_acceleration)
