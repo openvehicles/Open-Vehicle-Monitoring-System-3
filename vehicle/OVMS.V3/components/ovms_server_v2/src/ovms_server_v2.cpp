@@ -2005,6 +2005,25 @@ void OvmsServerV2::Ticker1(std::string event, void* data)
     }
   }
 
+void OvmsServerV2::RequestUpdate(bool txall)
+  {
+  if (txall)
+    {
+    m_lasttx = 0;
+    }
+  else
+    {
+    m_now_stat = true;
+    m_now_gen = true;
+    m_now_gps = true;
+    m_now_tpms = true;
+    m_now_firmware = true;
+    m_now_environment = true;
+    m_now_capabilities = true;
+    m_now_group = true;
+    }
+  }
+
 OvmsServerV2::OvmsServerV2(const char* name)
   : OvmsServer(name)
   {
@@ -2174,6 +2193,21 @@ void ovmsv2_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
     }
   }
 
+void ovmsv2_update(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (MyOvmsServerV2 == NULL)
+    {
+    writer->puts("ERROR: OVMS v2 server has not been started");
+    }
+  else
+    {
+    bool txall = (strcmp(cmd->GetName(), "all") == 0);
+    MyOvmsServerV2->RequestUpdate(txall);
+    writer->printf("Server V2 data update for %s metrics has been scheduled\n",
+      txall ? "all" : "modified");
+    }
+  }
+
 OvmsServerV2Init MyOvmsServerV2Init  __attribute__ ((init_priority (6100)));
 
 OvmsServerV2Init::OvmsServerV2Init()
@@ -2185,6 +2219,10 @@ OvmsServerV2Init::OvmsServerV2Init()
   cmd_v2->RegisterCommand("start","Start an OVMS V2 Server Connection",ovmsv2_start);
   cmd_v2->RegisterCommand("stop","Stop an OVMS V2 Server Connection",ovmsv2_stop);
   cmd_v2->RegisterCommand("status","Show OVMS V2 Server connection status",ovmsv2_status);
+
+  OvmsCommand* cmd_update = cmd_v2->RegisterCommand("update", "Request OVMS V2 Server data update", ovmsv2_update);
+  cmd_update->RegisterCommand("all", "Transmit all metrics covered by v2 protocol", ovmsv2_update);
+  cmd_update->RegisterCommand("modified", "Transmit modified metrics only", ovmsv2_update);
 
   MyConfig.RegisterParam("server.v2", "V2 Server Configuration", true, true);
   // Our instances:

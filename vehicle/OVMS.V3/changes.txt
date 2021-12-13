@@ -1,6 +1,13 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Server V2/V3: added manual update request
+    Note: the servers normally don't need a manual trigger to perform
+    data updates, they listen to metrics changes and events. Use this
+    only if you need extraordinary single updates as fast as possible.
+  New commands:
+    server v2 update [all|modified]     -- Request V2 data update
+    server v3 update [all|modified]     -- Request V3 data update
 
 2021-11-22 MWJ  3.2.018  OTA release
 - Vehicle: added optional automatic trip report generation
