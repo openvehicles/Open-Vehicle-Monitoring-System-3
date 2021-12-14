@@ -1,6 +1,8 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Volt/Ampera:: added notification for "fuel" metric.
+    new config: [xva] notify_va_metrics 	(bool, default no)
 - Server V2/V3: added manual update request
     Note: the servers normally don't need a manual trigger to perform
     data updates, they listen to metrics changes and events. Use this
