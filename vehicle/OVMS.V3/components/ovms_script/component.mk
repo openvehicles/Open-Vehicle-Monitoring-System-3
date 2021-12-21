@@ -7,12 +7,16 @@
 # please read the ESP-IDF documents if you need to do this.
 #
 
-COMPONENT_SRCDIRS := src
-COMPONENT_ADD_INCLUDEDIRS := src
-COMPONENT_ADD_LDFLAGS = -Wl,--whole-archive -l$(COMPONENT_NAME) -Wl,--no-whole-archive
 
 ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+COMPONENT_SRCDIRS := src srcduk
+COMPONENT_ADD_INCLUDEDIRS := src srcduk umm
 # To get line numbers of internal modules in stack traces, embed the uncompressed sources:
 #COMPONENT_EMBED_FILES := jsmodsrc/pubsub.js jsmodsrc/json.js
 COMPONENT_EMBED_FILES := jsmodembed/pubsub.js jsmodembed/json.js
+else
+COMPONENT_SRCDIRS := src
+COMPONENT_ADD_INCLUDEDIRS := src
 endif
+
+COMPONENT_ADD_LDFLAGS = -Wl,--whole-archive -l$(COMPONENT_NAME) -Wl,--no-whole-archive

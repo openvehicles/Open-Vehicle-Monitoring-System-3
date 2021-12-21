@@ -27,7 +27,7 @@
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
 
 // #include "ovms_log.h"
-static const char *TAG = "v-voltampera";
+// static const char *TAG = "v-voltampera";
 
 #include <stdio.h>
 #include <string>

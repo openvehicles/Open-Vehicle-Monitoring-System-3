@@ -4,7 +4,7 @@ Renault Zoe
 
 Vehicle Type: **RZ**
 
-The Renault Zoe will be documented here.
+This vehicle type supports the Renault Zoe(PH1) and Kangoo(2011 - ~2019). The newer Zoe ph2 and Kangoo are not supported yet.
 
 ----------------
 Support Overview
@@ -22,8 +22,9 @@ Range Display               Yes
 GPS Location                Yes (from modem module GPS)
 Speed Display               Yes
 Temperature Display         Yes (External Temp and Battery)
-BMS v+t Display             No
-TPMS Display                Yes (pressure only)
+BMS v+t Display             Yes
+TPMS Display Zoe            Yes (pressure only)
+TPMS Display Kangoo         No
 Charge Status Display       Yes
 Charge Interruption Alerts  No
 Charge Control              No
@@ -32,3 +33,8 @@ Lock/Unlock Vehicle         No
 Valet Mode Control          No
 Others
 =========================== ==============
+
+After selecting the Renault Zoe/Kangoo vehicle module, the corresponding settings have to be made in the web interface via the "Renault Zoe/Kangoo" menu under "Features":
+
+.. image:: Features.png
+    :width: 480px

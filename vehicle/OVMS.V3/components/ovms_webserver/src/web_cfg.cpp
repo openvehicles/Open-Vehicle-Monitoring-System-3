@@ -27,7 +27,7 @@
 */
 
 #include "ovms_log.h"
-#ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
+#ifdef CONFIG_OVMS_COMP_CELLULAR
 static const char *TAG = "webserver";
 #endif
 
@@ -216,13 +216,13 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
     "</div>"
     "<div class=\"col-sm-6 col-lg-4\">");
 
-  c.panel_start("primary", "Modem");
-  output = ExecuteCommand("simcom status");
-  c.printf("<samp class=\"monitor\" data-updcmd=\"simcom status\" data-events=\"\\.modem\\.\">%s</samp>", _html(output));
+  c.panel_start("primary", "Cellular Modem");
+  output = ExecuteCommand("cellular status");
+  c.printf("<samp class=\"monitor\" data-updcmd=\"cellular status\" data-events=\"\\.modem\\.\">%s</samp>", _html(output));
   c.panel_end(
     "<ul class=\"list-inline\">"
-      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#modem-cmdres\" data-cmd=\"power simcom on\">Start modem</button></li>"
-      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#modem-cmdres\" data-cmd=\"power simcom off\">Stop modem</button></li>"
+      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#modem-cmdres\" data-cmd=\"power cellular on\">Start cellular modem</button></li>"
+      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#modem-cmdres\" data-cmd=\"power cellular off\">Stop cellular modem</button></li>"
       "<li><samp id=\"modem-cmdres\" class=\"samp-inline\"></samp></li>"
     "</ul>");
 
@@ -286,6 +286,14 @@ void OvmsWebServer::HandleCommand(PageEntry_t& p, PageContext_t& c)
   } else if (output == "json") {
     c.head(200,
       "Content-Type: application/json; charset=utf-8\r\n"
+      "Cache-Control: no-cache");
+  } else if (output == "binary") {
+    // As Safari on iOS still doesn't support responseType=ArrayBuffer on XMLHttpRequests,
+    // this is meant to be used for binary data transmissions.
+    // Based on Marcus Granado's approach, see…
+    // https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest/Sending_and_Receiving_Binary_Data
+    c.head(200,
+      "Content-Type: application/octet-stream; charset=x-user-defined\r\n"
       "Cache-Control: no-cache");
   } else {
     c.head(200,
@@ -619,7 +627,8 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
         MyConfig.SetParamValue("password", "pin", pin);
 
       info = "<p class=\"lead\">Success!</p><ul class=\"infolist\">" + info + "</ul>";
-      info += "<script>$(\"#menu\").load(\"/menu\")</script>";
+      info += "<script>$(\"title\").data(\"moduleid\", \"" + c.encode_html(vehicleid)
+        + "\");$(\"#menu\").load(\"/menu\")</script>";
       c.head(200);
       c.alert("success", info.c_str());
       OutputHome(p, c);
@@ -764,9 +773,9 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
 }
 
 
-#ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
+#ifdef CONFIG_OVMS_COMP_CELLULAR
 /**
- * HandleCfgModem: configure APN & modem features (URL /cfg/modem)
+ * HandleCfgModem: configure APN & cellular modem features (URL /cfg/modem)
  */
 void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
 {
@@ -821,7 +830,7 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
 
   // generate form:
   c.head(200);
-  c.panel_start("primary", "Modem configuration");
+  c.panel_start("primary", "Cellular modem configuration");
   c.form_start(p.uri);
 
   std::string info;
@@ -831,9 +840,9 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
   } else {
     info =
       "<div class=\"receiver\">"
-        "<code class=\"autoselect\" data-metric=\"m.net.mdm.iccid\">(power modem on to read)</code>"
+        "<code class=\"autoselect\" data-metric=\"m.net.mdm.iccid\">(power cellular modem on to read)</code>"
         "&nbsp;"
-        "<button class=\"btn btn-default\" data-cmd=\"power simcom on\" data-target=\"#pso\">Power modem on</button>"
+        "<button class=\"btn btn-default\" data-cmd=\"power cellular on\" data-target=\"#pso\">Power cellular modem on</button>"
         "&nbsp;"
         "<samp id=\"pso\" class=\"samp-inline\"></samp>"
       "</div>"
@@ -876,10 +885,10 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
 
 
 /**
- * HandleCfgNotification: Configure notifications (URL /cfg/notifications)
+ * HandleCfgPushover: Configure pushover notifications (URL /cfg/pushover)
  */
 #ifdef CONFIG_OVMS_COMP_PUSHOVER
-void OvmsWebServer::HandleCfgNotification(PageEntry_t& p, PageContext_t& c)
+void OvmsWebServer::HandleCfgPushover(PageEntry_t& p, PageContext_t& c)
 {
   std::string error;
   OvmsConfigParam* param = MyConfig.CachedParam("pushover");
@@ -1354,8 +1363,11 @@ void OvmsWebServer::HandleCfgServerV2(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValue("server.v2", "updatetime.connected", updatetime_connected);
       MyConfig.SetParamValue("server.v2", "updatetime.idle", updatetime_idle);
 
+      std::string info = "<p class=\"lead\">Server V2 (MP) connection configured.</p>"
+        "<script>$(\"title\").data(\"moduleid\", \"" + c.encode_html(vehicleid) + "\");</script>";
+
       c.head(200);
-      c.alert("success", "<p class=\"lead\">Server V2 (MP) connection configured.</p>");
+      c.alert("success", info.c_str());
       OutputHome(p, c);
       c.done();
       return;
@@ -1421,7 +1433,7 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
 {
   std::string error;
   std::string server, user, password, port, topic_prefix;
-  std::string updatetime_connected, updatetime_idle;
+  std::string updatetime_connected, updatetime_idle, updatetime_on, updatetime_charging, updatetime_awake, updatetime_sendall;
   bool tls;
 
   if (c.method == "POST") {
@@ -1434,6 +1446,10 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
     topic_prefix = c.getvar("topic_prefix");
     updatetime_connected = c.getvar("updatetime_connected");
     updatetime_idle = c.getvar("updatetime_idle");
+    updatetime_on = c.getvar("updatetime_on");
+    updatetime_charging = c.getvar("updatetime_charging");
+    updatetime_awake = c.getvar("updatetime_awake");
+    updatetime_sendall = c.getvar("updatetime_sendall");
 
     // validate:
     if (port != "") {
@@ -1452,6 +1468,26 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
         error += "<li data-input=\"updatetime_idle\">Update interval (idle) must be at least 1 second</li>";
       }
     }
+    if (updatetime_on != "") {
+      if (atoi(updatetime_on.c_str()) < 1) {
+        error += "<li data-input=\"updatetime_on\">Update interval (on) must be at least 1 second</li>";
+      }
+    }
+    if (updatetime_charging != "") {
+      if (atoi(updatetime_charging.c_str()) < 1) {
+        error += "<li data-input=\"updatetime_charging\">Update interval (charging) must be at least 1 second</li>";
+      }
+    }
+    if (updatetime_awake != "") {
+      if (atoi(updatetime_awake.c_str()) < 1) {
+        error += "<li data-input=\"updatetime_awake\">Update interval (awake) must be at least 1 second</li>";
+      }
+    }
+    if (updatetime_sendall != "") {
+      if (atoi(updatetime_sendall.c_str()) < 60) {
+        error += "<li data-input=\"updatetime_sendall\">Update interval (sendall) must be at least 60 seconds</li>";
+      }
+    }
 
     if (error == "") {
       // success:
@@ -1464,6 +1500,22 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValue("server.v3", "topic.prefix", topic_prefix);
       MyConfig.SetParamValue("server.v3", "updatetime.connected", updatetime_connected);
       MyConfig.SetParamValue("server.v3", "updatetime.idle", updatetime_idle);
+      if (updatetime_on == "")
+        MyConfig.DeleteInstance("server.v3", "updatetime.on");
+      else
+        MyConfig.SetParamValue("server.v3", "updatetime.on", updatetime_on);
+      if (updatetime_charging == "")
+        MyConfig.DeleteInstance("server.v3", "updatetime.charging");
+      else
+        MyConfig.SetParamValue("server.v3", "updatetime.charging", updatetime_charging);
+      if (updatetime_awake == "")
+        MyConfig.DeleteInstance("server.v3", "updatetime.awake");
+      else
+        MyConfig.SetParamValue("server.v3", "updatetime.awake", updatetime_awake);
+      if (updatetime_sendall == "")
+        MyConfig.DeleteInstance("server.v3", "updatetime.sendall");
+      else
+        MyConfig.SetParamValue("server.v3", "updatetime.sendall", updatetime_sendall);
 
       c.head(200);
       c.alert("success", "<p class=\"lead\">Server V3 (MQTT) connection configured.</p>");
@@ -1487,6 +1539,10 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
     topic_prefix = MyConfig.GetParamValue("server.v3", "topic.prefix");
     updatetime_connected = MyConfig.GetParamValue("server.v3", "updatetime.connected");
     updatetime_idle = MyConfig.GetParamValue("server.v3", "updatetime.idle");
+    updatetime_on = MyConfig.GetParamValue("server.v3", "updatetime.on");
+    updatetime_charging = MyConfig.GetParamValue("server.v3", "updatetime.charging");
+    updatetime_awake = MyConfig.GetParamValue("server.v3", "updatetime.awake");
+    updatetime_sendall = MyConfig.GetParamValue("server.v3", "updatetime.sendall");
 
     // generate form:
     c.head(200);
@@ -1516,6 +1572,14 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
     "optional, in seconds, default: 60");
   c.input_text("…idle", "updatetime_idle", updatetime_idle.c_str(),
     "optional, in seconds, default: 600");
+  c.input_text("…on", "updatetime_on", updatetime_on.c_str(),
+    "optional, in seconds, only used if set");
+  c.input_text("…charging", "updatetime_charging", updatetime_charging.c_str(),
+    "optional, in seconds, only used if set");
+  c.input_text("…awake", "updatetime_awake", updatetime_awake.c_str(),
+    "optional, in seconds, only used if set");
+  c.input_text("…sendall", "updatetime_sendall", updatetime_sendall.c_str(),
+    "optional, in seconds, only used if set");
   c.fieldset_end();
 
   c.hr();
@@ -1529,6 +1593,185 @@ void OvmsWebServer::HandleCfgServerV3(PageEntry_t& p, PageContext_t& c)
 
 
 /**
+ * HandleCfgNotifications: configure notifications & data logging (URL /cfg/notifications)
+ */
+void OvmsWebServer::HandleCfgNotifications(PageEntry_t& p, PageContext_t& c)
+{
+  std::string error;
+  std::string vehicle_minsoc, vehicle_stream;
+  std::string log_trip_storetime, log_trip_minlength, log_grid_storetime;
+  bool report_trip_enable;
+  std::string report_trip_minlength;
+
+  if (c.method == "POST") {
+    // process form submission:
+    vehicle_minsoc = c.getvar("vehicle_minsoc");
+    vehicle_stream = c.getvar("vehicle_stream");
+    log_trip_storetime = c.getvar("log_trip_storetime");
+    log_trip_minlength = c.getvar("log_trip_minlength");
+    log_grid_storetime = c.getvar("log_grid_storetime");
+    report_trip_enable = (c.getvar("report_trip_enable") == "yes");
+    report_trip_minlength = c.getvar("report_trip_minlength");
+
+    if (vehicle_minsoc != "") {
+      if (atoi(vehicle_minsoc.c_str()) < 0 || atoi(vehicle_minsoc.c_str()) > 100) {
+        error += "<li data-input=\"vehicle_minsoc\">Min SOC must be in the range 0…100 %</li>";
+      }
+    }
+    if (vehicle_stream != "") {
+      if (atoi(vehicle_stream.c_str()) < 0 || atoi(vehicle_stream.c_str()) > 60) {
+        error += "<li data-input=\"vehicle_stream\">GPS log interval must be in the range 0…60 seconds</li>";
+      }
+    }
+
+    if (log_trip_storetime != "") {
+      if (atoi(log_trip_storetime.c_str()) < 0 || atoi(log_trip_storetime.c_str()) > 365) {
+        error += "<li data-input=\"log_trip_storetime\">Trip history log storage time must be in the range 0…365 days</li>";
+      }
+    }
+    if (log_trip_minlength != "") {
+      if (atoi(log_trip_minlength.c_str()) < 0) {
+        error += "<li data-input=\"log_trip_minlength\">Trip min length must not be negative</li>";
+      }
+    }
+    if (log_grid_storetime != "") {
+      if (atoi(log_grid_storetime.c_str()) < 0 || atoi(log_grid_storetime.c_str()) > 365) {
+        error += "<li data-input=\"log_grid_storetime\">Grid history log storage time must be in the range 0…365 days</li>";
+      }
+    }
+
+    if (report_trip_minlength != "") {
+      if (atoi(report_trip_minlength.c_str()) < 0) {
+        error += "<li data-input=\"report_trip_minlength\">Trip report min length must not be negative</li>";
+      }
+    }
+
+    if (error == "") {
+      // success:
+      if (vehicle_minsoc == "")
+        MyConfig.DeleteInstance("vehicle", "minsoc");
+      else
+        MyConfig.SetParamValue("vehicle", "minsoc", vehicle_minsoc);
+      if (vehicle_stream == "")
+        MyConfig.DeleteInstance("vehicle", "stream");
+      else
+        MyConfig.SetParamValue("vehicle", "stream", vehicle_stream);
+
+      if (log_trip_storetime == "")
+        MyConfig.DeleteInstance("notify", "log.trip.storetime");
+      else
+        MyConfig.SetParamValue("notify", "log.trip.storetime", log_trip_storetime);
+      if (log_trip_minlength == "")
+        MyConfig.DeleteInstance("notify", "log.trip.minlength");
+      else
+        MyConfig.SetParamValue("notify", "log.trip.minlength", log_trip_minlength);
+      if (log_grid_storetime == "")
+        MyConfig.DeleteInstance("notify", "log.grid.storetime");
+      else
+        MyConfig.SetParamValue("notify", "log.grid.storetime", log_grid_storetime);
+
+      MyConfig.SetParamValueBool("notify", "report.trip.enable", report_trip_enable);
+      if (report_trip_minlength == "")
+        MyConfig.DeleteInstance("notify", "report.trip.minlength");
+      else
+        MyConfig.SetParamValue("notify", "report.trip.minlength", report_trip_minlength);
+
+      c.head(200);
+      c.alert("success", "<p class=\"lead\">Notifications configured.</p>");
+      OutputHome(p, c);
+      c.done();
+      return;
+    }
+
+    // output error, return to form:
+    error = "<p class=\"lead\">Error!</p><ul class=\"errorlist\">" + error + "</ul>";
+    c.head(400);
+    c.alert("danger", error.c_str());
+  }
+  else {
+    // read configuration:
+    vehicle_minsoc = MyConfig.GetParamValue("vehicle", "minsoc");
+    vehicle_stream = MyConfig.GetParamValue("vehicle", "stream");
+    log_trip_storetime = MyConfig.GetParamValue("notify", "log.trip.storetime");
+    log_trip_storetime = MyConfig.GetParamValue("notify", "log.trip.storetime");
+    log_trip_minlength = MyConfig.GetParamValue("notify", "log.trip.minlength");
+    log_grid_storetime = MyConfig.GetParamValue("notify", "log.grid.storetime");
+    report_trip_enable = MyConfig.GetParamValueBool("notify", "report.trip.enable");
+    report_trip_minlength = MyConfig.GetParamValue("notify", "report.trip.minlength");
+
+    // generate form:
+    c.head(200);
+  }
+
+  c.panel_start("primary", "Notifications &amp; Data Logging");
+  c.form_start(p.uri);
+
+  c.fieldset_start("Vehicle Monitoring");
+
+  c.input_slider("Location streaming", "vehicle_stream", 3, "sec",
+    -1, atoi(vehicle_stream.c_str()), 0, 0, 60, 1,
+    "<p>While driving send location updates to server every n seconds, 0 = use default update interval "
+    "from server configuration. Same as App feature #8.</p>");
+
+  c.input_slider("Minimum SOC", "vehicle_minsoc", 3, "%",
+    -1, atoi(vehicle_minsoc.c_str()), 0, 0, 100, 1,
+    "<p>Send an alert when SOC drops below this level, 0 = off. Same as App feature #9.</p>");
+
+  c.fieldset_end();
+
+  c.fieldset_start("Vehicle Reports");
+
+  c.input_checkbox("Enable trip report", "report_trip_enable", report_trip_enable,
+    "<p>This will send a textual report on driving statistics after each trip.</p>");
+  c.input("number", "Report min trip length", "report_trip_minlength", report_trip_minlength.c_str(), "Default: 0.2 km",
+    "<p>Only trips over at least this distance will produce a report. If your vehicle does not support the "
+    "<code>v.p.trip</code> metric, set this to 0.</p>",
+    "min=\"0\" step=\"0.1\"", "km");
+
+  c.fieldset_end();
+
+  c.fieldset_start("Data Log Storage Times");
+
+  c.input("number", "Trip history log", "log_trip_storetime", log_trip_storetime.c_str(), "Default: empty/0 = disabled",
+    "<p>Empty/0 = disabled. If enabled, the trip log receives one entry per trip, "
+    "see <a target=\"_blank\" href=\""
+    "https://docs.openvehicles.com/en/latest/userguide/notifications.html#trip-history-log"
+    "\">user manual</a> for details.</p>",
+    "min=\"0\" max=\"365\" step=\"1\"", "days");
+  c.input("number", "Trip min length", "log_trip_minlength", log_trip_minlength.c_str(), "Default: 0.2 km",
+    "<p>Only trips over at least this distance will be logged. If your vehicle does not support the "
+    "<code>v.p.trip</code> metric, set this to 0.</p>",
+    "min=\"0\" step=\"0.1\"", "km");
+
+  c.input("number", "Grid history log", "log_grid_storetime", log_grid_storetime.c_str(), "Default: empty/0 = disabled",
+    "<p>Empty/0 = disabled. If enabled, the grid log receives one entry per charge/generator state change, "
+    "see <a target=\"_blank\" href=\""
+    "https://docs.openvehicles.com/en/latest/userguide/notifications.html#grid-history-log"
+    "\">user manual</a> for details.</p>",
+    "min=\"0\" max=\"365\" step=\"1\"", "days");
+
+  c.fieldset_end();
+
+  c.hr();
+  c.input_button("default", "Save");
+  c.form_end();
+  c.panel_end(
+    "<p>Data logs are sent to the server (V2/V3). A V2 server may store the logs as requested by you "
+    "for up to 365 days, depending on the server configuration. You can download the log tables "
+    "in CSV format from the server using the standard server APIs or the browser UI provided "
+    "by the server.</p>"
+    "<p>An MQTT (V3) server normally won't store data records for longer than a few days, possibly "
+    "hours. You need to fetch them as soon as possible. There are automated MQTT tools available "
+    "for this purpose.</p>"
+    "<p>See <a target=\"_blank\" href=\""
+    "https://docs.openvehicles.com/en/latest/userguide/notifications.html"
+    "\">user manual</a> for details on notifications.</p>"
+    );
+  c.done();
+}
+
+
+/**
  * HandleCfgWebServer: configure web server (URL /cfg/webserver)
  */
 void OvmsWebServer::HandleCfgWebServer(PageEntry_t& p, PageContext_t& c)
@@ -1536,6 +1779,7 @@ void OvmsWebServer::HandleCfgWebServer(PageEntry_t& p, PageContext_t& c)
   std::string error, warn;
   std::string docroot, auth_domain, auth_file;
   bool enable_files, enable_dirlist, auth_global;
+  extram::string tls_cert, tls_key;
 
   if (c.method == "POST") {
     // process form submission:
@@ -1545,6 +1789,8 @@ void OvmsWebServer::HandleCfgWebServer(PageEntry_t& p, PageContext_t& c)
     enable_files = (c.getvar("enable_files") == "yes");
     enable_dirlist = (c.getvar("enable_dirlist") == "yes");
     auth_global = (c.getvar("auth_global") == "yes");
+    c.getvar("tls_cert", tls_cert);
+    c.getvar("tls_key", tls_key);
 
     // validate:
     if (docroot != "" && docroot[0] != '/') {
@@ -1552,6 +1798,35 @@ void OvmsWebServer::HandleCfgWebServer(PageEntry_t& p, PageContext_t& c)
     }
     if (docroot == "/" || docroot == "/store" || docroot == "/store/" || startsWith(docroot, "/store/ovms_config")) {
       warn += "<li data-input=\"docroot\">Document root <code>" + docroot + "</code> may open access to OVMS configuration files, consider using a sub directory</li>";
+    }
+    if (!tls_cert.empty() && !startsWith(tls_cert, "-----BEGIN CERTIFICATE-----")) {
+      error += "<li data-input=\"tls_cert\">TLS certificate must be in PEM CERTIFICATE format</li>";
+    }
+    if (!tls_key.empty() && !startsWith(tls_key, "-----BEGIN PRIVATE KEY-----")) {
+      error += "<li data-input=\"tls_key\">TLS private key must be in PEM PRIVATE KEY format</li>";
+    }
+    if (tls_cert.empty() != tls_key.empty()) {
+      error += "<li data-input=\"tls_cert,tls_key\">Both TLS certificate and private key must be given</li>";
+    }
+
+    // save TLS files:
+    if (error == "") {
+      if (tls_cert.empty()) {
+        unlink("/store/tls/webserver.crt");
+        unlink("/store/tls/webserver.key");
+      }
+      else {
+        if (save_file("/store/tls/webserver.crt", tls_cert) != 0) {
+          error += "<li data-input=\"tls_cert\">Error saving TLS certificate: ";
+          error += strerror(errno);
+          error += "</li>";
+        }
+        if (save_file("/store/tls/webserver.key", tls_key) != 0) {
+          error += "<li data-input=\"tls_key\">Error saving TLS private key: ";
+          error += strerror(errno);
+          error += "</li>";
+        }
+      }
     }
 
     if (error == "") {
@@ -1568,7 +1843,9 @@ void OvmsWebServer::HandleCfgWebServer(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValueBool("http.server", "auth.global", auth_global);
 
       c.head(200);
-      c.alert("success", "<p class=\"lead\">Webserver configuration saved.</p>");
+      c.alert("success", "<p class=\"lead\">Webserver configuration saved.</p>"
+        "<p>Note: if you changed the TLS certificate or key, you need to reboot"
+        " the module to activate the change.</p>");
       if (warn != "") {
         warn = "<p class=\"lead\">Warning:</p><ul class=\"warnlist\">" + warn + "</ul>";
         c.alert("warning", warn.c_str());
@@ -1591,6 +1868,8 @@ void OvmsWebServer::HandleCfgWebServer(PageEntry_t& p, PageContext_t& c)
     enable_files = MyConfig.GetParamValueBool("http.server", "enable.files", true);
     enable_dirlist = MyConfig.GetParamValueBool("http.server", "enable.dirlist", true);
     auth_global = MyConfig.GetParamValueBool("http.server", "auth.global", true);
+    load_file("/store/tls/webserver.crt", tls_cert);
+    load_file("/store/tls/webserver.key", tls_key);
 
     // generate form:
     c.head(200);
@@ -1615,9 +1894,45 @@ void OvmsWebServer::HandleCfgWebServer(PageEntry_t& p, PageContext_t& c)
     "<p>Note: sub directories do <u>not</u> inherit the parent auth file.</p>");
   c.input_text("Auth domain/realm", "auth_domain", auth_domain.c_str(), "Default: ovms");
 
+  c.printf(
+    "<div class=\"form-group\">\n"
+      "<label class=\"control-label col-sm-3\" for=\"input-content\">TLS certificate:</label>\n"
+      "<div class=\"col-sm-9\">\n"
+        "<textarea class=\"form-control font-monospace\" style=\"font-size:80%%;white-space:pre;\"\n"
+          "autocapitalize=\"none\" autocorrect=\"off\" autocomplete=\"off\" spellcheck=\"false\"\n"
+          "placeholder=\"-----BEGIN CERTIFICATE-----&#13;&#10;...&#13;&#10;-----END CERTIFICATE-----\"\n"
+          "rows=\"5\" id=\"input-tls_cert\" name=\"tls_cert\">%s</textarea>\n"
+      "</div>\n"
+    "</div>\n"
+    , c.encode_html(tls_cert).c_str());
+  c.printf(
+    "<div class=\"form-group\">\n"
+      "<label class=\"control-label col-sm-3\" for=\"input-content\">TLS private key:</label>\n"
+      "<div class=\"col-sm-9\">\n"
+        "<textarea class=\"form-control font-monospace\" style=\"font-size:80%%;white-space:pre;\"\n"
+          "autocapitalize=\"none\" autocorrect=\"off\" autocomplete=\"off\" spellcheck=\"false\"\n"
+          "placeholder=\"-----BEGIN PRIVATE KEY-----&#13;&#10;...&#13;&#10;-----END PRIVATE KEY-----\"\n"
+          "rows=\"5\" id=\"input-tls_key\" name=\"tls_key\">%s</textarea>\n"
+      "</div>\n"
+    "</div>\n"
+    , c.encode_html(tls_key).c_str());
+
   c.input_button("default", "Save");
   c.form_end();
-  c.panel_end();
+  c.panel_end(
+    "<p>To enable encryption (https, wss) you need to install a TLS certificate + key. Public"
+    " certification authorities (CAs) won't issue certificates for private hosts and IP addresses,"
+    " so we recommend to create a self-signed TLS certificate for your module. Use a maximum key"
+    " size of 2048 bit for acceptable performance.</p>"
+    "<p><u>Example/template using OpenSSL</u>:</p>"
+    "<samp class=\"autoselect\">openssl req -x509 -newkey rsa:2048 -sha256 -days 3650 -nodes \\\n"
+    "&nbsp;&nbsp;-keyout ovms.key -out ovms.crt -subj \"/CN=ovmsname.local\" \\\n"
+    "&nbsp;&nbsp;-addext \"subjectAltName=IP:192.168.4.1,IP:192.168.2.101\"</samp>"
+    "<p>Change the name and add more IPs as needed. The command produces two files in your current"
+    " directory, <code>ovms.crt</code> and <code>ovms.key</code>. Copy their contents into the"
+    " respective fields above.</p>"
+    "<p><u>Note</u>: as this is a self-signed certificate, you will need to explicitly allow the"
+    " browser to access the module on the first https connect.</p>");
   c.done();
 }
 
@@ -1630,7 +1945,7 @@ void OvmsWebServer::HandleCfgWifi(PageEntry_t& p, PageContext_t& c)
 {
   bool cfg_bad_reconnect;
   float cfg_sq_good, cfg_sq_bad;
-  
+
   if (c.method == "POST") {
     std::string warn, error;
 
@@ -1680,7 +1995,7 @@ void OvmsWebServer::HandleCfgWifi(PageEntry_t& p, PageContext_t& c)
     cfg_sq_good = MyConfig.GetParamValueFloat("network", "wifi.sq.good", -87);
     cfg_sq_bad = MyConfig.GetParamValueFloat("network", "wifi.sq.bad", -89);
     cfg_bad_reconnect = MyConfig.GetParamValueBool("network", "wifi.bad.reconnect", false);
-    
+
     c.head(200);
   }
 
@@ -2208,12 +2523,6 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
     tag = c.getvar("tag");
 
     if (action.substr(0,3) == "set") {
-
-      if (startsWith(server, "https:")) {
-        error = true;
-        output += "<p>Sorry, https not yet supported!</p>";
-      }
-
       info.partition_boot = c.getvar("boot_old");
       std::string partition_boot = c.getvar("boot");
       if (partition_boot != info.partition_boot) {
@@ -2332,8 +2641,8 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
     "<p>Automatic updates are normally only done if a wifi connection is available at the time. Before allowing updates via modem, be aware a single firmware image has a size of around 3 MB, which may lead to additional costs on your data plan.</p>");
   c.print(
     "<datalist id=\"server-list\">"
-      "<option value=\"api.openvehicles.com/firmware/ota\">"
-      "<option value=\"ovms.dexters-web.de/firmware/ota\">"
+      "<option value=\"https://api.openvehicles.com/firmware/ota\">"
+      "<option value=\"https://ovms.dexters-web.de/firmware/ota\">"
     "</datalist>"
     "<datalist id=\"tag-list\">"
       "<option value=\"main\">"
@@ -2342,7 +2651,7 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
     "</datalist>"
     );
   c.input_text("Update server", "server", server.c_str(), "Specify or select from list (clear to see all options)",
-    "<p>Default is <code>api.openvehicles.com/firmware/ota</code>. Note: currently only http is supported.</p>",
+    "<p>Default is <code>https://api.openvehicles.com/firmware/ota</code>.</p>",
     "list=\"server-list\"");
   c.input_text("Version tag", "tag", tag.c_str(), "Specify or select from list (clear to see all options)",
     "<p>Default is <code>main</code> for standard releases. Use <code>eap</code> (early access program) for stable or <code>edge</code> for bleeding edge developer builds.</p>",
@@ -2368,12 +2677,12 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
     if (netif_default->name[0] == 'a' && netif_default->name[1] == 'p') {
       c.alert("warning",
         "<p class=\"lead\"><strong>No internet access.</strong></p>"
-        "<p>The module is running in wifi AP mode without modem, so flashing from a public server is currently not possible.</p>"
+        "<p>The module is running in wifi AP mode without cellular modem, so flashing from a public server is currently not possible.</p>"
         "<p>You can still flash from an AP network local IP address (<code>192.168.4.x</code>).</p>");
     }
     else if (netif_default->name[0] == 'p' && netif_default->name[1] == 'p') {
       c.alert("warning",
-        "<p class=\"lead\"><strong>Using modem connection for internet.</strong></p>"
+        "<p class=\"lead\"><strong>Using cellular modem connection for internet.</strong></p>"
         "<p>Downloads from public servers will currently be done via cellular network. Be aware update files are &gt;2 MB, "
         "which may exceed your data plan and need some time depending on your link speed.</p>"
         "<p>You can also flash locally from a wifi network IP address.</p>");
@@ -2637,7 +2946,7 @@ void OvmsWebServer::HandleCfgLogging(PageEntry_t& p, PageContext_t& c)
     if (p != std::string::npos) {
       std::string webdir = webpath.substr(0, p);
       if (webdir != docroot)
-        download += " <a class=\"btn btn-default\" target=\"_blank\" href=\"" + webdir + "/\">Open directory</a>";
+        download += " <a class=\"btn btn-default\" target=\"_blank\" href=\"" + webdir + "/#sc=0&amp;so=1\">Open directory</a>";
     }
   } else {
     download = "You can access your logs with the browser if the path is in your webserver root (" + docroot + ").";
@@ -3043,7 +3352,7 @@ void OvmsWebServer::HandleCfgBackup(PageEntry_t& p, PageContext_t& c)
         "promptdialog(\"password\", \"Create backup\", \"ZIP password / empty = use module password\", [\"Cancel\", \"Create backup\"], function(ok, password) {\n"
           "if (ok) {\n"
             "updateButtons(false);\n"
-            "loadcmd(\"config backup \" + zip.path + ((password) ? \" \" + password : \"\"), \"#log\").done(function(output) {\n"
+            "loadcmd(\"config backup \" + zip.path + ((password) ? \" \" + password : \"\"), \"#log\", 120).done(function(output) {\n"
               "if (output.indexOf(\"Error\") < 0) {\n"
                 "zip.exists = true;\n"
                 "zip.url = getPathURL(zip.path);\n"
@@ -3069,7 +3378,7 @@ void OvmsWebServer::HandleCfgBackup(PageEntry_t& p, PageContext_t& c)
                 "msg.request.abort();\n"
               "}\n"
               "return rebooting ? null : standardTextFilter(msg);\n"
-            "}).always(function(data, status) {\n"
+            "}, 120).always(function(data, status) {\n"
               "updateButtons();\n"
               "if (rebooting) $('#log').reconnectTicker();\n"
             "});\n"
@@ -3769,7 +4078,7 @@ void OvmsWebServer::HandleEditor(PageEntry_t& p, PageContext_t& c)
       "});\n"
       "$output.on(\"msg:log\", function(ev, msg){\n"
         "if ($output.css(\"display\") == \"none\") return;\n"
-        "if (!/^..[0-9()]+ script: /.test(msg)) return;\n"
+        "if (!/^..[0-9()]+ (script|ovms-duk)/.test(msg)) return;\n"
         "var autoscroll = ($output.get(0).scrollTop + $output.innerHeight()) >= $output.get(0).scrollHeight;\n"
         "htmsg = '<div class=\"log log-'+msg[0]+'\">'+encode_html(unwrapLogLine(msg))+'</div>';\n"
         "$output.append(htmsg);\n"
@@ -3816,9 +4125,9 @@ void OvmsWebServer::HandleEditor(PageEntry_t& p, PageContext_t& c)
 
 /**
  * HandleFile: file load/save API
- *  
+ *
  *  URL: /api/file
- *  
+ *
  *  @param method
  *    GET   = load content from path
  *    POST  = save content to path
@@ -3826,7 +4135,7 @@ void OvmsWebServer::HandleEditor(PageEntry_t& p, PageContext_t& c)
  *    Full path to file
  *  @param content
  *    File content for POST
- *  
+ *
  *  @return
  *    Status: 200 (OK) / 400 (Error)
  *    Body: GET: file content or error message, POST: empty or error message
@@ -3859,28 +4168,10 @@ void OvmsWebServer::HandleFile(PageEntry_t& p, PageContext_t& c)
       error += "; Missing content";
     }
     else {
-      // create path:
-      size_t n = path.rfind('/');
-      if (n != 0 && n != std::string::npos) {
-        std::string dir = path.substr(0, n);
-        if (!path_exists(dir)) {
-          if (mkpath(dir) != 0) {
-            error += "; Error creating path: ";
-            error += strerror(errno);
-          }
-        }
-      }
       // write file:
-      if (error == "") {
-        std::ofstream file(path, std::ios::out | std::ios::binary | std::ios::trunc);
-        if (file.is_open())
-          file.write(content.data(), content.size());
-        if (file.fail()) {
-          error += "; Error writing to path: ";
-          error += strerror(errno);
-        } else {
-          MyEvents.SignalEvent("system.vfs.file.changed", (void*)path.c_str(), path.size()+1);
-        }
+      if (save_file(path, content) != 0) {
+        error += "; Error writing to path: ";
+        error += strerror(errno);
       }
     }
   }
@@ -3890,16 +4181,7 @@ void OvmsWebServer::HandleFile(PageEntry_t& p, PageContext_t& c)
       path = "/store/";
     } else if (path.back() != '/') {
       // read file:
-      std::ifstream file(path, std::ios::in | std::ios::binary | std::ios::ate);
-      if (file.is_open()) {
-        auto size = file.tellg();
-        if (size > 0) {
-          content.resize(size, '\0');
-          file.seekg(0);
-          file.read(&content[0], size);
-        }
-      }
-      if (file.fail()) {
+      if (load_file(path, content) != 0) {
         error += "; Error reading from path: ";
         error += strerror(errno);
       }

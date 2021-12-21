@@ -32,8 +32,17 @@ Port Signal(s)        Exp.Pin Default usage
 
 ``SW_CTL`` (port 1) controls a `BTS452R power switch 
 <https://www.infineon.com/dgdl/Infineon-BTS452R-DS-v01_01-en.pdf?fileId=db3a30431ddc9372011ddd17aba80002>`_, 
-which can deliver a nominal output of 25W or 1.8A, and up to 40W or 2.9A short term at the 
-``SW_12V`` pin. This is meant to power auxiliary devices from the OVMS, for example head-up displays. 
+which *could* deliver a nominal output of 25W or 1.8A, and up to 40W or 2.9A short term at the 
+``SW_12V`` pin, *but* the main fuse of the module (located at the corner near the DB9 plug) limits the
+12V current total sum of the board plus any external hardware to continuous 0.75A on a revision 3.1 
+board and 1.0A on a revision 3.2 board. The unswitched ``EXT_12V`` pin is also behind the fuse.
+
+The module including modem needs a 12V current share of ~80mA in full operation. Calculate with 
+100mA to be on the safe side. That leaves continuous **0.65A** on a revision 3.1 board and **0.9A** 
+on a revision 3.2 board for external devices and addons powered by the module. The fuse has a 
+little headroom, but don't rely on that.
+
+``SW_12V`` is meant to power auxiliary devices from the OVMS, for example head-up displays. 
 Of course you can as well power a standard 12V automotive relay or fan directly from this without 
 additional hardware.
 

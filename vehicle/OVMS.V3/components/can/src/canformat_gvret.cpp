@@ -28,6 +28,7 @@
 static const char *TAG = "canformat-gvret";
 
 #include "canformat_gvret.h"
+#include "canlog.h"
 #include <errno.h>
 #include <endian.h>
 #include "pcp.h"
@@ -72,7 +73,7 @@ std::string canformat_gvret::getheader(struct timeval *time)
   return std::string("");
   }
 
-size_t canformat_gvret::put(CAN_log_message_t* message, uint8_t *buffer, size_t len, void* userdata)
+size_t canformat_gvret::put(CAN_log_message_t* message, uint8_t *buffer, size_t len, bool* hasmore, canlogconnection* clc)
   {
   return len;
   }
@@ -111,14 +112,14 @@ std::string canformat_gvret_ascii::get(CAN_log_message_t* message)
   return std::string(buf);
   }
 
-size_t canformat_gvret_ascii::put(CAN_log_message_t* message, uint8_t *buffer, size_t len, void* userdata)
+size_t canformat_gvret_ascii::put(CAN_log_message_t* message, uint8_t *buffer, size_t len, bool* hasmore, canlogconnection* clc)
   {
   if (m_buf.FreeSpace()==0) SetServeDiscarding(true); // Buffer full, so discard from now on
   if (IsServeDiscarding()) return len;  // Quick return if discarding
 
   size_t consumed = Stuff(buffer,len);  // Stuff m_buf with as much as possible
 
-  if (!m_buf.HasLine())
+  if (m_buf.HasLine()<0)
     {
     return consumed; // No line, so quick exit
     }
@@ -212,7 +213,18 @@ std::string canformat_gvret_binary::get(CAN_log_message_t* message)
   return std::string((const char*)&frame,12 + message->frame.FIR.B.DLC);
   }
 
-size_t canformat_gvret_binary::put(CAN_log_message_t* message, uint8_t *buffer, size_t len, void* userdata)
+std::string canformat_gvret_binary::getheader(struct timeval *time)
+  {
+  // Nasty kludge workaround to SavvyCAN issue
+  // (when SavvyCAN reconnects, it doesn't request GET_CANBUS_PARAMS, but if
+  // it doesn't get a GET_CANBUS_PARAMS reply it times out and disconnects;
+  // so we send it unsolicited, upon initial connection).
+  gvret_replymsg_t r;
+  PopulateBusList12(&r);
+  return std::string((char*)&r,12);
+  }
+
+size_t canformat_gvret_binary::put(CAN_log_message_t* message, uint8_t *buffer, size_t len, bool* hasmore, canlogconnection* clc)
   {
   if (m_buf.FreeSpace()==0) SetServeDiscarding(true); // Buffer full, so discard from now on
   if (IsServeDiscarding()) return len;  // Quick return if discarding
@@ -262,6 +274,9 @@ size_t canformat_gvret_binary::put(CAN_log_message_t* message, uint8_t *buffer, 
               }
             msg.FIR.B.DLC = m.body.build_can_frame.length;
             memcpy(&msg.data, &m.body.build_can_frame.data, m.body.build_can_frame.length);
+
+            ESP_LOGD(TAG,"Rx BUILD_CAN_FRAME ID=%0x",msg.MsgID);
+            *hasmore = true;  // Call us again to see if we have more frames to process
             // We have a frame to be transmitted / simulated
             switch (m_servemode)
               {
@@ -278,70 +293,118 @@ size_t canformat_gvret_binary::put(CAN_log_message_t* message, uint8_t *buffer, 
           }
         break;
       case TIME_SYNC:
+        ESP_LOGD(TAG,"Rx %02x TIME_SYNC",m.command);
         m_buf.Pop(2,(uint8_t*)&m);
         r.body.time_sync.microseconds = 0;
-        if (m_putcallback_fn) m_putcallback_fn((uint8_t*)&r,6,userdata);
+        if (clc) clc->TransmitCallback((uint8_t*)&r,6);
+        *hasmore = true;  // Call us again to see if we have more frames to process
         break;
       case GET_DIG_INPUTS:
+        ESP_LOGD(TAG,"Rx %02x GET_DIG_INPUTS",m.command);
         m_buf.Pop(2,(uint8_t*)&m);
-        if (m_putcallback_fn) m_putcallback_fn((uint8_t*)&r,4,userdata);
+        if (clc) clc->TransmitCallback((uint8_t*)&r,4);
+        *hasmore = true;  // Call us again to see if we have more frames to process
         break;
       case GET_ANALOG_INPUTS:
+        ESP_LOGD(TAG,"Rx %02x GET_ANALOG_INPUTS",m.command);
         m_buf.Pop(2,(uint8_t*)&m);
-        if (m_putcallback_fn) m_putcallback_fn((uint8_t*)&r,11,userdata);
+        if (clc) clc->TransmitCallback((uint8_t*)&r,11);
+        *hasmore = true;  // Call us again to see if we have more frames to process
         break;
       case SET_DIG_OUTPUTS:
+        ESP_LOGD(TAG,"Rx %02x GET_DIG_OUTPUTS",m.command);
         m_buf.Pop(2,(uint8_t*)&m);
+        *hasmore = true;  // Call us again to see if we have more frames to process
         break;
       case SETUP_CANBUS:
+        ESP_LOGD(TAG,"Rx %02x SETUP_CANBUS",m.command);
         m_buf.Pop(2,(uint8_t*)&m);
+        *hasmore = true;  // Call us again to see if we have more frames to process
         break;
       case GET_CANBUS_PARAMS:
+        ESP_LOGD(TAG,"Rx %02x GET_CANBUS_PARAMS",m.command);
         m_buf.Pop(2,(uint8_t*)&m);
-        r.body.get_canbus_params.can1_mode = 1;
-        r.body.get_canbus_params.can1_speed = 1000000;
-        r.body.get_canbus_params.can2_mode = 1;
-        r.body.get_canbus_params.can2_speed = 1000000;
-        if (m_putcallback_fn) m_putcallback_fn((uint8_t*)&r,12,userdata);
+        PopulateBusList12(&r);
+        if (clc) clc->TransmitCallback((uint8_t*)&r,12);
+        *hasmore = true;  // Call us again to see if we have more frames to process
         break;
       case GET_DEVICE_INFO:
+        ESP_LOGD(TAG,"Rx %02x GET_DEVICE_INFO",m.command);
         m_buf.Pop(2,(uint8_t*)&m);
         r.body.get_device_info.build = 0;
         r.body.get_device_info.eeprom = 0;
         r.body.get_device_info.filetype = 0;
         r.body.get_device_info.autolog = 0;
         r.body.get_device_info.singlewire = 0;
-        if (m_putcallback_fn) m_putcallback_fn((uint8_t*)&r,8,userdata);
+        if (clc) clc->TransmitCallback((uint8_t*)&r,8);
+        *hasmore = true;  // Call us again to see if we have more frames to process
         break;
       case SET_SINGLEWIRE_MODE:
+        ESP_LOGD(TAG,"Rx %02x SET_SINGLEWIRE_MODE",m.command);
         m_buf.Pop(2,(uint8_t*)&m);
+        *hasmore = true;  // Call us again to see if we have more frames to process
         break;
       case KEEP_ALIVE:
+        // Don't log keepalive, as we get four of these a second
+        //ESP_LOGD(TAG,"Rx %02x KEEP_ALIVE",m.command);
         m_buf.Pop(2,(uint8_t*)&m);
         r.body.keep_alive.notdead1 = GVRET_NOTDEAD_1;
         r.body.keep_alive.notdead2 = GVRET_NOTDEAD_2;
-        if (m_putcallback_fn) m_putcallback_fn((uint8_t*)&r,4,userdata);
+        if (clc) clc->TransmitCallback((uint8_t*)&r,4);
+        *hasmore = true;  // Call us again to see if we have more frames to process
         break;
       case SET_SYSTEM_TYPE:
+        ESP_LOGD(TAG,"Rx %02x SET_SYSTEM_TYPE",m.command);
         m_buf.Pop(2,(uint8_t*)&m);
+        *hasmore = true;  // Call us again to see if we have more frames to process
         break;
       case ECHO_CAN_FRAME:
+        ESP_LOGD(TAG,"Rx %02x ECHO_CAN_FRAME",m.command);
         m_buf.Pop(2,(uint8_t*)&m);
+        *hasmore = true;  // Call us again to see if we have more frames to process
         break;
       case GET_NUM_BUSES:
+        ESP_LOGD(TAG,"Rx %02x GET_NUM_BUSES",m.command);
         m_buf.Pop(2,(uint8_t*)&m);
         r.body.get_num_buses.buses = 3;
-        if (m_putcallback_fn) m_putcallback_fn((uint8_t*)&r,3,userdata);
+        if (clc) clc->TransmitCallback((uint8_t*)&r,3);
+        *hasmore = true;  // Call us again to see if we have more frames to process
         break;
       case GET_EXT_BUSES:
+        ESP_LOGD(TAG,"Rx %02x GET_EXT_BUSES",m.command);
         m_buf.Pop(2,(uint8_t*)&m);
-        if (m_putcallback_fn) m_putcallback_fn((uint8_t*)&r,17,userdata);
+        PopulateBusList3(&r);
+        if (clc) clc->TransmitCallback((uint8_t*)&r,17);
+        *hasmore = true;  // Call us again to see if we have more frames to process
         break;
       default:
-        ESP_LOGW(TAG,"Unrecognised GVRET command %02x - skipping",m.command);
+        ESP_LOGW(TAG,"Rx %02x command unrecognised - skipping",m.command);
         m_buf.Pop(2,(uint8_t*)&m);
+        *hasmore = true;  // Call us again to see if we have more frames to process
       }
     }
 
   return consumed;
+  }
+
+void canformat_gvret_binary::PopulateBusList12(gvret_replymsg_t* r)
+  {
+  memset(r,0,sizeof(*r));
+  r->startbyte = GVRET_START_BYTE;
+  r->command = GET_CANBUS_PARAMS;
+
+  canbus* bus = (canbus*)MyPcpApp.FindDeviceByName("can1");
+  r->body.get_canbus_params.can1_mode = (bus->m_mode != CAN_MODE_OFF) | ((bus->m_mode == CAN_MODE_LISTEN)<<4);
+  r->body.get_canbus_params.can1_speed = MAP_CAN_SPEED(bus->m_speed);
+
+  bus = (canbus*)MyPcpApp.FindDeviceByName("can2");
+  r->body.get_canbus_params.can2_mode = (bus->m_mode != CAN_MODE_OFF) | ((bus->m_mode == CAN_MODE_LISTEN)<<4);
+  r->body.get_canbus_params.can2_speed = MAP_CAN_SPEED(bus->m_speed);
+  }
+
+void canformat_gvret_binary::PopulateBusList3(gvret_replymsg_t* r)
+  {
+  canbus* bus = (canbus*)MyPcpApp.FindDeviceByName("can3");
+  r->body.get_ext_buses.swcan_mode = (bus->m_mode != CAN_MODE_OFF) | ((bus->m_mode == CAN_MODE_LISTEN)<<4);
+  r->body.get_ext_buses.swcan_speed = MAP_CAN_SPEED(bus->m_speed);
   }

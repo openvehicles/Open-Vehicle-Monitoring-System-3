@@ -242,7 +242,7 @@ Example Code for Web Plugin with some custom metrics:
      </div>
      <div class="clearfix">
       <div class="metric number" data-metric="v.b.energy.used.total" data-prec="2">
-       <span class="label">TOTALS:&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbspUsed</span>
+       <span class="label">TOTALS:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Used</span>
        <span class="value">?</span>
        <span class="unit">kWh</span>
       </div>
@@ -257,7 +257,7 @@ Example Code for Web Plugin with some custom metrics:
        <span class="unit">km</span>
       </div>
       <div class="metric number" data-metric="v.e.serv.range" data-prec="0">
-       <span class="label">SERVICE:&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbspRange</span>
+       <span class="label">SERVICE:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Range</span>
        <span class="value">?</span>
        <span class="unit">km</span>
       </div>
@@ -392,3 +392,54 @@ Example Code for Web Plugin with some custom metrics:
     </div>
    </div>
   </div>
+
+
+----------------
+Custom Data Logs
+----------------
+
+^^^^^^^^^^^^^^^^^^
+SOC Monitoring Log
+^^^^^^^^^^^^^^^^^^
+
+The SOC monitoring log provides detailed data about the correlations
+and connections between the various SOCs, voltage level & energy/coulomb
+charge/discharge amounts.
+
+You need to enable this log explicitly by configuring a storage time via
+config param ``xvu log.socmon.storetime`` (in days). Set to 0/empty to
+disable the log. Already stored log entries will be kept on the server 
+until expiry or manual deletion.
+
+Log entries are created on SOC changes while charging and every 10 seconds
+while driving.
+
+  - Notification subtype: ``xvu.log.socmon``
+  - History record type: ``XVU-LOG-SOCMon``
+  - Format: CSV
+  - Archive time: config ``xvu log.socmon.storetime`` (days, 0=off)
+  - Fields/columns:
+
+    * temp -- battery temperature [°C]
+    * charging -- 0/1
+    * soc_abs_bms -- absolute SOC from BMS (ECU 8C PID 028C) [%]
+    * soc_abs_eng -- absolute SOC from engine (ECU 01 PID F45B) [%]
+    * soc_norm_cmg -- normalized user SOC from charge manager (ECU BD PID 1DD0) [%]
+    * soc_norm_eng -- normalized user SOC from engine (ECU 01 PID 1164) [%]
+    * soc_norm -- previously selected soc_norm_eng while driving, now always soc_norm_cmg [%]
+    * voltage -- momentary total battery voltage [V]
+    * current -- momentary battery current, negative = charging [A]
+    * soh -- state of health, sourced as configured [%]
+    * cac -- battery capacity, sourced as configured [Ah]
+    * energy_used -- total car energy discharge counter [kWh]
+    * energy_recd -- total car energy charge counter [kWh]
+    * coulomb_used -- total car coulomb discharge counter [Ah]
+    * coulomb_recd -- total car coulomb charge counter [Ah]
+    * pack_vavg -- average cell voltage [V]
+    * pack_vmin -- minimum cell voltage [V]
+    * pack_vmax -- maximum cell voltage [V]
+    * pack_vstddev -- cell voltage standard deviation [V]
+    * pack_vgrad -- cell voltage series quality (gradient)
+    * energy_range -- remaining usable energy from MDF range estimation (ECU 17 PID 22E4) [kWh]
+
+

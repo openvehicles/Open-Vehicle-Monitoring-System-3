@@ -440,7 +440,7 @@ OvmsNotify::OvmsNotify()
   MyConfig.RegisterParam("notify", "Notification filters", true, true);
 
   // Register our commands
-  OvmsCommand* cmd_notify = MyCommandApp.RegisterCommand("notify","NOTIFICATION framework");
+  OvmsCommand* cmd_notify = MyCommandApp.RegisterCommand("notify","NOTIFICATION framework", notify_status, "", 0, 0, false);
   cmd_notify->RegisterCommand("status","Show notification status",notify_status);
   OvmsCommand* cmd_notifyraise = cmd_notify->RegisterCommand("raise","NOTIFICATION raise framework");
   cmd_notifyraise->RegisterCommand("text","Raise a textual notification",notify_raise,"<type><subtype><message>", 3, 3);
@@ -463,7 +463,7 @@ OvmsNotify::OvmsNotify()
   ESP_LOGI(TAG, "Expanding DUKTAPE javascript engine");
   DuktapeObjectRegistration* dto = new DuktapeObjectRegistration("OvmsNotify");
   dto->RegisterDuktapeFunction(DukOvmsNotifyRaise, 3, "Raise");
-  MyScripts.RegisterDuktapeObject(dto);
+  MyDuktape.RegisterDuktapeObject(dto);
 #endif // CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   }
 

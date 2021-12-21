@@ -49,6 +49,14 @@ static const char *TAG = "can";
 #include "ovms_command.h"
 #include "metrics_standard.h"
 
+#if defined(CONFIG_OVMS_COMP_ESP32CAN) || \
+    defined(CONFIG_OVMS_COMP_MCP2515) || \
+    defined(CONFIG_OVMS_COMP_EXTERNAL_SWCAN)
+static const bool includeCAN = true;
+#else
+static const bool includeCAN = false;
+#endif
+
 can MyCan __attribute__ ((init_priority (4510)));
 
 ////////////////////////////////////////////////////////////////////////
@@ -92,6 +100,9 @@ void can_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
     case 33333:
       res = sbus->Start(smode,CAN_SPEED_33KBPS,dbcfile);
       break;
+    case 50000:
+      res = sbus->Start(smode,CAN_SPEED_50KBPS,dbcfile);
+      break;
     case 83333:
       res = sbus->Start(smode,CAN_SPEED_83KBPS,dbcfile);
       break;
@@ -111,7 +122,7 @@ void can_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
       res = sbus->Start(smode,CAN_SPEED_1000KBPS,dbcfile);
       break;
     default:
-      writer->puts("Error: Unrecognised speed (33333, 83333, 100000, 125000, 250000, 500000, 1000000 are accepted)");
+      writer->puts("Error: Unrecognised speed (33333, 50000, 83333, 100000, 125000, 250000, 500000, 1000000 are accepted)");
       return;
     }
   if (res == ESP_OK)
@@ -174,7 +185,12 @@ void can_tx(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const
   const char* bus = cmd->GetParent()->GetParent()->GetName();
   const char* mode = cmd->GetName();
   CAN_frame_format_t smode = CAN_frame_std;
-  if (strcmp(mode, "extended")==0) smode = CAN_frame_ext;
+  uint32_t idmax = (1 << 11) - 1;
+  if (strcmp(mode, "extended")==0)
+    {
+    smode = CAN_frame_ext;
+    idmax = (1 << 29) - 1;
+    }
 
   canbus* sbus = (canbus*)MyPcpApp.FindDeviceByName(bus);
   if (sbus == NULL)
@@ -193,13 +209,26 @@ void can_tx(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const
   frame.FIR.U = 0;
   frame.FIR.B.DLC = argc-1;
   frame.FIR.B.FF = smode;
-  frame.MsgID = (int)strtol(argv[0],NULL,16);
+  char* ep;
+  uint32_t uv = strtoul(argv[0], &ep, 16);
+  if (*ep != '\0' || uv > idmax)
+    {
+    writer->printf("Error: Invalid CAN ID \"%s\" (0x%lx max)\n", argv[0], idmax);
+    return;
+    }
+  frame.MsgID = uv;
   frame.callback = NULL;
   for(int k=0;k<(argc-1);k++)
     {
-    frame.data.u8[k] = strtol(argv[k+1],NULL,16);
+    uv = strtoul(argv[k+1], &ep, 16);
+    if (*ep != '\0' || uv > 0xff)
+      {
+      writer->printf("Error: Invalid CAN octet \"%s\"\n", argv[k+1]);
+      return;
+      }
+    frame.data.u8[k] = uv;
     }
-  sbus->Write(&frame);
+  sbus->Write(&frame, pdMS_TO_TICKS(500));
   }
 
 void can_rx(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -264,6 +293,7 @@ void can_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
   writer->printf("\nErr flags: 0x%08x\n",sbus->m_status.error_flags);
   writer->printf("Rx err:    %20d\n",sbus->m_status.errors_rx);
   writer->printf("Tx err:    %20d\n",sbus->m_status.errors_tx);
+  writer->printf("Rx invalid:%20d\n",sbus->m_status.invalid_rx);
   writer->printf("Wdg Resets:%20d\n",sbus->m_status.watchdog_resets);
   if (sbus->m_watchdog_timer>0)
     {
@@ -499,7 +529,7 @@ const char* GetCanLogTypeName(CAN_log_type_t type)
 
 void can::LogFrame(canbus* bus, CAN_log_type_t type, const CAN_frame_t* frame)
   {
-  OvmsMutexLock lock(&m_loggermap_mutex);
+  OvmsRecMutexLock lock(&m_loggermap_mutex);
 
   for (canlog_map_t::iterator it=m_loggermap.begin(); it!=m_loggermap.end(); ++it)
     {
@@ -509,7 +539,7 @@ void can::LogFrame(canbus* bus, CAN_log_type_t type, const CAN_frame_t* frame)
 
 void can::LogStatus(canbus* bus, CAN_log_type_t type, const CAN_status_t* status)
   {
-  OvmsMutexLock lock(&m_loggermap_mutex);
+  OvmsRecMutexLock lock(&m_loggermap_mutex);
 
   for (canlog_map_t::iterator it=m_loggermap.begin(); it!=m_loggermap.end(); ++it)
     {
@@ -519,7 +549,7 @@ void can::LogStatus(canbus* bus, CAN_log_type_t type, const CAN_status_t* status
 
 void can::LogInfo(canbus* bus, CAN_log_type_t type, const char* text)
   {
-  OvmsMutexLock lock(&m_loggermap_mutex);
+  OvmsRecMutexLock lock(&m_loggermap_mutex);
 
   for (canlog_map_t::iterator it=m_loggermap.begin(); it!=m_loggermap.end(); ++it)
     {
@@ -539,12 +569,13 @@ void canbus::LogStatus(CAN_log_type_t type)
     if (!StatusChanged())
       return;
     ESP_LOGE(TAG,
-      "%s: intr=%d rxpkt=%d txpkt=%d errflags=%#x rxerr=%d txerr=%d rxovr=%d txovr=%d"
-      " txdelay=%d txfail=%d wdgreset=%d errreset=%d",
+      "%s: intr=%d rxpkt=%d txpkt=%d errflags=%#x rxerr=%d txerr=%d rxinval=%d"
+      " rxovr=%d txovr=%d txdelay=%d txfail=%d wdgreset=%d errreset=%d",
       m_name, m_status.interrupts, m_status.packets_rx, m_status.packets_tx,
       m_status.error_flags, m_status.errors_rx, m_status.errors_tx,
-      m_status.rxbuf_overflow, m_status.txbuf_overflow, m_status.txbuf_delay,
-      m_status.tx_fails, m_status.watchdog_resets, m_status.error_resets);
+      m_status.invalid_rx, m_status.rxbuf_overflow, m_status.txbuf_overflow,
+      m_status.txbuf_delay, m_status.tx_fails, m_status.watchdog_resets,
+      m_status.error_resets);
     }
   if (MyCan.HasLogger())
     MyCan.LogStatus(this, type, &m_status);
@@ -559,7 +590,7 @@ bool canbus::StatusChanged()
   {
   // simple checksum to prevent log flooding:
   uint32_t chksum = m_status.errors_rx + m_status.errors_tx
-    + m_status.rxbuf_overflow + m_status.txbuf_overflow
+    + m_status.invalid_rx + m_status.rxbuf_overflow + m_status.txbuf_overflow
     + m_status.error_flags + m_status.txbuf_delay + m_status.tx_fails
     + m_status.watchdog_resets + m_status.error_resets;
   if (chksum != m_status_chksum)
@@ -569,6 +600,39 @@ bool canbus::StatusChanged()
     }
   return false;
   }
+
+static const char* const CAN_errorstate_names[] = {
+  "none",
+  "active",
+  "warning",
+  "passive",
+  "busoff"
+  };
+
+const char* GetCanErrorStateName(CAN_errorstate_t error_state)
+  {
+  return CAN_errorstate_names[error_state];
+  }
+
+CAN_errorstate_t canbus::GetErrorState()
+  {
+  if (m_status.errors_tx == 0 && m_status.errors_rx == 0)
+    return CAN_errorstate_none;
+  else if (m_status.errors_tx < 96 && m_status.errors_rx < 96)
+    return CAN_errorstate_active;
+  else if (m_status.errors_tx < 128 && m_status.errors_rx < 128)
+    return CAN_errorstate_warning;
+  else if (m_status.errors_tx < 256 && m_status.errors_rx < 256)
+    return CAN_errorstate_passive;
+  else
+    return CAN_errorstate_busoff;
+  }
+
+const char* canbus::GetErrorStateName()
+  {
+  return GetCanErrorStateName(GetErrorState());
+  }
+
 
 uint32_t can::AddLogger(canlog* logger, int filterc, const char* const* filterv)
   {
@@ -582,7 +646,7 @@ uint32_t can::AddLogger(canlog* logger, int filterc, const char* const* filterv)
     logger->SetFilter(filter);
     }
 
-  OvmsMutexLock lock(&m_loggermap_mutex);
+  OvmsRecMutexLock lock(&m_loggermap_mutex);
   uint32_t id = m_logger_id++;
   m_loggermap[id] = logger;
 
@@ -596,7 +660,7 @@ bool can::HasLogger()
 
 canlog* can::GetLogger(uint32_t id)
   {
-  OvmsMutexLock lock(&m_loggermap_mutex);
+  OvmsRecMutexLock lock(&m_loggermap_mutex);
 
   auto k = m_loggermap.find(id);
   if (k != m_loggermap.end())
@@ -607,7 +671,7 @@ canlog* can::GetLogger(uint32_t id)
 
 bool can::RemoveLogger(uint32_t id)
   {
-  OvmsMutexLock lock(&m_loggermap_mutex);
+  OvmsRecMutexLock lock(&m_loggermap_mutex);
 
   auto k = m_loggermap.find(id);
   if (k != m_loggermap.end())
@@ -623,7 +687,7 @@ bool can::RemoveLogger(uint32_t id)
 
 void can::RemoveLoggers()
   {
-  OvmsMutexLock lock(&m_loggermap_mutex);
+  OvmsRecMutexLock lock(&m_loggermap_mutex);
 
   for (canlog_map_t::iterator it=m_loggermap.begin(); it!=m_loggermap.end();)
     {
@@ -723,10 +787,8 @@ void can::CAN_rxtask(void *pvParameters)
           bool loop;
           // Loop until all interrupts are handled
           do {
-            bool receivedFrame;
-            loop = msg.body.bus->AsynchronousInterruptHandler(&msg.body.frame, &receivedFrame);
-            if (receivedFrame)
-              me->IncomingFrame(&msg.body.frame);
+            uint32_t receivedFrames;
+            loop = msg.body.bus->AsynchronousInterruptHandler(&msg.body.frame, &receivedFrames);
             } while (loop);
           break;
           }
@@ -755,6 +817,8 @@ void can::CAN_rxtask(void *pvParameters)
 
 can::can()
   {
+  if (!includeCAN) return;
+
   ESP_LOGI(TAG, "Initialising CAN (4510)");
 
   m_logger_id = 1;
@@ -1014,7 +1078,7 @@ void canbus::BusTicker10(std::string event, void* data)
     }
   }
 
-bool canbus::AsynchronousInterruptHandler(CAN_frame_t* frame, bool * frameReceived)
+bool canbus::AsynchronousInterruptHandler(CAN_frame_t* frame, uint32_t* framesReceived)
   {
   return false;
   }

@@ -16,7 +16,7 @@
     "minimist": "~1.2.5",
     "readline": "0.0.5",
     "recursive-readdir-sync": "^1.0.6",
-    "socket.io": "~1.2.1",
+    "socket.io": ">=2.4.0",
     "sprintf": "~0.1.5",
     "stream": "0.0.2",
     "utf8": "~2.0.0",

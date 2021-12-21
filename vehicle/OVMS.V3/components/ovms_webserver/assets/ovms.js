@@ -49,6 +49,60 @@ function getPathURL(path) {
 
 
 /**
+ * Hexadecimal encoding & decoding
+ * based on: https://stackoverflow.com/a/54099484 by Aaron Watters
+ */
+
+var HEX = {
+  to_hex_array: [],
+  to_byte_map: {},
+
+  // Init lookup tables:
+  init: function () {
+    for (var ord=0; ord<=0xff; ord++) {
+      var s = ord.toString(16);
+      if (s.length < 2) {
+        s = "0" + s;
+      }
+      this.to_hex_array.push(s);
+      this.to_byte_map[s] = ord;
+    }
+  },
+
+  // Encode ArrayBuffer to hexadecimal string:
+  // Usage example: HEX.encode(CBOR.encode({a: 42})) = "a16161182a"
+  encode: function (arraybuffer) {
+    if (!this.to_hex_array.length) this.init();
+    var buffer = new Uint8Array(arraybuffer);
+    var hex_array = [];
+    for (var i=0; i<buffer.length; i++) {
+      hex_array.push(this.to_hex_array[buffer[i]]);
+    }
+    return hex_array.join('');
+  },
+
+  // Decode hexadecimal string into ArrayBuffer:
+  // Usage example: CBOR.decode(HEX.decode("a16161182a")) = {a: 42}
+  decode: function (s) {
+    if (!this.to_hex_array.length) this.init();
+    var length2 = s.length;
+    if ((length2 % 2) != 0) {
+      console.error("HEX.decode: string must have length a multiple of 2");
+      return null;
+    }
+    var length = length2 / 2;
+    var buffer = new Uint8Array(length);
+    for (var i=0; i<length; i++) {
+      var i2 = i * 2;
+      var b = s.substring(i2, i2 + 2);
+      buffer[i] = this.to_byte_map[b];
+    }
+    return buffer.buffer;
+  }
+};
+
+
+/**
  * AJAX Pages & Commands
  */
 
@@ -145,16 +199,23 @@ function setcontent(tgt, uri, text){
     $("#nav li").removeClass("active");
     var mi = $("#nav [href='"+uri+"']");
     mi.parents("li").addClass("active");
-    tgt[0].scrollIntoView();
+    if (tgt[0].id == "main")
+      window.scrollTo(0,0);
+    else
+      tgt[0].scrollIntoView();
     tgt.html(text);
     var $p = tgt.find(">.panel");
     if ($p.length == 1) $p.addClass("panel-single");
+    var moduleid = $("title").data("moduleid") || "OVMS";
     if (mi.length > 0)
-      document.title = "OVMS " + (mi.attr("title") || mi.text());
+      document.title = moduleid + " " + (mi.attr("title") || mi.text());
     else
-      document.title = "OVMS Console";
+      document.title = moduleid + " Console";
   } else {
-    tgt[0].scrollIntoView();
+    if (tgt[0].id == "main")
+      window.scrollTo(0,0);
+    else
+      tgt[0].scrollIntoView();
     tgt.html(text);
   }
 
@@ -217,7 +278,15 @@ function standardTextFilter(msg) {
 }
 
 function loadjs(command, target, filter, timeout) {
-  return loadcmd({ "command": command, type: "js" }, target, filter, timeout);
+  if (!command) return null;
+  var args = {};
+  if (typeof command == "object") {
+    args = command;
+  } else {
+    args.command = command;
+  }
+  args.type = "js";
+  return loadcmd(args, target, filter, timeout);
 }
 
 function loadcmd(command, target, filter, timeout) {
@@ -338,7 +407,11 @@ var loghist = [];
 const loghist_maxsize = 100;
 
 function initSocketConnection(){
-  ws = new WebSocket('ws://' + location.host + '/msg');
+  if (location.protocol == "https:") {
+    ws = new WebSocket('wss://' + location.host + '/msg');
+  } else {
+    ws = new WebSocket('ws://' + location.host + '/msg');
+  }
   ws.onopen = function(ev) {
     console.log("WebSocket OPENED", ev);
     $(".receiver").subscribe();
@@ -1360,6 +1433,7 @@ $.fn.chart = function(options) {
         $(this).data("chart", chart).addClass("has-chart get-window-resize").on("window-resize", function() {
           $(this).data("chart").reflow();
         });
+        $(this).closest(".metric.chart").data("chart", chart);
       });
     }
     if (window.Highcharts) {
@@ -1409,6 +1483,7 @@ $.fn.table = function(options) {
         });
         var table = $(this).DataTable(options);
         $(this).data("dataTable", table).addClass("has-dataTable");
+        $(this).closest(".metric.table").data("dataTable", table);
       });
     }
     if ($.fn.DataTables) {
@@ -1646,7 +1721,7 @@ $(function(){
   // Metrics displays:
   $("body").on('msg:metrics', '.receiver', function(e, update) {
     $(this).find(".metric").each(function() {
-      var $el = $(this), metric = $el.data("metric"), prec = $el.data("prec");
+      var $el = $(this), metric = $el.data("metric"), prec = $el.data("prec"), scale = $el.data("scale");
       if (!metric) return;
       // filter:
       var keys = metric.split(","), val;
@@ -1658,23 +1733,27 @@ $(function(){
       if ($el.hasClass("text")) {
         $el.children(".value").text(val);
       } else if ($el.hasClass("number")) {
-        var vf = (prec != null) ? Number(val).toFixed(prec) : val;
+        var vf = val;
+        if (scale != null) vf = Number(vf) * scale;
+        if (prec != null) vf = Number(vf).toFixed(prec);
         $el.children(".value").text(vf);
       } else if ($el.hasClass("progress")) {
+        var vf = val;
+        if (scale != null) vf = Number(vf) * scale;
+        if (prec != null) vf = Number(vf).toFixed(prec);
         var $pb = $(this.firstElementChild), min = $pb.attr("aria-valuemin"), max = $pb.attr("aria-valuemax");
         var vp = (val-min) / (max-min) * 100;
-        var vf = (prec != null) ? Number(val).toFixed(prec) : val;
         $pb.css("width", vp+"%").attr("aria-valuenow", vp).find(".value").text(vf);
         var lw = 0; $pb.find("span").each(function(){ lw += $(this).width(); });
         if (($pb.parent().width()*vp/100) < lw) $pb.addClass("value-low"); else $pb.removeClass("value-low");
       } else if ($el.hasClass("chart")) {
-        var ch = $(this.firstElementChild).data("chart");
+        var ch = $(this).data("chart");
         if (ch && ch.userOptions && ch.userOptions.onUpdate)
           ch.userOptions.onUpdate.call(ch, update);
       } else if ($el.hasClass("table")) {
-        var dt = $(this.firstElementChild).data("dataTable");
-        if (dt && dt.settings() && dt.settings().oInit && dt.settings().oInit.onUpdate)
-          dt.settings().oInit.onUpdate.call(dt, update);
+        var dt = $(this).data("dataTable");
+        if (dt && dt.settings() && dt.settings()[0] && dt.settings()[0].oInit && dt.settings()[0].oInit.onUpdate)
+          dt.settings()[0].oInit.onUpdate.call(dt, update);
       } else {
         $el.text(val);
       }

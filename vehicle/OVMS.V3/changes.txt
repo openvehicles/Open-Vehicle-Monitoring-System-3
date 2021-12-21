@@ -1,11 +1,253 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Volt/Ampera:: added notification for "fuel" metric.
+    new config: [xva] notify_va_metrics 	(bool, default no)
+- Server V2/V3: added manual update request
+    Note: the servers normally don't need a manual trigger to perform
+    data updates, they listen to metrics changes and events. Use this
+    only if you need extraordinary single updates as fast as possible.
+  New commands:
+    server v2 update [all|modified]     -- Request V2 data update
+    server v3 update [all|modified]     -- Request V3 data update
+
+2021-11-22 MWJ  3.2.018  OTA release
+- Vehicle: added optional automatic trip report generation
+    Details: https://docs.openvehicles.com/en/latest/userguide/notifications.html
+  New configs:
+    [notify]  report.trip.enable        -- Send trip report on vehicle off (bool, default no)
+    [notify]  report.trip.minlength     -- … minimum trip length in km, default 0.2 km
+  New command:
+    stat trip                           -- Output statistics for current/finished trip
+- VW e-Up: added acceleration support; OBD by reading from ECU,
+    T26 deriving from speed changes
+- Fiat 500e: enhancements courtesy of Gunther Huck
+- OTA: Add support for v3.3 hardware (ESP32 rev3)
+
+2021-09-29 MB  3.2.017  OTA release
+- Added VEHICLE_POLL_TYPE_ROUTINECONTROL to UDS (ISO 14229) service identifiers list
+- MG ZS EV: 
+  - Moved to 2 car variants architecture: MG EV A (✔ Zombie mode | ❌ GWM authentication | ❌ Poll BCM) and MG EV B (❌ Zombie mode | ✔ GWM authentication | ✔ Poll BCM)
+  - New commands:
+      drl [on | off]            Turn on/off daytime running lights
+      drlauth [on | off]        (Only for MG EV A) Do BCM authentication then turn on/off daytime running lights
+      auth [all | gwm | bcm]    Authenticate with specified ECU
+  - New metrics:
+      v.e.headlights
+      v.e.cooling
+      xmg.v.bat.voltage.vcu
+      xmg.v.bat.coolant.temp
+      xmg.v.bat.resistance
+      xmg.v.bms.cell.voltage.max
+      xmg.v.bms.cell.voltage.min
+      xmg.v.bms.mainrelay.b
+      xmg.v.bms.mainrelay.g
+      xmg.v.bms.mainrelay.p
+      xmg.v.bms.time
+      xmg.v.bat.error
+      xmg.v.radiator.fan
+      xmg.v.dcdc.load
+      xmg.v.vcu.dcdc.mode
+      xmg.v.vcu.dcdc.input.current
+      xmg.v.vcu.dcdc.input.voltage
+      xmg.v.vcu.dcdc.output.current
+      xmg.v.vcu.dcdc.output.voltage
+      xmg.v.vcu.dcdc.temp
+      xmg.v.m.coolant.temp
+      xmg.v.m.torque
+      xmg.v.ignition.state
+  - Modified metrics calculation:
+      v.e.charging12v
+      v.e.on
+      v.m.rpm
+      v.m.temp
+      v.b.temp
+  - Decreased poll intervals for some PIDs for better performance
+  - Fixed issue where Features page shows unchecked check box but value is actually true
+  - Added notifications when reaching SOC & Range Limit.
+  - Display charge time to reach Full/SOC/Range limit.
+  - Display CCS Charging on App.
+  - Add new features page to select car's BMS firmware release to adjust SOC display.
+- Zoe: add Kangoo to Renault Zoe vehicle module.
+- New vehicle: Maxus eDeliver 3 via OBD-II Port (MED3)
+  https://docs.openvehicles.com/en/latest/components/vehicle_maxus_edeliver3/docs/index.html
+- Maxus eDeliver3: cell volts and temps added to metrics and polling update.
+- Maxus eDeliver3: Web interface page added for charging and cell metrics
+- Vehicle: emit standard events on changing v.c.timermode
+  New events:
+    vehicle.charge.timermode.off   -- Vehicle charge timer mode has been switched off
+    vehicle.charge.timermode.on    -- Vehicle charge timer mode has been switched on
+- VW e-Up/OBD: detect charge timer mode
+  New metrics:
+    xvu.c.limit.soc.max            -- Charge schedule maximum SOC [%]
+    xvu.c.limit.soc.min            -- Charge schedule minimum SOC [%]
+    xvu.c.timermode.def            -- Charge timer defined & default [bool]
+- VW e-Up/OBD: optional BMS auto statistics reset between driving & charging
+  New config:
+    [xvu] bms.autoreset            -- yes = enable statistics reset, default no
+- VW e-Up/OBD: add MFD range estimation as SOH source, add config option for SOH source
+  New metrics:
+    xvu.b.soh.charge               -- SOH based on charge energy sum [%]
+    xvu.b.soh.range                -- SOH based on MFD range estimation [%]
+  New configs:
+    [xvu] bat.soh.source           -- 'charge' (default) or 'range' [string]
+- VW e-Up/OBD: charge time prediction while not charging & full charge with limit
+  New configs:
+    [xvu] ctp.maxpower             -- in kW, 0 = unlimited except by car, used when not charging
+    [xvu] ctp.soclimit             -- in %, used as informative limit w/o OBD connection
+- VW e-Up/OBD: charge start notification delay configuration to accomodate current ramp-up
+  New configs:
+    [xvu] notify.charge.start.delay       -- in seconds, default 24
+- VW e-Up/OBD: polling control for diagnostic/adaptation sessions
+  New command:
+    xvu polling <status|pause|continue>   -- temporarily pause OBD2 polling
+- VW e-Up: added SOC monitoring log
+  New configs:
+    [xvu] log.socmon.storetime            -- days, 0=off
+- VW e-Up: add topping off charge phase support & timer mode change notification
+- VW e-Up/OBD: read ignition state from ECU, support v.e.gear & v.e.drivemode
+    (v.e.gear only on 2020 model)
+- New vehicle: Hyundai Ioniq vFL (HIONVFL)
+  https://docs.openvehicles.com/en/latest/components/vehicle_hyundai_ioniqvfl/docs/index.html
+- Webserver: support TLS (https, wss) using self-signed certificates
+- New vehicle: Jaguar Ipace (JLRI)
+- New commands:
+    echo [<text>] […] -- output text
+    sleep <seconds> -- pause script execution
+- Scripting API: added OvmsVehicle.ObdRequest()
+- Vehicle: provide momentary ideal range gain/loss speed as a metric,
+    add charge speed to "stat" output, output "stat" charge ETRs in hh:mm format
+  New metric:
+    v.b.range.speed                -- Momentary ideal range gain/loss (charge/discharge) speed [kph]
+- Vehicle: emit standard events on changing v.e.gear & v.e.drivemode
+  New events:
+    vehicle.drivemode.<n>          -- Vehicle drivemode has been set to profile <n> (vehicle specific)
+    vehicle.gear.forward           -- Vehicle has been put in forward gear
+    vehicle.gear.neutral           -- Vehicle has been put in neutral gear
+    vehicle.gear.reverse           -- Vehicle has been put in reverse gear
+- Scripting/Duktape: new heap memory management using fixed amount of system RAM
+  New config:
+    [module] duktape.heapsize    -- in KB, default 512, max 1024
+  New commands:
+    script meminfo               -- output heap memory status (JSON)
+  New API calls:
+    meminfo()                    -- return heap memory status
+- TLS: removed expired DST root certificate, added new ISRG root certificate
+    for Let's Encrypt
+
+2021-03-05 MB  3.2.016  OTA release
+- VW e-Up: CCS (DC) charge detection & data
+  New metrics:
+    xvu.c.ccs.u             -- CCS charger supplied voltage [V]
+    xvu.c.ccs.i             -- CCS Charger supplied current [A]
+    xvu.c.ccs.p             -- CCS Charger supplied power [kW]
+- VW e-Up: replaced MFD range based CAC/SOH by charge coulomb count based
+  Removed metrics:
+    xvu.b.cap.range
+    xvu.b.cap.chg.ah.norm
+    xvu.b.cap.chg.ah.norm
+    xvu.b.cap.chg.kwh.norm
+    xvu.b.cap.chg.kwh.abs
+  New metrics:
+    xvu.b.energy.range      -- MFD range estimation energy [kWh]
+    xvu.b.cap.kwh.range     -- … usable battery capacity derived [kWh]
+    xvu.b.cap.ah.abs        -- Charge coulomb based capacity [Ah]
+    xvu.b.cap.ah.norm       -- … normalized (usable) [Ah]
+    xvu.b.cap.kwh.abs       -- Charge energy based capacity [kWh]
+    xvu.b.cap.kwh.norm      -- … normalized (usable) [kWh]
+- Volt/Ampera: new xva metrics:
+    xva.v.p.trip.ev   = trip using electric, km;
+    xva.v.e.fuel      = fuel tank level, %; 
+- WiFi: replace fixed scan times by config instances
+  New configs:
+    [network] wifi.scan.tmin              Min scan time per channel [ms], default 120 ms
+    [network] wifi.scan.tmax              Max scan time per channel [ms], default 120 ms
+- ZOE: BMS cell monitoring (PH1)
+- SmartED: add Drivmode for Brabus
+- BMS: optional cell voltage & temperature logging
+  New configs:
+    [vehicle] bms.log.voltage.interval    Interval [s] for cell voltage logging, default 0=disable
+    [vehicle] bms.log.temp.interval       Interval [s] for cell temperature logging, default 0=disable
+- BMS: detection of inconsistent voltage series by gradient & stddev average deviation
+    thresholds, added pack metrics to battery monitor web UI, change cell warning & alert
+    thresholds to be applied exceeding stddev level
+  New metrics:
+    v.b.p.voltage.grad                    Cell voltage - gradient of current series [V]
+  New configs:
+    [vehicle] bms.dev.voltage.maxgrad     Max gradient for a valid series
+    [vehicle] bms.dev.voltage.maxsddev    Max stddev deviation from average for valid series
+- Events: added automatic events on v.e.aux12v changes.
+  New events:
+    vehicle.aux.12v.on
+    vehicle.aux.12v.off
+- Notifications: added optional long term trip & grid (charge/generator session) server logs.
+    See https://docs.openvehicles.com/en/latest/userguide/notifications.html for details.
+  New configs:
+    [notify]  log.trip.storetime    Trip log storage time in days, 0/empty = off (default)
+    [notify]  log.trip.minlength    … minimum trip length in km, default 0.2 km
+    [notify]  log.grid.storetime    Grid log storage time in days, 0/empty = off (default)
+- Server V3 improvements:
+    a) On first connection to MQTT broker we used to send all metrics. Now
+       we only send metrics for which we have a value.
+    b) New config settings:
+         "updatetime.on" which sets updatetime when the car is on (driving)
+         "updatetime.charging" which sets updatetime when the car is charging
+         "updatetime.awake" which sets updatetime when the car is awake
+       If unset the server uses the "idle" or "connected" interval as before
+    c) New config setting "updatetime.sendall". If you set this we will publish
+       _all_ valid metrics at this interval. Helpful to keep a steady flow of
+       values for charting.
+    PLEASE NOTE: These settings will increase OVMS' data usage.
+- Metrics: extended reboot persistence: most vehicle state and long term counter
+    metrics will now retain their values over a reboot (e.g. OTA update)
+- Metrics: new standard metrics for grid integration (V2G) / generator role
+  New standard metrics:
+    v.c.kwh.grid            Energy drawn from grid during running session
+    v.c.kwh.grid.total      Energy drawn from grid total (life time)
+    v.g.generating          True = currently delivering power
+    v.g.climit              Maximum generator input current (from battery)
+    v.g.current             Momentary generator input current (from battery)
+    v.g.duration.empty      Estimated time remaining for full discharge
+    v.g.duration.range      … for range limit
+    v.g.duration.soc        … for SOC limit
+    v.g.efficiency          Momentary generator efficiency
+    v.g.kwh                 Energy sum generated in the running session
+    v.g.kwh.grid            Energy sent to grid during running session
+    v.g.kwh.grid.total      Energy sent to grid total
+    v.g.limit.range         Minimum range limit for generator mode
+    v.g.limit.soc           Minimum SOC limit for generator mode
+    v.g.mode                Generator mode (TBD)
+    v.g.pilot               Pilot signal present
+    v.g.power               Momentary generator output power
+    v.g.state               Generator state (TBD)
+    v.g.substate            Generator substate (TBD)
+    v.g.temp                Generator temperature
+    v.g.time                Duration of generator running
+    v.g.timermode           True if generator timer enabled
+    v.g.timerstart          Time generator is due to start
+    v.g.type                Connection type (chademo, ccs, …)
+    v.g.voltage             Momentary generator output voltage
+- TPMS: metrics rework & standard alert notifications on new v.t.alert metric.
+  Replaced metrics…
+    v.tp.fl.p               TPMS front left pressure
+    v.tp.fl.t               TPMS front left temperature
+    v.tp.fr.p               TPMS front right pressure
+    v.tp.fr.t               TPMS front right temperature
+    v.tp.rl.p               TPMS rear left pressure
+    v.tp.rl.t               TPMS rear left temperature
+    v.tp.rr.p               TPMS rear right pressure
+    v.tp.rr.t               TPMS rear right temperature
+  …by…
+    v.t.pressure            TPMS tyre pressures vector (fl,fr,rl,rr)
+    v.t.temp                TPMS tyre temperatures vector
+  New standard metrics:
+    v.t.alert               TPMS tyre alert levels [0=normal, 1=warning, 2=alert]
+    v.t.health              TPMS tyre health states
 - Volt/Ampera: BMS cell monitoring (CAN1 polling), fast CAN polling when waking up,
-  estimated range gets from CAN instead of calculation, 
-  lock/unlock status processing fixed for Volt 14MY; 
-  New standard metrics: 
-    trip (this charge), energy used (this charge), HV battery capacity (CAC, Ah), 
+  estimated range gets from CAN instead of calculation,
+  lock/unlock status processing fixed for Volt 14MY;
+  New standard metrics:
+    trip (this charge), energy used (this charge), HV battery capacity (CAC, Ah),
     transmission temp, doors, trunk, hood, lightings;
 - VW e-Up: BMS cell monitoring (@OBD)
 - VW e-Up: combined T26A & OBD module, extended standard metrics coverage,
@@ -29,7 +271,12 @@ Open Vehicle Monitor System v3 - Change log
 - VW e-UP T26A: add climate control and charging detection
 - New vehicle: VW e-Up via OBD-II Port (VWUP.OBD)
 - New vehicle: MG ZS EV via OBD-II Port (MGEV)
-- New vehicle: BMW i3/i3s via OBD-II Port (BMWI3) 
+- Add support for TLS OTA update and change to default
+- New vehicle: BMW i3/i3s via OBD-II Port (BMWI3)
+- Updated wolfssh and wolfssl so the restriction of clients to use
+  aes128-cbc cipher is no longer required.
+- MG ZS EV: Add Charging Metrics page.
+- MG ZS EV: Add support for ms_v_charge_kwh, ms_v_bat_energy_used and ms_v_bat_coulomb_used metrics
 
 2020-09-02 MWJ  3.2.015  OTA release
 - Notify: add explicit channel exclusion config syntax

@@ -30,6 +30,20 @@
 
 #include "canlog.h"
 
+#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+
+class canlog_monitor_conn: public canlogconnection
+  {
+  public:
+    canlog_monitor_conn(canlog* logger, std::string format, canformat::canformat_serve_mode_t mode);
+    virtual ~canlog_monitor_conn();
+
+  public:
+    virtual void OutputMsg(CAN_log_message_t& msg, std::string &result);
+  };
+
+#endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+
 class canlog_monitor : public canlog
   {
   public:
@@ -39,10 +53,6 @@ class canlog_monitor : public canlog
   public:
     virtual bool Open();
     virtual void Close();
-    virtual bool IsOpen();
-
-  public:
-    virtual void OutputMsg(CAN_log_message_t& msg);
   };
 
 #endif // __CANLOG_MONITOR_H__

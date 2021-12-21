@@ -76,12 +76,12 @@ class OvmsVehicleRenaultZoe : public OvmsVehicle {
 		void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain);
 
 	protected:
-		void IncomingEPS(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain);
-		void IncomingEVC(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain);
-		void IncomingBCB(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain);
-		void IncomingLBC(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain);
-		void IncomingUBP(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain);
-		void IncomingPEB(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain);
+		void IncomingEPS(uint16_t type, uint16_t pid, const char* data, uint16_t len);
+		void IncomingEVC(uint16_t type, uint16_t pid, const char* data, uint16_t len);
+		void IncomingBCB(uint16_t type, uint16_t pid, const char* data, uint16_t len);
+		void IncomingLBC(uint16_t type, uint16_t pid, const char* data, uint16_t len);
+		void IncomingUBP(uint16_t type, uint16_t pid, const char* data, uint16_t len);
+		void IncomingPEB(uint16_t type, uint16_t pid, const char* data, uint16_t len);
 		void car_on(bool isOn);
     virtual void Ticker1(uint32_t ticker);
     virtual void Ticker10(uint32_t ticker);
@@ -95,6 +95,10 @@ class OvmsVehicleRenaultZoe : public OvmsVehicle {
     OvmsMetricFloat  *mt_pos_odometer_start;  // ODOmeter at Start
     OvmsMetricBool   *mt_bus_awake;           // can-bus awake status
     OvmsMetricFloat  *mt_available_energy;    // Available Energy
+    OvmsMetricFloat  *mt_main_power_consumed; // Mains active power consumed
+    
+    // Rnault Kangoo metrics
+    OvmsMetricFloat  *mt_heatwater_temp;      // Heat Water Temp
 
   public:
     void WebInit();
@@ -126,14 +130,26 @@ class OvmsVehicleRenaultZoe : public OvmsVehicle {
     int m_battery_capacity;                 // Battery Capacity (default 27000)
     bool m_enable_egpio;                    // enable EGPIO for Homelink commands
     bool m_reset_trip;                      // Reset trip when charging else when env on
+    int m_vehicle_type;                     // Vehicle type (Zoe, Kangoo...)
     int m_reboot_ticker;
 
   private:
     unsigned int m_candata_timer;
     unsigned int m_candata_poll;
-		
-	public:
+  
+  public:
 		static void zoe_trip(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+  
+  protected:
+    string zoe_obd_rxbuf;
+  
+  public:
+    bool IsZoe() {
+      return m_vehicle_type == 0;
+    }
+    bool IsKangoo() {
+      return m_vehicle_type == 1;
+    }
 };
 
 #endif //#ifndef __VEHICLE_RENAUTZOE_H__

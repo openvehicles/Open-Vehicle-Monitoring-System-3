@@ -1,6 +1,6 @@
 /* rsa.c
  *
- * Copyright (C) 2006-2016 wolfSSL Inc.
+ * Copyright (C) 2006-2020 wolfSSL Inc.
  *
  * This file is part of wolfSSL.
  *
@@ -70,7 +70,7 @@ enum {
     RSA_MIN_SIZE = 512,
     RSA_MAX_SIZE = 4096, /* max allowed in IPP library */
 
-    RSA_MIN_PAD_SZ   = 11      /* seperator + 0 + pad value + 8 pads */
+    RSA_MIN_PAD_SZ   = 11      /* separator + 0 + pad value + 8 pads */
 };
 
 
@@ -99,7 +99,7 @@ int wc_InitRsaKey(RsaKey* key, void* heap)
 
 
 /* three functions needed for cert and key gen */
-#if defined(WOLFSSL_CERT_GEN) || defined(WOLFSSL_KEY_GEN)
+#if defined(WOLFSSL_CERT_GEN) || defined(WOLFSSL_KEY_GEN) || defined(OPENSSL_EXTRA)
 /* return 1 if there is a leading bit*/
 int wc_Rsa_leading_bit(void* bn)
 {
@@ -162,7 +162,7 @@ int wc_Rsa_unsigned_bin_size(void* bn)
 #define MP_OKAY 0
 #endif
 
-/* extract the bn value to a unsigned byte array and return MP_OKAY on succes */
+/* extract the bn value to a unsigned byte array and return MP_OKAY on success */
 int wc_Rsa_to_unsigned_bin(void* bn, byte* in, int inLen)
 {
     if (ippsGetOctString_BN((Ipp8u*)in, inLen, bn) != ippStsNoErr) {
@@ -171,7 +171,7 @@ int wc_Rsa_to_unsigned_bin(void* bn, byte* in, int inLen)
     }
     return MP_OKAY;
 }
-#endif /* WOLFSSL_CERT_GEN or WOLFSSL_KEY_GEN */
+#endif /* WOLFSSL_CERT_GEN || WOLFSSL_KEY_GEN || OPENSSL_EXTRA */
 
 
 #ifdef OPENSSL_EXTRA /* functions needed for openssl compatibility layer */
@@ -308,34 +308,36 @@ int SetRsaExternal(WOLFSSL_RSA* rsa)
         return USER_CRYPTO_ERROR;
     }
 
-    if (SetIndividualExternal(&rsa->d, key->dipp) != 0) {
-        USER_DEBUG(("rsa d key error\n"));
-        return USER_CRYPTO_ERROR;
-    }
+    if (key->type == RSA_PRIVATE) {
+        if (SetIndividualExternal(&rsa->d, key->dipp) != 0) {
+            USER_DEBUG(("rsa d key error\n"));
+            return USER_CRYPTO_ERROR;
+        }
 
-    if (SetIndividualExternal(&rsa->p, key->pipp) != 0) {
-        USER_DEBUG(("rsa p key error\n"));
-        return USER_CRYPTO_ERROR;
-    }
+        if (SetIndividualExternal(&rsa->p, key->pipp) != 0) {
+            USER_DEBUG(("rsa p key error\n"));
+            return USER_CRYPTO_ERROR;
+        }
 
-    if (SetIndividualExternal(&rsa->q, key->qipp) != 0) {
-        USER_DEBUG(("rsa q key error\n"));
-        return USER_CRYPTO_ERROR;
-    }
+        if (SetIndividualExternal(&rsa->q, key->qipp) != 0) {
+            USER_DEBUG(("rsa q key error\n"));
+            return USER_CRYPTO_ERROR;
+        }
 
-    if (SetIndividualExternal(&rsa->dmp1, key->dPipp) != 0) {
-        USER_DEBUG(("rsa dP key error\n"));
-        return USER_CRYPTO_ERROR;
-    }
+        if (SetIndividualExternal(&rsa->dmp1, key->dPipp) != 0) {
+            USER_DEBUG(("rsa dP key error\n"));
+            return USER_CRYPTO_ERROR;
+        }
 
-    if (SetIndividualExternal(&rsa->dmq1, key->dQipp) != 0) {
-        USER_DEBUG(("rsa dQ key error\n"));
-        return USER_CRYPTO_ERROR;
-    }
+        if (SetIndividualExternal(&rsa->dmq1, key->dQipp) != 0) {
+            USER_DEBUG(("rsa dQ key error\n"));
+            return USER_CRYPTO_ERROR;
+        }
 
-    if (SetIndividualExternal(&rsa->iqmp, key->uipp) != 0) {
-        USER_DEBUG(("rsa u key error\n"));
-        return USER_CRYPTO_ERROR;
+        if (SetIndividualExternal(&rsa->iqmp, key->uipp) != 0) {
+            USER_DEBUG(("rsa u key error\n"));
+            return USER_CRYPTO_ERROR;
+        }
     }
 
     rsa->exSet = 1;
@@ -526,8 +528,8 @@ int SetRsaInternal(WOLFSSL_RSA* rsa)
    existing API signing scheme
     input : the msg to be signed
     inputLen : length of input msg
-    pkcsBlock : the outputed padded msg
-    pkcsBlockLen : length of outptued padded msg buffer
+    pkcsBlock : the outputted padded msg
+    pkcsBlockLen : length of outputted padded msg buffer
     padValue : the padded value after first 00 , is either 01 or 02
     rng : random number generator structure
  */
@@ -691,7 +693,7 @@ static IppStatus init_mont(IppsMontState** mont, int* ctxSz,
 
     /* 2. Allocate working buffer using malloc */
     *mont = (IppsMontState*)XMALLOC(*ctxSz, 0, DYNAMIC_TYPE_USER_CRYPTO);
-    if (mont == NULL) {
+    if (*mont == NULL) {
         XFREE(m, NULL, DYNAMIC_TYPE_USER_CRYPTO);
         return ippStsNoMemErr;
     }
@@ -734,7 +736,7 @@ int wc_FreeRsaKey(RsaKey* key)
     }
 
     if (key->pPrv != NULL) {
-        /* write over senstive information */
+        /* write over sensitive information */
         ForceZero(key->pPrv, key->prvSz);
         XFREE(key->pPrv, NULL, DYNAMIC_TYPE_USER_CRYPTO);
         key->pPrv = NULL;
@@ -831,32 +833,61 @@ static int GetLength(const byte* input, word32* inOutIdx, int* len,
     return length;
 }
 
+static int GetASNHeader(const byte* input, byte tag, word32* inOutIdx, int* len,
+                        word32 maxIdx)
+{
+    word32 idx = *inOutIdx;
+    byte   b;
+    int    length;
+
+    if ((idx + 1) > maxIdx)
+        return USER_CRYPTO_ERROR;
+
+    b = input[idx++];
+    if (b != tag)
+        return USER_CRYPTO_ERROR;
+
+    if (GetLength(input, &idx, &length, maxIdx) < 0)
+        return USER_CRYPTO_ERROR;
+
+    *len      = length;
+    *inOutIdx = idx;
+    return length;
+}
+
+static int GetASNInt(const byte* input, word32* inOutIdx, int* len,
+                     word32 maxIdx)
+{
+    int    ret;
+
+    ret = GetASNHeader(input, ASN_INTEGER, inOutIdx, len, maxIdx);
+    if (ret < 0)
+        return ret;
+
+    if (*len > 0) {
+        /* remove leading zero, unless there is only one 0x00 byte */
+        if ((input[*inOutIdx] == 0x00) && (*len > 1)) {
+            (*inOutIdx)++;
+            (*len)--;
+
+            if (*len > 0 && (input[*inOutIdx] & 0x80) == 0)
+                return USER_CRYPTO_ERROR;
+        }
+    }
+
+    return 0;
+}
 
 static int GetInt(IppsBigNumState** mpi, const byte* input, word32* inOutIdx,
                   word32 maxIdx)
 {
     IppStatus ret;
     word32 idx = *inOutIdx;
-    byte   b;
     int    length;
     int    ctxSz;
 
-    if ((idx + 1) > maxIdx)
+    if (GetASNInt(input, &idx, &length, maxIdx) < 0) {
         return USER_CRYPTO_ERROR;
-
-    b = input[idx++];
-    if (b != 0x02)
-        return USER_CRYPTO_ERROR;
-
-    if (GetLength(input, &idx, &length, maxIdx) < 0)
-        return USER_CRYPTO_ERROR;
-
-    if (length > 0) {
-        /* remove leading zero */
-        if ( (b = input[idx++]) == 0x00)
-            length--;
-        else
-            idx--;
     }
 
     ret = ippsBigNumGetSize(length, &ctxSz);
@@ -1059,27 +1090,23 @@ int wc_RsaPrivateKeyDecode(const byte* input, word32* inOutIdx, RsaKey* key,
 }
 
 
-/* read in a public RSA key */
-int wc_RsaPublicKeyDecode(const byte* input, word32* inOutIdx, RsaKey* key,
-                       word32 inSz)
+int wc_RsaPublicKeyDecode_ex(const byte* input, word32* inOutIdx,
+        word32 inSz, const byte** n, word32* nSz, const byte** e, word32* eSz)
 {
-    int  length;
-    int  ctxSz;
-    IppStatus ret;
+    IppStatus ret = 0;
+    int length;
 #if defined(OPENSSL_EXTRA) || defined(RSA_DECODE_EXTRA)
     byte b;
 #endif
 
-    if (input == NULL || inOutIdx == NULL || key == NULL) {
+    if (input == NULL || inOutIdx == NULL) {
         return USER_CRYPTO_ERROR;
     }
 
-    USER_DEBUG(("Entering wc_RsaPublicKeyDecode\n"));
+    USER_DEBUG(("Entering wc_RsaPublicKeyDecode_ex\n"));
 
     if (GetSequence(input, inOutIdx, &length, inSz) < 0)
         return USER_CRYPTO_ERROR;
-
-    key->type = RSA_PUBLIC;
 
 #if defined(OPENSSL_EXTRA) || defined(RSA_DECODE_EXTRA)
     if ((*inOutIdx + 1) > inSz)
@@ -1131,62 +1158,55 @@ int wc_RsaPublicKeyDecode(const byte* input, word32* inOutIdx, RsaKey* key,
     }
 #endif /* OPENSSL_EXTRA || RSA_DECODE_EXTRA */
 
-    if (GetInt(&key->n,  input, inOutIdx, inSz) < 0 ||
-        GetInt(&key->e,  input, inOutIdx, inSz) < 0) {
+    /* Get modulus */
+    ret = GetASNInt(input, inOutIdx, &length, inSz);
+    if (ret < 0) {
         return USER_CRYPTO_ERROR;
     }
+    if (nSz)
+        *nSz = length;
+    if (n)
+        *n = &input[*inOutIdx];
+    *inOutIdx += length;
 
-    /* get sizes set for IPP BN states */
-    ret = ippsGetSize_BN(key->n, &key->nSz);
-    if (ret != ippStsNoErr) {
-        USER_DEBUG(("ippsGetSize_BN error %s\n", ippGetStatusString(ret)));
+    /* Get exponent */
+    ret = GetASNInt(input, inOutIdx, &length, inSz);
+    if (ret < 0) {
         return USER_CRYPTO_ERROR;
     }
+    if (eSz)
+        *eSz = length;
+    if (e)
+        *e = &input[*inOutIdx];
+    *inOutIdx += length;
 
-    ret = ippsGetSize_BN(key->e, &key->eSz);
-    if (ret != ippStsNoErr) {
-        USER_DEBUG(("ippsGetSize_BN error %s\n", ippGetStatusString(ret)));
-        return USER_CRYPTO_ERROR;
-    }
+    USER_DEBUG(("\tExit wc_RsaPublicKeyDecode_ex\n"));
 
-    key->sz = key->nSz; /* set modulus size */
+    return ret;
+}
 
-    /* convert to size in bits */
-    key->nSz = key->nSz * 8;
-    key->eSz = key->eSz * 8;
+/* read in a public RSA key */
+int wc_RsaPublicKeyDecode(const byte* input, word32* inOutIdx, RsaKey* key,
+                       word32 inSz)
+{
+    IppStatus ret;
+    const byte *n = NULL, *e = NULL;
+    word32 nSz = 0, eSz = 0;
 
-    /* set up public key state */
-    ret = ippsRSA_GetSizePublicKey(key->nSz, key->eSz, &ctxSz);
-    if (ret != ippStsNoErr) {
-        USER_DEBUG(("ippsRSA_GetSizePublicKey error %s\n",
-                ippGetStatusString(ret)));
-        return USER_CRYPTO_ERROR;
-    }
-
-    key->pPub = (IppsRSAPublicKeyState*)XMALLOC(ctxSz, NULL,
-                                                      DYNAMIC_TYPE_USER_CRYPTO);
-    if (key->pPub == NULL)
+    if (key == NULL)
         return USER_CRYPTO_ERROR;
 
-    ret = ippsRSA_InitPublicKey(key->nSz, key->eSz, key->pPub, ctxSz);
-    if (ret != ippStsNoErr) {
-        USER_DEBUG(("ippsRSA_InitPublicKey error %s\n",
-                    ippGetStatusString(ret)));
-        return USER_CRYPTO_ERROR;
-    }
+    USER_DEBUG(("Entering wc_RsaPublicKeyDecode\n"));
 
-    ret = ippsRSA_SetPublicKey(key->n, key->e, key->pPub);
-    if (ret != ippStsNoErr) {
-        USER_DEBUG(("ippsRSA_SetPublicKey error %s\n",
-                    ippGetStatusString(ret)));
-        return USER_CRYPTO_ERROR;
+    ret = wc_RsaPublicKeyDecode_ex(input, inOutIdx, inSz, &n, &nSz, &e, &eSz);
+    if (ret == 0) {
+        ret = wc_RsaPublicKeyDecodeRaw(n, nSz, e, eSz, key);
     }
 
     USER_DEBUG(("\tExit RsaPublicKeyDecode\n"));
 
-    return 0;
+    return ret;
 }
-
 
 /* import RSA public key elements (n, e) into RsaKey structure (key) */
 int wc_RsaPublicKeyDecodeRaw(const byte* n, word32 nSz, const byte* e,
@@ -1489,7 +1509,7 @@ int wc_RsaSSL_VerifyInline(byte* in, word32 inLen, byte** out, RsaKey* key)
         return USER_CRYPTO_ERROR;
     }
 
-    /* extract big num struct to octect string */
+    /* extract big num struct to octet string */
     ret = ippsGetOctString_BN((Ipp8u*)in, key->sz, pTxt);
     if (ret != ippStsNoErr) {
         FreeHelper(pTxt, cTxt, scratchBuffer, pPub);
@@ -1600,7 +1620,6 @@ static void Free_BN(IppsBigNumState* bn)
             USER_DEBUG(("Issue with clearing a struct in RsaSSL_Sign free\n"));
         }
         XFREE(bn, NULL, DYNAMIC_TYPE_USER_CRYPTO);
-        bn = NULL;
     }
 }
 
@@ -1680,7 +1699,7 @@ int wc_RsaSSL_Sign(const byte* in, word32 inLen, byte* out, word32 outLen,
         return USER_CRYPTO_ERROR;
     }
 
-    /* tmp = intput to sign */
+    /* tmp = input to sign */
     ret = init_bn(&tmp, sz);
     if (ret != ippStsNoErr) {
         USER_DEBUG(("init_BN error of %s\n", ippGetStatusString(ret)));
@@ -2285,6 +2304,10 @@ makeKeyEnd:
     return ret;
 }
 
+#endif
+
+#if defined(WOLFSSL_KEY_GEN) || defined(OPENSSL_EXTRA)
+
 /********** duplicate code needed -- future refactor */
 #define MAX_VERSION_SZ 5
 #define MAX_SEQ_SZ 5
@@ -2528,7 +2551,7 @@ static int SetRsaPublicKey(byte* output, RsaKey* key,
     if (with_header) {
         int  algoSz;
 #ifdef WOLFSSL_SMALL_STACK
-        byte* algo = NULL;
+        byte* algo;
 
         algo = (byte*)XMALLOC(MAX_ALGO_SZ, NULL, DYNAMIC_TYPE_USER_CRYPTO);
         if (algo == NULL) {
@@ -2615,7 +2638,7 @@ static IppsBigNumState* GetRsaInt(RsaKey* key, int idx)
 
 
 /* Release Tmp RSA resources */
-static INLINE void FreeTmpRsas(byte** tmps, void* heap)
+static WC_INLINE void FreeTmpRsas(byte** tmps, void* heap)
 {
     int i;
 
@@ -2640,7 +2663,7 @@ int wc_RsaKeyToDer(RsaKey* key, byte* output, word32 inLen)
 
     USER_DEBUG(("Entering RsaKeyToDer\n"));
 
-    if (!key || !output)
+    if (!key)
         return USER_CRYPTO_ERROR;
 
     if (key->type != RSA_PRIVATE)
@@ -2716,19 +2739,21 @@ int wc_RsaKeyToDer(RsaKey* key, byte* output, word32 inLen)
     seqSz = SetSequence(verSz + intTotalLen, seq);
 
     outLen = seqSz + verSz + intTotalLen;
-    if (outLen > (int)inLen) {
-        return USER_CRYPTO_ERROR;
-    }
+    if (output) {
+        if (outLen > (int)inLen) {
+            return USER_CRYPTO_ERROR;
+        }
 
-    /* write to output */
-    XMEMCPY(output, seq, seqSz);
-    j = seqSz;
-    XMEMCPY(output + j, ver, verSz);
-    j += verSz;
+        /* write to output */
+        XMEMCPY(output, seq, seqSz);
+        j = seqSz;
+        XMEMCPY(output + j, ver, verSz);
+        j += verSz;
 
-    for (i = 0; i < RSA_INTS; i++) {
-        XMEMCPY(output + j, tmps[i], sizes[i]);
-        j += sizes[i];
+        for (i = 0; i < RSA_INTS; i++) {
+            XMEMCPY(output + j, tmps[i], sizes[i]);
+            j += sizes[i];
+        }
     }
     FreeTmpRsas(tmps, key->heap);
 
@@ -2745,7 +2770,7 @@ int wc_RsaKeyToPublicDer(RsaKey* key, byte* output, word32 inLen)
 }
 
 
-#endif /* WOLFSSL_KEY_GEN */
+#endif /* WOLFSSL_KEY_GEN || OPENSSL_EXTRA */
 
 #ifdef WC_RSA_BLINDING
 

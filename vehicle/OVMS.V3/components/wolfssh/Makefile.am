@@ -16,6 +16,8 @@ EXTRA_HEADERS =
 BUILT_SOURCES=
 EXTRA_DIST=
 dist_doc_DATA=
+dist_noinst_SCRIPTS=
+check_SCRIPTS=
 
 
 #includes additional rules from aminclude.am
@@ -27,18 +29,23 @@ dist_example_DATA=
 
 ACLOCAL_AMFLAGS= -I m4
 
-EXTRA_DIST+= README.md
-EXTRA_DIST+= LICENSING
+EXTRA_DIST+= LICENSING README.md ChangeLog.md
 
 include src/include.am
 include wolfssh/include.am
 include examples/include.am
 include tests/include.am
 include keys/include.am
+include ide/include.am
+include scripts/include.am
 
 
 TEST_EXTENSIONS = .test
 TESTS += $(check_PROGRAMS)
+
+check_SCRIPTS+= $(dist_noinst_SCRIPTS)
+TESTS += $(check_SCRIPTS)
+
 test: check
 
 DISTCLEANFILES+= wolfssh-config

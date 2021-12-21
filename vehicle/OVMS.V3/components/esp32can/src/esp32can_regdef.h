@@ -88,7 +88,17 @@ typedef enum
   __CAN_IRQ_ERR_PASSIVE=        BIT(5),             // IR.5 Error Passive Interrupt (passive state change)
   __CAN_IRQ_ARB_LOST=           BIT(6),             // IR.6 Arbitration Lost Interrupt
   __CAN_IRQ_BUS_ERR=            BIT(7),             // IR.7 Bus Error Interrupt
+  __CAN_IRQ_INVALID_RX=         BIT(8),             // Invalid RX Frame (synthetic)
   } ESP32CAN_IRQ_t;
+
+/* 
+ * Setting this interrupt enable register bit with ESP32 revision
+ * 2 and higher divides the Baud Rate Prescaler (BRP) by 2.
+ */
+#define __CAN_IER_BRP_DIV __CAN_IRQ_WAKEUP
+
+/* The BRP is 6 bits wide */
+#define BRP_MAX ((1 << 6) - 1)
 
 /** \brief OCMODE options. */
 typedef enum

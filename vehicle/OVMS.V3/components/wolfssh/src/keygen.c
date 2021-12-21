@@ -1,6 +1,6 @@
 /* keygen.c
  *
- * Copyright (C) 2014-2016 wolfSSL Inc.
+ * Copyright (C) 2014-2020 wolfSSL Inc.
  *
  * This file is part of wolfSSH.
  *
@@ -29,14 +29,22 @@
     #include <config.h>
 #endif
 
+#ifdef WOLFSSL_USER_SETTINGS
+#include <wolfssl/wolfcrypt/settings.h>
+#else
+#include <wolfssl/options.h>
+#endif
+
+
+#include <wolfssl/wolfcrypt/random.h>
+#include <wolfssl/wolfcrypt/rsa.h>
 #include <wolfssh/error.h>
 #include <wolfssh/keygen.h>
 #include <wolfssh/log.h>
-#include <wolfssl/options.h>
-#include <wolfssl/wolfcrypt/random.h>
-#include <wolfssl/wolfcrypt/rsa.h>
 
 #ifdef WOLFSSH_KEYGEN
+
+#ifdef WOLFSSL_KEY_GEN
 
 #ifdef NO_INLINE
     #include <wolfssh/misc.h>
@@ -46,9 +54,11 @@
 #endif
 
 
-int wolfSSH_MakeRsaKey(uint8_t* out, uint32_t outSz,
-                       uint32_t size, uint32_t e)
+int wolfSSH_MakeRsaKey(byte* out, word32 outSz,
+                       word32 size, word32 e)
 {
+#ifndef NO_RSA
+
     int ret = WS_SUCCESS;
     WC_RNG rng;
 
@@ -97,6 +107,18 @@ int wolfSSH_MakeRsaKey(uint8_t* out, uint32_t outSz,
 
     WLOG(WS_LOG_DEBUG, "Leaving wolfSSH_MakeRsaKey(), ret = %d", ret);
     return ret;
+#else
+    (void)out;
+    (void)outSz;
+    (void)size;
+    (void)e;
+    return WS_NOT_COMPILED;
+#endif
 }
 
-#endif
+
+#else /* WOLFSSL_KEY_GEN */
+    #error "wolfSSH keygen requires that keygen is enabled in wolfSSL, use --enable-keygen or #define WOLFSSL_KEY_GEN."
+#endif /* WOLFSSL_KEY_GEN */
+
+#endif /* WOLFSSH_KEYGEN */

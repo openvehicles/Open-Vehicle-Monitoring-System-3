@@ -1,6 +1,6 @@
 /* arc4.c
  *
- * Copyright (C) 2006-2016 wolfSSL Inc.
+ * Copyright (C) 2006-2020 wolfSSL Inc.
  *
  * This file is part of wolfSSL.
  *
@@ -38,7 +38,7 @@ int wc_Arc4SetKey(Arc4* arc4, const byte* key, word32 length)
     word32 i;
     word32 keyIndex = 0, stateIndex = 0;
 
-    if (arc4 == NULL || key == NULL) {
+    if (arc4 == NULL || key == NULL || length == 0) {
         return BAD_FUNC_ARG;
     }
 
@@ -70,7 +70,7 @@ int wc_Arc4SetKey(Arc4* arc4, const byte* key, word32 length)
 }
 
 
-static INLINE byte MakeByte(word32* x, word32* y, byte* s)
+static WC_INLINE byte MakeByte(word32* x, word32* y, byte* s)
 {
     word32 a = s[*x], b;
     *y = (*y+a) & 0xff;

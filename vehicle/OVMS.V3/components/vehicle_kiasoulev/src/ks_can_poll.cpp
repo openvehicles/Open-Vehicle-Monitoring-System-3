@@ -90,8 +90,8 @@ void OvmsVehicleKiaSoulEv::IncomingTPMS(canbus* bus, uint16_t type, uint16_t pid
 			else if (m_poll_ml_frame == 1)
 				{
 				bVal = CAN_BYTE(0);
-				if (bVal > 0) StdMetrics.ms_v_tpms_fl_p->SetValue( TO_PSI(bVal), PSI);
-				StdMetrics.ms_v_tpms_fl_t->SetValue( TO_CELCIUS(CAN_BYTE(1)), Celcius);
+				if (bVal > 0) StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FL,  TO_PSI(bVal), PSI);
+				StdMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_FL,  TO_CELCIUS(CAN_BYTE(1)), Celcius);
 				lVal = (kia_tpms_id[1] & 0x000000ff) | (CAN_UINT32(4) & 0xffffff00);
 				SET_TPMS_ID(1, lVal);
 				}
@@ -100,8 +100,8 @@ void OvmsVehicleKiaSoulEv::IncomingTPMS(canbus* bus, uint16_t type, uint16_t pid
 				lVal = (uint32_t) CAN_BYTE(0) | (kia_tpms_id[1] & 0xffffff00);
 				SET_TPMS_ID(1, lVal);
 				bVal = CAN_BYTE(1);
-				if (bVal > 0) StdMetrics.ms_v_tpms_fr_p->SetValue( TO_PSI(bVal), PSI);
-				StdMetrics.ms_v_tpms_fr_t->SetValue( TO_CELCIUS(CAN_BYTE(2)), Celcius);
+				if (bVal > 0) StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FR,  TO_PSI(bVal), PSI);
+				StdMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_FR,  TO_CELCIUS(CAN_BYTE(2)), Celcius);
 				lVal = (kia_tpms_id[2] & 0x0000ffff) | (CAN_UINT32(5) & 0xffff0000);
 				SET_TPMS_ID(2, lVal);
 
@@ -111,8 +111,8 @@ void OvmsVehicleKiaSoulEv::IncomingTPMS(canbus* bus, uint16_t type, uint16_t pid
 				lVal = ((uint32_t) CAN_UINT(0)) | (kia_tpms_id[2] & 0xffff0000);
 				SET_TPMS_ID(2, lVal);
 				bVal = CAN_BYTE(2);
-				if (bVal > 0) StdMetrics.ms_v_tpms_rl_p->SetValue( TO_PSI(bVal), PSI);
-				StdMetrics.ms_v_tpms_rl_t->SetValue( TO_CELCIUS(CAN_BYTE(3)), Celcius);
+				if (bVal > 0) StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RL,  TO_PSI(bVal), PSI);
+				StdMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_RL,  TO_CELCIUS(CAN_BYTE(3)), Celcius);
 				lVal = (kia_tpms_id[3] & 0x00ffffff) | ((uint32_t) CAN_BYTE(6) << 24);
 				SET_TPMS_ID(3, lVal);
 
@@ -120,8 +120,8 @@ void OvmsVehicleKiaSoulEv::IncomingTPMS(canbus* bus, uint16_t type, uint16_t pid
 				lVal = (CAN_UINT24(0)) | (kia_tpms_id[3] & 0xff000000);
 				SET_TPMS_ID(3, lVal);
 				bVal = CAN_BYTE(3);
-				if (bVal > 0) StdMetrics.ms_v_tpms_rr_p->SetValue( TO_PSI(bVal), PSI);
-				StdMetrics.ms_v_tpms_rr_t->SetValue( TO_CELCIUS(CAN_BYTE(4)), Celcius);
+				if (bVal > 0) StdMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RR,  TO_PSI(bVal), PSI);
+				StdMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_RR,  TO_CELCIUS(CAN_BYTE(4)), Celcius);
 			}
 			break;
 		}

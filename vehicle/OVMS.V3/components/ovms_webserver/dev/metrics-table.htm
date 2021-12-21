@@ -1,0 +1,125 @@
+<!--
+  Web UI page plugin: DataTables metrics widget demonstration
+-->
+
+<style>
+td i {
+  font-style: normal;
+  font-size: 140%;
+  line-height: 90%;
+  font-weight: bold;
+}
+td i.warning { color: orange; }
+td i.danger { color: red; }
+</style>
+
+
+<div class="panel panel-primary panel-single receiver" id="my-receiver">
+  <div class="panel-heading">Metrics Table Widget Example</div>
+  <div class="panel-body">
+
+    <p>The following table shows a live view of the battery cell voltages along with their recorded
+      minimum, maximum, maximum deviation and current warning/alert state.</p>
+    <p>Try resizing the window or using a mobile phone to see how the table adapts to the screen
+      width. The table will also keep the selected sorting over data updates.</p>
+    <p>Hint: if you don't have live battery cell data, click the generator button to create
+      some random values. The random data is only generated in your browser, not on the module.</p>
+
+    <div class="metric table"
+      data-metric="v.b.c.voltage,v.b.c.voltage.min,v.b.c.voltage.max,v.b.c.voltage.dev.max,v.b.c.voltage.alert">
+      <table class="table table-striped table-bordered table-hover" id="v-table" />
+    </div>
+
+    <p>See <a target="_blank" href="https://datatables.net/manual/">DataTables manual</a> for all
+      options and API methods available.</p>
+
+  </div>
+  <div class="panel-footer">
+    <p><button type="button" class="btn btn-default action-gendata">Generate random data</button></p>
+  </div>
+</div>
+
+
+<script>
+(function(){
+
+  // Utilities:
+  var alertMap = {
+    0: '',
+    1: '<i class="warning">⚐</i>',
+    2: '<i class="danger">⚑</i>',
+  };
+
+  function fmtCode(value, map) {
+    return (map[value] !== undefined) ? map[value] : null;
+  }
+  function fmtNumber(value, prec) {
+    return (value !== undefined) ? Number(value).toFixed(prec) : null;
+  }
+
+  // Init table:
+  $('#v-table').table({
+    responsive: true,
+    paging: true,
+    searching: false,
+    info: false,
+    autoWidth: false,
+    columns: [
+      { title: "#",         className: "dt-body-center",  width: "6%",  responsivePriority: 1 },
+      { title: "Voltage",   className: "dt-body-right",   width: "22%", responsivePriority: 3 },
+      { title: "Minimum",   className: "dt-body-right",   width: "22%", responsivePriority: 4 },
+      { title: "Maximum",   className: "dt-body-right",   width: "22%", responsivePriority: 5 },
+      { title: "Max.Dev.",  className: "dt-body-right",   width: "22%", responsivePriority: 2 },
+      { title: "Alert",     className: "dt-body-center",  width: "6%",  responsivePriority: 1 },
+    ],
+    rowId: 0,
+    onUpdate: function(update) {
+      // Get vector metrics to display:
+      var v = [
+        metrics["v.b.c.voltage"] || [],
+        metrics["v.b.c.voltage.min"] || [],
+        metrics["v.b.c.voltage.max"] || [],
+        metrics["v.b.c.voltage.dev.max"] || [],
+        metrics["v.b.c.voltage.alert"] || [],
+      ];
+      var lcnt = 0;
+      v.map(el => lcnt = Math.max(lcnt, el.length));
+      // Transpose vectors to columns:
+      var l, d = [];
+      for (l = 0; l < lcnt; l++) {
+        d.push([
+          l+1,
+          fmtNumber(v[0][l], 2),
+          fmtNumber(v[1][l], 2),
+          fmtNumber(v[2][l], 2),
+          fmtNumber(v[3][l], 3),
+          fmtCode(v[4][l], alertMap),
+        ]);
+      }
+      // Display new data:
+      this.clear().rows.add(d).draw();
+    },
+  });
+
+
+  // Test data generator:
+  $('.action-gendata').on('click', function() {
+    var td = {};
+    var m_vlt = [], m_min = [], m_max = [], m_devmax = [], m_alert = [];
+    for (var i = 1; i <= 16; i++) {
+      m_vlt.push(3.6 + Math.random() * 0.5);
+      m_min.push(3.4 + Math.random() * 0.2);
+      m_max.push(3.8 + Math.random() * 0.2);
+      m_devmax.push(-0.2 + Math.random() * 0.4);
+      m_alert.push(Math.floor(Math.random() * 3));
+    }
+    td["v.b.c.voltage"] = m_vlt;
+    td["v.b.c.voltage.min"] = m_min;
+    td["v.b.c.voltage.max"] = m_max;
+    td["v.b.c.voltage.dev.max"] = m_devmax;
+    td["v.b.c.voltage.alert"] = m_alert;
+    $('.receiver').trigger('msg:metrics', $.extend(metrics, td));
+  });
+
+})();
+</script>

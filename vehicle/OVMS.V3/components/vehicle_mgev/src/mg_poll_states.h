@@ -34,10 +34,10 @@
 
 // The states that change how many seconds between polling for different values
 enum PollStates {
-    PollStateLocked = 0,  // The car is currently locked and not charging
-    PollStateUnlocked,  // The car is currently unlocked and not charging
-    PollStateRunning,  // Car is running (ignition on)
-    PollStateCharging,  // Car is charging, may be locked or unlocked
+    PollStateListenOnly = 0,  // No Polling, listen only
+    PollStateCharging,  // Only Polling charging related ECUs
+    PollStateRunning,  // Polling all ECUs related to running (ignition on)
+    PollStateBackup,  // Failed Zombie Mode Just Polling SoC every 60s
 };
 
 #endif  // MG_POLL_STATES_H_

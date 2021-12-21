@@ -29,6 +29,7 @@ static const char *TAG = "canformat-crtd";
 
 #include <errno.h>
 #include "pcp.h"
+#include "canlog.h"
 #include "canformat_crtd.h"
 #include "ovms_utils.h"
 
@@ -107,16 +108,16 @@ std::string canformat_crtd::get(CAN_log_message_t* message)
     case CAN_LogStatus_Statistics:
       snprintf(buf,sizeof(buf),
         "%ld.%06ld %c%s %s intr=%d rxpkt=%d txpkt=%d errflags=%#x rxerr=%d txerr=%d"
-        " rxovr=%d txovr=%d txdelay=%d txfail=%d wdgreset=%d errreset=%d",
+        " rxinval=%d rxovr=%d txovr=%d txdelay=%d txfail=%d wdgreset=%d errreset=%d",
         message->timestamp.tv_sec, message->timestamp.tv_usec,
         busnumber,
         (message->type == CAN_LogStatus_Error) ? "CER" : "CST",
         GetCanLogTypeName(message->type), message->status.interrupts,
         message->status.packets_rx, message->status.packets_tx, message->status.error_flags,
-        message->status.errors_rx, message->status.errors_tx, message->status.rxbuf_overflow,
-        message->status.txbuf_overflow, message->status.txbuf_delay, message->status.tx_fails,
-        message->status.watchdog_resets, message->status.error_resets);
-      break;
+        message->status.errors_rx, message->status.errors_tx, message->status.invalid_rx,
+        message->status.rxbuf_overflow, message->status.txbuf_overflow,
+        message->status.txbuf_delay, message->status.tx_fails, message->status.watchdog_resets,
+        message->status.error_resets);
       break;
 
     case CAN_LogInfo_Comment:
@@ -150,25 +151,26 @@ std::string canformat_crtd::getheader(struct timeval *time)
     time = &t;
     }
 
-  snprintf(buf,sizeof(buf),"%ld.%06ld CXX OVMS CRTD\n",
+  snprintf(buf,sizeof(buf),"%ld.%06ld CXX OVMS CRTD\n%ld.%06ld CVR 3.0\n",
+    time->tv_sec, time->tv_usec,
     time->tv_sec, time->tv_usec);
 
   return std::string(buf);
   }
 
-size_t canformat_crtd::put(CAN_log_message_t* message, uint8_t *buffer, size_t len, void* userdata)
+size_t canformat_crtd::put(CAN_log_message_t* message, uint8_t *buffer, size_t len, bool* hasmore, canlogconnection* clc)
   {
   if (m_buf.FreeSpace()==0) SetServeDiscarding(true); // Buffer full, so discard from now on
   if (IsServeDiscarding()) return len;  // Quick return if discarding
 
   size_t consumed = Stuff(buffer,len);  // Stuff m_buf with as much as possible
-
-  if (!m_buf.HasLine())
+  if (m_buf.HasLine()<0)
     {
     return consumed; // No line, so quick exit
     }
   else
     {
+    *hasmore = true;  // Call us again to see if we have more frames to process
     std::string line = m_buf.ReadLine();
     const char *b = line.c_str();
 
@@ -208,6 +210,52 @@ size_t canformat_crtd::put(CAN_log_message_t* message, uint8_t *buffer, size_t l
       // T29 outgoingCAN frame
       message->type = CAN_LogFrame_TX;
       message->frame.FIR.B.FF = CAN_frame_ext;
+      }
+    else if ((b[0]=='C')&&(b[1]=='B')&&(b[2]=='C'))
+      {
+      // A command to configure a CAN bus
+      CAN_mode_t mode = (b[4]=='A')?CAN_MODE_ACTIVE:CAN_MODE_LISTEN;
+      CAN_speed_t speed;
+      switch (atoi(b+6))
+        {
+        case 33333:   speed = CAN_SPEED_33KBPS; break;
+        case 50000:   speed = CAN_SPEED_50KBPS; break;
+        case 83333:   speed = CAN_SPEED_83KBPS; break;
+        case 100000:  speed = CAN_SPEED_100KBPS; break;
+        case 125000:  speed = CAN_SPEED_125KBPS; break;
+        case 250000:  speed = CAN_SPEED_250KBPS; break;
+        case 500000:  speed = CAN_SPEED_500KBPS; break;
+        case 1000000: speed = CAN_SPEED_1000KBPS; break;
+        default:
+          return consumed;
+        }
+      if (clc) clc->ControlBusConfigure(MyCan.GetBus(bus - '1'), mode, speed);
+      return consumed;
+      }
+    else if ((b[0]=='C')&&(b[1]=='D')&&(b[2]=='P'))
+      {
+      // A command to pause the transmission of messages
+      if (clc) clc->PauseTransmission();
+      return consumed;
+      }
+    else if ((b[0]=='C')&&(b[1]=='D')&&(b[2]=='R'))
+      {
+      // A command to resume the transmission of messages
+      if (clc) clc->ResumeTransmission();
+      return consumed;
+      }
+    else if ((b[0]=='C')&&(b[1]=='F')&&(b[2]=='C'))
+      {
+      // A command to clear all filters for this connection
+      if (clc) clc->ClearFilters();
+      return consumed;
+      }
+    else if ((b[0]=='C')&&(b[1]=='F')&&(b[2]=='A'))
+      {
+      // A command to add a filter for this connection
+      std::string filter(b+4);
+      if (clc) clc->AddFilter(filter);
+      return consumed;
       }
     else
       return consumed;  // Discard invalid line

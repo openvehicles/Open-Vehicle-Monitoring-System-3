@@ -469,9 +469,9 @@ void OvmsReToolsPidScanner::IncomingPollFrame(const CAN_frame_t* frame)
     }
 
     uint8_t frameType = frame->data.u8[0] >> 4;
-    uint8_t frameLength = frame->data.u8[0] & 0x0f;
+    uint16_t frameLength = frame->data.u8[0] & 0x0f;
     const uint8_t* data = &frame->data.u8[1];
-    uint8_t dataLength = frameLength;
+    uint16_t dataLength = frameLength;
 
     if (frame->MsgID < m_rxid_low || frame->MsgID > m_rxid_high)
     {
@@ -518,29 +518,46 @@ void OvmsReToolsPidScanner::IncomingPollFrame(const CAN_frame_t* frame)
             m_lastFrame = m_ticker;
         }
     }
-    else if (dataLength == 3 && data[0] == UDS_RESP_TYPE_NRC)
+    else if (dataLength == 3 && data[0] == UDS_RESP_TYPE_NRC && data[1] == m_pollType)
     {
-        // Invalid frame response
-        SendNextFrame();
+        if (data[2] == UDS_RESP_NRC_RCRRP)
+        {
+            // ResponsePending: ignore, keep waiting
+            ESP_LOGD(TAG, "ResponsePending from %x[%x]:%x",
+              m_id, frame->MsgID, m_currentPid);
+        }
+        else
+        {
+            // …other negative response code:
+            ESP_LOGD(TAG, "Negative response from %x[%x]:%x code %02x",
+              m_id, frame->MsgID, m_currentPid, data[2]);
+            SendNextFrame();
+        }
     }
     else if (dataLength > 3 && data[0] == m_pollType + 0x40)
     {
         // Success
         uint16_t responsePid;
+        const uint8_t* payload;
+        uint16_t payloadLength;
         if (POLL_TYPE_HAS_16BIT_PID(m_pollType))
         {
             responsePid = data[1] << 8 | data[2];
+            payload = &data[3];
+            payloadLength = dataLength - 3;
         }
         else
         {
             responsePid = data[1];
+            payload = &data[2];
+            payloadLength = dataLength - 2;
         }
         if (responsePid == m_currentPid)
         {
             ESP_LOGD(
                 TAG,
                 "Success response from %x[%x]:%x length %d (0x%02x 0x%02x 0x%02x 0x%02x%s)",
-                m_id, frame->MsgID, m_currentPid, frameLength - 3, data[3], data[4], data[5], data[6],
+                m_id, frame->MsgID, m_currentPid, payloadLength, payload[0], payload[1], payload[2], payload[3],
                 (frameType == 0 ? "" : " ...")
             );
             time(&m_lastResponseTime);
@@ -567,7 +584,7 @@ void OvmsReToolsPidScanner::IncomingPollFrame(const CAN_frame_t* frame)
                 }
                 std::vector<uint8_t> response;
                 response.reserve(frameLength);
-                std::copy(&data[3], &data[dataLength], std::back_inserter(response));
+                std::copy(payload, &payload[payloadLength], std::back_inserter(response));
                 OvmsMutexLock lock(&m_foundMutex);
                 m_found.push_back(std::make_tuple(frame->MsgID, responsePid, std::move(response)));
             }
@@ -575,7 +592,7 @@ void OvmsReToolsPidScanner::IncomingPollFrame(const CAN_frame_t* frame)
             {
                 OvmsMutexLock lock(&m_foundMutex);
                 m_found.push_back(std::make_tuple(frame->MsgID,
-                    responsePid, std::vector<uint8_t>(&data[3], &data[dataLength])
+                    responsePid, std::vector<uint8_t>(payload, &payload[payloadLength])
                 ));
             }
             if (m_mfRemain == 0u)

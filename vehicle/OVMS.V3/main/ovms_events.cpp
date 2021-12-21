@@ -146,8 +146,15 @@ void event_raise(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
 
   for (int i=0; i<argc; i++)
     {
-    if (argv[i][0]=='-' && argv[i][1]=='d')
+    if (argv[i][0] == '-')
+      {
+      if (argv[i][1] != 'd')
+        {
+        cmd->PutUsage(writer);
+        return;
+        }
       delay_ms = atol(argv[i]+2);
+      }
     else
       event = argv[i];
     }
@@ -164,6 +171,22 @@ void event_raise(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
     }
   }
 
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+
+static duk_ret_t DukOvmsRaiseEvent(duk_context *ctx)
+  {
+  const char *event = duk_to_string(ctx,0);
+  uint32_t delay_ms = duk_is_number(ctx,1) ? duk_to_uint32(ctx,1) : 0;
+
+  if (event != NULL)
+    {
+    MyEvents.SignalEvent(event, NULL, (size_t)0, delay_ms);
+    }
+  return 0;  /* no return value */
+  }
+
+#endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+
 OvmsEvents::OvmsEvents()
   {
   ESP_LOGI(TAG, "Initialising EVENTS (1200)");
@@ -179,7 +202,7 @@ OvmsEvents::OvmsEvents()
   ESP_ERROR_CHECK(esp_event_loop_init(ReceiveSystemEvent, (void*)this));
 
   // Register our commands
-  OvmsCommand* cmd_event = MyCommandApp.RegisterCommand("event","EVENT framework");
+  OvmsCommand* cmd_event = MyCommandApp.RegisterCommand("event","EVENT framework", event_status, "", 0, 0, false);
   cmd_event->RegisterCommand("status","Show status of event system",event_status);
   cmd_event->RegisterCommand("list","List registered events",event_list,"[<key>]", 0, 1);
   cmd_event->RegisterCommand("raise","Raise a textual event",event_raise,"[-d<delay_ms>] <event>", 1, 2, true, event_validate);
@@ -190,6 +213,12 @@ OvmsEvents::OvmsEvents()
   m_taskqueue = xQueueCreate(CONFIG_OVMS_HW_EVENT_QUEUE_SIZE,sizeof(event_queue_t));
   xTaskCreatePinnedToCore(EventLaunchTask, "OVMS Events", 8192, (void*)this, 8, &m_taskid, CORE(1));
   AddTaskToMap(m_taskid);
+
+  #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  DuktapeObjectRegistration* dto = new DuktapeObjectRegistration("OvmsEvents");
+  dto->RegisterDuktapeFunction(DukOvmsRaiseEvent, 2, "Raise");
+  MyDuktape.RegisterDuktapeObject(dto);
+  #endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   }
 
 OvmsEvents::~OvmsEvents()
@@ -375,7 +404,7 @@ static void CheckQueueOverflow(const char* from, char* event)
     }
   }
 
-static void SignalScheduledEvent(TimerHandle_t timer)
+void OvmsEvents::SignalScheduledEvent(TimerHandle_t timer)
   {
   event_queue_t* msg = (event_queue_t*) pvTimerGetTimerID(timer);
   if (xQueueSend(MyEvents.m_taskqueue, msg, 0) != pdTRUE)
@@ -384,6 +413,8 @@ static void SignalScheduledEvent(TimerHandle_t timer)
     MyEvents.FreeQueueSignalEvent(msg);
     }
   delete msg;
+  OvmsMutexLock lock(&MyEvents.m_timers_mutex);
+  MyEvents.m_timer_active[timer] = false;
   }
 
 bool OvmsEvents::ScheduleEvent(event_queue_t* msg, uint32_t delay_ms)
@@ -395,20 +426,31 @@ bool OvmsEvents::ScheduleEvent(event_queue_t* msg, uint32_t delay_ms)
   int timerticks = pdMS_TO_TICKS(delay_ms); if (timerticks<1) timerticks=1;
 
   if (!msgdup)
+    {
+    ESP_LOGE(TAG, "ScheduleEvent: message duplication failed, event dropped");
     return false;
+    }
   // find available timer:
   for (it = m_timers.begin(); it != m_timers.end(); it++)
     {
     timer = *it;
-    if (xTimerIsTimerActive(timer) == pdFALSE)
+    // Note: xTimerIsTimerActive() must not be used here, it has a
+    //  multicore race condition with FreeRTOS V8.2.0 (esp-idf 3.3):
+    //  an expired timer is removed from the active list before its
+    //  callback is executed, so while the callback is running, the
+    //  timer already appears to be free. Workaround is to use our
+    //  own timer status map:
+    if (!m_timer_active[timer])
       break;
     }
   if (it == m_timers.end())
     {
     // create new timer:
+    ESP_LOGI(TAG, "ScheduleEvent: creating new timer");
     timer = xTimerCreate("ScheduleEvent", timerticks, pdFALSE, msgdup, SignalScheduledEvent);
     if (!timer)
       {
+      ESP_LOGE(TAG, "ScheduleEvent: xTimerCreate failed, event dropped");
       delete msgdup;
       return false;
       }
@@ -419,6 +461,7 @@ bool OvmsEvents::ScheduleEvent(event_queue_t* msg, uint32_t delay_ms)
     // update timer:
     if (xTimerChangePeriod(timer, timerticks, 0) != pdPASS)
       {
+      ESP_LOGE(TAG, "ScheduleEvent: xTimerChangePeriod failed, event dropped");
       delete msgdup;
       return false;
       }
@@ -427,9 +470,11 @@ bool OvmsEvents::ScheduleEvent(event_queue_t* msg, uint32_t delay_ms)
   // start timer:
   if (xTimerStart(timer, 0) != pdPASS)
     {
+    ESP_LOGE(TAG, "ScheduleEvent: xTimerStart failed, event dropped");
     delete msgdup;
     return false;
     }
+  m_timer_active[timer] = true;
   return true;
   }
 

@@ -1,6 +1,6 @@
 <!--
   Web UI page plugin: Trip Power/Energy History Chart
-    Version 1.0  Michael Balzer <dexter@dexters-web.de>
+    Version 1.3  Michael Balzer <dexter@dexters-web.de>
   
   Dependencies:
     - OVMS firmware >= 3.2.008-250
@@ -88,14 +88,39 @@
 .highcharts-plot-line.consumption, .night .highcharts-plot-line.consumption {
   stroke: dodgerblue;
 }
+
+.actions {
+  margin: -3px -6px 0 0;
+}
+.actions .btn-sm {
+  line-height: 15px;
+}
+@media (max-width: 420px) {
+  .action-showall, .action-show50 {
+    display: none;
+  }
+}
 </style>
 
 <div class="panel panel-primary">
-  <div class="panel-heading">Trip Power/Energy History</div>
+  <div class="panel-heading">
+    <div class="pull-right actions">
+      <button class="btn btn-default btn-sm action-showall">Show all</button>
+      <button class="btn btn-default btn-sm action-show50">50 km</button>
+      <button class="btn btn-default btn-sm action-show25">25 km</button>
+      <button class="btn btn-default btn-sm action-show10">10 km</button>
+    </div>
+    Trip Power/Energy History
+  </div>
   <div class="panel-body">
     <div class="receiver" id="chartreceiver">
       <div class="chart-box linechart" id="pwrchart"/>
     </div>
+  </div>
+  <div class="panel-footer">
+    <p>
+      Hint: Ctrl-Click or two-point touch to scroll, select range or pinch to zoom in/out
+    </p>
   </div>
 </div>
 
@@ -103,7 +128,7 @@
 (function(){
 
   const minSampleDistance = 0.3;    // [km]
-  const defaultZoom = 8;            // [km]
+  const defaultZoom = 25;           // [km]
 
   var history = {
     "time": [],
@@ -128,13 +153,13 @@
     pwrchart = chart;
     pwrchart.showLoading();
     // Load data:
-    loadjs('pwrmon.dump()').done((data) => {
+    loadjs({ command: "pwrmon.dump('CBOR')", output: "binary" }).done((data) => {
       console.log("loadChart: read " + data.length + " bytes");
       if (data.startsWith("ERROR")) {
         console.error(data);
       } else {
         try {
-          history = JSON.parse(data);
+          history = CBOR.decode(data);
           console.log("loadChart: got " + history["time"].length + " samples");
           loadHistory();
         } catch (error) {
@@ -239,6 +264,21 @@
     }
     pwrchart.redraw();
   }
+
+  // Init buttons:
+  $(".action-showall").on("click", function () {
+    pwrchart.xAxis[0].setExtremes();
+    pwrchart.redraw();
+  });
+  $(".action-show10").on("click", function () {
+    pwrchart.xAxis[0].setExtremes(lastOdo - 10, lastOdo, true);
+  });
+  $(".action-show25").on("click", function () {
+    pwrchart.xAxis[0].setExtremes(lastOdo - 25, lastOdo, true);
+  });
+  $(".action-show50").on("click", function () {
+    pwrchart.xAxis[0].setExtremes(lastOdo - 50, lastOdo, true);
+  });
 
   // Init chart:
   $("#pwrchart").chart({

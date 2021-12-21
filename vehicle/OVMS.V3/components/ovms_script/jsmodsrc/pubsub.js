@@ -2,6 +2,7 @@
  * Project:  Open Vehicle Monitor System
  * Date:     14th Jan 2019
  * Based on: https://github.com/mroderick/PubSubJS
+ *  +merged: https://github.com/mroderick/PubSubJS/issues/115
  * Copyright (c) 2010,2011,2012,2013,2014 Morgan Roderick http://roderick.dk
  * License: MIT - http://mrgnrdrck.mit-license.org
  */
@@ -16,7 +17,7 @@ function hasKeys(obj)
   var key;
   for (key in obj)
     {
-    if ( obj.hasOwnProperty(key) )
+    if ( Object.prototype.hasOwnProperty.call(obj, key) )
       {
       return true;
       }
@@ -34,14 +35,14 @@ function deliverMessage( originalMessage, matchedMessage, data )
   var subscribers = messages[matchedMessage],
       s;
 
-  if ( !messages.hasOwnProperty( matchedMessage ) )
+  if ( !Object.prototype.hasOwnProperty.call(messages, matchedMessage ) )
     {
     return;
     }
 
   for (s in subscribers)
     {
-    if ( subscribers.hasOwnProperty(s))
+    if ( Object.prototype.hasOwnProperty.call(subscribers, s))
       {
       callSubscriberWithImmediateExceptions( subscribers[s], originalMessage, data );
       }
@@ -69,14 +70,14 @@ function createDeliveryFunction( message, data )
 function messageHasSubscribers( message )
   {
   var topic = String( message ),
-      found = Boolean(messages.hasOwnProperty( topic ) && hasKeys(messages[topic])),
+      found = Boolean(Object.prototype.hasOwnProperty.call(messages, topic) && hasKeys(messages[topic])),
       position = topic.lastIndexOf( '.' );
 
   while ( !found && position !== -1 )
     {
     topic = topic.substr( 0, position );
     position = topic.lastIndexOf( '.' );
-    found = Boolean(messages.hasOwnProperty( topic ) && hasKeys(messages[topic]));
+    found = Boolean(Object.prototype.hasOwnProperty.call(messages, topic) && hasKeys(messages[topic]));
     }
 
   return found;
@@ -129,7 +130,7 @@ exports.subscribe = function( message, func )
   message = (typeof message === 'symbol') ? message.toString() : message;
 
   // message is not registered yet
-  if ( !messages.hasOwnProperty( message ) )
+  if ( !Object.prototype.hasOwnProperty.call(messages, message) )
     {
     messages[message] = {};
     }
@@ -165,7 +166,7 @@ exports.clearSubscriptions = function clearSubscriptions(topic)
   var m;
   for (m in messages)
     {
-    if (messages.hasOwnProperty(m) && m.indexOf(topic) === 0)
+    if (Object.prototype.hasOwnProperty.call(messages, m) && m.indexOf(topic) === 0)
       {
       delete messages[m];
       }
@@ -199,7 +200,7 @@ exports.unsubscribe = function(value)
     var m;
     for ( m in messages )
       {
-      if ( messages.hasOwnProperty(m) && m.indexOf(topic) === 0 )
+      if ( Object.prototype.hasOwnProperty.call(messages, m) && m.indexOf(topic) === 0 )
         {
         // a descendant of the topic exists:
         return true;
@@ -208,7 +209,7 @@ exports.unsubscribe = function(value)
 
     return false;
     },
-    isTopic    = typeof value === 'string' && ( messages.hasOwnProperty(value) || descendantTopicExists(value) ),
+    isTopic    = typeof value === 'string' && ( Object.prototype.hasOwnProperty.call(messages, value) || descendantTopicExists(value) ),
     isToken    = !isTopic && typeof value === 'string',
     isFunction = typeof value === 'function',
     result = false,
@@ -222,7 +223,7 @@ exports.unsubscribe = function(value)
 
   for ( m in messages )
     {
-    if ( messages.hasOwnProperty( m ) )
+    if ( Object.prototype.hasOwnProperty.call(messages, m) )
       {
       message = messages[m];
 
@@ -238,7 +239,7 @@ exports.unsubscribe = function(value)
         {
         for ( t in message )
           {
-          if (message.hasOwnProperty(t) && message[t] === value)
+          if (Object.prototype.hasOwnProperty.call(message, t) && message[t] === value)
             {
             delete message[t];
             result = true;
@@ -249,4 +250,16 @@ exports.unsubscribe = function(value)
     }
 
   return result;
+  };
+
+/**
+ * Debugging: output / return subscriptions
+ */
+exports.dump = function ()
+  {
+  JSON.print(messages);
+  };
+exports.data = function ()
+  {
+  return messages;
   };

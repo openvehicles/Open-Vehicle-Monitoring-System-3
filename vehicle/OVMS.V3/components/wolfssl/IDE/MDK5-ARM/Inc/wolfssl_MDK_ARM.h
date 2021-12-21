@@ -1,6 +1,6 @@
 /* wolfssl_KEIL_ARM.h
  *
- * Copyright (C) 2006-2016 wolfSSL Inc.
+ * Copyright (C) 2006-2020 wolfSSL Inc.
  *
  * This file is part of wolfSSL.
  *
@@ -27,10 +27,6 @@
 
 #include <stdio.h>
 
-/* Go to STDIN */
-#define fgets(buff, sz, fd)   wolfssl_fgets(buff, sz, fd) 
-extern char * wolfssl_fgets ( char * str, int num, FILE * f ) ;
-
 #define SOCKET_T int
 
 /*** #include <socket.h> ***/
@@ -51,12 +47,12 @@ struct timeval {
 };
 
 
-#if defined(WOLFSSL_KEIL_TCP_NET) 
+#if defined(WOLFSSL_KEIL_TCP_NET)
 
 #define SCK_EWOULDBLOCK     BSD_ERROR_WOULDBLOCK
 #define SCK_ETIMEOUT        BSD_ERROR_TIMEOUT
-#include "rl_net.h" 
- 
+#include "rl_net.h"
+
 typedef int socklen_t ;
 
 /* for avoiding conflict with KEIL-TCPnet BSD socket */
@@ -69,11 +65,12 @@ typedef int socklen_t ;
 
 /* for avoiding conflicting with KEIL-TCPnet TCP socket */
 /* Bodies are in test.h */
-#define tcp_connect   wolfssl_tcp_connect    
+#define tcp_connect   wolfssl_tcp_connect
 #define tcp_socket    wolfssl_tcp_soket
 #define tcp_listen    wolfssl_tcp_listen
-#define tcp_select(a,b)    (0)
-
+#define connect(a,b,c)    connect(a, (SOCKADDR *)(b), c)
+#define SOCKADDR struct sockaddr
+	
 /** KEIL-RL TCPnet ****/
 /* TCPnet BSD socket does not have following functions. */
 extern char *inet_ntoa(struct in_addr in);

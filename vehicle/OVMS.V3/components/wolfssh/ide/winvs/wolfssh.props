@@ -1,0 +1,45 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ImportGroup Label="PropertySheets" />
+  <PropertyGroup Label="UserMacros">
+    <wolfCryptDir>..\..\..\..\wolfssl</wolfCryptDir>
+    <wolfCryptDebug32>$(wolfCryptDir)\Debug</wolfCryptDebug32>
+    <wolfCryptRelease32>$(wolfCryptDir)\Release</wolfCryptRelease32>
+    <wolfCryptDebug64>$(wolfCryptDir)\x64\Debug</wolfCryptDebug64>
+    <wolfCryptRelease64>$(wolfCryptDir)\x64\Release</wolfCryptRelease64>
+    <wolfCryptDllDebug32>$(wolfCryptDir)\DLL Debug</wolfCryptDllDebug32>
+    <wolfCryptDllRelease32>$(wolfCryptDir)\DLL Release</wolfCryptDllRelease32>
+    <wolfCryptDllDebug64>$(wolfCryptDir)\x64\DLL Debug</wolfCryptDllDebug64>
+    <wolfCryptDllRelease64>$(wolfCryptDir)\x64\DLL Release</wolfCryptDllRelease64>
+  </PropertyGroup>
+  <ItemDefinitionGroup />
+  <ItemGroup>
+    <BuildMacro Include="wolfCryptDir">
+      <Value>$(wolfCryptDir)</Value>
+    </BuildMacro>
+    <BuildMacro Include="wolfCryptDebug32">
+      <Value>$(wolfCryptDebug32)</Value>
+    </BuildMacro>
+    <BuildMacro Include="wolfCryptRelease32">
+      <Value>$(wolfCryptRelease32)</Value>
+    </BuildMacro>
+    <BuildMacro Include="wolfCryptDebug64">
+      <Value>$(wolfCryptDebug64)</Value>
+    </BuildMacro>
+    <BuildMacro Include="wolfCryptRelease64">
+      <Value>$(wolfCryptRelease64)</Value>
+    </BuildMacro>
+    <BuildMacro Include="wolfCryptDllDebug32">
+      <Value>$(wolfCryptDllDebug32)</Value>
+    </BuildMacro>
+    <BuildMacro Include="wolfCryptDllRelease32">
+      <Value>$(wolfCryptDllRelease32)</Value>
+    </BuildMacro>
+    <BuildMacro Include="wolfCryptDllDebug64">
+      <Value>$(wolfCryptDllDebug64)</Value>
+    </BuildMacro>
+    <BuildMacro Include="wolfCryptDllRelease64">
+      <Value>$(wolfCryptDllRelease64)</Value>
+    </BuildMacro>
+  </ItemGroup>
+</Project>

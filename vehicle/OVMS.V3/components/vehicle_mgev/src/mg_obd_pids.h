@@ -62,11 +62,20 @@ constexpr uint16_t cell9StatPid = 0xb0b3u;
 constexpr uint16_t batteryBusVoltagePid = 0xb041u;
 constexpr uint16_t batteryVoltagePid = 0xb042u;
 constexpr uint16_t batteryCurrentPid = 0xb043u;
+constexpr uint16_t batteryResistancePid = 0xb045u;
 constexpr uint16_t batterySoCPid = 0xb046u;
+constexpr uint16_t batteryErrorPid = 0xb047u;
 constexpr uint16_t bmsStatusPid = 0xb048u;
 constexpr uint16_t batteryCoolantTempPid = 0xb05cu;
 constexpr uint16_t batterySoHPid = 0xb061u;
+constexpr uint16_t batteryTempPid = 0xb056u;
 constexpr uint16_t bmsRangePid = 0xb0ceu;
+constexpr uint16_t bmsMaxCellVoltagePid = 0xb058u;
+constexpr uint16_t bmsMinCellVoltagePid = 0xb059u;
+constexpr uint16_t bmsSystemMainRelayBPid = 0xb049u;
+constexpr uint16_t bmsSystemMainRelayGPid = 0xb04au;
+constexpr uint16_t bmsSystemMainRelayPPid = 0xb052u;
+constexpr uint16_t bmsTimePid = 0xb06du;
 
 // DCDC PIDs
 constexpr uint16_t dcdcLvCurrentPid = 0xb022u;
@@ -76,17 +85,29 @@ constexpr uint16_t dcdcTemperaturePid = 0xb026u;
 // VCU PIDs
 constexpr uint16_t vcu12vSupplyPid = 0x0112u;
 constexpr uint16_t vcuChargerConnectedPid = 0xb71bu;
+constexpr uint16_t vcuHvContactorPid = 0xb703u;
 constexpr uint16_t vcuIgnitionStatePid = 0xb18cu;
 constexpr uint16_t vcuCoolantTempPid = 0xb309u;
+constexpr uint16_t vcuMotorTempPid = 0xb405u;
 constexpr uint16_t vcuVehicleSpeedPid = 0xba00u;
 constexpr uint16_t vcuVinPid = 0xf190u;
 constexpr uint16_t vcuMotorSpeedPid = 0xb402u;
+constexpr uint16_t vcuMotorTorquePid = 0xb401u;
 constexpr uint16_t vcuOdometerPid = 0xe101u;
 constexpr uint16_t vcuHandbrakePid = 0xba40u;
 constexpr uint16_t vcuGearPid = 0xb900u;
-constexpr uint16_t vcuBreakPid = 0xb120u;
+constexpr uint16_t vcuBrakePid = 0xb120u;
 constexpr uint16_t vcuBonnetPid = 0xbb06u;
 constexpr uint16_t chargeRatePid = 0xb712u;
+constexpr uint16_t vcuAcPowerPid = 0xbb01u;
+constexpr uint16_t vcuBatteryVoltagePid = 0xb705u;
+constexpr uint16_t vcuRadiatorFanPid = 0xbb91u;
+constexpr uint16_t vcuDcDcModePid = 0xb580u;
+constexpr uint16_t vcuDcDcInputCurrentPid = 0xb581u;
+constexpr uint16_t vcuDcDcInputVoltagePid = 0xb582u;
+constexpr uint16_t vcuDcDcOutputCurrentPid = 0xb583u;
+constexpr uint16_t vcuDcDcOutputVoltagetPid = 0xb584u;
+constexpr uint16_t vcuDcDcTempPid = 0xb587u;
 
 // ATC PIDs
 constexpr uint16_t atcAmbientTempPid = 0xe01bu;
@@ -99,10 +120,11 @@ constexpr uint16_t atcPtcTempPid = 0xe01cu;
 // Talking to the BCM while the alarm is set will set it off
 constexpr uint16_t bcmDoorPid = 0xd112u;
 constexpr uint16_t bcmLightPid = 0xb512u;
+constexpr uint16_t bcmDrlPid = 0xd117u;
 
 // TPMS PIDs
 constexpr uint16_t tyrePressurePid = 0xb001u;
-constexpr uint16_t typeTemperaturePid = 0xb003u;
+constexpr uint16_t tyreTemperaturePid = 0xb003u;
 
 // PEPS PIDs
 constexpr uint16_t pepsLockPid = 0xb013u;

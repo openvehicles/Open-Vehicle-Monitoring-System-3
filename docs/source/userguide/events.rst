@@ -152,6 +152,8 @@ vehicle.alert.12v.on                          12V system voltage is below alert 
 vehicle.alert.bms                             BMS cell/pack volts/temps exceeded thresholds
 vehicle.asleep                                Vehicle systems are asleep
 vehicle.awake                                 Vehicle systems are awake
+vehicle.aux.12v.on                            Vehicle 12V auxiliary system is on (base system awake)
+vehicle.aux.12v.off                           Vehicle 12V auxiliary system is off
 vehicle.charge.12v.start                      Vehicle 12V battery is charging
 vehicle.charge.12v.stop                       Vehicle 12V battery has stopped charging
 vehicle.charge.finished                       Vehicle charge has completed normally
@@ -162,6 +164,12 @@ vehicle.charge.prepare                        Vehicle is preparing to charge
 vehicle.charge.start                          Vehicle has started to charge
 vehicle.charge.state                <state>   Vehicle charge state has changed
 vehicle.charge.stop                           Vehicle has stopped charging
+vehicle.charge.timermode.off                  Vehicle charge timer mode has been switched off
+vehicle.charge.timermode.on                   Vehicle charge timer mode has been switched on
+vehicle.drivemode.<n>                         Vehicle drivemode has been set to profile <n> (vehicle specific)
+vehicle.gear.forward                          Vehicle has been put in forward gear
+vehicle.gear.neutral                          Vehicle has been put in neutral gear
+vehicle.gear.reverse                          Vehicle has been put in reverse gear
 vehicle.headlights.off                        Vehicle headlights are off
 vehicle.headlights.on                         Vehicle headlights are on
 vehicle.locked                                Vehicle has been locked

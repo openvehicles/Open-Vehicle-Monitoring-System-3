@@ -231,7 +231,7 @@
 				>
 			</File>
 			<File
-				RelativePath=".\src\io.c"
+				RelativePath=".\src\wolfio.c"
 				>
 			</File>
 			<File
@@ -288,6 +288,10 @@
 			</File>
 			<File
 				RelativePath=".\wolfcrypt\src\random.c"
+				>
+			</File>
+			<File
+				RelativePath=".\wolfcrypt\src\rc2.c"
 				>
 			</File>
 			<File

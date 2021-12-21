@@ -971,8 +971,13 @@ bool module_factory_reset_yesno(OvmsWriter* writer, void* ctx, char ch)
 
 static void module_factory_reset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  if (argc == 1 && strcmp(argv[0], "-noconfirm") == 0)
+  if (argc > 0)
     {
+    if (strcmp(argv[0], "-noconfirm") != 0)
+      {
+      cmd->PutUsage(writer);
+      return;
+      }
     module_perform_factoryreset(writer);
     }
   else
@@ -1032,9 +1037,10 @@ static void module_summary(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, 
   writer->printf("  Hardware: %s\n",StandardMetrics.ms_m_hardware->AsString().c_str());
   writer->printf("  12v:      %0.1fv\n",StandardMetrics.ms_v_bat_12v_voltage->AsFloat());
 
-#ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
-  MyPeripherals->m_simcom->SupportSummary(writer);
-#endif // #ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
+#ifdef CONFIG_OVMS_COMP_CELLULAR
+  writer->puts("");
+  MyPeripherals->m_cellular_modem->SupportSummary(writer, true);
+#endif // #ifdef CONFIG_OVMS_COMP_CELLULAR
 
   MyConfig.SupportSummary(writer);
 

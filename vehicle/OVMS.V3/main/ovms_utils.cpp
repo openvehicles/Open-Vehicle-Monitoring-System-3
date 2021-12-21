@@ -32,10 +32,12 @@
 #include <stdio.h>
 #include <sys/stat.h>
 #include <dirent.h>
+#include <fstream>
 #include "ovms_utils.h"
 #include "ovms_config.h"
+#include "ovms_events.h"
 #include "metrics_standard.h"
-
+#include "ovms_version.h"
 
 /**
  * chargestate_code: convert legacy chargestate key to code
@@ -492,6 +494,63 @@ bool path_exists(const std::string path)
   return (stat(path.c_str(), &st) == 0);
   }
 
+/**
+ * load file into string:
+ *  - return value: 0 = ok / errno
+ */
+int load_file(const std::string &path, extram::string &content)
+  {
+  std::ifstream file(path, std::ios::in | std::ios::binary | std::ios::ate);
+  if (file.is_open())
+    {
+    auto size = file.tellg();
+    if (size > 0)
+      {
+      content.resize(size, '\0');
+      file.seekg(0);
+      file.read(&content[0], size);
+      }
+    }
+  if (file.fail())
+    return errno;
+  else
+    return 0;
+  }
+
+/**
+ * save file from string:
+ *  - creates missing directories automatically & signals system.vfs.file.changed
+ *  - return value: 0 = ok / errno
+ */
+int save_file(const std::string &path, extram::string &content)
+  {
+  // create path:
+  size_t n = path.rfind('/');
+  if (n != 0 && n != std::string::npos)
+    {
+    std::string dir = path.substr(0, n);
+    if (!path_exists(dir))
+      {
+      if (mkpath(dir) != 0)
+        return errno;
+      }
+    }
+
+  // write file:
+  std::ofstream file(path, std::ios::out | std::ios::binary | std::ios::trunc);
+  if (file.is_open())
+    file.write(content.data(), content.size());
+  if (file.fail())
+    {
+    return errno;
+    }
+  else
+    {
+    MyEvents.SignalEvent("system.vfs.file.changed", (void*)path.c_str(), path.size()+1);
+    return 0;
+    }
+  }
+
 
 /**
  * mqtt_topic: convert dotted string (e.g. notification subtype) to MQTT topic
@@ -520,12 +579,8 @@ std::string get_user_agent()
   {
   std::string ua;
   ua = "ovms/";
-  #ifdef CONFIG_OVMS_HW_BASE_3_0
-    ua.append("v3.0 (");
-  #endif
-  #ifdef CONFIG_OVMS_HW_BASE_3_1
-    ua.append("v3.1 (");
-  #endif
+  ua.append(GetOVMSProduct());
+  ua.append(" (");
   ua.append(MyConfig.GetParamValue("vehicle","id",""));
   ua.append(" ");
   ua.append(StandardMetrics.ms_m_version->AsString());

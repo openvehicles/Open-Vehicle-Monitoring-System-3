@@ -34,6 +34,8 @@ static const char *TAG = "metrics";
 #include <stdlib.h>
 #include <stdio.h>
 #include <sstream>
+#include <functional>
+#include <map>
 #include "ovms.h"
 #include "ovms_metrics.h"
 #include "ovms_command.h"
@@ -44,30 +46,17 @@ static const char *TAG = "metrics";
 
 using namespace std;
 
-#define PERSISTENT_METRICS_MAGIC (('O' << 24) | ('V' << 16) | ('M' << 8) | '3')
-#define PERSISTENT_VERSION 2            /* increment when struct is changed */
+#define PERSISTENT_METRICS_MAGIC        (('O' << 24) | ('V' << 16) | ('M' << 8) | '3')
+#define PERSISTENT_VERSION              3                     // increment when struct is changed
 
-struct persistent_values {
-  char name[24];
-  float value;
-};
+RTC_NOINIT_ATTR persistent_metrics      pmetrics;             // persistent storage container
+#define NUM_PERSISTENT_VALUES           sizeof_array(pmetrics.values)
+static const char*                      pmetrics_reason;      // reason pmetrics was zeroed
+std::map<std::size_t, const char*>      pmetrics_keymap       // hash key → metric name map (registry)
+                                        __attribute__ ((init_priority (1800)));
 
-struct persistent_metrics {
-  u_long magic;
-  int version;
-  unsigned int serial;
-  size_t size;
-  int used;
-  struct persistent_values values[30];
-};
-
-RTC_NOINIT_ATTR struct persistent_metrics pmetrics;
-static const char* pmetrics_reason;     /* reason pmetrics was zeroed */
-
-#define NUM_PERSISTENT_VALUES \
-    ((int)(sizeof(pmetrics.values) / sizeof(pmetrics.values[0])))
-
-OvmsMetrics       MyMetrics       __attribute__ ((init_priority (1800)));
+OvmsMetrics                             MyMetrics
+                                        __attribute__ ((init_priority (1800)));
 
 void metrics_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
@@ -75,47 +64,51 @@ void metrics_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
   bool show_staleness = false;
   bool show_set = false;
   bool only_persist = false;
+  bool display_strings = false;
+  const char* show_only = NULL;
   int i;
   for (i=0;i<argc;i++)
     {
     const char *cp = argv[i];
     if (*cp != '-')
-      break;
+      {
+      if (show_only != NULL)
+        {
+        cmd->PutUsage(writer);
+        return;
+        }
+      show_only = cp;
+      continue;
+      }
     for (++cp; *cp != '\0'; ++cp)
       {
       switch (*cp)
         {
-        case 's':
-          show_staleness = true;
-          break;
-        case 'S':
+        case 'c':
           show_set = true;
           break;
         case 'p':
           only_persist = true;
           break;
+        case 's':
+          show_staleness = true;
+          break;
+        case 't':
+          display_strings = true;
+          break;
         default:
-          writer->puts("Invalid flag");
+          cmd->PutUsage(writer);
           return;
         }
       }
     }
-  int firstmetric = i;
-  bool show_only = (firstmetric < argc);
   for (OvmsMetric* m=MyMetrics.m_first; m != NULL; m=m->m_next)
     {
     if (only_persist && !m->m_persist)
       continue;
     const char *k = m->m_name;
-    if (show_only)
-      {
-      bool match = false;
-      for (i=firstmetric;i<argc;i++)
-        if (strstr(k,argv[i]))
-          match = true;
-      if (!match)
-        continue;
-      }
+    if (show_only != NULL && strstr(k, show_only) == NULL)
+      continue;
     found = true;
     if (show_set)
       {
@@ -135,9 +128,17 @@ void metrics_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
         writer->printf("[%02d%c] ", age, (m->IsStale() ? 'S' : '-' ));
       }
     if (v.empty())
+      {
       writer->printf("%s\n",k);
+      continue;
+      }
+    // Apply (linux) "cat -t" semantics to strings
+    const char *s;
+    if (!display_strings || !m->IsString())
+      s = v.c_str();
     else
-      writer->printf("%-40.40s %s\n", k, v.c_str());
+      s = display_encode(v).c_str();
+    writer->printf("%-40.40s %s\n", k, s);
     }
   if (show_only && !found)
     writer->puts("Unrecognised metric name");
@@ -145,8 +146,15 @@ void metrics_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
 
 void metrics_persist(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  if (argc > 0 && strcmp(argv[0], "-r") == 0)
+  if (argc > 0)
+    {
+    if (strcmp(argv[0], "-r") != 0)
+      {
+      cmd->PutUsage(writer);
+      return;
+      }
     pmetrics.magic = 0;
+    }
   if (pmetrics.magic != PERSISTENT_METRICS_MAGIC)
     writer->puts("Persistent metrics will be reset on the next boot");
   writer->printf("version %d, ", pmetrics.version);
@@ -165,7 +173,7 @@ void metrics_set(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
     writer->puts("Metric could not be set");
   }
 
-bool pmetrics_check(bool checkused=false)
+bool pmetrics_check()
   {
   bool ret = true;
   if (pmetrics.magic != PERSISTENT_METRICS_MAGIC)
@@ -188,32 +196,27 @@ bool pmetrics_check(bool checkused=false)
     ESP_LOGE(TAG, "pmetrics_check: out of range used");
     ret = false;
     }
-  int used = 0;
   for (OvmsMetric* m = MyMetrics.m_first; m != NULL; m = m->m_next)
     {
-    if (m->m_persist)
+    if (m->m_persist && !m->CheckPersist())
       {
-      ++used;
-      if (!m->CheckPersist())
-        ret = false;
+      ret = false;
+      break;
       }
-    }
-  if (checkused && pmetrics.used != used)
-    {
-    ESP_LOGE(TAG, "pmetrics_check: incorrect used (%d != %d)",
-        used, pmetrics.used);
-    ret = false;
     }
   return ret;
   }
 
-struct persistent_values *pmetrics_find(const char *name)
+persistent_values *pmetrics_find(const char *name)
   {
   int i;
-  struct persistent_values *vp;
+  persistent_values *vp;
+  std::size_t namehash = std::hash<std::string>{}(name);
   for (i = 0, vp = pmetrics.values; i < pmetrics.used; ++i, ++vp)
-    if (strcmp(name, vp->name) == 0)
+    {
+    if (vp->namehash == namehash)
       return vp;
+    }
   return NULL;
   }
 
@@ -230,10 +233,51 @@ void pmetrics_init(bool refresh = false)
     }
   }
 
+persistent_values *pmetrics_register(const char *name)
+  {
+  int i;
+  persistent_values *vp;
+  std::size_t namehash = std::hash<std::string>{}(name);
+
+  // check for hash collision:
+  auto it = pmetrics_keymap.find(namehash);
+  if (it != pmetrics_keymap.end() && strcmp(it->second, name) != 0)
+    {
+    ESP_LOGE(TAG, "pmetrics_register: cannot persist '%s' due to hash collision with '%s'",
+      name, it->second);
+    return NULL;
+    }
+
+  // find slot:
+  for (i = 0, vp = pmetrics.values; i < pmetrics.used; ++i, ++vp)
+    {
+    if (vp->namehash == namehash)
+      break;
+    }
+
+  // not found? assign to next free slot:
+  if (i >= pmetrics.used)
+    {
+    if (i >= NUM_PERSISTENT_VALUES)
+      {
+      ESP_LOGE(TAG, "pmetrics_register: no free slots, cannot persist '%s'", name);
+      return NULL;
+      }
+    vp->namehash = namehash;
+    memset(&vp->value, 0, sizeof(vp->value));
+    ++pmetrics.used;
+    }
+
+  ESP_LOGD(TAG, "pmetrics_register: '%s' => slot=%d, used %d/%d",
+    name, i, pmetrics.used, NUM_PERSISTENT_VALUES);
+  pmetrics_keymap[namehash] = name;
+  return vp;
+  }
+
 void OvmsMetrics::EventSystemShutDown(std::string event, void* data)
   {
   /* Check for corruption and repair of possible before shutting down */
-  if (!pmetrics_check(true))
+  if (!pmetrics_check())
     {
     ESP_LOGI(TAG, "Persistent metrics shutdown check failed");
     pmetrics_init(true);
@@ -373,8 +417,15 @@ OvmsMetrics::OvmsMetrics()
 
   // Register our commands
   OvmsCommand* cmd_metric = MyCommandApp.RegisterCommand("metrics","METRICS framework");
-  cmd_metric->RegisterCommand("list","Show all metrics", metrics_list, "[<metric>] [-ps]", 0, 2);
-  cmd_metric->RegisterCommand("persist","Show persistent metrics info", metrics_persist, "[-r]", 0, 1);
+  cmd_metric->RegisterCommand("list","Show all metrics", metrics_list,
+      "[-cpst] [<metric>]\n"
+      "Display a metric, show all by default\n"
+      "-c = display persistent metrics set commands\n"
+      "-p = display only persistent metrics\n"
+      "-s = show metric staleness\n"
+      "-t = display non-printing characters and tabs in string metrics", 0, 2);
+  cmd_metric->RegisterCommand("persist","Show persistent metrics info", metrics_persist, "[-r]\n"
+      "-r = reset persistent metrics", 0, 1);
   cmd_metric->RegisterCommand("set","Set the value of a metric",metrics_set, "<metric> <value>", 2, 2);
   OvmsCommand* cmd_metrictrace = cmd_metric->RegisterCommand("trace","METRIC trace framework");
   cmd_metrictrace->RegisterCommand("on","Turn metric tracing ON",metrics_trace);
@@ -387,14 +438,14 @@ OvmsMetrics::OvmsMetrics()
   dto->RegisterDuktapeFunction(DukOvmsMetricJSON, 1, "AsJSON");
   dto->RegisterDuktapeFunction(DukOvmsMetricFloat, 1, "AsFloat");
   dto->RegisterDuktapeFunction(DukOvmsMetricGetValues, 2, "GetValues");
-  MyScripts.RegisterDuktapeObject(dto);
+  MyDuktape.RegisterDuktapeObject(dto);
 #endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 
   /* Initialize persistent metrics on cold boot or corruption */
   if (rtc_get_reset_reason(0) == POWERON_RESET || !pmetrics_check())
     pmetrics_init();
-  ESP_LOGI(TAG, "Persistent metrics serial %u using %d bytes",
-      pmetrics.serial++, sizeof(pmetrics));
+  ESP_LOGI(TAG, "Persistent metrics serial %u using %d bytes, %d/%d slots used",
+      ++pmetrics.serial, sizeof(pmetrics), pmetrics.used, NUM_PERSISTENT_VALUES);
 
   // Register our event
   #undef bind  // Kludgy, but works
@@ -513,23 +564,13 @@ OvmsMetric* OvmsMetrics::Find(const char* metric)
   return NULL;
   }
 
-OvmsMetricString* OvmsMetrics::InitString(const char* metric, uint16_t autostale, const char* value, metric_unit_t units, bool persist)
-  {
-  OvmsMetricString *m = (OvmsMetricString*)Find(metric);
-  if (m==NULL) m = new OvmsMetricString(metric, autostale, units, persist);
-
-  m->m_persist = persist;
-  if (value)
-    m->SetValue(value);
-  return m;
-  }
-
 OvmsMetricInt* OvmsMetrics::InitInt(const char* metric, uint16_t autostale, int value, metric_unit_t units, bool persist)
   {
   OvmsMetricInt *m = (OvmsMetricInt*)Find(metric);
   if (m==NULL) m = new OvmsMetricInt(metric, autostale, units, persist);
 
-  m->SetValue(value);
+  if (!m->IsDefined())
+    m->SetValue(value);
   return m;
   }
 
@@ -539,7 +580,8 @@ OvmsMetricBool* OvmsMetrics::InitBool(const char* metric, uint16_t autostale, bo
 
   if (m==NULL) m = new OvmsMetricBool(metric, autostale, units, persist);
 
-  m->SetValue(value);
+  if (!m->IsDefined())
+    m->SetValue(value);
   return m;
   }
 
@@ -549,37 +591,19 @@ OvmsMetricFloat* OvmsMetrics::InitFloat(const char* metric, uint16_t autostale, 
 
   if (m==NULL) m = new OvmsMetricFloat(metric, autostale, units, persist);
 
-  m->SetValue(value);
+  if (!m->IsDefined())
+    m->SetValue(value);
   return m;
   }
 
-bool OvmsMetricFloat::CheckPersist()
+OvmsMetricString* OvmsMetrics::InitString(const char* metric, uint16_t autostale, const char* value, metric_unit_t units)
   {
-  if (!m_persist || m_valuep == NULL || !IsDefined())
-    return true;
-  if (*m_valuep != m_value)
-    {
-    ESP_LOGE(TAG, "CheckPersist: bad value for %s", m_name);
-    return false;
-    }
-  struct persistent_values *vp = pmetrics_find(m_name);
-  if (vp == NULL)
-    {
-    ESP_LOGE(TAG, "CheckPersist: can't find %s", m_name);
-    return false;
-    }
-  if (&vp->value != m_valuep)
-    {
-    ESP_LOGE(TAG, "CheckPersist: bad value for %s", m_name);
-    return false;
-    }
-  return true;
-  }
+  OvmsMetricString *m = (OvmsMetricString*)Find(metric);
+  if (m==NULL) m = new OvmsMetricString(metric, autostale, units);
 
-void OvmsMetricFloat::RefreshPersist()
-  {
-  if (m_persist && m_valuep != NULL && IsDefined())
-    SetValue(m_value);
+  if (value && !m->IsDefined())
+    m->SetValue(value);
+  return m;
   }
 
 void OvmsMetrics::RegisterListener(const char* caller, const char* name, MetricCallback callback)
@@ -676,9 +700,10 @@ OvmsMetric::OvmsMetric(const char* name, uint16_t autostale, metric_unit_t units
   m_name = name;
   m_lastmodified = 0;
   m_autostale = autostale;
+  m_stale = false;
   m_units = units;
   m_next = NULL;
-  m_persist = persist;
+  m_persist = false;          // only set by metrics supporting persistence
   MyMetrics.RegisterMetric(this);
   }
 
@@ -723,12 +748,14 @@ void OvmsMetric::DukPush(DukContext &dc)
   }
 #endif
 
-void OvmsMetric::SetValue(std::string value)
+bool OvmsMetric::SetValue(std::string value)
   {
+  return false;
   }
 
-void OvmsMetric::SetValue(dbcNumber& value)
+bool OvmsMetric::SetValue(dbcNumber& value)
   {
+  return false;
   }
 
 void OvmsMetric::operator=(std::string value)
@@ -770,6 +797,11 @@ bool OvmsMetric::IsFirstDefined()
   return (m_defined == FirstDefined);
   }
 
+bool OvmsMetric::IsPersistent()
+  {
+  return m_persist;
+  }
+
 bool OvmsMetric::CheckPersist()
   {
   return true;
@@ -779,16 +811,38 @@ void OvmsMetric::RefreshPersist()
   {
   }
 
+/**
+ * IsStale: check if metric value has not been set within the staleness period / since marked stale
+ *  Note: a persistent metric won't be stale immediately after a reboot, because
+ *    it's unknown when the value was set before the reboot. If you need to assert
+ *    freshness, use IsFresh().
+ */
 bool OvmsMetric::IsStale()
   {
-  if (m_autostale>0)
+  if (m_autostale > 0)
     {
-    if (m_lastmodified < (monotonictime-m_autostale))
-      m_stale=true;
+    if (m_lastmodified + m_autostale < monotonictime)
+      m_stale = true;
     else
-      m_stale=false;
+      m_stale = false;
     }
   return m_stale;
+  }
+
+/**
+ * IsFresh: check if metric value has been set explicitly within the staleness period / since marked stale
+ *  Note: a persistent metric won't be fresh immediately after a reboot, because
+ *    it's unknown when the value was set before the reboot. It needs to receive a
+ *    live value to become fresh.
+ */
+bool OvmsMetric::IsFresh()
+  {
+  if (m_defined == NeverDefined)
+    return false;
+  else if (m_persist && m_defined == FirstDefined)
+    return false;
+  else
+    return !IsStale();
   }
 
 void OvmsMetric::SetStale(bool stale)
@@ -823,17 +877,71 @@ void OvmsMetric::ClearModified(size_t modifier)
   m_modified &= ~(1ul << modifier);
   }
 
+void OvmsMetric::Clear()
+  {
+  SetValue("");
+  m_defined = NeverDefined;
+  m_stale = true;
+  }
+
 OvmsMetricInt::OvmsMetricInt(const char* name, uint16_t autostale, metric_unit_t units, bool persist)
   : OvmsMetric(name, autostale, units, persist)
   {
-  m_persist = persist;
-  if (m_persist)
-    ESP_LOGE(TAG, "persist not implemented for OvmsMetricInt (%s)", name);
   m_value = 0;
+  m_valuep = NULL;
+  m_persist = persist;
+
+  if (m_persist)
+    {
+    persistent_values *vp = pmetrics_register(name);
+    if (!vp)
+      {
+      m_persist = false;
+      }
+    else
+      {
+      m_valuep = reinterpret_cast<int*>(&vp->value);
+      if (m_value != *m_valuep)
+        {
+        m_value = *m_valuep;
+        SetModified(true);
+        ESP_LOGI(TAG, "persist %s = %s", name, AsUnitString().c_str());
+        }
+      }
+    }
   }
 
 OvmsMetricInt::~OvmsMetricInt()
   {
+  }
+
+bool OvmsMetricInt::CheckPersist()
+  {
+  if (!m_persist || !m_valuep || !IsDefined())
+    return true;
+  if (*m_valuep != m_value)
+    {
+    ESP_LOGE(TAG, "CheckPersist: bad value for %s", m_name);
+    return false;
+    }
+  persistent_values *vp = pmetrics_find(m_name);
+  if (vp == NULL)
+    {
+    ESP_LOGE(TAG, "CheckPersist: can't find %s", m_name);
+    return false;
+    }
+  if (m_valuep != reinterpret_cast<int*>(&vp->value))
+    {
+    ESP_LOGE(TAG, "CheckPersist: bad address for %s", m_name);
+    return false;
+    }
+  return true;
+  }
+
+void OvmsMetricInt::RefreshPersist()
+  {
+  if (m_persist && m_valuep && IsDefined())
+    *m_valuep = m_value;
   }
 
 std::string OvmsMetricInt::AsString(const char* defvalue, metric_unit_t units, int precision)
@@ -896,7 +1004,7 @@ void OvmsMetricInt::DukPush(DukContext &dc)
   }
 #endif
 
-void OvmsMetricInt::SetValue(int value, metric_unit_t units)
+bool OvmsMetricInt::SetValue(int value, metric_unit_t units)
   {
   int nvalue = value;
   if ((units != Other)&&(units != m_units)) nvalue=UnitConvert(units,m_units,value);
@@ -904,40 +1012,105 @@ void OvmsMetricInt::SetValue(int value, metric_unit_t units)
   if (m_value != nvalue)
     {
     m_value = nvalue;
+    if (m_valuep)
+      *m_valuep = m_value;
     SetModified(true);
+    return true;
     }
   else
+    {
     SetModified(false);
+    return false;
+    }
   }
 
-void OvmsMetricInt::SetValue(std::string value)
+bool OvmsMetricInt::SetValue(std::string value)
   {
   int nvalue = atoi(value.c_str());
   if (m_value != nvalue)
     {
     m_value = nvalue;
+    if (m_valuep)
+      *m_valuep = m_value;
     SetModified(true);
+    return true;
     }
   else
+    {
     SetModified(false);
+    return false;
+    }
   }
 
-void OvmsMetricInt::SetValue(dbcNumber& value)
+bool OvmsMetricInt::SetValue(dbcNumber& value)
   {
-  SetValue(value.GetSignedInteger());
+  return SetValue(value.GetSignedInteger());
+  }
+
+void OvmsMetricInt::Clear()
+  {
+  SetValue(0);
+  OvmsMetric::Clear();
   }
 
 OvmsMetricBool::OvmsMetricBool(const char* name, uint16_t autostale, metric_unit_t units, bool persist)
   : OvmsMetric(name, autostale, units, persist)
   {
-  m_persist = persist;
-  if (m_persist)
-    ESP_LOGE(TAG, "persist not implemented for OvmsMetricBool (%s)", name);
   m_value = false;
+  m_valuep = NULL;
+  m_persist = persist;
+
+  if (m_persist)
+    {
+    persistent_values *vp = pmetrics_register(name);
+    if (!vp)
+      {
+      m_persist = false;
+      }
+    else
+      {
+      m_valuep = reinterpret_cast<bool*>(&vp->value);
+      if (m_value != *m_valuep)
+        {
+        m_value = *m_valuep;
+        SetModified(true);
+        ESP_LOGI(TAG, "persist %s = %s", name, AsUnitString().c_str());
+        }
+      }
+    }
   }
 
 OvmsMetricBool::~OvmsMetricBool()
   {
+  }
+
+bool OvmsMetricBool::CheckPersist()
+  {
+  if (!m_persist || !m_valuep || !IsDefined())
+    return true;
+  if (*m_valuep != m_value)
+    {
+    ESP_LOGE(TAG, "CheckPersist: bad value for %s", m_name);
+    return false;
+    }
+  persistent_values *vp = pmetrics_find(m_name);
+  if (vp == NULL)
+    {
+    ESP_LOGE(TAG, "CheckPersist: can't find %s", m_name);
+    return false;
+    }
+  if (m_valuep != reinterpret_cast<bool*>(&vp->value))
+    {
+    ESP_LOGE(TAG, "CheckPersist: bad address for %s", m_name);
+    return false;
+    }
+  return true;
+  }
+
+void OvmsMetricBool::RefreshPersist()
+  {
+  if (m_persist && m_valuep && IsDefined())
+    *m_valuep = m_value;
   }
 
 std::string OvmsMetricBool::AsString(const char* defvalue, metric_unit_t units, int precision)
@@ -993,32 +1166,50 @@ void OvmsMetricBool::DukPush(DukContext &dc)
   }
 #endif
 
-void OvmsMetricBool::SetValue(bool value)
+bool OvmsMetricBool::SetValue(bool value)
   {
   if (m_value != value)
     {
     m_value = value;
+    if (m_valuep)
+      *m_valuep = m_value;
     SetModified(true);
+    return true;
     }
   else
+    {
     SetModified(false);
+    return false;
+    }
   }
 
-void OvmsMetricBool::SetValue(std::string value)
+bool OvmsMetricBool::SetValue(std::string value)
   {
   bool nvalue = strtobool(value);
   if (m_value != nvalue)
     {
     m_value = nvalue;
+    if (m_valuep)
+      *m_valuep = m_value;
     SetModified(true);
+    return true;
     }
   else
+    {
     SetModified(false);
+    return false;
+    }
   }
 
-void OvmsMetricBool::SetValue(dbcNumber& value)
+bool OvmsMetricBool::SetValue(dbcNumber& value)
   {
-  SetValue((bool)value.GetUnsignedInteger());
+  return SetValue((bool)value.GetUnsignedInteger());
+  }
+
+void OvmsMetricBool::Clear()
+  {
+  SetValue(false);
+  OvmsMetric::Clear();
   }
 
 OvmsMetricFloat::OvmsMetricFloat(const char* name, uint16_t autostale, metric_unit_t units, bool persist)
@@ -1027,42 +1218,58 @@ OvmsMetricFloat::OvmsMetricFloat(const char* name, uint16_t autostale, metric_un
   m_value = 0.0;
   m_valuep = NULL;
   m_persist = persist;
-  if (!m_persist)
-    return;
-  int i;
-  struct persistent_values *vp;
-  for (i = 0, vp = pmetrics.values; i < pmetrics.used; ++i, ++vp)
-    if (strcmp(name, vp->name) == 0)
-      break;
-  if (i >= pmetrics.used)
-    {
-    if (i >= NUM_PERSISTENT_VALUES)
-      {
-      ESP_LOGE(TAG, "no more persist slots for OvmsMetricFloat (%s)", name);
-      return;
-      }
 
-    /* Use the next slot */
-    strlcpy(vp->name, name, sizeof(vp->name));
-    if (strcmp(vp->name, name) != 0)
-      {
-      ESP_LOGE(TAG, "persist name field too small for OvmsMetricFloat (%s)", name);
-      return;
-      }
-    ++pmetrics.used;
-    }
-
-  m_valuep = &vp->value;
-  m_value = *m_valuep;
-  if (m_value != 0.0)
+  if (m_persist)
     {
-    SetModified(true);
-    ESP_LOGI(TAG, "persist %s = %s", name, AsUnitString().c_str());
+    persistent_values *vp = pmetrics_register(name);
+    if (!vp)
+      {
+      m_persist = false;
+      }
+    else
+      {
+      m_valuep = reinterpret_cast<float*>(&vp->value);
+      if (m_value != *m_valuep)
+        {
+        m_value = *m_valuep;
+        SetModified(true);
+        ESP_LOGI(TAG, "persist %s = %s", name, AsUnitString().c_str());
+        }
+      }
     }
   }
 
 OvmsMetricFloat::~OvmsMetricFloat()
   {
+  }
+
+bool OvmsMetricFloat::CheckPersist()
+  {
+  if (!m_persist || !m_valuep || !IsDefined())
+    return true;
+  if (*m_valuep != m_value)
+    {
+    ESP_LOGE(TAG, "CheckPersist: bad value for %s", m_name);
+    return false;
+    }
+  persistent_values *vp = pmetrics_find(m_name);
+  if (vp == NULL)
+    {
+    ESP_LOGE(TAG, "CheckPersist: can't find %s", m_name);
+    return false;
+    }
+  if (m_valuep != reinterpret_cast<float*>(&vp->value))
+    {
+    ESP_LOGE(TAG, "CheckPersist: bad address for %s", m_name);
+    return false;
+    }
+  return true;
+  }
+
+void OvmsMetricFloat::RefreshPersist()
+  {
+  if (m_persist && m_valuep && IsDefined())
+    *m_valuep = m_value;
   }
 
 std::string OvmsMetricFloat::AsString(const char* defvalue, metric_unit_t units, int precision)
@@ -1121,46 +1328,57 @@ void OvmsMetricFloat::DukPush(DukContext &dc)
   }
 #endif
 
-void OvmsMetricFloat::SetValue(float value, metric_unit_t units)
+bool OvmsMetricFloat::SetValue(float value, metric_unit_t units)
   {
   float nvalue = value;
   if ((units != Other)&&(units != m_units)) nvalue=UnitConvert(units,m_units,value);
   if (m_value != nvalue)
     {
     m_value = nvalue;
-    if (m_valuep != NULL)
+    if (m_valuep)
       *m_valuep = m_value;
     SetModified(true);
+    return true;
     }
   else
+    {
     SetModified(false);
+    return false;
+    }
   }
 
-void OvmsMetricFloat::SetValue(std::string value)
+bool OvmsMetricFloat::SetValue(std::string value)
   {
   float nvalue = atof(value.c_str());
   if (m_value != nvalue)
     {
     m_value = nvalue;
-    if (m_valuep != NULL)
+    if (m_valuep)
       *m_valuep = m_value;
     SetModified(true);
+    return true;
     }
   else
+    {
     SetModified(false);
+    return false;
+    }
   }
 
-void OvmsMetricFloat::SetValue(dbcNumber& value)
+bool OvmsMetricFloat::SetValue(dbcNumber& value)
   {
-  SetValue((float)value.GetDouble());
+  return SetValue((float)value.GetDouble());
+  }
+
+void OvmsMetricFloat::Clear()
+  {
+  SetValue(0);
+  OvmsMetric::Clear();
   }
 
 OvmsMetricString::OvmsMetricString(const char* name, uint16_t autostale, metric_unit_t units, bool persist)
   : OvmsMetric(name, autostale, units, persist)
   {
-  m_persist = persist;
-  if (m_persist)
-    ESP_LOGE(TAG, "persist not implemented for OvmsMetricString (%s)", name);
   }
 
 OvmsMetricString::~OvmsMetricString()
@@ -1188,7 +1406,7 @@ void OvmsMetricString::DukPush(DukContext &dc)
   }
 #endif
 
-void OvmsMetricString::SetValue(std::string value)
+bool OvmsMetricString::SetValue(std::string value)
   {
   if (m_mutex.Lock())
     {
@@ -1200,7 +1418,15 @@ void OvmsMetricString::SetValue(std::string value)
       }
     m_mutex.Unlock();
     SetModified(modified);
+    return modified;
     }
+  return false;
+  }
+
+void OvmsMetricString::Clear()
+  {
+  SetValue("");
+  OvmsMetric::Clear();
   }
 
 const char* OvmsMetricUnitLabel(metric_unit_t units)
@@ -1210,6 +1436,7 @@ const char* OvmsMetricUnitLabel(metric_unit_t units)
     case Kilometers:   return "km";
     case Miles:        return "M";
     case Meters:       return "m";
+    case Feet:         return "ft";
     case Celcius:      return "°C";
     case Fahrenheit:   return "°F";
     case kPa:          return "kPa";
@@ -1254,13 +1481,23 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
       if (to == Kilometers) return (value*8)/5;
       else if (to == Meters) return (value*8000)/5;
       break;
+    case Meters:
+      if (to == Feet) return (int)(value * 3.28084);
+      break;
+    case Feet:
+      if (to == Meters) return (int)(value * 0.3048);
+      break;
     case KphPS:
       if (to == MphPS) return (value*5)/8;
-      else if (to == MetersPSS) return value/1000;
+      else if (to == MetersPSS) return (value*1000)/3600;
       break;
     case MphPS:
       if (to == KphPS) return (value*8)/5;
-      else if (to == MetersPSS) return (value*8000)/5;
+      else if (to == MetersPSS) return (value*8000)/(5*3600);
+      break;
+    case MetersPSS:
+      if (to == KphPS) return (int) (value*3.6);
+      else if (to == MphPS) return (int) (value*3.6/1.60934);
       break;
     case kW:
       if (to == Watts) return (value*1000);
@@ -1353,13 +1590,23 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
       if (to == Kilometers) return (value*1.60934);
       else if (to == Meters) return (value*1609.34);
       break;
+    case Meters:
+      if (to == Feet) return (value * 3.28084);
+      break;
+    case Feet:
+      if (to == Meters) return (value * 0.3048);
+      break;
     case KphPS:
       if (to == MphPS) return (value/1.60934);
-      else if (to == MetersPSS) return value/1000;
+      else if (to == MetersPSS) return value/3.6;
       break;
     case MphPS:
       if (to == KphPS) return (value*8)/5;
-      else if (to == MetersPSS) return (value*1.60934);
+      else if (to == MetersPSS) return (value*1.60934/3.6);
+      break;
+    case MetersPSS:
+      if (to == KphPS) return (value*3.6);
+      else if (to == MphPS) return (value*3.6/1.60934);
       break;
     case kW:
       if (to == Watts) return (value*1000);

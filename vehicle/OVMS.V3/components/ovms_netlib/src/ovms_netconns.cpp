@@ -72,6 +72,7 @@ OvmsNetTcpClient::~OvmsNetTcpClient()
   {
   if (m_mgconn)
     {
+    m_mgconn->user_data = NULL;
     m_mgconn->flags |= MG_F_CLOSE_IMMEDIATELY;
     m_mgconn = NULL;
     m_netstate = NetConnIdle;
@@ -84,6 +85,7 @@ void OvmsNetTcpClient::Mongoose(struct mg_connection *nc, int ev, void *ev_data)
     {
     case MG_EV_CONNECT:
       {
+      mg_set_timer(m_mgconn, 0);
       int *success = (int*)ev_data;
       if (*success == 0)
         {
@@ -102,6 +104,14 @@ void OvmsNetTcpClient::Mongoose(struct mg_connection *nc, int ev, void *ev_data)
         }
       }
       break;
+    case MG_EV_TIMER:
+      ESP_LOGD(TAG, "OvmsNetTcpClient Connection timeout");
+      m_mgconn->user_data = NULL;
+      m_mgconn->flags |= MG_F_CLOSE_IMMEDIATELY;
+      m_mgconn = NULL;
+      m_netstate = NetConnFailed;
+      ConnectionFailed();
+      break;
     case MG_EV_CLOSE:
       ESP_LOGD(TAG, "OvmsNetTcpClient Connection closed");
       m_netstate = NetConnDisconnected;
@@ -110,7 +120,6 @@ void OvmsNetTcpClient::Mongoose(struct mg_connection *nc, int ev, void *ev_data)
       break;
     case MG_EV_RECV:
       {
-      ESP_LOGD(TAG, "OvmsNetTcpClient Incoming data (%d bytes)", nc->recv_mbuf.len);
       size_t removed = IncomingData(nc->recv_mbuf.buf, nc->recv_mbuf.len);
       if (removed > 0)
         {
@@ -124,18 +133,22 @@ void OvmsNetTcpClient::Mongoose(struct mg_connection *nc, int ev, void *ev_data)
     }
   }
 
-bool OvmsNetTcpClient::Connect(std::string dest, struct mg_connect_opts opts)
+bool OvmsNetTcpClient::Connect(std::string dest, struct mg_connect_opts opts, double timeout)
   {
   struct mg_mgr* mgr = MyNetManager.GetMongooseMgr();
   if (mgr == NULL) return false;
 
   OvmsMutexLock mg(&m_mgconn_mutex);
   m_dest = dest;
+  opts.user_data = this;
   if ((m_mgconn = mg_connect_opt(mgr, dest.c_str(), OvmsMongooseWrapperCallback, opts)) == NULL)
     {
     return false;
     }
-  m_mgconn->user_data = this;
+  if (timeout > 0.0)
+    {
+    mg_set_timer(m_mgconn, mg_time() + timeout);
+    }
   m_netstate = NetConnConnecting;
   return true;
   }
@@ -144,6 +157,7 @@ void OvmsNetTcpClient::Disconnect()
   {
   if (m_mgconn)
     {
+    m_mgconn->user_data = NULL;
     m_mgconn->flags |= MG_F_CLOSE_IMMEDIATELY;
     m_mgconn = NULL;
     m_netstate = NetConnIdle;

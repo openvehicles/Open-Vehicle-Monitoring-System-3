@@ -1,6 +1,6 @@
 /* settings.h
  *
- * Copyright (C) 2006-2016 wolfSSL Inc.
+ * Copyright (C) 2006-2020 wolfSSL Inc.
  *
  * This file is part of wolfSSL.
  *
@@ -54,7 +54,7 @@
 
 /* Uncomment next line if using PIC32MZ Crypto Engine */
 /* #define CYASSL_MICROCHIP_PIC32MZ */
-        
+
 /* Uncomment next line if using FreeRTOS */
 /* #define FREERTOS */
 
@@ -84,7 +84,7 @@
 
 /* Uncomment next line if building for EROAD */
 /* #define CYASSL_EROAD */
-      
+
 /* Uncomment next line if building for IAR EWARM */
 /* #define CYASSL_IAR_ARM */
 
@@ -111,7 +111,7 @@
 /* for reverse compatibility after name change */
 #include <cyassl/ctaocrypt/settings_comp.h>
 
-#ifdef THREADX 
+#ifdef THREADX
     #define SIZEOF_LONG_LONG 8
 #endif
 
@@ -125,8 +125,8 @@
     #define SINGLE_THREADED
     #define CYASSL_USER_IO
     #define NO_FILESYSTEM
-#endif 
-    
+#endif
+
 #if defined(CYASSL_IAR_ARM)
     #define NO_MAIN_DRIVER
     #define SINGLE_THREADED
@@ -137,7 +137,7 @@
     #define CYASSL_USER_IO
     #define  BENCH_EMBEDDED
 #endif
-      
+
 #ifdef MICROCHIP_PIC32
     /* #define CYASSL_MICROCHIP_PIC32MZ */
     #define SIZEOF_LONG_LONG 8
@@ -150,16 +150,20 @@
     #define TFM_TIMING_RESISTANT
 #endif
 
-#ifdef CYASSL_MICROCHIP_PIC32MZ
-    #define CYASSL_PIC32MZ_CE
-    #define CYASSL_PIC32MZ_CRYPT
-    #define HAVE_AES_ENGINE
-    #define CYASSL_PIC32MZ_RNG
-    /* #define CYASSL_PIC32MZ_HASH */
+#if defined(CYASSL_MICROCHIP_PIC32MZ) || defined(WOLFSSL_MICROCHIP_PIC32MZ)
+    #ifndef NO_PIC32MZ_CRYPT
+        #define WOLFSSL_PIC32MZ_CRYPT
+    #endif
+    #ifndef NO_PIC32MZ_RNG
+        #define WOLFSSL_PIC32MZ_RNG
+    #endif
+    #ifndef NO_PIC32MZ_HASH
+        #define WOLFSSL_PIC32MZ_HASH
+    #endif
+
     #define CYASSL_AES_COUNTER
     #define HAVE_AESGCM
     #define NO_BIG_INT
-
 #endif
 
 #ifdef MICROCHIP_TCPIP_V5
@@ -180,7 +184,7 @@
 #ifdef MBED
     #define CYASSL_USER_IO
     #define NO_FILESYSTEM
-    #define NO_CERT
+    #define NO_CERTS
     #define USE_CERT_BUFFERS_1024
     #define NO_WRITEV
     #define NO_DEV_RANDOM
@@ -254,7 +258,7 @@
 #if defined(CYASSL_LEANPSK) && !defined(XMALLOC_USER)
     #include <stdlib.h>
     #define XMALLOC(s, h, type)  malloc((s))
-    #define XFREE(p, h, type)    free((p)) 
+    #define XFREE(p, h, type)    free((p))
     #define XREALLOC(p, n, h, t) realloc((p), (n))
 #endif
 
@@ -337,7 +341,9 @@
         #undef SIZEOF_LONG
         #define SIZEOF_LONG_LONG 8
     #else
-        #sslpro: settings.h - please implement SIZEOF_LONG and SIZEOF_LONG_LONG
+        #if !defined(SIZEOF_LONG) && !defined(SIZEOF_LONG_LONG)
+            #error settings.h - please implement SIZEOF_LONG and SIZEOF_LONG_LONG
+        #endif
     #endif
 
     #define XMALLOC(s, h, type) ((void *)rtp_malloc((s), SSL_PRO_MALLOC))
@@ -386,7 +392,7 @@
 
     #include "SafeRTOS/heap.h"
     #define XMALLOC(s, h, type)  pvPortMalloc((s))
-    #define XFREE(p, h, type)    vPortFree((p)) 
+    #define XFREE(p, h, type)    vPortFree((p))
     #define XREALLOC(p, n, h, t) pvPortRealloc((p), (n))
 #endif
 
@@ -462,7 +468,7 @@
                      (CPU_CHAR *)(pstr_src), (CPU_SIZE_T)(len_max)))
     #define XSTRNCMP(pstr_1, pstr_2, len_max) \
                     ((CPU_INT16S)Str_Cmp_N((CPU_CHAR *)(pstr_1), \
-                     (CPU_CHAR *)(pstr_2), (CPU_SIZE_T)(len_max)))  
+                     (CPU_CHAR *)(pstr_2), (CPU_SIZE_T)(len_max)))
     #define XSTRSTR(pstr, pstr_srch) \
                     ((CPU_CHAR *)Str_Str((CPU_CHAR *)(pstr), \
                      (CPU_CHAR *)(pstr_srch)))
@@ -477,7 +483,7 @@
     #define XMEMMOVE XMEMCPY
 
 #if (NET_SECURE_MGR_CFG_EN == DEF_ENABLED)
-    #define MICRIUM_MALLOC    
+    #define MICRIUM_MALLOC
     #define XMALLOC(s, h, type) ((void *)NetSecure_BlkGet((CPU_INT08U)(type), \
                                  (CPU_SIZE_T)(s), (void *)0))
     #define XFREE(p, h, type)   (NetSecure_BlkFree((CPU_INT08U)(type), \
@@ -577,13 +583,13 @@
     #endif
 
     #if (SSL_CFG_USER_RNG_SEED_EN == DEF_ENABLED)
-        #define NO_DEV_RANDOM   
+        #define NO_DEV_RANDOM
     #else
         #undef  NO_DEV_RANDOM
     #endif
 
     #if (SSL_CFG_USER_IO_EN == DEF_ENABLED)
-        #define CYASSL_USER_IO   
+        #define CYASSL_USER_IO
     #else
         #undef  CYASSL_USER_IO
     #endif
@@ -697,15 +703,9 @@
         #define CYASSL_GENERAL_ALIGNMENT  4
     #elif defined(FREESCALE_MMCAU)
         #define CYASSL_GENERAL_ALIGNMENT  CYASSL_MMCAU_ALIGNMENT
-    #else 
-        #define CYASSL_GENERAL_ALIGNMENT  0 
+    #else
+        #define CYASSL_GENERAL_ALIGNMENT  0
     #endif
-#endif
-
-#ifdef HAVE_CRL
-    /* not widely supported yet */
-    #undef NO_SKID
-    #define NO_SKID
 #endif
 
 

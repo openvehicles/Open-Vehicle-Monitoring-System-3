@@ -1,6 +1,6 @@
 /* crypto.h
  *
- * Copyright (C) 2006-2016 wolfSSL Inc.
+ * Copyright (C) 2006-2020 wolfSSL Inc.
  *
  * This file is part of wolfSSL.
  *
@@ -40,6 +40,7 @@ typedef struct CRYPT_MD5_CTX {
 int CRYPT_MD5_Initialize(CRYPT_MD5_CTX*);
 int CRYPT_MD5_DataAdd(CRYPT_MD5_CTX*, const unsigned char*, unsigned int);
 int CRYPT_MD5_Finalize(CRYPT_MD5_CTX*, unsigned char*);
+int CRYPT_MD5_DataSizeSet(CRYPT_MD5_CTX* md5, unsigned int sz);
 
 enum {
     CRYPT_MD5_DIGEST_SIZE = 16
@@ -54,6 +55,7 @@ typedef struct CRYPT_SHA_CTX {
 int CRYPT_SHA_Initialize(CRYPT_SHA_CTX*);
 int CRYPT_SHA_DataAdd(CRYPT_SHA_CTX*, const unsigned char*, unsigned int);
 int CRYPT_SHA_Finalize(CRYPT_SHA_CTX*, unsigned char*);
+int CRYPT_SHA_DataSizeSet(CRYPT_SHA_CTX* sha, unsigned int sz);
 
 enum {
     CRYPT_SHA_DIGEST_SIZE = 20
@@ -68,6 +70,7 @@ typedef struct CRYPT_SHA256_CTX {
 int CRYPT_SHA256_Initialize(CRYPT_SHA256_CTX*);
 int CRYPT_SHA256_DataAdd(CRYPT_SHA256_CTX*, const unsigned char*, unsigned int);
 int CRYPT_SHA256_Finalize(CRYPT_SHA256_CTX*, unsigned char*);
+int CRYPT_SHA256_DataSizeSet(CRYPT_SHA256_CTX* sha256, unsigned int sz);
 
 enum {
     CRYPT_SHA256_DIGEST_SIZE = 32
@@ -104,7 +107,7 @@ enum {
 
 /* HMAC */
 typedef struct CRYPT_HMAC_CTX {
-    long long holder[72];   /* big enough to hold internal, but check on init */
+    long long holder[98];   /* big enough to hold internal, but check on init */
 } CRYPT_HMAC_CTX;
 
 int CRYPT_HMAC_SetKey(CRYPT_HMAC_CTX*, int, const unsigned char*, unsigned int);
@@ -113,10 +116,10 @@ int CRYPT_HMAC_Finalize(CRYPT_HMAC_CTX*, unsigned char*);
 
 /* HMAC types */
 enum {
-    CRYPT_HMAC_SHA    = 1,
-    CRYPT_HMAC_SHA256 = 2,
-    CRYPT_HMAC_SHA384 = 5,
-    CRYPT_HMAC_SHA512 = 4
+    CRYPT_HMAC_SHA    = 4,
+    CRYPT_HMAC_SHA256 = 6,
+    CRYPT_HMAC_SHA384 = 7,
+    CRYPT_HMAC_SHA512 = 8
 };
 
 

@@ -382,6 +382,25 @@ void max7317_output(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     }
   }
 
+void max7317_pulse(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  int port = atoi(argv[0]);
+  int level = atoi(argv[1]);
+  int durationms = atoi(argv[2]);
+  int baselevel = 1-level;
+
+  writer->printf("EGPIO port %d set to base level %d\n", port, baselevel);
+  MyPeripherals->m_max7317->Output((uint8_t)port,(uint8_t)baselevel);
+
+  writer->printf("EGPIO port %d setting to level %d for %dms\n", port, level, durationms);
+  MyPeripherals->m_max7317->Output((uint8_t)port,(uint8_t)level);
+
+  vTaskDelay(pdMS_TO_TICKS(durationms));
+
+  writer->printf("EGPIO port %d set back to base level %d\n", port, baselevel);
+  MyPeripherals->m_max7317->Output((uint8_t)port,(uint8_t)baselevel);
+  }
+
 void max7317_input(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   for (int i = 0; i < argc; i += 1)
@@ -514,10 +533,13 @@ Max7317Init::Max7317Init()
   MyConfig.RegisterParam("egpio", "EGPIO configuration", true, true);
 
   OvmsCommand* cmd_egpio = MyCommandApp.RegisterCommand(
-    "egpio", "EGPIO framework");
+    "egpio", "EGPIO framework", max7317_status, "", 0, 0, false);
   cmd_egpio->RegisterCommand(
     "output", "Set EGPIO output level(s)", max7317_output,
     "<port> <level> [<port> <level> ...]", 2, 20);
+  cmd_egpio->RegisterCommand(
+    "pulse", "Pulse EGPIO output level(s)", max7317_pulse,
+    "<port> <level> <durationms>", 3, 3);
   cmd_egpio->RegisterCommand(
     "input", "Get EGPIO input level(s)", max7317_input,
     "<port> [<port> ...]", 1, 10);

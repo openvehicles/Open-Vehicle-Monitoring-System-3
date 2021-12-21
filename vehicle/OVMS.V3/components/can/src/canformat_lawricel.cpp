@@ -92,19 +92,20 @@ std::string canformat_lawricel::getheader(struct timeval *time)
   return std::string("");
   }
 
-size_t canformat_lawricel::put(CAN_log_message_t* message, uint8_t *buffer, size_t len, void* userdata)
+size_t canformat_lawricel::put(CAN_log_message_t* message, uint8_t *buffer, size_t len, bool* hasmore, canlogconnection* clc)
   {
   if (m_buf.FreeSpace()==0) SetServeDiscarding(true); // Buffer full, so discard from now on
   if (IsServeDiscarding()) return len;  // Quick return if discarding
 
   size_t consumed = Stuff(buffer,len);  // Stuff m_buf with as much as possible
 
-  if (!m_buf.HasLine())
+  if (m_buf.HasLine()<0)
     {
     return consumed; // No line, so quick exit
     }
   else
     {
+    *hasmore = true;  // Call us again to see if we have more frames to process
     std::string line = m_buf.ReadLine();
     const char *b = line.c_str();
     char hex[9];

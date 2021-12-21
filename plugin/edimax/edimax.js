@@ -1,7 +1,7 @@
 /**
  * Module plugin:
  *  Smart Plug control for Edimax models SP-1101W, SP-2101W et al
- *  Version 2.1 by Michael Balzer <dexter@dexters-web.de>
+ *  Version 2.2 by Michael Balzer <dexter@dexters-web.de>
  *  Note: may need digest auth support to work with newer Edimax firmware (untested)
  * 
  * Installation:
@@ -14,7 +14,7 @@
  * 
  * Usage:
  *  - script eval edimax.get()
- *  - script eval edimax.set("on" | "off")
+ *  - script eval edimax.set("on" | "off" | 1 | 0 | true | false)
  *  - script eval edimax.info()
  * 
  * Note: get() & set() do an async update, the result is logged.
@@ -71,7 +71,7 @@ function getPowerState() {
         var m = resp.body.match('<Device.System.Power.State>([^<]*)');
         if (m && m.length == 2) {
           state.error = "";
-          state.power = m[1];
+          state.power = m[1].toLowerCase();
         } else {
           state.error = "Unable to parse Edimax response";
         }

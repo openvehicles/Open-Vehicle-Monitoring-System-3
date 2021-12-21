@@ -39,7 +39,7 @@ using namespace std;
 
 #define CANFORMAT_SERVE_BUFFERSIZE 1024
 
-typedef void (*canformat_put_write_fn)(uint8_t *buffer, size_t len, void* data);
+class canlogconnection;
 
 class canformat
   {
@@ -58,7 +58,7 @@ class canformat
     virtual std::string getheader(struct timeval *time = NULL);
 
   public: // Conversion from specific format to OVMS CAN log messages
-    virtual size_t put(CAN_log_message_t* message, uint8_t *buffer, size_t len, void* userdata=NULL);
+    virtual size_t put(CAN_log_message_t* message, uint8_t *buffer, size_t len, bool* hasmore, canlogconnection* clc=NULL);
 
   private:
     const char* m_type;
@@ -69,12 +69,10 @@ class canformat
     void SetServeMode(canformat_serve_mode_t mode);
     bool IsServeDiscarding();
     void SetServeDiscarding(bool discarding);
-    void SetPutCallback(canformat_put_write_fn callback);
-    virtual size_t Serve(uint8_t *buffer, size_t len, void* userdata=NULL);
+    virtual size_t Serve(uint8_t *buffer, size_t len, canlogconnection* clc=NULL);
     virtual size_t Stuff(uint8_t *buffer, size_t len);
 
   protected:
-    canformat_put_write_fn m_putcallback_fn;
     canformat_serve_mode_t m_servemode;
     bool m_servediscarding;
     OvmsBuffer m_buf;

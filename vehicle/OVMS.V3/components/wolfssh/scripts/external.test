@@ -1,0 +1,60 @@
+#!/bin/sh
+
+# external tests
+host="$WOLFSSH_EXTERNAL_HOST"
+user="$WOLFSSH_EXTERNAL_USER"
+password="$WOLFSSH_EXTERNAL_PASSWORD"
+
+if test -n "$WOLFSSH_EXTERNAL_TEST"; then
+    echo "WOLFSSH_EXTERNAL_TEST set, running test..."
+else
+    echo "WOLFSSH_EXTERNAL_TEST NOT set, won't run"
+    exit 0
+fi
+
+do_cleanup() {
+    echo "in cleanup"
+}
+
+do_trap() {
+    echo "got trap"
+    do_cleanup
+    exit -1
+}
+
+trap do_trap INT TERM
+
+[ ! -x ./examples/client/client ] && echo -e "\n\nClient doesn't exist" && exit 1
+
+echo "Testing client connection to $host : "
+./examples/client/client -u $user -P $password -h $host -p 22 -x
+RESULT=$?
+if [ $RESULT -ne 0 ]; then
+    echo -e "failed to connect\n"
+    do_cleanup
+    exit 1
+fi
+echo -e "Success\n"
+
+
+# not having the sftp client built in is not a failure case
+./examples/sftpclient/wolfsftp -h
+if [ $? -eq 0 ]; then
+    echo "Testing wolfsftp connection to $host : "
+    echo "exit" | ./examples/sftpclient/wolfsftp -u $user -P $password -h $host -p 22
+    RESULT=$?
+    if [ $RESULT -ne 0 ]; then
+        echo -e "failed to connect\n"
+        do_cleanup
+        exit 1
+    else
+        echo -e "Success\n"
+    fi
+else
+    echo -e "\n\nwolfSFTP client doesn't exist"
+fi
+
+echo -e "\nALL Tests Passed"
+
+exit 0
+

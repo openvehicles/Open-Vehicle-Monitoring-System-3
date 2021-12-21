@@ -30,8 +30,6 @@
 */
 
 #include "vehicle_mgev.h"
-#include "mg_obd_pids.h"
-#include "metrics_standard.h"
 
 void OvmsVehicleMgEv::IncomingPepsPoll(uint16_t pid, uint8_t* data, uint8_t length)
 {

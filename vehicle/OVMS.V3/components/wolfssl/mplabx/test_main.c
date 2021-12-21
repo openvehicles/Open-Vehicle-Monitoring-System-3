@@ -1,6 +1,6 @@
 /* main.c
  *
- * Copyright (C) 2006-2016 wolfSSL Inc.
+ * Copyright (C) 2006-2020 wolfSSL Inc.
  *
  * This file is part of wolfSSL.
  *
@@ -44,7 +44,7 @@
     #define _DISABLE_OPENADC10_CONFIGPORT_WARNING
     #include <plib.h>
     #include <sys/appio.h>
-    #define init_serial()  /* void out init_serial() */
+    #define init_serial(x)  /* void out init_serial() */
     #define SYS_CLK 80000000
 #endif
 
@@ -77,12 +77,12 @@ void WriteCoreTimer(unsigned int t)
 int main(int argc, char** argv)
 {
     func_args args;
-    
+
     SYSTEMConfigPerformance(SYS_CLK);
     DBINIT();
-    
+
     init_serial(SYS_CLK) ;  /* initialize PIC32MZ serial I/O */
-    
+
     printf("WolfCrypt Test:\n");
 
     args.argc = argc;

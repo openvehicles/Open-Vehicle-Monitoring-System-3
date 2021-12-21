@@ -1,0 +1,14 @@
+# vim:ft=automake
+# All paths should be given relative to the root
+
+if BUILD_SCP
+if BUILD_EXAMPLE_CLIENTS
+noinst_PROGRAMS += examples/scpclient/wolfscp
+noinst_HEADERS += examples/scpclient/scpclient.h
+examples_scpclient_wolfscp_SOURCES      = examples/scpclient/scpclient.c
+examples_scpclient_wolfscp_LDADD        = src/libwolfssh.la
+examples_scpclient_wolfscp_DEPENDENCIES = src/libwolfssh.la
+endif
+endif
+
+DISTCLEANFILES+= examples/scpclient/.libs/wolfscp

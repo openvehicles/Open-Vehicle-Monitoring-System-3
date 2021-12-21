@@ -49,6 +49,7 @@
 #include "ovms_semaphore.h"
 
 #include "poll_reply_helper.h"
+#include "vweup_utils.h"
 
 #define DEFAULT_MODEL_YEAR 2020
 
@@ -61,14 +62,15 @@ typedef enum {
 } RemoteCommand;
 
 // Value update & conversion debug logging:
-#define VALUE_LOG(...)    ESP_LOGD(__VA_ARGS__)
+#define VALUE_LOG(...)    ESP_LOGV(__VA_ARGS__)
 // …disable:
 //#define VALUE_LOG(...)
 
 // Car (poll) states
-#define VWEUP_OFF         0
-#define VWEUP_ON          1
-#define VWEUP_CHARGING    2
+#define VWEUP_OFF         0           // All systems sleeping
+#define VWEUP_AWAKE       1           // Base systems online
+#define VWEUP_CHARGING    2           // Base systems online & car is charging the main battery
+#define VWEUP_ON          3           // All systems online & car is drivable
 
 // Connections available (vweup_con):
 #define CON_NONE          0
@@ -78,6 +80,26 @@ typedef enum {
 
 typedef std::vector<OvmsVehicle::poll_pid_t, ExtRamAllocator<OvmsVehicle::poll_pid_t>> poll_vector_t;
 typedef std::initializer_list<const OvmsVehicle::poll_pid_t> poll_list_t;
+
+typedef enum {
+  OBDS_Init = 0,
+  OBDS_DeInit,
+  OBDS_Config,
+  OBDS_Run,
+  OBDS_Pause,
+} obd_state_t;
+
+typedef enum {
+  CHGTYPE_None = 0,
+  CHGTYPE_AC,
+  CHGTYPE_DC,
+} chg_type_t;
+
+typedef enum {
+  UP_None = 0,
+  UP_Charging,
+  UP_Driving,
+} use_phase_t;
 
 class OvmsVehicleVWeUp : public OvmsVehicle
 {
@@ -92,11 +114,14 @@ public:
 
 public:
   void ConfigChanged(OvmsConfigParam *param);
+  void MetricModified(OvmsMetric* metric);
   bool SetFeature(int key, const char *value);
   const std::string GetFeature(int key);
 
 protected:
   void Ticker1(uint32_t ticker);
+  void Ticker10(uint32_t ticker);
+  void Ticker60(uint32_t ticker);
 
 public:
   vehicle_command_t CommandHomelink(int button, int durationms = 1000);
@@ -111,16 +136,31 @@ public:
 
 protected:
   int GetNotifyChargeStateDelay(const char *state);
+  void NotifiedVehicleChargeState(const char* s);
+  int CalcChargeTime(float capacity, float max_pwr, int from_soc, int to_soc);
+  void UpdateChargeTimes();
+
+protected:
+  void ResetTripCounters();
+  void UpdateTripOdo();
+  void ResetChargeCounters();
+  void SetChargeType(chg_type_t chgtype);
+  void SetChargeState(bool charging);
+  void SetUsePhase(use_phase_t usephase);
+  void SetSOH(float soh_new);
 
 public:
   bool IsOff() {
     return m_poll_state == VWEUP_OFF;
   }
-  bool IsOn() {
-    return m_poll_state == VWEUP_ON;
+  bool IsAwake() {
+    return m_poll_state == VWEUP_AWAKE;
   }
   bool IsCharging() {
     return m_poll_state == VWEUP_CHARGING;
+  }
+  bool IsOn() {
+    return m_poll_state == VWEUP_ON;
   }
 
   bool HasT26() {
@@ -134,6 +174,16 @@ public:
   }
   bool HasNoOBD() {
     return (vweup_con & CON_OBD) == 0;
+  }
+  bool IsOBDReady() {
+    return (m_obd_state == OBDS_Run);
+  }
+
+  bool IsChargeModeAC() {
+    return m_chg_type == CHGTYPE_AC;
+  }
+  bool IsChargeModeDC() {
+    return m_chg_type == CHGTYPE_DC;
   }
 
 protected:
@@ -149,10 +199,25 @@ public:
   int vweup_modelyear;
 
 private:
-  float OdoStart;
-  float EnergyRecdStart;
-  float EnergyUsedStart;
-  float EnergyChargedStart;
+  use_phase_t m_use_phase;
+  double m_odo_trip;
+  uint32_t m_tripfrac_reftime;
+  float m_tripfrac_refspeed;
+  float m_soc_norm_start;
+  float m_soc_abs_start;
+  float m_energy_recd_start;
+  float m_energy_used_start;
+  float m_energy_charged_start;
+  float m_coulomb_recd_start;
+  float m_coulomb_used_start;
+  float m_coulomb_charged_start;
+  float m_charge_kwh_grid_start;
+  double m_charge_kwh_grid;
+  int m_chargestart_ticker;
+  int m_chargestop_ticker;
+  float m_chargestate_lastsoc;
+  int m_timermode_ticker;
+  bool m_timermode_new;
 
 
   // --------------------------------------------------------------------------
@@ -168,6 +233,9 @@ protected:
   static void WebCfgClimate(PageEntry_t &p, PageContext_t &c);
   static void WebDispChgMetrics(PageEntry_t &p, PageContext_t &c);
 
+public:
+  void GetDashboardConfig(DashboardConfig& cfg);
+
 
   // --------------------------------------------------------------------------
   // T26 Connection Subsystem
@@ -176,6 +244,7 @@ protected:
 
 protected:
   void T26Init();
+  void T26Ticker1(uint32_t ticker);
 
 protected:
   void IncomingFrameCan3(CAN_frame_t *p_frame);
@@ -208,6 +277,12 @@ public:
   bool vweup_cc_on;
   bool vweup_cc_turning_on;
   bool signal_ok;
+  bool t26_12v_boost;
+  bool t26_car_on;
+  bool t26_ring_awake;
+  int t26_12v_boost_cnt;
+  int t26_12v_boost_last_cnt;
+  int t26_12v_wait_off;
   int cc_count;
   int cd_count;
   int fas_counter_on;
@@ -228,10 +303,27 @@ private:
 protected:
   void OBDInit();
   void OBDDeInit();
-  void OBDCheckCarState();
 
 protected:
+  bool OBDSetState(obd_state_t state);
+  static const char *GetOBDStateName(obd_state_t state) {
+    const char *statename[] = { "INIT", "DEINIT", "CONFIG", "RUN", "PAUSE" };
+    return statename[state];
+  }
+  void PollSetState(uint8_t state);
+  static const char *GetPollStateName(uint8_t state) {
+    const char *statename[4] = { "OFF", "AWAKE", "CHARGING", "ON" };
+    return statename[state];
+  }
+  void PollerStateTicker();
   void IncomingPollReply(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length, uint16_t mlremain);
+
+protected:
+  void UpdateChargePower(float power_kw);
+  void UpdateChargeCap(bool charging);
+
+public:
+  static void ShellPollControl(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 
 protected:
   OvmsMetricFloat *MotElecSoCAbs;                 // Absolute SoC of main battery from motor electrics ECU
@@ -254,29 +346,65 @@ protected:
   OvmsMetricFloat *ChargerPowerLossEcu;           // Power loss of Charger [kW] (from ECU)
   OvmsMetricFloat *ChargerPowerEffCalc;           // Efficiency of the Charger [%] (calculated from U and I)
   OvmsMetricFloat *ChargerPowerLossCalc;          // Power loss of Charger [kW] (calculated from U and I)
+
+  OvmsMetricFloat     *m_chg_ccs_voltage;         // CCS charger supplied voltage [V]
+  OvmsMetricFloat     *m_chg_ccs_current;         // CCS Charger supplied current [A]
+  OvmsMetricFloat     *m_chg_ccs_power;           // CCS Charger supplied power [kW]
+
   OvmsMetricInt *ServiceDays;                     // Days until next scheduled maintenance/service
+  OvmsMetricVector<float> *TPMSDiffusion;         // TPMS Indicator for Pressure Diffusion
+  OvmsMetricVector<float> *TPMSEmergency;         // TPMS Indicator for Tyre Emergency
 
   OvmsMetricFloat *BatTempMax;
   OvmsMetricFloat *BatTempMin;
 
+  OvmsMetricInt       *m_lv_pwrstate;             // Low voltage (12V) systems power state (0x1DEC[0]: 0-15)
+  OvmsMetricInt       *m_lv_autochg;              // Low voltage (12V) auto charge mode (0x1DED[0]: 0/1)
+  OvmsMetricInt       *m_hv_chgmode;              // High voltage charge mode (0x1DD6[0]: 0/1/4)
+
+  OvmsMetricInt       *m_chg_timer_socmin;        // Scheduled minimum SOC
+  OvmsMetricInt       *m_chg_timer_socmax;        // Scheduled maximum SOC
+  OvmsMetricBool      *m_chg_timer_def;           // true = Scheduled charging is default
+
+  OvmsMetricFloat     *m_bat_soh_range = 0;       // Battery SOH based on MFD range estimation [%]
+  OvmsMetricFloat     *m_bat_soh_charge = 0;      // Battery SOH based on coulomb charge count [%]
+
+  OvmsMetricFloat     *m_bat_energy_range;        // Battery energy available from MFD range estimation [kWh]
+  OvmsMetricFloat     *m_bat_cap_kwh_range;       // Battery usable capacity derived from MFD range estimation [kWh]
+
+  OvmsMetricFloat     *m_bat_cap_ah_abs;          // Battery capacity based on coulomb charge count [Ah]
+  OvmsMetricFloat     *m_bat_cap_ah_norm;         // … using normalized SOC
+  OvmsMetricFloat     *m_bat_cap_kwh_abs;         // … based on energy charge count [kWh]
+  OvmsMetricFloat     *m_bat_cap_kwh_norm;        // … using normalized SOC
+
+  SmoothExp<float>    m_smooth_cap_ah_abs;        // … and smoothing for these
+  SmoothExp<float>    m_smooth_cap_ah_norm;
+  SmoothExp<float>    m_smooth_cap_kwh_abs;
+  SmoothExp<float>    m_smooth_cap_kwh_norm;
+
 protected:
+  obd_state_t         m_obd_state;                // OBD subsystem state
   poll_vector_t       m_poll_vector;              // List of PIDs to poll
 
   int                 m_cfg_cell_interval_drv;    // Cell poll interval while driving, default 15 sec.
   int                 m_cfg_cell_interval_chg;    // … while charging, default 60 sec.
+  int                 m_cfg_cell_interval_awk;    // … while awake, default 60 sec.
   uint16_t            m_cell_last_vi;             // Index of last cell voltage read
   uint16_t            m_cell_last_ti;             // … temperature
 
   float               m_range_est_factor;         // For range calculation during charge
+  float               m_bat_cap_range_hist[3];    // Range capacity maximum detection for SOH calculation
+
+  chg_type_t          m_chg_type;                 // CHGTYPE_None / _AC / _DC
+  int                 m_cfg_dc_interval;          // Interval for DC fast charge test/log PIDs
+
+  int                 m_chg_ctp_car;              // Charge time prediction by car
 
 private:
   PollReplyHelper     PollReply;
 
   float               BatMgmtCellMax;             // Maximum cell voltage
   float               BatMgmtCellMin;             // Minimum cell voltage
-
-  uint32_t            TimeOffRequested;           // For Off-Timeout: Monotonictime when the poll should
-                                                  //   have gone to VWEUP_OFF, 0 means no Off requested
 
 };
 

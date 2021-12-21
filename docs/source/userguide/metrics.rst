@@ -20,14 +20,10 @@ The full list of metrics available can be shown::
   v.p.satcount                             12
   v.p.speed                                0Kph
   v.p.trip                                 0Km
-  v.tp.fl.p                                206.843kPa
-  v.tp.fl.t                                33°C
-  v.tp.fr.p                                206.843kPa
-  v.tp.fr.t                                33°C
-  v.tp.rl.p                                275.79kPa
-  v.tp.rl.t                                34°C
-  v.tp.rr.p                                275.79kPa
-  v.tp.rr.t                                34°C
+  v.t.alert                                0,0,0,1
+  v.t.health                               95,93,96,74%
+  v.t.pressure                             206.843,216.483,275.79,175.79kPa
+  v.t.temp                                 33,33,34,38°C
   v.type                                   DEMO
 
 You can filter the ``metrics list`` output for names matching a given substring,
@@ -133,6 +129,7 @@ v.b.p.temp.min                           13°C                     Cell temperat
 v.b.p.temp.stddev                        0°C                      Cell temperature - current standard deviation
 v.b.p.temp.stddev.max                    0.73°C                   Cell temperature - maximum standard deviation observed
 v.b.p.voltage.avg                        4.1V                     Cell voltage - pack average
+v.b.p.voltage.grad                       0.0032V                  Cell voltage - gradient of current series
 v.b.p.voltage.max                        4.105V                   Cell voltage - strongest cell in pack
 v.b.p.voltage.min                        4.09V                    Cell voltage - weakest cell in pack
 v.b.p.voltage.stddev                     0.00535V                 Cell voltage - current standard deviation
@@ -141,6 +138,7 @@ v.b.power                                0kW                      Main battery m
 v.b.range.est                            99km                     Estimated range
 v.b.range.full                           50.8km                   Ideal range at 100% SOC & current conditions
 v.b.range.ideal                          48km                     Ideal range
+v.b.range.speed                          21.6km/h                 Momentary ideal range gain/loss (charge/discharge) speed
 v.b.soc                                  96.3%                    State of charge
 v.b.soh                                  85%                      State of health
 v.b.temp                                 13°C                     Main battery momentary temperature
@@ -157,6 +155,8 @@ v.c.duration.range                       -1Min                    … for suffic
 v.c.duration.soc                         0Min                     … for sufficient SOC
 v.c.efficiency                           87.6%                    Momentary charger efficiency
 v.c.kwh                                  2.6969kWh                Energy sum for running charge
+v.c.kwh.grid                             3.6969kWh                Energy drawn from grid during running session
+v.c.kwh.grid.total                       256.69kWh                Energy drawn from grid total (life time)
 v.c.limit.range                          0km                      Sufficient range limit for current charge
 v.c.limit.soc                            80%                      Sufficient SOC limit for current charge
 v.c.mode                                 standard                 standard, range, performance, storage
@@ -178,8 +178,8 @@ v.d.rl                                                            yes = Rear lef
 v.d.rr                                                            yes = Rear right door open
 v.d.trunk                                                         yes = Trunk open
 v.e.alarm                                                         yes = Alarm currently sounding
-v.e.aux12v                                                        yes = Auxilliary 12v system is on
-v.e.awake                                no                       yes = Vehicle/bus awake (switched on)
+v.e.aux12v                                                        yes = 12V auxiliary system is on (base system awake)
+v.e.awake                                no                       yes = Vehicle is fully awake (switched on by the user)
 v.e.c.config                                                      yes = ECU/controller in configuration state
 v.e.c.login                                                       yes = Module logged in at ECU/controller
 v.e.cabintemp                            20°C                     Cabin temperature
@@ -187,7 +187,7 @@ v.e.cabinfan                             100%                     Cabin fan
 v.e.cabinsetpoint                        24°C                     Cabin set point
 v.e.cabinintake                          fresh                    Cabin intake type (fresh, recirc, etc)
 v.e.cabinvent                            feet,face                Cabin vent type (comma-separated list of feet, face, screen, etc)
-v.e.charging12v                          no                       yes = 12V battery charging
+v.e.charging12v                          no                       yes = 12V battery is charging
 v.e.cooling                                                       yes = Cooling
 v.e.drivemode                            33882626                 Active drive profile code (vehicle specific)
 v.e.drivetime                            0Sec                     Seconds driving (turned on)
@@ -198,7 +198,7 @@ v.e.headlights                                                    yes = Headligh
 v.e.heating                                                       yes = Heating
 v.e.hvac                                                          yes = HVAC active
 v.e.locked                                                        yes = Vehicle locked
-v.e.on                                   no                       yes = "Ignition" state (drivable)
+v.e.on                                   no                       yes = Vehicle is in "ignition" state (drivable)
 v.e.parktime                             49608Sec                 Seconds parking (turned off)
 v.e.regenbrake                                                    yes = Regenerative braking active
 v.e.serv.range                           12345km                  Distance to next scheduled maintenance/service [km]
@@ -206,6 +206,29 @@ v.e.serv.time                            1572590910Sec            Time of next s
 v.e.temp                                                          Ambient temperature
 v.e.throttle                             0%                       Drive pedal state [%]
 v.e.valet                                                         yes = Valet mode engaged
+v.g.generating                           no                       True = currently delivering power
+v.g.climit                               0A                       Maximum generator input current (from battery)
+v.g.current                              1.25A                    Momentary generator input current (from battery)
+v.g.duration.empty                       25Min                    Estimated time remaining for full discharge
+v.g.duration.range                       -1Min                    … for range limit
+v.g.duration.soc                         0Min                     … for SOC limit
+v.g.efficiency                           87.6%                    Momentary generator efficiency
+v.g.kwh                                  2.6969kWh                Energy sum generated in the running session
+v.g.kwh.grid                             3.6969kWh                Energy sent to grid during running session
+v.g.kwh.grid.total                       256.69kWh                Energy sent to grid total
+v.g.limit.range                          0km                      Minimum range limit for generator mode
+v.g.limit.soc                            80%                      Minimum SOC limit for generator mode
+v.g.mode                                 standard                 Generator mode (TBD)
+v.g.pilot                                no                       Pilot signal present
+v.g.power                                125kW                    Momentary generator output power
+v.g.state                                done                     Generator state (TBD)
+v.g.substate                                                      Generator substate (TBD)
+v.g.temp                                 16°C                     Generator temperature
+v.g.time                                 0Sec                     Duration of generator running
+v.g.timermode                            false                    True if generator timer enabled 
+v.g.timerstart                                                    Time generator is due to start 
+v.g.type                                                          Connection type (chademo, ccs, …)
+v.g.voltage                              0V                       Momentary generator output voltage
 v.i.temp                                                          Inverter temperature
 v.i.power                                42.7kW                   Momentary inverter motor power (output=positive)
 v.i.efficiency                           98.2%                    Momentary inverter efficiency
@@ -225,14 +248,10 @@ v.p.odometer                             57913.1km                Vehicle odomet
 v.p.satcount                             8                        GPS satellite count in view
 v.p.speed                                0km/h                    Vehicle speed
 v.p.trip                                 0km                      Trip odometer
-v.tp.fl.p                                                         TPMS front left pressure
-v.tp.fl.t                                                         TPMS front left temperature
-v.tp.fr.p                                                         TPMS front right pressure
-v.tp.fr.t                                                         TPMS front right temperature
-v.tp.rl.p                                                         TPMS rear left pressure
-v.tp.rl.t                                                         TPMS rear left temperature
-v.tp.rr.p                                                         TPMS rear right pressure
-v.tp.rr.t                                                         TPMS rear right temperature
+v.t.alert                                0,0,0,1                  TPMS tyre alert levels [0=normal, 1=warning, 2=alert]
+v.t.health                               95,93,96,74%             TPMS tyre health states
+v.t.pressure                             206.8,216.4,…kPa         TPMS tyre pressures
+v.t.temp                                 33,33,34,38°C            TPMS tyre temperatures
 v.type                                   RT                       Vehicle type code
 v.vin                                    VF1ACVYB012345678        Vehicle identification number
 ======================================== ======================== ============================================

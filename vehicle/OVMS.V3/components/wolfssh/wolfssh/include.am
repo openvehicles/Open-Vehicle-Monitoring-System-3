@@ -2,19 +2,21 @@
 # All paths should be given relative to the root
 #
 
-
 nobase_include_HEADERS+= \
+                         wolfssh/agent.h \
                          wolfssh/version.h \
                          wolfssh/ssh.h \
                          wolfssh/keygen.h \
                          wolfssh/port.h \
-                         wolfssh/memory.h \
                          wolfssh/settings.h \
                          wolfssh/error.h \
                          wolfssh/visibility.h \
+                         wolfssh/wolfscp.h \
                          wolfssh/misc.h \
-                         wolfssh/log.h
+                         wolfssh/log.h \
+                         wolfssh/test.h \
+                         wolfssh/certs_test.h \
+                         wolfssh/wolfsftp.h
 
-noinst_HEADERS+= \
-                         wolfssh/internal.h
+noinst_HEADERS+= wolfssh/internal.h
 

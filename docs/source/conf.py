@@ -76,8 +76,8 @@ html_context = {
 }
 
 def setup(app):
-    app.add_stylesheet('theme_overrides.css')
-    app.add_stylesheet('copybutton.css')
-    app.add_javascript('clipboard.min.js')
-    app.add_javascript('copybutton.js')
+    app.add_css_file('theme_overrides.css')
+    app.add_css_file('copybutton.css')
+    app.add_js_file('clipboard.min.js')
+    app.add_js_file('copybutton.js')
 

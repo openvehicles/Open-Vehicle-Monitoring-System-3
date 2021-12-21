@@ -1,6 +1,6 @@
 /* fe_low_mem.c
  *
- * Copyright (C) 2006-2016 wolfSSL Inc.
+ * Copyright (C) 2006-2020 wolfSSL Inc.
  *
  * This file is part of wolfSSL.
  *
@@ -40,7 +40,6 @@
     #include <wolfcrypt/src/misc.c>
 #endif
 
-
 void fprime_copy(byte *x, const byte *a)
 {
     int i;
@@ -56,8 +55,18 @@ void lm_copy(byte* x, const byte* a)
         x[i] = a[i];
 }
 
+#if ((defined(HAVE_CURVE25519) && !defined(CURVE25519_SMALL)) || \
+    (defined(HAVE_ED25519) && !defined(ED25519_SMALL))) &&      \
+    !defined(FREESCALE_LTC_ECC)
+    /* to be Complementary to fe_low_mem.c */
+#else
+void fe_init(void)
+{
+}
+#endif
 
 #ifdef CURVE25519_SMALL
+
 /* Double an X-coordinate */
 static void xc_double(byte *x3, byte *z3,
 		      const byte *x1, const byte *z1)
@@ -132,7 +141,7 @@ static void xc_diffadd(byte *x5, byte *z5,
 }
 
 #ifndef FREESCALE_LTC_ECC
-int curve25519(byte *result, byte *e, byte *q)
+int curve25519(byte *result, const byte *e, const byte *q)
 {
 	/* Current point: P_m */
 	byte xm[F25519_SIZE];

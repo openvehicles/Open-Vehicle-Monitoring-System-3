@@ -1,6 +1,6 @@
 /* port/ti/ti_ccm.c
  *
- * Copyright (C) 2006-2016 wolfSSL Inc.
+ * Copyright (C) 2006-2020 wolfSSL Inc.
  *
  * This file is part of wolfSSL.
  *
@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335, USA
  */
 
+
 #ifndef WOLF_CRYPT_TI_CCM_H
 #define WOLF_CRYPT_TI_CCM_H
 
@@ -35,7 +36,7 @@ int wolfSSL_TI_CCMInit(void) ;
 #ifndef SINGLE_THREADED
 void wolfSSL_TI_lockCCM(void) ;
 void wolfSSL_TI_unlockCCM(void) ;
-#else 
+#else
 #define wolfSSL_TI_lockCCM()
 #define wolfSSL_TI_unlockCCM()
 #endif

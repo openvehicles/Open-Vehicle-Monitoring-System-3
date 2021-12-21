@@ -9,6 +9,10 @@
 
 ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
 COMPONENT_ADD_INCLUDEDIRS := include mongoose
+ifdef CONFIG_MG_SSL_IF_WOLFSSL
+COMPONENT_PRIV_INCLUDEDIRS := ../wolfssl ../wolfssl/wolfssl
+COMPONENT_EXTRA_INCLUDES := ${IDF_PATH}/components/freertos/include/freertos
+endif
 COMPONENT_SRCDIRS := mongoose
 COMPONENT_SUBMODULES := mongoose
 #COMPONENT_ADD_LDFLAGS = -Wl,--whole-archive -l$(COMPONENT_NAME) -Wl,--no-whole-archive

@@ -46,6 +46,9 @@ static const char *TAG = "webserver";
 #include "buffered_shell.h"
 #include "vehicle.h"
 
+#ifdef CONFIG_OVMS_COMP_PLUGINS
+#include "ovms_plugins.h"
+#endif // #ifdef CONFIG_OVMS_COMP_PLUGINS
 
 OvmsWebServer MyWebServer __attribute__ ((init_priority (8200)));
 
@@ -55,7 +58,7 @@ OvmsWebServer::OvmsWebServer()
 
   m_running = false;
   m_configured = false;
-  m_restart_countdown = 0;
+  m_shutdown_countdown = 0;
   memset(m_sessions, 0, sizeof(m_sessions));
 
 #if MG_ENABLE_FILESYSTEM
@@ -110,8 +113,8 @@ OvmsWebServer::OvmsWebServer()
   RegisterPage("/cfg/password", "Password", HandleCfgPassword, PageMenu_Config, PageAuth_Cookie);
   RegisterPage("/cfg/vehicle", "Vehicle", HandleCfgVehicle, PageMenu_Config, PageAuth_Cookie);
   RegisterPage("/cfg/wifi", "Wifi", HandleCfgWifi, PageMenu_Config, PageAuth_Cookie);
-#ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
-  RegisterPage("/cfg/modem", "Modem", HandleCfgModem, PageMenu_Config, PageAuth_Cookie);
+#ifdef CONFIG_OVMS_COMP_CELLULAR
+  RegisterPage("/cfg/cellular", "Cellular", HandleCfgModem, PageMenu_Config, PageAuth_Cookie);
 #endif
 #ifdef CONFIG_OVMS_COMP_SERVER
 #ifdef CONFIG_OVMS_COMP_SERVER_V2
@@ -120,9 +123,10 @@ OvmsWebServer::OvmsWebServer()
 #ifdef CONFIG_OVMS_COMP_SERVER_V3
   RegisterPage("/cfg/server/v3", "Server V3 (MQTT)", HandleCfgServerV3, PageMenu_Config, PageAuth_Cookie);
 #endif
+  RegisterPage("/cfg/notifications", "Notifications", HandleCfgNotifications, PageMenu_Config, PageAuth_Cookie);
 #endif
 #ifdef CONFIG_OVMS_COMP_PUSHOVER
-  RegisterPage("/cfg/notification", "Notification", HandleCfgNotification, PageMenu_Config, PageAuth_Cookie);
+  RegisterPage("/cfg/pushover", "Pushover", HandleCfgPushover, PageMenu_Config, PageAuth_Cookie);
 #endif
   RegisterPage("/cfg/webserver", "Webserver", HandleCfgWebServer, PageMenu_Config, PageAuth_Cookie);
   RegisterPage("/cfg/plugins", "Web Plugins", HandleCfgPlugins, PageMenu_Config, PageAuth_Cookie);
@@ -157,12 +161,28 @@ void OvmsWebServer::NetManInit(std::string event, void* data)
   struct mg_bind_opts bind_opts = {};
   memset(&bind_opts, 0, sizeof(bind_opts));
   bind_opts.error_string = (const char**) &error_string;
+
+  // bind http:
+  ESP_LOGI(TAG, "Binding to port 80 (http)");
   struct mg_connection *nc = mg_bind_opt(mgr, ":80", EventHandler, bind_opts);
-  if (!nc)
-    ESP_LOGE(TAG, "Cannot bind to port 80: %s", error_string);
-  else {
+  if (!nc) {
+    ESP_LOGE(TAG, "Cannot bind to port 80 (http): %s", error_string);
+  } else {
     mg_set_protocol_http_websocket(nc);
     mg_set_timer(nc, mg_time() + SESSION_CHECK_INTERVAL);
+  }
+
+  // bind https:
+  if (path_exists("/store/tls/webserver.crt") && path_exists("/store/tls/webserver.key")) {
+    ESP_LOGI(TAG, "Binding to port 443 (https)");
+    bind_opts.ssl_cert = "/store/tls/webserver.crt";
+    bind_opts.ssl_key = "/store/tls/webserver.key";
+    nc = mg_bind_opt(mgr, ":443", EventHandler, bind_opts);
+    if (!nc) {
+      ESP_LOGE(TAG, "Cannot bind to port 443 (https): %s", error_string);
+    } else {
+      mg_set_protocol_http_websocket(nc);
+    }
   }
 }
 
@@ -350,8 +370,19 @@ PageEntry* OvmsWebServer::FindPage(std::string uri)
 
 void PagePluginContent::LoadContent()
 {
-  std::string path = "/store/plugin/" + m_path;
+  std::string path;
+  if (m_pluginstore)
+    {
+    path = "/store/plugins/" + m_path;
+    }
+  else
+    {
+    path = "/store/plugin/" + m_path;
+    }
   std::ifstream file(path, std::ios::in | std::ios::binary | std::ios::ate);
+
+  ESP_LOGD(TAG,"Plugin LoadContent: %s = %s",m_path.c_str(),path.c_str());
+
   if (!file.is_open()) {
     ESP_LOGE(TAG, "Plugin file missing: '%s'", path.c_str());
     m_content = "<!-- ERROR: Plugin file missing: '";
@@ -390,21 +421,21 @@ void OvmsWebServer::RegisterPlugins()
   //    <key>.auth          [page] <PageAuth_t> code name
   //    <key>.menu          [page] <PageMenu_t> code name
   //    <key>.hook          [hook] Callback hook code
-  // 
+  //
   // Files:
   //    /store/plugin/<key>
 
   for (auto& kv: pmap) {
     if (!endsWith(kv.first, ".enable") || !strtobool(kv.second))
       continue;
-    
+
     key = kv.first.substr(0, kv.first.length() - 7);
     page = cp->GetValue(key+".page");
     hook = cp->GetValue(key+".hook");
     bool is_hook = cp->IsDefined(key+".hook");
     if (page == "" || (is_hook && hook == ""))
       continue;
-    
+
     if (is_hook) {
       m_plugin_parts.insert({ page + ":" + hook, PagePluginContent(key) });
       RegisterCallback("http.plugin", page, PluginCallback, -1);
@@ -418,6 +449,12 @@ void OvmsWebServer::RegisterPlugins()
       ESP_LOGD(TAG, "Plugin page registered: '%s' => '%s'", page.c_str(), key.c_str());
     }
   }
+
+  #ifdef CONFIG_OVMS_COMP_PLUGINS
+  // Plugins
+  MyPluginStore.LoadEnabledModules(EL_WEB_PAGE);
+  MyPluginStore.LoadEnabledModules(EL_WEB_HOOK);
+  #endif // #ifdef CONFIG_OVMS_COMP_PLUGIN
 }
 
 void OvmsWebServer::DeregisterPlugins()
@@ -432,10 +469,14 @@ void OvmsWebServer::ReloadPlugin(std::string path)
 {
   if (startsWith(path, "/store/plugin/"))
     path = path.substr(14);
+  else if (startsWith(path, "/store/plugins/"))
+    path = path.substr(15);
+
   for (auto i = m_plugin_pages.begin(); i != m_plugin_pages.end(); i++) {
     if (i->second.m_path == path)
       i->second.LoadContent();
   }
+
   for (auto i = m_plugin_parts.begin(); i != m_plugin_parts.end(); i++) {
     if (i->second.m_path == path)
       i->second.LoadContent();

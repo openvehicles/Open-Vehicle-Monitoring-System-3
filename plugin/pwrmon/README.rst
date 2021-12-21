@@ -4,7 +4,7 @@ PwrMon: Trip Power Chart
 
 **Web chart showing average speed, power & energy use on the road**
 
-Version 1.0 by Michael Balzer <dexter@dexters-web.de>
+Version 1.2 by Michael Balzer <dexter@dexters-web.de>
 
 .. image:: pwrmon-screenshot.png
 
@@ -23,6 +23,10 @@ into the chart to highlight a specific data point.
 The live data may be more accurate than the data stored by the module plugin, as it
 will react directly to the odometer change, while the module plugin can only check
 the odometer once per second.
+
+**Version 1.2** changes the file and transfer encoding from JSON to CBOR. Upgrading is
+strongly recommended, as this has a substantial performance gain for both the module
+(scripting engine) and the web user interface (loading the chart).
 
 
 ------------
@@ -58,8 +62,8 @@ storage file and interval (1 km) can also be changed.
 On the web plugin, you can customize the live sample interval (default 0.3 km, doesn't
 need to match the module plugin) and the initial zoom (default: 8 km).
 
-The persistent history storage file is ``/store/usr/pwrmon.jx``. It needs ~9 kB with
-the default sample configuration. If space is tight on your ``/store`` partition you can
+The persistent history storage file is ``/store/usr/pwrmon.cbor`` by default. It needs
+~10 kB with the default configuration. If space is tight on your ``/store`` partition you can
 change the file location to ``/sd/…`` in the source code or disable the file by setting
 an empty string as the filename.
 
@@ -70,6 +74,7 @@ Plugin API
 
 .. code-block:: none
 
-  pwrmon.dump()        -- dump (print) recorded history data in JSON format
-  pwrmon.data()        -- get a copy of the history data object
+  pwrmon.dump('CBOR')     -- dump recorded history data in CBOR format (binary)
+  pwrmon.dump()           -- dump (print) recorded history data in JSON format
+  pwrmon.data()           -- get a copy of the history data object
 

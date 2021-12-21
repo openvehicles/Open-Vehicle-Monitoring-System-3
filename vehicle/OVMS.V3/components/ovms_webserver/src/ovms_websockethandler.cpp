@@ -462,7 +462,7 @@ WebSocketHandler* OvmsWebServer::CreateWebSocketHandler(mg_connection* nc)
   
   // start ticker:
   m_client_cnt++;
-  if (xTimerIsTimerActive(m_update_ticker) == pdFALSE)
+  if (m_client_cnt == 1)
     xTimerStart(m_update_ticker, 0);
   
   ESP_LOGD(TAG, "WebSocket[%p] handler %p opened; %d clients active", nc, handler, m_client_cnt);
@@ -523,15 +523,15 @@ void OvmsWebServer::EventListener(std::string event, void* data)
 {
   // shutdown delay to finish command output transmissions:
   if (event == "system.shuttingdown") {
-    MyBoot.RestartPending("webserver");
-    m_restart_countdown = 3;
+    MyBoot.ShutdownPending("webserver");
+    m_shutdown_countdown = 3;
   }
 
   // ticker:
   else if (event == "ticker.1") {
     CfgInitTicker();
-    if (m_restart_countdown > 0 && --m_restart_countdown == 0)
-      MyBoot.RestartReady("webserver");
+    if (m_shutdown_countdown > 0 && --m_shutdown_countdown == 0)
+      MyBoot.ShutdownReady("webserver");
   }
 
   // reload plugins on changes:

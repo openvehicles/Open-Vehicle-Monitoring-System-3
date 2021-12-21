@@ -1,6 +1,6 @@
 /* crypto.c
  *
- * Copyright (C) 2006-2016 wolfSSL Inc.
+ * Copyright (C) 2006-2020 wolfSSL Inc.
  *
  * This file is part of wolfSSL.
  *
@@ -59,6 +59,19 @@ int CRYPT_MD5_Initialize(CRYPT_MD5_CTX* md5)
     return wc_InitMd5((Md5*)md5);
 }
 
+int CRYPT_MD5_DataSizeSet(CRYPT_MD5_CTX* md5, unsigned int sz)
+{
+    if (md5 == NULL)
+        return BAD_FUNC_ARG;
+
+#ifdef WOLFSSL_PIC32MZ_HASH
+    wc_Md5SizeSet((Md5*)md5, sz);
+#else
+    (void)sz;
+#endif
+
+    return 0;
+}
 
 /* Add data to MD5 */
 int CRYPT_MD5_DataAdd(CRYPT_MD5_CTX* md5, const unsigned char* input,
@@ -92,9 +105,22 @@ int CRYPT_SHA_Initialize(CRYPT_SHA_CTX* sha)
     if (sha == NULL)
         return BAD_FUNC_ARG;
 
-    return wc_InitSha((Sha*)sha);
+    return wc_InitSha((wc_Sha*)sha);
 }
 
+int CRYPT_SHA_DataSizeSet(CRYPT_SHA_CTX* sha, unsigned int sz)
+{
+    if (sha == NULL)
+        return BAD_FUNC_ARG;
+
+#ifdef WOLFSSL_PIC32MZ_HASH
+    wc_ShaSizeSet((wc_Sha*)sha, sz);
+#else
+    (void)sz;
+#endif
+
+    return 0;
+}
 
 /* Add data to SHA */
 int CRYPT_SHA_DataAdd(CRYPT_SHA_CTX* sha, const unsigned char* input,
@@ -103,7 +129,7 @@ int CRYPT_SHA_DataAdd(CRYPT_SHA_CTX* sha, const unsigned char* input,
     if (sha == NULL || input == NULL)
         return BAD_FUNC_ARG;
 
-    return wc_ShaUpdate((Sha*)sha, input, sz);
+    return wc_ShaUpdate((wc_Sha*)sha, input, sz);
 }
 
 
@@ -113,7 +139,7 @@ int CRYPT_SHA_Finalize(CRYPT_SHA_CTX* sha, unsigned char* digest)
     if (sha == NULL || digest == NULL)
         return BAD_FUNC_ARG;
 
-    return wc_ShaFinal((Sha*)sha, digest);
+    return wc_ShaFinal((wc_Sha*)sha, digest);
 }
 #endif
 
@@ -122,15 +148,28 @@ int CRYPT_SHA_Finalize(CRYPT_SHA_CTX* sha, unsigned char* digest)
 /* Initialize SHA-256 */
 int CRYPT_SHA256_Initialize(CRYPT_SHA256_CTX* sha256)
 {
-    typedef char sha_test[sizeof(CRYPT_SHA256_CTX) >= sizeof(Sha256) ? 1 : -1];
+    typedef char sha_test[sizeof(CRYPT_SHA256_CTX) >= sizeof(wc_Sha256) ? 1 : -1];
     (void)sizeof(sha_test);
 
     if (sha256 == NULL)
         return BAD_FUNC_ARG;
 
-    return wc_InitSha256((Sha256*)sha256);
+    return wc_InitSha256((wc_Sha256*)sha256);
 }
 
+int CRYPT_SHA256_DataSizeSet(CRYPT_SHA256_CTX* sha256, unsigned int sz)
+{
+    if (sha256 == NULL)
+        return BAD_FUNC_ARG;
+
+#ifdef WOLFSSL_PIC32MZ_HASH
+    wc_Sha256SizeSet((wc_Sha256*)sha256, sz);
+#else
+    (void)sz;
+#endif
+
+    return 0;
+}
 
 /* Add data to SHA-256 */
 int CRYPT_SHA256_DataAdd(CRYPT_SHA256_CTX* sha256, const unsigned char* input,
@@ -139,7 +178,7 @@ int CRYPT_SHA256_DataAdd(CRYPT_SHA256_CTX* sha256, const unsigned char* input,
     if (sha256 == NULL || input == NULL)
         return BAD_FUNC_ARG;
 
-    return wc_Sha256Update((Sha256*)sha256, input, sz);
+    return wc_Sha256Update((wc_Sha256*)sha256, input, sz);
 }
 
 
@@ -149,7 +188,7 @@ int CRYPT_SHA256_Finalize(CRYPT_SHA256_CTX* sha256, unsigned char* digest)
     if (sha256 == NULL || digest == NULL)
         return BAD_FUNC_ARG;
 
-    return wc_Sha256Final((Sha256*)sha256, digest);
+    return wc_Sha256Final((wc_Sha256*)sha256, digest);
 }
 #endif
 
@@ -158,13 +197,13 @@ int CRYPT_SHA256_Finalize(CRYPT_SHA256_CTX* sha256, unsigned char* digest)
 /* Initialize SHA-384 */
 int CRYPT_SHA384_Initialize(CRYPT_SHA384_CTX* sha384)
 {
-    typedef char sha_test[sizeof(CRYPT_SHA384_CTX) >= sizeof(Sha384) ? 1 : -1];
+    typedef char sha_test[sizeof(CRYPT_SHA384_CTX) >= sizeof(wc_Sha384) ? 1 : -1];
     (void)sizeof(sha_test);
 
     if (sha384 == NULL)
         return BAD_FUNC_ARG;
 
-    return wc_InitSha384((Sha384*)sha384);
+    return wc_InitSha384((wc_Sha384*)sha384);
 }
 
 
@@ -175,7 +214,7 @@ int CRYPT_SHA384_DataAdd(CRYPT_SHA384_CTX* sha384, const unsigned char* input,
     if (sha384 == NULL || input == NULL)
         return BAD_FUNC_ARG;
 
-    return wc_Sha384Update((Sha384*)sha384, input, sz);
+    return wc_Sha384Update((wc_Sha384*)sha384, input, sz);
 }
 
 
@@ -185,7 +224,7 @@ int CRYPT_SHA384_Finalize(CRYPT_SHA384_CTX* sha384, unsigned char* digest)
     if (sha384 == NULL || digest == NULL)
         return BAD_FUNC_ARG;
 
-    return wc_Sha384Final((Sha384*)sha384, digest);
+    return wc_Sha384Final((wc_Sha384*)sha384, digest);
 }
 #endif
 
@@ -193,13 +232,13 @@ int CRYPT_SHA384_Finalize(CRYPT_SHA384_CTX* sha384, unsigned char* digest)
 /* Initialize SHA-512 */
 int CRYPT_SHA512_Initialize(CRYPT_SHA512_CTX* sha512)
 {
-    typedef char sha_test[sizeof(CRYPT_SHA512_CTX) >= sizeof(Sha512) ? 1 : -1];
+    typedef char sha_test[sizeof(CRYPT_SHA512_CTX) >= sizeof(wc_Sha512) ? 1 : -1];
     (void)sizeof(sha_test);
 
     if (sha512 == NULL)
         return BAD_FUNC_ARG;
 
-    return wc_InitSha512((Sha512*)sha512);
+    return wc_InitSha512((wc_Sha512*)sha512);
 }
 
 
@@ -210,7 +249,7 @@ int CRYPT_SHA512_DataAdd(CRYPT_SHA512_CTX* sha512, const unsigned char* input,
     if (sha512 == NULL || input == NULL)
         return BAD_FUNC_ARG;
 
-    return wc_Sha512Update((Sha512*)sha512, input, sz);
+    return wc_Sha512Update((wc_Sha512*)sha512, input, sz);
 }
 
 
@@ -220,7 +259,7 @@ int CRYPT_SHA512_Finalize(CRYPT_SHA512_CTX* sha512, unsigned char* digest)
     if (sha512 == NULL || digest == NULL)
         return BAD_FUNC_ARG;
 
-    return wc_Sha512Final((Sha512*)sha512, digest);
+    return wc_Sha512Final((wc_Sha512*)sha512, digest);
 }
 #endif
 
@@ -663,13 +702,31 @@ int CRYPT_ECC_DHE_SharedSecretMake(CRYPT_ECC_CTX* priv, CRYPT_ECC_CTX* pub,
 {
     int ret;
     unsigned int inOut = outSz;
+#if defined(ECC_TIMING_RESISTANT)
+    WC_RNG rng;
+#endif
 
     if (priv == NULL || pub == NULL || out == NULL || usedSz == NULL)
         return BAD_FUNC_ARG;
 
+#if defined(ECC_TIMING_RESISTANT)
+    ret = wc_InitRng(&rng);
+    if (ret != 0)
+        return ret;
+    ret = wc_ecc_set_rng((ecc_key*)priv->holder, &rng);
+    if (ret != 0) {
+        wc_FreeRng(&rng);
+        return ret;
+    }
+#endif
+
     ret = wc_ecc_shared_secret((ecc_key*)priv->holder, (ecc_key*)pub->holder,
                             out, &inOut);
     *usedSz = inOut;
+
+#if defined(ECC_TIMING_RESISTANT)
+    wc_FreeRng(&rng);
+#endif
 
     return ret;
 }

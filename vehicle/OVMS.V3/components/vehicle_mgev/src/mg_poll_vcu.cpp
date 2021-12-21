@@ -30,8 +30,6 @@
 */
 
 #include "vehicle_mgev.h"
-#include "mg_obd_pids.h"
-#include "metrics_standard.h"
 
 namespace {
 
@@ -76,26 +74,41 @@ void OvmsVehicleMgEv::IncomingVcuPoll(
             );
             break;
         case vcuChargerConnectedPid:
-            StandardMetrics.ms_v_door_chargeport->SetValue(data[0] & 1);
-            StandardMetrics.ms_v_charge_pilot->SetValue(data[0] & 1);
+            if (StandardMetrics.ms_v_charge_type->AsString() == "ccs")
+            {
+                StandardMetrics.ms_v_door_chargeport->SetValue(true);
+                StandardMetrics.ms_v_charge_pilot->SetValue(true);
+            }
+            else
+            {
+                StandardMetrics.ms_v_door_chargeport->SetValue(data[0] & 1);
+                StandardMetrics.ms_v_charge_pilot->SetValue(data[0] & 1);
+            }
+            break;
+        case vcuHvContactorPid:
+            StandardMetrics.ms_v_env_charging12v->SetValue(data[0] & 1);
+            SetEnvOn();
             break;
         case vcuIgnitionStatePid:
             // Aux only is 1, but we'll say it's on when the ignition is too
             StandardMetrics.ms_v_env_aux12v->SetValue(data[0] != 0);
-            if (StandardMetrics.ms_v_env_on->AsBool() != (data[0] == 2))
-            {
-                // Only set on change so we can see when it was turned on
-                StandardMetrics.ms_v_env_on->SetValue(data[0] == 2);
-            }
+            m_ignition_state->SetValue(data[0]);
+            SetEnvOn();
             break;
         case vcuVinPid:
             HandleVinMessage(data, length, remain);
             break;
         case vcuCoolantTempPid:
+            m_motor_coolant_temp->SetValue(data[0] - 40);
+            break;
+        case vcuMotorTempPid:
             StandardMetrics.ms_v_mot_temp->SetValue(data[0] - 40);
             break;
         case vcuMotorSpeedPid:
-            StandardMetrics.ms_v_mot_rpm->SetValue(value == 0x7fffu ? 0 : value);
+            StandardMetrics.ms_v_mot_rpm->SetValue(value - 0x7fffu);
+            break;
+        case vcuMotorTorquePid:
+            m_motor_torque->SetValue(value - 0x7fffu);
             break;
         case vcuOdometerPid:
             // km
@@ -109,42 +122,54 @@ void OvmsVehicleMgEv::IncomingVcuPoll(
         case vcuGearPid:
             if (data[0] == 8)
             {
-                StandardMetrics.ms_v_env_gear->SetValue(0);
+                StandardMetrics.ms_v_env_drivemode->SetValue(0);
             }
             // TODO: Get the correct value here for reverse
             else if (data[0] == 0)
             {
-                StandardMetrics.ms_v_env_gear->SetValue(-1);
+                StandardMetrics.ms_v_env_drivemode->SetValue(-1);
             }
             else
             {
-                StandardMetrics.ms_v_env_gear->SetValue(1);
+                StandardMetrics.ms_v_env_drivemode->SetValue(1);
             }
             break;
-        case vcuBreakPid:
+        case vcuBrakePid:
             StandardMetrics.ms_v_env_footbrake->SetValue(value / 10.0);
             break;
         case vcuBonnetPid:
             StandardMetrics.ms_v_door_hood->SetValue(data[0] & 1);
             break;
         case chargeRatePid:
-            // The kW of the charger, crude way to determine the charge type
-            {
-                auto rate = value / 10.0;
-                StandardMetrics.ms_v_charge_climit->SetValue(rate);
-                if (rate < 0.1)
-                {
-                    StandardMetrics.ms_v_charge_type->SetValue("undefined");
-                }
-                else if (rate > 7.0)
-                {
-                    StandardMetrics.ms_v_charge_type->SetValue("ccs");
-                }
-                else
-                {
-                    StandardMetrics.ms_v_charge_type->SetValue("type2");
-                }
-            }
+            // The available charge rate, max power BMS will accept right now
+            StandardMetrics.ms_v_charge_climit->SetValue(value / 10.0);
+            break;
+        case vcuAcPowerPid:
+            StandardMetrics.ms_v_env_cooling->SetValue(value > 0);
+            break;
+        case vcuBatteryVoltagePid:
+            m_bat_voltage_vcu->SetValue(value / 10.0);
+            break;
+        case vcuRadiatorFanPid:
+            m_radiator_fan->SetValue(data[0]);
+            break;
+        case vcuDcDcModePid:
+            m_vcu_dcdc_mode->SetValue(data[0]);
+            break;            
+        case vcuDcDcInputCurrentPid:
+            m_vcu_dcdc_input_current->SetValue((value - 0x7fffu)/10.0);
+            break;
+        case vcuDcDcInputVoltagePid:
+            m_vcu_dcdc_input_voltage->SetValue(value / 10.0);
+            break;     
+        case vcuDcDcOutputCurrentPid:
+            m_vcu_dcdc_output_current->SetValue(value / 10.0);
+            break;
+        case vcuDcDcOutputVoltagetPid:
+            m_vcu_dcdc_output_voltage->SetValue(value / 10.0);
+            break;     
+        case vcuDcDcTempPid:
+            m_vcu_dcdc_temp->SetValue(data[0] - 40);
             break;
     }
 }
@@ -165,4 +190,10 @@ void OvmsVehicleMgEv::HandleVinMessage(uint8_t* data, uint8_t length, uint16_t r
         StandardMetrics.ms_v_vin->SetValue(&m_vin[1]);
         memset(m_vin, 0, sizeof(m_vin));
     }
+}
+
+void OvmsVehicleMgEv::SetEnvOn()
+{
+    //Vehicle is ready to drive if ignition state is 2 (start button is green) and HV contactor is engaged (ms_v_env_charging12v will be true).
+    StandardMetrics.ms_v_env_on->SetValue(StandardMetrics.ms_v_env_charging12v->AsBool() && m_ignition_state->AsInt() == 2);      
 }

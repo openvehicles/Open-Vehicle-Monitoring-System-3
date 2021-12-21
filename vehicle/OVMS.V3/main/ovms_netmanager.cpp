@@ -271,10 +271,10 @@ void OvmsNetManager::RestartNetwork()
     MyPeripherals->m_esp32wifi->Restart();
 #endif // #ifdef CONFIG_OVMS_COMP_WIFI
 
-#ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
-  if (MyPeripherals && MyPeripherals->m_simcom)
-    MyPeripherals->m_simcom->Restart();
-#endif // CONFIG_OVMS_COMP_MODEM_SIMCOM
+#ifdef CONFIG_OVMS_COMP_CELLULAR
+  if (MyPeripherals && MyPeripherals->m_cellular_modem)
+    MyPeripherals->m_cellular_modem->Restart();
+#endif // CONFIG_OVMS_COMP_CELLULAR
   }
 
 void OvmsNetManager::WifiConnect()
@@ -658,10 +658,10 @@ void OvmsNetManager::SetNetType(std::string type)
   else if (type == "modem")
     {
     StdMetrics.ms_m_net_type->SetValue(type);
-#ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
-    if (MyPeripherals && MyPeripherals->m_simcom)
-      MyPeripherals->m_simcom->UpdateNetMetrics();
-#endif // CONFIG_OVMS_COMP_MODEM_SIMCOM
+#ifdef CONFIG_OVMS_COMP_CELLULAR
+    if (MyPeripherals && MyPeripherals->m_cellular_modem)
+      MyPeripherals->m_cellular_modem->UpdateNetMetrics();
+#endif // CONFIG_OVMS_COMP_CELLULAR
     }
   else
     {
@@ -671,7 +671,17 @@ void OvmsNetManager::SetNetType(std::string type)
     }
   }
 
+void SafePrioritiseAndIndicate(void* ctx)
+  {
+  MyNetManager.DoSafePrioritiseAndIndicate();
+  }
+
 void OvmsNetManager::PrioritiseAndIndicate()
+  {
+  tcpip_callback_with_block(SafePrioritiseAndIndicate, NULL, 1);
+  }
+
+void OvmsNetManager::DoSafePrioritiseAndIndicate()
   {
   const char *search = NULL;
   ip_addr_t* dns = NULL;
@@ -796,7 +806,7 @@ void OvmsNetManager::StartMongooseTask()
       while (m_mongoose_task)
         vTaskDelay(pdMS_TO_TICKS(50));
       // start new task:
-      xTaskCreatePinnedToCore(MongooseRawTask, "OVMS NetMan", 8*1024, (void*)this,
+      xTaskCreatePinnedToCore(MongooseRawTask, "OVMS NetMan",10*1024, (void*)this,
                               CONFIG_OVMS_NETMAN_TASK_PRIORITY, &m_mongoose_task, CORE(1));
       AddTaskToMap(m_mongoose_task);
       }
@@ -1002,6 +1012,14 @@ int OvmsNetManager::CleanupConnections()
       } // AP remotes
     } // connection loop
   return cnt;
+  }
+
+bool OvmsNetManager::IsNetManagerTask()
+  {
+  // Return TRUE if the currently running task is the Net Manager task
+  extern void *pxCurrentTCB[portNUM_PROCESSORS];
+
+  return (m_mongoose_task == pxCurrentTCB[xPortGetCoreID()]);
   }
 
 #endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE

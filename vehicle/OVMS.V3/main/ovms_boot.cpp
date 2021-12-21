@@ -38,6 +38,7 @@ static const char *TAG = "boot";
 #include "esp_system.h"
 #include "esp_panic.h"
 #include "esp_task_wdt.h"
+#include <driver/adc.h>
 
 #include "ovms.h"
 #include "ovms_boot.h"
@@ -80,6 +81,7 @@ static const char *sdesc[] = {
 // Boot reasons [bootreason_t]
 static const char* const bootreason_name[] = {
     "PowerOn",
+    "Wakeup",
     "SoftReset",
     "FirmwareUpdate",
     "EarlyCrash",
@@ -150,10 +152,11 @@ void boot_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
   writer->printf("  Reset reason: %s (%d)\n",MyBoot.GetResetReasonName(),MyBoot.GetResetReason());
   writer->printf("  Crash counters: %d total, %d early\n",MyBoot.GetCrashCount(),MyBoot.GetEarlyCrashCount());
 
-  if (MyBoot.m_restart_timer>0)
+  if (MyBoot.m_shutdown_timer>0)
     {
-    writer->printf("\nRestart in progress (%d secs, waiting for %d tasks)\n",
-      MyBoot.m_restart_timer, MyBoot.m_restart_pending);
+    writer->printf("\nShutdown for %s in progress (%d secs, waiting for %d tasks)\n",
+      MyBoot.m_shutdown_deepsleep ? "DeepSleep" : "Restart",
+      MyBoot.m_shutdown_timer, MyBoot.m_shutdown_pending);
     }
 
   if (MyBoot.GetCrashCount() > 0)
@@ -203,8 +206,10 @@ Boot::Boot()
   RESET_REASON cpu0 = rtc_get_reset_reason(0);
   RESET_REASON cpu1 = rtc_get_reset_reason(1);
 
-  m_restart_timer = 0;
-  m_restart_pending = 0;
+  m_shutdown_timer = 0;
+  m_shutdown_pending = 0;
+  m_shutdown_deepsleep = false;
+  m_shutting_down = false;
 
   m_resetreason = esp_reset_reason(); // Note: necessary to link reset_reason module
 
@@ -213,6 +218,40 @@ Boot::Boot()
     memset(&boot_data,0,sizeof(boot_data_t));
     m_bootreason = BR_PowerOn;
     ESP_LOGI(TAG, "Power cycle reset detected");
+    }
+  else if (cpu0 == DEEPSLEEP_RESET)
+    {
+    memset(&boot_data,0,sizeof(boot_data_t));
+    m_bootreason = BR_Wakeup;
+    esp_sleep_wakeup_cause_t wakeup_cause = esp_sleep_get_wakeup_cause();
+    ESP_LOGI(TAG, "Wakeup from deep sleep detected, wakeup cause %d", wakeup_cause);
+
+    // There is currently only one deep sleep application: saving the 12V battery
+    // from depletion. So we need to check if the voltage level is sufficient for
+    // normal operation now. MyPeripherals has not been initialized yet, so we need
+    // to read the ADC manually here.
+    #ifdef CONFIG_OVMS_COMP_ADC
+      // Note: RTC_MODULE nags about a lock release before aquire, this can be ignored
+      //  (reason: RTC_MODULE needs FreeRTOS for locking, which hasn't been started yet)
+      adc1_config_width(ADC_WIDTH_12Bit);
+      adc1_config_channel_atten(ADC1_CHANNEL_0, ADC_ATTEN_11db);
+      uint32_t adc_level = 0;
+      for (int i = 0; i < 5; i++)
+        adc_level += adc1_get_raw(ADC1_CHANNEL_0);
+      float level_12v = adc_level / 5 / 195.7;
+      ESP_LOGI(TAG, "12V level: ~%.1fV", level_12v);
+      if (level_12v > 11.0)
+        ESP_LOGI(TAG, "12V level sufficient, proceeding with boot");
+      else if (level_12v < 1.0)
+        ESP_LOGI(TAG, "Assuming USB powered, proceeding with boot");
+      else
+        {
+        ESP_LOGE(TAG, "12V level insufficient, re-entering deep sleep");
+        esp_deep_sleep(1000000LL * 60);
+        }
+    #else
+      ESP_LOGW(TAG, "ADC not available, cannot check 12V level");
+    #endif // CONFIG_OVMS_COMP_ADC
     }
   else if (boot_data.crc != boot_data.calc_crc())
     {
@@ -319,13 +358,22 @@ const char* Boot::GetResetReasonName()
 static void boot_shutdown_done(const char* event, void* data)
   {
   MyConfig.unmount();
-  esp_restart();
+
+  if (MyBoot.m_shutdown_deepsleep)
+    {
+    // For consistency with init, instead of calling MyPeripherals->m_esp32->SetPowerMode(DeepSleep):
+    esp_deep_sleep(1000000LL * 60);
+    }
+  else
+    {
+    esp_restart();
+    }
   }
 
 static void boot_shuttingdown_done(const char* event, void* data)
   {
-  if (MyBoot.m_restart_pending == 0)
-    MyBoot.m_restart_timer = 2;
+  if (MyBoot.m_shutdown_pending == 0)
+    MyBoot.m_shutdown_timer = 2;
   }
 
 void Boot::Restart(bool hard)
@@ -338,10 +386,11 @@ void Boot::Restart(bool hard)
     return;
     }
 
-  ESP_LOGI(TAG,"Shutting down for restart...");
-  OvmsMutexLock lock(&m_restart_mutex);
-  m_restart_pending = 0;
-  m_restart_timer = 60; // Give them 60 seconds to shutdown
+  ESP_LOGI(TAG,"Shutting down for %s...", m_shutdown_deepsleep ? "DeepSleep" : "Restart");
+  OvmsMutexLock lock(&m_shutdown_mutex);
+  m_shutting_down = true;
+  m_shutdown_pending = 0;
+  m_shutdown_timer = 60; // Give them 60 seconds to shutdown
   MyEvents.SignalEvent("system.shuttingdown", NULL, boot_shuttingdown_done);
 
   #undef bind  // Kludgy, but works
@@ -350,43 +399,52 @@ void Boot::Restart(bool hard)
   MyEvents.RegisterEvent(TAG,"ticker.1", std::bind(&Boot::Ticker1, this, _1, _2));
   }
 
-void Boot::RestartPending(const char* tag)
+void Boot::DeepSleep()
   {
-  OvmsMutexLock lock(&m_restart_mutex);
-  m_restart_pending++;
+  m_shutdown_deepsleep = true;
+  Restart(false);
   }
 
-void Boot::RestartReady(const char* tag)
+void Boot::ShutdownPending(const char* tag)
   {
-  OvmsMutexLock lock(&m_restart_mutex);
-  m_restart_pending--;
-  if (m_restart_pending == 0)
-    m_restart_timer = 2;
+  OvmsMutexLock lock(&m_shutdown_mutex);
+  m_shutdown_pending++;
+  ESP_LOGW(TAG, "Shutdown: %s pending, %d total", tag, m_shutdown_pending);
+  }
+
+void Boot::ShutdownReady(const char* tag)
+  {
+  OvmsMutexLock lock(&m_shutdown_mutex);
+  m_shutdown_pending--;
+  ESP_LOGI(TAG, "Shutdown: %s ready, %d pending", tag, m_shutdown_pending);
+  if (m_shutdown_pending == 0)
+    m_shutdown_timer = 2;
   }
 
 void Boot::Ticker1(std::string event, void* data)
   {
-  if (m_restart_timer > 0)
+  if (m_shutdown_timer > 0)
     {
-    OvmsMutexLock lock(&m_restart_mutex);
-    m_restart_timer--;
-    if (m_restart_timer == 1)
+    OvmsMutexLock lock(&m_shutdown_mutex);
+    m_shutdown_timer--;
+    if (m_shutdown_timer == 1)
       {
-      ESP_LOGI(TAG,"Restart now");
+      ESP_LOGI(TAG, "%s now", m_shutdown_deepsleep ? "DeepSleep" : "Restart");
       }
-    else if (m_restart_timer == 0)
+    else if (m_shutdown_timer == 0)
       {
       MyEvents.SignalEvent("system.shutdown", NULL, boot_shutdown_done);
       return;
       }
-    else if ((m_restart_timer % 5)==0)
-      ESP_LOGI(TAG,"Restart in %d seconds (%d pending)...",m_restart_timer,m_restart_pending);
+    else if ((m_shutdown_timer % 5)==0)
+      ESP_LOGI(TAG, "%s in %d seconds (%d pending)...",
+        m_shutdown_deepsleep ? "DeepSleep" : "Restart", m_shutdown_timer, m_shutdown_pending);
     }
   }
 
 bool Boot::IsShuttingDown()
   {
-  return (m_restart_timer > 0);
+  return m_shutting_down;
   }
 
 void Boot::ErrorCallback(XtExcFrame *frame, int core_id, bool is_abort)

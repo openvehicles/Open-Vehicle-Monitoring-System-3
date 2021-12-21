@@ -69,6 +69,7 @@ class esp32wifi : public pcp, public InternalRamAllocated
     void StopStation();
     void StartConnect();
     void Reconnect(OvmsWriter* writer);
+    wifi_active_scan_time_t GetScanTime();
     void Scan(OvmsWriter* writer, bool json=false);
     esp32wifi_mode_t GetMode();
     std::string GetSSID();
@@ -77,6 +78,7 @@ class esp32wifi : public pcp, public InternalRamAllocated
     void AdjustTaskPriority();
     void StartDhcpClient();
     void SetSTAWifiIP(std::string ip="", std::string sn="", std::string gw="");
+    void SetAPWifiBW();
 
   public:
     void EventWifiStaState(std::string event, void* data);

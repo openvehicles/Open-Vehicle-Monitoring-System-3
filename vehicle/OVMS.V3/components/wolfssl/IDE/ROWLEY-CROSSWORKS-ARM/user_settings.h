@@ -19,8 +19,12 @@ extern "C" {
 #define SINGLE_THREADED
 
 #undef  WOLFSSL_SMALL_STACK
-#define WOLFSSL_SMALL_STACK
+//#define WOLFSSL_SMALL_STACK
 
+#undef  WOLFSSL_SMALL_STACK_CACHE
+//#define WOLFSSL_SMALL_STACK_CACHE
+
+#define WOLFSSL_IGNORE_FILE_WARN
 
 /* ------------------------------------------------------------------------- */
 /* Math Configuration */
@@ -41,6 +45,25 @@ extern "C" {
 #undef  WOLFSSL_DEBUG_MATH
 //#define WOLFSSL_DEBUG_MATH
 
+/* Wolf Single Precision Math */
+#undef WOLFSSL_SP
+#if 0
+    #define WOLFSSL_SP
+    #define WOLFSSL_SP_SMALL      /* use smaller version of code */
+    #define WOLFSSL_HAVE_SP_RSA
+    #define WOLFSSL_HAVE_SP_DH
+    #define WOLFSSL_HAVE_SP_ECC
+    //#define WOLFSSL_SP_CACHE_RESISTANT
+    #define WOLFSSL_SP_MATH     /* only SP math - eliminates fast math code */
+
+    /* SP Assembly Speedups */
+    #define WOLFSSL_SP_ASM      /* required if using the ASM versions */
+    //#define WOLFSSL_SP_ARM32_ASM
+    //#define WOLFSSL_SP_ARM64_ASM
+    //#define WOLFSSL_SP_ARM_THUMB_ASM
+    #define WOLFSSL_SP_ARM_CORTEX_M_ASM
+#endif
+
 
 /* ------------------------------------------------------------------------- */
 /* Crypto */
@@ -58,7 +81,7 @@ extern "C" {
     #define HAVE_ECC224
     #undef NO_ECC256
     #define HAVE_ECC384
-    #ifndef USE_NXP_LTC /* NXP LTC HW supports up to 512 */
+    #ifndef USE_NXP_LTC /* NXP LTC HW supports up to 384 */
         #define HAVE_ECC521
     #endif
 
@@ -205,6 +228,7 @@ extern "C" {
 /* MD5 */
 #undef  NO_MD5
 #if 1
+#else
     #define NO_MD5
 #endif
 
@@ -221,7 +245,7 @@ extern "C" {
         #endif
         #ifdef USE_NXP_LTC
             #define FREESCALE_USE_LTC
-            #define LTC_MAX_ECC_BITS    (512)
+            #define LTC_MAX_ECC_BITS    (384)
             #define LTC_MAX_INT_BYTES   (256)
 
             //#define FREESCALE_LTC_TFM_RSA_4096_ENABLE

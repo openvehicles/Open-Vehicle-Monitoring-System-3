@@ -1,0 +1,10 @@
+# vim:ft=automake
+# included from Top Level Makefile.am
+# All paths should be given relative to the root
+
+if BUILD_SFTP
+dist_noinst_SCRIPTS+= scripts/sftp.test
+dist_noinst_SCRIPTS+= scripts/get-put.test
+endif
+
+dist_noinst_SCRIPTS+= scripts/external.test

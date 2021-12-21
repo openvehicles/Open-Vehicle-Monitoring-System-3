@@ -37,6 +37,7 @@ static const char *TAG = "command";
 #include <ctype.h>
 #include <functional>
 #include <esp_log.h>
+#include <sys/time.h>
 #include <sys/types.h>
 #include <dirent.h>
 #include "freertos/FreeRTOS.h"
@@ -49,11 +50,8 @@ static const char *TAG = "command";
 #include "buffered_shell.h"
 #include "log_buffers.h"
 #include "ovms_semaphore.h"
-#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
-#include "duktape.h"
-#endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 
-OvmsCommandApp MyCommandApp __attribute__ ((init_priority (1000)));
+OvmsCommandApp MyCommandApp __attribute__ ((init_priority (1010)));
 
 bool CompareCharPtr::operator()(const char* a, const char* b)
   {
@@ -167,9 +165,9 @@ OvmsCommand::OvmsCommand()
   m_validate = NULL;
   }
 
-OvmsCommand::OvmsCommand(const char* name, const char* title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
+OvmsCommand::OvmsCommand(const char* name, const char* title, OvmsCommandExecuteCallback_t execute,
                          const char *usage, int min, int max, bool secure,
-                         int (*validate)(OvmsWriter*, OvmsCommand*, int, const char* const*, bool))
+                         OvmsCommandValidateCallback_t validate)
   {
   m_name = name;
   m_title = title;
@@ -326,9 +324,9 @@ void OvmsCommand::ExpandUsage(const char* templ, OvmsWriter* writer, std::string
   result += usage.substr(pos);
   }
 
-OvmsCommand* OvmsCommand::RegisterCommand(const char* name, const char* title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
+OvmsCommand* OvmsCommand::RegisterCommand(const char* name, const char* title, OvmsCommandExecuteCallback_t execute,
                                           const char *usage, int min, int max, bool secure,
-                                          int (*validate)(OvmsWriter*, OvmsCommand*, int, const char* const*, bool))
+                                          OvmsCommandValidateCallback_t validate)
   {
   // Protect against duplicate registrations
   OvmsCommand* cmd = FindCommand(name);
@@ -703,6 +701,22 @@ void disable(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
   writer->SetSecure(false);
   }
 
+void cmd_sleep(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  int milliseconds = atof(argv[0]) * 1000;
+  if (milliseconds >= 0)
+    vTaskDelay(pdMS_TO_TICKS(milliseconds));
+  }
+
+void cmd_echo(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  int i;
+  for (i = 0; i < argc; i++)
+    writer->puts(argv[i]);
+  if (!i)
+    writer->puts("");
+  }
+
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 
 static duk_ret_t DukOvmsCommandExec(duk_context *ctx)
@@ -733,10 +747,9 @@ static duk_ret_t DukOvmsCommandExec(duk_context *ctx)
 
 static duk_ret_t DukOvmsCommandRegister(duk_context *ctx)
   {
-  /* TODO: Complete implement
   std::string filename, function;
   int linenumber = 0;
-  DukGetCallInfo(ctx, &filename, &linenumber, &function);
+  MyDuktape.DukGetCallInfo(ctx, &filename, &linenumber, &function);
 
   const char *fullcommand = duk_to_string(ctx,0);
   const char *name = duk_to_string(ctx,1);
@@ -745,51 +758,27 @@ static duk_ret_t DukOvmsCommandRegister(duk_context *ctx)
   uint32_t min = duk_is_number(ctx,4) ? duk_to_uint32(ctx,4) : 0;
   uint32_t max = duk_is_number(ctx,5) ? duk_to_uint32(ctx,5) : 0;
 
-  OvmsCommand* cmd = MyCommandApp.FindCommandFullName(fullcommand);
-  if (cmd == NULL)
-    {
-    ESP_LOGE(TAG,"Duktape: Script %s %s:%d trying to register unknown command %s/%s",
-        filename.c_str(), function.c_str(), linenumber, fullcommand, name);
-    return 0;
-    }
+  MyDuktape.RegisterDuktapeConsoleCommand(
+    ctx, 0,
+    filename.c_str(),
+    fullcommand,
+    name,
+    title,
+    usage,
+    min,
+    max);
 
-  OvmsCommand* regcmd = cmd->RegisterCommand(name, title, DukOvmsCommandRegisterRun, usage, min, max);
   ESP_LOGD(TAG,"Duktape: Script %s %s:%d registered command %s/%s",
       filename.c_str(), function.c_str(), linenumber, fullcommand, name);
-  */
 
   return 0;
-  }
-
-void OvmsCommandApp::NotifyDuktapeScriptsReady()
-  {
-  ESP_LOGD(TAG,"Duktape: scripts system is ready");
-  DuktapeObjectRegistration* dto = new DuktapeObjectRegistration("OvmsCommand");
-  dto->RegisterDuktapeFunction(DukOvmsCommandExec, 1, "Exec");
-  dto->RegisterDuktapeFunction(DukOvmsCommandRegister, 6, "Register");
-  MyScripts.RegisterDuktapeObject(dto);
-  }
-
-void OvmsCommandApp::NotifyDuktapeModuleLoad(const char* filename)
-  {
-  ESP_LOGD(TAG,"Duktape: module load: %s",filename);
-  }
-
-void OvmsCommandApp::NotifyDuktapeModuleUnload(const char* filename)
-  {
-  ESP_LOGD(TAG,"Duktape: module unload: %s",filename);
-  }
-
-void OvmsCommandApp::NotifyDuktapeModuleUnloadAll()
-  {
-  ESP_LOGD(TAG,"Duktape: module unload all");
   }
 
 #endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 
 OvmsCommandApp::OvmsCommandApp()
   {
-  ESP_LOGI(TAG, "Initialising COMMAND (1000)");
+  ESP_LOGI(TAG, "Initialising COMMAND (1010)");
 
   m_logfile = NULL;
   m_logfile_path = "";
@@ -803,7 +792,7 @@ OvmsCommandApp::OvmsCommandApp()
 
   m_root.RegisterCommand("help", "Ask for help", help, "", 0, 0, false);
   m_root.RegisterCommand("exit", "End console session", cmd_exit, "", 0, 0, false);
-  OvmsCommand* cmd_log = MyCommandApp.RegisterCommand("log","LOG framework");
+  OvmsCommand* cmd_log = MyCommandApp.RegisterCommand("log","LOG framework", log_status, "", 0, 0, false);
   cmd_log->RegisterCommand("file", "Start logging to specified file", log_file, "[<vfspath>]\nDefault: config log[file.path]", 0, 1);
   cmd_log->RegisterCommand("open", "Start file logging", log_open);
   cmd_log->RegisterCommand("close", "Stop file logging", log_close);
@@ -821,6 +810,18 @@ OvmsCommandApp::OvmsCommandApp()
   monitor->RegisterCommand("no", "Don't monitor log", log_monitor);
   m_root.RegisterCommand("enable","Enter secure mode (enable access to all commands)", enable, "[<password>]", 0, 1, false);
   m_root.RegisterCommand("disable","Leave secure mode (disable access to most commands)", disable);
+  m_root.RegisterCommand("sleep", "Script utility: pause execution", cmd_sleep,
+    "<seconds>\nFractions of seconds are supported, e.g. 0.2 = 200 ms", 1, 1);
+  m_root.RegisterCommand("echo", "Script utility: output text", cmd_echo,
+    "[<text>] […]\nOutputs up to 10 arguments as separate lines, just a newline if no text is given.", 0, 10);
+
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  ESP_LOGI(TAG, "Expanding DUKTAPE javascript engine");
+  DuktapeObjectRegistration* dto = new DuktapeObjectRegistration("OvmsCommand");
+  dto->RegisterDuktapeFunction(DukOvmsCommandExec, 1, "Exec");
+  dto->RegisterDuktapeFunction(DukOvmsCommandRegister, 6, "Register");
+  MyDuktape.RegisterDuktapeObject(dto);
+#endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   }
 
 OvmsCommandApp::~OvmsCommandApp()
@@ -841,7 +842,7 @@ void OvmsCommandApp::ConfigureLogging()
   ReadConfig();
   }
 
-OvmsCommand* OvmsCommandApp::RegisterCommand(const char* name, const char* title, void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
+OvmsCommand* OvmsCommandApp::RegisterCommand(const char* name, const char* title, OvmsCommandExecuteCallback_t execute,
                                              const char *usage, int min, int max, bool secure)
   {
   return m_root.RegisterCommand(name, title, execute, usage, min, max, secure);
@@ -1038,11 +1039,13 @@ static void LogTaskEntry(void* me)
 void OvmsCommandApp::LogTask()
   {
   LogTaskCmd cmd;
-  time_t rawtime;
   char tb[64];
 
   m_logtask_linecnt = 0;
   m_logtask_fsynctime = 0;
+  m_logtask_laststamp = -11;
+  m_logtask_basetime.tv_sec = 0;
+  m_logtask_basetime.tv_usec = 0;
 
   // syncperiod: 0 = never, <0 = every n lines, >0 = after n/2 seconds idle
   uint32_t linecnt_synced = 0;
@@ -1059,13 +1062,38 @@ void OvmsCommandApp::LogTask()
         // write logbuffers messages:
         for (auto it = cmd.data.logbuffers->begin(); it != cmd.data.logbuffers->end(); it++)
           {
-          // write timestamp:
-          time(&rawtime);
-          struct tm* tmu = localtime(&rawtime);
-          strftime(tb, sizeof(tb), "%Y-%m-%d %H:%M:%S %Z ", tmu);
-          m_logfile_size += fwrite(tb, 1, strlen(tb), m_logfile);
-          // write log entry:
           std::string le = stripesc(*it);
+          if (*(le.data() + 1) == ' ' && *(le.data() + 2) == '(')
+            {
+            struct timeval stamp;
+            stamp.tv_sec = atoi(le.data() + 3);
+            stamp.tv_usec = (stamp.tv_sec % 1000) * 1000;
+            stamp.tv_sec /= 1000;
+            // If 10 seconds have elapsed since the previous log message or if a
+            // real base time hasn't been set yet, recalculate the correspondence
+            // of real time to system time.
+            if (stamp.tv_sec - m_logtask_laststamp > 10 || m_logtask_basetime.tv_sec < 1609459200)
+              {
+              struct timeval daytime, uptime;
+              gettimeofday(&daytime, NULL);
+              uptime.tv_sec = xTaskGetTickCount();
+              uptime.tv_usec = (uptime.tv_sec % 100) * 10000;
+              uptime.tv_sec /= 100;
+              daytime.tv_usec -= daytime.tv_usec % 10000;       // Always show 0 for ms units
+              timersub(&daytime, &uptime, &m_logtask_basetime);
+              }
+            m_logtask_laststamp = stamp.tv_sec;
+            // write timestamp:
+            timeradd(&m_logtask_basetime, &stamp, &stamp);
+            struct tm* tmu = localtime(&stamp.tv_sec);
+            strftime(tb, sizeof(tb), "%Y-%m-%d %H:%M:%S", tmu);
+            m_logfile_size += fwrite(tb, 1, strlen(tb), m_logfile);
+            snprintf(tb, sizeof(tb), ".%03lu ", stamp.tv_usec / 1000);
+            int len = strlen(tb);
+            strftime(tb+len, sizeof(tb)-len, "%Z ", tmu);
+            m_logfile_size += fwrite(tb, 1, strlen(tb), m_logfile);
+            }
+          // write log entry:
           m_logfile_size += fwrite(le.data(), 1, le.size(), m_logfile);
           m_logtask_linecnt++;
           }
@@ -1503,7 +1531,7 @@ void OvmsCommandApp::Display(OvmsWriter* writer)
 
 
 OvmsCommandTask::OvmsCommandTask(int _verbosity, OvmsWriter* _writer, OvmsCommand* _cmd, int _argc, const char* const* _argv)
-  : TaskBase(_cmd->GetName(), CONFIG_OVMS_SYS_COMMAND_STACK_SIZE)
+  : TaskBase(_cmd->GetName(), CONFIG_OVMS_SYS_COMMAND_STACK_SIZE, CONFIG_OVMS_SYS_COMMAND_PRIORITY)
   {
   m_state = OCS_Init;
 

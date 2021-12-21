@@ -25,6 +25,7 @@
  * THE SOFTWARE.
  */
 
+#define _GLIBCXX_USE_C99 // to enable std::stoi etc.
 #include <stdio.h>
 #include <string>
 #include "ovms_metrics.h"
@@ -73,57 +74,51 @@ void OvmsVehicleVWeUp::WebDeInit()
  */
 void OvmsVehicleVWeUp::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
 {
+  ConfigParamMap pmap = MyConfig.GetParamMap("xvu");
+  ConfigParamMap nmap = pmap;
   std::string error, warn;
-  std::string modelyear;
-  std::string cell_interval_drv, cell_interval_chg;
-  bool canwrite;
-  bool con_obd;
-  bool con_t26;
   bool do_reload = false;
 
   if (c.method == "POST")
   {
     // process form submission:
-    modelyear = c.getvar("modelyear");
-    con_obd = (c.getvar("con_obd") == "yes");
-    con_t26 = (c.getvar("con_t26") == "yes");
-    canwrite = (c.getvar("canwrite") == "yes");
-    cell_interval_drv = c.getvar("cell_interval_drv");
-    cell_interval_chg = c.getvar("cell_interval_chg");
+    nmap["modelyear"] = c.getvar("modelyear");
+    nmap["con_obd"] = (c.getvar("con_obd") == "yes") ? "yes" : "no";
+    nmap["con_t26"] = (c.getvar("con_t26") == "yes") ? "yes" : "no";
+    nmap["canwrite"] = (c.getvar("canwrite") == "yes") ? "yes" : "no";
+    nmap["bms.autoreset"] = (c.getvar("bms.autoreset") == "yes") ? "yes" : "no";
+    nmap["cell_interval_drv"] = c.getvar("cell_interval_drv");
+    nmap["cell_interval_chg"] = c.getvar("cell_interval_chg");
+    nmap["cell_interval_awk"] = c.getvar("cell_interval_awk");
+    nmap["bat.soh.source"] = c.getvar("bat.soh.source");
+    nmap["ctp.maxpower"] = c.getvar("ctp_maxpower");
+    nmap["ctp.soclimit"] = c.getvar("ctp_soclimit");
 
     // check:
-    if (!modelyear.empty())
+    if (nmap["modelyear"] != "")
     {
-      int n = atoi(modelyear.c_str());
+      int n = std::stoi(nmap["modelyear"]);
       if (n < 2013)
         error += "<li data-input=\"modelyear\">Model year must be &ge; 2013</li>";
     }
 
-    if (!con_obd && !con_t26) {
+    if (nmap["con_obd"] != "yes" && nmap["con_t26"] != "yes") {
       warn += "<li><b>No connection type enabled.</b> You won't be able to get live data.</li>";
+    }
+
+    if (std::stoi(nmap["cell_interval_awk"]) > 0 && std::stoi(nmap["cell_interval_awk"]) < 30) {
+      warn += "<li><b>BMS update intervals below 30 seconds in awake may keep the car awake indefinitely!</b></li>";
     }
 
     if (error == "")
     {
       do_reload =
-        MyConfig.GetParamValue("xvu", "modelyear", STR(DEFAULT_MODEL_YEAR)) != modelyear ||
-        MyConfig.GetParamValueBool("xvu", "con_obd", true) != con_obd ||
-        MyConfig.GetParamValueBool("xvu", "con_t26", true) != con_t26;
+        nmap["modelyear"] != pmap["modelyear"]  ||
+        nmap["con_obd"]   != pmap["con_obd"]    ||
+        nmap["con_t26"]   != pmap["con_t26"];
 
       // store:
-      MyConfig.SetParamValue("xvu", "modelyear", modelyear);
-      MyConfig.SetParamValueBool("xvu", "con_obd", con_obd);
-      MyConfig.SetParamValueBool("xvu", "con_t26", con_t26);
-      MyConfig.SetParamValueBool("xvu", "canwrite", canwrite);
-
-      if (cell_interval_drv == "15")
-        MyConfig.DeleteInstance("xvu", "cell_interval_drv");
-      else
-        MyConfig.SetParamValue("xvu", "cell_interval_drv", cell_interval_drv);
-      if (cell_interval_chg == "60")
-        MyConfig.DeleteInstance("xvu", "cell_interval_chg");
-      else
-        MyConfig.SetParamValue("xvu", "cell_interval_chg", cell_interval_chg);
+      MyConfig.SetParamMap("xvu", nmap);
 
       c.head(200);
       c.alert("success", "<p class=\"lead\">VW e-Up feature configuration saved.</p>");
@@ -146,51 +141,88 @@ void OvmsVehicleVWeUp::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
   }
   else
   {
-    // read configuration:
-    modelyear = MyConfig.GetParamValue("xvu", "modelyear", STR(DEFAULT_MODEL_YEAR));
-    con_obd = MyConfig.GetParamValueBool("xvu", "con_obd", true);
-    con_t26 = MyConfig.GetParamValueBool("xvu", "con_t26", true);
-    canwrite = MyConfig.GetParamValueBool("xvu", "canwrite", false);
-    cell_interval_drv = MyConfig.GetParamValue("xvu", "cell_interval_drv");
-    cell_interval_chg = MyConfig.GetParamValue("xvu", "cell_interval_chg");
+    // fill in defaults:
+    if (nmap["modelyear"] == "")
+      nmap["modelyear"] = STR(DEFAULT_MODEL_YEAR);
+    if (nmap["con_obd"] == "")
+      nmap["con_obd"] = "yes";
+    if (nmap["con_t26"] == "")
+      nmap["con_t26"] = "yes";
+    if (nmap["bat.soh.source"] == "")
+      nmap["bat.soh.source"] = "charge";
 
     c.head(200);
   }
 
   // generate form:
 
-  c.panel_start("primary", "VW e-Up feature configuration");
+  c.panel_start("primary receiver", "VW e-Up feature configuration");
   c.form_start(p.uri);
 
   c.fieldset_start("Vehicle Settings");
-  c.input("number", "Model year", "modelyear", modelyear.c_str(), "Default: " STR(DEFAULT_MODEL_YEAR),
+  c.input("number", "Model year", "modelyear", nmap["modelyear"].c_str(), "Default: " STR(DEFAULT_MODEL_YEAR),
     "<p>This sets some parameters that differ for pre 2020 models. I.e. kWh of battery.</p>"
     "<p>This parameter can also be set in the app under FEATURES 20.</p>",
     "min=\"2013\" step=\"1\"");
   c.fieldset_end();
 
   c.fieldset_start("Connection Types");
-  c.input_checkbox("OBD2", "con_obd", con_obd,
+  c.input_checkbox("OBD2", "con_obd", strtobool(nmap["con_obd"]),
     "<p>CAN1 connected to OBD2 port?</p>");
-  c.input_checkbox("T26A", "con_t26", con_t26,
+  c.input_checkbox("T26A", "con_t26", strtobool(nmap["con_t26"]),
     "<p>CAN3 connected to T26A plug underneath passenger seat?</p>");
   c.fieldset_end();
 
   c.fieldset_start("Remote Control");
-  c.input_checkbox("Enable CAN writes", "canwrite", canwrite,
+  c.input_checkbox("Enable CAN writes", "canwrite", strtobool(nmap["canwrite"]),
     "<p>Controls overall CAN write access, OBD2 and climate control depends on this.</p>"
     "<p>This parameter can also be set in the app under FEATURES 15.</p>");
   c.fieldset_end();
 
+  c.fieldset_start("Charge Time Prediction");
+  c.input_slider("Default power limit", "ctp_maxpower", 3, "kW",
+    -1, nmap["ctp.maxpower"].empty() ? 0 : std::stof(nmap["ctp.maxpower"]),
+    0, 0, 30, 0.1,
+    "<p>Used while not charging, default 0 = unlimited (except by car).</p>"
+    "<p>Note: this needs to be the power level at the battery, i.e. after losses.</p>"
+    "<p>Typical values: 6.5 kW for 2-phase charging, 3.2 kW for 1-phase, 2 kW for ICCB/Schuko.</p>");
+  c.input_slider("Default SOC limit", "ctp_soclimit", 3, "%",
+    -1, nmap["ctp.soclimit"].empty() ? 80 : std::stof(nmap["ctp.soclimit"]),
+    80, 10, 100, 5,
+    "<p>Used if no timer mode limits are available, i.e. without OBD connection or without timer schedule.</p>");
+  c.fieldset_end();
+
+  c.fieldset_start("Battery Health", "needs-con-obd");
+  c.input_radiobtn_start("SOH source", "bat.soh.source");
+  c.input_radiobtn_option("bat.soh.source", "Charge capacity", "charge", (nmap["bat.soh.source"] == "charge"));
+  c.input_radiobtn_option("bat.soh.source", "Range estimation", "range", (nmap["bat.soh.source"] == "range"));
+  c.input_radiobtn_end(
+    "<p><b>Charge capacity SOH</b> "
+    "(currently <span class=\"metric\" data-metric=\"xvu.b.soh.charge\" data-prec=\"1\">?</span>%) "
+    "needs a couple of full charges to settle but tends to be more precise.</p>"
+    "<p><b>Range estimation SOH</b> "
+    "(currently <span class=\"metric\" data-metric=\"xvu.b.soh.range\" data-prec=\"1\">?</span>%) "
+    "is available immediately when switching the car on with at least 70% SOC, but needs a high SOC "
+    "for accuracy and is more temperature dependent.</p><p>For more details, see <a target=\"_blank\" "
+    "href=\"https://docs.openvehicles.com/en/latest/components/vehicle_vweup/docs/index_obd.html#battery-capacity-soh\""
+    ">Battery Capacity &amp; SOH</a>.</p>");
+  c.fieldset_end();
+
   c.fieldset_start("BMS Cell Monitoring", "needs-con-obd");
   c.input_slider("Update interval driving", "cell_interval_drv", 3, "s",
-    -1, cell_interval_drv.empty() ? 15 : atof(cell_interval_drv.c_str()),
+    -1, nmap["cell_interval_drv"].empty() ? 15 : std::stof(nmap["cell_interval_drv"]),
     15, 0, 300, 1,
     "<p>Default 15 seconds, 0=off.</p>");
   c.input_slider("Update interval charging", "cell_interval_chg", 3, "s",
-    -1, cell_interval_chg.empty() ? 60 : atof(cell_interval_chg.c_str()),
+    -1, nmap["cell_interval_chg"].empty() ? 60 : std::stof(nmap["cell_interval_chg"]),
     60, 0, 300, 1,
     "<p>Default 60 seconds, 0=off.</p>");
+  c.input_slider("Update interval awake", "cell_interval_awk", 3, "s",
+    -1, nmap["cell_interval_awk"].empty() ? 60 : std::stof(nmap["cell_interval_awk"]),
+    60, 0, 300, 1,
+    "<p>Default 60 seconds, 0=off. Note: an interval below 30 seconds may keep the car awake indefinitely.</p>");
+  c.input_checkbox("Auto reset", "bms.autoreset", strtobool(nmap["bms.autoreset"]),
+    "<p>Reset cell statistics automatically between driving &amp; charging?</p>");
   c.fieldset_end();
 
   c.print("<hr>");
@@ -282,6 +314,22 @@ void OvmsVehicleVWeUp::WebDispChgMetrics(PageEntry_t &p, PageContext_t &c)
   PAGE_HOOK("body.pre");
 
   c.print(
+    "<style>\n"
+    ".wide-metrics .metric.number .label, .wide-metrics .metric.text .label {\n"
+      "min-width: 12em;\n"
+    "}\n"
+    ".wide-metrics .metric.number .value {\n"
+      "min-width: 6em;\n"
+    "}\n"
+    "h6.metric-head {\n"
+      "margin-bottom: 0;\n"
+      "color: #676767;\n"
+      "font-size: 15px;\n"
+    "}\n"
+    ".night h6.metric-head {\n"
+      "color: unset;\n"
+    "}\n"
+    "</style>\n"
     "<div class=\"panel panel-primary\">"
       "<div class=\"panel-heading\">VW e-Up Charging Metrics</div>"
       "<div class=\"panel-body\">"
@@ -310,8 +358,32 @@ void OvmsVehicleVWeUp::WebDispChgMetrics(PageEntry_t &p, PageContext_t &c)
             "</div>"
           "</div>"
           "<div class=\"clearfix\">"
+            "<h6 class=\"metric-head\">Current Status:</h6>"
+            "<div class=\"metric number\" data-metric=\"v.b.range.est\" data-prec=\"0\">"
+              "<span class=\"label\">Range</span>"
+              "<span class=\"value\">?</span>"
+              "<span class=\"unit\">km</span>"
+            "</div>"
+            "<div class=\"metric number\" data-metric=\"v.c.kwh\" data-prec=\"2\">"
+              "<span class=\"label\">Charged</span>"
+              "<span class=\"value\">?</span>"
+              "<span class=\"unit\">kWh</span>"
+            "</div>"
+            "<div class=\"metric number\" data-metric=\"v.b.cac\" data-prec=\"2\">"
+              "<span class=\"label\">Capacity</span>"
+              "<span class=\"value\">?</span>"
+              "<span class=\"unit\">Ah</span>"
+            "</div>"
+            "<div class=\"metric number\" data-metric=\"v.b.soh\" data-prec=\"2\">"
+              "<span class=\"label\">SOH</span>"
+              "<span class=\"value\">?</span>"
+              "<span class=\"unit\">%</span>"
+            "</div>"
+          "</div>"
+          "<div class=\"clearfix\">"
+            "<h6 class=\"metric-head\">Totals:</h6>"
             "<div class=\"metric number\" data-metric=\"v.b.energy.used.total\" data-prec=\"2\">"
-              "<span class=\"label\">TOTALS:&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbspUsed</span>"
+              "<span class=\"label\">Used</span>"
               "<span class=\"value\">?</span>"
               "<span class=\"unit\">kWh</span>"
             "</div>"
@@ -320,13 +392,18 @@ void OvmsVehicleVWeUp::WebDispChgMetrics(PageEntry_t &p, PageContext_t &c)
               "<span class=\"value\">?</span>"
               "<span class=\"unit\">kWh</span>"
             "</div>"
+            "<div class=\"metric number\" data-metric=\"v.b.coulomb.used.total\" data-prec=\"2\">"
+              "<span class=\"label\">Used</span>"
+              "<span class=\"value\">?</span>"
+              "<span class=\"unit\">Ah</span>"
+            "</div>"
+            "<div class=\"metric number\" data-metric=\"v.b.coulomb.recd.total\" data-prec=\"2\">"
+              "<span class=\"label\">Charged</span>"
+              "<span class=\"value\">?</span>"
+              "<span class=\"unit\">Ah</span>"
+            "</div>"
             "<div class=\"metric number\" data-metric=\"v.p.odometer\" data-prec=\"0\">"
               "<span class=\"label\">Odometer</span>"
-              "<span class=\"value\">?</span>"
-              "<span class=\"unit\">km</span>"
-            "</div>"
-            "<div class=\"metric number\" data-metric=\"v.b.range.est\" data-prec=\"0\">"
-              "<span class=\"label\">Range</span>"
               "<span class=\"value\">?</span>"
               "<span class=\"unit\">km</span>"
             "</div>"
@@ -347,7 +424,7 @@ void OvmsVehicleVWeUp::WebDispChgMetrics(PageEntry_t &p, PageContext_t &c)
             "</div>"
             "<div class=\"metric progress\" data-metric=\"v.b.current\" data-prec=\"1\">"
               "<div class=\"progress-bar progress-bar-danger value-low text-left\" role=\"progressbar\""
-                "aria-valuenow=\"0\" aria-valuemin=\"-10\" aria-valuemax=\"150\" style=\"width:0%\">"
+                "aria-valuenow=\"0\" aria-valuemin=\"-120\" aria-valuemax=\"240\" style=\"width:0%\">"
                 "<div>"
                   "<span class=\"label\">Current</span>"
                   "<span class=\"value\">?</span>"
@@ -357,7 +434,7 @@ void OvmsVehicleVWeUp::WebDispChgMetrics(PageEntry_t &p, PageContext_t &c)
             "</div>"
             "<div class=\"metric progress\" data-metric=\"v.b.power\" data-prec=\"3\">"
               "<div class=\"progress-bar progress-bar-warning value-low text-left\" role=\"progressbar\""
-                "aria-valuenow=\"0\" aria-valuemin=\"-4\" aria-valuemax=\"60\" style=\"width:0%\">"
+                "aria-valuenow=\"0\" aria-valuemin=\"-40\" aria-valuemax=\"80\" style=\"width:0%\">"
                 "<div>"
                   "<span class=\"label\">Power</span>"
                   "<span class=\"value\">?</span>"
@@ -389,14 +466,14 @@ void OvmsVehicleVWeUp::WebDispChgMetrics(PageEntry_t &p, PageContext_t &c)
             "</div>"
           "</div>"
 
-          "<h4>AC Charger</h4>"
+          "<h4>AC/DC Charge Input</h4>"
 
           "<div class=\"clearfix\">"
-            "<div class=\"metric progress\" data-metric=\"v.c.voltage\" data-prec=\"0\">"
+            "<div class=\"metric progress\" data-metric=\"v.c.voltage\" data-prec=\"1\">"
               "<div class=\"progress-bar value-low text-left\" role=\"progressbar\""
-                "aria-valuenow=\"0\" aria-valuemin=\"0\" aria-valuemax=\"240\" style=\"width:0%\">"
+                "aria-valuenow=\"0\" aria-valuemin=\"0\" aria-valuemax=\"420\" style=\"width:0%\">"
                 "<div>"
-                  "<span class=\"label\">AC Voltage</span>"
+                  "<span class=\"label\">Voltage</span>"
                   "<span class=\"value\">?</span>"
                   "<span class=\"unit\">V</span>"
                 "</div>"
@@ -404,9 +481,9 @@ void OvmsVehicleVWeUp::WebDispChgMetrics(PageEntry_t &p, PageContext_t &c)
             "</div>"
             "<div class=\"metric progress\" data-metric=\"v.c.current\" data-prec=\"1\">"
               "<div class=\"progress-bar progress-bar-danger value-low text-left\" role=\"progressbar\""
-                "aria-valuenow=\"0\" aria-valuemin=\"0\" aria-valuemax=\"16\" style=\"width:0%\">"
+                "aria-valuenow=\"0\" aria-valuemin=\"0\" aria-valuemax=\"120\" style=\"width:0%\">"
                 "<div>"
-                  "<span class=\"label\">AC Current</span>"
+                  "<span class=\"label\">Current</span>"
                   "<span class=\"value\">?</span>"
                   "<span class=\"unit\">A</span>"
                 "</div>"
@@ -414,15 +491,38 @@ void OvmsVehicleVWeUp::WebDispChgMetrics(PageEntry_t &p, PageContext_t &c)
             "</div>"
             "<div class=\"metric progress\" data-metric=\"v.c.power\" data-prec=\"3\">"
               "<div class=\"progress-bar progress-bar-warning value-low text-left\" role=\"progressbar\""
-                "aria-valuenow=\"0\" aria-valuemin=\"0\" aria-valuemax=\"8\" style=\"width:0%\">"
+                "aria-valuenow=\"0\" aria-valuemin=\"0\" aria-valuemax=\"40\" style=\"width:0%\">"
                 "<div>"
-                  "<span class=\"label\">AC Power</span>"
+                  "<span class=\"label\">Power</span>"
                   "<span class=\"value\">?</span>"
                   "<span class=\"unit\">kW</span>"
                 "</div>"
               "</div>"
             "</div>"
-            "<div class=\"metric progress\" data-metric=\"xvu.c.dc.u1\" data-prec=\"0\">"
+          "</div>"
+
+          "<div class=\"clearfix wide-metrics\">"
+            "<div class=\"metric number\" data-metric=\"v.c.efficiency\" data-prec=\"1\">"
+              "<span class=\"label\">Efficiency (total)</span>"
+              "<span class=\"value\">?</span>"
+              "<span class=\"unit\">%</span>"
+            "</div>"
+            "<div class=\"metric number\" data-metric=\"v.c.kwh.grid\" data-prec=\"2\">"
+              "<span class=\"label\">Charged (grid)</span>"
+              "<span class=\"value\">?</span>"
+              "<span class=\"unit\">kWh</span>"
+            "</div>"
+            "<div class=\"metric number\" data-metric=\"v.c.kwh.grid.total\" data-prec=\"1\">"
+              "<span class=\"label\">Charged total (grid)</span>"
+              "<span class=\"value\">?</span>"
+              "<span class=\"unit\">kWh</span>"
+            "</div>"
+          "</div>"
+
+          "<h4>AC Charger</h4>"
+
+          "<div class=\"clearfix\">"
+            "<div class=\"metric progress\" data-metric=\"xvu.c.dc.u1\" data-prec=\"1\">"
               "<div class=\"progress-bar value-low text-left\" role=\"progressbar\""
                 "aria-valuenow=\"0\" aria-valuemin=\"275\" aria-valuemax=\"420\" style=\"width:0%\">"
                 "<div>"
@@ -436,7 +536,17 @@ void OvmsVehicleVWeUp::WebDispChgMetrics(PageEntry_t &p, PageContext_t &c)
               "<div class=\"progress-bar progress-bar-danger value-low text-left\" role=\"progressbar\""
                 "aria-valuenow=\"0\" aria-valuemin=\"0\" aria-valuemax=\"9\" style=\"width:0%\">"
                 "<div>"
-                  "<span class=\"label\">DC Current</span>"
+                  "<span class=\"label\">DC Current 1</span>"
+                  "<span class=\"value\">?</span>"
+                  "<span class=\"unit\">A</span>"
+                "</div>"
+              "</div>"
+            "</div>"
+            "<div class=\"metric progress\" data-metric=\"xvu.c.dc.i2\" data-prec=\"1\">"
+              "<div class=\"progress-bar progress-bar-danger value-low text-left\" role=\"progressbar\""
+                "aria-valuenow=\"0\" aria-valuemin=\"0\" aria-valuemax=\"9\" style=\"width:0%\">"
+                "<div>"
+                  "<span class=\"label\">DC Current 2</span>"
                   "<span class=\"value\">?</span>"
                   "<span class=\"unit\">A</span>"
                 "</div>"
@@ -454,16 +564,11 @@ void OvmsVehicleVWeUp::WebDispChgMetrics(PageEntry_t &p, PageContext_t &c)
             "</div>"
           "</div>"
 
-          "<div class=\"clearfix\">"
+          "<div class=\"clearfix wide-metrics\">"
             "<div class=\"metric number\" data-metric=\"v.c.temp\" data-prec=\"1\">"
               "<span class=\"label\">Temp</span>"
               "<span class=\"value\">?</span>"
               "<span class=\"unit\">°C</span>"
-            "</div>"
-            "<div class=\"metric number\" data-metric=\"v.c.efficiency\" data-prec=\"1\">"
-              "<span class=\"label\">Efficiency (total)</span>"
-              "<span class=\"value\">?</span>"
-              "<span class=\"unit\">%</span>"
             "</div>"
             "<div class=\"metric number\" data-metric=\"xvu.c.eff.calc\" data-prec=\"1\">"
               "<span class=\"label\">Efficiency (charger)</span>"
@@ -484,4 +589,91 @@ void OvmsVehicleVWeUp::WebDispChgMetrics(PageEntry_t &p, PageContext_t &c)
 
   PAGE_HOOK("body.post");
   c.done();
+}
+
+
+/**
+ * GetDashboardConfig: VW eUp specific dashboard setup
+ */
+void OvmsVehicleVWeUp::GetDashboardConfig(DashboardConfig& cfg)
+{
+  // Get model specific battery voltage range:
+  int cells = (vweup_modelyear > 2019) ? 84 : 102;
+  float
+    bat_volt_max      = cells * 4.2,
+    bat_volt_yellow   = cells * 3.5,
+    bat_volt_red      = cells * 3.4,
+    bat_volt_min      = cells * 3.3;
+
+  StringWriter buf;
+  buf.printf(
+    "yAxis: [{"
+      // Speed:
+      "min: 0, max: 140,"
+      "plotBands: ["
+        "{ from: 0, to: 100, className: 'green-band' },"
+        "{ from: 100, to: 120, className: 'yellow-band' },"
+        "{ from: 120, to: 140, className: 'red-band' }]"
+    "},{"
+      // Voltage:
+      "min: %.0f, max: %.0f,"
+      "plotBands: ["
+        "{ from: %.0f, to: %.1f, className: 'red-band' },"
+        "{ from: %.1f, to: %.1f, className: 'yellow-band' },"
+        "{ from: %.1f, to: %.0f, className: 'green-band' }]"
+    "},{"
+      // SOC:
+      "min: 0, max: 100,"
+      "plotBands: ["
+        "{ from: 0, to: 12.5, className: 'red-band' },"
+        "{ from: 12.5, to: 25, className: 'yellow-band' },"
+        "{ from: 25, to: 100, className: 'green-band' }]"
+    "},{"
+      // Efficiency:
+      "min: 0, max: 300,"
+      "plotBands: ["
+        "{ from: 0, to: 150, className: 'green-band' },"
+        "{ from: 150, to: 250, className: 'yellow-band' },"
+        "{ from: 250, to: 300, className: 'red-band' }]"
+    "},{"
+      // Power:
+      "min: -40, max: 80,"
+      "plotBands: ["
+        "{ from: -40, to: 0, className: 'violet-band' },"
+        "{ from: 0, to: 40, className: 'green-band' },"
+        "{ from: 40, to: 60, className: 'yellow-band' },"
+        "{ from: 60, to: 80, className: 'red-band' }]"
+    "},{"
+      // Charger temperature:
+      "min: 20, max: 80, tickInterval: 20,"
+      "plotBands: ["
+        "{ from: 20, to: 65, className: 'normal-band border' },"
+        "{ from: 65, to: 80, className: 'red-band border' }]"
+    "},{"
+      // Battery temperature:
+      "min: -15, max: 65, tickInterval: 25,"
+      "plotBands: ["
+        "{ from: -15, to: 0, className: 'red-band border' },"
+        "{ from: 0, to: 50, className: 'normal-band border' },"
+        "{ from: 50, to: 65, className: 'red-band border' }]"
+    "},{"
+      // Inverter temperature:
+      "min: 20, max: 80, tickInterval: 20,"
+      "plotBands: ["
+        "{ from: 20, to: 70, className: 'normal-band border' },"
+        "{ from: 70, to: 80, className: 'red-band border' }]"
+    "},{"
+      // Motor temperature:
+      "min: 50, max: 125, tickInterval: 25,"
+      "plotBands: ["
+        "{ from: 50, to: 110, className: 'normal-band border' },"
+        "{ from: 110, to: 125, className: 'red-band border' }]"
+    "}]",
+    bat_volt_min, bat_volt_max,
+    bat_volt_min, bat_volt_red,
+    bat_volt_red, bat_volt_yellow,
+    bat_volt_yellow, bat_volt_max
+  );
+
+  cfg.gaugeset1 = buf;
 }

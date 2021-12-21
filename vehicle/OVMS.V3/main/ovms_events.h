@@ -89,6 +89,7 @@ typedef struct
   } event_queue_t;
 
 typedef std::list<TimerHandle_t> TimerList;
+typedef std::map<TimerHandle_t, bool> TimerStatusMap;
 
 class OvmsEvents
   {
@@ -112,10 +113,12 @@ class OvmsEvents
 
   protected:
     bool ScheduleEvent(event_queue_t* msg, uint32_t delay_ms);
+    static void SignalScheduledEvent(TimerHandle_t timer);
 
   protected:
     EventMap m_map;
     TimerList m_timers;
+    TimerStatusMap m_timer_active;
     OvmsMutex m_timers_mutex;
 
   public:

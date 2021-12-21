@@ -28,8 +28,8 @@
 ; THE SOFTWARE.
 */
 
-#include "ovms_log.h"
-static const char *TAG = "vehicle";
+// #include "ovms_log.h"
+// static const char *TAG = "vehicle";
 
 #include <stdio.h>
 #include <algorithm>
@@ -45,10 +45,16 @@ static const char *TAG = "vehicle";
 #include <string_writer.h>
 #include "vehicle.h"
 
-#undef LIMIT_MIN
-#define LIMIT_MIN(n,lim) ((n) < (lim) ? (lim) : (n))
-#undef LIMIT_MAX
-#define LIMIT_MAX(n,lim) ((n) > (lim) ? (lim) : (n))
+
+/**
+ * PollerStateTicker: check for state changes (stub, override with vehicle implementation)
+ *  This is called by VehicleTicker1() just before the next PollerSend().
+ *  Implement your poller state transition logic in this method, so the changes
+ *  will get applied immediately.
+ */
+void OvmsVehicle::PollerStateTicker()
+  {
+  }
 
 
 /**
@@ -135,6 +141,14 @@ void OvmsVehicle::IncomingPollTxCallback(canbus* bus, uint32_t txid, uint16_t ty
 
 /**
  * PollSetPidList: set the default bus and the polling list to process
+ *  Call this to install a new polling list or restart the list.
+ *  This won't change the polling state; you can change the list while keeping the state.
+ *  The list is changed without waiting for pending responses to finish (except PollSingleRequests).
+ *  
+ *  @param bus
+ *    CAN bus to use as the default bus (for all poll entries with bus=0) or NULL to stop polling
+ *  @param plist
+ *    The polling list to use or NULL to stop polling
  */
 void OvmsVehicle::PollSetPidList(canbus* bus, const poll_pid_t* plist)
   {
@@ -147,12 +161,19 @@ void OvmsVehicle::PollSetPidList(canbus* bus, const poll_pid_t* plist)
   m_poll_sequence_cnt = 0;
   m_poll_wait = 0;
   m_poll_plcur = NULL;
+  m_poll_entry = {};
   m_poll_txmsgid = 0;
   }
 
 
 /**
- * PollSetPidList: set the polling state
+ * PollSetState: set the polling state
+ *  Call this to change the polling state and restart the current polling list.
+ *  This won't do anything if the state is already active. The state is changed without
+ *  waiting for pending responses to finish (except PollSingleRequests).
+ *  
+ *  @param state
+ *    The polling state to activate (0 … VEHICLE_POLL_NSTATES)
  */
 void OvmsVehicle::PollSetState(uint8_t state)
   {
@@ -165,6 +186,7 @@ void OvmsVehicle::PollSetState(uint8_t state)
     m_poll_sequence_cnt = 0;
     m_poll_wait = 0;
     m_poll_plcur = NULL;
+    m_poll_entry = {};
     m_poll_txmsgid = 0;
     }
   }
@@ -209,16 +231,31 @@ void OvmsVehicle::PollSetResponseSeparationTime(uint8_t septime)
 
 
 /**
+ * PollSetChannelKeepalive: configure keepalive timeout for channel oriented protocols
+ * 
+ *  The VWTP poller will keep a channel connection to a module open for this
+ *  many seconds after the last poll data transmission has taken place, to
+ *  minimize connection overhead in case the next poll is sent to the same
+ *  module.
+ * 
+ *  Devices may stay awake as long as the channel is open, so don't disable
+ *  the timeout except for special purposes.
+ * 
+ *  @param keepalive_seconds
+ *    Channel inactivity timeout in seconds, 0 = disable, default/init = 60
+ */
+void OvmsVehicle::PollSetChannelKeepalive(uint16_t keepalive_seconds)
+  {
+  m_poll_ch_keepalive = keepalive_seconds;
+  }
+
+
+/**
  * PollerSend: internal: start next due request
  */
 void OvmsVehicle::PollerSend(bool fromTicker)
   {
   OvmsRecMutexLock lock(&m_poll_mutex);
-
-  // Don't do anything with no bus, no list or an empty list
-  if (!m_poll_bus_default || !m_poll_plist || m_poll_plist->txmoduleid == 0) return;
-
-  if (m_poll_plcur == NULL) m_poll_plcur = m_poll_plist;
 
   // ESP_LOGD(TAG, "PollerSend(%d): entry at[type=%02X, pid=%X], ticker=%u, wait=%u, cnt=%u/%u",
   //          fromTicker, m_poll_plcur->type, m_poll_plcur->pid,
@@ -229,8 +266,19 @@ void OvmsVehicle::PollerSend(bool fromTicker)
     // Timer ticker call: reset throttling counter, check response timeout
     m_poll_sequence_cnt = 0;
     if (m_poll_wait > 0) m_poll_wait--;
+
+    // Protocol specific ticker calls:
+    PollerVWTPTicker();
     }
   if (m_poll_wait > 0) return;
+
+  // Check poll bus & list:
+  if (!m_poll_bus_default || !m_poll_plist || m_poll_plist->txmoduleid == 0) return;
+
+  // Restart poll list cursor:
+  if (m_poll_plcur == NULL) m_poll_plcur = m_poll_plist;
+
+  m_poll_entry = {};
 
   while (m_poll_plcur->txmoduleid != 0)
     {
@@ -238,23 +286,10 @@ void OvmsVehicle::PollerSend(bool fromTicker)
         ((m_poll_ticker % m_poll_plcur->polltime[m_poll_state]) == 0))
       {
       // We need to poll this one...
+      m_poll_entry = *m_poll_plcur;
       m_poll_protocol = m_poll_plcur->protocol;
       m_poll_type = m_poll_plcur->type;
       m_poll_pid = m_poll_plcur->pid;
-      if (m_poll_plcur->rxmoduleid != 0)
-        {
-        // send to <moduleid>, listen to response from <rmoduleid>:
-        m_poll_moduleid_sent = m_poll_plcur->txmoduleid;
-        m_poll_moduleid_low = m_poll_plcur->rxmoduleid;
-        m_poll_moduleid_high = m_poll_plcur->rxmoduleid;
-        }
-      else
-        {
-        // broadcast: send to 0x7df, listen to all responses:
-        m_poll_moduleid_sent = 0x7df;
-        m_poll_moduleid_low = 0x7e8;
-        m_poll_moduleid_high = 0x7ef;
-        }
 
       switch (m_poll_plcur->pollbus)
         {
@@ -274,64 +309,14 @@ void OvmsVehicle::PollerSend(bool fromTicker)
           m_poll_bus = m_poll_bus_default;
         }
 
-      ESP_LOGD(TAG, "PollerSend(%d): send [bus=%d, type=%02X, pid=%X], expecting %03x/%03x-%03x",
-               fromTicker, m_poll_plcur->pollbus, m_poll_type, m_poll_pid, m_poll_moduleid_sent,
-               m_poll_moduleid_low, m_poll_moduleid_high);
-
-      CAN_frame_t txframe;
-      uint8_t* txdata;
-      memset(&txframe,0,sizeof(txframe));
-      txframe.origin = m_poll_bus;
-      txframe.callback = &m_poll_txcallback;
-      txframe.FIR.B.FF = CAN_frame_std;
-      txframe.FIR.B.DLC = 8;
-
-      if (m_poll_protocol == ISOTP_EXTADR)
-        {
-        txframe.MsgID = m_poll_moduleid_sent >> 8;
-        txframe.data.u8[0] = m_poll_moduleid_sent & 0xff;
-        txdata = &txframe.data.u8[1];
-        }
+      // Dispatch transmission start to protocol handler:
+      if (m_poll_protocol == VWTP_20)
+        PollerVWTPStart(fromTicker);
       else
-        {
-        txframe.MsgID = m_poll_moduleid_sent;
-        txdata = &txframe.data.u8[0];
-        }
+        PollerISOTPStart(fromTicker);
 
-      if (POLL_TYPE_HAS_16BIT_PID(m_poll_plcur->type))
-        {
-        uint8_t datalen = LIMIT_MAX(m_poll_plcur->args.datalen, 4);
-        txdata[0] = (ISOTP_FT_SINGLE << 4) + 3 + datalen;
-        txdata[1] = m_poll_type;
-        txdata[2] = m_poll_pid >> 8;
-        txdata[3] = m_poll_pid & 0xff;
-        memcpy(&txdata[4], m_poll_plcur->args.data, datalen);
-        }
-      else if (POLL_TYPE_HAS_8BIT_PID(m_poll_plcur->type))
-        {
-        uint8_t datalen = LIMIT_MAX(m_poll_plcur->args.datalen, 5);
-        txdata[0] = (ISOTP_FT_SINGLE << 4) + 2 + datalen;
-        txdata[1] = m_poll_type;
-        txdata[2] = m_poll_pid;
-        memcpy(&txdata[3], m_poll_plcur->args.data, datalen);
-        }
-      else
-        {
-        uint8_t datalen = LIMIT_MAX(m_poll_plcur->args.datalen, 6);
-        txdata[0] = (ISOTP_FT_SINGLE << 4) + 1 + datalen;
-        txdata[1] = m_poll_type;
-        memcpy(&txdata[2], m_poll_plcur->args.data, datalen);
-        }
-
-      m_poll_txmsgid = txframe.MsgID;
-      m_poll_ml_frame = 0;
-      m_poll_ml_offset = 0;
-      m_poll_ml_remain = 0;
-      m_poll_wait = 2;
       m_poll_plcur++;
       m_poll_sequence_cnt++;
-      m_poll_bus->Write(&txframe);
-
       return;
       }
 
@@ -358,6 +343,10 @@ void OvmsVehicle::PollerTxCallback(const CAN_frame_t* frame, bool success)
   if (!m_poll_wait || !m_poll_plist || frame->origin != m_poll_bus || frame->MsgID != m_poll_txmsgid)
     return;
 
+  // Forward to protocol handler:
+  if (m_poll_protocol == VWTP_20)
+    PollerVWTPTxCallback(frame, success);
+
   // On failure, try to speed up the current poll timeout:
   if (!success)
     {
@@ -376,289 +365,11 @@ void OvmsVehicle::PollerTxCallback(const CAN_frame_t* frame, bool success)
 
 
 /**
- * PollerSend: internal: process poll response frame
+ * PollerReceive: internal: process poll response frame
  */
 void OvmsVehicle::PollerReceive(CAN_frame_t* frame, uint32_t msgid)
   {
-  OvmsRecMutexLock lock(&m_poll_mutex);
-  char *hexdump = NULL;
-
-  // After locking the mutex, check again for poll expectance match:
-  if (!m_poll_wait || !m_poll_plist || frame->origin != m_poll_bus ||
-      msgid < m_poll_moduleid_low || msgid > m_poll_moduleid_high)
-    {
-    ESP_LOGD(TAG, "PollerReceive[%03X]: dropping expired poll response", msgid);
-    return;
-    }
-
-
-  // 
-  // Get & validate ISO-TP meta data
-  // 
-
-  uint8_t* fr_data;               // Frame data address
-  uint8_t  fr_maxlen;             // Frame data max length
-  uint8_t  tp_frametype;          // ISO-TP frame type (0…3)
-  uint8_t  tp_frameindex;         // TP cyclic frame index (0…15)
-  uint16_t tp_len;                // TP remaining payload length including this frame (0…4095)
-  uint8_t* tp_data;               // TP frame data section address
-  uint8_t  tp_datalen;            // TP frame data section length (0…7)
-
-  if (m_poll_protocol == ISOTP_EXTADR)
-    {
-    fr_data = &frame->data.u8[1];
-    fr_maxlen = 7;
-    }
-  else
-    {
-    fr_data = &frame->data.u8[0];
-    fr_maxlen = 8;
-    }
-
-  tp_frametype = fr_data[0] >> 4;
-
-  switch (tp_frametype)
-    {
-    case ISOTP_FT_SINGLE:
-      tp_frameindex = 0;
-      tp_len = fr_data[0] & 0x0f;
-      tp_data = &fr_data[1];
-      tp_datalen = tp_len;
-      break;
-    case ISOTP_FT_FIRST:
-      tp_frameindex = 0;
-      tp_len = (fr_data[0] & 0x0f) << 8 | fr_data[1];
-      tp_data = &fr_data[2];
-      tp_datalen = (tp_len > fr_maxlen-2) ? fr_maxlen-2 : tp_len;
-      break;
-    case ISOTP_FT_CONSECUTIVE:
-      tp_frameindex = fr_data[0] & 0x0f;
-      tp_len = m_poll_ml_remain;
-      tp_data = &fr_data[1];
-      tp_datalen = (tp_len > fr_maxlen-1) ? fr_maxlen-1 : tp_len;
-      break;
-    default:
-      {
-      // This is most likely an indication there is a non ISO-TP device sending
-      // in our expected RX ID range, so we log the frame and abort:
-      FormatHexDump(&hexdump, (const char*)frame->data.u8, 8, 8);
-      ESP_LOGW(TAG, "PollerReceive[%03X]: ignoring unknown/invalid ISO TP frame: %s",
-               msgid, hexdump ? hexdump : "-");
-      if (hexdump) free(hexdump);
-      return;
-      }
-    }
-
-  // Check frame index:
-  if (tp_frametype == ISOTP_FT_CONSECUTIVE)
-    {
-    // Note: we tolerate an index less than the expected one, as some devices
-    //  begin counting at the first consecutive frame
-    if (m_poll_ml_remain == 0 || tp_frameindex > (m_poll_ml_frame & 0x0f))
-      {
-      FormatHexDump(&hexdump, (const char*)frame->data.u8, 8, 8);
-      ESP_LOGW(TAG, "PollerReceive[%03X]: unexpected/out of sequence ISO TP frame (%d vs %d), aborting poll %02X(%X): %s",
-              msgid, tp_frameindex, m_poll_ml_frame & 0x0f, m_poll_type, m_poll_pid,
-              hexdump ? hexdump : "-");
-      if (hexdump) free(hexdump);
-      m_poll_moduleid_low = m_poll_moduleid_high = 0; // ignore further frames
-      m_poll_wait = 2; // give the bus time to let remaining frames pass
-      return;
-      }
-    }
-
-
-  // 
-  // Get & validate OBD/UDS meta data
-  // 
-
-  uint8_t  response_type = 0;         // OBD/UDS response type tag (expected: 0x40 + request type)
-  uint16_t response_pid = 0;          // OBD/UDS response PID (expected: request PID)
-  uint8_t* response_data = NULL;      // OBD/UDS frame payload address
-  uint16_t response_datalen = 0;      // OBD/UDS frame payload length (0…7)
-  uint8_t  error_type = 0;            // OBD/UDS error response service type (expected: request type)
-  uint8_t  error_code = 0;            // OBD/UDS error response code (see ISO 14229 Annex A.1)
-
-  if (tp_frametype == ISOTP_FT_CONSECUTIVE)
-    {
-    response_type = 0x40+m_poll_type;
-    response_pid = m_poll_pid;
-    response_data = tp_data;
-    response_datalen = tp_datalen;
-    }
-  else // ISOTP_FT_FIRST || ISOTP_FT_SINGLE
-    {
-    response_type = tp_data[0];
-    if (response_type == UDS_RESP_TYPE_NRC)
-      {
-      error_type = tp_data[1];
-      error_code = tp_data[2];
-      }
-    else if (POLL_TYPE_HAS_16BIT_PID(response_type-0x40))
-      {
-      response_pid = tp_data[1] << 8 | tp_data[2];
-      response_data = &tp_data[3];
-      response_datalen = tp_datalen - 3;
-      }
-    else if (POLL_TYPE_HAS_8BIT_PID(response_type-0x40))
-      {
-      response_pid = tp_data[1];
-      response_data = &tp_data[2];
-      response_datalen = tp_datalen - 2;
-      }
-    else
-      {
-      response_pid = m_poll_pid;
-      response_data = &tp_data[1];
-      response_datalen = tp_datalen - 1;
-      }
-    }
-
-
-  // 
-  // Process OBD/UDS payload
-  // 
-
-  if (response_type == UDS_RESP_TYPE_NRC && error_type == m_poll_type)
-    {
-    // Negative Response Code:
-    if (error_code == UDS_RESP_NRC_RCRRP)
-      {
-      // Info: requestCorrectlyReceived-ResponsePending (server busy processing the request)
-      ESP_LOGD(TAG, "PollerReceive[%03X]: got OBD/UDS info %02X(%X) code=%02X (pending)",
-               msgid, m_poll_type, m_poll_pid, error_code);
-      // add some wait time:
-      m_poll_wait++;
-      return;
-      }
-    else
-      {
-      // Error: forward to application:
-      ESP_LOGD(TAG, "PollerReceive[%03X]: process OBD/UDS error %02X(%X) code=%02X",
-               msgid, m_poll_type, m_poll_pid, error_code);
-      // Running single poll?
-      if (m_poll_single_rxbuf)
-        {
-        m_poll_single_rxerr = error_code;
-        m_poll_single_rxbuf = NULL;
-        m_poll_single_rxdone.Give();
-        }
-      else
-        {
-        IncomingPollError(frame->origin, m_poll_type, m_poll_pid, error_code);
-        }
-      // abort:
-      m_poll_ml_remain = 0;
-      }
-    }
-  else if (response_type == 0x40+m_poll_type && response_pid == m_poll_pid)
-    {
-    // Normal matching poll response, forward to application:
-    m_poll_ml_remain = tp_len - tp_datalen;
-    ESP_LOGD(TAG, "PollerReceive[%03X]: process OBD/UDS response %02X(%X) frm=%u len=%u off=%u rem=%u",
-             msgid, m_poll_type, m_poll_pid,
-             m_poll_ml_frame, response_datalen, m_poll_ml_offset, m_poll_ml_remain);
-    // Running single poll?
-    if (m_poll_single_rxbuf)
-      {
-      if (m_poll_ml_frame == 0)
-        {
-        m_poll_single_rxbuf->clear();
-        m_poll_single_rxbuf->reserve(response_datalen + m_poll_ml_remain);
-        }
-      m_poll_single_rxbuf->append((char*)response_data, response_datalen);
-      if (m_poll_ml_remain == 0)
-        {
-        m_poll_single_rxerr = 0;
-        m_poll_single_rxbuf = NULL;
-        m_poll_single_rxdone.Give();
-        }
-      }
-    else
-      {
-      IncomingPollReply(frame->origin, m_poll_type, m_poll_pid, response_data, response_datalen, m_poll_ml_remain);
-      }
-    }
-  else
-    {
-    // This is most likely a late response to a previous poll, log & skip:
-    FormatHexDump(&hexdump, (const char*)frame->data.u8, 8, 8);
-    ESP_LOGW(TAG, "PollerReceive[%03X]: OBD/UDS response type/PID mismatch, got %02X(%X) vs %02X(%X) => ignoring: %s",
-             msgid, response_type, response_pid, 0x40+m_poll_type, m_poll_pid, hexdump ? hexdump : "-");
-    if (hexdump) free(hexdump);
-    return;
-    }
-
-
-  // Do we expect more data?
-  if (m_poll_ml_remain)
-    {
-    if (tp_frametype == ISOTP_FT_FIRST)
-      {
-      // First frame; send flow control frame:
-      CAN_frame_t txframe;
-      uint8_t* txdata;
-      uint32_t txid;
-      memset(&txframe,0,sizeof(txframe));
-      txframe.origin = frame->origin;
-      txframe.FIR.B.FF = CAN_frame_std;
-      txframe.FIR.B.DLC = 8;
-
-      if (m_poll_moduleid_sent == 0x7df)
-        {
-        // broadcast request: derive module ID from response ID:
-        // (Note: this only works for the SAE standard ID scheme)
-        txid = frame->MsgID - 8;
-        }
-      else
-        {
-        // use known module ID:
-        txid = m_poll_moduleid_sent;
-        }
-
-      if (m_poll_protocol == ISOTP_EXTADR)
-        {
-        txframe.MsgID = txid >> 8;
-        txframe.data.u8[0] = txid & 0xff;
-        txdata = &txframe.data.u8[1];
-        }
-      else
-        {
-        txframe.MsgID = txid;
-        txdata = &txframe.data.u8[0];
-        }
-
-      txdata[0] = 0x30;                // flow control frame type
-      txdata[1] = 0x00;                // request all frames available
-      txdata[2] = m_poll_fc_septime;   // with configured separation timing (default 25 ms)
-      txframe.Write();
-      m_poll_ml_frame = 1;
-      }
-    else
-      {
-      m_poll_ml_frame++;
-      }
-
-    m_poll_ml_offset += response_datalen; // next frame application payload offset
-    m_poll_wait = 2;
-    }
-  else
-    {
-    // Request response complete:
-    m_poll_wait = 0;
-    }
-
-
-  // Immediately send the next poll for this tick if…
-  // - we are not waiting for another frame
-  // - the poll was no broadcast (with potential further responses from other devices)
-  // - poll throttling is unlimited or limit isn't reached yet
-  if (m_poll_wait == 0 &&
-      m_poll_moduleid_sent != 0x7df &&
-      (!m_poll_sequence_max || m_poll_sequence_cnt < m_poll_sequence_max))
-    {
-    PollerSend(false);
-    }
+  // obsolete
   }
 
 
@@ -677,10 +388,10 @@ void OvmsVehicle::PollerReceive(CAN_frame_t* frame, uint32_t msgid)
  *  @param bus          CAN bus to use for the request
  *  @param txid         CAN ID to send to (0x7df = broadcast)
  *  @param rxid         CAN ID to expect response from (broadcast: 0)
- *  @param request      Request to send (binary string) (only single frame requests supported)
+ *  @param request      Request to send (binary string) (type + pid + up to 4095 bytes payload)
  *  @param response     Response buffer (binary string) (multiple response frames assembled)
  *  @param timeout_ms   Timeout for poller/response in milliseconds
- *  @param protocol     Protocol variant: ISOTP_STD / ISOTP_EXTADR
+ *  @param protocol     Protocol variant: ISOTP_STD / ISOTP_EXTADR / ISOTP_EXTFRAME
  *  
  *  @return             POLLSINGLE_OK         (0)   -- success, response is valid
  *                      POLLSINGLE_TIMEOUT    (-1)  -- timeout/poller unavailable
@@ -714,26 +425,27 @@ int OvmsVehicle::PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
 
   assert(request.size() > 0);
   poll[0].type = request[0];
+  poll[0].xargs.tag = POLL_TXDATA;
 
   if (POLL_TYPE_HAS_16BIT_PID(poll[0].type))
     {
     assert(request.size() >= 3);
-    poll[0].args.pid = request[1] << 8 | request[2];
-    poll[0].args.datalen = LIMIT_MAX(request.size()-3, sizeof(poll[0].args.data));
-    memcpy(poll[0].args.data, request.data()+3, poll[0].args.datalen);
+    poll[0].xargs.pid = request[1] << 8 | request[2];
+    poll[0].xargs.datalen = LIMIT_MAX(request.size()-3, 4095);
+    poll[0].xargs.data = (const uint8_t*)request.data()+3;
     }
   else if (POLL_TYPE_HAS_8BIT_PID(poll[0].type))
     {
     assert(request.size() >= 2);
-    poll[0].args.pid = request.at(1);
-    poll[0].args.datalen = LIMIT_MAX(request.size()-2, sizeof(poll[0].args.data));
-    memcpy(poll[0].args.data, request.data()+2, poll[0].args.datalen);
+    poll[0].xargs.pid = request.at(1);
+    poll[0].xargs.datalen = LIMIT_MAX(request.size()-2, 4095);
+    poll[0].xargs.data = (const uint8_t*)request.data()+2;
     }
   else
     {
-    poll[0].args.pid = 0;
-    poll[0].args.datalen = LIMIT_MAX(request.size()-1, sizeof(poll[0].args.data));
-    memcpy(poll[0].args.data, request.data()+1, poll[0].args.datalen);
+    poll[0].xargs.pid = 0;
+    poll[0].xargs.datalen = LIMIT_MAX(request.size()-1, 4095);
+    poll[0].xargs.data = (const uint8_t*)request.data()+1;
     }
 
   // acquire poller access:
@@ -779,7 +491,7 @@ int OvmsVehicle::PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
  *  @param pid          … and PID to poll
  *  @param response     Response buffer (binary string) (multiple response frames assembled)
  *  @param timeout_ms   Timeout for poller/response in milliseconds
- *  @param protocol     Protocol variant: ISOTP_STD / ISOTP_EXTADR
+ *  @param protocol     Protocol variant: ISOTP_STD / ISOTP_EXTADR / ISOTP_EXTFRAME
  *  
  *  @return             POLLSINGLE_OK         ( 0)  -- success, response is valid
  *                      POLLSINGLE_TIMEOUT    (-1)  -- timeout/poller unavailable
@@ -803,4 +515,38 @@ int OvmsVehicle::PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
     request += (char) (pid & 0xff);
     }
   return PollSingleRequest(bus, txid, rxid, request, response, timeout_ms, protocol);
+  }
+
+
+/**
+ * PollResultCodeName: get text representation of result code
+ */
+const char* OvmsVehicle::PollResultCodeName(int code)
+  {
+  switch (code)
+    {
+    case 0x10:  return "generalReject";
+    case 0x11:  return "serviceNotSupported";
+    case 0x12:  return "subFunctionNotSupported";
+    case 0x13:  return "incorrectMessageLengthOrInvalidFormat";
+    case 0x14:  return "responseTooLong";
+    case 0x21:  return "busyRepeatRequest";
+    case 0x22:  return "conditionsNotCorrect";
+    case 0x24:  return "requestSequenceError";
+    case 0x25:  return "noResponseFromSubnetComponent";
+    case 0x26:  return "failurePreventsExecutionOfRequestedAction";
+    case 0x31:  return "requestOutOfRange";
+    case 0x33:  return "securityAccessDenied";
+    case 0x35:  return "invalidKey";
+    case 0x36:  return "exceedNumberOfAttempts";
+    case 0x37:  return "requiredTimeDelayNotExpired";
+    case 0x70:  return "uploadDownloadNotAccepted";
+    case 0x71:  return "transferDataSuspended";
+    case 0x72:  return "generalProgrammingFailure";
+    case 0x73:  return "wrongBlockSequenceCounter";
+    case 0x78:  return "requestCorrectlyReceived-ResponsePending";
+    case 0x7e:  return "subFunctionNotSupportedInActiveSession";
+    case 0x7f:  return "serviceNotSupportedInActiveSession";
+    default:    return NULL;
+    }
   }

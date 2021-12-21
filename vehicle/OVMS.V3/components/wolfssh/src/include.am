@@ -2,19 +2,14 @@
 # included from Top Level Makefile.am
 # All paths should be given relative to the root
 
-
-lib_LTLIBRARIES+=  src/libwolfssh.la
+lib_LTLIBRARIES += src/libwolfssh.la
 src_libwolfssh_la_SOURCES = src/ssh.c \
                             src/internal.c \
-                            src/memory.c \
                             src/log.c \
                             src/io.c \
                             src/port.c
-src_libwolfssh_la_CFLAGS       = -DBUILDING_WOLFSSH $(AM_CFLAGS)
-src_libwolfssh_la_CPPFLAGS     = -DBUILDING_WOLFSSH $(AM_CPPFLAGS)
-src_libwolfssh_la_LDFLAGS      = ${AM_LDFLAGS} -no-undefined -version-info ${WOLFSSH_LIBRARY_VERSION} 
-src_libwolfssh_la_DEPENDENCIES =
-EXTRA_DIST +=
+src_libwolfssh_la_CPPFLAGS = -DBUILDING_WOLFSSH ${AM_CPPFLAGS}
+src_libwolfssh_la_LDFLAGS = -no-undefined -version-info ${WOLFSSH_LIBRARY_VERSION}
 
 if !BUILD_INLINE
 src_libwolfssh_la_SOURCES += src/misc.c
@@ -22,4 +17,20 @@ endif
 
 if BUILD_KEYGEN
 src_libwolfssh_la_SOURCES += src/keygen.c
+endif
+
+if BUILD_SCP
+src_libwolfssh_la_SOURCES += src/wolfscp.c
+endif
+
+if BUILD_SFTP
+src_libwolfssh_la_SOURCES += src/wolfsftp.c
+endif
+
+if BUILD_TERM
+src_libwolfssh_la_SOURCES += src/wolfterm.c
+endif
+
+if BUILD_AGENT
+src_libwolfssh_la_SOURCES += src/agent.c
 endif

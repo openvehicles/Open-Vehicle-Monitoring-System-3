@@ -122,12 +122,16 @@ alert   batt.bms.alert              Battery pack/cell alert (critical voltage/te
 alert   batt.soc.alert              Battery SOC critical
 info    charge.done                 ``stat`` on charge finished
 info    charge.started              ``stat`` on start of charge
+info    charge.toppingoff           ``stat`` on start of topping off charge/phase
 info    charge.stopped              ``stat`` on planned charge stop
 alert   charge.stopped              ``stat`` on unplanned charge stop
 data    debug.crash                 Transmit crash backtraces (→ ``*-OVM-DebugCrash``)
 data    debug.tasks                 Transmit task statistics (→ ``*-OVM-DebugTasks``)
+info    drive.trip.report           Trip driving statistics (see `Trip report`_)
 alert   flatbed.moved               Vehicle is being transported while parked - possible theft/flatbed
 info    heating.started             ``stat`` on start of heating (battery)
+data    log.grid                    Grid (charge/generator) history log (see below) (→ ``*-LOG-Grid``)
+data    log.trip                    Trip history log (see below) (→ ``*-LOG-Trip``)
 alert   modem.no_pincode            No PIN code for SIM card configured
 alert   modem.wrongpincode          Wrong pin code
 info    ota.update                  New firmware available/downloaded/installed
@@ -141,3 +145,166 @@ alert   valet.trunk                 Vehicle trunk opened while in valet mode
 alert   vehicle.idle                Vehicle is idling / stopped turned on
 ======= =========================== ================================================================
 
+
+----------------
+Grid history log
+----------------
+
+The grid history log can be used as a source for long term statistics on your charges and typical 
+energy usages and to calculate your vehicle energy costs.
+
+Log entries are created on each change of the charge or generator state (``v.c.state`` / ``v.g.state``).
+
+You need to enable this log explicitly by configuring a storage time via config param ``notify 
+log.grid.storetime`` (in days) or via the web configuration page. Set to 0/empty to disable the log. 
+Already stored log entries will be kept on the server until expiry or manual deletion.
+
+Note: the stability of the total energy counters included in this log depends on their source 
+and persistence on the vehicle and/or module. If they are kept on the module, they may lose their
+values on a power outage.
+
+  - Notification subtype: ``log.grid``
+  - History record type: ``*-LOG-Grid``
+  - Format: CSV
+  - Archive time: config ``notify log.grid.storetime`` (days)
+  - Fields/columns:
+
+    * pos_gpslock
+    * pos_latitude
+    * pos_longitude
+    * pos_altitude
+    * pos_location
+    * charge_type
+    * charge_state
+    * charge_substate
+    * charge_mode
+    * charge_climit
+    * charge_limit_range
+    * charge_limit_soc
+    * gen_type
+    * gen_state
+    * gen_substate
+    * gen_mode
+    * gen_climit
+    * gen_limit_range
+    * gen_limit_soc
+    * charge_time
+    * charge_kwh
+    * charge_kwh_grid
+    * charge_kwh_grid_total
+    * gen_time
+    * gen_kwh
+    * gen_kwh_grid
+    * gen_kwh_grid_total
+    * bat_soc
+    * bat_range_est
+    * bat_range_ideal
+    * bat_range_full
+    * bat_voltage
+    * bat_temp
+    * charge_temp
+    * charge_12v_temp
+    * env_temp
+    * env_cabintemp
+    * bat_soh
+    * bat_health
+    * bat_cac
+    * bat_energy_used_total
+    * bat_energy_recd_total
+    * bat_coulomb_used_total
+    * bat_coulomb_recd_total
+
+
+----------------
+Trip history log
+----------------
+
+The trip history log can be used as a source for long term statistics on your trips and typical 
+trip power usages, as well as your battery performance in different environmental conditions and 
+degradation over time.
+
+Entries are created at the beginning and end of each "ignition" cycle (``v.e.on`` change). Configure 
+a minimum trip length for logging by the config variable ``notify log.trip.minlength`` or via the web 
+UI. If your vehicle does not support the ``v.p.trip`` metric, set the minimum trip length to 0.
+
+The log entry at the beginning of a trip is created to track non-driving SOC changes, vampire drains
+and BMS SOC corrections that occurred in between. If you're just interested in the actual drive results,
+filter the records e.g. by ``pos_trip > 0.1`` or ``env_drivetime > 10`` (by default log entries
+will be created 3 seconds after the ``v.e.on`` state change).
+
+You need to enable this log explicitly by configuring a storage time via config param ``notify 
+log.trip.storetime`` (in days) or via the web configuration page. Set to 0/empty to disable the log. 
+Already stored log entries will be kept on the server until expiry or manual deletion.
+
+  - Notification subtype: ``log.trip``
+  - History record type: ``*-LOG-Trip``
+  - Format: CSV
+  - Archive time: config ``notify log.trip.storetime`` (days)
+  - Fields/columns:
+
+    * pos_gpslock
+    * pos_latitude
+    * pos_longitude
+    * pos_altitude
+    * pos_location
+    * pos_odometer
+    * pos_trip
+    * env_drivetime
+    * env_drivemode
+    * bat_soc
+    * bat_range_est
+    * bat_range_ideal
+    * bat_range_full
+    * bat_energy_used
+    * bat_energy_recd
+    * bat_coulomb_used
+    * bat_coulomb_recd
+    * bat_soh
+    * bat_health
+    * bat_cac
+    * bat_energy_used_total
+    * bat_energy_recd_total
+    * bat_coulomb_used_total
+    * bat_coulomb_recd_total
+    * env_temp
+    * env_cabintemp
+    * bat_temp
+    * inv_temp
+    * mot_temp
+    * charge_12v_temp
+    * tpms_temp_min
+    * tpms_temp_max
+    * tpms_pressure_min
+    * tpms_pressure_max
+    * tpms_health_min
+    * tpms_health_max
+
+
+-----------
+Trip report
+-----------
+
+The trip report outputs some core statistics of the current or most recent trip (drive
+cycle). It can be queried any time using the ``stat trip`` command, or be configured to
+be sent automatically on turning the vehicle off:
+
+Use the web UI (Config → Notifications) or set config variable ``notify report.trip.enable`` to
+``yes`` and optionally a minimum trip length in ``notify log.trip.minlength`` (defaults to 0.2 km).
+If your vehicle does not support the ``v.p.trip`` metric, set the minimum trip length to 0.
+
+The statistics available depend on your vehicle type (i.e. metrics support of that vehicle
+adaption). Vehicles also may override the report to provide custom statistics. By default,
+a full trip report will contain:
+
+  - Trip length
+  - Average driving speed
+  - Overall altitude difference (start to end point)
+  - Energy consumption in Wh per km/Mi
+  - Recuperation percentage (in relation to energy used)
+  - SOC difference & new SOC
+  - Estimated range difference & new range
+  - Average acceleration & deceleration
+
+The average driving speed is calculated only from speeds above 5 kph (3 mph)
+(to exclude slow speed rolling), and the acceleration & deceleration averages
+exclude values below 2.5 kph/s (1.6 mph/s) (constant speed cruising).

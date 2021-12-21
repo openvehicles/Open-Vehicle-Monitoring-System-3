@@ -56,7 +56,7 @@ class esp32can : public canbus
   public:
     esp_err_t Start(CAN_mode_t mode, CAN_speed_t speed);
     esp_err_t Stop();
-    void InitController();
+    esp_err_t InitController();
 
   public:
     esp_err_t Write(const CAN_frame_t* p_frame, TickType_t maxqueuewait=0);

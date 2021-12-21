@@ -126,9 +126,9 @@ Once complete, you can **Save & reboot** to activate your new configuration.
   :align: left
 
 | **Warning!**
-| Do not set the Wifi mode to **AP+Client** or **Client** before having configured your Wifi network. Also, do not use client scan mode with **AP+Client**, as this is not supported! The web interface will prevent these combinations.
- 
-If you have configured this combination manually, the Wifi network will not start automatically. You need to log in using a USB terminal and either do a factory reset (see Module Factory Reset) or (better) issue **enable** to enter secure mode, then issue **config set auto wifi.mode ap** and reboot.
+| Do not set the Wifi mode to **AP+Client** or **Client** before having configured your Wifi network.
+
+If you have configured this manually, the Wifi network may not start automatically. Log in using a USB terminal and either do a factory reset (see Module Factory Reset) or (better) issue **enable** to enter secure mode, then issue **config set auto wifi.mode ap** and reboot.
 
 ^^^^^^^^^^^^^^^^^^
 Networking Options

@@ -75,6 +75,7 @@ typedef enum
 typedef enum
   {
   CAN_SPEED_33KBPS=33,       // CAN Node runs at 33.333kBit/s
+  CAN_SPEED_50KBPS=50,       // CAN Node runs at 50kBit/s
   CAN_SPEED_83KBPS=83,       // CAN Node runs at 83.333kBit/s
   CAN_SPEED_100KBPS=100,     // CAN Node runs at 100kBit/s
   CAN_SPEED_125KBPS=125,     // CAN Node runs at 125kBit/s
@@ -85,7 +86,7 @@ typedef enum
 
 /* Map CAN_speed_t to a Bit/s value */
 #define MAP_CAN_SPEED(s) \
-    ((s) > CAN_SPEED_83KBPS ? (((int)(s)) * 1000) : ((((int)(s)) * 1000) + 333))
+    (((s) == CAN_SPEED_33KBPS || (s) == CAN_SPEED_83KBPS) ? ((((int)(s)) * 1000) + 333) : (((int)(s)) * 1000))
 
 // CAN frame type (standard/extended)
 typedef enum
@@ -151,9 +152,22 @@ typedef struct
   uint32_t error_flags;             // driver specific bitset
   uint16_t errors_rx;               // RX error counter
   uint16_t errors_tx;               // TX error counter
+  uint16_t invalid_rx;              // RX invalid frame counter
   uint16_t watchdog_resets;         // Watchdog reset counter
   uint16_t error_resets;            // Error resolving reset counter
   } CAN_status_t;
+
+// CAN error states
+typedef enum
+  {
+  CAN_errorstate_none = 0,          // normal operation, no errors present
+  CAN_errorstate_active,            // normal operation, some errors present (< 96 rx/tx errors)
+  CAN_errorstate_warning,           // normal operation, many errors present (>= 96 rx/tx errors)
+  CAN_errorstate_passive,           // passive mode, no tx retries until bus recovery (>= 128 rx/tx errors)
+  CAN_errorstate_busoff             // bus-off mode, no tx/rx until bus recovery (> 255 rx/tx errors)
+} CAN_errorstate_t;
+
+extern const char* GetCanErrorStateName(CAN_errorstate_t error_state);
 
 ////////////////////////////////////////////////////////////////////////
 // CAN messages queue
@@ -179,7 +193,7 @@ typedef struct
   union
     {
     CAN_frame_t frame;  // CAN_frame
-    canbus* bus;        
+    canbus* bus;
     } body;
   } CAN_queue_msg_t;
 
@@ -293,7 +307,7 @@ class canbus : public pcp, public InternalRamAllocated
     virtual esp_err_t Write(const CAN_frame_t* p_frame, TickType_t maxqueuewait=0);
     virtual esp_err_t WriteExtended(uint32_t id, uint8_t length, uint8_t *data, TickType_t maxqueuewait=0);
     virtual esp_err_t WriteStandard(uint16_t id, uint8_t length, uint8_t *data, TickType_t maxqueuewait=0);
-    virtual bool AsynchronousInterruptHandler(CAN_frame_t* frame, bool* frameReceived);
+    virtual bool AsynchronousInterruptHandler(CAN_frame_t* frame, uint32_t* framesReceived);
     virtual void TxCallback(CAN_frame_t* frame, bool success);
 
   protected:
@@ -305,6 +319,8 @@ class canbus : public pcp, public InternalRamAllocated
     void LogStatus(CAN_log_type_t type);
     void LogInfo(CAN_log_type_t type, const char* text);
     bool StatusChanged();
+    CAN_errorstate_t GetErrorState();
+    const char* GetErrorStateName();
 
   public:
     CAN_speed_t m_speed;
@@ -313,12 +329,15 @@ class canbus : public pcp, public InternalRamAllocated
     CAN_frame_t m_tx_frame;       // saved copy of last TX frame to be used in txcallback
     uint32_t m_status_chksum;
     uint32_t m_watchdog_timer;
+    uint32_t m_state;             // state bitset
     QueueHandle_t m_txqueue;
     int m_busnumber;
 
   protected:
     dbcfile *m_dbcfile;
   };
+
+#define CAN_M_STATE_TX_BUF_OCCUPIED   BIT(0) // transmit buffer is in use
 
 ////////////////////////////////////////////////////////////////////////
 // can - the CAN system controller
@@ -392,7 +411,7 @@ class can : public InternalRamAllocated
   public:
     typedef std::map<uint32_t, canlog*> canlog_map_t;
     canlog_map_t m_loggermap;
-    OvmsMutex m_loggermap_mutex;
+    OvmsRecMutex m_loggermap_mutex;
     uint32_t m_logger_id;
 
   public:

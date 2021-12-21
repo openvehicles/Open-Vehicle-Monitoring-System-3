@@ -38,7 +38,7 @@
 
 //static const char *TAG = "Console";
 static char CRbuf[4] = { '\r', '\033', '[', 'K' };
-static char NLbuf[1] = { '\n' };
+static char NLbuf[2] = { '\r', '\n' };
 static char ctrlRbuf[1] = { 'R'-0100 };
 
 char ** Complete (microrl_t* rl, int argc, const char * const * argv )
@@ -170,7 +170,7 @@ void OvmsConsole::Poll(portTickType ticks, QueueHandle_t queue)
         (event.type != ALERT_MULTI || event.multi->begin() != event.multi->end()))
         {
         if (m_state == AWAITING_NL)
-          write(NLbuf, 1);
+          write(NLbuf, 2);
         else if (m_state == AT_PROMPT)
           write(CRbuf, 4);
         char* buffer;
@@ -222,7 +222,7 @@ void OvmsConsole::Poll(portTickType ticks, QueueHandle_t queue)
       if (lost > 0)
         {
         if (m_state == AWAITING_NL)
-          write(NLbuf, 1);
+          write(NLbuf, 2);
         else if (m_state == AT_PROMPT)
           write(CRbuf, 4);
         printf("\033[33m[%d log messages lost]\033[0m", lost);

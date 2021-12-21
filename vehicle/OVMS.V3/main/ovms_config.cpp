@@ -40,6 +40,7 @@ static const char *TAG = "config";
 #include "crypt_base64.h"
 #include "ovms_config.h"
 #include "ovms_command.h"
+#include "ovms_script.h"
 #include "ovms_events.h"
 #include "ovms_utils.h"
 #include "ovms_boot.h"
@@ -223,6 +224,169 @@ void config_restore(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
   }
 #endif // CONFIG_OVMS_SC_ZIP
 
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+
+static duk_ret_t DukOvmsConfigParams(duk_context *ctx)
+  {
+  if (!MyConfig.ismounted()) return 0;
+
+  duk_idx_t arr_idx = duk_push_array(ctx);
+  int count = 0;
+  for (ConfigMap::iterator it=MyConfig.m_map.begin(); it!=MyConfig.m_map.end(); ++it)
+    {
+    duk_push_string(ctx, it->first.c_str());
+    duk_put_prop_index(ctx, arr_idx, count++);
+    }
+
+  return 1;
+  }
+
+static duk_ret_t DukOvmsConfigInstances(duk_context *ctx)
+  {
+  const char *param = duk_to_string(ctx,0);
+
+  if (!MyConfig.ismounted()) return 0;
+
+  OvmsConfigParam *p = MyConfig.CachedParam(param);
+  if (p)
+    {
+    if (! p->Readable()) return 0;  // Parameter is protected, and not readable
+
+    duk_idx_t arr_idx = duk_push_array(ctx);
+    int count = 0;
+    for (ConfigParamMap::iterator it=p->m_map.begin(); it!=p->m_map.end(); ++it)
+      {
+      duk_push_string(ctx, it->first.c_str());
+      duk_put_prop_index(ctx, arr_idx, count++);
+      }
+    return 1;
+    }
+
+  return 0;
+  }
+
+static duk_ret_t DukOvmsConfigGetValues(duk_context *ctx)
+  {
+  const char *param = duk_to_string(ctx,0);
+  std::string prefix = duk_opt_string(ctx,1,"");
+
+  if (!MyConfig.ismounted()) return 0;
+
+  OvmsConfigParam *p = MyConfig.CachedParam(param);
+  if (p)
+    {
+    if (! p->Readable()) return 0;  // Parameter is protected, and not readable
+
+    duk_idx_t obj_idx = duk_push_object(ctx);
+    for (ConfigParamMap::iterator it=p->m_map.lower_bound(prefix); it!=p->m_map.end(); ++it)
+      {
+      if (!startsWith(it->first, prefix)) break;
+      duk_push_string(ctx, it->second.c_str());
+      duk_put_prop_string(ctx, obj_idx, it->first.substr(prefix.length()).c_str());
+      }
+    return 1;
+    }
+
+  return 0;
+  }
+
+static duk_ret_t DukOvmsConfigSetValues(duk_context *ctx)
+  {
+  const char *param = duk_to_string(ctx,0);
+  std::string prefix = duk_opt_string(ctx,1,"");
+  duk_require_object(ctx,2);
+
+  if (!duk_is_object(ctx,2)) return 0;
+  if (!MyConfig.ismounted()) return 0;
+
+  OvmsConfigParam *p = MyConfig.CachedParam(param);
+  if (p)
+    {
+    if (! p->Writable()) return 0;  // Parameter is not writeable
+
+    ConfigParamMap pmap = p->m_map;
+    std::string key, val;
+    duk_enum(ctx, 2, 0);
+    while (duk_next(ctx, -1, true))
+      {
+      key = duk_to_string(ctx, -2);
+      val = duk_to_string(ctx, -1);
+      duk_pop_2(ctx);
+      pmap[prefix+key] = val;
+      }
+    duk_pop(ctx);
+    p->m_map.clear();
+    p->m_map = std::move(pmap);
+    p->Save();
+    }
+
+  return 0;
+  }
+
+static duk_ret_t DukOvmsConfigGet(duk_context *ctx)
+  {
+  const char *param = duk_to_string(ctx,0);
+  const char *instance = duk_to_string(ctx,1);
+  const char *defvalue = duk_to_string(ctx,2);
+
+  if (!MyConfig.ismounted()) return 0;
+  OvmsConfigParam *p = MyConfig.CachedParam(param);
+  if (p)
+    {
+    if (! p->Readable()) return 0;  // Parameter is protected, and not readable
+    if (p->IsDefined(instance))
+      {
+      std::string v = p->GetValue(instance);
+      duk_push_string(ctx, v.c_str());
+      }
+    else
+      {
+      duk_push_string(ctx, defvalue);
+      }
+    return 1;
+    }
+  else
+    {
+    return 0;
+    }
+  return 0;
+  }
+
+static duk_ret_t DukOvmsConfigSet(duk_context *ctx)
+  {
+  const char *param = duk_to_string(ctx,0);
+  const char *instance = duk_to_string(ctx,1);
+  const char *value = duk_to_string(ctx,2);
+
+  if (!MyConfig.ismounted()) return 0;
+
+  OvmsConfigParam *p = MyConfig.CachedParam(param);
+  if (p)
+    {
+    if (! p->Writable()) return 0;  // Parameter is not writeable
+    p->SetValue(instance, value);
+    }
+  return 0;
+  }
+
+static duk_ret_t DukOvmsConfigDelete(duk_context *ctx)
+  {
+  const char *param = duk_to_string(ctx,0);
+  const char *instance = duk_to_string(ctx,1);
+
+  if (!MyConfig.ismounted()) return 0;
+
+  OvmsConfigParam *p = MyConfig.CachedParam(param);
+  if (p)
+    {
+    if (! p->Writable()) return 0;  // Parameter is not writeable
+    p->DeleteInstance(instance);
+    }
+  return 0;
+  }
+
+#endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+
 OvmsConfig::OvmsConfig()
   {
   ESP_LOGI(TAG, "Initialising CONFIG (1400)");
@@ -251,12 +415,25 @@ OvmsConfig::OvmsConfig()
     "Note: user files or directories in /store will not be touched.\n"
     "The module will perform a reboot after successful restore.\n"
     "<password> defaults to the current module password.\n"
-    "Note: you need to supply the password used for the backup creation.", 1, 2);
+    "Note: You need to supply the password used for the backup creation.\n"
+    "The default password is not available after flash is erased.", 1, 2);
 #endif // CONFIG_OVMS_SC_ZIP
 
   RegisterParam("password", "Password store", true, false);
   RegisterParam("module", "Module configuration", true, true);
   RegisterParam("usr", "Custom plugin configuration", true, true);
+
+  #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  DuktapeObjectRegistration* dto = new DuktapeObjectRegistration("OvmsConfig");
+  dto->RegisterDuktapeFunction(DukOvmsConfigParams, 0, "Params");
+  dto->RegisterDuktapeFunction(DukOvmsConfigInstances, 1, "Instances");
+  dto->RegisterDuktapeFunction(DukOvmsConfigGet, 3, "Get");
+  dto->RegisterDuktapeFunction(DukOvmsConfigSet, 3, "Set");
+  dto->RegisterDuktapeFunction(DukOvmsConfigDelete, 2, "Delete");
+  dto->RegisterDuktapeFunction(DukOvmsConfigGetValues, 2, "GetValues");
+  dto->RegisterDuktapeFunction(DukOvmsConfigSetValues, 3, "SetValues");
+  MyDuktape.RegisterDuktapeObject(dto);
+  #endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   }
 
 OvmsConfig::~OvmsConfig()
@@ -550,18 +727,17 @@ bool OvmsConfig::ProtectedPath(std::string path)
   }
 
 /**
- * GetParamMap: get map of param instances
- * - Note: no modification allowed, to modify clone & call SetParamMap()
+ * GetParamMap: get map (copy) of param instances
  */
-const ConfigParamMap* OvmsConfig::GetParamMap(std::string param)
+ConfigParamMap OvmsConfig::GetParamMap(std::string param)
   {
+  ConfigParamMap pmap;
   if (!CachedParam(param))
     RegisterParam(param, "", true, false);
   OvmsConfigParam* p = CachedParam(param);
   if (p)
-    return &p->GetMap();
-  else
-    return NULL;
+    pmap = p->GetMap();
+  return pmap;
   }
 
 /**
@@ -596,7 +772,9 @@ static struct
     { "obd2ecu", true },
     { "dbc", true },
     { "plugin", true },
+    { "tls", true },
     { "trustedca", true },
+    { "usr", true },
     { NULL, false }
   };
 
@@ -706,9 +884,11 @@ bool OvmsConfig::Restore(std::string path, std::string password, OvmsWriter* wri
   if (!ok)
     {
     if (writer)
-      writer->printf("Error: unzip failed: %s\n", zip.strerror());
+      writer->printf("Error: unzip failed: %s%s\n", zip.strerror(),
+        password.empty() ? " (password required?)" : "");
     else
-      ESP_LOGE(TAG, "Restore '%s': unzip failed: %s", path.c_str(), zip.strerror());
+      ESP_LOGE(TAG, "Restore '%s': unzip failed: %s%s", path.c_str(), zip.strerror(),
+        password.empty() ? " (password required?)" : "");
     rmtree(tempdir);
     m_store_lock.Unlock();
     return false;

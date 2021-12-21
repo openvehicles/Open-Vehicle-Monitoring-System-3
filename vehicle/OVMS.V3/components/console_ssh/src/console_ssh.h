@@ -49,7 +49,7 @@ class OvmsSSH
     void EventHandler(struct mg_connection *nc, int ev, void *p);
     void NetManInit(std::string event, void* data);
     void NetManStop(std::string event, void* data);
-    static int Authenticate(uint8_t type, const WS_UserAuthData* data, void* ctx);
+    static int Authenticate(uint8_t type, WS_UserAuthData* data, void* ctx);
     WOLFSSH_CTX* ctx() { return m_ctx; }
 
   protected:

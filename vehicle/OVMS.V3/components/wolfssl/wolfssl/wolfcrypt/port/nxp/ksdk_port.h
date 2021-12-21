@@ -1,6 +1,6 @@
 /* ksdk_port.h
  *
- * Copyright (C) 2006-2016 wolfSSL Inc.
+ * Copyright (C) 2006-2020 wolfSSL Inc.
  *
  * This file is part of wolfSSL.
  *
@@ -25,6 +25,8 @@
 #include <wolfssl/wolfcrypt/settings.h>
 #ifdef USE_FAST_MATH
     #include <wolfssl/wolfcrypt/tfm.h>
+#elif defined WOLFSSL_SP_MATH
+    #include <wolfssl/wolfcrypt/sp_int.h>
 #else
     #include <wolfssl/wolfcrypt/integer.h>
 #endif
@@ -44,6 +46,10 @@ int ksdk_port_init(void);
 	int wolfcrypt_mp_mod(mp_int *a, mp_int *b, mp_int *c);
 	int wolfcrypt_mp_invmod(mp_int *a, mp_int *b, mp_int *c);
 	int wolfcrypt_mp_exptmod(mp_int *G, mp_int *X, mp_int *P, mp_int *Y);
+
+    /* Exported mp_mulmod function */
+    int mp_mulmod(mp_int *a, mp_int *b, mp_int *c, mp_int *d);
+
 #endif /* FREESCALE_LTC_TFM */
 
 #if defined(FREESCALE_LTC_ECC)
@@ -51,16 +57,16 @@ int ksdk_port_init(void);
 
 	typedef enum _fsl_ltc_ecc_coordinate_system
 	{
-	    kLTC_Weierstrass = 0U, /*!< Point coordinates on an elliptic curve in Weierstrass form */
-	    kLTC_Curve25519 = 1U,  /*!< Point coordinates on an Curve25519 elliptic curve in Montgomery form */
-	    kLTC_Ed25519 = 2U,     /*!< Point coordinates on an Ed25519 elliptic curve in twisted Edwards form */
+	    kLTC_Weierstrass = 0U, /*< Point coordinates on an elliptic curve in Weierstrass form */
+	    kLTC_Curve25519 = 1U,  /*< Point coordinates on an Curve25519 elliptic curve in Montgomery form */
+	    kLTC_Ed25519 = 2U,     /*< Point coordinates on an Ed25519 elliptic curve in twisted Edwards form */
 	} fsl_ltc_ecc_coordinate_system_t;
 
 	int wc_ecc_point_add(ecc_point *mG, ecc_point *mQ, ecc_point *mR, mp_int *m);
 
 	#ifdef HAVE_CURVE25519
-		int wc_curve25519(ECPoint *q, byte *n, const ECPoint *p, fsl_ltc_ecc_coordinate_system_t type);
-		const ECPoint *wc_curve25519_GetBasePoint(void);
+		int nxp_ltc_curve25519(ECPoint *q, const byte *n, const ECPoint *p, fsl_ltc_ecc_coordinate_system_t type);
+		const ECPoint *nxp_ltc_curve25519_GetBasePoint(void);
 		status_t LTC_PKHA_Curve25519ToWeierstrass(const ltc_pkha_ecc_point_t *ltcPointIn, ltc_pkha_ecc_point_t *ltcPointOut);
 		status_t LTC_PKHA_WeierstrassToCurve25519(const ltc_pkha_ecc_point_t *ltcPointIn, ltc_pkha_ecc_point_t *ltcPointOut);
 		status_t LTC_PKHA_Curve25519ComputeY(ltc_pkha_ecc_point_t *ltcPoint);

@@ -59,6 +59,7 @@ static const char *TAG = "v-voltampera";
 static const OvmsVehicle::poll_pid_t va_polls[]
   =
   {
+    { 0x7e0, 0x7e8, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x002F, {  0, 600,  0 },   0, ISOTP_STD }, // Fuel Level
     { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x1940, {  0, 60,   60 },  0, ISOTP_STD }, // Transmission temperature
     { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x4369, {  0, 10,   10 },  0, ISOTP_STD }, // On-board charger current
     { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x4368, {  0, 10,   10 },  0, ISOTP_STD }, // On-board charger voltage
@@ -66,12 +67,12 @@ static const OvmsVehicle::poll_pid_t va_polls[]
     { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x1c43, {  0, 10,   10 },  0, ISOTP_STD }, // PEM temperature
     { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x8334, {  0, 10,   10 },  0, ISOTP_STD }, // SOC
     { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x41a3, {  0, 600,  0 },   0, ISOTP_STD }, // High-voltage Battery capacity
-    { 0x7e7, 0x7ef, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x40d7, {  0, 60,   60 },  0, ISOTP_STD }, // High-voltage Battery Section 1 temperature
-    { 0x7e7, 0x7ef, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x40d9, {  0, 60,   60 },  0, ISOTP_STD }, // High-voltage Battery Section 2 temperature
-    { 0x7e7, 0x7ef, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x40db, {  0, 60,   60 },  0, ISOTP_STD }, // High-voltage Battery Section 3 temperature
-    { 0x7e7, 0x7ef, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x40dd, {  0, 60,   60 },  0, ISOTP_STD }, // High-voltage Battery Section 4 temperature
-    { 0x7e7, 0x7ef, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x40df, {  0, 60,   60 },  0, ISOTP_STD }, // High-voltage Battery Section 5 temperature
-    { 0x7e7, 0x7ef, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x40e1, {  0, 60,   60 },  0, ISOTP_STD }, // High-voltage Battery Section 6 temperature
+    { 0x7e7, 0x7ef, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x40d7, {  0, 0,    60 },  0, ISOTP_STD }, // High-voltage Battery Section 1 temperature
+    { 0x7e7, 0x7ef, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x40d9, {  0, 0,    60 },  0, ISOTP_STD }, // High-voltage Battery Section 2 temperature
+    { 0x7e7, 0x7ef, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x40db, {  0, 0,    60 },  0, ISOTP_STD }, // High-voltage Battery Section 3 temperature
+    { 0x7e7, 0x7ef, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x40dd, {  0, 0,    60 },  0, ISOTP_STD }, // High-voltage Battery Section 4 temperature
+    { 0x7e7, 0x7ef, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x40df, {  0, 0,    60 },  0, ISOTP_STD }, // High-voltage Battery Section 5 temperature
+    { 0x7e7, 0x7ef, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x40e1, {  0, 0,    60 },  0, ISOTP_STD }, // High-voltage Battery Section 6 temperature
     POLL_LIST_END
   };
 // These are not polled anymore but instead received passively
@@ -109,7 +110,12 @@ OvmsVehicleVoltAmpera::OvmsVehicleVoltAmpera()
   BmsSetCellDefaultThresholdsVoltage(0.020, 0.030);
   BmsSetCellDefaultThresholdsTemperature(4.0, 8.0);
 
+  // VA metrics
   mt_charging_limits = MyMetrics.InitVector<int>("xva.v.b.charging_limits", SM_STALE_HIGH, "0");
+  mt_coolant_temp = new OvmsMetricInt("xva.v.e.coolant_temp", SM_STALE_MIN, Celcius);
+  mt_coolant_heater_pwr = new OvmsMetricFloat("xva.v.e.coolant_heater_pwr", SM_STALE_MIN, kWh);
+  mt_fuel_level = new OvmsMetricInt("xva.v.e.fuel", SM_STALE_HIGH, Percentage, true);
+  mt_v_trip_ev = new OvmsMetricFloat("xva.v.p.trip.ev", SM_STALE_HIGH, Kilometers);
 
   // Config parameters
   MyConfig.RegisterParam("xva", "Volt/Ampera", true, true);
@@ -178,6 +184,11 @@ OvmsVehicleVoltAmpera::~OvmsVehicleVoltAmpera()
 #endif
   PollSetPidList(m_can1, NULL); 
   delete m_pPollingList; 
+
+  MyMetrics.DeregisterMetric(mt_coolant_temp);
+  MyMetrics.DeregisterMetric(mt_coolant_heater_pwr);
+  MyMetrics.DeregisterMetric(mt_fuel_level);
+  MyMetrics.DeregisterMetric(mt_v_trip_ev);
   }
 
 /**
@@ -192,6 +203,7 @@ void OvmsVehicleVoltAmpera::ConfigChanged(OvmsConfigParam* param)
 
   m_range_rated_km = MyConfig.GetParamValueInt("xva", "range.km", 0);
   m_extended_wakeup = MyConfig.GetParamValueBool("xva", "extended_wakeup", false);
+  m_notify_metrics = MyConfig.GetParamValueBool("xva", "notify_va_metrics", false);
   }
 
 void OvmsVehicleVoltAmpera::Status(int verbosity, OvmsWriter* writer)
@@ -240,11 +252,9 @@ void OvmsVehicleVoltAmpera::IncomingFrameCan1(CAN_frame_t* p_frame)
   ESP_LOGV(TAG,"CAN1 message received: %08x: [%02x %02x %02x %02x %02x %02x %02x %02x]", 
     p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7] );
 
-  if ((p_frame->MsgID == 0x7e8)||
-      (p_frame->MsgID == 0x7ec)||
-      (p_frame->MsgID == 0x7e9))
+  if ((p_frame->MsgID & 0xff8) == 0x7e8)
     return; // Ignore poll responses
-
+    
   // Activity on the bus, so resume polling
   if (m_poll_state == 0 && m_startPolling_timer == 0)
     {
@@ -258,7 +268,7 @@ void OvmsVehicleVoltAmpera::IncomingFrameCan1(CAN_frame_t* p_frame)
     {
     case 0x0c9: 
       {
-      StandardMetrics.ms_v_env_on->SetValue((d[0] & 0xC0) != 0);
+      StandardMetrics.ms_v_env_on->SetValue((d[0] & 0xC0) != 0);  // true for Ign ON, remote preheating
       StandardMetrics.ms_v_mot_rpm->SetValue( GET16(p_frame, 1) >> 2 );
       break;
       }
@@ -513,10 +523,10 @@ void OvmsVehicleVoltAmpera::IncomingFrameCan4(CAN_frame_t* p_frame)
     // Tire pressure
     case 0x103D4040: 
       {
-      StandardMetrics.ms_v_tpms_fl_p->SetValue( d[2] << 2 );
-      StandardMetrics.ms_v_tpms_rl_p->SetValue( d[3] << 2 );
-      StandardMetrics.ms_v_tpms_fr_p->SetValue( d[4] << 2 );
-      StandardMetrics.ms_v_tpms_rr_p->SetValue( d[5] << 2 );
+      StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FL,  d[2] << 2 );
+      StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RL,  d[3] << 2 );
+      StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FR,  d[4] << 2 );
+      StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RR,  d[5] << 2 );
 
       // Tire temperature is not sent via CAN. For now set bogus tire temperature, 
       // because iOS app does not show tire pressure unless tempereature is set and >0 ..
@@ -527,10 +537,10 @@ void OvmsVehicleVoltAmpera::IncomingFrameCan4(CAN_frame_t* p_frame)
         temp = 255;
       if (temp<1)
         temp=1;
-      StandardMetrics.ms_v_tpms_fl_t->SetValue(temp);
-      StandardMetrics.ms_v_tpms_fr_t->SetValue(temp);
-      StandardMetrics.ms_v_tpms_rl_t->SetValue(temp);
-      StandardMetrics.ms_v_tpms_rr_t->SetValue(temp);
+      StandardMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_FL, temp);
+      StandardMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_FR, temp);
+      StandardMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_RL, temp);
+      StandardMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_RR, temp);
       break;
       } 
 
@@ -629,6 +639,7 @@ void OvmsVehicleVoltAmpera::IncomingFrameCan4(CAN_frame_t* p_frame)
     case 0x1044A0CB: 
       {
       StdMetrics.ms_v_pos_trip->SetValue((float)((d[4]<<8 | d[5]) & 0x3fff)/8, Kilometers); // total km this charge
+      mt_v_trip_ev->SetValue((float)((d[0]<<6 | d[1]>>2))/8, Kilometers); // ev km this charge
       break;
       } 
 
@@ -671,6 +682,10 @@ void OvmsVehicleVoltAmpera::IncomingPollReply(canbus* bus, uint16_t type, uint16
     else{
       nCellNum = pid - pid_cellv1 - 96;
     }
+
+    if(nCellNum == 0)
+      BmsResetCellVoltages();
+
     uint32_t uCellv =  (data[0]<<8 | data[1]);
     BmsSetCellVoltage(nCellNum, (float)5 * uCellv / 65535);
     return;
@@ -678,6 +693,10 @@ void OvmsVehicleVoltAmpera::IncomingPollReply(canbus* bus, uint16_t type, uint16
 
   switch (pid)
     {
+    case 0x002f:  // Fuel level
+      if(mt_fuel_level->SetValue((int)value * 100 / 255))
+        NotifyFuel();
+      break;
     case 0x4369:  // On-board charger current
       StandardMetrics.ms_v_charge_current->SetValue((unsigned int)value / 5);
       break;
@@ -721,6 +740,7 @@ void OvmsVehicleVoltAmpera::IncomingPollReply(canbus* bus, uint16_t type, uint16
       StandardMetrics.ms_v_bat_cac->SetValue((float)(data[0]<<8 | data[1]) / 10, AmpHours);
       break;
     case 0x40d7:  // High-voltage Battery Section 1 temperature  
+      BmsResetCellTemperatures();
       BmsSetCellTemperature(0, data[0] - 40);
       break;
     case 0x40d9:  // High-voltage Battery Section 2 temperature  
@@ -745,6 +765,14 @@ void OvmsVehicleVoltAmpera::IncomingPollReply(canbus* bus, uint16_t type, uint16
       break;
     }
   }
+
+  void OvmsVehicleVoltAmpera::Ticker300(uint32_t ticker)
+    {
+    if (StandardMetrics.ms_v_env_on->AsBool())
+      {
+        NotifyMetrics();
+      }
+    }
 
 void OvmsVehicleVoltAmpera::Ticker10(uint32_t ticker)
   {
@@ -890,6 +918,8 @@ void OvmsVehicleVoltAmpera::Ticker1(uint32_t ticker)
 void OvmsVehicleVoltAmpera::NotifiedVehicleOn()
   {
   ESP_LOGI(TAG,"Powertrain enabled");
+  PollSetState(1); // abort state 2 if not complete yet
+  PollSetThrottling(VA_POLLING_NORMAL_THROTTLING);
   }
 
 void OvmsVehicleVoltAmpera::NotifiedVehicleOff()
@@ -897,9 +927,13 @@ void OvmsVehicleVoltAmpera::NotifiedVehicleOff()
   ESP_LOGI(TAG,"Powertrain disabled");
   
   // update all cells info without HV load
-  BmsResetCellVoltages();
   PollSetThrottling(VA_POLLING_HIGH_THROTTLING);  
   PollSetState(2);
+  }
+
+void OvmsVehicleVoltAmpera::NotifiedVehicleAwake()
+  {
+  NotifyMetrics();
   }
 
 void OvmsVehicleVoltAmpera::CommandWakeupComplete( const CAN_frame_t* p_frame, bool success )

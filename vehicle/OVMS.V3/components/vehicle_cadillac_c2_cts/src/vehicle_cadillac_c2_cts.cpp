@@ -229,15 +229,6 @@ ESP_LOGI(TAG, "now awake");
 #ifdef notdef
     case 0x???:
       /* ??? TMPS */
-      StandardMetrics.ms_v_tpms_fl_t->SetValue(?);
-      StandardMetrics.ms_v_tpms_fr_t->SetValue(?);
-      StandardMetrics.ms_v_tpms_rr_t->SetValue(?);
-      StandardMetrics.ms_v_tpms_rl_t->SetValue(?);
-
-      StandardMetrics.ms_v_tpms_fl_p->SetValue(?);
-      StandardMetrics.ms_v_tpms_fr_p->SetValue(?);
-      StandardMetrics.ms_v_tpms_rr_p->SetValue(?);
-      StandardMetrics.ms_v_tpms_rl_p->SetValue(?);
       break;
 #endif
 
@@ -295,16 +286,16 @@ OvmsVehicleCadillaccC2CTS::IncomingPollReply(canbus* bus, uint16_t type,
       if (value2 == 0)
         { // Car engine is OFF
         PollSetState(0);
-        // StandardMetrics.ms_v_env_handbrake->SetValue(true);
-        // StandardMetrics.ms_v_env_on->SetValue(false);
-        // StandardMetrics.ms_v_pos_speed->SetValue(0);
+        StandardMetrics.ms_v_env_handbrake->SetValue(true);
+        StandardMetrics.ms_v_env_on->SetValue(false);
+        StandardMetrics.ms_v_pos_speed->SetValue(0);
         StandardMetrics.ms_v_env_charging12v->SetValue(false);
         }
       else
         { // Car engine is ON
         PollSetState(1);
-        // StandardMetrics.ms_v_env_handbrake->SetValue(false);
-        // StandardMetrics.ms_v_env_on->SetValue(true);
+        StandardMetrics.ms_v_env_handbrake->SetValue(false);
+        StandardMetrics.ms_v_env_on->SetValue(true);
         StandardMetrics.ms_v_env_charging12v->SetValue(true);
         }
       break;
@@ -322,6 +313,8 @@ OvmsVehicleCadillaccC2CTSInit::OvmsVehicleCadillaccC2CTSInit()
 
   MyVehicleFactory.RegisterVehicle<OvmsVehicleCadillaccC2CTS>("C2CTS",
     "Cadillac 2nd gen CTS");
+  if (!StandardMetrics.ms_v_env_on->AsBool())
+      StandardMetrics.ms_v_env_on->SetValue(false);
   }
 
 // XXX from vehicle_nissanleaf.cpp

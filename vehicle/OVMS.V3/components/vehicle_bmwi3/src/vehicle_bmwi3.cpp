@@ -81,15 +81,27 @@ static const char *TAG = "v-bmwi3";
 // "connected to power and could charge" and "actually charging right now"
 
 
+// https://www.bimmerfest.com/threads/can-bus-wake-up-via-obd-connector.789159/
+// Hi !
+// Do anybody know how to wake-up the CAN-Bus via OBD connector?
+// Current situation: The car is locked and in sleep modus - CAN-Bus OFF. Now I want to wake-up the CAN-Bus and sent messages via OBD connector e.g. read vin, ...
+// I heared about a methode which should work on Audi cars with gateway:
+// In sleep mode PIN 14 (CAN low) should have 11V. Now pull the PIN 14 down (switch to ground) and the wake-up of the CAN-Bus is done.
+// Can anybody confirm this on e.g. F10?
+// Any other ideas?
+// Answers highly wellcome! :)
+
+
+
 static const OvmsVehicle::poll_pid_t obdii_polls[] = {
   // TXMODULEID, RXMODULEID, TYPE, PID, { POLLTIMES }, BUS, ADDRESSING
   // SME: Battery management electronics
     { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_SME_ALTERUNG_KAPAZITAET_TS,                     {  0, 60, 60, 60 }, 0, ISOTP_EXTADR },   // 0x6335 v_bat_soh, v_bat_health
     { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_SME_HV_SPANNUNG_BERECHNET,                      {  0,  2,  1,  2 }, 0, ISOTP_EXTADR },   // 0xDD68 v_bat_volts
     { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_SME_HV_STROM,                                   {  0,  2,  1,  2 }, 0, ISOTP_EXTADR },   // 0xDD69 v_bat_current - and v_bat_power by *v_bat_volts
-    { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_SME_ANZEIGE_SOC,                                {  0, 30, 30, 30 }, 0, ISOTP_EXTADR },   // 0xDDBC v_bat_soc, mt_i3_charge_max, mt_i3_charge_min
-    { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_SME_ZUSTAND_SPEICHER,                           {  0,120,120,120 }, 0, ISOTP_EXTADR },   // 0xDFA0 v_bat_cac, v_bat_pack_vmax, _vmin, _vavg, v_bat_pack_level_max, _min, avg, mt_i3_batt_pack_ocv_avg, _max, _min
-    { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_SME_TEMPERATUREN,                               {  0, 30, 30, 30 }, 0, ISOTP_EXTADR },   // 0xDDC0 v_bat_pack_temp, _tmin, _tmax and _tavg
+    { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_SME_ANZEIGE_SOC,                                {  0, 30, 10, 10 }, 0, ISOTP_EXTADR },   // 0xDDBC v_bat_soc, mt_i3_charge_max, mt_i3_charge_min
+    { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_SME_ZUSTAND_SPEICHER,                           {  0,120, 60, 60 }, 0, ISOTP_EXTADR },   // 0xDFA0 v_bat_cac, v_bat_pack_vmax, _vmin, _vavg, v_bat_pack_level_max, _min, avg, mt_i3_batt_pack_ocv_avg, _max, _min
+    { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_SME_TEMPERATUREN,                               {  0, 30, 10, 10 }, 0, ISOTP_EXTADR },   // 0xDDC0 v_bat_pack_temp, _tmin, _tmax and _tavg
 #ifdef INVESTIGATIONS
     { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_SME_PROJEKT_PARAMETER,                          {  0,120,120,120 }, 0, ISOTP_EXTADR },   // 0xDF71 Battery pack info - but we don't use
     { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX,                     {  0, 30, 30, 30 }, 0, ISOTP_EXTADR },   // 0xDDBF
@@ -106,15 +118,15 @@ static const OvmsVehicle::poll_pid_t obdii_polls[] = {
     { I3_ECU_KOM_TX, I3_ECU_KOM_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_KOM_KOMBI_BC_RBC_KWH_KM,                        {  0, 10,  2, 60 }, 0, ISOTP_EXTADR },   // 0xD12A v_pos_trip, v_post_tripconsumption, v_bat_coulomb_used, v_bat_energy_used
   
   // EME:
-    { I3_ECU_EME_TX, I3_ECU_EME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_EME_EME_HVPM_DCDC_ANSTEUERUNG,                {  0, 30, 30, 10 }, 0, ISOTP_EXTADR },   // 0xDE00 mt_i3_charge_actual
+    { I3_ECU_EME_TX, I3_ECU_EME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_EME_EME_HVPM_DCDC_ANSTEUERUNG,                {  0, 30, 10, 10 }, 0, ISOTP_EXTADR },   // 0xDE00 mt_i3_charge_actual
     { I3_ECU_EME_TX, I3_ECU_EME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_EME_AE_STROM_EMASCHINE,                       {  0, 30,  2, 30 }, 0, ISOTP_EXTADR },   // 0xDE8A Motor currents - can we calculate an efficiency from this?
     { I3_ECU_EME_TX, I3_ECU_EME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_EME_AE_TEMP_LE,                               {  0, 10, 10, 10 }, 0, ISOTP_EXTADR },   // 0xDE8C v_inv_temp, v_charge_temp, mt_i3_v_charge_temp_gatedriver
     { I3_ECU_EME_TX, I3_ECU_EME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_EME_AE_TEMP_EMASCHINE,                        {  0, 10,  5, 30 }, 0, ISOTP_EXTADR },   // 0xDEA6 v_mot_temp
     { I3_ECU_EME_TX, I3_ECU_EME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_EME_AE_ELEKTRISCHE_MASCHINE,                  {  0, 60,  1, 60 }, 0, ISOTP_EXTADR },   // 0xDEA7 v_mot_rpm
 
   //NBT: Headunit high
-    { I3_ECU_NBT_TX, I3_ECU_NBT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_NBT_STATUS_SPEED,                             {  0, 30,  1, 30 }, 0, ISOTP_EXTADR },   // 0xD030 Speeds from wheels: mt_i3_wheelX_speed 
-    { I3_ECU_NBT_TX, I3_ECU_NBT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_NBT_STATUS_DIRECTION,                         {  0, 10, 10, 10 }, 0, ISOTP_EXTADR },   // 0xD031 v_env_gear
+    { I3_ECU_NBT_TX, I3_ECU_NBT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_NBT_STATUS_SPEED,                             {  0, 30,  2, 30 }, 0, ISOTP_EXTADR },   // 0xD030 Speeds from wheels: mt_i3_wheelX_speed 
+    { I3_ECU_NBT_TX, I3_ECU_NBT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_NBT_STATUS_DIRECTION,                         {  0, 10,  4, 10 }, 0, ISOTP_EXTADR },   // 0xD031 v_env_gear
 
   // FZD: Roof function centre
     { I3_ECU_FZD_TX, I3_ECU_FZD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_FZD_DWA_KLAPPENKONTAKTE,                      {  0, 10, 10, 10 }, 0, ISOTP_EXTADR },   // 0xDCDD v_door_fr, _fl. etc.  v_env_locked
@@ -156,69 +168,100 @@ static const OvmsVehicle::poll_pid_t obdii_polls[] = {
   
     POLL_LIST_END
   };
+
+OvmsMetricFloat* MetricFloat(const char* name, uint16_t autostale=0, metric_unit_t units = Other) {
+    OvmsMetricFloat* metric = (OvmsMetricFloat*)MyMetrics.Find(name);
+    if (metric==NULL) {
+        metric = new OvmsMetricFloat(name, autostale, units, 0);
+    }
+    return metric;
+}
+OvmsMetricInt* MetricInt(const char* name, uint16_t autostale=0, metric_unit_t units = Other) {
+    OvmsMetricInt* metric = (OvmsMetricInt*)MyMetrics.Find(name);
+    if (metric==NULL) {
+        metric = new OvmsMetricInt(name, autostale, units, 0);
+    }
+    return metric;
+}
   
+OvmsMetricBool* MetricBool(const char* name, uint16_t autostale=0, metric_unit_t units = Other) {
+    OvmsMetricBool* metric = (OvmsMetricBool*)MyMetrics.Find(name);
+    if (metric==NULL) {
+        metric = new OvmsMetricBool(name, autostale, units, 0);
+    }
+    return metric;
+}
+
+OvmsMetricString* MetricString(const char* name, uint16_t autostale=0, metric_unit_t units = Other) {
+    OvmsMetricString* metric = (OvmsMetricString*)MyMetrics.Find(name);
+    if (metric==NULL) {
+        metric = new OvmsMetricString(name, autostale, units);
+    }
+    return metric;
+}
+
 OvmsVehicleBMWi3::OvmsVehicleBMWi3()
 {
     ESP_LOGI(TAG, "BMW i3/i3s vehicle module");
 
     // Our metrics.
     // Charge limits
-    mt_i3_charge_actual                 = MyMetrics.InitFloat("xi3.v.b.soc.actual",         SM_STALE_MAX,  0, Percentage);
-    mt_i3_charge_max                    = MyMetrics.InitFloat("xi3.v.b.soc.actual.highlimit", SM_STALE_MAX, 0, Percentage);
-    mt_i3_charge_min                    = MyMetrics.InitFloat("xi3.v.b.soc.actual.lowlimit", SM_STALE_MAX, 0, Percentage);
+    mt_i3_charge_actual                 = MetricFloat("xi3.v.b.soc.actual",         SM_STALE_MAX,  Percentage);
+    mt_i3_charge_max                    = MetricFloat("xi3.v.b.soc.actual.highlimit", SM_STALE_MAX, Percentage);
+    mt_i3_charge_min                    = MetricFloat("xi3.v.b.soc.actual.lowlimit", SM_STALE_MAX, Percentage);
     // Wheel speeds
-    mt_i3_wheel1_speed                  = MyMetrics.InitFloat("xi3.v.p.wheel1_speed",       SM_STALE_MIN,  0, Kph);
-    mt_i3_wheel2_speed                  = MyMetrics.InitFloat("xi3.v.p.wheel2_speed",       SM_STALE_MIN,  0, Kph);
-    mt_i3_wheel3_speed                  = MyMetrics.InitFloat("xi3.v.p.wheel3_speed",       SM_STALE_MIN,  0, Kph);
-    mt_i3_wheel4_speed                  = MyMetrics.InitFloat("xi3.v.p.wheel4_speed",       SM_STALE_MIN,  0, Kph);
-    mt_i3_wheel_speed                   = MyMetrics.InitFloat("xi3.v.p.wheel_speed",        SM_STALE_MIN,  0, Kph);
-    mt_i3_batt_pack_ocv_avg             = MyMetrics.InitFloat("xi3.v.b.p.ocv.avg",          SM_STALE_MAX,  0, Volts);
-    mt_i3_batt_pack_ocv_min             = MyMetrics.InitFloat("xi3.v.b.p.ocv.min",          SM_STALE_MAX,  0, Volts);
-    mt_i3_batt_pack_ocv_max             = MyMetrics.InitFloat("xi3.v.b.p.ocv.max",          SM_STALE_MAX,  0, Volts);
+    mt_i3_wheel1_speed                  = MetricFloat("xi3.v.p.wheel1_speed",       SM_STALE_MIN,  Kph);
+    mt_i3_wheel2_speed                  = MetricFloat("xi3.v.p.wheel2_speed",       SM_STALE_MIN,  Kph);
+    mt_i3_wheel3_speed                  = MetricFloat("xi3.v.p.wheel3_speed",       SM_STALE_MIN,  Kph);
+    mt_i3_wheel4_speed                  = MetricFloat("xi3.v.p.wheel4_speed",       SM_STALE_MIN,  Kph);
+    mt_i3_wheel_speed                   = MetricFloat("xi3.v.p.wheel_speed",        SM_STALE_MIN,  Kph);
+    mt_i3_batt_pack_ocv_avg             = MetricFloat("xi3.v.b.p.ocv.avg",          SM_STALE_MAX,  Volts);
+    mt_i3_batt_pack_ocv_min             = MetricFloat("xi3.v.b.p.ocv.min",          SM_STALE_MAX,  Volts);
+    mt_i3_batt_pack_ocv_max             = MetricFloat("xi3.v.b.p.ocv.max",          SM_STALE_MAX,  Volts);
     // Ranges in modes
-    mt_i3_range_bc                      = MyMetrics.InitInt  ("xi3.v.b.range.bc",           SM_STALE_HIGH, 0, Kilometers);
-    mt_i3_range_comfort                 = MyMetrics.InitInt  ("xi3.v.b.range.comfort",      SM_STALE_HIGH, 0, Kilometers);
-    mt_i3_range_ecopro                  = MyMetrics.InitInt  ("xi3.v.b.range.ecopro",       SM_STALE_HIGH, 0, Kilometers);
-    mt_i3_range_ecoproplus              = MyMetrics.InitInt  ("xi3.v.b.range.ecoproplus",   SM_STALE_HIGH, 0, Kilometers);
+    mt_i3_range_bc                      = MetricInt  ("xi3.v.b.range.bc",           SM_STALE_HIGH, Kilometers);
+    mt_i3_range_comfort                 = MetricInt  ("xi3.v.b.range.comfort",      SM_STALE_HIGH, Kilometers);
+    mt_i3_range_ecopro                  = MetricInt  ("xi3.v.b.range.ecopro",       SM_STALE_HIGH, Kilometers);
+    mt_i3_range_ecoproplus              = MetricInt  ("xi3.v.b.range.ecoproplus",   SM_STALE_HIGH, Kilometers);
     // Charging
-    mt_i3_v_charge_voltage_phase1       = MyMetrics.InitInt("xi3.v.c.voltage.phase1",       SM_STALE_MID,  0, Volts);
-    mt_i3_v_charge_voltage_phase2       = MyMetrics.InitInt("xi3.v.c.voltage.phase2",       SM_STALE_MID,  0, Volts);
-    mt_i3_v_charge_voltage_phase3       = MyMetrics.InitInt("xi3.v.c.voltage.phase3",       SM_STALE_MID,  0, Volts);
-    mt_i3_v_charge_voltage_dc           = MyMetrics.InitFloat("xi3.v.c.voltage.dc",         SM_STALE_MID,  0, Volts);
-    mt_i3_v_charge_voltage_dc_limit     = MyMetrics.InitFloat("xi3.v.c.voltage.dc.limit",   SM_STALE_MID,  0, Volts);
-    mt_i3_v_charge_current_phase1       = MyMetrics.InitFloat("xi3.v.c.current.phase1",     SM_STALE_MID,  0, Amps);
-    mt_i3_v_charge_current_phase2       = MyMetrics.InitFloat("xi3.v.c.current.phase2",     SM_STALE_MID,  0, Amps);
-    mt_i3_v_charge_current_phase3       = MyMetrics.InitFloat("xi3.v.c.current.phase3",     SM_STALE_MID,  0, Amps);
-    mt_i3_v_charge_current_dc           = MyMetrics.InitFloat("xi3.v.c.current.dc",         SM_STALE_MID,  0, Amps);
-    mt_i3_v_charge_current_dc_limit     = MyMetrics.InitFloat("xi3.v.c.current.dc.limit",   SM_STALE_MID,  0, Amps);
-    mt_i3_v_charge_current_dc_maxlimit  = MyMetrics.InitFloat("xi3.v.c.current.dc.maxlimit", SM_STALE_MID, 0, Amps);
-    mt_i3_v_charge_deratingreasons      = MyMetrics.InitInt("xi3.v.c.deratingreasons",      SM_STALE_HIGH, 0, Other);
-    mt_i3_v_charge_faults               = MyMetrics.InitInt("xi3.v.c.deratingreasons",      SM_STALE_HIGH, 0, Other);
-    mt_i3_v_charge_failsafetriggers     = MyMetrics.InitInt("xi3.v.c.failsafetriggers",     SM_STALE_HIGH, 0, Other);
-    mt_i3_v_charge_interruptionreasons  = MyMetrics.InitInt("xi3.v.c.interruptionreasons",  SM_STALE_HIGH, 0, Other);
-    mt_i3_v_charge_errors               = MyMetrics.InitInt("xi3.v.c.error",                SM_STALE_HIGH, 0, Other);
-    mt_i3_v_charge_readytocharge        = MyMetrics.InitBool("xi3.v.c.readytocharge",       SM_STALE_MID, false);
-    mt_i3_v_charge_plugstatus           = MyMetrics.InitString("xi3.v.c.chargeplugstatus",  SM_STALE_MID);
-    mt_i3_v_charge_pilotsignal          = MyMetrics.InitInt("xi3.v.c.pilotsignal",          SM_STALE_MID, 0, Amps);
-    mt_i3_v_charge_cablecapacity        = MyMetrics.InitInt("xi3.v.c.chargecablecapacity",  SM_STALE_MID, 0, Amps);
-    mt_i3_v_charge_dc_plugconnected     = MyMetrics.InitBool("xi3.v.c.dc.plugconnected",    SM_STALE_MID, false);
-    mt_i3_v_charge_dc_voltage           = MyMetrics.InitInt("xi3.v.c.dc.chargevoltage",     SM_STALE_MID, 0, Volts);
-    mt_i3_v_charge_dc_controlsignals    = MyMetrics.InitInt("xi3.v.c.dc.controlsignals",    SM_STALE_MID, 0);
-    mt_i3_v_door_dc_chargeport          = MyMetrics.InitBool("xi3.v.d.chargeport.dc",       SM_STALE_MID, false);
-    mt_i3_v_charge_dc_contactorstatus   = MyMetrics.InitString("xi3.v.c.dc.contactorstatus", SM_STALE_MID, "open");
-    mt_i3_v_charge_dc_inprogress        = MyMetrics.InitBool("xi3.v.c.dc.inprogress",       SM_STALE_MID, false);
-    mt_i3_v_charge_chargeledstate       = MyMetrics.InitInt("xi3.v.c.chargeledstate",       SM_STALE_MID, 0);
-    mt_i3_v_charge_temp_gatedriver      = MyMetrics.InitInt("xi3.v.c.temp.gatedriver",      SM_STALE_MID, 0, Celcius);
+    mt_i3_v_charge_voltage_phase1       = MetricInt  ("xi3.v.c.voltage.phase1",     SM_STALE_MID,  Volts);
+    mt_i3_v_charge_voltage_phase2       = MetricInt  ("xi3.v.c.voltage.phase2",     SM_STALE_MID,  Volts);
+    mt_i3_v_charge_voltage_phase3       = MetricInt  ("xi3.v.c.voltage.phase3",     SM_STALE_MID,  Volts);
+    mt_i3_v_charge_voltage_dc           = MetricFloat("xi3.v.c.voltage.dc",         SM_STALE_MID,  Volts);
+    mt_i3_v_charge_voltage_dc_limit     = MetricFloat("xi3.v.c.voltage.dc.limit",   SM_STALE_MID,  Volts);
+    mt_i3_v_charge_current_phase1       = MetricFloat("xi3.v.c.current.phase1",     SM_STALE_MID,  Amps);
+    mt_i3_v_charge_current_phase2       = MetricFloat("xi3.v.c.current.phase2",     SM_STALE_MID,  Amps);
+    mt_i3_v_charge_current_phase3       = MetricFloat("xi3.v.c.current.phase3",     SM_STALE_MID,  Amps);
+    mt_i3_v_charge_current_dc           = MetricFloat("xi3.v.c.current.dc",         SM_STALE_MID,  Amps);
+    mt_i3_v_charge_current_dc_limit     = MetricFloat("xi3.v.c.current.dc.limit",   SM_STALE_MID,  Amps);
+    mt_i3_v_charge_current_dc_maxlimit  = MetricFloat("xi3.v.c.current.dc.maxlimit", SM_STALE_MID, Amps);
+    mt_i3_v_charge_deratingreasons      = MetricInt  ("xi3.v.c.deratingreasons",    SM_STALE_HIGH, Other);
+    mt_i3_v_charge_faults               = MetricInt  ("xi3.v.c.deratingreasons",    SM_STALE_HIGH, Other);
+    mt_i3_v_charge_failsafetriggers     = MetricInt  ("xi3.v.c.failsafetriggers",   SM_STALE_HIGH, Other);
+    mt_i3_v_charge_interruptionreasons  = MetricInt  ("xi3.v.c.interruptionreasons", SM_STALE_HIGH, Other);
+    mt_i3_v_charge_errors               = MetricInt  ("xi3.v.c.error",              SM_STALE_HIGH, Other);
+    mt_i3_v_charge_readytocharge        = MetricBool ("xi3.v.c.readytocharge",      SM_STALE_MID);
+    mt_i3_v_charge_plugstatus           = MetricString("xi3.v.c.chargeplugstatus",  SM_STALE_MID);
+    mt_i3_v_charge_pilotsignal          = MetricInt  ("xi3.v.c.pilotsignal",        SM_STALE_MID,  Amps);
+    mt_i3_v_charge_cablecapacity        = MetricInt  ("xi3.v.c.chargecablecapacity", SM_STALE_MID, Amps);
+    mt_i3_v_charge_dc_plugconnected     = MetricBool ("xi3.v.c.dc.plugconnected",   SM_STALE_MID);
+    mt_i3_v_charge_dc_voltage           = MetricInt  ("xi3.v.c.dc.chargevoltage",   SM_STALE_MID,  Volts);
+    mt_i3_v_charge_dc_controlsignals    = MetricInt  ("xi3.v.c.dc.controlsignals",  SM_STALE_MID,  Other);
+    mt_i3_v_door_dc_chargeport          = MetricBool ("xi3.v.d.chargeport.dc",      SM_STALE_MID);
+    mt_i3_v_charge_dc_contactorstatus   = MetricString("xi3.v.c.dc.contactorstatus", SM_STALE_MID);
+    mt_i3_v_charge_dc_inprogress        = MetricBool ("xi3.v.c.dc.inprogress",      SM_STALE_MID);
+    mt_i3_v_charge_chargeledstate       = MetricInt  ("xi3.v.c.chargeledstate",     SM_STALE_MID,  Other);
+    mt_i3_v_charge_temp_gatedriver      = MetricInt  ("xi3.v.c.temp.gatedriver",    SM_STALE_MID,  Celcius);
     // Trip consumption
-    mt_i3_v_pos_tripconsumption         = MyMetrics.InitInt("xi3.v.p.tripconsumption",      SM_STALE_MID, 0, WattHoursPK);
+    mt_i3_v_pos_tripconsumption         = MetricInt  ("xi3.v.p.tripconsumption",    SM_STALE_MID,  WattHoursPK);
 
     // State
-    mt_i3_obdtraffic                    = MyMetrics.InitBool("xi3.v.e.obdtraffic",          SM_STALE_MID, false);
-    mt_i3_pollermode                    = MyMetrics.InitInt("xi3.s.pollermode",             SM_STALE_MID, false);
-    mt_i3_age                           = MyMetrics.InitInt("xi3.s.age",                    SM_STALE_MID, -1, Minutes);
+    mt_i3_obdisalive                    = MetricBool ("xi3.v.e.obdisalive",         SM_STALE_MID);
+    mt_i3_pollermode                    = MetricInt  ("xi3.s.pollermode",           SM_STALE_MID);
+    mt_i3_age                           = MetricInt  ("xi3.s.age",                  SM_STALE_MID,  Minutes);
 
     // Controls
-    mt_i3_v_env_autorecirc              = MyMetrics.InitBool("xi3.v.e.autorecirc",          SM_STALE_MID, true);
+    mt_i3_v_env_autorecirc              = MetricBool("xi3.v.e.autorecirc",          SM_STALE_MID);
  
     // Init the stuff to keep track of whether the car is talking or not
     framecount = 0;
@@ -235,9 +278,11 @@ OvmsVehicleBMWi3::OvmsVehicleBMWi3()
     pollerstate = POLLSTATE_SHUTDOWN;  // If the car is alive we'll get frames and switch to ALIVE
     PollSetState(pollerstate);
     mt_i3_pollermode->SetValue(pollerstate);
-    mt_i3_obdtraffic->SetValue(false);
-    StdMetrics.ms_v_env_awake->SetValue(false);
-    StdMetrics.ms_v_env_on->SetValue(false);
+    mt_i3_obdisalive->SetValue(false);
+    if (!StdMetrics.ms_v_env_awake->AsBool())
+        StdMetrics.ms_v_env_awake->SetValue(false);
+    if (!StdMetrics.ms_v_env_on->AsBool())
+        StdMetrics.ms_v_env_on->SetValue(false);
     PollSetThrottling(50);
     PollSetResponseSeparationTime(5);
 }
@@ -281,7 +326,6 @@ void OvmsVehicleBMWi3::Ticker1(uint32_t ticker)
             // we previously shut down.  Wake up again since the car seems to be back
             pollerstate = POLLSTATE_ALIVE;
             mt_i3_pollermode->SetValue(pollerstate);
-            mt_i3_obdtraffic->SetValue(true);
             PollSetState(pollerstate);
             ESP_LOGI(TAG, "Woke up polling since we saw CANBUS traffic from the car");
         }
@@ -293,7 +337,6 @@ void OvmsVehicleBMWi3::Ticker1(uint32_t ticker)
         ESP_LOGW(TAG, "No OBD traffic from car for 3 seconds, shutting down poller");
         pollerstate = POLLSTATE_SHUTDOWN;
         mt_i3_pollermode->SetValue(pollerstate);
-        mt_i3_obdtraffic->SetValue(false);
         StdMetrics.ms_v_env_awake->SetValue(false);
         StdMetrics.ms_v_env_on->SetValue(false);
         PollSetState(pollerstate);
@@ -303,16 +346,16 @@ void OvmsVehicleBMWi3::Ticker1(uint32_t ticker)
 void OvmsVehicleBMWi3::Ticker10(uint32_t ticker)
 {
     // 1) Is the car responsive - ie replying to our polls?
-    StdMetrics.ms_v_env_awake->SetValue( (replycount != 0) );
+    mt_i3_obdisalive->SetValue( (replycount != 0) );
     if (replycount == 0 && pollerstate != POLLSTATE_SHUTDOWN) {
-        ESP_LOGI(TAG, "No replies from the car to our polls - it's not awake");
+        ESP_LOGI(TAG, "No replies from the car to our polls - OBD is not alive");
     }
     replycount = 0;
 
     // 2) Is the car 'on' (READY)?  We check if we are hearing from the EPS - which seems to only be powered when the car is READY (more or less).
     // FIXME: Would be nice to find a better way to do this
     if (eps_messages != 0) {
-        StdMetrics.ms_v_env_on->SetValue(true);
+        StdMetrics.ms_v_env_awake->SetValue(true);
         if (pollerstate != POLLSTATE_READY) {
             ESP_LOGI(TAG, "Car is now ON");
             pollerstate = POLLSTATE_READY;
@@ -321,7 +364,7 @@ void OvmsVehicleBMWi3::Ticker10(uint32_t ticker)
         }
         eps_messages = 0;
     } else {
-        StdMetrics.ms_v_env_on->SetValue(false);
+        StdMetrics.ms_v_env_awake->SetValue(false);
         if (pollerstate == POLLSTATE_READY) {
             pollerstate = POLLSTATE_ALIVE;
             mt_i3_pollermode->SetValue(pollerstate);
@@ -330,10 +373,13 @@ void OvmsVehicleBMWi3::Ticker10(uint32_t ticker)
         }
     }
 
-    // 3) i3 always has regen braking on
+    //3) Are we actually DRIVING?  - we take it that if the car is awake and in gear
+    StdMetrics.ms_v_env_on->SetValue( (pollerstate == POLLSTATE_READY && StdMetrics.ms_v_env_gear->AsInt() != 0) );
+
+    // 4) i3 always has regen braking on
     StdMetrics.ms_v_env_regenbrake->SetValue(true);
 
-    // 4) mt_i3_age
+    // 5) mt_i3_age
     if (last_obd_data_seen) {
         mt_i3_age->SetValue(StdMetrics.ms_m_monotonic->AsInt() - last_obd_data_seen, Seconds);
     }
@@ -373,7 +419,7 @@ void OvmsVehicleBMWi3::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pi
 
   case I3_PID_SME_ALTERUNG_KAPAZITAET_TS: {
     if (datalen < 4) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", length, "I3_PID_SME_ALTERUNG_KAPAZITAET_TS", 4);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", length, "I3_PID_SME_ALTERUNG_KAPAZITAET_TS", 4);
         break;
     }
     unsigned long STAT_ALTERUNG_KAPAZITAET_WERT = (RXBUF_UINT32(0));
@@ -394,7 +440,7 @@ void OvmsVehicleBMWi3::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pi
 
   case I3_PID_SME_HV_SPANNUNG_BERECHNET: {
     if (datalen < 2) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", length, "I3_PID_SME_HV_SPANNUNG_BERECHNET", 2);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", length, "I3_PID_SME_HV_SPANNUNG_BERECHNET", 2);
         break;
     }
     float STAT_HV_SPANNUNG_BERECHNET_WERT = (RXBUF_UINT(0)/100.0f);
@@ -411,7 +457,7 @@ void OvmsVehicleBMWi3::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pi
 
   case I3_PID_SME_HV_STROM: {
     if (datalen < 4) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", length, "I3_PID_SME_HV_STROM", 4);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", length, "I3_PID_SME_HV_STROM", 4);
         break;
     }
     float STAT_HV_STROM_WERT = (RXBUF_SINT32(0)/100.0f);
@@ -432,7 +478,7 @@ void OvmsVehicleBMWi3::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pi
 
   case I3_PID_SME_ANZEIGE_SOC: {
     if (datalen < 6) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", length, "I3_PID_SME_ANZEIGE_SOC", 6);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", length, "I3_PID_SME_ANZEIGE_SOC", 6);
         break;
     }
     float STAT_ANZEIGE_SOC_WERT = (RXBUF_UINT(0)/10.0f);
@@ -446,17 +492,21 @@ void OvmsVehicleBMWi3::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pi
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "ANZEIGE_SOC", "STAT_MINIMALE_ANZEIGE_SOC_WERT", STAT_MINIMALE_ANZEIGE_SOC_WERT, "\"%\"");
 
     // ==========  Add your processing here ==========
-    StdMetrics.ms_v_bat_soc->SetValue(STAT_ANZEIGE_SOC_WERT, Percentage);
-    soc = STAT_ANZEIGE_SOC_WERT / 100.0f;
-    mt_i3_charge_max->SetValue(STAT_MAXIMALE_ANZEIGE_SOC_WERT, Percentage);
-    mt_i3_charge_min->SetValue(STAT_MINIMALE_ANZEIGE_SOC_WERT, Percentage);
+    if (STAT_ANZEIGE_SOC_WERT >= 0.0 && STAT_ANZEIGE_SOC_WERT <= 100.0) {
+        StdMetrics.ms_v_bat_soc->SetValue(STAT_ANZEIGE_SOC_WERT, Percentage);
+        soc = STAT_ANZEIGE_SOC_WERT / 100.0f;
+    }
+    if (STAT_MAXIMALE_ANZEIGE_SOC_WERT >= 0.0 && STAT_MAXIMALE_ANZEIGE_SOC_WERT <= 100.0)
+        mt_i3_charge_max->SetValue(STAT_MAXIMALE_ANZEIGE_SOC_WERT, Percentage);
+    if (STAT_MINIMALE_ANZEIGE_SOC_WERT >= 0.0 && STAT_MINIMALE_ANZEIGE_SOC_WERT <= 100.0)
+        mt_i3_charge_min->SetValue(STAT_MINIMALE_ANZEIGE_SOC_WERT, Percentage);
 
     break;
   }
 
   case I3_PID_SME_TEMPERATUREN: {
     if (datalen < 6) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_SME_TEMPERATUREN", 6);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_SME_TEMPERATUREN", 6);
         break;
     }
     float STAT_TCORE_MIN_WERT = (RXBUF_SINT(0)/100.0f);
@@ -484,7 +534,7 @@ void OvmsVehicleBMWi3::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pi
 
     case I3_PID_SME_ZUSTAND_SPEICHER: {                                             // 0xDFA0
     if (datalen < 38) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_SME_ZUSTAND_SPEICHER", 38);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_SME_ZUSTAND_SPEICHER", 38);
         break;
     }
 
@@ -624,7 +674,7 @@ void OvmsVehicleBMWi3::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pi
 #ifdef INVESTIGATIONS
   case I3_PID_SME_PROJEKT_PARAMETER: {                                            // 0xDF71
     if (datalen < 5) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_SME_PROJEKT_PARAMETER", 5);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_SME_PROJEKT_PARAMETER", 5);
         break;
     }
 
@@ -660,7 +710,7 @@ void OvmsVehicleBMWi3::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pi
 
 case I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX: {                                       // 0xDDBF
     if (datalen < 4) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX", 4);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX", 4);
         break;
     }
 
@@ -683,7 +733,7 @@ case I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX: {                                       
 
   case I3_PID_KOM_KOMBI_REICHWEITE_BEV_PHEV: {
     if (datalen < 12) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_KOM_KOMBI_REICHWEITE_BEV_PHEV", 12);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_KOM_KOMBI_REICHWEITE_BEV_PHEV", 12);
         break;
     }
     float STAT_ELECTRIC_RANGE_CURRENT_WERT = (RXBUF_UINT(0)/10.0f);
@@ -726,7 +776,7 @@ case I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX: {                                       
 
   case I3_PID_KOM_TACHO_WERT: {
     if (datalen < 2) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_KOM_TACHO_WERT", 2);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_KOM_TACHO_WERT", 2);
         break;
     }
     float STAT_GESCHWINDIGKEIT_WERT = (RXBUF_UINT(0)/10.0f);
@@ -741,7 +791,7 @@ case I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX: {                                       
 
   case I3_PID_KOM_GWSZ_ABSOLUT_WERT: {
     if (datalen < 8) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_KOM_GWSZ_ABSOLUT_WERT", 8);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_KOM_GWSZ_ABSOLUT_WERT", 8);
         break;
     }
     long STAT_ABSOLUT_GWSZ_RAM_WERT = (RXBUF_SINT32(0));
@@ -761,7 +811,7 @@ case I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX: {                                       
 
   case I3_PID_KOM_A_TEMP_WERT: {
     if (datalen < 2) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_KOM_A_TEMP_WERT", 2);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_KOM_A_TEMP_WERT", 2);
         break;
     }
     float STAT_A_TEMP_ANZEIGE_WERT = (RXBUF_UCHAR(0)/2.0f-40.0);
@@ -779,7 +829,7 @@ case I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX: {                                       
 
   case I3_PID_KOM_KOMBI_BC_BCW_KWH_KM: {
     if (datalen < 8) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_KOM_KOMBI_BC_BCW_KWH_KM", 8);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_KOM_KOMBI_BC_BCW_KWH_KM", 8);
         break;
     }
     float STAT_BC_DSV_KWH_KM_WERT = (RXBUF_UINT(0)/10.0f);
@@ -806,7 +856,7 @@ case I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX: {                                       
 
   case I3_PID_KOM_KOMBI_BC_RBC_KWH_KM: {
     if (datalen < 6) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_KOM_KOMBI_BC_RBC_KWH_KM", 10);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_KOM_KOMBI_BC_RBC_KWH_KM", 10);
         break;
     }
     float STAT_RBC_DSV_KWH_KM_WERT = (RXBUF_UINT(0)/10.0f);
@@ -853,7 +903,7 @@ case I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX: {                                       
 
   case I3_PID_KOM_REICHWEITE_MCV: {                                               // 0x420C
     if (datalen < 8) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_KOM_REICHWEITE_MCV", 8);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_KOM_REICHWEITE_MCV", 8);
         break;
     }
 
@@ -887,7 +937,7 @@ case I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX: {                                       
   // Don't think this is actually what we want
   case I3_PID_KOM_SEGMENTDATEN_SPEICHER: {                                        // 0xD12F
     if (datalen < 210) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_KOM_SEGMENTDATEN_SPEICHER", 210);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_KOM_SEGMENTDATEN_SPEICHER", 210);
         break;
     }
 
@@ -1461,7 +1511,7 @@ case I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX: {                                       
 
   case I3_PID_EME_EME_HVPM_DCDC_ANSTEUERUNG: {                                    // 0xDE00
     if (datalen < 25) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_EME_EME_HVPM_DCDC_ANSTEUERUNG", 25);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_EME_EME_HVPM_DCDC_ANSTEUERUNG", 25);
         break;
     }
 
@@ -1539,7 +1589,7 @@ case I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX: {                                       
   // TODO can we use this to calculate efficiency - how much battery power got to the motor?
   case I3_PID_EME_AE_STROM_EMASCHINE: {                                           // 0xDE8A
     if (datalen < 10) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_EME_AE_STROM_EMASCHINE", 10);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_EME_AE_STROM_EMASCHINE", 10);
         break;
     }
 
@@ -1571,7 +1621,7 @@ case I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX: {                                       
 
   case I3_PID_EME_AE_TEMP_LE: {
     if (datalen < 30) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_EME_AE_TEMP_LE", 30);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_EME_AE_TEMP_LE", 30);
         break;
     }
     float STAT_TEMP_UMRICHTER_PHASE_U_WERT = (RXBUF_SINT(0)*0.0156f);
@@ -1639,7 +1689,7 @@ case I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX: {                                       
 
   case I3_PID_EME_AE_TEMP_EMASCHINE: {
     if (datalen < 4) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_EME_AE_TEMP_EMASCHINE", 4);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_EME_AE_TEMP_EMASCHINE", 4);
         break;
     }
     float STAT_TEMP1_E_MOTOR_WERT = (RXBUF_SINT(0)*0.0156f);
@@ -1657,7 +1707,7 @@ case I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX: {                                       
 
   case I3_PID_EME_AE_ELEKTRISCHE_MASCHINE: {
     if (datalen < 7) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_EME_AE_ELEKTRISCHE_MASCHINE", 7);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_EME_AE_ELEKTRISCHE_MASCHINE", 7);
         break;
     }
     float STAT_ELEKTRISCHE_MASCHINE_DREHZAHL_WERT = (RXBUF_UINT(0)*0.5f-5000.0);
@@ -1683,7 +1733,7 @@ case I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX: {                                       
 
   case I3_PID_NBT_STATUS_SPEED: {                                                 // 0xD030
     if (datalen < 14) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_NBT_STATUS_SPEED", 14);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_NBT_STATUS_SPEED", 14);
         break;
     }
 
@@ -1730,7 +1780,7 @@ case I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX: {                                       
 
   case I3_PID_NBT_STATUS_DIRECTION: {                                             // 0xD031
     if (datalen < 2) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_NBT_STATUS_DIRECTION", 2);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_NBT_STATUS_DIRECTION", 2);
         break;
     }
 
@@ -1753,7 +1803,7 @@ case I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX: {                                       
 
   case I3_PID_FZD_DWA_KLAPPENKONTAKTE: {                                          // 0xDCDD
     if (datalen < 12) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_FZD_DWA_KLAPPENKONTAKTE", 12);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_FZD_DWA_KLAPPENKONTAKTE", 12);
         break;
     }
 
@@ -1811,7 +1861,7 @@ case I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX: {                                       
 
   case I3_PID_KLE_BETRIEBSZUSTAND_LADEGERAET: {                                   // 0xDE84
     if (datalen < 16) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_KLE_BETRIEBSZUSTAND_LADEGERAET", 16);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_KLE_BETRIEBSZUSTAND_LADEGERAET", 16);
         break;
     }
 
@@ -1934,7 +1984,7 @@ case I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX: {                                       
     // FIXME not convinced these are correctly mapped to the standard values
     switch (STAT_BETRIEBSART_NR) {
         case 1:
-            state = "idle";  // Standby: does that always mean done?
+            state = "";  // Standby: does that always mean done?
             break;
         case 2:
             state = "charging";
@@ -1973,7 +2023,7 @@ case I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX: {                                       
 
   case I3_PID_KLE_LADEGERAET_LEISTUNG: {                                          // 0xDE85
     if (datalen < 4) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_KLE_LADEGERAET_LEISTUNG", 4);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_KLE_LADEGERAET_LEISTUNG", 4);
         break;
     }
 
@@ -1997,7 +2047,7 @@ case I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX: {                                       
 
   case I3_PID_KLE_LADEGERAET_SPANNUNG: {                                          // 0xDE86
     if (datalen < 12) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_KLE_LADEGERAET_SPANNUNG", 12);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_KLE_LADEGERAET_SPANNUNG", 12);
         break;
     }
 
@@ -2053,7 +2103,7 @@ case I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX: {                                       
 
   case I3_PID_KLE_LADEGERAET_STROM: {                                             // 0xDE87
     if (datalen < 14) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_KLE_LADEGERAET_STROM", 14);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_KLE_LADEGERAET_STROM", 14);
         break;
     }
 
@@ -2115,7 +2165,7 @@ case I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX: {                                       
 
   case I3_PID_EDM_STATUS_MESSWERTE_IBS: {                                              // 0xDF25
     if (datalen < 6) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected at least %d", datalen, "I3_PID_EDM_STATUS_MESSWERTE_IBS", 6);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected at least %d", datalen, "I3_PID_EDM_STATUS_MESSWERTE_IBS", 6);
         break;
     }
 
@@ -2129,7 +2179,7 @@ case I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX: {                                       
 
 case I3_PID_EDM_PEDALWERTGEBER: {                                               // 0xDE9C
     if (datalen < 6) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_EDM_PEDALWERTGEBER", 6);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_EDM_PEDALWERTGEBER", 6);
         break;
     }
 
@@ -2157,7 +2207,7 @@ case I3_PID_EDM_PEDALWERTGEBER: {                                               
 
   case I3_PID_LIM_STATUS_LADEKLAPPE: {
     if (datalen < 2) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected at least %d", datalen, "I3_PID_LIM_STATUS_LADEKLAPPE", 2);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected at least %d", datalen, "I3_PID_LIM_STATUS_LADEKLAPPE", 2);
         break;
     }
 
@@ -2170,7 +2220,7 @@ case I3_PID_EDM_PEDALWERTGEBER: {                                               
 
   case I3_PID_LIM_LED_LADESTATUS: {
     if (datalen < 1) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected at least %d", datalen, "I3_PID_LIM_LED_LADESTATUS", 1);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected at least %d", datalen, "I3_PID_LIM_LED_LADESTATUS", 1);
         break;
     }
 
@@ -2196,7 +2246,7 @@ case I3_PID_EDM_PEDALWERTGEBER: {                                               
 
    case I3_PID_LIM_LADEBEREITSCHAFT_LIM: {                                         // 0xDEF2
     if (datalen < 1) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_LIM_LADEBEREITSCHAFT_LIM", 1);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_LIM_LADEBEREITSCHAFT_LIM", 1);
         break;
     }
 
@@ -2213,7 +2263,7 @@ case I3_PID_EDM_PEDALWERTGEBER: {                                               
 
   case I3_PID_LIM_PILOTSIGNAL: {                                                  // 0xDEF6
     if (datalen < 7) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_LIM_PILOTSIGNAL", 7);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_LIM_PILOTSIGNAL", 7);
         break;
     }
 
@@ -2251,7 +2301,7 @@ case I3_PID_EDM_PEDALWERTGEBER: {                                               
 
   case I3_PID_LIM_PROXIMITY: {                                                    // 0xDEF5
     if (datalen < 2) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_LIM_PROXIMITY", 2);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_LIM_PROXIMITY", 2);
         break;
     }
 
@@ -2277,7 +2327,7 @@ case I3_PID_EDM_PEDALWERTGEBER: {                                               
 
   case I3_PID_LIM_LADESCHNITTSTELLE_DC_TEPCO: {                                   // 0xDEF7
     if (datalen < 4) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_LIM_LADESCHNITTSTELLE_DC_TEPCO", 4);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_LIM_LADESCHNITTSTELLE_DC_TEPCO", 4);
         break;
     }
 
@@ -2311,7 +2361,7 @@ case I3_PID_EDM_PEDALWERTGEBER: {                                               
 
   case I3_PID_LIM_DC_SCHUETZ_SCHALTER: {                                          // 0xDEF8
     if (datalen < 1) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_LIM_DC_SCHUETZ_SCHALTER", 1);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_LIM_DC_SCHUETZ_SCHALTER", 1);
         break;
     }
 
@@ -2332,7 +2382,7 @@ case I3_PID_EDM_PEDALWERTGEBER: {                                               
         ESP_LOGI(TAG, "DC charge started");
         StdMetrics.ms_v_charge_inprogress->SetValue(true);
         mt_i3_v_charge_dc_inprogress->SetValue(true);
-        if (StdMetrics.ms_v_charge_state->AsString().compare("idle") == 0) {
+        if (StdMetrics.ms_v_charge_state->AsString().compare("") == 0) {
             StdMetrics.ms_v_charge_state->SetValue("charging");
         }
     }
@@ -2341,7 +2391,7 @@ case I3_PID_EDM_PEDALWERTGEBER: {                                               
         mt_i3_v_charge_dc_inprogress->SetValue(false);
         StdMetrics.ms_v_charge_inprogress->SetValue(false);
         if (StdMetrics.ms_v_charge_state->AsString().compare("charging") == 0) {
-            StdMetrics.ms_v_charge_state->SetValue("idle");
+            StdMetrics.ms_v_charge_state->SetValue("");
         }
     }
     
@@ -2350,7 +2400,7 @@ case I3_PID_EDM_PEDALWERTGEBER: {                                               
 
   case I3_PID_LIM_DC_PINABDECKUNG_COMBO: {                                        // 0xDEFA
     if (datalen < 1) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_LIM_DC_PINABDECKUNG_COMBO", 1);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_LIM_DC_PINABDECKUNG_COMBO", 1);
         break;
     }
 
@@ -2374,7 +2424,7 @@ case I3_PID_EDM_PEDALWERTGEBER: {                                               
 
     case I3_PID_BDC_HANDBREMSE_KONTAKT: {                                           // 0xD130
     if (datalen < 1) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_BDC_HANDBREMSE_KONTAKT", 1);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_BDC_HANDBREMSE_KONTAKT", 1);
         break;
     }
 
@@ -2390,7 +2440,7 @@ case I3_PID_EDM_PEDALWERTGEBER: {                                               
 
   case I3_PID_BDC_VIN: {
       if (datalen != 17) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_BDC_VIN", 17);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_BDC_VIN", 17);
         break;
       }
       StdMetrics.ms_v_vin->SetValue(rxbuf);
@@ -2400,7 +2450,7 @@ case I3_PID_EDM_PEDALWERTGEBER: {                                               
 
 case I3_PID_IHX_TEMP_INNEN_UNBELUEFTET: {                                       // 0xD85C
     if (datalen < 1) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_IHX_TEMP_INNEN_UNBELUEFTET", 1);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_IHX_TEMP_INNEN_UNBELUEFTET", 1);
         break;
     }
 
@@ -2418,7 +2468,7 @@ case I3_PID_IHX_TEMP_INNEN_UNBELUEFTET: {                                       
 
   case I3_PID_IHX_EKMV_BETRIEBSZUSTAND_GEN20: {                                   // 0xD8C5
     if (datalen < 1) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_IHX_EKMV_BETRIEBSZUSTAND_GEN20", 1);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_IHX_EKMV_BETRIEBSZUSTAND_GEN20", 1);
         break;
     }
 
@@ -2435,7 +2485,7 @@ case I3_PID_IHX_TEMP_INNEN_UNBELUEFTET: {                                       
 
   case I3_PID_IHX_KLIMA_VORN_LUFTVERTEILUNG_LI_RE: {                              // 0xD91A
     if (datalen < 2) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_IHX_KLIMA_VORN_LUFTVERTEILUNG_LI_RE", 2);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_IHX_KLIMA_VORN_LUFTVERTEILUNG_LI_RE", 2);
         break;
     }
 
@@ -2475,7 +2525,7 @@ case I3_PID_IHX_TEMP_INNEN_UNBELUEFTET: {                                       
 
   case I3_PID_IHX_KLIMA_VORN_OFF_EIN: {                                           // 0xD92C
     if (datalen < 1) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_IHX_KLIMA_VORN_OFF_EIN", 1);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_IHX_KLIMA_VORN_OFF_EIN", 1);
         break;
     }
 
@@ -2493,7 +2543,7 @@ case I3_PID_IHX_TEMP_INNEN_UNBELUEFTET: {                                       
 
   case I3_PID_IHX_KLIMA_VORN_PRG_AUC_EIN: {                                       // 0xD930
     if (datalen < 1) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_IHX_KLIMA_VORN_PRG_AUC_EIN", 1);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_IHX_KLIMA_VORN_PRG_AUC_EIN", 1);
         break;
     }
 
@@ -2509,7 +2559,7 @@ case I3_PID_IHX_TEMP_INNEN_UNBELUEFTET: {                                       
 
   case I3_PID_IHX_KLIMA_VORN_PRG_UMLUFT_EIN: {                                    // 0xD931
     if (datalen < 1) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_IHX_KLIMA_VORN_PRG_UMLUFT_EIN", 1);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_IHX_KLIMA_VORN_PRG_UMLUFT_EIN", 1);
         break;
     }
 
@@ -2529,7 +2579,7 @@ case I3_PID_IHX_TEMP_INNEN_UNBELUEFTET: {                                       
 
   case I3_PID_EPS_EPS_MOMENTENSENSOR: {                                           // 0xDB99
     if (datalen < 3) {
-        ESP_LOGW(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_EPS_EPS_MOMENTENSENSOR", 3);
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_EPS_EPS_MOMENTENSENSOR", 3);
         break;
     }
 

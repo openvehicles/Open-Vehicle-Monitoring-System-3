@@ -131,13 +131,13 @@ void OvmsVehicleMercedesB250e::IncomingFrameCan1(CAN_frame_t* p_frame)
   case 0x2FF: // TPMS
     {
       if (d[3] < 255)
-	StandardMetrics.ms_v_tpms_fl_p->SetValue((float)d[3]*2.5); // KPa
+	StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FL, (float)d[3]*2.5); // KPa
       if (d[4] < 255)
-	StandardMetrics.ms_v_tpms_fr_p->SetValue((float)d[4]*2.5); // KPa
+	StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FR, (float)d[4]*2.5); // KPa
       if (d[5] < 255)
-	StandardMetrics.ms_v_tpms_rl_p->SetValue((float)d[5]*2.5); // KPa
+	StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RL, (float)d[5]*2.5); // KPa
       if (d[6] < 255)
-	StandardMetrics.ms_v_tpms_rr_p->SetValue((float)d[6]*2.5); // KPa
+	StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RR, (float)d[6]*2.5); // KPa
       break;
     }	
   case 0x33D: // Momentary power

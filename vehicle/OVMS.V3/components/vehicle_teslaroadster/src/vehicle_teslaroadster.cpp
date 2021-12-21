@@ -50,6 +50,7 @@ static const char *TAG = "v-teslaroadster";
 #include "ovms_peripherals.h"
 #include "metrics_standard.h"
 #include "ovms_utils.h"
+#include "ovms_time.h"
 #include "driver/uart.h"
 #include "driver/gpio.h"
 
@@ -92,6 +93,7 @@ OvmsVehicleTeslaRoadster::OvmsVehicleTeslaRoadster()
   memset(m_vin,0,sizeof(m_vin));
   m_aux12v = false;
   m_requesting_cac = false;
+  m_starting_charge = INACTIVE;
 
   m_cooldown_running = false;
   m_cooldown_prev_chargemode = Standard;
@@ -194,10 +196,8 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
           }
         case 0x81: // Time/Date UTC
           {
-          StandardMetrics.ms_m_timeutc->SetValue(((int)d[7]<<24)+
-                                                 ((int)d[6]<<16)+
-                                                 ((int)d[5]<<8)+
-                                                 d[4]);
+          int tm = ((int)d[7]<<24) + ((int)d[6]<<16) + ((int)d[5]<<8) + d[4];
+          MyTime.Set(TAG, 2, true, tm);
           break;
           }
         case 0x82: // Ambient Temperature
@@ -323,41 +323,65 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
           switch (d[1]) // Charge state
             {
             case 0x01: // Charging
+              m_starting_charge = INACTIVE; // Charging started, return to idle state.
               StandardMetrics.ms_v_charge_state->SetValue("charging"); break;
             case 0x02: // Top-off
+              m_starting_charge = INACTIVE; // Charging started, return to idle state.
               StandardMetrics.ms_v_charge_state->SetValue("topoff"); break;
             case 0x04: // done
+              // Don't change state, we see this while preparing to restart after done.
               StandardMetrics.ms_v_charge_state->SetValue("done"); break;
             case 0x0c: // interrupted
-            case 0x15: // interrupted
             case 0x16: // interrupted
             case 0x17: // interrupted
             case 0x18: // interrupted
             case 0x19: // interrupted
+              m_starting_charge = INACTIVE; // Charging stopped, return to idle state.
               StandardMetrics.ms_v_charge_state->SetValue("stopped"); break;
             case 0x0d: // preparing
               StandardMetrics.ms_v_charge_state->SetValue("prepare"); break;
             case 0x0e: // timer wait
-              // Apps don't currently support 'timerwait' charge state correctly
-              // (they don't allow a charge to be manually started in that mode)
-              // so for the moment just report it as 'stopped'.
-              //StandardMetrics.ms_v_charge_state->SetValue("timerwait"); break;
-              StandardMetrics.ms_v_charge_state->SetValue("stopped"); break;
+              // If charging is manually started while the car is asleep and
+              // waiting for a scheduled start time then we need to report the
+              // state as "prepare" while the car wakes up and checks for a
+              // pilot signal.
+              StandardMetrics.ms_v_charge_state->SetValue(m_starting_charge == INACTIVE ?
+                "timerwait" : "prepare"); break;
             case 0x0f: // heating
               StandardMetrics.ms_v_charge_state->SetValue("heating"); break;
+            case 0x15: // interrupted
+              // Don't change state when charging has been stopped by request,
+              // we see this while preparing to restart.  State will already
+              // have been reset when charging started.
+              if (d[2] != 0x03)
+                m_starting_charge = INACTIVE; // Charging stopped, return to idle state.
+              StandardMetrics.ms_v_charge_state->SetValue("stopped"); break;
             default:
               break;
             }
           switch (d[2]) // Charge sub-state
             {
             case 0x02: // Scheduled start
-              StandardMetrics.ms_v_charge_substate->SetValue("scheduledstart"); break;
+              StandardMetrics.ms_v_charge_substate->SetValue("scheduledstart");
+              if (m_starting_charge == POWERWAIT)
+                CommandStartCharge();
+              break;
             case 0x03: // On request
               StandardMetrics.ms_v_charge_substate->SetValue("onrequest"); break;
             case 0x05: // Timer wait
               StandardMetrics.ms_v_charge_substate->SetValue("timerwait"); break;
             case 0x07: // Power wait
-              StandardMetrics.ms_v_charge_substate->SetValue("powerwait"); break;
+              // If charging is manually started while the car is waiting for a
+              // scheduled start time then the substate will temporarily change
+              // to 'powerwait' while the car checks for a pilot signal.  This
+              // would cause app to hide the charge connector icon, so when
+              // manually starting a charge from the app we continue to report
+              // 'scheduledstart' instead and advance to next state.
+              StandardMetrics.ms_v_charge_substate->SetValue(m_starting_charge == INACTIVE ?
+                "powerwait" : "scheduledstart");
+              if (m_starting_charge == SCHEDULED)
+                m_starting_charge = POWERWAIT;
+              break;
             case 0x0d: // interrupted
               StandardMetrics.ms_v_charge_substate->SetValue("stopped"); break;
             case 0x09: // xxMinutes - yykWh
@@ -513,23 +537,23 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
       {
       if (d[1]>0) // Front-left
         {
-        StandardMetrics.ms_v_tpms_fl_p->SetValue((float)d[0] / 2.755, PSI);
-        StandardMetrics.ms_v_tpms_fl_t->SetValue((float)d[1] - 40);
+        StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FL, (float)d[0] / 2.755, PSI);
+        StandardMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_FL, (float)d[1] - 40);
         }
       if (d[3]>0) // Front-right
         {
-        StandardMetrics.ms_v_tpms_fr_p->SetValue((float)d[2] / 2.755, PSI);
-        StandardMetrics.ms_v_tpms_fr_t->SetValue((float)d[3] - 40);
+        StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_FR, (float)d[2] / 2.755, PSI);
+        StandardMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_FR, (float)d[3] - 40);
         }
       if (d[5]>0) // Rear-left
         {
-        StandardMetrics.ms_v_tpms_rl_p->SetValue((float)d[4] / 2.755, PSI);
-        StandardMetrics.ms_v_tpms_rl_t->SetValue((float)d[5] - 40);
+        StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RL, (float)d[4] / 2.755, PSI);
+        StandardMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_RL, (float)d[5] - 40);
         }
       if (d[7]>0) // Rear-right
         {
-        StandardMetrics.ms_v_tpms_rr_p->SetValue((float)d[6] / 2.755, PSI);
-        StandardMetrics.ms_v_tpms_rr_t->SetValue((float)d[7] - 40);
+        StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RR, (float)d[6] / 2.755, PSI);
+        StandardMetrics.ms_v_tpms_temp->SetElemValue(MS_V_TPMS_IDX_RR, (float)d[7] - 40);
         }
       break;
       }
@@ -841,6 +865,24 @@ OvmsVehicle::vehicle_command_t OvmsVehicleTeslaRoadster::CommandStartCharge()
   {
   CAN_frame_t frame;
   memset(&frame,0,sizeof(frame));
+  // If the car is asleep waiting for a scheduled start time or after charging
+  // has finished or been stopped by request we will need to repeat the command
+  // to start charging after the car wakes up and detects the pilot signal.  We
+  // need to sequence through states to track that.
+  enum StartingCharge state = m_starting_charge;
+  if (!StandardMetrics.ms_v_env_cooling->AsBool() && state == INACTIVE)
+    state = SCHEDULED;
+  // If this is the repeat of the command to start charging, advance the state.
+  if (state == POWERWAIT)
+    state = STARTED;
+  frame.origin = m_can1;
+  frame.FIR.U = 0;
+  frame.FIR.B.DLC = 1;
+  frame.FIR.B.FF = CAN_frame_std;
+  frame.MsgID = 0x102;
+  frame.data.u8[0] = 0x0a;
+  m_can1->Write(&frame);
+  vTaskDelay(150 / portTICK_PERIOD_MS);
 
   frame.origin = m_can1;
   frame.FIR.U = 0;
@@ -857,11 +899,16 @@ OvmsVehicle::vehicle_command_t OvmsVehicleTeslaRoadster::CommandStartCharge()
   frame.data.u8[7] = 0x00;
   m_can1->Write(&frame);
 
+  // Set the StartingCharge state after issuing the command to start the charge
+  // in case a CAN status message that could change the state was issued since
+  // we selected the next state above.
+  m_starting_charge = state;
   return Success;
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleTeslaRoadster::CommandStopCharge()
   {
+  m_starting_charge = INACTIVE;
   CAN_frame_t frame;
   memset(&frame,0,sizeof(frame));
 
@@ -1200,7 +1247,9 @@ bool OvmsVehicleTeslaRoadster::TPMSRead(std::vector<uint32_t> *tpms)
     MyCommandApp.HexDump(TAG, "tpms", (const char*)data, length);
     }
 
+#ifdef CONFIG_OVMS_COMP_MAX7317
   MyPeripherals->m_max7317->Output(9, 0); // Enable LOW
+#endif // #ifdef CONFIG_OVMS_COMP_MAX7317
   uart_flush(uart);
   uart_driver_delete(uart);
 
@@ -1281,7 +1330,9 @@ bool OvmsVehicleTeslaRoadster::TPMSWrite(std::vector<uint32_t> &tpms)
     MyCommandApp.HexDump(TAG, "tpms", (const char*)data, length);
     }
 
+#ifdef CONFIG_OVMS_COMP_MAX7317
   MyPeripherals->m_max7317->Output(9, 0); // Enable LOW
+#endif // #ifdef CONFIG_OVMS_COMP_MAX7317
   uart_flush(uart);
   uart_driver_delete(uart);
 

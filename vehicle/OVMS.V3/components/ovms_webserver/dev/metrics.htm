@@ -35,8 +35,9 @@
 
       <p><code>number</code> &amp; <code>text</code> displays get the metric value set in their child of
         class <code>value</code>. They may additionally have labels and units. <code>data-prec</code> can
-        be used on <code>number</code> to set the precision. They have fixed min widths and float by
-        default, so you can simply put multiple displays into the same container:</p>
+        be used on <code>number</code> to set the precision, <code>data-scale</code> to scale the raw
+        values by a factor. They have fixed min widths and float by default, so you can simply put
+        multiple displays into the same container:</p>
 
       <div class="clearfix">
         <div class="metric number" data-metric="v.e.throttle" data-prec="0">
@@ -57,7 +58,8 @@
       <h4>Progress Bar</h4>
 
       <p>Bootstrap <code>progress</code> bars can be used as lightweight graphical indicators.
-        Labels and units are available as well. Again, all you need is a bit of markup:</p>
+        Labels and units are available, also <code>data-prec</code> and <code>data-scale</code>.
+        Again, all you need is a bit of markup:</p>
 
       <div class="clearfix">
         <div class="metric progress" data-metric="v.e.throttle" data-prec="0">

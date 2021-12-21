@@ -89,6 +89,41 @@ config OVMS_HW_CAN_TX_QUEUE_SIZE
     help
         The size of the CAN bus TX queue.
 
+config OVMS_HW_CELLULAR_MODEM_BUFFER_SIZE
+    int "MODEM buffer size"
+    default 1024
+    depends on OVMS && OVMS_COMP_CELLULAR
+    help
+        The size of the buffer used for the cellular modem.
+
+config OVMS_HW_CELLULAR_MODEM_UART_SIZE
+    int "MODEM UART driver buffer size"
+    default 2048
+    depends on OVMS && OVMS_COMP_CELLULAR
+    help
+        The size of the UART driver buffers used for the cellular modem.
+
+config OVMS_HW_CELLULAR_MODEM_MUXCHANNEL_SIZE
+    int "MODEM MUX channels buffer size"
+    default 2048
+    depends on OVMS && OVMS_COMP_CELLULAR
+    help
+        The size of each MUX channel buffers used for the cellular modem.
+
+config OVMS_HW_CELLULAR_MODEM_QUEUE_SIZE
+    int "MODEM UART driver queue size"
+    default 50
+    depends on OVMS && OVMS_COMP_CELLULAR
+    help
+        The size of the UART driver queue used for the cellular modem.
+
+config OVMS_HW_CELLULAR_MODEM_STACK_SIZE
+    int "Stack size for MODEM task"
+    default 4096
+    depends on OVMS && OVMS_COMP_CELLULAR
+    help
+        The stack size of the OVMS Console and dynamic command tasks.
+
 endmenu # Hardware Support
 
 
@@ -101,6 +136,13 @@ config OVMS_SYS_COMMAND_STACK_SIZE
     depends on OVMS
     help
         The stack size of the OVMS Console and dynamic command tasks.
+
+config OVMS_SYS_COMMAND_PRIORITY
+    int "Task priority for command execution"
+    default 5
+    depends on OVMS
+    help
+        The RTOS priority for the OVMS Console and dynamic command tasks.
 
 config OVMS_LOGFILE_QUEUE_SIZE
     int "Queue size for file logging"
@@ -166,12 +208,33 @@ config MG_ENABLE_DIRECTORY_LISTING
         Enable MONGOOSE directory listing support
 
 config MG_ENABLE_SSL
-    bool "Enable MONGOOSE SSL/TSL support"
+    bool "Enable MONGOOSE SSL/TLS support"
     default n
     depends on OVMS_SC_GPL_MONGOOSE
     depends on MBEDTLS_PSK_MODES
     help
-        Enable MONGOOSE SSL/TSL support
+        Enable MONGOOSE SSL/TLS support
+
+choice MG_SSL_IF
+    prompt "Select the MONGOOSE SSL/TLS library to use"
+        default MG_SSL_IF_WOLFSSL
+        depends on MG_ENABLE_SSL
+        help
+                MG_SSL_IF_MBEDTLS      Use mbedTLS (esp-idf default)
+                MG_SSL_IF_WOLFSSL      Use WolfSSL
+
+config MG_SSL_IF_MBEDTLS
+    bool "mbedTLS"
+    help
+        Use mbedTLS (esp-idf default)
+
+config MG_SSL_IF_WOLFSSL
+    bool "WolfSSL"
+    depends on OVMS_SC_GPL_WOLF
+    help
+        Use WolfSSL
+
+endchoice # MG_SSL_IF
 
 config MG_ENABLE_DEBUG
     bool "Enable MONGOOSE debug logging"
@@ -216,11 +279,48 @@ config OVMS_SC_JAVASCRIPT_DUKTAPE_QUEUE_SIZE
 
 config OVMS_SC_JAVASCRIPT_DUKTAPE_PRIORITY
     int "JavaScript (DukTape) task priority"
-    default 3
+    default 5
     depends on OVMS_SC_JAVASCRIPT_DUKTAPE
     help
         Priority for the DukTape task ("OVMS DukTape").
         The DukTape task runs the javascript framework.
+
+config OVMS_SC_JAVASCRIPT_DUKTAPE_HEAP_UMM
+    bool "Enable Javascript (Duktape) dedicated heap memory management"
+    default y
+    depends on OVMS_SC_JAVASCRIPT_DUKTAPE
+    help
+        Duktape does a lot of small SPIRAM memory allocations for the heap,
+        due to the Javascript memory management scheme leading to
+        fragmentation of main memory and overall performance degradation.
+        This option enables using a configurable dedicated chunk of SPIRAM
+        memory for Duktape (config module duktape.heapsize). The memory
+        management is implemented using the MIT licensed umm_malloc
+        library by Ralph Hempel (https://github.com/rhempel/umm_malloc).
+        
+        NOTE: this is a workaround for the bad fragmentation handling of
+        the esp-idf 3 memory allocator. esp-idf 4.3 includes a new memory
+        allocator with better fragmentation handling, possibly eliminating
+        the need for this.
+
+config OVMS_SC_JAVASCRIPT_DUKTAPE_HEAP_UMM_DEFAULTSIZE
+    int "Javascript/Duktape default size of dedicated memory chunk (KB)"
+    default 512
+    depends on OVMS_SC_JAVASCRIPT_DUKTAPE_HEAP_UMM
+    help
+        This is the compile time default for the Duktape heap size
+        if using the dedicated memory management. It can be overridden
+        at run time by the user configuration (module duktape.heapsize).
+
+config OVMS_SC_JAVASCRIPT_DUKTAPE_HEAP_UMM_BLOCKSIZE
+    int "Javascript/Duktape size of a memory block (bytes)"
+    default 32
+    depends on OVMS_SC_JAVASCRIPT_DUKTAPE_HEAP_UMM
+    help
+        Needs to be a multiple of 4 and at least 8.
+        The umm_malloc library limits the total amount of blocks to
+        32767, so total heap size is limited to 32767 x block size.
+        The default of 32 allows for heaps up to 1 MB.
 
 endmenu # Library support
 
@@ -300,6 +400,13 @@ config OVMS_VEHICLE_RENAULTZOE
     depends on OVMS_COMP_CANOPEN
     help
         Enable to include support for Renault Zoe vehicles.
+
+config OVMS_VEHICLE_MAXED3
+    bool "Include support for Maxus eDeliver3 vehicle"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for Maxus eDeliver3 vehicle.
 
 config OVMS_VEHICLE_KIASOULEV
     bool "Include support for Kia Soul EV vehicles"
@@ -406,6 +513,20 @@ config OVMS_VEHICLE_BMWI3
     depends on OVMS
     help
         Enable to include support for BMW i3 or i3s vehicles
+
+config OVMS_VEHICLE_HYUNDAI_IONIQVFL
+    bool "Include support for Hyundai Ioniq Electric 28kWh (vFL)"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for Hyundai Ioniq Electric 28kWh (vFL).
+
+config OVMS_VEHICLE_JAGUARIPACE
+    bool "Include support for Jaguar Ipace"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for Jaguar Ipace.
 
 config OVMS_VEHICLE_RXTASK_STACK
     int "Stack size for vehicle RX task"
@@ -566,7 +687,7 @@ config OVMS_COMP_PUSHOVER
     default y
     depends on MG_ENABLE_SSL
     help
-        Enable to include support for Pushover. 
+        Enable to include support for Pushover.
 
 config OVMS_COMP_TPMS
     bool "Include support for TPMS tyre sets"
@@ -575,12 +696,19 @@ config OVMS_COMP_TPMS
     help
         Enable to include support for TPMS tyre sets
 
-config OVMS_COMP_MODEM_SIMCOM
-    bool "Include support for SIMCOM modems"
+config OVMS_COMP_CELLULAR
+    bool "Include support for cellular modems"
     default y
-    depends on OVMS && OVMS_COMP_MAX7317
+    depends on OVMS
     help
-        Enable to include support for SIMCOM modems
+        Enable to include support for cellular modems
+
+config OVMS_COMP_CELLULAR_SIMCOM
+    bool "Include support for SIMCOM cellular modems"
+    default y
+    depends on OVMS && OVMS_COMP_MAX7317 && OVMS_COMP_CELLULAR
+    help
+        Enable to include support for SIMCOM cellular modems
 
 config OVMS_COMP_SDCARD
     bool "Include support for SD CARDs"
@@ -654,12 +782,27 @@ config OVMS_COMP_CANOPEN_WRK_STACK
         updates so can run with a smaller stack than the RX task.
         Standard stack usage for the Twizy is currently around 1000 bytes.
 
+config OVMS_COMP_PLUGINS
+    bool "Include support for PLUGINS"
+    default y
+    depends on OVMS_SC_GPL_MONGOOSE
+    help
+        Enable to include support for PLUGINS and server based
+        extension repositories.
+
 endmenu # Component Options
 
 
 
 menu "Developer Options"
     depends on OVMS
+
+config OVMS_DEV_SECUREASYNC
+    bool "Initialize async console in enabled mode"
+    default n
+    depends on OVMS
+    help
+        Enable for async console to be automatically logged in (danger: insecure)
 
 config OVMS_DEV_CONFIGVFS
     bool "Disable the usual protections for configuration visibility in VFS"

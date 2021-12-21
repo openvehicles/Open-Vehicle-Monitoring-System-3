@@ -42,6 +42,7 @@
 typedef enum
   {
     BR_PowerOn = 0,                 // standard power on / hard reset
+    BR_Wakeup,                      // reboot from deep sleep
     BR_SoftReset,                   // user requested reset ("module reset")
     BR_FirmwareUpdate,              // Firmware update reset
     BR_EarlyCrash,                  // crash during boot/init phase
@@ -106,15 +107,18 @@ class Boot
     void SetSoftReset();
     void SetFirmwareUpdate();
     void Restart(bool hard=false);
-    void RestartPending(const char* tag);
-    void RestartReady(const char* tag);
+    void DeepSleep();
+    void ShutdownPending(const char* tag);
+    void ShutdownReady(const char* tag);
     bool IsShuttingDown();
     void Ticker1(std::string event, void* data);
 
   public:
-    OvmsMutex m_restart_mutex;
-    unsigned int m_restart_timer;
-    unsigned int m_restart_pending;
+    OvmsMutex m_shutdown_mutex;
+    unsigned int m_shutdown_timer;
+    unsigned int m_shutdown_pending;
+    bool m_shutdown_deepsleep;
+    bool m_shutting_down;
 
   public:
     static void ErrorCallback(XtExcFrame *frame, int core_id, bool is_abort);

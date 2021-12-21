@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?fileVersion 4.0.0?><cproject storage_type_id="org.eclipse.cdt.core.XmlProjectDescriptionStorage">
+	<storageModule moduleId="org.eclipse.cdt.core.settings">
+		<cconfiguration id="cdt.managedbuild.config.gnu.mentor.nucleus.exe.debug.1214077048">
+			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="cdt.managedbuild.config.gnu.mentor.nucleus.exe.debug.1214077048" moduleId="org.eclipse.cdt.core.settings" name="Debug">
+				<externalSettings/>
+				<extensions>
+					<extension id="org.eclipse.cdt.core.ELF" point="org.eclipse.cdt.core.BinaryParser"/>
+					<extension id="org.eclipse.cdt.core.GASErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.core.GmakeErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.core.GLDErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="com.mentor.embedded.toolchains.core.nucleus.FuseErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.core.CWDLocator" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.core.GCCErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+				</extensions>
+			</storageModule>
+			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
+				<configuration artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe,org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.debug" cleanCommand="cs-rm -rf" description="" id="cdt.managedbuild.config.gnu.mentor.nucleus.exe.debug.1214077048" name="Debug" parent="cdt.managedbuild.config.gnu.mentor.nucleus.exe.debug" postbuildStep="${POSTLD} -O binary &quot;${CWD}/${ProjName}.out&quot; &quot;${CWD}/${ProjName}.bin&quot;" postcleanStep="">
+					<folderInfo id="cdt.managedbuild.config.gnu.mentor.nucleus.exe.debug.1214077048." name="/" resourcePath="">
+						<toolChain id="cdt.managedbuild.toolchain.gnu.mentor.nucleus.exe.debug.1208281997" name="Sourcery CodeBench for Nucleus" superClass="cdt.managedbuild.toolchain.gnu.mentor.nucleus.exe.debug">
+							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="cdt.managedbuild.targetPlatform.gnu.mentor.nucleus.1291172499" isAbstract="false" osList="all" superClass="cdt.managedbuild.targetPlatform.gnu.mentor.nucleus"/>
+							<builder buildPath="${workspace_loc:/CSBENCH}/Debug" id="cdt.managedbuild.builder.gnu.mentor.nucleus.363008008" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="CodeSourcery GNU Builder" superClass="cdt.managedbuild.builder.gnu.mentor.nucleus"/>
+							<tool id="cdt.managedbuild.tool.gnu.mentor.archiver.nucleus.796002859" name="CodeSourcery GNU Archiver" superClass="cdt.managedbuild.tool.gnu.mentor.archiver.nucleus"/>
+							<tool id="cdt.managedbuild.tool.gnu.mentor.cpp.compiler.nucleus.1301230838" name="CodeSourcery GNU C++ Compiler" superClass="cdt.managedbuild.tool.gnu.mentor.cpp.compiler.nucleus">
+								<option id="mentor.gnu.cpp.compiler.option.optimization.level.166261543" name="Optimization Level" superClass="mentor.gnu.cpp.compiler.option.optimization.level" value="mentor.gnu.cpp.compiler.optimization.level.none" valueType="enumerated"/>
+								<option id="mentor.gnu.cpp.compiler.option.debugging.level.1260284336" name="Debug Level" superClass="mentor.gnu.cpp.compiler.option.debugging.level" value="mentor.gnu.cpp.compiler.debugging.level.max" valueType="enumerated"/>
+								<option id="mentor.gnu.cpp.compiler.option.indexer_include.2129830556" name="Include paths for indexer" superClass="mentor.gnu.cpp.compiler.option.indexer_include" valueType="includePath">
+									<listOptionValue builtIn="false" value="${CFG_INCLUDE}"/>
+									<listOptionValue builtIn="false" value="${SYSTEM_HOME}/./"/>
+									<listOptionValue builtIn="false" value="${SYSTEM_HOME}/bsp/realview_eb_ct926ejs/include/"/>
+									<listOptionValue builtIn="false" value="${SYSTEM_HOME}/bsp/realview_eb_ct926ejs/include/bsp/arch/plat-realview_eb/"/>
+									<listOptionValue builtIn="false" value="${SYSTEM_HOME}/os/arch/arm/tool-csgnu_arm/"/>
+									<listOptionValue builtIn="false" value="${SYSTEM_HOME}/os/include/"/>
+									<listOptionValue builtIn="false" value="${SYSTEM_HOME}/os/include/arch/arm/"/>
+									<listOptionValue builtIn="false" value="${SYSTEM_HOME}/os/include/arch/arm/tool-csgnu_arm/"/>
+								</option>
+							</tool>
+							<tool id="cdt.managedbuild.tool.gnu.mentor.c.compiler.nucleus.733911603" name="CodeSourcery GNU C Compiler" superClass="cdt.managedbuild.tool.gnu.mentor.c.compiler.nucleus">
+								<option defaultValue="mentor.gnu.c.optimization.level.none" id="mentor.gnu.c.compiler.option.optimization.level.1781700399" name="Optimization Level" superClass="mentor.gnu.c.compiler.option.optimization.level" valueType="enumerated"/>
+								<option id="mentor.gnu.c.compiler.option.debugging.level.474868803" name="Debug Level" superClass="mentor.gnu.c.compiler.option.debugging.level" value="mentor.gnu.c.debugging.level.max" valueType="enumerated"/>
+								<option id="mentor.gnu.c.compiler.option.indexer_include.335417164" name="Include paths for indexer" superClass="mentor.gnu.c.compiler.option.indexer_include" valueType="includePath">
+									<listOptionValue builtIn="false" value="${CFG_INCLUDE}"/>
+									<listOptionValue builtIn="false" value="${SYSTEM_HOME}/./"/>
+									<listOptionValue builtIn="false" value="${SYSTEM_HOME}/bsp/realview_eb_ct926ejs/include/"/>
+									<listOptionValue builtIn="false" value="${SYSTEM_HOME}/bsp/realview_eb_ct926ejs/include/bsp/arch/plat-realview_eb/"/>
+									<listOptionValue builtIn="false" value="${SYSTEM_HOME}/os/arch/arm/tool-csgnu_arm/"/>
+									<listOptionValue builtIn="false" value="${SYSTEM_HOME}/os/include/"/>
+									<listOptionValue builtIn="false" value="${SYSTEM_HOME}/os/include/arch/arm/"/>
+									<listOptionValue builtIn="false" value="${SYSTEM_HOME}/os/include/arch/arm/tool-csgnu_arm/"/>
+								</option>
+								<option id="mentor.gnu.c.compiler.option.preprocessor.def.symbols.1534557880" name="Defined symbols (-D)" superClass="mentor.gnu.c.compiler.option.preprocessor.def.symbols" valueType="definedSymbols">
+									<listOptionValue builtIn="false" value="WOLFSSL_USER_SETTINGS"/>
+								</option>
+								<option id="mentor.gnu.c.compiler.option.include.paths.2089432830" name="Include paths (-I)" superClass="mentor.gnu.c.compiler.option.include.paths" valueType="includePath">
+									<listOptionValue builtIn="false" value="../../../"/>
+									<listOptionValue builtIn="false" value="../../../../wolfssl"/>
+									<listOptionValue builtIn="false" value="../../../../wolfssl/IDE/CSBENCH"/>
+								</option>
+								<inputType id="cdt.managedbuild.tool.gnu.mentor.c.compiler.nucleus.input.1877603173" superClass="cdt.managedbuild.tool.gnu.mentor.c.compiler.nucleus.input"/>
+							</tool>
+							<tool id="cdt.managedbuild.tool.gnu.mentor.c.linker.nucleus.1678700114" name="CodeSourcery GNU C Linker" superClass="cdt.managedbuild.tool.gnu.mentor.c.linker.nucleus">
+								<option id="mentor.gnu.c.link.option.libs.1194482769" name="Libraries (-l)" superClass="mentor.gnu.c.link.option.libs" valueType="libs">
+									<listOptionValue builtIn="false" value="wolfssl"/>
+								</option>
+								<option id="mentor.gnu.c.link.option.paths.1319236070" name="Library search path (-L)" superClass="mentor.gnu.c.link.option.paths" valueType="libPaths">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/wolfcrypt/Debug}&quot;"/>
+								</option>
+							</tool>
+							<tool id="cdt.managedbuild.tool.gnu.mentor.cpp.linker.nucleus.596240520" name="CodeSourcery GNU C++ Linker" superClass="cdt.managedbuild.tool.gnu.mentor.cpp.linker.nucleus"/>
+							<tool id="cdt.managedbuild.tool.gnu.mentor.assembler.nucleus.1670834398" name="CodeSourcery GNU Assembler" superClass="cdt.managedbuild.tool.gnu.mentor.assembler.nucleus">
+								<option id="gnu.both.asm.option.debugging.level.1676640171" name="Debug Level" superClass="gnu.both.asm.option.debugging.level" value="gnu.both.asm.debugging.level.max" valueType="enumerated"/>
+								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.2026816449" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
+							</tool>
+							<tool id="com.mentor.embedded.toolchains.core.nucleus.exportgen.process.1917586302" name="Nucleus Exports Generator" superClass="com.mentor.embedded.toolchains.core.nucleus.exportgen.process"/>
+							<tool id="com.mentor.embedded.toolchains.core.nucleus.exportgen.application.2124639416" name="Nucleus Exports Generator" superClass="com.mentor.embedded.toolchains.core.nucleus.exportgen.application"/>
+						</toolChain>
+					</folderInfo>
+					<sourceEntries>
+						<entry excluding="src/misc.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+					</sourceEntries>
+				</configuration>
+			</storageModule>
+			<storageModule moduleId="org.eclipse.cdt.core.externalSettings">
+				<externalSettings containerId="system-project;" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier"/>
+			</storageModule>
+		</cconfiguration>
+		<cconfiguration id="cdt.managedbuild.config.gnu.mentor.nucleus.exe.release.593147631">
+			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="cdt.managedbuild.config.gnu.mentor.nucleus.exe.release.593147631" moduleId="org.eclipse.cdt.core.settings" name="Release">
+				<externalSettings/>
+				<extensions>
+					<extension id="org.eclipse.cdt.core.ELF" point="org.eclipse.cdt.core.BinaryParser"/>
+					<extension id="org.eclipse.cdt.core.GASErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.core.GmakeErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.core.GLDErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="com.mentor.embedded.toolchains.core.nucleus.FuseErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.core.CWDLocator" point="org.eclipse.cdt.core.ErrorParser"/>
+					<extension id="org.eclipse.cdt.core.GCCErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
+				</extensions>
+			</storageModule>
+			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
+				<configuration artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe,org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.release" cleanCommand="rm -rf" description="" id="cdt.managedbuild.config.gnu.mentor.nucleus.exe.release.593147631" name="Release" parent="cdt.managedbuild.config.gnu.mentor.nucleus.exe.release" postbuildStep="${POSTLD} -O binary &quot;${CWD}/${ProjName}.out&quot; &quot;${CWD}/${ProjName}.bin&quot;" postcleanStep="">
+					<folderInfo id="cdt.managedbuild.config.gnu.mentor.nucleus.exe.release.593147631." name="/" resourcePath="">
+						<toolChain id="cdt.managedbuild.toolchain.gnu.mentor.nucleus.exe.release.4556438" name="Sourcery CodeBench for Nucleus" superClass="cdt.managedbuild.toolchain.gnu.mentor.nucleus.exe.release">
+							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="cdt.managedbuild.targetPlatform.gnu.mentor.nucleus.655260117" isAbstract="false" osList="all" superClass="cdt.managedbuild.targetPlatform.gnu.mentor.nucleus"/>
+							<builder buildPath="${workspace_loc:/CSBENCH}/Release" id="cdt.managedbuild.builder.gnu.mentor.nucleus.461742616" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="CodeSourcery GNU Builder" superClass="cdt.managedbuild.builder.gnu.mentor.nucleus"/>
+							<tool id="cdt.managedbuild.tool.gnu.mentor.archiver.nucleus.114153486" name="CodeSourcery GNU Archiver" superClass="cdt.managedbuild.tool.gnu.mentor.archiver.nucleus"/>
+							<tool id="cdt.managedbuild.tool.gnu.mentor.cpp.compiler.nucleus.79634184" name="CodeSourcery GNU C++ Compiler" superClass="cdt.managedbuild.tool.gnu.mentor.cpp.compiler.nucleus">
+								<option id="mentor.gnu.cpp.compiler.option.optimization.level.2040515769" name="Optimization Level" superClass="mentor.gnu.cpp.compiler.option.optimization.level" value="mentor.gnu.cpp.compiler.optimization.level.most" valueType="enumerated"/>
+								<option id="mentor.gnu.cpp.compiler.option.debugging.level.1751501356" name="Debug Level" superClass="mentor.gnu.cpp.compiler.option.debugging.level"/>
+								<option id="mentor.gnu.cpp.compiler.option.indexer_include.1343364452" name="Include paths for indexer" superClass="mentor.gnu.cpp.compiler.option.indexer_include" valueType="includePath">
+									<listOptionValue builtIn="false" value="${CFG_INCLUDE}"/>
+									<listOptionValue builtIn="false" value="${SYSTEM_HOME}/./"/>
+									<listOptionValue builtIn="false" value="${SYSTEM_HOME}/bsp/realview_eb_ct926ejs/include/"/>
+									<listOptionValue builtIn="false" value="${SYSTEM_HOME}/bsp/realview_eb_ct926ejs/include/bsp/arch/plat-realview_eb/"/>
+									<listOptionValue builtIn="false" value="${SYSTEM_HOME}/os/arch/arm/tool-csgnu_arm/"/>
+									<listOptionValue builtIn="false" value="${SYSTEM_HOME}/os/include/"/>
+									<listOptionValue builtIn="false" value="${SYSTEM_HOME}/os/include/arch/arm/"/>
+									<listOptionValue builtIn="false" value="${SYSTEM_HOME}/os/include/arch/arm/tool-csgnu_arm/"/>
+								</option>
+							</tool>
+							<tool id="cdt.managedbuild.tool.gnu.mentor.c.compiler.nucleus.28888809" name="CodeSourcery GNU C Compiler" superClass="cdt.managedbuild.tool.gnu.mentor.c.compiler.nucleus">
+								<option defaultValue="mentor.gnu.c.optimization.level.most" id="mentor.gnu.c.compiler.option.optimization.level.1932130070" name="Optimization Level" superClass="mentor.gnu.c.compiler.option.optimization.level" valueType="enumerated"/>
+								<option id="mentor.gnu.c.compiler.option.debugging.level.709958810" name="Debug Level" superClass="mentor.gnu.c.compiler.option.debugging.level"/>
+								<option id="mentor.gnu.c.compiler.option.indexer_include.717141201" name="Include paths for indexer" superClass="mentor.gnu.c.compiler.option.indexer_include" valueType="includePath">
+									<listOptionValue builtIn="false" value="${CFG_INCLUDE}"/>
+									<listOptionValue builtIn="false" value="${SYSTEM_HOME}/./"/>
+									<listOptionValue builtIn="false" value="${SYSTEM_HOME}/bsp/realview_eb_ct926ejs/include/"/>
+									<listOptionValue builtIn="false" value="${SYSTEM_HOME}/bsp/realview_eb_ct926ejs/include/bsp/arch/plat-realview_eb/"/>
+									<listOptionValue builtIn="false" value="${SYSTEM_HOME}/os/arch/arm/tool-csgnu_arm/"/>
+									<listOptionValue builtIn="false" value="${SYSTEM_HOME}/os/include/"/>
+									<listOptionValue builtIn="false" value="${SYSTEM_HOME}/os/include/arch/arm/"/>
+									<listOptionValue builtIn="false" value="${SYSTEM_HOME}/os/include/arch/arm/tool-csgnu_arm/"/>
+								</option>
+								<option id="mentor.gnu.c.compiler.option.preprocessor.def.symbols.925278548" name="Defined symbols (-D)" superClass="mentor.gnu.c.compiler.option.preprocessor.def.symbols" valueType="definedSymbols">
+									<listOptionValue builtIn="false" value="WOLFSSL_USER_SETTINGS"/>
+								</option>
+								<option id="mentor.gnu.c.compiler.option.include.paths.308993068" name="Include paths (-I)" superClass="mentor.gnu.c.compiler.option.include.paths" valueType="includePath">
+									<listOptionValue builtIn="false" value="../../../"/>
+									<listOptionValue builtIn="false" value="../../../../wolfssl"/>
+									<listOptionValue builtIn="false" value="../../../../wolfssl/IDE/CSBENCH"/>
+								</option>
+								<inputType id="cdt.managedbuild.tool.gnu.mentor.c.compiler.nucleus.input.25852946" superClass="cdt.managedbuild.tool.gnu.mentor.c.compiler.nucleus.input"/>
+							</tool>
+							<tool id="cdt.managedbuild.tool.gnu.mentor.c.linker.nucleus.636842819" name="CodeSourcery GNU C Linker" superClass="cdt.managedbuild.tool.gnu.mentor.c.linker.nucleus">
+								<option id="mentor.gnu.c.link.option.libs.554706755" name="Libraries (-l)" superClass="mentor.gnu.c.link.option.libs" valueType="libs">
+									<listOptionValue builtIn="false" value="wolfssl"/>
+								</option>
+								<option id="mentor.gnu.c.link.option.paths.2121461092" name="Library search path (-L)" superClass="mentor.gnu.c.link.option.paths" valueType="libPaths">
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/wolfcrypt/Release}&quot;"/>
+								</option>
+							</tool>
+							<tool id="cdt.managedbuild.tool.gnu.mentor.cpp.linker.nucleus.1551851046" name="CodeSourcery GNU C++ Linker" superClass="cdt.managedbuild.tool.gnu.mentor.cpp.linker.nucleus"/>
+							<tool id="cdt.managedbuild.tool.gnu.mentor.assembler.nucleus.2138744001" name="CodeSourcery GNU Assembler" superClass="cdt.managedbuild.tool.gnu.mentor.assembler.nucleus">
+								<option id="gnu.both.asm.option.debugging.level.1046354273" name="Debug Level" superClass="gnu.both.asm.option.debugging.level" value="gnu.both.asm.debugging.level.none" valueType="enumerated"/>
+								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.2099604782" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
+							</tool>
+							<tool id="com.mentor.embedded.toolchains.core.nucleus.exportgen.process.255113742" name="Nucleus Exports Generator" superClass="com.mentor.embedded.toolchains.core.nucleus.exportgen.process"/>
+							<tool id="com.mentor.embedded.toolchains.core.nucleus.exportgen.application.942752326" name="Nucleus Exports Generator" superClass="com.mentor.embedded.toolchains.core.nucleus.exportgen.application"/>
+						</toolChain>
+					</folderInfo>
+					<sourceEntries>
+						<entry excluding="src/misc.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+					</sourceEntries>
+				</configuration>
+			</storageModule>
+			<storageModule moduleId="org.eclipse.cdt.core.externalSettings">
+				<externalSettings containerId="system-project;" factoryId="org.eclipse.cdt.core.cfg.export.settings.sipplier"/>
+			</storageModule>
+		</cconfiguration>
+	</storageModule>
+	<storageModule moduleId="cdtBuildSystem" version="4.0.0">
+		<project id="CSBENCH.cdt.managedbuild.target.gnu.mentor.nucleus.exe.1080439571" name="Executable" projectType="cdt.managedbuild.target.gnu.mentor.nucleus.exe"/>
+	</storageModule>
+	<storageModule moduleId="scannerConfiguration">
+		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.mentor.nucleus.exe.release.593147631;cdt.managedbuild.config.gnu.mentor.nucleus.exe.release.593147631.;cdt.managedbuild.tool.gnu.mentor.c.compiler.nucleus.28888809;cdt.managedbuild.tool.gnu.mentor.c.compiler.nucleus.input.25852946">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="com.mentor.embedded.toolchains.core.nucleus.GCCManagedMakePerProjectProfileC"/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.mentor.nucleus.exe.debug.1214077048;cdt.managedbuild.config.gnu.mentor.nucleus.exe.debug.1214077048.;cdt.managedbuild.tool.gnu.mentor.c.compiler.nucleus.733911603;cdt.managedbuild.tool.gnu.mentor.c.compiler.nucleus.input.1877603173">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId="com.mentor.embedded.toolchains.core.nucleus.GCCManagedMakePerProjectProfileC"/>
+		</scannerConfigBuildInfo>
+	</storageModule>
+	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
+	<storageModule moduleId="com.mentor.embedded">
+		<project systemProject="system-project" version="2017.02.1"/>
+	</storageModule>
+	<storageModule moduleId="refreshScope" versionNumber="2">
+		<configuration configurationName="Debug">
+			<resource resourceType="PROJECT" workspacePath="/sftp"/>
+		</configuration>
+		<configuration configurationName="Release">
+			<resource resourceType="PROJECT" workspacePath="/sftp"/>
+		</configuration>
+	</storageModule>
+</cproject>

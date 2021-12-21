@@ -1,6 +1,6 @@
-/* log.c 
+/* log.c
  *
- * Copyright (C) 2014-2016 wolfSSL Inc.
+ * Copyright (C) 2014-2020 wolfSSL Inc.
  *
  * This file is part of wolfSSH.
  *
@@ -34,27 +34,40 @@
 #include <wolfssh/log.h>
 #include <wolfssh/error.h>
 
-
-#ifdef DEBUG_WOLFSSH
-    #include <stdlib.h>
+#include <stdlib.h>
+#include <stdarg.h>
+#ifndef FREESCALE_MQX
     #include <stdio.h>
-    #include <stdarg.h>
-    #include <time.h>
+    #ifndef WOLFSSH_NO_TIMESTAMP
+        #include <time.h>
+    #endif
+#endif
 
-    static wolfSSH_LoggingCb logFunction  = NULL;
-    static int loggingEnabled             = 0;
-    static enum wolfSSH_LogLevel logLevel = WS_LOG_DEFAULT;
-#endif /* DEBUG_WOLFSSH */
+
+#ifndef WOLFSSH_DEFAULT_LOG_WIDTH
+    #define WOLFSSH_DEFAULT_LOG_WIDTH 120
+#endif
+
+
+#ifndef WOLFSSL_NO_DEFAULT_LOGGING_CB
+    static void DefaultLoggingCb(enum wolfSSH_LogLevel, const char *const);
+    static wolfSSH_LoggingCb logFunction = DefaultLoggingCb;
+#else /* WOLFSSH_NO_DEFAULT_LOGGING_CB */
+    static wolfSSH_LoggingCb logFunction = NULL;
+#endif /* WOLFSSH_NO_DEFAULT_LOGGING_CB */
+
+
+static enum wolfSSH_LogLevel logLevel = WS_LOG_DEFAULT;
+#ifdef DEBUG_WOLFSSH
+    static int logEnable = 0;
+#endif
 
 
 /* turn debugging on if supported */
-int wolfSSH_Debugging_ON(void)
+void wolfSSH_Debugging_ON(void)
 {
 #ifdef DEBUG_WOLFSSH
-    loggingEnabled = 1;
-    return WS_SUCCESS;
-#else
-    return WS_NOT_COMPILED;
+    logEnable = 1;
 #endif
 }
 
@@ -63,34 +76,30 @@ int wolfSSH_Debugging_ON(void)
 void wolfSSH_Debugging_OFF(void)
 {
 #ifdef DEBUG_WOLFSSH
-    loggingEnabled = 0;
+    logEnable = 0;
 #endif
 }
 
 
 /* set logging callback function */
-int wolfSSH_SetLoggingCb(wolfSSH_LoggingCb logF)
+void wolfSSH_SetLoggingCb(wolfSSH_LoggingCb logF)
 {
-#ifdef DEBUG_WOLFSSH
-    int ret = 0;
-
     if (logF)
         logFunction = logF;
-    else
-        ret = WS_BAD_ARGUMENT;
-
-    return ret;
-#else
-    (void)logF;
-    return WS_NOT_COMPILED;
-#endif /* DEUBG_WOLFSSH */
 }
 
 
-
+int wolfSSH_LogEnabled(void)
+{
 #ifdef DEBUG_WOLFSSH
+    return logEnable;
+#else
+    return 0;
+#endif
+}
 
 
+#ifndef WOLFSSH_NO_DEFAULT_LOGGING_CB
 /* log level string */
 static const char* GetLogStr(enum wolfSSH_LogLevel level)
 {
@@ -110,54 +119,60 @@ static const char* GetLogStr(enum wolfSSH_LogLevel level)
         case WS_LOG_USER:
             return "USER";
 
+        case WS_LOG_SFTP:
+            return "SFTP";
+
+        case WS_LOG_SCP:
+            return "SCP";
+
+        case WS_LOG_AGENT:
+            return "AGENT";
+
         default:
             return "UNKNOWN";
     }
 }
 
 
-/* our default logger */
-void WLOG(enum wolfSSH_LogLevel level, const char *const fmt, ...)
+void DefaultLoggingCb(enum wolfSSH_LogLevel level, const char *const msgStr)
 {
-    va_list vlist;
-    char    timeStr[80];
-    char    msgStr[80*2];
-
-    if (loggingEnabled == 0)
-        return;  /* not on */
-
-    if (level < logLevel)
-        return;   /* don't need to output */
-
-    /* prefix strings */
-    msgStr[0]  = '\0';
+    char timeStr[24];
     timeStr[0] = '\0';
-
-#ifndef NO_TIMESTAMP
+#ifndef WOLFSSH_NO_TIMESTAMP
     {
         time_t  current;
         struct  tm local;
 
-        current = time(NULL);
-        if (localtime_r(&current, &local)) {
+        current = WTIME(NULL);
+        if (WLOCALTIME(&current, &local)) {
             /* make pretty */
-            strftime(timeStr, sizeof(timeStr), "%b %d %T %Y", &local);
-        }        
-        timeStr[sizeof(timeStr)-1] = '\0';
+            strftime(timeStr, sizeof(timeStr), "%F %T ", &local);
+        }
     }
-#endif /* NO_TIMESTAMP */
+#endif /* WOLFSSH_NO_TIMESTAMP */
+    #ifndef WOLFSSH_LOG_PRINTF
+    fprintf(stdout, "%s[%s] %s\r\n", timeStr, GetLogStr(level), msgStr);
+    #else
+    printf("%s[%s] %s\r\n", timeStr, GetLogStr(level), msgStr);
+    #endif
+}
+#endif /* WOLFSSH_NO_DEFAULT_LOGGING_CB */
+
+
+/* our default logger */
+void wolfSSH_Log(enum wolfSSH_LogLevel level, const char *const fmt, ...)
+{
+    va_list vlist;
+    char    msgStr[WOLFSSH_DEFAULT_LOG_WIDTH];
+
+    if (level < logLevel)
+        return;   /* don't need to output */
 
     /* format msg */
     va_start(vlist, fmt);
-    vsnprintf(msgStr, sizeof(msgStr), fmt, vlist);
+    WVSNPRINTF(msgStr, sizeof(msgStr), fmt, vlist);
     va_end(vlist);
-    msgStr[sizeof(msgStr)-1] = '\0';
 
     if (logFunction)
         logFunction(level, msgStr);
-    else
-        printf("%s: [%s] %s\n", timeStr, GetLogStr(level), msgStr);
 }
-
-#endif /* DEBUG_WOLFSSH */
-

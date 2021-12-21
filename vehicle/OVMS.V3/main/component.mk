@@ -4,8 +4,11 @@
 # (Uses default behaviour of compiling all source files in directory, adding 'include' to include path.)
 
 COMPONENT_ADD_INCLUDEDIRS := .
-COMPONENT_ADD_LDFLAGS = -Wl,--whole-archive -l$(COMPONENT_NAME) -Wl,--no-whole-archive -T main/ovms_boot.ld \
-	-mfix-esp32-psram-cache-issue
+COMPONENT_ADD_LDFLAGS = -Wl,--whole-archive -l$(COMPONENT_NAME) -Wl,--no-whole-archive -T main/ovms_boot.ld
+
+ifdef CONFIG_SPIRAM_CACHE_WORKAROUND
+COMPONENT_ADD_LDFLAGS += -mfix-esp32-psram-cache-issue
+endif
 
 OVMS_VERSION := $(shell git describe --always --tags --dirty)
 CPPFLAGS := -D OVMS_VERSION=\"$(OVMS_VERSION)\" $(CPPFLAGS)

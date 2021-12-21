@@ -30,6 +30,10 @@
 #include "freertos/semphr.h"
 #include "can.h"
 #include "canformat.h"
+#include <sdkconfig.h>
+#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+#include "ovms_netmanager.h"
+#endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
 
 /**
  * canlog is the general interface and base implementation for all can loggers.
@@ -51,6 +55,46 @@
  *  allow multiple buses within a file, the logger needs to manage a set
  *  of files or may return false on Open() without a bus filter.
  */
+
+#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+
+class canlog;
+class canlogconnection: public InternalRamAllocated
+  {
+  public:
+    canlogconnection(canlog* logger, std::string format, canformat::canformat_serve_mode_t mode);
+    virtual ~canlogconnection();
+
+  public:
+    virtual void OutputMsg(CAN_log_message_t& msg, std::string &result);
+
+  public:
+    virtual void TransmitCallback(uint8_t *buffer, size_t len);
+    virtual void ControlBusConfigure(canbus* bus, CAN_mode_t mode, CAN_speed_t speed);
+    virtual void PauseTransmission();
+    virtual void ResumeTransmission();
+    virtual void ClearFilters();
+    virtual void AddFilter(std::string& filter);
+
+  public:
+    virtual std::string GetSummary();
+    virtual std::string GetStats();
+
+  public:
+    canlog*        m_logger;
+    canformat*     m_formatter;
+    mg_connection* m_nc;
+    std::string    m_peer;
+    bool           m_ispaused;
+    canfilter*     m_filters;
+    uint32_t       m_msgcount;
+    uint32_t       m_dropcount;
+    uint32_t       m_discardcount;
+    uint32_t       m_filtercount;
+  };
+
+#endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+
 class canlog : public InternalRamAllocated
   {
   public:
@@ -70,7 +114,7 @@ class canlog : public InternalRamAllocated
     // Methods expected to be implemented by sub-classes
     virtual bool Open() = 0;
     virtual void Close() = 0;
-    virtual bool IsOpen() = 0;
+    virtual bool IsOpen();
     virtual std::string GetInfo();
     virtual void OutputMsg(CAN_log_message_t& msg);
 
@@ -88,11 +132,20 @@ class canlog : public InternalRamAllocated
     const char*         m_type;
     std::string         m_format;
     canformat*          m_formatter;
+    canformat::canformat_serve_mode_t m_mode;
     canfilter*          m_filter;
+
+  public:
+    #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+    typedef std::map<mg_connection*, canlogconnection*> conn_map_t;
+    conn_map_t m_connmap;
+    OvmsRecMutex m_cmmutex;
+    #endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
 
   public:
     TaskHandle_t        m_task;
     QueueHandle_t       m_queue;
+    bool                m_isopen;
     uint32_t            m_msgcount;
     uint32_t            m_dropcount;
     uint32_t            m_filtercount;

@@ -2,4 +2,9 @@
 # included from Top Level Makefile.am
 # All paths should be given relative to the root
 
+include examples/client/include.am
+include examples/server/include.am
 include examples/echoserver/include.am
+include examples/portfwd/include.am
+include examples/sftpclient/include.am
+include examples/scpclient/include.am

@@ -94,17 +94,20 @@ class OvmsLocations
     ~OvmsLocations();
 
   public:
+    bool m_ready;
     bool m_gpslock;
     float m_latitude;
     float m_longitude;
     float m_park_latitude;
     float m_park_longitude;
     float m_park_distance;
+    bool m_park_invalid;
     LocationMap m_locations;
 
   public:
     void ReloadMap();
     void UpdateLocations();
+    void UpdateParkPosition();
     void CheckTheft();
 
   public:

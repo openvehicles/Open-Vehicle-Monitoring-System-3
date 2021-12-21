@@ -65,25 +65,111 @@ OvmsVehicle::vehicle_command_t OvmsVehicleRenaultZoe::CommandWakeup() {
   
   ESP_LOGI(TAG, "Send Wakeup Command");
   
-  CAN_frame_t frame;
-  memset(&frame, 0, sizeof(frame));
-
-  frame.origin = m_can1;
-  frame.FIR.U = 0;
-  frame.FIR.B.DLC = 1;
-  frame.FIR.B.FF = CAN_frame_std;
-  frame.MsgID = 0x218;
-  frame.data.u8[0] = 0xc9;
-  m_can1->Write(&frame);
+  if (IsZoe()) {
+    uint8_t data[8] = {0xf1, 0x04, 0x1f, 0xc5, 0x35, 0xfe, 0x65, 0x08};
+    
+    canbus *obd;
+    obd = m_can1;
+    
+    obd->WriteStandard(0x35C, 8, data);
+    data[1] = 0x06;
+    data[7] = 0x61;
+    vTaskDelay(50 / portTICK_PERIOD_MS);
+    obd->WriteStandard(0x35C, 8, data);
+  }
+  
+  if (IsKangoo()) {
+    uint8_t data[8] = {0x10, 0x03, 0x00, 0x00, 0x08, 0xC0, 0x12, 0x00};
+    
+    canbus *obd;
+    obd = m_can1;
+    
+    obd->WriteStandard(0x35D, 8, data);
+    data[7] = 0x52;
+    vTaskDelay(50 / portTICK_PERIOD_MS);
+    obd->WriteStandard(0x35D, 8, data);
+  }
 
   return Success;
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleRenaultZoe::CommandLock(const char* pin) {
+  if (IsKangoo()) {
+    CommandWakeup();
+    vTaskDelay(500 / portTICK_PERIOD_MS);
+    
+    uint32_t txid = 0x745, rxid = 0x765;
+    uint8_t protocol = ISOTP_STD;
+    int timeout_ms = 100;
+    std::string request;
+    std::string response;
+    
+    request = hexdecode("10C0");
+    int err = PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);
+    
+    request = hexdecode("30010001");
+    err = PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);
+
+    if (err == POLLSINGLE_TXFAILURE)
+      {
+      ESP_LOGD(TAG, "ERROR: transmission failure (CAN bus error)");
+      return Fail;
+      }
+    else if (err < 0)
+      {
+      ESP_LOGD(TAG, "ERROR: timeout waiting for poller/response");
+      return Fail;
+      }
+    else if (err)
+      {
+      ESP_LOGD(TAG, "ERROR: request failed with response error code %02X\n", err);
+      return Fail;
+      }
+
+    StdMetrics.ms_v_env_locked->SetValue(true);
+    
+    return Success;
+  }
   return NotImplemented;
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleRenaultZoe::CommandUnlock(const char* pin) {
+  if (IsKangoo()) {
+    CommandWakeup();
+    vTaskDelay(500 / portTICK_PERIOD_MS);
+    
+    uint32_t txid = 0x745, rxid = 0x765;
+    uint8_t protocol = ISOTP_STD;
+    int timeout_ms = 100;
+    std::string request;
+    std::string response;
+    
+    request = hexdecode("10C0");
+    int err = PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);
+    
+    request = hexdecode("30010002");
+    err = PollSingleRequest(m_can1, txid, rxid, request, response, timeout_ms, protocol);
+
+    if (err == POLLSINGLE_TXFAILURE)
+      {
+      ESP_LOGD(TAG, "ERROR: transmission failure (CAN bus error)");
+      return Fail;
+      }
+    else if (err < 0)
+      {
+      ESP_LOGD(TAG, "ERROR: timeout waiting for poller/response");
+      return Fail;
+      }
+    else if (err)
+      {
+      ESP_LOGD(TAG, "ERROR: request failed with response error code %02X\n", err);
+      return Fail;
+      }
+
+    StdMetrics.ms_v_env_locked->SetValue(false);
+    
+    return Success;
+  }
   return NotImplemented;
 }
 

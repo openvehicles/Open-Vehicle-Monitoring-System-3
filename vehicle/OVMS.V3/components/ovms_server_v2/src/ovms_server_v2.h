@@ -68,6 +68,7 @@ class OvmsServerV2 : public OvmsServer
 
   protected:
     void TransmitMsgStat(bool always = false);
+    void TransmitMsgGen(bool always = false);
     void TransmitMsgGPS(bool always = false);
     void TransmitMsgTPMS(bool always = false);
     void TransmitMsgFirmware(bool always = false);
@@ -94,6 +95,7 @@ class OvmsServerV2 : public OvmsServer
     void NetmanInit(std::string event, void* data);
     void NetmanStop(std::string event, void* data);
     void Ticker1(std::string event, void* data);
+    void RequestUpdate(bool txall);
 
   public:
     enum State
@@ -138,6 +140,7 @@ class OvmsServerV2 : public OvmsServer
     bool m_ptoken_ready;
 
     bool m_now_stat;
+    bool m_now_gen;
     bool m_now_gps;
     bool m_now_tpms;
     bool m_now_firmware;

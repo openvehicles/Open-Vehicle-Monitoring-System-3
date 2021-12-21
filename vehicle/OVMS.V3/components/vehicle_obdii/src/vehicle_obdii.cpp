@@ -72,6 +72,12 @@ void OvmsVehicleOBDII::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pi
   switch (pid)
     {
     case 0x02:  // VIN (multi-line response)
+      // Data in the first frame starts with 0x01 for some (all?) vehicles
+      if (length > 1 && data[0] == 0x01)
+        {
+        ++data;
+        --length;
+        }
       strncat(m_vin,(char*)data,length);
       if (mlremain==0)
         {

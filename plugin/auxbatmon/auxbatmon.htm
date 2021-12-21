@@ -1,7 +1,7 @@
 <!--
   Web UI page plugin:
     Auxiliary (12V) Battery History Chart
-    Version 1.0  Michael Balzer <dexter@dexters-web.de>
+    Version 2.3.1 by Michael Balzer <dexter@dexters-web.de>
   
   Dependencies:
     - "auxbatmon.js" module plugin (metrics background recording)
@@ -64,10 +64,10 @@
     auxchart = chart;
     $('.panel').addClass('loading');
     // Load data:
-    loadjs('auxbatmon.dump()').done((data) => {
+    loadjs({ command: "auxbatmon.dump('CBOR')", output: "binary" }).done((data) => {
       console.log("loadChart: read " + data.length + " bytes");
       try {
-        history = JSON.parse(data);
+        history = CBOR.decode(data);
         console.log("loadChart: got " + history["v.b.12v.voltage"].length + " samples");
         updateChart();
       } catch (error) {

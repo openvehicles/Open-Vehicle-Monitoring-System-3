@@ -106,10 +106,13 @@ class OvmsNetManager
     void EventSystemShuttingDown(std::string event, void* data);
     void RestartNetwork();
 
+  public:
+    void DoSafePrioritiseAndIndicate();
+
   protected:
+    void PrioritiseAndIndicate();
     void WifiConnect();
     void WifiDisconnect();
-    void PrioritiseAndIndicate();
     void SetNetType(std::string type);
     void SaveDNSServer(ip_addr_t* dnsstore);
     void SetDNSServer(ip_addr_t* dnsstore);
@@ -153,6 +156,7 @@ class OvmsNetManager
     int ListConnections(int verbosity, OvmsWriter* writer);
     int CloseConnection(uint32_t id);
     int CleanupConnections();
+    bool IsNetManagerTask();
 
 #endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   };

@@ -51,6 +51,7 @@ You will need, at a minimum, the following modules from CPAN (or from your distr
 * Net::SSLeay
 * JSON::XS
 * Protocol::WebSocket
+* Time::Piece
 
 -----------
 MySQL Setup

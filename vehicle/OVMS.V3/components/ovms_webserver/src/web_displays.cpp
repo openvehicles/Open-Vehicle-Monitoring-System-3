@@ -204,7 +204,14 @@ void OvmsWebServer::HandleDashboard(PageEntry_t& p, PageContext_t& c)
       "left: 0%;"
       "right: 0%;"
     "}"
-    ".dashboard .overlay .value {"
+    ".dashboard .underlay {"
+      "position: absolute;"
+      "z-index: 0;"
+      "width: 100%;"
+      "height: 100%;"
+      "overflow: hidden;"
+    "}"
+    ".dashboard .value {"
       "color: #04282b;"
       "background: #97b597;"
       "padding: 2px 5px;"
@@ -214,29 +221,77 @@ void OvmsWebServer::HandleDashboard(PageEntry_t& p, PageContext_t& c)
       "font-family: \"Monaco\", \"Menlo\", \"Consolas\", \"QuickType Mono\", \"Lucida Console\", \"Roboto Mono\", \"Ubuntu Mono\", \"DejaVu Sans Mono\", \"Droid Sans Mono\", monospace;"
       "display: inline-block;"
     "}"
-    ".night .dashboard .overlay .value {"
+    ".night .dashboard .value {"
       "color: #fff;"
       "background: #252525;"
     "}"
-    ".dashboard .overlay .unit {"
+    ".dashboard .unit {"
       "color: #666;"
       "font-size: 12px;"
     "}"
-    ""
-    ".dashboard .overlay .range-value .value {"
+    ".dashboard .range-value .value {"
       "margin-left: 10px;"
       "width: 100px;"
     "}"
-    ""
-    ".dashboard .overlay .energy-value {"
+    ".dashboard .energy-value {"
       "margin-top: 4px;"
     "}"
-    ".dashboard .overlay .energy-value .value {"
+    ".dashboard .energy-value .value {"
       "margin-left: 18px;"
       "width: 100px;"
       "font-size: 12px;"
     "}"
-    ""
+    ".dashboard .underlay .value {"
+      "font-size: 12px;"
+      "width: 32px;"
+      "padding: 2px 1px 0 0;"
+      "margin: 0;"
+      "position: absolute;"
+    "}"
+    ".dashboard .underlay > div {"
+      "position: absolute;"
+      "display: inline-block;"
+    "}"
+    ".dashboard .voltage-value .value {"
+      "left: 80px;"
+      "top: 40px;"
+    "}"
+    ".dashboard .soc-value .value {"
+      "left: 80px;"
+      "top: 40px;"
+    "}"
+    ".dashboard .consumption-value .value {"
+      "left: -112px;"
+      "top: 40px;"
+    "}"
+    ".dashboard .power-value .value {"
+      "left: -112px;"
+      "top: 40px;"
+    "}"
+    "@media (min-width: 0px) and (max-width: 404px) {"
+      ".dashboard .voltage-value { left: -20%; top: 20%; }"
+      ".dashboard .soc-value { left: -20%; top: 60%; }"
+      ".dashboard .consumption-value { left: 120%; top: 20%; }"
+      ".dashboard .power-value { left: 120%; top: 60%; }"
+    "}"
+    "@media (min-width: 405px) and (max-width: 454px) {"
+      ".dashboard .voltage-value { left: -15%; top: 20%; }"
+      ".dashboard .soc-value { left: -15%; top: 60%; }"
+      ".dashboard .consumption-value { left: 115%; top: 20%; }"
+      ".dashboard .power-value { left: 115%; top: 60%; }"
+    "}"
+    "@media (min-width: 455px) and (max-width: 604px) {"
+      ".dashboard .voltage-value { left: -10%; top: 20%; }"
+      ".dashboard .soc-value { left: -10%; top: 60%; }"
+      ".dashboard .consumption-value { left: 110%; top: 20%; }"
+      ".dashboard .power-value { left: 110%; top: 60%; }"
+    "}"
+    "@media (min-width: 605px) {"
+      ".dashboard .voltage-value { left: 0%; top: 20%; }"
+      ".dashboard .soc-value { left: 0%; top: 60%; }"
+      ".dashboard .consumption-value { left: 100%; top: 20%; }"
+      ".dashboard .power-value { left: 100%; top: 60%; }"
+    "}"
     "</style>"
     ""
     "<div class=\"panel panel-primary\" id=\"panel-dashboard\">"
@@ -247,6 +302,12 @@ void OvmsWebServer::HandleDashboard(PageEntry_t& p, PageContext_t& c)
             "<div class=\"overlay\">"
               "<div class=\"range-value\"><span class=\"value\">▼0 ▲0</span><span class=\"unit\">km</span></div>"
               "<div class=\"energy-value\"><span class=\"value\">▲0.0 ▼0.0</span><span class=\"unit\">kWh</span></div>"
+            "</div>"
+            "<div class=\"underlay\">"
+              "<div class=\"voltage-value\"><span class=\"value\">0</span></div>"
+              "<div class=\"soc-value\"><span class=\"value\">0</span></div>"
+              "<div class=\"consumption-value\"><span class=\"value\">0</span></div>"
+              "<div class=\"power-value\"><span class=\"value\">0</span></div>"
             "</div>"
             "<div id=\"gaugeset1\" style=\"width: 100%; height: 100%;\"></div>"
           "</div>"
@@ -261,11 +322,17 @@ void OvmsWebServer::HandleDashboard(PageEntry_t& p, PageContext_t& c)
     "function get_dashboard_data() {"
       "var rmin = metrics[\"v.b.range.est\"]||0, rmax = metrics[\"v.b.range.ideal\"]||0;\n"
       "var euse = metrics[\"v.b.energy.used\"]||0, erec = metrics[\"v.b.energy.recd\"]||0;\n"
+      "var voltage = metrics[\"v.b.voltage\"]||0, soc = metrics[\"v.b.soc\"]||0;\n"
+      "var consumption = metrics[\"v.b.consumption\"]||0, power = metrics[\"v.b.power\"]||0;\n"
       "euse = Math.floor(euse*10)/10; erec = Math.floor(erec*10)/10;"
       "if (rmin > rmax) { var x = rmin; rmin = rmax; rmax = x; }"
       "var md = {"
         "range: { value: \"▼\" + rmin.toFixed(0) + \" ▲\" + rmax.toFixed(0) },"
         "energy: { value: \"▲\" + euse.toFixed(1) + \" ▼\" + erec.toFixed(1) },"
+        "voltage: { value: voltage.toFixed(0) },"
+        "soc: { value: soc.toFixed(0) },"
+        "consumption: { value: consumption.toFixed(0) },"
+        "power: { value: power.toFixed(0) },"
         "series: ["
           "{ data: [metrics[\"v.p.speed\"]] },"
           "{ data: [metrics[\"v.b.voltage\"]] },"
@@ -284,6 +351,10 @@ void OvmsWebServer::HandleDashboard(PageEntry_t& p, PageContext_t& c)
       "var md = get_dashboard_data();"
       "$('.range-value .value').text(md.range.value);"
       "$('.energy-value .value').text(md.energy.value);"
+      "$('.voltage-value .value').text(md.voltage.value);"
+      "$('.soc-value .value').text(md.soc.value);"
+      "$('.consumption-value .value').text(md.consumption.value);"
+      "$('.power-value .value').text(md.power.value);"
       "gaugeset1.update({ series: md.series });"
     "}"
     ""
@@ -372,28 +443,28 @@ void OvmsWebServer::HandleDashboard(PageEntry_t& p, PageContext_t& c)
           "labels: { step: 2, distance: -28, x: 0, y: 5, zIndex: 2 },"
         "},{"
           "/* Voltage axis: */"
-          "pane: 1, className: 'voltage', title: { text: 'Volt', align: 'low', x: 90, y: 35, },"
+          "pane: 1, className: 'voltage', title: { text: 'Volt', align: 'low', x: 85, y: 35, },"
           "reversed: true,"
           "minorTickInterval: 'auto', minorTickLength: 5, minorTickPosition: 'inside',"
           "tickPixelInterval: 30, tickPosition: 'inside', tickLength: 13,"
           "labels: { step: 1, distance: -25, x: 0, y: 5, zIndex: 2 },"
         "},{"
           "/* SOC axis: */"
-          "pane: 2, className: 'soc', title: { text: 'SOC', align: 'low', x: 85, y: 35 },"
+          "pane: 2, className: 'soc', title: { text: 'SOC', align: 'low', x: 82.5, y: 35 },"
           "reversed: true,"
           "minorTickInterval: 'auto', minorTickLength: 5, minorTickPosition: 'inside',"
           "tickPixelInterval: 30, tickPosition: 'inside', tickLength: 13,"
           "labels: { step: 1, distance: -25, x: 0, y: 5, zIndex: 2 },"
         "},{"
           "/* Efficiency axis: */"
-          "pane: 3, className: 'efficiency', title: { text: 'Wh/km', align: 'low', x: -125, y: 35 },"
+          "pane: 3, className: 'efficiency', title: { text: 'Wh/km', align: 'low', x: -116, y: 35 },"
           "reversed: false,"
           "minorTickInterval: 'auto', minorTickLength: 5, minorTickPosition: 'inside',"
           "tickPixelInterval: 30, tickPosition: 'inside', tickLength: 13,"
           "labels: { step: 1, distance: -25, x: 0, y: 5, zIndex: 2 },"
         "},{"
           "/* Power axis: */"
-          "pane: 4, className: 'power', title: { text: 'kW', align: 'low', x: -115, y: 35 },"
+          "pane: 4, className: 'power', title: { text: 'kW', align: 'low', x: -105, y: 35 },"
           "reversed: false,"
           "minorTickInterval: 'auto', minorTickLength: 5, minorTickPosition: 'inside',"
           "tickPixelInterval: 30, tickPosition: 'inside', tickLength: 13,"
@@ -524,10 +595,14 @@ void OvmsWebServer::HandleBmsCellMonitor(PageEntry_t& p, PageContext_t& c)
 {
   float stemwidth_v = 0.5, stemwidth_t = 0.5;
   float
-    volt_warn_def=BMS_DEFTHR_VWARN, volt_alert_def=BMS_DEFTHR_VALERT,
-    temp_warn_def=BMS_DEFTHR_TWARN, temp_alert_def=BMS_DEFTHR_TALERT;
-  float volt_warn=0, volt_alert=0, temp_warn=0, temp_alert=0;
-  bool alerts_enabled=true;
+    volt_warn_def = BMS_DEFTHR_VWARN, volt_alert_def = BMS_DEFTHR_VALERT,
+    volt_maxgrad_def = BMS_DEFTHR_VMAXGRAD, volt_maxsddev_def = BMS_DEFTHR_VMAXSDDEV,
+    temp_warn_def = BMS_DEFTHR_TWARN, temp_alert_def = BMS_DEFTHR_TALERT;
+  float
+    volt_warn = 0, volt_alert = 0,
+    volt_maxgrad = 0, volt_maxsddev = 0,
+    temp_warn = 0, temp_alert = 0;
+  bool alerts_enabled = true;
 
   // get vehicle BMS configuration:
   OvmsVehicle* vehicle = MyVehicleFactory.ActiveVehicle();
@@ -540,7 +615,7 @@ void OvmsWebServer::HandleBmsCellMonitor(PageEntry_t& p, PageContext_t& c)
     if (readings_t) {
       stemwidth_t   = 0.1 + 10.0 / readings_t;  //  7 → 1.5 … 96 → 0.4
     }
-    vehicle->BmsGetCellDefaultThresholdsVoltage(&volt_warn_def, &volt_alert_def);
+    vehicle->BmsGetCellDefaultThresholdsVoltage(&volt_warn_def, &volt_alert_def, &volt_maxgrad_def, &volt_maxsddev_def);
     vehicle->BmsGetCellDefaultThresholdsTemperature(&temp_warn_def, &temp_alert_def);
   }
 
@@ -558,6 +633,18 @@ void OvmsWebServer::HandleBmsCellMonitor(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValueFloat("vehicle", "bms.dev.voltage.alert", volt_alert);
     else
       MyConfig.SetParamValue("vehicle", "bms.dev.voltage.alert", "");
+
+    volt_maxgrad = atof(c.getvar("volt_maxgrad").c_str()) / 1000;
+    if (volt_maxgrad > 0)
+      MyConfig.SetParamValueFloat("vehicle", "bms.dev.voltage.maxgrad", volt_maxgrad);
+    else
+      MyConfig.SetParamValue("vehicle", "bms.dev.voltage.maxgrad", "");
+
+    volt_maxsddev = atof(c.getvar("volt_maxsddev").c_str()) / 1000;
+    if (volt_maxsddev > 0)
+      MyConfig.SetParamValueFloat("vehicle", "bms.dev.voltage.maxsddev", volt_maxsddev);
+    else
+      MyConfig.SetParamValue("vehicle", "bms.dev.voltage.maxsddev", "");
 
     temp_warn = atof(c.getvar("temp_warn").c_str());
     if (temp_warn > 0)
@@ -586,6 +673,8 @@ void OvmsWebServer::HandleBmsCellMonitor(PageEntry_t& p, PageContext_t& c)
   // read config:
   volt_warn = MyConfig.GetParamValueFloat("vehicle", "bms.dev.voltage.warn");
   volt_alert = MyConfig.GetParamValueFloat("vehicle", "bms.dev.voltage.alert");
+  volt_maxgrad = MyConfig.GetParamValueFloat("vehicle", "bms.dev.voltage.maxgrad");
+  volt_maxsddev = MyConfig.GetParamValueFloat("vehicle", "bms.dev.voltage.maxsddev");
   temp_warn = MyConfig.GetParamValueFloat("vehicle", "bms.dev.temp.warn");
   temp_alert = MyConfig.GetParamValueFloat("vehicle", "bms.dev.temp.alert");
   alerts_enabled = MyConfig.GetParamValueBool("vehicle", "bms.alerts.enabled", true);
@@ -594,17 +683,40 @@ void OvmsWebServer::HandleBmsCellMonitor(PageEntry_t& p, PageContext_t& c)
   PAGE_HOOK("body.pre");
 
   c.print(
-    "<div class=\"panel panel-primary panel-single\">\n"
+    "<div class=\"panel panel-primary panel-single receiver\" id=\"livestatus\">\n"
       "<div class=\"panel-heading\">BMS Cell Monitor</div>\n"
       "<div class=\"panel-body\">\n"
         "<div class=\"row\">\n"
-          "<div class=\"receiver\" id=\"livestatus\">\n"
-            "<div id=\"voltchart\" style=\"width: 100%; max-width: 100%; height: 45vh; min-height: 280px; margin: 0 auto\"></div>\n"
-            "<div id=\"tempchart\" style=\"width: 100%; max-width: 100%; height: 25vh; min-height: 160px; margin: 0 auto\"></div>\n"
-          "</div>\n"
+          "<div id=\"voltchart\" style=\"width: 100%; max-width: 100%; height: 45vh; min-height: 280px; margin: 0 auto\"></div>\n"
+          "<div id=\"tempchart\" style=\"width: 100%; max-width: 100%; height: 25vh; min-height: 160px; margin: 0 auto\"></div>\n"
         "</div>\n"
       "</div>\n"
       "<div class=\"panel-footer\">\n"
+        "<table class=\"table table-bordered table-condensed\">\n"
+          "<tbody>\n"
+            "<tr>\n"
+              "<th>Voltage</th>\n"
+              "<td>\n"
+              "<div class=\"metric number\" data-prec=\"3\" data-metric=\"v.b.p.voltage.avg\"><span class=\"label\">Cell avg</span><span class=\"value\">–</span><span class=\"unit\">V</span></div>\n"
+              "<div class=\"metric number\" data-prec=\"3\" data-metric=\"v.b.p.voltage.min\"><span class=\"label\">Cell min</span><span class=\"value\">–</span><span class=\"unit\">V</span></div>\n"
+              "<div class=\"metric number\" data-prec=\"3\" data-metric=\"v.b.p.voltage.max\"><span class=\"label\">Cell max</span><span class=\"value\">–</span><span class=\"unit\">V</span></div>\n"
+              "<div class=\"metric number\" data-prec=\"1\" data-scale=\"1000\" data-metric=\"v.b.p.voltage.stddev\"><span class=\"label\">StdDev</span><span class=\"value\">–</span><span class=\"unit\">mV</span></div>\n"
+              "<div class=\"metric number\" data-prec=\"1\" data-scale=\"1000\" data-metric=\"v.b.p.voltage.stddev.max\"><span class=\"label\">StdDev max</span><span class=\"value\">–</span><span class=\"unit\">mV</span></div>\n"
+              "<div class=\"metric number\" data-prec=\"1\" data-scale=\"1000\" data-metric=\"v.b.p.voltage.grad\"><span class=\"label\">Gradient</span><span class=\"value\">–</span><span class=\"unit\">mV</span></div>\n"
+              "</td>\n"
+            "</tr>\n"
+            "<tr>\n"
+              "<th>Temperature</th>\n"
+              "<td>\n"
+              "<div class=\"metric number\" data-prec=\"1\" data-metric=\"v.b.p.temp.avg\"><span class=\"label\">Cell avg</span><span class=\"value\">–</span><span class=\"unit\">°C</span></div>\n"
+              "<div class=\"metric number\" data-prec=\"1\" data-metric=\"v.b.p.temp.min\"><span class=\"label\">Cell min</span><span class=\"value\">–</span><span class=\"unit\">°C</span></div>\n"
+              "<div class=\"metric number\" data-prec=\"1\" data-metric=\"v.b.p.temp.max\"><span class=\"label\">Cell max</span><span class=\"value\">–</span><span class=\"unit\">°C</span></div>\n"
+              "<div class=\"metric number\" data-prec=\"1\" data-metric=\"v.b.p.temp.stddev\"><span class=\"label\">StdDev</span><span class=\"value\">–</span><span class=\"unit\">°C</span></div>\n"
+              "<div class=\"metric number\" data-prec=\"1\" data-metric=\"v.b.p.temp.stddev.max\"><span class=\"label\">StdDev max</span><span class=\"value\">–</span><span class=\"unit\">°C</span></div>\n"
+              "</td>\n"
+            "</tr>\n"
+          "</tbody>\n"
+        "</table>\n"
         "<button class=\"btn btn-default\" data-toggle=\"modal\" data-target=\"#cfg-dialog\">Alert config</button>\n"
         "<button class=\"btn btn-default\" data-cmd=\"bms reset\" data-target=\"#output\" data-watchcnt=\"0\">Reset min/max</button>\n"
         "<samp id=\"output\" class=\"samp-inline\"></samp>\n"
@@ -642,6 +754,17 @@ void OvmsWebServer::HandleBmsCellMonitor(PageEntry_t& p, PageContext_t& c)
   sdef.str(""); sdef << "Default: " << volt_alert_def * 1000;
   c.input("number", "Voltage alert", "volt_alert", sval.str().c_str(), sdef.str().c_str(),
     NULL, "min=\"1\" step=\"1\"", "mV");
+
+  sval << std::setprecision(1);
+  sdef << std::setprecision(1);
+  sval.str(""); if (volt_maxgrad > 0) sval << volt_maxgrad * 1000;
+  sdef.str(""); sdef << "Default: " << volt_maxgrad_def * 1000;
+  c.input("number", "Max valid gradient", "volt_maxgrad", sval.str().c_str(), sdef.str().c_str(),
+    NULL, "min=\"0\" step=\"0.1\"", "mV");
+  sval.str(""); if (volt_maxsddev > 0) sval << volt_maxsddev * 1000;
+  sdef.str(""); sdef << "Default: " << volt_maxsddev_def * 1000;
+  c.input("number", "Max stddev deviation", "volt_maxsddev", sval.str().c_str(), sdef.str().c_str(),
+    NULL, "min=\"0\" step=\"0.1\"", "mV");
 
   sval << std::setprecision(1);
   sdef << std::setprecision(1);

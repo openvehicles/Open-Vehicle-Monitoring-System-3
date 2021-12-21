@@ -1,0 +1,12 @@
+# vim:ft=automake
+# All paths should be given relative to the root
+
+if BUILD_SFTP
+noinst_PROGRAMS += examples/sftpclient/wolfsftp
+noinst_HEADERS += examples/sftpclient/sftpclient.h
+examples_sftpclient_wolfsftp_SOURCES      = examples/sftpclient/sftpclient.c
+examples_sftpclient_wolfsftp_LDADD        = src/libwolfssh.la
+examples_sftpclient_wolfsftp_DEPENDENCIES = src/libwolfssh.la
+endif
+
+DISTCLEANFILES+= examples/sftpclient/.libs/wolfsftp

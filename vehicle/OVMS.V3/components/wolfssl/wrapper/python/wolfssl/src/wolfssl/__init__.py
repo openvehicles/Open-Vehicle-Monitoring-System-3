@@ -2,9 +2,9 @@
 #
 # __init__.py
 #
-# Copyright (C) 2006-2017 wolfSSL Inc.
+# Copyright (C) 2006-2020 wolfSSL Inc.
 #
-# This file is part of wolfSSL. (formerly known as CyaSSL)
+# This file is part of wolfSSL.
 #
 # wolfSSL is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -18,7 +18,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335, USA
+#/
 
 import sys
 import errno
@@ -604,12 +605,12 @@ def wrap_socket(sock, keyfile=None, certfile=None, server_side=False,
                 ciphers=None):
     """
     Takes an instance sock of socket.socket, and returns an instance of
-    wolfssl.SSLSocket, wraping the underlying socket in an SSL context.
+    wolfssl.SSLSocket, wrapping the underlying socket in an SSL context.
 
     The sock parameter must be a SOCK_STREAM socket; other socket types are
     unsupported.
 
-    The keyfile and certfile parameters specify optional files whith proper
+    The keyfile and certfile parameters specify optional files with proper
     key and the certificates used to identify the local side of the connection.
 
     The parameter server_side is a boolean which identifies whether server-side

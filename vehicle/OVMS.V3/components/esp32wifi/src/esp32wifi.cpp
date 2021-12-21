@@ -251,8 +251,15 @@ void wifi_scan(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
     }
 
   bool json = false;
-  if (argc >= 1 && strcmp(argv[0], "-j") == 0)
+  if (argc > 0)
+    {
+    if (strcmp(argv[0], "-j") != 0)
+      {
+      cmd->PutUsage(writer);
+      return;
+      }
     json = true;
+    }
 
   me->Scan(writer, json);
   }
@@ -616,6 +623,7 @@ void esp32wifi::StartAccessPointMode(std::string ssid, std::string password)
 
   // we need APSTA mode to be able to do scans:
   ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA));
+  SetAPWifiBW();
 
   memset(&m_wifi_ap_cfg,0,sizeof(m_wifi_ap_cfg));
   m_wifi_ap_cfg.ap.ssid_len = 0;
@@ -675,6 +683,7 @@ void esp32wifi::StartAccessPointClientMode(std::string apssid, std::string appas
   OvmsMutexLock exclusive(&m_mutex);
 
   ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA));
+  SetAPWifiBW();
 
   memset(&m_wifi_ap_cfg,0,sizeof(m_wifi_ap_cfg));
   m_wifi_ap_cfg.ap.ssid_len = 0;
@@ -761,6 +770,27 @@ void esp32wifi::StopStation()
   UpdateNetMetrics();
   }
 
+wifi_active_scan_time_t esp32wifi::GetScanTime()
+  {
+  // https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-guides/wifi.html#scan-configuration
+  // On wifi_active_scan_time_t:
+  //  min=0, max=0: scan dwells on each channel for 120 ms.
+  //  min>0, max=0: scan dwells on each channel for 120 ms.
+  //  min=0, max>0: scan dwells on each channel for max ms.
+  //  min>0, max>0: the minimum time the scan dwells on each channel is min ms.
+  //    If no AP is found during this time frame, the scan switches to the next channel.
+  //    Otherwise, the scan dwells on the channel for max ms.
+
+  // Hint: some older Android APs need higher min times, try 200 ms.
+
+  wifi_active_scan_time_t active;
+  active.min = MyConfig.GetParamValueInt("network", "wifi.scan.tmin", 120);
+  active.max = MyConfig.GetParamValueInt("network", "wifi.scan.tmax", 120);
+  if (active.max < active.min)
+    active.max = active.min;
+  return active;
+  }
+
 void esp32wifi::Scan(OvmsWriter* writer, bool json)
   {
   uint16_t apCount = 0;
@@ -801,8 +831,7 @@ void esp32wifi::Scan(OvmsWriter* writer, bool json)
   scanConf.channel = 0;
   scanConf.show_hidden = true;
   scanConf.scan_type = WIFI_SCAN_TYPE_ACTIVE;
-  scanConf.scan_time.active.min = 200;
-  scanConf.scan_time.active.max = 500;
+  scanConf.scan_time.active = GetScanTime();
   res = esp_wifi_scan_start(&scanConf, true);
   if (res != ESP_OK)
     {
@@ -1135,8 +1164,7 @@ void esp32wifi::StartConnect()
   scanConf.channel = 0;
   scanConf.show_hidden = true;
   scanConf.scan_type = WIFI_SCAN_TYPE_ACTIVE;
-  scanConf.scan_time.active.min = 200;
-  scanConf.scan_time.active.max = 500;
+  scanConf.scan_time.active = GetScanTime();
   esp_err_t res = esp_wifi_scan_start(&scanConf, false);
   if (res != ESP_OK)
     ESP_LOGE(TAG, "StartConnect: error 0x%x starting scan", res);
@@ -1266,8 +1294,13 @@ void esp32wifi::OutputStatus(int verbosity, OvmsWriter* writer)
 
   if (m_mode == ESP32WIFI_MODE_AP || m_mode == ESP32WIFI_MODE_APCLIENT)
     {
-    writer->printf("\nAP SSID: %s\n  MAC: " MACSTR "\n  IP: " IPSTR "\n",
-      m_wifi_ap_cfg.ap.ssid, MAC2STR(m_mac_ap), IP2STR(&m_ip_info_ap.ip));
+    wifi_bandwidth_t bw;
+    uint8_t primary;
+    wifi_second_chan_t secondary;
+    esp_wifi_get_channel(&primary, &secondary);
+    esp_wifi_get_bandwidth(WIFI_IF_AP, &bw);
+    writer->printf("\nAP SSID: %s (%d MHz, channel %d)\n  MAC: " MACSTR "\n  IP: " IPSTR "\n",
+      m_wifi_ap_cfg.ap.ssid, (int)bw*20, primary, MAC2STR(m_mac_ap), IP2STR(&m_ip_info_ap.ip));
     wifi_sta_list_t sta_list;
     tcpip_adapter_sta_list_t ip_list;
     if (esp_wifi_ap_get_sta_list(&sta_list) == ESP_OK)
@@ -1359,3 +1392,28 @@ void esp32wifi::SetSTAWifiIP(std::string ip, std::string sn, std::string gw)
     tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA,&m_ip_info_sta);
     }
   }
+  
+void esp32wifi::SetAPWifiBW()
+  {
+  esp_err_t err;
+  if (m_mode ==  ESP32WIFI_MODE_AP || m_mode ==  ESP32WIFI_MODE_APCLIENT)
+    {
+    uint8_t bw = MyConfig.GetParamValueInt("network", "wifi.ap.bw");
+    switch (bw)
+      {
+      case 20:
+        err = esp_wifi_set_bandwidth(ESP_IF_WIFI_AP, WIFI_BW_HT20);
+        break;
+      case 40:
+        err = esp_wifi_set_bandwidth(ESP_IF_WIFI_AP, WIFI_BW_HT40);
+        break;
+      default:
+        err = esp_wifi_set_bandwidth(ESP_IF_WIFI_AP, WIFI_BW_HT20);
+      }
+    if (err != ESP_OK)
+      {
+      ESP_LOGE(TAG, "WIFI: failed changing bandwidth; error=%d", err);
+      return;
+      }
+    }
+  }    

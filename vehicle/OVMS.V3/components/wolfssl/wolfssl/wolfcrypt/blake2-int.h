@@ -12,7 +12,7 @@
 */
 /* blake2-int.h
  *
- * Copyright (C) 2006-2016 wolfSSL Inc.
+ * Copyright (C) 2006-2020 wolfSSL Inc.
  *
  * This file is part of wolfSSL.
  *
@@ -38,16 +38,6 @@
 #define WOLFCRYPT_BLAKE2_INT_H
 
 #include <wolfssl/wolfcrypt/types.h>
-
-
-#if defined(_MSC_VER)
-    #define ALIGN(x) __declspec(align(x))
-#elif defined(__GNUC__)
-    #define ALIGN(x) __attribute__((aligned(x)))
-#else
-    #define ALIGN(x)
-#endif
-
 
 #if defined(__cplusplus)
     extern "C" {
@@ -87,13 +77,13 @@
     byte  personal[BLAKE2S_PERSONALBYTES];  /* 32 */
   } blake2s_param;
 
-  ALIGN( 64 ) typedef struct __blake2s_state
+  ALIGN32 typedef struct __blake2s_state
   {
     word32 h[8];
     word32 t[2];
     word32 f[2];
     byte  buf[2 * BLAKE2S_BLOCKBYTES];
-    word64 buflen;
+    word32 buflen;
     byte  last_node;
   } blake2s_state ;
 
@@ -112,7 +102,7 @@
     byte  personal[BLAKE2B_PERSONALBYTES];  /* 64 */
   } blake2b_param;
 
-  ALIGN( 64 ) typedef struct __blake2b_state
+  ALIGN64 typedef struct __blake2b_state
   {
     word64 h[8];
     word64 t[2];
@@ -127,7 +117,7 @@
     blake2s_state S[8][1];
     blake2s_state R[1];
     byte buf[8 * BLAKE2S_BLOCKBYTES];
-    word64 buflen;
+    word32 buflen;
   } blake2sp_state;
 
   typedef struct __blake2bp_state
@@ -143,7 +133,7 @@
   int blake2s_init( blake2s_state *S, const byte outlen );
   int blake2s_init_key( blake2s_state *S, const byte outlen, const void *key, const byte keylen );
   int blake2s_init_param( blake2s_state *S, const blake2s_param *P );
-  int blake2s_update( blake2s_state *S, const byte *in, word64 inlen );
+  int blake2s_update( blake2s_state *S, const byte *in, word32 inlen );
   int blake2s_final( blake2s_state *S, byte *out, byte outlen );
 
   int blake2b_init( blake2b_state *S, const byte outlen );
@@ -154,7 +144,7 @@
 
   int blake2sp_init( blake2sp_state *S, const byte outlen );
   int blake2sp_init_key( blake2sp_state *S, const byte outlen, const void *key, const byte keylen );
-  int blake2sp_update( blake2sp_state *S, const byte *in, word64 inlen );
+  int blake2sp_update( blake2sp_state *S, const byte *in, word32 inlen );
   int blake2sp_final( blake2sp_state *S, byte *out, byte outlen );
 
   int blake2bp_init( blake2bp_state *S, const byte outlen );
@@ -163,13 +153,13 @@
   int blake2bp_final( blake2bp_state *S, byte *out, byte outlen );
 
   /* Simple API */
-  int blake2s( byte *out, const void *in, const void *key, const byte outlen, const word64 inlen, byte keylen );
+  int blake2s( byte *out, const void *in, const void *key, const byte outlen, const word32 inlen, byte keylen );
   int blake2b( byte *out, const void *in, const void *key, const byte outlen, const word64 inlen, byte keylen );
 
-  int blake2sp( byte *out, const void *in, const void *key, const byte outlen, const word64 inlen, byte keylen );
+  int blake2sp( byte *out, const void *in, const void *key, const byte outlen, const word32 inlen, byte keylen );
   int blake2bp( byte *out, const void *in, const void *key, const byte outlen, const word64 inlen, byte keylen );
 
-  static INLINE int blake2( byte *out, const void *in, const void *key, const byte outlen, const word64 inlen, byte keylen )
+  static WC_INLINE int blake2( byte *out, const void *in, const void *key, const byte outlen, const word64 inlen, byte keylen )
   {
     return blake2b( out, in, key, outlen, inlen, keylen );
   }

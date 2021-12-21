@@ -66,7 +66,7 @@ void test_javascript(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
 #endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_NONE
 
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
-  writer->printf("Javascript 1+2=%d\n", MyScripts.DuktapeEvalIntResult("1+2"));
+  writer->printf("Javascript 1+2=%d\n", MyDuktape.DuktapeEvalIntResult("1+2"));
 #endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   }
 
@@ -278,7 +278,7 @@ void test_can(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
 
   for (int k=0;k<frames;k++)
     {
-    frame.MsgID = (rand()%64)+256;
+    frame.MsgID = k % 2048;
     frame.data.u64 = k+1;
     if (tx)
       can->Write(&frame, pdMS_TO_TICKS(10));
@@ -317,6 +317,7 @@ void test_string(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
   const char* t5 = "0123456789-abcdefghijk-";
   std::string t6(t5);
 
+  int64_t time_start_us = esp_timer_get_time();
   for (int j = 1; j <= loopcnt; j++)
     {
     std::string msg;
@@ -356,7 +357,9 @@ void test_string(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
       writer->printf("#%d: stdlen = %d\n%s\n\n", j, stdlen, msg.c_str());
       }
     }
-  writer->puts("finished");
+  writer->printf("finished %d loops for mode %d using %s in %d ms\n", loopcnt, mode,
+    (t6.data() >= (void*)0x3F800000 && t6.data() < (void*)0x3FC00000) ? "extram" : "intram",
+    (int)((esp_timer_get_time() - time_start_us) / 1000));
   }
 
 void test_command(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)

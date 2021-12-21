@@ -30,8 +30,6 @@
 */
 
 #include "vehicle_mgev.h"
-#include "mg_obd_pids.h"
-#include "metrics_standard.h"
 
 namespace {
 
@@ -43,7 +41,7 @@ enum DoorMasks : unsigned char {
     RearRight = 8,
     Bonnet = 16,
     Boot = 32,
-    Locked = 128
+    Unlocked = 128
 };
 
 }  // anon namespace
@@ -57,10 +55,12 @@ void OvmsVehicleMgEv::IncomingBcmPoll(uint16_t pid, uint8_t* data, uint8_t lengt
             StandardMetrics.ms_v_door_fr->SetValue(data[0] & Driver);
             StandardMetrics.ms_v_door_rl->SetValue(data[0] & RearLeft);
             StandardMetrics.ms_v_door_rr->SetValue(data[0] & RearRight);
+            StandardMetrics.ms_v_door_hood->SetValue(data[0] & Bonnet);
             StandardMetrics.ms_v_door_trunk->SetValue(data[0] & Boot);
+            StandardMetrics.ms_v_env_locked->SetValue(!(data[0] & Unlocked));
             break;
-        case bcmLightPid:
-            StandardMetrics.ms_v_env_headlights->SetValue(data[0] > 1);
+        case bcmDrlPid:
+            StandardMetrics.ms_v_env_headlights->SetValue(data[0] & 0x80u);
             break;
     }    
 }

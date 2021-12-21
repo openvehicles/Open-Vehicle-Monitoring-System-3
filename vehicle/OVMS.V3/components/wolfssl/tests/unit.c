@@ -1,6 +1,6 @@
 /* unit.c API unit tests driver
  *
- * Copyright (C) 2006-2016 wolfSSL Inc.
+ * Copyright (C) 2006-2020 wolfSSL Inc.
  *
  * This file is part of wolfSSL.
  *
@@ -49,6 +49,15 @@ int unit_test(int argc, char** argv)
 
     (void)argc;
     (void)argv;
+
+#ifdef WOLFSSL_FORCE_MALLOC_FAIL_TEST
+    if (argc > 1) {
+        word32 memFailCount = atoi(argv[1]);
+        printf("\n--- SET RNG MALLOC FAIL AT %d---\n", memFailCount);
+        wolfSSL_SetMemFailCount(memFailCount);
+    }
+#endif
+
     printf("starting unit tests...\n");
 
 #if defined(DEBUG_WOLFSSL) && !defined(HAVE_VALGRIND)
@@ -71,11 +80,13 @@ int unit_test(int argc, char** argv)
         goto exit;
     }
 
+#if !defined(NO_WOLFSSL_CLIENT) && !defined(NO_WOLFSSL_SERVER)
 #ifndef SINGLE_THREADED
-    if ( (ret = SuiteTest()) != 0){
+    if ( (ret = SuiteTest(argc, argv)) != 0){
         printf("suite test failed with %d\n", ret);
         goto exit;
     }
+#endif
 #endif
 
     SrpTest();

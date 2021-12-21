@@ -2,17 +2,67 @@
 # included from Top Level Makefile.am
 # All paths should be given relative to the root
 
-check_PROGRAMS += tests/unit.test tests/api.test
-noinst_PROGRAMS += tests/unit.test tests/api.test
+check_PROGRAMS  += tests/unit.test tests/api.test \
+                   tests/testsuite.test
+noinst_PROGRAMS += tests/unit.test tests/api.test \
+                   tests/testsuite.test
 
 tests_unit_test_SOURCES      = tests/unit.c
-tests_unit_test_CFLAGS       = -DNO_MAIN_DRIVER $(AM_CFLAGS)
-tests_unit_test_LDADD        = src/libwolfssh.la $(LIB_STATIC_ADD)
+tests_unit_test_CPPFLAGS     = -DNO_MAIN_DRIVER
+if BUILD_SCP
+tests_unit_test_CPPFLAGS     += -DWOLFSSH_SCP
+endif
+if BUILD_SFTP
+tests_unit_test_CPPFLAGS     += -DWOLFSSH_SFTP
+endif
+if BUILD_SHELL
+tests_unit_test_CPPFLAGS     += -DWOLFSSH_SHELL
+endif
+if BUILD_AGENT
+tests_unit_test_CPPFLAGS     += -DWOLFSSH_AGENT
+endif
+tests_unit_test_LDADD        = src/libwolfssh.la
 tests_unit_test_DEPENDENCIES = src/libwolfssh.la
 
-tests_api_test_SOURCES      = tests/api.c
-tests_api_test_CFLAGS       = -DNO_MAIN_DRIVER $(AM_CFLAGS)
-tests_api_test_LDADD        = src/libwolfssh.la $(LIB_STATIC_ADD)
-tests_api_test_DEPENDENCIES = src/libwolfssh.la
+tests_api_test_SOURCES       = tests/api.c \
+                               examples/echoserver/echoserver.c
+tests_api_test_CPPFLAGS      = -DNO_MAIN_DRIVER
+if BUILD_SCP
+tests_api_test_CPPFLAGS     += -DWOLFSSH_SCP
+endif
+if BUILD_SFTP
+tests_api_test_CPPFLAGS     += -DWOLFSSH_SFTP
+endif
+if BUILD_SHELL
+tests_api_test_CPPFLAGS     += -DWOLFSSH_SHELL
+endif
+if BUILD_AGENT
+tests_api_test_CPPFLAGS     += -DWOLFSSH_AGENT
+endif
+tests_api_test_LDADD         = src/libwolfssh.la
+tests_api_test_DEPENDENCIES  = src/libwolfssh.la
 
-DISTCLEANFILES+= tests/.libs/unit.test tests/.libs/api.test
+tests_testsuite_test_SOURCES = tests/testsuite.c \
+                               tests/sftp.c \
+                               examples/echoserver/echoserver.c \
+                               examples/client/client.c \
+                               examples/sftpclient/sftpclient.c
+tests_testsuite_test_CPPFLAGS  = -DNO_MAIN_DRIVER
+if BUILD_SCP
+tests_testsuite_test_CPPFLAGS     += -DWOLFSSH_SCP
+endif
+if BUILD_SFTP
+tests_testsuite_test_CPPFLAGS     += -DWOLFSSH_SFTP
+endif
+if BUILD_SHELL
+tests_testsuite_test_CPPFLAGS     += -DWOLFSSH_SHELL
+endif
+if BUILD_AGENT
+tests_testsuite_test_CPPFLAGS     += -DWOLFSSH_AGENT
+endif
+tests_testsuite_test_LDADD   = src/libwolfssh.la
+tests_testsuite_test_DEPENDENCIES = src/libwolfssh.la
+
+DISTCLEANFILES+= tests/.libs/unit.test tests/.libs/api.test \
+                 tests/.libs/testsuite.test
+EXTRA_DIST += tests/testsuite.h
