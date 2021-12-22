@@ -351,11 +351,6 @@ void OvmsVehicleNissanLeaf::vehicle_nissanleaf_charger_status(ChargerStatus stat
         StandardMetrics.ms_v_charge_voltage->SetValue(StandardMetrics.ms_v_bat_voltage->AsFloat());
         StandardMetrics.ms_v_charge_current->SetValue(StandardMetrics.ms_v_bat_current->AsFloat());
         }
-      if (m_AZE0_charger)
-        {
-        StandardMetrics.ms_v_charge_voltage->SetValue(StandardMetrics.ms_v_bat_voltage->AsFloat());
-        StandardMetrics.ms_v_charge_current->SetValue(StandardMetrics.ms_v_bat_current->AsFloat());
-        }
       break;
     case CHARGER_STATUS_V2X:
       if (!StandardMetrics.ms_v_gen_inprogress->AsBool())
@@ -374,9 +369,9 @@ void OvmsVehicleNissanLeaf::vehicle_nissanleaf_charger_status(ChargerStatus stat
       break;
     case CHARGER_STATUS_INTERRUPTED:
       // Charging stopped during charge by user
+		StandardMetrics.ms_v_charge_current->SetValue(0);
       if (m_ZE0_charger)
         {
-        StandardMetrics.ms_v_charge_current->SetValue(0);
         StandardMetrics.ms_v_charge_voltage->SetValue(0);
         // TODO set this in ovms v2
         // TODO the charger probably knows the line voltage, when we find where it's
@@ -384,7 +379,6 @@ void OvmsVehicleNissanLeaf::vehicle_nissanleaf_charger_status(ChargerStatus stat
         }
       if (m_AZE0_charger)
         {
-        StandardMetrics.ms_v_charge_current->SetValue(0);
         StandardMetrics.ms_v_charge_voltage->SetValue(0); //AZE0 doesn't know line voltage
         }
       StandardMetrics.ms_v_charge_inprogress->SetValue(false);
@@ -395,17 +389,15 @@ void OvmsVehicleNissanLeaf::vehicle_nissanleaf_charger_status(ChargerStatus stat
       break;
     case CHARGER_STATUS_FINISHED:
       // Charging finished
+	  StandardMetrics.ms_v_charge_current->SetValue(0);
       if (m_ZE0_charger)
         {
-        StandardMetrics.ms_v_charge_current->SetValue(0);
         StandardMetrics.ms_v_charge_voltage->SetValue(0);
         // TODO set this in ovms v2
-        // TODO the charger probably knows the line voltage, when we find where it's
-        // coded, don't zero it out when we're plugged in but not charging
+		// TODO? don't zero it out when we're plugged in but not charging
         }
       if (m_AZE0_charger)
         {
-        StandardMetrics.ms_v_charge_current->SetValue(0);
         StandardMetrics.ms_v_charge_voltage->SetValue(0); //AZE0 doesn't know line voltage
         }
       StandardMetrics.ms_v_charge_inprogress->SetValue(false);
@@ -417,16 +409,14 @@ void OvmsVehicleNissanLeaf::vehicle_nissanleaf_charger_status(ChargerStatus stat
     }
   if (status != CHARGER_STATUS_CHARGING && status != CHARGER_STATUS_QUICK_CHARGING)
     {
+	  StandardMetrics.ms_v_charge_current->SetValue(0);
     if (m_ZE0_charger)
       {
-      StandardMetrics.ms_v_charge_current->SetValue(0);
-      // TODO the charger probably knows the line voltage, when we find where it's
-      // coded, don't zero it out when we're plugged in but not charging
+      // TODO? don't zero it out when we're plugged in but not charging
       StandardMetrics.ms_v_charge_voltage->SetValue(0);
       }
     if (m_AZE0_charger)
       {
-      StandardMetrics.ms_v_charge_current->SetValue(0);
       StandardMetrics.ms_v_charge_voltage->SetValue(0); //AZE0 doesn't know line voltage
       }
     StandardMetrics.ms_v_charge_mode->SetValue("");
@@ -924,7 +914,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       float ac_voltage = ( ((d[5] & 0x07) << 8 | ( d[6] & 0xFC)) >> 2) * 2; // in V
       ac_voltage = ac_voltage + 70; //Offset with 70V
 
-      StandardMetrics.ms_v_ac_voltage->SetValue(ac_voltage);
+      StandardMetrics.ms_v_charge_voltage->SetValue(ac_voltage);
       
       if (StandardMetrics.ms_v_charge_voltage->AsFloat() > 0)
       {
@@ -966,8 +956,8 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       if (qc_state && !vg_state)
         StandardMetrics.ms_v_charge_voltage->SetValue(StandardMetrics.ms_v_bat_voltage->AsFloat());
         
-      if (ac_state) //Either 100V or 200V (Abnormal wave will report 300V with this method)
-        StandardMetrics.ms_v_charge_voltage->SetValue( ((d[3] >> 3) & 0x03) * 100 );
+      if (ac_state) //Either 110V or 220V (Abnormal AC wave will report 330V with this method)
+        StandardMetrics.ms_v_charge_voltage->SetValue( ((d[3] >> 3) & 0x03) * 110 );
 
       if (StandardMetrics.ms_v_charge_voltage->AsFloat() > 0 && !vg_state)
         {
@@ -1336,6 +1326,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       }
       break;
     case 0x5bf:
+		// ZE0 gen1 charger only
       if (d[4] == 0xb0)
         {
         // Quick Charging
@@ -1347,8 +1338,8 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         }
       else
         {
-        // Maybe J1772 is connected
-        // can_databuffer[2] is the J1772 maximum available current, 0 if we're not plugged in
+        // J1772 might be connected
+        // d[2] is the J1772 maximum available current, 0 if we're not plugged in
         // TODO enum?
         uint8_t current_limit = d[2] / 5;
         StandardMetrics.ms_v_charge_climit->SetValue(current_limit);
@@ -1357,6 +1348,10 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
           //StandardMetrics.ms_v_charge_type->SetValue("type1");
           StandardMetrics.ms_v_charge_pilot->SetValue(true);
           }
+		else // current limit is 0
+		  {
+		  StandardMetrics.ms_v_charge_pilot->SetValue(false);
+		  }
         }
 
       switch (d[4])
