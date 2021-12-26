@@ -2026,19 +2026,11 @@ void OvmsVehicleNissanLeaf::HandleRange()
 //
 OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::CommandWakeup()
   {
-  // Use GPIO to wake up GEN 1 Leaf with EV SYSTEM ACTIVATION REQUEST
-  // TODO re-implement to support Gen 1 leaf
-  //output_gpo3(TRUE);
-
-  // The Gen 2 Wakeup frame works on some Gen1, and doesn't cause a problem
-  // so we send it on all models. We have to take care to send it on the
-  // correct can bus in newer cars.
-  if (!m_enable_write) return Fail; //disable commands unless canwrite is true
-  ESP_LOGI(TAG, "Sending Gen 2 Wakeup Frame");
-  int modelyear = MyConfig.GetParamValueInt("xnl", "modelyear", DEFAULT_MODEL_YEAR);
-  canbus* tcuBus = modelyear >= 2016 ? m_can2 : m_can1;
+  // The on board charger wakeup message is the same on all 2011-2017 LEAFs
+  if (!m_enable_write) return Fail; // Disable commands unless canwrite is true
+  ESP_LOGI(TAG, "Sending Wakeup Frame");
   unsigned char data = 0;
-  tcuBus->WriteStandard(0x68c, 1, &data);
+  m_can1->WriteStandard(0x679, 1, &data);
   return Success;
   }
 
