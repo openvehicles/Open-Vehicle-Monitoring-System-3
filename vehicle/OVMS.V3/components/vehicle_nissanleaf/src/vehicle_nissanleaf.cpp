@@ -75,7 +75,7 @@ static const OvmsVehicle::poll_pid_t obdii_polls[] =
     POLL_LIST_END
   };
 
-void mITMDisableTimer(TimerHandle_t timer)
+void MITMDisableTimerCallback(TimerHandle_t timer)
   {
   OvmsVehicleNissanLeaf* nl = (OvmsVehicleNissanLeaf*) pvTimerGetTimerID(timer);
   nl->MITMDisableTimer();
@@ -194,7 +194,7 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
 
   m_remoteCommandTimer = xTimerCreate("Nissan Leaf Remote Command", 100 / portTICK_PERIOD_MS, pdTRUE, this, remoteCommandTimer);
   m_ccDisableTimer = xTimerCreate("Nissan Leaf CC Disable", 1000 / portTICK_PERIOD_MS, pdFALSE, this, ccDisableTimer);
-  MITMstop = xTimerCreate("Nissan Leaf MITM Disable", 1000 / portTICK_PERIOD_MS, pdFALSE, this, mITMDisableTimer);
+  m_MITMstop = xTimerCreate("Nissan Leaf MITM Chargestop Disable", 1000 / portTICK_PERIOD_MS, pdFALSE, this, MITMDisableTimerCallback);
 
   //load custom shell commands
   CommandInit();
@@ -2081,20 +2081,20 @@ OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::CommandUnlock(const char* 
 
 void OvmsVehicleNissanLeaf::MITMDisableTimer() 
 {
-  ESP_LOGI(TAG, " MITM attempted off");
+  ESP_LOGI(TAG, "MITM attempted off");
   if(MITM) {
     MITM = 0;
-    xTimerStop(MITMstop, 0);
+    xTimerStop(m_MITMstop, 0);
     ESP_LOGI(TAG, " MITM turned off");
   }
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::CommandStopCharge()
 {
-  ESP_LOGI(TAG, "CommandStopCharge - MITM");
+  ESP_LOGI(TAG, "CommandStopCharge - MITM method");
   if (!MITM) {
     MITM = 10;
-    xTimerStart(MITMstop, 0);
+    xTimerStart(m_MITMstop, 0);
   }
   return Success;
 

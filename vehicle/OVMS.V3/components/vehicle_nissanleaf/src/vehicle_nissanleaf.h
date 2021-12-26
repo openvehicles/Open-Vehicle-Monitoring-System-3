@@ -165,7 +165,7 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
 
     TimerHandle_t m_remoteCommandTimer;
     TimerHandle_t m_ccDisableTimer;
-    TimerHandle_t MITMstop;
+    TimerHandle_t m_MITMstop;
     metric_unit_t m_odometer_units = Other;
     OvmsMetricInt *m_gids;
     OvmsMetricFloat *m_hx;
