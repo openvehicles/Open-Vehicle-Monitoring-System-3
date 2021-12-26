@@ -132,6 +132,7 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   BmsSetCellArrangementTemperature(3, 1);
   
   m_gids = MyMetrics.InitInt("xnl.v.b.gids", SM_STALE_HIGH, 0);
+  m_max_gids = MyMetrics.InitInt("xnl.v.b.max.gids", SM_STALE_HIGH, 0);
   m_hx = MyMetrics.InitFloat("xnl.v.b.hx", SM_STALE_HIGH, 0);
   m_soc_new_car = MyMetrics.InitFloat("xnl.v.b.soc.newcar", SM_STALE_HIGH, 0, Percentage);
   m_soc_instrument = MyMetrics.InitFloat("xnl.v.b.soc.instrument", SM_STALE_HIGH, 0, Percentage);
@@ -1309,7 +1310,8 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
             break;
           case  0x01:
             {
-            // Max gids, this mx value only occurs on 30kwh models. For 24 kwh models we use the value from msg 0x59e
+            // Max gids, this mx value only occurs on 30kWh models and up
+            m_max_gids->SetValue(nl_gids);
             m_battery_energy_capacity->SetValue(nl_gids * GEN_1_WH_PER_GID, WattHours);
             type = BATTERY_TYPE_2_30kWh;
             }

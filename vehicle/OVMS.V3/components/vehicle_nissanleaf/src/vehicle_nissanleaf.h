@@ -168,6 +168,7 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     TimerHandle_t m_MITMstop;
     metric_unit_t m_odometer_units = Other;
     OvmsMetricInt *m_gids;
+    OvmsMetricInt *m_max_gids;
     OvmsMetricFloat *m_hx;
     OvmsMetricFloat *m_soc_new_car;
     OvmsMetricFloat *m_soc_instrument;
