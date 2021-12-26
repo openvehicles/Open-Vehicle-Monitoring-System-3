@@ -200,7 +200,7 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     OvmsMetricInt *m_climate_fan_speed_limit;
     OvmsMetricFloat *m_climate_setpoint;
     OvmsMetricBool *m_climate_auto;
-    int MITM = 0;
+    int m_MITM = 0;
 
     float m_cum_energy_used_wh;				    // Cumulated energy (in wh) used within 1 second ticker interval
     float m_cum_energy_recd_wh; 					// Cumulated energy (in wh) recovered  within 1 second ticker interval

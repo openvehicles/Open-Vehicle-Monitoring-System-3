@@ -867,14 +867,14 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       break;
     case 0x1db:
     {
-      if (MITM>0) { // This section used to stop charging upon request
+      if (m_MITM>0) { // This section used to stop charging upon request
         unsigned char new1db[8];
         memcpy(new1db, d, 8); // Store current 1DB message content
         new1db[1] = (new1db[1] & 0xe0) | 2; // Charging Mode Stop Request
         new1db[6] = (new1db[6] + 1) % 4; // Increment PRUN counter
         new1db[7] = leafcrc(7, new1db); // Sign message with correct CRC
         m_can1->WriteStandard(0x1db, 8, new1db); //Send completed CAN message
-        if (1==--MITM) MITMDisableTimer();
+        if (1==--m_MITM) MITMDisableTimer();
       }
       // sent by the LBC, measured inside the battery box
       // current is 11 bit twos complement big endian starting at bit 0
@@ -2082,8 +2082,8 @@ OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::CommandUnlock(const char* 
 void OvmsVehicleNissanLeaf::MITMDisableTimer() 
 {
   ESP_LOGI(TAG, "MITM attempted off");
-  if(MITM) {
-    MITM = 0;
+  if(m_MITM) {
+    m_MITM = 0;
     xTimerStop(m_MITMstop, 0);
     ESP_LOGI(TAG, " MITM turned off");
   }
@@ -2092,8 +2092,8 @@ void OvmsVehicleNissanLeaf::MITMDisableTimer()
 OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::CommandStopCharge()
 {
   ESP_LOGI(TAG, "CommandStopCharge - MITM method");
-  if (!MITM) {
-    MITM = 10;
+  if (!m_MITM) {
+    m_MITM = 10;
     xTimerStart(m_MITMstop, 0);
   }
   return Success;
