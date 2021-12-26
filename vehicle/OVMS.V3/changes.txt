@@ -10,6 +10,9 @@ Open Vehicle Monitor System v3 - Change log
   New commands:
     server v2 update [all|modified]     -- Request V2 data update
     server v3 update [all|modified]     -- Request V3 data update
+- Notifications: add tracing (debug logging) of stream notifications
+  New commands:
+    notify trace all                    -- Enable logging of stream notifications
 
 2021-11-22 MWJ  3.2.018  OTA release
 - Vehicle: added optional automatic trip report generation
