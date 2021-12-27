@@ -43,7 +43,7 @@ Metrics
 =========================== ==============
 Item                        Support Status
 =========================== ==============
-SOC                         Yes (by default based on GIDS)[4]
+SOC                         Yes (by default based on GIDS) [4]_
 Range                       Yes (by default based on GIDS)
 GPS Location                Yes (from modem module GPS)
 Speed                       Yes (from vehicle speed PID)
@@ -68,6 +68,7 @@ Charge Interruption Alerts  Yes
 .. [3] Lock/Unlock will work if CAR can bus is awake, this can be activated by turning on A/C
 
 .. [4] ZE0 (2011-2013) vehicles are required to choose SoC display from "relative to fixed value", "dashboard display" SoC method does not work with these vehicles. 
+
 ----------------------
 Remote Climate Control
 ----------------------
@@ -82,9 +83,9 @@ If you want to to enable remote climate control once the charge has finished, or
 
 If you have a "smart" EVSE (or one connected to a "smart" outlet, you can sometimes wake up the EV system by turning it off, then back on. This obviously only helps if your vehicle is plugged in, but may be useful for some users.
 
-^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 2013-2016 models (AZE0-0/1)
-^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 To use OVMS to activate remote climate the Nissan TCU (Telematics Control Unit) module must be unplugged if fitted (only on Acenta and Tekna models). The TCU is located behind the glovebox on LHD cars or on the right hand side of the drivers foot well on RHD cars. The large white plug on the rear of the TCU should be unplugged, push down tab in the middle and pull to unplug, `see video for RHD cars <https://photos.app.goo.gl/MuvpCaXQUjbCdoox6>`_ and `this page for LHD cars <http://www.arachnon.de/wb/pages/en/nissan-leaf/tcu.php>`_.
 
@@ -95,9 +96,9 @@ OVMS remote climate support will 'just work' on LEAF Visia models and Visia/Acen
 Note: If you prefer not to unplug the Nissan TCU, all OVMS functions appart from remote climate will function just fine alongside the Nissan TCU.
 
 
-^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^
 2016-2017 models (AZE0-2)
-^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **Remote climate control will only work when plugged in and actively charging on 2016-2017 models.** This is because in 2016 Nissan moved the TCU from the EV CAN bus to the CAR CAN bus.
 
