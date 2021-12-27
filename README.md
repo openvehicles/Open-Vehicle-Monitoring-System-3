@@ -72,7 +72,9 @@ provides data logging to SD card and to a server.
 ## Links
 
 - _User Resources_
-  - [User and Developer Guides](https://docs.openvehicles.com/en/latest/)
+  - _User and Developer Guides: (hint: version selection in left menu at the bottom)_
+    - [Stable release (OTA version "main")](https://docs.openvehicles.com/en/stable/)
+    - [Latest nightly build (OTA version "edge")](https://docs.openvehicles.com/en/latest/)
   - [User Support Forum](https://www.openvehicles.com/forum)
   - [Android App](https://play.google.com/store/apps/details?id=com.openvehicles.OVMS&hl=en_US)
   - [iOS App](https://apps.apple.com/us/app/open-vehicles/id490098531)
