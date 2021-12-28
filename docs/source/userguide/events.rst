@@ -75,6 +75,7 @@ network.wifi.down                             WIFI network is down
 network.wifi.sta.bad                          WIFI client has bad signal level
 network.wifi.sta.good                         WIFI client has good signal level
 network.wifi.up                               WIFI network is up
+notify.<type>.<subtype>                       An info / alert / error notification is sent
 retools.cleared.all                           RE frame log has been cleared
 retools.cleared.changed                       RE frame change flags cleared
 retools.cleared.discovered                    RE frame discovery flags cleared

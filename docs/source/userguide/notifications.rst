@@ -83,6 +83,11 @@ To send a battery status command result, do::
 
 To send notifications from Duktape scripts, use the API call ``OvmsNotify.Raise()``.
 
+When a text (info/alert) or error notification is sent (i.e. has at least one listening channel,
+e.g. ``pushover``), an **event** is raised once when the notification is queued. The event will
+be named ``notify.<type>.<subtype>``. For example, the second example above would come with
+an event ``notify.info.battery.status``.
+
 
 ----------------------
 Suppress notifications

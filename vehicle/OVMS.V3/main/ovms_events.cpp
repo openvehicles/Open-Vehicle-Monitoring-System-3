@@ -406,14 +406,23 @@ static void CheckQueueOverflow(const char* from, char* event)
 
 void OvmsEvents::SignalScheduledEvent(TimerHandle_t timer)
   {
+  OvmsMutexLock lock(&MyEvents.m_timers_mutex);
   event_queue_t* msg = (event_queue_t*) pvTimerGetTimerID(timer);
+  vTimerSetTimerID(timer, NULL);
+  if (!msg)
+    {
+    // This should not be possible but occurs ~3 times per million callbacks,
+    // only if callback interval is 1 tick (10 ms), observed on both ESP32/R1
+    // _and_ ESP32/R3. FreeRTOS timer service bug?
+    ESP_LOGW(TAG, "SignalScheduledEvent: duplicate callback invocation detected");
+    return;
+    }
   if (xQueueSend(MyEvents.m_taskqueue, msg, 0) != pdTRUE)
     {
     CheckQueueOverflow("SignalScheduledEvent", msg->body.signal.event);
     MyEvents.FreeQueueSignalEvent(msg);
     }
   delete msg;
-  OvmsMutexLock lock(&MyEvents.m_timers_mutex);
   MyEvents.m_timer_active[timer] = false;
   }
 
@@ -447,7 +456,7 @@ bool OvmsEvents::ScheduleEvent(event_queue_t* msg, uint32_t delay_ms)
     {
     // create new timer:
     ESP_LOGI(TAG, "ScheduleEvent: creating new timer");
-    timer = xTimerCreate("ScheduleEvent", timerticks, pdFALSE, msgdup, SignalScheduledEvent);
+    timer = xTimerCreate("ScheduleEvent", timerticks, pdFALSE, NULL, SignalScheduledEvent);
     if (!timer)
       {
       ESP_LOGE(TAG, "ScheduleEvent: xTimerCreate failed, event dropped");
@@ -455,6 +464,7 @@ bool OvmsEvents::ScheduleEvent(event_queue_t* msg, uint32_t delay_ms)
       return false;
       }
     m_timers.push_back(timer);
+    m_timer_active[timer] = false;
     }
   else
     {
@@ -465,12 +475,13 @@ bool OvmsEvents::ScheduleEvent(event_queue_t* msg, uint32_t delay_ms)
       delete msgdup;
       return false;
       }
-    vTimerSetTimerID(timer, msgdup);
     }
   // start timer:
+  vTimerSetTimerID(timer, msgdup);
   if (xTimerStart(timer, 0) != pdPASS)
     {
     ESP_LOGE(TAG, "ScheduleEvent: xTimerStart failed, event dropped");
+    vTimerSetTimerID(timer, NULL);
     delete msgdup;
     return false;
     }
