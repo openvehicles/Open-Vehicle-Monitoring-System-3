@@ -168,6 +168,7 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     TimerHandle_t m_MITMstop;
     metric_unit_t m_odometer_units = Other;
     OvmsMetricInt *m_gids;
+    OvmsMetricInt *m_max_gids;
     OvmsMetricFloat *m_hx;
     OvmsMetricFloat *m_soc_new_car;
     OvmsMetricFloat *m_soc_instrument;
@@ -181,12 +182,16 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     OvmsMetricFloat *m_battery_energy_available;
     OvmsMetricInt *m_battery_type;
     OvmsMetricBool *m_battery_heaterpresent;
+    OvmsMetricBool *m_battery_heatrequested;
+    OvmsMetricBool *m_battery_heatergranted;
     OvmsMetricFloat *m_battery_out_power_limit;
     OvmsMetricFloat *m_battery_in_power_limit; 
     OvmsMetricFloat *m_battery_chargerate_max;
     OvmsMetricString *m_charge_limit;    
     OvmsMetricVector<int> *m_charge_duration;
     OvmsMetricVector<string> *m_charge_duration_label;
+    OvmsMetricInt *m_charge_minutes_3kW_remaining;
+    OvmsMetricInt *m_remaining_chargebars;
     OvmsMetricInt *m_quick_charge;
     OvmsMetricFloat *m_soc_nominal;
     OvmsMetricInt *m_charge_count_qc;

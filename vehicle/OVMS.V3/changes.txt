@@ -13,6 +13,16 @@ Open Vehicle Monitor System v3 - Change log
 - Notifications: add tracing (debug logging) of stream notifications
   New commands:
     notify trace all                    -- Enable logging of stream notifications
+- Nissan LEAF:
+ - Stop charge feature added, works via app
+ - 5 new metrics added
+    xnl.v.b.max.gids (Max number of GIDs the battery can reach (for 2016+))
+    xnl.v.b.heatrequested (Battery is requesting heater elements to turn on (for 2013+))
+    xnl.v.b.heatergranted (Vehicle is OKing heater elements to turn on (for 2013+))
+    xnl.v.c.chargeminutes3kW (The 3kW charge time estimate the car calculates)
+    xnl.v.c.chargebars (Remaining charge "bars" on dashboard)
+ - Wakeup command now charges 12V battery if connected to EVSE
+ - 2011-2012 LEAF now reads AC voltage from grid
 
 2021-11-22 MWJ  3.2.018  OTA release
 - Vehicle: added optional automatic trip report generation
