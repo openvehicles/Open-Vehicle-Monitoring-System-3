@@ -146,6 +146,8 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   m_battery_energy_available = MyMetrics.InitFloat("xnl.v.b.e.available", SM_STALE_HIGH, 0, kWh);
   m_battery_type = MyMetrics.InitInt("xnl.v.b.type", SM_STALE_HIGH, 0); // auto-detect version and size by can traffic
   m_battery_heaterpresent = MyMetrics.InitBool("xnl.v.b.heaterpresent", SM_STALE_HIGH, false);
+  m_battery_heatrequested = MyMetrics.InitBool("xnl.v.b.heatrequested", SM_STALE_HIGH, false);
+  m_battery_heatergranted = MyMetrics.InitBool("xnl.v.b.heatergranted", SM_STALE_HIGH, false);
   m_charge_duration = MyMetrics.InitVector<int>("xnl.v.c.duration", SM_STALE_HIGH, 0, Minutes);
   // note vector strings are not handled by ovms_metrics.h and cause web errors loading ev.data in ovms.js
   // this will need to be resolved before reinstating metrics
@@ -156,7 +158,9 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   // m_charge_duration_label->SetElemValue(CHARGE_DURATION_RANGE_L2, "range.l2");
   // m_charge_duration_label->SetElemValue(CHARGE_DURATION_RANGE_L1, "range.l1");
   // m_charge_duration_label->SetElemValue(CHARGE_DURATION_RANGE_L0, "range.l0");
+  m_charge_minutes_3kW_remaining = MyMetrics.InitInt("xnl.v.c.chargeminutes3kW", SM_STALE_HIGH, 0);
   m_quick_charge = MyMetrics.InitInt("xnl.v.c.quick", SM_STALE_HIGH, 0);
+  m_remaining_chargebars = MyMetrics.InitInt("xnl.v.c.chargebars", SM_STALE_HIGH, 0);
   m_soc_nominal = MyMetrics.InitFloat("xnl.v.b.soc.nominal", SM_STALE_HIGH, 0, Percentage);
   m_battery_out_power_limit = MyMetrics.InitFloat("xnl.v.b.output.limit", SM_STALE_HIGH, 0, kW);
   m_battery_in_power_limit = MyMetrics.InitFloat("xnl.v.b.regen.limit", SM_STALE_HIGH, 0, kW);
@@ -828,7 +832,7 @@ void OvmsVehicleNissanLeaf::IncomingPollReply(canbus* bus, uint16_t type, uint16
   }
 
 void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
-  {
+  { // CAN1 is connected to EV-CAN
   uint8_t *d = p_frame->data.u8;
 
   switch (p_frame->MsgID)
@@ -1054,9 +1058,17 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         }
     }
       break;
+    case 0x50a:
+    { //Battery heating during below -17*C , request OK
+    if (MyConfig.GetParamValueInt("xnl", "modelyear", DEFAULT_MODEL_YEAR) >= 2013)
+      {
+      m_battery_heatergranted->SetValue(d[6] & 0x20); // Heater request granted
+      } 
+    }
+    break;
     case 0x54a:
     {
-      // setpoint gets reset on heatin or cooling off, so we only update it while they are running
+      // setpoint gets reset on heating or cooling off, so we only update it while they are running
       if (StandardMetrics.ms_v_env_heating->AsBool() || StandardMetrics.ms_v_env_cooling->AsBool())
       {
         float setpoint_float = d[4] / 2;
@@ -1233,9 +1245,8 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       break;
     case 0x55b:
       {
-      /* 10-bit SOC%.  Very similar to the 7-bit value in 0x1db, but that
-       * one eventually reaches 100%, while this one usually doesn't.
-       * Maybe relative to the nominal pack size, scaled down by health?
+      /* 10-bit SOC%. Actual value calculated by battery.
+       * This value never reaches 100% (or 0%) due to charging safety buffer
        */
       uint16_t soc = d[0] << 2 | d[1] >> 6;
       if (soc != 0x3ff)
@@ -1426,19 +1437,21 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         {
         StandardMetrics.ms_v_bat_temp->SetValue(d[2] / 2 - 40);
         }
-      /* Battery Heater existance as reported by the LBC. 
-       * Frame 4, bit 0. Note this should only work on AZE0. 
+      /* Battery Heater as reported by the LBC.
+       * Battery heating needed below -17*C
+       * TODO: Notify user in app that battery has entered this state! 
        */
       if ( d[4] && MyConfig.GetParamValueInt("xnl", "modelyear", DEFAULT_MODEL_YEAR) >= 2013 )
         {
-        m_battery_heaterpresent->SetValue(d[4] & 0x01);
+        m_battery_heaterpresent->SetValue(d[4] & 0x01); // Heater pads present
+        m_battery_heatrequested->SetValue(d[1] & 0x01); // Request permission to turn on
         }
       break;
     }
   }
 
 void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
-  {
+  { // CAN2 is connected to CAR-CAN
   uint8_t *d = p_frame->data.u8;
 
   switch (p_frame->MsgID)
@@ -1499,17 +1512,6 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
           break;
         }
       break;
-    case 0x510:
-      /* This seems to be outside temperature with half-degree C accuracy.
-       * It reacts a bit more rapidly than what we get from the battery.
-       * See msg 0x54c on EV CAN bus
-       * App label: PEM
-       */
-      //if (d[7] != 0xff)
-      //  {
-      //  StandardMetrics.ms_v_inv_temp->SetValue(d[7] / 2.0 - 40);
-      //  }
-      break;
     case 0x5a9:
       {
       uint16_t nl_range = d[1] << 4 | d[2] >> 4;
@@ -1519,6 +1521,16 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
         }
       break;
       }
+    case 0x5b9:
+      {
+      uint8_t chargebars = ((d[1] & 0xF8) >> 3); // Range: 0-12
+      m_remaining_chargebars->SetValue(chargebars);
+
+      //Minutes from 3kW charging estimate on dashboard
+      uint16_t minutes = ((d[1] & 0x07) | d[2]); 
+      m_charge_minutes_3kW_remaining->SetValue(minutes);
+      }
+      break;
     case 0x5b3:
       {
       // soh as percentage
@@ -1541,13 +1553,6 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
         {
         StandardMetrics.ms_v_pos_odometer->SetValue(d[1] << 16 | d[2] << 8 | d[3], m_odometer_units);
         }
-      break;
-    case 0x35d:
-      //charge port open signal, have not found state signal use 0x390
-      //if (!StandardMetrics.ms_v_door_chargeport->AsBool())
-      //  {
-      //  StandardMetrics.ms_v_door_chargeport->SetValue(d[5] & 0x08);
-      //  }
       break;
     case 0x60d:
       StandardMetrics.ms_v_door_trunk->SetValue(d[0] & 0x80);
