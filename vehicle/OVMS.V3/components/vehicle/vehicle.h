@@ -357,6 +357,10 @@ class OvmsVehicle : public InternalRamAllocated
     double m_drive_accelsum;                // Driving acceleration average data
     uint32_t m_drive_decelcnt;              // Driving deceleration average data
     double m_drive_decelsum;                // Driving deceleration average data
+    double m_inv_energyused;                // Driving motor energy sum
+    double m_inv_energyrecd;                // Driving recupered energy sum
+    uint32_t m_inv_reftime;                 // last time inverter(motor) power was measured
+    float m_inv_refpower;                   // last inverter(motor) power
 
   protected:
     uint32_t m_ticker;
