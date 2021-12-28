@@ -16,11 +16,11 @@ Open Vehicle Monitor System v3 - Change log
 - Nissan LEAF:
  - Stop charge feature added, works via app
  - 5 new metrics added
-    m_max_gids (Max number of GIDs the battery can reach (for 2016+))
-    m_battery_heatrequested (Battery is requesting heater elements to turn on (for 2013+))
-    m_battery_heatergranted (Vehicle is OKing heater elements to turn on (for 2013+))
-    m_charge_minutes_3kW_remaining (The 3kW charge time estimate the car calculates)
-    m_remaining_chargebars (Remaining charge "bars" on dashboard)
+    xnl.v.b.max.gids (Max number of GIDs the battery can reach (for 2016+))
+    xnl.v.b.heatrequested (Battery is requesting heater elements to turn on (for 2013+))
+    xnl.v.b.heatergranted (Vehicle is OKing heater elements to turn on (for 2013+))
+    xnl.v.c.chargeminutes3kW (The 3kW charge time estimate the car calculates)
+    xnl.v.c.chargebars (Remaining charge "bars" on dashboard)
  - Wakeup command now charges 12V battery if connected to EVSE
  - 2011-2012 LEAF now reads AC voltage from grid
 
