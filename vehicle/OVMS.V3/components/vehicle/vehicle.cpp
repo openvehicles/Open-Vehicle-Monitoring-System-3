@@ -124,6 +124,7 @@ OvmsVehicleFactory::OvmsVehicleFactory()
     }
 
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+#if 0
   DuktapeObjectRegistration* dto = new DuktapeObjectRegistration("OvmsVehicle");
   dto->RegisterDuktapeFunction(DukOvmsVehicleType, 0, "Type");
   dto->RegisterDuktapeFunction(DukOvmsVehicleWakeup, 0, "Wakeup");
@@ -142,6 +143,7 @@ OvmsVehicleFactory::OvmsVehicleFactory()
   dto->RegisterDuktapeFunction(DukOvmsVehicleStopCooldown, 0, "StopCooldown");
   dto->RegisterDuktapeFunction(DukOvmsVehicleObdRequest, 1, "ObdRequest");
   MyDuktape.RegisterDuktapeObject(dto);
+#endif
 #endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   }
 

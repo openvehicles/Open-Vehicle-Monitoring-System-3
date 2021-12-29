@@ -424,6 +424,7 @@ OvmsConfig::OvmsConfig()
   RegisterParam("usr", "Custom plugin configuration", true, true);
 
   #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  #if 0
   DuktapeObjectRegistration* dto = new DuktapeObjectRegistration("OvmsConfig");
   dto->RegisterDuktapeFunction(DukOvmsConfigParams, 0, "Params");
   dto->RegisterDuktapeFunction(DukOvmsConfigInstances, 1, "Instances");
@@ -433,6 +434,7 @@ OvmsConfig::OvmsConfig()
   dto->RegisterDuktapeFunction(DukOvmsConfigGetValues, 2, "GetValues");
   dto->RegisterDuktapeFunction(DukOvmsConfigSetValues, 3, "SetValues");
   MyDuktape.RegisterDuktapeObject(dto);
+  #endif
   #endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   }
 

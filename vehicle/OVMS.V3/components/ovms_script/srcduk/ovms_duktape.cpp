@@ -932,9 +932,11 @@ OvmsDuktape::OvmsDuktape()
   extern const char mod_pubsub_js_end[]       asm("_binary_pubsub_js_end");
   RegisterDuktapeModule(mod_pubsub_js_start, mod_pubsub_js_end - mod_pubsub_js_start, "PubSub");
 
+  #if 0
   extern const char mod_json_js_start[]     asm("_binary_json_js_start");
   extern const char mod_json_js_end[]       asm("_binary_json_js_end");
   RegisterDuktapeModule(mod_json_js_start, mod_json_js_end - mod_json_js_start, "JSON");
+  #endif
 
   // Start the DukTape task...
   m_duktaskqueue = xQueueCreate(CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE_QUEUE_SIZE,sizeof(duktape_queue_t));

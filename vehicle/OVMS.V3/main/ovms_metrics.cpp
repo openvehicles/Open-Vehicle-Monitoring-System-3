@@ -432,6 +432,7 @@ OvmsMetrics::OvmsMetrics()
   cmd_metrictrace->RegisterCommand("off","Turn metric tracing OFF",metrics_trace);
 
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  #if 0
   ESP_LOGI(TAG, "Expanding DUKTAPE javascript engine");
   DuktapeObjectRegistration* dto = new DuktapeObjectRegistration("OvmsMetrics");
   dto->RegisterDuktapeFunction(DukOvmsMetricValue, 1, "Value");
@@ -439,6 +440,7 @@ OvmsMetrics::OvmsMetrics()
   dto->RegisterDuktapeFunction(DukOvmsMetricFloat, 1, "AsFloat");
   dto->RegisterDuktapeFunction(DukOvmsMetricGetValues, 2, "GetValues");
   MyDuktape.RegisterDuktapeObject(dto);
+  #endif
 #endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 
   /* Initialize persistent metrics on cold boot or corruption */

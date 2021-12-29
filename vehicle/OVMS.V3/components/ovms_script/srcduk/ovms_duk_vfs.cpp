@@ -28,6 +28,8 @@
 ; THE SOFTWARE.
 */
 
+#if 0
+
 #include "ovms_log.h"
 static const char *TAG = "ovms-duk-vfs";
 
@@ -615,3 +617,5 @@ DuktapeVFSInit::DuktapeVFSInit()
   dt_vfs->RegisterDuktapeFunction(DuktapeVFSSave::Create, 1, "Save");
   MyDuktape.RegisterDuktapeObject(dt_vfs);
   }
+
+#endif
