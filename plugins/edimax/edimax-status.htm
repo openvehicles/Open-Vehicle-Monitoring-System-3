@@ -1,0 +1,72 @@
+<!--
+  Web UI plugin for page /status hook body.post:
+    Add Edimax power control button to Vehicle panel
+    Version 1.0  Michael Balzer <dexter@dexters-web.de>
+-->
+
+<script>
+(function(){
+
+  var edimax = { cfg: {}, state: { power: "", error: "" } };
+  var $receiver = $('#livestatus');
+  var $actionres = $('#vehicle-cmdres');
+  var $actionset;
+
+  // State & UI update:
+  function update(data) {
+    $.extend(true, edimax, data);
+    // update state buttons:
+    $actionres.empty();
+    $actionset.removeClass('active');
+    if (edimax.state.power) {
+      $actionset.find('input[value='+edimax.state.power+']')
+        .prop('checked', true)
+        .parent().addClass('active');
+    }
+    // show error:
+    if (edimax.state.error) {
+      $actionres.text("Edimax: " + edimax.state.error);
+    }
+  }
+
+  // Listen to edimax events:
+  $receiver.on('msg:event', function(e, event) {
+    if (event == "usr.edimax.on")
+      update({ state: { power: "on" } });
+    else if (event == "usr.edimax.off")
+      update({ state: { power: "off" } });
+    else if (event == "usr.edimax.error" || event == "config.changed")
+      getInfo();
+  });
+
+  // Get state & config:
+  function getInfo() {
+    loadjs('edimax.info()').then(function(output) {
+      update(JSON.parse(output));
+    });
+  }
+
+  // Init:
+  $('#main').one('load', function(ev) {
+    // add buttons to panel:
+    $('#vehicle-cmdres').parent().before(
+      '<li>'+
+        '<label class="control-label">Power:</label>'+
+        '<div class="btn-group action-edimax-set" data-toggle="buttons">'+
+          '<label class="btn btn-default btn-sm action-edimax-off"><input type="radio" name="power" value="off">OFF</label>'+
+          '<label class="btn btn-default btn-sm action-edimax-on"><input type="radio" name="power" value="on">ON</label>'+
+        '</div>'+
+      '</li>');
+    $actionset = $('.action-edimax-set > label');
+    // add button handler:
+    $('.action-edimax-set input').on('change', function(e) {
+      $actionres.empty();
+      edimax.state.power = $(this).val();
+      loadjs('edimax.set("'+edimax.state.power+'")', '#action-edimax-output');
+    });
+    // get status:
+    getInfo();
+  });
+
+})();
+</script>
