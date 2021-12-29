@@ -52,6 +52,11 @@
 #include "ovms_utils.h"
 #include "log_buffers.h"
 
+// The setup wizard currently is tailored to be used with a WiFi enabled module:
+#ifdef CONFIG_OVMS_COMP_WIFI
+#define WEBSRV_HAVE_SETUPWIZARD 1
+#endif
+
 #define OVMS_GLOBAL_AUTH_FILE     "/store/.htpasswd"
 
 #define SESSION_COOKIE_NAME       "ovms_session"
@@ -564,6 +569,7 @@ class OvmsWebServer : public ExternalRamAllocated
     static void HandleCfgBackup(PageEntry_t& p, PageContext_t& c);
     static void HandleCfgPlugins(PageEntry_t& p, PageContext_t& c);
 
+#ifdef WEBSRV_HAVE_SETUPWIZARD
   public:
     void CfgInitStartup();
     static void HandleCfgInit(PageEntry_t& p, PageContext_t& c);
@@ -574,6 +580,7 @@ class OvmsWebServer : public ExternalRamAllocated
     std::string CfgInit3(PageEntry_t& p, PageContext_t& c, std::string step);
     std::string CfgInit4(PageEntry_t& p, PageContext_t& c, std::string step);
     std::string CfgInit5(PageEntry_t& p, PageContext_t& c, std::string step);
+#endif // WEBSRV_HAVE_SETUPWIZARD
 
 
   public:

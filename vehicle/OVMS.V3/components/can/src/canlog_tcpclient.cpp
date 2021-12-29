@@ -24,6 +24,9 @@
 ; THE SOFTWARE.
 */
 
+#include <sdkconfig.h>
+#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+
 #include "ovms_log.h"
 static const char *TAG = "canlog-tcpclient";
 
@@ -277,3 +280,5 @@ void canlog_tcpclient::MongooseHandler(struct mg_connection *nc, int ev, void *p
       break;
     }
   }
+
+#endif // #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE

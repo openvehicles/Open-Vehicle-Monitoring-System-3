@@ -88,6 +88,7 @@ class OvmsNetManager
     ~OvmsNetManager();
 
   public:
+#ifdef CONFIG_OVMS_COMP_WIFI
     void WifiStaGotIP(std::string event, void* data);
     void WifiStaLostIP(std::string event, void* data);
     void WifiStaConnected(std::string event, void* data);
@@ -99,6 +100,8 @@ class OvmsNetManager
     void WifiUpAP(std::string event, void* data);
     void WifiDownAP(std::string event, void* data);
     void WifiApStaDisconnect(std::string event, void* data);
+#endif // CONFIG_OVMS_COMP_WIFI
+
     void ModemUp(std::string event, void* data);
     void ModemDown(std::string event, void* data);
     void InterfaceUp(std::string event, void* data);
@@ -111,8 +114,10 @@ class OvmsNetManager
 
   protected:
     void PrioritiseAndIndicate();
+#ifdef CONFIG_OVMS_COMP_WIFI
     void WifiConnect();
     void WifiDisconnect();
+#endif // CONFIG_OVMS_COMP_WIFI
     void SetNetType(std::string type);
     void SaveDNSServer(ip_addr_t* dnsstore);
     void SetDNSServer(ip_addr_t* dnsstore);

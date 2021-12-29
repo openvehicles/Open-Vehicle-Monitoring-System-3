@@ -36,6 +36,7 @@ static const char *TAG = "max7317";
 #include "ovms_command.h"
 #include "ovms_peripherals.h"
 #include "ovms_config.h"
+#include "ovms_events.h"
 #include "metrics_standard.h"
 
 max7317::max7317(const char* name, spi* spibus, spi_nodma_host_device_t host, int clockspeed, int cspin)

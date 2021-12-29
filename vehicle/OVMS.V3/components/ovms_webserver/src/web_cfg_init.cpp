@@ -55,6 +55,8 @@ static const char *TAG = "webserver";
 #define _html(text) (c.encode_html(text).c_str())
 
 
+#ifdef WEBSRV_HAVE_SETUPWIZARD
+
 /**
  * HandleCfgInit: /cfg/init: setup wizard dispatcher
  */
@@ -1238,3 +1240,5 @@ std::string OvmsWebServer::CfgInit5(PageEntry_t& p, PageContext_t& c, std::strin
 
   return "";
 }
+
+#endif // WEBSRV_HAVE_SETUPWIZARD

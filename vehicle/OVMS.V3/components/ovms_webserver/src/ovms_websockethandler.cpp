@@ -529,7 +529,9 @@ void OvmsWebServer::EventListener(std::string event, void* data)
 
   // ticker:
   else if (event == "ticker.1") {
-    CfgInitTicker();
+    #ifdef WEBSRV_HAVE_SETUPWIZARD
+      CfgInitTicker();
+    #endif
     if (m_shutdown_countdown > 0 && --m_shutdown_countdown == 0)
       MyBoot.ShutdownReady("webserver");
   }

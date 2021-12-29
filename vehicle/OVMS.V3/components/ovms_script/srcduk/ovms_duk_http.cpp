@@ -28,6 +28,9 @@
 ; THE SOFTWARE.
 */
 
+#include <sdkconfig.h>
+#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+
 #include "ovms_log.h"
 static const char *TAG = "ovms-duk-http";
 
@@ -534,3 +537,5 @@ DuktapeHTTPInit::DuktapeHTTPInit()
   dt_http->RegisterDuktapeFunction(DuktapeHTTPRequest::Create, 1, "Request");
   MyDuktape.RegisterDuktapeObject(dt_http);
   }
+
+#endif // CONFIG_OVMS_SC_GPL_MONGOOSE
