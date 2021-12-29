@@ -39,6 +39,7 @@
 #include "ovms_webserver.h"
 #include "ovms_semaphore.h"
 #include "ovms_mutex.h"
+#include "ovms_peripherals.h"
 #include "nl_types.h"
 
 #define DEFAULT_MODEL_YEAR 2012
@@ -206,13 +207,14 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     OvmsMetricFloat *m_climate_setpoint;
     OvmsMetricBool *m_climate_auto;
     int m_MITM = 0;
+    int cfg_ev_request_port = 0;          // EGPIO port number for EV SYSTEM ACTIVATION REQUEST
 
     float m_cum_energy_used_wh;				    // Cumulated energy (in wh) used within 1 second ticker interval
     float m_cum_energy_recd_wh; 					// Cumulated energy (in wh) recovered  within 1 second ticker interval
     float m_cum_energy_charge_wh;					// Cumulated energy (in wh) charged within 10 second ticker interval
     float m_cum_energy_gen_wh;					  // Cumulated energy (in wh) exported within 10 second ticker interval
     bool  m_ZE0_charger;					        // True if 2011-2012 ZE0 LEAF with 0x380 message (Gen 1)
-	bool  m_AZE0_charger;							// True if 2013+ AZE0 LEAF with 0x390 message (Gen 2)
+	  bool  m_AZE0_charger;							    // True if 2013+ AZE0 LEAF with 0x390 message (Gen 2)
     bool  m_enable_write;                 // Enable/disable can write (polling and commands
 
   protected:
