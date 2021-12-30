@@ -1103,11 +1103,13 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStatTrip(int verbosity, OvmsW
   metric_unit_t rangeUnit = (MyConfig.GetParamValue("vehicle", "units.distance") == "M") ? Miles : Kilometers;
   metric_unit_t speedUnit = (rangeUnit == Miles) ? Mph : Kph;
   metric_unit_t accelUnit = (rangeUnit == Miles) ? MphPS : KphPS;
-  metric_unit_t energyUnit = (rangeUnit == Miles) ? WattHoursPM : WattHoursPK;
+  metric_unit_t consumUnit = (rangeUnit == Miles) ? WattHoursPM : WattHoursPK;
+  metric_unit_t energyUnit = kWh;
   metric_unit_t altitudeUnit = (rangeUnit == Miles) ? Feet : Meters;
   const char* rangeUnitLabel = OvmsMetricUnitLabel(rangeUnit);
   const char* speedUnitLabel = OvmsMetricUnitLabel(speedUnit);
   const char* accelUnitLabel = OvmsMetricUnitLabel(accelUnit);
+  const char* consumUnitLabel = OvmsMetricUnitLabel(consumUnit);
   const char* energyUnitLabel = OvmsMetricUnitLabel(energyUnit);
   const char* altitudeUnitLabel = OvmsMetricUnitLabel(altitudeUnit);
 
@@ -1122,6 +1124,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStatTrip(int verbosity, OvmsW
   float decel_avg = (m_drive_decelcnt > 0)
     ? UnitConvert(MetersPSS, accelUnit, (float)(m_drive_decelsum / m_drive_decelcnt))
     : 0;
+  float energy_recup_perc = (m_inv_energyused > 0) ? m_inv_energyrecd / m_inv_energyused * 100 : 0;
 
   float energy_used = StdMetrics.ms_v_bat_energy_used->AsFloat();
   float energy_recd = StdMetrics.ms_v_bat_energy_recd->AsFloat();
@@ -1152,7 +1155,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStatTrip(int verbosity, OvmsW
     {
     buf
       << "\nEnergy "
-      << wh_per_rangeunit << energyUnitLabel
+      << wh_per_rangeunit << consumUnitLabel
       << ", "
       << energy_recd_perc << "% recd"
       ;
@@ -1177,6 +1180,18 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStatTrip(int verbosity, OvmsW
       << accel_avg
       << " / "
       << decel_avg << accelUnitLabel
+      ;
+    }
+  if (m_inv_energyused > 0)
+    {
+    buf
+      << "\nMotor +"
+      << std::setprecision(3)
+      << m_inv_energyused
+      << " / -"
+      << m_inv_energyrecd << energyUnitLabel
+      << std::setprecision(0)
+      << " (" << energy_recup_perc << "% recd)"
       ;
     }
 
@@ -1236,6 +1251,10 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
       m_drive_accelsum = 0;
       m_drive_decelcnt = 0;
       m_drive_decelsum = 0;
+      m_inv_reftime = esp_log_timestamp();
+      m_inv_refpower = 0;
+      m_inv_energyused = 0;
+      m_inv_energyrecd = 0;
       MyEvents.SignalEvent("vehicle.on",NULL);
       if (m_autonotifications)
         {
@@ -1484,6 +1503,26 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
       {
       m_drive_speedcnt++;
       m_drive_speedsum += speed;
+      }
+    }
+  else if (metric == StdMetrics.ms_v_inv_power)
+    // collect data for trip pos. and neg. (recuperated) motor energies
+    {
+    uint32_t now = esp_log_timestamp();
+    if (now > m_inv_reftime)
+      {
+      float invpower = StdMetrics.ms_v_inv_power->AsFloat();
+      float invenergy = (m_inv_refpower + invpower) * (now - m_inv_reftime) / (2*1000*3600); // average of last 2 values in kWh
+      if ( invenergy < 0 )
+        {
+        m_inv_energyrecd -= invenergy; // sum should be positive
+        }
+      else
+        {
+        m_inv_energyused += invenergy;
+        }
+      m_inv_refpower = invpower;
+      m_inv_reftime = now;
       }
     }
   else if (metric == StandardMetrics.ms_v_pos_acceleration)
