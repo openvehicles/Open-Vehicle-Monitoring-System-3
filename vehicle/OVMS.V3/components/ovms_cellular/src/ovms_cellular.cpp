@@ -1382,6 +1382,9 @@ void modem::SetCellularModemDriver(const char* ModelType)
   m_mux_channel_DATA = m_driver->GetMuxChannelDATA();
   m_mux_channel_POLL = m_driver->GetMuxChannelPOLL();
   m_mux_channel_CMD = m_driver->GetMuxChannelCMD();
+
+  if (m_model != "auto")
+    MyEvents.SignalEvent("system.modem.installed", NULL);
   }
 
 void modem::Ticker(std::string event, void* data)
