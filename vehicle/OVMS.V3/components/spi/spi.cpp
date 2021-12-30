@@ -36,12 +36,15 @@ spi::spi(const char* name, int misopin, int mosipin, int clkpin)
   : pcp(name)
   {
   m_mtx = xSemaphoreCreateMutex();
-  memset(&m_buscfg, 0, sizeof(spi_nodma_bus_config_t));
+  //CSW memset(&m_buscfg, 0, sizeof(spi_nodma_bus_config_t));
+  memset(&m_buscfg, 0, sizeof(spi_bus_config_t));
   m_buscfg.miso_io_num=misopin;
   m_buscfg.mosi_io_num=mosipin;
   m_buscfg.sclk_io_num=clkpin;
   m_buscfg.quadwp_io_num=-1;
   m_buscfg.quadhd_io_num=-1;
+  m_host = SPI_HOST;        //  CSW  not yet assgined
+  m_initialized = false;
   }
 
 spi::~spi()
@@ -57,9 +60,10 @@ void spi::UnlockBus()
   {
   xSemaphoreGive(m_mtx);
   }
-
-uint8_t* spi::spi_cmd(spi_nodma_device_handle_t spi, uint8_t* buf, int rxlen, int txlen, ...)
+//CSW uint8_t* spi::spi_cmd(spi_nodma_device_handle_t spi, uint8_t* buf, int rxlen, int txlen, ...)
+uint8_t* spi::spi_cmd(spi_device_handle_t spi, uint8_t* buf, int rxlen, int txlen, ...)
   {
+  
   va_list args;
   esp_err_t ret;
 
@@ -72,7 +76,8 @@ uint8_t* spi::spi_cmd(spi_nodma_device_handle_t spi, uint8_t* buf, int rxlen, in
     }
   va_end(args);
 
-  spi_nodma_transaction_t t;
+  //CSW spi_nodma_transaction_t t;
+  spi_transaction_t t;
   memset(&t, 0, sizeof(t));       //Zero out the transaction
   t.length=(txlen+rxlen)*8;       // Transmit length (in bits)
   // We are using spi_master_no_dma in full-duplex mode (even if below we return only the part received after transmitted bytes == half-duplex),
@@ -83,17 +88,25 @@ uint8_t* spi::spi_cmd(spi_nodma_device_handle_t spi, uint8_t* buf, int rxlen, in
   t.user=(void*)0;                // D/C needs to be set to 0
   if (LockBus(portMAX_DELAY))
     {
-    if (spi->cfg.spics_io_num == -1) // use software CS
-      spi_nodma_device_select(spi,0);
-    ret=spi_nodma_device_transmit(spi, &t, portMAX_DELAY);  // Transmit!
-    if (spi->cfg.spics_io_num == -1) // use software CS
-      spi_nodma_device_deselect(spi);
+      //  Asserting and releasing the CS pin is now part of the SPI module, using callbacks if needed
+      //CSW if (spi->cfg.spics_io_num == -1) {// use software CS
+      //CSW spi_nodma_device_select(spi,0);
+      //CSW }
+    //CSW ret=spi_nodma_device_transmit(spi, &t, portMAX_DELAY);  // Transmit!
+   
+    ret=spi_device_polling_transmit(spi, &t);  // Transmit!
+  
+    //CSW if (spi->cfg.spics_io_num == -1) { // use software CS
+      //CSW spi_nodma_device_deselect(spi);
+    //CSW }
     assert(ret==ESP_OK);            // Should have had no issues.
     UnlockBus();
     }
   return buf + txlen; // return only the data received after tx (half-duplex)
   }
 
+/************************************
+ * Completely removed as superflous 
 esp_err_t spi::spi_deselect(spi_nodma_device_handle_t spi)
   {
   esp_err_t ret = ESP_OK;
@@ -104,3 +117,4 @@ esp_err_t spi::spi_deselect(spi_nodma_device_handle_t spi)
     }
   return ret;
   }
+****************************/

@@ -34,7 +34,9 @@
 #include "freertos/task.h"
 #include "freertos/semphr.h"
 #include "driver/gpio.h"
-#include "spi_master_nodma.h"
+//CSW #include "spi_master_nodma.h"
+#include "driver/spi_common.h"   //CSW added
+#include "driver/spi_master.h"
 
 #ifndef __SPI_H__
 #define __SPI_H__
@@ -48,14 +50,18 @@ class spi : public pcp, public InternalRamAllocated
   public:
     bool LockBus(TickType_t delay = portMAX_DELAY);
     void UnlockBus();
-    uint8_t* spi_cmd(spi_nodma_device_handle_t spi, uint8_t* buf, int rxlen, int txlen, ...);
-    esp_err_t spi_deselect(spi_nodma_device_handle_t spi);
+    //CSW uint8_t* spi_cmd(spi_nodma_device_handle_t spi, uint8_t* buf, int rxlen, int txlen, ...);
+    uint8_t* spi_cmd(spi_device_handle_t spi, uint8_t* buf, int rxlen, int txlen, ...);
+    //CSW esp_err_t spi_deselect(spi_nodma_device_handle_t spi);
 
   public:
-    spi_nodma_bus_config_t m_buscfg;
-
+    //CSWspi_nodma_bus_config_t m_buscfg;
+    spi_bus_config_t m_buscfg;
+    spi_host_device_t m_host;
+    bool m_initialized;
   protected:
     SemaphoreHandle_t m_mtx;
+
   };
 
 #endif //#ifndef __SPI_H__

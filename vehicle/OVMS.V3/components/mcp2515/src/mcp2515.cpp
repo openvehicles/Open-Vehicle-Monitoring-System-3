@@ -62,32 +62,40 @@ static IRAM_ATTR void MCP2515_isr(void *pvParameters)
     }
   }
 
-mcp2515::mcp2515(const char* name, spi* spibus, spi_nodma_host_device_t host, int clockspeed, int cspin, int intpin, bool hw_cs /*=true*/)
+mcp2515::mcp2515(const char* name, spi* spibus, spi_host_device_t host, int clockspeed, int cspin, int intpin, bool hw_cs /*=true*/)
   : canbus(name)
   {
   m_spibus = spibus;
-  m_host = host;
   m_clockspeed = clockspeed;
   m_cspin = cspin;
   m_intpin = intpin;
 
-  memset(&m_devcfg, 0, sizeof(spi_nodma_device_interface_config_t));
+  memset(&m_devcfg, 0, sizeof(spi_device_interface_config_t));
   m_devcfg.clock_speed_hz=m_clockspeed;     // Clock speed (in hz)
   m_devcfg.mode=0;                          // SPI mode 0
   m_devcfg.command_bits=0;
   m_devcfg.address_bits=0;
   m_devcfg.dummy_bits=0;
-  if (hw_cs)
+  //if (hw_cs)
     m_devcfg.spics_io_num=m_cspin;
-  else
-    {
+  //else
+  //  {
     // use software CS for this mcp2515
-    m_devcfg.spics_io_num=-1;
-    m_devcfg.spics_ext_io_num=m_cspin;
-    }
+  //  m_devcfg.spics_io_num=-1;
+  //  m_devcfg.spics_ext_io_num=m_cspin;
+  //  }
   m_devcfg.queue_size=7;                    // We want to be able to queue 7 transactions at a time
 
-  esp_err_t ret = spi_nodma_bus_add_device(m_host, &m_spibus->m_buscfg, &m_devcfg, &m_spi);
+/********* Use the SPI object to determine if the SPI bus has been initialized *************/
+if (m_spibus->m_initialized == false) {
+  ESP_LOGI(TAG, "  Initializing the SPI object in MC2515");
+    esp_err_t ret = spi_bus_initialize(host, &m_spibus->m_buscfg, 0);
+    assert(ret==ESP_OK);
+    m_spibus->m_host = host;
+    m_spibus->m_initialized = true;
+}
+/********************************/
+  esp_err_t ret = spi_bus_add_device(host,  &m_devcfg, &m_spi);
   assert(ret==ESP_OK);
 
   gpio_set_intr_type((gpio_num_t)m_intpin, GPIO_INTR_NEGEDGE);
@@ -101,7 +109,7 @@ mcp2515::mcp2515(const char* name, spi* spibus, spi_nodma_host_device_t host, in
 mcp2515::~mcp2515()
   {
   gpio_isr_handler_remove((gpio_num_t)m_intpin);
-  spi_nodma_bus_remove_device(m_spi);
+  spi_bus_remove_device(m_spi);
   }
 
 

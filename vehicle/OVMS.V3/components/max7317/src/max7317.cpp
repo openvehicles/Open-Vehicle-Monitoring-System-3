@@ -39,24 +39,32 @@ static const char *TAG = "max7317";
 #include "ovms_events.h"
 #include "metrics_standard.h"
 
-max7317::max7317(const char* name, spi* spibus, spi_nodma_host_device_t host, int clockspeed, int cspin)
+max7317::max7317(const char* name, spi* spibus, spi_host_device_t host, int clockspeed, int cspin )
   : pcp(name)
   {
   m_spibus = spibus;
-  m_host = host;
-  m_clockspeed = clockspeed;
-  m_cspin = cspin;
 
-  memset(&m_devcfg, 0, sizeof(spi_nodma_device_interface_config_t));
+  m_clockspeed = clockspeed;
+
+  memset(&m_devcfg, 0, sizeof(spi_device_interface_config_t));
   m_devcfg.clock_speed_hz=m_clockspeed;     // Clock speed (in hz)
   m_devcfg.mode=0;                          // SPI mode 0
   m_devcfg.command_bits=0;
   m_devcfg.address_bits=0;
   m_devcfg.dummy_bits=0;
-  m_devcfg.spics_io_num=m_cspin;
+  m_devcfg.spics_io_num=cspin;
   m_devcfg.queue_size=7;                    // We want to be able to queue 7 transactions at a time
 
-  esp_err_t ret = spi_nodma_bus_add_device(m_host, &m_spibus->m_buscfg, &m_devcfg, &m_spi);
+  // Use the SPI object to determine if the SPI bus has been initialized
+  if (m_spibus->m_initialized == false)
+    {
+    esp_err_t ret = spi_bus_initialize(host, &m_spibus->m_buscfg, 0);
+    assert(ret==ESP_OK);
+    m_spibus->m_host = host;
+    m_spibus->m_initialized = true;
+    }
+
+  esp_err_t ret = spi_bus_add_device(host, &m_devcfg, &m_spi);
   assert(ret==ESP_OK);
 
   m_monitor_task = NULL;
@@ -159,14 +167,12 @@ uint8_t max7317::Input(uint8_t port)
   if (port < 8)
     {
     m_spibus->spi_cmd(m_spi, buf, 0, 2, 0x8E, 0);
-    m_spibus->spi_deselect(m_spi);
     m_spibus->spi_cmd(m_spi, buf, 0, 2, 0x20, 0);
     level = (buf[1] & (1 << port)) ? 1 : 0;
     }
   else
     {
     m_spibus->spi_cmd(m_spi, buf, 0, 2, 0x8F, 0);
-    m_spibus->spi_deselect(m_spi);
     m_spibus->spi_cmd(m_spi, buf, 0, 2, 0x20, 0);
     level = (buf[1] & (1 << (port-8))) ? 1 : 0;
     }
@@ -214,14 +220,12 @@ std::bitset<10> max7317::Inputs(std::bitset<10> ports)
   if ((ports & std::bitset<10>(0b0011111111)).any())
     {
     m_spibus->spi_cmd(m_spi, buf, 0, 2, 0x8E, 0);
-    m_spibus->spi_deselect(m_spi);
     m_spibus->spi_cmd(m_spi, buf, 0, 2, 0x20, 0);
     pstate = buf[1];
     }
   if ((ports & std::bitset<10>(0b1100000000)).any())
     {
     m_spibus->spi_cmd(m_spi, buf, 0, 2, 0x8F, 0);
-    m_spibus->spi_deselect(m_spi);
     m_spibus->spi_cmd(m_spi, buf, 0, 2, 0x20, 0);
     pstate |= ((uint16_t)buf[1] << 8);
     }
