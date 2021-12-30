@@ -34,6 +34,7 @@
 #include "metrics_standard.h"
 #include "ovms_notify.h"
 #include "ovms_webserver.h"
+#include "ovms_peripherals.h"
 
 #include "vehicle_nissanleaf.h"
 
@@ -77,16 +78,18 @@ void OvmsVehicleNissanLeaf::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   std::string cabintempoffset;
   std::string maxgids;
   std::string newcarah;
+  std::string cfg_ev_request_port;
 
   if (c.method == "POST") {
     // process form submission:
-    modelyear       = c.getvar("modelyear");
-    cabintempoffset = c.getvar("cabintempoffset");
-    maxgids         = c.getvar("maxgids");
-    newcarah        = c.getvar("newcarah");
-    socnewcar       = (c.getvar("socnewcar") == "yes");
-    sohnewcar       = (c.getvar("sohnewcar") == "yes");
-    canwrite        = (c.getvar("canwrite") == "yes");
+    modelyear           = c.getvar("modelyear");
+    cabintempoffset     = c.getvar("cabintempoffset");
+    cfg_ev_request_port = c.getvar("cfg_ev_request_port");
+    maxgids             = c.getvar("maxgids");
+    newcarah            = c.getvar("newcarah");
+    socnewcar           = (c.getvar("socnewcar") == "yes");
+    sohnewcar           = (c.getvar("sohnewcar") == "yes");
+    canwrite            = (c.getvar("canwrite") == "yes");
 
     // check:
     if (!modelyear.empty()) {
@@ -99,10 +102,15 @@ void OvmsVehicleNissanLeaf::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
       error += "<li data-input=\"cabintempoffset\">Cabin Temperature Offset can not be empty</li>";
     }
 
+    if (cfg_ev_request_port.empty()) {
+      error += "<li data-input=\"cfg_ev_request_port\">EV SYSTEM ACTIVATION REQUEST Pin field cannot be empty</li>";
+    }
+
     if (error == "") {
       // store:
       MyConfig.SetParamValue("xnl", "modelyear", modelyear);
       MyConfig.SetParamValue("xnl", "cabintempoffset", cabintempoffset);
+      MyConfig.SetParamValue("xnl", "cfg_ev_request_port", cfg_ev_request_port);
       MyConfig.SetParamValue("xnl", "maxGids",   maxgids);
       MyConfig.SetParamValue("xnl", "newCarAh",  newcarah);
       MyConfig.SetParamValueBool("xnl", "soc.newcar", socnewcar);
@@ -166,6 +174,9 @@ void OvmsVehicleNissanLeaf::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   c.input("number", "Model year", "modelyear", modelyear.c_str(), "Default: " STR(DEFAULT_MODEL_YEAR),
     "<p>This determines the format of CAN write messages as it differs slightly between model years.</p>",
     "min=\"2011\" step=\"1\"", "");
+  c.input("number", "Pin for EV SYSTEM ACTIVATION REQUEST", "cfg_ev_request_port", cfg_ev_request_port.c_str(), "Default: " STR(MAX7317_SW_CTL)"(Pin 18 on D26 (Ext12V control)",
+    "<p>The 2011-2012 LEAF needs a +12V signal to the TCU harness to use remote commands. See documentation before making changes here.</p>",
+    "step=\"1\"", "");
   c.fieldset_end();
 
   c.print("<hr>");
