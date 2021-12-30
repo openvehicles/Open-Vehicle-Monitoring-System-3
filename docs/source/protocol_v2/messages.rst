@@ -185,12 +185,15 @@ This message is sent <cartoserver> "C", or <servertoapp> "s", and transmits the 
 
 <data> is comma-separated list of:
 
-* Car firmware version
-* Car VIN
-* GSM signal level
+* OVMS firmware version
+* VIN (vehicle identification number)
+* Current network signal quality (Wifi / GSM, in SQ units)
 * Write-enabled firmware (0=read-only, 1=write-enabled)
-* Car type (TR=Tesla Roadster, others may follow)
-* GSM lock
+* Vehicle type code (e.g. ``TR`` = Tesla Roadster, see command output ``vehicle list``)
+* Current network name (Wifi SSID / GSM provider)
+* Distance to next scheduled maintenance/service [km]
+* Time to next scheduled maintenance/service [seconds]
+* OVMS hardware version
 
 --------------------------------
 Server firmware message 0x66 "f"
