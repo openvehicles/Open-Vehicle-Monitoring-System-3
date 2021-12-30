@@ -61,7 +61,9 @@ static const char *TAG = "housekeeping";
 #include "obd2ecu.h"
 #endif
 
-#define AUTO_INIT_STABLE_TIME           10      // seconds after which an auto init boot is considered stable
+#define AUTO_INIT_STABLE_TIME           120     // seconds after which an auto init boot is considered stable;
+                                                // 120 seconds to take modem model auto detection into account
+                                                // (late driver installation esp. after unscheduled reboot)
                                                 // (Note: resolution = 10 seconds)
 #define AUTO_INIT_INHIBIT_CRASHCOUNT    5
 
