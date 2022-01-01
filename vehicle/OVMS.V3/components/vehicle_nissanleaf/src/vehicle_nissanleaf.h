@@ -207,7 +207,7 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     OvmsMetricFloat *m_climate_setpoint;
     OvmsMetricBool *m_climate_auto;
     int m_MITM = 0;
-    int cfg_ev_request_port = 0;          // EGPIO port number for EV SYSTEM ACTIVATION REQUEST
+    int cfg_ev_request_port = MAX7317_SW_CTL;          // EGPIO port number for EV SYSTEM ACTIVATION REQUEST
 
     float m_cum_energy_used_wh;				    // Cumulated energy (in wh) used within 1 second ticker interval
     float m_cum_energy_recd_wh; 					// Cumulated energy (in wh) recovered  within 1 second ticker interval

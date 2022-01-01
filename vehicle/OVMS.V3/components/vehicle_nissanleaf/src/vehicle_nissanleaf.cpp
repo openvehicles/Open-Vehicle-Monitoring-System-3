@@ -1716,10 +1716,11 @@ void OvmsVehicleNissanLeaf::RemoteCommandTimer()
       // RemoteCommandHandler() and we decrement it every 10th of a
       // second, hence the following if statement evaluates to true
       // ACTIVATION_REQUEST_TIME tenths after we start
-      if (nl_remote_command_ticker == REMOTE_COMMAND_REPEAT_COUNT - ACTIVATION_REQUEST_TIME)
-        {
+      if (nl_remote_command_ticker == (REMOTE_COMMAND_REPEAT_COUNT - ACTIVATION_REQUEST_TIME))
+        { 
         // release EV SYSTEM ACTIVATION REQUEST
         MyPeripherals->m_max7317->Output(cfg_ev_request_port, 0);
+        ESP_LOGI(TAG, "EV SYSTEM ACTIVATION REQUEST OFF");
         }
       }
     }
@@ -2042,6 +2043,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::CommandWakeup()
   if (MyConfig.GetParamValueInt("xnl", "modelyear", DEFAULT_MODEL_YEAR) < 2013)
   {
     MyPeripherals->m_max7317->Output(cfg_ev_request_port, 1);
+    ESP_LOGI(TAG, "EV SYSTEM ACTIVATION REQUEST ON");
   }
 
   // The on board charger wakeup message is the same on all 2011-2017 LEAFs
