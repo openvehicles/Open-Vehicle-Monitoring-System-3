@@ -185,13 +185,14 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
 
   c.panel_start("primary", "Module");
   output = ExecuteCommand("boot status");
-  c.printf("<samp>%s</samp>", _html(output));
+  c.printf("<samp id=\"boot-status-cmdres\">%s</samp>", _html(output));
   c.print("<hr>");
   output = ExecuteCommand("ota status nocheck");
   c.printf("<samp>%s</samp>", _html(output));
   c.panel_end(
     "<ul class=\"list-inline\">"
       "<li><button type=\"button\" class=\"btn btn-default btn-sm\" name=\"action\" value=\"reboot\">Reboot</button></li>"
+      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#boot-status-cmdres\" data-cmd=\"boot clear\nboot status\">Clear counters</button></li>"
     "</ul>");
 
   c.print(

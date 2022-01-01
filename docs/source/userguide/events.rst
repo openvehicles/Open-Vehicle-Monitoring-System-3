@@ -112,6 +112,7 @@ server.web.socket.opened            <cnt>     Web server has a new websocket cli
 system.modem.down                             Modem has been disconnected
 system.modem.gotgps                           Modem GPS has obtained lock
 system.modem.gotip                            Modem received IP address from DATA
+system.modem.installed                        Modem type has been identified, driver installed
 system.modem.lostgps                          Modem GPS has lost lock
 system.modem.muxstart                         Modem MUX has started
 system.modem.netdeepsleep                     Modem is deep sleeping DATA network

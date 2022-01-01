@@ -38,6 +38,7 @@
 
 struct ota_info
   {
+  std::string hardware_info;
   std::string version_firmware;
   std::string version_server;
   bool update_available;

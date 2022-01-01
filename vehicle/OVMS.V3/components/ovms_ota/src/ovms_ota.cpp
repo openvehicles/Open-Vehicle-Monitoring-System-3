@@ -95,6 +95,8 @@ void ota_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
   bool check_update = (strcmp(cmd->GetName(), "status")==0);
   MyOTA.GetStatus(info, check_update);
 
+  if (info.hardware_info != "")
+    len += writer->printf("Hardware:          %s\n", info.hardware_info.c_str());
   if (info.version_firmware != "")
     len += writer->printf("Firmware:          %s\n", info.version_firmware.c_str());
   if (info.partition_running != "")
@@ -582,12 +584,16 @@ OvmsOTA::~OvmsOTA()
 
 void OvmsOTA::GetStatus(ota_info& info, bool check_update /*=true*/)
   {
+  info.hardware_info = "";
   info.version_firmware = "";
   info.version_server = "";
   info.update_available = false;
   info.partition_running = "";
   info.partition_boot = "";
   info.changelog_server = "";
+
+  if (StdMetrics.ms_m_hardware)
+    info.hardware_info = StdMetrics.ms_m_hardware->AsString();
 
   OvmsMetricString* m = StandardMetrics.ms_m_version;
   if (m != NULL)
