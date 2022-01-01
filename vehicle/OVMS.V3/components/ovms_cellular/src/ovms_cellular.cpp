@@ -1620,7 +1620,7 @@ void modem_setstate(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     {
     if (strcmp(statename,ModemState1Name((modem::modem_state1_t)newstate)) == 0)
       {
-      writer->printf("Set modem to state: %s",statename);
+      writer->printf("Set modem to state: %s\n",statename);
       MyModem->SendSetState1((modem::modem_state1_t)newstate);
       return;
       }
