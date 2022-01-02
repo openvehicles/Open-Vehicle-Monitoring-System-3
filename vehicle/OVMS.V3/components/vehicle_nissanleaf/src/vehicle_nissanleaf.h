@@ -43,6 +43,7 @@
 #include "nl_types.h"
 
 #define DEFAULT_MODEL_YEAR 2012
+#define DEFAULT_PIN_EV 1
 #define DEFAULT_CABINTEMP_OFFSET .0
 #define GEN_1_NEW_CAR_GIDS 281
 #define GEN_1_NEW_CAR_AH 66
@@ -207,7 +208,7 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     OvmsMetricFloat *m_climate_setpoint;
     OvmsMetricBool *m_climate_auto;
     int m_MITM = 0;
-    int cfg_ev_request_port = MAX7317_SW_CTL;          // EGPIO port number for EV SYSTEM ACTIVATION REQUEST
+    int cfg_ev_request_port = DEFAULT_PIN_EV;        // EGPIO port number for EV SYSTEM ACTIVATION REQUEST
 
     float m_cum_energy_used_wh;				    // Cumulated energy (in wh) used within 1 second ticker interval
     float m_cum_energy_recd_wh; 					// Cumulated energy (in wh) recovered  within 1 second ticker interval

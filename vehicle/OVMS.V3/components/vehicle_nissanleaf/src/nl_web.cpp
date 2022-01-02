@@ -131,13 +131,14 @@ void OvmsVehicleNissanLeaf::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   }
   else {
     // read configuration:
-    modelyear       = MyConfig.GetParamValue("xnl", "modelyear", STR(DEFAULT_MODEL_YEAR));
-    cabintempoffset = MyConfig.GetParamValue("xnl", "cabintempoffset", STR(DEFAULT_CABINTEMP_OFFSET));
-    maxgids         = MyConfig.GetParamValue("xnl", "maxGids", STR(GEN_1_NEW_CAR_GIDS));
-    newcarah        = MyConfig.GetParamValue("xnl", "newCarAh", STR(GEN_1_NEW_CAR_AH));
-    socnewcar       = MyConfig.GetParamValueBool("xnl", "soc.newcar", false);
-    sohnewcar       = MyConfig.GetParamValueBool("xnl", "soh.newcar", false);
-    canwrite        = MyConfig.GetParamValueBool("xnl", "canwrite", false);
+    modelyear           = MyConfig.GetParamValue("xnl", "modelyear", STR(DEFAULT_MODEL_YEAR));
+    cabintempoffset     = MyConfig.GetParamValue("xnl", "cabintempoffset", STR(DEFAULT_CABINTEMP_OFFSET));
+    cfg_ev_request_port = MyConfig.GetParamValue("xnl", "cfg_ev_request_port", STR(DEFAULT_PIN_EV));
+    maxgids             = MyConfig.GetParamValue("xnl", "maxGids", STR(GEN_1_NEW_CAR_GIDS));
+    newcarah            = MyConfig.GetParamValue("xnl", "newCarAh", STR(GEN_1_NEW_CAR_AH));
+    socnewcar           = MyConfig.GetParamValueBool("xnl", "soc.newcar", false);
+    sohnewcar           = MyConfig.GetParamValueBool("xnl", "soh.newcar", false);
+    canwrite            = MyConfig.GetParamValueBool("xnl", "canwrite", false);
 
     c.head(200);
   }
@@ -174,7 +175,7 @@ void OvmsVehicleNissanLeaf::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   c.input("number", "Model year", "modelyear", modelyear.c_str(), "Default: " STR(DEFAULT_MODEL_YEAR),
     "<p>This determines the format of CAN write messages as it differs slightly between model years.</p>",
     "min=\"2011\" step=\"1\"", "");
-  c.input("number", "Pin for EV SYSTEM ACTIVATION REQUEST", "cfg_ev_request_port", cfg_ev_request_port.c_str(), "Default: " STR(MAX7317_SW_CTL)"(Pin 18 on D26 (Ext12V control)",
+  c.input("number", "Pin for EV SYSTEM ACTIVATION REQUEST", "cfg_ev_request_port", cfg_ev_request_port.c_str(), "Default: " STR(DEFAULT_PIN_EV)"(Pin 18 on D26 (Ext12V control))",
     "<p>The 2011-2012 LEAF needs a +12V signal to the TCU harness to use remote commands. See documentation before making changes here.</p>",
     "step=\"1\"", "");
   c.fieldset_end();

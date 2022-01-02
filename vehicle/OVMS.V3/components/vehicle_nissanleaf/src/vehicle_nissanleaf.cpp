@@ -280,7 +280,7 @@ void OvmsVehicleNissanLeaf::ConfigChanged(OvmsConfigParam* param)
   StandardMetrics.ms_v_charge_limit_soc->SetValue(   (float) MyConfig.GetParamValueInt("xnl", "suffsoc"),   Percentage );
   StandardMetrics.ms_v_charge_limit_range->SetValue( (float) MyConfig.GetParamValueInt("xnl", "suffrange"), Kilometers );
 
-  cfg_ev_request_port = MyConfig.GetParamValueInt("xnl", "ev_request_port");
+  uint8_t cfg_ev_request_port = MyConfig.GetParamValueInt("xnl", "cfg_ev_request_port");
 
   //TODO nl_enable_write = MyConfig.GetParamValueBool("xnl", "canwrite", false);
   m_enable_write = MyConfig.GetParamValueBool("xnl", "canwrite", false);
@@ -2039,10 +2039,11 @@ void OvmsVehicleNissanLeaf::HandleRange()
 OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::CommandWakeup()
   {
 
-  // Use PIN? to wake up GEN 1 Leaf with EV SYSTEM ACTIVATION REQUEST
+  // Use the configured pin to wake up GEN 1 Leaf with EV SYSTEM ACTIVATION REQUEST
   if (MyConfig.GetParamValueInt("xnl", "modelyear", DEFAULT_MODEL_YEAR) < 2013)
   {
-    MyPeripherals->m_max7317->Output(cfg_ev_request_port, 1);
+    uint8_t max_gids = MyConfig.GetParamValueInt("xnl", "maxGids", GEN_1_NEW_CAR_GIDS);
+    MyPeripherals->m_max7317->Output((uint8_t)cfg_ev_request_port, 1);
     ESP_LOGI(TAG, "EV SYSTEM ACTIVATION REQUEST ON");
   }
 
