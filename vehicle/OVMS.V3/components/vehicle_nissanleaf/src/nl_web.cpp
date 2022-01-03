@@ -171,13 +171,21 @@ void OvmsVehicleNissanLeaf::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 
   c.fieldset_start("Remote Control");
   c.input_checkbox("Enable CAN writes", "canwrite", canwrite,
-    "<p>Controls overall CAN write access, some functions depend on this.</p>");
+    "<p>Controls overall CAN write access, some functions like remote heating depend on this.</p>");
   c.input("number", "Model year", "modelyear", modelyear.c_str(), "Default: " STR(DEFAULT_MODEL_YEAR),
     "<p>This determines the format of CAN write messages as it differs slightly between model years.</p>",
     "min=\"2011\" step=\"1\"", "");
-  c.input("number", "Pin for EV SYSTEM ACTIVATION REQUEST", "cfg_ev_request_port", cfg_ev_request_port.c_str(), "Default: " STR(DEFAULT_PIN_EV)"(Pin 18 on D26 (Ext12V control))",
-    "<p>The 2011-2012 LEAF needs a +12V signal to the TCU harness to use remote commands. See documentation before making changes here.</p>",
-    "step=\"1\"", "");
+  c.input_select_start("Pin for EV SYSTEM ACTIVATION REQUEST", "cfg_ev_request_port");
+  c.input_select_option("SW_12V (DA26 pin 18)", "1", cfg_ev_request_port == "1");
+  c.input_select_option("EGPIO_2", "3", cfg_ev_request_port == "3");
+  c.input_select_option("EGPIO_3", "4", cfg_ev_request_port == "4");
+  c.input_select_option("EGPIO_4", "5", cfg_ev_request_port == "5");
+  c.input_select_option("EGPIO_5", "6", cfg_ev_request_port == "6");
+  c.input_select_option("EGPIO_6", "7", cfg_ev_request_port == "7");
+  c.input_select_option("EGPIO_7", "8", cfg_ev_request_port == "8");
+  c.input_select_option("EGPIO_8", "9", cfg_ev_request_port == "9");
+  c.input_select_end();
+  c.print("<p>The 2011-2012 LEAF needs a +12V signal to the TCU harness to use remote commands. Default is SW_12V. See documentation before making changes here.</p>");
   c.fieldset_end();
 
   c.print("<hr>");

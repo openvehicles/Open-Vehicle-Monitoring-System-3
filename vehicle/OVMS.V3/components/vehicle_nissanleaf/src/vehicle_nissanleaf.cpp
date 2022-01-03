@@ -280,7 +280,7 @@ void OvmsVehicleNissanLeaf::ConfigChanged(OvmsConfigParam* param)
   StandardMetrics.ms_v_charge_limit_soc->SetValue(   (float) MyConfig.GetParamValueInt("xnl", "suffsoc"),   Percentage );
   StandardMetrics.ms_v_charge_limit_range->SetValue( (float) MyConfig.GetParamValueInt("xnl", "suffrange"), Kilometers );
 
-  uint8_t cfg_ev_request_port = MyConfig.GetParamValueInt("xnl", "cfg_ev_request_port");
+  cfg_ev_request_port = MyConfig.GetParamValueInt("xnl", "cfg_ev_request_port");
 
   //TODO nl_enable_write = MyConfig.GetParamValueBool("xnl", "canwrite", false);
   m_enable_write = MyConfig.GetParamValueBool("xnl", "canwrite", false);
@@ -1719,7 +1719,7 @@ void OvmsVehicleNissanLeaf::RemoteCommandTimer()
       if (nl_remote_command_ticker == (REMOTE_COMMAND_REPEAT_COUNT - ACTIVATION_REQUEST_TIME))
         { 
         // release EV SYSTEM ACTIVATION REQUEST
-        MyPeripherals->m_max7317->Output(cfg_ev_request_port, 0);
+        MyPeripherals->m_max7317->Output((uint8_t)cfg_ev_request_port, 0);
         ESP_LOGI(TAG, "EV SYSTEM ACTIVATION REQUEST OFF");
         }
       }
@@ -2038,15 +2038,6 @@ void OvmsVehicleNissanLeaf::HandleRange()
 //
 OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::CommandWakeup()
   {
-
-  // Use the configured pin to wake up GEN 1 Leaf with EV SYSTEM ACTIVATION REQUEST
-  if (MyConfig.GetParamValueInt("xnl", "modelyear", DEFAULT_MODEL_YEAR) < 2013)
-  {
-    uint8_t max_gids = MyConfig.GetParamValueInt("xnl", "maxGids", GEN_1_NEW_CAR_GIDS);
-    MyPeripherals->m_max7317->Output((uint8_t)cfg_ev_request_port, 1);
-    ESP_LOGI(TAG, "EV SYSTEM ACTIVATION REQUEST ON");
-  }
-
   // The on board charger wakeup message is the same on all 2011-2017 LEAFs
   if (!m_enable_write) return Fail; // Disable commands unless canwrite is true
   ESP_LOGI(TAG, "Sending Wakeup Frame");
@@ -2061,6 +2052,12 @@ OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::RemoteCommandHandler(Remot
   if (!m_enable_write) return Fail; //disable commands unless canwrite is true
   ESP_LOGI(TAG, "RemoteCommandHandler");
   CommandWakeup();
+  // Use the configured pin to wake up GEN 1 Leaf with EV SYSTEM ACTIVATION REQUEST
+  if (MyConfig.GetParamValueInt("xnl", "modelyear", DEFAULT_MODEL_YEAR) < 2013)
+  {
+    MyPeripherals->m_max7317->Output((uint8_t)cfg_ev_request_port, 1);
+    ESP_LOGI(TAG, "EV SYSTEM ACTIVATION REQUEST ON");
+  }
   // The GEN 2 Nissan TCU module sends the command repeatedly, so we start
   // m_remoteCommandTimer (which calls RemoteCommandTimer()) to do this
   // EV SYSTEM ACTIVATION REQUEST is released in the timer too
