@@ -79,7 +79,7 @@ Remote Climate Control
 
 Gen1 Cars (ZE0, 2011-2012) require a hardware modification to enable remote climate control if the vehicle is not plugged in and charging. If you are ok with this, you don't need to do anything further.
 
-If you want to to enable remote climate control once the charge has finished, or if the vehicle is not plugged in, you need to do the following hardware modification. You need to pull TCU pin 11 high (to 12v) to generate the "EV System Activation Request Signal", `more info <https://carrott.org/emini/Nissan_Leaf_OVMS#Remote_Climate_Control)>`_. Currently, the new v3 OVMS hardware does not have software support for doing this automatically. You can track the progress and find some more info (including about the old "RC3" pin), `here <https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3/issues/607>`_.
+If you want to to enable remote climate control once the charge has finished, or if the vehicle is not plugged in, you need to do the following hardware modification. You need to pull TCU pin 11 high (to 12v) to generate the "EV System Activation Request Signal". This is by default achieved via the pin 18 (Ext 12V) on the OVMS D26 connector. `See this page for more info <https://www.mynissanleaf.com/viewtopic.php?f=37&t=32935>`_.
 
 If you have a "smart" EVSE (or one connected to a "smart" outlet, you can sometimes wake up the EV system by turning it off, then back on. This obviously only helps if your vehicle is plugged in, but may be useful for some users.
 
