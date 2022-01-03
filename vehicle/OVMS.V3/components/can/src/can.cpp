@@ -264,6 +264,56 @@ void can_rx(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const
   MyCan.IncomingFrame(&frame);
   }
 
+void can_testtx(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  const char* bus = cmd->GetParent()->GetParent()->GetName();
+  const char* mode = cmd->GetName();
+  CAN_frame_format_t smode = CAN_frame_std;
+  uint32_t idmax = (1 << 11) - 1;
+  if (strcmp(mode, "extended")==0)
+    {
+    smode = CAN_frame_ext;
+    idmax = (1 << 29) - 1;
+    }
+
+  canbus* sbus = (canbus*)MyPcpApp.FindDeviceByName(bus);
+  if (sbus == NULL)
+    {
+    writer->puts("Error: Cannot find named CAN bus");
+    return;
+    }
+  if (sbus->GetPowerMode() != On)
+    {
+    writer->puts("Error: Can bus is not powered on");
+    return;
+    }
+
+  CAN_frame_t frame = {};
+  frame.origin = sbus;
+  frame.FIR.U = 0;
+  frame.FIR.B.DLC = 1;
+  frame.FIR.B.FF = smode;
+  char* ep;
+  uint32_t uv = strtoul(argv[0], &ep, 16);
+  if (*ep != '\0' || uv > idmax)
+    {
+    writer->printf("Error: Invalid CAN ID \"%s\" (0x%lx max)\n", argv[0], idmax);
+    return;
+    }
+  frame.MsgID = uv;
+  frame.callback = NULL;
+
+  uint32_t count = strtoul(argv[1], &ep, 10);
+  uint32_t delayms = strtoul(argv[2], &ep, 10);
+
+  for (uint32_t k=0;k<count;k++)
+    {
+    frame.data.u8[0] = (uint8_t)k;
+    sbus->Write(&frame, pdMS_TO_TICKS(500));
+    if (delayms != 0) vTaskDelay(pdMS_TO_TICKS(delayms));
+    }
+  }
+
 void can_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   const char* bus = cmd->GetParent()->GetName();
@@ -847,6 +897,9 @@ can::can()
     OvmsCommand* cmd_canrx = cmd_canx->RegisterCommand("rx","CAN rx framework");
     cmd_canrx->RegisterCommand("standard","Simulate reception of standard CAN frame",can_rx,"<id> <data...>", 1, 9);
     cmd_canrx->RegisterCommand("extended","Simulate reception of extended CAN frame",can_rx,"<id> <data...>", 1, 9);
+    OvmsCommand* cmd_cantesttx = cmd_canx->RegisterCommand("testtx","CAN test tx framework");
+    cmd_cantesttx->RegisterCommand("standard","Transmit test standard CAN frames",can_testtx,"<id> <count> <delayms>", 3, 3);
+    cmd_cantesttx->RegisterCommand("extended","Transmit test extended CAN frames",can_testtx,"<id> <count> <delayms>", 3, 3);
     cmd_canx->RegisterCommand("status","Show CAN status",can_status);
     cmd_canx->RegisterCommand("clear","Clear CAN status",can_clearstatus);
     cmd_canx->RegisterCommand("viewregisters","view can controller registers",can_view_registers);
