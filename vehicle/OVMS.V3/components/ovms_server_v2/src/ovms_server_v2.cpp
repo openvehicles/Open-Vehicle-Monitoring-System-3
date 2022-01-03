@@ -1375,7 +1375,8 @@ void OvmsServerV2::TransmitMsgFirmware(bool always)
     StandardMetrics.ms_v_type->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_m_net_provider->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_env_service_range->IsModifiedAndClear(MyOvmsServerV2Modifier) |
-    StandardMetrics.ms_v_env_service_time->IsModifiedAndClear(MyOvmsServerV2Modifier);
+    StandardMetrics.ms_v_env_service_time->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_m_hardware->IsModifiedAndClear(MyOvmsServerV2Modifier);
 
   // Quick exit if nothing modified
   if ((!always)&&(!modified)) return;
@@ -1383,19 +1384,23 @@ void OvmsServerV2::TransmitMsgFirmware(bool always)
   extram::ostringstream buffer;
   buffer
     << "MP-0 F"
-    << StandardMetrics.ms_m_version->AsString("")
+    << mp_encode(StandardMetrics.ms_m_version->AsString(""))
     << ","
-    << StandardMetrics.ms_v_vin->AsString("")
+    << mp_encode(StandardMetrics.ms_v_vin->AsString(""))
     << ","
     << StandardMetrics.ms_m_net_sq->AsString("0",sq)
-    << ",1,"
+    << ","
+    << MyConfig.GetParamValue("vehicle", "canwrite", "0")
+    << ","
     << StandardMetrics.ms_v_type->AsString("")
     << ","
-    << StandardMetrics.ms_m_net_provider->AsString("")
+    << mp_encode(StandardMetrics.ms_m_net_provider->AsString(""))
     << ","
     << StandardMetrics.ms_v_env_service_range->AsString("-1", Kilometers, 0)
     << ","
     << StandardMetrics.ms_v_env_service_time->AsString("-1", Seconds, 0)
+    << ","
+    << mp_encode(StandardMetrics.ms_m_hardware->AsString(""))
     ;
 
   Transmit(buffer.str().c_str());
@@ -1723,6 +1728,14 @@ void OvmsServerV2::MetricModified(OvmsMetric* metric)
 
   if (StandardMetrics.ms_s_v2_peers->AsInt() == 0)
     return;
+
+  if ((metric == StandardMetrics.ms_v_vin)||
+      (metric == StandardMetrics.ms_v_type)||
+      (metric == StandardMetrics.ms_m_net_provider)||
+      (metric == StandardMetrics.ms_m_hardware))
+    {
+    m_now_firmware = true;
+    }
 
   if ((metric == StandardMetrics.ms_v_charge_climit)||
       (metric == StandardMetrics.ms_v_charge_limit_range)||
