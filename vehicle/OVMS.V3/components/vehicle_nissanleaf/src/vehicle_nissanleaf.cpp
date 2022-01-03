@@ -280,6 +280,8 @@ void OvmsVehicleNissanLeaf::ConfigChanged(OvmsConfigParam* param)
   StandardMetrics.ms_v_charge_limit_soc->SetValue(   (float) MyConfig.GetParamValueInt("xnl", "suffsoc"),   Percentage );
   StandardMetrics.ms_v_charge_limit_range->SetValue( (float) MyConfig.GetParamValueInt("xnl", "suffrange"), Kilometers );
 
+  cfg_ev_request_port = MyConfig.GetParamValueInt("xnl", "cfg_ev_request_port");
+
   //TODO nl_enable_write = MyConfig.GetParamValueBool("xnl", "canwrite", false);
   m_enable_write = MyConfig.GetParamValueBool("xnl", "canwrite", false);
   if (!m_enable_write) PollSetState(POLLSTATE_OFF);
@@ -1708,16 +1710,19 @@ void OvmsVehicleNissanLeaf::RemoteCommandTimer()
       xTimerStart(m_ccDisableTimer, 0);
       }
 
-    // nl_remote_command_ticker is set to REMOTE_COMMAND_REPEAT_COUNT in
-    // RemoteCommandHandler() and we decrement it every 10th of a
-    // second, hence the following if statement evaluates to true
-    // ACTIVATION_REQUEST_TIME tenths after we start
-    // TODO re-implement to support Gen 1 leaf
-    //if (nl_remote_command_ticker == REMOTE_COMMAND_REPEAT_COUNT - ACTIVATION_REQUEST_TIME)
-    //  {
-    //  // release EV SYSTEM ACTIVATION REQUEST
-    //  output_gpo3(FALSE);
-    //  }
+    if (MyConfig.GetParamValueInt("xnl", "modelyear", DEFAULT_MODEL_YEAR) < 2013)
+    {
+      // nl_remote_command_ticker is set to REMOTE_COMMAND_REPEAT_COUNT in
+      // RemoteCommandHandler() and we decrement it every 10th of a
+      // second, hence the following if statement evaluates to true
+      // ACTIVATION_REQUEST_TIME tenths after we start
+      if (nl_remote_command_ticker == (REMOTE_COMMAND_REPEAT_COUNT - ACTIVATION_REQUEST_TIME))
+        { 
+        // release EV SYSTEM ACTIVATION REQUEST
+        MyPeripherals->m_max7317->Output((uint8_t)cfg_ev_request_port, 0);
+        ESP_LOGI(TAG, "EV SYSTEM ACTIVATION REQUEST OFF");
+        }
+      }
     }
     else
     {
@@ -2021,9 +2026,9 @@ void OvmsVehicleNissanLeaf::HandleRange()
 // http://www.mynissanleaf.com/viewtopic.php?f=44&t=4131&hilit=open+CAN+discussion&start=416
 //
 // On Generation 1 Cars, TCU pin 11's "EV system activation request signal" is
-// driven to 12V to wake up the VCU. This function drives RC3 high to
+// driven to 12V to wake up the VCU. This function drives the configured pin high to
 // activate the "EV system activation request signal". Without a circuit
-// connecting RC3 to the activation signal wire, remote climate control will
+// connecting the configured pin to the activation signal wire, remote climate control will
 // only work during charging and for obvious reasons remote charging won't
 // work at all.
 //
@@ -2037,7 +2042,8 @@ OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::CommandWakeup()
   if (!m_enable_write) return Fail; // Disable commands unless canwrite is true
   ESP_LOGI(TAG, "Sending Wakeup Frame");
   unsigned char data = 0;
-  m_can1->WriteStandard(0x679, 1, &data);
+  m_can1->WriteStandard(0x679, 1, &data); //Tops up the 12V battery if connected to EVSE
+  m_can1->WriteStandard(0x5C0, 8, &data); //Wakes up the VCM (by spoofing empty battery request heating)
   return Success;
   }
 
@@ -2046,6 +2052,12 @@ OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::RemoteCommandHandler(Remot
   if (!m_enable_write) return Fail; //disable commands unless canwrite is true
   ESP_LOGI(TAG, "RemoteCommandHandler");
   CommandWakeup();
+  // Use the configured pin to wake up GEN 1 Leaf with EV SYSTEM ACTIVATION REQUEST
+  if (MyConfig.GetParamValueInt("xnl", "modelyear", DEFAULT_MODEL_YEAR) < 2013)
+  {
+    MyPeripherals->m_max7317->Output((uint8_t)cfg_ev_request_port, 1);
+    ESP_LOGI(TAG, "EV SYSTEM ACTIVATION REQUEST ON");
+  }
   // The GEN 2 Nissan TCU module sends the command repeatedly, so we start
   // m_remoteCommandTimer (which calls RemoteCommandTimer()) to do this
   // EV SYSTEM ACTIVATION REQUEST is released in the timer too
