@@ -289,9 +289,10 @@ void can_testtx(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
     }
 
   CAN_frame_t frame = {};
+  memset(&frame, 0, sizeof(frame));
   frame.origin = sbus;
   frame.FIR.U = 0;
-  frame.FIR.B.DLC = 1;
+  frame.FIR.B.DLC = 8;
   frame.FIR.B.FF = smode;
   char* ep;
   uint32_t uv = strtoul(argv[0], &ep, 16);
