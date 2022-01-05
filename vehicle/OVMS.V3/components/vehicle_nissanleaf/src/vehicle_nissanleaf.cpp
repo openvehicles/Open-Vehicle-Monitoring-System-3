@@ -1173,6 +1173,12 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         m_climate_remoteheat->SetValue(d[1] == 0x4b);
         m_climate_remotecool->SetValue(d[1] == 0x71);
         hvac_calculated = (climate_on & (m_climate_fan_speed->AsInt() != 0));
+        //dirty fix until solution is found:
+        if (m_climate_fan_speed->AsInt() == 28 && !heating && !cooling
+            && !StandardMetrics.ms_v_env_awake->AsBool()
+            && StandardMetrics.ms_v_charge_state->AsString() == "charging") {
+              hvac_calculated = false;
+            }
       }
       else
       // More accurate climate control values for hvac, heating, cooling for 2016+ model year cars.
@@ -1923,6 +1929,13 @@ void OvmsVehicleNissanLeaf::HandleCharging()
   {
     StandardMetrics.ms_v_charge_substate->SetValue("interrupted");
   }
+  if ( charge_state    == "charging" 
+    && (prev_c_state   == "stopped"
+    || prev_c_state    == "timerwait") 
+    && StandardMetrics.ms_v_env_hvac->AsBool())
+  {
+    StandardMetrics.ms_v_charge_substate->SetValue("interrupted");
+  }
   if (prev_c_state != charge_state) {
     m_charge_state_previous->SetValue(charge_state);
   }
@@ -1930,7 +1943,7 @@ void OvmsVehicleNissanLeaf::HandleCharging()
   if (limit_soc > 0)
     {
     // if limit_soc is set, then stop charging accordingly
-    if (bat_soc >= limit_soc)
+    if (bat_soc >= limit_soc && !StandardMetrics.ms_v_env_hvac->AsBool())
       {
         if (charge_state == "charging") {
           StandardMetrics.ms_v_charge_substate->SetValue("scheduledstop");
@@ -1951,7 +1964,7 @@ void OvmsVehicleNissanLeaf::HandleCharging()
         
       }
     }
-  if (limit_range > 0 && bat_soc < 100 && !chg_ctrl_activated)
+  if (limit_range > 0 && bat_soc < 100 && !chg_ctrl_activated && !StandardMetrics.ms_v_env_hvac->AsBool())
     {
     // if limit_range is set, then stop charging accordingly
     if (controlled_range >= limit_range)
