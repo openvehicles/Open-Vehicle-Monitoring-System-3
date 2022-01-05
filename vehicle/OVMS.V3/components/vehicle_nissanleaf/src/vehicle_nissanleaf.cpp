@@ -1891,9 +1891,17 @@ void OvmsVehicleNissanLeaf::HandleCharging()
     StandardMetrics.ms_v_charge_kwh->SetValue( StandardMetrics.ms_v_charge_kwh->AsFloat() + m_cum_energy_charge_wh / 1000.0, kWh);
     m_cum_energy_charge_wh = 0.0f;
 
-    float limit_soc      = StandardMetrics.ms_v_charge_limit_soc->AsFloat(0);
-    float limit_range    = StandardMetrics.ms_v_charge_limit_range->AsFloat(0, Kilometers);
-    float max_range      = StandardMetrics.ms_v_bat_range_full->AsFloat(0, Kilometers);
+    float  limit_soc        = StandardMetrics.ms_v_charge_limit_soc->AsFloat(0);
+    float  bat_soc          = StandardMetrics.ms_v_bat_soc->AsFloat(0);
+    float  limit_range      = StandardMetrics.ms_v_charge_limit_range->AsFloat(0, Kilometers);
+    string limit_range_calc = MyConfig.GetParamValue("xnl", "suffrangecalc", DEFAULT_SUFF_RANGE_CALC);
+    // string charge_state     = StandardMetrics.ms_v_charge_state->AsString(); // to be used with min_soc feature
+    float  max_range        = StandardMetrics.ms_v_bat_range_full->AsFloat(0, Kilometers);
+    float  controlled_range = StandardMetrics.ms_v_bat_range_est->AsFloat(0, Kilometers);
+    if (limit_range_calc != "est")
+    {
+      controlled_range      = StandardMetrics.ms_v_bat_range_ideal->AsFloat(0, Kilometers);
+    }
 
     // always calculate remaining charge time to full
     float full_soc           = 100.0;     // 100%
@@ -1909,6 +1917,13 @@ void OvmsVehicleNissanLeaf::HandleCharging()
 
       StandardMetrics.ms_v_charge_duration_soc->SetValue(minsremaining_soc, Minutes);
       ESP_LOGV(TAG, "Time remaining: %d mins to %0.0f%% soc", minsremaining_soc, limit_soc);
+
+      // if limit_soc is set, then stop charging accordingly
+      if (limit_soc >= bat_soc)
+        {
+          OvmsVehicleNissanLeaf::CommandStopCharge();
+        }
+      
       }
 
     if (limit_range > 0 && max_range > 0.0)
@@ -1919,6 +1934,13 @@ void OvmsVehicleNissanLeaf::HandleCharging()
 
       StandardMetrics.ms_v_charge_duration_range->SetValue(minsremaining_range, Minutes);
       ESP_LOGV(TAG, "Time remaining: %d mins for %0.0f km (%0.0f%% soc)", minsremaining_range, limit_range, range_soc);
+
+      // if limit_range is set, then stop charging accordingly
+
+      if (limit_range >= controlled_range)
+        {
+          OvmsVehicleNissanLeaf::CommandStopCharge();
+        }
       }
     }
   // calculate charger power and efficiency

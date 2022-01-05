@@ -205,11 +205,13 @@ void OvmsVehicleNissanLeaf::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
   std::string error;
   //  suffsoc          	Sufficient SOC [%] (Default: 0=disabled)
   //  suffrange        	Sufficient range [km] (Default: 0=disabled)
-  std::string suffrange, suffsoc, minrange, minsoc;
+  //  suffrangecalc     Sufficient range calulation method [ideal/est] (Default: ideal)
+  std::string suffrange, suffrangecalc, suffsoc, minrange, minsoc;
 
   if (c.method == "POST") {
     // process form submission:
     suffrange = c.getvar("suffrange");
+    suffrangecalc = c.getvar("suffrangecalc");
     suffsoc = c.getvar("suffsoc");
     minrange = c.getvar("minrange");
     minsoc = c.getvar("minsoc");
@@ -239,6 +241,7 @@ void OvmsVehicleNissanLeaf::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
     if (error == "") {
       // store:
       MyConfig.SetParamValue("xnl", "suffrange", suffrange);
+      MyConfig.SetParamValue("xnl", "suffrangecalc", suffrangecalc);
       MyConfig.SetParamValue("xnl", "suffsoc", suffsoc);
       MyConfig.SetParamValue("xnl", "minrange", minrange);
       MyConfig.SetParamValue("xnl", "minsoc", minsoc);
@@ -257,6 +260,7 @@ void OvmsVehicleNissanLeaf::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
   }
   else {
     // read configuration:
+    suffrangecalc = MyConfig.GetParamValue("xnl", "suffrangecalc", "ideal");
     suffrange = MyConfig.GetParamValue("xnl", "suffrange", "0");
     suffsoc = MyConfig.GetParamValue("xnl", "suffsoc", "0");
     minrange = MyConfig.GetParamValue("xnl", "minrange", "0");
@@ -274,6 +278,11 @@ void OvmsVehicleNissanLeaf::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
   c.input_slider("Sufficient range", "suffrange", 3, "km",
     atof(suffrange.c_str()) > 0, atof(suffrange.c_str()), 0, 0, 300, 1,
     "<p>Default 0=off. Notify/stop charge when reaching this level.</p>");
+  
+  c.input_radio_start("Sufficient range estimation method", "suffrangecalc");
+  c.input_radio_option("suffrangecalc", "Ideal",   "ideal",  suffrangecalc == "ideal");
+  c.input_radio_option("suffrangecalc", "Standard", "est", suffrangecalc == "est");
+  c.input_radio_end("");
 
   c.input_slider("Sufficient SOC", "suffsoc", 3, "%",
     atof(suffsoc.c_str()) > 0, atof(suffsoc.c_str()), 0, 0, 100, 1,
