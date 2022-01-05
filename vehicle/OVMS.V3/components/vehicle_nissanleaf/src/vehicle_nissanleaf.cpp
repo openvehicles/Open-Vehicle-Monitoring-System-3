@@ -1890,8 +1890,8 @@ void OvmsVehicleNissanLeaf::HandleExporting()
 void OvmsVehicleNissanLeaf::HandleCharging()
   {
   // Are we charging?
-  bool charging = (!StandardMetrics.ms_v_charge_pilot->AsBool()      ||
-                   !StandardMetrics.ms_v_charge_inprogress->AsBool() )
+  bool charging = (!StandardMetrics.ms_v_charge_pilot->AsBool()
+                || !StandardMetrics.ms_v_charge_inprogress->AsBool() );
   if (charging)
     {
     StandardMetrics.ms_v_charge_power->SetValue(0);
