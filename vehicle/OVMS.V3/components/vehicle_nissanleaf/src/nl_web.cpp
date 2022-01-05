@@ -184,8 +184,9 @@ void OvmsVehicleNissanLeaf::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   c.input_select_option("EGPIO_6", "7", cfg_ev_request_port == "7");
   c.input_select_option("EGPIO_7", "8", cfg_ev_request_port == "8");
   c.input_select_option("EGPIO_8", "9", cfg_ev_request_port == "9");
-  c.input_select_end();
-  c.print("<p>The 2011-2012 LEAF needs a +12V signal to the TCU harness to use remote commands. Default is SW_12V. See documentation before making changes here.</p>");
+  c.input_select_end(
+    "<p>The 2011-2012 LEAF needs a +12V signal to the TCU harness to use remote commands."
+    " Default is SW_12V. See documentation before making changes here.</p>");
   c.fieldset_end();
 
   c.print("<hr>");
