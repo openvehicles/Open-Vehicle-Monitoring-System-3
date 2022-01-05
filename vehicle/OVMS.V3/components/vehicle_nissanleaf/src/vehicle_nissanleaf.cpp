@@ -1895,7 +1895,7 @@ void OvmsVehicleNissanLeaf::HandleCharging()
     float  bat_soc          = StandardMetrics.ms_v_bat_soc->AsFloat(0);
     float  limit_range      = StandardMetrics.ms_v_charge_limit_range->AsFloat(0, Kilometers);
     string limit_range_calc = MyConfig.GetParamValue("xnl", "suffrangecalc", DEFAULT_SUFF_RANGE_CALC);
-    // string charge_state     = StandardMetrics.ms_v_charge_state->AsString(); // to be used with min_soc feature
+    string charge_state     = StandardMetrics.ms_v_charge_state->AsString();
     float  max_range        = StandardMetrics.ms_v_bat_range_full->AsFloat(0, Kilometers);
     float  controlled_range = StandardMetrics.ms_v_bat_range_est->AsFloat(0, Kilometers);
     if (limit_range_calc != "est")
@@ -1919,10 +1919,14 @@ void OvmsVehicleNissanLeaf::HandleCharging()
       ESP_LOGV(TAG, "Time remaining: %d mins to %0.0f%% soc", minsremaining_soc, limit_soc);
 
       // if limit_soc is set, then stop charging accordingly
-      if (limit_soc >= bat_soc)
+      if (bat_soc >= limit_soc)
         {
           OvmsVehicleNissanLeaf::CommandStopCharge();
         }
+      else if (charge_state != "charging" && charge_state != "timerwait" && StandardMetrics.ms_v_charge_pilot->AsBool())
+      {
+        OvmsVehicleNissanLeaf::CommandStartCharge();
+      }
       
       }
 
@@ -1937,10 +1941,14 @@ void OvmsVehicleNissanLeaf::HandleCharging()
 
       // if limit_range is set, then stop charging accordingly
 
-      if (limit_range >= controlled_range)
+      if (controlled_range >= limit_range)
         {
           OvmsVehicleNissanLeaf::CommandStopCharge();
         }
+      else if (charge_state != "charging" && charge_state != "timerwait" && StandardMetrics.ms_v_charge_pilot->AsBool())
+      {
+        OvmsVehicleNissanLeaf::CommandStartCharge();
+      }
       }
     }
   // calculate charger power and efficiency
