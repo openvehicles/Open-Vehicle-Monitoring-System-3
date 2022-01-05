@@ -1928,7 +1928,7 @@ void OvmsVehicleNissanLeaf::HandleCharging()
   if (limit_soc > 0)
       {
       // if limit_soc is set, then stop charging accordingly
-      if (bat_soc >= limit_soc)
+      if (bat_soc >= limit_soc && charging)
         {
           StandardMetrics.ms_v_charge_substate->SetValue("scheduledstop");
           RemoteCommandHandler(STOP_CHARGING);
@@ -1948,7 +1948,7 @@ void OvmsVehicleNissanLeaf::HandleCharging()
     if (limit_range > 0)
       {
       // if limit_range is set, then stop charging accordingly
-      if (controlled_range >= limit_range)
+      if (controlled_range >= limit_range && charging)
         {
           StandardMetrics.ms_v_charge_substate->SetValue("scheduledstop");
           RemoteCommandHandler(STOP_CHARGING);
