@@ -367,10 +367,6 @@ void OvmsVehicleNissanLeaf::vehicle_nissanleaf_charger_status(ChargerStatus stat
       StandardMetrics.ms_v_charge_inprogress->SetValue(true);
       StandardMetrics.ms_v_charge_type->SetValue(fast_charge ? "chademo" : "type1");
       StdMetrics.ms_v_charge_mode->SetValue(fast_charge ? "performance" : "standard");
-      if (StandardMetrics.ms_v_charge_substate->AsString() != "scheduledstart")
-      {
-        StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
-      }
       StandardMetrics.ms_v_charge_state->SetValue("charging");
       if (m_enable_write) PollSetState(POLLSTATE_CHARGING);
       // TODO only use battery current for Quick Charging, for regular charging
@@ -427,10 +423,7 @@ void OvmsVehicleNissanLeaf::vehicle_nissanleaf_charger_status(ChargerStatus stat
         }
       StandardMetrics.ms_v_charge_inprogress->SetValue(false);
       //StandardMetrics.ms_v_door_chargeport->SetValue(false);
-      if (StandardMetrics.ms_v_charge_substate->AsString() != "scheduledstop")
-      {
-        StandardMetrics.ms_v_charge_substate->SetValue("interrupted");
-      }
+      StandardMetrics.ms_v_charge_substate->SetValue("interrupted");
       StandardMetrics.ms_v_charge_state->SetValue("stopped");
       PollSetState(POLLSTATE_OFF);
       break;
@@ -449,10 +442,6 @@ void OvmsVehicleNissanLeaf::vehicle_nissanleaf_charger_status(ChargerStatus stat
         }
       StandardMetrics.ms_v_charge_inprogress->SetValue(false);
       //StandardMetrics.ms_v_door_chargeport->SetValue(false);
-      if (StandardMetrics.ms_v_charge_substate->AsString() != "scheduledstop")
-      {
-        StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
-      }
       StandardMetrics.ms_v_charge_state->SetValue("done");
       PollSetState(POLLSTATE_OFF);
       break;
@@ -1626,6 +1615,7 @@ void OvmsVehicleNissanLeaf::SendCommand(RemoteCommand command)
   unsigned char data[4];
   uint8_t length;
   canbus *tcuBus;
+  bool advancedCommand = false;
 
   if (MyConfig.GetParamValueInt("xnl", "modelyear", DEFAULT_MODEL_YEAR) >= 2016)
     {
@@ -1685,10 +1675,29 @@ void OvmsVehicleNissanLeaf::SendCommand(RemoteCommand command)
       data[3] = 0x00;
       break;
     default:
-      // shouldn't be possible, but lets not send random data on the bus
-      return;
+      // use for more advanced activation sequences
+      advancedCommand = true;
+      break;
     }
-    tcuBus->WriteStandard(0x56e, length, data);
+    if (advancedCommand)
+    {
+      switch (command)
+      {
+      case STOP_CHARGING:
+        ESP_LOGI(TAG, "Stop Charging");
+        if (!m_MITM) {
+          m_MITM = 10;
+          xTimerStart(m_MITMstop, 0);
+        }
+        break;
+      default:
+        return;
+      }
+    }
+    else
+    {
+      tcuBus->WriteStandard(0x56e, length, data);
+    }
   }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1890,8 +1899,63 @@ void OvmsVehicleNissanLeaf::HandleCharging()
     StandardMetrics.ms_v_charge_efficiency->SetValue(100);
     return;
     }
-  // Check if we have what is needed to calculate energy and remaining minutes
+  
   float charge_power_w  = 0;
+  float  limit_soc        = StandardMetrics.ms_v_charge_limit_soc->AsFloat(0);
+  float  bat_soc          = StandardMetrics.ms_v_bat_soc->AsFloat(0);
+  float  limit_range      = StandardMetrics.ms_v_charge_limit_range->AsFloat(0, Kilometers);
+  string limit_range_calc = MyConfig.GetParamValue("xnl", "suffrangecalc", DEFAULT_SUFF_RANGE_CALC);
+  string charge_state     = StandardMetrics.ms_v_charge_state->AsString();
+  string charge_substate  = StandardMetrics.ms_v_charge_substate->AsString();
+  string prev_c_state     = MyConfig.GetParamValue("xnl", "v.c.state.previous");
+  float  max_range        = StandardMetrics.ms_v_bat_range_full->AsFloat(0, Kilometers);
+  float  controlled_range = StandardMetrics.ms_v_bat_range_est->AsFloat(0, Kilometers);
+  if (limit_range_calc != "est")
+  {
+    controlled_range      = StandardMetrics.ms_v_bat_range_ideal->AsFloat(0, Kilometers);
+  }
+  // handle auto charge start/stop
+  if (limit_soc > 0)
+      {
+      // if limit_soc is set, then stop charging accordingly
+      if (bat_soc >= limit_soc)
+        {
+          StandardMetrics.ms_v_charge_substate->SetValue("scheduledstop");
+          OvmsVehicleNissanLeaf::CommandStopCharge();
+          MyNotify.NotifyString("info", "v-nissanleaf.charge.status", "Sufficient charge level reached - Charging Stopped.");
+        }
+      else if ( charge_state != "charging" 
+            && (charge_state != "timerwait" || charge_substate == "scheduledstop")
+            && StandardMetrics.ms_v_charge_pilot->AsBool()
+            )
+          {
+          StandardMetrics.ms_v_charge_substate->SetValue("scheduledstart");
+          OvmsVehicleNissanLeaf::CommandStartCharge();
+          MyNotify.NotifyString("info", "v-nissanleaf.charge.status", "Insufficient charge level - Charging Started.");
+          
+        }
+      }
+    if (limit_range > 0)
+      {
+      // if limit_range is set, then stop charging accordingly
+      if (controlled_range >= limit_range)
+        {
+          StandardMetrics.ms_v_charge_substate->SetValue("scheduledstop");
+          OvmsVehicleNissanLeaf::CommandStopCharge();
+          MyNotify.NotifyString("info", "v-nissanleaf.charge.status", "Sufficient range reached - Charging Stopped.");
+        }
+      else if ( charge_state != "charging" 
+            && (charge_state != "timerwait" || charge_substate == "scheduledstop")
+            && StandardMetrics.ms_v_charge_pilot->AsBool()
+            )
+        {
+          StandardMetrics.ms_v_charge_substate->SetValue("scheduledstart");
+          OvmsVehicleNissanLeaf::CommandStartCharge();
+          MyNotify.NotifyString("info", "v-nissanleaf.charge.status", "Insufficient range - Charging Started.");
+        }
+      }
+
+  // Check if we have what is needed to calculate energy and remaining minutes
   if (m_cum_energy_charge_wh > 0)
     {
     // Convert 10sec worth of energy back to an average charge power (in watts)
@@ -1899,20 +1963,7 @@ void OvmsVehicleNissanLeaf::HandleCharging()
 
     StandardMetrics.ms_v_charge_kwh->SetValue( StandardMetrics.ms_v_charge_kwh->AsFloat() + m_cum_energy_charge_wh / 1000.0, kWh);
     m_cum_energy_charge_wh = 0.0f;
-
-    float  limit_soc        = StandardMetrics.ms_v_charge_limit_soc->AsFloat(0);
-    float  bat_soc          = StandardMetrics.ms_v_bat_soc->AsFloat(0);
-    float  limit_range      = StandardMetrics.ms_v_charge_limit_range->AsFloat(0, Kilometers);
-    string limit_range_calc = MyConfig.GetParamValue("xnl", "suffrangecalc", DEFAULT_SUFF_RANGE_CALC);
-    string charge_state     = StandardMetrics.ms_v_charge_state->AsString();
-    string charge_substate  = StandardMetrics.ms_v_charge_substate->AsString();
-    float  max_range        = StandardMetrics.ms_v_bat_range_full->AsFloat(0, Kilometers);
-    float  controlled_range = StandardMetrics.ms_v_bat_range_est->AsFloat(0, Kilometers);
-    if (limit_range_calc != "est")
-    {
-      controlled_range      = StandardMetrics.ms_v_bat_range_ideal->AsFloat(0, Kilometers);
-    }
-
+    
     // always calculate remaining charge time to full
     float full_soc           = 100.0;     // 100%
     int   minsremaining_full = calcMinutesRemaining(full_soc, charge_power_w);
@@ -1927,25 +1978,6 @@ void OvmsVehicleNissanLeaf::HandleCharging()
 
       StandardMetrics.ms_v_charge_duration_soc->SetValue(minsremaining_soc, Minutes);
       ESP_LOGV(TAG, "Time remaining: %d mins to %0.0f%% soc", minsremaining_soc, limit_soc);
-
-      // if limit_soc is set, then stop charging accordingly
-      if (bat_soc >= limit_soc)
-        {
-          StandardMetrics.ms_v_charge_substate->SetValue("scheduledstop");
-          OvmsVehicleNissanLeaf::CommandStopCharge();
-          MyNotify.NotifyString("info", "v-nissanleaf.charge.status", "Sufficient charge level reached - Charging Stopped.");
-        }
-      else if ( charge_state != "charging" && StandardMetrics.ms_v_charge_pilot->AsBool() ) 
-        {
-          if (charge_state != "timerwait" || charge_substate == "scheduledstop")
-          {
-            StandardMetrics.ms_v_charge_substate->SetValue("scheduledstart");
-            OvmsVehicleNissanLeaf::CommandStartCharge();
-            MyNotify.NotifyString("info", "v-nissanleaf.charge.status", "Insufficient charge level - Charging Started.");
-          }
-          
-        }
-      
       }
 
     if (limit_range > 0 && max_range > 0.0)
@@ -1956,24 +1988,6 @@ void OvmsVehicleNissanLeaf::HandleCharging()
 
       StandardMetrics.ms_v_charge_duration_range->SetValue(minsremaining_range, Minutes);
       ESP_LOGV(TAG, "Time remaining: %d mins for %0.0f km (%0.0f%% soc)", minsremaining_range, limit_range, range_soc);
-
-      // if limit_range is set, then stop charging accordingly
-
-      if (controlled_range >= limit_range)
-        {
-          StandardMetrics.ms_v_charge_substate->SetValue("scheduledstop");
-          OvmsVehicleNissanLeaf::CommandStopCharge();
-          MyNotify.NotifyString("info", "v-nissanleaf.charge.status", "Sufficient charge level reached - Charging Stopped.");
-        }
-      else if ( charge_state != "charging" 
-            && (charge_state != "timerwait" || charge_substate == "scheduledstop")
-            && StandardMetrics.ms_v_charge_pilot->AsBool()
-            )
-        {
-          StandardMetrics.ms_v_charge_substate->SetValue("scheduledstart");
-          OvmsVehicleNissanLeaf::CommandStartCharge();
-          MyNotify.NotifyString("info", "v-nissanleaf.charge.status", "Insufficient charge level - Charging Started.");
-        }
       }
     }
   // calculate charger power and efficiency
@@ -2166,12 +2180,7 @@ void OvmsVehicleNissanLeaf::MITMDisableTimer()
 OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::CommandStopCharge()
 {
   ESP_LOGI(TAG, "CommandStopCharge - MITM method");
-  if (!m_MITM) {
-    m_MITM = 10;
-    xTimerStart(m_MITMstop, 0);
-  }
-  return Success;
-
+  return RemoteCommandHandler(STOP_CHARGING);
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::CommandStartCharge()
