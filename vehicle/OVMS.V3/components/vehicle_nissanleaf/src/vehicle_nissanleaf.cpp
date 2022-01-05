@@ -177,6 +177,7 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   m_climate_fan_only = MyMetrics.InitBool("xnl.cc.fan.only", SM_STALE_MIN, false);
   m_climate_remoteheat = MyMetrics.InitBool("xnl.cc.remoteheat", SM_STALE_MIN, false);
   m_climate_remotecool = MyMetrics.InitBool("xnl.cc.remotecool", SM_STALE_MIN, false);
+  m_charge_state_previous = MyMetrics.InitString("xnl.v.c.state.previous", SM_STALE_HIGH, 0);
   m_climate_auto = MyMetrics.InitBool("xnl.v.e.hvac.auto", SM_STALE_MIN, false);
   MyMetrics.InitBool("v.e.on", SM_STALE_MIN, false);
   MyMetrics.InitBool("v.e.awake", SM_STALE_MID, false);
@@ -1899,19 +1900,20 @@ void OvmsVehicleNissanLeaf::HandleCharging()
     StandardMetrics.ms_v_charge_efficiency->SetValue(100);
     }
   
-  float charge_power_w  = 0;
-  float  limit_soc        = StandardMetrics.ms_v_charge_limit_soc->AsFloat(0);
-  float  bat_soc          = StandardMetrics.ms_v_bat_soc->AsFloat(0);
-  float  limit_range      = StandardMetrics.ms_v_charge_limit_range->AsFloat(0, Kilometers);
-  string limit_range_calc = MyConfig.GetParamValue("xnl", "suffrangecalc", DEFAULT_SUFF_RANGE_CALC);
-  string charge_state     = StandardMetrics.ms_v_charge_state->AsString();
-  string charge_substate  = StandardMetrics.ms_v_charge_substate->AsString();
-  string prev_c_state     = MyConfig.GetParamValue("xnl", "v.c.state.previous");
-  float  max_range        = StandardMetrics.ms_v_bat_range_full->AsFloat(0, Kilometers);
-  float  controlled_range = StandardMetrics.ms_v_bat_range_est->AsFloat(0, Kilometers);
+  float  charge_power_w     = 0;
+  bool   chg_ctrl_activated = false;
+  float  limit_soc          = StandardMetrics.ms_v_charge_limit_soc->AsFloat(0);
+  float  bat_soc            = StandardMetrics.ms_v_bat_soc->AsFloat(0);
+  float  limit_range        = StandardMetrics.ms_v_charge_limit_range->AsFloat(0, Kilometers);
+  string limit_range_calc   = MyConfig.GetParamValue("xnl", "suffrangecalc", DEFAULT_SUFF_RANGE_CALC);
+  string charge_state       = StandardMetrics.ms_v_charge_state->AsString();
+  string charge_substate    = StandardMetrics.ms_v_charge_substate->AsString();
+  string prev_c_state       = m_charge_state_previous->AsString();
+  float  max_range          = StandardMetrics.ms_v_bat_range_full->AsFloat(0, Kilometers);
+  float  controlled_range   = StandardMetrics.ms_v_bat_range_est->AsFloat(0, Kilometers);
   if (limit_range_calc != "est")
   {
-    controlled_range      = StandardMetrics.ms_v_bat_range_ideal->AsFloat(0, Kilometers);
+    controlled_range        = StandardMetrics.ms_v_bat_range_ideal->AsFloat(0, Kilometers);
   }
   // handle charge interruption substate
   if ( charge_state    == "stopped" 
@@ -1922,48 +1924,54 @@ void OvmsVehicleNissanLeaf::HandleCharging()
     StandardMetrics.ms_v_charge_substate->SetValue("interrupted");
   }
   if (prev_c_state != charge_state) {
-    MyConfig.SetParamValue("xnl", "v.c.state.previous", charge_state);
+    m_charge_state_previous->SetValue(charge_state);
   }
   // handle auto charge start/stop
   if (limit_soc > 0)
+    {
+    // if limit_soc is set, then stop charging accordingly
+    if (bat_soc >= limit_soc)
       {
-      // if limit_soc is set, then stop charging accordingly
-      if (bat_soc >= limit_soc && charging)
-        {
+        if (charge_state == "charging") {
           StandardMetrics.ms_v_charge_substate->SetValue("scheduledstop");
           RemoteCommandHandler(STOP_CHARGING);
           MyNotify.NotifyString("info", "v-nissanleaf.charge.status", "Sufficient charge level reached - Charging Stopped.");
-        }
-      else if ( charge_state != "charging" 
-            && (charge_state != "timerwait" || charge_substate == "scheduledstop")
-            && StandardMetrics.ms_v_charge_pilot->AsBool()
-            )
-          {
-          StandardMetrics.ms_v_charge_substate->SetValue("scheduledstart");
-          RemoteCommandHandler(START_CHARGING);
-          MyNotify.NotifyString("info", "v-nissanleaf.charge.status", "Insufficient charge level - Charging Started.");
-          
+          chg_ctrl_activated = true;
         }
       }
-    if (limit_range > 0)
-      {
-      // if limit_range is set, then stop charging accordingly
-      if (controlled_range >= limit_range && charging)
+    else if ( charge_state != "charging" 
+          && (charge_state != "timerwait" || charge_substate == "scheduledstop")
+          && StandardMetrics.ms_v_charge_pilot->AsBool()
+          )
         {
+        StandardMetrics.ms_v_charge_substate->SetValue("scheduledstart");
+        RemoteCommandHandler(START_CHARGING);
+        MyNotify.NotifyString("info", "v-nissanleaf.charge.status", "Insufficient charge level - Charging Started.");
+        chg_ctrl_activated = true;
+        
+      }
+    }
+  if (limit_range > 0 && bat_soc < 100 && !chg_ctrl_activated)
+    {
+    // if limit_range is set, then stop charging accordingly
+    if (controlled_range >= limit_range)
+      {
+        if (charge_state == "charging") {
           StandardMetrics.ms_v_charge_substate->SetValue("scheduledstop");
           RemoteCommandHandler(STOP_CHARGING);
           MyNotify.NotifyString("info", "v-nissanleaf.charge.status", "Sufficient range reached - Charging Stopped.");
         }
-      else if ( charge_state != "charging" 
-            && (charge_state != "timerwait" || charge_substate == "scheduledstop")
-            && StandardMetrics.ms_v_charge_pilot->AsBool()
-            )
-        {
-          StandardMetrics.ms_v_charge_substate->SetValue("scheduledstart");
-          RemoteCommandHandler(START_CHARGING);
-          MyNotify.NotifyString("info", "v-nissanleaf.charge.status", "Insufficient range - Charging Started.");
-        }
       }
+    else if ( charge_state != "charging" 
+          && (charge_state != "timerwait" || charge_substate == "scheduledstop")
+          && StandardMetrics.ms_v_charge_pilot->AsBool()
+          )
+      {
+        StandardMetrics.ms_v_charge_substate->SetValue("scheduledstart");
+        RemoteCommandHandler(START_CHARGING);
+        MyNotify.NotifyString("info", "v-nissanleaf.charge.status", "Insufficient range - Charging Started.");
+      }
+    }
 
   // Check if we have what is needed to calculate energy and remaining minutes
   if (charging)
