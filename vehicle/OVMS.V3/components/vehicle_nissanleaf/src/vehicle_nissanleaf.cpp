@@ -1951,7 +1951,9 @@ void OvmsVehicleNissanLeaf::HandleCharging()
           if (cfg_enable_autocharge) {
             RemoteCommandHandler(STOP_CHARGING);
           }
-          MyNotify.NotifyString("info", "v-nissanleaf.charge.status", "Sufficient charge level reached - Charging Stopped.");
+          MyNotify.NotifyStringf("info", "v-nissanleaf.charge.status",
+              "Target charge level reached (%d%%%)", limit_soc
+            );
           chg_ctrl_activated = true;
         }
       }
@@ -1965,7 +1967,9 @@ void OvmsVehicleNissanLeaf::HandleCharging()
         if (cfg_enable_autocharge) {
             RemoteCommandHandler(START_CHARGING);
           }
-        MyNotify.NotifyString("info", "v-nissanleaf.charge.status", "Insufficient charge level - Charging Started.");
+        MyNotify.NotifyStringf("info", "v-nissanleaf.charge.status",
+            "Charge level below target (%d%%%)", bat_soc
+          );
         chg_ctrl_activated = true;
         
       }
@@ -1980,7 +1984,9 @@ void OvmsVehicleNissanLeaf::HandleCharging()
           if (cfg_enable_autocharge) {
             RemoteCommandHandler(STOP_CHARGING);
           }
-          MyNotify.NotifyString("info", "v-nissanleaf.charge.status", "Sufficient range reached - Charging Stopped.");
+          MyNotify.NotifyStringf("info", "v-nissanleaf.charge.status", 
+              "Target driving range reached (%d%% km)", limit_range
+            );
         }
       }
     else if ( charge_state != "charging" 
@@ -1993,7 +1999,9 @@ void OvmsVehicleNissanLeaf::HandleCharging()
         if (cfg_enable_autocharge) {
           RemoteCommandHandler(START_CHARGING);
           }
-        MyNotify.NotifyString("info", "v-nissanleaf.charge.status", "Insufficient range - Charging Started.");
+        MyNotify.NotifyStringf("info", "v-nissanleaf.charge.status",
+            "Driving range below target (%d%% km)", controlled_range
+          );
       }
     }
 

@@ -303,12 +303,12 @@ void OvmsVehicleNissanLeaf::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
     "state of charge (SOC).</p><p>The charging will be automatically stopped when sufficient range or SOC is reached."
     " <br>Likewise the charging will be started again if the range or SOC drops more than allowed drop.</p>");
 
-  c.input_slider("Sufficient range", "suffrange", 0, "km",
-    atof(suffrange.c_str()) > 0, atof(suffrange.c_str()), 0, 0, 300, 1,
+  c.input_slider("Sufficient range", "suffrange", 3, "km",
+    atof(suffrange.c_str()) > 0, atof(suffrange.c_str()), 0, 0, 500, 1,
     "<p>Default 0=off. Notify/stop charge when reaching this level.</p>");
   
-  c.input_slider("Allowed range drop", "rangedrop", 0, "km",
-    atof(rangedrop.c_str()) > 0, atof(rangedrop.c_str()), 0, 0, 300, 1,
+  c.input_slider("Allowed range drop", "rangedrop", 3, "km",
+    atof(rangedrop.c_str()) > 0, atof(rangedrop.c_str()), 0, 0, 500, 1,
     "<p>Default 0=none. Notify/start charge when the range drops more than this "
     "below Sufficient range after the charging has finished.</p>");
   
