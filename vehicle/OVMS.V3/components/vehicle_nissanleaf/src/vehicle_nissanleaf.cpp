@@ -185,6 +185,7 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   MyMetrics.InitString("v.c.state",SM_STALE_MID,"stopped");
   m_ZE0_charger = false;
   m_AZE0_charger = false;
+  m_climate_really_off = false;
 
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
   RegisterCanBus(2,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
@@ -282,11 +283,16 @@ void OvmsVehicleNissanLeaf::ConfigChanged(OvmsConfigParam* param)
   StandardMetrics.ms_v_charge_limit_soc->SetValue(   (float) MyConfig.GetParamValueInt("xnl", "suffsoc"),   Percentage );
   StandardMetrics.ms_v_charge_limit_range->SetValue( (float) MyConfig.GetParamValueInt("xnl", "suffrange"), Kilometers );
 
-  cfg_ev_request_port = MyConfig.GetParamValueInt("xnl", "cfg_ev_request_port");
+  cfg_ev_request_port       = MyConfig.GetParamValueInt("xnl", "cfg_ev_request_port");
+  cfg_limit_range_calc      = MyConfig.GetParamValue("xnl", "suffrangecalc", DEFAULT_SUFF_RANGE_CALC);
+  cfg_allowed_rangedrop     = MyConfig.GetParamValueInt("xnl", "rangedrop", DEFAULT_RANGEDROP);
+  cfg_allowed_socdrop       = MyConfig.GetParamValueInt("xnl", "socdrop", DEFAULT_SOCDROP);
+  cfg_enable_autocharge     = MyConfig.GetParamValueBool("xnl", "autocharge", DEFAULT_AUTOCHARGE_ENABLED);
+
 
   //TODO nl_enable_write = MyConfig.GetParamValueBool("xnl", "canwrite", false);
-  m_enable_write = MyConfig.GetParamValueBool("xnl", "canwrite", false);
-  if (!m_enable_write) PollSetState(POLLSTATE_OFF);
+  cfg_enable_write = MyConfig.GetParamValueBool("xnl", "canwrite", false);
+  if (!cfg_enable_write) PollSetState(POLLSTATE_OFF);
   }
 
 
@@ -299,7 +305,7 @@ void OvmsVehicleNissanLeaf::vehicle_nissanleaf_car_on(bool isOn)
     {
     // Log once that car is being turned on
     ESP_LOGI(TAG,"CAR IS ON");
-    if (m_enable_write) PollSetState(POLLSTATE_ON);
+    if (cfg_enable_write) PollSetState(POLLSTATE_ON);
     // if a can message is found with the state of charge port this can removed
     StandardMetrics.ms_v_door_chargeport->SetValue(false); 
     // Reset trip values
@@ -369,7 +375,7 @@ void OvmsVehicleNissanLeaf::vehicle_nissanleaf_charger_status(ChargerStatus stat
       StandardMetrics.ms_v_charge_type->SetValue(fast_charge ? "chademo" : "type1");
       StdMetrics.ms_v_charge_mode->SetValue(fast_charge ? "performance" : "standard");
       StandardMetrics.ms_v_charge_state->SetValue("charging");
-      if (m_enable_write) PollSetState(POLLSTATE_CHARGING);
+      if (cfg_enable_write) PollSetState(POLLSTATE_CHARGING);
       // TODO only use battery current for Quick Charging, for regular charging
       // we should return AC line current and voltage, not battery
       // TODO does the leaf know the AC line current and voltage?
@@ -406,7 +412,7 @@ void OvmsVehicleNissanLeaf::vehicle_nissanleaf_charger_status(ChargerStatus stat
         StandardMetrics.ms_v_gen_substate->SetValue("onrequest");
         StandardMetrics.ms_v_gen_state->SetValue("exporting");
 
-        if (m_enable_write) PollSetState(POLLSTATE_CHARGING);
+        if (cfg_enable_write) PollSetState(POLLSTATE_CHARGING);
       break;
     case CHARGER_STATUS_INTERRUPTED:
       // Charging stopped during charge by user
@@ -1172,13 +1178,9 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         // The following 2 values work only when preheat is activated while connected to charger.
         m_climate_remoteheat->SetValue(d[1] == 0x4b);
         m_climate_remotecool->SetValue(d[1] == 0x71);
-        hvac_calculated = (climate_on & (m_climate_fan_speed->AsInt() != 0));
-        //dirty fix until solution is found:
-        if (m_climate_fan_speed->AsInt() == 28 && !heating && !cooling
-            && !StandardMetrics.ms_v_env_awake->AsBool()
-            && StandardMetrics.ms_v_charge_state->AsString() == "charging") {
-              hvac_calculated = false;
-            }
+        hvac_calculated = (climate_on 
+                        & (m_climate_fan_speed->AsInt() != 0)
+                        & !m_climate_really_off);
       }
       else
       // More accurate climate control values for hvac, heating, cooling for 2016+ model year cars.
@@ -1225,8 +1227,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         StandardMetrics.ms_v_env_temp->SetValue(d[6] / 2.0 - 40);
         }
 
-      // below true when hvac on while charging so must be used for something else. leaving for future use.
-      // m_climate_dev_off1->SetValue(d[1] == 0xff);
+      m_climate_really_off = (d[2] == 0x00 || d[2] == 0xf8);
 
       break;
     case 0x54f:
@@ -1503,18 +1504,18 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
         case 5: // undefined
         case 6: // undefined
           StandardMetrics.ms_v_env_gear->SetValue(0);
-          if (m_enable_write && StandardMetrics.ms_v_env_on->AsBool()) PollSetState(POLLSTATE_ON);
+          if (cfg_enable_write && StandardMetrics.ms_v_env_on->AsBool()) PollSetState(POLLSTATE_ON);
           break;
         case 2: // Reverse
           StandardMetrics.ms_v_env_gear->SetValue(-1);
           StandardMetrics.ms_v_env_on->SetValue(true);
-          if (m_enable_write) PollSetState(POLLSTATE_RUNNING);
+          if (cfg_enable_write) PollSetState(POLLSTATE_RUNNING);
           break;
         case 4: // Drive
         case 7: // Drive/B (ECO on some models)
           StandardMetrics.ms_v_env_gear->SetValue(1);
           StandardMetrics.ms_v_env_on->SetValue(true);
-          if (m_enable_write) PollSetState(POLLSTATE_RUNNING);
+          if (cfg_enable_write) PollSetState(POLLSTATE_RUNNING);
           break;
         }
       break;
@@ -1617,7 +1618,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
 
 void OvmsVehicleNissanLeaf::SendCommand(RemoteCommand command)
   {
-  if (!m_enable_write) return; //disable commands unless canwrite is true
+  if (!cfg_enable_write) return; //disable commands unless canwrite is true
   unsigned char data[4];
   uint8_t length;
   canbus *tcuBus;
@@ -1911,13 +1912,13 @@ void OvmsVehicleNissanLeaf::HandleCharging()
   float  limit_soc          = StandardMetrics.ms_v_charge_limit_soc->AsFloat(0);
   float  bat_soc            = StandardMetrics.ms_v_bat_soc->AsFloat(0);
   float  limit_range        = StandardMetrics.ms_v_charge_limit_range->AsFloat(0, Kilometers);
-  string limit_range_calc   = MyConfig.GetParamValue("xnl", "suffrangecalc", DEFAULT_SUFF_RANGE_CALC);
   string charge_state       = StandardMetrics.ms_v_charge_state->AsString();
   string charge_substate    = StandardMetrics.ms_v_charge_substate->AsString();
   string prev_c_state       = m_charge_state_previous->AsString();
   float  max_range          = StandardMetrics.ms_v_bat_range_full->AsFloat(0, Kilometers);
   float  controlled_range   = StandardMetrics.ms_v_bat_range_est->AsFloat(0, Kilometers);
-  if (limit_range_calc != "est")
+  
+  if (cfg_limit_range_calc != "est")
   {
     controlled_range        = StandardMetrics.ms_v_bat_range_ideal->AsFloat(0, Kilometers);
   }
@@ -1947,7 +1948,9 @@ void OvmsVehicleNissanLeaf::HandleCharging()
       {
         if (charge_state == "charging") {
           StandardMetrics.ms_v_charge_substate->SetValue("scheduledstop");
-          RemoteCommandHandler(STOP_CHARGING);
+          if (cfg_enable_autocharge) {
+            RemoteCommandHandler(STOP_CHARGING);
+          }
           MyNotify.NotifyString("info", "v-nissanleaf.charge.status", "Sufficient charge level reached - Charging Stopped.");
           chg_ctrl_activated = true;
         }
@@ -1955,10 +1958,13 @@ void OvmsVehicleNissanLeaf::HandleCharging()
     else if ( charge_state != "charging" 
           && (charge_state != "timerwait" || charge_substate == "scheduledstop")
           && StandardMetrics.ms_v_charge_pilot->AsBool()
+          && bat_soc - cfg_allowed_socdrop < limit_soc
           )
         {
         StandardMetrics.ms_v_charge_substate->SetValue("scheduledstart");
-        RemoteCommandHandler(START_CHARGING);
+        if (cfg_enable_autocharge) {
+            RemoteCommandHandler(START_CHARGING);
+          }
         MyNotify.NotifyString("info", "v-nissanleaf.charge.status", "Insufficient charge level - Charging Started.");
         chg_ctrl_activated = true;
         
@@ -1971,17 +1977,22 @@ void OvmsVehicleNissanLeaf::HandleCharging()
       {
         if (charge_state == "charging") {
           StandardMetrics.ms_v_charge_substate->SetValue("scheduledstop");
-          RemoteCommandHandler(STOP_CHARGING);
+          if (cfg_enable_autocharge) {
+            RemoteCommandHandler(STOP_CHARGING);
+          }
           MyNotify.NotifyString("info", "v-nissanleaf.charge.status", "Sufficient range reached - Charging Stopped.");
         }
       }
     else if ( charge_state != "charging" 
           && (charge_state != "timerwait" || charge_substate == "scheduledstop")
           && StandardMetrics.ms_v_charge_pilot->AsBool()
+          && controlled_range - cfg_allowed_rangedrop < limit_range
           )
       {
         StandardMetrics.ms_v_charge_substate->SetValue("scheduledstart");
-        RemoteCommandHandler(START_CHARGING);
+        if (cfg_enable_autocharge) {
+          RemoteCommandHandler(START_CHARGING);
+          }
         MyNotify.NotifyString("info", "v-nissanleaf.charge.status", "Insufficient range - Charging Started.");
       }
     }
@@ -2142,7 +2153,7 @@ void OvmsVehicleNissanLeaf::HandleRange()
 OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::CommandWakeup()
   {
   // The on board charger wakeup message is the same on all 2011-2017 LEAFs
-  if (!m_enable_write) return Fail; // Disable commands unless canwrite is true
+  if (!cfg_enable_write) return Fail; // Disable commands unless canwrite is true
   ESP_LOGI(TAG, "Sending Wakeup Frame");
   unsigned char data = 0;
   m_can1->WriteStandard(0x679, 1, &data); //Tops up the 12V battery if connected to EVSE
@@ -2152,7 +2163,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::CommandWakeup()
 
 OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::RemoteCommandHandler(RemoteCommand command)
   {
-  if (!m_enable_write) return Fail; //disable commands unless canwrite is true
+  if (!cfg_enable_write) return Fail; //disable commands unless canwrite is true
   ESP_LOGI(TAG, "RemoteCommandHandler");
   CommandWakeup();
   // Use the configured pin to wake up GEN 1 Leaf with EV SYSTEM ACTIVATION REQUEST
