@@ -177,6 +177,7 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   m_climate_fan_only = MyMetrics.InitBool("xnl.cc.fan.only", SM_STALE_MIN, false);
   m_climate_remoteheat = MyMetrics.InitBool("xnl.cc.remoteheat", SM_STALE_MIN, false);
   m_climate_remotecool = MyMetrics.InitBool("xnl.cc.remotecool", SM_STALE_MIN, false);
+  m_climate_rqinprogress = MyMetrics.InitBool("xnl.cc.rqinprogress", SM_STALE_MIN, false);
   m_charge_state_previous = MyMetrics.InitString("xnl.v.c.state.previous", SM_STALE_HIGH, 0);
   m_charge_user_notified = MyMetrics.InitString("xnl.v.c.notification", SM_STALE_HIGH, 0);
   m_climate_auto = MyMetrics.InitBool("xnl.v.e.hvac.auto", SM_STALE_MIN, false);
@@ -1211,6 +1212,9 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         if (!hvac_calculated) m_climate_fan_speed->SetValue(0);
       }
 
+      if (hvac_calculated) {
+        m_climate_rqinprogress->SetValue(true);
+      }
       StandardMetrics.ms_v_env_hvac->SetValue(hvac_calculated);
       
       bool fan_only = ( (d[1] == 0x48 || d[1] == 0x46) && fanspeed_int != 0 );
@@ -1643,6 +1647,7 @@ void OvmsVehicleNissanLeaf::SendCommand(RemoteCommand command)
   switch (command)
     {
     case ENABLE_CLIMATE_CONTROL:
+      m_climate_rqinprogress->SetValue(true);
       ESP_LOGI(TAG, "Enable Climate Control");
       data[0] = 0x4e;
       data[1] = 0x08;
@@ -1803,12 +1808,21 @@ void OvmsVehicleNissanLeaf::Ticker10(uint32_t ticker)
     }
   
   // assume charge port has been closed 2min after pilot signal finished
-  if (StandardMetrics.ms_v_charge_pilot->IsStale() && StandardMetrics.ms_v_gen_pilot->IsStale() && StandardMetrics.ms_v_door_chargeport->AsBool())
+  // mjk: Not needed for MY 2013 an above, is pilot signal is stable on both AC and DC.
+
+  if (MyConfig.GetParamValueInt("xnl", "modelyear", DEFAULT_MODEL_YEAR) < 2013
+      && StandardMetrics.ms_v_charge_pilot->IsStale() 
+      && StandardMetrics.ms_v_gen_pilot->IsStale() 
+      && StandardMetrics.ms_v_door_chargeport->AsBool())
     {
     std::string str = StandardMetrics.ms_v_charge_substate->AsString();
     if      (str == "timerwait") ;
     else if (str == "powerwait") ;
     else StandardMetrics.ms_v_door_chargeport->SetValue(false);
+    }
+  else if ( !StandardMetrics.ms_v_charge_pilot->AsBool() ) {
+    // todo: validate against actuall charge port value once the relevant CAN message is found
+    StandardMetrics.ms_v_door_chargeport->SetValue(false);
     }
   }
 
@@ -1912,6 +1926,7 @@ void OvmsVehicleNissanLeaf::HandleCharging()
   
   float  charge_power_w     = 0;
   bool   chg_ctrl_activated = false;
+  bool   cc_on_or_requested = (m_climate_rqinprogress->AsBool() || StandardMetrics.ms_v_env_hvac->AsBool());
   float  limit_soc          = StandardMetrics.ms_v_charge_limit_soc->AsFloat(0);
   float  bat_soc            = StandardMetrics.ms_v_bat_soc->AsFloat(0);
   float  limit_range        = StandardMetrics.ms_v_charge_limit_range->AsFloat(0, Kilometers);
@@ -1928,21 +1943,28 @@ void OvmsVehicleNissanLeaf::HandleCharging()
     controlled_range        = StandardMetrics.ms_v_bat_range_ideal->AsFloat(0, Kilometers);
   }
   // handle charge interruption substate
-  if ( charge_state    == "stopped" 
-    && (prev_c_state   == "charging"
-    || prev_c_state    == "timerwait") 
-    && charge_substate != "scheduledstop")
-  {
-    StandardMetrics.ms_v_charge_substate->SetValue("interrupted");
-  }
-  if ( charge_state    == "charging" 
-    && (prev_c_state   == "stopped"
-    || prev_c_state    == "timerwait") 
-    && StandardMetrics.ms_v_env_hvac->AsBool())
-  {
-    StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
-  }
   if (prev_c_state != charge_state) {
+    if ( charge_state    == "stopped" 
+      && (prev_c_state   == "charging"
+      || prev_c_state    == "timerwait") 
+      && charge_substate != "scheduledstop")
+    {
+      StandardMetrics.ms_v_charge_substate->SetValue("interrupted");
+    }
+    if ( charge_state    == "charging" 
+      && (prev_c_state   == "stopped"
+      || prev_c_state    == "timerwait"
+      || charge_substate == "powerwait") 
+      && cc_on_or_requested)
+    {
+      StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
+    }
+    if ( charge_state    == "timerwait" 
+      && charge_substate != "onrequest"
+      && charge_substate != "scheduledstop")
+    {
+      StandardMetrics.ms_v_charge_substate->SetValue("powerwait");
+    }
     m_charge_state_previous->SetValue(charge_state);
     m_charge_user_notified->SetValue("reset");
   }
@@ -1953,7 +1975,7 @@ void OvmsVehicleNissanLeaf::HandleCharging()
     if (bat_soc >= limit_soc)
       {
         if (charge_state == "charging") {
-          if (cfg_enable_autocharge && !StandardMetrics.ms_v_env_hvac->AsBool()) {
+          if (cfg_enable_autocharge && !cc_on_or_requested) {
             StandardMetrics.ms_v_charge_substate->SetValue("scheduledstop");
             RemoteCommandHandler(STOP_CHARGING);
           }
@@ -1996,7 +2018,7 @@ void OvmsVehicleNissanLeaf::HandleCharging()
     if (controlled_range >= limit_range)
       {
         if (charge_state == "charging") {
-          if (cfg_enable_autocharge && !StandardMetrics.ms_v_env_hvac->AsBool()) {
+          if (cfg_enable_autocharge && !cc_on_or_requested) {
             StandardMetrics.ms_v_charge_substate->SetValue("scheduledstop");
             RemoteCommandHandler(STOP_CHARGING);
           }

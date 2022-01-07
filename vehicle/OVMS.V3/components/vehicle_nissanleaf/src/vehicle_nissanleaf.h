@@ -208,6 +208,7 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     OvmsMetricBool *m_climate_fan_only;
     OvmsMetricBool *m_climate_remoteheat;
     OvmsMetricBool *m_climate_remotecool;
+    OvmsMetricBool *m_climate_rqinprogress;
     OvmsMetricString *m_climate_vent;
     OvmsMetricString *m_climate_intake;
     OvmsMetricInt *m_climate_fan_speed;
