@@ -202,6 +202,7 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     OvmsMetricInt *m_quick_charge;
     OvmsMetricString *m_charge_state_previous;
     OvmsMetricString *m_charge_user_notified;           // For sending autocharge notifications only after charge status has changed
+    OvmsMetricString *m_charge_event_reason;
     OvmsMetricFloat *m_soc_nominal;
     OvmsMetricInt *m_charge_count_qc;
     OvmsMetricInt *m_charge_count_l0l1l2;

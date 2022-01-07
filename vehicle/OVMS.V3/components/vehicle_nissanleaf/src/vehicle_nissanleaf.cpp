@@ -179,7 +179,8 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   m_climate_remotecool = MyMetrics.InitBool("xnl.cc.remotecool", SM_STALE_MIN, false);
   m_climate_rqinprogress = MyMetrics.InitBool("xnl.cc.rqinprogress", SM_STALE_MIN, false);
   m_charge_state_previous = MyMetrics.InitString("xnl.v.c.state.previous", SM_STALE_HIGH, 0);
-  m_charge_user_notified = MyMetrics.InitString("xnl.v.c.notification", SM_STALE_HIGH, 0);
+  m_charge_user_notified = MyMetrics.InitString("xnl.v.c.event.notification", SM_STALE_HIGH, 0);
+  m_charge_event_reason = MyMetrics.InitString("xnl.v.c.event.reason", SM_STALE_HIGH, 0);
   m_climate_auto = MyMetrics.InitBool("xnl.v.e.hvac.auto", SM_STALE_MIN, false);
   MyMetrics.InitBool("v.e.on", SM_STALE_MIN, false);
   MyMetrics.InitBool("v.e.awake", SM_STALE_MID, false);
@@ -1213,7 +1214,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
       }
 
       if (hvac_calculated) {
-        m_climate_rqinprogress->SetValue(true);
+        m_climate_rqinprogress->SetValue(false);
       }
       StandardMetrics.ms_v_env_hvac->SetValue(hvac_calculated);
       
@@ -1969,7 +1970,7 @@ void OvmsVehicleNissanLeaf::HandleCharging()
     m_charge_user_notified->SetValue("reset");
   }
   // handle auto charge start/stop
-  if (limit_soc > 0)
+  if (limit_soc > 0 && m_charge_event_reason->AsString() != "range")
     {
     // if limit_soc is set, then stop charging accordingly
     if (bat_soc >= limit_soc)
@@ -1978,6 +1979,7 @@ void OvmsVehicleNissanLeaf::HandleCharging()
           if (cfg_enable_autocharge && !cc_on_or_requested) {
             StandardMetrics.ms_v_charge_substate->SetValue("scheduledstop");
             RemoteCommandHandler(STOP_CHARGING);
+            m_charge_event_reason->SetValue("");
           }
           notify_msg = "Target charge level reached";
           if (prev_notify_msg != notify_msg) {
@@ -2000,6 +2002,7 @@ void OvmsVehicleNissanLeaf::HandleCharging()
         if (cfg_enable_autocharge) {
           StandardMetrics.ms_v_charge_substate->SetValue("scheduledstart");
           RemoteCommandHandler(START_CHARGING);
+          m_charge_event_reason->SetValue("soc");
         }
         notify_msg = "Charge level below target";
         if (prev_notify_msg != notify_msg) {
@@ -2012,7 +2015,7 @@ void OvmsVehicleNissanLeaf::HandleCharging()
         
       }
     }
-  if (limit_range > 0 && bat_soc < 100 && !chg_ctrl_activated)
+  if (limit_range > 0 && bat_soc < 100 && !chg_ctrl_activated && m_charge_event_reason->AsString() != "soc")
     {
     // if limit_range is set, then stop charging accordingly
     if (controlled_range >= limit_range)
@@ -2021,6 +2024,7 @@ void OvmsVehicleNissanLeaf::HandleCharging()
           if (cfg_enable_autocharge && !cc_on_or_requested) {
             StandardMetrics.ms_v_charge_substate->SetValue("scheduledstop");
             RemoteCommandHandler(STOP_CHARGING);
+            m_charge_event_reason->SetValue("");
           }
           notify_msg = "Target driving range reached";
           if (prev_notify_msg != notify_msg) {
@@ -2041,6 +2045,7 @@ void OvmsVehicleNissanLeaf::HandleCharging()
         if (cfg_enable_autocharge) {
           StandardMetrics.ms_v_charge_substate->SetValue("scheduledstart");
           RemoteCommandHandler(START_CHARGING);
+          m_charge_event_reason->SetValue("range");
         }
         notify_msg = "Driving range below target";
         if (prev_notify_msg != notify_msg) {
