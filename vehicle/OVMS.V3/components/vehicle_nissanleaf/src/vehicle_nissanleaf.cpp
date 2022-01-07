@@ -178,6 +178,7 @@ OvmsVehicleNissanLeaf::OvmsVehicleNissanLeaf()
   m_climate_remoteheat = MyMetrics.InitBool("xnl.cc.remoteheat", SM_STALE_MIN, false);
   m_climate_remotecool = MyMetrics.InitBool("xnl.cc.remotecool", SM_STALE_MIN, false);
   m_charge_state_previous = MyMetrics.InitString("xnl.v.c.state.previous", SM_STALE_HIGH, 0);
+  m_charge_user_notified = MyMetrics.InitString("xnl.v.c.notification", SM_STALE_HIGH, 0);
   m_climate_auto = MyMetrics.InitBool("xnl.v.e.hvac.auto", SM_STALE_MIN, false);
   MyMetrics.InitBool("v.e.on", SM_STALE_MIN, false);
   MyMetrics.InitBool("v.e.awake", SM_STALE_MID, false);
@@ -1222,12 +1223,14 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
        * and seems to stay within a degree or two of the "eyebrow" temp display.
        * App label: AMBIENT
        */
+      m_climate_really_off = (d[5] == 0x00 || d[5] == 0xf8);
+
       if (d[6] != 0xff)
         {
         StandardMetrics.ms_v_env_temp->SetValue(d[6] / 2.0 - 40);
         }
 
-      m_climate_really_off = (d[2] == 0x00 || d[2] == 0xf8);
+      m_climate_really_off = (d[5] == 0x00 || d[5] == 0xf8);
 
       break;
     case 0x54f:
@@ -1915,6 +1918,8 @@ void OvmsVehicleNissanLeaf::HandleCharging()
   string charge_state       = StandardMetrics.ms_v_charge_state->AsString();
   string charge_substate    = StandardMetrics.ms_v_charge_substate->AsString();
   string prev_c_state       = m_charge_state_previous->AsString();
+  string prev_notify_msg    = m_charge_user_notified->AsString();
+  std::string notify_msg;
   float  max_range          = StandardMetrics.ms_v_bat_range_full->AsFloat(0, Kilometers);
   float  controlled_range   = StandardMetrics.ms_v_bat_range_est->AsFloat(0, Kilometers);
   
@@ -1935,73 +1940,93 @@ void OvmsVehicleNissanLeaf::HandleCharging()
     || prev_c_state    == "timerwait") 
     && StandardMetrics.ms_v_env_hvac->AsBool())
   {
-    StandardMetrics.ms_v_charge_substate->SetValue("interrupted");
+    StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
   }
   if (prev_c_state != charge_state) {
     m_charge_state_previous->SetValue(charge_state);
+    m_charge_user_notified->SetValue("reset");
   }
   // handle auto charge start/stop
   if (limit_soc > 0)
     {
     // if limit_soc is set, then stop charging accordingly
-    if (bat_soc >= limit_soc && !StandardMetrics.ms_v_env_hvac->AsBool())
+    if (bat_soc >= limit_soc)
       {
         if (charge_state == "charging") {
-          StandardMetrics.ms_v_charge_substate->SetValue("scheduledstop");
-          if (cfg_enable_autocharge) {
+          if (cfg_enable_autocharge && !StandardMetrics.ms_v_env_hvac->AsBool()) {
+            StandardMetrics.ms_v_charge_substate->SetValue("scheduledstop");
             RemoteCommandHandler(STOP_CHARGING);
           }
-          MyNotify.NotifyStringf("info", "v-nissanleaf.charge.status",
-              "Target charge level reached (%d%%%)", limit_soc
+          notify_msg = "Target charge level reached";
+          if (prev_notify_msg != notify_msg) {
+            m_charge_user_notified->SetValue(notify_msg);
+            MyNotify.NotifyStringf("info", "v-nissanleaf.charge.status",
+              "%s (%.0f%%)", notify_msg.c_str(), limit_soc
             );
+          }
           chg_ctrl_activated = true;
         }
       }
     else if ( charge_state != "charging" 
-          && (charge_state != "timerwait" || charge_substate == "scheduledstop")
+          && ( (charge_state != "timerwait" && charge_substate != "onrequest" && charge_substate != "scheduledstop")
+            || (bat_soc < limit_soc - cfg_allowed_socdrop && charge_substate == "scheduledstop")
+          )
           && StandardMetrics.ms_v_charge_pilot->AsBool()
-          && bat_soc - cfg_allowed_socdrop < limit_soc
           )
         {
-        StandardMetrics.ms_v_charge_substate->SetValue("scheduledstart");
+        
         if (cfg_enable_autocharge) {
-            RemoteCommandHandler(START_CHARGING);
-          }
-        MyNotify.NotifyStringf("info", "v-nissanleaf.charge.status",
-            "Charge level below target (%d%%%)", bat_soc
+          StandardMetrics.ms_v_charge_substate->SetValue("scheduledstart");
+          RemoteCommandHandler(START_CHARGING);
+        }
+        notify_msg = "Charge level below target";
+        if (prev_notify_msg != notify_msg) {
+          m_charge_user_notified->SetValue(notify_msg);
+          MyNotify.NotifyStringf("info", "v-nissanleaf.charge.status",
+            "%s (%.0f%%)", notify_msg.c_str(), bat_soc
           );
+        }
         chg_ctrl_activated = true;
         
       }
     }
-  if (limit_range > 0 && bat_soc < 100 && !chg_ctrl_activated && !StandardMetrics.ms_v_env_hvac->AsBool())
+  if (limit_range > 0 && bat_soc < 100 && !chg_ctrl_activated)
     {
     // if limit_range is set, then stop charging accordingly
     if (controlled_range >= limit_range)
       {
         if (charge_state == "charging") {
-          StandardMetrics.ms_v_charge_substate->SetValue("scheduledstop");
-          if (cfg_enable_autocharge) {
+          if (cfg_enable_autocharge && !StandardMetrics.ms_v_env_hvac->AsBool()) {
+            StandardMetrics.ms_v_charge_substate->SetValue("scheduledstop");
             RemoteCommandHandler(STOP_CHARGING);
           }
-          MyNotify.NotifyStringf("info", "v-nissanleaf.charge.status", 
-              "Target driving range reached (%d%% km)", limit_range
+          notify_msg = "Target driving range reached";
+          if (prev_notify_msg != notify_msg) {
+            m_charge_user_notified->SetValue(notify_msg);
+            MyNotify.NotifyStringf("info", "v-nissanleaf.charge.status",
+              "%s (%.0f km)", notify_msg.c_str(), limit_range
             );
+          }
         }
       }
     else if ( charge_state != "charging" 
-          && (charge_state != "timerwait" || charge_substate == "scheduledstop")
+          && ( (charge_state != "timerwait" && charge_substate != "onrequest" && charge_substate != "scheduledstop")
+            || (controlled_range < limit_range - cfg_allowed_rangedrop && charge_substate == "scheduledstop")
+          )
           && StandardMetrics.ms_v_charge_pilot->AsBool()
-          && controlled_range - cfg_allowed_rangedrop < limit_range
           )
       {
-        StandardMetrics.ms_v_charge_substate->SetValue("scheduledstart");
         if (cfg_enable_autocharge) {
+          StandardMetrics.ms_v_charge_substate->SetValue("scheduledstart");
           RemoteCommandHandler(START_CHARGING);
-          }
-        MyNotify.NotifyStringf("info", "v-nissanleaf.charge.status",
-            "Driving range below target (%d%% km)", controlled_range
+        }
+        notify_msg = "Driving range below target";
+        if (prev_notify_msg != notify_msg) {
+          m_charge_user_notified->SetValue(notify_msg);
+          MyNotify.NotifyStringf("info", "v-nissanleaf.charge.status",
+            "%s (%.0f km)", notify_msg.c_str(), controlled_range
           );
+        }
       }
     }
 

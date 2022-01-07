@@ -201,6 +201,7 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     OvmsMetricInt *m_remaining_chargebars;
     OvmsMetricInt *m_quick_charge;
     OvmsMetricString *m_charge_state_previous;
+    OvmsMetricString *m_charge_user_notified;           // For sending autocharge notifications only after charge status has changed
     OvmsMetricFloat *m_soc_nominal;
     OvmsMetricInt *m_charge_count_qc;
     OvmsMetricInt *m_charge_count_l0l1l2;
@@ -221,14 +222,15 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     bool   cfg_enable_autocharge;                       // Enable/disable automatic charge control based on SOC or range
     string cfg_limit_range_calc;                        // What range calc to use for charge to range feature
 
-    int   m_MITM = 0;
-    float m_cum_energy_used_wh;				    // Cumulated energy (in wh) used within 1 second ticker interval
-    float m_cum_energy_recd_wh; 					// Cumulated energy (in wh) recovered  within 1 second ticker interval
-    float m_cum_energy_charge_wh;					// Cumulated energy (in wh) charged within 10 second ticker interval
-    float m_cum_energy_gen_wh;					  // Cumulated energy (in wh) exported within 10 second ticker interval
-    bool  m_ZE0_charger;					        // True if 2011-2012 ZE0 LEAF with 0x380 message (Gen 1)
-	  bool  m_AZE0_charger;							    // True if 2013+ AZE0 LEAF with 0x390 message (Gen 2)
-    bool  m_climate_really_off;           // Needed for AZE0 to shown correct hvac status while charging
+    int     m_MITM = 0;
+    float   m_cum_energy_used_wh;				    // Cumulated energy (in wh) used within 1 second ticker interval
+    float   m_cum_energy_recd_wh; 					// Cumulated energy (in wh) recovered  within 1 second ticker interval
+    float   m_cum_energy_charge_wh;					// Cumulated energy (in wh) charged within 10 second ticker interval
+    float   m_cum_energy_gen_wh;					  // Cumulated energy (in wh) exported within 10 second ticker interval
+    bool    m_ZE0_charger;					        // True if 2011-2012 ZE0 LEAF with 0x380 message (Gen 1)
+	  bool    m_AZE0_charger;							    // True if 2013+ AZE0 LEAF with 0x390 message (Gen 2)
+    bool    m_climate_really_off;           // Needed for AZE0 to shown correct hvac status while charging
+
 
   protected:
     OvmsCommand*        cmd_xnl;
