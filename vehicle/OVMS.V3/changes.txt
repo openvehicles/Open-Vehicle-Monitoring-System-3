@@ -16,12 +16,19 @@ Open Vehicle Monitor System v3 - Change log
 - Nissan LEAF:
  - Remote heating/cooling now works on 2011-2012 LEAFs
  - Stop charge feature added, works via app
- - 5 new metrics added
+ - Charge to Limit SOC and/or range added with a top-up feature.
+ - Improved charging metric logic.
+ - Fixed incorrect HVAC (Climate Control) status when charging (for 2013+).
+ - 9 new metrics added
     xnl.v.b.max.gids (Max number of GIDs the battery can reach (for 2016+))
     xnl.v.b.heatrequested (Battery is requesting heater elements to turn on (for 2013+))
     xnl.v.b.heatergranted (Vehicle is OKing heater elements to turn on (for 2013+))
     xnl.v.c.chargeminutes3kW (The 3kW charge time estimate the car calculates)
     xnl.v.c.chargebars (Remaining charge "bars" on dashboard)
+    xnl.v.c.event.notification (Used to not send duplicate notifications for charge to limit feature.)
+    xnl.v.c.event.reason (When charge to limit feature starts the charge shows if was triggered due to range or SOC limit.)
+    xnl.v.c.state.previous (Used to better handle charging substate, shows previos charging state timed to ticker.10.)
+    xnl.cc.rqinprogress (Indicates the period betwen arrival of climate control action message and climate control activation.)
  - Wakeup command now charges 12V battery if connected to EVSE
  - 2011-2012 LEAF now reads AC voltage from grid
 

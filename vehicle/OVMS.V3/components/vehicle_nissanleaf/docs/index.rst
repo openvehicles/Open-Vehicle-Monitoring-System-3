@@ -36,6 +36,17 @@ Lock/Unlock Vehicle         Yes [3]_ (see info below)
 Valet Mode Control          Not currently supported
 =========================== ==============
 
+^^^^^^^^^^^^^^^^^^^
+Additional Features
+^^^^^^^^^^^^^^^^^^^
+
+=========================== ==============
+Feature                     Description
+=========================== ==============
+BMS Cell Monitor            Allows to monitor individual battery cells in a configurable chart. Can be accessed from web user interface accessible over WiFi.
+Charge to Limit             Allows to automatically stop the charge when target SOC (state of charge) and/or range is reached. All parameters can be controlled trough metrics or web user interface. Meanwhile Range and SOC can be controlled from the app as well, by adjusting fields 10 (SOC) and 11 (range) in feature section accessible trough app settings.
+=========================== ==============
+
 ^^^^^^^^^^^^^^^^
 Metrics
 ^^^^^^^^^^^^^^^^
