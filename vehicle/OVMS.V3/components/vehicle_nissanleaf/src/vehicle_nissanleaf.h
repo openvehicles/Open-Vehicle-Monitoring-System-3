@@ -152,6 +152,7 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     void Ticker10(uint32_t ticker);
     void HandleEnergy();
     void HandleCharging();
+    void HandleChargeEstimation();
     void HandleExporting();
     void HandleRange();
     int  calcMinutesRemaining(float target, float charge_power_w);
