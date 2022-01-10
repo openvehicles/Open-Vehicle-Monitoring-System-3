@@ -1934,6 +1934,15 @@ void OvmsVehicleNissanLeaf::HandleChargeEstimation()
 
     // always calculate remaining charge time to full
     float full_soc           = 100.0;     // 100%
+
+    // adjust max range if 'ideal' is selected as estimation method
+    if (cfg_limit_range_calc != "est")
+    {
+      max_range = (full_soc 
+                    * StandardMetrics.ms_v_bat_range_ideal->AsFloat(0, Kilometers) 
+                    / StandardMetrics.ms_v_bat_soc->AsFloat(0) );
+    }
+
     int   minsremaining_full = calcMinutesRemaining(full_soc, charge_power_w);
 
     StandardMetrics.ms_v_charge_duration_full->SetValue(minsremaining_full, Minutes);
