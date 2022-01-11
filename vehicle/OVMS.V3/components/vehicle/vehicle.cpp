@@ -763,7 +763,8 @@ void OvmsVehicle::NotifyChargeStopped()
   StringWriter buf(200);
   CommandStat(COMMAND_RESULT_NORMAL, &buf);
   if (StdMetrics.ms_v_charge_substate->AsString() == "scheduledstop" ||
-      StdMetrics.ms_v_charge_substate->AsString() == "timerwait")
+      StdMetrics.ms_v_charge_substate->AsString() == "timerwait" ||
+      StdMetrics.ms_v_charge_substate->AsString() == "onrequest")
     MyNotify.NotifyString("info","charge.stopped",buf.c_str());
   else
     MyNotify.NotifyString("alert","charge.stopped",buf.c_str());
@@ -1008,6 +1009,8 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStat(int verbosity, OvmsWrite
       charge_state = "Charging, Heating";
     else if (charge_state == "stopped")
       charge_state = "Charge Stopped";
+    else if (charge_state == "timerwait")
+      charge_state = "Charge Stopped, Timer On";
 
     if (charge_mode != "")
       writer->printf("%s - ", charge_mode.c_str());
@@ -1687,7 +1690,7 @@ void OvmsVehicle::NotifyChargeState()
   std::string m = StandardMetrics.ms_v_charge_state->AsString();
   if (m == "done")
     NotifyChargeDone();
-  else if (m == "stopped")
+  else if (m == "stopped" || m == "timerwait")
     NotifyChargeStopped();
   else if (m == "charging")
     NotifyChargeStart();
