@@ -184,8 +184,9 @@ void OvmsVehicleNissanLeaf::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
   c.input_select_option("EGPIO_6", "7", cfg_ev_request_port == "7");
   c.input_select_option("EGPIO_7", "8", cfg_ev_request_port == "8");
   c.input_select_option("EGPIO_8", "9", cfg_ev_request_port == "9");
-  c.input_select_end();
-  c.print("<p>The 2011-2012 LEAF needs a +12V signal to the TCU harness to use remote commands. Default is SW_12V. See documentation before making changes here.</p>");
+  c.input_select_end(
+    "<p>The 2011-2012 LEAF needs a +12V signal to the TCU harness to use remote commands."
+    " Default is SW_12V. See documentation before making changes here.</p>");
   c.fieldset_end();
 
   c.print("<hr>");
@@ -204,14 +205,23 @@ void OvmsVehicleNissanLeaf::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
   std::string error;
   //  suffsoc          	Sufficient SOC [%] (Default: 0=disabled)
   //  suffrange        	Sufficient range [km] (Default: 0=disabled)
-  std::string suffrange, suffsoc, minrange, minsoc;
+  //  suffrangecalc     Sufficient range calulation method [ideal/est] (Default: ideal
+  //  socdrop          	Allowed drop in SOC [%] (Default: 0=none)
+  //  rangedrop        	Allowed drop in range [km] (Default: 0=none)
+  std::string suffrange, suffrangecalc, suffsoc, rangedrop, socdrop, minrange, minsoc;
+  //  chgnoteonly        Whether to control charging or not [0/1] (Default: 0)
+  bool chgnoteonly;
 
   if (c.method == "POST") {
     // process form submission:
-    suffrange = c.getvar("suffrange");
-    suffsoc = c.getvar("suffsoc");
-    minrange = c.getvar("minrange");
-    minsoc = c.getvar("minsoc");
+    suffrange         = c.getvar("suffrange");
+    suffrangecalc     = c.getvar("suffrangecalc");
+    suffsoc           = c.getvar("suffsoc");
+    rangedrop         = c.getvar("rangedrop");
+    socdrop           = c.getvar("socdrop");
+    minrange          = c.getvar("minrange");
+    minsoc            = c.getvar("minsoc");
+    chgnoteonly       = (c.getvar("chgnoteonly") == "yes");
 
     // check:
     if (!suffrange.empty()) {
@@ -223,6 +233,16 @@ void OvmsVehicleNissanLeaf::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
       float n = atof(suffsoc.c_str());
       if (n < 0 || n > 100)
         error += "<li data-input=\"suffsoc\">Sufficient SOC invalid, must be 0…100</li>";
+    }
+    if (!rangedrop.empty()) {
+      float n = atof(rangedrop.c_str());
+      if (n < 0)
+        error += "<li data-input=\"rangedrop\">Allowed range drop invalid, must be &ge; 0</li>";
+    }
+    if (!socdrop.empty()) {
+      float n = atof(socdrop.c_str());
+      if (n < 0 || n > 100)
+        error += "<li data-input=\"socdrop\">Allowed SOC drop invalid, must be 0…100</li>";
     }
     if (!minrange.empty()) {
       float n = atof(minrange.c_str());
@@ -238,9 +258,13 @@ void OvmsVehicleNissanLeaf::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
     if (error == "") {
       // store:
       MyConfig.SetParamValue("xnl", "suffrange", suffrange);
+      MyConfig.SetParamValue("xnl", "suffrangecalc", suffrangecalc);
       MyConfig.SetParamValue("xnl", "suffsoc", suffsoc);
+      MyConfig.SetParamValue("xnl", "rangedrop", rangedrop);
+      MyConfig.SetParamValue("xnl", "socdrop", socdrop);
       MyConfig.SetParamValue("xnl", "minrange", minrange);
       MyConfig.SetParamValue("xnl", "minsoc", minsoc);
+      MyConfig.SetParamValueBool("xnl", "autocharge", !chgnoteonly);
 
       c.head(200);
       c.alert("success", "<p class=\"lead\">Nissan Leaf battery setup saved.</p>");
@@ -256,10 +280,14 @@ void OvmsVehicleNissanLeaf::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
   }
   else {
     // read configuration:
+    suffrangecalc = MyConfig.GetParamValue("xnl", "suffrangecalc", "ideal");
     suffrange = MyConfig.GetParamValue("xnl", "suffrange", "0");
     suffsoc = MyConfig.GetParamValue("xnl", "suffsoc", "0");
+    rangedrop = MyConfig.GetParamValue("xnl", "rangedrop", "0");
+    socdrop = MyConfig.GetParamValue("xnl", "socdrop", "0");
     minrange = MyConfig.GetParamValue("xnl", "minrange", "0");
     minsoc = MyConfig.GetParamValue("xnl", "minsoc", "0");
+    chgnoteonly = !MyConfig.GetParamValueBool("xnl", "autocharge", true);
     c.head(200);
   }
 
@@ -270,13 +298,36 @@ void OvmsVehicleNissanLeaf::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
 
   c.fieldset_start("Charge control");
 
+  c.alert("info",
+    "<p>This section allows to configure automatic charge control based on the range and/or "
+    "state of charge (SOC).</p><p>The charging will be automatically stopped when sufficient range or SOC is reached."
+    " <br>Likewise the charging will be started again if the range or SOC drops more than allowed drop.</p>");
+
   c.input_slider("Sufficient range", "suffrange", 3, "km",
-    atof(suffrange.c_str()) > 0, atof(suffrange.c_str()), 0, 0, 300, 1,
+    atof(suffrange.c_str()) > 0, atof(suffrange.c_str()), 0, 0, 500, 1,
     "<p>Default 0=off. Notify/stop charge when reaching this level.</p>");
+  
+  c.input_slider("Allowed range drop", "rangedrop", 3, "km",
+    atof(rangedrop.c_str()) > 0, atof(rangedrop.c_str()), 0, 0, 500, 1,
+    "<p>Default 0=none. Notify/start charge when the range drops more than this "
+    "below Sufficient range after the charging has finished.</p>");
+  
+  c.input_radio_start("Sufficient range estimation method", "suffrangecalc");
+  c.input_radio_option("suffrangecalc", "Ideal",   "ideal",  suffrangecalc == "ideal");
+  c.input_radio_option("suffrangecalc", "Standard", "est", suffrangecalc == "est");
+  c.input_radio_end("");
 
   c.input_slider("Sufficient SOC", "suffsoc", 3, "%",
     atof(suffsoc.c_str()) > 0, atof(suffsoc.c_str()), 0, 0, 100, 1,
     "<p>Default 0=off. Notify/stop charge when reaching this level.</p>");
+  c.input_slider("Allowed SOC drop", "socdrop", 3, "%",
+    atof(socdrop.c_str()) > 0, atof(socdrop.c_str()), 0, 0, 100, 1,
+    "<p>Default 0=none. Notify/start charge when SOC drops more than this "
+    "below Sufficient SOC after the charging has finished.</p>");
+  
+  c.input_checkbox("Notify only", "chgnoteonly", chgnoteonly,
+    "<p>Select this if you only want to receive notification when the range or state of charge"
+    " is outside your defined parameters. And don't want the charging to be stopped or started automatically.</p>");
 
   c.fieldset_end();
   

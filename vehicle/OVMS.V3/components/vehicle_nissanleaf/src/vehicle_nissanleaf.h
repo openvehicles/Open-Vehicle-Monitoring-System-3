@@ -45,6 +45,10 @@
 #define DEFAULT_MODEL_YEAR 2012
 #define DEFAULT_PIN_EV 1
 #define DEFAULT_CABINTEMP_OFFSET .0
+#define DEFAULT_SUFF_RANGE_CALC "ideal"
+#define DEFAULT_RANGEDROP 0
+#define DEFAULT_SOCDROP 0
+#define DEFAULT_AUTOCHARGE_ENABLED true
 #define GEN_1_NEW_CAR_GIDS 281
 #define GEN_1_NEW_CAR_AH 66
 #define GEN_1_KM_PER_KWH 7.1
@@ -65,6 +69,7 @@ typedef enum
   ENABLE_CLIMATE_CONTROL,
   DISABLE_CLIMATE_CONTROL,
   START_CHARGING,
+  STOP_CHARGING,
   AUTO_DISABLE_CLIMATE_CONTROL,
   UNLOCK_DOORS,
   LOCK_DOORS
@@ -147,6 +152,7 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     void Ticker10(uint32_t ticker);
     void HandleEnergy();
     void HandleCharging();
+    void HandleChargeEstimation();
     void HandleExporting();
     void HandleRange();
     int  calcMinutesRemaining(float target, float charge_power_w);
@@ -195,28 +201,39 @@ class OvmsVehicleNissanLeaf : public OvmsVehicle
     OvmsMetricInt *m_charge_minutes_3kW_remaining;
     OvmsMetricInt *m_remaining_chargebars;
     OvmsMetricInt *m_quick_charge;
+    OvmsMetricString *m_charge_state_previous;
+    OvmsMetricString *m_charge_user_notified;           // For sending autocharge notifications only after charge status has changed
+    OvmsMetricString *m_charge_event_reason;
     OvmsMetricFloat *m_soc_nominal;
     OvmsMetricInt *m_charge_count_qc;
     OvmsMetricInt *m_charge_count_l0l1l2;
     OvmsMetricBool *m_climate_fan_only;
     OvmsMetricBool *m_climate_remoteheat;
     OvmsMetricBool *m_climate_remotecool;
+    OvmsMetricBool *m_climate_rqinprogress;
     OvmsMetricString *m_climate_vent;
     OvmsMetricString *m_climate_intake;
     OvmsMetricInt *m_climate_fan_speed;
     OvmsMetricInt *m_climate_fan_speed_limit;
     OvmsMetricFloat *m_climate_setpoint;
     OvmsMetricBool *m_climate_auto;
-    int m_MITM = 0;
-    int cfg_ev_request_port = DEFAULT_PIN_EV;        // EGPIO port number for EV SYSTEM ACTIVATION REQUEST
+    
+    int    cfg_ev_request_port = DEFAULT_PIN_EV;        // EGPIO port number for EV SYSTEM ACTIVATION REQUEST
+    int    cfg_allowed_rangedrop;                       // Allowed drop of range after charging
+    int    cfg_allowed_socdrop;                         // Allowed drop of SOC after charging
+    bool   cfg_enable_write;                            // Enable/disable can write (polling and commands
+    bool   cfg_enable_autocharge;                       // Enable/disable automatic charge control based on SOC or range
+    string cfg_limit_range_calc;                        // What range calc to use for charge to range feature
 
-    float m_cum_energy_used_wh;				    // Cumulated energy (in wh) used within 1 second ticker interval
-    float m_cum_energy_recd_wh; 					// Cumulated energy (in wh) recovered  within 1 second ticker interval
-    float m_cum_energy_charge_wh;					// Cumulated energy (in wh) charged within 10 second ticker interval
-    float m_cum_energy_gen_wh;					  // Cumulated energy (in wh) exported within 10 second ticker interval
-    bool  m_ZE0_charger;					        // True if 2011-2012 ZE0 LEAF with 0x380 message (Gen 1)
-	  bool  m_AZE0_charger;							    // True if 2013+ AZE0 LEAF with 0x390 message (Gen 2)
-    bool  m_enable_write;                 // Enable/disable can write (polling and commands
+    int     m_MITM = 0;
+    float   m_cum_energy_used_wh;				    // Cumulated energy (in wh) used within 1 second ticker interval
+    float   m_cum_energy_recd_wh; 					// Cumulated energy (in wh) recovered  within 1 second ticker interval
+    float   m_cum_energy_charge_wh;					// Cumulated energy (in wh) charged within 10 second ticker interval
+    float   m_cum_energy_gen_wh;					  // Cumulated energy (in wh) exported within 10 second ticker interval
+    bool    m_ZE0_charger;					        // True if 2011-2012 ZE0 LEAF with 0x380 message (Gen 1)
+	  bool    m_AZE0_charger;							    // True if 2013+ AZE0 LEAF with 0x390 message (Gen 2)
+    bool    m_climate_really_off;           // Needed for AZE0 to shown correct hvac status while charging
+
 
   protected:
     OvmsCommand*        cmd_xnl;
