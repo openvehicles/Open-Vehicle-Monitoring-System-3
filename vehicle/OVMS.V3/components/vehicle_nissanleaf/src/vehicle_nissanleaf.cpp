@@ -1989,7 +1989,6 @@ void OvmsVehicleNissanLeaf::HandleChargeEstimation()
  */
 void OvmsVehicleNissanLeaf::HandleCharging()
   {
-  float  charge_power_w     = 0;
   bool   chg_ctrl_activated = false;
   bool   cc_on_or_requested = (m_climate_rqinprogress->AsBool() || StandardMetrics.ms_v_env_hvac->AsBool());
   float  limit_soc          = StandardMetrics.ms_v_charge_limit_soc->AsFloat(0);
@@ -2000,7 +1999,6 @@ void OvmsVehicleNissanLeaf::HandleCharging()
   string prev_c_state       = m_charge_state_previous->AsString();
   string prev_notify_msg    = m_charge_user_notified->AsString();
   std::string notify_msg;
-  float  max_range          = StandardMetrics.ms_v_bat_range_full->AsFloat(0, Kilometers);
   float  controlled_range   = StandardMetrics.ms_v_bat_range_est->AsFloat(0, Kilometers);
   
   if (cfg_limit_range_calc != "est")
