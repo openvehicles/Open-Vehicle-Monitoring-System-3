@@ -1000,7 +1000,7 @@ void OvmsDuktape::AutoInitDuktape()
 
 void OvmsDuktape::EventScript(std::string event, void* data)
   {
-  std::string path;
+  if (!m_dukctx) return;
 
   // dispatch event to PubSub component:
   duktape_queue_t dmsg;
