@@ -33,6 +33,7 @@ static const char *TAG = "housekeeping";
 
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 #include <esp_system.h>
 #include <esp_ota_ops.h>
 #include <esp_heap_caps.h>
@@ -263,8 +264,10 @@ void Housekeeping::Metrics(std::string event, void* data)
     size_t free_8bit = heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL);
     size_t free_32bit = heap_caps_get_free_size(MALLOC_CAP_32BIT|MALLOC_CAP_INTERNAL);
     size_t lgst_8bit = heap_caps_get_largest_free_block(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL);
-    ESP_LOGI(TAG, "System considered stable (RAM: 8b=%zu-%zu 32b=%zu)",
-      lgst_8bit, free_8bit, free_32bit-free_8bit);
+    size_t free_spiram = heap_caps_get_free_size(MALLOC_CAP_SPIRAM);
+    size_t lgst_spiram = heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM);
+    ESP_LOGI(TAG, "System considered stable (RAM: 8b=%zu-%zu 32b=%zu SPI=%zu-%zu)",
+      lgst_8bit, free_8bit, free_32bit-free_8bit, lgst_spiram, free_spiram);
 
     MyBoot.SetStable();
     // …and send debug crash data as necessary:
@@ -284,8 +287,10 @@ void Housekeeping::TimeLogger(std::string event, void* data)
     size_t free_8bit = heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL);
     size_t free_32bit = heap_caps_get_free_size(MALLOC_CAP_32BIT|MALLOC_CAP_INTERNAL);
     size_t lgst_8bit = heap_caps_get_largest_free_block(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL);
+    size_t free_spiram = heap_caps_get_free_size(MALLOC_CAP_SPIRAM);
+    size_t lgst_spiram = heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM);
 
-    ESP_LOGI(TAG, "%.24s (RAM: 8b=%zu-%zu 32b=%zu)",
-    tb, lgst_8bit, free_8bit, free_32bit-free_8bit);
+    ESP_LOGI(TAG, "%.24s (RAM: 8b=%zu-%zu 32b=%zu SPI=%zu-%zu)",
+      tb, lgst_8bit, free_8bit, free_32bit-free_8bit, lgst_spiram, free_spiram);
     }
   }
