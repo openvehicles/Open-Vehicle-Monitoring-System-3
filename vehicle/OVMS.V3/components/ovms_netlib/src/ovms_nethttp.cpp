@@ -109,8 +109,13 @@ bool OvmsNetHttpAsyncClient::Request(std::string url, const char* method, double
   memset(&opts, 0, sizeof(opts));
   if (m_tls)
     {
-    opts.ssl_ca_cert = MyOvmsTLS.GetTrustedList();
-    opts.ssl_server_name = m_server.c_str();
+    #ifdef CONFIG_MG_ENABLE_SSL
+      opts.ssl_ca_cert = MyOvmsTLS.GetTrustedList();
+      opts.ssl_server_name = m_server.c_str();
+    #else
+      ESP_LOGE(TAG, "OvmsNetHttpAsyncClient: SSL support disabled");
+      return false;
+    #endif
     }
 
   m_httpstate = NetHttpConnecting;

@@ -174,6 +174,7 @@ void OvmsWebServer::NetManInit(std::string event, void* data)
     mg_set_timer(nc, mg_time() + SESSION_CHECK_INTERVAL);
   }
 
+#ifdef CONFIG_MG_ENABLE_SSL
   // bind https:
   if (path_exists("/store/tls/webserver.crt") && path_exists("/store/tls/webserver.key")) {
     ESP_LOGI(TAG, "Binding to port 443 (https)");
@@ -186,6 +187,7 @@ void OvmsWebServer::NetManInit(std::string event, void* data)
       mg_set_protocol_http_websocket(nc);
     }
   }
+#endif // CONFIG_MG_ENABLE_SSL
 }
 
 void OvmsWebServer::NetManStop(std::string event, void* data)

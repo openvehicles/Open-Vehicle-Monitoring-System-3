@@ -47,7 +47,6 @@ static const char *TAG = "script";
 #include "console_async.h"
 #include "buffered_shell.h"
 #include "ovms_netmanager.h"
-#include "ovms_tls.h"
 #include "ovms_boot.h"
 #include "ovms_peripherals.h"
 
