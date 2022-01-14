@@ -2230,10 +2230,11 @@ void OvmsVehicleNissanLeaf::HandleRange()
 //
 OvmsVehicle::vehicle_command_t OvmsVehicleNissanLeaf::CommandWakeup()
   {
-  // The on board charger wakeup message is the same on all 2011-2017 LEAFs
+  // Shotgun approach to waking up the vehicle. Send all kinds of wakeup messages
   if (!cfg_enable_write) return Fail; // Disable commands unless canwrite is true
   ESP_LOGI(TAG, "Sending Wakeup Frame");
   unsigned char data = 0;
+  m_can1->WriteStandard(0x679, 1, &data); //Wakes up the modules by spoofing VCM startup message
   m_can1->WriteStandard(0x679, 1, &data); //Tops up the 12V battery if connected to EVSE
   m_can1->WriteStandard(0x5C0, 8, &data); //Wakes up the VCM (by spoofing empty battery request heating)
   return Success;
