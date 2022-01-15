@@ -136,12 +136,26 @@ static const char *TAG = "v-vweup";
 
 void OvmsVehicleVWeUp::sendOcuHeartbeat(TimerHandle_t timer)
 {
+  // Workaround for FreeRTOS duplicate timer callback bug
+  // (see https://github.com/espressif/esp-idf/issues/8234)
+  static TickType_t last_tick = 0;
+  TickType_t tick = xTaskGetTickCount();
+  if (tick == last_tick) return;
+  last_tick = tick;
+
   OvmsVehicleVWeUp *vweup = (OvmsVehicleVWeUp *)pvTimerGetTimerID(timer);
   vweup->SendOcuHeartbeat();
 }
 
 void OvmsVehicleVWeUp::ccCountdown(TimerHandle_t timer)
 {
+  // Workaround for FreeRTOS duplicate timer callback bug
+  // (see https://github.com/espressif/esp-idf/issues/8234)
+  static TickType_t last_tick = 0;
+  TickType_t tick = xTaskGetTickCount();
+  if (tick == last_tick) return;
+  last_tick = tick;
+
   OvmsVehicleVWeUp *vweup = (OvmsVehicleVWeUp *)pvTimerGetTimerID(timer);
   vweup->CCCountdown();
 }
