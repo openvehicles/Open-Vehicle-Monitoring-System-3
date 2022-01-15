@@ -421,6 +421,7 @@ void OvmsEvents::SignalScheduledEvent(TimerHandle_t timer)
     // This should not be possible but occurs ~3 times per million callbacks,
     // only if callback interval is 1 tick (10 ms), observed on both ESP32/R1
     // _and_ ESP32/R3. FreeRTOS timer service bug?
+    // See: https://github.com/espressif/esp-idf/issues/8234
     ESP_LOGW(TAG, "SignalScheduledEvent: duplicate callback invocation detected");
     return;
     }
