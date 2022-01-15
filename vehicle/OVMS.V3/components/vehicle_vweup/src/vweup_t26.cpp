@@ -140,7 +140,7 @@ void OvmsVehicleVWeUp::sendOcuHeartbeat(TimerHandle_t timer)
   // (see https://github.com/espressif/esp-idf/issues/8234)
   static TickType_t last_tick = 0;
   TickType_t tick = xTaskGetTickCount();
-  if (tick == last_tick) return;
+  if (tick < last_tick + xTimerGetPeriod(timer) - 3) return;
   last_tick = tick;
 
   OvmsVehicleVWeUp *vweup = (OvmsVehicleVWeUp *)pvTimerGetTimerID(timer);
@@ -153,7 +153,7 @@ void OvmsVehicleVWeUp::ccCountdown(TimerHandle_t timer)
   // (see https://github.com/espressif/esp-idf/issues/8234)
   static TickType_t last_tick = 0;
   TickType_t tick = xTaskGetTickCount();
-  if (tick == last_tick) return;
+  if (tick < last_tick + xTimerGetPeriod(timer) - 3) return;
   last_tick = tick;
 
   OvmsVehicleVWeUp *vweup = (OvmsVehicleVWeUp *)pvTimerGetTimerID(timer);
