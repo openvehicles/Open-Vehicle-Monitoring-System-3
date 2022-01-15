@@ -580,6 +580,13 @@ void OvmsWebServer::EventListener(std::string event, void* data)
  */
 void OvmsWebServer::UpdateTicker(TimerHandle_t timer)
 {
+  // Workaround for FreeRTOS duplicate timer callback bug
+  // (see https://github.com/espressif/esp-idf/issues/8234)
+  static TickType_t last_tick = 0;
+  TickType_t tick = xTaskGetTickCount();
+  if (tick == last_tick) return;
+  last_tick = tick;
+
   if (xSemaphoreTake(MyWebServer.m_client_mutex, 0) != pdTRUE) {
     ESP_LOGD(TAG, "UpdateTicker: can't lock client list, ticker run skipped");
     return;
