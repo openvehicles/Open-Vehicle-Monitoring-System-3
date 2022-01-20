@@ -6,10 +6,12 @@
 9642828,OVMS v3.1 Kit w/ SIM5360 3G Modem Module (EU Edition)
 9642829,OVMS v3.1 Kit w/ SIM5360 3G Modem Module (US Edition)
 9652027,OVMS V3 HUD/OBDII-F Cable
-9652892,OVMS v3.1 Base Module (wifi/bluetooth)
+9652892,OVMS v3.2 Base Module (wifi/bluetooth)
 9652893,OVMS v3.1 3G Optional Modem Module (EU Edition)
 9652894,OVMS v3.1 3G Optional Modem Module (US Edition)
 9658635,Kia Soul OBD-II to DB9 Data Cable for OVMS
 9665972,OVMS Data Cable for Early Teslas
 9728447,OVMS K-line Option Expansion Board Module
 9730443,OVMS Data Cable for Later Tesla Model S/X
+9747555,OVMS v3.3 Kit w/ SIM57600G 4G Modem Module (Global Edition)
+9747556,OVMS v3.3 SIM7600G 4G Optional Modem Module (Global Edition)
