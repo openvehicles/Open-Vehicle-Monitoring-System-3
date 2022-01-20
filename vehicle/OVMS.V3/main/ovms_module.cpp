@@ -78,6 +78,13 @@ static void must(OvmsWriter* writer)
 
 static void module_memory(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
+  size_t free_8bit = heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL);
+  size_t free_32bit = heap_caps_get_free_size(MALLOC_CAP_32BIT|MALLOC_CAP_INTERNAL);
+  size_t lgst_8bit = heap_caps_get_largest_free_block(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL);
+  size_t free_spiram = heap_caps_get_free_size(MALLOC_CAP_SPIRAM);
+  size_t lgst_spiram = heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM);
+  writer->printf("Free RAM: 8bit=%zu-%zu 32bit=%zu SPIRAM=%zu-%zu bytes\n\n",
+    lgst_8bit, free_8bit, free_32bit-free_8bit, lgst_spiram, free_spiram);
   must(writer);
   }
 

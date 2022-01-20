@@ -24,12 +24,23 @@ Connection to Comfort CAN can be done by removing the OCU below the passenger se
 
 .. image:: location.png
     :width: 480px
+.. image:: OCU.jpg
+    :width: 480px
 .. image:: grinded_ribbon.png
     :height: 200px
 .. image:: fakra_sma.png
     :height: 200px    
+.. image:: T26a-Pins.jpg
+    :height: 200px
 
-(The passenger seat doesn't have to be removed, it can also be done by fiddling around a bit :))
+The passenger seat doesn't need to be removed completely, you can 
+access the OCU connection from the back when tilting the unscrewed 
+seat to the front. To unscrew the seat you'll need an XZN 
+(triple-square / german "Vielzahn") M10 bit. Hint: raise the seat to 
+gain access to the rear screws.
+
+The T26a plug is secured by the white clamp, open it fully to the left 
+to unplug.
 
 If both connections are to be made simultaneously, an adapter cable has to be made with the following connections:
 
@@ -50,6 +61,10 @@ T26 OBD DB9-F Signal
 14  .   8	  can3 H (Comfort-can High)
 1   .   9	  +12V Vehicle Power
 === === ===== ===========================
+
+**Important note**: the VW T26a pin numbering scheme does not follow 
+the IT standard (zig zag) but instead has pins 1-13 left to right on 
+the top and 14-26 left to right on the bottom row. See image above.
 
 After selecting the VW e-Up vehicle module, the corresponding settings have to be made in the web interface via the "VW e-Up" menu under "Features":
 

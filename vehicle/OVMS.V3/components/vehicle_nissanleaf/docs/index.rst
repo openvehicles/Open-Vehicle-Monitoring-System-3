@@ -36,6 +36,17 @@ Lock/Unlock Vehicle         Yes [3]_ (see info below)
 Valet Mode Control          Not currently supported
 =========================== ==============
 
+^^^^^^^^^^^^^^^^^^^
+Additional Features
+^^^^^^^^^^^^^^^^^^^
+
+=========================== ==============
+Feature                     Description
+=========================== ==============
+BMS Cell Monitor            Allows to monitor individual battery cells in a configurable chart. Can be accessed from web user interface accessible over WiFi.
+Charge to Limit             Allows to automatically stop the charge when target SOC (state of charge) and/or range is reached. All parameters can be controlled trough metrics or web user interface. Meanwhile Range and SOC can be controlled from the app as well, by adjusting fields 10 (SOC) and 11 (range) in feature section accessible trough app settings.
+=========================== ==============
+
 ^^^^^^^^^^^^^^^^
 Metrics
 ^^^^^^^^^^^^^^^^
@@ -79,8 +90,16 @@ Remote Climate Control
 
 Gen1 Cars (ZE0, 2011-2012) require a hardware modification to enable remote climate control if the vehicle is not plugged in and charging. If you are ok with this, you don't need to do anything further.
 
-If you want to to enable remote climate control once the charge has finished, or if the vehicle is not plugged in, you need to do the following hardware modification. You need to pull TCU pin 11 high (to 12v) to generate the "EV System Activation Request Signal", `more info <https://carrott.org/emini/Nissan_Leaf_OVMS#Remote_Climate_Control)>`_. Currently, the new v3 OVMS hardware does not have software support for doing this automatically. You can track the progress and find some more info (including about the old "RC3" pin), `here <https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3/issues/607>`_.
+If you want to to enable remote climate control once the charge has finished, or if the vehicle is not plugged in, you need to do the following hardware modification. A cable wired to the pin 11 of Nissan TCU (Telematics Control Unit) needs to receive +12V so that "EV System Activation Request Signal" can be generated, which in turn allows to trigger climate control independently. This can be achieved by wiring the pin 18 (Ext 12V) from the OVMS DA26 socket to the cable going to pin 11 of the TCU by using a standard single conductor wire. The connection on the OVMS DA26 side can be made by using dedicated DA26 connector or a standard round 1mm jumper cable. Here's how to wire it up:
 
+.. image:: SchematicLEAF.png
+    :width: 480px
+
+Meanwhile on the TCU side the cable can be soldered or spliced in to by using a connector of your choice. When done, the original TCU can be left unplugged. `See this page for additional pictures <https://www.mynissanleaf.com/viewtopic.php?f=37&t=32935>`_.
+
+.. image:: TCU.png
+    :width: 480px
+    
 If you have a "smart" EVSE (or one connected to a "smart" outlet, you can sometimes wake up the EV system by turning it off, then back on. This obviously only helps if your vehicle is plugged in, but may be useful for some users.
 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^

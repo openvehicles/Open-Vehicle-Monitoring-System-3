@@ -1366,12 +1366,20 @@ void OvmsServerV2::TransmitMsgTPMS(bool always)
 
 void OvmsServerV2::TransmitMsgFirmware(bool always)
   {
+  // As the signal quality is the only fast changing metric here, and will normally
+  // change continuously +/- 2 even while parking, we check this for an actual value
+  // difference > 2 to the last transmission, so we don't need to retransmit the
+  // -now- comparably huge static info contained here on every signal level change.
+  // TODO: move dynamic network status infos into another message (needs App updates)
+  static int last_m_net_sq = 0;
+  int curr_m_net_sq = StandardMetrics.ms_m_net_sq->AsInt(0, sq);
+
   m_now_firmware = false;
 
   bool modified =
     StandardMetrics.ms_m_version->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_vin->IsModifiedAndClear(MyOvmsServerV2Modifier) |
-    StandardMetrics.ms_m_net_sq->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    (std::abs(curr_m_net_sq - last_m_net_sq) > 2) |
     StandardMetrics.ms_v_type->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_m_net_provider->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_env_service_range->IsModifiedAndClear(MyOvmsServerV2Modifier) |
@@ -1380,6 +1388,8 @@ void OvmsServerV2::TransmitMsgFirmware(bool always)
 
   // Quick exit if nothing modified
   if ((!always)&&(!modified)) return;
+
+  last_m_net_sq = curr_m_net_sq;
 
   extram::ostringstream buffer;
   buffer
