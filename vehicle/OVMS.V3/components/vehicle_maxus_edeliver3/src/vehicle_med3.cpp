@@ -373,13 +373,14 @@ void OvmsVehicleMaxed3::IncomingFrameCan1(CAN_frame_t* p_frame)
                     float kwhPerKm = 1000/(consumpRange * 59 + consumpRange) / 60;
                     float kmPerKwh = (1000/kwhPerKm) * 1.609;
                     //float kmPerKwhAvg = (kmPerKwh * 59 + kmPerKwh) / 60;
-                    m_watt_hour_raw->SetValue(kmPerKwh);
                     m_consumprange_raw->SetValue(kwhPerKm);
                     m_consump_raw->SetValue(consumpRange);
                         
                     if(kmPerKwh<4.5)kmPerKwh=4.5;
                     if(kmPerKwh>6.4)kmPerKwh=6.6;
                     if(batTemp>20)batTemp=20;
+                
+                    m_watt_hour_raw->SetValue(kmPerKwh);
               
               StdMetrics.ms_v_bat_range_full->SetValue(241);
               StdMetrics.ms_v_bat_range_ideal->SetValue(241 * soc / 100);
