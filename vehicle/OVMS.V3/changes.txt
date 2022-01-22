@@ -1,6 +1,8 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Maxus eDeliver3: CCS Charging now show in the app
+	New Polling method implemented 
 - Vehicle: added optional automatic trip report generation
     Details: https://docs.openvehicles.com/en/latest/userguide/notifications.html
   New configs:
