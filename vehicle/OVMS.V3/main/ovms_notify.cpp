@@ -47,17 +47,26 @@ static const char *TAG = "notify";
 
 using namespace std;
 
+OvmsNotify       MyNotify       __attribute__ ((init_priority (1820)));
+
+// Tracing:
+//  level 0 = no tracing (logging)
+//  level 1 = trace standard (text & data) notifications
+//  level 2 = also trace stream notifications
+#define DO_TRACE(type) (MyNotify.m_trace == 2 || (MyNotify.m_trace == 1 && strcmp((type), "stream") != 0))
+
+
 ////////////////////////////////////////////////////////////////////////
 // Console commands...
 
-OvmsNotify       MyNotify       __attribute__ ((init_priority (1820)));
-
 void notify_trace(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  if (strcmp(cmd->GetName(),"on")==0)
-    MyNotify.m_trace = true;
+  if (strcmp(cmd->GetName(),"all")==0)
+    MyNotify.m_trace = 2;
+  else if (strcmp(cmd->GetName(),"on")==0)
+    MyNotify.m_trace = 1;
   else
-    MyNotify.m_trace = false;
+    MyNotify.m_trace = 0;
 
   writer->printf("Notification tracing is now %s\n",cmd->GetName());
   }
@@ -360,8 +369,8 @@ void OvmsNotifyType::Cleanup(OvmsNotifyEntry* entry, NotifyEntryMap_t::iterator*
       NotifyEntryMap_t::iterator it = m_entries.erase(k);
       if (next) *next = it;
       }
-    if (MyNotify.m_trace && strcmp(m_name, "stream") != 0)
-      ESP_LOGI(TAG,"Cleanup type %s id %d",m_name,entry->m_id);
+    if (DO_TRACE(m_name))
+      ESP_LOGD(TAG,"Cleanup type %s id %d",m_name,entry->m_id);
     delete entry;
     }
   }
@@ -432,15 +441,15 @@ OvmsNotify::OvmsNotify()
   m_nextreader = 1;
 
 #ifdef CONFIG_OVMS_DEV_DEBUGNOTIFICATIONS
-  m_trace = true;
+  m_trace = 1;
 #else
-  m_trace = false;
+  m_trace = 0;
 #endif // #ifdef CONFIG_OVMS_DEV_DEBUGNOTIFICATIONS
 
   MyConfig.RegisterParam("notify", "Notification filters", true, true);
 
   // Register our commands
-  OvmsCommand* cmd_notify = MyCommandApp.RegisterCommand("notify","NOTIFICATION framework");
+  OvmsCommand* cmd_notify = MyCommandApp.RegisterCommand("notify","NOTIFICATION framework", notify_status, "", 0, 0, false);
   cmd_notify->RegisterCommand("status","Show notification status",notify_status);
   OvmsCommand* cmd_notifyraise = cmd_notify->RegisterCommand("raise","NOTIFICATION raise framework");
   cmd_notifyraise->RegisterCommand("text","Raise a textual notification",notify_raise,"<type><subtype><message>", 3, 3);
@@ -450,7 +459,8 @@ OvmsNotify::OvmsNotify()
   cmd_notifyerrorcode->RegisterCommand("list","List error codes raised",notify_errorcode_list);
   cmd_notifyerrorcode->RegisterCommand("clear","Clear error code list",notify_errorcode_clear);
   OvmsCommand* cmd_notifytrace = cmd_notify->RegisterCommand("trace","NOTIFICATION trace framework");
-  cmd_notifytrace->RegisterCommand("on","Turn notification tracing ON",notify_trace);
+  cmd_notifytrace->RegisterCommand("on","Standard notification tracing (text, error & data)",notify_trace);
+  cmd_notifytrace->RegisterCommand("all","Full notification tracing (including streams)",notify_trace);
   cmd_notifytrace->RegisterCommand("off","Turn notification tracing OFF",notify_trace);
 
   RegisterType("info");     // payload: human readable text message
@@ -463,7 +473,7 @@ OvmsNotify::OvmsNotify()
   ESP_LOGI(TAG, "Expanding DUKTAPE javascript engine");
   DuktapeObjectRegistration* dto = new DuktapeObjectRegistration("OvmsNotify");
   dto->RegisterDuktapeFunction(DukOvmsNotifyRaise, 3, "Raise");
-  MyScripts.RegisterDuktapeObject(dto);
+  MyDuktape.RegisterDuktapeObject(dto);
 #endif // CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   }
 
@@ -575,7 +585,7 @@ uint32_t OvmsNotify::NotifyString(const char* type, const char* subtype, const c
     return 0;
     }
 
-  if (m_trace && strcmp(type, "stream") != 0)
+  if (DO_TRACE(type))
     ESP_LOGI(TAG, "Raise text %s/%s: %s", type, subtype, value);
 
   // determine all currently active readers accepting the message:
@@ -612,7 +622,7 @@ uint32_t OvmsNotify::NotifyCommand(const char* type, const char* subtype, const 
     return 0;
     }
 
-  if (m_trace && strcmp(type, "stream") != 0)
+  if (DO_TRACE(type))
     ESP_LOGI(TAG, "Raise command %s/%s: %s", type, subtype, cmd);
 
   // Strategy:
@@ -633,7 +643,7 @@ uint32_t OvmsNotify::NotifyCommand(const char* type, const char* subtype, const 
     }
   if (verbosity_msgs.size() == 0)
     {
-    if (m_trace && strcmp(type, "stream") != 0)
+    if (DO_TRACE(type))
       {
       // no readers, but tracing enabled, so log command result:
       const int verbosity = COMMAND_RESULT_NORMAL;
@@ -665,7 +675,7 @@ uint32_t OvmsNotify::NotifyCommand(const char* type, const char* subtype, const 
         msg = new OvmsNotifyEntryCommand(subtype, verbosity, cmd);
         msglen = msg->GetValueSize();
         verbosity_msgs[verbosity] = msg;
-        if (m_trace && strcmp(type, "stream") != 0)
+        if (DO_TRACE(type))
           ESP_LOGI(TAG, "Raise cmdres[%d] %s/%s: %s", verbosity, type, subtype, msg->GetValue().c_str());
         }
       }

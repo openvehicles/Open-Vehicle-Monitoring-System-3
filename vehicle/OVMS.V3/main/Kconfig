@@ -89,6 +89,41 @@ config OVMS_HW_CAN_TX_QUEUE_SIZE
     help
         The size of the CAN bus TX queue.
 
+config OVMS_HW_CELLULAR_MODEM_BUFFER_SIZE
+    int "MODEM buffer size"
+    default 1024
+    depends on OVMS && OVMS_COMP_CELLULAR
+    help
+        The size of the buffer used for the cellular modem.
+
+config OVMS_HW_CELLULAR_MODEM_UART_SIZE
+    int "MODEM UART driver buffer size"
+    default 2048
+    depends on OVMS && OVMS_COMP_CELLULAR
+    help
+        The size of the UART driver buffers used for the cellular modem.
+
+config OVMS_HW_CELLULAR_MODEM_MUXCHANNEL_SIZE
+    int "MODEM MUX channels buffer size"
+    default 2048
+    depends on OVMS && OVMS_COMP_CELLULAR
+    help
+        The size of each MUX channel buffers used for the cellular modem.
+
+config OVMS_HW_CELLULAR_MODEM_QUEUE_SIZE
+    int "MODEM UART driver queue size"
+    default 50
+    depends on OVMS && OVMS_COMP_CELLULAR
+    help
+        The size of the UART driver queue used for the cellular modem.
+
+config OVMS_HW_CELLULAR_MODEM_STACK_SIZE
+    int "Stack size for MODEM task"
+    default 4096
+    depends on OVMS && OVMS_COMP_CELLULAR
+    help
+        The stack size of the OVMS Console and dynamic command tasks.
+
 endmenu # Hardware Support
 
 
@@ -182,7 +217,7 @@ config MG_ENABLE_SSL
 
 choice MG_SSL_IF
     prompt "Select the MONGOOSE SSL/TLS library to use"
-        default MG_SSL_IF_MBEDTLS
+        default MG_SSL_IF_WOLFSSL
         depends on MG_ENABLE_SSL
         help
                 MG_SSL_IF_MBEDTLS      Use mbedTLS (esp-idf default)
@@ -652,7 +687,7 @@ config OVMS_COMP_PUSHOVER
     default y
     depends on MG_ENABLE_SSL
     help
-        Enable to include support for Pushover. 
+        Enable to include support for Pushover.
 
 config OVMS_COMP_TPMS
     bool "Include support for TPMS tyre sets"
@@ -661,12 +696,19 @@ config OVMS_COMP_TPMS
     help
         Enable to include support for TPMS tyre sets
 
-config OVMS_COMP_MODEM_SIMCOM
-    bool "Include support for SIMCOM modems"
+config OVMS_COMP_CELLULAR
+    bool "Include support for cellular modems"
     default y
-    depends on OVMS && OVMS_COMP_MAX7317
+    depends on OVMS
     help
-        Enable to include support for SIMCOM modems
+        Enable to include support for cellular modems
+
+config OVMS_COMP_CELLULAR_SIMCOM
+    bool "Include support for SIMCOM cellular modems"
+    default y
+    depends on OVMS && OVMS_COMP_MAX7317 && OVMS_COMP_CELLULAR
+    help
+        Enable to include support for SIMCOM cellular modems
 
 config OVMS_COMP_SDCARD
     bool "Include support for SD CARDs"
@@ -739,6 +781,14 @@ config OVMS_COMP_CANOPEN_WRK_STACK
         Worker tasks only process TX jobs and don't trigger any event/metrics
         updates so can run with a smaller stack than the RX task.
         Standard stack usage for the Twizy is currently around 1000 bytes.
+
+config OVMS_COMP_PLUGINS
+    bool "Include support for PLUGINS"
+    default y
+    depends on OVMS_SC_GPL_MONGOOSE
+    help
+        Enable to include support for PLUGINS and server based
+        extension repositories.
 
 endmenu # Component Options
 

@@ -30,10 +30,21 @@ Controls
 =========================== ==============
 Function                    Support Status
 =========================== ==============
-Charge Control              Start charge only (Stop charge in beta firmware stage)
+Charge Control              Start and stop charge
 Cabin Pre-heat/cool Control Yes [1]_ (see info below)
 Lock/Unlock Vehicle         Yes [3]_ (see info below)
 Valet Mode Control          Not currently supported
+=========================== ==============
+
+^^^^^^^^^^^^^^^^^^^
+Additional Features
+^^^^^^^^^^^^^^^^^^^
+
+=========================== ==============
+Feature                     Description
+=========================== ==============
+BMS Cell Monitor            Allows to monitor individual battery cells in a configurable chart. Can be accessed from web user interface accessible over WiFi.
+Charge to Limit             Allows to automatically stop the charge when target SOC (state of charge) and/or range is reached. All parameters can be controlled trough metrics or web user interface. Meanwhile Range and SOC can be controlled from the app as well, by adjusting fields 10 (SOC) and 11 (range) in feature section accessible trough app settings.
 =========================== ==============
 
 ^^^^^^^^^^^^^^^^
@@ -43,7 +54,7 @@ Metrics
 =========================== ==============
 Item                        Support Status
 =========================== ==============
-SOC                         Yes (by default based on GIDS)[4]
+SOC                         Yes (by default based on GIDS) [4]_
 Range                       Yes (by default based on GIDS)
 GPS Location                Yes (from modem module GPS)
 Speed                       Yes (from vehicle speed PID)
@@ -68,36 +79,45 @@ Charge Interruption Alerts  Yes
 .. [3] Lock/Unlock will work if CAR can bus is awake, this can be activated by turning on A/C
 
 .. [4] ZE0 (2011-2013) vehicles are required to choose SoC display from "relative to fixed value", "dashboard display" SoC method does not work with these vehicles. 
+
 ----------------------
 Remote Climate Control
 ----------------------
 
 ^^^^^^^^^^^^^^^^^^^^^^
-2011-2013 models (ZE0)
+2011-2012 models (ZE0)
 ^^^^^^^^^^^^^^^^^^^^^^
 
-Gen1 Cars (ZE0, 2011-2013) require a hardware modification to enable remote climate control if the vehicle is not plugged in and charging. If you are ok with this, you don't need to do anything further.
+Gen1 Cars (ZE0, 2011-2012) require a hardware modification to enable remote climate control if the vehicle is not plugged in and charging. If you are ok with this, you don't need to do anything further.
 
-If you want to to enable remote climate control once the charge has finished, or if the vehicle is not plugged in, you need to do the following hardware modification. You need to pull TCU pin 11 high (to 12v) to generate the "EV System Activation Request Signal", `more info <https://carrott.org/emini/Nissan_Leaf_OVMS#Remote_Climate_Control)>`_. Currently, the new v3 OVMS hardware does not have software support for doing this automatically. You can track the progress and find some more info (including about the old "RC3" pin), `here <https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3/issues/607>`_.
+If you want to to enable remote climate control once the charge has finished, or if the vehicle is not plugged in, you need to do the following hardware modification. A cable wired to the pin 11 of Nissan TCU (Telematics Control Unit) needs to receive +12V so that "EV System Activation Request Signal" can be generated, which in turn allows to trigger climate control independently. This can be achieved by wiring the pin 18 (Ext 12V) from the OVMS DA26 socket to the cable going to pin 11 of the TCU by using a standard single conductor wire. The connection on the OVMS DA26 side can be made by using dedicated DA26 connector or a standard round 1mm jumper cable. Here's how to wire it up:
 
+.. image:: SchematicLEAF.png
+    :width: 480px
+
+Meanwhile on the TCU side the cable can be soldered or spliced in to by using a connector of your choice. When done, the original TCU can be left unplugged. `See this page for additional pictures <https://www.mynissanleaf.com/viewtopic.php?f=37&t=32935>`_.
+
+.. image:: TCU.png
+    :width: 480px
+    
 If you have a "smart" EVSE (or one connected to a "smart" outlet, you can sometimes wake up the EV system by turning it off, then back on. This obviously only helps if your vehicle is plugged in, but may be useful for some users.
 
-^^^^^^^^^^^^^^^^^^^^^^^
-2014-2016 models (AZE0)
-^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2013-2016 models (AZE0-0/1)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 To use OVMS to activate remote climate the Nissan TCU (Telematics Control Unit) module must be unplugged if fitted (only on Acenta and Tekna models). The TCU is located behind the glovebox on LHD cars or on the right hand side of the drivers foot well on RHD cars. The large white plug on the rear of the TCU should be unplugged, push down tab in the middle and pull to unplug, `see video for RHD cars <https://photos.app.goo.gl/MuvpCaXQUjbCdoox6>`_ and `this page for LHD cars <http://www.arachnon.de/wb/pages/en/nissan-leaf/tcu.php>`_.
 
 Note: Unplugging the TCU will disable Nissan EV connect / CARWINGS features e.g Nissan mobile app. All other car functions will not be effected e.g GPS, maps, radio, Bluetooth, microphone all work just the same as before. OVMS can be used to more than substitute the loss of Nissan Connect features. The TCU can be plugged back in at any point in the future if required.
 
-OVMS remote climate support will 'just work' on LEAF Visia models and Visia/Acenta e-NV200 since these models do not have a TCU fitted.
+OVMS remote climate support will 'just work' on LEAF Visia models and Visia/Acenta e-NV200 since these models do not have a TCU fitted. In the US these base models are called S.
 
 Note: If you prefer not to unplug the Nissan TCU, all OVMS functions appart from remote climate will function just fine alongside the Nissan TCU.
 
 
-^^^^^^^^^^^^^^^^^^^^^^^
-2016-2017 models (AZE0)
-^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^
+2016-2017 models (AZE0-2)
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **Remote climate control will only work when plugged in and actively charging on 2016-2017 models.** This is because in 2016 Nissan moved the TCU from the EV CAN bus to the CAR CAN bus.
 

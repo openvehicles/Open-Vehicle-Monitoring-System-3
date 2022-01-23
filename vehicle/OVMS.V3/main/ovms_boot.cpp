@@ -189,6 +189,7 @@ void boot_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
       writer->printf("\n  WDT tasks: %s", boot_data.wdt_tasknames);
       }
     writer->printf("\n  Version: %s\n", StdMetrics.ms_m_version->AsString("").c_str());
+    writer->printf("\n  Hardware: %s\n", StdMetrics.ms_m_hardware->AsString("").c_str());
     }
   }
 
@@ -512,11 +513,12 @@ void Boot::NotifyDebugCrash()
     //  ,<resetreason>,<resetreason_name>
     //  ,<curr_event_name>,<curr_event_handler>,<curr_event_runtime>
     //  ,<wdt_tasknames>
+    //  ,<hardware_info>
 
     StringWriter buf;
-    buf.reserve(1024);
+    buf.reserve(2048);
     buf.append("*-OVM-DebugCrash,0,2592000,");
-    buf.append(StdMetrics.ms_m_version->AsString(""));
+    buf.append(mp_encode(StdMetrics.ms_m_version->AsString("")));
     buf.printf(",%d,%s,%d,%d,%d,%d"
       , boot_data.boot_count, GetBootReasonName(), boot_data.bootreason_cpu0, boot_data.bootreason_cpu1
       , GetCrashCount(), GetEarlyCrashCount());
@@ -547,7 +549,13 @@ void Boot::NotifyDebugCrash()
     buf.printf(",%s,%s,%u", boot_data.curr_event_name, boot_data.curr_event_handler, boot_data.curr_event_runtime);
 
     // TWDT debug info:
-    buf.printf(",%s", boot_data.wdt_tasknames);
+    std::string tasknames = boot_data.wdt_tasknames;
+    buf.append(",");
+    buf.append(mp_encode(tasknames));
+
+    // Hardware info:
+    buf.append(",");
+    buf.append(mp_encode(StdMetrics.ms_m_hardware->AsString("")));
 
     MyNotify.NotifyString("data", "debug.crash", buf.c_str());
     }

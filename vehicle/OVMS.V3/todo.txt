@@ -57,8 +57,8 @@ MWJ    Done          Event system
 MWJ    Done          Event hooks in key components
 
                    Comms system
-MWJ    99%           SIMCOM modem support
-MB     Done          SIMCOM GPS support
+MWJ    Done          modem support
+MB     Done          GPS support
 MWJ    Done          WIFI support
 MWJ    30%           BLUETOOTH support
 

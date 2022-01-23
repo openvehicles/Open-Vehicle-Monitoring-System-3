@@ -136,12 +136,26 @@ static const char *TAG = "v-vweup";
 
 void OvmsVehicleVWeUp::sendOcuHeartbeat(TimerHandle_t timer)
 {
+  // Workaround for FreeRTOS duplicate timer callback bug
+  // (see https://github.com/espressif/esp-idf/issues/8234)
+  static TickType_t last_tick = 0;
+  TickType_t tick = xTaskGetTickCount();
+  if (tick < last_tick + xTimerGetPeriod(timer) - 3) return;
+  last_tick = tick;
+
   OvmsVehicleVWeUp *vweup = (OvmsVehicleVWeUp *)pvTimerGetTimerID(timer);
   vweup->SendOcuHeartbeat();
 }
 
 void OvmsVehicleVWeUp::ccCountdown(TimerHandle_t timer)
 {
+  // Workaround for FreeRTOS duplicate timer callback bug
+  // (see https://github.com/espressif/esp-idf/issues/8234)
+  static TickType_t last_tick = 0;
+  TickType_t tick = xTaskGetTickCount();
+  if (tick < last_tick + xTimerGetPeriod(timer) - 3) return;
+  last_tick = tick;
+
   OvmsVehicleVWeUp *vweup = (OvmsVehicleVWeUp *)pvTimerGetTimerID(timer);
   vweup->CCCountdown();
 }
@@ -391,7 +405,8 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
     case 0x320: // Speed
       StandardMetrics.ms_v_pos_speed->SetValue(((d[4] << 8) + d[3] - 1) / 190);
       UpdateTripOdo();
-      CalculateAcceleration(); // only necessary until we find acceleration on T26
+      if (HasNoOBD())
+        CalculateAcceleration(); // only necessary until we find acceleration on T26
       break;
 
     case 0x527: // Outdoor temperature

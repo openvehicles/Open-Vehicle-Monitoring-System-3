@@ -438,7 +438,7 @@ OvmsMetrics::OvmsMetrics()
   dto->RegisterDuktapeFunction(DukOvmsMetricJSON, 1, "AsJSON");
   dto->RegisterDuktapeFunction(DukOvmsMetricFloat, 1, "AsFloat");
   dto->RegisterDuktapeFunction(DukOvmsMetricGetValues, 2, "GetValues");
-  MyScripts.RegisterDuktapeObject(dto);
+  MyDuktape.RegisterDuktapeObject(dto);
 #endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 
   /* Initialize persistent metrics on cold boot or corruption */
@@ -877,6 +877,13 @@ void OvmsMetric::ClearModified(size_t modifier)
   m_modified &= ~(1ul << modifier);
   }
 
+void OvmsMetric::Clear()
+  {
+  SetValue("");
+  m_defined = NeverDefined;
+  m_stale = true;
+  }
+
 OvmsMetricInt::OvmsMetricInt(const char* name, uint16_t autostale, metric_unit_t units, bool persist)
   : OvmsMetric(name, autostale, units, persist)
   {
@@ -1040,6 +1047,12 @@ bool OvmsMetricInt::SetValue(dbcNumber& value)
   return SetValue(value.GetSignedInteger());
   }
 
+void OvmsMetricInt::Clear()
+  {
+  SetValue(0);
+  OvmsMetric::Clear();
+  }
+
 OvmsMetricBool::OvmsMetricBool(const char* name, uint16_t autostale, metric_unit_t units, bool persist)
   : OvmsMetric(name, autostale, units, persist)
   {
@@ -1191,6 +1204,12 @@ bool OvmsMetricBool::SetValue(std::string value)
 bool OvmsMetricBool::SetValue(dbcNumber& value)
   {
   return SetValue((bool)value.GetUnsignedInteger());
+  }
+
+void OvmsMetricBool::Clear()
+  {
+  SetValue(false);
+  OvmsMetric::Clear();
   }
 
 OvmsMetricFloat::OvmsMetricFloat(const char* name, uint16_t autostale, metric_unit_t units, bool persist)
@@ -1351,8 +1370,14 @@ bool OvmsMetricFloat::SetValue(dbcNumber& value)
   return SetValue((float)value.GetDouble());
   }
 
-OvmsMetricString::OvmsMetricString(const char* name, uint16_t autostale, metric_unit_t units)
-  : OvmsMetric(name, autostale, units)
+void OvmsMetricFloat::Clear()
+  {
+  SetValue(0);
+  OvmsMetric::Clear();
+  }
+
+OvmsMetricString::OvmsMetricString(const char* name, uint16_t autostale, metric_unit_t units, bool persist)
+  : OvmsMetric(name, autostale, units, persist)
   {
   }
 
@@ -1396,6 +1421,12 @@ bool OvmsMetricString::SetValue(std::string value)
     return modified;
     }
   return false;
+  }
+
+void OvmsMetricString::Clear()
+  {
+  SetValue("");
+  OvmsMetric::Clear();
   }
 
 const char* OvmsMetricUnitLabel(metric_unit_t units)

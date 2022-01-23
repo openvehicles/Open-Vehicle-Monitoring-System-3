@@ -347,7 +347,7 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
       case 0x346://freq50 // Estimated range, Handbrake state
       {
 
-        (mi_QC) ? StandardMetrics.ms_v_bat_range_est->SetValue(0) : StandardMetrics.ms_v_bat_range_est->SetValue(d[7]);
+        (mi_QC) ? StandardMetrics.ms_v_bat_range_est->SetValue(0) : d[7] < 255 ? StandardMetrics.ms_v_bat_range_est->SetValue(d[7]) : d[7];
 
         if ((d[4] & 32) == 0)
         {

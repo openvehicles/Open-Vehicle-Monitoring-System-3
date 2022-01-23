@@ -45,6 +45,7 @@ static const char *TAG = "tls";
 #include "ovms_tls.h"
 #include "mbedtls/x509.h"
 #include "mbedtls/x509_crt.h"
+#include "mbedtls/base64.h"
 #include "mbedtls/debug.h"
 
 OvmsTLS MyOvmsTLS __attribute__ ((init_priority (3000)));
@@ -78,28 +79,22 @@ void tls_reload(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
 
 void tls_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  mbedtls_x509_crt *crt = (mbedtls_x509_crt*)ExternalRamMalloc( sizeof(mbedtls_x509_crt) );
   char *buf = (char*)ExternalRamMalloc(1024);
   for (auto it = MyOvmsTLS.m_trustlist.begin(); it != MyOvmsTLS.m_trustlist.end(); it++)
     {
     OvmsTrustedCert* tc = it->second;
-    char* pem = tc->GetPEM();
-    writer->printf("%s length %d bytes\n",it->first.c_str(),strlen(tc->GetPEM()));
-    mbedtls_x509_crt_init(crt);
-    if ( (mbedtls_x509_crt_parse(crt, (const unsigned char *)pem, strlen(pem)+1) == 0) &&
-         (mbedtls_x509_crt_info(buf, 1024-1, "  ", crt) > 0) )
+    mbedtls_x509_crt* crt = tc->GetCert();
+    writer->printf("%s\n",it->first.c_str());
+    if ( crt && (mbedtls_x509_crt_info(buf, 1024-1, "  ", crt) > 0) )
       {
-      writer->printf("%d byte certificate: %s\n%s\n",strlen(pem),it->first.c_str(),buf);
+      writer->printf("%d byte certificate: %s\n%s\n",crt->raw.len,it->first.c_str(),buf);
       }
     else
       {
-      writer->printf("%d byte invalid certificate could not be parsed as X509: %s\n\n",
-        strlen(pem),it->first.c_str());
+      writer->printf("Invalid certificate could not be parsed as X509: %s\n\n", it->first.c_str());
       }
-    mbedtls_x509_crt_free(crt);
     }
   free(buf);
-  free(crt);
   }
 
 OvmsTLS::OvmsTLS()
@@ -109,7 +104,7 @@ OvmsTLS::OvmsTLS()
   m_trustedcache = NULL;
 
   OvmsCommand* cmd_tls = MyCommandApp.RegisterCommand("tls","SSL/TLS Framework",NULL,"",0,0);
-  OvmsCommand* cmd_trust = cmd_tls->RegisterCommand("trust","SSL/TLS Trusted CA Framework",NULL,"",0,0);
+  OvmsCommand* cmd_trust = cmd_tls->RegisterCommand("trust","SSL/TLS Trusted CA Framework", tls_status, "", 0, 0, false);
   cmd_trust->RegisterCommand("status","Show SSL/TLS Trusted CA status",tls_status, "",0,0);
   cmd_trust->RegisterCommand("clear","Clear SSL/TLS Trusted CA list",tls_clear, "",0,0);
   cmd_trust->RegisterCommand("reload","Reload SSL/TLS Trusted CA list",tls_reload, "",0,0);
@@ -149,17 +144,25 @@ void OvmsTLS::Reload()
   Clear();
 
   // Add our embedded trusted CAs
-  extern const char usertrust[] asm("_binary_usertrust_crt_start");
-  m_trustlist["USERTrust RSA Certification Authority"] = new OvmsTrustedCert((char*)usertrust, false);
+  extern const unsigned char usertrust[] asm("_binary_usertrust_crt_start");
+  extern const unsigned char usertrust_end[] asm("_binary_usertrust_crt_end");
+  m_trustlist["USERTrust RSA Certification Authority"] = new OvmsTrustedCert(usertrust, usertrust_end - usertrust);
 
-  extern const char isrg_x1[] asm("_binary_isrg_x1_crt_start");
-  m_trustlist["ISRG Root X1"] = new OvmsTrustedCert((char*)isrg_x1, false);
+  extern const unsigned char digicert_global[] asm("_binary_digicert_global_crt_start");
+  extern const unsigned char digicert_global_end[] asm("_binary_digicert_global_crt_end");
+  m_trustlist["DigiCert Global Root CA"] = new OvmsTrustedCert(digicert_global, digicert_global_end - digicert_global);
 
-  extern const char digicert_global[] asm("_binary_digicert_global_crt_start");
-  m_trustlist["DigiCert Global Root CA"] = new OvmsTrustedCert((char*)digicert_global, false);
+  extern const unsigned char starfield_class2[] asm("_binary_starfield_class2_crt_start");
+  extern const unsigned char starfield_class2_end[] asm("_binary_starfield_class2_crt_end");
+  m_trustlist["Starfield Class 2 CA"] = new OvmsTrustedCert(starfield_class2, starfield_class2_end - starfield_class2);
 
-  extern const char starfield_class2[] asm("_binary_starfield_class2_crt_start");
-  m_trustlist["Starfield Class 2 CA"] = new OvmsTrustedCert((char*)starfield_class2, false);
+  extern const unsigned char baltimore_cybertrust[] asm("_binary_baltimore_cybertrust_crt_start");
+  extern const unsigned char baltimore_cybertrust_end[] asm("_binary_baltimore_cybertrust_crt_end");
+  m_trustlist["Baltimore CyberTrust Root CA"] = new OvmsTrustedCert(baltimore_cybertrust, baltimore_cybertrust_end - baltimore_cybertrust);
+
+  extern const unsigned char isrg_x1[] asm("_binary_isrg_x1_crt_start");
+  extern const unsigned char isrg_x1_end[] asm("_binary_isrg_x1_crt_end");
+  m_trustlist["ISRG X1 CA"] = new OvmsTrustedCert(isrg_x1, isrg_x1_end - isrg_x1);
 
   // Add trusted certs on disk (/store/trustedca)
   DIR *dir;
@@ -179,7 +182,8 @@ void OvmsTLS::Reload()
         char *buf = (char*)ExternalRamMalloc(size+1);
         fread(buf,1,size,f);
         buf[size] = 0;
-        m_trustlist[dp->d_name] = new OvmsTrustedCert(buf, true);
+        m_trustlist[dp->d_name] = new OvmsTrustedCert(reinterpret_cast<unsigned char*>(buf), size + 1);
+        free(buf);
         }
       fclose(f);
       }
@@ -214,50 +218,101 @@ void OvmsTLS::ClearTrustedRaw()
 
 void OvmsTLS::BuildTrustedRaw()
   {
+  const char DASHES[] = "-----";
+  const char BEGIN[] = "BEGIN";
+  const char END[] = "END";
+  const char CERTIFICATE[] = " CERTIFICATE";
+
   if (m_trustedcache != NULL) return;
 
-  int count = 0;
-  size_t size = 0;
-  for (auto it = m_trustlist.begin(); it != m_trustlist.end(); it++)
+  size_t totalLength = 0u;
+  size_t count = 0u;
+  for (auto it = m_trustlist.begin(); it != m_trustlist.end(); ++it)
     {
-    count++;
-    size += strlen(it->second->GetPEM());
+    mbedtls_x509_crt* crt = it->second->GetCert();
+    if (crt)
+      {
+      size_t encodedLength;
+      mbedtls_base64_encode(nullptr, 0, &encodedLength, nullptr, crt->raw.len);
+      // Add the new lines added every 64 bytes
+      encodedLength += (encodedLength >> 6);
+      // Add the header and footer (the NUL will be included as new lines)
+      encodedLength += sizeof(DASHES) + sizeof(BEGIN) + sizeof(CERTIFICATE) + sizeof(DASHES) - 3;
+      encodedLength += sizeof(DASHES) + sizeof(END) + sizeof(CERTIFICATE) + sizeof(DASHES) - 3;
+      totalLength += encodedLength;
+      ++count;
+      }
     }
-  size += 1; // Ending 0 termination
 
-  m_trustedcache = (char*)ExternalRamMalloc(size);
-
-  char* p = m_trustedcache;
-  for (auto it = m_trustlist.begin(); it != m_trustlist.end(); it++)
+  m_trustedcache = (char*)ExternalRamMalloc(totalLength + 1);
+  if (m_trustedcache == nullptr)
     {
-    char *pem = it->second->GetPEM();
-    strcpy(p,pem);
-    p += strlen(pem);
+    return;
     }
-  *p = 0; // NULL terminate
 
-  ESP_LOGI(TAG, "Built trusted CA cache (%d entries, %d bytes)",count,size);
+  auto current = m_trustedcache;
+  for (auto it = m_trustlist.begin(); it != m_trustlist.end(); ++it)
+    {
+    mbedtls_x509_crt* crt = it->second->GetCert();
+    if (crt)
+      {
+      current = std::copy(DASHES, &DASHES[sizeof(DASHES) - 1], current);
+      current = std::copy(BEGIN, &BEGIN[sizeof(BEGIN) - 1], current);
+      current = std::copy(CERTIFICATE, &CERTIFICATE[sizeof(CERTIFICATE) - 1], current);
+      current = std::copy(DASHES, &DASHES[sizeof(DASHES) - 1], current);
+      *current++ = '\n';
+      // Encode 48 bytes at a time with new lines between them
+      const unsigned char* der = crt->raw.p;
+      size_t derLength = crt->raw.len;
+      while (derLength)
+        {
+        size_t pemLength;
+        size_t inLength = derLength > 48 ? 48 : derLength;
+        mbedtls_base64_encode((unsigned char*)current, 65, &pemLength, der, inLength);
+        current += pemLength;
+        *current++ = '\n';
+        der += inLength;
+        derLength -= inLength;
+        }
+      current = std::copy(DASHES, &DASHES[sizeof(DASHES) - 1], current);
+      current = std::copy(END, &END[sizeof(END) - 1], current);
+      current = std::copy(CERTIFICATE, &CERTIFICATE[sizeof(CERTIFICATE) - 1], current);
+      current = std::copy(DASHES, &DASHES[sizeof(DASHES) - 1], current);
+      *current++ = '\n';
+      }
+    }
+  *current = '\0';
+
+  ESP_LOGI(TAG, "Built trusted CA cache (%d entries, %d bytes)",count,totalLength);
   }
 
-OvmsTrustedCert::OvmsTrustedCert(char* pem, bool needfree)
+OvmsTrustedCert::OvmsTrustedCert(const unsigned char* cert, size_t length) :
+    m_cert(reinterpret_cast<mbedtls_x509_crt*>(ExternalRamMalloc(sizeof(mbedtls_x509_crt))))
   {
-  ESP_LOGD(TAG,"Registered %d byte trusted CA (%d)",strlen(pem),needfree);
-  m_pem = pem;
-  m_needfree = needfree;
+  mbedtls_x509_crt_init(m_cert);
+  if (mbedtls_x509_crt_parse(m_cert, cert, length) != 0)
+    {
+    ESP_LOGE(TAG,"Invalid %d byte trusted CA - ignored", length);
+    free(m_cert);
+    m_cert = nullptr;
+    }
+  else
+    {
+    ESP_LOGD(TAG,"Registered %d byte trusted CA", length);
+    }
   }
 
 OvmsTrustedCert::~OvmsTrustedCert()
   {
-  ESP_LOGD(TAG,"Freeing trusted certificate (length %d bytes)",strlen(m_pem));
-  if (m_needfree) free(m_pem);
+  if (m_cert)
+    {
+    ESP_LOGD(TAG,"Freeing trusted certificate");
+    mbedtls_x509_crt_free(m_cert);
+    free(m_cert);
+    }
   }
 
-bool OvmsTrustedCert::IsInternal()
+mbedtls_x509_crt* OvmsTrustedCert::GetCert()
   {
-  return (! m_needfree);
-  }
-
-char *OvmsTrustedCert::GetPEM()
-  {
-  return m_pem;
+  return m_cert;
   }

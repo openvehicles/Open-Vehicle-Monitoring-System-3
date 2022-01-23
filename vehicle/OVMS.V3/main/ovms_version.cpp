@@ -40,6 +40,7 @@ static const char *TAG = "version";
 #include "ovms_metrics.h"
 #include "metrics_standard.h"
 #include "ovms_events.h"
+#include "ovms_peripherals.h"
 
 
 std::string GetOVMSPartitionVersion(esp_partition_subtype_t t)
@@ -153,6 +154,22 @@ std::string GetOVMSBuild()
   return build;
   }
 
+std::string GetOVMSProduct()
+  {
+  #ifdef CONFIG_OVMS_HW_BASE_3_0
+  return std::string("v3.0");
+  #endif //#ifdef CONFIG_OVMS_HW_BASE_3_0
+
+  #ifdef CONFIG_OVMS_HW_BASE_3_1
+  esp_chip_info_t chip;
+  esp_chip_info(&chip);
+  if (chip.revision < 3)
+    { return std::string("v3.1"); }
+  else
+    { return std::string("v3.3"); }
+  #endif //#ifdef CONFIG_OVMS_HW_BASE_3_1
+  }
+
 std::string GetOVMSHardware()
   {
   std::string hardware("OVMS ");
@@ -164,6 +181,14 @@ std::string GetOVMSHardware()
   if (chip.features & CHIP_FEATURE_BT) hardware.append("BT ");
   char buf[32]; sprintf(buf,"cores=%d ",chip.cores); hardware.append(buf);
   sprintf(buf,"rev=ESP32/%d",chip.revision); hardware.append(buf);
+
+#ifdef CONFIG_OVMS_COMP_CELLULAR
+  if (MyPeripherals->m_cellular_modem && MyPeripherals->m_cellular_modem->m_model != "auto")
+    {
+    hardware.append("; MODEM ");
+    hardware.append(MyPeripherals->m_cellular_modem->m_model);
+    }
+#endif
 
   return hardware;
   }
@@ -201,4 +226,5 @@ VersionInit::VersionInit()
   using std::placeholders::_1;
   using std::placeholders::_2;
   MyEvents.RegisterEvent(TAG,"system.start", std::bind(&Version, _1, _2));
+  MyEvents.RegisterEvent(TAG,"system.modem.installed", std::bind(&Version, _1, _2));
   }

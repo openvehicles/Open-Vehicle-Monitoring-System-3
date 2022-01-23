@@ -779,7 +779,7 @@ REInit::REInit()
   {
   ESP_LOGI(TAG, "Initialising RE Tools (8800)");
 
-  OvmsCommand* cmd_re = MyCommandApp.RegisterCommand("re","RE framework");
+  OvmsCommand* cmd_re = MyCommandApp.RegisterCommand("re","RE framework", re_status, "", 0, 0, false);
   cmd_re->RegisterCommand("start","Start RE tools",
     re_start,
     "[filter1] ... [filterN]\n"

@@ -199,7 +199,7 @@ class OvmsNotify : public ExternalRamAllocated
   public:
     OvmsNotifyTypeMap_t m_types;
     OvmsNotifyErrorCodeMap_t m_errorcodes;
-    bool m_trace;
+    int m_trace;
   };
 
 extern OvmsNotify MyNotify;

@@ -53,6 +53,23 @@ You do not have to use the Hologram service. If you use another cellular provide
 
 If you are using the cellular option, you should attach a suitable cellular antenna to the module, using the antenna connector labeled "GSM".
 
+
+^^^^^^^^^^^^^^^^
+Modem Status LED
+^^^^^^^^^^^^^^^^
+
+The blue LED on the modem board shows the current modem status:
+
+=================================== ===================== =============================
+LED Status                          SIM5360 (3G)          SIM7600 (4G)
+=================================== ===================== =============================
+ON                                  Searching network     Searching network
+Fast blinking (200ms)               Data Transmit         Data Transmit; 4G registered
+Slow blinking (800ms)               Registered network    2G/3G registered network
+OFF                                 Power off / Sleep     Power off / Sleep
+=================================== ===================== =============================
+
+
 ----------------
 GPS/GNSS Antenna
 ----------------

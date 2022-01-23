@@ -114,6 +114,17 @@ Too high values may result in connection drops on the AP network of the module.
 WiFi Signal Quality
 -------------------
 
+.. note:: **For best performance you'll need a signal level of -85 dBm or higher.**
+  
+  - Open the web status page, the Wifi signal level can be monitored in the "Live" box.
+  
+  - Try moving / turning / tilting your router -- centimeters can make a huge difference.
+    After each move step back from the router and watch how the signal develops.
+  
+  - Try switching to another Wifi channel (router configuration).
+  
+  - Try adding a repeater half way from the router to the car.
+
 The module monitors the WiFi client signal quality and drops a WiFi connection (switches to modem
 if available) if it becomes too bad. The WiFi connection will be kept active and monitored, and as 
 the signal recovers, the module will automatically reconnect to the AP.
@@ -121,7 +132,8 @@ the signal recovers, the module will automatically reconnect to the AP.
 The default threshold is to stop using the connection if it drops below -89 dBm. A connection is 
 assumed to be usable if the signal is above -87 dBm.
 
-Depending on your WiFi environment, the WiFi connection may still be usable at lower signal levels.
+Depending on your WiFi environment, the WiFi connection **may** still be usable at lower signal levels,
+but it **normally** will need stable levels above -87 dBm.
 
 To tweak the thresholds, use the web UI WiFi configuration or change the following configuration
 variables::
@@ -145,6 +157,11 @@ to true, either using the web UI or by doing::
   OVMS# config set network wifi.bad.reconnect yes
 
 With this, the module will perform a full WiFi reconnect cycle as soon as the signal becomes bad.
+
+This is meant for the car moving between cells of your mesh network, e.g. if the first cell
+is checked in at your gate, but a much better cell becomes available in your garage / car port.
+It **should not be enabled** if your Wifi signal is generally poor, as that will cause many
+disconnects & reconnects.
 
 
 ------------------------------

@@ -1,0 +1,91 @@
+<!--
+  foglight.htm: Web plugin for hook /dashboard:body.pre
+    - add button to activate/deactivate foglight
+    - add indicator to show current foglight state
+  
+  Requires module plugin: foglight.js
+  
+  Version 1.0  Michael Balzer <dexter@dexters-web.de>
+-->
+
+<style>
+#foglight {
+  margin: 10px 8px 0;
+}
+#foglight .indicator > .label {
+  font-size: 130%;
+  line-height: 160%;
+  margin: 0px;
+  padding: 10px;
+  display: block;
+  border-radius: 50px;
+}
+</style>
+
+<div class="receiver" id="foglight" style="display:none">
+  <form>
+    <div class="form-group">
+      <div class="col-xs-6">
+        <div class="indicator indicator-foglight">
+          <span class="label label-default">FOGLIGHT</span>
+        </div>
+      </div>
+      <div class="col-xs-6">
+        <div class="btn-group btn-group-justified action-foglight-set" data-toggle="buttons">
+          <label class="btn btn-default action-foglight-0"><input type="radio" name="foglight" value="0">OFF</label>
+          <label class="btn btn-default action-foglight-1"><input type="radio" name="foglight" value="1">ON/AUTO</label>
+        </div>
+        <samp id="action-foglight-output" class="text-center"></samp>
+      </div>
+    </div>
+  </form>
+</div>
+
+<script>
+(function(){
+
+  var foglight = { cfg: {}, state: { on: 0, port: 0 } };
+  var $indicator = $('#foglight .indicator-foglight > .label');
+  var $actionset = $('#foglight .action-foglight-set > label');
+
+  // State & UI update:
+  function update(data) {
+    $.extend(true, foglight, data);
+    // update indicator:
+    if (foglight.state.port)
+      $indicator.removeClass('label-default').addClass('label-danger');
+    else
+      $indicator.removeClass('label-danger').addClass('label-default');
+    // update buttons:
+    $actionset.removeClass('active');
+    $actionset.find('input[value='+foglight.state.on+']').prop('checked', true).parent().addClass('active');
+  }
+
+  // Listen to foglight events:
+  $('#foglight').on('msg:event', function(e, event) {
+    if (event == "usr.foglight.on")
+      update({ state: { port: 1 } });
+    else if (event == "usr.foglight.off")
+      update({ state: { port: 0 } });
+    else if (event == "vehicle.off") {
+      update({ state: { on: 0 } });
+      $('#action-foglight-output').empty();
+    }
+  });
+
+  // Button action:
+  $('#foglight .action-foglight-set input').on('change', function(e) {
+    foglight.state.on = $(this).val();
+    loadcmd('script eval foglight.set('+foglight.state.on+')', '#action-foglight-output');
+  });
+
+  // Init & install:
+  $('#main').one('load', function(ev) {
+    loadcmd('script eval foglight.info()').then(function(output) {
+      update(JSON.parse(output));
+      $('#foglight').appendTo('#panel-dashboard .panel-body').show();
+    });
+  });
+
+})();
+</script>

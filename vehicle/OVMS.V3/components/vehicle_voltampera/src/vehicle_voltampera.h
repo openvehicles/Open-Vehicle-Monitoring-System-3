@@ -93,9 +93,12 @@ class OvmsVehicleVoltAmpera : public OvmsVehicle
     void SendTesterPresentMessage( uint32_t id );
     virtual void Ticker1(uint32_t ticker);
     virtual void Ticker10(uint32_t ticker);
+    virtual void Ticker300(uint32_t ticker);
     virtual void NotifiedVehicleOn();
     virtual void NotifiedVehicleOff();
+    virtual void NotifiedVehicleAwake();
 
+    // va_ac_preheat
     void ClimateControlInit();
     void ClimateControlPrintStatus(int verbosity, OvmsWriter* writer);
     void ClimateControlIncomingSWCAN(CAN_frame_t* p_frame);
@@ -103,6 +106,10 @@ class OvmsVehicleVoltAmpera : public OvmsVehicle
     const char * PreheatStatus();
     void PreheatModeChange( uint8_t preheat_status );
     void PreheatWatchdog();
+
+    //va_notify
+    void NotifyFuel();
+    void NotifyMetrics();
 
   protected:
     char m_vin[18];
@@ -127,6 +134,7 @@ class OvmsVehicleVoltAmpera : public OvmsVehicle
     uint32_t m_controlled_lights;    
     uint32_t m_tester_present_timer;
     bool m_extended_wakeup;
+    bool m_notify_metrics;
 
     OvmsMetricInt * mt_preheat_status;
     OvmsMetricInt *  mt_preheat_timer;

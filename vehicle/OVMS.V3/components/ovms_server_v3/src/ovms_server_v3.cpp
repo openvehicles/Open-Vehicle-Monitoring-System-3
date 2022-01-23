@@ -112,8 +112,6 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
         {
         if (MyOvmsServerV3)
           {
-          StandardMetrics.ms_s_v3_connected->SetValue(true);
-          MyOvmsServerV3->SetStatus("OVMS V3 MQTT login successful", false, OvmsServerV3::Connected);
           MyOvmsServerV3->m_sendall = true;
           MyOvmsServerV3->m_notify_info_pending = true;
           MyOvmsServerV3->m_notify_error_pending = true;
@@ -122,6 +120,8 @@ static void OvmsServerV3MongooseCallback(struct mg_connection *nc, int ev, void 
           MyOvmsServerV3->m_notify_data_waitcomp = 0;
           MyOvmsServerV3->m_notify_data_waittype = NULL;
           MyOvmsServerV3->m_notify_data_waitentry = NULL;
+          StandardMetrics.ms_s_v3_connected->SetValue(true);
+          MyOvmsServerV3->SetStatus("OVMS V3 MQTT login successful", false, OvmsServerV3::Connected);
           }
         }
       break;
@@ -193,6 +193,7 @@ OvmsServerV3::OvmsServerV3(const char* name)
   m_sendall = false;
   m_lasttx = 0;
   m_lasttx_stream = 0;
+  m_lasttx_sendall = 0;
   m_peers = 0;
   m_streaming = 0;
   m_updatetime_idle = 600;
@@ -919,7 +920,8 @@ void OvmsServerV3::Ticker1(std::string event, void* data)
                (StandardMetrics.ms_v_env_awake->AsBool()) ? m_updatetime_awake :
                m_updatetime_idle;
 
-    if ( m_updatetime_sendall > 0 && (now > (m_lasttx_sendall + m_updatetime_sendall)) )
+    if ((m_lasttx_sendall == 0) ||
+        (m_updatetime_sendall > 0 && now > (m_lasttx_sendall + m_updatetime_sendall)))
       {
       ESP_LOGI(TAG, "Transmit all metrics");
       TransmitAllMetrics();
@@ -935,6 +937,18 @@ void OvmsServerV3::Ticker1(std::string event, void* data)
       // TODO: transmit streaming metrics
       m_lasttx_stream = now;
       }
+    }
+  }
+
+void OvmsServerV3::RequestUpdate(bool txall)
+  {
+  if (txall)
+    {
+    m_lasttx_sendall = 0;
+    }
+  else
+    {
+    m_lasttx = 0;
     }
   }
 
@@ -1017,6 +1031,21 @@ void ovmsv3_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
     }
   }
 
+void ovmsv3_update(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (MyOvmsServerV3 == NULL)
+    {
+    writer->puts("ERROR: OVMS v3 server has not been started");
+    }
+  else
+    {
+    bool txall = (strcmp(cmd->GetName(), "all") == 0);
+    MyOvmsServerV3->RequestUpdate(txall);
+    writer->printf("Server V3 data update for %s metrics has been scheduled\n",
+      txall ? "all" : "modified");
+    }
+  }
+
 OvmsServerV3Init MyOvmsServerV3Init  __attribute__ ((init_priority (6200)));
 
 OvmsServerV3Init::OvmsServerV3Init()
@@ -1024,10 +1053,14 @@ OvmsServerV3Init::OvmsServerV3Init()
   ESP_LOGI(TAG, "Initialising OVMS V3 Server (6200)");
 
   OvmsCommand* cmd_server = MyCommandApp.FindCommand("server");
-  OvmsCommand* cmd_v3 = cmd_server->RegisterCommand("v3","OVMS Server V3 Protocol");
+  OvmsCommand* cmd_v3 = cmd_server->RegisterCommand("v3","OVMS Server V3 Protocol", ovmsv3_status, "", 0, 0, false);
   cmd_v3->RegisterCommand("start","Start an OVMS V3 Server Connection",ovmsv3_start);
   cmd_v3->RegisterCommand("stop","Stop an OVMS V3 Server Connection",ovmsv3_stop);
   cmd_v3->RegisterCommand("status","Show OVMS V3 Server connection status",ovmsv3_status);
+
+  OvmsCommand* cmd_update = cmd_v3->RegisterCommand("update", "Request OVMS V3 Server data update", ovmsv3_update);
+  cmd_update->RegisterCommand("all", "Transmit all metrics", ovmsv3_update);
+  cmd_update->RegisterCommand("modified", "Transmit modified metrics only", ovmsv3_update);
 
   using std::placeholders::_1;
   using std::placeholders::_2;

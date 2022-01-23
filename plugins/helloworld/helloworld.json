@@ -1,0 +1,15 @@
+{
+  "name": "helloworld",
+  "title": "Hello World: An example OVMS plugin",
+  "description": "This plugin is provided for demonstration and example purposes only.",
+  "group": "Development",
+  "info": "http://www.openvehicles.com/",
+  "maintainer": "Mark Webb-Johnson <mark@openvehicles.com>",
+  "version": "0.1",
+  "prerequisites": ["ovms>=3.2.014"],
+  "elements": [{
+    "type": "module",
+    "path": "helloworld.js",
+    "name": "helloworld"
+  }]
+}

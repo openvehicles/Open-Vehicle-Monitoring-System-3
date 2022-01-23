@@ -56,6 +56,9 @@ static const char *TAG = "ota";
 
 OvmsOTA MyOTA __attribute__ ((init_priority (4400)));
 
+////////////////////////////////////////////////////////////////////////////////
+// Utility functions
+
 int buildverscmp(std::string v1, std::string v2)
   {
   // compare canonical versions & check dirty state:
@@ -81,6 +84,9 @@ int buildverscmp(std::string v1, std::string v2)
   return cmp;
   }
 
+////////////////////////////////////////////////////////////////////////////////
+// Commands
+
 void ota_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   ota_info info;
@@ -89,6 +95,8 @@ void ota_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
   bool check_update = (strcmp(cmd->GetName(), "status")==0);
   MyOTA.GetStatus(info, check_update);
 
+  if (info.hardware_info != "")
+    len += writer->printf("Hardware:          %s\n", info.hardware_info.c_str());
   if (info.version_firmware != "")
     len += writer->printf("Firmware:          %s\n", info.version_firmware.c_str());
   if (info.partition_running != "")
@@ -257,19 +265,20 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     {
     // Automatically build the URL based on firmware
     std::string tag = MyConfig.GetParamValue("ota","tag");
+
     url = MyConfig.GetParamValue("ota","server");
     if (url.empty())
       url = "api.openvehicles.com/firmware/ota";
-#ifdef CONFIG_OVMS_HW_BASE_3_0
-    url.append("/v3.0/");
-#endif //#ifdef CONFIG_OVMS_HW_BASE_3_0
-#ifdef CONFIG_OVMS_HW_BASE_3_1
-    url.append("/v3.1/");
-#endif //#ifdef CONFIG_OVMS_HW_BASE_3_1
+
+    url.append("/");
+    url.append(GetOVMSProduct());
+    url.append("/");
+
     if (tag.empty())
       url.append(CONFIG_OVMS_VERSION_TAG);
     else
       url.append(tag);
+
     url.append("/ovms3.bin");
     }
   else
@@ -300,9 +309,9 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
   esp_err_t err = esp_ota_begin(target, expected, &otah);
   if (err != ESP_OK)
     {
-    writer->printf("Error: ESP32 error #%d when starting OTA operation\n",err);
-    http.Disconnect();
-    return;
+      writer->printf("Error: ESP32 error #%d when starting OTA operation\n",err);
+      http.Disconnect();
+      return;
     }
 
   // Now, process the body
@@ -351,8 +360,6 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     return;
     }
 
-  // OK. Now ready to start the work...
-
   // All done
   writer->puts("Setting boot partition...");
   err = esp_ota_set_boot_partition(target);
@@ -363,7 +370,7 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     }
 
   writer->printf("OTA flash was successful\n  Flashed %d bytes from %s\n  Next boot will be from '%s'\n",
-                 filesize,url.c_str(),target->label);
+                 http.BodySize(),url.c_str(),target->label);
   MyConfig.SetParamValue("ota", "http.mru", url);
   }
 
@@ -423,6 +430,11 @@ void ota_boot(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
       }
     }
   }
+
+////////////////////////////////////////////////////////////////////////////////
+// OvmsOTA
+//
+// The main OTA functionality
 
 #ifdef CONFIG_OVMS_COMP_SDCARD
 void OvmsOTA::AutoFlashSD(std::string event, void* data)
@@ -549,7 +561,7 @@ OvmsOTA::OvmsOTA()
   MyEvents.RegisterEvent(TAG,"sd.mounted", std::bind(&OvmsOTA::AutoFlashSD, this, _1, _2));
 #endif // #ifdef CONFIG_OVMS_COMP_SDCARD
 
-  OvmsCommand* cmd_ota = MyCommandApp.RegisterCommand("ota","OTA framework");
+  OvmsCommand* cmd_ota = MyCommandApp.RegisterCommand("ota","OTA framework", ota_status, "", 0, 0, false);
 
   OvmsCommand* cmd_otastatus = cmd_ota->RegisterCommand("status","Show OTA status",ota_status);
   cmd_otastatus->RegisterCommand("nocheck","…skip check for available update",ota_status);
@@ -572,12 +584,16 @@ OvmsOTA::~OvmsOTA()
 
 void OvmsOTA::GetStatus(ota_info& info, bool check_update /*=true*/)
   {
+  info.hardware_info = "";
   info.version_firmware = "";
   info.version_server = "";
   info.update_available = false;
   info.partition_running = "";
   info.partition_boot = "";
   info.changelog_server = "";
+
+  if (StdMetrics.ms_m_hardware)
+    info.hardware_info = StdMetrics.ms_m_hardware->AsString();
 
   OvmsMetricString* m = StandardMetrics.ms_m_version;
   if (m != NULL)
@@ -591,12 +607,9 @@ void OvmsOTA::GetStatus(ota_info& info, bool check_update /*=true*/)
       std::string url = MyConfig.GetParamValue("ota","server");
       if (url.empty())
         url = "api.openvehicles.com/firmware/ota";
-#ifdef CONFIG_OVMS_HW_BASE_3_0
-      url.append("/v3.0/");
-#endif //#ifdef CONFIG_OVMS_HW_BASE_3_0
-#ifdef CONFIG_OVMS_HW_BASE_3_1
-      url.append("/v3.1/");
-#endif //#ifdef CONFIG_OVMS_HW_BASE_3_1
+      url.append("/");
+      url.append(GetOVMSProduct());
+      url.append("/");
       if (tag.empty())
         url.append(CONFIG_OVMS_VERSION_TAG);
       else
@@ -749,12 +762,11 @@ bool OvmsOTA::AutoFlash(bool force)
   std::string url = MyConfig.GetParamValue("ota","server");
   if (url.empty())
     url = "api.openvehicles.com/firmware/ota";
-#ifdef CONFIG_OVMS_HW_BASE_3_0
-  url.append("/v3.0/");
-#endif //#ifdef CONFIG_OVMS_HW_BASE_3_0
-#ifdef CONFIG_OVMS_HW_BASE_3_1
-  url.append("/v3.1/");
-#endif //#ifdef CONFIG_OVMS_HW_BASE_3_1
+
+  url.append("/");
+  url.append(GetOVMSProduct());
+  url.append("/");
+
   if (tag.empty())
     url.append(CONFIG_OVMS_VERSION_TAG);
   else
@@ -843,7 +855,7 @@ bool OvmsOTA::AutoFlash(bool force)
     return false;
     }
 
-  ESP_LOGI(TAG, "AutoFlash: Success flash of %d bytes from %s", filesize, url.c_str());
+  ESP_LOGI(TAG, "AutoFlash: Success flash of %d bytes from %s", http.BodySize(), url.c_str());
   MyNotify.NotifyStringf("info", "ota.update", "OTA firmware %s has been updated (OVMS will restart)", info.version_server.c_str());
   MyConfig.SetParamValue("ota", "http.mru", url);
 

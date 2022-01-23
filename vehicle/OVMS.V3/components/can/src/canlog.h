@@ -56,8 +56,6 @@
  *  of files or may return false on Open() without a bus filter.
  */
 
-#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
-
 class canlog;
 class canlogconnection: public InternalRamAllocated
   {
@@ -83,7 +81,11 @@ class canlogconnection: public InternalRamAllocated
   public:
     canlog*        m_logger;
     canformat*     m_formatter;
+#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
     mg_connection* m_nc;
+#else
+    void*          m_nc;
+#endif
     std::string    m_peer;
     bool           m_ispaused;
     canfilter*     m_filters;
@@ -93,7 +95,6 @@ class canlogconnection: public InternalRamAllocated
     uint32_t       m_filtercount;
   };
 
-#endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
 
 class canlog : public InternalRamAllocated
   {
@@ -137,10 +138,12 @@ class canlog : public InternalRamAllocated
 
   public:
     #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
-    typedef std::map<mg_connection*, canlogconnection*> conn_map_t;
+      typedef std::map<mg_connection*, canlogconnection*> conn_map_t;
+    #else
+      typedef std::map<void*, canlogconnection*> conn_map_t;
+    #endif
     conn_map_t m_connmap;
     OvmsRecMutex m_cmmutex;
-    #endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
 
   public:
     TaskHandle_t        m_task;
