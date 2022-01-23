@@ -1,11 +1,11 @@
 <!--
   Web UI page plugin:
     Frontend for the OVMS3 "re" (reverse engineering) toolkit
-    Version 0.1  Michael Balzer <dexter@dexters-web.de>
+    Version 0.2  Michael Balzer <dexter@dexters-web.de>
   
   Recommended installation:
     - Type:    Page
-    - Page:    ``/usr/retools``
+    - Page:    ``/plugins/retools``
     - Label:   RE Toolkit
     - Menu:    Tools
     - Auth:    Cookie
@@ -59,12 +59,13 @@ td u {
             <div class="sidebox">
               <div class="sidebox-heading">Control</div>
               <div id="controls" class="action-menu">
-                <button type="button" class="btn btn-default action-start" data-target="#status" data-cmd="re start">Start</button>
+                <input type="text" class="form-control font-monospace" name="filters" placeholder="Filters, e.g. 2:2a0-37f">
+                <button type="button" class="btn btn-default action-start">Start</button>
                 <button type="button" class="btn btn-default action-stop" data-target="#status" data-cmd="re stop">Stop</button>
                 <div>Set mode:</div>
-                <button type="button" class="btn btn-default action-clear" data-target="#status" data-cmd="re mode discover">Discover</button>
-                <button type="button" class="btn btn-default action-clear" data-target="#status" data-cmd="re mode analyse">Analyse</button>
-                <button type="button" class="btn btn-default action-clear" data-target="#status" data-cmd="re mode serve">Serve</button>
+                <button type="button" class="btn btn-default action-mode" data-target="#status" data-cmd="re mode discover">Discover</button>
+                <button type="button" class="btn btn-default action-mode" data-target="#status" data-cmd="re mode analyse">Analyse</button>
+                <button type="button" class="btn btn-default action-mode" data-target="#status" data-cmd="re mode serve">Serve</button>
                 <div>Clear:</div>
                 <button type="button" class="btn btn-default action-clear" data-target="#status" data-cmd="re clear">all</button>
                 <button type="button" class="btn btn-default action-clear" data-target="#status" data-cmd="re discover clear discovered">discovered</button>
@@ -118,7 +119,13 @@ td u {
 
 
 <script>
-(function(){
+// Plugin init after receiver init:
+$('#main').one('load', function(ev) {
+
+  // Button actions:
+  $('.action-start').on('click', function(ev) {
+    $('#status').loadcmd("re start " + $('input[name=filters]').val());
+  });
 
   // Init list table:
   var $list;
@@ -186,5 +193,5 @@ td u {
     }
   });
 
-})();
+});
 </script>

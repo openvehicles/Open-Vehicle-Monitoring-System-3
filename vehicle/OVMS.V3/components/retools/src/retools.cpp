@@ -40,12 +40,14 @@ static const char *TAG = "re";
 #include "ovms_utils.h"
 #include "ovms_notify.h"
 
+void re_stream_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+
 re *MyRE = NULL;
 
 const char* re_green[2][2] = { { "\x1b" "[32m", "\x1b" "[39m" }, { "<b>", "</b>" } };
 const char* re_red[2][2] = { { "\x1b" "[31m", "\x1b" "[39m" }, { "<u>", "</u>" } };
 
-void HighlightDump(char* bufferp, const char* data, size_t rlength, uint8_t red, uint8_t green, int mode = 0)
+void HighlightDump(char* bufferp, const char* data, size_t rlength, uint8_t red, uint8_t green, int mode = 0, char** ascii = NULL)
   {
   const char *s = data;
   const char *os = data;
@@ -69,7 +71,15 @@ void HighlightDump(char* bufferp, const char* data, size_t rlength, uint8_t red,
       bufferp += sprintf(bufferp,"   ");
       }
     }
-  bufferp += sprintf(bufferp,"| ");
+  if (ascii)
+    {
+    *bufferp++ = 0;
+    *ascii = bufferp;
+    }
+  else
+    {
+    bufferp += sprintf(bufferp,"| ");
+    }
   s = os;
   for (int k=0;k<colsize;k++)
     {
@@ -132,7 +142,7 @@ void re::DoAnalyse(CAN_frame_t* frame)
   {
   char vbuf[256];
 
-  OvmsMutexLock lock(&m_mutex);
+  OvmsRecMutexLock lock(&m_mutex);
   std::string key = GetKey(frame);
   auto k = m_rmap.find(key);
   re_record_t* r;
@@ -292,6 +302,7 @@ re::re(const char* name, canfilter* filter)
 
 re::~re()
   {
+  OvmsRecMutexLock lock(&m_mutex);
   MyCan.DeregisterListener(m_rxqueue);
 
   Clear();
@@ -324,7 +335,6 @@ void re::SetPowerMode(PowerMode powermode)
 
 void re::Clear()
   {
-  OvmsMutexLock lock(&m_mutex);
   for (re_record_map_t::iterator it=m_rmap.begin(); it!=m_rmap.end(); ++it)
     {
     delete it->second;
@@ -369,12 +379,23 @@ void re_stop(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
 void re_clear(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   if (!MyRE)
-    writer->puts("Error: RE tools not running");
-  else
     {
-    MyRE->Clear();
-    MyEvents.SignalEvent("retools.cleared.all", NULL);
+    writer->puts("Error: RE tools not running");
+    return;
     }
+
+  OvmsRecMutexLock lock(&MyRE->m_mutex);
+  MyRE->Clear();
+
+  if (MyNotify.HasReader("stream", "retools.list"))
+    {
+    StringWriter buf;
+    re_stream_list(COMMAND_RESULT_VERBOSE, &buf, NULL, 0, NULL);
+    MyNotify.NotifyString("stream", "retools.list.set", buf.c_str());
+    }
+
+  writer->puts("Cleared all records");
+  MyEvents.SignalEvent("retools.cleared.all", NULL);
   }
 
 void re_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -388,7 +409,7 @@ void re_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
   uint32_t tdiff = (MyRE->m_finished - MyRE->m_started)*1000;
   if (tdiff == 0) tdiff = 1000;
 
-  OvmsMutexLock lock(&MyRE->m_mutex);
+  OvmsRecMutexLock lock(&MyRE->m_mutex);
   writer->printf("%-20.20s %10s %6s %s\n","key","records","ms","last");
   for (re_record_map_t::iterator it=MyRE->m_rmap.begin(); it!=MyRE->m_rmap.end(); ++it)
     {
@@ -405,6 +426,7 @@ void re_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
 
 void re_stream_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
+  char vbuf[256];
   if (!MyRE)
     {
     writer->puts("[]");
@@ -414,22 +436,21 @@ void re_stream_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
   uint32_t tdiff = (MyRE->m_finished - MyRE->m_started)*1000;
   if (tdiff == 0) tdiff = 1000;
 
-  OvmsMutexLock lock(&MyRE->m_mutex);
+  OvmsRecMutexLock lock(&MyRE->m_mutex);
   writer->printf("[");
   int cnt = 0;
+  char *ascii = NULL;
   for (re_record_map_t::iterator it=MyRE->m_rmap.begin(); it!=MyRE->m_rmap.end(); ++it)
     {
-    if ((argc==0)||(strstr(it->first.c_str(),argv[0])))
+    if (argc == 0 || strstr(it->first.c_str(),argv[0]) != NULL)
       {
-      char vbuf[48];
-      char *s = vbuf;
-      FormatHexDump(&s, (const char*)it->second->last.data.u8, it->second->last.FIR.B.DLC, 8);
-      vbuf[24] = 0;
+      HighlightDump(vbuf, (const char*)it->second->last.data.u8,
+        it->second->last.FIR.B.DLC, it->second->attr.dc, it->second->attr.dd, 1, &ascii);
       writer->printf("%s[\"%s\",%d,%d,\"%s\",\"%s\"]\n",
         cnt ? "," : "",
         json_encode(it->first).c_str(), it->second->rxcount, (tdiff/it->second->rxcount),
         json_encode(std::string(vbuf)).c_str(),
-        json_encode(std::string(vbuf+25)).c_str());
+        json_encode(std::string(ascii)).c_str());
       cnt++;
       }
     }
@@ -447,7 +468,7 @@ void re_dbc_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
   uint32_t tdiff = (MyRE->m_finished - MyRE->m_started)*1000;
   if (tdiff == 0) tdiff = 1000;
 
-  OvmsMutexLock lock(&MyRE->m_mutex);
+  OvmsRecMutexLock lock(&MyRE->m_mutex);
   writer->printf("%-20.20s %10s %6s %s\n","key","records","ms","last");
   for (re_record_map_t::iterator it=MyRE->m_rmap.begin(); it!=MyRE->m_rmap.end(); ++it)
     {
@@ -528,7 +549,7 @@ void re_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
     writer->printf("Filter:  %s\n", MyRE->m_filter->Info().c_str());
     }
 
-  OvmsMutexLock lock(&MyRE->m_mutex);
+  OvmsRecMutexLock lock(&MyRE->m_mutex);
   writer->printf("Key Map: %d entries\n",MyRE->m_rmap.size());
   if (MyRE->m_rmap.size() > 0)
     {
@@ -607,7 +628,7 @@ void re_mode_discover(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int a
     return;
     }
 
-  OvmsMutexLock lock(&MyRE->m_mutex);
+  OvmsRecMutexLock lock(&MyRE->m_mutex);
   for (re_record_map_t::iterator it=MyRE->m_rmap.begin(); it!=MyRE->m_rmap.end(); ++it)
     {
     it->second->attr.b.Discovered = 0;
@@ -627,11 +648,18 @@ void re_clear_changed(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int a
     return;
     }
 
-  OvmsMutexLock lock(&MyRE->m_mutex);
+  OvmsRecMutexLock lock(&MyRE->m_mutex);
   for (re_record_map_t::iterator it=MyRE->m_rmap.begin(); it!=MyRE->m_rmap.end(); ++it)
     {
     it->second->attr.b.Changed = 0;
     it->second->attr.dc = 0;
+    }
+
+  if (MyNotify.HasReader("stream", "retools.list"))
+    {
+    StringWriter buf;
+    re_stream_list(COMMAND_RESULT_VERBOSE, &buf, NULL, 0, NULL);
+    MyNotify.NotifyString("stream", "retools.list.set", buf.c_str());
     }
 
   writer->puts("Cleared all change flags");
@@ -646,11 +674,18 @@ void re_clear_discovered(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, in
     return;
     }
 
-  OvmsMutexLock lock(&MyRE->m_mutex);
+  OvmsRecMutexLock lock(&MyRE->m_mutex);
   for (re_record_map_t::iterator it=MyRE->m_rmap.begin(); it!=MyRE->m_rmap.end(); ++it)
     {
     it->second->attr.b.Discovered = 0;
     it->second->attr.dd = 0;
+    }
+
+  if (MyNotify.HasReader("stream", "retools.list"))
+    {
+    StringWriter buf;
+    re_stream_list(COMMAND_RESULT_VERBOSE, &buf, NULL, 0, NULL);
+    MyNotify.NotifyString("stream", "retools.list.set", buf.c_str());
     }
 
   writer->puts("Cleared all discover flags");
@@ -669,7 +704,7 @@ void re_list_changed(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
   uint32_t tdiff = (MyRE->m_finished - MyRE->m_started)*1000;
   if (tdiff == 0) tdiff = 1000;
 
-  OvmsMutexLock lock(&MyRE->m_mutex);
+  OvmsRecMutexLock lock(&MyRE->m_mutex);
   writer->printf("%-20.20s %10s %6s %s\n","key","records","ms","last");
   for (re_record_map_t::iterator it=MyRE->m_rmap.begin(); it!=MyRE->m_rmap.end(); ++it)
     {
@@ -698,26 +733,23 @@ void re_stream_changed(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int 
   uint32_t tdiff = (MyRE->m_finished - MyRE->m_started)*1000;
   if (tdiff == 0) tdiff = 1000;
 
-  OvmsMutexLock lock(&MyRE->m_mutex);
+  OvmsRecMutexLock lock(&MyRE->m_mutex);
   writer->printf("[");
   int cnt = 0;
+  char *ascii = NULL;
   for (re_record_map_t::iterator it=MyRE->m_rmap.begin(); it!=MyRE->m_rmap.end(); ++it)
     {
-    if ((it->second->attr.b.Changed)||(it->second->attr.dc))
+    if ((it->second->attr.b.Changed || it->second->attr.dc) &&
+        (argc == 0 || strstr(it->first.c_str(),argv[0]) != NULL))
       {
       HighlightDump(vbuf, (const char*)it->second->last.data.u8,
-        it->second->last.FIR.B.DLC, it->second->attr.dc, it->second->attr.dd, 1);
-      if ((argc==0)||(strstr(it->first.c_str(),argv[0])))
-        {
-        char *asc = strchr(vbuf, '|');
-        *asc = 0;
-        writer->printf("%s[\"%s\",%d,%d,\"%s\",\"%s\"]\n",
-          cnt ? "," : "",
-          json_encode(it->first).c_str(), it->second->rxcount, (tdiff/it->second->rxcount),
-          json_encode(std::string(vbuf)).c_str(),
-          json_encode(std::string(asc+2)).c_str());
-        cnt++;
-        }
+        it->second->last.FIR.B.DLC, it->second->attr.dc, it->second->attr.dd, 1, &ascii);
+      writer->printf("%s[\"%s\",%d,%d,\"%s\",\"%s\"]\n",
+        cnt ? "," : "",
+        json_encode(it->first).c_str(), it->second->rxcount, (tdiff/it->second->rxcount),
+        json_encode(std::string(vbuf)).c_str(),
+        json_encode(std::string(ascii)).c_str());
+      cnt++;
       }
     }
   writer->puts("]");
@@ -735,7 +767,7 @@ void re_list_discovered(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int
   uint32_t tdiff = (MyRE->m_finished - MyRE->m_started)*1000;
   if (tdiff == 0) tdiff = 1000;
 
-  OvmsMutexLock lock(&MyRE->m_mutex);
+  OvmsRecMutexLock lock(&MyRE->m_mutex);
   writer->printf("%-20.20s %10s %6s %s\n","key","records","ms","last");
   for (re_record_map_t::iterator it=MyRE->m_rmap.begin(); it!=MyRE->m_rmap.end(); ++it)
     {
@@ -767,7 +799,7 @@ void REInit::Ticker1(std::string event, void* data)
     re_status(COMMAND_RESULT_VERBOSE, &buf, NULL, 0, NULL);
     MyNotify.NotifyString("stream", "retools.status", buf.c_str());
     }
-  if (MyRE && MyNotify.HasReader("stream", "retools.list.update"))
+  if (MyRE && MyNotify.HasReader("stream", "retools.list"))
     {
     StringWriter buf;
     re_stream_changed(COMMAND_RESULT_VERBOSE, &buf, NULL, 0, NULL);
