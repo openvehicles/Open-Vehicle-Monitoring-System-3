@@ -3,9 +3,9 @@
   "title": "REtools: Reverse Engineering UI",
   "description": "A web front-end for the RETOOLS subsystem in OVMS",
   "group": "Development",
-  "info": "https://docs.openvehicles.com/en/latest/plugin/retools/README.html",
+  "info": "https://docs.openvehicles.com/en/latest/plugins/retools/README.html",
   "maintainer": "Michael Balzer <dexter@dexters-web.de>",
-  "version": "0.1",
+  "version": "0.2",
   "prerequisites": ["ovms>=3.2.010"],
   "elements": [
     {

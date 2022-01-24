@@ -1,7 +1,7 @@
 /**
  * Module plugin:
  *  Auxiliary (12V) Battery History Chart
- *  Version 2.3.1 by Michael Balzer <dexter@dexters-web.de>
+ *  Version 2.3.2 by Michael Balzer <dexter@dexters-web.de>
  * 
  * This module records a set of metrics with a fixed time interval.
  * History data is stored in a file and automatically restored on reboot/reload.
@@ -87,7 +87,11 @@ function loadStoreFile() {
     binary: true,
     done: function(data) {
       print(storeFile + " loaded\n");
-      history = CBOR.decode(data);
+      try {
+        history = CBOR.decode(data);
+      } catch (ex) {
+        print("ERROR: CBOR.decode failed: " + ex);
+      }
       startRecording();
     },
     fail: function(error) {
