@@ -415,6 +415,13 @@ config OVMS_VEHICLE_KIASOULEV
     help
         Enable to include support for Kia Soul EV vehicles.
 
+config OVMS_VEHICLE_BOLTEV
+    bool "Include support for Bolt EV/Ampera-e vehicles"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for Bolt EV/Ampera-e vehicles"
+
 config OVMS_VEHICLE_VOLTAMPERA
     bool "Include support for Volt/Ampera vehicles"
     default y
