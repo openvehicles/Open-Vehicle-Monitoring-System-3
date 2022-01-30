@@ -69,37 +69,57 @@ std::string canformat_crtd::get(CAN_log_message_t* message)
     {
     case CAN_LogFrame_RX:
     case CAN_LogFrame_TX:
-      snprintf(buf,sizeof(buf),"%ld.%06ld %c%c%s %0*X",
+      snprintf(buf,sizeof(buf),"%ld.%06ld %c%c%s%s %0*X",
         message->timestamp.tv_sec, message->timestamp.tv_usec,
         busnumber,
         (message->type == CAN_LogFrame_RX) ? 'R' : 'T',
         (message->frame.FIR.B.FF == CAN_frame_std) ? "11":"29",
+        (message->frame.FIR.B.RTR == CAN_RTR) ? "R" : "",
         (message->frame.FIR.B.FF == CAN_frame_std) ? 3 : 8,
         message->frame.MsgID);
       p = buf+strlen(buf);
       for (int k=0; k<message->frame.FIR.B.DLC; k++)
         {
         *p++ = ' ';
-        p = HexByte(p,message->frame.data.u8[k]);
+        if (message->frame.FIR.B.RTR == CAN_RTR)
+          {
+          // RTR frames have length but no valid data
+          *p++ = '0';
+          *p++ = '0';
+          }
+        else
+          {
+          p = HexByte(p,message->frame.data.u8[k]);
+          }
         }
       *p = 0;
       break;
 
     case CAN_LogFrame_TX_Queue:
     case CAN_LogFrame_TX_Fail:
-      snprintf(buf,sizeof(buf),"%ld.%06ld %cCER %s %c%s %0*X",
+      snprintf(buf,sizeof(buf),"%ld.%06ld %cCER %s %c%s%s %0*X",
         message->timestamp.tv_sec, message->timestamp.tv_usec,
         busnumber,
         GetCanLogTypeName(message->type),
         (message->type == CAN_LogFrame_RX) ? 'R' : 'T',
         (message->frame.FIR.B.FF == CAN_frame_std) ? "11":"29",
+        (message->frame.FIR.B.RTR == CAN_RTR) ? "R" : "",
         (message->frame.FIR.B.FF == CAN_frame_std) ? 3 : 8,
         message->frame.MsgID);
         p = buf+strlen(buf);
         for (int k=0; k<message->frame.FIR.B.DLC; k++)
           {
           *p++ = ' ';
-          p = HexByte(p,message->frame.data.u8[k]);
+          if (message->frame.FIR.B.RTR == CAN_RTR)
+            {
+            // RTR frames have length but no valid data
+            *p++ = '0';
+            *p++ = '0';
+            }
+          else
+            {
+            p = HexByte(p,message->frame.data.u8[k]);
+            }
           }
         *p = 0;
       break;
@@ -151,7 +171,7 @@ std::string canformat_crtd::getheader(struct timeval *time)
     time = &t;
     }
 
-  snprintf(buf,sizeof(buf),"%ld.%06ld CXX OVMS CRTD\n%ld.%06ld CVR 3.0\n",
+  snprintf(buf,sizeof(buf),"%ld.%06ld CXX OVMS CRTD\n%ld.%06ld CVR 4.0\n",
     time->tv_sec, time->tv_usec,
     time->tv_sec, time->tv_usec);
 

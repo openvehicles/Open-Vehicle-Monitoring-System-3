@@ -33,47 +33,46 @@ History
 * 1.0: Initial version supporting CXX, R11, R29, T11, and T29 messages only
 * 2.0: Add optional bus ID prefix to record types
 * 3.0: Add support for comment commands, and clarify documentation inconsistencies
+* 4.0: Add support for remote transmission request (RTR) frames
 
 -------------
 Specification
 -------------
 
 CRTD files are UTF-8 text files using LF or CR+LF line termination to
-separate each record.
+separate each record::
 
-  <crtd-file> ::= { <crtd-record> [CR] LF }
+  <crtd-file>       ::= { <crtd-record> [CR] LF }
 
-The records are formatted as follows:
+The records are formatted as follows::
 
-  <crtd-record>    ::= <timestamp> <space> <crtd-type>
-  <timestamp>      ::= <julianseconds> . [ <milliseconds> | <microseconds> ]
-  <julianseconds>  ::= <digti> { <digit> }
-  <milliseconds>   ::= <digit> <digit> <digit>
-  <microseconds>   ::= <digit> <digit> <digit> <digit> <digit> <digit>
-  <digit>          ::= [ 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 ]
-  <hexdigit>       ::= [ <digit>
-                     | A | B | C | D | E | F | a | b | c | d | e | f ]
-  <space>          ::= ASCII character 32 decimal (0x20 hex)
-
-  <crtd-type>      ::= [ <crtd-comment> | <crtd-transmit> | <crtd-receive> ]
-
-  <crtd-comment>   ::= CXX <space> <textual-comment>
-
-  <crtd-receive>   ::= R11 <space> <rxtx-data>
-                     | <bus>R11 <space> <rxtx-data>
-                     | R29 <space> <rxtx-data>
-                     | <bus>R29 <space> <rxtx-data>
-
-  <crtd-transmit>  ::= T11 <space> <rxtx-data>
-                     | <bus>T11 <space> <rxtx-data>
-                     | T29 <space> <rxtx-data>
-                     | <bus>T29 <space> <rxtx-data>
-
-  <bus>            ::= <digit> { <digit> }
-
-  <rxtx-data>      ::= <can-id> { <space> <can-byte> }
-  <can-id>         ::= <hexdigit> { <hexdigit> ]
-  <can-byte>       ::= <hexdigit> [ <hexdigit> ]
+  <crtd-record>     ::= <timestamp> <space> <crtd-type>
+  
+  <timestamp>       ::= <julianseconds> . <milliseconds>
+                      | <julianseconds> . <microseconds>
+  <julianseconds>   ::= <digit> { <digit> }
+  <milliseconds>    ::= <digit> <digit> <digit>
+  <microseconds>    ::= <digit> <digit> <digit> <digit> <digit> <digit>
+  
+  <crtd-type>       ::= <crtd-comment> | <crtd-frame>
+  
+  <crtd-comment>    ::= C <letter> <letter> <space> <textual-comment>
+  
+  <crtd-frame>      ::= [ <bus> ] <direction> <format> [ <rtr> ] <space> <rxtx-data>
+  
+  <bus>             ::= <digit> { <digit> }
+  <direction>       ::= R | T
+  <format>          ::= 11 | 29
+  <rtr>             ::= R
+  
+  <rxtx-data>       ::= <can-id> { <space> <can-byte> }
+  <can-id>          ::= <hexdigit> { <hexdigit> }
+  <can-byte>        ::= <hexdigit> [ <hexdigit> ]
+  
+  <digit>           ::= 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
+  <hexdigit>        ::= <digit> | A | B | C | D | E | F | a | b | c | d | e | f
+  <space>           ::= ASCII character 32 decimal (0x20 hex)
+  <letter>          ::= ASCII alphanumeric character (0-9, A-Z, a-z)
 
 ----------
 Timestamps
@@ -126,19 +125,19 @@ The rest of the record is to be considered a comment (or data for the command).
 
 The following comment record types are defined:
 
-* CXX: General textual comment
-* CER: An indication of a (usually recoverable) error
-* CST: Periodical statistics
-* CEV: An indication of an event
-* CVR: Version of CRTD protocol adhered to (with version number as text comment)
+* ``CXX``: General textual comment
+* ``CER``: An indication of a (usually recoverable) error
+* ``CST``: Periodical statistics
+* ``CEV``: An indication of an event
+* ``CVR``: Version of CRTD protocol adhered to (with version number as text comment)
 
 and the following command record types are defined:
 
-* CBC: A command to configure a CAN bus
-* CDP: A command to pause the transmission of messages
-* CDR: A command to resume the transmission of messages
-* CFC: A command to clear all filters for this connection
-* CFA: A command to add a filter for this connection
+* ``CBC``: A command to configure a CAN bus
+* ``CDP``: A command to pause the transmission of messages
+* ``CDR``: A command to resume the transmission of messages
+* ``CFC``: A command to clear all filters for this connection
+* ``CFA``: A command to add a filter for this connection
 
 Here are some examples::
 
@@ -200,16 +199,17 @@ The command should have the filter passed as a single parameter:
 
 * filter: the filter to add
 
-Filters are formatted as:
+Filters are formatted as::
 
   Filter ::= <bus> | <id>[-<id>] | <bus>:<id>[-<id>]
 
 For example:
 
-* 2:2a0-37f for bus #2, IDs 0x2a0 - 0x37f
-* 1:0-37f for bus #1, IDs 0x000 - 0x37f
-* 3 for bus #3, all messages
-* 100-200 for bus #1, IDs 0x100 - 0x200
+* ``2:2a0-37f`` for bus #2, IDs 0x2a0 - 0x37f
+* ``1:0-37f`` for bus #1, IDs 0x000 - 0x37f
+* ``1:6ac`` for bus #1, single ID 0x6ac
+* ``3`` for bus #3, all messages
+* ``100-200`` for bus #1, IDs 0x100 - 0x200
 
 ^^^^^^^^^^^^^^^^^^^^^
 Received Frame Record
@@ -217,8 +217,8 @@ Received Frame Record
 
 Received frame records describe a frame received from the CAN bus, and start with the letter 'R'. Two types are defined:
 
-* R11: A standard 11bit ID CAN frame
-* R29: An extended 29bit ID CAN frame
+* ``R11``: A standard 11bit ID CAN frame
+* ``R29``: An extended 29bit ID CAN frame
 
 The record type is followed by the frame ID (in hexadecimal), and then up to 8 bytes of CAN frame data.
 
@@ -243,8 +243,8 @@ Transmitted Frame Record
 
 Transmitted frame records describe a frame transmitted onto the CAN bus, and start with the letter 'T'. Two types are defined:
 
-* T11: A standard 11bit ID CAN frame
-* T29: An extended 29bit ID CAN frame
+* ``T11``: A standard 11bit ID CAN frame
+* ``T29``: An extended 29bit ID CAN frame
 
 The record type is followed by the frame ID (in hexadecimal), and then up to 8 bytes of CAN frame data.
 
@@ -262,6 +262,27 @@ Here are some examples::
   1542473901.042516 2T11 168 e0 7f 70 00 ff ff ff
   1542473901.042809 2T11 27E c0 c0 c0 c0 00 00 00 00
   1542473901.043073 1T11 248 29 29 0f bc 01 10 00
+
+
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Remote Transmission Requests (RTR)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+RTR frames are tagged by appending the letter 'R' to the frame record:
+
+* ``R11R``: A standard 11bit ID RTR CAN frame
+* ``R29R``: An extended 29bit ID RTR CAN frame
+* ``T11R``: A standard 11bit ID RTR CAN frame
+* ``T29R``: An extended 29bit ID RTR CAN frame
+
+RTR frames do not carry a payload, but they still indicate the expected frame length,
+so the "data" bytes of an RTR frame will be included as zeros.
+
+Example::
+
+  1542473901.020305 1T11R 358 00 00 00 00 00 00 00 00
+  1542473901.030341 1R11 358 18 08 20 00 00 00 00 20
+
 
 -----------
 Conclusions
