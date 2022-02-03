@@ -1252,7 +1252,7 @@ class OvmsVehicleVoltAmperaInit
 
 OvmsVehicleVoltAmperaInit::OvmsVehicleVoltAmperaInit()
   {
-  ESP_LOGI(TAG, "Registering Vehicle: Volt/Ampera (9000)");
+  ESP_LOGI(TAG, "Registering Vehicle: Chevrolet Volt/Ampera (9000)");
 
-  MyVehicleFactory.RegisterVehicle<OvmsVehicleVoltAmpera>("VA","Volt/Ampera");
+  MyVehicleFactory.RegisterVehicle<OvmsVehicleVoltAmpera>("VA","Chevrolet Volt/Ampera");
   }
