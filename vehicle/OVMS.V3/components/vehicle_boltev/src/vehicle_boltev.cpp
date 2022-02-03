@@ -1182,5 +1182,5 @@ OvmsVehicleBoltEVInit::OvmsVehicleBoltEVInit()
 {
     ESP_LOGI(TAG, "Registering Vehicle: Bolt EV (9000)");
 
-    MyVehicleFactory.RegisterVehicle<OvmsVehicleBoltEV>("CBOLT","Chevrolet Bolt EV / Ampera-e");
+    MyVehicleFactory.RegisterVehicle<OvmsVehicleBoltEV>("CBOLT","Chevrolet Bolt EV/Ampera-e");
 }
