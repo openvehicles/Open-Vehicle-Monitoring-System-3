@@ -414,22 +414,25 @@ static void CheckQueueOverflow(const char* from, char* event)
 void OvmsEvents::SignalScheduledEvent(TimerHandle_t timer)
   {
   OvmsMutexLock lock(&MyEvents.m_timers_mutex);
+
+  // retrieve timer payload message (event):
   event_queue_t* msg = (event_queue_t*) pvTimerGetTimerID(timer);
   vTimerSetTimerID(timer, NULL);
   if (!msg)
     {
-    // This should not be possible but occurs ~3 times per million callbacks,
-    // only if callback interval is 1 tick (10 ms), observed on both ESP32/R1
-    // _and_ ESP32/R3. FreeRTOS timer service bug?
+    // This should no longer happen, but keeping the test doesn't hurt.
     // See: https://github.com/espressif/esp-idf/issues/8234
     ESP_LOGW(TAG, "SignalScheduledEvent: duplicate callback invocation detected");
     return;
     }
+
+  // … and pass on to event task:
   if (xQueueSend(MyEvents.m_taskqueue, msg, 0) != pdTRUE)
     {
     CheckQueueOverflow("SignalScheduledEvent", msg->body.signal.event);
     MyEvents.FreeQueueSignalEvent(msg);
     }
+
   delete msg;
   MyEvents.m_timer_active[timer] = false;
   }
@@ -447,6 +450,7 @@ bool OvmsEvents::ScheduleEvent(event_queue_t* msg, uint32_t delay_ms)
     ESP_LOGE(TAG, "ScheduleEvent: message duplication failed, event dropped");
     return false;
     }
+
   // find available timer:
   for (it = m_timers.begin(); it != m_timers.end(); it++)
     {
@@ -462,7 +466,7 @@ bool OvmsEvents::ScheduleEvent(event_queue_t* msg, uint32_t delay_ms)
     }
   if (it == m_timers.end())
     {
-    // create new timer:
+    // create & register a new timer:
     ESP_LOGI(TAG, "ScheduleEvent: creating new timer");
     timer = xTimerCreate("ScheduleEvent", timerticks, pdFALSE, NULL, SignalScheduledEvent);
     if (!timer)
@@ -474,25 +478,17 @@ bool OvmsEvents::ScheduleEvent(event_queue_t* msg, uint32_t delay_ms)
     m_timers.push_back(timer);
     m_timer_active[timer] = false;
     }
-  else
-    {
-    // update timer:
-    if (xTimerChangePeriod(timer, timerticks, 0) != pdPASS)
-      {
-      ESP_LOGE(TAG, "ScheduleEvent: xTimerChangePeriod failed, event dropped");
-      delete msgdup;
-      return false;
-      }
-    }
-  // start timer:
+
+  // set payload, update & start the timer:
   vTimerSetTimerID(timer, msgdup);
-  if (xTimerStart(timer, 0) != pdPASS)
+  if (xTimerChangePeriod(timer, timerticks, 0) != pdPASS) // also starts the timer
     {
-    ESP_LOGE(TAG, "ScheduleEvent: xTimerStart failed, event dropped");
+    ESP_LOGE(TAG, "ScheduleEvent: xTimerChangePeriod failed, event dropped");
     vTimerSetTimerID(timer, NULL);
     delete msgdup;
     return false;
     }
+
   m_timer_active[timer] = true;
   return true;
   }

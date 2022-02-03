@@ -431,7 +431,8 @@ void canlog::RxTask(void *context)
 
 void canlog::EventListener(std::string event, void* data)
   {
-  if (startsWith(event, "vehicle"))
+  // Log vehicle custom (x…) & framework events:
+  if (startsWith(event, 'x') || startsWith(event, "vehicle"))
     LogInfo(NULL, CAN_LogInfo_Event, event.c_str());
   }
 
