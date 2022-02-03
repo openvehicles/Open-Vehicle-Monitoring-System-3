@@ -1,6 +1,7 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Maxus eDeliver3: Updated speed PID
 - Bolt EV: Add early Bolt EV support
 - Maxus eDeliver3: Add CCS Charging
 	rewrite polling system

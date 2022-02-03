@@ -67,7 +67,7 @@ static const OvmsVehicle::poll_pid_t obdii_polls[] =
 //        { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcusoc, {  0, 0, 30, 30  }, 0, ISOTP_STD }, //SOC Scaled below
         { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcutemp1, {  0, 0, 30, 30  }, 0, ISOTP_STD }, //temp
         { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcutemp2, {  0, 0, 30, 30  }, 0, ISOTP_STD }, //temp
-        { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcuspeed, {  0, 0, 1, 30  }, 0, ISOTP_STD }, //Possible speed 660 - value
+        { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcuspeed, {  0, 0, 1, 30  }, 0, ISOTP_STD }, //speed in KM (maybe cruise setpoint)
         { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcupackvolts, {  0, 0, 30, 30  }, 0, ISOTP_STD }, //Pack Voltage
         { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcu12vamps, {  0, 0, 30, 30  }, 0, ISOTP_STD }, //12v amps?
         { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcuchargervolts, {  0, 0, 15, 15  }, 0, ISOTP_STD }, //charger volts at a guess?
@@ -223,13 +223,11 @@ void OvmsVehicleMaxed3::IncomingPollReply(canbus* bus, uint16_t type, uint16_t p
       case vcutemp2:  // temperature??
           StdMetrics.ms_v_env_temp->SetValue(value1 / 10.0f);
           break;
-      case vcuspeed:  // Possible speed 660 - value with 32 off set
+      case vcuspeed:  // Speed in Km
       {
           vanIsOn = StdMetrics.ms_v_env_on->AsBool();
           if (vanIsOn)
-          //StdMetrics.ms_v_pos_speed->SetValue(628-(value2-32));
-          StdMetrics.ms_v_pos_speed->SetValue(660-(value2));
-          //StdMetrics.ms_v_pos_speed->SetValue((100 - ((value2 - 512) * 100 / (640 - 512))) * 1.60934);
+          StdMetrics.ms_v_pos_speed->SetValue(value1); // in km
           else
               StdMetrics.ms_v_pos_speed->SetValue(0);
       }

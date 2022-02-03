@@ -57,7 +57,7 @@ constexpr uint16_t bmsacamps = 0xe089u;
 // VCU PIDs
 constexpr uint16_t vcutemp1 = 0xe005u;
 constexpr uint16_t vcutemp2 = 0xe006u;
-constexpr uint16_t vcuspeed = 0xe009u;
+constexpr uint16_t vcuspeed = 0xe000u; 
 constexpr uint16_t vcupackvolts = 0xe019u;
 constexpr uint16_t vcuvin = 0xf190u;
 constexpr uint16_t vcu12vamps = 0xe022u;
