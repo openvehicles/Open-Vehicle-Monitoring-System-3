@@ -73,13 +73,13 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
   private:
     unsigned int m_candata_timer;
     unsigned int m_candata_poll;
-  
+
   protected:
     virtual void Ticker1(uint32_t ticker);
     void GetDashboardConfig(DashboardConfig& cfg);
     
-    void PollReply_BMS_BattVolts(uint8_t* reply_data, uint16_t reply_len, uint16_t start);
-    void PollReply_BMS_BattTemps(uint8_t* reply_data, uint16_t reply_len);
+    void PollReply_BMS_BattVolts(const char* reply_data, uint16_t reply_len, uint16_t start);
+    void PollReply_BMS_BattTemps(const char* reply_data, uint16_t reply_len);
 
   protected:
     bool m_enable_write;                    // canwrite
@@ -88,7 +88,10 @@ class OvmsVehicleSmartEQ : public OvmsVehicle
     #define MAX_POLL_DATA_LEN 126
     #define CELLCOUNT 96
     #define SQ_CANDATA_TIMEOUT 10
-    
+
+  protected:
+    std::string   m_rxbuf;
+
   protected:
     OvmsMetricVector<float> *mt_bms_temps;       // BMS temperatures
 };

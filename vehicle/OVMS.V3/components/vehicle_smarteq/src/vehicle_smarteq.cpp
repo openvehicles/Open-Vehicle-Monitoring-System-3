@@ -66,7 +66,7 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   ESP_LOGI(TAG, "Start Smart EQ vehicle module");
 
   // BMS configuration:
-  BmsSetCellArrangementVoltage(96, 1);
+  BmsSetCellArrangementVoltage(96, 3);
   BmsSetCellArrangementTemperature(28, 1);
   BmsSetCellLimitsVoltage(2.0, 5.0);
   BmsSetCellLimitsTemperature(-39, 200);
@@ -78,6 +78,9 @@ OvmsVehicleSmartEQ::OvmsVehicleSmartEQ() {
   RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
   PollSetPidList(m_can1, obdii_polls);
   PollSetState(0);
+  
+  PollSetThrottling(5);
+  PollSetResponseSeparationTime(20);
 
   MyConfig.RegisterParam("xsq", "Smart EQ", true, true);
   ConfigChanged(NULL);
