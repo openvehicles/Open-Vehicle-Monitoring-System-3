@@ -74,15 +74,16 @@ In this case, ‘user’ is the username you use to ssh, and the public key is y
 You can also use SCP to copy files to and from the OVMS v3 VFS.
 
 .. note::
-  With OpenSSH version 6.6 (or later), cipher ``aes128-cbc`` has been disabled by default and
+  With OpenSSH version 8.8 (or later), the ``ssh-rsa`` algorithm has been disabled by default and
   needs to be enabled manually, either on the command line::
 
-    ssh -c aes128-cbc user@ip
+    ssh -o HostkeyAlgorithms=+ssh-rsa -o PubkeyAcceptedAlgorithms=+ssh-rsa user@ip
 
   …or by adding a host entry to your ``~/.ssh/config`` file::
 
     Host ovmsname.local
-    Ciphers +aes128-cbc
+	HostkeyAlgorithms +ssh-rsa
+	PubkeyAcceptedAlgorithms +ssh-rsa
 
 
 --------------
