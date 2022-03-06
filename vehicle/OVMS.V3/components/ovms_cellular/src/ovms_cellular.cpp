@@ -1421,9 +1421,16 @@ void modem::IncomingMuxData(GsmMuxChannel* channel)
     }
   else if (channel->m_channel == m_mux_channel_NMEA)
     {
-    while (channel->m_buffer.HasLine() >= 0)
+    if (m_nmea != NULL)
       {
-      if (m_nmea != NULL) m_nmea->IncomingLine(channel->m_buffer.ReadLine());
+      while (channel->m_buffer.HasLine() >= 0)
+        {
+        m_nmea->IncomingLine(channel->m_buffer.ReadLine());
+        }
+      }
+    else
+      {
+      channel->m_buffer.EmptyAll();
       }
     }
   else if (channel->m_channel == m_mux_channel_DATA)
