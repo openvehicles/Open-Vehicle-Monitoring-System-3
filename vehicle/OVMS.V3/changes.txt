@@ -1,6 +1,8 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+
+2022-03-07 MWJ  3.3.002  OTA release
 - Maxus eDeliver3: Updated speed PID
 - Bolt EV: Add early Bolt EV support
 - Maxus eDeliver3: Add CCS Charging
@@ -35,6 +37,7 @@ Open Vehicle Monitor System v3 - Change log
     xnl.cc.rqinprogress (Indicates the period betwen arrival of climate control action message and climate control activation.)
  - Wakeup command now charges 12V battery if connected to EVSE
  - 2011-2012 LEAF now reads AC voltage from grid
+ - Fix to watchdog timer for modem driver without GPS enabled
 
 2021-11-22 MWJ  3.2.018  OTA release
 - Vehicle: added optional automatic trip report generation
