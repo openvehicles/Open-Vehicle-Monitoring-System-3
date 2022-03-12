@@ -266,6 +266,7 @@ void OvmsVehicleVWeUp::OBDInit()
   // Add high priority PIDs:
   m_poll_vector.insert(m_poll_vector.end(), {
     {VWUP_MOT_ELEC, UDS_READ, VWUP_MOT_ELEC_POWER_MOT,  {  0,  0,  0,  1}, 1, ISOTP_STD},
+    {VWUP_MOT_ELEC, UDS_READ, VWUP_MOT_ELEC_ACCEL,      {  0,  0,  0,  1}, 1, ISOTP_STD},
   });
 
   // Add model year specific AC charger PIDs:
@@ -1143,8 +1144,9 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
       break;
 
     case VWUP_MOT_ELEC_SPEED:
-      if (PollReply.FromUint8("VWUP_MOT_ELEC_SPEED", value)) {
+      if (PollReply.FromUint8("VWUP_MOT_ELEC_SPEED", value) && value < 250) {
         StdMetrics.ms_v_pos_speed->SetValue(value);
+        UpdateTripOdo();
         VALUE_LOG(TAG, "VWUP_MOT_ELEC_SPEED=%f", value);
       }
       break;
@@ -1152,6 +1154,13 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
       if (PollReply.FromInt16("VWUP_MOT_ELEC_POWER_MOT", value)) {
         StdMetrics.ms_v_inv_power->SetValue(value / 250);
         VALUE_LOG(TAG, "VWUP_MOT_ELEC_POWER_MOT=%f => %f", value, StdMetrics.ms_v_inv_power->AsFloat());
+      }
+      break;
+    case VWUP_MOT_ELEC_ACCEL:
+      if (PollReply.FromInt16("VWUP_MOT_ELEC_ACCEL", value)) {
+        float accel = value / 1000;
+        StdMetrics.ms_v_pos_acceleration->SetValue(accel);
+        VALUE_LOG(TAG, "VWUP_MOT_ELEC_ACCEL=%f => %f", value, accel);
       }
       break;
 
@@ -1187,10 +1196,6 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
     case VWUP_BAT_MGMT_ODOMETER:
       if (PollReply.FromUint24("VWUP_BAT_MGMT_ODOMETER", value, 1) && value < 10000000) {
         StdMetrics.ms_v_pos_odometer->SetValue(value);
-        // Set trip reference / difference:
-        if (m_odo_start <= 0)
-          m_odo_start = value;
-        StdMetrics.ms_v_pos_trip->SetValue(value - m_odo_start);
         VALUE_LOG(TAG, "VWUP_BAT_MGMT_ODOMETER=%f", value);
       }
       break;
@@ -1378,6 +1383,9 @@ void OvmsVehicleVWeUp::UpdateChargeCap(bool charging)
 
   static int checkpoint = 9999;
   bool log_data = false, update_caps = false, update_soh = false;
+
+  if (m_soc_abs_start == 0 || m_coulomb_charged_start == 0)
+    return;
 
   int   charge_time   = StdMetrics.ms_v_charge_time->AsInt();
   float soc_abs_diff  = BatMgmtSoCAbs->AsFloat() - m_soc_abs_start;

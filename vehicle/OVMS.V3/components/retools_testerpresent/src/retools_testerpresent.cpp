@@ -135,7 +135,7 @@ OvmsReToolsTesterPresentInit::OvmsReToolsTesterPresentInit() :
     );
     cmd_tester->RegisterCommand(
         "start", "Start sending a tester present signal to an ECU",
-        &OvmsReToolsTesterPresentInit::Start,
+        PickOvmsCommandExecuteCallback(OvmsReToolsTesterPresentInit::Start),
         "<bus> <ecu> <interval>", 3, 3
     );
     cmd_tester->RegisterCommand(
@@ -143,7 +143,8 @@ OvmsReToolsTesterPresentInit::OvmsReToolsTesterPresentInit() :
         &OvmsReToolsTesterPresentInit::List
     );
     cmd_tester->RegisterCommand(
-        "stop", "Stop tester present for an ECU", &OvmsReToolsTesterPresentInit::Stop,
+        "stop", "Stop tester present for an ECU",
+        PickOvmsCommandExecuteCallback(OvmsReToolsTesterPresentInit::Stop),
         "<bus> <ecu>", 2, 2
     );
     cmd_tester->RegisterCommand(

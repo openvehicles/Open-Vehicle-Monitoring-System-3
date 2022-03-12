@@ -72,7 +72,6 @@ OvmsCanLogMonitorInit::OvmsCanLogMonitorInit()
     }
   }
 
-#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
 
 canlog_monitor_conn::canlog_monitor_conn(canlog* logger, std::string format, canformat::canformat_serve_mode_t mode)
   : canlogconnection(logger, format, mode)
@@ -118,7 +117,6 @@ void canlog_monitor_conn::OutputMsg(CAN_log_message_t& msg, std::string &result)
     }
   }
 
-#endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
 
 canlog_monitor::canlog_monitor(std::string format)
   : canlog("monitor", format)
@@ -135,7 +133,6 @@ bool canlog_monitor::Open()
 
   OvmsRecMutexLock lock(&m_cmmutex);
   canlog_monitor_conn* clc = new canlog_monitor_conn(this, m_format, m_mode);
-  clc->m_nc = NULL;
   clc->m_peer = std::string("MONITOR");
   m_connmap[NULL] = clc;
   m_isopen = true;

@@ -40,7 +40,7 @@
 class mcp2515 : public canbus
   {
   public:
-    mcp2515(const char* name, spi* spibus, spi_nodma_host_device_t host, int clockspeed, int cspin, int intpin, bool hw_cs=true);
+    mcp2515(const char* name, spi* spibus, spi_host_device_t host, int clockspeed, int cspin, int intpin, bool hw_cs=true);
     ~mcp2515();
 
   public:
@@ -64,11 +64,10 @@ class mcp2515 : public canbus
 
   public:
     spi* m_spibus;
-    spi_nodma_device_handle_t m_spi;
+    spi_device_handle_t m_spi;
 
   protected:
-    spi_nodma_device_interface_config_t m_devcfg;
-    spi_nodma_host_device_t m_host;
+    spi_device_interface_config_t m_devcfg;
     int m_clockspeed;
     int m_cspin;
     int m_intpin;

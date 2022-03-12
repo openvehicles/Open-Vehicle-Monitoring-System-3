@@ -87,7 +87,6 @@ OvmsCanLogVFSInit::OvmsCanLogVFSInit()
     }
   }
 
-#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
 
 canlog_vfs_conn::canlog_vfs_conn(canlog* logger, std::string format, canformat::canformat_serve_mode_t mode)
   : canlogconnection(logger, format, mode)
@@ -118,7 +117,6 @@ void canlog_vfs_conn::OutputMsg(CAN_log_message_t& msg, std::string &result)
     fwrite(result.c_str(),result.length(),1,m_file);
   }
 
-#endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
 
 canlog_vfs::canlog_vfs(std::string path, std::string format)
   : canlog("vfs", format)
@@ -169,7 +167,6 @@ bool canlog_vfs::Open()
 #endif // #ifdef CONFIG_OVMS_COMP_SDCARD
 
   canlog_vfs_conn* clc = new canlog_vfs_conn(this, m_format, m_mode);
-  clc->m_nc = NULL;
   clc->m_peer = m_path;
 
   clc->m_file = fopen(m_path.c_str(), "w");

@@ -27,7 +27,7 @@
 */
 
 #include "ovms_log.h"
-#ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
+#ifdef CONFIG_OVMS_COMP_CELLULAR
 static const char *TAG = "webserver";
 #endif
 
@@ -185,13 +185,14 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
 
   c.panel_start("primary", "Module");
   output = ExecuteCommand("boot status");
-  c.printf("<samp>%s</samp>", _html(output));
+  c.printf("<samp id=\"boot-status-cmdres\">%s</samp>", _html(output));
   c.print("<hr>");
   output = ExecuteCommand("ota status nocheck");
   c.printf("<samp>%s</samp>", _html(output));
   c.panel_end(
     "<ul class=\"list-inline\">"
       "<li><button type=\"button\" class=\"btn btn-default btn-sm\" name=\"action\" value=\"reboot\">Reboot</button></li>"
+      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#boot-status-cmdres\" data-cmd=\"boot clear\nboot status\">Clear counters</button></li>"
     "</ul>");
 
   c.print(
@@ -216,13 +217,13 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
     "</div>"
     "<div class=\"col-sm-6 col-lg-4\">");
 
-  c.panel_start("primary", "Modem");
-  output = ExecuteCommand("simcom status");
-  c.printf("<samp class=\"monitor\" data-updcmd=\"simcom status\" data-events=\"\\.modem\\.\">%s</samp>", _html(output));
+  c.panel_start("primary", "Cellular Modem");
+  output = ExecuteCommand("cellular status");
+  c.printf("<samp class=\"monitor\" data-updcmd=\"cellular status\" data-events=\"\\.modem\\.\">%s</samp>", _html(output));
   c.panel_end(
     "<ul class=\"list-inline\">"
-      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#modem-cmdres\" data-cmd=\"power simcom on\">Start modem</button></li>"
-      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#modem-cmdres\" data-cmd=\"power simcom off\">Stop modem</button></li>"
+      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#modem-cmdres\" data-cmd=\"power cellular on\">Start cellular modem</button></li>"
+      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#modem-cmdres\" data-cmd=\"power cellular off\">Stop cellular modem</button></li>"
       "<li><samp id=\"modem-cmdres\" class=\"samp-inline\"></samp></li>"
     "</ul>");
 
@@ -773,9 +774,9 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
 }
 
 
-#ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
+#ifdef CONFIG_OVMS_COMP_CELLULAR
 /**
- * HandleCfgModem: configure APN & modem features (URL /cfg/modem)
+ * HandleCfgModem: configure APN & cellular modem features (URL /cfg/modem)
  */
 void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
 {
@@ -830,7 +831,7 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
 
   // generate form:
   c.head(200);
-  c.panel_start("primary", "Modem configuration");
+  c.panel_start("primary", "Cellular modem configuration");
   c.form_start(p.uri);
 
   std::string info;
@@ -840,9 +841,9 @@ void OvmsWebServer::HandleCfgModem(PageEntry_t& p, PageContext_t& c)
   } else {
     info =
       "<div class=\"receiver\">"
-        "<code class=\"autoselect\" data-metric=\"m.net.mdm.iccid\">(power modem on to read)</code>"
+        "<code class=\"autoselect\" data-metric=\"m.net.mdm.iccid\">(power cellular modem on to read)</code>"
         "&nbsp;"
-        "<button class=\"btn btn-default\" data-cmd=\"power simcom on\" data-target=\"#pso\">Power modem on</button>"
+        "<button class=\"btn btn-default\" data-cmd=\"power cellular on\" data-target=\"#pso\">Power cellular modem on</button>"
         "&nbsp;"
         "<samp id=\"pso\" class=\"samp-inline\"></samp>"
       "</div>"
@@ -1600,6 +1601,8 @@ void OvmsWebServer::HandleCfgNotifications(PageEntry_t& p, PageContext_t& c)
   std::string error;
   std::string vehicle_minsoc, vehicle_stream;
   std::string log_trip_storetime, log_trip_minlength, log_grid_storetime;
+  bool report_trip_enable;
+  std::string report_trip_minlength;
 
   if (c.method == "POST") {
     // process form submission:
@@ -1608,6 +1611,8 @@ void OvmsWebServer::HandleCfgNotifications(PageEntry_t& p, PageContext_t& c)
     log_trip_storetime = c.getvar("log_trip_storetime");
     log_trip_minlength = c.getvar("log_trip_minlength");
     log_grid_storetime = c.getvar("log_grid_storetime");
+    report_trip_enable = (c.getvar("report_trip_enable") == "yes");
+    report_trip_minlength = c.getvar("report_trip_minlength");
 
     if (vehicle_minsoc != "") {
       if (atoi(vehicle_minsoc.c_str()) < 0 || atoi(vehicle_minsoc.c_str()) > 100) {
@@ -1636,6 +1641,12 @@ void OvmsWebServer::HandleCfgNotifications(PageEntry_t& p, PageContext_t& c)
       }
     }
 
+    if (report_trip_minlength != "") {
+      if (atoi(report_trip_minlength.c_str()) < 0) {
+        error += "<li data-input=\"report_trip_minlength\">Trip report min length must not be negative</li>";
+      }
+    }
+
     if (error == "") {
       // success:
       if (vehicle_minsoc == "")
@@ -1660,6 +1671,12 @@ void OvmsWebServer::HandleCfgNotifications(PageEntry_t& p, PageContext_t& c)
       else
         MyConfig.SetParamValue("notify", "log.grid.storetime", log_grid_storetime);
 
+      MyConfig.SetParamValueBool("notify", "report.trip.enable", report_trip_enable);
+      if (report_trip_minlength == "")
+        MyConfig.DeleteInstance("notify", "report.trip.minlength");
+      else
+        MyConfig.SetParamValue("notify", "report.trip.minlength", report_trip_minlength);
+
       c.head(200);
       c.alert("success", "<p class=\"lead\">Notifications configured.</p>");
       OutputHome(p, c);
@@ -1680,6 +1697,8 @@ void OvmsWebServer::HandleCfgNotifications(PageEntry_t& p, PageContext_t& c)
     log_trip_storetime = MyConfig.GetParamValue("notify", "log.trip.storetime");
     log_trip_minlength = MyConfig.GetParamValue("notify", "log.trip.minlength");
     log_grid_storetime = MyConfig.GetParamValue("notify", "log.grid.storetime");
+    report_trip_enable = MyConfig.GetParamValueBool("notify", "report.trip.enable");
+    report_trip_minlength = MyConfig.GetParamValue("notify", "report.trip.minlength");
 
     // generate form:
     c.head(200);
@@ -1698,6 +1717,17 @@ void OvmsWebServer::HandleCfgNotifications(PageEntry_t& p, PageContext_t& c)
   c.input_slider("Minimum SOC", "vehicle_minsoc", 3, "%",
     -1, atoi(vehicle_minsoc.c_str()), 0, 0, 100, 1,
     "<p>Send an alert when SOC drops below this level, 0 = off. Same as App feature #9.</p>");
+
+  c.fieldset_end();
+
+  c.fieldset_start("Vehicle Reports");
+
+  c.input_checkbox("Enable trip report", "report_trip_enable", report_trip_enable,
+    "<p>This will send a textual report on driving statistics after each trip.</p>");
+  c.input("number", "Report min trip length", "report_trip_minlength", report_trip_minlength.c_str(), "Default: 0.2 km",
+    "<p>Only trips over at least this distance will produce a report. If your vehicle does not support the "
+    "<code>v.p.trip</code> metric, set this to 0.</p>",
+    "min=\"0\" step=\"0.1\"", "km");
 
   c.fieldset_end();
 
@@ -1916,7 +1946,7 @@ void OvmsWebServer::HandleCfgWifi(PageEntry_t& p, PageContext_t& c)
 {
   bool cfg_bad_reconnect;
   float cfg_sq_good, cfg_sq_bad;
-  
+
   if (c.method == "POST") {
     std::string warn, error;
 
@@ -1966,7 +1996,7 @@ void OvmsWebServer::HandleCfgWifi(PageEntry_t& p, PageContext_t& c)
     cfg_sq_good = MyConfig.GetParamValueFloat("network", "wifi.sq.good", -87);
     cfg_sq_bad = MyConfig.GetParamValueFloat("network", "wifi.sq.bad", -89);
     cfg_bad_reconnect = MyConfig.GetParamValueBool("network", "wifi.bad.reconnect", false);
-    
+
     c.head(200);
   }
 
@@ -2494,12 +2524,6 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
     tag = c.getvar("tag");
 
     if (action.substr(0,3) == "set") {
-
-      if (startsWith(server, "https:")) {
-        error = true;
-        output += "<p>Sorry, https not yet supported!</p>";
-      }
-
       info.partition_boot = c.getvar("boot_old");
       std::string partition_boot = c.getvar("boot");
       if (partition_boot != info.partition_boot) {
@@ -2618,8 +2642,8 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
     "<p>Automatic updates are normally only done if a wifi connection is available at the time. Before allowing updates via modem, be aware a single firmware image has a size of around 3 MB, which may lead to additional costs on your data plan.</p>");
   c.print(
     "<datalist id=\"server-list\">"
-      "<option value=\"api.openvehicles.com/firmware/ota\">"
-      "<option value=\"ovms.dexters-web.de/firmware/ota\">"
+      "<option value=\"https://api.openvehicles.com/firmware/ota\">"
+      "<option value=\"https://ovms.dexters-web.de/firmware/ota\">"
     "</datalist>"
     "<datalist id=\"tag-list\">"
       "<option value=\"main\">"
@@ -2628,7 +2652,7 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
     "</datalist>"
     );
   c.input_text("Update server", "server", server.c_str(), "Specify or select from list (clear to see all options)",
-    "<p>Default is <code>api.openvehicles.com/firmware/ota</code>. Note: currently only http is supported.</p>",
+    "<p>Default is <code>https://api.openvehicles.com/firmware/ota</code>.</p>",
     "list=\"server-list\"");
   c.input_text("Version tag", "tag", tag.c_str(), "Specify or select from list (clear to see all options)",
     "<p>Default is <code>main</code> for standard releases. Use <code>eap</code> (early access program) for stable or <code>edge</code> for bleeding edge developer builds.</p>",
@@ -2654,12 +2678,12 @@ void OvmsWebServer::HandleCfgFirmware(PageEntry_t& p, PageContext_t& c)
     if (netif_default->name[0] == 'a' && netif_default->name[1] == 'p') {
       c.alert("warning",
         "<p class=\"lead\"><strong>No internet access.</strong></p>"
-        "<p>The module is running in wifi AP mode without modem, so flashing from a public server is currently not possible.</p>"
+        "<p>The module is running in wifi AP mode without cellular modem, so flashing from a public server is currently not possible.</p>"
         "<p>You can still flash from an AP network local IP address (<code>192.168.4.x</code>).</p>");
     }
     else if (netif_default->name[0] == 'p' && netif_default->name[1] == 'p') {
       c.alert("warning",
-        "<p class=\"lead\"><strong>Using modem connection for internet.</strong></p>"
+        "<p class=\"lead\"><strong>Using cellular modem connection for internet.</strong></p>"
         "<p>Downloads from public servers will currently be done via cellular network. Be aware update files are &gt;2 MB, "
         "which may exceed your data plan and need some time depending on your link speed.</p>"
         "<p>You can also flash locally from a wifi network IP address.</p>");
@@ -4055,7 +4079,7 @@ void OvmsWebServer::HandleEditor(PageEntry_t& p, PageContext_t& c)
       "});\n"
       "$output.on(\"msg:log\", function(ev, msg){\n"
         "if ($output.css(\"display\") == \"none\") return;\n"
-        "if (!/^..[0-9()]+ script: /.test(msg)) return;\n"
+        "if (!/^..[0-9()]+ (script|ovms-duk)/.test(msg)) return;\n"
         "var autoscroll = ($output.get(0).scrollTop + $output.innerHeight()) >= $output.get(0).scrollHeight;\n"
         "htmsg = '<div class=\"log log-'+msg[0]+'\">'+encode_html(unwrapLogLine(msg))+'</div>';\n"
         "$output.append(htmsg);\n"
@@ -4102,9 +4126,9 @@ void OvmsWebServer::HandleEditor(PageEntry_t& p, PageContext_t& c)
 
 /**
  * HandleFile: file load/save API
- *  
+ *
  *  URL: /api/file
- *  
+ *
  *  @param method
  *    GET   = load content from path
  *    POST  = save content to path
@@ -4112,7 +4136,7 @@ void OvmsWebServer::HandleEditor(PageEntry_t& p, PageContext_t& c)
  *    Full path to file
  *  @param content
  *    File content for POST
- *  
+ *
  *  @return
  *    Status: 200 (OK) / 400 (Error)
  *    Body: GET: file content or error message, POST: empty or error message

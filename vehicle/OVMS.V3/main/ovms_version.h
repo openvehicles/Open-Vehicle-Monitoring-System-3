@@ -40,6 +40,7 @@
 
 extern std::string GetOVMSVersion();
 extern std::string GetOVMSBuild();
+extern std::string GetOVMSProduct();
 extern std::string GetOVMSHardware();
 extern std::string GetOVMSPartitionVersion(esp_partition_subtype_t);
 

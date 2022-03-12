@@ -33,6 +33,7 @@ static const char *TAG = "housekeeping";
 
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 #include <esp_system.h>
 #include <esp_ota_ops.h>
 #include <esp_heap_caps.h>
@@ -61,7 +62,9 @@ static const char *TAG = "housekeeping";
 #include "obd2ecu.h"
 #endif
 
-#define AUTO_INIT_STABLE_TIME           10      // seconds after which an auto init boot is considered stable
+#define AUTO_INIT_STABLE_TIME           120     // seconds after which an auto init boot is considered stable;
+                                                // 120 seconds to take modem model auto detection into account
+                                                // (late driver installation esp. after unscheduled reboot)
                                                 // (Note: resolution = 10 seconds)
 #define AUTO_INIT_INHIBIT_CRASHCOUNT    5
 
@@ -93,6 +96,13 @@ void HousekeepingUpdate12V()
 
 void HousekeepingTicker1( TimerHandle_t timer )
   {
+  // Workaround for FreeRTOS duplicate timer callback bug
+  // (see https://github.com/espressif/esp-idf/issues/8234)
+  static TickType_t last_tick = 0;
+  TickType_t curr_tick = xTaskGetTickCount();
+  if (curr_tick < last_tick + xTimerGetPeriod(timer) - 3) return;
+  last_tick = curr_tick;
+
   monotonictime++;
   StandardMetrics.ms_m_monotonic->SetValue((int)monotonictime);
   StandardMetrics.ms_m_timeutc->SetValue((int)time(NULL));
@@ -200,10 +210,10 @@ void Housekeeping::Init(std::string event, void* data)
     MyPeripherals->m_esp32wifi->AutoInit();
 #endif // CONFIG_OVMS_COMP_WIFI
 
-#ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
+#ifdef CONFIG_OVMS_COMP_CELLULAR
     ESP_LOGI(TAG, "Auto init modem (free: %zu bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL));
-    MyPeripherals->m_simcom->AutoInit();
-#endif // #ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
+    MyPeripherals->m_cellular_modem->AutoInit();
+#endif // #ifdef CONFIG_OVMS_COMP_CELLULAR
 
     ESP_LOGI(TAG, "Auto init vehicle (free: %zu bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL));
     MyVehicleFactory.AutoInit();
@@ -226,7 +236,7 @@ void Housekeeping::Init(std::string event, void* data)
 
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
     ESP_LOGI(TAG, "Auto init javascript (free: %zu bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL));
-    MyScripts.AutoInitDuktape();
+    MyDuktape.AutoInitDuktape();
 #endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 
     ESP_LOGI(TAG, "Auto init done (free: %zu bytes)", heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL));
@@ -261,8 +271,10 @@ void Housekeeping::Metrics(std::string event, void* data)
     size_t free_8bit = heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL);
     size_t free_32bit = heap_caps_get_free_size(MALLOC_CAP_32BIT|MALLOC_CAP_INTERNAL);
     size_t lgst_8bit = heap_caps_get_largest_free_block(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL);
-    ESP_LOGI(TAG, "System considered stable (RAM: 8b=%zu-%zu 32b=%zu)",
-      lgst_8bit, free_8bit, free_32bit-free_8bit);
+    size_t free_spiram = heap_caps_get_free_size(MALLOC_CAP_SPIRAM);
+    size_t lgst_spiram = heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM);
+    ESP_LOGI(TAG, "System considered stable (RAM: 8b=%zu-%zu 32b=%zu SPI=%zu-%zu)",
+      lgst_8bit, free_8bit, free_32bit-free_8bit, lgst_spiram, free_spiram);
 
     MyBoot.SetStable();
     // …and send debug crash data as necessary:
@@ -282,8 +294,10 @@ void Housekeeping::TimeLogger(std::string event, void* data)
     size_t free_8bit = heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL);
     size_t free_32bit = heap_caps_get_free_size(MALLOC_CAP_32BIT|MALLOC_CAP_INTERNAL);
     size_t lgst_8bit = heap_caps_get_largest_free_block(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL);
+    size_t free_spiram = heap_caps_get_free_size(MALLOC_CAP_SPIRAM);
+    size_t lgst_spiram = heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM);
 
-    ESP_LOGI(TAG, "%.24s (RAM: 8b=%zu-%zu 32b=%zu)",
-    tb, lgst_8bit, free_8bit, free_32bit-free_8bit);
+    ESP_LOGI(TAG, "%.24s (RAM: 8b=%zu-%zu 32b=%zu SPI=%zu-%zu)",
+      tb, lgst_8bit, free_8bit, free_32bit-free_8bit, lgst_spiram, free_spiram);
     }
   }

@@ -523,15 +523,17 @@ void OvmsWebServer::EventListener(std::string event, void* data)
 {
   // shutdown delay to finish command output transmissions:
   if (event == "system.shuttingdown") {
-    MyBoot.RestartPending("webserver");
-    m_restart_countdown = 3;
+    MyBoot.ShutdownPending("webserver");
+    m_shutdown_countdown = 3;
   }
 
   // ticker:
   else if (event == "ticker.1") {
-    CfgInitTicker();
-    if (m_restart_countdown > 0 && --m_restart_countdown == 0)
-      MyBoot.RestartReady("webserver");
+    #ifdef WEBSRV_HAVE_SETUPWIZARD
+      CfgInitTicker();
+    #endif
+    if (m_shutdown_countdown > 0 && --m_shutdown_countdown == 0)
+      MyBoot.ShutdownReady("webserver");
   }
 
   // reload plugins on changes:
@@ -578,6 +580,13 @@ void OvmsWebServer::EventListener(std::string event, void* data)
  */
 void OvmsWebServer::UpdateTicker(TimerHandle_t timer)
 {
+  // Workaround for FreeRTOS duplicate timer callback bug
+  // (see https://github.com/espressif/esp-idf/issues/8234)
+  static TickType_t last_tick = 0;
+  TickType_t tick = xTaskGetTickCount();
+  if (tick < last_tick + xTimerGetPeriod(timer) - 3) return;
+  last_tick = tick;
+
   if (xSemaphoreTake(MyWebServer.m_client_mutex, 0) != pdTRUE) {
     ESP_LOGD(TAG, "UpdateTicker: can't lock client list, ticker run skipped");
     return;

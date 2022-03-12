@@ -35,6 +35,8 @@
 #include <string>
 #include <map>
 #include <set>
+#include <list>
+#include <functional>
 #include <limits.h>
 #include "ovms.h"
 #include "ovms_utils.h"
@@ -232,21 +234,28 @@ class OvmsCommandMap : public std::map<const char*, OvmsCommand*, CompareCharPtr
     char** GetCompletion(OvmsWriter* writer, const char* token);
   };
 
+typedef std::function<void(int, OvmsWriter*, OvmsCommand*, int, const char* const*)> OvmsCommandExecuteCallback_t;
+typedef std::function<int(OvmsWriter*, OvmsCommand*, int, const char* const*, bool)> OvmsCommandValidateCallback_t;
+
+// Compiler utilities: pick the matching method overload in case of ambiguity:
+#define PickOvmsCommandExecuteCallback(method) static_cast<void(*)(int, OvmsWriter*, OvmsCommand*, int, const char* const*)>(method)
+#define PickOvmsCommandValidateCallback(method) static_cast<int(*)(OvmsWriter*, OvmsCommand*, int, const char* const*, bool)>(method)
+
 class OvmsCommand : public ExternalRamAllocated
   {
   public:
     OvmsCommand();
     OvmsCommand(const char* name, const char* title,
-		void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*),
+                OvmsCommandExecuteCallback_t execute,
                 const char *usage, int min, int max, bool secure,
-                int (*validate)(OvmsWriter*, OvmsCommand*, int, const char* const*, bool));
+                OvmsCommandValidateCallback_t validate);
     virtual ~OvmsCommand();
 
   public:
     OvmsCommand* RegisterCommand(const char* name, const char* title,
-                                 void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*) = NULL,
+                                 OvmsCommandExecuteCallback_t execute = NULL,
                                  const char *usage = "", int min = 0, int max = 0, bool secure = true,
-                                 int (*validate)(OvmsWriter*, OvmsCommand*, int, const char* const*, bool) = NULL);
+                                 OvmsCommandValidateCallback_t validate = NULL);
     bool UnregisterCommand(const char* name = NULL);
     const char* GetName();
     const char* GetTitle();
@@ -265,8 +274,8 @@ class OvmsCommand : public ExternalRamAllocated
   protected:
     const char* m_name;
     const char* m_title;
-    void (*m_execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*);
-    int (*m_validate)(OvmsWriter*, OvmsCommand*, int, const char* const*, bool);
+    OvmsCommandExecuteCallback_t m_execute;
+    OvmsCommandValidateCallback_t m_validate;
     const char* m_usage_template;
     int m_min;
     int m_max;
@@ -313,7 +322,7 @@ class OvmsCommandApp : public OvmsWriter
 
   public:
     OvmsCommand* RegisterCommand(const char* name, const char* title,
-                                 void (*execute)(int, OvmsWriter*, OvmsCommand*, int, const char* const*) = NULL,
+                                 OvmsCommandExecuteCallback_t execute = NULL,
                                  const char *usage = "", int min = 0, int max = 0, bool secure = true);
     bool UnregisterCommand(const char* name);
     OvmsCommand* FindCommand(const char* name);
@@ -376,14 +385,6 @@ class OvmsCommandApp : public OvmsWriter
 
   public:
     TaskHandle_t m_expiretask;
-
-#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
-  public:
-    void NotifyDuktapeScriptsReady();
-    void NotifyDuktapeModuleLoad(const char* filename);
-    void NotifyDuktapeModuleUnload(const char* filename);
-    void NotifyDuktapeModuleUnloadAll();
-#endif // #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   };
 
 extern OvmsCommandApp MyCommandApp;

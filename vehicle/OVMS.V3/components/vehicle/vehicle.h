@@ -348,6 +348,20 @@ class OvmsVehicle : public InternalRamAllocated
     int m_last_chargetime;                  // duration of current/most recent charge [s]
     int m_last_gentime;                     // duration of current/most recent generator run [s]
 
+    float m_drive_startsoc;                 // SOC at drive start (vehicle.on)
+    float m_drive_startrange;               // Range estimation at drive start (vehicle.on)
+    float m_drive_startaltitude;            // Altitude at drive start (vehicle.on)
+    uint32_t m_drive_speedcnt;              // Driving speed average data
+    double m_drive_speedsum;                // Driving speed average data
+    uint32_t m_drive_accelcnt;              // Driving acceleration average data
+    double m_drive_accelsum;                // Driving acceleration average data
+    uint32_t m_drive_decelcnt;              // Driving deceleration average data
+    double m_drive_decelsum;                // Driving deceleration average data
+    double m_inv_energyused;                // Driving motor energy sum
+    double m_inv_energyrecd;                // Driving recupered energy sum
+    uint32_t m_inv_reftime;                 // last time inverter(motor) power was measured
+    float m_inv_refpower;                   // last inverter(motor) power
+
   protected:
     uint32_t m_ticker;
     int m_12v_ticker;
@@ -388,6 +402,7 @@ class OvmsVehicle : public InternalRamAllocated
   protected:
     virtual void NotifyGridLog();
     virtual void NotifyTripLog();
+    virtual void NotifyTripReport();
 
   protected:
     virtual int GetNotifyVehicleStateDelay(const std::string& state) { return 3; }
@@ -493,6 +508,7 @@ class OvmsVehicle : public InternalRamAllocated
 
   public:
     virtual vehicle_command_t CommandStat(int verbosity, OvmsWriter* writer);
+    virtual vehicle_command_t CommandStatTrip(int verbosity, OvmsWriter* writer);
     virtual vehicle_command_t ProcessMsgCommand(std::string &result, int command, const char* args);
 
   public:
@@ -736,6 +752,7 @@ class OvmsVehicleFactory
     static void vehicle_charge_stop(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void vehicle_charge_cooldown(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void vehicle_stat(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void vehicle_stat_trip(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void bms_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void bms_reset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void bms_alerts(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);

@@ -1748,6 +1748,13 @@ void SevconClient::Kickdown(bool engage)
 
 void SevconClient::KickdownTimer(TimerHandle_t timer)
 {
+  // Workaround for FreeRTOS duplicate timer callback bug
+  // (see https://github.com/espressif/esp-idf/issues/8234)
+  static TickType_t last_tick = 0;
+  TickType_t tick = xTaskGetTickCount();
+  if (tick < last_tick + xTimerGetPeriod(timer) - 3) return;
+  last_tick = tick;
+
   SevconClient* me = SevconClient::GetInstance();
   if (me)
     me->Kickdown(false);

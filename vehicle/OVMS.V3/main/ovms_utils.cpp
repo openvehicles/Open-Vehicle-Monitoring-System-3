@@ -37,7 +37,7 @@
 #include "ovms_config.h"
 #include "ovms_events.h"
 #include "metrics_standard.h"
-
+#include "ovms_version.h"
 
 /**
  * chargestate_code: convert legacy chargestate key to code
@@ -579,12 +579,8 @@ std::string get_user_agent()
   {
   std::string ua;
   ua = "ovms/";
-  #ifdef CONFIG_OVMS_HW_BASE_3_0
-    ua.append("v3.0 (");
-  #endif
-  #ifdef CONFIG_OVMS_HW_BASE_3_1
-    ua.append("v3.1 (");
-  #endif
+  ua.append(GetOVMSProduct());
+  ua.append(" (");
   ua.append(MyConfig.GetParamValue("vehicle","id",""));
   ua.append(" ");
   ua.append(StandardMetrics.ms_m_version->AsString());

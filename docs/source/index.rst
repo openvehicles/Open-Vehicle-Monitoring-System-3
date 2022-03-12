@@ -2,6 +2,12 @@
 Open Vehicles Monitoring System
 ===============================
 
+.. note::
+  This online manual includes documentation for the **stable** release of the
+  OVMS firmware (available as OTA version tag "main") and the **latest**
+  nightly firmware build (available as OTA version "edge"). Select the
+  manual version matching your setup using the menu on the bottom left.
+
 .. toctree::
    :maxdepth: 1
    :caption: User Guides:

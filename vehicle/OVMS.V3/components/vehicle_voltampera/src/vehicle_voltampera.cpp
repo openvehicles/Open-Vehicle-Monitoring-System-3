@@ -203,6 +203,7 @@ void OvmsVehicleVoltAmpera::ConfigChanged(OvmsConfigParam* param)
 
   m_range_rated_km = MyConfig.GetParamValueInt("xva", "range.km", 0);
   m_extended_wakeup = MyConfig.GetParamValueBool("xva", "extended_wakeup", false);
+  m_notify_metrics = MyConfig.GetParamValueBool("xva", "notify_va_metrics", false);
   }
 
 void OvmsVehicleVoltAmpera::Status(int verbosity, OvmsWriter* writer)
@@ -693,7 +694,8 @@ void OvmsVehicleVoltAmpera::IncomingPollReply(canbus* bus, uint16_t type, uint16
   switch (pid)
     {
     case 0x002f:  // Fuel level
-      mt_fuel_level->SetValue((int)value * 100 / 255);
+      if(mt_fuel_level->SetValue((int)value * 100 / 255))
+        NotifyFuel();
       break;
     case 0x4369:  // On-board charger current
       StandardMetrics.ms_v_charge_current->SetValue((unsigned int)value / 5);
@@ -763,6 +765,14 @@ void OvmsVehicleVoltAmpera::IncomingPollReply(canbus* bus, uint16_t type, uint16
       break;
     }
   }
+
+  void OvmsVehicleVoltAmpera::Ticker300(uint32_t ticker)
+    {
+    if (StandardMetrics.ms_v_env_on->AsBool())
+      {
+        NotifyMetrics();
+      }
+    }
 
 void OvmsVehicleVoltAmpera::Ticker10(uint32_t ticker)
   {
@@ -919,6 +929,11 @@ void OvmsVehicleVoltAmpera::NotifiedVehicleOff()
   // update all cells info without HV load
   PollSetThrottling(VA_POLLING_HIGH_THROTTLING);  
   PollSetState(2);
+  }
+
+void OvmsVehicleVoltAmpera::NotifiedVehicleAwake()
+  {
+  NotifyMetrics();
   }
 
 void OvmsVehicleVoltAmpera::CommandWakeupComplete( const CAN_frame_t* p_frame, bool success )
@@ -1237,7 +1252,7 @@ class OvmsVehicleVoltAmperaInit
 
 OvmsVehicleVoltAmperaInit::OvmsVehicleVoltAmperaInit()
   {
-  ESP_LOGI(TAG, "Registering Vehicle: Volt/Ampera (9000)");
+  ESP_LOGI(TAG, "Registering Vehicle: Chevrolet Volt/Ampera (9000)");
 
-  MyVehicleFactory.RegisterVehicle<OvmsVehicleVoltAmpera>("VA","Volt/Ampera");
+  MyVehicleFactory.RegisterVehicle<OvmsVehicleVoltAmpera>("VA","Chevrolet Volt/Ampera");
   }

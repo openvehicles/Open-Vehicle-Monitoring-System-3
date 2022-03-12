@@ -151,9 +151,8 @@ void OvmsVehicleHyundaiVFL::IncomingPollReply(canbus* bus, uint16_t type, uint16
       StdMetrics.ms_v_bat_energy_used_total->SetValue(RXB_UINT32(42) * 0.1f);
 
       // Read vehicle speed:
-      // …this seems to be wrong or needs another scaling/interpretation (rpm?)
-      //float speed = RXB_INT16(53);
-      //StdMetrics.ms_v_pos_speed->SetValue(fabs(speed));
+      float speed = UnitConvert(Mph, Kph, RXB_INT16(53) / 100.0f);
+      StdMetrics.ms_v_pos_speed->SetValue(fabs(speed));
 
       // Read battery module temperatures 1-5 (only when also polling PIDs 02…05):
       if (m_poll_state != STATE_OFF && m_poll_ticker % 15 == 0)

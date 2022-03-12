@@ -56,6 +56,7 @@
 #define MS_N_MDM_NETREG             "m.net.mdm.netreg"
 #define MS_N_MDM_NETWORK            "m.net.mdm.network"
 #define MS_N_MDM_SQ                 "m.net.mdm.sq"
+#define MS_N_MDM_MODE               "m.net.mdm.mode"
 #define MS_N_WIFI_NETWORK           "m.net.wifi.network"
 #define MS_N_WIFI_SQ                "m.net.wifi.sq"
 
@@ -287,8 +288,9 @@ class MetricsStandard
     OvmsMetricString* ms_m_net_mdm_netreg;                // Modem network registration state
     OvmsMetricString* ms_m_net_mdm_network;               // Modem network operator
     OvmsMetricFloat*  ms_m_net_mdm_sq;                    // Modem network signal quality [dbm]
-    OvmsMetricString* ms_m_net_mdm_iccid;
-    OvmsMetricString* ms_m_net_mdm_model;
+    OvmsMetricString* ms_m_net_mdm_iccid;                 // ICCID of SIM card in modem
+    OvmsMetricString* ms_m_net_mdm_model;                 // Model of modem discovered
+    OvmsMetricString* ms_m_net_mdm_mode;                  // Cellular connection mode and status
 
 #ifdef CONFIG_OVMS_COMP_MAX7317
     OvmsMetricBitset<10,0>* ms_m_egpio_input;             // EGPIO (MAX7317) input port state (ports 0…9)
@@ -409,7 +411,7 @@ class MetricsStandard
     OvmsMetricInt*     ms_v_gen_time;                     // Duration of generator running [sec]
     OvmsMetricFloat*   ms_v_gen_kwh;                      // Energy sum generated in the running session [kWh]
     OvmsMetricFloat*   ms_v_gen_kwh_grid;                 // Energy sent to grid during running session [kWh]
-    OvmsMetricFloat*   ms_v_gen_kwh_grid_total;           // Energy sent to grid total (life time) [kWh] 
+    OvmsMetricFloat*   ms_v_gen_kwh_grid_total;           // Energy sent to grid total (life time) [kWh]
     OvmsMetricString*  ms_v_gen_mode;                     // TBD
     OvmsMetricBool*    ms_v_gen_timermode;                // True if generator timer enabled
     OvmsMetricInt*     ms_v_gen_timerstart;               // Time generator is due to start
@@ -423,7 +425,7 @@ class MetricsStandard
     OvmsMetricInt*     ms_v_gen_duration_empty;           // Estimated time remaining for full discharge [min]
     OvmsMetricInt*     ms_v_gen_duration_range;           // … for range limit [min]
     OvmsMetricInt*     ms_v_gen_duration_soc;             // … for SOC limit [min]
-    OvmsMetricFloat*   ms_v_gen_temp;                     // Generator temperature [°C] 
+    OvmsMetricFloat*   ms_v_gen_temp;                     // Generator temperature [°C]
 
     //
     // Motor inverter/controller metrics
