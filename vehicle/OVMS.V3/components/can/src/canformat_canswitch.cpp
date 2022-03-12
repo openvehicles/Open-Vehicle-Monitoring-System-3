@@ -48,6 +48,7 @@ OvmsCanFormatCanSwitchInit::OvmsCanFormatCanSwitchInit()
 canformat_cs11::canformat_cs11(const char *type)
   : canformat(type)
   {
+  m_syncing = false;
   }
 
 canformat_cs11::~canformat_cs11()
@@ -102,45 +103,45 @@ size_t canformat_cs11::put(CAN_log_message_t* message, uint8_t *buffer, size_t l
     uint8_t len = m_buf.Peek();
     if (len==0)
       {
-      if (m_buf.UsedSpace() >= 2)
-        {
-        m_buf.Pop(2,(uint8_t*)buf);
-        return consumed;  // CMD_SYNC
-        }
+      *hasmore = true;  // Call us again to see if we have more frames to process
+      m_syncing = true;
+      m_buf.Pop(1,(uint8_t*)buf);
+      return consumed;  // CMD_SYNC
       }
     else if (len==255)
       {
-        if (m_buf.UsedSpace() >= 3)
+      if (m_buf.UsedSpace() >= 3)
+        {
+        *hasmore = true;  // Call us again to see if we have more frames to process
+        m_buf.Pop(3,(uint8_t*)buf);
+        canbus* bus = MyCan.GetBus(buf[1]);
+        if (bus != NULL)
           {
-          m_buf.Pop(2,(uint8_t*)buf);
-          canbus* bus = MyCan.GetBus(buf[1]);
-          if (bus != NULL)
+          CAN_speed_t speed;
+          switch(buf[2])
             {
-            CAN_speed_t speed;
-            switch(buf[2])
-              {
-              case 0:
-                speed = CAN_SPEED_125KBPS;
-                break;
-              case 1:
-                speed = CAN_SPEED_250KBPS;
-                break;
-              case 2:
-                speed = CAN_SPEED_500KBPS;
-                break;
-              case 3:
-                speed = CAN_SPEED_1000KBPS;
-                break;
-              case 4:
-                speed = CAN_SPEED_83KBPS;
-                break;
-              default:
-                return consumed;
-              }
-            bus->Start(CAN_MODE_ACTIVE, speed);
+            case 0:
+              speed = CAN_SPEED_125KBPS;
+              break;
+            case 1:
+              speed = CAN_SPEED_250KBPS;
+              break;
+            case 2:
+              speed = CAN_SPEED_500KBPS;
+              break;
+            case 3:
+              speed = CAN_SPEED_1000KBPS;
+              break;
+            case 4:
+              speed = CAN_SPEED_83KBPS;
+              break;
+            default:
+              return consumed;
             }
-          return consumed;  // CMD_SYNC
+          bus->Start(CAN_MODE_ACTIVE, speed);
           }
+        return consumed;  // CMD_SYNC
+        }
       }
     else if (m_buf.UsedSpace() >= (len+1))
       {
@@ -153,6 +154,15 @@ size_t canformat_cs11::put(CAN_log_message_t* message, uint8_t *buffer, size_t l
       message->frame.MsgID = ((uint16_t)buf[3]<<8) + buf[2];
       message->frame.FIR.B.DLC = len-3;
       memcpy(message->frame.data.u8,buf+4,message->frame.FIR.B.DLC);
+
+      if (m_syncing)
+        {
+        uint8_t ack[2];
+        ack[0] = 1;
+        ack[1] = buf[1];
+        if (clc) clc->TransmitCallback(ack,2);
+        }
+
       return consumed;
       }
     }

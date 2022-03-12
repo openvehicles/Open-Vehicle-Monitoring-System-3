@@ -136,12 +136,26 @@ static const char *TAG = "v-vweup";
 
 void OvmsVehicleVWeUp::sendOcuHeartbeat(TimerHandle_t timer)
 {
+  // Workaround for FreeRTOS duplicate timer callback bug
+  // (see https://github.com/espressif/esp-idf/issues/8234)
+  static TickType_t last_tick = 0;
+  TickType_t tick = xTaskGetTickCount();
+  if (tick < last_tick + xTimerGetPeriod(timer) - 3) return;
+  last_tick = tick;
+
   OvmsVehicleVWeUp *vweup = (OvmsVehicleVWeUp *)pvTimerGetTimerID(timer);
   vweup->SendOcuHeartbeat();
 }
 
 void OvmsVehicleVWeUp::ccCountdown(TimerHandle_t timer)
 {
+  // Workaround for FreeRTOS duplicate timer callback bug
+  // (see https://github.com/espressif/esp-idf/issues/8234)
+  static TickType_t last_tick = 0;
+  TickType_t tick = xTaskGetTickCount();
+  if (tick < last_tick + xTimerGetPeriod(timer) - 3) return;
+  last_tick = tick;
+
   OvmsVehicleVWeUp *vweup = (OvmsVehicleVWeUp *)pvTimerGetTimerID(timer);
   vweup->CCCountdown();
 }
@@ -385,15 +399,14 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
     case 0x65D: { // ODO
       float odo = (float) (((uint32_t)(d[3] & 0xf) << 12) | ((UINT)d[2] << 8) | d[1]);
       StandardMetrics.ms_v_pos_odometer->SetValue(odo);
-      // so far we don't know where to get trip distance directly:
-      if (m_odo_start <= 0)
-        m_odo_start = odo;
-      StandardMetrics.ms_v_pos_trip->SetValue(odo - m_odo_start);
       break;
     }
 
     case 0x320: // Speed
       StandardMetrics.ms_v_pos_speed->SetValue(((d[4] << 8) + d[3] - 1) / 190);
+      UpdateTripOdo();
+      if (HasNoOBD())
+        CalculateAcceleration(); // only necessary until we find acceleration on T26
       break;
 
     case 0x527: // Outdoor temperature

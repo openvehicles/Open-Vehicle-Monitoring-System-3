@@ -63,6 +63,7 @@ class OvmsServerV3 : public OvmsServer
     void NetmanStop(std::string event, void* data);
     void Ticker1(std::string event, void* data);
     void Ticker60(std::string event, void* data);
+    void RequestUpdate(bool txall);
 
   public:
     enum State

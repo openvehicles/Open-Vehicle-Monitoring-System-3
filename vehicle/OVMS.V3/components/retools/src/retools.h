@@ -92,7 +92,7 @@ class re : public pcp, public ExternalRamAllocated
     QueueHandle_t m_rxqueue;
 
   public:
-    OvmsMutex m_mutex;
+    OvmsRecMutex m_mutex;
     canfilter* m_filter;
     REMode m_mode;
     re_record_map_t m_rmap;

@@ -43,6 +43,7 @@ provides data logging to SD card and to a server.
 
 - _Native Integration_
   - Chevrolet Volt / Opel Ampera
+  - Chevrolet Bolt EV / Opel Ampera-e
   - [BMW i3 / i3s](https://docs.openvehicles.com/en/latest/components/vehicle_bmwi3/docs/index.html)
   - [Fiat 500e](https://docs.openvehicles.com/en/latest/components/vehicle_fiat500/docs/index.html)
   - [Hyundai Ioniq vFL](https://docs.openvehicles.com/en/latest/components/vehicle_hyundai_ioniqvfl/docs/index.html)
@@ -72,7 +73,9 @@ provides data logging to SD card and to a server.
 ## Links
 
 - _User Resources_
-  - [User and Developer Guides](https://docs.openvehicles.com/en/latest/)
+  - _User and Developer Guides: (hint: version selection in left menu at the bottom)_
+    - [Stable release (OTA version "main")](https://docs.openvehicles.com/en/stable/)
+    - [Latest nightly build (OTA version "edge")](https://docs.openvehicles.com/en/latest/)
   - [User Support Forum](https://www.openvehicles.com/forum)
   - [Android App](https://play.google.com/store/apps/details?id=com.openvehicles.OVMS&hl=en_US)
   - [iOS App](https://apps.apple.com/us/app/open-vehicles/id490098531)

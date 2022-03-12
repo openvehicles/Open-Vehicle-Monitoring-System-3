@@ -1,0 +1,392 @@
+<!--
+  Web UI page plugin:
+    Reverse Engineering OBD2 PID Scanner
+    Version 2.1  Michael Balzer <dexter@dexters-web.de>
+  
+  History:
+    - 2.1   PID step support
+    - 2.0   Highlight differences between scan results
+    - 1.0   Initial release
+  
+  Dependencies:
+    - OVMS firmware version 3.2.015-324 or higher
+  
+  Installation:
+    - Type:    Page
+    - Page:    /usr/repidscan
+    - Label:   RE PID Scanner
+    - Menu:    Tools
+    - Auth:    Cookie
+-->
+
+<style>
+.sidebox {
+  padding: 5px;
+  margin-bottom: 5px;
+  background-color: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+}
+.sidebox-heading {
+  border-bottom: 1px solid #ddd;
+  margin: -5px -5px 5px;
+  padding: 5px 5px;
+  background-color: #eee;
+}
+.mainbox {
+  padding: 5px;
+  margin-bottom: 10px;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+}
+.mainbox-heading {
+  border-bottom: 1px solid #ddd;
+  margin: -5px -5px 5px;
+  padding: 5px 5px;
+  background-color: #eee;
+}
+.night .sidebox {
+  background-color: #252525;
+}
+.night .sidebox-heading,
+.night .mainbox-heading {
+  background-color: #353535;
+}
+.sidebox .form-control {
+  width: auto;
+  display: inline-block;
+}
+.sidebox hr {
+  margin-top: 8px;
+  margin-bottom: 8px;
+  border-top: 1px solid #ddd;
+}
+.action-menu {
+  padding-top: 10px;
+}
+#input-notes {
+  height: 180px;
+  font-size: 13px;
+}
+.scan-result b {
+  color: #00aa00;
+}
+.night .scan-result b {
+  color: #dddd00;
+}
+.scan-result u {
+  color: #aa0000;
+  font-weight: bold;
+  text-decoration: none;
+}
+.night .scan-result u {
+  color: #ee0000;
+}
+</style>
+
+<div class="filedialog" id="fileselect"/>
+
+<div class="panel panel-primary receiver" id="repidscan">
+  <div class="panel-heading">RE: OBD2 PID Scanner</div>
+  <div class="panel-body">
+
+    <div class="row">
+
+      <div class="col-sm-4">
+        <div class="row">
+
+          <div class="col-xs-6 col-sm-12">
+            <div class="sidebox">
+              <div class="sidebox-heading">Scan Control</div>
+              
+              <div id="vehicle-mode">
+                <button type="button" class="btn btn-default" data-target="#output-current" data-cmd="vehicle module NONE">
+                  Set vehicle module <code>NONE</code>
+                </button>
+                <hr>
+              </div>
+
+              <div>
+                <select class="form-control" size="1" id="input-bus">
+                  <option value="1" selected>can1</option>
+                  <option value="2">can2</option>
+                  <option value="3">can3</option>
+                  <option value="4">can4</option>
+                </select>
+                <select class="form-control" size="1" id="input-busspeed">
+                  <option value="33333">33 kbit</option>
+                  <option value="83333">83 kbit</option>
+                  <option value="100000">100 kbit</option>
+                  <option value="125000">125 kbit</option>
+                  <option value="250000">250 kbit</option>
+                  <option value="500000" selected>500 kbit</option>
+                  <option value="1000000">1 Mbit</option>
+                </select>
+                <button type="button" class="btn btn-default action-startbus">Set</button>
+              </div>
+
+              <hr>
+
+              <div>ECU CAN TX &amp; RX IDs:</div>
+              <div>
+                <input type="text" class="form-control font-monospace" size="4" maxlength="3" placeholder="TX" id="input-txid" value="">
+                <input type="text" class="form-control font-monospace" size="8" maxlength="7" placeholder="RX[-RX]" id="input-rxid" value="">
+              </div>
+              
+              <div>Poll type, PID range &amp; step:</div>
+              <div>
+                <input type="text" class="form-control font-monospace" size="2" maxlength="2" placeholder="22" id="input-type" value="">
+                <input type="text" class="form-control font-monospace" size="5" maxlength="4" placeholder="Start" id="input-start" value="">
+                <input type="text" class="form-control font-monospace" size="5" maxlength="4" placeholder="End" id="input-end" value="">
+                <input type="text" class="form-control font-monospace" size="5" maxlength="4" placeholder="0001" id="input-step" value="">
+              </div>
+              
+              <div>Request timeout:</div>
+              <div>
+                <input type="text" class="form-control font-monospace" size="2" placeholder="3" id="input-timeout" value=""> seconds
+              </div>
+              
+              <div class="action-menu">
+                <button type="button" class="btn btn-default action-start" accesskey="S"><u>S</u>tart</button>
+                <button type="button" class="btn btn-default action-status" accesskey="U">Stat<u>u</u>s</button>
+                <button type="button" class="btn btn-default action-stop" data-target="#output-current" data-cmd="re obdii scan stop">Stop</button>
+              </div>
+              
+            </div>
+          </div>
+
+          <div class="col-xs-6 col-sm-12">
+            <div class="sidebox">
+              <div class="sidebox-heading">File</div>
+              
+              <div>Notes:</div>
+              <div>
+                <textarea class="form-control font-monospace fullwidth" rows="4" id="input-notes" value="" autocapitalize="none" autocorrect="off" autocomplete="off" spellcheck="false"></textarea>
+              </div>
+              
+              <div class="action-menu">
+                <button type="button" class="btn btn-default action-load" accesskey="O">L<u>o</u>ad…</button>
+                <button type="button" class="btn btn-default action-save" accesskey="A">S<u>a</u>ve…</button>
+              </div>
+              
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="col-sm-8">
+        <div class="mainbox">
+          <div class="mainbox-heading">Scan Results</div>
+          
+          <ul class="nav nav-tabs">
+            <li class="active"><a data-toggle="tab" href="#tab-current" aria-expanded="true" accesskey="C"><u>C</u>urrent</a></li>
+            <li class=""><a data-toggle="tab" href="#tab-previous" aria-expanded="false" accesskey="P"><u>P</u>revious</a></li>
+          </ul>
+          <div class="tab-content">
+            <div id="tab-current" class="tab-pane section-vehicle active in">
+              <samp id="output-current" class="monitor scan-result" />
+            </div>
+            <div id="tab-previous" class="tab-pane section-vehicle">
+              <samp id="output-previous" class="monitor scan-result" />
+            </div>
+          </div>
+          
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <div class="panel-footer">
+    <p class="text-danger"><b>⚠ The scanner allows to use any poll type! Know what you do!</b></p>
+    <p>The OBD2 PID scanner performs a series of OBD/UDS requests for a range of PIDs and displays
+      the results. Only PIDs with positive results (responses) will be shown in the results.</p>
+    <p>Enter all values hexadecimal (case irrelevant). Default RXID is TXID+8, try RXID range
+      <code>500-7FF</code> if you don't know the responding ID. To send broadcast requests, set
+      TXID to <code>7DF</code> and RXID to <code>7E8-7EF</code>. The PID range must match the
+      poll type PID constraints (8/16 bit).</p>
+      </p>
+    <p>Scan results will be shown automatically when the scan has been completed. Scanning
+      a large range of PIDs may take some time, to get intermediate results, click "Status".
+      You can also start the scan, do something else and return to this page later.</p>
+    <p class="text-info"><u>Notes</u>: to avoid clashing of scan polls with vehicle polls, use
+      the scanner only with the vehicle module <code>NONE</code>. The CAN bus to use needs to
+      have been started in active mode. The scanner does not send session or tester presence
+      messages, if you need these, use the <code>re obdii tester</code> tool or the
+      <code>obdii canX request</code> command.</p>
+  </div>
+
+</div>
+
+
+<script>
+(function(){
+
+  // Init file dialog:
+  $('#fileselect').filedialog({
+    path: '/sd/repidscan/',
+    quicknav: ['/sd/repidscan/', '/store/repidscan/', '/sd/', '/store/']
+  });
+
+  // Hide vehicle mode button if already in mode "NONE":
+  if (metrics["v.type"] == "NONE") {
+    $('#vehicle-mode').hide();
+  }
+
+  // Query current CAN bus speed:
+  $('#input-bus').on('change', function() {
+    loadcmd('can can' + $(this).val() + ' status').then(function(output) {
+      var speed = output.match(/Speed:\s+([0-9]+)/);
+      if (speed)
+        $('#input-busspeed').val(speed[1]);
+    });
+  }).trigger('change');
+
+  // Set CAN speed & mode:
+  $('.action-startbus').on('click', function() {
+    var cmd = "can can" + $('#input-bus').val() + " start active " + $('#input-busspeed').val();
+    loadcmd(cmd, "#output-current");
+  });
+
+  // Get fields:
+  function getData() {
+    var data = {};
+    $("#repidscan").find("[id^=input-]").each(function() {
+      data[this.id] = $(this).val();
+    });
+    $("#repidscan").find("[id^=output-]").each(function() {
+      data[this.id] = $(this).html();
+    });
+    return data;
+  }
+
+  // Set fields:
+  function setData(data) {
+    for (key in data) {
+      if (key.substr(0,6) == "input-")
+        $('#'+key).val(data[key]);
+      else if (key.substr(0,7) == "output-")
+        $('#'+key).html(data[key]);
+    }
+    showDiff();
+  }
+
+  // Get and split scan result (for showDiff):
+  function getResult(sel) {
+    var text = $(sel).text();
+    var lines = text.split('\n');
+    var info = [], pids = [];
+    lines.forEach(ln => ln && (ln.indexOf(']:') < 0 ? info : pids).push(ln));
+    var data = pids.map(el => el.split(' '));
+    return {
+      "info": info,
+      "data": data,
+    };
+  }
+  
+  // Get line & byte differences of r2 compared with r1 (for showDiff):
+  function getDiff(r1, r2) {
+    var lref = r2.data.map(e2 => r1.data.findIndex(e1 => e1[0] == e2[0]));
+    if (lref.findIndex(el => el != -1) == -1)
+      return r2.data;
+    return r2.data.map((e2, l2) => {
+      let l1 = lref[l2];
+      if (l1 < 0)
+        return e2.map((val, idx) => (idx == 0) ? '<b>'+val+'</b>' : val);
+      else
+        return e2.map((val, idx) => (val != r1.data[l1][idx]) ? '<u>'+val+'</u>' : val);
+    });
+  }
+  
+  // Highlight differences:
+  function showDiff() {
+    var r1 = getResult('#output-previous'),
+        r2 = getResult('#output-current');
+    var d1 = getDiff(r2, r1),
+        d2 = getDiff(r1, r2);
+    var h1 = r1.info.join('\n') + '\n' + d1.map(ln => ln.join(' ')).join('\n'),
+        h2 = r2.info.join('\n') + '\n' + d2.map(ln => ln.join(' ')).join('\n');
+    $('#output-previous').html(h1);
+    $('#output-current').html(h2);
+  }
+  
+  // Start button:
+  $('.action-start').on('click', function() {
+    var data = getData();
+    if (data['input-txid'] == "" || data['input-start'] == "" || data['input-end'] == "") {
+      confirmdialog('<span class="text-danger">Missing parameter</span>',
+        '<p>Please enter at least a TXID and a PID range.</p>', ["OK"]);
+    } else {
+      // Save current results if any:
+      var current = $('#output-current').html();
+      if (current.indexOf("]:") >= 0) {
+        $('#output-previous').html(current);
+      }
+      // Start new scan:
+      var cmd = "re obdii scan start " + data['input-bus'] + " " +
+        data['input-txid'] + " " + data['input-start'] + " " + data['input-end'] +
+        (data['input-step'] ? " -s" + data['input-step'] : "") +
+        (data['input-rxid'] ? " -r" + data['input-rxid'] : "") +
+        (data['input-type'] ? " -t" + data['input-type'] : "") +
+        (data['input-timeout'] ? " -x" + data['input-timeout'] : "");
+      loadcmd(cmd, "#output-current");
+    }
+  });
+
+  // Show scan result:
+  $('#repidscan').on('msg:event', function(e, event) {
+    if (event == "retools.pidscan.done") {
+      loadcmd("re obdii scan status", "#output-current").then(showDiff);
+    }
+  });
+  $('.action-status').on('click', function() {
+    loadcmd("re obdii scan status", "#output-current").then(showDiff);
+  });
+
+  // Save:
+  $('.action-save').on('click', function(){
+    $('#fileselect').filedialog('show', {
+      title: "Save PID Scan",
+      submit: "Save",
+      onSubmit: function(input) {
+        if (input.file) {
+          var json = JSON.stringify(getData(), null, 1);
+          $.post("/api/file", { "path": input.path, "content": json })
+            .done(function() {
+              confirmdialog('<span class="text-success">Scan saved</span>',
+                '<p>Scan has been saved as <code>'+input.path+'</code>.</p>', ["OK"], 2);
+            })
+            .fail(function(jqXHR) {
+              confirmdialog('<span class="text-danger">Save failed</span>',
+                '<p>'+jqXHR.responseText+'</p>', ["OK"]);
+            });
+        }
+      },
+    });
+  });
+
+  // Load:
+  $('.action-load').on('click', function(){
+    $('#fileselect').filedialog('show', {
+      title: "Load PID Scan",
+      submit: "Load",
+      onSubmit: function(input) {
+        if (input.file) {
+          $.get("/api/file", { "path": input.path })
+            .done(function(responseText) {
+              var data = JSON.parse(responseText);
+              setData(data);
+            })
+            .fail(function(jqXHR) {
+              confirmdialog('<span class="text-danger">Load failed</span>',
+                '<p>'+jqXHR.responseText+'</p>', ["OK"]);
+            });
+        }
+      },
+    });
+  });
+
+})();
+</script>

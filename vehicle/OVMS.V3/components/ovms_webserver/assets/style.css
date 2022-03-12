@@ -945,7 +945,9 @@ table.dataTable thead .sorting_desc:after {
 /* ovms.css | (c) Michael Balzer | https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3 */
 
 code, kbd, pre, samp, .font-monospace {
-  font-family: "Monaco", "Menlo", "Consolas", "QuickType Mono", "Lucida Console", "Roboto Mono", "Ubuntu Mono", "DejaVu Sans Mono", "Droid Sans Mono", monospace;
+  font-family: ui-monospace, "Cascadia Mono", "Segoe UI Mono",
+    "Hack", "Source Code Pro", "Roboto Mono",
+    Menlo, Monaco, Consolas, monospace;
 }
 samp {
   display: block;

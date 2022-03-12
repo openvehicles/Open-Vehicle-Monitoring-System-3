@@ -417,6 +417,20 @@ void OvmsVehicleFactory::vehicle_stat(int verbosity, OvmsWriter* writer, OvmsCom
     }
   }
 
+void OvmsVehicleFactory::vehicle_stat_trip(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (MyVehicleFactory.m_currentvehicle==NULL)
+    {
+    writer->puts("Error: No vehicle module selected");
+    return;
+    }
+
+  if (MyVehicleFactory.m_currentvehicle->CommandStatTrip(verbosity, writer) == OvmsVehicle::NotImplemented)
+    {
+    writer->puts("Error: Functionality not available");
+    }
+  }
+
 void OvmsVehicleFactory::bms_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   if (MyVehicleFactory.m_currentvehicle != NULL)

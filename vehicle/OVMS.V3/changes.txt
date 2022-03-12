@@ -2,6 +2,56 @@ Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
 
+2022-03-07 MWJ  3.3.002  OTA release
+- Maxus eDeliver3: Updated speed PID
+- Bolt EV: Add early Bolt EV support
+- Maxus eDeliver3: Add CCS Charging
+	rewrite polling system
+- Volt/Ampera:: added notification for "fuel" metric.
+    new config: [xva] notify_va_metrics 	(bool, default no)
+- Server V2/V3: added manual update request
+    Note: the servers normally don't need a manual trigger to perform
+    data updates, they listen to metrics changes and events. Use this
+    only if you need extraordinary single updates as fast as possible.
+  New commands:
+    server v2 update [all|modified]     -- Request V2 data update
+    server v3 update [all|modified]     -- Request V3 data update
+- Notifications: add tracing (debug logging) of stream notifications
+  New commands:
+    notify trace all                    -- Enable logging of stream notifications
+- Nissan LEAF:
+ - Remote heating/cooling now works on 2011-2012 LEAFs
+ - Stop charge feature added, works via app
+ - Charge to Limit SOC and/or range added with a top-up feature.
+ - Improved charging metric logic.
+ - Fixed incorrect HVAC (Climate Control) status when charging (for 2013+).
+ - 9 new metrics added
+    xnl.v.b.max.gids (Max number of GIDs the battery can reach (for 2016+))
+    xnl.v.b.heatrequested (Battery is requesting heater elements to turn on (for 2013+))
+    xnl.v.b.heatergranted (Vehicle is OKing heater elements to turn on (for 2013+))
+    xnl.v.c.chargeminutes3kW (The 3kW charge time estimate the car calculates)
+    xnl.v.c.chargebars (Remaining charge "bars" on dashboard)
+    xnl.v.c.event.notification (Used to not send duplicate notifications for charge to limit feature.)
+    xnl.v.c.event.reason (When charge to limit feature starts the charge shows if was triggered due to range or SOC limit.)
+    xnl.v.c.state.previous (Used to better handle charging substate, shows previos charging state timed to ticker.10.)
+    xnl.cc.rqinprogress (Indicates the period betwen arrival of climate control action message and climate control activation.)
+ - Wakeup command now charges 12V battery if connected to EVSE
+ - 2011-2012 LEAF now reads AC voltage from grid
+ - Fix to watchdog timer for modem driver without GPS enabled
+
+2021-11-22 MWJ  3.2.018  OTA release
+- Vehicle: added optional automatic trip report generation
+    Details: https://docs.openvehicles.com/en/latest/userguide/notifications.html
+  New configs:
+    [notify]  report.trip.enable        -- Send trip report on vehicle off (bool, default no)
+    [notify]  report.trip.minlength     -- … minimum trip length in km, default 0.2 km
+  New command:
+    stat trip                           -- Output statistics for current/finished trip
+- VW e-Up: added acceleration support; OBD by reading from ECU,
+    T26 deriving from speed changes
+- Fiat 500e: enhancements courtesy of Gunther Huck
+- OTA: Add support for v3.3 hardware (ESP32 rev3)
+
 2021-09-29 MB  3.2.017  OTA release
 - Added VEHICLE_POLL_TYPE_ROUTINECONTROL to UDS (ISO 14229) service identifiers list
 - MG ZS EV: 
@@ -175,7 +225,7 @@ Open Vehicle Monitor System v3 - Change log
     c) New config setting "updatetime.sendall". If you set this we will publish
        _all_ valid metrics at this interval. Helpful to keep a steady flow of
        values for charting.
-    PLEASE NOTE: These settings will increase OVMS' data usage. 
+    PLEASE NOTE: These settings will increase OVMS' data usage.
 - Metrics: extended reboot persistence: most vehicle state and long term counter
     metrics will now retain their values over a reboot (e.g. OTA update)
 - Metrics: new standard metrics for grid integration (V2G) / generator role
@@ -201,8 +251,8 @@ Open Vehicle Monitor System v3 - Change log
     v.g.substate            Generator substate (TBD)
     v.g.temp                Generator temperature
     v.g.time                Duration of generator running
-    v.g.timermode           True if generator timer enabled 
-    v.g.timerstart          Time generator is due to start 
+    v.g.timermode           True if generator timer enabled
+    v.g.timerstart          Time generator is due to start
     v.g.type                Connection type (chademo, ccs, …)
     v.g.voltage             Momentary generator output voltage
 - TPMS: metrics rework & standard alert notifications on new v.t.alert metric.
@@ -222,10 +272,10 @@ Open Vehicle Monitor System v3 - Change log
     v.t.alert               TPMS tyre alert levels [0=normal, 1=warning, 2=alert]
     v.t.health              TPMS tyre health states
 - Volt/Ampera: BMS cell monitoring (CAN1 polling), fast CAN polling when waking up,
-  estimated range gets from CAN instead of calculation, 
-  lock/unlock status processing fixed for Volt 14MY; 
-  New standard metrics: 
-    trip (this charge), energy used (this charge), HV battery capacity (CAC, Ah), 
+  estimated range gets from CAN instead of calculation,
+  lock/unlock status processing fixed for Volt 14MY;
+  New standard metrics:
+    trip (this charge), energy used (this charge), HV battery capacity (CAC, Ah),
     transmission temp, doors, trunk, hood, lightings;
 - VW e-Up: BMS cell monitoring (@OBD)
 - VW e-Up: combined T26A & OBD module, extended standard metrics coverage,
@@ -249,7 +299,8 @@ Open Vehicle Monitor System v3 - Change log
 - VW e-UP T26A: add climate control and charging detection
 - New vehicle: VW e-Up via OBD-II Port (VWUP.OBD)
 - New vehicle: MG ZS EV via OBD-II Port (MGEV)
-- New vehicle: BMW i3/i3s via OBD-II Port (BMWI3) 
+- Add support for TLS OTA update and change to default
+- New vehicle: BMW i3/i3s via OBD-II Port (BMWI3)
 - Updated wolfssh and wolfssl so the restriction of clients to use
   aes128-cbc cipher is no longer required.
 - MG ZS EV: Add Charging Metrics page.

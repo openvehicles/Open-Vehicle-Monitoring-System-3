@@ -140,7 +140,7 @@ size_t canformat::Serve(uint8_t *buffer, size_t len, canlogconnection* clc)
           MyCan.IncomingFrame(&msg.frame);
           break;
         case Transmit:
-          msg.frame.origin->Write(&msg.frame);
+          msg.frame.origin->Write(&msg.frame, pdMS_TO_TICKS(500));
           break;
         default:
           break;

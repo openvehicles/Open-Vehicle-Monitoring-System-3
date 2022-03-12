@@ -78,66 +78,48 @@ static const char *TAG = "v-smarteq";
  * Incoming poll reply messages
  */
 void OvmsVehicleSmartEQ::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain) {
-  static int last_pid = -1;
-  static int last_remain = -1;
-  static uint8_t buf[MAX_POLL_DATA_LEN];
-  static int bufpos = 0;
+  
+  // init / fill rx buffer:
+  if (m_poll_ml_frame == 0) {
+    m_rxbuf.clear();
+    m_rxbuf.reserve(length + remain);
+  }
+  m_rxbuf.append((char*)data, length);
+  if (remain)
+    return;
 
-  int i;
+  // response complete:
+  ESP_LOGV(TAG, "IncomingPollReply: PID %02X: len=%d %s", pid, m_rxbuf.size(), hexencode(m_rxbuf).c_str());
   
-  //if (pid == 0xF111) ESP_LOGD(TAG, "IncomingPollReply: pid=%#x len=%d remain=%d", pid, length, remain);
-  
-  if ( pid != last_pid || remain >= last_remain ) {
-    // must be a new reply, so reset to the beginning
-    last_pid=pid;
-    last_remain=remain;
-    bufpos=0;
+  switch (m_poll_moduleid_low) {
+    case 0x7BB:
+      switch (pid) {
+        case 0x41: // rqBattVoltages_P1
+          PollReply_BMS_BattVolts(m_rxbuf.data(), m_rxbuf.size(), 0);
+          break;
+        case 0x42: // rqBattVoltages_P2
+          PollReply_BMS_BattVolts(m_rxbuf.data(), m_rxbuf.size(), 48);
+          break;
+        case 0x04: // rqBattTemperatures
+          PollReply_BMS_BattTemps(m_rxbuf.data(), 31);
+          break;
+      }
+      break;
+    case 0x793:
+      switch (pid) {
+        case 0x80: // rqIDpart OBL_7KW_Installed
+          //PollReply_BMS_BattVolts(m_rxbuf.data(), m_rxbuf.size(), 0);
+          break;
+      }
+      break;
+    default:
+      ESP_LOGW(TAG, "IncomingPollReply: unhandled PID %02X: len=%d %s", pid, m_rxbuf.size(), hexencode(m_rxbuf).c_str());
+      break;
   }
   
-  if (bufpos == MAX_POLL_DATA_LEN) { 
-    remain=0;
-    m_poll_ml_remain=0;
-  } else {
-    for (i=0; i<length; i++) {
-      if ( bufpos < sizeof(buf) ) buf[bufpos++] = data[i];
-    }
-  }
-  
-  if (remain==0) {
-    uint32_t id_pid = m_poll_moduleid_low<<16 | pid;
-    switch (m_poll_moduleid_low) {
-      case 0x7BB:
-        switch (pid) {
-          case 0x41: // rqBattVoltages_P1
-            PollReply_BMS_BattVolts(buf, bufpos, 0);
-            break;
-          case 0x42: // rqBattVoltages_P2
-            PollReply_BMS_BattVolts(buf, bufpos, 48);
-            break;
-          case 0x04: // rqBattTemperatures
-            PollReply_BMS_BattTemps(buf, 31);
-            break;
-        }
-        break;
-      case 0x793:
-        switch (pid) {
-          case 0x80: // rqIDpart OBL_7KW_Installed
-            //PollReply_BMS_BattVolts(buf, bufpos, 0);
-            break;
-        }
-        break;
-      default:
-        ESP_LOGI(TAG, "IncomingPollReply: unknown reply module|pid=%#x len=%d", id_pid, bufpos);
-        break;
-    }
-    last_pid=pid;
-    last_remain=remain;
-    bufpos=0;
-    memset(buf, 0, sizeof(buf));
-  }
 }
 
-void OvmsVehicleSmartEQ::PollReply_BMS_BattVolts(uint8_t* reply_data, uint16_t reply_len, uint16_t start) {
+void OvmsVehicleSmartEQ::PollReply_BMS_BattVolts(const char* reply_data, uint16_t reply_len, uint16_t start) {
   float CV;
   static bool cellstat = false;
   
@@ -146,16 +128,17 @@ void OvmsVehicleSmartEQ::PollReply_BMS_BattVolts(uint8_t* reply_data, uint16_t r
   if (CV != 5120 && start == 0) cellstat = true;
   
   if (cellstat) {
-    for(uint16_t n = 0; n < CELLCOUNT; n = n + 2){
+    for(int n = 0; n < CELLCOUNT; n = n + 2){
       CV = (reply_data[n] * 256 + reply_data[n + 1]);
-      CV = CV / 1024.0 * 1000;
-      BmsSetCellVoltage((n/2)+start, CV);
-      //ESP_LOGV(TAG, "CellVoltage: id=%d len=%F", (n/2)+start, CV);
+      CV = CV / 1024.0;
+      BmsSetCellVoltage((n/2) + start, CV);
+      
+      ESP_LOGV(TAG, "CellVoltage: id=%d len=%F", (n/2)+start, CV);
     }
   }
 }
 
-void OvmsVehicleSmartEQ::PollReply_BMS_BattTemps(uint8_t* reply_data, uint16_t reply_len) {
+void OvmsVehicleSmartEQ::PollReply_BMS_BattTemps(const char* reply_data, uint16_t reply_len) {
   int16_t Temps[31];
   float BMStemps[31];
   

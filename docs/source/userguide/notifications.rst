@@ -83,6 +83,11 @@ To send a battery status command result, do::
 
 To send notifications from Duktape scripts, use the API call ``OvmsNotify.Raise()``.
 
+When a text (info/alert) or error notification is sent (i.e. has at least one listening channel,
+e.g. ``pushover``), an **event** is raised once when the notification is queued. The event will
+be named ``notify.<type>.<subtype>``. For example, the second example above would come with
+an event ``notify.info.battery.status``.
+
 
 ----------------------
 Suppress notifications
@@ -127,6 +132,7 @@ info    charge.stopped              ``stat`` on planned charge stop
 alert   charge.stopped              ``stat`` on unplanned charge stop
 data    debug.crash                 Transmit crash backtraces (→ ``*-OVM-DebugCrash``)
 data    debug.tasks                 Transmit task statistics (→ ``*-OVM-DebugTasks``)
+info    drive.trip.report           Trip driving statistics (see `Trip report`_)
 alert   flatbed.moved               Vehicle is being transported while parked - possible theft/flatbed
 info    heating.started             ``stat`` on start of heating (battery)
 data    log.grid                    Grid (charge/generator) history log (see below) (→ ``*-LOG-Grid``)
@@ -278,3 +284,32 @@ Already stored log entries will be kept on the server until expiry or manual del
     * tpms_health_min
     * tpms_health_max
 
+
+-----------
+Trip report
+-----------
+
+The trip report outputs some core statistics of the current or most recent trip (drive
+cycle). It can be queried any time using the ``stat trip`` command, or be configured to
+be sent automatically on turning the vehicle off:
+
+Use the web UI (Config → Notifications) or set config variable ``notify report.trip.enable`` to
+``yes`` and optionally a minimum trip length in ``notify log.trip.minlength`` (defaults to 0.2 km).
+If your vehicle does not support the ``v.p.trip`` metric, set the minimum trip length to 0.
+
+The statistics available depend on your vehicle type (i.e. metrics support of that vehicle
+adaption). Vehicles also may override the report to provide custom statistics. By default,
+a full trip report will contain:
+
+  - Trip length
+  - Average driving speed
+  - Overall altitude difference (start to end point)
+  - Energy consumption in Wh per km/Mi
+  - Recuperation percentage (in relation to energy used)
+  - SOC difference & new SOC
+  - Estimated range difference & new range
+  - Average acceleration & deceleration
+
+The average driving speed is calculated only from speeds above 5 kph (3 mph)
+(to exclude slow speed rolling), and the acceleration & deceleration averages
+exclude values below 2.5 kph/s (1.6 mph/s) (constant speed cruising).

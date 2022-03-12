@@ -626,7 +626,7 @@ OvmsLocations::OvmsLocations()
   m_park_invalid = true;
 
   // Register our commands
-  OvmsCommand* cmd_location = MyCommandApp.RegisterCommand("location","LOCATION framework");
+  OvmsCommand* cmd_location = MyCommandApp.RegisterCommand("location","LOCATION framework", location_status, "", 0, 0, false);
   cmd_location->RegisterCommand("list","Show all locations",location_list);
   cmd_location->RegisterCommand("set","Set the position of a location",location_set, "<name> [<latitude> <longitude> [<radius>]]", 1, 4);
   cmd_location->RegisterCommand("radius","Set the radius of a location",location_radius, "<name> <radius>", 2, 2, true, location_validate);
@@ -680,7 +680,7 @@ OvmsLocations::OvmsLocations()
   ESP_LOGI(TAG, "Expanding DUKTAPE javascript engine");
   DuktapeObjectRegistration* dto = new DuktapeObjectRegistration("OvmsLocation");
   dto->RegisterDuktapeFunction(DukOvmsLocationStatus, 1, "Status");
-  MyScripts.RegisterDuktapeObject(dto);
+  MyDuktape.RegisterDuktapeObject(dto);
 #endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   }
 

@@ -52,6 +52,11 @@
 #include "ovms_utils.h"
 #include "log_buffers.h"
 
+// The setup wizard currently is tailored to be used with a WiFi enabled module:
+#ifdef CONFIG_OVMS_COMP_WIFI
+#define WEBSRV_HAVE_SETUPWIZARD 1
+#endif
+
 #define OVMS_GLOBAL_AUTH_FILE     "/store/.htpasswd"
 
 #define SESSION_COOKIE_NAME       "ovms_session"
@@ -199,7 +204,7 @@ struct PageCallbackEntry
 {
   std::string       caller;
   PageCallback_t    handler;
-  
+
   PageCallbackEntry(std::string _caller, PageCallback_t _handler)
   {
     caller = _caller;
@@ -243,11 +248,13 @@ typedef std::forward_list<PageEntry> PageMap_t;
 
 struct PagePluginContent
 {
+  bool              m_pluginstore;
   std::string       m_path;
   extram::string    m_content;
 
-  PagePluginContent(std::string path) {
+  PagePluginContent(std::string path, bool pluginstore=false) {
     m_path = path;
+    m_pluginstore = pluginstore;
   }
 
   extram::string& GetContent() {
@@ -255,7 +262,7 @@ struct PagePluginContent
       LoadContent();
     return m_content;
   }
-  
+
   void LoadContent();
 };
 
@@ -562,6 +569,7 @@ class OvmsWebServer : public ExternalRamAllocated
     static void HandleCfgBackup(PageEntry_t& p, PageContext_t& c);
     static void HandleCfgPlugins(PageEntry_t& p, PageContext_t& c);
 
+#ifdef WEBSRV_HAVE_SETUPWIZARD
   public:
     void CfgInitStartup();
     static void HandleCfgInit(PageEntry_t& p, PageContext_t& c);
@@ -572,6 +580,7 @@ class OvmsWebServer : public ExternalRamAllocated
     std::string CfgInit3(PageEntry_t& p, PageContext_t& c, std::string step);
     std::string CfgInit4(PageEntry_t& p, PageContext_t& c, std::string step);
     std::string CfgInit5(PageEntry_t& p, PageContext_t& c, std::string step);
+#endif // WEBSRV_HAVE_SETUPWIZARD
 
 
   public:
@@ -596,7 +605,7 @@ class OvmsWebServer : public ExternalRamAllocated
     TimerHandle_t             m_update_ticker;
 
     int                       m_init_timeout;
-    int                       m_restart_countdown;
+    int                       m_shutdown_countdown;
 };
 
 extern OvmsWebServer MyWebServer;

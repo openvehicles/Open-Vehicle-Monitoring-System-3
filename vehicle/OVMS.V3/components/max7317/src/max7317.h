@@ -42,7 +42,7 @@
 class max7317 : public pcp, public InternalRamAllocated
   {
   public:
-    max7317(const char* name, spi* spibus, spi_nodma_host_device_t host, int clockspeed, int cspin);
+    max7317(const char* name, spi* spibus, spi_host_device_t host, int clockspeed, int cspin);
     ~max7317();
 
   public:
@@ -63,11 +63,9 @@ class max7317 : public pcp, public InternalRamAllocated
 
   protected:
     spi* m_spibus;
-    spi_nodma_device_interface_config_t m_devcfg;
-    spi_nodma_host_device_t m_host;
+    spi_device_interface_config_t m_devcfg;
     int m_clockspeed;
-    int m_cspin;
-    spi_nodma_device_handle_t m_spi;
+    spi_device_handle_t m_spi;
     std::bitset<10> m_outputstate;
     std::bitset<10> m_inputstate;
     std::bitset<10> m_monitor_ports;

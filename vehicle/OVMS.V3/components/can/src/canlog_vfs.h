@@ -30,7 +30,6 @@
 
 #include "canlog.h"
 
-#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
 
 class canlog_vfs_conn: public canlogconnection
   {
@@ -45,7 +44,6 @@ class canlog_vfs_conn: public canlogconnection
     FILE*               m_file;
   };
 
-#endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
 
 class canlog_vfs : public canlog
   {

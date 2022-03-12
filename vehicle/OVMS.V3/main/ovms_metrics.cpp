@@ -438,7 +438,7 @@ OvmsMetrics::OvmsMetrics()
   dto->RegisterDuktapeFunction(DukOvmsMetricJSON, 1, "AsJSON");
   dto->RegisterDuktapeFunction(DukOvmsMetricFloat, 1, "AsFloat");
   dto->RegisterDuktapeFunction(DukOvmsMetricGetValues, 2, "GetValues");
-  MyScripts.RegisterDuktapeObject(dto);
+  MyDuktape.RegisterDuktapeObject(dto);
 #endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 
   /* Initialize persistent metrics on cold boot or corruption */
@@ -877,6 +877,13 @@ void OvmsMetric::ClearModified(size_t modifier)
   m_modified &= ~(1ul << modifier);
   }
 
+void OvmsMetric::Clear()
+  {
+  SetValue("");
+  m_defined = NeverDefined;
+  m_stale = true;
+  }
+
 OvmsMetricInt::OvmsMetricInt(const char* name, uint16_t autostale, metric_unit_t units, bool persist)
   : OvmsMetric(name, autostale, units, persist)
   {
@@ -1040,6 +1047,12 @@ bool OvmsMetricInt::SetValue(dbcNumber& value)
   return SetValue(value.GetSignedInteger());
   }
 
+void OvmsMetricInt::Clear()
+  {
+  SetValue(0);
+  OvmsMetric::Clear();
+  }
+
 OvmsMetricBool::OvmsMetricBool(const char* name, uint16_t autostale, metric_unit_t units, bool persist)
   : OvmsMetric(name, autostale, units, persist)
   {
@@ -1191,6 +1204,12 @@ bool OvmsMetricBool::SetValue(std::string value)
 bool OvmsMetricBool::SetValue(dbcNumber& value)
   {
   return SetValue((bool)value.GetUnsignedInteger());
+  }
+
+void OvmsMetricBool::Clear()
+  {
+  SetValue(false);
+  OvmsMetric::Clear();
   }
 
 OvmsMetricFloat::OvmsMetricFloat(const char* name, uint16_t autostale, metric_unit_t units, bool persist)
@@ -1351,8 +1370,14 @@ bool OvmsMetricFloat::SetValue(dbcNumber& value)
   return SetValue((float)value.GetDouble());
   }
 
-OvmsMetricString::OvmsMetricString(const char* name, uint16_t autostale, metric_unit_t units)
-  : OvmsMetric(name, autostale, units)
+void OvmsMetricFloat::Clear()
+  {
+  SetValue(0);
+  OvmsMetric::Clear();
+  }
+
+OvmsMetricString::OvmsMetricString(const char* name, uint16_t autostale, metric_unit_t units, bool persist)
+  : OvmsMetric(name, autostale, units, persist)
   {
   }
 
@@ -1398,6 +1423,12 @@ bool OvmsMetricString::SetValue(std::string value)
   return false;
   }
 
+void OvmsMetricString::Clear()
+  {
+  SetValue("");
+  OvmsMetric::Clear();
+  }
+
 const char* OvmsMetricUnitLabel(metric_unit_t units)
   {
   switch (units)
@@ -1405,6 +1436,7 @@ const char* OvmsMetricUnitLabel(metric_unit_t units)
     case Kilometers:   return "km";
     case Miles:        return "M";
     case Meters:       return "m";
+    case Feet:         return "ft";
     case Celcius:      return "°C";
     case Fahrenheit:   return "°F";
     case kPa:          return "kPa";
@@ -1449,13 +1481,23 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
       if (to == Kilometers) return (value*8)/5;
       else if (to == Meters) return (value*8000)/5;
       break;
+    case Meters:
+      if (to == Feet) return (int)(value * 3.28084);
+      break;
+    case Feet:
+      if (to == Meters) return (int)(value * 0.3048);
+      break;
     case KphPS:
       if (to == MphPS) return (value*5)/8;
-      else if (to == MetersPSS) return value/1000;
+      else if (to == MetersPSS) return (value*1000)/3600;
       break;
     case MphPS:
       if (to == KphPS) return (value*8)/5;
-      else if (to == MetersPSS) return (value*8000)/5;
+      else if (to == MetersPSS) return (value*8000)/(5*3600);
+      break;
+    case MetersPSS:
+      if (to == KphPS) return (int) (value*3.6);
+      else if (to == MphPS) return (int) (value*3.6/1.60934);
       break;
     case kW:
       if (to == Watts) return (value*1000);
@@ -1548,13 +1590,23 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
       if (to == Kilometers) return (value*1.60934);
       else if (to == Meters) return (value*1609.34);
       break;
+    case Meters:
+      if (to == Feet) return (value * 3.28084);
+      break;
+    case Feet:
+      if (to == Meters) return (value * 0.3048);
+      break;
     case KphPS:
       if (to == MphPS) return (value/1.60934);
-      else if (to == MetersPSS) return value/1000;
+      else if (to == MetersPSS) return value/3.6;
       break;
     case MphPS:
       if (to == KphPS) return (value*8)/5;
-      else if (to == MetersPSS) return (value*1.60934);
+      else if (to == MetersPSS) return (value*1.60934/3.6);
+      break;
+    case MetersPSS:
+      if (to == KphPS) return (value*3.6);
+      else if (to == MphPS) return (value*3.6/1.60934);
       break;
     case kW:
       if (to == Watts) return (value*1000);

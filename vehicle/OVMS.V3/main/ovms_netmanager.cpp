@@ -33,6 +33,7 @@ static const char *TAG = "netmanager";
 
 #include <string.h>
 #include <stdio.h>
+#include <lwip/tcpip.h>
 #include <lwip/ip_addr.h>
 #include <lwip/netif.h>
 #include <lwip/dns.h>
@@ -230,6 +231,7 @@ OvmsNetManager::OvmsNetManager()
   using std::placeholders::_1;
   using std::placeholders::_2;
 
+#ifdef CONFIG_OVMS_COMP_WIFI
   MyEvents.RegisterEvent(TAG,"system.wifi.sta.gotip", std::bind(&OvmsNetManager::WifiStaGotIP, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.wifi.sta.lostip", std::bind(&OvmsNetManager::WifiStaLostIP, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"network.wifi.sta.good", std::bind(&OvmsNetManager::WifiStaGood, this, _1, _2));
@@ -238,10 +240,10 @@ OvmsNetManager::OvmsNetManager()
   MyEvents.RegisterEvent(TAG,"system.wifi.sta.connected", std::bind(&OvmsNetManager::WifiStaConnected, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.wifi.sta.disconnected", std::bind(&OvmsNetManager::WifiStaStop, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.wifi.down", std::bind(&OvmsNetManager::WifiStaStop, this, _1, _2));
-
   MyEvents.RegisterEvent(TAG,"system.wifi.ap.start", std::bind(&OvmsNetManager::WifiUpAP, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.wifi.ap.stop", std::bind(&OvmsNetManager::WifiDownAP, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.wifi.ap.sta.disconnected", std::bind(&OvmsNetManager::WifiApStaDisconnect, this, _1, _2));
+#endif // #ifdef CONFIG_OVMS_COMP_WIFI
 
   MyEvents.RegisterEvent(TAG,"system.modem.gotip", std::bind(&OvmsNetManager::ModemUp, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.modem.stop", std::bind(&OvmsNetManager::ModemDown, this, _1, _2));
@@ -257,7 +259,9 @@ OvmsNetManager::OvmsNetManager()
   //   wifi.sq.good       Threshold for usable wifi signal [dBm], default -87
   //   wifi.sq.bad        Threshold for unusable wifi signal [dBm], default -89
 
+#ifdef CONFIG_OVMS_COMP_WIFI
   MyMetrics.RegisterListener(TAG, MS_N_WIFI_SQ, std::bind(&OvmsNetManager::WifiStaCheckSQ, this, _1));
+#endif
   }
 
 OvmsNetManager::~OvmsNetManager()
@@ -271,11 +275,13 @@ void OvmsNetManager::RestartNetwork()
     MyPeripherals->m_esp32wifi->Restart();
 #endif // #ifdef CONFIG_OVMS_COMP_WIFI
 
-#ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
-  if (MyPeripherals && MyPeripherals->m_simcom)
-    MyPeripherals->m_simcom->Restart();
-#endif // CONFIG_OVMS_COMP_MODEM_SIMCOM
+#ifdef CONFIG_OVMS_COMP_CELLULAR
+  if (MyPeripherals && MyPeripherals->m_cellular_modem)
+    MyPeripherals->m_cellular_modem->Restart();
+#endif // CONFIG_OVMS_COMP_CELLULAR
   }
+
+#ifdef CONFIG_OVMS_COMP_WIFI
 
 void OvmsNetManager::WifiConnect()
   {
@@ -489,6 +495,9 @@ void OvmsNetManager::WifiApStaDisconnect(std::string event, void* data)
 #endif
   }
 
+#endif // #ifdef CONFIG_OVMS_COMP_WIFI
+
+
 void OvmsNetManager::ModemUp(std::string event, void* data)
   {
   m_connected_modem = true;
@@ -568,7 +577,9 @@ void OvmsNetManager::ConfigChanged(std::string event, void* data)
       m_cfg_wifi_sq_good = m_cfg_wifi_sq_bad;
       m_cfg_wifi_sq_bad = x;
       }
-    WifiStaCheckSQ(NULL);
+    #ifdef CONFIG_OVMS_COMP_WIFI
+      WifiStaCheckSQ(NULL);
+    #endif
     if (param && m_network_any)
       PrioritiseAndIndicate();
     }
@@ -658,10 +669,10 @@ void OvmsNetManager::SetNetType(std::string type)
   else if (type == "modem")
     {
     StdMetrics.ms_m_net_type->SetValue(type);
-#ifdef CONFIG_OVMS_COMP_MODEM_SIMCOM
-    if (MyPeripherals && MyPeripherals->m_simcom)
-      MyPeripherals->m_simcom->UpdateNetMetrics();
-#endif // CONFIG_OVMS_COMP_MODEM_SIMCOM
+#ifdef CONFIG_OVMS_COMP_CELLULAR
+    if (MyPeripherals && MyPeripherals->m_cellular_modem)
+      MyPeripherals->m_cellular_modem->UpdateNetMetrics();
+#endif // CONFIG_OVMS_COMP_CELLULAR
     }
   else
     {
@@ -671,7 +682,17 @@ void OvmsNetManager::SetNetType(std::string type)
     }
   }
 
+void SafePrioritiseAndIndicate(void* ctx)
+  {
+  MyNetManager.DoSafePrioritiseAndIndicate();
+  }
+
 void OvmsNetManager::PrioritiseAndIndicate()
+  {
+  tcpip_callback_with_block(SafePrioritiseAndIndicate, NULL, 1);
+  }
+
+void OvmsNetManager::DoSafePrioritiseAndIndicate()
   {
   const char *search = NULL;
   ip_addr_t* dns = NULL;
@@ -928,6 +949,7 @@ int OvmsNetManager::CleanupConnections()
 
   // get IP addresses of stations connected to our wifi AP:
   ap_ip_list.num = 0;
+#ifdef CONFIG_OVMS_COMP_WIFI
   if (m_wifi_ap)
     {
     wifi_sta_list_t sta_list;
@@ -936,6 +958,7 @@ int OvmsNetManager::CleanupConnections()
     else if (tcpip_adapter_get_sta_list(&sta_list, &ap_ip_list) != ESP_OK)
       ESP_LOGW(TAG, "CleanupConnections: can't get AP station IP list");
     }
+#endif // #ifdef CONFIG_OVMS_COMP_WIFI
 
   for (c = mg_next(&m_mongoose_mgr, NULL); c; c = mg_next(&m_mongoose_mgr, c))
     {
@@ -1002,6 +1025,14 @@ int OvmsNetManager::CleanupConnections()
       } // AP remotes
     } // connection loop
   return cnt;
+  }
+
+bool OvmsNetManager::IsNetManagerTask()
+  {
+  // Return TRUE if the currently running task is the Net Manager task
+  extern void *pxCurrentTCB[portNUM_PROCESSORS];
+
+  return (m_mongoose_task == pxCurrentTCB[xPortGetCoreID()]);
   }
 
 #endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE

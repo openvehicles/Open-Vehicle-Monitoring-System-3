@@ -24,6 +24,9 @@
 ; THE SOFTWARE.
 */
 
+#include <sdkconfig.h>
+#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+
 #include "ovms_log.h"
 static const char *TAG = "canlog-udpclient";
 
@@ -239,3 +242,5 @@ void canlog_udpclient::MongooseHandler(struct mg_connection *nc, int ev, void *p
       break;
     }
   }
+
+#endif // CONFIG_OVMS_SC_GPL_MONGOOSE

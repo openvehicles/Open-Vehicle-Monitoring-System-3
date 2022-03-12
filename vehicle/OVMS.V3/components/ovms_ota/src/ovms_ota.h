@@ -38,6 +38,7 @@
 
 struct ota_info
   {
+  std::string hardware_info;
   std::string version_firmware;
   std::string version_server;
   bool update_available;
@@ -45,6 +46,14 @@ struct ota_info
   std::string partition_boot;
   std::string changelog_server;
   };
+
+// Flash task mode configuration:
+typedef enum
+  {
+  OTA_FlashCfg_Default,         // standard OTA update
+  OTA_FlashCfg_Force,           // force OTA update (skip version check)
+  OTA_FlashCfg_FromSD           // perform update from SD card (/sd/ovms3.bin)
+  } ota_flashcfg_t;
 
 class OvmsOTA
   {
@@ -56,7 +65,7 @@ class OvmsOTA
     static void GetStatus(ota_info& info, bool check_update=true);
 
   public:
-    void LaunchAutoFlash(bool force=false);
+    void LaunchAutoFlash(ota_flashcfg_t cfg=OTA_FlashCfg_Default);
     bool AutoFlash(bool force=false);
     void Ticker600(std::string event, void* data);
 
@@ -68,7 +77,9 @@ class OvmsOTA
 
 #ifdef CONFIG_OVMS_COMP_SDCARD
   protected:
-    void AutoFlashSD(std::string event, void* data);
+    void CheckFlashSD(std::string event, void* data);
+  public:
+    bool AutoFlashSD();
 #endif // #ifdef CONFIG_OVMS_COMP_SDCARD
   };
 

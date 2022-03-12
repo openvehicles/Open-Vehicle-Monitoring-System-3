@@ -193,7 +193,6 @@ OvmsCanLogInit::OvmsCanLogInit()
 // CAN Logger Connection class
 ////////////////////////////////////////////////////////////////////////
 
-#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
 
 canlogconnection::canlogconnection(canlog* logger, std::string format, canformat::canformat_serve_mode_t mode)
   {
@@ -233,6 +232,7 @@ void canlogconnection::OutputMsg(CAN_log_message_t& msg, std::string &result)
     return;
     }
 
+#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   // The standard base implemention here is for mongoose network connections
   if (m_nc != NULL)
     {
@@ -249,6 +249,7 @@ void canlogconnection::OutputMsg(CAN_log_message_t& msg, std::string &result)
       }
     }
   else
+#endif // CONFIG_OVMS_SC_GPL_MONGOOSE
     {
     m_dropcount++;
     }
@@ -259,11 +260,13 @@ void canlogconnection::TransmitCallback(uint8_t *buffer, size_t len)
   ESP_LOGD(TAG,"TransmitCallback on %s (%d bytes)",m_peer.c_str(),len);
 
   m_msgcount++;
+#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   if ((m_nc != NULL)&&(m_nc->send_mbuf.len < 32768))
     {
     mg_send(m_nc, buffer, len);
     }
   else
+#endif // CONFIG_OVMS_SC_GPL_MONGOOSE
     {
     m_dropcount++;
     }
@@ -327,7 +330,6 @@ std::string canlogconnection::GetStats()
   return buf.str();
   }
 
-#endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
 
 ////////////////////////////////////////////////////////////////////////
 // CAN Logger class
@@ -429,7 +431,8 @@ void canlog::RxTask(void *context)
 
 void canlog::EventListener(std::string event, void* data)
   {
-  if (startsWith(event, "vehicle"))
+  // Log vehicle custom (x…) & framework events:
+  if (startsWith(event, 'x') || startsWith(event, "vehicle"))
     LogInfo(NULL, CAN_LogInfo_Event, event.c_str());
   }
 

@@ -63,6 +63,7 @@ typedef enum : uint8_t
   Kilometers    = 10,
   Miles         = 11,
   Meters        = 12,
+  Feet          = 13,
 
   Celcius       = 20,
   Fahrenheit    = 21,
@@ -174,6 +175,7 @@ class OvmsMetric
     virtual bool IsModifiedAndClear(size_t modifier);
     virtual void ClearModified(size_t modifier);
     virtual void SetModified(bool changed=true);
+    virtual void Clear();
 
   public:
     OvmsMetric* m_next;
@@ -206,6 +208,7 @@ class OvmsMetricBool : public OvmsMetric
     bool SetValue(std::string value);
     bool SetValue(dbcNumber& value);
     void operator=(std::string value) { SetValue(value); }
+    void Clear();
     bool CheckPersist();
     void RefreshPersist();
 
@@ -233,6 +236,7 @@ class OvmsMetricInt : public OvmsMetric
     bool SetValue(std::string value);
     bool SetValue(dbcNumber& value);
     void operator=(std::string value) { SetValue(value); }
+    void Clear();
     bool CheckPersist();
     void RefreshPersist();
 
@@ -260,8 +264,9 @@ class OvmsMetricFloat : public OvmsMetric
     bool SetValue(std::string value);
     bool SetValue(dbcNumber& value);
     void operator=(std::string value) { SetValue(value); }
-    bool CheckPersist();
-    void RefreshPersist();
+    void Clear();
+    virtual bool CheckPersist();
+    virtual void RefreshPersist();
 
   protected:
     float m_value;
@@ -271,7 +276,7 @@ class OvmsMetricFloat : public OvmsMetric
 class OvmsMetricString : public OvmsMetric
   {
   public:
-    OvmsMetricString(const char* name, uint16_t autostale=0, metric_unit_t units = Other);
+    OvmsMetricString(const char* name, uint16_t autostale=0, metric_unit_t units = Other, bool persist = false);
     virtual ~OvmsMetricString();
 
   public:
@@ -281,6 +286,7 @@ class OvmsMetricString : public OvmsMetric
 #endif
     bool SetValue(std::string value);
     void operator=(std::string value) { SetValue(value); }
+    void Clear();
     virtual bool IsString() { return true; };
 
   protected:
@@ -524,12 +530,12 @@ class OvmsMetricSet : public OvmsMetric
  *  vf->SetElemValues(10, 3, myvals);
  *
  * Note: use ExtRamAllocator<type> for large vectors (= use SPIRAM)
- * 
+ *
  * Persistence can only be used on ElemTypes fitting into a pmetrics storage container.
  * A persistent vector will need 1+size pmetrics slots. It will allocate new slots as
  * needed when growing, but the slots will remain used when shrinking the vector. If any
  * new element cannot allocate a pmetrics slot, the whole vector loses its persistence.
- * 
+ *
  * Unit conversion currently casts to and from float for the conversion, it's assumed to
  * only be necessary for floating point values here. If you need int conversion, rework
  * UnitConvert() into a template.
@@ -548,11 +554,11 @@ class OvmsMetricVector : public OvmsMetric
       m_valuep_size = NULL;
       if (!persist)
         return;
-      
+
       // Ensure ElemType fits into persistent value:
       if (sizeof(ElemType) > sizeof(persistent_value_t))
         return;
-      
+
       // Vector persistence is currently implemented by a size entry with the metric name
       //  + one additional entry per element using the metric name extended by the element index.
       // This may be optimized when the persistence system supports arrays.
@@ -578,14 +584,14 @@ class OvmsMetricVector : public OvmsMetric
       // on vector size changes:
       //  m_persist false => register & read persistent values
       //  m_persist true  => only register new elements
-      // 
+      //
       // Persistent element pointers will be retained on shrinking, and reused
       // when the size grows again. Overall vector persistence is cancelled if any
       // new element fails to register.
-      
+
       if (!m_valuep_size)
         return false;
-      
+
       std::size_t old_size = m_valuep_elem.size();
       if (new_size <= old_size)
         {
@@ -593,11 +599,11 @@ class OvmsMetricVector : public OvmsMetric
         m_persist = true;
         return false;
         }
-      
+
       m_valuep_elem.resize(new_size);
       if (!m_persist)
         m_value.resize(new_size);
-      
+
       struct persistent_values *vp;
       char elem_name[100];
       for (std::size_t i = old_size; i < new_size; i++)

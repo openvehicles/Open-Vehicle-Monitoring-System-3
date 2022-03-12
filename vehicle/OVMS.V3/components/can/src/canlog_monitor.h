@@ -30,7 +30,6 @@
 
 #include "canlog.h"
 
-#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
 
 class canlog_monitor_conn: public canlogconnection
   {
@@ -42,7 +41,6 @@ class canlog_monitor_conn: public canlogconnection
     virtual void OutputMsg(CAN_log_message_t& msg, std::string &result);
   };
 
-#endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
 
 class canlog_monitor : public canlog
   {

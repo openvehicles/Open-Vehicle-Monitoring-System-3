@@ -34,19 +34,19 @@
 #include <string>
 #include <map>
 
+struct mbedtls_x509_crt;
+
 class OvmsTrustedCert
   {
   public:
-    OvmsTrustedCert(char* pem, bool needfree=false);
+    OvmsTrustedCert(const unsigned char* cert, size_t length);
     ~OvmsTrustedCert();
 
   public:
-    char* GetPEM();
-    bool IsInternal();
+    mbedtls_x509_crt* GetCert();
 
   private:
-    char* m_pem;
-    bool m_needfree;
+    mbedtls_x509_crt* m_cert;
   };
 
 typedef std::map<std::string, OvmsTrustedCert*> TrustedCert_t;

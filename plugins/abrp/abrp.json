@@ -1,0 +1,15 @@
+{
+  "name": "abrp",
+  "title": "A Better Route Planner",
+  "description": "This plugin submits data to the ABRP service.",
+  "group": "Development",
+  "info": "http://abetterrouteplanner.com/",
+  "maintainer": "Mike Stuart <mike.stuart@uk.bosch.com>",
+  "version": "0.1",
+  "prerequisites": ["ovms>=3.3.001"],
+  "elements": [{
+    "type": "module",
+    "path": "abrp.js",
+    "name": "abrp"
+  }]
+}
