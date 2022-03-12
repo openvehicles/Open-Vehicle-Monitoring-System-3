@@ -379,7 +379,7 @@ void ota_flash_auto(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
   bool force = (strcmp(cmd->GetName(), "force")==0);
 
   writer->puts("Triggering automatic firmware update...");
-  MyOTA.LaunchAutoFlash(force);
+  MyOTA.LaunchAutoFlash(force ? OTA_FlashCfg_Force : OTA_FlashCfg_Default);
   }
 
 void ota_boot(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -437,10 +437,18 @@ void ota_boot(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
 // The main OTA functionality
 
 #ifdef CONFIG_OVMS_COMP_SDCARD
-void OvmsOTA::AutoFlashSD(std::string event, void* data)
+void OvmsOTA::CheckFlashSD(std::string event, void* data)
+  {
+  if (path_exists("/sd/ovms3.bin"))
+    {
+    LaunchAutoFlash(OTA_FlashCfg_FromSD);
+    }
+  }
+
+bool OvmsOTA::AutoFlashSD()
   {
   FILE* f = fopen("/sd/ovms3.bin", "r");
-  if (f == NULL) return;
+  if (f == NULL) return false;
 
   const esp_partition_t *running = esp_ota_get_running_partition();
   const esp_partition_t *target = esp_ota_get_next_update_partition(running);
@@ -450,14 +458,14 @@ void OvmsOTA::AutoFlashSD(std::string event, void* data)
     {
     ESP_LOGW(TAG, "AutoFlashSD: Flash operation already in progress - cannot auto flash");
     fclose(f);
-    return;
+    return false;
     }
 
   if (running==NULL)
     {
     ESP_LOGE(TAG, "AutoFlashSD Error: Current running image cannot be determined - aborting");
     fclose(f);
-    return;
+    return false;
     }
   ESP_LOGW(TAG, "AutoFlashSD Current running partition is: %s",running->label);
 
@@ -465,7 +473,7 @@ void OvmsOTA::AutoFlashSD(std::string event, void* data)
     {
     ESP_LOGE(TAG, "AutoFlashSD Error: Target partition cannot be determined - aborting");
     fclose(f);
-    return;
+    return false;
     }
   ESP_LOGW(TAG, "AutoFlashSD Target partition is: %s",target->label);
 
@@ -473,7 +481,7 @@ void OvmsOTA::AutoFlashSD(std::string event, void* data)
     {
     ESP_LOGE(TAG, "AutoFlashSD Error: Cannot flash to running image partition");
     fclose(f);
-    return;
+    return false;
     }
 
   struct stat ds;
@@ -481,7 +489,7 @@ void OvmsOTA::AutoFlashSD(std::string event, void* data)
     {
     ESP_LOGE(TAG, "AutoFlashSD Error: Cannot stat file");
     fclose(f);
-    return;
+    return false;
     }
   ESP_LOGW(TAG, "AutoFlashSD Source image is %d bytes in size",(int)ds.st_size);
 
@@ -492,7 +500,7 @@ void OvmsOTA::AutoFlashSD(std::string event, void* data)
     {
     ESP_LOGE(TAG, "AutoFlashSD Error: ESP32 error #%d when starting OTA operation",err);
     fclose(f);
-    return;
+    return false;
     }
 
   ESP_LOGW(TAG, "AutoFlashSD Flashing image partition...");
@@ -505,7 +513,7 @@ void OvmsOTA::AutoFlashSD(std::string event, void* data)
       ESP_LOGE(TAG, "AutoFlashSD Error: ESP32 error #%d when writing to flash - state is inconsistent",err);
       esp_ota_end(otah);
       fclose(f);
-      return;
+      return false;
       }
     }
 
@@ -515,7 +523,7 @@ void OvmsOTA::AutoFlashSD(std::string event, void* data)
   if (err != ESP_OK)
     {
     ESP_LOGE(TAG, "AutoFlashSD Error: ESP32 error #%d finalising OTA operation - state is inconsistent",err);
-    return;
+    return false;
     }
 
   ESP_LOGW(TAG, "AutoFlashSD Setting boot partition...");
@@ -523,23 +531,19 @@ void OvmsOTA::AutoFlashSD(std::string event, void* data)
   if (err != ESP_OK)
     {
     ESP_LOGE(TAG, "AutoFlashSD Error: ESP32 error #%d setting boot partition - check before rebooting",err);
-    return;
+    return false;
     }
 
   remove("/sd/ovms3.done"); // Ensure the target is removed first
   if (rename("/sd/ovms3.bin","/sd/ovms3.done") != 0)
     {
     ESP_LOGE(TAG, "AutoFlashSD Error: ovms3.bin could not be renamed to ovms3.done - check before rebooting");
-    return;
+    return false;
     }
 
   ESP_LOGW(TAG, "AutoFlashSD OTA flash successful: Flashed %d bytes, and booting from '%s'",
                  (int)ds.st_size,target->label);
-
-  vTaskDelay(2000 / portTICK_PERIOD_MS); // Delay for log display and settle
-  ESP_LOGW(TAG, "AutoFlashSD restarting...");
-  MyBoot.Restart();
-  MyBoot.SetFirmwareUpdate();
+  return true;
   }
 #endif // #ifdef CONFIG_OVMS_COMP_SDCARD
 
@@ -558,7 +562,7 @@ OvmsOTA::OvmsOTA()
   MyEvents.RegisterEvent(TAG,"ticker.600", std::bind(&OvmsOTA::Ticker600, this, _1, _2));
 
 #ifdef CONFIG_OVMS_COMP_SDCARD
-  MyEvents.RegisterEvent(TAG,"sd.mounted", std::bind(&OvmsOTA::AutoFlashSD, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"sd.mounted", std::bind(&OvmsOTA::CheckFlashSD, this, _1, _2));
 #endif // #ifdef CONFIG_OVMS_COMP_SDCARD
 
   OvmsCommand* cmd_ota = MyCommandApp.RegisterCommand("ota","OTA framework", ota_status, "", 0, 0, false);
@@ -658,25 +662,35 @@ void OvmsOTA::Ticker600(std::string event, void* data)
       (tmu->tm_mday != m_lastcheckday))
     {
     m_lastcheckday = tmu->tm_mday;  // So we only try once a day (unless cleared due to a temporary fault)
-    LaunchAutoFlash();
+    LaunchAutoFlash(OTA_FlashCfg_Default);
     }
   }
 
 static void OTAFlashTask(void *pvParameters)
   {
-  bool force = (bool)pvParameters;
+  ota_flashcfg_t cfg = (ota_flashcfg_t)((uint32_t)pvParameters);
+  bool force  = (cfg == OTA_FlashCfg_Force);
+  bool fromsd = (cfg == OTA_FlashCfg_FromSD);
+  bool success;
 
-  ESP_LOGD(TAG, "AutoFlash: Tasks is running%s",(force)?" forced":"");
+  ESP_LOGI(TAG, "AutoFlash %s: Task is running%s", (fromsd)?"SD":"OTA", (force)?" forced":"");
 
-  bool result = MyOTA.AutoFlash(force);
+  if (fromsd)
+    {
+    success = MyOTA.AutoFlashSD();
+    }
+  else
+    {
+    success = MyOTA.AutoFlash(force);
+    }
 
-  if (result)
+  if (success)
     {
     // Flash has completed. We now need to reboot
     vTaskDelay(pdMS_TO_TICKS(5000));
 
     // All done. Let's restart...
-    ESP_LOGI(TAG, "AutoFlash: Complete. Requesting restart...");
+    ESP_LOGI(TAG, "AutoFlash %s: Task complete. Requesting restart...", (fromsd)?"SD":"OTA");
     MyBoot.Restart();
     MyBoot.SetFirmwareUpdate();
     }
@@ -685,7 +699,7 @@ static void OTAFlashTask(void *pvParameters)
   vTaskDelete(NULL);
   }
 
-void OvmsOTA::LaunchAutoFlash(bool force)
+void OvmsOTA::LaunchAutoFlash(ota_flashcfg_t cfg /*=OTA_FlashCfg_Default*/)
   {
   if (m_autotask != NULL)
     {
@@ -694,7 +708,7 @@ void OvmsOTA::LaunchAutoFlash(bool force)
     }
 
   xTaskCreatePinnedToCore(OTAFlashTask, "OVMS AutoFlash",
-    6144, (void*)force, 5, &m_autotask, CORE(1));
+    6144, (void*)cfg, 5, &m_autotask, CORE(1));
   }
 
 bool OvmsOTA::AutoFlash(bool force)
