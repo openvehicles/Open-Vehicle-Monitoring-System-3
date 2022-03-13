@@ -535,6 +535,13 @@ config OVMS_VEHICLE_JAGUARIPACE
     help
         Enable to include support for Jaguar Ipace.
 
+config OVMS_VEHICLE_TOYOTARAV4EV
+    bool "Include support for Toyota RAV4 EV vehicles"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for Toyota RAV4 EV vehicles.
+
 config OVMS_VEHICLE_RXTASK_STACK
     int "Stack size for vehicle RX task"
     default 6144

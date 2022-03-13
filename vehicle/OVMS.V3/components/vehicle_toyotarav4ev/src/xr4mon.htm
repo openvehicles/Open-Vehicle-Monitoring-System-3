@@ -1,0 +1,95 @@
+<!--
+  Test/Development/Documentation page; install as plugin to test
+-->
+
+<style>
+  .indicator > .label {
+    font-size: 150%;
+    line-height: 200%;
+    margin: 10px;
+    padding: 10px;
+    display: block;
+    border-radius: 50px;
+  }
+  .metric.number .label {
+    min-width: 8em;
+  }
+  .metric.number {
+    display: block;
+    float: none;
+    text-align: center;
+  }
+  </style>
+  
+  <div class="panel panel-primary">
+    <div class="panel-heading">Toyota RAV4 EV Monitor</div>
+    <div class="panel-body">
+  
+      <div class="receiver" id="xr4mon-receiver">
+  
+        <div class="row">
+          <div class="col-sm-6">
+            <div class="metric number" data-metric="xr4.v.b.t.cltin" data-prec="1">
+              <span class="label">Battery Coolant Inlet Temp:</span>
+              <span class="value">?</span>
+              <span class="unit">deg C</span>
+            </div>
+            <div class="metric number" data-metric="xr4.v.b.t.cltout" data-prec="1">
+              <span class="label">Battery Coolant Outlet Temp:</span>
+              <span class="value">?</span>
+              <span class="unit">deg C</span>
+            </div>
+            <div class="metric number" data-metric="xr4.v.m.t.cltin" data-prec="1">
+              <span class="label">Motor Coolant Inlet Temp:</span>
+              <span class="value">?</span>
+              <span class="unit">deg C</span>
+            </div>
+            <div class="metric number" data-metric="xr4.v.b.p.one" data-prec="0">
+              <span class="label">Battery Pump #1:</span>
+              <span class="value">?</span>
+              <span class="unit">%</span>
+            </div>
+            <div class="metric number" data-metric="xr4.v.b.p.two" data-prec="0">
+              <span class="label">Battery Pump #2:</span>
+              <span class="value">?</span>
+              <span class="unit">%</span>
+            </div>
+            <div class="metric number" data-metric="xr4.v.m.pump" data-prec="0">
+              <span class="label">Motor Pump:</span>
+              <span class="value">?</span>
+              <span class="unit">%</span>
+            </div>
+            <div class="metric number" data-metric="xr4.v.b.en.avail" data-prec="1">
+              <span class="label">Battery Available Energy:</span>
+              <span class="value">?</span>
+              <span class="unit">kWh</span>
+            </div>
+            <br class="clearfix"/>
+          </div>
+        </div>
+  
+      </div>
+  
+    </div>
+  </div>
+  
+  <script>
+  (function()
+  {
+  
+    /* Init indicators: */
+    $('#xr4mon-receiver').on('msg:metrics', function(e, update) {
+      $(this).find('.indicator').each(function() {
+        var $el = $(this), metric = $el.data("metric"), val = update[metric];
+        if (val == null)
+          return;
+        else if (val != 0)
+          $el.children().removeClass('label-default').addClass('label-danger');
+        else if (val == 0)
+          $el.children().removeClass('label-danger').addClass('label-default');
+      });
+    });
+  
+  })();
+  </script>
+  
