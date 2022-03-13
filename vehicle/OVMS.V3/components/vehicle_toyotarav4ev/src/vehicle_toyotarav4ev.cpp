@@ -49,7 +49,8 @@ OvmsVehicleToyotaRav4Ev::OvmsVehicleToyotaRav4Ev()
 
   memset(m_vin,0,sizeof(m_vin));
   memset(m_type,0,sizeof(m_type));
-  m_charge_w = 0;
+  // m_charge_w = 0;
+  // iSOCcount = 0;
 
   m_v_bat_cool_in_temp = MyMetrics.InitFloat("xr4.v.b.t.cltin", SM_STALE_MIN, 0, Celcius);
   m_v_bat_cool_out_temp = MyMetrics.InitFloat("xr4.v.b.t.cltout", SM_STALE_MIN, 0, Celcius);
@@ -60,6 +61,7 @@ OvmsVehicleToyotaRav4Ev::OvmsVehicleToyotaRav4Ev()
   // m_v_mot_cool_out_temp = MyMetrics.InitFloat("xr4.v.m.t.cltout", SM_STALE_MIN, 0, Celcius);
   // it turns out this is value is not populated by the RAV4 Thermal Control ECU, it came from a Model S DBC
   m_v_mot_cool_pump = MyMetrics.InitInt("xr4.v.m.pump", SM_STALE_HIGH, 0, Percentage);
+  m_v_chg_pilot_cur = MyMetrics.InitInt("xr4.v.c.pilot.current", SM_STALE_MIN, 0, Amps);
 
 /*
 #ifdef CONFIG_OVMS_COMP_TPMS
@@ -69,7 +71,7 @@ OvmsVehicleToyotaRav4Ev::OvmsVehicleToyotaRav4Ev()
 #endif // #ifdef CONFIG_OVMS_COMP_TPMS
 */
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);  // Tesla Bus at vehicle rear
-  RegisterCanBus(2,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);  // Toyota Bus under dash
+//  RegisterCanBus(2,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);  // Toyota Bus under dash
 
   BmsSetCellArrangementVoltage(92, 6);
   BmsSetCellArrangementTemperature(32, 2);
@@ -98,11 +100,15 @@ void OvmsVehicleToyotaRav4Ev::Ticker1(uint32_t ticker)
     ESP_LOGI(TAG,"Car has gone to sleep (CAN bus timeout)");
     StandardMetrics.ms_v_env_awake->SetValue(false);
     }
+  if (StandardMetrics.ms_v_charge_12v_current->IsStale())
+    {
+    StandardMetrics.ms_v_bat_12v_current->SetValue(float(0));
+    }
   }
 
 void OvmsVehicleToyotaRav4Ev::Ticker60(uint32_t ticker)
 {
-  StandardMetrics.ms_v_bat_temp->SetValue(StandardMetrics.ms_v_bat_cell_temp->AsFloat());
+  StandardMetrics.ms_v_bat_temp->SetValue(StandardMetrics.ms_v_bat_cell_tmax->AsFloat());
 }
 
 // IncomingFrameCan1 (Tesla)
@@ -110,17 +116,21 @@ void OvmsVehicleToyotaRav4Ev::IncomingFrameCan1(CAN_frame_t* p_frame)
   {
   
   uint8_t *d = p_frame->data.u8;
-  static float fPackVolts;
-  static float fPackAmps;
-  static uint16_t iPackAmps;
+//  static float fPackVolts;  // these were moved to "protected" in the header file
+//  static float fPackAmps;
+//  static uint16_t iPackAmps;
 
   switch (p_frame->MsgID)
     {
-    case 0x102: // BMS current and voltage
+    case 0x102: // BMS current and voltage (about 72 frame/sec)
       {
-      // Don't update battery voltage too quickly (as it jumps around like crazy)
-      if (StandardMetrics.ms_v_bat_voltage->Age() > 10)
-      {
+      // Don't update battery voltage too quickly (as it jumps around like crazy) 
+//      if (StandardMetrics.ms_v_bat_voltage->Age() > 2)
+//      iSOCcount++;
+//      if (iSOCcount%50 == 0)
+//      {
+//        iSOCcount=0;
+//        StandardMetrics.ms_v_bat_voltage->SetValue(((float)((int)(d[1]<<8)+d[0]))/100);
         fPackVolts = ((float)((int)d[1]<<8)+d[0])/100;
         iPackAmps = ((d[3]&0x3F)<<8) + d[2];
         if (d[3] & 0x40) fPackAmps = -0.1 * float(iPackAmps - 16384);
@@ -128,7 +138,7 @@ void OvmsVehicleToyotaRav4Ev::IncomingFrameCan1(CAN_frame_t* p_frame)
         StandardMetrics.ms_v_bat_voltage->SetValue(fPackVolts);
         StandardMetrics.ms_v_bat_current->SetValue(fPackAmps);
         StandardMetrics.ms_v_bat_power->SetValue(fPackVolts * fPackAmps / 1000);
-      }
+//      }
 //      StandardMetrics.ms_v_bat_temp->SetValue((float)((((int)d[7]&0x07)<<8)+d[6])/10);
       // This signal is from the Model S code. RAV4 EV is only 6 bytes in Frame 0x102, so it doesn't have this signal.
       break;
@@ -156,6 +166,7 @@ void OvmsVehicleToyotaRav4Ev::IncomingFrameCan1(CAN_frame_t* p_frame)
           StandardMetrics.ms_v_env_charging12v->SetValue(true);
           break;
         case 4: // Drive
+        case 5: // B Mode
           StandardMetrics.ms_v_env_gear->SetValue(1);
           StandardMetrics.ms_v_env_on->SetValue(true);
           StandardMetrics.ms_v_env_handbrake->SetValue(false);
@@ -166,23 +177,68 @@ void OvmsVehicleToyotaRav4Ev::IncomingFrameCan1(CAN_frame_t* p_frame)
         }
       break;
       }
+    case 0x20C:
+      {
+        StandardMetrics.ms_v_charge_voltage->SetValue(((d[2]&0x01)<<8) + d[1]);
+        StandardMetrics.ms_v_charge_power->SetValue(float((d[3]<<3)+((d[2]&0xE0)>>5))*0.01);
+        StandardMetrics.ms_v_charge_current->SetValue(StandardMetrics.ms_v_charge_power->AsFloat()*1000/StandardMetrics.ms_v_charge_voltage->AsFloat());
+        break;
+      }
     case 0x210:
       {
         StandardMetrics.ms_v_charge_12v_current->SetValue(float(d[4]));
+        StandardMetrics.ms_v_bat_12v_current->SetValue(float(d[4]));
         StandardMetrics.ms_v_charge_12v_voltage->SetValue(float(d[5])*0.1);
         StandardMetrics.ms_v_charge_12v_power->SetValue(float(d[4])*float(d[5])*0.1);
+        break;
       }  
-    case 0x222: // Charging related
+    case 0x21C:
+      {
+        switch (d[0]>>4)
+        {
+          case 0x00:  // Standby
+            StandardMetrics.ms_v_charge_state->SetValue("stopped");
+            StandardMetrics.ms_v_charge_inprogress->SetValue(false);
+            // StandardMetrics.ms_v_charge_pilot->SetValue(false);
+            break;
+          case 0x01:  // Clear Fault
+          case 0x02:  // Fault
+          case 0x03:  // Precharge
+            break;
+          case 0x04:  // Enable
+            StandardMetrics.ms_v_charge_state->SetValue("charging");
+            StandardMetrics.ms_v_charge_inprogress->SetValue(true);
+            // StandardMetrics.ms_v_charge_pilot->SetValue(true);
+            break;
+        }
+        switch ((d[1]&0x18)>>3)   // bits 11, 12
+        {
+          case 0x00:  // CHG_PROXIMITY_SNA
+          case 0x01:  // CHG_PROXIMITY_DISCONNECTED
+          case 0x02:  // CHG_PROXIMITY_UNLATCHED
+            StandardMetrics.ms_v_charge_pilot->SetValue(false);
+            break;
+          case 0x03:  // CHG_PROXIMITY_LATCHED  
+            StandardMetrics.ms_v_charge_pilot->SetValue(true);
+            break;
+        }
+        m_v_chg_pilot_cur->SetValue(d[2]/2);
+        break;
+      }
+/*
+    case 0x222: // Charging related (from Model S code)
       {
       m_charge_w = uint16_t(d[1]<<8)+d[0];
       break;
       }
+*/
     case 0x256: // Speed
       {
       StandardMetrics.ms_v_pos_speed->SetValue( ((((int)d[3]&0x0f)<<8) + (int)d[2])/10, (d[3]&0x80)?Kph:Mph );
       break;
       }
-    case 0x28C: // Charging related
+/*      
+    case 0x28C: // Charging related (from Model S code)
       {
       float charge_v = (float)(uint16_t(d[1]<<8) + d[0])/256;
       if ((charge_v != 0)&&(m_charge_w != 0))
@@ -211,6 +267,7 @@ void OvmsVehicleToyotaRav4Ev::IncomingFrameCan1(CAN_frame_t* p_frame)
         }
       break;
       }
+  */
     case 0x302: // SOC
       {
         // BMS_socUI from Tesla Model S
