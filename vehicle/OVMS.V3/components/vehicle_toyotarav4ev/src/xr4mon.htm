@@ -19,6 +19,11 @@
     float: none;
     text-align: center;
   }
+  .metric.text {
+    display: block;
+    float: none;
+    text-align: center;
+  }
   </style>
   
   <div class="panel panel-primary">
@@ -29,6 +34,7 @@
   
         <div class="row">
           <div class="col-sm-6">
+            <h3>Cooling</h3>
             <div class="metric number" data-metric="xr4.v.b.t.cltin" data-prec="1">
               <span class="label">Battery Coolant Inlet Temp:</span>
               <span class="value">?</span>
@@ -59,11 +65,78 @@
               <span class="value">?</span>
               <span class="unit">%</span>
             </div>
+            <h3>Battery</h3>
+            <div class="metric number" data-metric="v.b.soc" data-prec="1">
+              <span class="label">Battery SOC:</span>
+              <span class="value">?</span>
+              <span class="unit">%</span>
+            </div>
             <div class="metric number" data-metric="xr4.v.b.en.avail" data-prec="1">
               <span class="label">Battery Available Energy:</span>
               <span class="value">?</span>
               <span class="unit">kWh</span>
             </div>
+            <div class="metric number" data-metric="v.b.voltage" data-prec="0">
+              <span class="label">Battery Pack Voltage:</span>
+              <span class="value">?</span>
+              <span class="unit">V</span>
+            </div>
+            <div class="metric number" data-metric="v.b.current" data-prec="1">
+              <span class="label">Battery Pack Current:</span>
+              <span class="value">?</span>
+              <span class="unit">A</span>
+            </div>
+            <div class="metric number" data-metric="v.b.power" data-prec="1">
+              <span class="label">Battery Pack Power:</span>
+              <span class="value">?</span>
+              <span class="unit">kW</span>
+            </div>
+            <h3>Charging</h3>
+            <div class="metric text" data-metric="v.c.state">
+              <span class="label">Charge State:</span>
+              <span class="value">?</span>
+            </div>
+            <div class="metric number" data-metric="v.c.voltage" data-prec="0">
+              <span class="label">AC Line Voltage:</span>
+              <span class="value">?</span>
+              <span class="unit">V</span>
+            </div>
+            <div class="metric number" data-metric="v.c.current" data-prec="0">
+              <span class="label">AC Line Current:</span>
+              <span class="value">?</span>
+              <span class="unit">A</span>
+            </div>
+            <div class="metric number" data-metric="v.c.power" data-prec="0">
+              <span class="label">Charging Power:</span>
+              <span class="value">?</span>
+              <span class="unit">kW</span>
+            </div>
+            <div class="metric text" data-metric="v.c.pilot">
+              <span class="label">Pilot Present:</span>
+              <span class="value">?</span>
+            </div>
+            <div class="metric number" data-metric="xr4.v.c.pilot.current" data-prec="0">
+              <span class="label">Pilot Current:</span>
+              <span class="value">?</span>
+              <span class="unit">A</span>
+            </div>
+            <h3>DC-DC</h3>
+            <div class="metric number" data-metric="v.c.12v.voltage" data-prec="1">
+              <span class="label">DC-DC Output Voltage:</span>
+              <span class="value">?</span>
+              <span class="unit">V</span>
+            </div>
+            <div class="metric number" data-metric="v.c.12v.current" data-prec="1">
+              <span class="label">DC-DC Output Current:</span>
+              <span class="value">?</span>
+              <span class="unit">A</span>
+            </div>
+            <div class="metric number" data-metric="v.c.12v.power" data-prec="1">
+              <span class="label">DC-DC Output Power:</span>
+              <span class="value">?</span>
+              <span class="unit">kW</span>
+            </div>
+
             <br class="clearfix"/>
           </div>
         </div>

@@ -84,8 +84,13 @@ class OvmsVehicleToyotaRav4Ev: public OvmsVehicle
   protected:
     char m_vin[18];
     char m_type[5];
-    uint16_t m_charge_w;
+    // uint16_t m_charge_w;
     unsigned int m_candata_timer;
+    float fPackVolts;
+    float fPackAmps;
+    uint16_t iPackAmps;
+//    uint8_t iSOCcount;
+
     
     OvmsMetricFloat *m_v_bat_cool_in_temp;
     OvmsMetricFloat *m_v_bat_cool_out_temp;
@@ -95,7 +100,7 @@ class OvmsVehicleToyotaRav4Ev: public OvmsVehicle
     OvmsMetricInt *m_v_bat_cool_pump_1;
     OvmsMetricInt *m_v_bat_cool_pump_2;
     OvmsMetricInt *m_v_mot_cool_pump;
-
+    OvmsMetricInt *m_v_chg_pilot_cur;
   };
 
 #endif //#ifndef __VEHICLE_TOYOTARAV4EV_H__
