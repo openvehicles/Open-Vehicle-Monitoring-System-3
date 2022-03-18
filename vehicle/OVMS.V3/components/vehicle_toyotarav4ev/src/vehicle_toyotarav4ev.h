@@ -1,10 +1,15 @@
 /*
-;    Project:       Open Vehicle Monitor System
-;    Date:          14th March 2017
+;    Project:       Open Vehicle Monitor System for Toyota RAV4 EV (2012-2014)
+;    Date:          22nd June 2021
 ;
 ;    Changes:
-;    1.0  Initial release
+;    0.1.0  Trial code
+;    0.2.0  Code initially submitted to master branch
+;    0.3.0  Implemented v_on and v_charging states with some metrics only set/cleared depending on these states
 ;
+;    (C) 2021-2022 Mike Iimura
+;
+;   Adapted from Tesla Model S by:
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
 ;    (C) 2011        Sonny Chen @ EPRO/DX
@@ -38,6 +43,9 @@
 using namespace std;
 
 #define TS_CANDATA_TIMEOUT 10
+#define BMS_CTRSET_OPEN 0x00
+#define BMS_CTRSET_PRECHARGE 0x01
+#define BMS_CTRSET_CLOSED 0x02
 
 class OvmsVehicleToyotaRav4Ev: public OvmsVehicle
   {
@@ -89,7 +97,10 @@ class OvmsVehicleToyotaRav4Ev: public OvmsVehicle
     float fPackVolts;
     float fPackAmps;
     uint16_t iPackAmps;
-//    uint8_t iSOCcount;
+    bool v_on;
+    bool v_charging;
+    uint16_t iFrameCountCan1;
+    uint16_t iFrameCountCan2;
 
     
     OvmsMetricFloat *m_v_bat_cool_in_temp;
