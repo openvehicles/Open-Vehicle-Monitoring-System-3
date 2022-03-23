@@ -431,6 +431,159 @@ void ota_boot(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
     }
   }
 
+void ota_erase(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  std::string tn = cmd->GetName();
+
+  OvmsMutexLock m_lock(&MyOTA.m_flashing,0);
+  if (!m_lock.IsLocked())
+    {
+    writer->puts("Error: Flash operation already in progress - cannot flash again");
+    return;
+    }
+
+  esp_partition_subtype_t subtype = ESP_PARTITION_SUBTYPE_ANY;
+  if (tn.compare("factory")==0)
+    { subtype = ESP_PARTITION_SUBTYPE_APP_FACTORY; }
+  else if (tn.compare("ota_0")==0)
+    { subtype = ESP_PARTITION_SUBTYPE_APP_OTA_0; }
+  else if (tn.compare("ota_1")==0)
+    { subtype = ESP_PARTITION_SUBTYPE_APP_OTA_1; }
+  if (subtype == ESP_PARTITION_SUBTYPE_ANY) return;
+
+  const esp_partition_t *p = esp_ota_get_running_partition();
+  if ((p != NULL) && (p->subtype == subtype))
+    {
+    writer->puts("Error: Cannot erase currently running partition");
+    return;
+    }
+  p = esp_ota_get_boot_partition();
+  if ((p != NULL) && (p->subtype == subtype))
+    {
+    writer->puts("Error: Cannot erase boot partition");
+    return;
+    }
+
+  p = esp_partition_find_first(ESP_PARTITION_TYPE_APP, subtype, NULL);
+  if (p != NULL)
+    {
+    writer->puts("Erasing partition...");
+    esp_ota_handle_t otah;
+    esp_err_t err = esp_ota_begin(p, OTA_SIZE_UNKNOWN, &otah);
+    if (err != ESP_OK)
+      {
+      writer->printf("Error: ESP32 error #%d starting OTA operation\n",err);
+      return;
+      }
+    esp_ota_end(otah);
+    writer->puts("Partition erase complete");
+    }
+  else
+    {
+    writer->puts("Error: Cannot find specified partition");
+    }
+  }
+
+void ota_copy(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  std::string fn = cmd->GetParent()->GetName();
+  std::string tn = cmd->GetName();
+
+  OvmsMutexLock m_lock(&MyOTA.m_flashing,0);
+  if (!m_lock.IsLocked())
+    {
+    writer->puts("Error: Flash operation already in progress - cannot flash again");
+    return;
+    }
+
+  esp_partition_subtype_t from = ESP_PARTITION_SUBTYPE_ANY;
+  if (fn.compare("factory")==0)
+    { from = ESP_PARTITION_SUBTYPE_APP_FACTORY; }
+  else if (fn.compare("ota_0")==0)
+    { from = ESP_PARTITION_SUBTYPE_APP_OTA_0; }
+  else if (fn.compare("ota_1")==0)
+    { from = ESP_PARTITION_SUBTYPE_APP_OTA_1; }
+  else return;
+
+  esp_partition_subtype_t to = ESP_PARTITION_SUBTYPE_ANY;
+  if (tn.compare("factory")==0)
+    { to = ESP_PARTITION_SUBTYPE_APP_FACTORY; }
+  else if (tn.compare("ota_0")==0)
+    { to = ESP_PARTITION_SUBTYPE_APP_OTA_0; }
+  else if (tn.compare("ota_1")==0)
+    { to = ESP_PARTITION_SUBTYPE_APP_OTA_1; }
+  else return;
+
+  const esp_partition_t *p = esp_ota_get_running_partition();
+  if ((p != NULL) && (p->subtype == to))
+    {
+    writer->puts("Error: Cannot copy to currently running partition");
+    return;
+    }
+  p = esp_ota_get_boot_partition();
+  if ((p != NULL) && (p->subtype == to))
+    {
+    writer->puts("Error: Cannot copy to boot partition");
+    return;
+    }
+
+  const esp_partition_t *from_p = esp_partition_find_first(ESP_PARTITION_TYPE_APP, from, NULL);
+  if (from_p == NULL)
+    {
+    writer->puts("Error: Could not find partition to copy from");
+    return;
+    }
+  const esp_partition_t *to_p = esp_partition_find_first(ESP_PARTITION_TYPE_APP, to, NULL);
+  if (to_p == NULL)
+    {
+    writer->puts("Error: Could not find partition to copy to");
+    return;
+    }
+  if (from_p->size != to_p->size)
+    {
+    writer->puts("Error: The two specified partitions are not the same size");
+    return;
+    }
+
+  writer->printf("OTA copy %s (%08x) -> %s (%08x) size %u\n",
+    fn.c_str(), from_p->address,
+    tn.c_str(), to_p->address, to_p->size);
+
+  esp_ota_handle_t otah;
+  esp_err_t err = esp_ota_begin(to_p, OTA_SIZE_UNKNOWN, &otah);
+  if (err != ESP_OK)
+    {
+    writer->printf("Error: ESP32 error #%d starting OTA operation\n",err);
+    return;
+    }
+
+  size_t offset = 0;
+  while (offset < to_p->size)
+    {
+    char buf[512];
+    size_t todo = to_p->size - offset;
+    if (todo > sizeof(buf)) todo=sizeof(buf);
+    esp_err_t err = esp_partition_read(from_p, offset, buf, todo);
+    if (err != ESP_OK)
+      {
+      writer->printf("Error: ESP32 error #%d reading source at offset %d",err,offset);
+      esp_ota_end(otah);
+      return;
+      }
+    err = esp_ota_write(otah, buf, todo);
+    if (err != ESP_OK)
+      {
+      writer->printf("Error: ESP32 error #%d writing destinatio at offset %d",err,offset);
+      esp_ota_end(otah);
+      return;
+      }
+    offset += todo;
+    }
+
+  esp_ota_end(otah);
+  writer->puts("OTA copy complete");
+  }
+
 ////////////////////////////////////////////////////////////////////////////////
 // OvmsOTA
 //
@@ -580,6 +733,22 @@ OvmsOTA::OvmsOTA()
   cmd_otaboot->RegisterCommand("factory","Boot from factory image",ota_boot);
   cmd_otaboot->RegisterCommand("ota_0","Boot from ota_0 image",ota_boot);
   cmd_otaboot->RegisterCommand("ota_1","Boot from ota_1 image",ota_boot);
+
+  OvmsCommand* cmd_otaerase = cmd_ota->RegisterCommand("erase","OTA erase");
+  cmd_otaerase->RegisterCommand("factory","Erase factory image",ota_erase);
+  cmd_otaerase->RegisterCommand("ota_0","Erase ota_0 image",ota_erase);
+  cmd_otaerase->RegisterCommand("ota_1","Erase ota_1 image",ota_erase);
+
+  OvmsCommand* cmd_otacopy = cmd_ota->RegisterCommand("copy","OTA copy");
+  OvmsCommand* cmd_otacopyf = cmd_otacopy->RegisterCommand("factory","OTA copy factory <to>");
+  cmd_otacopyf->RegisterCommand("ota_0","Copy factory to ota_0 image",ota_copy);
+  cmd_otacopyf->RegisterCommand("ota_1","Copy factory to ota_1 image",ota_copy);
+  OvmsCommand* cmd_otacopy0 = cmd_otacopy->RegisterCommand("ota_0","OTA copy ota_0 <to>");
+  cmd_otacopy0->RegisterCommand("factory","Copy ota_0 to factory image",ota_copy);
+  cmd_otacopy0->RegisterCommand("ota_1","Copy ota_0 to ota_1 image",ota_copy);
+  OvmsCommand* cmd_otacopy1 = cmd_otacopy->RegisterCommand("ota_1","OTA copy ota_1 <to>");
+  cmd_otacopy1->RegisterCommand("factory","Copy ota_1 to factory image",ota_copy);
+  cmd_otacopy1->RegisterCommand("ota_0","Copy ota_1 to ota_0 image",ota_copy);
   }
 
 OvmsOTA::~OvmsOTA()
