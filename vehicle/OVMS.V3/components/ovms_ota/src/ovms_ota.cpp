@@ -103,6 +103,15 @@ void ota_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
     len += writer->printf("Running partition: %s\n", info.partition_running.c_str());
   if (info.partition_boot != "")
     len += writer->printf("Boot partition:    %s\n", info.partition_boot.c_str());
+
+  if (MyOTA.IsFlashStatus())
+    {
+    if (MyOTA.GetFlashPerc()>0)
+      len += writer->printf("Status:            %s (%d%%)\n", MyOTA.GetFlashStatus(), MyOTA.GetFlashPerc());
+    else
+      len += writer->printf("Status:            %s\n", MyOTA.GetFlashStatus());
+    }
+
   version = GetOVMSPartitionVersion(ESP_PARTITION_SUBTYPE_APP_FACTORY);
   if (version != "")
       len += writer->printf("Factory image:     %s\n", version.c_str());
@@ -180,42 +189,53 @@ void ota_flash_vfs(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
     return;
     }
 
-  writer->puts("Preparing flash partition...");
+  MyOTA.SetFlashStatus("OTA Flash VFS: Preparing flash partition...");
+  writer->puts(MyOTA.GetFlashStatus());
   esp_ota_handle_t otah;
   esp_err_t err = esp_ota_begin(target, ds.st_size, &otah);
   if (err != ESP_OK)
     {
+    MyOTA.ClearFlashStatus();
     writer->printf("Error: ESP32 error #%d when starting OTA operation\n",err);
     fclose(f);
     return;
     }
 
-  writer->puts("Flashing image partition...");
+  MyOTA.SetFlashStatus("OTA Flash VFS: Flashing image partition...");
+  writer->puts(MyOTA.GetFlashStatus());
   char buf[512];
+  size_t done = 0;
   while(size_t n = fread(buf, sizeof(char), sizeof(buf), f))
     {
     err = esp_ota_write(otah, buf, n);
     if (err != ESP_OK)
       {
+      MyOTA.ClearFlashStatus();
       writer->printf("Error: ESP32 error #%d when writing to flash - state is inconsistent\n",err);
       esp_ota_end(otah);
       fclose(f);
       return;
       }
+    done += n;
+    MyOTA.SetFlashPerc((done*100)/ds.st_size);
     }
   fclose(f);
 
+  MyOTA.SetFlashStatus("OTA Flash VFS: Finalising flash write");
   err = esp_ota_end(otah);
   if (err != ESP_OK)
     {
+    MyOTA.ClearFlashStatus();
     writer->printf("Error: ESP32 error #%d finalising OTA operation - state is inconsistent\n",err);
     return;
     }
 
   fclose(f);
 
-  writer->puts("Setting boot partition...");
+  MyOTA.SetFlashStatus("OTA Flash VFS: Setting boot partition...");
+  writer->puts(MyOTA.GetFlashStatus());
   err = esp_ota_set_boot_partition(target);
+  MyOTA.ClearFlashStatus();
   if (err != ESP_OK)
     {
     writer->printf("Error: ESP32 error #%d setting boot partition - check before rebooting\n",err);
@@ -304,24 +324,28 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
 
   writer->printf("Expected file size is %d\n",expected);
 
-  writer->puts("Preparing flash partition...");
+  MyOTA.SetFlashStatus("OTA Flash HTTP: Preparing flash partition...");
+  writer->puts(MyOTA.GetFlashStatus());
   esp_ota_handle_t otah;
   esp_err_t err = esp_ota_begin(target, expected, &otah);
   if (err != ESP_OK)
     {
-      writer->printf("Error: ESP32 error #%d when starting OTA operation\n",err);
-      http.Disconnect();
-      return;
+    MyOTA.ClearFlashStatus();
+    writer->printf("Error: ESP32 error #%d when starting OTA operation\n",err);
+    http.Disconnect();
+    return;
     }
 
   // Now, process the body
   uint8_t rbuf[512];
   size_t filesize = 0;
-  int sofar = 0;
+  size_t sofar = 0;
+  MyOTA.SetFlashStatus("OTA Flash HTTP: Downloading OTA image...");
   while (int k = http.BodyRead(rbuf,512))
     {
     filesize += k;
     sofar += k;
+    MyOTA.SetFlashPerc((filesize*100)/expected);
     if (sofar > 100000)
       {
       writer->printf("Downloading... (%d bytes so far)\n",filesize);
@@ -329,6 +353,7 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
       }
     if (filesize > target->size)
       {
+      MyOTA.ClearFlashStatus();
       writer->printf("Error: Download firmware is bigger than available partition space - state is inconsistent\n");
       esp_ota_end(otah);
       http.Disconnect();
@@ -337,6 +362,7 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     err = esp_ota_write(otah, rbuf, k);
     if (err != ESP_OK)
       {
+      MyOTA.ClearFlashStatus();
       writer->printf("Error: ESP32 error #%d when writing to flash - state is inconsistent\n",err);
       esp_ota_end(otah);
       http.Disconnect();
@@ -348,21 +374,26 @@ void ota_flash_http(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
 
   if (filesize != expected)
     {
+    MyOTA.ClearFlashStatus();
     writer->printf("Error: Download file size (%d) does not match expected (%d)\n",filesize,expected);
     esp_ota_end(otah);
     return;
     }
 
+  MyOTA.SetFlashStatus("OTA Flash HTTP: Finalising flash write");
   err = esp_ota_end(otah);
   if (err != ESP_OK)
     {
+    MyOTA.ClearFlashStatus();
     writer->printf("Error: ESP32 error #%d finalising OTA operation - state is inconsistent\n",err);
     return;
     }
 
   // All done
-  writer->puts("Setting boot partition...");
+  MyOTA.SetFlashStatus("OTA Flash HTTP: Setting boot partition...");
+  writer->puts(MyOTA.GetFlashStatus());
   err = esp_ota_set_boot_partition(target);
+  MyOTA.ClearFlashStatus();
   if (err != ESP_OK)
     {
     writer->printf("Error: ESP32 error #%d setting boot partition - check before rebooting\n",err);
@@ -467,9 +498,11 @@ void ota_erase(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, co
   p = esp_partition_find_first(ESP_PARTITION_TYPE_APP, subtype, NULL);
   if (p != NULL)
     {
-    writer->puts("Erasing partition...");
+    MyOTA.SetFlashStatus("OTA Erase: Erasing partition...");
+    writer->puts(MyOTA.GetFlashStatus());
     esp_ota_handle_t otah;
     esp_err_t err = esp_ota_begin(p, OTA_SIZE_UNKNOWN, &otah);
+    MyOTA.ClearFlashStatus();
     if (err != ESP_OK)
       {
       writer->printf("Error: ESP32 error #%d starting OTA operation\n",err);
@@ -549,14 +582,17 @@ void ota_copy(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
     fn.c_str(), from_p->address,
     tn.c_str(), to_p->address, to_p->size);
 
+  MyOTA.SetFlashStatus("OTA Copy: Preparing flash partition...");
   esp_ota_handle_t otah;
   esp_err_t err = esp_ota_begin(to_p, OTA_SIZE_UNKNOWN, &otah);
   if (err != ESP_OK)
     {
+    MyOTA.ClearFlashStatus();
     writer->printf("Error: ESP32 error #%d starting OTA operation\n",err);
     return;
     }
 
+  MyOTA.SetFlashStatus("OTA Copy: Copying flash image...");
   size_t offset = 0;
   while (offset < to_p->size)
     {
@@ -566,6 +602,7 @@ void ota_copy(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
     esp_err_t err = esp_partition_read(from_p, offset, buf, todo);
     if (err != ESP_OK)
       {
+      MyOTA.ClearFlashStatus();
       writer->printf("Error: ESP32 error #%d reading source at offset %d",err,offset);
       esp_ota_end(otah);
       return;
@@ -573,14 +610,18 @@ void ota_copy(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
     err = esp_ota_write(otah, buf, todo);
     if (err != ESP_OK)
       {
+      MyOTA.ClearFlashStatus();
       writer->printf("Error: ESP32 error #%d writing destinatio at offset %d",err,offset);
       esp_ota_end(otah);
       return;
       }
     offset += todo;
+    MyOTA.SetFlashPerc((offset*100)/to_p->size);
     }
 
+  MyOTA.SetFlashStatus("OTA Copy: Finalising copy...");
   esp_ota_end(otah);
+  MyOTA.ClearFlashStatus();
   writer->puts("OTA copy complete");
   }
 
@@ -646,41 +687,49 @@ bool OvmsOTA::AutoFlashSD()
     }
   ESP_LOGW(TAG, "AutoFlashSD Source image is %d bytes in size",(int)ds.st_size);
 
-  ESP_LOGW(TAG, "AutoFlashSD Preparing flash partition...");
+  SetFlashStatus("OTA Auto Flash SD: Preparing flash partition...",0,true);
   esp_ota_handle_t otah;
   esp_err_t err = esp_ota_begin(target, ds.st_size, &otah);
   if (err != ESP_OK)
     {
+    ClearFlashStatus();
     ESP_LOGE(TAG, "AutoFlashSD Error: ESP32 error #%d when starting OTA operation",err);
     fclose(f);
     return false;
     }
 
-  ESP_LOGW(TAG, "AutoFlashSD Flashing image partition...");
+  SetFlashStatus("OTA Auto Flash SD: Flashing image paritition...",0,true);
   char buf[512];
+  size_t done = 0;
   while(size_t n = fread(buf, sizeof(char), sizeof(buf), f))
     {
     err = esp_ota_write(otah, buf, n);
     if (err != ESP_OK)
       {
+      ClearFlashStatus();
       ESP_LOGE(TAG, "AutoFlashSD Error: ESP32 error #%d when writing to flash - state is inconsistent",err);
       esp_ota_end(otah);
       fclose(f);
       return false;
       }
+    done += n;
+    SetFlashPerc((done*100)/ds.st_size);
     }
 
   fclose(f);
 
+  SetFlashStatus("OTA Auto Flash SD: Finalising flash image...",0,true);
   err = esp_ota_end(otah);
   if (err != ESP_OK)
     {
+    ClearFlashStatus();
     ESP_LOGE(TAG, "AutoFlashSD Error: ESP32 error #%d finalising OTA operation - state is inconsistent",err);
     return false;
     }
 
-  ESP_LOGW(TAG, "AutoFlashSD Setting boot partition...");
+  SetFlashStatus("OTA Auto Flash SD: Setting boot partition...",0,true);
   err = esp_ota_set_boot_partition(target);
+  ClearFlashStatus();
   if (err != ESP_OK)
     {
     ESP_LOGE(TAG, "AutoFlashSD Error: ESP32 error #%d setting boot partition - check before rebooting",err);
@@ -706,6 +755,8 @@ OvmsOTA::OvmsOTA()
 
   m_autotask = NULL;
   m_lastcheckday = -1;
+  m_flashstatus = NULL;
+  m_flashperc = 0;
 
   MyConfig.RegisterParam("ota", "OTA setup and status", true, true);
 
@@ -833,6 +884,40 @@ void OvmsOTA::Ticker600(std::string event, void* data)
     m_lastcheckday = tmu->tm_mday;  // So we only try once a day (unless cleared due to a temporary fault)
     LaunchAutoFlash(OTA_FlashCfg_Default);
     }
+  }
+
+bool OvmsOTA::IsFlashStatus()
+  {
+  return (m_flashstatus != NULL);
+  }
+
+void OvmsOTA::SetFlashStatus(const char* status, int perc, bool dolog)
+  {
+  m_flashstatus = status;
+  m_flashperc = perc;
+  if (dolog)
+    { ESP_LOGI(TAG, "%s", status); }
+  }
+
+void OvmsOTA::SetFlashPerc(int perc)
+  {
+  m_flashperc = perc;
+  }
+
+void OvmsOTA::ClearFlashStatus()
+  {
+  m_flashstatus = NULL;
+  m_flashperc = 0;
+  }
+
+const char* OvmsOTA::GetFlashStatus()
+  {
+  return m_flashstatus;
+  }
+
+int OvmsOTA::GetFlashPerc()
+  {
+  return m_flashperc;
   }
 
 static void OTAFlashTask(void *pvParameters)
@@ -979,24 +1064,28 @@ bool OvmsOTA::AutoFlash(bool force)
     return false;
     }
 
-  ESP_LOGI(TAG, "AutoFlash: Preparing flash partition...");
+  SetFlashStatus("OTA Auto Flash: Preparing flash partition...",0,true);
   esp_ota_handle_t otah;
   esp_err_t err = esp_ota_begin(target, expected, &otah);
   if (err != ESP_OK)
     {
+    ClearFlashStatus();
     ESP_LOGE(TAG, "AutoFlash: ESP32 error #%d when starting OTA operation", err);
     http.Disconnect();
     return false;
     }
 
   // Now, process the body
+  SetFlashStatus("OTA Auto Flash: Downloading OTA image...");
   uint8_t rbuf[512];
   size_t filesize = 0;
   while (int k = http.BodyRead(rbuf,512))
     {
     filesize += k;
+    SetFlashPerc((filesize*100)/expected);
     if (filesize > target->size)
       {
+      ClearFlashStatus();
       ESP_LOGE(TAG, "AutoFlash: Download firmware is bigger than available partition space - state is inconsistent");
       esp_ota_end(otah);
       http.Disconnect();
@@ -1005,6 +1094,7 @@ bool OvmsOTA::AutoFlash(bool force)
     err = esp_ota_write(otah, rbuf, k);
     if (err != ESP_OK)
       {
+      ClearFlashStatus();
       ESP_LOGE(TAG, "AutoFlash: ESP32 error #%d when writing to flash - state is inconsistent", err);
       esp_ota_end(otah);
       http.Disconnect();
@@ -1016,13 +1106,16 @@ bool OvmsOTA::AutoFlash(bool force)
 
   if (filesize != expected)
     {
+    ClearFlashStatus();
     ESP_LOGE(TAG, "AutoFlash: Download file size (%d) does not match expected (%d)", filesize, expected);
     esp_ota_end(otah);
     m_lastcheckday = -1; // Allow to try again within the same day
     return false;
     }
 
+  SetFlashStatus("OTA Auto Flash: Finalising flash partition...");
   err = esp_ota_end(otah);
+  ClearFlashStatus();
   if (err != ESP_OK)
     {
     ESP_LOGE(TAG, "AutoFlash: ESP32 error #%d finalising OTA operation - state is inconsistent", err);

@@ -70,7 +70,17 @@ class OvmsOTA
     void Ticker600(std::string event, void* data);
 
   public:
+    bool IsFlashStatus();
+    void SetFlashStatus(const char* status, int perc=0, bool dolog=false);
+    void SetFlashPerc(int perc);
+    void ClearFlashStatus();
+    const char* GetFlashStatus();
+    int GetFlashPerc();
+
+  public:
     OvmsMutex m_flashing;
+    const char *m_flashstatus;
+    int m_flashperc;
     TaskHandle_t m_autotask;
     int m_lastcheckday;
     std::string m_lastnotifyversion;
