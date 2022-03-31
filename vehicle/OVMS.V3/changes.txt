@@ -1,9 +1,10 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
-
-2022-03-13
 - Toyota RAV4 EV: Initial support added. Only the Tesla bus is decoded and just listening so far.
+- Location: configurable flatbed movement alarm repetition
+  New configs:
+    [vehicle] flatbed.alarminterval     -- in minutes, default 15, 0 = single alarm
 
 2022-03-07 MWJ  3.3.002  OTA release
 - Maxus eDeliver3: Updated speed PID
