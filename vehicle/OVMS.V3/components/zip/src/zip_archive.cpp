@@ -257,7 +257,8 @@ bool ZipArchive::extract(const std::string prefix, bool ignore_nonexist /*=false
     }
     while ((sz = zip_fread(file, buf.data(), buf.capacity())) > 0) {
       if (fwrite(buf.data(), 1, sz, fp) != sz) {
-        m_errno = errno;
+        // fwrite does not set errno correctly if running out of space
+        m_errno = ENOSPC;
         break;
       }
     }
