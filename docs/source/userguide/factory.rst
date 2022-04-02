@@ -11,11 +11,16 @@ Module Configuration
 A standard factory reset erases the configuration store. After a factory reset, you will be able to 
 access the USB console with an empty module password and the “OVMS” wifi access point with the 
 initial password “OVMSinit”. We recommend using the setup wizard to configure the module or 
-restoring a configuration backup as soon as possible, as the module is accessible by anyone knowing 
+restoring a configuration backup as soon as possible [1]_, as the module is accessible by anyone knowing 
 the initial password.
 
 The standard factory reset does not revert OTA firmware installs. See below for methods to switch 
 back to and optionally replace the factory firmware.
+
+.. [1] Wait for the SSH key generation to finish after reboot before attempting to restore the backup.
+  Trying to run both processes concurrently may crash the module. Key generation takes about 2 minutes,
+  look for log message "SSH server key installed".
+
 
 ^^^^^^^^^^^^^^^^^
 Method 1: Command
