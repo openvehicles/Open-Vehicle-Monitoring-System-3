@@ -29,12 +29,10 @@
   <div class="panel panel-primary">
     <div class="panel-heading">Toyota RAV4 EV Monitor</div>
     <div class="panel-body">
-  
       <div class="receiver" id="xr4mon-receiver">
-  
         <div class="row">
           <div class="col-sm-6">
-            <h3>Cooling</h3>
+            <h4>Cooling</h4>
             <div class="metric number" data-metric="xr4.v.b.t.cltin" data-prec="1">
               <span class="label">Battery Coolant Inlet Temp:</span>
               <span class="value">?</span>
@@ -65,9 +63,9 @@
               <span class="value">?</span>
               <span class="unit">%</span>
             </div>
-            <h3>Battery</h3>
+            <h4>Battery</h4>
             <div class="metric number" data-metric="v.b.soc" data-prec="1">
-              <span class="label">Battery SOC:</span>
+              <span class="label">Battery SOC Min:</span>
               <span class="value">?</span>
               <span class="unit">%</span>
             </div>
@@ -91,19 +89,38 @@
               <span class="value">?</span>
               <span class="unit">kW</span>
             </div>
+            <div class="metric number" data-metric="v.b.temp" data-prec="1">
+              <span class="label">Battery Temperature:</span>
+              <span class="value">?</span>
+              <span class="unit">C</span>
+            </div>
+            <div class="metric number" data-metric="v.b.p.voltage.max" data-prec="3">
+              <span class="label">Max Cell Voltage:</span>
+              <span class="value">?</span>
+              <span class="unit">V</span>
+            </div>
+            <div class="metric number" data-metric="v.b.p.voltage.min" data-prec="3">
+              <span class="label">Min Cell Voltage:</span>
+              <span class="value">?</span>
+              <span class="unit">V</span>
+            </div>
             <div class="metric number" data-metric="v.b.energy.used.total" data-prec="3">
-              <span class="label">Lifetime Battery Discharge Total:</span>
+              <span class="label">Lifetime Battery Pack Discharge:</span>
               <span class="value">?</span>
               <span class="unit">kWh</span>
             </div>
             <div class="metric number" data-metric="v.c.kwh.grid.total" data-prec="3">
-              <span class="label">Lifetime Battery Charge Total:</span>
+              <span class="label">Lifetime Battery Pack Charge:</span>
               <span class="value">?</span>
               <span class="unit">kWh</span>
             </div>
-            <h3>Charging</h3>
+            <h4>Charging</h4>
             <div class="metric text" data-metric="v.c.state">
               <span class="label">Charge State:</span>
+              <span class="value">?</span>
+            </div>
+            <div class="metric text" data-metric="v.c.type">
+              <span class="label">Charge Type:</span>
               <span class="value">?</span>
             </div>
             <div class="metric number" data-metric="v.c.voltage" data-prec="0">
@@ -130,7 +147,7 @@
               <span class="value">?</span>
               <span class="unit">A</span>
             </div>
-            <h3>DC-DC</h3>
+            <h4>DC-DC</h4>
             <div class="metric number" data-metric="v.c.12v.voltage" data-prec="1">
               <span class="label">DC-DC Output Voltage:</span>
               <span class="value">?</span>
@@ -144,15 +161,23 @@
             <div class="metric number" data-metric="v.c.12v.power" data-prec="1">
               <span class="label">DC-DC Output Power:</span>
               <span class="value">?</span>
-              <span class="unit">kW</span>
+              <span class="unit">W</span>
+            </div>
+            <h4>Misc Status</h4>
+            <div class="metric number" data-metric="v.p.odometer" data-prec="0">
+              <span class="label">Odometer:</span>
+              <span class="value">?</span>
+              <span class="unit">mi</span>
+            </div>
+            <div class="metric text" data-metric="xr4.v.e.gear.letter">
+              <span class="label">Gear:</span>
+              <span class="value">?</span>
             </div>
 
             <br class="clearfix"/>
           </div>
         </div>
-  
       </div>
-  
     </div>
   </div>
   
@@ -175,4 +200,3 @@
   
   })();
   </script>
-  
