@@ -721,11 +721,11 @@ void OvmsServerV2::ProcessCommand(const char* payload)
   delete buffer;
   }
 
-void OvmsServerV2::Transmit(const std::string& message)
+bool OvmsServerV2::Transmit(const std::string& message)
   {
   OvmsMutexLock mg(&m_mgconn_mutex);
   if (!m_mgconn)
-    return;
+    return false;
 
   int len = message.length();
   char* s = new char[(len*2)+4];
@@ -775,6 +775,7 @@ void OvmsServerV2::Transmit(const std::string& message)
 
   delete [] buf;
   delete [] s;
+  return true;
   }
 
 void OvmsServerV2::SetStatus(const char* status, bool fault, State newstate)
@@ -1610,9 +1611,15 @@ void OvmsServerV2::TransmitNotifyInfo()
     buffer
       << "MP-0 PI"
       << mp_encode(e->GetValue());
-    Transmit(buffer.str().c_str());
-
-    info->MarkRead(MyOvmsServerV2Reader, e);
+    if (Transmit(buffer.str().c_str()))
+      {
+      info->MarkRead(MyOvmsServerV2Reader, e);
+      }
+    else
+      {
+      m_pending_notify_info = true;
+      return;
+      }
     }
   }
 
@@ -1634,9 +1641,15 @@ void OvmsServerV2::TransmitNotifyError()
     buffer
       << "MP-0 PE"
       << e->GetValue(); // no mp_encode; payload structure "<vehicletype>,<errorcode>,<errordata>"
-    Transmit(buffer.str().c_str());
-
-    alert->MarkRead(MyOvmsServerV2Reader, e);
+    if (Transmit(buffer.str().c_str()))
+      {
+      alert->MarkRead(MyOvmsServerV2Reader, e);
+      }
+    else
+      {
+      m_pending_notify_error = true;
+      return;
+      }
     }
   }
 
@@ -1658,9 +1671,15 @@ void OvmsServerV2::TransmitNotifyAlert()
     buffer
       << "MP-0 PA"
       << mp_encode(e->GetValue());
-    Transmit(buffer.str().c_str());
-
-    alert->MarkRead(MyOvmsServerV2Reader, e);
+    if (Transmit(buffer.str().c_str()))
+      {
+      alert->MarkRead(MyOvmsServerV2Reader, e);
+      }
+    else
+      {
+      m_pending_notify_alert = true;
+      return;
+      }
     }
   }
 
@@ -1704,7 +1723,13 @@ void OvmsServerV2::TransmitNotifyData()
       << -((int)(now - e->m_created) / 1000)
       << ","
       << msg;
-    Transmit(buffer.str().c_str());
+    if (!Transmit(buffer.str().c_str()))
+      {
+      m_pending_notify_data = true;
+      m_pending_notify_data_last = 0;
+      return;
+      }
+
     m_pending_notify_data_last = e->m_id;
 
     // be nice to other tasks, the network & the server:
@@ -1833,8 +1858,7 @@ bool OvmsServerV2::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* e
     buffer
       << "MP-0 PI"
       << mp_encode(entry->GetValue());
-    Transmit(buffer.str().c_str());
-    return true; // Mark it as read, as we've managed to send it
+    return Transmit(buffer.str().c_str()); // Mark it as read if we've managed to send it
     }
   else if (strcmp(type->m_name,"error")==0)
     {
@@ -1848,8 +1872,7 @@ bool OvmsServerV2::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* e
     buffer
       << "MP-0 PE"
       << entry->GetValue(); // no mp_encode; payload structure "<vehicletype>,<errorcode>,<errordata>"
-    Transmit(buffer.str().c_str());
-    return true; // Mark it as read, as we've managed to send it
+    return Transmit(buffer.str().c_str()); // Mark it as read if we've managed to send it
     }
   else if (strcmp(type->m_name,"alert")==0)
     {
@@ -1863,8 +1886,7 @@ bool OvmsServerV2::IncomingNotification(OvmsNotifyType* type, OvmsNotifyEntry* e
     buffer
       << "MP-0 PA"
       << mp_encode(entry->GetValue());
-    Transmit(buffer.str().c_str());
-    return true; // Mark it as read, as we've managed to send it
+    return Transmit(buffer.str().c_str()); // Mark it as read if we've managed to send it
     }
   else if (strcmp(type->m_name,"data")==0)
     {

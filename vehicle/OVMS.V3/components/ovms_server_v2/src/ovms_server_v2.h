@@ -64,7 +64,7 @@ class OvmsServerV2 : public OvmsServer
   protected:
     void ProcessServerMsg();
     void ProcessCommand(const char* payload);
-    void Transmit(const std::string& message);
+    bool Transmit(const std::string& message);
 
   protected:
     void TransmitMsgStat(bool always = false);
