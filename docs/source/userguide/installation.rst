@@ -34,6 +34,18 @@ Powering the module
 
 If you intend to configure the module on your desk before connecting it to the vehicle, make sure your USB port delivers power (around 500mA, depending on modem and wifi activity). We recommend using a USB hub with a separate power supply or a direct port of your laptop / PC.
 
+.. warning::
+  **The v3.3 LTE Modem (SIMCOM 7600G) may not be able to connect or not power up at all
+  when powered from USB, even with a powered USB hub.**
+  
+  If you cannot get the cellular connection to work on your desk, try powering from your
+  car's OBD port first.
+  
+  Another option is adding a 12V supply on your desk, e.g. using a standard RC 3S LiPo battery
+  (connect 12V/+ to OBD pin 16 and GND/- to OBD pin 4). You can connect USB and OBD/12V supply
+  simultaneously, be aware the module will boot as soon as any power source is present.
+
+
 ^^^^^^^^^^^^^^^^^^^
 OVMS Server account
 ^^^^^^^^^^^^^^^^^^^

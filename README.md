@@ -82,6 +82,7 @@ provides data logging to SD card and to a server.
   - [iOS App](https://apps.apple.com/us/app/open-vehicles/id490098531)
 - _Distributors_
   - [FastTech (global)](https://www.fasttech.com/search?ovms)
+  - [Medlock & Sons (North America)](https://medlockandsons.com/product/ovms-v3/)
   - [OpenEnergyMonitor (UK/Europe)](https://shop.openenergymonitor.com/ovms/)
 - _Servers_
   - [Asia-Pacific](https://www.openvehicles.com/)
@@ -100,7 +101,7 @@ provides data logging to SD card and to a server.
 
 - [Module Schematics and PCB Layouts](https://github.com/openvehicles/Open-Vehicle-Monitoring-System-3/tree/master/vehicle/hardware)  
 
-- **Base Module**
+- **Base Module (v3.0-3.3)**
   - Black injection-moulded plastic enclosure, approximately 99x73x29 mm excl. plugs
   - ESP32 WROVER processor (16MB flash, 4MB SPI RAM, 520KB SRAM, dual core 160/240MHz Xtensa LX6 processor)
   - WIFI 802.11 b/g/n
@@ -114,11 +115,18 @@ provides data logging to SD card and to a server.
   - 1x GPS antenna connector
   - 1x DB9 vehicle connector
   - 1x DB26 expansion connector
-- **Modem Module**
+- **Modem Module v3.0-3.2**
   - US edition is SIM5360A (Dual-Band UMTS/HSPA+ 850/1900MHz, Quad-Band GSM/GPRS/EDGE 850/900/1800/1900MHz)
   - EU edition is SIM5360J(E) (Dual-Band UMTS/HSPA+ 900/2100MHz, Quad-Band GSM/GPRS/EDGE 850/900/1800/1900MHz)
   - 3G (EV-DO/HSPA+) dual band modem
   - Includes 2G (GSM/GPRS) and 2.5G (EDGE) quad band
+  - GPS/GNSS
+  - Nano (4FF) SIM slot
+  - HOLOGRAM.IO nano sim included (can be exchanged if necessary)
+- **Modem Module v3.3**
+  - World edition: SIM7600G (Multi-Band LTE-FDD/LTE-TDD/HSPA+ and GSM/GPRS/EDGE)
+  - 4G (LTE-FDD/LTE-TDD) multi band modem
+  - Includes 3G (EV-DO/HSPA+), 2G (GSM/GPRS) and 2.5G (EDGE) quad band
   - GPS/GNSS
   - Nano (4FF) SIM slot
   - HOLOGRAM.IO nano sim included (can be exchanged if necessary)
