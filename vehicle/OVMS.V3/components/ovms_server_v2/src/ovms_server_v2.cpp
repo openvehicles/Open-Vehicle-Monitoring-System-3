@@ -1182,6 +1182,7 @@ void OvmsServerV2::TransmitMsgGPS(bool always)
     StandardMetrics.ms_v_pos_direction->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_pos_altitude->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_pos_gpslock->IsModifiedAndClear(MyOvmsServerV2Modifier) |
+    StandardMetrics.ms_v_pos_gpssq->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_pos_gpsmode->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_pos_gpshdop->IsModifiedAndClear(MyOvmsServerV2Modifier) |
     StandardMetrics.ms_v_pos_satcount->IsModifiedAndClear(MyOvmsServerV2Modifier) |
@@ -1198,10 +1199,7 @@ void OvmsServerV2::TransmitMsgGPS(bool always)
   if ((!always)&&(!modified)) return;
 
   bool stale =
-    StandardMetrics.ms_v_pos_latitude->IsStale() ||
-    StandardMetrics.ms_v_pos_longitude->IsStale() ||
-    StandardMetrics.ms_v_pos_direction->IsStale() ||
-    StandardMetrics.ms_v_pos_altitude->IsStale();
+    StandardMetrics.ms_v_pos_gpstime->IsStale();
 
   char drivemode[10];
   sprintf(drivemode, "%x", StandardMetrics.ms_v_env_drivemode->AsInt());
@@ -1244,6 +1242,8 @@ void OvmsServerV2::TransmitMsgGPS(bool always)
     << StandardMetrics.ms_v_pos_gpshdop->AsString("0", Native, 1)
     << ","
     << StandardMetrics.ms_v_pos_gpsspeed->AsString("0", units_speed, 1)
+    << ","
+    << StandardMetrics.ms_v_pos_gpssq->AsInt()
     ;
 
   Transmit(buffer.str().c_str());

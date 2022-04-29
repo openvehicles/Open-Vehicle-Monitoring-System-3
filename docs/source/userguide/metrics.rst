@@ -240,7 +240,9 @@ v.p.direction                            31.2°                    GPS direction
 v.p.gpshdop                              1.3                      GPS horizontal dilution of precision (smaller=better)
 v.p.gpslock                              no                       yes = has GPS satellite lock
 v.p.gpsmode                              AA                       <GPS><GLONASS>; N/A/D/E (None/Autonomous/Differential/Estimated)
+v.p.gpssq                                80%                      GPS signal quality [%] (<30 unusable, >50 good, >80 excellent)
 v.p.gpsspeed                             0km/h                    GPS speed over ground
+v.p.gpstime                              1572590910Sec            Time (UTC) of GPS coordinates [Seconds]
 v.p.latitude                             51.3023                  GPS latitude
 v.p.location                             Home                     Name of current location if defined
 v.p.longitude                            7.39006                  GPS longitude

@@ -5,6 +5,17 @@ Open Vehicle Monitor System v3 - Change log
 - Location: configurable flatbed movement alarm repetition
   New configs:
     [vehicle] flatbed.alarminterval     -- in minutes, default 15, 0 = single alarm
+- GPS: added normalized signal quality level, added web UI live status info
+  New metrics:
+    v.p.gpssq                           -- GPS signal quality [%] (<30 unusable, >50 good, >80 excellent)
+    v.p.gpstime                         -- Time (UTC) of GPS coordinates [Seconds]
+- Location: flatbed movement alarm only with reliable positioning
+  New configs:
+    [vehicle] gps.sq.good               -- SQ level for location state "reliable", default 60
+    [vehicle] gps.sq.bad                -- SQ level for location state "unreliable", default 40
+  New events:
+    gps.sq.good                         -- GPS position is now reliable
+    gps.sq.bad                          -- GPS position is now unreliable
 
 2022-03-07 MWJ  3.3.002  OTA release
 - Maxus eDeliver3: Updated speed PID

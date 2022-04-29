@@ -101,10 +101,13 @@ OvmsVehicleDemo::OvmsVehicleDemo()
   StandardMetrics.ms_v_env_temp->SetValue(22);
   StandardMetrics.ms_v_pos_gpslock->SetValue(true);
   StandardMetrics.ms_v_pos_satcount->SetValue(12);
+  StandardMetrics.ms_v_pos_gpshdop->SetValue(1.5);
+  StandardMetrics.ms_v_pos_gpssq->SetValue(80);
   StandardMetrics.ms_v_pos_latitude->SetValue(22.280868);
   StandardMetrics.ms_v_pos_longitude->SetValue(114.160598);
   StandardMetrics.ms_v_pos_direction->SetValue(10);
   StandardMetrics.ms_v_pos_altitude->SetValue(30);
+  StandardMetrics.ms_v_pos_gpstime->SetValue(time(NULL));
   StandardMetrics.ms_v_pos_speed->SetValue(0);
   StandardMetrics.ms_v_pos_odometer->SetValue(100000);
   StandardMetrics.ms_v_pos_trip->SetValue(0);

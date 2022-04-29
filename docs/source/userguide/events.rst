@@ -58,6 +58,8 @@ egpio.input.<port>.<state>                    EGPIO input port change (port=0…
 egpio.output.<port>.<state>                   EGPIO output port change (port=0…9, state=high/low)
 gps.lock.acquired                             GPS lock has been acquired
 gps.lock.lost                                 GPS lock has been lost
+gps.sq.bad                                    GPS position is now unreliable
+gps.sq.good                                   GPS position is now reliable
 housekeeping.init                             Housekeeping has initialised
 location.alert.flatbed.moved                  GPS movement of parked vehicle detected
 location.enter.<name>               <name>    The specified geolocation has been entered

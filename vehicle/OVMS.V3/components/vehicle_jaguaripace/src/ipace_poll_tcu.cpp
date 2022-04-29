@@ -69,6 +69,11 @@ void OvmsVehicleJaguarIpace::IncomingTcuPoll(uint16_t pid, uint8_t* data, uint8_
                 ESP_LOGD(TAG, "Longitude=%f", longitude);
                 ESP_LOGD(TAG, "Latitude=%f", latitude);
                 ESP_LOGD(TAG, "Sat Count=%d", m_localization[9]);
+                
+                // Derive GPS signal quality from satellite count, as we don't have HDOP:
+                // 6 satellites = 50%
+                StandardMetrics.ms_v_pos_gpssq->SetValue(LIMIT_MAX(LIMIT_MIN(m_localization[9]-1,0) * 10, 100));
+                StandardMetrics.ms_v_pos_gpstime->SetValue(time(NULL));
             }
             
             break;

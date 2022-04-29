@@ -229,11 +229,14 @@ void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
         case 0x85: // GPS direction and altitude
           {
           StandardMetrics.ms_v_pos_gpslock->SetValue(d[1] == 1);
+          StandardMetrics.ms_v_pos_gpssq->SetValue(d[1] == 1 ? 100 : 0);
           StandardMetrics.ms_v_pos_direction->SetValue((((int)d[3]<<8)+d[2])%360);
           if (d[5] & 0xf0)
             StandardMetrics.ms_v_pos_altitude->SetValue(0);
           else
             StandardMetrics.ms_v_pos_altitude->SetValue(((int)d[5]<<8)+d[4]);
+          // Assuming this finishes the GPS update:
+          StandardMetrics.ms_v_pos_gpstime->SetValue(time(NULL));
           break;
           }
         case 0x87: // Gear shift status every 10 seconds for v2.x cars

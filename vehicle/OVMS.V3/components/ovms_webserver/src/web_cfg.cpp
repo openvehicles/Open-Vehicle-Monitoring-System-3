@@ -102,6 +102,13 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
             "</td>"
           "</tr>"
           "<tr>"
+            "<th>GPS</th>"
+            "<td>"
+              "<div class=\"metric number\" data-metric=\"v.p.satcount\"><span class=\"value\">?</span><span class=\"unit\">Satellites</span></div>"
+              "<div class=\"metric number\" data-metric=\"v.p.gpssq\"><span class=\"value\">?</span><span class=\"unit\">%</span></div>"
+            "</td>"
+          "</tr>"
+          "<tr>"
             "<th>Main battery</th>"
             "<td>"
               "<div class=\"metric number\" data-metric=\"v.b.soc\" data-prec=\"1\"><span class=\"value\">?</span><span class=\"unit\">%</span></div>"
@@ -137,7 +144,7 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
   output = ExecuteCommand("stat");
   c.printf("<samp class=\"monitor\" id=\"vehicle-status\" data-updcmd=\"stat\" data-events=\"vehicle.charge\">%s</samp>", _html(output));
   output = ExecuteCommand("location status");
-  c.printf("<samp class=\"monitor\" data-updcmd=\"location status\" data-events=\"gps.lock|location\">%s</samp>", _html(output));
+  c.printf("<samp class=\"monitor\" data-updcmd=\"location status\" data-events=\"gps.lock|gps.sq|location\">%s</samp>", _html(output));
   c.panel_end(
     "<ul class=\"list-inline\">"
       "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#vehicle-cmdres\" data-cmd=\"charge start\">Start charge</button></li>"

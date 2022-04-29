@@ -285,6 +285,7 @@ void OvmsVehicleTeslaModelS::IncomingFrameCan2(CAN_frame_t* p_frame)
       if (d[0] < 255)
         {
         StandardMetrics.ms_v_pos_gpslock->SetValue(true);
+        StandardMetrics.ms_v_pos_gpssq->SetValue(100); // todo: derive from HDOP
         StandardMetrics.ms_v_pos_gpsmode->SetValue("TESLA");
         }
       break;
@@ -305,6 +306,7 @@ void OvmsVehicleTeslaModelS::IncomingFrameCan2(CAN_frame_t* p_frame)
                                                            ((uint32_t)d[5] << 12) +
                                                            ((uint32_t)d[4] << 4) +
                                                            ((uint32_t)(d[3]&0xf0) >> 4)) / 1000000.0);
+      StandardMetrics.ms_v_pos_gpstime->SetValue(time(NULL));
       break;
     case 0x31f: // TPMS Baolong tyre pressures + temperatures
       // Note: Baolong TPMS in Model S does not specify which wheel is which, so

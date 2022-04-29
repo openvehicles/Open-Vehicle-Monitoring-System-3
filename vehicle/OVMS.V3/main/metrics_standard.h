@@ -230,6 +230,8 @@
 #define MS_V_POS_GPSMODE            "v.p.gpsmode"
 #define MS_V_POS_GPSHDOP            "v.p.gpshdop"
 #define MS_V_POS_SATCOUNT           "v.p.satcount"
+#define MS_V_POS_GPSSQ              "v.p.gpssq"
+#define MS_V_POS_GPSTIME            "v.p.gpstime"
 #define MS_V_POS_LATITUDE           "v.p.latitude"
 #define MS_V_POS_LONGITUDE          "v.p.longitude"
 #define MS_V_POS_LOCATION           "v.p.location"
@@ -491,6 +493,8 @@ class MetricsStandard
     OvmsMetricString* ms_v_pos_gpsmode;                   // <GPS><GLONASS>; N/A/D/E (None/Autonomous/Differential/Estimated)
     OvmsMetricFloat*  ms_v_pos_gpshdop;                   // Horizontal dilution of precision (smaller=better)
     OvmsMetricInt*    ms_v_pos_satcount;
+    OvmsMetricInt*    ms_v_pos_gpssq;                     // GPS signal quality [%] (<30 unusable, >50 good, >80 excellent)
+    OvmsMetricInt*    ms_v_pos_gpstime;                   // Time (UTC) of GPS coordinates [Seconds]
     OvmsMetricFloat*  ms_v_pos_latitude;
     OvmsMetricFloat*  ms_v_pos_longitude;
     OvmsMetricString* ms_v_pos_location;                  // Name of current location if defined
