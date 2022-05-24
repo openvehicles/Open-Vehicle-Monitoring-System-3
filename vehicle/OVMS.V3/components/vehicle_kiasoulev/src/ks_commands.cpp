@@ -258,7 +258,8 @@ void xks_vin(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
 		writer->printf("Unknown %c\n", soul->m_vin[4]);
 		}
 
-	writer->printf("Model year: %04d\n", 2014 + soul->m_vin[9]-'E'); //TODO Will be wrong in for 2022. O and Q are not used.
+	int margin = (soul->m_vin[9] >= 'I') + (soul->m_vin[9] >= 'O') + (soul->m_vin[9] >= 'Q') + (soul->m_vin[9] >= 'U') + (soul->m_vin[9] >= 'Z'); // Will be wrong in 2032, but that's a 2032 problem.
+	writer->printf("Model year: %04d\n", 2014 + soul->m_vin[9]-'E'-margin);
 
 	writer->printf("Motor type: ");
 	if(soul->m_vin[7]=='E')
