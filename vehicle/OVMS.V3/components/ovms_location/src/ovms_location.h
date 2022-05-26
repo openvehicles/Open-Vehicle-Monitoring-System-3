@@ -104,6 +104,7 @@ class OvmsLocations
     float m_park_longitude;
     float m_park_distance;
     bool m_park_invalid;
+    OvmsRecMutex m_park_lock;
     uint32_t m_last_alarm;
     LocationMap m_locations;
 

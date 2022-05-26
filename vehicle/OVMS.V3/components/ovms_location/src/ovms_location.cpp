@@ -752,6 +752,8 @@ void OvmsLocations::UpdatedVehicleOn(OvmsMetric* metric)
 
 void OvmsLocations::UpdateParkPosition()
   {
+  OvmsRecMutexLock lock(&m_park_lock);
+
   bool caron = StdMetrics.ms_v_env_on->AsBool();
   if (caron)
     {
@@ -842,6 +844,8 @@ void OvmsLocations::UpdateLocations()
 void OvmsLocations::CheckTheft()
   {
   static int last_dist = 0;
+
+  OvmsRecMutexLock lock(&m_park_lock);
 
   if ((m_park_latitude == 0) && (m_park_longitude == 0)) return;
   if (StandardMetrics.ms_v_env_on->AsBool()) return;
