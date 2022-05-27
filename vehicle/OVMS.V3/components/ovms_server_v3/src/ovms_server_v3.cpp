@@ -748,13 +748,22 @@ void OvmsServerV3::MetricModified(OvmsMetric* metric)
   {
   if (!StandardMetrics.ms_s_v3_connected->AsBool()) return;
 
-  if (m_streaming)
+  int now = StandardMetrics.ms_m_monotonic->AsInt();
+  if (StandardMetrics.ms_v_env_on->AsBool() && m_streaming && now > m_lasttx_stream+m_streaming) 
     {
     OvmsMutexLock mg(&m_mgconn_mutex);
     if (!m_mgconn)
       return;
-    metric->ClearModified(MyOvmsServerV3Modifier);
-    TransmitMetric(metric);
+
+    while (metric != NULL)
+    {
+      if (metric->IsModifiedAndClear(MyOvmsServerV3Modifier))
+      {
+      TransmitMetric(metric);
+      }
+    metric = metric->m_next;
+    }
+    m_lasttx_stream = now;
     }
   }
 
