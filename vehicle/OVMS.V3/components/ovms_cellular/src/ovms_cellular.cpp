@@ -1133,6 +1133,12 @@ void modem::StandardLineHandler(int channel, OvmsBuffer* buf, std::string line)
     MyNotify.NotifyStringf("alert", "modem.wrongpincode", "Wrong pin code (%s) entered!", MyConfig.GetParamValue("modem", "pincode"));
     MyConfig.SetParamValueBool("modem","wrongpincode",true);
     }
+  else if (line.compare(0, 28, "+CME ERROR: SIM not inserted") == 0)
+    {
+    ESP_LOGE(TAG,"SIM not inserted!");
+    MyEvents.SignalEvent("system.modem.simnotinserted", NULL);
+    StandardMetrics.ms_m_net_mdm_iccid->SetValue(line.substr(12));
+    }
 
   // MMI/USSD response (URC):
   //  sent on all free channels, so we only process m_mux_channel_CMD
