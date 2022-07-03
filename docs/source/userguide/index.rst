@@ -9,6 +9,7 @@ User Guide
    warnings
    components
    installation
+   webui
    console
    logging
    configuration
