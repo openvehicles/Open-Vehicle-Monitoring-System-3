@@ -150,3 +150,12 @@ into the respective fields in Config → Webserver.
   allow the browser to access the module on the first HTTPS connect.
 
 
+-----------------
+Tools & Utilities
+-----------------
+
+.. toctree::
+   :maxdepth: 2
+
+   ../components/ovms_webserver/docs/bms-cell-monitor
+

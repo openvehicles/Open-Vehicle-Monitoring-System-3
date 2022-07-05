@@ -9,8 +9,8 @@ User Guide
    warnings
    components
    installation
-   webui
    console
+   webui
    logging
    configuration
    wifi
