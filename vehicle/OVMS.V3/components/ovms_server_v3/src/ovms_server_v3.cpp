@@ -282,14 +282,133 @@ void OvmsServerV3::TransmitModifiedMetrics()
   if (!m_mgconn)
     return;
 
-  OvmsMetric* metric = MyMetrics.m_first;
-  while (metric != NULL)
+  if (StandardMetrics.ms_v_bat_soc->IsModifiedAndClear(MyOvmsServerV3Modifier))
     {
-    if (metric->IsModifiedAndClear(MyOvmsServerV3Modifier))
-      {
-      TransmitMetric(metric);
-      }
-    metric = metric->m_next;
+    TransmitMetric(StandardMetrics.ms_v_bat_soc);
+    }
+  if (StandardMetrics.ms_v_charge_voltage->IsModifiedAndClear(MyOvmsServerV3Modifier))
+    {
+    TransmitMetric(StandardMetrics.ms_v_charge_voltage);
+    }
+  if (StandardMetrics.ms_v_charge_current->IsModifiedAndClear(MyOvmsServerV3Modifier))
+    {
+    TransmitMetric(StandardMetrics.ms_v_charge_current);
+    }
+  if (StandardMetrics.ms_v_charge_state->IsModifiedAndClear(MyOvmsServerV3Modifier))
+    {
+    TransmitMetric(StandardMetrics.ms_v_charge_state);
+    }
+  if (StandardMetrics.ms_v_charge_substate->IsModifiedAndClear(MyOvmsServerV3Modifier))
+    {
+    TransmitMetric(StandardMetrics.ms_v_charge_substate);
+    }
+  if (StandardMetrics.ms_v_charge_mode->IsModifiedAndClear(MyOvmsServerV3Modifier))
+    {
+    TransmitMetric(StandardMetrics.ms_v_charge_mode);
+    }
+  if (StandardMetrics.ms_v_bat_range_ideal->IsModifiedAndClear(MyOvmsServerV3Modifier))
+    {
+    TransmitMetric(StandardMetrics.ms_v_bat_range_ideal);
+    }
+  if (StandardMetrics.ms_v_bat_range_est->IsModifiedAndClear(MyOvmsServerV3Modifier))
+    {
+    TransmitMetric(StandardMetrics.ms_v_bat_range_est);
+    }
+  if (StandardMetrics.ms_v_charge_climit->IsModifiedAndClear(MyOvmsServerV3Modifier))
+    {
+    TransmitMetric(StandardMetrics.ms_v_charge_climit);
+    }
+  if (StandardMetrics.ms_v_charge_kwh->IsModifiedAndClear(MyOvmsServerV3Modifier))
+    {
+    TransmitMetric(StandardMetrics.ms_v_charge_kwh);
+    }
+  if (StandardMetrics.ms_v_charge_timermode->IsModifiedAndClear(MyOvmsServerV3Modifier))
+    {
+    TransmitMetric(StandardMetrics.ms_v_charge_timermode);
+    }
+  if (StandardMetrics.ms_v_charge_timerstart->IsModifiedAndClear(MyOvmsServerV3Modifier))
+    {
+    TransmitMetric(StandardMetrics.ms_v_charge_timerstart);
+    }
+  if (StandardMetrics.ms_v_bat_cac->IsModifiedAndClear(MyOvmsServerV3Modifier))
+    {
+    TransmitMetric(StandardMetrics.ms_v_bat_cac);
+    }
+  if (StandardMetrics.ms_v_charge_duration_full->IsModifiedAndClear(MyOvmsServerV3Modifier))
+    {
+    TransmitMetric(StandardMetrics.ms_v_charge_duration_full);
+    }
+  if (StandardMetrics.ms_v_charge_duration_range->IsModifiedAndClear(MyOvmsServerV3Modifier))
+    {
+    TransmitMetric(StandardMetrics.ms_v_charge_duration_range);
+    }
+  if (StandardMetrics.ms_v_charge_duration_soc->IsModifiedAndClear(MyOvmsServerV3Modifier))
+    {
+    TransmitMetric(StandardMetrics.ms_v_charge_duration_soc);
+    }
+  if (StandardMetrics.ms_v_charge_inprogress->IsModifiedAndClear(MyOvmsServerV3Modifier))
+    {
+    TransmitMetric(StandardMetrics.ms_v_charge_inprogress);
+    }
+  if (StandardMetrics.ms_v_charge_limit_range->IsModifiedAndClear(MyOvmsServerV3Modifier))
+    {
+    TransmitMetric(StandardMetrics.ms_v_charge_limit_range);
+    }
+  if (StandardMetrics.ms_v_charge_limit_soc->IsModifiedAndClear(MyOvmsServerV3Modifier))
+    {
+    TransmitMetric(StandardMetrics.ms_v_charge_limit_soc);
+    }
+  if (StandardMetrics.ms_v_env_cooling->IsModifiedAndClear(MyOvmsServerV3Modifier))
+    {
+    TransmitMetric(StandardMetrics.ms_v_env_cooling);
+    }
+  if (StandardMetrics.ms_v_bat_range_full->IsModifiedAndClear(MyOvmsServerV3Modifier))
+    {
+    TransmitMetric(StandardMetrics.ms_v_bat_range_full);
+    }
+  if (StandardMetrics.ms_v_bat_power->IsModifiedAndClear(MyOvmsServerV3Modifier))
+    {
+    TransmitMetric(StandardMetrics.ms_v_bat_power);
+    }
+  if (StandardMetrics.ms_v_bat_voltage->IsModifiedAndClear(MyOvmsServerV3Modifier))
+    {
+    TransmitMetric(StandardMetrics.ms_v_bat_voltage);
+    }
+  if (StandardMetrics.ms_v_bat_soh->IsModifiedAndClear(MyOvmsServerV3Modifier))
+    {
+    TransmitMetric(StandardMetrics.ms_v_bat_soh);
+    }
+  if (StandardMetrics.ms_v_charge_power->IsModifiedAndClear(MyOvmsServerV3Modifier))
+    {
+    TransmitMetric(StandardMetrics.ms_v_charge_power);
+    }
+  if (StandardMetrics.ms_v_charge_efficiency->IsModifiedAndClear(MyOvmsServerV3Modifier))
+    {
+    TransmitMetric(StandardMetrics.ms_v_charge_efficiency);
+    }
+  if (StandardMetrics.ms_v_bat_current->IsModifiedAndClear(MyOvmsServerV3Modifier))
+    {
+    TransmitMetric(StandardMetrics.ms_v_bat_current);
+    }
+  if (StandardMetrics.ms_v_bat_range_speed->IsModifiedAndClear(MyOvmsServerV3Modifier))
+    {
+    TransmitMetric(StandardMetrics.ms_v_bat_range_speed);
+    }
+  if (StandardMetrics.ms_v_tpms_pressure->IsModifiedAndClear(MyOvmsServerV3Modifier))
+    {
+    TransmitMetric(StandardMetrics.ms_v_tpms_pressure);
+    }
+  if (StandardMetrics.ms_v_tpms_temp->IsModifiedAndClear(MyOvmsServerV3Modifier))
+    {
+    TransmitMetric(StandardMetrics.ms_v_tpms_temp);
+    }
+  if (StandardMetrics.ms_v_tpms_health->IsModifiedAndClear(MyOvmsServerV3Modifier))
+    {
+    TransmitMetric(StandardMetrics.ms_v_tpms_health);
+    }
+  if (StandardMetrics.ms_v_tpms_alert->IsModifiedAndClear(MyOvmsServerV3Modifier))
+    {
+    TransmitMetric(StandardMetrics.ms_v_tpms_alert);
     }
   }
 
@@ -749,11 +868,13 @@ void OvmsServerV3::MetricModified(OvmsMetric* metric)
   if (!StandardMetrics.ms_s_v3_connected->AsBool()) return;
 
   int now = StandardMetrics.ms_m_monotonic->AsInt();
+  //ESP_LOGD(TAG, "now: %d, m_lasttx_stream: %d, m_streaming: %d", now, m_lasttx_stream, m_streaming);
   if (StandardMetrics.ms_v_env_on->AsBool() && m_streaming && now > m_lasttx_stream+m_streaming) 
     {
     OvmsMutexLock mg(&m_mgconn_mutex);
     if (!m_mgconn)
       return;
+    //metric->ClearModified(MyOvmsServerV3Modifier);
 
     while (metric != NULL)
     {
@@ -763,6 +884,7 @@ void OvmsServerV3::MetricModified(OvmsMetric* metric)
       }
     metric = metric->m_next;
     }
+    //TransmitMetric(metric);
     m_lasttx_stream = now;
     }
   }
@@ -826,13 +948,22 @@ void OvmsServerV3::EventListener(std::string event, void* data)
  */
 void OvmsServerV3::ConfigChanged(OvmsConfigParam* param)
   {
+  ESP_LOGD(TAG, "--- ConfigChanged ---");
   m_streaming = MyConfig.GetParamValueInt("vehicle", "stream", 0);
+  ESP_LOGD(TAG, "m_streaming: %d", m_streaming);
   m_updatetime_connected = MyConfig.GetParamValueInt("server.v3", "updatetime.connected", 60);
+  ESP_LOGD(TAG, "m_updatetime_connected: %d", m_updatetime_connected);
   m_updatetime_idle = MyConfig.GetParamValueInt("server.v3", "updatetime.idle", 600);
+  ESP_LOGD(TAG, "m_updatetime_idle: %d", m_updatetime_idle);
   m_updatetime_awake = MyConfig.GetParamValueInt("server.v3", "updatetime.awake", m_updatetime_idle);
+  ESP_LOGD(TAG, "m_updatetime_awake: %d", m_updatetime_awake);
   m_updatetime_on = MyConfig.GetParamValueInt("server.v3", "updatetime.on", m_updatetime_idle);
+  ESP_LOGD(TAG, "m_updatetime_on: %d", m_updatetime_on);
   m_updatetime_charging = MyConfig.GetParamValueInt("server.v3", "updatetime.charging", m_updatetime_idle);
+  ESP_LOGD(TAG, "m_updatetime_charging: %d", m_updatetime_charging);
   m_updatetime_sendall = MyConfig.GetParamValueInt("server.v3", "updatetime.sendall", 0);
+  ESP_LOGD(TAG, "m_updatetime_sendall: %d", m_updatetime_sendall);
+  ESP_LOGD(TAG, "--- ConfigChanged ---");
   }
 
 void OvmsServerV3::NetUp(std::string event, void* data)
@@ -938,12 +1069,55 @@ void OvmsServerV3::Ticker1(std::string event, void* data)
       }
     else if ((m_lasttx==0)||(now>(m_lasttx+next)))
       {
+      ESP_LOGD(TAG, "m_lasttx: %d next: %d, now: %d", m_lasttx, next, now);
+      ESP_LOGD(TAG, "m_updatetime_connected: %d m_updatetime_on: %d, m_updatetime_charging: %d", m_updatetime_connected, m_updatetime_on, m_updatetime_charging);
+      ESP_LOGD(TAG, "m_updatetime_awake: %d ", m_updatetime_awake);
       TransmitModifiedMetrics();
       m_lasttx = m_lasttx_stream = now;
       }
     else if (m_streaming && caron && m_peers && now > m_lasttx_stream+m_streaming)
       {
-      // TODO: transmit streaming metrics
+      //Transmit important metrics while streaming
+        bool modified =
+        StandardMetrics.ms_v_pos_latitude->IsModifiedAndClear(MyOvmsServerV3Modifier) |
+        StandardMetrics.ms_v_pos_longitude->IsModifiedAndClear(MyOvmsServerV3Modifier) |
+        StandardMetrics.ms_v_pos_direction->IsModifiedAndClear(MyOvmsServerV3Modifier) |
+        StandardMetrics.ms_v_pos_altitude->IsModifiedAndClear(MyOvmsServerV3Modifier) |
+        StandardMetrics.ms_v_pos_gpslock->IsModifiedAndClear(MyOvmsServerV3Modifier) |
+        StandardMetrics.ms_v_pos_gpssq->IsModifiedAndClear(MyOvmsServerV3Modifier) |
+        StandardMetrics.ms_v_pos_gpsmode->IsModifiedAndClear(MyOvmsServerV3Modifier) |
+        StandardMetrics.ms_v_pos_gpshdop->IsModifiedAndClear(MyOvmsServerV3Modifier) |
+        StandardMetrics.ms_v_pos_satcount->IsModifiedAndClear(MyOvmsServerV3Modifier) |
+        StandardMetrics.ms_v_pos_gpsspeed->IsModifiedAndClear(MyOvmsServerV3Modifier) |
+        StandardMetrics.ms_v_pos_speed->IsModifiedAndClear(MyOvmsServerV3Modifier) |
+        StandardMetrics.ms_v_env_drivemode->IsModifiedAndClear(MyOvmsServerV3Modifier) |
+        StandardMetrics.ms_v_bat_power->IsModifiedAndClear(MyOvmsServerV3Modifier) |
+        StandardMetrics.ms_v_bat_energy_used->IsModifiedAndClear(MyOvmsServerV3Modifier) |
+        StandardMetrics.ms_v_bat_energy_recd->IsModifiedAndClear(MyOvmsServerV3Modifier) |
+        StandardMetrics.ms_v_inv_power->IsModifiedAndClear(MyOvmsServerV3Modifier) |
+        StandardMetrics.ms_v_inv_efficiency->IsModifiedAndClear(MyOvmsServerV3Modifier);
+
+      // Quick exit if nothing modified
+      if ((!modified)) return;
+
+      TransmitMetric(StandardMetrics.ms_v_pos_latitude);
+      TransmitMetric(StandardMetrics.ms_v_pos_longitude);
+      TransmitMetric(StandardMetrics.ms_v_pos_direction);
+      TransmitMetric(StandardMetrics.ms_v_pos_altitude);
+      TransmitMetric(StandardMetrics.ms_v_pos_gpslock);
+      TransmitMetric(StandardMetrics.ms_v_pos_gpssq);
+      TransmitMetric(StandardMetrics.ms_v_pos_gpsmode);
+      TransmitMetric(StandardMetrics.ms_v_pos_gpshdop);
+      TransmitMetric(StandardMetrics.ms_v_pos_satcount);
+      TransmitMetric(StandardMetrics.ms_v_pos_gpsspeed);
+      TransmitMetric(StandardMetrics.ms_v_pos_speed);
+      TransmitMetric(StandardMetrics.ms_v_env_drivemode);
+      TransmitMetric(StandardMetrics.ms_v_bat_power);
+      TransmitMetric(StandardMetrics.ms_v_bat_energy_used);
+      TransmitMetric(StandardMetrics.ms_v_bat_energy_recd);
+      TransmitMetric(StandardMetrics.ms_v_inv_power);
+      TransmitMetric(StandardMetrics.ms_v_inv_efficiency);
+
       m_lasttx_stream = now;
       }
     }
