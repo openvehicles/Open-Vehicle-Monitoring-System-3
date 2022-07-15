@@ -10,6 +10,7 @@ User Guide
    components
    installation
    console
+   webui
    logging
    configuration
    wifi
