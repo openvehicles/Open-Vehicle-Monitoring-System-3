@@ -61,6 +61,8 @@ static const OvmsVehicle::poll_pid_t va_polls[]
 = {
     { 0x7e0, 0x7e8, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x002F, {  0, 600,  0 },   0, ISOTP_STD }, // Fuel Level
     { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x1940, {  0, 60,   60 },  0, ISOTP_STD }, // Transmission temperature
+    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x4531, {  0, 10,   10 },  0, ISOTP_STD }, // Charging Level (0,1,2,3)
+    { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x4424, {  0, 10,   10 },  0, ISOTP_STD }, // DCFC Current
     { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x4369, {  0, 10,   10 },  0, ISOTP_STD }, // On-board charger current
     { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x4368, {  0, 10,   10 },  0, ISOTP_STD }, // On-board charger voltage
     { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x432d, {  0, 10,   10 },  0, ISOTP_STD }, // High-voltage Battery voltage
@@ -657,11 +659,40 @@ void OvmsVehicleBoltEV::IncomingPollReply(canbus* bus, uint16_t type, uint16_t p
         if(mt_fuel_level->SetValue((int)value * 100 / 255))
             NotifyFuel();
         break;
+    case 0x4531:  // Charger Type
+        // We make a few assumptions here knowing about the Bolt EV specs.
+        switch(value) {
+            default:
+            case 0: // unplugged
+                StandardMetrics.ms_v_charge_type->SetValue("undefined");
+                StandardMetrics.ms_v_charge_mode->SetValue("standard");
+                StandardMetrics.ms_v_charge_climit->SetValue(0, Amps);
+                break;
+            case 1: // L1 (US 110v split phase)
+            case 2: // L2 (220v)
+                StandardMetrics.ms_v_charge_type->SetValue("type1");
+                StandardMetrics.ms_v_charge_mode->SetValue("standard");
+                StandardMetrics.ms_v_charge_climit->SetValue(32, Amps); // 6.6kw L2
+                break;
+            case 3: // DCFC
+                StandardMetrics.ms_v_charge_type->SetValue("ccs");
+                StandardMetrics.ms_v_charge_mode->SetValue("performance");
+                StandardMetrics.ms_v_charge_climit->SetValue(157, Amps); // 55kw / 350v
+                break;
+        }
+        break;
     case 0x4369:  // On-board charger current
-        StandardMetrics.ms_v_charge_current->SetValue((unsigned int)value * 0.2);
+        if (value > 0)
+            StandardMetrics.ms_v_charge_current->SetValue((unsigned int)value * 0.2);
+        break;
+    case 0x4424:  // DC charger port current ((A*256)+B-32768)/128
+        if (value > 0) {
+            unsigned int amps = (float)((data[0] << 8 | data[1]) - 32768) / 128;
+            StandardMetrics.ms_v_charge_current->SetValue(amps, Amps);
+        }
         break;
     case 0x4368:  // On-board charger voltage
-        StandardMetrics.ms_v_charge_voltage->SetValue((unsigned int)value << 1);
+        StandardMetrics.ms_v_charge_voltage->SetValue((unsigned int)value << 1, Volts);
         break;
     case 0x801f:  // Outside temperature (filtered) (aka ambient temperature)
         StandardMetrics.ms_v_env_temp->SetValue((int)value/2 - 0x28);
@@ -801,10 +832,8 @@ void OvmsVehicleBoltEV::Ticker1(uint32_t ticker)
             StandardMetrics.ms_v_charge_pilot->SetValue(true);
             StandardMetrics.ms_v_charge_inprogress->SetValue(true);
             StandardMetrics.ms_v_door_chargeport->SetValue(true);
-            StandardMetrics.ms_v_charge_mode->SetValue("standard");
             StandardMetrics.ms_v_charge_state->SetValue("charging");
             StandardMetrics.ms_v_charge_substate->SetValue("onrequest");
-            StandardMetrics.ms_v_charge_climit->SetValue(16);
             NotifyChargeState();
             m_charge_timer = 0;
             m_charge_wm = 0;
@@ -829,7 +858,7 @@ void OvmsVehicleBoltEV::Ticker1(uint32_t ticker)
             StandardMetrics.ms_v_charge_pilot->SetValue(false);
             StandardMetrics.ms_v_charge_inprogress->SetValue(false);
             StandardMetrics.ms_v_door_chargeport->SetValue(false);
-            StandardMetrics.ms_v_charge_mode->SetValue("standard");
+            StandardMetrics.ms_v_charge_current->SetValue(0);
             if (StandardMetrics.ms_v_bat_soc->AsInt() < 95) {
                 // Assume the charge was interrupted
                 ESP_LOGI(TAG,"Car charge session was interrupted");
