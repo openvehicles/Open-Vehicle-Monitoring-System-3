@@ -362,8 +362,10 @@ void OvmsVehicleMgEv::processEnergy()
 
         int limit_soc      = StandardMetrics.ms_v_charge_limit_soc->AsInt(0);
         float limit_range    = StandardMetrics.ms_v_charge_limit_range->AsFloat(0, Kilometers);
-        float max_range      = StandardMetrics.ms_v_bat_range_full->AsFloat(0, Kilometers);
-
+        
+        // Calculate  a maximum range taking the battery state of health into account
+        float adjusted_max_range = StandardMetrics.ms_v_bat_range_full->AsFloat(0, Kilometers) * StandardMetrics.ms_v_bat_soh->AsFloat() / 100;
+        
         // Calculate time to reach 100% charge
         int minsremaining_full = StandardMetrics.ms_v_charge_type->AsString() == "ccs" ? calcMinutesRemaining(100, ccs_steps) : calcMinutesRemaining(100, granny_steps);
         StandardMetrics.ms_v_charge_duration_full->SetValue(minsremaining_full);
@@ -384,10 +386,10 @@ void OvmsVehicleMgEv::processEnergy()
         }
 
         // Calculate time to charge to Range Limit
-        if (limit_range > 0.0 && max_range > 0.0)
+        if (limit_range > 0.0 && adjusted_max_range > 0.0)
         {
             // if range limit is set, then compute required soc and then calculate remaining time to that soc
-            int range_soc = limit_range / max_range * 100.0;
+            int range_soc = limit_range / adjusted_max_range * 100.0;
             int minsremaining_range = StandardMetrics.ms_v_charge_type->AsString() == "ccs" ? calcMinutesRemaining(range_soc, ccs_steps) : calcMinutesRemaining(range_soc, granny_steps);
             StandardMetrics.ms_v_charge_duration_range->SetValue(minsremaining_range, Minutes);
             if ( minsremaining_range == 0 && !range_limit_reached && range_soc >= StandardMetrics.ms_v_bat_soc->AsFloat(100))
