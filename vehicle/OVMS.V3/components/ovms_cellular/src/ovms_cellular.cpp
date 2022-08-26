@@ -79,12 +79,16 @@ const char* ModemNetRegName(modem::network_registration_t netreg)
   {
   switch (netreg)
     {
-    case modem::NotRegistered:       return "NotRegistered";
-    case modem::Searching:           return "Searching";
-    case modem::DeniedRegistration:  return "DeniedRegistration";
-    case modem::RegisteredHome:      return "RegisteredHome";
-    case modem::RegisteredRoaming:   return "RegisteredRoaming";
-    default:                         return "Unknown";
+    case modem::NotRegistered:               return "NotRegistered";
+    case modem::DeniedRegistration:          return "DeniedRegistration";
+    case modem::Searching:                   return "Searching";
+    case modem::Registered:                  return "Registered";
+    case modem::RegisteredEmergencyServices: return "RegisteredEmergencyServices";
+    case modem::RegisteredRoamingSMS:        return "RegisteredRoamingSMS";
+    case modem::RegisteredRoaming:           return "RegisteredRoaming";
+    case modem::RegisteredHomeSMS:           return "RegisteredHomeSMS";
+    case modem::RegisteredHome:              return "RegisteredHome";
+    default:                                 return "Unknown";
     };
   }
 
@@ -272,6 +276,7 @@ modem::modem(const char* name, uart_port_t uartnum, int baud, int rxpin, int txp
   m_line_unfinished = -1;
   m_line_buffer.clear();
   m_netreg = Unknown;
+  for (size_t k=0; k<CELLULAR_NETREG_COUNT; k++) { m_netreg_d[k] = Unknown; }
   m_provider = "";
   m_sq = 99; // Unknown
   m_powermode = Off;
@@ -404,6 +409,9 @@ void modem::SupportSummary(OvmsWriter* writer, bool debug /*=FALSE*/)
       m_provider.c_str(),
       UnitConvert(sq, dbm, m_sq),
       StandardMetrics.ms_m_net_mdm_mode->AsString().c_str());
+    // writer->printf("    GSM Registration:   %s\n",ModemNetRegName(m_netreg_d[NRT_GSM]));
+    // writer->printf("    GPRS Registration:  %s\n",ModemNetRegName(m_netreg_d[NRT_GPRS]));
+    // writer->printf("    EPS Registration:   %s\n",ModemNetRegName(m_netreg_d[NRT_EPS]));
     }
 
   writer->printf("  State: %s\n", ModemState1Name(m_state1));
@@ -852,7 +860,7 @@ modem::modem_state1_t modem::State1Ticker1()
         if ((!MyConfig.GetParamValueBool("modem", "enable.net", true))||(p.empty()))
           return NetHold; // Just hold, without starting PPP
         }
-      else if ((m_state1_ticker > 3)&&((m_netreg==RegisteredHome)||(m_netreg==RegisteredRoaming)))
+      else if ((m_state1_ticker > 3)&&((m_netreg >= Registered)))
         return NetStart; // We have GSM, so start the network
       if ((m_mux != NULL)&&(m_state1_ticker>3)&&((m_state1_ticker % 10) == 0))
         { muxtx(m_mux_channel_POLL, "AT+CREG?;+CCLK?;+CSQ;+COPS?\r\n"); }
@@ -907,7 +915,7 @@ modem::modem_state1_t modem::State1Ticker1()
         // Need to shutdown ppp, and get back to NetSleep mode
         return NetSleep;
         }
-      if ((m_netreg!=RegisteredHome)&&(m_netreg!=RegisteredRoaming))
+      if (m_netreg < Registered)
         {
         // We've lost the network connection
         ESP_LOGW(TAG, "Lost network connection (NetworkRegistration in NetMode)");
@@ -1055,26 +1063,57 @@ void modem::StandardLineHandler(int channel, OvmsBuffer* buf, std::string line)
       creg = atoi(line.substr(7,1).c_str());
     switch (creg)
       {
-      case 0:
-      case 4:
-        nreg = NotRegistered;
-        break;
-      case 1:
-        nreg = RegisteredHome;
-        break;
-      case 2:
-        nreg = Searching;
-        break;
-      case 3:
-        nreg = DeniedRegistration;
-        break;
-      case 5:
-        nreg = RegisteredRoaming;
-        break;
-      default:
-        break;
+      case 0: case 4: nreg = NotRegistered; break;
+      case 1:         nreg = RegisteredHome; break;
+      case 2:         nreg = Searching; break;
+      case 3:         nreg = DeniedRegistration; break;
+      case 5:         nreg = RegisteredRoaming; break;
+      default:        break;
       }
-    SetNetworkRegistration(nreg);
+    SetNetworkRegistration(NRT_GSM, nreg);
+    }
+  else if (line.compare(0, 8, "+CGREG: ") == 0)
+    {
+    size_t qp = line.find(',');
+    int creg;
+    network_registration_t nreg = Unknown;
+    if (qp != string::npos)
+      creg = atoi(line.substr(qp+1,1).c_str());
+    else
+      creg = atoi(line.substr(7,1).c_str());
+    switch (creg)
+      {
+      case 0: case 4: nreg = NotRegistered; break;
+      case 1:         nreg = RegisteredHome; break;
+      case 2:         nreg = Searching; break;
+      case 3:         nreg = DeniedRegistration; break;
+      case 5:         nreg = RegisteredRoaming; break;
+      default:        break;
+      }
+    SetNetworkRegistration(NRT_GPRS, nreg);
+    }
+  else if (line.compare(0, 8, "+CEREG: ") == 0)
+    {
+    size_t qp = line.find(',');
+    int creg;
+    network_registration_t nreg = Unknown;
+    if (qp != string::npos)
+      creg = atoi(line.substr(qp+1,1).c_str());
+    else
+      creg = atoi(line.substr(7,1).c_str());
+    switch (creg)
+      {
+      case 0: case 4: nreg = NotRegistered; break;
+      case 1:         nreg = RegisteredHome; break;
+      case 2:         nreg = Searching; break;
+      case 3:         nreg = DeniedRegistration; break;
+      case 5:         nreg = RegisteredRoaming; break;
+      case 6:         nreg = RegisteredHomeSMS; break;
+      case 7:         nreg = RegisteredRoamingSMS; break;
+      case 8:         nreg = RegisteredEmergencyServices; break;
+      default:        break;
+      }
+    SetNetworkRegistration(NRT_EPS, nreg);
     }
   else if (line.compare(0, 7, "+CPSI: ") == 0)
     {
@@ -1492,14 +1531,25 @@ bool modem::IsStarted()
   return (m_task != NULL);
   }
 
-void modem::SetNetworkRegistration(network_registration_t netreg)
+void modem::SetNetworkRegistration(network_regtype_t regtype, network_registration_t netreg)
   {
-  if (netreg != m_netreg)
+  if (netreg != m_netreg_d[regtype])
     {
-    m_netreg = netreg;
-    const char *v = ModemNetRegName(m_netreg);
-    ESP_LOGI(TAG, "Network Registration status: %s", v);
-    StdMetrics.ms_m_net_mdm_netreg->SetValue(v);
+    m_netreg_d[regtype] = netreg;
+
+    // Need to re-calculate m_netreg as best of these
+    network_registration_t highest = Unknown;
+    for (size_t k=0; k<CELLULAR_NETREG_COUNT; k++)
+      {
+      if (highest < m_netreg_d[k]) highest = m_netreg_d[k];
+      }
+    if (highest != m_netreg)
+      {
+      m_netreg = highest;
+      const char *v = ModemNetRegName(m_netreg);
+      ESP_LOGI(TAG, "Network Registration status: %s", v);
+      StdMetrics.ms_m_net_mdm_netreg->SetValue(v);
+      }
     }
   }
 
@@ -1539,6 +1589,7 @@ void modem::SetSignalQuality(int newsq)
 void modem::ClearNetMetrics()
   {
   m_netreg = Unknown;
+  for (size_t k=0; k<CELLULAR_NETREG_COUNT; k++) { m_netreg_d[k] = Unknown; }
   StdMetrics.ms_m_net_mdm_netreg->Clear();
 
   m_provider = "";

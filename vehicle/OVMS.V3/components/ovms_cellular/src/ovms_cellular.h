@@ -47,6 +47,8 @@
 
 using namespace std;
 
+#define CELLULAR_NETREG_COUNT 3
+
 class modemdriver;  // Forward declaration
 
 class modem : public pcp, public InternalRamAllocated
@@ -93,13 +95,23 @@ class modem : public pcp, public InternalRamAllocated
       } event_type_t;
     typedef enum
       {
-      NotRegistered = 0,
-      Searching = 2,
-      DeniedRegistration = 3,
-      RegisteredHome = 1,
-      RegisteredRoaming = 5,
-      Unknown = 99
+      Unknown = 0,
+      NotRegistered = 1,
+      DeniedRegistration = 2,
+      Searching = 3,
+      Registered = 4,
+      RegisteredEmergencyServices = 5,
+      RegisteredRoamingSMS = 6,
+      RegisteredRoaming = 7,
+      RegisteredHomeSMS = 8,
+      RegisteredHome = 9
       } network_registration_t;
+    typedef enum
+      {
+      NRT_GSM = 0,
+      NRT_GPRS = 1,
+      NRT_EPS = 2
+      } network_regtype_t;
     typedef struct
       {
       event_type_t type;
@@ -126,6 +138,7 @@ class modem : public pcp, public InternalRamAllocated
 
     std::string            m_line_buffer;
     network_registration_t m_netreg;
+    network_registration_t m_netreg_d[CELLULAR_NETREG_COUNT];
     std::string            m_provider;
     int                    m_sq;
     bool                   m_pincode_required;
@@ -201,7 +214,7 @@ class modem : public pcp, public InternalRamAllocated
     void IncomingMuxData(GsmMuxChannel* channel);
     void SendSetState1(modem_state1_t newstate);
     bool IsStarted();
-    void SetNetworkRegistration(network_registration_t netreg);
+    void SetNetworkRegistration(network_regtype_t regtype, network_registration_t netreg);
     void SetProvider(std::string provider);
     void SetSignalQuality(int newsq);
     void ClearNetMetrics();
