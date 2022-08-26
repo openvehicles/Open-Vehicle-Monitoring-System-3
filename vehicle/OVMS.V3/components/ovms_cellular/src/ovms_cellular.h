@@ -150,6 +150,9 @@ class modem : public pcp, public InternalRamAllocated
     GsmPPPOS*              m_ppp;
     GsmNMEA*               m_nmea;
 
+    bool                   m_cmd_running;
+    std::string            m_cmd_output;
+
   public:
     // Modem power control and initialisation
     virtual void SetPowerMode(PowerMode powermode);

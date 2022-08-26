@@ -285,6 +285,8 @@ modem::modem(const char* name, uart_port_t uartnum, int baud, int rxpin, int txp
   m_mux = NULL;
   m_ppp = NULL;
   m_driver = NULL;
+  m_cmd_running = false;
+  m_cmd_output.clear();
 
   ClearNetMetrics();
   StartTask();
@@ -988,6 +990,12 @@ void modem::StandardLineHandler(int channel, OvmsBuffer* buf, std::string line)
   if (line.length() == 0)
     return;
 
+  if ((m_cmd_running)&&(channel == m_mux_channel_CMD))
+    {
+    m_cmd_output.append(line);
+    m_cmd_output.append("\r\n");
+    }
+
   // expecting continuation of previous line?
   if (m_line_unfinished == channel)
     {
@@ -1593,6 +1601,10 @@ void cellular_muxtx(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
 void cellular_cmd(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   std::string msg;
+
+  MyModem->m_cmd_output.clear();
+  MyModem->m_cmd_running = true;
+
   for (int k=0; k<argc; k++)
     {
     if (k>0)
@@ -1602,14 +1614,31 @@ void cellular_cmd(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
     msg.append(argv[k]);
     }
   msg.append("\r\n");
-  bool sent = MyModem->txcmd(msg.c_str(),msg.length());
+  if (!MyModem->txcmd(msg.c_str(),msg.length()))
+    {
+    if (verbosity >= COMMAND_RESULT_MINIMAL)
+      {
+      writer->puts("ERROR: MODEM command channel not available!");
+      }
+    return;
+    }
+
+  // Wait for output to stabilise
+  size_t cmdsize = UINT_MAX;
+  size_t iter = 0;
+  while ((MyModem->m_cmd_output.size() != cmdsize) && (iter < 5))
+    {
+    iter++;
+    cmdsize = MyModem->m_cmd_output.size();
+    vTaskDelay(pdMS_TO_TICKS(500));
+    }
+
+  MyModem->m_cmd_running = false;
   if (verbosity >= COMMAND_RESULT_MINIMAL)
     {
-    if (sent)
-      writer->puts("MODEM command has been sent.");
-    else
-      writer->puts("ERROR: MODEM command channel not available!");
+    writer->write(MyModem->m_cmd_output.c_str(), MyModem->m_cmd_output.size());
     }
+  MyModem->m_cmd_output.clear();
   }
 
 void cellular_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
