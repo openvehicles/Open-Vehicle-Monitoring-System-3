@@ -107,12 +107,12 @@ void wifi_mode_client(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int a
     return;
     }
 
-  if (!MyConfig.IsDefined("wifi.ssid", argv[0]))
+  std::string password = MyConfig.GetParamValue("wifi.ssid", argv[0]);
+  if (password.empty())
     {
     writer->puts("Error: SSID password must be defined in config wifi.ssid");
     return;
     }
-  std::string password = MyConfig.GetParamValue("wifi.ssid", argv[0]);
 
   if (argc == 1)
     {
@@ -193,12 +193,12 @@ void wifi_mode_apclient(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int
   if (argc >= 2 && argv[1][0])
     {
     stassid = argv[1];
-    if (!MyConfig.IsDefined("wifi.ssid", argv[1]))
+    stapassword = MyConfig.GetParamValue("wifi.ssid", argv[1]);
+    if (stapassword.empty())
       {
       writer->puts("Error: SSID password must be defined in config wifi.ssid");
       return;
       }
-    stapassword = MyConfig.GetParamValue("wifi.ssid", argv[1]);
     }
 
   if (argc >= 3)
@@ -443,13 +443,11 @@ void esp32wifi::AutoInit()
       }
     else
       {
-      if (!MyConfig.IsDefined("wifi.ssid", stassid))
+      stapassword = MyConfig.GetParamValue("wifi.ssid", stassid);
+      if (stapassword.empty())
         ESP_LOGE(TAG, "AutoInit: no password set for SSID %s, mode inhibited", stassid.c_str());
       else
-        {
-        stapassword = MyConfig.GetParamValue("wifi.ssid", stassid);
         StartClientMode(stassid, stapassword);
-        }
       }
     }
   else if (mode == "apclient")
@@ -473,11 +471,11 @@ void esp32wifi::AutoInit()
     stassid = MyConfig.GetParamValue("auto", "wifi.ssid.client");
     if (!stassid.empty())
       {
-      if (!MyConfig.IsDefined("wifi.ssid", stassid))
+      stapassword = MyConfig.GetParamValue("wifi.ssid", stassid);
+      if (stapassword.empty())
         {
         ESP_LOGE(TAG, "AutoInit: Wifi client password must be specified for SSID %s", stassid.c_str());
         }
-      stapassword = MyConfig.GetParamValue("wifi.ssid", stassid);
       }
 
     if (!appassword.empty())
@@ -1226,7 +1224,7 @@ void esp32wifi::EventWifiScanDone(std::string event, void* data)
         {
         // scanning mode:
         password = MyConfig.GetParamValue("wifi.ssid", (const char*)list[k].ssid);
-        if (MyConfig.IsDefined("wifi.ssid", (const char*)list[k].ssid))
+        if (!password.empty())
           ap_connect = k;
         }
       else
