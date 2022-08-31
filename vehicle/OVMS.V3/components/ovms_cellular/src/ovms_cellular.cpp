@@ -842,7 +842,7 @@ modem::modem_state1_t modem::State1Ticker1()
       if (m_mux != NULL)
         {
         if ((m_state1_ticker>5)&&((m_state1_ticker % 30) == 0))
-          { muxtx(m_mux_channel_POLL, "AT+CREG?;+CCLK?;+CSQ;+COPS?\r\n"); }
+          { m_driver->StatusPoller(); }
         if (m_mux->IsMuxUp())
           return NetWait;
         }
@@ -863,7 +863,7 @@ modem::modem_state1_t modem::State1Ticker1()
       else if ((m_state1_ticker > 3)&&((m_netreg >= Registered)))
         return NetStart; // We have GSM, so start the network
       if ((m_mux != NULL)&&(m_state1_ticker>3)&&((m_state1_ticker % 10) == 0))
-        { muxtx(m_mux_channel_POLL, "AT+CREG?;+CCLK?;+CSQ;+COPS?\r\n"); }
+        { m_driver->StatusPoller(); }
       break;
 
     case NetStart:
@@ -899,14 +899,14 @@ modem::modem_state1_t modem::State1Ticker1()
 
     case NetHold:
       if ((m_mux != NULL)&&(m_state1_ticker>5)&&((m_state1_ticker % 30) == 0))
-        { muxtx(m_mux_channel_POLL, "AT+CREG?;+CCLK?;+CSQ;+COPS?\r\n"); }
+        { m_driver->StatusPoller(); }
       break;
 
     case NetSleep:
       if (m_powermode == On) return NetWait;
       if (m_powermode != Sleep) return PoweringOn;
       if ((m_mux != NULL)&&(m_state1_ticker>5)&&((m_state1_ticker % 30) == 0))
-        { muxtx(m_mux_channel_POLL, "AT+CREG?;+CCLK?;+CSQ;+COPS?\r\n"); }
+        { m_driver->StatusPoller(); }
       break;
 
     case NetMode:
