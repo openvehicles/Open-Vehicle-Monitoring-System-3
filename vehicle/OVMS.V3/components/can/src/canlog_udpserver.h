@@ -25,8 +25,8 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __CANLOG_TCP_SERVER_H__
-#define __CANLOG_TCP_SERVER_H__
+#ifndef __CANLOG_UDP_SERVER_H__
+#define __CANLOG_UDP_SERVER_H__
 
 #include <sdkconfig.h>
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
@@ -35,11 +35,30 @@
 #include "ovms_netmanager.h"
 #include "ovms_mutex.h"
 
-class canlog_tcpserver : public canlog
+class udpcanlogconnection: public canlogconnection
   {
   public:
-    canlog_tcpserver(std::string path, std::string format, canformat::canformat_serve_mode_t mode);
-    virtual ~canlog_tcpserver();
+    udpcanlogconnection(canlog* logger, std::string format, canformat::canformat_serve_mode_t mode);
+    virtual ~udpcanlogconnection();
+
+  public:
+    virtual void OutputMsg(CAN_log_message_t& msg, std::string &result);
+
+  public:
+    void Tickle();
+
+  public:
+    sock_t m_sock;             // Our main listening UDP socket
+    struct sockaddr m_sa;      // Our remote client address
+    mg_connection m_fakenc;    // A fake nc, just as an index to us
+    uint32_t m_timeout;        // Our timeout
+  };
+
+class canlog_udpserver : public canlog
+  {
+  public:
+    canlog_udpserver(std::string path, std::string format, canformat::canformat_serve_mode_t mode);
+    virtual ~canlog_udpserver();
 
   public:
     virtual bool Open();
@@ -48,6 +67,7 @@ class canlog_tcpserver : public canlog
 
   public:
     void MongooseHandler(struct mg_connection *nc, int ev, void *p);
+    void Ticker(std::string event, void* data);
 
   public:
     struct mg_connection *m_mgconn;
@@ -57,4 +77,4 @@ class canlog_tcpserver : public canlog
   };
 
 #endif // #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
-#endif // __CANLOG_TCP_SERVER_H__
+#endif // __CANLOG_UDP_SERVER_H__
