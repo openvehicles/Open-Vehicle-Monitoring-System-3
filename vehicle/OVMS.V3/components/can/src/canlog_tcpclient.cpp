@@ -164,7 +164,16 @@ bool canlog_tcpclient::Open()
       opts.error_string = &err;
       if (mg_connect_opt(mgr, m_path.c_str(), tcMongooseHandler, opts) != NULL)
         {
-        return true;
+        // Wait 10s max for connection establishment...
+        m_connecting = true;
+        int timeout = 10000000;
+        const int step = 10000; // check every 10 ms
+        while (m_connecting && timeout > 0)
+        {
+          timeout -= step;
+          usleep(step);
+        }
+        return m_isopen;
         }
       else
         {
@@ -220,8 +229,9 @@ void canlog_tcpclient::MongooseHandler(struct mg_connection *nc, int ev, void *p
       {
       int *success = (int*)p;
       ESP_LOGV(TAG, "MongooseHandler(MG_EV_CONNECT=%d)",*success);
+      m_connecting = false;
       if (*success == 0)
-        { // Successful connection
+        { // Connection successful
         OvmsRecMutexLock lock(&m_cmmutex);
         ESP_LOGI(TAG, "Connection successful to %s",m_path.c_str());
         canlogconnection* clc = new canlogconnection(this, m_format, m_mode);
@@ -236,8 +246,7 @@ void canlog_tcpclient::MongooseHandler(struct mg_connection *nc, int ev, void *p
           }
         }
       else
-        {
-        // Connection failed
+        { // Connection failed
         ESP_LOGE(TAG, "Connection failed to %s",m_path.c_str());
         m_isopen = false;
         }
@@ -250,6 +259,7 @@ void canlog_tcpclient::MongooseHandler(struct mg_connection *nc, int ev, void *p
         OvmsRecMutexLock lock(&m_cmmutex);
         ESP_LOGE(TAG,"Disconnected from %s",m_path.c_str());
         m_isopen = false;
+        m_connecting = false;
         auto k = m_connmap.find(nc);
         if (k != m_connmap.end())
           {

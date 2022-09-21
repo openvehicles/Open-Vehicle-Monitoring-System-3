@@ -48,6 +48,7 @@ class canlog_tcpclient : public canlog
 
   public:
     std::string         m_path;
+    bool                m_connecting;
   };
 
 #endif // __CANLOG_TCP_CLIENT_H__
