@@ -34,7 +34,6 @@ static const char *TAG = "canlog-tcpclient";
 #include "canformat.h"
 #include "canlog_tcpclient.h"
 #include "ovms_config.h"
-#include "ovms_peripherals.h"
 
 canlog_tcpclient* MyCanLogTcpClient = NULL;
 
@@ -83,9 +82,9 @@ OvmsCanLogTcpClientInit::OvmsCanLogTcpClientInit()
         {
         // We have a place to put our command tree..
         OvmsCommand* start = cmd_can_log_start->RegisterCommand("tcpclient", "CAN logging as TCP client");
-        OvmsCommand* discard = start->RegisterCommand("discard","CAN logging as TCP client (discard mode)");
-        OvmsCommand* simulate = start->RegisterCommand("simulate","CAN logging as TCP client (simulate mode)");
-        OvmsCommand* transmit = start->RegisterCommand("transmit","CAN logging as TCP client (transmit mode)");
+        OvmsCommand* discard = start->RegisterCommand("discard", "CAN logging as TCP client (discard mode)");
+        OvmsCommand* simulate = start->RegisterCommand("simulate", "CAN logging as TCP client (simulate mode)");
+        OvmsCommand* transmit = start->RegisterCommand("transmit", "CAN logging as TCP client (transmit mode)");
         MyCanFormatFactory.RegisterCommandSet(discard, "Start CAN logging as TCP client (discard mode)",
           can_log_tcpclient_start,
           "<host:port> [filter1] ... [filterN]\n"
@@ -165,31 +164,24 @@ bool canlog_tcpclient::Open()
       if (mg_connect_opt(mgr, m_path.c_str(), tcMongooseHandler, opts) != NULL)
         {
         // Wait 10s max for connection establishment...
-        m_connecting = true;
-        int timeout = 10000000;
-        const int step = 10000; // check every 10 ms
-        while (m_connecting && timeout > 0)
-        {
-          timeout -= step;
-          usleep(step);
-        }
+        m_connecting.Take(pdMS_TO_TICKS(10*1000));
         return m_isopen;
         }
       else
         {
-        ESP_LOGE(TAG,"Could not connect to %s",m_path.c_str());
+        ESP_LOGE(TAG, "Could not connect to %s", m_path.c_str());
         return false;
         }
       }
     else
       {
-      ESP_LOGI(TAG,"Delay TCP client (as network manager not up)");
+      ESP_LOGI(TAG, "Delay TCP client (as network manager not up)");
       return true;
       }
     }
   else
     {
-    ESP_LOGE(TAG,"Network manager is not available");
+    ESP_LOGE(TAG, "Network manager is not available");
     return false;
     }
   }
@@ -229,11 +221,10 @@ void canlog_tcpclient::MongooseHandler(struct mg_connection *nc, int ev, void *p
       {
       int *success = (int*)p;
       ESP_LOGV(TAG, "MongooseHandler(MG_EV_CONNECT=%d)",*success);
-      m_connecting = false;
       if (*success == 0)
         { // Connection successful
         OvmsRecMutexLock lock(&m_cmmutex);
-        ESP_LOGI(TAG, "Connection successful to %s",m_path.c_str());
+        ESP_LOGI(TAG, "Connection successful to %s", m_path.c_str());
         canlogconnection* clc = new canlogconnection(this, m_format, m_mode);
         clc->m_nc = nc;
         clc->m_peer = m_path;
@@ -247,9 +238,10 @@ void canlog_tcpclient::MongooseHandler(struct mg_connection *nc, int ev, void *p
         }
       else
         { // Connection failed
-        ESP_LOGE(TAG, "Connection failed to %s",m_path.c_str());
+        ESP_LOGE(TAG, "Connection failed to %s", m_path.c_str());
         m_isopen = false;
         }
+      m_connecting.Give();
       }
       break;
     case MG_EV_CLOSE:
@@ -257,9 +249,8 @@ void canlog_tcpclient::MongooseHandler(struct mg_connection *nc, int ev, void *p
       if (m_isopen)
         {
         OvmsRecMutexLock lock(&m_cmmutex);
-        ESP_LOGE(TAG,"Disconnected from %s",m_path.c_str());
+        ESP_LOGE(TAG, "Disconnected from %s", m_path.c_str());
         m_isopen = false;
-        m_connecting = false;
         auto k = m_connmap.find(nc);
         if (k != m_connmap.end())
           {

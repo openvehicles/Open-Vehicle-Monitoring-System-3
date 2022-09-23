@@ -31,6 +31,7 @@
 #include "canlog.h"
 #include "ovms_netmanager.h"
 #include "ovms_mutex.h"
+#include "ovms_semaphore.h"
 
 class canlog_tcpclient : public canlog
   {
@@ -48,7 +49,7 @@ class canlog_tcpclient : public canlog
 
   public:
     std::string         m_path;
-    bool                m_connecting;
+    OvmsSemaphore       m_connecting;
   };
 
 #endif // __CANLOG_TCP_CLIENT_H__
