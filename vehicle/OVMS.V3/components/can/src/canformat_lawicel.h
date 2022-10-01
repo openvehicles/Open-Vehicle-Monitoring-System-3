@@ -24,18 +24,18 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __CANFORMAT_LAWRICEL_H__
-#define __CANFORMAT_LAWRICEL_H__
+#ifndef __CANFORMAT_LAWICEL_H__
+#define __CANFORMAT_LAWICEL_H__
 
 #include "canformat.h"
 
-#define CANFORMAT_LAWRICEL_MAXLEN 48
+#define CANFORMAT_LAWICEL_MAXLEN 48
 
-class canformat_lawricel : public canformat
+class canformat_lawicel : public canformat
   {
   public:
-    canformat_lawricel(const char* type);
-    virtual ~canformat_lawricel();
+    canformat_lawicel(const char* type);
+    virtual ~canformat_lawicel();
 
   public:
     virtual std::string get(CAN_log_message_t* message);
@@ -43,4 +43,4 @@ class canformat_lawricel : public canformat
     virtual size_t put(CAN_log_message_t* message, uint8_t *buffer, size_t len, bool* hasmore, canlogconnection* clc=NULL);
   };
 
-#endif // __CANFORMAT_LAWRICEL_H__
+#endif // __CANFORMAT_LAWICEL_H__

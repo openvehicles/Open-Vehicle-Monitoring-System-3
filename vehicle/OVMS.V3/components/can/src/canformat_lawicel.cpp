@@ -25,44 +25,44 @@
 */
 
 #include "ovms_log.h"
-static const char *TAG = "canformat-lawricel";
+static const char *TAG = "canformat-lawicel";
 
 #include <errno.h>
 #include "pcp.h"
-#include "canformat_lawricel.h"
+#include "canformat_lawicel.h"
 
 ////////////////////////////////////////////////////////////////////////
 // Initialisation and Registration
 ////////////////////////////////////////////////////////////////////////
 
-class OvmsCanFormatLawricelInit
+class OvmsCanFormatLawicelInit
   {
-  public: OvmsCanFormatLawricelInit();
-} MyOvmsCanFormatLawricelTInit  __attribute__ ((init_priority (4505)));
+  public: OvmsCanFormatLawicelInit();
+} MyOvmsCanFormatLawicelTInit  __attribute__ ((init_priority (4505)));
 
-OvmsCanFormatLawricelInit::OvmsCanFormatLawricelInit()
+OvmsCanFormatLawicelInit::OvmsCanFormatLawicelInit()
   {
-  ESP_LOGI(TAG, "Registering CAN Format: LAWRICEL (4505)");
+  ESP_LOGI(TAG, "Registering CAN Format: LAWICEL (4505)");
 
-  MyCanFormatFactory.RegisterCanFormat<canformat_lawricel>("lawricel");
+  MyCanFormatFactory.RegisterCanFormat<canformat_lawicel>("lawicel");
   }
 
 ////////////////////////////////////////////////////////////////////////
 // Base GVRET implementation (utility)
 ////////////////////////////////////////////////////////////////////////
 
-canformat_lawricel::canformat_lawricel(const char* type)
+canformat_lawicel::canformat_lawicel(const char* type)
   : canformat(type)
   {
   }
 
-canformat_lawricel::~canformat_lawricel()
+canformat_lawicel::~canformat_lawicel()
   {
   }
 
-std::string canformat_lawricel::get(CAN_log_message_t* message)
+std::string canformat_lawicel::get(CAN_log_message_t* message)
   {
-  char buf[CANFORMAT_LAWRICEL_MAXLEN];
+  char buf[CANFORMAT_LAWICEL_MAXLEN];
 
   if ((message->type != CAN_LogFrame_RX)&&
       (message->type != CAN_LogFrame_TX))
@@ -87,12 +87,12 @@ std::string canformat_lawricel::get(CAN_log_message_t* message)
   return std::string(buf);
   }
 
-std::string canformat_lawricel::getheader(struct timeval *time)
+std::string canformat_lawicel::getheader(struct timeval *time)
   {
   return std::string("");
   }
 
-size_t canformat_lawricel::put(CAN_log_message_t* message, uint8_t *buffer, size_t len, bool* hasmore, canlogconnection* clc)
+size_t canformat_lawicel::put(CAN_log_message_t* message, uint8_t *buffer, size_t len, bool* hasmore, canlogconnection* clc)
   {
   if (m_buf.FreeSpace()==0) SetServeDiscarding(true); // Buffer full, so discard from now on
   if (IsServeDiscarding()) return len;  // Quick return if discarding
