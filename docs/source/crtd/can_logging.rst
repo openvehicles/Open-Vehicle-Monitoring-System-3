@@ -77,7 +77,7 @@ or log specific CAN packets by applying a filter e.g 0x55b the Nissan LEAF SoC C
 
 ``ovms# can log start vfs crtd /sd/can.crtd 55b``
   
-Other CAN log file formats are supported e.g ``crtd, gvret-a, gvret-b, lawricel, pcap, raw``.
+Other CAN log file formats are supported e.g ``crtd, cs11, gvret-a, gvret-b, lawricel, pcap, raw``
   
 Check CAN logging satus with:
 

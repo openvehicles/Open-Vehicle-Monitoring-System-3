@@ -25,7 +25,7 @@
 */
 
 #include "ovms_log.h"
-static const char *TAG = "canformat-crtd";
+static const char *TAG = "canformat-cs11";
 
 #include <errno.h>
 #include "pcp.h"
