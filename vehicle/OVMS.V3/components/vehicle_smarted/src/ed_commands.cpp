@@ -623,24 +623,32 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandStat(int verbosity, Ov
   writer->printf("SOC: %s\n", (char*) StdMetrics.ms_v_bat_soc->AsUnitString("-", Native, 1).c_str());
   writer->printf("realSOC: %s\n", (char*) mt_real_soc->AsUnitString("-", Native, 1).c_str());
 
-  const char* range_ideal = StdMetrics.ms_v_bat_range_ideal->AsUnitString("-", rangeUnit, 0).c_str();
-  if (*range_ideal != '-')
-    writer->printf("Ideal range: %s\n", range_ideal);
+  if (StdMetrics.ms_v_bat_range_ideal->IsDefined())
+    {
+    const std::string& range_ideal = StdMetrics.ms_v_bat_range_ideal->AsUnitString("-", rangeUnit, 0);
+    writer->printf("Ideal range: %s\n", range_ideal.c_str());
+    }
 
-  const char* range_est = StdMetrics.ms_v_bat_range_est->AsUnitString("-", rangeUnit, 0).c_str();
-  if (*range_est != '-')
-    writer->printf("Est. range: %s\n", range_est);
+  if (StdMetrics.ms_v_bat_range_est->IsDefined())
+    {
+    const std::string& range_est = StdMetrics.ms_v_bat_range_est->AsUnitString("-", rangeUnit, 0);
+    writer->printf("Est. range: %s\n", range_est.c_str());
+    }
 
-  const char* chargedkwh = StdMetrics.ms_v_charge_kwh->AsUnitString("-", Native, 3).c_str();
-  if (*chargedkwh != '-')
-    writer->printf("Energy charged: %s\n", chargedkwh);
+  if (StdMetrics.ms_v_charge_kwh->IsDefined())
+    {
+    const std::string& chargedkwh = StdMetrics.ms_v_charge_kwh->AsUnitString("-", Native, 3);
+    writer->printf("Energy charged: %s\n", chargedkwh.c_str());
+    }
 
-  const char* odometer = StdMetrics.ms_v_pos_odometer->AsUnitString("-", rangeUnit, 1).c_str();
-  if (*odometer != '-')
+  if (StdMetrics.ms_v_pos_odometer->IsDefined())
+    {
+    const std::string& odometer = StdMetrics.ms_v_pos_odometer->AsUnitString("-", rangeUnit, 1);
     writer->printf("ODO: %s\n", odometer);
+    }
 
-  const char* days = mt_v_bat_LastMeas_days->AsUnitString("-", Native, 0).c_str();
-  if (*days != '-') {
+  if (mt_v_bat_LastMeas_days->IsDefined())
+  {
     writer->printf("Last measurement      : %d day(s)\n", mt_v_bat_LastMeas_days->AsInt());
     writer->printf("Measurement estimation: %.3f\n", mt_v_bat_Cap_meas_quality->AsFloat());
     writer->printf("Actual estimation     : %.3f\n", mt_v_bat_Cap_combined_quality->AsFloat());
@@ -649,9 +657,11 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandStat(int verbosity, Ov
     writer->printf("CAP max : %5.0f As/10, %2.1f Ah\n", mt_v_bat_Cap_As_max->AsFloat(), mt_v_bat_Cap_As_max->AsFloat()/360.0);
   }
 
-  const char* soh = StdMetrics.ms_v_bat_soh->AsUnitString("-", Native, 1).c_str();
-  if (*soh != '-')
-    writer->printf("SOH: %s\n", soh);
+  if (StdMetrics.ms_v_bat_soh->IsDefined())
+  {
+    const std::string& soh = StdMetrics.ms_v_bat_soh->AsUnitString("-", Native, 1);
+    writer->printf("SOH: %s\n", soh.c_str());
+  }
 
   return Success;
 }
