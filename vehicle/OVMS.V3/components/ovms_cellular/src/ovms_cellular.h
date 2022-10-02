@@ -257,6 +257,7 @@ class modemdriver : public InternalRamAllocated
   protected:
     unsigned int m_powercyclefactor;
     modem* m_modem;
+    int m_statuspoller_step;
   };
 
 template<typename Type> modemdriver* CreateCellularModemDriver()

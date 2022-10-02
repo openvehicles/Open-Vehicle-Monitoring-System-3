@@ -91,7 +91,33 @@ void simcom7600::StartupNMEA()
 void simcom7600::StatusPoller()
   {
   if (m_modem->m_mux != NULL)
-    { m_modem->muxtx(GetMuxChannelPOLL(), "AT+CREG?;+CGREG?;+CEREG?;+CCLK?;+CSQ;+CPSI?;+COPS?\r\n"); }
+    {
+    // The ESP32 UART queue has a capacity of 128 bytes, NMEA and PPP data may be
+    // coming in concurrently, and we cannot use flow control.
+    // Reduce the queue stress by distributing the status poll:
+    switch (++m_statuspoller_step)
+      {
+      case 1:
+        m_modem->muxtx(GetMuxChannelPOLL(), "AT+CREG?;+CGREG?;+CEREG?;+CCLK?;+CSQ\r\n");
+        // → ~ 80 bytes, e.g.
+        //  +CREG: 1,5  +CGREG: 1,5  +CEREG: 1,5  +CCLK: "22/09/09,12:54:41+08"  +CSQ: 13,99  
+        break;
+      case 2:
+        m_modem->muxtx(GetMuxChannelPOLL(), "AT+CPSI?\r\n");
+        // → ~ 85 bytes, e.g.
+        //  +CPSI: LTE,Online,262-02,0xB0F5,13179412,448,EUTRAN-BAND1,100,4,4,-122,-1184,-874,9  
+        break;
+      case 3:
+        m_modem->muxtx(GetMuxChannelPOLL(), "AT+COPS?\r\n");
+        // → ~ 35 bytes, e.g.
+        //  +COPS: 0,0,"vodafone.de Hologram",7  
+
+        // done, fallthrough:
+      default:
+        m_statuspoller_step = 0;
+        break;
+      }
+    }
   }
 
 void simcom7600::PowerCycle()
@@ -111,12 +137,12 @@ void simcom7600::PowerCycle()
 
 bool simcom7600::State1Leave(modem::modem_state1_t oldstate)
   {
-  return false;
+  return modemdriver::State1Leave(oldstate);
   }
 
 bool simcom7600::State1Enter(modem::modem_state1_t newstate)
   {
-  return false;
+  return modemdriver::State1Enter(newstate);
   }
 
 modem::modem_state1_t simcom7600::State1Activity(modem::modem_state1_t curstate)
@@ -130,7 +156,7 @@ modem::modem_state1_t simcom7600::State1Activity(modem::modem_state1_t curstate)
     return modem::None;
     }
 
-  return curstate;
+  return modemdriver::State1Activity(curstate);
   }
 
 modem::modem_state1_t simcom7600::State1Ticker1(modem::modem_state1_t curstate)
@@ -156,5 +182,5 @@ modem::modem_state1_t simcom7600::State1Ticker1(modem::modem_state1_t curstate)
     return modem::None;
     }
 
-  return curstate;
+  return modemdriver::State1Ticker1(curstate);
   }

@@ -61,6 +61,7 @@ modemdriver::modemdriver()
   {
   m_modem = MyPeripherals->m_cellular_modem;
   m_powercyclefactor = 0;
+  m_statuspoller_step = 0;
   }
 
 modemdriver::~modemdriver()
@@ -154,11 +155,13 @@ void modemdriver::StatusPoller()
 
 bool modemdriver::State1Leave(modem::modem_state1_t oldstate)
   {
+  m_statuspoller_step = 0;
   return false;
   }
 
 bool modemdriver::State1Enter(modem::modem_state1_t newstate)
   {
+  m_statuspoller_step = 0;
   return false;
   }
 
@@ -169,5 +172,9 @@ modem::modem_state1_t modemdriver::State1Activity(modem::modem_state1_t curstate
 
 modem::modem_state1_t modemdriver::State1Ticker1(modem::modem_state1_t curstate)
   {
+  if (m_statuspoller_step > 0)
+    {
+    StatusPoller();
+    }
   return curstate;
   }
