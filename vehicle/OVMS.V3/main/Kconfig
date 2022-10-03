@@ -401,6 +401,14 @@ config OVMS_VEHICLE_RENAULTZOE
     help
         Enable to include support for Renault Zoe vehicles.
 
+config OVMS_VEHICLE_RENAULTZOE_PH2_OBD
+    bool "Include support for Renault Zoe Phase2 vehicles (OBD port version)"
+    default y
+    depends on OVMS
+    depends on OVMS_COMP_CANOPEN
+    help
+        Enable to include support for Renault Zoe Phase 2 vehicles (OBD port version).
+        
 config OVMS_VEHICLE_MAXED3
     bool "Include support for Maxus eDeliver3 vehicle"
     default y
