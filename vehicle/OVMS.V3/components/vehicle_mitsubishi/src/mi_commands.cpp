@@ -35,11 +35,13 @@ void xmi_aux(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
 		return;
 	}
 
-	const char* auxBatt = StdMetrics.ms_v_bat_12v_voltage->AsUnitString("-", Volts, 2).c_str();
 
 	writer->printf("AUX BATTERY\n");
-	if (*auxBatt != '-')
-		writer->printf("Aux battery voltage %s\n", auxBatt);
+	if (StdMetrics.ms_v_bat_12v_voltage->IsDefined())
+	{
+		const std::string& auxBatt = StdMetrics.ms_v_bat_12v_voltage->AsUnitString("-", Volts, 2);
+		writer->printf("Aux battery voltage %s\n", auxBatt.c_str());
+	}
 }
 
 /**

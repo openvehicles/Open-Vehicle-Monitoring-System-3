@@ -997,33 +997,47 @@ OvmsVehicle::vehicle_command_t OvmsVehicleMitsubishi::CommandStat(int verbosity,
 
   writer->printf("SOC: %s\n", (char*) StdMetrics.ms_v_bat_soc->AsUnitString("-", Native, 1).c_str());
 
-  const char* range_ideal = StdMetrics.ms_v_bat_range_ideal->AsUnitString("-", rangeUnit, 0).c_str();
-  if (*range_ideal != '-')
-    writer->printf("Ideal range: %s\n", range_ideal );
+  if (StdMetrics.ms_v_bat_range_ideal->IsDefined())
+  {
+    const std::string& range_ideal = StdMetrics.ms_v_bat_range_ideal->AsUnitString("-", rangeUnit, 0);
+    writer->printf("Ideal range: %s\n", range_ideal.c_str() );
+  }
 
-  const char* range_est = StdMetrics.ms_v_bat_range_est->AsUnitString("-", rangeUnit, 0).c_str();
-  if (*range_est != '-')
-    writer->printf( "Est. range: %s\n", range_est );
+  if (StdMetrics.ms_v_bat_range_est->IsDefined())
+  {
+    const std::string& range_est = StdMetrics.ms_v_bat_range_est->AsUnitString("-", rangeUnit, 0);
+    writer->printf( "Est. range: %s\n", range_est.c_str() );
+  }
 
-  const char* odometer = StdMetrics.ms_v_pos_odometer->AsUnitString("-", rangeUnit, 1).c_str();
-  if (*odometer != '-')
-    writer->printf( "ODO: %s\n", odometer );
+  if (StdMetrics.ms_v_pos_odometer->IsDefined())
+  {
+    const std::string& odometer = StdMetrics.ms_v_pos_odometer->AsUnitString("-", rangeUnit, 1);
+    writer->printf( "ODO: %s\n", odometer.c_str() );
+  }
 
-  const char* cac = StdMetrics.ms_v_bat_cac->AsUnitString("-", Native, 1).c_str();
-  if ( *cac != '-')
-    writer->printf( "CAC: %s\n", cac );
+  if (StdMetrics.ms_v_bat_cac->IsDefined())
+  {
+    const std::string& cac = StdMetrics.ms_v_bat_cac->AsUnitString("-", Native, 1);
+    writer->printf( "CAC: %s\n", cac.c_str() );
+  }
 
-  const char* soh = StdMetrics.ms_v_bat_soh->AsUnitString("-", Native, 0).c_str();
-  if (*soh != '-')
-    writer->printf("SOH: %s\n", soh);
+  if (StdMetrics.ms_v_bat_soh->IsDefined())
+  {
+    const std::string& soh = StdMetrics.ms_v_bat_soh->AsUnitString("-", Native, 0);
+    writer->printf("SOH: %s\n", soh.c_str());
+  }
 
-  const char* charge_kWh_ac = ms_v_charge_ac_kwh->AsUnitString("-", Native, 3).c_str();
-  if (*charge_kWh_ac != '-')
-    writer->printf( "AC charge: %s kWh\n", charge_kWh_ac );
+  if (ms_v_charge_ac_kwh->IsDefined())
+  {
+    const std::string& charge_kWh_ac = ms_v_charge_ac_kwh->AsUnitString("-", Native, 3);
+    writer->printf( "AC charge: %s kWh\n", charge_kWh_ac.c_str() );
+  }
 
-  const char* charge_kWh_dc = ms_v_charge_dc_kwh->AsUnitString("-", Native, 3).c_str();
-  if (*charge_kWh_dc != '-')
-    writer->printf( "DC charge: %s kWh\n", charge_kWh_dc );
+  if (ms_v_charge_dc_kwh->IsDefined())
+  {
+    const std::string& charge_kWh_dc = ms_v_charge_dc_kwh->AsUnitString("-", Native, 3);
+    writer->printf( "DC charge: %s kWh\n", charge_kWh_dc.c_str() );
+  }
 
   return Success;
 }
