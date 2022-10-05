@@ -17,7 +17,7 @@ OVMS includes a Virtual File System (VFS) used to unify all storage in the syste
   stat                 VFS Status of a file
   tail                 VFS Output tail of a file
 
-Please take care. This is a very small microcontroller based system with limited storage. The /store area should only be used for storage of configurations and small scripts. The /sd SD CARD area is more flexibly and can be used for storing of configuration logs, firmware images, etc.
+Please take care. This is a very small microcontroller based system with limited storage. The /store area should only be used for storage of configurations and small scripts. The /sd SD CARD area is more flexible and can be used for storing of configuration logs, firmware images, etc.
 
 
 --------------

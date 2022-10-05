@@ -71,7 +71,7 @@ As this is insecure, you should take care not to leave the module running unconf
 
 Using your laptop/tablet/phone, establish a wifi connection to the module. You should see an IP address in the range 192.168.4.x allocated, with a gateway at 192.168.4.1.
 
-Note: Some smartphones (e.g Android) require mobile data to be switched off to use a WiFi connection without a interent connectivity. 
+Note: Some smartphones (e.g Android) require mobile data to be switched off to use a WiFi connection without a internet connectivity.
 
 Launch your web browser, and connect as follows:
 

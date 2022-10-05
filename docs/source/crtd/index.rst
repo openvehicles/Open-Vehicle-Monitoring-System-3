@@ -40,10 +40,11 @@ Specification
 
 CRTD files are UTF-8 text files using LF or CR+LF line termination to
 separate each record.
+::
 
   <crtd-file> ::= { <crtd-record> [CR] LF }
 
-The records are formatted as follows:
+The records are formatted as follows::
 
   <crtd-record>    ::= <timestamp> <space> <crtd-type>
   <timestamp>      ::= <julianseconds> . [ <milliseconds> | <microseconds> ]
