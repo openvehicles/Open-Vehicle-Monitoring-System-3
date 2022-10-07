@@ -38,21 +38,23 @@ static const char *TAG = "v-chevroletc6corvette";
 static const OvmsVehicle::poll_pid_t obdii_polls[] =
   {
     // Engine coolant temp
-    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x05, {  0, 30, 30 }, 0, ISOTP_STD },
+    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x05, {  0, 30 }, 0, ISOTP_STD },
     // Engine RPM
-    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x0c, { 10, 10, 10 }, 0, ISOTP_STD },
+    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x0c, {  0, 10 }, 0, ISOTP_STD },
     // Speed
-    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x0d, {  0, 10, 10 }, 0, ISOTP_STD },
+    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x0d, {  0, 10 }, 0, ISOTP_STD },
     // Engine air intake temp
-    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x0f, {  0, 30, 30 }, 0, ISOTP_STD },
+    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x0f, {  0, 30 }, 0, ISOTP_STD },
     // Fuel level
-    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x2f, {  0, 30, 30 }, 0, ISOTP_STD },
+    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x2f, {  0, 30 }, 0, ISOTP_STD },
     // Ambiant temp
-    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x46, {  0, 30, 30 }, 0, ISOTP_STD },
+    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x46, {  0, 30 }, 0, ISOTP_STD },
     // Engine oil temp
-    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x5c, {  0, 30, 30 }, 0, ISOTP_STD },
+    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x5c, {  0, 30 }, 0, ISOTP_STD },
+#ifdef notdef
     // VIN
-    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIIVEHICLE, 0x02, {999,999,999 }, 0, ISOTP_STD },
+    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIIVEHICLE, 0x02, {999,999 }, 0, ISOTP_STD },
+#endif
     POLL_LIST_END
   };
 
@@ -60,9 +62,9 @@ OvmsVehicleChevroletC6Corvette::OvmsVehicleChevroletC6Corvette()
   {
   ESP_LOGI(TAG, "Chevrolet C6 Corvette vehicle module");
 
-  memset(m_vin,0,sizeof(m_vin));
+  memset(m_vin, 0, sizeof(m_vin));
 
-  RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
+  RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
   PollSetPidList(m_can1, obdii_polls);
   PollSetState(0);
   }
@@ -72,28 +74,85 @@ OvmsVehicleChevroletC6Corvette::~OvmsVehicleChevroletC6Corvette()
   ESP_LOGI(TAG, "Shutdown Chevrolet C6 Corvette vehicle module");
   }
 
-void OvmsVehicleChevroletC6Corvette::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
+void OvmsVehicleChevroletC6Corvette::IncomingFrameCan1(CAN_frame_t* p_frame)
   {
-  int value1 = (int)data[0];
-  int value2 = ((int)data[0] << 8) + (int)data[1];
+  int i, len;
+  uint8_t *d;
 
-  switch (pid)
+  d = p_frame->data.u8;
+  len = p_frame->FIR.B.DLC;
+  if (len > sizeof(p_frame->data))
+    len = sizeof(p_frame->data);
+
+  switch (p_frame->MsgID)
     {
-    case 0x02:  // VIN (multi-line response)
-      // Data in the first frame starts with 0x01 for some (all?) vehicles
-      if (length > 1 && data[0] == 0x01)
+    case 0x131:
+      /* Last 8 of vin */
+      if (m_vin[1 + 8] == '\0') {
+	i = len;
+	if (i > 8)
+	  i = 8;
+        memcpy(m_vin + 1 + 8, d, i);
+	/* Publish once we have the whole VIN */
+        if (m_vin[0] != '\0')
+          StandardMetrics.ms_v_vin->SetValue(m_vin);
+      }
+      break;
+
+    case 0x300:
+      if (d[1] != 0)
         {
-        ++data;
-        --length;
+        // Engine running for any non-zero value 
+        PollSetState(1);
+        StandardMetrics.ms_v_env_handbrake->SetValue(false);
+        StandardMetrics.ms_v_env_on->SetValue(true);
+        StandardMetrics.ms_v_env_charging12v->SetValue(true);
         }
-      strncat(m_vin,(char*)data,length);
-      if (mlremain==0)
+      else
         {
-        StandardMetrics.ms_v_vin->SetValue(m_vin);
-        m_vin[0] = 0;
+        PollSetState(0);
+        StandardMetrics.ms_v_env_handbrake->SetValue(true);
+        StandardMetrics.ms_v_env_on->SetValue(false);
+        StandardMetrics.ms_v_pos_speed->SetValue(0);
+        StandardMetrics.ms_v_mot_rpm->SetValue(0);
+        StandardMetrics.ms_v_env_charging12v->SetValue(false);
         }
       break;
 
+#ifdef notdef
+    case 0x308:
+      /* Engine RPM */
+      // XXX we don't know how to convert rpm yet
+      // StandardMetrics.ms_v_mot_rpm->SetValue(rpm);
+#endif
+
+    case 0x670:
+      /* First 8 of vin */
+      if (m_vin[0] == '\0') {
+	i = len;
+	if (i > 8)
+	  i = 8;
+	/* The World Manufacturer number: United States */
+        m_vin[0] = '1';
+        memcpy(m_vin + 1, d, i);
+	/* Publish once we have the whole VIN */
+        if (m_vin[1 + 8] != '\0')
+          StandardMetrics.ms_v_vin->SetValue(m_vin);
+      }
+      break;
+
+    default:
+      break;
+    }
+  }
+
+void OvmsVehicleChevroletC6Corvette::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
+  {
+  int value1 = (int)data[0];
+  // int value2 = ((int)data[0] << 8) + (int)data[1];
+
+  switch (pid)
+    {
     case 0x05:  // Engine coolant temperature
       StandardMetrics.ms_v_bat_temp->SetValue(value1 - 0x28);
       break;
@@ -118,6 +177,7 @@ void OvmsVehicleChevroletC6Corvette::IncomingPollReply(canbus* bus, uint16_t typ
       StandardMetrics.ms_v_bat_soc->SetValue((value1 * 100) >> 8);
       break;
 
+#ifdef notdef
     case 0x0c:  // Engine RPM
       if (value2 == 0)
         { // Car engine is OFF
@@ -134,6 +194,9 @@ void OvmsVehicleChevroletC6Corvette::IncomingPollReply(canbus* bus, uint16_t typ
         StandardMetrics.ms_v_env_on->SetValue(true);
         StandardMetrics.ms_v_env_charging12v->SetValue(true);
         }
+      break;
+#endif
+    default:
       break;
     }
   }
