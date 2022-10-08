@@ -67,10 +67,41 @@ void OvmsVehicle::BmsSetCellArrangementVoltage(int readings, int readingspermodu
   m_bms_bitset_v.reserve(readings);
 
   m_bms_readings_v = readings;
+  m_bms_readings_cap_v = readings;
   m_bms_readingspermodule_v = readingspermodule;
 
   BmsResetCellVoltages(true);
   }
+
+void OvmsVehicle::BmsCapCellVoltageCount(int readings)
+  {
+  if (readings != m_bms_readings_v)
+    {
+    if (readings < m_bms_readings_v)
+      {
+      BmsResetCellVoltageBits(readings, m_bms_readings_v-readings);
+      m_bms_readings_cap_v = readings;
+      if (m_bms_bitset_cv == readings)
+        BmsFinaliseCellVoltages();
+      }
+    }
+  }
+
+
+void OvmsVehicle::BmsCapCellTemperatureCount(int readings)
+  {
+  if (readings != m_bms_readings_cap_t)
+    {
+    if (readings < m_bms_readings_t)
+      {
+      BmsResetCellTemperatureBits(readings, m_bms_readings_t-readings);
+      m_bms_readings_cap_t = readings;
+      if (m_bms_bitset_ct == m_bms_readings_cap_t)
+        BmsFinaliseCellVoltages();
+      }
+    }
+  }
+
 
 void OvmsVehicle::BmsSetCellArrangementTemperature(int readings, int readingspermodule)
   {
@@ -90,6 +121,7 @@ void OvmsVehicle::BmsSetCellArrangementTemperature(int readings, int readingsper
   m_bms_bitset_t.reserve(readings);
 
   m_bms_readings_t = readings;
+  m_bms_readings_cap_t = readings;
   m_bms_readingspermodule_t = readingspermodule;
 
   BmsResetCellTemperatures(true);
@@ -158,6 +190,9 @@ void OvmsVehicle::BmsSetCellVoltage(int index, float value)
   if ((value<m_bms_limit_vmin)||(value>m_bms_limit_vmax)) return;
   m_bms_voltages[index] = value;
 
+  if (index >= m_bms_readings_cap_v)
+    m_bms_readings_cap_v = index+1;
+
   if (! m_bms_has_voltages)
     {
     m_bms_vmins[index] = value;
@@ -168,10 +203,23 @@ void OvmsVehicle::BmsSetCellVoltage(int index, float value)
   else if (m_bms_vmaxs[index] < value)
     m_bms_vmaxs[index] = value;
 
-  if (m_bms_bitset_v[index] == false) m_bms_bitset_cv++;
-  if (m_bms_bitset_cv == m_bms_readings_v)
+  if (!m_bms_bitset_v[index])
     {
-    // Series complete, all cell voltages acquired
+    m_bms_bitset_cv++;
+    m_bms_bitset_v[index] = true;
+    }
+  if (m_bms_bitset_cv == m_bms_readings_cap_v)
+    {
+    // Series complete, all cell voltages acquired. Finalise voltages
+    //
+    BmsFinaliseCellVoltages();
+    }
+  }
+
+void OvmsVehicle::BmsFinaliseCellVoltages()
+  {
+    if (m_bms_bitset_cv == 0)
+      return;
     float thr_maxgrad  = MyConfig.GetParamValueFloat("vehicle", "bms.dev.voltage.maxgrad",  m_bms_defthr_vmaxgrad);
     float thr_maxsddev = MyConfig.GetParamValueFloat("vehicle", "bms.dev.voltage.maxsddev", m_bms_defthr_vmaxsddev);
     float thr_warn     = MyConfig.GetParamValueFloat("vehicle", "bms.dev.voltage.warn",     m_bms_defthr_vwarn);
@@ -180,36 +228,46 @@ void OvmsVehicle::BmsSetCellVoltage(int index, float value)
     // Get min, max, avg & standard deviation:
     double sum=0, sqrsum=0, avg, stddev=0;
     float min=0, max=0;
-    for (int i=0; i<m_bms_readings_v; i++)
+    int32_t finish = m_bms_readings_cap_v;
+
+    for (int i=0; i<finish; i++)
       {
-      sum += m_bms_voltages[i];
-      sqrsum += SQR(m_bms_voltages[i]);
-      if (min==0 || m_bms_voltages[i]<min)
-        min = m_bms_voltages[i];
-      if (max==0 || m_bms_voltages[i]>max)
-        max = m_bms_voltages[i];
+      float curVoltage = m_bms_voltages[i];
+      sum += curVoltage;
+      sqrsum += SQR(curVoltage);
+      if (min==0 || curVoltage<min)
+        min =curVoltage;
+      if (max==0 ||curVoltage>max)
+        max = curVoltage;
       }
-    avg = sum / m_bms_readings_v;
-    stddev = sqrt(LIMIT_MIN((sqrsum / m_bms_readings_v) - SQR(avg), 0));
+    avg = sum / m_bms_readings_cap_v;
+    stddev = sqrt(LIMIT_MIN((sqrsum / m_bms_readings_cap_v) - SQR(avg), 0));
 
     // Get gradient:
     double sumn = 0, sumd = 0;
-    for (int i=0; i<m_bms_readings_v; i++)
+    for (int i=0; i<finish; i++)
       {
-      sumn += (i - (m_bms_readings_v / 2 - 0.5)) * (m_bms_voltages[i] - avg);
-      sumd += SQR(i - (m_bms_readings_v / 2 - 0.5));
+      sumn += (i - (m_bms_readings_cap_v / 2 - 0.5)) * (m_bms_voltages[i] - avg);
+      sumd += SQR(i - (m_bms_readings_cap_v / 2 - 0.5));
       }
-    float grad = (sumn / sumd) * m_bms_readings_v;
+    float grad = (sumn / sumd) * m_bms_readings_cap_v;
 
+    // Zero missing voltages.
+    for (int32_t i = finish; i < m_bms_readings_t; ++i)
+      {
+      m_bms_voltages[i] = 0;
+      m_bms_vmins[i] = 0;
+      m_bms_vmaxs[i] = 0;
+      }
     // …publish to metrics:
     StandardMetrics.ms_v_bat_pack_vmin->SetValue(min);
     StandardMetrics.ms_v_bat_pack_vmax->SetValue(max);
     StandardMetrics.ms_v_bat_pack_vavg->SetValue(ROUNDPREC(avg, 5));
     StandardMetrics.ms_v_bat_pack_vstddev->SetValue(ROUNDPREC(stddev, 5));
     StandardMetrics.ms_v_bat_pack_vgrad->SetValue(ROUNDPREC(grad, 5));
-    StandardMetrics.ms_v_bat_cell_voltage->SetElemValues(0, m_bms_readings_v, m_bms_voltages);
-    StandardMetrics.ms_v_bat_cell_vmin->SetElemValues(0, m_bms_readings_v, m_bms_vmins);
-    StandardMetrics.ms_v_bat_cell_vmax->SetElemValues(0, m_bms_readings_v, m_bms_vmaxs);
+    StandardMetrics.ms_v_bat_cell_voltage->SetElemValues(0, finish, m_bms_voltages);
+    StandardMetrics.ms_v_bat_cell_vmin->SetElemValues(0, finish, m_bms_vmins);
+    StandardMetrics.ms_v_bat_cell_vmax->SetElemValues(0, finish, m_bms_vmaxs);
 
     // Voltages are very volatile and may respond to a load change within the sensor query loop.
     // To detect an inconsistent series, we check for a too high gradient and/or a too high
@@ -240,7 +298,7 @@ void OvmsVehicle::BmsSetCellVoltage(int index, float value)
     if (series_valid)
       {
       float dev;
-      for (int i=0; i<m_bms_readings_v; i++)
+      for (int i=0; i<finish; i++)
         {
         dev = ROUNDPREC(m_bms_voltages[i] - avg, 5);
         if (ABS(dev) > ABS(m_bms_vdevmaxs[i]))
@@ -254,11 +312,17 @@ void OvmsVehicle::BmsSetCellVoltage(int index, float value)
           m_bms_valerts[i] = 1;
         }
 
+      for (int32_t i = finish; i < m_bms_readings_cap_v ; ++i)
+        {
+        m_bms_vdevmaxs[i] = 0;
+        m_bms_valerts[i] = 0;
+        }
+
       // Publish deviation maximums & alerts:
       if (stddev > StandardMetrics.ms_v_bat_pack_vstddev_max->AsFloat())
         StandardMetrics.ms_v_bat_pack_vstddev_max->SetValue(stddev);
-      StandardMetrics.ms_v_bat_cell_vdevmax->SetElemValues(0, m_bms_readings_v, m_bms_vdevmaxs);
-      StandardMetrics.ms_v_bat_cell_valert->SetElemValues(0, m_bms_readings_v, m_bms_valerts);
+      StandardMetrics.ms_v_bat_cell_vdevmax->SetElemValues(0, finish, m_bms_vdevmaxs);
+      StandardMetrics.ms_v_bat_cell_valert->SetElemValues(0, finish, m_bms_valerts);
       }
 
     // complete:
@@ -266,11 +330,6 @@ void OvmsVehicle::BmsSetCellVoltage(int index, float value)
     m_bms_bitset_v.clear();
     m_bms_bitset_v.resize(m_bms_readings_v);
     m_bms_bitset_cv = 0;
-    }
-  else
-    {
-    m_bms_bitset_v[index] = true;
-    }
   }
 
 void OvmsVehicle::BmsSetCellTemperature(int index, float value)
@@ -279,6 +338,9 @@ void OvmsVehicle::BmsSetCellTemperature(int index, float value)
   if ((index<0)||(index>=m_bms_readings_t)) return;
   if ((value<m_bms_limit_tmin)||(value>m_bms_limit_tmax)) return;
   m_bms_temperatures[index] = value;
+
+  if (index >= m_bms_readings_cap_t)
+    m_bms_readings_cap_t = index+1;
 
   if (! m_bms_has_temperatures)
     {
@@ -290,69 +352,90 @@ void OvmsVehicle::BmsSetCellTemperature(int index, float value)
   else if (m_bms_tmaxs[index] < value)
     m_bms_tmaxs[index] = value;
 
-  if (m_bms_bitset_t[index] == false) m_bms_bitset_ct++;
-  if (m_bms_bitset_ct == m_bms_readings_t)
+  if ( !m_bms_bitset_t[index] )
+    ++m_bms_bitset_ct;
+  m_bms_bitset_t[index] = true;
+
+  if (m_bms_bitset_ct == m_bms_readings_cap_t)
     {
-    // Series complete, all cell temperatures acquired
-    float thr_warn  = MyConfig.GetParamValueFloat("vehicle", "bms.dev.temp.warn", m_bms_defthr_twarn);
-    float thr_alert = MyConfig.GetParamValueFloat("vehicle", "bms.dev.temp.alert", m_bms_defthr_talert);
-
-    // get min, max, avg & standard deviation:
-    double sum=0, sqrsum=0, avg, stddev=0;
-    float min=0, max=0;
-    for (int i=0; i<m_bms_readings_t; i++)
-      {
-      sum += m_bms_temperatures[i];
-      sqrsum += SQR(m_bms_temperatures[i]);
-      if (min==0 || m_bms_temperatures[i]<min)
-        min = m_bms_temperatures[i];
-      if (max==0 || m_bms_temperatures[i]>max)
-        max = m_bms_temperatures[i];
-      }
-    avg = sum / m_bms_readings_t;
-    stddev = sqrt(LIMIT_MIN((sqrsum / m_bms_readings_t) - SQR(avg), 0));
-
-    // check cell deviations:
-    float dev;
-    for (int i=0; i<m_bms_readings_t; i++)
-      {
-      dev = ROUNDPREC(m_bms_temperatures[i] - avg, 2);
-      if (ABS(dev) > ABS(m_bms_tdevmaxs[i]))
-        m_bms_tdevmaxs[i] = dev;
-      if (ABS(dev) >= stddev + thr_alert && m_bms_talerts[i] < 2)
-        {
-        m_bms_talerts[i] = 2;
-        m_bms_talerts_new++; // trigger notification
-        }
-      else if (ABS(dev) >= stddev + thr_warn && m_bms_valerts[i] < 1)
-        m_bms_talerts[i] = 1;
-      }
-
-    // publish to metrics:
-    avg = ROUNDPREC(avg, 2);
-    stddev = ROUNDPREC(stddev, 2);
-    StandardMetrics.ms_v_bat_pack_tmin->SetValue(min);
-    StandardMetrics.ms_v_bat_pack_tmax->SetValue(max);
-    StandardMetrics.ms_v_bat_pack_tavg->SetValue(avg);
-    StandardMetrics.ms_v_bat_pack_tstddev->SetValue(stddev);
-    if (stddev > StandardMetrics.ms_v_bat_pack_tstddev_max->AsFloat())
-      StandardMetrics.ms_v_bat_pack_tstddev_max->SetValue(stddev);
-    StandardMetrics.ms_v_bat_cell_temp->SetElemValues(0, m_bms_readings_t, m_bms_temperatures);
-    StandardMetrics.ms_v_bat_cell_tmin->SetElemValues(0, m_bms_readings_t, m_bms_tmins);
-    StandardMetrics.ms_v_bat_cell_tmax->SetElemValues(0, m_bms_readings_t, m_bms_tmaxs);
-    StandardMetrics.ms_v_bat_cell_tdevmax->SetElemValues(0, m_bms_readings_t, m_bms_tdevmaxs);
-    StandardMetrics.ms_v_bat_cell_talert->SetElemValues(0, m_bms_readings_t, m_bms_talerts);
-
-    // complete:
-    m_bms_has_temperatures = true;
-    m_bms_bitset_t.clear();
-    m_bms_bitset_t.resize(m_bms_readings_t);
-    m_bms_bitset_ct = 0;
+     // Series complete, all cell temperatures acquired
+    BmsFinaliseCellTemperatures();
     }
-  else
+  }
+
+void OvmsVehicle::BmsFinaliseCellTemperatures()
+  {
+  if (m_bms_bitset_ct == 0)
+    return;
+
+  float thr_warn  = MyConfig.GetParamValueFloat("vehicle", "bms.dev.temp.warn", m_bms_defthr_twarn);
+  float thr_alert = MyConfig.GetParamValueFloat("vehicle", "bms.dev.temp.alert", m_bms_defthr_talert);
+
+  int32_t finish = m_bms_readings_cap_t;
+
+  // get min, max, avg & standard deviation:
+  double sum=0, sqrsum=0, avg, stddev=0;
+  float min=0, max=0;
+  for (int i=0; i<finish; i++)
     {
-    m_bms_bitset_t[index] = true;
+
+    float curTemp =  m_bms_temperatures[i];
+    sum += curTemp;
+    sqrsum += SQR(curTemp);
+    if (min==0 || curTemp<min)
+      min = curTemp;
+    if (max==0 || curTemp>max)
+      max = curTemp;
     }
+  avg = sum / m_bms_bitset_ct;
+  stddev = sqrt(LIMIT_MIN((sqrsum / m_bms_bitset_ct) - SQR(avg), 0));
+
+  // check cell deviations:
+  float dev;
+  for (int i=0; i<finish; i++)
+    {
+    dev = ROUNDPREC(m_bms_temperatures[i] - avg, 2);
+    if (ABS(dev) > ABS(m_bms_tdevmaxs[i]))
+      m_bms_tdevmaxs[i] = dev;
+    if (ABS(dev) >= stddev + thr_alert && m_bms_talerts[i] < 2)
+      {
+      m_bms_talerts[i] = 2;
+      m_bms_talerts_new++; // trigger notification
+      }
+    else if (ABS(dev) >= stddev + thr_warn && m_bms_valerts[i] < 1)
+      m_bms_talerts[i] = 1;
+    }
+
+  // publish to metrics:
+  avg = ROUNDPREC(avg, 2);
+  stddev = ROUNDPREC(stddev, 2);
+  StandardMetrics.ms_v_bat_pack_tmin->SetValue(min);
+  StandardMetrics.ms_v_bat_pack_tmax->SetValue(max);
+  StandardMetrics.ms_v_bat_pack_tavg->SetValue(avg);
+  StandardMetrics.ms_v_bat_pack_tstddev->SetValue(stddev);
+  if (stddev > StandardMetrics.ms_v_bat_pack_tstddev_max->AsFloat())
+    StandardMetrics.ms_v_bat_pack_tstddev_max->SetValue(stddev);
+
+  for (int32_t i = finish; i < m_bms_readings_cap_t; ++i)
+    {
+    m_bms_temperatures[i] = 0;
+    m_bms_tmins[i] = 0;
+    m_bms_tmaxs[i] = 0;
+    m_bms_tdevmaxs[i] = 0;
+    m_bms_talerts[i] = 0;
+    }
+
+  StandardMetrics.ms_v_bat_cell_temp->SetElemValues(0, finish, m_bms_temperatures);
+  StandardMetrics.ms_v_bat_cell_tmin->SetElemValues(0, finish, m_bms_tmins);
+  StandardMetrics.ms_v_bat_cell_tmax->SetElemValues(0, finish, m_bms_tmaxs);
+  StandardMetrics.ms_v_bat_cell_tdevmax->SetElemValues(0, finish, m_bms_tdevmaxs);
+  StandardMetrics.ms_v_bat_cell_talert->SetElemValues(0, finish, m_bms_talerts);
+
+  // complete:
+  m_bms_has_temperatures = true;
+  m_bms_bitset_t.clear();
+  m_bms_bitset_t.resize(m_bms_readings_t);
+  m_bms_bitset_ct = 0;
   }
 
 void OvmsVehicle::BmsRestartCellVoltages()
@@ -360,6 +443,26 @@ void OvmsVehicle::BmsRestartCellVoltages()
   m_bms_bitset_v.clear();
   m_bms_bitset_v.resize(m_bms_readings_v);
   m_bms_bitset_cv = 0;
+  m_bms_readings_cap_v = m_bms_readings_v;
+  }
+
+void OvmsVehicle::BmsResetCellVoltageBits( int indexFrom, int count)
+  {
+    if (indexFrom >= m_bms_readings_v)
+      return;
+    int indexEnd = indexFrom + count;
+    if (indexFrom < 0)
+      indexFrom = 0;
+    if (indexEnd > m_bms_readings_v)
+      indexEnd = m_bms_readings_v;
+    for (int i = indexFrom; i < indexEnd; ++i)
+      {
+      if (m_bms_bitset_v[i])
+        {
+        m_bms_bitset_v[i] = false;
+        --m_bms_bitset_cv;
+        }
+      }
   }
 
 void OvmsVehicle::BmsRestartCellTemperatures()
@@ -367,12 +470,57 @@ void OvmsVehicle::BmsRestartCellTemperatures()
   m_bms_bitset_t.clear();
   m_bms_bitset_t.resize(m_bms_readings_t);
   m_bms_bitset_ct = 0;
+  m_bms_readings_cap_t = m_bms_readings_t;
+  }
+
+void OvmsVehicle::BmsResetCellTemperatureBits( int indexFrom, int count)
+  {
+  if (indexFrom >= m_bms_readings_t)
+    return;
+  int indexEnd = indexFrom + count;
+  if (indexFrom < 0)
+    indexFrom = 0;
+  if (indexEnd > m_bms_readings_t)
+    indexEnd = m_bms_readings_t;
+  for (int i = indexFrom; i < indexEnd; ++i)
+    {
+    if (m_bms_bitset_t[i])
+      {
+      m_bms_bitset_t[i] = false;
+      --m_bms_bitset_ct;
+      }
+    }
+  }
+void OvmsVehicle::BmsRestartCellTemperatures( int indexFrom, int count)
+  {
+    if (m_bms_bitset_t.size() < m_bms_readings_t)
+      {
+      // Uninitialised. Full reset.
+      BmsRestartCellTemperatures();
+      return;
+      }
+    if (indexFrom >= m_bms_readings_t)
+      return;
+    int indexEnd = indexFrom + count;
+    if (indexFrom < 0)
+      indexFrom = 0;
+    if (indexEnd > m_bms_readings_t)
+      indexEnd = m_bms_readings_t;
+    for (int i = indexFrom; i < indexEnd; ++i)
+      {
+      if (m_bms_bitset_t[i])
+        {
+        m_bms_bitset_t[i] = false;
+        --m_bms_bitset_ct;
+        }
+      }
   }
 
 void OvmsVehicle::BmsResetCellVoltages(bool full /*=false*/)
   {
   if (m_bms_readings_v > 0)
     {
+    m_bms_readings_cap_v = m_bms_readings_v;
     m_bms_bitset_v.clear();
     m_bms_bitset_v.resize(m_bms_readings_v);
     m_bms_bitset_cv = 0;
@@ -400,6 +548,7 @@ void OvmsVehicle::BmsResetCellTemperatures(bool full /*=false*/)
   {
   if (m_bms_readings_t > 0)
     {
+    m_bms_readings_cap_t = m_bms_readings_t;
     m_bms_bitset_t.clear();
     m_bms_bitset_t.resize(m_bms_readings_t);
     m_bms_bitset_ct = 0;

@@ -647,9 +647,11 @@ class OvmsVehicle : public InternalRamAllocated
     std::vector<bool> m_bms_bitset_t;         // BMS tracking: true if corresponding temperature set
     int m_bms_bitset_cv;                      // BMS tracking: count of unique voltage values set
     int m_bms_bitset_ct;                      // BMS tracking: count of unique temperature values set
-    int m_bms_readings_v;                     // Number of BMS voltage readings expected
+    int m_bms_readings_v;                     // Number of BMS voltage readings allowed
+    int m_bms_readings_cap_v;                 // Number of BMS voltage readings expected
     int m_bms_readingspermodule_v;            // Number of BMS voltage readings per module
-    int m_bms_readings_t;                     // Number of BMS temperature readings expected
+    int m_bms_readings_t;                     // Number of BMS temperature readings allowed
+    int m_bms_readings_cap_t;                 // Number of BMS temperature readings expected
     int m_bms_readingspermodule_t;            // Number of BMS temperature readings per module
     float m_bms_limit_tmin;                   // Minimum temperature limit (for sanity checking)
     float m_bms_limit_tmax;                   // Maximum temperature limit (for sanity checking)
@@ -673,13 +675,22 @@ class OvmsVehicle : public InternalRamAllocated
     void BmsSetCellLimitsTemperature(float min, float max);
     void BmsSetCellVoltage(int index, float value);
     void BmsResetCellVoltages(bool full = false);
+    void BmsFinaliseCellVoltages();
+    void BmsCapCellVoltageCount(int readings);
     void BmsSetCellTemperature(int index, float value);
+    void BmsFinaliseCellTemperatures();
+    void BmsCapCellTemperatureCount(int readings);
+
     void BmsResetCellTemperatures(bool full = false);
     void BmsRestartCellVoltages();
+
     void BmsRestartCellTemperatures();
+    void BmsRestartCellTemperatures( int indexFrom, int count);
     void BmsTicker();
     virtual void NotifyBmsAlerts();
-
+  private:
+    void BmsResetCellTemperatureBits( int indexFrom, int count);
+    void BmsResetCellVoltageBits( int indexFrom, int count);
   public:
     int BmsGetCellArangementVoltage(int* readings=NULL, int* readingspermodule=NULL);
     int BmsGetCellArangementTemperature(int* readings=NULL, int* readingspermodule=NULL);
