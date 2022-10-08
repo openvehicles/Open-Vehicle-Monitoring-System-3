@@ -46,6 +46,7 @@ class OvmsVehicleCadillaccC2CTS : public OvmsVehicle
         uint8_t* data, uint8_t length, uint16_t mlremain);
 
   public:
+    void IncomingFrameCan1(CAN_frame_t* p_frame);
     void IncomingFrameCan2(CAN_frame_t* p_frame);
 
   public:
