@@ -673,7 +673,9 @@ class OvmsVehicle : public InternalRamAllocated
     void BmsSetCellLimitsTemperature(float min, float max);
     void BmsSetCellVoltage(int index, float value);
     void BmsResetCellVoltages(bool full = false);
+    void BmsFinaliseCellVoltages();
     void BmsSetCellTemperature(int index, float value);
+    void BmsFinaliseCellTemperatures();
     void BmsResetCellTemperatures(bool full = false);
     void BmsRestartCellVoltages();
     void BmsRestartCellTemperatures();
