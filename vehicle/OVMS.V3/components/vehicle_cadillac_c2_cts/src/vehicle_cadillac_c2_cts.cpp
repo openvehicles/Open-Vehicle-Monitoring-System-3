@@ -41,23 +41,19 @@ OvmsVehicleCadillaccC2CTS* MyCadillaccC2CTS = NULL;
 static const OvmsVehicle::poll_pid_t obdii_polls[] =
   {
     // Engine coolant temp
-    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x05, {  0, 30, 30 }, 0, ISOTP_STD },
+    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x05, {  0, 30 }, 0, ISOTP_STD },
     // Engine RPM
-    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x0c, { 10, 10, 10 }, 0, ISOTP_STD },
+    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x0c, {  0, 10 }, 0, ISOTP_STD },
     // Speed
-    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x0d, {  0, 10, 10 }, 0, ISOTP_STD },
+    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x0d, {  0, 10 }, 0, ISOTP_STD },
     // Engine air intake temp
-    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x0f, {  0, 30, 30 }, 0, ISOTP_STD },
+    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x0f, {  0, 30 }, 0, ISOTP_STD },
     // Fuel level
-    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x2f, {  0, 30, 30 }, 0, ISOTP_STD },
+    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x2f, {  0, 30 }, 0, ISOTP_STD },
     // Ambiant temp
-    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x46, {  0, 30, 30 }, 0, ISOTP_STD },
+    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x46, {  0, 30 }, 0, ISOTP_STD },
     // Engine oil temp
-    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x5c, {  0, 30, 30 }, 0, ISOTP_STD },
-#ifdef notdef
-    // VIN
-    // { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIIVEHICLE, 0x02, {999,999,999 } },
-#endif
+    { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x5c, {  0, 30 }, 0, ISOTP_STD },
     POLL_LIST_END
   };
 
@@ -74,89 +70,65 @@ OvmsVehicleCadillaccC2CTS::OvmsVehicleCadillaccC2CTS()
   MyCadillaccC2CTS = this;
   }
 
-#ifdef notdef
-      StandardMetrics.ms_v_env_headlights->SetValue(?);
-#endif
-
 OvmsVehicleCadillaccC2CTS::~OvmsVehicleCadillaccC2CTS()
   {
   ESP_LOGI(TAG, "Shutdown Cadillac 2nd gen CTS vehicle module");
   MyCadillaccC2CTS = NULL;
   }
 
-void OvmsVehicleCadillaccC2CTS::IncomingFrameCan2(CAN_frame_t* p_frame)
+void OvmsVehicleCadillaccC2CTS::IncomingFrameCan1(CAN_frame_t* p_frame)
   {
-  int i, len;
   uint8_t *d;
+  bool isRunning;
 
   processing = 1;
   d = p_frame->data.u8;
-  len = p_frame->FIR.B.DLC;
-  if (len > sizeof(p_frame->data))
-	  len = sizeof(p_frame->data);
 
   switch (p_frame->MsgID)
     {
-#ifdef notdef
-    case 0x1004C040:
-      /* Maybe soc (fuel level)? */
-      // 2R29 1004C040 00 68 05 7b 00 bb 00 00
-      //                0  1  2  3  4  5  6  7
-      break;
-#endif
-
-#ifdef notdef
-    case 0x1004C040:
-      /* Engine RPM and run state */
-      bool isRunning = (dp5] != 0);
-      if (StandardMetrics.ms_v_env_on->AsBool() != isRunning) {
+    case 0x134:
+      /* Unknown pid tells us when the engine is running */
+      isRunning = (d[2] != 0);
+      if (StandardMetrics.ms_v_env_on->AsBool() != isRunning)
+        {
+        ESP_LOGI(TAG, "running: \"%s\"", isRunning ? "yes" : "no");
         StdMetrics.ms_v_env_on->SetValue(isRunning);
-
-ESP_LOGI(TAG, "running: \"%s\"", isRunning ? "yes" : "no");
-      }
-      StandardMetrics.ms_v_mot_rpm->SetValue((d[2] << 8) + d[3]);
+        StdMetrics.ms_v_env_charging12v->SetValue(isRunning);
+        PollSetState(isRunning ? 1 : 0);
+        }
       break;
-#endif
 
 #ifdef notdef
-    case 0x12A:
-      /* XXX 0F9 might be a better "awake" pid */
-      /* ??? is d[5] pressure? */
-
-      /* XXX we can probably find a better pid for this */
-      if (!StandardMetrics.ms_v_env_awake->AsBool() ) {
-        StandardMetrics.ms_v_env_awake->SetValue(true);
-
-ESP_LOGI(TAG, "now awake");
-      }
-      break;
-#endif
-
-    case 0x10024040:
+    case 0x514:
       /* First 8 of vin */
       if (m_vin[0] == '\0') {
-	i = len;
-	if (i > 8)
-	  i = 8;
-	/* The World Manufacturer number: United States */
+        i = len;
+        if (i > 8)
+          i = 8;
+        /* The World Manufacturer number: United States */
         m_vin[0] = '1';
         memcpy(m_vin + 1, d, i);
+        /* Publish once we have the whole VIN */
         if (m_vin[1 + 8] != '\0')
           StandardMetrics.ms_v_vin->SetValue(m_vin);
       }
       break;
+#endif
 
-    case 0x10026040:
+#ifdef notdef
+    case 0x4E1:
       /* Last 8 of vin */
       if (m_vin[1 + 8] == '\0') {
-	i = len;
-	if (i > 8)
-	  i = 8;
+        i = len;
+        if (i > 8)
+          i = 8;
         memcpy(m_vin + 1 + 8, d, i);
+        /* Publish once we have the whole VIN */
         if (m_vin[0] != '\0')
           StandardMetrics.ms_v_vin->SetValue(m_vin);
       }
       break;
+#endif
 
 #ifdef notdef
     case 0x0C9:
@@ -169,9 +141,7 @@ ESP_LOGI(TAG, "now awake");
     case 0x0f1:
       /* ??? d[1]  brake 0-100% (0-254) */
       StandardMetrics.ms_v_env_footbrake->SetValue(d[2]);
-#ifdef notdef
-      StandardMetrics.ms_v_env_handbrake->SetValue(?);
-#endif
+      // StandardMetrics.ms_v_env_handbrake->SetValue(?);
       break;
 #endif
 
@@ -204,15 +174,15 @@ ESP_LOGI(TAG, "now awake");
       break;
 #endif
 
+#ifdef notdef
     case 0x4c1:
       /* ??? Ambient temperature (probably wrong) */
       /* ??? probably pressure (psi) of some kind */
-#ifdef notdef
       StandardMetrics.ms_v_env_temp->SetValue(F2C(d[4] - 0x28));
       // Cabin temperature
       StandardMetrics.ms_v_env_cabintemp->SetValue(F2C(?));
-#endif
       break;
+#endif
 
 #ifdef notdef
     case 0x???:
@@ -238,29 +208,72 @@ ESP_LOGI(TAG, "now awake");
   processing = 0;
   }
 
+void OvmsVehicleCadillaccC2CTS::IncomingFrameCan2(CAN_frame_t* p_frame)
+  {
+  int i, len;
+  uint8_t *d;
+
+  processing = 1;
+  d = p_frame->data.u8;
+  len = p_frame->FIR.B.DLC;
+  if (len > sizeof(p_frame->data))
+          len = sizeof(p_frame->data);
+
+  switch (p_frame->MsgID)
+    {
+    case 0x10024040:
+      /* First 8 of vin */
+      if (m_vin[0] == '\0') {
+        i = len;
+        if (i > 8)
+          i = 8;
+        /* The World Manufacturer number: United States */
+        m_vin[0] = '1';
+        memcpy(m_vin + 1, d, i);
+        /* Publish once we have the whole VIN */
+        if (m_vin[1 + 8] != '\0')
+          StandardMetrics.ms_v_vin->SetValue(m_vin);
+      }
+      break;
+
+    case 0x10026040:
+      /* Last 8 of vin */
+      if (m_vin[1 + 8] == '\0') {
+        i = len;
+        if (i > 8)
+          i = 8;
+        memcpy(m_vin + 1 + 8, d, i);
+        /* Publish once we have the whole VIN */
+        if (m_vin[0] != '\0')
+          StandardMetrics.ms_v_vin->SetValue(m_vin);
+      }
+      break;
+
+    default:
+      break;
+    }
+  processing = 0;
+  }
+
 void
 OvmsVehicleCadillaccC2CTS::IncomingPollReply(canbus* bus, uint16_t type,
   uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
   {
   int value1 = (int)data[0];
-  int value2 = ((int)data[0] << 8) + (int)data[1];
+  // int value2 = ((int)data[0] << 8) + (int)data[1];
 
   switch (pid)
     {
-#ifdef notdef
-    case 0x02:  // VIN (multi-line response)
-      strncat(m_vin,(char*)data,length);
-      if (mlremain==0)
-        {
-        StandardMetrics.ms_v_vin->SetValue(m_vin);
-        m_vin[0] = 0;
-        }
-      break;
-#endif
-
     case 0x05:  // Engine coolant temperature
       StandardMetrics.ms_v_bat_temp->SetValue(value1 - 0x28);
       break;
+
+#ifdef notdef
+    case 0x0c:  // Engine RPM
+      // XXX we don't know how to convert rpm yet
+      StandardMetrics.ms_v_mot_rpm->SetValue(rpm);
+      break;
+#endif
 
     case 0x0f:  // Engine intake air temperature
       StandardMetrics.ms_v_inv_temp->SetValue(value1 - 0x28);
@@ -282,22 +295,7 @@ OvmsVehicleCadillaccC2CTS::IncomingPollReply(canbus* bus, uint16_t type,
       StandardMetrics.ms_v_bat_soc->SetValue((value1 * 100) >> 8);
       break;
 
-    case 0x0c:  // Engine RPM
-      if (value2 == 0)
-        { // Car engine is OFF
-        PollSetState(0);
-        StandardMetrics.ms_v_env_handbrake->SetValue(true);
-        StandardMetrics.ms_v_env_on->SetValue(false);
-        StandardMetrics.ms_v_pos_speed->SetValue(0);
-        StandardMetrics.ms_v_env_charging12v->SetValue(false);
-        }
-      else
-        { // Car engine is ON
-        PollSetState(1);
-        StandardMetrics.ms_v_env_handbrake->SetValue(false);
-        StandardMetrics.ms_v_env_on->SetValue(true);
-        StandardMetrics.ms_v_env_charging12v->SetValue(true);
-        }
+    default:
       break;
     }
   }
@@ -344,7 +342,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleCadillaccC2CTS::CommandWakeup()
   {
   CAN_frame_t frame;
   memset(&frame,0,sizeof(frame));
-  
+
   frame.origin = m_can2;
   frame.FIR.U = 0;
   frame.FIR.B.DLC = 1;
