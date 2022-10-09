@@ -365,7 +365,7 @@ void OvmsVehicle::BmsRestartCellVoltages()
 void OvmsVehicle::BmsRestartCellTemperatures()
   {
   m_bms_bitset_t.clear();
-  m_bms_bitset_v.resize(m_bms_readings_t);
+  m_bms_bitset_t.resize(m_bms_readings_t);
   m_bms_bitset_ct = 0;
   }
 
