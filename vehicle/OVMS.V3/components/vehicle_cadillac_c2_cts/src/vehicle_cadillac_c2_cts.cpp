@@ -94,6 +94,7 @@ void OvmsVehicleCadillaccC2CTS::IncomingFrameCan1(CAN_frame_t* p_frame)
         ESP_LOGI(TAG, "running: \"%s\"", isRunning ? "yes" : "no");
         StdMetrics.ms_v_env_on->SetValue(isRunning);
         StdMetrics.ms_v_env_charging12v->SetValue(isRunning);
+        PollSetState(isRunning ? 1 : 0);
         }
       break;
 
