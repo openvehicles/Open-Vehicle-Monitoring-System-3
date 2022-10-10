@@ -101,6 +101,8 @@ Manual configuration
 
 After finishing the wizard or if you prefer to do a manual setup, the configuration menus will provide single pages for each module function. These also contain advanced options for the features, so it's worth having a look.
 
+.. _installation-vehicle-configuration:
+
 ^^^^^^^^^^^^^^^^^^^^^
 Vehicle Configuration
 ^^^^^^^^^^^^^^^^^^^^^
