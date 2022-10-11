@@ -830,8 +830,10 @@ dbcNumber dbcSignal::Decode(CAN_frame_t* msg)
 
   if (m_value_type == DBC_VALUETYPE_UNSIGNED)
     result.Cast((uint32_t)val, DBC_NUMBER_INTEGER_UNSIGNED);
-  else
-    result.Cast((uint32_t)val, DBC_NUMBER_INTEGER_SIGNED);
+  else {
+    int32_t signed_val = sign_extend<uint32_t, int32_t>((uint32_t)val, m_signal_size-1);
+    result.Cast(static_cast<uint32_t>(signed_val), DBC_NUMBER_INTEGER_SIGNED);
+  }
 
   // Apply factor and offset
   if (!(m_factor == 1))
