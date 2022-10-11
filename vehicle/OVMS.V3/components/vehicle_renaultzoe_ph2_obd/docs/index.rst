@@ -1,6 +1,6 @@
-=======================
+==============================
 Renault Zoe Phase 2 (OBD port)
-=======================
+==============================
 
 Vehicle Type: **RZ2O**
 
@@ -32,8 +32,10 @@ Cabin Pre-heat/cool Control No (planned, but access to CAN after gw neccessary)
 Lock/Unlock Vehicle         Yes (display only)
 Valet Mode Control          No
 =========================== ==============
+
 Others:
 
+=================================== ==============
 Door open/close                     Yes (exclude hood)
 Battery full charge cycles          Yes
 Battery max charge, recd pwr        Yes
@@ -44,3 +46,4 @@ Aux power gauges                    Yes (testing needed)
 Charge type                         Yes (DC charge, testing needed)
 Headlights Status                   Yes (lowbeam)
 Charge efficiency calculation       Yes (but only for AC, pf is measured with power analyzer and included as statics)
+=================================== ==============

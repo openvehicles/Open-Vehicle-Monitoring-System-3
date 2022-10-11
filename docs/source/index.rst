@@ -36,3 +36,10 @@ Open Vehicles Monitoring System
    server/index
    protocol_v2/index
    protocol_httpapi/index
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Research / Work in progress:
+
+   components/retools_pidscan/docs/index
+   components/retools_testerpresent/docs/index

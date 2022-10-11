@@ -69,6 +69,11 @@ If using a good quality SD card with a current OVMS V3 module (i.e. PCB revision
 
 ``config set sdcard maxfreq.khz 20000``
 
+.. warning::
+  If you increase :code:`maxfreq.khz` too much, higher than the maximum possible frequency supported by the board,
+  you may encounter a bootloop on the next boot.
+  In that case you will want to eject the SD card - to stop the bootloop - and change the config to a lower value of :code:`maxfreq.khz`.
+
 Start logging all CAN messages using CRTD log file format with:
 
 ``ovms# can log start vfs crtd /sd/can.crtd``
