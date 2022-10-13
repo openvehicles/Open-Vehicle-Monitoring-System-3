@@ -67,5 +67,5 @@ Currently, there is no known way to get the estimated range directly from the ca
 12V battery drain
 -----------------
 
-OVMS will eventually drain the 12V battery, but steps have been taken to minimize the drain. However, if you are going to leave the car for a fews days, it is recommended to unplug OVMS. OVMS will send an alert if 12V drops under 12V alert threshold. See 12V Calibration section. 
+OVMS will eventually drain the 12V battery, but steps have been taken to minimize the drain. However, if you are going to leave the car for a few days, it is recommended to unplug OVMS. OVMS will send an alert if 12V drops under 12V alert threshold. See 12V Calibration section. 
 
