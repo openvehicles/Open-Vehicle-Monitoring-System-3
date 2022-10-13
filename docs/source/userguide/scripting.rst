@@ -995,6 +995,13 @@ command by ``script reload`` followed by some ``script eval`` calls to your plug
 
 Note: this may be slow, as the ``ssh`` session needs to be negotiated for every command.
 
+.. note::
+  With OpenSSH version 9.0 (or later), the ``scp`` **protocol** has been disabled by default and
+  replaced by the ``sftp`` **protocol**. To be able to use the ``scp`` **command** with OVMS, you need
+  to re-enable the ``scp`` **protocol** with option ``-O`` on the command line::
+
+    scp -O ....
+
 A faster option is using the OVMS HTTP REST API. The following script uses ``curl`` to upload
 and execute a script:
 
