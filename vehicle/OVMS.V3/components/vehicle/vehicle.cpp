@@ -280,6 +280,7 @@ OvmsVehicle::OvmsVehicle()
   m_poll_vwtp = {};
   m_poll_ticker = 0;
   m_poll_single_rxbuf = NULL;
+  m_poll_single_rx_vecbuf = NULL;
   m_poll_single_rxerr = 0;
   m_poll_moduleid_sent = 0;
   m_poll_moduleid_low = 0;

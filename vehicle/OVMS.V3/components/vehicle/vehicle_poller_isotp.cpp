@@ -440,11 +440,18 @@ bool OvmsVehicle::PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid)
       ESP_LOGD(TAG, "PollerISOTPReceive[%03X]: process OBD/UDS error %02X(%X) code=%02X",
                msgid, m_poll_type, m_poll_pid, error_code);
       // Running single poll?
-      if (m_poll_single_rxbuf)
+      if (m_poll_single_rxbuf || m_poll_single_rx_vecbuf)
         {
         m_poll_single_rxerr = error_code;
         m_poll_single_rxbuf = NULL;
+	m_poll_single_rx_vecbuf = NULL;
         m_poll_single_rxdone.Give();
+        }
+      else if (m_poll_single_rx_vecbuf)
+        {
+          m_poll_single_rxerr = error_code;
+          m_poll_single_rx_vecbuf = NULL;
+          m_poll_single_rxdone.Give();
         }
       else
         {
@@ -474,6 +481,22 @@ bool OvmsVehicle::PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid)
         {
         m_poll_single_rxerr = 0;
         m_poll_single_rxbuf = NULL;
+        m_poll_single_rxdone.Give();
+        }
+      }
+    else if (m_poll_single_rx_vecbuf)
+      {
+      if (m_poll_ml_frame == 0)
+        {
+        m_poll_single_rx_vecbuf->clear();
+        m_poll_single_rx_vecbuf->reserve(response_datalen + m_poll_ml_remain);
+        }
+      // Append each piece..
+      m_poll_single_rx_vecbuf->insert(m_poll_single_rx_vecbuf->end(), response_data, response_data + response_datalen);
+      if (m_poll_ml_remain == 0)
+        {
+        m_poll_single_rxerr = 0;
+        m_poll_single_rx_vecbuf = NULL;
         m_poll_single_rxdone.Give();
         }
       }

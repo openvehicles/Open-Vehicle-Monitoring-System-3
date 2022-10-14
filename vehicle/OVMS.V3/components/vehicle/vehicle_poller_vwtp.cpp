@@ -54,10 +54,11 @@ void OvmsVehicle::PollerVWTPStart(bool fromTicker)
       PollerVWTPEnter(VWTP_ChannelClose);
     else if (m_poll_entry.rxmoduleid != 0)
       PollerVWTPEnter(VWTP_ChannelSetup);
-    else if (m_poll_single_rxbuf)
+    else if (m_poll_single_rxbuf || m_poll_single_rx_vecbuf)
       {
       m_poll_single_rxbuf->clear();
       m_poll_single_rxbuf = NULL;
+      m_poll_single_rx_vecbuf = NULL;
       m_poll_single_rxerr = POLLSINGLE_OK;
       m_poll_single_rxdone.Give();
       }
@@ -502,10 +503,11 @@ bool OvmsVehicle::PollerVWTPReceive(CAN_frame_t* frame, uint32_t msgid)
         // Check if we shall open another channel:
         if (m_poll_protocol == VWTP_20 && m_poll_entry.rxmoduleid != 0)
           PollerVWTPEnter(VWTP_ChannelSetup);
-        else if (m_poll_single_rxbuf)
+        else if (m_poll_single_rxbuf || m_poll_single_rx_vecbuf)
           {
           m_poll_single_rxbuf->clear();
           m_poll_single_rxbuf = NULL;
+          m_poll_single_rx_vecbuf = NULL;
           m_poll_single_rxerr = POLLSINGLE_OK;
           m_poll_single_rxdone.Give();
           }
@@ -700,10 +702,11 @@ bool OvmsVehicle::PollerVWTPReceive(CAN_frame_t* frame, uint32_t msgid)
             ESP_LOGD(TAG, "PollerVWTPReceive[%02X]: process OBD/UDS error %02X(%X) code=%02X",
                       m_poll_vwtp.moduleid, m_poll_type, m_poll_pid, error_code);
             // Running single poll?
-            if (m_poll_single_rxbuf)
+            if (m_poll_single_rxbuf || m_poll_single_rx_vecbuf)
               {
               m_poll_single_rxerr = error_code;
               m_poll_single_rxbuf = NULL;
+	      m_poll_single_rx_vecbuf = NULL;
               m_poll_single_rxdone.Give();
               }
             else
@@ -742,7 +745,22 @@ bool OvmsVehicle::PollerVWTPReceive(CAN_frame_t* frame, uint32_t msgid)
               m_poll_single_rxdone.Give();
               }
             }
-          else
+          else if (m_poll_single_rx_vecbuf)
+            {
+            if (m_poll_ml_frame == 0)
+              {
+              m_poll_single_rx_vecbuf->clear();
+              m_poll_single_rx_vecbuf->reserve(response_datalen + m_poll_ml_remain);
+              }
+            m_poll_single_rx_vecbuf->
+                    insert(m_poll_single_rx_vecbuf->end(), response_data, response_data + response_datalen);
+            if (m_poll_ml_remain == 0)
+              {
+              m_poll_single_rxerr = 0;
+              m_poll_single_rx_vecbuf = NULL;
+              m_poll_single_rxdone.Give();
+              }
+            }
             {
             IncomingPollReply(frame->origin, m_poll_type, m_poll_pid, response_data, response_datalen, m_poll_ml_remain);
             }

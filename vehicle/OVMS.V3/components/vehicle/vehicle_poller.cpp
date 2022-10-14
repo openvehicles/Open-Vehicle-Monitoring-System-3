@@ -351,10 +351,11 @@ void OvmsVehicle::PollerTxCallback(const CAN_frame_t* frame, bool success)
   if (!success)
     {
     m_poll_wait = 0;
-    if (m_poll_single_rxbuf)
+    if (m_poll_single_rxbuf || m_poll_single_rx_vecbuf)
       {
       m_poll_single_rxerr = POLLSINGLE_TXFAILURE;
       m_poll_single_rxbuf = NULL;
+      m_poll_single_rx_vecbuf = NULL;
       m_poll_single_rxdone.Give();
       }
     }
@@ -380,30 +381,35 @@ void OvmsVehicle::PollerReceive(CAN_frame_t* frame, uint32_t msgid)
  *  poller state is automatically restored after the request has been performed, but
  *  without any guarantee for repetition or omission of an aborted poll.
  *  On success, the response buffer will contain the response payload (may be empty).
- *  
+ *
  *  See OvmsVehicleFactory::obdii_request() for a usage example.
- *  
+ *
  *  ATT: must not be called from within the vehicle task context -- deadlock situation!
- *  
+ *
  *  @param bus          CAN bus to use for the request
  *  @param txid         CAN ID to send to (0x7df = broadcast)
  *  @param rxid         CAN ID to expect response from (broadcast: 0)
  *  @param request      Request to send (binary string) (type + pid + up to 4095 bytes payload)
+ *  @param size         Size of request
  *  @param response     Response buffer (binary string) (multiple response frames assembled)
+ *  @param vresponse    Response vector buffer.
  *  @param timeout_ms   Timeout for poller/response in milliseconds
  *  @param protocol     Protocol variant: ISOTP_STD / ISOTP_EXTADR / ISOTP_EXTFRAME
- *  
+ *
  *  @return             POLLSINGLE_OK         (0)   -- success, response is valid
  *                      POLLSINGLE_TIMEOUT    (-1)  -- timeout/poller unavailable
  *                      POLLSINGLE_TXFAILURE  (-2)  -- CAN transmission failure
  *                      else                  (>0)  -- UDS NRC detail code
  *                      Note: response is only valid with return value 0
  */
-int OvmsVehicle::PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
-                                   std::string request, std::string& response,
-                                   int timeout_ms /*=3000*/, uint8_t protocol /*=ISOTP_STD*/)
+int OvmsVehicle::DoPollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
+                  const uint8_t* request, uint16_t size,
+                  std::string* response, std::vector<uint8_t> *vresponse,
+                  int timeout_ms/*=3000*/, uint8_t protocol/*=ISOTP_STD*/)
   {
   if (!m_ready)
+    return -1;
+  if (response == NULL && vresponse == NULL)
     return -1;
 
   if (!m_registeredlistener)
@@ -414,7 +420,7 @@ int OvmsVehicle::PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
 
   OvmsRecMutexLock slock(&m_poll_single_mutex, pdMS_TO_TICKS(timeout_ms));
   if (!slock.IsLocked())
-    return -1;
+    return POLLSINGLE_TIMEOUT;
 
   // prepare single poll:
   OvmsVehicle::poll_pid_t poll[] =
@@ -423,59 +429,78 @@ int OvmsVehicle::PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
       POLL_LIST_END
     };
 
-  assert(request.size() > 0);
+  assert(size > 0);
   poll[0].type = request[0];
   poll[0].xargs.tag = POLL_TXDATA;
 
   if (POLL_TYPE_HAS_16BIT_PID(poll[0].type))
     {
-    assert(request.size() >= 3);
+    assert(size >= 3);
     poll[0].xargs.pid = request[1] << 8 | request[2];
-    poll[0].xargs.datalen = LIMIT_MAX(request.size()-3, 4095);
-    poll[0].xargs.data = (const uint8_t*)request.data()+3;
+    poll[0].xargs.datalen = LIMIT_MAX(size-3, 4095);
+    poll[0].xargs.data = (const uint8_t*)request+3;
     }
   else if (POLL_TYPE_HAS_8BIT_PID(poll[0].type))
     {
-    assert(request.size() >= 2);
-    poll[0].xargs.pid = request.at(1);
-    poll[0].xargs.datalen = LIMIT_MAX(request.size()-2, 4095);
-    poll[0].xargs.data = (const uint8_t*)request.data()+2;
+    assert(size >= 2);
+    poll[0].xargs.pid = request[1];
+    poll[0].xargs.datalen = LIMIT_MAX(size-2, 4095);
+    poll[0].xargs.data = request+2;
     }
   else
     {
     poll[0].xargs.pid = 0;
-    poll[0].xargs.datalen = LIMIT_MAX(request.size()-1, 4095);
-    poll[0].xargs.data = (const uint8_t*)request.data()+1;
+    poll[0].xargs.datalen = LIMIT_MAX(size-1, 4095);
+    poll[0].xargs.data = request+1;
     }
+  canbus*           p_bus;
+  const poll_pid_t* p_list;
+  const poll_pid_t* p_plcur;
+  uint32_t          p_ticker;
 
-  // acquire poller access:
-  if (!m_poll_mutex.Lock(pdMS_TO_TICKS(timeout_ms)))
-    return -1;
+    {
+    // acquire poller access:
+    OvmsRecMutexLock lock(&m_poll_mutex, pdMS_TO_TICKS(timeout_ms));
+    if (!lock.IsLocked())
+      return -1;
 
-  // save poller state:
-  canbus*           p_bus    = m_poll_bus_default;
-  const poll_pid_t* p_list   = m_poll_plist;
-  const poll_pid_t* p_plcur  = m_poll_plcur;
-  uint32_t          p_ticker = m_poll_ticker;
+    // save poller state:
+    p_bus    = m_poll_bus_default;
+    p_list   = m_poll_plist;
+    p_plcur  = m_poll_plcur;
+    p_ticker = m_poll_ticker;
 
-  // start single poll:
-  PollSetPidList(bus, poll);
-  m_poll_single_rxdone.Take(0);
-  m_poll_single_rxbuf = &response;
-  PollerSend(true);
-  m_poll_mutex.Unlock();
+    // start single poll:
+    PollSetPidList(bus, poll);
+    m_poll_single_rxdone.Take(0);
+    // One should be available
+    m_poll_single_rxbuf = response;
+    m_poll_single_rx_vecbuf = vresponse;
+
+    PollerSend(true);
+
+    // Release poll mutex
+    }
 
   // wait for response:
   bool rxok = m_poll_single_rxdone.Take(pdMS_TO_TICKS(timeout_ms));
 
   // restore poller state:
-  m_poll_mutex.Lock();
-  PollSetPidList(p_bus, p_list);
-  m_poll_plcur = p_plcur;
-  m_poll_ticker = p_ticker;
-  m_poll_single_rxbuf = NULL;
-  m_poll_mutex.Unlock();
+  {
+    OvmsRecMutexLock lock(&m_poll_mutex);
 
+    PollSetPidList(p_bus, p_list);
+    m_poll_plcur = p_plcur;
+    m_poll_ticker = p_ticker;
+    m_poll_single_rxbuf = NULL;
+    m_poll_single_rx_vecbuf = NULL;
+    // Release poll mutex
+  }
+  /*
+  ESP_LOGV(TAG, "Vehicle-PollISOTP: IPR %03x TYPE:%x PID: %03x Frames: %d Message Size: %d",
+      m_poll_moduleid_low, type, pid, obd_frame, rxbuf.size());
+    ESP_BUFFER_LOGD(TAG, rxbuf.data(), rxbuf.size());
+*/
   return (rxok == pdFALSE) ? -1 : m_poll_single_rxerr;
   }
 
@@ -514,9 +539,30 @@ int OvmsVehicle::PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
     {
     request += (char) (pid & 0xff);
     }
-  return PollSingleRequest(bus, txid, rxid, request, response, timeout_ms, protocol);
+  return DoPollSingleRequest(bus, txid, rxid,
+      reinterpret_cast<const uint8_t *>(request.data()), request.size(),
+      &response, NULL,
+      timeout_ms, protocol);
   }
 
+int OvmsVehicle::PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
+                  uint8_t polltype, uint16_t pid, std::vector<uint8_t>& response,
+                  int timeout_ms/*=3000*/, uint8_t protocol/*=ISOTP_STD*/)
+  {
+  std::vector<uint8_t> request;
+  request.reserve(3);
+  request.push_back(polltype);
+  if (POLL_TYPE_HAS_16BIT_PID(polltype))
+    {
+    request.push_back(pid >> 8);
+    request.push_back(pid & 0xff);
+    }
+  else if (POLL_TYPE_HAS_8BIT_PID(polltype))
+    {
+    request.push_back(pid & 0xff);
+    }
+  return PollSingleRequest(bus, txid, rxid, request, response, timeout_ms, protocol);
+  }
 
 /**
  * PollResultCodeName: get text representation of result code

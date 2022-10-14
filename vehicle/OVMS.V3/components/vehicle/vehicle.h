@@ -155,6 +155,9 @@ struct DashboardConfig;
 #define VEHICLE_POLL_TYPE_OBDIIGROUP      0x21 // Custom: Read data by 8 bit PID
 #define VEHICLE_POLL_TYPE_OBDII_32        0x32 // Custom: VW routine control extension (8 bit PID)
 
+#define VEHICLE_OBD_BROADCAST_MODULE_TX  0x7df
+#define VEHICLE_OBD_BROADCAST_MODULE_RX  0
+
 // A note on "PID" and their sizes here:
 //  By "PID" for the service types we mean the part of the request parameters
 //  after the service type that is reflected in _every_ valid response to the request.
@@ -584,6 +587,7 @@ class OvmsVehicle : public InternalRamAllocated
   private:
     OvmsRecMutex      m_poll_single_mutex;    // PollSingleRequest() concurrency protection
     std::string*      m_poll_single_rxbuf;    // … response buffer
+    std::vector<uint8_t>* m_poll_single_rx_vecbuf;// Response buffer.
     int               m_poll_single_rxerr;    // … response error code (NRC) / TX failure code
     OvmsSemaphore     m_poll_single_rxdone;   // … response done (ok/error)
 
@@ -596,15 +600,35 @@ class OvmsVehicle : public InternalRamAllocated
     void PollSetThrottling(uint8_t sequence_max);
     void PollSetResponseSeparationTime(uint8_t septime);
     void PollSetChannelKeepalive(uint16_t keepalive_seconds);
+
+    int PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
+      const std::vector<uint8_t>& request, std::vector<uint8_t>& response,
+      int timeout_ms=3000, uint8_t protocol=ISOTP_STD)
+      {
+      return DoPollSingleRequest( bus, txid, rxid, request.data(), request.size(), NULL, &response, timeout_ms, protocol);
+      }
     int PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
                       std::string request, std::string& response,
-                      int timeout_ms=3000, uint8_t protocol=ISOTP_STD);
+                      int timeout_ms=3000, uint8_t protocol=ISOTP_STD)
+      {
+      return DoPollSingleRequest( bus, txid, rxid, (const uint8_t*)request.data(), request.size(), &response, NULL, timeout_ms, protocol);
+      }
+
     int PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
                       uint8_t polltype, uint16_t pid, std::string& response,
                       int timeout_ms=3000, uint8_t protocol=ISOTP_STD);
+
+    int PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
+                      uint8_t polltype, uint16_t pid, std::vector<uint8_t>& response,
+                      int timeout_ms=3000, uint8_t protocol=ISOTP_STD);
+
     const char* PollResultCodeName(int code);
 
   private:
+    int DoPollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
+                      const uint8_t* request, uint16_t size, 
+                      std::string* response, std::vector<uint8_t>* vresponse,
+                      int timeout_ms=3000, uint8_t protocol=ISOTP_STD);
     void PollerISOTPStart(bool fromTicker);
     bool PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid);
 
