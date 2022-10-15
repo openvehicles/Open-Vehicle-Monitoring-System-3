@@ -91,6 +91,12 @@ document root. So you can get an inventory of your log files now at the URL::
 retrieve the files without unmounting the SD card is by ``scp`` if you have configured SSH
 access.
 
+.. note::
+  With OpenSSH version 9.0 (or later), the ``scp`` **protocol** has been disabled by default and
+  replaced by the ``sftp`` **protocol**. To be able to use the ``scp`` **command** with OVMS, you need
+  to re-enable the ``scp`` **protocol** with option ``-O`` on the command line::
+
+    scp -O ....
 
 ---------------------
 Logging Configuration

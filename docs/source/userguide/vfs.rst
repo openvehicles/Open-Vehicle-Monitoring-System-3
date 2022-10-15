@@ -35,6 +35,13 @@ SCP can access the whole file system and is read/write::
 
 In the upload example the firmware can then be loaded with the :code:`OTA flash vfs` command
 
+.. note::
+  With OpenSSH version 9.0 (or later), the ``scp`` **protocol** has been disabled by default and
+  replaced by the ``sftp`` **protocol**. To be able to use the ``scp`` **command** with OVMS, you need
+  to re-enable the ``scp`` **protocol** with option ``-O`` on the command line::
+
+    scp -O ....
+
 The web server offers read access rooted at the sd card.
 An example retrieving that same config file from the SCP example would look like::
 
