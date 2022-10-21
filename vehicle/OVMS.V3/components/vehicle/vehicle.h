@@ -803,6 +803,165 @@ class OvmsVehicleFactory
 #endif // CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   };
 
+/** Get at a specific bit in a byte.
+ * Templated for efficiency.
+ */
+template<uint8_t BIT>
+bool get_bit(uint8_t data)
+  {
+  return (0 != (data & (1 << BIT)));
+  }
+
+/// Get at a specific bit in a byte of the index into an array.
+template<uint8_t BIT>
+bool can_bit(uint8_t *data, uint8_t index, uint8_t length)
+  {
+  return (index < length) && get_bit<BIT>(data[index]);
+  }
+
+// helper to provide a big endian integer from a given number of bytes.
+// The helper function checks the length before using this.
+template<uint8_t BYTES>
+struct can_bytes_impl_t
+  {
+  static uint32_t can_bytes_int(const uint8_t *data, uint8_t index)
+    {
+    return (data[index + (BYTES - 1)])
+      | (can_bytes_impl_t < BYTES - 1 >::can_bytes_int(data, index) << 8);
+    }
+  };
+template<>
+struct can_bytes_impl_t<1>
+  {
+  static uint32_t can_bytes_int(const uint8_t  *data, uint8_t index)
+    {
+    return (data[index]);
+    }
+  };
+
+/** Access to unsigned integer (big-endian) in a data buffer.
+ *
+ * @return true If within bounds
+ */
+template<uint8_t BYTES>
+bool can_uint_bytes(const uint8_t  *data, uint8_t index, uint8_t length, uint32_t &res)
+  {
+  if ((index + (BYTES - 1)) >= length)
+    return false;
+  res = can_bytes_impl_t<BYTES>::can_bytes_int(data, index);
+  return true;
+  }
+/** Access to signed integer (big-endian) in a data buffer.
+ * @return true If within bounds
+ */
+template<uint8_t BYTES>
+bool can_int_bytes(const uint8_t  *data, uint8_t index, uint8_t length, int32_t &res)
+  {
+  if ((index + (BYTES - 1)) >= length)
+    return false;
+  uint32_t uresult = can_bytes_impl_t<BYTES>::can_bytes_int(data, index);
+  res = reinterpret_cast<int32_t &>(uresult);
+  return true;
+  }
+
+/** Access to unsigned integer (big-endian) in a vector data buffer.
+ * @return true If successful
+ */
+template<uint8_t BYTES>
+bool can_uint_buff(const std::vector<uint8_t> &data, uint8_t index,  uint32_t &ures)
+  {
+  if ((index + (BYTES - 1)) >= data.size())
+    return false;
+  ures = can_bytes_impl_t<BYTES>::can_bytes_int(data.data(), index);
+  return true;
+  }
+
+/** Sign extend an unsigned to a signed integer of the same size.
+ */
+template<typename UINT, typename INT, uint8_t SIGNBIT>
+INT sign_extend( UINT uvalue)
+  {
+  typedef typename std::make_unsigned<INT>::type uint_t;
+  uint_t newuvalue = uvalue;
+  if ( newuvalue & ( UINT(1U) << SIGNBIT) )
+    newuvalue |= ~((uint_t(1U) << SIGNBIT) - 1);
+  return reinterpret_cast<INT &>(uvalue);
+  }
+
+/** Access to unsigned integer (big-endian) in a vector data buffer.
+ * @return true If successful
+ */
+template<uint8_t BYTES>
+bool can_buff_int(const std::vector<uint8_t> &data, uint8_t index,  int32_t &res)
+  {
+  if ((index + (BYTES - 1)) >= data.size())
+    return false;
+  uint32_t ures = can_bytes_impl_t<BYTES>::can_bytes_int(data.data(), index);
+
+  res = sign_extend < uint32_t, int32_t, BYTES * 8 - 1 > (ures);
+  return true;
+  }
+
+// Helper Class to access Little-Endian values.
+template<uint8_t BYTES>
+struct can_bytes_le_impl_t
+  {
+  static uint32_t can_bytes_int( const uint8_t *data, uint8_t index)
+    {
+    return ((data[index + (BYTES - 1)]) << (8 * (BYTES - 1)))
+      | can_bytes_le_impl_t < BYTES - 1 >::can_bytes_int(data, index);
+    }
+  };
+template<>
+struct can_bytes_le_impl_t<1>
+  {
+  static uint32_t can_bytes_int(const uint8_t *data, uint8_t index)
+    {
+    return (data[index]);
+    }
+  };
+
+/** Access to unsigned integer (little-endian) in a data buffer.
+ * @return true If within bounds
+ */
+template<uint8_t BYTES>
+bool can_bytes_uint_le(const uint8_t *data, uint8_t index, uint8_t length, uint32_t &res)
+  {
+  if ((index + (BYTES - 1)) >= length)
+    return false;
+  res = can_bytes_le_impl_t<BYTES>::can_bytes_int(data, index);
+  return true;
+  }
+
+/** Access to unsigned integer (little-endian) in a vector data buffer.
+ * @return true If within bounds
+ */
+template<uint8_t BYTES>
+bool can_buff_uint_le(const std::vector<uint8_t> &data, uint8_t index, uint32_t &res)
+  {
+  if ((index + (BYTES - 1)) >= data.size())
+    return false;
+  res = can_bytes_le_impl_t<BYTES>::can_bytes_int(data.data(), index);
+  return true;
+  }
+/** Access to signed integer (little-endian) in a vector data buffer.
+ * @return true If within bounds
+ */
+template<uint8_t BYTES>
+bool can_buff_int_le(const std::vector<uint8_t> &data, uint8_t index, int32_t &res)
+  {
+  if ((index + (BYTES - 1)) >= data.size())
+    return false;
+  uint32_t uresult = can_bytes_impl_t<BYTES>::can_bytes_int(data.data(), index);
+  res = sign_extend < uint32_t, int32_t, BYTES * 8 - 1 > (uresult);
+  return true;
+  }
+
+/** Extract a string from a vector data buffer up to available length.
+ *  @return true if start is within bounds.
+ */
+bool can_buff_string(const std::vector<uint8_t> &data, uint8_t index, uint8_t len, std::string &strret);
+
 extern OvmsVehicleFactory MyVehicleFactory;
 
 #endif //#ifndef __VEHICLE_H__

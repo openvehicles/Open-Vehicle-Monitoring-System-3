@@ -1990,6 +1990,18 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::ProcessMsgCommand(std::string &resul
   return NotImplemented;
   }
 
+bool can_buff_string(const std::vector<uint8_t> &data, uint8_t index, uint8_t len, std::string &strret)
+  {
+  int remain = data.size() - index;
+  if (remain < 0)
+    return false;
+  if (remain < len)
+    len = remain;
+  const char *begin = reinterpret_cast<const char *>(data.data() + index) ;
+  const char *end   = begin + len;
+  strret.assign<const char *>(begin, end);
+  return true;
+}
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
 /**
