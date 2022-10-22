@@ -38,12 +38,12 @@ is the recommended default. That way, you can always connect to your module via 
     AP Stations: 0
 
 
-In **client mode**, the module can connect to a fixed network, or automatically scan all channels for
-known networks to connect to ("scanning mode"). Scanning mode is configured by enabling client mode
-without a specific client SSID.
+In **client mode**, the module will connect to an existing newtork (Access Point) as a client.
+Multiple APs can be registered, in this case the module will continuously monitor the signal quality,
+and be able to switch AP if the signal quality is too low.
 
 The module will normally receive an IP address, gateway and DNS from the WiFi access point by DHCP. 
-See below on how to connect with a manual static IP setup.
+See below `Static IP / SSID Configuration`_ on how to connect with a manual static IP setup.
 
 In **access point mode**, the module provides access for other WiFi devices on a private network
 with the IP subnet ``192.168.4.0/24``. The module's IP address on this network is ``192.168.4.1``.
@@ -59,6 +59,13 @@ configure your default mode and networks.
   limitations. If you need this, consider installing a dedicated mobile hotspot and using that one 
   via WiFi instead of the modem for the module's internet access (you won't need the modem in this 
   setup).
+
+.. toctree::
+   :maxdepth: 1
+   :caption: More details:
+
+   wifi/client
+   wifi/access-point
 
 
 ---------------------
