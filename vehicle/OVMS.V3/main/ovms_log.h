@@ -46,4 +46,8 @@
 #define ESP_LOGD( tag, format, ... ) esp_log_write(ESP_LOG_DEBUG,   tag, LOG_FORMAT(D, format), esp_log_timestamp(), tag, ##__VA_ARGS__)
 #define ESP_LOGV( tag, format, ... ) esp_log_write(ESP_LOG_VERBOSE, tag, LOG_FORMAT(V, format), esp_log_timestamp(), tag, ##__VA_ARGS__)
 
+#define ESP_BUFFER_LOGI( tag, buffer, buff_len) esp_log_buffer_hexdump_internal( tag, buffer, buff_len, ESP_LOG_INFO)
+#define ESP_BUFFER_LOGD( tag, buffer, buff_len) esp_log_buffer_hexdump_internal( tag, buffer, buff_len, ESP_LOG_DEBUG)
+#define ESP_BUFFER_LOGV( tag, buffer, buff_len) esp_log_buffer_hexdump_internal( tag, buffer, buff_len, ESP_LOG_VERBOSE)
+
 #endif //#ifndef __OVMS_LOG_H__
