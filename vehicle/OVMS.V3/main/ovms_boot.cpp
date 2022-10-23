@@ -239,7 +239,7 @@ Boot::Boot()
       uint32_t adc_level = 0;
       for (int i = 0; i < 5; i++)
         adc_level += adc1_get_raw(ADC1_CHANNEL_0);
-      float level_12v = adc_level / 5 / 195.7;
+      float level_12v = (float) adc_level / 5 / 195.7;
       ESP_LOGI(TAG, "12V level: ~%.1fV", level_12v);
       if (level_12v > 11.0)
         ESP_LOGI(TAG, "12V level sufficient, proceeding with boot");
