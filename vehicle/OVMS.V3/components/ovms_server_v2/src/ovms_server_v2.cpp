@@ -2194,8 +2194,13 @@ void ovmsv2_stop(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
   if (MyOvmsServerV2 != NULL)
     {
     writer->puts("Stopping OVMS Server V2 connection (oscv2)");
-    delete MyOvmsServerV2;
+    OvmsServerV2 *instance = MyOvmsServerV2;
     MyOvmsServerV2 = NULL;
+    delete instance;
+    }
+  else
+    {
+    writer->puts("OVMS v2 server has not been started");
     }
   }
 

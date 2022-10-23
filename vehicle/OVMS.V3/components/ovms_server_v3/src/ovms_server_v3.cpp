@@ -979,6 +979,7 @@ void ovmsv3_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
   {
   if (MyOvmsServerV3 == NULL)
     {
+    writer->puts("Launching OVMS Server V3 connection (oscv3)");
     MyOvmsServerV3 = new OvmsServerV3("oscv3");
     }
   }
@@ -987,8 +988,14 @@ void ovmsv3_stop(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
   {
   if (MyOvmsServerV3 != NULL)
     {
-    delete MyOvmsServerV3;
+    writer->puts("Stopping OVMS Server V3 connection (oscv3)");
+    OvmsServerV3 *instance = MyOvmsServerV3;
     MyOvmsServerV3 = NULL;
+    delete instance;
+    }
+  else
+    {
+    writer->puts("OVMS v3 server has not been started");
     }
   }
 
