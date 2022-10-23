@@ -155,6 +155,8 @@ struct DashboardConfig;
 #define VEHICLE_POLL_TYPE_OBDIIGROUP      0x21 // Custom: Read data by 8 bit PID
 #define VEHICLE_POLL_TYPE_OBDII_32        0x32 // Custom: VW routine control extension (8 bit PID)
 
+#define VEHICLE_OBD_BROADCAST_MODULE_TX   0x7df
+#define VEHICLE_OBD_BROADCAST_MODULE_RX   0x0
 // A note on "PID" and their sizes here:
 //  By "PID" for the service types we mean the part of the request parameters
 //  after the service type that is reflected in _every_ valid response to the request.
