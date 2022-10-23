@@ -338,4 +338,18 @@ double float2double(float f);
 std::string idtag(const char* tag, void* instance);
 #define IDTAG idtag(TAG,this)
 
+/**
+ * sign_extend: Sign extend an unsigned to a signed integer of the same size.
+ */
+template <typename UINT, typename INT>
+INT sign_extend(UINT uvalue, uint8_t signbit)
+  {
+  typedef typename std::make_unsigned<INT>::type uint_t;
+  uint_t newuvalue = uvalue;
+  if (newuvalue & (UINT(1U) << signbit)) {
+    newuvalue |= ~((uint_t(1U) << signbit) - 1);
+  }
+  return reinterpret_cast<INT &>(newuvalue);
+  }
+
 #endif // __OVMS_UTILS_H__
