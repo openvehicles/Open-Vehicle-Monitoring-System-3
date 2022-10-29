@@ -26,8 +26,6 @@
 #ifndef __VEHICLE_RENAULTZOE_PH2_OBD_H__
 #define __VEHICLE_RENAULTZOE_PH2_OBD_H__
 
-static const char *TAG = "v-zoe-ph2-obd";
-
 #include <atomic>
 
 #include "can.h"
@@ -58,7 +56,11 @@ static const char *TAG = "v-zoe-ph2-obd";
 
 using namespace std;
 
+#define TAG (OvmsVehicleRenaultZoePh2OBD::s_tag)
+
 class OvmsVehicleRenaultZoePh2OBD : public OvmsVehicle {
+  public:
+    static const char *s_tag;
 
   public:
     OvmsVehicleRenaultZoePh2OBD();

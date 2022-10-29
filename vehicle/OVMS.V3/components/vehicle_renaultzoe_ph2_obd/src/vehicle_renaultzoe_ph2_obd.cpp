@@ -42,6 +42,8 @@
 #include "vehicle_renaultzoe_ph2_obd.h"
 #include "ph2_poller.h"
 
+const char *OvmsVehicleRenaultZoePh2OBD::s_tag = "v-zoe-ph2-obd";
+
 OvmsVehicleRenaultZoePh2OBD::OvmsVehicleRenaultZoePh2OBD() {
   ESP_LOGI(TAG, "Start Renault Zoe Ph2 (OBD) vehicle module");
 
