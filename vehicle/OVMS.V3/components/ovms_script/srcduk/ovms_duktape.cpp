@@ -1218,7 +1218,8 @@ void DukOvmsCommandRegisterRun(int verbosity, OvmsWriter* writer, OvmsCommand* c
     }
   else
     {
-    DuktapeConsoleCommand* dcc = it->second;
+    // TODO
+    // DuktapeConsoleCommand* dcc = it->second;
     // Perform the callback
     }
   }
