@@ -44,6 +44,7 @@ static const char *TAG = "config";
 #include "ovms_events.h"
 #include "ovms_utils.h"
 #include "ovms_boot.h"
+#include "ovms_semaphore.h"
 
 #ifdef CONFIG_OVMS_SC_ZIP
 #include "zip_archive.h"
@@ -852,7 +853,24 @@ bool OvmsConfig::Restore(std::string path, std::string password, OvmsWriter* wri
   else
     ESP_LOGD(TAG, "Restore: reading '%s'...", path.c_str());
 
-  m_store_lock.Lock();
+  // Lock config store:
+  if (!m_store_lock.Lock(pdMS_TO_TICKS(5000)))
+    {
+    if (writer)
+      writer->puts("Error: config store currently in use by another process");
+    else
+      ESP_LOGE(TAG, "Restore: timeout waiting for config lock");
+    return false;
+    }
+
+  // Signal & wait for components to shutdown:
+    {
+    OvmsSemaphore eventdone;
+    auto callback = [](const char* event, void* data) { ((OvmsSemaphore*)data)->Give(); };
+    MyEvents.SignalEvent("config.restore", &eventdone, callback);
+    eventdone.Take();
+    }
+
   bool ok = true;
 
   // unzip into restore directory:

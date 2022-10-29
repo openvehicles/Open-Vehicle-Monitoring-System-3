@@ -158,6 +158,7 @@ OvmsSSH::OvmsSSH()
   using std::placeholders::_2;
   MyEvents.RegisterEvent(tag,"network.mgr.init", std::bind(&OvmsSSH::NetManInit, this, _1, _2));
   MyEvents.RegisterEvent(tag,"network.mgr.stop", std::bind(&OvmsSSH::NetManStop, this, _1, _2));
+  MyEvents.RegisterEvent(tag,"config.restore", std::bind(&OvmsSSH::ConfigRestore, this, _1, _2));
   MyConfig.RegisterParam("ssh.server", "SSH server private key store", true, false);
   MyConfig.RegisterParam("ssh.info", "SSH server information", false, true);
   MyConfig.RegisterParam("ssh.keys", "SSH public key store", true, true);
@@ -229,6 +230,14 @@ void OvmsSSH::NetManStop(std::string event, void* data)
     if (wolfSSH_Cleanup() != WS_SUCCESS)
       ESP_LOGE(tag, "Couldn't clean up wolfSSH.");
     m_ctx = NULL;
+    }
+  }
+
+void OvmsSSH::ConfigRestore(std::string event, void* data)
+  {
+  if (RSAKeyGenerator::KillInstance())
+    {
+    ESP_LOGW(tag, "RSAKeyGenerator killed by request");
     }
   }
 
@@ -1058,9 +1067,24 @@ int SendCallback(WOLFSSH* ssh, void* data, uint32_t size, void* ctx)
 //    Class RSAKeyGenerator
 //-----------------------------------------------------------------------------
 
+RSAKeyGenerator* RSAKeyGenerator::s_instance = NULL;
+
 RSAKeyGenerator::RSAKeyGenerator() : TaskBase("RSAKeyGen", 7*1024, 0)
   {
+  s_instance = this;
   Instantiate();
+  }
+
+RSAKeyGenerator::~RSAKeyGenerator()
+  {
+  s_instance = NULL;
+  }
+
+bool RSAKeyGenerator::KillInstance()
+  {
+  if (!s_instance) return false;
+  s_instance->Kill();
+  return true;
   }
 
 void RSAKeyGenerator::Service()

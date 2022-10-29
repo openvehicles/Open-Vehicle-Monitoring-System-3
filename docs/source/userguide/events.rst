@@ -54,6 +54,7 @@ clock.dayN                                    Per-day local time, day N (0=Sun, 
 config.changed                                Configuration has changed
 config.mounted                                Configuration is mounted and available
 config.unmounted                              Configuration is unmounted and unavailable
+config.restore                                Configuration is about to be restored from a backup
 egpio.input.<port>.<state>                    EGPIO input port change (port=0…9, state=high/low)
 egpio.output.<port>.<state>                   EGPIO output port change (port=0…9, state=high/low)
 gps.lock.acquired                             GPS lock has been acquired
