@@ -36,6 +36,7 @@
 #include <cstring>
 #include <string>
 #include <iomanip>
+#include <vector>
 #include "ovms.h"
 
 // Macro utils:
@@ -339,17 +340,234 @@ std::string idtag(const char* tag, void* instance);
 #define IDTAG idtag(TAG,this)
 
 /**
- * sign_extend: Sign extend an unsigned to a signed integer of the same size.
+ * sign_extend: Sign extend an unsigned to a signed integer of the same or bigger size.
+ *  Sign bit is not known at compile time.
  */
-template <typename UINT, typename INT>
-INT sign_extend(UINT uvalue, uint8_t signbit)
+template<typename UINT, typename INT>
+INT sign_extend( UINT uvalue, uint8_t signbit)
   {
   typedef typename std::make_unsigned<INT>::type uint_t;
   uint_t newuvalue = uvalue;
-  if (newuvalue & (UINT(1U) << signbit)) {
-    newuvalue |= ~((uint_t(1U) << signbit) - 1);
+  UINT signmask = UINT(1U) << signbit;
+  if ( newuvalue & signmask)
+    newuvalue |= ~ (static_cast<uint_t>(signmask) - 1);
+  return reinterpret_cast<INT &>(uvalue);
   }
-  return reinterpret_cast<INT &>(newuvalue);
+
+/**
+ * sign_extend: Sign extend an unsigned to a signed integer of the same or bigger size.
+ * Sign bit is known at compile time.
+ */
+template<typename UINT, typename INT, uint8_t SIGNBIT>
+INT sign_extend( UINT uvalue)
+  {
+  typedef typename std::make_unsigned<INT>::type uint_t;
+  uint_t newuvalue = uvalue;
+  if ( newuvalue & ( UINT(1U) << SIGNBIT) )
+    newuvalue |= ~((uint_t(1U) << SIGNBIT) - 1);
+  return reinterpret_cast<INT &>(uvalue);
+  }
+
+/**
+ * get_bit: Get at a specific (compile-time defined) bit in a byte.
+ */
+template<uint8_t BIT>
+bool get_bit(uint8_t data)
+  {
+  return (0 != (data & (1 << BIT)));
+  }
+/**
+ * get_bit: Get at a specific (run-time defined) bit in a byte.
+ */
+inline bool get_bit(uint8_t data, uint8_t bit)
+  {
+  return (0 != (data & (1 << bit)));
+  }
+/**
+ * get_uint_bits: Get at unsigned integer values within data.
+ * Compile-time defined section.
+ */
+template<uint8_t BIT, uint8_t BITLEN>
+uint16_t get_uint_bits(uint32_t data)
+  {
+  return (data >> BIT) & ((0x1U <<(BITLEN+1))-1);
+  }
+/**
+ * get_uint_bits: Get at unsigned integer values within data.
+ * Run-time defined section.
+ */
+inline uint16_t get_uint_bits(uint32_t data, uint8_t bit, uint8_t bitlen)
+  {
+  return (data >> bit) & ((0x1U <<(bitlen+1))-1);
+  }
+
+/**
+ * get_uint_bits: Get at signed integer values within data.
+ * Compile-time defined section.
+ */
+template<uint8_t BIT, uint8_t BITLEN>
+int16_t get_int_bits(uint32_t data)
+  {
+  uint16_t unsigned_val = get_uint_bits<BIT,BITLEN>(data);
+  return sign_extend<uint16_t,int16_t, BITLEN-1>(unsigned_val);
+  }
+/**
+ * get_uint_bits: Get at signed integer values within data.
+ * Run-time defined section.
+ */
+inline int16_t get_int_bits(uint32_t data, uint8_t bit, uint8_t bitlen)
+  {
+  uint16_t unsigned_val = get_uint_bits(data, bit, bitlen);
+  return sign_extend<uint16_t,int16_t>(unsigned_val, bitlen-1);
+  }
+
+// helper to provide a big endian integer from a given number of bytes.
+// The helper function checks the length before using this.
+template<uint8_t BYTES, typename UINT = uint32_t>
+struct ovms_bytes_impl_t
+  {
+  static UINT get_bytes_uint(const uint8_t *data, uint32_t index)
+    {
+    return (data[index + (BYTES - 1)])
+      | (ovms_bytes_impl_t < BYTES - 1, UINT>::get_bytes_uint(data, index) << 8);
+    }
+  };
+template<typename UINT>
+struct ovms_bytes_impl_t<1,UINT>
+  {
+  static UINT get_bytes_uint(const uint8_t  *data, uint32_t index)
+    {
+    return (data[index]);
+    }
+  };
+
+// Helper Class to access Little-Endian values.
+template<uint8_t BYTES, typename UINT = uint32_t>
+struct get_bytes_le_impl_t
+  {
+  static UINT get_bytes_uint( const uint8_t *data, uint32_t index)
+    {
+    return ((data[index + (BYTES - 1)]) << (UINT(8) * (BYTES - 1)))
+      | get_bytes_le_impl_t < BYTES - 1 >::get_bytes_uint(data, index);
+    }
+  };
+template<typename UINT>
+struct get_bytes_le_impl_t<1, UINT>
+  {
+  static UINT get_bytes_uint(const uint8_t *data, uint32_t index)
+    {
+    return (data[index]);
+    }
+  };
+
+/**
+ * get_uint_bytes_be: Access to unsigned integer (big-endian) in a data buffer.
+ *
+ * @return true If within bounds
+ */
+template<uint8_t BYTES, typename UINT = uint32_t>
+bool get_uint_bytes_be(const uint8_t  *data, uint32_t index, uint32_t length, UINT &res)
+{
+  if ((index + (BYTES - 1)) >= length) {
+    return false;
+  }
+  res = ovms_bytes_impl_t<BYTES,UINT>::get_bytes_uint(data, index);
+  return true;
+}
+
+/**
+ * get_int_bytes_be: Access to signed integer (big-endian) in a data buffer.
+ * @return true If within bounds
+ */
+template<uint8_t BYTES, typename INT = int32_t>
+bool get_int_bytes_be(const uint8_t  *data, uint32_t index, uint32_t length, INT &res)
+  {
+  if ((index + (BYTES - 1)) >= length)
+    return false;
+  typedef typename std::make_unsigned<INT>::type uint_t;
+
+  uint_t uresult = ovms_bytes_impl_t<BYTES,uint_t>::get_bytes_uint(data, index);
+  res = sign_extend<uint_t, INT, BYTES * 8 - 1>(uresult);
+  return true;
+  }
+
+/**
+ * get_uint_buff_be: Access to unsigned integer (big-endian) in a vector data buffer.
+ * @return true If successful
+ */
+template<uint8_t BYTES, typename UINT = uint32_t>
+bool get_uint_buff_be(const std::string &data, uint32_t index,  UINT &ures)
+  {
+  if ((index + (BYTES - 1)) >= data.size())
+    return false;
+  ures = ovms_bytes_impl_t<BYTES,UINT>::get_bytes_uint(reinterpret_cast<const uint8_t *>(data.data()), index);
+  return true;
+  }
+
+/**
+ * get_buff_int_be: Access to signed integer (big-endian) in a std::string data buffer.
+ * @return true If successful
+ */
+template<uint8_t BYTES, typename INT = int32_t>
+bool get_buff_int_be(const std::string &data, uint32_t index,  INT &res)
+  {
+  if ((index + (BYTES - 1)) >= data.size())
+    return false;
+  typedef typename std::make_unsigned<INT>::type uint_t;
+  uint_t ures = ovms_bytes_impl_t<BYTES,uint_t>::get_bytes_uint(reinterpret_cast<const uint8_t *>(data.data()), index);
+
+  res = sign_extend<uint_t, INT, BYTES * 8 - 1>(ures);
+  return true;
+  }
+
+/**
+ * get_bytes_uint_le: Access to unsigned integer (little-endian) in a data buffer.
+ * @return true If within bounds
+ */
+template<uint8_t BYTES, typename UINT = uint32_t>
+bool get_bytes_uint_le(const uint8_t *data, uint32_t index, uint32_t length, UINT &res)
+  {
+  if ((index + (BYTES - 1)) >= length)
+    return false;
+  res = get_bytes_le_impl_t<BYTES,UINT>::get_bytes_uint(data, index);
+  return true;
+  }
+
+/** Access to unsigned integer (little-endian) in a vector data buffer.
+ * @return true If within bounds
+ */
+template<uint8_t BYTES, typename UINT = uint32_t>
+bool get_buff_uint_le(const std::string &data, uint32_t index, UINT &res)
+  {
+  if ((index + (BYTES - 1)) >= data.size())
+    return false;
+  res = get_bytes_le_impl_t<BYTES,UINT>::get_bytes_uint(reinterpret_cast<const uint8_t *>(data.data()), index);
+  return true;
+  }
+
+/** Access to signed integer (little-endian) in a vector data buffer.
+ * @return true If within bounds
+ */
+template<uint8_t BYTES, typename INT = int32_t>
+bool get_buff_int_le(const std::string &data, uint32_t index, INT &res)
+  {
+  if ((index + (BYTES - 1)) >= data.size())
+    return false;
+  typedef typename std::make_unsigned<INT>::type uint_t;
+  uint_t uresult = ovms_bytes_impl_t<BYTES,uint_t>::get_bytes_uint(reinterpret_cast<const uint8_t *>(data.data()), index);
+  res = sign_extend < uint_t, INT, BYTES * 8 - 1 > (uresult);
+  return true;
+  }
+
+
+/** Access a string portion in a vector data buffer.
+ * @return true if start is within bounds.
+ */ 
+bool get_buff_string(const uint8_t *data, uint32_t size, uint32_t index, uint32_t len, std::string &strret);
+
+inline bool get_buff_string(const std::string &data, uint32_t index, uint32_t len, std::string &strret)
+  {
+  return get_buff_string(reinterpret_cast<const uint8_t *>(data.data()), data.size(), index, len, strret);
   }
 
 #endif // __OVMS_UTILS_H__

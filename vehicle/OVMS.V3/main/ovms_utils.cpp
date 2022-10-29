@@ -612,3 +612,19 @@ std::string idtag(const char* tag, void* instance)
   std::string res = buf.str();
   return res;
   }
+
+/**
+ * get_buff_string: Helper function to get at string value from sized buffer.
+ */
+bool get_buff_string(const uint8_t *data, uint32_t size, uint32_t index, uint32_t len, std::string &strret)
+  {
+  int remain = size - index;
+  if (remain < 0)
+    return false;
+  if (remain < len)
+    len = remain;
+  const char *begin = reinterpret_cast<const char *>(data + index) ;
+  const char *end   = begin + len;
+  strret.assign<const char *>(begin, end);
+  return true;
+  }
