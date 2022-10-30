@@ -644,7 +644,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandStat(int verbosity, Ov
   if (StdMetrics.ms_v_pos_odometer->IsDefined())
     {
     const std::string& odometer = StdMetrics.ms_v_pos_odometer->AsUnitString("-", rangeUnit, 1);
-    writer->printf("ODO: %s\n", odometer);
+    writer->printf("ODO: %s\n", odometer.c_str());
     }
 
   if (mt_v_bat_LastMeas_days->IsDefined())
