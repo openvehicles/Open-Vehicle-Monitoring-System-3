@@ -64,6 +64,12 @@ typedef struct
 
 typedef struct
   {
+  char name[16];
+  uint32_t stackfree;
+  } task_info_t;
+
+typedef struct
+  {
   // data consistency:
   uint32_t crc;
   uint32_t calc_crc() { return crc32_le(0, (uint8_t*)this+sizeof(crc), sizeof(*this)-sizeof(crc)); }
@@ -83,6 +89,9 @@ typedef struct
   char curr_event_handler[16];      // … MyEvents.m_current_callback->m_caller
   uint16_t curr_event_runtime;      // … monotonictime-MyEvents.m_current_started
   char wdt_tasknames[32];           // Pipe (|) separated list of the tasks that triggered the TWDT
+  bool stack_overflow;
+  char stack_overflow_taskname[16];
+  task_info_t curr_task[portNUM_PROCESSORS];
   } boot_data_t;
 
 extern boot_data_t boot_data;
@@ -128,6 +137,7 @@ class Boot
     bootreason_t m_bootreason;
     esp_reset_reason_t m_resetreason;
     unsigned int m_crash_count_early;
+    bool m_stack_overflow;
   };
 
 extern Boot MyBoot;

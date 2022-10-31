@@ -34,6 +34,7 @@ static const char *TAG = "boot";
 #include "freertos/FreeRTOS.h"
 #include "freertos/xtensa_api.h"
 #include "rom/rtc.h"
+#include "rom/uart.h"
 #include "soc/rtc_cntl_reg.h"
 #include "esp_system.h"
 #include "esp_panic.h"
@@ -165,10 +166,18 @@ void boot_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
     writer->printf("\nLast crash: ");
     if (boot_data.crash_data.is_abort)
       {
+      // Software controlled panic:
       writer->printf("abort() was called on core %d\n", boot_data.crash_data.core_id);
+      if (boot_data.stack_overflow_taskname[0])
+        writer->printf("  Stack overflow in task %s\n", boot_data.stack_overflow_taskname);
+      else if (boot_data.curr_task[0].name[0] && !boot_data.curr_task[0].stackfree)
+        writer->printf("  Pending stack overflow in task %s\n", boot_data.curr_task[0].name);
+      else if (boot_data.curr_task[1].name[0] && !boot_data.curr_task[1].stackfree)
+        writer->printf("  Pending stack overflow in task %s\n", boot_data.curr_task[1].name);
       }
     else
       {
+      // Hardware exception:
       int exccause = boot_data.crash_data.reg[19];
       writer->printf("%s exception on core %d\n",
         (exccause < NUM_EDESCS) ? edesc[exccause] : "Unknown", boot_data.crash_data.core_id);
@@ -176,18 +185,29 @@ void boot_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
       for (int i=0; i<24; i++)
         writer->printf("  %s: 0x%08lx%s", sdesc[i], boot_data.crash_data.reg[i], ((i+1)%4) ? "" : "\n");
       }
+
+    for (int core = 0; core < portNUM_PROCESSORS; core++)
+      {
+      if (boot_data.curr_task[core].name[0])
+        writer->printf("  Current task on core %d: %s, %u stack bytes free\n",
+          core, boot_data.curr_task[core].name, boot_data.curr_task[core].stackfree);
+      }
+
     writer->printf("  Backtrace:\n ");
     for (int i=0; i<OVMS_BT_LEVELS && boot_data.crash_data.bt[i].pc; i++)
       writer->printf(" 0x%08lx", boot_data.crash_data.bt[i].pc);
+
     if (boot_data.curr_event_name[0])
       {
       writer->printf("\n  Event: %s@%s %u secs", boot_data.curr_event_name, boot_data.curr_event_handler,
         boot_data.curr_event_runtime);
       }
+
     if (MyBoot.GetResetReason() == ESP_RST_TASK_WDT)
       {
       writer->printf("\n  WDT tasks: %s", boot_data.wdt_tasknames);
       }
+
     writer->printf("\n  Version: %s\n", StdMetrics.ms_m_version->AsString("").c_str());
     writer->printf("\n  Hardware: %s\n", StdMetrics.ms_m_hardware->AsString("").c_str());
     }
@@ -265,14 +285,12 @@ Boot::Boot()
     boot_data.boot_count++;
     ESP_LOGI(TAG, "Boot #%d reasons for CPU0=%d and CPU1=%d",boot_data.boot_count,cpu0,cpu1);
 
-    m_resetreason = boot_data.reset_hint;
-    ESP_LOGI(TAG, "Reset reason %s (%d)", GetResetReasonName(), GetResetReason());
-
     if (boot_data.soft_reset)
       {
       boot_data.crash_count_total = 0;
       boot_data.crash_count_early = 0;
       m_bootreason = BR_SoftReset;
+      m_resetreason = ESP_RST_SW;
       ESP_LOGI(TAG, "Soft reset by user");
       }
     else if (boot_data.firmware_update)
@@ -281,6 +299,7 @@ Boot::Boot()
       boot_data.crash_count_early = 0;
       m_bootreason = BR_FirmwareUpdate;
       ESP_LOGI(TAG, "Firmware update reset");
+      m_resetreason = ESP_RST_SW;
       }
     else if (!boot_data.stable_reached)
       {
@@ -288,24 +307,33 @@ Boot::Boot()
       boot_data.crash_count_early++;
       m_bootreason = BR_EarlyCrash;
       ESP_LOGE(TAG, "Early crash #%d detected", boot_data.crash_count_early);
+      m_resetreason = boot_data.reset_hint;
+      ESP_LOGI(TAG, "Reset reason %s (%d)", GetResetReasonName(), GetResetReason());
       }
     else
       {
       boot_data.crash_count_total++;
       m_bootreason = BR_Crash;
       ESP_LOGE(TAG, "Crash #%d detected", boot_data.crash_count_total);
+      m_resetreason = boot_data.reset_hint;
+      ESP_LOGI(TAG, "Reset reason %s (%d)", GetResetReasonName(), GetResetReason());
       }
     }
 
   m_crash_count_early = boot_data.crash_count_early;
+  m_stack_overflow = boot_data.stack_overflow;
+  if (!m_stack_overflow)
+    boot_data.stack_overflow_taskname[0] = 0;
 
   boot_data.bootreason_cpu0 = cpu0;
   boot_data.bootreason_cpu1 = cpu1;
+  boot_data.reset_hint = ESP_RST_UNKNOWN;
 
   // reset flags:
   boot_data.soft_reset = false;
   boot_data.firmware_update = false;
   boot_data.stable_reached = false;
+  boot_data.stack_overflow = false;
 
   boot_data.crc = boot_data.calc_crc();
 
@@ -351,6 +379,8 @@ const char* Boot::GetBootReasonName()
 
 const char* Boot::GetResetReasonName()
   {
+  if (m_stack_overflow)
+    return "Stack overflow";
   return (m_resetreason >= 0 && m_resetreason < NUM_RESETREASONS)
     ? resetreason_name[m_resetreason]
     : "Unknown reset reason";
@@ -448,6 +478,52 @@ bool Boot::IsShuttingDown()
   return m_shutting_down;
   }
 
+
+/*
+ * Direct UART output utils borrowed from esp32/panic.c
+ */
+static void panicPutChar(char c)
+  {
+  while (((READ_PERI_REG(UART_STATUS_REG(CONFIG_CONSOLE_UART_NUM)) >> UART_TXFIFO_CNT_S)&UART_TXFIFO_CNT) >= 126) ;
+  WRITE_PERI_REG(UART_FIFO_REG(CONFIG_CONSOLE_UART_NUM), c);
+  }
+
+static void panicPutStr(const char *c)
+  {
+  int x = 0;
+  while (c[x] != 0)
+    {
+    panicPutChar(c[x]);
+    x++;
+    }
+  }
+
+/*
+ * This function is called by task_wdt_isr function (ISR for when TWDT times out).
+ * It can be redefined in user code to handle twdt events.
+ * Note: It has the same limitations as the interrupt function.
+ *       Do not use ESP_LOGI functions inside.
+ */
+extern "C" void esp_task_wdt_isr_user_handler(void)
+  {
+  panicPutStr("\r\n[OVMS] ***TWDT***\r\n");
+  // Save TWDT task info:
+  esp_task_wdt_get_trigger_tasknames(boot_data.wdt_tasknames, sizeof(boot_data.wdt_tasknames));
+  }
+
+/*
+ * This function is called if FreeRTOS detects a stack overflow.
+ */
+extern "C" void vApplicationStackOverflowHook( TaskHandle_t xTask, signed char *pcTaskName )
+  {
+  panicPutStr("\r\n[OVMS] ***ERROR*** A stack overflow in task ");
+  panicPutStr((char *)pcTaskName);
+  panicPutStr(" has been detected.\r\n");
+  strlcpy(boot_data.stack_overflow_taskname, (const char*)pcTaskName, sizeof(boot_data.stack_overflow_taskname));
+  boot_data.stack_overflow = true;
+  abort();
+  }
+
 void Boot::ErrorCallback(XtExcFrame *frame, int core_id, bool is_abort)
   {
   boot_data.reset_hint = ovms_reset_reason_get_hint();
@@ -495,8 +571,28 @@ void Boot::ErrorCallback(XtExcFrame *frame, int core_id, bool is_abort)
     boot_data.curr_event_runtime = 0;
     }
 
-  // Save TWDT task info:
-  esp_task_wdt_get_trigger_tasknames(boot_data.wdt_tasknames, sizeof(boot_data.wdt_tasknames));
+  // Save current tasks:
+  panicPutStr("\r\n[OVMS] Current tasks: ");
+  for (int core=0; core<portNUM_PROCESSORS; core++)
+    {
+    TaskHandle_t task = xTaskGetCurrentTaskHandleForCPU(core);
+    if (task)
+      {
+      char *name = pcTaskGetTaskName(task);
+      uint32_t stackfree = uxTaskGetStackHighWaterMark(task);
+      if (core > 0) panicPutChar('|');
+      panicPutStr(name);
+      strlcpy(boot_data.curr_task[core].name, name, sizeof(boot_data.curr_task[core].name));
+      boot_data.curr_task[core].stackfree = stackfree;
+      if (!stackfree) boot_data.stack_overflow = true;
+      }
+    else
+      {
+      boot_data.curr_task[core].name[0] = 0;
+      boot_data.curr_task[core].stackfree = 0;
+      }
+    }
+  panicPutStr("\r\n");
 
   boot_data.crc = boot_data.calc_crc();
   }
@@ -514,6 +610,8 @@ void Boot::NotifyDebugCrash()
     //  ,<curr_event_name>,<curr_event_handler>,<curr_event_runtime>
     //  ,<wdt_tasknames>
     //  ,<hardware_info>
+    //  ,<stack_overflow_task>
+    //  ,<core0_task>,<core0_stackfree>,<core1_task>,<core1_stackfree>
 
     StringWriter buf;
     buf.reserve(2048);
@@ -556,6 +654,20 @@ void Boot::NotifyDebugCrash()
     // Hardware info:
     buf.append(",");
     buf.append(mp_encode(StdMetrics.ms_m_hardware->AsString("")));
+
+    // Stack overflow task:
+    std::string name = boot_data.stack_overflow_taskname;
+    buf.append(",");
+    buf.append(mp_encode(name));
+
+    // Current tasks:
+    for (int i = 0; i < 2; i++)
+      {
+      name = boot_data.curr_task[i].name;
+      buf.append(",");
+      buf.append(mp_encode(name));
+      buf.printf(",%u", boot_data.curr_task[i].stackfree);
+      }
 
     MyNotify.NotifyString("data", "debug.crash", buf.c_str());
     }

@@ -169,6 +169,17 @@ void test_watchdog(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
   writer->puts("Error: We should never get here");
   }
 
+void test_stackoverflow(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  uint8_t data[256];
+  memset(data, verbosity & 255, sizeof data);
+  writer->printf("Stack bytes remaining: %u\n", uxTaskGetStackHighWaterMark(NULL));
+  vTaskDelay(pdMS_TO_TICKS(250));
+  test_stackoverflow(verbosity+1, writer, cmd, argc, argv);
+  // never reached, just to inhibit tail recursion optimization:
+  writer->printf("%x\n", data[0]);
+  }
+
 void test_realloc(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   void* buf;
@@ -385,6 +396,7 @@ TestFrameworkInit::TestFrameworkInit()
   cmd_test->RegisterCommand("chargen","Character generator",test_chargen,"[<#lines>] [<delay_ms>]",0,2);
   cmd_test->RegisterCommand("echo", "Test getchar", test_echo);
   cmd_test->RegisterCommand("watchdog", "Test task spinning (and watchdog firing)", test_watchdog);
+  cmd_test->RegisterCommand("stackoverflow", "Test stack overflow detection (crashes)", test_stackoverflow);
   cmd_test->RegisterCommand("realloc", "Test memory re-allocations", test_realloc);
   cmd_test->RegisterCommand("spiram", "Test SPI RAM memory usage", test_spiram);
   cmd_test->RegisterCommand("strverscmp", "Test strverscmp function", test_strverscmp, "", 2, 2);
