@@ -90,6 +90,8 @@ OvmsVehicleFactory::OvmsVehicleFactory()
 
   OvmsCommand* cmd_bms = MyCommandApp.RegisterCommand("bms","BMS framework", bms_status, "", 0, 0, false);
   cmd_bms->RegisterCommand("status","Show BMS status",bms_status);
+  cmd_bms->RegisterCommand("temp","Show BMS temperature status",bms_temp);
+  cmd_bms->RegisterCommand("volt","Show BMS voltage status",bms_volt);
   cmd_bms->RegisterCommand("reset","Reset BMS statistics",bms_reset);
   cmd_bms->RegisterCommand("alerts","Show BMS alerts",bms_alerts);
 

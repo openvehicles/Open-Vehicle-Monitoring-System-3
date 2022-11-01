@@ -550,17 +550,19 @@ void OvmsVehicle::BmsResetCellStats()
   BmsResetCellTemperatures(false);
   }
 
-int check_max_cols( int total_cols)
+int check_max_cols( int total_cols, int maximum)
   {
-  if (total_cols <= 5)
+  if (maximum <= 1)
+    return 1;
+  if (total_cols <= maximum)
     return total_cols;
-  if (total_cols % 4 == 0)
+  if (maximum >= 4 && total_cols % 4 == 0)
     return 4;
   if (total_cols % 3 == 0)
     return 3;
-  if (total_cols % 5 == 0)
+  if (maximum >= 5 && total_cols % 5 == 0)
     return 5;
-  return 4;
+  return maximum;
   }
 
 template<typename INT>
@@ -569,13 +571,22 @@ INT round_up_div(INT value, INT divis)
     return (value + divis -1) / divis;
   }
 
-void OvmsVehicle::BmsStatus(int verbosity, OvmsWriter* writer)
+void OvmsVehicle::BmsStatus(int verbosity, bool showvoltage, bool showtemperature, OvmsWriter* writer)
   {
   int c;
 
-  if ((!m_bms_has_voltages) && (!m_bms_has_temperatures))
+  bool show_voltage = showvoltage && m_bms_has_voltages;
+  bool show_temperature = showtemperature && m_bms_has_temperatures;
+  if ((!show_voltage) && (!show_temperature))
     {
-    writer->puts("No BMS status data available");
+      const char *datatype;
+    if (showvoltage & showtemperature) 
+      datatype = "status";
+    else if (showvoltage)
+      datatype = "voltage";
+    else
+      datatype = "temperature";
+    writer->printf("No BMS %s data available\n", datatype);
     return;
     }
 
@@ -599,7 +610,7 @@ void OvmsVehicle::BmsStatus(int verbosity, OvmsWriter* writer)
       case OvmsStatus::Alert: talert++; break;
       }
     }
-  if (m_bms_has_voltages)
+  if (show_voltage)
     {
     writer->puts("Voltage:");
     writer->printf("    Average: %5.3fV [%5.3fV - %5.3fV]\n",
@@ -612,7 +623,7 @@ void OvmsVehicle::BmsStatus(int verbosity, OvmsWriter* writer)
       vwarn, valert);
     }
 
-  if (m_bms_has_temperatures)
+  if (show_temperature)
     {
     writer->puts("Temperature:");
     writer->printf("    Average: %5.1fC [%5.1fC - %5.1fC]\n",
@@ -629,31 +640,31 @@ void OvmsVehicle::BmsStatus(int verbosity, OvmsWriter* writer)
   int kv = 0;
   int kt = 0;
   int module_count = 0;
-  if (m_bms_has_voltages)
+  if (show_voltage)
     module_count = round_up_div(m_bms_readings_v,m_bms_readingspermodule_v);
-  if (m_bms_has_temperatures)
+  if (show_temperature)
     {
     int temp_module_count  = round_up_div(m_bms_readings_t,m_bms_readingspermodule_t);
     if (temp_module_count > module_count)
       module_count = temp_module_count;
     }
   int max_cols_v = 0;
-  if (m_bms_has_voltages)
-    max_cols_v = check_max_cols(m_bms_readingspermodule_v);
+  if (show_voltage)
+    max_cols_v = check_max_cols(m_bms_readingspermodule_v, show_temperature?4:5);
   int max_cols_t = 0;
-  if (m_bms_has_temperatures)
-    max_cols_t = check_max_cols(m_bms_readingspermodule_t);
+  if (show_temperature)
+    max_cols_t = check_max_cols(m_bms_readingspermodule_t, 5-max_cols_v);
 
   for (int module = 0; module < module_count; ++module)
     {
     writer->printf("    +");
-    if (m_bms_has_voltages)
+    if (show_voltage)
       {
       for (c=0;c<max_cols_v;c++) { writer->printf("-------"); }
       writer->printf("-+");
       }
 
-      if (m_bms_has_temperatures) {
+      if (show_temperature) {
         for (c=0;c<max_cols_t;c++) { writer->printf("-------"); }
         writer->printf("-+");
       }
@@ -661,13 +672,13 @@ void OvmsVehicle::BmsStatus(int verbosity, OvmsWriter* writer)
 
     int rows_v = 0, rows_t = 0;
     int reading_left_v = 0, reading_left_t = 0;
-    if (m_bms_has_voltages)
+    if (show_voltage)
       {
       int items_left_v = m_bms_readings_v - kv;
       reading_left_v = std::min(items_left_v, m_bms_readingspermodule_v);
       rows_v = round_up_div(reading_left_v, max_cols_v);
       }
-    if (m_bms_has_temperatures)
+    if (show_temperature)
       {
       int items_left_t = m_bms_readings_t - kt;
       reading_left_t = std::min(items_left_t, m_bms_readingspermodule_t);
@@ -680,7 +691,7 @@ void OvmsVehicle::BmsStatus(int verbosity, OvmsWriter* writer)
         writer->printf("%3d |",module+1);
       else
         writer->printf("    |");
-      if (m_bms_has_voltages)
+      if (show_voltage)
         {
         for (c=0; c<max_cols_v; c++)
           {
@@ -695,7 +706,7 @@ void OvmsVehicle::BmsStatus(int verbosity, OvmsWriter* writer)
           }
         writer->printf(" |");
         }
-      if (m_bms_has_temperatures)
+      if (show_temperature)
         {
         for (c=0; c<m_bms_readingspermodule_t; c++)
           {
@@ -715,12 +726,12 @@ void OvmsVehicle::BmsStatus(int verbosity, OvmsWriter* writer)
     }
 
   writer->printf("    +");
-  if (m_bms_has_voltages)
+  if (show_voltage)
     {
     for (c=0;c<max_cols_v;c++) { writer->printf("-------"); }
     writer->printf("-+");
     }
-  if (m_bms_has_temperatures)
+  if (show_temperature)
     {
     for (c=0;c<max_cols_t;c++) { writer->printf("-------"); }
     writer->printf("-+");

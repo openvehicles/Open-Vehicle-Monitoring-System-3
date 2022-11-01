@@ -435,7 +435,30 @@ void OvmsVehicleFactory::bms_status(int verbosity, OvmsWriter* writer, OvmsComma
   {
   if (MyVehicleFactory.m_currentvehicle != NULL)
     {
-    MyVehicleFactory.m_currentvehicle->BmsStatus(verbosity, writer);
+    MyVehicleFactory.m_currentvehicle->BmsStatus(verbosity, true, true, writer);
+    }
+  else
+    {
+    writer->puts("No vehicle module selected");
+    }
+  }
+
+void OvmsVehicleFactory::bms_temp(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (MyVehicleFactory.m_currentvehicle != NULL)
+    {
+    MyVehicleFactory.m_currentvehicle->BmsStatus(verbosity, false, true, writer);
+    }
+  else
+    {
+    writer->puts("No vehicle module selected");
+    }
+  }
+void OvmsVehicleFactory::bms_volt(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (MyVehicleFactory.m_currentvehicle != NULL)
+    {
+    MyVehicleFactory.m_currentvehicle->BmsStatus(verbosity, true, false, writer);
     }
   else
     {
