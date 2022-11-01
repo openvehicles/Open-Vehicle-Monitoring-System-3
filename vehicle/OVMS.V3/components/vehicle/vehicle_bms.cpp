@@ -72,6 +72,129 @@ void OvmsVehicle::BmsSetCellArrangementVoltage(int readings, int readingspermodu
   BmsResetCellVoltages(true);
   }
 
+// Internal entry for changing cell arrangements.
+struct reading_entry_t
+  {
+  int cell_no;
+  float entry;
+  };
+
+/**
+ * Changes the cell arrangement for Voltage, if needs be restoring any readings that were there.
+ * Really should only do work the first time it is called.. as for any one car, the number of readings
+ * should be consistent.
+ * @return true If the cell arrangement was changed.
+ */
+bool OvmsVehicle::BmsCheckChangeCellArrangementVoltage(int readings, int readingspermodule /*=0*/)
+  {
+  bool res = false;
+  if (readingspermodule <= 0)
+    {
+    // Passing in 0 will leave the readings per module unchanged.
+    readingspermodule = m_bms_readingspermodule_v;
+    }
+  if (readings != m_bms_readings_v)
+    {
+    res = true;
+    if (m_bms_bitset_cv == 0)
+      {
+      BmsSetCellArrangementVoltage(readings, readingspermodule);
+      }
+    else
+      {
+      // Store (potentially) sparse readings into a vector.
+      std::vector<reading_entry_t> cells;
+      // At most we will need the number of voltages set in the bitset.
+      cells.reserve(m_bms_bitset_cv);
+      reading_entry_t reading;
+      int maxv = readings;
+      if (m_bms_readings_v < maxv)
+        {
+        maxv = m_bms_readings_v;
+        }
+      for (int i = 0; i< maxv; ++i)
+        {
+        if (m_bms_bitset_v[i])
+          {
+          reading.cell_no = i;
+          reading.entry = m_bms_voltages[i];
+          cells.insert(cells.end(),reading);
+          }
+        }
+      BmsSetCellArrangementVoltage(readings, readingspermodule);
+      for ( std::vector<reading_entry_t>::iterator iter = cells.begin(); iter != cells.end(); ++iter)
+        {
+        BmsSetCellVoltage(iter->cell_no, iter->entry);
+        }
+      }
+    }
+  else if (readingspermodule != m_bms_readingspermodule_v)
+    {
+    // This only changes the read-out.
+    m_bms_readingspermodule_v = readingspermodule;
+    res = true;
+    }
+  return res;
+  }
+
+/**
+ * Changes the cell arrangement for Temperature, if needs be restoring any readings that were there.
+ * Really should only do work the first time it is called.. as for any one car, the number of readings
+ * should be consistent.
+ * @return true If the cell arrangement was changed.
+ */
+bool OvmsVehicle::BmsCheckChangeCellArrangementTemperature(int readings, int readingspermodule /*=0*/)
+  {
+  bool res = false;
+  if (readingspermodule <= 0)
+    {
+    // Passing in 0 will leave the readings per module unchanged.
+    readingspermodule = m_bms_readingspermodule_t;
+    }
+  if (readings != m_bms_readings_t)
+    {
+    res = true;
+    if (m_bms_bitset_ct == 0)
+      {
+      BmsSetCellArrangementTemperature(readings, readingspermodule);
+      }
+    else
+      {
+      // Store (potentially) sparse readings into a vector.
+      std::vector<reading_entry_t> cells;
+      // At most we will need the number of Temperatures set in the bitset.
+      cells.reserve(m_bms_bitset_ct);
+      reading_entry_t reading;
+      int maxv = readings;
+      if (m_bms_readings_t < maxv)
+        {
+        maxv = m_bms_readings_t;
+        }
+      for (int i = 0; i< maxv; ++i)
+        {
+        if (m_bms_bitset_t[i])
+          {
+          reading.cell_no = i;
+          reading.entry = m_bms_temperatures[i];
+          cells.insert(cells.end(),reading);
+          }
+        }
+      BmsSetCellArrangementTemperature(readings, readingspermodule);
+      for ( std::vector<reading_entry_t>::iterator iter = cells.begin(); iter != cells.end(); ++iter)
+        {
+        BmsSetCellTemperature(iter->cell_no, iter->entry);
+        }
+      }
+    }
+  else if (readingspermodule != m_bms_readingspermodule_t)
+    {
+    // This only changes the read-out.
+    m_bms_readingspermodule_t = readingspermodule;
+    res = true;
+    }
+  return res;
+  }
+
 void OvmsVehicle::BmsSetCellArrangementTemperature(int readings, int readingspermodule)
   {
   if (m_bms_temperatures != NULL) delete m_bms_temperatures;
