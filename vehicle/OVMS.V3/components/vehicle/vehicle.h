@@ -689,6 +689,7 @@ class OvmsVehicle : public InternalRamAllocated
     virtual void BmsStatus(int verbosity, OvmsWriter* writer);
     virtual bool FormatBmsAlerts(int verbosity, OvmsWriter* writer, bool show_warnings);
     bool BmsCheckChangeCellArrangementVoltage(int readings, int readingspermodule = 0);
+    bool BmsCheckChangeCellArrangementTemperature(int readings, int readingspermodule = 0);
   };
 
 template<typename Type> OvmsVehicle* CreateVehicle()

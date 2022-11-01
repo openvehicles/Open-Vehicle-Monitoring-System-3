@@ -137,6 +137,64 @@ bool OvmsVehicle::BmsCheckChangeCellArrangementVoltage(int readings, int reading
   return res;
   }
 
+/**
+ * Changes the cell arrangement for Temperature, if needs be restoring any readings that were there.
+ * Really should only do work the first time it is called.. as for any one car, the number of readings
+ * should be consistent.
+ * @return true If the cell arrangement was changed.
+ */
+bool OvmsVehicle::BmsCheckChangeCellArrangementTemperature(int readings, int readingspermodule /*=0*/)
+  {
+  bool res = false;
+  if (readingspermodule <= 0)
+    {
+    // Passing in 0 will leave the readings per module unchanged.
+    readingspermodule = m_bms_readingspermodule_t;
+    }
+  if (readings != m_bms_readings_t)
+    {
+    res = true;
+    if (m_bms_bitset_ct == 0)
+      {
+      BmsSetCellArrangementTemperature(readings, readingspermodule);
+      }
+    else
+      {
+      // Store (potentially) sparse readings into a vector.
+      std::vector<reading_entry_t> cells;
+      // At most we will need the number of Temperatures set in the bitset.
+      cells.reserve(m_bms_bitset_ct);
+      reading_entry_t reading;
+      int maxv = readings;
+      if (m_bms_readings_t < maxv)
+        {
+        maxv = m_bms_readings_t;
+        }
+      for (int i = 0; i< maxv; ++i)
+        {
+        if (m_bms_bitset_t[i])
+          {
+          reading.cell_no = i;
+          reading.entry = m_bms_temperatures[i];
+          cells.insert(cells.end(),reading);
+          }
+        }
+      BmsSetCellArrangementTemperature(readings, readingspermodule);
+      for ( std::vector<reading_entry_t>::iterator iter = cells.begin(); iter != cells.end(); ++iter)
+        {
+        BmsSetCellTemperature(iter->cell_no, iter->entry);
+        }
+      }
+    }
+  else if (readingspermodule != m_bms_readingspermodule_t)
+    {
+    // This only changes the read-out.
+    m_bms_readingspermodule_t = readingspermodule;
+    res = true;
+    }
+  return res;
+  }
+
 void OvmsVehicle::BmsSetCellArrangementTemperature(int readings, int readingspermodule)
   {
   if (m_bms_temperatures != NULL) delete m_bms_temperatures;
