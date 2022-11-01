@@ -435,30 +435,14 @@ void OvmsVehicleFactory::bms_status(int verbosity, OvmsWriter* writer, OvmsComma
   {
   if (MyVehicleFactory.m_currentvehicle != NULL)
     {
-    MyVehicleFactory.m_currentvehicle->BmsStatus(verbosity, true, true, writer);
-    }
-  else
-    {
-    writer->puts("No vehicle module selected");
-    }
-  }
+      OvmsVehicle::vehicle_bms_status_t statusmode = OvmsVehicle::vehicle_bms_status_t::Both;
+      const char* smode = cmd->GetName();
+      if (strcmp(smode,"volt")==0)
+        statusmode = OvmsVehicle::vehicle_bms_status_t::Voltage;
+      else if (strcmp(smode,"temp")==0)
+        statusmode = OvmsVehicle::vehicle_bms_status_t::Temperature;
 
-void OvmsVehicleFactory::bms_temp(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-  {
-  if (MyVehicleFactory.m_currentvehicle != NULL)
-    {
-    MyVehicleFactory.m_currentvehicle->BmsStatus(verbosity, false, true, writer);
-    }
-  else
-    {
-    writer->puts("No vehicle module selected");
-    }
-  }
-void OvmsVehicleFactory::bms_volt(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-  {
-  if (MyVehicleFactory.m_currentvehicle != NULL)
-    {
-    MyVehicleFactory.m_currentvehicle->BmsStatus(verbosity, true, false, writer);
+      MyVehicleFactory.m_currentvehicle->BmsStatus(verbosity, writer, statusmode);
     }
   else
     {

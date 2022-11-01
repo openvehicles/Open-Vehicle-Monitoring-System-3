@@ -550,42 +550,58 @@ void OvmsVehicle::BmsResetCellStats()
   BmsResetCellTemperatures(false);
   }
 
-int check_max_cols( int total_cols, int maximum)
-  {
-  if (maximum <= 1)
-    return 1;
-  if (total_cols <= maximum)
-    return total_cols;
-  if (maximum >= 4 && total_cols % 4 == 0)
-    return 4;
-  if (total_cols % 3 == 0)
-    return 3;
-  if (maximum >= 5 && total_cols % 5 == 0)
-    return 5;
-  return maximum;
-  }
-
 template<typename INT>
 INT round_up_div(INT value, INT divis)
   {
     return (value + divis -1) / divis;
   }
 
-void OvmsVehicle::BmsStatus(int verbosity, bool showvoltage, bool showtemperature, OvmsWriter* writer)
+void OvmsVehicle::BmsStatus(int verbosity, OvmsWriter* writer, vehicle_bms_status_t statusmode)
   {
+  auto check_max_cols = [](int total_cols, int maximum)
+    {
+    if (maximum <= 1)
+      return 1;
+    if (total_cols <= maximum)
+      return total_cols;
+    if (maximum >= 4 && total_cols % 4 == 0)
+      return 4;
+    if (total_cols % 3 == 0)
+      return 3;
+    if (maximum >= 5 && total_cols % 5 == 0)
+      return 5;
+    return maximum;
+    };
+
   int c;
 
-  bool show_voltage = showvoltage && m_bms_has_voltages;
-  bool show_temperature = showtemperature && m_bms_has_temperatures;
+  bool show_voltage = m_bms_has_voltages;
+  bool show_temperature = m_bms_has_temperatures;
+  switch (statusmode)
+    {
+    case vehicle_bms_status_t::Both:
+      break;
+    case vehicle_bms_status_t::Voltage:
+      show_temperature = false;
+      break;
+    case vehicle_bms_status_t::Temperature:
+      show_voltage = false;
+      break;
+    }
   if ((!show_voltage) && (!show_temperature))
     {
-      const char *datatype;
-    if (showvoltage & showtemperature) 
-      datatype = "status";
-    else if (showvoltage)
-      datatype = "voltage";
-    else
-      datatype = "temperature";
+    const char *datatype= "status";
+    switch (statusmode)
+      {
+      case vehicle_bms_status_t::Both:
+        break;
+      case vehicle_bms_status_t::Voltage:
+        datatype = "voltage";
+        break;
+      case vehicle_bms_status_t::Temperature:
+        datatype = "temperature";
+        break;
+      }
     writer->printf("No BMS %s data available\n", datatype);
     return;
     }
