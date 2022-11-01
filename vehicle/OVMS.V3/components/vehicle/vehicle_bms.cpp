@@ -72,6 +72,7 @@ void OvmsVehicle::BmsSetCellArrangementVoltage(int readings, int readingspermodu
   BmsResetCellVoltages(true);
   }
 
+// Internal entry for changing cell arrangements.
 struct reading_entry_t
   {
   int cell_no;
@@ -82,6 +83,7 @@ struct reading_entry_t
  * Changes the cell arrangement for Voltage, if needs be restoring any readings that were there.
  * Really should only do work the first time it is called.. as for any one car, the number of readings
  * should be consistent.
+ * @return true If the cell arrangement was changed.
  */
 bool OvmsVehicle::BmsCheckChangeCellArrangementVoltage(int readings, int readingspermodule /*=0*/)
   {
@@ -122,14 +124,15 @@ bool OvmsVehicle::BmsCheckChangeCellArrangementVoltage(int readings, int reading
       BmsSetCellArrangementVoltage(readings, readingspermodule);
       for ( std::vector<reading_entry_t>::iterator iter = cells.begin(); iter != cells.end(); ++iter)
         {
-        BmsSetCellTemperature(iter->cell_no, iter->entry);
+        BmsSetCellVoltage(iter->cell_no, iter->entry);
         }
       }
     }
   else if (readingspermodule != m_bms_readingspermodule_v)
     {
-    // This seems only to change the read-out.
+    // This only changes the read-out.
     m_bms_readingspermodule_v = readingspermodule;
+    res = true;
     }
   return res;
   }
