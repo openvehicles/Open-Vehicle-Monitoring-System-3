@@ -397,7 +397,7 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
       break;
 
     case 0x65D: { // ODO
-      float odo = (float) (((uint32_t)(d[3] & 0xf) << 12) | ((UINT)d[2] << 8) | d[1]);
+      float odo = (float) (((uint32_t)(d[3] & 0xf) << 16) | ((UINT)d[2] << 8) | d[1]);
       StandardMetrics.ms_v_pos_odometer->SetValue(odo);
       break;
     }
