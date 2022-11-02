@@ -536,6 +536,13 @@ config OVMS_VEHICLE_HYUNDAI_IONIQVFL
     help
         Enable to include support for Hyundai Ioniq Electric 28kWh (vFL).
 
+config OVMS_VEHICLE_HYUNDAI_IONIQ5
+    bool "Include support for Hyundai Ioniq 5"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for Hyundai Ioniq 5.
+
 config OVMS_VEHICLE_JAGUARIPACE
     bool "Include support for Jaguar Ipace"
     default y
