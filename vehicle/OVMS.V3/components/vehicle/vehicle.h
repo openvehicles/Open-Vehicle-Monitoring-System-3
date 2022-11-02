@@ -479,6 +479,12 @@ class OvmsVehicle : public InternalRamAllocated
       Range = 3,
       Performance = 4
       } vehicle_mode_t;
+    enum class vehicle_bms_status_t
+      {
+      Both,
+      Voltage,
+      Temperature
+      };
 
   public:
     vehicle_mode_t VehicleModeKey(const std::string code);
@@ -694,7 +700,7 @@ class OvmsVehicle : public InternalRamAllocated
     void BmsGetCellDefaultThresholdsVoltage(float* warn, float* alert, float* maxgrad=NULL, float* maxsddev=NULL);
     void BmsGetCellDefaultThresholdsTemperature(float* warn, float* alert);
     void BmsResetCellStats();
-    virtual void BmsStatus(int verbosity, OvmsWriter* writer);
+    virtual void BmsStatus(int verbosity, OvmsWriter* writer, vehicle_bms_status_t statusmode);
     virtual bool FormatBmsAlerts(int verbosity, OvmsWriter* writer, bool show_warnings);
     bool BmsCheckChangeCellArrangementVoltage(int readings, int readingspermodule = 0);
     bool BmsCheckChangeCellArrangementTemperature(int readings, int readingspermodule = 0);

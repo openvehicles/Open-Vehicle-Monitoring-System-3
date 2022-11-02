@@ -2,6 +2,10 @@ Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
 - Renault Zoe Phase 2: Initial support
+- Improved output of bms shell command for narrow windows.
+  New commands:
+    bms volt                            -- Output only voltage info if available
+    bms temp                            -- Output only temperature info if available
 
 2022-09-01 MWJ  3.3.003  OTA release
 - Toyota RAV4 EV: Initial support added. Only the Tesla bus is decoded and just listening so far.

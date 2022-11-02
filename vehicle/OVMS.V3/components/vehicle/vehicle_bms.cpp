@@ -550,13 +550,59 @@ void OvmsVehicle::BmsResetCellStats()
   BmsResetCellTemperatures(false);
   }
 
-void OvmsVehicle::BmsStatus(int verbosity, OvmsWriter* writer)
+template<typename INT>
+INT round_up_div(INT value, INT divis)
   {
+    return (value + divis -1) / divis;
+  }
+
+void OvmsVehicle::BmsStatus(int verbosity, OvmsWriter* writer, vehicle_bms_status_t statusmode)
+  {
+  auto check_max_cols = [](int total_cols, int maximum)
+    {
+    if (maximum <= 1)
+      return 1;
+    if (total_cols <= maximum)
+      return total_cols;
+    if (maximum >= 4 && total_cols % 4 == 0)
+      return 4;
+    if (total_cols % 3 == 0)
+      return 3;
+    if (maximum >= 5 && total_cols % 5 == 0)
+      return 5;
+    return maximum;
+    };
+
   int c;
 
-  if ((! m_bms_has_voltages)||(! m_bms_has_temperatures))
+  bool show_voltage = m_bms_has_voltages;
+  bool show_temperature = m_bms_has_temperatures;
+  switch (statusmode)
     {
-    writer->puts("No BMS status data available");
+    case vehicle_bms_status_t::Both:
+      break;
+    case vehicle_bms_status_t::Voltage:
+      show_temperature = false;
+      break;
+    case vehicle_bms_status_t::Temperature:
+      show_voltage = false;
+      break;
+    }
+  if ((!show_voltage) && (!show_temperature))
+    {
+    const char *datatype= "status";
+    switch (statusmode)
+      {
+      case vehicle_bms_status_t::Both:
+        break;
+      case vehicle_bms_status_t::Voltage:
+        datatype = "voltage";
+        break;
+      case vehicle_bms_status_t::Temperature:
+        datatype = "temperature";
+        break;
+      }
+    writer->printf("No BMS %s data available\n", datatype);
     return;
     }
 
@@ -580,61 +626,133 @@ void OvmsVehicle::BmsStatus(int verbosity, OvmsWriter* writer)
       case OvmsStatus::Alert: talert++; break;
       }
     }
+  if (show_voltage)
+    {
+    writer->puts("Voltage:");
+    writer->printf("    Average: %5.3fV [%5.3fV - %5.3fV]\n",
+      StdMetrics.ms_v_bat_pack_vavg->AsFloat(),
+      StdMetrics.ms_v_bat_pack_vmin->AsFloat(),
+      StdMetrics.ms_v_bat_pack_vmax->AsFloat());
+    writer->printf("  Deviation: SD %6.2fmV [max %.2fmV], %d warnings, %d alerts\n",
+      StdMetrics.ms_v_bat_pack_vstddev->AsFloat()*1000,
+      StdMetrics.ms_v_bat_pack_vstddev_max->AsFloat()*1000,
+      vwarn, valert);
+    }
 
-  writer->puts("Voltage:");
-  writer->printf("    Average: %5.3fV [%5.3fV - %5.3fV]\n",
-    StdMetrics.ms_v_bat_pack_vavg->AsFloat(),
-    StdMetrics.ms_v_bat_pack_vmin->AsFloat(),
-    StdMetrics.ms_v_bat_pack_vmax->AsFloat());
-  writer->printf("  Deviation: SD %6.2fmV [max %.2fmV], %d warnings, %d alerts\n",
-    StdMetrics.ms_v_bat_pack_vstddev->AsFloat()*1000,
-    StdMetrics.ms_v_bat_pack_vstddev_max->AsFloat()*1000,
-    vwarn, valert);
-
-  writer->puts("Temperature:");
-  writer->printf("    Average: %5.1fC [%5.1fC - %5.1fC]\n",
-    StdMetrics.ms_v_bat_pack_tavg->AsFloat(),
-    StdMetrics.ms_v_bat_pack_tmin->AsFloat(),
-    StdMetrics.ms_v_bat_pack_tmax->AsFloat());
-  writer->printf("  Deviation: SD %6.2fC  [max %.2fC], %d warnings, %d alerts\n",
-    StdMetrics.ms_v_bat_pack_tstddev->AsFloat(),
-    StdMetrics.ms_v_bat_pack_tstddev_max->AsFloat(),
-    twarn, talert);
+  if (show_temperature)
+    {
+    writer->puts("Temperature:");
+    writer->printf("    Average: %5.1fC [%5.1fC - %5.1fC]\n",
+      StdMetrics.ms_v_bat_pack_tavg->AsFloat(),
+      StdMetrics.ms_v_bat_pack_tmin->AsFloat(),
+      StdMetrics.ms_v_bat_pack_tmax->AsFloat());
+    writer->printf("  Deviation: SD %6.2fC  [max %.2fC], %d warnings, %d alerts\n",
+      StdMetrics.ms_v_bat_pack_tstddev->AsFloat(),
+      StdMetrics.ms_v_bat_pack_tstddev_max->AsFloat(),
+      twarn, talert);
+    }
 
   writer->puts("Cells:");
   int kv = 0;
   int kt = 0;
-  for (int module = 0; module < ((m_bms_readings_v+m_bms_readingspermodule_v-1)/m_bms_readingspermodule_v); module++)
+  int module_count = 0;
+  if (show_voltage)
+    module_count = round_up_div(m_bms_readings_v,m_bms_readingspermodule_v);
+  if (show_temperature)
+    {
+    int temp_module_count  = round_up_div(m_bms_readings_t,m_bms_readingspermodule_t);
+    if (temp_module_count > module_count)
+      module_count = temp_module_count;
+    }
+  int max_cols_v = 0;
+  if (show_voltage)
+    max_cols_v = check_max_cols(m_bms_readingspermodule_v, show_temperature?4:5);
+  int max_cols_t = 0;
+  if (show_temperature)
+    max_cols_t = check_max_cols(m_bms_readingspermodule_t, 5-max_cols_v);
+
+  for (int module = 0; module < module_count; ++module)
     {
     writer->printf("    +");
-    for (c=0;c<m_bms_readingspermodule_v;c++) { writer->printf("-------"); }
-    writer->printf("-+");
-    for (c=0;c<m_bms_readingspermodule_t;c++) { writer->printf("-------"); }
-    writer->puts("-+");
-    writer->printf("%3d |",module+1);
-    for (c=0; c<m_bms_readingspermodule_v; c++)
+    if (show_voltage)
       {
-      if (kv < m_bms_readings_v)
-        writer->printf(" %5.3fV",m_bms_voltages[kv++]);
-      else
-        writer->printf("       ");
+      for (c=0;c<max_cols_v;c++) { writer->printf("-------"); }
+      writer->printf("-+");
       }
-    writer->printf(" |");
-    for (c=0; c<m_bms_readingspermodule_t; c++)
+
+      if (show_temperature) {
+        for (c=0;c<max_cols_t;c++) { writer->printf("-------"); }
+        writer->printf("-+");
+      }
+      writer->puts("");
+
+    int rows_v = 0, rows_t = 0;
+    int reading_left_v = 0, reading_left_t = 0;
+    if (show_voltage)
       {
-      if (kt < m_bms_readings_t)
-        writer->printf(" %5.1fC",m_bms_temperatures[kt++]);
-      else
-        writer->printf("       ");
+      int items_left_v = m_bms_readings_v - kv;
+      reading_left_v = std::min(items_left_v, m_bms_readingspermodule_v);
+      rows_v = round_up_div(reading_left_v, max_cols_v);
       }
-    writer->puts(" |");
+    if (show_temperature)
+      {
+      int items_left_t = m_bms_readings_t - kt;
+      reading_left_t = std::min(items_left_t, m_bms_readingspermodule_t);
+      rows_t = round_up_div(reading_left_t, max_cols_t);
+      }
+    int rows = std::max(rows_v,rows_t);
+    for (int row = 0 ; row < rows; ++row)
+      {
+      if (row == 0)
+        writer->printf("%3d |",module+1);
+      else
+        writer->printf("    |");
+      if (show_voltage)
+        {
+        for (c=0; c<max_cols_v; c++)
+          {
+          if (kv < m_bms_readings_v && (reading_left_v > 0))
+            {
+            writer->printf(" %5.3fV",m_bms_voltages[kv]);
+            --reading_left_v;
+            ++kv;
+            }
+          else
+            writer->printf("       ");
+          }
+        writer->printf(" |");
+        }
+      if (show_temperature)
+        {
+        for (c=0; c<m_bms_readingspermodule_t; c++)
+          {
+          if (kt < m_bms_readings_t && (reading_left_t > 0))
+            {
+            writer->printf(" %5.1fC",m_bms_temperatures[kt]);
+            --reading_left_t;
+            ++kt;
+            }
+          else
+            writer->printf("       ");
+          }
+        writer->printf(" |");
+        }
+      writer->puts("");
+      }
     }
 
   writer->printf("    +");
-  for (c=0;c<m_bms_readingspermodule_v;c++) { writer->printf("-------"); }
-  writer->printf("-+");
-  for (c=0;c<m_bms_readingspermodule_t;c++) { writer->printf("-------"); }
-  writer->puts("-+");
+  if (show_voltage)
+    {
+    for (c=0;c<max_cols_v;c++) { writer->printf("-------"); }
+    writer->printf("-+");
+    }
+  if (show_temperature)
+    {
+    for (c=0;c<max_cols_t;c++) { writer->printf("-------"); }
+    writer->printf("-+");
+    }
+  writer->puts("");
   }
 
 bool OvmsVehicle::FormatBmsAlerts(int verbosity, OvmsWriter* writer, bool show_warnings)
