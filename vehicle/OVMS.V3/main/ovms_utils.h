@@ -351,7 +351,7 @@ INT sign_extend( UINT uvalue, uint8_t signbit)
   UINT signmask = UINT(1U) << signbit;
   if ( newuvalue & signmask)
     newuvalue |= ~ (static_cast<uint_t>(signmask) - 1);
-  return reinterpret_cast<INT &>(uvalue);
+  return reinterpret_cast<INT &>(newuvalue);
   }
 
 /**
@@ -365,7 +365,7 @@ INT sign_extend( UINT uvalue)
   uint_t newuvalue = uvalue;
   if ( newuvalue & ( UINT(1U) << SIGNBIT) )
     newuvalue |= ~((uint_t(1U) << SIGNBIT) - 1);
-  return reinterpret_cast<INT &>(uvalue);
+  return reinterpret_cast<INT &>(newuvalue);
   }
 
 /**
