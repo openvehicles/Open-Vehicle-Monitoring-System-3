@@ -380,6 +380,12 @@ void OvmsHyundaiIoniqEv::IncomingBMC_Full(canbus *bus, uint16_t type, uint16_t p
           if (current != 0) {
             m_c_power->SetValue( current * voltage, Watts);
           }
+
+          if (current < 0) {
+            StdMetrics.ms_v_charge_power->SetValue(-current * voltage, Watts);
+          } else {
+            StdMetrics.ms_v_charge_power->Clear();
+          }
         }
 
         if (!get_uint_buff_be<2>(data, 5, value)) {
@@ -623,7 +629,13 @@ void OvmsHyundaiIoniqEv::IncomingBMC_Full(canbus *bus, uint16_t type, uint16_t p
         }
         if (isfinal && m_bms_bitset_cv > 0) {
           // Finalise with what we have!
-          BmsCheckChangeCellArrangementVoltage(iq_last_voltage_cell + 1);
+          int cellcount = iq_last_voltage_cell + 1;
+          if (BmsCheckChangeCellArrangementVoltage(cellcount) && !hif_override_capacity)
+          {
+            hif_battery_capacity = HIF_CELL_CAPACITY * cellcount;
+            UpdateMaxRangeAndSOH();
+          }
+
         }
       }
       break;

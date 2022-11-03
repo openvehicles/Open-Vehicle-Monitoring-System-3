@@ -153,7 +153,7 @@ void OvmsHyundaiIoniqEv::WebCfgBattery(PageEntry_t &p, PageContext_t &c)
 {
   XARM("OvmsHyundaiIoniqEv::WebCfgBattery");
   std::string error;
-  //    cap_act_kwh     Battery capacity in wH (Default: 640000)
+  //    cap_act_kwh     Battery capacity override in wH
   //  suffsoc           Sufficient SOC [%] (Default: 0=disabled)
   //  suffrange         Sufficient range [km] (Default: 0=disabled)
   //  maxrange          Maximum ideal range at 20 °C [km] (Default: 160)
@@ -214,7 +214,7 @@ void OvmsHyundaiIoniqEv::WebCfgBattery(PageEntry_t &p, PageContext_t &c)
   }
   else {
     // read configuration:
-    cap_act_kwh = MyConfig.GetParamValue("xiq", "cap_act_kwh", STR(CGF_DEFAULT_BATTERY_CAPACITY));
+    cap_act_kwh = MyConfig.GetParamValue("xiq", "cap_act_kwh", "");
     maxrange = MyConfig.GetParamValue("xiq", "maxrange", STR(CFG_DEFAULT_MAXRANGE));
     suffrange = MyConfig.GetParamValue("xiq", "suffrange", "0");
     suffsoc = MyConfig.GetParamValue("xiq", "suffsoc", "0");
@@ -229,7 +229,7 @@ void OvmsHyundaiIoniqEv::WebCfgBattery(PageEntry_t &p, PageContext_t &c)
 
   c.fieldset_start("Battery properties");
 
-  c.input("number", "Battery capacity", "cap_nom_ah", cap_act_kwh.c_str(), "Default: " STR(CGF_DEFAULT_BATTERY_CAPACITY),
+  c.input("number", "Battery capacity", "cap_nom_ah", cap_act_kwh.c_str(), "",
     "<p>This is the usable battery capacity of your battery when new.</p>",
     "min=\"1\" step=\"0.1\"", "Wh");
 

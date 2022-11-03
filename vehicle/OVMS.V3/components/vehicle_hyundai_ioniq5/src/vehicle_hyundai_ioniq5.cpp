@@ -547,7 +547,14 @@ void OvmsHyundaiIoniqEv::ConfigChanged(OvmsConfigParam *param)
   //  suffrange         Sufficient range [km] (Default: 0=disabled)
   //  maxrange          Maximum ideal range at 20 °C [km] (Default: 160)
   //  canwrite          Enable commands
-  hif_battery_capacity = (float)MyConfig.GetParamValueInt("xiq", "cap_act_kwh", CGF_DEFAULT_BATTERY_CAPACITY);
+  int newcap = MyConfig.GetParamValueInt("xiq", "cap_act_kwh", 0);
+
+  hif_override_capacity = newcap > 0;
+  if (hif_override_capacity) {
+    hif_battery_capacity = (float)newcap;
+  } else {
+    hif_battery_capacity = (BmsGetCellArangementVoltage() * HIF_CELL_CAPACITY);
+  }
 
   hif_maxrange = MyConfig.GetParamValueInt("xiq", "maxrange", CFG_DEFAULT_MAXRANGE);
   if (hif_maxrange <= 0) {
