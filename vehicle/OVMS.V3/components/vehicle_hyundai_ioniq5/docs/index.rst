@@ -47,16 +47,16 @@ Custom Metrics
 ======================================== ======================== ============================================
 Metric name                              Example value            Description
 ======================================== ======================== ============================================
-xiq.version                              0.0.1 10/09/2022 10:23   Version of Module
+xiq.m.version                            0.0.1 10/09/2022 10:23   Version of Module
 xiq.b.bms.soc                            78.5%                    Internal BMS SOC
 
-xiq.b.cell.volt.max                      10.0V                    Battery Cell Volt Max
-xiq.b.cell.volt.min                      10.0V                    Battery Cell Volt Min
-xiq.b.cell.volt.max.no                   123450                   Battery Cell Volt Max No
-xiq.b.cell.volt.min.no                   123450                   Battery Cell Volt Min No
-xiq.b.cell.det.min                       12.1%                    Battery Cell Det Min
-xiq.b.cell.det.max.no                    123450                   Battery Cell Det Max No
-xiq.b.cell.det.min.no                    123450                   Battery Cell Det Min No
+xiq.v.b.c.voltage.max                    10.0V                    Battery Cell Volt Max
+xiq.v.b.c.voltage.min                    10.0V                    Battery Cell Volt Min
+xiq.v.b.c.voltage.max.no                 123450                   Battery Cell Volt Max No
+xiq.v.b.c.voltage.min.no                 123450                   Battery Cell Volt Min No
+xiq.v.b.c.det.min                        12.1%                    Battery Cell Det Min
+xiq.v.b.c.det.max.no                     123450                   Battery Cell Det Max No
+xiq.v.b.c.det.min.no                     123450                   Battery Cell Det Min No
 xiq.c.power                              12345kW                  Power
 xiq.c.speed                              109Kph                   Speed
 xiq.b.min.temp                           36°C                     Battery Min Temperature
@@ -87,16 +87,16 @@ xiq.e.trip.energy.used                   12345kWh                 Trip: Energy U
 xiq.e.trip.energy.recuperated            12345kWh                 Trip: Energy Recuperated since Charged
 xiq.v.trip.consumption.KWh/100km         9.5                      Trip: Power Consumption (kwH/100km) since Charged
 xiq.v.trip.consumption.km/kWh            1234                     Trip: Power Consumption (km/kWh) since Charged
-xiq.v.seat.belt.driver                   false                    Seat Belt Driver             
-xiq.v.seat.belt.passenger                false                    Seat Belt Passenger             
-xiq.v.seat.belt.back.right               false                    Seat Belt Back Right             
-xiq.v.seat.belt.back.middle              false                    Seat Belt Back Middle             
-xiq.v.seat.belt.back.left                false                    Seat Belt Back Left             
+xiq.v.sb.driver                          false                    Seat Belt Driver             
+xiq.v.sb.passenger                       false                    Seat Belt Passenger             
+xiq.v.sb.back.right                      false                    Seat Belt Back Right             
+xiq.v.sb.back.middle                     false                    Seat Belt Back Middle             
+xiq.v.sb.back.left                       false                    Seat Belt Back Left             
 xiq.v.emergency.lights                   false                    Emergency Lights             
-xiq.v.door.lock.front.left               false                    Door Locked - Front Left             
-xiq.v.door.lock.front.right              false                    Door Locked - Front Right             
-xiq.v.door.lock.rear.left                false                    Door Locked - Rear Left             
-xiq.v.door.lock.rear.right               false                    Door Locked - Rear Right
+xiq.v.d.l.fl                             false                    Door Locked - Front Left             
+xiq.v.d.l.fr                             false                    Door Locked - Front Right             
+xiq.v.d.l.rl                             false                    Door Locked - Rear Left             
+xiq.v.d.l.rr                             false                    Door Locked - Rear Right
 
 ======================================== ======================== ============================================
 
