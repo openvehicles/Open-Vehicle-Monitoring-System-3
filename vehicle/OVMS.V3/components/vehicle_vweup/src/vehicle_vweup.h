@@ -178,6 +178,9 @@ public:
   bool IsOBDReady() {
     return (m_obd_state == OBDS_Run);
   }
+  bool IsT26Ready() {
+    return (m_can3 != NULL);
+  }
 
   bool IsChargeModeAC() {
     return m_chg_type == CHGTYPE_AC;

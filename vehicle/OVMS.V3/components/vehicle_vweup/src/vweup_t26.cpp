@@ -635,7 +635,16 @@ void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
 
 OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::RemoteCommandHandler(RemoteCommand command)
 {
-  ESP_LOGI(TAG, "RemoteCommandHandler");
+  ESP_LOGI(TAG, "RemoteCommandHandler command=%d", command);
+
+  if (HasNoT26()) {
+    ESP_LOGE(TAG, "RemoteCommandHandler failed: T26 not available");
+    return NotImplemented;
+  }
+  if (!IsT26Ready() || !vweup_enable_write) {
+    ESP_LOGE(TAG, "RemoteCommandHandler failed: T26 not ready / no write access");
+    return Fail;
+  }
 
   vweup_remote_command = command;
   SendCommand(vweup_remote_command);
@@ -653,6 +662,10 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::RemoteCommandHandler(RemoteComm
 //
 void OvmsVehicleVWeUp::SendCommand(RemoteCommand command)
 {
+  if (!IsT26Ready()) {
+    ESP_LOGE(TAG, "SendCommand %d failed: T26 not ready", command);
+    return;
+  }
 
   switch (command) {
     case ENABLE_CLIMATE_CONTROL:
@@ -743,8 +756,12 @@ void OvmsVehicleVWeUp::SendCommand(RemoteCommand command)
 //
 OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandWakeup()
 {
-
-  if (!vweup_enable_write) {
+  if (HasNoT26()) {
+    ESP_LOGE(TAG, "CommandWakeup failed: T26 not available");
+    return NotImplemented;
+  }
+  if (!IsT26Ready() || !vweup_enable_write) {
+    ESP_LOGE(TAG, "CommandWakeup failed: T26 not ready / no write access");
     return Fail;
   }
 
@@ -768,7 +785,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandWakeup()
 
     data[0] = 0x14;
     data[1] = 0x42;
-    if (vweup_enable_write && !dev_mode) {
+    if (!dev_mode) {
       comfBus->WriteStandard(0x69E, length2, data2);
     }
 
@@ -784,7 +801,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandWakeup()
     data[5] = 0x14; // What does this do?
     data[6] = 0x00;
     data[7] = 0x00;
-    if (vweup_enable_write && !dev_mode) {
+    if (!dev_mode) {
       comfBus->WriteStandard(0x43D, length, data);
     }
 
@@ -798,7 +815,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandWakeup()
     data[5] = 0x14; // What does this do?
     data[6] = 0x00;
     data[7] = 0x00;
-    if (vweup_enable_write && !dev_mode) {
+    if (!dev_mode) {
       comfBus->WriteStandard(0x43D, length, data);
     }
 
@@ -878,7 +895,7 @@ void OvmsVehicleVWeUp::SendOcuHeartbeat()
   data[5] = 0x00;
   data[6] = 0x00;
   data[7] = 0x00;
-  if (vweup_enable_write && !dev_mode) {
+  if (comfBus && vweup_enable_write && !dev_mode) {
     comfBus->WriteStandard(0x5A9, length, data);
   }
 
@@ -901,7 +918,7 @@ void OvmsVehicleVWeUp::SendOcuHeartbeat()
   data[5] = 0x00;
   data[6] = 0x00;
   data[7] = 0x00;
-  if (vweup_enable_write && !dev_mode) {
+  if (comfBus && vweup_enable_write && !dev_mode) {
     comfBus->WriteStandard(0x5A7, length, data);
   }
 }
@@ -926,6 +943,11 @@ void OvmsVehicleVWeUp::CCCountdown()
 
 void OvmsVehicleVWeUp::CCOn()
 {
+  if (!IsT26Ready()) {
+    ESP_LOGE(TAG, "CCOn: T26 not ready");
+    return;
+  }
+
   unsigned char data[8];
   uint8_t length;
   length = 8;
@@ -1137,6 +1159,11 @@ void OvmsVehicleVWeUp::CCOn()
 
 void OvmsVehicleVWeUp::CCOnP()
 {
+  if (!IsT26Ready()) {
+    ESP_LOGE(TAG, "CCOnP: T26 not ready");
+    return;
+  }
+
   unsigned char data[8];
   uint8_t length;
   length = 8;
@@ -1344,6 +1371,11 @@ void OvmsVehicleVWeUp::CCOnP()
 
 void OvmsVehicleVWeUp::CCOff()
 {
+  if (!IsT26Ready()) {
+    ESP_LOGE(TAG, "CCOff: T26 not ready");
+    return;
+  }
+
   unsigned char data[8];
   uint8_t length;
   length = 8;
@@ -1560,24 +1592,21 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandStopCharge()
 OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandHomelink(int button, int durationms)
 {
   // This is needed to enable climate control via Homelink for the iOS app
-  ESP_LOGI(TAG, "CommandHomelink");
-  if (button == 0 && vweup_enable_write) {
+  ESP_LOGI(TAG, "CommandHomelink button=%d durationms=%d", button, durationms);
+
+  if (button == 0) {
     return RemoteCommandHandler(ENABLE_CLIMATE_CONTROL);
   }
-  if (button == 1 && vweup_enable_write) {
+  if (button == 1) {
     return RemoteCommandHandler(DISABLE_CLIMATE_CONTROL);
   }
+
   return NotImplemented;
 }
 
 
 OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandClimateControl(bool climatecontrolon)
 {
-  ESP_LOGI(TAG, "CommandClimateControl");
-  if (vweup_enable_write) {
-    return RemoteCommandHandler(climatecontrolon ? ENABLE_CLIMATE_CONTROL : DISABLE_CLIMATE_CONTROL);
-  }
-  else {
-    return NotImplemented;
-  }
+  ESP_LOGI(TAG, "CommandClimateControl %s", climatecontrolon ? "ON" : "OFF");
+  return RemoteCommandHandler(climatecontrolon ? ENABLE_CLIMATE_CONTROL : DISABLE_CLIMATE_CONTROL);
 }
