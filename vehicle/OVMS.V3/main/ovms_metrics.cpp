@@ -58,6 +58,46 @@ std::map<std::size_t, const char*>      pmetrics_keymap       // hash key → me
 OvmsMetrics                             MyMetrics
                                         __attribute__ ((init_priority (1800)));
 
+static inline int mi_to_km(int mi)
+  {
+  return mi * 4023 / 2500; // mi * 1.6092
+  }
+static inline float mi_to_km(float mi)
+  {
+  return mi * 1.609347;
+  }
+static inline double mi_to_km(double mi)
+  {
+  return mi * 1.609347;
+  }
+
+static inline int km_to_mi(int km)
+  {
+  return km * 2500 / 4023; // km / 1.6092
+  }
+static inline float km_to_mi(float km)
+  {
+  return km * 0.6213700; // km / 1.609347;
+  }
+static inline double km_to_mi(double km)
+  {
+  return km * 0.6213700; // 1 / 1.609347;
+  }
+const int feet_per_mile = 5280;
+
+// Alias for reading clarity.
+template<typename T>
+T pmi_to_pkm(T pmi)
+  {
+  return km_to_mi(pmi);
+  }
+// Alias for reading clarity.
+template<typename T>
+T pkm_to_pmi(T pkm)
+  {
+  return mi_to_km(pkm);
+  }
+
 void metrics_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   bool found = false;
@@ -1474,30 +1514,48 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
   switch (from)
     {
     case Kilometers:
-      if (to == Miles) return (value*5)/8;
-      else if (to == Meters) return value/1000;
-      break;
+      switch (to)
+        {
+        case Miles:   return km_to_mi(value);
+        case Meters:  return value*1000;
+        case Feet:    return km_to_mi(value) * feet_per_mile;
+        default: break;
+        }
     case Miles:
-      if (to == Kilometers) return (value*8)/5;
-      else if (to == Meters) return (value*8000)/5;
-      break;
+      switch (to)
+        {
+        case Kilometers: return mi_to_km(value);
+        case Meters:     return mi_to_km(value*1000);
+        case Feet:       return value * feet_per_mile;
+        default: break;
+        }
     case Meters:
-      if (to == Feet) return (int)(value * 3.28084);
-      break;
+      switch (to)
+        {
+        case Miles:      return km_to_mi(value)/1000;
+        case Kilometers: return value/1000;
+        case Feet:       return km_to_mi( value * feet_per_mile)/ 1000;
+        default: break;
+        }
     case Feet:
-      if (to == Meters) return (int)(value * 0.3048);
-      break;
+      switch (to)
+        {
+        case Kilometers: return mi_to_km(value)/feet_per_mile;
+        case Meters:     return (mi_to_km(value*1000)/feet_per_mile);
+        case Miles:      return value / feet_per_mile;
+        default: break;
+        }
     case KphPS:
-      if (to == MphPS) return (value*5)/8;
+      if (to == MphPS) return km_to_mi(value);
       else if (to == MetersPSS) return (value*1000)/3600;
       break;
     case MphPS:
-      if (to == KphPS) return (value*8)/5;
-      else if (to == MetersPSS) return (value*8000)/(5*3600);
+      if (to == KphPS) return mi_to_km(value);
+      else if (to == MetersPSS) return mi_to_km(value*1000) / 3600; //    (value*8000)/(5*3600);
       break;
     case MetersPSS:
-      if (to == KphPS) return (int) (value*3.6);
-      else if (to == MphPS) return (int) (value*3.6/1.60934);
+      if (to == KphPS) return  (value*3600 / 1000);
+      else if (to == MphPS) return km_to_mi(value*3600) / 1000;
       break;
     case kW:
       if (to == Watts) return (value*1000);
@@ -1512,10 +1570,17 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
       if (to == kWh) return (value/1000);
       break;
     case WattHoursPK:
-      if (to == WattHoursPM) return (value*8)/5;
-      break;
+      switch (to)
+        {
+        case WattHoursPM: return pkm_to_pmi(value);
+        default: break;
+        }
     case WattHoursPM:
-      if (to == WattHoursPK) return (value*5)/8;
+      switch (to)
+        {
+        case WattHoursPK: return pmi_to_pkm(value);
+        default: break;
+        }
       break;
     case Celcius:
       if (to == Fahrenheit) return ((value*9)/5) + 32;
@@ -1561,10 +1626,10 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
       else if (to == Hours) return value/3600;
       break;
     case Kph:
-      if (to == Mph) return (value*5)/8;
+      if (to == Mph) return km_to_mi(value);
       break;
     case Mph:
-      if (to == Kph) return (value*8)/5;
+      if (to == Kph) return mi_to_km(value);
       break;
     case dbm:
       if (to == sq) return (value <= -51)?((value + 113)/2):0;
@@ -1583,30 +1648,48 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
   switch (from)
     {
     case Kilometers:
-      if (to == Miles) return (value/1.60934);
-      else if (to == Meters) return value/1000;
-      break;
+      switch (to)
+        {
+        case Miles:   return km_to_mi(value);
+        case Meters:  return value*1000;
+        case Feet:    return km_to_mi(value) * feet_per_mile;
+        default: break;
+        }
     case Miles:
-      if (to == Kilometers) return (value*1.60934);
-      else if (to == Meters) return (value*1609.34);
-      break;
+      switch (to)
+        {
+        case Kilometers: return mi_to_km(value);
+        case Meters:     return (mi_to_km(value)*1000);
+        case Feet:       return value * feet_per_mile;
+        default: break;
+        }
     case Meters:
-      if (to == Feet) return (value * 3.28084);
-      break;
+      switch (to)
+        {
+        case Miles:       return km_to_mi(value/1000);
+        case Kilometers:  return value/1000;
+        case Feet:        return km_to_mi(value/1000) * feet_per_mile;
+        default: break;
+        }
     case Feet:
-      if (to == Meters) return (value * 0.3048);
-      break;
+      switch (to)
+        {
+        case Kilometers: return mi_to_km(value/feet_per_mile);
+        case Meters:     return (mi_to_km(value/feet_per_mile)*1000);
+        case Miles:      return value / feet_per_mile;
+        default: break;
+        }
     case KphPS:
-      if (to == MphPS) return (value/1.60934);
+      if (to == MphPS) return km_to_mi(value);
       else if (to == MetersPSS) return value/3.6;
       break;
     case MphPS:
-      if (to == KphPS) return (value*8)/5;
-      else if (to == MetersPSS) return (value*1.60934/3.6);
+      if (to == KphPS) return mi_to_km(value);
+      else if (to == MetersPSS) return (mi_to_km(value)/3.6);
       break;
     case MetersPSS:
       if (to == KphPS) return (value*3.6);
-      else if (to == MphPS) return (value*3.6/1.60934);
+      else if (to == MphPS) return (km_to_mi(value)*3.6);
       break;
     case kW:
       if (to == Watts) return (value*1000);
@@ -1621,10 +1704,17 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
       if (to == kWh) return (value/1000);
       break;
     case WattHoursPK:
-      if (to == WattHoursPM) return (value*1.60934);
-      break;
+      switch (to)
+        {
+        case WattHoursPM: return pkm_to_pmi(value);
+        default: break;
+        }
     case WattHoursPM:
-      if (to == WattHoursPK) return (value/1.60934);
+      switch (to)
+        {
+        case WattHoursPK: return pmi_to_pkm(value);
+        default: break;
+        }
       break;
     case Celcius:
       if (to == Fahrenheit) return ((value*9)/5) + 32;
@@ -1657,10 +1747,10 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
       else if (to == Minutes) return value*60;
       break;
     case Kph:
-      if (to == Mph) return (value/1.60934);
+      if (to == Mph) return km_to_mi(value);
       break;
     case Mph:
-      if (to == Kph) return (value*1.60934);
+      if (to == Kph) return mi_to_km(value);
       break;
     case dbm:
       if (to == sq) return int((value <= -51)?((value + 113)/2):0);
