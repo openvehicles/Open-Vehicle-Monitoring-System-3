@@ -81,7 +81,7 @@ static inline float km_to_mi(float km)
   }
 static inline double km_to_mi(double km)
   {
-  return km * 0.6213700 // 1 / 1.609347;
+  return km * 0.6213700; // 1 / 1.609347;
   }
 const int feet_per_mile = 5280;
 
@@ -1534,7 +1534,7 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
         {
         case Miles:      return km_to_mi(value)/1000;
         case Kilometers: return value/1000;
-        case Feet:       return km_to_mi(value * 1000 * feet_per_mile);
+        case Feet:       return km_to_mi( value * feet_per_mile)/ 1000;
         default: break;
         }
     case Feet:
@@ -1668,7 +1668,7 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
         {
         case Miles:       return km_to_mi(value/1000);
         case Kilometers:  return value/1000;
-        case Feet:        return km_to_mi(value * 1000) * feet_per_mile;
+        case Feet:        return km_to_mi(value/1000) * feet_per_mile;
         default: break;
         }
     case Feet:
