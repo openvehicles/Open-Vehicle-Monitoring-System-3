@@ -111,7 +111,13 @@ typedef enum : uint8_t
 
   // Torque:
   Nm            = 110,
+  // ^^^^ Last ^^^^ MetricUnitLast below.
+
+  UnitNotFound  = 255 // Used for errors in Search.
   } metric_unit_t;
+
+const metric_unit_t MetricUnitFirst = Other;
+const metric_unit_t MetricUnitLast  = Nm;
 
 typedef enum : uint8_t
   {
@@ -121,6 +127,9 @@ typedef enum : uint8_t
 } metric_defined_t;
 
 extern const char* OvmsMetricUnitLabel(metric_unit_t units);
+extern const char* OvmsMetricUnitName(metric_unit_t units);
+extern metric_unit_t OvmsMetricUnitFromName(const char* unit);
+
 extern int UnitConvert(metric_unit_t from, metric_unit_t to, int value);
 extern float UnitConvert(metric_unit_t from, metric_unit_t to, float value);
 
@@ -159,7 +168,7 @@ class OvmsMetric
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
     virtual void DukPush(DukContext &dc);
 #endif
-    virtual bool SetValue(std::string value);
+    virtual bool SetValue(std::string value, metric_unit_t units = Other);
     virtual bool SetValue(dbcNumber& value);
     virtual void operator=(std::string value);
     virtual uint32_t LastModified();
@@ -209,8 +218,8 @@ class OvmsMetricBool : public OvmsMetric
 #endif
     bool SetValue(bool value);
     void operator=(bool value) { SetValue(value); }
-    bool SetValue(std::string value);
-    bool SetValue(dbcNumber& value);
+    bool SetValue(std::string value, metric_unit_t units = Other) override;
+    bool SetValue(dbcNumber& value) override;
     void operator=(std::string value) { SetValue(value); }
     void Clear();
     bool CheckPersist();
@@ -237,8 +246,8 @@ class OvmsMetricInt : public OvmsMetric
 #endif
     bool SetValue(int value, metric_unit_t units = Other);
     void operator=(int value) { SetValue(value); }
-    bool SetValue(std::string value);
-    bool SetValue(dbcNumber& value);
+    bool SetValue(std::string value, metric_unit_t units = Other) override;
+    bool SetValue(dbcNumber& value) override;
     void operator=(std::string value) { SetValue(value); }
     void Clear();
     bool CheckPersist();
@@ -265,8 +274,8 @@ class OvmsMetricFloat : public OvmsMetric
 #endif
     bool SetValue(float value, metric_unit_t units = Other);
     void operator=(float value) { SetValue(value); }
-    bool SetValue(std::string value);
-    bool SetValue(dbcNumber& value);
+    bool SetValue(std::string value, metric_unit_t units = Other) override;
+    bool SetValue(dbcNumber& value) override;
     void operator=(std::string value) { SetValue(value); }
     void Clear();
     virtual bool CheckPersist();
@@ -288,7 +297,7 @@ class OvmsMetricString : public OvmsMetric
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
     void DukPush(DukContext &dc);
 #endif
-    bool SetValue(std::string value);
+    bool SetValue(std::string value, metric_unit_t units = Other) override;
     void operator=(std::string value) { SetValue(value); }
     void Clear();
     virtual bool IsString() { return true; };
@@ -342,7 +351,7 @@ class OvmsMetricBitset : public OvmsMetric
       return json;
       }
 
-    bool SetValue(std::string value)
+    bool SetValue(std::string value, metric_unit_t units = Other) override
       {
       std::bitset<N> n_value;
       std::istringstream vs(value);
@@ -356,7 +365,7 @@ class OvmsMetricBitset : public OvmsMetric
         if (elem >= 0 && elem < N)
           n_value[elem] = 1;
         }
-      return SetValue(n_value);
+      return SetValue(n_value, units);
       }
     void operator=(std::string value) { SetValue(value); }
 
@@ -454,7 +463,7 @@ class OvmsMetricSet : public OvmsMetric
       return json;
       }
 
-    bool SetValue(std::string value)
+    bool SetValue(std::string value, metric_unit_t units = Other) override
       {
       std::set<ElemType> n_value;
       std::istringstream vs(value);
@@ -466,7 +475,7 @@ class OvmsMetricSet : public OvmsMetric
         ts >> elem;
         n_value.insert(elem);
         }
-      return SetValue(n_value);
+      return SetValue(n_value, units);
       }
     void operator=(std::string value) { SetValue(value); }
 
@@ -939,10 +948,11 @@ class OvmsMetrics
     void DeregisterMetric(OvmsMetric* metric);
 
   public:
-    bool Set(const char* metric, const char* value);
+    bool Set(const char* metric, const char* value, const char *unit = NULL);
     bool SetInt(const char* metric, int value);
     bool SetBool(const char* metric, bool value);
     bool SetFloat(const char* metric, float value);
+    std::string GetUnitStr(const char* metric, const char *unit = NULL);
     OvmsMetric* Find(const char* metric);
 
     OvmsMetricInt *InitInt(const char* metric, uint16_t autostale=0, int value=0, metric_unit_t units = Other, bool persist = false);
