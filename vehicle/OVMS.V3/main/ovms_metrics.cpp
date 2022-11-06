@@ -599,15 +599,31 @@ void metrics_units(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
 static duk_ret_t DukOvmsMetricValue(duk_context *ctx)
   {
   DukContext dc(ctx);
-  bool decode = duk_opt_boolean(ctx, 1, true);
   const char *mn = duk_to_string(ctx,0);
   OvmsMetric *m = MyMetrics.Find(mn);
-  if (m)
+  if (!m)
+    return 0;
+  bool decode = true;
+  const char *un =  NULL;
+  bool has_unit = false;
+	if (duk_check_type_mask(ctx, 1, DUK_TYPE_MASK_BOOLEAN))
+    decode = duk_opt_boolean(ctx, 1, true);
+  else
+    {
+    un = duk_opt_string(ctx, 1, NULL);
+    decode = duk_opt_boolean(ctx, 2, true);
+    has_unit = un != NULL;
+    }
+  metric_unit_t unit = OvmsMetricUnitFromName(un);
+
+  if (m && unit != UnitNotFound)
     {
     if (decode)
-      m->DukPush(dc);
+      m->DukPush(dc, unit);
+    else if (has_unit)
+      dc.Push(m->AsUnitString("", unit));
     else
-      dc.Push(m->AsString());
+      dc.Push(m->AsString(""));
     return 1;  /* one return value */
     }
   else
@@ -631,9 +647,11 @@ static duk_ret_t DukOvmsMetricFloat(duk_context *ctx)
   {
   const char *mn = duk_to_string(ctx,0);
   OvmsMetric *m = MyMetrics.Find(mn);
-  if (m)
+  const char *un = duk_opt_string(ctx,1,NULL);
+  metric_unit_t unit = OvmsMetricUnitFromName(un);
+  if (m && unit != UnitNotFound)
     {
-    duk_push_number(ctx, float2double(m->AsFloat()));
+    duk_push_number(ctx, float2double(m->AsFloat(0, unit)));
     return 1;  /* one return value */
     }
   else
@@ -644,14 +662,29 @@ static duk_ret_t DukOvmsMetricGetValues(duk_context *ctx)
   {
   OvmsMetric *m;
   DukContext dc(ctx);
-  bool decode = duk_opt_boolean(ctx, 1, true);
+
+  bool has_unit = false;
+  bool decode = true;
+  const char *un =  NULL;
+  if (duk_check_type_mask(ctx, 1, DUK_TYPE_MASK_BOOLEAN))
+    decode = duk_opt_boolean(ctx, 1, true);
+  else
+    {
+    un = duk_opt_string(ctx, 1, NULL);
+    has_unit = un != NULL;
+    decode = duk_opt_boolean(ctx, 2, true);
+    }
+  metric_unit_t unit = OvmsMetricUnitFromName(un);
+
   duk_idx_t obj_idx = dc.PushObject();
 
   // helper: set object property from metric
-  auto set_metric = [&dc, obj_idx, decode](OvmsMetric *m)
+  auto set_metric = [&dc, obj_idx, decode, unit, has_unit](OvmsMetric *m)
     {
     if (decode)
-      m->DukPush(dc);
+      m->DukPush(dc, unit);
+    else if (has_unit)
+      dc.Push(m->AsUnitString("", unit));
     else
       dc.Push(m->AsString());
     dc.PutProp(obj_idx, m->m_name);
@@ -740,10 +773,10 @@ OvmsMetrics::OvmsMetrics()
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   ESP_LOGI(TAG, "Expanding DUKTAPE javascript engine");
   DuktapeObjectRegistration* dto = new DuktapeObjectRegistration("OvmsMetrics");
-  dto->RegisterDuktapeFunction(DukOvmsMetricValue, 1, "Value");
+  dto->RegisterDuktapeFunction(DukOvmsMetricValue, 3, "Value");
   dto->RegisterDuktapeFunction(DukOvmsMetricJSON, 1, "AsJSON");
-  dto->RegisterDuktapeFunction(DukOvmsMetricFloat, 1, "AsFloat");
-  dto->RegisterDuktapeFunction(DukOvmsMetricGetValues, 2, "GetValues");
+  dto->RegisterDuktapeFunction(DukOvmsMetricFloat, 2, "AsFloat");
+  dto->RegisterDuktapeFunction(DukOvmsMetricGetValues, 3, "GetValues");
   MyDuktape.RegisterDuktapeObject(dto);
 #endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 
@@ -1075,9 +1108,9 @@ float OvmsMetric::AsFloat(const float defvalue, metric_unit_t units)
   }
 
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
-void OvmsMetric::DukPush(DukContext &dc)
+void OvmsMetric::DukPush(DukContext &dc, metric_unit_t units)
   {
-  dc.Push(AsString());
+  dc.Push(AsString("", units));
   }
 #endif
 
@@ -1331,9 +1364,9 @@ int OvmsMetricInt::AsInt(const int defvalue, metric_unit_t units)
   }
 
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
-void OvmsMetricInt::DukPush(DukContext &dc)
+void OvmsMetricInt::DukPush(DukContext &dc, metric_unit_t units)
   {
-  dc.Push(m_value);
+  dc.Push(AsInt(0, units));
   }
 #endif
 
@@ -1482,7 +1515,7 @@ int OvmsMetricBool::AsBool(const bool defvalue)
   }
 
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
-void OvmsMetricBool::DukPush(DukContext &dc)
+void OvmsMetricBool::DukPush(DukContext &dc, metric_unit_t units)
   {
   dc.Push(m_value);
   }
@@ -1644,9 +1677,9 @@ int OvmsMetricFloat::AsInt(const int defvalue, metric_unit_t units)
   }
 
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
-void OvmsMetricFloat::DukPush(DukContext &dc)
+void OvmsMetricFloat::DukPush(DukContext &dc, metric_unit_t units)
   {
-  dc.Push(m_value);
+  dc.Push(AsFloat(0, units));
   }
 #endif
 
@@ -1709,7 +1742,7 @@ std::string OvmsMetricString::AsString(const char* defvalue, metric_unit_t units
   }
 
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
-void OvmsMetricString::DukPush(DukContext &dc)
+void OvmsMetricString::DukPush(DukContext &dc, metric_unit_t units)
   {
   OvmsMutexLock lock(&m_mutex);
   dc.Push(m_value);

@@ -13,6 +13,10 @@ Open Vehicle Monitor System v3 - Change log
     metrics get                         -- Get at a particular metric value (with a specified unit)
   Extended commands:
     metrics set                         -- Support setting with a specified unit
+  Extend functions
+    OvmsMetrics.Value                   -- Optionally specify a unit (and make 'decode' work) and to get values with units.
+    OvmsMetrics.GetValues               -- Optionally specify a unit to get values with units. 
+    OvmsMetrics.AsFloat                 -- Optionally specify a unit
 
 2022-09-01 MWJ  3.3.003  OTA release
 - Toyota RAV4 EV: Initial support added. Only the Tesla bus is decoded and just listening so far.

@@ -825,14 +825,14 @@ Note: to get the actual GPS coordinates, simply read metrics ``v.p.latitude``, `
 OvmsMetrics
 ^^^^^^^^^^^
 
-- ``str = OvmsMetrics.Value(metricname [,decode])``
+- ``str = OvmsMetrics.Value(metricname [,unitcode] [,decode])``
     Returns the typed value (default) or string representation (with ``decode`` = false)
-    of the metric value.
+    of the metric value optionally converted to the specified unit.
 - ``num = OvmsMetrics.AsFloat(metricname)``
     Returns the float representation of the metric value.
 - ``str = OvmsMetrics.AsJSON(metricname)``
     Returns the JSON representation of the metric value.
-- ``obj = OvmsMetrics.GetValues([filter] [,decode])``
+- ``obj = OvmsMetrics.GetValues([filter] [,unitcode] [,decode])``
     Returns an object of all metrics matching the optional name filter/template (see below),
     by default decoded into Javascript types (i.e. numerical values will be JS numbers, arrays
     will be JS arrays etc.). The object returned is a snapshot, the values won't be updated.
@@ -845,6 +845,16 @@ OvmsMetrics
     
     The ``decode`` argument defaults to ``true``, pass ``false`` to retrieve the metrics
     string representations instead of typed values.
+
+    The ``unitcode`` argument allows units to be converted (amongst the sametype). The special
+    unit codes "native", "metric" and "imperial" can also be used.
+    For ``OvmsMetrics.Value`` and ``OvmsMetrics.GetValues`` if a ``unitcode`` is specified
+    in addition to passing ``false`` to the ``decode`` argument, then the metric is
+    returned as a string with any unit specifiers.
+
+.. code-block:: javascript
+  // Get the speed as a string with units ( eg: 37.4km/h )
+  var speed  = OvmsMetrics.GetValue("v.b.range.speed", "native", false)
 
 With the introduction of the ``OvmsMetrics.GetValues()`` call, you can get multiple metrics
 at once and let the system decode them for you. Using this you can for example do:
