@@ -595,6 +595,16 @@ void metrics_units(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
   }
 
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+static duk_ret_t DukOvmsMetricHasValue(duk_context *ctx)
+  {
+  DukContext dc(ctx);
+  const char *mn = duk_to_string(ctx,0);
+  OvmsMetric *m = MyMetrics.Find(mn);
+  if (!m)
+    return 0;
+  dc.Push(m->IsDefined());
+  return 1;
+  }
 
 static duk_ret_t DukOvmsMetricValue(duk_context *ctx)
   {
@@ -773,6 +783,7 @@ OvmsMetrics::OvmsMetrics()
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
   ESP_LOGI(TAG, "Expanding DUKTAPE javascript engine");
   DuktapeObjectRegistration* dto = new DuktapeObjectRegistration("OvmsMetrics");
+  dto->RegisterDuktapeFunction(DukOvmsMetricHasValue, 1, "HasValue");
   dto->RegisterDuktapeFunction(DukOvmsMetricValue, 3, "Value");
   dto->RegisterDuktapeFunction(DukOvmsMetricJSON, 1, "AsJSON");
   dto->RegisterDuktapeFunction(DukOvmsMetricFloat, 2, "AsFloat");

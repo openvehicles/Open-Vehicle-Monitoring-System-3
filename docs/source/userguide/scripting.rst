@@ -825,6 +825,8 @@ Note: to get the actual GPS coordinates, simply read metrics ``v.p.latitude``, `
 OvmsMetrics
 ^^^^^^^^^^^
 
+- ``bool = OvmsMetrics.HasValue(metricname)``
+    Returns whether the specified metric has a defined value.
 - ``str = OvmsMetrics.Value(metricname [,unitcode] [,decode])``
     Returns the typed value (default) or string representation (with ``decode`` = false)
     of the metric value optionally converted to the specified unit.
