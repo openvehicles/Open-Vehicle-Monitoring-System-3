@@ -1499,6 +1499,7 @@ const char* OvmsMetricUnitLabel(metric_unit_t units)
     case KphPS:        return "km/h/s";
     case MphPS:        return "Mph/s";
     case MetersPSS:    return "m/s²";
+    case FeetPSS:      return "ft/s²";
     case dbm:          return "dBm";
     case sq:           return "sq";
     case Percentage:   return "%";
@@ -1549,17 +1550,37 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
         default: break;
         }
     case KphPS:
-      if (to == MphPS) return km_to_mi(value);
-      else if (to == MetersPSS) return (value*1000)/3600;
-      break;
+      switch (to)
+        {
+        case MphPS:     return km_to_mi(value);
+        case MetersPSS: return value * 10 /36;
+        case FeetPSS:   return km_to_mi(value*feet_per_mile)/3600;
+        default: break;
+        }
     case MphPS:
-      if (to == KphPS) return mi_to_km(value);
-      else if (to == MetersPSS) return mi_to_km(value*1000) / 3600; //    (value*8000)/(5*3600);
-      break;
+      switch (to)
+        {
+        case KphPS:     return mi_to_km(value);
+        case MetersPSS: return mi_to_km(value*10)/36;
+        case FeetPSS:   return value*feet_per_mile/3600;
+        default: break;
+        }
     case MetersPSS:
-      if (to == KphPS) return  (value*3600 / 1000);
-      else if (to == MphPS) return km_to_mi(value*3600) / 1000;
-      break;
+      switch (to)
+        {
+        case KphPS:     return (value*36) / 10;
+        case MphPS:     return km_to_mi(value * 36) / 10;
+        case FeetPSS:   return km_to_mi(value*feet_per_mile);
+        default: break;
+        }
+    case FeetPSS:
+      switch (to)
+        {
+        case KphPS:     return (mi_to_km(value * 36 )/(feet_per_mile*10));
+        case MphPS:     return value *3600/feet_per_mile;
+        case MetersPSS: return mi_to_km(value/feet_per_mile)*1000;
+        default: break;
+        }
     case kW:
       if (to == Watts) return (value*1000);
       break;
@@ -1716,17 +1737,37 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
         default: break;
         }
     case KphPS:
-      if (to == MphPS) return km_to_mi(value);
-      else if (to == MetersPSS) return value/3.6;
-      break;
+      switch (to)
+        {
+        case MphPS:     return km_to_mi(value);
+        case MetersPSS: return value/3.6;
+        case FeetPSS:   return km_to_mi(value)*feet_per_mile/3600;
+        default: break;
+        }
     case MphPS:
-      if (to == KphPS) return mi_to_km(value);
-      else if (to == MetersPSS) return (mi_to_km(value)/3.6);
-      break;
+      switch (to)
+        {
+        case KphPS:     return mi_to_km(value);
+        case MetersPSS: return mi_to_km(value)/3.6;
+        case FeetPSS:   return value*feet_per_mile/3600;
+        default: break;
+        }
     case MetersPSS:
-      if (to == KphPS) return (value*3.6);
-      else if (to == MphPS) return (km_to_mi(value)*3.6);
-      break;
+      switch (to)
+        {
+        case KphPS:     return (value*3.6);
+        case MphPS:     return km_to_mi(value)*3.6;
+        case FeetPSS:   return km_to_mi(value)*feet_per_mile;
+        default: break;
+        }
+    case FeetPSS:
+      switch (to)
+        {
+        case KphPS:     return (mi_to_km(value/feet_per_mile)*3.6);
+        case MphPS:     return value *3600/feet_per_mile;
+        case MetersPSS: return mi_to_km(value/feet_per_mile)*1000;
+        default: break;
+        }
     case kW:
       if (to == Watts) return (value*1000);
       break;

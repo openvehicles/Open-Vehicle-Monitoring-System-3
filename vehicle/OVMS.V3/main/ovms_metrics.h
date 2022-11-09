@@ -95,6 +95,7 @@ typedef enum : uint8_t
   KphPS         = 71,   // Kph per second
   MphPS         = 72,   // Mph per second
   MetersPSS     = 73,   // Meters per second^2
+  FeetPSS       = 74,   // Feet per second^2
 
   dbm           = 80,   // Signal Quality (in dBm)
   sq            = 81,   // Signal Quality (in SQ units)
