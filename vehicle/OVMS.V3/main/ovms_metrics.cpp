@@ -1585,7 +1585,7 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
       switch (to)
         {
         case WattHoursPK: return pmi_to_pkm(value);
-        case kWhP100K: return km_to_mi(value) / 10;
+        case kWhP100K: return pmi_to_pkm(value) / 10;
         case kPkWh:    return value ? static_cast<int>(mi_to_km(1000.0 / value)) : 0;
         case MPkWh:    return value ? static_cast<int>(1000.0 / value) : 0;
         default: break;
@@ -1752,7 +1752,7 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
       switch (to)
         {
         case WattHoursPK: return pmi_to_pkm(value);
-        case kWhP100K:    return km_to_mi(value) / 10;
+        case kWhP100K:    return pmi_to_pkm(value) / 10;
         case kPkWh:       return value ? (mi_to_km(1000.0 / value)) : 0;
         case MPkWh:       return value ? (1000.0 / value) : 0;
         default: break;
