@@ -394,14 +394,14 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
   MyConfig.SetParamValueBool("vehicle", "bms.alerts.enabled", false);
 
   // init metrics:
-  m_version = MyMetrics.InitString("xiq.version", 0, VERSION " " __DATE__ " " __TIME__);
-  m_b_cell_volt_max = MyMetrics.InitFloat("xiq.b.cell.volt.max", 10, 0, Volts);
-  m_b_cell_volt_min = MyMetrics.InitFloat("xiq.b.cell.volt.min", 10, 0, Volts);
-  m_b_cell_volt_max_no = MyMetrics.InitInt("xiq.b.cell.volt.max.no", 10, 0);
-  m_b_cell_volt_min_no = MyMetrics.InitInt("xiq.b.cell.volt.min.no", 10, 0);
-  m_b_cell_det_min = MyMetrics.InitFloat("xiq.b.cell.det.min", 0, 0, Percentage);
-  m_b_cell_det_max_no = MyMetrics.InitInt("xiq.b.cell.det.max.no", 10, 0);
-  m_b_cell_det_min_no = MyMetrics.InitInt("xiq.b.cell.det.min.no", 10, 0);
+  m_version = MyMetrics.InitString("xiq.m.version", 0, VERSION " " __DATE__ " " __TIME__);
+  m_b_cell_volt_max = MyMetrics.InitFloat("xiq.v.b.c.voltage.max", 10, 0, Volts);
+  m_b_cell_volt_min = MyMetrics.InitFloat("xiq.v.b.c.voltage.min", 10, 0, Volts);
+  m_b_cell_volt_max_no = MyMetrics.InitInt("xiq.v.b.c.voltage.max.no", 10, 0);
+  m_b_cell_volt_min_no = MyMetrics.InitInt("xiq.v.b.c.voltage.min.no", 10, 0);
+  m_b_cell_det_min = MyMetrics.InitFloat("xiq.v.b.c.det.min", 0, 0, Percentage);
+  m_b_cell_det_max_no = MyMetrics.InitInt("xiq.v.b.c.det.max.no", 10, 0);
+  m_b_cell_det_min_no = MyMetrics.InitInt("xiq.v.b.c.det.min.no", 10, 0);
   m_c_power = MyMetrics.InitFloat("xiq.c.power", 10, 0, kW);
   m_c_speed = MyMetrics.InitFloat("xiq.c.speed", 10, 0, Kph);
   m_b_min_temperature = MyMetrics.InitInt("xiq.b.min.temp", 10, 0, Celcius);
@@ -441,11 +441,11 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
   ms_v_trip_energy_used = MyMetrics.InitFloat("xiq.e.trip.energy.used", 10, 0, kWh);
   ms_v_trip_energy_recd = MyMetrics.InitFloat("xiq.e.trip.energy.recuperated", 10, 0, kWh);
 
-  m_v_seat_belt_driver = MyMetrics.InitBool("xiq.v.seat.belt.driver", 10, false);
-  m_v_seat_belt_passenger = MyMetrics.InitBool("xiq.v.seat.belt.passenger", 10, false);
-  m_v_seat_belt_back_right = MyMetrics.InitBool("xiq.v.seat.belt.back.right", 10, false);
-  m_v_seat_belt_back_middle = MyMetrics.InitBool("xiq.v.seat.belt.back.middle", 10, false);
-  m_v_seat_belt_back_left = MyMetrics.InitBool("xiq.v.seat.belt.back.left", 10, false);
+  m_v_seat_belt_driver = MyMetrics.InitBool("xiq.v.sb.driver", 10, false);
+  m_v_seat_belt_passenger = MyMetrics.InitBool("xiq.v.sb.passenger", 10, false);
+  m_v_seat_belt_back_right = MyMetrics.InitBool("xiq.v.sb.back.right", 10, false);
+  m_v_seat_belt_back_middle = MyMetrics.InitBool("xiq.v.sb.back.middle", 10, false);
+  m_v_seat_belt_back_left = MyMetrics.InitBool("xiq.v.sb.back.left", 10, false);
 
   m_v_emergency_lights = MyMetrics.InitBool("xiq.v.emergency.lights", 10, false);
 
@@ -454,10 +454,10 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
   m_v_trip_consumption1 = MyMetrics.InitFloat("xiq.v.trip.consumption.KWh/100km", 10, 0, Other);
   m_v_trip_consumption2 = MyMetrics.InitFloat("xiq.v.trip.consumption.km/kWh", 10, 0, Other);
 
-  m_v_door_lock_fl = MyMetrics.InitBool("xiq.v.door.lock.front.left", 10, false);
-  m_v_door_lock_fr = MyMetrics.InitBool("xiq.v.door.lock.front.right", 10, false);
-  m_v_door_lock_rl = MyMetrics.InitBool("xiq.v.door.lock.rear.left", 10, false);
-  m_v_door_lock_rr = MyMetrics.InitBool("xiq.v.door.lock.rear.right", 10, false);
+  m_v_door_lock_fl = MyMetrics.InitBool("xiq.v.d.l.fl", 10, false);
+  m_v_door_lock_fr = MyMetrics.InitBool("xiq.v.d.l.fr", 10, false);
+  m_v_door_lock_rl = MyMetrics.InitBool("xiq.v.d.l.rl", 10, false);
+  m_v_door_lock_rr = MyMetrics.InitBool("xiq.v.d.l.rr", 10, false);
 
   m_b_cell_det_min->SetValue(0);
 
