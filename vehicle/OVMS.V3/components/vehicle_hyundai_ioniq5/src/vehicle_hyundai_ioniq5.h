@@ -318,8 +318,11 @@ protected:
 #define CFG_DEFAULT_MAXRANGE 440
   int hif_maxrange = CFG_DEFAULT_MAXRANGE;        // Configured max range at 20 °C
 
-#define CGF_DEFAULT_BATTERY_CAPACITY 74000
-  float hif_battery_capacity = CGF_DEFAULT_BATTERY_CAPACITY; //TODO Detect battery capacity from VIN or number of batterycells
+#define CGF_DEFAULT_BATTERY_CAPACITY 72600
+#define HIF_CELL_CAPACITY 2420
+
+  bool hif_override_capacity = false;
+  float hif_battery_capacity = CGF_DEFAULT_BATTERY_CAPACITY;
 
   unsigned int kn_notifications = 0;
 
