@@ -7,6 +7,9 @@ Open Vehicle Monitor System v3 - Change log
     bms volt                            -- Output only voltage info if available
     bms temp                            -- Output only temperature info if available
 - Hyundai Ioniq 5: Initial support
+- Added power consumptions units:  kWhP100K,KPkWh,MPkWh
+- Consolidate custom trip power consumption metrics to single value (kWhP100K)
+  in Kia Niro and Kia Soul
 
 2022-09-01 MWJ  3.3.003  OTA release
 - Toyota RAV4 EV: Initial support added. Only the Tesla bus is decoded and just listening so far.
