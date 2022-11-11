@@ -8,8 +8,6 @@
 ;               Fix naming of various metrics.
 ;               Fix/consolidate power consumption metrics
 ;
-#define I5_VERSION "0.0.2"
-
 ;    (C) 2022 Michael Geddes
 ; ----- Kona/Kia Module -----
 ;    (C) 2011       Michael Stegen / Stegen Electronics
@@ -35,6 +33,7 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 ; THE SOFTWARE.
 */
+#define IONIQ5_VERSION "0.0.2"
 
 #include "vehicle_hyundai_ioniq5.h"
 
@@ -343,7 +342,7 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
 {
   XARM("OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv");
 
-  ESP_LOGI(TAG, "Ioniq 5 EV " I5_VERSION " vehicle module");
+  ESP_LOGI(TAG, "Ioniq 5 EV " IONIQ5_VERSION " vehicle module");
 
   StopTesterPresentMessages();
 
@@ -397,7 +396,7 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
   MyConfig.SetParamValueBool("vehicle", "bms.alerts.enabled", false);
 
   // init metrics:
-  m_version = MyMetrics.InitString("xiq.m.version", 0, I5_VERSION " " __DATE__ " " __TIME__);
+  m_version = MyMetrics.InitString("xiq.m.version", 0, IONIQ5_VERSION " " __DATE__ " " __TIME__);
   m_b_cell_volt_max = MyMetrics.InitFloat("xiq.v.b.c.voltage.max", 10, 0, Volts);
   m_b_cell_volt_min = MyMetrics.InitFloat("xiq.v.b.c.voltage.min", 10, 0, Volts);
   m_b_cell_volt_max_no = MyMetrics.InitInt("xiq.v.b.c.voltage.max.no", 10, 0);
