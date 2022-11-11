@@ -51,65 +51,6 @@ static const char *TAG = "vfs";
 #include "vfsedit.h"
 #endif // #ifdef CONFIG_OVMS_COMP_EDITOR
 
-void vfs_ls(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
-  {
-  DIR *dir;
-  struct dirent *dp;
-  char size[64], mod[64], path[PATH_MAX];
-  struct stat st;
-
-  if (argc == 0)
-    {
-    if ((dir = opendir (".")) == NULL)
-      {
-      writer->puts("Error: VFS cannot open directory listing");
-      return;
-      }
-    }
-  else
-    {
-    if (MyConfig.ProtectedPath(argv[0]))
-      {
-      writer->puts("Error: protected path");
-      return;
-      }
-    if ((dir = opendir (argv[0])) == NULL)
-      {
-      writer->puts("Error: VFS cannot open directory listing for that directory");
-      return;
-      }
-    }
-
-  while ((dp = readdir (dir)) != NULL)
-    {
-    snprintf(path, sizeof(path), "%s/%s", (argc==0) ? "." : argv[0], dp->d_name);
-    stat(path, &st);
-
-    int64_t fsize = st.st_size;
-    int is_dir = S_ISDIR(st.st_mode);
-    const char *slash = is_dir ? "/" : "";
-
-    if (is_dir) {
-      strcpy(size, "[DIR]   ");
-    } else {
-      if (fsize < 1024) {
-        snprintf(size, sizeof(size), "%d ", (int) fsize);
-      } else if (fsize < 0x100000) {
-        snprintf(size, sizeof(size), "%.1fk", (double) fsize / 1024.0);
-      } else if (fsize < 0x40000000) {
-        snprintf(size, sizeof(size), "%.1fM", (double) fsize / 1048576);
-      } else {
-        snprintf(size, sizeof(size), "%.1fG", (double) fsize / 1073741824);
-      }
-    }
-    strftime(mod, sizeof(mod), "%d-%b-%Y %H:%M", localtime(&st.st_mtime));
-
-    writer->printf("%8.8s  %17.17s  %s%s\n", size, mod, dp->d_name, slash);
-    }
-
-  closedir(dir);
-  }
-
 /**
  * This class is a kind of wrapper around dirent
  */
@@ -241,7 +182,6 @@ void vfs_rls(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
   list_entries(writer, (argc==0) ? "." : argv[0], true);
 }
 
-#if 0
 /**
  * Listing of the files and directories at `argv[0]` (or '.')
  * - the display shows only the file  / directory name
@@ -250,7 +190,6 @@ void vfs_rls(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
 void vfs_ls(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv) {
   list_entries(writer, (argc==0) ? "." : argv[0], false);
 }
-#endif
 
 void vfs_cat(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
