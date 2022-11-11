@@ -104,6 +104,9 @@ typedef enum : uint8_t
   // Energy consumption:
   WattHoursPK   = 100,  // Wh/km
   WattHoursPM   = 101,  // Wh/mi
+  kWhP100K      = 102,  // Kwh/100km
+  KPkWh         = 103,  // Km/kwH
+  MPkWh         = 104,  // mi/kwH
 
   // Torque:
   Nm            = 110,

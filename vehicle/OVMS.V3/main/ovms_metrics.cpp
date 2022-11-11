@@ -1504,6 +1504,9 @@ const char* OvmsMetricUnitLabel(metric_unit_t units)
     case Percentage:   return "%";
     case WattHoursPK:  return "Wh/km";
     case WattHoursPM:  return "Wh/mi";
+    case kWhP100K:     return "kWh/100km";
+    case KPkWh:        return "km/kWh";
+    case MPkWh:        return "mi/kWh";
     case Nm:           return "Nm";
     default:           return "";
     }
@@ -1573,15 +1576,48 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
       switch (to)
         {
         case WattHoursPM: return pkm_to_pmi(value);
+        case kWhP100K: return value / 10;
+        case KPkWh:    return value ? static_cast<int>(1000.0 / value) : 0;
+        case MPkWh:    return value ? static_cast<int>(km_to_mi(1000.0 / value)) : 0;
         default: break;
         }
     case WattHoursPM:
       switch (to)
         {
         case WattHoursPK: return pmi_to_pkm(value);
+        case kWhP100K: return pmi_to_pkm(value) / 10;
+        case KPkWh:    return value ? static_cast<int>(mi_to_km(1000.0 / value)) : 0;
+        case MPkWh:    return value ? static_cast<int>(1000.0 / value) : 0;
         default: break;
         }
       break;
+    case kWhP100K:
+      switch (to)
+        {
+        case WattHoursPM: return pkm_to_pmi(value * 10);
+        case WattHoursPK: return value * 10;
+        case KPkWh:       return value ? static_cast<int>(100.0 / value) : 0;
+        case MPkWh:       return value ? static_cast<int>(km_to_mi(100.0 / value)) : 0;
+        default: break;
+        }
+    case KPkWh:
+      switch (to)
+        {
+        case WattHoursPM: return value ? static_cast<int>(1000.0 / km_to_mi(float(value))) : 0;
+        case WattHoursPK: return value ? static_cast<int>(1/(1000.0 * value)) : 0;
+        case kWhP100K:    return value ? static_cast<int>(100.0/value) : 0;
+        case MPkWh:       return km_to_mi(value);
+        default: break;
+        }
+    case MPkWh:
+      switch (to)
+        {
+        case WattHoursPM: return value ? 1000/value : 0;
+        case WattHoursPK: return value ? static_cast<int>(1000 / mi_to_km(float(value))) : 0;
+        case kWhP100K:    return value ? static_cast<int>(100.0/mi_to_km(float(value))) : 0;
+        case KPkWh:       return mi_to_km(value);
+        default: break;
+        }
     case Celcius:
       if (to == Fahrenheit) return ((value*9)/5) + 32;
       break;
@@ -1632,10 +1668,10 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
       if (to == Kph) return mi_to_km(value);
       break;
     case dbm:
-      if (to == sq) return (value <= -51)?((value + 113)/2):0;
+      if (to == sq) return (value <= -51) ? ((value + 113)/2) : 0;
       break;
     case sq:
-      if (to == dbm) return (value <= 31)?(-113 + (value*2)):0;
+      if (to == dbm) return (value <= 31) ? (-113 + (value*2)) : 0;
       break;
     default:
       return value;
@@ -1707,15 +1743,30 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
       switch (to)
         {
         case WattHoursPM: return pkm_to_pmi(value);
+        case kWhP100K:    return value / 10;
+        case KPkWh:       return value ? 1000.0 / value : 0;
+        case MPkWh:       return value ? (km_to_mi(1000.0 / value)) : 0;
         default: break;
         }
     case WattHoursPM:
       switch (to)
         {
         case WattHoursPK: return pmi_to_pkm(value);
+        case kWhP100K:    return pmi_to_pkm(value) / 10;
+        case KPkWh:       return value ? (mi_to_km(1000.0 / value)) : 0;
+        case MPkWh:       return value ? (1000.0 / value) : 0;
         default: break;
         }
       break;
+    case kWhP100K:
+      switch (to)
+        {
+        case WattHoursPM: return pkm_to_pmi(value * 10);
+        case WattHoursPK: return value * 10;
+        case KPkWh:       return value ? (100.0 / value) : 0;
+        case MPkWh:       return value ? km_to_mi(100.0 / value) : 0;
+        default: break;
+        }
     case Celcius:
       if (to == Fahrenheit) return ((value*9)/5) + 32;
       break;
@@ -1753,10 +1804,10 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
       if (to == Kph) return mi_to_km(value);
       break;
     case dbm:
-      if (to == sq) return int((value <= -51)?((value + 113)/2):0);
+      if (to == sq) return int((value <= -51) ? ((value + 113)/2) : 0);
       break;
     case sq:
-      if (to == dbm) return int((value <= 31)?(-113 + (value*2)):0);
+      if (to == dbm) return int((value <= 31) ? (-113 + (value*2)) : 0);
       break;
     default:
       return value;
