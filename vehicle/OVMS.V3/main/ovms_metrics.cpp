@@ -83,18 +83,20 @@ typedef enum : uint8_t
 struct OvmsUnitInfo {
   const char *UnitCode; //< The UnitCode identifying the unit
   const char *Label;    //< The suffix to print against the value
+  metric_unit_t MetricUnit; //< The Metric equivalent if there is one.
+  metric_unit_t ImperialUnit; //< The Imperial equivalent if there is one.
   metric_group_t Group; //< The conversion group it belongs to.
 };
 
-#define UNIT_GAP {NULL,NULL,GrpNone}
+#define UNIT_GAP {NULL,NULL, UnitNotFound, UnitNotFound, GrpNone}
 
 // Mapping for information on metric info
 static const OvmsUnitInfo unit_info[int(MetricUnitLast)+1] =
 {
-// Unit Code   Label       Unit Group
-  {"native",   "",         GrpNone   }, // 0
-  {"metric",   "",         GrpNone   }, // 1
-  {"imperial", "",         GrpNone   }, // 2
+// Unit Code   Label       Metric Unt  Imperial Unt Unit Group
+  {"native",   "",         Native,     Native,      GrpNone   }, // 0
+  {"metric",   "",         Native,     Native,      GrpNone   }, // 1
+  {"imperial", "",         Native,     Native,      GrpNone   }, // 2
   UNIT_GAP, // 3
   UNIT_GAP, // 4
   UNIT_GAP, // 5
@@ -102,18 +104,18 @@ static const OvmsUnitInfo unit_info[int(MetricUnitLast)+1] =
   UNIT_GAP, // 7
   UNIT_GAP, // 8
   UNIT_GAP, // 9
-  {"km",       "km",       GrpDistance }, // 10
-  {"miles",    "M",        GrpDistance }, // 11
-  {"meters",   "m",        GrpDistanceShort }, // 12
-  {"feet",     "ft",       GrpDistanceShort }, // 13
+  {"km",       "km",       Native,     Miles,       GrpDistance }, // 10
+  {"miles",    "M",        Kilometers, Native,      GrpDistance }, // 11
+  {"meters",   "m",        Native,     Feet,        GrpDistanceShort }, // 12
+  {"feet",     "ft",       Meters,     Native,      GrpDistanceShort }, // 13
   UNIT_GAP, // 14
   UNIT_GAP, // 15
   UNIT_GAP, // 16
   UNIT_GAP, // 17
   UNIT_GAP, // 18
   UNIT_GAP, // 19
-  {"celcius",  "°C",       GrpTemp     }, // 20
-  {"fahrenheit","°F",      GrpTemp     }, // 21
+  {"celcius",  "°C",       Native,     Fahrenheit,  GrpTemp     }, // 20
+  {"fahrenheit","°F",      Celcius,    Native,      GrpTemp     }, // 21
   UNIT_GAP, // 22
   UNIT_GAP, // 23
   UNIT_GAP, // 24
@@ -122,9 +124,9 @@ static const OvmsUnitInfo unit_info[int(MetricUnitLast)+1] =
   UNIT_GAP, // 27
   UNIT_GAP, // 28
   UNIT_GAP, // 29
-  {"kpa",      "kPa",      GrpPreassure}, // 30
-  {"pa",       "Pa",       GrpPreassure}, // 31
-  {"psi",      "psi",      GrpPreassure}, // 32
+  {"kpa",      "kPa",      Native,     PSI,         GrpPreassure}, // 30
+  {"pa",       "Pa",       Native,     PSI,         GrpPreassure}, // 31
+  {"psi",      "psi",      kPa,        Native,      GrpPreassure}, // 32
   UNIT_GAP, // 33
   UNIT_GAP, // 34
   UNIT_GAP, // 35
@@ -132,29 +134,29 @@ static const OvmsUnitInfo unit_info[int(MetricUnitLast)+1] =
   UNIT_GAP, // 37
   UNIT_GAP, // 38
   UNIT_GAP, // 39
-  {"volts",    "V",        GrpOther }, // 40
-  {"amps",     "A",        GrpOther }, // 41
-  {"amphours", "Ah",       GrpOther }, // 42
-  {"kw",       "kW",       GrpPower }, // 43
-  {"kwh",      "kWh",      GrpEnergy}, // 44
-  {"watts",    "W",        GrpPower }, // 45
-  {"watthours","Wh",       GrpEnergy}, // 46
+  {"volts",    "V",        Native,     Native,      GrpOther }, // 40
+  {"amps",     "A",        Native,     Native,      GrpOther }, // 41
+  {"amphours", "Ah",       Native,     Native,      GrpOther }, // 42
+  {"kw",       "kW",       Native,     Native,      GrpPower }, // 43
+  {"kwh",      "kWh",      Native,     Native,      GrpEnergy}, // 44
+  {"watts",    "W",        Native,     Native,      GrpPower }, // 45
+  {"watthours","Wh",       Native,     Native,      GrpEnergy}, // 46
   UNIT_GAP, // 47
   UNIT_GAP, // 48
   UNIT_GAP, // 49
-  {"seconds",  "Sec",      GrpTime}, // 50
-  {"minutes",  "Min",      GrpTime}, // 51
-  {"hours",    "Hour",     GrpTime}, // 52
-  {"utc",      "UTC",      GrpTime}, // 53
-  {"localtz",  "local",    GrpTime}, // 54,
+  {"seconds",  "Sec",      Native,     Native,      GrpTime}, // 50
+  {"minutes",  "Min",      Native,     Native,      GrpTime}, // 51
+  {"hours",    "Hour",     Native,     Native,      GrpTime}, // 52
+  {"utc",      "UTC",      Native,     Native,      GrpTime}, // 53
+  {"localtz",  "local",    Native,     Native,      GrpTime}, // 54,
   UNIT_GAP,// 55
   UNIT_GAP,// 56
   UNIT_GAP,// 57
   UNIT_GAP,// 58
   UNIT_GAP,// 59
-  {"degrees",  "°",        GrpDirection}, // 60
-  {"kmph",     "km/h",     GrpSpeed}, // 61
-  {"miph",     "Mph",      GrpSpeed}, // 62
+  {"degrees",  "°",        Native,     Native,      GrpDirection}, // 60
+  {"kmph",     "km/h",     Native,     Mph,         GrpSpeed}, // 61
+  {"miph",     "Mph",      Kph,        Native,      GrpSpeed}, // 62
   UNIT_GAP,// 63
   UNIT_GAP,// 64
   UNIT_GAP,// 65
@@ -164,17 +166,17 @@ static const OvmsUnitInfo unit_info[int(MetricUnitLast)+1] =
   UNIT_GAP,// 69
   UNIT_GAP,// 70
   // Acceleration:
-  {"kmphps",   "km/h/s",   GrpAccel}, // 71
-  {"miphps",   "Mph/s",    GrpAccel}, // 72
-  {"mpss",     "m/s²",     GrpAccelShort}, // 73
-  {"ftpss",    "ft/s²",    GrpAccelShort}, // 74
+  {"kmphps",   "km/h/s",   Native,     MphPS,       GrpAccel}, // 71
+  {"miphps",   "Mph/s",    KphPS,      Native,      GrpAccel}, // 72
+  {"mpss",     "m/s²",     Native,     FeetPSS,     GrpAccelShort}, // 73
+  {"ftpss",    "ft/s²",    MetersPSS,  Native,      GrpAccelShort}, // 74
   UNIT_GAP,// 75
   UNIT_GAP,// 76
   UNIT_GAP,// 77
   UNIT_GAP,// 78
   UNIT_GAP,// 79
-  {"dbm",      "dBm",      GrpSound}, // 80
-  {"sq",       "sq",       GrpSound}, // 81
+  {"dbm",      "dBm",      Native,     sq,          GrpSound}, // 80
+  {"sq",       "sq",       dbm,        Native,      GrpSound}, // 81
   UNIT_GAP,// 82
   UNIT_GAP,// 83
   UNIT_GAP,// 84
@@ -183,7 +185,7 @@ static const OvmsUnitInfo unit_info[int(MetricUnitLast)+1] =
   UNIT_GAP,// 87
   UNIT_GAP,// 88
   UNIT_GAP,// 89
-  {"percent",  "%",        GrpOther}, // 90
+  {"percent",  "%",        Native,     Native,      GrpOther}, // 90
   UNIT_GAP,// 91
   UNIT_GAP,// 92
   UNIT_GAP,// 93
@@ -194,18 +196,18 @@ static const OvmsUnitInfo unit_info[int(MetricUnitLast)+1] =
   UNIT_GAP,// 98
   UNIT_GAP,// 99
   // Energy consumption:
-  {"whpkm",    "Wh/km",    GrpConsumption}, // 100
-  {"whpmi",    "Wh/mi",    GrpConsumption}, // 101
-  {"kwhp100km","kWh/100km",GrpConsumption}, // 102
-  {"kmpkwh",   "km/kWh",   GrpConsumption}, // 103
-  {"mipkwh",   "mi/kWh",   GrpConsumption}, // 104
+  {"whpkm",    "Wh/km",    Native,     WattHoursPM, GrpConsumption}, // 100
+  {"whpmi",    "Wh/mi",    WattHoursPK,Native,      GrpConsumption}, // 101
+  {"kwhp100km","kWh/100km",Native,     WattHoursPM, GrpConsumption}, // 102
+  {"kmpkwh",   "km/kWh",   Native,     MPkWh,       GrpConsumption}, // 103
+  {"mipkwh",   "mi/kWh",   KPkWh,      Native,      GrpConsumption}, // 104
   UNIT_GAP,// 105
   UNIT_GAP,// 106
   UNIT_GAP,// 107
   UNIT_GAP,// 108
   UNIT_GAP,// 109
   // Torque:
-  {"nm",       "Nm",       GrpTorque} // 110
+  {"nm",       "Nm",       Native,     Native,      GrpTorque} // 110
 };
 #undef UNIT_GAP
 
@@ -269,6 +271,7 @@ static inline metric_group_t GetMetricGroupSimplify(metric_unit_t unit)
 
 /*
  * Modifies the 'to' target to match the real target (or Native for no change).
+ * Handles ToMetric/ToImperial conversion types.
  *
  * full_check takes into account whether a conversion CAN be done (used for
  * printing correct labels)
@@ -283,6 +286,20 @@ static void CheckTargetUnit(metric_unit_t from, metric_unit_t &to, bool full_che
   switch (to)
     {
     case Native: break;
+    case ToMetric:
+      {
+      uint8_t unit_i = static_cast<uint8_t>(from);
+      if (unit_i <= uint8_t(MetricUnitLast))
+        to = unit_info[unit_i].MetricUnit;
+      break;
+      }
+    case ToImperial:
+      {
+      uint8_t unit_i = static_cast<uint8_t>(from);
+      if (unit_i <= uint8_t(MetricUnitLast))
+        to = unit_info[unit_i].ImperialUnit;
+      break;
+      }
     default:
       if (to == from)
         to = Native;
@@ -327,6 +344,12 @@ void metrics_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
         {
         case 'c':
           show_set = true;
+          break;
+        case 'i':
+          def_unit = ToImperial;
+          break;
+        case 'm':
+          def_unit = ToMetric;
           break;
         case 'p':
           only_persist = true;

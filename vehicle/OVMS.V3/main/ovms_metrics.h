@@ -59,6 +59,8 @@ typedef enum : uint8_t
   {
   Other         = 0,
   Native        = Other,
+  ToMetric      = 1,
+  ToImperial    = 2,
 
   Kilometers    = 10,
   Miles         = 11,
