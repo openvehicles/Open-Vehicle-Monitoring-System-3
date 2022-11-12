@@ -159,8 +159,7 @@ xks.v.cruise.control.enabled     Cruise control enabled/disabled
 xks.v.emergency.lights           Emergency lights enabled/disabled
 xks.v.steering.mode              Steering mode: Sport, comfort, normal.
 xks.v.power.usage                Power usage of the car
-xks.v.trip.consumption.kWh/100km Battery consumption for current trip
-xks.v.trip.consumption.km/kWh    Battery consumption for current trip
+xks.v.trip.consumption           Battery consumption for current trip (kWh/100km)
 ================================ =============
 
 Note that some metrics are polled at different rates than others and some metrics are not available when car is off. This means that after a restart of the OVMS, some metrics will be missing until the car is turned on and maybe driven for few minutes.

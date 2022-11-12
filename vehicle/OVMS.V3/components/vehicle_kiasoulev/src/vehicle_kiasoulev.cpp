@@ -376,8 +376,7 @@ OvmsVehicleKiaSoulEv::OvmsVehicleKiaSoulEv()
 
   m_v_power_usage = MyMetrics.InitFloat("xks.v.power.usage", 10, 0, kW);
 
-  m_v_trip_consumption1 = MyMetrics.InitFloat("xks.v.trip.consumption.KWh/100km", 10, 0, Other);
-  m_v_trip_consumption2 = MyMetrics.InitFloat("xks.v.trip.consumption.km/kWh", 10, 0, Other);
+  m_v_trip_consumption = MyMetrics.InitFloat("xks.v.trip.consumption", 10, 0, kWhP100K);
 
   m_b_cell_det_max->SetValue(0);
   m_b_cell_det_min->SetValue(0);
@@ -584,10 +583,8 @@ void OvmsVehicleKiaSoulEv::Ticker1(uint32_t ticker)
 		// Cooling?
 		StdMetrics.ms_v_env_cooling->SetValue (  m_v_env_climate_ac->AsBool() && StdMetrics.ms_v_env_temp->AsFloat(10,Celcius) > m_v_env_climate_temp->AsFloat(16, Celcius) );
 
-	  if( StdMetrics.ms_v_pos_trip->AsFloat(Kilometers)>0 )
-	  		m_v_trip_consumption1->SetValue( StdMetrics.ms_v_bat_energy_used->AsFloat(kWh) * 10 / StdMetrics.ms_v_pos_trip->AsFloat(Kilometers) );
-	  if( StdMetrics.ms_v_bat_energy_used->AsFloat(kWh)>0 )
-	  		m_v_trip_consumption2->SetValue( StdMetrics.ms_v_pos_trip->AsFloat(Kilometers) * 10 / StdMetrics.ms_v_bat_energy_used->AsFloat(kWh) );
+		if( StdMetrics.ms_v_pos_trip->AsFloat(Kilometers)>0 )
+			m_v_trip_consumption->SetValue( StdMetrics.ms_v_bat_energy_used->AsFloat(kWh) * 10 / StdMetrics.ms_v_pos_trip->AsFloat(Kilometers), kWhP100K);
 
 		}
 
