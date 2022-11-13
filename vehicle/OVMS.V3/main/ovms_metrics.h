@@ -105,6 +105,7 @@ typedef enum : uint8_t
   sq            = 81,   // Signal Quality (in SQ units)
 
   Percentage    = 90,
+  Permille      = 91,
 
   // Energy consumption:
   WattHoursPK   = 100,  // Wh/km
@@ -149,6 +150,7 @@ typedef enum : uint8_t
   GrpSignal = 11,
   GrpTorque = 12,
   GrpDirection = 13,
+  GrpRatio = 14,
   // These are where a dimension group is split and allows
   // easily folding the 'short distances' back onto their equivalents.
   GrpDistanceShort = GrpDistance + GrpUnfold,

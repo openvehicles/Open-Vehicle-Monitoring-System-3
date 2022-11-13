@@ -164,8 +164,8 @@ static const OvmsUnitInfo unit_info[int(MetricUnitLast)+1] =
   UNIT_GAP,// 87
   UNIT_GAP,// 88
   UNIT_GAP,// 89
-  {"percent",  "%",        Native,     Native,      GrpOther}, // 90
-  UNIT_GAP,// 91
+  {"percent",  "%",        Native,     Native,      GrpRatio}, // 90
+  {"permille", "\u2030",   Native,     Native,      GrpRatio}, // 91
   UNIT_GAP,// 92
   UNIT_GAP,// 93
   UNIT_GAP,// 94
@@ -213,11 +213,11 @@ static const OvmsUnitGroupInfo group_info[int(MetricGroupLast)+1] =
   { "signal",      "Signal Strength"         }, // 11
   { "torque",      NULL                      }, // 12
   { "direction",   NULL                      }, // 13
-  GROUP_GAP,
-  GROUP_GAP,
+  { "ratio",       "Ratio"                   }, // 14
+  GROUP_GAP, // 15
   // Short dimensions from here:
-  GROUP_GAP,
-  GROUP_GAP,
+  GROUP_GAP, // 16
+  GROUP_GAP, // 17
   { "distanceshort","Height"                 }, // 2+16=18
   GROUP_GAP,
   { "accelshort",   "Acceleration (short)"   }, // 4+16=20
@@ -2167,6 +2167,12 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
     case sq:
       if (to == dbm) return (value <= 31) ? (-113 + (value*2)) : 0;
       break;
+    case Percentage:
+      if (to == Permille) return value*10;
+      break;
+    case Permille:
+      if (to == Percentage) return value/10;
+      break;
     default:
       return value;
     }
@@ -2347,6 +2353,10 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
     case sq:
       if (to == dbm) return int((value <= 31) ? (-113 + (value*2)) : 0);
       break;
+    case Percentage:
+      if (to == Permille) return value*10.0;
+    case Permille:
+      if (to == Percentage) return value*0.10;
     default:
       return value;
     }
