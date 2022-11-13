@@ -64,14 +64,14 @@ typedef enum : uint8_t
   GrpOther,
   GrpDistance,
   GrpTemp,
-  GrpPreassure,
+  GrpPressure,
   GrpPower,
   GrpEnergy,
   GrpTime,
   GrpDirection,
   GrpSpeed,
   GrpAccel,
-  GrpSound,
+  GrpSignal,
   GrpConsumption,
   GrpTorque,
   // These are where a dimension group is split and allows
@@ -124,9 +124,9 @@ static const OvmsUnitInfo unit_info[int(MetricUnitLast)+1] =
   UNIT_GAP, // 27
   UNIT_GAP, // 28
   UNIT_GAP, // 29
-  {"kpa",      "kPa",      Native,     PSI,         GrpPreassure}, // 30
-  {"pa",       "Pa",       Native,     PSI,         GrpPreassure}, // 31
-  {"psi",      "psi",      kPa,        Native,      GrpPreassure}, // 32
+  {"kpa",      "kPa",      Native,     PSI,         GrpPressure}, // 30
+  {"pa",       "Pa",       Native,     PSI,         GrpPressure}, // 31
+  {"psi",      "psi",      kPa,        Native,      GrpPressure}, // 32
   UNIT_GAP, // 33
   UNIT_GAP, // 34
   UNIT_GAP, // 35
@@ -175,8 +175,8 @@ static const OvmsUnitInfo unit_info[int(MetricUnitLast)+1] =
   UNIT_GAP,// 77
   UNIT_GAP,// 78
   UNIT_GAP,// 79
-  {"dbm",      "dBm",      Native,     sq,          GrpSound}, // 80
-  {"sq",       "sq",       dbm,        Native,      GrpSound}, // 81
+  {"dbm",      "dBm",      Native,     sq,          GrpSignal}, // 80
+  {"sq",       "sq",       dbm,        Native,      GrpSignal}, // 81
   UNIT_GAP,// 82
   UNIT_GAP,// 83
   UNIT_GAP,// 84
