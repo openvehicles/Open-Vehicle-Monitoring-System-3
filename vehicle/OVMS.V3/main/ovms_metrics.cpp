@@ -127,7 +127,7 @@ static const OvmsUnitInfo unit_info[int(MetricUnitLast)+1] =
   {"kpa",      "kPa",      Native,     PSI,         GrpPressure}, // 30
   {"pa",       "Pa",       Native,     PSI,         GrpPressure}, // 31
   {"psi",      "psi",      kPa,        Native,      GrpPressure}, // 32
-  UNIT_GAP, // 33
+  {"bar",      "bar",      Native,     PSI,         GrpPressure}, // 33
   UNIT_GAP, // 34
   UNIT_GAP, // 35
   UNIT_GAP, // 36
@@ -1977,17 +1977,37 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
       if (to == Celcius) return ((value-32)*5)/9;
       break;
     case kPa:
-      if (to == Pa) return value*1000;
-      else if (to == PSI) return int((float)value * 0.14503773773020923);
-      break;
+      switch (to)
+        {
+        case Pa:  return value*1000;
+        case Bar: return value/100;
+        case PSI: return int((float)value * 0.14503773773020923);
+        default: break;
+        }
     case Pa:
-      if (to == kPa) return value/1000;
-      else if (to == PSI) return int((float)value * 0.00014503773773020923);
-      break;
+      switch (to)
+        {
+        case kPa: return value/1000;
+        case Bar: return value/100000;
+        case PSI: return int((float)value * 0.00014503773773020923);
+        default: break;
+        }
     case PSI:
-      if (to == kPa) return int((float)value * 6.894757293168361);
-      else if (to == Pa) return int((float)value * 0.006894757293168361);
-      break;
+      switch (to)
+        {
+        case kPa: return int((float)value * 6.894757293168361);
+        case Pa:  return int((float)value * 6894.757293168361);
+        case Bar: return int((float)value * 0.06894757293168361);
+        default: break;
+        }
+    case Bar:
+      switch (to)
+        {
+        case Pa:  return value*100000;
+        case kPa: return value*100;
+        case PSI: return int((float)value * 14.503773773020923);
+        default: break;
+        }
     case Seconds:
       if (to == Minutes) return value/60;
       else if (to == Hours) return value/3600;
@@ -2150,17 +2170,37 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
       if (to == Celcius) return ((value-32)*5)/9;
       break;
     case kPa:
-      if (to == Pa) return value*1000;
-      else if (to == PSI) return value * 0.14503773773020923;
-      break;
+      switch (to)
+        {
+        case Pa:  return value*1000;
+        case Bar: return value/100;
+        case PSI: return value * 0.14503773773020923;
+        default: break;
+        }
     case Pa:
-      if (to == kPa) return value/1000;
-      else if (to == PSI) return value * 0.00014503773773020923;
-      break;
+      switch (to)
+        {
+        case kPa: return value/1000;
+        case Bar: return value/100000;
+        case PSI: return value * 0.00014503773773020923;
+        default: break;
+        }
     case PSI:
-      if (to == kPa) return value * 6.894757293168361;
-      else if (to == Pa) return value * 0.006894757293168361;
-      break;
+      switch (to)
+        {
+        case kPa: return value * 6.894757293168361;
+        case Pa:  return value * 6894.757293168361;
+        case Bar: return value * 0.06894757293168361;
+        default: break;
+        }
+    case Bar:
+      switch (to)
+        {
+        case Pa:  return value*100000;
+        case kPa: return value*100;
+        case PSI: return value * 14.503773773020923;
+        default: break;
+        }
     case Seconds:
       if (to == Minutes) return value/60;
       else if (to == Hours) return value/3600;

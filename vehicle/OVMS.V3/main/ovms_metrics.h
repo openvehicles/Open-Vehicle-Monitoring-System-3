@@ -73,6 +73,7 @@ typedef enum : uint8_t
   kPa           = 30,
   Pa            = 31,
   PSI           = 32,
+  Bar           = 33,
 
   Volts         = 40,
   Amps          = 41,
