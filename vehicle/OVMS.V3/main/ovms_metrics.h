@@ -61,6 +61,7 @@ typedef enum : uint8_t
   Native        = Other,
   ToMetric      = 1,
   ToImperial    = 2,
+  ToUser        = 3,
 
   Kilometers    = 10,
   Miles         = 11,
@@ -129,12 +130,53 @@ typedef enum : uint8_t
   Defined
 } metric_defined_t;
 
+// Mask for folding "Short groups" to their equivalent "Long Group"
+const uint8_t GrpFoldMask = 0x0f;
+const uint8_t GrpUnfold = 0x10;
+typedef enum : uint8_t
+  {
+  GrpNone = 0,
+  GrpOther = 1,
+  GrpDistance = 2,
+  GrpSpeed = 3,
+  GrpAccel = 4,
+  GrpPower = 5,
+  GrpEnergy = 6,
+  GrpConsumption = 7,
+  GrpTemp = 8,
+  GrpPressure = 9,
+  GrpTime = 10,
+  GrpSignal = 11,
+  GrpTorque = 12,
+  GrpDirection = 13,
+  // These are where a dimension group is split and allows
+  // easily folding the 'short distances' back onto their equivalents.
+  GrpDistanceShort = GrpDistance + GrpUnfold,
+  GrpAccelShort = GrpAccel + GrpUnfold
+  } metric_group_t;
+const metric_group_t MetricGroupLast = GrpAccelShort;
+
 extern const char* OvmsMetricUnitLabel(metric_unit_t units);
 extern const char* OvmsMetricUnitName(metric_unit_t units);
 extern metric_unit_t OvmsMetricUnitFromName(const char* unit);
 
 extern int UnitConvert(metric_unit_t from, metric_unit_t to, int value);
 extern float UnitConvert(metric_unit_t from, metric_unit_t to, float value);
+
+typedef std::vector<metric_group_t> metric_group_list_t;
+typedef std::set<metric_unit_t> metric_unit_set_t;
+
+// Groups in order of display.
+extern bool OvmsMetricGroupConfigList(metric_group_list_t& groups);
+extern const char* OvmsMetricGroupLabel(metric_group_t group);
+extern const char* OvmsMetricGroupName(metric_group_t group);
+extern bool OvmsMetricGroupUnits(metric_group_t group, metric_unit_set_t& units);
+
+// Get/Set Metric default config
+extern std::string OvmsMetricGetUserConfig(metric_group_t group);
+extern void OvmsMetricSetUserConfig(metric_group_t group, std::string value);
+extern metric_unit_t OvmsMetricGetUserUnit(metric_group_t group);
+
 
 typedef uint32_t persistent_value_t;
 
