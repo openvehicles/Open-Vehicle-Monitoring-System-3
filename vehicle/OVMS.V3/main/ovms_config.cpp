@@ -718,12 +718,25 @@ OvmsConfigParam* OvmsConfig::CachedParam(std::string param)
   return *p;
   }
 
+/**
+ * ProtectedPath: `true` if the path is protected (e.g. config)
+ * - Note: path is canonicalized before comparison, in case the path
+ * does not exist in the filesystem, the result will be `false`
+ * (i.e.: not protected).
+ */
 bool OvmsConfig::ProtectedPath(std::string path)
   {
 #ifdef CONFIG_OVMS_DEV_CONFIGVFS
   return false;
 #else
-  return (path.find(OVMS_CONFIGPATH) != std::string::npos);
+  char canonical_path[PATH_MAX];
+  char * result = realpath(path.c_str(), canonical_path);
+  if (NULL == result) {
+    // If error during path resolution, we consider it as not protected
+    return false;
+  }
+  std::string resolved_path(canonical_path);
+  return (resolved_path.find(OVMS_CONFIGPATH) != std::string::npos);
 #endif // #ifdef CONFIG_OVMS_DEV_CONFIGVFS
   }
 
