@@ -827,11 +827,17 @@ OvmsMetrics
 
 - ``bool = OvmsMetrics.HasValue(metricname)``
     Returns whether the specified metric has a defined value.
+    Returns undefined if metric is un-registered.
 - ``str = OvmsMetrics.Value(metricname [,unitcode] [,decode])``
     Returns the typed value (default) or string representation (with ``decode`` = false)
     of the metric value optionally converted to the specified unit.
-- ``num = OvmsMetrics.AsFloat(metricname)``
-    Returns the float representation of the metric value.
+    Invalid ``unitcode`` or ``metricname`` will return invalid.
+    Mismatched ``unitcode`` will be ignored.
+- ``num = OvmsMetrics.AsFloat(metricname [,unitcode])``
+    Returns the float representation of the metric value, optionally converted
+    to the supplied unit.
+    Un-registered ``metricname`` or invalid ``unitcode`` will return invalid.
+    Mismatched ``unitcode`` will be ignored.
 - ``str = OvmsMetrics.AsJSON(metricname)``
     Returns the JSON representation of the metric value.
 - ``obj = OvmsMetrics.GetValues([filter] [,unitcode] [,decode])``
@@ -848,15 +854,18 @@ OvmsMetrics
     The ``decode`` argument defaults to ``true``, pass ``false`` to retrieve the metrics
     string representations instead of typed values.
 
-    The ``unitcode`` argument allows units to be converted (amongst the sametype). The special
-    unit codes "native", "metric" and "imperial" can also be used.
+    The ``unitcode`` argument allows units to be converted (amongst the same types of untits).
+    The special unit codes "native", "metric" and "imperial" can also be used.
+    Specifying an invalid ``unitcode`` will return invalid.
+    Mismatched ``unitcode`` will be ignored on those metricnames that don't match.
+
     For ``OvmsMetrics.Value`` and ``OvmsMetrics.GetValues`` if a ``unitcode`` is specified
     in addition to passing ``false`` to the ``decode`` argument, then the metric is
     returned as a string with any unit specifiers.
 
 .. code-block:: javascript
   // Get the speed as a string with units ( eg: 37.4km/h )
-  var speed  = OvmsMetrics.GetValue("v.b.range.speed", "native", false)
+  var speed  = OvmsMetrics.Value("v.b.range.speed", "native", false)
 
 With the introduction of the ``OvmsMetrics.GetValues()`` call, you can get multiple metrics
 at once and let the system decode them for you. Using this you can for example do:
