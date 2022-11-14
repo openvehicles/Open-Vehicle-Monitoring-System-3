@@ -85,8 +85,7 @@ xiq.v.traction.control                   false                    Traction Contr
 xiq.e.trip                               12345Km                  Trip: Distance Travelled since Charged
 xiq.e.trip.energy.used                   12345kWh                 Trip: Energy Used since Charged
 xiq.e.trip.energy.recuperated            12345kWh                 Trip: Energy Recuperated since Charged
-xiq.v.trip.consumption.KWh/100km         9.5                      Trip: Power Consumption (kwH/100km) since Charged
-xiq.v.trip.consumption.km/kWh            1234                     Trip: Power Consumption (km/kWh) since Charged
+xiq.v.trip.consumption                   9.5kW/100km              Power Consumption (kwH/100km) for current trip
 xiq.v.sb.driver                          false                    Seat Belt Driver             
 xiq.v.sb.passenger                       false                    Seat Belt Passenger             
 xiq.v.sb.back.right                      false                    Seat Belt Back Right             

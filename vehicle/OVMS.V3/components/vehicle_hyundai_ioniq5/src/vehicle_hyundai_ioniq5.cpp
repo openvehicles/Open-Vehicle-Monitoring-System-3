@@ -4,6 +4,9 @@
 ;
 ;    Changes:
 ;       0.0.1:  Initial Fork of Kona/Kia module
+;       0.0.2:  Load Battery capacity from cell count
+;               Fix naming of various metrics.
+;               Fix/consolidate power consumption metrics
 ;
 ;    (C) 2022 Michael Geddes
 ; ----- Kona/Kia Module -----
@@ -30,6 +33,7 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 ; THE SOFTWARE.
 */
+#define IONIQ5_VERSION "0.0.2"
 
 #include "vehicle_hyundai_ioniq5.h"
 
@@ -44,8 +48,6 @@
 #include <sys/param.h>
 #include "../../vehicle_kiasoulev/src/kia_common.h"
 #include <sstream>
-
-#define VERSION "0.0.1"
 
 const char *OvmsHyundaiIoniqEv::TAG = "v-ioniq5";
 
@@ -340,7 +342,7 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
 {
   XARM("OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv");
 
-  ESP_LOGI(TAG, "Ioniq 5 EV " VERSION " vehicle module");
+  ESP_LOGI(TAG, "Ioniq 5 EV " IONIQ5_VERSION " vehicle module");
 
   StopTesterPresentMessages();
 
@@ -394,7 +396,7 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
   MyConfig.SetParamValueBool("vehicle", "bms.alerts.enabled", false);
 
   // init metrics:
-  m_version = MyMetrics.InitString("xiq.m.version", 0, VERSION " " __DATE__ " " __TIME__);
+  m_version = MyMetrics.InitString("xiq.m.version", 0, IONIQ5_VERSION " " __DATE__ " " __TIME__);
   m_b_cell_volt_max = MyMetrics.InitFloat("xiq.v.b.c.voltage.max", 10, 0, Volts);
   m_b_cell_volt_min = MyMetrics.InitFloat("xiq.v.b.c.voltage.min", 10, 0, Volts);
   m_b_cell_volt_max_no = MyMetrics.InitInt("xiq.v.b.c.voltage.max.no", 10, 0);
@@ -451,8 +453,7 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
 
   // m_v_power_usage = MyMetrics.InitFloat("xiq.v.power.usage", 10, 0, kW);
 
-  m_v_trip_consumption1 = MyMetrics.InitFloat("xiq.v.trip.consumption.KWh/100km", 10, 0, Other);
-  m_v_trip_consumption2 = MyMetrics.InitFloat("xiq.v.trip.consumption.km/kWh", 10, 0, Other);
+  m_v_trip_consumption = MyMetrics.InitFloat("xiq.v.trip.consumption", 10, 0, kWhP100K);
 
   m_v_door_lock_fl = MyMetrics.InitBool("xiq.v.d.l.fl", 10, false);
   m_v_door_lock_fr = MyMetrics.InitBool("xiq.v.d.l.fr", 10, false);
@@ -646,11 +647,10 @@ void OvmsHyundaiIoniqEv::Ticker1(uint32_t ticker)
     }
   }
 
-  if ( StdMetrics.ms_v_pos_trip->AsFloat(Kilometers) > 0 ) {
-    m_v_trip_consumption1->SetValue( StdMetrics.ms_v_bat_energy_used->AsFloat(kWh) * 100 / StdMetrics.ms_v_pos_trip->AsFloat(Kilometers) );
-  }
-  if ( StdMetrics.ms_v_bat_energy_used->AsFloat(kWh) > 0 ) {
-    m_v_trip_consumption2->SetValue( StdMetrics.ms_v_pos_trip->AsFloat(Kilometers) / StdMetrics.ms_v_bat_energy_used->AsFloat(kWh) );
+  float trip_km = StdMetrics.ms_v_pos_trip->AsFloat(Kilometers);
+  float trip_energy = StdMetrics.ms_v_bat_energy_used->AsFloat(kWh);
+  if ( trip_km > 0 && trip_energy > 0 ) {
+    m_v_trip_consumption->SetValue( trip_energy * 100 / trip_km, kWhP100K );
   }
 
   StdMetrics.ms_v_bat_power->SetValue( StdMetrics.ms_v_bat_voltage->AsFloat(400, Volts) * StdMetrics.ms_v_bat_current->AsFloat(1, Amps) / 1000, kW );

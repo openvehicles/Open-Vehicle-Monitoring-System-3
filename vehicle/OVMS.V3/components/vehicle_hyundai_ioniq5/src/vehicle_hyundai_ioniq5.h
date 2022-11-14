@@ -1,10 +1,9 @@
 /*
 ;    Project:       Open Vehicle Monitor System
-;    Date:          22th October 2017
+;    Date:          November 2022
 ;
-;    Changes:
-;    1.0  Initial stub
-;
+;    (C) 2022 Michael Geddes
+; ----- Kona/Kia Module -----
 ;    (C) 2018        Geir Øyvind Vælidalo <geir@validalo.net>
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy

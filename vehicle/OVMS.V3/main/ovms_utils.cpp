@@ -38,6 +38,7 @@
 #include "ovms_events.h"
 #include "metrics_standard.h"
 #include "ovms_version.h"
+#include "esp_idf_version.h"
 
 /**
  * chargestate_code: convert legacy chargestate key to code
@@ -628,3 +629,100 @@ bool get_buff_string(const uint8_t *data, uint32_t size, uint32_t index, uint32_
   strret.assign<const char *>(begin, end);
   return true;
   }
+
+#if ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(4, 4, 0)
+/**
+ * realpath: this implementation is from (a newer version of) newlib, in particular
+ * https://github.com/espressif/esp-idf/commit/d83ce227aa987d648e1a0dddba32b88846374815#diff-91b1abbc42db113c5dcf9c11c594f0b3e75cae5f6dfba9ef8b68e26bbd422f4a
+ * - Note: strchrnul has been replaced with strchr as it's also non implemented
+ * in our versions.
+ */
+char * realpath(const char *file_name, char *resolved_name)
+{
+    char * out_path = resolved_name;
+    if (out_path == NULL) {
+        /* allowed as an extension, allocate memory for the output path */
+        out_path = (char *)malloc(PATH_MAX);
+        if (out_path == NULL) {
+            errno = ENOMEM;
+            return NULL;
+        }
+    }
+
+    /* canonical path starts with / */
+    strlcpy(out_path, "/", PATH_MAX);
+
+    /* pointers moving over the input and output path buffers */
+    const char* in_ptr = file_name;
+    char* out_ptr = out_path + 1;
+    /* number of path components in the output buffer */
+    size_t out_depth = 0;
+
+
+    while (*in_ptr) {
+        /* "path component" is the part between two '/' path separators.
+         * locate the next path component in the input path:
+         */
+        const char* end_of_path_component = strchr(in_ptr, '/');
+        if (NULL == end_of_path_component) {
+          end_of_path_component = in_ptr + strlen(in_ptr);
+        }
+        size_t path_component_len = end_of_path_component - in_ptr;
+
+        if (path_component_len == 0 ||
+            (path_component_len == 1 && in_ptr[0] == '.')) {
+            /* empty path component or '.' - nothing to do */
+        } else if (path_component_len == 2 && in_ptr[0] == '.' && in_ptr[1] == '.') {
+            /* '..' - remove one path component from the output */
+            if (out_depth == 0) {
+                /* nothing to remove */
+            } else if (out_depth == 1) {
+                /* there is only one path component in output;
+                 * remove it, but keep the leading separator
+                 */
+                out_ptr = out_path + 1;
+                *out_ptr = '\0';
+                out_depth = 0;
+            } else {
+                /* remove last path component and the separator preceding it */
+                char * prev_sep = strrchr(out_path, '/');
+                assert(prev_sep > out_path);  /* this shouldn't be the leading separator */
+                out_ptr = prev_sep;
+                *out_ptr = '\0';
+                --out_depth;
+            }
+        } else {
+            /* copy path component to output; +1 is for the separator  */
+            if (out_ptr - out_path + 1 + path_component_len > PATH_MAX - 1) {
+                /* output buffer insufficient */
+                errno = E2BIG;
+                goto fail;
+            } else {
+                /* add separator if necessary */
+                if (out_depth > 0) {
+                    *out_ptr = '/';
+                    ++out_ptr;
+                }
+                memcpy(out_ptr, in_ptr, path_component_len);
+                out_ptr += path_component_len;
+                *out_ptr = '\0';
+                ++out_depth;
+            }
+        }
+        /* move input pointer to separator right after this path component */
+        in_ptr += path_component_len;
+        if (*in_ptr != '\0') {
+            /* move past it unless already at the end of the input string */
+            ++in_ptr;
+        }
+    }
+    return out_path;
+
+fail:
+    if (resolved_name == NULL) {
+        /* out_path was allocated, free it */
+        free(out_path);
+    }
+    return NULL;
+}
+#endif

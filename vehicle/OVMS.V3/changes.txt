@@ -19,6 +19,9 @@ Open Vehicle Monitor System v3 - Change log
     OvmsMetrics.AsFloat                 -- Optionally specify a unit
   New DukTape function
     OvmsMetrics.HasValue                -- Returns true if the metric has a valid value.
+- Added power consumptions units:  kWhP100K,KPkWh,MPkWh
+- Consolidate custom trip power consumption metrics to single value (kWhP100K)
+  in Kia Niro and Kia Soul
 
 2022-09-01 MWJ  3.3.003  OTA release
 - Toyota RAV4 EV: Initial support added. Only the Tesla bus is decoded and just listening so far.

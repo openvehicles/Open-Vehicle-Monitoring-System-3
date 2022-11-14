@@ -99,8 +99,7 @@ public:
 
   OvmsMetricFloat* m_v_power_usage;
 
-  OvmsMetricFloat* m_v_trip_consumption1;
-  OvmsMetricFloat* m_v_trip_consumption2;
+  OvmsMetricFloat* m_v_trip_consumption;
 
   OvmsMetricBool*  m_v_emergency_lights;
 
