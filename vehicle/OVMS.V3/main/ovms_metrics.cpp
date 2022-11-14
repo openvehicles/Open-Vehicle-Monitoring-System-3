@@ -639,7 +639,7 @@ static duk_ret_t DukOvmsMetricValue(duk_context *ctx)
   bool decode = true;
   const char *un =  NULL;
   bool has_unit = false;
-	if (duk_check_type_mask(ctx, 1, DUK_TYPE_MASK_BOOLEAN))
+  if (duk_check_type_mask(ctx, 1, DUK_TYPE_MASK_BOOLEAN))
     decode = duk_opt_boolean(ctx, 1, true);
   else
     {
