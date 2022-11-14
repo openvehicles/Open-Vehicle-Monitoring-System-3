@@ -59,6 +59,8 @@ typedef enum : uint8_t
   {
   Other         = 0,
   Native        = Other,
+  ToMetric      = 1,
+  ToImperial    = 2,
 
   Kilometers    = 10,
   Miles         = 11,
@@ -95,6 +97,7 @@ typedef enum : uint8_t
   KphPS         = 71,   // Kph per second
   MphPS         = 72,   // Mph per second
   MetersPSS     = 73,   // Meters per second^2
+  FeetPSS       = 74,   // Feet per second^2
 
   dbm           = 80,   // Signal Quality (in dBm)
   sq            = 81,   // Signal Quality (in SQ units)
@@ -110,7 +113,13 @@ typedef enum : uint8_t
 
   // Torque:
   Nm            = 110,
+  // ^^^^ Last ^^^^ MetricUnitLast below.
+
+  UnitNotFound  = 255 // Used for errors in Search.
   } metric_unit_t;
+
+const metric_unit_t MetricUnitFirst = Other;
+const metric_unit_t MetricUnitLast  = Nm;
 
 typedef enum : uint8_t
   {
@@ -120,6 +129,9 @@ typedef enum : uint8_t
 } metric_defined_t;
 
 extern const char* OvmsMetricUnitLabel(metric_unit_t units);
+extern const char* OvmsMetricUnitName(metric_unit_t units);
+extern metric_unit_t OvmsMetricUnitFromName(const char* unit);
+
 extern int UnitConvert(metric_unit_t from, metric_unit_t to, int value);
 extern float UnitConvert(metric_unit_t from, metric_unit_t to, float value);
 
@@ -156,9 +168,9 @@ class OvmsMetric
     virtual std::string AsJSON(const char* defvalue = "", metric_unit_t units = Other, int precision = -1);
     virtual float AsFloat(const float defvalue = 0, metric_unit_t units = Other);
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
-    virtual void DukPush(DukContext &dc);
+    virtual void DukPush(DukContext &dc, metric_unit_t units = Other);
 #endif
-    virtual bool SetValue(std::string value);
+    virtual bool SetValue(std::string value, metric_unit_t units = Other);
     virtual bool SetValue(dbcNumber& value);
     virtual void operator=(std::string value);
     virtual uint32_t LastModified();
@@ -204,12 +216,12 @@ class OvmsMetricBool : public OvmsMetric
     float AsFloat(const float defvalue = 0, metric_unit_t units = Other);
     int AsBool(const bool defvalue = false);
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
-    void DukPush(DukContext &dc);
+    void DukPush(DukContext &dc, metric_unit_t units = Other) override;
 #endif
     bool SetValue(bool value);
     void operator=(bool value) { SetValue(value); }
-    bool SetValue(std::string value);
-    bool SetValue(dbcNumber& value);
+    bool SetValue(std::string value, metric_unit_t units = Other) override;
+    bool SetValue(dbcNumber& value) override;
     void operator=(std::string value) { SetValue(value); }
     void Clear();
     bool CheckPersist();
@@ -232,12 +244,12 @@ class OvmsMetricInt : public OvmsMetric
     float AsFloat(const float defvalue = 0, metric_unit_t units = Other);
     int AsInt(const int defvalue = 0, metric_unit_t units = Other);
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
-    void DukPush(DukContext &dc);
+    void DukPush(DukContext &dc, metric_unit_t units = Other) override;
 #endif
     bool SetValue(int value, metric_unit_t units = Other);
     void operator=(int value) { SetValue(value); }
-    bool SetValue(std::string value);
-    bool SetValue(dbcNumber& value);
+    bool SetValue(std::string value, metric_unit_t units = Other) override;
+    bool SetValue(dbcNumber& value) override;
     void operator=(std::string value) { SetValue(value); }
     void Clear();
     bool CheckPersist();
@@ -260,12 +272,12 @@ class OvmsMetricFloat : public OvmsMetric
     float AsFloat(const float defvalue = 0, metric_unit_t units = Other);
     int AsInt(const int defvalue = 0, metric_unit_t units = Other);
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
-    void DukPush(DukContext &dc);
+    void DukPush(DukContext &dc, metric_unit_t units = Other) override;
 #endif
     bool SetValue(float value, metric_unit_t units = Other);
     void operator=(float value) { SetValue(value); }
-    bool SetValue(std::string value);
-    bool SetValue(dbcNumber& value);
+    bool SetValue(std::string value, metric_unit_t units = Other) override;
+    bool SetValue(dbcNumber& value) override;
     void operator=(std::string value) { SetValue(value); }
     void Clear();
     virtual bool CheckPersist();
@@ -285,9 +297,9 @@ class OvmsMetricString : public OvmsMetric
   public:
     std::string AsString(const char* defvalue = "", metric_unit_t units = Other, int precision = -1);
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
-    void DukPush(DukContext &dc);
+    void DukPush(DukContext &dc, metric_unit_t units = Other) override;
 #endif
-    bool SetValue(std::string value);
+    bool SetValue(std::string value, metric_unit_t units = Other) override;
     void operator=(std::string value) { SetValue(value); }
     void Clear();
     virtual bool IsString() { return true; };
@@ -341,7 +353,7 @@ class OvmsMetricBitset : public OvmsMetric
       return json;
       }
 
-    bool SetValue(std::string value)
+    bool SetValue(std::string value, metric_unit_t units = Other) override
       {
       std::bitset<N> n_value;
       std::istringstream vs(value);
@@ -355,7 +367,7 @@ class OvmsMetricBitset : public OvmsMetric
         if (elem >= 0 && elem < N)
           n_value[elem] = 1;
         }
-      return SetValue(n_value);
+      return SetValue(n_value, units);
       }
     void operator=(std::string value) { SetValue(value); }
 
@@ -368,7 +380,7 @@ class OvmsMetricBitset : public OvmsMetric
       }
 
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
-    void DukPush(DukContext &dc)
+    void DukPush(DukContext &dc, metric_unit_t units = Other) override
       {
       std::bitset<N> value;
         {
@@ -453,7 +465,7 @@ class OvmsMetricSet : public OvmsMetric
       return json;
       }
 
-    bool SetValue(std::string value)
+    bool SetValue(std::string value, metric_unit_t units = Other) override
       {
       std::set<ElemType> n_value;
       std::istringstream vs(value);
@@ -465,7 +477,7 @@ class OvmsMetricSet : public OvmsMetric
         ts >> elem;
         n_value.insert(elem);
         }
-      return SetValue(n_value);
+      return SetValue(n_value, units);
       }
     void operator=(std::string value) { SetValue(value); }
 
@@ -478,7 +490,7 @@ class OvmsMetricSet : public OvmsMetric
       }
 
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
-    void DukPush(DukContext &dc)
+    void DukPush(DukContext &dc, metric_unit_t units = Other) override
       {
       std::set<ElemType> value;
         {
@@ -738,7 +750,7 @@ class OvmsMetricVector : public OvmsMetric
       }
 
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
-    void DukPush(DukContext &dc)
+    void DukPush(DukContext &dc, metric_unit_t units = Other) override
       {
       std::vector<ElemType, Allocator> value;
         {
@@ -938,10 +950,11 @@ class OvmsMetrics
     void DeregisterMetric(OvmsMetric* metric);
 
   public:
-    bool Set(const char* metric, const char* value);
+    bool Set(const char* metric, const char* value, const char *unit = NULL);
     bool SetInt(const char* metric, int value);
     bool SetBool(const char* metric, bool value);
     bool SetFloat(const char* metric, float value);
+    std::string GetUnitStr(const char* metric, const char *unit = NULL);
     OvmsMetric* Find(const char* metric);
 
     OvmsMetricInt *InitInt(const char* metric, uint16_t autostale=0, int value=0, metric_unit_t units = Other, bool persist = false);

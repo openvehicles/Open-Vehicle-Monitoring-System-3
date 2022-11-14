@@ -7,6 +7,18 @@ Open Vehicle Monitor System v3 - Change log
     bms volt                            -- Output only voltage info if available
     bms temp                            -- Output only temperature info if available
 - Hyundai Ioniq 5: Initial support
+- Support for specifying units in scripts
+  New commands:
+    metrics units                       -- Display available unit identifiers
+    metrics get                         -- Get at a particular metric value (with a specified unit)
+  Extended commands:
+    metrics set                         -- Support setting with a specified unit
+  Extend functions
+    OvmsMetrics.Value                   -- Optionally specify a unit (and make 'decode' work) and to get values with units.
+    OvmsMetrics.GetValues               -- Optionally specify a unit to get values with units. 
+    OvmsMetrics.AsFloat                 -- Optionally specify a unit
+  New DukTape function
+    OvmsMetrics.HasValue                -- Returns true if the metric has a valid value.
 - Added power consumptions units:  kWhP100K,KPkWh,MPkWh
 - Consolidate custom trip power consumption metrics to single value (kWhP100K)
   in Kia Niro and Kia Soul
