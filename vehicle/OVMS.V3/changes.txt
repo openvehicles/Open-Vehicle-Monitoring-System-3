@@ -22,6 +22,9 @@ Open Vehicle Monitor System v3 - Change log
 - Added power consumptions units:  kWhP100K,KPkWh,MPkWh
 - Consolidate custom trip power consumption metrics to single value (kWhP100K)
   in Kia Niro and Kia Soul
+- VFS: sorted directory listings & recursive directory listings
+  New commands:
+    vfs rls <path>                      -- List <path> and all subdirectory contents
 
 2022-09-01 MWJ  3.3.003  OTA release
 - Toyota RAV4 EV: Initial support added. Only the Tesla bus is decoded and just listening so far.
