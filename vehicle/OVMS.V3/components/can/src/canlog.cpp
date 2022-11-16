@@ -596,7 +596,11 @@ void canlog::LogInfo(canbus* bus, CAN_log_type_t type, const char* text)
     msg.origin = bus;
     msg.text = strdup(text);
     m_msgcount++;
-    if (xQueueSend(m_queue, &msg, 0) != pdTRUE) m_dropcount++;
+    if (xQueueSend(m_queue, &msg, 0) != pdTRUE)
+      {
+      m_dropcount++;
+      free(msg.text);
+      }
     }
   else
     {
