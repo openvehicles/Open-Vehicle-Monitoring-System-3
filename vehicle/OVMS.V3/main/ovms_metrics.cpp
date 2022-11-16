@@ -268,7 +268,7 @@ T pkm_to_pmi(T pkm)
  * simplify - Means those separated for (eventual) user config
  *            are folded to one metric.
  */
-static metric_group_t GetMetricGroup(metric_unit_t unit)
+metric_group_t GetMetricGroup(metric_unit_t unit)
   {
   uint8_t unit_i = static_cast<uint8_t>(unit);
   if (unit_i <= uint8_t(MetricUnitLast))
@@ -362,14 +362,14 @@ void OvmsMetricSetUserConfig(metric_group_t group, std::string value)
   MyConfig.SetParamValue("vehicle", cfg, value);
   }
 
-metric_unit_t OvmsMetricGetUserUnit(metric_group_t group)
+metric_unit_t OvmsMetricGetUserUnit(metric_group_t group, metric_unit_t defaultUnit )
   {
   std::string unit_name = OvmsMetricGetUserConfig(group);
   if (unit_name.empty())
-    return Native;
+    return defaultUnit;
   metric_unit_t unit = OvmsMetricUnitFromName(unit_name.c_str());
   if (unit == UnitNotFound)
-    return Native;
+    return defaultUnit;
   return unit;
   }
 
@@ -1928,6 +1928,7 @@ void OvmsMetricString::Clear()
   OvmsMetric::Clear();
   }
 
+/// Get the label for the metric.
 const char* OvmsMetricUnitLabel(metric_unit_t units)
   {
   uint8_t unit_i = static_cast<uint8_t>(units);
@@ -1939,6 +1940,7 @@ const char* OvmsMetricUnitLabel(metric_unit_t units)
   return res;
   }
 
+/// Get the Name for the unit.
 const char* OvmsMetricUnitName(metric_unit_t units)
   {
   uint8_t unit_i = static_cast<uint8_t>(units);

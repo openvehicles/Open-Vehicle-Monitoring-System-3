@@ -177,8 +177,8 @@ extern bool OvmsMetricGroupUnits(metric_group_t group, metric_unit_set_t& units)
 // Get/Set Metric default config
 extern std::string OvmsMetricGetUserConfig(metric_group_t group);
 extern void OvmsMetricSetUserConfig(metric_group_t group, std::string value);
-extern metric_unit_t OvmsMetricGetUserUnit(metric_group_t group);
-
+extern metric_unit_t OvmsMetricGetUserUnit(metric_group_t group, metric_unit_t defaultUnit = Native);
+extern metric_group_t GetMetricGroup(metric_unit_t unit);
 
 typedef uint32_t persistent_value_t;
 
@@ -894,6 +894,12 @@ class OvmsMetricVector : public OvmsMetric
       return val;
       }
 
+    ElemType GetElemValue(size_t n, metric_unit_t units)
+      {
+      ElemType val = GetElemValue(n);
+      return UnitConvert(m_units, units, val);
+      }
+
     void SetElemValue(size_t n, const ElemType nvalue, metric_unit_t units = Other)
       {
       ElemType value;
@@ -1055,6 +1061,9 @@ class OvmsMetrics
     OvmsMetric* m_first;
     bool m_trace;
   };
+
+extern const char* OvmsMetricUnitLabel(metric_unit_t units);
+extern const char* OvmsMetricUnitName(metric_unit_t units);
 
 extern OvmsMetrics MyMetrics;
 
