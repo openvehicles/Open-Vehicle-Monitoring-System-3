@@ -198,7 +198,7 @@ static const OvmsUnitInfo unit_info[int(MetricUnitLast)+1] =
   // Energy consumption:
   {"whpkm",    "Wh/km",    Native,     WattHoursPM, GrpConsumption}, // 100
   {"whpmi",    "Wh/mi",    WattHoursPK,Native,      GrpConsumption}, // 101
-  {"kwhp100km","kWh/100km",Native,     WattHoursPM, GrpConsumption}, // 102
+  {"kwhp100km","kWh/100km",Native,     MPkWh,       GrpConsumption}, // 102
   {"kmpkwh",   "km/kWh",   Native,     MPkWh,       GrpConsumption}, // 103
   {"mipkwh",   "mi/kWh",   KPkWh,      Native,      GrpConsumption}, // 104
   UNIT_GAP,// 105
