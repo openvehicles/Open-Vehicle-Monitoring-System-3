@@ -884,6 +884,10 @@ class OvmsMetricVector : public OvmsMetric
       OvmsMutexLock lock(&m_mutex);
       return m_value;
       }
+    inline std::vector<ElemType, Allocator> AsVector(metric_unit_t units)
+      {
+      return AsVector(std::vector<ElemType, Allocator>(), units);
+      }
 
     ElemType GetElemValue(size_t n)
       {
