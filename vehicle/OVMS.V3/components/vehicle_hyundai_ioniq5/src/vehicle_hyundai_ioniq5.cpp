@@ -1428,10 +1428,13 @@ const std::string OvmsHyundaiIoniqEv::GetFeature(int key)
     case 0:
     case 10:
       res = MyConfig.GetParamValue("xiq", "suffsoc", STR(0));
+      break;
     case 11:
       res = MyConfig.GetParamValue("xiq", "suffrange", STR(0));
+      break;
     case 12:
       res = MyConfig.GetParamValue("xiq", "maxrange", STR(CFG_DEFAULT_MAXRANGE));
+      break;
     case 15: {
 #ifdef XIQ_CAN_WRITE
       int bits =
@@ -1439,12 +1442,15 @@ const std::string OvmsHyundaiIoniqEv::GetFeature(int key)
       char buf[4];
       snprintf(buf, 4, "%d", bits);
       res = std::string(buf);
+      break;
 #else
       res = std::string("unavailable");
+      break;
 #endif
     }
     default:
       res = OvmsVehicle::GetFeature(key);
+      break;
   }
   XDISARM;
   return res;
