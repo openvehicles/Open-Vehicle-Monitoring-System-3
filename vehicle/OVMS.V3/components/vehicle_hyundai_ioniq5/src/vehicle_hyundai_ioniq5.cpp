@@ -7,6 +7,9 @@
 ;       0.0.2:  Load Battery capacity from cell count
 ;               Fix naming of various metrics.
 ;               Fix/consolidate power consumption metrics
+;       0.0.3:  Fix Battery voltage indicator range.
+;               Fix legacy GetFeatures
+;               Confirm some more values and move to new decode.
 ;
 ;    (C) 2022 Michael Geddes
 ; ----- Kona/Kia Module -----
@@ -33,7 +36,7 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 ; THE SOFTWARE.
 */
-#define IONIQ5_VERSION "0.0.2"
+#define IONIQ5_VERSION "0.0.3"
 
 #include "vehicle_hyundai_ioniq5.h"
 
