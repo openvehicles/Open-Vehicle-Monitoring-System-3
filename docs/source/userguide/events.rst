@@ -171,10 +171,13 @@ vehicle.charge.state                <state>   Vehicle charge state has changed
 vehicle.charge.stop                           Vehicle has stopped charging
 vehicle.charge.timermode.off                  Vehicle charge timer mode has been switched off
 vehicle.charge.timermode.on                   Vehicle charge timer mode has been switched on
+vehicle.charge.type                 <type>    Vehicle charge connection type has changed (e.g. ccs/type2/…)
 vehicle.drivemode.<n>                         Vehicle drivemode has been set to profile <n> (vehicle specific)
 vehicle.gear.forward                          Vehicle has been put in forward gear
 vehicle.gear.neutral                          Vehicle has been put in neutral gear
 vehicle.gear.reverse                          Vehicle has been put in reverse gear
+vehicle.gen.state                   <state>   Vehicle generator state has changed
+vehicle.gen.type                    <type>    Vehicle generator connection type has changed
 vehicle.headlights.off                        Vehicle headlights are off
 vehicle.headlights.on                         Vehicle headlights are on
 vehicle.locked                                Vehicle has been locked

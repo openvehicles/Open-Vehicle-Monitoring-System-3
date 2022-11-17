@@ -25,6 +25,10 @@ Open Vehicle Monitor System v3 - Change log
 - VFS: sorted directory listings & recursive directory listings
   New commands:
     vfs rls <path>                      -- List <path> and all subdirectory contents
+- Vehicle: emit standard events on charge/generator connection type changes
+  New events:
+    vehicle.charge.type                 -- Vehicle charge connection type has changed (e.g. ccs/type2/…)
+    vehicle.gen.type                    -- Vehicle generator connection type has changed
 
 2022-09-01 MWJ  3.3.003  OTA release
 - Toyota RAV4 EV: Initial support added. Only the Tesla bus is decoded and just listening so far.

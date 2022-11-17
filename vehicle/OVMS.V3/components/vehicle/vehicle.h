@@ -447,7 +447,9 @@ class OvmsVehicle : public InternalRamAllocated
     virtual void NotifiedVehicleDrivemode(int drivemode) {}
     virtual void NotifiedVehicleChargeMode(const char* m) {}
     virtual void NotifiedVehicleChargeState(const char* s) {}
+    virtual void NotifiedVehicleChargeType(const std::string& state) {}
     virtual void NotifiedVehicleGenState(const std::string& state) {}
+    virtual void NotifiedVehicleGenType(const std::string& state) {}
 
   protected:
     virtual void ConfigChanged(OvmsConfigParam* param);

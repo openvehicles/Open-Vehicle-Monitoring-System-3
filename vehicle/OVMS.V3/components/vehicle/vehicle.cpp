@@ -1502,12 +1502,24 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
         NotifyChargeState();
       }
     }
+  else if (metric == StandardMetrics.ms_v_charge_type)
+    {
+    std::string m = metric->AsString();
+    MyEvents.SignalEvent("vehicle.charge.type", (void*)m.c_str(), m.size()+1);
+    NotifiedVehicleChargeType(m);
+    }
   else if (metric == StandardMetrics.ms_v_gen_state)
     {
     std::string state = metric->AsString();
     MyEvents.SignalEvent("vehicle.gen.state", (void*)state.c_str(), state.size()+1);
     if (m_autonotifications)
       NotifyGenState();
+    }
+  else if (metric == StandardMetrics.ms_v_gen_type)
+    {
+    std::string m = metric->AsString();
+    MyEvents.SignalEvent("vehicle.gen.type", (void*)m.c_str(), m.size()+1);
+    NotifiedVehicleGenType(m);
     }
   else if (metric == StandardMetrics.ms_v_pos_speed)
     {
