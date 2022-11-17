@@ -928,11 +928,11 @@ typedef std::function<void(OvmsMetric*)> MetricCallback;
 class MetricCallbackEntry
   {
   public:
-    MetricCallbackEntry(const char* caller, MetricCallback callback);
+    MetricCallbackEntry(std::string caller, MetricCallback callback);
     virtual ~MetricCallbackEntry();
 
   public:
-    const char *m_caller;
+    std::string m_caller;
     MetricCallback m_callback;
   };
 
@@ -990,8 +990,8 @@ class OvmsMetrics
       }
 
   public:
-    void RegisterListener(const char* caller, const char* name, MetricCallback callback);
-    void DeregisterListener(const char* caller);
+    void RegisterListener(std::string caller, const char* name, MetricCallback callback);
+    void DeregisterListener(std::string caller);
     void NotifyModified(OvmsMetric* metric);
 
   protected:
