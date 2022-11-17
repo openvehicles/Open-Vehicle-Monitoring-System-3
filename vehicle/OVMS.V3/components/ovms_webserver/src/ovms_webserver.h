@@ -615,6 +615,80 @@ class OvmsWebServer : public ExternalRamAllocated
 
 extern OvmsWebServer MyWebServer;
 
+/** Dashboard Gauge generator.
+ * Handles unit conversions.
+ */
+struct dash_guage_t {
+protected:
+  struct dash_plot_band_t {
+    std::string colour;
+    float min_value, max_value;
+  };
+  std::string title_prefix;
+  metric_unit_t user_unit, base_unit;
+  float min_value, max_value, tick_value;
+  bool has_tick;
+  std::vector<dash_plot_band_t> bands;
+  void DoAddBand( const std::string &colour, float minValue, float maxValue, bool round, float roundValue);
+public:
+
+  /**
+   * @param titlePrefix The title/caption prefix (to the unit)
+   * @param defUnit  The unit used as a default for these metrics.
+   * @param group    (Optional) The group of units it belong to.
+   */
+  dash_guage_t(const char *titlePrefix, metric_unit_t defUnit, metric_group_t group = GrpNone);
+  /**
+   * Convert a unit to the user unit.
+   */
+  float UntConvert( float inValue ) const;
+  /**
+   * Convert a unit to the user unit with rounding to the nearest value.
+   */
+  float UntConvert( float inValue, float roundValue ) const;
+  /**
+   * Set the minimum and maximum values for the guage (in original units).
+   */
+  void SetMinMax( float minValue, float maxValue);
+  /**
+   * Set the minimum and maximum values for the guage (in original units) including
+   * rounding to the nearest value.
+   */
+  void SetMinMax( float minValue, float maxValue, float roundValue);
+  /**
+   * Set the tickmark intervals (in original units).
+   */
+  void SetTick( float tickValue);
+  /**
+   * Set the tickmark intervals (in original units) with rounding to nearest.
+   */
+  void SetTick( float tickValue, float roundValue);
+  /** Zero the minimum.  Used when 0 cannot be originally used as a minimum.
+   */
+  inline void ZeroMin() { if (max_value > 0) min_value = 0; }
+
+  /** Add a colour band to the guage.
+   */
+  inline void AddBand( const std::string &colour, float minValue, float maxValue)
+  {
+    DoAddBand(colour, minValue, maxValue, false, 0);
+  }
+  /** Add a colour band to the guage with rounding to the nearest value.
+   */
+  inline void AddBand( const std::string &colour, float minValue, float maxValue, float roundValue)
+  {
+    DoAddBand(colour, minValue, maxValue, true, roundValue);
+  }
+
+  /** Output this element to a stream.
+   */
+  std::ostream &Output(std::ostream &ostream) const;
+};
+inline std::ostream &operator<<(std::ostream &out, const dash_guage_t& guage)
+{
+  return guage.Output(out);
+}
+
 
 /**
  * DashboardConfig:
