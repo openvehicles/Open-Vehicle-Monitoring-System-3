@@ -274,11 +274,11 @@ void OvmsHyundaiIoniqEv::GetDashboardConfig(DashboardConfig &cfg)
     "{ from: 120, to: 170, className: 'red-band' }]"
     "},{"
     // Voltage:
-    "min: 300, max: 405,"
+    "min: 300, max: 810,"
     "plotBands: ["
-    "{ from: 330, to: 360, className: 'red-band' },"
-    "{ from: 360, to: 380, className: 'yellow-band' },"
-    "{ from: 380, to: 405, className: 'green-band' }]"
+    "{ from: 660, to: 720, className: 'red-band' },"
+    "{ from: 720, to: 760, className: 'yellow-band' },"
+    "{ from: 760, to: 810, className: 'green-band' }]"
     "},{"
     // SOC:
     "min: 0, max: 100,"

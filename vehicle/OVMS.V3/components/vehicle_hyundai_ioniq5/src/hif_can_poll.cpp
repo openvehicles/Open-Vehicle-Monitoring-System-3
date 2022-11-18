@@ -55,9 +55,9 @@ void OvmsHyundaiIoniqEv::IncomingPollReply(canbus *bus, uint16_t type, uint16_t 
       process_all = true;
       break;
 
-    // ****** AirCon ******
+    // ****** (not) AirCon ******
     case 0x7bb:
-      IncomingAirCon(bus, type, pid, data, length, mlremain);
+      process_all = true;
       break;
 
     // ****** ABS ESP ******
@@ -157,6 +157,10 @@ void OvmsHyundaiIoniqEv::IncomingPollReply(canbus *bus, uint16_t type, uint16_t 
       case 0x7a8:
         IncomingBCM_Full(bus, type, pid, rxbuf);
         break;
+      // ****** ?? Misc ******
+      case 0x7bb:
+        IncomingOther_Full(bus, type, pid, rxbuf);
+        break;
       // ******* VMCU ******
       case 0x7ea:
         IncomingVMCU_Full(bus, type, pid, rxbuf);
@@ -192,32 +196,27 @@ void OvmsHyundaiIoniqEv::IncomingCM_Full(canbus *bus, uint16_t type, uint16_t pi
 /**
  * Handle incoming messages from Aircon poll.
  */
-void OvmsHyundaiIoniqEv::IncomingAirCon(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length, uint16_t mlremain)
+void OvmsHyundaiIoniqEv::IncomingOther_Full(canbus *bus, uint16_t type, uint16_t pid, const std::string &data)
 {
   // 0x7b3->0x7bb
-  XARM("OvmsHyundaiIoniqEv::IncomingAirCon");
-  //ESP_LOGD(TAG, "AirCon PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", pid, length, m_poll_ml_frame, data[0], data[1], data[2], data[3],
-  //    data[4], data[5], data[6]);
+  XARM("OvmsHyundaiIoniqEv::IncomingOther_Full");
   switch (pid) {
     case 0x0100:
-      if (m_poll_ml_frame == 1) {
-        StdMetrics.ms_v_env_temp->SetValue((data[3] / 2.0) - 40, Celcius);
-        StdMetrics.ms_v_env_cabintemp->SetValue((data[2] / 2.0) - 40, Celcius);
-      }
-      if (m_poll_ml_frame == 4) {
-        StdMetrics.ms_v_pos_speed->SetValue(CAN_BYTE(5)); //Speed moved to here --TP
-      }
-      break;
-
-    case 0x0102:
-      if (m_poll_ml_frame == 1) {
-        //Coolant temp 1 & 2 in byte 1 and 2
-      }
-      break;
+      {
+        uint8_t value;
+        if (get_uint_buff_be<1>(data, 5, value)) {
+          StdMetrics.ms_v_env_cabintemp->SetValue((value/2.0) - 40, Celcius);
+        }
+        if (get_uint_buff_be<1>(data, 6, value)) {
+          StdMetrics.ms_v_env_temp->SetValue((value/2.0) - 40, Celcius);
+        }
+        if (get_uint_buff_be<1>(data, 29, value)) {
+          StdMetrics.ms_v_pos_speed->SetValue(value);
+        }
+      } break;
   }
   XDISARM;
 }
-
 
 /**
  * Handle incoming messages from ABS ESP poll.
