@@ -1002,7 +1002,7 @@ OvmsMetricString* OvmsMetrics::InitString(const char* metric, uint16_t autostale
   return m;
   }
 
-void OvmsMetrics::RegisterListener(std::string caller, const char* name, MetricCallback callback)
+void OvmsMetrics::RegisterListener(std::string caller, std::string name, MetricCallback callback)
   {
   auto k = m_listeners.find(name);
   if (k == m_listeners.end())
@@ -1012,7 +1012,7 @@ void OvmsMetrics::RegisterListener(std::string caller, const char* name, MetricC
     }
   if (k == m_listeners.end())
     {
-    ESP_LOGE(TAG, "Problem registering metric %s for caller %s",name,caller.c_str());
+    ESP_LOGE(TAG, "Problem registering metric %s for caller %s",name.c_str(),caller.c_str());
     return;
     }
 

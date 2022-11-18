@@ -41,7 +41,6 @@
 #include <set>
 #include <vector>
 #include <atomic>
-#include "ovms_utils.h"
 #include "ovms_mutex.h"
 #include "dbc_number.h"
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
@@ -937,7 +936,7 @@ class MetricCallbackEntry
   };
 
 typedef std::list<MetricCallbackEntry*> MetricCallbackList;
-typedef std::map<const char*, MetricCallbackList*, CmpStrOp> MetricCallbackMap;
+typedef std::map<std::string, MetricCallbackList*> MetricCallbackMap;
 
 class OvmsMetrics
   {
@@ -990,7 +989,7 @@ class OvmsMetrics
       }
 
   public:
-    void RegisterListener(std::string caller, const char* name, MetricCallback callback);
+    void RegisterListener(std::string caller, std::string name, MetricCallback callback);
     void DeregisterListener(std::string caller);
     void NotifyModified(OvmsMetric* metric);
 
