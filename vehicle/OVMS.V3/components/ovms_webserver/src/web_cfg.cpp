@@ -605,13 +605,12 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
     vehiclename = c.getvar("vehiclename");
     timezone = c.getvar("timezone");
     timezone_region = c.getvar("timezone_region");
-    for ( auto grpiter = unit_groups.begin(); grpiter != unit_groups.end(); ++grpiter)
-      {
+    for ( auto grpiter = unit_groups.begin(); grpiter != unit_groups.end(); ++grpiter) {
       std::string name = OvmsMetricGroupName(*grpiter);
       std::string cfg = "units_";
       cfg += name;
       units_values[*grpiter] = c.getvar(cfg);
-      }
+    }
 
     bat12v_factor = c.getvar("bat12v_factor");
     bat12v_ref = c.getvar("bat12v_ref");
@@ -638,12 +637,11 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValue("vehicle", "name", vehiclename);
       MyConfig.SetParamValue("vehicle", "timezone", timezone);
       MyConfig.SetParamValue("vehicle", "timezone_region", timezone_region);
-      for ( auto grpiter = unit_groups.begin(); grpiter != unit_groups.end(); ++grpiter)
-        {
+      for ( auto grpiter = unit_groups.begin(); grpiter != unit_groups.end(); ++grpiter) {
         std::string name = OvmsMetricGroupName(*grpiter);
         std::string value = units_values[*grpiter];
         OvmsMetricSetUserConfig(*grpiter, value);
-        }
+      }
 
       MyConfig.SetParamValue("system.adc", "factor12v", bat12v_factor);
       MyConfig.SetParamValue("vehicle", "12v.ref", bat12v_ref);
@@ -674,9 +672,7 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
     timezone = MyConfig.GetParamValue("vehicle", "timezone");
     timezone_region = MyConfig.GetParamValue("vehicle", "timezone_region");
     for ( auto grpiter = unit_groups.begin(); grpiter != unit_groups.end(); ++grpiter)
-      {
       units_values[*grpiter] = OvmsMetricGetUserConfig(*grpiter);
-      }
     bat12v_factor = MyConfig.GetParamValue("system.adc", "factor12v");
     bat12v_ref = MyConfig.GetParamValue("vehicle", "12v.ref");
     bat12v_alert = MyConfig.GetParamValue("vehicle", "12v.alert");
@@ -723,12 +719,10 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
     , _attr(timezone_region)
     , _attr(timezone));
 
-  for ( auto grpiter = unit_groups.begin(); grpiter != unit_groups.end(); ++grpiter)
-    {
+  for ( auto grpiter = unit_groups.begin(); grpiter != unit_groups.end(); ++grpiter) {
     std::string name = OvmsMetricGroupName(*grpiter);
     metric_unit_set_t group_units;
-    if (OvmsMetricGroupUnits(*grpiter,group_units))
-      {
+    if (OvmsMetricGroupUnits(*grpiter,group_units)) {
       bool use_select = group_units.size() > 3;
       std::string cfg = "units_";
       cfg += name;
@@ -743,8 +737,7 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
         c.input_select_option( "Default", "", checked);
       else
         c.input_radiobtn_option(cfg.c_str(), "Default", "", checked);
-      for (auto unititer = group_units.begin(); unititer != group_units.end(); ++unititer)
-        {
+      for (auto unititer = group_units.begin(); unititer != group_units.end(); ++unititer) {
         const char* unit_name = OvmsMetricUnitName(*unititer);
         const char* unit_label = OvmsMetricUnitLabel(*unititer);
         checked = value == unit_name;
@@ -752,13 +745,13 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
           c.input_select_option( unit_label, unit_name, checked);
         else
           c.input_radiobtn_option(cfg.c_str(), unit_label, unit_name, checked);
-        }
+      }
       if (use_select)
         c.input_select_end();
       else
         c.input_radiobtn_end();
-      }
     }
+  }
 
   c.input_password("PIN", "pin", "", "empty = no change",
     "<p>Vehicle PIN code used for unlocking etc.</p>", "autocomplete=\"section-vehiclepin new-password\"");
@@ -1016,8 +1009,7 @@ void OvmsWebServer::HandleCfgPushover(PageEntry_t& p, PageContext_t& c)
     }
 
     if (error == "") {
-      if (c.getvar("action") == "save")
-        {
+      if (c.getvar("action") == "save") {
         // save:
         param->m_map.clear();
         param->m_map = std::move(pmap);
@@ -1028,9 +1020,8 @@ void OvmsWebServer::HandleCfgPushover(PageEntry_t& p, PageContext_t& c)
         OutputHome(p, c);
         c.done();
         return;
-        }
-      else if (c.getvar("action") == "test")
-        {
+      } else if (c.getvar("action") == "test")
+      {
         std::string reply;
         std::string popup;
         c.head(200);
@@ -1044,10 +1035,10 @@ void OvmsWebServer::HandleCfgPushover(PageEntry_t& p, PageContext_t& c)
             atoi(c.getvar("retry").c_str()),
             atoi(c.getvar("expire").c_str()),
             true /* receive server reply as reply/pushover-type notification */ ))
-          {
+        {
           c.alert("danger", "<p class=\"lead\">Could not send test message!</p>");
-          }
         }
+      }
     }
     else {
       // output error, return to form:
