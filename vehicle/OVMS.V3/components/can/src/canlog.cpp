@@ -388,6 +388,7 @@ canlog::~canlog()
         case CAN_LogInfo_Comment:
         case CAN_LogInfo_Config:
         case CAN_LogInfo_Event:
+        case CAN_LogInfo_Metric:
           free(msg.text);
           break;
         default:
@@ -423,6 +424,7 @@ void canlog::RxTask(void *context)
         case CAN_LogInfo_Comment:
         case CAN_LogInfo_Config:
         case CAN_LogInfo_Event:
+        case CAN_LogInfo_Metric:
           me->OutputMsg(msg);
           free(msg.text);
           break;

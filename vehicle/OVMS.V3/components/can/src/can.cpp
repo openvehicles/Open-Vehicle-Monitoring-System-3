@@ -570,7 +570,8 @@ static const char* const CAN_log_type_names[] = {
   "Status",
   "Comment",
   "Info",
-  "Event"
+  "Event",
+  "Metric"
   };
 
 const char* GetCanLogTypeName(CAN_log_type_t type)
