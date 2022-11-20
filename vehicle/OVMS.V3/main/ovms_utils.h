@@ -33,6 +33,7 @@
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include <algorithm>
 #include <cstring>
 #include <string>
 #include <iomanip>
@@ -569,5 +570,43 @@ inline bool get_buff_string(const std::string &data, uint32_t index, uint32_t le
   {
   return get_buff_string(reinterpret_cast<const uint8_t *>(data.data()), data.size(), index, len, strret);
   }
+
+// trim from start (in place)
+static inline void ltrim(std::string &s) {
+    s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) {
+        return !std::isspace(ch);
+    }));
+}
+
+// trim from end (in place)
+static inline void rtrim(std::string &s) {
+    s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch) {
+        return !std::isspace(ch);
+    }).base(), s.end());
+}
+
+// trim from both ends (in place)
+static inline void trim(std::string &s) {
+    rtrim(s);
+    ltrim(s);
+}
+
+// trim from start (copying)
+static inline std::string ltrim_copy(std::string s) {
+    ltrim(s);
+    return s;
+}
+
+// trim from end (copying)
+static inline std::string rtrim_copy(std::string s) {
+    rtrim(s);
+    return s;
+}
+
+// trim from both ends (copying)
+static inline std::string trim_copy(std::string s) {
+    trim(s);
+    return s;
+}
 
 #endif // __OVMS_UTILS_H__
