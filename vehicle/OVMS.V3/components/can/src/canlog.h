@@ -110,6 +110,7 @@ class canlog : public InternalRamAllocated
   public:
     static void RxTask(void* context);
     void EventListener(std::string event, void* data);
+    void MetricListener(OvmsMetric* metric);
 
   public:
     const char* GetType();
@@ -165,6 +166,8 @@ class canlog : public InternalRamAllocated
   protected:
     conn_filters_arr_t  m_events_filters;
     size_t              m_events_filters_hash = 0;
+    conn_filters_arr_t  m_metrics_filters;
+    size_t              m_metrics_filters_hash = 0;
   };
 
 #endif // __CANLOG_H__

@@ -356,6 +356,7 @@ canlog::canlog(const char* type, std::string format, canformat::canformat_serve_
   MyEvents.RegisterEvent(IDTAG, "*", std::bind(&canlog::EventListener, this, _1, _2));
   MyEvents.RegisterEvent(IDTAG,"config.mounted", std::bind(&canlog::UpdatedConfig, this, _1, _2));
   MyEvents.RegisterEvent(IDTAG,"config.changed", std::bind(&canlog::UpdatedConfig, this, _1, _2));
+  MyMetrics.RegisterListener(IDTAG, "*", std::bind(&canlog::MetricListener, this, _1));
 
   int queuesize = MyConfig.GetParamValueInt(CAN_PARAM, "log.queuesize",100);
   LoadConfig();
@@ -366,6 +367,7 @@ canlog::canlog(const char* type, std::string format, canformat::canformat_serve_
 canlog::~canlog()
   {
   MyEvents.DeregisterEvent(IDTAG);
+  MyMetrics.DeregisterListener(IDTAG);
 
   if (m_task)
     {
@@ -530,6 +532,14 @@ void canlog::LoadConfig()
     LoadFilters(m_events_filters, list_of_events_filters);
     MyCan.LogInfo(NULL, CAN_LogInfo_Config, ("Events filters: " + list_of_events_filters).c_str());
     }
+  std::string list_of_metrics_filters = MyConfig.GetParamValue(CAN_PARAM, "log.metrics_filters");
+  str_hash = std::hash<std::string>{}(list_of_metrics_filters);
+  if (str_hash != m_metrics_filters_hash)
+    {
+    m_metrics_filters_hash = str_hash;
+    LoadFilters(m_metrics_filters, list_of_metrics_filters);
+    MyCan.LogInfo(NULL, CAN_LogInfo_Config, ("Metrics filters: " + list_of_metrics_filters).c_str());
+    }
   }
 
 /**
@@ -585,6 +595,20 @@ void canlog::EventListener(std::string event, void* data)
   // Log vehicle custom (x…) & framework events:
   if (CheckFilter(m_events_filters, event))
     LogInfo(NULL, CAN_LogInfo_Event, event.c_str());
+  }
+
+void canlog::MetricListener(OvmsMetric* metric)
+  {
+    std::string name = metric->m_name;
+  // Log metrics (in JSON for later parsing):
+  if (CheckFilter(m_metrics_filters, name))
+    {
+    std::string metric_text = "{ ";
+    metric_text += "\"name\": \"" + json_encode(name) + "\", ";
+    metric_text += "\"value\": " + metric->AsJSON() + ", ";
+    metric_text += "\"unit\": \"" + json_encode(std::string(OvmsMetricUnitLabel(metric->GetUnits()))) + "\" }";
+    LogInfo(NULL, CAN_LogInfo_Metric, metric_text.c_str());
+    }
   }
 
 const char* canlog::GetType()
