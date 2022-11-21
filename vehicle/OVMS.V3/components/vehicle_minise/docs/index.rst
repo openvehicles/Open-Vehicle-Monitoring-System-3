@@ -1,11 +1,11 @@
 
 =============
-BMW i3 / i3s
+Mini Cooper SE
 =============
 
-Vehicle Type: **BMWI3**
+Vehicle Type: **Mini Cooper SE**
 
-This vehicle type supports the BMW i3 and i3s models. All model years should be supported.
+This vehicle type supports the Mini Cooper SE. All model years should be supported.
 
 The OVMS support was developed Jan 2021.
 

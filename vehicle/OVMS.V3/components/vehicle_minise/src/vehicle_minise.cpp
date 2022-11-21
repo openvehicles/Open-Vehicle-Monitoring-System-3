@@ -47,7 +47,7 @@
 */
 
 #include "ovms_log.h"
-static const char *TAG = "v-bmwi3";
+static const char *TAG = "v-minise";
 
 #include <stdio.h>
 #include "vehicle_minise.h"
@@ -169,14 +169,14 @@ static const OvmsVehicle::poll_pid_t obdii_polls[] = {
     POLL_LIST_END
   };
 
-OvmsMetricFloat* MetricFloat(const char* name, uint16_t autostale=0, metric_unit_t units = Other) {
+OvmsMetricFloat* MetricFloatSE(const char* name, uint16_t autostale=0, metric_unit_t units = Other) {
     OvmsMetricFloat* metric = (OvmsMetricFloat*)MyMetrics.Find(name);
     if (metric==NULL) {
         metric = new OvmsMetricFloat(name, autostale, units, 0);
     }
     return metric;
 }
-OvmsMetricInt* MetricInt(const char* name, uint16_t autostale=0, metric_unit_t units = Other) {
+OvmsMetricInt* MetricIntSE(const char* name, uint16_t autostale=0, metric_unit_t units = Other) {
     OvmsMetricInt* metric = (OvmsMetricInt*)MyMetrics.Find(name);
     if (metric==NULL) {
         metric = new OvmsMetricInt(name, autostale, units, 0);
@@ -184,7 +184,7 @@ OvmsMetricInt* MetricInt(const char* name, uint16_t autostale=0, metric_unit_t u
     return metric;
 }
   
-OvmsMetricBool* MetricBool(const char* name, uint16_t autostale=0, metric_unit_t units = Other) {
+OvmsMetricBool* MetricBoolSE(const char* name, uint16_t autostale=0, metric_unit_t units = Other) {
     OvmsMetricBool* metric = (OvmsMetricBool*)MyMetrics.Find(name);
     if (metric==NULL) {
         metric = new OvmsMetricBool(name, autostale, units, 0);
@@ -192,7 +192,7 @@ OvmsMetricBool* MetricBool(const char* name, uint16_t autostale=0, metric_unit_t
     return metric;
 }
 
-OvmsMetricString* MetricString(const char* name, uint16_t autostale=0, metric_unit_t units = Other) {
+OvmsMetricString* MetricStringSE(const char* name, uint16_t autostale=0, metric_unit_t units = Other) {
     OvmsMetricString* metric = (OvmsMetricString*)MyMetrics.Find(name);
     if (metric==NULL) {
         metric = new OvmsMetricString(name, autostale, units);
@@ -206,62 +206,62 @@ OvmsVehicleMiniSE::OvmsVehicleMiniSE()
 
     // Our metrics.
     // Charge limits
-    mt_i3_charge_actual                 = MetricFloat("xi3.v.b.soc.actual",         SM_STALE_MAX,  Percentage);
-    mt_i3_charge_max                    = MetricFloat("xi3.v.b.soc.actual.highlimit", SM_STALE_MAX, Percentage);
-    mt_i3_charge_min                    = MetricFloat("xi3.v.b.soc.actual.lowlimit", SM_STALE_MAX, Percentage);
+    mt_i3_charge_actual                 = MetricFloatSE("xi3.v.b.soc.actual",         SM_STALE_MAX,  Percentage);
+    mt_i3_charge_max                    = MetricFloatSE("xi3.v.b.soc.actual.highlimit", SM_STALE_MAX, Percentage);
+    mt_i3_charge_min                    = MetricFloatSE("xi3.v.b.soc.actual.lowlimit", SM_STALE_MAX, Percentage);
     // Wheel speeds
-    mt_i3_wheel1_speed                  = MetricFloat("xi3.v.p.wheel1_speed",       SM_STALE_MIN,  Kph);
-    mt_i3_wheel2_speed                  = MetricFloat("xi3.v.p.wheel2_speed",       SM_STALE_MIN,  Kph);
-    mt_i3_wheel3_speed                  = MetricFloat("xi3.v.p.wheel3_speed",       SM_STALE_MIN,  Kph);
-    mt_i3_wheel4_speed                  = MetricFloat("xi3.v.p.wheel4_speed",       SM_STALE_MIN,  Kph);
-    mt_i3_wheel_speed                   = MetricFloat("xi3.v.p.wheel_speed",        SM_STALE_MIN,  Kph);
-    mt_i3_batt_pack_ocv_avg             = MetricFloat("xi3.v.b.p.ocv.avg",          SM_STALE_MAX,  Volts);
-    mt_i3_batt_pack_ocv_min             = MetricFloat("xi3.v.b.p.ocv.min",          SM_STALE_MAX,  Volts);
-    mt_i3_batt_pack_ocv_max             = MetricFloat("xi3.v.b.p.ocv.max",          SM_STALE_MAX,  Volts);
+    mt_i3_wheel1_speed                  = MetricFloatSE("xi3.v.p.wheel1_speed",       SM_STALE_MIN,  Kph);
+    mt_i3_wheel2_speed                  = MetricFloatSE("xi3.v.p.wheel2_speed",       SM_STALE_MIN,  Kph);
+    mt_i3_wheel3_speed                  = MetricFloatSE("xi3.v.p.wheel3_speed",       SM_STALE_MIN,  Kph);
+    mt_i3_wheel4_speed                  = MetricFloatSE("xi3.v.p.wheel4_speed",       SM_STALE_MIN,  Kph);
+    mt_i3_wheel_speed                   = MetricFloatSE("xi3.v.p.wheel_speed",        SM_STALE_MIN,  Kph);
+    mt_i3_batt_pack_ocv_avg             = MetricFloatSE("xi3.v.b.p.ocv.avg",          SM_STALE_MAX,  Volts);
+    mt_i3_batt_pack_ocv_min             = MetricFloatSE("xi3.v.b.p.ocv.min",          SM_STALE_MAX,  Volts);
+    mt_i3_batt_pack_ocv_max             = MetricFloatSE("xi3.v.b.p.ocv.max",          SM_STALE_MAX,  Volts);
     // Ranges in modes
-    mt_i3_range_bc                      = MetricInt  ("xi3.v.b.range.bc",           SM_STALE_HIGH, Kilometers);
-    mt_i3_range_comfort                 = MetricInt  ("xi3.v.b.range.comfort",      SM_STALE_HIGH, Kilometers);
-    mt_i3_range_ecopro                  = MetricInt  ("xi3.v.b.range.ecopro",       SM_STALE_HIGH, Kilometers);
-    mt_i3_range_ecoproplus              = MetricInt  ("xi3.v.b.range.ecoproplus",   SM_STALE_HIGH, Kilometers);
+    mt_i3_range_bc                      = MetricIntSE  ("xi3.v.b.range.bc",           SM_STALE_HIGH, Kilometers);
+    mt_i3_range_comfort                 = MetricIntSE  ("xi3.v.b.range.comfort",      SM_STALE_HIGH, Kilometers);
+    mt_i3_range_ecopro                  = MetricIntSE  ("xi3.v.b.range.ecopro",       SM_STALE_HIGH, Kilometers);
+    mt_i3_range_ecoproplus              = MetricIntSE  ("xi3.v.b.range.ecoproplus",   SM_STALE_HIGH, Kilometers);
     // Charging
-    mt_i3_v_charge_voltage_phase1       = MetricInt  ("xi3.v.c.voltage.phase1",     SM_STALE_MID,  Volts);
-    mt_i3_v_charge_voltage_phase2       = MetricInt  ("xi3.v.c.voltage.phase2",     SM_STALE_MID,  Volts);
-    mt_i3_v_charge_voltage_phase3       = MetricInt  ("xi3.v.c.voltage.phase3",     SM_STALE_MID,  Volts);
-    mt_i3_v_charge_voltage_dc           = MetricFloat("xi3.v.c.voltage.dc",         SM_STALE_MID,  Volts);
-    mt_i3_v_charge_voltage_dc_limit     = MetricFloat("xi3.v.c.voltage.dc.limit",   SM_STALE_MID,  Volts);
-    mt_i3_v_charge_current_phase1       = MetricFloat("xi3.v.c.current.phase1",     SM_STALE_MID,  Amps);
-    mt_i3_v_charge_current_phase2       = MetricFloat("xi3.v.c.current.phase2",     SM_STALE_MID,  Amps);
-    mt_i3_v_charge_current_phase3       = MetricFloat("xi3.v.c.current.phase3",     SM_STALE_MID,  Amps);
-    mt_i3_v_charge_current_dc           = MetricFloat("xi3.v.c.current.dc",         SM_STALE_MID,  Amps);
-    mt_i3_v_charge_current_dc_limit     = MetricFloat("xi3.v.c.current.dc.limit",   SM_STALE_MID,  Amps);
-    mt_i3_v_charge_current_dc_maxlimit  = MetricFloat("xi3.v.c.current.dc.maxlimit", SM_STALE_MID, Amps);
-    mt_i3_v_charge_deratingreasons      = MetricInt  ("xi3.v.c.deratingreasons",    SM_STALE_HIGH, Other);
-    mt_i3_v_charge_faults               = MetricInt  ("xi3.v.c.deratingreasons",    SM_STALE_HIGH, Other);
-    mt_i3_v_charge_failsafetriggers     = MetricInt  ("xi3.v.c.failsafetriggers",   SM_STALE_HIGH, Other);
-    mt_i3_v_charge_interruptionreasons  = MetricInt  ("xi3.v.c.interruptionreasons", SM_STALE_HIGH, Other);
-    mt_i3_v_charge_errors               = MetricInt  ("xi3.v.c.error",              SM_STALE_HIGH, Other);
-    mt_i3_v_charge_readytocharge        = MetricBool ("xi3.v.c.readytocharge",      SM_STALE_MID);
-    mt_i3_v_charge_plugstatus           = MetricString("xi3.v.c.chargeplugstatus",  SM_STALE_MID);
-    mt_i3_v_charge_pilotsignal          = MetricInt  ("xi3.v.c.pilotsignal",        SM_STALE_MID,  Amps);
-    mt_i3_v_charge_cablecapacity        = MetricInt  ("xi3.v.c.chargecablecapacity", SM_STALE_MID, Amps);
-    mt_i3_v_charge_dc_plugconnected     = MetricBool ("xi3.v.c.dc.plugconnected",   SM_STALE_MID);
-    mt_i3_v_charge_dc_voltage           = MetricInt  ("xi3.v.c.dc.chargevoltage",   SM_STALE_MID,  Volts);
-    mt_i3_v_charge_dc_controlsignals    = MetricInt  ("xi3.v.c.dc.controlsignals",  SM_STALE_MID,  Other);
-    mt_i3_v_door_dc_chargeport          = MetricBool ("xi3.v.d.chargeport.dc",      SM_STALE_MID);
-    mt_i3_v_charge_dc_contactorstatus   = MetricString("xi3.v.c.dc.contactorstatus", SM_STALE_MID);
-    mt_i3_v_charge_dc_inprogress        = MetricBool ("xi3.v.c.dc.inprogress",      SM_STALE_MID);
-    mt_i3_v_charge_chargeledstate       = MetricInt  ("xi3.v.c.chargeledstate",     SM_STALE_MID,  Other);
-    mt_i3_v_charge_temp_gatedriver      = MetricInt  ("xi3.v.c.temp.gatedriver",    SM_STALE_MID,  Celcius);
+    mt_i3_v_charge_voltage_phase1       = MetricIntSE  ("xi3.v.c.voltage.phase1",     SM_STALE_MID,  Volts);
+    mt_i3_v_charge_voltage_phase2       = MetricIntSE  ("xi3.v.c.voltage.phase2",     SM_STALE_MID,  Volts);
+    mt_i3_v_charge_voltage_phase3       = MetricIntSE  ("xi3.v.c.voltage.phase3",     SM_STALE_MID,  Volts);
+    mt_i3_v_charge_voltage_dc           = MetricFloatSE("xi3.v.c.voltage.dc",         SM_STALE_MID,  Volts);
+    mt_i3_v_charge_voltage_dc_limit     = MetricFloatSE("xi3.v.c.voltage.dc.limit",   SM_STALE_MID,  Volts);
+    mt_i3_v_charge_current_phase1       = MetricFloatSE("xi3.v.c.current.phase1",     SM_STALE_MID,  Amps);
+    mt_i3_v_charge_current_phase2       = MetricFloatSE("xi3.v.c.current.phase2",     SM_STALE_MID,  Amps);
+    mt_i3_v_charge_current_phase3       = MetricFloatSE("xi3.v.c.current.phase3",     SM_STALE_MID,  Amps);
+    mt_i3_v_charge_current_dc           = MetricFloatSE("xi3.v.c.current.dc",         SM_STALE_MID,  Amps);
+    mt_i3_v_charge_current_dc_limit     = MetricFloatSE("xi3.v.c.current.dc.limit",   SM_STALE_MID,  Amps);
+    mt_i3_v_charge_current_dc_maxlimit  = MetricFloatSE("xi3.v.c.current.dc.maxlimit", SM_STALE_MID, Amps);
+    mt_i3_v_charge_deratingreasons      = MetricIntSE  ("xi3.v.c.deratingreasons",    SM_STALE_HIGH, Other);
+    mt_i3_v_charge_faults               = MetricIntSE  ("xi3.v.c.deratingreasons",    SM_STALE_HIGH, Other);
+    mt_i3_v_charge_failsafetriggers     = MetricIntSE  ("xi3.v.c.failsafetriggers",   SM_STALE_HIGH, Other);
+    mt_i3_v_charge_interruptionreasons  = MetricIntSE  ("xi3.v.c.interruptionreasons", SM_STALE_HIGH, Other);
+    mt_i3_v_charge_errors               = MetricIntSE  ("xi3.v.c.error",              SM_STALE_HIGH, Other);
+    mt_i3_v_charge_readytocharge        = MetricBoolSE ("xi3.v.c.readytocharge",      SM_STALE_MID);
+    mt_i3_v_charge_plugstatus           = MetricStringSE("xi3.v.c.chargeplugstatus",  SM_STALE_MID);
+    mt_i3_v_charge_pilotsignal          = MetricIntSE  ("xi3.v.c.pilotsignal",        SM_STALE_MID,  Amps);
+    mt_i3_v_charge_cablecapacity        = MetricIntSE  ("xi3.v.c.chargecablecapacity", SM_STALE_MID, Amps);
+    mt_i3_v_charge_dc_plugconnected     = MetricBoolSE ("xi3.v.c.dc.plugconnected",   SM_STALE_MID);
+    mt_i3_v_charge_dc_voltage           = MetricIntSE  ("xi3.v.c.dc.chargevoltage",   SM_STALE_MID,  Volts);
+    mt_i3_v_charge_dc_controlsignals    = MetricIntSE  ("xi3.v.c.dc.controlsignals",  SM_STALE_MID,  Other);
+    mt_i3_v_door_dc_chargeport          = MetricBoolSE ("xi3.v.d.chargeport.dc",      SM_STALE_MID);
+    mt_i3_v_charge_dc_contactorstatus   = MetricStringSE("xi3.v.c.dc.contactorstatus", SM_STALE_MID);
+    mt_i3_v_charge_dc_inprogress        = MetricBoolSE ("xi3.v.c.dc.inprogress",      SM_STALE_MID);
+    mt_i3_v_charge_chargeledstate       = MetricIntSE  ("xi3.v.c.chargeledstate",     SM_STALE_MID,  Other);
+    mt_i3_v_charge_temp_gatedriver      = MetricIntSE  ("xi3.v.c.temp.gatedriver",    SM_STALE_MID,  Celcius);
     // Trip consumption
-    mt_i3_v_pos_tripconsumption         = MetricInt  ("xi3.v.p.tripconsumption",    SM_STALE_MID,  WattHoursPK);
+    mt_i3_v_pos_tripconsumption         = MetricIntSE  ("xi3.v.p.tripconsumption",    SM_STALE_MID,  WattHoursPK);
 
     // State
-    mt_i3_obdisalive                    = MetricBool ("xi3.v.e.obdisalive",         SM_STALE_MID);
-    mt_i3_pollermode                    = MetricInt  ("xi3.s.pollermode",           SM_STALE_MID);
-    mt_i3_age                           = MetricInt  ("xi3.s.age",                  SM_STALE_MID,  Minutes);
+    mt_i3_obdisalive                    = MetricBoolSE ("xi3.v.e.obdisalive",         SM_STALE_MID);
+    mt_i3_pollermode                    = MetricIntSE  ("xi3.s.pollermode",           SM_STALE_MID);
+    mt_i3_age                           = MetricIntSE  ("xi3.s.age",                  SM_STALE_MID,  Minutes);
 
     // Controls
-    mt_i3_v_env_autorecirc              = MetricBool("xi3.v.e.autorecirc",          SM_STALE_MID);
+    mt_i3_v_env_autorecirc              = MetricBoolSE("xi3.v.e.autorecirc",          SM_STALE_MID);
  
     // Init the stuff to keep track of whether the car is talking or not
     framecount = 0;
@@ -292,7 +292,7 @@ OvmsVehicleMiniSE::~OvmsVehicleMiniSE()
     ESP_LOGI(TAG, "Shutdown Mini Cooper SE vehicle module");
 }
 
-void hexdump(string &rxbuf, uint16_t type, uint16_t pid)
+void hexdumpse(string &rxbuf, uint16_t type, uint16_t pid)
 {
     char *buf = NULL;
     size_t rlen = rxbuf.size(), offset = 0;
@@ -703,7 +703,7 @@ void OvmsVehicleMiniSE::IncomingPollReply(canbus* bus, uint16_t type, uint16_t p
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%x%s\n", "SME", "PROJEKT_PARAMETER", "STAT_ANZAHL_TEMPERATURSENSOREN_PRO_MODUL_WERT", STAT_ANZAHL_TEMPERATURSENSOREN_PRO_MODUL_WERT, "");
 
     // ==========  Add your processing here ==========
-    hexdump(rxbuf, type, pid);
+    hexdumpse(rxbuf, type, pid);
 
     break;
   }
@@ -723,7 +723,7 @@ case I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX: {                                       
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "ZELLSPANNUNGEN_MIN_MAX", "STAT_UCELL_MAX_WERT", STAT_UCELL_MAX_WERT, "\"V\"");
 
     // ==========  Add your processing here ==========
-    hexdump(rxbuf, type, pid);
+    hexdumpse(rxbuf, type, pid);
 
     break;
   }
@@ -1502,7 +1502,7 @@ case I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX: {                                       
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%lx%s\n", "KOM", "SEGMENTDATEN_SPEICHER", "BF_BLOCK_10_STERNE", (unsigned long)BF_BLOCK_10_STERNE, "\"Bit\"");
 
     // ==========  Add your processing here ==========
-    hexdump(rxbuf, type, pid);
+    hexdumpse(rxbuf, type, pid);
 
     break;
   }
@@ -1614,7 +1614,7 @@ case I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX: {                                       
     ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "EME", "AE_STROM_EMASCHINE", "STAT_STROM_DC_HV_UMRICHTER_EM_WERT", STAT_STROM_DC_HV_UMRICHTER_EM_WERT, "\"A\"");
 
     // ==========  Add your processing here ==========
-    hexdump(rxbuf, type, pid);
+    hexdumpse(rxbuf, type, pid);
 
     break;
   }
@@ -2604,7 +2604,7 @@ case I3_PID_IHX_TEMP_INNEN_UNBELUEFTET: {                                       
 
   // Unknown: output if for review
   default: {
-    hexdump(rxbuf, type, pid);
+    hexdumpse(rxbuf, type, pid);
     break;
   }
 

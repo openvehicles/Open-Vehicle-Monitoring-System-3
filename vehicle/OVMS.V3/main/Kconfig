@@ -529,6 +529,13 @@ config OVMS_VEHICLE_BMWI3
     help
         Enable to include support for BMW i3 or i3s vehicles
 
+config OVMS_VEHICLE_MINISE
+    bool "Include support for Mini Cooper SE"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for Mini Cooper SE vehicles
+
 config OVMS_VEHICLE_HYUNDAI_IONIQVFL
     bool "Include support for Hyundai Ioniq Electric 28kWh (vFL)"
     default y
