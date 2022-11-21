@@ -609,4 +609,10 @@ static inline std::string trim_copy(std::string s) {
     return s;
 }
 
+/**
+ * format_file_size: format a file size in human-readable format.
+ * (like 1.5k 234.2M 2.1G)
+ */
+void format_file_size(char* buffer, std::size_t buf_size, std::size_t fsize);
+
 #endif // __OVMS_UTILS_H__
