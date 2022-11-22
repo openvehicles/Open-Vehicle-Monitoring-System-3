@@ -570,4 +570,8 @@ inline bool get_buff_string(const std::string &data, uint32_t index, uint32_t le
   return get_buff_string(reinterpret_cast<const uint8_t *>(data.data()), data.size(), index, len, strret);
   }
 
+/** Format a std::string.
+ */
+std::string string_format(const std::string fmt_str, ...) ;
+
 #endif // __OVMS_UTILS_H__
