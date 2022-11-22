@@ -133,7 +133,7 @@ static const OvmsVehicle::poll_pid_t obdii_polls[] = {
 
   // FZD: Roof function centre
   { I3_ECU_FZD_TX, I3_ECU_FZD_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_FZD_DWA_KLAPPENKONTAKTE, { 0, 10, 10, 10 }, 0,
-    ISOTP_EXTADR },   // 0xDCDD v_door_fr, _fl. etc.  v_env_locked
+    ISOTP_EXTADR },   // 0xDCDD v_door_fr, _fl. etc. v_env_locked
 
   // KLE: Convenience charging electronics
   { I3_ECU_KLE_TX, I3_ECU_KLE_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_KLE_BETRIEBSZUSTAND_LADEGERAET,
@@ -425,7 +425,7 @@ void OvmsVehicleMiniSE::Ticker10(uint32_t ticker)
 void OvmsVehicleMiniSE::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length,
   uint16_t mlremain)
 {
-  string &rxbuf = bmwi3_obd_rxbuf;
+  string &rxbuf = obd_rxbuf;
 
   // Assemble first and following frames to get complete reply
 
@@ -581,26 +581,6 @@ void OvmsVehicleMiniSE::IncomingPollReply(canbus *bus, uint16_t type, uint16_t p
         ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "I3_PID_SME_ZUSTAND_SPEICHER", 38);
         break;
       }
-
-// 2020-12-19 12:54:28 SAST D (686338) v-bmwi3: From ECU SME, pid ZUSTAND_SPEICHER: got STAT_ZELLKAPAZITAET_MIN_WERT=120.4100"Ah"
-// 2020-12-19 12:54:28 SAST D (686338) v-bmwi3: From ECU SME, pid ZUSTAND_SPEICHER: got STAT_ZELLKAPAZITAET_MAX_WERT=122.1400"Ah"
-// 2020-12-19 12:54:28 SAST D (686338) v-bmwi3: From ECU SME, pid ZUSTAND_SPEICHER: got STAT_ZELLKAPAZITAET_MEAN_WERT=121.2400"Ah"
-// 2020-12-19 12:54:28 SAST D (686338) v-bmwi3: From ECU SME, pid ZUSTAND_SPEICHER: got STAT_ZELLSPANNUNG_MIN_WERT=3.9219"V"
-// 2020-12-19 12:54:28 SAST D (686338) v-bmwi3: From ECU SME, pid ZUSTAND_SPEICHER: got STAT_ZELLSPANNUNG_MAX_WERT=3.9250"V"
-// 2020-12-19 12:54:28 SAST D (686338) v-bmwi3: From ECU SME, pid ZUSTAND_SPEICHER: got STAT_ZELLSPANNUNG_MEAN_WERT=3.9230"V"
-// 2020-12-19 12:54:28 SAST D (686338) v-bmwi3: From ECU SME, pid ZUSTAND_SPEICHER: got STAT_ZELLTEMPERATUR_MIN_WERT=21.0100"°C"
-// 2020-12-19 12:54:28 SAST D (686338) v-bmwi3: From ECU SME, pid ZUSTAND_SPEICHER: got STAT_ZELLTEMPERATUR_MAX_WERT=22.0100"°C"
-// 2020-12-19 12:54:28 SAST D (686338) v-bmwi3: From ECU SME, pid ZUSTAND_SPEICHER: got STAT_ZELLTEMPERATUR_MEAN_WERT=21.8100"°C"
-// 2020-12-19 12:54:28 SAST D (686338) v-bmwi3: From ECU SME, pid ZUSTAND_SPEICHER: got STAT_ZELLWIDERSTANDSFAKTOR_MIN_WERT=6.5535
-// 2020-12-19 12:54:28 SAST D (686338) v-bmwi3: From ECU SME, pid ZUSTAND_SPEICHER: got STAT_ZELLWIDERSTANDSFAKTOR_MAX_WERT=6.5535
-// 2020-12-19 12:54:28 SAST D (686338) v-bmwi3: From ECU SME, pid ZUSTAND_SPEICHER: got STAT_ZELLWIDERSTANDSFAKTOR_MEAN_WERT=1.0655
-// 2020-12-19 12:54:28 SAST D (686338) v-bmwi3: From ECU SME, pid ZUSTAND_SPEICHER: got STAT_ZELLSOC_MIN_WERT=73.4700"%"
-// 2020-12-19 12:54:28 SAST D (686338) v-bmwi3: From ECU SME, pid ZUSTAND_SPEICHER: got STAT_ZELLSOC_MAX_WERT=74.6100"%"
-// 2020-12-19 12:54:28 SAST D (686338) v-bmwi3: From ECU SME, pid ZUSTAND_SPEICHER: got STAT_ZELLSOC_MEAN_WERT=74.0200"%"
-// 2020-12-19 12:54:28 SAST D (686338) v-bmwi3: From ECU SME, pid ZUSTAND_SPEICHER: got STAT_ZELLOCV_MIN_WERT=3.9220"V"
-// 2020-12-19 12:54:28 SAST D (686338) v-bmwi3: From ECU SME, pid ZUSTAND_SPEICHER: got STAT_ZELLOCV_MAX_WERT=3.9250"V"
-// 2020-12-19 12:54:28 SAST D (686338) v-bmwi3: From ECU SME, pid ZUSTAND_SPEICHER: got STAT_ZELLOCV_MEAN_WERT=3.9235"V"
-// 2020-12-19 12:54:28 SAST D (686338) v-bmwi3: From ECU SME, pid ZUSTAND_SPEICHER: got STAT_IMPEDANCE_ESTIMATION_ALPHA_WERT=1.0655
 
       float STAT_ZELLKAPAZITAET_MIN_WERT = (RXBUF_UINT(0) / 100.0f);
       // Output of the current minimum measured cell capacity of all cells in Ah / Ausgabe der aktuellen minimalen
@@ -2897,7 +2877,7 @@ void OvmsVehicleMiniSE::IncomingPollReply(canbus *bus, uint16_t type, uint16_t p
 }
 
 class OvmsVehicleMiniSEInit {
-public:
+  public:
   OvmsVehicleMiniSEInit();
 
   ~OvmsVehicleMiniSEInit();
