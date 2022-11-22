@@ -116,7 +116,7 @@ static const OvmsVehicle::poll_pid_t obdii_polls[] = {
     { I3_ECU_KOM_TX, I3_ECU_KOM_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_KOM_REICHWEITE_MCV,                             {  0, 10, 10, 10 }, 0, ISOTP_EXTADR },   // 0x420C mt_i3_range_bc, _comfort, _ecopro, _ecoproplus
     { I3_ECU_KOM_TX, I3_ECU_KOM_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_KOM_KOMBI_BC_BCW_KWH_KM,                        {  0, 10, 10, 60 }, 0, ISOTP_EXTADR },   // 0xD129 Averages - but we don't use
     { I3_ECU_KOM_TX, I3_ECU_KOM_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_KOM_KOMBI_BC_RBC_KWH_KM,                        {  0, 10,  2, 60 }, 0, ISOTP_EXTADR },   // 0xD12A v_pos_trip, v_post_tripconsumption, v_bat_coulomb_used, v_bat_energy_used
-  
+
   // EME:
     { I3_ECU_EME_TX, I3_ECU_EME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_EME_EME_HVPM_DCDC_ANSTEUERUNG,                {  0, 30, 10, 10 }, 0, ISOTP_EXTADR },   // 0xDE00 mt_i3_charge_actual
     { I3_ECU_EME_TX, I3_ECU_EME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_EME_AE_STROM_EMASCHINE,                       {  0, 30,  2, 30 }, 0, ISOTP_EXTADR },   // 0xDE8A Motor currents - can we calculate an efficiency from this?
@@ -125,7 +125,7 @@ static const OvmsVehicle::poll_pid_t obdii_polls[] = {
     { I3_ECU_EME_TX, I3_ECU_EME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_EME_AE_ELEKTRISCHE_MASCHINE,                  {  0, 60,  1, 60 }, 0, ISOTP_EXTADR },   // 0xDEA7 v_mot_rpm
 
   //NBT: Headunit high
-    { I3_ECU_NBT_TX, I3_ECU_NBT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_NBT_STATUS_SPEED,                             {  0, 30,  2, 30 }, 0, ISOTP_EXTADR },   // 0xD030 Speeds from wheels: mt_i3_wheelX_speed 
+    { I3_ECU_NBT_TX, I3_ECU_NBT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_NBT_STATUS_SPEED,                             {  0, 30,  2, 30 }, 0, ISOTP_EXTADR },   // 0xD030 Speeds from wheels: mt_i3_wheelX_speed
     { I3_ECU_NBT_TX, I3_ECU_NBT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_NBT_STATUS_DIRECTION,                         {  0, 10,  4, 10 }, 0, ISOTP_EXTADR },   // 0xD031 v_env_gear
 
   // FZD: Roof function centre
@@ -165,7 +165,7 @@ static const OvmsVehicle::poll_pid_t obdii_polls[] = {
 
   // EPS:  Power steering (We only use this to tell if the car is ready since the EPS is only on when the car is READY)
     { I3_ECU_EPS_TX, I3_ECU_EPS_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_EPS_EPS_MOMENTENSENSOR,                       {  0,  5,  5,  5 }, 0, ISOTP_EXTADR },   // 0xDB99
-  
+
     POLL_LIST_END
   };
 
@@ -183,7 +183,7 @@ OvmsMetricInt* MetricIntSE(const char* name, uint16_t autostale=0, metric_unit_t
     }
     return metric;
 }
-  
+
 OvmsMetricBool* MetricBoolSE(const char* name, uint16_t autostale=0, metric_unit_t units = Other) {
     OvmsMetricBool* metric = (OvmsMetricBool*)MyMetrics.Find(name);
     if (metric==NULL) {
@@ -262,7 +262,7 @@ OvmsVehicleMiniSE::OvmsVehicleMiniSE()
 
     // Controls
     mt_i3_v_env_autorecirc              = MetricBoolSE("xi3.v.e.autorecirc",          SM_STALE_MID);
- 
+
     // Init the stuff to keep track of whether the car is talking or not
     framecount = 0;
     tickercount = 0;
@@ -271,7 +271,7 @@ OvmsVehicleMiniSE::OvmsVehicleMiniSE()
 
     // Callbacks
     MyCan.RegisterCallback(TAG, std::bind(&OvmsVehicleMiniSE::CanResponder, this, std::placeholders::_1));
- 
+
     // Get the Canbus setup
     RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
     PollSetPidList(m_can1, obdii_polls);
@@ -388,9 +388,9 @@ void OvmsVehicleMiniSE::Ticker10(uint32_t ticker)
 void OvmsVehicleMiniSE::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
 {
     string& rxbuf = bmwi3_obd_rxbuf;
-  
+
     // Assemble first and following frames to get complete reply
-    
+
     // init rx buffer on first (it tells us whole length)
     if (m_poll_ml_frame == 0) {
       rxbuf.clear();
@@ -406,7 +406,7 @@ void OvmsVehicleMiniSE::IncomingPollReply(canbus* bus, uint16_t type, uint16_t p
   ++replycount;
 
   int datalen = rxbuf.size();
-  
+
   // We now have received the whole reply - lets mine our nuggets!
   // FIXME: we need to check where we received it from in case PIDs clash?
   // FIXME: Seems OK for now since there aren't clashes - compiler complains if there are.
@@ -684,7 +684,7 @@ void OvmsVehicleMiniSE::IncomingPollReply(canbus* bus, uint16_t type, uint16_t p
 // 2020-12-19 12:54:27 SAST D (685158) v-bmwi3: From ECU SME, pid PROJEKT_PARAMETER: got STAT_ANZAHL_TEMPERATURSENSOREN_PRO_MODUL_WERT=4
 // So we have 96 cells total, split into 8 modules with 12 cells each.
 // Each module contains 4 temperature probes.
-// This stuff aint gonna change 
+// This stuff aint gonna change
 
     unsigned short STAT_ANZAHL_ZELLEN_INSGESAMT_WERT = (RXBUF_UINT(0));
         // Number of cells in the HV storage system / Anzahl der Zellen des HV-Speichers
@@ -1990,7 +1990,7 @@ case I3_PID_SME_ZELLSPANNUNGEN_MIN_MAX: {                                       
             state = "charging";
             break;
         case 3:
-            state = "derating"; // 
+            state = "derating"; //
             break;
         case 4:
             state = "stopped";
@@ -2233,7 +2233,7 @@ case I3_PID_EDM_PEDALWERTGEBER: {                                               
 // ▷ Lamp green: charging process completed.
     // 6 - mauve --> charger socket unlocked?  Nothing happened when i plugged in a connector with the evse "sleeping"
     // 0 - car unlocked door open but charge flap closed
-    // 6 - mauve - 
+    // 6 - mauve -
     // 1 - plugged charger in, led was blinking red
     // 3 - blinking blue, charging.
 
@@ -2394,7 +2394,7 @@ case I3_PID_EDM_PEDALWERTGEBER: {                                               
             StdMetrics.ms_v_charge_state->SetValue("");
         }
     }
-    
+
     break;
   }
 
@@ -2613,14 +2613,34 @@ case I3_PID_IHX_TEMP_INNEN_UNBELUEFTET: {                                       
 
 class OvmsVehicleMiniSEInit
 {
-  public: OvmsVehicleMiniSEInit();
+  public:
+    OvmsVehicleMiniSEInit();
+    ~OvmsVehicleMiniSEInit();
+    void WebInit();
+    void WebDeInit();
+
 }
 MyOvmsVehicleMiniSEInit  __attribute__ ((init_priority (9000)));
 
 OvmsVehicleMiniSEInit::OvmsVehicleMiniSEInit()
 {
   ESP_LOGI(TAG, "Registering Vehicle: Mini Cooper SE (9000)");
-
   MyVehicleFactory.RegisterVehicle<OvmsVehicleMiniSE>("MINISE", "Mini Cooper SE");
+  WebInit();
 }
 
+OvmsVehicleMiniSEInit::~OvmsVehicleMiniSEInit()
+{
+  ESP_LOGI(TAG, "Stop Mini Cooper SE vehicle module");
+  WebDeInit();
+}
+
+void OvmsVehicleMiniSEInit::WebInit()
+{
+  MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
+}
+
+void OvmsVehicleMiniSEInit::WebDeInit()
+{
+  MyWebServer.DeregisterPage("/bms/cellmon");
+}

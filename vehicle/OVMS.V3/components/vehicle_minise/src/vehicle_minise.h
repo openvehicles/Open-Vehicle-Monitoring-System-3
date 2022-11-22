@@ -40,6 +40,10 @@
 
 #include "vehicle.h"
 
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
+#include "ovms_webserver.h"
+#endif
+
 using namespace std;
 
 // rxbuff access macros: b=byte# 0..7 / n=nibble# 0..15
@@ -55,12 +59,10 @@ using namespace std;
 #define RXBUF_NIBH(b)     (rxbuff[b] >> 4)
 #define RXBUF_NIB(n)      (((n)&1) ? RXBUF_NIBL((n)>>1) : RXBUF_NIBH((n)>>1))
 
-
 #define POLLSTATE_SHUTDOWN   0
 #define POLLSTATE_ALIVE	     1
 #define POLLSTATE_READY	     2
 #define POLLSTATE_CHARGING   3
-
 
 class OvmsVehicleMiniSE : public OvmsVehicle
   {
@@ -70,8 +72,6 @@ class OvmsVehicleMiniSE : public OvmsVehicle
     void CanResponder(const CAN_frame_t* p_frame);
     void Ticker1(uint32_t ticker);
     void Ticker10(uint32_t ticker);
-
-
 
   protected:
     string bmwi3_obd_rxbuf;                               // CAN messages unpacked into here
