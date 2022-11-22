@@ -83,10 +83,10 @@ intermittent access to data from the car.
 By observation, whilst the car is charging it wakes up now and then (seems to be every 30 minutes).
 So at those times we can update our SOC etc.
 
-Metrics "v.e.awake" tells you if the car is awake or not.  Metric "xi3.s.age" will tell you how
+Metrics "v.e.awake" tells you if the car is awake or not.  Metric "mse.s.age" will tell you how
 many minutes have passed since we last received data from the car.
 
-You may also refer to metric xi3.s.pollermode as follows:
+You may also refer to metric mse.s.pollermode as follows:
 
 ==== ================================================
 Mode Meaning
@@ -104,53 +104,53 @@ Custom metrics
 ======================================== =================== =====================================================================================================
 Metric name                              Example value       Description
 ======================================== =================== =====================================================================================================
-xi3.s.age                                5Min                How long since we last got data from the car
-xi3.s.pollermode                         0                   OBD-II polling mode as explained above
-xi3.v.b.p.ocv.avg                        4.0646V             Main battery pack - average open-circuit voltage
-xi3.v.b.p.ocv.max                        4.067V              Main battery pack - highest open-circuit voltage
-xi3.v.b.p.ocv.min                        4.063V              Main battery pack - lowest open-circuit voltage
-xi3.v.b.range.bc                         245km               Available range per trip computer (based on current driving mode and style)
-xi3.v.b.range.comfort                    217km               Available range if you use Comfort mode
-xi3.v.b.range.ecopro                     245km               Available range if you use EcoPro mode
-xi3.v.b.range.ecoproplus                 247km               Available range if you use EcoPro+ mode
-xi3.v.b.soc.actual                       85%                 Actual physical state-of-charge of the main battery pack
-xi3.v.b.soc.actual.highlimit             93.7%               Highest physical charge level permitted (shown as 100% SOC)
-xi3.v.b.soc.actual.lowlimit              10.5%               Minimum physical charge level permitted (shown as 0% SOC)
-xi3.v.c.chargecablecapacity              0A                  Maximum power capacity of connected charge cable per the charging interface
-xi3.v.c.chargeledstate                   0                   Colour of the "ring light" on the charging interface.
-xi3.v.c.chargeplugstatus                 Not connected       Charging cable connected?
-xi3.v.c.current.dc                       0A                  Power flowing on the DC side of the AC charger
-xi3.v.c.current.dc.limit                 0.100003A           Limit
-xi3.v.c.current.dc.maxlimit              16A                 Maximum limit
-xi3.v.c.current.phase1                   0A                  Power being drawn on AC phase 1
-xi3.v.c.current.phase2                   0A                  Power being drawn on AC phase 2
-xi3.v.c.current.phase3                   0A                  Power being drawn on AC phase 3
-xi3.v.c.dc.chargevoltage                 0V                  Voltage seen on the DC charger input
-xi3.v.c.dc.contactorstatus               open                DC contactor state (closed implies we are DC charging)
-xi3.v.c.dc.controlsignals                0                   DC charger control signals (always see 0?)
-xi3.v.c.dc.inprogress                    no                  DC charging in progress?
-xi3.v.c.dc.plugconnected                 no                  Is DC charger plug connected (doesn't seem to work)
-xi3.v.c.deratingreasons                  0                   Reasons why charging rate is derated
-xi3.v.c.error                            0                   Charging error codes
-xi3.v.c.failsafetriggers                 0                   Failsafe trigger reasons
-xi3.v.c.interruptionreasons              0                   Charging interruption reasons
-xi3.v.c.pilotsignal                      0A                  Charge rate pilot signal being received from EVSE
-xi3.v.c.readytocharge                    no                  Are we ready to charge
-xi3.v.c.temp.gatedriver                  40°C                Charger gatedrive mosfet temperature
-xi3.v.c.voltage.dc                       8.4V                Charger output DC voltage being seen (for AC charging, not DC)
-xi3.v.c.voltage.dc.limit                 420V                Maximum permitted DC voltge
-xi3.v.c.voltage.phase1                   0V                  Voltage seen on AC charger input phase 1
-xi3.v.c.voltage.phase2                   0V                  Voltage seen on AC charger input phase 2
-xi3.v.c.voltage.phase3                   0V                  Voltage seen on AC charger input phase 3
-xi3.v.d.chargeport.dc                    no                  Is the charger port DC cover open (doesn't seem to work)
-xi3.v.e.autorecirc                       no                  Ventilation is in "auto-recirculate" mode
-xi3.v.e.obdtraffic                       no                  Are we seeing OBD-II frames from the car?
-xi3.v.p.tripconsumption                  127Wh/km            Average consumption for the current or most recent trip
-xi3.v.p.wheel1_speed                     0km/h               Wheel 1 speed
-xi3.v.p.wheel2_speed                     0km/h               Wheel 2 speed
-xi3.v.p.wheel3_speed                     0km/h               Wheel 3 speed
-xi3.v.p.wheel4_speed                     0km/h               Wheel 4 speed
-xi3.v.p.wheel_speed                      0km/h               Average wheel speed
+mse.s.age                                5Min                How long since we last got data from the car
+mse.s.pollermode                         0                   OBD-II polling mode as explained above
+mse.v.b.p.ocv.avg                        4.0646V             Main battery pack - average open-circuit voltage
+mse.v.b.p.ocv.max                        4.067V              Main battery pack - highest open-circuit voltage
+mse.v.b.p.ocv.min                        4.063V              Main battery pack - lowest open-circuit voltage
+mse.v.b.range.bc                         245km               Available range per trip computer (based on current driving mode and style)
+mse.v.b.range.comfort                    217km               Available range if you use Comfort mode
+mse.v.b.range.ecopro                     245km               Available range if you use EcoPro mode
+mse.v.b.range.ecoproplus                 247km               Available range if you use EcoPro+ mode
+mse.v.b.soc.actual                       85%                 Actual physical state-of-charge of the main battery pack
+mse.v.b.soc.actual.highlimit             93.7%               Highest physical charge level permitted (shown as 100% SOC)
+mse.v.b.soc.actual.lowlimit              10.5%               Minimum physical charge level permitted (shown as 0% SOC)
+mse.v.c.chargecablecapacity              0A                  Maximum power capacity of connected charge cable per the charging interface
+mse.v.c.chargeledstate                   0                   Colour of the "ring light" on the charging interface.
+mse.v.c.chargeplugstatus                 Not connected       Charging cable connected?
+mse.v.c.current.dc                       0A                  Power flowing on the DC side of the AC charger
+mse.v.c.current.dc.limit                 0.100003A           Limit
+mse.v.c.current.dc.maxlimit              16A                 Maximum limit
+mse.v.c.current.phase1                   0A                  Power being drawn on AC phase 1
+mse.v.c.current.phase2                   0A                  Power being drawn on AC phase 2
+mse.v.c.current.phase3                   0A                  Power being drawn on AC phase 3
+mse.v.c.dc.chargevoltage                 0V                  Voltage seen on the DC charger input
+mse.v.c.dc.contactorstatus               open                DC contactor state (closed implies we are DC charging)
+mse.v.c.dc.controlsignals                0                   DC charger control signals (always see 0?)
+mse.v.c.dc.inprogress                    no                  DC charging in progress?
+mse.v.c.dc.plugconnected                 no                  Is DC charger plug connected (doesn't seem to work)
+mse.v.c.deratingreasons                  0                   Reasons why charging rate is derated
+mse.v.c.error                            0                   Charging error codes
+mse.v.c.failsafetriggers                 0                   Failsafe trigger reasons
+mse.v.c.interruptionreasons              0                   Charging interruption reasons
+mse.v.c.pilotsignal                      0A                  Charge rate pilot signal being received from EVSE
+mse.v.c.readytocharge                    no                  Are we ready to charge
+mse.v.c.temp.gatedriver                  40°C                Charger gatedrive mosfet temperature
+mse.v.c.voltage.dc                       8.4V                Charger output DC voltage being seen (for AC charging, not DC)
+mse.v.c.voltage.dc.limit                 420V                Maximum permitted DC voltge
+mse.v.c.voltage.phase1                   0V                  Voltage seen on AC charger input phase 1
+mse.v.c.voltage.phase2                   0V                  Voltage seen on AC charger input phase 2
+mse.v.c.voltage.phase3                   0V                  Voltage seen on AC charger input phase 3
+mse.v.d.chargeport.dc                    no                  Is the charger port DC cover open (doesn't seem to work)
+mse.v.e.autorecirc                       no                  Ventilation is in "auto-recirculate" mode
+mse.v.e.obdtraffic                       no                  Are we seeing OBD-II frames from the car?
+mse.v.p.tripconsumption                  127Wh/km            Average consumption for the current or most recent trip
+mse.v.p.wheel1_speed                     0km/h               Wheel 1 speed
+mse.v.p.wheel2_speed                     0km/h               Wheel 2 speed
+mse.v.p.wheel3_speed                     0km/h               Wheel 3 speed
+mse.v.p.wheel4_speed                     0km/h               Wheel 4 speed
+mse.v.p.wheel_speed                      0km/h               Average wheel speed
 ======================================== =================== =====================================================================================================
 
 ----------------
