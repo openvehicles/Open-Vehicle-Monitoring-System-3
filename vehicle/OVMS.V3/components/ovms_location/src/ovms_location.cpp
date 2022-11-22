@@ -290,9 +290,10 @@ void OvmsLocation::Store(std::string& buf)
 
 void OvmsLocation::Render(std::string& buf)
   {
-  char val[32];
-  snprintf(val, sizeof(val), "%0.6f,%0.6f (%dm)", m_latitude, m_longitude, m_radius);
-  buf = val;
+  metric_unit_t user_length = OvmsMetricGetUserUnit(GrpDistanceShort, Meters);
+
+  buf = string_format("%0.6f,%0.6f (%d%s)",
+      m_latitude, m_longitude, UnitConvert(Meters, user_length, m_radius), OvmsMetricUnitLabel(user_length));
   bool first = true;
   for (ActionList::iterator it = m_actions.begin(); it != m_actions.end(); ++it)
     {
@@ -409,12 +410,35 @@ void location_radius(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
     writer->printf("Error: No location %s defined\n",name);
     return;
     }
+  metric_unit_t user_length;
+  if (argc < 3)
+    user_length = OvmsMetricGetUserUnit(GrpDistanceShort, Meters);
+  else
+    {
+    user_length = OvmsMetricUnitFromName(argv[2]);
+    if (user_length == UnitNotFound)
+      {
+      writer->printf("Error: Invalid Metric %s\n", argv[2]);
+      return;
+      }
+    user_length = OvmsMetricCheckUnit(Meters, user_length);
+    if (user_length == UnitNotFound)
+      {
+      writer->printf("Error: Metric %s is not a length unit\n", argv[2]);
+      return;
+      }
+    }
 
   std::string buf;
   OvmsLocation* loc = *locp;
-  loc->m_radius = atoi(argv[1]);
+  int base_value = atoi(argv[1]);
+  int radius_m = UnitConvert(user_length, Meters, base_value);
+  loc->m_radius = radius_m;
   loc->Store(buf);
-  writer->puts("Location radius set");
+  if (user_length == Meters)
+    writer->printf("Location radius set to %dm\n", base_value);
+  else
+    writer->printf("Location radius set to %d%s = %dm\n", base_value, OvmsMetricUnitLabel(user_length), radius_m);
   }
 
 void location_rm(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -635,7 +659,7 @@ OvmsLocations::OvmsLocations()
   OvmsCommand* cmd_location = MyCommandApp.RegisterCommand("location","LOCATION framework", location_status, "", 0, 0, false);
   cmd_location->RegisterCommand("list","Show all locations",location_list);
   cmd_location->RegisterCommand("set","Set the position of a location",location_set, "<name> [<latitude> <longitude> [<radius>]]", 1, 4);
-  cmd_location->RegisterCommand("radius","Set the radius of a location",location_radius, "<name> <radius>", 2, 2, true, location_validate);
+  cmd_location->RegisterCommand("radius","Set the radius of a location (defaults to user 'height' units)",location_radius, "<name> <radius> [<unit>]", 2, 3, true, location_validate);
   cmd_location->RegisterCommand("rm","Remove a defined location",location_rm, "<name>", 1, 1, true, location_validate);
   cmd_location->RegisterCommand("status","Show location status",location_status);
   OvmsCommand* cmd_action = cmd_location->RegisterCommand("action","Set an action for a location");

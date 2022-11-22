@@ -177,8 +177,10 @@ extern bool OvmsMetricGroupUnits(metric_group_t group, metric_unit_set_t& units)
 // Get/Set Metric default config
 extern std::string OvmsMetricGetUserConfig(metric_group_t group);
 extern void OvmsMetricSetUserConfig(metric_group_t group, std::string value);
+extern void OvmsMetricSetUserConfig(metric_group_t group, metric_unit_t unit);
 extern metric_unit_t OvmsMetricGetUserUnit(metric_group_t group, metric_unit_t defaultUnit = Native);
 extern metric_group_t GetMetricGroup(metric_unit_t unit);
+metric_unit_t OvmsMetricCheckUnit(metric_unit_t fromUnit, metric_unit_t toUnit);
 
 typedef uint32_t persistent_value_t;
 

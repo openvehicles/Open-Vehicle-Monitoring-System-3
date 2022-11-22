@@ -361,7 +361,34 @@ void OvmsMetricSetUserConfig(metric_group_t group, std::string value)
     }
   MyConfig.SetParamValue("vehicle", cfg, value);
   }
+void OvmsMetricSetUserConfig(metric_group_t group, metric_unit_t unit)
+  {
+  switch (group)
+    {
+    case GrpNone:
+    case GrpOther:
+       return;
+    default: ;
+    }
+  switch (unit)
+    {
+    case ToMetric:
+    case ToImperial:
+    case ToUser:
+    case UnitNotFound: break;
+    case Native:
+      OvmsMetricSetUserConfig(group, "");
+      break;
+    default:
+      OvmsMetricSetUserConfig(group, OvmsMetricUnitName(unit));
+    }
+  }
 
+/**
+ * Returns the User-specified unit for the given unit group.
+ * \param group The target group.
+ * \param defaultUnit The unit to use if no user unit is specified (defaults to 'Native');
+ */
 metric_unit_t OvmsMetricGetUserUnit(metric_group_t group, metric_unit_t defaultUnit )
   {
   std::string unit_name = OvmsMetricGetUserConfig(group);
@@ -380,49 +407,77 @@ metric_unit_t OvmsMetricGetUserUnit(metric_group_t group, metric_unit_t defaultU
  * full_check takes into account whether a conversion CAN be done (used for
  * printing correct labels)
  */
-static void CheckTargetUnit(metric_unit_t from, metric_unit_t &to, bool full_check)
+static bool CheckTargetUnit(metric_unit_t from, metric_unit_t &to, bool full_check)
   {
   if (from == Other)
     {
     to = from;
-    return;
+    return true;
     }
   switch (to)
     {
-    case Native: break;
+    case Native: return true;
     case ToMetric:
       {
       uint8_t unit_i = static_cast<uint8_t>(from);
       if (unit_i <= uint8_t(MetricUnitLast))
         to = unit_info[unit_i].MetricUnit;
-      break;
+      return true;
       }
     case ToImperial:
       {
       uint8_t unit_i = static_cast<uint8_t>(from);
       if (unit_i <= uint8_t(MetricUnitLast))
         to = unit_info[unit_i].ImperialUnit;
-      break;
+      return true;
       }
     case ToUser:
       {
       metric_group_t from_grp = GetMetricGroup(from);
       to = OvmsMetricGetUserUnit(from_grp);
-      break;
+      return true;
       }
     default:
       if (to == from)
-        to = Native;
-      else if (full_check)
         {
-        metric_group_t from_grp = GetMetricGroupSimplify(from);
-        if (from_grp == GrpNone || from_grp == GrpOther)
-          to = Native;
-        else if (from_grp != GetMetricGroupSimplify(to))
-          to = Native;
+        to = Native;
+        return true;
+        }
+      else
+        {
+        if (full_check)
+          {
+          metric_group_t from_grp = GetMetricGroupSimplify(from);
+          if (from_grp == GrpNone || from_grp == GrpOther)
+            {
+            to = Native;
+            return false;
+            }
+          else if (from_grp != GetMetricGroupSimplify(to))
+            {
+            to = Native;
+            return false;
+            }
+          }
+        return true;
         }
       break;
     }
+  }
+
+/**
+ * Converts/Checks that the specified unit conversion is allowed.
+ * \return The actual unit to use or UnitNotFound if invalid.
+ * \param fromUnit The unit value of the value. Must be a real Unit.
+ * \param toUnit  The unit being converted to. Can be a psuedo-unit (Native, ToUser, ToMetric, ToImperial).
+ */
+metric_unit_t OvmsMetricCheckUnit(metric_unit_t fromUnit, metric_unit_t toUnit)
+  {
+  if (not CheckTargetUnit(fromUnit, toUnit, true))
+    return UnitNotFound;
+  if (toUnit == Native)
+    return fromUnit;
+  return toUnit;
   }
 
 void metrics_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -432,7 +487,7 @@ void metrics_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
   bool show_set = false;
   bool only_persist = false;
   bool display_strings = false;
-  metric_unit_t def_unit = Native;
+  metric_unit_t def_unit = ToUser;
   const char* show_only = NULL;
   int i;
   for (i=0;i<argc;i++)
@@ -461,6 +516,9 @@ void metrics_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
         case 'm':
           def_unit = ToMetric;
           break;
+        case 'n':
+          def_unit = Native;
+          break;
         case 'p':
           only_persist = true;
           break;
@@ -469,9 +527,6 @@ void metrics_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
           break;
         case 't':
           display_strings = true;
-          break;
-        case 'u':
-          def_unit = ToUser;
           break;
         default:
           cmd->PutUsage(writer);
@@ -905,15 +960,15 @@ OvmsMetrics::OvmsMetrics()
   // Register our commands
   OvmsCommand* cmd_metric = MyCommandApp.RegisterCommand("metrics","METRICS framework");
   cmd_metric->RegisterCommand("list","Show all metrics", metrics_list,
-      "[-cimpst] [<metric>]\n"
+      "[-cimnpst] [<metric>]\n"
       "Display a metric, show all by default\n"
       "-c = display persistent metrics set commands\n"
       "-i = display imperial units where possible\n"
       "-m = display metric units where possible\n"
+      "-n = show metrics in native units\n"
       "-p = display only persistent metrics\n"
       "-s = show metric staleness\n"
-      "-t = display non-printing characters and tabs in string metrics\n"
-      "-u = display in user-configured units" , 0, 2);
+      "-t = display non-printing characters and tabs in string metrics" , 0, 2);
   cmd_metric->RegisterCommand("persist","Show persistent metrics info", metrics_persist, "[-r]\n"
       "-r = reset persistent metrics", 0, 1);
   cmd_metric->RegisterCommand("set","Set the value of a metric",metrics_set, "<metric> <value> [<unit>]", 2, 3);
