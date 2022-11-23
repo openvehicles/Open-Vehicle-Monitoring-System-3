@@ -202,13 +202,12 @@ OvmsVehicleMiniSE::OvmsVehicleMiniSE()
 {
   ESP_LOGI(TAG, "Mini Cooper SE vehicle module");
 
-  // Our metrics.
+  // Declare all custom metrics
 
   // Charge limits
   mt_se_charge_actual = MetricFloat("mse.v.b.soc.actual", SM_STALE_MAX, Percentage);
   mt_se_charge_max = MetricFloat("mse.v.b.soc.actual.highlimit", SM_STALE_MAX, Percentage);
   mt_se_charge_min = MetricFloat("mse.v.b.soc.actual.lowlimit", SM_STALE_MAX, Percentage);
-
   // Wheel speeds
   mt_se_wheel1_speed = MetricFloat("mse.v.p.wheel1_speed", SM_STALE_MIN, Kph);
   mt_se_wheel2_speed = MetricFloat("mse.v.p.wheel2_speed", SM_STALE_MIN, Kph);
@@ -218,13 +217,11 @@ OvmsVehicleMiniSE::OvmsVehicleMiniSE()
   mt_se_batt_pack_ocv_avg = MetricFloat("mse.v.b.p.ocv.avg", SM_STALE_MAX, Volts);
   mt_se_batt_pack_ocv_min = MetricFloat("mse.v.b.p.ocv.min", SM_STALE_MAX, Volts);
   mt_se_batt_pack_ocv_max = MetricFloat("mse.v.b.p.ocv.max", SM_STALE_MAX, Volts);
-
   // Ranges in modes
   mt_se_range_bc = MetricInt("mse.v.b.range.bc", SM_STALE_HIGH, Kilometers);
   mt_se_range_comfort = MetricInt("mse.v.b.range.comfort", SM_STALE_HIGH, Kilometers);
   mt_se_range_ecopro = MetricInt("mse.v.b.range.ecopro", SM_STALE_HIGH, Kilometers);
   mt_se_range_ecoproplus = MetricInt("mse.v.b.range.ecoproplus", SM_STALE_HIGH, Kilometers);
-
   // Charging
   mt_se_v_charge_voltage_phase1 = MetricInt("mse.v.c.voltage.phase1", SM_STALE_MID, Volts);
   mt_se_v_charge_voltage_phase2 = MetricInt("mse.v.c.voltage.phase2", SM_STALE_MID, Volts);
@@ -253,17 +250,15 @@ OvmsVehicleMiniSE::OvmsVehicleMiniSE()
   mt_se_v_charge_dc_contactorstatus = MetricString("mse.v.c.dc.contactorstatus", SM_STALE_MID, Other);
   mt_se_v_charge_dc_inprogress = MetricBool("mse.v.c.dc.inprogress", SM_STALE_MID, Other);
   mt_se_v_charge_chargeledstate = MetricInt("mse.v.c.chargeledstate", SM_STALE_MID, Other);
-  mt_se_v_charge_temp_gatedriver = MetricInt("xi3.v.c.temp.gatedriver", SM_STALE_MID, Celcius);
+  mt_se_v_charge_temp_gatedriver = MetricInt("mse.v.c.temp.gatedriver", SM_STALE_MID, Celcius);
   // Trip consumption
-  mt_se_v_pos_tripconsumption = MetricInt("xi3.v.p.tripconsumption", SM_STALE_MID, WattHoursPK);
-
+  mt_se_v_pos_tripconsumption = MetricInt("mse.v.p.tripconsumption", SM_STALE_MID, WattHoursPK);
   // State
-  mt_se_obdisalive = MetricBool("xi3.v.e.obdisalive", SM_STALE_MID, Other);
-  mt_se_pollermode = MetricInt("xi3.s.pollermode", SM_STALE_MID, Other);
-  mt_se_age = MetricInt("xi3.s.age", SM_STALE_MID, Minutes);
-
+  mt_se_obdisalive = MetricBool("mse.v.e.obdisalive", SM_STALE_MID, Other);
+  mt_se_pollermode = MetricInt("mse.s.pollermode", SM_STALE_MID, Other);
+  mt_se_age = MetricInt("mse.s.age", SM_STALE_MID, Minutes);
   // Controls
-  mt_se_v_env_autorecirc = MetricBool("xi3.v.e.autorecirc", SM_STALE_MID, Other);
+  mt_se_v_env_autorecirc = MetricBool("mse.v.e.autorecirc", SM_STALE_MID, Other);
 
   // Init the stuff to keep track of whether the car is talking or not
   framecount = 0;
@@ -2326,7 +2321,6 @@ void OvmsVehicleMiniSE::IncomingPollReply(canbus *bus, uint16_t type, uint16_t p
       mt_se_v_charge_voltage_phase3->SetValue(STAT_SPANNUNG_RMS_AC_PHASE_3_WERT, Volts);
       mt_se_v_charge_voltage_dc->SetValue(STAT_SPANNUNG_DC_HV_WERT, Volts);
       mt_se_v_charge_voltage_dc_limit->SetValue(STAT_SPANNUNG_DC_HV_OBERGRENZE_WERT, Volts);
-
 
       break;
     }
