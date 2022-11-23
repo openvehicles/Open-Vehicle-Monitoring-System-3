@@ -272,7 +272,8 @@ OvmsVehicleMiniSE::OvmsVehicleMiniSE()
   // Get the CAN bus setup
   RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
   PollSetPidList(m_can1, obdii_polls);
-  pollerstate = POLLSTATE_SHUTDOWN;  // If the car is alive we'll get frames and switch to ALIVE
+  //pollerstate = POLLSTATE_SHUTDOWN;  // If the car is alive we'll get frames and switch to ALIVE
+  pollerstate = POLLSTATE_ALIVE;  // If the car is alive we'll get frames and switch to ALIVE
   PollSetState(pollerstate);
   mt_se_pollermode->SetValue(pollerstate);
   mt_se_obdisalive->SetValue(false);
@@ -421,6 +422,17 @@ void OvmsVehicleMiniSE::Ticker10(uint32_t ticker)
   // 5) mt_se_age
   if (last_obd_data_seen) {
     mt_se_age->SetValue(StdMetrics.ms_m_monotonic->AsInt() - last_obd_data_seen, Seconds);
+  }
+
+  // Read cells voltages
+  for (uint8_t cell = 1; cell <= 96; cell++) {
+    std::string request;
+    std::string response;
+    request = "\x31\x01\xAD\x6E";
+    request.append(1, cell);
+    PollSingleRequest(m_can1, I3_ECU_SME_TX, I3_ECU_SME_RX, request, response, 10, ISOTP_STD);
+    request = "\x31\x01\xAD\x6E";
+    PollSingleRequest(m_can1, I3_ECU_SME_TX, I3_ECU_SME_RX, request, response, 10, ISOTP_STD);
   }
 }
 
