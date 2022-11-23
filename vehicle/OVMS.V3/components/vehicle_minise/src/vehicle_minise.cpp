@@ -50,7 +50,7 @@
 
 static const char *TAG = "v-minise";
 
-#include <stdio.h>
+#include <cstdio>
 #include "vehicle_minise.h"
 
 #include "../ecu_definitions/ecu_sme_defines.h"
@@ -83,15 +83,15 @@ static const OvmsVehicle::poll_pid_t obdii_polls[] = {
   // TXMODULEID, RXMODULEID, TYPE, PID, { POLLTIMES }, BUS, ADDRESSING
   // SME: Battery management electronics
   { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_SME_ALTERUNG_KAPAZITAET_TS, { 0, 60, 60, 60 },
-    0, ISOTP_EXTADR },   // 0x6335 v_bat_soh, v_bat_health
+    0, ISOTP_EXTADR },// 0x6335 v_bat_soh, v_bat_health
   { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_SME_HV_SPANNUNG_BERECHNET, { 0, 2, 1, 2 }, 0,
     ISOTP_EXTADR },   // 0xDD68 v_bat_volts
   { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_SME_HV_STROM, { 0, 2, 1, 2 }, 0,
     ISOTP_EXTADR },   // 0xDD69 v_bat_current - and v_bat_power by *v_bat_volts
   { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_SME_ANZEIGE_SOC, { 0, 30, 10, 10 }, 0,
-    ISOTP_EXTADR },   // 0xDDBC v_bat_soc, mt_i3_charge_max, mt_i3_charge_min
+    ISOTP_EXTADR },   // 0xDDBC v_bat_soc, mt_se_charge_max, mt_se_charge_min
   { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_SME_ZUSTAND_SPEICHER, { 0, 120, 60, 60 }, 0,
-    ISOTP_EXTADR },   // 0xDFA0 v_bat_cac, v_bat_pack_vmax, _vmin, _vavg, v_bat_pack_level_max, _min, avg, mt_i3_batt_pack_ocv_avg, _max, _min
+    ISOTP_EXTADR },   // 0xDFA0 v_bat_cac, v_bat_pack_vmax, _vmin, _vavg, v_bat_pack_level_max, _min, avg, mt_se_batt_pack_ocv_avg, _max, _min
   { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_SME_TEMPERATUREN, { 0, 30, 10, 10 }, 0,
     ISOTP_EXTADR },   // 0xDDC0 v_bat_pack_temp, _tmin, _tmax and _tavg
 
@@ -107,7 +107,7 @@ static const OvmsVehicle::poll_pid_t obdii_polls[] = {
   { I3_ECU_KOM_TX, I3_ECU_KOM_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_KOM_SEGMENTDATEN_SPEICHER,
     { 0, 120, 120, 120 }, 0, ISOTP_EXTADR },   // 0xD12F edrive stuff I think --> FIXME See what this gives us.
   { I3_ECU_KOM_TX, I3_ECU_KOM_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_KOM_REICHWEITE_MCV, { 0, 10, 10, 10 }, 0,
-    ISOTP_EXTADR },   // 0x420C mt_i3_range_bc, _comfort, _ecopro, _ecoproplus
+    ISOTP_EXTADR },   // 0x420C mt_se_range_bc, _comfort, _ecopro, _ecoproplus
   { I3_ECU_KOM_TX, I3_ECU_KOM_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_KOM_KOMBI_BC_BCW_KWH_KM, { 0, 10, 10, 60 }, 0,
     ISOTP_EXTADR },   // 0xD129 Averages - but we don't use
   { I3_ECU_KOM_TX, I3_ECU_KOM_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_KOM_KOMBI_BC_RBC_KWH_KM, { 0, 10, 2, 60 }, 0,
@@ -115,11 +115,11 @@ static const OvmsVehicle::poll_pid_t obdii_polls[] = {
 
   // EME:
   { I3_ECU_EME_TX, I3_ECU_EME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_EME_EME_HVPM_DCDC_ANSTEUERUNG,
-    { 0, 30, 10, 10 }, 0, ISOTP_EXTADR },   // 0xDE00 mt_i3_charge_actual
+    { 0, 30, 10, 10 }, 0, ISOTP_EXTADR },   // 0xDE00 mt_se_charge_actual
   { I3_ECU_EME_TX, I3_ECU_EME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_EME_AE_STROM_EMASCHINE, { 0, 30, 2, 30 }, 0,
     ISOTP_EXTADR },   // 0xDE8A Motor currents - can we calculate an efficiency from this?
   { I3_ECU_EME_TX, I3_ECU_EME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_EME_AE_TEMP_LE, { 0, 10, 10, 10 }, 0,
-    ISOTP_EXTADR },   // 0xDE8C v_inv_temp, v_charge_temp, mt_i3_v_charge_temp_gatedriver
+    ISOTP_EXTADR },   // 0xDE8C v_inv_temp, v_charge_temp, mt_se_v_charge_temp_gatedriver
   { I3_ECU_EME_TX, I3_ECU_EME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_EME_AE_TEMP_EMASCHINE, { 0, 10, 5, 30 }, 0,
     ISOTP_EXTADR },   // 0xDEA6 v_mot_temp
   { I3_ECU_EME_TX, I3_ECU_EME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_EME_AE_ELEKTRISCHE_MASCHINE, { 0, 60, 1, 60 },
@@ -127,7 +127,7 @@ static const OvmsVehicle::poll_pid_t obdii_polls[] = {
 
   // NBT: Headunit high
   { I3_ECU_NBT_TX, I3_ECU_NBT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_NBT_STATUS_SPEED, { 0, 30, 2, 30 }, 0,
-    ISOTP_EXTADR },   // 0xD030 Speeds from wheels: mt_i3_wheelX_speed
+    ISOTP_EXTADR },   // 0xD030 Speeds from wheels: mt_se_wheelX_speed
   { I3_ECU_NBT_TX, I3_ECU_NBT_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_NBT_STATUS_DIRECTION, { 0, 10, 4, 10 }, 0,
     ISOTP_EXTADR },   // 0xD031 v_env_gear
 
@@ -138,11 +138,11 @@ static const OvmsVehicle::poll_pid_t obdii_polls[] = {
   // KLE: Convenience charging electronics
   { I3_ECU_KLE_TX, I3_ECU_KLE_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_KLE_BETRIEBSZUSTAND_LADEGERAET,
     { 0, 10, 10, 10 }, 0,
-    ISOTP_EXTADR },   // 0xDE84 v_charge_state, c_charge_inprogress, mt_i3_v_charge_dc_inprogress, v_charge_state, etc
+    ISOTP_EXTADR },   // 0xDE84 v_charge_state, c_charge_inprogress, mt_se_v_charge_dc_inprogress, v_charge_state, etc
   { I3_ECU_KLE_TX, I3_ECU_KLE_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_KLE_LADEGERAET_LEISTUNG, { 0, 10, 10, 10 }, 0,
     ISOTP_EXTADR },   // 0xDE85 v_charge_efficiency
   { I3_ECU_KLE_TX, I3_ECU_KLE_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_KLE_LADEGERAET_SPANNUNG, { 0, 10, 10, 10 }, 0,
-    ISOTP_EXTADR },   // 0xDE86 v_charge_voltage, mt_i3_v_charge_voltage_phaseX, mt_i3_v_charge_voltage_dc etc
+    ISOTP_EXTADR },   // 0xDE86 v_charge_voltage, mt_se_v_charge_voltage_phaseX, mt_se_v_charge_voltage_dc etc
   { I3_ECU_KLE_TX, I3_ECU_KLE_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_KLE_LADEGERAET_STROM, { 0, 10, 10, 10 }, 0,
     ISOTP_EXTADR },   // 0xDE87 v_charge_currents in similar way
 
@@ -160,26 +160,26 @@ static const OvmsVehicle::poll_pid_t obdii_polls[] = {
 
   // LIM: Charging interface module
   { I3_ECU_LIM_TX, I3_ECU_LIM_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_LIM_LADEBEREITSCHAFT_LIM, { 0, 10, 10, 10 },
-    0, ISOTP_EXTADR },   // 0xDEF2 mt_i3_v_charge_readytocharge
+    0, ISOTP_EXTADR },// 0xDEF2 mt_se_v_charge_readytocharge
   { I3_ECU_LIM_TX, I3_ECU_LIM_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_LIM_PROXIMITY, { 0, 10, 10, 10 }, 0,
     ISOTP_EXTADR },   // 0xDEF5 v_charge_plugstatus
   { I3_ECU_LIM_TX, I3_ECU_LIM_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_LIM_PILOTSIGNAL, { 0, 10, 10, 10 }, 0,
-    ISOTP_EXTADR },   // 0xDEF6 v_charge_pilot, mt_i3_v_charge_pilotsignal
+    ISOTP_EXTADR },   // 0xDEF6 v_charge_pilot, mt_se_v_charge_pilotsignal
   { I3_ECU_LIM_TX, I3_ECU_LIM_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_LIM_LADESCHNITTSTELLE_DC_TEPCO,
     { 0, 10, 10, 10 }, 0,
-    ISOTP_EXTADR },   // 0xDEF7  mt_i3_v_charge_dc_plugconnected, mt_i3_v_charge_dc_controlsignals (but don't seem to work)
+    ISOTP_EXTADR },   // 0xDEF7  mt_se_v_charge_dc_plugconnected, mt_se_v_charge_dc_controlsignals (but don't seem to work)
   { I3_ECU_LIM_TX, I3_ECU_LIM_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_LIM_DC_SCHUETZ_SCHALTER, { 0, 10, 10, 10 }, 0,
-    ISOTP_EXTADR },   // 0xDEF8 mt_i3_v_charge_dc_contactorstatus
+    ISOTP_EXTADR },   // 0xDEF8 mt_se_v_charge_dc_contactorstatus
   { I3_ECU_LIM_TX, I3_ECU_LIM_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_LIM_DC_PINABDECKUNG_COMBO, { 0, 10, 10, 10 },
-    0, ISOTP_EXTADR },   // 0xDEFA mt_i3_v_door_dc_chargeport- (but doesn't seem to work)
+    0, ISOTP_EXTADR },// 0xDEFA mt_se_v_door_dc_chargeport- (but doesn't seem to work)
   { I3_ECU_LIM_TX, I3_ECU_LIM_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_LIM_STATUS_LADEKLAPPE, { 0, 10, 10, 10 }, 0,
     ISOTP_EXTADR },   // 0xDEF1 v_door_chargeport
   { I3_ECU_LIM_TX, I3_ECU_LIM_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_LIM_LED_LADESTATUS, { 0, 10, 10, 10 }, 0,
-    ISOTP_EXTADR },   // 0xDEF3 mt_i3_v_charge_chargeledstate
+    ISOTP_EXTADR },   // 0xDEF3 mt_se_v_charge_chargeledstate
 
   // IHX: Integrated automatic heating/aircon
   { I3_ECU_IHX_TX, I3_ECU_IHX_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_IHX_TEMP_INNEN_UNBELUEFTET, { 0, 11, 11, 11 },
-    0, ISOTP_EXTADR },   // 0xD85C v_env_cabintemp
+    0, ISOTP_EXTADR },// 0xD85C v_env_cabintemp
   { I3_ECU_IHX_TX, I3_ECU_IHX_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_IHX_EKMV_BETRIEBSZUSTAND_GEN20,
     { 0, 11, 11, 11 }, 0, ISOTP_EXTADR },   // 0xD8C5 v_env_cooling
   { I3_ECU_IHX_TX, I3_ECU_IHX_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_IHX_KLIMA_VORN_LUFTVERTEILUNG_LI_RE,
@@ -187,7 +187,7 @@ static const OvmsVehicle::poll_pid_t obdii_polls[] = {
   { I3_ECU_IHX_TX, I3_ECU_IHX_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_IHX_KLIMA_VORN_OFF_EIN, { 0, 11, 11, 11 }, 0,
     ISOTP_EXTADR },   // 0xD92C v_env_hvac
   { I3_ECU_IHX_TX, I3_ECU_IHX_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_IHX_KLIMA_VORN_PRG_AUC_EIN, { 0, 11, 11, 11 },
-    0, ISOTP_EXTADR },   // 0xD930 mt_i3_v_env_autorecirc
+    0, ISOTP_EXTADR },// 0xD930 mt_se_v_env_autorecirc
   { I3_ECU_IHX_TX, I3_ECU_IHX_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_IHX_KLIMA_VORN_PRG_UMLUFT_EIN,
     { 0, 11, 11, 11 }, 0, ISOTP_EXTADR },   // 0xD931 v_env_cabinintake
 
@@ -198,42 +198,6 @@ static const OvmsVehicle::poll_pid_t obdii_polls[] = {
   POLL_LIST_END
 };
 
-OvmsMetricFloat *MetricFloatSE(const char *name, uint16_t autostale = 0, metric_unit_t units = Other)
-{
-  OvmsMetricFloat *metric = (OvmsMetricFloat *) MyMetrics.Find(name);
-  if (metric == NULL) {
-    metric = new OvmsMetricFloat(name, autostale, units, 0);
-  }
-  return metric;
-}
-
-OvmsMetricInt *MetricIntSE(const char *name, uint16_t autostale = 0, metric_unit_t units = Other)
-{
-  OvmsMetricInt *metric = (OvmsMetricInt *) MyMetrics.Find(name);
-  if (metric == NULL) {
-    metric = new OvmsMetricInt(name, autostale, units, 0);
-  }
-  return metric;
-}
-
-OvmsMetricBool *MetricBoolSE(const char *name, uint16_t autostale = 0, metric_unit_t units = Other)
-{
-  OvmsMetricBool *metric = (OvmsMetricBool *) MyMetrics.Find(name);
-  if (metric == NULL) {
-    metric = new OvmsMetricBool(name, autostale, units, 0);
-  }
-  return metric;
-}
-
-OvmsMetricString *MetricStringSE(const char *name, uint16_t autostale = 0, metric_unit_t units = Other)
-{
-  OvmsMetricString *metric = (OvmsMetricString *) MyMetrics.Find(name);
-  if (metric == NULL) {
-    metric = new OvmsMetricString(name, autostale, units);
-  }
-  return metric;
-}
-
 OvmsVehicleMiniSE::OvmsVehicleMiniSE()
 {
   ESP_LOGI(TAG, "Mini Cooper SE vehicle module");
@@ -241,65 +205,65 @@ OvmsVehicleMiniSE::OvmsVehicleMiniSE()
   // Our metrics.
 
   // Charge limits
-  mt_i3_charge_actual = MetricFloatSE("mse.v.b.soc.actual", SM_STALE_MAX, Percentage);
-  mt_i3_charge_max = MetricFloatSE("mse.v.b.soc.actual.highlimit", SM_STALE_MAX, Percentage);
-  mt_i3_charge_min = MetricFloatSE("mse.v.b.soc.actual.lowlimit", SM_STALE_MAX, Percentage);
+  mt_se_charge_actual = MetricFloat("mse.v.b.soc.actual", SM_STALE_MAX, Percentage);
+  mt_se_charge_max = MetricFloat("mse.v.b.soc.actual.highlimit", SM_STALE_MAX, Percentage);
+  mt_se_charge_min = MetricFloat("mse.v.b.soc.actual.lowlimit", SM_STALE_MAX, Percentage);
 
   // Wheel speeds
-  mt_i3_wheel1_speed = MetricFloatSE("mse.v.p.wheel1_speed", SM_STALE_MIN, Kph);
-  mt_i3_wheel2_speed = MetricFloatSE("mse.v.p.wheel2_speed", SM_STALE_MIN, Kph);
-  mt_i3_wheel3_speed = MetricFloatSE("mse.v.p.wheel3_speed", SM_STALE_MIN, Kph);
-  mt_i3_wheel4_speed = MetricFloatSE("mse.v.p.wheel4_speed", SM_STALE_MIN, Kph);
-  mt_i3_wheel_speed = MetricFloatSE("mse.v.p.wheel_speed", SM_STALE_MIN, Kph);
-  mt_i3_batt_pack_ocv_avg = MetricFloatSE("mse.v.b.p.ocv.avg", SM_STALE_MAX, Volts);
-  mt_i3_batt_pack_ocv_min = MetricFloatSE("mse.v.b.p.ocv.min", SM_STALE_MAX, Volts);
-  mt_i3_batt_pack_ocv_max = MetricFloatSE("mse.v.b.p.ocv.max", SM_STALE_MAX, Volts);
+  mt_se_wheel1_speed = MetricFloat("mse.v.p.wheel1_speed", SM_STALE_MIN, Kph);
+  mt_se_wheel2_speed = MetricFloat("mse.v.p.wheel2_speed", SM_STALE_MIN, Kph);
+  mt_se_wheel3_speed = MetricFloat("mse.v.p.wheel3_speed", SM_STALE_MIN, Kph);
+  mt_se_wheel4_speed = MetricFloat("mse.v.p.wheel4_speed", SM_STALE_MIN, Kph);
+  mt_se_wheel_speed = MetricFloat("mse.v.p.wheel_speed", SM_STALE_MIN, Kph);
+  mt_se_batt_pack_ocv_avg = MetricFloat("mse.v.b.p.ocv.avg", SM_STALE_MAX, Volts);
+  mt_se_batt_pack_ocv_min = MetricFloat("mse.v.b.p.ocv.min", SM_STALE_MAX, Volts);
+  mt_se_batt_pack_ocv_max = MetricFloat("mse.v.b.p.ocv.max", SM_STALE_MAX, Volts);
 
   // Ranges in modes
-  mt_i3_range_bc = MetricIntSE("mse.v.b.range.bc", SM_STALE_HIGH, Kilometers);
-  mt_i3_range_comfort = MetricIntSE("mse.v.b.range.comfort", SM_STALE_HIGH, Kilometers);
-  mt_i3_range_ecopro = MetricIntSE("mse.v.b.range.ecopro", SM_STALE_HIGH, Kilometers);
-  mt_i3_range_ecoproplus = MetricIntSE("mse.v.b.range.ecoproplus", SM_STALE_HIGH, Kilometers);
+  mt_se_range_bc = MetricInt("mse.v.b.range.bc", SM_STALE_HIGH, Kilometers);
+  mt_se_range_comfort = MetricInt("mse.v.b.range.comfort", SM_STALE_HIGH, Kilometers);
+  mt_se_range_ecopro = MetricInt("mse.v.b.range.ecopro", SM_STALE_HIGH, Kilometers);
+  mt_se_range_ecoproplus = MetricInt("mse.v.b.range.ecoproplus", SM_STALE_HIGH, Kilometers);
 
   // Charging
-  mt_i3_v_charge_voltage_phase1 = MetricIntSE("mse.v.c.voltage.phase1", SM_STALE_MID, Volts);
-  mt_i3_v_charge_voltage_phase2 = MetricIntSE("mse.v.c.voltage.phase2", SM_STALE_MID, Volts);
-  mt_i3_v_charge_voltage_phase3 = MetricIntSE("mse.v.c.voltage.phase3", SM_STALE_MID, Volts);
-  mt_i3_v_charge_voltage_dc = MetricFloatSE("mse.v.c.voltage.dc", SM_STALE_MID, Volts);
-  mt_i3_v_charge_voltage_dc_limit = MetricFloatSE("mse.v.c.voltage.dc.limit", SM_STALE_MID, Volts);
-  mt_i3_v_charge_current_phase1 = MetricFloatSE("mse.v.c.current.phase1", SM_STALE_MID, Amps);
-  mt_i3_v_charge_current_phase2 = MetricFloatSE("mse.v.c.current.phase2", SM_STALE_MID, Amps);
-  mt_i3_v_charge_current_phase3 = MetricFloatSE("mse.v.c.current.phase3", SM_STALE_MID, Amps);
-  mt_i3_v_charge_current_dc = MetricFloatSE("mse.v.c.current.dc", SM_STALE_MID, Amps);
-  mt_i3_v_charge_current_dc_limit = MetricFloatSE("mse.v.c.current.dc.limit", SM_STALE_MID, Amps);
-  mt_i3_v_charge_current_dc_maxlimit = MetricFloatSE("mse.v.c.current.dc.maxlimit", SM_STALE_MID, Amps);
-  mt_i3_v_charge_deratingreasons = MetricIntSE("mse.v.c.deratingreasons", SM_STALE_HIGH, Other);
-  mt_i3_v_charge_faults = MetricIntSE("mse.v.c.deratingreasons", SM_STALE_HIGH, Other);
-  mt_i3_v_charge_failsafetriggers = MetricIntSE("mse.v.c.failsafetriggers", SM_STALE_HIGH, Other);
-  mt_i3_v_charge_interruptionreasons = MetricIntSE("mse.v.c.interruptionreasons", SM_STALE_HIGH, Other);
-  mt_i3_v_charge_errors = MetricIntSE("mse.v.c.error", SM_STALE_HIGH, Other);
-  mt_i3_v_charge_readytocharge = MetricBoolSE("mse.v.c.readytocharge", SM_STALE_MID);
-  mt_i3_v_charge_plugstatus = MetricStringSE("mse.v.c.chargeplugstatus", SM_STALE_MID);
-  mt_i3_v_charge_pilotsignal = MetricIntSE("mse.v.c.pilotsignal", SM_STALE_MID, Amps);
-  mt_i3_v_charge_cablecapacity = MetricIntSE("mse.v.c.chargecablecapacity", SM_STALE_MID, Amps);
-  mt_i3_v_charge_dc_plugconnected = MetricBoolSE("mse.v.c.dc.plugconnected", SM_STALE_MID);
-  mt_i3_v_charge_dc_voltage = MetricIntSE("mse.v.c.dc.chargevoltage", SM_STALE_MID, Volts);
-  mt_i3_v_charge_dc_controlsignals = MetricIntSE("mse.v.c.dc.controlsignals", SM_STALE_MID, Other);
-  mt_i3_v_door_dc_chargeport = MetricBoolSE("mse.v.d.chargeport.dc", SM_STALE_MID);
-  mt_i3_v_charge_dc_contactorstatus = MetricStringSE("mse.v.c.dc.contactorstatus", SM_STALE_MID);
-  mt_i3_v_charge_dc_inprogress = MetricBoolSE("mse.v.c.dc.inprogress", SM_STALE_MID);
-  mt_i3_v_charge_chargeledstate = MetricIntSE("mse.v.c.chargeledstate", SM_STALE_MID, Other);
-  mt_i3_v_charge_temp_gatedriver = MetricIntSE("xi3.v.c.temp.gatedriver", SM_STALE_MID, Celcius);
+  mt_se_v_charge_voltage_phase1 = MetricInt("mse.v.c.voltage.phase1", SM_STALE_MID, Volts);
+  mt_se_v_charge_voltage_phase2 = MetricInt("mse.v.c.voltage.phase2", SM_STALE_MID, Volts);
+  mt_se_v_charge_voltage_phase3 = MetricInt("mse.v.c.voltage.phase3", SM_STALE_MID, Volts);
+  mt_se_v_charge_voltage_dc = MetricFloat("mse.v.c.voltage.dc", SM_STALE_MID, Volts);
+  mt_se_v_charge_voltage_dc_limit = MetricFloat("mse.v.c.voltage.dc.limit", SM_STALE_MID, Volts);
+  mt_se_v_charge_current_phase1 = MetricFloat("mse.v.c.current.phase1", SM_STALE_MID, Amps);
+  mt_se_v_charge_current_phase2 = MetricFloat("mse.v.c.current.phase2", SM_STALE_MID, Amps);
+  mt_se_v_charge_current_phase3 = MetricFloat("mse.v.c.current.phase3", SM_STALE_MID, Amps);
+  mt_se_v_charge_current_dc = MetricFloat("mse.v.c.current.dc", SM_STALE_MID, Amps);
+  mt_se_v_charge_current_dc_limit = MetricFloat("mse.v.c.current.dc.limit", SM_STALE_MID, Amps);
+  mt_se_v_charge_current_dc_maxlimit = MetricFloat("mse.v.c.current.dc.maxlimit", SM_STALE_MID, Amps);
+  mt_se_v_charge_deratingreasons = MetricInt("mse.v.c.deratingreasons", SM_STALE_HIGH, Other);
+  mt_se_v_charge_faults = MetricInt("mse.v.c.deratingreasons", SM_STALE_HIGH, Other);
+  mt_se_v_charge_failsafetriggers = MetricInt("mse.v.c.failsafetriggers", SM_STALE_HIGH, Other);
+  mt_se_v_charge_interruptionreasons = MetricInt("mse.v.c.interruptionreasons", SM_STALE_HIGH, Other);
+  mt_se_v_charge_errors = MetricInt("mse.v.c.error", SM_STALE_HIGH, Other);
+  mt_se_v_charge_readytocharge = MetricBool("mse.v.c.readytocharge", SM_STALE_MID, Other);
+  mt_se_v_charge_plugstatus = MetricString("mse.v.c.chargeplugstatus", SM_STALE_MID, Other);
+  mt_se_v_charge_pilotsignal = MetricInt("mse.v.c.pilotsignal", SM_STALE_MID, Amps);
+  mt_se_v_charge_cablecapacity = MetricInt("mse.v.c.chargecablecapacity", SM_STALE_MID, Amps);
+  mt_se_v_charge_dc_plugconnected = MetricBool("mse.v.c.dc.plugconnected", SM_STALE_MID, Other);
+  mt_se_v_charge_dc_voltage = MetricInt("mse.v.c.dc.chargevoltage", SM_STALE_MID, Volts);
+  mt_se_v_charge_dc_controlsignals = MetricInt("mse.v.c.dc.controlsignals", SM_STALE_MID, Other);
+  mt_se_v_door_dc_chargeport = MetricBool("mse.v.d.chargeport.dc", SM_STALE_MID, Other);
+  mt_se_v_charge_dc_contactorstatus = MetricString("mse.v.c.dc.contactorstatus", SM_STALE_MID, Other);
+  mt_se_v_charge_dc_inprogress = MetricBool("mse.v.c.dc.inprogress", SM_STALE_MID, Other);
+  mt_se_v_charge_chargeledstate = MetricInt("mse.v.c.chargeledstate", SM_STALE_MID, Other);
+  mt_se_v_charge_temp_gatedriver = MetricInt("xi3.v.c.temp.gatedriver", SM_STALE_MID, Celcius);
   // Trip consumption
-  mt_i3_v_pos_tripconsumption = MetricIntSE("xi3.v.p.tripconsumption", SM_STALE_MID, WattHoursPK);
+  mt_se_v_pos_tripconsumption = MetricInt("xi3.v.p.tripconsumption", SM_STALE_MID, WattHoursPK);
 
   // State
-  mt_i3_obdisalive = MetricBoolSE("xi3.v.e.obdisalive", SM_STALE_MID);
-  mt_i3_pollermode = MetricIntSE("xi3.s.pollermode", SM_STALE_MID);
-  mt_i3_age = MetricIntSE("xi3.s.age", SM_STALE_MID, Minutes);
+  mt_se_obdisalive = MetricBool("xi3.v.e.obdisalive", SM_STALE_MID, Other);
+  mt_se_pollermode = MetricInt("xi3.s.pollermode", SM_STALE_MID, Other);
+  mt_se_age = MetricInt("xi3.s.age", SM_STALE_MID, Minutes);
 
   // Controls
-  mt_i3_v_env_autorecirc = MetricBoolSE("xi3.v.e.autorecirc", SM_STALE_MID);
+  mt_se_v_env_autorecirc = MetricBool("xi3.v.e.autorecirc", SM_STALE_MID, Other);
 
   // Init the stuff to keep track of whether the car is talking or not
   framecount = 0;
@@ -310,13 +274,13 @@ OvmsVehicleMiniSE::OvmsVehicleMiniSE()
   // Callbacks
   MyCan.RegisterCallback(TAG, std::bind(&OvmsVehicleMiniSE::CanResponder, this, std::placeholders::_1));
 
-  // Get the Canbus setup
+  // Get the CAN bus setup
   RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
   PollSetPidList(m_can1, obdii_polls);
   pollerstate = POLLSTATE_SHUTDOWN;  // If the car is alive we'll get frames and switch to ALIVE
   PollSetState(pollerstate);
-  mt_i3_pollermode->SetValue(pollerstate);
-  mt_i3_obdisalive->SetValue(false);
+  mt_se_pollermode->SetValue(pollerstate);
+  mt_se_obdisalive->SetValue(false);
   if (!StdMetrics.ms_v_env_awake->AsBool())
     StdMetrics.ms_v_env_awake->SetValue(false);
   if (!StdMetrics.ms_v_env_on->AsBool())
@@ -330,9 +294,45 @@ OvmsVehicleMiniSE::~OvmsVehicleMiniSE()
   ESP_LOGI(TAG, "Shutdown Mini Cooper SE vehicle module");
 }
 
-void hexdumpse(string &rxbuf, uint16_t type, uint16_t pid)
+OvmsMetricFloat *OvmsVehicleMiniSE::MetricFloat(const char *name, uint16_t autostale = 0, metric_unit_t units = Other)
 {
-  char *buf = NULL;
+  auto *metric = (OvmsMetricFloat *) MyMetrics.Find(name);
+  if (metric == nullptr) {
+    metric = new OvmsMetricFloat(name, autostale, units, false);
+  }
+  return metric;
+}
+
+OvmsMetricInt *OvmsVehicleMiniSE::MetricInt(const char *name, uint16_t autostale = 0, metric_unit_t units = Other)
+{
+  auto *metric = (OvmsMetricInt *) MyMetrics.Find(name);
+  if (metric == nullptr) {
+    metric = new OvmsMetricInt(name, autostale, units, false);
+  }
+  return metric;
+}
+
+OvmsMetricBool *OvmsVehicleMiniSE::MetricBool(const char *name, uint16_t autostale = 0, metric_unit_t units = Other)
+{
+  auto *metric = (OvmsMetricBool *) MyMetrics.Find(name);
+  if (metric == nullptr) {
+    metric = new OvmsMetricBool(name, autostale, units, false);
+  }
+  return metric;
+}
+
+OvmsMetricString *OvmsVehicleMiniSE::MetricString(const char *name, uint16_t autostale = 0, metric_unit_t units = Other)
+{
+  auto *metric = (OvmsMetricString *) MyMetrics.Find(name);
+  if (metric == nullptr) {
+    metric = new OvmsMetricString(name, autostale, units);
+  }
+  return metric;
+}
+
+void OvmsVehicleMiniSE::HexDump(string &rxbuf, uint16_t type, uint16_t pid)
+{
+  char *buf = nullptr;
   size_t rlen = rxbuf.size(), offset = 0;
   do {
     rlen = FormatHexDump(&buf, rxbuf.data() + offset, rlen, 16);
@@ -362,7 +362,7 @@ void OvmsVehicleMiniSE::Ticker1(uint32_t ticker)
     if (pollerstate == POLLSTATE_SHUTDOWN) {
       // we previously shut down.  Wake up again since the car seems to be back
       pollerstate = POLLSTATE_ALIVE;
-      mt_i3_pollermode->SetValue(pollerstate);
+      mt_se_pollermode->SetValue(pollerstate);
       PollSetState(pollerstate);
       ESP_LOGI(TAG, "Woke up polling since we saw CANBUS traffic from the car");
     }
@@ -373,7 +373,7 @@ void OvmsVehicleMiniSE::Ticker1(uint32_t ticker)
     // No life for 3 seconds - stop polling
     ESP_LOGW(TAG, "No OBD traffic from car for 3 seconds, shutting down poller");
     pollerstate = POLLSTATE_SHUTDOWN;
-    mt_i3_pollermode->SetValue(pollerstate);
+    mt_se_pollermode->SetValue(pollerstate);
     StdMetrics.ms_v_env_awake->SetValue(false);
     StdMetrics.ms_v_env_on->SetValue(false);
     PollSetState(pollerstate);
@@ -383,7 +383,7 @@ void OvmsVehicleMiniSE::Ticker1(uint32_t ticker)
 void OvmsVehicleMiniSE::Ticker10(uint32_t ticker)
 {
   // 1) Is the car responsive - ie replying to our polls?
-  mt_i3_obdisalive->SetValue((replycount != 0));
+  mt_se_obdisalive->SetValue((replycount != 0));
   if (replycount == 0 && pollerstate != POLLSTATE_SHUTDOWN) {
     ESP_LOGI(TAG, "No replies from the car to our polls - OBD is not alive");
   }
@@ -396,7 +396,7 @@ void OvmsVehicleMiniSE::Ticker10(uint32_t ticker)
     if (pollerstate != POLLSTATE_READY) {
       ESP_LOGI(TAG, "Car is now ON");
       pollerstate = POLLSTATE_READY;
-      mt_i3_pollermode->SetValue(pollerstate);
+      mt_se_pollermode->SetValue(pollerstate);
       PollSetState(pollerstate);
     }
     eps_messages = 0;
@@ -404,7 +404,7 @@ void OvmsVehicleMiniSE::Ticker10(uint32_t ticker)
     StdMetrics.ms_v_env_awake->SetValue(false);
     if (pollerstate == POLLSTATE_READY) {
       pollerstate = POLLSTATE_ALIVE;
-      mt_i3_pollermode->SetValue(pollerstate);
+      mt_se_pollermode->SetValue(pollerstate);
       PollSetState(pollerstate);
       ESP_LOGI(TAG, "Car is now OFF");
     }
@@ -416,9 +416,9 @@ void OvmsVehicleMiniSE::Ticker10(uint32_t ticker)
   // 4) i3 always has regen braking on
   StdMetrics.ms_v_env_regenbrake->SetValue(true);
 
-  // 5) mt_i3_age
+  // 5) mt_se_age
   if (last_obd_data_seen) {
-    mt_i3_age->SetValue(StdMetrics.ms_m_monotonic->AsInt() - last_obd_data_seen, Seconds);
+    mt_se_age->SetValue(StdMetrics.ms_m_monotonic->AsInt() - last_obd_data_seen, Seconds);
   }
 }
 
@@ -467,11 +467,13 @@ void OvmsVehicleMiniSE::IncomingPollReply(canbus *bus, uint16_t type, uint16_t p
 
       // ==========  Add your processing here ==========
       StdMetrics.ms_v_bat_soh->SetValue(STAT_ALTERUNG_KAPAZITAET_WERT, Percentage);
-      StdMetrics.ms_v_bat_health->SetValue((STAT_ALTERUNG_KAPAZITAET_WERT >= 95.0f) ? "Excellent" :
-                                           (STAT_ALTERUNG_KAPAZITAET_WERT >= 90.0f) ? "Good" :
-                                           (STAT_ALTERUNG_KAPAZITAET_WERT >= 80.0f) ? "OK" :
-                                           (STAT_ALTERUNG_KAPAZITAET_WERT >= 70.0f) ? "Poor" :
-                                           "Service");
+      StdMetrics.ms_v_bat_health->SetValue(
+        (STAT_ALTERUNG_KAPAZITAET_WERT >= 95.0f) ? "Excellent" :
+        (STAT_ALTERUNG_KAPAZITAET_WERT >= 90.0f) ? "Good" :
+        (STAT_ALTERUNG_KAPAZITAET_WERT >= 80.0f) ? "OK" :
+        (STAT_ALTERUNG_KAPAZITAET_WERT >= 70.0f) ? "Poor" :
+        "Service"
+      );
       break;
     }
 
@@ -539,9 +541,9 @@ void OvmsVehicleMiniSE::IncomingPollReply(canbus *bus, uint16_t type, uint16_t p
         soc = STAT_ANZEIGE_SOC_WERT / 100.0f;
       }
       if (STAT_MAXIMALE_ANZEIGE_SOC_WERT >= 0.0 && STAT_MAXIMALE_ANZEIGE_SOC_WERT <= 100.0)
-        mt_i3_charge_max->SetValue(STAT_MAXIMALE_ANZEIGE_SOC_WERT, Percentage);
+        mt_se_charge_max->SetValue(STAT_MAXIMALE_ANZEIGE_SOC_WERT, Percentage);
       if (STAT_MINIMALE_ANZEIGE_SOC_WERT >= 0.0 && STAT_MINIMALE_ANZEIGE_SOC_WERT <= 100.0)
-        mt_i3_charge_min->SetValue(STAT_MINIMALE_ANZEIGE_SOC_WERT, Percentage);
+        mt_se_charge_min->SetValue(STAT_MINIMALE_ANZEIGE_SOC_WERT, Percentage);
 
       break;
     }
@@ -704,9 +706,9 @@ void OvmsVehicleMiniSE::IncomingPollReply(canbus *bus, uint16_t type, uint16_t p
       StdMetrics.ms_v_bat_pack_vmin->SetValue(STAT_ZELLSPANNUNG_MIN_WERT, Volts);
       StdMetrics.ms_v_bat_pack_vavg->SetValue(STAT_ZELLSPANNUNG_MEAN_WERT, Volts);
       if (RXBUF_UINT(34) != 65535) {
-        mt_i3_batt_pack_ocv_avg->SetValue(STAT_ZELLOCV_MEAN_WERT, Volts);
-        mt_i3_batt_pack_ocv_min->SetValue(STAT_ZELLOCV_MIN_WERT, Volts);
-        mt_i3_batt_pack_ocv_max->SetValue(STAT_ZELLOCV_MAX_WERT, Volts);
+        mt_se_batt_pack_ocv_avg->SetValue(STAT_ZELLOCV_MEAN_WERT, Volts);
+        mt_se_batt_pack_ocv_min->SetValue(STAT_ZELLOCV_MIN_WERT, Volts);
+        mt_se_batt_pack_ocv_max->SetValue(STAT_ZELLOCV_MAX_WERT, Volts);
       }
       StdMetrics.ms_v_bat_pack_level_max->SetValue(STAT_ZELLSOC_MAX_WERT, Percentage);
       StdMetrics.ms_v_bat_pack_level_min->SetValue(STAT_ZELLSOC_MIN_WERT, Percentage);
@@ -884,7 +886,7 @@ void OvmsVehicleMiniSE::IncomingPollReply(canbus *bus, uint16_t type, uint16_t p
         StdMetrics.ms_v_pos_trip->SetValue(STAT_RBC_STRECKE_KWH_KM_WERT);
       }
       if (STAT_RBC_DSV_WH_KM_WERT < 65500) { // 65533 seems to mean invalid
-        mt_i3_v_pos_tripconsumption->SetValue(STAT_RBC_DSV_WH_KM_WERT, WattHoursPK);
+        mt_se_v_pos_tripconsumption->SetValue(STAT_RBC_DSV_WH_KM_WERT, WattHoursPK);
       }
 
       // We can reverse-calculate these to come up with v.b.energy.used - Main battery coulomb used on trip [Ah] - ms_v_bat_energy_used
@@ -935,10 +937,10 @@ void OvmsVehicleMiniSE::IncomingPollReply(canbus *bus, uint16_t type, uint16_t p
         STAT_ECO_PRO_PLUS_REICHWEITE_WERT, "\"km\"");
 
       // ==========  Add your processing here ==========
-      mt_i3_range_bc->SetValue(STAT_BC_REICHWEITE_WERT, Kilometers);
-      mt_i3_range_comfort->SetValue(STAT_COMFORT_MODE_REICHWEITE_WERT, Kilometers);
-      mt_i3_range_ecopro->SetValue(STAT_ECO_MODE_REICHWEITE_WERT, Kilometers);
-      mt_i3_range_ecoproplus->SetValue(STAT_ECO_PRO_PLUS_REICHWEITE_WERT, Kilometers);
+      mt_se_range_bc->SetValue(STAT_BC_REICHWEITE_WERT, Kilometers);
+      mt_se_range_comfort->SetValue(STAT_COMFORT_MODE_REICHWEITE_WERT, Kilometers);
+      mt_se_range_ecopro->SetValue(STAT_ECO_MODE_REICHWEITE_WERT, Kilometers);
+      mt_se_range_ecoproplus->SetValue(STAT_ECO_PRO_PLUS_REICHWEITE_WERT, Kilometers);
 
       break;
     }
@@ -1641,7 +1643,7 @@ void OvmsVehicleMiniSE::IncomingPollReply(canbus *bus, uint16_t type, uint16_t p
         (unsigned long) BF_BLOCK_10_STERNE, "\"Bit\"");
 
       // ==========  Add your processing here ==========
-      hexdumpse(rxbuf, type, pid);
+      HexDump(rxbuf, type, pid);
 
       break;
     }
@@ -1736,7 +1738,7 @@ void OvmsVehicleMiniSE::IncomingPollReply(canbus *bus, uint16_t type, uint16_t p
         STAT_U_DCDC_LV_WERT, "\"V\"");
 
       // ==========  Add your processing here ==========
-      mt_i3_charge_actual->SetValue(STAT_SOC_HVB_WERT, Percentage);
+      mt_se_charge_actual->SetValue(STAT_SOC_HVB_WERT, Percentage);
 
       break;
     }
@@ -1774,7 +1776,7 @@ void OvmsVehicleMiniSE::IncomingPollReply(canbus *bus, uint16_t type, uint16_t p
         "STAT_STROM_DC_HV_UMRICHTER_EM_WERT", STAT_STROM_DC_HV_UMRICHTER_EM_WERT, "\"A\"");
 
       // ==========  Add your processing here ==========
-      hexdumpse(rxbuf, type, pid);
+      HexDump(rxbuf, type, pid);
 
       break;
     }
@@ -1851,13 +1853,13 @@ void OvmsVehicleMiniSE::IncomingPollReply(canbus *bus, uint16_t type, uint16_t p
         max(STAT_TEMP_UMRICHTER_PHASE_U_WERT,
           max(STAT_TEMP_UMRICHTER_PHASE_V_WERT,
             /* max( */ STAT_TEMP_UMRICHTER_PHASE_W_WERT // ,
-            /* STAT_TEMP_UMRICHTER_GT_WERT)*/ )), Celcius);  // FIXED: the GT temp is the hot one - left it out
-      mt_i3_v_charge_temp_gatedriver->SetValue(STAT_TEMP_UMRICHTER_GT_WERT, Celcius);
+            /* STAT_TEMP_UMRICHTER_GT_WERT)*/ )), Celcius
+      );  // FIXED: the GT temp is the hot one - left it out
+      mt_se_v_charge_temp_gatedriver->SetValue(STAT_TEMP_UMRICHTER_GT_WERT, Celcius);
       StdMetrics.ms_v_charge_temp->SetValue(
-        max(STAT_TEMP_SLE_PFC_WERT,
-          max(STAT_TEMP_SLE_GR_WERT,
-            max(STAT_TEMP_SLE_GTW_WERT,
-              STAT_TEMP_SLE_BO_WERT))), Celcius);
+        max(STAT_TEMP_SLE_PFC_WERT, max(STAT_TEMP_SLE_GR_WERT, max(STAT_TEMP_SLE_GTW_WERT, STAT_TEMP_SLE_BO_WERT))),
+        Celcius
+      );
 
       break;
     }
@@ -1956,14 +1958,15 @@ void OvmsVehicleMiniSE::IncomingPollReply(canbus *bus, uint16_t type, uint16_t p
 
       // ==========  Add your processing here ==========
       // TODO: Which wheel is which?
-      mt_i3_wheel1_speed->SetValue(STAT_WHEEL1_SENSOR_SPEED_WERT, Kph);
-      mt_i3_wheel2_speed->SetValue(STAT_WHEEL2_SENSOR_SPEED_WERT, Kph);
-      mt_i3_wheel3_speed->SetValue(STAT_WHEEL3_SENSOR_SPEED_WERT, Kph);
-      mt_i3_wheel4_speed->SetValue(STAT_WHEEL4_SENSOR_SPEED_WERT, Kph);
+      mt_se_wheel1_speed->SetValue(STAT_WHEEL1_SENSOR_SPEED_WERT, Kph);
+      mt_se_wheel2_speed->SetValue(STAT_WHEEL2_SENSOR_SPEED_WERT, Kph);
+      mt_se_wheel3_speed->SetValue(STAT_WHEEL3_SENSOR_SPEED_WERT, Kph);
+      mt_se_wheel4_speed->SetValue(STAT_WHEEL4_SENSOR_SPEED_WERT, Kph);
       // STAT_COMBINED_SENSOR_SPEED_WERT does't give a sensible anwer - so just compute a mean
-      mt_i3_wheel_speed->SetValue(
+      mt_se_wheel_speed->SetValue(
         (STAT_WHEEL1_SENSOR_SPEED_WERT + STAT_WHEEL2_SENSOR_SPEED_WERT + STAT_WHEEL3_SENSOR_SPEED_WERT +
-         STAT_WHEEL4_SENSOR_SPEED_WERT) / 4, Kph);
+         STAT_WHEEL4_SENSOR_SPEED_WERT) / 4, Kph
+      );
 
       break;
     }
@@ -2189,7 +2192,7 @@ void OvmsVehicleMiniSE::IncomingPollReply(canbus *bus, uint16_t type, uint16_t p
         StdMetrics.ms_v_charge_inprogress->SetValue(true); // AC charging
       } else {
         // unless we are DC charging, we aren't charging...
-        if (!mt_i3_v_charge_dc_inprogress->AsBool()) {
+        if (!mt_se_v_charge_dc_inprogress->AsBool()) {
           StdMetrics.ms_v_charge_inprogress->SetValue(false);
         }
       }
@@ -2225,11 +2228,11 @@ void OvmsVehicleMiniSE::IncomingPollReply(canbus *bus, uint16_t type, uint16_t p
           break;
       }
       StdMetrics.ms_v_charge_state->SetValue(state);
-      mt_i3_v_charge_deratingreasons->SetValue(BF_LADEGERAET_DERATING);
-      mt_i3_v_charge_faults->SetValue(BF_LADEGERAET_FEHLERZUSTAND_UCXII);
-      mt_i3_v_charge_failsafetriggers->SetValue(BF_AUSLOESER_FAILSAFE_UCXII);
-      mt_i3_v_charge_interruptionreasons->SetValue(BF_LADEGERAET_URSACHE_LADEUNTERBRECHUNG);
-      mt_i3_v_charge_errors->SetValue(BF_MOD_ERR);
+      mt_se_v_charge_deratingreasons->SetValue(BF_LADEGERAET_DERATING);
+      mt_se_v_charge_faults->SetValue(BF_LADEGERAET_FEHLERZUSTAND_UCXII);
+      mt_se_v_charge_failsafetriggers->SetValue(BF_AUSLOESER_FAILSAFE_UCXII);
+      mt_se_v_charge_interruptionreasons->SetValue(BF_LADEGERAET_URSACHE_LADEUNTERBRECHUNG);
+      mt_se_v_charge_errors->SetValue(BF_MOD_ERR);
 
       break;
     }
@@ -2308,19 +2311,21 @@ void OvmsVehicleMiniSE::IncomingPollReply(canbus *bus, uint16_t type, uint16_t p
         if (STAT_SPANNUNG_RMS_AC_PHASE_3_WERT > STAT_SPANNUNG_RMS_AC_PHASE_1_WERT - 25) {
           StdMetrics.ms_v_charge_voltage->SetValue(
             (STAT_SPANNUNG_RMS_AC_PHASE_1_WERT + STAT_SPANNUNG_RMS_AC_PHASE_2_WERT +
-             STAT_SPANNUNG_RMS_AC_PHASE_3_WERT) / 3, Volts);
+             STAT_SPANNUNG_RMS_AC_PHASE_3_WERT) / 3, Volts
+          );
         } else {
           StdMetrics.ms_v_charge_voltage->SetValue(
-            (STAT_SPANNUNG_RMS_AC_PHASE_1_WERT + STAT_SPANNUNG_RMS_AC_PHASE_2_WERT) / 2, Volts);
+            (STAT_SPANNUNG_RMS_AC_PHASE_1_WERT + STAT_SPANNUNG_RMS_AC_PHASE_2_WERT) / 2, Volts
+          );
         }
       } else {
         StdMetrics.ms_v_charge_voltage->SetValue(STAT_SPANNUNG_RMS_AC_PHASE_1_WERT, Volts);
       }
-      mt_i3_v_charge_voltage_phase1->SetValue(STAT_SPANNUNG_RMS_AC_PHASE_1_WERT, Volts);
-      mt_i3_v_charge_voltage_phase2->SetValue(STAT_SPANNUNG_RMS_AC_PHASE_2_WERT, Volts);
-      mt_i3_v_charge_voltage_phase3->SetValue(STAT_SPANNUNG_RMS_AC_PHASE_3_WERT, Volts);
-      mt_i3_v_charge_voltage_dc->SetValue(STAT_SPANNUNG_DC_HV_WERT, Volts);
-      mt_i3_v_charge_voltage_dc_limit->SetValue(STAT_SPANNUNG_DC_HV_OBERGRENZE_WERT, Volts);
+      mt_se_v_charge_voltage_phase1->SetValue(STAT_SPANNUNG_RMS_AC_PHASE_1_WERT, Volts);
+      mt_se_v_charge_voltage_phase2->SetValue(STAT_SPANNUNG_RMS_AC_PHASE_2_WERT, Volts);
+      mt_se_v_charge_voltage_phase3->SetValue(STAT_SPANNUNG_RMS_AC_PHASE_3_WERT, Volts);
+      mt_se_v_charge_voltage_dc->SetValue(STAT_SPANNUNG_DC_HV_WERT, Volts);
+      mt_se_v_charge_voltage_dc_limit->SetValue(STAT_SPANNUNG_DC_HV_OBERGRENZE_WERT, Volts);
 
 
       break;
@@ -2369,27 +2374,28 @@ void OvmsVehicleMiniSE::IncomingPollReply(canbus *bus, uint16_t type, uint16_t p
 
       // ==========  Add your processing here ==========
       StdMetrics.ms_v_charge_current->SetValue(
-        STAT_STROM_AC_PHASE_1_WERT + STAT_STROM_AC_PHASE_2_WERT + STAT_STROM_AC_PHASE_3_WERT, Amps);
+        STAT_STROM_AC_PHASE_1_WERT + STAT_STROM_AC_PHASE_2_WERT + STAT_STROM_AC_PHASE_3_WERT, Amps
+      );
       //FIXME: should the climit be multiplied by 3 for 3phase charging?
       StdMetrics.ms_v_charge_climit->SetValue(STAT_STROM_AC_MAX_GESPEICHERT_WERT,
         Amps);  // Think this is what the EVSE signals with the pilot signal
-      mt_i3_v_charge_current_phase1->SetValue(STAT_STROM_AC_PHASE_1_WERT, Amps);
-      mt_i3_v_charge_current_phase2->SetValue(STAT_STROM_AC_PHASE_2_WERT, Amps);
-      mt_i3_v_charge_current_phase3->SetValue(STAT_STROM_AC_PHASE_3_WERT, Amps);
+      mt_se_v_charge_current_phase1->SetValue(STAT_STROM_AC_PHASE_1_WERT, Amps);
+      mt_se_v_charge_current_phase2->SetValue(STAT_STROM_AC_PHASE_2_WERT, Amps);
+      mt_se_v_charge_current_phase3->SetValue(STAT_STROM_AC_PHASE_3_WERT, Amps);
       if (STAT_STROM_HV_DC_WERT > -0.01f && STAT_STROM_HV_DC_WERT < 0.01f) {
-        mt_i3_v_charge_current_dc->SetValue(0.0f, Amps);
+        mt_se_v_charge_current_dc->SetValue(0.0f, Amps);
       } else {
-        mt_i3_v_charge_current_dc->SetValue(STAT_STROM_HV_DC_WERT, Amps);
+        mt_se_v_charge_current_dc->SetValue(STAT_STROM_HV_DC_WERT, Amps);
       }
       if (STAT_STROM_HV_DC_MAX_GESPEICHERT_WERT > -0.01f && STAT_STROM_HV_DC_MAX_GESPEICHERT_WERT < 0.01f) {
-        mt_i3_v_charge_current_dc_limit->SetValue(0.0f, Amps);
+        mt_se_v_charge_current_dc_limit->SetValue(0.0f, Amps);
       } else {
-        mt_i3_v_charge_current_dc_limit->SetValue(STAT_STROM_HV_DC_MAX_GESPEICHERT_WERT, Amps);
+        mt_se_v_charge_current_dc_limit->SetValue(STAT_STROM_HV_DC_MAX_GESPEICHERT_WERT, Amps);
       }
       if (STAT_STROM_HV_DC_MAX_LIMIT_WERT > -0.01f && STAT_STROM_HV_DC_MAX_LIMIT_WERT < 0.01f) {
-        mt_i3_v_charge_current_dc_maxlimit->SetValue(0.0f, Amps);
+        mt_se_v_charge_current_dc_maxlimit->SetValue(0.0f, Amps);
       } else {
-        mt_i3_v_charge_current_dc_maxlimit->SetValue(STAT_STROM_HV_DC_MAX_LIMIT_WERT, Amps);
+        mt_se_v_charge_current_dc_maxlimit->SetValue(STAT_STROM_HV_DC_MAX_LIMIT_WERT, Amps);
       }
 
       break;
@@ -2477,7 +2483,7 @@ void OvmsVehicleMiniSE::IncomingPollReply(canbus *bus, uint16_t type, uint16_t p
       unsigned short LED_LADESTATUS = I3_RES_LIM_LED_LADESTATUS;
       ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%d%s\n", "LIM", "I3_PID_LIM_LED_LADESTATUS", "LED_LADESTATUS",
         LED_LADESTATUS, "");
-      mt_i3_v_charge_chargeledstate->SetValue(LED_LADESTATUS);
+      mt_se_v_charge_chargeledstate->SetValue(LED_LADESTATUS);
 
       break;
     }
@@ -2495,7 +2501,7 @@ void OvmsVehicleMiniSE::IncomingPollReply(canbus *bus, uint16_t type, uint16_t p
         STAT_LADEBEREITSCHAFT_LIM, "\"0/1\"");
 
       // ==========  Add your processing here ==========
-      mt_i3_v_charge_readytocharge->SetValue(STAT_LADEBEREITSCHAFT_LIM);
+      mt_se_v_charge_readytocharge->SetValue(STAT_LADEBEREITSCHAFT_LIM);
 
       break;
     }
@@ -2539,7 +2545,7 @@ void OvmsVehicleMiniSE::IncomingPollReply(canbus *bus, uint16_t type, uint16_t p
 
       // ==========  Add your processing here ==========
       StdMetrics.ms_v_charge_pilot->SetValue(STAT_PILOT_AKTIV);
-      mt_i3_v_charge_pilotsignal->SetValue(STAT_PILOT_CURRENT_WERT, Amps);
+      mt_se_v_charge_pilotsignal->SetValue(STAT_PILOT_CURRENT_WERT, Amps);
 
       break;
     }
@@ -2561,13 +2567,13 @@ void OvmsVehicleMiniSE::IncomingPollReply(canbus *bus, uint16_t type, uint16_t p
         STAT_STROMTRAGFAEHIGKEIT_WERT, "\"A\"");
 
       // ==========  Add your processing here ==========
-      mt_i3_v_charge_plugstatus->SetValue(
+      mt_se_v_charge_plugstatus->SetValue(
         (STAT_STECKER_NR == 0) ? "Not connected" :
         (STAT_STECKER_NR == 1) ? "Connected" :
         (STAT_STECKER_NR == 2) ? "Connected, unlocked" :
         "Invalid state"
       );
-      mt_i3_v_charge_cablecapacity->SetValue(STAT_STROMTRAGFAEHIGKEIT_WERT, Amps);
+      mt_se_v_charge_cablecapacity->SetValue(STAT_STROMTRAGFAEHIGKEIT_WERT, Amps);
 
       break;
     }
@@ -2604,8 +2610,8 @@ void OvmsVehicleMiniSE::IncomingPollReply(canbus *bus, uint16_t type, uint16_t p
 
       // ==========  Add your processing here ==========
       // FIXME: these don't work?
-      mt_i3_v_charge_dc_plugconnected->SetValue(STAT_LADESTECKER);
-      mt_i3_v_charge_dc_controlsignals->SetValue(
+      mt_se_v_charge_dc_plugconnected->SetValue(STAT_LADESTECKER);
+      mt_se_v_charge_dc_controlsignals->SetValue(
         (STAT_LADESTECKER & 1 << 3) | (STAT_CHARGE_PERMISSION & 1 << 2) | (STAT_CHARGE_CONTROL_2 & 1 << 1) |
         (STAT_CHARGE_CONTROL_1 & 1));
 
@@ -2624,7 +2630,7 @@ void OvmsVehicleMiniSE::IncomingPollReply(canbus *bus, uint16_t type, uint16_t p
         STAT_DC_SCHUETZ_SCHALTER, "\"0-n\"");
 
       // ==========  Add your processing here ==========
-      mt_i3_v_charge_dc_contactorstatus->SetValue(
+      mt_se_v_charge_dc_contactorstatus->SetValue(
         (STAT_DC_SCHUETZ_SCHALTER == 0) ? "open" :
         (STAT_DC_SCHUETZ_SCHALTER == 1) ? "closed" :
         (STAT_DC_SCHUETZ_SCHALTER == 2) ? "contacts welded" :
@@ -2635,15 +2641,15 @@ void OvmsVehicleMiniSE::IncomingPollReply(canbus *bus, uint16_t type, uint16_t p
       if (STAT_DC_SCHUETZ_SCHALTER == 1 && StdMetrics.ms_v_bat_current->AsFloat() < -1.0f) {
         ESP_LOGI(TAG, "DC charge started");
         StdMetrics.ms_v_charge_inprogress->SetValue(true);
-        mt_i3_v_charge_dc_inprogress->SetValue(true);
-        if (StdMetrics.ms_v_charge_state->AsString().compare("") == 0) {
+        mt_se_v_charge_dc_inprogress->SetValue(true);
+        if (StdMetrics.ms_v_charge_state->AsString().empty()) {
           StdMetrics.ms_v_charge_state->SetValue("charging");
         }
-      } else if (STAT_DC_SCHUETZ_SCHALTER == 0 && mt_i3_v_charge_dc_inprogress->AsBool()) {
+      } else if (STAT_DC_SCHUETZ_SCHALTER == 0 && mt_se_v_charge_dc_inprogress->AsBool()) {
         ESP_LOGI(TAG, "DC charge stopped");
-        mt_i3_v_charge_dc_inprogress->SetValue(false);
+        mt_se_v_charge_dc_inprogress->SetValue(false);
         StdMetrics.ms_v_charge_inprogress->SetValue(false);
-        if (StdMetrics.ms_v_charge_state->AsString().compare("charging") == 0) {
+        if (StdMetrics.ms_v_charge_state->AsString() == "charging") {
           StdMetrics.ms_v_charge_state->SetValue("");
         }
       }
@@ -2665,7 +2671,7 @@ void OvmsVehicleMiniSE::IncomingPollReply(canbus *bus, uint16_t type, uint16_t p
 
       // ==========  Add your processing here ==========
       // FIXME: doesn't seem to work
-      mt_i3_v_door_dc_chargeport->SetValue(!STAT_DC_PINABDECKUNG);
+      mt_se_v_door_dc_chargeport->SetValue(!STAT_DC_PINABDECKUNG);
 
       break;
     }
@@ -2737,8 +2743,9 @@ void OvmsVehicleMiniSE::IncomingPollReply(canbus *bus, uint16_t type, uint16_t p
         (unsigned long) RES_0xD8C5_D, "\"Bit\"");
 
       // ==========  Add your processing here ==========
-      StdMetrics.ms_v_env_cooling->SetValue((RES_0xD8C5_D ==
-                                             8)); // It's bits, also see 0x28 which is suspect is that compressor is working but user has turned ac off?
+      StdMetrics.ms_v_env_cooling->SetValue(
+        (RES_0xD8C5_D == 8)
+      ); // It's bits, also see 0x28 which is suspect is that compressor is working but user has turned ac off?
 
       break;
     }
@@ -2779,7 +2786,7 @@ void OvmsVehicleMiniSE::IncomingPollReply(canbus *bus, uint16_t type, uint16_t p
         if (STAT_KLIMA_VORN_LUFTVERTEILUNG_LINKS_NR & 1) status.append("feet,");
         if (STAT_KLIMA_VORN_LUFTVERTEILUNG_LINKS_NR & 2) status.append("face,");
         if (STAT_KLIMA_VORN_LUFTVERTEILUNG_LINKS_NR & 4) status.append("screen,");
-        if (status.size() > 0) status.resize(status.size() - 1);
+        if (!status.empty()) status.resize(status.size() - 1);
       }
       StdMetrics.ms_v_env_cabinvent->SetValue(status);
 
@@ -2817,7 +2824,7 @@ void OvmsVehicleMiniSE::IncomingPollReply(canbus *bus, uint16_t type, uint16_t p
         "STAT_KLIMA_VORN_PRG_AUC_EIN", STAT_KLIMA_VORN_PRG_AUC_EIN, "\"0/1\"");
 
       // ==========  Add your processing here ==========
-      mt_i3_v_env_autorecirc->SetValue(STAT_KLIMA_VORN_PRG_AUC_EIN);
+      mt_se_v_env_autorecirc->SetValue(STAT_KLIMA_VORN_PRG_AUC_EIN);
 
       break;
     }
@@ -2870,22 +2877,19 @@ void OvmsVehicleMiniSE::IncomingPollReply(canbus *bus, uint16_t type, uint16_t p
 
       // Unknown: output if for review
     default: {
-      hexdumpse(rxbuf, type, pid);
+      HexDump(rxbuf, type, pid);
       break;
     }
   }
 }
 
-class OvmsVehicleMiniSEInit {
+__attribute__((unused)) class OvmsVehicleMiniSEInit {
   public:
   OvmsVehicleMiniSEInit();
-
   ~OvmsVehicleMiniSEInit();
-
-  void WebInit();
-
-  void WebDeInit();
-} MyOvmsVehicleMiniSEInit  __attribute__ ((init_priority (9000)));
+  static void WebInit();
+  static void WebDeInit();
+} MyOvmsVehicleMiniSEInit __attribute__ ((init_priority (9000)));
 
 OvmsVehicleMiniSEInit::OvmsVehicleMiniSEInit()
 {
