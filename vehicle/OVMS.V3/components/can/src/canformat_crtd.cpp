@@ -123,10 +123,11 @@ std::string canformat_crtd::get(CAN_log_message_t* message)
     case CAN_LogInfo_Comment:
     case CAN_LogInfo_Config:
     case CAN_LogInfo_Event:
+    case CAN_LogInfo_Metric:
       snprintf(buf,sizeof(buf),"%ld.%06ld %c%s %s %s",
         message->timestamp.tv_sec, message->timestamp.tv_usec,
         busnumber,
-        (message->type == CAN_LogInfo_Event) ? "CEV" : "CXX",
+        (message->type == CAN_LogInfo_Event) ? "CEV" : (message->type == CAN_LogInfo_Metric) ? "CMT" : "CXX",
         GetCanLogTypeName(message->type),
         message->text);
       break;
@@ -151,7 +152,7 @@ std::string canformat_crtd::getheader(struct timeval *time)
     time = &t;
     }
 
-  snprintf(buf,sizeof(buf),"%ld.%06ld CXX OVMS CRTD\n%ld.%06ld CVR 3.0\n",
+  snprintf(buf,sizeof(buf),"%ld.%06ld CXX OVMS CRTD\n%ld.%06ld CVR 3.1\n",
     time->tv_sec, time->tv_usec,
     time->tv_sec, time->tv_usec);
 
