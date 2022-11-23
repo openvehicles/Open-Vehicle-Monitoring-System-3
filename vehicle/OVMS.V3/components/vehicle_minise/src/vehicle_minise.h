@@ -64,7 +64,7 @@ class OvmsVehicleMiniSE : public OvmsVehicle {
 
   protected:
   string obd_rxbuf;                                     // CAN messages unpacked into here
-  float hv_volts{};                                       // Traction battery voltage - used to calculate power from current
+  float hv_volts{};                                     // Traction battery voltage - used to calculate power from current
   float soc = 0.0f;                                     // Remember SOC for derivative calcs
   int framecount = 0, tickercount = 0, replycount = 0;  // Keep track of when the car is talking or schtum.
   int eps_messages = 0;                                 // Is the EPS (power steering) alive?  If so we are "on"

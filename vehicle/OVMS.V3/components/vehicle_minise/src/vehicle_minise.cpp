@@ -352,10 +352,14 @@ void OvmsVehicleMiniSE::CanResponder(const CAN_frame_t *p_frame)
 void OvmsVehicleMiniSE::Ticker1(uint32_t ticker)
 {
   ++tickercount;
+
+  // If there is life
   if (framecount > 0) {
-    // There is life.
+
+    // If we previously shut down
     if (pollerstate == POLLSTATE_SHUTDOWN) {
-      // we previously shut down.  Wake up again since the car seems to be back
+
+      // Wake up again since the car seems to be back
       pollerstate = POLLSTATE_ALIVE;
       mt_se_pollermode->SetValue(pollerstate);
       PollSetState(pollerstate);
@@ -364,8 +368,11 @@ void OvmsVehicleMiniSE::Ticker1(uint32_t ticker)
     framecount = 0;
     tickercount = 0;
   }
-  if (tickercount >= 3 && pollerstate != POLLSTATE_SHUTDOWN) {
-    // No life for 3 seconds - stop polling
+
+  // If there is no life for 3 seconds
+  if (tickercount >= 60 && pollerstate != POLLSTATE_SHUTDOWN) {
+
+    // Stop polling
     ESP_LOGW(TAG, "No OBD traffic from car for 3 seconds, shutting down poller");
     pollerstate = POLLSTATE_SHUTDOWN;
     mt_se_pollermode->SetValue(pollerstate);
