@@ -41,7 +41,7 @@ static const char *TAG = "swcan";
 #define ERROR_LED_BLINK_COUNT 25 // 10s
 
 
-swcan::swcan(const char* name, spi* spibus, spi_nodma_host_device_t host, int clockspeed, int cspin, int intpin, bool hw_cs /*=true*/)
+swcan::swcan(const char* name, spi* spibus, spi_host_device_t host, int clockspeed, int cspin, int intpin, bool hw_cs /*=true*/)
   : mcp2515(name,spibus,host,clockspeed,cspin,intpin,hw_cs)
   {
   m_status_led = new ovms_led("status led", MAX7317_SWCAN_STATUS_LED);
