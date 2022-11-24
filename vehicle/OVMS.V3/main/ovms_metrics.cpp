@@ -275,10 +275,16 @@ metric_group_t GetMetricGroup(metric_unit_t unit)
     return unit_info[unit_i].Group;
   return GrpNone;
   }
+
+static inline metric_group_t MetricGroupSimplify(metric_group_t group)
+  {
+    return static_cast<metric_group_t>(static_cast<uint8_t>(group) & GrpFoldMask);
+  }
+
 static inline metric_group_t GetMetricGroupSimplify(metric_unit_t unit)
   {
     // Removes High-bit to fold the 'Short' metrics back onto their equivalents.
-    return static_cast<metric_group_t>(static_cast<uint8_t>(GetMetricGroup(unit)) & GrpFoldMask);
+    return MetricGroupSimplify(GetMetricGroup(unit));
   }
 /**
  * Return a list of Metric Groups for configuration.
@@ -609,22 +615,57 @@ void metrics_persist(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
   writer->printf("%d of %d slots used\n", pmetrics.used, NUM_PERSISTENT_VALUES);
   }
 
+static int metrics_set_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool complete)
+  {
+  switch (argc)
+    {
+    case 1: return MyMetrics.Validate(writer, argc, argv[0], complete);
+    case 3:
+      {
+      OvmsMetric *metric = MyMetrics.FindUniquePrefix(argv[0]);
+      if (!metric)
+        return -1;
+      metric_unit_t unit = metric->GetUnits();
+      metric_group_t group = GetMetricGroup(unit);
+      return OvmsMetricUnit_Validate(writer, argc, argv[2], complete, group);
+      }
+    }
+  return -1;
+  }
+
 void metrics_set(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   const char *unit = NULL;
   if (argc > 2)
-    unit = argv[2];
+    unit = OvmsMetricUnit_FindUniquePrefix(argv[2]);
   if (MyMetrics.Set(argv[0],argv[1], unit))
     writer->puts("Metric set");
   else
     writer->puts("Metric could not be set");
   }
 
+static int metrics_get_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool complete)
+  {
+  switch (argc)
+    {
+    case 1: return MyMetrics.Validate(writer, argc, argv[0], complete);
+    case 2:
+      {
+      OvmsMetric *metric = MyMetrics.FindUniquePrefix(argv[0]);
+      if (!metric)
+        return -1;
+      metric_unit_t unit = metric->GetUnits();
+      metric_group_t group = GetMetricGroup(unit);
+      return OvmsMetricUnit_Validate(writer, argc, argv[1], complete, group);
+      }
+    }
+  return -1;
+  }
 void metrics_get(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   const char *unit = NULL;
   if (argc > 1)
-    unit = argv[1];
+    unit = OvmsMetricUnit_FindUniquePrefix(argv[1]);
   std::string str = MyMetrics.GetUnitStr(argv[0], unit);
   writer->puts(str.c_str());
   }
@@ -971,9 +1012,9 @@ OvmsMetrics::OvmsMetrics()
       "-t = display non-printing characters and tabs in string metrics" , 0, 2);
   cmd_metric->RegisterCommand("persist","Show persistent metrics info", metrics_persist, "[-r]\n"
       "-r = reset persistent metrics", 0, 1);
-  cmd_metric->RegisterCommand("set","Set the value of a metric",metrics_set, "<metric> <value> [<unit>]", 2, 3);
+  cmd_metric->RegisterCommand("set","Set the value of a metric",metrics_set, "<metric> <value> [<unit>]", 2, 3, true, metrics_set_validate);
 
-  cmd_metric->RegisterCommand("get","Get the value of a metric",metrics_get, "<metric> [<unit>]", 1, 2);
+  cmd_metric->RegisterCommand("get","Get the value of a metric",metrics_get, "<metric> [<unit>]", 1, 2, true, metrics_get_validate);
   cmd_metric->RegisterCommand("units","List available units",metrics_units, "[<name>]",0,1);
 
   OvmsCommand* cmd_metrictrace = cmd_metric->RegisterCommand("trace","METRIC trace framework");
@@ -1135,6 +1176,62 @@ OvmsMetric* OvmsMetrics::Find(const char* metric)
     if (strcmp(m->m_name,metric)==0) return m;
     }
   return NULL;
+  }
+
+OvmsMetric* OvmsMetrics::FindUniquePrefix(const char* token) const
+  {
+  size_t len = strlen(token);
+  OvmsMetric* found = NULL;
+  for (OvmsMetric* m=m_first; m != NULL; m=m->m_next)
+    {
+    if (strncmp(m->m_name, token, len) == 0)
+      {
+      if (len == strlen(m->m_name))
+        return m;
+      if (found)
+        return NULL;
+      else
+        found = m;
+      }
+    }
+  return found;
+  }
+bool OvmsMetrics::GetCompletion(OvmsWriter* writer, const char* token) const
+  {
+    unsigned int index = 0;
+    bool match = false;
+    writer->SetCompletion(index, NULL);
+    if (token)
+      {
+      size_t len = strlen(token);
+      for (OvmsMetric* m=m_first; m != NULL; m=m->m_next)
+        {
+        if (strncmp(m->m_name, token, len) == 0)
+        {
+          writer->SetCompletion(index++, m->m_name);
+          match = true;
+        }
+      }
+    }
+    return match;
+  }
+int OvmsMetrics::Validate(OvmsWriter* writer, int argc, const char* token, bool complete) const
+  {
+  if (complete)
+    {
+    if (!GetCompletion(writer, token))
+      return -1;
+    }
+  else
+    {
+    if (FindUniquePrefix(token) == NULL)
+      {
+      if (strcmp(token, "?") != 0)
+        writer->printf("Metric: %s is not defined\n", token);
+      return -1;
+      }
+    }
+  return argc;
   }
 
 OvmsMetricInt* OvmsMetrics::InitInt(const char* metric, uint16_t autostale, int value, metric_unit_t units, bool persist)
@@ -2004,19 +2101,110 @@ const char* OvmsMetricUnitName(metric_unit_t units)
   return unit_info[unit_i].UnitCode;
   }
 
-metric_unit_t OvmsMetricUnitFromName(const char* unit)
+metric_unit_t OvmsMetricUnitFromName(const char* unit, bool allowUniquePrefix)
   {
   if (unit == NULL || unit[0] == '\0')
     return Native;
 
+  metric_unit_t res = UnitNotFound;
+  int unit_len = strlen(unit);
   for (metric_unit_t metric = MetricUnitFirst; metric <= MetricUnitLast; metric = metric_unit_t(1+(uint8_t)metric))
     {
     const char * name = unit_info[(uint8_t)metric].UnitCode;
+    if (name == NULL)
+      continue;
 
-    if (name != NULL && strcasecmp(name,unit) == 0)
-      return metric;
+    if (strncasecmp(name, unit, unit_len) == 0)
+      {
+      if (unit_len == strlen(name))
+        return metric;
+      else if (allowUniquePrefix)
+        {
+        if (res != UnitNotFound)
+          return UnitNotFound;
+        res = metric;
+        }
+      }
     }
-  return UnitNotFound;
+  return res;
+  }
+
+const char *OvmsMetricUnit_FindUniquePrefix(const char* token)
+  {
+
+  if (token == NULL || token[0] == '\0')
+    return NULL;
+
+  size_t len = strlen(token);
+  const char* found = NULL;
+
+  for (metric_unit_t metric = MetricUnitFirst; metric <= MetricUnitLast; metric = metric_unit_t(1+(uint8_t)metric))
+    {
+    const char * name = unit_info[(uint8_t)metric].UnitCode;
+    if (name == NULL)
+      continue;
+
+    if (strncasecmp(name, token, len) == 0)
+      {
+      if (len == strlen(name))
+        return name;
+      if (found)
+        return NULL;
+      else
+        found = name;
+      }
+    }
+  return found;
+  }
+
+bool OvmsMetricUnit_GetCompletion(OvmsWriter* writer, const char* token, metric_group_t group = GrpNone)
+  {
+  unsigned int index = 0;
+  bool match = false;
+  writer->SetCompletion(index, NULL);
+  if (token)
+    {
+    size_t len = strlen(token);
+    auto group_simple = MetricGroupSimplify(group);
+
+    for (metric_unit_t metric = MetricUnitFirst; metric <= MetricUnitLast; metric = metric_unit_t(1+(uint8_t)metric))
+      {
+      const char * name = unit_info[(uint8_t)metric].UnitCode;
+      if (name == NULL)
+        continue;
+      if (group != GrpNone )
+        {
+        auto group_current = MetricGroupSimplify(unit_info[(uint8_t)metric].Group);
+        if ( group_current != GrpNone && (group_simple != group_current ))
+          continue;
+        }
+      if (strncasecmp(name, token, len) == 0)
+        {
+        writer->SetCompletion(index++, name);
+        match = true;
+        }
+      }
+    }
+  return match;
+  }
+
+int OvmsMetricUnit_Validate(OvmsWriter* writer, int argc, const char* token, bool complete, metric_group_t group)
+  {
+  if (complete)
+    {
+    if (!OvmsMetricUnit_GetCompletion(writer, token, group))
+      return -1;
+    }
+  else
+    {
+    if (OvmsMetricUnit_FindUniquePrefix(token) == NULL)
+      {
+      if (strcmp(token, "?") != 0)
+        writer->printf("Error: %s is not defined\n", token);
+      return -1;
+      }
+    }
+  return argc;
   }
 
 int UnitConvert(metric_unit_t from, metric_unit_t to, int value)

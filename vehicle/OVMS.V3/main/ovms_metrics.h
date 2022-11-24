@@ -160,7 +160,9 @@ const metric_group_t MetricGroupLast = GrpAccelShort;
 
 extern const char* OvmsMetricUnitLabel(metric_unit_t units);
 extern const char* OvmsMetricUnitName(metric_unit_t units);
-extern metric_unit_t OvmsMetricUnitFromName(const char* unit);
+extern metric_unit_t OvmsMetricUnitFromName(const char* unit, bool allowUniquePrefix = false);
+int OvmsMetricUnit_Validate(OvmsWriter* writer, int argc, const char* token, bool complete, metric_group_t group = GrpNone);
+const char *OvmsMetricUnit_FindUniquePrefix(const char* token);
 
 extern int UnitConvert(metric_unit_t from, metric_unit_t to, int value);
 extern float UnitConvert(metric_unit_t from, metric_unit_t to, float value);
@@ -1013,6 +1015,10 @@ class OvmsMetrics
     bool SetFloat(const char* metric, float value);
     std::string GetUnitStr(const char* metric, const char *unit = NULL);
     OvmsMetric* Find(const char* metric);
+
+    OvmsMetric* FindUniquePrefix(const char* token) const;
+    bool GetCompletion(OvmsWriter* writer, const char* token) const;
+    int Validate(OvmsWriter* writer, int argc, const char* token, bool complete) const;
 
     OvmsMetricInt *InitInt(const char* metric, uint16_t autostale=0, int value=0, metric_unit_t units = Other, bool persist = false);
     OvmsMetricBool *InitBool(const char* metric, uint16_t autostale=0, bool value=0, metric_unit_t units = Other, bool persist = false);

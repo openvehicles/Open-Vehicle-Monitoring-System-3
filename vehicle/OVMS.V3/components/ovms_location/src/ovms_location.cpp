@@ -370,6 +370,15 @@ void location_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
   writer->puts("NOTE: ACC actions are not implemented yet!");       // XXX IMPLEMENT AND REMOVE THIS!
   }
 
+int location_set_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool complete)
+  {
+  if (argc == 5)
+    {
+    return OvmsMetricUnit_Validate(writer, argc, argv[4], complete, GrpDistanceShort);
+    }
+  return -1;
+  }
+
 void location_set(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   const char *name = argv[0];
@@ -525,6 +534,16 @@ int location_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char
   {
   if (argc == 1)
     return MyLocations.m_locations.Validate(writer, argc, argv[0], complete);
+  return -1;
+  }
+
+int location_radius_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool complete)
+  {
+  switch (argc)
+    {
+    case 1: return MyLocations.m_locations.Validate(writer, argc, argv[0], complete);
+    case 3: return OvmsMetricUnit_Validate(writer, argc, argv[2], complete, GrpDistanceShort);
+    }
   return -1;
   }
 
@@ -685,8 +704,8 @@ OvmsLocations::OvmsLocations()
   // Register our commands
   OvmsCommand* cmd_location = MyCommandApp.RegisterCommand("location","LOCATION framework", location_status, "", 0, 0, false);
   cmd_location->RegisterCommand("list","Show all locations",location_list);
-  cmd_location->RegisterCommand("set","Set the position of a location",location_set, "<name> [<latitude> <longitude> [<radius> [<unit>]] ]", 1, 5);
-  cmd_location->RegisterCommand("radius","Set the radius of a location (defaults to user 'height' units)",location_radius, "<name> <radius> [<unit>]", 2, 3, true, location_validate);
+  cmd_location->RegisterCommand("set","Set the position of a location",location_set, "<name> [<latitude> <longitude> [<radius> [<unit>]] ]", 1, 5, true, location_set_validate);
+  cmd_location->RegisterCommand("radius","Set the radius of a location (defaults to user 'height' units)",location_radius, "<name> <radius> [<unit>]", 2, 3, true, location_radius_validate);
   cmd_location->RegisterCommand("rm","Remove a defined location",location_rm, "<name>", 1, 1, true, location_validate);
   cmd_location->RegisterCommand("status","Show location status",location_status);
   OvmsCommand* cmd_action = cmd_location->RegisterCommand("action","Set an action for a location");
