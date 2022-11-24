@@ -89,7 +89,7 @@ OvmsCanLogVFSInit::OvmsCanLogVFSInit()
 
 
 canlog_vfs_conn::canlog_vfs_conn(canlog* logger, std::string format, canformat::canformat_serve_mode_t mode)
-  : canlogconnection(logger, format, mode)
+  : canlogconnection(logger, format, mode), m_file_size(0)
   {
   m_file = NULL;
   }
@@ -114,7 +114,10 @@ void canlog_vfs_conn::OutputMsg(CAN_log_message_t& msg, std::string &result)
     }
 
   if (result.length()>0)
+    {
     fwrite(result.c_str(),result.length(),1,m_file);
+    m_file_size += result.length();
+    }
   }
 
 
@@ -181,7 +184,10 @@ bool canlog_vfs::Open()
 
   std::string header = m_formatter->getheader();
   if (header.length()>0)
+    {
     fwrite(header.c_str(),header.length(),1,clc->m_file);
+    clc->m_file_size += header.length();
+    }
 
   m_connmap[NULL] = clc;
   m_isopen = true;
@@ -205,6 +211,47 @@ void canlog_vfs::Close()
 
     m_isopen = false;
     }
+  }
+
+size_t canlog_vfs::GetFileSize()
+  {
+  size_t result = 0;
+  if (m_isopen)
+    {
+    for (conn_map_t::iterator it=m_connmap.begin(); it!=m_connmap.end(); ++it)
+      {
+      canlog_vfs_conn * clc = static_cast<canlog_vfs_conn *>(it->second);
+      result += clc->m_file_size;
+      }
+    }
+  return result;
+  }
+
+std::string canlog_vfs_conn::GetStats()
+  {
+  char bufsize[15];
+  format_file_size(bufsize, sizeof(bufsize), m_file_size);
+
+  std::string result = "Size:";
+  result.append(bufsize);
+  result.append(" ");
+  result.append(canlogconnection::GetStats());
+
+  return result;
+  }
+
+std::string canlog_vfs::GetStats()
+  {
+  char bufsize[15];
+  size_t size = GetFileSize();
+  format_file_size(bufsize, sizeof(bufsize), size);
+
+  std::string result = "Size:";
+  result.append(bufsize);
+  result.append(" ");
+  result.append(canlog::GetStats());
+
+  return result;
   }
 
 std::string canlog_vfs::GetInfo()
