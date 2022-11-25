@@ -251,6 +251,7 @@ typedef enum
   CAN_LogInfo_Comment,        // general comment
   CAN_LogInfo_Config,         // logger setup info (type, file, filters, vehicle)
   CAN_LogInfo_Event,          // system event (i.e. vehicle started)
+  CAN_LogInfo_Metric,         // system or plugin metric (i.e. v.p.altitude)
   } CAN_log_type_t;
 
 // Log message:

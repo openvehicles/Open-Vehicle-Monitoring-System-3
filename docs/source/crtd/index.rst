@@ -33,6 +33,7 @@ History
 * 1.0: Initial version supporting CXX, R11, R29, T11, and T29 messages only
 * 2.0: Add optional bus ID prefix to record types
 * 3.0: Add support for comment commands, and clarify documentation inconsistencies
+* 3.1: Add support for CMT - metric data in comments
 
 -------------
 Specification
@@ -131,6 +132,7 @@ The following comment record types are defined:
 * CER: An indication of a (usually recoverable) error
 * CST: Periodical statistics
 * CEV: An indication of an event
+* CMT: An indication of a metric data
 * CVR: Version of CRTD protocol adhered to (with version number as text comment)
 
 and the following command record types are defined:
@@ -147,6 +149,7 @@ Here are some examples::
   19292.299819 CEV vehicle.alert this is a textual vehicle alert
   198923.283738 CST intr=0 rxpkt=0 txpkt=0 errflags=0 rxerr=0 txerr=0 rxovr=0 txovr=0 txdelay=0 wdgreset=0
   2783.384726 CER intr=0 rxpkt=0 txpkt=0 errflags=0 rxerr=0 txerr=0 rxovr=0 txovr=0 txdelay=0 wdgreset=0
+  1668730982.038759 CMT Metric { "name": "v.p.gpstime", "value": 1668730982, "unit": "Sec" }
 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Command Record CBC - Configure a CAN bus

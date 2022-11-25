@@ -199,7 +199,7 @@ protected:
   void IncomingBMC_Full(canbus *bus, uint16_t type, uint16_t pid, const std::string &data);
   void IncomingBCM_Full(canbus *bus, uint16_t type, uint16_t pid, const std::string &data);
   void IncomingIGMP_Full(canbus *bus, uint16_t type, uint16_t pid, const std::string &data);
-  void IncomingAirCon(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length, uint16_t mlremain);
+  void IncomingOther_Full(canbus *bus, uint16_t type, uint16_t pid, const std::string &data);
   void IncomingAbsEsp(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length, uint16_t mlremain);
   void IncomingCM_Full(canbus *bus, uint16_t type, uint16_t pid, const std::string &data);
   void RequestNotify(unsigned int which);

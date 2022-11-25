@@ -748,3 +748,19 @@ std::string string_format(const std::string fmt_str, ...) {
     return std::string(formatted.get());
 }
 #endif
+
+/**
+ * format_file_size: format a file size in human-readable format.
+ * (like 1.5k 234.2M 2.1G)
+ */
+void format_file_size(char* buffer, std::size_t buf_size, std::size_t fsize) {
+  if (fsize < 1024) {
+    snprintf(buffer, buf_size, "%d", (int) fsize);
+  } else if (fsize < 0x100000) {
+    snprintf(buffer, buf_size, "%.1fk", (double) fsize / 1024.0);
+  } else if (fsize < 0x40000000) {
+    snprintf(buffer, buf_size, "%.1fM", (double) fsize / 1048576);
+  } else {
+    snprintf(buffer, buf_size, "%.1fG", (double) fsize / 1073741824);
+  }
+}

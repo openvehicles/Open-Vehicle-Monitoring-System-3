@@ -980,7 +980,7 @@ static duk_ret_t DukOvmsMetricGetValues(duk_context *ctx)
 
 #endif //#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
 
-MetricCallbackEntry::MetricCallbackEntry(const char* caller, MetricCallback callback)
+MetricCallbackEntry::MetricCallbackEntry(std::string caller, MetricCallback callback)
   {
   m_caller = caller;
   m_callback = callback;
@@ -1276,7 +1276,7 @@ OvmsMetricString* OvmsMetrics::InitString(const char* metric, uint16_t autostale
   return m;
   }
 
-void OvmsMetrics::RegisterListener(const char* caller, const char* name, MetricCallback callback)
+void OvmsMetrics::RegisterListener(std::string caller, std::string name, MetricCallback callback)
   {
   auto k = m_listeners.find(name);
   if (k == m_listeners.end())
@@ -1286,7 +1286,7 @@ void OvmsMetrics::RegisterListener(const char* caller, const char* name, MetricC
     }
   if (k == m_listeners.end())
     {
-    ESP_LOGE(TAG, "Problem registering metric %s for caller %s",name,caller);
+    ESP_LOGE(TAG, "Problem registering metric %s for caller %s",name.c_str(),caller.c_str());
     return;
     }
 
@@ -1294,7 +1294,7 @@ void OvmsMetrics::RegisterListener(const char* caller, const char* name, MetricC
   ml->push_back(new MetricCallbackEntry(caller,callback));
   }
 
-void OvmsMetrics::DeregisterListener(const char* caller)
+void OvmsMetrics::DeregisterListener(std::string caller)
   {
   MetricCallbackMap::iterator itm=m_listeners.begin();
   while (itm!=m_listeners.end())

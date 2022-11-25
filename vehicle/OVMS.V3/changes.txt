@@ -29,6 +29,10 @@ Open Vehicle Monitor System v3 - Change log
   New events:
     vehicle.charge.type                 -- Vehicle charge connection type has changed (e.g. ccs/type2/…)
     vehicle.gen.type                    -- Vehicle generator connection type has changed
+- CAN logging: add possibility to log events (name) and metrics (JSON object with name, value, unit)
+  New configs:
+    [can] log.events_filters            -- comma-separated list of filters (with possible wildcard) matching an event name
+    [can] log.metrics_filters           -- comma-separated list of filters (with possible wildcard) matching a metric name
 - Add units Bar, Permille
 - Add user configuration for groups of metrics
   Adds the 'ToUser' unit that converts to the user specified unit.
