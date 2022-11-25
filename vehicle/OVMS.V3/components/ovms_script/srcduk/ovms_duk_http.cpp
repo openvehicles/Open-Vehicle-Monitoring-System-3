@@ -180,9 +180,9 @@ DuktapeHTTPRequest::DuktapeHTTPRequest(duk_context *ctx, int obj_idx)
           m_headers.append(": ");
           m_headers.append(val);
           m_headers.append("\r\n");
-          if (key == "User-Agent")
+          if (strcasecmp(key.c_str(), "User-Agent") == 0)
             have_useragent = true;
-          else if (key == "Content-Type")
+          else if (strcasecmp(key.c_str(), "Content-Type") == 0)
             have_contenttype = true;
           }
         duk_pop(ctx); // enum
@@ -325,7 +325,7 @@ void DuktapeHTTPRequest::MongooseCallback(struct mg_connection *nc, int ev, void
         key.assign(hm->header_names[i].p, hm->header_names[i].len);
         val.assign(hm->header_values[i].p, hm->header_values[i].len);
         m_response_headers.push_back(std::make_pair(key, val));
-        if (key == "Location") location = val;
+        if (strcasecmp(key.c_str(), "Location") == 0) location = val;
         }
 
       // follow redirect?

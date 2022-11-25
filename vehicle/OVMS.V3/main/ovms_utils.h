@@ -615,4 +615,18 @@ static inline std::string trim_copy(std::string s) {
  */
 void format_file_size(char* buffer, std::size_t buf_size, std::size_t fsize);
 
+/**
+ * Return `std::string` in lower-case.
+ *
+ * Cf https://en.cppreference.com/w/cpp/string/byte/tolower
+ *
+ * Note: This may introduce unnecessary overhead as `std::tolower()` is locale aware.
+ * Sometimes it may be better to use plain C `strncasecmp()`.
+ */
+static inline std::string str_tolower(std::string s) {
+    std::transform(s.begin(), s.end(), s.begin(),
+                   [](unsigned char c){ return std::tolower(c); }
+                  );
+    return s;
+}
 #endif // __OVMS_UTILS_H__
