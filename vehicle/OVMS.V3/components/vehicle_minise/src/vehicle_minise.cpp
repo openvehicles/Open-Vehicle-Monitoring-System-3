@@ -287,8 +287,8 @@ OvmsVehicleMiniSE::OvmsVehicleMiniSE()
     StdMetrics.ms_v_env_awake->SetValue(false);
   if (!StdMetrics.ms_v_env_on->AsBool())
     StdMetrics.ms_v_env_on->SetValue(false);
-  PollSetThrottling(50);
-  PollSetResponseSeparationTime(5);
+//  PollSetThrottling(50);
+//  PollSetResponseSeparationTime(5);
 }
 
 OvmsVehicleMiniSE::~OvmsVehicleMiniSE()
@@ -430,7 +430,7 @@ void OvmsVehicleMiniSE::Ticker10(uint32_t ticker)
     mt_se_age->SetValue(StdMetrics.ms_m_monotonic->AsInt() - last_obd_data_seen, Seconds);
   }
 
-#if 0
+#if 1
   for (uint8_t cell = 1; cell <= 96; cell++) {
     BmsSetCellVoltage(cell - 1, 3.2f);
     BmsSetCellTemperature(cell - 1, 19.0f);
@@ -440,7 +440,7 @@ void OvmsVehicleMiniSE::Ticker10(uint32_t ticker)
 #if 1
   // Read cells voltages
   ESP_LOGI(TAG, "Polling 96 cell voltages...");
-  for (uint8_t cell = 1; cell <= 96; cell++) {
+  for (uint8_t cell = 1; cell <= 10; cell++) {
     std::string request;
     std::string response;
     request = "\x31\x03\xAD\x6E";
@@ -454,7 +454,7 @@ void OvmsVehicleMiniSE::Ticker10(uint32_t ticker)
       BmsSetCellVoltage(cell - 1, voltage / 1000.0f);
     }
     BmsSetCellTemperature(cell - 1, 19.0f);
-    usleep(100000);
+    usleep(200000);
   }
 #endif
 }
