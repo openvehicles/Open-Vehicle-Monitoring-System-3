@@ -84,6 +84,7 @@ static const OvmsVehicle::poll_pid_t obdii_polls[] = {
   // SME: Battery management electronics
   { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_SME_ALTERUNG_KAPAZITAET_TS, { 0, 60, 60, 60 },
     0, ISOTP_EXTADR },// 0x6335 v_bat_soh, v_bat_health
+#if 1
   { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_SME_HV_SPANNUNG_BERECHNET, { 0, 2, 1, 2 }, 0,
     ISOTP_EXTADR },   // 0xDD68 v_bat_volts
   { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_SME_HV_STROM, { 0, 2, 1, 2 }, 0,
@@ -194,13 +195,19 @@ static const OvmsVehicle::poll_pid_t obdii_polls[] = {
   // EPS:  Power steering (We only use this to tell if the car is ready since the EPS is only on when the car is READY)
   { I3_ECU_EPS_TX, I3_ECU_EPS_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_EPS_EPS_MOMENTENSENSOR, { 0, 5, 5, 5 }, 0,
     ISOTP_EXTADR },   // 0xDB99
-
+#endif
   POLL_LIST_END
 };
 
 OvmsVehicleMiniSE::OvmsVehicleMiniSE()
 {
   ESP_LOGI(TAG, "Mini Cooper SE vehicle module");
+
+  // BMS configuration:
+  BmsSetCellArrangementVoltage(96, 1);
+  BmsSetCellArrangementTemperature(12, 1);
+  BmsSetCellLimitsVoltage(0.0, 5.0);
+  BmsSetCellLimitsTemperature(-30.0, 90.0);
 
   // Declare all custom metrics
 
@@ -271,9 +278,8 @@ OvmsVehicleMiniSE::OvmsVehicleMiniSE()
 
   // Get the CAN bus setup
   RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
-  PollSetPidList(m_can1, obdii_polls);
-  //pollerstate = POLLSTATE_SHUTDOWN;  // If the car is alive we'll get frames and switch to ALIVE
-  pollerstate = POLLSTATE_ALIVE;  // If the car is alive we'll get frames and switch to ALIVE
+//  PollSetPidList(m_can1, obdii_polls);
+  pollerstate = POLLSTATE_SHUTDOWN;  // If the car is alive we'll get frames and switch to ALIVE
   PollSetState(pollerstate);
   mt_se_pollermode->SetValue(pollerstate);
   mt_se_obdisalive->SetValue(false);
@@ -424,16 +430,33 @@ void OvmsVehicleMiniSE::Ticker10(uint32_t ticker)
     mt_se_age->SetValue(StdMetrics.ms_m_monotonic->AsInt() - last_obd_data_seen, Seconds);
   }
 
+#if 0
+  for (uint8_t cell = 1; cell <= 96; cell++) {
+    BmsSetCellVoltage(cell - 1, 3.2f);
+    BmsSetCellTemperature(cell - 1, 19.0f);
+  }
+#endif
+
+#if 1
   // Read cells voltages
+  ESP_LOGI(TAG, "Polling 96 cell voltages...");
   for (uint8_t cell = 1; cell <= 96; cell++) {
     std::string request;
     std::string response;
-    request = "\x31\x01\xAD\x6E";
+    request = "\x31\x03\xAD\x6E";
     request.append(1, cell);
-    PollSingleRequest(m_can1, I3_ECU_SME_TX, I3_ECU_SME_RX, request, response, 10, ISOTP_STD);
-    request = "\x31\x01\xAD\x6E";
-    PollSingleRequest(m_can1, I3_ECU_SME_TX, I3_ECU_SME_RX, request, response, 10, ISOTP_STD);
+    ESP_LOGI(TAG, "Polling cell %d voltage", cell);
+    int result = PollSingleRequest(m_can1, I3_ECU_SME_TX, I3_ECU_SME_RX, request, response, 1000, ISOTP_EXTADR);
+    ESP_LOGI(TAG, "### %d %s", result, hexencode(response).c_str());
+    if (result == POLLSINGLE_OK) {
+      uint16_t voltage = response[2] << 8 | response[3];
+      ESP_LOGI(TAG, "Cell %d voltage = %f", cell, voltage / 1000.0f);
+      BmsSetCellVoltage(cell - 1, voltage / 1000.0f);
+    }
+    BmsSetCellTemperature(cell - 1, 19.0f);
+    usleep(100000);
   }
+#endif
 }
 
 void OvmsVehicleMiniSE::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length,
@@ -456,6 +479,7 @@ void OvmsVehicleMiniSE::IncomingPollReply(canbus *bus, uint16_t type, uint16_t p
   }
 
   ++replycount;
+  ESP_LOGI(TAG, "IncomingPollReply");
 
   int datalen = rxbuf.size();
 
@@ -1788,9 +1812,6 @@ void OvmsVehicleMiniSE::IncomingPollReply(canbus *bus, uint16_t type, uint16_t p
       // HV-DC current of the converter for the EM stator / HV-DC Strom des Umrichters für den EM-Stator
       ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "EME", "AE_STROM_EMASCHINE",
         "STAT_STROM_DC_HV_UMRICHTER_EM_WERT", STAT_STROM_DC_HV_UMRICHTER_EM_WERT, "\"A\"");
-
-      // ==========  Add your processing here ==========
-      HexDump(rxbuf, type, pid);
 
       break;
     }
