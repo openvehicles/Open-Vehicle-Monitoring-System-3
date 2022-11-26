@@ -42,8 +42,6 @@
 #include "ovms_version.h"
 #include "esp_idf_version.h"
 
-static const char *TAG = "utils";
-
 /**
  * chargestate_code: convert legacy chargestate key to code
  */
@@ -734,18 +732,17 @@ fail:
 /**
  * Format string with std::string result (sprintf for std::string).
  */
-std::string string_format(const std::string fmt_str, ...)
+std::string string_format(const char * fmt_str, ...)
   {
   va_list ap;
   char *fp = NULL;
   va_start(ap, fmt_str);
-  int ret = vasprintf(&fp, fmt_str.c_str(), ap);
+  int ret = vasprintf(&fp, fmt_str, ap);
   va_end(ap);
   std::unique_ptr<char[]> formatted(fp);
   if (ret >= 0)
     return std::string(formatted.get());
-  ESP_LOGE(TAG, "Invalid format string: \"%s\"", fmt_str.c_str());
-  return fmt_str;
+  return "";
   }
 
 /**
