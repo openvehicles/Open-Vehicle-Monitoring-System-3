@@ -42,6 +42,8 @@
 #include "ovms_version.h"
 #include "esp_idf_version.h"
 
+static const char *TAG = "utils";
+
 /**
  * chargestate_code: convert legacy chargestate key to code
  */
@@ -727,27 +729,24 @@ fail:
     }
     return NULL;
 }
+#endif
+
 /**
  * Format string with std::string result (sprintf for std::string).
  */
-std::string string_format(const std::string fmt_str, ...) {
-    int final_n, n = ((int)fmt_str.size()) * 2; /* Reserve two times as much as the length of the fmt_str */
-    std::unique_ptr<char[]> formatted;
-    va_list ap;
-    while(1) {
-        formatted.reset(new char[n]); /* Wrap the plain char array into the unique_ptr */
-        strcpy(&formatted[0], fmt_str.c_str());
-        va_start(ap, fmt_str);
-        final_n = vsnprintf(&formatted[0], n, fmt_str.c_str(), ap);
-        va_end(ap);
-        if (final_n < 0 || final_n >= n)
-            n += abs(final_n - n + 1);
-        else
-            break;
-    }
+std::string string_format(const std::string fmt_str, ...)
+  {
+  va_list ap;
+  char *fp = NULL;
+  va_start(ap, fmt_str);
+  int ret = vasprintf(&fp, fmt_str.c_str(), ap);
+  va_end(ap);
+  std::unique_ptr<char[]> formatted(fp);
+  if (ret >= 0)
     return std::string(formatted.get());
-}
-#endif
+  ESP_LOGE(TAG, "Invalid format string: \"%s\"", fmt_str.c_str());
+  return fmt_str;
+  }
 
 /**
  * format_file_size: format a file size in human-readable format.
