@@ -41,7 +41,7 @@ class LogBuffers : public std::forward_list<char*>
     virtual ~LogBuffers();
 
   public:
-    int append(const char* fmt, va_list args);
+    int append(const char* fmt, va_list args) __attribute__ ((format (printf, 2, 0)));
     void append(char* buffer);
     void set(int count);
     void release();

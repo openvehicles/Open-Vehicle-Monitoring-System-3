@@ -1207,7 +1207,7 @@ void OvmsWebServer::HandleCfgPushover(PageEntry_t& p, PageContext_t& c)
             "<td><button type=\"button\" class=\"btn btn-danger\" onclick=\"delRow(this)\"><strong>✖</strong></button></td>"
             "<td><input type=\"text\" class=\"form-control\" name=\"nfy_%d\" value=\"%s\" placeholder=\"Enter notification type/subtype\""
               " autocomplete=\"section-notification-type\"></td>"
-            "<td width=\"20%\"><select class=\"form-control\" name=\"np_%d\" size=\"1\">"
+            "<td width=\"20%%\"><select class=\"form-control\" name=\"np_%d\" size=\"1\">"
       , max, _attr(name)
       , max);
     gen_options_priority(kv.second);
@@ -3973,7 +3973,7 @@ void OvmsWebServer::HandleEditor(PageEntry_t& p, PageContext_t& c)
         "text-align: center !important;\n"
       "}\n"
     "}\n"
-    ".log { font-size: 87%; color: gray; }\n"
+    ".log { font-size: 87%%; color: gray; }\n"
     ".log.log-I { color: green; }\n"
     ".log.log-W { color: darkorange; }\n"
     ".log.log-E { color: red; }\n"

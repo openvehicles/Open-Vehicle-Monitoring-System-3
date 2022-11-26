@@ -1079,7 +1079,7 @@ void OvmsVehicleSmartED::WebCfgBmsCellMonitor(PageEntry_t& p, PageContext_t& c)
 void OvmsVehicleSmartED::WebCfgBmsCellCapacity(PageEntry_t& p, PageContext_t& c)
 {
   c.head(200);
-  c.printf(
+  c.print(
     "<div class=\"panel panel-primary panel-single\">"
     "<div class=\"panel-heading\">Smart ED BMS Cell Capacity</div>"
     "<div class=\"panel-body\">"
@@ -1109,7 +1109,7 @@ void OvmsVehicleSmartED::WebCfgBmsCellCapacity(PageEntry_t& p, PageContext_t& c)
     "}\n"
     "@media (max-width: 600px) {\n"
       ".outer {\n"
-        "width: 100%%;\n"
+        "width: 100%;\n"
         "height: 400px;\n"
       "}\n"
       ".container {\n"

@@ -180,7 +180,7 @@ void ota_flash_vfs(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
     writer->printf("Error: Cannot find file %s\n",argv[0]);
     return;
     }
-  writer->printf("Source image is %d bytes in size\n",ds.st_size);
+  writer->printf("Source image is %ld bytes in size\n",ds.st_size);
 
   FILE* f = fopen(argv[0], "r");
   if (f == NULL)
@@ -242,7 +242,7 @@ void ota_flash_vfs(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
     return;
     }
 
-  writer->printf("OTA flash was successful\n  Flashed %d bytes from %s\n  Next boot will be from '%s'\n",
+  writer->printf("OTA flash was successful\n  Flashed %ld bytes from %s\n  Next boot will be from '%s'\n",
                  ds.st_size,argv[0],target->label);
   MyConfig.SetParamValue("ota", "vfs.mru", argv[0]);
   }

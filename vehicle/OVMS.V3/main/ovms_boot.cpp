@@ -183,7 +183,7 @@ void boot_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
         (exccause < NUM_EDESCS) ? edesc[exccause] : "Unknown", boot_data.crash_data.core_id);
       writer->printf("  Registers:\n");
       for (int i=0; i<24; i++)
-        writer->printf("  %s: 0x%08lx%s", sdesc[i], boot_data.crash_data.reg[i], ((i+1)%4) ? "" : "\n");
+        writer->printf("  %s: 0x%08x%s", sdesc[i], boot_data.crash_data.reg[i], ((i+1)%4) ? "" : "\n");
       }
 
     for (int core = 0; core < portNUM_PROCESSORS; core++)
@@ -195,7 +195,7 @@ void boot_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
 
     writer->printf("  Backtrace:\n ");
     for (int i=0; i<OVMS_BT_LEVELS && boot_data.crash_data.bt[i].pc; i++)
-      writer->printf(" 0x%08lx", boot_data.crash_data.bt[i].pc);
+      writer->printf(" 0x%08x", boot_data.crash_data.bt[i].pc);
 
     if (boot_data.curr_event_name[0])
       {
@@ -632,13 +632,13 @@ void Boot::NotifyDebugCrash()
       buf.printf(",%s,%d,",
         (exccause < NUM_EDESCS) ? edesc[exccause] : "Unknown", boot_data.crash_data.core_id);
       for (int i=0; i<24; i++)
-        buf.printf("0x%08lx ", boot_data.crash_data.reg[i]);
+        buf.printf("0x%08x ", boot_data.crash_data.reg[i]);
       }
 
     // backtrace:
     buf.append(",");
     for (int i=0; i<OVMS_BT_LEVELS && boot_data.crash_data.bt[i].pc; i++)
-      buf.printf("0x%08lx ", boot_data.crash_data.bt[i].pc);
+      buf.printf("0x%08x ", boot_data.crash_data.bt[i].pc);
 
     // Reset reason:
     buf.printf(",%d,%s", GetResetReason(), GetResetReasonName());

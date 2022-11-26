@@ -75,7 +75,7 @@ class ConsoleSSH : public OvmsConsole
     void Sent();
     void Exit();
     int puts(const char* s);
-    int printf(const char* fmt, ...);
+    int printf(const char* fmt, ...) __attribute__ ((format (printf, 2, 3)));
     ssize_t write(const void *buf, size_t nbyte);
     int RecvCallback(char* buf, uint32_t size);
     bool IsDraining() { return m_drain > 0; }

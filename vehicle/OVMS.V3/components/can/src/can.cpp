@@ -213,7 +213,7 @@ void can_tx(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const
   uint32_t uv = strtoul(argv[0], &ep, 16);
   if (*ep != '\0' || uv > idmax)
     {
-    writer->printf("Error: Invalid CAN ID \"%s\" (0x%lx max)\n", argv[0], idmax);
+    writer->printf("Error: Invalid CAN ID \"%s\" (0x%x max)\n", argv[0], idmax);
     return;
     }
   frame.MsgID = uv;
@@ -298,7 +298,7 @@ void can_testtx(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
   uint32_t uv = strtoul(argv[0], &ep, 16);
   if (*ep != '\0' || uv > idmax)
     {
-    writer->printf("Error: Invalid CAN ID \"%s\" (0x%lx max)\n", argv[0], idmax);
+    writer->printf("Error: Invalid CAN ID \"%s\" (0x%x max)\n", argv[0], idmax);
     return;
     }
   frame.MsgID = uv;

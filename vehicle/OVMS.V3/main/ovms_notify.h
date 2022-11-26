@@ -184,9 +184,9 @@ class OvmsNotify : public ExternalRamAllocated
   public:
     void RegisterType(const char* type);
     uint32_t NotifyString(const char* type, const char* subtype, const char* value);
-    uint32_t NotifyStringf(const char* type, const char* subtype, const char* fmt, ...);
+    uint32_t NotifyStringf(const char* type, const char* subtype, const char* fmt, ...) __attribute__ ((format (printf, 4, 5)));
     uint32_t NotifyCommand(const char* type, const char* subtype, const char* cmd);
-    uint32_t NotifyCommandf(const char* type, const char* subtype, const char* fmt, ...);
+    uint32_t NotifyCommandf(const char* type, const char* subtype, const char* fmt, ...) __attribute__ ((format (printf, 4, 5)));
     void NotifyErrorCode(uint32_t code, uint32_t data, bool raised, bool force=false);
 
   public:
