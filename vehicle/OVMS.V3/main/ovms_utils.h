@@ -615,6 +615,10 @@ static inline std::string trim_copy(std::string s) {
  */
 void format_file_size(char* buffer, std::size_t buf_size, std::size_t fsize);
 
+/** Format to a std::string.
+ */
+std::string string_format(const char *fmt_str, ...) __attribute__ ((format (printf, 1, 2)));
+
 /**
  * Return `std::string` in lower-case.
  *

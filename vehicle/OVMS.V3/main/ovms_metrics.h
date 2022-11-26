@@ -60,6 +60,7 @@ typedef enum : uint8_t
   Native        = Other,
   ToMetric      = 1,
   ToImperial    = 2,
+  ToUser        = 3,
 
   Kilometers    = 10,
   Miles         = 11,
@@ -72,6 +73,7 @@ typedef enum : uint8_t
   kPa           = 30,
   Pa            = 31,
   PSI           = 32,
+  Bar           = 33,
 
   Volts         = 40,
   Amps          = 41,
@@ -102,6 +104,7 @@ typedef enum : uint8_t
   sq            = 81,   // Signal Quality (in SQ units)
 
   Percentage    = 90,
+  Permille      = 91,
 
   // Energy consumption:
   WattHoursPK   = 100,  // Wh/km
@@ -127,12 +130,58 @@ typedef enum : uint8_t
   Defined
 } metric_defined_t;
 
+// Mask for folding "Short groups" to their equivalent "Long Group"
+const uint8_t GrpFoldMask = 0x0f;
+const uint8_t GrpUnfold = 0x10;
+typedef enum : uint8_t
+  {
+  GrpNone = 0,
+  GrpOther = 1,
+  GrpDistance = 2,
+  GrpSpeed = 3,
+  GrpAccel = 4,
+  GrpPower = 5,
+  GrpEnergy = 6,
+  GrpConsumption = 7,
+  GrpTemp = 8,
+  GrpPressure = 9,
+  GrpTime = 10,
+  GrpSignal = 11,
+  GrpTorque = 12,
+  GrpDirection = 13,
+  GrpRatio = 14,
+  // These are where a dimension group is split and allows
+  // easily folding the 'short distances' back onto their equivalents.
+  GrpDistanceShort = GrpDistance + GrpUnfold,
+  GrpAccelShort = GrpAccel + GrpUnfold
+  } metric_group_t;
+const metric_group_t MetricGroupLast = GrpAccelShort;
+
 extern const char* OvmsMetricUnitLabel(metric_unit_t units);
 extern const char* OvmsMetricUnitName(metric_unit_t units);
-extern metric_unit_t OvmsMetricUnitFromName(const char* unit);
+extern metric_unit_t OvmsMetricUnitFromName(const char* unit, bool allowUniquePrefix = false);
+int OvmsMetricUnit_Validate(OvmsWriter* writer, int argc, const char* token, bool complete, metric_group_t group = GrpNone);
+const char *OvmsMetricUnit_FindUniquePrefix(const char* token);
 
 extern int UnitConvert(metric_unit_t from, metric_unit_t to, int value);
 extern float UnitConvert(metric_unit_t from, metric_unit_t to, float value);
+
+typedef std::vector<metric_group_t> metric_group_list_t;
+typedef std::set<metric_unit_t> metric_unit_set_t;
+
+// Groups in order of display.
+extern bool OvmsMetricGroupConfigList(metric_group_list_t& groups);
+extern const char* OvmsMetricGroupLabel(metric_group_t group);
+extern const char* OvmsMetricGroupName(metric_group_t group);
+extern bool OvmsMetricGroupUnits(metric_group_t group, metric_unit_set_t& units);
+
+// Get/Set Metric default config
+extern std::string OvmsMetricGetUserConfig(metric_group_t group);
+extern void OvmsMetricSetUserConfig(metric_group_t group, std::string value);
+extern void OvmsMetricSetUserConfig(metric_group_t group, metric_unit_t unit);
+extern metric_unit_t OvmsMetricGetUserUnit(metric_group_t group, metric_unit_t defaultUnit = Native);
+extern metric_group_t GetMetricGroup(metric_unit_t unit);
+metric_unit_t OvmsMetricCheckUnit(metric_unit_t fromUnit, metric_unit_t toUnit);
 
 typedef uint32_t persistent_value_t;
 
@@ -838,6 +887,10 @@ class OvmsMetricVector : public OvmsMetric
       OvmsMutexLock lock(&m_mutex);
       return m_value;
       }
+    inline std::vector<ElemType, Allocator> AsVector(metric_unit_t units)
+      {
+      return AsVector(std::vector<ElemType, Allocator>(), units);
+      }
 
     ElemType GetElemValue(size_t n)
       {
@@ -846,6 +899,12 @@ class OvmsMetricVector : public OvmsMetric
       if (m_value.size() > n)
         val = m_value[n];
       return val;
+      }
+
+    ElemType GetElemValue(size_t n, metric_unit_t units)
+      {
+      ElemType val = GetElemValue(n);
+      return UnitConvert(m_units, units, val);
       }
 
     void SetElemValue(size_t n, const ElemType nvalue, metric_unit_t units = Other)
@@ -956,6 +1015,10 @@ class OvmsMetrics
     std::string GetUnitStr(const char* metric, const char *unit = NULL);
     OvmsMetric* Find(const char* metric);
 
+    OvmsMetric* FindUniquePrefix(const char* token) const;
+    bool GetCompletion(OvmsWriter* writer, const char* token) const;
+    int Validate(OvmsWriter* writer, int argc, const char* token, bool complete) const;
+
     OvmsMetricInt *InitInt(const char* metric, uint16_t autostale=0, int value=0, metric_unit_t units = Other, bool persist = false);
     OvmsMetricBool *InitBool(const char* metric, uint16_t autostale=0, bool value=0, metric_unit_t units = Other, bool persist = false);
     OvmsMetricFloat *InitFloat(const char* metric, uint16_t autostale=0, float value=0, metric_unit_t units = Other, bool persist = false);
@@ -1009,6 +1072,9 @@ class OvmsMetrics
     OvmsMetric* m_first;
     bool m_trace;
   };
+
+extern const char* OvmsMetricUnitLabel(metric_unit_t units);
+extern const char* OvmsMetricUnitName(metric_unit_t units);
 
 extern OvmsMetrics MyMetrics;
 

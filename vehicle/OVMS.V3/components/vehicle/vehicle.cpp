@@ -979,7 +979,6 @@ bool OvmsVehicle::TPMSWrite(std::vector<uint32_t> &tpms)
  */
 OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStat(int verbosity, OvmsWriter* writer)
   {
-  metric_unit_t rangeUnit = (MyConfig.GetParamValue("vehicle", "units.distance") == "M") ? Miles : Kilometers;
 
   bool chargeport_open = StdMetrics.ms_v_door_chargeport->AsBool();
   std::string charge_state = StdMetrics.ms_v_charge_state->AsString();
@@ -1030,10 +1029,9 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStat(int verbosity, OvmsWrite
         }
 
       // Charge speed:
-      if (StdMetrics.ms_v_bat_range_speed->AsFloat() != 0)
+      if (StdMetrics.ms_v_bat_range_speed->IsDefined() && StdMetrics.ms_v_bat_range_speed->AsFloat() != 0)
         {
-        metric_unit_t speedUnit = (rangeUnit == Miles) ? Mph : Kph;
-        writer->printf("%s\n", StdMetrics.ms_v_bat_range_speed->AsUnitString("-", speedUnit, 1).c_str());
+        writer->printf("%s\n", StdMetrics.ms_v_bat_range_speed->AsUnitString("-", ToUser, 1).c_str());
         }
       else if (show_vc)
         {
@@ -1048,13 +1046,13 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStat(int verbosity, OvmsWrite
       int duration_soc = StdMetrics.ms_v_charge_duration_soc->AsInt();
       if (duration_soc > 0)
         writer->printf("%s: %d:%02dh\n",
-          (char*) StdMetrics.ms_v_charge_limit_soc->AsUnitString("SOC", Native, 0).c_str(),
+          (char*) StdMetrics.ms_v_charge_limit_soc->AsUnitString("SOC", ToUser, 0).c_str(),
           duration_soc / 60, duration_soc % 60);
 
       int duration_range = StdMetrics.ms_v_charge_duration_range->AsInt();
       if (duration_range > 0)
         writer->printf("%s: %d:%02dh\n",
-          (char*) StdMetrics.ms_v_charge_limit_range->AsUnitString("Range", rangeUnit, 0).c_str(),
+          (char*) StdMetrics.ms_v_charge_limit_range->AsUnitString("Range", ToUser, 0).c_str(),
           duration_range / 60, duration_range % 60);
       }
 
@@ -1062,12 +1060,12 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStat(int verbosity, OvmsWrite
     if (StdMetrics.ms_v_charge_kwh_grid->IsDefined())
       {
       writer->printf("Drawn: %s\n",
-        StdMetrics.ms_v_charge_kwh_grid->AsUnitString("-", Native, 1).c_str());
+        StdMetrics.ms_v_charge_kwh_grid->AsUnitString("-", ToUser, 1).c_str());
       }
     if (StdMetrics.ms_v_charge_kwh->IsDefined())
       {
       writer->printf("Charged: %s\n",
-        StdMetrics.ms_v_charge_kwh->AsUnitString("-", Native, 1).c_str());
+        StdMetrics.ms_v_charge_kwh->AsUnitString("-", ToUser, 1).c_str());
       }
     }
   else
@@ -1075,35 +1073,35 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStat(int verbosity, OvmsWrite
     writer->puts("Not charging");
     }
 
-  writer->printf("SOC: %s\n", (char*) StdMetrics.ms_v_bat_soc->AsUnitString("-", Native, 1).c_str());
+  writer->printf("SOC: %s\n", (char*) StdMetrics.ms_v_bat_soc->AsUnitString("-", ToUser, 1).c_str());
 
   if (StdMetrics.ms_v_bat_range_ideal->IsDefined())
     {
-    const std::string& range_ideal = StdMetrics.ms_v_bat_range_ideal->AsUnitString("-", rangeUnit, 0);
+    const std::string& range_ideal = StdMetrics.ms_v_bat_range_ideal->AsUnitString("-", ToUser, 0);
     writer->printf("Ideal range: %s\n", range_ideal.c_str());
     }
 
   if (StdMetrics.ms_v_bat_range_est->IsDefined())
     {
-    const std::string& range_est = StdMetrics.ms_v_bat_range_est->AsUnitString("-", rangeUnit, 0);
+    const std::string& range_est = StdMetrics.ms_v_bat_range_est->AsUnitString("-", ToUser, 0);
     writer->printf("Est. range: %s\n", range_est.c_str());
     }
 
   if (StdMetrics.ms_v_pos_odometer->IsDefined())
     {
-    const std::string& odometer = StdMetrics.ms_v_pos_odometer->AsUnitString("-", rangeUnit, 1);
+    const std::string& odometer = StdMetrics.ms_v_pos_odometer->AsUnitString("-", ToUser, 1);
     writer->printf("ODO: %s\n", odometer.c_str());
     }
 
   if (StdMetrics.ms_v_bat_cac->IsDefined())
     {
-    const std::string& cac = StdMetrics.ms_v_bat_cac->AsUnitString("-", Native, 1);
+    const std::string& cac = StdMetrics.ms_v_bat_cac->AsUnitString("-", ToUser, 1);
     writer->printf("CAC: %s\n", cac.c_str());
     }
 
   if (StdMetrics.ms_v_bat_soh->IsDefined())
     {
-    const std::string& soh = StdMetrics.ms_v_bat_soh->AsUnitString("-", Native, 0);
+    const std::string& soh = StdMetrics.ms_v_bat_soh->AsUnitString("-", ToUser, 0);
     writer->printf("SOH: %s\n", soh.c_str());
     }
 
@@ -1115,12 +1113,12 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStat(int verbosity, OvmsWrite
  */
 OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStatTrip(int verbosity, OvmsWriter* writer)
   {
-  metric_unit_t rangeUnit = (MyConfig.GetParamValue("vehicle", "units.distance") == "M") ? Miles : Kilometers;
-  metric_unit_t speedUnit = (rangeUnit == Miles) ? Mph : Kph;
-  metric_unit_t accelUnit = (rangeUnit == Miles) ? MphPS : KphPS;
-  metric_unit_t consumUnit = (rangeUnit == Miles) ? WattHoursPM : WattHoursPK;
+  metric_unit_t rangeUnit = OvmsMetricGetUserUnit(GrpDistance);
+  metric_unit_t speedUnit = OvmsMetricGetUserUnit(GrpSpeed);
+  metric_unit_t accelUnit = OvmsMetricGetUserUnit(GrpAccel);
+  metric_unit_t consumUnit = OvmsMetricGetUserUnit(GrpConsumption);
   metric_unit_t energyUnit = kWh;
-  metric_unit_t altitudeUnit = (rangeUnit == Miles) ? Feet : Meters;
+  metric_unit_t altitudeUnit = OvmsMetricGetUserUnit(GrpDistanceShort);
   const char* rangeUnitLabel = OvmsMetricUnitLabel(rangeUnit);
   const char* speedUnitLabel = OvmsMetricUnitLabel(speedUnit);
   const char* accelUnitLabel = OvmsMetricUnitLabel(accelUnit);

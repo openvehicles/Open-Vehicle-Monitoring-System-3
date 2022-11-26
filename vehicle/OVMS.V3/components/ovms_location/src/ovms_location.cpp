@@ -290,9 +290,10 @@ void OvmsLocation::Store(std::string& buf)
 
 void OvmsLocation::Render(std::string& buf)
   {
-  char val[32];
-  snprintf(val, sizeof(val), "%0.6f,%0.6f (%dm)", m_latitude, m_longitude, m_radius);
-  buf = val;
+  metric_unit_t user_length = OvmsMetricGetUserUnit(GrpDistanceShort, Meters);
+
+  buf = string_format("%0.6f,%0.6f (%d%s)",
+      m_latitude, m_longitude, UnitConvert(Meters, user_length, m_radius), OvmsMetricUnitLabel(user_length));
   bool first = true;
   for (ActionList::iterator it = m_actions.begin(); it != m_actions.end(); ++it)
     {
@@ -369,11 +370,22 @@ void location_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
   writer->puts("NOTE: ACC actions are not implemented yet!");       // XXX IMPLEMENT AND REMOVE THIS!
   }
 
+int location_set_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool complete)
+  {
+  if (argc == 5)
+    {
+    return OvmsMetricUnit_Validate(writer, argc, argv[4], complete, GrpDistanceShort);
+    }
+  return -1;
+  }
+
 void location_set(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   const char *name = argv[0];
   float latitude, longitude;
   int radius = LOCATION_DEFRADIUS;
+  int base_value = radius;
+  metric_unit_t user_length = Meters;
 
   if (strcmp(name, "?") == 0)
     {
@@ -391,12 +403,37 @@ void location_set(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
     longitude = MyLocations.m_longitude;
     }
 
-  if (argc > 3) radius = atoi(argv[3]);
+  if (argc > 3)
+    {
+    radius = atoi(argv[3]);
+    base_value = radius;
+    if (argc < 5)
+      user_length = OvmsMetricGetUserUnit(GrpDistanceShort, Meters);
+    else
+      {
+      user_length = OvmsMetricUnitFromName(argv[4]);
+      if (user_length == UnitNotFound)
+        {
+        writer->printf("Error: Invalid Metric %s\n", argv[4]);
+        return;
+        }
+      user_length = OvmsMetricCheckUnit(Meters, user_length);
+      if (user_length == UnitNotFound)
+        {
+        writer->printf("Error: Metric %s is not a length unit\n", argv[4]);
+        return;
+        }
+      }
 
-  char val[32];
-  snprintf(val,sizeof(val),"%0.6f,%0.6f,%d",latitude,longitude,radius);
-  MyConfig.SetParamValue(LOCATIONS_PARAM,name,val);
-  writer->puts("Location defined");
+    radius = UnitConvert(user_length, Meters, radius);
+    }
+
+  std::string val = string_format("%0.6f,%0.6f,%d",latitude,longitude,radius);
+  MyConfig.SetParamValue(LOCATIONS_PARAM,name,val.c_str());
+  if (user_length == Meters)
+    writer->printf("Location defined with radius of %dm\n", base_value);
+  else
+    writer->printf("Location defined with radius of %d%s = %dm\n", base_value, OvmsMetricUnitLabel(user_length), radius);
   }
 
 void location_radius(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -409,12 +446,35 @@ void location_radius(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
     writer->printf("Error: No location %s defined\n",name);
     return;
     }
+  metric_unit_t user_length;
+  if (argc < 3)
+    user_length = OvmsMetricGetUserUnit(GrpDistanceShort, Meters);
+  else
+    {
+    user_length = OvmsMetricUnitFromName(argv[2]);
+    if (user_length == UnitNotFound)
+      {
+      writer->printf("Error: Invalid Metric %s\n", argv[2]);
+      return;
+      }
+    user_length = OvmsMetricCheckUnit(Meters, user_length);
+    if (user_length == UnitNotFound)
+      {
+      writer->printf("Error: Metric %s is not a length unit\n", argv[2]);
+      return;
+      }
+    }
 
   std::string buf;
   OvmsLocation* loc = *locp;
-  loc->m_radius = atoi(argv[1]);
+  int base_value = atoi(argv[1]);
+  int radius_m = UnitConvert(user_length, Meters, base_value);
+  loc->m_radius = radius_m;
   loc->Store(buf);
-  writer->puts("Location radius set");
+  if (user_length == Meters)
+    writer->printf("Location radius set to %dm\n", base_value);
+  else
+    writer->printf("Location radius set to %d%s = %dm\n", base_value, OvmsMetricUnitLabel(user_length), radius_m);
   }
 
 void location_rm(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -474,6 +534,16 @@ int location_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char
   {
   if (argc == 1)
     return MyLocations.m_locations.Validate(writer, argc, argv[0], complete);
+  return -1;
+  }
+
+int location_radius_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool complete)
+  {
+  switch (argc)
+    {
+    case 1: return MyLocations.m_locations.Validate(writer, argc, argv[0], complete);
+    case 3: return OvmsMetricUnit_Validate(writer, argc, argv[2], complete, GrpDistanceShort);
+    }
   return -1;
   }
 
@@ -634,8 +704,8 @@ OvmsLocations::OvmsLocations()
   // Register our commands
   OvmsCommand* cmd_location = MyCommandApp.RegisterCommand("location","LOCATION framework", location_status, "", 0, 0, false);
   cmd_location->RegisterCommand("list","Show all locations",location_list);
-  cmd_location->RegisterCommand("set","Set the position of a location",location_set, "<name> [<latitude> <longitude> [<radius>]]", 1, 4);
-  cmd_location->RegisterCommand("radius","Set the radius of a location",location_radius, "<name> <radius>", 2, 2, true, location_validate);
+  cmd_location->RegisterCommand("set","Set the position of a location",location_set, "<name> [<latitude> <longitude> [<radius> [<unit>]] ]", 1, 5, true, location_set_validate);
+  cmd_location->RegisterCommand("radius","Set the radius of a location (defaults to user 'height' units)",location_radius, "<name> <radius> [<unit>]", 2, 3, true, location_radius_validate);
   cmd_location->RegisterCommand("rm","Remove a defined location",location_rm, "<name>", 1, 1, true, location_validate);
   cmd_location->RegisterCommand("status","Show location status",location_status);
   OvmsCommand* cmd_action = cmd_location->RegisterCommand("action","Set an action for a location");

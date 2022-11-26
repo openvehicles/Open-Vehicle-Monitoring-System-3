@@ -605,6 +605,14 @@ void OvmsVehicle::BmsStatus(int verbosity, OvmsWriter* writer, vehicle_bms_statu
     writer->printf("No BMS %s data available\n", datatype);
     return;
     }
+  metric_unit_t user_temp = UnitNotFound;
+  std::string temp_unit;
+  if (show_temperature)
+    {
+    user_temp = OvmsMetricGetUserUnit(GrpTemp, Celcius);
+    // (To Check: '°' is not SMS safe, so we only output 'C')
+    temp_unit = OvmsMetricUnitLabel(user_temp);
+    }
 
   int vwarn=0, valert=0;
   int twarn=0, talert=0;
@@ -642,13 +650,13 @@ void OvmsVehicle::BmsStatus(int verbosity, OvmsWriter* writer, vehicle_bms_statu
   if (show_temperature)
     {
     writer->puts("Temperature:");
-    writer->printf("    Average: %5.1fC [%5.1fC - %5.1fC]\n",
-      StdMetrics.ms_v_bat_pack_tavg->AsFloat(),
-      StdMetrics.ms_v_bat_pack_tmin->AsFloat(),
-      StdMetrics.ms_v_bat_pack_tmax->AsFloat());
-    writer->printf("  Deviation: SD %6.2fC  [max %.2fC], %d warnings, %d alerts\n",
-      StdMetrics.ms_v_bat_pack_tstddev->AsFloat(),
-      StdMetrics.ms_v_bat_pack_tstddev_max->AsFloat(),
+    writer->printf("    Average: %5.1f%s [%5.1f%s - %5.1f%s]\n",
+      StdMetrics.ms_v_bat_pack_tavg->AsFloat(0, user_temp), temp_unit.c_str(),
+      StdMetrics.ms_v_bat_pack_tmin->AsFloat(0, user_temp), temp_unit.c_str(),
+      StdMetrics.ms_v_bat_pack_tmax->AsFloat(0, user_temp), temp_unit.c_str());
+    writer->printf("  Deviation: SD %6.2f%s  [max %.2f%s], %d warnings, %d alerts\n",
+      StdMetrics.ms_v_bat_pack_tstddev->AsFloat(0, user_temp), temp_unit.c_str(),
+      StdMetrics.ms_v_bat_pack_tstddev_max->AsFloat(0, user_temp), temp_unit.c_str(),
       twarn, talert);
     }
 
@@ -728,7 +736,7 @@ void OvmsVehicle::BmsStatus(int verbosity, OvmsWriter* writer, vehicle_bms_statu
           {
           if (kt < m_bms_readings_t && (reading_left_t > 0))
             {
-            writer->printf(" %5.1fC",m_bms_temperatures[kt]);
+            writer->printf(" %5.1f%s",UnitConvert(Celcius, user_temp, m_bms_temperatures[kt]), temp_unit.c_str());
             --reading_left_t;
             ++kt;
             }
@@ -788,8 +796,9 @@ bool OvmsVehicle::FormatBmsAlerts(int verbosity, OvmsWriter* writer, bool show_w
   writer->printf("%s\n", has_valerts ? "" : ", cells OK");
 
   // Temperatures:
-  // (Note: '°' is not SMS safe, so we only output 'C')
-  writer->printf("Temperature: StdDev %.1fC", StdMetrics.ms_v_bat_pack_tstddev_max->AsFloat());
+  metric_unit_t user_temp =  OvmsMetricGetUserUnit(GrpTemp, Celcius);
+  std::string temp_unit = OvmsMetricUnitLabel(user_temp);
+  writer->printf("Temperature: StdDev %.1f%s", StdMetrics.ms_v_bat_pack_tstddev_max->AsFloat(0, user_temp), temp_unit.c_str());
   for (int i=0; i<m_bms_readings_v; i++)
     {
     OvmsStatus sts = OvmsStatus(StdMetrics.ms_v_bat_cell_talert->GetElemValue(i));
@@ -802,8 +811,8 @@ bool OvmsVehicle::FormatBmsAlerts(int verbosity, OvmsWriter* writer, bool show_w
     has_talerts++;
     if (verbose || has_talerts <= 5)
       {
-      float dev = StdMetrics.ms_v_bat_cell_tdevmax->GetElemValue(i);
-      writer->printf("\n %c #%02d: %+3.1fC", (sts==OvmsStatus::Warn) ? '?' : '!', i+1, dev);
+      float dev = StdMetrics.ms_v_bat_cell_tdevmax->GetElemValue(i, user_temp);
+      writer->printf("\n %c #%02d: %+3.1f%s", (sts==OvmsStatus::Warn) ? '?' : '!', i+1, dev, temp_unit.c_str());
       }
     else
       {

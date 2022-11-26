@@ -33,6 +33,11 @@ Open Vehicle Monitor System v3 - Change log
   New configs:
     [can] log.events_filters            -- comma-separated list of filters (with possible wildcard) matching an event name
     [can] log.metrics_filters           -- comma-separated list of filters (with possible wildcard) matching a metric name
+- Add units Bar, Permille
+- Add user configuration for groups of metrics
+  Adds the 'ToUser' unit that converts to the user specified unit.
+  Add -u to 'metrics list' to view metrics as  user units.
+- Add completion for metrics set/get as well as units
 
 2022-09-01 MWJ  3.3.003  OTA release
 - Toyota RAV4 EV: Initial support added. Only the Tesla bus is decoded and just listening so far.

@@ -32,6 +32,8 @@
 #include <stdio.h>
 #include <sys/stat.h>
 #include <dirent.h>
+#include <stdarg.h>
+#include <memory>
 #include <fstream>
 #include "ovms_utils.h"
 #include "ovms_config.h"
@@ -726,6 +728,22 @@ fail:
     return NULL;
 }
 #endif
+
+/**
+ * Format string with std::string result (sprintf for std::string).
+ */
+std::string string_format(const char * fmt_str, ...)
+  {
+  va_list ap;
+  char *fp = NULL;
+  va_start(ap, fmt_str);
+  int ret = vasprintf(&fp, fmt_str, ap);
+  va_end(ap);
+  std::unique_ptr<char[]> formatted(fp);
+  if (ret >= 0)
+    return std::string(formatted.get());
+  return "";
+  }
 
 /**
  * format_file_size: format a file size in human-readable format.
