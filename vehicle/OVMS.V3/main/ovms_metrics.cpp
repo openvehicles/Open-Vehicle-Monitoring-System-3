@@ -399,7 +399,7 @@ void metrics_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
       if (age>99)
         age=99;
       if (v.empty())
-        writer->printf("[---] ",k);
+        writer->printf("[---] ");
       else
         writer->printf("[%02d%c] ", age, (m->IsStale() ? 'S' : '-' ));
       }

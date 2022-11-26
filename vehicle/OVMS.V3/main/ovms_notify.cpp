@@ -118,7 +118,7 @@ void notify_errorcode_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, 
   {
   for (OvmsNotifyErrorCodeMap_t::iterator it=MyNotify.m_errorcodes.begin(); it!=MyNotify.m_errorcodes.end(); ++it)
     {
-    writer->printf("%u(0x%04.4x) %s raised %d, updated %d, sec(s) ago\n",
+    writer->printf("%u(0x%4.4x) %s raised %d, updated %d, sec(s) ago\n",
       it->first,
       it->second->lastdata,
       (it->second->active)?"active":"cleared",

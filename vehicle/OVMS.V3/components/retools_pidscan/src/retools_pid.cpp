@@ -199,7 +199,7 @@ void scanStart(int, OvmsWriter* writer, OvmsCommand*, int argc, const char* cons
     if (start > end)
     {
         writer->printf(
-            "Error: Invalid Start PID %04x is after End PID %04x\n", start, end
+            "Error: Invalid Start PID %04lx is after End PID %04lx\n", start, end
         );
         valid = false;
     }
@@ -209,7 +209,7 @@ void scanStart(int, OvmsWriter* writer, OvmsCommand*, int argc, const char* cons
     }
     if (POLL_TYPE_HAS_8BIT_PID(polltype) && end > 0xff)
     {
-        writer->printf("Error: Poll type %x PID range is 00..ff\n");
+        writer->printf("Error: Poll type %lx PID range is 00..ff\n", polltype);
         valid = false;
     }
     if (!valid)
@@ -229,7 +229,7 @@ void scanStart(int, OvmsWriter* writer, OvmsCommand*, int argc, const char* cons
     if (valid)
     {
         s_scanner = new OvmsReToolsPidScanner(can, ecu, rxid_low, rxid_high, polltype, start, end, step, timeout);
-        writer->printf("Scan started: bus %d, ecu %x, rxid %x-%x, polltype %x, PID %x-%x (step %x), timeout %d seconds\n",
+        writer->printf("Scan started: bus %ld, ecu %lx, rxid %lx-%lx, polltype %lx, PID %lx-%lx (step %lx), timeout %d seconds\n",
                        bus, ecu, rxid_low, rxid_high, polltype, start, end, step, timeout);
     }
 }

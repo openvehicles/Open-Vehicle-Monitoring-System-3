@@ -55,8 +55,8 @@ class ExternalRamAllocated
     static void* operator new(std::size_t sz);
     static void* operator new[](std::size_t sz);
     static char* strdup(const char* src);
-    static int asprintf(char** strp, const char* fmt, ...);
-    static int vasprintf(char** strp, const char* fmt, va_list ap);
+    static int asprintf(char** strp, const char* fmt, ...) __attribute__ ((format (printf, 2, 3)));
+    static int vasprintf(char** strp, const char* fmt, va_list ap) __attribute__ ((format (printf, 2, 0)));
   };
 
 class InternalRamAllocated
@@ -65,8 +65,8 @@ class InternalRamAllocated
     static void* operator new(std::size_t sz);
     static void* operator new[](std::size_t sz);
     static char* strdup(const char* src);
-    static int asprintf(char** strp, const char* fmt, ...);
-    static int vasprintf(char** strp, const char* fmt, va_list ap);
+    static int asprintf(char** strp, const char* fmt, ...) __attribute__ ((format (printf, 2, 3)));
+    static int vasprintf(char** strp, const char* fmt, va_list ap) __attribute__ ((format (printf, 2, 0)));
   };
 
 // C++11 Allocator:

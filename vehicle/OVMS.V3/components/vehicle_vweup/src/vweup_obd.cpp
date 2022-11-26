@@ -1206,7 +1206,7 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
         int threshold = MyConfig.GetParamValueInt("xvu", "serv_warn_range", 5000);
         int old_value = StdMetrics.ms_v_env_service_range->AsInt();
         if (old_value > threshold && value <= threshold) { 
-          MyNotify.NotifyStringf("info", "serv.range", "Service range left: %d km!", value);
+          MyNotify.NotifyStringf("info", "serv.range", "Service range left: %.0f km!", value);
         }         
         StdMetrics.ms_v_env_service_range->SetValue(value);
         VALUE_LOG(TAG, "VWUP_MFD_SERV_RANGE=%f => %f", value, StdMetrics.ms_v_env_service_range->AsFloat());
@@ -1219,7 +1219,7 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
         int threshold = MyConfig.GetParamValueInt("xvu", "serv_warn_days", 30);
         int old_value = ROUNDPREC((StdMetrics.ms_v_env_service_time->AsInt() - now) / 86400.0f, 0);
         if (old_value > threshold && value <= threshold) {
-          MyNotify.NotifyStringf("info", "serv.time", "Service time left: %d days!", value);
+          MyNotify.NotifyStringf("info", "serv.time", "Service time left: %.0f days!", value);
         }         
         ServiceDays -> SetValue(value);
         StdMetrics.ms_v_env_service_time->SetValue(StdMetrics.ms_m_timeutc->AsInt() + value * 86400);

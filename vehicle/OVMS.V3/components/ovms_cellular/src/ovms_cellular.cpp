@@ -1175,9 +1175,10 @@ void modem::StandardLineHandler(int channel, OvmsBuffer* buf, std::string line)
     }
   else if (line.compare(0, 30, "+CME ERROR: incorrect password") == 0)
     {
+    std::string pincode = MyConfig.GetParamValue("modem", "pincode");
     ESP_LOGE(TAG,"Wrong PIN code entered!");
     MyEvents.SignalEvent("system.modem.wrongpingcode", NULL);
-    MyNotify.NotifyStringf("alert", "modem.wrongpincode", "Wrong pin code (%s) entered!", MyConfig.GetParamValue("modem", "pincode"));
+    MyNotify.NotifyStringf("alert", "modem.wrongpincode", "Wrong pin code (%s) entered!", pincode.c_str());
     MyConfig.SetParamValueBool("modem","wrongpincode",true);
     }
   else if (line.compare(0, 28, "+CME ERROR: SIM not inserted") == 0)

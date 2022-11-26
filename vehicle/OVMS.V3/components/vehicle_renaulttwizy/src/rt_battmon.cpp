@@ -798,7 +798,7 @@ void OvmsVehicleRenaultTwizy::FormatBatteryTemps(int verbosity, OvmsWriter* writ
       em = "";
 
     if (show_deviations)
-      capacity -= writer->printf("%s%d:%+dC ", em, c+1, twizy_cmod[c].temp_maxdev);
+      capacity -= writer->printf("%s%d:%+.0fC ", em, c+1, twizy_cmod[c].temp_maxdev);
     else
       capacity -= writer->printf("%s%d:%dC ", em, c+1, CONV_Temp(twizy_cmod[c].temp_act));
   }
@@ -912,7 +912,7 @@ void OvmsVehicleRenaultTwizy::FormatCellData(int verbosity, OvmsWriter* writer, 
     ",%d,%d"
     ",%d,%d,%d,%d"
     ",%d,%d,%d,%d"
-    ",%d,%d,%d",
+    ",%d,%d,%ld",
     cell+1,
     volt_alert, temp_alert,
     CONV_CellVolt(twizy_cell[cell].volt_act),

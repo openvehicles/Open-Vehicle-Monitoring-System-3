@@ -155,7 +155,7 @@ struct PageContext : public ExternalRamAllocated
   void print(const std::string text);
   void print(const extram::string text);
   void print(const char* text);
-  void printf(const char *fmt, ...);
+  void printf(const char *fmt, ...) __attribute__ ((format (printf, 2, 3)));
   void done();
   void panel_start(const char* type, const char* title);
   void panel_end(const char* footer="");
@@ -469,7 +469,7 @@ class HttpCommandStream : public OvmsShell, public MgHandler
     void Initialize(bool print);
     virtual bool IsInteractive() { return false; }
     int puts(const char* s);
-    int printf(const char* fmt, ...);
+    int printf(const char* fmt, ...) __attribute__ ((format (printf, 2, 3)));
     ssize_t write(const void *buf, size_t nbyte);
     void Log(LogBuffers* message);
 };
