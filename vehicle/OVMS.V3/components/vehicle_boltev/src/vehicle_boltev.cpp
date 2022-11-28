@@ -89,9 +89,9 @@ OvmsVehicleBoltEV::OvmsVehicleBoltEV()
     ESP_LOGI(TAG, "Bolt vehicle module");
 
     memset(m_vin,0,sizeof(m_vin));
-    m_type[0] = 'V';
-    m_type[1] = 'A';
-    m_type[2] = 0;
+    m_type[0] = 'V'; // cheVy / Opel
+    m_type[1] = 'B'; // Bolt (or Ampera-e)
+    m_type[2] = 'E'; // Ev (vs eUv)
     m_type[3] = 0;
     m_type[4] = 0;
     m_type[5] = 0;
@@ -333,18 +333,22 @@ void OvmsVehicleBoltEV::IncomingFrameCan1(CAN_frame_t* p_frame)
 
     // VIN digits 2-9
     case 0x514: {
+        // m_type:  cheVy / Opel, Bolt / Ampera-e, Ev / eUv
+        //          VBE , OAE,  VBU
         for (k=0; k<8; k++)
             m_vin[k+1] = d[k];
 
         if (m_vin[9] != 0) {
             m_vin[0] = '1';
             m_vin[17] = 0;
-            if (m_vin[2] == '1')
-                m_type[2] = 'V';
-            else if (m_vin[2] == '0')
-                m_type[2] = 'A';
-            else
-                m_type[2] = m_vin[2];
+
+            if (m_vin[1] == '0') {
+                m_type[0] = 'O'; // Opel vs cheVy
+                m_type[1] = 'A'; // Ampera-e vs Bolt
+            }
+
+            // TODO: EV vs EUV?
+
             m_modelyear = (m_vin[9] - 'A') + 10;
 
             // H, J, K L (I is skipped?)
@@ -372,9 +376,11 @@ void OvmsVehicleBoltEV::IncomingFrameCan1(CAN_frame_t* p_frame)
         }
         if (mt_charging_limits->AsString()=="0") {
             // Set defaults
-            if (m_type[2]=='V') {
+            if (m_type[0]=='V') {
+		// Chevy USA
                 mt_charging_limits->SetValue("12,8");
-            } else if (m_type[2]=='A') {
+            } else if (m_type[0]=='O') {
+		// Opel EU
                 mt_charging_limits->SetValue("10,6");
             }
         }
