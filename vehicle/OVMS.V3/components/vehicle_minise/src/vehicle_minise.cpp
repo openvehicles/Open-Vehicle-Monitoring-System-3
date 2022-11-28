@@ -90,7 +90,7 @@ static const OvmsVehicle::poll_pid_t obdii_polls[] = {
     { .xargs = { 0x03, POLL_TXDATA, 2, (const uint8_t *) "\xAD\x6E" }},
     { 0, 10, 10, 10 }, 0, ISOTP_EXTADR }, // proble selected cell
 #endif
-#if 0
+#if 1
   { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_SME_ALTERUNG_KAPAZITAET_TS, { 0, 60, 60, 60 },
     0, ISOTP_EXTADR },// 0x6335 v_bat_soh, v_bat_health
   { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_SME_HV_SPANNUNG_BERECHNET, { 0, 2, 1, 2 }, 0,
@@ -213,7 +213,7 @@ OvmsVehicleMiniSE::OvmsVehicleMiniSE()
 
   // BMS configuration:
   BmsSetCellArrangementVoltage(96, 1);
-  BmsSetCellArrangementTemperature(12, 1);
+  BmsSetCellArrangementTemperature(96, 1);
   BmsSetCellLimitsVoltage(2.0, 5.0);
   BmsSetCellLimitsTemperature(-35.0, 200.0);
 
@@ -446,12 +446,12 @@ void OvmsVehicleMiniSE::Ticker60(uint32_t ticker)
   for (uint8_t cell = 1; cell <= 96; cell++) {
     std::string request;
     std::string response;
-    ESP_LOGI(TAG, "Selecting cell %d voltage", cell);
+    ESP_LOGD(TAG, "Selecting cell %d voltage", cell);
     request = "\x31\x01\xAD\x6E";
     request.append(1, cell);
     int result = PollSingleRequest(m_can1, I3_ECU_SME_TX, I3_ECU_SME_RX, request, response, 1000, ISOTP_EXTADR);
     if (result == POLLSINGLE_OK) {
-      ESP_LOGI(TAG, "Probing cell %d voltage", cell);
+      ESP_LOGD(TAG, "Probing cell %d voltage", cell);
       request = "\x31\x03\xAD\x6E";
       int result = PollSingleRequest(m_can1, I3_ECU_SME_TX, I3_ECU_SME_RX, request, response, 1000, ISOTP_EXTADR);
       if (result == POLLSINGLE_OK) {
@@ -484,7 +484,7 @@ void OvmsVehicleMiniSE::IncomingPollReply(canbus *bus, uint16_t type, uint16_t p
   }
 
   ++replycount;
-  ESP_LOGI(TAG, "IncomingPollReply");
+  ESP_LOGD(TAG, "IncomingPollReply");
 
   int datalen = rxbuf.size();
 
