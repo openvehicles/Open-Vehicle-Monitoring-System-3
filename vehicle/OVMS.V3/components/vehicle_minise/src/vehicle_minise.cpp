@@ -82,9 +82,17 @@ static const char *TAG = "v-minise";
 static const OvmsVehicle::poll_pid_t obdii_polls[] = {
   // TXMODULEID, RXMODULEID, TYPE, PID, { POLLTIMES }, BUS, ADDRESSING
   // SME: Battery management electronics
+#if 0
+  { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_ROUTINECONTROL,
+    { .xargs = { 0x01, POLL_TXDATA, 3, (const uint8_t *) "\xAD\x6E\x01" }},
+    { 0, 10, 10, 10 }, 0, ISOTP_EXTADR }, // select cell to probe
+  { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_ROUTINECONTROL,
+    { .xargs = { 0x03, POLL_TXDATA, 2, (const uint8_t *) "\xAD\x6E" }},
+    { 0, 10, 10, 10 }, 0, ISOTP_EXTADR }, // proble selected cell
+#endif
+#if 0
   { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_SME_ALTERUNG_KAPAZITAET_TS, { 0, 60, 60, 60 },
     0, ISOTP_EXTADR },// 0x6335 v_bat_soh, v_bat_health
-#if 1
   { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_SME_HV_SPANNUNG_BERECHNET, { 0, 2, 1, 2 }, 0,
     ISOTP_EXTADR },   // 0xDD68 v_bat_volts
   { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_SME_HV_STROM, { 0, 2, 1, 2 }, 0,
@@ -206,8 +214,8 @@ OvmsVehicleMiniSE::OvmsVehicleMiniSE()
   // BMS configuration:
   BmsSetCellArrangementVoltage(96, 1);
   BmsSetCellArrangementTemperature(12, 1);
-  BmsSetCellLimitsVoltage(0.0, 5.0);
-  BmsSetCellLimitsTemperature(-30.0, 90.0);
+  BmsSetCellLimitsVoltage(2.0, 5.0);
+  BmsSetCellLimitsTemperature(-35.0, 200.0);
 
   // Declare all custom metrics
 
@@ -278,8 +286,8 @@ OvmsVehicleMiniSE::OvmsVehicleMiniSE()
 
   // Get the CAN bus setup
   RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
-//  PollSetPidList(m_can1, obdii_polls);
-  pollerstate = POLLSTATE_SHUTDOWN;  // If the car is alive we'll get frames and switch to ALIVE
+  PollSetPidList(m_can1, obdii_polls);
+  pollerstate = POLLSTATE_SHUTDOWN; // If the car is alive we'll get frames and switch to ALIVE
   PollSetState(pollerstate);
   mt_se_pollermode->SetValue(pollerstate);
   mt_se_obdisalive->SetValue(false);
@@ -287,8 +295,8 @@ OvmsVehicleMiniSE::OvmsVehicleMiniSE()
     StdMetrics.ms_v_env_awake->SetValue(false);
   if (!StdMetrics.ms_v_env_on->AsBool())
     StdMetrics.ms_v_env_on->SetValue(false);
-//  PollSetThrottling(50);
-//  PollSetResponseSeparationTime(5);
+  PollSetThrottling(50);
+  PollSetResponseSeparationTime(5);
 }
 
 OvmsVehicleMiniSE::~OvmsVehicleMiniSE()
@@ -429,34 +437,32 @@ void OvmsVehicleMiniSE::Ticker10(uint32_t ticker)
   if (last_obd_data_seen) {
     mt_se_age->SetValue(StdMetrics.ms_m_monotonic->AsInt() - last_obd_data_seen, Seconds);
   }
+}
 
-#if 1
-  for (uint8_t cell = 1; cell <= 96; cell++) {
-    BmsSetCellVoltage(cell - 1, 3.2f);
-    BmsSetCellTemperature(cell - 1, 19.0f);
-  }
-#endif
-
-#if 1
+void OvmsVehicleMiniSE::Ticker60(uint32_t ticker)
+{
   // Read cells voltages
   ESP_LOGI(TAG, "Polling 96 cell voltages...");
-  for (uint8_t cell = 1; cell <= 10; cell++) {
+  for (uint8_t cell = 1; cell <= 96; cell++) {
     std::string request;
     std::string response;
-    request = "\x31\x03\xAD\x6E";
+    ESP_LOGI(TAG, "Selecting cell %d voltage", cell);
+    request = "\x31\x01\xAD\x6E";
     request.append(1, cell);
-    ESP_LOGI(TAG, "Polling cell %d voltage", cell);
     int result = PollSingleRequest(m_can1, I3_ECU_SME_TX, I3_ECU_SME_RX, request, response, 1000, ISOTP_EXTADR);
-    ESP_LOGI(TAG, "### %d %s", result, hexencode(response).c_str());
     if (result == POLLSINGLE_OK) {
-      uint16_t voltage = response[2] << 8 | response[3];
-      ESP_LOGI(TAG, "Cell %d voltage = %f", cell, voltage / 1000.0f);
-      BmsSetCellVoltage(cell - 1, voltage / 1000.0f);
+      ESP_LOGI(TAG, "Probing cell %d voltage", cell);
+      request = "\x31\x03\xAD\x6E";
+      int result = PollSingleRequest(m_can1, I3_ECU_SME_TX, I3_ECU_SME_RX, request, response, 1000, ISOTP_EXTADR);
+      if (result == POLLSINGLE_OK) {
+        uint16_t voltage = response[2] << 8 | response[3];
+        ESP_LOGI(TAG, "Cell %d voltage = %f", cell, voltage / 1000.0f);
+        BmsSetCellVoltage(cell - 1, voltage / 1000.0f);
+      }
     }
+
     BmsSetCellTemperature(cell - 1, 19.0f);
-    usleep(200000);
   }
-#endif
 }
 
 void OvmsVehicleMiniSE::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length,
@@ -464,14 +470,13 @@ void OvmsVehicleMiniSE::IncomingPollReply(canbus *bus, uint16_t type, uint16_t p
 {
   string &rxbuf = obd_rxbuf;
 
-  // Assemble first and following frames to get complete reply
-
-  // init rx buffer on first (it tells us whole length)
+  // Init RX buffer on first (it tells us whole length)
   if (m_poll_ml_frame == 0) {
     rxbuf.clear();
     rxbuf.reserve(length + mlremain);
   }
-  // Append each piece
+
+  // Assemble first and following frames to get complete reply
   rxbuf.append((char *) data, length);
   if (mlremain) {
     // we need more - return for now.
@@ -484,7 +489,7 @@ void OvmsVehicleMiniSE::IncomingPollReply(canbus *bus, uint16_t type, uint16_t p
   int datalen = rxbuf.size();
 
   // We now have received the whole reply - lets mine our nuggets!
-  // FIXME: we need to check where we received it from in case PIDs clash?
+  // FIXME: We need to check where we received it from in case PIDs clash?
   // FIXME: Seems OK for now since there aren't clashes - compiler complains if there are.
 
   last_obd_data_seen = StdMetrics.ms_m_monotonic->AsInt();
@@ -492,6 +497,26 @@ void OvmsVehicleMiniSE::IncomingPollReply(canbus *bus, uint16_t type, uint16_t p
   switch (pid) {
 
     // --- SME --------------------------------------------------------------------------------------------------------
+
+    case 0x01/*AD6E*/: {
+      if (datalen < 2) {
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "0x01AD6E", 2);
+        break;
+      }
+      ESP_LOGD(TAG, "From ECU %s, pid %s: got %s\n", "SME", "0x01AD6E", "cell select");
+      break;
+    }
+
+    case 0x03/*AD6E*/: {
+      if (datalen < 2) {
+        ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "0x03AD6E", 2);
+        break;
+      }
+      unsigned int cellVoltage = (RXBUF_UINT(2));
+      ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "0x03AD6E",
+        "cell voltage", cellVoltage / 1000.0f, "\"V\"");
+      break;
+    }
 
     case I3_PID_SME_ALTERUNG_KAPAZITAET_TS: {
       if (datalen < 4) {
@@ -1997,7 +2022,7 @@ void OvmsVehicleMiniSE::IncomingPollReply(canbus *bus, uint16_t type, uint16_t p
       mt_se_wheel2_speed->SetValue(STAT_WHEEL2_SENSOR_SPEED_WERT, Kph);
       mt_se_wheel3_speed->SetValue(STAT_WHEEL3_SENSOR_SPEED_WERT, Kph);
       mt_se_wheel4_speed->SetValue(STAT_WHEEL4_SENSOR_SPEED_WERT, Kph);
-      // STAT_COMBINED_SENSOR_SPEED_WERT does't give a sensible anwer - so just compute a mean
+      // STAT_COMBINED_SENSOR_SPEED_WERT doesn't give a sensible anwer - so just compute a mean
       mt_se_wheel_speed->SetValue(
         (STAT_WHEEL1_SENSOR_SPEED_WERT + STAT_WHEEL2_SENSOR_SPEED_WERT + STAT_WHEEL3_SENSOR_SPEED_WERT +
          STAT_WHEEL4_SENSOR_SPEED_WERT) / 4, Kph
