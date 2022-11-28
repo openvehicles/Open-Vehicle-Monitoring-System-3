@@ -90,7 +90,7 @@ static const OvmsVehicle::poll_pid_t obdii_polls[] = {
     { .xargs = { 0x03, POLL_TXDATA, 2, (const uint8_t *) "\xAD\x6E" }},
     { 0, 10, 10, 10 }, 0, ISOTP_EXTADR }, // proble selected cell
 #endif
-#if 1
+#if 0
   { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_SME_ALTERUNG_KAPAZITAET_TS, { 0, 60, 60, 60 },
     0, ISOTP_EXTADR },// 0x6335 v_bat_soh, v_bat_health
   { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_SME_HV_SPANNUNG_BERECHNET, { 0, 2, 1, 2 }, 0,
