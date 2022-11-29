@@ -64,8 +64,15 @@ Peripherals::Peripherals()
         mac_addr[3], mac_addr[4], mac_addr[5]);
       }
     }
+#if ESP_IDF_VERSION_MAJOR >= 4
+  ESP_LOGI(TAG, "  ESP-NETIF");
+  ESP_ERROR_CHECK(esp_netif_init());
+  esp_netif_create_default_wifi_sta();
+  esp_netif_create_default_wifi_ap();
+#else
   ESP_LOGI(TAG, "  TCP/IP Adaptor");
   tcpip_adapter_init();
+#endif
 #endif // #if defined(CONFIG_OVMS_COMP_WIFI)||defined(CONFIG_OVMS_COMP_CELLULAR)
 
   gpio_install_isr_service(ESP_INTR_FLAG_IRAM);
@@ -190,4 +197,7 @@ Peripherals::Peripherals()
 
 Peripherals::~Peripherals()
   {
+#if ESP_IDF_VERSION_MAJOR >= 4
+  esp_netif_deinit();
+#endif
   }

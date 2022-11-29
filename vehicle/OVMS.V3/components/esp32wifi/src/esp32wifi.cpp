@@ -1070,7 +1070,11 @@ void esp32wifi::EventWifiStaState(std::string event, void* data)
     // Set hostname for DHCP request
     std::string vehicleid = MyConfig.GetParamValue("vehicle", "id");
     if (vehicleid.empty()) vehicleid = "ovms";
+#if ESP_IDF_VERSION_MAJOR >= 4
+    if (ESP_OK != esp_netif_set_hostname(esp_netif_get_handle_from_ifkey("WIFI_STA_DEF"), vehicleid.c_str()))
+#else
     if (ESP_OK != tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_STA, vehicleid.c_str()))
+#endif
       ESP_LOGW(TAG, "failed to set hostname");
 
     AdjustTaskPriority();
@@ -1091,12 +1095,20 @@ void esp32wifi::EventWifiApState(std::string event, void* data)
     // Start
     AdjustTaskPriority();
     esp_wifi_get_mac(WIFI_IF_AP, m_mac_ap);
+#if ESP_IDF_VERSION_MAJOR >= 4
+    esp_netif_get_ip_info(esp_netif_get_handle_from_ifkey("WIFI_AP_DEF"), &m_ip_info_ap);
+#else
     tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP, &m_ip_info_ap);
+#endif
 
     // Disable routing (gateway) and DNS offer on DHCP server for AP:
     // Note: disabling the DNS offer requires esp-idf fix in commit 4195d7c2eec2d93781d5f88fd71f5c7e1ee1ff20
     esp_err_t err;
+#if ESP_IDF_VERSION_MAJOR >= 4
+    err = esp_netif_dhcps_stop(esp_netif_get_handle_from_ifkey("WIFI_AP_DEF"));
+#else
     err = tcpip_adapter_dhcps_stop(TCPIP_ADAPTER_IF_AP);
+#endif
     if (err != ESP_OK)
       {
       ESP_LOGE(TAG, "AP: failed reconfiguring DHCP server; error=%d", err);
@@ -1104,13 +1116,25 @@ void esp32wifi::EventWifiApState(std::string event, void* data)
     else
       {
       dhcps_offer_t opt_val = 0;
+#if ESP_IDF_VERSION_MAJOR >= 4
+      err = esp_netif_dhcps_option(esp_netif_get_handle_from_ifkey("WIFI_AP_DEF"), ESP_NETIF_OP_SET, ESP_NETIF_DOMAIN_NAME_SERVER, &opt_val, sizeof(opt_val));
+#else
       err = tcpip_adapter_dhcps_option(TCPIP_ADAPTER_OP_SET, TCPIP_ADAPTER_DOMAIN_NAME_SERVER, &opt_val, sizeof(opt_val));
+#endif
       if (err != ESP_OK)
         ESP_LOGW(TAG, "AP: failed disabling DHCP DNS offer; error=%d", err);
+#if ESP_IDF_VERSION_MAJOR >= 4
+      err = esp_netif_dhcps_option(esp_netif_get_handle_from_ifkey("WIFI_AP_DEF"), ESP_NETIF_OP_SET, ESP_NETIF_ROUTER_SOLICITATION_ADDRESS, &opt_val, sizeof(opt_val));
+#else
       err = tcpip_adapter_dhcps_option(TCPIP_ADAPTER_OP_SET, TCPIP_ADAPTER_ROUTER_SOLICITATION_ADDRESS, &opt_val, sizeof(opt_val));
+#endif
       if (err != ESP_OK)
         ESP_LOGW(TAG, "AP: failed disabling DHCP routing offer; error=%d", err);
+#if ESP_IDF_VERSION_MAJOR >= 4
+      err = esp_netif_dhcps_start(esp_netif_get_handle_from_ifkey("WIFI_AP_DEF"));
+#else
       err = tcpip_adapter_dhcps_start(TCPIP_ADAPTER_IF_AP);
+#endif
       if (err != ESP_OK)
         ESP_LOGE(TAG, "AP: failed restarting DHCP server; error=%d", err);
       }
@@ -1302,11 +1326,19 @@ void esp32wifi::OutputStatus(int verbosity, OvmsWriter* writer)
     writer->printf("\nAP SSID: %s (%d MHz, channel %d)\n  MAC: " MACSTR "\n  IP: " IPSTR "\n",
       m_wifi_ap_cfg.ap.ssid, (int)bw*20, primary, MAC2STR(m_mac_ap), IP2STR(&m_ip_info_ap.ip));
     wifi_sta_list_t sta_list;
+#if ESP_IDF_VERSION_MAJOR >= 4
+    esp_netif_sta_list_t ip_list;
+#else
     tcpip_adapter_sta_list_t ip_list;
+#endif
     if (esp_wifi_ap_get_sta_list(&sta_list) == ESP_OK)
       {
       writer->printf("  AP Stations: %d\n", sta_list.num);
+#if ESP_IDF_VERSION_MAJOR >= 4
+      if (esp_netif_get_sta_list(&sta_list, &ip_list) == ESP_OK)
+#else
       if (tcpip_adapter_get_sta_list(&sta_list, &ip_list) == ESP_OK)
+#endif
         {
         for (int i=0; i<sta_list.num; i++)
           writer->printf("    %d: MAC: " MACSTR ", IP: " IPSTR "\n", i+1, MAC2STR(ip_list.sta[i].mac), IP2STR(&ip_list.sta[i].ip));
@@ -1329,8 +1361,13 @@ void esp32wifi::StartDhcpClient()
   if (m_mode ==  ESP32WIFI_MODE_CLIENT || m_mode ==  ESP32WIFI_MODE_APCLIENT)
     {
     esp_err_t err;
+#if ESP_IDF_VERSION_MAJOR >= 4
+    err = esp_netif_dhcpc_start(esp_netif_get_handle_from_ifkey("WIFI_STA_DEF"));
+    if (err != ESP_OK && err != ESP_ERR_ESP_NETIF_DHCP_ALREADY_STARTED)
+#else
     err = tcpip_adapter_dhcpc_start(TCPIP_ADAPTER_IF_STA);
     if (err != ESP_OK && err != ESP_ERR_TCPIP_ADAPTER_DHCP_ALREADY_STARTED)
+#endif
       {
       ESP_LOGE(TAG, "TCPIP: failed starting dhcp client; error=%d", err);
       }
@@ -1368,28 +1405,49 @@ void esp32wifi::SetSTAWifiIP(std::string ip, std::string sn, std::string gw)
     inet_aton(sn.c_str(), &m_ip_static_sta.netmask);
     inet_aton(gw.c_str(), &m_dns_static_sta.ip);
     esp_err_t err;
+#if ESP_IDF_VERSION_MAJOR >= 4
+    err = esp_netif_dhcpc_stop(esp_netif_get_handle_from_ifkey("WIFI_STA_DEF"));
+    if (err != ESP_OK && err != ESP_ERR_ESP_NETIF_DHCP_ALREADY_STOPPED)
+#else
     err = tcpip_adapter_dhcpc_stop(TCPIP_ADAPTER_IF_STA);
     if (err != ESP_OK && err != ESP_ERR_TCPIP_ADAPTER_DHCP_ALREADY_STOPPED)
+#endif
       {
       ESP_LOGE(TAG, "DHCP: failed stopping DHCP server; error=%d", err);
       return;
       }
 
+#if ESP_IDF_VERSION_MAJOR >= 4
+    err = esp_netif_set_ip_info(esp_netif_get_handle_from_ifkey("WIFI_STA_DEF"), &m_ip_static_sta);
+#else
     err = tcpip_adapter_set_ip_info(TCPIP_ADAPTER_IF_STA, &m_ip_static_sta);
+#endif
     if (err != ESP_OK)
       {
       ESP_LOGE(TAG, "TCPIP: failed setting static ip details, restarting dhcp; error=%d", err);
+#if ESP_IDF_VERSION_MAJOR >= 4
+      esp_netif_dhcpc_start(esp_netif_get_handle_from_ifkey("WIFI_STA_DEF"));
+#else
       tcpip_adapter_dhcpc_start(TCPIP_ADAPTER_IF_STA);
+#endif
       return;
       }
 
+#if ESP_IDF_VERSION_MAJOR >= 4
+    err = esp_netif_set_dns_info(esp_netif_get_handle_from_ifkey("WIFI_STA_DEF"),ESP_NETIF_DNS_MAIN, &m_dns_static_sta);
+#else
     err = tcpip_adapter_set_dns_info(TCPIP_ADAPTER_IF_STA,TCPIP_ADAPTER_DNS_MAIN, &m_dns_static_sta);
+#endif
     if (err != ESP_OK)
       {
       ESP_LOGE(TAG, "TCPIP: failed setting static dns details; error=%d", err);
       return;
       }
+#if ESP_IDF_VERSION_MAJOR >= 4
+    esp_netif_get_ip_info(esp_netif_get_handle_from_ifkey("WIFI_STA_DEF"),&m_ip_info_sta);
+#else
     tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA,&m_ip_info_sta);
+#endif
     }
   }
   
