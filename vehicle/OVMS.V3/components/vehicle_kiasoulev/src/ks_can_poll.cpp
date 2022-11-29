@@ -169,7 +169,7 @@ void OvmsVehicleKiaSoulEv::IncomingOBC(canbus* bus, uint16_t type, uint16_t pid,
  */
 void OvmsVehicleKiaSoulEv::IncomingVMCU(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
 	{
-	INT base;
+	uint16_t base;
 	uint8_t bVal;
 
 	switch (pid)

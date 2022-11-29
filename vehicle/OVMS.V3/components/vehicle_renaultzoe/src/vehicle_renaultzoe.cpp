@@ -1001,15 +1001,15 @@ void OvmsVehicleRenaultZoe::IncomingLBC(uint16_t type, uint16_t pid, const char*
     case 0x04: {
       if (IsZoe()) {
         for(int i=2; i<36; i+=3){
-          BmsSetCellTemperature( (i-2)/3, (INT)CAN_BYTE(i)-40 );
+          BmsSetCellTemperature( (i-2)/3, CAN_BYTE(i)-40 );
           //ESP_LOGD(TAG, "temp %d - %d", (i-2)/3, (INT)CAN_BYTE(i)-40);
         }
       }
       if (IsKangoo()) {
         int x=0;
         for(int i=2; i<12; i+=3){
-          BmsSetCellTemperature( x, (INT)CAN_BYTE(i) );
-          ESP_LOGD(TAG, "temp %d - %d", x, (INT)CAN_BYTE(i));
+          BmsSetCellTemperature( x, CAN_BYTE(i) );
+          ESP_LOGD(TAG, "temp %d - %d", x, CAN_BYTE(i));
           x++;
         }
       }
