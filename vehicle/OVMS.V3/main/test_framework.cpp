@@ -45,7 +45,9 @@ static const char *TAG = "test";
 #include "metrics_standard.h"
 #include "ovms_config.h"
 #include "can.h"
+#if ESP_IDF_VERSION_MAJOR < 4
 #include "strverscmp.h"
+#endif
 
 void test_deepsleep(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
