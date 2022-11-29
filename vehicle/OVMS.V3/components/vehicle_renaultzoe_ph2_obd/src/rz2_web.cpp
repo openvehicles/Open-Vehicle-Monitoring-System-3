@@ -128,7 +128,8 @@ void OvmsVehicleRenaultZoePh2OBD::WebInit()
 void OvmsVehicleRenaultZoePh2OBD::WebDeInit()
 {
   MyWebServer.DeregisterPage("/xrz2o/battmon");
-  MyWebServer.DeregisterPage("/xrz2o/settings");
+  MyWebServer.DeregisterPage("/xrz2o/battery");
 }
+
 
 #endif //CONFIG_OVMS_COMP_WEBSERVER

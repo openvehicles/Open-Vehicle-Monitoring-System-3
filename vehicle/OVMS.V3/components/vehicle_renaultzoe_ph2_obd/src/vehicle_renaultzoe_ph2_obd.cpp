@@ -100,17 +100,13 @@ OvmsVehicleRenaultZoePh2OBD::OvmsVehicleRenaultZoePh2OBD() {
   BmsSetCellDefaultThresholdsVoltage(0.030, 0.050);
   BmsSetCellDefaultThresholdsTemperature(4.0, 5.0);  
 
-#ifdef CONFIG_OVMS_COMP_WEBSERVER
+  #ifdef CONFIG_OVMS_COMP_WEBSERVER
   WebInit();
-#endif
+  #endif
 }
 
 OvmsVehicleRenaultZoePh2OBD::~OvmsVehicleRenaultZoePh2OBD() {
   ESP_LOGI(TAG, "Stop Renault Zoe Ph2 (OBD) vehicle module");
-
-#ifdef CONFIG_OVMS_COMP_WEBSERVER
-  WebDeInit();
-#endif
 }
 
 void OvmsVehicleRenaultZoePh2OBD::ConfigChanged(OvmsConfigParam* param) {

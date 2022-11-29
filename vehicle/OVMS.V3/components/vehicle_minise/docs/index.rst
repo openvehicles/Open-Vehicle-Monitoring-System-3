@@ -7,11 +7,7 @@ Vehicle Type: **Mini Cooper SE**
 
 This vehicle type supports the Mini Cooper SE. All model years should be supported.
 
-The OVMS support was developed Jan 2021.
-
-It was developed against the author's 2018 120Ah i3s BEV.  I would welcome engagement from
-the owner of a REX type to further develop metrics related to the REX engine. Testing by
-drivers of LHD models, as well as those with the smaller batteries will also be helpful.
+The OVMS support was developed Nov 2022 from the BMW i3 module.
 
 As of this release this vehicle support is read-only and cannot send commands to the car.
 
@@ -34,7 +30,7 @@ Cabin Pre-heat/cool Control tba
 GPS Location                Yes (from modem module GPS)
 Speed Display               Yes
 Temperature Display         Yes
-BMS v+t Display             Yes
+BMS v+t Display             Yes (including individual cells and modules)
 TPMS Display                tba
 Charge Status Display       Yes
 Charge Interruption Alerts  Yes
@@ -48,22 +44,10 @@ Others                      12v battery voltage/current, battery true SOC, etc
 WARNINGS
 --------
 
-Alarm behaviour
-^^^^^^^^^^^^^^^
-
-As standard, the i3 will sound the alarm if anything is left connected to the OBD-II
-port when the car is locked.
-
-A tool like Bimmercode will allow you to disable this. Alternatively
-you will need to disconnect the OVMS unit before locking the car.
-
-A future version may add a command to allow you to disable this alarm directly
-from your OVMS shell.
-
 12V Battery drain
 ^^^^^^^^^^^^^^^^^
 
-The i3 has a small 20Ah AGM 12v battery. Whilst care has been taken to minimize OVMS' power usage,
+The Mini Cooper SE has a small 20Ah AGM 12v battery. Whilst care has been taken to minimize OVMS' power usage,
 OVMS could eventually drain this battery if the car is left unplugged and locked.
 OVMS will also send an alert if 12V drops under 12V alert threshold. (See 12V Calibration section).
 
