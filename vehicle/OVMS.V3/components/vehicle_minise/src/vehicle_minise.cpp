@@ -82,7 +82,6 @@ static const char *TAG = "v-minise";
 static OvmsVehicle::poll_pid_t obdii_polls[] = {
   // TXMODULEID, RXMODULEID, TYPE, PID, { POLLTIMES }, BUS, ADDRESSING
   // SME: Battery management electronics
-#if 1
   // Reserve space for polling 96 battery cells voltages ("select cell" + "probe cell")
   {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {},
   {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {},
@@ -92,8 +91,8 @@ static OvmsVehicle::poll_pid_t obdii_polls[] = {
   {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {},
   {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {},
   {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {},
-#endif
-#if 0
+  // Reserve space for polling 12 battery modules temperatures ("select module" + "probe module")
+  {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {},
   { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_SME_ALTERUNG_KAPAZITAET_TS, { 0, 60, 60, 60 },
     0, ISOTP_EXTADR },// 0x6335 v_bat_soh, v_bat_health
   { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_SME_HV_SPANNUNG_BERECHNET, { 0, 2, 1, 2 }, 0,
@@ -206,7 +205,7 @@ static OvmsVehicle::poll_pid_t obdii_polls[] = {
   // EPS:  Power steering (We only use this to tell if the car is ready since the EPS is only on when the car is READY)
   { I3_ECU_EPS_TX, I3_ECU_EPS_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_EPS_EPS_MOMENTENSENSOR, { 0, 5, 5, 5 }, 0,
     ISOTP_EXTADR },   // 0xDB99
-#endif
+
   POLL_LIST_END
 };
 
@@ -215,24 +214,42 @@ OvmsVehicleMiniSE::OvmsVehicleMiniSE()
   ESP_LOGI(TAG, "Mini Cooper SE vehicle module");
 
   // Build polls for probing 96 battery cell voltages
-  poll_pid_t selectCell =
+  poll_pid_t selectCellVoltage =
     { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_ROUTINECONTROL,
       { .args = { 0x01, 3, { 0xAD, 0x6E, 0x00 }}},
-      { 0, 10, 10, 10 }, 0, ISOTP_EXTADR };
-  poll_pid_t probeCell =
+      { 0, 30, 10, 10 }, 0, ISOTP_EXTADR };
+  poll_pid_t probeCellVoltage =
     { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_ROUTINECONTROL,
       { .args = { 0x03, 3, { 0xAD, 0x6E, 0x00 }}},
-      { 0, 10, 10, 10 }, 0, ISOTP_EXTADR };
+      { 0, 30, 10, 10 }, 0, ISOTP_EXTADR };
   for (uint8_t i = 0; i < 96; i++) {
-    obdii_polls[i * 2] = selectCell;
+    obdii_polls[i * 2] = selectCellVoltage;
     obdii_polls[i * 2].args.data[2] = i + 1;
-    obdii_polls[i * 2 + 1] = probeCell;
+    obdii_polls[i * 2 + 1] = probeCellVoltage;
     obdii_polls[i * 2 + 1].args.data[2] = i + 1;
+  }
+
+  // Build polls for probing 12 battery modules temperatures
+  poll_pid_t selectModuleTemperature =
+    { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_ROUTINECONTROL,
+      { .args = { 0x01, 3, { 0xAD, 0x6D, 0x00 }}},
+      { 0, 30, 10, 10 }, 0, ISOTP_EXTADR };
+  poll_pid_t probeModuleTemperature =
+    { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_ROUTINECONTROL,
+      { .args = { 0x03, 3, { 0xAD, 0x6D, 0x00 }}},
+      { 0, 30, 10, 10 }, 0, ISOTP_EXTADR };
+  for (uint8_t i = 0; i < 12; i++) {
+    obdii_polls[(i + 96) * 2] = selectModuleTemperature;
+    obdii_polls[(i + 96) * 2].args.data[2] = i + 1;
+    obdii_polls[(i + 96) * 2 + 1] = probeModuleTemperature;
+    obdii_polls[(i + 96) * 2 + 1].args.data[2] = i + 1;
   }
 
   // BMS configuration
   BmsSetCellArrangementVoltage(96, 1);
   BmsSetCellLimitsVoltage(2.0, 5.0);
+  BmsSetCellArrangementTemperature(12, 1);
+  BmsSetCellLimitsTemperature(-35.0, 90.0);
 
   // Declare all custom metrics
 
@@ -489,29 +506,41 @@ void OvmsVehicleMiniSE::IncomingPollReply(canbus *bus, uint16_t type, uint16_t p
 
     // --- SME --------------------------------------------------------------------------------------------------------
 
-    case 0x01/*AD6E*/: {
+    case 0x01/*AD6E*//*AD6D*/: {
       if (datalen < 2) {
         ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "0x01AD6E", 2);
         break;
       }
-      uint8_t cell = m_poll_entry.xargs.data[2];
-      ESP_LOGD(TAG, "From ECU %s, pid %s: got %s (cell %d)\n", "SME", "0x01AD6E", "cell selected", cell);
+      if (m_poll_entry.args.data[1] == 0x6E) {
+        uint8_t cell = m_poll_entry.args.data[2];
+        ESP_LOGD(TAG, "From ECU %s, pid %s: got %s (cell %d)\n", "SME", "0x01AD6E", "cell voltage selected", cell);
+      } else if (m_poll_entry.args.data[1] == 0x6D) {
+        uint8_t module = m_poll_entry.args.data[2];
+        ESP_LOGD(TAG, "From ECU %s, pid %s: got %s (cell %d)\n", "SME", "0x01AD6E", "module temp. selected", module);
+      }
       break;
     }
 
-    case 0x03/*AD6E*/: {
+    case 0x03/*AD6E*//*AD6D*/: {
       if (datalen < 2) {
         ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "0x03AD6E", 2);
         break;
       }
-      uint8_t cell = m_poll_entry.xargs.data[2];
-      uint16_t voltage = (RXBUF_UINT(2));
-      ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s  (cell %d)\n", "SME", "0x03AD6E",
-        "cell voltage", voltage / 1000.0f, "\"V\"", cell);
-
-      ESP_LOGI(TAG, "Cell %d voltage = %f", cell, voltage / 1000.0f);
-      BmsSetCellVoltage(cell - 1, voltage / 1000.0f);
-
+      if (m_poll_entry.args.data[1] == 0x6E) {
+        uint8_t cell = m_poll_entry.args.data[2];
+        uint16_t voltage = (RXBUF_UINT(2));
+        ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s  (cell %d)\n", "SME", "0x03AD6E",
+          "cell voltage", voltage / 1000.0f, "\"V\"", cell);
+        ESP_LOGD(TAG, "Cell %d voltage = %f", cell, voltage / 1000.0f);
+        BmsSetCellVoltage(cell - 1, voltage / 1000.0f);
+      } else if (m_poll_entry.args.data[1] == 0x6D) {
+        uint8_t module = m_poll_entry.args.data[2];
+        uint16_t temperature = (RXBUF_UINT(2));
+        ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s  (module %d)\n", "SME", "0x03AD6E",
+          "module temperature", temperature / 100.0f, "\"°C\"", module);
+        ESP_LOGD(TAG, "Module %d temperature = %f", module, temperature / 100.0f);
+        BmsSetCellTemperature(module - 1, temperature / 100.0f);
+      }
       break;
     }
 
