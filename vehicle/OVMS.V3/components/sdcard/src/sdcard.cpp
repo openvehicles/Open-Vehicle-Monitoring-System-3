@@ -97,13 +97,13 @@ static void IRAM_ATTR sdcard_isr_handler(void* arg)
 sdcard::sdcard(const char* name, bool mode1bit, bool autoformat, int cdpin)
   : pcp(name)
   {
-  m_host = SDMMC_HOST_DEFAULT();
+  m_host = sdmmc_host_t SDMMC_HOST_DEFAULT();
   if (mode1bit)
     {
     m_host.flags = SDMMC_HOST_FLAG_1BIT;
     }
 
-  m_slot = SDMMC_SLOT_CONFIG_DEFAULT();
+  m_slot = sdmmc_slot_config_t SDMMC_SLOT_CONFIG_DEFAULT();
 // Disable driver-level CD pin, as we do this ourselves
 //  if (cdpin)
 //    {

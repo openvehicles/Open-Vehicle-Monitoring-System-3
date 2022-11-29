@@ -140,8 +140,10 @@ void tpms_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
 
   if (StandardMetrics.ms_v_tpms_pressure->IsDefined())
     {
-    writer->printf("Pressure...[kPa]: ");
-    for (auto val : StandardMetrics.ms_v_tpms_pressure->AsVector())
+
+    metric_unit_t user_pressure = OvmsMetricGetUserUnit(GrpPressure, kPa);
+    writer->printf("Pressure...[%s]: ", OvmsMetricUnitLabel(user_pressure) );
+    for (auto val : StandardMetrics.ms_v_tpms_pressure->AsVector(user_pressure))
       writer->printf(" %8.1f", val);
     writer->puts(StandardMetrics.ms_v_tpms_pressure->IsStale() ? "  [stale]" : "");
     data_shown = true;
@@ -149,8 +151,9 @@ void tpms_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
 
   if (StandardMetrics.ms_v_tpms_temp->IsDefined())
     {
-    writer->printf("Temperature.[°C]: ");
-    for (auto val : StandardMetrics.ms_v_tpms_temp->AsVector())
+    metric_unit_t user_temp = OvmsMetricGetUserUnit(GrpTemp, Celcius);
+    writer->printf("Temperature.[%s]: ", OvmsMetricUnitLabel(user_temp));
+    for (auto val : StandardMetrics.ms_v_tpms_temp->AsVector(user_temp))
       writer->printf(" %8.1f", val);
     writer->puts(StandardMetrics.ms_v_tpms_temp->IsStale() ? "  [stale]" : "");
     data_shown = true;

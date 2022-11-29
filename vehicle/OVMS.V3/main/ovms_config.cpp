@@ -565,8 +565,21 @@ void OvmsConfig::upgrade()
     DeregisterParam("vwup");
     }
 
+  // Update single units setting of miles/km to multiple units settings
+  if (GetParamValueInt("module", "cfgversion") < 2022111900)
+    {
+    bool ismiles = GetParamValue("vehicle", "units.distance") == "M";
+    if (ismiles)
+      {
+      SetParamValue("vehicle", "units.speed", "miph");
+      SetParamValue("vehicle", "units.accel", "miphps");
+      SetParamValue("vehicle", "units.accelshort", "ftpss");
+      SetParamValue("vehicle", "units.consumption", "mipkwh");
+      }
+    }
+
   // Done, set config version:
-  SetParamValueInt("module", "cfgversion", 2020053100);
+  SetParamValueInt("module", "cfgversion", 2022111900);
   }
 
 void OvmsConfig::RegisterParam(std::string name, std::string title, bool writable, bool readable)

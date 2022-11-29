@@ -198,7 +198,7 @@ size_t OvmsNetHttpAsyncClient::IncomingData(void *data, size_t length)
         {
         // Process the header
         ESP_LOGD(TAG, "OvmsNetHttpAsyncClient Headers got %s", header.c_str());
-        if (header.compare(0,15,"Content-Length:") == 0)
+        if (strncasecmp(header.c_str(), "Content-Length:", 15) == 0)
           {
           m_bodysize = atoi(header.substr(15).c_str());
           ESP_LOGD(TAG, "OvmsNetHttpAsyncClient content-length is %d", m_bodysize);

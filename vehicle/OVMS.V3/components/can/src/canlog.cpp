@@ -42,6 +42,8 @@ static const char *TAG = "canlog";
 #include "ovms_peripherals.h"
 #include "metrics_standard.h"
 
+static const char *CAN_PARAM = "can";
+
 ////////////////////////////////////////////////////////////////////////
 // Command Processing
 ////////////////////////////////////////////////////////////////////////
@@ -352,8 +354,12 @@ canlog::canlog(const char* type, std::string format, canformat::canformat_serve_
   using std::placeholders::_1;
   using std::placeholders::_2;
   MyEvents.RegisterEvent(IDTAG, "*", std::bind(&canlog::EventListener, this, _1, _2));
+  MyEvents.RegisterEvent(IDTAG,"config.mounted", std::bind(&canlog::UpdatedConfig, this, _1, _2));
+  MyEvents.RegisterEvent(IDTAG,"config.changed", std::bind(&canlog::UpdatedConfig, this, _1, _2));
+  MyMetrics.RegisterListener(IDTAG, "*", std::bind(&canlog::MetricListener, this, _1));
 
-  int queuesize = MyConfig.GetParamValueInt("can", "log.queuesize",100);
+  int queuesize = MyConfig.GetParamValueInt(CAN_PARAM, "log.queuesize",100);
+  LoadConfig();
   m_queue = xQueueCreate(queuesize, sizeof(CAN_log_message_t));
   xTaskCreatePinnedToCore(RxTask, "OVMS CanLog", 4096, (void*)this, 10, &m_task, CORE(1));
   }
@@ -361,6 +367,7 @@ canlog::canlog(const char* type, std::string format, canformat::canformat_serve_
 canlog::~canlog()
   {
   MyEvents.DeregisterEvent(IDTAG);
+  MyMetrics.DeregisterListener(IDTAG);
 
   if (m_task)
     {
@@ -383,6 +390,7 @@ canlog::~canlog()
         case CAN_LogInfo_Comment:
         case CAN_LogInfo_Config:
         case CAN_LogInfo_Event:
+        case CAN_LogInfo_Metric:
           free(msg.text);
           break;
         default:
@@ -418,6 +426,7 @@ void canlog::RxTask(void *context)
         case CAN_LogInfo_Comment:
         case CAN_LogInfo_Config:
         case CAN_LogInfo_Event:
+        case CAN_LogInfo_Metric:
           me->OutputMsg(msg);
           free(msg.text);
           break;
@@ -429,11 +438,177 @@ void canlog::RxTask(void *context)
     }
   }
 
+/**
+ * Parse a comma-separated list of filters, and assign them to a member of the class.
+ * We have 3 kind of comparisons, and an unlimited list of filters.
+ *
+ * A filter can be:
+ * - A "startsWith" comparison - when ending with '*',
+ * - An "endsWith" comparison - when starting with '*',
+ * - Invalid (and skipped) if empty, or with a '*' in any other position than beginning or end,
+ * - A "string equal" comparison for all other cases
+ */
+static void LoadFilters(conn_filters_arr_t &member, const std::string &value)
+  {
+  // Empty all previously defined filters, for all operators
+  for (int i=0; i<COUNT_OF_OPERATORS; i++)
+    {
+    member[i].clear();
+    }
+
+  if (!value.empty())
+    {
+    std::stringstream stream (value);
+    std::string item;
+    unsigned char comparison_operator;
+
+    // Comma-separated list
+    while (getline (stream, item, ','))
+      {
+      trim(item); // Removing leading and trailing spaces
+
+      if (item.empty())
+        {
+        ESP_LOGW(TAG, "LoadFilters: skipping empty value in the filter list");
+        continue;
+        }
+
+      // Check if there is a wildcard ('*') in any other place than first or last position
+      size_t wildcard_position = item.find('*', 1);
+      if ((wildcard_position != std::string::npos) && (wildcard_position != item.size()-1))
+        {
+        ESP_LOGW(TAG, "LoadFilters: skipping incorrect value (%s) in the filter list (wildcard in wrong position)", item.c_str());
+        continue;
+        }
+
+      // Depending on the presence and position of the wildcard, push the filter
+      // in the proper vector (without the wildcard)
+      if (item.front() == '*')
+        {
+        comparison_operator = OPERATOR_ENDSWITH;
+        item.erase(0, 1);
+        }
+      else if (item.back() == '*')
+        {
+        comparison_operator = OPERATOR_STARTSWITH;
+        item.pop_back();
+        }
+      else
+        {
+        comparison_operator = OPERATOR_EQUALS;
+        }
+      member[comparison_operator].push_back(item);
+      }
+    }
+
+  // for (int i=0; i<COUNT_OF_OPERATORS; i++)
+  //   {
+  //   ESP_LOGI(TAG, "LoadFilters: filters for operator %d:", i);
+  //   for (std::vector<std::string>::iterator it=member[i].begin(); it!=member[i].end(); ++it)
+  //     {
+  //     ESP_LOGI(TAG, "LoadFilters: filter value '%s'", it->c_str());
+  //     }
+  //   if (member[i].begin() == member[i].end())
+  //     {
+  //     ESP_LOGI(TAG, "LoadFilters: (empty filter list)");
+  //     }
+  //   }
+  }
+
+/**
+ * Load, or reload, the configuration of events and metrics filters.
+ *
+ * The configuration item is a string containing a comma-separated list of filters.
+ */
+void canlog::LoadConfig()
+  {
+  std::size_t str_hash;
+
+  std::string list_of_events_filters = MyConfig.GetParamValue(CAN_PARAM, "log.events_filters", "x*,vehicle*");
+  str_hash = std::hash<std::string>{}(list_of_events_filters);
+  if (str_hash != m_events_filters_hash)
+    {
+    m_events_filters_hash = str_hash;
+    LoadFilters(m_events_filters, list_of_events_filters);
+    MyCan.LogInfo(NULL, CAN_LogInfo_Config, ("Events filters: " + list_of_events_filters).c_str());
+    }
+  std::string list_of_metrics_filters = MyConfig.GetParamValue(CAN_PARAM, "log.metrics_filters");
+  str_hash = std::hash<std::string>{}(list_of_metrics_filters);
+  if (str_hash != m_metrics_filters_hash)
+    {
+    m_metrics_filters_hash = str_hash;
+    LoadFilters(m_metrics_filters, list_of_metrics_filters);
+    MyCan.LogInfo(NULL, CAN_LogInfo_Config, ("Metrics filters: " + list_of_metrics_filters).c_str());
+    }
+  }
+
+/**
+ * Load, or reload, the configuration if a config event occurred.
+ */
+void canlog::UpdatedConfig(std::string event, void* data)
+  {
+  if (event == "config.changed")
+    {
+    // Only reload if our parameter has changed
+    OvmsConfigParam*p = (OvmsConfigParam*)data;
+    if (p->GetName() != CAN_PARAM)
+      {
+      return;
+      }
+    }
+  LoadConfig();
+  }
+
+/**
+ * Check if a value matches in a list of filters.
+ *
+ * Match can be a:
+ * - startsWith match,
+ * - endsWith match,
+ * - equality match.
+ */
+static bool CheckFilter(conn_filters_arr_t &member, const std::string &value)
+  {
+  for (int i=0; i<COUNT_OF_OPERATORS; i++)
+    {
+    for (std::vector<std::string>::iterator it=member[i].begin(); it!=member[i].end(); ++it)
+      {
+      if ((i == OPERATOR_STARTSWITH) && (startsWith(value, *it)))
+        {
+        return true;
+        }
+      else if ((i == OPERATOR_ENDSWITH) && (endsWith(value, *it)))
+        {
+        return true;
+        }
+      else if ((i == OPERATOR_EQUALS) && (value == *it))
+        {
+        return true;
+        }
+      }
+    }
+  return false;
+  }
+
 void canlog::EventListener(std::string event, void* data)
   {
   // Log vehicle custom (x…) & framework events:
-  if (startsWith(event, 'x') || startsWith(event, "vehicle"))
+  if (CheckFilter(m_events_filters, event))
     LogInfo(NULL, CAN_LogInfo_Event, event.c_str());
+  }
+
+void canlog::MetricListener(OvmsMetric* metric)
+  {
+    std::string name = metric->m_name;
+  // Log metrics (in JSON for later parsing):
+  if (CheckFilter(m_metrics_filters, name))
+    {
+    std::string metric_text = "{ ";
+    metric_text += "\"name\": \"" + json_encode(name) + "\", ";
+    metric_text += "\"value\": " + metric->AsJSON() + ", ";
+    metric_text += "\"unit\": \"" + json_encode(std::string(OvmsMetricUnitLabel(metric->GetUnits()))) + "\" }";
+    LogInfo(NULL, CAN_LogInfo_Metric, metric_text.c_str());
+    }
   }
 
 const char* canlog::GetType()

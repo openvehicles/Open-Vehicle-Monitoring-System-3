@@ -312,7 +312,7 @@ void SevconClient::shell_cfg_set(int verbosity, OvmsWriter* writer, OvmsCommand*
       else if (res == COR_ERR_StateChangeFailed)
         writer->puts("Live tuning changed, base tuning needs STOP mode");
       else
-        writer->printf("ERROR: %s\n", me->GetResultString(res));
+        writer->printf("ERROR: %s\n", me->GetResultString(res).c_str());
     }
   }
 

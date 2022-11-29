@@ -95,6 +95,11 @@ class canlogconnection: public InternalRamAllocated
     uint32_t       m_filtercount;
   };
 
+#define OPERATOR_STARTSWITH 0
+#define OPERATOR_ENDSWITH 1
+#define OPERATOR_EQUALS 2
+#define COUNT_OF_OPERATORS 3
+typedef std::array<std::vector<std::string>, COUNT_OF_OPERATORS> conn_filters_arr_t;
 
 class canlog : public InternalRamAllocated
   {
@@ -105,6 +110,7 @@ class canlog : public InternalRamAllocated
   public:
     static void RxTask(void* context);
     void EventListener(std::string event, void* data);
+    void MetricListener(OvmsMetric* metric);
 
   public:
     const char* GetType();
@@ -152,6 +158,16 @@ class canlog : public InternalRamAllocated
     uint32_t            m_msgcount;
     uint32_t            m_dropcount;
     uint32_t            m_filtercount;
+
+  protected:
+    virtual void UpdatedConfig(std::string event, void* data);
+    virtual void LoadConfig();
+
+  protected:
+    conn_filters_arr_t  m_events_filters;
+    size_t              m_events_filters_hash = 0;
+    conn_filters_arr_t  m_metrics_filters;
+    size_t              m_metrics_filters_hash = 0;
   };
 
 #endif // __CANLOG_H__

@@ -864,6 +864,7 @@ OvmsMetrics
     returned as a string with any unit specifiers.
 
 .. code-block:: javascript
+
   // Get the speed as a string with units ( eg: 37.4km/h )
   var speed  = OvmsMetrics.Value("v.b.range.speed", "native", false)
 

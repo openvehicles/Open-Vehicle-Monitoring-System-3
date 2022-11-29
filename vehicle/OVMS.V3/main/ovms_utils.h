@@ -33,6 +33,7 @@
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include <algorithm>
 #include <cstring>
 #include <string>
 #include <iomanip>
@@ -570,4 +571,66 @@ inline bool get_buff_string(const std::string &data, uint32_t index, uint32_t le
   return get_buff_string(reinterpret_cast<const uint8_t *>(data.data()), data.size(), index, len, strret);
   }
 
+// trim from start (in place)
+static inline void ltrim(std::string &s) {
+    s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) {
+        return !std::isspace(ch);
+    }));
+}
+
+// trim from end (in place)
+static inline void rtrim(std::string &s) {
+    s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch) {
+        return !std::isspace(ch);
+    }).base(), s.end());
+}
+
+// trim from both ends (in place)
+static inline void trim(std::string &s) {
+    rtrim(s);
+    ltrim(s);
+}
+
+// trim from start (copying)
+static inline std::string ltrim_copy(std::string s) {
+    ltrim(s);
+    return s;
+}
+
+// trim from end (copying)
+static inline std::string rtrim_copy(std::string s) {
+    rtrim(s);
+    return s;
+}
+
+// trim from both ends (copying)
+static inline std::string trim_copy(std::string s) {
+    trim(s);
+    return s;
+}
+
+/**
+ * format_file_size: format a file size in human-readable format.
+ * (like 1.5k 234.2M 2.1G)
+ */
+void format_file_size(char* buffer, std::size_t buf_size, std::size_t fsize);
+
+/** Format to a std::string.
+ */
+std::string string_format(const char *fmt_str, ...) __attribute__ ((format (printf, 1, 2)));
+
+/**
+ * Return `std::string` in lower-case.
+ *
+ * Cf https://en.cppreference.com/w/cpp/string/byte/tolower
+ *
+ * Note: This may introduce unnecessary overhead as `std::tolower()` is locale aware.
+ * Sometimes it may be better to use plain C `strncasecmp()`.
+ */
+static inline std::string str_tolower(std::string s) {
+    std::transform(s.begin(), s.end(), s.begin(),
+                   [](unsigned char c){ return std::tolower(c); }
+                  );
+    return s;
+}
 #endif // __OVMS_UTILS_H__

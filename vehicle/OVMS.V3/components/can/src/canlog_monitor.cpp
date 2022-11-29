@@ -109,6 +109,7 @@ void canlog_monitor_conn::OutputMsg(CAN_log_message_t& msg, std::string &result)
       case CAN_LogInfo_Comment:
       case CAN_LogInfo_Config:
       case CAN_LogInfo_Event:
+      case CAN_LogInfo_Metric:
         ESP_LOGD(TAG,"%s",result.c_str());
         break;
       default:

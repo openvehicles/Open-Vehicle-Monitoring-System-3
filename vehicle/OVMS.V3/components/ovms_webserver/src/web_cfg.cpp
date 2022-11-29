@@ -591,8 +591,12 @@ void OvmsWebServer::HandleCfgPassword(PageEntry_t& p, PageContext_t& c)
 void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
 {
   std::string error, info;
-  std::string vehicleid, vehicletype, vehiclename, timezone, timezone_region, units_distance, pin;
+  std::string vehicleid, vehicletype, vehiclename, timezone, timezone_region, pin;
   std::string bat12v_factor, bat12v_ref, bat12v_alert;
+
+  std::map<metric_group_t,std::string> units_values;
+  metric_group_list_t unit_groups;
+  OvmsMetricGroupConfigList(unit_groups);
 
   if (c.method == "POST") {
     // process form submission:
@@ -601,7 +605,13 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
     vehiclename = c.getvar("vehiclename");
     timezone = c.getvar("timezone");
     timezone_region = c.getvar("timezone_region");
-    units_distance = c.getvar("units_distance");
+    for ( auto grpiter = unit_groups.begin(); grpiter != unit_groups.end(); ++grpiter) {
+      std::string name = OvmsMetricGroupName(*grpiter);
+      std::string cfg = "units_";
+      cfg += name;
+      units_values[*grpiter] = c.getvar(cfg);
+    }
+
     bat12v_factor = c.getvar("bat12v_factor");
     bat12v_ref = c.getvar("bat12v_ref");
     bat12v_alert = c.getvar("bat12v_alert");
@@ -627,7 +637,12 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
       MyConfig.SetParamValue("vehicle", "name", vehiclename);
       MyConfig.SetParamValue("vehicle", "timezone", timezone);
       MyConfig.SetParamValue("vehicle", "timezone_region", timezone_region);
-      MyConfig.SetParamValue("vehicle", "units.distance", units_distance);
+      for ( auto grpiter = unit_groups.begin(); grpiter != unit_groups.end(); ++grpiter) {
+        std::string name = OvmsMetricGroupName(*grpiter);
+        std::string value = units_values[*grpiter];
+        OvmsMetricSetUserConfig(*grpiter, value);
+      }
+
       MyConfig.SetParamValue("system.adc", "factor12v", bat12v_factor);
       MyConfig.SetParamValue("vehicle", "12v.ref", bat12v_ref);
       MyConfig.SetParamValue("vehicle", "12v.alert", bat12v_alert);
@@ -656,7 +671,8 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
     vehiclename = MyConfig.GetParamValue("vehicle", "name");
     timezone = MyConfig.GetParamValue("vehicle", "timezone");
     timezone_region = MyConfig.GetParamValue("vehicle", "timezone_region");
-    units_distance = MyConfig.GetParamValue("vehicle", "units.distance");
+    for ( auto grpiter = unit_groups.begin(); grpiter != unit_groups.end(); ++grpiter)
+      units_values[*grpiter] = OvmsMetricGetUserConfig(*grpiter);
     bat12v_factor = MyConfig.GetParamValue("system.adc", "factor12v");
     bat12v_ref = MyConfig.GetParamValue("vehicle", "12v.ref");
     bat12v_alert = MyConfig.GetParamValue("vehicle", "12v.alert");
@@ -703,10 +719,40 @@ void OvmsWebServer::HandleCfgVehicle(PageEntry_t& p, PageContext_t& c)
     , _attr(timezone_region)
     , _attr(timezone));
 
-  c.input_radiobtn_start("Distance units", "units_distance");
-  c.input_radiobtn_option("units_distance", "Kilometers", "K", units_distance == "K");
-  c.input_radiobtn_option("units_distance", "Miles", "M", units_distance == "M");
-  c.input_radiobtn_end();
+  for ( auto grpiter = unit_groups.begin(); grpiter != unit_groups.end(); ++grpiter) {
+    std::string name = OvmsMetricGroupName(*grpiter);
+    metric_unit_set_t group_units;
+    if (OvmsMetricGroupUnits(*grpiter,group_units)) {
+      bool use_select = group_units.size() > 3;
+      std::string cfg = "units_";
+      cfg += name;
+      std::string value = units_values[*grpiter];
+      if (use_select)
+        c.input_select_start(OvmsMetricGroupLabel(*grpiter), cfg.c_str() );
+      else
+        c.input_radiobtn_start(OvmsMetricGroupLabel(*grpiter), cfg.c_str() );
+
+      bool checked = value.empty();
+      if (use_select)
+        c.input_select_option( "Default", "", checked);
+      else
+        c.input_radiobtn_option(cfg.c_str(), "Default", "", checked);
+      for (auto unititer = group_units.begin(); unititer != group_units.end(); ++unititer) {
+        const char* unit_name = OvmsMetricUnitName(*unititer);
+        const char* unit_label = OvmsMetricUnitLabel(*unititer);
+        checked = value == unit_name;
+        if (use_select)
+          c.input_select_option( unit_label, unit_name, checked);
+        else
+          c.input_radiobtn_option(cfg.c_str(), unit_label, unit_name, checked);
+      }
+      if (use_select)
+        c.input_select_end();
+      else
+        c.input_radiobtn_end();
+    }
+  }
+
   c.input_password("PIN", "pin", "", "empty = no change",
     "<p>Vehicle PIN code used for unlocking etc.</p>", "autocomplete=\"section-vehiclepin new-password\"");
 
@@ -963,8 +1009,7 @@ void OvmsWebServer::HandleCfgPushover(PageEntry_t& p, PageContext_t& c)
     }
 
     if (error == "") {
-      if (c.getvar("action") == "save")
-        {
+      if (c.getvar("action") == "save") {
         // save:
         param->m_map.clear();
         param->m_map = std::move(pmap);
@@ -975,9 +1020,8 @@ void OvmsWebServer::HandleCfgPushover(PageEntry_t& p, PageContext_t& c)
         OutputHome(p, c);
         c.done();
         return;
-        }
-      else if (c.getvar("action") == "test")
-        {
+      } else if (c.getvar("action") == "test")
+      {
         std::string reply;
         std::string popup;
         c.head(200);
@@ -991,10 +1035,10 @@ void OvmsWebServer::HandleCfgPushover(PageEntry_t& p, PageContext_t& c)
             atoi(c.getvar("retry").c_str()),
             atoi(c.getvar("expire").c_str()),
             true /* receive server reply as reply/pushover-type notification */ ))
-          {
+        {
           c.alert("danger", "<p class=\"lead\">Could not send test message!</p>");
-          }
         }
+      }
     }
     else {
       // output error, return to form:
@@ -1163,7 +1207,7 @@ void OvmsWebServer::HandleCfgPushover(PageEntry_t& p, PageContext_t& c)
             "<td><button type=\"button\" class=\"btn btn-danger\" onclick=\"delRow(this)\"><strong>✖</strong></button></td>"
             "<td><input type=\"text\" class=\"form-control\" name=\"nfy_%d\" value=\"%s\" placeholder=\"Enter notification type/subtype\""
               " autocomplete=\"section-notification-type\"></td>"
-            "<td width=\"20%\"><select class=\"form-control\" name=\"np_%d\" size=\"1\">"
+            "<td width=\"20%%\"><select class=\"form-control\" name=\"np_%d\" size=\"1\">"
       , max, _attr(name)
       , max);
     gen_options_priority(kv.second);
@@ -3929,7 +3973,7 @@ void OvmsWebServer::HandleEditor(PageEntry_t& p, PageContext_t& c)
         "text-align: center !important;\n"
       "}\n"
     "}\n"
-    ".log { font-size: 87%; color: gray; }\n"
+    ".log { font-size: 87%%; color: gray; }\n"
     ".log.log-I { color: green; }\n"
     ".log.log-W { color: darkorange; }\n"
     ".log.log-E { color: red; }\n"

@@ -76,7 +76,7 @@ void pushover_send_message(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, 
       sound = "pushover";
     }
 
-  writer->printf("Sending PUSHOVER message \"%s\" with priority %d and sound %s\n",argv[0],priority,sound);
+  writer->printf("Sending PUSHOVER message \"%s\" with priority %d and sound %s\n",argv[0],priority,sound.c_str());
   MyPushoverClient.SendMessage(argv[0], priority, sound);
   }
 

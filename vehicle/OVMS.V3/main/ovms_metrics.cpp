@@ -41,6 +41,7 @@ static const char *TAG = "metrics";
 #include "ovms_command.h"
 #include "ovms_events.h"
 #include "ovms_script.h"
+#include "ovms_config.h"
 #include "rom/rtc.h"
 #include "string.h"
 
@@ -57,28 +58,6 @@ std::map<std::size_t, const char*>      pmetrics_keymap       // hash key → me
 
 OvmsMetrics                             MyMetrics
                                         __attribute__ ((init_priority (1800)));
-
-typedef enum : uint8_t
-  {
-  GrpNone,
-  GrpOther,
-  GrpDistance,
-  GrpTemp,
-  GrpPressure,
-  GrpPower,
-  GrpEnergy,
-  GrpTime,
-  GrpDirection,
-  GrpSpeed,
-  GrpAccel,
-  GrpSignal,
-  GrpConsumption,
-  GrpTorque,
-  // These are where a dimension group is split and allows
-  // easily folding the 'short distances' back onto their equivalents.
-  GrpDistanceShort = GrpDistance + 0x80,
-  GrpAccelShort = GrpAccel + 0x80
-  } metric_group_t;
 
 struct OvmsUnitInfo {
   const char *UnitCode; //< The UnitCode identifying the unit
@@ -97,7 +76,7 @@ static const OvmsUnitInfo unit_info[int(MetricUnitLast)+1] =
   {"native",   "",         Native,     Native,      GrpNone   }, // 0
   {"metric",   "",         Native,     Native,      GrpNone   }, // 1
   {"imperial", "",         Native,     Native,      GrpNone   }, // 2
-  UNIT_GAP, // 3
+  {"user",     "",         Native,     Native,      GrpNone   }, // 3
   UNIT_GAP, // 4
   UNIT_GAP, // 5
   UNIT_GAP, // 6
@@ -127,7 +106,7 @@ static const OvmsUnitInfo unit_info[int(MetricUnitLast)+1] =
   {"kpa",      "kPa",      Native,     PSI,         GrpPressure}, // 30
   {"pa",       "Pa",       Native,     PSI,         GrpPressure}, // 31
   {"psi",      "psi",      kPa,        Native,      GrpPressure}, // 32
-  UNIT_GAP, // 33
+  {"bar",      "bar",      Native,     PSI,         GrpPressure}, // 33
   UNIT_GAP, // 34
   UNIT_GAP, // 35
   UNIT_GAP, // 36
@@ -185,8 +164,8 @@ static const OvmsUnitInfo unit_info[int(MetricUnitLast)+1] =
   UNIT_GAP,// 87
   UNIT_GAP,// 88
   UNIT_GAP,// 89
-  {"percent",  "%",        Native,     Native,      GrpOther}, // 90
-  UNIT_GAP,// 91
+  {"percent",  "%",        Native,     Native,      GrpRatio}, // 90
+  {"permille", "\u2030",   Native,     Native,      GrpRatio}, // 91
   UNIT_GAP,// 92
   UNIT_GAP,// 93
   UNIT_GAP,// 94
@@ -198,7 +177,7 @@ static const OvmsUnitInfo unit_info[int(MetricUnitLast)+1] =
   // Energy consumption:
   {"whpkm",    "Wh/km",    Native,     WattHoursPM, GrpConsumption}, // 100
   {"whpmi",    "Wh/mi",    WattHoursPK,Native,      GrpConsumption}, // 101
-  {"kwhp100km","kWh/100km",Native,     WattHoursPM, GrpConsumption}, // 102
+  {"kwhp100km","kWh/100km",Native,     MPkWh,       GrpConsumption}, // 102
   {"kmpkwh",   "km/kWh",   Native,     MPkWh,       GrpConsumption}, // 103
   {"mipkwh",   "mi/kWh",   KPkWh,      Native,      GrpConsumption}, // 104
   UNIT_GAP,// 105
@@ -210,6 +189,39 @@ static const OvmsUnitInfo unit_info[int(MetricUnitLast)+1] =
   {"nm",       "Nm",       Native,     Native,      GrpTorque} // 110
 };
 #undef UNIT_GAP
+
+struct OvmsUnitGroupInfo {
+  const char *GroupCode; //< The GroupCode identifying the group
+  const char *Label;    //< The label to be used for config
+};
+#define GROUP_GAP {NULL, NULL}
+// Mapping for information on metric groups
+static const OvmsUnitGroupInfo group_info[int(MetricGroupLast)+1] =
+{
+// Group Code      Config Label
+  { "none",        NULL                      }, // 0
+  { "other",       NULL                      }, // 1
+  { "distance",    "Distance"                }, // 2
+  { "speed",       "Speed"                   }, // 3
+  { "accel",       "Acceleration"            }, // 4
+  { "power",       "Power"                   }, // 5
+  { "energy",      "Energy"                  }, // 6
+  { "consumption", "Energy Consumption"      }, // 7
+  { "temp",        "Temperature"             }, // 8
+  { "preasure",    "Pressure"                }, // 9
+  { "time",        NULL                      }, // 10
+  { "signal",      "Signal Strength"         }, // 11
+  { "torque",      NULL                      }, // 12
+  { "direction",   NULL                      }, // 13
+  { "ratio",       "Ratio"                   }, // 14
+  GROUP_GAP, // 15
+  // Short dimensions from here:
+  GROUP_GAP, // 16
+  GROUP_GAP, // 17
+  { "distanceshort","Height"                 }, // 2+16=18
+  GROUP_GAP,
+  { "accelshort",   "Acceleration (short)"   }, // 4+16=20
+};
 
 static inline int mi_to_km(int mi)
   {
@@ -256,17 +268,142 @@ T pkm_to_pmi(T pkm)
  * simplify - Means those separated for (eventual) user config
  *            are folded to one metric.
  */
-static metric_group_t GetMetricGroup(metric_unit_t unit)
+metric_group_t GetMetricGroup(metric_unit_t unit)
   {
   uint8_t unit_i = static_cast<uint8_t>(unit);
   if (unit_i <= uint8_t(MetricUnitLast))
     return unit_info[unit_i].Group;
   return GrpNone;
   }
+
+static inline metric_group_t MetricGroupSimplify(metric_group_t group)
+  {
+    return static_cast<metric_group_t>(static_cast<uint8_t>(group) & GrpFoldMask);
+  }
+
 static inline metric_group_t GetMetricGroupSimplify(metric_unit_t unit)
   {
     // Removes High-bit to fold the 'Short' metrics back onto their equivalents.
-    return static_cast<metric_group_t>(static_cast<uint8_t>(GetMetricGroup(unit)) & 0x7f);
+    return MetricGroupSimplify(GetMetricGroup(unit));
+  }
+/**
+ * Return a list of Metric Groups for configuration.
+ */
+bool OvmsMetricGroupConfigList(metric_group_list_t& groups)
+  {
+  bool found = false;
+  groups.reserve(12);
+  for (uint8_t idx = 0; idx <= GrpFoldMask; ++idx)
+    {
+    if (group_info[idx].Label != NULL)
+      {
+      found = true;
+      metric_group_t grp = static_cast<metric_group_t>(idx);
+      groups.insert(groups.end(), grp);
+      // Get unfolded version
+      uint8_t unfold = idx + GrpUnfold;
+      grp = static_cast<metric_group_t>(unfold);
+      if (OvmsMetricGroupLabel(grp) != NULL)
+        groups.insert(groups.end(), grp);
+      }
+    }
+  return found;
+  }
+
+const char* OvmsMetricGroupLabel(metric_group_t group)
+  {
+  if (group > MetricGroupLast)
+    return NULL;
+  return group_info[static_cast<uint8_t>(group)].Label;
+  }
+
+const char* OvmsMetricGroupName(metric_group_t group)
+  {
+  if (group > MetricGroupLast)
+    return NULL;
+  return group_info[static_cast<uint8_t>(group)].GroupCode;
+  }
+
+bool OvmsMetricGroupUnits(metric_group_t group, metric_unit_set_t& units)
+  {
+  bool found = false;
+  for (metric_unit_t unit = MetricUnitFirst; unit <= MetricUnitLast; unit = metric_unit_t(1+(uint8_t)unit))
+    {
+    if ( group == GetMetricGroup(unit))
+      {
+      units.insert(unit);
+      found=true;
+      }
+    }
+  return found;
+  }
+
+std::string OvmsMetricGetUserConfig(metric_group_t group)
+  {
+  std::string cfg = "units.";
+  cfg += OvmsMetricGroupName(group);
+  std::string value = MyConfig.GetParamValue("vehicle", cfg);
+  if (group == GrpDistance)
+    {
+    // Backwards compat
+    if (value == "M")
+      value = "miles";
+    else if (value == "K")
+      value = "km";
+    }
+  return value;
+  }
+void OvmsMetricSetUserConfig(metric_group_t group, std::string value)
+  {
+  std::string cfg = "units.";
+  cfg += OvmsMetricGroupName(group);
+  if (group == GrpDistance)
+    {
+    // Backwards compat
+    if (value == "miles")
+      value = "M";
+    else if (value == "km")
+      value = "K";
+    }
+  MyConfig.SetParamValue("vehicle", cfg, value);
+  }
+void OvmsMetricSetUserConfig(metric_group_t group, metric_unit_t unit)
+  {
+  switch (group)
+    {
+    case GrpNone:
+    case GrpOther:
+       return;
+    default: ;
+    }
+  switch (unit)
+    {
+    case ToMetric:
+    case ToImperial:
+    case ToUser:
+    case UnitNotFound: break;
+    case Native:
+      OvmsMetricSetUserConfig(group, "");
+      break;
+    default:
+      OvmsMetricSetUserConfig(group, OvmsMetricUnitName(unit));
+    }
+  }
+
+/**
+ * Returns the User-specified unit for the given unit group.
+ * \param group The target group.
+ * \param defaultUnit The unit to use if no user unit is specified (defaults to 'Native');
+ */
+metric_unit_t OvmsMetricGetUserUnit(metric_group_t group, metric_unit_t defaultUnit )
+  {
+  std::string unit_name = OvmsMetricGetUserConfig(group);
+  if (unit_name.empty())
+    return defaultUnit;
+  metric_unit_t unit = OvmsMetricUnitFromName(unit_name.c_str());
+  if (unit == UnitNotFound)
+    return defaultUnit;
+  return unit;
   }
 
 /*
@@ -276,43 +413,77 @@ static inline metric_group_t GetMetricGroupSimplify(metric_unit_t unit)
  * full_check takes into account whether a conversion CAN be done (used for
  * printing correct labels)
  */
-static void CheckTargetUnit(metric_unit_t from, metric_unit_t &to, bool full_check)
+static bool CheckTargetUnit(metric_unit_t from, metric_unit_t &to, bool full_check)
   {
   if (from == Other)
     {
     to = from;
-    return;
+    return true;
     }
   switch (to)
     {
-    case Native: break;
+    case Native: return true;
     case ToMetric:
       {
       uint8_t unit_i = static_cast<uint8_t>(from);
       if (unit_i <= uint8_t(MetricUnitLast))
         to = unit_info[unit_i].MetricUnit;
-      break;
+      return true;
       }
     case ToImperial:
       {
       uint8_t unit_i = static_cast<uint8_t>(from);
       if (unit_i <= uint8_t(MetricUnitLast))
         to = unit_info[unit_i].ImperialUnit;
-      break;
+      return true;
+      }
+    case ToUser:
+      {
+      metric_group_t from_grp = GetMetricGroup(from);
+      to = OvmsMetricGetUserUnit(from_grp);
+      return true;
       }
     default:
       if (to == from)
-        to = Native;
-      else if (full_check)
         {
-        metric_group_t from_grp = GetMetricGroupSimplify(from);
-        if (from_grp == GrpNone || from_grp == GrpOther)
-          to = Native;
-        else if (from_grp != GetMetricGroupSimplify(to))
-          to = Native;
+        to = Native;
+        return true;
+        }
+      else
+        {
+        if (full_check)
+          {
+          metric_group_t from_grp = GetMetricGroupSimplify(from);
+          if (from_grp == GrpNone || from_grp == GrpOther)
+            {
+            to = Native;
+            return false;
+            }
+          else if (from_grp != GetMetricGroupSimplify(to))
+            {
+            to = Native;
+            return false;
+            }
+          }
+        return true;
         }
       break;
     }
+  }
+
+/**
+ * Converts/Checks that the specified unit conversion is allowed.
+ * \return The actual unit to use or UnitNotFound if invalid.
+ * \param fromUnit The unit value of the value. Must be a real Unit.
+ * \param toUnit  The unit being converted to. Can be a psuedo-unit (Native, ToUser, ToMetric, ToImperial).
+ */
+metric_unit_t OvmsMetricCheckUnit(metric_unit_t fromUnit, metric_unit_t toUnit)
+  {
+  if (not CheckTargetUnit(fromUnit, toUnit, true))
+    return UnitNotFound;
+  if (toUnit == Native)
+    return fromUnit;
+  return toUnit;
   }
 
 void metrics_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -322,7 +493,7 @@ void metrics_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
   bool show_set = false;
   bool only_persist = false;
   bool display_strings = false;
-  metric_unit_t def_unit = Native;
+  metric_unit_t def_unit = ToUser;
   const char* show_only = NULL;
   int i;
   for (i=0;i<argc;i++)
@@ -350,6 +521,9 @@ void metrics_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
           break;
         case 'm':
           def_unit = ToMetric;
+          break;
+        case 'n':
+          def_unit = Native;
           break;
         case 'p':
           only_persist = true;
@@ -399,7 +573,7 @@ void metrics_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
       if (age>99)
         age=99;
       if (v.empty())
-        writer->printf("[---] ",k);
+        writer->printf("[---] ");
       else
         writer->printf("[%02d%c] ", age, (m->IsStale() ? 'S' : '-' ));
       }
@@ -441,22 +615,57 @@ void metrics_persist(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
   writer->printf("%d of %d slots used\n", pmetrics.used, NUM_PERSISTENT_VALUES);
   }
 
+static int metrics_set_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool complete)
+  {
+  switch (argc)
+    {
+    case 1: return MyMetrics.Validate(writer, argc, argv[0], complete);
+    case 3:
+      {
+      OvmsMetric *metric = MyMetrics.FindUniquePrefix(argv[0]);
+      if (!metric)
+        return -1;
+      metric_unit_t unit = metric->GetUnits();
+      metric_group_t group = GetMetricGroup(unit);
+      return OvmsMetricUnit_Validate(writer, argc, argv[2], complete, group);
+      }
+    }
+  return -1;
+  }
+
 void metrics_set(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   const char *unit = NULL;
   if (argc > 2)
-    unit = argv[2];
+    unit = OvmsMetricUnit_FindUniquePrefix(argv[2]);
   if (MyMetrics.Set(argv[0],argv[1], unit))
     writer->puts("Metric set");
   else
     writer->puts("Metric could not be set");
   }
 
+static int metrics_get_validate(OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv, bool complete)
+  {
+  switch (argc)
+    {
+    case 1: return MyMetrics.Validate(writer, argc, argv[0], complete);
+    case 2:
+      {
+      OvmsMetric *metric = MyMetrics.FindUniquePrefix(argv[0]);
+      if (!metric)
+        return -1;
+      metric_unit_t unit = metric->GetUnits();
+      metric_group_t group = GetMetricGroup(unit);
+      return OvmsMetricUnit_Validate(writer, argc, argv[1], complete, group);
+      }
+    }
+  return -1;
+  }
 void metrics_get(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   const char *unit = NULL;
   if (argc > 1)
-    unit = argv[1];
+    unit = OvmsMetricUnit_FindUniquePrefix(argv[1]);
   std::string str = MyMetrics.GetUnitStr(argv[0], unit);
   writer->puts(str.c_str());
   }
@@ -609,7 +818,15 @@ void metrics_units(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
       continue;
     if (show_only != NULL && strstr(metric_name, show_only) == NULL)
       continue;
-    const char *metric_label = OvmsMetricUnitLabel(unit);
+    const char *metric_label;
+    switch (unit)
+      {
+      case Native:     metric_label = "(internal/original unit)"; break;
+      case ToMetric:   metric_label = "(equivalent metric unit)"; break;
+      case ToImperial: metric_label = "(equivalent Imperial unit)"; break;
+      case ToUser:     metric_label = "(user-configured unit)"; break;
+      default:         metric_label = OvmsMetricUnitLabel(unit);
+      }
     writer->printf("%12s : %s\n", metric_name, metric_label);
     found = true;
     }
@@ -784,19 +1001,20 @@ OvmsMetrics::OvmsMetrics()
   // Register our commands
   OvmsCommand* cmd_metric = MyCommandApp.RegisterCommand("metrics","METRICS framework");
   cmd_metric->RegisterCommand("list","Show all metrics", metrics_list,
-      "[-cimpst] [<metric>]\n"
+      "[-cimnpst] [<metric>]\n"
       "Display a metric, show all by default\n"
       "-c = display persistent metrics set commands\n"
       "-i = display imperial units where possible\n"
       "-m = display metric units where possible\n"
+      "-n = show metrics in native units\n"
       "-p = display only persistent metrics\n"
       "-s = show metric staleness\n"
-      "-t = display non-printing characters and tabs in string metrics", 0, 2);
+      "-t = display non-printing characters and tabs in string metrics" , 0, 2);
   cmd_metric->RegisterCommand("persist","Show persistent metrics info", metrics_persist, "[-r]\n"
       "-r = reset persistent metrics", 0, 1);
-  cmd_metric->RegisterCommand("set","Set the value of a metric",metrics_set, "<metric> <value> [<unit>]", 2, 3);
+  cmd_metric->RegisterCommand("set","Set the value of a metric",metrics_set, "<metric> <value> [<unit>]", 2, 3, true, metrics_set_validate);
 
-  cmd_metric->RegisterCommand("get","Get the value of a metric",metrics_get, "<metric> [<unit>]", 1, 2);
+  cmd_metric->RegisterCommand("get","Get the value of a metric",metrics_get, "<metric> [<unit>]", 1, 2, true, metrics_get_validate);
   cmd_metric->RegisterCommand("units","List available units",metrics_units, "[<name>]",0,1);
 
   OvmsCommand* cmd_metrictrace = cmd_metric->RegisterCommand("trace","METRIC trace framework");
@@ -958,6 +1176,62 @@ OvmsMetric* OvmsMetrics::Find(const char* metric)
     if (strcmp(m->m_name,metric)==0) return m;
     }
   return NULL;
+  }
+
+OvmsMetric* OvmsMetrics::FindUniquePrefix(const char* token) const
+  {
+  size_t len = strlen(token);
+  OvmsMetric* found = NULL;
+  for (OvmsMetric* m=m_first; m != NULL; m=m->m_next)
+    {
+    if (strncmp(m->m_name, token, len) == 0)
+      {
+      if (len == strlen(m->m_name))
+        return m;
+      if (found)
+        return NULL;
+      else
+        found = m;
+      }
+    }
+  return found;
+  }
+bool OvmsMetrics::GetCompletion(OvmsWriter* writer, const char* token) const
+  {
+    unsigned int index = 0;
+    bool match = false;
+    writer->SetCompletion(index, NULL);
+    if (token)
+      {
+      size_t len = strlen(token);
+      for (OvmsMetric* m=m_first; m != NULL; m=m->m_next)
+        {
+        if (strncmp(m->m_name, token, len) == 0)
+        {
+          writer->SetCompletion(index++, m->m_name);
+          match = true;
+        }
+      }
+    }
+    return match;
+  }
+int OvmsMetrics::Validate(OvmsWriter* writer, int argc, const char* token, bool complete) const
+  {
+  if (complete)
+    {
+    if (!GetCompletion(writer, token))
+      return -1;
+    }
+  else
+    {
+    if (FindUniquePrefix(token) == NULL)
+      {
+      if (strcmp(token, "?") != 0)
+        writer->printf("Metric: %s is not defined\n", token);
+      return -1;
+      }
+    }
+  return argc;
   }
 
 OvmsMetricInt* OvmsMetrics::InitInt(const char* metric, uint16_t autostale, int value, metric_unit_t units, bool persist)
@@ -1806,6 +2080,7 @@ void OvmsMetricString::Clear()
   OvmsMetric::Clear();
   }
 
+/// Get the label for the metric.
 const char* OvmsMetricUnitLabel(metric_unit_t units)
   {
   uint8_t unit_i = static_cast<uint8_t>(units);
@@ -1817,6 +2092,7 @@ const char* OvmsMetricUnitLabel(metric_unit_t units)
   return res;
   }
 
+/// Get the Name for the unit.
 const char* OvmsMetricUnitName(metric_unit_t units)
   {
   uint8_t unit_i = static_cast<uint8_t>(units);
@@ -1825,19 +2101,110 @@ const char* OvmsMetricUnitName(metric_unit_t units)
   return unit_info[unit_i].UnitCode;
   }
 
-metric_unit_t OvmsMetricUnitFromName(const char* unit)
+metric_unit_t OvmsMetricUnitFromName(const char* unit, bool allowUniquePrefix)
   {
   if (unit == NULL || unit[0] == '\0')
     return Native;
 
+  metric_unit_t res = UnitNotFound;
+  int unit_len = strlen(unit);
   for (metric_unit_t metric = MetricUnitFirst; metric <= MetricUnitLast; metric = metric_unit_t(1+(uint8_t)metric))
     {
     const char * name = unit_info[(uint8_t)metric].UnitCode;
+    if (name == NULL)
+      continue;
 
-    if (name != NULL && strcasecmp(name,unit) == 0)
-      return metric;
+    if (strncasecmp(name, unit, unit_len) == 0)
+      {
+      if (unit_len == strlen(name))
+        return metric;
+      else if (allowUniquePrefix)
+        {
+        if (res != UnitNotFound)
+          return UnitNotFound;
+        res = metric;
+        }
+      }
     }
-  return UnitNotFound;
+  return res;
+  }
+
+const char *OvmsMetricUnit_FindUniquePrefix(const char* token)
+  {
+
+  if (token == NULL || token[0] == '\0')
+    return NULL;
+
+  size_t len = strlen(token);
+  const char* found = NULL;
+
+  for (metric_unit_t metric = MetricUnitFirst; metric <= MetricUnitLast; metric = metric_unit_t(1+(uint8_t)metric))
+    {
+    const char * name = unit_info[(uint8_t)metric].UnitCode;
+    if (name == NULL)
+      continue;
+
+    if (strncasecmp(name, token, len) == 0)
+      {
+      if (len == strlen(name))
+        return name;
+      if (found)
+        return NULL;
+      else
+        found = name;
+      }
+    }
+  return found;
+  }
+
+bool OvmsMetricUnit_GetCompletion(OvmsWriter* writer, const char* token, metric_group_t group = GrpNone)
+  {
+  unsigned int index = 0;
+  bool match = false;
+  writer->SetCompletion(index, NULL);
+  if (token)
+    {
+    size_t len = strlen(token);
+    auto group_simple = MetricGroupSimplify(group);
+
+    for (metric_unit_t metric = MetricUnitFirst; metric <= MetricUnitLast; metric = metric_unit_t(1+(uint8_t)metric))
+      {
+      const char * name = unit_info[(uint8_t)metric].UnitCode;
+      if (name == NULL)
+        continue;
+      if (group != GrpNone )
+        {
+        auto group_current = MetricGroupSimplify(unit_info[(uint8_t)metric].Group);
+        if ( group_current != GrpNone && (group_simple != group_current ))
+          continue;
+        }
+      if (strncasecmp(name, token, len) == 0)
+        {
+        writer->SetCompletion(index++, name);
+        match = true;
+        }
+      }
+    }
+  return match;
+  }
+
+int OvmsMetricUnit_Validate(OvmsWriter* writer, int argc, const char* token, bool complete, metric_group_t group)
+  {
+  if (complete)
+    {
+    if (!OvmsMetricUnit_GetCompletion(writer, token, group))
+      return -1;
+    }
+  else
+    {
+    if (OvmsMetricUnit_FindUniquePrefix(token) == NULL)
+      {
+      if (strcmp(token, "?") != 0)
+        writer->printf("Error: %s is not defined\n", token);
+      return -1;
+      }
+    }
+  return argc;
   }
 
 int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
@@ -1977,17 +2344,37 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
       if (to == Celcius) return ((value-32)*5)/9;
       break;
     case kPa:
-      if (to == Pa) return value*1000;
-      else if (to == PSI) return int((float)value * 0.14503773773020923);
-      break;
+      switch (to)
+        {
+        case Pa:  return value*1000;
+        case Bar: return value/100;
+        case PSI: return int((float)value * 0.14503773773020923);
+        default: break;
+        }
     case Pa:
-      if (to == kPa) return value/1000;
-      else if (to == PSI) return int((float)value * 0.00014503773773020923);
-      break;
+      switch (to)
+        {
+        case kPa: return value/1000;
+        case Bar: return value/100000;
+        case PSI: return int((float)value * 0.00014503773773020923);
+        default: break;
+        }
     case PSI:
-      if (to == kPa) return int((float)value * 6.894757293168361);
-      else if (to == Pa) return int((float)value * 0.006894757293168361);
-      break;
+      switch (to)
+        {
+        case kPa: return int((float)value * 6.894757293168361);
+        case Pa:  return int((float)value * 6894.757293168361);
+        case Bar: return int((float)value * 0.06894757293168361);
+        default: break;
+        }
+    case Bar:
+      switch (to)
+        {
+        case Pa:  return value*100000;
+        case kPa: return value*100;
+        case PSI: return int((float)value * 14.503773773020923);
+        default: break;
+        }
     case Seconds:
       if (to == Minutes) return value/60;
       else if (to == Hours) return value/3600;
@@ -2024,6 +2411,12 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
       break;
     case sq:
       if (to == dbm) return (value <= 31) ? (-113 + (value*2)) : 0;
+      break;
+    case Percentage:
+      if (to == Permille) return value*10;
+      break;
+    case Permille:
+      if (to == Percentage) return value/10;
       break;
     default:
       return value;
@@ -2150,17 +2543,37 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
       if (to == Celcius) return ((value-32)*5)/9;
       break;
     case kPa:
-      if (to == Pa) return value*1000;
-      else if (to == PSI) return value * 0.14503773773020923;
-      break;
+      switch (to)
+        {
+        case Pa:  return value*1000;
+        case Bar: return value/100;
+        case PSI: return value * 0.14503773773020923;
+        default: break;
+        }
     case Pa:
-      if (to == kPa) return value/1000;
-      else if (to == PSI) return value * 0.00014503773773020923;
-      break;
+      switch (to)
+        {
+        case kPa: return value/1000;
+        case Bar: return value/100000;
+        case PSI: return value * 0.00014503773773020923;
+        default: break;
+        }
     case PSI:
-      if (to == kPa) return value * 6.894757293168361;
-      else if (to == Pa) return value * 0.006894757293168361;
-      break;
+      switch (to)
+        {
+        case kPa: return value * 6.894757293168361;
+        case Pa:  return value * 6894.757293168361;
+        case Bar: return value * 0.06894757293168361;
+        default: break;
+        }
+    case Bar:
+      switch (to)
+        {
+        case Pa:  return value*100000;
+        case kPa: return value*100;
+        case PSI: return value * 14.503773773020923;
+        default: break;
+        }
     case Seconds:
       if (to == Minutes) return value/60;
       else if (to == Hours) return value/3600;
@@ -2185,6 +2598,10 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
     case sq:
       if (to == dbm) return int((value <= 31) ? (-113 + (value*2)) : 0);
       break;
+    case Percentage:
+      if (to == Permille) return value*10.0;
+    case Permille:
+      if (to == Percentage) return value*0.10;
     default:
       return value;
     }

@@ -780,7 +780,8 @@ static void module_tasks(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, in
         uint32_t used = total - ((uint32_t)taskstatus[i].pxStackBase & 0xFFFF);
         int core = xTaskGetAffinity(taskstatus[i].xHandle);
         uint32_t runtime = taskstatus[i].ulRunTimeCounter - last_runtime[taskstatus[i].xTaskNumber];
-        writer->printf("%08X %4u %s %-15s %5u %5u %5u %7u%7u%7u  %c %3d %3.0f%% %3d/%2d\n", taskstatus[i].xHandle,
+        writer->printf("%08X %4u %s %-15s %5u %5u %5u %7u%7u%7u  %c %3d %3.0f%% %3d/%2d\n",
+          (uint32_t)taskstatus[i].xHandle,
           taskstatus[i].xTaskNumber, states[taskstatus[i].eCurrentState], taskstatus[i].pcTaskName,
           used, total - taskstatus[i].usStackHighWaterMark, total, heaptotal, heap32bit, heapspi,
           (core == tskNO_AFFINITY) ? '*' : '0'+core, taskstatus[i].uxCurrentPriority,
@@ -795,7 +796,7 @@ static void module_tasks(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, in
             uint32_t word = *topstack++;
             if ((word & 0xFF000000) == 0x80000000)
               {
-              writer->printf("  %p", word - 0x40000000);
+              writer->printf("  %#x", word - 0x40000000);
               }
             }
           writer->printf("\n");
