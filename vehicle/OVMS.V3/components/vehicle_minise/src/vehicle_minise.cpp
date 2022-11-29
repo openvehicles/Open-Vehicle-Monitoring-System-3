@@ -79,16 +79,19 @@ static const char *TAG = "v-minise";
 // Might be useful to have more states or maybe to treat as bitmap so that we can distinguish
 // "connected to power and could charge" and "actually charging right now"
 
-static const OvmsVehicle::poll_pid_t obdii_polls[] = {
+static OvmsVehicle::poll_pid_t obdii_polls[] = {
   // TXMODULEID, RXMODULEID, TYPE, PID, { POLLTIMES }, BUS, ADDRESSING
   // SME: Battery management electronics
-#if 0
-  { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_ROUTINECONTROL,
-    { .xargs = { 0x01, POLL_TXDATA, 3, (const uint8_t *) "\xAD\x6E\x01" }},
-    { 0, 10, 10, 10 }, 0, ISOTP_EXTADR }, // select cell to probe
-  { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_ROUTINECONTROL,
-    { .xargs = { 0x03, POLL_TXDATA, 2, (const uint8_t *) "\xAD\x6E" }},
-    { 0, 10, 10, 10 }, 0, ISOTP_EXTADR }, // proble selected cell
+#if 1
+  // Reserve space for polling 96 battery cells voltages ("select cell" + "probe cell")
+  {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {},
+  {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {},
+  {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {},
+  {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {},
+  {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {},
+  {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {},
+  {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {},
+  {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {},
 #endif
 #if 0
   { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_SME_ALTERUNG_KAPAZITAET_TS, { 0, 60, 60, 60 },
@@ -211,11 +214,25 @@ OvmsVehicleMiniSE::OvmsVehicleMiniSE()
 {
   ESP_LOGI(TAG, "Mini Cooper SE vehicle module");
 
-  // BMS configuration:
+  // Build polls for probing 96 battery cell voltages
+  poll_pid_t selectCell =
+    { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_ROUTINECONTROL,
+      { .args = { 0x01, 3, { 0xAD, 0x6E, 0x00 }}},
+      { 0, 10, 10, 10 }, 0, ISOTP_EXTADR };
+  poll_pid_t probeCell =
+    { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_ROUTINECONTROL,
+      { .args = { 0x03, 3, { 0xAD, 0x6E, 0x00 }}},
+      { 0, 10, 10, 10 }, 0, ISOTP_EXTADR };
+  for (uint8_t i = 0; i < 96; i++) {
+    obdii_polls[i * 2] = selectCell;
+    obdii_polls[i * 2].args.data[2] = i + 1;
+    obdii_polls[i * 2 + 1] = probeCell;
+    obdii_polls[i * 2 + 1].args.data[2] = i + 1;
+  }
+
+  // BMS configuration
   BmsSetCellArrangementVoltage(96, 1);
-  BmsSetCellArrangementTemperature(96, 1);
   BmsSetCellLimitsVoltage(2.0, 5.0);
-  BmsSetCellLimitsTemperature(-35.0, 200.0);
 
   // Declare all custom metrics
 
@@ -439,32 +456,6 @@ void OvmsVehicleMiniSE::Ticker10(uint32_t ticker)
   }
 }
 
-void OvmsVehicleMiniSE::Ticker60(uint32_t ticker)
-{
-  // Read cells voltages
-  ESP_LOGI(TAG, "Polling 96 cell voltages...");
-  for (uint8_t cell = 1; cell <= 96; cell++) {
-    std::string request;
-    std::string response;
-    ESP_LOGD(TAG, "Selecting cell %d voltage", cell);
-    request = "\x31\x01\xAD\x6E";
-    request.append(1, cell);
-    int result = PollSingleRequest(m_can1, I3_ECU_SME_TX, I3_ECU_SME_RX, request, response, 1000, ISOTP_EXTADR);
-    if (result == POLLSINGLE_OK) {
-      ESP_LOGD(TAG, "Probing cell %d voltage", cell);
-      request = "\x31\x03\xAD\x6E";
-      int result = PollSingleRequest(m_can1, I3_ECU_SME_TX, I3_ECU_SME_RX, request, response, 1000, ISOTP_EXTADR);
-      if (result == POLLSINGLE_OK) {
-        uint16_t voltage = response[2] << 8 | response[3];
-        ESP_LOGI(TAG, "Cell %d voltage = %f", cell, voltage / 1000.0f);
-        BmsSetCellVoltage(cell - 1, voltage / 1000.0f);
-      }
-    }
-
-    BmsSetCellTemperature(cell - 1, 19.0f);
-  }
-}
-
 void OvmsVehicleMiniSE::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length,
   uint16_t mlremain)
 {
@@ -503,7 +494,8 @@ void OvmsVehicleMiniSE::IncomingPollReply(canbus *bus, uint16_t type, uint16_t p
         ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "0x01AD6E", 2);
         break;
       }
-      ESP_LOGD(TAG, "From ECU %s, pid %s: got %s\n", "SME", "0x01AD6E", "cell select");
+      uint8_t cell = m_poll_entry.xargs.data[2];
+      ESP_LOGD(TAG, "From ECU %s, pid %s: got %s (cell %d)\n", "SME", "0x01AD6E", "cell selected", cell);
       break;
     }
 
@@ -512,9 +504,14 @@ void OvmsVehicleMiniSE::IncomingPollReply(canbus *bus, uint16_t type, uint16_t p
         ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "0x03AD6E", 2);
         break;
       }
-      unsigned int cellVoltage = (RXBUF_UINT(2));
-      ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s\n", "SME", "0x03AD6E",
-        "cell voltage", cellVoltage / 1000.0f, "\"V\"");
+      uint8_t cell = m_poll_entry.xargs.data[2];
+      uint16_t voltage = (RXBUF_UINT(2));
+      ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s  (cell %d)\n", "SME", "0x03AD6E",
+        "cell voltage", voltage / 1000.0f, "\"V\"", cell);
+
+      ESP_LOGI(TAG, "Cell %d voltage = %f", cell, voltage / 1000.0f);
+      BmsSetCellVoltage(cell - 1, voltage / 1000.0f);
+
       break;
     }
 
