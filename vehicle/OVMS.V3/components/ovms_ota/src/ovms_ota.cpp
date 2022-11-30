@@ -38,7 +38,9 @@ static const char *TAG = "ota";
 #include <string.h>
 #include <esp_system.h>
 #include <esp_ota_ops.h>
+#if ESP_IDF_VERSION_MAJOR < 4
 #include "strverscmp.h"
+#endif
 #include "ovms_ota.h"
 #include "ovms_command.h"
 #include "ovms_boot.h"
