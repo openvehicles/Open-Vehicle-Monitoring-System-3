@@ -1,0 +1,120 @@
+{
+   "tables" : {
+      "RES_0XAD73_R" : [
+         {
+            "DATENTYP" : "unsigned char",
+            "STR" : "-",
+            "MASKE" : "-",
+            "NAME" : "TAB_SME_HEIZUNG_FUNKTION",
+            "INFO" : "Ergebniss der funktionalen Heizungsdiagnose",
+            "RRR" : "+",
+            "ADD" : "-",
+            "MUL" : "-",
+            "STPR" : "-",
+            "INFO_EN" : "Result of the functional heating diagnosis",
+            "RESULTNAME" : "STAT_HEIZUNG_FUNKTION_NR",
+            "EINHEIT" : "0-n",
+            "L/H" : "high",
+            "DIV" : "-"
+         }
+      ],
+      "RES_0XAD71_R" : [
+         {
+            "EINHEIT" : "V",
+            "DIV" : "100.0",
+            "L/H" : "high",
+            "RESULTNAME" : "STAT_SPANNUNG_MIN_LIM_WERT",
+            "MUL" : "1.0",
+            "INFO_EN" : "Limit value for minimum voltage in volts (project-specific UminLim)",
+            "STPR" : "-",
+            "NAME" : "-",
+            "DATENTYP" : "unsigned int",
+            "STR" : "-",
+            "MASKE" : "-",
+            "ADD" : "0.0",
+            "RRR" : "+",
+            "INFO" : "Grenzwert für minimale Spannung in Volt (projektspezifischer UminLim)"
+         },
+         {
+            "ADD" : "0.0",
+            "INFO" : "Grenzwert für maximale Spannung in Volt (projektspezifischer UmaxLim)",
+            "RRR" : "+",
+            "NAME" : "-",
+            "MASKE" : "-",
+            "STR" : "-",
+            "DATENTYP" : "unsigned int",
+            "STPR" : "-",
+            "INFO_EN" : "Limit value for maximum voltage in volts (project-specific UmaxLim)",
+            "MUL" : "1.0",
+            "RESULTNAME" : "STAT_SPANNUNG_MAX_LIM_WERT",
+            "L/H" : "high",
+            "DIV" : "100.0",
+            "EINHEIT" : "V"
+         },
+         {
+            "RESULTNAME" : "STAT_HIS_SPANNUNG_MOD_1_WERT",
+            "L/H" : "high",
+            "DIV" : "1.0",
+            "EINHEIT" : "min",
+            "RRR" : "+",
+            "INFO" : "Dauer in Minuten in der Klasse UminLim <= U <= 3.57 (I12) bzw. UminLim <= U <= 3.82 (I01) (SBL)",
+            "ADD" : "0.0",
+            "STR" : "-",
+            "DATENTYP" : "unsigned long",
+            "MASKE" : "-",
+            "NAME" : "-",
+            "STPR" : "-",
+            "INFO_EN" : "Duration in minutes in the class UminLim <= U <= 3.57 (I12) or UminLim <= U <= 3.82 (I01) (SBL)",
+            "MUL" : "1.0"
+         },
+         {
+            "ADD" : "0.0",
+            "INFO" : "Dauer in Minuten in der Klasse  3.57 < U <= 3.77 (I12) bzw. 3.82 < U <= 3.91 (I01) (SBL)",
+            "RRR" : "+",
+            "NAME" : "-",
+            "DATENTYP" : "unsigned long",
+            "MASKE" : "-",
+            "STR" : "-",
+            "INFO_EN" : "Duration in minutes in class 3.57 <U <= 3.77 (I12) or 3.82 <U <= 3.91 (I01) (SBL)",
+            "STPR" : "-",
+            "MUL" : "1.0",
+            "RESULTNAME" : "STAT_HIS_SPANNUNG_MOD_2_WERT",
+            "DIV" : "1.0",
+            "L/H" : "high",
+            "EINHEIT" : "min"
+         },
+         {
+            "EINHEIT" : "min",
+            "L/H" : "high",
+            "DIV" : "1.0",
+            "RESULTNAME" : "STAT_HIS_SPANNUNG_MOD_3_WERT",
+            "MUL" : "1.0",
+            "STPR" : "-",
+            "INFO_EN" : "Duration in minutes in class 3.77 <U <= 3.93 (I12) or 3.91 <U <= 4.03 (I01) (SBL)",
+            "MASKE" : "-",
+            "STR" : "-",
+            "DATENTYP" : "unsigned long",
+            "NAME" : "-",
+            "RRR" : "+",
+            "INFO" : "Dauer in Minuten in der Klasse  3.77 < U <= 3.93 (I12) bzw. 3.91 < U <= 4.03 (I01) (SBL)",
+            "ADD" : "0.0"
+         },
+         {
+            "RESULTNAME" : "STAT_HIS_SPANNUNG_MOD_4_WERT",
+            "EINHEIT" : "min",
+            "DIV" : "1.0",
+            "L/H" : "high",
+            "DATENTYP" : "unsigned long",
+            "MASKE" : "-",
+            "STR" : "-",
+            "NAME" : "-",
+            "RRR" : "+",
+            "INFO" : "Dauer in Minuten in der Klasse  3.93 < U <= UmaxLim (I12) bzw. 4.03 < U <= UmaxLim (I01) (SBL)",
+            "ADD" : "0.0",
+            "MUL" : "1.0",
+            "STPR" : "-",
+            "INFO_EN" : "Duration in minutes in class 3.93 <U <= UmaxLim (I12) or 4.03 <U <= UmaxLim (I01) (SBL)"
+         }
+      ]
+   }
+}
