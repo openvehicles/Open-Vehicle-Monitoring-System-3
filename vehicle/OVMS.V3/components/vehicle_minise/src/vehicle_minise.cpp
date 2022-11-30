@@ -254,60 +254,60 @@ OvmsVehicleMiniSE::OvmsVehicleMiniSE()
   // Declare all custom metrics
 
   // Charge limits
-  mt_se_charge_actual = MetricFloat("mse.v.b.soc.actual", SM_STALE_MAX, Percentage);
-  mt_se_charge_max = MetricFloat("mse.v.b.soc.actual.highlimit", SM_STALE_MAX, Percentage);
-  mt_se_charge_min = MetricFloat("mse.v.b.soc.actual.lowlimit", SM_STALE_MAX, Percentage);
+  mt_se_charge_actual = MetricFloat("xms.v.b.soc.actual", SM_STALE_MAX, Percentage);
+  mt_se_charge_max = MetricFloat("xms.v.b.soc.actual.highlimit", SM_STALE_MAX, Percentage);
+  mt_se_charge_min = MetricFloat("xms.v.b.soc.actual.lowlimit", SM_STALE_MAX, Percentage);
   // Wheel speeds
-  mt_se_wheel1_speed = MetricFloat("mse.v.p.wheel1_speed", SM_STALE_MIN, Kph);
-  mt_se_wheel2_speed = MetricFloat("mse.v.p.wheel2_speed", SM_STALE_MIN, Kph);
-  mt_se_wheel3_speed = MetricFloat("mse.v.p.wheel3_speed", SM_STALE_MIN, Kph);
-  mt_se_wheel4_speed = MetricFloat("mse.v.p.wheel4_speed", SM_STALE_MIN, Kph);
-  mt_se_wheel_speed = MetricFloat("mse.v.p.wheel_speed", SM_STALE_MIN, Kph);
-  mt_se_batt_pack_ocv_avg = MetricFloat("mse.v.b.p.ocv.avg", SM_STALE_MAX, Volts);
-  mt_se_batt_pack_ocv_min = MetricFloat("mse.v.b.p.ocv.min", SM_STALE_MAX, Volts);
-  mt_se_batt_pack_ocv_max = MetricFloat("mse.v.b.p.ocv.max", SM_STALE_MAX, Volts);
+  mt_se_wheel1_speed = MetricFloat("xms.v.p.wheel1_speed", SM_STALE_MIN, Kph);
+  mt_se_wheel2_speed = MetricFloat("xms.v.p.wheel2_speed", SM_STALE_MIN, Kph);
+  mt_se_wheel3_speed = MetricFloat("xms.v.p.wheel3_speed", SM_STALE_MIN, Kph);
+  mt_se_wheel4_speed = MetricFloat("xms.v.p.wheel4_speed", SM_STALE_MIN, Kph);
+  mt_se_wheel_speed = MetricFloat("xms.v.p.wheel_speed", SM_STALE_MIN, Kph);
+  mt_se_batt_pack_ocv_avg = MetricFloat("xms.v.b.p.ocv.avg", SM_STALE_MAX, Volts);
+  mt_se_batt_pack_ocv_min = MetricFloat("xms.v.b.p.ocv.min", SM_STALE_MAX, Volts);
+  mt_se_batt_pack_ocv_max = MetricFloat("xms.v.b.p.ocv.max", SM_STALE_MAX, Volts);
   // Ranges in modes
-  mt_se_range_bc = MetricInt("mse.v.b.range.bc", SM_STALE_HIGH, Kilometers);
-  mt_se_range_comfort = MetricInt("mse.v.b.range.comfort", SM_STALE_HIGH, Kilometers);
-  mt_se_range_ecopro = MetricInt("mse.v.b.range.ecopro", SM_STALE_HIGH, Kilometers);
-  mt_se_range_ecoproplus = MetricInt("mse.v.b.range.ecoproplus", SM_STALE_HIGH, Kilometers);
+  mt_se_range_bc = MetricInt("xms.v.b.range.bc", SM_STALE_HIGH, Kilometers);
+  mt_se_range_comfort = MetricInt("xms.v.b.range.comfort", SM_STALE_HIGH, Kilometers);
+  mt_se_range_ecopro = MetricInt("xms.v.b.range.ecopro", SM_STALE_HIGH, Kilometers);
+  mt_se_range_ecoproplus = MetricInt("xms.v.b.range.ecoproplus", SM_STALE_HIGH, Kilometers);
   // Charging
-  mt_se_v_charge_voltage_phase1 = MetricInt("mse.v.c.voltage.phase1", SM_STALE_MID, Volts);
-  mt_se_v_charge_voltage_phase2 = MetricInt("mse.v.c.voltage.phase2", SM_STALE_MID, Volts);
-  mt_se_v_charge_voltage_phase3 = MetricInt("mse.v.c.voltage.phase3", SM_STALE_MID, Volts);
-  mt_se_v_charge_voltage_dc = MetricFloat("mse.v.c.voltage.dc", SM_STALE_MID, Volts);
-  mt_se_v_charge_voltage_dc_limit = MetricFloat("mse.v.c.voltage.dc.limit", SM_STALE_MID, Volts);
-  mt_se_v_charge_current_phase1 = MetricFloat("mse.v.c.current.phase1", SM_STALE_MID, Amps);
-  mt_se_v_charge_current_phase2 = MetricFloat("mse.v.c.current.phase2", SM_STALE_MID, Amps);
-  mt_se_v_charge_current_phase3 = MetricFloat("mse.v.c.current.phase3", SM_STALE_MID, Amps);
-  mt_se_v_charge_current_dc = MetricFloat("mse.v.c.current.dc", SM_STALE_MID, Amps);
-  mt_se_v_charge_current_dc_limit = MetricFloat("mse.v.c.current.dc.limit", SM_STALE_MID, Amps);
-  mt_se_v_charge_current_dc_maxlimit = MetricFloat("mse.v.c.current.dc.maxlimit", SM_STALE_MID, Amps);
-  mt_se_v_charge_deratingreasons = MetricInt("mse.v.c.deratingreasons", SM_STALE_HIGH, Other);
-  mt_se_v_charge_faults = MetricInt("mse.v.c.deratingreasons", SM_STALE_HIGH, Other);
-  mt_se_v_charge_failsafetriggers = MetricInt("mse.v.c.failsafetriggers", SM_STALE_HIGH, Other);
-  mt_se_v_charge_interruptionreasons = MetricInt("mse.v.c.interruptionreasons", SM_STALE_HIGH, Other);
-  mt_se_v_charge_errors = MetricInt("mse.v.c.error", SM_STALE_HIGH, Other);
-  mt_se_v_charge_readytocharge = MetricBool("mse.v.c.readytocharge", SM_STALE_MID, Other);
-  mt_se_v_charge_plugstatus = MetricString("mse.v.c.chargeplugstatus", SM_STALE_MID, Other);
-  mt_se_v_charge_pilotsignal = MetricInt("mse.v.c.pilotsignal", SM_STALE_MID, Amps);
-  mt_se_v_charge_cablecapacity = MetricInt("mse.v.c.chargecablecapacity", SM_STALE_MID, Amps);
-  mt_se_v_charge_dc_plugconnected = MetricBool("mse.v.c.dc.plugconnected", SM_STALE_MID, Other);
-  mt_se_v_charge_dc_voltage = MetricInt("mse.v.c.dc.chargevoltage", SM_STALE_MID, Volts);
-  mt_se_v_charge_dc_controlsignals = MetricInt("mse.v.c.dc.controlsignals", SM_STALE_MID, Other);
-  mt_se_v_door_dc_chargeport = MetricBool("mse.v.d.chargeport.dc", SM_STALE_MID, Other);
-  mt_se_v_charge_dc_contactorstatus = MetricString("mse.v.c.dc.contactorstatus", SM_STALE_MID, Other);
-  mt_se_v_charge_dc_inprogress = MetricBool("mse.v.c.dc.inprogress", SM_STALE_MID, Other);
-  mt_se_v_charge_chargeledstate = MetricInt("mse.v.c.chargeledstate", SM_STALE_MID, Other);
-  mt_se_v_charge_temp_gatedriver = MetricInt("mse.v.c.temp.gatedriver", SM_STALE_MID, Celcius);
+  mt_se_v_charge_voltage_phase1 = MetricInt("xms.v.c.voltage.phase1", SM_STALE_MID, Volts);
+  mt_se_v_charge_voltage_phase2 = MetricInt("xms.v.c.voltage.phase2", SM_STALE_MID, Volts);
+  mt_se_v_charge_voltage_phase3 = MetricInt("xms.v.c.voltage.phase3", SM_STALE_MID, Volts);
+  mt_se_v_charge_voltage_dc = MetricFloat("xms.v.c.voltage.dc", SM_STALE_MID, Volts);
+  mt_se_v_charge_voltage_dc_limit = MetricFloat("xms.v.c.voltage.dc.limit", SM_STALE_MID, Volts);
+  mt_se_v_charge_current_phase1 = MetricFloat("xms.v.c.current.phase1", SM_STALE_MID, Amps);
+  mt_se_v_charge_current_phase2 = MetricFloat("xms.v.c.current.phase2", SM_STALE_MID, Amps);
+  mt_se_v_charge_current_phase3 = MetricFloat("xms.v.c.current.phase3", SM_STALE_MID, Amps);
+  mt_se_v_charge_current_dc = MetricFloat("xms.v.c.current.dc", SM_STALE_MID, Amps);
+  mt_se_v_charge_current_dc_limit = MetricFloat("xms.v.c.current.dc.limit", SM_STALE_MID, Amps);
+  mt_se_v_charge_current_dc_maxlimit = MetricFloat("xms.v.c.current.dc.maxlimit", SM_STALE_MID, Amps);
+  mt_se_v_charge_deratingreasons = MetricInt("xms.v.c.deratingreasons", SM_STALE_HIGH, Other);
+  mt_se_v_charge_faults = MetricInt("xms.v.c.deratingreasons", SM_STALE_HIGH, Other);
+  mt_se_v_charge_failsafetriggers = MetricInt("xms.v.c.failsafetriggers", SM_STALE_HIGH, Other);
+  mt_se_v_charge_interruptionreasons = MetricInt("xms.v.c.interruptionreasons", SM_STALE_HIGH, Other);
+  mt_se_v_charge_errors = MetricInt("xms.v.c.error", SM_STALE_HIGH, Other);
+  mt_se_v_charge_readytocharge = MetricBool("xms.v.c.readytocharge", SM_STALE_MID, Other);
+  mt_se_v_charge_plugstatus = MetricString("xms.v.c.chargeplugstatus", SM_STALE_MID, Other);
+  mt_se_v_charge_pilotsignal = MetricInt("xms.v.c.pilotsignal", SM_STALE_MID, Amps);
+  mt_se_v_charge_cablecapacity = MetricInt("xms.v.c.chargecablecapacity", SM_STALE_MID, Amps);
+  mt_se_v_charge_dc_plugconnected = MetricBool("xms.v.c.dc.plugconnected", SM_STALE_MID, Other);
+  mt_se_v_charge_dc_voltage = MetricInt("xms.v.c.dc.chargevoltage", SM_STALE_MID, Volts);
+  mt_se_v_charge_dc_controlsignals = MetricInt("xms.v.c.dc.controlsignals", SM_STALE_MID, Other);
+  mt_se_v_door_dc_chargeport = MetricBool("xms.v.d.chargeport.dc", SM_STALE_MID, Other);
+  mt_se_v_charge_dc_contactorstatus = MetricString("xms.v.c.dc.contactorstatus", SM_STALE_MID, Other);
+  mt_se_v_charge_dc_inprogress = MetricBool("xms.v.c.dc.inprogress", SM_STALE_MID, Other);
+  mt_se_v_charge_chargeledstate = MetricInt("xms.v.c.chargeledstate", SM_STALE_MID, Other);
+  mt_se_v_charge_temp_gatedriver = MetricInt("xms.v.c.temp.gatedriver", SM_STALE_MID, Celcius);
   // Trip consumption
-  mt_se_v_pos_tripconsumption = MetricInt("mse.v.p.tripconsumption", SM_STALE_MID, WattHoursPK);
+  mt_se_v_pos_tripconsumption = MetricInt("xms.v.p.tripconsumption", SM_STALE_MID, WattHoursPK);
   // State
-  mt_se_obdisalive = MetricBool("mse.v.e.obdisalive", SM_STALE_MID, Other);
-  mt_se_pollermode = MetricInt("mse.s.pollermode", SM_STALE_MID, Other);
-  mt_se_age = MetricInt("mse.s.age", SM_STALE_MID, Minutes);
+  mt_se_obdisalive = MetricBool("xms.v.e.obdisalive", SM_STALE_MID, Other);
+  mt_se_pollermode = MetricInt("xms.s.pollermode", SM_STALE_MID, Other);
+  mt_se_age = MetricInt("xms.s.age", SM_STALE_MID, Minutes);
   // Controls
-  mt_se_v_env_autorecirc = MetricBool("mse.v.e.autorecirc", SM_STALE_MID, Other);
+  mt_se_v_env_autorecirc = MetricBool("xms.v.e.autorecirc", SM_STALE_MID, Other);
 
   // Init the stuff to keep track of whether the car is talking or not
   framecount = 0;
