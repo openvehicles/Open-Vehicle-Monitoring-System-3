@@ -986,38 +986,46 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStat(int verbosity, OvmsWrite
   std::string charge_state = StdMetrics.ms_v_charge_state->AsString();
   if (chargeport_open && charge_state != "")
     {
-    std::string charge_mode = StdMetrics.ms_v_charge_mode->AsString();
-    bool show_details = !(charge_state == "done" || charge_state == "stopped");
+    bool show_details = false;
+    if (StdMetrics.ms_v_charge_mode->IsDefined())
+      {
+      std::string charge_mode = "";
+      if (StdMetrics.ms_v_charge_mode->IsDefined())
+        {
+        StdMetrics.ms_v_charge_mode->AsString();
+        show_details = !(charge_state == "done" || charge_state == "stopped");
 
-    // Translate mode codes:
-    if (charge_mode == "standard")
-      charge_mode = "Standard";
-    else if (charge_mode == "storage")
-      charge_mode = "Storage";
-    else if (charge_mode == "range")
-      charge_mode = "Range";
-    else if (charge_mode == "performance")
-      charge_mode = "Performance";
+        // Translate mode codes:
+        if (charge_mode == "standard")
+          charge_mode = "Standard";
+        else if (charge_mode == "storage")
+          charge_mode = "Storage";
+        else if (charge_mode == "range")
+          charge_mode = "Range";
+        else if (charge_mode == "performance")
+          charge_mode = "Performance";
+        }
 
-    // Translate state codes:
-    if (charge_state == "charging")
-      charge_state = "Charging";
-    else if (charge_state == "topoff")
-      charge_state = "Topping off";
-    else if (charge_state == "done")
-      charge_state = "Charge Done";
-    else if (charge_state == "preparing")
-      charge_state = "Preparing";
-    else if (charge_state == "heating")
-      charge_state = "Charging, Heating";
-    else if (charge_state == "stopped")
-      charge_state = "Charge Stopped";
-    else if (charge_state == "timerwait")
-      charge_state = "Charge Stopped, Timer On";
+      // Translate state codes:
+      if (charge_state == "charging")
+        charge_state = "Charging";
+      else if (charge_state == "topoff")
+        charge_state = "Topping off";
+      else if (charge_state == "done")
+        charge_state = "Charge Done";
+      else if (charge_state == "preparing")
+        charge_state = "Preparing";
+      else if (charge_state == "heating")
+        charge_state = "Charging, Heating";
+      else if (charge_state == "stopped")
+        charge_state = "Charge Stopped";
+      else if (charge_state == "timerwait")
+        charge_state = "Charge Stopped, Timer On";
 
-    if (charge_mode != "")
-      writer->printf("%s - ", charge_mode.c_str());
-    writer->printf("%s\n", charge_state.c_str());
+      if (charge_mode != "")
+        writer->printf("%s - ", charge_mode.c_str());
+      writer->printf("%s\n", charge_state.c_str());
+      }
 
     if (show_details)
       {
