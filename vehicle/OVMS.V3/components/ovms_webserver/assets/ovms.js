@@ -402,6 +402,156 @@ $.fn.loadcmd = function(command, filter, timeout) {
 var monitorTimer, last_monotonic = 0;
 var ws, ws_inhibit = 0;
 var metrics = {};
+var units = {};
+
+mi_to_km = function(mi) { return mi * 1.609347; }
+km_to_mi = function(km) { return km * 0.6213700; }
+pkm_to_pmi = function(pkm) { return pkm * 1.609347; }
+pmi_to_pkm  = function(pmi) { return pmi * 0.6213700; }
+no_conversion = function (value) { return value;}
+x_to_kx = function (value) { return value/1000; }
+kx_to_x = function (value) { return value*1000; }
+
+const feet_per_mile = 5280;
+
+var unit_conversions = {
+      "native":             no_conversion,
+      "km>miles":           km_to_mi,
+      "km>meters":          kx_to_x,
+      "km>feet":            function (value) { return km_to_mi(value) * feet_per_mile; },
+      "miles>km":           mi_to_km,
+      "miles>meters":       function (value) { return (mi_to_km(value)*1000); },
+      "miles>feet":         function (value) { return value * feet_per_mile; },
+      "meters>miles":       function (value) { return km_to_mi(value/1000); },
+      "meters>km":          x_to_kx,
+      "meters>feet":        function (value) { return km_to_mi(value/1000) * feet_per_mile; },
+      "feet>km":            function (value) { return mi_to_km(value/feet_per_mile); },
+      "feet>meters":        function (value) { return (mi_to_km(value/feet_per_mile)*1000); },
+      "feet>miles":         function (value) { return value / feet_per_mile; },
+      "kmphps>miphps":      km_to_mi,
+      "kmphps>mpss":        function (value) { return value/3.6; },
+      "kmphps>ftpss":       function (value) { return km_to_mi(value)*feet_per_mile/3600; },
+      "miphps>kmphps":      mi_to_km,
+      "miphps>mpss":        function (value) { return mi_to_km(value)/3.6; },
+      "miphps>ftpss":       function (value) { return value*feet_per_mile/3600; },
+      "mpss>kmphps":        function (value) { return (value*3.6); },
+      "mpss>miphps":        function (value) { return km_to_mi(value)*3.6; },
+      "mpss>ftpss":         function (value) { return km_to_mi(value)*feet_per_mile; },
+      "ftpss>kmphps":       function (value) { return (mi_to_km(value/feet_per_mile)*3.6); },
+      "ftpss>miphps":       function (value) { return value *3600/feet_per_mile; },
+      "ftpss>mpss":         function (value) { return mi_to_km(value/feet_per_mile)*1000; },
+      "kw>watts":           kx_to_x,
+      "watts>kw":           x_to_kx,
+      "kwh>watthours":      kx_to_x,
+      "watthours>kwh":      x_to_kx,
+      "whpkm>whpmi":        pkm_to_pmi,
+      "whpkm>kwhp100km":    function (value) { return value / 10; },
+      "whpkm>kmpkwh":       function (value) { return value ? 1000.0 / value : 0; },
+      "whpkm>mipkwh":       function (value) { return value ? (km_to_mi(1000.0 / value)) : 0; },
+      "whpmi>whpkm":        pmi_to_pkm,
+      "whpmi>kwhp100km":    function (value) { return pmi_to_pkm(value) / 10; },
+      "whpmi>kmpkwh":       function (value) { return value ? (mi_to_km(1000.0 / value)) : 0; },
+      "whpmi>mipkwh":       function (value) { return value ? (1000.0 / value) : 0; },
+      "kwhp100km>whpmi":    function (value) { return pkm_to_pmi(value * 10); },
+      "kwhp100km>whpkm":    function (value) { return value * 10; },
+      "kwhp100km>kmpkwh":   function (value) { return value ? (100.0 / value) : 0; },
+      "kwhp100km>mipkwh":   function (value) { return value ? km_to_mi(100.0 / value) : 0; },
+      "celcius>fahrenheit": function (value) { return ((value*9)/5) + 32; },
+      "fahrenheit>celcius": function (value) { return ((value-32)*5)/9; },
+      "kpa>pa":             kx_to_x,
+      "kpa>bar":            function (value) { return value/100; },
+      "kpa>psi":            function (value) { return value * 0.14503773773020923; },
+      "pa>kpa":             x_to_kx,
+      "pa>bar":             function (value) { return value/100000; },
+      "pa>psi":             function (value) { return value * 0.00014503773773020923; },
+      "psi>kpa":            function (value) { return value * 6.894757293168361; },
+      "psi>pa":             function (value) { return value * 6894.757293168361; },
+      "psi>bar":            function (value) { return value * 0.06894757293168361; },
+      "bar>pa":             function (value) { return value*100000; },
+      "bar>kpa":            function (value) { return value*100; },
+      "bar>psi":            function (value) { return value * 14.503773773020923; },
+      "seconds>minutes":    function (value) { return value/60; },
+      "seconds>hours":      function (value) { return value/3600; },
+      "minutes>seconds":    function (value) { return value*60; },
+      "minutes>hours":      function (value) { return value/60; },
+      "hours>seconds":      function (value) { return value*3600; },
+      "hours>minutes":      function (value) { return value*60; },
+      "kmph>miph":          km_to_mi,
+      "miph>kmph":          mi_to_km,
+      "dbm>sq":             function (value) { return int((value <= -51) ? ((value + 113)/2) : 0); },
+      "sq>dbm":             function (value) { return int((value <= 31) ? (-113 + (value*2)) : 0); },
+      "percent>permille":   function (value) { return value*10.0; },
+      "permille>percent":   function (value) { return value*0.10; }
+}
+$.fn.convertUnitFunction = function (from, to) {
+  return unit_conversions[from + ">" + to] || no_conversion;
+}
+convertUnits = function (from, to, value) {
+  return $.fn.convertUnitFunction(from, to)(value);
+}
+
+$.fn.convertMetricToUserUnits = function (value, name) {
+  if (value == undefined)
+    return value
+  var unit_entry = units[name];
+  if (unit_entry == undefined)
+    return value
+  var cnvfn = unit_entry.user_fn;
+  if (cnvfn == undefined) {
+    cnvfn = $.fn.convertUnitFunction(unit_entry.native, unit_entry.code);
+    units[name].user_fn = cnvfn;
+  }
+  return cnvfn(value);
+}
+$.fn.userUnitLabelFromMetric = function (target, name) {
+    var unit_entry = target[name];
+    if (unit_entry == undefined)
+      return "";
+    return unit_entry.label;
+}
+
+// Works for units and metrics collection.
+$.fn.metricsAllHas = function(target, name) {
+  return target[name] != undefined
+}
+
+var metrics_all = new Proxy(metrics, {
+  get: function(target, name) {
+      if (!(typeof name === "string" || name instanceof String))
+        return undefined;
+      var names = name.split('#',2);
+      var name = names[0];
+      var value_type = names[1]
+      if (value_type === "unit")
+        return $.fn.userUnitLabelFromMetric(units, name);
+      var value = target[name];
+      if (value_type === "label")
+        value = $.fn.convertMetricToUserUnits(value, name)
+      return value;
+    },
+  has: $.fn.metricsAllHas
+  });
+
+var metrics_user = new Proxy(metrics, {
+  get:
+    function(target, name) {
+      return $.fn.convertMetricToUserUnits(target[name], name)
+    },
+  has: $.fn.metricsAllHas
+  });
+
+var metrics_label = new Proxy(units, {
+  get:
+    function(target, name) {
+      var unit_entry = target[name];
+      if (unit_entry == undefined) {
+        return "";
+      }
+      return unit_entry.label;
+    },
+  has: $.fn.metricsAllHas
+  });
+
 var shellhist = [""], shellhpos = 0;
 var loghist = [];
 const loghist_maxsize = 100;
@@ -415,6 +565,7 @@ function initSocketConnection(){
   ws.onopen = function(ev) {
     console.log("WebSocket OPENED", ev);
     $(".receiver").subscribe();
+    $(".receiver").sendUnits(true);
   };
   ws.onerror = function(ev) { console.log("WebSocket ERROR", ev); };
   ws.onclose = function(ev) { console.log("WebSocket CLOSED", ev); };
@@ -441,6 +592,11 @@ function initSocketConnection(){
       }
       else if (msgtype == "metrics") {
         $.extend(metrics, msg.metrics);
+        $(".receiver").trigger("msg:metrics", msg.metrics);
+      }
+      else if (msgtype == "units") {
+        $.extend(units, msg.units);
+        $(".receiver").trigger("msg:units", msg.units);
         $(".receiver").trigger("msg:metrics", msg.metrics);
       }
       else if (msgtype == "notify") {
@@ -513,6 +669,15 @@ function processNotification(msg) {
   confirmdialog(opts.title, opts.body, ["OK"], opts.timeout);
 }
 
+$.fn.sendUnits = function (mode) {
+  try {
+    var msg = mode?"on":"off";
+    console.log("metric units " + msg);
+    if (ws) ws.send("metric units " + msg);
+  } catch (e) {
+    console.log(e);
+  }
+}
 
 $.fn.subscribe = function(topics) {
   return this.each(function() {
@@ -1479,7 +1644,7 @@ $.fn.table = function(options) {
       $this.each(function() {
         $(this).one("init.dt", function(ev, settings) {
           if (settings && settings.oInstance && settings.oInit && settings.oInit.onUpdate)
-            settings.oInit.onUpdate.call(settings.oInstance.api(), metrics);
+            settings.oInit.onUpdate.call(settings.oInstance.api(), metrics_all);
         });
         var table = $(this).DataTable(options);
         $(this).data("dataTable", table).addClass("has-dataTable");

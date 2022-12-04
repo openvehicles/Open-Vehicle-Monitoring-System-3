@@ -365,7 +365,16 @@ void OvmsMetricSetUserConfig(metric_group_t group, std::string value)
     else if (value == "km")
       value = "K";
     }
-  MyConfig.SetParamValue("vehicle", cfg, value);
+  if (MyConfig.GetParamValue("vehicle", cfg) != value)
+    {
+    MyConfig.SetParamValue("vehicle", cfg, value);
+    switch (group)
+      {
+      case GrpNone:
+      case GrpOther: break;
+      default: MyMetrics.SetAllGroupUnitSend(group);
+      }
+    }
   }
 void OvmsMetricSetUserConfig(metric_group_t group, metric_unit_t unit)
   {
@@ -1363,6 +1372,26 @@ size_t OvmsMetrics::RegisterModifier()
   return m_nextmodifier++;
   }
 
+void OvmsMetrics::SetAllUnitSend(size_t modifier)
+  {
+  for (OvmsMetric* m = m_first; m != NULL; m = m->m_next)
+    m->SetUnitSend(modifier);
+  }
+void OvmsMetrics::SetAllGroupUnitSend(metric_group_t group)
+  {
+  for (OvmsMetric* m = m_first; m != NULL; m = m->m_next)
+    {
+    if (group == GetMetricGroup(m->GetUnits()))
+      m->SetUnitSendAll();
+    }
+  }
+unsigned long OvmsMetrics::GetUnitSendAll()
+  {
+  unsigned long ret = 0;
+  for (OvmsMetric* m = m_first; m != NULL; m = m->m_next)
+    ret |= m->m_sendunit;
+  return ret;
+  }
 OvmsMetric::OvmsMetric(const char* name, uint16_t autostale, metric_unit_t units, bool persist)
   {
   m_defined = NeverDefined;
@@ -1459,6 +1488,30 @@ void OvmsMetric::SetModified(bool changed)
     m_modified = ULONG_MAX;
     MyMetrics.NotifyModified(this);
     }
+  }
+
+bool OvmsMetric::IsUnitSend(size_t modifier)
+  {
+    return m_sendunit & (1ul << modifier);
+  }
+bool OvmsMetric::IsUnitSendAndClear(size_t modifier)
+  {
+  unsigned long bit = 1ul << modifier;
+  unsigned long send = m_sendunit.fetch_and(~bit);
+  return (send & bit) != 0;
+  }
+void OvmsMetric::ClearUnitSend(size_t modifier)
+  {
+    m_sendunit &= ~(1ul << modifier);
+  }
+void OvmsMetric::SetUnitSend(size_t modifier)
+  {
+  unsigned long bit = 1ul << modifier;
+  m_sendunit |= bit;
+  }
+void OvmsMetric::SetUnitSendAll()
+  {
+  m_sendunit = ULONG_MAX;
   }
 
 bool OvmsMetric::IsDefined()
@@ -2606,4 +2659,40 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
       return value;
     }
   return value;
+  }
+
+UserMetricSnapshot::UserMetricSnapshot()
+  {
+  Load();
+  }
+
+void UserMetricSnapshot::Load()
+  {
+  // Fill as 'not found'
+  m_map.resize(static_cast<uint8_t>(MetricGroupLast)+1, UnitNotFound);
+  metric_group_list_t groups;
+  OvmsMetricGroupConfigList(groups);
+  // Fill the groups with a user configurable list
+  for (auto grpit = groups.begin(); grpit != groups.end(); ++grpit)
+    {
+    uint8_t igrp = static_cast<uint8_t>(*grpit);
+    if (igrp < m_map.size())
+      m_map[igrp] = OvmsMetricGetUserUnit(*grpit);
+    }
+  }
+
+metric_unit_t UserMetricSnapshot::GetUserUnit( metric_group_t group)
+  {
+  uint8_t groupint = static_cast<uint8_t>(group);
+  if (groupint >= m_map.size())
+    return UnitNotFound;
+  return m_map[groupint];
+  }
+
+metric_unit_t UserMetricSnapshot::GetUserUnit( metric_unit_t unit)
+  {
+  metric_group_t grp = GetMetricGroup(unit);
+  if (grp == GrpNone || grp == GrpOther)
+    return UnitNotFound;
+  return GetUserUnit(grp);
   }

@@ -39,6 +39,10 @@ Open Vehicle Monitor System v3 - Change log
   Add -u to 'metrics list' to view metrics as  user units.
 - Add completion for metrics set/get as well as units
 - Mini Cooper SE: Initial support
+- Add support for user-configured metrics in the web interface and plugins.
+   Adds an extra 'units' stream from the websocket.
+   Adds proxy arrays metrics_user[] , metrics_label[]
+   Adds  metric.name#user and metric.name#label as special names
 
 2022-09-01 MWJ  3.3.003  OTA release
 - Toyota RAV4 EV: Initial support added. Only the Tesla bus is decoded and just listening so far.

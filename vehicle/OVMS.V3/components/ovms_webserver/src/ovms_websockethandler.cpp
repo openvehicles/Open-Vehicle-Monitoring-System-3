@@ -71,7 +71,8 @@ WebSocketHandler::WebSocketHandler(mg_connection* nc, size_t slot, size_t modifi
   m_jobqueue_overflow_dropcnt = 0;
   m_jobqueue_overflow_dropcntref = 0;
   m_job.type = WSTX_None;
-  m_sent = m_ack = 0;
+  m_sent = m_ack = m_last = 0;
+  m_units_subscribed = false;
   
   // Register as logging console:
   SetMonitoring(true);
@@ -158,7 +159,72 @@ void WebSocketHandler::ProcessTxJob()
       
       break;
     }
-    
+
+    case WSTX_MetricsUnitUpdate:
+    {
+      // Note: this loops over the metrics by index, keeping the checked count
+      //  in m_sent. It will not detect new metrics added between polls if they are
+      //  inserted before m_sent, so new metrics may not be sent until first changed.
+      //  The Metrics set normally is static, so this should be no problem.
+
+      ESP_EARLY_LOGD(TAG, "WebSocketHandler[%p/%d]: ProcessTxJob MetricsUnitUpdate, last=%d sent=%d ack=%d", m_nc, m_modifier, m_last, m_sent, m_ack);
+      // find start:
+      int i;
+      OvmsMetric* m;
+      for (i=0, m=MyMetrics.m_first; i < m_last && m != NULL; m=m->m_next, i++);
+      ESP_EARLY_LOGD(TAG, "WebSocketHandler[%p/%d]: ProcessTxJob MetricsUnitUpdate, i=%d", m_nc, m_modifier, i);
+      if (m) { // Bypass this if we are on the 'just sent' leg.
+        // build msg:
+        std::string msg;
+        msg.reserve(2*XFER_CHUNK_SIZE+128);
+        msg = "{\"units\":{";
+
+        // Cache the user mappings for each group.
+        UserMetricSnapshot metric_snap;
+        for (i=0; m && msg.size() < XFER_CHUNK_SIZE; m=m->m_next) {
+          ++m_last;
+          bool send = m->IsUnitSendAndClear(m_modifier);
+          if (send) {
+            if (i) msg += ',';
+            metric_unit_t units = m->m_units;
+            metric_unit_t user_units = metric_snap.GetUserUnit(units);
+            if (user_units ==  UnitNotFound)
+              user_units = Native;
+            std::string unitlabel = OvmsMetricUnitLabel((user_units == Native) ? units : user_units);
+
+            const char *metricname = (units == Native) ? "Other" : OvmsMetricUnitName(units);
+            if (metricname == NULL)
+              metricname = "";
+            const char *user_metricname = (user_units == Native) ? metricname : OvmsMetricUnitName(user_units);
+            if (user_metricname == NULL)
+              user_metricname = metricname;
+
+            std::string entry = string_format("\"%s\": {\"native\": \"%s\", \"code\": \"%s\", \"label\": \"%s\"}",
+               m->m_name, metricname, user_metricname, json_encode(unitlabel).c_str()
+               );
+            msg += entry;
+            i++;
+          }
+        }
+
+        // send msg:
+        if (i) {
+          msg += "}}";
+          ESP_EARLY_LOGD(TAG, "WebSocket msg: %s", msg.c_str());
+          mg_send_websocket_frame(m_nc, WEBSOCKET_OP_TEXT, msg.data(), msg.size());
+          m_sent += i;
+        }
+      }
+
+      // done?
+      if (!m && m_ack == m_sent) {
+        if (m_sent)
+          ESP_EARLY_LOGD(TAG, "WebSocketHandler[%p/%d]: ProcessTxJob MetricsUnitsUpdate done, sent=%d metrics", m_nc, m_modifier, m_sent);
+        ClearTxJob(m_job);
+      }
+      break;
+    }
+
     case WSTX_Notify:
     {
       if (m_sent && m_ack == m_job.notification->GetValueSize()+1) {
@@ -300,7 +366,7 @@ bool WebSocketHandler::GetNextTxJob()
   if (!m_jobqueue) return false;
   if (xQueueReceive(m_jobqueue, &m_job, 0) == pdTRUE) {
     // init new job state:
-    m_sent = m_ack = 0;
+    m_sent = m_ack = m_last = 0;
     return true;
   } else {
     return false;
@@ -399,6 +465,27 @@ void WebSocketHandler::HandleIncomingMsg(std::string msg)
     while (!input.eof()) {
       input >> arg;
       if (!arg.empty()) Unsubscribe(arg);
+    }
+  }
+  else if (cmd == "metric") {
+    bool handled = false;
+    input >> cmd; // Sub-command
+    if (cmd == "units") {
+      input >> arg;
+      if (arg == "on") {
+        ESP_LOGD(TAG, "WebSocketHandler[%p/%d]: Sub-command metric/units/on", m_nc, m_modifier);
+        UnitsSubscribe();
+        handled = true;
+      } else if (arg == "off") {
+        ESP_LOGD(TAG, "WebSocketHandler[%p/%d]: Sub-command metric/units/off", m_nc, m_modifier);
+        UnitsUnsubscribe();
+        handled = true;
+      }
+    } else 
+      ESP_LOGD(TAG, "WebSocketHandler[%p/%d]: Command metric - Unknown %s", m_nc, m_modifier, cmd.c_str());
+
+    if (!handled) {
+      ESP_LOGW(TAG, "WebSocketHandler[%p]: unhandled metric message: '%s'", m_nc, msg.c_str());
     }
   }
   else {
@@ -611,12 +698,22 @@ void OvmsWebServer::UpdateTicker(TimerHandle_t timer)
     }
   }
   
-  // trigger metrics update:
+  // trigger metrics update if required.
+  unsigned long mask_all = MyMetrics.GetUnitSendAll();
   for (auto slot: MyWebServer.m_client_slots) {
-    if (slot.handler)
+    if (slot.handler) {
       slot.handler->AddTxJob({ WSTX_MetricsUpdate, NULL });
+      if (slot.handler->m_units_subscribed) {
+        unsigned long bit = 1ul << slot.handler->m_modifier;
+        bool addJob = (bit & mask_all) != 0;
+        if (addJob) {
+          // Trigger Units update:
+          slot.handler->AddTxJob({ WSTX_MetricsUnitUpdate, NULL });
+        }
+      }
+    }
   }
-  
+
   xSemaphoreGive(MyWebServer.m_client_mutex);
 }
 
@@ -654,6 +751,21 @@ void WebSocketHandler::Unsubscribe(std::string topic)
       it++;
     }
   }
+}
+void WebSocketHandler::UnitsSubscribe()
+{
+  if (!m_units_subscribed) {
+    m_units_subscribed = true;
+    ESP_LOGD(TAG, "WebSocketHandler[%p/%d]: Subscribed to Units", m_nc, m_modifier);
+    MyMetrics.SetAllUnitSend(m_modifier);
+  } else
+    ESP_LOGD(TAG, "WebSocketHandler[%p/%d]: Already Subscribed to Units", m_nc, m_modifier);
+}
+
+void WebSocketHandler::UnitsUnsubscribe()
+{
+  m_units_subscribed = false;
+  ESP_LOGD(TAG, "WebSocketHandler[%p/%d]: Unsubscribed from Units", m_nc, m_modifier);
 }
 
 bool WebSocketHandler::IsSubscribedTo(std::string topic)

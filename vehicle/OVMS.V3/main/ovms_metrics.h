@@ -240,10 +240,16 @@ class OvmsMetric
     virtual void SetModified(bool changed=true);
     virtual void Clear();
 
+    bool IsUnitSend(size_t modifier);
+    bool IsUnitSendAndClear(size_t modifier);
+    void ClearUnitSend(size_t modifier);
+    void SetUnitSend(size_t modifier);
+    void SetUnitSendAll();
+
   public:
     OvmsMetric* m_next;
     const char* m_name;
-    std::atomic_ulong m_modified;
+    std::atomic_ulong m_modified, m_sendunit;
     uint32_t m_lastmodified;
     uint16_t m_autostale;
     metric_unit_t m_units;
@@ -994,6 +1000,18 @@ class MetricCallbackEntry
     MetricCallback m_callback;
   };
 
+class UserMetricSnapshot
+  {
+  protected:
+    std::vector<metric_unit_t> m_map;
+  public:
+    UserMetricSnapshot();
+    void Load();
+
+    metric_unit_t GetUserUnit( metric_group_t group);
+    metric_unit_t GetUserUnit( metric_unit_t unit);
+  };
+
 typedef std::list<MetricCallbackEntry*> MetricCallbackList;
 typedef std::map<std::string, MetricCallbackList*> MetricCallbackMap;
 
@@ -1050,6 +1068,11 @@ class OvmsMetrics
         m->SetValue(value);
       return m;
       }
+    void SetAllUnitSend(size_t modifier);
+    void SetAllGroupUnitSend(metric_group_t group);
+
+    // Return bitmask of unit streams that need to be sent
+    unsigned long GetUnitSendAll();
 
   public:
     void RegisterListener(std::string caller, std::string name, MetricCallback callback);
