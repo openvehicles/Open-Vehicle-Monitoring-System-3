@@ -318,7 +318,7 @@ OvmsVehicleMiniSE::OvmsVehicleMiniSE()
   // Callbacks
   MyCan.RegisterCallback(TAG, std::bind(&OvmsVehicleMiniSE::CanResponder, this, std::placeholders::_1));
 
-  // Get the CAN bus setup
+  // Set up the CAN bus poller
   RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
   PollSetPidList(m_can1, obdii_polls);
   pollerstate = POLLSTATE_SHUTDOWN; // If the car is alive we'll get frames and switch to ALIVE
@@ -331,11 +331,22 @@ OvmsVehicleMiniSE::OvmsVehicleMiniSE()
     StdMetrics.ms_v_env_on->SetValue(false);
   PollSetThrottling(50);
   PollSetResponseSeparationTime(5);
+
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
+  // Add the BMS cell monitor to the web UI
+  MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle,
+    PageAuth_Cookie);
+#endif
 }
 
 OvmsVehicleMiniSE::~OvmsVehicleMiniSE()
 {
   ESP_LOGI(TAG, "Shutdown Mini Cooper SE vehicle module");
+
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
+  // Remove the BMS cell monitor to the web UI
+  MyWebServer.DeregisterPage("/bms/cellmon");
+#endif
 }
 
 OvmsMetricFloat *OvmsVehicleMiniSE::MetricFloat(const char *name, uint16_t autostale = 0, metric_unit_t units = Other)
@@ -2971,19 +2982,10 @@ void OvmsVehicleMiniSE::IncomingPollReply(canbus *bus, uint16_t type, uint16_t p
 __attribute__((unused)) class OvmsVehicleMiniSEInit {
   public:
   OvmsVehicleMiniSEInit();
-  ~OvmsVehicleMiniSEInit();
 } MyOvmsVehicleMiniSEInit __attribute__ ((init_priority (9000)));
 
 OvmsVehicleMiniSEInit::OvmsVehicleMiniSEInit()
 {
   ESP_LOGI(TAG, "Registering Vehicle: Mini Cooper SE (9000)");
   MyVehicleFactory.RegisterVehicle<OvmsVehicleMiniSE>("MINISE", "Mini Cooper SE");
-  MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle,
-    PageAuth_Cookie);
-}
-
-OvmsVehicleMiniSEInit::~OvmsVehicleMiniSEInit()
-{
-  ESP_LOGI(TAG, "Stop Mini Cooper SE vehicle module");
-  MyWebServer.DeregisterPage("/bms/cellmon");
 }
