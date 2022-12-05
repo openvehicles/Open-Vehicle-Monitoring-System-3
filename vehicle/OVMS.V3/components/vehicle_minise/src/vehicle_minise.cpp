@@ -2972,30 +2972,18 @@ __attribute__((unused)) class OvmsVehicleMiniSEInit {
   public:
   OvmsVehicleMiniSEInit();
   ~OvmsVehicleMiniSEInit();
-  static void WebInit();
-  static void WebDeInit();
 } MyOvmsVehicleMiniSEInit __attribute__ ((init_priority (9000)));
 
 OvmsVehicleMiniSEInit::OvmsVehicleMiniSEInit()
 {
   ESP_LOGI(TAG, "Registering Vehicle: Mini Cooper SE (9000)");
   MyVehicleFactory.RegisterVehicle<OvmsVehicleMiniSE>("MINISE", "Mini Cooper SE");
-  WebInit();
+  MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle,
+    PageAuth_Cookie);
 }
 
 OvmsVehicleMiniSEInit::~OvmsVehicleMiniSEInit()
 {
   ESP_LOGI(TAG, "Stop Mini Cooper SE vehicle module");
-  WebDeInit();
-}
-
-void OvmsVehicleMiniSEInit::WebInit()
-{
-  MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle,
-    PageAuth_Cookie);
-}
-
-void OvmsVehicleMiniSEInit::WebDeInit()
-{
   MyWebServer.DeregisterPage("/bms/cellmon");
 }
