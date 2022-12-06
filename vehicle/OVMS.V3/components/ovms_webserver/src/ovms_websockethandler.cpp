@@ -125,31 +125,34 @@ void WebSocketHandler::ProcessTxJob()
       // find start:
       int i;
       OvmsMetric* m;
-      for (i=0, m=MyMetrics.m_first; i < m_sent && m != NULL; m=m->m_next, i++);
+      for (i=0, m=MyMetrics.m_first; i < m_last && m != NULL; m=m->m_next, i++);
       
       // build msg:
-      std::string msg;
-      msg.reserve(2*XFER_CHUNK_SIZE+128);
-      msg = "{\"metrics\":{";
-      for (i=0; m && msg.size() < XFER_CHUNK_SIZE; m=m->m_next) {
-        if (m->IsModifiedAndClear(m_modifier) || m_job.type == WSTX_MetricsAll) {
-          if (i) msg += ',';
-          msg += '\"';
-          msg += m->m_name;
-          msg += "\":";
-          msg += m->AsJSON();
-          i++;
+      if (m) {
+        std::string msg;
+        msg.reserve(2*XFER_CHUNK_SIZE+128);
+        msg = "{\"metrics\":{";
+        for (i=0; m && msg.size() < XFER_CHUNK_SIZE; m=m->m_next) {
+          ++m_last;
+          if (m->IsModifiedAndClear(m_modifier) || m_job.type == WSTX_MetricsAll) {
+            if (i) msg += ',';
+            msg += '\"';
+            msg += m->m_name;
+            msg += "\":";
+            msg += m->AsJSON();
+            i++;
+          }
+        }
+
+        // send msg:
+        if (i) {
+          msg += "}}";
+          ESP_EARLY_LOGV(TAG, "WebSocket msg: %s", msg.c_str());
+          mg_send_websocket_frame(m_nc, WEBSOCKET_OP_TEXT, msg.data(), msg.size());
+          m_sent += i;
         }
       }
-      
-      // send msg:
-      if (i) {
-        msg += "}}";
-        ESP_EARLY_LOGV(TAG, "WebSocket msg: %s", msg.c_str());
-        mg_send_websocket_frame(m_nc, WEBSOCKET_OP_TEXT, msg.data(), msg.size());
-        m_sent += i;
-      }
-      
+
       // done?
       if (!m && m_ack == m_sent) {
         if (m_sent)
