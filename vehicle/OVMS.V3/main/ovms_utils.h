@@ -207,7 +207,8 @@ std::string json_encode(const src_string text)
   buf.reserve(text.size() + (text.size() >> 3));
   for (int i=0; i<text.size(); i++)
     {
-    switch(text[i])
+    char ch = text[i];
+    switch(ch)
       {
       case '\n':        buf += "\\n"; break;
       case '\r':        buf += "\\r"; break;
@@ -217,14 +218,14 @@ std::string json_encode(const src_string text)
       case '\"':        buf += "\\\""; break;
       case '\\':        buf += "\\\\"; break;
       default:
-        if (iscntrl(text[i]))
+        if (iscntrl(ch))
           {
-          sprintf(hex, "\\u%04x", (unsigned int)text[i]);
+          sprintf(hex, "\\u%04x", (unsigned int)ch);
           buf += hex;
           }
         else
           {
-          buf += text[i];
+          buf += ch;
           }
         break;
       }
