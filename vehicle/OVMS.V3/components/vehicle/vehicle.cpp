@@ -1113,12 +1113,12 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStat(int verbosity, OvmsWrite
  */
 OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStatTrip(int verbosity, OvmsWriter* writer)
   {
-  metric_unit_t rangeUnit = OvmsMetricGetUserUnit(GrpDistance);
-  metric_unit_t speedUnit = OvmsMetricGetUserUnit(GrpSpeed);
-  metric_unit_t accelUnit = OvmsMetricGetUserUnit(GrpAccel);
-  metric_unit_t consumUnit = OvmsMetricGetUserUnit(GrpConsumption);
+  metric_unit_t rangeUnit = OvmsMetricGetUserUnit(GrpDistance, Kilometers);
+  metric_unit_t speedUnit = OvmsMetricGetUserUnit(GrpSpeed, Kph);
+  metric_unit_t accelUnit = OvmsMetricGetUserUnit(GrpAccel, KphPS);
+  metric_unit_t consumUnit = OvmsMetricGetUserUnit(GrpConsumption, WattHoursPK);
   metric_unit_t energyUnit = kWh;
-  metric_unit_t altitudeUnit = OvmsMetricGetUserUnit(GrpDistanceShort);
+  metric_unit_t altitudeUnit = OvmsMetricGetUserUnit(GrpDistanceShort, Meters);
   const char* rangeUnitLabel = OvmsMetricUnitLabel(rangeUnit);
   const char* speedUnitLabel = OvmsMetricUnitLabel(speedUnit);
   const char* accelUnitLabel = OvmsMetricUnitLabel(accelUnit);
