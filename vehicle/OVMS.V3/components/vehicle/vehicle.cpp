@@ -358,6 +358,8 @@ OvmsVehicle::OvmsVehicle()
   m_brakelight_ignftbrk = false;
 
   m_tpms_lastcheck = 0;
+  m_inv_energyused = 0;
+  m_inv_energyrecd = 0;
 
   m_rxqueue = xQueueCreate(CONFIG_OVMS_VEHICLE_CAN_RX_QUEUE_SIZE,sizeof(CAN_frame_t));
   xTaskCreatePinnedToCore(OvmsVehicleRxTask, "OVMS Vehicle",
