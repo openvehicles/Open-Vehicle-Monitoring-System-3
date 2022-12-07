@@ -166,7 +166,7 @@ static OvmsVehicle::poll_pid_t obdii_polls[] = {
   // BDC: Body domain controller
   { I3_ECU_BDC_TX, I3_ECU_BDC_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_BDC_HANDBREMSE_KONTAKT, { 0, 60, 60, 60 }, 0,
     ISOTP_EXTADR },   // 0xD130 v_env_handbrake, but doesn't seem to work
-  { I3_ECU_BDC_TX, I3_ECU_BDC_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_BDC_VIN, { 0, 300, 300, 300 }, 0,
+  { I3_ECU_BDC_TX, I3_ECU_BDC_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_BDC_VIN, { 0, 30, 30, 30 }, 0,
     ISOTP_EXTADR },   // 0xF190 v_vin
 
   // LIM: Charging interface module
