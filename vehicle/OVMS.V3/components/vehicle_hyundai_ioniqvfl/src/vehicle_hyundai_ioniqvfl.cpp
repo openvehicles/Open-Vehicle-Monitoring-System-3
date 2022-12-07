@@ -81,9 +81,13 @@ OvmsVehicleHyundaiVFL::OvmsVehicleHyundaiVFL()
   // Init CAN:
   RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
 
+  // Init configs:
+  MyConfig.RegisterParam("xhi", "Hyundai Ioniq vFL", true, true);
+
   // Init metrics:
   m_xhi_charge_state = MyMetrics.InitInt("xhi.c.state", 10, 0, Other, true);
   m_xhi_bat_soc_bms = MyMetrics.InitFloat("xhi.b.soc.bms", 30, 0, Percentage, true);
+  m_xhi_bat_range_user = MyMetrics.InitFloat("xhi.b.range.user", 120, 0, Kilometers, true);
 
   // Init BMS:
   BmsSetCellArrangementVoltage(96, 12);
@@ -101,6 +105,9 @@ OvmsVehicleHyundaiVFL::OvmsVehicleHyundaiVFL()
   PollSetResponseSeparationTime(1);
   PollSetState(STATE_OFF);
   PollSetPidList(m_can1, standard_polls);
+
+  // Read config:
+  ConfigChanged(NULL);
 }
 
 
@@ -114,6 +121,45 @@ OvmsVehicleHyundaiVFL::~OvmsVehicleHyundaiVFL()
   MyWebServer.DeregisterPage("/xhi/battmon");
   MyMetrics.DeregisterMetric(m_xhi_charge_state);
   MyMetrics.DeregisterMetric(m_xhi_bat_soc_bms);
+  MyMetrics.DeregisterMetric(m_xhi_bat_range_user);
+}
+
+
+/**
+ * ConfigChanged: configuration init/update
+ */
+void OvmsVehicleHyundaiVFL::ConfigChanged(OvmsConfigParam *param)
+{
+  if (param && param->GetName() != "xhi") {
+    return;
+  }
+
+  // Configure range estimation:
+
+  bool recalc_ranges = false;
+  int cfg_range_ideal = MyConfig.GetParamValueInt("xhi", "range.ideal", 200);
+  int cfg_range_user = MyConfig.GetParamValueInt("xhi", "range.user", 200);
+
+  if (m_cfg_range_ideal != cfg_range_ideal) {
+    recalc_ranges = true;
+  }
+
+  if (m_cfg_range_user != cfg_range_user) {
+    // update metric on user config changes and if unset:
+    if (m_cfg_range_user != 0 || m_xhi_bat_range_user->AsFloat() == 0) {
+      m_xhi_bat_range_user->SetValue(cfg_range_user);
+    }
+    recalc_ranges = true;
+  }
+
+  m_cfg_range_ideal = cfg_range_ideal;
+  m_cfg_range_user = cfg_range_user;
+
+  if (recalc_ranges) {
+    ESP_LOGD(TAG, "ConfigChanged: range ideal=%d km, user=%d km",
+             m_cfg_range_ideal, m_cfg_range_user);
+    CalculateRangeEstimations(true);
+  }
 }
 
 
@@ -153,6 +199,9 @@ void OvmsVehicleHyundaiVFL::IncomingPollReply(canbus* bus, uint16_t type, uint16
       // Read vehicle speed:
       float speed = UnitConvert(Mph, Kph, RXB_INT16(53) / 100.0f);
       StdMetrics.ms_v_pos_speed->SetValue(fabs(speed));
+
+      // Update trip length & energy usage:
+      UpdateTripCounters();
 
       // Read battery module temperatures 1-5 (only when also polling PIDs 02…05):
       if (m_poll_state != STATE_OFF && m_poll_ticker % 15 == 0)
@@ -204,6 +253,14 @@ void OvmsVehicleHyundaiVFL::IncomingPollReply(canbus* bus, uint16_t type, uint16
       StdMetrics.ms_v_bat_soh->SetValue(bat_soh);
       float bat_soc = RXB_BYTE(31) * 0.5f;
       StdMetrics.ms_v_bat_soc->SetValue(bat_soc);
+
+      // Update trip reference for SOC usage:
+      if (m_drive_startsoc == 0) {
+        m_drive_startsoc = bat_soc;
+      }
+      
+      // Update range estimations:
+      CalculateRangeEstimations();
       break;
     }
 
@@ -302,6 +359,9 @@ void OvmsVehicleHyundaiVFL::PollerStateTicker()
       StdMetrics.ms_v_charge_substate->SetValue("");
       StdMetrics.ms_v_charge_state->SetValue("");
       PollSetState(STATE_ON);
+
+      // Start new trip:
+      ResetTripCounters();
     }
   }
 
@@ -312,8 +372,118 @@ void OvmsVehicleHyundaiVFL::PollerStateTicker()
       StdMetrics.ms_v_bat_current->SetValue(0);
       StdMetrics.ms_v_bat_power->SetValue(0);
       PollSetState(STATE_OFF);
+
+      // Remember new user range?
+      int range_user = m_xhi_bat_range_user->AsInt();
+      if (ABS(m_cfg_range_user - range_user) >= 5) {
+        ESP_LOGD(TAG, "PollerStateTicker: save new user range=%d km", range_user);
+        m_cfg_range_user = range_user;
+        MyConfig.SetParamValueInt("xhi", "range.user", range_user);
+      }
     }
   }
+}
+
+
+/**
+ * ResetTripCounters: called at trip start to set reference points
+ */
+void OvmsVehicleHyundaiVFL::ResetTripCounters()
+{
+  StdMetrics.ms_v_pos_trip->SetValue(0);
+  m_odo_trip            = 0;
+  m_tripfrac_reftime    = esp_log_timestamp();
+  m_tripfrac_refspeed   = StdMetrics.ms_v_pos_speed->AsFloat();
+
+  StdMetrics.ms_v_bat_energy_recd->SetValue(0);
+  StdMetrics.ms_v_bat_energy_used->SetValue(0);
+  StdMetrics.ms_v_bat_coulomb_recd->SetValue(0);
+  StdMetrics.ms_v_bat_coulomb_used->SetValue(0);
+
+  m_energy_recd_start   = 0;
+  m_energy_used_start   = 0;
+  m_coulomb_recd_start  = 0;
+  m_coulomb_used_start  = 0;
+}
+
+
+/**
+ * UpdateTripCounters: odometer resolution is only 1 km, so trip distances lack
+ *  precision. To compensate, this method derives trip distance from speed.
+ */
+void OvmsVehicleHyundaiVFL::UpdateTripCounters()
+{
+  // Process speed update:
+
+  uint32_t now = esp_log_timestamp();
+  float speed = StdMetrics.ms_v_pos_speed->AsFloat();
+
+  if (m_tripfrac_reftime && now > m_tripfrac_reftime) {
+    float speed_avg = ABS(speed + m_tripfrac_refspeed) / 2;
+    uint32_t time_ms = now - m_tripfrac_reftime;
+    double meters = speed_avg / 3.6 * time_ms / 1000;
+    m_odo_trip += meters / 1000;
+    StdMetrics.ms_v_pos_trip->SetValue(TRUNCPREC(m_odo_trip,3));
+  }
+
+  m_tripfrac_reftime = now;
+  m_tripfrac_refspeed = speed;
+
+  // Process energy update:
+
+  float energy_recd  = StdMetrics.ms_v_bat_energy_recd_total->AsFloat();
+  float energy_used  = StdMetrics.ms_v_bat_energy_used_total->AsFloat();
+  float coulomb_recd = StdMetrics.ms_v_bat_coulomb_recd_total->AsFloat();
+  float coulomb_used = StdMetrics.ms_v_bat_coulomb_used_total->AsFloat();
+
+  if (m_coulomb_used_start == 0) {
+    m_energy_recd_start  = energy_recd;
+    m_energy_used_start  = energy_used;
+    m_coulomb_recd_start = coulomb_recd;
+    m_coulomb_used_start = coulomb_used;
+  } else {
+    StdMetrics.ms_v_bat_energy_recd->SetValue(energy_recd - m_energy_recd_start);
+    StdMetrics.ms_v_bat_energy_used->SetValue(energy_used - m_energy_used_start);
+    StdMetrics.ms_v_bat_coulomb_recd->SetValue(coulomb_recd - m_coulomb_recd_start);
+    StdMetrics.ms_v_bat_coulomb_used->SetValue(coulomb_used - m_coulomb_used_start);
+  }
+}
+
+
+/**
+ * CalculateRangeEstimations: calculate ranges from SOH, SOC & driving metrics
+ *  -- called by IncomingPollReply() on PID 0x05 (SOC,SOH) = every 15 seconds
+ */
+void OvmsVehicleHyundaiVFL::CalculateRangeEstimations(bool init /*=false*/)
+{
+  // Get battery state:
+  float soc = StdMetrics.ms_v_bat_soc->AsFloat(), socfactor = soc / 100;
+  float soh = StdMetrics.ms_v_bat_soh->AsFloat(), sohfactor = soh / 100;
+  if (sohfactor == 0) {
+    sohfactor = 1;
+    StdMetrics.ms_v_bat_soh->SetValue(100);
+  }
+
+  // Get user range:
+  float range_user = m_xhi_bat_range_user->AsFloat();
+
+  // While driving, update user range estimation from trip metrics:
+  if (!init && m_poll_state == STATE_ON) {
+    float trip_soc_used = m_drive_startsoc - soc;
+    if (trip_soc_used >= 1 && m_odo_trip >= 1) {
+      // smooth over 6 samples = 90 seconds:
+      float range_trip = m_odo_trip / trip_soc_used * 100;
+      range_user = (range_user * 5 + range_trip) / 6;
+      ESP_LOGD(TAG, "CalculateRangeEstimations: trip %.2f km / %.1f %%SOC -> range=%.2f -> user=%.2f km",
+               m_odo_trip, trip_soc_used, range_trip, range_user);
+      m_xhi_bat_range_user->SetValue(TRUNCPREC(range_user,3));
+    }
+  }
+
+  // Calculate ranges:
+  StdMetrics.ms_v_bat_range_full->SetValue(m_cfg_range_ideal * sohfactor);
+  StdMetrics.ms_v_bat_range_ideal->SetValue(m_cfg_range_ideal * sohfactor * socfactor);
+  StdMetrics.ms_v_bat_range_est->SetValue(range_user * socfactor);
 }
 
 

@@ -40,15 +40,40 @@ class OvmsVehicleHyundaiVFL : public OvmsVehicle
     OvmsVehicleHyundaiVFL();
     ~OvmsVehicleHyundaiVFL();
 
+  public:
+    void ConfigChanged(OvmsConfigParam *param);
+
   protected:
     void PollerStateTicker();
     void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
+
+    // Trip length & SOC/energy consumption:
+    void ResetTripCounters();
+    void UpdateTripCounters();
+
+    // Range estimations:
+    void CalculateRangeEstimations(bool init=false);
 
   protected:
     std::string         m_rxbuf;
     OvmsMetricInt       *m_xhi_charge_state = NULL;
     OvmsMetricFloat     *m_xhi_bat_soc_bms = NULL;
 
+    // Trip length derived from speed:
+    double              m_odo_trip = 0;
+    uint32_t            m_tripfrac_reftime = 0;
+    float               m_tripfrac_refspeed = 0;
+    
+    // Trip start reference values:
+    float               m_energy_recd_start = 0;
+    float               m_energy_used_start = 0;
+    float               m_coulomb_recd_start = 0;
+    float               m_coulomb_used_start = 0;
+
+    // Range estimation:
+    int                 m_cfg_range_ideal = 0;
+    int                 m_cfg_range_user = 0;
+    OvmsMetricFloat     *m_xhi_bat_range_user = NULL;
 };
 
 #endif // __VEHICLE_HYUNDAI_IONIQVFL_H__
