@@ -503,7 +503,6 @@ void OvmsVehicleMiniSE::IncomingPollReply(canbus *bus, uint16_t type, uint16_t p
   }
 
   ++replycount;
-  ESP_LOGD(TAG, "IncomingPollReply");
 
   int datalen = rxbuf.size();
 
