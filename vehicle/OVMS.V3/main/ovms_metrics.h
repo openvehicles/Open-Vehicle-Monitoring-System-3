@@ -815,7 +815,7 @@ class OvmsMetricVector : public OvmsMetric
       }
 #endif
 
-    virtual bool SetValue(std::string value)
+    virtual bool SetValue(std::string value, metric_unit_t units = Other)
       {
       std::vector<ElemType, Allocator> n_value;
       std::istringstream vs(value);
@@ -827,7 +827,7 @@ class OvmsMetricVector : public OvmsMetric
         ts >> elem;
         n_value.push_back(elem);
         }
-      return SetValue(n_value);
+      return SetValue(n_value, units);
       }
     void operator=(std::string value) { SetValue(value); }
 
