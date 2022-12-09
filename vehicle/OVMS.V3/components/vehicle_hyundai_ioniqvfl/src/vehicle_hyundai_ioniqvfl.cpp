@@ -60,13 +60,14 @@ static const char *TAG = "v-hyundaivfl";
 
 static const OvmsVehicle::poll_pid_t standard_polls[] =
 {
-  { 0x7e4, 0x7ec, UDS_READ8,    0x01, {   1,   1,   1 }, 0, ISOTP_STD },
-  { 0x7e4, 0x7ec, UDS_READ8,    0x02, {   0,  15,  15 }, 0, ISOTP_STD },
-  { 0x7e4, 0x7ec, UDS_READ8,    0x03, {   0,  15,  15 }, 0, ISOTP_STD },
-  { 0x7e4, 0x7ec, UDS_READ8,    0x04, {   0,  15,  15 }, 0, ISOTP_STD },
-  { 0x7e4, 0x7ec, UDS_READ8,    0x05, {   0,  15,  15 }, 0, ISOTP_STD },
-  { 0x7e6, 0x7ee, UDS_READ8,    0x80, {   0,  60, 120 }, 0, ISOTP_STD },
-  { 0x7c6, 0x7ce, UDS_READ16, 0xb002, {   0,  30,   0 }, 0, ISOTP_STD },
+  { 0x7e4, 0x7ec, UDS_READ8,    0x01, {   1,   1,   1 }, 0, ISOTP_STD },  // Battery status, speed, module temperatures 1-5
+  { 0x7e4, 0x7ec, UDS_READ8,    0x02, {   0,  15,  15 }, 0, ISOTP_STD },  // Cell voltages 1-32
+  { 0x7e4, 0x7ec, UDS_READ8,    0x03, {   0,  15,  15 }, 0, ISOTP_STD },  // Cell voltages 33-64
+  { 0x7e4, 0x7ec, UDS_READ8,    0x04, {   0,  15,  15 }, 0, ISOTP_STD },  // Cell voltages 65-96
+  { 0x7e4, 0x7ec, UDS_READ8,    0x05, {   0,  15,  15 }, 0, ISOTP_STD },  // SOC, SOH, module temperatures 6-12
+  { 0x7e6, 0x7ee, UDS_READ8,    0x80, {   0,  60, 120 }, 0, ISOTP_STD },  // Ambient temperature
+  { 0x7c6, 0x7ce, UDS_READ16, 0xb002, {   0,  30,   0 }, 0, ISOTP_STD },  // Odometer
+  { 0x7a0, 0x7a8, UDS_READ16, 0xc00b, {   0,  60,   0 }, 0, ISOTP_STD },  // TPMS
   POLL_LIST_END
 };
 
@@ -98,6 +99,7 @@ OvmsVehicleHyundaiVFL::OvmsVehicleHyundaiVFL()
   BmsSetCellDefaultThresholdsTemperature(2.0, 3.0);
 
   // Init web UI:
+  MyWebServer.RegisterPage("/xhi/features", "Features", WebCfgFeatures, PageMenu_Vehicle, PageAuth_Cookie);
   MyWebServer.RegisterPage("/xhi/battmon", "Battery Monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
 
   // Init polling:
@@ -119,6 +121,7 @@ OvmsVehicleHyundaiVFL::~OvmsVehicleHyundaiVFL()
   ESP_LOGI(TAG, "Shutdown Hyundai Ioniq vFL vehicle module");
   PollSetPidList(m_can1, NULL);
   MyWebServer.DeregisterPage("/xhi/battmon");
+  MyWebServer.DeregisterPage("/xhi/features");
   MyMetrics.DeregisterMetric(m_xhi_charge_state);
   MyMetrics.DeregisterMetric(m_xhi_bat_soc_bms);
   MyMetrics.DeregisterMetric(m_xhi_bat_range_user);
@@ -278,6 +281,47 @@ void OvmsVehicleHyundaiVFL::IncomingPollReply(canbus* bus, uint16_t type, uint16
       float odo = RXB_UINT24(6);
       StdMetrics.ms_v_pos_odometer->SetValue(odo);
       break;
+    }
+
+    case 0xc00b:
+    {
+      // Read TPMS:
+      std::vector<float> tpms_pressure(4);  // kPa
+      std::vector<float> tpms_temp(4);      // °C
+      std::vector<short> tpms_alert(4);     // 0,1,2
+
+      // Metric layout:   FL,FR,RL,RR
+      // Car layout:      FL,FR,RR,RL
+
+      const float kpa_factor = 100 * 0.2 / 14.504;
+      tpms_pressure[0] = TRUNCPREC((float)RXB_BYTE( 4) * kpa_factor, 1);
+      tpms_pressure[1] = TRUNCPREC((float)RXB_BYTE( 8) * kpa_factor, 1);
+      tpms_pressure[2] = TRUNCPREC((float)RXB_BYTE(16) * kpa_factor, 1);
+      tpms_pressure[3] = TRUNCPREC((float)RXB_BYTE(12) * kpa_factor, 1);
+
+      tpms_temp[0] = (float)RXB_BYTE( 5) - 55;
+      tpms_temp[1] = (float)RXB_BYTE( 9) - 55;
+      tpms_temp[2] = (float)RXB_BYTE(17) - 55;
+      tpms_temp[3] = (float)RXB_BYTE(13) - 55;
+
+      // Check for warnings/alerts:
+      float pressure_warn   = MyConfig.GetParamValueFloat("xhi", "tpms.pressure.warn",  230); // kPa
+      float pressure_alert  = MyConfig.GetParamValueFloat("xhi", "tpms.pressure.alert", 220); // kPa
+      float temp_warn       = MyConfig.GetParamValueFloat("xhi", "tpms.temp.warn",       90); // °C
+      float temp_alert      = MyConfig.GetParamValueFloat("xhi", "tpms.temp.alert",     100); // °C
+      for (int i = 0; i < 4; i++) {
+        if (tpms_pressure[i] <= pressure_alert || tpms_temp[i] >= temp_alert)
+          tpms_alert[i] = 2;
+        else if (tpms_pressure[i] <= pressure_warn || tpms_temp[i] >= temp_warn)
+          tpms_alert[i] = 1;
+        else
+          tpms_alert[i] = 0;
+      }
+
+      // Publish metrics:
+      StdMetrics.ms_v_tpms_pressure->SetValue(tpms_pressure);
+      StdMetrics.ms_v_tpms_temp->SetValue(tpms_temp);
+      StdMetrics.ms_v_tpms_alert->SetValue(tpms_alert);
     }
 
     default:

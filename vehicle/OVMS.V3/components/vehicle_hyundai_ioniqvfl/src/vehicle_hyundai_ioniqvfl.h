@@ -31,6 +31,7 @@
 #define __VEHICLE_HYUNDAI_IONIQVFL_H__
 
 #include "vehicle.h"
+#include "ovms_webserver.h"
 
 using namespace std;
 
@@ -42,6 +43,9 @@ class OvmsVehicleHyundaiVFL : public OvmsVehicle
 
   public:
     void ConfigChanged(OvmsConfigParam *param);
+
+  public:
+    static void WebCfgFeatures(PageEntry_t &p, PageContext_t &c);
 
   protected:
     void PollerStateTicker();
