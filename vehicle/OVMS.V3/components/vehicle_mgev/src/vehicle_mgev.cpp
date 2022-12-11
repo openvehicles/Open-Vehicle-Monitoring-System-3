@@ -176,6 +176,8 @@ OvmsVehicleMgEv::OvmsVehicleMgEv()
     m_bcm_auth = MyMetrics.InitBool("xmg.auth.bcm", SM_STALE_MAX, false);
     m_gwm_task = MyMetrics.InitInt("xmg.task.gwm", SM_STALE_MAX, static_cast<int>(GWMTasks::None));
     m_bcm_task = MyMetrics.InitInt("xmg.task.bcm", SM_STALE_MAX, static_cast<int>(BCMTasks::None));
+    
+    m_trip_start = MyMetrics.InitFloat("xmg.p.trip.start", SM_STALE_MAX, SM_STALE_MAX);
 
     DRLFirstFrameSentCallback = std::bind(&OvmsVehicleMgEv::DRLFirstFrameSent, this, std::placeholders::_1, std::placeholders::_2);
 
@@ -301,6 +303,8 @@ void OvmsVehicleMgEv::processEnergy()
             // Set all values to zero
             if (StandardMetrics.ms_v_env_drivetime->AsInt() == 0) {
                 ESP_LOGI(TAG, "Trip has started");
+                // Reset trip to 0
+                StandardMetrics.ms_v_pos_trip->SetValue(0);
                 StandardMetrics.ms_v_bat_coulomb_used->SetValue(0);
                 StandardMetrics.ms_v_bat_coulomb_recd->SetValue(0);
                 StandardMetrics.ms_v_bat_energy_used->SetValue(0);
@@ -309,6 +313,9 @@ void OvmsVehicleMgEv::processEnergy()
             }
             else
             {
+                // Update trip distance
+                StandardMetrics.ms_v_pos_trip->SetValue(StandardMetrics.ms_v_pos_odometer->AsFloat() - m_trip_start->AsFloat());
+
                 // Calculate regeneration power
                 if (bat_power < 0) {
                     StandardMetrics.ms_v_bat_energy_recd->SetValue
@@ -333,8 +340,14 @@ void OvmsVehicleMgEv::processEnergy()
         else
         {
             // We have only just stopped so add trip values to the totals
+            
             if (StandardMetrics.ms_v_env_parktime->AsInt() == 0) {
                 ESP_LOGI(TAG, "Trip has ended");
+                // Update trip distance
+                StandardMetrics.ms_v_pos_trip->SetValue(StandardMetrics.ms_v_pos_odometer->AsFloat() - m_trip_start->AsFloat());
+                // Save current odometer reading at the start of the trip
+                m_trip_start->SetValue(StandardMetrics.ms_v_pos_odometer->AsFloat());
+                
                 StandardMetrics.ms_v_bat_energy_used_total->SetValue
                 (StandardMetrics.ms_v_bat_energy_used_total->AsFloat()
                     + StandardMetrics.ms_v_bat_energy_used->AsFloat());
