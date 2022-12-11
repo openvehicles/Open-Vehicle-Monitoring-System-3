@@ -503,8 +503,8 @@ $.fn.convertMetricToUserUnits = function (value, name) {
   }
   return cnvfn(value);
 }
-$.fn.userUnitLabelFromMetric = function (target, name) {
-    var unit_entry = target[name];
+$.fn.userUnitLabelFromMetric = function (name) {
+    var unit_entry = units[name];
     if (unit_entry == undefined)
       return "";
     return unit_entry.label;
@@ -517,13 +517,15 @@ $.fn.metricsAllHas = function(target, name) {
 
 var metrics_all = new Proxy(metrics, {
   get: function(target, name) {
+      if (name == Symbol.toStringTag)
+       return 'metrics_all[]';
       if (!(typeof name === "string" || name instanceof String))
         return undefined;
       var names = name.split('#',2);
       var name = names[0];
       var value_type = names[1]
       if (value_type === "unit")
-        return $.fn.userUnitLabelFromMetric(units, name);
+        return $.fn.userUnitLabelFromMetric(name);
       var value = target[name];
       if (value_type === "label")
         value = $.fn.convertMetricToUserUnits(value, name)
@@ -535,6 +537,8 @@ var metrics_all = new Proxy(metrics, {
 var metrics_user = new Proxy(metrics, {
   get:
     function(target, name) {
+      if (name == Symbol.toStringTag)
+       return 'metrics_user[]';
       return $.fn.convertMetricToUserUnits(target[name], name)
     },
   has: $.fn.metricsAllHas
@@ -543,6 +547,8 @@ var metrics_user = new Proxy(metrics, {
 var metrics_label = new Proxy(units, {
   get:
     function(target, name) {
+      if (name == Symbol.toStringTag)
+       return 'metrics_label[]';
       var unit_entry = target[name];
       if (unit_entry == undefined) {
         return "";
@@ -675,7 +681,7 @@ function processNotification(msg) {
 $.fn.sendUnits = function (mode) {
   try {
     var msg = mode?"on":"off";
-    console.log("metric units " + msg);
+    console.debug("metric units " + msg);
     if (ws) ws.send("metric units " + msg);
   } catch (e) {
     console.log(e);
@@ -1893,8 +1899,12 @@ $(function(){
       if (!metric) return;
       // filter:
       var keys = metric.split(","), val;
+      var metricName = ""
       for (var i=0; i<keys.length; i++) {
-        if ((val = update[keys[i]]) != null) break;
+        metricName = keys[i]
+        if ((val = update[metricName]) != null) {
+          break;
+        }
       }
       if (val == null) return;
       // process:
@@ -1902,7 +1912,19 @@ $(function(){
         $el.children(".value").text(val);
       } else if ($el.hasClass("number")) {
         var vf = val;
-        if (scale != null) vf = Number(vf) * scale;
+        if (scale != null)
+          vf = Number(vf) * scale;
+        else {
+          var mun = $.fn.userUnitLabelFromMetric(metricName)
+          if (mun != "") {
+            // If there's a .unit.. then convert it.
+            item = $el.children(".unit");
+            if (item) {
+              item.text(mun);
+              vf = $.fn.convertMetricToUserUnits(vf, metricName);
+            }
+          }
+        }
         if (prec != null) vf = Number(vf).toFixed(prec);
         $el.children(".value").text(vf);
       } else if ($el.hasClass("progress")) {
