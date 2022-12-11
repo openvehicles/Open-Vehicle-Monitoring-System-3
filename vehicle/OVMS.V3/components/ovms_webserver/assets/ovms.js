@@ -478,8 +478,8 @@ var unit_conversions = {
       "hours>minutes":      function (value) { return value*60; },
       "kmph>miph":          km_to_mi,
       "miph>kmph":          mi_to_km,
-      "dbm>sq":             function (value) { return int((value <= -51) ? ((value + 113)/2) : 0); },
-      "sq>dbm":             function (value) { return int((value <= 31) ? (-113 + (value*2)) : 0); },
+      "dbm>sq":             function (value) { return Math.round((value <= -51) ? ((value + 113)/2) : 0); },
+      "sq>dbm":             function (value) { return Math.round((value <= 31) ? (-113 + (value*2)) : 0); },
       "percent>permille":   function (value) { return value*10.0; },
       "permille>percent":   function (value) { return value*0.10; }
 }
