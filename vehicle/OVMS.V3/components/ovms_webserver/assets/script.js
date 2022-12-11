@@ -1024,7 +1024,10 @@ function initSocketConnection(){
       else if (msgtype == "units") {
         $.extend(units, msg.units);
         $(".receiver").trigger("msg:units", msg.units);
-        $(".receiver").trigger("msg:metrics", msg.metrics);
+        var msgmetrics = {}
+        for (metricname in msg.units)
+          msgmetrics[metricname] = metrics[metricname]
+        $(".receiver").trigger("msg:metrics", msgmetrics);
       }
       else if (msgtype == "notify") {
         processNotification(msg.notify);
