@@ -111,6 +111,7 @@ class OvmsVehicleMgEv : public OvmsVehicle
     OvmsMetricBool *m_bcm_auth; // True if BCM is authenticated, false if not
     OvmsMetricInt *m_gwm_task, *m_bcm_task; // Current ECU tasks that we are awaiting response for manual frame handling so we know which function to use to handle the responses.
     OvmsMetricInt *m_ignition_state; // For storing state of start switch
+    OvmsMetricFloat *m_trip_start; // Trip start odometer reading
 
   protected:
     void ConfigChanged(OvmsConfigParam* param) override;
