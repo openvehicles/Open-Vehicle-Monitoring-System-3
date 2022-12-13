@@ -1087,10 +1087,10 @@ void OvmsWebServer::HandleLogout(PageEntry_t& p, PageContext_t& c)
   c.done();
 }
 
-// Dash Guage implementations.
+// Dash Gauge implementations.
 //
 
-dash_guage_t::dash_guage_t(const char *titlePrefix, metric_unit_t defUnit, metric_group_t group)
+dash_gauge_t::dash_gauge_t(const char *titlePrefix, metric_unit_t defUnit, metric_group_t group)
 {
   has_tick = false;
   title_prefix = titlePrefix ? titlePrefix : "";
@@ -1102,18 +1102,18 @@ dash_guage_t::dash_guage_t(const char *titlePrefix, metric_unit_t defUnit, metri
     user_unit = OvmsMetricGetUserUnit(group, defUnit);
   base_unit = defUnit;
 }
-float dash_guage_t::UntConvert( float inValue ) const
+float dash_gauge_t::UntConvert( float inValue ) const
 {
   return UnitConvert(base_unit, user_unit, inValue);
 }
-float dash_guage_t::UntConvert( float inValue, float roundValue ) const
+float dash_gauge_t::UntConvert( float inValue, float roundValue ) const
 {
   if (base_unit == user_unit)
     return inValue;
   return truncf(UnitConvert(base_unit, user_unit, inValue) / roundValue) * roundValue;
 }
 
-void dash_guage_t::SetMinMax( float minValue, float maxValue)
+void dash_gauge_t::SetMinMax( float minValue, float maxValue)
 {
   min_value = UntConvert(minValue);
   float temp_max = UntConvert(maxValue);
@@ -1125,7 +1125,7 @@ void dash_guage_t::SetMinMax( float minValue, float maxValue)
   }
 }
 
-void dash_guage_t::SetMinMax( float minValue, float maxValue, float roundValue)
+void dash_gauge_t::SetMinMax( float minValue, float maxValue, float roundValue)
 {
   min_value = UntConvert(minValue, roundValue);
   float temp_max = UntConvert(maxValue, roundValue);
@@ -1136,17 +1136,17 @@ void dash_guage_t::SetMinMax( float minValue, float maxValue, float roundValue)
     min_value = temp_max;
   }
 }
-void dash_guage_t::SetTick( float tickValue)
+void dash_gauge_t::SetTick( float tickValue)
 {
   tick_value = UntConvert(tickValue);
   has_tick =true;
 }
-void dash_guage_t::SetTick( float tickValue, float roundValue)
+void dash_gauge_t::SetTick( float tickValue, float roundValue)
 {
   tick_value = UntConvert(tickValue);
   has_tick = true;
 }
-void dash_guage_t::DoAddBand( const std::string &colour, float minValue, float maxValue, bool round, float roundValue)
+void dash_gauge_t::DoAddBand( const std::string &colour, float minValue, float maxValue, bool round, float roundValue)
 {
   dash_plot_band_t new_band;
   new_band.colour = colour;
@@ -1163,7 +1163,7 @@ void dash_guage_t::DoAddBand( const std::string &colour, float minValue, float m
   }
 }
 
-std::ostream &dash_guage_t::Output(std::ostream &ostream) const
+std::ostream &dash_gauge_t::Output(std::ostream &ostream) const
 {
   ostream <<
     "{"

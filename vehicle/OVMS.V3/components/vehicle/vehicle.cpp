@@ -2013,35 +2013,35 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::ProcessMsgCommand(std::string &resul
 void OvmsVehicle::GetDashboardConfig(DashboardConfig& cfg)
   {
   // Speed:
-  dash_guage_t speed_dash(NULL,Kph);
+  dash_gauge_t speed_dash(NULL,Kph);
   speed_dash.SetMinMax(0, 200, 5);
   speed_dash.AddBand("green", 0, 120);
   speed_dash.AddBand("yellow", 120, 160);
   speed_dash.AddBand("red", 160, 200);
 
   // Voltage:
-  dash_guage_t voltage_dash(NULL,Volts);
+  dash_gauge_t voltage_dash(NULL,Volts);
   voltage_dash.SetMinMax(310, 410);
   voltage_dash.AddBand("red", 310, 325);
   voltage_dash.AddBand("yellow", 325, 340);
   voltage_dash.AddBand("green", 340, 410);
 
   // SOC:
-  dash_guage_t soc_dash("SOC ",Percentage);
+  dash_gauge_t soc_dash("SOC ",Percentage);
   soc_dash.SetMinMax(0, 100);
   soc_dash.AddBand("red", 0, 12.5);
   soc_dash.AddBand("yellow", 12.5, 25);
   soc_dash.AddBand("green", 25, 100);
 
   // Efficiency:
-  dash_guage_t eff_dash(NULL,WattHoursPK);
+  dash_gauge_t eff_dash(NULL,WattHoursPK);
   eff_dash.SetMinMax(0, 400);
   eff_dash.AddBand("green", 0, 200);
   eff_dash.AddBand("yellow", 200, 300);
   eff_dash.AddBand("red", 300, 400);
 
   // Power:
-  dash_guage_t power_dash(NULL,kW);
+  dash_gauge_t power_dash(NULL,kW);
   power_dash.SetMinMax(-50, 200);
   power_dash.AddBand("violet", -50, 0);
   power_dash.AddBand("green", 0, 100);
@@ -2049,14 +2049,14 @@ void OvmsVehicle::GetDashboardConfig(DashboardConfig& cfg)
   power_dash.AddBand("red", 150, 200);
 
   // Charger temperature:
-  dash_guage_t charget_dash("CHG ",Celcius);
+  dash_gauge_t charget_dash("CHG ",Celcius);
   charget_dash.SetMinMax(20, 80);
   charget_dash.SetTick(20);
   charget_dash.AddBand("normal", 20, 65);
   charget_dash.AddBand("red", 65, 80);
 
   // Battery temperature:
-  dash_guage_t batteryt_dash("BAT ",Celcius);
+  dash_gauge_t batteryt_dash("BAT ",Celcius);
   batteryt_dash.SetMinMax(-15, 65);
   batteryt_dash.SetTick(25);
   batteryt_dash.AddBand("red", -15, 0);
@@ -2064,14 +2064,14 @@ void OvmsVehicle::GetDashboardConfig(DashboardConfig& cfg)
   batteryt_dash.AddBand("red", 50, 65);
 
   // Inverter temperature:
-  dash_guage_t invertert_dash("PEM ",Celcius);
+  dash_gauge_t invertert_dash("PEM ",Celcius);
   invertert_dash.SetMinMax(20, 80);
   invertert_dash.SetTick(20);
   invertert_dash.AddBand("normal", 20, 70);
   invertert_dash.AddBand("red", 70, 80);
 
   // Motor temperature:
-  dash_guage_t motort_dash("MOT ",Celcius);
+  dash_gauge_t motort_dash("MOT ",Celcius);
   motort_dash.SetMinMax(50, 125);
   motort_dash.SetTick(25);
   motort_dash.AddBand("normal", 50, 110);

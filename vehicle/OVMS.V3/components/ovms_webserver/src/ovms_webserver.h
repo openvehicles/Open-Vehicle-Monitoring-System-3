@@ -618,7 +618,7 @@ extern OvmsWebServer MyWebServer;
 /** Dashboard Gauge generator.
  * Handles unit conversions.
  */
-struct dash_guage_t {
+struct dash_gauge_t {
 protected:
   struct dash_plot_band_t {
     std::string colour;
@@ -637,7 +637,7 @@ public:
    * @param defUnit  The unit used as a default for these metrics.
    * @param group    (Optional) The group of units it belong to.
    */
-  dash_guage_t(const char *titlePrefix, metric_unit_t defUnit, metric_group_t group = GrpNone);
+  dash_gauge_t(const char *titlePrefix, metric_unit_t defUnit, metric_group_t group = GrpNone);
   /**
    * Convert a unit to the user unit.
    */
@@ -647,11 +647,11 @@ public:
    */
   float UntConvert( float inValue, float roundValue ) const;
   /**
-   * Set the minimum and maximum values for the guage (in original units).
+   * Set the minimum and maximum values for the gauge (in original units).
    */
   void SetMinMax( float minValue, float maxValue);
   /**
-   * Set the minimum and maximum values for the guage (in original units) including
+   * Set the minimum and maximum values for the gauge (in original units) including
    * rounding to the nearest value.
    */
   void SetMinMax( float minValue, float maxValue, float roundValue);
@@ -667,13 +667,13 @@ public:
    */
   inline void ZeroMin() { if (max_value > 0) min_value = 0; }
 
-  /** Add a colour band to the guage.
+  /** Add a colour band to the gauge.
    */
   inline void AddBand( const std::string &colour, float minValue, float maxValue)
   {
     DoAddBand(colour, minValue, maxValue, false, 0);
   }
-  /** Add a colour band to the guage with rounding to the nearest value.
+  /** Add a colour band to the gauge with rounding to the nearest value.
    */
   inline void AddBand( const std::string &colour, float minValue, float maxValue, float roundValue)
   {
@@ -684,9 +684,9 @@ public:
    */
   std::ostream &Output(std::ostream &ostream) const;
 };
-inline std::ostream &operator<<(std::ostream &out, const dash_guage_t& guage)
+inline std::ostream &operator<<(std::ostream &out, const dash_gauge_t& gauge)
 {
-  return guage.Output(out);
+  return gauge.Output(out);
 }
 
 

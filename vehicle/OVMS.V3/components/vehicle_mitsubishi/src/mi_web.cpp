@@ -132,14 +132,14 @@ void OvmsVehicleMitsubishi::GetDashboardConfig(DashboardConfig& cfg)
 {
   OvmsVehicleMitsubishi* trio = (OvmsVehicleMitsubishi*) MyVehicleFactory.ActiveVehicle();
   // Speed:
-  dash_guage_t speed_dash(NULL,Kph);
+  dash_gauge_t speed_dash(NULL,Kph);
   speed_dash.SetMinMax(0, 135, 5);
   speed_dash.AddBand("green", 0, 65);
   speed_dash.AddBand("yellow", 65, 100);
   speed_dash.AddBand("red", 100, 135);
 
   // Voltage:
-  dash_guage_t voltage_dash(NULL,Volts);
+  dash_gauge_t voltage_dash(NULL,Volts);
   if(!trio->cfg_newcell)
   {
     // Voltage:
@@ -156,21 +156,21 @@ void OvmsVehicleMitsubishi::GetDashboardConfig(DashboardConfig& cfg)
   }
 
   // SOC:
-  dash_guage_t soc_dash("SOC ",Percentage);
+  dash_gauge_t soc_dash("SOC ",Percentage);
   soc_dash.SetMinMax(10, 100);
   soc_dash.AddBand("red", 10, 15.5);
   soc_dash.AddBand("yellow", 15.5, 25);
   soc_dash.AddBand("green", 25, 100);
 
   // Efficiency:
-  dash_guage_t eff_dash(NULL,WattHoursPK);
+  dash_gauge_t eff_dash(NULL,WattHoursPK);
   eff_dash.SetMinMax(0, 300);
   eff_dash.AddBand("green", 0, 120);
   eff_dash.AddBand("yellow", 120, 250);
   eff_dash.AddBand("red", 250, 300);
 
   // Power:
-  dash_guage_t power_dash(NULL,kW);
+  dash_gauge_t power_dash(NULL,kW);
   power_dash.SetMinMax(-30, 65);
   power_dash.AddBand("violet", -30, 0);
   power_dash.AddBand("green", 0, 16);
@@ -178,14 +178,14 @@ void OvmsVehicleMitsubishi::GetDashboardConfig(DashboardConfig& cfg)
   power_dash.AddBand("red", 40, 65);
 
   // Charger temperature:
-  dash_guage_t charget_dash("CHG ",Celcius);
+  dash_gauge_t charget_dash("CHG ",Celcius);
   charget_dash.SetMinMax(-10, 55);
   charget_dash.SetTick(20);
   charget_dash.AddBand("normal", -10, 40);
   charget_dash.AddBand("red", 40, 55);
 
   // Battery temperature:
-  dash_guage_t batteryt_dash("BAT ",Celcius);
+  dash_gauge_t batteryt_dash("BAT ",Celcius);
   batteryt_dash.SetMinMax(-15, 65);
   batteryt_dash.SetTick(25);
   batteryt_dash.AddBand("red", -15, 0);
@@ -193,14 +193,14 @@ void OvmsVehicleMitsubishi::GetDashboardConfig(DashboardConfig& cfg)
   batteryt_dash.AddBand("red", 40, 65);
 
   // Inverter temperature:
-  dash_guage_t invertert_dash("PEM ",Celcius);
+  dash_gauge_t invertert_dash("PEM ",Celcius);
   invertert_dash.SetMinMax(-10, 55);
   invertert_dash.SetTick(20);
   invertert_dash.AddBand("normal", -10, 40);
   invertert_dash.AddBand("red", 40, 55);
 
   // Motor temperature:
-  dash_guage_t motort_dash("MOT ",Celcius);
+  dash_gauge_t motort_dash("MOT ",Celcius);
   motort_dash.SetMinMax(20, 100);
   motort_dash.SetTick(25);
   motort_dash.AddBand("normal", 20, 75);

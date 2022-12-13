@@ -479,35 +479,35 @@ OvmsVehicleToyotaRav4EvInit::OvmsVehicleToyotaRav4EvInit()
 void OvmsVehicleToyotaRav4Ev::GetDashboardConfig(DashboardConfig& cfg)
 {
   // Speed:
-  dash_guage_t speed_dash(NULL,Kph);
+  dash_gauge_t speed_dash(NULL,Kph);
   speed_dash.SetMinMax(0, 120, 5);
   speed_dash.AddBand("green", 0, 70);
   speed_dash.AddBand("yellow", 70, 100);
   speed_dash.AddBand("red", 100, 120);
 
   // Voltage:
-  dash_guage_t voltage_dash(NULL,Volts);
+  dash_gauge_t voltage_dash(NULL,Volts);
   voltage_dash.SetMinMax(45, 60);
   voltage_dash.AddBand("red", 45, 47.5);
   voltage_dash.AddBand("yellow", 47.5, 50);
   voltage_dash.AddBand("green", 50, 60);
 
   // SOC:
-  dash_guage_t soc_dash("SOC ",Percentage);
+  dash_gauge_t soc_dash("SOC ",Percentage);
   soc_dash.SetMinMax(0, 100);
   soc_dash.AddBand("red", 0, 12.5);
   soc_dash.AddBand("yellow", 12.5, 25);
   soc_dash.AddBand("green", 25, 100);
 
   // Efficiency:
-  dash_guage_t eff_dash(NULL,WattHoursPK);
+  dash_gauge_t eff_dash(NULL,WattHoursPK);
   eff_dash.SetMinMax(0, 300);
   eff_dash.AddBand("green", 0, 150);
   eff_dash.AddBand("yellow", 150, 250);
   eff_dash.AddBand("red", 250, 300);
 
   // Power:
-  dash_guage_t power_dash(NULL,kW);
+  dash_gauge_t power_dash(NULL,kW);
   power_dash.SetMinMax(-10, 30);
   power_dash.AddBand("violet", -10, 0);
   power_dash.AddBand("green", 0, 15);
@@ -515,14 +515,14 @@ void OvmsVehicleToyotaRav4Ev::GetDashboardConfig(DashboardConfig& cfg)
   power_dash.AddBand("red", 25, 30);
 
   // Charger temperature:
-  dash_guage_t charget_dash("CHG ",Celcius);
+  dash_gauge_t charget_dash("CHG ",Celcius);
   charget_dash.SetMinMax(20, 80);
   charget_dash.SetTick(20);
   charget_dash.AddBand("normal", 20, 65);
   charget_dash.AddBand("red", 65, 80);
 
   // Battery temperature:
-  dash_guage_t batteryt_dash("BAT ",Celcius);
+  dash_gauge_t batteryt_dash("BAT ",Celcius);
   batteryt_dash.SetMinMax(-15, 65);
   batteryt_dash.SetTick(25);
   batteryt_dash.AddBand("red", -15, 0);
@@ -530,14 +530,14 @@ void OvmsVehicleToyotaRav4Ev::GetDashboardConfig(DashboardConfig& cfg)
   batteryt_dash.AddBand("red", 50, 65);
 
   // Inverter temperature:
-  dash_guage_t invertert_dash("PEM ",Celcius);
+  dash_gauge_t invertert_dash("PEM ",Celcius);
   invertert_dash.SetMinMax(20, 80);
   invertert_dash.SetTick(20);
   invertert_dash.AddBand("normal", 20, 70);
   invertert_dash.AddBand("red", 70, 80);
 
   // Motor temperature:
-  dash_guage_t motort_dash("MOT ",Celcius);
+  dash_gauge_t motort_dash("MOT ",Celcius);
   motort_dash.SetMinMax(50, 125);
   motort_dash.SetTick(25);
   motort_dash.AddBand("normal", 50, 110);
