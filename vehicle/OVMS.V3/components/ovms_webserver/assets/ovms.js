@@ -603,9 +603,9 @@ function initSocketConnection(){
       else if (msgtype == "units") {
         $.extend(units, msg.units);
         $(".receiver").trigger("msg:units", msg.units);
-        var msgmetrics = {}
+        var msgmetrics = {};
         for (metricname in msg.units)
-          msgmetrics[metricname] = metrics[metricname]
+          msgmetrics[metricname] = metrics[metricname];
         $(".receiver").trigger("msg:metrics", msgmetrics);
       }
       else if (msgtype == "notify") {
@@ -1899,9 +1899,9 @@ $(function(){
       if (!metric) return;
       // filter:
       var keys = metric.split(","), val;
-      var metricName = ""
+      var metricName = "";
       for (var i=0; i<keys.length; i++) {
-        metricName = keys[i]
+        metricName = keys[i];
         if ((val = update[metricName]) != null) {
           break;
         }
@@ -1915,7 +1915,7 @@ $(function(){
         if (scale != null)
           vf = Number(vf) * scale;
         else {
-          var mun = $.fn.userUnitLabelFromMetric(metricName)
+          var mun = $.fn.userUnitLabelFromMetric(metricName);
           if (mun != "") {
             // If there's a .unit.. then convert it.
             item = $el.children(".unit");
