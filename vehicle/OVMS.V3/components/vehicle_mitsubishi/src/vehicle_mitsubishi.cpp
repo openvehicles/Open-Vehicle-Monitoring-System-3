@@ -187,7 +187,7 @@ OvmsVehicleMitsubishi::OvmsVehicleMitsubishi()
   #ifdef CONFIG_OVMS_COMP_WEBSERVER
     MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
     MyWebServer.RegisterPage("/cfg/brakelight", "Brake Light control", OvmsWebServer::HandleCfgBrakelight, PageMenu_Vehicle, PageAuth_Cookie);
-    WebInit();
+    MyWebServer.RegisterPage("/xmi/features", "Settings", WebCfgFeatures, PageMenu_Vehicle, PageAuth_Cookie);
   #endif
 
   // init commands:
@@ -201,8 +201,6 @@ OvmsVehicleMitsubishi::OvmsVehicleMitsubishi()
   // init configs:
   MyConfig.RegisterParam( "xmi", "Trio", true, true);
   ConfigChanged(NULL);
-
-
 }
 
 OvmsVehicleMitsubishi::~OvmsVehicleMitsubishi()
@@ -212,6 +210,7 @@ OvmsVehicleMitsubishi::~OvmsVehicleMitsubishi()
   #ifdef CONFIG_OVMS_COMP_WEBSERVER
     MyWebServer.DeregisterPage("/bms/cellmon");
     MyWebServer.DeregisterPage("/cfg/brakelight");
+    MyWebServer.DeregisterPage("/xmi/features");
   #endif
   MyCommandApp.UnregisterCommand("xmi");
 }
