@@ -117,9 +117,9 @@ void WebSocketHandler::ProcessTxJob()
     case WSTX_MetricsAll:
     case WSTX_MetricsUpdate:
     {
-      // Note: this loops over the metrics by index, keeping the checked count
-      //  in m_sent. It will not detect new metrics added between polls if they are
-      //  inserted before m_sent, so new metrics may not be sent until first changed.
+      // Note: this loops over the metrics by index, keeping the last checked position
+      //  in m_last. It will not detect new metrics added between polls if they are
+      //  inserted before m_last, so new metrics may not be sent until first changed.
       //  The Metrics set normally is static, so this should be no problem.
       
       // find start:
@@ -165,9 +165,9 @@ void WebSocketHandler::ProcessTxJob()
 
     case WSTX_MetricsUnitUpdate:
     {
-      // Note: this loops over the metrics by index, keeping the checked count
-      //  in m_sent. It will not detect new metrics added between polls if they are
-      //  inserted before m_sent, so new metrics may not be sent until first changed.
+      // Note: this loops over the metrics by index, keeping the last checked position
+      //  in m_last. It will not detect new metrics added between polls if they are
+      //  inserted before m_last, so new metrics may not be sent until first changed.
       //  The Metrics set normally is static, so this should be no problem.
 
       ESP_EARLY_LOGD(TAG, "WebSocketHandler[%p/%d]: ProcessTxJob MetricsUnitUpdate, last=%d sent=%d ack=%d", m_nc, m_modifier, m_last, m_sent, m_ack);
