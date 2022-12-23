@@ -1101,6 +1101,7 @@ void OvmsConfigParam::DeleteParam()
   path.append("/");
   path.append(m_name);
   unlink(path.c_str());
+  m_map.clear();
   MyEvents.SignalEvent("config.changed", this);
   }
 

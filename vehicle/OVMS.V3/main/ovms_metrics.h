@@ -1000,16 +1000,29 @@ class MetricCallbackEntry
     MetricCallback m_callback;
   };
 
-class UserMetricSnapshot
+class UserMetricMap
   {
   protected:
-    std::vector<metric_unit_t> m_map;
+    std::array<metric_unit_t, static_cast<uint8_t>(MetricGroupLast)+1> m_map;
+    std::array<std::atomic_ulong, static_cast<uint8_t>(MetricGroupLast)+1> m_modified;
+    OvmsMutex m_store_lock;
   public:
-    UserMetricSnapshot();
+    UserMetricMap();
     void Load();
 
-    metric_unit_t GetUserUnit( metric_group_t group);
+    void ConfigEventListener(std::string event, void* data);
+
+    metric_unit_t GetUserUnit( metric_group_t group, metric_unit_t defaultUnit = UnitNotFound );
     metric_unit_t GetUserUnit( metric_unit_t unit);
+
+    bool IsModified( metric_group_t group, size_t modifier);
+    bool IsModifiedAndClear(metric_group_t group, size_t modifier);
+    bool HasModified(size_t modifier);
+    void ConfigList(metric_group_list_t& groups);
+
+    metric_group_list_t config_groups;
+
+    void InitialiseSlot(size_t modifier);
   };
 
 typedef std::list<MetricCallbackEntry*> MetricCallbackList;
@@ -1078,12 +1091,12 @@ class OvmsMetrics
     void RegisterListener(std::string caller, std::string name, MetricCallback callback);
     void DeregisterListener(std::string caller);
     void NotifyModified(OvmsMetric* metric);
-
   protected:
     MetricCallbackMap m_listeners;
 
   public:
     size_t RegisterModifier();
+    void InitialiseSlot(size_t modifier);
 
   public:
     void EventSystemShutDown(std::string event, void* data);
@@ -1096,10 +1109,8 @@ class OvmsMetrics
     bool m_trace;
   };
 
-extern const char* OvmsMetricUnitLabel(metric_unit_t units);
-extern const char* OvmsMetricUnitName(metric_unit_t units);
-
 extern OvmsMetrics MyMetrics;
+extern UserMetricMap MyUserMetrics;
 
 #undef TAG
 

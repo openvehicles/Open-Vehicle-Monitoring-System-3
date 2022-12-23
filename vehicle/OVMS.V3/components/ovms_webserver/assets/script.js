@@ -829,7 +829,7 @@ $.fn.loadcmd = function(command, filter, timeout) {
 var monitorTimer, last_monotonic = 0;
 var ws, ws_inhibit = 0;
 var metrics = {};
-var units = {};
+var units = { metrics: {}, vehicle: {} };
 
 mi_to_km = function(mi) { return mi * 1.609347; }
 km_to_mi = function(km) { return km * 0.6213700; }
@@ -910,35 +910,45 @@ var unit_conversions = {
       "percent>permille":   function (value) { return value*10.0; },
       "permille>percent":   function (value) { return value*0.10; }
 }
-$.fn.convertUnitFunction = function (from, to) {
+convertUnitFunction = function (from, to) {
   return unit_conversions[from + ">" + to] || no_conversion;
 }
 convertUnits = function (from, to, value) {
-  return $.fn.convertUnitFunction(from, to)(value);
+  return convertUnitFunction(from, to)(value);
 }
 
-$.fn.convertMetricToUserUnits = function (value, name) {
+units.convertMetricToUserUnits = function (value, name) {
   if (value == undefined)
     return value
-  var unit_entry = units[name];
+  var unit_entry = this.metrics[name];
   if (unit_entry == undefined)
     return value
   var cnvfn = unit_entry.user_fn;
   if (cnvfn == undefined) {
-    cnvfn = $.fn.convertUnitFunction(unit_entry.native, unit_entry.code);
-    units[name].user_fn = cnvfn;
+    cnvfn = convertUnitFunction(unit_entry.native, unit_entry.code);
+    this.metrics[name].user_fn = cnvfn;
   }
   return cnvfn(value);
 }
-$.fn.userUnitLabelFromMetric = function (name) {
-    var unit_entry = units[name];
+units.userUnitLabelFromMetric = function (name) {
+    var unit_entry = this.metrics[name];
     if (unit_entry == undefined)
       return "";
     return unit_entry.label;
 }
+units.unitLabelToUser = function (unitType, defaultLabel) {
+  var res = this.vehicle[unitType];
+  return (res && res.label) ?  res.label : defaultLabel
+}
+units.unitValueToUser = function (unitType, value) {
+  var entry = this.vehicle[unitType];
+  if (!entry)
+    return value;
+  return convertUnits(value, unitType, entry.unit);
+}
 
 // Works for units and metrics collection.
-$.fn.metricsAllHas = function(target, name) {
+metricsProxyHas = function(target, name) {
   return target[name] != undefined
 }
 
@@ -952,13 +962,13 @@ var metrics_all = new Proxy(metrics, {
       var name = names[0];
       var value_type = names[1]
       if (value_type === "unit")
-        return $.fn.userUnitLabelFromMetric(name);
+        return units.userUnitLabelFromMetric(name);
       var value = target[name];
       if (value_type === "label")
-        value = $.fn.convertMetricToUserUnits(value, name)
+        value = units.convertMetricToUserUnits(value, name)
       return value;
     },
-  has: $.fn.metricsAllHas
+  has: metricsProxyHas
   });
 
 var metrics_user = new Proxy(metrics, {
@@ -966,12 +976,12 @@ var metrics_user = new Proxy(metrics, {
     function(target, name) {
       if (name == Symbol.toStringTag)
        return 'metrics_user[]';
-      return $.fn.convertMetricToUserUnits(target[name], name)
+      return units.convertMetricToUserUnits(target[name], name)
     },
-  has: $.fn.metricsAllHas
+  has: metricsProxyHas
   });
 
-var metrics_label = new Proxy(units, {
+var metrics_label = new Proxy(units.metrics, {
   get:
     function(target, name) {
       if (name == Symbol.toStringTag)
@@ -982,7 +992,7 @@ var metrics_label = new Proxy(units, {
       }
       return unit_entry.label;
     },
-  has: $.fn.metricsAllHas
+  has: metricsProxyHas
   });
 
 var shellhist = [""], shellhpos = 0;
@@ -998,7 +1008,7 @@ function initSocketConnection(){
   ws.onopen = function(ev) {
     console.log("WebSocket OPENED", ev);
     $(".receiver").subscribe();
-    $(".receiver").sendUnits(true);
+    subscribeToTopic("units/#");
   };
   ws.onerror = function(ev) { console.log("WebSocket ERROR", ev); };
   ws.onclose = function(ev) { console.log("WebSocket CLOSED", ev); };
@@ -1028,12 +1038,19 @@ function initSocketConnection(){
         $(".receiver").trigger("msg:metrics", msg.metrics);
       }
       else if (msgtype == "units") {
-        $.extend(units, msg.units);
-        $(".receiver").trigger("msg:units", msg.units);
-        var msgmetrics = {}
-        for (metricname in msg.units)
-          msgmetrics[metricname] = metrics[metricname]
-        $(".receiver").trigger("msg:metrics", msgmetrics);
+        for (var subtype in msg.units) {
+          if (subtype == "metrics") {
+            $.extend(units.metrics, msg.units.metrics);
+            $(".receiver").trigger("msg:units", msg.units.metrics);
+            var msgmetrics = {};
+            for (metricname in msg.units.metrics)
+              msgmetrics[metricname] = metrics[metricname];
+            $(".receiver").trigger("msg:metrics", msgmetrics);
+          } else if (subtype == "vehicle") {
+            $.extend(units.vehicle, msg.units.vehicle);
+            $(".receiver").trigger("msg:vehicle_units", msg.units.vehicle);
+          }
+        }
       }
       else if (msgtype == "notify") {
         processNotification(msg.notify);
@@ -1105,16 +1122,14 @@ function processNotification(msg) {
   confirmdialog(opts.title, opts.body, ["OK"], opts.timeout);
 }
 
-$.fn.sendUnits = function (mode) {
+subscribeToTopic = function (topic) {
   try {
-    var msg = mode?"on":"off";
-    console.debug("metric units " + msg);
-    if (ws) ws.send("metric units " + msg);
+    console.debug("subscribe " + topic);
+    if (ws) ws.send("subscribe " + topic);
   } catch (e) {
     console.log(e);
   }
 }
-
 $.fn.subscribe = function(topics) {
   return this.each(function() {
     var subscriptions = $(this).data("subscriptions");
@@ -1127,13 +1142,7 @@ $.fn.subscribe = function(topics) {
     var tops = topics ? topics.split(' ') : [];
     for (var i = 0; i < tops.length; i++) {
       if (tops[i] && !subs.includes(tops[i])) {
-        try {
-          console.log("subscribe " + tops[i]);
-          if (ws) ws.send("subscribe " + tops[i]);
-          subs.push(tops[i]);
-        } catch (e) {
-          console.log(e);
-        }
+        subscribeToTopic(tops[i]);
       }
     }
     $(this).data("subscriptions", subs.join(' '));
@@ -2080,7 +2089,7 @@ $.fn.table = function(options) {
       $this.each(function() {
         $(this).one("init.dt", function(ev, settings) {
           if (settings && settings.oInstance && settings.oInit && settings.oInit.onUpdate)
-            settings.oInit.onUpdate.call(settings.oInstance.api(), metrics_all);
+            settings.oInit.onUpdate.call(settings.oInstance.api(), metrics);
         });
         var table = $(this).DataTable(options);
         $(this).data("dataTable", table).addClass("has-dataTable");
@@ -2322,35 +2331,42 @@ $(function(){
   // Metrics displays:
   $("body").on('msg:metrics', '.receiver', function(e, update) {
     $(this).find(".metric").each(function() {
-      var $el = $(this), metric = $el.data("metric"), prec = $el.data("prec"), scale = $el.data("scale");
+      var $el = $(this), metric = $el.data("metric"), prec = $el.data("prec"), scale = $el.data("scale"), useUser = $el.data("user");
       if (!metric) return;
       // filter:
       var keys = metric.split(","), val;
-      var metricName = ""
+      var metricName = "";
       for (var i=0; i<keys.length; i++) {
-        metricName = keys[i]
+        metricName = keys[i];
         if ((val = update[metricName]) != null) {
           break;
         }
       }
       if (val == null) return;
+
       // process:
       if ($el.hasClass("text")) {
-        $el.children(".value").text(val);
+        var elt = $el.children(".value");
+        if (elt) elt.text(val);
+        elt = $el.children(".unit");
+        if (elt) elt.text(val);
+
       } else if ($el.hasClass("number")) {
         var vf = val;
         if (scale != null)
           vf = Number(vf) * scale;
         else {
-          var mun = $.fn.userUnitLabelFromMetric(metricName)
+          var mun = units.userUnitLabelFromMetric(metricName);
           if (mun != "") {
             // If there's a .unit.. then convert it.
             item = $el.children(".unit");
             if (item) {
               item.text(mun);
-              vf = $.fn.convertMetricToUserUnits(vf, metricName);
+              useUser = true;
             }
           }
+          if (useUser)
+            vf = units.convertMetricToUserUnits(vf, metricName);
         }
         if (prec != null) vf = Number(vf).toFixed(prec);
         $el.children(".value").text(vf);

@@ -59,6 +59,9 @@ std::map<std::size_t, const char*>      pmetrics_keymap       // hash key → me
 OvmsMetrics                             MyMetrics
                                         __attribute__ ((init_priority (1800)));
 
+UserMetricMap                           MyUserMetrics
+                                        __attribute__ ((init_priority (1800)));
+
 struct OvmsUnitInfo {
   const char *UnitCode; //< The UnitCode identifying the unit
   const char *Label;    //< The suffix to print against the value
@@ -366,15 +369,7 @@ void OvmsMetricSetUserConfig(metric_group_t group, std::string value)
       value = "K";
     }
   if (MyConfig.GetParamValue("vehicle", cfg) != value)
-    {
     MyConfig.SetParamValue("vehicle", cfg, value);
-    switch (group)
-      {
-      case GrpNone:
-      case GrpOther: break;
-      default: MyMetrics.SetAllGroupUnitSend(group);
-      }
-    }
   }
 void OvmsMetricSetUserConfig(metric_group_t group, metric_unit_t unit)
   {
@@ -449,7 +444,7 @@ static bool CheckTargetUnit(metric_unit_t from, metric_unit_t &to, bool full_che
     case ToUser:
       {
       metric_group_t from_grp = GetMetricGroup(from);
-      to = OvmsMetricGetUserUnit(from_grp);
+      to = MyUserMetrics.GetUserUnit(from_grp);
       return true;
       }
     default:
@@ -1048,11 +1043,14 @@ OvmsMetrics::OvmsMetrics()
       ++pmetrics.serial, sizeof(pmetrics), pmetrics.used, NUM_PERSISTENT_VALUES);
 
   // Register our event
+#ifdef bind
   #undef bind  // Kludgy, but works
+#endif
   using std::placeholders::_1;
   using std::placeholders::_2;
   MyEvents.RegisterEvent(TAG, "system.shutdown",
       std::bind(&OvmsMetrics::EventSystemShutDown, this, _1, _2));
+
   }
 
 OvmsMetrics::~OvmsMetrics()
@@ -1370,6 +1368,18 @@ void OvmsMetrics::NotifyModified(OvmsMetric* metric)
 size_t OvmsMetrics::RegisterModifier()
   {
   return m_nextmodifier++;
+  }
+
+void OvmsMetrics::InitialiseSlot(size_t modifier)
+  {
+  // Set for send.
+  SetAllUnitSend(modifier);
+  unsigned long bit = 1ul << modifier;
+  for (OvmsMetric* m = m_first; m != NULL; m = m->m_next)
+    {
+     if (m->IsDefined())
+       m->m_modified |= bit;
+    }
   }
 
 void OvmsMetrics::SetAllUnitSend(size_t modifier)
@@ -2661,38 +2671,113 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
   return value;
   }
 
-UserMetricSnapshot::UserMetricSnapshot()
+UserMetricMap::UserMetricMap()
   {
+  for (auto it = m_modified.begin(); it != m_modified.end(); ++it)
+    *it = 0;
+  for (auto it = m_map.begin(); it != m_map.end(); ++it)
+    *it = UnitNotFound;
+  OvmsMetricGroupConfigList(config_groups);
+
   Load();
+#ifdef bind
+  #undef bind  // Kludgy, but works
+#endif
+  using std::placeholders::_1;
+  using std::placeholders::_2;
+  MyEvents.RegisterEvent(TAG, "config.changed",
+      std::bind(&UserMetricMap::ConfigEventListener, this, _1, _2));
   }
 
-void UserMetricSnapshot::Load()
+void UserMetricMap::Load()
   {
-  // Fill as 'not found'
-  m_map.resize(static_cast<uint8_t>(MetricGroupLast)+1, UnitNotFound);
-  metric_group_list_t groups;
-  OvmsMetricGroupConfigList(groups);
+
+  OvmsMutexLock store_lock(&m_store_lock);
+
   // Fill the groups with a user configurable list
-  for (auto grpit = groups.begin(); grpit != groups.end(); ++grpit)
+  for (auto grpit = config_groups.begin(); grpit != config_groups.end(); ++grpit)
     {
     uint8_t igrp = static_cast<uint8_t>(*grpit);
     if (igrp < m_map.size())
-      m_map[igrp] = OvmsMetricGetUserUnit(*grpit);
+      {
+      auto newValue = OvmsMetricGetUserUnit(*grpit);
+      if (m_map[igrp] != newValue)
+        {
+        m_map[igrp] = newValue;
+        switch (*grpit)
+          {
+          case GrpNone:
+          case GrpOther: break;
+          default:
+            MyMetrics.SetAllGroupUnitSend(*grpit);
+            m_modified[igrp] = ULONG_MAX;
+          }
+        }
+      }
     }
   }
 
-metric_unit_t UserMetricSnapshot::GetUserUnit( metric_group_t group)
+void UserMetricMap::InitialiseSlot(size_t modifier)
+  {
+  unsigned long bit = 1ul << modifier;
+  for (auto it = m_modified.begin(); it != m_modified.end(); ++it)
+    *it |= bit;
+  }
+
+metric_unit_t UserMetricMap::GetUserUnit( metric_group_t group, metric_unit_t defaultUnit )
   {
   uint8_t groupint = static_cast<uint8_t>(group);
   if (groupint >= m_map.size())
-    return UnitNotFound;
-  return m_map[groupint];
+    return defaultUnit;
+  OvmsMutexLock store_lock(&m_store_lock);
+  auto res = m_map[groupint];
+  return (res== UnitNotFound? defaultUnit: res);
   }
 
-metric_unit_t UserMetricSnapshot::GetUserUnit( metric_unit_t unit)
+metric_unit_t UserMetricMap::GetUserUnit( metric_unit_t unit)
   {
   metric_group_t grp = GetMetricGroup(unit);
   if (grp == GrpNone || grp == GrpOther)
     return UnitNotFound;
   return GetUserUnit(grp);
+  }
+
+void UserMetricMap::ConfigEventListener(std::string event, void* data)
+  {
+  if (data == NULL)
+    return;
+  OvmsConfigParam *config = (OvmsConfigParam *)data;
+  if (config->GetName() == "vehicle")
+    Load();
+  }
+
+void UserMetricMap::ConfigList(metric_group_list_t& groups)
+  {
+  groups.insert(groups.begin(), config_groups.begin(), config_groups.end());
+  }
+
+bool UserMetricMap::HasModified(size_t modifier)
+  {
+  for (auto it = config_groups.begin(); it != config_groups.end(); ++it)
+    if (IsModified(*it, modifier))
+      return true;
+  return false;
+  }
+
+bool UserMetricMap::IsModified( metric_group_t group, size_t modifier)
+  {
+  uint8_t groupint = static_cast<uint8_t>(group);
+  if (groupint >= m_modified.size())
+    return false;
+   return m_modified[groupint] & (1ul << modifier);
+  }
+
+bool UserMetricMap::IsModifiedAndClear(metric_group_t group, size_t modifier)
+  {
+  uint8_t groupint = static_cast<uint8_t>(group);
+  if (groupint >= m_modified.size())
+    return false;
+  unsigned long bit = 1ul << modifier;
+  unsigned long mod = m_modified[groupint].fetch_and(~bit);
+  return mod & bit;
   }
