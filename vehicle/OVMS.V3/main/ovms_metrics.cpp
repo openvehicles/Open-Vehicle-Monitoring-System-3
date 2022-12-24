@@ -211,7 +211,7 @@ static const OvmsUnitGroupInfo group_info[int(MetricGroupLast)+1] =
   { "energy",      "Energy"                  }, // 6
   { "consumption", "Energy Consumption"      }, // 7
   { "temp",        "Temperature"             }, // 8
-  { "preasure",    "Pressure"                }, // 9
+  { "pressure",    "Pressure"                }, // 9
   { "time",        NULL                      }, // 10
   { "signal",      "Signal Strength"         }, // 11
   { "torque",      NULL                      }, // 12
