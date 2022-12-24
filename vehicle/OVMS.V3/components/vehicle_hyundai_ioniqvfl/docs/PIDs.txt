@@ -149,3 +149,202 @@ class IoniqBev(Car):
 
     def get_evn_model(self):
         return 'IONIQ_BEV'
+
+==========================================================================================
+Source/credits:
+  - https://github.com/hokus15/pioniq
+
+
+ext_commands = {
+#                                          name                       description                                            cmd        bytes decoder               ECU         fast
+    'CAN_HEADER_7E4':          OBDCommand("CAN_HEADER_7E4",          "Set CAN module ID to 7E4 - BMS battery information"  , b"ATSH7E4" ,  0, raw_string          , ECU.UNKNOWN, False),
+    'CAN_HEADER_7C6':          OBDCommand("CAN_HEADER_7C6",          "Set CAN module ID to 7C6 - Odometer information"     , b"ATSH7C6" ,  0, raw_string          , ECU.UNKNOWN, False),
+    'CAN_HEADER_7E2':          OBDCommand("CAN_HEADER_7E2",          "Set CAN module ID to 7E2 - VMCU information"         , b"ATSH7E2" ,  0, raw_string          , ECU.UNKNOWN, False),
+    'CAN_HEADER_7A0':          OBDCommand("CAN_HEADER_7A0",          "Set CAN module ID to 7A0 - TPMS information"         , b"ATSH7A0" ,  0, raw_string          , ECU.UNKNOWN, False),
+    'CAN_HEADER_7E6':          OBDCommand("CAN_HEADER_7E6",          "Set CAN module ID to 7E6 - External temp information", b"ATSH7E6" ,  0, raw_string          , ECU.UNKNOWN, False),
+
+    'CAN_RECEIVE_ADDRESS_7EC': OBDCommand("CAN_RECEIVE_ADDRESS_7EC", "Set the CAN receive address to 7EC"                  , b"ATCRA7EC",  0, raw_string          , ECU.UNKNOWN, False),
+    'CAN_RECEIVE_ADDRESS_7EA': OBDCommand("CAN_RECEIVE_ADDRESS_7EA", "Set the CAN receive address to 7EA"                  , b"ATCRA7EA",  0, raw_string          , ECU.UNKNOWN, False),
+    'CAN_RECEIVE_ADDRESS_7A8': OBDCommand("CAN_RECEIVE_ADDRESS_7A8", "Set the CAN receive address to 7A8"                  , b"ATCRA7A8",  0, raw_string          , ECU.UNKNOWN, False),
+    'CAN_RECEIVE_ADDRESS_7EE': OBDCommand("CAN_RECEIVE_ADDRESS_7EE", "Set the CAN receive address to 7EE"                  , b"ATCRA7EE",  0, raw_string          , ECU.UNKNOWN, False),
+
+    'CAN_FILTER_7CE':          OBDCommand("CAN_FILTER_7CE",          "Set the CAN filter to 7CE"                           , b"ATCF7CE" ,  0, raw_string          , ECU.UNKNOWN, False),
+
+    'BMS_2101':                OBDCommand("BMS_2101",                "Extended command - BMS Battery information"          , b"2101"    ,  0, bms_2101            , ECU.ALL    , False),  # length 61
+    'BMS_2102':                OBDCommand("BMS_2102",                "Extended command - BMS Battery information"          , b"2102"    ,  0, cell_voltages       , ECU.ALL    , False),  # length 38
+    'BMS_2103':                OBDCommand("BMS_2103",                "Extended command - BMS Battery information"          , b"2103"    ,  0, cell_voltages       , ECU.ALL    , False),  # length 38
+    'BMS_2104':                OBDCommand("BMS_2104",                "Extended command - BMS Battery information"          , b"2104"    ,  0, cell_voltages       , ECU.ALL    , False),  # length 38
+    'BMS_2105':                OBDCommand("BMS_2105",                "Extended command - BMS Battery information"          , b"2105"    ,  0, bms_2105            , ECU.ALL    , False),  # length 45
+
+    'ODOMETER_22B002':         OBDCommand("ODOMETER_22B002",         "Extended command - Odometer information"             , b"22b002"  ,  0, odometer            , ECU.ALL    , False),  # length 15
+    'VIN_1A80':                OBDCommand("VIN_1A80",                "Extended command - Vehicle Identification Number"    , b"1A80"    ,  0, vin                 , ECU.ALL    , False),  # length 99
+    'VMCU_2101':               OBDCommand("VMCU_2101",               "Extended command - VMCU information"                 , b"2101"    ,  0, vmcu                , ECU.ALL    , False),  # length 22
+    'TPMS_22C00B':             OBDCommand("TPMS_22C00B",             "Extended command - TPMS information"                 , b"22C00B"  ,  0, tpms                , ECU.ALL    , False),  # length 23
+    'EXT_TEMP_2180':           OBDCommand("EXT_TEMP_2180",           "Extended command - External temperature"             , b"2180"    ,  0, external_temperature, ECU.ALL    , False)   # length 25
+}
+
+
+------------------------------------------------------------------------------------------
+
+def query_tpms_info(connection):
+    logger.info("**** Querying for TPMS information ****")
+    tpms_info = {}
+    # Set header to 7A0
+    query_command(connection, ext_commands["CAN_HEADER_7A0"])
+    # Set the CAN receive address to 7A8
+    query_command(connection, ext_commands["CAN_RECEIVE_ADDRESS_7A8"])
+    # Query TPMS
+    tpms_22c00b_resp = query_command(connection, ext_commands["TPMS_22C00B"])
+
+
+def tpms(messages):
+    """TPMS decoder."""
+    d = messages[0].data
+    if len(d) == 0:
+        return None
+    else:
+        return dict(tire_fl_pressure=round((d[7] * 0.2) / 14.504, 1),  # bar - Front Left
+                    tire_fl_temperature=d[8] - 55,  # C   - Front Left
+
+                    tire_fr_pressure=round((d[11] * 0.2) / 14.504, 1),  # bar - Front Right
+                    tire_fr_temperature=d[12] - 55,  # C   - Front Right
+
+                    tire_bl_pressure=round((d[19] * 0.2) / 14.504, 1),  # bar - Back Left
+                    tire_bl_temperature=d[20] - 55,  # C   - Back Left
+
+                    tire_br_pressure=round((d[15] * 0.2) / 14.504, 1),  # bar - Back Right
+                    tire_br_temperature=d[16] - 55  # C   - Back Right
+                    )
+
+------------------------------------------------------------------------------------------
+
+def query_vmcu_info(connection):
+    logger.info("**** Querying VMCU ****")
+    vmcu_info = {}
+    # Set header to 7E2
+    query_command(connection, ext_commands["CAN_HEADER_7E2"])
+    # Set the CAN receive address to 7EA
+    query_command(connection, ext_commands["CAN_RECEIVE_ADDRESS_7EA"])
+
+    # VIN
+    vin_resp = query_command(connection, ext_commands["VIN_1A80"])
+    # Add vin to vmcu info
+    vmcu_info.update(vin_resp.value)
+
+    # VMCU
+    vmcu_2101_resp = query_command(connection, ext_commands["VMCU_2101"])
+    vmcu_info.update({'timestamp': int(round(vmcu_2101_resp.time))})
+ 
+
+def vin(messages):
+    """VIN decoder."""
+    d = messages[0].data
+    if len(d) == 0:
+        return None
+    else:
+        vin_str = ""
+        for v in range(16, 33):
+            vin_str = vin_str + chr(bytes_to_int(d[v:v + 1]))
+        return dict(vin=vin_str)
+
+ 
+def vmcu(messages):
+    """VMCU decoder."""
+    d = messages[0].data
+    if len(d) == 0:
+        return None
+    else:
+        gear_str = ""
+        gear_bits = d[7]
+        if gear_bits & 0x1:  # 1st bit is 1
+            gear_str = gear_str + "P"
+        if gear_bits & 0x2:  # 2nd bit is 1
+            gear_str = gear_str + "R"
+        if gear_bits & 0x4:  # 3rd bit is 1
+            gear_str = gear_str + "N"
+        if gear_bits & 0x8:  # 4th bit is 1
+            gear_str = gear_str + "D"
+
+        brakes_bits = d[8]
+
+        return dict(gear=gear_str,
+                    speed=(((d[16] * 256) + d[15]) / 100.0) * 1.60934,  # kmh. Multiplied by 1.60934 to convert mph to kmh
+                    accel_pedal_depth=d[16] / 2,  # %
+                    brake_lamp=1 if brakes_bits & 0x1 else 0,  # 1st bit is 1
+                    brakes_on=0 if brakes_bits & 0x2 else 1  # 2nd bit is 0
+                    )
+
+------------------------------------------------------------------------------------------
+
+def bms_2101(messages):
+    """BMS 2101 decoder."""
+    d = messages[0].data
+    if len(d) == 0:
+        return None
+    else:
+        charging_bits = d[11]
+        charging = 1 if charging_bits & 0x80 else 0  # 8th bit is 1
+
+        battery_current = bytes_to_int_signed(d[12:14]) / 10.0
+        battery_voltage = bytes_to_int(d[14:16]) / 10.0
+
+        return dict(socBms=d[6] / 2.0,  # %
+                    bmsIgnition=1 if d[52] & 0x4 else 0,  # 3rd bit is 1
+                    bmsMainRelay=1 if charging_bits & 0x1 else 0,  # 1st bit is 1
+                    auxBatteryVoltage=d[31] / 10.0,  # V
+
+                    charging=charging,
+                    normalChargePort=1 if charging_bits & 0x20 else 0,  # 6th bit is 1
+                    rapidChargePort=1 if charging_bits & 0x40 else 0,  # 7th bit is 1
+                    fanStatus=d[29],  # Hz
+                    fanFeedback=d[30],
+                    cumulativeEnergyCharged=bytes_to_int(d[40:44]) / 10.0,  # kWh
+                    cumulativeEnergyDischarged=bytes_to_int(d[44:48]) / 10.0,  # kWh
+
+                    cumulativeChargeCurrent=bytes_to_int(d[32:36]) / 10.0,  # A
+                    cumulativeDischargeCurrent=bytes_to_int(d[36:40]) / 10.0,  # A
+
+                    cumulativeOperatingTime=bytes_to_int(d[48:52]),  # seconds
+
+                    availableChargePower=bytes_to_int(d[7:9]) / 100.0,  # kW
+                    availableDischargePower=bytes_to_int(d[9:11]) / 100.0,  # kW
+
+                    dcBatteryInletTemperature=bytes_to_int_signed(d[22:23]),  # C
+                    dcBatteryMaxTemperature=bytes_to_int_signed(d[16:17]),  # C
+                    dcBatteryMinTemperature=bytes_to_int_signed(d[17:18]),  # C
+                    dcBatteryCellMaxVoltage=d[25] / 50,  # V
+                    dcBatteryCellNoMaxVoltage=d[26],
+                    dcBatteryCellMinVoltage=d[27] / 50,  # V
+                    dcBatteryCellNoMinVoltage=d[28],
+                    dcBatteryCurrent=battery_current,  # A
+                    dcBatteryPower=round(battery_current * battery_voltage / 1000.0, 3),  # kW
+                    dcBatteryVoltage=battery_voltage,  # V
+
+                    driveMotorSpeed=bytes_to_int_signed(d[55:57]),  # RPM
+
+                    dcBatteryModuleTemp01=bytes_to_int_signed(d[18:19]),  # C
+                    dcBatteryModuleTemp02=bytes_to_int_signed(d[19:20]),  # C
+                    dcBatteryModuleTemp03=bytes_to_int_signed(d[20:21]),  # C
+                    dcBatteryModuleTemp04=bytes_to_int_signed(d[21:22]),  # C
+                    dcBatteryModuleTemp05=bytes_to_int_signed(d[22:23]),  # C
+                    )
+
+
+==========================================================================================
+Source/credits:
+  - https://github.com/JejuSoul/OBD-PIDs-for-HKMC-EVs
+
+003_VMCU Accel Pedal Depth,Pedal,2101,m/2,0,100,%,7E2
+003_VMCU Accel Pedal Related,Pedal related,2101,l,0,255,,7E2
+003_VMCU Brake lamp,Brake lamp,2101,{g:0},0,1,,7E2
+003_VMCU Brake related,Brake related,2101,g,0,255,,7E2
+003_VMCU Brakes On,Brakes On,2101,{g:1} -1 * -1},0,1,,7E2
+003_VMCU D,D,2101,{f:3},0,1,,7E2
+003_VMCU N,N,2101,{f:2},0,1,,7E2
+003_VMCU P,P,2101,{f:0},0,1,,7E2
+003_VMCU R,R,2101,{f:1},0,1,,7E2
+003_VMCU Real Vehicle Speed,Real Speed,2101,((Signed(O)*256)+N)/100,0,180,mph,7E2
+003_VMCU Motor Actual Speed RPM,Speed rpm,2102,((Signed(F)*256)+E),-10100,10100,rpm,7E3
+003_VMCU Ambient temp,ambient temp,2180,(signed(m)-80)/2),-40,80,C,7E6
+
+

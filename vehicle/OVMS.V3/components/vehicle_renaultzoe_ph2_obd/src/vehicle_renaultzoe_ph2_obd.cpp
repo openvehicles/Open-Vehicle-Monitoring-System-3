@@ -107,6 +107,10 @@ OvmsVehicleRenaultZoePh2OBD::OvmsVehicleRenaultZoePh2OBD() {
 
 OvmsVehicleRenaultZoePh2OBD::~OvmsVehicleRenaultZoePh2OBD() {
   ESP_LOGI(TAG, "Stop Renault Zoe Ph2 (OBD) vehicle module");
+
+  #ifdef CONFIG_OVMS_COMP_WEBSERVER
+  WebDeInit();
+  #endif
 }
 
 void OvmsVehicleRenaultZoePh2OBD::ConfigChanged(OvmsConfigParam* param) {

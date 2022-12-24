@@ -53,12 +53,12 @@ void OvmsVehicleRenaultZoePh2OBD::WebCfgCommon(PageEntry_t& p, PageContext_t& c)
     battcapacity          = c.getvar("battcapacity");
     UseBMScalculation     = (c.getvar("UseBMScalculation") == "no");
 
-  if (!rangeideal.empty()) {
+    if (!rangeideal.empty()) {
       int v = atoi(rangeideal.c_str());
       if (v < 90 || v > 500)
         error += "<li data-input=\"rangeideal\">Range Ideal must be of 80…500 km</li>";
     }
-  if (error == "") {
+    if (error == "") {
       // store:
       MyConfig.SetParamValue("xrz2o", "rangeideal", rangeideal);
       MyConfig.SetParamValue("xrz2o", "battcapacity", battcapacity);
@@ -71,7 +71,7 @@ void OvmsVehicleRenaultZoePh2OBD::WebCfgCommon(PageEntry_t& p, PageContext_t& c)
       return;
     }
 
-  error = "<p class=\"lead\">Error!</p><ul class=\"errorlist\">" + error + "</ul>";
+    error = "<p class=\"lead\">Error!</p><ul class=\"errorlist\">" + error + "</ul>";
     c.head(400);
     c.alert("danger", error.c_str());
   }
@@ -87,7 +87,7 @@ void OvmsVehicleRenaultZoePh2OBD::WebCfgCommon(PageEntry_t& p, PageContext_t& c)
   c.form_start(p.uri);
 
   c.fieldset_start("Battery size and ideal range");
-  
+
   c.input_radio_start("Battery size", "battcapacity");
   c.input_radio_option("battcapacity", "R240 (22kWh)", "22000", battcapacity == "22000");
   c.input_radio_option("battcapacity", "ZE40 (41kWh)", "41000", battcapacity == "41000");
@@ -96,7 +96,7 @@ void OvmsVehicleRenaultZoePh2OBD::WebCfgCommon(PageEntry_t& p, PageContext_t& c)
 
   c.input_slider("Range Ideal", "rangeideal", 3, "km", -1, atoi(rangeideal.c_str()), 350, 80, 500, 1,
     "<p>Default 350km. Ideal Range...</p>");
-    
+
   c.fieldset_start("Battery energy calculation");
 
   c.input_radio_start("Which energy calculation?", "UseBMScalculation");
@@ -128,7 +128,7 @@ void OvmsVehicleRenaultZoePh2OBD::WebInit()
 void OvmsVehicleRenaultZoePh2OBD::WebDeInit()
 {
   MyWebServer.DeregisterPage("/xrz2o/battmon");
-  MyWebServer.DeregisterPage("/xrz2o/battery");
+  MyWebServer.DeregisterPage("/xrz2o/settings");
 }
 
 
