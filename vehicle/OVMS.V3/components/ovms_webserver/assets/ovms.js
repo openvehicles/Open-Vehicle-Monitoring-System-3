@@ -483,14 +483,14 @@ var unit_conversions = {
       "percent>permille":   function (value) { return value*10.0; },
       "permille>percent":   function (value) { return value*0.10; }
 }
-$.fn.convertUnitFunction = function (from, to) {
+convertUnitFunction = function (from, to) {
   return unit_conversions[from + ">" + to] || no_conversion;
 }
 convertUnits = function (from, to, value) {
-  return $.fn.convertUnitFunction(from, to)(value);
+  return convertUnitFunction(from, to)(value);
 }
 
-$.fn.convertMetricToUserUnits = function (value, name) {
+convertMetricToUserUnits = function (value, name) {
   if (value == undefined)
     return value
   var unit_entry = units[name];
@@ -498,12 +498,12 @@ $.fn.convertMetricToUserUnits = function (value, name) {
     return value
   var cnvfn = unit_entry.user_fn;
   if (cnvfn == undefined) {
-    cnvfn = $.fn.convertUnitFunction(unit_entry.native, unit_entry.code);
+    cnvfn = convertUnitFunction(unit_entry.native, unit_entry.code);
     units[name].user_fn = cnvfn;
   }
   return cnvfn(value);
 }
-$.fn.userUnitLabelFromMetric = function (name) {
+userUnitLabelFromMetric = function (name) {
     var unit_entry = units[name];
     if (unit_entry == undefined)
       return "";
@@ -511,7 +511,7 @@ $.fn.userUnitLabelFromMetric = function (name) {
 }
 
 // Works for units and metrics collection.
-$.fn.metricsAllHas = function(target, name) {
+metricsProxyHas = function(target, name) {
   return target[name] != undefined
 }
 
@@ -525,13 +525,13 @@ var metrics_all = new Proxy(metrics, {
       var name = names[0];
       var value_type = names[1]
       if (value_type === "unit")
-        return $.fn.userUnitLabelFromMetric(name);
+        return userUnitLabelFromMetric(name);
       var value = target[name];
       if (value_type === "label")
-        value = $.fn.convertMetricToUserUnits(value, name)
+        value = convertMetricToUserUnits(value, name)
       return value;
     },
-  has: $.fn.metricsAllHas
+  has: metricsProxyHas
   });
 
 var metrics_user = new Proxy(metrics, {
@@ -539,9 +539,9 @@ var metrics_user = new Proxy(metrics, {
     function(target, name) {
       if (name == Symbol.toStringTag)
        return 'metrics_user[]';
-      return $.fn.convertMetricToUserUnits(target[name], name)
+      return convertMetricToUserUnits(target[name], name)
     },
-  has: $.fn.metricsAllHas
+  has: metricsProxyHas
   });
 
 var metrics_label = new Proxy(units, {
@@ -555,7 +555,7 @@ var metrics_label = new Proxy(units, {
       }
       return unit_entry.label;
     },
-  has: $.fn.metricsAllHas
+  has: metricsProxyHas
   });
 
 var shellhist = [""], shellhpos = 0;
