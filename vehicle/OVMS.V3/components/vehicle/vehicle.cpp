@@ -1128,7 +1128,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStatTrip(int verbosity, OvmsW
   const char* energyUnitLabel = OvmsMetricUnitLabel(energyUnit);
   const char* altitudeUnitLabel = OvmsMetricUnitLabel(altitudeUnit);
 
-  float trip_length = StdMetrics.ms_v_pos_trip->AsFloat(0, rangeUnit);
+  float trip_length = StdMetrics.ms_v_pos_trip->AsFloat(0);
 
   float speed_avg = (m_drive_speedcnt > 0)
     ? UnitConvert(Kph, speedUnit, (float)(m_drive_speedsum / m_drive_speedcnt))
@@ -1144,7 +1144,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStatTrip(int verbosity, OvmsW
   float energy_used = StdMetrics.ms_v_bat_energy_used->AsFloat();
   float energy_recd = StdMetrics.ms_v_bat_energy_recd->AsFloat();
   float energy_recd_perc = (energy_used > 0) ? energy_recd / energy_used * 100 : 0;
-  float wh_per_rangeunit = (trip_length > 0) ? (energy_used - energy_recd) * 1000 / trip_length : 0;
+  float wh_per_km = (trip_length > 0) ? (energy_used - energy_recd) * 1000 / trip_length : 0;
 
   float soc = StdMetrics.ms_v_bat_soc->AsFloat();
   float soc_diff = soc - m_drive_startsoc;
@@ -1158,7 +1158,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStatTrip(int verbosity, OvmsW
     << "Trip "
     << std::fixed
     << std::setprecision(1)
-    << trip_length << rangeUnitLabel
+    << UnitConvert(Kilometers, rangeUnit, trip_length) << rangeUnitLabel
     << " Avg "
     << std::setprecision(0)
     << speed_avg << speedUnitLabel
@@ -1166,11 +1166,11 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStatTrip(int verbosity, OvmsW
     << ((alt_diff >= 0) ? "+" : "")
     << alt_diff << altitudeUnitLabel
     ;
-  if (wh_per_rangeunit != 0)
+  if (wh_per_km != 0)
     {
     buf
       << "\nEnergy "
-      << wh_per_rangeunit << consumUnitLabel
+      << UnitConvert(WattHoursPK, consumUnit, wh_per_km) << consumUnitLabel
       << ", "
       << energy_recd_perc << "% recd"
       ;
