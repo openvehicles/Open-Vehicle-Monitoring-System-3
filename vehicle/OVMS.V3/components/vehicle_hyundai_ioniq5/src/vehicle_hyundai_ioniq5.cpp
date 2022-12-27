@@ -96,19 +96,99 @@ static const OvmsVehicle::poll_pid_t vehicle_ioniq_polls[] = {
 };
 
 // Charging profile
-charging_profile ioniq5_charge_steps[] = {
-  //from%, to%, Chargespeed in Wh
-  {  0, 10, 100000 },
-  { 10, 25, 190000 },
-  { 25, 45, 220000 },
-  { 55, 75, 120000 },
-  { 75, 80, 80000 },
-  { 80, 85, 60000 },
-  { 85, 90, 40000 },
-  { 90, 95, 25000 },
-  { 95, 100, 7200 },
-  { 0, 0, 0 },
+//  - Must be from lowest to highest to%.
+//  - max watts is at optimal temperature.
+//  - MaxWattsUsed = maxChargeWatts * 1-(|battery_temp - tempOptimal| * tempDegrade)
+
+/* 0.0182 means it degrades by 40% of original maxwatts (22deg) by 0 (and 44) degress Celcius
+*  - GUESTIMATE ONLY from a graph that shows that at 0 deg it is taking twice(ish)
+*   as long to charge than at 25deg
+*  Needs data! Might need a +ve and -ve degrade slope.
+*/
+charging_step_t ioniq5_chargesteps[] = {
+  //  to     max  optimal temp degrade
+  //   %   watts  deg C   gradient
+  {   10, 220000,    22,  0.0182 },
+  {   25, 210000,    22,  0.0182 },
+  {   45, 200000,    22,  0.0182 },
+  {   75, 150000,    22,  0.0182 },
+  {   80,  80000,    22,  0.0182 },
+  {   85,  60000,    22,  0.0182 },
+  {   90,  40000,    22,  0.0182 },
+  {   95,  25000,    22,  0.0182 },
+  {  100,   7200,    22,  0.0182 },
+  { 0, 0, 0, 0},
 };
+/** Calculate the remaining minutes to charge.
+  * Works on the premise that the charge curve applies to the MAXIMUM only.
+  * The array is treated as points on a line graph.
+  * At each step, 'maxWatts' is degraded based on the battery temperature - this makes the assumption that the battery
+  * degrades equally either side of 'optimal'. We're really only after 'good enough'.. so this is not too bad.
+  * \param chargewatts the current power being used to charge
+  * \param availwatts Is the reported available amount to use (can leave as 0)
+  * \param adjustTemp  true if 'tempCelcius' is valid
+  * \param tempCelcius The current battery temperature - used to adjust the power based on temperature.
+  * \param fromSoc The current state of charge
+  * \param toSoc  The target  state of charge
+  * \param batterySizeWh The battery size in whatt-hours
+  * \param charge_steps Array of steps.
+  */
+int CalcRemainingChargeMins(float chargewatts, float availwatts, bool adjustTemp, float tempCelcius, int fromSoc, int toSoc, int batterySizeWh, const charging_step_t charge_steps[])
+{
+  if (chargewatts <= 0 || fromSoc >= toSoc)
+    return 0;
+  if (availwatts < chargewatts) // encompasses '0' case.
+    availwatts = chargewatts;
+
+  int last_to_soc = fromSoc;
+  int last_charge_watts = chargewatts;
+
+  // Track the sum of percent/kw.  Reduces floating point operations.
+  // The 'batterySizeWh' * 60 / 100 would be used on every sum.. so factored to the end.
+  float sumval = 0;
+  for (int i = 0; last_to_soc < toSoc; ++i) {
+    const charging_step_t &step = charge_steps[i];
+    if (step.maxChargeWatts <= 0)
+      break;
+
+    if (step.toPercent > last_to_soc) {
+      int next_to_soc = step.toPercent;
+      float stepMaxCharge = step.maxChargeWatts ;
+      if (adjustTemp && step.tempOptimal > 0) {
+        stepMaxCharge *= 1-(std::abs(tempCelcius - step.tempOptimal) * step.tempDegrade);
+        if (stepMaxCharge < 0) {
+          // Shouldn't happen; it means the numbers are wrong.
+          stepMaxCharge = chargewatts;
+        }
+      }
+      int percents_In_Step = next_to_soc - last_to_soc;
+      if (toSoc < next_to_soc) {
+        // This would be the last one. Only really gets used in the odd case where the 'toSoc' isn't one of
+        // the points in the array!
+        int new_percents_in_step = toSoc - last_to_soc;
+        int chargeDiff = stepMaxCharge - last_charge_watts;
+        // Calc either way (+ve or -ve) since the check below will cap it.
+        stepMaxCharge = last_charge_watts + (new_percents_in_step * chargeDiff / percents_In_Step);
+        next_to_soc = toSoc;
+        percents_In_Step = new_percents_in_step;
+      }
+      float end_charge_watts = std::min(availwatts, stepMaxCharge);
+      // Keep it as a doubled value here to avoid a /2 which becomes *2 below.
+      float curSpeedDbl = last_charge_watts + end_charge_watts;
+
+      // our one main division.
+      sumval += ( percents_In_Step * 2) / curSpeedDbl;
+      last_to_soc = next_to_soc;
+      last_charge_watts = end_charge_watts;
+    }
+  }
+  if (last_to_soc < toSoc) {
+    sumval +=  (toSoc - last_to_soc) / last_charge_watts;
+  }
+  // convert to minutes (summary value to minutes)
+  // 60 (hours to mins) / 100 (percent to ratio) -> 0.6
+  return (int)((batterySizeWh * sumval * 0.6) + 0.5);
+}
 
 OvmsBatteryMon::OvmsBatteryMon()
 {
@@ -419,6 +499,7 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
   m_b_bms_relay = MyMetrics.InitBool("xiq.b.bms.relay", 30, false, Other);
   m_b_bms_ignition = MyMetrics.InitBool("xiq.b.bms.ignition", 30, false, Other);
   m_b_bms_availpower = MyMetrics.InitInt("xiq.b.bms.power.avail", 30, 0, Watts);
+  m_v_bat_calc_cap   = MyMetrics.InitFloat("xiq.v.b.ccap", SM_STALE_NONE, CGF_DEFAULT_BATTERY_CAPACITY, WattHours);
 
   m_ldc_out_voltage = MyMetrics.InitFloat("xiq.ldc.out.volt", 10, 12, Volts);
   m_ldc_in_voltage = MyMetrics.InitFloat("xiq.ldc.in.volt", 10, 12, Volts);
@@ -554,19 +635,39 @@ void OvmsHyundaiIoniqEv::ConfigChanged(OvmsConfigParam *param)
   int newcap = MyConfig.GetParamValueInt("xiq", "cap_act_kwh", 0);
 
   hif_override_capacity = newcap > 0;
-  if (hif_override_capacity) {
-    hif_battery_capacity = (float)newcap;
-  } else {
-    hif_battery_capacity = (BmsGetCellArangementVoltage() * HIF_CELL_CAPACITY);
-  }
+  if (hif_override_capacity)
+    hif_battery_capacity = (float)newcap * 1000;
+  else
+    hif_battery_capacity = (BmsGetCellArangementVoltage() * HIF_CELL_PAIR_CAPACITY);
+  m_v_bat_calc_cap->SetValue(hif_battery_capacity, WattHours);
 
   hif_maxrange = MyConfig.GetParamValueInt("xiq", "maxrange", CFG_DEFAULT_MAXRANGE);
   if (hif_maxrange <= 0) {
     hif_maxrange = CFG_DEFAULT_MAXRANGE;
   }
 
-  *StdMetrics.ms_v_charge_limit_soc = (float) MyConfig.GetParamValueInt("xiq", "suffsoc");
-  *StdMetrics.ms_v_charge_limit_range = (float) MyConfig.GetParamValueInt("xiq", "suffrange");
+  std::string suff = MyConfig.GetParamValue("xiq", "suffsoc");
+
+  if (suff.empty())
+    StdMetrics.ms_v_charge_limit_soc->Clear();
+   else {
+    auto range = atoi(suff.c_str());
+    if (range <=0 )
+      StdMetrics.ms_v_charge_limit_soc->Clear();
+    else
+      *StdMetrics.ms_v_charge_limit_soc = (float)range;
+   }
+
+  suff = MyConfig.GetParamValue("xiq", "suffrange");
+  if (suff.empty())
+    StdMetrics.ms_v_charge_limit_range->Clear();
+   else {
+     auto range = atoi(suff.c_str());
+     if (range <= 0)
+       StdMetrics.ms_v_charge_limit_range->Clear();
+     else
+       *StdMetrics.ms_v_charge_limit_range = (float)range;
+   }
 #ifdef XIQ_CAN_WRITE
   kia_enable_write = MyConfig.GetParamValueBool("xiq", "canwrite", false);
 #endif
@@ -973,9 +1074,9 @@ void OvmsHyundaiIoniqEv::HandleCharging()
   else {
     // ******* Charging continues: *******
     float limit_soc = StdMetrics.ms_v_charge_limit_soc->AsFloat(0);
-    float est_range = StdMetrics.ms_v_bat_range_est->AsFloat(100, Kilometers);
+    float est_range = StdMetrics.ms_v_bat_range_est->AsFloat(400, Kilometers);
     float limit_range = StdMetrics.ms_v_charge_limit_range->AsFloat(0, Kilometers);
-    float ideal_range = StdMetrics.ms_v_bat_range_ideal->AsFloat(100, Kilometers);
+    float ideal_range = StdMetrics.ms_v_bat_range_ideal->AsFloat(450, Kilometers);
 
     if (((bat_soc > 0) && (limit_soc > 0) && (bat_soc >= limit_soc) && (kia_last_soc < limit_soc))
       || ((est_range > 0) && (limit_range > 0)
@@ -995,26 +1096,54 @@ void OvmsHyundaiIoniqEv::HandleCharging()
   if (charge_voltage > 0 && charge_current > 0) {
     //Calculate remaining charge time
     float chargeTarget_full   = 100;
-    float chargeTarget_soc    = 100;
-    float chargeTarget_range  = 100;
-
-    if (LIMIT_SOC > 0) { //If SOC limit is set, lets calculate target battery capacity
-      chargeTarget_soc =  LIMIT_SOC * 100;
-    }
-    else if (LIMIT_RANGE > 0) { //If range limit is set, lets calculate target battery capacity
-      chargeTarget_range = LIMIT_RANGE * 100 / FULL_RANGE;
+    if (StdMetrics.ms_v_bat_soh->IsDefined()) {
+      float bat_soh = StdMetrics.ms_v_bat_soh->AsFloat(100);
+      if (bat_soh > 0) {
+        chargeTarget_full = bat_soh;
+      }
     }
 
-    if (kn_charge_bits.ChargingCCS) {
-      //CCS charging means that we will reach maximum 80%.
-      chargeTarget_full = MIN(chargeTarget_full, 80);
-      chargeTarget_soc = MIN(chargeTarget_soc, 80);
-      chargeTarget_range = MIN(chargeTarget_range, 80);
+    auto batTemp = StdMetrics.ms_v_charge_temp->AsFloat(0);
+    bool useTemp = StdMetrics.ms_v_charge_temp->IsDefined();
+    if (!useTemp && StandardMetrics.ms_v_bat_pack_tavg->IsDefined()) {
+      useTemp = true;
+      batTemp = StandardMetrics.ms_v_bat_pack_tavg->AsFloat(0);
     }
 
-    StdMetrics.ms_v_charge_duration_full->SetValue( CalcRemainingChargeMinutes(charge_voltage * charge_current, bat_soc, chargeTarget_full, hif_battery_capacity, ioniq5_charge_steps), Minutes);
-    StdMetrics.ms_v_charge_duration_soc->SetValue( CalcRemainingChargeMinutes(charge_voltage * charge_current, bat_soc, chargeTarget_soc, hif_battery_capacity, ioniq5_charge_steps), Minutes);
-    StdMetrics.ms_v_charge_duration_range->SetValue( CalcRemainingChargeMinutes(charge_voltage * charge_current, bat_soc, chargeTarget_range, hif_battery_capacity, ioniq5_charge_steps), Minutes);
+    float charge_power = charge_voltage * charge_current;
+    auto calc_remain_mins = [&]( int target_soc ) {
+        return CalcRemainingChargeMins(charge_power, 0/*availPower*/,
+          useTemp, batTemp,  bat_soc, target_soc, hif_battery_capacity, ioniq5_chargesteps);
+      };
+
+    if (!StdMetrics.ms_v_charge_limit_soc->IsDefined()) {
+      StdMetrics.ms_v_charge_duration_soc->Clear();
+    } else {
+      float chargeTarget_soc = StdMetrics.ms_v_charge_limit_soc->AsFloat(0);
+      if (chargeTarget_soc <= 0) {
+        StdMetrics.ms_v_charge_duration_soc->Clear();
+      } else {
+        int dur_mins = calc_remain_mins(chargeTarget_soc);
+        StdMetrics.ms_v_charge_duration_soc->SetValue(dur_mins, Minutes);
+      }
+    }
+
+    if (!StdMetrics.ms_v_charge_limit_range->IsDefined() || !StdMetrics.ms_v_bat_range_full->IsDefined()) {
+      StdMetrics.ms_v_charge_duration_range->Clear();
+    } else {
+      float chargeTarget_range = StdMetrics.ms_v_charge_limit_range->AsFloat(0);
+      float bat_range_full = StdMetrics.ms_v_bat_range_full->AsFloat(0);
+
+      if (chargeTarget_range <= 0 || bat_range_full <= 0) {
+        StdMetrics.ms_v_charge_duration_range->Clear();
+      } else {
+        float targetPercent = chargeTarget_range * 100 / bat_range_full;
+        int dur_mins = calc_remain_mins(targetPercent);
+        StdMetrics.ms_v_charge_duration_range->SetValue(dur_mins, Minutes);
+      }
+    }
+    int dur_mins = calc_remain_mins(chargeTarget_full);
+    StdMetrics.ms_v_charge_duration_full->SetValue(dur_mins, Minutes);
   }
   else {
     if ( m_v_preheating->AsBool()) {
@@ -1027,7 +1156,7 @@ void OvmsHyundaiIoniqEv::HandleCharging()
   StdMetrics.ms_v_charge_kwh->SetValue(CUM_CHARGE - kia_cum_charge_start, kWh); // kWh charged
   kia_last_soc = bat_soc;
   kia_last_battery_cum_charge = kia_battery_cum_charge;
-  kia_last_ideal_range = IDEAL_RANGE;
+  kia_last_ideal_range = StdMetrics.ms_v_bat_range_ideal->AsFloat(100, Kilometers);
   StdMetrics.ms_v_charge_pilot->SetValue(true);
   XDISARM;
 }
@@ -1089,25 +1218,11 @@ void OvmsHyundaiIoniqEv::SetChargeMetrics(float voltage, float current, float cl
   //ESP_LOGI(TAG, "SetChargeMetrics: volt=%1f current=%1f chargeLimit=%1f", voltage, current, climit);
 
   //"Typical" consumption based on battery temperature and ambient temperature.
-  float temp = ((StdMetrics.ms_v_bat_temp->AsFloat(Celcius) * 3) + StdMetrics.ms_v_env_temp->AsFloat(Celcius)) / 4;
+  float temperature = StdMetrics.ms_v_bat_temp->AsFloat(20, Celcius);
+  float temp = (( temperature * 3) + StdMetrics.ms_v_env_temp->AsFloat(Celcius)) / 4;
   float consumption = 15 + (20 - temp) * 3.0 / 8.0; //kWh/100km
   m_c_speed->SetValue( (voltage * current) / (consumption * 10), Kph);
   XDISARM;
-}
-
-/**
- * Calculates minutes remaining before target is reached. Based on current charge speed.
- * TODO: Should be calculated based on actual charge curve. Maybe in a later version?
- */
-uint16_t OvmsHyundaiIoniqEv::calcMinutesRemaining(float target)
-{
-  float power = CHARGE_VOLTAGE * CHARGE_CURRENT;
-  if (power == 0) {
-    return 0;
-  }
-  else {
-    return MIN( 1440, (uint16_t) (((target - (hif_battery_capacity * BAT_SOC) / 100.0) * 60.0) / power));
-  }
 }
 
 /**
@@ -1118,7 +1233,9 @@ void OvmsHyundaiIoniqEv::UpdateMaxRangeAndSOH(void)
 {
   XARM("OvmsHyundaiIoniqEv::UpdateMaxRangeAndSOH");
   //Update State of Health using following assumption: 10% buffer
-  StdMetrics.ms_v_bat_cac->SetValue( (hif_battery_capacity * BAT_SOH * BAT_SOC / 10000.0) / 400, AmpHours);
+  float bat_soh = StdMetrics.ms_v_bat_soh->AsFloat(100);
+  float bat_soc = StdMetrics.ms_v_bat_soc->AsFloat(100);
+  StdMetrics.ms_v_bat_cac->SetValue( (hif_battery_capacity * bat_soh * bat_soc / 10000.0) / 400, AmpHours);
 
   iq_range_calc->updateTrip(kia_park_trip_counter.GetDistance(), kia_park_trip_counter.GetEnergyUsed());
 

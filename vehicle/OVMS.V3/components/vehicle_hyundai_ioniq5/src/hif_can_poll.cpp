@@ -631,7 +631,8 @@ void OvmsHyundaiIoniqEv::IncomingBMC_Full(canbus *bus, uint16_t type, uint16_t p
           int cellcount = iq_last_voltage_cell + 1;
           if (BmsCheckChangeCellArrangementVoltage(cellcount) && !hif_override_capacity)
           {
-            hif_battery_capacity = HIF_CELL_CAPACITY * cellcount;
+            hif_battery_capacity = HIF_CELL_PAIR_CAPACITY * cellcount;
+            m_v_bat_calc_cap->SetValue(hif_battery_capacity);
             UpdateMaxRangeAndSOH();
           }
 

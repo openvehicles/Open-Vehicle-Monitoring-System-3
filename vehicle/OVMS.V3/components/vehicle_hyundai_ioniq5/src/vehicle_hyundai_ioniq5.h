@@ -136,6 +136,16 @@ struct OvmsBatteryMon {
   float average_lastf();
 };
 
+typedef struct {
+  int toPercent;
+  float maxChargeWatts;
+  int tempOptimal;   // Optimal temperature
+  float tempDegrade; // Degredation per degree Calc from optimal (ratio)
+} charging_step_t;
+
+// Calculates the remaining charge with allowance for temperature.
+int CalcRemainingChargeMins(float chargewatts, float availwatts, bool adjustTemp, float tempCelcius, int fromSoc, int toSoc, int batterySizeWh, const charging_step_t charge_steps[]);
+
 class OvmsHyundaiIoniqEv : public KiaVehicle
 {
 public:
@@ -206,7 +216,6 @@ protected:
   void DoNotify();
   void vehicle_ioniq5_car_on(bool isOn);
   void UpdateMaxRangeAndSOH(void);
-  uint16_t calcMinutesRemaining(float target);
   bool SetDoorLock(bool open, const char *password);
   bool LeftIndicator(bool);
   bool RightIndicator(bool);
@@ -318,7 +327,7 @@ protected:
   int hif_maxrange = CFG_DEFAULT_MAXRANGE;        // Configured max range at 20 °C
 
 #define CGF_DEFAULT_BATTERY_CAPACITY 72600
-#define HIF_CELL_CAPACITY 2420
+#define HIF_CELL_PAIR_CAPACITY 403
 
   bool hif_override_capacity = false;
   float hif_battery_capacity = CGF_DEFAULT_BATTERY_CAPACITY;
@@ -351,6 +360,7 @@ protected:
   OvmsMetricBool  *m_b_bms_relay;
   OvmsMetricBool  *m_b_bms_ignition;
   OvmsMetricInt   *m_b_bms_availpower;
+  OvmsMetricFloat *m_v_bat_calc_cap;
 
   OvmsMetricBool   *m_v_env_parklights;
 

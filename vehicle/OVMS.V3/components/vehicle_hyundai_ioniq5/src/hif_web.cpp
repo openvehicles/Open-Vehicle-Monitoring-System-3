@@ -217,8 +217,8 @@ void OvmsHyundaiIoniqEv::WebCfgBattery(PageEntry_t &p, PageContext_t &c)
     // read configuration:
     cap_act_kwh = MyConfig.GetParamValue("xiq", "cap_act_kwh", "");
     maxrange = MyConfig.GetParamValue("xiq", "maxrange", STR(CFG_DEFAULT_MAXRANGE));
-    suffrange = MyConfig.GetParamValue("xiq", "suffrange", "0");
-    suffsoc = MyConfig.GetParamValue("xiq", "suffsoc", "0");
+    suffrange = MyConfig.GetParamValue("xiq", "suffrange", "");
+    suffsoc = MyConfig.GetParamValue("xiq", "suffsoc", "");
 
     c.head(200);
   }
@@ -242,11 +242,13 @@ void OvmsHyundaiIoniqEv::WebCfgBattery(PageEntry_t &p, PageContext_t &c)
 
   c.fieldset_start("Charge control");
 
+  bool rangeempty = suffrange.empty();
   c.input_slider("Sufficient range", "suffrange", 3, "km",
-    atof(suffrange.c_str()) > 0, atof(suffrange.c_str()), 0, 0, 300, 1,
+    !rangeempty, rangeempty ? 0 : atof(suffrange.c_str()), 0, 0, 300, 1,
     "<p>Default 0=off. Notify/stop charge when reaching this level.</p>");
+  rangeempty = suffsoc.empty();
   c.input_slider("Sufficient SOC", "suffsoc", 3, "%",
-    atof(suffsoc.c_str()) > 0, atof(suffsoc.c_str()), 0, 0, 100, 1,
+    !rangeempty, rangeempty ? 0 : atof(suffsoc.c_str()), 0, 0, 100, 1,
     "<p>Default 0=off. Notify/stop charge when reaching this level.</p>");
 
   c.fieldset_end();
