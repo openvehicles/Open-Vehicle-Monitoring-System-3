@@ -627,7 +627,7 @@ void OvmsHyundaiIoniqEv::ConfigChanged(OvmsConfigParam *param)
 
   // Instances:
   // xkn
-  //    cap_act_kwh     Battery capacity in wH (Default: 640000)
+  //    cap_act_kwh     Battery capacity in kwH
   //  suffsoc           Sufficient SOC [%] (Default: 0=disabled)
   //  suffrange         Sufficient range [km] (Default: 0=disabled)
   //  maxrange          Maximum ideal range at 20 °C [km] (Default: 160)
@@ -635,8 +635,12 @@ void OvmsHyundaiIoniqEv::ConfigChanged(OvmsConfigParam *param)
   int newcap = MyConfig.GetParamValueInt("xiq", "cap_act_kwh", 0);
 
   hif_override_capacity = newcap > 0;
-  if (hif_override_capacity)
-    hif_battery_capacity = (float)newcap * 1000;
+  if (hif_override_capacity) {
+    if (newcap > 10000)
+      hif_battery_capacity = newcap;
+    else
+      hif_battery_capacity = (float)newcap * 1000;
+  }
   else
     hif_battery_capacity = (BmsGetCellArangementVoltage() * HIF_CELL_PAIR_CAPACITY);
   m_v_bat_calc_cap->SetValue(hif_battery_capacity, WattHours);
