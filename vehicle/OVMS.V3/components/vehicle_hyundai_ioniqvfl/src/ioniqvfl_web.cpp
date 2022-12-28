@@ -58,6 +58,7 @@ void OvmsVehicleHyundaiVFL::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
     // process form submission:
     nmap["range.ideal"] = c.getvar("range_ideal");
     nmap["range.user"] = c.getvar("range_user");
+    nmap["range.smoothing"] = c.getvar("range_smoothing");
     nmap["tpms.pressure.warn"] = c.getvar("tpms_pressure_warn");
     nmap["tpms.pressure.alert"] = c.getvar("tpms_pressure_alert");
     nmap["tpms.temp.warn"] = c.getvar("tpms_temp_warn");
@@ -92,6 +93,10 @@ void OvmsVehicleHyundaiVFL::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
     "<p>Current metric: "
     "<b><span class=\"metric\" data-metric=\"xhi.b.range.user\" data-prec=\"1\">?</span></b>"
     "&nbsp;<span class=\"unit\">km</span></p>");
+  c.input_slider("Smoothing", "range_smoothing", 3, NULL, -1,
+    nmap["range.smoothing"].empty() ? 10 : std::stof(nmap["range.smoothing"]), 10, 0, 200, 1,
+    "<p>The lower you set this, the faster the range estimation will adapt to the current driving conditions.</p>"
+    "<p>0 disables smoothing, 10 is approximately equivalent to smoothing over 5% SOC usage, 200 to 100% SOC usage.</p>");
   c.fieldset_end();
 
   c.fieldset_start("Tyre Monitoring (TPMS)");
