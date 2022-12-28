@@ -356,22 +356,28 @@ void OvmsVehicleHyundaiVFL::PollerStateTicker()
   int charge_state = m_xhi_charge_state->AsInt();
   int env_state = m_xhi_env_state->AsInt();
 
+  //bool flag_mainrelay = (charge_state & 0x01);      // BMS main relay closed
+  //bool flag_pluggedin = (charge_state & 0x20);      // Plugged in / charge port / pilot (?)
+  bool flag_charging  = (charge_state & 0x80);      // Main battery is charging
+  bool flag_ignition  = (env_state & 0x04);         // Ignition switched on
+
   // Determine new polling state:
   int poll_state;
   if (!car_online)
     poll_state = STATE_OFF;
-  else if (charge_state & 0x80)
+  else if (flag_charging)
     poll_state = STATE_CHARGING;
-  else if (env_state & 0x04)
+  else if (flag_ignition)
     poll_state = STATE_DRIVING;
   else
     poll_state = STATE_AWAKE;
 
   // Set base state flags:
-  StdMetrics.ms_v_env_aux12v->SetValue(car_online);
-  StdMetrics.ms_v_env_charging12v->SetValue(car_online);
-  StdMetrics.ms_v_env_awake->SetValue(car_online);
-  StdMetrics.ms_v_env_on->SetValue(poll_state == STATE_DRIVING);
+  // TODO: find real indicators for charging12v & awake/on
+  StdMetrics.ms_v_env_aux12v->SetValue(car_online);                   // base system awake
+  StdMetrics.ms_v_env_charging12v->SetValue(car_online);              // charging the 12V battery
+  StdMetrics.ms_v_env_awake->SetValue(poll_state == STATE_DRIVING);   // fully awake (switched on)
+  StdMetrics.ms_v_env_on->SetValue(poll_state == STATE_DRIVING);      // ignition on
 
   //
   // Handle polling state change
