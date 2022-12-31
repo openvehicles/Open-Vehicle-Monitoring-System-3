@@ -43,6 +43,10 @@ class OvmsVehicleHyundaiVFL : public OvmsVehicle
 
   public:
     void ConfigChanged(OvmsConfigParam *param);
+    void MetricModified(OvmsMetric* metric);
+
+  protected:
+    void Ticker60(uint32_t ticker);
 
   public:
     static void WebCfgFeatures(PageEntry_t &p, PageContext_t &c);
@@ -57,6 +61,11 @@ class OvmsVehicleHyundaiVFL : public OvmsVehicle
 
     // Range estimations:
     void CalculateRangeEstimations(bool init=false);
+
+    // Charge time estimations:
+    int CalcChargeTime(float capacity, float max_pwr, int from_soc, int to_soc);
+    void UpdateChargeTimes();
+    int GetNotifyChargeStateDelay(const char *state);
 
   protected:
     std::string         m_rxbuf;
@@ -80,6 +89,10 @@ class OvmsVehicleHyundaiVFL : public OvmsVehicle
     int                 m_cfg_range_user = 0;
     int                 m_cfg_range_smoothing = 0;
     OvmsMetricFloat     *m_xhi_bat_range_user = NULL;
+
+    // Charge time/speed estimation:
+    float               m_bat_nominal_cap_kwh = 28.0;
+    float               m_bat_nominal_cap_ah = 78.0;
 };
 
 #endif // __VEHICLE_HYUNDAI_IONIQVFL_H__

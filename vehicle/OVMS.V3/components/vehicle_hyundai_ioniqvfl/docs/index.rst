@@ -37,7 +37,7 @@ Charge Control              No
 Cabin Pre-heat/cool Control No
 Lock/Unlock Vehicle         No
 Valet Mode Control          No
-Others
+Others                      Charge time estimation
 =========================== ==============
 
 
@@ -62,6 +62,10 @@ Custom Configs
 ======================================== ============== ========= ============================================
 Config name                              Default value  …unit     Description
 ======================================== ============== ========= ============================================
+xhi ctp.maxpower                         0              kW        Default charge power limit for charge time estimations, 0 = unlimited
+xhi ctp.soclimit [1]_                    80             %         SOC level for secondary charge time estimation
+xhi notify.charge.delay.ccs              15             Seconds   Wait time for DC charge power to ramp up before sending the notification
+xhi notify.charge.delay.type2            3              Seconds   … same for AC charging
 xhi range.ideal                          200            km        Ideal range of new battery
 xhi range.user                           200            km        Typical maximum user range (updated automatically)
 xhi range.smoothing                      10                       Number of SOC samples, 10=~5% SOC, 0=disable
@@ -72,6 +76,8 @@ xhi tpms.temp.alert                      100            °C        Tyre alert at
 ======================================== ============== ========= ============================================
 
 The web UI features a configuration page for this in the vehicle menu.
+
+.. [1] Setting ``ctp.soclimit`` does not imply an automatic charge stop, there is currently no charge control.
 
 
 ----------
