@@ -134,12 +134,63 @@ voltage drops below a healthy level.
 Average Power Usage
 -------------------
 
-The power used by the module depends on the component activation. You can save power by
-disabling unused components. This can be done automatically by the Power Management module
-to avoid deep discharging the 12V battery, or you can use scripts to automate switching
-components off and on.
+The power used by the module depends on the component activation and hardware configuration.
+You can save power by disabling unused components. This can be done automatically by the
+Power Management module to avoid deep discharging the 12V battery, or you can use scripts 
+to automate switching components off and on.
 
-The base components need approximately these power levels continuously while powered on:
+The power manager can trigger deep sleep mode to save the 12V battery from deep discharging.
+
+Most vehicles keep the 12V battery charged automatically using the main battery, so the
+power usage isn't a real issue unless parking the vehicle for a long period.
+
+If you want or need to have minimum power consumption, configure the module for minimum
+power usage (see below) and consider using an OBD cable with an integrated power switch,
+so you can easily turn off the module when not needed.
+
+If you have fixed vehicle usage/parking times, you can use the scripting system to schedule
+regular sleep periods (see command ``module sleep``).
+
+
+~~~~~~~~~~~~~~~~~~
+Module Version 3.3
+~~~~~~~~~~~~~~~~~~
+
+For module hardware version 3.3, the base components need approximately these power
+levels continuously while powered on:
+
+================ =========== ============
+Component          Avg Power  12V Current
+================ =========== ============
+Base System           340 mW        28 mA
+Wifi Client            20 mW         2 mA
+Wifi AP Mode          300 mW        25 mA
+Modem                 100 mW         8 mA
+GPS                   270 mW        23 mA
+**Total**        **1030 mW**    **86 mA**
+================ =========== ============
+
+With all features enabled, this adds up to:
+
+  - ~  25 Wh  or   2 Ah  / day
+  - ~ 173 Wh  or  14 Ah  / week
+  - ~ 754 Wh  or  63 Ah  / month
+
+Note that depending on the vehicle type, the module may also need to wake up the ECU
+periodically to retrieve the vehicle status. Check the vehicle specific documentation
+sections for hints on the power usage for this and options to avoid or reduce this.
+
+**GPS** consumption includes the active GPS antenna, which accounts for ~ 5 mA / 55 mW.
+Antenna power cannot be switched by the module.
+
+ESP32 **deep sleep mode** (e.g. triggered by the power management module) reduces the
+consumption to ~ 15 mA / 165 mW with the active GPS antenna attached, or ~ 10 mA / 110 mW
+with the GPS antenna detached. The hardware isn't capable to go any lower than this.
+
+
+~~~~~~~~~~~~~~~~~~
+Module Version 3.2
+~~~~~~~~~~~~~~~~~~
 
 ================ ========== ============
 Component         Avg Power  12V Current
@@ -157,6 +208,3 @@ This adds up to:
   - ~ 156 Wh  or  13 Ah  / week
   - ~ 680 Wh  or  57 Ah  / month
 
-Note that depending on the vehicle type, the module may also need to wake up the ECU
-periodically to retrieve the vehicle status. Check the vehicle specific documentation
-sections for hints on the power usage for this and options to avoid or reduce this.
