@@ -838,6 +838,7 @@ void WebSocketHandler::UnitsCheckVehicleSubscribe()
     m_units_vehicle_subscribed = newSubscribe;
     if (newSubscribe) {
       ESP_LOGD(TAG, "WebSocketHandler[%p/%d]: Subscribed to units/prefs", m_nc, m_modifier);
+      MyUserMetrics. InitialiseSlot(m_modifier);
     } else {
       ESP_LOGD(TAG, "WebSocketHandler[%p/%d]: Unsubscribed from units/prefs", m_nc, m_modifier);
     }
