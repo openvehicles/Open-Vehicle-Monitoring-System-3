@@ -244,7 +244,7 @@ void WebSocketHandler::ProcessTxJob()
         // build msg:
         std::string msg;
         msg.reserve(2*XFER_CHUNK_SIZE+128);
-        msg = "{\"units\":{\"vehicle\":{";
+        msg = "{\"units\":{\"prefs\":{";
 
         // Cache the user mappings for each group.
         int i = 0;
@@ -833,13 +833,13 @@ void WebSocketHandler::UnitsCheckSubscribe()
 
 void WebSocketHandler::UnitsCheckVehicleSubscribe()
 {
-  bool newSubscribe = IsSubscribedTo("units/vehicle");
+  bool newSubscribe = IsSubscribedTo("units/prefs");
   if (newSubscribe != m_units_vehicle_subscribed) {
     m_units_vehicle_subscribed = newSubscribe;
     if (newSubscribe) {
-      ESP_LOGD(TAG, "WebSocketHandler[%p/%d]: Subscribed to units/vehicle", m_nc, m_modifier);
+      ESP_LOGD(TAG, "WebSocketHandler[%p/%d]: Subscribed to units/prefs", m_nc, m_modifier);
     } else {
-      ESP_LOGD(TAG, "WebSocketHandler[%p/%d]: Unsubscribed from units/vehicle", m_nc, m_modifier);
+      ESP_LOGD(TAG, "WebSocketHandler[%p/%d]: Unsubscribed from units/prefs", m_nc, m_modifier);
     }
   }
 }

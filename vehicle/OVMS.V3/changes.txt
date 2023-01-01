@@ -42,7 +42,7 @@ Open Vehicle Monitor System v3 - Change log
 - Add support for user-configured metrics in the web interface and plugins:
    Adds an extra 'units' stream from the websocket containing sub-streams:
      - metrics (for the current user unit/label for each metric) (subscribe to units/metrics)
-     - vehicle (for any user overrides of unit groups/types) (subscribe to units/vehicle)
+     - prefs (for any user preferences for unit groups/types) (subscribe to units/prefs)
    Adds proxy arrays metrics_user[] , metrics_label[] available to plugin pages.
    Adds various browser javascript functions and methods for plugins related
      to displaying user configurations Auto-converts metric display to user

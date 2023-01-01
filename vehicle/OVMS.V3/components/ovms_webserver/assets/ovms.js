@@ -402,7 +402,7 @@ $.fn.loadcmd = function(command, filter, timeout) {
 var monitorTimer, last_monotonic = 0;
 var ws, ws_inhibit = 0;
 var metrics = {};
-var units = { metrics: {}, vehicle: {} };
+var units = { metrics: {}, prefs: {} };
 
 mi_to_km = function(mi) { return mi * 1.609347; }
 km_to_mi = function(km) { return km * 0.6213700; }
@@ -510,11 +510,11 @@ units.userUnitLabelFromMetric = function (name) {
     return unit_entry.label;
 }
 units.unitLabelToUser = function (unitType, defaultLabel) {
-  var res = this.vehicle[unitType];
+  var res = this.prefs[unitType];
   return (res && res.label) ?  res.label : defaultLabel
 }
 units.unitValueToUser = function (unitType, value) {
-  var entry = this.vehicle[unitType];
+  var entry = this.prefs[unitType];
   if (!entry)
     return value;
   return convertUnits(value, unitType, entry.unit);
@@ -619,9 +619,9 @@ function initSocketConnection(){
             for (metricname in msg.units.metrics)
               msgmetrics[metricname] = metrics[metricname];
             $(".receiver").trigger("msg:metrics", msgmetrics);
-          } else if (subtype == "vehicle") {
-            $.extend(units.vehicle, msg.units.vehicle);
-            $(".receiver").trigger("msg:vehicle_units", msg.units.vehicle);
+          } else if (subtype == "prefs") {
+            $.extend(units.prefs, msg.units.prefs);
+            $(".receiver").trigger("msg:vehicle_units", msg.units.prefs);
           }
         }
       }
