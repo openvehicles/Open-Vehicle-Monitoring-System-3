@@ -56,6 +56,9 @@ Open Vehicle Monitor System v3 - Change log
   New metrics:
     xhi.b.range.user                  -- actual current user range [km]
     xhi.e.state                       -- General/ignition state flags
+- Module: support deep sleep schedules
+  New commands:
+    module sleep                      -- Shutdown all components and enter deep sleep for a time span or until a specific time.
 
 
 2022-09-01 MWJ  3.3.003  OTA release

@@ -230,6 +230,7 @@ Boot::Boot()
   m_shutdown_timer = 0;
   m_shutdown_pending = 0;
   m_shutdown_deepsleep = false;
+  m_shutdown_deepsleep_seconds = 0;
   m_shutting_down = false;
 
   m_resetreason = esp_reset_reason(); // Note: necessary to link reset_reason module
@@ -393,7 +394,17 @@ static void boot_shutdown_done(const char* event, void* data)
   if (MyBoot.m_shutdown_deepsleep)
     {
     // For consistency with init, instead of calling MyPeripherals->m_esp32->SetPowerMode(DeepSleep):
-    esp_deep_sleep(1000000LL * 60);
+    if (MyBoot.m_shutdown_deepsleep_waketime)
+      {
+      // Accomodate for boot time (15 seconds):
+      int seconds = MyBoot.m_shutdown_deepsleep_waketime - time(0) - 15;
+      if (seconds < 0) seconds = 0;
+      esp_deep_sleep(1000000LL * seconds);
+      }
+    else
+      {
+      esp_deep_sleep(1000000LL * MyBoot.m_shutdown_deepsleep_seconds);
+      }
     }
   else
     {
@@ -430,9 +441,19 @@ void Boot::Restart(bool hard)
   MyEvents.RegisterEvent(TAG,"ticker.1", std::bind(&Boot::Ticker1, this, _1, _2));
   }
 
-void Boot::DeepSleep()
+void Boot::DeepSleep(unsigned int seconds /*=60*/)
   {
   m_shutdown_deepsleep = true;
+  m_shutdown_deepsleep_seconds = seconds;
+  m_shutdown_deepsleep_waketime = 0;
+  Restart(false);
+  }
+
+void Boot::DeepSleep(time_t waketime)
+  {
+  m_shutdown_deepsleep = true;
+  m_shutdown_deepsleep_seconds = 0;
+  m_shutdown_deepsleep_waketime = waketime;
   Restart(false);
   }
 

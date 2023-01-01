@@ -923,6 +923,138 @@ static void module_reset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, in
   MyBoot.Restart();
   }
 
+static void module_sleep(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  int seconds = 0;
+  struct tm spec = {};
+  spec.tm_wday = -1;
+  spec.tm_year = -1;
+  bool have_timespec = false;
+
+  // The esp-idf strptime implementation doesn't return NULL on some mismatches but
+  // instead returns the string start, so we use a wrapper to get POSIX behaviour:
+  auto my_strptime = [](const char *s, const char *format, struct tm *tm) -> bool
+    {
+    char *r = strptime(s, format, tm);
+    return (r && r != s);
+    };
+
+  // Time specification: [weekday|YYYY-mm-dd] [HH:MM[:SS]] | <seconds>
+  for (int i = 0; i < argc; i++)
+    {
+    struct tm part = {};
+
+    // check for weekday name:
+    if (my_strptime(argv[i], "%A", &part) || my_strptime(argv[i], "%a", &part))
+      {
+      spec.tm_wday = part.tm_wday;
+      have_timespec = true;
+      continue;
+      }
+
+    // check for date:
+    if (my_strptime(argv[i], "%Y-%m-%d", &part))
+      {
+      spec.tm_year = part.tm_year;
+      spec.tm_mon = part.tm_mon;
+      spec.tm_mday = part.tm_mday;
+      have_timespec = true;
+      continue;
+      }
+
+    // check for time:
+    if (my_strptime(argv[i], "%H:%M:%S", &part) || my_strptime(argv[i], "%H:%M", &part))
+      {
+      spec.tm_hour = part.tm_hour;
+      spec.tm_min = part.tm_min;
+      spec.tm_sec = part.tm_sec;
+      have_timespec = true;
+      continue;
+      }
+
+    // check for seconds:
+    seconds = atoi(argv[i]);
+    if (seconds > 0) break;
+    }
+
+  time_t utnow = time(NULL);
+  time_t utwaketime;
+
+  if (have_timespec)
+    {
+    // wakeup time specified, calculate second difference to now:
+    struct tm waketime = {};
+    struct tm *tmu = NULL;
+
+    if (spec.tm_year >= 0)
+      {
+      // absolute date:
+      waketime.tm_year = spec.tm_year;
+      waketime.tm_mon = spec.tm_mon;
+      waketime.tm_mday = spec.tm_mday;
+      }
+    else
+      {
+      // date relative to today:
+      tmu = localtime(&utnow);
+      if (spec.tm_wday >= 0)
+        {
+        int daydiff = (spec.tm_wday == tmu->tm_wday) ? 7 : ((7 + spec.tm_wday - tmu->tm_wday) % 7);
+        time_t tday = utnow + daydiff * 24 * 60 * 60;
+        tmu = localtime(&tday);
+        }
+      waketime.tm_year = tmu->tm_year;
+      waketime.tm_mon = tmu->tm_mon;
+      waketime.tm_mday = tmu->tm_mday;
+      }
+
+    waketime.tm_hour = spec.tm_hour;
+    waketime.tm_min = spec.tm_min;
+    waketime.tm_sec = spec.tm_sec;
+
+    // make unix time from spec:
+    waketime.tm_isdst = -1;
+    utwaketime = mktime(&waketime);
+
+    if (utwaketime <= utnow && spec.tm_year < 0)
+      {
+      // relative time in the past, shift by 24 hours:
+      time_t tday = utnow + 24 * 60 * 60;
+      tmu = localtime(&tday);
+      waketime.tm_year = tmu->tm_year;
+      waketime.tm_mon = tmu->tm_mon;
+      waketime.tm_mday = tmu->tm_mday;
+      utwaketime = mktime(&waketime);
+      }
+
+    seconds = utwaketime - utnow;
+    }
+  else
+    {
+    // time span specified:
+    utwaketime = utnow + seconds;
+    }
+
+  // Accomodate shutdown & boot time:
+  if (seconds < 60)
+    {
+    writer->puts("ERROR: invalid or past time specification");
+    }
+  else
+    {
+    // Output info:
+    char buf[100];
+    struct tm *tmwaketime = localtime(&utwaketime);
+    strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S %Z", tmwaketime);
+    ESP_LOGI(TAG, "Sleeping until %s = %u seconds ...\n", buf, seconds);
+    writer->printf("Sleeping until %s = %u seconds ...\n", buf, seconds);
+
+    // Enter sleep mode:
+    vTaskDelay(1000/portTICK_PERIOD_MS);
+    MyBoot.DeepSleep(utwaketime);
+    }
+  }
+
 static void module_perform_factoryreset(OvmsWriter* writer)
   {
   const esp_partition_t* p = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_FAT, "store");
@@ -1081,6 +1213,17 @@ class OvmsModuleInit
     OvmsCommand* cmd_trigger = cmd_module->RegisterCommand("trigger","Trigger framework");
     cmd_trigger->RegisterCommand("twdt","Trigger task watchdog timeout",module_trigger_twdt);
     cmd_module->RegisterCommand("reset","Reset module",module_reset);
+    cmd_module->RegisterCommand("sleep","Enter sleep mode", module_sleep,
+      "[weekday|YYYY-mm-dd] [HH:MM[:SS]] | <seconds>\n"
+      "Shutdown all components and enter deep sleep for a time span or until a specific time.\n"
+      "Day defaults to today. Weekdays set the next matching day and may be abbreviated.\n"
+      "Time defaults to 00:00 and is expected in local time. A past time today sets that time tomorrow.\n"
+      "Wakeup time needs to be set at least 60 seconds from now.\n"
+      "Actual wakeup is scheduled 15 seconds before the time set to accomodate boot time.\n"
+      "Examples:\n"
+      " - sleep for 30 minutes: module sleep 1800\n"
+      " - sleep until monday 6:30: module sleep monday 06:30\n"
+      , 1, 2);
     cmd_module->RegisterCommand("check","Check heap integrity",module_check);
     cmd_module->RegisterCommand("summary","Show module summary",module_summary);
     OvmsCommand* cmd_factory = cmd_module->RegisterCommand("factory","MODULE FACTORY framework");

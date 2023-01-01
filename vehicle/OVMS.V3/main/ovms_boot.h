@@ -116,7 +116,8 @@ class Boot
     void SetSoftReset();
     void SetFirmwareUpdate();
     void Restart(bool hard=false);
-    void DeepSleep();
+    void DeepSleep(unsigned int seconds = 60);
+    void DeepSleep(time_t waketime);
     void ShutdownPending(const char* tag);
     void ShutdownReady(const char* tag);
     bool IsShuttingDown();
@@ -127,6 +128,8 @@ class Boot
     unsigned int m_shutdown_timer;
     unsigned int m_shutdown_pending;
     bool m_shutdown_deepsleep;
+    unsigned int m_shutdown_deepsleep_seconds;
+    time_t m_shutdown_deepsleep_waketime;
     bool m_shutting_down;
 
   public:
