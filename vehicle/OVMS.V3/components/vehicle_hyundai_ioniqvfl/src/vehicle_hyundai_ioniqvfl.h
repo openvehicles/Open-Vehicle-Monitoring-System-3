@@ -61,6 +61,7 @@ class OvmsVehicleHyundaiVFL : public OvmsVehicle
   protected:
     std::string         m_rxbuf;
     OvmsMetricInt       *m_xhi_charge_state = NULL;
+    OvmsMetricInt       *m_xhi_env_state = NULL;
     OvmsMetricFloat     *m_xhi_bat_soc_bms = NULL;
 
     // Trip length derived from speed:
@@ -77,6 +78,7 @@ class OvmsVehicleHyundaiVFL : public OvmsVehicle
     // Range estimation:
     int                 m_cfg_range_ideal = 0;
     int                 m_cfg_range_user = 0;
+    int                 m_cfg_range_smoothing = 0;
     OvmsMetricFloat     *m_xhi_bat_range_user = NULL;
 };
 

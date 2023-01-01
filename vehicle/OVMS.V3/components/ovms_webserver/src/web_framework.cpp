@@ -380,7 +380,7 @@ void PageContext::input_slider(const char* label, const char* name, int size, co
       "<label class=\"control-label col-sm-3\" for=\"input-%s\">%s:</label>"
       "<div class=\"col-sm-9\">"
         "<div class=\"form-control slider\" data-default=\"%g\" data-reset=\"false\""
-        " data-value=\"%g\" data-min=\"%g\" data-max=\"%g\" data-step=\"%g\">"
+        " data-value=\"%g\" data-min=\"%g\" data-max=\"%g\" data-step=\"%g\" data-checked=\"%s\">"
           "<div class=\"slider-control form-inline\">"
             "<input class=\"slider-enable\" type=\"%s\" %s> "
             "<input class=\"form-control slider-value\" %s type=\"number\" style=\"width:%dpx;\""
@@ -399,6 +399,7 @@ void PageContext::input_slider(const char* label, const char* name, int size, co
     , _attr(name)
     , label
     , defval, value, min, max, step
+    , (enabled != 0) ? "true" : "false"
     , (enabled < 0) ? "hidden" : "checkbox" // -1 => no checkbox
     , (enabled > 0) ? "checked" : ""
     , (enabled == 0) ? "disabled" : ""

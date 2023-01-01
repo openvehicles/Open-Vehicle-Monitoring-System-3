@@ -34,11 +34,6 @@ static const char *TAG = "v-hyundaivfl";
 #include "vehicle_hyundai_ioniqvfl.h"
 #include "ovms_webserver.h"
 
-// Vehicle states:
-#define STATE_OFF             0
-#define STATE_ON              1
-#define STATE_CHARGING        2
-
 // RX buffer access macros: b=byte#
 #define RXB_BYTE(b)           m_rxbuf[b]
 #define RXB_UINT16(b)         (((uint16_t)RXB_BYTE(b) << 8) | RXB_BYTE(b+1))
@@ -58,16 +53,24 @@ static const char *TAG = "v-hyundaivfl";
 #define UDS_READ8             0x21
 #define UDS_READ16            0x22
 
+// Vehicle states:
+#define STATE_OFF             0
+#define STATE_AWAKE           1
+#define STATE_DRIVING         2
+#define STATE_CHARGING        3
+
 static const OvmsVehicle::poll_pid_t standard_polls[] =
 {
-  { 0x7e4, 0x7ec, UDS_READ8,    0x01, {   1,   1,   1 }, 0, ISOTP_STD },  // Battery status, speed, module temperatures 1-5
-  { 0x7e4, 0x7ec, UDS_READ8,    0x02, {   0,  15,  15 }, 0, ISOTP_STD },  // Cell voltages 1-32
-  { 0x7e4, 0x7ec, UDS_READ8,    0x03, {   0,  15,  15 }, 0, ISOTP_STD },  // Cell voltages 33-64
-  { 0x7e4, 0x7ec, UDS_READ8,    0x04, {   0,  15,  15 }, 0, ISOTP_STD },  // Cell voltages 65-96
-  { 0x7e4, 0x7ec, UDS_READ8,    0x05, {   0,  15,  15 }, 0, ISOTP_STD },  // SOC, SOH, module temperatures 6-12
-  { 0x7e6, 0x7ee, UDS_READ8,    0x80, {   0,  60, 120 }, 0, ISOTP_STD },  // Ambient temperature
-  { 0x7c6, 0x7ce, UDS_READ16, 0xb002, {   0,  30,   0 }, 0, ISOTP_STD },  // Odometer
-  { 0x7a0, 0x7a8, UDS_READ16, 0xc00b, {   0,  60,   0 }, 0, ISOTP_STD },  // TPMS
+  //                                    OFF  AWK  DRV  CHG
+  { 0x7e4, 0x7ec, UDS_READ8,    0x01, {   1,   1,   1,   1 }, 0, ISOTP_STD },  // Battery status, speed, module temperatures 1-5
+  { 0x7e4, 0x7ec, UDS_READ8,    0x02, {   0,  15,  15,  15 }, 0, ISOTP_STD },  // Cell voltages 1-32
+  { 0x7e4, 0x7ec, UDS_READ8,    0x03, {   0,  15,  15,  15 }, 0, ISOTP_STD },  // Cell voltages 33-64
+  { 0x7e4, 0x7ec, UDS_READ8,    0x04, {   0,  15,  15,  15 }, 0, ISOTP_STD },  // Cell voltages 65-96
+  { 0x7e4, 0x7ec, UDS_READ8,    0x05, {   0,  15,  15,  15 }, 0, ISOTP_STD },  // SOC, SOH, module temperatures 6-12
+  { 0x7e6, 0x7ee, UDS_READ8,    0x80, {   0,  60,  60, 120 }, 0, ISOTP_STD },  // Ambient temperature
+  { 0x7c6, 0x7ce, UDS_READ16, 0xb002, {   0, 120,  30,   0 }, 0, ISOTP_STD },  // Odometer
+  { 0x7a0, 0x7a8, UDS_READ16, 0xc00b, {   0,  60,  60,   0 }, 0, ISOTP_STD },  // TPMS
+  //                                    OFF  AWK  DRV  CHG
   POLL_LIST_END
 };
 
@@ -87,6 +90,7 @@ OvmsVehicleHyundaiVFL::OvmsVehicleHyundaiVFL()
 
   // Init metrics:
   m_xhi_charge_state = MyMetrics.InitInt("xhi.c.state", 10, 0, Other, true);
+  m_xhi_env_state = MyMetrics.InitInt("xhi.e.state", 10, 0, Other, true);
   m_xhi_bat_soc_bms = MyMetrics.InitFloat("xhi.b.soc.bms", 30, 0, Percentage, true);
   m_xhi_bat_range_user = MyMetrics.InitFloat("xhi.b.range.user", 120, 0, Kilometers, true);
 
@@ -123,6 +127,7 @@ OvmsVehicleHyundaiVFL::~OvmsVehicleHyundaiVFL()
   MyWebServer.DeregisterPage("/xhi/battmon");
   MyWebServer.DeregisterPage("/xhi/features");
   MyMetrics.DeregisterMetric(m_xhi_charge_state);
+  MyMetrics.DeregisterMetric(m_xhi_env_state);
   MyMetrics.DeregisterMetric(m_xhi_bat_soc_bms);
   MyMetrics.DeregisterMetric(m_xhi_bat_range_user);
 }
@@ -142,6 +147,11 @@ void OvmsVehicleHyundaiVFL::ConfigChanged(OvmsConfigParam *param)
   bool recalc_ranges = false;
   int cfg_range_ideal = MyConfig.GetParamValueInt("xhi", "range.ideal", 200);
   int cfg_range_user = MyConfig.GetParamValueInt("xhi", "range.user", 200);
+
+  m_cfg_range_smoothing = MyConfig.GetParamValueInt("xhi", "range.smoothing", 10);
+  if (m_cfg_range_smoothing < 0) {
+    m_cfg_range_smoothing = 0;
+  }
 
   if (m_cfg_range_ideal != cfg_range_ideal) {
     recalc_ranges = true;
@@ -189,6 +199,7 @@ void OvmsVehicleHyundaiVFL::IncomingPollReply(canbus* bus, uint16_t type, uint16
       // Read status & battery metrics:
       m_xhi_bat_soc_bms->SetValue(RXB_BYTE(4) * 0.5f);
       m_xhi_charge_state->SetValue(RXB_BYTE(9));
+      m_xhi_env_state->SetValue(RXB_BYTE(50));
       float bat_current = RXB_INT16(10) * 0.1f;
       float bat_voltage = RXB_UINT16(12) * 0.1f;
       StdMetrics.ms_v_bat_current->SetValue(bat_current);
@@ -255,15 +266,17 @@ void OvmsVehicleHyundaiVFL::IncomingPollReply(canbus* bus, uint16_t type, uint16
       float bat_soh = RXB_UINT16(25) * 0.1f;
       StdMetrics.ms_v_bat_soh->SetValue(bat_soh);
       float bat_soc = RXB_BYTE(31) * 0.5f;
-      StdMetrics.ms_v_bat_soc->SetValue(bat_soc);
+      bool soc_changed = StdMetrics.ms_v_bat_soc->SetValue(bat_soc);
 
       // Update trip reference for SOC usage:
       if (m_drive_startsoc == 0) {
         m_drive_startsoc = bat_soc;
       }
       
-      // Update range estimations:
-      CalculateRangeEstimations();
+      // Update range estimations only at the SOC steps (0.5%):
+      if (soc_changed) {
+        CalculateRangeEstimations();
+      }
       break;
     }
 
@@ -322,6 +335,7 @@ void OvmsVehicleHyundaiVFL::IncomingPollReply(canbus* bus, uint16_t type, uint16
       StdMetrics.ms_v_tpms_pressure->SetValue(tpms_pressure);
       StdMetrics.ms_v_tpms_temp->SetValue(tpms_temp);
       StdMetrics.ms_v_tpms_alert->SetValue(tpms_alert);
+      break;
     }
 
     default:
@@ -340,21 +354,30 @@ void OvmsVehicleHyundaiVFL::PollerStateTicker()
 {
   bool car_online = (m_can1->GetErrorState() < CAN_errorstate_passive && !m_xhi_charge_state->IsStale());
   int charge_state = m_xhi_charge_state->AsInt();
+  int env_state = m_xhi_env_state->AsInt();
+
+  //bool flag_mainrelay = (charge_state & 0x01);      // BMS main relay closed
+  //bool flag_pluggedin = (charge_state & 0x20);      // Plugged in / charge port / pilot (?)
+  bool flag_charging  = (charge_state & 0x80);      // Main battery is charging
+  bool flag_ignition  = (env_state & 0x04);         // Ignition switched on
 
   // Determine new polling state:
   int poll_state;
   if (!car_online)
     poll_state = STATE_OFF;
-  else if (charge_state & 0x80)
+  else if (flag_charging)
     poll_state = STATE_CHARGING;
+  else if (flag_ignition)
+    poll_state = STATE_DRIVING;
   else
-    poll_state = STATE_ON;
+    poll_state = STATE_AWAKE;
 
   // Set base state flags:
-  StdMetrics.ms_v_env_aux12v->SetValue(car_online);
-  StdMetrics.ms_v_env_charging12v->SetValue(car_online);
-  StdMetrics.ms_v_env_awake->SetValue(poll_state == STATE_ON);
-  StdMetrics.ms_v_env_on->SetValue(poll_state == STATE_ON);
+  // TODO: find real indicators for charging12v & awake/on
+  StdMetrics.ms_v_env_aux12v->SetValue(car_online);                   // base system awake
+  StdMetrics.ms_v_env_charging12v->SetValue(car_online);              // charging the 12V battery
+  StdMetrics.ms_v_env_awake->SetValue(poll_state == STATE_DRIVING);   // fully awake (switched on)
+  StdMetrics.ms_v_env_on->SetValue(poll_state == STATE_DRIVING);      // ignition on
 
   //
   // Handle polling state change
@@ -395,17 +418,25 @@ void OvmsVehicleHyundaiVFL::PollerStateTicker()
     }
   }
 
-  if (poll_state == STATE_ON)
+  if (poll_state == STATE_DRIVING)
   {
-    if (m_poll_state != STATE_ON) {
-      // Switched on:
+    if (m_poll_state != STATE_DRIVING) {
+      // Ignition switched on:
       StdMetrics.ms_v_door_chargeport->SetValue(false);
       StdMetrics.ms_v_charge_substate->SetValue("");
       StdMetrics.ms_v_charge_state->SetValue("");
-      PollSetState(STATE_ON);
+      PollSetState(STATE_DRIVING);
 
       // Start new trip:
       ResetTripCounters();
+    }
+  }
+
+  if (poll_state == STATE_AWAKE)
+  {
+    if (m_poll_state != STATE_AWAKE) {
+      // Just entered awake state, nothing to do here for now
+      PollSetState(STATE_AWAKE);
     }
   }
 
@@ -512,14 +543,13 @@ void OvmsVehicleHyundaiVFL::CalculateRangeEstimations(bool init /*=false*/)
   float range_user = m_xhi_bat_range_user->AsFloat();
 
   // While driving, update user range estimation from trip metrics:
-  if (!init && m_poll_state == STATE_ON) {
+  if (!init && m_poll_state == STATE_DRIVING) {
     float trip_soc_used = m_drive_startsoc - soc;
     if (trip_soc_used >= 1 && m_odo_trip >= 1) {
-      // smooth over 6 samples = 90 seconds:
       float range_trip = m_odo_trip / trip_soc_used * 100;
-      range_user = (range_user * 5 + range_trip) / 6;
-      ESP_LOGD(TAG, "CalculateRangeEstimations: trip %.2f km / %.1f %%SOC -> range=%.2f -> user=%.2f km",
-               m_odo_trip, trip_soc_used, range_trip, range_user);
+      range_user = (range_user * m_cfg_range_smoothing + range_trip) / (m_cfg_range_smoothing + 1);
+      ESP_LOGD(TAG, "CalculateRangeEstimations: trip %.2f km / %.1f %%SOC -> range=%.2f smoothing(%d) -> user=%.2f km",
+               m_odo_trip, trip_soc_used, range_trip, m_cfg_range_smoothing, range_user);
       m_xhi_bat_range_user->SetValue(TRUNCPREC(range_user,3));
     }
   }

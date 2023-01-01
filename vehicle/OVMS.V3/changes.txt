@@ -51,12 +51,14 @@ Open Vehicle Monitor System v3 - Change log
     New configs:
       [xhi] range.ideal                 -- ideal new car range [km], default 200
       [xhi] range.user                  -- typical current user range [km], default 200
+      [xhi] range.smoothing             -- Number of SOC samples, default 10 = ~ 5% SOC
       [xhi] tpms.pressure.warn		      -- default 230 [kPa]
       [xhi] tpms.pressure.alert         -- default 220 [kPa]
       [xhi] tpms.temp.warn              -- default 90 [°C]
       [xhi] tpms.temp.alert             -- default 100 [°C]
     New metrics:
       xhi.b.range.user                  -- actual current user range [km]
+      xhi.e.state                       -- General/ignition state flags
 
 2022-09-01 MWJ  3.3.003  OTA release
 - Toyota RAV4 EV: Initial support added. Only the Tesla bus is decoded and just listening so far.

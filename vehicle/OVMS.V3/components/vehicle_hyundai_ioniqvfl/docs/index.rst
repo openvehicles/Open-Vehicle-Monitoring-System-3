@@ -51,6 +51,7 @@ Metric name                              Example value            Description
 xhi.b.range.user                         134.56km                 Current maximum user range
 xhi.b.soc.bms                            78.5%                    Internal BMS SOC
 xhi.c.state                              128                      Charge state flags
+xhi.e.state                              13                       General/ignition state flags
 ======================================== ======================== ============================================
 
 
@@ -63,6 +64,7 @@ Config name                              Default value  …unit     Description
 ======================================== ============== ========= ============================================
 xhi range.ideal                          200            km        Ideal range of new battery
 xhi range.user                           200            km        Typical maximum user range (updated automatically)
+xhi range.smoothing                      10                       Number of SOC samples, 10=~5% SOC, 0=disable
 xhi tpms.pressure.warn                   230            kPa       Tyre warning at/below this pressure
 xhi tpms.pressure.alert                  220            kPa       Tyre alert at/below this pressure
 xhi tpms.temp.warn                       90             °C        Tyre warning at/above this temperature
