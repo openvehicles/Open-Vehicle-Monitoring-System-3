@@ -1220,6 +1220,8 @@ class OvmsModuleInit
       "Time defaults to 00:00 and is expected in local time. A past time today sets that time tomorrow.\n"
       "Wakeup time needs to be set at least 60 seconds from now.\n"
       "Actual wakeup is scheduled 15 seconds before the time set to accomodate boot time.\n"
+      "Note: the ESP32 internal clock isn't precise and has a temperature depending drift,\n"
+      "so expect random deviations in both directions on long sleep periods.\n"
       "Examples:\n"
       " - sleep for 30 minutes: module sleep 1800\n"
       " - sleep until monday 6:30: module sleep monday 06:30\n"
