@@ -178,6 +178,10 @@ void OvmsVehicleHyundaiVFL::ConfigChanged(OvmsConfigParam *param)
     CalculateRangeEstimations(true);
   }
 
+  // Set v.c.limit.soc (sufficient SOC for charge):
+  float suff_soc = MyConfig.GetParamValueFloat("xhi", "ctp.soclimit", 80);
+  StdMetrics.ms_v_charge_limit_soc->SetValue(suff_soc);
+
   UpdateChargeTimes();
 }
 
@@ -201,6 +205,15 @@ void OvmsVehicleHyundaiVFL::MetricModified(OvmsMetric* metric)
   if (metric == StdMetrics.ms_v_bat_soc)
   {
     CalculateRangeEstimations();
+    
+    // …also check for sufficient SOC reached during charge:
+    if (is_charging) {
+      float curr_soc = StdMetrics.ms_v_bat_soc->AsFloat();
+      float suff_soc = StdMetrics.ms_v_charge_limit_soc->AsFloat();
+      if (m_charge_lastsoc < suff_soc && curr_soc >= suff_soc)
+        StdMetrics.ms_v_charge_state->SetValue("topoff");
+      m_charge_lastsoc = curr_soc;
+    }
   }
 
   // Pass update on to standard handler:
@@ -440,11 +453,16 @@ void OvmsVehicleHyundaiVFL::PollerStateTicker()
   {
     if (m_poll_state != STATE_CHARGING) {
       // Charge started:
+      m_charge_lastsoc = StdMetrics.ms_v_bat_soc->AsFloat();
+      float suff_soc = StdMetrics.ms_v_charge_limit_soc->AsFloat();
       StdMetrics.ms_v_door_chargeport->SetValue(true);
       StdMetrics.ms_v_charge_pilot->SetValue(true);
       StdMetrics.ms_v_charge_inprogress->SetValue(true);
       StdMetrics.ms_v_charge_substate->SetValue("onrequest");
-      StdMetrics.ms_v_charge_state->SetValue("charging");
+      if (m_charge_lastsoc < suff_soc)
+        StdMetrics.ms_v_charge_state->SetValue("charging");
+      else
+        StdMetrics.ms_v_charge_state->SetValue("topoff");
       PollSetState(STATE_CHARGING);
     }
   }
@@ -743,7 +761,7 @@ int OvmsVehicleHyundaiVFL::CalcChargeTime(float capacity, float max_pwr, int fro
 void OvmsVehicleHyundaiVFL::UpdateChargeTimes()
 {
   float capacity = 0, max_pwr = 0;
-  int from_soc = 0, to_soc = 0;
+  int from_soc = 0, suff_soc = 0;
 
   // Get battery capacity:
   float soh = StdMetrics.ms_v_bat_soh->AsFloat(), sohfactor = soh ? soh / 100 : 1;
@@ -756,14 +774,10 @@ void OvmsVehicleHyundaiVFL::UpdateChargeTimes()
   else
     max_pwr = MyConfig.GetParamValueFloat("xhi", "ctp.maxpower", 0);
 
-  // Set v.c.limit.soc (sufficient SOC for current charge):
-  float suff_soc = MyConfig.GetParamValueFloat("xhi", "ctp.soclimit", 80);
-  StdMetrics.ms_v_charge_limit_soc->SetValue(suff_soc);
-
   // Calculate charge times for 100% and sufficient SOC:
   from_soc = StdMetrics.ms_v_bat_soc->AsInt();
-  to_soc = suff_soc;
-  StdMetrics.ms_v_charge_duration_soc ->SetValue(CalcChargeTime(capacity, max_pwr, from_soc, to_soc));
+  suff_soc = StdMetrics.ms_v_charge_limit_soc->AsInt();
+  StdMetrics.ms_v_charge_duration_soc ->SetValue(CalcChargeTime(capacity, max_pwr, from_soc, suff_soc));
   StdMetrics.ms_v_charge_duration_full->SetValue(CalcChargeTime(capacity, max_pwr, from_soc, 100));
 }
 

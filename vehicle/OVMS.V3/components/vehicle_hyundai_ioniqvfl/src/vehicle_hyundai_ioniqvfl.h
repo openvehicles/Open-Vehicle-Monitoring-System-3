@@ -93,6 +93,9 @@ class OvmsVehicleHyundaiVFL : public OvmsVehicle
     // Charge time/speed estimation:
     float               m_bat_nominal_cap_kwh = 28.0;
     float               m_bat_nominal_cap_ah = 78.0;
+
+    // Charge phase detection:
+    float               m_charge_lastsoc = 0;
 };
 
 #endif // __VEHICLE_HYUNDAI_IONIQVFL_H__
