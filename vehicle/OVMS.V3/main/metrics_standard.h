@@ -242,6 +242,9 @@
 #define MS_V_POS_GPSSPEED           "v.p.gpsspeed"
 #define MS_V_POS_ODOMETER           "v.p.odometer"
 #define MS_V_POS_TRIP               "v.p.trip"
+#define MS_V_POS_VALET_LATITUDE     "v.p.valet.latitude"
+#define MS_V_POS_VALET_LONGITUDE    "v.p.valet.longitude"
+#define MS_V_POS_VALET_DISTANCE     "v.p.valet.distance"
 
 #define MS_V_TPMS_FL_T              "v.tp.fl.t"
 #define MS_V_TPMS_FR_T              "v.tp.fr.t"
@@ -505,6 +508,9 @@ class MetricsStandard
     OvmsMetricFloat*  ms_v_pos_gpsspeed;                  // GPS speed over ground [kph]
     OvmsMetricFloat*  ms_v_pos_odometer;
     OvmsMetricFloat*  ms_v_pos_trip;
+    OvmsMetricFloat*  ms_v_pos_valet_latitude;
+    OvmsMetricFloat*  ms_v_pos_valet_longitude;
+    OvmsMetricFloat*  ms_v_pos_valet_distance;
 
     //
     // TPMS: tyre monitoring metrics

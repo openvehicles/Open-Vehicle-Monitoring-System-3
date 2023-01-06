@@ -549,7 +549,7 @@ void OvmsVehicle::RegisterCanBus(int bus, CAN_mode_t mode, CAN_speed_t speed, db
     }
   }
 
-bool OvmsVehicle::PinCheck(char* pin)
+bool OvmsVehicle::PinCheck(const char* pin)
   {
   if (!MyConfig.IsDefined("password","pin")) return false;
 
@@ -1059,10 +1059,25 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandActivateValet(const char* pin
     dukcmd.printf("(!OvmsVehicle.Valet.prototype)?-1:"
       "OvmsVehicle.Valet(\"%s\")", pin_json.c_str());
     int res = MyDuktape.DuktapeEvalIntResult(dukcmd.c_str());
-    if (res >= 0) return res ? Success : Fail;
+    if (res >= 0)
+      {
+        if (res)
+          {
+          StandardMetrics.ms_v_env_valet->SetValue(true);
+          return Success;
+          }
+        else
+          return Fail;
+      }
     }
 #endif
-  return NotImplemented;
+  if (StandardMetrics.ms_v_env_valet->AsBool())
+    return Success;
+  if (!PinCheck(pin))
+    return Fail;
+  StandardMetrics.ms_v_env_valet->SetValue(true);
+  return Success;
+
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicle::CommandDeactivateValet(const char* pin)
@@ -1075,10 +1090,20 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandDeactivateValet(const char* p
     dukcmd.printf("(!OvmsVehicle.Unvalet.prototype)?-1:"
       "OvmsVehicle.Unvalet(\"%s\")", pin_json.c_str());
     int res = MyDuktape.DuktapeEvalIntResult(dukcmd.c_str());
-    if (res >= 0) return res ? Success : Fail;
+    if (res >= 0)
+      {
+      if (res)
+        StandardMetrics.ms_v_env_valet->SetValue(false);
+      return res ? Success : Fail;
+      }
     }
 #endif
-  return NotImplemented;
+  if (!StandardMetrics.ms_v_env_valet->AsBool())
+    return Success;
+  if (!PinCheck(pin))
+    return Fail;
+  StandardMetrics.ms_v_env_valet->SetValue(false);
+  return Success;
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicle::CommandHomelink(int button, int durationms)

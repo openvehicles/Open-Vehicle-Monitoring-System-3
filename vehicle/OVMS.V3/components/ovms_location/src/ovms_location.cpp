@@ -700,6 +700,11 @@ OvmsLocations::OvmsLocations()
   m_park_distance = 0;
   m_park_invalid = true;
   m_last_alarm = 0;
+  m_valet_latitude = 0;
+  m_valet_longitude = 0;
+  m_valet_distance = 0;
+  m_valet_invalid = true;
+  m_valet_last_alarm = 0;
 
   // Register our commands
   OvmsCommand* cmd_location = MyCommandApp.RegisterCommand("location","LOCATION framework", location_status, "", 0, 0, false);
@@ -749,6 +754,8 @@ OvmsLocations::OvmsLocations()
   MyMetrics.RegisterListener(TAG, MS_V_POS_GPSSQ, std::bind(&OvmsLocations::UpdatedGpsSQ, this, _1));
   MyMetrics.RegisterListener(TAG, MS_V_POS_GPSTIME, std::bind(&OvmsLocations::UpdatedPosition, this, _1));
   MyMetrics.RegisterListener(TAG, MS_V_ENV_ON, std::bind(&OvmsLocations::UpdatedVehicleOn, this, _1));
+  MyMetrics.RegisterListener(TAG, MS_V_ENV_VALET, std::bind(&OvmsLocations::UpdateValetMode, this, _1));
+
   MyEvents.RegisterEvent(TAG,"config.mounted", std::bind(&OvmsLocations::UpdatedConfig, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"config.changed", std::bind(&OvmsLocations::UpdatedConfig, this, _1, _2));
 
@@ -792,6 +799,7 @@ void OvmsLocations::UpdatedGpsSQ(OvmsMetric* metric)
     if (!m_ready)
       {
       UpdateParkPosition();
+      UpdateValetPosition();
       m_ready = true;
       }
     UpdateLocations();
@@ -812,12 +820,14 @@ void OvmsLocations::UpdatedPosition(OvmsMetric* metric)
     {
     UpdateLocations();
     CheckTheft();
+    CheckValet();
     }
   }
 
 void OvmsLocations::UpdatedVehicleOn(OvmsMetric* metric)
   {
   UpdateParkPosition();
+  UpdateValetPosition();
   }
 
 void OvmsLocations::UpdateParkPosition()
@@ -974,6 +984,112 @@ void OvmsLocations::CheckTheft()
     // inhibit further alerts for configured interval:
     m_last_alarm = monotonictime;
     }
+  }
+
+void OvmsLocations::UpdateValetPosition()
+  {
+  OvmsRecMutexLock lock(&m_valet_lock);
+  if (!StandardMetrics.ms_v_env_valet->AsBool())
+    {
+    if (m_valet_enabled)
+      ESP_LOGI(TAG, "UpdateValetPosition: Clear Valeting information");
+    m_valet_enabled = false;
+    m_valet_latitude = 0;
+    m_valet_longitude = 0;
+    m_valet_distance = 0;
+    m_valet_invalid = true;
+    m_valet_last_alarm = 0;
+    StandardMetrics.ms_v_pos_valet_latitude->Clear();
+    StandardMetrics.ms_v_pos_valet_longitude->Clear();
+    StandardMetrics.ms_v_pos_valet_distance->Clear();
+    }
+  else if (!m_valet_enabled || m_valet_invalid)
+    {
+
+    m_valet_last_alarm = 0;
+    m_valet_enabled = true;
+    if (StandardMetrics.ms_v_pos_valet_latitude->IsDefined() && StandardMetrics.ms_v_pos_valet_longitude->IsDefined())
+      {
+      m_valet_latitude = StandardMetrics.ms_v_pos_valet_latitude->AsFloat();
+      m_valet_longitude = StandardMetrics.ms_v_pos_valet_longitude->AsFloat();
+      m_valet_distance = StandardMetrics.ms_v_pos_valet_distance->AsFloat();
+
+      m_valet_invalid = false;
+      ESP_LOGI(TAG, "UpdateValetPosition: Load from metrics - vehicle is valeting @%0.6f,%0.6f", m_valet_latitude, m_valet_longitude);
+      }
+    else
+      {
+      m_valet_latitude = m_latitude;
+      m_valet_longitude = m_longitude;
+      m_valet_invalid = (!m_gpsgood || StdMetrics.ms_v_pos_latitude->IsStale() || StdMetrics.ms_v_pos_longitude->IsStale());
+      if (!m_valet_invalid)
+        {
+        StandardMetrics.ms_v_pos_valet_latitude->SetValue(m_valet_latitude);
+        StandardMetrics.ms_v_pos_valet_longitude->SetValue(m_valet_longitude );
+        }
+
+      ESP_LOGI(TAG, "UpdateValetPosition: vehicle is valeting @%0.6f,%0.6f gpslock=%d satcount=%d hdop=%.1f sq=%d invalid=%d",
+        m_valet_latitude, m_valet_longitude, m_gpslock,
+        StdMetrics.ms_v_pos_satcount->AsInt(),
+        StdMetrics.ms_v_pos_gpshdop->AsFloat(),
+        m_gpssq, m_valet_invalid);
+      }
+    }
+  }
+
+void OvmsLocations::CheckValet()
+  {
+  OvmsRecMutexLock lock(&m_valet_lock);
+  if (!m_valet_enabled)
+    return;
+  if (!StandardMetrics.ms_v_env_valet->AsBool())
+    {
+    UpdateValetPosition();
+    return;
+    }
+
+  // Wait for first valid coordinates if we had none when we valeted the car:
+  if (m_valet_invalid)
+    {
+    UpdateValetPosition();
+    return;
+    }
+
+  if ((m_valet_latitude == 0) && (m_valet_longitude == 0))
+    return;
+
+  int alarm_dist = MyConfig.GetParamValueInt("vehicle", "valet.alarmdistance", 0);
+  if (alarm_dist == 0) return;
+
+  double dist = fabs(OvmsLocationDistance(
+    (double)m_latitude,(double)m_longitude,
+    (double)m_valet_latitude,(double)m_valet_longitude));
+  // Valet distance is the smoothed version
+  m_valet_distance = (m_valet_distance * 4 + dist) / 5;
+  StandardMetrics.ms_v_pos_valet_distance->SetValue(m_valet_distance);
+
+  int alarm_interval = MyConfig.GetParamValueInt("vehicle", "valet.alarminterval", 15) * 60;
+  if ((m_valet_distance > alarm_dist) &&
+      (m_valet_last_alarm == 0
+        || (alarm_interval > 0 && monotonictime > m_valet_last_alarm + alarm_interval)))
+    {
+    MyNotify.NotifyStringf("alert", "valet.bounds",
+      "Vehicle has moved out of area while being valeted (@%0.6f,%0.6f)",
+      m_latitude, m_longitude);
+    MyEvents.SignalEvent("location.alert.valet.bounds", NULL);
+    ESP_LOGW(TAG, "CheckValet: valet.bounds valeted @%0.6f,%0.6f now @%0.6f,%0.6f gpsmode=%s satcount=%d hdop=%.1f gpsspeed=%.1f",
+      m_valet_latitude, m_valet_longitude, m_latitude, m_longitude,
+      StdMetrics.ms_v_pos_gpsmode->AsString().c_str(),
+      StdMetrics.ms_v_pos_satcount->AsInt(),
+      StdMetrics.ms_v_pos_gpshdop->AsFloat(),
+      StdMetrics.ms_v_pos_gpsspeed->AsFloat());
+    // inhibit further alerts for configured interval:
+    m_valet_last_alarm = monotonictime;
+    }
+  }
+void OvmsLocations::UpdateValetMode(OvmsMetric* metric)
+  {
+  UpdateValetPosition();
   }
 
 void OvmsLocations::UpdatedConfig(std::string event, void* data)
