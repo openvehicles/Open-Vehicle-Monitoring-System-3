@@ -1597,7 +1597,7 @@ void OvmsVehicle::CalculateAcceleration()
   uint32_t now = esp_log_timestamp();
   if (now > m_accel_reftime)
     {
-    float speed = ABS(StdMetrics.ms_v_pos_speed->AsFloat(0, Kph)) * 1000 / 3600;
+    float speed = ABS(StdMetrics.ms_v_pos_speed->AsFloat(0, MetersPS));
     float accel = (speed - m_accel_refspeed) / (now - m_accel_reftime) * 1000;
     // smooth out road bumps & gear box backlash:
     if (m_accel_smoothing > 0)

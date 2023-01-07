@@ -82,6 +82,8 @@ typedef enum : uint8_t
   kWh           = 44,
   Watts         = 45,
   WattHours     = 46,
+  Kilocoulombs  = 47,
+  MegaJoules    = 48,
 
   Seconds       = 50,
   Minutes       = 51,
@@ -93,6 +95,8 @@ typedef enum : uint8_t
 
   Kph           = 61,
   Mph           = 62,
+  MetersPS      = 63,
+  FeetPS        = 64,
 
   // Acceleration:
   KphPS         = 71,   // Kph per second
@@ -150,6 +154,7 @@ typedef enum : uint8_t
   GrpTorque = 12,
   GrpDirection = 13,
   GrpRatio = 14,
+  GrpCharge = 15,
   // These are where a dimension group is split and allows
   // easily folding the 'short distances' back onto their equivalents.
   GrpDistanceShort = GrpDistance + GrpUnfold,
