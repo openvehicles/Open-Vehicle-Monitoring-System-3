@@ -68,6 +68,10 @@ void xiq_trip_since_charge(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, 
 void xiq_tpms(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
 void xiq_aux(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
 void xiq_vin(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
+
+void xiq_range_stat(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
+void xiq_range_reset(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
+
 //NOTIMPL void CommandOpenTrunk(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
 void CommandParkBreakService(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
 //NOTIMPL void xiq_sjb(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
@@ -355,14 +359,15 @@ protected:
 
   OvmsBatteryMon hif_aux_battery_mon;
 
-  // uint32_t odo;
-
   OvmsMetricBool  *m_b_bms_relay;
   OvmsMetricBool  *m_b_bms_ignition;
   OvmsMetricInt   *m_b_bms_availpower;
   OvmsMetricFloat *m_v_bat_calc_cap;
 
   OvmsMetricBool   *m_v_env_parklights;
+
+  /// Accumulated operating time
+  OvmsMetricInt *m_v_accum_op_time;
 
   struct {
     unsigned char ChargingCCS : 1;
@@ -393,6 +398,8 @@ public:
   static void WebCfgBattery(PageEntry_t &p, PageContext_t &c);
   static void WebBattMon(PageEntry_t &p, PageContext_t &c);
 
+  void RangeCalcReset();
+  void RangeCalcStat(OvmsWriter *writer);
 public:
   void GetDashboardConfig(DashboardConfig &cfg) override;
 #endif //CONFIG_OVMS_COMP_WEBSERVER

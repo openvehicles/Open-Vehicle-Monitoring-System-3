@@ -517,3 +517,33 @@ void xiq_trip_since_charge(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, 
 
   XDISARM;
 }
+
+void OvmsHyundaiIoniqEv::RangeCalcStat(OvmsWriter *writer)
+{
+  iq_range_calc->displayStoredTrips(writer);
+}
+
+void xiq_range_stat(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv)
+{
+  if (MyVehicleFactory.m_currentvehicle == NULL) {
+    writer->puts("Error: No vehicle module selected");
+    return;
+  }
+  OvmsHyundaiIoniqEv *mycar = (OvmsHyundaiIoniqEv *)(MyVehicleFactory.ActiveVehicle());
+  mycar->RangeCalcStat(writer);
+}
+
+void OvmsHyundaiIoniqEv::RangeCalcReset()
+{
+  iq_range_calc->resetTrips();
+}
+
+void xiq_range_reset(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv)
+{
+  if (MyVehicleFactory.m_currentvehicle == NULL) {
+    writer->puts("Error: No vehicle module selected");
+    return;
+  }
+  OvmsHyundaiIoniqEv *mycar = (OvmsHyundaiIoniqEv *)(MyVehicleFactory.ActiveVehicle());
+  mycar->RangeCalcReset();
+}

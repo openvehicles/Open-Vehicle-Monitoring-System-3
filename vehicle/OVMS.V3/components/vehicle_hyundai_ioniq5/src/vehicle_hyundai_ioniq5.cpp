@@ -436,12 +436,7 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
   kia_obc_ac_voltage = 230;
   kia_obc_ac_current = 0;
 
-  kia_battery_cum_charge_current = 0;
-  kia_battery_cum_discharge_current = 0;
-  kia_battery_cum_charge = 0;
   kia_last_battery_cum_charge = 0;
-  kia_battery_cum_discharge = 0;
-  kia_battery_cum_op_time = 0;
 
   kn_charge_bits.ChargingCCS = false;
   kn_charge_bits.ChargingType2 = false;
@@ -544,6 +539,10 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
   m_v_door_lock_rl = MyMetrics.InitBool("xiq.v.d.l.rl", 10, false);
   m_v_door_lock_rr = MyMetrics.InitBool("xiq.v.d.l.rr", 10, false);
 
+  m_v_accum_op_time           = MyMetrics.InitInt("xiq.v.accum.op.time",         SM_STALE_MAX, 0, Seconds );
+
+  iq_range_calc = new RangeCalculator(1, 4, 450, 74);
+
   m_b_cell_det_min->SetValue(0);
 
   StdMetrics.ms_v_bat_12v_voltage->SetValue(12.5, Volts);
@@ -558,6 +557,9 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
   cmd_hiq->RegisterCommand("tpms", "Tire pressure monitor", xiq_tpms);
   cmd_hiq->RegisterCommand("aux", "Aux battery", xiq_aux);
   cmd_hiq->RegisterCommand("vin", "VIN information", xiq_vin);
+  OvmsCommand *cmd_trip = cmd_hiq->RegisterCommand("range", "Show Range information");
+  cmd_trip->RegisterCommand("status", "Show Status of Range Calculator", xiq_range_stat);
+  cmd_trip->RegisterCommand("reset", "Reset ranage calculation stats", xiq_range_reset);
 
   //TODO cmd_hiq->RegisterCommand("trunk", "Open trunk", CommandOpenTrunk, "<pin>", 1, 1);
 
@@ -601,7 +603,6 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
   ESP_LOGD(TAG, "PollState->Ping for 30 (Init)");
   PollState_Ping(30);
 
-  iq_range_calc = new RangeCalculator(1, 4, 455, 64);
   XDISARM;
 }
 
@@ -644,6 +645,8 @@ void OvmsHyundaiIoniqEv::ConfigChanged(OvmsConfigParam *param)
   else
     hif_battery_capacity = (BmsGetCellArangementVoltage() * HIF_CELL_PAIR_CAPACITY);
   m_v_bat_calc_cap->SetValue(hif_battery_capacity, WattHours);
+  iq_range_calc->updateCapacity(hif_battery_capacity / 1000);
+  UpdateMaxRangeAndSOH();
 
   hif_maxrange = MyConfig.GetParamValueInt("xiq", "maxrange", CFG_DEFAULT_MAXRANGE);
   if (hif_maxrange <= 0) {
@@ -695,13 +698,24 @@ void OvmsHyundaiIoniqEv::vehicle_ioniq5_car_on(bool isOn)
     PollState_Running();
     StdMetrics.ms_v_env_charging12v->SetValue( true );
     kia_ready_for_chargepollstate = true;
-    kia_park_trip_counter.Reset(POS_ODO, CUM_DISCHARGE, CUM_CHARGE);
+
+    float charg_accum = StdMetrics.ms_v_bat_energy_recd_total->AsFloat(kWh);
+    float coulomb_accum = StdMetrics.ms_v_bat_coulomb_recd_total->AsFloat(kWh);
+    kia_park_trip_counter.Reset(POS_ODO,
+      StdMetrics.ms_v_bat_energy_used_total->AsFloat(kWh), charg_accum,
+      StdMetrics.ms_v_bat_coulomb_used_total->AsFloat(kWh), coulomb_accum
+      );
+    if (StdMetrics.ms_v_charge_inprogress->AsBool())
+      kia_park_trip_counter.StartCharge(charg_accum, coulomb_accum);
     BmsResetCellStats();
   }
   else if (!isOn) {
     // Car is OFF
     ESP_LOGI(TAG, "CAR IS OFF");
-    kia_park_trip_counter.Update(POS_ODO, CUM_DISCHARGE, CUM_CHARGE);
+    kia_park_trip_counter.Update(POS_ODO,
+      StdMetrics.ms_v_bat_energy_used_total->AsFloat(kWh), StdMetrics.ms_v_bat_energy_recd_total->AsFloat(kWh),
+      StdMetrics.ms_v_bat_coulomb_used_total->AsFloat(kWh), StdMetrics.ms_v_bat_coulomb_recd_total->AsFloat(kWh)
+      );
     kia_secs_with_no_client = 0;
     StdMetrics.ms_v_pos_speed->SetValue( 0 );
     StdMetrics.ms_v_pos_trip->SetValue( kia_park_trip_counter.GetDistance() );
@@ -738,15 +752,26 @@ void OvmsHyundaiIoniqEv::Ticker1(uint32_t ticker)
   // Update trip data
   if (StdMetrics.ms_v_env_on->AsBool()) {
     if (kia_park_trip_counter.Started()) {
-      kia_park_trip_counter.Update(POS_ODO, CUM_DISCHARGE, CUM_CHARGE);
+      kia_park_trip_counter.Update(POS_ODO,
+        StdMetrics.ms_v_bat_energy_used_total->AsFloat(kWh), StdMetrics.ms_v_bat_energy_recd_total->AsFloat(kWh),
+        StdMetrics.ms_v_bat_coulomb_used_total->AsFloat(kWh), StdMetrics.ms_v_bat_coulomb_recd_total->AsFloat(kWh)
+        );
+
       StdMetrics.ms_v_pos_trip->SetValue( kia_park_trip_counter.GetDistance(), Kilometers);
       if ( kia_park_trip_counter.HasEnergyData()) {
         StdMetrics.ms_v_bat_energy_used->SetValue( kia_park_trip_counter.GetEnergyUsed(), kWh );
         StdMetrics.ms_v_bat_energy_recd->SetValue( kia_park_trip_counter.GetEnergyRecuperated(), kWh );
       }
+      if ( kia_park_trip_counter.HasChargeData()) {
+        StdMetrics.ms_v_bat_coulomb_used->SetValue( kia_park_trip_counter.GetChargeUsed(), kWh );
+        StdMetrics.ms_v_bat_coulomb_recd->SetValue( kia_park_trip_counter.GetChargeRecuperated(), kWh );
+      }
     }
     if (kia_charge_trip_counter.Started()) {
-      kia_charge_trip_counter.Update(POS_ODO, CUM_DISCHARGE, CUM_CHARGE);
+      kia_charge_trip_counter.Update(POS_ODO,
+        StdMetrics.ms_v_bat_energy_used_total->AsFloat(kWh), StdMetrics.ms_v_bat_energy_recd_total->AsFloat(kWh),
+        StdMetrics.ms_v_bat_coulomb_used_total->AsFloat(kWh), StdMetrics.ms_v_bat_coulomb_recd_total->AsFloat(kWh)
+        );
       ms_v_pos_trip->SetValue( kia_charge_trip_counter.GetDistance(), Kilometers);
       if ( kia_charge_trip_counter.HasEnergyData()) {
         ms_v_trip_energy_used->SetValue( kia_charge_trip_counter.GetEnergyUsed(), kWh );
@@ -884,9 +909,10 @@ void OvmsHyundaiIoniqEv::Ticker1(uint32_t ticker)
   }
 
   // Wake up if car starts charging again
-  if (IsPollState_Off() && kia_last_battery_cum_charge < kia_battery_cum_charge) {
+  int accum_power_wh = StdMetrics.ms_v_bat_energy_recd_total->AsInt();
+  if (IsPollState_Off() && kia_last_battery_cum_charge < accum_power_wh ) {
     kia_secs_with_no_client = 0;
-    kia_last_battery_cum_charge = kia_battery_cum_charge;
+    kia_last_battery_cum_charge = accum_power_wh;
     if (StdMetrics.ms_v_env_on->AsBool()) {
       if (!IsPollState_Running()) {
         ESP_LOGD(TAG, "PollState->Running (ON)");
@@ -1057,6 +1083,11 @@ void OvmsHyundaiIoniqEv::HandleCharging()
   float bat_soc = StdMetrics.ms_v_bat_soc->AsFloat(100);
   if (!StdMetrics.ms_v_charge_inprogress->AsBool() ) {
     ESP_LOGI(TAG, "Charging starting");
+    kia_park_trip_counter.StartCharge(
+      StdMetrics.ms_v_bat_energy_recd_total->AsFloat(kWh),
+      StdMetrics.ms_v_bat_coulomb_recd_total->AsFloat(kWh)
+    );
+
     // ******* Charging started: **********
     StdMetrics.ms_v_charge_duration_full->SetValue( 1440 * (100 - bat_soc), Minutes ); // Lets assume 24H to full.
     if ( StdMetrics.ms_v_charge_timermode->AsBool()) {
@@ -1066,7 +1097,7 @@ void OvmsHyundaiIoniqEv::HandleCharging()
       SET_CHARGE_STATE("charging", "onrequest");
     }
     StdMetrics.ms_v_charge_kwh->SetValue( 0, kWh );  // kWh charged
-    kia_cum_charge_start = CUM_CHARGE; // Battery charge base point
+    kia_cum_charge_start = StdMetrics.ms_v_bat_energy_recd_total->AsFloat(kWh); // Battery charge base point
     StdMetrics.ms_v_charge_inprogress->SetValue( true );
     StdMetrics.ms_v_env_charging12v->SetValue( true);
 
@@ -1081,6 +1112,10 @@ void OvmsHyundaiIoniqEv::HandleCharging()
     float est_range = StdMetrics.ms_v_bat_range_est->AsFloat(400, Kilometers);
     float limit_range = StdMetrics.ms_v_charge_limit_range->AsFloat(0, Kilometers);
     float ideal_range = StdMetrics.ms_v_bat_range_ideal->AsFloat(450, Kilometers);
+    kia_park_trip_counter.FinishCharge(
+      StdMetrics.ms_v_bat_energy_recd_total->AsFloat(kWh),
+      StdMetrics.ms_v_bat_coulomb_recd_total->AsFloat(kWh)
+    );
 
     if (((bat_soc > 0) && (limit_soc > 0) && (bat_soc >= limit_soc) && (kia_last_soc < limit_soc))
       || ((est_range > 0) && (limit_range > 0)
@@ -1157,9 +1192,9 @@ void OvmsHyundaiIoniqEv::HandleCharging()
       SET_CHARGE_STATE("charging", NULL);
     }
   }
-  StdMetrics.ms_v_charge_kwh->SetValue(CUM_CHARGE - kia_cum_charge_start, kWh); // kWh charged
+  StdMetrics.ms_v_charge_kwh->SetValue(StdMetrics.ms_v_bat_energy_recd_total->AsFloat(kWh) - kia_cum_charge_start, kWh); // kWh charged
   kia_last_soc = bat_soc;
-  kia_last_battery_cum_charge = kia_battery_cum_charge;
+  kia_last_battery_cum_charge = StdMetrics.ms_v_bat_energy_recd_total->AsInt();
   kia_last_ideal_range = StdMetrics.ms_v_bat_range_ideal->AsFloat(100, Kilometers);
   StdMetrics.ms_v_charge_pilot->SetValue(true);
   XDISARM;
@@ -1185,7 +1220,7 @@ void OvmsHyundaiIoniqEv::HandleChargeStop()
   else {
     SET_CHARGE_STATE("stopped", "interrupted");
   }
-  StdMetrics.ms_v_charge_kwh->SetValue( CUM_CHARGE - kia_cum_charge_start, kWh );  // kWh charged
+  StdMetrics.ms_v_charge_kwh->SetValue( StdMetrics.ms_v_bat_energy_recd_total->AsFloat(kWh) - kia_cum_charge_start, kWh );  // kWh charged
 
   kia_cum_charge_start = 0;
   StdMetrics.ms_v_charge_inprogress->SetValue( false );
@@ -1200,7 +1235,10 @@ void OvmsHyundaiIoniqEv::HandleChargeStop()
   StdMetrics.ms_v_charge_duration_range->Clear();
 
   // Reset trip counter for this charge
-  kia_charge_trip_counter.Reset(POS_ODO, CUM_DISCHARGE, CUM_CHARGE);
+  kia_charge_trip_counter.Reset(POS_ODO,
+    StdMetrics.ms_v_bat_energy_used_total->AsFloat(kWh), StdMetrics.ms_v_bat_energy_recd_total->AsFloat(kWh),
+    StdMetrics.ms_v_bat_coulomb_used_total->AsFloat(kWh), StdMetrics.ms_v_bat_coulomb_recd_total->AsFloat(kWh)
+    );
   kia_secs_with_no_client = 0;
   SaveStatus();
   XDISARM;
@@ -1260,7 +1298,6 @@ void OvmsHyundaiIoniqEv::UpdateMaxRangeAndSOH(void)
   //TODO How to find the range as displayed in the cluster? Use the WLTP until we find it
   //wltpRange = (wltpRange * (100.0 - (int) (ABS(20.0 - (amb_temp+bat_temp * 3)/4)* 1.25))) / 100.0;
   StdMetrics.ms_v_bat_range_est->SetValue( wltpRange * BAT_SOC / 100.0, Kilometers);
-
   XDISARM;
 }
 

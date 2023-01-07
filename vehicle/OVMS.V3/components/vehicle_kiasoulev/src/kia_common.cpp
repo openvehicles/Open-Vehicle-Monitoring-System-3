@@ -195,6 +195,9 @@ Kia_Trip_Counter::Kia_Trip_Counter()
 	odo=0;
 	cdc=0;
 	cc=0;
+	cc_ext = 0;
+	charging = false;
+	charge_start = 0;
 	}
 
 Kia_Trip_Counter::~Kia_Trip_Counter()
@@ -208,15 +211,25 @@ Kia_Trip_Counter::~Kia_Trip_Counter()
  * cdc - Cumulated Discharge
  * cc - Cumulated Charge
  */
-void Kia_Trip_Counter::Reset(float odo, float cdc, float cc)
+void Kia_Trip_Counter::Reset(float odo, float cdc, float cc, float cdc_ah, float cc_ah)
 	{
+	cc_ext = 0;
+	cc_ah_ext = 0;
+	charging = false;
+	charge_start = 0;
+	charge_start_ah = 0;
+
 	Update(odo, cdc, cc);
 	if(odo_start==0 && odo!=0)
 		odo_start = odo;		// ODO at Start of trip
 	if(cdc_start==0 && cdc!=0)
-	  	cdc_start = cdc; 	// Register Cumulated discharge
+		cdc_start = cdc;	// Register Cumulated discharge
 	if(cc_start==0 && cc!=0)
-	  	cc_start = cc; 		// Register Cumulated charge
+		cc_start = cc;		// Register Cumulated charge
+	if(cdc_ah_start==0 && cdc_ah!=0)
+		cdc_ah_start = cdc_ah;	// Register Cumulated discharge
+	if(cc_ah_start==0 && cc_ah!=0)
+		cc_ah_start = cc_ah;		// Register Cumulated charge
 	}
 
 /*
@@ -226,11 +239,19 @@ void Kia_Trip_Counter::Reset(float odo, float cdc, float cc)
  * cdc - Accumulated Discharge
  * cc - Accumulated Charge
  */
-void Kia_Trip_Counter::Update(float current_odo, float current_cdc, float current_cc)
+void Kia_Trip_Counter::Update(float current_odo, float current_cdc, float current_cc, float current_cdc_ah, float current_cc_ah)
 	{
 	odo=current_odo;
 	cdc=current_cdc;
 	cc=current_cc;
+	cc_ah = current_cc_ah;
+	if (charging)
+		{
+		cc_ext += current_cc-charge_start;
+		cc_ah_ext += current_cc_ah - charge_start_ah;
+		charge_start = current_cc;
+		charge_start_ah = current_cc_ah;
+		}
 	}
 
 /*
@@ -248,6 +269,10 @@ bool Kia_Trip_Counter::HasEnergyData()
 	{
 	return cdc_start!=0 && cc_start!=0;
 	}
+bool Kia_Trip_Counter::HasChargeData()
+	{
+	return cdc_ah_start!=0 && cc_ah_start!=0;
+	}
 
 float Kia_Trip_Counter::GetDistance()
 	{
@@ -258,16 +283,63 @@ float Kia_Trip_Counter::GetDistance()
 
 float Kia_Trip_Counter::GetEnergyUsed()
 	{
+	float res = 0;
 	if( HasEnergyData())
-		return (cdc-cdc_start) - (cc-cc_start);
-	return 0;
+		{
+		res = (cdc-cdc_start) - (cc-cc_start);
+		if (charging)
+			res -= (cc-charge_start);
+		}
+	return res;
 	}
 
 float Kia_Trip_Counter::GetEnergyRecuperated()
 	{
 	if( HasEnergyData())
-		return cc - cc_start;
+		return (cc - cc_start) - cc_ext;
 	return 0;
+	}
+float Kia_Trip_Counter::GetChargeUsed()
+	{
+	float res = 0;
+	if( HasChargeData())
+		{
+		res = (cdc_ah-cdc_ah_start) - (cc_ah-cc_ah_start);
+		if (charging)
+			res -= (cc_ah-charge_start_ah);
+		}
+	return res;
+	}
+float Kia_Trip_Counter::GetChargeRecuperated()
+	{
+	if( HasChargeData())
+		return (cc_ah - cc_ah_start) - cc_ah_ext;
+	return 0;
+	}
+void Kia_Trip_Counter::StartCharge(float current_cc, float current_cc_ah)
+	{
+	if (!charging)
+		{
+		charging = true;
+		charge_start = current_cc;
+		cc = current_cc;
+		charge_start_ah = current_cc_ah;
+		cc_ah = current_cc_ah;
+		}
+	}
+void Kia_Trip_Counter::FinishCharge(float current_cc, float current_cc_ah)
+	{
+	if (charging)
+		{
+		charging = false;
+		cc_ext += current_cc-charge_start;
+		charge_start = 0;
+		cc = current_cc;
+
+		cc_ah_ext += current_cc_ah-charge_start_ah;
+		charge_start_ah = 0;
+		cc_ah = current_cc_ah;
+		}
 	}
 
 /*
@@ -282,18 +354,15 @@ RangeCalculator::RangeCalculator(float minimumTrip, float weightOfCurrentTrip, f
 	this->minimumTrip = minimumTrip;
 	this->weightOfCurrentTrip = weightOfCurrentTrip;
 	this->batteryCapacity = batteryCapacity;
-	for (int i = 0; i < 20; i++)
-		{
-		trips[i].distance=defaultRange;
-		trips[i].consumption=batteryCapacity;
-		}
+	this->defaultRange = defaultRange;
 
+	clearTrips();
 	restoreTrips();
 	}
 
 RangeCalculator::~RangeCalculator()
 	{
-  storeTrips();
+	storeTrips();
 	}
 
 /*
@@ -330,13 +399,28 @@ void RangeCalculator::restoreTrips()
 	if (currentTripPointer >= 20 || currentTripPointer<0) currentTripPointer = 0;
 	}
 
+void RangeCalculator::updateCapacity(float capacity)
+	{
+	if (capacity != batteryCapacity)
+		{
+		float oldCap = batteryCapacity;
+		batteryCapacity = capacity;
+		for (int i = 0; i < 20; i++)
+			{
+			TripConsumption &entry = trips[i];
+			if (entry.distance == defaultRange && entry.consumption == oldCap)
+				entry.consumption = capacity;
+			}
+		}
+	}
+
 /*
  * Updates the internal current trip
  */
 void RangeCalculator::updateTrip(float distance, float consumption)
 	{
 	trips[currentTripPointer].consumption = consumption;
-  trips[currentTripPointer].distance = distance;
+	trips[currentTripPointer].distance = distance;
 	}
 
 /*
@@ -360,27 +444,71 @@ void RangeCalculator::tripEnded(float distance, float consumption)
 		}
 	}
 
-/*
- * Returns the calculated full range based on driving history
- */
-float RangeCalculator::getRange()
+ /// Efficiency In km/kWh
+float RangeCalculator::getEfficiency()
 	{
 	float totalDistance = 0, totalConsumption = 0;
 	for (int i = 0; i < 20; i++)
 		{
 		totalDistance += trips[i].distance;
 		totalConsumption += trips[i].consumption;
-		//TODO ESP_LOGI("v-kianiroev", "%i %.2f km %.2f kWh",i, trips[i].distance, trips[i].consumption);
 		}
 
 	// Make current trip count more than the rest
 	totalDistance += trips[currentTripPointer].distance * (weightOfCurrentTrip - 1);
 	totalConsumption += trips[currentTripPointer].consumption * (weightOfCurrentTrip - 1);
 
-	float averageConsumption = totalConsumption / totalDistance;
-
-	return batteryCapacity / averageConsumption;
+	return totalDistance / totalConsumption ;
 	}
 
+/**
+ * Returns the calculated full range based on driving history
+ */
+float RangeCalculator::getRange()
+	{
+	return batteryCapacity * getEfficiency();
+	}
+void RangeCalculator::resetTrips()
+	{
+	clearTrips();
+	currentTripPointer = 0;
+	TripConsumption &entry = trips[0];
+	entry.distance = 0;
+	entry.consumption = 0;
+	storeTrips();
+	}
+void RangeCalculator::clearTrips()
+	{
+	for (int i = 0; i < 20; ++i)
+		{
+		TripConsumption &entry = trips[i];
+		entry.distance = defaultRange;
+		entry.consumption = batteryCapacity;
+		}
+	}
 
-
+void RangeCalculator::displayStoredTrips(OvmsWriter *writer)
+	{
+	writer->puts("+-Dist(km)-+-Power(kWh)-+");
+	// Put the 'current' one at the end (it's a circular buffer)
+	for (int i= 1; i < 21; ++i)
+		{
+		const TripConsumption &entry = trips[(i+currentTripPointer)%20];
+		float effic = UnitConvert(KPkWh, kWhP100K,
+			entry.distance/entry.consumption);
+		writer->printf("|%8.8g|%10.10g|%10.10g|%s\n",
+			entry.distance,
+			ROUNDPREC(entry.consumption,2),
+			ROUNDPREC(effic,2),
+			(i == 20) ? "<< current" : "");
+		}
+	writer->puts("+--------+----------+----------+");
+	writer->printf("Battery Capacity: %gkWh\n", batteryCapacity);
+	auto efficiency = UnitConvert(KPkWh, kWhP100K, getEfficiency());
+	writer->printf("Efficiency: %gkWh/100km\n", ROUNDPREC(efficiency,2));
+	float soc = StdMetrics.ms_v_bat_soc->AsFloat();
+	auto curRange = getRange();
+	writer->printf("Full Range: %gkm\n", ROUNDPREC(curRange,1));
+	writer->printf("SOC: %g%%\n", soc);
+	writer->printf("Range: %gkm\n", ROUNDPREC(curRange* soc / 100.0,1));
+	}

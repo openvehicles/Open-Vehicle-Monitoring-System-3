@@ -16,22 +16,37 @@ class Kia_Trip_Counter
     {
     private:
       float odo_start;
-      float cdc_start;                  // Used to calculate trip power use (Cumulated discharge)
-      float cc_start;                   // Used to calculate trip recuperation (Cumulated charge)
+      float cdc_start; // Used to calculate trip power use (Cumulated discharge)
+      float cc_start;  // Used to calculate trip recuperation (Cumulated charge)
+      float cdc_ah_start; // Used to calculate trip power use (Cumulated discharge)
+      float cc_ah_start;  // Used to calculate trip recuperation (Cumulated charge)
       float odo;
-      float cdc;
-      float cc;
+      float cdc;   // Cumulative Discharge
+      float cc;    // Cumulative Charge
+      float cdc_ah;// Cumulative Discharge  Amp Hours
+      float cc_ah; // Cumulative Charge Amp Hours
+
+      float cc_ext; // Cumulative charge (from external charging)
+      float cc_ah_ext; // Cumulative charge external - Amp Hours
+      bool charging;
+      float charge_start;
+      float charge_start_ah;
 
     public:
       Kia_Trip_Counter();
       ~Kia_Trip_Counter();
-      void Reset(float odo, float cdc, float cc);
-      void Update(float odo, float cdc, float cc);
+      void Reset(float odo, float cdc, float cc, float cdc_ah = 0, float cc_ah = 0);
+      void Update(float current_odo, float current_cdc, float current_cc, float current_cdc_ah = 0, float current_cc_ah = 0);
       float GetDistance();
       float GetEnergyUsed();
       float GetEnergyRecuperated();
+      float GetChargeUsed();
+      float GetChargeRecuperated();
       bool Started();
       bool HasEnergyData();
+      bool HasChargeData();
+      void StartCharge(float current_cc, float current_cc_ah = 0);
+      void FinishCharge(float current_cc, float current_cc_ah = 0);
     };
 
 class KiaVehicle : public OvmsVehicle
@@ -178,16 +193,22 @@ private:
        float minimumTrip = 1;
        float weightOfCurrentTrip = 4;
        float batteryCapacity = 64;
+       float defaultRange = 0;
 
        void storeTrips();
        void restoreTrips();
+       void clearTrips();
 
 public:
        RangeCalculator(float minimumTrip, float weightOfCurrentTrip, float defaultRange, float batteryCapacity);
        ~RangeCalculator();
+       void updateCapacity(float capacity);
        void updateTrip(float distance, float consumption);
        void tripEnded(float distance, float consumption);
        float getRange();
+       float getEfficiency();
+       void displayStoredTrips(OvmsWriter *writer);
+       void resetTrips();
 };
 
 #define SQR(n) ((n)*(n))
