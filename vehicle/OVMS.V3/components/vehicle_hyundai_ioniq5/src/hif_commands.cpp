@@ -513,7 +513,7 @@ void xiq_trip_since_charge(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, 
 
   OvmsHyundaiIoniqEv *mycar = (OvmsHyundaiIoniqEv *)(MyVehicleFactory.ActiveVehicle());
 
-  xiq_trip_( "TRIP SINCE CHARGE", writer, mycar->ms_v_pos_trip,  mycar->ms_v_pos_trip, mycar->ms_v_trip_energy_recd);
+  xiq_trip_( "TRIP SINCE CHARGE", writer, mycar->ms_v_pos_trip,  mycar->ms_v_trip_energy_used, mycar->ms_v_trip_energy_recd);
 
   XDISARM;
 }
