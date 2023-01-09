@@ -176,6 +176,8 @@ OvmsVehicleMgEv::OvmsVehicleMgEv()
     m_bcm_auth = MyMetrics.InitBool("xmg.auth.bcm", SM_STALE_MAX, false);
     m_gwm_task = MyMetrics.InitInt("xmg.task.gwm", SM_STALE_MAX, static_cast<int>(GWMTasks::None));
     m_bcm_task = MyMetrics.InitInt("xmg.task.bcm", SM_STALE_MAX, static_cast<int>(BCMTasks::None));
+    
+    m_trip_start = MyMetrics.InitFloat("xmg.p.trip.start", SM_STALE_MAX, SM_STALE_MAX);
 
     DRLFirstFrameSentCallback = std::bind(&OvmsVehicleMgEv::DRLFirstFrameSent, this, std::placeholders::_1, std::placeholders::_2);
 
@@ -301,10 +303,8 @@ void OvmsVehicleMgEv::processEnergy()
             // Set all values to zero
             if (StandardMetrics.ms_v_env_drivetime->AsInt() == 0) {
                 ESP_LOGI(TAG, "Trip has started");
-                StandardMetrics.ms_v_bat_coulomb_used->SetValue(0);
-                StandardMetrics.ms_v_bat_coulomb_recd->SetValue(0);
-                StandardMetrics.ms_v_bat_energy_used->SetValue(0);
-                StandardMetrics.ms_v_bat_energy_recd->SetValue(0);
+                // Reset trip
+                ResetTripCounters();
             // Otherwise we are already moving so do calculations
             }
             else
@@ -327,14 +327,23 @@ void OvmsVehicleMgEv::processEnergy()
                     StandardMetrics.ms_v_bat_coulomb_used->SetValue
                     (StandardMetrics.ms_v_bat_coulomb_used->AsFloat() + coulombs);
                 }
+                
+                // Update trip counters
+                UpdateTripCounters();
             }
         }
         // Not in READY so must have been turned off
         else
         {
             // We have only just stopped so add trip values to the totals
+            
             if (StandardMetrics.ms_v_env_parktime->AsInt() == 0) {
                 ESP_LOGI(TAG, "Trip has ended");
+                // Update trip distance
+                //StandardMetrics.ms_v_pos_trip->SetValue(StandardMetrics.ms_v_pos_odometer->AsFloat() - m_trip_start->AsFloat());
+                // Save current odometer reading at the start of the trip
+                //m_trip_start->SetValue(StandardMetrics.ms_v_pos_odometer->AsFloat());
+                
                 StandardMetrics.ms_v_bat_energy_used_total->SetValue
                 (StandardMetrics.ms_v_bat_energy_used_total->AsFloat()
                     + StandardMetrics.ms_v_bat_energy_used->AsFloat());
@@ -429,6 +438,71 @@ int OvmsVehicleMgEv::calcMinutesRemaining(int toSoc, charging_profile charge_ste
           }
     }
     return minutes;
+}
+
+/**
+ * ResetTripCounters: called at trip start to set reference points
+ */
+void OvmsVehicleMgEv::ResetTripCounters()
+{
+  StdMetrics.ms_v_pos_trip->SetValue(0);
+  m_odo_trip            = 0;
+  m_tripfrac_reftime    = esp_log_timestamp();
+  m_tripfrac_refspeed   = StdMetrics.ms_v_pos_speed->AsFloat();
+
+  StdMetrics.ms_v_bat_energy_recd->SetValue(0);
+  StdMetrics.ms_v_bat_energy_used->SetValue(0);
+  StdMetrics.ms_v_bat_coulomb_recd->SetValue(0);
+  StdMetrics.ms_v_bat_coulomb_used->SetValue(0);
+/*
+  m_energy_recd_start   = 0;
+  m_energy_used_start   = 0;
+  m_coulomb_recd_start  = 0;
+  m_coulomb_used_start  = 0;
+ */
+}
+
+/**
+ * UpdateTripCounters: odometer resolution is only 1 km, so trip distances lack
+ *  precision. To compensate, this method derives trip distance from speed.
+ */
+void OvmsVehicleMgEv::UpdateTripCounters()
+{
+  // Process speed update:
+
+  uint32_t now = esp_log_timestamp();
+  float speed = StdMetrics.ms_v_pos_speed->AsFloat();
+
+  if (m_tripfrac_reftime && now > m_tripfrac_reftime) {
+    float speed_avg = ABS(speed + m_tripfrac_refspeed) / 2;
+    uint32_t time_ms = now - m_tripfrac_reftime;
+    double meters = speed_avg / 3.6 * time_ms / 1000;
+    m_odo_trip += meters / 1000;
+    StdMetrics.ms_v_pos_trip->SetValue(TRUNCPREC(m_odo_trip,3));
+  }
+
+  m_tripfrac_reftime = now;
+  m_tripfrac_refspeed = speed;
+
+  // Process energy update:
+/*
+  float energy_recd  = StdMetrics.ms_v_bat_energy_recd_total->AsFloat();
+  float energy_used  = StdMetrics.ms_v_bat_energy_used_total->AsFloat();
+  float coulomb_recd = StdMetrics.ms_v_bat_coulomb_recd_total->AsFloat();
+  float coulomb_used = StdMetrics.ms_v_bat_coulomb_used_total->AsFloat();
+
+  if (m_coulomb_used_start == 0) {
+    m_energy_recd_start  = energy_recd;
+    m_energy_used_start  = energy_used;
+    m_coulomb_recd_start = coulomb_recd;
+    m_coulomb_used_start = coulomb_used;
+  } else {
+    StdMetrics.ms_v_bat_energy_recd->SetValue(energy_recd - m_energy_recd_start);
+    StdMetrics.ms_v_bat_energy_used->SetValue(energy_used - m_energy_used_start);
+    StdMetrics.ms_v_bat_coulomb_recd->SetValue(coulomb_recd - m_coulomb_recd_start);
+    StdMetrics.ms_v_bat_coulomb_used->SetValue(coulomb_used - m_coulomb_used_start);
+  }
+ */
 }
 
 //Called by OVMS when a wake up command is requested
