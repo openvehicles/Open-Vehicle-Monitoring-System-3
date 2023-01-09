@@ -7,6 +7,7 @@
 #include <fstream>
 #include <sdkconfig.h>
 #include "ovms_webserver.h"
+#include "ovms_peripherals.h"
 #include "kia_common.h"
 
 int KiaVehicle::CalcRemainingChargeMinutes(float chargespeed, int fromSoc, int toSoc, int batterySize, charging_profile charge_steps[])
@@ -342,6 +343,7 @@ void Kia_Trip_Counter::FinishCharge(float current_cc, float current_cc_ah)
 		}
 	}
 
+static const char *CALCTAG = "rangecalc";
 /*
  * Constructor for the range calculator
  * int minimumTrip  - The minium length a trip has to be in order to be included in the future calculations.
@@ -358,10 +360,18 @@ RangeCalculator::RangeCalculator(float minimumTrip, float weightOfCurrentTrip, f
 
 	clearTrips();
 	restoreTrips();
+#ifdef bind
+	#undef bind  // Kludgy, but works
+#endif
+	using std::placeholders::_1;
+	using std::placeholders::_2;
+	MyEvents.RegisterEvent(CALCTAG, "sd.mounted",
+			std::bind(&RangeCalculator::SDCardMountListener, this, _1, _2));
 	}
 
 RangeCalculator::~RangeCalculator()
 	{
+  MyEvents.DeregisterEvent(CALCTAG);
 	storeTrips();
 	}
 
@@ -371,6 +381,12 @@ RangeCalculator::~RangeCalculator()
  */
 void RangeCalculator::storeTrips()
 	{
+#ifdef CONFIG_OVMS_COMP_SDCARD
+	if (!storeToFile)
+		return;
+	sdcard *sd = MyPeripherals->m_sdcard;
+	if ( sd == NULL || !sd->isinserted() || (!sd->ismounted()))
+		return;
 	FILE *sf = NULL;
 	sf = fopen(RANGE_CALC_DATA_PATH, "w");
 	if (sf == NULL)
@@ -380,6 +396,7 @@ void RangeCalculator::storeTrips()
 	fwrite(&currentTripPointer, sizeof(int), 1, sf);
 	fwrite(trips, sizeof(TripConsumption), 20, sf);
 	fclose(sf);
+#endif
 	}
 
 /*
@@ -387,6 +404,12 @@ void RangeCalculator::storeTrips()
  */
 void RangeCalculator::restoreTrips()
 	{
+#ifdef CONFIG_OVMS_COMP_SDCARD
+	sdcard *sd = MyPeripherals->m_sdcard;
+	if ( sd == NULL || !sd->isinserted() || (!sd->ismounted()))
+		return;
+	// At least we tried.
+	storeToFile = true;
 	FILE *sf = NULL;
 	sf = fopen(RANGE_CALC_DATA_PATH, "r");
 	if (sf == NULL)
@@ -397,6 +420,7 @@ void RangeCalculator::restoreTrips()
 	fread(trips, sizeof(TripConsumption), 20, sf);
 	fclose(sf);
 	if (currentTripPointer >= 20 || currentTripPointer<0) currentTripPointer = 0;
+#endif
 	}
 
 void RangeCalculator::updateCapacity(float capacity)
@@ -468,6 +492,10 @@ float RangeCalculator::getRange()
 	{
 	return batteryCapacity * getEfficiency();
 	}
+/**
+ * Reset the trips used for the range calculator.
+ * Stores to the file.
+ */
 void RangeCalculator::resetTrips()
 	{
 	clearTrips();
@@ -475,8 +503,12 @@ void RangeCalculator::resetTrips()
 	TripConsumption &entry = trips[0];
 	entry.distance = 0;
 	entry.consumption = 0;
+	storeToFile = true;
 	storeTrips();
 	}
+/**
+ * Initialise the trips to the default.
+ */
 void RangeCalculator::clearTrips()
 	{
 	for (int i = 0; i < 20; ++i)
@@ -485,11 +517,30 @@ void RangeCalculator::clearTrips()
 		entry.distance = defaultRange;
 		entry.consumption = batteryCapacity;
 		}
+	storeToFile = false;
+	}
+
+void RangeCalculator::SDCardMountListener(std::string event, void* data)
+	{
+	restoreTrips();
 	}
 
 void RangeCalculator::displayStoredTrips(OvmsWriter *writer)
 	{
-	writer->puts("+-Dist(km)-+-Power(kWh)-+");
+	writer->printf("Range Calculator%s\n", storeToFile ? "" : " (not stored)");
+#ifndef CONFIG_OVMS_COMP_SDCARD
+	writer->puts("SD Card Not Implemented");
+#else
+	sdcard *sd = MyPeripherals->m_sdcard;
+	if (!sd)
+		writer->puts("SD Card System Missing");
+	if (!sd->isinserted())
+		writer->puts("SD Card Not Inserted");
+	else if (!sd->ismounted())
+		writer->puts("SD Card Not Mounted");
+#endif
+
+	writer->puts("+Dist(km)+Power(kWh)+-kWh/100km+");
 	// Put the 'current' one at the end (it's a circular buffer)
 	for (int i= 1; i < 21; ++i)
 		{

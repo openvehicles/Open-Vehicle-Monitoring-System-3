@@ -3,6 +3,7 @@
 
 #include "vehicle.h"
 #include "ovms_webserver.h"
+#include <sdkconfig.h>
 
 using namespace std;
 
@@ -135,7 +136,6 @@ protected:
   		float soc;
   }Kia_Save_Status;
 
-
   int CalcRemainingChargeMinutes(float chargespeed, int fromSoc, int toSoc, int batterySize, charging_profile charge_steps[]);
   int CalcAUXSoc(float volt);
   void SaveStatus();
@@ -180,7 +180,9 @@ protected:
 
 class RangeCalculator
 {
+#ifdef CONFIG_OVMS_COMP_SDCARD
 #define     RANGE_CALC_DATA_PATH "/sd/RangeCalc.dat"
+#endif
 
 private:
        typedef struct {
@@ -194,6 +196,7 @@ private:
        float weightOfCurrentTrip = 4;
        float batteryCapacity = 64;
        float defaultRange = 0;
+       bool storeToFile;
 
        void storeTrips();
        void restoreTrips();
@@ -209,6 +212,8 @@ public:
        float getEfficiency();
        void displayStoredTrips(OvmsWriter *writer);
        void resetTrips();
+       void SDCardMountListener(std::string event, void* data);
+
 };
 
 #define SQR(n) ((n)*(n))
