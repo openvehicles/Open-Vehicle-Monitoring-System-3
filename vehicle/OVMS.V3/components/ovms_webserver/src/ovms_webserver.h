@@ -368,7 +368,7 @@ enum WebSocketTxJobType
   WSTX_Notify,                // payload: notification
   WSTX_LogBuffers,            // payload: logbuffers
   WSTX_UnitMetricUpdate,      // payload: -
-  WSTX_UnitVehicleUpdate,     // payload: -
+  WSTX_UnitPrefsUpdate,       // payload: -
 };
 
 struct WebSocketTxJob
@@ -437,7 +437,7 @@ class WebSocketHandler : public MgHandler, public OvmsWriter
     int                       m_last = 0;             // last entry sent up
     std::set<std::string>     m_subscriptions;
     bool                      m_units_subscribed;
-    bool                      m_units_vehicle_subscribed;
+    bool                      m_units_prefs_subscribed;
 };
 
 struct WebSocketSlot

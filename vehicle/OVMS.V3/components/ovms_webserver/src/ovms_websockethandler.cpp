@@ -73,7 +73,7 @@ WebSocketHandler::WebSocketHandler(mg_connection* nc, size_t slot, size_t modifi
   m_job.type = WSTX_None;
   m_sent = m_ack = m_last = 0;
   m_units_subscribed = false;
-  m_units_vehicle_subscribed = false;
+  m_units_prefs_subscribed = false;
 
   MyMetrics.InitialiseSlot(m_slot);
   MyUserMetrics.InitialiseSlot(m_slot);
@@ -231,7 +231,7 @@ void WebSocketHandler::ProcessTxJob()
       }
       break;
     }
-    case WSTX_UnitVehicleUpdate:
+    case WSTX_UnitPrefsUpdate:
     {
       // Note: this loops over the metrics by index, keeping the last checked position
       //  in m_last. It will not detect new metrics added between polls if they are
@@ -254,7 +254,7 @@ void WebSocketHandler::ProcessTxJob()
           ++m_last;
           metric_group_t group = MyUserMetrics.config_groups[groupindex];
 
-          bool send = MyUserMetrics.IsModifiedAndClear(group, m_modifier);
+          bool send = MyUserMetrics.IsGroupConfModifiedAndClear(group, m_modifier);
           if (send) {
             metric_unit_t user_units = MyUserMetrics.GetUserUnit(group);
             std::string unitLabel;
@@ -760,10 +760,10 @@ void OvmsWebServer::UpdateTicker(TimerHandle_t timer)
           slot.handler->AddTxJob({ WSTX_UnitMetricUpdate, NULL });
         }
       }
-      if (slot.handler->m_units_vehicle_subscribed) {
+      if (slot.handler->m_units_prefs_subscribed) {
         // Triger unit group config update.
-        if (MyUserMetrics.HasModified(slot.handler->m_modifier))
-          slot.handler->AddTxJob({ WSTX_UnitVehicleUpdate, NULL });
+        if (MyUserMetrics.HasModifiedGroupConf(slot.handler->m_modifier))
+          slot.handler->AddTxJob({ WSTX_UnitPrefsUpdate, NULL });
       }
     }
   }
@@ -834,8 +834,8 @@ void WebSocketHandler::UnitsCheckSubscribe()
 void WebSocketHandler::UnitsCheckVehicleSubscribe()
 {
   bool newSubscribe = IsSubscribedTo("units/prefs");
-  if (newSubscribe != m_units_vehicle_subscribed) {
-    m_units_vehicle_subscribed = newSubscribe;
+  if (newSubscribe != m_units_prefs_subscribed) {
+    m_units_prefs_subscribed = newSubscribe;
     if (newSubscribe) {
       ESP_LOGD(TAG, "WebSocketHandler[%p/%d]: Subscribed to units/prefs", m_nc, m_modifier);
       MyUserMetrics. InitialiseSlot(m_modifier);
