@@ -582,9 +582,9 @@ void OvmsConfig::upgrade()
     auto val = GetParamValue("vehicle", "units.preasure");
     if (val != "")
       {
-      if (GetParamValue("vehicle", "units.prssure") != "")
+      if (GetParamValue("vehicle", "units.pressure") != "")
         SetParamValue("vehicle", "units.pressure", val);
-      SetParamValue("vehicle", "units.preasure", "");
+      DeleteInstance("vehicle", "units.preasure");
       }
     }
 
