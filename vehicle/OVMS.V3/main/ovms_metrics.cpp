@@ -59,7 +59,7 @@ std::map<std::size_t, const char*>      pmetrics_keymap       // hash key → me
 OvmsMetrics                             MyMetrics
                                         __attribute__ ((init_priority (1800)));
 
-UserMetricMap                           MyUserMetrics
+UserUnitConfigMap                       MyUserUnitConf
                                         __attribute__ ((init_priority (1800)));
 
 struct OvmsUnitInfo {
@@ -444,7 +444,7 @@ static bool CheckTargetUnit(metric_unit_t from, metric_unit_t &to, bool full_che
     case ToUser:
       {
       metric_group_t from_grp = GetMetricGroup(from);
-      to = MyUserMetrics.GetUserUnit(from_grp);
+      to = MyUserUnitConf.GetUserUnit(from_grp);
       return true;
       }
     default:
@@ -2671,7 +2671,7 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
   return value;
   }
 
-UserMetricMap::UserMetricMap()
+UserUnitConfigMap::UserUnitConfigMap()
   {
   for (auto it = m_modified.begin(); it != m_modified.end(); ++it)
     *it = 0;
@@ -2679,19 +2679,19 @@ UserMetricMap::UserMetricMap()
     *it = UnitNotFound;
   OvmsMetricGroupConfigList(config_groups);
 
-  Load();
 #ifdef bind
   #undef bind  // Kludgy, but works
 #endif
   using std::placeholders::_1;
   using std::placeholders::_2;
   MyEvents.RegisterEvent(TAG, "config.changed",
-      std::bind(&UserMetricMap::ConfigEventListener, this, _1, _2));
+      std::bind(&UserUnitConfigMap::ConfigEventListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "config.mounted",
+      std::bind(&UserUnitConfigMap::ConfigMountedListener, this, _1, _2));
   }
 
-void UserMetricMap::Load()
+void UserUnitConfigMap::Load()
   {
-
   OvmsMutexLock store_lock(&m_store_lock);
 
   // Fill the groups with a user configurable list
@@ -2717,24 +2717,24 @@ void UserMetricMap::Load()
     }
   }
 
-void UserMetricMap::InitialiseSlot(size_t modifier)
+void UserUnitConfigMap::InitialiseSlot(size_t modifier)
   {
   unsigned long bit = 1ul << modifier;
   for (auto it = m_modified.begin(); it != m_modified.end(); ++it)
     *it |= bit;
   }
 
-metric_unit_t UserMetricMap::GetUserUnit( metric_group_t group, metric_unit_t defaultUnit )
+metric_unit_t UserUnitConfigMap::GetUserUnit( metric_group_t group, metric_unit_t defaultUnit )
   {
   uint8_t groupint = static_cast<uint8_t>(group);
   if (groupint >= m_map.size())
     return defaultUnit;
   OvmsMutexLock store_lock(&m_store_lock);
   auto res = m_map[groupint];
-  return (res== UnitNotFound? defaultUnit: res);
+  return (res== UnitNotFound ? defaultUnit : res);
   }
 
-metric_unit_t UserMetricMap::GetUserUnit( metric_unit_t unit)
+metric_unit_t UserUnitConfigMap::GetUserUnit( metric_unit_t unit)
   {
   metric_group_t grp = GetMetricGroup(unit);
   if (grp == GrpNone || grp == GrpOther)
@@ -2742,7 +2742,7 @@ metric_unit_t UserMetricMap::GetUserUnit( metric_unit_t unit)
   return GetUserUnit(grp);
   }
 
-void UserMetricMap::ConfigEventListener(std::string event, void* data)
+void UserUnitConfigMap::ConfigEventListener(std::string event, void* data)
   {
   if (data == NULL)
     return;
@@ -2751,12 +2751,17 @@ void UserMetricMap::ConfigEventListener(std::string event, void* data)
     Load();
   }
 
-void UserMetricMap::ConfigList(metric_group_list_t& groups)
+void UserUnitConfigMap::ConfigMountedListener(std::string event, void* data)
+  {
+  Load();
+  }
+
+void UserUnitConfigMap::ConfigList(metric_group_list_t& groups)
   {
   groups.insert(groups.begin(), config_groups.begin(), config_groups.end());
   }
 
-bool UserMetricMap::HasModified(size_t modifier)
+bool UserUnitConfigMap::HasModified(size_t modifier)
   {
   for (auto it = config_groups.begin(); it != config_groups.end(); ++it)
     if (IsModified(*it, modifier))
@@ -2764,7 +2769,7 @@ bool UserMetricMap::HasModified(size_t modifier)
   return false;
   }
 
-bool UserMetricMap::IsModified( metric_group_t group, size_t modifier)
+bool UserUnitConfigMap::IsModified( metric_group_t group, size_t modifier)
   {
   uint8_t groupint = static_cast<uint8_t>(group);
   if (groupint >= m_modified.size())
@@ -2772,7 +2777,7 @@ bool UserMetricMap::IsModified( metric_group_t group, size_t modifier)
    return m_modified[groupint] & (1ul << modifier);
   }
 
-bool UserMetricMap::IsModifiedAndClear(metric_group_t group, size_t modifier)
+bool UserUnitConfigMap::IsModifiedAndClear(metric_group_t group, size_t modifier)
   {
   uint8_t groupint = static_cast<uint8_t>(group);
   if (groupint >= m_modified.size())

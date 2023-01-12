@@ -1099,7 +1099,7 @@ dash_gauge_t::dash_gauge_t(const char *titlePrefix, metric_unit_t defUnit, metri
   if (group == GrpOther)
     user_unit = defUnit;
   else
-    user_unit = MyUserMetrics.GetUserUnit(group, defUnit);
+    user_unit = MyUserUnitConf.GetUserUnit(group, defUnit);
   base_unit = defUnit;
 }
 float dash_gauge_t::UntConvert( float inValue ) const
