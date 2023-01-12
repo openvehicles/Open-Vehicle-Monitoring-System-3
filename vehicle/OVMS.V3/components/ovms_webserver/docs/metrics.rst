@@ -16,7 +16,7 @@ So for example the user could configure distance values to be in miles, and in t
 ``metrics_label["v.p.odometer"]`` would return "M".
 
 The user conversion information is contained in another object ``units``.  ``units.metrics``
-has the user configuration for each metric and ``units.vehicle`` has the user configuration
+has the user configuration for each metric and ``units.prefs`` has the user configuration
 for each group of metrics (distance, temperature, consumption, pressure etc). There also some methods
 for general conversions allowing user preferences.
 - The method ``units.unitLabelToUser(unitType,name)`` will return the user
@@ -26,8 +26,8 @@ for general conversions allowing user preferences.
 
 Metrics updates (as well as other updates) are sent to all DOM elements having the
 ``receiver`` class. To hook into these updates, simply add an event listener for
-``msg:metrics``. The event ``msg:units`` is called when ``units.metrics`` or
-``units.vehicle`` are changed.
+``msg:metrics:``. The event ``msg:units:metrics`` is called when ``units.metrics`` is change
+and ``msg:units:prefs`` when ``units.prefs`` are changed.
 
 Listening to the event is not necessary though if all you need is some metrics
 display. This is covered by the ``metric`` widget class family as shown here.
@@ -52,7 +52,7 @@ The following example covers…
 Where a number element of class 'metric' contains both elements of class
 'value' and 'unit', these will be automatically displayed in the units selected
 in the user preferences. Having a 'data-user' attribute will also cause the
-'value' element to be displayed in user units.
+'value' element to be displayed in user units (unless 'data-scale' attribute is present).
 
 Gauges & charts use the HighCharts library, which is included in the web server. The other widgets
 are simple standard Bootstrap widgets extended by an automatic metrics value update mechanism.

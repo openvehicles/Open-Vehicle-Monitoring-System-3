@@ -614,14 +614,14 @@ function initSocketConnection(){
         for (var subtype in msg.units) {
           if (subtype == "metrics") {
             $.extend(units.metrics, msg.units.metrics);
-            $(".receiver").trigger("msg:units", msg.units.metrics);
+            $(".receiver").trigger("msg:units:metrics", msg.units.metrics);
             var msgmetrics = {};
             for (metricname in msg.units.metrics)
               msgmetrics[metricname] = metrics[metricname];
             $(".receiver").trigger("msg:metrics", msgmetrics);
           } else if (subtype == "prefs") {
             $.extend(units.prefs, msg.units.prefs);
-            $(".receiver").trigger("msg:vehicle_units", msg.units.prefs);
+            $(".receiver").trigger("msg:units:prefs", msg.units.prefs);
           }
         }
       }
