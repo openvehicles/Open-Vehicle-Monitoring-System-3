@@ -39,6 +39,26 @@ Open Vehicle Monitor System v3 - Change log
   Add -u to 'metrics list' to view metrics as  user units.
 - Add completion for metrics set/get as well as units
 - Mini Cooper SE: Initial support
+- Hyundai Ioniq vFL: trip metrics, range estimations, TPMS, web configuration,
+    charge type detection, charge speed & time estimation
+  New configs:
+    [xhi] ctp.maxpower                -- Default charge power limit [kW] for charge time estimations, default 0 = unlimited
+    [xhi] ctp.soclimit                -- SOC level [%] for secondary charge time estimation (sufficient SOC), default 80
+    [xhi] notify.charge.delay.ccs     -- Wait time [sec] for DC charge power to ramp up before sending the notification, default 15
+    [xhi] notify.charge.delay.type2   -- … same for AC charging, default 3
+    [xhi] range.ideal                 -- ideal new car range [km], default 200
+    [xhi] range.user                  -- typical current user range [km], default 200
+    [xhi] range.smoothing             -- Number of SOC samples, default 10 = ~ 5% SOC
+    [xhi] tpms.pressure.warn		      -- default 230 [kPa]
+    [xhi] tpms.pressure.alert         -- default 220 [kPa]
+    [xhi] tpms.temp.warn              -- default 90 [°C]
+    [xhi] tpms.temp.alert             -- default 100 [°C]
+  New metrics:
+    xhi.b.range.user                  -- actual current user range [km]
+    xhi.e.state                       -- General/ignition state flags
+- Module: support deep sleep schedules
+  New commands:
+    module sleep                      -- Shutdown all components and enter deep sleep for a time span or until a specific time.
 - Add support for user-configured metrics in the web interface and plugins:
    Adds an extra 'units' stream from the websocket containing sub-streams:
      - metrics (for the current user unit/label for each metric) (subscribe to units/metrics)
@@ -47,18 +67,6 @@ Open Vehicle Monitor System v3 - Change log
    Adds various browser javascript functions and methods for plugins related
      to displaying user configurations Auto-converts metric display to user
      units in plugins that use attributes
-- Hyundai Ioniq vFL: trip metrics, range estimations, TPMS, web configuration
-    New configs:
-      [xhi] range.ideal                 -- ideal new car range [km], default 200
-      [xhi] range.user                  -- typical current user range [km], default 200
-      [xhi] range.smoothing             -- Number of SOC samples, default 10 = ~ 5% SOC
-      [xhi] tpms.pressure.warn		      -- default 230 [kPa]
-      [xhi] tpms.pressure.alert         -- default 220 [kPa]
-      [xhi] tpms.temp.warn              -- default 90 [°C]
-      [xhi] tpms.temp.alert             -- default 100 [°C]
-    New metrics:
-      xhi.b.range.user                  -- actual current user range [km]
-      xhi.e.state                       -- General/ignition state flags
 
 2022-09-01 MWJ  3.3.003  OTA release
 - Toyota RAV4 EV: Initial support added. Only the Tesla bus is decoded and just listening so far.

@@ -59,6 +59,8 @@ void OvmsVehicleHyundaiVFL::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
     nmap["range.ideal"] = c.getvar("range_ideal");
     nmap["range.user"] = c.getvar("range_user");
     nmap["range.smoothing"] = c.getvar("range_smoothing");
+    nmap["ctp.maxpower"] = c.getvar("ctp_maxpower");
+    nmap["ctp.soclimit"] = c.getvar("ctp_soclimit");
     nmap["tpms.pressure.warn"] = c.getvar("tpms_pressure_warn");
     nmap["tpms.pressure.alert"] = c.getvar("tpms_pressure_alert");
     nmap["tpms.temp.warn"] = c.getvar("tpms_temp_warn");
@@ -97,6 +99,17 @@ void OvmsVehicleHyundaiVFL::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
     nmap["range.smoothing"].empty() ? 10 : std::stof(nmap["range.smoothing"]), 10, 0, 200, 1,
     "<p>The lower you set this, the faster the range estimation will adapt to the current driving conditions.</p>"
     "<p>0 disables smoothing, 10 is approximately equivalent to smoothing over 5% SOC usage, 200 to 100% SOC usage.</p>");
+  c.fieldset_end();
+
+  c.fieldset_start("Charge Time Prediction");
+  c.input_slider("Default power limit", "ctp_maxpower", 3, "kW", -1,
+    nmap["ctp.maxpower"].empty() ? 0 : std::stof(nmap["ctp.maxpower"]), 0, 0, 70, 0.1,
+    "<p>Used while not charging, default 0 = unlimited (except by car).</p>"
+    "<p>Note: this needs to be the power level at the battery, i.e. after losses.</p>"
+    "<p>Set above 50 kW to use high power charging curve.</p>");
+  c.input_slider("Default SOC limit", "ctp_soclimit", 3, "%", -1,
+    nmap["ctp.soclimit"].empty() ? 80 : std::stof(nmap["ctp.soclimit"]), 80, 10, 100, 5,
+    "<p>Used as the sufficient SOC charge destination.</p>");
   c.fieldset_end();
 
   c.fieldset_start("Tyre Monitoring (TPMS)");

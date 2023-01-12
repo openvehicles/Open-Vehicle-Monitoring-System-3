@@ -94,6 +94,10 @@ OvmsVehicleHyundaiVFL::OvmsVehicleHyundaiVFL()
   m_xhi_bat_soc_bms = MyMetrics.InitFloat("xhi.b.soc.bms", 30, 0, Percentage, true);
   m_xhi_bat_range_user = MyMetrics.InitFloat("xhi.b.range.user", 120, 0, Kilometers, true);
 
+  if (StdMetrics.ms_v_bat_soh->AsFloat() <= 0) {
+    StdMetrics.ms_v_bat_soh->SetValue(100);
+  }
+
   // Init BMS:
   BmsSetCellArrangementVoltage(96, 12);
   BmsSetCellArrangementTemperature(12, 1);
@@ -173,6 +177,47 @@ void OvmsVehicleHyundaiVFL::ConfigChanged(OvmsConfigParam *param)
              m_cfg_range_ideal, m_cfg_range_user);
     CalculateRangeEstimations(true);
   }
+
+  // Set v.c.limit.soc (sufficient SOC for charge):
+  float suff_soc = MyConfig.GetParamValueFloat("xhi", "ctp.soclimit", 80);
+  StdMetrics.ms_v_charge_limit_soc->SetValue(suff_soc);
+
+  UpdateChargeTimes();
+}
+
+
+/**
+ * MetricModified: hook into general listener for metrics changes
+ */
+void OvmsVehicleHyundaiVFL::MetricModified(OvmsMetric* metric)
+{
+  bool is_charging = StdMetrics.ms_v_charge_inprogress->AsBool();
+
+  // Update charge time estimations on…
+  if (metric == StdMetrics.ms_v_bat_soc ||
+      (metric == StdMetrics.ms_v_bat_power && is_charging) ||
+      metric == StdMetrics.ms_v_charge_inprogress)
+  {
+    UpdateChargeTimes();
+  }
+
+  // Update range estimations on…
+  if (metric == StdMetrics.ms_v_bat_soc)
+  {
+    CalculateRangeEstimations();
+    
+    // …also check for sufficient SOC reached during charge:
+    if (is_charging) {
+      float curr_soc = StdMetrics.ms_v_bat_soc->AsFloat();
+      float suff_soc = StdMetrics.ms_v_charge_limit_soc->AsFloat();
+      if (m_charge_lastsoc < suff_soc && curr_soc >= suff_soc)
+        StdMetrics.ms_v_charge_state->SetValue("topoff");
+      m_charge_lastsoc = curr_soc;
+    }
+  }
+
+  // Pass update on to standard handler:
+  OvmsVehicle::MetricModified(metric);
 }
 
 
@@ -198,13 +243,32 @@ void OvmsVehicleHyundaiVFL::IncomingPollReply(canbus* bus, uint16_t type, uint16
     {
       // Read status & battery metrics:
       m_xhi_bat_soc_bms->SetValue(RXB_BYTE(4) * 0.5f);
-      m_xhi_charge_state->SetValue(RXB_BYTE(9));
+
+      uint8_t charge_state = RXB_BYTE(9);
+      bool flag_charge_dc = (charge_state & 0x40);
+      bool flag_charge_ac = (charge_state & 0x20);
+
+      m_xhi_charge_state->SetValue(charge_state);
       m_xhi_env_state->SetValue(RXB_BYTE(50));
+      
       float bat_current = RXB_INT16(10) * 0.1f;
       float bat_voltage = RXB_UINT16(12) * 0.1f;
-      StdMetrics.ms_v_bat_current->SetValue(bat_current);
+      float bat_power = bat_voltage * bat_current / 1000;
+      
       StdMetrics.ms_v_bat_voltage->SetValue(bat_voltage);
-      StdMetrics.ms_v_bat_power->SetValue(bat_voltage * bat_current / 1000);
+      StdMetrics.ms_v_bat_current->SetValue(bat_current);
+      StdMetrics.ms_v_bat_power->SetValue(bat_power);
+      
+      if (flag_charge_dc) {
+        StdMetrics.ms_v_charge_type->SetValue("ccs");
+      }
+      else if (flag_charge_ac) {
+        StdMetrics.ms_v_charge_type->SetValue("type2");
+      }
+      else {
+        StdMetrics.ms_v_charge_type->SetValue("");
+      }
+
       StdMetrics.ms_v_bat_coulomb_recd_total->SetValue(RXB_UINT32(30) * 0.1f);
       StdMetrics.ms_v_bat_coulomb_used_total->SetValue(RXB_UINT32(34) * 0.1f);
       StdMetrics.ms_v_bat_energy_recd_total->SetValue(RXB_UINT32(38) * 0.1f);
@@ -265,17 +329,14 @@ void OvmsVehicleHyundaiVFL::IncomingPollReply(canbus* bus, uint16_t type, uint16
       // Read SOH & user SOC:
       float bat_soh = RXB_UINT16(25) * 0.1f;
       StdMetrics.ms_v_bat_soh->SetValue(bat_soh);
+      StdMetrics.ms_v_bat_cac->SetValue(m_bat_nominal_cap_ah * (bat_soh/100));
+
       float bat_soc = RXB_BYTE(31) * 0.5f;
-      bool soc_changed = StdMetrics.ms_v_bat_soc->SetValue(bat_soc);
+      StdMetrics.ms_v_bat_soc->SetValue(bat_soc);
 
       // Update trip reference for SOC usage:
       if (m_drive_startsoc == 0) {
         m_drive_startsoc = bat_soc;
-      }
-      
-      // Update range estimations only at the SOC steps (0.5%):
-      if (soc_changed) {
-        CalculateRangeEstimations();
       }
       break;
     }
@@ -357,7 +418,6 @@ void OvmsVehicleHyundaiVFL::PollerStateTicker()
   int env_state = m_xhi_env_state->AsInt();
 
   //bool flag_mainrelay = (charge_state & 0x01);      // BMS main relay closed
-  //bool flag_pluggedin = (charge_state & 0x20);      // Plugged in / charge port / pilot (?)
   bool flag_charging  = (charge_state & 0x80);      // Main battery is charging
   bool flag_ignition  = (env_state & 0x04);         // Ignition switched on
 
@@ -393,11 +453,16 @@ void OvmsVehicleHyundaiVFL::PollerStateTicker()
   {
     if (m_poll_state != STATE_CHARGING) {
       // Charge started:
+      m_charge_lastsoc = StdMetrics.ms_v_bat_soc->AsFloat();
+      float suff_soc = StdMetrics.ms_v_charge_limit_soc->AsFloat();
       StdMetrics.ms_v_door_chargeport->SetValue(true);
       StdMetrics.ms_v_charge_pilot->SetValue(true);
       StdMetrics.ms_v_charge_inprogress->SetValue(true);
       StdMetrics.ms_v_charge_substate->SetValue("onrequest");
-      StdMetrics.ms_v_charge_state->SetValue("charging");
+      if (m_charge_lastsoc < suff_soc)
+        StdMetrics.ms_v_charge_state->SetValue("charging");
+      else
+        StdMetrics.ms_v_charge_state->SetValue("topoff");
       PollSetState(STATE_CHARGING);
     }
   }
@@ -457,6 +522,15 @@ void OvmsVehicleHyundaiVFL::PollerStateTicker()
       }
     }
   }
+}
+
+
+/**
+ * Vehicle framework per minute ticker
+ */
+void OvmsVehicleHyundaiVFL::Ticker60(uint32_t ticker)
+{
+  UpdateChargeTimes();
 }
 
 
@@ -558,6 +632,169 @@ void OvmsVehicleHyundaiVFL::CalculateRangeEstimations(bool init /*=false*/)
   StdMetrics.ms_v_bat_range_full->SetValue(m_cfg_range_ideal * sohfactor);
   StdMetrics.ms_v_bat_range_ideal->SetValue(m_cfg_range_ideal * sohfactor * socfactor);
   StdMetrics.ms_v_bat_range_est->SetValue(range_user * socfactor);
+}
+
+
+/**
+ * CalcChargeTime: charge time prediction
+ *  see docs/Charge-Curve.ods for the model
+ */
+
+int OvmsVehicleHyundaiVFL::CalcChargeTime(float capacity, float max_pwr, int from_soc, int to_soc)
+{
+  struct ccurve_point {
+    int soc;  float pwr;    float grd;
+  };
+
+  // Charge curve model for 50 kW chargers:
+  const ccurve_point ccurve_50[] = {
+    {     0,       42.5,    (49.0-42.5) / ( 81-  0) },
+    {    81,       49.0,    (22.0-49.0) / ( 86- 81) },
+    {    86,       22.0,    (22.0-22.0) / ( 93- 86) },
+    {    93,       22.0,    ( 6.5-22.0) / (100- 93) },
+    {   100,        6.5,    0                       },
+  };
+
+  // Charge curve model for chargers above 50 kW:
+  const ccurve_point ccurve_70[] = {
+    {     0,       60.0,    (67.0-60.0) / ( 78-  0) },
+    {    78,       67.0,    (22.0-67.0) / ( 86- 78) },
+    {    86,       22.0,    (22.0-22.0) / ( 93- 86) },
+    {    93,       22.0,    ( 6.5-22.0) / (100- 93) },
+    {   100,        6.5,    0                       },
+  };
+
+  // Select charge curve:
+  const ccurve_point *ccurve = (max_pwr > 50) ? ccurve_70 : ccurve_50;
+
+  // Validate arguments:
+  if (capacity <= 0 || to_soc <= from_soc)
+    return 0;
+  if (from_soc < 0) from_soc = 0;
+  if (to_soc > 100) to_soc = 100;
+
+  // Find curve section for a given SOC:
+  auto find_csection = [&](int soc) {
+    if (soc == 0) return 0;
+    int i;
+    for (i = 0; ccurve[i].soc != 100; i++) {
+      if (ccurve[i].soc < soc && ccurve[i+1].soc >= soc)
+        break;
+    }
+    return i;
+  };
+
+  // Calculate the theoretical max power at a curve section SOC point:
+  auto calc_cpwr = [&](int ci, int soc) {
+    return ccurve[ci].pwr + (soc - ccurve[ci].soc) * ccurve[ci].grd;
+  };
+
+  // Calculate the theoretical max power at a curve section SOC point:
+  auto pwr_limit = [&](float pwr) {
+    return (max_pwr > 0) ? std::min(pwr, max_pwr) : pwr;
+  };
+
+  // Sum charge curve section parts involved:
+  
+  int from_section = find_csection(from_soc),
+      to_section   = find_csection(to_soc);
+  float charge_time = 0;
+
+  int s1, s2;
+  float p1, p2;
+  float section_energy, section_time;
+
+  for (int section = from_section; section <= to_section; section++)
+  {
+    if (section == from_section) {
+      s1 = from_soc;
+      p1 = calc_cpwr(from_section, from_soc);
+    } else {
+      s1 = ccurve[section].soc;
+      p1 = ccurve[section].pwr;
+    }
+
+    if (section == to_section) {
+      s2 = to_soc;
+      p2 = calc_cpwr(to_section, to_soc);
+    } else {
+      s2 = ccurve[section+1].soc;
+      p2 = ccurve[section+1].pwr;
+    }
+    
+    if (max_pwr > 0 && ((p1 > max_pwr && p2 < max_pwr) || (p1 < max_pwr && p2 > max_pwr)))
+    {
+      // the section crosses max_pwr, split at intersection:
+      float si = ccurve[section].soc + (max_pwr - ccurve[section].pwr) / ccurve[section].grd;
+      
+      p1 = pwr_limit(p1);
+      p2 = pwr_limit(p2);
+      
+      section_energy = capacity * (si - s1) / 100.0;
+      section_time = section_energy / ((p1 + max_pwr) / 2);
+      charge_time += section_time;
+      
+      section_energy = capacity * (s2 - si) / 100.0;
+      section_time = section_energy / ((max_pwr + p2) / 2);
+      charge_time += section_time;
+    }
+    else
+    {
+      // the section does not cross max_pwr, use the full section:
+      p1 = pwr_limit(p1);
+      p2 = pwr_limit(p2);
+      
+      section_energy = capacity * (s2 - s1) / 100.0;
+      section_time = section_energy / ((p1 + p2) / 2);
+      charge_time += section_time;
+    }
+  }
+
+  // return full minutes:
+  return std::ceil(charge_time * 60);
+}
+
+
+/**
+ * UpdateChargeTimes: update all charge time predictions
+ */
+void OvmsVehicleHyundaiVFL::UpdateChargeTimes()
+{
+  float capacity = 0, max_pwr = 0;
+  int from_soc = 0, suff_soc = 0;
+
+  // Get battery capacity:
+  float soh = StdMetrics.ms_v_bat_soh->AsFloat(), sohfactor = soh ? soh / 100 : 1;
+  capacity = m_bat_nominal_cap_kwh * sohfactor;
+
+  // Get maximum power available for the charge:
+  float chg_power = -StdMetrics.ms_v_bat_power->AsFloat();
+  if (m_poll_state == STATE_CHARGING && chg_power > 0)
+    max_pwr = chg_power;
+  else
+    max_pwr = MyConfig.GetParamValueFloat("xhi", "ctp.maxpower", 0);
+
+  // Calculate charge times for 100% and sufficient SOC:
+  from_soc = StdMetrics.ms_v_bat_soc->AsInt();
+  suff_soc = StdMetrics.ms_v_charge_limit_soc->AsInt();
+  StdMetrics.ms_v_charge_duration_soc ->SetValue(CalcChargeTime(capacity, max_pwr, from_soc, suff_soc));
+  StdMetrics.ms_v_charge_duration_full->SetValue(CalcChargeTime(capacity, max_pwr, from_soc, 100));
+}
+
+
+/**
+ * GetNotifyChargeStateDelay: framework hook
+ */
+int OvmsVehicleHyundaiVFL::GetNotifyChargeStateDelay(const char *state)
+{
+  std::string charge_type = StdMetrics.ms_v_charge_type->AsString();
+  if (charge_type == "ccs") {
+    // CCS charging needs some time to ramp up the current/power level:
+    return MyConfig.GetParamValueInt("xhi", "notify.charge.delay.ccs", 15);
+  }
+  else {
+    return MyConfig.GetParamValueInt("xhi", "notify.charge.delay.type2", 3);
+  }
 }
 
 
