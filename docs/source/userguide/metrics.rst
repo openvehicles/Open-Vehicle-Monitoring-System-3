@@ -305,6 +305,7 @@ Historical records can be downloaded from the server via TCP MP or HTTP REST API
 
 The V2 server REST API call returns all records stored within the expiry period with
 their respective record times in ``h_timestamp``, and most recent = last entry.
+You can restrict the results by time by adding the ``since`` request parameter.
 Field ``h_data`` contains the JSON encoded metrics dump, so needs to be parsed
 via ``JSON.parse()`` or the respective client platform variant.
 
