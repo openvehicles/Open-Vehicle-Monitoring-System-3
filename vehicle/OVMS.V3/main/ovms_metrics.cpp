@@ -2599,6 +2599,24 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
         case MPkWh:       return value ? km_to_mi(100.0 / value) : 0;
         default: break;
         }
+    case KPkWh:
+      switch (to)
+        {
+        case WattHoursPM: return value ? (1000.0 / km_to_mi(value)) : 0;
+        case WattHoursPK: return value ? (0.001 / value) : 0;
+        case kWhP100K:    return value ? (100.0 / value) : 0;
+        case MPkWh:       return km_to_mi(value);
+        default: break;
+        }
+    case MPkWh:
+      switch (to)
+        {
+        case WattHoursPM: return value ? 1000/value : 0;
+        case WattHoursPK: return value ? (1000 / mi_to_km(value)) : 0;
+        case kWhP100K:    return value ? (100.0/mi_to_km(value)) : 0;
+        case KPkWh:       return mi_to_km(value);
+        default: break;
+        }
     case Celcius:
       if (to == Fahrenheit) return ((value*9)/5) + 32;
       break;
