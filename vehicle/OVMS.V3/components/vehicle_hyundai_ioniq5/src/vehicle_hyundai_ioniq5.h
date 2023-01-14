@@ -161,6 +161,7 @@ public:
   void IncomingFrameCan1(CAN_frame_t *p_frame) override;
   void Ticker1(uint32_t ticker) override;
   void Ticker10(uint32_t ticker) override;
+  void Ticker60(uint32_t ticker) override;
   void Ticker300(uint32_t ticker) override;
   void EventListener(std::string event, void *data);
   void UpdatedAverageTemp(OvmsMetric* metric);
@@ -207,6 +208,8 @@ public:
   metric_unit_t GetConsoleUnits();
 
   bool  kn_emergency_message_sent;
+
+  int m_checklock_retry, m_checklock_start, m_checklock_notify;
 
 protected:
   void HandleCharging();
@@ -313,6 +316,7 @@ protected:
       bcm_tester_present_seconds = seconds;
     }
   }
+  void CheckResetDoorCheck();
 public:
   int RequestVIN();
   bool DriverIndicator(bool on)

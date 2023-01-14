@@ -470,6 +470,9 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
   kia_ready_for_chargepollstate = true;
   kia_secs_with_no_client = 0;
   hif_keep_awake = 0;
+  m_checklock_retry = 0;
+  m_checklock_start = 0;
+  m_checklock_notify = 0;
 
   memset( kia_send_can.byte, 0, sizeof(kia_send_can.byte));
 
@@ -1107,6 +1110,42 @@ void OvmsHyundaiIoniqEv::Ticker10(uint32_t ticker)
     }
   }
 }
+void OvmsHyundaiIoniqEv::CheckResetDoorCheck()
+{
+  if (m_checklock_start > 0) {
+    if (m_checklock_notify > 0) {
+      if ((monotonictime - m_checklock_notify) < (30*60)) {
+        MyNotify.NotifyString("info", "unlock.ok", "Vehicle is now locked");
+      }
+      m_checklock_notify = 0;
+    }
+    m_checklock_start = 0;
+  }
+  m_checklock_retry = 0;
+}
+
+void OvmsHyundaiIoniqEv::Ticker60(uint32_t ticker)
+{
+  if (!StdMetrics.ms_v_env_locked->AsBool(false) && !StdMetrics.ms_v_env_on->AsBool(false)) {
+    if (m_checklock_start == 0) {
+      m_checklock_start = monotonictime;
+      m_checklock_notify = 0;
+    }
+    bool notify = false;
+    int diffsecs = (monotonictime - m_checklock_start);
+    if ( m_checklock_notify == 0) {
+      notify = diffsecs >= (5*60);
+    } else if (diffsecs <= (45*60)) {
+      notify = (monotonictime - m_checklock_notify) > 600;
+    }
+    if (notify) {
+      m_checklock_notify = monotonictime;
+      MyNotify.NotifyString("alert", "unlock.alert", "Vehicle is still unlocked and off");
+    }
+  } else {
+    CheckResetDoorCheck();
+  }
+}
 
 /**
  * Ticker300: Called every five minutes
@@ -1115,6 +1154,22 @@ void OvmsHyundaiIoniqEv::Ticker300(uint32_t ticker)
 {
   XARM("OvmsHyundaiIoniqEv::Ticker300");
   Save12VHistory();
+  if (!StdMetrics.ms_v_env_locked->AsBool(false) && !StdMetrics.ms_v_env_on->AsBool(false)) {
+    if (m_checklock_start == 0) {
+      m_checklock_start = monotonictime;
+      m_checklock_notify = 0;
+    }
+    if (!IsPollState_Ping()) {
+      ++m_checklock_retry;
+      if (m_checklock_retry < 5) {
+        PollState_Ping(30);
+      } else if ((m_checklock_retry <= 20) && ((m_checklock_retry & 3) == 0)) // every 4th
+        PollState_Ping(10);
+    }
+  } else {
+    CheckResetDoorCheck();
+  }
+
   XDISARM;
 }
 
