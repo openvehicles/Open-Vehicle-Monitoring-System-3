@@ -369,8 +369,8 @@ format. Both by default insert spacing and indentation for readability and accep
   builtins and `Duktape JSON <https://github.com/svaarala/duktape/blob/master/doc/json.rst>`_
   for explanations of these).
   
-  For example, ``Duktape.enc('JC', data)`` is equivalent to ``JSON.format(data, false)`` except for
-  the representation of functions. Using the ``JX`` encoding will omit unnecessary quotings.
+  For example, ``Duktape.enc('jc', data)`` is equivalent to ``JSON.format(data, false)`` except for
+  the representation of functions. Using the ``jx`` encoding will omit unnecessary quotings.
 
 
 .. warning:: All Duktape JSON encoders and decoders have a very high performance penalty
