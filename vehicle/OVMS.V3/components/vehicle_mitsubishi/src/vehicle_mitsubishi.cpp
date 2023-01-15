@@ -63,6 +63,8 @@
 ;       - Calculate trip distance from TripB, more accurate than odometer 100m vs 1000m
 ;     1.0.12
 ;       - Convert divisions to multiplications
+;     1.0.12
+;       - Convert divisions to multiplications
 ;
 ;    (C) 2011         Michael Stegen / Stegen Electronics
 ;    (C) 2011-2018    Mark Webb-Johnson
@@ -98,7 +100,7 @@
 #include "ovms_notify.h"
 #include <sys/param.h>
 
-#define VERSION "1.0.11"
+#define VERSION "1.0.12"
 
 static const char *TAG = "v-mitsubishi";
 
@@ -214,6 +216,7 @@ OvmsVehicleMitsubishi::~OvmsVehicleMitsubishi()
     MyWebServer.DeregisterPage("/bms/cellmon");
     MyWebServer.DeregisterPage("/cfg/brakelight");
     MyWebServer.DeregisterPage("/xmi/features");
+    WebInit();
   #endif
   MyCommandApp.UnregisterCommand("xmi");
 }
@@ -277,6 +280,8 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
 
       case 0x236://freq100 // Steeering wheel
       {
+        // (((d[0] * 256.0) +d[1])-4096) * 0.5  //Negative angle - right, positive angle left
+        // (((d[2] * 256.0) + d[3]) - 4096) * 0.5)) //Steering wheel movement
         // (((d[0] * 256.0) +d[1])-4096) * 0.5  //Negative angle - right, positive angle left
         // (((d[2] * 256.0) + d[3]) - 4096) * 0.5)) //Steering wheel movement
       break;
@@ -366,6 +371,9 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
         StandardMetrics.ms_v_bat_current->SetValue((((((d[2] * 256.0) + d[3])) - 32768)) * 0.01, Amps);
         StandardMetrics.ms_v_bat_voltage->SetValue((d[4] * 256.0 + d[5]) * 0.1, Volts);
         StandardMetrics.ms_v_bat_power->SetValue((StandardMetrics.ms_v_bat_voltage->AsFloat(0, Volts) * StandardMetrics.ms_v_bat_current->AsFloat(0, Amps)) * -0.001, kW);
+        StandardMetrics.ms_v_bat_current->SetValue((((((d[2] * 256.0) + d[3])) - 32768)) * 0.01, Amps);
+        StandardMetrics.ms_v_bat_voltage->SetValue((d[4] * 256.0 + d[5]) * 0.1, Volts);
+        StandardMetrics.ms_v_bat_power->SetValue((StandardMetrics.ms_v_bat_voltage->AsFloat(0, Volts) * StandardMetrics.ms_v_bat_current->AsFloat(0, Amps)) * -0.001, kW);
         v_c_power_dc->SetValue( StandardMetrics.ms_v_bat_power->AsFloat() * -1.0, kW );
         if (!StandardMetrics.ms_v_charge_pilot->AsBool())
         {
@@ -374,9 +382,15 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
               StandardMetrics.ms_v_bat_energy_recd->SetValue((StandardMetrics.ms_v_bat_energy_recd->AsFloat() + (StandardMetrics.ms_v_bat_power->AsFloat() * -0.00000278)));
               ms_v_trip_park_energy_recd->SetValue((ms_v_trip_park_energy_recd->AsFloat() + (StandardMetrics.ms_v_bat_power->AsFloat() * -0.00000278)));
               ms_v_trip_charge_energy_recd->SetValue((ms_v_trip_charge_energy_recd->AsFloat() + (StandardMetrics.ms_v_bat_power->AsFloat() * -0.00000278)));
+              StandardMetrics.ms_v_bat_energy_recd->SetValue((StandardMetrics.ms_v_bat_energy_recd->AsFloat() + (StandardMetrics.ms_v_bat_power->AsFloat() * -0.00000278)));
+              ms_v_trip_park_energy_recd->SetValue((ms_v_trip_park_energy_recd->AsFloat() + (StandardMetrics.ms_v_bat_power->AsFloat() * -0.00000278)));
+              ms_v_trip_charge_energy_recd->SetValue((ms_v_trip_charge_energy_recd->AsFloat() + (StandardMetrics.ms_v_bat_power->AsFloat() * -0.00000278)));
             }
             else
             {
+              StandardMetrics.ms_v_bat_energy_used->SetValue( ( StandardMetrics.ms_v_bat_energy_used->AsFloat()+(StandardMetrics.ms_v_bat_power->AsFloat() * 0.00000278)));
+              ms_v_trip_park_energy_used->SetValue((ms_v_trip_park_energy_used->AsFloat() + (StandardMetrics.ms_v_bat_power->AsFloat() * 0.00000278)));
+              ms_v_trip_charge_energy_used->SetValue((ms_v_trip_charge_energy_used->AsFloat() + (StandardMetrics.ms_v_bat_power->AsFloat() * 0.00000278)));
               StandardMetrics.ms_v_bat_energy_used->SetValue( ( StandardMetrics.ms_v_bat_energy_used->AsFloat()+(StandardMetrics.ms_v_bat_power->AsFloat() * 0.00000278)));
               ms_v_trip_park_energy_used->SetValue((ms_v_trip_park_energy_used->AsFloat() + (StandardMetrics.ms_v_bat_power->AsFloat() * 0.00000278)));
               ms_v_trip_charge_energy_used->SetValue((ms_v_trip_charge_energy_used->AsFloat() + (StandardMetrics.ms_v_bat_power->AsFloat() * 0.00000278)));
@@ -388,9 +402,11 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
           if ( StandardMetrics.ms_v_bat_power->AsInt() < 0)
           {
             StandardMetrics.ms_v_bat_energy_recd->SetValue((StandardMetrics.ms_v_bat_energy_recd->AsFloat() + (StandardMetrics.ms_v_bat_power->AsFloat() * -0.00000278)));
+            StandardMetrics.ms_v_bat_energy_recd->SetValue((StandardMetrics.ms_v_bat_energy_recd->AsFloat() + (StandardMetrics.ms_v_bat_power->AsFloat() * -0.00000278)));
           }
           else
           {
+            StandardMetrics.ms_v_bat_energy_used->SetValue((StandardMetrics.ms_v_bat_energy_used->AsFloat() + (StandardMetrics.ms_v_bat_power->AsFloat() * 0.00000278)));
             StandardMetrics.ms_v_bat_energy_used->SetValue((StandardMetrics.ms_v_bat_energy_used->AsFloat() + (StandardMetrics.ms_v_bat_power->AsFloat() * 0.00000278)));
           }
         }
@@ -398,6 +414,7 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
 
         if (StandardMetrics.ms_v_charge_inprogress->AsBool())
         {
+          ms_v_charge_dc_kwh->SetValue((ms_v_charge_dc_kwh->AsFloat() + (StandardMetrics.ms_v_bat_power->AsFloat() * -0.00000278)));
           ms_v_charge_dc_kwh->SetValue((ms_v_charge_dc_kwh->AsFloat() + (StandardMetrics.ms_v_bat_power->AsFloat() * -0.00000278)));
         }
 
@@ -423,6 +440,7 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
       {
         if (d[1] > 10)
           StandardMetrics.ms_v_bat_soc->SetValue(((int)d[1] - 10 ) * 0.5, Percentage);
+          StandardMetrics.ms_v_bat_soc->SetValue(((int)d[1] - 10 ) * 0.5, Percentage);
 
       break;
       }
@@ -430,8 +448,11 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
       case 0x384://freq10 //heating current
       {
         ms_v_env_heating_amp->SetValue(d[4] * 0.1);
+        ms_v_env_heating_amp->SetValue(d[4] * 0.1);
         ms_v_env_heating_watt->SetValue(ms_v_env_heating_amp->AsFloat() * StandardMetrics.ms_v_bat_voltage->AsFloat());
 
+        ms_v_trip_park_heating_kwh->SetValue(ms_v_trip_park_heating_kwh->AsFloat() + (ms_v_env_heating_watt->AsFloat() * 0.0000000278));
+        ms_v_trip_charge_heating_kwh->SetValue(ms_v_trip_charge_heating_kwh->AsFloat() + (ms_v_env_heating_watt->AsFloat() * 0.0000000278));
         ms_v_trip_park_heating_kwh->SetValue(ms_v_trip_park_heating_kwh->AsFloat() + (ms_v_env_heating_watt->AsFloat() * 0.0000000278));
         ms_v_trip_charge_heating_kwh->SetValue(ms_v_trip_charge_heating_kwh->AsFloat() + (ms_v_env_heating_watt->AsFloat() * 0.0000000278));
 
@@ -441,8 +462,8 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
 
         if ( cfg_heater_old )
         {
-          ms_v_env_heating_temp_return->SetValue(((d[5] - 32) * 0.55555556) - 3.0d);
-          ms_v_env_heating_temp_flow->SetValue(((d[6] - 32) * 0.55555556) - 3.0d);
+          ms_v_env_heating_temp_return->SetValue(((d[5] - 32) * 0.555555555) - 3.0d);
+          ms_v_env_heating_temp_flow->SetValue(((d[6] - 32) * 0.555555555) - 3.0d);
         }
         else
         {
@@ -451,8 +472,11 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
         }
 
         ms_v_env_ac_amp->SetValue((d[0] * 256.0 + d[1]) * 0.001);
+        ms_v_env_ac_amp->SetValue((d[0] * 256.0 + d[1]) * 0.001);
         ms_v_env_ac_watt->SetValue(ms_v_env_ac_amp->AsFloat() * StandardMetrics.ms_v_bat_voltage->AsFloat());
 
+        ms_v_trip_park_ac_kwh->SetValue(ms_v_trip_park_ac_kwh->AsFloat() + (ms_v_env_ac_watt->AsFloat() * 0.0000000278));
+        ms_v_trip_charge_ac_kwh->SetValue(ms_v_trip_charge_ac_kwh->AsFloat() + (ms_v_env_ac_watt->AsFloat() * 0.0000000278));
         ms_v_trip_park_ac_kwh->SetValue(ms_v_trip_park_ac_kwh->AsFloat() + (ms_v_env_ac_watt->AsFloat() * 0.0000000278));
         ms_v_trip_charge_ac_kwh->SetValue(ms_v_trip_charge_ac_kwh->AsFloat() + (ms_v_env_ac_watt->AsFloat() * 0.0000000278));
 
@@ -465,12 +489,15 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
         {
           StandardMetrics.ms_v_charge_voltage->SetValue(d[1] * 1.0, Volts);
           StandardMetrics.ms_v_charge_current->SetValue(d[6] * 0.1, Amps);
+          StandardMetrics.ms_v_charge_current->SetValue(d[6] * 0.1, Amps);
         }
 
+        v_c_power_ac->SetValue((StandardMetrics.ms_v_charge_voltage->AsFloat() * StandardMetrics.ms_v_charge_current->AsFloat()) * 0.001, kW);
         v_c_power_ac->SetValue((StandardMetrics.ms_v_charge_voltage->AsFloat() * StandardMetrics.ms_v_charge_current->AsFloat()) * 0.001, kW);
         if ( (StdMetrics.ms_v_charge_voltage->AsInt() > 0) && (StdMetrics.ms_v_charge_current->AsFloat() > 0.0) )
         {
           StandardMetrics.ms_v_charge_inprogress->SetValue(true);
+          StandardMetrics.ms_v_charge_kwh->SetValue(StandardMetrics.ms_v_charge_kwh->AsFloat() + (v_c_power_ac->AsFloat() * 0.0000278));
           StandardMetrics.ms_v_charge_kwh->SetValue(StandardMetrics.ms_v_charge_kwh->AsFloat() + (v_c_power_ac->AsFloat() * 0.0000278));
           ms_v_charge_ac_kwh->SetValue(StandardMetrics.ms_v_charge_kwh->AsFloat());
         }
@@ -700,8 +727,8 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
       double temp2 = d[2] - 50.0;
       double temp3 = d[3] - 50.0;
 
-      double voltage1 = (((d[4] * 256.0 + d[5]) * 0.005) + 2.1);
-      double voltage2 = (((d[6] * 256.0 + d[7]) * 0.005) + 2.1);
+      double voltage1 = (((d[4] * 256.0 + d[5]) * 0.05) + 2.1);
+      double voltage2 = (((d[6] * 256.0 + d[7]) * 0.05) + 2.1);
 
       int voltage_index = ((cmu_id - 1) * 8 + (2 * pid_index));
       int temp_index = ((cmu_id - 1) * 6 + (2 * pid_index));
