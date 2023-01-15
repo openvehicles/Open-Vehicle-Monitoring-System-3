@@ -196,6 +196,8 @@ OvmsBatteryMon::OvmsBatteryMon()
   m_first = 0;
   m_dirty = false;
   m_lastState = OvmsBatteryState::Unknown;
+  m_average_last = 0;
+  m_diff_last = 0;
 }
 void OvmsBatteryMon::add(float voltage)
 {
@@ -222,7 +224,7 @@ bool OvmsBatteryMon::checkStateChange()
     XDISARM;
     return false;
   }
-  OvmsBatteryState newState = calc_state(m_average_last);
+  OvmsBatteryState newState = calc_state(m_average_last, m_diff_last);
   bool res = newState != m_lastState;
   m_lastState = newState;
   m_dirty = false;
@@ -234,7 +236,7 @@ OvmsBatteryState OvmsBatteryMon::state()
 {
   XARM("OvmsBatteryMon::state");
   if (m_dirty) {
-    m_lastState = calc_state(m_average_last);
+    m_lastState = calc_state(m_average_last,m_diff_last);
     m_dirty = false;
   }
   XDISARM;
@@ -278,7 +280,7 @@ bool OvmsBatteryMon::calc_average( int32_t &average, int32_t &average_first, int
   return true;
 }
 
-OvmsBatteryState OvmsBatteryMon::calc_state(int32_t &ave_last)
+OvmsBatteryState OvmsBatteryMon::calc_state(int32_t &ave_last, int32_t &diff_last)
 {
   XARM("OvmsBatteryMon::calc_state");
   if (m_count == 0) {
@@ -307,7 +309,9 @@ OvmsBatteryState OvmsBatteryMon::calc_state(int32_t &ave_last)
 
   int32_t average, average_first, average_last;
   calc_average(average, average_first, average_last);
+  int32_t diff = (average_last - average_first);
   ave_last = average_last;
+  diff_last = diff;
 
   if (average_last < low_threshold) {
     XDISARM;
@@ -319,7 +323,6 @@ OvmsBatteryState OvmsBatteryMon::calc_state(int32_t &ave_last)
     return OvmsBatteryState::Charging;
   }
 
-  int32_t diff = (average_last - average_first);
   if (abs(diff) < smooth_threshold) {
     XDISARM;
     return OvmsBatteryState::Normal;
@@ -363,36 +366,45 @@ float OvmsBatteryMon::average_lastf()
   return m_average_last / entry_mult;
 }
 
-#ifdef OVMS_DEBUG_BATTERYMON
 std::string OvmsBatteryMon::to_string()
 {
   XARM("OvmsBatteryMon::to_string");
   std::stringstream ret;
+  bool needs_cr = false;
   ret << "n=" << m_count << ":" << endl;
+  ret.setf( std::ios::fixed, std::ios::floatfield);
   for (int i = 0; i < m_count; ++i) {
     int32_t cur = m_voltages[(m_first + i) % entry_count];
+    ret.width(6);
     ret.precision(2);
-    ret.setf( std::ios::fixed, std::ios::floatfield);
-    ret.width(5);
-    ret << " " << (float(cur) / entry_mult);
+    ret << (float(cur) / entry_mult);
     if (i % 5 == 4) {
       ret << endl;
-    }
+      needs_cr = false;
+    } else
+      needs_cr = true;
   }
-  ret << " ";
+  if (needs_cr)
+    ret << endl;
 
   int32_t average, average_first, average_last;
   if (calc_average(average, average_first, average_last)) {
+    float ave = float(average) / entry_mult;
+    float ave_first = (float(average_first) / entry_mult);
+    float ave_last = (float(average_last) / entry_mult);
+    ret.setf( std::ios::fixed, std::ios::floatfield);
     ret.precision(2);
     ret.width(0);
-    ret.setf( std::ios::fixed, std::ios::floatfield);
-    ret << " ave=" << (float(average) / entry_mult);
-    ret << " ave_first=" << (float(average_first) / entry_mult);
-    ret << " ave_last=" << (float(average_last) / entry_mult);
+    ret << " ave=" << ave << endl
+        << " ave_first=" << ave_first << endl
+        << " ave_last=" << ave_last  << endl
+        << " diff=" << (ave_last - ave_first) << endl;
   }
+  ret.width(0);
 
-  ret << " state:";
-  switch (calc_state()) {
+  ret << " state=";
+  int32_t ave_ign, diff_ign;
+  switch (calc_state(ave_ign, diff_ign)) {
     case OvmsBatteryState::Unknown:
       ret << "Unknown";
       break;
@@ -412,11 +424,11 @@ std::string OvmsBatteryMon::to_string()
       ret << "Low";
       break;
   }
+  ret << endl;
 
   XDISARM;
   return ret.str();
 }
-#endif
 
 /**
  * Constructor for Ioniq 5 EV
@@ -541,7 +553,10 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
 
   m_v_accum_op_time           = MyMetrics.InitInt("xiq.v.accum.op.time",         SM_STALE_MAX, 0, Seconds );
 
-  iq_range_calc = new RangeCalculator(1, 4, 450, 74);
+  // Setting a minimum trip size of 5km as the granuality of trips is +/- 1km.
+  // The default range and battery size are overridden below in ConfigChanged() .. and
+  // when the battery size is loaded from OBD.
+  iq_range_calc = new RangeCalculator(5/*minTrip*/, 4/*weightCurrent*/, 450, 74);
 
   m_b_cell_det_min->SetValue(0);
 
@@ -555,8 +570,13 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
   cmd_hiq->RegisterCommand("trip", "Show trip info since last parked", xiq_trip_since_parked);
   cmd_hiq->RegisterCommand("tripch", "Show trip info since last charge", xiq_trip_since_charge);
   cmd_hiq->RegisterCommand("tpms", "Tire pressure monitor", xiq_tpms);
-  cmd_hiq->RegisterCommand("aux", "Aux battery", xiq_aux);
+
+  OvmsCommand *cmd_aux = cmd_hiq->RegisterCommand("aux", "Aux battery", xiq_aux);
+  cmd_aux->RegisterCommand("status", "Aux Battery Status", xiq_aux);
+  cmd_aux->RegisterCommand("monitor", "Aux Battery Monitor", xiq_aux_monitor);
+
   cmd_hiq->RegisterCommand("vin", "VIN information", xiq_vin);
+
   OvmsCommand *cmd_trip = cmd_hiq->RegisterCommand("range", "Show Range information");
   cmd_trip->RegisterCommand("status", "Show Status of Range Calculator", xiq_range_stat);
   cmd_trip->RegisterCommand("reset", "Reset ranage calculation stats", xiq_range_reset);
@@ -692,31 +712,36 @@ void OvmsHyundaiIoniqEv::vehicle_ioniq5_car_on(bool isOn)
   XARM("OvmsHyundaiIoniqEv::vehicle_ioniq5_car_on");
   iq_car_on = isOn;
   StdMetrics.ms_v_env_awake->SetValue(isOn);
+  float charg_rec = StdMetrics.ms_v_bat_energy_recd_total->AsFloat(kWh);
+  float charg_used = StdMetrics.ms_v_bat_energy_used_total->AsFloat(kWh);
+  float coulomb_rec = StdMetrics.ms_v_bat_coulomb_recd_total->AsFloat(kWh);
+  float coulomb_used = StdMetrics.ms_v_bat_coulomb_used_total->AsFloat(kWh);
+  bool isCharge = StdMetrics.ms_v_charge_inprogress->AsBool();
   if (isOn) {
     // Car is ON
     ESP_LOGI(TAG, "CAR IS ON");
-    ESP_LOGD(TAG, "PollState->Running (Blip)");
+    ESP_LOGD(TAG, "PollState->Running (on)");
     PollState_Running();
     StdMetrics.ms_v_env_charging12v->SetValue( true );
     kia_ready_for_chargepollstate = true;
 
-    float charg_accum = StdMetrics.ms_v_bat_energy_recd_total->AsFloat(kWh);
-    float coulomb_accum = StdMetrics.ms_v_bat_coulomb_recd_total->AsFloat(kWh);
-    kia_park_trip_counter.Reset(POS_ODO,
-      StdMetrics.ms_v_bat_energy_used_total->AsFloat(kWh), charg_accum,
-      StdMetrics.ms_v_bat_coulomb_used_total->AsFloat(kWh), coulomb_accum
-      );
-    if (StdMetrics.ms_v_charge_inprogress->AsBool())
-      kia_park_trip_counter.StartCharge(charg_accum, coulomb_accum);
+    kia_park_trip_counter.Reset(POS_ODO, charg_used, charg_rec, coulomb_used, coulomb_rec, isCharge);
     BmsResetCellStats();
   }
   else if (!isOn) {
     // Car is OFF
     ESP_LOGI(TAG, "CAR IS OFF");
-    kia_park_trip_counter.Update(POS_ODO,
-      StdMetrics.ms_v_bat_energy_used_total->AsFloat(kWh), StdMetrics.ms_v_bat_energy_recd_total->AsFloat(kWh),
-      StdMetrics.ms_v_bat_coulomb_used_total->AsFloat(kWh), StdMetrics.ms_v_bat_coulomb_recd_total->AsFloat(kWh)
-      );
+    if (kia_park_trip_counter.Started()) {
+      kia_park_trip_counter.Update(POS_ODO,
+        StdMetrics.ms_v_bat_energy_used_total->AsFloat(kWh), StdMetrics.ms_v_bat_energy_recd_total->AsFloat(kWh),
+        StdMetrics.ms_v_bat_coulomb_used_total->AsFloat(kWh), StdMetrics.ms_v_bat_coulomb_recd_total->AsFloat(kWh)
+        );
+      if (isCharge != kia_park_trip_counter.Charging()) {
+        kia_park_trip_counter.StartCharge(charg_rec, coulomb_rec);
+      }
+    } else {
+      kia_park_trip_counter.Reset(POS_ODO, charg_used, charg_rec, coulomb_used, coulomb_rec, isCharge);
+    }
     kia_secs_with_no_client = 0;
     StdMetrics.ms_v_pos_speed->SetValue( 0 );
     StdMetrics.ms_v_pos_trip->SetValue( kia_park_trip_counter.GetDistance() );
@@ -752,11 +777,17 @@ void OvmsHyundaiIoniqEv::Ticker1(uint32_t ticker)
 
   // Update trip data
   if (StdMetrics.ms_v_env_on->AsBool()) {
+    float energy_used = StdMetrics.ms_v_bat_energy_used_total->AsFloat(kWh);
+    float energy_recovered = StdMetrics.ms_v_bat_energy_recd_total->AsFloat(kWh);
+    float coulomb_used = StdMetrics.ms_v_bat_coulomb_used_total->AsFloat(kWh);
+    float coulomb_recovered = StdMetrics.ms_v_bat_coulomb_recd_total->AsFloat(kWh);
+    float odo =  StdMetrics.ms_v_pos_odometer->AsFloat(0, Kilometers);
+
     if (kia_park_trip_counter.Started()) {
-      kia_park_trip_counter.Update(POS_ODO,
-        StdMetrics.ms_v_bat_energy_used_total->AsFloat(kWh), StdMetrics.ms_v_bat_energy_recd_total->AsFloat(kWh),
-        StdMetrics.ms_v_bat_coulomb_used_total->AsFloat(kWh), StdMetrics.ms_v_bat_coulomb_recd_total->AsFloat(kWh)
-        );
+      kia_park_trip_counter.Update(odo, energy_used, energy_recovered, coulomb_used, coulomb_recovered);
+      if (StdMetrics.ms_v_charge_inprogress->AsBool() != kia_park_trip_counter.Charging()) {
+        kia_park_trip_counter.StartCharge( energy_recovered, coulomb_recovered );
+      }
 
       StdMetrics.ms_v_pos_trip->SetValue( kia_park_trip_counter.GetDistance(), Kilometers);
       if ( kia_park_trip_counter.HasEnergyData()) {
@@ -769,15 +800,18 @@ void OvmsHyundaiIoniqEv::Ticker1(uint32_t ticker)
       }
     }
     if (kia_charge_trip_counter.Started()) {
-      kia_charge_trip_counter.Update(POS_ODO,
-        StdMetrics.ms_v_bat_energy_used_total->AsFloat(kWh), StdMetrics.ms_v_bat_energy_recd_total->AsFloat(kWh),
-        StdMetrics.ms_v_bat_coulomb_used_total->AsFloat(kWh), StdMetrics.ms_v_bat_coulomb_recd_total->AsFloat(kWh)
-        );
+      kia_charge_trip_counter.Update(odo, energy_used, energy_recovered, coulomb_used, coulomb_recovered);
       ms_v_pos_trip->SetValue( kia_charge_trip_counter.GetDistance(), Kilometers);
       if ( kia_charge_trip_counter.HasEnergyData()) {
         ms_v_trip_energy_used->SetValue( kia_charge_trip_counter.GetEnergyUsed(), kWh );
         ms_v_trip_energy_recd->SetValue( kia_charge_trip_counter.GetEnergyRecuperated(), kWh );
       }
+    }
+  } else {
+    if (kia_park_trip_counter.Started() && (StdMetrics.ms_v_charge_inprogress->AsBool() != kia_park_trip_counter.Charging())) {
+      float energy_recovered = StdMetrics.ms_v_bat_energy_recd_total->AsFloat(kWh);
+      float coulomb_recovered = StdMetrics.ms_v_bat_coulomb_recd_total->AsFloat(kWh);
+      kia_park_trip_counter.StartCharge( energy_recovered, coulomb_recovered);
     }
   }
 
@@ -842,8 +876,8 @@ void OvmsHyundaiIoniqEv::Ticker1(uint32_t ticker)
     HandleChargeStop();
   }
 
-  // Battery Monitor (evey 3 seconds).
-  if (((ticker % 3) == 0) && StdMetrics.ms_v_bat_12v_voltage->IsDefined()) {
+  // Battery Monitor (evey 2 seconds).
+  if (((ticker % 2) == 0) && StdMetrics.ms_v_bat_12v_voltage->IsDefined()) {
     hif_aux_battery_mon.add(StdMetrics.ms_v_bat_12v_voltage->AsFloat());
     if (hif_aux_battery_mon.checkStateChange()) {
 #ifdef OVMS_DEBUG_BATTERYMON
@@ -857,10 +891,10 @@ void OvmsHyundaiIoniqEv::Ticker1(uint32_t ticker)
           m_b_aux_soc->SetValue( CalcAUXSoc(hif_aux_battery_mon.average_lastf()), Percentage );
           break;
         case OvmsBatteryState::Charging:
-          ESP_LOGD(TAG, "Aux Battery state: Charging");
+          ESP_LOGD(TAG, "Aux Battery state: Charging %d", hif_aux_battery_mon.m_average_last);
           break;
         case OvmsBatteryState::Blip: {
-          ESP_LOGD(TAG, "Aux Battery state: Blip");
+          ESP_LOGD(TAG, "Aux Battery state: Blip %d", hif_aux_battery_mon.m_diff_last);
           if ( IsPollState_Off()) {
             ESP_LOGD(TAG, "PollState->Ping for 30 (Blip)");
             PollState_Ping(30);
@@ -868,7 +902,7 @@ void OvmsHyundaiIoniqEv::Ticker1(uint32_t ticker)
         }
         break;
         case OvmsBatteryState::Dip: {
-          ESP_LOGD(TAG, "Aux Battery state: Dip");
+          ESP_LOGD(TAG, "Aux Battery state: Dip %d", hif_aux_battery_mon.m_diff_last);
           if ( IsPollState_Off()) {
             ESP_LOGD(TAG, "PollState->Ping for 30 (Dip)");
             PollState_Ping(30);
@@ -876,9 +910,12 @@ void OvmsHyundaiIoniqEv::Ticker1(uint32_t ticker)
         }
         break;
         case OvmsBatteryState::Low: {
-          ESP_LOGD(TAG, "PollState->Off (Aux Battery state Low)");
-          PollState_Off();
-          // ?? Turn other things off ??
+          ESP_LOGD(TAG, "Aux Battery state: Low %d", hif_aux_battery_mon.m_diff_last);
+          if (!IsPollState_Off()) {
+            ESP_LOGD(TAG, "PollState->Off (Aux Battery state Low)");
+            PollState_Off();
+            // ?? Turn other things off ??
+          }
           m_b_aux_soc->SetValue( CalcAUXSoc(hif_aux_battery_mon.average_lastf()), Percentage );
           XDISARM;
           return;

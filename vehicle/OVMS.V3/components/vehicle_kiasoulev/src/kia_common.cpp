@@ -190,72 +190,84 @@ void KiaVehicle::WebAuxBattery(PageEntry_t& p, PageContext_t& c)
 
 Kia_Trip_Counter::Kia_Trip_Counter()
 	{
-	odo_start=0;
-	cdc_start=0;
-	cc_start=0;
-	odo=0;
-	cdc=0;
-	cc=0;
-	cc_ext = 0;
-	charging = false;
-	charge_start = 0;
+	odo_start              = 0;
+	tot_discharge_start    = 0;
+	tot_charge_start       = 0;
+	odo                    = 0;
+	tot_discharge          = 0;
+	tot_charge             = 0;
+	tot_charge_ext         = 0;
+	charging               = false;
+	charge_start           = 0;
+
+	tot_discharge_ah_start = 0;
+	tot_charge_ah_start    = 0;
+	tot_discharge_ah       = 0;
+	tot_charge_ah          = 0;
+	tot_charge_ah_ext      = 0;
+	charge_start_ah        = 0;
 	}
 
 Kia_Trip_Counter::~Kia_Trip_Counter()
 	{
 	}
 
-/*
- * Resets the trip counter.
+/** Resets the trip counter.
  *
- * odo - The current ODO
- * cdc - Cumulated Discharge
- * cc - Cumulated Charge
+ * \param current_odo The current ODO
+ * \param current_cdc Accumulated Energy Discharged
+ * \param current_cc Accumulated Energy Charged
+ * \param current_cdc_ah Accumulated 'Charge' Discharged
+ * \param current_cc_ah Accumulated 'Charge' added.
  */
-void Kia_Trip_Counter::Reset(float odo, float cdc, float cc, float cdc_ah, float cc_ah)
+void Kia_Trip_Counter::Reset(float current_odo, float current_cdc, float current_cc, float current_cdc_ah, float current_cc_ah, bool is_charging)
 	{
-	cc_ext = 0;
-	cc_ah_ext = 0;
-	charging = false;
-	charge_start = 0;
-	charge_start_ah = 0;
+	tot_charge_ext = 0;
+	tot_charge_ah_ext = 0;
+	// ODO at Start of trip
+	odo_start = odo = current_odo;
+	// Register Cumulated discharge
+	tot_discharge_start = tot_discharge = current_cdc;
+	// Register Cumulated charge
+	tot_charge_start = tot_charge = current_cc;
+	// Register Cumulated discharge
+	tot_discharge_ah_start = tot_discharge_ah = current_cdc_ah;
+	// Register Cumulated charge
+	tot_charge_ah_start = tot_charge_ah = current_cc_ah;
 
-	Update(odo, cdc, cc);
-	if(odo_start==0 && odo!=0)
-		odo_start = odo;		// ODO at Start of trip
-	if(cdc_start==0 && cdc!=0)
-		cdc_start = cdc;	// Register Cumulated discharge
-	if(cc_start==0 && cc!=0)
-		cc_start = cc;		// Register Cumulated charge
-	if(cdc_ah_start==0 && cdc_ah!=0)
-		cdc_ah_start = cdc_ah;	// Register Cumulated discharge
-	if(cc_ah_start==0 && cc_ah!=0)
-		cc_ah_start = cc_ah;		// Register Cumulated charge
+	// Register charing.
+	charging = is_charging;
+	if (is_charging)
+		{
+		charge_start = current_cc;
+		charge_start_ah = current_cc_ah;
+		}
+	else
+		{
+		charge_start = 0;
+		charge_start_ah = 0;
+		}
 	}
 
-/*
+/**
  * Update the trip counter with current ODO, accumulated discharge and accumulated charge..
  *
- * odo - The current ODO
- * cdc - Accumulated Discharge
- * cc - Accumulated Charge
+ * \param current_odo The current ODO
+ * \param current_cdc Accumulated Energy Discharged
+ * \param current_current_cc Accumulated Energy Charged
+ * \param current_cdc_ah Accumulated 'Charge' Discharged
+ * \param current_current_cc_ah Accumulated 'Charge' added.
  */
 void Kia_Trip_Counter::Update(float current_odo, float current_cdc, float current_cc, float current_cdc_ah, float current_cc_ah)
 	{
 	odo=current_odo;
-	cdc=current_cdc;
-	cc=current_cc;
-	cc_ah = current_cc_ah;
-	if (charging)
-		{
-		cc_ext += current_cc-charge_start;
-		cc_ah_ext += current_cc_ah - charge_start_ah;
-		charge_start = current_cc;
-		charge_start_ah = current_cc_ah;
-		}
+	tot_discharge=current_cdc;
+	tot_charge=current_cc;
+	tot_charge_ah = current_cc_ah;
+	tot_discharge_ah = current_cdc_ah;
 	}
 
-/*
+/**
  * Returns true if the trip counter has been initialized properly.
  */
 bool Kia_Trip_Counter::Started()
@@ -263,18 +275,23 @@ bool Kia_Trip_Counter::Started()
 	return odo_start!=0;
 	}
 
-/*
- * Returns true if the trip counter have energy data.
+/**
+ * Returns true if the trip counter has energy data.
  */
 bool Kia_Trip_Counter::HasEnergyData()
 	{
-	return cdc_start!=0 && cc_start!=0;
+	return tot_discharge_start!=0 && tot_charge_start!=0;
 	}
+/**
+ * Returns true if the trip counter has charge data.
+ */
 bool Kia_Trip_Counter::HasChargeData()
 	{
-	return cdc_ah_start!=0 && cc_ah_start!=0;
+	return tot_discharge_ah_start!=0 && tot_charge_ah_start!=0;
 	}
 
+/** Returns the distance travelled.
+  */
 float Kia_Trip_Counter::GetDistance()
 	{
 	if( Started())
@@ -282,64 +299,133 @@ float Kia_Trip_Counter::GetDistance()
 	return 0;
 	}
 
+/** Gets the Balance of Energy Used in kWh.
+ * Energy Discharged - Energy Recuperated.
+ */
 float Kia_Trip_Counter::GetEnergyUsed()
+	{
+	return GetEnergyConsumed() - GetEnergyRecuperated();
+	}
+
+float Kia_Trip_Counter::GetEnergyConsumed()
+	{
+	float res = 0;
+	if( HasEnergyData())
+		res = (tot_discharge-tot_discharge_start);
+	return res;
+	}
+
+/** Gets the Energy Recuperated while moving in kWhh.
+  * Totally Energy Charged less Energy Added in Charging.
+  */
+float Kia_Trip_Counter::GetEnergyRecuperated()
 	{
 	float res = 0;
 	if( HasEnergyData())
 		{
-		res = (cdc-cdc_start) - (cc-cc_start);
+		res = (tot_charge - tot_charge_start);
+		res -= GetEnergyCharged();
+		}
+	return res;
+	}
+/** Gets the amount of energy input via a charger.
+  */
+float Kia_Trip_Counter::GetEnergyCharged()
+	{
+	float res = 0;
+	if( HasEnergyData())
+		{
+		res = tot_charge_ext;
 		if (charging)
-			res -= (cc-charge_start);
+			res += (tot_charge - charge_start);
 		}
 	return res;
 	}
 
-float Kia_Trip_Counter::GetEnergyRecuperated()
-	{
-	if( HasEnergyData())
-		return (cc - cc_start) - cc_ext;
-	return 0;
-	}
+/** Gets the Balance of Charge Used in Ah.
+  */
 float Kia_Trip_Counter::GetChargeUsed()
+	{
+	return GetChargeConsumed() - GetChargeRecuperated();
+	}
+
+/** Gets the total charge consumed in Ah.
+*/
+float Kia_Trip_Counter::GetChargeConsumed()
+	{{
+	float res = 0;
+	if( HasChargeData())
+		res = (tot_discharge_ah-tot_discharge_ah_start) ;
+	return res;
+	}
+	}
+/** Gets the Charge Recuperated in Ah.
+  */
+float Kia_Trip_Counter::GetChargeRecuperated()
 	{
 	float res = 0;
 	if( HasChargeData())
 		{
-		res = (cdc_ah-cdc_ah_start) - (cc_ah-cc_ah_start);
-		if (charging)
-			res -= (cc_ah-charge_start_ah);
+		res = (tot_charge_ah - tot_charge_ah_start);
+		res -= GetChargeCharged();
 		}
 	return res;
 	}
-float Kia_Trip_Counter::GetChargeRecuperated()
+
+/** Gets the amount of energy input via a charger.
+  */
+float Kia_Trip_Counter::GetChargeCharged()
 	{
+	float res = 0;
 	if( HasChargeData())
-		return (cc_ah - cc_ah_start) - cc_ah_ext;
-	return 0;
+		{
+		res = tot_charge_ah_ext;
+		if (charging)
+			res += (tot_charge_ah - charge_start_ah);
+		}
+	return res;
 	}
+
+/** Set start of charging.
+  */
 void Kia_Trip_Counter::StartCharge(float current_cc, float current_cc_ah)
 	{
-	if (!charging)
+
+	if (!charging && ((tot_discharge_start != 0) || (tot_charge_start != 0)))
 		{
 		charging = true;
 		charge_start = current_cc;
-		cc = current_cc;
+		tot_charge = current_cc;
 		charge_start_ah = current_cc_ah;
-		cc_ah = current_cc_ah;
+		tot_charge_ah = current_cc_ah;
+		tot_charge_ext = 0;
+		tot_charge_ah_ext = 0;
 		}
 	}
+
+/** Set finish of charging.
+  */
 void Kia_Trip_Counter::FinishCharge(float current_cc, float current_cc_ah)
 	{
 	if (charging)
 		{
 		charging = false;
-		cc_ext += current_cc-charge_start;
-		charge_start = 0;
-		cc = current_cc;
 
-		cc_ah_ext += current_cc_ah-charge_start_ah;
+		if (charge_start > 0) {
+			float diff = current_cc-charge_start;
+			if (diff > 0)
+				tot_charge_ext += diff;
+		}
+		charge_start = 0;
+		tot_charge = current_cc;
+
+		if (charge_start_ah > 0) {
+			float diff = current_cc_ah-charge_start_ah;
+			if (diff > 0)
+				tot_charge_ah_ext += diff;
+		}
 		charge_start_ah = 0;
-		cc_ah = current_cc_ah;
+		tot_charge_ah = current_cc_ah;
 		}
 	}
 

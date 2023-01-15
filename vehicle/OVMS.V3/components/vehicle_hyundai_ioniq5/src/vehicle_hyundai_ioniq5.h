@@ -68,6 +68,7 @@ void xiq_trip_since_charge(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, 
 void xiq_tpms(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
 void xiq_aux(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
 void xiq_vin(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
+void xiq_aux_monitor(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
 
 void xiq_range_stat(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
 void xiq_range_reset(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
@@ -98,7 +99,8 @@ struct OvmsBatteryMon {
   static const int32_t low_threshold = 1150;    // Under 11.5 is 'Low'
   static const int32_t smooth_threshold = 20;   // < 0.2v variation is 'Normal'
   static const int32_t blip_threshold = 30;     // cur is > 0.3v over average is 'Blip'
-  static const int32_t dip_threshold = -30;     // cur is < 0.3v over average is 'Dip'
+  static const int32_t dip_threshold = -25;     // cur is < 0.3v over average is 'Dip'
+  // Divides the entry_count history elements into 2 parts (as a fraction first_mult / first_divis )
   static const uint16_t first_mult = 2;
   static const uint16_t first_divis = 3;
 
@@ -112,10 +114,11 @@ struct OvmsBatteryMon {
   // Last calculated state
   OvmsBatteryState m_lastState;
   int32_t m_average_last;
+  int32_t m_diff_last;
 
   OvmsBatteryMon();
 
-  OvmsBatteryState calc_state(int32_t &ave_last);
+  OvmsBatteryState calc_state(int32_t &ave_last, int32_t &diff_last);
 
   // Add a voltage to the circular buffer.
   void add(float voltage);
@@ -127,9 +130,7 @@ struct OvmsBatteryMon {
 
   // Current State
   OvmsBatteryState state();
-#ifdef OVMS_DEBUG_BATTERYMON
   std::string to_string();
-#endif
   uint16_t count()
   {
     return m_count;
@@ -393,6 +394,7 @@ protected:
   //
 
 public:
+  void GetDashboardConfig(DashboardConfig &cfg) override;
   virtual void WebInit();
   static void WebCfgFeatures(PageEntry_t &p, PageContext_t &c);
   static void WebCfgBattery(PageEntry_t &p, PageContext_t &c);
@@ -400,9 +402,12 @@ public:
 
   void RangeCalcReset();
   void RangeCalcStat(OvmsWriter *writer);
-public:
-  void GetDashboardConfig(DashboardConfig &cfg) override;
 #endif //CONFIG_OVMS_COMP_WEBSERVER
+public:
+  std::string BatteryMonStat()
+  {
+    return hif_aux_battery_mon.to_string();
+  }
 };
 
 #ifdef DEBUG_FUNC_LEAVE

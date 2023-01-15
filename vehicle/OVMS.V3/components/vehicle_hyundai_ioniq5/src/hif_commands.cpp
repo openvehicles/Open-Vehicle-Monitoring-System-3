@@ -520,7 +520,52 @@ void xiq_trip_since_charge(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, 
 
 void OvmsHyundaiIoniqEv::RangeCalcStat(OvmsWriter *writer)
 {
-  iq_range_calc->displayStoredTrips(writer);
+  if (iq_range_calc) {
+    iq_range_calc->displayStoredTrips(writer);
+  }
+
+  if (kia_park_trip_counter.Started()) {
+    metric_unit_t rangeUnit = MyUnitConfig.GetUserUnit(GrpDistance, Kilometers);
+
+    writer->puts("Current Trip Counter");
+    writer->printf("Dist: %.2g%s\n",
+      UnitConvert( Kilometers, rangeUnit, kia_park_trip_counter.GetDistance()),
+      OvmsMetricUnitLabel(rangeUnit));
+
+    if (kia_park_trip_counter.HasEnergyData()) {
+      metric_unit_t energyUnit = MyUnitConfig.GetUserUnit(GrpEnergy, kWh);
+      const char *energyLabel = OvmsMetricUnitLabel(energyUnit);
+      writer->printf("Energy Consumed: %.2g%s\n",
+        UnitConvert(kWh, energyUnit, kia_park_trip_counter.GetEnergyConsumed()), energyLabel);
+      writer->printf("Energy Recovered: %.2g%s\n",
+        UnitConvert(kWh, energyUnit, kia_park_trip_counter.GetEnergyRecuperated()), energyLabel);
+      writer->printf("Total Energy Used: %.2g%s\n",
+        UnitConvert(kWh, energyUnit, kia_park_trip_counter.GetEnergyUsed()), energyLabel);
+      auto charged = kia_park_trip_counter.GetEnergyCharged();
+      if (charged != 0) {
+        writer->printf("Energy Charged: %.2g%s\n",
+          UnitConvert(kWh, energyUnit, charged), energyLabel);
+      }
+    }
+
+    if (kia_park_trip_counter.HasChargeData()) {
+      metric_unit_t chargeUnit = MyUnitConfig.GetUserUnit(GrpCharge, AmpHours);
+      const char *chargeLabel = OvmsMetricUnitLabel(chargeUnit);
+      writer->printf("Charge Consumed: %.2g%s\n",
+        UnitConvert(AmpHours, chargeUnit,kia_park_trip_counter.GetChargeConsumed()), chargeLabel);
+      writer->printf("Charge Recovered: %.2g%s\n",
+        UnitConvert(AmpHours, chargeUnit, kia_park_trip_counter.GetChargeRecuperated()), chargeLabel);
+      writer->printf("Total Charge Used: %.2g%s\n",
+        UnitConvert(AmpHours, chargeUnit, kia_park_trip_counter.GetChargeUsed()), chargeLabel);
+      writer->printf("Charging: %s", kia_park_trip_counter.Charging() ? "Yes" : "No");
+      auto charged = kia_park_trip_counter.GetChargeCharged();
+      if (charged != 0) {
+        writer->printf("Charge Charged: %.2g%s\n",
+          UnitConvert(AmpHours, chargeUnit, charged), chargeLabel);
+      }
+    }
+  }
+
 }
 
 void xiq_range_stat(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv)
@@ -546,4 +591,15 @@ void xiq_range_reset(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int ar
   }
   OvmsHyundaiIoniqEv *mycar = (OvmsHyundaiIoniqEv *)(MyVehicleFactory.ActiveVehicle());
   mycar->RangeCalcReset();
+}
+
+void xiq_aux_monitor(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv)
+{
+  if (MyVehicleFactory.m_currentvehicle == NULL) {
+    writer->puts("Error: No vehicle module selected");
+    return;
+  }
+  OvmsHyundaiIoniqEv *mycar = (OvmsHyundaiIoniqEv *)(MyVehicleFactory.ActiveVehicle());
+  std::string stat = mycar->BatteryMonStat();
+  writer->puts(stat.c_str());
 }

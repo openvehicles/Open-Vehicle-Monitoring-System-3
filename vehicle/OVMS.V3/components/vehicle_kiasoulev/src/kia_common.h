@@ -16,34 +16,39 @@ typedef struct{
 class Kia_Trip_Counter
     {
     private:
-      float odo_start;
-      float cdc_start; // Used to calculate trip power use (Cumulated discharge)
-      float cc_start;  // Used to calculate trip recuperation (Cumulated charge)
-      float cdc_ah_start; // Used to calculate trip power use (Cumulated discharge)
-      float cc_ah_start;  // Used to calculate trip recuperation (Cumulated charge)
-      float odo;
-      float cdc;   // Cumulative Discharge
-      float cc;    // Cumulative Charge
-      float cdc_ah;// Cumulative Discharge  Amp Hours
-      float cc_ah; // Cumulative Charge Amp Hours
+      float odo_start;              // Trip start point of ODO
+      float tot_discharge_start;    // Trip start point of energy discharged (kWh)
+      float tot_charge_start;       // Trip start point of energy charged (charged+recovered) (kWh)
+      float tot_discharge_ah_start; // Trip start point of 'charge' discharged (Ah)
+      float tot_charge_ah_start;    // Trip start point of 'charge' charged+recovered (Ah)
+      float odo;               // Last ODO entry.
+      float tot_discharge;     // Last Cumulative Discharge (kWh)
+      float tot_charge;        // Last Cumulative Charge (kWh)
+      float tot_discharge_ah;  // Last Cumulative Energey Discharged (Ah)
+      float tot_charge_ah;     // Last Cumulative Charge (Ah)
 
-      float cc_ext; // Cumulative charge (from external charging)
-      float cc_ah_ext; // Cumulative charge external - Amp Hours
-      bool charging;
-      float charge_start;
-      float charge_start_ah;
+      float tot_charge_ext;    // Cumulative energy charge (from external charging) (kWh)
+      float tot_charge_ah_ext; // Cumulative 'charge' added external (Ah)
+      bool charging;           // Currently charging
+      float charge_start;      // Charging  energe Start point (kWh)
+      float charge_start_ah;   // Charging 'charge' Start point (Ah)
 
     public:
       Kia_Trip_Counter();
       ~Kia_Trip_Counter();
-      void Reset(float odo, float cdc, float cc, float cdc_ah = 0, float cc_ah = 0);
+      void Reset(float current_odo, float current_cdc, float current_cc, float current_cdc_ah = 0, float current_cc_ah = 0, bool is_charging = false);
       void Update(float current_odo, float current_cdc, float current_cc, float current_cdc_ah = 0, float current_cc_ah = 0);
       float GetDistance();
       float GetEnergyUsed();
+      float GetEnergyConsumed();
       float GetEnergyRecuperated();
+      float GetEnergyCharged();
       float GetChargeUsed();
+      float GetChargeCharged();
+      float GetChargeConsumed();
       float GetChargeRecuperated();
       bool Started();
+      bool Charging() { return charging; }
       bool HasEnergyData();
       bool HasChargeData();
       void StartCharge(float current_cc, float current_cc_ah = 0);
