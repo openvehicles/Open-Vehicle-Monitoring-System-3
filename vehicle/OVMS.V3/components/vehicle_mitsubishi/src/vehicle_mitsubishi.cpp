@@ -170,7 +170,7 @@ OvmsVehicleMitsubishi::OvmsVehicleMitsubishi()
     BmsSetCellArrangementTemperature(60, 6);
   }
   else
-  {
+  {   
     BmsSetCellArrangementVoltage(88, 8);
     BmsSetCellArrangementTemperature(66, 6);
   }
@@ -181,7 +181,6 @@ OvmsVehicleMitsubishi::OvmsVehicleMitsubishi()
   #ifdef CONFIG_OVMS_COMP_WEBSERVER
     MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
     MyWebServer.RegisterPage("/cfg/brakelight", "Brake Light control", OvmsWebServer::HandleCfgBrakelight, PageMenu_Vehicle, PageAuth_Cookie);
-    //MyWebServer.RegisterPage("/xmi/features", "Settings", WebCfgFeatures, PageMenu_Vehicle, PageAuth_Cookie);
     WebInit();
   #endif
 
@@ -205,8 +204,6 @@ OvmsVehicleMitsubishi::~OvmsVehicleMitsubishi()
   #ifdef CONFIG_OVMS_COMP_WEBSERVER
     MyWebServer.DeregisterPage("/bms/cellmon");
     MyWebServer.DeregisterPage("/cfg/brakelight");
-   // MyWebServer.DeregisterPage("/xmi/features");
-    //WebInit();
   #endif
   MyCommandApp.UnregisterCommand("xmi");
 }
@@ -341,10 +338,10 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
             }
           }
 
-          if (m_vin[0] == 'V' && m_vin[1] == 'F' && m_vin[9] == 'D'){
+          /*if (m_vin[0] == 'V' && m_vin[1] == 'F' && m_vin[9] == 'D'){
             BmsSetCellArrangementVoltage(80, 8);
             BmsSetCellArrangementTemperature(60, 6);
-          }
+          }*/
 
       break;
       }
@@ -712,8 +709,8 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
       double temp2 = d[2] - 50.0;
       double temp3 = d[3] - 50.0;
 
-      double voltage1 = (((d[4] * 256.0 + d[5]) * 0.05) + 2.1);
-      double voltage2 = (((d[6] * 256.0 + d[7]) * 0.05) + 2.1);
+      double voltage1 = (((d[4] * 256.0 + d[5]) * 0.005) + 2.1);
+      double voltage2 = (((d[6] * 256.0 + d[7]) * 0.005) + 2.1);
 
       int voltage_index = ((cmu_id - 1) * 8 + (2 * pid_index));
       int temp_index = ((cmu_id - 1) * 6 + (2 * pid_index));
