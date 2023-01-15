@@ -2,7 +2,7 @@
 ;    Project:       Open Vehicle Monitor System
 ;
 ;    (C) 2017       	Geir Øyvind Vælidalo <geir@validalo.net>
-;    (C) 2018-2020    Tamás Kovács (KommyKT)
+;    (C) 2018-2023    Tamás Kovács (KommyKT)
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -35,13 +35,11 @@ void xmi_aux(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
 		return;
 	}
 
+	const char* auxBatt = StdMetrics.ms_v_bat_12v_voltage->AsUnitString("-", Volts, 2).c_str();
 
 	writer->printf("AUX BATTERY\n");
-	if (StdMetrics.ms_v_bat_12v_voltage->IsDefined())
-	{
-		const std::string& auxBatt = StdMetrics.ms_v_bat_12v_voltage->AsUnitString("-", Volts, 2);
-		writer->printf("Aux battery voltage %s\n", auxBatt.c_str());
-	}
+	if (*auxBatt != '-')
+		writer->printf("Aux battery voltage %s\n", auxBatt);
 }
 
 /**

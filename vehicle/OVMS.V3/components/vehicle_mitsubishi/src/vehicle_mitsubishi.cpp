@@ -63,13 +63,16 @@
 ;       - Calculate trip distance from TripB, more accurate than odometer 100m vs 1000m
 ;     1.0.12
 ;       - Convert divisions to multiplications
-;     1.0.12
-;       - Convert divisions to multiplications
+;     1.0.13
+;       - Supply new standard metrics
+;     1.0.14
+;       - Persist metrics fix
+;       - Fix charge metrics if crash during charge session
 ;
 ;    (C) 2011         Michael Stegen / Stegen Electronics
 ;    (C) 2011-2018    Mark Webb-Johnson
 ;    (C) 2011         Sonny Chen @ EPRO/DX
-;    (C) 2018-2020    Tamás Kovács (KommyKT)
+;    (C) 2018-2023    Tamás Kovács (KommyKT)
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -100,7 +103,7 @@
 #include "ovms_notify.h"
 #include <sys/param.h>
 
-#define VERSION "1.0.12"
+#define VERSION "1.0.14"
 
 static const char *TAG = "v-mitsubishi";
 
@@ -120,26 +123,21 @@ OvmsVehicleMitsubishi::OvmsVehicleMitsubishi()
 {
   ESP_LOGI(TAG, "Start Mitsubishi iMiev, Citroen C-Zero, Peugeot iOn vehicle module");
 
-  StandardMetrics.ms_v_env_parktime->SetValue(0);
-  StandardMetrics.ms_v_charge_type->SetValue("None");
-  StandardMetrics.ms_v_bat_energy_used->SetValue(0);
-  StandardMetrics.ms_v_bat_energy_recd->SetValue(0);
   memset(m_vin, 0, sizeof(m_vin));
+
+  if(ms_v_trip_park_energy_used->AsFloat() == 0.0){
+    ms_v_trip_park_energy_used->SetValue(StandardMetrics.ms_v_bat_energy_used->AsFloat());
+    ms_v_trip_park_energy_recd->SetValue(StandardMetrics.ms_v_bat_energy_recd->AsFloat());
+  }
 
   mi_start_time_utc = StandardMetrics.ms_m_timeutc->AsInt();
   StandardMetrics.ms_v_charge_inprogress->SetAutoStale(30);    //Set autostale to 30 second
 
-  ms_v_charge_ac_kwh->SetValue(0);
-  ms_v_charge_dc_kwh->SetValue(0);
-
-  ms_v_trip_park_energy_recd->SetValue(0);
-  ms_v_trip_park_energy_used->SetValue(0);
-  ms_v_trip_park_heating_kwh->SetValue(0);
-  ms_v_trip_park_ac_kwh->SetValue(0);
-
   set_odo = false;
+  has_trip = false;
+  mi_SC = false;
 
-  v_c_efficiency->SetValue(0);
+  StdMetrics.ms_v_charge_efficiency->SetValue(0);
 
   if(POS_ODO > 0.0)
   {
@@ -154,14 +152,6 @@ OvmsVehicleMitsubishi::OvmsVehicleMitsubishi()
   {
     has_odo = false;
   }
-
-
-  // reset charge counter
-
-  ms_v_trip_charge_energy_recd->SetValue(0);
-  ms_v_trip_charge_energy_used->SetValue(0);
-  ms_v_trip_charge_heating_kwh->SetValue(0);
-  ms_v_trip_charge_ac_kwh->SetValue(0);
 
   RegisterCanBus(1,CAN_MODE_ACTIVE,CAN_SPEED_500KBPS);
   PollSetPidList(m_can1,vehicle_mitsubishi_polls);
@@ -185,13 +175,13 @@ OvmsVehicleMitsubishi::OvmsVehicleMitsubishi()
     BmsSetCellArrangementTemperature(66, 6);
   }
 
-  BmsSetCellLimitsVoltage(2.52, 4.9);
+  BmsSetCellLimitsVoltage(2.52, 4.3);
   BmsSetCellLimitsTemperature(-30, 60);
 
   #ifdef CONFIG_OVMS_COMP_WEBSERVER
     MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
     MyWebServer.RegisterPage("/cfg/brakelight", "Brake Light control", OvmsWebServer::HandleCfgBrakelight, PageMenu_Vehicle, PageAuth_Cookie);
-    MyWebServer.RegisterPage("/xmi/features", "Settings", WebCfgFeatures, PageMenu_Vehicle, PageAuth_Cookie);
+    //MyWebServer.RegisterPage("/xmi/features", "Settings", WebCfgFeatures, PageMenu_Vehicle, PageAuth_Cookie);
     WebInit();
   #endif
 
@@ -215,8 +205,8 @@ OvmsVehicleMitsubishi::~OvmsVehicleMitsubishi()
   #ifdef CONFIG_OVMS_COMP_WEBSERVER
     MyWebServer.DeregisterPage("/bms/cellmon");
     MyWebServer.DeregisterPage("/cfg/brakelight");
-    MyWebServer.DeregisterPage("/xmi/features");
-    WebInit();
+   // MyWebServer.DeregisterPage("/xmi/features");
+    //WebInit();
   #endif
   MyCommandApp.UnregisterCommand("xmi");
 }
@@ -268,6 +258,14 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
       break;
       }
 
+       case 0x215:
+      {
+        //ESP_LOGW(TAGDEV,"Speed: %f", (d[0] * 256.0 + d[1]) / 128.0);
+        StandardMetrics.ms_v_pos_speed->SetValue((d[0] * 256.0 + d[1]) * 0.0078125, Kph);
+        CalculateAcceleration();
+        break;
+      }
+
       case 0x231://freq50 // Brake pedal switch
       {
         if (d[4] == 0) {
@@ -289,21 +287,21 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
 
       case 0x286://freq10  // Charger/inverter temperature
       {
-        StandardMetrics.ms_v_charge_temp->SetValue((float)d[3] - 40);
-        StandardMetrics.ms_v_inv_temp->SetValue((float)d[3] - 40);
-
+        StandardMetrics.ms_v_charge_temp->SetValue(d[3] - 40);
+        StandardMetrics.ms_v_inv_temp->SetValue(d[3] - 40);
+        ms_v_c_detection->SetValue(d[2]);
         //charger detection
         //if(d[0] == 14  && d[1] == 116 ) // charger connected
         if((d[1] & 32 ) != 0)
         {
-          mi_SC = true;
-          if(d[2] == 100) //charging (d[2] <= 99 prepare charge?)
+          if(mi_SC == false) 
           {
             StandardMetrics.ms_v_charge_type->SetValue("Standard");
             StandardMetrics.ms_v_charge_mode->SetValue("Type1");
             StandardMetrics.ms_v_charge_climit->SetValue("14");
             StandardMetrics.ms_v_charge_state->SetValue("charging");
           }
+          mi_SC = true;
         }
         else
         {
@@ -315,7 +313,7 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
 
       case 0x298://freq10 // Motor temperature and RPM
       {
-        StandardMetrics.ms_v_mot_temp->SetValue((int)d[3] - 40 );
+        StandardMetrics.ms_v_mot_temp->SetValue(d[3] - 40);
         StandardMetrics.ms_v_mot_rpm->SetValue(((d[6] * 256.0) + d[7]) - 10000);
 
         if ( StandardMetrics.ms_v_mot_rpm->AsInt() < 10 && StandardMetrics.ms_v_mot_rpm->AsInt() > -10)
@@ -342,12 +340,12 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
               StandardMetrics.ms_v_vin->SetValue(m_vin);
             }
           }
-/*
-          if (m_vin[0] == 'V' && m_vin[1] == 'F' && m_vin[7] == 'Y'){
+
+          if (m_vin[0] == 'V' && m_vin[1] == 'F' && m_vin[9] == 'D'){
             BmsSetCellArrangementVoltage(80, 8);
             BmsSetCellArrangementTemperature(60, 6);
           }
-*/
+
       break;
       }
 
@@ -371,27 +369,27 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
         StandardMetrics.ms_v_bat_current->SetValue((((((d[2] * 256.0) + d[3])) - 32768)) * 0.01, Amps);
         StandardMetrics.ms_v_bat_voltage->SetValue((d[4] * 256.0 + d[5]) * 0.1, Volts);
         StandardMetrics.ms_v_bat_power->SetValue((StandardMetrics.ms_v_bat_voltage->AsFloat(0, Volts) * StandardMetrics.ms_v_bat_current->AsFloat(0, Amps)) * -0.001, kW);
-        StandardMetrics.ms_v_bat_current->SetValue((((((d[2] * 256.0) + d[3])) - 32768)) * 0.01, Amps);
-        StandardMetrics.ms_v_bat_voltage->SetValue((d[4] * 256.0 + d[5]) * 0.1, Volts);
-        StandardMetrics.ms_v_bat_power->SetValue((StandardMetrics.ms_v_bat_voltage->AsFloat(0, Volts) * StandardMetrics.ms_v_bat_current->AsFloat(0, Amps)) * -0.001, kW);
+       // StandardMetrics.ms_v_bat_current->SetValue((((((d[2] * 256.0) + d[3])) - 32768)) * 0.01, Amps);
+       // StandardMetrics.ms_v_bat_voltage->SetValue((d[4] * 256.0 + d[5]) * 0.1, Volts);
+       // StandardMetrics.ms_v_bat_power->SetValue((StandardMetrics.ms_v_bat_voltage->AsFloat(0, Volts) * StandardMetrics.ms_v_bat_current->AsFloat(0, Amps)) * -0.001, kW);
         v_c_power_dc->SetValue( StandardMetrics.ms_v_bat_power->AsFloat() * -1.0, kW );
         if (!StandardMetrics.ms_v_charge_pilot->AsBool())
         {
           if ( StandardMetrics.ms_v_bat_power->AsInt() < 0)
             {
               StandardMetrics.ms_v_bat_energy_recd->SetValue((StandardMetrics.ms_v_bat_energy_recd->AsFloat() + (StandardMetrics.ms_v_bat_power->AsFloat() * -0.00000278)));
-              ms_v_trip_park_energy_recd->SetValue((ms_v_trip_park_energy_recd->AsFloat() + (StandardMetrics.ms_v_bat_power->AsFloat() * -0.00000278)));
-              ms_v_trip_charge_energy_recd->SetValue((ms_v_trip_charge_energy_recd->AsFloat() + (StandardMetrics.ms_v_bat_power->AsFloat() * -0.00000278)));
-              StandardMetrics.ms_v_bat_energy_recd->SetValue((StandardMetrics.ms_v_bat_energy_recd->AsFloat() + (StandardMetrics.ms_v_bat_power->AsFloat() * -0.00000278)));
+             // ms_v_trip_park_energy_recd->SetValue((ms_v_trip_park_energy_recd->AsFloat() + (StandardMetrics.ms_v_bat_power->AsFloat() * -0.00000278)));
+             // ms_v_trip_charge_energy_recd->SetValue((ms_v_trip_charge_energy_recd->AsFloat() + (StandardMetrics.ms_v_bat_power->AsFloat() * -0.00000278)));
+              StandardMetrics.ms_v_bat_energy_recd_total->SetValue((StandardMetrics.ms_v_bat_energy_recd->AsFloat() + (StandardMetrics.ms_v_bat_power->AsFloat() * -0.00000278)));
               ms_v_trip_park_energy_recd->SetValue((ms_v_trip_park_energy_recd->AsFloat() + (StandardMetrics.ms_v_bat_power->AsFloat() * -0.00000278)));
               ms_v_trip_charge_energy_recd->SetValue((ms_v_trip_charge_energy_recd->AsFloat() + (StandardMetrics.ms_v_bat_power->AsFloat() * -0.00000278)));
             }
             else
             {
               StandardMetrics.ms_v_bat_energy_used->SetValue( ( StandardMetrics.ms_v_bat_energy_used->AsFloat()+(StandardMetrics.ms_v_bat_power->AsFloat() * 0.00000278)));
-              ms_v_trip_park_energy_used->SetValue((ms_v_trip_park_energy_used->AsFloat() + (StandardMetrics.ms_v_bat_power->AsFloat() * 0.00000278)));
-              ms_v_trip_charge_energy_used->SetValue((ms_v_trip_charge_energy_used->AsFloat() + (StandardMetrics.ms_v_bat_power->AsFloat() * 0.00000278)));
-              StandardMetrics.ms_v_bat_energy_used->SetValue( ( StandardMetrics.ms_v_bat_energy_used->AsFloat()+(StandardMetrics.ms_v_bat_power->AsFloat() * 0.00000278)));
+              //ms_v_trip_park_energy_used->SetValue((ms_v_trip_park_energy_used->AsFloat() + (StandardMetrics.ms_v_bat_power->AsFloat() * 0.00000278)));
+              //ms_v_trip_charge_energy_used->SetValue((ms_v_trip_charge_energy_used->AsFloat() + (StandardMetrics.ms_v_bat_power->AsFloat() * 0.00000278)));
+              StandardMetrics.ms_v_bat_energy_used_total->SetValue( ( StandardMetrics.ms_v_bat_energy_used->AsFloat()+(StandardMetrics.ms_v_bat_power->AsFloat() * 0.00000278)));
               ms_v_trip_park_energy_used->SetValue((ms_v_trip_park_energy_used->AsFloat() + (StandardMetrics.ms_v_bat_power->AsFloat() * 0.00000278)));
               ms_v_trip_charge_energy_used->SetValue((ms_v_trip_charge_energy_used->AsFloat() + (StandardMetrics.ms_v_bat_power->AsFloat() * 0.00000278)));
             }
@@ -402,19 +400,18 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
           if ( StandardMetrics.ms_v_bat_power->AsInt() < 0)
           {
             StandardMetrics.ms_v_bat_energy_recd->SetValue((StandardMetrics.ms_v_bat_energy_recd->AsFloat() + (StandardMetrics.ms_v_bat_power->AsFloat() * -0.00000278)));
-            StandardMetrics.ms_v_bat_energy_recd->SetValue((StandardMetrics.ms_v_bat_energy_recd->AsFloat() + (StandardMetrics.ms_v_bat_power->AsFloat() * -0.00000278)));
+            StandardMetrics.ms_v_bat_energy_recd_total->SetValue((StandardMetrics.ms_v_bat_energy_recd->AsFloat() + (StandardMetrics.ms_v_bat_power->AsFloat() * -0.00000278)));
           }
           else
           {
             StandardMetrics.ms_v_bat_energy_used->SetValue((StandardMetrics.ms_v_bat_energy_used->AsFloat() + (StandardMetrics.ms_v_bat_power->AsFloat() * 0.00000278)));
-            StandardMetrics.ms_v_bat_energy_used->SetValue((StandardMetrics.ms_v_bat_energy_used->AsFloat() + (StandardMetrics.ms_v_bat_power->AsFloat() * 0.00000278)));
+            StandardMetrics.ms_v_bat_energy_used_total->SetValue((StandardMetrics.ms_v_bat_energy_used->AsFloat() + (StandardMetrics.ms_v_bat_power->AsFloat() * 0.00000278)));
           }
         }
 
 
         if (StandardMetrics.ms_v_charge_inprogress->AsBool())
         {
-          ms_v_charge_dc_kwh->SetValue((ms_v_charge_dc_kwh->AsFloat() + (StandardMetrics.ms_v_bat_power->AsFloat() * -0.00000278)));
           ms_v_charge_dc_kwh->SetValue((ms_v_charge_dc_kwh->AsFloat() + (StandardMetrics.ms_v_bat_power->AsFloat() * -0.00000278)));
         }
 
@@ -439,8 +436,7 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
       case 0x374://freq10 // Main Battery Soc
       {
         if (d[1] > 10)
-          StandardMetrics.ms_v_bat_soc->SetValue(((int)d[1] - 10 ) * 0.5, Percentage);
-          StandardMetrics.ms_v_bat_soc->SetValue(((int)d[1] - 10 ) * 0.5, Percentage);
+          StandardMetrics.ms_v_bat_soc->SetValue((d[1] - 10 ) * 0.5, Percentage);
 
       break;
       }
@@ -448,11 +444,8 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
       case 0x384://freq10 //heating current
       {
         ms_v_env_heating_amp->SetValue(d[4] * 0.1);
-        ms_v_env_heating_amp->SetValue(d[4] * 0.1);
         ms_v_env_heating_watt->SetValue(ms_v_env_heating_amp->AsFloat() * StandardMetrics.ms_v_bat_voltage->AsFloat());
 
-        ms_v_trip_park_heating_kwh->SetValue(ms_v_trip_park_heating_kwh->AsFloat() + (ms_v_env_heating_watt->AsFloat() * 0.0000000278));
-        ms_v_trip_charge_heating_kwh->SetValue(ms_v_trip_charge_heating_kwh->AsFloat() + (ms_v_env_heating_watt->AsFloat() * 0.0000000278));
         ms_v_trip_park_heating_kwh->SetValue(ms_v_trip_park_heating_kwh->AsFloat() + (ms_v_env_heating_watt->AsFloat() * 0.0000000278));
         ms_v_trip_charge_heating_kwh->SetValue(ms_v_trip_charge_heating_kwh->AsFloat() + (ms_v_env_heating_watt->AsFloat() * 0.0000000278));
 
@@ -462,21 +455,18 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
 
         if ( cfg_heater_old )
         {
-          ms_v_env_heating_temp_return->SetValue(((d[5] - 32) * 0.555555555) - 3.0d);
-          ms_v_env_heating_temp_flow->SetValue(((d[6] - 32) * 0.555555555) - 3.0d);
+          ms_v_env_heating_temp_return->SetValue(((d[5] - 32) * 0.555555555) - 3.0);
+          ms_v_env_heating_temp_flow->SetValue(((d[6] - 32) * 0.555555555) - 3.0);
         }
         else
         {
-          ms_v_env_heating_temp_return->SetValue((d[5] * 0.6) - 40.0d);
-          ms_v_env_heating_temp_flow->SetValue((d[6] * 0.6) - 40.0d);
+          ms_v_env_heating_temp_return->SetValue((d[5] * 0.6) - 40.0);
+          ms_v_env_heating_temp_flow->SetValue((d[6] * 0.6) - 40.0);
         }
 
         ms_v_env_ac_amp->SetValue((d[0] * 256.0 + d[1]) * 0.001);
-        ms_v_env_ac_amp->SetValue((d[0] * 256.0 + d[1]) * 0.001);
         ms_v_env_ac_watt->SetValue(ms_v_env_ac_amp->AsFloat() * StandardMetrics.ms_v_bat_voltage->AsFloat());
 
-        ms_v_trip_park_ac_kwh->SetValue(ms_v_trip_park_ac_kwh->AsFloat() + (ms_v_env_ac_watt->AsFloat() * 0.0000000278));
-        ms_v_trip_charge_ac_kwh->SetValue(ms_v_trip_charge_ac_kwh->AsFloat() + (ms_v_env_ac_watt->AsFloat() * 0.0000000278));
         ms_v_trip_park_ac_kwh->SetValue(ms_v_trip_park_ac_kwh->AsFloat() + (ms_v_env_ac_watt->AsFloat() * 0.0000000278));
         ms_v_trip_charge_ac_kwh->SetValue(ms_v_trip_charge_ac_kwh->AsFloat() + (ms_v_env_ac_watt->AsFloat() * 0.0000000278));
 
@@ -489,16 +479,13 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
         {
           StandardMetrics.ms_v_charge_voltage->SetValue(d[1] * 1.0, Volts);
           StandardMetrics.ms_v_charge_current->SetValue(d[6] * 0.1, Amps);
-          StandardMetrics.ms_v_charge_current->SetValue(d[6] * 0.1, Amps);
         }
 
-        v_c_power_ac->SetValue((StandardMetrics.ms_v_charge_voltage->AsFloat() * StandardMetrics.ms_v_charge_current->AsFloat()) * 0.001, kW);
-        v_c_power_ac->SetValue((StandardMetrics.ms_v_charge_voltage->AsFloat() * StandardMetrics.ms_v_charge_current->AsFloat()) * 0.001, kW);
+        StdMetrics.ms_v_charge_power->SetValue((StandardMetrics.ms_v_charge_voltage->AsFloat() * StandardMetrics.ms_v_charge_current->AsFloat()) * 0.001, kW);
         if ( (StdMetrics.ms_v_charge_voltage->AsInt() > 0) && (StdMetrics.ms_v_charge_current->AsFloat() > 0.0) )
         {
           StandardMetrics.ms_v_charge_inprogress->SetValue(true);
-          StandardMetrics.ms_v_charge_kwh->SetValue(StandardMetrics.ms_v_charge_kwh->AsFloat() + (v_c_power_ac->AsFloat() * 0.0000278));
-          StandardMetrics.ms_v_charge_kwh->SetValue(StandardMetrics.ms_v_charge_kwh->AsFloat() + (v_c_power_ac->AsFloat() * 0.0000278));
+          StandardMetrics.ms_v_charge_kwh->SetValue(StandardMetrics.ms_v_charge_kwh->AsFloat() + (StdMetrics.ms_v_charge_power->AsFloat() * 0.0000278));
           ms_v_charge_ac_kwh->SetValue(StandardMetrics.ms_v_charge_kwh->AsFloat());
         }
       break;
@@ -520,21 +507,21 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
          */
 
         //heating level
-        if (((int)d[0] & 15) == 7)
+        if ((d[0] & 15) == 7)
         {
           //ESP_LOGI(TAG, "Middle");
           //in the middle "off"
-        }else if (((int)d[0] & 15) < 7)
+        }else if ((d[0] & 15) < 7)
         {
         //  ESP_LOGI(TAG, "cooling");
           // Cooling
         }
-        else if (((int)d[0] & 15) > 7)
+        else if ((d[0] & 15) > 7)
         {
         //  ESP_LOGI(TAG, "Heating");
           //Heating
         }
-        //ESP_LOGI(TAG,"Heat level: %d", (int)d[0] & 15  );
+        //ESP_LOGI(TAG,"Heat level: %d", d[0] & 15  );
 
         //Recirculation pushed
         ((d[0] & 64) != 0) ? StandardMetrics.ms_v_env_cabinintake->SetValue("Recirculation") : StandardMetrics.ms_v_env_cabinintake->SetValue("Fresh");
@@ -545,7 +532,7 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
         //Fan Speed
         float fanSpeed = ((d[1] & 15 )*12.5)+0.5;
         //Max pushed
-        ((d[0] & 32) != 0) ? StandardMetrics.ms_v_env_cabinfan->SetValue(110) : StandardMetrics.ms_v_env_cabinfan->SetValue((int)fanSpeed);
+        ((d[0] & 32) != 0) ? StandardMetrics.ms_v_env_cabinfan->SetValue(110) : StandardMetrics.ms_v_env_cabinfan->SetValue(fanSpeed);
 
         //Vent Direction
         string ventDirection = "-";
@@ -577,11 +564,9 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
 
     case 0x412://freq10 // Speed and odometer
     {
-      (d[1] > 200) ? StandardMetrics.ms_v_pos_speed->SetValue((int)d[1] - 255.0, Kph) : StandardMetrics.ms_v_pos_speed->SetValue(d[1]);
+      //(d[1] > 200) ? StandardMetrics.ms_v_pos_speed->SetValue(d[1] - 255.0, Kph) : StandardMetrics.ms_v_pos_speed->SetValue(d[1]);
 
-      CalculateAcceleration();
-
-      StandardMetrics.ms_v_pos_odometer->SetValue(((int)d[2] << 16 ) + ((int)d[3] << 8) + d[4], Kilometers);
+      StandardMetrics.ms_v_pos_odometer->SetValue((d[2] << 16 ) + (d[3] << 8) + d[4], Kilometers);
 
       if(StandardMetrics.ms_v_pos_odometer->AsInt() > 0 && has_odo == false && StandardMetrics.ms_v_bat_soc->AsFloat() > 0)
       {
@@ -691,7 +676,7 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
         //Doors locked
         ((d[2] & 64) != 0) ? StandardMetrics.ms_v_env_locked->SetValue(true) : StandardMetrics.ms_v_env_locked->SetValue(false);
 
-        //rear window heating, mirror heating is on
+        //rear window heating, mirror heating
         //((d[6] & 8) != 0 ) ? : ;
 
         break;
@@ -773,9 +758,9 @@ void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
     StandardMetrics.ms_v_charge_current->SetValue(0.0);
     StandardMetrics.ms_v_bat_current->SetValue(0);
     StandardMetrics.ms_v_bat_power->SetValue(0);
-    v_c_power_ac->SetValue(0);
+    StdMetrics.ms_v_charge_power->SetValue(0);
     v_c_power_dc->SetValue(0);
-    v_c_efficiency->SetValue(0);
+    StdMetrics.ms_v_charge_efficiency->SetValue(0);
   }
 
   //Check only if 'transmission in park
@@ -845,7 +830,7 @@ void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
             StandardMetrics.ms_v_charge_substate->SetValue("scheduledstop");
           }
 
-          v_c_power_ac->SetValue(0.0);  // Reset charge power meter
+          StdMetrics.ms_v_charge_power->SetValue(0.0);  // Reset charge power meter
           v_c_power_dc->SetValue(0.0);  // Reset charge power meter
           StandardMetrics.ms_v_charge_current->SetValue(0.0); //Reset charge current
           StandardMetrics.ms_v_charge_climit->SetValue(0.0); //Reset charge limit
@@ -867,14 +852,14 @@ void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
         }
       }
 
-      //Efficiency calculation AC/DC
-      if ((v_c_power_dc->AsInt() <= 0) || (v_c_power_ac->AsInt() <= 0))
+      //Charge efficiency calculation AC/DC
+      if ((v_c_power_dc->AsInt() <= 0) || (StdMetrics.ms_v_charge_power->AsInt() <= 0))
       {
-        v_c_efficiency->SetValue(0,Percentage);
+        StdMetrics.ms_v_charge_efficiency->SetValue(0,Percentage);
       }
       else
       {
-        v_c_efficiency->SetValue((v_c_power_dc->AsFloat() / v_c_power_ac->AsFloat()) * 100, Percentage);
+        StdMetrics.ms_v_charge_efficiency->SetValue((v_c_power_dc->AsFloat() / StdMetrics.ms_v_charge_power->AsFloat()) * 100, Percentage);
       }
   } //Car in P "if" close
 
@@ -886,8 +871,9 @@ void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
     {
         mi_park_trip_counter.Update(ms_v_trip_B->AsFloat());
         StdMetrics.ms_v_pos_trip->SetValue(mi_park_trip_counter.GetDistance(), Kilometers);
-        ms_v_pos_trip_park->SetValue(mi_charge_trip_counter.GetDistance(), Kilometers);
+        ms_v_pos_trip_park->SetValue(mi_park_trip_counter.GetDistance(), Kilometers);
         ms_v_trip_park_soc_stop->SetValue(StandardMetrics.ms_v_bat_soc->AsFloat());
+        ms_v_trip_park_time_stop->SetValue(StdMetrics.ms_m_timeutc->AsInt());
     }
     //Since charge
     if (mi_charge_trip_counter.Started())
@@ -908,7 +894,7 @@ void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
     if (cfg_newcell)
       cell = 80;
 
-    StdMetrics.ms_v_bat_range_ideal->SetValue(StdMetrics.ms_v_bat_soc->AsFloat() * StdMetrics.ms_v_bat_cac->AsFloat() * 3.7 * cell * 0.00005882);
+    StdMetrics.ms_v_bat_range_ideal->SetValue((StdMetrics.ms_v_bat_soc->AsFloat() - 10) * StdMetrics.ms_v_bat_cac->AsFloat() * 3.7 * cell * 0.00005882);
     StdMetrics.ms_v_bat_soh->SetValue(StdMetrics.ms_v_bat_cac->AsFloat() * 2.083333);
   }
 }
@@ -920,7 +906,11 @@ void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
    */
 void OvmsVehicleMitsubishi::vehicle_mitsubishi_car_on(bool isOn)
 {
-  StdMetrics.ms_v_env_awake->SetValue(isOn);
+    StdMetrics.ms_v_env_awake->SetValue(isOn);
+    mi_park_trip_counter.Update(ms_v_trip_B->AsFloat());
+    StdMetrics.ms_v_pos_trip->SetValue(mi_park_trip_counter.GetDistance());
+    ms_v_pos_trip_park->SetValue(mi_park_trip_counter.GetDistance());
+
     if (isOn && !StdMetrics.ms_v_env_on->AsBool())
     {
   	   // Car is ON
@@ -936,7 +926,7 @@ void OvmsVehicleMitsubishi::vehicle_mitsubishi_car_on(bool isOn)
        ms_v_trip_park_heating_kwh->SetValue(0);
        ms_v_trip_park_ac_kwh->SetValue(0);
        ms_v_trip_park_time_start->SetValue(StdMetrics.ms_m_timeutc->AsInt());
-       if(has_odo == true && StandardMetrics.ms_v_bat_soc->AsFloat() > 0.0)
+       if(has_trip == true && StandardMetrics.ms_v_bat_soc->AsFloat() > 0.0)
          {
            mi_park_trip_counter.Reset(ms_v_trip_B->AsFloat());
            ms_v_trip_park_soc_start->SetValue(StandardMetrics.ms_v_bat_soc->AsFloat());
@@ -950,9 +940,6 @@ void OvmsVehicleMitsubishi::vehicle_mitsubishi_car_on(bool isOn)
       // Car is OFF
       StdMetrics.ms_v_env_on->SetValue( isOn );
       StdMetrics.ms_v_pos_speed->SetValue(0);
-      mi_park_trip_counter.Update(ms_v_trip_B->AsFloat());
-      StdMetrics.ms_v_pos_trip->SetValue(mi_park_trip_counter.GetDistance());
-      ms_v_pos_trip_park->SetValue(mi_park_trip_counter.GetDistance());
 
       StdMetrics.ms_v_env_charging12v->SetValue(false);
       ms_v_trip_park_soc_stop->SetValue(StandardMetrics.ms_v_bat_soc->AsFloat());
@@ -1026,47 +1013,33 @@ OvmsVehicle::vehicle_command_t OvmsVehicleMitsubishi::CommandStat(int verbosity,
 
   writer->printf("SOC: %s\n", (char*) StdMetrics.ms_v_bat_soc->AsUnitString("-", Native, 1).c_str());
 
-  if (StdMetrics.ms_v_bat_range_ideal->IsDefined())
-  {
-    const std::string& range_ideal = StdMetrics.ms_v_bat_range_ideal->AsUnitString("-", rangeUnit, 0);
-    writer->printf("Ideal range: %s\n", range_ideal.c_str() );
-  }
+  const char* range_ideal = StdMetrics.ms_v_bat_range_ideal->AsUnitString("-", rangeUnit, 0).c_str();
+  if (*range_ideal != '-')
+    writer->printf("Ideal range: %s\n", range_ideal );
 
-  if (StdMetrics.ms_v_bat_range_est->IsDefined())
-  {
-    const std::string& range_est = StdMetrics.ms_v_bat_range_est->AsUnitString("-", rangeUnit, 0);
-    writer->printf( "Est. range: %s\n", range_est.c_str() );
-  }
+  const char* range_est = StdMetrics.ms_v_bat_range_est->AsUnitString("-", rangeUnit, 0).c_str();
+  if (*range_est != '-')
+    writer->printf( "Est. range: %s\n", range_est );
 
-  if (StdMetrics.ms_v_pos_odometer->IsDefined())
-  {
-    const std::string& odometer = StdMetrics.ms_v_pos_odometer->AsUnitString("-", rangeUnit, 1);
-    writer->printf( "ODO: %s\n", odometer.c_str() );
-  }
+  const char* odometer = StdMetrics.ms_v_pos_odometer->AsUnitString("-", rangeUnit, 1).c_str();
+  if (*odometer != '-')
+    writer->printf( "ODO: %s\n", odometer );
 
-  if (StdMetrics.ms_v_bat_cac->IsDefined())
-  {
-    const std::string& cac = StdMetrics.ms_v_bat_cac->AsUnitString("-", Native, 1);
-    writer->printf( "CAC: %s\n", cac.c_str() );
-  }
+  const char* cac = StdMetrics.ms_v_bat_cac->AsUnitString("-", Native, 1).c_str();
+  if ( *cac != '-')
+    writer->printf( "CAC: %s\n", cac );
 
-  if (StdMetrics.ms_v_bat_soh->IsDefined())
-  {
-    const std::string& soh = StdMetrics.ms_v_bat_soh->AsUnitString("-", Native, 0);
-    writer->printf("SOH: %s\n", soh.c_str());
-  }
+  const char* soh = StdMetrics.ms_v_bat_soh->AsUnitString("-", Native, 0).c_str();
+  if (*soh != '-')
+    writer->printf("SOH: %s\n", soh);
 
-  if (ms_v_charge_ac_kwh->IsDefined())
-  {
-    const std::string& charge_kWh_ac = ms_v_charge_ac_kwh->AsUnitString("-", Native, 3);
-    writer->printf( "AC charge: %s kWh\n", charge_kWh_ac.c_str() );
-  }
+  const char* charge_kWh_ac = ms_v_charge_ac_kwh->AsUnitString("-", Native, 3).c_str();
+  if (*charge_kWh_ac != '-')
+    writer->printf( "AC charge: %s kWh\n", charge_kWh_ac );
 
-  if (ms_v_charge_dc_kwh->IsDefined())
-  {
-    const std::string& charge_kWh_dc = ms_v_charge_dc_kwh->AsUnitString("-", Native, 3);
-    writer->printf( "DC charge: %s kWh\n", charge_kWh_dc.c_str() );
-  }
+  const char* charge_kWh_dc = ms_v_charge_dc_kwh->AsUnitString("-", Native, 3).c_str();
+  if (*charge_kWh_dc != '-')
+    writer->printf( "DC charge: %s kWh\n", charge_kWh_dc );
 
   return Success;
 }
@@ -1086,8 +1059,8 @@ OvmsVehicleMitsubishiInit::OvmsVehicleMitsubishiInit()
   /*******************************************************************************/
 MI_Trip_Counter::MI_Trip_Counter()
 {
-  odo_start=0;
-  odo=0;
+  odo_start = 0;
+  odo = 0;
 }
 
 MI_Trip_Counter::~MI_Trip_Counter()

@@ -60,6 +60,15 @@ using namespace std;
 #define _html(text) (c.encode_html(text).c_str())
 
 /**
+ * WebInit: register pages
+ */
+void OvmsVehicleMitsubishi::WebInit()
+{
+  // vehicle menu:
+  MyWebServer.RegisterPage("/xmi/features", "Settings", WebCfgFeatures, PageMenu_Vehicle, PageAuth_Cookie);
+}
+
+/**
  * WebCfgFeatures: configure general parameters (URL /xmi/config)
  */
 void OvmsVehicleMitsubishi::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)

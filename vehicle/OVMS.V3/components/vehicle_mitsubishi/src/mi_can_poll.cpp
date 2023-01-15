@@ -2,7 +2,7 @@
 ;    Project:       Open Vehicle Monitor System
 ;    Date:          02th May 2020
 ;
-;    (C) 2020       Tamás Kovács (KommyKT)
+;    (C) 2023       Tamás Kovács (KommyKT)
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -24,14 +24,14 @@
 */
 #include "vehicle_mitsubishi.h"
 
-static const char *TAG = "v-mitsubishi";
+static const char *TAGPOLL = "v-trio-poll";
 
 /**
  * Incoming poll reply messages
  */
 void OvmsVehicleMitsubishi::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
 {
-  //ESP_LOGW(TAG, "%03x TYPE:%x PID:%02x Data:%02x %02x %02x %02x %02x %02x %02x %02x LENG:%02x REM:%02x", m_poll_moduleid_low, type, pid, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], length, mlremain);
+  //ESP_LOGW(TAGPOLL, "%03x TYPE:%x PID:%02x Data:%02x %02x %02x %02x %02x %02x %02x %02x LENG:%02x REM:%02x", m_poll_moduleid_low, type, pid, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], length, mlremain);
 
   	//OvmsVehicleMitsubishi* trio = (OvmsVehicleMitsubishi*) MyVehicleFactory.ActiveVehicle();
     switch (m_poll_moduleid_low)
@@ -43,11 +43,11 @@ void OvmsVehicleMitsubishi::IncomingPollReply(canbus* bus, uint16_t type, uint16
           case 0:
           {
             OvmsMetricFloat* xmi_bat_soc_real = MyMetrics.InitFloat("xmi.b.soc.real", 10, 0, Percentage);
-            xmi_bat_soc_real->SetValue((data[0] / 2.0 - 5));
+            xmi_bat_soc_real->SetValue((data[0] * 0.5) - 5);
 
             // displayed SOC
             OvmsMetricFloat* xmi_bat_soc_display = MyMetrics.InitFloat("xmi.b.soc.display", 10, 0, Percentage);
-            xmi_bat_soc_display->SetValue((data[1] / 2.0 - 5));
+            xmi_bat_soc_display->SetValue((data[1] * 0.5) - 5);
             break;
           }
 
@@ -57,17 +57,17 @@ void OvmsVehicleMitsubishi::IncomingPollReply(canbus* bus, uint16_t type, uint16
             StandardMetrics.ms_v_bat_cac->SetValue(((data[2] * 256.0 + data[3]) / 10.0));
 
             // battery remain capacity
-            ms_v_bat_cac_rem->SetValue(((data[4] * 256.0 + data[5]) / 10.0));
+            ms_v_bat_cac_rem->SetValue(((data[4] * 256.0 + data[5]) * 0.1));
 
             //max charging kW
-            ms_v_bat_max_input->SetValue(data[6] / 4.0);
+            ms_v_bat_max_input->SetValue(data[6] * 0.25);
             break;
           }
 
           case 5:
           {
             //max output kW
-            ms_v_bat_max_output->SetValue(data[0] / 4.0);
+            ms_v_bat_max_output->SetValue(data[0] * 0.25);
             break;
           }
           default:
@@ -79,7 +79,7 @@ void OvmsVehicleMitsubishi::IncomingPollReply(canbus* bus, uint16_t type, uint16
       // ****** OBC *****
       case 0x766:
       {
-        ESP_LOGW(TAG, "%03x TYPE:%x PID:%02x Data:%02x %02x %02x %02x %02x %02x %02x %02x LENG:%02x REM:%02x", m_poll_moduleid_low, type, pid, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], length, mlremain);
+        //ESP_LOGW(TAGPOLL, "%03x TYPE:%x PID:%02x Data:%02x %02x %02x %02x %02x %02x %02x %02x LENG:%02x REM:%02x", m_poll_moduleid_low, type, pid, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], length, mlremain);
         break;
       }
 
@@ -89,14 +89,14 @@ void OvmsVehicleMitsubishi::IncomingPollReply(canbus* bus, uint16_t type, uint16
         switch (m_poll_ml_frame) {
           case 0:
           {
-            StandardMetrics.ms_v_env_temp->SetValue((data[2] + data[3] - 68) / 10.0);
+            StandardMetrics.ms_v_env_cabintemp->SetValue((data[0] * 0.25) - 16.0);
             break;
           }
 
           case 1:
           {
-            StandardMetrics.ms_v_env_cabintemp->SetValue((data[0] + data[1] - 68) / 10.0);
-            break;
+            //StandardMetrics.ms_v_env_temp->SetValue((data[0] * 0.3) - 29.0);
+             break;
           }
           default:
           break;
@@ -112,16 +112,23 @@ void OvmsVehicleMitsubishi::IncomingPollReply(canbus* bus, uint16_t type, uint16
           switch (m_poll_ml_frame) {
             case 0:
             {
-              ms_v_trip_A->SetValue((((int)data[2] << 16 ) + ((int)data[1] << 8) + data[0])/10.0, Kilometers);
-              tripb += (int)data[3];
+              ms_v_trip_A->SetValue(((data[2] << 16 ) + (data[1] << 8) + data[0]) * 0.1, Kilometers);
+              tripb += data[3];
               break;
             }
 
             case 1:
             {
-              tripb += ((int)data[1] << 16 ) + ((int)data[0] << 8);
-              ms_v_trip_B->SetValue(tripb/10.0, Kilometers);
-              tripb = 0;
+             tripb += (data[1] << 16 ) + (data[0] << 8);
+              if((tripb * 0.1) > 0.1){
+                ms_v_trip_B->SetValue(tripb * 0.1, Kilometers);
+                has_trip = true;
+              }
+              else
+              {
+                has_trip = false;
+              }
+              tripb = 0.0;
               break;
             }
             default:
@@ -132,7 +139,7 @@ void OvmsVehicleMitsubishi::IncomingPollReply(canbus* bus, uint16_t type, uint16
       }
 
      default:
-		   ESP_LOGW(TAG, "Unknown module: %03x", m_poll_moduleid_low);
+		   ESP_LOGW(TAGPOLL, "Unknown module: %03x", m_poll_moduleid_low);
 	  }
 
 }
