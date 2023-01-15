@@ -134,10 +134,10 @@ void OvmsVehicleKiaNiroEv::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 void OvmsVehicleKiaNiroEv::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
 {
   std::string error;
-  //	  cap_act_kwh			Battery capacity in wH (Default: 640000)
-  //  suffsoc          	Sufficient SOC [%] (Default: 0=disabled)
-  //  suffrange        	Sufficient range [km] (Default: 0=disabled)
-  //  maxrange         	Maximum ideal range at 20 °C [km] (Default: 160)
+  //  cap_act_kwh       Battery capacity in wH (Default: 64000)
+  //  suffsoc           Sufficient SOC [%] (Default: 0=disabled)
+  //  suffrange         Sufficient range [km] (Default: 0=disabled)
+  //  maxrange          Maximum ideal range at 20 °C [km] (Default: 440)
   std::string cap_act_kwh, maxrange, suffrange, suffsoc;
 
   if (c.method == "POST") {
@@ -205,7 +205,7 @@ void OvmsVehicleKiaNiroEv::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
 
   c.fieldset_start("Battery properties");
 
-  c.input("number", "Battery capacity", "cap_nom_ah", cap_act_kwh.c_str(), "Default: " STR(CGF_DEFAULT_BATTERY_CAPACITY),
+  c.input("number", "Battery capacity", "cap_act_kwh", cap_act_kwh.c_str(), "Default: " STR(CGF_DEFAULT_BATTERY_CAPACITY),
     "<p>This is the usable battery capacity of your battery when new.</p>",
     "min=\"1\" step=\"0.1\"", "Wh");
 
