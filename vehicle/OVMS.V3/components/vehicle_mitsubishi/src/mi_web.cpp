@@ -122,138 +122,94 @@ void OvmsVehicleMitsubishi::WebCfgFeatures(PageEntry_t& p, PageContext_t& c)
 void OvmsVehicleMitsubishi::GetDashboardConfig(DashboardConfig& cfg)
 {
   OvmsVehicleMitsubishi* trio = (OvmsVehicleMitsubishi*) MyVehicleFactory.ActiveVehicle();
+  // Speed:
+  dash_gauge_t speed_dash(NULL,Kph);
+  speed_dash.SetMinMax(0, 135, 5);
+  speed_dash.AddBand("green", 0, 65);
+  speed_dash.AddBand("yellow", 65, 100);
+  speed_dash.AddBand("red", 100, 135);
+
+  // Voltage:
+  dash_gauge_t voltage_dash(NULL,Volts);
   if(!trio->cfg_newcell)
   {
-    cfg.gaugeset1 =
-      "yAxis: [{"
-        // Speed:
-        "min: 0, max: 135,"
-        "plotBands: ["
-          "{ from: 0, to: 65, className: 'green-band' },"
-          "{ from: 65, to: 100, className: 'yellow-band' },"
-          "{ from: 100, to: 135, className: 'red-band' }]"
-      "},{"
-        // Voltage:
-        "min: 294, max: 363,"
-        "plotBands: ["
-          "{ from: 294, to: 317, className: 'red-band' },"
-          "{ from: 317, to: 341, className: 'yellow-band' },"
-          "{ from: 341, to: 363, className: 'green-band' }]"
-      "},{"
-        // SOC:
-        "min: 10, max: 100,"
-        "plotBands: ["
-          "{ from: 10, to: 15.5, className: 'red-band' },"
-          "{ from: 15.5, to: 25, className: 'yellow-band' },"
-          "{ from: 25, to: 100, className: 'green-band' }]"
-      "},{"
-        // Efficiency:
-        "min: 0, max: 300,"
-        "plotBands: ["
-          "{ from: 0, to: 120, className: 'green-band' },"
-          "{ from: 120, to: 250, className: 'yellow-band' },"
-          "{ from: 250, to: 300, className: 'red-band' }]"
-      "},{"
-        // Power:
-        "min: -30, max: 65,"
-        "plotBands: ["
-          "{ from: -30, to: 0, className: 'violet-band' },"
-          "{ from: 0, to: 16, className: 'green-band' },"
-          "{ from: 16, to: 40, className: 'yellow-band' },"
-          "{ from: 40, to: 65, className: 'red-band' }]"
-      "},{"
-        // Charger temperature:
-        "min: -10, max: 55, tickInterval: 20,"
-        "plotBands: ["
-          "{ from: -10, to: 40, className: 'normal-band border' },"
-          "{ from: 40, to: 55, className: 'red-band border' }]"
-      "},{"
-        // Battery temperature:
-        "min: -15, max: 65, tickInterval: 25,"
-        "plotBands: ["
-          "{ from: -15, to: 0, className: 'red-band border' },"
-          "{ from: 0, to: 40, className: 'normal-band border' },"
-          "{ from: 40, to: 65, className: 'red-band border' }]"
-      "},{"
-        // Inverter temperature:
-        "min: -10, max: 55, tickInterval: 20,"
-        "plotBands: ["
-          "{ from: -10, to: 40, className: 'normal-band border' },"
-          "{ from: 40, to: 55, className: 'red-band border' }]"
-      "},{"
-        // Motor temperature:
-        "min: 20, max: 100, tickInterval: 25,"
-        "plotBands: ["
-          "{ from: 20, to: 75, className: 'normal-band border' },"
-          "{ from: 75, to: 100, className: 'red-band border' }]"
-      "}]";
-    }
-    else
-    {
-      cfg.gaugeset1 =
-        "yAxis: [{"
-          // Speed:
-          "min: 0, max: 135,"
-          "plotBands: ["
-            "{ from: 0, to: 65, className: 'green-band' },"
-            "{ from: 65, to: 100, className: 'yellow-band' },"
-            "{ from: 100, to: 135, className: 'red-band' }]"
-        "},{"
-          // Voltage:
-          "min: 240, max: 330,"
-          "plotBands: ["
-            "{ from: 240, to: 280, className: 'red-band' },"
-            "{ from: 280, to: 310, className: 'yellow-band' },"
-            "{ from: 310, to: 330, className: 'green-band' }]"
-        "},{"
-          // SOC:
-          "min: 10, max: 100,"
-          "plotBands: ["
-            "{ from: 10, to: 15.5, className: 'red-band' },"
-            "{ from: 15.5, to: 25, className: 'yellow-band' },"
-            "{ from: 25, to: 100, className: 'green-band' }]"
-        "},{"
-          // Efficiency:
-          "min: 0, max: 300,"
-          "plotBands: ["
-            "{ from: 0, to: 120, className: 'green-band' },"
-            "{ from: 120, to: 250, className: 'yellow-band' },"
-            "{ from: 250, to: 300, className: 'red-band' }]"
-        "},{"
-          // Power:
-          "min: -30, max: 65,"
-          "plotBands: ["
-            "{ from: -30, to: 0, className: 'violet-band' },"
-            "{ from: 0, to: 16, className: 'green-band' },"
-            "{ from: 16, to: 40, className: 'yellow-band' },"
-            "{ from: 40, to: 65, className: 'red-band' }]"
-        "},{"
-          // Charger temperature:
-          "min: -10, max: 55, tickInterval: 20,"
-          "plotBands: ["
-            "{ from: -10, to: 40, className: 'normal-band border' },"
-            "{ from: 40, to: 55, className: 'red-band border' }]"
-        "},{"
-          // Battery temperature:
-          "min: -15, max: 65, tickInterval: 25,"
-          "plotBands: ["
-            "{ from: -15, to: 0, className: 'red-band border' },"
-            "{ from: 0, to: 40, className: 'normal-band border' },"
-            "{ from: 40, to: 65, className: 'red-band border' }]"
-        "},{"
-          // Inverter temperature:
-          "min: -10, max: 55, tickInterval: 20,"
-          "plotBands: ["
-            "{ from: -10, to: 40, className: 'normal-band border' },"
-            "{ from: 40, to: 55, className: 'red-band border' }]"
-        "},{"
-          // Motor temperature:
-          "min: 20, max: 100, tickInterval: 25,"
-          "plotBands: ["
-            "{ from: 20, to: 75, className: 'normal-band border' },"
-            "{ from: 75, to: 100, className: 'red-band border' }]"
-        "}]";
-    }
+    // Voltage:
+    voltage_dash.SetMinMax(294, 363);
+    voltage_dash.AddBand("red", 294, 317);
+    voltage_dash.AddBand("yellow", 317, 341);
+    voltage_dash.AddBand("green", 341, 363);
+  } else {
+    // Voltage:
+    voltage_dash.SetMinMax(240, 330);
+    voltage_dash.AddBand("red", 240, 280);
+    voltage_dash.AddBand("yellow", 280, 310);
+    voltage_dash.AddBand("green", 310, 330);
+  }
+
+  // SOC:
+  dash_gauge_t soc_dash("SOC ",Percentage);
+  soc_dash.SetMinMax(10, 100);
+  soc_dash.AddBand("red", 10, 15.5);
+  soc_dash.AddBand("yellow", 15.5, 25);
+  soc_dash.AddBand("green", 25, 100);
+
+  // Efficiency:
+  dash_gauge_t eff_dash(NULL,WattHoursPK);
+  eff_dash.SetMinMax(0, 300);
+  eff_dash.AddBand("green", 0, 120);
+  eff_dash.AddBand("yellow", 120, 250);
+  eff_dash.AddBand("red", 250, 300);
+
+  // Power:
+  dash_gauge_t power_dash(NULL,kW);
+  power_dash.SetMinMax(-30, 65);
+  power_dash.AddBand("violet", -30, 0);
+  power_dash.AddBand("green", 0, 16);
+  power_dash.AddBand("yellow", 16, 40);
+  power_dash.AddBand("red", 40, 65);
+
+  // Charger temperature:
+  dash_gauge_t charget_dash("CHG ",Celcius);
+  charget_dash.SetMinMax(-10, 55);
+  charget_dash.SetTick(20);
+  charget_dash.AddBand("normal", -10, 40);
+  charget_dash.AddBand("red", 40, 55);
+
+  // Battery temperature:
+  dash_gauge_t batteryt_dash("BAT ",Celcius);
+  batteryt_dash.SetMinMax(-15, 65);
+  batteryt_dash.SetTick(25);
+  batteryt_dash.AddBand("red", -15, 0);
+  batteryt_dash.AddBand("normal", 0, 40);
+  batteryt_dash.AddBand("red", 40, 65);
+
+  // Inverter temperature:
+  dash_gauge_t invertert_dash("PEM ",Celcius);
+  invertert_dash.SetMinMax(-10, 55);
+  invertert_dash.SetTick(20);
+  invertert_dash.AddBand("normal", -10, 40);
+  invertert_dash.AddBand("red", 40, 55);
+
+  // Motor temperature:
+  dash_gauge_t motort_dash("MOT ",Celcius);
+  motort_dash.SetMinMax(20, 100);
+  motort_dash.SetTick(25);
+  motort_dash.AddBand("normal", 20, 75);
+  motort_dash.AddBand("red", 75, 100);
+
+  std::ostringstream str;
+  str << "yAxis: ["
+      << speed_dash << "," // Speed
+      << voltage_dash << "," // Voltage
+      << soc_dash << "," // SOC
+      << eff_dash << "," // Efficiency
+      << power_dash << "," // Power
+      << charget_dash << "," // Charger temperature
+      << batteryt_dash << "," // Battery temperature
+      << invertert_dash << "," // Inverter temperature
+      << motort_dash // Motor temperature
+      << "]";
+  cfg.gaugeset1 = str.str();
 }
 
 #endif //CONFIG_OVMS_COMP_WEBSERVER

@@ -49,22 +49,32 @@
  *   &  →  &amp;
  */
 std::string PageContext::encode_html(const char* text) {
-	std::string buf;
-	for (int i=0; i<strlen(text); i++) {
-		if (text[i] == '\"')
-			buf += "&quot;";
-		else if (text[i] == '\'')
-			buf += "&#x27;";
-		else if(text[i] == '<')
-			buf += "&lt;";
-		else if(text[i] == '>')
-			buf += "&gt;";
-		else if(text[i] == '&')
-			buf += "&amp;";
-		else
-			buf += text[i];
+  int len = strlen(text);
+  std::string buf;
+  buf.reserve(len);
+  for (int i=0; i < len; i++) {
+    char ch = text[i];
+    switch(ch) {
+    case '\"':
+      buf.append("&quot;");
+      break;
+    case '\'':
+      buf.append("&#x27;");
+      break;
+    case '<':
+      buf.append("&lt;");
+      break;
+    case '>':
+      buf.append("&gt;");
+      break;
+    case '&':
+      buf.append("&amp;");
+      break;
+    default:
+      buf.append(&ch,1);
+    }
   }
-	return buf;
+  return buf;
 }
 
 std::string PageContext::encode_html(std::string text) {
@@ -72,23 +82,31 @@ std::string PageContext::encode_html(std::string text) {
 }
 
 extram::string PageContext::encode_html(const extram::string& text) {
-	extram::string buf;
+  extram::string buf;
   buf.reserve(text.length() + 500);
-	for (int i=0; i<text.length(); i++) {
-		if (text[i] == '\"')
-			buf += "&quot;";
-		else if (text[i] == '\'')
-			buf += "&#x27;";
-		else if(text[i] == '<')
-			buf += "&lt;";
-		else if(text[i] == '>')
-			buf += "&gt;";
-		else if(text[i] == '&')
-			buf += "&amp;";
-		else
-			buf += text[i];
+  for (int i=0; i<text.length(); i++) {
+    char ch = text[i];
+    switch (ch) {
+    case '\"':
+      buf.append("&quot;");
+      break;
+    case '\'':
+      buf.append("&#x27;");
+      break;
+    case '<':
+      buf.append("&lt;");
+      break;
+    case '>':
+      buf.append("&gt;");
+      break;
+    case '&':
+      buf.append("&amp;");
+      break;
+    default:
+      buf.append(&ch,1);
+    }
   }
-	return buf;
+  return buf;
 }
 
 #define _attr(text) (encode_html(text).c_str())
@@ -102,11 +120,12 @@ extram::string PageContext::encode_html(const extram::string& text) {
  *   
  */
 std::string PageContext::make_id(const char* text) {
-	std::string buf;
+  std::string buf;
   char lc = 0;
-	for (int i=0; i<strlen(text); i++) {
-		if (isalnum(text[i]))
-			buf += (lc = tolower(text[i]));
+  int len = strlen(text);
+  for (int i=0; i<len; i++) {
+    if (isalnum(text[i]))
+      buf += (lc = tolower(text[i]));
     else if (lc && lc != '-')
       buf += (lc = '-');
   }
@@ -114,7 +133,7 @@ std::string PageContext::make_id(const char* text) {
     lc = buf.back();
     buf.pop_back();
   }
-	return buf;
+  return buf;
 }
 
 std::string PageContext::make_id(std::string text) {

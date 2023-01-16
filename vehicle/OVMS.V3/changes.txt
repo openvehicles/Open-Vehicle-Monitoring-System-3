@@ -59,7 +59,14 @@ Open Vehicle Monitor System v3 - Change log
 - Module: support deep sleep schedules
   New commands:
     module sleep                      -- Shutdown all components and enter deep sleep for a time span or until a specific time.
-
+- Add support for user-configured metrics in the web interface and plugins:
+   Adds an extra 'units' stream from the websocket containing sub-streams:
+     - metrics (for the current user unit/label for each metric) (subscribe to units/metrics)
+     - prefs (for any user preferences for unit groups/types) (subscribe to units/prefs)
+   Adds proxy arrays metrics_user[] , metrics_label[] available to plugin pages.
+   Adds various browser javascript functions and methods for plugins related
+     to displaying user configurations Auto-converts metric display to user
+     units in plugins that use attributes
 
 2022-09-01 MWJ  3.3.003  OTA release
 - Toyota RAV4 EV: Initial support added. Only the Tesla bus is decoded and just listening so far.

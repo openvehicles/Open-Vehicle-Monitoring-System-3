@@ -6,9 +6,28 @@ OVMS V3 is based on metrics. Metrics can be single numerical or textual values o
 like sets and arrays. The web framework keeps all metrics in a global object, which can be read
 simply by e.g. ``metrics["v.b.soc"]``.
 
+In addition to the raw metric values, there are 2 main proxy arrays that give access to the
+user-configured versions of the raw metric values. The  ``metrics_user`` array
+converts the 'metrics' value to user-configured value and the ``metrics_label`` array
+provides the corresponding label for that metric.
+So for example the user could configure distance values to be in miles, and in this case
+``metrics["v.p.odometer"]`` would still contain the value in km (the default) but
+``metrics_user["v.p.odometer"]`` would give the value converted to miles and
+``metrics_label["v.p.odometer"]`` would return "M".
+
+The user conversion information is contained in another object ``units``.  ``units.metrics``
+has the user configuration for each metric and ``units.prefs`` has the user configuration
+for each group of metrics (distance, temperature, consumption, pressure etc). There also some methods
+for general conversions allowing user preferences.
+- The method ``units.unitLabelToUser(unitType,name)`` will return the user
+  defined label for that 'unitType', defaulting to ``name``.
+- The method ``units.unitValueToUser(unitType,value)`` will convert ``value``
+  to the user defined unit (if set) for the group.
+
 Metrics updates (as well as other updates) are sent to all DOM elements having the
 ``receiver`` class. To hook into these updates, simply add an event listener for
-``msg:metrics``.
+``msg:metrics:``. The event ``msg:units:metrics`` is called when ``units.metrics`` is change
+and ``msg:units:prefs`` when ``units.prefs`` are changed.
 
 Listening to the event is not necessary though if all you need is some metrics
 display. This is covered by the ``metric`` widget class family as shown here.
@@ -29,6 +48,11 @@ The following example covers…
 - Progress bars (horizontal light weight bar charts)
 - Gauges
 - Charts
+
+Where a number element of class 'metric' contains both elements of class
+'value' and 'unit', these will be automatically displayed in the units selected
+in the user preferences. Having a 'data-user' attribute will also cause the
+'value' element to be displayed in user units (unless 'data-scale' attribute is present).
 
 Gauges & charts use the HighCharts library, which is included in the web server. The other widgets
 are simple standard Bootstrap widgets extended by an automatic metrics value update mechanism.

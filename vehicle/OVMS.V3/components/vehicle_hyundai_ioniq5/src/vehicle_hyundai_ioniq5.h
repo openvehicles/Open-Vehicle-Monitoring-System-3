@@ -384,7 +384,7 @@ public:
   static void WebBattMon(PageEntry_t &p, PageContext_t &c);
 
 public:
-  void GetDashboardConfig(DashboardConfig &cfg);
+  void GetDashboardConfig(DashboardConfig &cfg) override;
 #endif //CONFIG_OVMS_COMP_WEBSERVER
 };
 

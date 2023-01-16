@@ -1086,3 +1086,105 @@ void OvmsWebServer::HandleLogout(PageEntry_t& p, PageContext_t& c)
     "<script>loggedin = false; $(\"#menu\").load(\"/menu\"); loaduri(\"#main\", \"get\", \"/home\", {})</script>");
   c.done();
 }
+
+// Dash Gauge implementations.
+//
+
+dash_gauge_t::dash_gauge_t(const char *titlePrefix, metric_unit_t defUnit, metric_group_t group)
+{
+  has_tick = false;
+  title_prefix = titlePrefix ? titlePrefix : "";
+  if (group == GrpNone)
+    group = GetMetricGroup(defUnit);
+  if (group == GrpOther)
+    user_unit = defUnit;
+  else
+    user_unit = MyUserUnitConf.GetUserUnit(group, defUnit);
+  base_unit = defUnit;
+}
+float dash_gauge_t::UntConvert( float inValue ) const
+{
+  return UnitConvert(base_unit, user_unit, inValue);
+}
+float dash_gauge_t::UntConvert( float inValue, float roundValue ) const
+{
+  if (base_unit == user_unit)
+    return inValue;
+  return truncf(UnitConvert(base_unit, user_unit, inValue) / roundValue) * roundValue;
+}
+
+void dash_gauge_t::SetMinMax( float minValue, float maxValue)
+{
+  min_value = UntConvert(minValue);
+  float temp_max = UntConvert(maxValue);
+  if (min_value < temp_max)
+    max_value = temp_max;
+  else {
+    max_value = min_value;
+    min_value = temp_max;
+  }
+}
+
+void dash_gauge_t::SetMinMax( float minValue, float maxValue, float roundValue)
+{
+  min_value = UntConvert(minValue, roundValue);
+  float temp_max = UntConvert(maxValue, roundValue);
+  if (min_value < temp_max)
+    max_value = temp_max;
+  else {
+    max_value = min_value;
+    min_value = temp_max;
+  }
+}
+void dash_gauge_t::SetTick( float tickValue)
+{
+  tick_value = UntConvert(tickValue);
+  has_tick =true;
+}
+void dash_gauge_t::SetTick( float tickValue, float roundValue)
+{
+  tick_value = UntConvert(tickValue);
+  has_tick = true;
+}
+void dash_gauge_t::DoAddBand( const std::string &colour, float minValue, float maxValue, bool round, float roundValue)
+{
+  dash_plot_band_t new_band;
+  new_band.colour = colour;
+  new_band.min_value = round ? UntConvert(minValue,roundValue) : UntConvert(minValue);
+  float temp_max = round ? UntConvert(maxValue, roundValue) : UntConvert(maxValue);
+  if (new_band.min_value <= temp_max) {
+    new_band.max_value = temp_max;
+    bands.insert(bands.end(), new_band);
+  } else
+  {
+    new_band.max_value = new_band.min_value;
+    new_band.min_value = temp_max;
+    bands.insert(bands.begin(), new_band);
+  }
+}
+
+std::ostream &dash_gauge_t::Output(std::ostream &ostream) const
+{
+  ostream <<
+    "{"
+    "title: { text: '"<< title_prefix <<  PageContext::encode_html(OvmsMetricUnitLabel(user_unit)) << "' },";
+  if (min_value < max_value) {
+    ostream <<
+      "min: " << min_value << ", max: " << max_value << ",";
+  }
+  if (has_tick)
+    ostream << "tickInterval: " << tick_value << ",";
+
+  ostream << "plotBands: [";
+  bool first = true;
+  for (auto iter = bands.begin() ; iter != bands.end(); ++iter) {
+    if (first)
+      first = false;
+    else
+      ostream << ",";
+    ostream <<
+      "{ from: " << iter->min_value << ", to: " << iter->max_value << ", className: '" << iter->colour <<"-band' }";
+  }
+  ostream << "]}";
+  return ostream;
+}

@@ -59,6 +59,9 @@ std::map<std::size_t, const char*>      pmetrics_keymap       // hash key → me
 OvmsMetrics                             MyMetrics
                                         __attribute__ ((init_priority (1800)));
 
+UnitConfigMap                       MyUnitConfig
+                                        __attribute__ ((init_priority (1800)));
+
 struct OvmsUnitInfo {
   const char *UnitCode; //< The UnitCode identifying the unit
   const char *Label;    //< The suffix to print against the value
@@ -208,7 +211,7 @@ static const OvmsUnitGroupInfo group_info[int(MetricGroupLast)+1] =
   { "energy",      "Energy"                  }, // 6
   { "consumption", "Energy Consumption"      }, // 7
   { "temp",        "Temperature"             }, // 8
-  { "preasure",    "Pressure"                }, // 9
+  { "pressure",    "Pressure"                }, // 9
   { "time",        NULL                      }, // 10
   { "signal",      "Signal Strength"         }, // 11
   { "torque",      NULL                      }, // 12
@@ -365,7 +368,8 @@ void OvmsMetricSetUserConfig(metric_group_t group, std::string value)
     else if (value == "km")
       value = "K";
     }
-  MyConfig.SetParamValue("vehicle", cfg, value);
+  if (MyConfig.GetParamValue("vehicle", cfg) != value)
+    MyConfig.SetParamValue("vehicle", cfg, value);
   }
 void OvmsMetricSetUserConfig(metric_group_t group, metric_unit_t unit)
   {
@@ -440,7 +444,7 @@ static bool CheckTargetUnit(metric_unit_t from, metric_unit_t &to, bool full_che
     case ToUser:
       {
       metric_group_t from_grp = GetMetricGroup(from);
-      to = OvmsMetricGetUserUnit(from_grp);
+      to = MyUnitConfig.GetUserUnit(from_grp);
       return true;
       }
     default:
@@ -1039,11 +1043,14 @@ OvmsMetrics::OvmsMetrics()
       ++pmetrics.serial, sizeof(pmetrics), pmetrics.used, NUM_PERSISTENT_VALUES);
 
   // Register our event
+#ifdef bind
   #undef bind  // Kludgy, but works
+#endif
   using std::placeholders::_1;
   using std::placeholders::_2;
   MyEvents.RegisterEvent(TAG, "system.shutdown",
       std::bind(&OvmsMetrics::EventSystemShutDown, this, _1, _2));
+
   }
 
 OvmsMetrics::~OvmsMetrics()
@@ -1363,6 +1370,38 @@ size_t OvmsMetrics::RegisterModifier()
   return m_nextmodifier++;
   }
 
+void OvmsMetrics::InitialiseSlot(size_t modifier)
+  {
+  // Set for send.
+  SetAllUnitSend(modifier);
+  unsigned long bit = 1ul << modifier;
+  for (OvmsMetric* m = m_first; m != NULL; m = m->m_next)
+    {
+     if (m->IsDefined())
+       m->m_modified |= bit;
+    }
+  }
+
+void OvmsMetrics::SetAllUnitSend(size_t modifier)
+  {
+  for (OvmsMetric* m = m_first; m != NULL; m = m->m_next)
+    m->SetUnitSend(modifier);
+  }
+void OvmsMetrics::SetAllGroupUnitSend(metric_group_t group)
+  {
+  for (OvmsMetric* m = m_first; m != NULL; m = m->m_next)
+    {
+    if (group == GetMetricGroup(m->GetUnits()))
+      m->SetUnitSendAll();
+    }
+  }
+unsigned long OvmsMetrics::GetUnitSendAll()
+  {
+  unsigned long ret = 0;
+  for (OvmsMetric* m = m_first; m != NULL; m = m->m_next)
+    ret |= m->m_sendunit;
+  return ret;
+  }
 OvmsMetric::OvmsMetric(const char* name, uint16_t autostale, metric_unit_t units, bool persist)
   {
   m_defined = NeverDefined;
@@ -1459,6 +1498,30 @@ void OvmsMetric::SetModified(bool changed)
     m_modified = ULONG_MAX;
     MyMetrics.NotifyModified(this);
     }
+  }
+
+bool OvmsMetric::IsUnitSend(size_t modifier)
+  {
+    return m_sendunit & (1ul << modifier);
+  }
+bool OvmsMetric::IsUnitSendAndClear(size_t modifier)
+  {
+  unsigned long bit = 1ul << modifier;
+  unsigned long send = m_sendunit.fetch_and(~bit);
+  return (send & bit) != 0;
+  }
+void OvmsMetric::ClearUnitSend(size_t modifier)
+  {
+    m_sendunit &= ~(1ul << modifier);
+  }
+void OvmsMetric::SetUnitSend(size_t modifier)
+  {
+  unsigned long bit = 1ul << modifier;
+  m_sendunit |= bit;
+  }
+void OvmsMetric::SetUnitSendAll()
+  {
+  m_sendunit = ULONG_MAX;
   }
 
 bool OvmsMetric::IsDefined()
@@ -2536,6 +2599,24 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
         case MPkWh:       return value ? km_to_mi(100.0 / value) : 0;
         default: break;
         }
+    case KPkWh:
+      switch (to)
+        {
+        case WattHoursPM: return value ? (1000.0 / km_to_mi(value)) : 0;
+        case WattHoursPK: return value ? (0.001 / value) : 0;
+        case kWhP100K:    return value ? (100.0 / value) : 0;
+        case MPkWh:       return km_to_mi(value);
+        default: break;
+        }
+    case MPkWh:
+      switch (to)
+        {
+        case WattHoursPM: return value ? 1000/value : 0;
+        case WattHoursPK: return value ? (1000 / mi_to_km(value)) : 0;
+        case kWhP100K:    return value ? (100.0/mi_to_km(value)) : 0;
+        case KPkWh:       return mi_to_km(value);
+        default: break;
+        }
     case Celcius:
       if (to == Fahrenheit) return ((value*9)/5) + 32;
       break;
@@ -2606,4 +2687,120 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
       return value;
     }
   return value;
+  }
+
+UnitConfigMap::UnitConfigMap()
+  {
+  for (auto it = m_modified.begin(); it != m_modified.end(); ++it)
+    *it = 0;
+  for (auto it = m_map.begin(); it != m_map.end(); ++it)
+    *it = UnitNotFound;
+  OvmsMetricGroupConfigList(config_groups);
+
+#ifdef bind
+  #undef bind  // Kludgy, but works
+#endif
+  using std::placeholders::_1;
+  using std::placeholders::_2;
+  MyEvents.RegisterEvent(TAG, "config.changed",
+      std::bind(&UnitConfigMap::ConfigEventListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "config.mounted",
+      std::bind(&UnitConfigMap::ConfigMountedListener, this, _1, _2));
+  }
+
+void UnitConfigMap::Load()
+  {
+  OvmsMutexLock store_lock(&m_store_lock);
+
+  // Fill the groups with a user configurable list
+  for (auto grpit = config_groups.begin(); grpit != config_groups.end(); ++grpit)
+    {
+    uint8_t igrp = static_cast<uint8_t>(*grpit);
+    if (igrp < m_map.size())
+      {
+      auto newValue = OvmsMetricGetUserUnit(*grpit);
+      if (m_map[igrp] != newValue)
+        {
+        m_map[igrp] = newValue;
+        switch (*grpit)
+          {
+          case GrpNone:
+          case GrpOther: break;
+          default:
+            MyMetrics.SetAllGroupUnitSend(*grpit);
+            m_modified[igrp] = ULONG_MAX;
+          }
+        }
+      }
+    }
+  }
+
+void UnitConfigMap::InitialiseSlot(size_t modifier)
+  {
+  unsigned long bit = 1ul << modifier;
+  for (auto it = m_modified.begin(); it != m_modified.end(); ++it)
+    *it |= bit;
+  }
+
+metric_unit_t UnitConfigMap::GetUserUnit( metric_group_t group, metric_unit_t defaultUnit )
+  {
+  uint8_t groupint = static_cast<uint8_t>(group);
+  if (groupint >= m_map.size())
+    return defaultUnit;
+  OvmsMutexLock store_lock(&m_store_lock);
+  auto res = m_map[groupint];
+  return (res== UnitNotFound ? defaultUnit : res);
+  }
+
+metric_unit_t UnitConfigMap::GetUserUnit( metric_unit_t unit)
+  {
+  metric_group_t grp = GetMetricGroup(unit);
+  if (grp == GrpNone || grp == GrpOther)
+    return UnitNotFound;
+  return GetUserUnit(grp);
+  }
+
+void UnitConfigMap::ConfigEventListener(std::string event, void* data)
+  {
+  if (data == NULL)
+    return;
+  OvmsConfigParam *config = (OvmsConfigParam *)data;
+  if (config->GetName() == "vehicle")
+    Load();
+  }
+
+void UnitConfigMap::ConfigMountedListener(std::string event, void* data)
+  {
+  Load();
+  }
+
+void UnitConfigMap::ConfigList(metric_group_list_t& groups)
+  {
+  groups.insert(groups.begin(), config_groups.begin(), config_groups.end());
+  }
+
+bool UnitConfigMap::HasModified(size_t modifier)
+  {
+  for (auto it = config_groups.begin(); it != config_groups.end(); ++it)
+    if (IsModified(*it, modifier))
+      return true;
+  return false;
+  }
+
+bool UnitConfigMap::IsModified( metric_group_t group, size_t modifier)
+  {
+  uint8_t groupint = static_cast<uint8_t>(group);
+  if (groupint >= m_modified.size())
+    return false;
+   return m_modified[groupint] & (1ul << modifier);
+  }
+
+bool UnitConfigMap::IsModifiedAndClear(metric_group_t group, size_t modifier)
+  {
+  uint8_t groupint = static_cast<uint8_t>(group);
+  if (groupint >= m_modified.size())
+    return false;
+  unsigned long bit = 1ul << modifier;
+  unsigned long mod = m_modified[groupint].fetch_and(~bit);
+  return mod & bit;
   }

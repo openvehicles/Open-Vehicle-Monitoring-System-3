@@ -577,9 +577,19 @@ void OvmsConfig::upgrade()
       SetParamValue("vehicle", "units.consumption", "mipkwh");
       }
     }
+  if (GetParamValueInt("module", "cfgversion") < 2022121400) 
+    {
+    auto val = GetParamValue("vehicle", "units.preasure");
+    if (val != "")
+      {
+      if (GetParamValue("vehicle", "units.pressure") != "")
+        SetParamValue("vehicle", "units.pressure", val);
+      }
+    DeleteInstance("vehicle", "units.preasure");
+    }
 
   // Done, set config version:
-  SetParamValueInt("module", "cfgversion", 2022111900);
+  SetParamValueInt("module", "cfgversion", 2022121400);
   }
 
 void OvmsConfig::RegisterParam(std::string name, std::string title, bool writable, bool readable)
@@ -1101,6 +1111,7 @@ void OvmsConfigParam::DeleteParam()
   path.append("/");
   path.append(m_name);
   unlink(path.c_str());
+  m_map.clear();
   MyEvents.SignalEvent("config.changed", this);
   }
 
