@@ -76,7 +76,7 @@ WebSocketHandler::WebSocketHandler(mg_connection* nc, size_t slot, size_t modifi
   m_units_prefs_subscribed = false;
 
   MyMetrics.InitialiseSlot(m_slot);
-  MyUserUnitConf.InitialiseSlot(m_slot);
+  MyUnitConfig.InitialiseSlot(m_slot);
   
   // Register as logging console:
   SetMonitoring(true);
@@ -194,7 +194,7 @@ void WebSocketHandler::ProcessTxJob()
             if (i)
               msg += ',';
             metric_unit_t units = m->m_units;
-            metric_unit_t user_units = MyUserUnitConf.GetUserUnit(units);
+            metric_unit_t user_units = MyUnitConfig.GetUserUnit(units);
             if (user_units ==  UnitNotFound)
               user_units = Native;
             std::string unitlabel = OvmsMetricUnitLabel((user_units == Native) ? units : user_units);
@@ -239,7 +239,7 @@ void WebSocketHandler::ProcessTxJob()
       //  The Metrics set normally is static, so this should be no problem.
 
       ESP_EARLY_LOGD(TAG, "WebSocketHandler[%p/%d]: ProcessTxJob MetricsVehicleUpdate, last=%d sent=%d ack=%d", m_nc, m_modifier, m_last, m_sent, m_ack);
-      if (m_last < MyUserUnitConf.config_groups.size()) {
+      if (m_last < MyUnitConfig.config_groups.size()) {
         // Bypass this if we are on the 'just sent' leg.
         // build msg:
         std::string msg;
@@ -249,14 +249,14 @@ void WebSocketHandler::ProcessTxJob()
         // Cache the user mappings for each group.
         int i = 0;
         for (int groupindex = m_last;
-             groupindex < MyUserUnitConf.config_groups.size() && msg.size() < XFER_CHUNK_SIZE;
+             groupindex < MyUnitConfig.config_groups.size() && msg.size() < XFER_CHUNK_SIZE;
              ++groupindex) {
           ++m_last;
-          metric_group_t group = MyUserUnitConf.config_groups[groupindex];
+          metric_group_t group = MyUnitConfig.config_groups[groupindex];
 
-          bool send = MyUserUnitConf.IsModifiedAndClear(group, m_modifier);
+          bool send = MyUnitConfig.IsModifiedAndClear(group, m_modifier);
           if (send) {
-            metric_unit_t user_units = MyUserUnitConf.GetUserUnit(group);
+            metric_unit_t user_units = MyUnitConfig.GetUserUnit(group);
             std::string unitLabel;
             if (user_units == UnitNotFound)
               unitLabel = "null";
@@ -287,7 +287,7 @@ void WebSocketHandler::ProcessTxJob()
       }
 
       // done?
-      if (m_last >= MyUserUnitConf.config_groups.size() && m_ack == m_sent) {
+      if (m_last >= MyUnitConfig.config_groups.size() && m_ack == m_sent) {
         if (m_sent)
           ESP_EARLY_LOGD(TAG, "WebSocketHandler[%p/%d]: ProcessTxJob MetricsUnitsUpdate done, sent=%d metrics", m_nc, m_modifier, m_sent);
         ClearTxJob(m_job);
@@ -762,7 +762,7 @@ void OvmsWebServer::UpdateTicker(TimerHandle_t timer)
       }
       if (slot.handler->m_units_prefs_subscribed) {
         // Triger unit group config update.
-        if (MyUserUnitConf.HasModified(slot.handler->m_modifier))
+        if (MyUnitConfig.HasModified(slot.handler->m_modifier))
           slot.handler->AddTxJob({ WSTX_UnitPrefsUpdate, NULL });
       }
     }
@@ -838,7 +838,7 @@ void WebSocketHandler::UnitsCheckVehicleSubscribe()
     m_units_prefs_subscribed = newSubscribe;
     if (newSubscribe) {
       ESP_LOGD(TAG, "WebSocketHandler[%p/%d]: Subscribed to units/prefs", m_nc, m_modifier);
-      MyUserUnitConf.InitialiseSlot(m_modifier);
+      MyUnitConfig.InitialiseSlot(m_modifier);
     } else {
       ESP_LOGD(TAG, "WebSocketHandler[%p/%d]: Unsubscribed from units/prefs", m_nc, m_modifier);
     }

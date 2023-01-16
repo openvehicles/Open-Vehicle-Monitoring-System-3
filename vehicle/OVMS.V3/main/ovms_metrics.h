@@ -1000,14 +1000,14 @@ class MetricCallbackEntry
     MetricCallback m_callback;
   };
 
-class UserUnitConfigMap
+class UnitConfigMap
   {
   protected:
     std::array<metric_unit_t, static_cast<uint8_t>(MetricGroupLast)+1> m_map;
     std::array<std::atomic_ulong, static_cast<uint8_t>(MetricGroupLast)+1> m_modified;
     OvmsMutex m_store_lock;
   public:
-    UserUnitConfigMap();
+    UnitConfigMap();
     void Load();
 
     void ConfigEventListener(std::string event, void* data);
@@ -1111,7 +1111,7 @@ class OvmsMetrics
   };
 
 extern OvmsMetrics MyMetrics;
-extern UserUnitConfigMap MyUserUnitConf;
+extern UnitConfigMap MyUnitConfig;
 
 #undef TAG
 
