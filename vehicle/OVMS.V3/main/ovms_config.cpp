@@ -584,8 +584,8 @@ void OvmsConfig::upgrade()
       {
       if (GetParamValue("vehicle", "units.pressure") != "")
         SetParamValue("vehicle", "units.pressure", val);
-      DeleteInstance("vehicle", "units.preasure");
       }
+    DeleteInstance("vehicle", "units.preasure");
     }
 
   // Done, set config version:
