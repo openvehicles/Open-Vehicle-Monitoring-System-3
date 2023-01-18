@@ -126,7 +126,8 @@ modem::modem_state1_t simcom7000::State1Ticker1(modem::modem_state1_t curstate)
         m_modem->tx("AT+CGMR;+ICCID\r\n");
         break;
       case 20:
-        m_modem->tx("AT+CMUX=0\r\n");
+        // start MUX mode, route URCs to MUX channel 3 (POLL)
+        m_modem->tx("AT+CMUX=0;+CATR=6\r\n");
         break;
       }
     return modem::None;

@@ -1026,12 +1026,15 @@ void modem::StandardLineHandler(int channel, OvmsBuffer* buf, std::string line)
     line = m_line_buffer;
     }
 
-  const char *cp = line.c_str();
-  if ((line.length()>2)&&(cp[0]!='$')&&(cp[1])!='G')
+  if (line.compare(0, 2, "$G") == 0)
     {
-    // Log incoming data other than GPS NMEA
-    ESP_LOGD(TAG, "mux-rx-line #%d: %s", channel, line.c_str());
+    // GPS NMEA URC:
+    if (m_nmea) m_nmea->IncomingLine(line);
+    return;
     }
+
+  // Log incoming data other than GPS NMEA
+  ESP_LOGD(TAG, "mux-rx-line #%d: %s", channel, line.c_str());
 
   if ((line.compare(0, 8, "CONNECT ") == 0)&&(m_state1 == NetStart)&&(m_state1_userdata == 1))
     {
@@ -1197,8 +1200,8 @@ void modem::StandardLineHandler(int channel, OvmsBuffer* buf, std::string line)
     }
 
   // MMI/USSD response (URC):
-  //  sent on all free channels, so we only process m_mux_channel_CMD
-  else if (channel == m_mux_channel_CMD && line.compare(0, 7, "+CUSD: ") == 0)
+  //  sent on all free channels or only on POLL, so we only process m_mux_channel_POLL
+  else if (channel == m_mux_channel_POLL && line.compare(0, 7, "+CUSD: ") == 0)
     {
     // Format: +CUSD: 0,"…msg…",15
     // The message string may contain CR/LF so can come on multiple lines, with unknown length
@@ -1484,17 +1487,7 @@ void modem::IncomingMuxData(GsmMuxChannel* channel)
     }
   else if (channel->m_channel == m_mux_channel_NMEA)
     {
-    if (m_nmea != NULL)
-      {
-      while (channel->m_buffer.HasLine() >= 0)
-        {
-        m_nmea->IncomingLine(channel->m_buffer.ReadLine());
-        }
-      }
-    else
-      {
-      channel->m_buffer.EmptyAll();
-      }
+    StandardIncomingHandler(channel->m_channel, &channel->m_buffer);
     }
   else if (channel->m_channel == m_mux_channel_DATA)
     {

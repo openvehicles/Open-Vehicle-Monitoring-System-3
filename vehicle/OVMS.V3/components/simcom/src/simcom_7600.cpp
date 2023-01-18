@@ -177,7 +177,11 @@ modem::modem_state1_t simcom7600::State1Ticker1(modem::modem_state1_t curstate)
         m_modem->tx("AT+CGMR;+ICCID\r\n");
         break;
       case 20:
-        m_modem->tx("AT+CMUX=0\r\n");
+        // start MUX mode, route URCs to MUX channel 3 (POLL)
+        // Note: NMEA URCs will now also be sent on channel 3 by the SIMCOM 7600;
+        //    without +CATR, NMEA URCs are sent identically on all channels;
+        //    there is no option to route these separately to channel 1 (NMEA)
+        m_modem->tx("AT+CMUX=0;+CATR=6\r\n");
         break;
       }
     return modem::None;
