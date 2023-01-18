@@ -119,7 +119,7 @@ void modem::Task()
     .use_ref_tick = 0,
     };
   uart_param_config(m_uartnum, &uart_config);
-  uart_set_pin(m_uartnum, m_txpin, m_rxpin, 0, 0);
+  uart_set_pin(m_uartnum, m_txpin, m_rxpin, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
   uart_driver_install(m_uartnum,
     CONFIG_OVMS_HW_CELLULAR_MODEM_UART_SIZE,
     CONFIG_OVMS_HW_CELLULAR_MODEM_UART_SIZE,
@@ -245,11 +245,19 @@ void modem::Task()
           }
         }
       }
+    
+    if (m_state1 == PoweredOff && MyBoot.IsShuttingDown())
+      {
+      m_task = 0;
+      }
     }
 
   // Shutdown:
-  uart_driver_delete(m_uartnum);
+  ESP_LOGD(TAG, "UART shutdown");
   m_queue = 0;
+  uart_flush(m_uartnum);
+  uart_driver_delete(m_uartnum);
+  if (MyBoot.IsShuttingDown()) MyBoot.ShutdownReady(TAG);
   vTaskDelete(NULL);
   }
 
@@ -662,7 +670,6 @@ void modem::State1Enter(modem_state1_t newstate)
     case PoweredOff:
       ClearNetMetrics();
       MyEvents.SignalEvent("system.modem.poweredoff", NULL);
-      if (MyBoot.IsShuttingDown()) MyBoot.ShutdownReady(TAG);
       StopMux();
       if (m_driver)
         {
@@ -1447,7 +1454,8 @@ void modem::Ticker(std::string event, void* data)
 
   ev.event.type = TICKER1;
 
-  xQueueSend(m_queue,&ev,0);
+  QueueHandle_t queue = m_queue;
+  if (queue) xQueueSend(queue,&ev,0);
   }
 
 void modem::EventListener(std::string event, void* data)
@@ -1524,7 +1532,8 @@ void modem::SendSetState1(modem_state1_t newstate)
   ev.event.type = SETSTATE;
   ev.event.data.newstate = newstate;
 
-  xQueueSend(m_queue,&ev,0);
+  QueueHandle_t queue = m_queue;
+  if (queue) xQueueSend(queue,&ev,0);
   }
 
 bool modem::IsStarted()

@@ -432,7 +432,7 @@ void Boot::Restart(bool hard)
   OvmsMutexLock lock(&m_shutdown_mutex);
   m_shutting_down = true;
   m_shutdown_pending = 0;
-  m_shutdown_timer = 60; // Give them 60 seconds to shutdown
+  m_shutdown_timer = 70; // Give them 70 seconds to shutdown
   MyEvents.SignalEvent("system.shuttingdown", NULL, boot_shuttingdown_done);
 
   #undef bind  // Kludgy, but works

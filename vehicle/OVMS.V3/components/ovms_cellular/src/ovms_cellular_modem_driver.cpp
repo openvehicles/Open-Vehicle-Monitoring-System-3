@@ -82,9 +82,9 @@ void modemdriver::Restart()
   {
   ESP_LOGI(TAG, "Restart");
   if (MyConfig.GetParamValueBool("auto", "modem", false))
-    m_modem->SetState1((m_modem->GetState1() != modem::PoweredOff) ? modem::PowerOffOn : modem::PoweringOn);
+    m_modem->SendSetState1((m_modem->GetState1() != modem::PoweredOff) ? modem::PowerOffOn : modem::PoweringOn);
   else
-    m_modem->SetState1(modem::PoweringOff);
+    m_modem->SendSetState1(modem::PoweringOff);
   }
 
 void modemdriver::PowerOff()
