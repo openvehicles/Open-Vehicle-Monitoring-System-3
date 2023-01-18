@@ -933,7 +933,11 @@ static void OTAFlashTask(void *pvParameters)
 
   if (fromsd)
     {
+#ifdef CONFIG_OVMS_COMP_SDCARD
     success = MyOTA.AutoFlashSD();
+#else
+    success = false;
+#endif //CONFIG_OVMS_COMP_SDCARD
     }
   else
     {

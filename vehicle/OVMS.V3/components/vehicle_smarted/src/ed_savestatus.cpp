@@ -12,6 +12,7 @@ static const char *TAG = "v-smarted";
 
 
 void OvmsVehicleSmartED::SaveStatus() {
+#ifdef CONFIG_OVMS_COMP_SDCARD
 	if (MyPeripherals->m_sdcard->isavailable()) {
     if (!path_exists("/sd/usr/") && mkpath("/sd/usr/") != 0) {
       return;
@@ -42,9 +43,11 @@ void OvmsVehicleSmartED::SaveStatus() {
     ESP_LOGI(TAG, "SaveStatus");
     fclose(sf);
   }
+#endif //CONFIG_OVMS_COMP_SDCARD
 }
 
 void OvmsVehicleSmartED::RestoreStatus() {
+#ifdef CONFIG_OVMS_COMP_SDCARD
   if (MyPeripherals->m_sdcard->isavailable()) {
     FILE *sf = NULL;
     char k[40];
@@ -59,5 +62,6 @@ void OvmsVehicleSmartED::RestoreStatus() {
     ESP_LOGI(TAG, "RestoreStatus");
     fclose(sf);
   }
+#endif //CONFIG_OVMS_COMP_SDCARD
 	return;
 }
