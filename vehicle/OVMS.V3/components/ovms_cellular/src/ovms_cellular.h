@@ -58,7 +58,7 @@ class modem : public pcp, public InternalRamAllocated
     ~modem();
 
   protected:
-    TaskHandle_t m_task;
+    volatile TaskHandle_t m_task;
     volatile QueueHandle_t m_queue;
     int m_baud;
     int m_rxpin;

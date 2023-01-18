@@ -126,6 +126,7 @@ void simcom7600::PowerCycle()
   m_powercyclefactor = m_powercyclefactor % 3;
   ESP_LOGI(TAG, "Power Cycle (SIM7600) %dms",psd);
 
+  uart_wait_tx_done(m_modem->m_uartnum, portMAX_DELAY);
   uart_flush(m_modem->m_uartnum); // Flush the ring buffer, to try to address MUX start issues
 #ifdef CONFIG_OVMS_COMP_MAX7317
   MyPeripherals->m_max7317->Output(MODEM_EGPIO_PWR, 0); // Modem EN/PWR line low
