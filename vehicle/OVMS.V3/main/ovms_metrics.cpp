@@ -2749,7 +2749,11 @@ metric_unit_t UnitConfigMap::GetUserUnit( metric_group_t group, metric_unit_t de
     return defaultUnit;
   OvmsMutexLock store_lock(&m_store_lock);
   auto res = m_map[groupint];
-  return (res== UnitNotFound ? defaultUnit : res);
+  switch (res) {
+    case UnitNotFound: return defaultUnit;
+    case Native: return (defaultUnit == UnitNotFound) ? Native : defaultUnit;
+    default: return res;
+  }
   }
 
 metric_unit_t UnitConfigMap::GetUserUnit( metric_unit_t unit)
