@@ -9,6 +9,7 @@
 #include "ovms_webserver.h"
 #include "ovms_peripherals.h"
 #include "kia_common.h"
+#include "ovms_metrics.h"
 
 int KiaVehicle::CalcRemainingChargeMinutes(float chargespeed, int fromSoc, int toSoc, int batterySize, charging_profile charge_steps[])
 {
@@ -626,26 +627,41 @@ void RangeCalculator::displayStoredTrips(OvmsWriter *writer)
 		writer->puts("SD Card Not Mounted");
 #endif
 
-	writer->puts("+Dist(km)+Power(kWh)+-kWh/100km+");
+	auto dist_unit = MyUnitConfig.GetUserUnit(GrpDistance, Kilometers);
+	auto energy_unit = MyUnitConfig.GetUserUnit(GrpEnergy, kWh);
+	auto cons_unit = MyUnitConfig.GetUserUnit(GrpConsumption, KPkWh);
+	writer->puts("+Distance+-Energy---+Efficiency+");
+	writer->printf("|%-6s  |%-6s    |%-10s|\n",
+		OvmsMetricUnitLabel(dist_unit),
+		OvmsMetricUnitLabel(energy_unit),
+		OvmsMetricUnitLabel(cons_unit)
+		);
+	writer->puts("+--------+----------+----------+");
 	// Put the 'current' one at the end (it's a circular buffer)
 	for (int i= 1; i < 21; ++i)
 		{
 		const TripConsumption &entry = trips[(i+currentTripPointer)%20];
-		float effic = UnitConvert(KPkWh, kWhP100K,
-			entry.distance/entry.consumption);
-		writer->printf("|%8.8g|%10.10g|%10.10g|%s\n",
-			entry.distance,
-			ROUNDPREC(entry.consumption,2),
+		float effic = UnitConvert(KPkWh, cons_unit, entry.distance/entry.consumption);
+		float dist = UnitConvert(Kilometers, dist_unit, entry.distance);
+		float energy = UnitConvert(kWh, energy_unit, entry.consumption);
+		writer->printf("|%8.4g|%10.4g|%10.4g|%s\n",
+			ROUNDPREC(dist, 2),
+			ROUNDPREC(energy,2),
 			ROUNDPREC(effic,2),
 			(i == 20) ? "<< current" : "");
 		}
 	writer->puts("+--------+----------+----------+");
-	writer->printf("Battery Capacity: %gkWh\n", batteryCapacity);
-	auto efficiency = UnitConvert(KPkWh, kWhP100K, getEfficiency());
-	writer->printf("Efficiency: %gkWh/100km\n", ROUNDPREC(efficiency,2));
+	float batCap = UnitConvert(kWh, energy_unit, batteryCapacity);
+	writer->printf("Battery Capacity: %g%s\n", ROUNDPREC(batCap, 2), OvmsMetricUnitLabel(energy_unit));
+
+	auto efficiency = UnitConvert(KPkWh, cons_unit, getEfficiency());
+	writer->printf("Efficiency: %g%s\n", ROUNDPREC(efficiency,2), OvmsMetricUnitLabel(cons_unit));
 	float soc = StdMetrics.ms_v_bat_soc->AsFloat();
 	auto curRange = getRange();
-	writer->printf("Full Range: %gkm\n", ROUNDPREC(curRange,1));
-	writer->printf("SOC: %g%%\n", soc);
-	writer->printf("Range: %gkm\n", ROUNDPREC(curRange* soc / 100.0,1));
+	auto showrange = UnitConvert(Kilometers, dist_unit, curRange);
+	writer->printf("Full Range: %g%s\n", ROUNDPREC(showrange,1), OvmsMetricUnitLabel(dist_unit));
+	auto ratio_unit = MyUnitConfig.GetUserUnit(GrpRatio);
+	writer->printf("SOC: %g%s\n", UnitConvert(Percentage, ratio_unit, soc), OvmsMetricUnitLabel(ratio_unit));
+	showrange = UnitConvert(Kilometers, dist_unit, float(curRange * soc  / 100.0));
+	writer->printf("Range: %g%s\n", ROUNDPREC(showrange, 1), OvmsMetricUnitLabel(dist_unit));
 	}
