@@ -7,3 +7,6 @@
 [submodule "vehicle/OVMS.V3/components/zip/libzip"]
 	path = vehicle/OVMS.V3/components/zip/libzip
 	url = https://github.com/openvehicles/libzip.git
+[submodule "vehicle/OVMS.V3/components/wolfssh/wolfssh"]
+	path = vehicle/OVMS.V3/components/wolfssh/wolfssh
+	url = https://github.com/wolfSSL/wolfssh.git
