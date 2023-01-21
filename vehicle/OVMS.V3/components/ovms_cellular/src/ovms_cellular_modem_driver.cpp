@@ -143,7 +143,12 @@ void modemdriver::ShutdownNMEA()
   {
   // Switch off GPS:
   if (m_modem->m_mux != NULL)
-    { m_modem->muxtx(GetMuxChannelCMD(), "AT+CGPS=0\r\n"); }
+    {
+    // send single commands, as each can fail:
+    m_modem->muxtx(GetMuxChannelCMD(), "AT+CGPSNMEA=0\r\n");
+    vTaskDelay(pdMS_TO_TICKS(100));
+    m_modem->muxtx(GetMuxChannelCMD(), "AT+CGPS=0\r\n");
+    }
   else
     { ESP_LOGE(TAG, "Attempt to transmit on non running mux"); }
   }

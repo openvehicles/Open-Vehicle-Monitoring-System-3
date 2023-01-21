@@ -1363,27 +1363,42 @@ void modem::StopTask()
     }
   }
 
-void modem::StartNMEA()
+bool modem::StartNMEA(bool force /*=false*/)
   {
   if ( (m_nmea == NULL) &&
-       (MyConfig.GetParamValueBool("modem", "enable.gps", false)) )
+       (force || MyConfig.GetParamValueBool("modem", "enable.gps", false)) )
     {
-    ESP_LOGV(TAG, "Starting NMEA");
-    m_nmea = new GsmNMEA(m_mux, m_mux_channel_NMEA, m_mux_channel_CMD);
-    m_nmea->Startup();
-    m_driver->StartupNMEA();
+    if (!m_mux || !m_driver)
+      {
+      ESP_LOGE(TAG, "StartNMEA failed: MUX or driver not available");
+      }
+    else
+      {
+      ESP_LOGV(TAG, "Starting NMEA");
+      m_nmea = new GsmNMEA(m_mux, m_mux_channel_NMEA, m_mux_channel_CMD);
+      m_nmea->Startup();
+      m_driver->StartupNMEA();
+      }
     }
+  return (m_nmea != NULL);
   }
 
 void modem::StopNMEA()
   {
   if (m_nmea != NULL)
     {
-    ESP_LOGV(TAG, "Stopping NMEA");
-    m_driver->ShutdownNMEA();
-    m_nmea->Shutdown();
-    delete m_nmea;
-    m_nmea = NULL;
+    if (!m_mux || !m_driver)
+      {
+      ESP_LOGE(TAG, "StopNMEA failed: MUX or driver not available");
+      }
+    else
+      {
+      ESP_LOGV(TAG, "Stopping NMEA");
+      m_driver->ShutdownNMEA();
+      m_nmea->Shutdown();
+      delete m_nmea;
+      m_nmea = NULL;
+      }
     }
   }
 
@@ -1726,6 +1741,53 @@ void modem_setstate(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
   writer->printf("Error: Unrecognised state %s\n",statename);
   }
 
+void modem_gps_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  writer->printf("GPS status: autostart %s, currently %s.\n",
+    MyConfig.GetParamValueBool("modem", "enable.gps", false) ? "enabled" : "disabled",
+    (MyModem && MyModem->m_nmea) ? "running" : "not running");
+  }
+
+void modem_gps_start(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (!MyModem || !MyModem->m_mux || !MyModem->m_mux->IsMuxUp())
+    {
+    writer->puts("ERROR: Modem not ready");
+    return;
+    }
+  if (MyModem->m_nmea)
+    {
+    writer->puts("GPS already running.");
+    return;
+    }
+
+  if (MyModem->StartNMEA(true))
+    {
+    writer->puts("GPS started (may take a minute to find satellites).");
+    }
+  else
+    {
+    writer->puts("ERROR: GPS startup failed.");
+    }
+  }
+
+void modem_gps_stop(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  if (!MyModem || !MyModem->m_mux || !MyModem->m_mux->IsMuxUp())
+    {
+    writer->puts("ERROR: Modem not ready");
+    return;
+    }
+  if (!MyModem->m_nmea)
+    {
+    writer->puts("GPS already stopped.");
+    return;
+    }
+
+  MyModem->StopNMEA();
+  writer->puts("GPS stopped.");
+  }
+
 void cellular_drivers(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   writer->puts("Type       Name");
@@ -1780,6 +1842,11 @@ CellularModemInit::CellularModemInit()
     {
     cmd_setstate->RegisterCommand(ModemState1Name((modem::modem_state1_t)x),"Force CELLULAR MODEM state change",modem_setstate);
     }
+
+  OvmsCommand* cmd_gps = cmd_cellular->RegisterCommand("gps", "GPS/GNSS state control", modem_gps_status);
+  cmd_gps->RegisterCommand("status", "GPS/GNSS status", modem_gps_status);
+  cmd_gps->RegisterCommand("start", "Start GPS/GNSS", modem_gps_start);
+  cmd_gps->RegisterCommand("stop", "Stop GPS/GNSS", modem_gps_stop);
 
   MyConfig.RegisterParam("modem", "Modem Configuration", true, true);
   // Our instances:

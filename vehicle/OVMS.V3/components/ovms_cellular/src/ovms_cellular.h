@@ -201,7 +201,7 @@ class modem : public pcp, public InternalRamAllocated
     // High level API functions
     void StartTask();
     void StopTask();
-    void StartNMEA();
+    bool StartNMEA(bool force=false);
     void StopNMEA();
     void StartMux();
     void StopMux();

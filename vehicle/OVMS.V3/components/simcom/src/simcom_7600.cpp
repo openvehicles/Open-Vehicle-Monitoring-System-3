@@ -80,9 +80,25 @@ void simcom7600::StartupNMEA()
     {
     m_modem->muxtx(GetMuxChannelCMD(), "AT+CGPS=0\r\n");
     vTaskDelay(2000 / portTICK_PERIOD_MS);
+    // send single commands, as each can fail:
     m_modem->muxtx(GetMuxChannelCMD(), "AT+CGPSNMEA=258\r\n");
     m_modem->muxtx(GetMuxChannelCMD(), "AT+CGPSINFOCFG=5,258\r\n");
     m_modem->muxtx(GetMuxChannelCMD(), "AT+CGPS=1,1\r\n");
+    }
+  else
+    { ESP_LOGE(TAG, "Attempt to transmit on non running mux"); }
+  }
+
+void simcom7600::ShutdownNMEA()
+  {
+  // Switch off GPS:
+  if (m_modem->m_mux != NULL)
+    {
+    // send single commands, as each can fail:
+    m_modem->muxtx(GetMuxChannelCMD(), "AT+CGPSNMEA=0\r\n");
+    m_modem->muxtx(GetMuxChannelCMD(), "AT+CGPSINFOCFG=0\r\n");
+    vTaskDelay(pdMS_TO_TICKS(100));
+    m_modem->muxtx(GetMuxChannelCMD(), "AT+CGPS=0\r\n");
     }
   else
     { ESP_LOGE(TAG, "Attempt to transmit on non running mux"); }
