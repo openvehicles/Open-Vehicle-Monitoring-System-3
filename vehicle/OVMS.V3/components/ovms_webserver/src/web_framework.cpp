@@ -734,7 +734,8 @@ void OvmsWebServer::OutputReboot(PageEntry_t& p, PageContext_t& c)
 /**
  * OutputReconnect: output reconnect script
  */
-void OvmsWebServer::OutputReconnect(PageEntry_t& p, PageContext_t& c, const char* info /*=NULL*/)
+void OvmsWebServer::OutputReconnect(PageEntry_t& p, PageContext_t& c, const char* info /*=NULL*/,
+                                    const char* cmd /*=NULL*/)
 {
   c.printf(
     "<div class=\"alert alert-warning\">"
@@ -753,8 +754,16 @@ void OvmsWebServer::OutputReconnect(PageEntry_t& p, PageContext_t& c, const char
           "$(\"#dots\").append(\"•\");"
         "}"
       "}, 1000);"
-    "</script>"
     , info ? info : "Reconnecting…");
+
+  if (cmd) {
+    c.printf(
+      "loadcmd(\"%s\");"
+      , __attr(cmd));
+  }
+
+  c.print(
+    "</script>");
 }
 
 

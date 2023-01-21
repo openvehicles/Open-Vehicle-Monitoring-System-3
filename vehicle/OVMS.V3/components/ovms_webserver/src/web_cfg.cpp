@@ -74,6 +74,12 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
       c.done();
       return;
     }
+    else {
+      // "network restart", "wifi reconnect"
+      OutputReconnect(p, c, NULL, cmd.c_str());
+      c.done();
+      return;
+    }
   }
 
   PAGE_HOOK("body.pre");
@@ -209,7 +215,10 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
   c.panel_start("primary", "Network");
   output = ExecuteCommand("network status");
   c.printf("<samp class=\"monitor\" data-updcmd=\"network status\" data-events=\"^network\">%s</samp>", _html(output));
-  c.panel_end();
+  c.panel_end(
+    "<ul class=\"list-inline\">"
+      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" name=\"action\" value=\"network restart\">Restart network</button></li>"
+    "</ul>");
 
   c.print(
     "</div>"
@@ -218,7 +227,10 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
   c.panel_start("primary", "Wifi");
   output = ExecuteCommand("wifi status");
   c.printf("<samp class=\"monitor\" data-updcmd=\"wifi status\" data-events=\"\\.wifi\\.\">%s</samp>", _html(output));
-  c.panel_end();
+  c.panel_end(
+    "<ul class=\"list-inline\">"
+      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" name=\"action\" value=\"wifi reconnect\">Reconnect Wifi</button></li>"
+    "</ul>");
 
   c.print(
     "</div>"
@@ -229,8 +241,10 @@ void OvmsWebServer::HandleStatus(PageEntry_t& p, PageContext_t& c)
   c.printf("<samp class=\"monitor\" data-updcmd=\"cellular status\" data-events=\"\\.modem\\.\">%s</samp>", _html(output));
   c.panel_end(
     "<ul class=\"list-inline\">"
-      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#modem-cmdres\" data-cmd=\"power cellular on\">Start cellular modem</button></li>"
-      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#modem-cmdres\" data-cmd=\"power cellular off\">Stop cellular modem</button></li>"
+      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#modem-cmdres\" data-cmd=\"power cellular on\">Start modem</button></li>"
+      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#modem-cmdres\" data-cmd=\"power cellular off\">Stop modem</button></li>"
+      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#modem-cmdres\" data-cmd=\"cellular gps start\">Start GPS</button></li>"
+      "<li><button type=\"button\" class=\"btn btn-default btn-sm\" data-target=\"#modem-cmdres\" data-cmd=\"cellular gps stop\">Stop GPS</button></li>"
       "<li><samp id=\"modem-cmdres\" class=\"samp-inline\"></samp></li>"
     "</ul>");
 
