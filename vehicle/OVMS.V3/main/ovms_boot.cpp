@@ -37,6 +37,7 @@ static const char *TAG = "boot";
 #include "rom/uart.h"
 #include "soc/rtc_cntl_reg.h"
 #include "esp_system.h"
+#include "esp_sleep.h"
 #include "esp_panic.h"
 #include "esp_task_wdt.h"
 #include <driver/adc.h>
@@ -535,7 +536,7 @@ extern "C" void esp_task_wdt_isr_user_handler(void)
 /*
  * This function is called if FreeRTOS detects a stack overflow.
  */
-extern "C" void vApplicationStackOverflowHook( TaskHandle_t xTask, signed char *pcTaskName )
+extern "C" void vApplicationStackOverflowHook( TaskHandle_t xTask, char *pcTaskName )
   {
   panicPutStr("\r\n[OVMS] ***ERROR*** A stack overflow in task ");
   panicPutStr((char *)pcTaskName);
