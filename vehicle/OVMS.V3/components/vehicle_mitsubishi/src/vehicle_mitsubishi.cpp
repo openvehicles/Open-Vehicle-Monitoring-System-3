@@ -746,6 +746,7 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
 
 void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
 {
+  ms_v_pos_trip_park->SetValue(StandardMetrics.ms_v_pos_trip->AsFloat());
   // battery temp from battery pack avg
   StdMetrics.ms_v_bat_temp->SetValue(StdMetrics.ms_v_bat_pack_tavg->AsFloat());
 
