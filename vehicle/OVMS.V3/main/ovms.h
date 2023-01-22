@@ -41,6 +41,11 @@
 #include <sstream>
 #include "ovms_malloc.h"
 
+#if ESP_IDF_VERSION_MAJOR >= 4
+#define CONFIG_CONSOLE_UART_NUM CONFIG_ESP_CONSOLE_UART_NUM
+#define CONFIG_TASK_WDT_TIMEOUT_S CONFIG_ESP_TASK_WDT_TIMEOUT_S
+#endif
+
 #ifdef CONFIG_FREERTOS_UNICORE
   #define CORE(n) (0)
 #else
