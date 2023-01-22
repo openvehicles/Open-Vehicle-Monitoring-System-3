@@ -38,7 +38,10 @@ static const char *TAG = "boot";
 #include "soc/rtc_cntl_reg.h"
 #include "esp_system.h"
 #include "esp_sleep.h"
+#include "esp_idf_version.h"
+#if ESP_IDF_VERSION_MAJOR < 4
 #include "esp_panic.h"
+#endif
 #include "esp_task_wdt.h"
 #include <driver/adc.h>
 
@@ -340,7 +343,9 @@ Boot::Boot()
   boot_data.crc = boot_data.calc_crc();
 
   // install error handler:
+#if ESP_IDF_VERSION_MAJOR < 4
   xt_set_error_handler_callback(ErrorCallback);
+#endif
 
   // Register our commands
   OvmsCommand* cmd_boot = MyCommandApp.RegisterCommand("boot","BOOT framework",boot_status, "", 0, 0, false);
@@ -530,7 +535,9 @@ extern "C" void esp_task_wdt_isr_user_handler(void)
   {
   panicPutStr("\r\n[OVMS] ***TWDT***\r\n");
   // Save TWDT task info:
+#if ESP_IDF_VERSION_MAJOR < 4
   esp_task_wdt_get_trigger_tasknames(boot_data.wdt_tasknames, sizeof(boot_data.wdt_tasknames));
+#endif
   }
 
 /*
