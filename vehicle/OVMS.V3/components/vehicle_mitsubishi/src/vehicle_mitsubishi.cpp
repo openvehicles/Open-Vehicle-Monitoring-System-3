@@ -127,8 +127,6 @@ OvmsVehicleMitsubishi::OvmsVehicleMitsubishi()
 
   memset(m_vin, 0, sizeof(m_vin));
 
-  m_trip_start = MyMetrics.InitFloat("xmi.p.trip.start", SM_STALE_MAX, SM_STALE_MAX); 
-
   if(ms_v_trip_park_energy_used->AsFloat() == 0.0){
     ms_v_trip_park_energy_used->SetValue(StandardMetrics.ms_v_bat_energy_used->AsFloat());
     ms_v_trip_park_energy_recd->SetValue(StandardMetrics.ms_v_bat_energy_recd->AsFloat());
@@ -140,6 +138,10 @@ OvmsVehicleMitsubishi::OvmsVehicleMitsubishi()
   set_odo = false;
   has_trip = false;
   mi_SC = false;
+
+  m_odo_trip = 0;
+  m_tripfrac_reftime = 0;
+  m_tripfrac_refspeed = 0;
 
   StdMetrics.ms_v_charge_efficiency->SetValue(0);
 
@@ -263,6 +265,7 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
       {
         //ESP_LOGW(TAGDEV,"Speed: %f", (d[0] * 256.0 + d[1]) / 128.0);
         StandardMetrics.ms_v_pos_speed->SetValue((d[0] * 256.0 + d[1]) * 0.0078125, Kph);
+        UpdateTripOdo();
         CalculateAcceleration();
         break;
       }
@@ -863,7 +866,7 @@ void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
     //Current Trip
     if (mi_park_trip_counter.Started())
     {
-        UpdateTripCounters();
+        //UpdateTripOdo();
         mi_park_trip_counter.Update(ms_v_trip_B->AsFloat());
         //StdMetrics.ms_v_pos_trip->SetValue(mi_park_trip_counter.GetDistance(), Kilometers);
         ms_v_pos_trip_park->SetValue(mi_park_trip_counter.GetDistance(), Kilometers);
@@ -902,7 +905,7 @@ void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
 void OvmsVehicleMitsubishi::vehicle_mitsubishi_car_on(bool isOn)
 {
     StdMetrics.ms_v_env_awake->SetValue(isOn);
-    UpdateTripCounters();
+    //UpdateTripOdo();
     mi_park_trip_counter.Update(ms_v_trip_B->AsFloat());
     //StdMetrics.ms_v_pos_trip->SetValue(mi_park_trip_counter.GetDistance());
     ms_v_pos_trip_park->SetValue(mi_park_trip_counter.GetDistance());
@@ -924,7 +927,7 @@ void OvmsVehicleMitsubishi::vehicle_mitsubishi_car_on(bool isOn)
        ms_v_trip_park_time_start->SetValue(StdMetrics.ms_m_timeutc->AsInt());
        if(has_trip == true && StandardMetrics.ms_v_bat_soc->AsFloat() > 0.0)
          {
-          ResetTripCounters();
+          ResetTripOdo();
            mi_park_trip_counter.Reset(ms_v_trip_B->AsFloat());
            ms_v_trip_park_soc_start->SetValue(StandardMetrics.ms_v_bat_soc->AsFloat());
          }
@@ -1056,7 +1059,7 @@ OvmsVehicleMitsubishiInit::OvmsVehicleMitsubishiInit()
 /**
   * ResetTripCounters: called at trip start to set reference points
   */
- void OvmsVehicleMitsubishi::ResetTripCounters()
+ void OvmsVehicleMitsubishi::ResetTripOdo()
  {
    StdMetrics.ms_v_pos_trip->SetValue(0);
    m_odo_trip            = 0;
@@ -1071,17 +1074,17 @@ OvmsVehicleMitsubishiInit::OvmsVehicleMitsubishiInit()
  }
 
  /**
-  * UpdateTripCounters: odometer resolution is only 1 km, so trip distances lack
+  * UpdateTripOdo: odometer resolution is only 1 km, so trip distances lack
   *  precision. To compensate, this method derives trip distance from speed.
   */
- void OvmsVehicleMitsubishi::UpdateTripCounters()
+ void OvmsVehicleMitsubishi::UpdateTripOdo()
  {
    // Process speed update:
-
    uint32_t now = esp_log_timestamp();
    float speed = StdMetrics.ms_v_pos_speed->AsFloat();
 
-   if (m_tripfrac_reftime && now > m_tripfrac_reftime) {
+   if (m_tripfrac_reftime && now > m_tripfrac_reftime) 
+   {
      float speed_avg = ABS(speed + m_tripfrac_refspeed) * 0.5;
      uint32_t time_ms = now - m_tripfrac_reftime;
      double meters = speed_avg * 0.27777778 * time_ms * 0.001;
@@ -1091,7 +1094,6 @@ OvmsVehicleMitsubishiInit::OvmsVehicleMitsubishiInit()
 
    m_tripfrac_reftime = now;
    m_tripfrac_refspeed = speed;
-
  }
 
 

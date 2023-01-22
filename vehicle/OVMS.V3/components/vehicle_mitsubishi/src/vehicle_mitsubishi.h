@@ -135,7 +135,6 @@ class OvmsVehicleMitsubishi : public OvmsVehicle
     OvmsMetricFloat* ms_v_bat_cac_rem = MyMetrics.InitFloat("xmi.v.bat.cac.rem", 10, 0, AmpHours);
     OvmsMetricFloat* ms_v_bat_max_input = MyMetrics.InitFloat("xmi.v.bat.max.input", 10, 0, kW);
     OvmsMetricFloat* ms_v_bat_max_output = MyMetrics.InitFloat("xmi.v.bat.max.output", 10, 0, kW);
-    OvmsMetricFloat* m_trip_start; // Trip start odomater reading
 
     void vehicle_mitsubishi_car_on(bool isOn);
 
@@ -165,8 +164,8 @@ class OvmsVehicleMitsubishi : public OvmsVehicle
     bool has_trip;
 
     // Trip length & SOC/energy consumption:
-    void ResetTripCounters();
-    void UpdateTripCounters();
+    void ResetTripOdo();
+    void UpdateTripOdo();
     // trip count on speed
     double m_odo_trip;
     uint32_t m_tripfrac_reftime;
