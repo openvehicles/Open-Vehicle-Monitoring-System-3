@@ -866,10 +866,6 @@ void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
     //Current Trip
     if (mi_park_trip_counter.Started())
     {
-        //UpdateTripOdo();
-        mi_park_trip_counter.Update(ms_v_trip_B->AsFloat());
-        //StdMetrics.ms_v_pos_trip->SetValue(mi_park_trip_counter.GetDistance(), Kilometers);
-        ms_v_pos_trip_park->SetValue(mi_park_trip_counter.GetDistance(), Kilometers);
         ms_v_trip_park_soc_stop->SetValue(StandardMetrics.ms_v_bat_soc->AsFloat());
         ms_v_trip_park_time_stop->SetValue(StdMetrics.ms_m_timeutc->AsInt());
     }
@@ -905,17 +901,12 @@ void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
 void OvmsVehicleMitsubishi::vehicle_mitsubishi_car_on(bool isOn)
 {
     StdMetrics.ms_v_env_awake->SetValue(isOn);
-    //UpdateTripOdo();
-    mi_park_trip_counter.Update(ms_v_trip_B->AsFloat());
-    //StdMetrics.ms_v_pos_trip->SetValue(mi_park_trip_counter.GetDistance());
-    ms_v_pos_trip_park->SetValue(mi_park_trip_counter.GetDistance());
 
     if (isOn && !StdMetrics.ms_v_env_on->AsBool())
     {
   	   // Car is ON
        StdMetrics.ms_v_env_on->SetValue(isOn);
        //Reset trip variables so that they are updated as soon as they are available
-       //mi_trip_start_odo = 0;
        StdMetrics.ms_v_env_charging12v->SetValue(true);
        //Reset energy calculation
        StdMetrics.ms_v_bat_energy_recd->SetValue(0);
@@ -928,7 +919,7 @@ void OvmsVehicleMitsubishi::vehicle_mitsubishi_car_on(bool isOn)
        if(has_trip == true && StandardMetrics.ms_v_bat_soc->AsFloat() > 0.0)
          {
           ResetTripOdo();
-           mi_park_trip_counter.Reset(ms_v_trip_B->AsFloat());
+           //mi_park_trip_counter.Reset(ms_v_trip_B->AsFloat());
            ms_v_trip_park_soc_start->SetValue(StandardMetrics.ms_v_bat_soc->AsFloat());
          }
 

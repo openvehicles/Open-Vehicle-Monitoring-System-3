@@ -58,8 +58,8 @@ void xmi_trip_since_parked(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, 
 	metric_unit_t rangeUnit = (MyConfig.GetParamValue("vehicle", "units.distance") == "M") ? Miles : Kilometers;
 
 	// Trip distance
-	//float distance = trio->ms_v_pos_trip_park->AsFloat(rangeUnit);
-	float distance = StdMetrics.ms_v_pos_trip->AsFloat();
+	
+	float distance = StdMetrics.ms_v_pos_trip->AsFloat(rangeUnit);
 	//Trip timer
 	int start = trio->ms_v_trip_park_time_start->AsInt();
 	int stop = trio->ms_v_trip_park_time_stop->AsInt();
@@ -74,8 +74,8 @@ void xmi_trip_since_parked(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, 
 	// Total consumption
 	float totalConsumption = trio->ms_v_trip_park_energy_used->AsFloat(kWh) - trio->ms_v_trip_park_energy_recd->AsFloat(kWh);
 	// Consumption
-	float consumption = totalConsumption * 100 / trio->ms_v_pos_trip_park->AsFloat(rangeUnit);
-	float consumption2 = trio->ms_v_pos_trip_park->AsFloat(rangeUnit) / totalConsumption;
+	float consumption = totalConsumption * 100 / distance;
+	float consumption2 = distance / totalConsumption;
 	// Discharge
 	float discharge = trio->ms_v_trip_park_energy_used->AsFloat();
 	// Recuperation
