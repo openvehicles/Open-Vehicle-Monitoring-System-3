@@ -1,3 +1,23 @@
+> **Warning**  
+> This branch is a Work-In-Progress to add compatibility with ESP-IDF v4.x and v5.x.  
+> Not suitable for production use - only for dev / tests.  
+> As of now, it (kind-of) works on ESP-IDF v4.4.3 with the following caveats:
+> * Crash detection / handler as been removed
+> * A small patch is needed for ESP-IDF v4.x to compile components as `whole-archive` when using `cmake` build system / `idf.py` (not needed for v5.x nor for Makefiles)
+> * Not all the vehicle components are included - in fact most of them aren't
+> * Another "WIP WIP WIP" patch needs to be addressed
+> * No real-world test has been done
+> * All compiler warnings are currently disabled (to re-enable, remove/edit/comment `idf_build_set_property` line from `vehicle/OVMS.V3/CMakeLists.txt`)
+> * I want to stay compatible with our 3.3.6 branch, and tried as much as I could to keep that compatibility. In case something is broken, please report and we will fix it.
+> * I'm mainly testing using `cmake` build system / `idf.py`, not Makefiles (which have disappeared in v5.x)
+
+Instructions for ESP-IDF v4.4.3:
+* Setup ESP-IDF where you want and ensure it works, [following the instructions here](https://docs.espressif.com/projects/esp-idf/en/release-v4.4/esp32/get-started/index.html).
+* In the (git) tree, apply [the following patch](https://github.com/espressif/esp-idf/commit/273633ee310fbc18b17edfaeae3f3121508e3b8d) : `git cherry-pick 273633ee310fbc18b17edfaeae3f3121508e3b8d` (Allows WHOLE_ARCHIVE support in cmake components).
+* Build as usual (`idf.py build`, etc...)
+
+---
+
 # Open-Vehicle-Monitoring-System-3 (OVMS3)
 
 ![OVMS3 module](docs/source/userguide/ovms-intro.jpg)
