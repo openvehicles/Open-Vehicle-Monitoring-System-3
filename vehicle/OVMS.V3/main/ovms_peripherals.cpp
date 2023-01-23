@@ -38,7 +38,6 @@ static const char *TAG = "peripherals";
 #include "ovms_command.h"
 #include "esp_intr_alloc.h"
 #include "driver/gpio.h"
-#include "esp_intr.h"
 #include "ovms_peripherals.h"
 
 Peripherals::Peripherals()
