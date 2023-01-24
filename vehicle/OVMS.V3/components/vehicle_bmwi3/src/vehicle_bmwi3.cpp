@@ -2444,6 +2444,7 @@ case I3_PID_EDM_PEDALWERTGEBER: {                                               
         break;
       }
       StdMetrics.ms_v_vin->SetValue(rxbuf);
+      break;
   }
 
   // --- IHX --------------------------------------------------------------------------------------------------------

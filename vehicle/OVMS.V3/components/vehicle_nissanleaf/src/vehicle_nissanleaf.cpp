@@ -367,6 +367,7 @@ void OvmsVehicleNissanLeaf::vehicle_nissanleaf_charger_status(ChargerStatus stat
       break;
     case CHARGER_STATUS_QUICK_CHARGING:
       fast_charge = true;
+      FALLTHROUGH;
     case CHARGER_STATUS_CHARGING:
       if (!StandardMetrics.ms_v_charge_inprogress->AsBool())
         {
@@ -978,6 +979,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         StandardMetrics.ms_v_charge_climit->SetValue(max_charge_power / StandardMetrics.ms_v_charge_voltage->AsFloat());
       }
     }
+      break;
     case 0x390:
     {
       m_AZE0_charger = true;
