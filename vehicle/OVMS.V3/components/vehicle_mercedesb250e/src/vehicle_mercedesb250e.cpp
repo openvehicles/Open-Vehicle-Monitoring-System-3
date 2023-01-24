@@ -119,7 +119,7 @@ void OvmsVehicleMercedesB250e::IncomingFrameCan1(CAN_frame_t* p_frame)
     {
       StandardMetrics.ms_v_bat_12v_voltage->SetValue((float)d[1]*0.1); // Volts
       break;
-    }	
+    }
   case 0x20B: // HVAC
     {
       StandardMetrics.ms_v_env_cabinsetpoint->SetValue((float)d[0]*0.1+10); // deg C
@@ -127,7 +127,7 @@ void OvmsVehicleMercedesB250e::IncomingFrameCan1(CAN_frame_t* p_frame)
       // d[4] ls nible, could be ms_v_env_cabinfan
       // d[5] contain ms_v_env_cooling and heating, possibly separated for drive and park      
       break;
-    }	
+    }
   case 0x2FF: // TPMS
     {
       if (d[3] < 255)
@@ -139,7 +139,7 @@ void OvmsVehicleMercedesB250e::IncomingFrameCan1(CAN_frame_t* p_frame)
       if (d[6] < 255)
 	StandardMetrics.ms_v_tpms_pressure->SetElemValue(MS_V_TPMS_IDX_RR, (float)d[6]*2.5); // KPa
       break;
-    }	
+    }
   case 0x33D: // Momentary power
     {
       float power = d[4]-100; // Percents, +/- 100
@@ -148,7 +148,7 @@ void OvmsVehicleMercedesB250e::IncomingFrameCan1(CAN_frame_t* p_frame)
         power = -50; // I just guess that maximum recuperation would be 50kW, probably less
       StandardMetrics.ms_v_bat_power->SetValue(power); // kW 
       break;
-    }	    
+    }
   case 0x34E:  // Distance Today , Distance since reset, scale is 0.1 km
     { 
       int trip_start = d[0] * 256 * 256 + d[1] * 256 + d[2];
@@ -157,7 +157,8 @@ void OvmsVehicleMercedesB250e::IncomingFrameCan1(CAN_frame_t* p_frame)
 	mt_mb_trip_start->SetValue(trip_start * 0.1); 
       if (trip_reset < 0xfffffe) 
         mt_mb_trip_reset->SetValue(trip_reset * 0.1);
-    }      
+      break;
+    }
   case 0x34F: // Range
     {
       float consumption = (float)(d[0]&0x7)*256 + (float)d[1];

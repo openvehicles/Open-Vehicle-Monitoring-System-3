@@ -129,6 +129,7 @@ void simcom7600::StatusPoller()
         //  +COPS: 0,0,"vodafone.de Hologram",7  
 
         // done, fallthrough:
+        FALLTHROUGH;
       default:
         m_statuspoller_step = 0;
         break;

@@ -235,6 +235,7 @@ void OvmsVehicle::PollerVWTPEnter(vwtp_channelstate_t state)
 
       // fall through to VWTP_Transmit
       }
+      FALLTHROUGH;
     case VWTP_Transmit:
       {
       ESP_LOGD(TAG, "PollerVWTPEnter[%02X]: transmit frame=%u remain=%u",
