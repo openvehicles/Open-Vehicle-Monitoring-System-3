@@ -9,5 +9,6 @@ endif ()
 # requirements can't depend on config
 idf_component_register(SRCS ${srcs}
                        INCLUDE_DIRS ${include_dirs}
+                       REQUIRES "mdns"
                        PRIV_REQUIRES "main"
                        WHOLE_ARCHIVE)
