@@ -31,7 +31,6 @@
 #include <string.h>
 #include "esp_system.h"
 #include "esp_event.h"
-#include "esp_event_loop.h"
 #include "esp_sleep.h"
 #include "esp32system.h"
 
