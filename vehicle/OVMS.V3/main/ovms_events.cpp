@@ -39,6 +39,10 @@ static const char *TAG = "events";
 #include "ovms_command.h"
 #include "ovms_script.h"
 #include "ovms_boot.h"
+#if ESP_IDF_VERSION_MAJOR >= 4
+#include <esp_netif_types.h>
+#include <esp_eth_com.h>
+#endif
 
 #ifdef CONFIG_OVMS_COMP_OTA
 #include "ovms_ota.h"
