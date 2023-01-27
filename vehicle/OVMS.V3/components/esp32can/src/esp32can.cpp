@@ -43,6 +43,10 @@ static const char *TAG = "esp32can";
 #include "esp32can_regdef.h"
 #include "ovms_peripherals.h"
 #include "ovms_module.h"
+#include "esp_idf_version.h"
+#if ESP_IDF_VERSION_MAJOR >= 5
+#include <esp_chip_info.h>
+#endif
 
 esp32can* MyESP32can = NULL;
 

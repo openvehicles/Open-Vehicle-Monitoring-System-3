@@ -33,7 +33,12 @@ static const char *TAG = "version";
 
 #include <esp_image_format.h>
 #include <esp_ota_ops.h>
+#include "esp_idf_version.h"
+#if ESP_IDF_VERSION_MAJOR >= 5
+#include <esp_chip_info.h>
+#else
 #include <esp_system.h>
+#endif
 #include "ovms.h"
 #include "ovms_version.h"
 #include "ovms_config.h"
