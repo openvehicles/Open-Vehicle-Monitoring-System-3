@@ -155,6 +155,7 @@ typedef struct
   uint16_t invalid_rx;              // RX invalid frame counter
   uint16_t watchdog_resets;         // Watchdog reset counter
   uint16_t error_resets;            // Error resolving reset counter
+  uint32_t error_time;              // monotonictime of last error state detection
   } CAN_status_t;
 
 // CAN error states
@@ -294,6 +295,7 @@ class canbus : public pcp, public InternalRamAllocated
     virtual esp_err_t Start(CAN_mode_t mode, CAN_speed_t speed);
     virtual esp_err_t Start(CAN_mode_t mode, CAN_speed_t speed, dbcfile *dbcfile);
     virtual esp_err_t Stop();
+    virtual esp_err_t Reset();
     virtual void ClearStatus();
     virtual esp_err_t ViewRegisters();
     virtual esp_err_t WriteReg( uint8_t reg, uint8_t value );
@@ -313,7 +315,7 @@ class canbus : public pcp, public InternalRamAllocated
 
   protected:
     virtual esp_err_t QueueWrite(const CAN_frame_t* p_frame, TickType_t maxqueuewait=0);
-    void BusTicker10(std::string event, void* data);
+    virtual void BusTicker10(std::string event, void* data);
 
   public:
     void LogFrame(CAN_log_type_t type, const CAN_frame_t* p_frame);

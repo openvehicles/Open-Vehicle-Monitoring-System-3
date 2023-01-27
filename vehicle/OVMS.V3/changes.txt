@@ -72,6 +72,9 @@ Open Vehicle Monitor System v3 - Change log
     cellular gps [status]             -- output current modem GPS/GNSS subsystem status
     cellular gps start                -- start modem GPS/GNSS subsystem
     cellular gps stop                 -- stop modem GPS/GNSS subsystem
+- CAN framework: add bus reset command
+  New commands:
+    can [can1…4] reset                -- reset the CAN interface
 
 
 2022-09-01 MWJ  3.3.003  OTA release

@@ -145,6 +145,21 @@ void can_stop(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
   writer->printf("Can bus %s stopped\n",bus);
   }
 
+void can_reset(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  const char* bus = cmd->GetParent()->GetName();
+  canbus* sbus = (canbus*)MyPcpApp.FindDeviceByName(bus);
+  if (sbus == NULL)
+    {
+    writer->puts("Error: Cannot find named CAN bus");
+    return;
+    }
+  if (sbus->Reset() == ESP_OK)
+    writer->printf("Can bus %s has been reset\n",bus);
+  else
+    writer->printf("ERROR: failed to reset can bus %s\n",bus);
+  }
+
 void can_dbc_attach(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   const char* bus = cmd->GetParent()->GetParent()->GetName();
@@ -890,6 +905,7 @@ can::can()
     cmd_canstart->RegisterCommand("listen","Start CAN bus in listen mode",can_start,"<baud> [<dbc>]", 1, 2);
     cmd_canstart->RegisterCommand("active","Start CAN bus in active mode",can_start,"<baud> [<dbc>]", 1, 2);
     cmd_canx->RegisterCommand("stop","Stop CAN bus",can_stop);
+    cmd_canx->RegisterCommand("reset","Reset CAN bus",can_reset);
     OvmsCommand* cmd_candbc = cmd_canx->RegisterCommand("dbc","CAN dbc framework");
     cmd_candbc->RegisterCommand("attach","Attach a DBC file to a CAN bus",can_dbc_attach,"<dbc>", 1, 1);
     cmd_candbc->RegisterCommand("detach","Detach the DBC file from a CAN bus",can_dbc_detach);
@@ -1056,6 +1072,18 @@ esp_err_t canbus::Stop()
   return ESP_FAIL;
   }
 
+esp_err_t canbus::Reset()
+  {
+  CAN_mode_t m = m_mode;
+  CAN_speed_t s = m_speed;
+  CAN_status_t t;
+  memcpy(&t,&m_status,sizeof(CAN_status_t));
+  Stop();
+  esp_err_t res = Start(m, s);
+  memcpy(&m_status,&t,sizeof(CAN_status_t));
+  return res;
+  }
+
 esp_err_t canbus::ViewRegisters()
   {
   return ESP_ERR_NOT_SUPPORTED;
@@ -1115,14 +1143,9 @@ void canbus::BusTicker10(std::string event, void* data)
       {
       // We have a watchdog timeout
       // We need to reset the CAN bus...
-      m_status.watchdog_resets++;
-      CAN_mode_t m = m_mode;
-      CAN_speed_t s = m_speed;
-      CAN_status_t t; memcpy(&t,&m_status,sizeof(CAN_status_t));
       ESP_LOGE(TAG, "%s watchdog inactivity timeout - resetting bus",m_name);
-      Stop();
-      Start(m, s);
-      memcpy(&m_status,&t,sizeof(CAN_status_t));
+      Reset();
+      m_status.watchdog_resets++;
       m_watchdog_timer = monotonictime;
       }
     }
