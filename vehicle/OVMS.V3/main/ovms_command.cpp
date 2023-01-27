@@ -53,7 +53,7 @@ static const char *TAG = "command";
 
 OvmsCommandApp MyCommandApp __attribute__ ((init_priority (1010)));
 
-bool CompareCharPtr::operator()(const char* a, const char* b)
+bool CompareCharPtr::operator()(const char* a, const char* b) const
   {
   return strcmp(a, b) < 0;
   }
