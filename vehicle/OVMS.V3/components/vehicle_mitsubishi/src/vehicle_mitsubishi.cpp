@@ -265,7 +265,7 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
       {
         //ESP_LOGW(TAGDEV,"Speed: %f", (d[0] * 256.0 + d[1]) / 128.0);
         StandardMetrics.ms_v_pos_speed->SetValue((d[0] * 256.0 + d[1]) * 0.0078125, Kph);
-        UpdateTripOdo();
+        
         CalculateAcceleration();
         break;
       }
@@ -892,6 +892,7 @@ void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
     StdMetrics.ms_v_bat_range_ideal->SetValue((StdMetrics.ms_v_bat_soc->AsFloat() - 10) * StdMetrics.ms_v_bat_cac->AsFloat() * 3.7 * cell * 0.00005882);
     StdMetrics.ms_v_bat_soh->SetValue(StdMetrics.ms_v_bat_cac->AsFloat() * 2.083333);
   }
+  UpdateTripOdo();
 }
 
   /**
