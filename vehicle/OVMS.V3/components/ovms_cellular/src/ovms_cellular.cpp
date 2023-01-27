@@ -116,7 +116,11 @@ void modem::Task()
     .stop_bits = UART_STOP_BITS_1,
     .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
     .rx_flow_ctrl_thresh = 122,
+#if ESP_IDF_VERSION_MAJOR < 5
     .use_ref_tick = 0,
+#else
+    .source_clk = UART_SCLK_DEFAULT,
+#endif
     };
   uart_param_config(m_uartnum, &uart_config);
   uart_set_pin(m_uartnum, m_txpin, m_rxpin, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
