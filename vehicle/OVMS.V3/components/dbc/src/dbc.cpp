@@ -836,11 +836,11 @@ dbcNumber dbcSignal::Decode(CAN_frame_t* msg)
   }
 
   // Apply factor and offset
-  if (!(m_factor == 1))
+  if (!(m_factor == (uint32_t)1))
     {
     result = (result * m_factor);
     }
-  if (!(m_offset == 0))
+  if (!(m_offset == (uint32_t)0))
     {
     result = (result + m_offset);
     }
