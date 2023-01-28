@@ -54,49 +54,21 @@ void OvmsVehicleMgEv::ProcessBatteryStats(int index, uint8_t* data, uint16_t rem
     // The stats are per block rather than per cell, but we'll record them in cells
     // Rather than cache all of the data as it's split over two frames, just cache the one
     // byte that we need
+    int i = index * 2;
     if (remain)
     {
         uint16_t vmin = (data[0] << 8 | data[1]);
         m_bmsCache = data[2];
-
-        StandardMetrics.ms_v_bat_cell_vmin->SetElemValue(index, (vmin / 2000.0f) + 1.0f);
-        
-        {
-            auto pvmin = StandardMetrics.ms_v_bat_cell_vmin->AsVector();
-            StandardMetrics.ms_v_bat_pack_vmin->SetValue(
-                *std::min_element(pvmin.begin(), pvmin.end())
-            );
-        }
-    }
-    else
-    {
+        BmsSetCellVoltage(i, (vmin / 2000.0f) + 1.0f);
+        //ESP_LOGI("BMS_CELL_VOLTAGE", "Setting Min Cell Voltage at %i to %f", index, (vmin / 2000.0f) + 1.0f);
+    } else {
         uint16_t vmax = (m_bmsCache << 8 | data[0]);
         uint8_t tmin = data[1];
         uint8_t tmax = data[2];
-        //uint8_t tpcb = data[3]; tpcb / 2.0 - 40.0;
-
-        StandardMetrics.ms_v_bat_cell_vmax->SetElemValue(index, (vmax / 2000.0f) + 1.0f);
-        StandardMetrics.ms_v_bat_cell_tmin->SetElemValue(index, tmin * 0.5f - 40.0f);
-        StandardMetrics.ms_v_bat_cell_tmax->SetElemValue(index, tmax * 0.5f - 40.0f);
-
-        {
-            auto pvmax = StandardMetrics.ms_v_bat_cell_vmax->AsVector();
-            StandardMetrics.ms_v_bat_pack_vmax->SetValue(
-                *std::max_element(pvmax.begin(), pvmax.end())
-            );
-        }
-        {
-            auto ptmin = StandardMetrics.ms_v_bat_cell_tmin->AsVector();
-            StandardMetrics.ms_v_bat_pack_tmin->SetValue(
-                *std::min_element(ptmin.begin(), ptmin.end())
-            );
-        }
-        {
-            auto ptmax = StandardMetrics.ms_v_bat_cell_tmax->AsVector();
-            StandardMetrics.ms_v_bat_pack_tmax->SetValue(
-                *std::max_element(ptmax.begin(), ptmax.end())
-            );
-        }
+        BmsSetCellVoltage(i + 1, (vmax / 2000.0f) + 1.0f);
+        //ESP_LOGI("BMS_CELL_VOLTAGE", "Setting Max Cell Voltage at %i to %f", index * 2 + 1, (vmax / 2000.0f) + 1.0f);
+        BmsSetCellTemperature(i, tmin * 0.5f - 40.0f);
+        BmsSetCellTemperature(i + 1, tmax * 0.5f - 40.0f);
     }
 }
 
