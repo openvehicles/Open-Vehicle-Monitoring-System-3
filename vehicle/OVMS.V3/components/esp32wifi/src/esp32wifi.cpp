@@ -42,6 +42,13 @@ static const char *TAG = "esp32wifi";
 #include "ovms_peripherals.h"
 #include "ovms_events.h"
 #include "metrics_standard.h"
+#if ESP_IDF_VERSION_MAJOR >= 4
+#include <esp_wifi_types.h>
+#endif
+#if ESP_IDF_VERSION_MAJOR >= 5
+#include <esp_wifi_ap_get_sta_list.h>
+#include <dhcpserver/dhcpserver.h>
+#endif
 
 const char* const esp32wifi_mode_names[] = {
   "Modem is off",
@@ -1000,8 +1007,13 @@ void esp32wifi::UpdateNetMetrics()
 
 void esp32wifi::EventWifiGotIp(std::string event, void* data)
   {
+#if ESP_IDF_VERSION_MAJOR >= 4
+  ip_event_got_ip_t *info = (ip_event_got_ip_t*)data;
+  m_ip_info_sta = info->ip_info;
+#else
   system_event_info_t *info = (system_event_info_t*)data;
   m_ip_info_sta = info->got_ip.ip_info;
+#endif
   esp_wifi_get_mac(WIFI_IF_STA, m_mac_sta);
   UpdateNetMetrics();
   ESP_LOGI(TAG, "STA got IP with SSID '%s' AP " MACSTR ": MAC: " MACSTR ", IP: " IPSTR ", mask: " IPSTR ", gw: " IPSTR,
@@ -1019,7 +1031,11 @@ void esp32wifi::EventWifiLostIp(std::string event, void* data)
 
 void esp32wifi::EventWifiStaConnected(std::string event, void* data)
   {
+#if ESP_IDF_VERSION_MAJOR >= 4
+  wifi_event_sta_connected_t& conn = *((wifi_event_sta_connected_t*)data);
+#else
   system_event_sta_connected_t& conn = ((system_event_info_t*)data)->connected;
+#endif
 
   m_sta_connected = true;
   m_previous_reason = 0;
@@ -1036,13 +1052,17 @@ void esp32wifi::EventWifiStaConnected(std::string event, void* data)
 
 void esp32wifi::EventWifiStaDisconnected(std::string event, void* data)
   {
-  system_event_info_t *info = (system_event_info_t*)data;
+#if ESP_IDF_VERSION_MAJOR >= 4
+  wifi_event_sta_disconnected_t& disconn = *((wifi_event_sta_disconnected_t*)data);
+#else
+  system_event_sta_disconnected_t& disconn = ((system_event_info_t*)data)->disconnected;
+#endif
 
-  if (info->disconnected.reason != m_previous_reason)
+  if (disconn.reason != m_previous_reason)
     {
     ESP_LOGI(TAG, "STA disconnected with reason %d = %s",
-      info->disconnected.reason, wifi_err_reason_code((wifi_err_reason_t)info->disconnected.reason));
-    m_previous_reason = info->disconnected.reason;
+      disconn.reason, wifi_err_reason_code((wifi_err_reason_t)disconn.reason));
+    m_previous_reason = disconn.reason;
     }
 
   m_sta_connected = false;
@@ -1153,13 +1173,26 @@ void esp32wifi::EventWifiApState(std::string event, void* data)
 
 void esp32wifi::EventWifiApUpdate(std::string event, void* data)
   {
-  system_event_info_t *info = (system_event_info_t*)data;
   if (event == "system.wifi.ap.sta.connected")
+    {
+#if ESP_IDF_VERSION_MAJOR >= 4
+    wifi_event_ap_staconnected_t& sta_conn = *((wifi_event_ap_staconnected_t*)data);
+#else
+    system_event_ap_staconnected_t& sta_conn = ((system_event_info_t*)data)->sta_connected;
+#endif
     ESP_LOGI(TAG, "AP station connected: id: %d, MAC: " MACSTR,
-      info->sta_connected.aid, MAC2STR(info->sta_connected.mac));
+      sta_conn.aid, MAC2STR(sta_conn.mac));
+    }
   else
+    {
+#if ESP_IDF_VERSION_MAJOR >= 4
+    wifi_event_ap_stadisconnected_t& sta_disconn = *((wifi_event_ap_stadisconnected_t*)data);
+#else
+    system_event_ap_stadisconnected_t& sta_disconn = ((system_event_info_t*)data)->sta_disconnected;
+#endif
     ESP_LOGI(TAG, "AP station disconnected: id: %d, MAC: " MACSTR,
-      info->sta_connected.aid, MAC2STR(info->sta_connected.mac));
+      sta_disconn.aid, MAC2STR(sta_disconn.mac));
+    }
   }
 
 void esp32wifi::EventTimer1(std::string event, void* data)
@@ -1326,7 +1359,9 @@ void esp32wifi::OutputStatus(int verbosity, OvmsWriter* writer)
     writer->printf("\nAP SSID: %s (%d MHz, channel %d)\n  MAC: " MACSTR "\n  IP: " IPSTR "\n",
       m_wifi_ap_cfg.ap.ssid, (int)bw*20, primary, MAC2STR(m_mac_ap), IP2STR(&m_ip_info_ap.ip));
     wifi_sta_list_t sta_list;
-#if ESP_IDF_VERSION_MAJOR >= 4
+#if ESP_IDF_VERSION_MAJOR >= 5
+    wifi_sta_mac_ip_list_t ip_list;
+#elif ESP_IDF_VERSION_MAJOR >= 4
     esp_netif_sta_list_t ip_list;
 #else
     tcpip_adapter_sta_list_t ip_list;
@@ -1334,7 +1369,9 @@ void esp32wifi::OutputStatus(int verbosity, OvmsWriter* writer)
     if (esp_wifi_ap_get_sta_list(&sta_list) == ESP_OK)
       {
       writer->printf("  AP Stations: %d\n", sta_list.num);
-#if ESP_IDF_VERSION_MAJOR >= 4
+#if ESP_IDF_VERSION_MAJOR >= 5
+      if (esp_wifi_ap_get_sta_list_with_ip(&sta_list, &ip_list) == ESP_OK)
+#elif ESP_IDF_VERSION_MAJOR >= 4
       if (esp_netif_get_sta_list(&sta_list, &ip_list) == ESP_OK)
 #else
       if (tcpip_adapter_get_sta_list(&sta_list, &ip_list) == ESP_OK)

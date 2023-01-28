@@ -39,6 +39,14 @@
 #include "ovms.h"
 #include "ovms_events.h"
 #include "ovms_mutex.h"
+#if ESP_IDF_VERSION_MAJOR >= 4
+#include "esp_netif.h"
+#else
+#include "tcpip_adapter.h"
+#endif
+#if ESP_IDF_VERSION_MAJOR >= 5
+#include <esp_mac.h>
+#endif
 
 typedef enum {
     ESP32WIFI_MODE_OFF = 0,   // Modem is off

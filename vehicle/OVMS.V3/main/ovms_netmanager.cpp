@@ -942,7 +942,13 @@ int OvmsNetManager::CleanupConnections()
 
   struct netif *ni;
   mg_connection *c;
+#if ESP_IDF_VERSION_MAJOR >= 5
+  wifi_sta_mac_ip_list_t ap_ip_list;
+#elif ESP_IDF_VERSION_MAJOR >= 4
+  esp_netif_sta_list_t ap_ip_list;
+#else
   tcpip_adapter_sta_list_t ap_ip_list;
+#endif
   union socket_address sa;
   socklen_t slen = sizeof(sa);
   int cnt = 0;
@@ -955,7 +961,14 @@ int OvmsNetManager::CleanupConnections()
     wifi_sta_list_t sta_list;
     if (esp_wifi_ap_get_sta_list(&sta_list) != ESP_OK)
       ESP_LOGW(TAG, "CleanupConnections: can't get AP station list");
+
+#if ESP_IDF_VERSION_MAJOR >= 5
+    else if (esp_wifi_ap_get_sta_list_with_ip(&sta_list, &ap_ip_list) != ESP_OK)
+#elif ESP_IDF_VERSION_MAJOR >= 4
+    else if (esp_netif_get_sta_list(&sta_list, &ap_ip_list) != ESP_OK)
+#else
     else if (tcpip_adapter_get_sta_list(&sta_list, &ap_ip_list) != ESP_OK)
+#endif
       ESP_LOGW(TAG, "CleanupConnections: can't get AP station IP list");
     }
 #endif // #ifdef CONFIG_OVMS_COMP_WIFI
