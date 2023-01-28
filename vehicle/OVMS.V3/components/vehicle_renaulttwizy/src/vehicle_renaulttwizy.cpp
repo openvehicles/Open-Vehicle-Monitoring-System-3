@@ -156,7 +156,9 @@ OvmsVehicleRenaultTwizy::~OvmsVehicleRenaultTwizy()
   ObdShutdown();
   if (m_sevcon)
     delete m_sevcon;
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
   WebShutdown();
+#endif
   ChargeShutdown();
   PowerShutdown();
   BatteryShutdown();

@@ -2,8 +2,10 @@
 #define __VEHICLE_KIA_COMMON_H__
 
 #include "vehicle.h"
-#include "ovms_webserver.h"
 #include <sdkconfig.h>
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
+#include "ovms_webserver.h"
+#endif
 
 using namespace std;
 

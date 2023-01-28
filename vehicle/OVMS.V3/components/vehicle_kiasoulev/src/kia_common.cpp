@@ -6,7 +6,9 @@
  */
 #include <fstream>
 #include <sdkconfig.h>
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
 #include "ovms_webserver.h"
+#endif
 #include "ovms_peripherals.h"
 #include "kia_common.h"
 #include "ovms_metrics.h"

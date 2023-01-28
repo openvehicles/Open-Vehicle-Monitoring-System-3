@@ -40,7 +40,9 @@
 
 #include "vehicle.h"
 #include "ovms_metrics.h"
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
 #include "ovms_webserver.h"
+#endif
 
 using namespace std;
 

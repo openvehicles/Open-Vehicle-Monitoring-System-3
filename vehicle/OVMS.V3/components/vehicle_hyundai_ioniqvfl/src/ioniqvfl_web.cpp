@@ -27,6 +27,8 @@
 ; THE SOFTWARE.
 */
 
+#include <sdkconfig.h>
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
 #define _GLIBCXX_USE_C99 // to enable std::stoi etc.
 #include <stdio.h>
 #include <string>
@@ -132,3 +134,5 @@ void OvmsVehicleHyundaiVFL::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
   c.panel_end();
   c.done();
 }
+
+#endif //CONFIG_OVMS_COMP_WEBSERVER

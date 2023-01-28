@@ -24,7 +24,8 @@
  * THE SOFTWARE.
  */
 
-
+#include <sdkconfig.h>
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
 #include <stdio.h>
 #include <string>
 #include "ovms_metrics.h"
@@ -435,3 +436,5 @@ void OvmsVehicleNissanLeaf::GetDashboardConfig(DashboardConfig& cfg)
       << "]";
   cfg.gaugeset1 = str.str();
 }
+
+#endif //CONFIG_OVMS_COMP_WEBSERVER
