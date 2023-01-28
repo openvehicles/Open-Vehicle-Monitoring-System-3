@@ -47,7 +47,6 @@ static const char *TAG = "ovms-duk-util";
 #include "console_async.h"
 #include "buffered_shell.h"
 #include "ovms_netmanager.h"
-#include "ovms_tls.h"
 
 #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE_HEAP_UMM
   #include "umm_malloc_cfg.h"

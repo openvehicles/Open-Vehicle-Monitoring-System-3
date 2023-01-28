@@ -50,7 +50,9 @@ static const char *TAG = "ovms-duk-http";
 #include "console_async.h"
 #include "buffered_shell.h"
 #include "ovms_netmanager.h"
+#if CONFIG_MG_ENABLE_SSL
 #include "ovms_tls.h"
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // DuktapeHTTPRequest
