@@ -32,6 +32,7 @@
 static const char *TAG = "v-mgev";
 
 #include "vehicle_mgev.h"
+#include "ovms_notify.h"
 
 namespace {
 

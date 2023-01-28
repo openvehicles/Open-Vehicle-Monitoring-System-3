@@ -37,6 +37,7 @@ static const char *TAG = "v-maxed3";
 #include "ovms_webserver.h"
 #include <algorithm>
 #include "metrics_standard.h"
+#include "ovms_notify.h"
 
 // Vehicle states:
 #define STATE_OFF             0     // Pollstate 0 - POLLSTATE_OFF      - car is off
