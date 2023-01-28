@@ -456,10 +456,10 @@ void modem::SupportSummary(OvmsWriter* writer, bool debug /*=FALSE*/)
     if (debug)
       {
       writer->printf("    Open Channels: %d\n", m_mux->m_openchannels);
-      writer->printf("    Framing Errors: %d\n", m_mux->m_framingerrors);
-      writer->printf("    RX frames: %d\n", m_mux->m_rxframecount);
-      writer->printf("    TX frames: %d\n", m_mux->m_txframecount);
-      writer->printf("    Last RX frame: %d sec(s) ago\n", m_mux->GoodFrameAge());
+      writer->printf("    Framing Errors: %" PRId32 "\n", m_mux->m_framingerrors);
+      writer->printf("    RX frames: %" PRId32 "\n", m_mux->m_rxframecount);
+      writer->printf("    TX frames: %" PRId32 "\n", m_mux->m_txframecount);
+      writer->printf("    Last RX frame: %" PRId32 " sec(s) ago\n", m_mux->GoodFrameAge());
       }
     }
   else

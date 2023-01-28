@@ -99,7 +99,7 @@ std::string canformat_gvret_ascii::get(CAN_log_message_t* message)
 
   char busnumber = (message->origin != NULL)?message->origin->m_busnumber + '0':'0';
 
-  sprintf(buf,"%u - %x %s %c %d",
+  sprintf(buf,"%" PRIu32 " - %" PRIx32 " %s %c %d",
     (uint32_t)((message->timestamp.tv_sec * 1000000) + message->timestamp.tv_usec),
     message->frame.MsgID,
     (message->frame.FIR.B.FF == CAN_frame_std) ? "S" : "X",
@@ -275,7 +275,7 @@ size_t canformat_gvret_binary::put(CAN_log_message_t* message, uint8_t *buffer, 
             msg.FIR.B.DLC = m.body.build_can_frame.length;
             memcpy(&msg.data, &m.body.build_can_frame.data, m.body.build_can_frame.length);
 
-            ESP_LOGD(TAG,"Rx BUILD_CAN_FRAME ID=%0x",msg.MsgID);
+            ESP_LOGD(TAG,"Rx BUILD_CAN_FRAME ID=%0" PRIx32,msg.MsgID);
             *hasmore = true;  // Call us again to see if we have more frames to process
             // We have a frame to be transmitted / simulated
             switch (m_servemode)

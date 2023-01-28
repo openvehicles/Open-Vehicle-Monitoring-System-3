@@ -830,7 +830,7 @@ void OvmsVehicleNissanLeaf::IncomingPollReply(canbus* bus, uint16_t type, uint16
         PollReply_VIN(buf, rxbuf.size());
         break;
       default:
-        ESP_LOGI(TAG, "IncomingPollReply: unknown reply module|pid=%#x len=%d", id_pid, rxbuf.size());
+        ESP_LOGI(TAG, "IncomingPollReply: unknown reply module|pid=%#" PRIx32 " len=%d", id_pid, rxbuf.size());
         break;
       }
 

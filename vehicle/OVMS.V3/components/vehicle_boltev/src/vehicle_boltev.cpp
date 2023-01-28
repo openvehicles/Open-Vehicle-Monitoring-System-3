@@ -233,15 +233,15 @@ void OvmsVehicleBoltEV::TxCallback(const CAN_frame_t* p_frame, bool success)
     const uint8_t *d = p_frame->data.u8;
     if (p_frame->MsgID == 0x7e4) {
         if (!success)
-            ESP_LOGE(TAG, "TxCallback. Error sending poll request. MsgId: 0x%x", p_frame->MsgID);
+            ESP_LOGE(TAG, "TxCallback. Error sending poll request. MsgId: 0x%" PRIx32, p_frame->MsgID);
         return;
     }
 
     if (success) {
-        ESP_LOGD(TAG,"TxCallback. Success. Frame %08x: [%02x %02x %02x %02x %02x %02x %02x %02x]",
+        ESP_LOGD(TAG,"TxCallback. Success. Frame %08" PRIx32 ": [%02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 "]",
                  p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7] );
     } else {
-        ESP_LOGE(TAG,"TxCallback. Failed! Frame %08x: [%02x %02x %02x %02x %02x %02x %02x %02x]",
+        ESP_LOGE(TAG,"TxCallback. Failed! Frame %08" PRIx32 ": [%02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 "]",
                  p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7] );
     }
 }
@@ -254,7 +254,7 @@ void OvmsVehicleBoltEV::IncomingFrameCan1(CAN_frame_t* p_frame)
 
     m_candata_timer = VA_CANDATA_TIMEOUT;
 
-    ESP_LOGV(TAG,"CAN1 message received: %08x: [%02x %02x %02x %02x %02x %02x %02x %02x]",
+    ESP_LOGV(TAG,"CAN1 message received: %08" PRIx32 ": [%02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 "]",
              p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7] );
 
     if ((p_frame->MsgID & 0xff8) == 0x7e8)
@@ -424,7 +424,7 @@ void OvmsVehicleBoltEV::IncomingFrameCan4(CAN_frame_t* p_frame)
 
     m_candata_timer = VA_CANDATA_TIMEOUT;
 
-    ESP_LOGV(TAG,"SW CAN message received: %08x: [%02x %02x %02x %02x %02x %02x %02x %02x]",
+    ESP_LOGV(TAG,"SW CAN message received: %08" PRIx32 ": [%02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 "]",
              p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7] );
 
     // Activity on the bus, so resume polling
@@ -1070,7 +1070,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleBoltEV::CommandUnlock(const char* pin)
 
 OvmsVehicle::vehicle_command_t OvmsVehicleBoltEV::CommandLights(va_light_t lights, bool turn_on)
 {
-    ESP_LOGI(TAG,"CommandLights: lights 0x%x:%d",(uint32_t)lights,turn_on);
+    ESP_LOGI(TAG,"CommandLights: lights 0x%" PRIx32 ":%d",(uint32_t)lights,turn_on);
     SendTesterPresentMessage(VA_BCM);
     vTaskDelay(200 / portTICK_PERIOD_MS);
 
@@ -1138,7 +1138,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleBoltEV::CommandLights(va_light_t light
 
     // Set the bitwise status of the lights that we control and are now ON. If any of these are set, we send periodic Tester Present messages
     m_controlled_lights = (m_controlled_lights & ~lights) | (lights*turn_on);
-    ESP_LOGI(TAG,"CommandLights: controlled_lights 0x%x",m_controlled_lights);
+    ESP_LOGI(TAG,"CommandLights: controlled_lights 0x%" PRIx32,m_controlled_lights);
     return Success;
 }
 

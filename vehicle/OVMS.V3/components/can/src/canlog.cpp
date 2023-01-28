@@ -121,7 +121,7 @@ void can_log_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
     for (can::canlog_map_t::iterator it=MyCan.m_loggermap.begin(); it!=MyCan.m_loggermap.end(); ++it)
       {
       canlog* cl = it->second;
-      writer->printf("#%d: %s %s %s\n",
+      writer->printf("#%" PRId32 ": %s %s %s\n",
         it->first,
         (cl->m_isopen)?"open":"closed",
         cl->GetInfo().c_str(), cl->GetStats().c_str());
@@ -159,7 +159,7 @@ void can_log_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
     for (can::canlog_map_t::iterator it=MyCan.m_loggermap.begin(); it!=MyCan.m_loggermap.end(); ++it)
       {
       canlog* cl = it->second;
-      writer->printf("#%d: %s\n", it->first, cl->GetInfo().c_str());
+      writer->printf("#%" PRId32 ": %s\n", it->first, cl->GetInfo().c_str());
       }
     }
   }

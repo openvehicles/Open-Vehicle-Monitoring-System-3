@@ -136,11 +136,11 @@ void CANopenWorker::StatusReport(int verbosity, OvmsWriter* writer)
     "  %s:\n"
     "    Active clients: %d\n"
     "    Jobs waiting  : %d\n"
-    "    Jobs processed: %d\n"
-    "    - timeouts    : %d\n"
-    "    - other errors: %d\n"
-    "    NMT received  : %d\n"
-    "    EMCY received : %d\n"
+    "    Jobs processed: %" PRId32 "\n"
+    "    - timeouts    : %" PRId32 "\n"
+    "    - other errors: %" PRId32 "\n"
+    "    NMT received  : %" PRId32 "\n"
+    "    EMCY received : %" PRId32 "\n"
     , m_bus->GetName()
     , m_clientcnt
     , (int)uxQueueMessagesWaiting(m_jobqueue)
@@ -574,7 +574,7 @@ CANopenResult_t CANopenWorker::ProcessReadSDOJob()
       m_job.sdo.error = m_response.ctl.data;
     else
       m_job.sdo.error = CANopen_BusCollision;
-    ESP_LOGD(TAG, "ReadSDO #%d 0x%04x.%02x: InitUpload failed, CANopen error code 0x%08x",
+    ESP_LOGD(TAG, "ReadSDO #%d 0x%04x.%02x: InitUpload failed, CANopen error code 0x%08" PRIx32,
       m_job.sdo.nodeid, m_job.sdo.index, m_job.sdo.subindex, m_job.sdo.error);
     return COR_ERR_SDO_Access;
     }
@@ -723,7 +723,7 @@ CANopenResult_t CANopenWorker::ProcessWriteSDOJob()
       m_job.sdo.error = m_response.ctl.data;
     else
       m_job.sdo.error = CANopen_BusCollision;
-    ESP_LOGD(TAG, "WriteSDO #%d 0x%04x.%02x: InitDownload failed, CANopen error code 0x%08x",
+    ESP_LOGD(TAG, "WriteSDO #%d 0x%04x.%02x: InitDownload failed, CANopen error code 0x%08" PRIx32,
       m_job.sdo.nodeid, m_job.sdo.index, m_job.sdo.subindex, m_job.sdo.error);
     return COR_ERR_SDO_Access;
     }
