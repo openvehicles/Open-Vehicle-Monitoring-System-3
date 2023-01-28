@@ -40,6 +40,7 @@
 #include <string>
 #include <sstream>
 #include "ovms_malloc.h"
+#include "esp_idf_version.h"
 
 #if ESP_IDF_VERSION_MAJOR >= 4
 #define CONFIG_CONSOLE_UART_NUM CONFIG_ESP_CONSOLE_UART_NUM
@@ -64,6 +65,25 @@
 #if !defined(FALLTHROUGH)
     #define FALLTHROUGH do {} while (0)  /* fallthrough */
 #endif
+
+#undef WDT_ALREADY_INITIALIZED
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 1)
+  #if CONFIG_ESP_TASK_WDT_INIT
+    #define WDT_ALREADY_INITIALIZED 1
+  #endif // CONFIG_ESP_TASK_WDT_INIT
+#endif // 5.0.1
+
+#if ESP_IDF_VERSION == ESP_IDF_VERSION_VAL(5, 0, 0)
+  #if CONFIG_ESP_TASK_WDT
+    #define WDT_ALREADY_INITIALIZED 1
+  #endif // CONFIG_ESP_TASK_WDT
+#endif // 5.0.0
+
+#if ESP_IDF_VERSION < ESP_IDF_VERSION_VAL(5, 0, 0)
+  #if CONFIG_TASK_WDT
+    #define WDT_ALREADY_INITIALIZED 1
+  #endif // CONFIG_ESP_TASK_WDT_INIT
+#endif // < 5
 
 extern uint32_t monotonictime;
 
