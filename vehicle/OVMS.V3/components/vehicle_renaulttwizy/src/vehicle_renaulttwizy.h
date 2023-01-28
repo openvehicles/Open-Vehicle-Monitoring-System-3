@@ -40,6 +40,7 @@
 #endif
 #include "ovms_mutex.h"
 #include "ovms_semaphore.h"
+#include "string_writer.h"
 
 #include "rt_types.h"
 #include "rt_battmon.h"
