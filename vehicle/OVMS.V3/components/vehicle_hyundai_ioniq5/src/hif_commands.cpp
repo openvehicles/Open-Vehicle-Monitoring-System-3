@@ -431,9 +431,10 @@ void xiq_tpms(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, con
 void xiq_trip_( const char *title,  OvmsWriter *writer, OvmsMetricFloat *metric_trip, OvmsMetricFloat *metric_energy, OvmsMetricFloat *metric_energy_recd )
 {
   XARM("xiq_trip_");
-  bool isMiles = MyConfig.GetParamValue("vehicle", "units.distance") == "M";
 
-  metric_unit_t rangeUnit = (isMiles ? Miles : Kilometers);
+  metric_unit_t rangeUnit = MyUnitConfig.GetUserUnit(GrpDistance, Kilometers);
+  metric_unit_t consumpUnit = MyUnitConfig.GetUserUnit(GrpConsumption, KPkWh);
+  metric_unit_t energyUnit = MyUnitConfig.GetUserUnit(GrpEnergy, kWh);
 
   writer->printf("%s\n", title);
 
@@ -447,8 +448,7 @@ void xiq_trip_( const char *title,  OvmsWriter *writer, OvmsMetricFloat *metric_
     writer->puts("No energy used\n");
   }
   else {
-    float consumption = energyUsed * 100 / posTrip;
-    float consumption2 = posTrip / energyUsed ;
+    float consumption =  UnitConvert(KPkWh, consumpUnit, posTrip/energyUsed);
 
     // Total consumption
     float totalConsumption = energyUsed + metric_energy_recd->AsFloat(kWh);
@@ -458,23 +458,21 @@ void xiq_trip_( const char *title,  OvmsWriter *writer, OvmsMetricFloat *metric_
       const std::string &distance = metric_trip->AsUnitString("-", rangeUnit, 1);
       writer->printf("Dist %s\n", distance.c_str());
     }
-    const std::string &unitLabel = OvmsMetricUnitLabel(rangeUnit);
-    writer->printf("Cons %.*fkWh/100%s\n", 2, consumption, unitLabel.c_str());
-    writer->printf("Cons %.*f%s/kWh\n", 2, consumption2, unitLabel.c_str());
+    writer->printf("Cons %.*f%s\n", 2, consumption, OvmsMetricUnitLabel(consumpUnit));
 
     // Discharge
     if (metric_energy->IsDefined()) {
-      const std::string &discharge = metric_energy->AsUnitString("-", kWh, 1);
+      const std::string &discharge = metric_energy->AsUnitString("-", energyUnit, 1);
       writer->printf("Disc %s\n", discharge.c_str());
     }
 
     // Recuperation
     if (metric_energy_recd->IsDefined()) {
-      const std::string &recuparation = metric_energy_recd->AsUnitString("-", kWh, 1);
+      const std::string &recuparation = metric_energy_recd->AsUnitString("-", energyUnit, 1);
       writer->printf("Rec %s\n", recuparation.c_str());
     }
 
-    writer->printf("Tot %.*fkWh\n", 2, totalConsumption);
+    writer->printf("Tot %.*f%s\n", 2, UnitConvert(kWh, consumpUnit, totalConsumption), OvmsMetricUnitLabel(consumpUnit));
   }
   // ODO
   if (StdMetrics.ms_v_pos_odometer->IsDefined()) {
