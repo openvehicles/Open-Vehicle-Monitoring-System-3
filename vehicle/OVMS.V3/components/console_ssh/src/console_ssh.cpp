@@ -268,7 +268,7 @@ int OvmsSSH::Authenticate(uint8_t type, WS_UserAuthData* data, void* ctx)
     if (key.empty())
       return WOLFSSH_USERAUTH_INVALID_USER;
     byte der[560];
-    uint32_t len = sizeof(der);
+    word32 len = sizeof(der);
     if (Base64_Decode((const byte*)key.data(), key.size(), der, &len) != 0 ||
       len != data->sf.publicKey.publicKeySz ||
       memcmp(data->sf.publicKey.publicKey, der, len) != 0)
@@ -284,8 +284,8 @@ int OvmsSSH::Authenticate(uint8_t type, WS_UserAuthData* data, void* ctx)
 //    Class ConsoleSSH
 //-----------------------------------------------------------------------------
 
-int RecvCallback(WOLFSSH* ssh, void* data, uint32_t size, void* ctx);
-int SendCallback(WOLFSSH* ssh, void* data, uint32_t size, void* ctx);
+int RecvCallback(WOLFSSH* ssh, void* data, word32 size, void* ctx);
+int SendCallback(WOLFSSH* ssh, void* data, word32 size, void* ctx);
 
 ConsoleSSH::ConsoleSSH(OvmsSSH* server, struct mg_connection* nc)
   {
@@ -1027,7 +1027,7 @@ ssize_t ConsoleSSH::write(const void *buf, size_t nbyte)
 // Routines to be called from within WolfSSH to receive and send data from and
 // to the network socket.
 
-int RecvCallback(WOLFSSH* ssh, void* data, uint32_t size, void* ctx)
+int RecvCallback(WOLFSSH* ssh, void* data, word32 size, void* ctx)
   {
   ConsoleSSH* me = (ConsoleSSH*)ctx;
   return me->RecvCallback((char*)data, size);
@@ -1046,7 +1046,7 @@ int ConsoleSSH::RecvCallback(char* buf, uint32_t size)
   return len;
   }
 
-int SendCallback(WOLFSSH* ssh, void* data, uint32_t size, void* ctx)
+int SendCallback(WOLFSSH* ssh, void* data, word32 size, void* ctx)
   {
   mg_connection* nc = (mg_connection*)ctx;
   nc->flags |= MG_F_SEND_IMMEDIATELY;
@@ -1056,7 +1056,7 @@ int SendCallback(WOLFSSH* ssh, void* data, uint32_t size, void* ctx)
     if (!((ConsoleSSH*)nc->user_data)->IsDraining())
       {
       size_t free8 = heap_caps_get_free_size(MALLOC_CAP_8BIT|MALLOC_CAP_INTERNAL);
-      ESP_LOGW(tag, "send blocked on %zu-byte packet: low free memory %zu", size, free8);
+      ESP_LOGW(tag, "send blocked on %u-byte packet: low free memory %zu", size, free8);
       }
     size = WS_CBIO_ERR_WANT_WRITE;
     }
@@ -1128,8 +1128,8 @@ void RSAKeyGenerator::Service()
   uint32_t length[2];
   byte  exp[8];
   byte  mod[260];
-  uint32_t explen = sizeof(exp);
-  uint32_t modlen = sizeof(mod);
+  word32 explen = sizeof(exp);
+  word32 modlen = sizeof(mod);
   ret = wc_RsaFlattenPublicKey(&key, exp, &explen, mod, &modlen);
   wc_InitSha256(&sha);
   length[0] = htonl(strlen(type));
