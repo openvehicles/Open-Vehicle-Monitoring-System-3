@@ -60,8 +60,8 @@ const char *OvmsHyundaiIoniqEv::TAG = "v-ioniq5";
 // Pollstate 3 - ping : car is off, not charging and something triggers a wake
 static const OvmsVehicle::poll_pid_t vehicle_ioniq_polls[] = {
   //                                                   Off  On  Chrg Ping
-  { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_READDATA, 0xe004, { 0,   1,   4,  4}, 0, ISOTP_STD },   // VMCU - Drive status + Accell
-  { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_READDATA, 0x0101, { 0,   9,   9,  9}, 0, ISOTP_STD },   // BMC Diag page 01 - Inc Battery Pack Temp
+  { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_READDATA, 0xe004, { 0,   1,   4,  4}, 0, ISOTP_STD },   // VMCU - Drive status + Accellerator
+  { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_READDATA, 0x0101, { 0,   1,   9,  9}, 0, ISOTP_STD },   // BMC Diag page 01 - Inc Battery Pack Temp + RPM
   { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_READDATA, 0x0102, { 0,  59,   9,  0}, 0, ISOTP_STD },   // Battery 1 - BMC Diag page 02
   { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_READDATA, 0x0103, { 0,  59,   9,  0}, 0, ISOTP_STD },   // Battery 2 - BMC Diag page 03
   { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_READDATA, 0x0104, { 0,  59,   9,  0}, 0, ISOTP_STD },   // Battery 3 - BMC Diag page 04
@@ -83,12 +83,12 @@ static const OvmsVehicle::poll_pid_t vehicle_ioniq_polls[] = {
   { 0x770, 0x778, VEHICLE_POLL_TYPE_READDATA, 0xbc09, { 0,  10,  10, 20}, 0, ISOTP_STD },  // Lights
   { 0x770, 0x778, VEHICLE_POLL_TYPE_READDATA, 0xbc10, { 0,  10,  10, 20}, 0, ISOTP_STD },  // Lights
 
-  { 0x7b3, 0x7bb, VEHICLE_POLL_TYPE_READDATA, 0x0100, { 0,  10,  10,  0}, 0, ISOTP_STD },  // AirCon
+  { 0x7b3, 0x7bb, VEHICLE_POLL_TYPE_READDATA, 0x0100, { 0,  1,  10,  30}, 0, ISOTP_STD },  // AirCon and Speed
   //{0x7b3,0x7bb, VEHICLE_POLL_TYPE_READDATA, 0x0102, { 0,  10,  10,  0} },  // AirCon - No usable values found yet
 
-  { 0x7c6, 0x7ce, VEHICLE_POLL_TYPE_READDATA, 0xB002, { 0,  19, 120,  0}, 0, ISOTP_STD },  // Cluster. ODO
+  { 0x7c6, 0x7ce, VEHICLE_POLL_TYPE_READDATA, 0xB002, { 0,  5, 120,  0}, 0, ISOTP_STD },  // Cluster. ODO
 
-  { 0x7d1, 0x7d9, VEHICLE_POLL_TYPE_READDATA, 0xc101, { 0,  27,  27,  0}, 0, ISOTP_STD },  // ABS/ESP - Emergency lights
+  { 0x7d1, 0x7d9, VEHICLE_POLL_TYPE_READDATA, 0xc101, { 0,  5,  27,  0}, 0, ISOTP_STD },  // ABS/ESP - Emergency lights
 
   // TODO 0x7e5 OBC - On Board Charger?
 
