@@ -560,10 +560,18 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
 
   m_b_cell_det_min->SetValue(0);
 
-  StdMetrics.ms_v_bat_12v_voltage->SetValue(12.5, Volts);
   StdMetrics.ms_v_charge_inprogress->SetValue(false);
   StdMetrics.ms_v_env_on->SetValue(false);
-  StdMetrics.ms_v_bat_temp->SetValue(20, Celcius);
+
+  // Mirror Average battery temperature to battery temperature metric.
+  if (StdMetrics.ms_v_bat_pack_tavg->IsDefined()) {
+    StdMetrics.ms_v_bat_temp->SetValue(StdMetrics.ms_v_bat_pack_tavg->AsFloat());
+  }
+#ifdef bind
+#undef bind
+#endif
+  using std::placeholders::_1;
+  MyMetrics.RegisterListener(TAG, MS_V_BAT_PACK_TAVG, std::bind(&OvmsHyundaiIoniqEv::UpdatedAverageTemp, this, _1));
 
   // init commands:
   cmd_hiq = MyCommandApp.RegisterCommand("xhiq", "Hyundai Ioniq 5 EV");
@@ -598,11 +606,7 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
 #endif
 
 
-  using std::placeholders::_1;
   using std::placeholders::_2;
-#ifdef bind
-#undef bind
-#endif
   MyEvents.RegisterEvent(TAG, "app.connected", std::bind(&OvmsHyundaiIoniqEv::EventListener, this, _1, _2));
 
   MyConfig.RegisterParam("xiq", "Hyundai Ioniq 5 EV specific settings.", true, true);
@@ -635,6 +639,7 @@ OvmsHyundaiIoniqEv::~OvmsHyundaiIoniqEv()
   ESP_LOGI(TAG, "Shutdown Hyundai Ioniq 5 EV vehicle module");
   MyWebServer.DeregisterPage("/bms/cellmon");
   MyEvents.DeregisterEvent(TAG);
+  MyMetrics.DeregisterListener(TAG);
   delete iq_range_calc;
   XDISARM;
 }
@@ -700,6 +705,18 @@ void OvmsHyundaiIoniqEv::ConfigChanged(OvmsConfigParam *param)
   kia_enable_write = MyConfig.GetParamValueBool("xiq", "canwrite", false);
 #endif
   XDISARM;
+}
+
+void OvmsHyundaiIoniqEv::UpdatedAverageTemp(OvmsMetric* metric)
+{
+  if (metric == StdMetrics.ms_v_bat_pack_tavg) {
+    // Mirror battery average temperature to battery temp
+    if (metric->IsDefined()) {
+      StdMetrics.ms_v_bat_temp->SetValue(metric->AsFloat());
+    } else {
+      StdMetrics.ms_v_bat_temp->Clear();
+    }
+  }
 }
 
 /**
@@ -1299,7 +1316,14 @@ void OvmsHyundaiIoniqEv::SetChargeMetrics(float voltage, float current, float cl
 
   //"Typical" consumption based on battery temperature and ambient temperature.
   float temperature = StdMetrics.ms_v_bat_temp->AsFloat(20, Celcius);
-  float temp = (( temperature * 3) + StdMetrics.ms_v_env_temp->AsFloat(Celcius)) / 4;
+  float temp =  temperature;
+  if (StdMetrics.ms_v_env_temp->IsDefined()) {
+    if (StdMetrics.ms_v_bat_temp->IsDefined()) {
+      temp = (( temp * 3) + StdMetrics.ms_v_env_temp->AsFloat(Celcius)) / 4;
+    } else {
+      temp = StdMetrics.ms_v_env_temp->AsFloat(Celcius);
+    }
+  }
   float consumption = 15 + (20 - temp) * 3.0 / 8.0; //kWh/100km
   m_c_speed->SetValue( (voltage * current) / (consumption * 10), Kph);
   XDISARM;
@@ -1322,13 +1346,24 @@ void OvmsHyundaiIoniqEv::UpdateMaxRangeAndSOH(void)
   float maxRange = hif_maxrange;// * MIN(BAT_SOH,100) / 100.0;
   float wltpRange = iq_range_calc->getRange();
   float amb_temp = StdMetrics.ms_v_env_temp->AsFloat(20, Celcius);
-  float bat_temp = StdMetrics.ms_v_bat_temp->AsFloat(20, Celcius);
+  float bat_temp = 20;
+  if (StdMetrics.ms_v_bat_pack_tavg->IsDefined()) {
+    bat_temp = StdMetrics.ms_v_bat_pack_tavg->AsFloat();
+  } else if ( StdMetrics.ms_v_bat_temp->IsDefined()) {
+    bat_temp = StdMetrics.ms_v_bat_temp->AsFloat();
+  } else {
+    bat_temp  = amb_temp;
+  }
+  float use_temp = bat_temp;
+  if (StdMetrics.ms_v_env_temp->IsDefined()) {
+    use_temp = (amb_temp + (bat_temp * 3))  / 4;
+  }
 
   // Temperature compensation:
   //   - Assumes standard maxRange specified at 20 degrees C
   //   - Range halved at -20C.
   if (maxRange != 0) {
-    maxRange = (maxRange * (100.0 - (int) (ABS(20.0 - (amb_temp + bat_temp * 3) / 4) * 1.25))) / 100.0;
+    maxRange = (maxRange * (100.0 - (int) (ABS(20.0 - use_temp) * 1.25))) / 100.0;
     StdMetrics.ms_v_bat_range_ideal->SetValue( maxRange * BAT_SOC / 100.0, Kilometers);
   }
   StdMetrics.ms_v_bat_range_full->SetValue(maxRange, Kilometers);
