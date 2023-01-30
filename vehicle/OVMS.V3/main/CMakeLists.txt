@@ -5,7 +5,11 @@ idf_component_register(SRCS "./ovms_malloc.c" "./buffered_shell.cpp" "./console_
 if (CONFIG_SPIRAM_CACHE_WORKAROUND)
   target_link_libraries(${COMPONENT_LIB} INTERFACE "-mfix-esp32-psram-cache-issue")
 endif ()
-target_link_libraries(${COMPONENT_LIB} PRIVATE "-T ${COMPONENT_DIR}/ovms_boot.ld")
+
+# Hack to ensure that the loader script is loaded after (at least) memory.ld which
+# defines `rtc_slow_seg` memory section.
+idf_build_get_property(prefix __PREFIX)
+target_linker_script("__${prefix}_esp_system" INTERFACE "${COMPONENT_DIR}/ovms_boot.ld")
 
 execute_process(COMMAND git describe --always --tags --dirty
                 OUTPUT_VARIABLE OVMS_VERSION
