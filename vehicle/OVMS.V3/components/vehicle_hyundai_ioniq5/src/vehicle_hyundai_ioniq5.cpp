@@ -10,8 +10,13 @@
 ;       0.0.3:  Fix Battery voltage indicator range.
 ;               Fix legacy GetFeatures
 ;               Confirm some more values and move to new decode.
-;
-;    (C) 2022 Michael Geddes
+;       0.0.4:  Fix range and battery estimation
+;               Add 'unlocked and parked' notification.
+;               Improve diagnosis of range estimation.
+;               Add Ah / coulomb count to trip metrics.
+;               Added RPM measurement.
+;               Improve response of speed measurement.
+;    (C) 2022,2023 Michael Geddes
 ; ----- Kona/Kia Module -----
 ;    (C) 2011       Michael Stegen / Stegen Electronics
 ;    (C) 2011-2017  Mark Webb-Johnson
@@ -36,7 +41,7 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 ; THE SOFTWARE.
 */
-#define IONIQ5_VERSION "0.0.3"
+#define IONIQ5_VERSION "0.0.4"
 
 #include "vehicle_hyundai_ioniq5.h"
 
