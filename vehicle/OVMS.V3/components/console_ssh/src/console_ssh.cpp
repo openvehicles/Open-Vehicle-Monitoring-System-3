@@ -40,7 +40,12 @@
 #include "freertos/queue.h"
 #include "esp_heap_caps.h"
 #include "ovms_log.h"
+// Unfortunately, both the compiler includes (stdc++) and wolfssl define "byte"
+// to a different value, and the compiler is not OK with that.
+// So we hide the compiler's definition - ugly hack.
+#define byte do_not_redefine_byte
 #include "ovms_events.h"
+#undef byte
 #include "ovms_netmanager.h"
 #include "ovms_config.h"
 #include <wolfssl/wolfcrypt/memory.h>
