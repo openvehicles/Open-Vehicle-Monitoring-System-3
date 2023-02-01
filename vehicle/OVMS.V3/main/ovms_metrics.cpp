@@ -417,7 +417,7 @@ metric_unit_t OvmsMetricGetUserUnit(metric_group_t group, metric_unit_t defaultU
  * full_check takes into account whether a conversion CAN be done (used for
  * printing correct labels)
  */
-static bool CheckTargetUnit(metric_unit_t from, metric_unit_t &to, bool full_check)
+bool CheckTargetUnit(metric_unit_t from, metric_unit_t &to, bool full_check)
   {
   if (from == Other)
     {
