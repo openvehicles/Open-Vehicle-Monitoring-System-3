@@ -118,13 +118,13 @@ static const OvmsUnitInfo unit_info[int(MetricUnitLast)+1] =
   UNIT_GAP, // 39
   {"volts",    "V",        Native,     Native,      GrpOther }, // 40
   {"amps",     "A",        Native,     Native,      GrpOther }, // 41
-  {"amphours", "Ah",       Native,     Native,      GrpOther }, // 42
+  {"amphours", "Ah",       Native,     Native,      GrpCharge}, // 42
   {"kw",       "kW",       Native,     Native,      GrpPower }, // 43
   {"kwh",      "kWh",      Native,     Native,      GrpEnergy}, // 44
   {"watts",    "W",        Native,     Native,      GrpPower }, // 45
   {"watthours","Wh",       Native,     Native,      GrpEnergy}, // 46
-  UNIT_GAP, // 47
-  UNIT_GAP, // 48
+  {"kilocoulombs", "kC",   Native,     Native,      GrpCharge}, // 47
+  {"megajoules",   "MJ",   Native,     Native,      GrpEnergy}, // 48
   UNIT_GAP, // 49
   {"seconds",  "Sec",      Native,     Native,      GrpTime}, // 50
   {"minutes",  "Min",      Native,     Native,      GrpTime}, // 51
@@ -139,8 +139,8 @@ static const OvmsUnitInfo unit_info[int(MetricUnitLast)+1] =
   {"degrees",  "°",        Native,     Native,      GrpDirection}, // 60
   {"kmph",     "km/h",     Native,     Mph,         GrpSpeed}, // 61
   {"miph",     "Mph",      Kph,        Native,      GrpSpeed}, // 62
-  UNIT_GAP,// 63
-  UNIT_GAP,// 64
+  {"mps",      "m/s",      Native,     FeetPS,      GrpSpeed}, // 63
+  {"ftps",     "ft/s",     MetersPS,   Native,      GrpSpeed}, // 64
   UNIT_GAP,// 65
   UNIT_GAP,// 66
   UNIT_GAP,// 67
@@ -217,7 +217,7 @@ static const OvmsUnitGroupInfo group_info[int(MetricGroupLast)+1] =
   { "torque",      NULL                      }, // 12
   { "direction",   NULL                      }, // 13
   { "ratio",       "Ratio"                   }, // 14
-  GROUP_GAP, // 15
+  { "charge",      "Charge"                  }, // 15
   // Short dimensions from here:
   GROUP_GAP, // 16
   GROUP_GAP, // 17
@@ -2349,11 +2349,38 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
       if (to == kW) return (value/1000);
       break;
     case kWh:
-      if (to == WattHours) return (value*1000);
-      break;
+      switch (to)
+        {
+        case WattHours: return (value*1000);
+        case MegaJoules:  return (value*3.6);
+        default: break;
+        }
     case WattHours:
-      if (to == kWh) return (value/1000);
-      break;
+      switch (to)
+        {
+        case kWh:       return (value/1000);
+        case MegaJoules:  return (value*9/2500);
+        default: break;
+        }
+    case MegaJoules:
+      switch (to)
+        {
+        case kWh: return (value * 5 / 18);
+        case WattHours:  return (value * 2500/9);
+        default: break;
+        }
+    case AmpHours:
+      switch (to)
+        {
+        case Kilocoulombs:  return (value * 18) / 5; // * 3600 / 1000
+        default: break;
+        }
+    case Kilocoulombs:
+      switch (to)
+        {
+        case AmpHours:  return (value * 5) / 18; // * 1000 / 3600
+        default: break;
+        }
     case WattHoursPK:
       switch (to)
         {
@@ -2464,11 +2491,37 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
       else if (to == Hours) return value/3600;
       break;
     case Kph:
-      if (to == Mph) return km_to_mi(value);
-      break;
+      switch (to)
+        {
+        case Mph: return km_to_mi(value);
+        case MetersPS: return value * 5 / 18; // 1000/3600 
+        case FeetPS: return km_to_mi(value* feet_per_mile)/3600;
+        default: break;
+        }
     case Mph:
-      if (to == Kph) return mi_to_km(value);
-      break;
+      switch (to)
+        {
+        case Kph:    return  mi_to_km(value);
+        case FeetPS: return value * feet_per_mile / 3600;
+        case MetersPS: return mi_to_km(value * 5 ) / 18;
+        default: break;
+        }
+    case MetersPS:
+      switch (to)
+        {
+        case Mph: return km_to_mi(value * 18) / 5; //  3600/ 1000
+        case Kph: return value * 18 / 5; // 3600/1000
+        case FeetPS: return km_to_mi(value* feet_per_mile) / 1000;
+        default: break;
+        }
+    case FeetPS:
+      switch (to)
+        {
+        case Kph: return  mi_to_km(value) / feet_per_mile;
+        case Mph:  return value * 3600 / feet_per_mile;
+        case MetersPS: return mi_to_km(value * 1000 ) / feet_per_mile;
+        default: break;
+        }
     case dbm:
       if (to == sq) return (value <= -51) ? ((value + 113)/2) : 0;
       break;
@@ -2565,12 +2618,40 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
     case Watts:
       if (to == kW) return (value/1000);
       break;
+
     case kWh:
-      if (to == WattHours) return (value*1000);
-      break;
+      switch (to)
+        {
+        case WattHours: return (value*1000);
+        case MegaJoules:  return (value*3.6);
+        default: break;
+        }
     case WattHours:
-      if (to == kWh) return (value/1000);
-      break;
+      switch (to)
+        {
+        case kWh:       return (value*0.001);
+        case MegaJoules:  return (value*0.0036);
+        default: break;
+        }
+    case MegaJoules:
+      switch (to)
+        {
+        case kWh: return (value * 2.777778);
+        case WattHours:  return (value * 277.7778);
+        default: break;
+        }
+    case AmpHours:
+      switch (to)
+        {
+        case Kilocoulombs:  return value * 3.6; // * 3600 / 1000
+        default: break;
+        }
+    case Kilocoulombs:
+      switch (to)
+        {
+        case AmpHours:  return value * 0.277778; // * 1000 / 3600
+        default: break;
+        }
     case WattHoursPK:
       switch (to)
         {
@@ -2668,11 +2749,37 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
       else if (to == Minutes) return value*60;
       break;
     case Kph:
-      if (to == Mph) return km_to_mi(value);
-      break;
+      switch (to)
+        {
+        case Mph: return km_to_mi(value);
+        case MetersPS: return value * 0.277778; // 1000/3600 
+        case FeetPS: return km_to_mi(value* feet_per_mile)/3600;
+        default: break;
+        }
     case Mph:
-      if (to == Kph) return mi_to_km(value);
-      break;
+      switch (to)
+        {
+        case Kph:    return  mi_to_km(value);
+        case FeetPS: return value * feet_per_mile / 3600;
+        case MetersPS: return mi_to_km(value) * 0.277778; // 1000/36000
+        default: break;
+        }
+    case MetersPS:
+      switch (to)
+        {
+        case Mph: return km_to_mi(value ) * 3.6; //  3600/ 1000
+        case Kph: return value * 3.6; // 3600/1000
+        case FeetPS: return km_to_mi(value* feet_per_mile) / 1000;
+        default: break;
+        }
+    case FeetPS:
+      switch (to)
+        {
+        case Kph: return  mi_to_km(value) / feet_per_mile;
+        case Mph:  return value * 3600 / feet_per_mile;
+        case MetersPS: return mi_to_km(value * 1000 ) / feet_per_mile;
+        default: break;
+        }
     case dbm:
       if (to == sq) return int((value <= -51) ? ((value + 113)/2) : 0);
       break;
@@ -2749,7 +2856,11 @@ metric_unit_t UnitConfigMap::GetUserUnit( metric_group_t group, metric_unit_t de
     return defaultUnit;
   OvmsMutexLock store_lock(&m_store_lock);
   auto res = m_map[groupint];
-  return (res== UnitNotFound ? defaultUnit : res);
+  switch (res) {
+    case UnitNotFound: return defaultUnit;
+    case Native: return (defaultUnit == UnitNotFound) ? Native : defaultUnit;
+    default: return res;
+  }
   }
 
 metric_unit_t UnitConfigMap::GetUserUnit( metric_unit_t unit)

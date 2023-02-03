@@ -157,7 +157,7 @@ void OvmsHyundaiIoniqEv::IncomingPollReply(canbus *bus, uint16_t type, uint16_t 
       case 0x7a8:
         IncomingBCM_Full(bus, type, pid, rxbuf);
         break;
-      // ****** ?? Misc ******
+      // ****** ?? Misc inc speed ******
       case 0x7bb:
         IncomingOther_Full(bus, type, pid, rxbuf);
         break;
@@ -212,6 +212,7 @@ void OvmsHyundaiIoniqEv::IncomingOther_Full(canbus *bus, uint16_t type, uint16_t
         }
         if (get_uint_buff_be<1>(data, 29, value)) {
           StdMetrics.ms_v_pos_speed->SetValue(value);
+          CalculateAcceleration();
         }
       } break;
   }
@@ -470,35 +471,35 @@ void OvmsHyundaiIoniqEv::IncomingBMC_Full(canbus *bus, uint16_t type, uint16_t p
           ESP_LOGE(TAG, "IoniqISOTP.BMC: Cumulative Charge Current Bad Buffer");
         }
         else {
-          kia_battery_cum_charge_current = value;  // Amp Hours
+          StdMetrics.ms_v_bat_coulomb_recd_total->SetValue(value * 0.1f, AmpHours);
         }
 
         if (!get_uint_buff_be<4>(data, 34, value)) {
           ESP_LOGE(TAG, "IoniqISOTP.BMC: Cumulative Discharge Current Bad Buffer");
         }
         else {
-          kia_battery_cum_discharge_current = value;  // Amp Hours
+          StdMetrics.ms_v_bat_coulomb_used_total->SetValue(value/10, AmpHours);
         }
         //
         if (!get_uint_buff_be<4>(data, 38, value)) {
           ESP_LOGE(TAG, "IoniqISOTP.BMC: Cumulative Charge Energy Bad Buffer");
         }
         else {
-          kia_battery_cum_charge = value;  // kWh
+          StdMetrics.ms_v_bat_energy_recd_total->SetValue(value*100, WattHours);
         }
 
         if (!get_uint_buff_be<4>(data, 42, value)) {
           ESP_LOGE(TAG, "IoniqISOTP.BMC: Cumulative Discharge Energy Bad Buffer");
         }
         else {
-          kia_battery_cum_discharge = value;  // kWh
+          StdMetrics.ms_v_bat_energy_used_total->SetValue(value*100, WattHours);
         }
 
         if (!get_uint_buff_be<4>(data, 46, value)) {
           ESP_LOGE(TAG, "IoniqISOTP.BMC: Cumulative Operating time Bad Buffer");
         }
         else {
-          kia_battery_cum_op_time = value / 3600;  // seconds->hours
+          m_v_accum_op_time->SetValue(value, Seconds);
         }
 
         if (!get_uint_buff_be<1>(data, 50, value)) {
@@ -507,6 +508,21 @@ void OvmsHyundaiIoniqEv::IncomingBMC_Full(canbus *bus, uint16_t type, uint16_t p
         else {
           m_b_bms_ignition->SetValue(get_bit<2>(value));
         }
+        int32_t drive1 = 0, drive2 = 0;
+
+        if (get_buff_int_be<2>(data, 53, drive1)
+          && get_buff_int_be<2>(data, 55, drive2)) {
+          int32_t drive;
+          if (drive2 == 0) {
+            drive = drive1;
+          } else if (drive1 == 0) {
+            drive = drive2;
+          } else {
+            drive = ((drive1 + drive2) + 1) / 2;
+          }
+          StandardMetrics.ms_v_mot_rpm->SetValue(drive);
+        }
+
       }
       break;
       case 0x0105: {
@@ -631,7 +647,8 @@ void OvmsHyundaiIoniqEv::IncomingBMC_Full(canbus *bus, uint16_t type, uint16_t p
           int cellcount = iq_last_voltage_cell + 1;
           if (BmsCheckChangeCellArrangementVoltage(cellcount) && !hif_override_capacity)
           {
-            hif_battery_capacity = HIF_CELL_CAPACITY * cellcount;
+            hif_battery_capacity = HIF_CELL_PAIR_CAPACITY * cellcount;
+            m_v_bat_calc_cap->SetValue(hif_battery_capacity);
             UpdateMaxRangeAndSOH();
           }
 

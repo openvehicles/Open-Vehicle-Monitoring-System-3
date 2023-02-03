@@ -431,9 +431,10 @@ void xiq_tpms(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, con
 void xiq_trip_( const char *title,  OvmsWriter *writer, OvmsMetricFloat *metric_trip, OvmsMetricFloat *metric_energy, OvmsMetricFloat *metric_energy_recd )
 {
   XARM("xiq_trip_");
-  bool isMiles = MyConfig.GetParamValue("vehicle", "units.distance") == "M";
 
-  metric_unit_t rangeUnit = (isMiles ? Miles : Kilometers);
+  metric_unit_t rangeUnit = MyUnitConfig.GetUserUnit(GrpDistance, Kilometers);
+  metric_unit_t consumpUnit = MyUnitConfig.GetUserUnit(GrpConsumption, KPkWh);
+  metric_unit_t energyUnit = MyUnitConfig.GetUserUnit(GrpEnergy, kWh);
 
   writer->printf("%s\n", title);
 
@@ -447,8 +448,7 @@ void xiq_trip_( const char *title,  OvmsWriter *writer, OvmsMetricFloat *metric_
     writer->puts("No energy used\n");
   }
   else {
-    float consumption = energyUsed * 100 / posTrip;
-    float consumption2 = posTrip / energyUsed ;
+    float consumption =  UnitConvert(KPkWh, consumpUnit, posTrip/energyUsed);
 
     // Total consumption
     float totalConsumption = energyUsed + metric_energy_recd->AsFloat(kWh);
@@ -458,23 +458,21 @@ void xiq_trip_( const char *title,  OvmsWriter *writer, OvmsMetricFloat *metric_
       const std::string &distance = metric_trip->AsUnitString("-", rangeUnit, 1);
       writer->printf("Dist %s\n", distance.c_str());
     }
-    const std::string &unitLabel = OvmsMetricUnitLabel(rangeUnit);
-    writer->printf("Cons %.*fkWh/100%s\n", 2, consumption, unitLabel.c_str());
-    writer->printf("Cons %.*f%s/kWh\n", 2, consumption2, unitLabel.c_str());
+    writer->printf("Cons %.*f%s\n", 2, consumption, OvmsMetricUnitLabel(consumpUnit));
 
     // Discharge
     if (metric_energy->IsDefined()) {
-      const std::string &discharge = metric_energy->AsUnitString("-", kWh, 1);
+      const std::string &discharge = metric_energy->AsUnitString("-", energyUnit, 1);
       writer->printf("Disc %s\n", discharge.c_str());
     }
 
     // Recuperation
     if (metric_energy_recd->IsDefined()) {
-      const std::string &recuparation = metric_energy_recd->AsUnitString("-", kWh, 1);
+      const std::string &recuparation = metric_energy_recd->AsUnitString("-", energyUnit, 1);
       writer->printf("Rec %s\n", recuparation.c_str());
     }
 
-    writer->printf("Tot %.*fkWh\n", 2, totalConsumption);
+    writer->printf("Tot %.*f%s\n", 2, UnitConvert(kWh, consumpUnit, totalConsumption), OvmsMetricUnitLabel(consumpUnit));
   }
   // ODO
   if (StdMetrics.ms_v_pos_odometer->IsDefined()) {
@@ -513,7 +511,93 @@ void xiq_trip_since_charge(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, 
 
   OvmsHyundaiIoniqEv *mycar = (OvmsHyundaiIoniqEv *)(MyVehicleFactory.ActiveVehicle());
 
-  xiq_trip_( "TRIP SINCE CHARGE", writer, mycar->ms_v_pos_trip,  mycar->ms_v_pos_trip, mycar->ms_v_trip_energy_recd);
+  xiq_trip_( "TRIP SINCE CHARGE", writer, mycar->ms_v_pos_trip,  mycar->ms_v_trip_energy_used, mycar->ms_v_trip_energy_recd);
 
   XDISARM;
+}
+
+void OvmsHyundaiIoniqEv::RangeCalcStat(OvmsWriter *writer)
+{
+  if (iq_range_calc) {
+    iq_range_calc->displayStoredTrips(writer);
+  }
+
+  if (kia_park_trip_counter.Started()) {
+    metric_unit_t rangeUnit = MyUnitConfig.GetUserUnit(GrpDistance, Kilometers);
+
+    writer->puts("Current Trip Counter");
+    writer->printf("Dist: %.2g%s\n",
+      UnitConvert( Kilometers, rangeUnit, kia_park_trip_counter.GetDistance()),
+      OvmsMetricUnitLabel(rangeUnit));
+
+    if (kia_park_trip_counter.HasEnergyData()) {
+      metric_unit_t energyUnit = MyUnitConfig.GetUserUnit(GrpEnergy, kWh);
+      const char *energyLabel = OvmsMetricUnitLabel(energyUnit);
+      writer->printf("Energy Consumed: %.2g%s\n",
+        UnitConvert(kWh, energyUnit, kia_park_trip_counter.GetEnergyConsumed()), energyLabel);
+      writer->printf("Energy Recovered: %.2g%s\n",
+        UnitConvert(kWh, energyUnit, kia_park_trip_counter.GetEnergyRecuperated()), energyLabel);
+      writer->printf("Total Energy Used: %.2g%s\n",
+        UnitConvert(kWh, energyUnit, kia_park_trip_counter.GetEnergyUsed()), energyLabel);
+      auto charged = kia_park_trip_counter.GetEnergyCharged();
+      if (charged != 0) {
+        writer->printf("Energy Charged: %.2g%s\n",
+          UnitConvert(kWh, energyUnit, charged), energyLabel);
+      }
+    }
+
+    if (kia_park_trip_counter.HasChargeData()) {
+      metric_unit_t chargeUnit = MyUnitConfig.GetUserUnit(GrpCharge, AmpHours);
+      const char *chargeLabel = OvmsMetricUnitLabel(chargeUnit);
+      writer->printf("Charge Consumed: %.2g%s\n",
+        UnitConvert(AmpHours, chargeUnit,kia_park_trip_counter.GetChargeConsumed()), chargeLabel);
+      writer->printf("Charge Recovered: %.2g%s\n",
+        UnitConvert(AmpHours, chargeUnit, kia_park_trip_counter.GetChargeRecuperated()), chargeLabel);
+      writer->printf("Total Charge Used: %.2g%s\n",
+        UnitConvert(AmpHours, chargeUnit, kia_park_trip_counter.GetChargeUsed()), chargeLabel);
+      writer->printf("Charging: %s", kia_park_trip_counter.Charging() ? "Yes" : "No");
+      auto charged = kia_park_trip_counter.GetChargeCharged();
+      if (charged != 0) {
+        writer->printf("Charge Charged: %.2g%s\n",
+          UnitConvert(AmpHours, chargeUnit, charged), chargeLabel);
+      }
+    }
+  }
+
+}
+
+void xiq_range_stat(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv)
+{
+  if (MyVehicleFactory.m_currentvehicle == NULL) {
+    writer->puts("Error: No vehicle module selected");
+    return;
+  }
+  OvmsHyundaiIoniqEv *mycar = (OvmsHyundaiIoniqEv *)(MyVehicleFactory.ActiveVehicle());
+  mycar->RangeCalcStat(writer);
+}
+
+void OvmsHyundaiIoniqEv::RangeCalcReset()
+{
+  iq_range_calc->resetTrips();
+}
+
+void xiq_range_reset(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv)
+{
+  if (MyVehicleFactory.m_currentvehicle == NULL) {
+    writer->puts("Error: No vehicle module selected");
+    return;
+  }
+  OvmsHyundaiIoniqEv *mycar = (OvmsHyundaiIoniqEv *)(MyVehicleFactory.ActiveVehicle());
+  mycar->RangeCalcReset();
+}
+
+void xiq_aux_monitor(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv)
+{
+  if (MyVehicleFactory.m_currentvehicle == NULL) {
+    writer->puts("Error: No vehicle module selected");
+    return;
+  }
+  OvmsHyundaiIoniqEv *mycar = (OvmsHyundaiIoniqEv *)(MyVehicleFactory.ActiveVehicle());
+  std::string stat = mycar->BatteryMonStat();
+  writer->puts(stat.c_str());
 }

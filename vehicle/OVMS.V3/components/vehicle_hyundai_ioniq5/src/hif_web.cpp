@@ -171,7 +171,10 @@ void OvmsHyundaiIoniqEv::WebCfgBattery(PageEntry_t &p, PageContext_t &c)
     if (!cap_act_kwh.empty()) {
       float n = atof(cap_act_kwh.c_str());
       if (n < 1) {
-        error += "<li data-input=\"cap_act_kwh\">Battery Wh capacity must be &ge; 1</li>";
+        error += "<li data-input=\"cap_act_kwh\">Battery kWh capacity must be &ge; 1</li>";
+      } else if (n > 10000) {
+        error += "<li data-input=\"cap_act_kwh\">Battery capacity is in kWh!</li>";
+        cap_act_kwh = string_format("%g", n/1000);
       }
     }
     if (!maxrange.empty()) {
@@ -216,9 +219,15 @@ void OvmsHyundaiIoniqEv::WebCfgBattery(PageEntry_t &p, PageContext_t &c)
   else {
     // read configuration:
     cap_act_kwh = MyConfig.GetParamValue("xiq", "cap_act_kwh", "");
+    if (!cap_act_kwh.empty()) {
+      float n = atof(cap_act_kwh.c_str());
+      if (n > 10000)
+        cap_act_kwh = string_format("%g", n/1000);
+    }
+
     maxrange = MyConfig.GetParamValue("xiq", "maxrange", STR(CFG_DEFAULT_MAXRANGE));
-    suffrange = MyConfig.GetParamValue("xiq", "suffrange", "0");
-    suffsoc = MyConfig.GetParamValue("xiq", "suffsoc", "0");
+    suffrange = MyConfig.GetParamValue("xiq", "suffrange", "");
+    suffsoc = MyConfig.GetParamValue("xiq", "suffsoc", "");
 
     c.head(200);
   }
@@ -230,9 +239,9 @@ void OvmsHyundaiIoniqEv::WebCfgBattery(PageEntry_t &p, PageContext_t &c)
 
   c.fieldset_start("Battery properties");
 
-  c.input("number", "Battery capacity", "cap_nom_ah", cap_act_kwh.c_str(), "",
-    "<p>This is the usable battery capacity of your battery when new.</p>",
-    "min=\"1\" step=\"0.1\"", "Wh");
+  c.input("number", "Override Battery capacity", "cap_act_kwh", cap_act_kwh.c_str(), "",
+    "<p>This overrides the calculated usable battery capacity of your battery when new.</p>",
+    "min=\"1\" step=\"0.1\"", "kWh");
 
   c.input("number", "Maximum drive range", "maxrange", maxrange.c_str(), "Default: " STR(CFG_DEFAULT_MAXRANGE),
     "<p>The range you normally get at 100% SOC and 20 °C.</p>",
@@ -242,11 +251,13 @@ void OvmsHyundaiIoniqEv::WebCfgBattery(PageEntry_t &p, PageContext_t &c)
 
   c.fieldset_start("Charge control");
 
+  bool rangeempty = suffrange.empty();
   c.input_slider("Sufficient range", "suffrange", 3, "km",
-    atof(suffrange.c_str()) > 0, atof(suffrange.c_str()), 0, 0, 300, 1,
+    !rangeempty, rangeempty ? 0 : atof(suffrange.c_str()), 0, 0, 300, 1,
     "<p>Default 0=off. Notify/stop charge when reaching this level.</p>");
+  rangeempty = suffsoc.empty();
   c.input_slider("Sufficient SOC", "suffsoc", 3, "%",
-    atof(suffsoc.c_str()) > 0, atof(suffsoc.c_str()), 0, 0, 100, 1,
+    !rangeempty, rangeempty ? 0 : atof(suffsoc.c_str()), 0, 0, 100, 1,
     "<p>Default 0=off. Notify/stop charge when reaching this level.</p>");
 
   c.fieldset_end();

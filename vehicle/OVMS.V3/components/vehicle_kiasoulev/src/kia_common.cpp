@@ -7,7 +7,9 @@
 #include <fstream>
 #include <sdkconfig.h>
 #include "ovms_webserver.h"
+#include "ovms_peripherals.h"
 #include "kia_common.h"
+#include "ovms_metrics.h"
 
 int KiaVehicle::CalcRemainingChargeMinutes(float chargespeed, int fromSoc, int toSoc, int batterySize, charging_profile charge_steps[])
 {
@@ -189,51 +191,84 @@ void KiaVehicle::WebAuxBattery(PageEntry_t& p, PageContext_t& c)
 
 Kia_Trip_Counter::Kia_Trip_Counter()
 	{
-	odo_start=0;
-	cdc_start=0;
-	cc_start=0;
-	odo=0;
-	cdc=0;
-	cc=0;
+	odo_start              = 0;
+	tot_discharge_start    = 0;
+	tot_charge_start       = 0;
+	odo                    = 0;
+	tot_discharge          = 0;
+	tot_charge             = 0;
+	tot_charge_ext         = 0;
+	charging               = false;
+	charge_start           = 0;
+
+	tot_discharge_ah_start = 0;
+	tot_charge_ah_start    = 0;
+	tot_discharge_ah       = 0;
+	tot_charge_ah          = 0;
+	tot_charge_ah_ext      = 0;
+	charge_start_ah        = 0;
 	}
 
 Kia_Trip_Counter::~Kia_Trip_Counter()
 	{
 	}
 
-/*
- * Resets the trip counter.
+/** Resets the trip counter.
  *
- * odo - The current ODO
- * cdc - Cumulated Discharge
- * cc - Cumulated Charge
+ * \param current_odo The current ODO
+ * \param current_cdc Accumulated Energy Discharged
+ * \param current_cc Accumulated Energy Charged
+ * \param current_cdc_ah Accumulated 'Charge' Discharged
+ * \param current_cc_ah Accumulated 'Charge' added.
  */
-void Kia_Trip_Counter::Reset(float odo, float cdc, float cc)
+void Kia_Trip_Counter::Reset(float current_odo, float current_cdc, float current_cc, float current_cdc_ah, float current_cc_ah, bool is_charging)
 	{
-	Update(odo, cdc, cc);
-	if(odo_start==0 && odo!=0)
-		odo_start = odo;		// ODO at Start of trip
-	if(cdc_start==0 && cdc!=0)
-	  	cdc_start = cdc; 	// Register Cumulated discharge
-	if(cc_start==0 && cc!=0)
-	  	cc_start = cc; 		// Register Cumulated charge
+	tot_charge_ext = 0;
+	tot_charge_ah_ext = 0;
+	// ODO at Start of trip
+	odo_start = odo = current_odo;
+	// Register Cumulated discharge
+	tot_discharge_start = tot_discharge = current_cdc;
+	// Register Cumulated charge
+	tot_charge_start = tot_charge = current_cc;
+	// Register Cumulated discharge
+	tot_discharge_ah_start = tot_discharge_ah = current_cdc_ah;
+	// Register Cumulated charge
+	tot_charge_ah_start = tot_charge_ah = current_cc_ah;
+
+	// Register charing.
+	charging = is_charging;
+	if (is_charging)
+		{
+		charge_start = current_cc;
+		charge_start_ah = current_cc_ah;
+		}
+	else
+		{
+		charge_start = 0;
+		charge_start_ah = 0;
+		}
 	}
 
-/*
+/**
  * Update the trip counter with current ODO, accumulated discharge and accumulated charge..
  *
- * odo - The current ODO
- * cdc - Accumulated Discharge
- * cc - Accumulated Charge
+ * \param current_odo The current ODO
+ * \param current_cdc Accumulated Energy Discharged
+ * \param current_current_cc Accumulated Energy Charged
+ * \param current_cdc_ah Accumulated 'Charge' Discharged
+ * \param current_current_cc_ah Accumulated 'Charge' added.
  */
-void Kia_Trip_Counter::Update(float current_odo, float current_cdc, float current_cc)
+void Kia_Trip_Counter::Update(float current_odo, float current_cdc, float current_cc, float current_cdc_ah, float current_cc_ah)
 	{
 	odo=current_odo;
-	cdc=current_cdc;
-	cc=current_cc;
+	tot_discharge=current_cdc;
+	tot_charge=current_cc;
+	tot_charge_ah = current_cc_ah;
+	tot_discharge_ah = current_cdc_ah;
 	}
 
-/*
+/**
  * Returns true if the trip counter has been initialized properly.
  */
 bool Kia_Trip_Counter::Started()
@@ -241,14 +276,23 @@ bool Kia_Trip_Counter::Started()
 	return odo_start!=0;
 	}
 
-/*
- * Returns true if the trip counter have energy data.
+/**
+ * Returns true if the trip counter has energy data.
  */
 bool Kia_Trip_Counter::HasEnergyData()
 	{
-	return cdc_start!=0 && cc_start!=0;
+	return tot_discharge_start!=0 && tot_charge_start!=0;
+	}
+/**
+ * Returns true if the trip counter has charge data.
+ */
+bool Kia_Trip_Counter::HasChargeData()
+	{
+	return tot_discharge_ah_start!=0 && tot_charge_ah_start!=0;
 	}
 
+/** Returns the distance travelled.
+  */
 float Kia_Trip_Counter::GetDistance()
 	{
 	if( Started())
@@ -256,20 +300,137 @@ float Kia_Trip_Counter::GetDistance()
 	return 0;
 	}
 
+/** Gets the Balance of Energy Used in kWh.
+ * Energy Discharged - Energy Recuperated.
+ */
 float Kia_Trip_Counter::GetEnergyUsed()
 	{
-	if( HasEnergyData())
-		return (cdc-cdc_start) - (cc-cc_start);
-	return 0;
+	return GetEnergyConsumed() - GetEnergyRecuperated();
 	}
 
+float Kia_Trip_Counter::GetEnergyConsumed()
+	{
+	float res = 0;
+	if( HasEnergyData())
+		res = (tot_discharge-tot_discharge_start);
+	return res;
+	}
+
+/** Gets the Energy Recuperated while moving in kWhh.
+  * Totally Energy Charged less Energy Added in Charging.
+  */
 float Kia_Trip_Counter::GetEnergyRecuperated()
 	{
+	float res = 0;
 	if( HasEnergyData())
-		return cc - cc_start;
-	return 0;
+		{
+		res = (tot_charge - tot_charge_start);
+		res -= GetEnergyCharged();
+		}
+	return res;
+	}
+/** Gets the amount of energy input via a charger.
+  */
+float Kia_Trip_Counter::GetEnergyCharged()
+	{
+	float res = 0;
+	if( HasEnergyData())
+		{
+		res = tot_charge_ext;
+		if (charging)
+			res += (tot_charge - charge_start);
+		}
+	return res;
 	}
 
+/** Gets the Balance of Charge Used in Ah.
+  */
+float Kia_Trip_Counter::GetChargeUsed()
+	{
+	return GetChargeConsumed() - GetChargeRecuperated();
+	}
+
+/** Gets the total charge consumed in Ah.
+*/
+float Kia_Trip_Counter::GetChargeConsumed()
+	{{
+	float res = 0;
+	if( HasChargeData())
+		res = (tot_discharge_ah-tot_discharge_ah_start) ;
+	return res;
+	}
+	}
+/** Gets the Charge Recuperated in Ah.
+  */
+float Kia_Trip_Counter::GetChargeRecuperated()
+	{
+	float res = 0;
+	if( HasChargeData())
+		{
+		res = (tot_charge_ah - tot_charge_ah_start);
+		res -= GetChargeCharged();
+		}
+	return res;
+	}
+
+/** Gets the amount of energy input via a charger.
+  */
+float Kia_Trip_Counter::GetChargeCharged()
+	{
+	float res = 0;
+	if( HasChargeData())
+		{
+		res = tot_charge_ah_ext;
+		if (charging)
+			res += (tot_charge_ah - charge_start_ah);
+		}
+	return res;
+	}
+
+/** Set start of charging.
+  */
+void Kia_Trip_Counter::StartCharge(float current_cc, float current_cc_ah)
+	{
+
+	if (!charging && ((tot_discharge_start != 0) || (tot_charge_start != 0)))
+		{
+		charging = true;
+		charge_start = current_cc;
+		tot_charge = current_cc;
+		charge_start_ah = current_cc_ah;
+		tot_charge_ah = current_cc_ah;
+		tot_charge_ext = 0;
+		tot_charge_ah_ext = 0;
+		}
+	}
+
+/** Set finish of charging.
+  */
+void Kia_Trip_Counter::FinishCharge(float current_cc, float current_cc_ah)
+	{
+	if (charging)
+		{
+		charging = false;
+
+		if (charge_start > 0) {
+			float diff = current_cc-charge_start;
+			if (diff > 0)
+				tot_charge_ext += diff;
+		}
+		charge_start = 0;
+		tot_charge = current_cc;
+
+		if (charge_start_ah > 0) {
+			float diff = current_cc_ah-charge_start_ah;
+			if (diff > 0)
+				tot_charge_ah_ext += diff;
+		}
+		charge_start_ah = 0;
+		tot_charge_ah = current_cc_ah;
+		}
+	}
+
+static const char *CALCTAG = "rangecalc";
 /*
  * Constructor for the range calculator
  * int minimumTrip  - The minium length a trip has to be in order to be included in the future calculations.
@@ -282,18 +443,23 @@ RangeCalculator::RangeCalculator(float minimumTrip, float weightOfCurrentTrip, f
 	this->minimumTrip = minimumTrip;
 	this->weightOfCurrentTrip = weightOfCurrentTrip;
 	this->batteryCapacity = batteryCapacity;
-	for (int i = 0; i < 20; i++)
-		{
-		trips[i].distance=defaultRange;
-		trips[i].consumption=batteryCapacity;
-		}
+	this->defaultRange = defaultRange;
 
+	clearTrips();
 	restoreTrips();
+#ifdef bind
+	#undef bind  // Kludgy, but works
+#endif
+	using std::placeholders::_1;
+	using std::placeholders::_2;
+	MyEvents.RegisterEvent(CALCTAG, "sd.mounted",
+			std::bind(&RangeCalculator::SDCardMountListener, this, _1, _2));
 	}
 
 RangeCalculator::~RangeCalculator()
 	{
-  storeTrips();
+  MyEvents.DeregisterEvent(CALCTAG);
+	storeTrips();
 	}
 
 /*
@@ -302,6 +468,12 @@ RangeCalculator::~RangeCalculator()
  */
 void RangeCalculator::storeTrips()
 	{
+#ifdef CONFIG_OVMS_COMP_SDCARD
+	if (!storeToFile)
+		return;
+	sdcard *sd = MyPeripherals->m_sdcard;
+	if ( sd == NULL || !sd->isinserted() || (!sd->ismounted()))
+		return;
 	FILE *sf = NULL;
 	sf = fopen(RANGE_CALC_DATA_PATH, "w");
 	if (sf == NULL)
@@ -311,6 +483,7 @@ void RangeCalculator::storeTrips()
 	fwrite(&currentTripPointer, sizeof(int), 1, sf);
 	fwrite(trips, sizeof(TripConsumption), 20, sf);
 	fclose(sf);
+#endif
 	}
 
 /*
@@ -318,6 +491,12 @@ void RangeCalculator::storeTrips()
  */
 void RangeCalculator::restoreTrips()
 	{
+#ifdef CONFIG_OVMS_COMP_SDCARD
+	sdcard *sd = MyPeripherals->m_sdcard;
+	if ( sd == NULL || !sd->isinserted() || (!sd->ismounted()))
+		return;
+	// At least we tried.
+	storeToFile = true;
 	FILE *sf = NULL;
 	sf = fopen(RANGE_CALC_DATA_PATH, "r");
 	if (sf == NULL)
@@ -328,6 +507,22 @@ void RangeCalculator::restoreTrips()
 	fread(trips, sizeof(TripConsumption), 20, sf);
 	fclose(sf);
 	if (currentTripPointer >= 20 || currentTripPointer<0) currentTripPointer = 0;
+#endif
+	}
+
+void RangeCalculator::updateCapacity(float capacity)
+	{
+	if (capacity != batteryCapacity)
+		{
+		float oldCap = batteryCapacity;
+		batteryCapacity = capacity;
+		for (int i = 0; i < 20; i++)
+			{
+			TripConsumption &entry = trips[i];
+			if (entry.distance == defaultRange && entry.consumption == oldCap)
+				entry.consumption = capacity;
+			}
+		}
 	}
 
 /*
@@ -336,7 +531,7 @@ void RangeCalculator::restoreTrips()
 void RangeCalculator::updateTrip(float distance, float consumption)
 	{
 	trips[currentTripPointer].consumption = consumption;
-  trips[currentTripPointer].distance = distance;
+	trips[currentTripPointer].distance = distance;
 	}
 
 /*
@@ -360,27 +555,113 @@ void RangeCalculator::tripEnded(float distance, float consumption)
 		}
 	}
 
-/*
- * Returns the calculated full range based on driving history
- */
-float RangeCalculator::getRange()
+ /// Efficiency In km/kWh
+float RangeCalculator::getEfficiency()
 	{
 	float totalDistance = 0, totalConsumption = 0;
 	for (int i = 0; i < 20; i++)
 		{
 		totalDistance += trips[i].distance;
 		totalConsumption += trips[i].consumption;
-		//TODO ESP_LOGI("v-kianiroev", "%i %.2f km %.2f kWh",i, trips[i].distance, trips[i].consumption);
 		}
 
 	// Make current trip count more than the rest
 	totalDistance += trips[currentTripPointer].distance * (weightOfCurrentTrip - 1);
 	totalConsumption += trips[currentTripPointer].consumption * (weightOfCurrentTrip - 1);
 
-	float averageConsumption = totalConsumption / totalDistance;
-
-	return batteryCapacity / averageConsumption;
+	return totalDistance / totalConsumption ;
 	}
 
+/**
+ * Returns the calculated full range based on driving history
+ */
+float RangeCalculator::getRange()
+	{
+	return batteryCapacity * getEfficiency();
+	}
+/**
+ * Reset the trips used for the range calculator.
+ * Stores to the file.
+ */
+void RangeCalculator::resetTrips()
+	{
+	clearTrips();
+	currentTripPointer = 0;
+	TripConsumption &entry = trips[0];
+	entry.distance = 0;
+	entry.consumption = 0;
+	storeToFile = true;
+	storeTrips();
+	}
+/**
+ * Initialise the trips to the default.
+ */
+void RangeCalculator::clearTrips()
+	{
+	for (int i = 0; i < 20; ++i)
+		{
+		TripConsumption &entry = trips[i];
+		entry.distance = defaultRange;
+		entry.consumption = batteryCapacity;
+		}
+	storeToFile = false;
+	}
 
+void RangeCalculator::SDCardMountListener(std::string event, void* data)
+	{
+	restoreTrips();
+	}
 
+void RangeCalculator::displayStoredTrips(OvmsWriter *writer)
+	{
+	writer->printf("Range Calculator%s\n", storeToFile ? "" : " (not stored)");
+#ifndef CONFIG_OVMS_COMP_SDCARD
+	writer->puts("SD Card Not Implemented");
+#else
+	sdcard *sd = MyPeripherals->m_sdcard;
+	if (!sd)
+		writer->puts("SD Card System Missing");
+	if (!sd->isinserted())
+		writer->puts("SD Card Not Inserted");
+	else if (!sd->ismounted())
+		writer->puts("SD Card Not Mounted");
+#endif
+
+	auto dist_unit = MyUnitConfig.GetUserUnit(GrpDistance, Kilometers);
+	auto energy_unit = MyUnitConfig.GetUserUnit(GrpEnergy, kWh);
+	auto cons_unit = MyUnitConfig.GetUserUnit(GrpConsumption, KPkWh);
+	writer->puts("+Distance+-Energy---+Efficiency+");
+	writer->printf("|%-6s  |%-6s    |%-10s|\n",
+		OvmsMetricUnitLabel(dist_unit),
+		OvmsMetricUnitLabel(energy_unit),
+		OvmsMetricUnitLabel(cons_unit)
+		);
+	writer->puts("+--------+----------+----------+");
+	// Put the 'current' one at the end (it's a circular buffer)
+	for (int i= 1; i < 21; ++i)
+		{
+		const TripConsumption &entry = trips[(i+currentTripPointer)%20];
+		float effic = UnitConvert(KPkWh, cons_unit, entry.distance/entry.consumption);
+		float dist = UnitConvert(Kilometers, dist_unit, entry.distance);
+		float energy = UnitConvert(kWh, energy_unit, entry.consumption);
+		writer->printf("|%8.4g|%10.4g|%10.4g|%s\n",
+			ROUNDPREC(dist, 2),
+			ROUNDPREC(energy,2),
+			ROUNDPREC(effic,2),
+			(i == 20) ? "<< current" : "");
+		}
+	writer->puts("+--------+----------+----------+");
+	float batCap = UnitConvert(kWh, energy_unit, batteryCapacity);
+	writer->printf("Battery Capacity: %g%s\n", ROUNDPREC(batCap, 2), OvmsMetricUnitLabel(energy_unit));
+
+	auto efficiency = UnitConvert(KPkWh, cons_unit, getEfficiency());
+	writer->printf("Efficiency: %g%s\n", ROUNDPREC(efficiency,2), OvmsMetricUnitLabel(cons_unit));
+	float soc = StdMetrics.ms_v_bat_soc->AsFloat();
+	auto curRange = getRange();
+	auto showrange = UnitConvert(Kilometers, dist_unit, curRange);
+	writer->printf("Full Range: %g%s\n", ROUNDPREC(showrange,1), OvmsMetricUnitLabel(dist_unit));
+	auto ratio_unit = MyUnitConfig.GetUserUnit(GrpRatio);
+	writer->printf("SOC: %g%s\n", UnitConvert(Percentage, ratio_unit, soc), OvmsMetricUnitLabel(ratio_unit));
+	showrange = UnitConvert(Kilometers, dist_unit, float(curRange * soc  / 100.0));
+	writer->printf("Range: %g%s\n", ROUNDPREC(showrange, 1), OvmsMetricUnitLabel(dist_unit));
+	}

@@ -68,6 +68,11 @@ void xiq_trip_since_charge(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, 
 void xiq_tpms(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
 void xiq_aux(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
 void xiq_vin(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
+void xiq_aux_monitor(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
+
+void xiq_range_stat(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
+void xiq_range_reset(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
+
 //NOTIMPL void CommandOpenTrunk(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
 void CommandParkBreakService(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
 //NOTIMPL void xiq_sjb(int verbosity, OvmsWriter *writer, OvmsCommand *cmd, int argc, const char *const *argv);
@@ -94,7 +99,8 @@ struct OvmsBatteryMon {
   static const int32_t low_threshold = 1150;    // Under 11.5 is 'Low'
   static const int32_t smooth_threshold = 20;   // < 0.2v variation is 'Normal'
   static const int32_t blip_threshold = 30;     // cur is > 0.3v over average is 'Blip'
-  static const int32_t dip_threshold = -30;     // cur is < 0.3v over average is 'Dip'
+  static const int32_t dip_threshold = -25;     // cur is < 0.3v over average is 'Dip'
+  // Divides the entry_count history elements into 2 parts (as a fraction first_mult / first_divis )
   static const uint16_t first_mult = 2;
   static const uint16_t first_divis = 3;
 
@@ -108,10 +114,11 @@ struct OvmsBatteryMon {
   // Last calculated state
   OvmsBatteryState m_lastState;
   int32_t m_average_last;
+  int32_t m_diff_last;
 
   OvmsBatteryMon();
 
-  OvmsBatteryState calc_state(int32_t &ave_last);
+  OvmsBatteryState calc_state(int32_t &ave_last, int32_t &diff_last);
 
   // Add a voltage to the circular buffer.
   void add(float voltage);
@@ -123,9 +130,7 @@ struct OvmsBatteryMon {
 
   // Current State
   OvmsBatteryState state();
-#ifdef OVMS_DEBUG_BATTERYMON
   std::string to_string();
-#endif
   uint16_t count()
   {
     return m_count;
@@ -135,6 +140,16 @@ struct OvmsBatteryMon {
   float lastf();
   float average_lastf();
 };
+
+typedef struct {
+  int toPercent;
+  float maxChargeWatts;
+  int tempOptimal;   // Optimal temperature
+  float tempDegrade; // Degredation per degree Calc from optimal (ratio)
+} charging_step_t;
+
+// Calculates the remaining charge with allowance for temperature.
+int CalcRemainingChargeMins(float chargewatts, float availwatts, bool adjustTemp, float tempCelcius, int fromSoc, int toSoc, int batterySizeWh, const charging_step_t charge_steps[]);
 
 class OvmsHyundaiIoniqEv : public KiaVehicle
 {
@@ -146,8 +161,10 @@ public:
   void IncomingFrameCan1(CAN_frame_t *p_frame) override;
   void Ticker1(uint32_t ticker) override;
   void Ticker10(uint32_t ticker) override;
+  void Ticker60(uint32_t ticker) override;
   void Ticker300(uint32_t ticker) override;
   void EventListener(std::string event, void *data);
+  void UpdatedAverageTemp(OvmsMetric* metric);
   void IncomingPollReply(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length, uint16_t mlremain);
   void ConfigChanged(OvmsConfigParam *param);
   bool SetFeature(int key, const char *value);
@@ -192,6 +209,8 @@ public:
 
   bool  kn_emergency_message_sent;
 
+  int m_checklock_retry, m_checklock_start, m_checklock_notify;
+
 protected:
   void HandleCharging();
   void HandleChargeStop();
@@ -206,7 +225,6 @@ protected:
   void DoNotify();
   void vehicle_ioniq5_car_on(bool isOn);
   void UpdateMaxRangeAndSOH(void);
-  uint16_t calcMinutesRemaining(float target);
   bool SetDoorLock(bool open, const char *password);
   bool LeftIndicator(bool);
   bool RightIndicator(bool);
@@ -298,6 +316,7 @@ protected:
       bcm_tester_present_seconds = seconds;
     }
   }
+  void CheckResetDoorCheck();
 public:
   int RequestVIN();
   bool DriverIndicator(bool on)
@@ -318,7 +337,7 @@ protected:
   int hif_maxrange = CFG_DEFAULT_MAXRANGE;        // Configured max range at 20 °C
 
 #define CGF_DEFAULT_BATTERY_CAPACITY 72600
-#define HIF_CELL_CAPACITY 2420
+#define HIF_CELL_PAIR_CAPACITY 403
 
   bool hif_override_capacity = false;
   float hif_battery_capacity = CGF_DEFAULT_BATTERY_CAPACITY;
@@ -346,13 +365,15 @@ protected:
 
   OvmsBatteryMon hif_aux_battery_mon;
 
-  // uint32_t odo;
-
   OvmsMetricBool  *m_b_bms_relay;
   OvmsMetricBool  *m_b_bms_ignition;
   OvmsMetricInt   *m_b_bms_availpower;
+  OvmsMetricFloat *m_v_bat_calc_cap;
 
   OvmsMetricBool   *m_v_env_parklights;
+
+  /// Accumulated operating time
+  OvmsMetricInt *m_v_accum_op_time;
 
   struct {
     unsigned char ChargingCCS : 1;
@@ -378,14 +399,20 @@ protected:
   //
 
 public:
+  void GetDashboardConfig(DashboardConfig &cfg) override;
   virtual void WebInit();
   static void WebCfgFeatures(PageEntry_t &p, PageContext_t &c);
   static void WebCfgBattery(PageEntry_t &p, PageContext_t &c);
   static void WebBattMon(PageEntry_t &p, PageContext_t &c);
 
-public:
-  void GetDashboardConfig(DashboardConfig &cfg) override;
+  void RangeCalcReset();
+  void RangeCalcStat(OvmsWriter *writer);
 #endif //CONFIG_OVMS_COMP_WEBSERVER
+public:
+  std::string BatteryMonStat()
+  {
+    return hif_aux_battery_mon.to_string();
+  }
 };
 
 #ifdef DEBUG_FUNC_LEAVE
