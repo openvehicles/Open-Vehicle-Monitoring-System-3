@@ -78,6 +78,15 @@ OvmsVehicleMgEvA::OvmsVehicleMgEvA()
 
     //Add variant specific poll data
     ConfigurePollData(obdii_polls_a, sizeof(obdii_polls_a));
+    
+    //BMS Configuration
+    BmsSetCellArrangementVoltage(18, 2);
+    BmsSetCellArrangementTemperature(18, 2);
+    BmsSetCellLimitsVoltage(3.0, 5.0);
+    BmsSetCellLimitsTemperature(-39, 200);
+    BmsSetCellDefaultThresholdsVoltage(0.020, 0.030);
+    BmsSetCellDefaultThresholdsTemperature(2.0, 3.0);
+
 }
 
 //Called by OVMS when vehicle type is changed from current
