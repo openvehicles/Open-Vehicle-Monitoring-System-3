@@ -64,6 +64,7 @@ class GsmPPPOS : public InternalRamAllocated
     ppp_pcb*     m_ppp;
     struct netif m_ppp_netif;
     bool         m_connected;
+    int          m_connectcount;
     int          m_lasterrcode;
   };
 

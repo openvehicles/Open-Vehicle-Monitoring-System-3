@@ -471,17 +471,24 @@ void modem::SupportSummary(OvmsWriter* writer, bool debug /*=FALSE*/)
     {
     writer->puts("  PPP: Not running");
     }
-  else if (m_ppp->m_connected)
-    {
-    writer->printf("  PPP: Connected on channel: #%d\n", m_ppp->m_channel);
-    }
   else
     {
-    writer->puts("  PPP: Not connected");
-    }
-  if ((m_ppp != NULL)&&(m_ppp->m_lasterrcode > 0))
-    {
-    writer->printf("     Last Error: %s\n", m_ppp->ErrCodeName(m_ppp->m_lasterrcode));
+    if (m_ppp->m_connected)
+      {
+      writer->printf("  PPP: Connected on channel: #%d\n", m_ppp->m_channel);
+      }
+    else
+      {
+      writer->puts("  PPP: Not connected");
+      }
+    if (debug)
+      {
+      writer->printf("     Connects: %d\n", m_ppp->m_connectcount);
+      }
+    if (m_ppp->m_lasterrcode > 0)
+      {
+      writer->printf("     Last Error: %s\n", m_ppp->ErrCodeName(m_ppp->m_lasterrcode));
+      }
     }
 
   if (m_nmea==NULL)
