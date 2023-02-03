@@ -168,6 +168,7 @@ extern metric_unit_t OvmsMetricUnitFromName(const char* unit, bool allowUniquePr
 int OvmsMetricUnit_Validate(OvmsWriter* writer, int argc, const char* token, bool complete, metric_group_t group = GrpNone);
 const char *OvmsMetricUnit_FindUniquePrefix(const char* token);
 
+bool CheckTargetUnit(metric_unit_t from, metric_unit_t &to, bool full_check);
 extern int UnitConvert(metric_unit_t from, metric_unit_t to, int value);
 extern float UnitConvert(metric_unit_t from, metric_unit_t to, float value);
 
@@ -762,15 +763,18 @@ class OvmsMetricVector : public OvmsMetric
         ss.precision(precision);
         ss << fixed;
         }
-      OvmsMutexLock lock(&m_mutex);
-      for (auto i = m_value.begin(); i != m_value.end(); i++)
+      CheckTargetUnit(m_units, units, false);
         {
-        if (ss.tellp() > 0)
-          ss << ',';
-        if (units != Other && units != m_units)
-          ss << (ElemType) UnitConvert(m_units, units, (float)*i);
-        else
-          ss << *i;
+        OvmsMutexLock lock(&m_mutex);
+        for (auto i = m_value.begin(); i != m_value.end(); i++)
+          {
+          if (ss.tellp() > 0)
+            ss << ',';
+          if (units != Other && units != m_units)
+            ss << (ElemType) UnitConvert(m_units, units, (float)*i);
+          else
+            ss << *i;
+          }
         }
       return ss.str();
       }
@@ -895,8 +899,24 @@ class OvmsMetricVector : public OvmsMetric
       {
       if (!IsDefined())
         return defvalue;
-      OvmsMutexLock lock(&m_mutex);
-      return m_value;
+      // Translate any 'Metric' or 'Imperial' type units.. see if we can do a simple return first..
+      CheckTargetUnit(m_units, units, false);
+      if ((units == Native) || (units == m_units) )
+        {
+        OvmsMutexLock lock(&m_mutex);
+        return m_value;
+        }
+      else
+        {
+        std::vector<ElemType, Allocator> res;
+          {
+          OvmsMutexLock lock(&m_mutex);
+          res = m_value;
+          }
+        for ( auto it = res.begin(); it != res.end(); ++it)
+          *it = UnitConvert(m_units, units, *it);
+        return res;
+        }
       }
     inline std::vector<ElemType, Allocator> AsVector(metric_unit_t units)
       {
