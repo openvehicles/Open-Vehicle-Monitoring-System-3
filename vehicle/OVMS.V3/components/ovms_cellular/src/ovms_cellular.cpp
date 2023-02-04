@@ -1139,7 +1139,13 @@ void modem::StandardLineHandler(int channel, OvmsBuffer* buf, std::string line)
     if (qp != string::npos)
       { qp = line.find(',',qp+1); }
     if (qp != string::npos)
-      { StandardMetrics.ms_m_net_mdm_mode->SetValue(line.substr(7,qp-7)); }
+      {
+      std::string netmode = line.substr(7,qp-7);
+      if (StandardMetrics.ms_m_net_mdm_mode->SetValue(netmode))
+        {
+        ESP_LOGI(TAG, "Network Mode: %s", netmode.c_str());
+        }
+      }
     }
   else if (line.compare(0, 7, "+COPS: ") == 0)
     {
