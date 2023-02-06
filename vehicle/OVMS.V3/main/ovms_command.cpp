@@ -40,6 +40,7 @@ static const char *TAG = "command";
 #include <sys/time.h>
 #include <sys/types.h>
 #include <dirent.h>
+#include <esp_timer.h>
 #include "freertos/FreeRTOS.h"
 #include "ovms_command.h"
 #include "ovms_config.h"

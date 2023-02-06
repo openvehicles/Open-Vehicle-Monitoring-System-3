@@ -31,6 +31,7 @@
 
 static const char *TAG = "v-mgev";
 
+#include <esp_timer.h>
 #include "vehicle_mgev.h"
 #include "mg_auth.h"
 
