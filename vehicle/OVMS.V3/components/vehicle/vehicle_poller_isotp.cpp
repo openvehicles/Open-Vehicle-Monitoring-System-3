@@ -194,13 +194,13 @@ bool OvmsVehicle::PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid)
   uint8_t  fr_maxlen;             // Frame data max length
   uint8_t  tp_frametype;          // ISO-TP frame type (0…3)
   uint8_t  tp_frameindex;         // TP cyclic frame index (0…15)
-  uint16_t tp_len;                // TP remaining payload length including this frame (0…4095)
-  uint8_t* tp_data;               // TP frame data section address
-  uint8_t  tp_datalen;            // TP frame data section length (0…7)
+  uint16_t tp_len = 0;            // TP remaining payload length including this frame (0…4095)
+  uint8_t* tp_data = 0;           // TP frame data section address
+  uint8_t  tp_datalen = 0;        // TP frame data section length (0…7)
 
   uint8_t  tp_fc_command;         // Flow control command (0 = continue, 1 = wait, 2 = abort)
   uint8_t  tp_fc_framecnt;        // Flow control max frame count (0 = unlimited)
-  uint8_t  tp_fc_septime;         // Flow control frame separation time
+  uint8_t  tp_fc_septime = 0;     // Flow control frame separation time
 
   if (m_poll_protocol == ISOTP_EXTADR)
     {
