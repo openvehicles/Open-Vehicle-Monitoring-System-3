@@ -1,0 +1,179 @@
+---
+# This is an ESP-IDF workflow to build OVMS v3
+
+name: 'Build and store artifacts for OVMS v3'
+
+# Controls when the action will run.
+on:
+  # # Triggers the workflow on tag create like v1.0, v2.0.0 and so on
+  push:
+  #   tags:
+  #    - 'v*'
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called 'build_ovms'
+  build_ovms:
+
+    strategy:
+      matrix:
+        # idf_ver: ["latest", "release-v5.1", "release-v5.0", "v5.0.1", "v5.0"]
+        # idf_ver: ["release-v5.0", "v5.0.1", "v5.0", "release-v4.4", "v4.4.4", "v3.3.4"]
+        idf_ver: ["latest", "release-v5.1", "release-v5.0", "v5.0.1", "v5.0", "release-v4.4", "v3.3.4"]
+        idf_target: ["esp32"]
+        include:
+
+          # All the following items are 'default' values for ALL the matrix entries
+          - patch_mongoose: true
+            build_command: "idf.py build"
+            sdkconfig: "sdkconfig.defaults.esp5.0.1"
+            patch_esp_idf_ovms: false
+            force_wolfssl_470: false
+            patch_esp_idf_whole_archive: false
+
+          # All the following items are updates of specific entries in the matrix
+          - idf_ver: "v5.0"
+            sdkconfig: "sdkconfig.defaults.esp5"
+
+          - idf_ver: "release-v4.4"
+            sdkconfig: "sdkconfig.defaults.esp4"
+            patch_esp_idf_whole_archive: true
+
+          # - idf_ver: "v4.4.4"
+          #   sdkconfig: "sdkconfig.defaults.esp4"
+          #   patch_mongoose: false
+          #   patch_esp_idf_whole_archive: true
+
+          # - idf_ver: "v3.3.6"
+          #   build_command: "make -j all"
+          #   patch_mongoose: false
+          #   force_wolfssl_470: true
+
+          - idf_ver: "v3.3.4"
+            build_command: "TERM=vt100 make defconfig all"
+            sdkconfig: "sdkconfig.defaults.esp3"
+            patch_mongoose: false
+            patch_esp_idf_ovms: true
+            # force_wolfssl_470: false
+
+    # The type of runner that the job will run on
+    runs-on: 'ubuntu-22.04'
+    container: 'espressif/idf:${{ matrix.idf_ver }}'
+
+    # For the moment, only on this branch
+    if: github.repository == 'llange/Open-Vehicle-Monitoring-System-3'
+    steps:
+
+      # For older builds (3.3.x), a few tweaks are needed:
+      # - the git version bundled in the official ESP-IDF docker image is too old
+      #   for GitHub's `actions/checkout` below. We upgrade it
+      # - We also replace the official ESP-IDF repo with OVMSv3's customized ESP-IDF repo
+      - name: 'Use ESP-IDF v3.3 with OVMS tweaks'
+        if: matrix.patch_esp_idf_ovms
+        run: |
+          # Git 2.17.x is not enough for the `actions/checkout` below - upgrade to a more recent version
+          apt-get update
+          apt-get install -y software-properties-common
+          add-apt-repository ppa:git-core/ppa
+          apt-get update
+          apt-get upgrade -y git
+          git --version
+          cd "${IDF_PATH}"
+          git remote set-url origin "https://github.com/openvehicles/esp-idf.git"
+          git fetch --all
+          git reset --hard
+          git clean -fxd
+          git pull origin master
+          git submodule update --init --recursive
+          ./install.sh esp32
+          cd -
+
+      # For older builds (4.4.x), a patch is needed:
+      # - the WHOLE_ARCHIVE statement in CMake components has only been introduced
+      #   in ESP-IDF v5.0. We patch it.
+      - name: 'Use ESP-IDF v4.4.x with WHOLE_ARCHIVE support'
+        if: matrix.patch_esp_idf_whole_archive
+        run: |
+          cd "${IDF_PATH}"
+          git config user.email "ci@github.com"
+          git config user.name "Github CI"
+          git config merge.renameLimit 999999
+          git fetch --all
+          git reset --hard
+          git clean -fxd
+          git cherry-pick 273633ee310fbc18b17edfaeae3f3121508e3b8d
+          cd -
+
+      # We're now able to fetch our OVMSv3 firmware repo
+      - name: 'Checkout repo'
+        uses: 'actions/checkout@v3'
+        with:
+          submodules: 'recursive'
+
+      - name: 'fix error message'
+        run: 'git config --global --add safe.directory "$GITHUB_WORKSPACE"'
+
+      # For ESP-IDF v5+ builds, we need to patch our "old" version of mongoose
+      - name: 'Patch mongoose (ESP-IDF v5+)'
+        if: matrix.patch_mongoose
+        run: 'git apply --directory="vehicle/OVMS.V3/components/mongoose/mongoose" "vehicle/OVMS.V3/support/mongoose-espv5.patch"'
+
+      # For older builds (3.3.x), we need to switch back to the (official) wolfssl version that
+      # was used in those builds + patch it and update the build system
+      # - name: 'Patch WolfSSL (ESP-IDF v3) with OVMS tweaks'
+      #   if: matrix.force_wolfssl_470
+      #   run: |
+      #     cd "vehicle/OVMS.V3/components/wolfssl/wolfssl"
+      #     git fetch --unshallow
+      #     git checkout "v4.7.0-stable"
+      #     cd -
+      #     cp "vehicle/OVMS.V3/support/wolfssl-4.7.0-esp3/user_settings.h" "vehicle/OVMS.V3/components/wolfssl/port/"
+      #     git apply -p5 --directory="vehicle/OVMS.V3/components/wolfssl/wolfssl" "vehicle/OVMS.V3/support/wolfssl-4.7.0-esp3/wolfssl-4.7.0.patch"
+
+      # For all builds, we have a default sdkconfig file
+      - name: 'Setup configuration'
+        run: 'cp "vehicle/OVMS.V3/support/${{ matrix.sdkconfig }}" "vehicle/OVMS.V3/sdkconfig.defaults"'
+
+      - name: Cache build dependencies
+        id: esp-idf-build
+        uses: actions/cache@v3
+        with:
+          path: |
+            vehicle/OVMS.V3/build
+            vehicle/OVMS.V3/sdkconfig
+          key: build-${{ runner.os }}-${{ matrix.idf_target }}_esp-idf-${{ matrix.idf_ver }}
+
+      # Now, we can build it. Let's not forget to install `dos2unix` first as it is needed.
+      - name: 'Build project with IDF-${{ matrix.idf_ver }} for ${{ matrix.idf_target }}'
+        env:
+          IDF_TARGET: ${{ matrix.idf_target }}
+        shell: bash
+        working-directory: vehicle/OVMS.V3
+        run: |
+          apt-get update
+          apt-get install -y dos2unix
+          . ${IDF_PATH}/export.sh
+          # https://github.com/espressif/idf-component-manager/issues/31#issuecomment-1535984388
+          pip install -U "urllib3<2"
+          git status --untracked-files
+          git ls-files -o --exclude-standard
+          ${{ matrix.build_command }}
+
+      - name: 'Archive build output artifacts'
+        uses: 'actions/upload-artifact@v3'
+        with:
+          name: '${{ matrix.idf_target }}_esp-idf-${{ matrix.idf_ver }}'
+          path: |
+            vehicle/OVMS.V3/build/bootloader/bootloader.bin
+            vehicle/OVMS.V3/build/partition_table/partition-table.bin
+            vehicle/OVMS.V3/build/*.bin
+            vehicle/OVMS.V3/build/*.elf
+            vehicle/OVMS.V3/build/log/*
+            vehicle/OVMS.V3/build/flasher_args.json
+            vehicle/OVMS.V3/build/config/sdkconfig.h
+            vehicle/OVMS.V3/build/config/sdkconfig.json
+            vehicle/OVMS.V3/sdkconfig
+          if-no-files-found: error
