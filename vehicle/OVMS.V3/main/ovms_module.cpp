@@ -780,6 +780,15 @@ static void module_tasks(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, in
         uint32_t used = total - ((uint32_t)taskstatus[i].pxStackBase & 0xFFFF);
         int core = xTaskGetAffinity(taskstatus[i].xHandle);
         uint32_t runtime = taskstatus[i].ulRunTimeCounter - last_runtime[taskstatus[i].xTaskNumber];
+#if ESP_IDF_VERSION_MAJOR >= 4
+        writer->printf("%08" PRIX32 " %4u %s %-15s %5" PRIu32 " %5" PRIu32 " %5" PRIu32 " %7u%7u%7u  %c %3d %3.0f%% %3d\n",
+          (uint32_t)taskstatus[i].xHandle,
+          taskstatus[i].xTaskNumber, states[taskstatus[i].eCurrentState], taskstatus[i].pcTaskName,
+          used, total - taskstatus[i].usStackHighWaterMark, total, heaptotal, heap32bit, heapspi,
+          (core == tskNO_AFFINITY) ? '*' : '0'+core, taskstatus[i].uxCurrentPriority,
+          diff_totalruntime ? ((float) runtime / diff_totalruntime * 100) : 0.0f,
+          taskstatus[i].uxBasePriority);
+#else
         writer->printf("%08" PRIX32 " %4u %s %-15s %5" PRIu32 " %5" PRIu32 " %5" PRIu32 " %7u%7u%7u  %c %3d %3.0f%% %3d/%2d\n",
           (uint32_t)taskstatus[i].xHandle,
           taskstatus[i].xTaskNumber, states[taskstatus[i].eCurrentState], taskstatus[i].pcTaskName,
@@ -787,6 +796,7 @@ static void module_tasks(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, in
           (core == tskNO_AFFINITY) ? '*' : '0'+core, taskstatus[i].uxCurrentPriority,
           diff_totalruntime ? ((float) runtime / diff_totalruntime * 100) : 0.0f,
           taskstatus[i].uxBasePriority, taskstatus[i].uxMutexesHeld);
+#endif
         if (showStack)
           {
           uint32_t* stack = (uint32_t*)(pxTaskGetStackStart(taskstatus[i].xHandle) + total);
