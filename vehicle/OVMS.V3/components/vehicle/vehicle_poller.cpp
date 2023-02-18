@@ -28,8 +28,8 @@
 ; THE SOFTWARE.
 */
 
-// #include "ovms_log.h"
-// static const char *TAG = "vehicle";
+#include "ovms_log.h"
+static const char *TAG = "vehicle-poll";
 
 #include <stdio.h>
 #include <algorithm>
@@ -159,6 +159,9 @@ void OvmsVehicle::PollSetPidList(canbus* bus, const poll_pid_t* plist)
   m_poll_plist = plist;
   m_poll_ticker = 0;
   m_poll_sequence_cnt = 0;
+
+  if (m_poll_subticker > subtick_arm)
+    m_poll_subticker = subtick_arm;
   m_poll_wait = 0;
   m_poll_plcur = NULL;
   m_poll_entry = {};
@@ -209,6 +212,40 @@ void OvmsVehicle::PollSetThrottling(uint8_t sequence_max)
   m_poll_sequence_max = sequence_max;
   }
 
+static void timerVehicleSubTicker(TimerHandle_t xTimer )
+  {
+  OvmsVehicle *vehicle = (OvmsVehicle *)pvTimerGetTimerID(xTimer);
+  if (vehicle)
+    vehicle->VehicleSubTicker();
+  }
+
+/** PollSetSubTick: Configure polling tenth of a second ticker.
+  *  Useful for speed display.
+  */
+void OvmsVehicle::PollSetSubTick(bool enabled)
+  {
+  if (enabled  == (m_poll_subticker >= subtick_arm))
+    return;
+
+  // Setting to -2 will cause the subticker to never reset.
+  if (m_poll_subticker == subtick_init)
+    {
+    if (!enabled) {
+      xTimerStop(m_timer200ms,0);
+      return;
+    }
+    // First time it is enabled, create the subticker poll
+    if (!m_timer200ms)
+      {
+      m_timer200ms = xTimerCreate("Vehicle 200ms ticker",
+          200 / portTICK_PERIOD_MS,pdTRUE,this,
+          timerVehicleSubTicker);
+      }
+    xTimerStart(m_timer200ms, 0);
+    }
+  m_poll_subticker = enabled ? subtick_arm : subtick_disable;
+  ESP_LOGI(TAG, "Poller Subtick %s", enabled ? "enabled" : "disabled");
+  }
 
 /**
  * PollSetResponseSeparationTime: configure ISO TP multi frame response timing
@@ -329,8 +366,34 @@ void OvmsVehicle::PollerSend(bool fromTicker)
   m_poll_plcur = m_poll_plist;
   m_poll_ticker++;
   if (m_poll_ticker > 3600) m_poll_ticker -= 3600;
+  if (m_poll_subticker >= subtick_arm)
+    m_poll_subticker = 0;
   }
 
+void OvmsVehicle::VehicleSubTicker()
+  {
+  if (!m_ready || (m_poll_subticker < 0))
+    return;
+  ++m_poll_subticker;
+  // Wait 0.4 seconds... then every 0.2 seconds
+  if (m_poll_subticker > 1)
+    {
+    // Check the list has more to process.
+    if (HasPollEntry())
+      {
+      // Send the next poll for this tick if…
+      // - we are not waiting for another frame (either protocol)
+      // - poll throttling is unlimited or limit isn't reached yet
+      if (m_poll_wait == 0 &&
+          (!m_poll_sequence_max || m_poll_sequence_cnt < m_poll_sequence_max))
+        {
+        CAN_frame_t frame = {};
+        memset(&frame, 0, sizeof(frame));
+        xQueueSend(m_rxqueue, &frame,0);
+        }
+      }
+    }
+  }
 
 /**
  * PollerTxCallback: internal: process poll request callbacks

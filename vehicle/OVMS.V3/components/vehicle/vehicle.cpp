@@ -281,6 +281,9 @@ OvmsVehicle::OvmsVehicle()
   m_poll_entry = {};
   m_poll_vwtp = {};
   m_poll_ticker = 0;
+
+  m_timer200ms = NULL;
+  m_poll_subticker = subtick_init;
   m_poll_single_rxbuf = NULL;
   m_poll_single_rxerr = 0;
   m_poll_moduleid_sent = 0;
@@ -375,6 +378,10 @@ OvmsVehicle::OvmsVehicle()
 
 OvmsVehicle::~OvmsVehicle()
   {
+  if (m_timer200ms) {
+    xTimerDelete( m_timer200ms, 0);
+    m_timer200ms = NULL;
+  }
   if (m_can1) m_can1->SetPowerMode(Off);
   if (m_can2) m_can2->SetPowerMode(Off);
   if (m_can3) m_can3->SetPowerMode(Off);
@@ -463,8 +470,16 @@ void OvmsVehicle::RxTask()
     {
     if (xQueueReceive(m_rxqueue, &frame, (portTickType)portMAX_DELAY)==pdTRUE)
       {
+
       if (!m_ready)
         continue;
+      if (!frame.origin)
+        {
+        // Special NULL frame sent from sub-tick counter to check for next item.
+        PollerSend(false);
+        continue;
+        }
+
 
       // Pass frame to poller protocol handlers:
       if (frame.origin == m_poll_vwtp.bus && frame.MsgID == m_poll_vwtp.rxid)

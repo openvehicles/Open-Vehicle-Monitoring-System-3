@@ -307,6 +307,7 @@ class OvmsVehicle : public InternalRamAllocated
     canbus* m_can3;
     canbus* m_can4;
 
+    void VehicleSubTicker();
   private:
     void VehicleTicker1(std::string event, void* data);
     void VehicleConfigChanged(std::string event, void* data);
@@ -562,6 +563,11 @@ class OvmsVehicle : public InternalRamAllocated
       } poll_pid_t;
 
   protected:
+    TimerHandle_t m_timer200ms;
+    const int32_t subtick_init = -3;
+    const int32_t subtick_disable = -2;
+    const int32_t subtick_arm = -1;
+
     OvmsRecMutex      m_poll_mutex;           // Concurrency protection for recursive calls
     uint8_t           m_poll_state;           // Current poll state
     canbus*           m_poll_bus;             // Bus to poll on
@@ -570,7 +576,9 @@ class OvmsVehicle : public InternalRamAllocated
     const poll_pid_t* m_poll_plcur;           // Poll list loop cursor
     poll_pid_t        m_poll_entry;           // Currently processed entry of poll list (copy)
     uint32_t          m_poll_ticker;          // Polling ticker
+    int32_t           m_poll_subticker;       // Subticker for polling
     uint8_t           m_poll_protocol;        // ISOTP_STD / ISOTP_EXTADR / ISOTP_EXTFRAME / VWTP_20
+
     uint32_t          m_poll_moduleid_sent;   // ModuleID last sent
     uint32_t          m_poll_moduleid_low;    // Expected response moduleid low mark
     uint32_t          m_poll_moduleid_high;   // Expected response moduleid high mark
@@ -612,6 +620,7 @@ class OvmsVehicle : public InternalRamAllocated
     void PollSetPidList(canbus* bus, const poll_pid_t* plist);
     void PollSetState(uint8_t state);
     void PollSetThrottling(uint8_t sequence_max);
+    void PollSetSubTick(bool enabled);
     void PollSetResponseSeparationTime(uint8_t septime);
     void PollSetChannelKeepalive(uint16_t keepalive_seconds);
     int PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
