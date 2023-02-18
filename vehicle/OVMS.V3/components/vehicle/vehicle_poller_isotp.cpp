@@ -564,7 +564,7 @@ bool OvmsVehicle::PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid)
       m_poll_moduleid_sent != 0x7df &&
       (!m_poll_sequence_max || m_poll_sequence_cnt < m_poll_sequence_max))
     {
-    PollerSend(false);
+    Queue_PollerSend(poller_source_t::Successful);
     }
 
   return true;

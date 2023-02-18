@@ -28,8 +28,8 @@
 ; THE SOFTWARE.
 */
 
-// #include "ovms_log.h"
-// static const char *TAG = "vehicle";
+#include "ovms_log.h"
+static const char *TAG = "vehicle-poll";
 
 #include <stdio.h>
 #include <algorithm>
@@ -159,6 +159,8 @@ void OvmsVehicle::PollSetPidList(canbus* bus, const poll_pid_t* plist)
   m_poll_plist = plist;
   m_poll_ticker = 0;
   m_poll_sequence_cnt = 0;
+
+  m_poll_subticker = 0;
   m_poll_wait = 0;
   m_poll_plcur = NULL;
   m_poll_entry = {};
@@ -209,6 +211,26 @@ void OvmsVehicle::PollSetThrottling(uint8_t sequence_max)
   m_poll_sequence_max = sequence_max;
   }
 
+/** Set the secondary sub-tick length in ms and the seconday ticks per primary tick.
+  */
+void OvmsVehicle::PollSetTicker(uint16_t tick_time_ms, uint8_t secondary_ticks)
+  {
+  ESP_LOGD(TAG, "Set Poll Ticker Timer %dms * %d", tick_time_ms, secondary_ticks);
+  if (!m_timer_poller)
+      m_poll_tick_ms = tick_time_ms;
+  else if (m_poll_tick_ms != tick_time_ms)
+    {
+    if (xTimerChangePeriod(m_timer_poller, tick_time_ms / portTICK_PERIOD_MS, 0) == pdPASS)
+      {
+      m_poll_tick_ms = tick_time_ms;
+      }
+    else
+      ESP_LOGE(TAG, "Poll Ticker Timer period not changed");
+    xTimerReset(m_timer_poller, 0);
+    }
+  m_poll_tick_secondary = secondary_ticks;
+  m_poll_subticker = 0;
+  }
 
 /**
  * PollSetResponseSeparationTime: configure ISO TP multi frame response timing
@@ -249,11 +271,16 @@ void OvmsVehicle::PollSetChannelKeepalive(uint16_t keepalive_seconds)
   m_poll_ch_keepalive = keepalive_seconds;
   }
 
+void OvmsVehicle::PollerResetThrottle()
+  {
+  // Main Timer reset throttling counter,
+  m_poll_sequence_cnt = 0;
+  }
 
 /**
  * PollerSend: internal: start next due request
  */
-void OvmsVehicle::PollerSend(bool fromTicker)
+void OvmsVehicle::PollerSend(poller_source_t source)
   {
   OvmsRecMutexLock lock(&m_poll_mutex);
 
@@ -261,10 +288,31 @@ void OvmsVehicle::PollerSend(bool fromTicker)
   //          fromTicker, m_poll_plcur->type, m_poll_plcur->pid,
   //          m_poll_ticker, m_poll_wait, m_poll_sequence_cnt, m_poll_sequence_max);
 
-  if (fromTicker)
+  bool fromPrimaryTicker = false, fromOnceOffTicker = false;
+  switch (source)
     {
-    // Timer ticker call: reset throttling counter, check response timeout
-    m_poll_sequence_cnt = 0;
+    case poller_source_t::OnceOff:
+      fromOnceOffTicker = true;
+      break;
+    case poller_source_t::Primary:
+      fromPrimaryTicker = true;
+      break;
+    default:
+      ;
+    }
+  if (fromPrimaryTicker)
+    {
+    // Only reset the list when 'from Ticker' and it's at the end.
+    if (m_poll_plcur && m_poll_plcur->txmoduleid == 0)
+      {
+      m_poll_plcur = m_poll_plist;
+      m_poll_ticker++;
+      if (m_poll_ticker > 3600) m_poll_ticker -= 3600;
+      }
+    }
+  if (fromPrimaryTicker || fromOnceOffTicker)
+    {
+    // Timer ticker call: check response timeout
     if (m_poll_wait > 0) m_poll_wait--;
 
     // Protocol specific ticker calls:
@@ -311,9 +359,9 @@ void OvmsVehicle::PollerSend(bool fromTicker)
 
       // Dispatch transmission start to protocol handler:
       if (m_poll_protocol == VWTP_20)
-        PollerVWTPStart(fromTicker);
+        PollerVWTPStart(fromPrimaryTicker);
       else
-        PollerISOTPStart(fromTicker);
+        PollerISOTPStart(fromPrimaryTicker);
 
       m_poll_plcur++;
       m_poll_sequence_cnt++;
@@ -326,11 +374,27 @@ void OvmsVehicle::PollerSend(bool fromTicker)
 
   // Completed checking all poll entries for the current m_poll_ticker
   // ESP_LOGD(TAG, "PollerSend(%d): cycle complete for ticker=%u", fromTicker, m_poll_ticker);
-  m_poll_plcur = m_poll_plist;
-  m_poll_ticker++;
-  if (m_poll_ticker > 3600) m_poll_ticker -= 3600;
   }
 
+void OvmsVehicle::VehiclePollTicker()
+  {
+  if (!m_ready)
+    return;
+
+  int32_t cur_ticker = ++m_poll_subticker;
+  if (cur_ticker >= m_poll_tick_secondary)
+    m_poll_subticker = 0;
+
+  // ESP_LOGV(TAG, "Vehicle ticker %" PRId32 "/%" PRId32 " [Seq=%d Wt=%d]", cur_ticker, m_poll_tick_secondary, m_poll_sequence_cnt, m_poll_wait);
+
+  if (!m_poll_sequence_max || m_poll_sequence_cnt < m_poll_sequence_max)
+    {
+    poller_source_t src;
+    // So first tick is Primary.
+    src = (cur_ticker == 1) ? poller_source_t::Primary : poller_source_t::Secondary;
+    Queue_PollerSend(src);
+    }
+  }
 
 /**
  * PollerTxCallback: internal: process poll request callbacks
@@ -462,7 +526,7 @@ int OvmsVehicle::PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
   PollSetPidList(bus, poll);
   m_poll_single_rxdone.Take(0);
   m_poll_single_rxbuf = &response;
-  PollerSend(true);
+  Queue_PollerSend(poller_source_t::OnceOff);
   m_poll_mutex.Unlock();
 
   // wait for response:

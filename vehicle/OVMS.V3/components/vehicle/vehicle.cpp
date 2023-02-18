@@ -30,6 +30,7 @@
 
 #include "ovms_log.h"
 static const char *TAG = "vehicle";
+static const char *TAGRX = "vehicle-rx";
 
 #include <stdio.h>
 #include <algorithm>
@@ -236,6 +237,13 @@ static void OvmsVehicleRxTask(void *pvParameters)
   OvmsVehicle *me = (OvmsVehicle*)pvParameters;
   me->RxTask();
   }
+static void OvmsVehiclePollTicker(TimerHandle_t xTimer )
+  {
+  OvmsVehicle *vehicle = (OvmsVehicle *)pvTimerGetTimerID(xTimer);
+  if (vehicle)
+    vehicle->VehiclePollTicker();
+  }
+
 
 OvmsVehicle::OvmsVehicle()
   {
@@ -281,6 +289,13 @@ OvmsVehicle::OvmsVehicle()
   m_poll_entry = {};
   m_poll_vwtp = {};
   m_poll_ticker = 0;
+
+  m_timer_poller = NULL;
+  m_poll_subticker = 0;
+  m_poll_tick_secondary = 0;
+
+  m_poll_tick_ms = 1000;
+
   m_poll_single_rxbuf = NULL;
   m_poll_single_rxerr = 0;
   m_poll_moduleid_sent = 0;
@@ -373,10 +388,19 @@ OvmsVehicle::OvmsVehicle()
 
   MyMetrics.RegisterListener(TAG, "*", std::bind(&OvmsVehicle::MetricModified, this, _1));
 
+  // default to 1 second
+  m_timer_poller = xTimerCreate("Vehicle OBD Poll Ticker",
+      m_poll_tick_ms / portTICK_PERIOD_MS,pdTRUE,this,
+      OvmsVehiclePollTicker);
+  xTimerStart(m_timer_poller, 0);
   }
 
 OvmsVehicle::~OvmsVehicle()
   {
+  if (m_timer_poller) {
+    xTimerDelete( m_timer_poller, 0);
+    m_timer_poller = NULL;
+  }
   if (m_can1) m_can1->SetPowerMode(Off);
   if (m_can2) m_can2->SetPowerMode(Off);
   if (m_can3) m_can3->SetPowerMode(Off);
@@ -457,6 +481,33 @@ const char* OvmsVehicle::VehicleType()
   return MyVehicleFactory.ActiveVehicleType();
   }
 
+const char *OvmsVehicle::PollerSource(OvmsVehicle::poller_source_t src)
+  {
+  switch (src)
+    {
+    case poller_source_t::Primary: return "PRI";
+    case poller_source_t::Secondary: return "SEC";
+    case poller_source_t::Successful: return "SRX";
+    case poller_source_t::OnceOff: return "ONE";
+    }
+    return "XXX";
+  }
+
+void OvmsVehicle::Queue_PollerSend(poller_source_t source)
+  {
+  if (!m_ready)
+    return;
+  // Sends a frame with a null CAN Bus and the 'source' as the MsgID
+  CAN_frame_t frame = {};
+  memset(&frame, 0, sizeof(frame));
+  frame.MsgID = uint32_t(source);
+  ESP_LOGD(TAGRX, "Poller: Queue PollerSend(%s)", PollerSource(source));
+  if (xQueueSend(m_rxqueue, &frame, 0) != pdPASS)
+    {
+    ESP_LOGI(TAGRX, "Poller: RX Task Queue Overflow");
+    }
+  }
+
 void OvmsVehicle::RxTask()
   {
   CAN_frame_t frame;
@@ -465,8 +516,17 @@ void OvmsVehicle::RxTask()
     {
     if (xQueueReceive(m_rxqueue, &frame, (portTickType)portMAX_DELAY)==pdTRUE)
       {
+
       if (!m_ready)
         continue;
+      if (!frame.origin)
+        {
+        // Special NULL frame sent from counter to handle polling.
+        poller_source_t src = poller_source_t(frame.MsgID);
+        ESP_LOGD(TAGRX, "RX Task: PollerSend(%s)", PollerSource(src));
+        PollerSend(src);
+        continue;
+        }
 
       // Pass frame to poller protocol handlers:
       if (frame.origin == m_poll_vwtp.bus && frame.MsgID == m_poll_vwtp.rxid)
@@ -567,7 +627,8 @@ void OvmsVehicle::VehicleTicker1(std::string event, void* data)
   m_ticker++;
 
   PollerStateTicker();
-  PollerSend(true);
+
+  PollerResetThrottle();
 
   Ticker1(m_ticker);
   if ((m_ticker % 10) == 0) Ticker10(m_ticker);

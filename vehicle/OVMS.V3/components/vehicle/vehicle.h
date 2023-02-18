@@ -307,11 +307,17 @@ class OvmsVehicle : public InternalRamAllocated
     canbus* m_can3;
     canbus* m_can4;
 
+    void VehiclePollTicker();
   private:
     void VehicleTicker1(std::string event, void* data);
     void VehicleConfigChanged(std::string event, void* data);
-    void PollerSend(bool fromTicker);
+    void PollerResetThrottle();
+
+    typedef enum { Primary, Secondary, Successful, OnceOff } poller_source_t;
+    void PollerSend(poller_source_t source);
     void PollerReceive(CAN_frame_t* frame, uint32_t msgid);
+    void Queue_PollerSend(poller_source_t source);
+    static const char *PollerSource(OvmsVehicle::poller_source_t src);
 
   protected:
     virtual void IncomingFrameCan1(CAN_frame_t* p_frame);
@@ -565,6 +571,11 @@ class OvmsVehicle : public InternalRamAllocated
       } poll_pid_t;
 
   protected:
+    TimerHandle_t     m_timer_poller;
+    int32_t           m_poll_subticker;       // Subticker count for polling
+    uint16_t          m_poll_tick_ms;         // Tick length in ms.
+    uint8_t           m_poll_tick_secondary;  // Number of secondary poll subticks per primary / zero
+
     OvmsRecMutex      m_poll_mutex;           // Concurrency protection for recursive calls
     uint8_t           m_poll_state;           // Current poll state
     canbus*           m_poll_bus;             // Bus to poll on
@@ -574,6 +585,7 @@ class OvmsVehicle : public InternalRamAllocated
     poll_pid_t        m_poll_entry;           // Currently processed entry of poll list (copy)
     uint32_t          m_poll_ticker;          // Polling ticker
     uint8_t           m_poll_protocol;        // ISOTP_STD / ISOTP_EXTADR / ISOTP_EXTFRAME / VWTP_20
+
     uint32_t          m_poll_moduleid_sent;   // ModuleID last sent
     uint32_t          m_poll_moduleid_low;    // Expected response moduleid low mark
     uint32_t          m_poll_moduleid_high;   // Expected response moduleid high mark
@@ -615,6 +627,8 @@ class OvmsVehicle : public InternalRamAllocated
     void PollSetPidList(canbus* bus, const poll_pid_t* plist);
     void PollSetState(uint8_t state);
     void PollSetThrottling(uint8_t sequence_max);
+    void PollSetTicker(uint16_t tick_time_ms, uint8_t secondary_ticks = 0);
+
     void PollSetResponseSeparationTime(uint8_t septime);
     void PollSetChannelKeepalive(uint16_t keepalive_seconds);
     int PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,

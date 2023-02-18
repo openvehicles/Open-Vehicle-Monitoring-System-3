@@ -792,7 +792,7 @@ bool OvmsVehicle::PollerVWTPReceive(CAN_frame_t* frame, uint32_t msgid)
   if (m_poll_wait == 0 &&
       (!m_poll_sequence_max || m_poll_sequence_cnt < m_poll_sequence_max))
     {
-    PollerSend(false);
+    Queue_PollerSend(poller_source_t::Successful);
     }
 
   return true;
