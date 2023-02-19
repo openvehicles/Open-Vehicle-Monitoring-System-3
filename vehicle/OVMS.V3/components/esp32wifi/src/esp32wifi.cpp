@@ -1002,7 +1002,7 @@ void esp32wifi::EventWifiGotIp(std::string event, void* data)
   {
   system_event_info_t *info = (system_event_info_t*)data;
   m_ip_info_sta = info->got_ip.ip_info;
-  esp_wifi_get_mac(ESP_IF_WIFI_STA, m_mac_sta);
+  esp_wifi_get_mac(WIFI_IF_STA, m_mac_sta);
   UpdateNetMetrics();
   ESP_LOGI(TAG, "STA got IP with SSID '%s' AP " MACSTR ": MAC: " MACSTR ", IP: " IPSTR ", mask: " IPSTR ", gw: " IPSTR,
     m_wifi_sta_cfg.sta.ssid, MAC2STR(m_sta_ap_info.bssid), MAC2STR(m_mac_sta),
@@ -1090,7 +1090,7 @@ void esp32wifi::EventWifiApState(std::string event, void* data)
     {
     // Start
     AdjustTaskPriority();
-    esp_wifi_get_mac(ESP_IF_WIFI_AP, m_mac_ap);
+    esp_wifi_get_mac(WIFI_IF_AP, m_mac_ap);
     tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP, &m_ip_info_ap);
 
     // Disable routing (gateway) and DNS offer on DHCP server for AP:
@@ -1402,13 +1402,13 @@ void esp32wifi::SetAPWifiBW()
     switch (bw)
       {
       case 20:
-        err = esp_wifi_set_bandwidth(ESP_IF_WIFI_AP, WIFI_BW_HT20);
+        err = esp_wifi_set_bandwidth(WIFI_IF_AP, WIFI_BW_HT20);
         break;
       case 40:
-        err = esp_wifi_set_bandwidth(ESP_IF_WIFI_AP, WIFI_BW_HT40);
+        err = esp_wifi_set_bandwidth(WIFI_IF_AP, WIFI_BW_HT40);
         break;
       default:
-        err = esp_wifi_set_bandwidth(ESP_IF_WIFI_AP, WIFI_BW_HT20);
+        err = esp_wifi_set_bandwidth(WIFI_IF_AP, WIFI_BW_HT20);
       }
     if (err != ESP_OK)
       {
