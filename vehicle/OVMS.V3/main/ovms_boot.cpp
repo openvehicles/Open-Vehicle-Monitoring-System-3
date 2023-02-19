@@ -256,8 +256,8 @@ Boot::Boot()
     #ifdef CONFIG_OVMS_COMP_ADC
       // Note: RTC_MODULE nags about a lock release before aquire, this can be ignored
       //  (reason: RTC_MODULE needs FreeRTOS for locking, which hasn't been started yet)
-      adc1_config_width(ADC_WIDTH_12Bit);
-      adc1_config_channel_atten(ADC1_CHANNEL_0, ADC_ATTEN_11db);
+      adc1_config_width(ADC_WIDTH_BIT_12);
+      adc1_config_channel_atten(ADC1_CHANNEL_0, ADC_ATTEN_DB_11);
       uint32_t adc_level = 0;
       for (int i = 0; i < 5; i++)
         adc_level += adc1_get_raw(ADC1_CHANNEL_0);
