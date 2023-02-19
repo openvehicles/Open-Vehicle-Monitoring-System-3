@@ -70,6 +70,8 @@
 ;       - Fix charge metrics if crash during charge session
 ;     1.0.15
 ;       - Add support for trip distance from speed
+;     1.0.16
+;       - Add DC-DC current as 12v battery current (only on newer cars)
 ;
 ;    (C) 2011         Michael Stegen / Stegen Electronics
 ;    (C) 2011-2018    Mark Webb-Johnson
@@ -435,6 +437,12 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
         if (d[1] > 10)
           StandardMetrics.ms_v_bat_soc->SetValue((d[1] - 10 ) * 0.5, Percentage);
 
+      break;
+      }
+
+      case 0x377://freq10 // DC-DC Converter
+      {
+        StandardMetrics.ms_v_bat_12v_current->SetValue(((d[2] << 8) + d[3]) * 0.1);
       break;
       }
 
