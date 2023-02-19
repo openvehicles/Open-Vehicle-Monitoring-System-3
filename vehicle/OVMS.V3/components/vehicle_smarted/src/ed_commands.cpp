@@ -41,6 +41,7 @@ static const char *TAG = "v-smarted";
 #include "metrics_standard.h"
 #include "ovms_notify.h"
 #include "ovms_peripherals.h"
+#include "string_writer.h"
 
 #include "vehicle_smarted.h"
 
