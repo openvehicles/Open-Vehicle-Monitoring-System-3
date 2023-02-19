@@ -34,7 +34,9 @@
 
 #include "vehicle.h"
 #include "metrics_standard.h"
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
 #include "ovms_webserver.h"
+#endif
 #include "mg_obd_pids.h"
 #include "mg_poll_states.h"
 

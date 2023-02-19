@@ -43,7 +43,9 @@
 #include "ovms_metrics.h"
 #include "ovms_command.h"
 
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
 #include "ovms_webserver.h"
+#endif
 
 #include "ovms_mutex.h"
 #include "ovms_semaphore.h"
@@ -228,6 +230,7 @@ private:
   //  - implementation: vweup_web.(h,cpp)
   //
 
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
 protected:
   void WebInit();
   void WebDeInit();
@@ -235,6 +238,7 @@ protected:
   static void WebCfgFeatures(PageEntry_t &p, PageContext_t &c);
   static void WebCfgClimate(PageEntry_t &p, PageContext_t &c);
   static void WebDispChgMetrics(PageEntry_t &p, PageContext_t &c);
+#endif
 
 public:
   void GetDashboardConfig(DashboardConfig& cfg);

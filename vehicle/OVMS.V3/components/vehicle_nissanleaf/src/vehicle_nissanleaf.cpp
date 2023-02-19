@@ -40,7 +40,9 @@ static const char *TAG = "v-nissanleaf";
 #include "ovms_metrics.h"
 #include "metrics_standard.h"
 #include "ovms_notify.h"
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
 #include "ovms_webserver.h"
+#endif
 #include "ovms_command.h"
 #include "ovms_config.h"
 

@@ -645,7 +645,9 @@ OvmsHyundaiIoniqEv::~OvmsHyundaiIoniqEv()
 {
   XARM("OvmsHyundaiIoniqEv::~OvmsHyundaiIoniqEv");
   ESP_LOGI(TAG, "Shutdown Hyundai Ioniq 5 EV vehicle module");
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
   MyWebServer.DeregisterPage("/bms/cellmon");
+#endif
   MyEvents.DeregisterEvent(TAG);
   MyMetrics.DeregisterListener(TAG);
   delete iq_range_calc;

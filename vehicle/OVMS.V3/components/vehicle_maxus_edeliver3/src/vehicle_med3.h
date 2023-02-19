@@ -33,7 +33,9 @@
 
 #include "vehicle.h"
 #include "metrics_standard.h"
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
 #include "ovms_webserver.h"
+#endif
 #include "med3_pids.h"
 
 #include "freertos/timers.h"

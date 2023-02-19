@@ -130,7 +130,6 @@ static const char *TAG = "v-vweup";
 #include "vehicle_vweup.h"
 #include "vweup_t26.h"
 #include "metrics_standard.h"
-#include "ovms_webserver.h"
 #include "ovms_events.h"
 #include "ovms_metrics.h"
 
