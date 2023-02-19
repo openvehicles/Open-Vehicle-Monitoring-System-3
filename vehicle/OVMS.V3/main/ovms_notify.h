@@ -159,9 +159,9 @@ typedef struct
   } OvmsNotifyErrorCodeEntry_t;
 
 typedef std::map<size_t, OvmsNotifyCallbackEntry*, std::less<size_t>,
-  ExtRamAllocator<std::pair<size_t, OvmsNotifyCallbackEntry*>>> OvmsNotifyCallbackMap_t;
+  ExtRamAllocator<std::pair<const size_t, OvmsNotifyCallbackEntry*>>> OvmsNotifyCallbackMap_t;
 typedef std::map<const char*, OvmsNotifyType*, CmpStrOp,
-  ExtRamAllocator<std::pair<const char*, OvmsNotifyCallbackEntry*>>> OvmsNotifyTypeMap_t;
+  ExtRamAllocator<std::pair<const char* const, OvmsNotifyType*>>> OvmsNotifyTypeMap_t;
 typedef std::map<uint32_t, OvmsNotifyErrorCodeEntry_t*> OvmsNotifyErrorCodeMap_t;
 
 class OvmsNotify : public ExternalRamAllocated
