@@ -601,6 +601,7 @@ void OvmsVehicleKiaSoulEv::Ticker1(uint32_t ticker)
 
 
 	// Check for charging status changes:
+	// 
 	bool isCharging = (ks_charge_bits.ChargingChademo || ks_charge_bits.ChargingJ1772) 	&& (CHARGE_CURRENT > 0);
 
 	if (isCharging)
@@ -831,6 +832,7 @@ void OvmsVehicleKiaSoulEv::HandleCharging()
 /**
  * Update metrics when charging stops
  */
+// Need to change something here.. 
 void OvmsVehicleKiaSoulEv::HandleChargeStop()
 	{
   ESP_LOGI(TAG, "Charging done...");
