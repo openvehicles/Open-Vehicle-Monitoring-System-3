@@ -52,6 +52,19 @@
   #define CORE(n) (n)
 #endif
 
+#if defined __has_cpp_attribute
+    #if __has_cpp_attribute(fallthrough)
+        #define FALLTHROUGH [[fallthrough]]
+    #endif
+#elif defined __has_attribute
+    #if __has_attribute(__fallthrough__)
+        #define FALLTHROUGH __attribute__((__fallthrough__))
+    #endif
+#endif
+#if !defined(FALLTHROUGH)
+    #define FALLTHROUGH do {} while (0)  /* fallthrough */
+#endif
+
 extern uint32_t monotonictime;
 
 class ExternalRamAllocated

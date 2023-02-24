@@ -2286,6 +2286,7 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
         case Feet:    return km_to_mi(value) * feet_per_mile;
         default: break;
         }
+      break;
     case Miles:
       switch (to)
         {
@@ -2294,6 +2295,7 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
         case Feet:       return value * feet_per_mile;
         default: break;
         }
+      break;
     case Meters:
       switch (to)
         {
@@ -2302,6 +2304,7 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
         case Feet:       return km_to_mi( value * feet_per_mile)/ 1000;
         default: break;
         }
+      break;
     case Feet:
       switch (to)
         {
@@ -2310,6 +2313,7 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
         case Miles:      return value / feet_per_mile;
         default: break;
         }
+      break;
     case KphPS:
       switch (to)
         {
@@ -2318,6 +2322,7 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
         case FeetPSS:   return km_to_mi(value*feet_per_mile)/3600;
         default: break;
         }
+      break;
     case MphPS:
       switch (to)
         {
@@ -2326,6 +2331,7 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
         case FeetPSS:   return value*feet_per_mile/3600;
         default: break;
         }
+      break;
     case MetersPSS:
       switch (to)
         {
@@ -2334,6 +2340,7 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
         case FeetPSS:   return km_to_mi(value*feet_per_mile);
         default: break;
         }
+      break;
     case FeetPSS:
       switch (to)
         {
@@ -2342,6 +2349,7 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
         case MetersPSS: return mi_to_km(value/feet_per_mile)*1000;
         default: break;
         }
+      break;
     case kW:
       if (to == Watts) return (value*1000);
       break;
@@ -2390,6 +2398,7 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
         case MPkWh:    return value ? static_cast<int>(km_to_mi(1000.0 / value)) : 0;
         default: break;
         }
+      break;
     case WattHoursPM:
       switch (to)
         {
@@ -2409,6 +2418,7 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
         case MPkWh:       return value ? static_cast<int>(km_to_mi(100.0 / value)) : 0;
         default: break;
         }
+      break;
     case KPkWh:
       switch (to)
         {
@@ -2418,6 +2428,7 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
         case MPkWh:       return km_to_mi(value);
         default: break;
         }
+      break;
     case MPkWh:
       switch (to)
         {
@@ -2427,6 +2438,7 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
         case KPkWh:       return mi_to_km(value);
         default: break;
         }
+      break;
     case Celcius:
       if (to == Fahrenheit) return ((value*9)/5) + 32;
       break;
@@ -2441,6 +2453,7 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
         case PSI: return int((float)value * 0.14503773773020923);
         default: break;
         }
+      break;
     case Pa:
       switch (to)
         {
@@ -2449,6 +2462,7 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
         case PSI: return int((float)value * 0.00014503773773020923);
         default: break;
         }
+      break;
     case PSI:
       switch (to)
         {
@@ -2457,6 +2471,7 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
         case Bar: return int((float)value * 0.06894757293168361);
         default: break;
         }
+      break;
     case Bar:
       switch (to)
         {
@@ -2465,6 +2480,7 @@ int UnitConvert(metric_unit_t from, metric_unit_t to, int value)
         case PSI: return int((float)value * 14.503773773020923);
         default: break;
         }
+      break;
     case Seconds:
       if (to == Minutes) return value/60;
       else if (to == Hours) return value/3600;
@@ -2556,6 +2572,7 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
         case Feet:    return km_to_mi(value) * feet_per_mile;
         default: break;
         }
+      break;
     case Miles:
       switch (to)
         {
@@ -2564,6 +2581,7 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
         case Feet:       return value * feet_per_mile;
         default: break;
         }
+      break;
     case Meters:
       switch (to)
         {
@@ -2572,6 +2590,7 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
         case Feet:        return km_to_mi(value/1000) * feet_per_mile;
         default: break;
         }
+      break;
     case Feet:
       switch (to)
         {
@@ -2580,6 +2599,7 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
         case Miles:      return value / feet_per_mile;
         default: break;
         }
+      break;
     case KphPS:
       switch (to)
         {
@@ -2588,6 +2608,7 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
         case FeetPSS:   return km_to_mi(value)*feet_per_mile/3600;
         default: break;
         }
+      break;
     case MphPS:
       switch (to)
         {
@@ -2596,6 +2617,7 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
         case FeetPSS:   return value*feet_per_mile/3600;
         default: break;
         }
+      break;
     case MetersPSS:
       switch (to)
         {
@@ -2604,6 +2626,7 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
         case FeetPSS:   return km_to_mi(value)*feet_per_mile;
         default: break;
         }
+      break;
     case FeetPSS:
       switch (to)
         {
@@ -2612,6 +2635,7 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
         case MetersPSS: return mi_to_km(value/feet_per_mile)*1000;
         default: break;
         }
+      break;
     case kW:
       if (to == Watts) return (value*1000);
       break;
@@ -2661,6 +2685,7 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
         case MPkWh:       return value ? (km_to_mi(1000.0 / value)) : 0;
         default: break;
         }
+      break;
     case WattHoursPM:
       switch (to)
         {
@@ -2680,6 +2705,7 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
         case MPkWh:       return value ? km_to_mi(100.0 / value) : 0;
         default: break;
         }
+      break;
     case KPkWh:
       switch (to)
         {
@@ -2689,6 +2715,7 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
         case MPkWh:       return km_to_mi(value);
         default: break;
         }
+      break;
     case MPkWh:
       switch (to)
         {
@@ -2698,6 +2725,7 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
         case KPkWh:       return mi_to_km(value);
         default: break;
         }
+      break;
     case Celcius:
       if (to == Fahrenheit) return ((value*9)/5) + 32;
       break;
@@ -2712,6 +2740,7 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
         case PSI: return value * 0.14503773773020923;
         default: break;
         }
+      break;
     case Pa:
       switch (to)
         {
@@ -2720,6 +2749,7 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
         case PSI: return value * 0.00014503773773020923;
         default: break;
         }
+      break;
     case PSI:
       switch (to)
         {
@@ -2728,6 +2758,7 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
         case Bar: return value * 0.06894757293168361;
         default: break;
         }
+      break;
     case Bar:
       switch (to)
         {
@@ -2736,6 +2767,7 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
         case PSI: return value * 14.503773773020923;
         default: break;
         }
+      break;
     case Seconds:
       if (to == Minutes) return value/60;
       else if (to == Hours) return value/3600;
@@ -2788,8 +2820,10 @@ float UnitConvert(metric_unit_t from, metric_unit_t to, float value)
       break;
     case Percentage:
       if (to == Permille) return value*10.0;
+      break;
     case Permille:
       if (to == Percentage) return value*0.10;
+      break;
     default:
       return value;
     }

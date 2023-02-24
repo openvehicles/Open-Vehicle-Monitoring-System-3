@@ -119,6 +119,7 @@ modem::modem_state1_t simcom7000::State1Ticker1(modem::modem_state1_t curstate)
       {
       case 8:
         m_modem->tx("ATE0\r\n");
+        break;
       case 10:
         m_modem->tx("AT+CPIN?;+CREG=1;+CTZU=1;+CTZR=1;+CMGF=1;+CNMI=1,2,0,0,0;+CSDH=1;+CMEE=2;+CSQ;S0=0\r\n");
         break;
