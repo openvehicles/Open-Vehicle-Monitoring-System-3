@@ -41,10 +41,28 @@
 #include <sstream>
 #include "ovms_malloc.h"
 
+#if ESP_IDF_VERSION_MAJOR >= 4
+#define CONFIG_CONSOLE_UART_NUM CONFIG_ESP_CONSOLE_UART_NUM
+#define CONFIG_TASK_WDT_TIMEOUT_S CONFIG_ESP_TASK_WDT_TIMEOUT_S
+#endif
+
 #ifdef CONFIG_FREERTOS_UNICORE
   #define CORE(n) (0)
 #else
   #define CORE(n) (n)
+#endif
+
+#if defined __has_cpp_attribute
+    #if __has_cpp_attribute(fallthrough)
+        #define FALLTHROUGH [[fallthrough]]
+    #endif
+#elif defined __has_attribute
+    #if __has_attribute(__fallthrough__)
+        #define FALLTHROUGH __attribute__((__fallthrough__))
+    #endif
+#endif
+#if !defined(FALLTHROUGH)
+    #define FALLTHROUGH do {} while (0)  /* fallthrough */
 #endif
 
 extern uint32_t monotonictime;

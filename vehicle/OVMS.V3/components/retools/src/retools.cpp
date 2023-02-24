@@ -218,9 +218,9 @@ std::string re::GetKey(CAN_frame_t* frame)
 
   char id[9];
   if (frame->FIR.B.FF == CAN_frame_std)
-    sprintf(id,"%03x",frame->MsgID);
+    sprintf(id,"%03" PRIx32,frame->MsgID);
   else
-    sprintf(id,"%08x",frame->MsgID);
+    sprintf(id,"%08" PRIx32,frame->MsgID);
   key.append(id);
 
   if (((m_obdii_std_min>0) &&
@@ -275,7 +275,7 @@ std::string re::GetKey(CAN_frame_t* frame)
         dbcNumber muxn = s->Decode(frame);
         uint32_t mux = muxn.GetUnsignedInteger();
         char b[8];
-        sprintf(b,":%04x",mux);
+        sprintf(b,":%04" PRIx32,mux);
         key.append(b);
         }
       }
@@ -418,7 +418,7 @@ void re_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, cons
       char vbuf[48];
       char *s = vbuf;
       FormatHexDump(&s, (const char*)it->second->last.data.u8, it->second->last.FIR.B.DLC, 8);
-      writer->printf("%-20s %10d %6d %s\n",
+      writer->printf("%-20s %10" PRId32 " %6" PRId32 " %s\n",
         it->first.c_str(),it->second->rxcount,(tdiff/it->second->rxcount),vbuf);
       }
     }
@@ -446,7 +446,7 @@ void re_stream_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
       {
       HighlightDump(vbuf, (const char*)it->second->last.data.u8,
         it->second->last.FIR.B.DLC, it->second->attr.dc, it->second->attr.dd, 1, &ascii);
-      writer->printf("%s[\"%s\",%d,%d,\"%s\",\"%s\"]\n",
+      writer->printf("%s[\"%s\",%" PRId32 ",%" PRId32 ",\"%s\",\"%s\"]\n",
         cnt ? "," : "",
         json_encode(it->first).c_str(), it->second->rxcount, (tdiff/it->second->rxcount),
         json_encode(std::string(vbuf)).c_str(),
@@ -477,7 +477,7 @@ void re_dbc_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
       char vbuf[48];
       char *s = vbuf;
       FormatHexDump(&s, (const char*)it->second->last.data.u8, it->second->last.FIR.B.DLC, 8);
-      writer->printf("%-20s %10d %6d %s\n",
+      writer->printf("%-20s %10" PRId32 " %6" PRId32 " %s\n",
         it->first.c_str(),it->second->rxcount,(tdiff/it->second->rxcount),vbuf);
       if (it->second->last.origin)
         {
@@ -590,7 +590,7 @@ void re_obdii_std(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
   MyRE->m_obdii_std_min = (uint32_t)strtol(argv[0],NULL,16);
   MyRE->m_obdii_std_max = (uint32_t)strtol(argv[1],NULL,16);
 
-  writer->printf("Set OBDII standard ID range %03x-%03x\n",MyRE->m_obdii_std_min,MyRE->m_obdii_std_max);
+  writer->printf("Set OBDII standard ID range %03" PRIx32 "-%03" PRIx32 "\n",MyRE->m_obdii_std_min,MyRE->m_obdii_std_max);
   }
 
 void re_obdii_ext(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -604,7 +604,7 @@ void re_obdii_ext(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
   MyRE->m_obdii_ext_min = (uint32_t)strtol(argv[0],NULL,16);
   MyRE->m_obdii_ext_max = (uint32_t)strtol(argv[1],NULL,16);
 
-  writer->printf("Set OBDII extended ID range %08x-%08x\n",MyRE->m_obdii_ext_min,MyRE->m_obdii_ext_max);
+  writer->printf("Set OBDII extended ID range %08" PRIx32 "-%08" PRIx32 "\n",MyRE->m_obdii_ext_min,MyRE->m_obdii_ext_max);
   }
 
 void re_mode_analyse(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
@@ -714,7 +714,7 @@ void re_list_changed(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
         it->second->last.FIR.B.DLC, it->second->attr.dc, it->second->attr.dd);
       if ((argc==0)||(strstr(it->first.c_str(),argv[0])))
         {
-        writer->printf("%-20s %10d %6d %s\n",
+        writer->printf("%-20s %10" PRId32 " %6" PRId32 " %s\n",
           it->first.c_str(),it->second->rxcount,(tdiff/it->second->rxcount),vbuf);
         }
       }
@@ -744,7 +744,7 @@ void re_stream_changed(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int 
       {
       HighlightDump(vbuf, (const char*)it->second->last.data.u8,
         it->second->last.FIR.B.DLC, it->second->attr.dc, it->second->attr.dd, 1, &ascii);
-      writer->printf("%s[\"%s\",%d,%d,\"%s\",\"%s\"]\n",
+      writer->printf("%s[\"%s\",%" PRId32 ",%" PRId32 ",\"%s\",\"%s\"]\n",
         cnt ? "," : "",
         json_encode(it->first).c_str(), it->second->rxcount, (tdiff/it->second->rxcount),
         json_encode(std::string(vbuf)).c_str(),
@@ -777,7 +777,7 @@ void re_list_discovered(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int
         it->second->last.FIR.B.DLC, it->second->attr.dc, it->second->attr.dd);
       if ((argc==0)||(strstr(it->first.c_str(),argv[0])))
         {
-        writer->printf("%-20s %10d %6d %s\n",
+        writer->printf("%-20s %10" PRId32 " %6" PRId32 " %s\n",
           it->first.c_str(),it->second->rxcount,(tdiff/it->second->rxcount),vbuf);
         }
       }

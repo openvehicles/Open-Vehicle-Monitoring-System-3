@@ -1461,9 +1461,9 @@ void OvmsCommandApp::ShowLogStatus(int verbosity, OvmsWriter* writer)
     "  Log file path    : %s\n"
     "  Current size     : %.1f kB\n"
     "  Cycle size       : %u kB\n"
-    "  Cycle count      : %u\n"
-    "  Dropped messages : %u\n"
-    "  Messages logged  : %u\n"
+    "  Cycle count      : %" PRIu32 "\n"
+    "  Dropped messages : %" PRIu32 "\n"
+    "  Messages logged  : %" PRIu32 "\n"
     "  Total fsync time : %.1f s\n"
     , m_consoles.size()
     , m_logfile ? "active" : "inactive"

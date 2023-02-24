@@ -369,6 +369,7 @@ void OvmsVehicleNissanLeaf::vehicle_nissanleaf_charger_status(ChargerStatus stat
       break;
     case CHARGER_STATUS_QUICK_CHARGING:
       fast_charge = true;
+      FALLTHROUGH;
     case CHARGER_STATUS_CHARGING:
       if (!StandardMetrics.ms_v_charge_inprogress->AsBool())
         {
@@ -830,7 +831,7 @@ void OvmsVehicleNissanLeaf::IncomingPollReply(canbus* bus, uint16_t type, uint16
         PollReply_VIN(buf, rxbuf.size());
         break;
       default:
-        ESP_LOGI(TAG, "IncomingPollReply: unknown reply module|pid=%#x len=%d", id_pid, rxbuf.size());
+        ESP_LOGI(TAG, "IncomingPollReply: unknown reply module|pid=%#" PRIx32 " len=%d", id_pid, rxbuf.size());
         break;
       }
 
@@ -980,6 +981,7 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
         StandardMetrics.ms_v_charge_climit->SetValue(max_charge_power / StandardMetrics.ms_v_charge_voltage->AsFloat());
       }
     }
+      break;
     case 0x390:
     {
       m_AZE0_charger = true;

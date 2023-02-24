@@ -496,7 +496,7 @@ int WebSocketHandler::HandleEvent(int ev, void* p)
         }
         else {
           uint32_t dropcnt = m_jobqueue_overflow_dropcnt;
-          ESP_LOGW(TAG, "WebSocketHandler[%p]: job queue overflow resolved, %u drops", m_nc, dropcnt - m_jobqueue_overflow_dropcntref);
+          ESP_LOGW(TAG, "WebSocketHandler[%p]: job queue overflow resolved, %" PRIu32 " drops", m_nc, dropcnt - m_jobqueue_overflow_dropcntref);
           m_jobqueue_overflow_dropcntref = dropcnt;
         }
       }

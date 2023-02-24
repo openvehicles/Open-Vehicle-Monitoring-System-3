@@ -1738,7 +1738,7 @@ void OvmsServerV2::TransmitNotifyData()
     size += buffer.str().size();
     if (now - starttime >= 300 || cnt == 5 || size >= 4000)
       {
-      ESP_LOGD(TAG, "TransmitNotifyData: used %d ms for %d records, %u bytes", now - starttime, cnt, size);
+      ESP_LOGD(TAG, "TransmitNotifyData: used %" PRId32 " ms for %d records, %u bytes", now - starttime, cnt, size);
       return;
       }
     }

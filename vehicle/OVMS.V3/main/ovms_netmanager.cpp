@@ -125,7 +125,7 @@ void network_connections(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, in
       uint32_t id = strtol(argv[0], NULL, 16);
       int cnt = MyNetManager.CloseConnection(id);
       if (cnt == 0)
-        writer->printf("ERROR: connection ID %08x not found\n", id);
+        writer->printf("ERROR: connection ID %08" PRIx32 " not found\n", id);
       else
         writer->printf("Close signal sent to %d connection(s)\n", cnt);
       }
@@ -154,7 +154,7 @@ void network_connections(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, in
       if (!MyNetManager.ExecuteJob(&job, pdMS_TO_TICKS(5000)))
         writer->puts("ERROR: job failed");
       else if (job.close.cnt == 0)
-        writer->printf("ERROR: connection ID %08x not found\n", job.close.id);
+        writer->printf("ERROR: connection ID %08" PRIx32 " not found\n", job.close.id);
       else
         writer->printf("Close signal sent to %d connection(s)\n", job.close.cnt);
       }
@@ -910,7 +910,7 @@ int OvmsNetManager::ListConnections(int verbosity, OvmsWriter* writer)
       continue;
     mg_conn_addr_to_str(c, local, sizeof(local), MG_SOCK_STRINGIFY_IP|MG_SOCK_STRINGIFY_PORT);
     mg_conn_addr_to_str(c, remote, sizeof(remote), MG_SOCK_STRINGIFY_IP|MG_SOCK_STRINGIFY_PORT|MG_SOCK_STRINGIFY_REMOTE);
-    writer->printf("%08x  %08x  %08x  %-21s  %s\n", (uint32_t)c, (uint32_t)c->flags, (uint32_t)c->user_data, local, remote);
+    writer->printf("%08" PRIx32 "  %08" PRIx32 "  %08" PRIx32 "  %-21s  %s\n", (uint32_t)c, (uint32_t)c->flags, (uint32_t)c->user_data, local, remote);
     cnt++;
     }
   return cnt;
@@ -982,7 +982,7 @@ int OvmsNetManager::CleanupConnections()
     memset(&sa, 0, sizeof(sa));
     if (getsockname(c->sock, &sa.sa, &slen) != 0)
       {
-      ESP_LOGW(TAG, "CleanupConnections: conn %08x: getsockname failed", (uint32_t)c);
+      ESP_LOGW(TAG, "CleanupConnections: conn %08" PRIx32 ": getsockname failed", (uint32_t)c);
       continue;
       }
 
@@ -997,13 +997,13 @@ int OvmsNetManager::CleanupConnections()
       }
 
     if (ni)
-      ESP_LOGD(TAG, "CleanupConnections: conn %08x -> iface %c%c%d", (uint32_t)c, ni->name[0], ni->name[1], ni->num);
+      ESP_LOGD(TAG, "CleanupConnections: conn %08" PRIx32 " -> iface %c%c%d", (uint32_t)c, ni->name[0], ni->name[1], ni->num);
     else
-      ESP_LOGD(TAG, "CleanupConnections: conn %08x -> no iface", (uint32_t)c);
+      ESP_LOGD(TAG, "CleanupConnections: conn %08" PRIx32 " -> no iface", (uint32_t)c);
 
     if (!ni || !(ni->flags & NETIF_FLAG_UP) || !(ni->flags & NETIF_FLAG_LINK_UP))
       {
-      ESP_LOGI(TAG, "CleanupConnections: closing conn %08x: interface/link down", (uint32_t)c);
+      ESP_LOGI(TAG, "CleanupConnections: closing conn %08" PRIx32 ": interface/link down", (uint32_t)c);
       c->flags |= MG_F_CLOSE_IMMEDIATELY;
       cnt++;
       continue;
@@ -1015,7 +1015,7 @@ int OvmsNetManager::CleanupConnections()
       memset(&sa, 0, sizeof(sa));
       if (getpeername(c->sock, &sa.sa, &slen) != 0)
         {
-        ESP_LOGW(TAG, "CleanupConnections: conn %08x: getpeername failed", (uint32_t)c);
+        ESP_LOGW(TAG, "CleanupConnections: conn %08" PRIx32 ": getpeername failed", (uint32_t)c);
         continue;
         }
       int i;
@@ -1027,11 +1027,11 @@ int OvmsNetManager::CleanupConnections()
 
       if (i < ap_ip_list.num)
         {
-        ESP_LOGD(TAG, "CleanupConnections: conn %08x -> AP IP " IPSTR, (uint32_t)c, IP2STR(&ap_ip_list.sta[i].ip));
+        ESP_LOGD(TAG, "CleanupConnections: conn %08" PRIx32 " -> AP IP " IPSTR, (uint32_t)c, IP2STR(&ap_ip_list.sta[i].ip));
         }
       else
         {
-        ESP_LOGI(TAG, "CleanupConnections: closing conn %08x: AP peer disconnected", (uint32_t)c);
+        ESP_LOGI(TAG, "CleanupConnections: closing conn %08" PRIx32 ": AP peer disconnected", (uint32_t)c);
         c->flags |= MG_F_CLOSE_IMMEDIATELY;
         cnt++;
         }

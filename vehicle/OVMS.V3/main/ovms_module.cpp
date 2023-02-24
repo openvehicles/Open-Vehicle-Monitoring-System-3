@@ -431,7 +431,7 @@ static void print_blocks(OvmsWriter* writer, TaskHandle_t task, bool leaks)
         break;
     if (j == numafter)
       {
-      writer->printf("- t=%.15s s=%4d a=%p\n", name.bytes,
+      writer->printf("- t=%.15s s=%4" PRId32 " a=%p\n", name.bytes,
         before[i].size, before[i].address);
       ++count;
       }
@@ -461,7 +461,7 @@ static void print_blocks(OvmsWriter* writer, TaskHandle_t task, bool leaks)
         {
         for (int pi=0; pi<32; pi++)
           pbuf[pi] = isprint(((char*)p)[pi]) ? ((char*)p)[pi] : '.';
-        writer->printf("  t=%.15s s=%4d a=%p  %08X %08X %08X %08X %08X %08X %08X %08X | %-32.32s\n",
+        writer->printf("  t=%.15s s=%4" PRId32 " a=%p  %08X %08X %08X %08X %08X %08X %08X %08X | %-32.32s\n",
           name.bytes, after[i].size, p, p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], pbuf);
         }
       size += after[i].size;
@@ -497,7 +497,7 @@ static void print_blocks(OvmsWriter* writer, TaskHandle_t task, bool leaks)
         {
         for (int pi=0; pi<32; pi++)
           pbuf[pi] = isprint(((char*)p)[pi]) ? ((char*)p)[pi] : '.';
-        writer->printf("+ t=%.15s s=%4d a=%p  %08X %08X %08X %08X %08X %08X %08X %08X | %-32.32s\n",
+        writer->printf("+ t=%.15s s=%4" PRId32 " a=%p  %08X %08X %08X %08X %08X %08X %08X %08X | %-32.32s\n",
           name.bytes, after[i].size, p, p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], pbuf);
         }
       size += after[i].size;
@@ -780,7 +780,7 @@ static void module_tasks(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, in
         uint32_t used = total - ((uint32_t)taskstatus[i].pxStackBase & 0xFFFF);
         int core = xTaskGetAffinity(taskstatus[i].xHandle);
         uint32_t runtime = taskstatus[i].ulRunTimeCounter - last_runtime[taskstatus[i].xTaskNumber];
-        writer->printf("%08X %4u %s %-15s %5u %5u %5u %7u%7u%7u  %c %3d %3.0f%% %3d/%2d\n",
+        writer->printf("%08" PRIX32 " %4u %s %-15s %5" PRIu32 " %5" PRIu32 " %5" PRIu32 " %7u%7u%7u  %c %3d %3.0f%% %3d/%2d\n",
           (uint32_t)taskstatus[i].xHandle,
           taskstatus[i].xTaskNumber, states[taskstatus[i].eCurrentState], taskstatus[i].pcTaskName,
           used, total - taskstatus[i].usStackHighWaterMark, total, heaptotal, heap32bit, heapspi,
@@ -796,7 +796,7 @@ static void module_tasks(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, in
             uint32_t word = *topstack++;
             if ((word & 0xFF000000) == 0x80000000)
               {
-              writer->printf("  %#x", word - 0x40000000);
+              writer->printf("  %#" PRIx32, word - 0x40000000);
               }
             }
           writer->printf("\n");
@@ -843,7 +843,7 @@ static void module_tasks_data(int verbosity, OvmsWriter* writer, OvmsCommand* cm
   uint32_t diff_totalruntime = totalruntime - last_totalruntime;
 
   // output task count & total runtime diff:
-  buf.printf("*-OVM-DebugTasks,1,86400,%u,%u", n, diff_totalruntime);
+  buf.printf("*-OVM-DebugTasks,1,86400,%u,%" PRIu32, n, diff_totalruntime);
 
   // output tasks sorted by xTaskNumber:
   num = 0;
@@ -870,7 +870,7 @@ static void module_tasks_data(int verbosity, OvmsWriter* writer, OvmsCommand* cm
         //  ,<stack_now>,<stack_max>,<stack_total>
         //  ,<heaptotal>,<heap32bit>,<heapspi>
         //  ,<runtime>
-        buf.printf(",%u,%-.15s,%s,%u,%u,%u,%u,%u,%u,%u",
+        buf.printf(",%u,%-.15s,%s,%" PRIu32 ",%" PRIu32 ",%" PRIu32 ",%u,%u,%u,%" PRIu32,
           taskstatus[i].xTaskNumber, taskstatus[i].pcTaskName, states[taskstatus[i].eCurrentState],
           used, total - taskstatus[i].usStackHighWaterMark, total,
           heaptotal, heap32bit, heapspi, runtime);
@@ -1069,20 +1069,20 @@ static void module_perform_factoryreset(OvmsWriter* writer)
 
   if (writer)
     {
-    writer->printf("Store partition is at %08x size %08x\n", p->address, p->size);
+    writer->printf("Store partition is at %08" PRIx32 " size %08" PRIx32 "\n", p->address, p->size);
     writer->puts("Unmounting configuration store...");
     }
   else
     {
-    ESP_LOGI(TAG, "Store partition is at %08x size %08x", p->address, p->size);
+    ESP_LOGI(TAG, "Store partition is at %08" PRIx32 " size %08" PRIx32, p->address, p->size);
     ESP_LOGI(TAG, "Unmounting configuration store...");
     }
   MyConfig.unmount();
 
   if (writer)
-    writer->printf("Erasing %d bytes of flash...\n",p->size);
+    writer->printf("Erasing %" PRId32 " bytes of flash...\n",p->size);
   else
-    ESP_LOGI(TAG, "Erasing %d bytes of flash...", p->size);
+    ESP_LOGI(TAG, "Erasing %" PRId32 " bytes of flash...", p->size);
   spi_flash_erase_range(p->address, p->size);
 
   if (writer)
