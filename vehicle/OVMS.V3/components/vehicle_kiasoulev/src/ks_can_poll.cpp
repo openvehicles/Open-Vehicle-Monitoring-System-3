@@ -66,7 +66,7 @@ void OvmsVehicleKiaSoulEv::IncomingPollReply(canbus* bus, uint16_t type, uint16_
 			break;
 
 		default:
-			ESP_LOGD(TAG, "Unknown module: %03x", m_poll_moduleid_low);
+			ESP_LOGD(TAG, "Unknown module: %03" PRIx32, m_poll_moduleid_low);
 			break;
 	  }
   }

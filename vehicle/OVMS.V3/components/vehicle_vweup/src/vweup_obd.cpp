@@ -460,7 +460,7 @@ void OvmsVehicleVWeUp::PollerStateTicker()
   if (poll_state != m_poll_state) {
     ESP_LOGD(TAG,
       "PollerStateTicker: [%s] LVPwrState=%d HVChgMode=%d SOC=%.1f%% LVAutoChg=%d "
-      "12V=%.1f DCDC_U=%.1f DCDC_I=%.1f ChgEff=%.1f BatI=%.1f BatIAge=%u => PollState %d->%d",
+      "12V=%.1f DCDC_U=%.1f DCDC_I=%.1f ChgEff=%.1f BatI=%.1f BatIAge=%" PRIu32 " => PollState %d->%d",
       car_online ? "online" : "offline", lv_pwrstate, hv_chgmode, StdMetrics.ms_v_bat_soc->AsFloat(),
       m_lv_autochg->AsInt(), StdMetrics.ms_v_bat_12v_voltage->AsFloat(),
       dcdc_voltage, StdMetrics.ms_v_charge_12v_current->AsFloat(),
@@ -1321,7 +1321,7 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
       break;
 
     default:
-      VALUE_LOG(TAG, "IncomingPollReply: ECU %X/%X unhandled PID %02X %04X: %s",
+      VALUE_LOG(TAG, "IncomingPollReply: ECU %" PRIX32 "/%" PRIX32 " unhandled PID %02X %04X: %s",
         m_poll_entry.txmoduleid, m_poll_entry.rxmoduleid, type, pid, PollReply.GetHexString().c_str());
       break;
   }

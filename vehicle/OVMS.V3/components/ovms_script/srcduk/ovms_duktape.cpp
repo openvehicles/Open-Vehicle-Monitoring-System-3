@@ -1427,7 +1427,7 @@ void OvmsDuktape::DukTapeTask()
             uint32_t ts = esp_log_timestamp();
             duk_gc(m_dukctx, 0);
             duk_gc(m_dukctx, 0);
-            ESP_LOGD(TAG, "Duktape: Compacting DukTape memory done in %u ms", esp_log_timestamp()-ts);
+            ESP_LOGD(TAG, "Duktape: Compacting DukTape memory done in %" PRIu32 " ms", esp_log_timestamp()-ts);
             }
           }
           break;
@@ -1451,7 +1451,7 @@ void OvmsDuktape::DukTapeTask()
             duk_pop_2(m_dukctx);
             ts = esp_log_timestamp() - ts;
             if (ts > 1000)
-              ESP_LOGW(TAG, "Duktape: event handling for '%s' took %u ms", msg.body.dt_event.name, ts);
+              ESP_LOGW(TAG, "Duktape: event handling for '%s' took %" PRIu32 " ms", msg.body.dt_event.name, ts);
             }
           }
           free((void*)msg.body.dt_event.name);

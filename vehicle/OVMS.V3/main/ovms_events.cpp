@@ -109,7 +109,7 @@ void event_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
     writer->printf("Currently dispatching:\n");
     writer->printf("  Event: %s\n",MyEvents.m_current_event.c_str());
     writer->printf("  To:    %s\n",cbe->m_caller.c_str());
-    writer->printf("  For:   %u second(s)\n",monotonictime-MyEvents.m_current_started);
+    writer->printf("  For:   %" PRIu32 " second(s)\n",monotonictime-MyEvents.m_current_started);
     }
   }
 
@@ -167,7 +167,7 @@ void event_raise(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
 
   if (delay_ms)
     {
-    writer->printf("Raising event in %u ms: %s\n", delay_ms, event.c_str());
+    writer->printf("Raising event in %" PRIu32 " ms: %s\n", delay_ms, event.c_str());
     MyEvents.SignalEvent(event, NULL, (size_t)0, delay_ms);
     }
   else
@@ -396,7 +396,7 @@ static void CheckQueueOverflow(const char* from, char* event)
   EventCallbackEntry* cbe = MyEvents.m_current_callback;
   if (cbe != NULL)
     {
-    ESP_LOGE(TAG, "%s: queue overflow (running %s->%s for %u sec), event '%s' dropped",
+    ESP_LOGE(TAG, "%s: queue overflow (running %s->%s for %" PRIu32 " sec), event '%s' dropped",
       from,
       MyEvents.m_current_event.c_str(),
       cbe->m_caller.c_str(),

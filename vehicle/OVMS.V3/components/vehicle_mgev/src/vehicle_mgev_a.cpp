@@ -181,7 +181,7 @@ void OvmsVehicleMgEvA::DeterminePollState(canbus* currentBus, uint32_t ticker)
 
             if (m_rxPackets != rxPackets)
             {
-                ESP_LOGV(TAG, "RX Frames Recieved, rx %i and m_rx %i and count %i ", rxPackets, m_rxPackets, m_noRxCount);
+                ESP_LOGV(TAG, "RX Frames Recieved, rx %" PRIi32 " and m_rx %" PRIi32 " and count %" PRIi32 " ", rxPackets, m_rxPackets, m_noRxCount);
                 m_rxPackets = rxPackets;
                 if (m_noRxCount != 0)
                 {
@@ -190,7 +190,7 @@ void OvmsVehicleMgEvA::DeterminePollState(canbus* currentBus, uint32_t ticker)
             }
             else
             {
-                ESP_LOGV(TAG, "No RX Frames Recieved, rx %i and m_rx %i and count %i ", rxPackets, m_rxPackets, m_noRxCount);
+                ESP_LOGV(TAG, "No RX Frames Recieved, rx %" PRIi32 " and m_rx %" PRIi32 " and count %" PRIi32 " ", rxPackets, m_rxPackets, m_noRxCount);
                 ++m_noRxCount;
                 if (m_noRxCount >= ZOMBIE_DETECT_TIMEOUT)
                 {
@@ -246,7 +246,7 @@ void OvmsVehicleMgEvA::DeterminePollState(canbus* currentBus, uint32_t ticker)
 
     if (m_afterRunTicker != (TRANSITION_TIMEOUT +1))
     {
-        ESP_LOGV(TAG, "Pollstate: %i , GWM State: %i , Rx Packet Count: %i , 12V level: %.2f.", m_poll_state, m_gwmState, rxPackets, voltage12V);
+        ESP_LOGV(TAG, "Pollstate: %i , GWM State: %i , Rx Packet Count: %" PRIi32 " , 12V level: %.2f.", m_poll_state, m_gwmState, rxPackets, voltage12V);
     }
     return;
 }
@@ -279,7 +279,7 @@ void OvmsVehicleMgEvA::ZombieMode()
     ++m_preZombieOverrideTicker;
     if (m_preZombieOverrideTicker <= ZOMBIE_TIMEOUT)
     {
-        ESP_LOGV(TAG, "Zombie Wait for %i Seconds.", m_preZombieOverrideTicker);
+        ESP_LOGV(TAG, "Zombie Wait for %" PRIi32 " Seconds.", m_preZombieOverrideTicker);
         return;
     }
     ++m_diagCount;

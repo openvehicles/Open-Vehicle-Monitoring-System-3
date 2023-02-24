@@ -99,7 +99,7 @@ void can_play_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
     for (can::canplay_map_t::iterator it=MyCan.m_playermap.begin(); it!=MyCan.m_playermap.end(); ++it)
       {
       canplay* cl = it->second;
-      writer->printf("CAN player #%d: %s\n  Statistics: %s\n",
+      writer->printf("CAN player #%" PRId32 ": %s\n  Statistics: %s\n",
         it->first, cl->GetInfo().c_str(), cl->GetStats().c_str());
       }
     }
@@ -119,7 +119,7 @@ void can_play_list(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
     for (can::canplay_map_t::iterator it=MyCan.m_playermap.begin(); it!=MyCan.m_playermap.end(); ++it)
       {
       canplay* cl = it->second;
-      writer->printf("#%d: %s\n", it->first, cl->GetInfo().c_str());
+      writer->printf("#%" PRId32 ": %s\n", it->first, cl->GetInfo().c_str());
       }
     }
   }
@@ -154,7 +154,7 @@ void can_play_speed(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int arg
       {
       canplay* cl = it->second;
       cl->SetSpeed(atoi(argv[0]));
-      writer->printf("CAN player #%d: %s\n  Statistics: %s\n",
+      writer->printf("CAN player #%" PRId32 ": %s\n  Statistics: %s\n",
         it->first, cl->GetInfo().c_str(), cl->GetStats().c_str());
       }
     }

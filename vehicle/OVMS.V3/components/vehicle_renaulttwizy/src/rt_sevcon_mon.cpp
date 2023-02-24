@@ -383,7 +383,7 @@ void SevconClient::ProcessMonitoringData(CANopenJob &job)
       if (m_mon_file) {
         fprintf((FILE*)m_mon_file,
           // timestamp,kph,rpm,throttle,kickdown,brake,
-          "%u,%.1f,%d,%.0f,%u,%.0f,"
+          "%" PRIu32 ",%.1f,%d,%.0f,%u,%.0f,"
           // mot_torque_limit,mot_torque_demand,mot_torque,
           "%.1f,%.1f,%.1f,"
           // bat_voltage,bat_current,bat_power,cap_voltage,

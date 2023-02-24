@@ -187,7 +187,7 @@ void CANopen::shell_readsdo(int verbosity, OvmsWriter* writer, OvmsCommand* cmd,
     if (i == job.sdo.xfersize)
       buffer.txt[i] = 0;
     
-    writer->printf("ReadSDO #%d 0x%04x.%02x: contsize=%d xfersize=%d dec=%d hex=0x%0*x str='%s'\n",
+    writer->printf("ReadSDO #%d 0x%04x.%02x: contsize=%d xfersize=%d dec=%" PRId32 " hex=0x%0*" PRIx32 " str='%s'\n",
       nodeid, index, subindex, job.sdo.contsize, job.sdo.xfersize,
       buffer.num, MIN(job.sdo.xfersize,4)*2, buffer.num, show_txt ? buffer.txt : "(binary)");
     }
@@ -275,10 +275,10 @@ void CANopen::shell_writesdo(int verbosity, OvmsWriter* writer, OvmsCommand* cmd
   switch (buftype)
     {
     case 'H':
-      writer->printf("WriteSDO #%d 0x%04x.%02x: hex=0x%08x => ", nodeid, index, subindex, buffer.num);
+      writer->printf("WriteSDO #%d 0x%04x.%02x: hex=0x%08" PRIx32 " => ", nodeid, index, subindex, buffer.num);
       break;
     case 'D':
-      writer->printf("WriteSDO #%d 0x%04x.%02x: dec=%d => ", nodeid, index, subindex, buffer.num);
+      writer->printf("WriteSDO #%d 0x%04x.%02x: dec=%" PRId32 " => ", nodeid, index, subindex, buffer.num);
       break;
     default:
       writer->printf("WriteSDO #%d 0x%04x.%02x: len=%d str='%s' => ", nodeid, index, subindex, bufsize, buffer.txt);
@@ -345,21 +345,21 @@ int CANopen::PrintNodeInfo(int capacity, OvmsWriter* writer, canbus* bus, int no
   if (brief)
     {
     if (written < capacity) written += writer->printf(
-      "#%d: DT=%08x ER=%02x VI=%08x\n"
+      "#%d: DT=%08" PRIx32 " ER=%02x VI=%08" PRIx32 "\n"
       , nodeid, device_type, error_register, vendor_id);
     }
   else
     {
     if (written < capacity) written += writer->printf(
       "Node #%d:\n"
-      " Device type: 0x%08x\n"
+      " Device type: 0x%08" PRIx32 "\n"
       " Error state: 0x%02x\n"
-      " Vendor ID: 0x%08x\n"
+      " Vendor ID: 0x%08" PRIx32 "\n"
       , nodeid, device_type, error_register, vendor_id);
     if (written < capacity) written += writer->printf(
-      " Product: 0x%08x\n"
-      " Revision: 0x%08x\n"
-      " S/N: 0x%08x\n"
+      " Product: 0x%08" PRIx32 "\n"
+      " Revision: 0x%08" PRIx32 "\n"
+      " S/N: 0x%08" PRIx32 "\n"
       , product_code, revision_number, serial_number);
     if (written < capacity) written += writer->printf(
       " Device name: %s\n"

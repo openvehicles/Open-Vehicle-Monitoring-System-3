@@ -371,28 +371,28 @@ void xkn_tpms(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
 		{
 		const std::string& fl_pressure = StdMetrics.ms_v_tpms_pressure->ElemAsUnitString(MS_V_TPMS_IDX_FL, "-", kPa, 1);
 		const std::string& fl_temp = StdMetrics.ms_v_tpms_temp->ElemAsUnitString(MS_V_TPMS_IDX_FL, "-", Celcius, 1);
-		writer->printf("1 ID:%u %s %s\n", car->kia_tpms_id[0], fl_pressure.c_str(), fl_temp.c_str());
+		writer->printf("1 ID:%" PRIu32 " %s %s\n", car->kia_tpms_id[0], fl_pressure.c_str(), fl_temp.c_str());
 		}
 	// Front right
 	if (StdMetrics.ms_v_tpms_pressure->IsDefined())
 		{
 		const std::string& fr_pressure = StdMetrics.ms_v_tpms_pressure->ElemAsUnitString(MS_V_TPMS_IDX_FR, "-", kPa, 1);
 		const std::string& fr_temp = StdMetrics.ms_v_tpms_temp->ElemAsUnitString(MS_V_TPMS_IDX_FR, "-", Celcius, 1);
-		writer->printf("2 ID:%u %s %s\n",car->kia_tpms_id[1], fr_pressure.c_str(), fr_temp.c_str());
+		writer->printf("2 ID:%" PRIu32 " %s %s\n",car->kia_tpms_id[1], fr_pressure.c_str(), fr_temp.c_str());
 		}
 	// Rear left
 	if (StdMetrics.ms_v_tpms_pressure->IsDefined())
 		{
 		const std::string& rl_pressure = StdMetrics.ms_v_tpms_pressure->ElemAsUnitString(MS_V_TPMS_IDX_RL, "-", kPa, 1);
 		const std::string& rl_temp = StdMetrics.ms_v_tpms_temp->ElemAsUnitString(MS_V_TPMS_IDX_RL, "-", Celcius, 1);
-		writer->printf("3 ID:%u %s %s\n",car->kia_tpms_id[2], rl_pressure.c_str(), rl_temp.c_str());
+		writer->printf("3 ID:%" PRIu32 " %s %s\n",car->kia_tpms_id[2], rl_pressure.c_str(), rl_temp.c_str());
 		}
 	// Rear right
 	if (StdMetrics.ms_v_tpms_pressure->IsDefined())
 		{
 		const std::string& rr_pressure = StdMetrics.ms_v_tpms_pressure->ElemAsUnitString(MS_V_TPMS_IDX_RR, "-", kPa, 1);
 		const std::string& rr_temp = StdMetrics.ms_v_tpms_temp->ElemAsUnitString(MS_V_TPMS_IDX_RR, "-", Celcius, 1);
-		writer->printf("4 ID:%u %s %s\n",car->kia_tpms_id[3], rr_pressure.c_str(), rr_temp.c_str());
+		writer->printf("4 ID:%" PRIu32 " %s %s\n",car->kia_tpms_id[3], rr_pressure.c_str(), rr_temp.c_str());
 		}
 	}
 

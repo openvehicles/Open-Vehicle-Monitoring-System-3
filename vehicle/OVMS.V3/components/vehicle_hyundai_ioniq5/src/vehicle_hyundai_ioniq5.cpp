@@ -918,10 +918,10 @@ void OvmsHyundaiIoniqEv::Ticker1(uint32_t ticker)
           m_b_aux_soc->SetValue( CalcAUXSoc(hif_aux_battery_mon.average_lastf()), Percentage );
           break;
         case OvmsBatteryState::Charging:
-          ESP_LOGD(TAG, "Aux Battery state: Charging %d", hif_aux_battery_mon.m_average_last);
+          ESP_LOGD(TAG, "Aux Battery state: Charging %" PRId32, hif_aux_battery_mon.m_average_last);
           break;
         case OvmsBatteryState::Blip: {
-          ESP_LOGD(TAG, "Aux Battery state: Blip %d", hif_aux_battery_mon.m_diff_last);
+          ESP_LOGD(TAG, "Aux Battery state: Blip %" PRId32, hif_aux_battery_mon.m_diff_last);
           if ( IsPollState_Off()) {
             ESP_LOGD(TAG, "PollState->Ping for 30 (Blip)");
             PollState_Ping(30);
@@ -929,7 +929,7 @@ void OvmsHyundaiIoniqEv::Ticker1(uint32_t ticker)
         }
         break;
         case OvmsBatteryState::Dip: {
-          ESP_LOGD(TAG, "Aux Battery state: Dip %d", hif_aux_battery_mon.m_diff_last);
+          ESP_LOGD(TAG, "Aux Battery state: Dip %" PRId32, hif_aux_battery_mon.m_diff_last);
           if ( IsPollState_Off()) {
             ESP_LOGD(TAG, "PollState->Ping for 30 (Dip)");
             PollState_Ping(30);
@@ -937,7 +937,7 @@ void OvmsHyundaiIoniqEv::Ticker1(uint32_t ticker)
         }
         break;
         case OvmsBatteryState::Low: {
-          ESP_LOGD(TAG, "Aux Battery state: Low %d", hif_aux_battery_mon.m_diff_last);
+          ESP_LOGD(TAG, "Aux Battery state: Low %" PRId32, hif_aux_battery_mon.m_diff_last);
           if (!IsPollState_Off()) {
             ESP_LOGD(TAG, "PollState->Off (Aux Battery state Low)");
             PollState_Off();
