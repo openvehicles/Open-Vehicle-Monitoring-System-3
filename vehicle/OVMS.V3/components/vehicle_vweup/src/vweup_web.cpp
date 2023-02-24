@@ -27,7 +27,10 @@
 
 #include <sdkconfig.h>
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
+#include "esp_idf_version.h"
+#if ESP_IDF_VERSION_MAJOR < 4
 #define _GLIBCXX_USE_C99 // to enable std::stoi etc.
+#endif
 #include <stdio.h>
 #include <string>
 #include "ovms_metrics.h"
