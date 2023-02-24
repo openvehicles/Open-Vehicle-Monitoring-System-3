@@ -39,6 +39,14 @@
 #include "ovms.h"
 #include "ovms_events.h"
 #include "ovms_mutex.h"
+#if ESP_IDF_VERSION_MAJOR >= 4
+#include "esp_netif.h"
+#else
+#include "tcpip_adapter.h"
+#endif
+#if ESP_IDF_VERSION_MAJOR >= 5
+#include <esp_mac.h>
+#endif
 
 typedef enum {
     ESP32WIFI_MODE_OFF = 0,   // Modem is off
@@ -106,10 +114,17 @@ class esp32wifi : public pcp, public InternalRamAllocated
     uint8_t m_previous_reason;
     uint8_t m_mac_sta[6];
     uint8_t m_mac_ap[6];
+#if ESP_IDF_VERSION_MAJOR >= 4
+    esp_netif_ip_info_t m_ip_info_sta;
+    esp_netif_ip_info_t m_ip_info_ap;
+    esp_netif_ip_info_t m_ip_static_sta;
+    esp_netif_dns_info_t m_dns_static_sta;
+#else
     tcpip_adapter_ip_info_t m_ip_info_sta;
     tcpip_adapter_ip_info_t m_ip_info_ap;
     tcpip_adapter_ip_info_t m_ip_static_sta;
     tcpip_adapter_dns_info_t m_dns_static_sta;
+#endif
     wifi_init_config_t m_wifi_init_cfg;
     wifi_config_t m_wifi_ap_cfg;
     wifi_config_t m_wifi_sta_cfg;

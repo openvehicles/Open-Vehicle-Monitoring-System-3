@@ -43,6 +43,9 @@ static const char *TAG = "events";
 #include <esp_netif_types.h>
 #include <esp_eth_com.h>
 #endif
+#if ESP_IDF_VERSION_MAJOR >= 5
+#include <esp_wifi_types.h>
+#endif
 
 #ifdef CONFIG_OVMS_COMP_OTA
 #include "ovms_ota.h"

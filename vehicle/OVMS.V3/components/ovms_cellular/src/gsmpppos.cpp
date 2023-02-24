@@ -38,6 +38,9 @@ static const char *TAG = "gsm-ppp";
 #include "ovms_command.h"
 #include "ovms_config.h"
 #include "ovms_events.h"
+#if ESP_IDF_VERSION_MAJOR >= 5
+#include <netif/ppp/pppapi.h>
+#endif
 
 static u32_t GsmPPPOS_OutputCallback(ppp_pcb *pcb, u8_t *data, u32_t len, void *ctx)
   {
@@ -214,7 +217,7 @@ void GsmPPPOS::Startup()
   {
   if (m_ppp == NULL) return;
 
-  pppapi_set_auth(m_ppp, PPPAUTHTYPE_PAP,
+  ppp_set_auth(m_ppp, PPPAUTHTYPE_PAP,
     MyConfig.GetParamValue("modem", "apn.user").c_str(),
     MyConfig.GetParamValue("modem", "apn.password").c_str());
   ppp_set_usepeerdns(m_ppp, 1); // Ask the peer for up to 2 DNS server addresses
