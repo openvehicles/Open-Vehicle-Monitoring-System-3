@@ -1232,7 +1232,11 @@ bool OvmsVehicleTeslaRoadster::TPMSRead(std::vector<uint32_t> *tpms)
     .stop_bits = UART_STOP_BITS_1,
     .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
     .rx_flow_ctrl_thresh = 122,
+#if ESP_IDF_VERSION_MAJOR < 5
     .use_ref_tick = 0,
+#else
+    .source_clk = UART_SCLK_DEFAULT,
+#endif
   };
   uart_param_config(uart, &uart_config);
   uart_set_pin(uart, 33, 32, 0, 0);
@@ -1306,7 +1310,11 @@ bool OvmsVehicleTeslaRoadster::TPMSWrite(std::vector<uint32_t> &tpms)
     .stop_bits = UART_STOP_BITS_1,
     .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
     .rx_flow_ctrl_thresh = 122,
+#if ESP_IDF_VERSION_MAJOR < 5
     .use_ref_tick = 0,
+#else
+    .source_clk = UART_SCLK_DEFAULT,
+#endif
   };
   uart_param_config(uart, &uart_config);
   uart_set_pin(uart, 33, 32, 0, 0);
