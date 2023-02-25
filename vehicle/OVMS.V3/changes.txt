@@ -75,6 +75,8 @@ Open Vehicle Monitor System v3 - Change log
 - CAN framework: add bus reset command
   New commands:
     can [can1…4] reset                -- reset the CAN interface
+- Vehicle: add support for custom command handlers, see…
+  https://docs.openvehicles.com/en/latest/userguide/scripting.html#ovmsvehicle-command-plugins
 
 
 2022-09-01 MWJ  3.3.003  OTA release

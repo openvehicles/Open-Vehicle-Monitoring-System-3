@@ -897,66 +897,202 @@ void OvmsVehicle::CalculateEfficiency()
 
 OvmsVehicle::vehicle_command_t OvmsVehicle::CommandSetChargeMode(vehicle_mode_t mode)
   {
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  if (MyDuktape.DukTapeAvailable())
+    {
+    std::string mode_code = chargemode_code((int)mode);
+    StringWriter dukcmd;
+    dukcmd.printf("(!OvmsVehicle.SetChargeMode.prototype)?-1:"
+      "OvmsVehicle.SetChargeMode(\"%s\")", mode_code.c_str());
+    int res = MyDuktape.DuktapeEvalIntResult(dukcmd.c_str());
+    if (res >= 0) return res ? Success : Fail;
+    }
+#endif
   return NotImplemented;
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicle::CommandSetChargeCurrent(uint16_t limit)
   {
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  if (MyDuktape.DukTapeAvailable())
+    {
+    StringWriter dukcmd;
+    dukcmd.printf("(!OvmsVehicle.SetChargeCurrent.prototype)?-1:"
+      "OvmsVehicle.SetChargeCurrent(%" PRIu16 ")", limit);
+    int res = MyDuktape.DuktapeEvalIntResult(dukcmd.c_str());
+    if (res >= 0) return res ? Success : Fail;
+    }
+#endif
   return NotImplemented;
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStartCharge()
   {
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  if (MyDuktape.DukTapeAvailable())
+    {
+    StringWriter dukcmd;
+    dukcmd.printf("(!OvmsVehicle.StartCharge.prototype)?-1:"
+      "OvmsVehicle.StartCharge()");
+    int res = MyDuktape.DuktapeEvalIntResult(dukcmd.c_str());
+    if (res >= 0) return res ? Success : Fail;
+    }
+#endif
   return NotImplemented;
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStopCharge()
   {
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  if (MyDuktape.DukTapeAvailable())
+    {
+    StringWriter dukcmd;
+    dukcmd.printf("(!OvmsVehicle.StopCharge.prototype)?-1:"
+      "OvmsVehicle.StopCharge()");
+    int res = MyDuktape.DuktapeEvalIntResult(dukcmd.c_str());
+    if (res >= 0) return res ? Success : Fail;
+    }
+#endif
   return NotImplemented;
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicle::CommandSetChargeTimer(bool timeron, uint16_t timerstart)
   {
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  if (MyDuktape.DukTapeAvailable())
+    {
+    StringWriter dukcmd;
+    dukcmd.printf("(!OvmsVehicle.SetChargeTimer.prototype)?-1:"
+      "OvmsVehicle.SetChargeTimer(%s,%" PRIu16 ")", timeron ? "true" : "false", timerstart);
+    int res = MyDuktape.DuktapeEvalIntResult(dukcmd.c_str());
+    if (res >= 0) return res ? Success : Fail;
+    }
+#endif
   return NotImplemented;
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicle::CommandCooldown(bool cooldownon)
   {
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  if (MyDuktape.DukTapeAvailable())
+    {
+    StringWriter dukcmd;
+    const char *method = cooldownon ? "StartCooldown" : "StopCooldown";
+    dukcmd.printf("(!OvmsVehicle.%s.prototype)?-1:"
+      "OvmsVehicle.%s()", method, method);
+    int res = MyDuktape.DuktapeEvalIntResult(dukcmd.c_str());
+    if (res >= 0) return res ? Success : Fail;
+    }
+#endif
   return NotImplemented;
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicle::CommandClimateControl(bool climatecontrolon)
   {
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  if (MyDuktape.DukTapeAvailable())
+    {
+    StringWriter dukcmd;
+    dukcmd.printf("(!OvmsVehicle.ClimateControl.prototype)?-1:"
+      "OvmsVehicle.ClimateControl(%s)", climatecontrolon ? "true" : "false");
+    int res = MyDuktape.DuktapeEvalIntResult(dukcmd.c_str());
+    if (res >= 0) return res ? Success : Fail;
+    }
+#endif
   return NotImplemented;
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicle::CommandWakeup()
   {
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  if (MyDuktape.DukTapeAvailable())
+    {
+    StringWriter dukcmd;
+    dukcmd.printf("(!OvmsVehicle.Wakeup.prototype)?-1:"
+      "OvmsVehicle.Wakeup()");
+    int res = MyDuktape.DuktapeEvalIntResult(dukcmd.c_str());
+    if (res >= 0) return res ? Success : Fail;
+    }
+#endif
   return NotImplemented;
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicle::CommandLock(const char* pin)
   {
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  if (MyDuktape.DukTapeAvailable())
+    {
+    std::string pin_json = json_encode(std::string(pin));
+    StringWriter dukcmd;
+    dukcmd.printf("(!OvmsVehicle.Lock.prototype)?-1:"
+      "OvmsVehicle.Lock(\"%s\")", pin_json.c_str());
+    int res = MyDuktape.DuktapeEvalIntResult(dukcmd.c_str());
+    if (res >= 0) return res ? Success : Fail;
+    }
+#endif
   return NotImplemented;
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicle::CommandUnlock(const char* pin)
   {
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  if (MyDuktape.DukTapeAvailable())
+    {
+    std::string pin_json = json_encode(std::string(pin));
+    StringWriter dukcmd;
+    dukcmd.printf("(!OvmsVehicle.Unlock.prototype)?-1:"
+      "OvmsVehicle.Unlock(\"%s\")", pin_json.c_str());
+    int res = MyDuktape.DuktapeEvalIntResult(dukcmd.c_str());
+    if (res >= 0) return res ? Success : Fail;
+    }
+#endif
   return NotImplemented;
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicle::CommandActivateValet(const char* pin)
   {
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  if (MyDuktape.DukTapeAvailable())
+    {
+    std::string pin_json = json_encode(std::string(pin));
+    StringWriter dukcmd;
+    dukcmd.printf("(!OvmsVehicle.Valet.prototype)?-1:"
+      "OvmsVehicle.Valet(\"%s\")", pin_json.c_str());
+    int res = MyDuktape.DuktapeEvalIntResult(dukcmd.c_str());
+    if (res >= 0) return res ? Success : Fail;
+    }
+#endif
   return NotImplemented;
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicle::CommandDeactivateValet(const char* pin)
   {
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  if (MyDuktape.DukTapeAvailable())
+    {
+    std::string pin_json = json_encode(std::string(pin));
+    StringWriter dukcmd;
+    dukcmd.printf("(!OvmsVehicle.Unvalet.prototype)?-1:"
+      "OvmsVehicle.Unvalet(\"%s\")", pin_json.c_str());
+    int res = MyDuktape.DuktapeEvalIntResult(dukcmd.c_str());
+    if (res >= 0) return res ? Success : Fail;
+    }
+#endif
   return NotImplemented;
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicle::CommandHomelink(int button, int durationms)
   {
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  if (MyDuktape.DukTapeAvailable())
+    {
+    StringWriter dukcmd;
+    dukcmd.printf("(!OvmsVehicle.Homelink.prototype)?-1:"
+      "OvmsVehicle.Homelink(%" PRId32 ",%" PRId32 ")", button+1, durationms);
+    int res = MyDuktape.DuktapeEvalIntResult(dukcmd.c_str());
+    if (res >= 0) return res ? Success : Fail;
+    }
+#endif
   return NotImplemented;
   }
 
