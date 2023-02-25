@@ -39,11 +39,13 @@ static const char *TAG = "ovms-mdns";
 
 OvmsMDNS MyMDNS __attribute__ ((init_priority (8100)));
 
+#if ESP_IDF_VERSION_MAJOR < 4
 void OvmsMDNS::SystemEvent(std::string event, void* data)
   {
   system_event_t *ev = (system_event_t *)data;
   if (m_mdns) mdns_handle_system_event(NULL, ev);
   }
+#endif
 
 void OvmsMDNS::SystemStart(std::string event, void* data)
   {
@@ -108,7 +110,9 @@ OvmsMDNS::OvmsMDNS()
 
   using std::placeholders::_1;
   using std::placeholders::_2;
+#if ESP_IDF_VERSION_MAJOR < 4
   MyEvents.RegisterEvent(TAG,"system.event", std::bind(&OvmsMDNS::SystemEvent, this, _1, _2));
+#endif
   MyEvents.RegisterEvent(TAG,"system.start", std::bind(&OvmsMDNS::SystemStart, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"system.shuttingdown",std::bind(&OvmsMDNS::EventSystemShuttingDown, this, _1, _2));
   }
