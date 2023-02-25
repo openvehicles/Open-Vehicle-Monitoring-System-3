@@ -41,6 +41,9 @@ static const char *TAG = "ota";
 #if ESP_IDF_VERSION_MAJOR < 4
 #include "strverscmp.h"
 #endif
+#if ESP_IDF_VERSION_MAJOR >= 5
+#include <spi_flash_mmap.h>
+#endif
 #include "ovms_ota.h"
 #include "ovms_command.h"
 #include "ovms_boot.h"
