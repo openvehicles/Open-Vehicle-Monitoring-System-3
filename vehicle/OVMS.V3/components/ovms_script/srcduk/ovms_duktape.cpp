@@ -47,7 +47,6 @@ static const char *TAG = "ovms-duktape";
 #include "console_async.h"
 #include "buffered_shell.h"
 #include "ovms_netmanager.h"
-#include "ovms_tls.h"
 
 #ifdef CONFIG_OVMS_COMP_PLUGINS
 #include "ovms_plugins.h"

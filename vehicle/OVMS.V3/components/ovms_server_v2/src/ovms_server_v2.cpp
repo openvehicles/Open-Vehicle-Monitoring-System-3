@@ -46,7 +46,9 @@ static const char *TAG = "ovms-server-v2";
 #include "esp_system.h"
 #include "ovms_utils.h"
 #include "ovms_boot.h"
+#if CONFIG_MG_ENABLE_SSL
 #include "ovms_tls.h"
+#endif
 
 // should this go in the .h or in the .cpp?
 typedef union {
@@ -863,8 +865,14 @@ void OvmsServerV2::Connect()
   opts.error_string = &err;
   if (m_tls)
     {
+#if CONFIG_MG_ENABLE_SSL
     opts.ssl_ca_cert = MyOvmsTLS.GetTrustedList();
     opts.ssl_server_name = m_server.c_str();
+#else
+    ESP_LOGE(TAG, "mg_connect(%s) failed: SSL support disabled", address.c_str());
+    SetStatus("Error: Connection failed (SSL support disabled)", true, Undefined);
+    return;
+#endif
     }
   if ((m_mgconn = mg_connect_opt(mgr, address.c_str(), OvmsServerV2MongooseCallback, opts)) == NULL)
     {
