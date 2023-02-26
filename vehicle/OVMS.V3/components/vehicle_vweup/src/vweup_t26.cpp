@@ -757,7 +757,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandWakeup()
 {
   if (HasNoT26()) {
     ESP_LOGE(TAG, "CommandWakeup failed: T26 not available");
-    return NotImplemented;
+    return OvmsVehicle::CommandWakeup();
   }
   if (!IsT26Ready() || !vweup_enable_write) {
     ESP_LOGE(TAG, "CommandWakeup failed: T26 not ready / no write access");
@@ -1555,37 +1555,43 @@ void OvmsVehicleVWeUp::CCOff()
 OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandLock(const char *pin)
 {
   ESP_LOGI(TAG, "CommandLock");
-  return NotImplemented;
+  // fallback to default implementation:
+  return OvmsVehicle::CommandLock(pin);
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandUnlock(const char *pin)
 {
   ESP_LOGI(TAG, "CommandUnlock");
-  return NotImplemented;
+  // fallback to default implementation:
+  return OvmsVehicle::CommandUnlock(pin);
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandActivateValet(const char *pin)
 {
   ESP_LOGI(TAG, "CommandActivateValet");
-  return NotImplemented;
+  // fallback to default implementation:
+  return OvmsVehicle::CommandActivateValet(pin);
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandDeactivateValet(const char *pin)
 {
   ESP_LOGI(TAG, "CommandLDeactivateValet");
-  return NotImplemented;
+  // fallback to default implementation:
+  return OvmsVehicle::CommandDeactivateValet(pin);
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandStartCharge()
 {
   ESP_LOGI(TAG, "CommandStartCharge");
-  return NotImplemented;
+  // fallback to default implementation:
+  return OvmsVehicle::CommandStartCharge();
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandStopCharge()
 {
   ESP_LOGI(TAG, "CommandStopCharge");
-  return NotImplemented;
+  // fallback to default implementation:
+  return OvmsVehicle::CommandStopCharge();
 }
 
 OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandHomelink(int button, int durationms)
@@ -1593,19 +1599,32 @@ OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandHomelink(int button, int
   // This is needed to enable climate control via Homelink for the iOS app
   ESP_LOGI(TAG, "CommandHomelink button=%d durationms=%d", button, durationms);
 
+  OvmsVehicle::vehicle_command_t res = NotImplemented;
   if (button == 0) {
-    return RemoteCommandHandler(ENABLE_CLIMATE_CONTROL);
+    res = RemoteCommandHandler(ENABLE_CLIMATE_CONTROL);
   }
-  if (button == 1) {
-    return RemoteCommandHandler(DISABLE_CLIMATE_CONTROL);
+  else if (button == 1) {
+    res = RemoteCommandHandler(DISABLE_CLIMATE_CONTROL);
   }
 
-  return NotImplemented;
+  // fallback to default implementation?
+  if (res == NotImplemented) {
+    res = OvmsVehicle::CommandHomelink(button, durationms);
+  }
+  return res;
 }
 
 
 OvmsVehicle::vehicle_command_t OvmsVehicleVWeUp::CommandClimateControl(bool climatecontrolon)
 {
   ESP_LOGI(TAG, "CommandClimateControl %s", climatecontrolon ? "ON" : "OFF");
-  return RemoteCommandHandler(climatecontrolon ? ENABLE_CLIMATE_CONTROL : DISABLE_CLIMATE_CONTROL);
+
+  OvmsVehicle::vehicle_command_t res;
+  res = RemoteCommandHandler(climatecontrolon ? ENABLE_CLIMATE_CONTROL : DISABLE_CLIMATE_CONTROL);
+
+  // fallback to default implementation?
+  if (res == NotImplemented) {
+    res = OvmsVehicle::CommandClimateControl(climatecontrolon);
+  }
+  return res;
 }
