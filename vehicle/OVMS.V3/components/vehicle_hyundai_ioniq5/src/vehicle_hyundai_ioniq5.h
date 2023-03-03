@@ -317,6 +317,7 @@ protected:
     }
   }
   void CheckResetDoorCheck();
+  void ECUStatusChange(bool ecuOn, bool carOn) override;
 public:
   int RequestVIN();
   bool DriverIndicator(bool on)

@@ -65,6 +65,7 @@ const char *OvmsHyundaiIoniqEv::TAG = "v-ioniq5";
 // Pollstate 3 - ping : car is off, not charging and something triggers a wake
 static const OvmsVehicle::poll_pid_t vehicle_ioniq_polls[] = {
   //                                                   Off  On  Chrg Ping
+  { 0x7b3, 0x7bb, VEHICLE_POLL_TYPE_READDATA, 0x0100, { 0,   1,  10, 30}, 0, ISOTP_STD },   // AirCon and Speed
   { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_READDATA, 0xe004, { 0,   1,   4,  4}, 0, ISOTP_STD },   // VMCU - Drive status + Accellerator
   { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_READDATA, 0x0101, { 0,   1,   9,  9}, 0, ISOTP_STD },   // BMC Diag page 01 - Inc Battery Pack Temp + RPM
   { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_READDATA, 0x0102, { 0,  59,   9,  0}, 0, ISOTP_STD },   // Battery 1 - BMC Diag page 02
@@ -88,7 +89,6 @@ static const OvmsVehicle::poll_pid_t vehicle_ioniq_polls[] = {
   { 0x770, 0x778, VEHICLE_POLL_TYPE_READDATA, 0xbc09, { 0,  10,  10, 20}, 0, ISOTP_STD },  // Lights
   { 0x770, 0x778, VEHICLE_POLL_TYPE_READDATA, 0xbc10, { 0,  10,  10, 20}, 0, ISOTP_STD },  // Lights
 
-  { 0x7b3, 0x7bb, VEHICLE_POLL_TYPE_READDATA, 0x0100, { 0,  1,  10,  30}, 0, ISOTP_STD },  // AirCon and Speed
   //{0x7b3,0x7bb, VEHICLE_POLL_TYPE_READDATA, 0x0102, { 0,  10,  10,  0} },  // AirCon - No usable values found yet
 
   { 0x7c6, 0x7ce, VEHICLE_POLL_TYPE_READDATA, 0xB002, { 0,  5, 120,  0}, 0, ISOTP_STD },  // Cluster. ODO
@@ -97,6 +97,8 @@ static const OvmsVehicle::poll_pid_t vehicle_ioniq_polls[] = {
 
   // TODO 0x7e5 OBC - On Board Charger?
 
+  // Check again while driving only
+  { 0x7b3, 0x7bb, VEHICLE_POLL_TYPE_READDATA, 0x0100, { 0,  1,  0,  0}, 0, ISOTP_STD },  // AirCon and Speed
   POLL_LIST_END
 };
 
@@ -632,10 +634,22 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
   PollState_Off();
   kia_secs_with_no_client = 0;
   PollSetPidList(m_can1, vehicle_ioniq_polls);
+  // Initially throttling to 4.
+  PollSetThrottling(4);
+  PollSetSubTick(false);
+
   ESP_LOGD(TAG, "PollState->Ping for 30 (Init)");
   PollState_Ping(30);
 
   XDISARM;
+}
+
+void OvmsHyundaiIoniqEv::ECUStatusChange(bool ecuOn, bool carOn)
+{
+  // When ECU is running - be more agressive.
+  PollSetThrottling(ecuOn && carOn ? 8 : 4);
+  bool subtick = MyConfig.GetParamValueBool("xiq", "poll_subtick", false);
+  PollSetSubTick(ecuOn && carOn && subtick);
 }
 
 /**
