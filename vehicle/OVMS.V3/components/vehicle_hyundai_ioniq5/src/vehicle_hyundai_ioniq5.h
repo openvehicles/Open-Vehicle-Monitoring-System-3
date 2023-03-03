@@ -317,6 +317,35 @@ protected:
     }
   }
   void CheckResetDoorCheck();
+
+  void NotifiedOBD2ECUStart() override
+  {
+    if (m_ecu_lockout == 0)
+      ECUStatusChange(StandardMetrics.ms_v_env_on->AsBool() && (StdMetrics.ms_v_env_gear->AsInt() > 0));
+  }
+  void NotifiedOBD2ECUStop() override
+  {
+    ECUStatusChange(false);
+  }
+  void NotifiedVehicleOn() override
+  {
+    m_ecu_lockout = 20;
+  }
+  void NotifiedVehicleOff() override
+  {
+    m_ecu_lockout = 0;
+    ECUStatusChange(false);
+  }
+  void NotifiedVehicleGear( int gear) override
+  {
+    if (gear <= 0)
+      ECUStatusChange(false);
+    else if (m_ecu_lockout == 0)
+      ECUStatusChange(StandardMetrics.ms_v_env_on->AsBool() && StandardMetrics.ms_m_obd2ecu_on->AsBool());
+  }
+
+  int m_ecu_lockout;
+  void ECUStatusChange(bool run);
 public:
   int RequestVIN();
   bool DriverIndicator(bool on)
