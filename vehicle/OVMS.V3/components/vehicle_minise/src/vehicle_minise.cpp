@@ -217,11 +217,11 @@ OvmsVehicleMiniSE::OvmsVehicleMiniSE()
   poll_pid_t selectCellVoltage =
     { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_ROUTINECONTROL,
       { .args = { 0x01, 3, { 0xAD, 0x6E, 0x00 }}},
-      { 0, 30, 10, 10 }, 0, ISOTP_EXTADR };
+      { 0, 30, 10, 30 }, 0, ISOTP_EXTADR };
   poll_pid_t probeCellVoltage =
     { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_ROUTINECONTROL,
       { .args = { 0x03, 3, { 0xAD, 0x6E, 0x00 }}},
-      { 0, 30, 10, 10 }, 0, ISOTP_EXTADR };
+      { 0, 30, 10, 30 }, 0, ISOTP_EXTADR };
   for (uint8_t i = 0; i < 96; i++) {
     obdii_polls[i * 2] = selectCellVoltage;
     obdii_polls[i * 2].args.data[2] = i + 1;
@@ -233,11 +233,11 @@ OvmsVehicleMiniSE::OvmsVehicleMiniSE()
   poll_pid_t selectModuleTemperature =
     { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_ROUTINECONTROL,
       { .args = { 0x01, 3, { 0xAD, 0x6D, 0x00 }}},
-      { 0, 30, 10, 10 }, 0, ISOTP_EXTADR };
+      { 0, 30, 30, 30 }, 0, ISOTP_EXTADR };
   poll_pid_t probeModuleTemperature =
     { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_ROUTINECONTROL,
       { .args = { 0x03, 3, { 0xAD, 0x6D, 0x00 }}},
-      { 0, 30, 10, 10 }, 0, ISOTP_EXTADR };
+      { 0, 30, 30, 30 }, 0, ISOTP_EXTADR };
   for (uint8_t i = 0; i < 12; i++) {
     obdii_polls[(i + 96) * 2] = selectModuleTemperature;
     obdii_polls[(i + 96) * 2].args.data[2] = i + 1;
