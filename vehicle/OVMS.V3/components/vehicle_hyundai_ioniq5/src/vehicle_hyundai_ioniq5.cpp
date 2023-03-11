@@ -561,6 +561,8 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
 
   m_v_accum_op_time           = MyMetrics.InitInt("xiq.v.accum.op.time",         SM_STALE_MAX, 0, Seconds );
 
+  m_v_charge_current_request = MyMetrics.InitFloat("xiq.v.c.current.req", SM_STALE_MID, 0, Amps);
+
   // Setting a minimum trip size of 5km as the granuality of trips is +/- 1km.
   // The default range and battery size are overridden below in ConfigChanged() .. and
   // when the battery size is loaded from OBD.
