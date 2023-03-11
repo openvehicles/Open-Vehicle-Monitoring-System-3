@@ -317,6 +317,8 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
         float avail = (float) CAN_BYTE(1) / 10.0f;
         m_batt_energy_avail->SetValue(avail);
       }
+      
+      break;
     
     
     case 0x554:
