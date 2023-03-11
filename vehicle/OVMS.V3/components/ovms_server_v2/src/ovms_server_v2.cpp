@@ -1922,7 +1922,7 @@ void OvmsServerV2::EventListener(std::string event, void* data)
     {
     ConfigChanged((OvmsConfigParam*) data);
     }
-  else if (event == "location.alert.flatbed.moved")
+  else if (event == "location.alert.flatbed.moved" || event == "location.alert.valet.bounds")
     {
     m_now_gps = true;
     }
@@ -2146,6 +2146,7 @@ OvmsServerV2::OvmsServerV2(const char* name)
   MyEvents.RegisterEvent(TAG,"config.changed", std::bind(&OvmsServerV2::EventListener, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"config.mounted", std::bind(&OvmsServerV2::EventListener, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"location.alert.flatbed.moved", std::bind(&OvmsServerV2::EventListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"location.alert.valet.bounds", std::bind(&OvmsServerV2::EventListener, this, _1, _2));
 
   // read config:
   ConfigChanged(NULL);
