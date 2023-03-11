@@ -307,6 +307,18 @@ void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
       break;
     
     
+    case 0x425:
+      // --------------------------------------------------------------------------
+      // CAN ID 0x425: sent every 100 ms (10 per second) [BMS]
+      
+      // Currently stored usable energy [kWh/10] in the battery
+      // (Note: capacity indicator, takes battery aging into account)
+      if (CAN_BYTE(1) != 0xff) {
+        float avail = (float) CAN_BYTE(1) / 10.0f;
+        m_batt_energy_avail->SetValue(avail);
+      }
+    
+    
     case 0x554:
       // --------------------------------------------------------------------------
       // CAN ID 0x554: Battery cell module temperatures
