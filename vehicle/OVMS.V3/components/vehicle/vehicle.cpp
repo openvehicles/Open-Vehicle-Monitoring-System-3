@@ -1088,7 +1088,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandHomelink(int button, int dura
     {
     StringWriter dukcmd;
     dukcmd.printf("(!OvmsVehicle.Homelink.prototype)?-1:"
-      "OvmsVehicle.Homelink(%" PRId32 ",%" PRId32 ")", button+1, durationms);
+      "OvmsVehicle.Homelink(%d,%d)", button+1, durationms);
     int res = MyDuktape.DuktapeEvalIntResult(dukcmd.c_str());
     if (res >= 0) return res ? Success : Fail;
     }
