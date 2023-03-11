@@ -47,6 +47,11 @@ static const char *TAG = "esp32can";
 #if ESP_IDF_VERSION_MAJOR >= 5
 #include <esp_chip_info.h>
 #endif
+#if ESP_IDF_VERSION_MAJOR >= 4
+#include <rom/gpio.h>
+#include <soc/gpio_sig_map.h>
+#endif
+
 
 esp32can* MyESP32can = NULL;
 
