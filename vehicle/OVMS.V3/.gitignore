@@ -66,3 +66,5 @@ sdkconfig.old
 
 # Tmp
 tmp/*
+
+managed_components/
