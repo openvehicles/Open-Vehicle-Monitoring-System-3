@@ -82,6 +82,7 @@ Open Vehicle Monitor System v3 - Change log
     xrt.b.energy.avail                -- Current battery energy available [kWh] (aged)
     xrt.b.energy.full                 -- Maximum battery energy capacity [kWh] (aged, needs full charge)
 - Add button on web file editor to reload ECU (when ECU is enabled).
+- Web UI: Add configuration for Valet and Flatbed geofence to the Locations config page.
 
 2022-09-01 MWJ  3.3.003  OTA release
 - Toyota RAV4 EV: Initial support added. Only the Tesla bus is decoded and just listening so far.
