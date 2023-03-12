@@ -269,6 +269,9 @@ MetricsStandard::MetricsStandard()
   ms_v_pos_gpsspeed = new OvmsMetricFloat(MS_V_POS_GPSSPEED, SM_STALE_MIN, Kph);
   ms_v_pos_odometer = new OvmsMetricFloat(MS_V_POS_ODOMETER, SM_STALE_MID, Kilometers, true);
   ms_v_pos_trip = new OvmsMetricFloat(MS_V_POS_TRIP, SM_STALE_MID, Kilometers, true);
+  ms_v_pos_valet_latitude = new OvmsMetricFloat(MS_V_POS_VALET_LATITUDE, SM_STALE_NONE, Other, true);
+  ms_v_pos_valet_longitude = new OvmsMetricFloat(MS_V_POS_VALET_LONGITUDE, SM_STALE_NONE, Other, true);
+  ms_v_pos_valet_distance = new OvmsMetricFloat(MS_V_POS_VALET_DISTANCE, SM_STALE_HIGH, Meters, true);
 
   //
   // TPMS: tyre monitoring metrics

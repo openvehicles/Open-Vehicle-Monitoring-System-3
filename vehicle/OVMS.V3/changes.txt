@@ -77,8 +77,11 @@ Open Vehicle Monitor System v3 - Change log
     can [can1…4] reset                -- reset the CAN interface
 - Vehicle: add support for custom command handlers, see…
   https://docs.openvehicles.com/en/latest/userguide/scripting.html#ovmsvehicle-command-plugins
- - Add button on web file editor to reload ECU (when ECU is enabled).
-
+- Renault Twizy: read battery energy available from BMS (thanks to Martin Bitz)
+  New metrics:
+    xrt.b.energy.avail                -- Current battery energy available [kWh] (aged)
+    xrt.b.energy.full                 -- Maximum battery energy capacity [kWh] (aged, needs full charge)
+- Add button on web file editor to reload ECU (when ECU is enabled).
 
 2022-09-01 MWJ  3.3.003  OTA release
 - Toyota RAV4 EV: Initial support added. Only the Tesla bus is decoded and just listening so far.

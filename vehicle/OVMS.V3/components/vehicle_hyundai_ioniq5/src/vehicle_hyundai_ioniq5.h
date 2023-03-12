@@ -371,6 +371,7 @@ protected:
   OvmsMetricFloat *m_v_bat_calc_cap;
 
   OvmsMetricBool   *m_v_env_parklights;
+  OvmsMetricFloat   *m_v_charge_current_request;
 
   /// Accumulated operating time
   OvmsMetricInt *m_v_accum_op_time;

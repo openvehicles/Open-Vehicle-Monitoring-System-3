@@ -394,6 +394,15 @@ void OvmsHyundaiIoniqEv::IncomingBMC_Full(canbus *bus, uint16_t type, uint16_t p
         else {
           m_b_bms_availpower->SetValue(value, Watts);
         }
+
+        if (get_uint_buff_be<2>(data, 7, value)) {
+          if (value == 0) {
+            m_v_charge_current_request->Clear();
+          } else {
+            m_v_charge_current_request->SetValue(value/10.0);
+          }
+        }
+
         if (!get_uint_buff_be<1>(data, 15, value)) {
           ESP_LOGE(TAG, "IoniqISOTP.BMC: BMS Min Temp Bad Buffer");
         }
