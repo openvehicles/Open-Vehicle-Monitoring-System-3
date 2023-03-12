@@ -81,7 +81,10 @@ Open Vehicle Monitor System v3 - Change log
   New metrics:
     xrt.b.energy.avail                -- Current battery energy available [kWh] (aged)
     xrt.b.energy.full                 -- Maximum battery energy capacity [kWh] (aged, needs full charge)
-
+- Add events for ecu:
+    vehicle.ecu.start  - Called after the ECU is started.
+    vehicle.ecu.stop   - Called before the ECU is stopped.
+    The vehicle class has a virtual function ECUStatusChange that responds to this event.
 
 2022-09-01 MWJ  3.3.003  OTA release
 - Toyota RAV4 EV: Initial support added. Only the Tesla bus is decoded and just listening so far.

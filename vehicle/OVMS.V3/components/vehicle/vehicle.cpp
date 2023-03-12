@@ -366,11 +366,19 @@ OvmsVehicle::OvmsVehicle()
     CONFIG_OVMS_VEHICLE_RXTASK_STACK, (void*)this, 10, &m_rxtask, CORE(1));
 
   MyEvents.RegisterEvent(TAG, "ticker.1", std::bind(&OvmsVehicle::VehicleTicker1, this, _1, _2));
+  MyEvents.RegisterEvent(TAG, "vehicle.ecu.start", std::bind(&OvmsVehicle::ECUEventListener, this, _1));
+  MyEvents.RegisterEvent(TAG, "vehicle.ecu.stop", std::bind(&OvmsVehicle::ECUEventListener, this, _1));
+
   MyEvents.RegisterEvent(TAG, "config.changed", std::bind(&OvmsVehicle::VehicleConfigChanged, this, _1, _2));
   MyEvents.RegisterEvent(TAG, "config.mounted", std::bind(&OvmsVehicle::VehicleConfigChanged, this, _1, _2));
   VehicleConfigChanged("config.mounted", NULL);
 
   MyMetrics.RegisterListener(TAG, "*", std::bind(&OvmsVehicle::MetricModified, this, _1));
+
+  bool ecuon = MyPeripherals->m_obd2ecu != nullptr;
+  bool caron = StandardMetrics.ms_v_env_on->AsBool();
+  if (ecuon || caron)
+    ECUStatusChange(ecuon, caron);
   }
 
 OvmsVehicle::~OvmsVehicle()
@@ -779,6 +787,20 @@ void OvmsVehicle::NotifyChargeDone()
   StringWriter buf(200);
   CommandStat(COMMAND_RESULT_NORMAL, &buf);
   MyNotify.NotifyString("info","charge.done",buf.c_str());
+  }
+
+void OvmsVehicle::ECUEventListener(std::string event)
+  {
+  ECUStatusChange(event == "vehicle.ecu.start", StandardMetrics.ms_v_env_on->AsBool());
+  }
+
+/** Called when ECU / Car on status changes.
+  * Cars that support faster polling might override this to update
+  * Poll Throttling (PollSetThrottling) to a larger value while the ECU and Car is on for
+  * more responsive speed/RPM values.
+  */
+void OvmsVehicle::ECUStatusChange(bool ecuOn, bool carOn)
+  {
   }
 
 void OvmsVehicle::NotifyValetEnabled()
@@ -1416,6 +1438,9 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
   {
   if (metric == StandardMetrics.ms_v_env_on)
     {
+
+    bool ecuon = MyPeripherals->m_obd2ecu != nullptr;
+    ECUStatusChange(ecuon, StandardMetrics.ms_v_env_on->AsBool());
     if (StandardMetrics.ms_v_env_on->AsBool())
       {
       m_drive_startsoc = StdMetrics.ms_v_bat_soc->AsFloat();
