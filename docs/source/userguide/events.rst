@@ -79,6 +79,8 @@ network.wifi.sta.bad                          WIFI client has bad signal level
 network.wifi.sta.good                         WIFI client has good signal level
 network.wifi.up                               WIFI network is up
 notify.<type>.<subtype>                       An info / alert / error notification is sent
+obd2ecu.start                                 Called after the OBD2ECU process is started.
+obd2ecu.stop                                  Called before the OBD2ECU process is stopped.
 retools.cleared.all                           RE frame log has been cleared
 retools.cleared.changed                       RE frame change flags cleared
 retools.cleared.discovered                    RE frame discovery flags cleared
@@ -173,6 +175,8 @@ vehicle.charge.timermode.off                  Vehicle charge timer mode has been
 vehicle.charge.timermode.on                   Vehicle charge timer mode has been switched on
 vehicle.charge.type                 <type>    Vehicle charge connection type has changed (e.g. ccs/type2/…)
 vehicle.drivemode.<n>                         Vehicle drivemode has been set to profile <n> (vehicle specific)
+vehicle.ecu.start                             Called after the ECU is started.
+vehicle.ecu.stop                              Called before the ECU is stopped.
 vehicle.gear.forward                          Vehicle has been put in forward gear
 vehicle.gear.neutral                          Vehicle has been put in neutral gear
 vehicle.gear.reverse                          Vehicle has been put in reverse gear

@@ -82,6 +82,7 @@ m.net.sq                                 -79dBm                   …signal qual
 m.net.type                               wifi                     …and type (none/modem/wifi)
 m.net.wifi.network                       WLAN-214677              Current Wifi network SSID
 m.net.wifi.sq                            -79.1dBm                 …and signal quality
+m.obdc2ecu.on                            no                       Is the OBD2ECU process currently on.
 m.serial                                                          Reserved for module serial no.
 m.tasks                                  20                       Task count (use ``module tasks`` to list)
 m.time.utc                               1572590910Sec            UTC time in seconds

@@ -81,7 +81,13 @@ Open Vehicle Monitor System v3 - Change log
   New metrics:
     xrt.b.energy.avail                -- Current battery energy available [kWh] (aged)
     xrt.b.energy.full                 -- Maximum battery energy capacity [kWh] (aged, needs full charge)
-- Add button on web file editor to reload ECU (when ECU is enabled).
+- Add button on web file editor to reload obd2ECU (when obd2ECU is enabled).
+- Add metric and events related to obd2ecu process:
+  New metric:
+    m.obdc2ecu.on                     -- Is the OBD2ECU process currently on.
+  New events:
+    obd2ecu.start                     -- Called after the OBD2ECU process is started.
+    obd2ecu.stop                      -- Called before the OBD2ECU process is stopped.
 
 2022-09-01 MWJ  3.3.003  OTA release
 - Toyota RAV4 EV: Initial support added. Only the Tesla bus is decoded and just listening so far.

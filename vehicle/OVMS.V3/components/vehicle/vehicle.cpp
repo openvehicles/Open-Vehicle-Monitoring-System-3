@@ -366,11 +366,13 @@ OvmsVehicle::OvmsVehicle()
     CONFIG_OVMS_VEHICLE_RXTASK_STACK, (void*)this, 10, &m_rxtask, CORE(1));
 
   MyEvents.RegisterEvent(TAG, "ticker.1", std::bind(&OvmsVehicle::VehicleTicker1, this, _1, _2));
+
   MyEvents.RegisterEvent(TAG, "config.changed", std::bind(&OvmsVehicle::VehicleConfigChanged, this, _1, _2));
   MyEvents.RegisterEvent(TAG, "config.mounted", std::bind(&OvmsVehicle::VehicleConfigChanged, this, _1, _2));
   VehicleConfigChanged("config.mounted", NULL);
 
   MyMetrics.RegisterListener(TAG, "*", std::bind(&OvmsVehicle::MetricModified, this, _1));
+
   }
 
 OvmsVehicle::~OvmsVehicle()
@@ -1743,6 +1745,19 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
       metric == StdMetrics.ms_v_bat_range_full)
     {
     CalculateRangeSpeed();
+    }
+  else if (metric == StdMetrics.ms_m_obd2ecu_on)
+    {
+    if ( StdMetrics.ms_m_obd2ecu_on->AsBool() )
+      {
+      MyEvents.SignalEvent("obd2ecu.on", NULL);
+      NotifiedOBD2ECUOn();
+      }
+    else
+      {
+      MyEvents.SignalEvent("obd2ecu.off", NULL);
+      NotifiedOBD2ECUOff();
+      }
     }
   }
 
