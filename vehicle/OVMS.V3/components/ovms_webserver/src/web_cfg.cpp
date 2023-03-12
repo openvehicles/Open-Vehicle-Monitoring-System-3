@@ -4006,7 +4006,11 @@ void OvmsWebServer::HandleEditor(PageEntry_t& p, PageContext_t& c)
           "</div>\n"
     , _attr(p.uri), _attr(path));
 
+#ifdef CONFIG_OVMS_COMP_OBD2ECU
   bool isECUEnabled = MyPeripherals->m_obd2ecu != nullptr;
+#else
+  bool isECUEnabled = false;
+#endif
   c.printf(
           "<div class=\"form-group\">\n"
             "<div class=\"textarea-control pull-right\">\n"
