@@ -1750,13 +1750,11 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
     {
     if ( StdMetrics.ms_m_obd2ecu_on->AsBool() )
       {
-      MyEvents.SignalEvent("obd2ecu.on", NULL);
-      NotifiedOBD2ECUOn();
+      NotifiedOBD2ECUStart();
       }
     else
       {
-      MyEvents.SignalEvent("obd2ecu.off", NULL);
-      NotifiedOBD2ECUOff();
+      NotifiedOBD2ECUStop();
       }
     }
   }
