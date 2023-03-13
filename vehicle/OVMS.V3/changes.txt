@@ -82,6 +82,10 @@ Open Vehicle Monitor System v3 - Change log
     xrt.b.energy.avail                -- Current battery energy available [kWh] (aged)
     xrt.b.energy.full                 -- Maximum battery energy capacity [kWh] (aged, needs full charge)
 - Add button on web file editor to reload obd2ECU (when obd2ECU is enabled).
+- Vehicle: add support for a geofence for valet mode similar to parking/flatbed warnings.
+  New Configs:
+    [vehicle] valet.alarmdistance     -- How far away from the original position before raising an alert (in metres)
+    [vehicle] valet.alarminterval      -- How often the alarm can be raised in minumtes
 - Add metric and events related to obd2ecu process:
   New metric:
     m.obdc2ecu.on                     -- Is the OBD2ECU process currently on.
