@@ -16,6 +16,9 @@ can can1 rx standard 155 05 96 E7 54 6D 58 00 6F
 metrics list climit
 metrics list soc
 
+# 0x425: ENERGY AVAIL=4.3kWh
+can can1 rx standard 425 2A 2B 44 FF FE 70 01 36
+metrics list energy
 
 # 0x19F: 
 can can1 rx standard 196 00 FF E7 7F 70 4C 0B 00

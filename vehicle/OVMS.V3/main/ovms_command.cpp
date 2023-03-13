@@ -39,6 +39,7 @@ static const char *TAG = "command";
 #include <esp_log.h>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <dirent.h>
 #include <esp_timer.h>
 #include "freertos/FreeRTOS.h"

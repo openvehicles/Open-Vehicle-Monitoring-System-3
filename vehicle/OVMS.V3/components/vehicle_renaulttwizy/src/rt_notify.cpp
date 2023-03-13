@@ -383,6 +383,7 @@ void OvmsVehicleRenaultTwizy::SendTripLog()
   //   ,trip_avg_speed_kph,trip_avg_accel_kps,trip_avg_decel_kps
   //   ,charge_used_ah,charge_recd_ah,batt_capacity_prc
   //   ,chg_temp
+  //   ,batt_energy_avail,batt_energy_full
 
   ostringstream buf;
   buf
@@ -435,6 +436,10 @@ void OvmsVehicleRenaultTwizy::SendTripLog()
     << "," << (float) twizy_charge_rec / AH_DIV
     << "," << (float) cfg_bat_cap_actual_prc
     << "," << StdMetrics.ms_v_charge_temp->AsInt()
+
+    << setprecision(1)
+    << "," << m_batt_energy_avail->AsFloat()
+    << "," << m_batt_energy_full->AsFloat()
     ;
 
   MyNotify.NotifyString("data", "xrt.trip.log", buf.str().c_str());

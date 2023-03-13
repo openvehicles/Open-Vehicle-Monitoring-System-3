@@ -4006,6 +4006,11 @@ void OvmsWebServer::HandleEditor(PageEntry_t& p, PageContext_t& c)
           "</div>\n"
     , _attr(p.uri), _attr(path));
 
+#ifdef CONFIG_OVMS_COMP_OBD2ECU
+  bool isECUEnabled = MyPeripherals->m_obd2ecu != nullptr;
+#else
+  bool isECUEnabled = false;
+#endif
   c.printf(
           "<div class=\"form-group\">\n"
             "<div class=\"textarea-control pull-right\">\n"
@@ -4022,6 +4027,7 @@ void OvmsWebServer::HandleEditor(PageEntry_t& p, PageContext_t& c)
               "<div class=\"text-left\">\n"
                 "<button type=\"button\" class=\"btn btn-default action-script-eval\" accesskey=\"V\">E<u>v</u>aluate JS</button>\n"
                 "<button type=\"button\" class=\"btn btn-default action-script-reload\">Reload JS Engine</button>\n"
+                "%s"
               "</div>\n"
             "</div>\n"
             "<div class=\"col-sm-6\">\n"
@@ -4044,9 +4050,11 @@ void OvmsWebServer::HandleEditor(PageEntry_t& p, PageContext_t& c)
           "Use a second session to test a web plugin.</p>\n"
       "</div>\n"
     "</div>\n"
-    , c.encode_html(content).c_str());
+    , c.encode_html(content).c_str()
+    , isECUEnabled ? "<button type=\"button\" class=\"btn btn-default action-script-ecu\">Reload ECU Settings</button>\n" : ""
+    );
 
-  c.print(
+  c.printf(
     "<script>\n"
     "(function(){\n"
       "var $ta = $('#input-content'), $output = $('#output');\n"
@@ -4108,6 +4116,7 @@ void OvmsWebServer::HandleEditor(PageEntry_t& p, PageContext_t& c)
           "$('.panel').removeClass('loading');\n"
         "});\n"
       "});\n"
+      "%s"
       "// Utility: select textarea line\n"
       "function selectLine(line) {\n"
         "var ta = $ta.get(0);\n"
@@ -4183,6 +4192,15 @@ void OvmsWebServer::HandleEditor(PageEntry_t& p, PageContext_t& c)
         "$('.action-open').trigger('click');\n"
     "})();\n"
     "</script>\n"
+     ,( !isECUEnabled ? "" : "// Reload ECU mappings:\n"
+      "$('.action-script-ecu').on('click', function() {\n"
+        "$('.panel').addClass('loading');\n"
+        "$ta.focus();\n"
+        "$output.empty().show();\n"
+        "loadcmd('obdii ecu reload', '+#output').then(function(){\n"
+          "$('.panel').removeClass('loading');\n"
+        "});\n"
+      "});\n")
     );
 
   c.done();

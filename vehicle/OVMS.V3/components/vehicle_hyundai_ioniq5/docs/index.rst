@@ -96,6 +96,7 @@ xiq.v.d.l.fl                             false                    Door Locked - 
 xiq.v.d.l.fr                             false                    Door Locked - Front Right             
 xiq.v.d.l.rl                             false                    Door Locked - Rear Left             
 xiq.v.d.l.rr                             false                    Door Locked - Rear Right
+xiq.v.c.current.req                      45A                      Requested charging current
 
 ======================================== ======================== ============================================
 
