@@ -82,6 +82,10 @@ Open Vehicle Monitor System v3 - Change log
     xrt.b.energy.avail                -- Current battery energy available [kWh] (aged)
     xrt.b.energy.full                 -- Maximum battery energy capacity [kWh] (aged, needs full charge)
 - Add button on web file editor to reload ECU (when ECU is enabled).
+- Vehicle: add support for a geofence for valet mode similar to parking/flatbed warnings.
+  New Configs:
+    [vehicle] valet.alarmdistance     -- How far away from the original position before raising an alert (in metres)
+    [vehicle] valet.alarminterval      -- How often the alarm can be raised in minumtes
 
 2022-09-01 MWJ  3.3.003  OTA release
 - Toyota RAV4 EV: Initial support added. Only the Tesla bus is decoded and just listening so far.
