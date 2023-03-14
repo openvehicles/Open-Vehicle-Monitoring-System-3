@@ -81,7 +81,17 @@ Open Vehicle Monitor System v3 - Change log
   New metrics:
     xrt.b.energy.avail                -- Current battery energy available [kWh] (aged)
     xrt.b.energy.full                 -- Maximum battery energy capacity [kWh] (aged, needs full charge)
-- Add button on web file editor to reload ECU (when ECU is enabled).
+- Add button on web file editor to reload obd2ECU (when obd2ECU is enabled).
+- Vehicle: add support for a geofence for valet mode similar to parking/flatbed warnings.
+  New Configs:
+    [vehicle] valet.alarmdistance     -- How far away from the original position before raising an alert (in metres)
+    [vehicle] valet.alarminterval      -- How often the alarm can be raised in minumtes
+- Add metric and events related to obd2ecu process:
+  New metric:
+    m.obdc2ecu.on                     -- Is the OBD2ECU process currently on.
+  New events:
+    obd2ecu.start                     -- Called after the OBD2ECU process is started.
+    obd2ecu.stop                      -- Called before the OBD2ECU process is stopped.
 - Web UI: Add configuration for Valet and Flatbed geofence to the Locations config page.
 
 2022-09-01 MWJ  3.3.003  OTA release

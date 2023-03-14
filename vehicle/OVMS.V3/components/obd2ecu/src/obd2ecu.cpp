@@ -173,10 +173,12 @@ obd2ecu::obd2ecu(const char* name, canbus* can)
   xTaskCreatePinnedToCore(OBD2ECU_task, "OVMS OBDII ECU", 6144, (void*)this, 5, &m_task, CORE(1));
 
   MyCan.RegisterListener(m_rxqueue);
+  NotifyStartup();
   }
 
 obd2ecu::~obd2ecu()
   {
+  NotifyShutdown();
   m_can->SetPowerMode(Off);
   MyCan.DeregisterListener(m_rxqueue);
 
@@ -184,6 +186,18 @@ obd2ecu::~obd2ecu()
   vTaskDelete(m_task);
 
   ClearMap();
+  }
+
+void obd2ecu::NotifyStartup()
+  {
+  StandardMetrics.ms_m_obd2ecu_on->SetValue(true);
+  MyEvents.SignalEvent("obd2ecu.start", NULL);
+  }
+
+void obd2ecu::NotifyShutdown()
+  {
+  StandardMetrics.ms_m_obd2ecu_on->SetValue(false);
+  MyEvents.SignalEvent("obd2ecu.stop", NULL);
   }
 
 void obd2ecu::SetPowerMode(PowerMode powermode)

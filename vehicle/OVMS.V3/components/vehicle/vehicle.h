@@ -450,6 +450,8 @@ class OvmsVehicle : public InternalRamAllocated
     virtual void NotifiedVehicleChargeType(const std::string& state) {}
     virtual void NotifiedVehicleGenState(const std::string& state) {}
     virtual void NotifiedVehicleGenType(const std::string& state) {}
+    virtual void NotifiedOBD2ECUStart() {}
+    virtual void NotifiedOBD2ECUStop() {}
 
   protected:
     uint32_t m_valet_last_alarm;
