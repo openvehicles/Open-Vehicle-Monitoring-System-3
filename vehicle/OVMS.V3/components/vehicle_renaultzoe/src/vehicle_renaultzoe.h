@@ -101,10 +101,12 @@ class OvmsVehicleRenaultZoe : public OvmsVehicle {
     OvmsMetricFloat  *mt_heatwater_temp;      // Heat Water Temp
 
   public:
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
     void WebInit();
     void WebDeInit();
     static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
     static void WebCfgBattery(PageEntry_t& p, PageContext_t& c);
+#endif
     void ConfigChanged(OvmsConfigParam* param);
     bool SetFeature(int key, const char* value);
     const std::string GetFeature(int key);

@@ -313,7 +313,7 @@ void OvmsVehicleRenaultTwizy::FormatDTC(StringWriter& buf, int i, cluster_dtc& e
                e.Ef ? " Ef" : "",
                e.Dc ? " Dc" : "",
                e.DNS ? " DNS" : "");
-    buf.printf("   @ %dkm %dkph SOC=%d%% BV=%dV TC=%d IC=%d",
+    buf.printf("   @ %" PRId32 "km %dkph SOC=%d%% BV=%dV TC=%d IC=%d",
                e.getOdometer(), e.Speed, e.BL, e.getBV(),
                e.TimeCounter, e.IgnitionCycle);
   }

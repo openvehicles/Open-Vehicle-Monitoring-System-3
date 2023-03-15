@@ -223,7 +223,7 @@ class CNameMap : public std::map<const char*, T, CmpStrOp>
 
 struct CompareCharPtr
   {
-  bool operator()(const char* a, const char* b);
+  bool operator()(const char* a, const char* b) const;
   };
 
 class OvmsCommandMap : public std::map<const char*, OvmsCommand*, CompareCharPtr>

@@ -134,7 +134,7 @@ void OvmsVehicleJaguarIpace::IncomingBecmPoll(uint16_t pid, uint8_t* data, uint8
             break;
         case odometerPid:
             StandardMetrics.ms_v_pos_odometer->SetValue(value24);
-            ESP_LOGD(TAG, "Odometer=%d", value24);
+            ESP_LOGD(TAG, "Odometer=%" PRId32, value24);
             break;
         case cabinTempPid:
             StandardMetrics.ms_v_env_cabintemp->SetValue(value8 - 40.0f);

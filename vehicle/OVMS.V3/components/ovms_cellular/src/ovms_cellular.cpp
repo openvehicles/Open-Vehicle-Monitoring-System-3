@@ -116,7 +116,11 @@ void modem::Task()
     .stop_bits = UART_STOP_BITS_1,
     .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
     .rx_flow_ctrl_thresh = 122,
+#if ESP_IDF_VERSION_MAJOR < 5
     .use_ref_tick = 0,
+#else
+    .source_clk = UART_SCLK_DEFAULT,
+#endif
     };
   uart_param_config(m_uartnum, &uart_config);
   uart_set_pin(m_uartnum, m_txpin, m_rxpin, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
@@ -456,10 +460,10 @@ void modem::SupportSummary(OvmsWriter* writer, bool debug /*=FALSE*/)
     if (debug)
       {
       writer->printf("    Open Channels: %d\n", m_mux->m_openchannels);
-      writer->printf("    Framing Errors: %d\n", m_mux->m_framingerrors);
-      writer->printf("    RX frames: %d\n", m_mux->m_rxframecount);
-      writer->printf("    TX frames: %d\n", m_mux->m_txframecount);
-      writer->printf("    Last RX frame: %d sec(s) ago\n", m_mux->GoodFrameAge());
+      writer->printf("    Framing Errors: %" PRId32 "\n", m_mux->m_framingerrors);
+      writer->printf("    RX frames: %" PRId32 "\n", m_mux->m_rxframecount);
+      writer->printf("    TX frames: %" PRId32 "\n", m_mux->m_txframecount);
+      writer->printf("    Last RX frame: %" PRId32 " sec(s) ago\n", m_mux->GoodFrameAge());
       }
     }
   else
@@ -1358,7 +1362,7 @@ void modem::StartTask()
   if (!m_task)
     {
     ESP_LOGV(TAG, "Starting modem task");
-    xTaskCreatePinnedToCore(MODEM_task, "OVMS Cellular", CONFIG_OVMS_HW_CELLULAR_MODEM_STACK_SIZE, (void*)this, 20, (void**)&m_task, CORE(0));
+    xTaskCreatePinnedToCore(MODEM_task, "OVMS Cellular", CONFIG_OVMS_HW_CELLULAR_MODEM_STACK_SIZE, (void*)this, 20, (TaskHandle_t*)&m_task, CORE(0));
     }
   }
 

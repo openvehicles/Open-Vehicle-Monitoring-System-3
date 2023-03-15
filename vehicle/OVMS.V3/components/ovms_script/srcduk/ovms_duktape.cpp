@@ -47,7 +47,6 @@ static const char *TAG = "ovms-duktape";
 #include "console_async.h"
 #include "buffered_shell.h"
 #include "ovms_netmanager.h"
-#include "ovms_tls.h"
 
 #ifdef CONFIG_OVMS_COMP_PLUGINS
 #include "ovms_plugins.h"
@@ -1034,24 +1033,32 @@ void OvmsDuktape::EventScript(std::string event, void* data)
 bool OvmsDuktape::DuktapeDispatch(duktape_queue_t* msg, TickType_t queuewait /*=portMAX_DELAY*/)
   {
   msg->waitcompletion = NULL;
-  if (xQueueSend(m_duktaskqueue, msg, queuewait) != pdPASS)
+  if (InDukTapeTask())
+    {
+    ProcessJob(*msg);
+    }
+  else if (xQueueSend(m_duktaskqueue, msg, queuewait) != pdPASS)
     {
     ESP_LOGW(TAG, "DuktapeDispatch: msg type %u lost, queue full", msg->type);
     return false;
     }
-  else
-    {
-    return true;
-    }
+  return true;
   }
 
 void OvmsDuktape::DuktapeDispatchWait(duktape_queue_t* msg)
   {
-  msg->waitcompletion = xSemaphoreCreateBinary();
-  xQueueSend(m_duktaskqueue, msg, portMAX_DELAY);
-  xSemaphoreTake(msg->waitcompletion, portMAX_DELAY);
-  vSemaphoreDelete(msg->waitcompletion);
-  msg->waitcompletion = NULL;
+  if (InDukTapeTask())
+    {
+    ProcessJob(*msg);
+    }
+  else
+    {
+    msg->waitcompletion = xSemaphoreCreateBinary();
+    xQueueSend(m_duktaskqueue, msg, portMAX_DELAY);
+    xSemaphoreTake(msg->waitcompletion, portMAX_DELAY);
+    vSemaphoreDelete(msg->waitcompletion);
+    msg->waitcompletion = NULL;
+    }
   }
 
 void OvmsDuktape::DuktapeEvalNoResult(const char* text, OvmsWriter* writer, const char* filename /*=NULL*/)
@@ -1395,157 +1402,7 @@ void OvmsDuktape::DukTapeTask()
     if (xQueueReceive(m_duktaskqueue, &msg, pdMS_TO_TICKS(5000))==pdTRUE)
       {
       esp_task_wdt_reset(); // Reset WATCHDOG timer for this task
-      duktapewriter = msg.writer;
-      switch(msg.type)
-        {
-        case DUKTAPE_reload:
-          {
-          // Reload DUKTAPE engine
-          NotifyDuktapeModuleUnloadAll();
-          if (m_dukctx != NULL)
-            {
-            ESP_LOGI(TAG,"Duktape: Clearing existing context");
-            duk_destroy_heap(m_dukctx);
-            #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE_HEAP_UMM
-              if (umm_memory != NULL)
-                {
-                free(umm_memory);
-                umm_memory = NULL;
-                }
-            #endif
-            m_dukctx = NULL;
-            }
-          DukTapeInit();
-          }
-          break;
-        case DUKTAPE_compact:
-          {
-          // Compact DUKTAPE memory
-          if (m_dukctx != NULL)
-            {
-            ESP_LOGV(TAG,"Duktape: Compacting DukTape memory");
-            uint32_t ts = esp_log_timestamp();
-            duk_gc(m_dukctx, 0);
-            duk_gc(m_dukctx, 0);
-            ESP_LOGD(TAG, "Duktape: Compacting DukTape memory done in %u ms", esp_log_timestamp()-ts);
-            }
-          }
-          break;
-        case DUKTAPE_event:
-          {
-          // Event
-          if (m_dukctx != NULL)
-            {
-            // Deliver the event to DUKTAPE
-            uint32_t ts = esp_log_timestamp();
-            duk_require_stack(m_dukctx, 5);
-            duk_get_global_string(m_dukctx, "PubSub");
-            duk_get_prop_string(m_dukctx, -1, "publish");
-            duk_dup(m_dukctx, -2);  /* this binding = process */
-            duk_push_string(m_dukctx, msg.body.dt_event.name);
-            duk_push_string(m_dukctx, "");
-            if (duk_pcall_method(m_dukctx, 2) != 0)
-              {
-              DukOvmsErrorHandler(m_dukctx, -1);
-              }
-            duk_pop_2(m_dukctx);
-            ts = esp_log_timestamp() - ts;
-            if (ts > 1000)
-              ESP_LOGW(TAG, "Duktape: event handling for '%s' took %u ms", msg.body.dt_event.name, ts);
-            }
-          }
-          free((void*)msg.body.dt_event.name);
-          break;
-        case DUKTAPE_autoinit:
-          {
-          // Auto init
-          DukTapeInit();
-          }
-          break;
-        case DUKTAPE_evalnoresult:
-          if (m_dukctx != NULL)
-            {
-            // Execute script text (without result)
-            const char* filename = msg.body.dt_evalnoresult.filename;
-            if (!filename) filename = "eval";
-            duk_push_string(m_dukctx, msg.body.dt_evalnoresult.text);
-            duk_push_string(m_dukctx, filename);
-            if (duk_pcompile(m_dukctx, DUK_COMPILE_EVAL) != 0 || duk_pcall(m_dukctx, 0) != 0)
-              {
-              DukOvmsErrorHandler(m_dukctx, -1, msg.writer, filename);
-              }
-            duk_pop(m_dukctx);
-            }
-          else
-            {
-            if (msg.writer)
-              msg.writer->puts("ERROR: Duktape not started");
-            else
-              ESP_LOGE(TAG, "Duktape not started");
-            }
-          break;
-        case DUKTAPE_evalfloatresult:
-          if (m_dukctx != NULL)
-            {
-            // Execute script text (float result)
-            duk_push_string(m_dukctx, msg.body.dt_evalfloatresult.text);
-            if (duk_peval(m_dukctx) != 0)
-              {
-              DukOvmsErrorHandler(m_dukctx, -1, msg.writer);
-              *msg.body.dt_evalfloatresult.result = 0;
-              }
-            else
-              {
-              *msg.body.dt_evalfloatresult.result = (float)duk_get_number(m_dukctx,-1);
-              }
-            duk_pop(m_dukctx);
-            }
-          else
-            {
-            if (msg.writer)
-              msg.writer->puts("ERROR: Duktape not started");
-            else
-              ESP_LOGE(TAG, "Duktape not started");
-            *msg.body.dt_evalfloatresult.result = 0;
-            }
-          break;
-        case DUKTAPE_evalintresult:
-          if (m_dukctx != NULL)
-            {
-            // Execute script text (int result)
-            duk_push_string(m_dukctx, msg.body.dt_evalintresult.text);
-            if (duk_peval(m_dukctx) != 0)
-              {
-              DukOvmsErrorHandler(m_dukctx, -1, msg.writer);
-              *msg.body.dt_evalintresult.result = 0;
-              }
-            else
-              {
-              *msg.body.dt_evalintresult.result = (int)duk_get_int(m_dukctx,-1);
-              }
-            duk_pop(m_dukctx);
-            }
-          else
-            {
-            if (msg.writer)
-              msg.writer->puts("ERROR: Duktape not started");
-            else
-              ESP_LOGE(TAG, "Duktape not started");
-            *msg.body.dt_evalintresult.result = 0;
-            }
-          break;
-        case DUKTAPE_callback:
-          {
-          // DuktapeObject callback (without result)
-          DuktapeObject* dto = msg.body.dt_callback.instance;
-          dto->DuktapeCallback(m_dukctx, msg);
-          }
-          break;
-        default:
-          ESP_LOGE(TAG,"Duktape: Unrecognised msg type 0x%04x",msg.type);
-          break;
-        }
-      duktapewriter = NULL;
+      ProcessJob(msg);
       if (msg.waitcompletion)
         {
         // Signal the completion...
@@ -1554,4 +1411,169 @@ void OvmsDuktape::DukTapeTask()
       }
     esp_task_wdt_reset(); // Reset WATCHDOG timer for this task
     }
+  }
+
+void OvmsDuktape::ProcessJob(duktape_queue_t& msg)
+  {
+  duktapewriter = msg.writer;
+
+  switch(msg.type)
+    {
+    case DUKTAPE_autoinit:
+      {
+      // Auto init
+      DukTapeInit();
+      }
+      break;
+
+    case DUKTAPE_reload:
+      {
+      // Reload DUKTAPE engine
+      NotifyDuktapeModuleUnloadAll();
+      if (m_dukctx != NULL)
+        {
+        ESP_LOGI(TAG,"Duktape: Clearing existing context");
+        duk_destroy_heap(m_dukctx);
+        #ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE_HEAP_UMM
+          if (umm_memory != NULL)
+            {
+            free(umm_memory);
+            umm_memory = NULL;
+            }
+        #endif
+        m_dukctx = NULL;
+        }
+      DukTapeInit();
+      }
+      break;
+
+    case DUKTAPE_compact:
+      {
+      // Compact DUKTAPE memory
+      if (m_dukctx != NULL)
+        {
+        ESP_LOGV(TAG,"Duktape: Compacting DukTape memory");
+        uint32_t ts = esp_log_timestamp();
+        duk_gc(m_dukctx, 0);
+        duk_gc(m_dukctx, 0);
+        ESP_LOGD(TAG, "Duktape: Compacting DukTape memory done in %" PRIu32 " ms", esp_log_timestamp()-ts);
+        }
+      }
+      break;
+
+    case DUKTAPE_event:
+      {
+      // Event
+      if (m_dukctx != NULL)
+        {
+        // Deliver the event to DUKTAPE
+        uint32_t ts = esp_log_timestamp();
+        duk_require_stack(m_dukctx, 5);
+        duk_get_global_string(m_dukctx, "PubSub");
+        duk_get_prop_string(m_dukctx, -1, "publish");
+        duk_dup(m_dukctx, -2);  /* this binding = process */
+        duk_push_string(m_dukctx, msg.body.dt_event.name);
+        duk_push_string(m_dukctx, "");
+        if (duk_pcall_method(m_dukctx, 2) != 0)
+          {
+          DukOvmsErrorHandler(m_dukctx, -1);
+          }
+        duk_pop_2(m_dukctx);
+        ts = esp_log_timestamp() - ts;
+        if (ts > 1000)
+          ESP_LOGW(TAG, "Duktape: event handling for '%s' took %" PRIu32 " ms", msg.body.dt_event.name, ts);
+        }
+      }
+      free((void*)msg.body.dt_event.name);
+      break;
+
+    case DUKTAPE_evalnoresult:
+      if (m_dukctx != NULL)
+        {
+        // Execute script text (without result)
+        const char* filename = msg.body.dt_evalnoresult.filename;
+        if (!filename) filename = "eval";
+        duk_push_string(m_dukctx, msg.body.dt_evalnoresult.text);
+        duk_push_string(m_dukctx, filename);
+        if (duk_pcompile(m_dukctx, DUK_COMPILE_EVAL) != 0 || duk_pcall(m_dukctx, 0) != 0)
+          {
+          DukOvmsErrorHandler(m_dukctx, -1, msg.writer, filename);
+          }
+        duk_pop(m_dukctx);
+        }
+      else
+        {
+        if (msg.writer)
+          msg.writer->puts("ERROR: Duktape not started");
+        else
+          ESP_LOGE(TAG, "Duktape not started");
+        }
+      break;
+
+    case DUKTAPE_evalfloatresult:
+      if (m_dukctx != NULL)
+        {
+        // Execute script text (float result)
+        duk_push_string(m_dukctx, msg.body.dt_evalfloatresult.text);
+        if (duk_peval(m_dukctx) != 0)
+          {
+          DukOvmsErrorHandler(m_dukctx, -1, msg.writer);
+          *msg.body.dt_evalfloatresult.result = 0;
+          }
+        else
+          {
+          *msg.body.dt_evalfloatresult.result = (float)duk_to_number(m_dukctx,-1);
+          }
+        duk_pop(m_dukctx);
+        }
+      else
+        {
+        if (msg.writer)
+          msg.writer->puts("ERROR: Duktape not started");
+        else
+          ESP_LOGE(TAG, "Duktape not started");
+        *msg.body.dt_evalfloatresult.result = 0;
+        }
+      break;
+
+    case DUKTAPE_evalintresult:
+      if (m_dukctx != NULL)
+        {
+        // Execute script text (int result)
+        duk_push_string(m_dukctx, msg.body.dt_evalintresult.text);
+        if (duk_peval(m_dukctx) != 0)
+          {
+          DukOvmsErrorHandler(m_dukctx, -1, msg.writer);
+          *msg.body.dt_evalintresult.result = 0;
+          }
+        else
+          {
+          *msg.body.dt_evalintresult.result = (int)duk_to_int(m_dukctx,-1);
+          }
+        duk_pop(m_dukctx);
+        }
+      else
+        {
+        if (msg.writer)
+          msg.writer->puts("ERROR: Duktape not started");
+        else
+          ESP_LOGE(TAG, "Duktape not started");
+        *msg.body.dt_evalintresult.result = 0;
+        }
+      break;
+
+    case DUKTAPE_callback:
+      {
+      // DuktapeObject callback (without result)
+      DuktapeObject* dto = msg.body.dt_callback.instance;
+      dto->DuktapeCallback(m_dukctx, msg);
+      }
+      break;
+
+    default:
+      ESP_LOGE(TAG,"Duktape: Unrecognised msg type 0x%04x",msg.type);
+      break;
+    }
+
+  duktapewriter = NULL;
   }

@@ -38,7 +38,9 @@ static const char *TAG = "ovms-server-v3";
 #include "ovms_command.h"
 #include "ovms_metrics.h"
 #include "metrics_standard.h"
+#if CONFIG_MG_ENABLE_SSL
 #include "ovms_tls.h"
+#endif
 
 OvmsServerV3 *MyOvmsServerV3 = NULL;
 size_t MyOvmsServerV3Modifier = 0;
@@ -679,8 +681,14 @@ void OvmsServerV3::Connect()
   opts.error_string = &err;
   if (m_tls)
     {
+#if CONFIG_MG_ENABLE_SSL
     opts.ssl_ca_cert = MyOvmsTLS.GetTrustedList();
     opts.ssl_server_name = m_server.c_str();
+#else
+    ESP_LOGE(TAG, "mg_connect(%s) failed: SSL support disabled", address.c_str());
+    SetStatus("Error: Connection failed (SSL support disabled)", true, Undefined);
+    return;
+#endif
     }
   if ((m_mgconn = mg_connect_opt(mgr, address.c_str(), OvmsServerV3MongooseCallback, opts)) == NULL)
     {

@@ -57,7 +57,7 @@ void OvmsVehicle::PollerISOTPStart(bool fromTicker)
     m_poll_moduleid_high = 0x7ef;
     }
 
-  ESP_LOGD(TAG, "PollerISOTPStart(%d): send [bus=%d, type=%02X, pid=%X], expecting %03x/%03x-%03x",
+  ESP_LOGD(TAG, "PollerISOTPStart(%d): send [bus=%d, type=%02X, pid=%X], expecting %03" PRIx32 "/%03" PRIx32 "-%03" PRIx32,
            fromTicker, m_poll_plcur->pollbus, m_poll_type, m_poll_pid, m_poll_moduleid_sent,
            m_poll_moduleid_low, m_poll_moduleid_high);
 
@@ -182,7 +182,7 @@ bool OvmsVehicle::PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid)
   if (!m_poll_wait || !m_poll_plist || frame->origin != m_poll_bus ||
       msgid < m_poll_moduleid_low || msgid > m_poll_moduleid_high)
     {
-    ESP_LOGD(TAG, "PollerISOTPReceive[%03X]: dropping expired poll response", msgid);
+    ESP_LOGD(TAG, "PollerISOTPReceive[%03" PRIX32 "]: dropping expired poll response", msgid);
     return false;
     }
 
@@ -194,13 +194,13 @@ bool OvmsVehicle::PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid)
   uint8_t  fr_maxlen;             // Frame data max length
   uint8_t  tp_frametype;          // ISO-TP frame type (0…3)
   uint8_t  tp_frameindex;         // TP cyclic frame index (0…15)
-  uint16_t tp_len;                // TP remaining payload length including this frame (0…4095)
-  uint8_t* tp_data;               // TP frame data section address
-  uint8_t  tp_datalen;            // TP frame data section length (0…7)
+  uint16_t tp_len = 0;            // TP remaining payload length including this frame (0…4095)
+  uint8_t* tp_data = 0;           // TP frame data section address
+  uint8_t  tp_datalen = 0;        // TP frame data section length (0…7)
 
   uint8_t  tp_fc_command;         // Flow control command (0 = continue, 1 = wait, 2 = abort)
   uint8_t  tp_fc_framecnt;        // Flow control max frame count (0 = unlimited)
-  uint8_t  tp_fc_septime;         // Flow control frame separation time
+  uint8_t  tp_fc_septime = 0;     // Flow control frame separation time
 
   if (m_poll_protocol == ISOTP_EXTADR)
     {
@@ -245,7 +245,7 @@ bool OvmsVehicle::PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid)
       // This is most likely an indication there is a non ISO-TP device sending
       // in our expected RX ID range, so we log the frame and abort:
       FormatHexDump(&hexdump, (const char*)frame->data.u8, 8, 8);
-      ESP_LOGW(TAG, "PollerISOTPReceive[%03X]: ignoring unknown/invalid ISO TP frame: %s",
+      ESP_LOGW(TAG, "PollerISOTPReceive[%03" PRIX32 "]: ignoring unknown/invalid ISO TP frame: %s",
                msgid, hexdump ? hexdump : "-");
       if (hexdump) free(hexdump);
       return false;
@@ -258,7 +258,7 @@ bool OvmsVehicle::PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid)
     if (tp_fc_command > 2 || m_poll_tx_remain == 0)
       {
       FormatHexDump(&hexdump, (const char*)frame->data.u8, 8, 8);
-      ESP_LOGW(TAG, "PollerISOTPReceive[%03X]: ignoring unexpected/invalid ISO TP flow control frame: %s",
+      ESP_LOGW(TAG, "PollerISOTPReceive[%03" PRIX32 "]: ignoring unexpected/invalid ISO TP flow control frame: %s",
               msgid, hexdump ? hexdump : "-");
       if (hexdump) free(hexdump);
       return false;
@@ -360,7 +360,7 @@ bool OvmsVehicle::PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid)
     if (m_poll_ml_remain == 0 || tp_frameindex > (m_poll_ml_frame & 0x0f))
       {
       FormatHexDump(&hexdump, (const char*)frame->data.u8, 8, 8);
-      ESP_LOGW(TAG, "PollerISOTPReceive[%03X]: unexpected/out of sequence ISO TP frame (%d vs %d), aborting poll %02X(%X): %s",
+      ESP_LOGW(TAG, "PollerISOTPReceive[%03" PRIX32 "]: unexpected/out of sequence ISO TP frame (%d vs %d), aborting poll %02X(%X): %s",
               msgid, tp_frameindex, m_poll_ml_frame & 0x0f, m_poll_type, m_poll_pid,
               hexdump ? hexdump : "-");
       if (hexdump) free(hexdump);
@@ -428,7 +428,7 @@ bool OvmsVehicle::PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid)
     if (error_code == UDS_RESP_NRC_RCRRP)
       {
       // Info: requestCorrectlyReceived-ResponsePending (server busy processing the request)
-      ESP_LOGD(TAG, "PollerISOTPReceive[%03X]: got OBD/UDS info %02X(%X) code=%02X (pending)",
+      ESP_LOGD(TAG, "PollerISOTPReceive[%03" PRIX32 "]: got OBD/UDS info %02X(%X) code=%02X (pending)",
                msgid, m_poll_type, m_poll_pid, error_code);
       // add some wait time:
       m_poll_wait++;
@@ -437,7 +437,7 @@ bool OvmsVehicle::PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid)
     else
       {
       // Error: forward to application:
-      ESP_LOGD(TAG, "PollerISOTPReceive[%03X]: process OBD/UDS error %02X(%X) code=%02X",
+      ESP_LOGD(TAG, "PollerISOTPReceive[%03" PRIX32 "]: process OBD/UDS error %02X(%X) code=%02X",
                msgid, m_poll_type, m_poll_pid, error_code);
       // Running single poll?
       if (m_poll_single_rxbuf)
@@ -458,7 +458,7 @@ bool OvmsVehicle::PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid)
     {
     // Normal matching poll response, forward to application:
     m_poll_ml_remain = tp_len - tp_datalen;
-    ESP_LOGD(TAG, "PollerISOTPReceive[%03X]: process OBD/UDS response %02X(%X) frm=%u len=%u off=%u rem=%u",
+    ESP_LOGD(TAG, "PollerISOTPReceive[%03" PRIX32 "]: process OBD/UDS response %02X(%X) frm=%u len=%u off=%u rem=%u",
              msgid, m_poll_type, m_poll_pid,
              m_poll_ml_frame, response_datalen, m_poll_ml_offset, m_poll_ml_remain);
     // Running single poll?
@@ -486,7 +486,7 @@ bool OvmsVehicle::PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid)
     {
     // This is most likely a late response to a previous poll, log & skip:
     FormatHexDump(&hexdump, (const char*)frame->data.u8, 8, 8);
-    ESP_LOGW(TAG, "PollerISOTPReceive[%03X]: OBD/UDS response type/PID mismatch, got %02X(%X) vs %02X(%X) => ignoring: %s",
+    ESP_LOGW(TAG, "PollerISOTPReceive[%03" PRIX32 "]: OBD/UDS response type/PID mismatch, got %02X(%X) vs %02X(%X) => ignoring: %s",
              msgid, response_type, response_pid, 0x40+m_poll_type, m_poll_pid, hexdump ? hexdump : "-");
     if (hexdump) free(hexdump);
     return false;

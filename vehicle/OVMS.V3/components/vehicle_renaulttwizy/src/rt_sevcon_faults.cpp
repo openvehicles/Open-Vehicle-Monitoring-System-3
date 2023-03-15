@@ -238,7 +238,7 @@ void SevconClient::EmcyListener(string event, void* data)
     return;
 
   uint32_t fault = emcy.data[1] << 8 | emcy.data[0];
-  ESP_LOGW(TAG, "Sevcon: received fault code 0x%04x", fault);
+  ESP_LOGW(TAG, "Sevcon: received fault code 0x%04" PRIx32, fault);
   MyEvents.SignalEvent("vehicle.fault.code", (void*)fault);
 
   // button push?

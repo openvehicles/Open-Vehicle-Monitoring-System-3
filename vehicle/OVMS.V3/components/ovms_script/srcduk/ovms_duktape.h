@@ -312,7 +312,9 @@ class OvmsDuktape
   public:
     void DukTapeInit();
     void DukTapeTask();
+    void ProcessJob(duktape_queue_t& msg);
     bool DukTapeAvailable() { return m_dukctx != NULL; }
+    bool InDukTapeTask() { return xTaskGetCurrentTaskHandle() == m_duktaskid; }
     duk_context* DukTapeContext() { return m_dukctx; }
     void EventScript(std::string event, void* data);
 

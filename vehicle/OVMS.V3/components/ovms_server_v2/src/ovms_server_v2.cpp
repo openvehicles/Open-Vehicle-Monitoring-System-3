@@ -46,7 +46,9 @@ static const char *TAG = "ovms-server-v2";
 #include "esp_system.h"
 #include "ovms_utils.h"
 #include "ovms_boot.h"
+#if CONFIG_MG_ENABLE_SSL
 #include "ovms_tls.h"
+#endif
 
 // should this go in the .h or in the .cpp?
 typedef union {
@@ -863,8 +865,14 @@ void OvmsServerV2::Connect()
   opts.error_string = &err;
   if (m_tls)
     {
+#if CONFIG_MG_ENABLE_SSL
     opts.ssl_ca_cert = MyOvmsTLS.GetTrustedList();
     opts.ssl_server_name = m_server.c_str();
+#else
+    ESP_LOGE(TAG, "mg_connect(%s) failed: SSL support disabled", address.c_str());
+    SetStatus("Error: Connection failed (SSL support disabled)", true, Undefined);
+    return;
+#endif
     }
   if ((m_mgconn = mg_connect_opt(mgr, address.c_str(), OvmsServerV2MongooseCallback, opts)) == NULL)
     {
@@ -1738,7 +1746,7 @@ void OvmsServerV2::TransmitNotifyData()
     size += buffer.str().size();
     if (now - starttime >= 300 || cnt == 5 || size >= 4000)
       {
-      ESP_LOGD(TAG, "TransmitNotifyData: used %d ms for %d records, %u bytes", now - starttime, cnt, size);
+      ESP_LOGD(TAG, "TransmitNotifyData: used %" PRId32 " ms for %d records, %u bytes", now - starttime, cnt, size);
       return;
       }
     }
@@ -1914,7 +1922,7 @@ void OvmsServerV2::EventListener(std::string event, void* data)
     {
     ConfigChanged((OvmsConfigParam*) data);
     }
-  else if (event == "location.alert.flatbed.moved")
+  else if (event == "location.alert.flatbed.moved" || event == "location.alert.valet.bounds")
     {
     m_now_gps = true;
     }
@@ -2138,6 +2146,7 @@ OvmsServerV2::OvmsServerV2(const char* name)
   MyEvents.RegisterEvent(TAG,"config.changed", std::bind(&OvmsServerV2::EventListener, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"config.mounted", std::bind(&OvmsServerV2::EventListener, this, _1, _2));
   MyEvents.RegisterEvent(TAG,"location.alert.flatbed.moved", std::bind(&OvmsServerV2::EventListener, this, _1, _2));
+  MyEvents.RegisterEvent(TAG,"location.alert.valet.bounds", std::bind(&OvmsServerV2::EventListener, this, _1, _2));
 
   // read config:
   ConfigChanged(NULL);

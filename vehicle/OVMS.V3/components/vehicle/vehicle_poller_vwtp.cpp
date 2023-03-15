@@ -235,6 +235,7 @@ void OvmsVehicle::PollerVWTPEnter(vwtp_channelstate_t state)
 
       // fall through to VWTP_Transmit
       }
+      FALLTHROUGH;
     case VWTP_Transmit:
       {
       ESP_LOGD(TAG, "PollerVWTPEnter[%02X]: transmit frame=%u remain=%u",
@@ -471,7 +472,7 @@ bool OvmsVehicle::PollerVWTPReceive(CAN_frame_t* frame, uint32_t msgid)
         m_poll_vwtp.blocksize = frame->data.u8[1];
         m_poll_vwtp.acktime = (frame->data.u8[2] & 0b00111111) * timeunit[(frame->data.u8[2] & 0b11000000) >> 6];
         m_poll_vwtp.septime = (frame->data.u8[4] & 0b00111111) * timeunit[(frame->data.u8[4] & 0b11000000) >> 6];
-        ESP_LOGD(TAG, "PollerVWTPReceive[%02X]: channel params OK: bs=%d acktime=%uus septime=%uus",
+        ESP_LOGD(TAG, "PollerVWTPReceive[%02X]: channel params OK: bs=%d acktime=%" PRIu32 "us septime=%" PRIu32 "us",
           m_poll_vwtp.moduleid, m_poll_vwtp.blocksize, m_poll_vwtp.acktime, m_poll_vwtp.septime);
         // …and proceed to data transmission:
         PollerVWTPEnter(VWTP_StartPoll);

@@ -41,6 +41,9 @@ static const char *TAG = "ota";
 #if ESP_IDF_VERSION_MAJOR < 4
 #include "strverscmp.h"
 #endif
+#if ESP_IDF_VERSION_MAJOR >= 5
+#include <spi_flash_mmap.h>
+#endif
 #include "ovms_ota.h"
 #include "ovms_command.h"
 #include "ovms_boot.h"
@@ -442,7 +445,7 @@ void ota_boot(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
     switch (err)
       {
       case ESP_OK:
-        writer->printf("Boot from %s at 0x%08x (size 0x%08x)\n",p->label,p->address,p->size);
+        writer->printf("Boot from %s at 0x%08" PRIx32 " (size 0x%08" PRIx32 ")\n",p->label,p->address,p->size);
         break;
       case ESP_ERR_INVALID_ARG:
         writer->puts("Error: partition argument didn't point to a valid OTA partition of type 'app'");
@@ -580,7 +583,7 @@ void ota_copy(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, con
     return;
     }
 
-  writer->printf("OTA copy %s (%08x) -> %s (%08x) size %u\n",
+  writer->printf("OTA copy %s (%08" PRIu32 ") -> %s (%08" PRIx32 ") size %" PRIu32 "\n",
     fn.c_str(), from_p->address,
     tn.c_str(), to_p->address, to_p->size);
 

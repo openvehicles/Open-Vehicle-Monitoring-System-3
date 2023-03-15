@@ -135,7 +135,7 @@ size_t canformat_pcap::put(CAN_log_message_t* message, uint8_t *buffer, size_t l
            (magic == 0xa1b23c4d)||
            (magic == 0x4d3cb2a1))
     {
-    ESP_LOGE(TAG,"pcap format %08x not supported: Discarding",magic);
+    ESP_LOGE(TAG,"pcap format %08" PRIx32 " not supported: Discarding",magic);
     SetServeDiscarding(true);
     return consumed;
     }

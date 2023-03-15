@@ -34,7 +34,6 @@
 #define __VEHICLE_EUP_OBD_H__
 
 #include "vehicle.h"
-#include "ovms_webserver.h"
 #include "poll_reply_helper.h"
 
 using namespace std;

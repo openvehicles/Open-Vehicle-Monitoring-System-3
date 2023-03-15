@@ -75,7 +75,23 @@ Open Vehicle Monitor System v3 - Change log
 - CAN framework: add bus reset command
   New commands:
     can [can1…4] reset                -- reset the CAN interface
-
+- Vehicle: add support for custom command handlers, see…
+  https://docs.openvehicles.com/en/latest/userguide/scripting.html#ovmsvehicle-command-plugins
+- Renault Twizy: read battery energy available from BMS (thanks to Martin Bitz)
+  New metrics:
+    xrt.b.energy.avail                -- Current battery energy available [kWh] (aged)
+    xrt.b.energy.full                 -- Maximum battery energy capacity [kWh] (aged, needs full charge)
+- Add button on web file editor to reload obd2ECU (when obd2ECU is enabled).
+- Vehicle: add support for a geofence for valet mode similar to parking/flatbed warnings.
+  New Configs:
+    [vehicle] valet.alarmdistance     -- How far away from the original position before raising an alert (in metres)
+    [vehicle] valet.alarminterval      -- How often the alarm can be raised in minumtes
+- Add metric and events related to obd2ecu process:
+  New metric:
+    m.obdc2ecu.on                     -- Is the OBD2ECU process currently on.
+  New events:
+    obd2ecu.start                     -- Called after the OBD2ECU process is started.
+    obd2ecu.stop                      -- Called before the OBD2ECU process is stopped.
 
 2022-09-01 MWJ  3.3.003  OTA release
 - Toyota RAV4 EV: Initial support added. Only the Tesla bus is decoded and just listening so far.

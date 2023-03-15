@@ -37,6 +37,7 @@ static const char *TAG = "boot";
 #include "rom/uart.h"
 #include "soc/rtc_cntl_reg.h"
 #include "esp_system.h"
+#include "esp_sleep.h"
 #include "esp_panic.h"
 #include "esp_task_wdt.h"
 #include <driver/adc.h>
@@ -140,7 +141,7 @@ void boot_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
   struct tm* tml;
   char tb[32];
   
-  writer->printf("Last boot was %d second(s) ago\n",monotonictime);
+  writer->printf("Last boot was %" PRId32 " second(s) ago\n",monotonictime);
   
   time(&rawtime);
   rawtime = rawtime-(time_t)monotonictime;
@@ -183,19 +184,19 @@ void boot_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
         (exccause < NUM_EDESCS) ? edesc[exccause] : "Unknown", boot_data.crash_data.core_id);
       writer->printf("  Registers:\n");
       for (int i=0; i<24; i++)
-        writer->printf("  %s: 0x%08x%s", sdesc[i], boot_data.crash_data.reg[i], ((i+1)%4) ? "" : "\n");
+        writer->printf("  %s: 0x%08" PRIx32 "%s", sdesc[i], boot_data.crash_data.reg[i], ((i+1)%4) ? "" : "\n");
       }
 
     for (int core = 0; core < portNUM_PROCESSORS; core++)
       {
       if (boot_data.curr_task[core].name[0])
-        writer->printf("  Current task on core %d: %s, %u stack bytes free\n",
+        writer->printf("  Current task on core %d: %s, %" PRIu32 " stack bytes free\n",
           core, boot_data.curr_task[core].name, boot_data.curr_task[core].stackfree);
       }
 
     writer->printf("  Backtrace:\n ");
     for (int i=0; i<OVMS_BT_LEVELS && boot_data.crash_data.bt[i].pc; i++)
-      writer->printf(" 0x%08x", boot_data.crash_data.bt[i].pc);
+      writer->printf(" 0x%08" PRIx32, boot_data.crash_data.bt[i].pc);
 
     if (boot_data.curr_event_name[0])
       {
@@ -255,8 +256,8 @@ Boot::Boot()
     #ifdef CONFIG_OVMS_COMP_ADC
       // Note: RTC_MODULE nags about a lock release before aquire, this can be ignored
       //  (reason: RTC_MODULE needs FreeRTOS for locking, which hasn't been started yet)
-      adc1_config_width(ADC_WIDTH_12Bit);
-      adc1_config_channel_atten(ADC1_CHANNEL_0, ADC_ATTEN_11db);
+      adc1_config_width(ADC_WIDTH_BIT_12);
+      adc1_config_channel_atten(ADC1_CHANNEL_0, ADC_ATTEN_DB_11);
       uint32_t adc_level = 0;
       for (int i = 0; i < 5; i++)
         adc_level += adc1_get_raw(ADC1_CHANNEL_0);
@@ -535,7 +536,7 @@ extern "C" void esp_task_wdt_isr_user_handler(void)
 /*
  * This function is called if FreeRTOS detects a stack overflow.
  */
-extern "C" void vApplicationStackOverflowHook( TaskHandle_t xTask, signed char *pcTaskName )
+extern "C" void vApplicationStackOverflowHook( TaskHandle_t xTask, char *pcTaskName )
   {
   panicPutStr("\r\n[OVMS] ***ERROR*** A stack overflow in task ");
   panicPutStr((char *)pcTaskName);
@@ -653,13 +654,13 @@ void Boot::NotifyDebugCrash()
       buf.printf(",%s,%d,",
         (exccause < NUM_EDESCS) ? edesc[exccause] : "Unknown", boot_data.crash_data.core_id);
       for (int i=0; i<24; i++)
-        buf.printf("0x%08x ", boot_data.crash_data.reg[i]);
+        buf.printf("0x%08" PRIx32 " ", boot_data.crash_data.reg[i]);
       }
 
     // backtrace:
     buf.append(",");
     for (int i=0; i<OVMS_BT_LEVELS && boot_data.crash_data.bt[i].pc; i++)
-      buf.printf("0x%08x ", boot_data.crash_data.bt[i].pc);
+      buf.printf("0x%08" PRIx32 " ", boot_data.crash_data.bt[i].pc);
 
     // Reset reason:
     buf.printf(",%d,%s", GetResetReason(), GetResetReasonName());
@@ -687,7 +688,7 @@ void Boot::NotifyDebugCrash()
       name = boot_data.curr_task[i].name;
       buf.append(",");
       buf.append(mp_encode(name));
-      buf.printf(",%u", boot_data.curr_task[i].stackfree);
+      buf.printf(",%" PRIu32, boot_data.curr_task[i].stackfree);
       }
 
     MyNotify.NotifyString("data", "debug.crash", buf.c_str());

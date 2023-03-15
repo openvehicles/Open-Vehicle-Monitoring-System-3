@@ -94,6 +94,9 @@ class obd2ecu : public pcp, public InternalRamAllocated
     uint32_t m_supported_21_40;  // bitmap of PIDs configured 0x21 through 0x40
 
   public:
+    void NotifyStartup();
+    void NotifyShutdown();
+
     void IncomingFrame(CAN_frame_t* p_frame);
     void LoadMap();
     void ClearMap();

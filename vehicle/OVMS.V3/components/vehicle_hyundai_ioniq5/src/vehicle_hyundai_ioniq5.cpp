@@ -561,6 +561,8 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
 
   m_v_accum_op_time           = MyMetrics.InitInt("xiq.v.accum.op.time",         SM_STALE_MAX, 0, Seconds );
 
+  m_v_charge_current_request = MyMetrics.InitFloat("xiq.v.c.current.req", SM_STALE_MID, 0, Amps);
+
   // Setting a minimum trip size of 5km as the granuality of trips is +/- 1km.
   // The default range and battery size are overridden below in ConfigChanged() .. and
   // when the battery size is loaded from OBD.
@@ -645,7 +647,9 @@ OvmsHyundaiIoniqEv::~OvmsHyundaiIoniqEv()
 {
   XARM("OvmsHyundaiIoniqEv::~OvmsHyundaiIoniqEv");
   ESP_LOGI(TAG, "Shutdown Hyundai Ioniq 5 EV vehicle module");
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
   MyWebServer.DeregisterPage("/bms/cellmon");
+#endif
   MyEvents.DeregisterEvent(TAG);
   MyMetrics.DeregisterListener(TAG);
   delete iq_range_calc;
@@ -916,10 +920,10 @@ void OvmsHyundaiIoniqEv::Ticker1(uint32_t ticker)
           m_b_aux_soc->SetValue( CalcAUXSoc(hif_aux_battery_mon.average_lastf()), Percentage );
           break;
         case OvmsBatteryState::Charging:
-          ESP_LOGD(TAG, "Aux Battery state: Charging %d", hif_aux_battery_mon.m_average_last);
+          ESP_LOGD(TAG, "Aux Battery state: Charging %" PRId32, hif_aux_battery_mon.m_average_last);
           break;
         case OvmsBatteryState::Blip: {
-          ESP_LOGD(TAG, "Aux Battery state: Blip %d", hif_aux_battery_mon.m_diff_last);
+          ESP_LOGD(TAG, "Aux Battery state: Blip %" PRId32, hif_aux_battery_mon.m_diff_last);
           if ( IsPollState_Off()) {
             ESP_LOGD(TAG, "PollState->Ping for 30 (Blip)");
             PollState_Ping(30);
@@ -927,7 +931,7 @@ void OvmsHyundaiIoniqEv::Ticker1(uint32_t ticker)
         }
         break;
         case OvmsBatteryState::Dip: {
-          ESP_LOGD(TAG, "Aux Battery state: Dip %d", hif_aux_battery_mon.m_diff_last);
+          ESP_LOGD(TAG, "Aux Battery state: Dip %" PRId32, hif_aux_battery_mon.m_diff_last);
           if ( IsPollState_Off()) {
             ESP_LOGD(TAG, "PollState->Ping for 30 (Dip)");
             PollState_Ping(30);
@@ -935,7 +939,7 @@ void OvmsHyundaiIoniqEv::Ticker1(uint32_t ticker)
         }
         break;
         case OvmsBatteryState::Low: {
-          ESP_LOGD(TAG, "Aux Battery state: Low %d", hif_aux_battery_mon.m_diff_last);
+          ESP_LOGD(TAG, "Aux Battery state: Low %" PRId32, hif_aux_battery_mon.m_diff_last);
           if (!IsPollState_Off()) {
             ESP_LOGD(TAG, "PollState->Off (Aux Battery state Low)");
             PollState_Off();

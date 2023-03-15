@@ -33,13 +33,19 @@ static const char *TAG = "events";
 
 #include <string.h>
 #include <stdio.h>
-#include <esp_event_loop.h>
 #include <esp_task_wdt.h>
 #include "ovms_module.h"
 #include "ovms_events.h"
 #include "ovms_command.h"
 #include "ovms_script.h"
 #include "ovms_boot.h"
+#if ESP_IDF_VERSION_MAJOR >= 4
+#include <esp_netif_types.h>
+#include <esp_eth_com.h>
+#endif
+#if ESP_IDF_VERSION_MAJOR >= 5
+#include <esp_wifi_types.h>
+#endif
 
 #ifdef CONFIG_OVMS_COMP_OTA
 #include "ovms_ota.h"
@@ -106,7 +112,7 @@ void event_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc,
     writer->printf("Currently dispatching:\n");
     writer->printf("  Event: %s\n",MyEvents.m_current_event.c_str());
     writer->printf("  To:    %s\n",cbe->m_caller.c_str());
-    writer->printf("  For:   %u second(s)\n",monotonictime-MyEvents.m_current_started);
+    writer->printf("  For:   %" PRIu32 " second(s)\n",monotonictime-MyEvents.m_current_started);
     }
   }
 
@@ -164,7 +170,7 @@ void event_raise(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, 
 
   if (delay_ms)
     {
-    writer->printf("Raising event in %u ms: %s\n", delay_ms, event.c_str());
+    writer->printf("Raising event in %" PRIu32 " ms: %s\n", delay_ms, event.c_str());
     MyEvents.SignalEvent(event, NULL, (size_t)0, delay_ms);
     }
   else
@@ -202,7 +208,12 @@ OvmsEvents::OvmsEvents()
   m_trace = false;
 #endif // #ifdef CONFIG_OVMS_DEV_DEBUGEVENTS
 
+#if ESP_IDF_VERSION_MAJOR >= 4
+  ESP_ERROR_CHECK(esp_event_loop_create_default());
+  ESP_ERROR_CHECK(esp_event_handler_instance_register(ESP_EVENT_ANY_BASE, ESP_EVENT_ANY_ID, ReceiveSystemEvent, (void*)this, &event_handler_instance));
+#else
   ESP_ERROR_CHECK(esp_event_loop_init(ReceiveSystemEvent, (void*)this));
+#endif
 
   // Register our commands
   OvmsCommand* cmd_event = MyCommandApp.RegisterCommand("event","EVENT framework", event_status, "", 0, 0, false);
@@ -226,6 +237,10 @@ OvmsEvents::OvmsEvents()
 
 OvmsEvents::~OvmsEvents()
   {
+#if ESP_IDF_VERSION_MAJOR >= 4
+  ESP_ERROR_CHECK(esp_event_handler_instance_unregister(ESP_EVENT_ANY_BASE, ESP_EVENT_ANY_ID, event_handler_instance));
+  ESP_ERROR_CHECK(esp_event_loop_delete_default());
+#endif
   }
 
 void OvmsEvents::EventTask()
@@ -384,7 +399,7 @@ static void CheckQueueOverflow(const char* from, char* event)
   EventCallbackEntry* cbe = MyEvents.m_current_callback;
   if (cbe != NULL)
     {
-    ESP_LOGE(TAG, "%s: queue overflow (running %s->%s for %u sec), event '%s' dropped",
+    ESP_LOGE(TAG, "%s: queue overflow (running %s->%s for %" PRIu32 " sec), event '%s' dropped",
       from,
       MyEvents.m_current_event.c_str(),
       cbe->m_caller.c_str(),
@@ -562,6 +577,117 @@ void OvmsEvents::SignalEvent(std::string event, void* data, size_t length,
     }
   }
 
+#if ESP_IDF_VERSION_MAJOR >= 4
+/* Handler for all events */
+void OvmsEvents::ReceiveSystemEvent(void* handler_args, esp_event_base_t base, int32_t id, void* event_data)
+  {
+  OvmsEvents* e = (OvmsEvents*)handler_args;
+  // e->SignalEvent("system.event",(void*)event_data, sizeof(system_event_t)); // used for legacy mdns approach only ?
+
+  if (base == WIFI_EVENT)
+    {
+    switch (id)
+      {
+      case WIFI_EVENT_WIFI_READY:      // ESP32 WiFi ready
+        e->SignalEvent("system.wifi.ready", NULL);
+        break;
+      case WIFI_EVENT_SCAN_DONE:       // ESP32 finish scanning AP
+        e->SignalEvent("system.wifi.scan.done", event_data, sizeof(wifi_event_sta_scan_done_t));
+        break;
+      case WIFI_EVENT_STA_START:       // ESP32 station start
+        e->SignalEvent("system.wifi.sta.start", NULL);
+        break;
+      case WIFI_EVENT_STA_STOP:        // ESP32 station stop
+        e->SignalEvent("system.wifi.sta.stop", NULL);
+        break;
+      case WIFI_EVENT_STA_CONNECTED:   // ESP32 station connected to AP
+        e->SignalEvent("system.wifi.sta.connected", event_data, sizeof(wifi_event_sta_connected_t));
+        break;
+      case WIFI_EVENT_STA_DISCONNECTED:  // ESP32 station disconnected from AP
+        e->SignalEvent("system.wifi.sta.disconnected", event_data, sizeof(wifi_event_sta_disconnected_t));
+        break;
+      case WIFI_EVENT_STA_AUTHMODE_CHANGE:  // the auth mode of AP connected by ESP32 station changed
+        e->SignalEvent("system.wifi.sta.authmodechange", event_data, sizeof(wifi_event_sta_authmode_change_t));
+        break;
+      case WIFI_EVENT_STA_WPS_ER_SUCCESS:  // ESP32 station wps succeeds in enrollee mode
+        e->SignalEvent("system.wifi.sta.wpser.success", NULL);
+        break;
+      case WIFI_EVENT_STA_WPS_ER_FAILED:   // ESP32 station wps fails in enrollee mode
+        e->SignalEvent("system.wifi.sta.wpser.failed", event_data, sizeof(wifi_event_sta_wps_fail_reason_t));
+        break;
+      case WIFI_EVENT_STA_WPS_ER_TIMEOUT:  // ESP32 station wps timeout in enrollee mode
+        e->SignalEvent("system.wifi.sta.wpser.timeout", NULL);
+        break;
+      case WIFI_EVENT_STA_WPS_ER_PIN:      // ESP32 station wps pin code in enrollee mode
+        e->SignalEvent("system.wifi.sta.wpser.pin", event_data, sizeof(wifi_event_sta_wps_er_pin_t));
+        break;
+      case WIFI_EVENT_AP_START:            // ESP32 soft-AP start
+        e->SignalEvent("system.wifi.ap.start", NULL);
+        break;
+      case WIFI_EVENT_AP_STOP:             // ESP32 soft-AP stop
+        e->SignalEvent("system.wifi.ap.stop", NULL);
+        break;
+      case WIFI_EVENT_AP_STACONNECTED:     // a station connected to ESP32 soft-AP
+        e->SignalEvent("system.wifi.ap.sta.connected", event_data, sizeof(wifi_event_ap_staconnected_t));
+        break;
+      case WIFI_EVENT_AP_STADISCONNECTED:  // a station disconnected from ESP32 soft-AP
+        e->SignalEvent("system.wifi.ap.sta.disconnected", event_data, sizeof(wifi_event_ap_stadisconnected_t));
+        break;
+      case WIFI_EVENT_AP_PROBEREQRECVED:   // Receive probe request packet in soft-AP interface
+        e->SignalEvent("system.wifi.ap.proberx", event_data, sizeof(wifi_event_ap_probe_req_rx_t));
+        break;
+      default:
+       break;
+      }
+    }
+  else if (base == IP_EVENT)
+    {
+    switch (id)
+      {
+      case IP_EVENT_STA_GOT_IP:           // ESP32 station got IP from connected AP
+        e->SignalEvent("network.interface.up", NULL);
+        e->SignalEvent("system.wifi.sta.gotip", event_data, sizeof(ip_event_got_ip_t));
+        break;
+      case IP_EVENT_STA_LOST_IP:         // ESP32 station lost IP and the IP is reset to 0
+        e->SignalEvent("system.wifi.sta.lostip", NULL);
+        break;
+      case IP_EVENT_AP_STAIPASSIGNED:    // ESP32 soft-AP assigned an IP to a connected station
+        e->SignalEvent("system.wifi.ap.sta.ipassigned", NULL);
+        break;
+      case IP_EVENT_GOT_IP6:      // ESP32 station or ap interface v6IP addr is preferred
+        e->SignalEvent("system.wifi.ap.sta.gotip6", event_data, sizeof(ip_event_got_ip6_t));
+        break;
+      case IP_EVENT_ETH_GOT_IP:          // ESP32 ethernet got IP from connected AP
+        e->SignalEvent("system.eth.gotip",  event_data, sizeof(ip_event_got_ip_t));
+        break;
+      default:
+       break;
+      }
+    }
+  else if (base == ETH_EVENT)
+    {
+    switch (id)
+      {
+      case ETHERNET_EVENT_START:           // ESP32 ethernet start
+        e->SignalEvent("system.eth.start", NULL);
+        break;
+      case ETHERNET_EVENT_STOP:            // ESP32 ethernet stop
+        e->SignalEvent("system.eth.stop", NULL);
+        break;
+      case ETHERNET_EVENT_CONNECTED:       // ESP32 ethernet phy link up
+        e->SignalEvent("system.eth.connected", NULL);
+        break;
+      case ETHERNET_EVENT_DISCONNECTED:    // ESP32 ethernet phy link down
+        e->SignalEvent("system.eth.disconnected", NULL);
+        break;
+      default:
+       break;
+      }
+    }
+  }
+
+#else
+
 esp_err_t OvmsEvents::ReceiveSystemEvent(void *ctx, system_event_t *event)
   {
   OvmsEvents* e = (OvmsEvents*)ctx;
@@ -654,6 +780,8 @@ void OvmsEvents::SignalSystemEvent(system_event_t *event)
      break;
     }
   }
+
+#endif
 
 EventCallbackEntry::EventCallbackEntry(std::string caller, EventCallback callback)
   {

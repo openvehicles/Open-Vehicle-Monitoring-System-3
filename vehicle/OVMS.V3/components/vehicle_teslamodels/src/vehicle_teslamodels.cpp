@@ -475,7 +475,7 @@ bool OvmsVehicleTeslaModelS::TPMSRead(std::vector<uint32_t> *tpms)
                     ((uint32_t)m_tpms_data[offset+1] << 16) +
                     ((uint32_t)m_tpms_data[offset+2] << 8) +
                     ((uint32_t)m_tpms_data[offset+3]);
-      ESP_LOGD(TAG,"TPMS read ID %08x",id);
+      ESP_LOGD(TAG,"TPMS read ID %08" PRIx32,id);
       tpms->push_back( id );
       }
     return true;
@@ -499,7 +499,7 @@ bool OvmsVehicleTeslaModelS::TPMSWrite(std::vector<uint32_t> &tpms)
   m_tpms_pos = 0;
   for(uint32_t id : tpms)
     {
-    ESP_LOGD(TAG,"TPMS write ID %08x",id);
+    ESP_LOGD(TAG,"TPMS write ID %08" PRIx32,id);
     m_tpms_data[m_tpms_pos++] = (id>>24) & 0xff;
     m_tpms_data[m_tpms_pos++] = (id>>16) & 0xff;
     m_tpms_data[m_tpms_pos++] = (id>>8) & 0xff;

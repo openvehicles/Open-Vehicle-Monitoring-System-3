@@ -32,11 +32,19 @@
 // Legacy type compatibility:
 
 typedef uint8_t UINT8;
-typedef uint32_t UINT;    // Note: fatfs defines this as 32 bit, so we stick to that
+typedef unsigned int UINT;    // Note: fatfs defines this as 32 bit, so we stick to that
+                              // Note: even if they are the same size (on 32-bit arch),
+                              // int and long are differenciated by the compiler and
+                              // are not interchangeable.
+                              // UINT is defined as `typedef unsigned int UINT` in `fatfs/src/ff.h:49`
+                              // while int32_t is defined as `unsigned long`.
+                              // Same bit size - but different type, so we cannot redefine it differently
+                              // Cf: https://docs.espressif.com/projects/esp-idf/en/latest/esp32/migration-guides/release-5.x/5.0/gcc.html#int32-t-and-uint32-t-for-xtensa-compiler
+                              // Cf: https://github.com/espressif/esp-idf/issues/9511#issuecomment-1226251443
 typedef uint32_t UINT32;
 
 typedef int8_t INT8;
-typedef int32_t INT;      // 32 bit for consistency with UINT
+typedef int INT;      // 32 bit for consistency with UINT
 typedef int32_t INT32;
 
 

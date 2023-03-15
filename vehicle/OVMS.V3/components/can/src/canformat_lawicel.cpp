@@ -72,11 +72,11 @@ std::string canformat_lawicel::get(CAN_log_message_t* message)
 
   if (message->frame.FIR.B.FF == CAN_frame_std)
     {
-    sprintf(buf,"t%03x%01d",message->frame.MsgID, message->frame.FIR.B.DLC);
+    sprintf(buf,"t%03" PRIx32 "%01d",message->frame.MsgID, message->frame.FIR.B.DLC);
     }
   else
     {
-    sprintf(buf,"T%08x%01d",message->frame.MsgID, message->frame.FIR.B.DLC);
+    sprintf(buf,"T%08" PRIx32 "%01d",message->frame.MsgID, message->frame.FIR.B.DLC);
     }
 
   for (int k=0; k<message->frame.FIR.B.DLC; k++)

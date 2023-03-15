@@ -191,7 +191,7 @@ void OvmsVehicleMgEv::IncomingPollReply(
 {
     ESP_LOGV(
         TAG,
-        "%03x TYPE:%x PID:%02x Length:%x Data:%02x %02x %02x %02x",
+        "%03" PRIx32 " TYPE:%" PRIx16 " PID:%02" PRIx16 " Length:%" PRIx8 " Data:%02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8,
         m_poll_moduleid_low,
         type,
         pid,

@@ -523,13 +523,13 @@ void OvmsReToolsPidScanner::IncomingPollFrame(const CAN_frame_t* frame)
         if (data[2] == UDS_RESP_NRC_RCRRP)
         {
             // ResponsePending: ignore, keep waiting
-            ESP_LOGD(TAG, "ResponsePending from %x[%x]:%x",
+            ESP_LOGD(TAG, "ResponsePending from %" PRIx16 "[%" PRIx32 "]:%x",
               m_id, frame->MsgID, m_currentPid);
         }
         else
         {
             // …other negative response code:
-            ESP_LOGD(TAG, "Negative response from %x[%x]:%x code %02x",
+            ESP_LOGD(TAG, "Negative response from %" PRIx16 "[%" PRIx32 "]:%x code %02" PRIx8,
               m_id, frame->MsgID, m_currentPid, data[2]);
             SendNextFrame();
         }
@@ -556,7 +556,7 @@ void OvmsReToolsPidScanner::IncomingPollFrame(const CAN_frame_t* frame)
         {
             ESP_LOGD(
                 TAG,
-                "Success response from %x[%x]:%x length %d (0x%02x 0x%02x 0x%02x 0x%02x%s)",
+                "Success response from %" PRIx16 "[%" PRIx32 "]:%x length %" PRId16 " (0x%02" PRIx8 " 0x%02" PRIx8 " 0x%02" PRIx8 " 0x%02" PRIx8 "%s)",
                 m_id, frame->MsgID, m_currentPid, payloadLength, payload[0], payload[1], payload[2], payload[3],
                 (frameType == 0 ? "" : " ...")
             );

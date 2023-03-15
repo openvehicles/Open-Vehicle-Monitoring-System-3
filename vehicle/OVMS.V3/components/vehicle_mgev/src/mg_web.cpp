@@ -311,6 +311,7 @@ void OvmsVehicleMgEv::GetDashboardConfig(DashboardConfig& cfg)
         << invertert_dash << "," // Inverter temperature
         << motort_dash // Motor temperature
         << "]";
+    cfg.gaugeset1 = str.str();
 }
 
 /**

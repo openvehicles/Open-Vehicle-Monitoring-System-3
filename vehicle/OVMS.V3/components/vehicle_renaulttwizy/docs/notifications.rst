@@ -82,6 +82,8 @@ see where charges stopped or how long they took and how high the temperatures go
     * charge_recd_ah
     * batt_capacity_prc
     * chg_temp
+    * batt_energy_avail
+    * batt_energy_full
 
 
 ----------------

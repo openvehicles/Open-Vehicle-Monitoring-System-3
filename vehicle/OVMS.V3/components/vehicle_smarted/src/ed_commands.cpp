@@ -41,6 +41,7 @@ static const char *TAG = "v-smarted";
 #include "metrics_standard.h"
 #include "ovms_notify.h"
 #include "ovms_peripherals.h"
+#include "string_writer.h"
 
 #include "vehicle_smarted.h"
 
@@ -473,7 +474,7 @@ OvmsVehicle::vehicle_command_t OvmsVehicleSmartED::CommandSetChargeTimer(bool ti
   vTaskDelay(50 / portTICK_PERIOD_MS);
   m_can1->Write(&frame);
   
-  ESP_LOGI(TAG, "%03x 8 %02x %02x %02x %02x %02x %02x %02x %02x", frame.MsgID, frame.data.u8[0], frame.data.u8[1], frame.data.u8[2], frame.data.u8[3], frame.data.u8[4], frame.data.u8[5], frame.data.u8[6], frame.data.u8[7]);
+  ESP_LOGI(TAG, "%03" PRIx32 " 8 %02x %02x %02x %02x %02x %02x %02x %02x", frame.MsgID, frame.data.u8[0], frame.data.u8[1], frame.data.u8[2], frame.data.u8[3], frame.data.u8[4], frame.data.u8[5], frame.data.u8[6], frame.data.u8[7]);
   return Success;
 #endif
   return NotImplemented;

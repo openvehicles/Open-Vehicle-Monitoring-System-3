@@ -43,6 +43,15 @@ static const char *TAG = "esp32can";
 #include "esp32can_regdef.h"
 #include "ovms_peripherals.h"
 #include "ovms_module.h"
+#include "esp_idf_version.h"
+#if ESP_IDF_VERSION_MAJOR >= 5
+#include <esp_chip_info.h>
+#endif
+#if ESP_IDF_VERSION_MAJOR >= 4
+#include <rom/gpio.h>
+#include <soc/gpio_sig_map.h>
+#endif
+
 
 esp32can* MyESP32can = NULL;
 
@@ -691,7 +700,7 @@ void esp32can::BusTicker10(std::string event, void* data)
   if ((m_status.error_flags >> 16 == __CAN_IRQ_ERR_WARNING) &&
       (monotonictime - m_status.error_time >= 10))
     {
-    ESP_LOGE(TAG, "%s stuck bus-off error state (errflags=0x%08x) detected - resetting bus",
+    ESP_LOGE(TAG, "%s stuck bus-off error state (errflags=0x%08" PRIx32 ") detected - resetting bus",
              m_name, m_status.error_flags);
     Reset();
     m_status.error_flags = 0;

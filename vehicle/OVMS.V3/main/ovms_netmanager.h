@@ -33,7 +33,14 @@
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#if ESP_IDF_VERSION_MAJOR >= 4
+#include "esp_netif.h"
+#else
 #include "tcpip_adapter.h"
+#endif
+#if ESP_IDF_VERSION_MAJOR >= 5
+#include "esp_wifi_ap_get_sta_list.h"
+#endif
 extern "C"
   {
 #include "lwip/netif.h"

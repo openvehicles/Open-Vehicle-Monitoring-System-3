@@ -520,7 +520,7 @@ CANopenResult_t SevconClient::CfgMakePowermap(void
     // Now rpm2 & rpm3 mark the start of regions 2 & 3,
     // and pt is the map index for rpm3.
     
-    ESP_LOGD(TAG, "CfgMakePowermap: pwr2=%d, rpm2=%d, pwr3=%d, rpm3=%d, pt=%d\n",
+    ESP_LOGD(TAG, "CfgMakePowermap: pwr2=%" PRId32 ", rpm2=%" PRId32 ", pwr3=%" PRId32 ", rpm3=%" PRId32 ", pt=%d\n",
       twizy_max_pwr_lo, rpm2, twizy_max_pwr_hi, rpm3, pt);
     
     // write map start point:
@@ -582,7 +582,7 @@ CANopenResult_t SevconClient::CfgMakePowermap(void
       // calculate torque at point i:
       trq = ((((uint32_t)pwr * 9549 + (rpm>>1)) / rpm) * 16 + 500) / 1000;
 
-      ESP_LOGD(TAG, "CfgMakePowermap: #%d rpm=%d trq=%.2f pwr=%d", i, rpm, trq/16.0, pwr);
+      ESP_LOGD(TAG, "CfgMakePowermap: #%d rpm=%" PRId32 " trq=%.2f pwr=%" PRId32, i, rpm, trq/16.0, pwr);
 
       // write into map:
       if ((err = sc.Write(0x4611, 0x03+(i<<1), trq)) != COR_OK)
