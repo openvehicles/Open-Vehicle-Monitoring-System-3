@@ -789,8 +789,7 @@ bool OvmsVehicle::PollerVWTPReceive(CAN_frame_t* frame, uint32_t msgid)
   // Immediately send the next poll for this tick if…
   // - we are not waiting for another frame
   // - poll throttling is unlimited or limit isn't reached yet
-  if (m_poll_wait == 0 &&
-      (!m_poll_sequence_max || m_poll_sequence_cnt < m_poll_sequence_max))
+  if (m_poll_wait == 0 && CanPoll())
     {
     Queue_PollerSend(poller_source_t::Successful);
     }

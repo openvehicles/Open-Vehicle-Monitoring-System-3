@@ -286,6 +286,8 @@ OvmsVehicle::OvmsVehicle()
   m_poll_txcallback = std::bind(&OvmsVehicle::PollerTxCallback, this, _1, _2);
   m_poll_plist = NULL;
   m_poll_plcur = NULL;
+  m_poll_paused = false;
+
   m_poll_entry = {};
   m_poll_vwtp = {};
   m_poll_ticker = 0;
@@ -533,7 +535,7 @@ void OvmsVehicle::RxTask()
         {
         PollerVWTPReceive(&frame, frame.MsgID);
         }
-      else if (m_poll_wait && frame.origin == m_poll_bus && m_poll_plist)
+      else if (m_poll_wait && frame.origin == m_poll_bus && HasPollList())
         {
         uint32_t msgid;
         if (m_poll_protocol == ISOTP_EXTADR)
