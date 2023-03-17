@@ -65,6 +65,7 @@
 #define MS_M_EGPIO_MONITOR          "m.egpio.monitor"
 #define MS_M_EGPIO_OUTPUT           "m.egpio.output"
 #endif //CONFIG_OVMS_COMP_MAX7317
+#define MS_M_OBD2ECU_ON             "m.obdc2ecu.on"
 
 #define MS_S_V2_CONNECTED           "s.v2.connected"
 #define MS_S_V2_PEERS               "s.v2.peers"
@@ -302,6 +303,7 @@ class MetricsStandard
     OvmsMetricBitset<10,0>* ms_m_egpio_output;            // EGPIO (MAX7317) output port state
     OvmsMetricBitset<10,0>* ms_m_egpio_monitor;           // EGPIO (MAX7317) input monitoring state
 #endif //CONFIG_OVMS_COMP_MAX7317
+    OvmsMetricBool* ms_m_obd2ecu_on;                      // OBD2ECU process is on.
 
     OvmsMetricBool*   ms_s_v2_connected;                  // True = V2 server connected [1]
     OvmsMetricInt*    ms_s_v2_peers;                      // V2 clients connected [1]
