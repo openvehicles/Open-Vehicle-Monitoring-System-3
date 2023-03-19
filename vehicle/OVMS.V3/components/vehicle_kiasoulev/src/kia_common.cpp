@@ -199,6 +199,7 @@ Kia_Trip_Counter::Kia_Trip_Counter()
 	odo                    = 0;
 	tot_discharge          = 0;
 	tot_charge             = 0;
+	tot_charge_start       = 0;
 	tot_charge_ext         = 0;
 	charging               = false;
 	charge_start           = 0;
