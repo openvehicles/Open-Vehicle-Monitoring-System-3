@@ -69,9 +69,9 @@ static const OvmsVehicle::poll_pid_t renault_zoe_polls[] = {
   //{ 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x504A, { 0, 10, 10, 10 } },  // Mains active Power consumed
   //{ 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5063, { 0, 10, 10, 10 } },  // Charging State
   //{ 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x5062, { 0, 10, 10, 10 } },  // Ground Resistance
-  { 0x79b, 0x7bb, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x04, { 0, 60, 60, 60 }, 0, ISOTP_STD },  // Bat Module temp
-  { 0x79b, 0x7bb, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x41, { 0, 60, 10, 60 }, 0, ISOTP_STD },  // Cell Bat Module 1-62
-  { 0x79b, 0x7bb, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x42, { 0, 60, 10, 60 }, 0, ISOTP_STD },  // Cell Bat Module 63-96
+  { 0x79b, 0x7bb, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x04, { 0, 60, 10, 10 }, 0, ISOTP_STD },  // Bat Module temp
+  { 0x79b, 0x7bb, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x41, { 0, 60, 10, 10 }, 0, ISOTP_STD },  // Cell Bat Module 1-62
+  { 0x79b, 0x7bb, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x42, { 0, 60, 10, 10 }, 0, ISOTP_STD },  // Cell Bat Module 63-96
   //+"7bc,28,39,1,4094,0,N·m,224B7C,624B7C,ff,Electric brake wheels torque request\n" //
   //+ "Uncoupled Braking Pedal,2197,V,7bc,79c,UBP,-,5902ff\n"
   //{ 0x79c, 0x7bc, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x04, { 0, 120, 1, 120 } }, // Braking Pedal
@@ -85,9 +85,9 @@ static const OvmsVehicle::poll_pid_t renault_kangoo_polls[] = {
   { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3203, { 0, 10, 1, 5 }, 0, ISOTP_STD },  // Battery Voltage
   { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3204, { 0, 10, 1, 5 }, 0, ISOTP_STD },  // Battery Current
   { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x33F6, { 0, 60, 600, 60 }, 0, ISOTP_STD }, // Inverter Temp
-  { 0x79b, 0x7bb, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x04, { 0, 60, 60, 60 }, 0, ISOTP_STD },  // Bat Module temp
-  { 0x79b, 0x7bb, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x41, { 0, 60, 10, 60 }, 0, ISOTP_STD },  // Cell Bat Module 1-62
-  { 0x79b, 0x7bb, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x42, { 0, 60, 10, 60 }, 0, ISOTP_STD },  // Cell Bat Module 63-96
+  { 0x79b, 0x7bb, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x04, { 0, 60, 10, 10 }, 0, ISOTP_STD },  // Bat Module temp
+  { 0x79b, 0x7bb, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x41, { 0, 60, 10, 10 }, 0, ISOTP_STD },  // Cell Bat Module 1-62
+  { 0x79b, 0x7bb, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x42, { 0, 60, 10, 10 }, 0, ISOTP_STD },  // Cell Bat Module 63-96
   // { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x504A, { 0, 0, 0, 10 }, 0, ISOTP_STD },  // Mains active Power consumed
   POLL_LIST_END
 };
