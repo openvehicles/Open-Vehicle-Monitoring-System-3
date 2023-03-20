@@ -126,12 +126,14 @@ MetricsStandard::MetricsStandard()
   ms_v_bat_cell_vmax = new OvmsMetricVector<float>(MS_V_BAT_CELL_VMAX, SM_STALE_HIGH, Volts);
   ms_v_bat_cell_vdevmax = new OvmsMetricVector<float>(MS_V_BAT_CELL_VDEVMAX, SM_STALE_HIGH, Volts);
   ms_v_bat_cell_valert = new OvmsMetricVector<short>(MS_V_BAT_CELL_VALERT, SM_STALE_HIGH, Other);
+  ms_v_bat_cell_vupdatedon = new OvmsMetricInt(MS_V_BAT_CELL_VUPDATEDON, SM_STALE_HIGH, Seconds);
 
   ms_v_bat_cell_temp = new OvmsMetricVector<float>(MS_V_BAT_CELL_TEMP, SM_STALE_HIGH, Celcius);
   ms_v_bat_cell_tmin = new OvmsMetricVector<float>(MS_V_BAT_CELL_TMIN, SM_STALE_HIGH, Celcius);
   ms_v_bat_cell_tmax = new OvmsMetricVector<float>(MS_V_BAT_CELL_TMAX, SM_STALE_HIGH, Celcius);
   ms_v_bat_cell_tdevmax = new OvmsMetricVector<float>(MS_V_BAT_CELL_TDEVMAX, SM_STALE_HIGH, Celcius);
   ms_v_bat_cell_talert = new OvmsMetricVector<short>(MS_V_BAT_CELL_TALERT, SM_STALE_HIGH, Other);
+  ms_v_bat_cell_tupdatedon = new OvmsMetricInt(MS_V_BAT_CELL_TUPDATEDON, SM_STALE_HIGH, Seconds);
 
   //
   // Charger / charging metrics

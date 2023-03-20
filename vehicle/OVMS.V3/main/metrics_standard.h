@@ -122,11 +122,14 @@
 #define MS_V_BAT_CELL_VMAX          "v.b.c.voltage.max"
 #define MS_V_BAT_CELL_VDEVMAX       "v.b.c.voltage.dev.max"
 #define MS_V_BAT_CELL_VALERT        "v.b.c.voltage.alert"
+#define MS_V_BAT_CELL_VUPDATEDON    "v.b.c.voltage.updatedon"
+
 #define MS_V_BAT_CELL_TEMP          "v.b.c.temp"
 #define MS_V_BAT_CELL_TMIN          "v.b.c.temp.min"
 #define MS_V_BAT_CELL_TMAX          "v.b.c.temp.max"
 #define MS_V_BAT_CELL_TDEVMAX       "v.b.c.temp.dev.max"
 #define MS_V_BAT_CELL_TALERT        "v.b.c.temp.alert"
+#define MS_V_BAT_CELL_TUPDATEDON    "v.b.c.temp.updatedon"
 
 #define MS_V_CHARGE_VOLTAGE         "v.c.voltage"
 #define MS_V_CHARGE_CURRENT         "v.c.current"
@@ -368,12 +371,14 @@ class MetricsStandard
     OvmsMetricVector<float>* ms_v_bat_cell_vmax;          // Cell maximum voltages [V]
     OvmsMetricVector<float>* ms_v_bat_cell_vdevmax;       // Cell maximum voltage deviation observed [V]
     OvmsMetricVector<short>* ms_v_bat_cell_valert;        // Cell voltage deviation alert level [0=normal, 1=warning, 2=alert]
+    OvmsMetricInt* ms_v_bat_cell_vupdatedon;              // Timestamp of last cell voltages update
 
     OvmsMetricVector<float>* ms_v_bat_cell_temp;          // Cell temperatures [°C]
     OvmsMetricVector<float>* ms_v_bat_cell_tmin;          // Cell minimum temperatures [°C]
     OvmsMetricVector<float>* ms_v_bat_cell_tmax;          // Cell maximum temperatures [°C]
     OvmsMetricVector<float>* ms_v_bat_cell_tdevmax;       // Cell maximum temperature deviation observed [°C]
     OvmsMetricVector<short>* ms_v_bat_cell_talert;        // Cell temperature deviation alert level [0=normal, 1=warning, 2=alert]
+    OvmsMetricInt* ms_v_bat_cell_tupdatedon;              // Timestamp of last cell temperatures update
 
     //
     // Charger / charging metrics

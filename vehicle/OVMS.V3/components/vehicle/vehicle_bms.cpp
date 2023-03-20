@@ -333,6 +333,7 @@ void OvmsVehicle::BmsSetCellVoltage(int index, float value)
     StandardMetrics.ms_v_bat_cell_voltage->SetElemValues(0, m_bms_readings_v, m_bms_voltages);
     StandardMetrics.ms_v_bat_cell_vmin->SetElemValues(0, m_bms_readings_v, m_bms_vmins);
     StandardMetrics.ms_v_bat_cell_vmax->SetElemValues(0, m_bms_readings_v, m_bms_vmaxs);
+    StandardMetrics.ms_v_bat_cell_vupdatedon->SetValue(monotonictime);
 
     // Voltages are very volatile and may respond to a load change within the sensor query loop.
     // To detect an inconsistent series, we check for a too high gradient and/or a too high
@@ -465,6 +466,7 @@ void OvmsVehicle::BmsSetCellTemperature(int index, float value)
     StandardMetrics.ms_v_bat_cell_tmax->SetElemValues(0, m_bms_readings_t, m_bms_tmaxs);
     StandardMetrics.ms_v_bat_cell_tdevmax->SetElemValues(0, m_bms_readings_t, m_bms_tdevmaxs);
     StandardMetrics.ms_v_bat_cell_talert->SetElemValues(0, m_bms_readings_t, (short *) m_bms_talerts);
+    StandardMetrics.ms_v_bat_cell_tupdatedon->SetValue(monotonictime);
 
     // complete:
     m_bms_has_temperatures = true;
