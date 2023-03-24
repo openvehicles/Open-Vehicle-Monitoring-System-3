@@ -370,9 +370,9 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
 
       case 0x373://freq100 // Main Battery volt and current
       {  // 1kwh -» 3600000Ws -- freq100 -» 360000000
-        StandardMetrics.ms_v_bat_current->SetValue((((((d[2] * 256.0) + d[3])) - 32768)) * 0.01, Amps);
+        StandardMetrics.ms_v_bat_current->SetValue((((((d[2] * 256.0) + d[3])) - 32768)) * -0.01, Amps);
         StandardMetrics.ms_v_bat_voltage->SetValue((d[4] * 256.0 + d[5]) * 0.1, Volts);
-        StandardMetrics.ms_v_bat_power->SetValue((StandardMetrics.ms_v_bat_voltage->AsFloat(0, Volts) * StandardMetrics.ms_v_bat_current->AsFloat(0, Amps)) * -0.001, kW);
+        StandardMetrics.ms_v_bat_power->SetValue((StandardMetrics.ms_v_bat_voltage->AsFloat(0, Volts) * StandardMetrics.ms_v_bat_current->AsFloat(0, Amps)) * 0.001, kW);
         v_c_power_dc->SetValue( StandardMetrics.ms_v_bat_power->AsFloat() * -1.0, kW );
         if (!StandardMetrics.ms_v_charge_pilot->AsBool())
         {
@@ -416,7 +416,7 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
         {
           //set battery voltage/current to charge voltage/current, when car in Park, and charging
           StandardMetrics.ms_v_charge_voltage->SetValue(StandardMetrics.ms_v_bat_voltage->AsFloat());
-          StandardMetrics.ms_v_charge_current->SetValue(StandardMetrics.ms_v_bat_current->AsFloat() * 1.0);
+          StandardMetrics.ms_v_charge_current->SetValue(StandardMetrics.ms_v_bat_current->AsFloat() * -1.0);
           StandardMetrics.ms_v_charge_kwh->SetValue(ms_v_charge_dc_kwh->AsFloat());
         }
 
