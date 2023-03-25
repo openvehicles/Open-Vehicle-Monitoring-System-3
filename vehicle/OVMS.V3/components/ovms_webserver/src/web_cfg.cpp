@@ -3147,6 +3147,7 @@ void OvmsWebServer::HandleCfgLocations(PageEntry_t& p, PageContext_t& c)
   std::string latlon, name;
   int radius;
   double lat, lon;
+  std::string flatbed_dist, flatbed_time, valet_dist, valet_time;
 
   if (c.method == "POST") {
     // process form submission:
@@ -3169,12 +3170,20 @@ void OvmsWebServer::HandleCfgLocations(PageEntry_t& p, PageContext_t& c)
       snprintf(buf, sizeof(buf), "%f,%f,%d", lat, lon, radius);
       pmap[name] = buf;
     }
-
+    flatbed_dist = c.getvar("flatbed.dist");
+    flatbed_time = c.getvar("flatbed.interval");
+    valet_dist = c.getvar("valet.dist");
+    valet_time = c.getvar("valet.interval");
     if (error == "") {
       // save:
       param->m_map.clear();
       param->m_map = std::move(pmap);
       param->Save();
+
+      MyConfig.SetParamValue("vehicle", "flatbed.alarmdistance", flatbed_dist);
+      MyConfig.SetParamValue("vehicle", "flatbed.alarminterval", flatbed_time);
+      MyConfig.SetParamValue("vehicle", "valet.alarmdistance", valet_dist);
+      MyConfig.SetParamValue("vehicle", "valet.alarminterval", valet_time);
 
       c.head(200);
       c.alert("success", "<p class=\"lead\">Locations saved.</p>");
@@ -3192,6 +3201,11 @@ void OvmsWebServer::HandleCfgLocations(PageEntry_t& p, PageContext_t& c)
     // read configuration:
     pmap = param->m_map;
 
+    flatbed_dist = MyConfig.GetParamValue("vehicle", "flatbed.alarmdistance");
+    flatbed_time = MyConfig.GetParamValue("vehicle", "flatbed.alarminterval");
+    valet_dist   = MyConfig.GetParamValue("vehicle", "valet.alarmdistance");
+    valet_time   = MyConfig.GetParamValue("vehicle", "valet.alarminterval");
+
     // generate form:
     c.head(200);
   }
@@ -3206,6 +3220,16 @@ void OvmsWebServer::HandleCfgLocations(PageEntry_t& p, PageContext_t& c)
 
   c.panel_start("primary panel-single", "Locations");
   c.form_start(p.uri);
+
+  c.print(
+    "<ul class=\"nav nav-tabs\">"
+      "<li class=\"active\"><a data-toggle=\"tab\" href=\"#tab-locations\">User Locations</a></li>"
+      "<li><a data-toggle=\"tab\" href=\"#tab-system-locations\">System Locations</a></li>"
+    "</ul>"
+    "<div class=\"tab-content\">"
+      "<div id=\"tab-locations\" class=\"tab-pane fade in active section-locations\">");
+
+
 
   c.print(
     "<div class=\"table-responsive list-editor receiver\" id=\"loced\">"
@@ -3265,13 +3289,36 @@ void OvmsWebServer::HandleCfgLocations(PageEntry_t& p, PageContext_t& c)
         "</tfoot>"
       "</table>"
       "<input type=\"hidden\" class=\"list-item-id\" name=\"loc\" value=\"0\">"
-    "</div>"
-    "<div class=\"text-center\">\n"
-      "<button type=\"reset\" class=\"btn btn-default\">Reset</button>\n"
-      "<button type=\"submit\" class=\"btn btn-primary\">Save</button>\n"
     "</div>\n"
   );
 
+  c.print(
+      "</div>"
+      "<div id=\"tab-system-locations\" class=\"tab-pane fade section-system-locations\">");
+
+  c.input("number", "Flatbed Alert Distance", "flatbed.dist", flatbed_dist.c_str(), "Default: 500",
+      "<p>Distance from the parked location that the car needs to have moved before a 'flat-bed' alert is raised.</p>",
+      "min=\"0\" step=\"1\"", "m");
+  c.input("number", "Flatbed Alert Interval", "flatbed.interval", flatbed_time.c_str(), "Default: 15",
+      "Minimum interval between Flatbed alerts",
+      "min=\"1\" step=\"1\"", "min");
+
+  c.input("number", "Valet Alert Distance", "valet.dist", valet_dist.c_str(), "Default: 0",
+      "<p>Distance from the location Valet Mode was enabled that the car needs to have travelled before an alert is raised.</p>",
+      "min=\"0\" step=\"1\"", "m");
+  c.input("number", "Valet Alert Interval", "valet.interval", valet_time.c_str(), "Default: 15",
+      "Minimum interval between Valet alerts",
+      "min=\"1\" step=\"1\"", "min");
+
+  c.print(
+    "</div>\n"
+    "<br/>\n"
+    "<div class=\"form-group\">\n"
+    "<div class=\"text-center\">\n"
+      "<button type=\"reset\" class=\"btn btn-default\">Reset</button>\n"
+      "<button type=\"submit\" class=\"btn btn-primary\">Save</button>\n"
+    "</div></div>\n"
+    );
   c.form_end();
 
   c.print(
