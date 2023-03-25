@@ -153,11 +153,23 @@ void OvmsVehicleMgEv::IncomingBmsPoll(
                         StandardMetrics.ms_v_charge_state->SetValue("topoff");
                     }
                 }
-                
                 // Save SOC for display
                 StandardMetrics.ms_v_bat_soc->SetValue(scaledSoc);
+                // Calculate Estimated Range
+                float batTemp = StandardMetrics.ms_v_bat_temp->AsFloat();
+                float effSoh = StandardMetrics.ms_v_bat_soh->AsFloat();
+                float kmPerKwh = m_avg_consumption->AsFloat(0, KPkWh);
+                
+                if(kmPerKwh < 4.648)  kmPerKwh = 4.648; //21.5 kWh/100km
+                if(kmPerKwh > 7.728) kmPerKwh = 7.728; //13 kWh/100km
+                if(batTemp > 20) batTemp = 20;
+                // Set full range accounting for battery State of Health (SoH)
+                StdMetrics.ms_v_bat_range_full->SetValue(WLTP_RANGE * effSoh * 0.01f, Kilometers);
+                // Set battery capacity reduced by SOC and SOH
+                float batteryCapacity = 42.5f * (scaledSoc * 0.01f) * (effSoh * 0.01f);
+                StandardMetrics.ms_v_bat_range_est->SetValue(batteryCapacity * (kmPerKwh * (1-((20 - batTemp) * 1.3f) * 0.01f)));
                 // Ideal range set to SoC percentage of WLTP Range
-                StandardMetrics.ms_v_bat_range_ideal->SetValue(WLTP_RANGE * (scaledSoc / 100));
+                StandardMetrics.ms_v_bat_range_ideal->SetValue(StdMetrics.ms_v_bat_range_full->AsFloat(0, Kilometers) * (scaledSoc * 0.01f));
             }
             break;
         case batteryErrorPid:
@@ -178,7 +190,7 @@ void OvmsVehicleMgEv::IncomingBmsPoll(
             StandardMetrics.ms_v_bat_soh->SetValue(value / 100.0);
             break;
         case bmsRangePid:
-            StandardMetrics.ms_v_bat_range_est->SetValue(value / 10.0);
+            //StandardMetrics.ms_v_bat_range_est->SetValue(value / 10.0);
             break;
         case bmsMaxCellVoltagePid:
             m_bms_max_cell_voltage->SetValue(value / 1000.0);
