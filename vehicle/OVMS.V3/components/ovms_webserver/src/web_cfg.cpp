@@ -3296,18 +3296,18 @@ void OvmsWebServer::HandleCfgLocations(PageEntry_t& p, PageContext_t& c)
       "</div>"
       "<div id=\"tab-system-locations\" class=\"tab-pane fade section-system-locations\">");
 
-  c.input("number", "Flatbed Alert Distance", "flatbed.dist", flatbed_dist.c_str(), "Default: 500",
-      "<p>Distance from the parked location that the car needs to have moved before a 'flat-bed' alert is raised.</p>",
+  c.input("number", "Flatbed Alert Distance", "flatbed.dist", flatbed_dist.c_str(), "Default: 500 m",
+      "<p>Distance from the parked location that the car needs to have moved before a 'flat-bed' alert is raised, 0 = disable flatbed alerts.</p>",
       "min=\"0\" step=\"1\"", "m");
-  c.input("number", "Flatbed Alert Interval", "flatbed.interval", flatbed_time.c_str(), "Default: 15",
-      "Minimum interval between Flatbed alerts",
+  c.input("number", "Flatbed Alert Interval", "flatbed.interval", flatbed_time.c_str(), "Default: 15 min",
+      "Interval between repeated flatbed alerts, 0 = disable alert repetition",
       "min=\"1\" step=\"1\"", "min");
 
-  c.input("number", "Valet Alert Distance", "valet.dist", valet_dist.c_str(), "Default: 0",
-      "<p>Distance from the location Valet Mode was enabled that the car needs to have travelled before an alert is raised.</p>",
+  c.input("number", "Valet Alert Distance", "valet.dist", valet_dist.c_str(), "Default: 0 (disabled)",
+      "<p>Distance from the location Valet Mode was enabled that the car needs to have travelled before an alert is raised, 0 = disable valet alerts.</p>",
       "min=\"0\" step=\"1\"", "m");
-  c.input("number", "Valet Alert Interval", "valet.interval", valet_time.c_str(), "Default: 15",
-      "Minimum interval between Valet alerts",
+  c.input("number", "Valet Alert Interval", "valet.interval", valet_time.c_str(), "Default: 15 min",
+      "Interval between repeated valet alerts, 0 = disable alert repetition",
       "min=\"1\" step=\"1\"", "min");
 
   c.print(
