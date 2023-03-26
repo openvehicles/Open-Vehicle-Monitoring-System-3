@@ -42,22 +42,22 @@ constexpr uint32_t evccrx = 0x7a6u;
 
 
 // BMS PIDs
+constexpr uint16_t bmssoc = 0xe014u;
 constexpr uint16_t bmsStatusPid = 0xe037u;
-constexpr uint16_t bmssoh = 0xe053u;
-constexpr uint16_t bmssoc = 0xe095u;
-constexpr uint16_t bmssocraw = 0xe096u;
-constexpr uint16_t cellvolts = 0xe113u;
-constexpr uint16_t celltemps = 0xe114u;
-constexpr uint16_t packamps = 0xe131u;
+ constexpr uint16_t bmssoh = 0xe053u;
 constexpr uint16_t bmsccsamps = 0xe088u;
 constexpr uint16_t bmsacamps = 0xe089u;
 //constexpr uint16_t bmsccschargeon = 0xe090u;
 //constexpr uint16_t bmsacchargeon = 0xe091u;
+ constexpr uint16_t bmssocraw = 0xe096u;
+constexpr uint16_t cellvolts = 0xe113u;
+constexpr uint16_t celltemps = 0xe114u;
+// constexpr uint16_t packamps = 0xe131u;
 
 // VCU PIDs
+constexpr uint16_t vcuspeed = 0xe000u; 
 constexpr uint16_t vcutemp1 = 0xe005u;
 constexpr uint16_t vcutemp2 = 0xe006u;
-constexpr uint16_t vcuspeed = 0xe000u; 
 constexpr uint16_t vcupackvolts = 0xe019u;
 constexpr uint16_t vcuvin = 0xf190u;
 constexpr uint16_t vcu12vamps = 0xe022u;

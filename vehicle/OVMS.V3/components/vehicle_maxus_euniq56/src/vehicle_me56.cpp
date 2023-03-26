@@ -278,9 +278,9 @@ void OvmsVehicleMaxe56::IncomingPollReply(canbus* bus, uint16_t type, uint16_t p
         }
         case celltemps:
         {
-            // Read battery cell temperatures 1-16:
+            // Read battery cell temperatures 1-20:
                 BmsRestartCellTemperatures();
-            for (int i = 0; i < 16; i++)
+            for (int i = 0; i < 20; i++)
                 {
                     BmsSetCellTemperature(i, RXB_UINT16(i*2) * 0.001f);
                 }
@@ -379,10 +379,10 @@ void OvmsVehicleMaxe56::IncomingFrameCan1(CAN_frame_t* p_frame)
                     if(kmPerKwh>6.4)kmPerKwh=6.6;
                     if(batTemp>20)batTemp=20;
               
-              StdMetrics.ms_v_bat_range_full->SetValue(241);
-              StdMetrics.ms_v_bat_range_ideal->SetValue(241 * soc / 100);
-                //StdMetrics.ms_v_bat_range_est->SetValue(241 * soc / 108);
-              StdMetrics.ms_v_bat_range_est->SetValue(52.5*((kmPerKwh * (1-((20-batTemp)*1.3)/100)*(soc/100))*(effSoh/100)));
+              StdMetrics.ms_v_bat_range_full->SetValue(360);
+              StdMetrics.ms_v_bat_range_ideal->SetValue(360 * soc / 100);
+                //StdMetrics.ms_v_bat_range_est->SetValue(360 * soc / 108);
+              StdMetrics.ms_v_bat_range_est->SetValue(72.7*((kmPerKwh * (1-((20-batTemp)*1.3)/100)*(soc/100))*(effSoh/100)));
         
               break;
         }

@@ -55,7 +55,7 @@ void OvmsVehicleMaxe56::WebInit()
 {
     // vehicle menu:
     
-    MyWebServer.RegisterPage("/xmg/battery",  "Battery config", WebCfgBattery, PageMenu_Vehicle, PageAuth_Cookie);
+    // MyWebServer.RegisterPage("/xmg/battery",  "Battery config", WebCfgBattery, PageMenu_Vehicle, PageAuth_Cookie);
     MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
     MyWebServer.RegisterPage("/bms/metrics_charger", "Charging Metrics", WebDispChgMetrics, PageMenu_Vehicle, PageAuth_Cookie);
 }
@@ -66,9 +66,9 @@ void OvmsVehicleMaxe56::WebDeInit()
 {
   MyWebServer.DeregisterPage("/bms/cellmon");
   MyWebServer.DeregisterPage("/bms/metrics_charger");
-  MyWebServer.DeregisterPage("/xmg/battery");
+  // MyWebServer.DeregisterPage("/xmg/battery");
 }
-
+/**
 void OvmsVehicleMaxe56::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
 {
   std::string error;
@@ -155,6 +155,7 @@ void OvmsVehicleMaxe56::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
   c.panel_end();
   c.done();
 }
+*/
 /**
  * GetDashboardConfig: Maxus Euniq 5 specific dashboard setup
  */
