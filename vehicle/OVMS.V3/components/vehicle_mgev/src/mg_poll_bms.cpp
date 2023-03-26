@@ -158,7 +158,8 @@ void OvmsVehicleMgEv::IncomingBmsPoll(
                 // Calculate Estimated Range
                 float batTemp = StandardMetrics.ms_v_bat_temp->AsFloat();
                 float effSoh = StandardMetrics.ms_v_bat_soh->AsFloat();
-                float kmPerKwh = m_avg_consumption->AsFloat(0, KPkWh);
+                // Get average trip consumption weighted by current trip consumption (25%)
+                float kmPerKwh = (m_avg_consumption->AsFloat(0, KPkWh) * 3.0 + m_trip_consumption->AsFloat(0,KPkWh))/4;
                 
                 if(kmPerKwh < 4.648)  kmPerKwh = 4.648; //21.5 kWh/100km
                 if(kmPerKwh > 7.728) kmPerKwh = 7.728; //13 kWh/100km
