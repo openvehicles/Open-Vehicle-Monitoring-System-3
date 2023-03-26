@@ -203,6 +203,7 @@ OvmsBatteryMon::OvmsBatteryMon()
   m_count = 0;
   m_first = 0;
   m_dirty = false;
+  m_to_notify = false;
   m_lastState = OvmsBatteryState::Unknown;
   m_average_last = 0;
   m_diff_last = 0;
@@ -228,14 +229,16 @@ void OvmsBatteryMon::add(float voltage)
 bool OvmsBatteryMon::checkStateChange()
 {
   XARM("OvmsBatteryMon::checkStateChange");
-  if (!m_dirty) {
-    XDISARM;
-    return false;
+  bool res = false;
+  if (m_dirty) {
+    // Causes calculation and clearing dirty.
+    state();
   }
-  OvmsBatteryState newState = calc_state(m_average_last, m_diff_last);
-  bool res = newState != m_lastState;
-  m_lastState = newState;
-  m_dirty = false;
+
+  if (m_to_notify) {
+    m_to_notify = false;
+    res = true;
+  }
   XDISARM;
   return res;
 }
@@ -244,8 +247,12 @@ OvmsBatteryState OvmsBatteryMon::state()
 {
   XARM("OvmsBatteryMon::state");
   if (m_dirty) {
-    m_lastState = calc_state(m_average_last,m_diff_last);
+    auto newState = calc_state(m_average_last,m_diff_last);
     m_dirty = false;
+    if (newState != m_lastState) {
+      m_to_notify = true;
+      m_lastState = newState;
+    }
   }
   XDISARM;
   return m_lastState;
@@ -372,6 +379,11 @@ float OvmsBatteryMon::average_lastf()
     return lastf();
   }
   return m_average_last / entry_mult;
+}
+
+float OvmsBatteryMon::diff_lastf()
+{
+  return m_diff_last / entry_mult;
 }
 
 std::string OvmsBatteryMon::to_string()
@@ -939,10 +951,10 @@ void OvmsHyundaiIoniqEv::Ticker1(uint32_t ticker)
           m_b_aux_soc->SetValue( CalcAUXSoc(hif_aux_battery_mon.average_lastf()), Percentage );
           break;
         case OvmsBatteryState::Charging:
-          ESP_LOGD(TAG, "Aux Battery state: Charging %" PRId32, hif_aux_battery_mon.m_average_last);
+          ESP_LOGD(TAG, "Aux Battery state: Charging %g" , hif_aux_battery_mon.average_lastf());
           break;
         case OvmsBatteryState::Blip: {
-          ESP_LOGD(TAG, "Aux Battery state: Blip %" PRId32, hif_aux_battery_mon.m_diff_last);
+          ESP_LOGD(TAG, "Aux Battery state: Blip %g", hif_aux_battery_mon.diff_lastf());
           if ( IsPollState_Off()) {
             ESP_LOGD(TAG, "PollState->Ping for 30 (Blip)");
             PollState_Ping(30);
@@ -950,7 +962,7 @@ void OvmsHyundaiIoniqEv::Ticker1(uint32_t ticker)
         }
         break;
         case OvmsBatteryState::Dip: {
-          ESP_LOGD(TAG, "Aux Battery state: Dip %" PRId32, hif_aux_battery_mon.m_diff_last);
+          ESP_LOGD(TAG, "Aux Battery state: Dip %g", hif_aux_battery_mon.diff_lastf());
           if ( IsPollState_Off()) {
             ESP_LOGD(TAG, "PollState->Ping for 30 (Dip)");
             PollState_Ping(30);
@@ -958,7 +970,7 @@ void OvmsHyundaiIoniqEv::Ticker1(uint32_t ticker)
         }
         break;
         case OvmsBatteryState::Low: {
-          ESP_LOGD(TAG, "Aux Battery state: Low %" PRId32, hif_aux_battery_mon.m_diff_last);
+          ESP_LOGD(TAG, "Aux Battery state: Low %g", hif_aux_battery_mon.diff_lastf());
           if (!IsPollState_Off()) {
             ESP_LOGD(TAG, "PollState->Off (Aux Battery state Low)");
             PollState_Off();

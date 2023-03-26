@@ -95,7 +95,7 @@ enum class OvmsBatteryState { Unknown, Normal, Charging, Blip, Dip, Low };
 struct OvmsBatteryMon {
   static const uint16_t entry_count = 30;
   static const int32_t entry_mult = 100.0;
-  static const int32_t charge_threshold = 1450; // over 14.5v is 'Charging'
+  static const int32_t charge_threshold = 1400; // over 14.0v is 'Charging'
   static const int32_t low_threshold = 1150;    // Under 11.5 is 'Low'
   static const int32_t smooth_threshold = 20;   // < 0.2v variation is 'Normal'
   static const int32_t blip_threshold = 30;     // cur is > 0.3v over average is 'Blip'
@@ -110,6 +110,7 @@ struct OvmsBatteryMon {
   // First  buffer entry and count
   uint16_t m_first, m_count;
   bool m_dirty;
+  bool m_to_notify;
 
   // Last calculated state
   OvmsBatteryState m_lastState;
@@ -139,6 +140,7 @@ struct OvmsBatteryMon {
   int32_t last();
   float lastf();
   float average_lastf();
+  float diff_lastf();
 };
 
 typedef struct {
