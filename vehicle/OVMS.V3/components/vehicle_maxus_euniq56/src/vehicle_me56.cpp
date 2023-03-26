@@ -34,7 +34,9 @@ static const char *TAG = "v-maxe56";
 #include <stdio.h>
 #include "vehicle_me56.h"
 #include "me56_pids.h"
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
 #include "ovms_webserver.h"
+#endif
 #include <algorithm>
 #include "metrics_standard.h"
 

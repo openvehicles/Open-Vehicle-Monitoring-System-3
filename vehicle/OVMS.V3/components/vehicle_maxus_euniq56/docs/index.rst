@@ -22,7 +22,7 @@ Range Display               Yes
 GPS Location                Yes (from modem module GPS)
 Speed Display               No
 Temperature Display         Yes (External Temp and Battery)
-BMS v+t Display             No
+BMS v+t Display             Yes
 TPMS Display                No
 Charge Status Display       No
 Charge Interruption Alerts  No
