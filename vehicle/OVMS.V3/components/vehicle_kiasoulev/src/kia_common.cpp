@@ -199,6 +199,7 @@ Kia_Trip_Counter::Kia_Trip_Counter()
 	odo                    = 0;
 	tot_discharge          = 0;
 	tot_charge             = 0;
+	tot_charge_start       = 0;
 	tot_charge_ext         = 0;
 	charging               = false;
 	charge_start           = 0;
@@ -394,15 +395,17 @@ float Kia_Trip_Counter::GetChargeCharged()
 void Kia_Trip_Counter::StartCharge(float current_cc, float current_cc_ah)
 	{
 
-	if (!charging && ((tot_discharge_start != 0) || (tot_charge_start != 0)))
+	if (!charging)
 		{
 		charging = true;
-		charge_start = current_cc;
-		tot_charge = current_cc;
-		charge_start_ah = current_cc_ah;
-		tot_charge_ah = current_cc_ah;
-		tot_charge_ext = 0;
-		tot_charge_ah_ext = 0;
+		if ((tot_discharge_start != 0) || (tot_charge_start != 0))
+			{
+			tot_charge = current_cc;
+			charge_start_ah = current_cc_ah;
+			tot_charge_ah = current_cc_ah;
+			tot_charge_ext = 0;
+			tot_charge_ah_ext = 0;
+			}
 		}
 	}
 
