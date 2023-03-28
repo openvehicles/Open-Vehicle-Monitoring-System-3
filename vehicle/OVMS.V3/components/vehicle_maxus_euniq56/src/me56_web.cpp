@@ -55,7 +55,7 @@ void OvmsVehicleMaxe56::WebInit()
 {
     // vehicle menu:
     
-    // MyWebServer.RegisterPage("/xmg/battery",  "Battery config", WebCfgBattery, PageMenu_Vehicle, PageAuth_Cookie);
+    // MyWebServer.RegisterPage("/xme/battery",  "Battery config", WebCfgBattery, PageMenu_Vehicle, PageAuth_Cookie);
     MyWebServer.RegisterPage("/bms/cellmon", "BMS cell monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
     MyWebServer.RegisterPage("/bms/metrics_charger", "Charging Metrics", WebDispChgMetrics, PageMenu_Vehicle, PageAuth_Cookie);
 }
@@ -66,7 +66,7 @@ void OvmsVehicleMaxe56::WebDeInit()
 {
   MyWebServer.DeregisterPage("/bms/cellmon");
   MyWebServer.DeregisterPage("/bms/metrics_charger");
-  // MyWebServer.DeregisterPage("/xmg/battery");
+  // MyWebServer.DeregisterPage("/xme/battery");
 }
 /**
 void OvmsVehicleMaxe56::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
@@ -109,8 +109,8 @@ void OvmsVehicleMaxe56::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
 
     if (error == "") {
       // store:
-      MyConfig.SetParamValue("xmg", "suffrange", suffrange);
-      MyConfig.SetParamValue("xmg", "suffsoc", suffsoc);
+      MyConfig.SetParamValue("xme", "suffrange", suffrange);
+      MyConfig.SetParamValue("xme", "suffsoc", suffsoc);
 
       c.head(200);
       c.alert("success", "<p class=\"lead\">Maxus battery setup saved.</p>");
@@ -126,8 +126,8 @@ void OvmsVehicleMaxe56::WebCfgBattery(PageEntry_t& p, PageContext_t& c)
   }
   else {
     // read configuration:
-    suffrange = MyConfig.GetParamValue("xmg", "suffrange", "0");
-    suffsoc = MyConfig.GetParamValue("xmg", "suffsoc", "0");
+    suffrange = MyConfig.GetParamValue("xme", "suffrange", "0");
+    suffsoc = MyConfig.GetParamValue("xme", "suffsoc", "0");
 
     c.head(200);
   }
@@ -284,7 +284,7 @@ void OvmsVehicleMaxe56::WebDispChgMetrics(PageEntry_t &p, PageContext_t &c)
                 "</div>"
               "</div>"
             "</div>"
-            "<div class=\"metric progress\" data-metric=\"xmg.v.soc.raw\" data-prec=\"1\">"
+            "<div class=\"metric progress\" data-metric=\"xme.v.soc.raw\" data-prec=\"1\">"
               "<div class=\"progress-bar progress-bar-info value-low text-left\" role=\"progressbar\" aria-valuenow=\"0\""
                 "aria-valuemin=\"0\" aria-valuemax=\"100\" style=\"width:0%\">"
                 "<div>"

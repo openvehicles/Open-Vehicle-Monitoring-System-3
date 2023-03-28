@@ -61,7 +61,7 @@ namespace
 {
 
 // The parameter namespace for this vehicle
-const char PARAM_NAME[] = "xmg";
+const char PARAM_NAME[] = "xme";
 
 static const OvmsVehicle::poll_pid_t obdii_polls[] =
     {
@@ -148,15 +148,15 @@ OvmsVehicleMaxe56::OvmsVehicleMaxe56()
         memset(m_vin, 0, sizeof(m_vin));
         
         // Init Raw Soc:
-        m_poll_state_metric = MyMetrics.InitInt("xmg.state.poll", SM_STALE_MAX, m_poll_state);
-        m_soc_raw = MyMetrics.InitFloat("xmg.v.soc.raw", 0, SM_STALE_HIGH, Percentage);
-        m_consump_raw = MyMetrics.InitFloat("xmg.v.consump.raw", 0, SM_STALE_HIGH); // temp to monitor bms range
-        m_consumprange_raw = MyMetrics.InitFloat("xmg.v.consumprange.raw", 0, SM_STALE_HIGH); // temp to monitor bms range
-        m_watt_hour_raw = MyMetrics.InitFloat("xmg.v.watt.hour.raw", 0, SM_STALE_HIGH); // temp to monitor bms range
-        m_poll_bmsstate = MyMetrics.InitFloat("xmg.bmsstate.poll", SM_STALE_HIGH); //temp to monitor bms state
+        m_poll_state_metric = MyMetrics.InitInt("xme.state.poll", SM_STALE_MAX, m_poll_state);
+        m_soc_raw = MyMetrics.InitFloat("xme.v.soc.raw", 0, SM_STALE_HIGH, Percentage);
+        m_consump_raw = MyMetrics.InitFloat("xme.v.consump.raw", 0, SM_STALE_HIGH); // temp to monitor bms range
+        m_consumprange_raw = MyMetrics.InitFloat("xme.v.consumprange.raw", 0, SM_STALE_HIGH); // temp to monitor bms range
+        m_watt_hour_raw = MyMetrics.InitFloat("xme.v.watt.hour.raw", 0, SM_STALE_HIGH); // temp to monitor bms range
+        m_poll_bmsstate = MyMetrics.InitFloat("xme.bmsstate.poll", SM_STALE_HIGH); //temp to monitor bms state
     
         // Register config params
-        MyConfig.RegisterParam("xmg", "Maxus EV configuration", true, true);
+        MyConfig.RegisterParam("xme", "Maxus EV configuration", true, true);
 
         
         // Init Energy:
@@ -622,21 +622,21 @@ void OvmsVehicleMaxe56::ConfigChanged(OvmsConfigParam* param)
     ESP_LOGI(TAG, "%s config changed", PARAM_NAME);
 
     // Instances:
-    // xmg
+    // xme
     //  suffsoc              Sufficient SOC [%] (Default: 0=disabled)
     //  suffrange            Sufficient range [km] (Default: 0=disabled)
     StdMetrics.ms_v_charge_limit_soc->SetValue(
-            (float) MyConfig.GetParamValueInt("xmg", "suffsoc"),   Percentage );
+            (float) MyConfig.GetParamValueInt("xme", "suffsoc"),   Percentage );
     
     if (MyConfig.GetParamValue("vehicle", "units.distance") == "K")
     {
         StdMetrics.ms_v_charge_limit_range->SetValue(
-                (float) MyConfig.GetParamValueInt("xmg", "suffrange"), Kilometers );
+                (float) MyConfig.GetParamValueInt("xme", "suffrange"), Kilometers );
     }
     else
     {
         StdMetrics.ms_v_charge_limit_range->SetValue(
-            (float) MyConfig.GetParamValueInt("xmg", "suffrange"), Miles );
+            (float) MyConfig.GetParamValueInt("xme", "suffrange"), Miles );
     }
 }
 
