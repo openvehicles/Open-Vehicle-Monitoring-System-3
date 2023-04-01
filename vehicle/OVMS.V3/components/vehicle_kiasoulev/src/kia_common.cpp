@@ -401,9 +401,11 @@ void Kia_Trip_Counter::StartCharge(float current_cc, float current_cc_ah)
 		if ((tot_discharge_start != 0) || (tot_charge_start != 0))
 			{
 			tot_charge = current_cc;
-			charge_start_ah = current_cc_ah;
-			tot_charge_ah = current_cc_ah;
+			charge_start = current_cc;
 			tot_charge_ext = 0;
+
+			tot_charge_ah = current_cc_ah;
+			charge_start_ah = current_cc_ah;
 			tot_charge_ah_ext = 0;
 			}
 		}

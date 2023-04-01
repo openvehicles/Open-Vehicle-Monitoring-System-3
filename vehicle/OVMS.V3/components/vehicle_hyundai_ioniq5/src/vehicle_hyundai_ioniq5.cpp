@@ -792,10 +792,7 @@ void OvmsHyundaiIoniqEv::vehicle_ioniq5_car_on(bool isOn)
     // Car is OFF
     ESP_LOGI(TAG, "CAR IS OFF");
     if (kia_park_trip_counter.Started()) {
-      kia_park_trip_counter.Update(POS_ODO,
-        StdMetrics.ms_v_bat_energy_used_total->AsFloat(kWh), StdMetrics.ms_v_bat_energy_recd_total->AsFloat(kWh),
-        StdMetrics.ms_v_bat_coulomb_used_total->AsFloat(kWh), StdMetrics.ms_v_bat_coulomb_recd_total->AsFloat(kWh)
-        );
+      kia_park_trip_counter.Update(POS_ODO, charg_used, charg_rec, coulomb_used, coulomb_rec);
       if (isCharge != kia_park_trip_counter.Charging()) {
         kia_park_trip_counter.StartCharge(charg_rec, coulomb_rec);
       }
@@ -886,8 +883,9 @@ void OvmsHyundaiIoniqEv::Ticker1(uint32_t ticker)
   //Calculate charge current and "guess" charging type
   if (StdMetrics.ms_v_bat_power->AsFloat(0, kW) < 0 ) {
     // We are charging! Now lets calculate which type! (This is a hack until we find this information elsewhere)
-    StdMetrics.ms_v_charge_current->SetValue(-StdMetrics.ms_v_bat_current->AsFloat(1, Amps));
-    if (StdMetrics.ms_v_bat_power->AsFloat(0, kW) < -7.36) {
+    StdMetrics.ms_v_charge_current->SetValue(
+      -StdMetrics.ms_v_bat_current->AsFloat(1, Amps));
+    if (StdMetrics.ms_v_bat_power->AsFloat(0, kW) < -12 /*7.36*/) {
       kn_charge_bits.ChargingCCS = true;
       kn_charge_bits.ChargingType2 = false;
     }
