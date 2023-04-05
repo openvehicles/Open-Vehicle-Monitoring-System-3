@@ -555,7 +555,7 @@ void OvmsHyundaiIoniqEv::RangeCalcStat(OvmsWriter *writer)
         UnitConvert(AmpHours, chargeUnit, kia_park_trip_counter.GetChargeRecuperated()), chargeLabel);
       writer->printf("Total Charge Used: %.2g%s\n",
         UnitConvert(AmpHours, chargeUnit, kia_park_trip_counter.GetChargeUsed()), chargeLabel);
-      writer->printf("Charging: %s", kia_park_trip_counter.Charging() ? "Yes" : "No");
+      writer->printf("Charging: %s", kia_park_trip_counter.Charging() ? "Yes\n" : "No\n");
       auto charged = kia_park_trip_counter.GetChargeCharged();
       if (charged != 0) {
         writer->printf("Charge Charged: %.2g%s\n",
