@@ -28,6 +28,7 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 ; THE SOFTWARE.
 */
+static const char *TAG = "v-mgev-bms";
 
 #include "vehicle_mgev.h"
 
@@ -261,10 +262,10 @@ void OvmsVehicleMgEv::SetBmsStatus(uint8_t status)
 
 float OvmsVehicleMgEv::calculateSoc(uint16_t value)
 {
-    int BMSVersion = MyConfig.GetParamValueInt("xmg", "bms.version", DEFAULT_BMS_VERSION);
-    float lowerlimit = BMSDoDLimits[BMSVersion].Lower*10;
-    float upperlimit = BMSDoDLimits[BMSVersion].Upper*10;
-    
+    int BMSVersion = MyConfig.GetParamValueInt("xmg", "bmsval", DEFAULT_BMS_VERSION);
+    float lowerlimit = BMSDoDLimits[BMSVersion].Lower;
+    float upperlimit = BMSDoDLimits[BMSVersion].Upper;
+    ESP_LOGD(TAG, "BMS Limits: Lower = %f Upper = %f",lowerlimit,upperlimit);
     // Calculate SOC from upper and lower limits
     return (value - lowerlimit) * 100.0f / (upperlimit - lowerlimit);
 }
