@@ -573,8 +573,15 @@ float RangeCalculator::getEfficiency()
 		}
 
 	// Make current trip count more than the rest
-	totalDistance += trips[currentTripPointer].distance * (weightOfCurrentTrip - 1);
-	totalConsumption += trips[currentTripPointer].consumption * (weightOfCurrentTrip - 1);
+	int useCurrent = currentTripPointer;
+	if (trips[currentTripPointer].distance < 1)
+		{
+		if (--useCurrent < 0)
+			useCurrent = 19;
+		}
+
+	totalDistance += trips[useCurrent].distance * (weightOfCurrentTrip - 1);
+	totalConsumption += trips[useCurrent].consumption * (weightOfCurrentTrip - 1);
 
 	return totalDistance / totalConsumption ;
 	}
