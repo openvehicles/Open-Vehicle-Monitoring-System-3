@@ -68,7 +68,7 @@ static const OvmsVehicle::poll_pid_t vehicle_ioniq_polls[] = {
   //                                                   Off  On  Chrg Ping
   { 0x7b3, 0x7bb, VEHICLE_POLL_TYPE_READDATA, 0x0100, { 0,   1,  10, 30}, 0, ISOTP_STD },   // AirCon and Speed
   { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_READDATA, 0xe004, { 0,   1,   4,  4}, 0, ISOTP_STD },   // VMCU - Drive status + Accellerator
-  { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_READDATA, 0x0101, { 0,   1,   9,  9}, 0, ISOTP_STD },   // BMC Diag page 01 - Inc Battery Pack Temp + RPM
+  { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_READDATA, 0x0101, { 0,   3,   4,  4}, 0, ISOTP_STD },   // BMC Diag page 01 - Inc Battery Pack Temp + RPM + Charging
   { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_READDATA, 0x0102, { 0,  59,   9,  0}, 0, ISOTP_STD },   // Battery 1 - BMC Diag page 02
   { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_READDATA, 0x0103, { 0,  59,   9,  0}, 0, ISOTP_STD },   // Battery 2 - BMC Diag page 03
   { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_READDATA, 0x0104, { 0,  59,   9,  0}, 0, ISOTP_STD },   // Battery 3 - BMC Diag page 04
@@ -85,8 +85,8 @@ static const OvmsVehicle::poll_pid_t vehicle_ioniq_polls[] = {
   { 0x7a0, 0x7a8, VEHICLE_POLL_TYPE_READDATA, 0xC00B, { 0,  13,   0,  0}, 0, ISOTP_STD },   // TPMS - Pressure and Temp
 
   { 0x770, 0x778, VEHICLE_POLL_TYPE_READDATA, 0xbc03, { 0,   4,   7,  2}, 0, ISOTP_STD },  // IGMP Door status + IGN1 & IGN2 - Detects when car is turned on
-  { 0x770, 0x778, VEHICLE_POLL_TYPE_READDATA, 0xbc04, { 0,  11,  11,  5}, 0, ISOTP_STD },  // IGMP Door status
-  { 0x770, 0x778, VEHICLE_POLL_TYPE_READDATA, 0xbc07, { 0,  13,  13,  0}, 0, ISOTP_STD },  // IGMP Rear/mirror defogger
+  { 0x770, 0x778, VEHICLE_POLL_TYPE_READDATA, 0xbc04, { 0,   5,  11,  2}, 0, ISOTP_STD },  // IGMP Door status
+  { 0x770, 0x778, VEHICLE_POLL_TYPE_READDATA, 0xbc07, { 0,   2,  13,  0}, 0, ISOTP_STD },  // IGMP Rear/mirror defogger/indicators
   { 0x770, 0x778, VEHICLE_POLL_TYPE_READDATA, 0xbc09, { 0,   5,  10, 20}, 0, ISOTP_STD },  // Lights
   { 0x770, 0x778, VEHICLE_POLL_TYPE_READDATA, 0xbc10, { 0,   5,  10, 20}, 0, ISOTP_STD },  // Lights
 
