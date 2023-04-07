@@ -94,8 +94,6 @@ static const OvmsVehicle::poll_pid_t vehicle_ioniq_polls[] = {
 
   { 0x7c6, 0x7ce, VEHICLE_POLL_TYPE_READDATA, 0xB002, { 0,  5, 120,  0}, 0, ISOTP_STD },  // Cluster. ODO
 
-  { 0x7d1, 0x7d9, VEHICLE_POLL_TYPE_READDATA, 0xc101, { 0,  5,  27,  0}, 0, ISOTP_STD },  // ABS/ESP - Emergency lights
-
   // TODO 0x7e5 OBC - On Board Charger?
 
   // Check again while driving only
@@ -543,6 +541,9 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
   m_v_env_lowbeam = MyMetrics.InitBool("xiq.e.lowbeam", 10, false);
   m_v_env_highbeam = MyMetrics.InitBool("xiq.e.highbeam", 10, false);
   m_v_env_parklights = MyMetrics.InitBool("xiq.e.parklights", 10, false);
+  m_v_env_indicator_l = MyMetrics.InitBool("xiq.e.indicator.l",SM_STALE_MIN, false);
+  m_v_env_indicator_r = MyMetrics.InitBool("xiq.e.indicator.r",SM_STALE_MIN, false);
+  m_v_emergency_lights = MyMetrics.InitBool("xiq.e.indicator.e",SM_STALE_MIN, false);
 
   m_v_preheat_timer1_enabled = MyMetrics.InitBool("xiq.e.preheat.timer1.enabled", 10, false);
   m_v_preheat_timer2_enabled = MyMetrics.InitBool("xiq.e.preheat.timer2.enabled", 10, false);
@@ -562,8 +563,6 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
   m_v_seat_belt_back_right = MyMetrics.InitBool("xiq.v.sb.back.right", 10, false);
   m_v_seat_belt_back_middle = MyMetrics.InitBool("xiq.v.sb.back.middle", 10, false);
   m_v_seat_belt_back_left = MyMetrics.InitBool("xiq.v.sb.back.left", 10, false);
-
-  m_v_emergency_lights = MyMetrics.InitBool("xiq.v.emergency.lights", 10, false);
 
   // m_v_power_usage = MyMetrics.InitFloat("xiq.v.power.usage", 10, 0, kW);
 
@@ -1117,16 +1116,17 @@ void OvmsHyundaiIoniqEv::Ticker1(uint32_t ticker)
   // Reset emergency light if it is stale.
   if ( m_v_emergency_lights->IsStale() ) {
     m_v_emergency_lights->SetValue(false);
-  }
+  } else {
 
-  // Notify if emergency light are turned on or off.
-  if ( m_v_emergency_lights->AsBool() && !kn_emergency_message_sent) {
-    kn_emergency_message_sent = true;
-    RequestNotify(SEND_EmergencyAlert);
-  }
-  else if ( !m_v_emergency_lights->AsBool() && kn_emergency_message_sent) {
-    kn_emergency_message_sent = false;
-    RequestNotify(SEND_EmergencyAlertOff);
+    // Notify if emergency light are turned on or off.
+    if ( m_v_emergency_lights->AsBool() && !kn_emergency_message_sent) {
+      kn_emergency_message_sent = true;
+      RequestNotify(SEND_EmergencyAlert);
+    }
+    else if ( !m_v_emergency_lights->AsBool() && kn_emergency_message_sent) {
+      kn_emergency_message_sent = false;
+      RequestNotify(SEND_EmergencyAlertOff);
+    }
   }
 
   // Let the busy time of starting the car happen before we

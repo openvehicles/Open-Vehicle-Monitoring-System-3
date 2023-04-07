@@ -221,7 +221,6 @@ protected:
   void IncomingBCM_Full(canbus *bus, uint16_t type, uint16_t pid, const std::string &data);
   void IncomingIGMP_Full(canbus *bus, uint16_t type, uint16_t pid, const std::string &data);
   void IncomingOther_Full(canbus *bus, uint16_t type, uint16_t pid, const std::string &data);
-  void IncomingAbsEsp(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length, uint16_t mlremain);
   void IncomingCM_Full(canbus *bus, uint16_t type, uint16_t pid, const std::string &data);
   void RequestNotify(unsigned int which);
   void DoNotify();
@@ -403,6 +402,9 @@ protected:
 
   OvmsMetricBool   *m_v_env_parklights;
   OvmsMetricFloat   *m_v_charge_current_request;
+
+  OvmsMetricBool  *m_v_env_indicator_l;
+  OvmsMetricBool  *m_v_env_indicator_r;
 
   /// Accumulated operating time
   OvmsMetricInt *m_v_accum_op_time;
