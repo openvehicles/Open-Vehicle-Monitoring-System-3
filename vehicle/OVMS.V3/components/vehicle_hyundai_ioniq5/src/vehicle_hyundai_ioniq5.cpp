@@ -16,6 +16,11 @@
 ;               Add Ah / coulomb count to trip metrics.
 ;               Added RPM measurement.
 ;               Improve response of speed measurement.
+;       0.0.5:  Add requested charge current metric
+;               Fix handling of range while charging
+;               Improve responsiveness for OBD2ECU
+;               Add indicators and warning light metrics
+;
 ;    (C) 2022,2023 Michael Geddes
 ; ----- Kona/Kia Module -----
 ;    (C) 2011       Michael Stegen / Stegen Electronics
@@ -41,7 +46,7 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 ; THE SOFTWARE.
 */
-#define IONIQ5_VERSION "0.0.4"
+#define IONIQ5_VERSION "0.0.5"
 
 #include "vehicle_hyundai_ioniq5.h"
 
