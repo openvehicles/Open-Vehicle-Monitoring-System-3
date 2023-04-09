@@ -39,6 +39,7 @@
 #include "ovms_notify.h"
 #include "ovms_config.h"
 #include "ovms_mutex.h"
+#include "metrics_list.h"
 
 typedef std::map<std::string, uint32_t> OvmsServerV3ClientMap;
 
@@ -141,6 +142,11 @@ class OvmsServerV3 : public OvmsServer
 
   private:
     void TransmitMetric(OvmsMetric* metric);
+
+    // If the whitelist is empty, all metrics are whitelisted (MATCH_ALL)
+    MetricsList m_metrics_whitelist{MetricsList::EmptyBehavior::MATCH_ALL};
+    // If the blacklist is empty, no metrics are blacklisted (MATCH_NONE)
+    MetricsList m_metrics_blacklist{MetricsList::EmptyBehavior::MATCH_NONE};
   };
 
 class OvmsServerV3Init

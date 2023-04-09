@@ -297,9 +297,17 @@ void OvmsServerV3::TransmitModifiedMetrics()
 
 void OvmsServerV3::TransmitMetric(OvmsMetric* metric)
   {
+  auto const metric_name = metric->m_name;
+
+  if (!m_metrics_whitelist.MatchesMetricName(metric_name))
+    return;
+
+  if (m_metrics_blacklist.MatchesMetricName(metric_name))
+    return;
+
   std::string topic(m_topic_prefix);
   topic.append("metric/");
-  topic.append(metric->m_name);
+  topic.append(metric_name);
 
   // Replace '.' inside the metric name by '/' for MQTT like namespacing.
   for(size_t i = m_topic_prefix.length(); i < topic.length(); i++)
@@ -832,6 +840,11 @@ void OvmsServerV3::ConfigChanged(OvmsConfigParam* param)
   m_updatetime_on = MyConfig.GetParamValueInt("server.v3", "updatetime.on", m_updatetime_idle);
   m_updatetime_charging = MyConfig.GetParamValueInt("server.v3", "updatetime.charging", m_updatetime_idle);
   m_updatetime_sendall = MyConfig.GetParamValueInt("server.v3", "updatetime.sendall", 0);
+  m_metrics_whitelist.LoadFromConfigValue(MyConfig.GetParamValue("server.v3", "whitelist"));
+  m_metrics_blacklist.LoadFromConfigValue(MyConfig.GetParamValue("server.v3", "blacklist"));
+
+  ESP_LOGI(TAG, "%d whitelist entries / %d blacklist entries",
+           m_metrics_whitelist.Count(), m_metrics_blacklist.Count());
   }
 
 void OvmsServerV3::NetUp(std::string event, void* data)
