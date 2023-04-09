@@ -51,6 +51,7 @@
 static const char *TAG = "v-minise";
 
 #include <cstdio>
+#include <math.h>
 #include "vehicle_minise.h"
 
 #include "../ecu_definitions/ecu_sme_defines.h"
