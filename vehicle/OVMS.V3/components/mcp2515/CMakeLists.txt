@@ -1,7 +1,7 @@
 set(srcs)
 set(include_dirs)
 
-if (CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE)
+if (CONFIG_OVMS_COMP_MCP2515)
   list(APPEND srcs "src/mcp2515.cpp")
   list(APPEND include_dirs "src")
 endif ()
