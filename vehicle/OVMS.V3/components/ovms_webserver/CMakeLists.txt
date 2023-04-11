@@ -12,7 +12,7 @@ endif ()
 idf_component_register(SRCS ${srcs}
                        INCLUDE_DIRS ${include_dirs}
                        REQUIRES "pushover" "mongoose"
-                       PRIV_REQUIRES "main"
+                       PRIV_REQUIRES "main" "ovms_plugins"
                        EMBED_FILES ${embedded_files}
                        WHOLE_ARCHIVE)
 

@@ -50,6 +50,7 @@
 static const char *TAG = "v-bmwi3";
 
 #include <stdio.h>
+#include <math.h>
 #include "vehicle_bmwi3.h"
 
 #include "../ecu_definitions/ecu_sme_defines.h"
