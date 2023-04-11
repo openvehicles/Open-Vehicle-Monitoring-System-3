@@ -39,7 +39,7 @@
 #include "ovms_notify.h"
 #include "ovms_config.h"
 #include "ovms_mutex.h"
-#include "metrics_list.h"
+#include "id_include_exclude_filter.h"
 
 typedef std::map<std::string, uint32_t> OvmsServerV3ClientMap;
 
@@ -48,6 +48,8 @@ typedef std::map<std::string, uint32_t> OvmsServerV3ClientMap;
 class OvmsServerV3 : public OvmsServer
   {
   public:
+    static constexpr const char *TAG = "ovms-server-v3";
+
     OvmsServerV3(const char* name);
     ~OvmsServerV3();
 
@@ -143,10 +145,7 @@ class OvmsServerV3 : public OvmsServer
   private:
     void TransmitMetric(OvmsMetric* metric);
 
-    // If the whitelist is empty, all metrics are whitelisted (MATCH_ALL)
-    MetricsList m_metrics_whitelist{MetricsList::EmptyBehavior::MATCH_ALL};
-    // If the blacklist is empty, no metrics are blacklisted (MATCH_NONE)
-    MetricsList m_metrics_blacklist{MetricsList::EmptyBehavior::MATCH_NONE};
+    IdIncludeExcludeFilter m_metrics_filter{TAG};
   };
 
 class OvmsServerV3Init

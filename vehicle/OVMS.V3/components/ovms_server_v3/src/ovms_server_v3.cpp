@@ -28,12 +28,13 @@
 ; THE SOFTWARE.
 */
 
+#include "ovms_server_v3.h"
+
 #include "ovms_log.h"
-static const char *TAG = "ovms-server-v3";
+static const char *TAG = OvmsServerV3::TAG;
 
 #include <string.h>
 #include <stdint.h>
-#include "ovms_server_v3.h"
 #include "buffered_shell.h"
 #include "ovms_command.h"
 #include "ovms_metrics.h"
@@ -299,10 +300,7 @@ void OvmsServerV3::TransmitMetric(OvmsMetric* metric)
   {
   auto const metric_name = metric->m_name;
 
-  if (!m_metrics_whitelist.MatchesMetricName(metric_name))
-    return;
-
-  if (m_metrics_blacklist.MatchesMetricName(metric_name))
+  if (!m_metrics_filter.CheckFilter(metric_name))
     return;
 
   std::string topic(m_topic_prefix);
@@ -840,11 +838,8 @@ void OvmsServerV3::ConfigChanged(OvmsConfigParam* param)
   m_updatetime_on = MyConfig.GetParamValueInt("server.v3", "updatetime.on", m_updatetime_idle);
   m_updatetime_charging = MyConfig.GetParamValueInt("server.v3", "updatetime.charging", m_updatetime_idle);
   m_updatetime_sendall = MyConfig.GetParamValueInt("server.v3", "updatetime.sendall", 0);
-  m_metrics_whitelist.LoadFromConfigValue(MyConfig.GetParamValue("server.v3", "whitelist"));
-  m_metrics_blacklist.LoadFromConfigValue(MyConfig.GetParamValue("server.v3", "blacklist"));
-
-  ESP_LOGI(TAG, "%d whitelist entries / %d blacklist entries",
-           m_metrics_whitelist.Count(), m_metrics_blacklist.Count());
+  m_metrics_filter.LoadFilters(MyConfig.GetParamValue("server.v3", "metrics.include"),
+                               MyConfig.GetParamValue("server.v3", "metrics.exclude"));
   }
 
 void OvmsServerV3::NetUp(std::string event, void* data)

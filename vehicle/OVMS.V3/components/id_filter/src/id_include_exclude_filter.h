@@ -24,39 +24,38 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __METRICS_LIST_H__
-#define __METRICS_LIST_H__
+#ifndef __ID_INCLUDE_EXCLUDE_FILTER_H
+#define __ID_INCLUDE_EXCLUDE_FILTER_H
 
-#include <cstddef>
 #include <string>
-#include <unordered_set>
 
-class MetricsList
+#include "id_filter.h"
+
+class IdIncludeExcludeFilter
   {
-    public:
-      enum class EmptyBehavior
-      {
-        MATCH_ALL,  // If empty, all metrics match
-        MATCH_NONE  // If empty, no metrics match
-      };
+  public:
+    IdIncludeExcludeFilter(const char *log_tag);
 
-      MetricsList(EmptyBehavior empty_behavior);
+    /**
+     * Parse comma-separated lists of include and exclude filter entries.
+     * 
+     * See IdFilter::LoadFilter()
+     */
+    void LoadFilters(const std::string &include_value, const std::string &exclude_value);
 
-      // Clear the current list and add the comma or whitespace-delimted list 
-      // of metrics names in config_value
-      //
-      // TODO: allow suffix wildcarding with trailing '*'
-      void LoadFromConfigValue(std::string const& config_value);
+    /**
+     * Check if a value matches the include/exclude filters.  A value will match if it matches the
+     * include filter (or the include filter has no entries) and does not match the exclude filter.
+     * 
+     * See IdFilter::CheckFilter()
+     */
+    bool CheckFilter(const std::string &value) const;
 
-      size_t Count();
+  private:
+    const char *m_log_tag;
 
-      // Return true iff metric_name is included in the list
-      bool MatchesMetricName(const char* metric_name);
-    
-    private:
-      const EmptyBehavior m_empty_behavior;
-
-      std::unordered_set<std::string> m_list;
+    IdFilter m_include_filter;
+    IdFilter m_exclude_filter;
   };
 
-#endif //#ifndef __METRICS_LIST_H__
+#endif // __ID_INCLUDE_EXCLUDE_FILTER_H

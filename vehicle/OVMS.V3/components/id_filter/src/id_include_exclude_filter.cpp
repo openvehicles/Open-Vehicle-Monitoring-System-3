@@ -24,44 +24,28 @@
 ; THE SOFTWARE.
 */
 
-#include "metrics_list.h"
+#include "id_include_exclude_filter.h"
 
-#include <regex>
-#include <iterator>
+#include <esp_log.h>
 
-MetricsList::MetricsList(EmptyBehavior empty_behavior)
-: m_empty_behavior(empty_behavior)
-  {
+IdIncludeExcludeFilter::IdIncludeExcludeFilter(const char *log_tag)
+: m_log_tag(log_tag), m_include_filter(log_tag), m_exclude_filter(log_tag)
+  {      
   }
 
-void MetricsList::LoadFromConfigValue(std::string const& config_value)
+void IdIncludeExcludeFilter::LoadFilters(const std::string &include_value, const std::string &exclude_value)
   {
-    using std::sregex_token_iterator;
-    
-    static const std::regex SEPERATOR_REGEX("[,\\s]");
+  m_include_filter.LoadFilters(include_value);
+  m_exclude_filter.LoadFilters(exclude_value);
 
-    m_list.clear();
-
-    sregex_token_iterator entries_begin(config_value.begin(), config_value.end(), SEPERATOR_REGEX, -1);
-    sregex_token_iterator entries_end;
-
-    for (auto entry_iter = entries_begin; entry_iter != entries_end; entry_iter++)
-      {
-        std::string entry(*entry_iter);
-        if (!entry.empty())
-          m_list.insert(entry);
-      }
+  ESP_LOGI(m_log_tag, "%d include entries / %d exclude entries",
+           m_include_filter.EntryCount(), m_exclude_filter.EntryCount());
   }
 
-size_t MetricsList::Count()
+bool IdIncludeExcludeFilter::CheckFilter(const std::string &value) const
   {
-    return m_list.size();
-  }
+  if (m_include_filter.EntryCount() > 0 && !m_include_filter.CheckFilter(value))
+      return false;
 
-bool MetricsList::MatchesMetricName(const char* metric_name)
-  {
-    if (m_list.empty())
-      return m_empty_behavior == EmptyBehavior::MATCH_ALL;
-
-    return m_list.find(metric_name) != m_list.end();
+  return !m_exclude_filter.CheckFilter(value);
   }
