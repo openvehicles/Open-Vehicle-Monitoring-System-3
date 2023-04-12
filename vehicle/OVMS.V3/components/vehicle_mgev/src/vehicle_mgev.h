@@ -66,9 +66,9 @@ typedef struct
 
 const BMSDoDLimits_t BMSDoDLimits[] =
 {
-    {60, 970}, //Pre Jan 2021 BMS firmware DoD range 6 - 97
-    {25, 940}, //Jan 2021 BMS firmware DoD range 2.5 - 94
-    {25, 905} //Jan 2021 BMS firmware DoD range 2.5 - 94
+    {60, 970}, //Pre Jan 2021 BMS firmware DoD range 60 - 970
+    {25, 940}, //Jan 2021 BMS firmware DoD range 25 - 940
+    {25, 923}  //Jan EU4 BMS firmware DoD range 25 - 923
 };
 
 typedef struct{
