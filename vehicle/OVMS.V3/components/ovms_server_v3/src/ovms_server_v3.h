@@ -39,6 +39,7 @@
 #include "ovms_notify.h"
 #include "ovms_config.h"
 #include "ovms_mutex.h"
+#include "id_include_exclude_filter.h"
 
 typedef std::map<std::string, uint32_t> OvmsServerV3ClientMap;
 
@@ -141,6 +142,8 @@ class OvmsServerV3 : public OvmsServer
 
   private:
     void TransmitMetric(OvmsMetric* metric);
+
+    IdIncludeExcludeFilter m_metrics_filter;
   };
 
 class OvmsServerV3Init
