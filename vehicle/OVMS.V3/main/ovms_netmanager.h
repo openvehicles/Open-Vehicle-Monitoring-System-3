@@ -49,6 +49,7 @@ extern "C"
 #include "ovms_command.h"
 #include "ovms_metrics.h"
 #include "string_writer.h"
+#include "ovms_semaphore.h"
 
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
 #define MG_LOCALS 1
@@ -87,6 +88,12 @@ typedef struct
   } netman_job_t;
 
 #endif //#ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
+
+typedef struct
+  {
+  OvmsWriter* writer;
+  OvmsSemaphore* semaphore;
+  } ping_callback_args_t;
 
 class OvmsNetManager
   {
