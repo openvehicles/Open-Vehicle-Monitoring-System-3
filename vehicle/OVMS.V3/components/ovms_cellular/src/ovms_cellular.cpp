@@ -1613,7 +1613,7 @@ void modem::SetSignalQuality(int newsq)
   if (m_sq != newsq)
     {
     m_sq = newsq;
-    ESP_LOGI(TAG, "Signal Quality is: %d (%d dBm)", m_sq, UnitConvert(sq, dbm, m_sq));
+    ESP_LOGD(TAG, "Signal Quality is: %d (%d dBm)", m_sq, UnitConvert(sq, dbm, m_sq));
     StdMetrics.ms_m_net_mdm_sq->SetValue(m_sq, sq);
     if (StdMetrics.ms_m_net_type->AsString() == "modem")
       {
