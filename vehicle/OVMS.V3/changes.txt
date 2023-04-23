@@ -99,6 +99,22 @@ Open Vehicle Monitor System v3 - Change log
     obd2ecu.stop                      -- Called before the OBD2ECU process is stopped.
 - Web UI: Add configuration for Valet and Flatbed geofence to the Locations config page.
 - Network: New 'network ping' command to ping (ICMP) hostname or IP address. (ESP-IDFv4+ only / needs to be enabled in menuconfig - Developer Options)
+- Network: Add support for WireGuard VPN (ESP-IDFv4+ only / needs to be enabled in menuconfig - Developer Options)
+  New commands:
+    wireguard start                           -- start the VPN tunnel
+    wireguard stop                            -- stop the VPN tunnel (and reset default route)
+    wireguard restart                         -- restart the VPN tunnel (and reset default route)
+    wireguard default                         -- set default route to use the VPN tunnel
+  New Configs:
+    [network.wireguard] local_ip_address      -- The IP address of your module IN YOUR PRIVATE NETWORK
+    [network.wireguard] local_ip_netmask      -- The netmask of your module IN YOUR PRIVATE NETWORK
+    [network.wireguard] local_private_key     -- The PRIVATE key of your module for your WireGuard VPN tunnel
+    [network.wireguard] local_port            -- The UDP port from which your module will communicate with the WireGuard server
+    [network.wireguard] peer_endpoint         -- The IP address or hostname of the WireGuard server
+    [network.wireguard] peer_public_key       -- The PUBLIC key of the WireGuard server
+    [network.wireguard] peer_port             -- The UDP port on which the WireGuard server listens
+    [network.wireguard] preshared_key         -- A (recommended) pre-shared symmetric key for additional protection
+    [network.wireguard] persistent_keepalive  -- A keep-alive if your module is behind NAT (recommended for NAT)
 
 2022-09-01 MWJ  3.3.003  OTA release
 - Toyota RAV4 EV: Initial support added. Only the Tesla bus is decoded and just listening so far.

@@ -13,3 +13,6 @@
 [submodule "vehicle/OVMS.V3/components/wolfssl/wolfssl"]
 	path = vehicle/OVMS.V3/components/wolfssl/wolfssl
 	url = https://github.com/openvehicles/wolfssl.git
+[submodule "vehicle/OVMS.V3/components/esp_wireguard"]
+	path = vehicle/OVMS.V3/components/esp_wireguard
+	url = https://github.com/trombik/esp_wireguard.git
