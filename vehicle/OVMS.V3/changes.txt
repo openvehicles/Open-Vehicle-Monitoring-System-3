@@ -1,6 +1,22 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
+- Network: Add support for WireGuard VPN (ESP-IDFv4+ only / needs to be enabled in menuconfig - Developer Options)
+  New commands:
+    wireguard start                           -- start the VPN tunnel
+    wireguard stop                            -- stop the VPN tunnel (and reset default route)
+    wireguard restart                         -- restart the VPN tunnel (and reset default route)
+    wireguard default                         -- set default route to use the VPN tunnel
+  New Configs:
+    [network.wireguard] local_ip_address      -- The IP address of your module IN YOUR PRIVATE NETWORK
+    [network.wireguard] local_ip_netmask      -- The netmask of your module IN YOUR PRIVATE NETWORK
+    [network.wireguard] local_private_key     -- The PRIVATE key of your module for your WireGuard VPN tunnel
+    [network.wireguard] local_port            -- The UDP port from which your module will communicate with the WireGuard server
+    [network.wireguard] peer_endpoint         -- The IP address or hostname of the WireGuard server
+    [network.wireguard] peer_public_key       -- The PUBLIC key of the WireGuard server
+    [network.wireguard] peer_port             -- The UDP port on which the WireGuard server listens
+    [network.wireguard] preshared_key         -- A (recommended) pre-shared symmetric key for additional protection
+    [network.wireguard] persistent_keepalive  -- A keep-alive if your module is behind NAT (recommended for NAT)
 
 2024-03-23 MB   3.3.004  OTA release
 - MG EV Added support for MG5 (2020 - 2023) Short Range
