@@ -278,7 +278,9 @@ void OvmsVehicle::BmsSetCellVoltage(int index, float value)
   {
   // ESP_LOGV(TAG,"BmsSetCellVoltage(%d,%f) c=%d", index, value, m_bms_bitset_cv);
   if ((index<0)||(index>=m_bms_readings_v)) return;
-  if ((value<m_bms_limit_vmin)||(value>m_bms_limit_vmax)) return;
+  if ((value<m_bms_limit_vmin)||(value>m_bms_limit_vmax)) {
+    ESP_LOGE(TAG, "BmsSetCellVoltage: cell %d voltage %f: out of range", index, value);
+  }
   m_bms_voltages[index] = value;
 
   if (! m_bms_has_voltages)
