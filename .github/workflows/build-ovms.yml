@@ -22,12 +22,14 @@ jobs:
       matrix:
         # idf_ver: ["latest", "release-v5.1", "release-v5.0", "v5.0.1", "v5.0"]
         # idf_ver: ["release-v5.0", "v5.0.1", "v5.0", "release-v4.4", "v4.4.4", "v3.3.4"]
-        idf_ver: ["latest", "release-v5.1", "release-v5.0", "v5.0.1", "v5.0", "release-v4.4", "v3.3.4"]
+        # idf_ver: ["latest", "release-v5.1", "release-v5.0", "v5.0.1", "v5.0", "release-v4.4", "v3.3.4"]
+        idf_ver: ["release-v5.0", "v5.0.2", "v5.0.1", "v5.0", "release-v4.4", "v3.3.4"] # v3.3.4 is our own fork / special handling
         idf_target: ["esp32"]
+        mongoose_ver: ["6.11"] # 6.11 is our own fork / special handling
         include:
 
           # All the following items are 'default' values for ALL the matrix entries
-          - patch_mongoose: true
+          - patch_mongoose_6_11: true
             build_command: "idf.py build"
             sdkconfig: "sdkconfig.defaults.esp5.0.1"
             patch_esp_idf_ovms: false
@@ -44,18 +46,18 @@ jobs:
 
           # - idf_ver: "v4.4.4"
           #   sdkconfig: "sdkconfig.defaults.esp4"
-          #   patch_mongoose: false
+          #   patch_mongoose_6_11: false
           #   patch_esp_idf_whole_archive: true
 
           # - idf_ver: "v3.3.6"
           #   build_command: "make -j all"
-          #   patch_mongoose: false
+          #   patch_mongoose_6_11: false
           #   force_wolfssl_470: true
 
           - idf_ver: "v3.3.4"
             build_command: "TERM=vt100 make defconfig all"
             sdkconfig: "sdkconfig.defaults.esp3"
-            patch_mongoose: false
+            patch_mongoose_6_11: false
             patch_esp_idf_ovms: true
             # force_wolfssl_470: false
 
@@ -118,8 +120,23 @@ jobs:
 
       # For ESP-IDF v5+ builds, we need to patch our "old" version of mongoose
       - name: 'Patch mongoose (ESP-IDF v5+)'
-        if: matrix.patch_mongoose
+        if: |
+          matrix.patch_mongoose_6_11 &&
+          (matrix.mongoose_ver == '6.11')
         run: 'git apply --directory="vehicle/OVMS.V3/components/mongoose/mongoose" "vehicle/OVMS.V3/support/mongoose-espv5.patch"'
+
+      # For Mongose >= 7, we checkout this specific version
+      - name: 'Switch mongoose dir'
+        if: |
+          (matrix.mongoose_ver != '6.11')
+        run: |
+          cd "vehicle/OVMS.V3/components/mongoose/mongoose"
+          git remote set-url origin "https://github.com/cesanta/mongoose.git"
+          git fetch --all
+          git reset --hard
+          git clean -fxd
+          git checkout "${{ matrix.mongoose_ver }}"
+          cd -
 
       # For older builds (3.3.x), we need to switch back to the (official) wolfssl version that
       # was used in those builds + patch it and update the build system
@@ -137,6 +154,12 @@ jobs:
       - name: 'Setup configuration'
         run: 'cp "vehicle/OVMS.V3/support/${{ matrix.sdkconfig }}" "vehicle/OVMS.V3/sdkconfig.defaults"'
 
+      - name: 'Patch configuration for Mongoose 6.11 (SSL cannot compile)'
+        if: |
+          matrix.patch_mongoose_6_11 &&
+          (matrix.mongoose_ver == '6.11')
+        run: 'sed -i -e "s/CONFIG_MG_ENABLE_SSL=y/#CONFIG_MG_ENABLE_SSL=/g" "vehicle/OVMS.V3/sdkconfig.defaults"'
+
       - name: Cache build dependencies
         id: esp-idf-build
         uses: actions/cache@v3
@@ -144,7 +167,7 @@ jobs:
           path: |
             vehicle/OVMS.V3/build
             vehicle/OVMS.V3/sdkconfig
-          key: build-${{ runner.os }}-${{ matrix.idf_target }}_esp-idf-${{ matrix.idf_ver }}
+          key: build-${{ runner.os }}-${{ matrix.idf_target }}_esp-idf-${{ matrix.idf_ver }}_mg-${{ matrix.mongoose_ver }}
 
       # Now, we can build it. Let's not forget to install `dos2unix` first as it is needed.
       - name: 'Build project with IDF-${{ matrix.idf_ver }} for ${{ matrix.idf_target }}'
@@ -165,7 +188,7 @@ jobs:
       - name: 'Archive build output artifacts'
         uses: 'actions/upload-artifact@v3'
         with:
-          name: '${{ matrix.idf_target }}_esp-idf-${{ matrix.idf_ver }}'
+          name: '${{ matrix.idf_target }}_esp-idf-${{ matrix.idf_ver }}_mongoose-${{ matrix.mongoose_ver }}'
           path: |
             vehicle/OVMS.V3/build/bootloader/bootloader.bin
             vehicle/OVMS.V3/build/partition_table/partition-table.bin
