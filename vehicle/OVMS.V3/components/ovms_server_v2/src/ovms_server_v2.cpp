@@ -365,7 +365,7 @@ void OvmsServerV2::ProcessServerMsg()
 
     delete pm_crypto1;
     delete pm_crypto2;
-    delete d;
+    delete[] d;
     ESP_LOGI(TAG, "Decoded Paranoid Msg: %s",line.c_str());
     }
 
@@ -763,7 +763,7 @@ bool OvmsServerV2::Transmit(const std::string& message)
     strcat(s,code);
     base64encode(d, len-6, (uint8_t*)s+8);
     // The messdage is now in paranoid mode...
-    delete d;
+    delete[] d;
     delete pm_crypto1;
     delete pm_crypto2;
     }
