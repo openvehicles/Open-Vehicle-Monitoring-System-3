@@ -47,6 +47,8 @@
 #include "ovms_script.h"
 #endif
 
+#include "ovms_command.h"
+
 #include "ovms_log.h"
 #define TAG ((const char*)"metric")
 
