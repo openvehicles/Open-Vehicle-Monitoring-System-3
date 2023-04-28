@@ -158,14 +158,17 @@ public:
   ~OvmsHyundaiIoniqEv();
   static const char *TAG;
 public:
-  void IncomingFrameCan1(CAN_frame_t *p_frame) override;
+  void IncomingFrameCan1(const CAN_frame_t *p_frame) override;
   void Ticker1(uint32_t ticker) override;
   void Ticker10(uint32_t ticker) override;
   void Ticker60(uint32_t ticker) override;
   void Ticker300(uint32_t ticker) override;
   void EventListener(std::string event, void *data);
   void UpdatedAverageTemp(OvmsMetric* metric);
-  void IncomingPollReply(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length, uint16_t mlremain);
+  void IncomingPollReply(
+    canbus* bus, uint32_t moduleidsent, uint32_t moduleid, uint16_t type, uint16_t pid,
+    const uint8_t* data, uint16_t mloffset, uint8_t length, uint16_t mlremain, uint16_t mlframe,
+    const OvmsPoller::poll_pid_t &pollentry) override;
   void ConfigChanged(OvmsConfigParam *param);
   bool SetFeature(int key, const char *value);
   const std::string GetFeature(int key);
@@ -219,7 +222,7 @@ protected:
   void IncomingBCM_Full(canbus *bus, uint16_t type, uint16_t pid, const std::string &data);
   void IncomingIGMP_Full(canbus *bus, uint16_t type, uint16_t pid, const std::string &data);
   void IncomingOther_Full(canbus *bus, uint16_t type, uint16_t pid, const std::string &data);
-  void IncomingAbsEsp(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length, uint16_t mlremain);
+  void IncomingAbsEsp(canbus *bus, uint16_t type, uint16_t pid, const uint8_t *data, uint8_t length, uint16_t mlframe, uint16_t mlremain);
   void IncomingCM_Full(canbus *bus, uint16_t type, uint16_t pid, const std::string &data);
   void RequestNotify(unsigned int which);
   void DoNotify();

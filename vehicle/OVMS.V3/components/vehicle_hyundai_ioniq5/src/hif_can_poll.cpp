@@ -32,15 +32,17 @@
 /**
  * Incoming poll reply messages
  */
-void OvmsHyundaiIoniqEv::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length, uint16_t mlremain)
+void OvmsHyundaiIoniqEv::IncomingPollReply(canbus* bus, uint32_t moduleidsent, uint32_t moduleid, uint16_t type, uint16_t pid,
+  const uint8_t* data, uint16_t mloffset, uint8_t length, uint16_t mlremain, uint16_t mlframe,
+  const OvmsPoller::poll_pid_t &pollentry)
 {
   XARM("OvmsHyundaiIoniqEv::IncomingPollReply");
   /*
-  ESP_LOGV(TAG, "IPR %03x TYPE:%x PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", m_poll_moduleid_low, type, pid, length, data[0], data[1], data[2], data[3],
+  ESP_LOGV(TAG, "IPR %03x TYPE:%x PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", moduleid, type, pid, length, data[0], data[1], data[2], data[3],
      data[4], data[5], data[6], data[7]);
   */
   bool process_all = false;
-  switch (m_poll_moduleid_low) {
+  switch (moduleid) {
     // ****** IGMP *****
     case 0x778:
       process_all = true;
@@ -62,7 +64,7 @@ void OvmsHyundaiIoniqEv::IncomingPollReply(canbus *bus, uint16_t type, uint16_t 
 
     // ****** ABS ESP ******
     case 0x7d9:
-      IncomingAbsEsp(bus, type, pid, data, length, mlremain);
+      IncomingAbsEsp(bus, type, pid, data, length, mlframe, mlremain);
       break;
 
     // ******* VMCU ******
@@ -85,7 +87,7 @@ void OvmsHyundaiIoniqEv::IncomingPollReply(canbus *bus, uint16_t type, uint16_t 
       break;
 
     default:
-      ESP_LOGD(TAG, "Unknown module: %03" PRIx32, m_poll_moduleid_low);
+      ESP_LOGD(TAG, "Unknown module: %03" PRIx32, moduleid);
       XDISARM;
       return;
   }
@@ -97,14 +99,14 @@ void OvmsHyundaiIoniqEv::IncomingPollReply(canbus *bus, uint16_t type, uint16_t 
     // Assemble first and following frames to get complete reply
 
     // init rx buffer on first (it tells us whole length)
-    if (m_poll_ml_frame == 0) {
-      obd_module = m_poll_moduleid_low;
+    if (mlframe == 0) {
+      obd_module = moduleid;
       obd_rxtype = type;
       obd_rxpid = pid;
       obd_frame = 0;
       rxbuf.clear();
       ESP_LOGV(TAG, "IoniqISOTP: IPR %03" PRIx32 " TYPE:%x PID: %03x Buffer: %d - Start",
-        m_poll_moduleid_low, type, pid, length + mlremain);
+        moduleid, type, pid, length + mlremain);
       rxbuf.reserve(length + mlremain);
     }
     else {
@@ -112,18 +114,18 @@ void OvmsHyundaiIoniqEv::IncomingPollReply(canbus *bus, uint16_t type, uint16_t 
         XDISARM;
         return; // Aborted
       }
-      if ((obd_rxtype != type) || (obd_rxpid != pid) || (obd_module != m_poll_moduleid_low)) {
+      if ((obd_rxtype != type) || (obd_rxpid != pid) || (obd_module != moduleid)) {
         ESP_LOGD(TAG, "IoniqISOTP: IPR %03" PRIx32 " TYPE:%x PID: %03x Dropped Frame",
-          m_poll_moduleid_low, type, pid);
+          moduleid, type, pid);
         XDISARM;
         return;
       }
       ++obd_frame;
-      if (obd_frame != m_poll_ml_frame) {
+      if (obd_frame != mlframe) {
         obd_frame = 0xffff;
         rxbuf.clear();
         ESP_LOGD(TAG, "IoniqISOTP: IPR %03" PRIx32 " TYPE:%x PID: %03x Skipped Frame: %d",
-          m_poll_moduleid_low, type, pid, obd_frame);
+          moduleid, type, pid, obd_frame);
         XDISARM;
         return;
       }
@@ -132,7 +134,7 @@ void OvmsHyundaiIoniqEv::IncomingPollReply(canbus *bus, uint16_t type, uint16_t 
     rxbuf.insert(rxbuf.end(), data, data + length);
     /*
     ESP_LOGV(TAG, "IoniqISOTP: IPR %03x TYPE:%x PID: %03x Frame: %d Append: %d Expected: %d - Append",
-      m_poll_moduleid_low, type, pid, m_poll_ml_frame, length, mlremain);
+      moduleid, type, pid, mlframe, length, mlremain);
     */
     if (mlremain > 0) {
       // we need more - return for now.
@@ -141,9 +143,9 @@ void OvmsHyundaiIoniqEv::IncomingPollReply(canbus *bus, uint16_t type, uint16_t 
     }
 
     ESP_LOGD(TAG, "IoniqISOTP: IPR %03" PRIx32 " TYPE:%x PID: %03x Frames: %d Message Size: %d",
-      m_poll_moduleid_low, type, pid, obd_frame, rxbuf.size());
+      moduleid, type, pid, obd_frame, rxbuf.size());
     ESP_BUFFER_LOGD(TAG, rxbuf.data(), rxbuf.size());
-    switch (m_poll_moduleid_low) {
+    switch (moduleid) {
       case 0x778:
         IncomingIGMP_Full(bus, type, pid, rxbuf);
         break;
@@ -222,14 +224,14 @@ void OvmsHyundaiIoniqEv::IncomingOther_Full(canbus *bus, uint16_t type, uint16_t
 /**
  * Handle incoming messages from ABS ESP poll.
  */
-void OvmsHyundaiIoniqEv::IncomingAbsEsp(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length, uint16_t mlremain)
+void OvmsHyundaiIoniqEv::IncomingAbsEsp(canbus *bus, uint16_t type, uint16_t pid, const uint8_t *data, uint8_t length, uint16_t mlframe, uint16_t mlremain)
 {
   XARM("OvmsHyundaiIoniqEv::IncomingAbsEsp");
-  //ESP_LOGD(TAG, "ABS/ESP PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", pid, length, m_poll_ml_frame, data[0], data[1], data[2], data[3],
+  //ESP_LOGD(TAG, "ABS/ESP PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", pid, length, mlframe, data[0], data[1], data[2], data[3],
   //    data[4], data[5], data[6]);
   switch (pid) {
     case 0xC101:
-      if ( m_poll_ml_frame == 3) {
+      if ( mlframe == 3) {
         uint32_t value;
         if (get_uint_bytes_be<1>(data, 2, length, value)) {
           m_v_emergency_lights->SetValue(get_bit<6>(value));

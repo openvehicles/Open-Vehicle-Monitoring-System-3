@@ -100,6 +100,9 @@ OvmsVehicleSmartED::OvmsVehicleSmartED() : smarted_obd_rxwait(1,1) {
   // 12v charging
   m_charging_timer    = 0;
 
+  m_last_pid = 0;
+  m_reboot_ticker = 0;
+
   // init commands:
   cmd_xse = MyCommandApp.RegisterCommand("xse","SmartED 451 Gen.3");
   cmd_xse->RegisterCommand("recu","Set recu..", xse_recu, "<up/down>",1,1);
@@ -371,7 +374,7 @@ void OvmsVehicleSmartED::HandleChargingStatus() {
   }
 }
 
-void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
+void OvmsVehicleSmartED::IncomingFrameCan1(const CAN_frame_t* p_frame) {
   if (m_candata_poll != 1) {
     ESP_LOGI(TAG,"Car has woken (CAN bus activity)");
     mt_bus_awake->SetValue(true);
@@ -382,7 +385,7 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
 
   m_candata_timer = SE_CANDATA_TIMEOUT;
 
-  uint8_t *d = p_frame->data.u8;
+  const uint8_t *d = p_frame->data.u8;
 
   switch (p_frame->MsgID) {
     case 0x168:
@@ -669,7 +672,7 @@ void OvmsVehicleSmartED::IncomingFrameCan1(CAN_frame_t* p_frame) {
   }
 }
 
-void OvmsVehicleSmartED::IncomingFrameCan2(CAN_frame_t* p_frame) {
+void OvmsVehicleSmartED::IncomingFrameCan2(const CAN_frame_t* p_frame) {
 
 }
 /**

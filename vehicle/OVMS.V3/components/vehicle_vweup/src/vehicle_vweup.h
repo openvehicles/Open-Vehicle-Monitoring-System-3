@@ -80,8 +80,8 @@ typedef enum {
 #define CON_OBD           2
 #define CON_BOTH          3
 
-typedef std::vector<OvmsVehicle::poll_pid_t, ExtRamAllocator<OvmsVehicle::poll_pid_t>> poll_vector_t;
-typedef std::initializer_list<const OvmsVehicle::poll_pid_t> poll_list_t;
+typedef std::vector<OvmsPoller::poll_pid_t, ExtRamAllocator<OvmsPoller::poll_pid_t>> poll_vector_t;
+typedef std::initializer_list<const OvmsPoller::poll_pid_t> poll_list_t;
 
 typedef enum {
   OBDS_Init = 0,
@@ -254,7 +254,7 @@ protected:
   void T26Ticker1(uint32_t ticker);
 
 protected:
-  void IncomingFrameCan3(CAN_frame_t *p_frame);
+  void IncomingFrameCan3(const CAN_frame_t *p_frame) override;
 
 public:
   void SendOcuHeartbeat();
@@ -323,7 +323,11 @@ protected:
     return statename[state];
   }
   void PollerStateTicker();
-  void IncomingPollReply(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length, uint16_t mlremain);
+
+  void IncomingPollReply(
+    canbus* bus, uint32_t moduleidsent, uint32_t moduleid, uint16_t type, uint16_t pid,
+    const uint8_t* data, uint16_t mloffset, uint8_t length, uint16_t mlremain, uint16_t mlframe,
+    const OvmsPoller::poll_pid_t &pollentry) override;
 
 protected:
   void UpdateChargePower(float power_kw);

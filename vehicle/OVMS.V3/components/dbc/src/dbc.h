@@ -300,7 +300,7 @@ class dbcSignal
 
   public:
     void Encode(dbcNumber* source, CAN_frame_t* msg);
-    dbcNumber Decode(CAN_frame_t* msg);
+    dbcNumber Decode(const CAN_frame_t* msg);
 
   public:
     void AssignMetric(OvmsMetric* metric);

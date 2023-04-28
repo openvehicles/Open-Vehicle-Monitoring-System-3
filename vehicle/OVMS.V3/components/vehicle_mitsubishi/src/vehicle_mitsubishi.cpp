@@ -113,7 +113,7 @@ static const char *TAG = "v-mitsubishi";
 // Pollstate 0 - car is off
 // Pollstate 1 - car is on
 // Pollstate 2 - car is charging
-static const OvmsVehicle::poll_pid_t vehicle_mitsubishi_polls[] =
+static const OvmsPoller::poll_pid_t vehicle_mitsubishi_polls[] =
   {
     { 0x761, 0x762, VEHICLE_POLL_TYPE_OBDIIGROUP,  0x01, 		{       0,  10,   10 }, 0, ISOTP_STD }, 	// cac
     { 0x765, 0x766, VEHICLE_POLL_TYPE_OBDIIGROUP,  0x01, 		{       0,  10,    0 }, 0, ISOTP_STD },   // OBC
@@ -232,9 +232,9 @@ void OvmsVehicleMitsubishi::ConfigChanged(OvmsConfigParam* param)
   }
 }
 
-void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
+void OvmsVehicleMitsubishi::IncomingFrameCan1(const CAN_frame_t* p_frame)
 {
-  uint8_t *d = p_frame->data.u8;
+  const uint8_t *d = p_frame->data.u8;
 
   switch ( p_frame->MsgID )
     {

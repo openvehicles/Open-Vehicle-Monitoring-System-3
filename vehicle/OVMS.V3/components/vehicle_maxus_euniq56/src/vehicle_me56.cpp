@@ -63,7 +63,7 @@ namespace
 // The parameter namespace for this vehicle
 const char PARAM_NAME[] = "xme";
 
-static const OvmsVehicle::poll_pid_t obdii_polls[] =
+static const OvmsPoller::poll_pid_t obdii_polls[] =
     {
         // VCU Polls
 //        { vcutx, vcurx, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcusoc, {  0, 0, 30, 30  }, 0, ISOTP_STD }, //SOC Scaled below
@@ -180,10 +180,13 @@ OvmsVehicleMaxe56::~OvmsVehicleMaxe56()
 
 // IncomingPollReply:
 
-void OvmsVehicleMaxe56::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
+void OvmsVehicleMaxe56::IncomingPollReply(canbus* bus,
+      uint32_t moduleidsent, uint32_t moduleid, uint16_t type, uint16_t pid,
+      const uint8_t* data, uint16_t mloffset, uint8_t length, uint16_t mlremain, uint16_t mlframe,
+      const OvmsPoller::poll_pid_t &pollentry)
 {
   // init / fill rx buffer:
-  if (m_poll_ml_frame == 0) {
+  if (mlframe == 0) {
     m_rxbuf.clear();
     m_rxbuf.reserve(length + mlremain);
   }
@@ -353,13 +356,13 @@ void OvmsVehicleMaxe56::SetBmsStatus(uint8_t status)
 
 // Can Frames
 
-void OvmsVehicleMaxe56::IncomingFrameCan1(CAN_frame_t* p_frame)
+void OvmsVehicleMaxe56::IncomingFrameCan1(const CAN_frame_t* p_frame)
   {
       
 //set batt temp
       StdMetrics.ms_v_bat_temp->SetValue(StdMetrics.ms_v_bat_pack_tavg->AsFloat());
       
-      uint8_t *d = p_frame->data.u8;
+      const uint8_t *d = p_frame->data.u8;
 
       switch (p_frame->MsgID)
         {

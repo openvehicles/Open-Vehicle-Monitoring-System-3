@@ -82,11 +82,14 @@ public:
     void FlashLights(va_light_t light, int interval=500, int count=1); // milliseconds
 
 protected:
-    void IncomingFrameCan1(CAN_frame_t* p_frame);
-    void IncomingFrameCan2(CAN_frame_t* p_frame);
-    void IncomingFrameCan3(CAN_frame_t* p_frame);
-    void IncomingFrameCan4(CAN_frame_t* p_frame);
-    void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
+    void IncomingFrameCan1(const CAN_frame_t* p_frame) override;
+    void IncomingFrameCan2(const CAN_frame_t* p_frame) override;
+    void IncomingFrameCan3(const CAN_frame_t* p_frame) override;
+    void IncomingFrameCan4(const CAN_frame_t* p_frame) override;
+    void IncomingPollReply(
+      canbus* bus, uint32_t moduleidsent, uint32_t moduleid, uint16_t type, uint16_t pid,
+      const uint8_t* data, uint16_t mloffset, uint8_t length, uint16_t mlremain, uint16_t mlframe,
+      const OvmsPoller::poll_pid_t &pollentry) override;
     void TxCallback(const CAN_frame_t* p_frame, bool success);
     void CommandWakeupComplete(const CAN_frame_t* p_frame, bool success);
     void SendTesterPresentMessage( uint32_t id );
@@ -100,7 +103,7 @@ protected:
     // va_ac_preheat
     void ClimateControlInit();
     void ClimateControlPrintStatus(int verbosity, OvmsWriter* writer);
-    void ClimateControlIncomingSWCAN(CAN_frame_t* p_frame);
+    void ClimateControlIncomingSWCAN(const CAN_frame_t* p_frame);
     void AirConStatusUpdated( bool ac_enabled );
     const char * PreheatStatus();
     void PreheatModeChange( uint8_t preheat_status );
@@ -120,7 +123,7 @@ protected:
     unsigned int m_candata_timer;
     unsigned int m_range_rated_km;
     unsigned int m_startPolling_timer;
-    poll_pid_t * m_pPollingList;
+    OvmsPoller::poll_pid_t * m_pPollingList;
 
     canbus* p_swcan;    // Either "can4" or "can3" bus, depending on which is connected to slow speed GMLAN bus
 #ifdef CONFIG_OVMS_COMP_EXTERNAL_SWCAN

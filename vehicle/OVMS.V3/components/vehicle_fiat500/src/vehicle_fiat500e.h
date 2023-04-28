@@ -42,8 +42,8 @@ class OvmsVehicleFiat500e : public OvmsVehicle
     ~OvmsVehicleFiat500e();
 
   public:
-    void IncomingFrameCan1(CAN_frame_t* p_frame);
-    void IncomingFrameCan2(CAN_frame_t* p_frame);
+    void IncomingFrameCan1(const CAN_frame_t* p_frame) override;
+    void IncomingFrameCan2(const CAN_frame_t* p_frame) override;
     virtual vehicle_command_t CommandWakeup();
     virtual vehicle_command_t CommandStartCharge();
     virtual vehicle_command_t CommandStopCharge();

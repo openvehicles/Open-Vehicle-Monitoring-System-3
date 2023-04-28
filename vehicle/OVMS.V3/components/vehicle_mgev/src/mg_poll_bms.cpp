@@ -49,7 +49,7 @@ enum BmsStatus : unsigned char {
 
 }  // anon namespace
 
-void OvmsVehicleMgEv::ProcessBatteryStats(int index, uint8_t* data, uint16_t remain)
+void OvmsVehicleMgEv::ProcessBatteryStats(int index, const uint8_t* data, uint16_t remain)
 {
     // The stats are per block rather than per cell, but we'll record them in cells.
     // Each cell consisting of 2 values. One for minimum value and the other for the maximum value.
@@ -75,7 +75,7 @@ void OvmsVehicleMgEv::ProcessBatteryStats(int index, uint8_t* data, uint16_t rem
 }
 
 void OvmsVehicleMgEv::IncomingBmsPoll(
-        uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain)
+        uint16_t pid, const uint8_t* data, uint8_t length, uint16_t remain)
 {
     uint16_t value = (data[0] << 8 | data[1]);
 

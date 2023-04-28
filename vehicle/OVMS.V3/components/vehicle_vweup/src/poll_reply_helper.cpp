@@ -28,7 +28,7 @@
 
 static const char *TAG = "v-vweup";
 
-bool PollReplyHelper::AddNewData(uint16_t pid, uint8_t *data, uint8_t length, uint16_t remain)
+bool PollReplyHelper::AddNewData(uint16_t pid, const uint8_t *data, uint8_t length, uint16_t remain)
 {
   // When I have a different PID as last time OR
   // if I'm not waiting for more data from last time...

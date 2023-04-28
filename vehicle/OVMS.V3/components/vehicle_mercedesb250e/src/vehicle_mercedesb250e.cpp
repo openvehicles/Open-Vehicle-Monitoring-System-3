@@ -82,9 +82,9 @@ OvmsVehicleMercedesB250eInit::OvmsVehicleMercedesB250eInit()
   MyVehicleFactory.RegisterVehicle<OvmsVehicleMercedesB250e>("MB", "Mercedes-Benz B250E, W242");
 }
 
-void OvmsVehicleMercedesB250e::IncomingFrameCan1(CAN_frame_t* p_frame)
+void OvmsVehicleMercedesB250e::IncomingFrameCan1(const CAN_frame_t* p_frame)
 {
-  uint8_t *d = p_frame->data.u8;
+  const uint8_t *d = p_frame->data.u8;
    
   switch (p_frame->MsgID) {
   case 0x105: // Motor RPM

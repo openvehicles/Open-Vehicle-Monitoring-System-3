@@ -51,15 +51,15 @@ OvmsVehicleTeslaModel3::~OvmsVehicleTeslaModel3()
   ESP_LOGI(TAG, "Shutdown Tesla Model 3 vehicle module");
   }
 
-void OvmsVehicleTeslaModel3::IncomingFrameCan1(CAN_frame_t* p_frame)
+void OvmsVehicleTeslaModel3::IncomingFrameCan1(const CAN_frame_t* p_frame)
   {
   }
 
-void OvmsVehicleTeslaModel3::IncomingFrameCan2(CAN_frame_t* p_frame)
+void OvmsVehicleTeslaModel3::IncomingFrameCan2(const CAN_frame_t* p_frame)
   {
   }
 
-void OvmsVehicleTeslaModel3::IncomingFrameCan3(CAN_frame_t* p_frame)
+void OvmsVehicleTeslaModel3::IncomingFrameCan3(const CAN_frame_t* p_frame)
   {
   }
 

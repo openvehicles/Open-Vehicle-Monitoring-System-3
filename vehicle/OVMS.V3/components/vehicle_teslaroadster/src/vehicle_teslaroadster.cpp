@@ -161,9 +161,9 @@ void OvmsVehicleTeslaRoadster::Status(int verbosity, OvmsWriter* writer)
     }
   }
 
-void OvmsVehicleTeslaRoadster::IncomingFrameCan1(CAN_frame_t* p_frame)
+void OvmsVehicleTeslaRoadster::IncomingFrameCan1(const CAN_frame_t* p_frame)
   {
-  uint8_t *d = p_frame->data.u8;
+  const uint8_t *d = p_frame->data.u8;
 
   switch (p_frame->MsgID)
     {

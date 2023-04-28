@@ -45,9 +45,9 @@ class OvmsVehicleTeslaModelS: public OvmsVehicle
     ~OvmsVehicleTeslaModelS();
 
   public:
-    void IncomingFrameCan1(CAN_frame_t* p_frame);
-    void IncomingFrameCan2(CAN_frame_t* p_frame);
-    void IncomingFrameCan3(CAN_frame_t* p_frame);
+    void IncomingFrameCan1(const CAN_frame_t* p_frame) override;
+    void IncomingFrameCan2(const CAN_frame_t* p_frame) override;
+    void IncomingFrameCan3(const CAN_frame_t* p_frame) override;
 
   protected:
     virtual void Ticker1(uint32_t ticker);

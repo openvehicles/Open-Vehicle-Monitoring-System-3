@@ -32,11 +32,11 @@ static const char *TAG = "v-jaguaripace";
 #include "vehicle_jaguaripace.h"
 #include "ipace_obd_pids.h"
 
-void OvmsVehicleJaguarIpace::IncomingFrameCan1(CAN_frame_t* p_frame)
+void OvmsVehicleJaguarIpace::IncomingFrameCan1(const CAN_frame_t* p_frame)
 {
     ESP_LOGD(TAG, "IncomingFrameCan1, ");
 
-    if (m_poll_bus_default != m_can1)
+    if (p_frame->origin != m_can1)
     {
         return;
     }
@@ -44,11 +44,11 @@ void OvmsVehicleJaguarIpace::IncomingFrameCan1(CAN_frame_t* p_frame)
 }
 
 
-void OvmsVehicleJaguarIpace::IncomingPollFrame(CAN_frame_t* frame)
+void OvmsVehicleJaguarIpace::IncomingPollFrame(const CAN_frame_t* frame)
 {
     uint8_t frameType = frame->data.u8[0] >> 4;
     uint8_t frameLength = frame->data.u8[0] & 0x0f;
-    uint8_t* data = &frame->data.u8[1];
+    const uint8_t* data = &frame->data.u8[1];
     uint8_t dataLength = frameLength;
 
     ESP_LOGD(TAG, "IncomingPollFrame, frameType=%d, dataLength=%d", frameType, dataLength);
@@ -121,7 +121,7 @@ void OvmsVehicleJaguarIpace::IncomingPollFrame(CAN_frame_t* frame)
 
     }
     // Handle multi-line version responses
-    else if (HasPollList() && frameType == ISOTP_FT_CONSECUTIVE)
+    else if (/*HasPollList() &&*/ frameType == ISOTP_FT_CONSECUTIVE)
     {
         // auto start = ((dataLength - 1) * 7) + 3;
         // for (auto& version : m_versions)
@@ -158,35 +158,36 @@ bool OvmsVehicleJaguarIpace::SendPollMessage(
 }
 
 void OvmsVehicleJaguarIpace::IncomingPollReply(
-        canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length,
-        uint16_t remain)
+  canbus* bus, uint32_t moduleidsent, uint32_t moduleid, uint16_t type, uint16_t pid,
+  const uint8_t* data, uint16_t mloffset, uint8_t length, uint16_t mlremain, uint16_t mlframe,
+  const OvmsPoller::poll_pid_t &pollentry)
 {
     ESP_LOGD(
         TAG,
         "%03" PRIx32 " TYPE:%" PRIx16 " PID:%02" PRIx16 " Length:%" PRIx8 " Data:%02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8,
-        m_poll_moduleid_low,
+        moduleid,
         type,
         pid,
         length,
         data[0], data[1], data[2], data[3]
     );
 
-    switch (m_poll_moduleid_low)
+    switch (moduleid)
     {
         case (becmId | rxFlag):
-            IncomingBecmPoll(pid, data, length, remain);
+            IncomingBecmPoll(pid, data, length, mlremain);
             break;
         case (hvacId | rxFlag):
-            IncomingHvacPoll(pid, data, length, remain);
+            IncomingHvacPoll(pid, data, length, mlremain);
             break;
         case (bcmId | rxFlag):
-            IncomingBcmPoll(pid, data, length, remain);
+            IncomingBcmPoll(pid, data, length, mlremain);
             break;
         case (tpmsId | rxFlag):
-            IncomingTpmsPoll(pid, data, length, remain);
+            IncomingTpmsPoll(pid, data, length, mlremain);
             break;
         case (tcuId | rxFlag):
-            IncomingTcuPoll(pid, data, length, remain);
+            IncomingTcuPoll(pid, data, length, mlremain);
             break;
     }
 }

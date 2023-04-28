@@ -62,7 +62,7 @@ static const char *TAG = "v-hyundaivfl";
 #define STATE_DRIVING         2
 #define STATE_CHARGING        3
 
-static const OvmsVehicle::poll_pid_t standard_polls[] =
+static const OvmsPoller::poll_pid_t standard_polls[] =
 {
   //                                    OFF  AWK  DRV  CHG
   { 0x7e4, 0x7ec, UDS_READ8,    0x01, {   1,   1,   1,   1 }, 0, ISOTP_STD },  // Battery status, speed, module temperatures 1-5
@@ -231,10 +231,12 @@ void OvmsVehicleHyundaiVFL::MetricModified(OvmsMetric* metric)
 /**
  * IncomingPollReply: framework callback: process response
  */
-void OvmsVehicleHyundaiVFL::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
+void OvmsVehicleHyundaiVFL::IncomingPollReply(canbus* bus, uint32_t moduleidsent, uint32_t moduleid, uint16_t type, uint16_t pid,
+  const uint8_t* data, uint16_t mloffset, uint8_t length, uint16_t mlremain, uint16_t mlframe,
+  const OvmsPoller::poll_pid_t &pollentry)
 {
   // init / fill rx buffer:
-  if (m_poll_ml_frame == 0) {
+  if (mlframe == 0) {
     m_rxbuf.clear();
     m_rxbuf.reserve(length + mlremain);
   }
@@ -289,7 +291,7 @@ void OvmsVehicleHyundaiVFL::IncomingPollReply(canbus* bus, uint16_t type, uint16
       UpdateTripCounters();
 
       // Read battery module temperatures 1-5 (only when also polling PIDs 02…05):
-      if (m_poll_state != STATE_OFF && m_poll_ticker % 15 == 0)
+      if (m_poll_state != STATE_OFF /*&& m_poll_ticker % 15 == 0 ?? why*/)
       {
         BmsRestartCellTemperatures();
         for (int i = 0; i < 5; i++) {

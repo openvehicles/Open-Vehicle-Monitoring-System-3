@@ -116,9 +116,9 @@ class OvmsVehicleFiat500eInit
 //****************** Incoming Frames Can-Bus C (500kbps) **********************
 //*****************************************************************************
 
-void OvmsVehicleFiat500e::IncomingFrameCan1(CAN_frame_t* p_frame) {
+void OvmsVehicleFiat500e::IncomingFrameCan1(const CAN_frame_t* p_frame) {
   
-  uint8_t *d = p_frame->data.u8;
+  const uint8_t *d = p_frame->data.u8;
   
   switch (p_frame->MsgID) { 
     case 0xC10A040: // MSG31B_EVCU
@@ -256,9 +256,9 @@ void OvmsVehicleFiat500e::IncomingFrameCan1(CAN_frame_t* p_frame) {
 //****************** Incoming Frames Can-Bus B (50kbps) ***********************
 //*****************************************************************************
 
-void OvmsVehicleFiat500e::IncomingFrameCan2(CAN_frame_t* p_frame) {
+void OvmsVehicleFiat500e::IncomingFrameCan2(const CAN_frame_t* p_frame) {
   
-  uint8_t *d = p_frame->data.u8;
+  const uint8_t *d = p_frame->data.u8;
   
   switch (p_frame->MsgID) {
     /*

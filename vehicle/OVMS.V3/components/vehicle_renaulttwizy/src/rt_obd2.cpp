@@ -58,7 +58,7 @@ using namespace std;
 #define SESSION_EXTDIAG           0xC0
 
 
-const OvmsVehicle::poll_pid_t twizy_poll_default[] = {
+const OvmsPoller::poll_pid_t twizy_poll_default[] = {
   // Note: poller ticker cycles at 3600 seconds = max period
   // { txid, rxid, type, pid, { period_off, period_drive, period_charge }, bus, protocol }
   { CLUSTER_TXID, CLUSTER_RXID,  VEHICLE_POLL_TYPE_OBDIISESSION, SESSION_EXTDIAG,  { 0,   10,   60 }, 0, ISOTP_STD },
@@ -154,12 +154,14 @@ void OvmsVehicleRenaultTwizy::ObdTicker1()
 
 
 void OvmsVehicleRenaultTwizy::IncomingPollReply(
-  canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
+  canbus* bus, uint32_t moduleidsent, uint32_t moduleid, uint16_t type, uint16_t pid,
+  const uint8_t* data, uint16_t mloffset, uint8_t length, uint16_t mlremain, uint16_t mlframe,
+  const OvmsPoller::poll_pid_t &pollentry)
 {
   string& rxbuf = twizy_obd_rxbuf;
 
   // init / fill rx buffer:
-  if (m_poll_ml_frame == 0) {
+  if (mlframe == 0) {
     rxbuf.clear();
     rxbuf.reserve(length + mlremain);
   }
@@ -218,7 +220,7 @@ void OvmsVehicleRenaultTwizy::IncomingPollReply(
 }
 
 
-void OvmsVehicleRenaultTwizy::IncomingPollError(canbus* bus, uint16_t type, uint16_t pid, uint16_t code)
+void OvmsVehicleRenaultTwizy::IncomingPollError(canbus* bus, uint32_t moduleidsent, uint32_t moduleid, uint16_t type, uint16_t pid, uint16_t code, const OvmsPoller::poll_pid_t &pollentry)
 {
   // single poll?
   if (!twizy_obd_rxwait.IsAvail()) {
@@ -235,7 +237,7 @@ int OvmsVehicleRenaultTwizy::ObdRequest(uint16_t txid, uint16_t rxid, string req
   OvmsMutexLock lock(&twizy_obd_request);
 
   // prepare single poll:
-  OvmsVehicle::poll_pid_t poll[] = {
+  OvmsPoller::poll_pid_t poll[] = {
     { txid, rxid, 0, 0, { 1, 1, 1 }, 0, ISOTP_STD },
     POLL_LIST_END
   };

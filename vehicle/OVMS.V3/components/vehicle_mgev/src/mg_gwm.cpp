@@ -109,7 +109,7 @@ bool OvmsVehicleMgEv::AuthenticateGWM(canbus* currentBus)
     return false;    
 }
 
-void OvmsVehicleMgEv::IncomingGWMAuthFrame(CAN_frame_t* frame, uint8_t serviceId, uint8_t* data)
+void OvmsVehicleMgEv::IncomingGWMAuthFrame(const CAN_frame_t* frame, uint8_t serviceId, const uint8_t* data)
 {
     if (serviceId == UDS_RESP_TYPE_NRC)
     {
@@ -252,7 +252,7 @@ void OvmsVehicleMgEv::IncomingGWMAuthFrame(CAN_frame_t* frame, uint8_t serviceId
     }
 }
 
-void OvmsVehicleMgEv::IncomingGWMFrame(CAN_frame_t* frame, uint8_t frameType, uint16_t frameLength, uint8_t serviceId, uint16_t responsePid, uint8_t* data)
+void OvmsVehicleMgEv::IncomingGWMFrame(const CAN_frame_t* frame, uint8_t frameType, uint16_t frameLength, uint8_t serviceId, uint16_t responsePid, const uint8_t* data)
 {
     switch (frameType)
     {

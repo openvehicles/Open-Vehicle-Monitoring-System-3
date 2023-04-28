@@ -56,7 +56,7 @@ static const char *TAG = "v-voltampera";
 // 1 = car is on and ready to Drive
 // 2 = car wakeup or powertrain off, one request with high polling speed. After swith to state 1.
 
-static const OvmsVehicle::poll_pid_t va_polls[]
+static const OvmsPoller::poll_pid_t va_polls[]
   =
   {
     { 0x7e0, 0x7e8, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x002F, {  0, 600,  0 },   0, ISOTP_STD }, // Fuel Level
@@ -130,7 +130,7 @@ OvmsVehicleVoltAmpera::OvmsVehicleVoltAmpera()
   //Add cell requests to polling list
   const int nCellListSize = 96; 
   const int va_pollsSize = sizeof(va_polls)/sizeof(va_polls[0]);
-  m_pPollingList = new poll_pid_t[va_pollsSize + nCellListSize];
+  m_pPollingList = new OvmsPoller::poll_pid_t[va_pollsSize + nCellListSize];
   uint16_t pid = 0x4181;
   
   int iPoll=0;
@@ -242,9 +242,9 @@ void OvmsVehicleVoltAmpera::TxCallback(const CAN_frame_t* p_frame, bool success)
   }
 
 
-void OvmsVehicleVoltAmpera::IncomingFrameCan1(CAN_frame_t* p_frame)
+void OvmsVehicleVoltAmpera::IncomingFrameCan1(const CAN_frame_t* p_frame)
   {
-  uint8_t *d = p_frame->data.u8;
+  const uint8_t *d = p_frame->data.u8;
   int k;
 
   m_candata_timer = VA_CANDATA_TIMEOUT;
@@ -409,21 +409,21 @@ void OvmsVehicleVoltAmpera::IncomingFrameCan1(CAN_frame_t* p_frame)
     }
   }
 
-void OvmsVehicleVoltAmpera::IncomingFrameCan2(CAN_frame_t* p_frame)
+void OvmsVehicleVoltAmpera::IncomingFrameCan2(const CAN_frame_t* p_frame)
   {
-  //uint8_t *d = p_frame->data.u8;
+  //const uint8_t *d = p_frame->data.u8;
   //ESP_LOGI(TAG,"CAN2 message received: %08x: %02x %02x %02x %02x %02x %02x %02x %02x", 
   //  p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7] );
   }
 
-void OvmsVehicleVoltAmpera::IncomingFrameCan3(CAN_frame_t* p_frame)
+void OvmsVehicleVoltAmpera::IncomingFrameCan3(const CAN_frame_t* p_frame)
   {
   IncomingFrameCan4(p_frame);  // assume third can bus messages coming from SWCAN bus
   }
 
-void OvmsVehicleVoltAmpera::IncomingFrameCan4(CAN_frame_t* p_frame)
+void OvmsVehicleVoltAmpera::IncomingFrameCan4(const CAN_frame_t* p_frame)
   {
-  uint8_t *d = p_frame->data.u8;
+  const uint8_t *d = p_frame->data.u8;
 
   m_candata_timer = VA_CANDATA_TIMEOUT;
 
@@ -665,7 +665,10 @@ void OvmsVehicleVoltAmpera::IncomingFrameCan4(CAN_frame_t* p_frame)
     ClimateControlIncomingSWCAN(p_frame);
   }
 
-void OvmsVehicleVoltAmpera::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
+void OvmsVehicleVoltAmpera::IncomingPollReply(
+  canbus* bus, uint32_t moduleidsent, uint32_t moduleid, uint16_t type, uint16_t pid,
+  const uint8_t* data, uint16_t mloffset, uint8_t length, uint16_t mlremain, uint16_t mlframe,
+  const OvmsPoller::poll_pid_t &pollentry)
   {
   uint8_t value = *data;
 

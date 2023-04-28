@@ -165,12 +165,12 @@ void OvmsVehicleRenaultTwizy::CanResponder(const CAN_frame_t* p_frame)
  * Asynchronous CAN RX handler
  */
 
-void OvmsVehicleRenaultTwizy::IncomingFrameCan1(CAN_frame_t* p_frame)
+void OvmsVehicleRenaultTwizy::IncomingFrameCan1(const CAN_frame_t* p_frame)
 {
   unsigned int u;
   int s;
   
-  uint8_t *can_databuffer = p_frame->data.u8;
+  const uint8_t *can_databuffer = p_frame->data.u8;
   
   
   switch (p_frame->MsgID)

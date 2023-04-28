@@ -49,7 +49,7 @@ constexpr uint32_t UNLOCKED_CHARGING_TIMEOUT = 5u;
 constexpr uint16_t DIAG_ATTEMPTS = 3u;
 
 //Variant a specific polls
-const OvmsVehicle::poll_pid_t obdii_polls_a[] =
+const OvmsPoller::poll_pid_t obdii_polls_a[] =
 {
     { pepsId, pepsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, pepsLockPid, {  0, 5, 5, 0  }, 0, ISOTP_STD },
     { vcuId, vcuId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcuBonnetPid, {  0, 0, 5, 0  }, 0, ISOTP_STD }

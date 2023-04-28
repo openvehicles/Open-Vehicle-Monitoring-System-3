@@ -60,10 +60,14 @@ class OvmsVehicleSmartED : public OvmsVehicle
     static OvmsVehicleSmartED* GetInstance(OvmsWriter* writer=NULL);
 
   public:
-    void IncomingFrameCan1(CAN_frame_t* p_frame);
-    void IncomingFrameCan2(CAN_frame_t* p_frame);
-    void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
-    void IncomingPollError(canbus* bus, uint16_t type, uint16_t pid, uint16_t code);
+    void IncomingFrameCan1(const CAN_frame_t* p_frame) override;
+    void IncomingFrameCan2(const CAN_frame_t* p_frame) override;
+    void IncomingPollReply(
+      canbus* bus, uint32_t moduleidsent, uint32_t moduleid, uint16_t type, uint16_t pid,
+      const uint8_t* data, uint16_t mloffset, uint8_t length, uint16_t mlremain, uint16_t mlframe,
+      const OvmsPoller::poll_pid_t &pollentry) override;
+    void IncomingPollError(
+      canbus* bus, uint32_t moduleidsent, uint32_t moduleid, uint16_t type, uint16_t pid, uint16_t code, const OvmsPoller::poll_pid_t &pollentry) override;
     char m_vin[18];
 
   public:
@@ -112,6 +116,8 @@ class OvmsVehicleSmartED : public OvmsVehicle
 
   protected:
     int m_reboot_ticker;
+    uint16_t m_last_pid;
+
     virtual void Ticker1(uint32_t ticker);
     virtual void Ticker10(uint32_t ticker);
     virtual void Ticker60(uint32_t ticker);

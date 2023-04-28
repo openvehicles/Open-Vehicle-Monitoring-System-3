@@ -72,8 +72,11 @@ class OvmsVehicleRenaultZoe : public OvmsVehicle {
     OvmsVehicleRenaultZoe();
     ~OvmsVehicleRenaultZoe();
 		static OvmsVehicleRenaultZoe* GetInstance(OvmsWriter* writer=NULL);
-		void IncomingFrameCan1(CAN_frame_t* p_frame);
-		void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain);
+		void IncomingFrameCan1(const CAN_frame_t* p_frame) override;
+		void IncomingPollReply(
+			canbus* bus, uint32_t moduleidsent, uint32_t moduleid, uint16_t type, uint16_t pid,
+			const uint8_t* data, uint16_t mloffset, uint8_t length, uint16_t mlremain, uint16_t mlframe,
+			const OvmsPoller::poll_pid_t &pollentry) override;
 
 	protected:
 		void IncomingEPS(uint16_t type, uint16_t pid, const char* data, uint16_t len);
@@ -138,7 +141,8 @@ class OvmsVehicleRenaultZoe : public OvmsVehicle {
   private:
     unsigned int m_candata_timer;
     unsigned int m_candata_poll;
-  
+
+    uint16_t m_last_pid;
   public:
 		static void zoe_trip(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
   
