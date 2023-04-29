@@ -1,7 +1,6 @@
 Open Vehicle Monitor System v3 - Change log
 
 ????-??-?? ???  ???????  OTA release
-- Change cellular signal quality logging level to DEBUG
 - OVMS Server v3 metrics filtering
   New configs:
     [server.v3] metrics.include         -- Comma-separated list of metric names (with possible wildcard) matching metrics to send
