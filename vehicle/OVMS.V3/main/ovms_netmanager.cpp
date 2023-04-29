@@ -178,8 +178,6 @@ static void test_on_ping_end(esp_ping_handle_t hdl, void *args)
 
 void network_ping(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
-  esp_ping_config_t ping_config = ESP_PING_DEFAULT_CONFIG();
-
   // parse hostname / IP address
   struct sockaddr_in6 sock_addr6;
   ip_addr_t target_addr;
