@@ -29,6 +29,6 @@ OVMS can only read the IDs from the TPMS ECU in the car itself. You can, however
 of a large number of TPMS tools) to trigger and read these IDs from the wheels. Once your garage gives you the sensor IDs (each
 expressed as an 8 character hexadecimal ID), you can enter them into OVMS as::
 
-  OVMS# tpms set SET ID1 ID2 ID3 ID4 ...
+  OVMS# tpms set SET LF-ID RF-ID LR-ID RR-ID ...
 
-(replace SET with your own identifier for this set of wheels, and ID1.. with the hexadecimal sensor ID)
+(replace SET with your own identifier for this set of wheels, and xx-ID.. with the specific location hexadecimal sensor ID)

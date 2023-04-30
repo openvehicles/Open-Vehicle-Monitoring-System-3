@@ -48,6 +48,7 @@
 #include "ovms_log.h"
 
 #include <stdio.h>
+#include <math.h>
 #include <string.h>
 #include "pcp.h"
 #include "metrics_standard.h"
@@ -1231,9 +1232,10 @@ void OvmsHyundaiIoniqEv::HandleCharging()
     float est_range = StdMetrics.ms_v_bat_range_est->AsFloat(400, Kilometers);
     float limit_range = StdMetrics.ms_v_charge_limit_range->AsFloat(0, Kilometers);
     float ideal_range = StdMetrics.ms_v_bat_range_ideal->AsFloat(450, Kilometers);
-    kia_park_trip_counter.FinishCharge(
-      StdMetrics.ms_v_bat_energy_recd_total->AsFloat(kWh),
-      StdMetrics.ms_v_bat_coulomb_recd_total->AsFloat(kWh)
+    kia_park_trip_counter.Update(
+      POS_ODO,
+      StdMetrics.ms_v_bat_energy_used_total->AsFloat(kWh), StdMetrics.ms_v_bat_energy_recd_total->AsFloat(kWh),
+      StdMetrics.ms_v_bat_coulomb_used_total->AsFloat(kWh), StdMetrics.ms_v_bat_coulomb_recd_total->AsFloat(kWh)
     );
 
     if (((bat_soc > 0) && (limit_soc > 0) && (bat_soc >= limit_soc) && (kia_last_soc < limit_soc))
