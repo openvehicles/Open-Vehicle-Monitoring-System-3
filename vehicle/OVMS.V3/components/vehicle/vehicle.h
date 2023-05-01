@@ -255,6 +255,7 @@ class OvmsVehicle : public InternalRamAllocated
     OvmsPoller::ParentSignal *m_parent_callback;
     OvmsPoller* m_pollers[VEHICLE_MAXBUSSES];
 
+    OvmsRecMutex      m_poller_mutex;
     OvmsPoller *GetPoller(canbus *can, bool force = false );
 
     void VehicleTicker1(std::string event, void* data);

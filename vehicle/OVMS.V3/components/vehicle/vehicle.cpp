@@ -253,6 +253,7 @@ void OvmsVehicle::VehiclePollTicker()
   // So first tick is Primary.
   src = (cur_ticker == 1) ? OvmsPoller::poller_source_t::Primary : OvmsPoller::poller_source_t::Secondary;
 
+  OvmsRecMutexLock lock(&m_poller_mutex);
   for (int i = 0 ; i < VEHICLE_MAXBUSSES; ++i)
     {
     if (m_pollers[i])
@@ -555,17 +556,19 @@ bool OvmsVehicleSignal::Ready()
 
 OvmsPoller* OvmsVehicle::GetPoller(canbus *can, bool force)
   {
+  OvmsRecMutexLock lock(&m_poller_mutex);
   int gap = -1;
   for (int i = 0 ; i < VEHICLE_MAXBUSSES; ++i)
     {
-    if (!m_pollers[i])
+    auto cur = m_pollers[i];
+    if (!cur)
       {
       if (gap < 0)
         gap = i;
       }
-    else if (m_pollers[i]->HasBus(can))
+    else if (cur->HasBus(can))
       {
-      return m_pollers[i];
+      return cur;
       }
     }
   if (!force)
@@ -2279,6 +2282,7 @@ void OvmsVehicle::PollerStateTicker()
 // signal poller (private)
 void OvmsVehicle::PollerResetThrottle()
   {
+  OvmsRecMutexLock lock(&m_poller_mutex);
   for (int i = 0 ; i < VEHICLE_MAXBUSSES; ++i)
     {
     if (m_pollers[i])
@@ -2289,6 +2293,7 @@ void OvmsVehicle::PollerResetThrottle()
 // Signal poller
 void OvmsVehicle::PausePolling()
   {
+  OvmsRecMutexLock lock(&m_poller_mutex);
   for (int i = 0 ; i < VEHICLE_MAXBUSSES; ++i)
     {
     if (m_pollers[i])
@@ -2297,12 +2302,14 @@ void OvmsVehicle::PausePolling()
   }
 void OvmsVehicle::ResumePolling()
   {
+  OvmsRecMutexLock lock(&m_poller_mutex);
   for (int i = 0 ; i < VEHICLE_MAXBUSSES; ++i)
     {
     if (m_pollers[i])
       m_pollers[i]->ResumePolling();
     }
   }
+
 void OvmsVehicle::PollSetPidList(canbus* bus, const OvmsPoller::poll_pid_t* plist)
   {
   m_poll_bus_default = bus;
@@ -2330,6 +2337,8 @@ void OvmsVehicle::PollSetPidList(canbus* bus, const OvmsPoller::poll_pid_t* plis
         }
       }
     }
+
+  OvmsRecMutexLock lock(&m_poller_mutex);
   for (int i = 0 ; i < VEHICLE_MAXBUSSES; ++i)
     {
     if (m_pollers[i])
@@ -2341,6 +2350,7 @@ void OvmsVehicle::PollSetState(uint8_t state)
   if (m_poll_state != state)
     {
     m_poll_state = state;
+    OvmsRecMutexLock lock(&m_poller_mutex);
     for (int i = 0 ; i < VEHICLE_MAXBUSSES; ++i)
       {
       if (m_pollers[i])
@@ -2381,6 +2391,7 @@ void OvmsVehicle::PollSetThrottling(uint8_t sequence_max)
   if (sequence_max != m_poll_sequence_max)
     {
     m_poll_sequence_max = sequence_max;
+    OvmsRecMutexLock lock(&m_poller_mutex);
     for (int i = 0 ; i < VEHICLE_MAXBUSSES; ++i)
       {
       if (m_pollers[i])
@@ -2415,6 +2426,7 @@ void OvmsVehicle::PollSetResponseSeparationTime(uint8_t septime)
   if (septime != m_poll_fc_septime)
     {
     m_poll_fc_septime = septime;
+    OvmsRecMutexLock lock(&m_poller_mutex);
     for (int i = 0 ; i < VEHICLE_MAXBUSSES; ++i)
       {
       if (m_pollers[i])
@@ -2427,6 +2439,7 @@ void OvmsVehicle::PollSetChannelKeepalive(uint16_t keepalive_seconds)
   if (keepalive_seconds != m_poll_ch_keepalive)
     {
     m_poll_ch_keepalive = keepalive_seconds;
+    OvmsRecMutexLock lock(&m_poller_mutex);
     for (int i = 0 ; i < VEHICLE_MAXBUSSES; ++i)
       {
       if (m_pollers[i])
@@ -2532,6 +2545,7 @@ bool OvmsVehicle::HasPollList(canbus* bus)
     auto poller = GetPoller(bus, false);
     return poller && poller->HasPollList();
     }
+  OvmsRecMutexLock lock(&m_poller_mutex);
   for (int i = 0 ; i < VEHICLE_MAXBUSSES; ++i)
     {
     auto poller = m_pollers[i];
