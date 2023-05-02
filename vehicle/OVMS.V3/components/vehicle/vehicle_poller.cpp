@@ -124,7 +124,7 @@ void OvmsPoller::PollerTask()
         case OvmsPollEntryType::Poll:
           if (!paused)
             {
-            ESP_LOGD(TAG, "[%" PRIu8 "]Poller: Send(%s)", m_can_number, PollerSource(entry.entry_Poll));
+            ESP_LOGV(TAG, "[%" PRIu8 "]Poller: Send(%s)", m_can_number, PollerSource(entry.entry_Poll));
             PollerSend(entry.entry_Poll);
             }
           break;
@@ -570,7 +570,7 @@ void OvmsPoller::PollerSend(poller_source_t source)
       ESP_LOGD(TAG, "[%" PRIu8 "]PollerSend: Ignore", m_can_number);
       break;
     case OvmsNextPollResult::ReachedEnd:
-      ESP_LOGD(TAG, "[%" PRIu8 "]PollerSend: Finished", m_can_number);
+      ESP_LOGV(TAG, "[%" PRIu8 "]PollerSend: Finished", m_can_number);
       PollRunFinished();
       // fall through
     case OvmsNextPollResult::StillAtEnd:
