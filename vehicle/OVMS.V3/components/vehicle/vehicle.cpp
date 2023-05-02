@@ -582,6 +582,7 @@ OvmsPoller* OvmsVehicle::GetPoller(canbus *can, bool force)
     {
     m_parent_callback = new OvmsVehicleSignal(this);
     }
+  ESP_LOGD(TAG, "GetPoller( busno=%" PRIu8 ")", busno);
   auto newpoller = m_pollers[gap] = new OvmsPoller(can, busno, m_parent_callback);
   newpoller->PollSetState(m_poll_state);
   newpoller->PollSetThrottling(m_poll_sequence_max);
@@ -2313,38 +2314,63 @@ void OvmsVehicle::ResumePolling()
 void OvmsVehicle::PollSetPidList(canbus* bus, const OvmsPoller::poll_pid_t* plist)
   {
   m_poll_bus_default = bus;
-  uint8_t defbusno = GetBusNo(bus);
+  uint8_t defbusno = !bus ? 0 : GetBusNo(bus);
   bool hasbus[1+VEHICLE_MAXBUSSES];
-  if (!bus)
-    hasbus[0] = false;
-  else
+  for (int i = 0 ; i <= VEHICLE_MAXBUSSES; ++i)
+    hasbus[i] = false;
+
+  // Check for an Empty list.
+  if (plist->txmoduleid == 0)
     {
-    GetPoller(bus, true);
-    hasbus[0] = true;
+    plist = nullptr;
+    ESP_LOGD(TAG, "PollSetPidList - Setting Empty List");
+    }
 
-    for (int i = 1 ; i <= VEHICLE_MAXBUSSES; ++i)
-      hasbus[i] = GetPoller(GetBus(i)) != nullptr;
-
-    // Load up any buss pollers required.
+  // Load up any buss pollers required.
+  if (plist)
+    {
     for (const OvmsPoller::poll_pid_t *plcur = plist; plcur->txmoduleid != 0; ++plcur)
       {
-      auto usebusno = plcur->pollbus ;
-      if ( usebusno <= 0 || usebusno > VEHICLE_MAXBUSSES)
+      uint8_t usebusno = plcur->pollbus;
+      if ( usebusno > VEHICLE_MAXBUSSES)
         continue;
+      if (usebusno == 0)
+        {
+        if (defbusno == 0)
+          continue;
+        usebusno = defbusno;
+        }
       if (!hasbus[usebusno])
         {
+        hasbus[usebusno] = true;
         GetPoller(GetBus(usebusno), true);
         }
       }
     }
+  else
+    ESP_LOGD(TAG, "PollSetPidList - Setting NULL List");
 
   OvmsRecMutexLock lock(&m_poller_mutex);
   for (int i = 0 ; i < VEHICLE_MAXBUSSES; ++i)
     {
-    if (m_pollers[i])
-      m_pollers[i]->PollSetPidList(defbusno, plist);
+    auto poller = m_pollers[i];
+    if (poller)
+      {
+      uint8_t busno = poller->CanBusNo();
+      if ((busno > VEHICLE_MAXBUSSES) || hasbus[busno])
+        {
+        ESP_LOGD(TAG, "PollSetPidList - Setting for bus=%" PRIu8 " defbus=%" PRIu8, busno, defbusno);
+        poller->PollSetPidList(defbusno, plist);
+        }
+      else
+        {
+        ESP_LOGD(TAG, "PollSetPidList - Clearing for bus=%" PRIu8, busno);
+        poller->PollSetPidList(0, nullptr);
+        }
+      }
     }
   }
+
 void OvmsVehicle::PollSetState(uint8_t state)
   {
   if (m_poll_state != state)
