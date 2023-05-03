@@ -668,11 +668,6 @@ void OvmsHyundaiIoniqEv::ECUStatusChange(bool run)
 {
   // When ECU is running - be more agressive.
   PollSetThrottling(run ? 10 : 4);
-  bool subtick = MyConfig.GetParamValueBool("xiq", "poll_subtick", false);
-  if (run && subtick)
-    PollSetTicker(400, 2);
-  else
-    PollSetTicker(1000, 1);
 }
 
 /**
