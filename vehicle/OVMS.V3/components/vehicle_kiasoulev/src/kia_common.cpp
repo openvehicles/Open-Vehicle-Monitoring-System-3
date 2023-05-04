@@ -401,9 +401,11 @@ void Kia_Trip_Counter::StartCharge(float current_cc, float current_cc_ah)
 		if ((tot_discharge_start != 0) || (tot_charge_start != 0))
 			{
 			tot_charge = current_cc;
-			charge_start_ah = current_cc_ah;
-			tot_charge_ah = current_cc_ah;
+			charge_start = current_cc;
 			tot_charge_ext = 0;
+
+			tot_charge_ah = current_cc_ah;
+			charge_start_ah = current_cc_ah;
 			tot_charge_ah_ext = 0;
 			}
 		}
@@ -571,8 +573,15 @@ float RangeCalculator::getEfficiency()
 		}
 
 	// Make current trip count more than the rest
-	totalDistance += trips[currentTripPointer].distance * (weightOfCurrentTrip - 1);
-	totalConsumption += trips[currentTripPointer].consumption * (weightOfCurrentTrip - 1);
+	int useCurrent = currentTripPointer;
+	if (trips[currentTripPointer].distance < 1)
+		{
+		if (--useCurrent < 0)
+			useCurrent = 19;
+		}
+
+	totalDistance += trips[useCurrent].distance * (weightOfCurrentTrip - 1);
+	totalConsumption += trips[useCurrent].consumption * (weightOfCurrentTrip - 1);
 
 	return totalDistance / totalConsumption ;
 	}
