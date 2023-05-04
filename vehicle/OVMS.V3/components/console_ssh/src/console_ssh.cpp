@@ -1180,9 +1180,6 @@ static void wolfssh_logger(enum wolfSSH_LogLevel level, const char* const msg)
     case WS_LOG_SFTP:
     case WS_LOG_USER:
     case WS_LOG_ERROR:
-#if LIBWOLFSSH_VERSION_HEX >= 0x01004012
-    case WS_LOG_CERTMAN:
-#endif
       ESP_LOGE(wolfssh_tag, "%s", msg);
       break;
 
