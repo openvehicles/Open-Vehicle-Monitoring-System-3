@@ -526,22 +526,22 @@ void OvmsHyundaiIoniqEv::RangeCalcStat(OvmsWriter *writer)
     metric_unit_t rangeUnit = MyUnitConfig.GetUserUnit(GrpDistance, Kilometers);
 
     writer->puts("Current Trip Counter");
-    writer->printf("Dist: %.2g%s\n",
+    writer->printf("Dist: %.2f%s\n",
       UnitConvert( Kilometers, rangeUnit, kia_park_trip_counter.GetDistance()),
       OvmsMetricUnitLabel(rangeUnit));
 
     if (kia_park_trip_counter.HasEnergyData()) {
       metric_unit_t energyUnit = MyUnitConfig.GetUserUnit(GrpEnergy, kWh);
       const char *energyLabel = OvmsMetricUnitLabel(energyUnit);
-      writer->printf("Energy Consumed: %.2g%s\n",
+      writer->printf("Energy Consumed: %.2f%s\n",
         UnitConvert(kWh, energyUnit, kia_park_trip_counter.GetEnergyConsumed()), energyLabel);
-      writer->printf("Energy Recovered: %.2g%s\n",
+      writer->printf("Energy Recovered: %.2f%s\n",
         UnitConvert(kWh, energyUnit, kia_park_trip_counter.GetEnergyRecuperated()), energyLabel);
-      writer->printf("Total Energy Used: %.2g%s\n",
+      writer->printf("Total Energy Used: %.2f%s\n",
         UnitConvert(kWh, energyUnit, kia_park_trip_counter.GetEnergyUsed()), energyLabel);
       auto charged = kia_park_trip_counter.GetEnergyCharged();
       if (charged != 0) {
-        writer->printf("Energy Charged: %.2g%s\n",
+        writer->printf("Energy Charged: %.2f%s\n",
           UnitConvert(kWh, energyUnit, charged), energyLabel);
       }
     }
@@ -549,16 +549,16 @@ void OvmsHyundaiIoniqEv::RangeCalcStat(OvmsWriter *writer)
     if (kia_park_trip_counter.HasChargeData()) {
       metric_unit_t chargeUnit = MyUnitConfig.GetUserUnit(GrpCharge, AmpHours);
       const char *chargeLabel = OvmsMetricUnitLabel(chargeUnit);
-      writer->printf("Charge Consumed: %.2g%s\n",
+      writer->printf("Charge Consumed: %.2f%s\n",
         UnitConvert(AmpHours, chargeUnit,kia_park_trip_counter.GetChargeConsumed()), chargeLabel);
-      writer->printf("Charge Recovered: %.2g%s\n",
+      writer->printf("Charge Recovered: %.2f%s\n",
         UnitConvert(AmpHours, chargeUnit, kia_park_trip_counter.GetChargeRecuperated()), chargeLabel);
-      writer->printf("Total Charge Used: %.2g%s\n",
+      writer->printf("Total Charge Used: %.2f%s\n",
         UnitConvert(AmpHours, chargeUnit, kia_park_trip_counter.GetChargeUsed()), chargeLabel);
       writer->printf("Charging: %s", kia_park_trip_counter.Charging() ? "Yes\n" : "No\n");
       auto charged = kia_park_trip_counter.GetChargeCharged();
       if (charged != 0) {
-        writer->printf("Charge Charged: %.2g%s\n",
+        writer->printf("Charge Charged: %.2f%s\n",
           UnitConvert(AmpHours, chargeUnit, charged), chargeLabel);
       }
     }

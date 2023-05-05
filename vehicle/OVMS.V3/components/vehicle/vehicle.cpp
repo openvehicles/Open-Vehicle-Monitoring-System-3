@@ -2655,16 +2655,17 @@ void OvmsVehicle::GetDashboardConfig(DashboardConfig& cfg)
   motort_dash.AddBand("red", 110, 125);
 
   std::ostringstream str;
-  str
-    << batteryt_dash // Battery temperature
-    << voltage_dash // Voltage
-    << motort_dash // Motor temperature
-    << invertert_dash // Inverter temperature
-    << power_dash // Power
-    << soc_dash // SOC
-    << charget_dash // Charger temperature
-    << speed_dash // Speed
-    << eff_dash; // Efficiency
+  str << "yAxis: ["
+      << speed_dash << "," // Speed
+      << voltage_dash << "," // Voltage
+      << soc_dash << "," // SOC
+      << eff_dash << "," // Efficiency
+      << power_dash << "," // Power
+      << charget_dash << "," // Charger temperature
+      << batteryt_dash << "," // Battery temperature
+      << invertert_dash << "," // Inverter temperature
+      << motort_dash // Motor temperature
+      << "]";
   cfg.gaugeset1 = str.str();
   }
 #endif // #ifdef CONFIG_OVMS_COMP_WEBSERVER

@@ -62,10 +62,6 @@ void OvmsHyundaiIoniqEv::IncomingPollReply(canbus* bus, uint32_t moduleidsent, u
       process_all = true;
       break;
 
-    // ****** ABS ESP ******
-    case 0x7d9:
-      IncomingAbsEsp(bus, type, pid, data, length, mlframe, mlremain);
-      break;
 
     // ******* VMCU ******
     case 0x7ea:
@@ -217,30 +213,6 @@ void OvmsHyundaiIoniqEv::IncomingOther_Full(canbus *bus, uint16_t type, uint16_t
           CalculateAcceleration();
         }
       } break;
-  }
-  XDISARM;
-}
-
-/**
- * Handle incoming messages from ABS ESP poll.
- */
-void OvmsHyundaiIoniqEv::IncomingAbsEsp(canbus *bus, uint16_t type, uint16_t pid, const uint8_t *data, uint8_t length, uint16_t mlframe, uint16_t mlremain)
-{
-  XARM("OvmsHyundaiIoniqEv::IncomingAbsEsp");
-  //ESP_LOGD(TAG, "ABS/ESP PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", pid, length, mlframe, data[0], data[1], data[2], data[3],
-  //    data[4], data[5], data[6]);
-  switch (pid) {
-    case 0xC101:
-      if ( mlframe == 3) {
-        uint32_t value;
-        if (get_uint_bytes_be<1>(data, 2, length, value)) {
-          m_v_emergency_lights->SetValue(get_bit<6>(value));
-        }
-        if (get_uint_bytes_be<1>(data, 1, length, value)) {
-          m_v_traction_control->SetValue(get_bit<6>(value));
-        }
-      }
-      break;
   }
   XDISARM;
 }
@@ -873,6 +845,11 @@ void OvmsHyundaiIoniqEv::IncomingIGMP_Full(canbus *bus, uint16_t type, uint16_t 
       uint32_t lVal;
       if (get_uint_buff_be<1>(data, 5, lVal)) {
         m_v_rear_defogger->SetValue(get_bit<1>(lVal));
+      }
+      if (get_uint_buff_be<1>(data, 7, lVal)) {
+        m_v_env_indicator_l->SetValue((lVal & 0xc) == 0x8);
+        m_v_env_indicator_r->SetValue((lVal & 0xc) == 0x4);
+        m_v_emergency_lights->SetValue((lVal & 0xc) == 0xc);
       }
       XDISARMX(three);
     }
