@@ -48,28 +48,18 @@ static const char *TAG = "vehicle-poll";
 
 using namespace std::placeholders;
 
-void OvmsPoller::OvmsPollerTask(void *pvParameters)
-  {
-  OvmsPoller *me = (OvmsPoller*)pvParameters;
-  me->PollerTask();
-  }
-
-OvmsPoller::OvmsPoller(canbus* can, uint8_t can_number, ParentSignal *parent_signal)
+OvmsPoller::OvmsPoller(canbus* can, uint8_t can_number, ParentSignal *parent_signal,
+      const CanFrameCallback  &polltxcallback)
   {
   m_bus = can;
   m_can_number = can_number;
   m_parent_signal = parent_signal;
-
-  // Must hold onto registered name memory.
-  m_poller_name = string_format("CanPoller_%" PRIu8, m_can_number);
+  m_poll_txcallback = polltxcallback;
 
   m_poll_mode = PollMode::Standard;
   m_poll_once = {};
 
   m_poll_state = 0;
-
-  m_poll_txcallback = std::bind(&OvmsPoller::PollerTxCallback, this, _1, _2);
-  MyCan.RegisterCallback(m_poller_name.c_str(), std::bind(&OvmsPoller::PollerRxCallback, this, _1, _2));
 
   m_poll_plist = NULL;
   m_poll_plcur = NULL;
@@ -96,68 +86,8 @@ OvmsPoller::OvmsPoller(canbus* can, uint8_t can_number, ParentSignal *parent_sig
   m_poll_fc_septime = 25;       // response default timing: 25 milliseconds
   m_poll_ch_keepalive = 60;     // channel keepalive default: 60 seconds
 
-  m_pollqueue = xQueueCreate(CONFIG_OVMS_VEHICLE_CAN_RX_QUEUE_SIZE,sizeof(poll_queue_entry_t));
-  const std::string &taskname = string_format("OVMS Poll Can %" PRIu8, can_number);
-  xTaskCreate(OvmsPollerTask, taskname.c_str(),
-    CONFIG_OVMS_VEHICLE_RXTASK_STACK, (void*)this, 10, &m_polltask);
-
   }
 
-void OvmsPoller::PollerTask()
-  {
-  poll_queue_entry_t entry;
-  bool paused = false;
-  while (true)
-    {
-    if (xQueueReceive(m_pollqueue, &entry, (portTickType)portMAX_DELAY)==pdTRUE)
-      {
-      switch (entry.entry_type)
-        {
-        case OvmsPollEntryType::FrameRx:
-          ESP_LOGD(TAG, "[%" PRIu8 "]Poller: FrameRx(bus=%s)", m_can_number, entry.entry_FrameRxTx.frame.origin == m_bus ? "Self" : "Other" );
-          Incoming(entry.entry_FrameRxTx.frame, entry.entry_FrameRxTx.success);
-          break;
-        case OvmsPollEntryType::FrameTx:
-          ESP_LOGD(TAG, "[%" PRIu8 "]Poller: FrameTx(bus=%s)", m_can_number, entry.entry_FrameRxTx.frame.origin == m_bus ? "Self" : "Other" );
-          Outgoing(entry.entry_FrameRxTx.frame, entry.entry_FrameRxTx.success);
-          break;
-        case OvmsPollEntryType::Poll:
-          if (!paused)
-            {
-            ESP_LOGV(TAG, "[%" PRIu8 "]Poller: Send(%s)", m_can_number, PollerSource(entry.entry_Poll));
-            PollerSend(entry.entry_Poll);
-            }
-          break;
-        case OvmsPollEntryType::Command:
-          ESP_LOGD(TAG, "[%" PRIu8 "]Poller: Command(%s)", m_can_number, PollerCommand(entry.entry_Command.cmd));
-          switch (entry.entry_Command.cmd)
-            {
-            case OvmsPollCommand::Pause:
-              paused = true;
-              break;
-            case OvmsPollCommand::Resume:
-              paused = false;
-              break;
-            case OvmsPollCommand::Throttle:
-              m_poll_sequence_max = entry.entry_Command.parameter;
-              break;
-            case OvmsPollCommand::ResponseSep:
-              {
-              auto septime = entry.entry_Command.parameter;
-              if (septime <= 127 || (septime >= 241 && septime <= 249))
-                m_poll_fc_septime = septime;
-              }
-              break;
-            }
-          break;
-        case OvmsPollEntryType::PollState:
-          ESP_LOGD(TAG, "[%" PRIu8 "]Poller: PollState(%" PRIu8 ")", m_can_number, entry.entry_PollState);
-          Do_PollSetState(entry.entry_PollState);
-          break;
-        }
-      }
-    }
-  }
 
 void OvmsPoller::Incoming(const CAN_frame_t &frame, bool success)
   {
@@ -195,9 +125,6 @@ void OvmsPoller::Incoming(const CAN_frame_t &frame, bool success)
 
 OvmsPoller::~OvmsPoller()
   {
-  vQueueDelete(m_pollqueue);
-  vTaskDelete(m_polltask);
-  MyCan.DeregisterCallback(m_poller_name.c_str());
   }
 
 /**
@@ -309,6 +236,7 @@ void OvmsPoller::PollSetPidList(uint8_t defaultbus, const poll_pid_t* plist)
   OvmsRecMutexLock lock(&m_poll_mutex);
   m_poll_default_bus = defaultbus;
   m_poll_plist = plist;
+  m_poll_plcur = NULL;
   m_poll_ticker = 0;
   m_poll_sequence_cnt = 0;
 
@@ -317,30 +245,6 @@ void OvmsPoller::PollSetPidList(uint8_t defaultbus, const poll_pid_t* plist)
     m_poll_wait = 0;
     ResetPollEntry();
     }
-  }
-
-/**
- * PollSetState: set the polling state
- *  Call this to change the polling state and restart the current polling list.
- *  This won't do anything if the state is already active. The state is changed without
- *  waiting for pending responses to finish (except PollSingleRequests).
- *  
- *  @param state
- *    The polling state to activate (0 … VEHICLE_POLL_NSTATES)
- */
-void OvmsPoller::PollSetState(uint8_t state)
-  {
-  if (state >= VEHICLE_POLL_NSTATES)
-    return;
-  // Queues the command
-  poll_queue_entry_t entry;
-  memset(&entry, 0, sizeof(entry));
-  entry.entry_type = OvmsPollEntryType::PollState;
-  entry.entry_PollState = state;
-
-  ESP_LOGD(TAG, "[%" PRIu8 "]Poller: Queue SetState()", m_can_number);
-  if (xQueueSend(m_pollqueue, &entry, 0) != pdPASS)
-    ESP_LOGI(TAG, "[%" PRIu8 "]Poller[SetState]: Task Queue Overflow", m_can_number);
   }
 
 void  OvmsPoller::Do_PollSetState(uint8_t state)
@@ -373,7 +277,7 @@ void  OvmsPoller::Do_PollSetState(uint8_t state)
  */
 void OvmsPoller::PollSetThrottling(uint8_t sequence_max)
   {
-  Queue_Command(OvmsPollCommand::Throttle, sequence_max);
+  m_poll_sequence_max = sequence_max;
   }
 
 /**
@@ -391,7 +295,7 @@ void OvmsPoller::PollSetThrottling(uint8_t sequence_max)
 void OvmsPoller::PollSetResponseSeparationTime(uint8_t septime)
   {
   assert (septime <= 127 || (septime >= 241 && septime <= 249));
-  Queue_Command(OvmsPollCommand::ResponseSep, septime);
+  m_poll_fc_septime  = septime;
   }
 
 
@@ -558,10 +462,18 @@ void OvmsPoller::PollerSend(poller_source_t source)
     // Protocol specific ticker calls:
     PollerVWTPTicker();
     }
-  if (m_poll_wait > 0) return;
+  if (m_poll_wait > 0)
+    {
+    ESP_LOGV(TAG, "[%" PRIu8 "]PollerSend: Waiting %" PRIu8, m_can_number, m_poll_wait);
+    return;
+    }
 
   // Check poll bus & list:
-  if (!HasPollList()) return;
+  if (!HasPollList())
+    {
+    ESP_LOGV(TAG, "[%" PRIu8 "]PollerSend: Empty", m_can_number);
+    return;
+    }
 
   ESP_LOGD(TAG, "[%" PRIu8 "]PollerSend: Get Next", m_can_number);
   switch (NextPollEntry(source, &m_poll_entry))
@@ -601,17 +513,6 @@ void OvmsPoller::PollerSend(poller_source_t source)
     }
   }
 
-/**
- * PollerTxCallback: internal: process poll request callbacks
- */
-void OvmsPoller::PollerTxCallback(const CAN_frame_t* frame, bool success)
-  {
-  if (frame->origin == m_bus)
-    {
-    Queue_PollerFrame(*frame, success, true);
-    }
-  }
-
 void OvmsPoller::Outgoing(const CAN_frame_t &frame, bool success)
   {
 
@@ -637,17 +538,6 @@ void OvmsPoller::Outgoing(const CAN_frame_t &frame, bool success)
 
   // Forward to application:
   IncomingPollTxCallback(m_bus, m_poll_moduleid_sent, m_poll_type, m_poll_pid, success);
-  }
-
-/**
- * PollerTxCallback: internal: process poll request callbacks
- */
-void OvmsPoller::PollerRxCallback(const CAN_frame_t* frame, bool success)
-  {
-  if (frame->origin == m_bus)
-    {
-    Queue_PollerFrame(*frame, success, false);
-    }
   }
 
 /**
@@ -786,47 +676,7 @@ int OvmsPoller::PollSingleRequest( uint32_t txid, uint32_t rxid,
 
 void OvmsPoller::Queue_PollerSend(OvmsPoller::poller_source_t source)
   {
-  if (!Ready())
-    return;
-  // Sends poller send message
-  poll_queue_entry_t entry;
-  memset(&entry, 0, sizeof(entry));
-  entry.entry_type = OvmsPollEntryType::Poll;
-  entry.entry_Poll = source;
-
-  ESP_LOGD(TAG, "[%" PRIu8 "]Poller: Queue PollerSend(%s)", m_can_number, OvmsPoller::PollerSource(source));
-  if (xQueueSend(m_pollqueue, &entry, 0) != pdPASS)
-    ESP_LOGI(TAG, "[%" PRIu8 "]Poller[Send]: Task Queue Overflow", m_can_number);
-  }
-
-void OvmsPoller::Queue_PollerFrame(const CAN_frame_t &frame, bool success, bool istx)
-  {
-  if (!Ready())
-    return;
-  // Queues the frame
-  poll_queue_entry_t entry;
-  memset(&entry, 0, sizeof(entry));
-  entry.entry_type = istx ? OvmsPollEntryType::FrameTx : OvmsPollEntryType::FrameRx;
-  entry.entry_FrameRxTx.frame = frame;
-  entry.entry_FrameRxTx.success = success;
-
-  ESP_LOGD(TAG, "[%" PRIu8 "]Poller: Queue PollerFrame()", m_can_number);
-  if (xQueueSend(m_pollqueue, &entry, 0) != pdPASS)
-    ESP_LOGI(TAG, "Poller[Frame]: Task Queue Overflow");
-  }
-
-void OvmsPoller::Queue_Command(OvmsPollCommand cmd, uint16_t param)
-  {
-  // Queues the command
-  poll_queue_entry_t entry;
-  memset(&entry, 0, sizeof(entry));
-  entry.entry_type = OvmsPollEntryType::Command;
-  entry.entry_Command.cmd = cmd;
-  entry.entry_Command.parameter = param;
-
-  ESP_LOGD(TAG, "[%" PRIu8 "]Poller: Queue Command()", m_can_number);
-  if (xQueueSend(m_pollqueue, &entry, 0) != pdPASS)
-    ESP_LOGI(TAG, "Poller[Command]: Task Queue Overflow");
+  m_parent_signal->PollerSend(m_can_number, source);
   }
 
 /**
@@ -880,7 +730,394 @@ const char *OvmsPoller::PollerCommand(OvmsPollCommand src)
     case OvmsPollCommand::Resume: return "Resume";
     case OvmsPollCommand::Throttle: return "Throttle";
     case OvmsPollCommand::ResponseSep: return "ResponseSep";
+    case OvmsPollCommand::Keepalive: return "Keepalive";
     }
   return "??";
   }
 
+OvmsPollers::OvmsPollers( OvmsPoller::ParentSignal *parent)
+  : m_parent_callback(parent),
+    m_poll_state(0),
+    m_poll_sequence_max(0),
+    m_poll_fc_septime(25),
+    m_poll_ch_keepalive(60),
+    m_pollqueue(nullptr), m_polltask(nullptr)
+  {
+  for (int idx = 0; idx < VEHICLE_MAXBUSSES; ++idx)
+    m_pollers[idx] = nullptr;
+
+  m_poll_txcallback = std::bind(&OvmsPollers::PollerTxCallback, this, _1, _2);
+  MyCan.RegisterCallback("CAN Poller", std::bind(&OvmsPollers::PollerRxCallback, this, _1, _2));
+  }
+OvmsPollers::~OvmsPollers()
+  {
+  if (m_pollqueue)
+    vQueueDelete(m_pollqueue);
+  if (m_polltask)
+    vTaskDelete(m_polltask);
+  MyCan.DeregisterCallback("CAN Poller");
+  delete m_parent_callback;
+  for (int i = 0 ; i < VEHICLE_MAXBUSSES; ++i)
+    {
+    if (m_pollers[i])
+      delete m_pollers[i];
+    }
+  }
+
+/**
+ * PollerTxCallback: internal: process poll request callbacks
+ */
+void OvmsPollers::PollerTxCallback(const CAN_frame_t* frame, bool success)
+  {
+  Queue_PollerFrame(*frame, success, true);
+  }
+/**
+ * PollerTxCallback: internal: process poll request callbacks
+ */
+void OvmsPollers::PollerRxCallback(const CAN_frame_t* frame, bool success)
+  {
+  Queue_PollerFrame(*frame, success, false);
+  }
+
+void OvmsPollers::CheckStartPollTask()
+  {
+  if (!m_pollqueue)
+    m_pollqueue = xQueueCreate(CONFIG_OVMS_VEHICLE_CAN_RX_QUEUE_SIZE,sizeof(OvmsPoller::poll_queue_entry_t));
+  if (!m_polltask)
+    {
+    xTaskCreatePinnedToCore(OvmsPollerTask, "OVMS Vehicle Poll",
+      CONFIG_OVMS_VEHICLE_RXTASK_STACK, (void*)this, 10, &m_polltask, CORE(1));
+    }
+  }
+
+
+void OvmsPollers::OvmsPollerTask(void *pvParameters)
+  {
+  OvmsPollers *me = (OvmsPollers*)pvParameters;
+  me->PollerTask();
+  }
+
+void OvmsPollers::PollerTask()
+  {
+  OvmsPoller::poll_queue_entry_t entry;
+  bool paused = false;
+  while (true)
+    {
+    if (xQueueReceive(m_pollqueue, &entry, (portTickType)portMAX_DELAY)==pdTRUE)
+      {
+      switch (entry.entry_type)
+        {
+        case OvmsPoller::OvmsPollEntryType::FrameRx:
+          {
+          auto poller = GetPoller(entry.entry_FrameRxTx.frame.origin);
+          ESP_LOGD(TAG, "Pollers: FrameRx(bus=%d)", m_parent_callback->GetBusNo(entry.entry_FrameRxTx.frame.origin));
+          if (poller)
+            poller->Incoming(entry.entry_FrameRxTx.frame, entry.entry_FrameRxTx.success);
+          }
+          break;
+        case OvmsPoller::OvmsPollEntryType::FrameTx:
+          {
+          auto poller = GetPoller(entry.entry_FrameRxTx.frame.origin);
+          ESP_LOGD(TAG, "Pollers: FrameTx(bus=%d)", m_parent_callback->GetBusNo(entry.entry_FrameRxTx.frame.origin));
+          if (poller)
+            poller->Outgoing(entry.entry_FrameRxTx.frame, entry.entry_FrameRxTx.success);
+          }
+          break;
+        case OvmsPoller::OvmsPollEntryType::Poll:
+          if (!paused)
+            {
+            // Must not lock mutex while calling.
+            ESP_LOGV(TAG, "[%" PRIu8 "]Poller: Send(%s)", entry.entry_Poll.busno, OvmsPoller::PollerSource(entry.entry_Poll.source));
+            if (entry.entry_Poll.busno != 0)
+              {
+              auto bus = m_parent_callback->GetBus(entry.entry_Poll.busno);
+              auto poller = GetPoller(bus);
+              if (poller)
+                poller->PollerSend(entry.entry_Poll.source);
+              }
+            else
+              {
+              for (int i = 0 ; i < VEHICLE_MAXBUSSES; ++i)
+                {
+                OvmsPoller *poller;
+                  {
+                  OvmsRecMutexLock lock(&m_poller_mutex);
+                  poller = m_pollers[i];
+                  }
+                if (poller)
+                  poller->PollerSend(entry.entry_Poll.source);
+              }
+            }
+          break;
+        case OvmsPoller::OvmsPollEntryType::Command:
+          switch (entry.entry_Command.cmd)
+            {
+            case OvmsPoller::OvmsPollCommand::Pause:
+              ESP_LOGD(TAG, "Pollers: Command Pause");
+              paused = true;
+              continue;
+            case OvmsPoller::OvmsPollCommand::Resume:
+              ESP_LOGD(TAG, "Pollers: Command Resume");
+              paused = false;
+              continue;
+            case OvmsPoller::OvmsPollCommand::Throttle:
+              if (entry.entry_Command.parameter != m_poll_sequence_max)
+                {
+                m_poll_sequence_max = entry.entry_Command.parameter;
+                OvmsRecMutexLock lock(&m_poller_mutex);
+                for (int i = 0 ; i < VEHICLE_MAXBUSSES; ++i)
+                  {
+                  if (m_pollers[i])
+                    m_pollers[i]->PollSetThrottling(m_poll_sequence_max);
+                  }
+                }
+              break;
+            case OvmsPoller::OvmsPollCommand::ResponseSep:
+              {
+              auto septime = entry.entry_Command.parameter;
+              if (septime <= 127 || (septime >= 241 && septime <= 249))
+                {
+                if (septime != m_poll_fc_septime)
+                  {
+                  m_poll_fc_septime = septime;
+                  OvmsRecMutexLock lock(&m_poller_mutex);
+                  for (int i = 0 ; i < VEHICLE_MAXBUSSES; ++i)
+                    {
+                    if (m_pollers[i])
+                      m_pollers[i]->PollSetResponseSeparationTime(septime);
+                    }
+                  }
+                }
+              }
+              break;
+            case OvmsPoller::OvmsPollCommand::Keepalive:
+              if (entry.entry_Command.parameter != m_poll_ch_keepalive)
+                {
+                m_poll_ch_keepalive = entry.entry_Command.parameter;
+                OvmsRecMutexLock lock(&m_poller_mutex);
+                for (int i = 0 ; i < VEHICLE_MAXBUSSES; ++i)
+                  {
+                  if (m_pollers[i])
+                    m_pollers[i]->PollSetChannelKeepalive(m_poll_ch_keepalive);
+                  }
+                }
+              break;
+            }
+          break;
+
+        case OvmsPoller::OvmsPollEntryType::PollState:
+          ESP_LOGD(TAG, "Pollers: PollState(%" PRIu8 ")", entry.entry_PollState);
+          OvmsRecMutexLock lock(&m_poller_mutex);
+          for (int i = 0 ; i < VEHICLE_MAXBUSSES; ++i)
+            {
+            if (m_pollers[i])
+              m_pollers[i]->Do_PollSetState(entry.entry_PollState);
+            }
+          }
+          break;
+        }
+
+      }
+    }
+  }
+
+OvmsPoller *OvmsPollers::GetPoller(canbus *can, bool force)
+  {
+  int gap = -1;
+    {
+    OvmsRecMutexLock lock(&m_poller_mutex);
+    for (int i = 0 ; i < VEHICLE_MAXBUSSES; ++i)
+      {
+      auto cur = m_pollers[i];
+      if (!cur)
+        {
+        if (gap < 0)
+          gap = i;
+        }
+      else if (cur->HasBus(can))
+        {
+        return cur;
+        }
+      }
+    if (!force)
+      return nullptr;
+    if (gap < 0)
+      return nullptr;
+
+    int busno = m_parent_callback->GetBusNo(can);
+
+    ESP_LOGD(TAG, "GetPoller( busno=%" PRIu8 ")", busno);
+    auto newpoller =  new OvmsPoller(can, busno, m_parent_callback, m_poll_txcallback);
+    newpoller->m_poll_state = m_poll_state;
+    newpoller->m_poll_sequence_max = m_poll_sequence_max;
+    newpoller->m_poll_fc_septime = m_poll_fc_septime;
+    newpoller->m_poll_ch_keepalive = m_poll_ch_keepalive;
+    m_pollers[gap] = newpoller;
+    }
+
+  CheckStartPollTask();
+
+  return (gap<0) ? nullptr : m_pollers[gap];
+  }
+
+void OvmsPollers::QueuePollerSend(OvmsPoller::poller_source_t src, uint8_t busno)
+  {
+  if (!m_parent_callback->Ready())
+    return;
+  if (!m_pollqueue)
+    return;
+  // Sends poller send message
+  OvmsPoller::poll_queue_entry_t entry;
+  memset(&entry, 0, sizeof(entry));
+  entry.entry_type = OvmsPoller::OvmsPollEntryType::Poll;
+  entry.entry_Poll.busno = busno;
+  entry.entry_Poll.source = src;
+
+  ESP_LOGV(TAG, "Pollers: Queue PollerSend(%s, %" PRIu8 ")", OvmsPoller::PollerSource(src), busno);
+  if (xQueueSend(m_pollqueue, &entry, 0) != pdPASS)
+    ESP_LOGI(TAG, "Pollers[Send]: Task Queue Overflow");
+  }
+
+void OvmsPollers::PollSetPidList(canbus* defbus, const OvmsPoller::poll_pid_t* plist)
+  {
+  uint8_t defbusno = !defbus ? 0 : m_parent_callback->GetBusNo(defbus);
+  bool hasbus[1+VEHICLE_MAXBUSSES];
+  for (int i = 0 ; i <= VEHICLE_MAXBUSSES; ++i)
+    hasbus[i] = false;
+
+  // Check for an Empty list.
+  if (plist->txmoduleid == 0)
+    {
+    plist = nullptr;
+    ESP_LOGD(TAG, "PollSetPidList - Setting Empty List");
+    }
+
+  // Load up any bus pollers required.
+  if (plist)
+    {
+    for (const OvmsPoller::poll_pid_t *plcur = plist; plcur->txmoduleid != 0; ++plcur)
+      {
+      uint8_t usebusno = plcur->pollbus;
+      if ( usebusno > VEHICLE_MAXBUSSES)
+        continue;
+      if (usebusno == 0)
+        {
+        if (defbusno == 0)
+          continue;
+        usebusno = defbusno;
+        }
+      if (!hasbus[usebusno])
+        {
+        hasbus[usebusno] = true;
+        GetPoller(m_parent_callback->GetBus(usebusno), true);
+        }
+      }
+    }
+  else
+    ESP_LOGD(TAG, "PollSetPidList - Setting NULL List");
+
+  OvmsRecMutexLock lock(&m_poller_mutex);
+  for (int i = 0 ; i < VEHICLE_MAXBUSSES; ++i)
+    {
+    auto poller = m_pollers[i];
+    if (poller)
+      {
+      uint8_t busno = poller->m_can_number;
+      if ((busno > VEHICLE_MAXBUSSES) || hasbus[busno])
+        {
+        ESP_LOGD(TAG, "PollSetPidList - Setting for bus=%" PRIu8 " defbus=%" PRIu8, busno, defbusno);
+        poller->PollSetPidList(defbusno, plist);
+        }
+      else
+        {
+        ESP_LOGD(TAG, "PollSetPidList - Clearing for bus=%" PRIu8, busno);
+        poller->PollSetPidList(0, nullptr);
+        }
+      }
+    }
+  }
+
+bool OvmsPollers::HasPollList(canbus* bus)
+  {
+  if (bus)
+    {
+    auto poller = GetPoller(bus, false);
+    return poller && poller->HasPollList();
+    }
+  OvmsRecMutexLock lock(&m_poller_mutex);
+  for (int i = 0 ; i < VEHICLE_MAXBUSSES; ++i)
+    {
+    auto poller = m_pollers[i];
+    if (poller && poller->HasPollList())
+      return true;
+    }
+  return false;
+  }
+
+void OvmsPollers::Queue_Command(OvmsPoller::OvmsPollCommand cmd, uint16_t param)
+  {
+  if (!m_pollqueue)
+    return;
+  // Queues the command
+  OvmsPoller::poll_queue_entry_t entry;
+  memset(&entry, 0, sizeof(entry));
+  entry.entry_type = OvmsPoller::OvmsPollEntryType::Command;
+  entry.entry_Command.cmd = cmd;
+  entry.entry_Command.parameter = param;
+
+  ESP_LOGD(TAG, "Pollers: Queue Command()");
+  if (xQueueSend(m_pollqueue, &entry, 0) != pdPASS)
+    ESP_LOGI(TAG, "Poller[Command]: Task Queue Overflow");
+  }
+
+void OvmsPollers::Queue_PollerFrame(const CAN_frame_t &frame, bool success, bool istx)
+  {
+  if (!m_parent_callback->Ready())
+    return;
+  if (!m_pollqueue)
+    return;
+  // Queues the frame
+  OvmsPoller::poll_queue_entry_t entry;
+  memset(&entry, 0, sizeof(entry));
+  entry.entry_type = istx ? OvmsPoller::OvmsPollEntryType::FrameTx : OvmsPoller::OvmsPollEntryType::FrameRx;
+  entry.entry_FrameRxTx.frame = frame;
+  entry.entry_FrameRxTx.success = success;
+
+  ESP_LOGD(TAG, "Poller: Queue PollerFrame()");
+  if (xQueueSend(m_pollqueue, &entry, 0) != pdPASS)
+    ESP_LOGI(TAG, "Poller[Frame]: Task Queue Overflow");
+  }
+
+void OvmsPollers::PollSetState(uint8_t state)
+  {
+  if (state >= VEHICLE_POLL_NSTATES)
+    return;
+  if (state == m_poll_state)
+    return;
+
+  m_poll_state = state;
+  if (!m_pollqueue)
+    return;
+
+  // Queues the command
+  OvmsPoller::poll_queue_entry_t entry;
+  memset(&entry, 0, sizeof(entry));
+  entry.entry_type = OvmsPoller::OvmsPollEntryType::PollState;
+  entry.entry_PollState = state;
+
+  ESP_LOGD(TAG, "Pollers: Queue SetState()");
+  if (xQueueSend(m_pollqueue, &entry, 0) != pdPASS)
+    ESP_LOGI(TAG, "Pollers[SetState]: Task Queue Overflow");
+  }
+
+
+// signal poller (private)
+void OvmsPollers::PollerResetThrottle()
+  {
+  OvmsRecMutexLock lock(&m_poller_mutex);
+  for (int i = 0 ; i < VEHICLE_MAXBUSSES; ++i)
+    {
+    if (m_pollers[i])
+      m_pollers[i]->ResetThrottle();
+    }
+  }

@@ -108,7 +108,7 @@ class OvmsPoller {
       uint8_t  protocol;                        // ISOTP_STD / ISOTP_EXTADR / ISOTP_EXTFRAME / VWTP_20
       } poll_pid_t;
 
-    typedef enum { Primary, Secondary, Successful, OnceOff } poller_source_t;
+    typedef enum : uint8_t { Primary, Secondary, Successful, OnceOff } poller_source_t;
 
 // Macro for poll_pid_t termination
 #define POLL_LIST_END                   { 0, 0, 0x00, 0x00, { 0, 0, 0 }, 0, 0 }
@@ -124,13 +124,17 @@ class OvmsPoller {
     virtual void IncomingPollTxCallback(canbus* bus, uint32_t txid, uint16_t type, uint16_t pid, bool success) = 0;
     virtual void IncomingPollRxFrame(canbus* bus, const CAN_frame_t* frame, bool success) = 0;
     virtual bool Ready() = 0;
+    virtual uint8_t GetBusNo(canbus* bus) = 0;
+    virtual canbus* GetBus(uint8_t busno) = 0;
+
+    virtual void PollerSend(uint8_t busno, OvmsPoller::poller_source_t source) = 0;
   };
 
   protected:
+    // const char *Callb;
     canbus* m_bus;
     uint8_t m_can_number;
     ParentSignal *m_parent_signal;
-    std::string m_poller_name;
 
     OvmsRecMutex      m_poll_mutex;           // Concurrency protection for recursive calls
     uint8_t           m_poll_state;           // Current poll state
@@ -189,10 +193,6 @@ class OvmsPoller {
     int               m_poll_single_rxerr;    // … response error code (NRC) / TX failure code
     OvmsSemaphore     m_poll_single_rxdone;   // … response done (ok/error)
 
-    void DoPollerTxCallback(const CAN_frame_t* frame, bool success);
-
-    void PollerTxCallback(const CAN_frame_t* frame, bool success);
-    void PollerRxCallback(const CAN_frame_t* frame, bool success);
   protected:
     vwtp_channel_t    m_poll_vwtp;            // VWTP channel state
 
@@ -241,7 +241,7 @@ class OvmsPoller {
     // Check for throttling.
     bool CanPoll();
 
-    enum class OvmsPollEntryType
+    enum class OvmsPollEntryType : uint8_t
       {
       Poll,
       FrameRx,
@@ -249,12 +249,13 @@ class OvmsPoller {
       Command,
       PollState
       };
-    enum class OvmsPollCommand : short
+    enum class OvmsPollCommand : uint8_t
       {
       Pause,
       Resume,
       Throttle,
-      ResponseSep
+      ResponseSep,
+      Keepalive
       };
     typedef struct {
         CAN_frame_t frame;
@@ -264,50 +265,41 @@ class OvmsPoller {
       OvmsPollCommand cmd;
       uint16_t parameter;
     } poll_command_entry_t;
+    typedef struct {
+      uint8_t busno ;
+      poller_source_t source;
+    } poll_source_entry_t;
 
     typedef struct {
       OvmsPollEntryType entry_type;
       union {
-        poller_source_t entry_Poll;
+        poll_source_entry_t entry_Poll;
         poll_frame_entry_t entry_FrameRxTx;
         poll_command_entry_t entry_Command;
         uint8_t entry_PollState;
       };
     } poll_queue_entry_t;
 
-    static void OvmsPollerTask(void *pvParameters);
-
-    void PollerTask();
-
-    QueueHandle_t m_pollqueue;
-    TaskHandle_t m_polltask;
-
-    void Queue_Command(OvmsPollCommand cmd, uint16_t param = 0);
     void Do_PollSetState(uint8_t state);
 
-    void Queue_PollerFrame(const CAN_frame_t &frame, bool success, bool istx);
   public:
-    OvmsPoller(canbus* can, uint8_t can_number, ParentSignal *parent_signal);
+    OvmsPoller(canbus* can, uint8_t can_number, ParentSignal *parent_signal,
+      const CanFrameCallback &polltxcallback);
     ~OvmsPoller();
 
     bool HasPollList();
 
     void ResetThrottle();
 
-    void PausePolling() { Queue_Command(OvmsPollCommand::Pause); }
-    void ResumePolling(){ Queue_Command(OvmsPollCommand::Resume); }
-
     void Queue_PollerSend(poller_source_t source);
 
     void PollSetThrottling(uint8_t sequence_max);
-    void PollSetTicker(uint16_t tick_time_ms, uint8_t secondary_ticks = 0);
 
     void PollSetResponseSeparationTime(uint8_t septime);
     void PollSetChannelKeepalive(uint16_t keepalive_seconds);
 
     // TODO - Work out how to make sure these are protected. Reduce/eliminate mutex time.
     void PollSetPidList(uint8_t defaultbus, const poll_pid_t* plist);
-    void PollSetState(uint8_t state);
 
     int PollSingleRequest(uint32_t txid, uint32_t rxid,
                       std::string request, std::string& response,
@@ -320,6 +312,70 @@ class OvmsPoller {
     static const char *PollerCommand(OvmsPollCommand src);
     static const char *PollerSource(poller_source_t src);
     static const char *PollResultCodeName(int code);
+  friend class OvmsPollers;
+};
+
+#define VEHICLE_MAXBUSSES 4
+class OvmsPollers {
+  private:
+    OvmsRecMutex      m_poller_mutex;
+    OvmsPoller*       m_pollers[VEHICLE_MAXBUSSES];
+    OvmsPoller::ParentSignal* m_parent_callback;
+    uint8_t           m_poll_state;           // Current poll state
+    uint8_t           m_poll_sequence_max;    // Polls allowed to be sent in sequence per time tick (second), default 1, 0 = no limit
+    uint8_t           m_poll_fc_septime;      // Flow control separation time for multi frame responses
+    uint16_t          m_poll_ch_keepalive;    // Seconds to keep an inactive channel (e.g. VWTP) alive (default: 60)
+    void CheckStartPollTask();
+
+    QueueHandle_t m_pollqueue;
+    TaskHandle_t m_polltask;
+    CanFrameCallback  m_poll_txcallback;      // Poller CAN TxCallback
+
+    void PollerTxCallback(const CAN_frame_t* frame, bool success);
+    void PollerRxCallback(const CAN_frame_t* frame, bool success);
+
+    void PollerTask();
+    static void OvmsPollerTask(void *pvParameters);
+
+    void Queue_PollerFrame(const CAN_frame_t &frame, bool success, bool istx);
+
+    void Queue_Command(OvmsPoller::OvmsPollCommand cmd, uint16_t param = 0);
+  public:
+    OvmsPollers( OvmsPoller::ParentSignal *parent);
+    ~OvmsPollers();
+
+    OvmsPoller *GetPoller(canbus *can, bool force = false );
+
+    void QueuePollerSend(OvmsPoller::poller_source_t src, uint8_t busno = 0 );
+
+    void PollSetPidList(canbus* defbus, const OvmsPoller::poll_pid_t* plist);
+
+    bool HasPollList(canbus* bus = nullptr);
+
+    void PollSetThrottling(uint8_t sequence_max)
+      {
+      Queue_Command(OvmsPoller::OvmsPollCommand::Throttle, sequence_max);
+      }
+    void PollSetResponseSeparationTime(uint8_t septime)
+      {
+      Queue_Command(OvmsPoller::OvmsPollCommand::ResponseSep, septime);
+      }
+    void PollSetChannelKeepalive(uint16_t keepalive_seconds)
+      {
+      Queue_Command(OvmsPoller::OvmsPollCommand::Keepalive, keepalive_seconds);
+      }
+    // signal poller
+    void PollerResetThrottle();
+
+    void PausePolling()
+      {
+      Queue_Command(OvmsPoller::OvmsPollCommand::Pause);
+      }
+    void ResumePolling()
+      {
+      Queue_Command(OvmsPoller::OvmsPollCommand::Resume);
+      }
+    void PollSetState(uint8_t state);
 
 };
 
