@@ -95,7 +95,7 @@ enum class OvmsBatteryState { Unknown, Normal, Charging, Blip, Dip, Low };
 struct OvmsBatteryMon {
   static const uint16_t entry_count = 30;
   static const int32_t entry_mult = 100.0;
-  static const int32_t charge_threshold = 1450; // over 14.5v is 'Charging'
+  static const int32_t charge_threshold = 1400; // over 14.0v is 'Charging'
   static const int32_t low_threshold = 1150;    // Under 11.5 is 'Low'
   static const int32_t smooth_threshold = 20;   // < 0.2v variation is 'Normal'
   static const int32_t blip_threshold = 30;     // cur is > 0.3v over average is 'Blip'
@@ -110,6 +110,7 @@ struct OvmsBatteryMon {
   // First  buffer entry and count
   uint16_t m_first, m_count;
   bool m_dirty;
+  bool m_to_notify;
 
   // Last calculated state
   OvmsBatteryState m_lastState;
@@ -139,6 +140,7 @@ struct OvmsBatteryMon {
   int32_t last();
   float lastf();
   float average_lastf();
+  float diff_lastf();
 };
 
 typedef struct {
@@ -219,7 +221,6 @@ protected:
   void IncomingBCM_Full(canbus *bus, uint16_t type, uint16_t pid, const std::string &data);
   void IncomingIGMP_Full(canbus *bus, uint16_t type, uint16_t pid, const std::string &data);
   void IncomingOther_Full(canbus *bus, uint16_t type, uint16_t pid, const std::string &data);
-  void IncomingAbsEsp(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length, uint16_t mlremain);
   void IncomingCM_Full(canbus *bus, uint16_t type, uint16_t pid, const std::string &data);
   void RequestNotify(unsigned int which);
   void DoNotify();
@@ -317,6 +318,35 @@ protected:
     }
   }
   void CheckResetDoorCheck();
+
+  void NotifiedOBD2ECUStart() override
+  {
+    if (m_ecu_lockout == 0)
+      ECUStatusChange(StandardMetrics.ms_v_env_on->AsBool() && (StdMetrics.ms_v_env_gear->AsInt() > 0));
+  }
+  void NotifiedOBD2ECUStop() override
+  {
+    ECUStatusChange(false);
+  }
+  void NotifiedVehicleOn() override
+  {
+    m_ecu_lockout = 20;
+  }
+  void NotifiedVehicleOff() override
+  {
+    m_ecu_lockout = 0;
+    ECUStatusChange(false);
+  }
+  void NotifiedVehicleGear( int gear) override
+  {
+    if (gear <= 0)
+      ECUStatusChange(false);
+    else if (m_ecu_lockout == 0)
+      ECUStatusChange(StandardMetrics.ms_v_env_on->AsBool() && StandardMetrics.ms_m_obd2ecu_on->AsBool());
+  }
+
+  int m_ecu_lockout;
+  void ECUStatusChange(bool run);
 public:
   int RequestVIN();
   bool DriverIndicator(bool on)
@@ -372,6 +402,9 @@ protected:
 
   OvmsMetricBool   *m_v_env_parklights;
   OvmsMetricFloat   *m_v_charge_current_request;
+
+  OvmsMetricBool  *m_v_env_indicator_l;
+  OvmsMetricBool  *m_v_env_indicator_r;
 
   /// Accumulated operating time
   OvmsMetricInt *m_v_accum_op_time;

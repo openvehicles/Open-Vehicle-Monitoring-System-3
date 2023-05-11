@@ -171,6 +171,7 @@ void test_watchdog(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc
   writer->puts("Error: We should never get here");
   }
 
+__attribute__((noreturn))
 void test_stackoverflow(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
   uint8_t data[256];

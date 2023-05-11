@@ -31,6 +31,7 @@
 
 static const char *TAG = "v-mgev";
 
+#include <math.h>
 #include "vehicle_mgev.h"
 #include "ovms_notify.h"
 

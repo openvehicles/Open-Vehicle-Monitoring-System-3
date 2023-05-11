@@ -16,6 +16,11 @@
 ;               Add Ah / coulomb count to trip metrics.
 ;               Added RPM measurement.
 ;               Improve response of speed measurement.
+;       0.0.5:  Add requested charge current metric
+;               Fix handling of range while charging
+;               Improve responsiveness for OBD2ECU
+;               Add indicators and warning light metrics
+;
 ;    (C) 2022,2023 Michael Geddes
 ; ----- Kona/Kia Module -----
 ;    (C) 2011       Michael Stegen / Stegen Electronics
@@ -41,13 +46,14 @@
 ; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 ; THE SOFTWARE.
 */
-#define IONIQ5_VERSION "0.0.4"
+#define IONIQ5_VERSION "0.0.5"
 
 #include "vehicle_hyundai_ioniq5.h"
 
 #include "ovms_log.h"
 
 #include <stdio.h>
+#include <math.h>
 #include <string.h>
 #include "pcp.h"
 #include "metrics_standard.h"
@@ -65,8 +71,9 @@ const char *OvmsHyundaiIoniqEv::TAG = "v-ioniq5";
 // Pollstate 3 - ping : car is off, not charging and something triggers a wake
 static const OvmsVehicle::poll_pid_t vehicle_ioniq_polls[] = {
   //                                                   Off  On  Chrg Ping
+  { 0x7b3, 0x7bb, VEHICLE_POLL_TYPE_READDATA, 0x0100, { 0,   1,  10, 30}, 0, ISOTP_STD },   // AirCon and Speed
   { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_READDATA, 0xe004, { 0,   1,   4,  4}, 0, ISOTP_STD },   // VMCU - Drive status + Accellerator
-  { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_READDATA, 0x0101, { 0,   1,   9,  9}, 0, ISOTP_STD },   // BMC Diag page 01 - Inc Battery Pack Temp + RPM
+  { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_READDATA, 0x0101, { 0,   3,   4,  4}, 0, ISOTP_STD },   // BMC Diag page 01 - Inc Battery Pack Temp + RPM + Charging
   { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_READDATA, 0x0102, { 0,  59,   9,  0}, 0, ISOTP_STD },   // Battery 1 - BMC Diag page 02
   { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_READDATA, 0x0103, { 0,  59,   9,  0}, 0, ISOTP_STD },   // Battery 2 - BMC Diag page 03
   { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_READDATA, 0x0104, { 0,  59,   9,  0}, 0, ISOTP_STD },   // Battery 3 - BMC Diag page 04
@@ -82,21 +89,20 @@ static const OvmsVehicle::poll_pid_t vehicle_ioniq_polls[] = {
   { 0x7a0, 0x7a8, VEHICLE_POLL_TYPE_READDATA, 0xC002, { 0,  60,   0,  0}, 0, ISOTP_STD },   // TPMS - ID's
   { 0x7a0, 0x7a8, VEHICLE_POLL_TYPE_READDATA, 0xC00B, { 0,  13,   0,  0}, 0, ISOTP_STD },   // TPMS - Pressure and Temp
 
-  { 0x770, 0x778, VEHICLE_POLL_TYPE_READDATA, 0xbc03, { 0,   7,  7,  10}, 0, ISOTP_STD },  // IGMP Door status + IGN1 & IGN2 - Detects when car is turned on
-  { 0x770, 0x778, VEHICLE_POLL_TYPE_READDATA, 0xbc04, { 0,  11,  11, 15}, 0, ISOTP_STD },  // IGMP Door status
-  { 0x770, 0x778, VEHICLE_POLL_TYPE_READDATA, 0xbc07, { 0,  13,  13,  0}, 0, ISOTP_STD },  // IGMP Rear/mirror defogger
-  { 0x770, 0x778, VEHICLE_POLL_TYPE_READDATA, 0xbc09, { 0,  10,  10, 20}, 0, ISOTP_STD },  // Lights
-  { 0x770, 0x778, VEHICLE_POLL_TYPE_READDATA, 0xbc10, { 0,  10,  10, 20}, 0, ISOTP_STD },  // Lights
+  { 0x770, 0x778, VEHICLE_POLL_TYPE_READDATA, 0xbc03, { 0,   4,   7,  2}, 0, ISOTP_STD },  // IGMP Door status + IGN1 & IGN2 - Detects when car is turned on
+  { 0x770, 0x778, VEHICLE_POLL_TYPE_READDATA, 0xbc04, { 0,   5,  11,  2}, 0, ISOTP_STD },  // IGMP Door status
+  { 0x770, 0x778, VEHICLE_POLL_TYPE_READDATA, 0xbc07, { 0,   2,  13,  0}, 0, ISOTP_STD },  // IGMP Rear/mirror defogger/indicators
+  { 0x770, 0x778, VEHICLE_POLL_TYPE_READDATA, 0xbc09, { 0,   5,  10, 20}, 0, ISOTP_STD },  // Lights
+  { 0x770, 0x778, VEHICLE_POLL_TYPE_READDATA, 0xbc10, { 0,   5,  10, 20}, 0, ISOTP_STD },  // Lights
 
-  { 0x7b3, 0x7bb, VEHICLE_POLL_TYPE_READDATA, 0x0100, { 0,  1,  10,  30}, 0, ISOTP_STD },  // AirCon and Speed
   //{0x7b3,0x7bb, VEHICLE_POLL_TYPE_READDATA, 0x0102, { 0,  10,  10,  0} },  // AirCon - No usable values found yet
 
   { 0x7c6, 0x7ce, VEHICLE_POLL_TYPE_READDATA, 0xB002, { 0,  5, 120,  0}, 0, ISOTP_STD },  // Cluster. ODO
 
-  { 0x7d1, 0x7d9, VEHICLE_POLL_TYPE_READDATA, 0xc101, { 0,  5,  27,  0}, 0, ISOTP_STD },  // ABS/ESP - Emergency lights
-
   // TODO 0x7e5 OBC - On Board Charger?
 
+  // Check again while driving only
+  { 0x7b3, 0x7bb, VEHICLE_POLL_TYPE_READDATA, 0x0100, { 0,  1,  0,  0}, 0, ISOTP_STD },  // AirCon and Speed
   POLL_LIST_END
 };
 
@@ -200,6 +206,7 @@ OvmsBatteryMon::OvmsBatteryMon()
   m_count = 0;
   m_first = 0;
   m_dirty = false;
+  m_to_notify = false;
   m_lastState = OvmsBatteryState::Unknown;
   m_average_last = 0;
   m_diff_last = 0;
@@ -225,14 +232,16 @@ void OvmsBatteryMon::add(float voltage)
 bool OvmsBatteryMon::checkStateChange()
 {
   XARM("OvmsBatteryMon::checkStateChange");
-  if (!m_dirty) {
-    XDISARM;
-    return false;
+  bool res = false;
+  if (m_dirty) {
+    // Causes calculation and clearing dirty.
+    state();
   }
-  OvmsBatteryState newState = calc_state(m_average_last, m_diff_last);
-  bool res = newState != m_lastState;
-  m_lastState = newState;
-  m_dirty = false;
+
+  if (m_to_notify) {
+    m_to_notify = false;
+    res = true;
+  }
   XDISARM;
   return res;
 }
@@ -241,8 +250,12 @@ OvmsBatteryState OvmsBatteryMon::state()
 {
   XARM("OvmsBatteryMon::state");
   if (m_dirty) {
-    m_lastState = calc_state(m_average_last,m_diff_last);
+    auto newState = calc_state(m_average_last,m_diff_last);
     m_dirty = false;
+    if (newState != m_lastState) {
+      m_to_notify = true;
+      m_lastState = newState;
+    }
   }
   XDISARM;
   return m_lastState;
@@ -369,6 +382,11 @@ float OvmsBatteryMon::average_lastf()
     return lastf();
   }
   return m_average_last / entry_mult;
+}
+
+float OvmsBatteryMon::diff_lastf()
+{
+  return m_diff_last / entry_mult;
 }
 
 std::string OvmsBatteryMon::to_string()
@@ -528,6 +546,9 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
   m_v_env_lowbeam = MyMetrics.InitBool("xiq.e.lowbeam", 10, false);
   m_v_env_highbeam = MyMetrics.InitBool("xiq.e.highbeam", 10, false);
   m_v_env_parklights = MyMetrics.InitBool("xiq.e.parklights", 10, false);
+  m_v_env_indicator_l = MyMetrics.InitBool("xiq.e.indicator.l",SM_STALE_MIN, false);
+  m_v_env_indicator_r = MyMetrics.InitBool("xiq.e.indicator.r",SM_STALE_MIN, false);
+  m_v_emergency_lights = MyMetrics.InitBool("xiq.e.indicator.e",SM_STALE_MIN, false);
 
   m_v_preheat_timer1_enabled = MyMetrics.InitBool("xiq.e.preheat.timer1.enabled", 10, false);
   m_v_preheat_timer2_enabled = MyMetrics.InitBool("xiq.e.preheat.timer2.enabled", 10, false);
@@ -547,8 +568,6 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
   m_v_seat_belt_back_right = MyMetrics.InitBool("xiq.v.sb.back.right", 10, false);
   m_v_seat_belt_back_middle = MyMetrics.InitBool("xiq.v.sb.back.middle", 10, false);
   m_v_seat_belt_back_left = MyMetrics.InitBool("xiq.v.sb.back.left", 10, false);
-
-  m_v_emergency_lights = MyMetrics.InitBool("xiq.v.emergency.lights", 10, false);
 
   // m_v_power_usage = MyMetrics.InitFloat("xiq.v.power.usage", 10, 0, kW);
 
@@ -622,6 +641,8 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
   MyConfig.RegisterParam("xiq", "Hyundai Ioniq 5 EV specific settings.", true, true);
   ConfigChanged(NULL);
 
+  m_ecu_lockout = 0;
+
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
   WebInit();
 #endif
@@ -634,10 +655,19 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
   PollState_Off();
   kia_secs_with_no_client = 0;
   PollSetPidList(m_can1, vehicle_ioniq_polls);
+  // Initially throttling to 4.
+  PollSetThrottling(4);
+
   ESP_LOGD(TAG, "PollState->Ping for 30 (Init)");
   PollState_Ping(30);
 
   XDISARM;
+}
+
+void OvmsHyundaiIoniqEv::ECUStatusChange(bool run)
+{
+  // When ECU is running - be more agressive.
+  PollSetThrottling(run ? 10 : 4);
 }
 
 /**
@@ -761,10 +791,7 @@ void OvmsHyundaiIoniqEv::vehicle_ioniq5_car_on(bool isOn)
     // Car is OFF
     ESP_LOGI(TAG, "CAR IS OFF");
     if (kia_park_trip_counter.Started()) {
-      kia_park_trip_counter.Update(POS_ODO,
-        StdMetrics.ms_v_bat_energy_used_total->AsFloat(kWh), StdMetrics.ms_v_bat_energy_recd_total->AsFloat(kWh),
-        StdMetrics.ms_v_bat_coulomb_used_total->AsFloat(kWh), StdMetrics.ms_v_bat_coulomb_recd_total->AsFloat(kWh)
-        );
+      kia_park_trip_counter.Update(POS_ODO, charg_used, charg_rec, coulomb_used, coulomb_rec);
       if (isCharge != kia_park_trip_counter.Charging()) {
         kia_park_trip_counter.StartCharge(charg_rec, coulomb_rec);
       }
@@ -855,8 +882,9 @@ void OvmsHyundaiIoniqEv::Ticker1(uint32_t ticker)
   //Calculate charge current and "guess" charging type
   if (StdMetrics.ms_v_bat_power->AsFloat(0, kW) < 0 ) {
     // We are charging! Now lets calculate which type! (This is a hack until we find this information elsewhere)
-    StdMetrics.ms_v_charge_current->SetValue(-StdMetrics.ms_v_bat_current->AsFloat(1, Amps));
-    if (StdMetrics.ms_v_bat_power->AsFloat(0, kW) < -7.36) {
+    StdMetrics.ms_v_charge_current->SetValue(
+      -StdMetrics.ms_v_bat_current->AsFloat(1, Amps));
+    if (StdMetrics.ms_v_bat_power->AsFloat(0, kW) < -12 /*7.36*/) {
       kn_charge_bits.ChargingCCS = true;
       kn_charge_bits.ChargingType2 = false;
     }
@@ -920,10 +948,10 @@ void OvmsHyundaiIoniqEv::Ticker1(uint32_t ticker)
           m_b_aux_soc->SetValue( CalcAUXSoc(hif_aux_battery_mon.average_lastf()), Percentage );
           break;
         case OvmsBatteryState::Charging:
-          ESP_LOGD(TAG, "Aux Battery state: Charging %" PRId32, hif_aux_battery_mon.m_average_last);
+          ESP_LOGD(TAG, "Aux Battery state: Charging %g" , hif_aux_battery_mon.average_lastf());
           break;
         case OvmsBatteryState::Blip: {
-          ESP_LOGD(TAG, "Aux Battery state: Blip %" PRId32, hif_aux_battery_mon.m_diff_last);
+          ESP_LOGD(TAG, "Aux Battery state: Blip %g", hif_aux_battery_mon.diff_lastf());
           if ( IsPollState_Off()) {
             ESP_LOGD(TAG, "PollState->Ping for 30 (Blip)");
             PollState_Ping(30);
@@ -931,7 +959,7 @@ void OvmsHyundaiIoniqEv::Ticker1(uint32_t ticker)
         }
         break;
         case OvmsBatteryState::Dip: {
-          ESP_LOGD(TAG, "Aux Battery state: Dip %" PRId32, hif_aux_battery_mon.m_diff_last);
+          ESP_LOGD(TAG, "Aux Battery state: Dip %g", hif_aux_battery_mon.diff_lastf());
           if ( IsPollState_Off()) {
             ESP_LOGD(TAG, "PollState->Ping for 30 (Dip)");
             PollState_Ping(30);
@@ -939,7 +967,7 @@ void OvmsHyundaiIoniqEv::Ticker1(uint32_t ticker)
         }
         break;
         case OvmsBatteryState::Low: {
-          ESP_LOGD(TAG, "Aux Battery state: Low %" PRId32, hif_aux_battery_mon.m_diff_last);
+          ESP_LOGD(TAG, "Aux Battery state: Low %g", hif_aux_battery_mon.diff_lastf());
           if (!IsPollState_Off()) {
             ESP_LOGD(TAG, "PollState->Off (Aux Battery state Low)");
             PollState_Off();
@@ -1088,16 +1116,28 @@ void OvmsHyundaiIoniqEv::Ticker1(uint32_t ticker)
   // Reset emergency light if it is stale.
   if ( m_v_emergency_lights->IsStale() ) {
     m_v_emergency_lights->SetValue(false);
+  } else {
+
+    // Notify if emergency light are turned on or off.
+    if ( m_v_emergency_lights->AsBool() && !kn_emergency_message_sent) {
+      kn_emergency_message_sent = true;
+      RequestNotify(SEND_EmergencyAlert);
+    }
+    else if ( !m_v_emergency_lights->AsBool() && kn_emergency_message_sent) {
+      kn_emergency_message_sent = false;
+      RequestNotify(SEND_EmergencyAlertOff);
+    }
   }
 
-  // Notify if emergency light are turned on or off.
-  if ( m_v_emergency_lights->AsBool() && !kn_emergency_message_sent) {
-    kn_emergency_message_sent = true;
-    RequestNotify(SEND_EmergencyAlert);
-  }
-  else if ( !m_v_emergency_lights->AsBool() && kn_emergency_message_sent) {
-    kn_emergency_message_sent = false;
-    RequestNotify(SEND_EmergencyAlertOff);
+  // Let the busy time of starting the car happen before we
+  // ramp up the speed of the polls to support obd2ecu.
+  // Otherwise we can see the car reporting system failures.
+  if (m_ecu_lockout > 0 && (--m_ecu_lockout == 0)) {
+    if (StandardMetrics.ms_v_env_on->AsBool()
+        && StandardMetrics.ms_m_obd2ecu_on->AsBool()
+        && (StdMetrics.ms_v_env_gear->AsInt() > 0)) {
+      ECUStatusChange(true);
+    }
   }
 
   // Send tester present

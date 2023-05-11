@@ -8,10 +8,10 @@
 #
 
 ifdef CONFIG_OVMS_SC_GPL_WOLF
-COMPONENT_ADD_INCLUDEDIRS := .
+COMPONENT_ADD_INCLUDEDIRS := wolfssh
 COMPONENT_EXTRA_INCLUDES := ${IDF_PATH}/components/freertos/include/freertos
-COMPONENT_OBJS := src/internal.o src/io.o src/keygen.o src/log.o src/port.o src/ssh.o
-COMPONENT_SRCDIRS := src
+COMPONENT_OBJS := wolfssh/src/internal.o wolfssh/src/io.o wolfssh/src/keygen.o wolfssh/src/log.o wolfssh/src/port.o wolfssh/src/ssh.o
+COMPONENT_SRCDIRS := wolfssh/src
 CFLAGS += -DWOLFSSL_USER_SETTINGS
 CFLAGS += -Wno-maybe-uninitialized
 #CFLAGS += -DDEBUG_WOLFSSH

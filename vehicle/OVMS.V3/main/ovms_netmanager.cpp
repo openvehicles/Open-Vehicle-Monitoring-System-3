@@ -44,6 +44,9 @@ static const char *TAG = "netmanager";
 #include "ovms_command.h"
 #include "ovms_config.h"
 #include "ovms_module.h"
+#ifdef CONFIG_OVMS_DEV_NETMANAGER_PING
+#include "ping/ping_sock.h"
+#endif // CONFIG_OVMS_DEV_NETMANAGER_PING
 
 #ifndef CONFIG_OVMS_NETMAN_TASK_PRIORITY
 #define CONFIG_OVMS_NETMAN_TASK_PRIORITY 5
@@ -106,6 +109,149 @@ void network_restart(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int ar
   vTaskDelay(pdMS_TO_TICKS(100));
   MyNetManager.RestartNetwork();
   }
+
+#ifdef CONFIG_OVMS_DEV_NETMANAGER_PING
+
+static void test_on_ping_success(esp_ping_handle_t hdl, void *args)
+  {
+  ping_callback_args_t* ping_callback_args = static_cast<ping_callback_args_t*>(args);
+  OvmsWriter* writer = ping_callback_args->writer;
+  uint8_t ttl;
+  uint16_t seqno;
+  uint32_t elapsed_time, recv_len;
+  ip_addr_t target_addr;
+  esp_ping_get_profile(hdl, ESP_PING_PROF_SEQNO, &seqno, sizeof(seqno));
+  esp_ping_get_profile(hdl, ESP_PING_PROF_TTL, &ttl, sizeof(ttl));
+  esp_ping_get_profile(hdl, ESP_PING_PROF_IPADDR, &target_addr, sizeof(target_addr));
+  esp_ping_get_profile(hdl, ESP_PING_PROF_SIZE, &recv_len, sizeof(recv_len));
+  esp_ping_get_profile(hdl, ESP_PING_PROF_TIMEGAP, &elapsed_time, sizeof(elapsed_time));
+  writer->printf("%" PRIu32 " bytes from %s: icmp_seq=%" PRIu16 " ttl=%" PRIi8 " time=%" PRIu32 " ms\n",
+         recv_len, ipaddr_ntoa((ip_addr_t*)&target_addr), (seqno - 1), ttl, elapsed_time);
+  }
+
+static void test_on_ping_timeout(esp_ping_handle_t hdl, void *args)
+  {
+  ping_callback_args_t* ping_callback_args = static_cast<ping_callback_args_t*>(args);
+  OvmsWriter* writer = ping_callback_args->writer;
+  uint16_t seqno;
+  ip_addr_t target_addr;
+  esp_ping_get_profile(hdl, ESP_PING_PROF_SEQNO, &seqno, sizeof(seqno));
+  esp_ping_get_profile(hdl, ESP_PING_PROF_IPADDR, &target_addr, sizeof(target_addr));
+  writer->printf("From %s icmp_seq=%" PRIu16 " timeout\n", ipaddr_ntoa((ip_addr_t*)&target_addr), (seqno - 1));
+  }
+
+static void test_on_ping_end(esp_ping_handle_t hdl, void *args)
+  {
+  ping_callback_args_t* ping_callback_args = static_cast<ping_callback_args_t*>(args);
+  OvmsWriter* writer = ping_callback_args->writer;
+  OvmsSemaphore* pingdone = ping_callback_args->semaphore;
+  ip_addr_t target_addr;
+  uint32_t transmitted;
+  uint32_t received;
+  uint32_t total_time_ms;
+
+  esp_ping_get_profile(hdl, ESP_PING_PROF_REQUEST, &transmitted, sizeof(transmitted));
+  esp_ping_get_profile(hdl, ESP_PING_PROF_REPLY, &received, sizeof(received));
+  esp_ping_get_profile(hdl, ESP_PING_PROF_IPADDR, &target_addr, sizeof(target_addr));
+  esp_ping_get_profile(hdl, ESP_PING_PROF_DURATION, &total_time_ms, sizeof(total_time_ms));
+  uint32_t loss = (uint32_t)((1 - ((float)received) / transmitted) * 100);
+  if (IP_IS_V4(&target_addr))
+    {
+    printf("\n--- %s ping statistics ---\n", inet_ntoa(*ip_2_ip4(&target_addr)));
+    }
+  else
+    {
+    printf("\n--- %s ping statistics ---\n", inet6_ntoa(*ip_2_ip6(&target_addr)));
+    }
+  writer->printf("%" PRIu32 " packets transmitted, %" PRIu32 " received, %" PRIu32 "%% packet loss, time %" PRIu32 "ms\n",
+         transmitted, received, loss, total_time_ms);
+  if (received > 0)
+    {
+    writer->printf("round-trip avg = %1.2f ms\n", (total_time_ms * 1.0) / received);
+    }
+
+  pingdone->Give();
+  // delete the ping sessions, so that we clean up all resources and can create a new ping session
+  // we don't have to call delete function in the callback, instead we can call delete function from other tasks
+  esp_ping_delete_session(hdl);
+  }
+
+void network_ping(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+  {
+  // parse hostname / IP address
+  struct sockaddr_in6 sock_addr6;
+  ip_addr_t target_addr;
+  memset(&target_addr, 0, sizeof(target_addr));
+
+  if (inet_pton(AF_INET6, argv[0], &sock_addr6.sin6_addr) == 1)
+    {
+    /* convert ip6 string to ip6 address */
+    ipaddr_aton(argv[0], &target_addr);
+    }
+  else
+    {
+    struct addrinfo hint;
+    struct addrinfo *res = NULL;
+    memset(&hint, 0, sizeof(hint));
+    /* convert ip4 string or hostname to ip4 or ip6 address */
+    if (getaddrinfo(argv[0], NULL, &hint, &res) != 0)
+      {
+      writer->printf("ERROR: unknown host %s\n", argv[0]);
+      return;
+      }
+    if (res->ai_family == AF_INET)
+      {
+      struct in_addr addr4 = ((struct sockaddr_in *) (res->ai_addr))->sin_addr;
+      inet_addr_to_ip4addr(ip_2_ip4(&target_addr), &addr4);
+      }
+    else
+      {
+      struct in6_addr addr6 = ((struct sockaddr_in6 *) (res->ai_addr))->sin6_addr;
+      inet6_addr_to_ip6addr(ip_2_ip6(&target_addr), &addr6);
+      }
+    freeaddrinfo(res);
+    }
+
+  esp_ping_config_t ping_config = ESP_PING_DEFAULT_CONFIG();
+
+  ping_config.target_addr = target_addr; // target IP address
+  ping_config.count = 4;
+
+  // This semaphore is used to "wait" on the `ping_end` callback
+  OvmsSemaphore pingdone;
+
+  // This set of arguments are passed to callbacks.
+  ping_callback_args_t args = {
+    .writer = writer,
+    .semaphore = &pingdone
+  };
+
+  /* set callback functions */
+  esp_ping_callbacks_t cbs = {
+      .cb_args = &args,
+      .on_ping_success = test_on_ping_success,
+      .on_ping_timeout = test_on_ping_timeout,
+      .on_ping_end = test_on_ping_end
+  };
+
+  esp_ping_handle_t ping;
+
+  ESP_ERROR_CHECK(esp_ping_new_session(&ping_config, &cbs, &ping));
+
+  writer->printf("PING %s (%s): %" PRIu32 " data bytes\n", argv[0],
+      ipaddr_ntoa(&target_addr), ping_config.data_size);
+
+  esp_ping_start(ping);
+
+  // We now wait for completion of the ping session (4 pings) - during this
+  // wait the output is suspended and no prompt is printed.
+  // The semaphore will be signaled by the `on_ping_end` callback, after which we can
+  // return from this function (which will then print the prompt)
+  pingdone.Take();
+
+  }
+
+#endif // CONFIG_OVMS_DEV_NETMANAGER_PING
 
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
 
@@ -220,6 +366,9 @@ OvmsNetManager::OvmsNetManager()
   OvmsCommand* cmd_network = MyCommandApp.RegisterCommand("network","NETWORK framework",network_status, "", 0, 0, false);
   cmd_network->RegisterCommand("status","Show network status",network_status, "", 0, 0, false);
   cmd_network->RegisterCommand("restart","Restart network",network_restart, "", 0, 0, false);
+#ifdef CONFIG_OVMS_DEV_NETMANAGER_PING
+  cmd_network->RegisterCommand("ping", "Ping (ICMP) a hostname/IP address", network_ping, "<host or ip address>", 1, 1, false);
+#endif // CONFIG_OVMS_DEV_NETMANAGER_PING
 #ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
   cmd_network->RegisterCommand("list", "List network connections", network_connections);
   cmd_network->RegisterCommand("close", "Close network connection(s)", network_connections, "<id>\nUse ID from connection list / 0 to close all", 1, 1);

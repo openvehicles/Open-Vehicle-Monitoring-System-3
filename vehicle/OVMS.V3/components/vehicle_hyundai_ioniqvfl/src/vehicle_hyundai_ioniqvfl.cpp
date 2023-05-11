@@ -31,6 +31,7 @@
 static const char *TAG = "v-hyundaivfl";
 
 #include <stdio.h>
+#include <math.h>
 #include "vehicle_hyundai_ioniqvfl.h"
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
 #include "ovms_webserver.h"

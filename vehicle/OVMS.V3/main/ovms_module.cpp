@@ -1083,7 +1083,16 @@ static void module_perform_factoryreset(OvmsWriter* writer)
     writer->printf("Erasing %" PRId32 " bytes of flash...\n",p->size);
   else
     ESP_LOGI(TAG, "Erasing %" PRId32 " bytes of flash...", p->size);
-  spi_flash_erase_range(p->address, p->size);
+
+  esp_err_t err = esp_partition_erase_range(p, 0, p->size);
+  if (ESP_OK != err)
+    {
+    if (writer)
+      writer->printf("Factory reset of configuration store failed: %s\n", esp_err_to_name(err));
+    else
+      ESP_LOGE(TAG, "Factory reset of configuration store failed: %s", esp_err_to_name(err));
+    return;
+    }
 
   if (writer)
     writer->puts("Factory reset of configuration store complete and reboot now...");

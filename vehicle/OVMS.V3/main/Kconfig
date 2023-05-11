@@ -875,4 +875,11 @@ config OVMS_DEV_DEBUGNOTIFICATIONS
     help
         Enable to show notifications raised
 
+config OVMS_DEV_NETMANAGER_PING
+    bool "Enable netmanager ping support"
+    default n
+    depends on OVMS && LWIP_ICMP
+    help
+        Enable to add 'network ping' command
+
 endmenu # Developer Options

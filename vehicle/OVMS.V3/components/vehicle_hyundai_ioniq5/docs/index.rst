@@ -76,6 +76,9 @@ xiq.obc.pilot.duty                       12.1%                    OBC Pilot Duty
 xiq.obc.timer.enabled                    false                    OBC Timer Enabled             
 xiq.e.lowbeam                            false                    Env Lowbeam             
 xiq.e.highbeam                           false                    Env Highbeam             
+xiq.e.indicator.l                        false                    Left Indicator on
+xiq.e.indicator.r                        false                    Right Indicator on
+xiq.e.indicator.e                        false                    Emergency lights on
 xiq.e.preheat.timer1.enabled             false                    Preheat Timer1 Enabled             
 xiq.e.preheat.timer2.enabled             false                    Preheat Timer2 Enabled             
 xiq.e.preheating                         false                    Preheating             
@@ -91,7 +94,6 @@ xiq.v.sb.passenger                       false                    Seat Belt Pass
 xiq.v.sb.back.right                      false                    Seat Belt Back Right             
 xiq.v.sb.back.middle                     false                    Seat Belt Back Middle             
 xiq.v.sb.back.left                       false                    Seat Belt Back Left             
-xiq.v.emergency.lights                   false                    Emergency Lights             
 xiq.v.d.l.fl                             false                    Door Locked - Front Left             
 xiq.v.d.l.fr                             false                    Door Locked - Front Right             
 xiq.v.d.l.rl                             false                    Door Locked - Rear Left             
