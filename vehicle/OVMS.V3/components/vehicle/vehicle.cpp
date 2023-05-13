@@ -583,8 +583,10 @@ void OvmsVehicle::RegisterCanBus(int bus, CAN_mode_t mode, CAN_speed_t speed, db
       m_can4->Start(mode,speed,dbcfile);
       break;
     default:
-      break;
+      return;
     }
+  // Make sure IncomingFrameCan* functions are called.
+  m_pollers.CheckStartPollTask();
   }
 
 bool OvmsVehicle::PinCheck(const char* pin)

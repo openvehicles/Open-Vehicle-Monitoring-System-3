@@ -779,6 +779,10 @@ void OvmsPollers::PollerRxCallback(const CAN_frame_t* frame, bool success)
   Queue_PollerFrame(*frame, success, false);
   }
 
+/**
+  * Make sure the Poll task is running.
+  * Automatically called when a poller is set.
+  */
 void OvmsPollers::CheckStartPollTask()
   {
   if (!m_pollqueue)

@@ -325,7 +325,6 @@ class OvmsPollers {
     uint8_t           m_poll_sequence_max;    // Polls allowed to be sent in sequence per time tick (second), default 1, 0 = no limit
     uint8_t           m_poll_fc_septime;      // Flow control separation time for multi frame responses
     uint16_t          m_poll_ch_keepalive;    // Seconds to keep an inactive channel (e.g. VWTP) alive (default: 60)
-    void CheckStartPollTask();
 
     QueueHandle_t m_pollqueue;
     TaskHandle_t m_polltask;
@@ -351,6 +350,8 @@ class OvmsPollers {
     void PollSetPidList(canbus* defbus, const OvmsPoller::poll_pid_t* plist);
 
     bool HasPollList(canbus* bus = nullptr);
+
+    void CheckStartPollTask();
 
     void PollSetThrottling(uint8_t sequence_max)
       {
