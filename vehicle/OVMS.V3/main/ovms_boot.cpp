@@ -629,7 +629,11 @@ void Boot::ErrorCallback(XtExcFrame *frame, int core_id, bool is_abort)
 
 void Boot::ErrorCallback(const void *f, int core_id, bool is_abort, esp_reset_reason_t reset_hint)
   {
+#if CONFIG_IDF_TARGET_ARCH_XTENSA
   XtExcFrame *frame = (XtExcFrame *) f;
+#elif CONFIG_IDF_TARGET_ARCH_RISCV
+  RvExcFrame *frame = (RvExcFrame *) f;
+#endif
 
   boot_data.reset_hint = reset_hint;
 
@@ -639,13 +643,17 @@ void Boot::ErrorCallback(const void *f, int core_id, bool is_abort, esp_reset_re
   boot_data.crash_data.is_abort = is_abort;
 
   // Save registers:
-  for (int i=0; i<24; i++)
-    boot_data.crash_data.reg[i] = ((uint32_t*)frame)[i+1];
+  for (int i=0; i<__ARCH_NB_REGS; i++)
+    {
+    boot_data.crash_data.reg[i] = ((uint32_t*)frame)[i + __ARCH_REG_OFFSET_IN_FRAME];
+    }
 
   // Save backtrace:
+  uint32_t i = 0;
+#if (ESP_IDF_VERSION_MAJOR < 4) || CONFIG_IDF_TARGET_ARCH_XTENSA
   // (see panic.c::doBacktrace() for code template)
   #define _adjusted_pc(pc) (((pc) & 0x80000000) ? (((pc) & 0x3fffffff) | 0x40000000) : (pc))
-  uint32_t i = 0, pc = frame->pc, sp = frame->a1;
+  uint32_t pc = frame->pc, sp = frame->a1;
   boot_data.crash_data.bt[i++].pc = _adjusted_pc(pc);
   pc = frame->a0;
   while (i < OVMS_BT_LEVELS)
@@ -659,6 +667,9 @@ void Boot::ErrorCallback(const void *f, int core_id, bool is_abort, esp_reset_re
     if (pc < 0x40000000)
         break;
     }
+#else
+  #warning "Backtrace not available in crash_data on this architecture - please fix ovms_boot.cpp"
+#endif
   while (i < OVMS_BT_LEVELS)
     boot_data.crash_data.bt[i++].pc = 0;
 

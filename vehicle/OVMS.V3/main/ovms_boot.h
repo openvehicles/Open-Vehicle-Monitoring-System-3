@@ -49,12 +49,22 @@ typedef enum
     BR_Crash,                       // crash after reaching stable state
   } bootreason_t;
 
+#if (ESP_IDF_VERSION_MAJOR < 4) || CONFIG_IDF_TARGET_ARCH_XTENSA
+  #define __ARCH_NB_REGS 24
+  #define __ARCH_REG_OFFSET_IN_FRAME 1
+#elif CONFIG_IDF_TARGET_ARCH_RISCV
+  #define __ARCH_NB_REGS 37
+  #define __ARCH_REG_OFFSET_IN_FRAME 0
+#else
+  #error "Unknown architecture, please fix ovms_boot.h"
+#endif
+
 #define OVMS_BT_LEVELS 32
 typedef struct
   {
   int core_id;
   bool is_abort;
-  uint32_t reg[24];
+  uint32_t reg[__ARCH_NB_REGS];
   struct
     {
     uint32_t pc;
