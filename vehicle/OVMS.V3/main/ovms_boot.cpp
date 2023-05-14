@@ -599,7 +599,12 @@ extern "C" void esp_task_wdt_isr_user_handler(void)
   {
   panicPutStr("\r\n[OVMS] ***TWDT***\r\n");
   // Save TWDT task info:
+#if ESP_IDF_VERSION_MAJOR < 4
   esp_task_wdt_get_trigger_tasknames(boot_data.wdt_tasknames, sizeof(boot_data.wdt_tasknames));
+#else
+  snprintf(boot_data.wdt_tasknames, sizeof(boot_data.wdt_tasknames), "(unavailable)");
+  #warning "(TODO) ESP-IDF >= 4 : list of tasks triggering WDT not available."
+#endif
   }
 
 /*
