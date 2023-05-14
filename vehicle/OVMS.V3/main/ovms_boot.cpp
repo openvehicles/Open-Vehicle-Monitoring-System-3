@@ -38,7 +38,13 @@ static const char *TAG = "boot";
 #include "soc/rtc_cntl_reg.h"
 #include "esp_system.h"
 #include "esp_sleep.h"
+#include "esp_idf_version.h"
+#if ESP_IDF_VERSION_MAJOR < 4
 #include "esp_panic.h"
+#else
+#include "esp_private/panic_internal.h"
+#include "esp_private/system_internal.h"
+#endif
 #include "esp_task_wdt.h"
 #include <driver/adc.h>
 
@@ -108,6 +114,7 @@ static const char *resetreason_name[] = {
 #define NUM_RESETREASONS (sizeof(resetreason_name) / sizeof(char *))
 
 
+#if ESP_IDF_VERSION_MAJOR < 4
 /**
  * ovms_reset_reason_get_hint()
  * 
@@ -133,6 +140,7 @@ static esp_reset_reason_t IRAM_ATTR ovms_reset_reason_get_hint(void)
     return (esp_reset_reason_t) low;
 }
 
+#endif
 
 void boot_status(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
   {
@@ -220,6 +228,65 @@ void boot_clear(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, c
   boot_data.crc = boot_data.calc_crc();
   writer->puts("Boot status data has been cleared.");
   }
+
+#if ESP_IDF_VERSION_MAJOR >= 4
+/*
+Error handling for OVMS/ESP-IDF4+ is done differently than the OVMS/ESP-IDF3 versions.
+- In OVMS/ESP-IDF3, ESP-IDF was patched to add support for a custom error handler.
+- In OVMS/ESP-IDF4+, we take advantage of the ability of the linker to wrap a symbol,
+  and we thus wrap the original `esp_panic_handler` (panic.c)
+
+See:
+- https://docs.espressif.com/projects/esp-idf/en/latest/esp32/api-guides/build-system.html#wrappers-to-redefine-or-extend-existing-functions
+- https://github.com/espressif/esp-idf/issues/7681#issuecomment-941957783
+*/
+extern "C" {
+  extern void esp_panic_handler_reconfigure_wdts(void);
+
+  /* Declare the real panic handler function. We'll be able to call it after executing our custom code */
+  extern void __real_esp_panic_handler(panic_info_t*);
+
+  /* This function will be considered the esp_panic_handler to call in case a panic occurs */
+  void __wrap_esp_panic_handler(panic_info_t* info)
+    {
+    /* Custom code, count the number of panics or simply print a message */
+    esp_rom_printf("Panic has been triggered by the program!\n");
+
+    /*
+    This logic comes from the original esp_panic_handler (in panic.c) which is
+    used to set the reset reason hint.
+    However, our wrapper happens *before* this function, so cannot benefit from
+    the hint.
+    */
+    esp_reset_reason_t reset_hint = esp_reset_reason_get_hint();
+    if (ESP_RST_UNKNOWN == reset_hint)
+      {
+      switch (info->exception)
+        {
+        case PANIC_EXCEPTION_IWDT:
+            reset_hint = ESP_RST_INT_WDT;
+            break;
+        case PANIC_EXCEPTION_TWDT:
+            reset_hint = ESP_RST_TASK_WDT;
+            break;
+        case PANIC_EXCEPTION_ABORT:
+        case PANIC_EXCEPTION_FAULT:
+        default:
+            reset_hint = ESP_RST_PANIC;
+            break;
+        }
+      }
+
+    /* Call the ErrorCallback from OVMS/ESP-IDF3 - adding the `reset_hint` parameter */
+    Boot::ErrorCallback(info->frame, info->core, g_panic_abort, reset_hint);
+
+    esp_panic_handler_reconfigure_wdts();
+
+    /* Call the original panic handler function to finish processing this error (creating a core dump for example...) */
+    __real_esp_panic_handler(info);
+    }
+}
+#endif
 
 Boot::Boot()
   {
@@ -340,7 +407,9 @@ Boot::Boot()
   boot_data.crc = boot_data.calc_crc();
 
   // install error handler:
+#if ESP_IDF_VERSION_MAJOR < 4
   xt_set_error_handler_callback(ErrorCallback);
+#endif
 
   // Register our commands
   OvmsCommand* cmd_boot = MyCommandApp.RegisterCommand("boot","BOOT framework",boot_status, "", 0, 0, false);
@@ -546,9 +615,21 @@ extern "C" void vApplicationStackOverflowHook( TaskHandle_t xTask, char *pcTaskN
   abort();
   }
 
+#if ESP_IDF_VERSION_MAJOR < 4
 void Boot::ErrorCallback(XtExcFrame *frame, int core_id, bool is_abort)
   {
   boot_data.reset_hint = ovms_reset_reason_get_hint();
+
+#else
+
+void Boot::ErrorCallback(const void *f, int core_id, bool is_abort, esp_reset_reason_t reset_hint)
+  {
+  XtExcFrame *frame = (XtExcFrame *) f;
+
+  boot_data.reset_hint = reset_hint;
+
+#endif
+
   boot_data.crash_data.core_id = core_id;
   boot_data.crash_data.is_abort = is_abort;
 

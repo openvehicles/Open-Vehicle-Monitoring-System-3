@@ -133,7 +133,11 @@ class Boot
     bool m_shutting_down;
 
   public:
-    static void ErrorCallback(XtExcFrame *frame, int core_id, bool is_abort);
+#if ESP_IDF_VERSION_MAJOR < 4
+    static void ErrorCallback(XtExcFrame *f, int core_id, bool is_abort);
+#else
+    static void ErrorCallback(const void *f, int core_id, bool is_abort, esp_reset_reason_t reset_hint);
+#endif
     void NotifyDebugCrash();
 
   protected:
