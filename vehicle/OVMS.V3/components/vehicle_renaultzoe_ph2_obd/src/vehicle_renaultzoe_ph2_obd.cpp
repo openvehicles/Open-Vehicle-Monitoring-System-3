@@ -145,8 +145,8 @@ void OvmsVehicleRenaultZoePh2OBD::ZoeWakeUp() {
 /**
  * Handles incoming CAN-frames on bus 1
  */
-void OvmsVehicleRenaultZoePh2OBD::IncomingFrameCan1(CAN_frame_t* p_frame) {
-	uint8_t *data = p_frame->data.u8;
+void OvmsVehicleRenaultZoePh2OBD::IncomingFrameCan1(const CAN_frame_t* p_frame) {
+	const uint8_t *data = p_frame->data.u8;
 	//ESP_LOGI(TAG, "PID:%x DATA: %02x %02x %02x %02x %02x %02x %02x %02x", p_frame->MsgID, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
   //ESP_LOGD(TAG, "Status CAN Bus: %s", mt_bus_awake->AsBool() ? "true" : "false");
 
@@ -178,7 +178,7 @@ void OvmsVehicleRenaultZoePh2OBD::IncomingFrameCan1(CAN_frame_t* p_frame) {
 /**
  * Handles incoming poll results
  */
-void OvmsVehicleRenaultZoePh2OBD::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain) {
+void OvmsVehicleRenaultZoePh2OBD::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, const uint8_t* data, uint8_t length, uint16_t remain) {
 	string& rxbuf = zoe_obd_rxbuf;
   
   //ESP_LOGV(TAG, "pid: %04x length: %d m_poll_ml_remain: %d m_poll_ml_frame: %d", pid, length, m_poll_ml_remain, m_poll_ml_frame);

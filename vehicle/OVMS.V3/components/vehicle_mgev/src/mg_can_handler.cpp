@@ -33,7 +33,7 @@ static const char *TAG = "v-mgev";
 
 #include "vehicle_mgev.h"
 
-void OvmsVehicleMgEv::IncomingFrameCan1(CAN_frame_t* p_frame)
+void OvmsVehicleMgEv::IncomingFrameCan1(const CAN_frame_t* p_frame)
 {
     if (m_poll_bus_default != m_can1)
     {
@@ -42,7 +42,7 @@ void OvmsVehicleMgEv::IncomingFrameCan1(CAN_frame_t* p_frame)
     IncomingPollFrame(p_frame);
 }
 
-void OvmsVehicleMgEv::IncomingFrameCan2(CAN_frame_t* p_frame)
+void OvmsVehicleMgEv::IncomingFrameCan2(const CAN_frame_t* p_frame)
 {
     if (m_poll_bus_default != m_can2)
     {
@@ -51,7 +51,7 @@ void OvmsVehicleMgEv::IncomingFrameCan2(CAN_frame_t* p_frame)
     IncomingPollFrame(p_frame);
 }
 
-void OvmsVehicleMgEv::IncomingFrameCan3(CAN_frame_t* p_frame)
+void OvmsVehicleMgEv::IncomingFrameCan3(const CAN_frame_t* p_frame)
 {
     if (m_poll_bus_default != m_can3)
     {
@@ -60,7 +60,7 @@ void OvmsVehicleMgEv::IncomingFrameCan3(CAN_frame_t* p_frame)
     IncomingPollFrame(p_frame);
 }
 
-void OvmsVehicleMgEv::IncomingFrameCan4(CAN_frame_t* p_frame)
+void OvmsVehicleMgEv::IncomingFrameCan4(const CAN_frame_t* p_frame)
 {
     if (m_poll_bus_default != m_can4)
     {
@@ -69,7 +69,7 @@ void OvmsVehicleMgEv::IncomingFrameCan4(CAN_frame_t* p_frame)
     IncomingPollFrame(p_frame);
 }
 
-void OvmsVehicleMgEv::IncomingPollFrame(CAN_frame_t* frame)
+void OvmsVehicleMgEv::IncomingPollFrame(const CAN_frame_t* frame)
 {
     if (frame->MsgID == 0x70au)
     {
@@ -89,7 +89,7 @@ void OvmsVehicleMgEv::IncomingPollFrame(CAN_frame_t* frame)
 
     uint8_t frameType = frame->data.u8[0] >> 4;
     uint16_t frameLength = 0;
-    uint8_t* data = &frame->data.u8[1];
+    const uint8_t* data = &frame->data.u8[1];
 
     switch (frameType)
     {
@@ -186,7 +186,7 @@ void OvmsVehicleMgEv::IncomingPollFrame(CAN_frame_t* frame)
 }
 
 void OvmsVehicleMgEv::IncomingPollReply(
-        canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length,
+        canbus* bus, uint16_t type, uint16_t pid, const uint8_t* data, uint8_t length,
         uint16_t remain)
 {
     ESP_LOGV(

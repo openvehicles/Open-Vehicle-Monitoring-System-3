@@ -159,8 +159,8 @@ OvmsVehicleRenaultZoe::~OvmsVehicleRenaultZoe() {
 /**
  * Handles incoming CAN-frames on bus 1
  */
-void OvmsVehicleRenaultZoe::IncomingFrameCan1(CAN_frame_t* p_frame) {
-	uint8_t *data = p_frame->data.u8;
+void OvmsVehicleRenaultZoe::IncomingFrameCan1(const CAN_frame_t* p_frame) {
+	const uint8_t *data = p_frame->data.u8;
 	//ESP_LOGI(TAG, "PID:%x DATA: %02x %02x %02x %02x %02x %02x %02x %02x", p_frame->MsgID, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
   
   if (m_candata_poll != 1 && m_ready) {
@@ -797,7 +797,7 @@ void OvmsVehicleRenaultZoe::IncomingFrameCan1(CAN_frame_t* p_frame) {
 /**
  * Handles incoming poll results
  */
-void OvmsVehicleRenaultZoe::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain) {
+void OvmsVehicleRenaultZoe::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, const uint8_t* data, uint8_t length, uint16_t remain) {
 	string& rxbuf = zoe_obd_rxbuf;
   static uint16_t last_pid = -1;
   

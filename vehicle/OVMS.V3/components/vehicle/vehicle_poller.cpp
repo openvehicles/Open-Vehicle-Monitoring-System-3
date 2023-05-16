@@ -85,7 +85,7 @@ void OvmsVehicle::PollerStateTicker()
  *  @member m_poll_plcur
  *    Pointer to the currently processed poll entry
  */
-void OvmsVehicle::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
+void OvmsVehicle::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, const uint8_t* data, uint8_t length, uint16_t mlremain)
   {
   }
 

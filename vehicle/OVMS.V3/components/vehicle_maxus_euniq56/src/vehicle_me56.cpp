@@ -180,7 +180,7 @@ OvmsVehicleMaxe56::~OvmsVehicleMaxe56()
 
 // IncomingPollReply:
 
-void OvmsVehicleMaxe56::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
+void OvmsVehicleMaxe56::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, const uint8_t* data, uint8_t length, uint16_t mlremain)
 {
   // init / fill rx buffer:
   if (m_poll_ml_frame == 0) {
@@ -353,13 +353,13 @@ void OvmsVehicleMaxe56::SetBmsStatus(uint8_t status)
 
 // Can Frames
 
-void OvmsVehicleMaxe56::IncomingFrameCan1(CAN_frame_t* p_frame)
+void OvmsVehicleMaxe56::IncomingFrameCan1(const CAN_frame_t* p_frame)
   {
       
 //set batt temp
       StdMetrics.ms_v_bat_temp->SetValue(StdMetrics.ms_v_bat_pack_tavg->AsFloat());
       
-      uint8_t *d = p_frame->data.u8;
+      const uint8_t *d = p_frame->data.u8;
 
       switch (p_frame->MsgID)
         {

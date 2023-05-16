@@ -62,25 +62,25 @@ bool OvmsVehicleDBC::RegisterCanBusDBCLoaded(int bus, CAN_mode_t mode, const cha
   return true;
   }
 
-void OvmsVehicleDBC::IncomingFrameCan1(CAN_frame_t* p_frame)
+void OvmsVehicleDBC::IncomingFrameCan1(const CAN_frame_t* p_frame)
   {
   // This should be called from the IncomingFrameCan1 handler of the derived vehicle class
   IncomingFrame(m_can1, p_frame);
   }
 
-void OvmsVehicleDBC::IncomingFrameCan2(CAN_frame_t* p_frame)
+void OvmsVehicleDBC::IncomingFrameCan2(const CAN_frame_t* p_frame)
   {
   // This should be called from the IncomingFrameCan1 handler of the derived vehicle class
   IncomingFrame(m_can2, p_frame);
   }
 
-void OvmsVehicleDBC::IncomingFrameCan3(CAN_frame_t* p_frame)
+void OvmsVehicleDBC::IncomingFrameCan3(const CAN_frame_t* p_frame)
   {
   // This should be called from the IncomingFrameCan1 handler of the derived vehicle class
   IncomingFrame(m_can3, p_frame);
   }
 
-void OvmsVehicleDBC::IncomingFrame(canbus* bus, CAN_frame_t* frame)
+void OvmsVehicleDBC::IncomingFrame(canbus* bus, const CAN_frame_t* frame)
   {
   dbcfile* dbc = bus->GetDBC();
   if (dbc==NULL) return;
@@ -143,17 +143,17 @@ OvmsVehiclePureDBC::~OvmsVehiclePureDBC()
   ESP_LOGI(TAG, "Shutdown Pure DBC vehicle module");
   }
 
-void OvmsVehiclePureDBC::IncomingFrameCan1(CAN_frame_t* p_frame)
+void OvmsVehiclePureDBC::IncomingFrameCan1(const CAN_frame_t* p_frame)
   {
   OvmsVehicleDBC::IncomingFrameCan1(p_frame);
   }
 
-void OvmsVehiclePureDBC::IncomingFrameCan2(CAN_frame_t* p_frame)
+void OvmsVehiclePureDBC::IncomingFrameCan2(const CAN_frame_t* p_frame)
   {
   OvmsVehicleDBC::IncomingFrameCan2(p_frame);
   }
 
-void OvmsVehiclePureDBC::IncomingFrameCan3(CAN_frame_t* p_frame)
+void OvmsVehiclePureDBC::IncomingFrameCan3(const CAN_frame_t* p_frame)
   {
   OvmsVehicleDBC::IncomingFrameCan3(p_frame);
   }

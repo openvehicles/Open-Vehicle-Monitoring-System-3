@@ -32,11 +32,11 @@ static const char *TAG = "v-jaguaripace";
 #include "vehicle_jaguaripace.h"
 #include "ipace_obd_pids.h"
 
-void OvmsVehicleJaguarIpace::IncomingFrameCan1(CAN_frame_t* p_frame)
+void OvmsVehicleJaguarIpace::IncomingFrameCan1(const CAN_frame_t* p_frame)
 {
     ESP_LOGD(TAG, "IncomingFrameCan1, ");
 
-    if (m_poll_bus_default != m_can1)
+    if (p_frame->origin != m_can1)
     {
         return;
     }
@@ -44,11 +44,11 @@ void OvmsVehicleJaguarIpace::IncomingFrameCan1(CAN_frame_t* p_frame)
 }
 
 
-void OvmsVehicleJaguarIpace::IncomingPollFrame(CAN_frame_t* frame)
+void OvmsVehicleJaguarIpace::IncomingPollFrame(const CAN_frame_t* frame)
 {
     uint8_t frameType = frame->data.u8[0] >> 4;
     uint8_t frameLength = frame->data.u8[0] & 0x0f;
-    uint8_t* data = &frame->data.u8[1];
+    const uint8_t* data = &frame->data.u8[1];
     uint8_t dataLength = frameLength;
 
     ESP_LOGD(TAG, "IncomingPollFrame, frameType=%d, dataLength=%d", frameType, dataLength);
@@ -158,7 +158,7 @@ bool OvmsVehicleJaguarIpace::SendPollMessage(
 }
 
 void OvmsVehicleJaguarIpace::IncomingPollReply(
-        canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length,
+        canbus* bus, uint16_t type, uint16_t pid, const uint8_t* data, uint8_t length,
         uint16_t remain)
 {
     ESP_LOGD(

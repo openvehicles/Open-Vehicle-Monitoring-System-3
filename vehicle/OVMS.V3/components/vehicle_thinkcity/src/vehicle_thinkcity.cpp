@@ -124,7 +124,7 @@ void OvmsVehicleThinkCity::LogValues()
   ESP_LOGI(TAG, "m_candata_timer	%d ", 	m_candata_timer	);
 }
 
-void OvmsVehicleThinkCity::IncomingFrameCan1(CAN_frame_t* p_frame)
+void OvmsVehicleThinkCity::IncomingFrameCan1(const CAN_frame_t* p_frame)
   {
 
   if (m_poll_state != 1)
@@ -135,7 +135,7 @@ void OvmsVehicleThinkCity::IncomingFrameCan1(CAN_frame_t* p_frame)
     }
   m_candata_timer = TC_CANDATA_TIMEOUT;
 
-  uint8_t *d = p_frame->data.u8;
+  const uint8_t *d = p_frame->data.u8;
 
   switch (p_frame->MsgID)
     {
@@ -400,7 +400,7 @@ void OvmsVehicleThinkCity::Ticker10(uint32_t ticker)
   }
 
 
-void OvmsVehicleThinkCity::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
+void OvmsVehicleThinkCity::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, const uint8_t* data, uint8_t length, uint16_t mlremain)
   {
     ESP_LOGI(TAG,"Poll replay arrived");
      

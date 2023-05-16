@@ -495,19 +495,19 @@ void OvmsVehicle::RxTask()
     }
   }
 
-void OvmsVehicle::IncomingFrameCan1(CAN_frame_t* p_frame)
+void OvmsVehicle::IncomingFrameCan1(const CAN_frame_t* p_frame)
   {
   }
 
-void OvmsVehicle::IncomingFrameCan2(CAN_frame_t* p_frame)
+void OvmsVehicle::IncomingFrameCan2(const CAN_frame_t* p_frame)
   {
   }
 
-void OvmsVehicle::IncomingFrameCan3(CAN_frame_t* p_frame)
+void OvmsVehicle::IncomingFrameCan3(const CAN_frame_t* p_frame)
   {
   }
 
-void OvmsVehicle::IncomingFrameCan4(CAN_frame_t* p_frame)
+void OvmsVehicle::IncomingFrameCan4(const CAN_frame_t* p_frame)
   {
   }
 

@@ -29,7 +29,7 @@ static const char *TAG = "v-kianiroev";
 /**
  * Incoming poll reply messages
  */
-void OvmsVehicleKiaNiroEv::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
+void OvmsVehicleKiaNiroEv::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, const uint8_t* data, uint8_t length, uint16_t mlremain)
   {
 	//ESP_LOGD(TAG, "IPR %03x TYPE:%x PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", m_poll_moduleid_low, type, pid, length, data[0], data[1], data[2], data[3],
 	//	data[4], data[5], data[6], data[7]);
@@ -89,7 +89,7 @@ void OvmsVehicleKiaNiroEv::IncomingPollReply(canbus* bus, uint16_t type, uint16_
 /**
  * Handle incoming messages from cluster.
  */
-void OvmsVehicleKiaNiroEv::IncomingCM(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
+void OvmsVehicleKiaNiroEv::IncomingCM(canbus* bus, uint16_t type, uint16_t pid, const uint8_t* data, uint8_t length, uint16_t mlremain)
 	{
 //	ESP_LOGI(TAG, "CM PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", pid, length, m_poll_ml_frame, data[0], data[1], data[2], data[3],
 //			data[4], data[5], data[6]);
@@ -123,7 +123,7 @@ void OvmsVehicleKiaNiroEv::IncomingCM(canbus* bus, uint16_t type, uint16_t pid, 
 /**
  * Handle incoming messages from Aircon poll.
  */
-void OvmsVehicleKiaNiroEv::IncomingAirCon(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
+void OvmsVehicleKiaNiroEv::IncomingAirCon(canbus* bus, uint16_t type, uint16_t pid, const uint8_t* data, uint8_t length, uint16_t mlremain)
 	{
 	//ESP_LOGD(TAG, "AirCon PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", pid, length, m_poll_ml_frame, data[0], data[1], data[2], data[3],
 	//		data[4], data[5], data[6]);
@@ -153,7 +153,7 @@ void OvmsVehicleKiaNiroEv::IncomingAirCon(canbus* bus, uint16_t type, uint16_t p
 /**
  * Handle incoming messages from ABS ESP poll.
  */
-void OvmsVehicleKiaNiroEv::IncomingAbsEsp(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
+void OvmsVehicleKiaNiroEv::IncomingAbsEsp(canbus* bus, uint16_t type, uint16_t pid, const uint8_t* data, uint8_t length, uint16_t mlremain)
 	{
 	//ESP_LOGD(TAG, "ABS/ESP PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", pid, length, m_poll_ml_frame, data[0], data[1], data[2], data[3],
 	//		data[4], data[5], data[6]);
@@ -178,7 +178,7 @@ void OvmsVehicleKiaNiroEv::IncomingAbsEsp(canbus* bus, uint16_t type, uint16_t p
  * - Pilot signal duty cycle
  * - Charger temperature
  */
-void OvmsVehicleKiaNiroEv::IncomingOBC(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
+void OvmsVehicleKiaNiroEv::IncomingOBC(canbus* bus, uint16_t type, uint16_t pid, const uint8_t* data, uint8_t length, uint16_t mlremain)
 	{
 	switch (pid)
 		{
@@ -213,7 +213,7 @@ void OvmsVehicleKiaNiroEv::IncomingOBC(canbus* bus, uint16_t type, uint16_t pid,
  *
  * - Aux battery SOC, Voltage and current
  */
-void OvmsVehicleKiaNiroEv::IncomingVMCU(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
+void OvmsVehicleKiaNiroEv::IncomingVMCU(canbus* bus, uint16_t type, uint16_t pid, const uint8_t* data, uint8_t length, uint16_t mlremain)
 	{
 	//ESP_LOGD(TAG, "VMCU TYPE: %02x PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", type, pid, length, m_poll_ml_frame, data[0], data[1], data[2], data[3],
 	//		data[4], data[5], data[6]);
@@ -310,7 +310,7 @@ void OvmsVehicleKiaNiroEv::IncomingVMCU(canbus* bus, uint16_t type, uint16_t pid
  *
  * -
  */
-void OvmsVehicleKiaNiroEv::IncomingMCU(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
+void OvmsVehicleKiaNiroEv::IncomingMCU(canbus* bus, uint16_t type, uint16_t pid, const uint8_t* data, uint8_t length, uint16_t mlremain)
 	{
 //	ESP_LOGI(TAG, "MCU PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", pid, length, m_poll_ml_frame, data[0], data[1], data[2], data[3],
 //				data[4], data[5], data[6]);
@@ -348,7 +348,7 @@ void OvmsVehicleKiaNiroEv::IncomingMCU(canbus* bus, uint16_t type, uint16_t pid,
  * - Cell voltage max / min + cell #
  * + more
  */
-void OvmsVehicleKiaNiroEv::IncomingBMC(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
+void OvmsVehicleKiaNiroEv::IncomingBMC(canbus* bus, uint16_t type, uint16_t pid, const uint8_t* data, uint8_t length, uint16_t mlremain)
 	{
 	uint8_t bVal;
 	if (type == VEHICLE_POLL_TYPE_OBDIIEXTENDED)
@@ -462,7 +462,7 @@ void OvmsVehicleKiaNiroEv::IncomingBMC(canbus* bus, uint16_t type, uint16_t pid,
  *
  *
  */
-void OvmsVehicleKiaNiroEv::IncomingBCM(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
+void OvmsVehicleKiaNiroEv::IncomingBCM(canbus* bus, uint16_t type, uint16_t pid, const uint8_t* data, uint8_t length, uint16_t mlremain)
 	{
 	uint8_t bVal;
 	uint32_t lVal;
@@ -547,7 +547,7 @@ void OvmsVehicleKiaNiroEv::IncomingBCM(canbus* bus, uint16_t type, uint16_t pid,
  *
  *
  */
-void OvmsVehicleKiaNiroEv::IncomingIGMP(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
+void OvmsVehicleKiaNiroEv::IncomingIGMP(canbus* bus, uint16_t type, uint16_t pid, const uint8_t* data, uint8_t length, uint16_t mlremain)
 	{
 	if (type == VEHICLE_POLL_TYPE_OBDIIEXTENDED)
 		{

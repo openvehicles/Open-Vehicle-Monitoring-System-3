@@ -232,9 +232,9 @@ void OvmsVehicleMitsubishi::ConfigChanged(OvmsConfigParam* param)
   }
 }
 
-void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
+void OvmsVehicleMitsubishi::IncomingFrameCan1(const CAN_frame_t* p_frame)
 {
-  uint8_t *d = p_frame->data.u8;
+  const uint8_t *d = p_frame->data.u8;
 
   switch ( p_frame->MsgID )
     {

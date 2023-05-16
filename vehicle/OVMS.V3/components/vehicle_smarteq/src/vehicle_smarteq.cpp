@@ -116,8 +116,8 @@ uint64_t OvmsVehicleSmartEQ::swap_uint64(uint64_t val) {
   return (val << 32) | (val >> 32);
 }
 
-void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
-  uint8_t *d = p_frame->data.u8;
+void OvmsVehicleSmartEQ::IncomingFrameCan1(const CAN_frame_t* p_frame) {
+  const uint8_t *d = p_frame->data.u8;
   uint64_t c = swap_uint64(p_frame->data.u64);
   
   static bool isCharging = false;

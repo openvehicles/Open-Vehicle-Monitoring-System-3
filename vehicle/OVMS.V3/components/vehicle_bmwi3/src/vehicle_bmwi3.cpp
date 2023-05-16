@@ -386,7 +386,7 @@ void OvmsVehicleBMWi3::Ticker10(uint32_t ticker)
     }
 }
 
-void OvmsVehicleBMWi3::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
+void OvmsVehicleBMWi3::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, const uint8_t* data, uint8_t length, uint16_t mlremain)
 {
     string& rxbuf = bmwi3_obd_rxbuf;
   

@@ -166,10 +166,10 @@ void OvmsVehicleToyotaRav4Ev::Ticker60(uint32_t ticker)
 }
 
 // IncomingFrameCan1 (Tesla)
-void OvmsVehicleToyotaRav4Ev::IncomingFrameCan1(CAN_frame_t* p_frame)
+void OvmsVehicleToyotaRav4Ev::IncomingFrameCan1(const CAN_frame_t* p_frame)
   {
   
-  uint8_t *d = p_frame->data.u8;
+  const uint8_t *d = p_frame->data.u8;
 
   iFrameCountCan1++;
   switch (p_frame->MsgID)
@@ -435,14 +435,14 @@ void OvmsVehicleToyotaRav4Ev::IncomingFrameCan1(CAN_frame_t* p_frame)
   }
 
 // IncomingFrameCan2 (Toyota)
-void OvmsVehicleToyotaRav4Ev::IncomingFrameCan2(CAN_frame_t* p_frame)
+void OvmsVehicleToyotaRav4Ev::IncomingFrameCan2(const CAN_frame_t* p_frame)
   {
     iFrameCountCan2++;
 
   }
 
 /*
-void OvmsVehicleToyotaRav4Ev::IncomingFrameCan3(CAN_frame_t* p_frame)
+void OvmsVehicleToyotaRav4Ev::IncomingFrameCan3(const CAN_frame_t* p_frame)
   {
   // Toyota RAV4 EV CAN3 Not Used
   }

@@ -316,9 +316,9 @@ void OvmsVehicleVWeUp::vehicle_vweup_car_on(bool turnOn)
   }
 }
 
-void OvmsVehicleVWeUp::IncomingFrameCan3(CAN_frame_t *p_frame)
+void OvmsVehicleVWeUp::IncomingFrameCan3(const CAN_frame_t *p_frame)
 {
-  uint8_t *d = p_frame->data.u8;
+  const uint8_t *d = p_frame->data.u8;
 
   static bool isCharging = false;
   static bool lastCharging = false;

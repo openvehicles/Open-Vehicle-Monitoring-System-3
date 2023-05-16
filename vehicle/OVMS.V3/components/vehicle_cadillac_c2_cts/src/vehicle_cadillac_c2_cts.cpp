@@ -76,9 +76,9 @@ OvmsVehicleCadillaccC2CTS::~OvmsVehicleCadillaccC2CTS()
   MyCadillaccC2CTS = NULL;
   }
 
-void OvmsVehicleCadillaccC2CTS::IncomingFrameCan1(CAN_frame_t* p_frame)
+void OvmsVehicleCadillaccC2CTS::IncomingFrameCan1(const CAN_frame_t* p_frame)
   {
-  uint8_t *d;
+  const uint8_t *d;
   bool isRunning;
 
   processing = 1;
@@ -208,10 +208,10 @@ void OvmsVehicleCadillaccC2CTS::IncomingFrameCan1(CAN_frame_t* p_frame)
   processing = 0;
   }
 
-void OvmsVehicleCadillaccC2CTS::IncomingFrameCan2(CAN_frame_t* p_frame)
+void OvmsVehicleCadillaccC2CTS::IncomingFrameCan2(const CAN_frame_t* p_frame)
   {
   int i, len;
-  uint8_t *d;
+  const uint8_t *d;
 
   processing = 1;
   d = p_frame->data.u8;
@@ -257,7 +257,7 @@ void OvmsVehicleCadillaccC2CTS::IncomingFrameCan2(CAN_frame_t* p_frame)
 
 void
 OvmsVehicleCadillaccC2CTS::IncomingPollReply(canbus* bus, uint16_t type,
-  uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
+  uint16_t pid, const uint8_t* data, uint8_t length, uint16_t mlremain)
   {
   int value1 = (int)data[0];
   // int value2 = ((int)data[0] << 8) + (int)data[1];

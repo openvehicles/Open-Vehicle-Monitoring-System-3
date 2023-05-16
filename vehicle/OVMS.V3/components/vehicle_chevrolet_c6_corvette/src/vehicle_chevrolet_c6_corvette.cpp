@@ -68,10 +68,10 @@ OvmsVehicleChevroletC6Corvette::~OvmsVehicleChevroletC6Corvette()
   ESP_LOGI(TAG, "Shutdown Chevrolet C6 Corvette vehicle module");
   }
 
-void OvmsVehicleChevroletC6Corvette::IncomingFrameCan1(CAN_frame_t* p_frame)
+void OvmsVehicleChevroletC6Corvette::IncomingFrameCan1(const CAN_frame_t* p_frame)
   {
   int i, len;
-  uint8_t *d;
+  const uint8_t *d;
   bool isRunning;
 
   d = p_frame->data.u8;
@@ -134,7 +134,7 @@ void OvmsVehicleChevroletC6Corvette::IncomingFrameCan1(CAN_frame_t* p_frame)
   }
 
 void OvmsVehicleChevroletC6Corvette::IncomingPollReply(canbus* bus,
-    uint16_t type, uint16_t pid, uint8_t* data, uint8_t length,
+    uint16_t type, uint16_t pid, const uint8_t* data, uint8_t length,
     uint16_t mlremain)
   {
   int value1 = (int)data[0];

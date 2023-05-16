@@ -557,7 +557,7 @@ void OvmsVehicleVWeUp::PollerStateTicker()
 }
 
 
-void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length, uint16_t mlremain)
+void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pid, const uint8_t *data, uint8_t length, uint16_t mlremain)
 {
   if (m_obd_state != OBDS_Run)
     return;

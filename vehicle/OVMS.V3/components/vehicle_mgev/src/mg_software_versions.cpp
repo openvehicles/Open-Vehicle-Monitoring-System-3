@@ -166,7 +166,7 @@ void OvmsVehicleMgEv::SoftwareVersions(OvmsWriter* writer)
     }
 }
 
-void OvmsVehicleMgEv::IncomingSoftwareVersionFrame(CAN_frame_t* frame, uint8_t frameType, uint16_t frameLength, uint16_t responsePid, uint8_t* data)
+void OvmsVehicleMgEv::IncomingSoftwareVersionFrame(const CAN_frame_t* frame, uint8_t frameType, uint16_t frameLength, uint16_t responsePid, const uint8_t* data)
 {       
     switch (frameType)
     {

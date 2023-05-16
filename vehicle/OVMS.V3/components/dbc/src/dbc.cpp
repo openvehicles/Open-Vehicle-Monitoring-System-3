@@ -52,7 +52,7 @@ static const char *TAG = "dbc";
 // Helper functions
 
 static inline uint64_t
-dbc_extract_bits(uint8_t *candata, unsigned int bpos, unsigned int align, unsigned int shifter, unsigned int pos)
+dbc_extract_bits(const uint8_t *candata, unsigned int bpos, unsigned int align, unsigned int shifter, unsigned int pos)
   {
   uint64_t val = (uint64_t)candata[bpos/8];
   unsigned int mask = (1 << shifter) - 1;
@@ -60,7 +60,7 @@ dbc_extract_bits(uint8_t *candata, unsigned int bpos, unsigned int align, unsign
   }
 
 static uint64_t
-dbc_extract_bits_little_endian(uint8_t *candata, unsigned int bpos, unsigned int bits)
+dbc_extract_bits_little_endian(const uint8_t *candata, unsigned int bpos, unsigned int bits)
   {
   unsigned int pos, aligner, shifter;
   uint64_t val = 0;
@@ -83,7 +83,7 @@ dbc_extract_bits_little_endian(uint8_t *candata, unsigned int bpos, unsigned int
   }
 
 static uint64_t
-dbc_extract_bits_big_endian(uint8_t *candata, unsigned int bpos, unsigned int bits)
+dbc_extract_bits_big_endian(const uint8_t *candata, unsigned int bpos, unsigned int bits)
   {
   unsigned int pos, aligner, slicer;
   uint64_t val = 0;
@@ -818,7 +818,7 @@ void dbcSignal::Encode(dbcNumber* source, CAN_frame_t* msg)
   // TODO: An efficient encoding of the signal
   }
 
-dbcNumber dbcSignal::Decode(CAN_frame_t* msg)
+dbcNumber dbcSignal::Decode(const CAN_frame_t* msg)
   {
   uint64_t val;
   dbcNumber result;

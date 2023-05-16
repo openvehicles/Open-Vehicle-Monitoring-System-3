@@ -190,12 +190,12 @@ bool OvmsVehicle::PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid)
   // Get & validate ISO-TP meta data
   // 
 
-  uint8_t* fr_data;               // Frame data address
+  const uint8_t* fr_data;         // Frame data address
   uint8_t  fr_maxlen;             // Frame data max length
   uint8_t  tp_frametype;          // ISO-TP frame type (0…3)
   uint8_t  tp_frameindex;         // TP cyclic frame index (0…15)
   uint16_t tp_len = 0;            // TP remaining payload length including this frame (0…4095)
-  uint8_t* tp_data = 0;           // TP frame data section address
+  const uint8_t* tp_data = 0;     // TP frame data section address
   uint8_t  tp_datalen = 0;        // TP frame data section length (0…7)
 
   uint8_t  tp_fc_command;         // Flow control command (0 = continue, 1 = wait, 2 = abort)
@@ -377,7 +377,7 @@ bool OvmsVehicle::PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid)
 
   uint8_t  response_type = 0;         // OBD/UDS response type tag (expected: 0x40 + request type)
   uint16_t response_pid = 0;          // OBD/UDS response PID (expected: request PID)
-  uint8_t* response_data = NULL;      // OBD/UDS frame payload address
+  const uint8_t* response_data = NULL;// OBD/UDS frame payload address
   uint16_t response_datalen = 0;      // OBD/UDS frame payload length (0…7)
   uint8_t  error_type = 0;            // OBD/UDS error response service type (expected: request type)
   uint8_t  error_code = 0;            // OBD/UDS error response code (see ISO 14229 Annex A.1)

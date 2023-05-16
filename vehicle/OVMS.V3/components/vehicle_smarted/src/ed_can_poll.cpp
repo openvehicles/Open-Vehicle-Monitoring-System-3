@@ -256,7 +256,7 @@ void OvmsVehicleSmartED::ObdInitPoll() {
 /**
  * Incoming poll reply messages
  */
-void OvmsVehicleSmartED::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain) {
+void OvmsVehicleSmartED::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, const uint8_t* data, uint8_t length, uint16_t remain) {
   string& rxbuf = smarted_obd_rxbuf;
   static uint16_t last_pid = -1;
   

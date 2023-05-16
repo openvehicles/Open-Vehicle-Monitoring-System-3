@@ -32,7 +32,7 @@
 /**
  * Incoming poll reply messages
  */
-void OvmsHyundaiIoniqEv::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length, uint16_t mlremain)
+void OvmsHyundaiIoniqEv::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pid, const uint8_t *data, uint8_t length, uint16_t mlremain)
 {
   XARM("OvmsHyundaiIoniqEv::IncomingPollReply");
   /*

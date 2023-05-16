@@ -790,7 +790,7 @@ void OvmsVehicleNissanLeaf::PollReply_VIN(uint8_t reply_data[], uint16_t reply_l
   }
 
 // Reassemble all pieces of a multi-frame reply.
-void OvmsVehicleNissanLeaf::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
+void OvmsVehicleNissanLeaf::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, const uint8_t* data, uint8_t length, uint16_t mlremain)
   {
   string& rxbuf = nl_obd_rxbuf;
 
@@ -843,9 +843,9 @@ void OvmsVehicleNissanLeaf::IncomingPollReply(canbus* bus, uint16_t type, uint16
     }
   }
 
-void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
+void OvmsVehicleNissanLeaf::IncomingFrameCan1(const CAN_frame_t* p_frame)
   { // CAN1 is connected to EV-CAN
-  uint8_t *d = p_frame->data.u8;
+  const uint8_t *d = p_frame->data.u8;
 
   switch (p_frame->MsgID)
     {
@@ -1469,9 +1469,9 @@ void OvmsVehicleNissanLeaf::IncomingFrameCan1(CAN_frame_t* p_frame)
     }
   }
 
-void OvmsVehicleNissanLeaf::IncomingFrameCan2(CAN_frame_t* p_frame)
+void OvmsVehicleNissanLeaf::IncomingFrameCan2(const CAN_frame_t* p_frame)
   { // CAN2 is connected to CAR-CAN
-  uint8_t *d = p_frame->data.u8;
+  const uint8_t *d = p_frame->data.u8;
 
   switch (p_frame->MsgID)
     {

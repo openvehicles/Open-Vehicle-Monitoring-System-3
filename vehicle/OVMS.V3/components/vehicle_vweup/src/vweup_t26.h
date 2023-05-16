@@ -69,7 +69,7 @@ class OvmsVehicleVWeUpAll : public OvmsVehicle
     const std::string GetFeature(int key);
 
   public:
-    void IncomingFrameCan3(CAN_frame_t* p_frame);
+    void IncomingFrameCan3(const CAN_frame_t* p_frame) override;
 
   protected:
     virtual void Ticker1(uint32_t ticker);
@@ -183,7 +183,7 @@ class OvmsVehicleVWeUpAll : public OvmsVehicle
 
     //OBD
     void ObdInit();
-    void IncomingPollReply(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length, uint16_t mlremain);
+    void IncomingPollReply(canbus *bus, uint16_t type, uint16_t pid, const uint8_t *data, uint8_t length, uint16_t mlremain) override;
 
 //  protected:
 //    virtual void Ticker1(uint32_t ticker);

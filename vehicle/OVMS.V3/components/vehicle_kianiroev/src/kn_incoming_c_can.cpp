@@ -29,10 +29,10 @@
 /**
  * Handles incoming CAN-frames on bus 1, the C-bus
  */
-void OvmsVehicleKiaNiroEv::IncomingFrameCan1(CAN_frame_t* p_frame)
+void OvmsVehicleKiaNiroEv::IncomingFrameCan1(const CAN_frame_t* p_frame)
 	{
 
-	uint8_t *d = p_frame->data.u8;
+	const uint8_t *d = p_frame->data.u8;
 	//ESP_LOGD(TAG, "IFC %03x 8 %02x %02x %02x %02x %02x %02x %02x %02x",
 	//		p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
 

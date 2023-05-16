@@ -50,7 +50,7 @@ enum BecmStatus : unsigned char {
 }  // anon namespace
 
 
-void OvmsVehicleJaguarIpace::IncomingBecmPoll(uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain) {
+void OvmsVehicleJaguarIpace::IncomingBecmPoll(uint16_t pid, const uint8_t* data, uint8_t length, uint16_t remain) {
     uint8_t value8 = data[0];
     uint16_t value16 = (data[0] << 8 | data[1]);
     uint32_t value24 = (data[0] << 16 | data[1] << 8 | data[2]);

@@ -247,9 +247,9 @@ void OvmsVehicleBoltEV::TxCallback(const CAN_frame_t* p_frame, bool success)
 }
 
 
-void OvmsVehicleBoltEV::IncomingFrameCan1(CAN_frame_t* p_frame)
+void OvmsVehicleBoltEV::IncomingFrameCan1(const CAN_frame_t* p_frame)
 {
-    uint8_t *d = p_frame->data.u8;
+    const uint8_t *d = p_frame->data.u8;
     int k;
 
     m_candata_timer = VA_CANDATA_TIMEOUT;
@@ -406,21 +406,21 @@ void OvmsVehicleBoltEV::IncomingFrameCan1(CAN_frame_t* p_frame)
     }
 }
 
-void OvmsVehicleBoltEV::IncomingFrameCan2(CAN_frame_t* p_frame)
+void OvmsVehicleBoltEV::IncomingFrameCan2(const CAN_frame_t* p_frame)
 {
     //uint8_t *d = p_frame->data.u8;
     //ESP_LOGI(TAG,"CAN2 message received: %08x: %02x %02x %02x %02x %02x %02x %02x %02x",
     //  p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7] );
 }
 
-void OvmsVehicleBoltEV::IncomingFrameCan3(CAN_frame_t* p_frame)
+void OvmsVehicleBoltEV::IncomingFrameCan3(const CAN_frame_t* p_frame)
 {
     IncomingFrameCan4(p_frame);  // assume third can bus messages coming from SWCAN bus
 }
 
-void OvmsVehicleBoltEV::IncomingFrameCan4(CAN_frame_t* p_frame)
+void OvmsVehicleBoltEV::IncomingFrameCan4(const CAN_frame_t* p_frame)
 {
-    uint8_t *d = p_frame->data.u8;
+    const uint8_t *d = p_frame->data.u8;
 
     m_candata_timer = VA_CANDATA_TIMEOUT;
 
@@ -636,7 +636,7 @@ void OvmsVehicleBoltEV::IncomingFrameCan4(CAN_frame_t* p_frame)
     ClimateControlIncomingSWCAN(p_frame);
 }
 
-void OvmsVehicleBoltEV::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
+void OvmsVehicleBoltEV::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, const uint8_t* data, uint8_t length, uint16_t mlremain)
 {
     uint8_t value = *data;
 

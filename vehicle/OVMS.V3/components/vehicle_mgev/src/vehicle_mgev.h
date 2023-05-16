@@ -118,12 +118,12 @@ class OvmsVehicleMgEv : public OvmsVehicle
   protected:
     void ConfigChanged(OvmsConfigParam* param) override;
 
-    void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain) override;
+    void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, const uint8_t* data, uint8_t length, uint16_t remain) override;
 
-    void IncomingFrameCan1(CAN_frame_t* p_frame) override;
-    void IncomingFrameCan2(CAN_frame_t* p_frame) override;
-    void IncomingFrameCan3(CAN_frame_t* p_frame) override;
-    void IncomingFrameCan4(CAN_frame_t* p_frame) override;
+    void IncomingFrameCan1(const CAN_frame_t* p_frame) override;
+    void IncomingFrameCan2(const CAN_frame_t* p_frame) override;
+    void IncomingFrameCan3(const CAN_frame_t* p_frame) override;
+    void IncomingFrameCan4(const CAN_frame_t* p_frame) override;
 
     int GetNotifyChargeStateDelay(const char* state) override;
 
@@ -254,62 +254,62 @@ class OvmsVehicleMgEv : public OvmsVehicle
     int CanInterface();
 
 	// mg_can_handler.cpp
-    void IncomingPollFrame(CAN_frame_t* frame);
+    void IncomingPollFrame(const CAN_frame_t* frame);
 
     // software_versions.cpp
     void SoftwareVersions(OvmsWriter* writer);
 
     // mg_poll_bms.cpp
-    void IncomingBmsPoll(uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain);
+    void IncomingBmsPoll(uint16_t pid, const uint8_t* data, uint8_t length, uint16_t remain);
     void SetBmsStatus(uint8_t status);
-    void ProcessBatteryStats(int index, uint8_t* data, uint16_t remain);
+    void ProcessBatteryStats(int index, const uint8_t* data, uint16_t remain);
     float calculateSoc(uint16_t value);
     // A cache of the last byte in the first message of the BMS cell voltage message
     uint8_t m_bmsCache;
     string m_bmsTimeTemp;
 
     // mg_poll_dcdc.cpp
-    void IncomingDcdcPoll(uint16_t pid, uint8_t* data, uint8_t length);
+    void IncomingDcdcPoll(uint16_t pid, const uint8_t* data, uint8_t length);
 
     // mg_poll_vcu.cpp
-    void IncomingVcuPoll(uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain);
-    void HandleVinMessage(uint8_t* data, uint8_t length, uint16_t remain);
+    void IncomingVcuPoll(uint16_t pid, const uint8_t* data, uint8_t length, uint16_t remain);
+    void HandleVinMessage(const uint8_t* data, uint8_t length, uint16_t remain);
     void SetEnvOn();
 
     // mg_poll_atc.cpp
-    void IncomingAtcPoll(uint16_t pid, uint8_t* data, uint8_t length);
+    void IncomingAtcPoll(uint16_t pid, const uint8_t* data, uint8_t length);
 
     // mg_poll_bcm.cpp
-    void IncomingBcmPoll(uint16_t pid, uint8_t* data, uint8_t length);
+    void IncomingBcmPoll(uint16_t pid, const uint8_t* data, uint8_t length);
 
     // mg_poll_tpms.cpp
-    void IncomingTpmsPoll(uint16_t pid, uint8_t* data, uint8_t length);
+    void IncomingTpmsPoll(uint16_t pid, const uint8_t* data, uint8_t length);
 
     // mg_poll_ipk.cpp
-    void IncomingIpkPoll(uint16_t pid, uint8_t* data, uint8_t length);
+    void IncomingIpkPoll(uint16_t pid, const uint8_t* data, uint8_t length);
 
     // mg_poll_peps.cpp
-    void IncomingPepsPoll(uint16_t pid, uint8_t* data, uint8_t length);
+    void IncomingPepsPoll(uint16_t pid, const uint8_t* data, uint8_t length);
 
     // mg_poll_evcc.cpp
-    void IncomingEvccPoll(uint16_t pid, uint8_t* data, uint8_t length);
+    void IncomingEvccPoll(uint16_t pid, const uint8_t* data, uint8_t length);
 
     // mg_gwm.cpp
     bool AuthenticateGWM(canbus* currentBus);
-    void IncomingGWMAuthFrame(CAN_frame_t* frame, uint8_t serviceId, uint8_t* data);
-	void IncomingGWMFrame(CAN_frame_t* frame, uint8_t frameType, uint16_t frameLength, uint8_t serviceId, uint16_t responsePid, uint8_t* data);
+    void IncomingGWMAuthFrame(const CAN_frame_t* frame, uint8_t serviceId, const uint8_t* data);
+    void IncomingGWMFrame(const CAN_frame_t* frame, uint8_t frameType, uint16_t frameLength, uint8_t serviceId, uint16_t responsePid, const uint8_t* data);
 
     // mg_bcm.cpp
     bool AuthenticateBCM(canbus* currentBus);
-    void IncomingBCMAuthFrame(CAN_frame_t* frame, uint8_t serviceId, uint8_t* data);
+    void IncomingBCMAuthFrame(const CAN_frame_t* frame, uint8_t serviceId, const uint8_t* data);
     void DRLCommand(OvmsWriter* writer, canbus* currentBus, bool TurnOn);
-    void IncomingBCMDRLFrame(CAN_frame_t* frame, uint8_t frameType, uint8_t serviceId, uint16_t responsePid, uint8_t* data);
+    void IncomingBCMDRLFrame(const CAN_frame_t* frame, uint8_t frameType, uint8_t serviceId, uint16_t responsePid, const uint8_t* data);
     void DRLFirstFrameSent(const CAN_frame_t* p_frame, bool success);
     CanFrameCallback DRLFirstFrameSentCallback;
-	void IncomingBCMFrame(CAN_frame_t* frame, uint8_t frameType, uint16_t frameLength, uint8_t serviceId, uint16_t responsePid, uint8_t* data);
+    void IncomingBCMFrame(const CAN_frame_t* frame, uint8_t frameType, uint16_t frameLength, uint8_t serviceId, uint16_t responsePid, const uint8_t* data);
 
     // software_versions.cpp
-    void IncomingSoftwareVersionFrame(CAN_frame_t* frame, uint8_t frameType, uint16_t frameLength, uint16_t responsePid, uint8_t* data);
+    void IncomingSoftwareVersionFrame(const CAN_frame_t* frame, uint8_t frameType, uint16_t frameLength, uint16_t responsePid, const uint8_t* data);
     uint32_t m_ECUCountToQuerySoftwareVersion = 0;
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER

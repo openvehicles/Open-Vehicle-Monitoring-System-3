@@ -41,11 +41,11 @@ class OvmsVehicleChevroletC6Corvette : public OvmsVehicle
   public:
     OvmsVehicleChevroletC6Corvette();
     ~OvmsVehicleChevroletC6Corvette();
-    void IncomingFrameCan1(CAN_frame_t* p_frame);
+    void IncomingFrameCan1(const CAN_frame_t* p_frame) override;
 
   protected:
     void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid,
-      uint8_t* data, uint8_t length, uint16_t mlremain);
+      const uint8_t* data, uint8_t length, uint16_t mlremain) override;
 
   protected:
     char m_vin[18];

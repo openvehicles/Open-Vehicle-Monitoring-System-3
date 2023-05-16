@@ -64,7 +64,7 @@ OvmsVehicleOBDII::~OvmsVehicleOBDII()
   ESP_LOGI(TAG, "Shutdown OBDII vehicle module");
   }
 
-void OvmsVehicleOBDII::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
+void OvmsVehicleOBDII::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, const uint8_t* data, uint8_t length, uint16_t mlremain)
   {
   int value1 = (int)data[0];
   int value2 = ((int)data[0] << 8) + (int)data[1];
