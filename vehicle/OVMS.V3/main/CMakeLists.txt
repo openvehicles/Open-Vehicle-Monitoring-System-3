@@ -15,3 +15,8 @@ execute_process(COMMAND git describe --always --tags --dirty
                 OUTPUT_VARIABLE OVMS_VERSION
                 ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
 add_definitions("-DOVMS_VERSION=\"${OVMS_VERSION}\"")
+
+# This is overriding the standard panic handler
+# https://github.com/espressif/esp-idf/issues/7681#issuecomment-941957783
+#idf_build_set_property(LINK_OPTIONS "-Wl,--wrap=esp_panic_handler" APPEND)
+target_link_libraries(${COMPONENT_LIB} INTERFACE "-Wl,--wrap=esp_panic_handler")
