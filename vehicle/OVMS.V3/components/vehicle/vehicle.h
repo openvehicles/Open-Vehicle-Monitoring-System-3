@@ -354,13 +354,15 @@ class OvmsVehicle : public InternalRamAllocated
     canbus* m_can3;
     canbus* m_can4;
 
+    void VehiclePollTicker();
   private:
     void VehicleTicker1(std::string event, void* data);
     void VehicleConfigChanged(std::string event, void* data);
     void PollerResetThrottle();
 
-    typedef enum { Primary, Successful, OnceOff } poller_source_t;
+    typedef enum { Primary, Secondary, Successful, OnceOff } poller_source_t;
     void PollerSend(poller_source_t source);
+    void Queue_PollerSend(poller_source_t source);
     static const char *PollerSource(OvmsVehicle::poller_source_t src);
 
   protected:
@@ -597,6 +599,11 @@ class OvmsVehicle : public InternalRamAllocated
       };
 
   protected:
+    TimerHandle_t     m_timer_poller;
+    int32_t           m_poll_subticker;       // Subticker count for polling
+    uint16_t          m_poll_tick_ms;         // Tick length in ms.
+    uint8_t           m_poll_tick_secondary;  // Number of secondary poll subticks per primary / zero
+
     OvmsRecMutex      m_poll_mutex;           // Concurrency protection for recursive calls
     uint8_t           m_poll_state;           // Current poll state
     canbus*           m_poll_bus_default;     // Bus default to poll on
@@ -660,6 +667,8 @@ class OvmsVehicle : public InternalRamAllocated
       }
     void PollSetState(uint8_t state);
     void PollSetThrottling(uint8_t sequence_max);
+    void PollSetTicker(uint16_t tick_time_ms, uint8_t secondary_ticks = 0);
+
     void PollSetResponseSeparationTime(uint8_t septime);
     void PollSetChannelKeepalive(uint16_t keepalive_seconds);
     int PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
