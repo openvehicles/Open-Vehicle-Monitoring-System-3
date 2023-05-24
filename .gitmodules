@@ -10,3 +10,6 @@
 [submodule "vehicle/OVMS.V3/components/wolfssh/wolfssh"]
 	path = vehicle/OVMS.V3/components/wolfssh/wolfssh
 	url = https://github.com/openvehicles/wolfssh.git
+[submodule "vehicle/OVMS.V3/components/wolfssl/wolfssl"]
+	path = vehicle/OVMS.V3/components/wolfssl/wolfssl
+	url = https://github.com/openvehicles/wolfssl.git

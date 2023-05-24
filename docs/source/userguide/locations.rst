@@ -58,7 +58,7 @@ You could then update the radius to 80 meters as follows::
   OVMS# location radius home 80 meters
 
 When the car enters the above location, you will get an event "location.enter.home", and when it leaves, you will get the event "location.leave.home".
-See :doc:`events.rst` for how to add scripts.
+See :doc:`events` for how to add scripts.
 There are also limited actions you can define. For help on how see::
 
   OVMS# location action ?
