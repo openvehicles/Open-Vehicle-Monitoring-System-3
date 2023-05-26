@@ -28,9 +28,14 @@ $(COMPONENT_PATH)/include/mg_version.h: $(COMPONENT_PATH)/mongoose/mongoose.h
 			> "$(COMPONENT_PATH)/include/mg_version.h"; \
 	}
 COMPONENT_ADD_INCLUDEDIRS := include mongoose
+CFLAGS += -DMG_ENABLE_LINES  # Only for Mongoose >= 7.0
+CFLAGS += -DMG_ENABLE_LWIP   # Only for Mongoose >= 7.0
 ifdef CONFIG_MG_SSL_IF_WOLFSSL
 COMPONENT_PRIV_INCLUDEDIRS := ../wolfssl ../wolfssl/wolfssl
 COMPONENT_EXTRA_INCLUDES := ${IDF_PATH}/components/freertos/include/freertos
+endif
+ifdef CONFIG_MG_SSL_IF_MBEDTLS
+CFLAGS += -DMG_ENABLE_MBEDTLS=1  # Only for Mongoose >= 7.0
 endif
 COMPONENT_SRCDIRS := mongoose
 COMPONENT_SUBMODULES := mongoose
