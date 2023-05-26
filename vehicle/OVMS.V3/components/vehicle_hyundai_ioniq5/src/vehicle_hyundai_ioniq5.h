@@ -322,6 +322,8 @@ protected:
   }
   void CheckResetDoorCheck();
 
+  int m_ecu_lockout;
+  bool m_ecu_status_on;
   void NotifiedOBD2ECUStart() override
   {
     if (m_ecu_lockout == 0)
@@ -333,12 +335,13 @@ protected:
   }
   void NotifiedVehicleOn() override
   {
-    m_ecu_lockout = 20;
+    if (m_ecu_lockout < 0)
+      m_ecu_lockout = 20;
   }
   void NotifiedVehicleOff() override
   {
-    m_ecu_lockout = 0;
     ECUStatusChange(false);
+    m_ecu_lockout = -1;
   }
   void NotifiedVehicleGear( int gear) override
   {
@@ -348,7 +351,6 @@ protected:
       ECUStatusChange(StandardMetrics.ms_v_env_on->AsBool() && StandardMetrics.ms_m_obd2ecu_on->AsBool());
   }
 
-  int m_ecu_lockout;
   void ECUStatusChange(bool run);
 public:
   // Non-Blocking VIN Request.

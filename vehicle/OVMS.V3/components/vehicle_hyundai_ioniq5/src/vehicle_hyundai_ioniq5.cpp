@@ -646,7 +646,8 @@ OvmsHyundaiIoniqEv::OvmsHyundaiIoniqEv()
   MyConfig.RegisterParam("xiq", "Ioniq 5/EV6 specific settings.", true, true);
   ConfigChanged(NULL);
 
-  m_ecu_lockout = 0;
+  m_ecu_lockout = -1;
+  m_ecu_status_on = false;
 
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
   WebInit();
@@ -673,6 +674,12 @@ static const char *ECU_POLL = "!xiq.ecu";
 
 void OvmsHyundaiIoniqEv::ECUStatusChange(bool run)
 {
+  if (m_ecu_status_on == run) {
+    return;
+  }
+  if (!run)
+    m_ecu_lockout = -1;
+  m_ecu_status_on = run;
   // When ECU is running - be more agressive.
   int newThrottle =  run ? 10 : 5;
   bool subtick = run && MyConfig.GetParamValueBool("xiq", "poll_subtick", false);
@@ -1159,12 +1166,19 @@ void OvmsHyundaiIoniqEv::Ticker1(uint32_t ticker)
   // Let the busy time of starting the car happen before we
   // ramp up the speed of the polls to support obd2ecu.
   // Otherwise we can see the car reporting system failures.
-  if (m_ecu_lockout > 0 && (--m_ecu_lockout == 0)) {
-    if (StandardMetrics.ms_v_env_on->AsBool()
-        && StandardMetrics.ms_m_obd2ecu_on->AsBool()
-        && (StdMetrics.ms_v_env_gear->AsInt() > 0)) {
-      ECUStatusChange(true);
-    }
+
+  if (StandardMetrics.ms_v_env_on->AsBool()
+      && StandardMetrics.ms_m_obd2ecu_on->AsBool()
+      && (StdMetrics.ms_v_env_gear->AsInt() > 0)) {
+
+    if (m_ecu_lockout > 0)
+      --m_ecu_lockout;
+    else if (m_ecu_lockout < 0)
+      m_ecu_lockout = 10;
+
+    ECUStatusChange(m_ecu_lockout==0);
+  } else {
+    ECUStatusChange(false);
   }
 
   // Send tester present
