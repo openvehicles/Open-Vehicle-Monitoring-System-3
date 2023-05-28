@@ -56,7 +56,7 @@ OvmsVehicleToyotaBz4x::~OvmsVehicleToyotaBz4x()
 class OvmsVehicleToyotaBz4xInit
   {
   public: OvmsVehicleToyotaBz4xInit();
-} MyOvmsVehicleNoneInit  __attribute__ ((init_priority (9000)));
+} OvmsVehicleToyotaBz4xInit  __attribute__ ((init_priority (9000)));
 
 OvmsVehicleToyotaBz4xInit::OvmsVehicleToyotaBz4xInit()
   {
