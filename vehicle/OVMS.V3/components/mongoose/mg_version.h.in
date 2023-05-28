@@ -1,0 +1,24 @@
+/* GENERATED FILE */
+
+/** Major version number (X.x.x) */
+#define MG_VERSION_MAJOR   @MG_VERSION_MAJOR@
+/** Minor version number (x.X.x) */
+#define MG_VERSION_MINOR   @MG_VERSION_MINOR@
+/** Patch version number (x.x.X) */
+#define MG_VERSION_PATCH   @MG_VERSION_PATCH@
+
+/**
+ * Macro to convert MG version number into an integer
+ *
+ * To be used in comparisons, such as MG_VERSION_NUMBER >= MG_VERSION_VAL(7, 0, 0)
+ */
+#define MG_VERSION_VAL(major, minor, patch) ((major << 16) | (minor << 8) | (patch))
+
+/**
+ * Current MG version, as an integer
+ *
+ * To be used in comparisons, such as MG_VERSION_NUMBER >= MG_VERSION_VAL(4, 0, 0)
+ */
+#define MG_VERSION_NUMBER  MG_VERSION_VAL(MG_VERSION_MAJOR, \
+                                          MG_VERSION_MINOR, \
+                                          MG_VERSION_PATCH)
