@@ -39,6 +39,15 @@ class OvmsVehicleToyotaBz4x : public OvmsVehicle
   public:
     OvmsVehicleToyotaBz4x();
     ~OvmsVehicleToyotaBz4x();
+
+  public:
+    void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
+    void IncomingFrameCan1(CAN_frame_t* p_frame);
+    void IncomingFrameCan2(CAN_frame_t* p_frame);
+    void IncomingFrameCan3(CAN_frame_t* p_frame);
+  
+  protected:
+    std::string         m_rxbuf;
   };
 
 #endif //#ifndef __VEHICLE_TOYOTA_BZ4X_H__

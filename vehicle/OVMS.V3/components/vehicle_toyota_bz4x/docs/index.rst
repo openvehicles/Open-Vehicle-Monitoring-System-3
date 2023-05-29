@@ -6,6 +6,11 @@ Vehicle Type: **Toyota bZ4X**
 
 This vehicle type supports the 2023 Toyota bZ4X and 2023 Subaru Solterra.
 
+Short type code = TOYBZ4X
+Long vehicle name = Toyota bZ4X
+unique log tag = v-toyotabz4x
+unique namespace prefix = xbz
+
 ----------------
 Support Overview
 ----------------
