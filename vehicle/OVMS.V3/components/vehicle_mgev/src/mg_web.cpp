@@ -87,19 +87,28 @@ void OvmsVehicleMgEv::WebDeInit()
 void OvmsVehicleMgEv::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
 {
     std::string error;
+    std::string bmstype;
+    int bmsval;
+
     //When we have more versions, need to change this to int and change from checkbox to select
-    bool updatedbms = DEFAULT_BMS_VERSION == 1 ? true : false;
+    //bool updatedbms = DEFAULT_BMS_VERSION == 1 ? true : false;
     
     if (c.method == "POST") {
-        updatedbms = (c.getvar("updatedbms") == "yes");
+        //updatedbms = (c.getvar("updatedbms") == "yes");
+        bmstype = c.getvar("bmstype");
+        bmsval = atoi(bmstype.c_str());
+
         
         if (error == "") {
           // store:
           //"Updated" BMS is version 1 (corresponding to BMSDoDLimits array element). "Original" BMS is version 0 (corresponding to BMSDoDLimits array element)
-          MyConfig.SetParamValueInt("xmg", "bms.version", updatedbms ? 1 : 0);
+          //MyConfig.SetParamValueInt("xmg", "bms.version", updatedbms ? 1 : 0);
+            MyConfig.SetParamValueInt("xmg", "bmsval", bmsval);
+            MyConfig.SetParamValue("xmg", "bmstype", bmstype);
+
           
           c.head(200);
-          c.alert("success", "<p class=\"lead\">MG ZS EV / MG5 feature configuration saved.</p>");
+          c.alert("success", "<p class=\"lead\">MG ZS EV feature configuration saved.</p>");
           MyWebServer.OutputHome(p, c);
           c.done();
           return;
@@ -110,7 +119,7 @@ void OvmsVehicleMgEv::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
         c.alert("danger", error.c_str());
     } else {
         // read configuration:
-        switch (MyConfig.GetParamValueInt("xmg", "bms.version", DEFAULT_BMS_VERSION))
+        /*switch (MyConfig.GetParamValueInt("xmg", "bms.version", DEFAULT_BMS_VERSION))
         {
           case 0:
             //"Updated" BMS is version 0 (corresponding to BMSDoDLimits array element)
@@ -121,16 +130,25 @@ void OvmsVehicleMgEv::WebCfgFeatures(PageEntry_t &p, PageContext_t &c)
             updatedbms = true;
             break;
         }
+        */
+        bmsval = MyConfig.GetParamValueInt("xmg", "bmsval",0);
+        bmstype = MyConfig.GetParamValue("xmg", "bmstype", "0");
+
         c.head(200);
     }
     // generate form:
-    c.panel_start("primary", "MG ZS EV / MG5 feature configuration");
+    c.panel_start("primary", "MG ZS EV feature configuration");
     c.form_start(p.uri);
 
-    c.fieldset_start("General");
+    c.fieldset_start("BMS Firmware Status");
     //When we have more versions, need to change this to select and updatedbms to int
-    c.input_checkbox("Updated BMS Firmware", "updatedbms", updatedbms,
-      "<p>Select this if you have BMS Firmware later than Jan 2021</p>");
+    //c.input_checkbox("Updated BMS Firmware", "updatedbms", updatedbms, "<p>Select this if you have BMS Firmware later than Jan 2021</p>");
+    c.input_radio_start("BMS Type", "bmstype");
+    c.input_radio_option("bmstype", "Original BMS Firmware", "0",  bmsval == 0);
+    c.input_radio_option("bmstype", "Updated BMS Firmware", "1", bmsval == 1);
+    c.input_radio_option("bmstype", "Select this if SOC not 100% at Full Charge after BMS Update", "2", bmsval == 2);
+    c.input_radio_end("");
+
     c.fieldset_end();
     c.print("<hr>");
     c.input_button("default", "Save");
