@@ -51,7 +51,6 @@
 #include "ovms_netmanager.h"
 #include "ovms_utils.h"
 #include "log_buffers.h"
-#include "ovms_webserver_mtimes.h"
 
 // The setup wizard currently is tailored to be used with a WiFi enabled module:
 #ifdef CONFIG_OVMS_COMP_WIFI
