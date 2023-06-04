@@ -79,7 +79,7 @@ void OvmsVehicleMitsubishi::IncomingPollReply(canbus* bus, uint16_t type, uint16
       // ****** OBC *****
       case 0x766:
       {
-        //ESP_LOGW(TAGPOLL, "%03" PRIx32 " TYPE:%x PID:%02x Data:%02x %02x %02x %02x %02x %02x %02x %02x LENG:%02x REM:%02x", m_poll_moduleid_low, type, pid, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], length, mlremain);
+        ESP_LOGW(TAGPOLL, "%03" PRIx32 " TYPE:%x PID:%02x Data:%02x %02x %02x %02x %02x %02x %02x %02x LENG:%02x REM:%02x", m_poll_moduleid_low, type, pid, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], length, mlremain);
         break;
       }
 
