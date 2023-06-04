@@ -173,10 +173,12 @@ obd2ecu::obd2ecu(const char* name, canbus* can)
   xTaskCreatePinnedToCore(OBD2ECU_task, "OVMS OBDII ECU", 6144, (void*)this, 5, &m_task, CORE(1));
 
   MyCan.RegisterListener(m_rxqueue);
+  NotifyStartup();
   }
 
 obd2ecu::~obd2ecu()
   {
+  NotifyShutdown();
   m_can->SetPowerMode(Off);
   MyCan.DeregisterListener(m_rxqueue);
 
@@ -184,6 +186,18 @@ obd2ecu::~obd2ecu()
   vTaskDelete(m_task);
 
   ClearMap();
+  }
+
+void obd2ecu::NotifyStartup()
+  {
+  StandardMetrics.ms_m_obd2ecu_on->SetValue(true);
+  MyEvents.SignalEvent("obd2ecu.start", NULL);
+  }
+
+void obd2ecu::NotifyShutdown()
+  {
+  StandardMetrics.ms_m_obd2ecu_on->SetValue(false);
+  MyEvents.SignalEvent("obd2ecu.stop", NULL);
   }
 
 void obd2ecu::SetPowerMode(PowerMode powermode)
@@ -489,7 +503,7 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
   uint8_t *p_d = p_frame->data.u8;  /* Incoming frame data from HUD / Dongle */
   uint8_t *r_d = r_frame.data.u8;  /* Response frame data being sent back to HUD / Dongle */
 
-  ESP_LOGD(TAG, "Rcv %x: %x (%x %x %x %x %x %x %x %x)",
+  ESP_LOGD(TAG, "Rcv %" PRIx32 ": %x (%x %x %x %x %x %x %x %x)",
                       p_frame->MsgID,
                       p_frame->FIR.B.DLC,
                       p_d[0],p_d[1],p_d[2],p_d[3],p_d[4],p_d[5],p_d[6],p_d[7]);
@@ -504,7 +518,7 @@ void obd2ecu::IncomingFrame(CAN_frame_t* p_frame)
            return;  /* ignore it.  We just sleep for a bit instead */
          }
          /* if none of the above, no idea what it is.  Ignore */
-         ESP_LOGD(TAG, "unknown MsgID %x",p_frame->MsgID);
+         ESP_LOGD(TAG, "unknown MsgID %" PRIx32,p_frame->MsgID);
          return;
        }
 
@@ -834,7 +848,7 @@ void obd2ecu::Addpid(uint8_t pid)
 
   if(pid <= 0x20)       // PIDs 1-20
   { m_supported_01_20 |= 1 << (32-pid);
-    ESP_LOGD(TAG, "Added 0x%02x resulting 0x%08x",pid,m_supported_01_20);
+    ESP_LOGD(TAG, "Added 0x%02x resulting 0x%08" PRIx32,pid,m_supported_01_20);
     return;
   }
 

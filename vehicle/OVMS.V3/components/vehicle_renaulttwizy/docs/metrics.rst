@@ -8,6 +8,8 @@ Metric name                              Example value            Description
 co.can1.nd1.emcy.code                                             SEVCON emergency code
 co.can1.nd1.emcy.type                                             SEVCON emergendy type
 co.can1.nd1.state                        Operational              SEVCON state (preop/op)
+xrt.b.energy.avail                       4.7                      Current battery energy available [kWh] (aged)
+xrt.b.energy.full                        5.9                      Maximum battery energy capacity [kWh] (aged, needs full charge)
 xrt.b.u.soc.max                          70.52%                   Current trip/charge pack SOC max
 xrt.b.u.soc.min                          50.8%                    Current trip/charge pack SOC min
 xrt.b.u.temp.max                         20°C                     Current trip/charge pack temp max

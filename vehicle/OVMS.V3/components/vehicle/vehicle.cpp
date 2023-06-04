@@ -366,11 +366,13 @@ OvmsVehicle::OvmsVehicle()
     CONFIG_OVMS_VEHICLE_RXTASK_STACK, (void*)this, 10, &m_rxtask, CORE(1));
 
   MyEvents.RegisterEvent(TAG, "ticker.1", std::bind(&OvmsVehicle::VehicleTicker1, this, _1, _2));
+
   MyEvents.RegisterEvent(TAG, "config.changed", std::bind(&OvmsVehicle::VehicleConfigChanged, this, _1, _2));
   MyEvents.RegisterEvent(TAG, "config.mounted", std::bind(&OvmsVehicle::VehicleConfigChanged, this, _1, _2));
   VehicleConfigChanged("config.mounted", NULL);
 
   MyMetrics.RegisterListener(TAG, "*", std::bind(&OvmsVehicle::MetricModified, this, _1));
+
   }
 
 OvmsVehicle::~OvmsVehicle()
@@ -549,7 +551,7 @@ void OvmsVehicle::RegisterCanBus(int bus, CAN_mode_t mode, CAN_speed_t speed, db
     }
   }
 
-bool OvmsVehicle::PinCheck(char* pin)
+bool OvmsVehicle::PinCheck(const char* pin)
   {
   if (!MyConfig.IsDefined("password","pin")) return false;
 
@@ -897,66 +899,227 @@ void OvmsVehicle::CalculateEfficiency()
 
 OvmsVehicle::vehicle_command_t OvmsVehicle::CommandSetChargeMode(vehicle_mode_t mode)
   {
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  if (MyDuktape.DukTapeAvailable())
+    {
+    std::string mode_code = chargemode_code((int)mode);
+    StringWriter dukcmd;
+    dukcmd.printf("(!OvmsVehicle.SetChargeMode.prototype)?-1:"
+      "OvmsVehicle.SetChargeMode(\"%s\")", mode_code.c_str());
+    int res = MyDuktape.DuktapeEvalIntResult(dukcmd.c_str());
+    if (res >= 0) return res ? Success : Fail;
+    }
+#endif
   return NotImplemented;
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicle::CommandSetChargeCurrent(uint16_t limit)
   {
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  if (MyDuktape.DukTapeAvailable())
+    {
+    StringWriter dukcmd;
+    dukcmd.printf("(!OvmsVehicle.SetChargeCurrent.prototype)?-1:"
+      "OvmsVehicle.SetChargeCurrent(%" PRIu16 ")", limit);
+    int res = MyDuktape.DuktapeEvalIntResult(dukcmd.c_str());
+    if (res >= 0) return res ? Success : Fail;
+    }
+#endif
   return NotImplemented;
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStartCharge()
   {
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  if (MyDuktape.DukTapeAvailable())
+    {
+    StringWriter dukcmd;
+    dukcmd.printf("(!OvmsVehicle.StartCharge.prototype)?-1:"
+      "OvmsVehicle.StartCharge()");
+    int res = MyDuktape.DuktapeEvalIntResult(dukcmd.c_str());
+    if (res >= 0) return res ? Success : Fail;
+    }
+#endif
   return NotImplemented;
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStopCharge()
   {
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  if (MyDuktape.DukTapeAvailable())
+    {
+    StringWriter dukcmd;
+    dukcmd.printf("(!OvmsVehicle.StopCharge.prototype)?-1:"
+      "OvmsVehicle.StopCharge()");
+    int res = MyDuktape.DuktapeEvalIntResult(dukcmd.c_str());
+    if (res >= 0) return res ? Success : Fail;
+    }
+#endif
   return NotImplemented;
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicle::CommandSetChargeTimer(bool timeron, uint16_t timerstart)
   {
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  if (MyDuktape.DukTapeAvailable())
+    {
+    StringWriter dukcmd;
+    dukcmd.printf("(!OvmsVehicle.SetChargeTimer.prototype)?-1:"
+      "OvmsVehicle.SetChargeTimer(%s,%" PRIu16 ")", timeron ? "true" : "false", timerstart);
+    int res = MyDuktape.DuktapeEvalIntResult(dukcmd.c_str());
+    if (res >= 0) return res ? Success : Fail;
+    }
+#endif
   return NotImplemented;
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicle::CommandCooldown(bool cooldownon)
   {
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  if (MyDuktape.DukTapeAvailable())
+    {
+    StringWriter dukcmd;
+    const char *method = cooldownon ? "StartCooldown" : "StopCooldown";
+    dukcmd.printf("(!OvmsVehicle.%s.prototype)?-1:"
+      "OvmsVehicle.%s()", method, method);
+    int res = MyDuktape.DuktapeEvalIntResult(dukcmd.c_str());
+    if (res >= 0) return res ? Success : Fail;
+    }
+#endif
   return NotImplemented;
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicle::CommandClimateControl(bool climatecontrolon)
   {
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  if (MyDuktape.DukTapeAvailable())
+    {
+    StringWriter dukcmd;
+    dukcmd.printf("(!OvmsVehicle.ClimateControl.prototype)?-1:"
+      "OvmsVehicle.ClimateControl(%s)", climatecontrolon ? "true" : "false");
+    int res = MyDuktape.DuktapeEvalIntResult(dukcmd.c_str());
+    if (res >= 0) return res ? Success : Fail;
+    }
+#endif
   return NotImplemented;
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicle::CommandWakeup()
   {
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  if (MyDuktape.DukTapeAvailable())
+    {
+    StringWriter dukcmd;
+    dukcmd.printf("(!OvmsVehicle.Wakeup.prototype)?-1:"
+      "OvmsVehicle.Wakeup()");
+    int res = MyDuktape.DuktapeEvalIntResult(dukcmd.c_str());
+    if (res >= 0) return res ? Success : Fail;
+    }
+#endif
   return NotImplemented;
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicle::CommandLock(const char* pin)
   {
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  if (MyDuktape.DukTapeAvailable())
+    {
+    std::string pin_json = json_encode(std::string(pin));
+    StringWriter dukcmd;
+    dukcmd.printf("(!OvmsVehicle.Lock.prototype)?-1:"
+      "OvmsVehicle.Lock(\"%s\")", pin_json.c_str());
+    int res = MyDuktape.DuktapeEvalIntResult(dukcmd.c_str());
+    if (res >= 0) return res ? Success : Fail;
+    }
+#endif
   return NotImplemented;
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicle::CommandUnlock(const char* pin)
   {
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  if (MyDuktape.DukTapeAvailable())
+    {
+    std::string pin_json = json_encode(std::string(pin));
+    StringWriter dukcmd;
+    dukcmd.printf("(!OvmsVehicle.Unlock.prototype)?-1:"
+      "OvmsVehicle.Unlock(\"%s\")", pin_json.c_str());
+    int res = MyDuktape.DuktapeEvalIntResult(dukcmd.c_str());
+    if (res >= 0) return res ? Success : Fail;
+    }
+#endif
   return NotImplemented;
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicle::CommandActivateValet(const char* pin)
   {
-  return NotImplemented;
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  if (MyDuktape.DukTapeAvailable())
+    {
+    std::string pin_json = json_encode(std::string(pin));
+    StringWriter dukcmd;
+    dukcmd.printf("(!OvmsVehicle.Valet.prototype)?-1:"
+      "OvmsVehicle.Valet(\"%s\")", pin_json.c_str());
+    int res = MyDuktape.DuktapeEvalIntResult(dukcmd.c_str());
+    if (res >= 0)
+      {
+        if (res)
+          {
+          StandardMetrics.ms_v_env_valet->SetValue(true);
+          return Success;
+          }
+        else
+          return Fail;
+      }
+    }
+#endif
+  if (StandardMetrics.ms_v_env_valet->AsBool())
+    return Success;
+  if (!PinCheck(pin))
+    return Fail;
+  StandardMetrics.ms_v_env_valet->SetValue(true);
+  return Success;
+
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicle::CommandDeactivateValet(const char* pin)
   {
-  return NotImplemented;
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  if (MyDuktape.DukTapeAvailable())
+    {
+    std::string pin_json = json_encode(std::string(pin));
+    StringWriter dukcmd;
+    dukcmd.printf("(!OvmsVehicle.Unvalet.prototype)?-1:"
+      "OvmsVehicle.Unvalet(\"%s\")", pin_json.c_str());
+    int res = MyDuktape.DuktapeEvalIntResult(dukcmd.c_str());
+    if (res >= 0)
+      {
+      if (res)
+        StandardMetrics.ms_v_env_valet->SetValue(false);
+      return res ? Success : Fail;
+      }
+    }
+#endif
+  if (!StandardMetrics.ms_v_env_valet->AsBool())
+    return Success;
+  if (!PinCheck(pin))
+    return Fail;
+  StandardMetrics.ms_v_env_valet->SetValue(false);
+  return Success;
   }
 
 OvmsVehicle::vehicle_command_t OvmsVehicle::CommandHomelink(int button, int durationms)
   {
+#ifdef CONFIG_OVMS_SC_JAVASCRIPT_DUKTAPE
+  if (MyDuktape.DukTapeAvailable())
+    {
+    StringWriter dukcmd;
+    dukcmd.printf("(!OvmsVehicle.Homelink.prototype)?-1:"
+      "OvmsVehicle.Homelink(%d,%d)", button+1, durationms);
+    int res = MyDuktape.DuktapeEvalIntResult(dukcmd.c_str());
+    if (res >= 0) return res ? Success : Fail;
+    }
+#endif
   return NotImplemented;
   }
 
@@ -1583,6 +1746,17 @@ void OvmsVehicle::MetricModified(OvmsMetric* metric)
     {
     CalculateRangeSpeed();
     }
+  else if (metric == StdMetrics.ms_m_obd2ecu_on)
+    {
+    if ( StdMetrics.ms_m_obd2ecu_on->AsBool() )
+      {
+      NotifiedOBD2ECUStart();
+      }
+    else
+      {
+      NotifiedOBD2ECUStop();
+      }
+    }
   }
 
 /**
@@ -2078,16 +2252,17 @@ void OvmsVehicle::GetDashboardConfig(DashboardConfig& cfg)
   motort_dash.AddBand("red", 110, 125);
 
   std::ostringstream str;
-  str
-    << batteryt_dash // Battery temperature
-    << voltage_dash // Voltage
-    << motort_dash // Motor temperature
-    << invertert_dash // Inverter temperature
-    << power_dash // Power
-    << soc_dash // SOC
-    << charget_dash // Charger temperature
-    << speed_dash // Speed
-    << eff_dash; // Efficiency
+  str << "yAxis: ["
+      << speed_dash << "," // Speed
+      << voltage_dash << "," // Voltage
+      << soc_dash << "," // SOC
+      << eff_dash << "," // Efficiency
+      << power_dash << "," // Power
+      << charget_dash << "," // Charger temperature
+      << batteryt_dash << "," // Battery temperature
+      << invertert_dash << "," // Inverter temperature
+      << motort_dash // Motor temperature
+      << "]";
   cfg.gaugeset1 = str.str();
   }
 #endif // #ifdef CONFIG_OVMS_COMP_WEBSERVER

@@ -101,6 +101,7 @@
 
 #include "ovms_log.h"
 #include <stdio.h>
+#include <math.h>
 #include <string.h>
 #include "pcp.h"
 #include "vehicle_mitsubishi.h"

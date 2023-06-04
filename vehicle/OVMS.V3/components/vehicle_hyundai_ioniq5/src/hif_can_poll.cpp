@@ -60,10 +60,6 @@ void OvmsHyundaiIoniqEv::IncomingPollReply(canbus *bus, uint16_t type, uint16_t 
       process_all = true;
       break;
 
-    // ****** ABS ESP ******
-    case 0x7d9:
-      IncomingAbsEsp(bus, type, pid, data, length, mlremain);
-      break;
 
     // ******* VMCU ******
     case 0x7ea:
@@ -85,7 +81,7 @@ void OvmsHyundaiIoniqEv::IncomingPollReply(canbus *bus, uint16_t type, uint16_t 
       break;
 
     default:
-      ESP_LOGD(TAG, "Unknown module: %03x", m_poll_moduleid_low);
+      ESP_LOGD(TAG, "Unknown module: %03" PRIx32, m_poll_moduleid_low);
       XDISARM;
       return;
   }
@@ -103,7 +99,7 @@ void OvmsHyundaiIoniqEv::IncomingPollReply(canbus *bus, uint16_t type, uint16_t 
       obd_rxpid = pid;
       obd_frame = 0;
       rxbuf.clear();
-      ESP_LOGV(TAG, "IoniqISOTP: IPR %03x TYPE:%x PID: %03x Buffer: %d - Start",
+      ESP_LOGV(TAG, "IoniqISOTP: IPR %03" PRIx32 " TYPE:%x PID: %03x Buffer: %d - Start",
         m_poll_moduleid_low, type, pid, length + mlremain);
       rxbuf.reserve(length + mlremain);
     }
@@ -113,7 +109,7 @@ void OvmsHyundaiIoniqEv::IncomingPollReply(canbus *bus, uint16_t type, uint16_t 
         return; // Aborted
       }
       if ((obd_rxtype != type) || (obd_rxpid != pid) || (obd_module != m_poll_moduleid_low)) {
-        ESP_LOGD(TAG, "IoniqISOTP: IPR %03x TYPE:%x PID: %03x Dropped Frame",
+        ESP_LOGD(TAG, "IoniqISOTP: IPR %03" PRIx32 " TYPE:%x PID: %03x Dropped Frame",
           m_poll_moduleid_low, type, pid);
         XDISARM;
         return;
@@ -122,7 +118,7 @@ void OvmsHyundaiIoniqEv::IncomingPollReply(canbus *bus, uint16_t type, uint16_t 
       if (obd_frame != m_poll_ml_frame) {
         obd_frame = 0xffff;
         rxbuf.clear();
-        ESP_LOGD(TAG, "IoniqISOTP: IPR %03x TYPE:%x PID: %03x Skipped Frame: %d",
+        ESP_LOGD(TAG, "IoniqISOTP: IPR %03" PRIx32 " TYPE:%x PID: %03x Skipped Frame: %d",
           m_poll_moduleid_low, type, pid, obd_frame);
         XDISARM;
         return;
@@ -140,7 +136,7 @@ void OvmsHyundaiIoniqEv::IncomingPollReply(canbus *bus, uint16_t type, uint16_t 
       return;
     }
 
-    ESP_LOGD(TAG, "IoniqISOTP: IPR %03x TYPE:%x PID: %03x Frames: %d Message Size: %d",
+    ESP_LOGD(TAG, "IoniqISOTP: IPR %03" PRIx32 " TYPE:%x PID: %03x Frames: %d Message Size: %d",
       m_poll_moduleid_low, type, pid, obd_frame, rxbuf.size());
     ESP_BUFFER_LOGD(TAG, rxbuf.data(), rxbuf.size());
     switch (m_poll_moduleid_low) {
@@ -186,7 +182,7 @@ void OvmsHyundaiIoniqEv::IncomingCM_Full(canbus *bus, uint16_t type, uint16_t pi
       }
       else {
         StdMetrics.ms_v_pos_odometer->SetValue(value, GetConsoleUnits());
-        ESP_LOGD(TAG, "IoniqISOTP.CM: ODO : %d km", value);
+        ESP_LOGD(TAG, "IoniqISOTP.CM: ODO : %" PRId32 " km", value);
       }
     }
     break;
@@ -215,30 +211,6 @@ void OvmsHyundaiIoniqEv::IncomingOther_Full(canbus *bus, uint16_t type, uint16_t
           CalculateAcceleration();
         }
       } break;
-  }
-  XDISARM;
-}
-
-/**
- * Handle incoming messages from ABS ESP poll.
- */
-void OvmsHyundaiIoniqEv::IncomingAbsEsp(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length, uint16_t mlremain)
-{
-  XARM("OvmsHyundaiIoniqEv::IncomingAbsEsp");
-  //ESP_LOGD(TAG, "ABS/ESP PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", pid, length, m_poll_ml_frame, data[0], data[1], data[2], data[3],
-  //    data[4], data[5], data[6]);
-  switch (pid) {
-    case 0xC101:
-      if ( m_poll_ml_frame == 3) {
-        uint32_t value;
-        if (get_uint_bytes_be<1>(data, 2, length, value)) {
-          m_v_emergency_lights->SetValue(get_bit<6>(value));
-        }
-        if (get_uint_bytes_be<1>(data, 1, length, value)) {
-          m_v_traction_control->SetValue(get_bit<6>(value));
-        }
-      }
-      break;
   }
   XDISARM;
 }
@@ -275,7 +247,7 @@ void OvmsHyundaiIoniqEv::IncomingVMCU_Full(canbus *bus, uint16_t type, uint16_t 
               iq_shift_status = IqShiftStatus::Reverse;
               break;
             default: // Other.
-              ESP_LOGI(TAG, "Unknown Gear selection %d", res & 0xf);
+              ESP_LOGI(TAG, "Unknown Gear selection %" PRId32, res & 0xf);
           }
           switch (iq_shift_status) {
             case IqShiftStatus::Park:
@@ -394,6 +366,15 @@ void OvmsHyundaiIoniqEv::IncomingBMC_Full(canbus *bus, uint16_t type, uint16_t p
         else {
           m_b_bms_availpower->SetValue(value, Watts);
         }
+
+        if (get_uint_buff_be<2>(data, 7, value)) {
+          if (value == 0) {
+            m_v_charge_current_request->Clear();
+          } else {
+            m_v_charge_current_request->SetValue(value/10.0);
+          }
+        }
+
         if (!get_uint_buff_be<1>(data, 15, value)) {
           ESP_LOGE(TAG, "IoniqISOTP.BMC: BMS Min Temp Bad Buffer");
         }
@@ -579,7 +560,7 @@ void OvmsHyundaiIoniqEv::IncomingBMC_Full(canbus *bus, uint16_t type, uint16_t p
             break;
           }
           BmsSetCellTemperature(5 + i, temp);
-          ESP_LOGV(TAG, "[%03d] T =%.2dC", 5 + i, temp);
+          ESP_LOGV(TAG, "[%03d] T =%.2" PRId32 "C", 5 + i, temp);
         }
       }
       break;
@@ -617,11 +598,11 @@ void OvmsHyundaiIoniqEv::IncomingBMC_Full(canbus *bus, uint16_t type, uint16_t p
         // It seems that the first 4 byte bitset indicate which cells are active.
         uint32_t present;
         if (! get_uint_buff_be<4>(data, 0, present)) {
-          ESP_LOGE(TAG, "IoniqISOTP.Battery Cells from %d : Bad Buffer", base);
+          ESP_LOGE(TAG, "IoniqISOTP.Battery Cells from %" PRId32 " : Bad Buffer", base);
 
           break; // Can't get subsequent data if this fails!!
         }
-        ESP_LOGV(TAG, "IoniqISOTP.Battery Cells Available from %d - %.8x ", base, present);
+        ESP_LOGV(TAG, "IoniqISOTP.Battery Cells Available from %" PRId32 " - %.8" PRIx32 " ", base, present);
 
         for (int32_t idx = 0; idx < 32; ++idx) {
           // Bitset is from high downto low, left to right.
@@ -634,7 +615,7 @@ void OvmsHyundaiIoniqEv::IncomingBMC_Full(canbus *bus, uint16_t type, uint16_t p
             }
 
             if (! get_uint_buff_be<1>(data, 4 + idx, value)) {
-              ESP_LOGE(TAG, "IoniqISOTP.Battery Cell %d : Bad Buffer", cellNo);
+              ESP_LOGE(TAG, "IoniqISOTP.Battery Cell %" PRId32 " : Bad Buffer", cellNo);
             }
             else {
               float voltage = (float)value * 0.02;
@@ -862,6 +843,11 @@ void OvmsHyundaiIoniqEv::IncomingIGMP_Full(canbus *bus, uint16_t type, uint16_t 
       uint32_t lVal;
       if (get_uint_buff_be<1>(data, 5, lVal)) {
         m_v_rear_defogger->SetValue(get_bit<1>(lVal));
+      }
+      if (get_uint_buff_be<1>(data, 7, lVal)) {
+        m_v_env_indicator_l->SetValue((lVal & 0xc) == 0x8);
+        m_v_env_indicator_r->SetValue((lVal & 0xc) == 0x4);
+        m_v_emergency_lights->SetValue((lVal & 0xc) == 0xc);
       }
       XDISARMX(three);
     }

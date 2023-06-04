@@ -106,7 +106,7 @@ void OvmsVehicleMgEv::SoftwareVersions(OvmsWriter* writer)
         m_SoftwareVersionResponsesReceived = 0;
         for (size_t i = 0u; i < m_ECUCountToQuerySoftwareVersion; ++i)
         {
-            ESP_LOGV(TAG, "Sending query to %03x", ecus[i]);
+            ESP_LOGV(TAG, "Sending query to %03" PRIx32, ecus[i]);
             SendPollMessage(
                 currentBus, ecus[i], VEHICLE_POLL_TYPE_OBDIIEXTENDED, softwarePid
             );
@@ -121,7 +121,7 @@ void OvmsVehicleMgEv::SoftwareVersions(OvmsWriter* writer)
             a++;
         }
         
-        ESP_LOGI(TAG, "%d/%d ECUs responded", m_SoftwareVersionResponsesReceived, m_ECUCountToQuerySoftwareVersion);
+        ESP_LOGI(TAG, "%d/%" PRId32 " ECUs responded", m_SoftwareVersionResponsesReceived, m_ECUCountToQuerySoftwareVersion);
 
         m_GettingSoftwareVersions = false;
         //Reset GWM and BCM task back to none (incase we didn't receive a response back)
@@ -201,12 +201,12 @@ void OvmsVehicleMgEv::IncomingSoftwareVersionFrame(CAN_frame_t* frame, uint8_t f
                         { .u8 = { (ISOTP_FT_FLOWCTRL << 4 | 0), 0, 25, 0, 0, 0, 0, 0 } }
                     };
                     frame->origin->Write(&flowControl);
-                    ESP_LOGV(TAG, "First part of software version response from %03x. %d bytes expected, %d bytes received, %d bytes remaining.", frame->MsgID - rxFlag, dataLength, BytesToCopy, dataLength - BytesToCopy); 
+                    ESP_LOGV(TAG, "First part of software version response from %03" PRIx32 ". %d bytes expected, %d bytes received, %d bytes remaining.", frame->MsgID - rxFlag, dataLength, BytesToCopy, dataLength - BytesToCopy); 
                 }  
                 else
                 {
                     m_SoftwareVersionResponsesReceived++;
-                    ESP_LOGI(TAG, "(%d/%d) Received software version response from %03x", m_SoftwareVersionResponsesReceived, m_ECUCountToQuerySoftwareVersion, frame->MsgID - rxFlag); 
+                    ESP_LOGI(TAG, "(%d/%" PRId32 ") Received software version response from %03" PRIx32, m_SoftwareVersionResponsesReceived, m_ECUCountToQuerySoftwareVersion, frame->MsgID - rxFlag); 
                 }                        
             }
             break;
@@ -229,12 +229,12 @@ void OvmsVehicleMgEv::IncomingSoftwareVersionFrame(CAN_frame_t* frame, uint8_t f
                         get<1>(version).begin() + start
                     );     
                     get<2>(version) -= BytesToCopy; //Decrement bytes remaining
-                    ESP_LOGV(TAG, "Received consecutive frame (%d) of software version response from %03x. %d bytes received, %d bytes remaining.", frameNumber, frame->MsgID - rxFlag, BytesToCopy, get<2>(version));
+                    ESP_LOGV(TAG, "Received consecutive frame (%d) of software version response from %03" PRIx32 ". %d bytes received, %d bytes remaining.", frameNumber, frame->MsgID - rxFlag, BytesToCopy, get<2>(version));
                     if (get<2>(version) == 0)
                     {
                         //No more bytes remaining
                         m_SoftwareVersionResponsesReceived++;
-                        ESP_LOGI(TAG, "(%d/%d) Received software version response from %03x", m_SoftwareVersionResponsesReceived, m_ECUCountToQuerySoftwareVersion, frame->MsgID - rxFlag);
+                        ESP_LOGI(TAG, "(%d/%" PRId32 ") Received software version response from %03" PRIx32, m_SoftwareVersionResponsesReceived, m_ECUCountToQuerySoftwareVersion, frame->MsgID - rxFlag);
                         switch (frame->MsgID - rxFlag)
                         {
                             case gwmId:

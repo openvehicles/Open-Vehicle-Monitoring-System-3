@@ -35,7 +35,12 @@
 #include <functional>
 #include <map>
 #include <list>
+#include "esp_idf_version.h"
+#if ESP_IDF_VERSION_MAJOR >= 4
 #include <esp_event.h>
+#else
+#include <esp_event_loop.h>
+#endif
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/queue.h"
@@ -107,8 +112,12 @@ class OvmsEvents
     void EventTask();
     void HandleQueueSignalEvent(event_queue_t* msg);
     void FreeQueueSignalEvent(event_queue_t* msg);
+#if ESP_IDF_VERSION_MAJOR >= 4
+    static void ReceiveSystemEvent(void* handler_args, esp_event_base_t base, int32_t id, void* event_data);
+#else
     static esp_err_t ReceiveSystemEvent(void *ctx, system_event_t *event);
     void SignalSystemEvent(system_event_t *event);
+#endif
     const EventMap& Map() { return m_map; }
 
   protected:
@@ -120,6 +129,9 @@ class OvmsEvents
     TimerList m_timers;
     TimerStatusMap m_timer_active;
     OvmsMutex m_timers_mutex;
+#if ESP_IDF_VERSION_MAJOR >= 4
+    esp_event_handler_instance_t event_handler_instance;
+#endif
 
   public:
     bool m_trace;

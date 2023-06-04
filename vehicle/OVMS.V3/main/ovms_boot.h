@@ -49,12 +49,22 @@ typedef enum
     BR_Crash,                       // crash after reaching stable state
   } bootreason_t;
 
+#if (ESP_IDF_VERSION_MAJOR < 4) || CONFIG_IDF_TARGET_ARCH_XTENSA
+  #define __ARCH_NB_REGS 24
+  #define __ARCH_REG_OFFSET_IN_FRAME 1
+#elif CONFIG_IDF_TARGET_ARCH_RISCV
+  #define __ARCH_NB_REGS 37
+  #define __ARCH_REG_OFFSET_IN_FRAME 0
+#else
+  #error "Unknown architecture, please fix ovms_boot.h"
+#endif
+
 #define OVMS_BT_LEVELS 32
 typedef struct
   {
   int core_id;
   bool is_abort;
-  uint32_t reg[24];
+  uint32_t reg[__ARCH_NB_REGS];
   struct
     {
     uint32_t pc;
@@ -133,7 +143,11 @@ class Boot
     bool m_shutting_down;
 
   public:
-    static void ErrorCallback(XtExcFrame *frame, int core_id, bool is_abort);
+#if ESP_IDF_VERSION_MAJOR < 4
+    static void ErrorCallback(XtExcFrame *f, int core_id, bool is_abort);
+#else
+    static void ErrorCallback(const void *f, int core_id, bool is_abort, esp_reset_reason_t reset_hint);
+#endif
     void NotifyDebugCrash();
 
   protected:

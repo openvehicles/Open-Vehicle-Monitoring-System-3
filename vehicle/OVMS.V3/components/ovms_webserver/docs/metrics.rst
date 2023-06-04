@@ -18,7 +18,8 @@ So for example the user could configure distance values to be in miles, and in t
 The user conversion information is contained in another object ``units``.  ``units.metrics``
 has the user configuration for each metric and ``units.prefs`` has the user configuration
 for each group of metrics (distance, temperature, consumption, pressure etc). There also some methods
-for general conversions allowing user preferences.
+for general conversions allowing user preferences:
+
 - The method ``units.unitLabelToUser(unitType,name)`` will return the user
   defined label for that 'unitType', defaulting to ``name``.
 - The method ``units.unitValueToUser(unitType,value)`` will convert ``value``

@@ -31,8 +31,11 @@
 static const char *TAG = "v-hyundaivfl";
 
 #include <stdio.h>
+#include <math.h>
 #include "vehicle_hyundai_ioniqvfl.h"
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
 #include "ovms_webserver.h"
+#endif
 
 // RX buffer access macros: b=byte#
 #define RXB_BYTE(b)           m_rxbuf[b]
@@ -106,9 +109,11 @@ OvmsVehicleHyundaiVFL::OvmsVehicleHyundaiVFL()
   BmsSetCellDefaultThresholdsVoltage(0.020, 0.030);
   BmsSetCellDefaultThresholdsTemperature(2.0, 3.0);
 
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
   // Init web UI:
   MyWebServer.RegisterPage("/xhi/features", "Features", WebCfgFeatures, PageMenu_Vehicle, PageAuth_Cookie);
   MyWebServer.RegisterPage("/xhi/battmon", "Battery Monitor", OvmsWebServer::HandleBmsCellMonitor, PageMenu_Vehicle, PageAuth_Cookie);
+#endif
 
   // Init polling:
   PollSetThrottling(0);
@@ -128,8 +133,10 @@ OvmsVehicleHyundaiVFL::~OvmsVehicleHyundaiVFL()
 {
   ESP_LOGI(TAG, "Shutdown Hyundai Ioniq vFL vehicle module");
   PollSetPidList(m_can1, NULL);
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
   MyWebServer.DeregisterPage("/xhi/battmon");
   MyWebServer.DeregisterPage("/xhi/features");
+#endif
   MyMetrics.DeregisterMetric(m_xhi_charge_state);
   MyMetrics.DeregisterMetric(m_xhi_env_state);
   MyMetrics.DeregisterMetric(m_xhi_bat_soc_bms);

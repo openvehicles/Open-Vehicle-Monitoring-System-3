@@ -189,7 +189,7 @@ void OvmsVehicleKiaSoulEv::IncomingFrameCan1(CAN_frame_t* p_frame)
 
 	case 0x534:
 		{
-		ESP_LOGI(TAG, "%03x 8 %02x %02x %02x %02x %02x %02x %02x %02x",
+		ESP_LOGI(TAG, "%03" PRIx32 " 8 %02x %02x %02x %02x %02x %02x %02x %02x",
 				p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
 		if( (d[1] & 0x3) == 0 )
 			{

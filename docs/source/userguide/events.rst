@@ -79,6 +79,8 @@ network.wifi.sta.bad                          WIFI client has bad signal level
 network.wifi.sta.good                         WIFI client has good signal level
 network.wifi.up                               WIFI network is up
 notify.<type>.<subtype>                       An info / alert / error notification is sent
+obd2ecu.start                                 Called after the OBD2ECU process is started.
+obd2ecu.stop                                  Called before the OBD2ECU process is stopped.
 retools.cleared.all                           RE frame log has been cleared
 retools.cleared.changed                       RE frame change flags cleared
 retools.cleared.discovered                    RE frame discovery flags cleared

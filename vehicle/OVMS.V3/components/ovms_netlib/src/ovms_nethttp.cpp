@@ -33,7 +33,9 @@ static const char *TAG = "ovms-net-http";
 
 #include "ovms.h"
 #include "ovms_nethttp.h"
+#ifdef CONFIG_MG_ENABLE_SSL
 #include "ovms_tls.h"
+#endif
 #include "ovms_utils.h"
 #include "ovms_buffer.h"
 

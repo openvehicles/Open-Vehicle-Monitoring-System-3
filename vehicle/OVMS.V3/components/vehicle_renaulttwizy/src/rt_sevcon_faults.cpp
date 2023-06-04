@@ -238,7 +238,7 @@ void SevconClient::EmcyListener(string event, void* data)
     return;
 
   uint32_t fault = emcy.data[1] << 8 | emcy.data[0];
-  ESP_LOGW(TAG, "Sevcon: received fault code 0x%04x", fault);
+  ESP_LOGW(TAG, "Sevcon: received fault code 0x%04" PRIx32, fault);
   MyEvents.SignalEvent("vehicle.fault.code", (void*)fault);
 
   // button push?
@@ -471,11 +471,11 @@ CANopenResult_t SevconClient::QueryLogs(int verbosity, OvmsWriter* writer, int w
       buf.str(""); buf.clear();
       buf << "RT-ENG-LogFaults," << n << ",86400,";
       AddFaultInfo(buf, sdoval);
-      _readsdo(0x4112, 0x02); buf << "," << sdoval;
-      _readsdo(0x4112, 0x03); buf << "," << sdoval;
-      _readsdo(0x4112, 0x04); buf << "," << sdoval;
-      _readsdo(0x4112, 0x05); buf << "," << sdoval;
-      _readsdo(0x4112, 0x06); buf << "," << sdoval;
+      (void)_readsdo(0x4112, 0x02); buf << "," << sdoval;
+      (void)_readsdo(0x4112, 0x03); buf << "," << sdoval;
+      (void)_readsdo(0x4112, 0x04); buf << "," << sdoval;
+      (void)_readsdo(0x4112, 0x05); buf << "," << sdoval;
+      (void)_readsdo(0x4112, 0x06); buf << "," << sdoval;
       _output(buf);
       outcnt++;
     }
@@ -497,11 +497,11 @@ CANopenResult_t SevconClient::QueryLogs(int verbosity, OvmsWriter* writer, int w
       buf.str(""); buf.clear();
       buf << "RT-ENG-LogSystem," << n << ",86400,";
       AddFaultInfo(buf, sdoval);
-      _readsdo(0x4102, 0x02); buf << "," << sdoval;
-      _readsdo(0x4102, 0x03); buf << "," << sdoval;
-      _readsdo(0x4102, 0x04); buf << "," << sdoval;
-      _readsdo(0x4102, 0x05); buf << "," << sdoval;
-      _readsdo(0x4102, 0x06); buf << "," << sdoval;
+      (void)_readsdo(0x4102, 0x02); buf << "," << sdoval;
+      (void)_readsdo(0x4102, 0x03); buf << "," << sdoval;
+      (void)_readsdo(0x4102, 0x04); buf << "," << sdoval;
+      (void)_readsdo(0x4102, 0x05); buf << "," << sdoval;
+      (void)_readsdo(0x4102, 0x06); buf << "," << sdoval;
       _output(buf);
       outcnt++;
     }
@@ -525,11 +525,11 @@ CANopenResult_t SevconClient::QueryLogs(int verbosity, OvmsWriter* writer, int w
       buf.str(""); buf.clear();
       buf << "RT-ENG-LogCounts," << n << ",86400,";
       AddFaultInfo(buf, sdoval);
-      _readsdo(0x4201+n, 0x04); buf << "," << sdoval;
-      _readsdo(0x4201+n, 0x05); buf << "," << sdoval;
-      _readsdo(0x4201+n, 0x02); buf << "," << sdoval;
-      _readsdo(0x4201+n, 0x03); buf << "," << sdoval;
-      _readsdo(0x4201+n, 0x06); buf << "," << sdoval;
+      (void)_readsdo(0x4201+n, 0x04); buf << "," << sdoval;
+      (void)_readsdo(0x4201+n, 0x05); buf << "," << sdoval;
+      (void)_readsdo(0x4201+n, 0x02); buf << "," << sdoval;
+      (void)_readsdo(0x4201+n, 0x03); buf << "," << sdoval;
+      (void)_readsdo(0x4201+n, 0x06); buf << "," << sdoval;
       _output(buf);
       outcnt++;
     }
@@ -553,15 +553,15 @@ CANopenResult_t SevconClient::QueryLogs(int verbosity, OvmsWriter* writer, int w
       if (!_readsdo(0x4300+n, 0x02)) break;
       buf.str(""); buf.clear();
       buf << "RT-ENG-LogMinMax," << n << ",86400," << sdoval;
-      _readsdo(0x4300+n, 0x03); buf << "," << (int16_t) sdoval;
-      _readsdo(0x4300+n, 0x04); buf << "," << (int16_t) sdoval;
-      _readsdo(0x4300+n, 0x05); buf << "," << (int16_t) sdoval;
-      _readsdo(0x4300+n, 0x06); buf << "," << (int16_t) sdoval;
-      _readsdo(0x4300+n, 0x07); buf << "," << (int16_t) sdoval;
-      _readsdo(0x4300+n, 0x0a); buf << "," << (int16_t) sdoval;
-      _readsdo(0x4300+n, 0x0b); buf << "," << (int16_t) sdoval;
-      _readsdo(0x4300+n, 0x0c); buf << "," << (int16_t) sdoval;
-      _readsdo(0x4300+n, 0x0d); buf << "," << (int16_t) sdoval;
+      (void)_readsdo(0x4300+n, 0x03); buf << "," << (int16_t) sdoval;
+      (void)_readsdo(0x4300+n, 0x04); buf << "," << (int16_t) sdoval;
+      (void)_readsdo(0x4300+n, 0x05); buf << "," << (int16_t) sdoval;
+      (void)_readsdo(0x4300+n, 0x06); buf << "," << (int16_t) sdoval;
+      (void)_readsdo(0x4300+n, 0x07); buf << "," << (int16_t) sdoval;
+      (void)_readsdo(0x4300+n, 0x0a); buf << "," << (int16_t) sdoval;
+      (void)_readsdo(0x4300+n, 0x0b); buf << "," << (int16_t) sdoval;
+      (void)_readsdo(0x4300+n, 0x0c); buf << "," << (int16_t) sdoval;
+      (void)_readsdo(0x4300+n, 0x0d); buf << "," << (int16_t) sdoval;
       _output(buf);
       outcnt++;
     }

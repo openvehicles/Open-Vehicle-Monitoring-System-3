@@ -307,7 +307,9 @@ OvmsVehicleKiaNiroEv::OvmsVehicleKiaNiroEv()
 OvmsVehicleKiaNiroEv::~OvmsVehicleKiaNiroEv()
   {
   ESP_LOGI(TAG, "Shutdown Kia Niro / Hyundai Kona EV vehicle module");
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
   MyWebServer.DeregisterPage("/bms/cellmon");
+#endif
   }
 
 /**

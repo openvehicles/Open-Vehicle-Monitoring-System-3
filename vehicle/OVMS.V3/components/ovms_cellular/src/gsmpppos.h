@@ -35,7 +35,11 @@
 #include "freertos/task.h"
 #include "freertos/queue.h"
 #include "driver/uart.h"
+#if ESP_IDF_VERSION_MAJOR >= 4
+#include "esp_netif.h"
+#else
 #include "tcpip_adapter.h"
+#endif
 extern "C"
   {
 #include "netif/ppp/pppos.h"

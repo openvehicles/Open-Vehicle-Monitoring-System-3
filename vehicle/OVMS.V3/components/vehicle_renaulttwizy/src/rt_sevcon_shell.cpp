@@ -108,9 +108,9 @@ struct sdo_buffer
       txt[i] = 0;
     
     if (show_txt)
-      writer->printf("dec=%d hex=0x%0*x str='%s'", num, MIN(size,4)*2, num, txt);
+      writer->printf("dec=%" PRId32 " hex=0x%0*" PRIx32 " str='%s'", num, MIN(size,4)*2, num, txt);
     else
-      writer->printf("dec=%d hex=0x%0*x", num, MIN(size,4)*2, num);
+      writer->printf("dec=%" PRId32 " hex=0x%0*" PRIx32, num, MIN(size,4)*2, num);
   }
 };
 
@@ -191,10 +191,10 @@ void SevconClient::shell_cfg_write(int verbosity, OvmsWriter* writer, OvmsComman
   switch (writeval.type)
   {
     case 'H':
-      writer->printf("Write 0x%04x.%02x: hex=0x%08x => ", index, subindex, writeval.num);
+      writer->printf("Write 0x%04x.%02x: hex=0x%08" PRIx32 " => ", index, subindex, writeval.num);
       break;
     case 'D':
-      writer->printf("Write 0x%04x.%02x: dec=%d => ", index, subindex, writeval.num);
+      writer->printf("Write 0x%04x.%02x: dec=%" PRId32 " => ", index, subindex, writeval.num);
       break;
     default:
       writer->printf("Write 0x%04x.%02x: str='%s' => ", index, subindex, writeval.txt);

@@ -25,7 +25,12 @@
  * THE SOFTWARE.
  */
 
+#include <sdkconfig.h>
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
+#include "esp_idf_version.h"
+#if ESP_IDF_VERSION_MAJOR < 4
 #define _GLIBCXX_USE_C99 // to enable std::stoi etc.
+#endif
 #include <stdio.h>
 #include <string>
 #include "ovms_metrics.h"
@@ -34,7 +39,6 @@
 #include "ovms_command.h"
 #include "metrics_standard.h"
 #include "ovms_notify.h"
-#include "ovms_webserver.h"
 
 #include "vehicle_vweup.h"
 
@@ -684,3 +688,5 @@ void OvmsVehicleVWeUp::GetDashboardConfig(DashboardConfig& cfg)
       << "]";
   cfg.gaugeset1 = str.str();
 }
+
+#endif //CONFIG_OVMS_COMP_WEBSERVER

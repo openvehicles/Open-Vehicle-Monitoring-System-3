@@ -26,7 +26,7 @@
 #include "ovms_log.h"
 static const char *TAG = "v-twizy";
 
-#define VERSION "1.12.1"
+#define VERSION "1.13.2"
 
 #include <stdio.h>
 #include <string>
@@ -156,7 +156,9 @@ OvmsVehicleRenaultTwizy::~OvmsVehicleRenaultTwizy()
   ObdShutdown();
   if (m_sevcon)
     delete m_sevcon;
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
   WebShutdown();
+#endif
   ChargeShutdown();
   PowerShutdown();
   BatteryShutdown();

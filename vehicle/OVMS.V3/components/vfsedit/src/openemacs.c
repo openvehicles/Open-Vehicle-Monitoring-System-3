@@ -8,7 +8,9 @@
 // 94d411270dec8684249f1b8d4848dbd2804424bb
 
 #define _DEFAULT_SOURCE // Linux: ftruncate, getline, kill, strdup
+#if !defined(_GNU_SOURCE)
 #define _GNU_SOURCE     // Linux: strcasestr
+#endif
 
 #include <ctype.h>      // isdigit, isspace
 #include <errno.h>      // errno, ENOENT/ENOTTY

@@ -47,6 +47,8 @@
 #include "ovms_script.h"
 #endif
 
+#include "ovms_command.h"
+
 #include "ovms_log.h"
 #define TAG ((const char*)"metric")
 
@@ -618,7 +620,8 @@ class OvmsMetricSet : public OvmsMetric
 template
   <
   typename ElemType,
-  class Allocator = std::allocator<ElemType>
+  class Allocator = std::allocator<ElemType>,
+  class AllocatorStar = std::allocator<ElemType*>
   >
 class OvmsMetricVector : public OvmsMetric
   {
@@ -1008,7 +1011,7 @@ class OvmsMetricVector : public OvmsMetric
     OvmsMutex m_mutex;
     std::vector<ElemType, Allocator> m_value;
     std::size_t* m_valuep_size;
-    std::vector<ElemType*, Allocator> m_valuep_elem;
+    std::vector<ElemType*, AllocatorStar> m_valuep_elem;
   };
 
 
