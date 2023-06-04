@@ -72,6 +72,8 @@
 ;       - Add support for trip distance from speed
 ;     1.0.16
 ;       - Add DC-DC current as 12v battery current (only on newer cars)
+;     1.0.17
+;       - swap xmi.b.power.min/max
 ;
 ;    (C) 2011         Michael Stegen / Stegen Electronics
 ;    (C) 2011-2018    Mark Webb-Johnson
@@ -423,10 +425,10 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
         }
 
         //min power
-        if (v_b_power_max->AsFloat() > StandardMetrics.ms_v_bat_power->AsFloat())
+        if (v_b_power_max->AsFloat() < StandardMetrics.ms_v_bat_power->AsFloat())
           v_b_power_max->SetValue(StandardMetrics.ms_v_bat_power->AsFloat());
         //max power
-        if (v_b_power_min->AsFloat() < StandardMetrics.ms_v_bat_power->AsFloat())
+        if (v_b_power_min->AsFloat() > StandardMetrics.ms_v_bat_power->AsFloat())
           v_b_power_min->SetValue(StandardMetrics.ms_v_bat_power->AsFloat());
 
       break;

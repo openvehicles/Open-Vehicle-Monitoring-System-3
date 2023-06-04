@@ -54,7 +54,7 @@ void OvmsVehicleMitsubishi::IncomingPollReply(canbus* bus, uint16_t type, uint16
           case 4:
           {
             // battery "max" capacity
-            StandardMetrics.ms_v_bat_cac->SetValue(((data[2] * 256.0 + data[3]) / 10.0));
+            StandardMetrics.ms_v_bat_cac->SetValue(((data[2] * 256.0 + data[3]) * 0.1));
 
             // battery remain capacity
             ms_v_bat_cac_rem->SetValue(((data[4] * 256.0 + data[5]) * 0.1));
