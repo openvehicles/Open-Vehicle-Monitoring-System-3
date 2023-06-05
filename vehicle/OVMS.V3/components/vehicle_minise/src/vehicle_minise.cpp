@@ -490,7 +490,7 @@ void OvmsVehicleMiniSE::IncomingPollReply(canbus* bus, const OvmsPoller::poll_st
   string &rxbuf = obd_rxbuf;
 
   // Init RX buffer on first (it tells us whole length)
-  if (m_poll_ml_frame == 0) {
+  if (state.mlframe == 0) {
     rxbuf.clear();
     rxbuf.reserve(length + state.mlremain);
   }

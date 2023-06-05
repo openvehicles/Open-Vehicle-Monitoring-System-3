@@ -810,7 +810,7 @@ void OvmsVehicleRenaultZoe::IncomingPollReply(canbus* bus, const OvmsPoller::pol
   }
   
   // init / fill rx buffer:
-  if (m_poll_ml_frame == 0) {
+  if (state.mlframe == 0) {
     rxbuf.clear();
     rxbuf.reserve(length + state.mlremain);
   }
@@ -989,11 +989,11 @@ void OvmsVehicleRenaultZoe::IncomingLBC(uint16_t type, uint16_t pid, const char*
       // 7bb,192,207,0.01,0,2,%,2103,6103,e2\n" // Real State of Charge
       // if (type == VEHICLE_POLL_TYPE_OBDIIGROUP)
       // {
-      // if (m_poll_ml_frame == 1)
+      // if (mlframe == 1)
       // {
       // m_b_cell_volt_max->SetValue(float( CAN_BYTE(6)*0.01 ),Volts);
       // }
-      // else if (m_poll_ml_frame == 2)
+      // else if (mlframe == 2)
       // {
       // m_b_cell_volt_min->SetValue(float( CAN_BYTE(1)*0.01 ),Volts);
       // }

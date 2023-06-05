@@ -794,7 +794,7 @@ void OvmsVehicleNissanLeaf::IncomingPollReply( canbus* bus, const OvmsPoller::po
   string& rxbuf = nl_obd_rxbuf;
 
   // init / fill rx buffer:
-  if (m_poll_ml_frame == 0) {
+  if (state.mlframe == 0) {
     rxbuf.clear();
     rxbuf.reserve(length + state.mlremain);
   }

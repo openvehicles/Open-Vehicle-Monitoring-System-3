@@ -39,7 +39,7 @@ void OvmsVehicleMitsubishi::IncomingPollReply(canbus* bus, const OvmsPoller::pol
   		// ****** BMU *****
   		case 0x762:
       {
-        switch (m_poll_ml_frame) {
+        switch (state.mlframe) {
           case 0:
           {
             OvmsMetricFloat* xmi_bat_soc_real = MyMetrics.InitFloat("xmi.b.soc.real", 10, 0, Percentage);
@@ -86,7 +86,7 @@ void OvmsVehicleMitsubishi::IncomingPollReply(canbus* bus, const OvmsPoller::pol
       // ****** HVAC *****
       case 0x772:
       {
-        switch (m_poll_ml_frame) {
+        switch (state.mlframe) {
           case 0:
           {
             StandardMetrics.ms_v_env_cabintemp->SetValue((data[0] * 0.25) - 16.0);
@@ -109,7 +109,7 @@ void OvmsVehicleMitsubishi::IncomingPollReply(canbus* bus, const OvmsPoller::pol
       {
         if(state.pid == 0xCE)
         {
-          switch (m_poll_ml_frame) {
+          switch (state.mlframe) {
             case 0:
             {
               ms_v_trip_A->SetValue(((data[2] << 16 ) + (data[1] << 8) + data[0]) * 0.1, Kilometers);

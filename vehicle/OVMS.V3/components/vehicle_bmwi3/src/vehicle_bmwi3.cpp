@@ -393,7 +393,7 @@ void OvmsVehicleBMWi3::IncomingPollReply(canbus* bus, const OvmsPoller::poll_sta
     // Assemble first and following frames to get complete reply
     
     // init rx buffer on first (it tells us whole length)
-    if (m_poll_ml_frame == 0) {
+    if (state.mlframe == 0) {
       rxbuf.clear();
       rxbuf.reserve(length + state.mlremain);
     }

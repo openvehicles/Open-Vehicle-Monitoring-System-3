@@ -184,7 +184,7 @@ void OvmsVehicleRenaultZoePh2OBD::IncomingPollReply(canbus* bus, const OvmsPolle
   //ESP_LOGV(TAG, "pid: %04x length: %d m_poll_ml_remain: %d mlframe: %d", pid, length, m_poll_ml_remain, m_poll_ml_frame);
 
   // init / fill rx buffer:
-  if (m_poll_ml_frame == 0) {
+  if (state.mlframe == 0) {
     rxbuf.clear();
     rxbuf.reserve(length + state.mlremain);
   }

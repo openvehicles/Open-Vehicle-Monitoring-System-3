@@ -184,7 +184,7 @@ OvmsVehicleMaxe56::~OvmsVehicleMaxe56()
 void OvmsVehicleMaxe56::IncomingPollReply(canbus* bus, const OvmsPoller::poll_state_t& state, uint8_t* data, uint8_t length, const OvmsPoller::poll_pid_t &pollentry)
 {
   // init / fill rx buffer:
-  if (m_poll_ml_frame == 0) {
+  if (state.mlframe == 0) {
     m_rxbuf.clear();
     m_rxbuf.reserve(length + state.mlremain);
   }
