@@ -37,6 +37,7 @@ static const char *TAG = "v-maxe56";
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
 #include "ovms_webserver.h"
 #endif
+#include "ovms_notify.h"
 #include <algorithm>
 #include "metrics_standard.h"
 
