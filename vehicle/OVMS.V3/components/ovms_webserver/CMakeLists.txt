@@ -10,8 +10,8 @@ endif ()
 # requirements can't depend on config
 idf_component_register(SRCS ${srcs}
                        INCLUDE_DIRS ${include_dirs}
-                       REQUIRES "pushover" "mongoose"
-                       PRIV_REQUIRES "main" "ovms_plugins"
+                       REQUIRES "pushover" "mongoose" "ovms_plugins"
+                       PRIV_REQUIRES "main"
                        EMBED_FILES ${embedded_files}
                        WHOLE_ARCHIVE)
 

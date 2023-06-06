@@ -22,6 +22,6 @@ endif ()
 idf_component_register(SRCS ${srcs}
                        INCLUDE_DIRS ${includes}
                        REQUIRES "ovms_tls"
-                       PRIV_REQUIRES "main" "duktape"
+                       PRIV_REQUIRES "main" "duktape" "mongoose"
                        EMBED_FILES ${embed}
                        WHOLE_ARCHIVE)
