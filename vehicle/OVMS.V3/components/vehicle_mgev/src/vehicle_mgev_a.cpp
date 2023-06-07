@@ -104,8 +104,11 @@ OvmsVehicleMgEvA::OvmsVehicleMgEvA()
 
     // Set Max Range to WLTP Range
     StandardMetrics.ms_v_bat_range_full->SetValue(WLTP_RANGE);
+    
     MyConfig.SetParamValueFloat("xmg","bms.dod.lower", BMSDoDLowerLimit);
     MyConfig.SetParamValueFloat("xmg","bms.dod.upper", BMSDoDUpperLimit);
+    m_batt_capacity->SetValue(BATT_CAPACITY);
+    m_max_dc_charge_rate->SetValue(MAX_CHARGE_RATE);
 
     //Add variant specific poll data
     ConfigurePollData(obdii_polls_a, sizeof(obdii_polls_a));

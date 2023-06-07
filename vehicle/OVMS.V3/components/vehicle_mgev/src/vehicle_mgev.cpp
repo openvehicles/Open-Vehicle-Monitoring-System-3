@@ -183,7 +183,9 @@ OvmsVehicleMgEv::OvmsVehicleMgEv()
     m_enable_polling = MyMetrics.InitBool("xmg.enable.polling", SM_STALE_MAX, false);
     m_trip_consumption = MyMetrics.InitFloat("xmg.p.trip.consumption", SM_STALE_MID, 165.0, WattHoursPK);
     m_avg_consumption = MyMetrics.InitFloat("xmg.p.avg.consumption", SM_STALE_MID, 165.0, WattHoursPK);
-    
+    m_batt_capacity = MyMetrics.InitFloat("xmg.b.capacity", SM_STALE_MID, 42.5, kWh);
+    m_max_dc_charge_rate = MyMetrics.InitFloat("xmg.c.max.dc.charge", SM_STALE_MID, 82.0, kW);
+
     DRLFirstFrameSentCallback = std::bind(&OvmsVehicleMgEv::DRLFirstFrameSent, this, std::placeholders::_1, std::placeholders::_2);
     
     // Register config params

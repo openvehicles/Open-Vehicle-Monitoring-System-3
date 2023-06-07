@@ -35,22 +35,30 @@ void OvmsVehicleMgEv::IncomingEvccPoll(uint16_t pid, uint8_t* data, uint8_t leng
 {
     uint16_t value = (data[0] << 8 | data[1]);
 
-    switch (pid)
-    {
+    float subtract = 2047.0f;
+    float divisorA = 5.7f;
+    float divisorMaxA = 2.3f;
+    float divisorV = 93.0f;
+
+    if (StandardMetrics.ms_v_type->AsString() == "MGA" || StandardMetrics.ms_v_type->AsString() == "MGB") {
+        subtract = 0.0f;
+        divisorA = 10.0f;
+        divisorMaxA = 4.0f;
+        divisorV = 97.0f;
+    }
+    switch (pid) {
         case evccAmperagePid:
-            StandardMetrics.ms_v_charge_current->SetValue(value / 10.0f);
+            StandardMetrics.ms_v_charge_current->SetValue((value - subtract) / divisorA);
             StandardMetrics.ms_v_charge_power->SetValue(
-                StandardMetrics.ms_v_charge_voltage->AsFloat() * (value / 10.0f) / 1000.0f
-            );
+                    StandardMetrics.ms_v_charge_voltage->AsFloat() * ((value - subtract) / divisorA) / 1000.0f);
             break;
         case evccMaxAmperagePid:
-            StandardMetrics.ms_v_charge_climit->SetValue(data[0] / 4.0f);
+            StandardMetrics.ms_v_charge_climit->SetValue(data[0] / divisorMaxA);
             break;
         case evccVoltagePid:
-            StandardMetrics.ms_v_charge_voltage->SetValue(value / 100.0f);
+            StandardMetrics.ms_v_charge_voltage->SetValue(value / divisorV);
             StandardMetrics.ms_v_charge_power->SetValue(
-                (value / 100.0f)  * StandardMetrics.ms_v_charge_current->AsFloat() / 1000.0f
-            );            
+                (value / divisorV)  * StandardMetrics.ms_v_charge_current->AsFloat() / 1000.0f);
             break;
     }
 }

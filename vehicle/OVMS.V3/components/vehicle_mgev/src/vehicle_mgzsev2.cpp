@@ -99,9 +99,8 @@ OvmsVehicleMgEvD::OvmsVehicleMgEvD()
     
     // Set Max Range to WLTP Range
     StandardMetrics.ms_v_bat_range_full->SetValue(WLTP_RANGE);
-    
-    //m_bms_dod_lower->SetValue(BMSDoDLowerLimit);
-    //m_bms_dod_upper->SetValue(BMSDoDUpperLimit);
+    m_batt_capacity->SetValue(BATT_CAPACITY);
+    m_max_dc_charge_rate->SetValue(MAX_CHARGE_RATE);
     MyConfig.SetParamValueFloat("xmg","bms.dod.lower", BMSDoDLowerLimit);
     MyConfig.SetParamValueFloat("xmg","bms.dod.upper", BMSDoDUpperLimit);
 

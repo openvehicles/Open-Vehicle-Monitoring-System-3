@@ -117,6 +117,8 @@ class OvmsVehicleMgEv : public OvmsVehicle
     OvmsMetricBool *m_enable_polling; //Flag to enable polling
     OvmsMetricFloat *m_trip_consumption; // Trip consumption
     OvmsMetricFloat *m_avg_consumption; // Average consumption
+    OvmsMetricFloat *m_batt_capacity; // Battery Capacity
+    OvmsMetricFloat *m_max_dc_charge_rate; // Maximum Charge Rate
 
   protected:
     void ConfigChanged(OvmsConfigParam* param) override;

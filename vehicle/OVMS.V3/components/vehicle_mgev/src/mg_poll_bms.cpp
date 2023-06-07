@@ -211,10 +211,10 @@ void OvmsVehicleMgEv::IncomingBmsPoll(
                 // Set full range accounting for battery State of Health (SoH)
                 StdMetrics.ms_v_bat_range_full->SetValue(StandardMetrics.ms_v_bat_range_full->AsFloat() * effSoh * 0.01f, Kilometers);
                 // Set battery capacity reduced by SOC and SOH
-                float batteryCapacity = 42.5f * (scaledSoc * 0.01f) * (effSoh * 0.01f);
+                float batteryCapacity = m_batt_capacity->AsFloat() * (scaledSoc * 0.01f) * (effSoh * 0.01f);
                 StandardMetrics.ms_v_bat_range_est->SetValue(batteryCapacity * (kmPerKwh * (1-((20 - batTemp) * 1.3f) * 0.01f)));
                 // Ideal range set to SoC percentage of WLTP Range
-                StandardMetrics.ms_v_bat_range_ideal->SetValue(StdMetrics.ms_v_bat_range_full->AsFloat(0, Kilometers) * (scaledSoc * 0.01f));
+                StandardMetrics.ms_v_bat_range_ideal->SetValue(StdMetrics.ms_v_bat_range_full->AsFloat(0, Kilometers) * (scaledSoc * 0.01f) * (effSoh * 0.01f));
             }
             break;
         case batteryErrorPid:
@@ -282,8 +282,7 @@ void OvmsVehicleMgEv::SetBmsStatus(uint8_t status)
             //These are normally set in mg_poll_evcc.cpp but while CCS charging, EVCC won't show up so we set these here
             StandardMetrics.ms_v_charge_current->SetValue(-StandardMetrics.ms_v_bat_current->AsFloat());
             StandardMetrics.ms_v_charge_power->SetValue(-StandardMetrics.ms_v_bat_power->AsFloat());
-            // Need to fix this as value varies for model
-            StandardMetrics.ms_v_charge_climit->SetValue(82);
+            StandardMetrics.ms_v_charge_climit->SetValue(m_max_dc_charge_rate->AsFloat());
             StandardMetrics.ms_v_charge_voltage->SetValue(StandardMetrics.ms_v_bat_voltage->AsFloat());
             break;
         default:
