@@ -52,7 +52,6 @@
 #define CAR_UNRESPONSIVE_THRESHOLD 3 //seconds. If reaches this threshold, GWM state will change back to Unknown.
 #define CHARGING_THRESHOLD 12.9 //Volts. If voltage is lower than this, we say 1. 12V battery is not charging and 2. we should sleep OVMS to avoid draining battery too low
 #define DEFAULT_BMS_VERSION 1 //Corresponding to the BMSDoDLimits array element
-#define WLTP_RANGE 263.0 //km
 #define TRANSITION_TIMEOUT 50 //s. Number of seconds after 12V goes below CHARGING_THRESHOLD to stay in current state before going to sleep.
 
 namespace
@@ -66,9 +65,9 @@ typedef struct
 
 const BMSDoDLimits_t BMSDoDLimits[] =
 {
-    {60, 970}, //Pre Jan 2021 BMS firmware DoD range 60 - 970
-    {25, 940}, //Jan 2021 BMS firmware DoD range 25 - 940
-    {25, 930}  //Jan EU4 BMS firmware DoD range 25 - 930
+    {60.0, 970.0}, //Pre Jan 2021 BMS firmware DoD range 60 - 970
+    {25.0, 940.0}, //Jan 2021 BMS firmware DoD range 25 - 940
+    {25.0, 930.0}  //Jan EU4 BMS firmware DoD range 25 - 930
 };
 
 typedef struct{
@@ -115,6 +114,7 @@ class OvmsVehicleMgEv : public OvmsVehicle
     OvmsMetricInt *m_gwm_task, *m_bcm_task; // Current ECU tasks that we are awaiting response for manual frame handling so we know which function to use to handle the responses.
     OvmsMetricInt *m_ignition_state; // For storing state of start switch
     //OvmsMetricFloat *m_trip_start; // Trip start odometer reading
+    OvmsMetricBool *m_enable_polling; //Flag to enable polling
     OvmsMetricFloat *m_trip_consumption; // Trip consumption
     OvmsMetricFloat *m_avg_consumption; // Average consumption
 
@@ -131,6 +131,24 @@ class OvmsVehicleMgEv : public OvmsVehicle
     int GetNotifyChargeStateDelay(const char* state) override;
 
 	void processEnergy();
+    void GWMAwake(canbus* currentBus);
+    void GWMUnlocked();
+    void RetryCheckState();
+    void GWMUnknown();
+    
+    enum class GWMStates
+    {
+        Unknown,                //Unknown state
+        CheckingState,            //Checking what state GWM is in
+        Awake,                     //Awake but don't know if locked or unlocked. Currently unused.
+        Unlocked,                //Awake and unlocked - can get parameters
+        WaitToRetryCheckState    //Waiting, doing nothing for a set amount of time before retrying check state
+    };
+
+    // Counter for waiting to change GWM state back to Unknown to restart state check process
+    uint8_t m_RetryCheckStateWaitCount = 0;
+    // Remember if we are active so when we go to sleep, we can do certain tasks once
+    bool m_OVMSActive = true;
 
     static void WakeUp(void* self);
     void NotifyVehicleIdling() override;
@@ -149,6 +167,7 @@ class OvmsVehicleMgEv : public OvmsVehicle
     void ConfigurePollData(const OvmsVehicle::poll_pid_t *SpecificPollData, size_t DataSize);
     // Form the poll list for OVMS to use by using only the common list
     void ConfigurePollData();
+    void ConfigureMG5PollData(const OvmsVehicle::poll_pid_t *SpecificPollData, size_t DataSize);
 
     // Integer to string without padding
     static string IntToString(int x);
@@ -187,6 +206,7 @@ class OvmsVehicleMgEv : public OvmsVehicle
     static void AuthenticateECUShell(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void DRLCommandShell(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
     static void DRLCommandWithAuthShell(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
+    static void PollsCommandShell(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv);
 
     enum class GWMTasks
     {
@@ -233,7 +253,8 @@ class OvmsVehicleMgEv : public OvmsVehicle
 
   private:
     // OVMS shell commands
-    OvmsCommand *m_cmdSoftver, *m_cmdAuth, *m_cmdDRL, *m_cmdDRLNoAuth;
+    OvmsCommand *cmd_xmg;
+    //OvmsCommand *m_cmdSoftver, *m_cmdAuth, *m_cmdDRL, *m_cmdDRLNoAuth;
     // The responses from the software version queries. First element of tuple = ECU ID. Second element of tuple = software version character vector response. Third element of tuple = response data bytes remaining, should be 0 after finished.
     std::vector<std::tuple<uint32_t, std::vector<char>, uint16_t>> m_versions;
     // True when getting software versions from ECUs
@@ -323,7 +344,11 @@ class OvmsVehicleMgEv : public OvmsVehicle
   public:
     void WebInit();
     void WebDeInit();
+    void Mg5WebInit();
+    void FeaturesWebInit();
+    void FeaturesWebDeInit();
     static void WebCfgFeatures(PageEntry_t& p, PageContext_t& c);
+    static void MG5WebCfgFeatures(PageEntry_t &p, PageContext_t &c);
     static void WebCfgBattery(PageEntry_t& p, PageContext_t& c);
     void GetDashboardConfig(DashboardConfig& cfg);
     static void WebDispChgMetrics(PageEntry_t &p, PageContext_t &c);

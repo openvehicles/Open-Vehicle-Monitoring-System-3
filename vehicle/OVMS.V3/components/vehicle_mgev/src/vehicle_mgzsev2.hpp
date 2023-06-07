@@ -9,6 +9,7 @@
 ;    (C) 2011-2018  Mark Webb-Johnson
 ;    (C) 2011       Sonny Chen @ EPRO/DX
 ;    (C) 2020       Chris Staite
+;    (C) 2023       Peter Harry
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -29,53 +30,27 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __VEHICLE_MGEV_A_H__
-#define __VEHICLE_MGEV_A_H__
+#ifndef vehicle_mgzsev2_hpp
+#define vehicle_mgzsev2_hpp
 
 #include "vehicle_mgev.h"
 
-#define WLTP_RANGE 263.0 //km
-#define BMSDoDUpperLimit 940.0
-#define BMSDoDLowerLimit 25.0
+#define WLTP_RANGE 320.0 //km
+#define BMSDoDUpperLimit 1000.0
+#define BMSDoDLowerLimit 36.0
 
-class OvmsVehicleMgEvA : public OvmsVehicleMgEv
+class OvmsVehicleMgEvD : public OvmsVehicleMgEv
 {
   public:
-    OvmsVehicleMgEvA();
-    ~OvmsVehicleMgEvA();
+    OvmsVehicleMgEvD();
+    ~OvmsVehicleMgEvD();
 
   protected:
     void Ticker1(uint32_t ticker) override;
-    vehicle_command_t CommandWakeup() override;   
+    vehicle_command_t CommandWakeup() override;
 
-  private:
-    void ZombieMode();
-    void DeterminePollState(canbus* currentBus, uint32_t ticker);
-    void SendAlarmSensitive(canbus* currentBus);
-
-    /// The states that the gateway CAN can be in
-    enum GwmState
-    {
-        AllowToSleep,  // Stop Sending any control to GWM
-        SendTester,  // Send Tester Present to GWM
-        SendDiagnostic,  // Send Diagnostic Session Override to GWM
-        Undefined    // We are not controlling GWM
-    };
-
-    /// The last ticker that we saw RX packets on
-    uint32_t m_rxPacketTicker;
-    /// The last number of packets received on the CAN
-    uint32_t m_rxPackets;
-    /// The number of ticks that no packets have been recieved
-    uint32_t m_noRxCount;
-    /// The current state of control commands we are sending to the gateway
-    GwmState m_gwmState;
-    /// The ticker time for Zombie Mode Sleep Timeout before attempting to wake.
-    uint32_t m_preZombieOverrideTicker;
-    /// Boolean for Car State
-    bool carIsResponsiveToQueries;
-    /// A count of the number of times we've woken the car to find it wasn't charging
-    uint16_t m_diagCount;    
+private:
+    void MainStateMachine(canbus* currentBus, uint32_t ticker);
 };
 
-#endif  // __VEHICLE_MGEV_A_H__
+#endif /* vehicle_mgzsev2_hpp */

@@ -9,6 +9,7 @@
 ;    (C) 2011-2018  Mark Webb-Johnson
 ;    (C) 2011       Sonny Chen @ EPRO/DX
 ;    (C) 2020       Chris Staite
+;    (C) 2023       Peter Harry
 ;
 ; Permission is hereby granted, free of charge, to any person obtaining a copy
 ; of this software and associated documentation files (the "Software"), to deal
@@ -29,27 +30,27 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __VEHICLE_MGEV_B_H__
-#define __VEHICLE_MGEV_B_H__
+#ifndef vehicle_mg5_hpp
+#define vehicle_mg5_hpp
 
 #include "vehicle_mgev.h"
 
-#define WLTP_RANGE 263.0 //km
-#define BMSDoDUpperLimit 940.0
-#define BMSDoDLowerLimit 25.0
+#define WLTP_RANGE 320.0 //km
+#define BMSDoDUpperLimit 950.0
+#define BMSDoDLowerLimit 36.0
 
-class OvmsVehicleMgEvB : public OvmsVehicleMgEv
+class OvmsVehicleMg5 : public OvmsVehicleMgEv
 {
-    public:
-        OvmsVehicleMgEvB();
-        ~OvmsVehicleMgEvB();
-
-    protected:
-        void Ticker1(uint32_t ticker) override;
-        vehicle_command_t CommandWakeup() override;        
-
-    private:
-        void MainStateMachine(canbus* currentBus, uint32_t ticker);
+public:
+    OvmsVehicleMg5();
+    ~OvmsVehicleMg5();
+    
+protected:
+    void Ticker1(uint32_t ticker) override;
+    vehicle_command_t CommandWakeup() override;
+    
+private:
+    void MainStateMachine(canbus* currentBus, uint32_t ticker);
 };
 
-#endif  // __VEHICLE_MGEV_B_H__
+#endif /* vehicle_mg5_hpp */

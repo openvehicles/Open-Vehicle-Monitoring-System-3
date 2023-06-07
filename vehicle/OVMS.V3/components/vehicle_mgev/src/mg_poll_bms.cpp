@@ -109,34 +109,77 @@ void OvmsVehicleMgEv::IncomingBmsPoll(
         case cell9StatPid:
             ProcessBatteryStats(8, data, remain);
             break;
+        case cell10StatPid:
+            ProcessBatteryStats(9, data, remain);
+            break;
+        case cell11StatPid:
+            ProcessBatteryStats(10, data, remain);
+            break;
+        case cell12StatPid:
+            ProcessBatteryStats(11, data, remain);
+            break;
+        case cell13StatPid:
+            ProcessBatteryStats(12, data, remain);
+            break;
+        case cell14StatPid:
+            ProcessBatteryStats(13, data, remain);
+            break;
+        case cell15StatPid:
+            ProcessBatteryStats(14, data, remain);
+            break;
+        case cell16StatPid:
+            ProcessBatteryStats(15, data, remain);
+            break;
+        case cell17StatPid:
+            ProcessBatteryStats(16, data, remain);
+            break;
+        case cell18StatPid:
+            ProcessBatteryStats(17, data, remain);
+            break;
+        case cell19StatPid:
+            ProcessBatteryStats(18, data, remain);
+            break;
+        case cell20StatPid:
+            ProcessBatteryStats(19, data, remain);
+            break;
+        case cell21StatPid:
+            ProcessBatteryStats(20, data, remain);
+            break;
+        case cell22StatPid:
+            ProcessBatteryStats(21, data, remain);
+            break;
+        case cell23StatPid:
+            ProcessBatteryStats(22, data, remain);
+            break;
+        case cell24StatPid:
+            ProcessBatteryStats(23, data, remain);
+            break;
         case batteryBusVoltagePid:
         {
-            float voltage;
+            float voltage = value / 4.0f;
             // Check that the bus is not turned off
-            if (value != 0xfffeu)
+            if (voltage > 1000)
             {
-                voltage = value * 0.25;
-            }
-            else
-            {
+                ESP_LOGI("v-mgev", "Voltage greater than 1000V = %0.0f", voltage);
                 voltage = m_bat_pack_voltage->AsFloat();
+                ESP_LOGI("v-mgev", "Voltage set to: %0.0f", voltage);
             }
             StandardMetrics.ms_v_bat_voltage->SetValue(voltage);
-            StandardMetrics.ms_v_bat_power->SetValue( (voltage * StandardMetrics.ms_v_bat_current->AsFloat()) / 1000 );               
+            StandardMetrics.ms_v_bat_power->SetValue( (voltage * StandardMetrics.ms_v_bat_current->AsFloat()) / 1000.0f );
             break;
         }
         case batteryCurrentPid:
         {
-            auto current = ((static_cast<int32_t>(value) - 40000) * 0.25) / 10.0;
+            auto current = ((static_cast<int32_t>(value) - 40000) / 4.0f) / 10.0f;
             StandardMetrics.ms_v_bat_current->SetValue( current );
-            StandardMetrics.ms_v_bat_power->SetValue( (StandardMetrics.ms_v_bat_voltage->AsFloat() * current) / 1000 );
+            StandardMetrics.ms_v_bat_power->SetValue( (StandardMetrics.ms_v_bat_voltage->AsFloat() * current) / 1000.0f );
             break;
         }
         case batteryVoltagePid:
-            m_bat_pack_voltage->SetValue(value * 0.25);
+            m_bat_pack_voltage->SetValue(value / 4.0f);
             break;
         case batteryResistancePid:
-            m_bat_resistance->SetValue(value / 2.0);
+            m_bat_resistance->SetValue(value / 2.0f);
             break;            
         case batterySoCPid:
             {
@@ -160,13 +203,13 @@ void OvmsVehicleMgEv::IncomingBmsPoll(
                 float batTemp = StandardMetrics.ms_v_bat_temp->AsFloat();
                 float effSoh = StandardMetrics.ms_v_bat_soh->AsFloat();
                 // Get average trip consumption weighted by current trip consumption (25%)
-                float kmPerKwh = (m_avg_consumption->AsFloat(0, KPkWh) * 3.0 + m_trip_consumption->AsFloat(0,KPkWh))/4;
+                float kmPerKwh = (m_avg_consumption->AsFloat(0, KPkWh) * 3.0f + m_trip_consumption->AsFloat(0,KPkWh)) / 4.0f;
                 
                 if(kmPerKwh < 4.648)  kmPerKwh = 4.648; //21.5 kWh/100km
                 if(kmPerKwh > 7.728) kmPerKwh = 7.728; //13 kWh/100km
                 if(batTemp > 20) batTemp = 20;
                 // Set full range accounting for battery State of Health (SoH)
-                StdMetrics.ms_v_bat_range_full->SetValue(WLTP_RANGE * effSoh * 0.01f, Kilometers);
+                StdMetrics.ms_v_bat_range_full->SetValue(StandardMetrics.ms_v_bat_range_full->AsFloat() * effSoh * 0.01f, Kilometers);
                 // Set battery capacity reduced by SOC and SOH
                 float batteryCapacity = 42.5f * (scaledSoc * 0.01f) * (effSoh * 0.01f);
                 StandardMetrics.ms_v_bat_range_est->SetValue(batteryCapacity * (kmPerKwh * (1-((20 - batTemp) * 1.3f) * 0.01f)));
@@ -182,23 +225,23 @@ void OvmsVehicleMgEv::IncomingBmsPoll(
             break;
         case batteryCoolantTempPid:
             // Temperature is half degrees from -40C
-            m_bat_coolant_temp->SetValue(data[0] * 0.5 - 40.0);
+            m_bat_coolant_temp->SetValue(data[0] * 0.5f - 40.0f);
             break;
         case batteryTempPid:
             // Temperature is half degrees from -40C
-            StandardMetrics.ms_v_bat_temp->SetValue(data[0] * 0.5 - 40.0);
+            StandardMetrics.ms_v_bat_temp->SetValue(data[0] * 0.5f - 40.0f);
             break;
         case batterySoHPid:
-            StandardMetrics.ms_v_bat_soh->SetValue(value / 100.0);
+            StandardMetrics.ms_v_bat_soh->SetValue(value / 100.0f);
             break;
         case bmsRangePid:
             //StandardMetrics.ms_v_bat_range_est->SetValue(value / 10.0);
             break;
         case bmsMaxCellVoltagePid:
-            m_bms_max_cell_voltage->SetValue(value / 1000.0);
+            m_bms_max_cell_voltage->SetValue(value / 1000.0f);
             break;
         case bmsMinCellVoltagePid:
-            m_bms_min_cell_voltage->SetValue(value / 1000.0);
+            m_bms_min_cell_voltage->SetValue(value / 1000.0f);
             break;     
         case bmsTimePid:     
             // Will get answer in 2 frames. 1st frame will have year month date in data[0], data[1] and data[2], length = 3 and remain = 3.
@@ -239,6 +282,7 @@ void OvmsVehicleMgEv::SetBmsStatus(uint8_t status)
             //These are normally set in mg_poll_evcc.cpp but while CCS charging, EVCC won't show up so we set these here
             StandardMetrics.ms_v_charge_current->SetValue(-StandardMetrics.ms_v_bat_current->AsFloat());
             StandardMetrics.ms_v_charge_power->SetValue(-StandardMetrics.ms_v_bat_power->AsFloat());
+            // Need to fix this as value varies for model
             StandardMetrics.ms_v_charge_climit->SetValue(82);
             StandardMetrics.ms_v_charge_voltage->SetValue(StandardMetrics.ms_v_bat_voltage->AsFloat());
             break;
@@ -247,7 +291,8 @@ void OvmsVehicleMgEv::SetBmsStatus(uint8_t status)
             {
                 StandardMetrics.ms_v_charge_type->SetValue("undefined");
                 StandardMetrics.ms_v_charge_inprogress->SetValue(false);
-                if (StandardMetrics.ms_v_bat_soc->AsFloat() >= 99.9) //Set to 99.9 instead of 100 incase of mathematical errors
+                //Set to 99.9 instead of 100 incase of mathematical errors
+                if (StandardMetrics.ms_v_bat_soc->AsFloat() >= 99.9)
                 {
                     StandardMetrics.ms_v_charge_state->SetValue("done");
                 }
@@ -262,9 +307,8 @@ void OvmsVehicleMgEv::SetBmsStatus(uint8_t status)
 
 float OvmsVehicleMgEv::calculateSoc(uint16_t value)
 {
-    int BMSVersion = MyConfig.GetParamValueInt("xmg", "bmsval", DEFAULT_BMS_VERSION);
-    float lowerlimit = BMSDoDLimits[BMSVersion].Lower;
-    float upperlimit = BMSDoDLimits[BMSVersion].Upper;
+    float lowerlimit = MyConfig.GetParamValueInt("xmg","bms.dod.lower");
+    float upperlimit = MyConfig.GetParamValueInt("xmg","bms.dod.upper");
     ESP_LOGD(TAG, "BMS Limits: Lower = %f Upper = %f",lowerlimit,upperlimit);
     // Calculate SOC from upper and lower limits
     return (value - lowerlimit) * 100.0f / (upperlimit - lowerlimit);
