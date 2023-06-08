@@ -97,6 +97,11 @@ OvmsVehicleMgEvB::OvmsVehicleMgEvB()
     BmsSetCellLimitsTemperature(-39, 200);
     BmsSetCellDefaultThresholdsVoltage(0.020, 0.030);
     BmsSetCellDefaultThresholdsTemperature(2.0, 3.0);
+    
+    // Register shell commands
+    cmd_xmg->RegisterCommand("auth", "Authenticate with ECUs", AuthenticateECUShell, "<ECU>\nall\tAll ECUs\ngwm\tGWM only\nbcm\tBCM only", 1, 1);
+    cmd_xmg->RegisterCommand("drl", "Daytime running light control", DRLCommandWithAuthShell, "<command>\non\tTurn on\noff\tTurn off", 1, 1);
+    cmd_xmg->RegisterCommand("drln", "Daytime running light control (no BCM authentication)", DRLCommandShell, "<command>\non\tTurn on\noff\tTurn off", 1, 1);
 
 }
 

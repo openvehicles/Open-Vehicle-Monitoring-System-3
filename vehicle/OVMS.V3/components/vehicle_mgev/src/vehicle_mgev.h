@@ -91,6 +91,9 @@ class OvmsVehicleMgEv : public OvmsVehicle
     bool SetFeature(int key, const char* value) override;
     const std::string GetFeature(int key) override;
 
+    // OVMS shell commands
+    OvmsCommand *cmd_xmg;
+
     OvmsMetricFloat* m_bat_pack_voltage;
     OvmsMetricFloat* m_bat_voltage_vcu;
     OvmsMetricFloat* m_bat_coolant_temp;
@@ -254,8 +257,6 @@ class OvmsVehicleMgEv : public OvmsVehicle
     uint32_t m_afterRunTicker = 0;
 
   private:
-    // OVMS shell commands
-    OvmsCommand *cmd_xmg;
     //OvmsCommand *m_cmdSoftver, *m_cmdAuth, *m_cmdDRL, *m_cmdDRLNoAuth;
     // The responses from the software version queries. First element of tuple = ECU ID. Second element of tuple = software version character vector response. Third element of tuple = response data bytes remaining, should be 0 after finished.
     std::vector<std::tuple<uint32_t, std::vector<char>, uint16_t>> m_versions;

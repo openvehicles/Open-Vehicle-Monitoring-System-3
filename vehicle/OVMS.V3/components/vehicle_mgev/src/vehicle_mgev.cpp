@@ -196,17 +196,6 @@ OvmsVehicleMgEv::OvmsVehicleMgEv()
     // Register shell commands
     cmd_xmg = MyCommandApp.RegisterCommand("xmg", "MG EV");
     cmd_xmg->RegisterCommand("softver", "MG EV Software", PickOvmsCommandExecuteCallback(OvmsVehicleMgEv::SoftwareVersions));
-    cmd_xmg->RegisterCommand("auth", "Authenticate with ECUs", AuthenticateECUShell, "<ECU>\nall\tAll ECUs\ngwm\tGWM only\nbcm\tBCM only", 1, 1);
-    cmd_xmg->RegisterCommand("drl", "Daytime running light control", DRLCommandWithAuthShell, "<command>\non\tTurn on\noff\tTurn off", 1, 1);
-    cmd_xmg->RegisterCommand("drln", "Daytime running light control (no BCM authentication)", DRLCommandShell, "<command>\non\tTurn on\noff\tTurn off", 1, 1);
-    cmd_xmg->RegisterCommand("polls", "Turn polling on", PollsCommandShell, "<command>\non\tTurn on\noff\tTurn off", 1, 1);
-    /*
-    m_cmdSoftver = MyCommandApp.RegisterCommand("softver", "MG EV Software", PickOvmsCommandExecuteCallback(OvmsVehicleMgEv::SoftwareVersions));
-      m_cmdAuth = MyCommandApp.RegisterCommand("auth", "Authenticate with ECUs", AuthenticateECUShell, "<ECU>\nall\tAll ECUs\ngwm\tGWM only\nbcm\tBCM only", 1, 1);
-    m_cmdDRL = MyCommandApp.RegisterCommand("drl", "Daytime running light control", DRLCommandWithAuthShell, "<command>\non\tTurn on\noff\tTurn off", 1, 1);
-    m_cmdDRLNoAuth = MyCommandApp.RegisterCommand("drln", "Daytime running light control (no BCM authentication)", DRLCommandShell, "<command>\non\tTurn on\noff\tTurn off", 1, 1);
-    m_cmdEnablePolls = MyCommandApp.RegisterCommand("polls", "Turn polling on", PollsCommandShell, "<command>\non\tTurn on\noff\tTurn off", 1, 1);
-     */
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
     WebInit();
 #endif

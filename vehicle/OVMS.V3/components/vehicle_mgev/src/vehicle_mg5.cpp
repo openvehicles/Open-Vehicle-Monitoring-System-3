@@ -150,6 +150,9 @@ OvmsVehicleMg5::OvmsVehicleMg5()
     BmsSetCellLimitsTemperature(-39, 200);
     BmsSetCellDefaultThresholdsVoltage(0.020, 0.030);
     BmsSetCellDefaultThresholdsTemperature(2.0, 3.0);
+    
+    // Register shell commands
+    cmd_xmg->RegisterCommand("polls", "Turn polling on", PollsCommandShell, "<command>\non\tTurn on\noff\tTurn off", 1, 1);
              
     //PollSetState(PollStateRunning);
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
