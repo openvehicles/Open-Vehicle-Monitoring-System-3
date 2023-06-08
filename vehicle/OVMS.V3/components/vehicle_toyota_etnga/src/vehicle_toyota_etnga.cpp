@@ -1,7 +1,7 @@
 /*
 ;    Project:       Open Vehicle Monitor System
-;    Module:        Vehicle Toyota bZ4X
-;    Date:          27th May 2023
+;    Module:        Vehicle Toyota e-TNGA platform
+;    Date:          4th June 2023
 ;
 ;    Changes:
 ;    1.0  Initial release
@@ -27,30 +27,33 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __VEHICLE_TOYOTA_BZ4X_H__
-#define __VEHICLE_TOYOTA_BZ4X_H__
+#include "ovms_log.h"
+static const char *TAG = "v-toyota-etnga";
 
-#include "vehicle.h"
+#include "vehicle_toyota_etnga.h"
 
-using namespace std;
-
-class OvmsVehicleToyotaBz4x : public OvmsVehicle
+/**
+ * Toyota e-TNGA constructor
+ */
+OvmsVehicleToyotaETNGA::OvmsVehicleToyotaETNGA()
   {
-  public:
-    OvmsVehicleToyotaBz4x();
-    ~OvmsVehicleToyotaBz4x();
+  ESP_LOGI(TAG, "Toyota e-TNGA vehicle module");
 
-  public:
-    void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
-    void IncomingFrameCan1(CAN_frame_t* p_frame);
-    void IncomingFrameCan2(CAN_frame_t* p_frame);
-    void IncomingFrameCan3(CAN_frame_t* p_frame);
-    void SendCanMessage(uint16_t id, uint8_t count,
-    uint8_t serviceId, uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4,
-    uint8_t b5, uint8_t b6);
-    
-  protected:
-    std::string         m_rxbuf;
-  };
+  // Init CAN:
+   RegisterCanBus(2, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
+ 
+  }
 
-#endif //#ifndef __VEHICLE_TOYOTA_BZ4X_H__
+/**
+ * Toyota e-TNGA destructor
+ */
+OvmsVehicleToyotaETNGA::~OvmsVehicleToyotaETNGA()
+  {
+  ESP_LOGI(TAG, "Shutdown Toyota e-TNGA platform vehicle module");
+  }
+
+void OvmsVehicleToyotaETNGA::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
+{
+  // Implement how to handle incoming poll replies specific to the Toyota e-TNGA platform
+  // Extract relevant data from the reply, update metrics, and perform any required actions
+}

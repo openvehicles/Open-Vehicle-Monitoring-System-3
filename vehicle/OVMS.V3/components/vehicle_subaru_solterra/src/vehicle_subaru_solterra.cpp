@@ -1,7 +1,7 @@
 /*
 ;    Project:       Open Vehicle Monitor System
-;    Module:        Vehicle Toyota bZ4X
-;    Date:          27th May 2023
+;    Module:        Vehicle Subaru Solterra
+;    Date:          4th June 2023
 ;
 ;    Changes:
 ;    1.0  Initial release
@@ -27,30 +27,28 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __VEHICLE_TOYOTA_BZ4X_H__
-#define __VEHICLE_TOYOTA_BZ4X_H__
+#include "ovms_log.h"
+static const char *TAG = "v-subaru-solterra";
 
-#include "vehicle.h"
+#include "subaru_solterra.h"
 
-using namespace std;
+/**
+ * Subaru Solterra constructor
+ */
+OvmsVehicleSubaruSolterra::OvmsVehicleSubaruSolterra()
+  : OvmsVehicleToyotaETNGA() // Call the base class constructor
+{
+  ESP_LOGI(TAG, "Subaru Solterra vehicle module");
 
-class OvmsVehicleToyotaBz4x : public OvmsVehicle
-  {
-  public:
-    OvmsVehicleToyotaBz4x();
-    ~OvmsVehicleToyotaBz4x();
+  // Initialize any private member variables and perform necessary setup for the Subaru Solterra
+}
 
-  public:
-    void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
-    void IncomingFrameCan1(CAN_frame_t* p_frame);
-    void IncomingFrameCan2(CAN_frame_t* p_frame);
-    void IncomingFrameCan3(CAN_frame_t* p_frame);
-    void SendCanMessage(uint16_t id, uint8_t count,
-    uint8_t serviceId, uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4,
-    uint8_t b5, uint8_t b6);
-    
-  protected:
-    std::string         m_rxbuf;
-  };
+/**
+ * Subaru Solterra destructor
+ */
+OvmsVehicleSubaruSolterra::~OvmsVehicleSubaruSolterra()
+{
+  ESP_LOGI(TAG, "Shutdown Subaru Solterra vehicle module");
 
-#endif //#ifndef __VEHICLE_TOYOTA_BZ4X_H__
+  // Perform any necessary cleanup and shutdown procedures for the Subaru Solterra
+}

@@ -1,7 +1,7 @@
 /*
 ;    Project:       Open Vehicle Monitor System
-;    Module:        Vehicle Toyota bZ4X
-;    Date:          27th May 2023
+;    Module:        Vehicle Toyota e-TNGA platform
+;    Date:          4th June 2023
 ;
 ;    Changes:
 ;    1.0  Initial release
@@ -27,30 +27,25 @@
 ; THE SOFTWARE.
 */
 
-#ifndef __VEHICLE_TOYOTA_BZ4X_H__
-#define __VEHICLE_TOYOTA_BZ4X_H__
+#ifndef __VEHICLE_TOYOTA_ETNGA_H__
+#define __VEHICLE_TOYOTA_ETNGA_H__
 
 #include "vehicle.h"
 
 using namespace std;
 
-class OvmsVehicleToyotaBz4x : public OvmsVehicle
-  {
-  public:
-    OvmsVehicleToyotaBz4x();
-    ~OvmsVehicleToyotaBz4x();
+class OvmsVehicleToyotaETNGA : public OvmsVehicle
+{
+public:
+  OvmsVehicleToyotaETNGA();
+  ~OvmsVehicleToyotaETNGA();
 
-  public:
-    void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
-    void IncomingFrameCan1(CAN_frame_t* p_frame);
-    void IncomingFrameCan2(CAN_frame_t* p_frame);
-    void IncomingFrameCan3(CAN_frame_t* p_frame);
-    void SendCanMessage(uint16_t id, uint8_t count,
-    uint8_t serviceId, uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4,
-    uint8_t b5, uint8_t b6);
-    
-  protected:
-    std::string         m_rxbuf;
-  };
+protected:
+  void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
 
-#endif //#ifndef __VEHICLE_TOYOTA_BZ4X_H__
+private:
+  // Add private member variables and methods specific to the Toyota e-TNGA platform
+
+};
+
+#endif //#ifndef __VEHICLE_TOYOTA_ETNGA_H__

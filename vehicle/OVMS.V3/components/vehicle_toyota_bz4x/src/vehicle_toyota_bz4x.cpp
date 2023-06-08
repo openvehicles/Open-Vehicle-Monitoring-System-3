@@ -51,9 +51,13 @@ static const char *TAG = "v-toyotabz4x";
 
 static const OvmsVehicle::poll_pid_t vehicle_bz4x_polls[] = {
   //                                                   Off  On  Chrg Ping
-  { 0x745, 0x74d, VEHICLE_POLL_TYPE_READDATA, 0x1739, { 15, 15,   10, 30}, 0, ISOTP_STD },   // SoC - Meter
-  { 0x7d2, 0x7da, VEHICLE_POLL_TYPE_READDATA, 0x1f9a, { 15, 15,   10, 30}, 0, ISOTP_STD },   // Battery Voltage and Current
-//  { VEHICLE_OBD_BROADCAST_MODULE_TX, VEHICLE_OBD_BROADCAST_MODULE_RX, VEHICLE_POLL_TYPE_OBDIICURRENT, 0xa6, { 15, 15,   10, 30}, 0, ISOTP_STD },   // Odometer
+  { 0x7D2, 0x7DA, VEHICLE_POLL_TYPE_READDATA, 0xF186, { 2, 2,   2, 2}, 0, ISOTP_STD },   // State?
+
+//  { 0x745, 0x74d, VEHICLE_POLL_TYPE_READDATA, 0x1739, { 15, 15,   10, 30}, 0, ISOTP_STD },   // SoC - Meter
+//  { 0x7d2, 0x7da, VEHICLE_POLL_TYPE_READDATA, 0x1f9a, { 15, 15,   10, 30}, 0, ISOTP_STD },   // Battery Voltage and Current
+//  { 0x7d2, 0x7da, VEHICLE_POLL_TYPE_READDATA, 0x1f0d, { 15, 15,   10, 30}, 0, ISOTP_STD },   // Vehicle Speed
+//  { 0x7d2, 0x7da, VEHICLE_POLL_TYPE_READDATA, 0x1f46, { 15, 15,   10, 30}, 0, ISOTP_STD },   // Ambient temp  
+//  { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0xa6, { 15, 15,   10, 30}, 0, ISOTP_STD },   // Odometer
   POLL_LIST_END
 };
 
@@ -65,10 +69,8 @@ OvmsVehicleToyotaBz4x::OvmsVehicleToyotaBz4x()
   ESP_LOGI(TAG, "Toyota bZ4X vehicle module");
 
   // Init CAN:
-  RegisterCanBus(1, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
-  RegisterCanBus(2, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
-  RegisterCanBus(3, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
-
+   RegisterCanBus(2, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
+ 
   // Set polling PID list
   PollSetPidList(m_can2,vehicle_bz4x_polls);
 
@@ -112,9 +114,27 @@ void OvmsVehicleToyotaBz4x::IncomingPollReply(canbus* bus, uint16_t type, uint16
   // This will be a nested switch; first for the ECU responding and second for the PID.
   // This is in case two ECUs have different values within the same PID
   switch(pid) {
+    case 0xa6: {
+      float odo = RXB_UINT32(0) / 10.0f;
+      StdMetrics.ms_v_pos_odometer->SetValue(odo);
+      break;
+    }
+
     case 0x1739: {
       float bat_soc = RXB_BYTE(0);
       StdMetrics.ms_v_bat_soc->SetValue(bat_soc);
+      break;
+    }
+
+    case 0x1f0d: {
+      float speed = RXB_BYTE(0);
+      StdMetrics.ms_v_pos_speed->SetValue(speed);
+      break;
+    }
+
+    case 0x1f46: {
+      float temp = RXB_BYTE(0) - 40.0f;
+      StdMetrics.ms_v_env_temp->SetValue(temp);
       break;
     }
 
@@ -143,6 +163,15 @@ void OvmsVehicleToyotaBz4x::IncomingPollReply(canbus* bus, uint16_t type, uint16
   }
 }
 
+void OvmsVehicleToyotaBz4x::SendCanMessage(uint16_t id, uint8_t count,
+  uint8_t serviceId, uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4,
+  uint8_t b5, uint8_t b6)
+{
+  uint8_t data[] = {count, serviceId, b1, b2, b3, b4, b5, b6};
+  m_can2->WriteStandard(id, 8, data);
+  ESP_LOGV(TAG, "Send Can Msg: %03x n=%02x svc=%02x %02x %02x %02x %02x %02x %02x", id, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
+}
+
 void OvmsVehicleToyotaBz4x::IncomingFrameCan1(CAN_frame_t* p_frame)
   {
     uint8_t *d = p_frame->data.u8;
@@ -159,17 +188,18 @@ void OvmsVehicleToyotaBz4x::IncomingFrameCan2(CAN_frame_t* p_frame)
 
     // Process the incoming message
     switch (p_frame->MsgID) {
-    case 0x74d: {
+
+    case 0x174d: {
       // Message from the Plug-in Control ECU
       break;
     }
 
-    case 0x74f: {
+    case 0x174f: {
       // Message from the EV Battery ECU
       break;
     }
 
-    case 0x7da: {
+    case 0x17da: {
       // Message from the EV Battery ECU
       break;
     }
@@ -181,6 +211,10 @@ void OvmsVehicleToyotaBz4x::IncomingFrameCan2(CAN_frame_t* p_frame)
 
     case 0x4e0: {
       // I'm not sure what this message is...
+      break;
+    }
+
+    case 0x17ea: {
       break;
     }
 

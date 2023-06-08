@@ -578,6 +578,13 @@ config OVMS_VEHICLE_TOYOTARAV4EV
     help
         Enable to include support for Toyota RAV4 EV vehicles.
 
+config OVMS_VEHICLE_SUBARU_SOLTERRA
+    bool "Include support for Subaru Solterra vehicles"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for Subaru Solterra vehicles.
+
 config OVMS_VEHICLE_RXTASK_STACK
     int "Stack size for vehicle RX task"
     default 6144
