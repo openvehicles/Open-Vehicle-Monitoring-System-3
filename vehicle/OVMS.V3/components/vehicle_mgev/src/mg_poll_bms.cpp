@@ -208,8 +208,6 @@ void OvmsVehicleMgEv::IncomingBmsPoll(
                 if(kmPerKwh < 4.648)  kmPerKwh = 4.648; //21.5 kWh/100km
                 if(kmPerKwh > 7.728) kmPerKwh = 7.728; //13 kWh/100km
                 if(batTemp > 20) batTemp = 20;
-                // Set full range accounting for battery State of Health (SoH)
-                StdMetrics.ms_v_bat_range_full->SetValue(StandardMetrics.ms_v_bat_range_full->AsFloat() * effSoh * 0.01f, Kilometers);
                 // Set battery capacity reduced by SOC and SOH
                 float batteryCapacity = m_batt_capacity->AsFloat() * (scaledSoc * 0.01f) * (effSoh * 0.01f);
                 StandardMetrics.ms_v_bat_range_est->SetValue(batteryCapacity * (kmPerKwh * (1-((20 - batTemp) * 1.3f) * 0.01f)));
