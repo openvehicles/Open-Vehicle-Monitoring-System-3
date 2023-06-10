@@ -62,7 +62,7 @@ static const char *TAG = "v-hyundaivfl";
 #define STATE_DRIVING         2
 #define STATE_CHARGING        3
 
-static const OvmsVehicle::poll_pid_t standard_polls[] =
+static const OvmsPoller::poll_pid_t standard_polls[] =
 {
   //                                    OFF  AWK  DRV  CHG
   { 0x7e4, 0x7ec, UDS_READ8,    0x01, {   1,   1,   1,   1 }, 0, ISOTP_STD },  // Battery status, speed, module temperatures 1-5
@@ -231,20 +231,20 @@ void OvmsVehicleHyundaiVFL::MetricModified(OvmsMetric* metric)
 /**
  * IncomingPollReply: framework callback: process response
  */
-void OvmsVehicleHyundaiVFL::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
+void OvmsVehicleHyundaiVFL::IncomingPollReply(canbus* bus, const OvmsPoller::poll_state_t& state, uint8_t* data, uint8_t length, const OvmsPoller::poll_pid_t &pollentry)
 {
   // init / fill rx buffer:
   if (m_poll_ml_frame == 0) {
     m_rxbuf.clear();
-    m_rxbuf.reserve(length + mlremain);
+    m_rxbuf.reserve(length + state.mlremain);
   }
   m_rxbuf.append((char*)data, length);
-  if (mlremain)
+  if (state.mlremain)
     return;
 
   // response complete:
-  ESP_LOGV(TAG, "IncomingPollReply: PID %02X: len=%d %s", pid, m_rxbuf.size(), hexencode(m_rxbuf).c_str());
-  switch (pid)
+  ESP_LOGV(TAG, "IncomingPollReply: PID %02X: len=%d %s", state.pid, m_rxbuf.size(), hexencode(m_rxbuf).c_str());
+  switch (state.pid)
   {
     case 0x01:
     {
@@ -408,7 +408,7 @@ void OvmsVehicleHyundaiVFL::IncomingPollReply(canbus* bus, uint16_t type, uint16
 
     default:
     {
-      ESP_LOGW(TAG, "IncomingPollReply: unhandled PID %02X: len=%d %s", pid, m_rxbuf.size(), hexencode(m_rxbuf).c_str());
+      ESP_LOGW(TAG, "IncomingPollReply: unhandled PID %02X: len=%d %s", state.pid, m_rxbuf.size(), hexencode(m_rxbuf).c_str());
     }
   }
 }

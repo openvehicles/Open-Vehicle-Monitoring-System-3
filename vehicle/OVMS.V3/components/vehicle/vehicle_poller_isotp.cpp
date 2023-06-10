@@ -448,7 +448,15 @@ bool OvmsVehicle::PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid)
         }
       else
         {
-        IncomingPollError(frame->origin, m_poll_type, m_poll_pid, error_code);
+        OvmsPoller::poll_state_t state;
+        state.moduleidsent = m_poll_moduleid_sent;
+        state.moduleidrec = msgid;
+        state.type = m_poll_type;
+        state.pid = m_poll_pid;
+        state.mlframe = 0;
+        state.mloffset = 0;
+        state.mlremain = 0;
+        IncomingPollError(frame->origin, state, error_code, m_poll_entry);
         }
       // abort:
       m_poll_ml_remain = 0;
@@ -479,7 +487,15 @@ bool OvmsVehicle::PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid)
       }
     else
       {
-      IncomingPollReply(frame->origin, m_poll_type, m_poll_pid, response_data, response_datalen, m_poll_ml_remain);
+      OvmsPoller::poll_state_t state;
+      state.moduleidsent = m_poll_moduleid_sent;
+      state.moduleidrec = msgid;
+      state.type = m_poll_type;
+      state.pid = m_poll_pid;
+      state.mlframe = m_poll_ml_frame;
+      state.mloffset = m_poll_ml_offset;
+      state.mlremain = m_poll_ml_remain;
+      IncomingPollReply(frame->origin, state, response_data, response_datalen, m_poll_entry);
       }
     }
   else

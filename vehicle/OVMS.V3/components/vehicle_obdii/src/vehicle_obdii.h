@@ -42,7 +42,7 @@ class OvmsVehicleOBDII : public OvmsVehicle
     ~OvmsVehicleOBDII();
 
   protected:
-    void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
+    void IncomingPollReply(canbus* bus, const OvmsPoller::poll_state_t& state, uint8_t* data, uint8_t length, const OvmsPoller::poll_pid_t &pollentry) override;
 
   protected:
     char m_vin[18];

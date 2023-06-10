@@ -167,7 +167,7 @@ public:
   void Ticker300(uint32_t ticker) override;
   void EventListener(std::string event, void *data);
   void UpdatedAverageTemp(OvmsMetric* metric);
-  void IncomingPollReply(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length, uint16_t mlremain);
+  void IncomingPollReply(canbus* bus, const OvmsPoller::poll_state_t& state, uint8_t* data, uint8_t length, const OvmsPoller::poll_pid_t &pollentry) override;
   void ConfigChanged(OvmsConfigParam *param);
   bool SetFeature(int key, const char *value);
   const std::string GetFeature(int key);

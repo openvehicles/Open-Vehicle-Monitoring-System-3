@@ -65,30 +65,30 @@ void OvmsVehicle::PollerStateTicker()
  *  
  *  @param bus
  *    CAN bus the current poll is done on
+ *  @param moduleidsent
+ *    The CAN ID addressed by the current request (txmoduleid)
+ *  @param moduleid
+ *    The CAN ID received matching the current request (rxmoduleid)
  *  @param type
  *    OBD2 mode / UDS polling type, e.g. VEHICLE_POLL_TYPE_READDTC
  *  @param pid
  *    PID addressed (depending on the request type, may be none / 8 bit / 16 bit)
  *  @param data
  *    Payload
+ *  @mparam mloffset
+ *    Byte position of this frame's payload part in the response, 0 = first frame
  *  @param length
  *    Payload size
  *  @param mlremain
  *    Remaining bytes expected to complete the response after this frame
- *  
- *  @member m_poll_moduleid_sent
- *    The CAN ID addressed by the current request (txmoduleid)
- *  @member m_poll_ml_frame
+ *  @param mlframe
  *    Frame number of the response, 0 = first frame / new response
- *  @member m_poll_ml_offset
- *    Byte position of this frame's payload part in the response, 0 = first frame
- *  @member m_poll_plcur
- *    Pointer to the currently processed poll entry
+ *  @param pollentry
+ *    The currently processed poll entry
  */
-void OvmsVehicle::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
+void OvmsVehicle::IncomingPollReply(canbus* bus, const OvmsPoller::poll_state_t& state, uint8_t* data, uint8_t length, const OvmsPoller::poll_pid_t &pollentry)
   {
   }
-
 
 /**
  * IncomingPollError: poll response error handler (stub, override with vehicle implementation)
@@ -98,22 +98,22 @@ void OvmsVehicle::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, ui
  *  
  *  @param bus
  *    CAN bus the current poll is done on
+ *  @param moduleidsent
+ *    The CAN ID addressed by the current request (txmoduleid)
+ *  @param moduleid
+ *    The CAN ID received (or expected to be received) matching the current request (rxmoduleid)
  *  @param type
  *    OBD2 mode / UDS polling type, e.g. VEHICLE_POLL_TYPE_READDTC
  *  @param pid
  *    PID addressed (depending on the request type, may be none / 8 bit / 16 bit)
  *  @param code
  *    NRC detail code
- *  
- *  @member m_poll_moduleid_sent
- *    The CAN ID addressed by the current request (txmoduleid)
- *  @member m_poll_plcur
- *    Pointer to the currently processed poll entry
+ *  @param pollentry
+ *    The currently processed poll entry
  */
-void OvmsVehicle::IncomingPollError(canbus* bus, uint16_t type, uint16_t pid, uint16_t code)
+void OvmsVehicle::IncomingPollError(canbus* bus, const OvmsPoller::poll_state_t& state, uint16_t code, const OvmsPoller::poll_pid_t &pollentry)
   {
   }
-
 
 /**
  * IncomingPollTxCallback: poller TX callback (stub, override with vehicle implementation)
@@ -150,7 +150,7 @@ void OvmsVehicle::IncomingPollTxCallback(canbus* bus, uint32_t txid, uint16_t ty
  *  @param plist
  *    The polling list to use or NULL to stop polling
  */
-void OvmsVehicle::PollSetPidList(canbus* bus, const poll_pid_t* plist)
+void OvmsVehicle::PollSetPidList(canbus* bus, const OvmsPoller::poll_pid_t* plist)
   {
   OvmsRecMutexLock slock(&m_poll_single_mutex);
   OvmsRecMutexLock lock(&m_poll_mutex);
@@ -417,7 +417,7 @@ int OvmsVehicle::PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
     return -1;
 
   // prepare single poll:
-  OvmsVehicle::poll_pid_t poll[] =
+  OvmsPoller::poll_pid_t poll[] =
     {
       { txid, rxid, 0, 0, { 999, 999, 999, 999 }, 0, protocol },
       POLL_LIST_END
@@ -454,8 +454,8 @@ int OvmsVehicle::PollSingleRequest(canbus* bus, uint32_t txid, uint32_t rxid,
 
   // save poller state:
   canbus*           p_bus    = m_poll_bus_default;
-  const poll_pid_t* p_list   = m_poll_plist;
-  const poll_pid_t* p_plcur  = m_poll_plcur;
+  const OvmsPoller::poll_pid_t* p_list   = m_poll_plist;
+  const OvmsPoller::poll_pid_t* p_plcur  = m_poll_plcur;
   uint32_t          p_ticker = m_poll_ticker;
 
   // start single poll:

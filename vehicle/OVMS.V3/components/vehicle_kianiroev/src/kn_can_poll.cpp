@@ -29,55 +29,55 @@ static const char *TAG = "v-kianiroev";
 /**
  * Incoming poll reply messages
  */
-void OvmsVehicleKiaNiroEv::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
+void OvmsVehicleKiaNiroEv::IncomingPollReply(canbus* bus, const OvmsPoller::poll_state_t& state, uint8_t* data, uint8_t length, const OvmsPoller::poll_pid_t &pollentry)
   {
-	//ESP_LOGD(TAG, "IPR %03x TYPE:%x PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", m_poll_moduleid_low, type, pid, length, data[0], data[1], data[2], data[3],
+	//ESP_LOGD(TAG, "IPR %03x TYPE:%x PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", m_poll_moduleid_low, state.type, state.pid, length, data[0], data[1], data[2], data[3],
 	//	data[4], data[5], data[6], data[7]);
 	switch (m_poll_moduleid_low)
 		{
 		// ****** IGMP *****
 		case 0x778:
-			IncomingIGMP(bus, type, pid, data, length, mlremain);
+			IncomingIGMP(bus, state.type, state.pid, data, length, state.mlremain);
 			break;
 
 		// ****** OBC ******
 		case 0x7ed:
-			IncomingOBC(bus, type, pid, data, length, mlremain);
+			IncomingOBC(bus, state.type, state.pid, data, length, state.mlremain);
 			break;
 
 		// ****** BCM ******
 		case 0x7a8:
-			IncomingBCM(bus, type, pid, data, length, mlremain);
+			IncomingBCM(bus, state.type, state.pid, data, length, state.mlremain);
 			break;
 
 	  // ****** AirCon ******
 	  case 0x7bb:
-			IncomingAirCon(bus, type, pid, data, length, mlremain);
+			IncomingAirCon(bus, state.type, state.pid, data, length, state.mlremain);
 			break;
 
 	  // ****** ABS ESP ******
 	  case 0x7d9:
-			IncomingAbsEsp(bus, type, pid, data, length, mlremain);
+			IncomingAbsEsp(bus, state.type, state.pid, data, length, state.mlremain);
 			break;
 
 		// ******* VMCU ******
 		case 0x7ea:
-			IncomingVMCU(bus, type, pid, data, length, mlremain);
+			IncomingVMCU(bus, state.type, state.pid, data, length, state.mlremain);
 			break;
 
 		// ******* MCU ******
 		case 0x7eb:
-			IncomingMCU(bus, type, pid, data, length, mlremain);
+			IncomingMCU(bus, state.type, state.pid, data, length, state.mlremain);
 			break;
 
 		// ***** BMC ****
 		case 0x7ec:
-			IncomingBMC(bus, type, pid, data, length, mlremain);
+			IncomingBMC(bus, state.type, state.pid, data, length, state.mlremain);
 			break;
 
 		// ***** CM ****
 		case 0x7ce:
-			IncomingCM(bus, type, pid, data, length, mlremain);
+			IncomingCM(bus, state.type, state.pid, data, length, state.mlremain);
 			break;
 
 		default:

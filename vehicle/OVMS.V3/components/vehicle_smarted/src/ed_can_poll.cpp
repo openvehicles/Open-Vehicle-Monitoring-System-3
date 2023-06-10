@@ -93,7 +93,7 @@ static const char *TAG = "v-smarted";
 #include "vehicle_smarted.h"
 
 
-static const OvmsVehicle::poll_pid_t smarted_polls[] =
+static const OvmsPoller::poll_pid_t smarted_polls[] =
 {
   { 0x61A, 0x483, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0xF111, {  0,300,600,600 }, 0, ISOTP_STD }, // rqChargerPN_HW
   { 0x61A, 0x483, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x0226, {  0,300,0,3 }, 0, ISOTP_STD }, // rqChargerVoltages
@@ -256,24 +256,27 @@ void OvmsVehicleSmartED::ObdInitPoll() {
 /**
  * Incoming poll reply messages
  */
-void OvmsVehicleSmartED::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain) {
+void OvmsVehicleSmartED::IncomingPollReply (
+    canbus* bus, const OvmsPoller::poll_state_t& state, uint8_t* data,
+    uint8_t length, const OvmsPoller::poll_pid_t &pollentry) {
   string& rxbuf = smarted_obd_rxbuf;
   static uint16_t last_pid = -1;
   
-  if (pid != last_pid) {
-    //ESP_LOGD(TAG, "pid: %04x length: %d m_poll_ml_remain: %d m_poll_ml_frame: %d", pid, length, m_poll_ml_remain, m_poll_ml_frame);
-    last_pid = pid;
-    m_poll_ml_frame=0;
+  if (state.pid != last_pid) {
+    //ESP_LOGD(TAG, "pid: %04x length: %d mlremain: %d mlframe: %d", state.pid, length, state.mlremain, state.mlframe);
+    if (state.mlframe > 0)
+      return;
+    last_pid = state.pid;
   }
   
   // init / fill rx buffer:
   if (m_poll_ml_frame == 0) {
     rxbuf.clear();
-    rxbuf.reserve(length + remain);
+    rxbuf.reserve(length + state.mlremain);
   }
   rxbuf.append((char*)data, length);
   
-  if (remain)
+  if (state.mlremain)
     return;
   
   // char *buf = NULL;
@@ -281,13 +284,13 @@ void OvmsVehicleSmartED::IncomingPollReply(canbus* bus, uint16_t type, uint16_t 
   // do {
     // rlen = FormatHexDump(&buf, rxbuf.data() + offset, rlen, 16);
     // offset += 16;
-    // ESP_LOGW(TAG, "OBD2: reply [%02x %02x]: %s", type, pid, buf ? buf : "-");
+    // ESP_LOGW(TAG, "OBD2: reply [%02x %02x]: %s", state.type, state.pid, buf ? buf : "-");
   // } while (rlen);
   // if (buf)
     // free(buf);
   
   // complete:
-  switch (pid) {
+  switch (state.pid) {
     case 0x0201: // rqBattTemperatures
       PollReply_BMS_BattTemp(rxbuf.data(), rxbuf.size());
       break;
@@ -403,7 +406,7 @@ void OvmsVehicleSmartED::IncomingPollReply(canbus* bus, uint16_t type, uint16_t 
       do {
         rlen = FormatHexDump(&buf, rxbuf.data() + offset, rlen, 16);
         offset += 16;
-        ESP_LOGW(TAG, "OBD2: unhandled reply [%02x %02x]: %s", type, pid, buf ? buf : "-");
+        ESP_LOGW(TAG, "OBD2: unhandled reply [%02x %02x]: %s", state.type, state.pid, buf ? buf : "-");
       } while (rlen);
       if (buf)
         free(buf);
@@ -420,7 +423,7 @@ void OvmsVehicleSmartED::IncomingPollReply(canbus* bus, uint16_t type, uint16_t 
   }
 }
 
-void OvmsVehicleSmartED::IncomingPollError(canbus* bus, uint16_t type, uint16_t pid, uint16_t code)
+void OvmsVehicleSmartED::IncomingPollError(canbus* bus, const OvmsPoller::poll_state_t& state, uint16_t code, const OvmsPoller::poll_pid_t &pollentry)
 {
   // single poll?
   if (!smarted_obd_rxwait.IsAvail()) {
@@ -435,7 +438,7 @@ int OvmsVehicleSmartED::ObdRequest(uint16_t txid, uint16_t rxid, string request,
   OvmsMutexLock lock(&smarted_obd_request);
 
   // prepare single poll:
-  OvmsVehicle::poll_pid_t poll[] = {
+  OvmsPoller::poll_pid_t poll[] = {
     { txid, rxid, 0, 0, { 1, 1, 1, 1 }, 0, ISOTP_STD },
     POLL_LIST_END
   };

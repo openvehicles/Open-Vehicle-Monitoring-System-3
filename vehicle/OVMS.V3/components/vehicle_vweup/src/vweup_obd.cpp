@@ -50,7 +50,7 @@ static const char *TAG = "v-vweup";
 // General PIDs for all model years
 //
 
-const OvmsVehicle::poll_pid_t vweup_polls[] = {
+const OvmsPoller::poll_pid_t vweup_polls[] = {
   // Note: poller ticker cycles at 3600 seconds = max period
   // { ecu, type, pid, {_OFF,_AWAKE,_CHARGING,_ON}, bus, protocol }
 
@@ -106,7 +106,7 @@ const OvmsVehicle::poll_pid_t vweup_polls[] = {
 //
 // Specific PIDs for gen1 model (before year 2020)
 //
-const OvmsVehicle::poll_pid_t vweup_gen1_polls[] = {
+const OvmsPoller::poll_pid_t vweup_gen1_polls[] = {
   // VWUP_MOT_ELEC_GEAR not available
   {VWUP_MOT_ELEC, UDS_READ, VWUP_MOT_ELEC_DRIVEMODE,        {  0,  0,  0,  5}, 1, ISOTP_STD},
 
@@ -122,7 +122,7 @@ const OvmsVehicle::poll_pid_t vweup_gen1_polls[] = {
 //
 // Specific PIDs for gen2 model (from year 2020)
 //
-const OvmsVehicle::poll_pid_t vweup_gen2_polls[] = {
+const OvmsPoller::poll_pid_t vweup_gen2_polls[] = {
   {VWUP_MOT_ELEC, UDS_READ, VWUP_MOT_ELEC_GEAR,             {  0,  0,  0,  2}, 1, ISOTP_STD},
   {VWUP_MOT_ELEC, UDS_READ, VWUP_MOT_ELEC_DRIVEMODE,        {  0,  0,  0,  5}, 1, ISOTP_STD},
 
@@ -313,7 +313,7 @@ void OvmsVehicleVWeUp::OBDInit()
     int cmods = (vweup_modelyear > 2019) ? 14 : 17;
 
     // Add PIDs to poll list:
-    OvmsVehicle::poll_pid_t p = { VWUP_BAT_MGMT, UDS_READ, 0, {0,0,0,0}, 1, ISOTP_STD };
+    OvmsPoller::poll_pid_t p = { VWUP_BAT_MGMT, UDS_READ, 0, {0,0,0,0}, 1, ISOTP_STD };
     p.polltime[VWEUP_ON]        = m_cfg_cell_interval_drv;
     p.polltime[VWEUP_CHARGING]  = m_cfg_cell_interval_chg;
     p.polltime[VWEUP_AWAKE]     = m_cfg_cell_interval_awk;
@@ -557,13 +557,13 @@ void OvmsVehicleVWeUp::PollerStateTicker()
 }
 
 
-void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length, uint16_t mlremain)
+void OvmsVehicleVWeUp::IncomingPollReply(canbus* bus, const OvmsPoller::poll_state_t& state, uint8_t* data, uint8_t length, const OvmsPoller::poll_pid_t &pollentry)
 {
   if (m_obd_state != OBDS_Run)
     return;
 
   // If not all data is here: wait for the next call
-  if (!PollReply.AddNewData(pid, data, length, mlremain)) {
+  if (!PollReply.AddNewData(state.pid, data, length, state.mlremain)) {
     return;
   }
 
@@ -574,16 +574,16 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
   // Handle reply for diagnostic session
   //
 
-  if (type == UDS_SESSION)
+  if (state.type == UDS_SESSION)
     return;
 
   //
   // Handle BMS cell voltage & temperatures
   //
 
-  if (pid >= VWUP_BAT_MGMT_CELL_VBASE && pid <= VWUP_BAT_MGMT_CELL_VLAST)
+  if (state.pid >= VWUP_BAT_MGMT_CELL_VBASE && state.pid <= VWUP_BAT_MGMT_CELL_VLAST)
   {
-    uint16_t pi = pid - VWUP_BAT_MGMT_CELL_VBASE;
+    uint16_t pi = state.pid - VWUP_BAT_MGMT_CELL_VBASE;
 
     // get cell index from poll index:
     uint16_t cmods = (vweup_modelyear > 2019) ? 14 : 17;
@@ -599,10 +599,10 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
     return;
   }
 
-  if ((pid >= VWUP_BAT_MGMT_CELL_TBASE && pid <= VWUP_BAT_MGMT_CELL_TLAST) ||
-      (pid == VWUP_BAT_MGMT_CELL_T17))
+  if ((state.pid >= VWUP_BAT_MGMT_CELL_TBASE && state.pid <= VWUP_BAT_MGMT_CELL_TLAST) ||
+      (state.pid == VWUP_BAT_MGMT_CELL_T17))
   {
-    uint16_t ti = (pid == VWUP_BAT_MGMT_CELL_T17) ? 16 : pid - VWUP_BAT_MGMT_CELL_TBASE;
+    uint16_t ti = (state.pid == VWUP_BAT_MGMT_CELL_T17) ? 16 : state.pid - VWUP_BAT_MGMT_CELL_TBASE;
     if (ti < m_cell_last_ti) {
       BmsRestartCellTemperatures();
     }
@@ -617,7 +617,7 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
   // Handle regular PIDs
   //
 
-  switch (pid) {
+  switch (state.pid) {
 
     case VWUP_CHG_MGMT_LV_PWRSTATE:
       if (PollReply.FromUint8("VWUP_CHG_MGMT_LV_PWRSTATE", ivalue)) {
@@ -1322,7 +1322,7 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
 
     default:
       VALUE_LOG(TAG, "IncomingPollReply: ECU %" PRIX32 "/%" PRIX32 " unhandled PID %02X %04X: %s",
-        m_poll_entry.txmoduleid, m_poll_entry.rxmoduleid, type, pid, PollReply.GetHexString().c_str());
+        state.moduleidsent, state.moduleidrec, state.type, state.pid, PollReply.GetHexString().c_str());
       break;
   }
 }

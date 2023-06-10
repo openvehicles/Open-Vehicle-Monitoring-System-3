@@ -29,40 +29,40 @@ static const char *TAG = "v-kiasoulev";
 /**
  * Incoming poll reply messages
  */
-void OvmsVehicleKiaSoulEv::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
+void OvmsVehicleKiaSoulEv::IncomingPollReply(canbus* bus, const OvmsPoller::poll_state_t& state, uint8_t* data, uint8_t length, const OvmsPoller::poll_pid_t &pollentry)
   {
-	//ESP_LOGW(TAG, "%03x TYPE:%x PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", m_poll_moduleid_low, type, pid, length, data[0], data[1], data[2], data[3],
+	//ESP_LOGW(TAG, "%03x TYPE:%x PID:%02x %x %02x %02x %02x %02x %02x %02x %02x %02x", m_poll_moduleid_low, state.type, state.pid, length, data[0], data[1], data[2], data[3],
 	//	data[4], data[5], data[6], data[7]);
 	switch (m_poll_moduleid_low)
 		{
 		// ****** SJB *****
 		case 0x779:
-			IncomingSJB(bus, type, pid, data, length, mlremain);
+			IncomingSJB(bus, state.type, state.pid, data, length, state.mlremain);
 			break;
 
 		// ****** OBC ******
 		case 0x79c:
-			IncomingOBC(bus, type, pid, data, length, mlremain);
+			IncomingOBC(bus, state.type, state.pid, data, length, state.mlremain);
 			break;
 
 		// ****** TPMS ******
 		case 0x7de:
-			IncomingTPMS(bus, type, pid, data, length, mlremain);
+			IncomingTPMS(bus, state.type, state.pid, data, length, state.mlremain);
 			break;
 
 		// ******* VMCU ******
 		case 0x7ea:
-			IncomingVMCU(bus, type, pid, data, length, mlremain);
+			IncomingVMCU(bus, state.type, state.pid, data, length, state.mlremain);
 			break;
 
 		// ***** BMC ****
 		case 0x7ec:
-			IncomingBMC(bus, type, pid, data, length, mlremain);
+			IncomingBMC(bus, state.type, state.pid, data, length, state.mlremain);
 			break;
 
 		// ***** LDC ****
 		case 0x7cd:
-			IncomingLDC(bus, type, pid, data, length, mlremain);
+			IncomingLDC(bus, state.type, state.pid, data, length, state.mlremain);
 			break;
 
 		default:

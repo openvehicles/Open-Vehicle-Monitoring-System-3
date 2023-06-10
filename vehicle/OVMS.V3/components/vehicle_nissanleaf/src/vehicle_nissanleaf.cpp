@@ -66,7 +66,7 @@ enum poll_states
   POLLSTATE_CHARGING  //- car is charging
   };
 
-static const OvmsVehicle::poll_pid_t obdii_polls[] =
+static const OvmsPoller::poll_pid_t obdii_polls[] =
   {
     { CHARGER_TXID, CHARGER_RXID, VEHICLE_POLL_TYPE_OBDIIGROUP, VIN_PID, {  0, 900, 0, 0 }, 2, ISOTP_STD },           // VIN [19]
     { CHARGER_TXID, CHARGER_RXID, VEHICLE_POLL_TYPE_OBDIIEXTENDED, QC_COUNT_PID, {  0, 900, 0, 0 }, 2, ISOTP_STD },   // QC [2]
@@ -555,7 +555,7 @@ bool OvmsVehicleNissanLeaf::ObdRequest(uint16_t txid, uint16_t rxid, uint32_t re
   {
   OvmsMutexLock lock(&nl_obd_request);
   // prepare single poll:
-  OvmsVehicle::poll_pid_t poll[] = {
+  OvmsPoller::poll_pid_t poll[] = {
     { txid, rxid, 0, 0, { 1, 1, 1, 1 }, 0, ISOTP_STD },
     POLL_LIST_END
   };
@@ -790,23 +790,22 @@ void OvmsVehicleNissanLeaf::PollReply_VIN(uint8_t reply_data[], uint16_t reply_l
   }
 
 // Reassemble all pieces of a multi-frame reply.
-void OvmsVehicleNissanLeaf::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
-  {
+void OvmsVehicleNissanLeaf::IncomingPollReply( canbus* bus, const OvmsPoller::poll_state_t& state, uint8_t* data, uint8_t length, const OvmsPoller::poll_pid_t &pollentry)  {
   string& rxbuf = nl_obd_rxbuf;
 
   // init / fill rx buffer:
   if (m_poll_ml_frame == 0) {
     rxbuf.clear();
-    rxbuf.reserve(length + mlremain);
+    rxbuf.reserve(length + state.mlremain);
   }
   rxbuf.append((char*)data, length);
-  if (mlremain)
+  if (state.mlremain)
     return;
 
   static uint8_t buf[MAX_POLL_DATA_LEN];
   memcpy(buf, rxbuf.c_str(), rxbuf.size());
 
-  uint32_t id_pid = m_poll_moduleid_low<<16 | pid;
+  uint32_t id_pid = m_poll_moduleid_low<<16 | state.pid;
     switch (id_pid)
       {
       case BMS_RXID<<16 | 0x01: // battery

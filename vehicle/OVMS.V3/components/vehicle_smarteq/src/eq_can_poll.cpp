@@ -77,23 +77,23 @@ static const char *TAG = "v-smarteq";
 /**
  * Incoming poll reply messages
  */
-void OvmsVehicleSmartEQ::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain) {
+void OvmsVehicleSmartEQ::IncomingPollReply(canbus* bus, const OvmsPoller::poll_state_t& state, uint8_t* data, uint8_t length, const OvmsPoller::poll_pid_t &pollentry){
   
   // init / fill rx buffer:
   if (m_poll_ml_frame == 0) {
     m_rxbuf.clear();
-    m_rxbuf.reserve(length + remain);
+    m_rxbuf.reserve(length + state.mlremain);
   }
-  m_rxbuf.append((char*)data, length);
-  if (remain)
+  m_rxbuf.append((const char*)data, length);
+  if (state.mlremain)
     return;
 
   // response complete:
-  ESP_LOGV(TAG, "IncomingPollReply: PID %02X: len=%d %s", pid, m_rxbuf.size(), hexencode(m_rxbuf).c_str());
+  ESP_LOGV(TAG, "IncomingPollReply: PID %02X: len=%d %s", state.pid, m_rxbuf.size(), hexencode(m_rxbuf).c_str());
   
   switch (m_poll_moduleid_low) {
     case 0x7BB:
-      switch (pid) {
+      switch (state.pid) {
         case 0x41: // rqBattVoltages_P1
           PollReply_BMS_BattVolts(m_rxbuf.data(), m_rxbuf.size(), 0);
           break;
@@ -106,14 +106,14 @@ void OvmsVehicleSmartEQ::IncomingPollReply(canbus* bus, uint16_t type, uint16_t 
       }
       break;
     case 0x793:
-      switch (pid) {
+      switch (state.pid) {
         case 0x80: // rqIDpart OBL_7KW_Installed
           //PollReply_BMS_BattVolts(m_rxbuf.data(), m_rxbuf.size(), 0);
           break;
       }
       break;
     default:
-      ESP_LOGW(TAG, "IncomingPollReply: unhandled PID %02X: len=%d %s", pid, m_rxbuf.size(), hexencode(m_rxbuf).c_str());
+      ESP_LOGW(TAG, "IncomingPollReply: unhandled PID %02X: len=%d %s", state.pid, m_rxbuf.size(), hexencode(m_rxbuf).c_str());
       break;
   }
   

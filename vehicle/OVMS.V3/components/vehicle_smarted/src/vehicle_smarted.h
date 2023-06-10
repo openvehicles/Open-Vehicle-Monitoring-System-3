@@ -62,8 +62,8 @@ class OvmsVehicleSmartED : public OvmsVehicle
   public:
     void IncomingFrameCan1(CAN_frame_t* p_frame);
     void IncomingFrameCan2(CAN_frame_t* p_frame);
-    void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
-    void IncomingPollError(canbus* bus, uint16_t type, uint16_t pid, uint16_t code);
+    void IncomingPollReply(canbus* bus, const OvmsPoller::poll_state_t& state, uint8_t* data, uint8_t length, const OvmsPoller::poll_pid_t &pollentry) override;
+    void IncomingPollError(canbus* bus, const OvmsPoller::poll_state_t& state, uint16_t code, const OvmsPoller::poll_pid_t &pollentry) override;
     char m_vin[18];
 
   public:

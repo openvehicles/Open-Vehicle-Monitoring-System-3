@@ -185,16 +185,14 @@ void OvmsVehicleMgEv::IncomingPollFrame(CAN_frame_t* frame)
     }
 }
 
-void OvmsVehicleMgEv::IncomingPollReply(
-        canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length,
-        uint16_t remain)
+void OvmsVehicleMgEv::IncomingPollReply(canbus* bus, const OvmsPoller::poll_state_t& state, uint8_t* data, uint8_t length, const OvmsPoller::poll_pid_t &pollentry)
 {
     ESP_LOGV(
         TAG,
         "%03" PRIx32 " TYPE:%" PRIx16 " PID:%02" PRIx16 " Length:%" PRIx8 " Data:%02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8,
         m_poll_moduleid_low,
-        type,
-        pid,
+        state.type,
+        state.pid,
         length,
         data[0], data[1], data[2], data[3]
     );
@@ -202,28 +200,28 @@ void OvmsVehicleMgEv::IncomingPollReply(
     switch (m_poll_moduleid_low)
     {
         case (bmsId | rxFlag):
-            IncomingBmsPoll(pid, data, length, remain);
+            IncomingBmsPoll(state.pid, data, length, state.mlremain);
             break;
         case (dcdcId | rxFlag):
-            IncomingDcdcPoll(pid, data, length);
+            IncomingDcdcPoll(state.pid, data, length);
             break;
         case (vcuId | rxFlag):
-            IncomingVcuPoll(pid, data, length, remain);
+            IncomingVcuPoll(state.pid, data, length, state.mlremain);
             break;
         case (atcId | rxFlag):
-            IncomingAtcPoll(pid, data, length);
+            IncomingAtcPoll(state.pid, data, length);
             break;
         case (tpmsId | rxFlag):
-            IncomingTpmsPoll(pid, data, length);
+            IncomingTpmsPoll(state.pid, data, length);
             break;
         case (pepsId | rxFlag):
-            IncomingPepsPoll(pid, data, length);
+            IncomingPepsPoll(state.pid, data, length);
             break;
         case (evccId | rxFlag):
-            IncomingEvccPoll(pid, data, length);
+            IncomingEvccPoll(state.pid, data, length);
             break;
         case (bcmId | rxFlag):
-            IncomingBcmPoll(pid, data, length);
+            IncomingBcmPoll(state.pid, data, length);
             break;            
     }
 }

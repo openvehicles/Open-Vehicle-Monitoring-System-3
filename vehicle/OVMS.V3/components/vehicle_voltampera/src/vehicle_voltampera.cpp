@@ -56,7 +56,7 @@ static const char *TAG = "v-voltampera";
 // 1 = car is on and ready to Drive
 // 2 = car wakeup or powertrain off, one request with high polling speed. After swith to state 1.
 
-static const OvmsVehicle::poll_pid_t va_polls[]
+static const OvmsPoller::poll_pid_t va_polls[]
   =
   {
     { 0x7e0, 0x7e8, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x002F, {  0, 600,  0 },   0, ISOTP_STD }, // Fuel Level
@@ -130,7 +130,7 @@ OvmsVehicleVoltAmpera::OvmsVehicleVoltAmpera()
   //Add cell requests to polling list
   const int nCellListSize = 96; 
   const int va_pollsSize = sizeof(va_polls)/sizeof(va_polls[0]);
-  m_pPollingList = new poll_pid_t[va_pollsSize + nCellListSize];
+  m_pPollingList = new OvmsPoller::poll_pid_t[va_pollsSize + nCellListSize];
   uint16_t pid = 0x4181;
   
   int iPoll=0;
@@ -665,22 +665,22 @@ void OvmsVehicleVoltAmpera::IncomingFrameCan4(CAN_frame_t* p_frame)
     ClimateControlIncomingSWCAN(p_frame);
   }
 
-void OvmsVehicleVoltAmpera::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
+void OvmsVehicleVoltAmpera::IncomingPollReply(canbus* bus, const OvmsPoller::poll_state_t& state, uint8_t* data, uint8_t length, const OvmsPoller::poll_pid_t &pollentry)
   {
   uint8_t value = *data;
 
   //Cell voltage
   const uint16_t pid_cellv1 = 0x4181;
-  if((pid>=pid_cellv1 && pid<=pid_cellv1+30) || (pid>=pid_cellv1+127 && pid<=pid_cellv1+191)){
+  if((state.pid>=pid_cellv1 && state.pid<=pid_cellv1+30) || (state.pid>=pid_cellv1+127 && state.pid<=pid_cellv1+191)){
     if(length <2)
       return;
 
     int nCellNum = 0;
-    if(pid <= pid_cellv1+30){
-      nCellNum = pid - pid_cellv1;
+    if(state.pid <= pid_cellv1+30){
+      nCellNum = state.pid - pid_cellv1;
     }
     else{
-      nCellNum = pid - pid_cellv1 - 96;
+      nCellNum = state.pid - pid_cellv1 - 96;
     }
 
     if(nCellNum == 0)
@@ -691,7 +691,7 @@ void OvmsVehicleVoltAmpera::IncomingPollReply(canbus* bus, uint16_t type, uint16
     return;
   }
 
-  switch (pid)
+  switch (state.pid)
     {
     case 0x002f:  // Fuel level
       if(mt_fuel_level->SetValue((int)value * 100 / 255))

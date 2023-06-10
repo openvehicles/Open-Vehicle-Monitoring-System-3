@@ -52,7 +52,7 @@ static const char *TAG = "v-zoe";
 // Pollstate 1 - POLLSTATE_ON       - car is on
 // Pollstate 2 - POLLSTATE_RUNNING  - car is driving
 // Pollstate 3 - POLLSTATE_CHARGING - car is charging
-static const OvmsVehicle::poll_pid_t renault_zoe_polls[] = {
+static const OvmsPoller::poll_pid_t renault_zoe_polls[] = {
   //{ 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2002, { 0, 10, 10, 10 } },  // SOC
   //{ 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2006, { 0, 10, 10, 10 } },  // Odometer
   //{ 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3203, { 0, 10, 10, 10 } },  // Battery Voltage
@@ -80,7 +80,7 @@ static const OvmsVehicle::poll_pid_t renault_zoe_polls[] = {
   POLL_LIST_END
 };
 
-static const OvmsVehicle::poll_pid_t renault_kangoo_polls[] = {
+static const OvmsPoller::poll_pid_t renault_kangoo_polls[] = {
   // { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x2006, { 0, 60, 0, 0 }, 0, ISOTP_STD },  // Odometer
   { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3203, { 0, 10, 1, 2 }, 0, ISOTP_STD },  // Battery Voltage
   { 0x7e4, 0x7ec, VEHICLE_POLL_TYPE_OBDIIEXTENDED, 0x3204, { 0, 10, 1, 2 }, 0, ISOTP_STD },  // Battery Current
@@ -797,50 +797,52 @@ void OvmsVehicleRenaultZoe::IncomingFrameCan1(CAN_frame_t* p_frame) {
 /**
  * Handles incoming poll results
  */
-void OvmsVehicleRenaultZoe::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain) {
+void OvmsVehicleRenaultZoe::IncomingPollReply(canbus* bus, const OvmsPoller::poll_state_t& state, uint8_t* data, uint8_t length, const OvmsPoller::poll_pid_t &pollentry){
 	string& rxbuf = zoe_obd_rxbuf;
   static uint16_t last_pid = -1;
   
-  if (pid != last_pid) {
-    //ESP_LOGD(TAG, "pid: %04x length: %d m_poll_ml_remain: %d m_poll_ml_frame: %d", pid, length, m_poll_ml_remain, m_poll_ml_frame);
-    last_pid = pid;
-    m_poll_ml_frame=0;
+  if (state.pid != last_pid) {
+    // Ignore if it's no tthe same one.
+    if (state.mlframe != 0)
+      return;
+    //ESP_LOGD(TAG, "pid: %04x length: %d m_poll_ml_remain: %d mlframe: %d", state.pid, length, state.mlremain, state.mlframe);
+    last_pid = state.pid;
   }
   
   // init / fill rx buffer:
   if (m_poll_ml_frame == 0) {
     rxbuf.clear();
-    rxbuf.reserve(length + remain);
+    rxbuf.reserve(length + state.mlremain);
   }
   rxbuf.append((char*)data, length);
   
-  if (remain)
+  if (state.mlremain)
     return;
   
 	switch (m_poll_moduleid_low) {
 		// ****** EPS *****
 		case 0x762:
-			IncomingEPS(type, pid, rxbuf.data(), rxbuf.size());
+			IncomingEPS(state.type, state.pid, rxbuf.data(), rxbuf.size());
 			break;
     // ****** EVC *****
 		case 0x7ec:
-			IncomingEVC(type, pid, rxbuf.data(), rxbuf.size());
+			IncomingEVC(state.type, state.pid, rxbuf.data(), rxbuf.size());
 			break;
     // ****** BCB *****
     case 0x793:
-      IncomingBCB(type, pid, rxbuf.data(), rxbuf.size());
+      IncomingBCB(state.type, state.pid, rxbuf.data(), rxbuf.size());
       break;
     // ****** LBC *****
     case 0x7bb:
-      IncomingLBC(type, pid, rxbuf.data(), rxbuf.size());
+      IncomingLBC(state.type, state.pid, rxbuf.data(), rxbuf.size());
       break;
     // ****** UBP *****
     case 0x7bc:
-      IncomingUBP(type, pid, rxbuf.data(), rxbuf.size());
+      IncomingUBP(state.type, state.pid, rxbuf.data(), rxbuf.size());
       break;
     // ****** PEB *****
     case 0x77e:
-      IncomingPEB(type, pid, rxbuf.data(), rxbuf.size());
+      IncomingPEB(state.type, state.pid, rxbuf.data(), rxbuf.size());
       break;
 	}
 }

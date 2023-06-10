@@ -80,8 +80,8 @@ typedef enum {
 #define CON_OBD           2
 #define CON_BOTH          3
 
-typedef std::vector<OvmsVehicle::poll_pid_t, ExtRamAllocator<OvmsVehicle::poll_pid_t>> poll_vector_t;
-typedef std::initializer_list<const OvmsVehicle::poll_pid_t> poll_list_t;
+typedef std::vector<OvmsPoller::poll_pid_t, ExtRamAllocator<OvmsPoller::poll_pid_t>> poll_vector_t;
+typedef std::initializer_list<const OvmsPoller::poll_pid_t> poll_list_t;
 
 typedef enum {
   OBDS_Init = 0,
@@ -323,7 +323,8 @@ protected:
     return statename[state];
   }
   void PollerStateTicker();
-  void IncomingPollReply(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length, uint16_t mlremain);
+
+  void IncomingPollReply( canbus* bus, const OvmsPoller::poll_state_t& state, uint8_t* data, uint8_t length, const OvmsPoller::poll_pid_t &pollentry) override;
 
 protected:
   void UpdateChargePower(float power_kw);

@@ -58,7 +58,7 @@ class OvmsVehicleMiniSE : public OvmsVehicle {
   ~OvmsVehicleMiniSE() override;
 
   protected:
-  void IncomingPollReply(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length, uint16_t mlremain) override;
+  void IncomingPollReply(canbus* bus, const OvmsPoller::poll_state_t& state, uint8_t* data, uint8_t length, const OvmsPoller::poll_pid_t &pollentry) override;
   void Ticker1(uint32_t ticker) override;
   void Ticker10(uint32_t ticker) override;
 

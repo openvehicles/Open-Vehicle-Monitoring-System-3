@@ -37,7 +37,7 @@ static const char *TAG = "v-mgev";
 
 namespace {
 
-const OvmsVehicle::poll_pid_t common_obdii_polls[] =
+const OvmsPoller::poll_pid_t common_obdii_polls[] =
 {
     { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmsStatusPid, {  0, 5, 5, 0  }, 0, ISOTP_STD },
     { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, batteryBusVoltagePid, {  0, 5, 30, 0  }, 0, ISOTP_STD },
@@ -250,7 +250,7 @@ int OvmsVehicleMgEv::GetNotifyChargeStateDelay(const char* state)
 }
 
 //Call this function in variant specific code to setup poll data
-void OvmsVehicleMgEv::ConfigurePollData(const OvmsVehicle::poll_pid_t *SpecificPollData, size_t DataSize)
+void OvmsVehicleMgEv::ConfigurePollData(const OvmsPoller::poll_pid_t *SpecificPollData, size_t DataSize)
 {
     if (m_pollData)
     {
@@ -262,7 +262,7 @@ void OvmsVehicleMgEv::ConfigurePollData(const OvmsVehicle::poll_pid_t *SpecificP
     //Allocate memory for m_pollData which should be enough for both the common_obdii_polls and SpecificPollData
     size_t size = sizeof(common_obdii_polls) + DataSize;
     ESP_LOGI(TAG, "Number of common obdii polls: %u. Number of variant specific polls: %u, total size: %u", sizeof(common_obdii_polls)/sizeof(common_obdii_polls[0]), DataSize/sizeof(SpecificPollData[0]), size/sizeof(common_obdii_polls[0]));
-    m_pollData = reinterpret_cast<OvmsVehicle::poll_pid_t*>(ExternalRamMalloc(size));
+    m_pollData = reinterpret_cast<OvmsPoller::poll_pid_t*>(ExternalRamMalloc(size));
     if (m_pollData == nullptr)
     {
         ESP_LOGE(TAG, "Unable to allocate memory for polling");
@@ -661,7 +661,7 @@ bool OvmsVehicleMgEv::SendPollMessage(
 //     return currentBus->Write(&diagnosticControl) != ESP_FAIL;
 // }
 
-// void OvmsVehicleMgEv::SetupManualPolls(const OvmsVehicle::poll_pid_t *ManualPolls, size_t ManualPollSize)
+// void OvmsVehicleMgEv::SetupManualPolls(const OvmsPoller::poll_pid_t *ManualPolls, size_t ManualPollSize)
 // {
 //     m_ManualPollList.clear();
 //     for (uint8_t a = 0; a < ManualPollSize/sizeof(ManualPolls[0]); a++)
