@@ -438,10 +438,11 @@ public:
   static void WebCfgFeatures(PageEntry_t &p, PageContext_t &c);
   static void WebCfgBattery(PageEntry_t &p, PageContext_t &c);
   static void WebBattMon(PageEntry_t &p, PageContext_t &c);
+#endif //CONFIG_OVMS_COMP_WEBSERVER
 
+public:
   void RangeCalcReset();
   void RangeCalcStat(OvmsWriter *writer);
-#endif //CONFIG_OVMS_COMP_WEBSERVER
 public:
   std::string BatteryMonStat()
   {

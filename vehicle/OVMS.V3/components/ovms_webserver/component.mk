@@ -10,6 +10,7 @@
 ifdef CONFIG_OVMS_SC_GPL_MONGOOSE
 ifdef CONFIG_OVMS_COMP_WEBSERVER
 
+COMPONENT_DEPENDS := mongoose
 COMPONENT_ADD_INCLUDEDIRS:=src
 COMPONENT_SRCDIRS:=src assets
 COMPONENT_ADD_LDFLAGS = -Wl,--whole-archive -l$(COMPONENT_NAME) -Wl,--no-whole-archive
@@ -23,8 +24,7 @@ COMPONENT_EXTRA_CLEAN := \
 	assets/tables.js.gz \
 	assets/style.css \
 	assets/style.css.gz \
-	assets/zones.json.gz \
-	$(COMPONENT_PATH)/src/ovms_webserver_mtimes.h
+	assets/zones.json.gz
 COMPONENT_EMBED_FILES := \
 	assets/script.js.gz \
 	assets/charts.js.gz \
@@ -91,28 +91,12 @@ src/web_framework.o: \
 	$(COMPONENT_PATH)/assets/favicon.png \
 	$(COMPONENT_PATH)/assets/zones.json.gz
 
-# When porting this component makefile to CMake we encountered and issue and
-# were not able to reproduce this set of defines based on generated files.
-# The workaround is to generate a header file instead of the defines, and to
-# have an helper shell do the generation.
-#
-# We may revert when we have found a way to make it work with CMake.
-src/ovms_webserver.o src/ovms_commandstream.o src/ovms_websockethandler.o src/web_cfg.o src/web_cfg_init.o src/web_displays.o src/web_framework.o: $(COMPONENT_PATH)/src/ovms_webserver_mtimes.h
-
-$(COMPONENT_PATH)/src/ovms_webserver_mtimes.h: \
-	$(COMPONENT_PATH)/assets/script.js.gz \
-	$(COMPONENT_PATH)/assets/charts.js.gz \
-	$(COMPONENT_PATH)/assets/tables.js.gz \
-	$(COMPONENT_PATH)/assets/style.css.gz \
-	$(COMPONENT_PATH)/assets/favicon.png \
-	$(COMPONENT_PATH)/assets/zones.json.gz
-	$(COMPONENT_PATH)/helper.sh "$@" \
-		"MTIME_ASSETS_SCRIPT_JS" "$(COMPONENT_PATH)/assets/script.js.gz" \
-		"MTIME_ASSETS_CHARTS_JS" "$(COMPONENT_PATH)/assets/charts.js.gz" \
-		"MTIME_ASSETS_TABLES_JS" "$(COMPONENT_PATH)/assets/tables.js.gz" \
-		"MTIME_ASSETS_STYLE_CSS" "$(COMPONENT_PATH)/assets/style.css.gz" \
-		"MTIME_ASSETS_FAVICON_PNG" "$(COMPONENT_PATH)/assets/favicon.png" \
-		"MTIME_ASSETS_ZONES_JSON" "$(COMPONENT_PATH)/assets/zones.json.gz"
+CPPFLAGS += -DMTIME_ASSETS_SCRIPT_JS=$(shell perl -e 'print +(stat "$(COMPONENT_PATH)/assets/script.js.gz")[9]')LL
+CPPFLAGS += -DMTIME_ASSETS_CHARTS_JS=$(shell perl -e 'print +(stat "$(COMPONENT_PATH)/assets/charts.js.gz")[9]')LL
+CPPFLAGS += -DMTIME_ASSETS_TABLES_JS=$(shell perl -e 'print +(stat "$(COMPONENT_PATH)/assets/tables.js.gz")[9]')LL
+CPPFLAGS += -DMTIME_ASSETS_STYLE_CSS=$(shell perl -e 'print +(stat "$(COMPONENT_PATH)/assets/style.css.gz")[9]')LL
+CPPFLAGS += -DMTIME_ASSETS_FAVICON_PNG=$(shell perl -e 'print +(stat "$(COMPONENT_PATH)/assets/favicon.png")[9]')LL
+CPPFLAGS += -DMTIME_ASSETS_ZONES_JSON=$(shell perl -e 'print +(stat "$(COMPONENT_PATH)/assets/zones.json.gz")[9]')LL
 
 endif
 endif
