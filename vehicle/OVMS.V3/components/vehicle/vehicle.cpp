@@ -151,13 +151,7 @@ OvmsVehicleFactory::OvmsVehicleFactory()
 
 OvmsVehicleFactory::~OvmsVehicleFactory()
   {
-  if (m_currentvehicle)
-    {
-    m_currentvehicle->m_ready = false;
-    delete m_currentvehicle;
-    m_currentvehicle = NULL;
-    m_currentvehicletype.clear();
-    }
+  DoClearVehicle(false, false);
   }
 
 OvmsVehicle* OvmsVehicleFactory::NewVehicle(const char* VehicleType)
@@ -172,35 +166,42 @@ OvmsVehicle* OvmsVehicleFactory::NewVehicle(const char* VehicleType)
 
 void OvmsVehicleFactory::ClearVehicle()
   {
+  DoClearVehicle(true, true);
+  }
+void OvmsVehicleFactory::DoClearVehicle( bool clearName, bool sendEvent)
+  {
   if (m_currentvehicle)
     {
-    m_currentvehicle->m_ready = false;
-    delete m_currentvehicle;
+    m_currentvehicle->ShuttingDown();
+    auto vehicle = m_currentvehicle;
     m_currentvehicle = NULL;
+
     m_currentvehicletype.clear();
-    StandardMetrics.ms_v_type->SetValue("");
-    MyEvents.SignalEvent("vehicle.type.cleared", NULL);
+    if (clearName)
+      StandardMetrics.ms_v_type->SetValue("");
+    if (sendEvent)
+      MyEvents.SignalEvent("vehicle.type.cleared", NULL);
+
+    delete vehicle;
     }
   }
 
 void OvmsVehicleFactory::SetVehicle(const char* type)
   {
+  DoClearVehicle(false, true);
+  m_currentvehicle = NewVehicle(type);
+  std::string new_type(type);
   if (m_currentvehicle)
     {
-    m_currentvehicle->m_ready = false;
-    delete m_currentvehicle;
-    m_currentvehicle = NULL;
-    m_currentvehicletype.clear();
-    MyEvents.SignalEvent("vehicle.type.cleared", NULL);
+    m_currentvehicle->StartingUp();
     }
-  m_currentvehicle = NewVehicle(type);
-  if (m_currentvehicle)
-  {
-  	m_currentvehicle->m_ready = true;
-  }
-  m_currentvehicletype = std::string(type);
-  StandardMetrics.ms_v_type->SetValue(m_currentvehicle ? type : "");
-  MyEvents.SignalEvent("vehicle.type.set", (void*)type, strlen(type)+1);
+  else
+    {
+    new_type = "";
+    }
+  m_currentvehicletype = new_type;
+  StandardMetrics.ms_v_type->SetValue(new_type);
+  MyEvents.SignalEvent("vehicle.type.set", (void*)new_type.c_str(), new_type.size()+1);
   }
 
 void OvmsVehicleFactory::AutoInit()
@@ -262,6 +263,8 @@ OvmsVehicle::OvmsVehicle()
   {
   using std::placeholders::_1;
   using std::placeholders::_2;
+
+  m_is_shutdown = false;
 
   m_can1 = NULL;
   m_can2 = NULL;
@@ -388,15 +391,7 @@ OvmsVehicle::OvmsVehicle()
 
 OvmsVehicle::~OvmsVehicle()
   {
-  if (m_timer_poller)
-    {
-    xTimerDelete( m_timer_poller, 0);
-    m_timer_poller = NULL;
-    }
-  if (m_can1) m_can1->SetPowerMode(Off);
-  if (m_can2) m_can2->SetPowerMode(Off);
-  if (m_can3) m_can3->SetPowerMode(Off);
-  if (m_can4) m_can4->SetPowerMode(Off);
+  ShuttingDown();
 
   if (m_bms_voltages != NULL)
     {
@@ -449,7 +444,30 @@ OvmsVehicle::~OvmsVehicle()
     delete [] m_bms_talerts;
     m_bms_talerts = NULL;
     }
+  }
 
+void OvmsVehicle::StartingUp()
+  {
+  m_ready = true;
+  m_pollers.StartingUp();
+  }
+
+void OvmsVehicle::ShuttingDown()
+  {
+  if (m_is_shutdown)
+    return;
+  m_is_shutdown = true;
+  m_ready = false;
+  if (m_timer_poller)
+    {
+    xTimerDelete( m_timer_poller, 0);
+    m_timer_poller = NULL;
+    }
+  m_pollers.ShuttingDown();
+  if (m_can1) m_can1->SetPowerMode(Off);
+  if (m_can2) m_can2->SetPowerMode(Off);
+  if (m_can3) m_can3->SetPowerMode(Off);
+  if (m_can4) m_can4->SetPowerMode(Off);
   MyEvents.DeregisterEvent(TAG);
   MyMetrics.DeregisterListener(TAG);
   }

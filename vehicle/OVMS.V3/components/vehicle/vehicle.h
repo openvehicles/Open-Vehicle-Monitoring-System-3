@@ -623,6 +623,11 @@ class OvmsVehicle : public InternalRamAllocated
     virtual bool FormatBmsAlerts(int verbosity, OvmsWriter* writer, bool show_warnings);
     bool BmsCheckChangeCellArrangementVoltage(int readings, int readingspermodule = 0);
     bool BmsCheckChangeCellArrangementTemperature(int readings, int readingspermodule = 0);
+  protected:
+    bool m_is_shutdown;
+  public:
+    void StartingUp();
+    void ShuttingDown();
   };
 
 template<typename Type> OvmsVehicle* CreateVehicle()
@@ -649,6 +654,7 @@ class OvmsVehicleFactory
     std::string m_currentvehicletype;
     map_vehicle_t m_vmap;
 
+    void DoClearVehicle( bool clearName, bool sendEvent);
   public:
     template<typename Type>
     short RegisterVehicle(const char* VehicleType, const char* VehicleName = "")
