@@ -9,8 +9,6 @@
 */
 
 #include "ovms_log.h"
-static const char *TAG = "v-toyota-etnga";
-
 #include "vehicle_toyota_etnga.h"
 
 // Poll state descriptions:
@@ -20,7 +18,7 @@ static const char *TAG = "v-toyota-etnga";
 //    POLLSTATE_CHARGING (3)  : Vehicle is charging
 
 static const OvmsVehicle::poll_pid_t obdii_polls[] = {
-  { HYBRID_CONTROL_SYSTEM_TX, HYBRID_CONTROL_SYSTEM_RX, VEHICLE_POLL_TYPE_READDATA, PID_BATTERY_VOLTAGE_AND_CURRENT, { 0, 0, 0, 0}, 0, ISOTP_STD },
+  { HYBRID_CONTROL_SYSTEM_TX, HYBRID_CONTROL_SYSTEM_RX, VEHICLE_POLL_TYPE_READDATA, PID_BATTERY_VOLTAGE_AND_CURRENT, { 0, 5, 5, 5}, 0, ISOTP_STD },
     POLL_LIST_END
   };
 
@@ -39,14 +37,46 @@ OvmsVehicleToyotaETNGA::OvmsVehicleToyotaETNGA()
 
   }
 
-void OvmsVehicleToyotaETNGA::Ticker1(uint32_t ticker)
+OvmsVehicleToyotaETNGA::~OvmsVehicleToyotaETNGA()
   {
-
+  ESP_LOGI(TAG, "Shutdown Toyota eTNGA platform module");
   }
+
+void OvmsVehicleToyotaETNGA::Ticker1(uint32_t ticker)
+{
+  ++tickerCount;
+  ESP_LOGV(TAG, "Tick! tickerCount=%d frameCount=%d replyCount=%d pollerstate=%d", tickerCount, frameCount, replyCount, m_poll_state);
+
+  switch (m_poll_state) {
+    case POLLSTATE_SLEEP:
+      handleSleepState();
+      break;
+
+    case POLLSTATE_ACTIVE:
+      handleActiveState();
+      break;
+
+    case POLLSTATE_READY:
+      handleReadyState();
+      break;
+
+    case POLLSTATE_CHARGING:
+      handleChargingState();
+      break;
+
+    default:
+      ESP_LOGE(TAG, "Invalid poll state: %d", m_poll_state);
+      break;
+  }
+}
 
 void OvmsVehicleToyotaETNGA::Ticker10(uint32_t ticker)
   {
+  }
 
+void OvmsVehicleToyotaETNGA::Ticker30(uint32_t ticker)
+  {
+    // Request VIN if not already set
     if (StandardMetrics.ms_v_vin->AsString().empty()) {
       RequestVIN();
     }
@@ -55,34 +85,4 @@ void OvmsVehicleToyotaETNGA::Ticker10(uint32_t ticker)
 
 void OvmsVehicleToyotaETNGA::Ticker3600(uint32_t ticker)
   {
-  }
-
-OvmsVehicleToyotaETNGA::~OvmsVehicleToyotaETNGA()
-  {
-  ESP_LOGI(TAG, "Shutdown Toyota eTNGA platform module");
-  }
-
-void OvmsVehicleToyotaETNGA::IncomingFrameCan2(CAN_frame_t* p_frame)
-  {
-    uint8_t *d = p_frame->data.u8;
-
-    // Process the incoming message
-    switch (p_frame->MsgID) {
-    
-    case 0x45a: {
-      // I'm not sure what this message is...
-      break;
-    }
-
-    case 0x4e0: {
-      // I'm not sure what this message is...
-      break;
-    }
-
-    default:
-      // Unknown frame. Log for evaluation
-      ESP_LOGV(TAG,"CAN2 message received: %08" PRIx32 ": [%02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 "]",
-        p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7] );
-        break;
-    }
   }

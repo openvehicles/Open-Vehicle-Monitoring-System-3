@@ -18,18 +18,25 @@ class OvmsVehicleToyotaETNGA : public OvmsVehicle
 public:
     OvmsVehicleToyotaETNGA();
     ~OvmsVehicleToyotaETNGA();
-    void IncomingFrameCan2(CAN_frame_t* p_frame);
-    void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
+
     void Ticker1(uint32_t ticker);
     void Ticker10(uint32_t ticker);
+    void Ticker30(uint32_t ticker);
     void Ticker3600(uint32_t ticker);
+
+    void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
+
+    void IncomingFrameCan2(CAN_frame_t* p_frame);
 
 protected:
     std::string m_rxbuf;
 
 private:
+    static constexpr const char* TAG = "v-toyota-etnga";
     void IncomingHybridControlSystem(uint16_t pid);
     int RequestVIN();
+
+    int frameCount = 0, tickerCount = 0, replyCount = 0;  // Keep track of when the car is talking or silent.
 
     float GetBatteryVoltage(const std::string& data);
     float GetBatteryCurrent(const std::string& data);
@@ -37,6 +44,16 @@ private:
     void SetBatteryVoltage(float voltage);
     void SetBatteryCurrent(float current);
     void SetBatteryPower(float power);
+
+    void handleSleepState();
+    void handleActiveState();
+    void handleReadyState();
+    void handleChargingState();
+
+    void transitionToSleepState();
+    void transitionToActiveState();
+    void transitionToReadyState();
+    void transitionToChargingState();
 
 };
 

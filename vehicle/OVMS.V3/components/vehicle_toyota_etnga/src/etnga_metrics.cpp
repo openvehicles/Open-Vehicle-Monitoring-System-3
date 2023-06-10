@@ -27,15 +27,18 @@ float OvmsVehicleToyotaETNGA::CalculateBatteryPower(float voltage, float current
 
 void OvmsVehicleToyotaETNGA::SetBatteryVoltage(float voltage)
 {
+  ESP_LOGV(TAG, "Voltage: %f", voltage);
   StdMetrics.ms_v_bat_voltage->SetValue(voltage);
 }
 
 void OvmsVehicleToyotaETNGA::SetBatteryCurrent(float current)
 {
+  ESP_LOGV(TAG, "Current: %f", current);
   StdMetrics.ms_v_bat_current->SetValue(current);
 }
 
 void OvmsVehicleToyotaETNGA::SetBatteryPower(float power)
 {
+  ESP_LOGV(TAG, "Power: %f", power);
   StdMetrics.ms_v_bat_power->SetValue(power);
 }

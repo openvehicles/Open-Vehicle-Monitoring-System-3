@@ -11,8 +11,6 @@
 */
 
 #include "ovms_log.h"
-static const char *TAG = "v-toyota-etnga";
-
 #include "vehicle_toyota_etnga.h"
 
 void OvmsVehicleToyotaETNGA::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
@@ -77,13 +75,10 @@ int OvmsVehicleToyotaETNGA::RequestVIN()
 {
   ESP_LOGD(TAG, "RequestVIN: Sending Request");
 
-/*
-  // TODO: This doesn't work yet as we aren't populating the 'awake'
   if (!StdMetrics.ms_v_env_awake->AsBool()) {
     ESP_LOGD(TAG, "RequestVIN: Not Awake Request not sent");
     return -3;
   }
-*/
 
   std::string response;
   int res = PollSingleRequest(
