@@ -590,6 +590,8 @@ class OvmsPoller {
 
     bool HasPollList();
 
+    void ClearPollList();
+
     void ResetThrottle();
 
     void Queue_PollerSend(poller_source_t source);
@@ -633,6 +635,8 @@ class OvmsPollers {
     TaskHandle_t m_polltask;
     CanFrameCallback  m_poll_txcallback;      // Poller CAN TxCallback
 
+    bool              m_shut_down;
+
     void PollerTxCallback(const CAN_frame_t* frame, bool success);
     void PollerRxCallback(const CAN_frame_t* frame, bool success);
 
@@ -646,6 +650,9 @@ class OvmsPollers {
     OvmsPollers( OvmsPoller::ParentSignal *parent);
     ~OvmsPollers();
 
+    void StartingUp();
+    void ShuttingDown();
+
     OvmsPoller *GetPoller(canbus *can, bool force = false );
 
     void QueuePollerSend(OvmsPoller::poller_source_t src, uint8_t busno = 0 );
@@ -654,7 +661,7 @@ class OvmsPollers {
 
     bool HasPollList(canbus* bus = nullptr);
 
-    void CheckStartPollTask();
+    void CheckStartPollTask( bool force = false);
 
     void PollSetThrottling(uint8_t sequence_max)
       {

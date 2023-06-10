@@ -298,6 +298,12 @@ bool OvmsPoller::HasPollList()
   return m_polls.HasPollList();
   }
 
+void OvmsPoller::ClearPollList()
+  {
+  OvmsRecMutexLock lock(&m_poll_mutex);
+  return m_polls.Clear();
+  }
+
 bool OvmsPoller::CanPoll()
   {
   // Check Throttle
@@ -708,32 +714,63 @@ const char *OvmsPoller::PollerCommand(OvmsPollCommand src)
   return "??";
   }
 
+static const char *PollerRegister="CAN Poller";
+
 OvmsPollers::OvmsPollers( OvmsPoller::ParentSignal *parent)
   : m_parent_callback(parent),
     m_poll_state(0),
     m_poll_sequence_max(0),
     m_poll_fc_septime(25),
     m_poll_ch_keepalive(60),
-    m_pollqueue(nullptr), m_polltask(nullptr)
+    m_pollqueue(nullptr), m_polltask(nullptr),
+    m_shut_down(false)
   {
   for (int idx = 0; idx < VEHICLE_MAXBUSSES; ++idx)
     m_pollers[idx] = nullptr;
 
   m_poll_txcallback = std::bind(&OvmsPollers::PollerTxCallback, this, _1, _2);
-  MyCan.RegisterCallback("CAN Poller", std::bind(&OvmsPollers::PollerRxCallback, this, _1, _2));
+  MyCan.RegisterCallback(PollerRegister, std::bind(&OvmsPollers::PollerRxCallback, this, _1, _2));
   }
 OvmsPollers::~OvmsPollers()
   {
-  if (m_pollqueue)
-    vQueueDelete(m_pollqueue);
-  if (m_polltask)
-    vTaskDelete(m_polltask);
-  MyCan.DeregisterCallback("CAN Poller");
+  ShuttingDown();
   delete m_parent_callback;
   for (int i = 0 ; i < VEHICLE_MAXBUSSES; ++i)
     {
     if (m_pollers[i])
       delete m_pollers[i];
+    }
+  }
+
+void OvmsPollers::StartingUp()
+  {
+  if (m_shut_down)
+    return;
+  CheckStartPollTask();
+  }
+
+void OvmsPollers::ShuttingDown()
+  {
+  if (m_shut_down)
+    return;
+  m_shut_down = true;
+  if (m_polltask)
+    {
+    vTaskDelete(m_polltask);
+    m_polltask = nullptr;
+    }
+  if (m_pollqueue)
+    {
+    vQueueDelete(m_pollqueue);
+    m_pollqueue = nullptr;
+    }
+  MyCan.DeregisterCallback(PollerRegister);
+
+  OvmsRecMutexLock lock(&m_poller_mutex);
+  for (int i = 0 ; i < VEHICLE_MAXBUSSES; ++i)
+    {
+    if (m_pollers[i])
+      m_pollers[i]->ClearPollList();
     }
   }
 
@@ -756,12 +793,32 @@ void OvmsPollers::PollerRxCallback(const CAN_frame_t* frame, bool success)
   * Make sure the Poll task is running.
   * Automatically called when a poller is set.
   */
-void OvmsPollers::CheckStartPollTask()
+void OvmsPollers::CheckStartPollTask( bool force )
   {
+
+  if (!force)
+    {
+    bool require = false;
+    OvmsRecMutexLock lock(&m_poller_mutex);
+    for (int i = 0 ; i < VEHICLE_MAXBUSSES; ++i)
+      {
+      if (m_pollers[i])
+        {
+        require = true;
+        break;
+        }
+      }
+
+    if (!require)
+      return;
+    }
+
   if (!m_pollqueue)
     m_pollqueue = xQueueCreate(CONFIG_OVMS_VEHICLE_CAN_RX_QUEUE_SIZE,sizeof(OvmsPoller::poll_queue_entry_t));
   if (!m_polltask)
     {
+    if (!m_parent_callback->Ready())
+      return;
     xTaskCreatePinnedToCore(OvmsPollerTask, "OVMS Vehicle Poll",
       CONFIG_OVMS_VEHICLE_RXTASK_STACK, (void*)this, 10, &m_polltask, CORE(1));
     }
@@ -778,10 +835,13 @@ void OvmsPollers::PollerTask()
   {
   OvmsPoller::poll_queue_entry_t entry;
   bool paused = false;
-  while (true)
+  while (!m_shut_down)
     {
     if (xQueueReceive(m_pollqueue, &entry, (portTickType)portMAX_DELAY)==pdTRUE)
       {
+      if (m_shut_down)
+        break;
+
       switch (entry.entry_type)
         {
         case OvmsPoller::OvmsPollEntryType::FrameRx:
@@ -902,6 +962,9 @@ void OvmsPollers::PollerTask()
 
 OvmsPoller *OvmsPollers::GetPoller(canbus *can, bool force)
   {
+  if (m_shut_down)
+    return nullptr;
+
   int gap = -1;
     {
     OvmsRecMutexLock lock(&m_poller_mutex);
@@ -934,13 +997,16 @@ OvmsPoller *OvmsPollers::GetPoller(canbus *can, bool force)
     m_pollers[gap] = newpoller;
     }
 
-  CheckStartPollTask();
+  if (gap >= 0)
+    CheckStartPollTask(true);
 
   return (gap<0) ? nullptr : m_pollers[gap];
   }
 
 void OvmsPollers::QueuePollerSend(OvmsPoller::poller_source_t src, uint8_t busno)
   {
+  if (m_shut_down)
+    return;
   if (!m_parent_callback->Ready())
     return;
   if (!m_pollqueue)
