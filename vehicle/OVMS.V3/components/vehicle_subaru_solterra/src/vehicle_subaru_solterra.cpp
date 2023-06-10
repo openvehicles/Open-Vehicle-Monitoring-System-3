@@ -9,9 +9,6 @@
 */
 
 #include "ovms_log.h"
-static const char *TAG = "v-subaru-solterra";  // Logging tag for this module
-
-#include <stdio.h>
 #include "vehicle_subaru_solterra.h"
 
 // Constructor for the OvmsVehicleSubaruSolterra class
@@ -36,7 +33,7 @@ class OvmsVehicleSubaruSolterraInit
 // Constructor for the OvmsVehicleSubaruSolterraInit class
 OvmsVehicleSubaruSolterraInit::OvmsVehicleSubaruSolterraInit()
   {
-  ESP_LOGI(TAG, "Registering Vehicle: Subaru Solterra (9000)");  // Log an informational message
+  ESP_LOGI(OvmsVehicleSubaruSolterra::TAG, "Registering Vehicle: Subaru Solterra (9000)");  // Log an informational message
 
   MyVehicleFactory.RegisterVehicle<OvmsVehicleSubaruSolterra>("SUBSOL","Subaru Solterra");  // Register the OvmsVehicleSubaruSolterra class with a vehicle factory
   }
