@@ -40,7 +40,7 @@ class OvmsVehicleMercedesB250e : public OvmsVehicle
     ~OvmsVehicleMercedesB250e();
 
   public:
-    void IncomingFrameCan1(CAN_frame_t* p_frame);
+    void IncomingFrameCan1(const CAN_frame_t* p_frame) override;
 
   protected:
     OvmsMetricFloat *mt_mb_trip_reset;        // Distance since reset

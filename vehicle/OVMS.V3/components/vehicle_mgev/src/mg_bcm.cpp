@@ -113,7 +113,7 @@ bool OvmsVehicleMgEv::AuthenticateBCM(canbus* currentBus)
     return false;
 }
 
-void OvmsVehicleMgEv::IncomingBCMAuthFrame(CAN_frame_t* frame, uint8_t serviceId, uint8_t* data)
+void OvmsVehicleMgEv::IncomingBCMAuthFrame(const CAN_frame_t* frame, uint8_t serviceId, const uint8_t* data)
 {
     if (serviceId == UDS_RESP_TYPE_NRC)
     {
@@ -241,16 +241,13 @@ void OvmsVehicleMgEv::DRLCommand(OvmsWriter* writer, canbus* currentBus, bool Tu
           
         m_bcm_task->SetValue(static_cast<int>(BCMTasks::DRL));
         // Pause the poller so we're not being interrupted
-        {
-            OvmsRecMutexLock lock(&m_poll_mutex);
-            m_poll_plist = nullptr;
-        }             
+        PausePolling();
 
         if (currentBus->Write(&Command) == ESP_FAIL) {
             ESP_LOGE(TAG, "Error writing DRL command frame");
             m_bcm_task->SetValue(static_cast<int>(BCMTasks::None));
             // Re-start polling
-            m_poll_plist = m_pollData;        
+            ResumePolling();
             return;      
         }
 
@@ -308,7 +305,7 @@ void OvmsVehicleMgEv::DRLCommand(OvmsWriter* writer, canbus* currentBus, bool Tu
             default: {}
         }
         // Re-start polling
-        m_poll_plist = m_pollData;                
+        ResumePolling();
     }
     else
     {
@@ -329,7 +326,7 @@ void OvmsVehicleMgEv::DRLFirstFrameSent(const CAN_frame_t* p_frame, bool success
     }
 }
 
-void OvmsVehicleMgEv::IncomingBCMDRLFrame(CAN_frame_t* frame, uint8_t frameType, uint8_t serviceId, uint16_t responsePid, uint8_t* data)
+void OvmsVehicleMgEv::IncomingBCMDRLFrame(const CAN_frame_t* frame, uint8_t frameType, uint8_t serviceId, uint16_t responsePid, const uint8_t* data)
 {
     if (serviceId == UDS_RESP_TYPE_NRC)
     {
@@ -417,7 +414,7 @@ void OvmsVehicleMgEv::IncomingBCMDRLFrame(CAN_frame_t* frame, uint8_t frameType,
     }
 }
 
-void OvmsVehicleMgEv::IncomingBCMFrame(CAN_frame_t* frame, uint8_t frameType, uint16_t frameLength, uint8_t serviceId, uint16_t responsePid, uint8_t* data)
+void OvmsVehicleMgEv::IncomingBCMFrame(const CAN_frame_t* frame, uint8_t frameType, uint16_t frameLength, uint8_t serviceId, uint16_t responsePid, const uint8_t* data)
 {
     switch (serviceId)
     {

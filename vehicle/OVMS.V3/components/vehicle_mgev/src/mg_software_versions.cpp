@@ -96,10 +96,7 @@ void OvmsVehicleMgEv::SoftwareVersions(OvmsWriter* writer)
         m_GettingSoftwareVersions = true;        
 
         // Pause the poller so we're not being interrupted
-        {
-            OvmsRecMutexLock lock(&m_poll_mutex);
-            m_poll_plist = nullptr;
-        }
+        PausePolling();
 
         // Send the software version requests
         m_versions.clear();
@@ -131,7 +128,7 @@ void OvmsVehicleMgEv::SoftwareVersions(OvmsWriter* writer)
             m_bcm_task->SetValue(static_cast<int>(BCMTasks::None));     
         }  
         // Re-start polling
-        m_poll_plist = m_pollData;             
+        ResumePolling();
 
         // Output responses
         for (const auto& version : m_versions)
@@ -166,7 +163,7 @@ void OvmsVehicleMgEv::SoftwareVersions(OvmsWriter* writer)
     }
 }
 
-void OvmsVehicleMgEv::IncomingSoftwareVersionFrame(CAN_frame_t* frame, uint8_t frameType, uint16_t frameLength, uint16_t responsePid, uint8_t* data)
+void OvmsVehicleMgEv::IncomingSoftwareVersionFrame(const CAN_frame_t* frame, uint8_t frameType, uint16_t frameLength, uint16_t responsePid, const uint8_t* data)
 {       
     switch (frameType)
     {

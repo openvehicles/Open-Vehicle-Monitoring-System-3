@@ -33,43 +33,51 @@ static const char *TAG = "v-mgev";
 
 #include "vehicle_mgev.h"
 
-void OvmsVehicleMgEv::IncomingFrameCan1(CAN_frame_t* p_frame)
+void OvmsVehicleMgEv::IncomingFrameCan1(const CAN_frame_t* p_frame)
 {
+  /*
     if (m_poll_bus_default != m_can1)
     {
         return;
     }
+    */
     IncomingPollFrame(p_frame);
 }
 
-void OvmsVehicleMgEv::IncomingFrameCan2(CAN_frame_t* p_frame)
+void OvmsVehicleMgEv::IncomingFrameCan2(const CAN_frame_t* p_frame)
 {
+  /*
     if (m_poll_bus_default != m_can2)
     {
         return;
     }
+    */
     IncomingPollFrame(p_frame);
 }
 
-void OvmsVehicleMgEv::IncomingFrameCan3(CAN_frame_t* p_frame)
+void OvmsVehicleMgEv::IncomingFrameCan3(const CAN_frame_t* p_frame)
 {
+  /*
     if (m_poll_bus_default != m_can3)
     {
         return;
     }
+    */
     IncomingPollFrame(p_frame);
 }
 
-void OvmsVehicleMgEv::IncomingFrameCan4(CAN_frame_t* p_frame)
+void OvmsVehicleMgEv::IncomingFrameCan4(const CAN_frame_t* p_frame)
 {
+    /*
     if (m_poll_bus_default != m_can4)
     {
         return;
     }
+    */
     IncomingPollFrame(p_frame);
 }
 
-void OvmsVehicleMgEv::IncomingPollFrame(CAN_frame_t* frame)
+void OvmsVehicleMgEv::IncomingPollFrame(const CAN_frame_t* frame)
 {
     if (frame->MsgID == 0x70au)
     {
@@ -89,7 +97,7 @@ void OvmsVehicleMgEv::IncomingPollFrame(CAN_frame_t* frame)
 
     uint8_t frameType = frame->data.u8[0] >> 4;
     uint16_t frameLength = 0;
-    uint8_t* data = &frame->data.u8[1];
+    const uint8_t* data = &frame->data.u8[1];
 
     switch (frameType)
     {
@@ -186,29 +194,30 @@ void OvmsVehicleMgEv::IncomingPollFrame(CAN_frame_t* frame)
 }
 
 void OvmsVehicleMgEv::IncomingPollReply(
-        canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length,
-        uint16_t remain)
+  canbus* bus, uint32_t moduleidsent, uint32_t moduleid, uint16_t type, uint16_t pid,
+  const uint8_t* data, uint16_t mloffset, uint8_t length, uint16_t mlremain, uint16_t mlframe,
+  const OvmsPoller::poll_pid_t &pollentry)
 {
     ESP_LOGV(
         TAG,
         "%03" PRIx32 " TYPE:%" PRIx16 " PID:%02" PRIx16 " Length:%" PRIx8 " Data:%02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8,
-        m_poll_moduleid_low,
+        moduleid,
         type,
         pid,
         length,
         data[0], data[1], data[2], data[3]
     );
 
-    switch (m_poll_moduleid_low)
+    switch (moduleid)
     {
         case (bmsId | rxFlag):
-            IncomingBmsPoll(pid, data, length, remain);
+            IncomingBmsPoll(pid, data, length, mlremain);
             break;
         case (dcdcId | rxFlag):
             IncomingDcdcPoll(pid, data, length);
             break;
         case (vcuId | rxFlag):
-            IncomingVcuPoll(pid, data, length, remain);
+            IncomingVcuPoll(pid, data, length, mlremain);
             break;
         case (atcId | rxFlag):
             IncomingAtcPoll(pid, data, length);

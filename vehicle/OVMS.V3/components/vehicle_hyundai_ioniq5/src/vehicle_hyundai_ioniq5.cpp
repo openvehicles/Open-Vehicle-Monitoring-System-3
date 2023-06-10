@@ -69,7 +69,7 @@ const char *OvmsHyundaiIoniqEv::TAG = "v-ioniq5";
 // Pollstate 1 - car is on
 // Pollstate 2 - car is charging
 // Pollstate 3 - ping : car is off, not charging and something triggers a wake
-static const OvmsVehicle::poll_pid_t vehicle_ioniq_polls[] = {
+static const OvmsPoller::poll_pid_t vehicle_ioniq_polls[] = {
   //                                                   Off  On  Chrg Ping
   { 0x7b3, 0x7bb, VEHICLE_POLL_TYPE_READDATA, 0x0100, { 0,   1,  10, 30}, 0, ISOTP_STD },   // AirCon and Speed
   { 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_READDATA, 0xe004, { 0,   1,   4,  4}, 0, ISOTP_STD },   // VMCU - Drive status + Accellerator

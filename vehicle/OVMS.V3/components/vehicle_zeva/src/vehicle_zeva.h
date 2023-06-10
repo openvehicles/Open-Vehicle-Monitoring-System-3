@@ -44,7 +44,7 @@ class OvmsVehicleZeva : public OvmsVehicle
     virtual void Ticker10(uint32_t ticker);
 
   public:
-    void IncomingFrameCan1(CAN_frame_t* p_frame);
+    void IncomingFrameCan1(const CAN_frame_t* p_frame) override;
     virtual vehicle_command_t CommandSetChargeMode(vehicle_mode_t mode);
     virtual vehicle_command_t CommandSetChargeCurrent(uint16_t limit);
     virtual vehicle_command_t CommandStartCharge();

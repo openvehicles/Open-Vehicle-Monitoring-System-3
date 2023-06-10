@@ -35,7 +35,7 @@ static const char *TAG = "v-jaguaripace";
 
 #include "ipace_obd_pids.h"
 
-static const OvmsVehicle::poll_pid_t obdii_polls[] = {
+static const OvmsPoller::poll_pid_t obdii_polls[] = {
 // BECM PIDs
     { becmId, becmId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, batterySoCPid, {  0, 30, 30, 60 }, 0, ISOTP_STD }, 
     { becmId, becmId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, batterySoHCapacityPid, {  0, 30, 30, 60 }, 0, ISOTP_STD }, 

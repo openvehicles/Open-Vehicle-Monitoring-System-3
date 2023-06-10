@@ -31,7 +31,7 @@
 // Pollstate 1 - POLLSTATE_ON       - car is on
 // Pollstate 2 - POLLSTATE_DRIVING  - car is driving
 // Pollstate 3 - POLLSTATE_CHARGING - car is charging
-static const OvmsVehicle::poll_pid_t renault_zoe_polls[] = {
+static const OvmsPoller::poll_pid_t renault_zoe_polls[] = {
 //***TX-ID, ***RX-ID, ***SID, ***PID, { Polltime (seconds) for Pollstate 0, 1, 2, 3}, ***CAN BUS Interface, ***FRAMETYPE
 
 //Motor Inverter

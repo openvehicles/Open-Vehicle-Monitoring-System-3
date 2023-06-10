@@ -84,9 +84,9 @@ void OvmsVehicleBoltEV::ClimateControlPrintStatus(int verbosity, OvmsWriter* wri
     writer->printf("Preheat status: %s - Cabin temperature %2.1f\n", PreheatStatus(), StandardMetrics.ms_v_env_cabintemp->AsFloat());
 }
 
-void OvmsVehicleBoltEV::ClimateControlIncomingSWCAN(CAN_frame_t* p_frame)
+void OvmsVehicleBoltEV::ClimateControlIncomingSWCAN(const CAN_frame_t* p_frame)
 {
-    uint8_t *d = p_frame->data.u8;
+    const uint8_t *d = p_frame->data.u8;
     bool unexpected_data = false;
 
     // Process the incoming message

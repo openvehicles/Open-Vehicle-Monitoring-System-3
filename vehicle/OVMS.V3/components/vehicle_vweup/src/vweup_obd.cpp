@@ -50,7 +50,7 @@ static const char *TAG = "v-vweup";
 // General PIDs for all model years
 //
 
-const OvmsVehicle::poll_pid_t vweup_polls[] = {
+const OvmsPoller::poll_pid_t vweup_polls[] = {
   // Note: poller ticker cycles at 3600 seconds = max period
   // { ecu, type, pid, {_OFF,_AWAKE,_CHARGING,_ON}, bus, protocol }
 
@@ -106,7 +106,7 @@ const OvmsVehicle::poll_pid_t vweup_polls[] = {
 //
 // Specific PIDs for gen1 model (before year 2020)
 //
-const OvmsVehicle::poll_pid_t vweup_gen1_polls[] = {
+const OvmsPoller::poll_pid_t vweup_gen1_polls[] = {
   // VWUP_MOT_ELEC_GEAR not available
   {VWUP_MOT_ELEC, UDS_READ, VWUP_MOT_ELEC_DRIVEMODE,        {  0,  0,  0,  5}, 1, ISOTP_STD},
 
@@ -122,7 +122,7 @@ const OvmsVehicle::poll_pid_t vweup_gen1_polls[] = {
 //
 // Specific PIDs for gen2 model (from year 2020)
 //
-const OvmsVehicle::poll_pid_t vweup_gen2_polls[] = {
+const OvmsPoller::poll_pid_t vweup_gen2_polls[] = {
   {VWUP_MOT_ELEC, UDS_READ, VWUP_MOT_ELEC_GEAR,             {  0,  0,  0,  2}, 1, ISOTP_STD},
   {VWUP_MOT_ELEC, UDS_READ, VWUP_MOT_ELEC_DRIVEMODE,        {  0,  0,  0,  5}, 1, ISOTP_STD},
 
@@ -218,7 +218,6 @@ void OvmsVehicleVWeUp::OBDInit()
   // Init/reconfigure poller
   //
 
-  OvmsRecMutexLock lock(&m_poll_mutex);
   obd_state_t previous_state = m_obd_state;
   m_obd_state = OBDS_Config;
 
@@ -313,7 +312,7 @@ void OvmsVehicleVWeUp::OBDInit()
     int cmods = (vweup_modelyear > 2019) ? 14 : 17;
 
     // Add PIDs to poll list:
-    OvmsVehicle::poll_pid_t p = { VWUP_BAT_MGMT, UDS_READ, 0, {0,0,0,0}, 1, ISOTP_STD };
+    OvmsPoller::poll_pid_t p = { VWUP_BAT_MGMT, UDS_READ, 0, {0,0,0,0}, 1, ISOTP_STD };
     p.polltime[VWEUP_ON]        = m_cfg_cell_interval_drv;
     p.polltime[VWEUP_CHARGING]  = m_cfg_cell_interval_chg;
     p.polltime[VWEUP_AWAKE]     = m_cfg_cell_interval_awk;
@@ -361,12 +360,10 @@ void OvmsVehicleVWeUp::OBDInit()
 void OvmsVehicleVWeUp::OBDDeInit()
 {
   ESP_LOGI(TAG, "Stopping connection: OBDII");
-  OvmsRecMutexLock lock(&m_poll_mutex);
   m_obd_state = OBDS_DeInit;
   PollSetPidList(m_can1, NULL);
   m_poll_vector.clear();
 }
-
 
 /**
  * OBDSetState: set the OBD state, log the change
@@ -376,14 +373,12 @@ bool OvmsVehicleVWeUp::OBDSetState(obd_state_t state)
   if (m_obd_state == OBDS_Run && state == OBDS_Pause)
   {
     ESP_LOGW(TAG, "OBDSetState: %s -> %s", GetOBDStateName(m_obd_state), GetOBDStateName(state));
-    OvmsRecMutexLock lock(&m_poll_mutex);
     PollSetPidList(m_can1, NULL);
     m_obd_state = OBDS_Pause;
   }
   else if (m_obd_state == OBDS_Pause && state == OBDS_Run)
   {
     ESP_LOGI(TAG, "OBDSetState: %s -> %s", GetOBDStateName(m_obd_state), GetOBDStateName(state));
-    OvmsRecMutexLock lock(&m_poll_mutex);
     PollSetPidList(m_can1, m_poll_vector.data());
     m_obd_state = OBDS_Run;
   }
@@ -557,7 +552,10 @@ void OvmsVehicleVWeUp::PollerStateTicker()
 }
 
 
-void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length, uint16_t mlremain)
+void OvmsVehicleVWeUp::IncomingPollReply(
+  canbus* bus, uint32_t moduleidsent, uint32_t moduleid, uint16_t type, uint16_t pid,
+  const uint8_t* data, uint16_t mloffset, uint8_t length, uint16_t mlremain, uint16_t mlframe,
+  const OvmsPoller::poll_pid_t &pollentry)
 {
   if (m_obd_state != OBDS_Run)
     return;
@@ -1322,7 +1320,7 @@ void OvmsVehicleVWeUp::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pi
 
     default:
       VALUE_LOG(TAG, "IncomingPollReply: ECU %" PRIX32 "/%" PRIX32 " unhandled PID %02X %04X: %s",
-        m_poll_entry.txmoduleid, m_poll_entry.rxmoduleid, type, pid, PollReply.GetHexString().c_str());
+        moduleidsent, moduleid, type, pid, PollReply.GetHexString().c_str());
       break;
   }
 }

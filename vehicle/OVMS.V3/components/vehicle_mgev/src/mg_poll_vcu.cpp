@@ -58,7 +58,7 @@ void Calibrate12v(float voltage)
 }  // anon namespace
 
 void OvmsVehicleMgEv::IncomingVcuPoll(
-        uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain)
+        uint16_t pid, const uint8_t* data, uint8_t length, uint16_t remain)
 {
     uint16_t value = (data[0] << 8 | data[1]);
 
@@ -174,7 +174,7 @@ void OvmsVehicleMgEv::IncomingVcuPoll(
     }
 }
 
-void OvmsVehicleMgEv::HandleVinMessage(uint8_t* data, uint8_t length, uint16_t remain)
+void OvmsVehicleMgEv::HandleVinMessage(const uint8_t* data, uint8_t length, uint16_t remain)
 {
     size_t len = strnlen(m_vin, sizeof(m_vin) - 1);
     // Trim the first character from the VIN as it's seemingly junk

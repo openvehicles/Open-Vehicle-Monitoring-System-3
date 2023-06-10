@@ -140,7 +140,10 @@ class OvmsVehicleBMWi3 : public OvmsVehicle
     OvmsMetricInt *mt_i3_pollermode;
     OvmsMetricInt *mt_i3_age;
 
-    void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
+    void IncomingPollReply(
+      canbus* bus, uint32_t moduleidsent, uint32_t moduleid, uint16_t type, uint16_t pid,
+      const uint8_t* data, uint16_t mloffset, uint8_t length, uint16_t mlremain, uint16_t mlframe,
+      const OvmsPoller::poll_pid_t &pollentry) override;
   };
 
 #endif //#ifndef __VEHICLE_BMWI3_H__

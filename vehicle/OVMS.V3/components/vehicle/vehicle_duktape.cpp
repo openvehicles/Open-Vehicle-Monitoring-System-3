@@ -484,7 +484,7 @@ duk_ret_t OvmsVehicleFactory::DukOvmsVehicleObdRequest(duk_context *ctx)
       else if (error)
         {
         errordesc = "Request failed with response error code " + int_to_hex((uint8_t)error);
-        const char* errname = MyVehicleFactory.m_currentvehicle->PollResultCodeName(error);
+        const char* errname = OvmsPoller::PollResultCodeName(error);
         if (errname)
           {
           errordesc += ' ';

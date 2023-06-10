@@ -87,11 +87,11 @@ void OvmsVehicleTeslaModelS::Ticker1(uint32_t ticker)
     }
   }
 
-void OvmsVehicleTeslaModelS::IncomingFrameCan1(CAN_frame_t* p_frame)
+void OvmsVehicleTeslaModelS::IncomingFrameCan1(const CAN_frame_t* p_frame)
   {
   // Tesla Model S/X CAN3: Powertrain
 
-  uint8_t *d = p_frame->data.u8;
+  const uint8_t *d = p_frame->data.u8;
 
   switch (p_frame->MsgID)
     {
@@ -263,11 +263,11 @@ void OvmsVehicleTeslaModelS::IncomingFrameCan1(CAN_frame_t* p_frame)
     }
   }
 
-void OvmsVehicleTeslaModelS::IncomingFrameCan2(CAN_frame_t* p_frame)
+void OvmsVehicleTeslaModelS::IncomingFrameCan2(const CAN_frame_t* p_frame)
   {
   // Tesla Model S/X CAN6: Chassis
 
-  uint8_t *d = p_frame->data.u8;
+  const uint8_t *d = p_frame->data.u8;
   uint8_t b;
 
   if (m_candata_timer < TS_CANDATA_TIMEOUT)
@@ -400,7 +400,7 @@ void OvmsVehicleTeslaModelS::IncomingFrameCan2(CAN_frame_t* p_frame)
     }
   }
 
-void OvmsVehicleTeslaModelS::IncomingFrameCan3(CAN_frame_t* p_frame)
+void OvmsVehicleTeslaModelS::IncomingFrameCan3(const CAN_frame_t* p_frame)
   {
   // Tesla Model S/X CAN4: Body Fault-Tolerant (OVT1 cable)
   }

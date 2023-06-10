@@ -29,17 +29,20 @@ static const char *TAGPOLL = "v-trio-poll";
 /**
  * Incoming poll reply messages
  */
-void OvmsVehicleMitsubishi::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
+void OvmsVehicleMitsubishi::IncomingPollReply(
+  canbus* bus, uint32_t moduleidsent, uint32_t moduleid, uint16_t type, uint16_t pid,
+  const uint8_t* data, uint16_t mloffset, uint8_t length, uint16_t mlremain, uint16_t mlframe,
+  const OvmsPoller::poll_pid_t &pollentry)
 {
-  //ESP_LOGW(TAGPOLL, "%03" PRIx32 " TYPE:%x PID:%02x Data:%02x %02x %02x %02x %02x %02x %02x %02x LENG:%02x REM:%02x", m_poll_moduleid_low, type, pid, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], length, mlremain);
+  //ESP_LOGW(TAGPOLL, "%03" PRIx32 " TYPE:%x PID:%02x Data:%02x %02x %02x %02x %02x %02x %02x %02x LENG:%02x REM:%02x", moduleid, type, pid, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], length, mlremain);
 
   	//OvmsVehicleMitsubishi* trio = (OvmsVehicleMitsubishi*) MyVehicleFactory.ActiveVehicle();
-    switch (m_poll_moduleid_low)
+    switch (moduleid)
 		{
   		// ****** BMU *****
   		case 0x762:
       {
-        switch (m_poll_ml_frame) {
+        switch (mlframe) {
           case 0:
           {
             OvmsMetricFloat* xmi_bat_soc_real = MyMetrics.InitFloat("xmi.b.soc.real", 10, 0, Percentage);
@@ -79,14 +82,14 @@ void OvmsVehicleMitsubishi::IncomingPollReply(canbus* bus, uint16_t type, uint16
       // ****** OBC *****
       case 0x766:
       {
-        //ESP_LOGW(TAGPOLL, "%03" PRIx32 " TYPE:%x PID:%02x Data:%02x %02x %02x %02x %02x %02x %02x %02x LENG:%02x REM:%02x", m_poll_moduleid_low, type, pid, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], length, mlremain);
+        //ESP_LOGW(TAGPOLL, "%03" PRIx32 " TYPE:%x PID:%02x Data:%02x %02x %02x %02x %02x %02x %02x %02x LENG:%02x REM:%02x", moduleid, type, pid, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7], length, mlremain);
         break;
       }
 
       // ****** HVAC *****
       case 0x772:
       {
-        switch (m_poll_ml_frame) {
+        switch (mlframe) {
           case 0:
           {
             StandardMetrics.ms_v_env_cabintemp->SetValue((data[0] * 0.25) - 16.0);
@@ -109,7 +112,7 @@ void OvmsVehicleMitsubishi::IncomingPollReply(canbus* bus, uint16_t type, uint16
       {
         if(pid == 0xCE)
         {
-          switch (m_poll_ml_frame) {
+          switch (mlframe) {
             case 0:
             {
               ms_v_trip_A->SetValue(((data[2] << 16 ) + (data[1] << 8) + data[0]) * 0.1, Kilometers);
@@ -139,7 +142,7 @@ void OvmsVehicleMitsubishi::IncomingPollReply(canbus* bus, uint16_t type, uint16
       }
 
      default:
-		   ESP_LOGW(TAGPOLL, "Unknown module: %03" PRIx32, m_poll_moduleid_low);
+		   ESP_LOGW(TAGPOLL, "Unknown module: %03" PRIx32, moduleid);
 	  }
 
 }

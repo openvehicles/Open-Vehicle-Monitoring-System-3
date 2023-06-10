@@ -37,7 +37,7 @@ using namespace std;
 class PollReplyHelper
 {
 public:
-  bool AddNewData(uint16_t pid, uint8_t *data, uint8_t length, uint16_t remain);
+  bool AddNewData(uint16_t pid, const uint8_t *data, uint8_t length, uint16_t remain);
   std::string GetHexString();
 
   bool FromUint8(const std::string &info, float &value, uint8_t bytesToSkip = 0);

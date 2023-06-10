@@ -34,7 +34,7 @@ static const char *TAG = "v-obdii";
 #include <stdio.h>
 #include "vehicle_obdii.h"
 
-static const OvmsVehicle::poll_pid_t obdii_polls[]
+static const OvmsPoller::poll_pid_t obdii_polls[]
   =
   {
     { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x05, {  0, 30, 30 }, 0, ISOTP_STD }, // Engine coolant temp
@@ -64,7 +64,10 @@ OvmsVehicleOBDII::~OvmsVehicleOBDII()
   ESP_LOGI(TAG, "Shutdown OBDII vehicle module");
   }
 
-void OvmsVehicleOBDII::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
+void OvmsVehicleOBDII::IncomingPollReply(
+  canbus* bus, uint32_t moduleidsent, uint32_t moduleid, uint16_t type, uint16_t pid,
+  const uint8_t* data, uint16_t mloffset, uint8_t length, uint16_t mlremain, uint16_t mlframe,
+  const OvmsPoller::poll_pid_t &pollentry)
   {
   int value1 = (int)data[0];
   int value2 = ((int)data[0] << 8) + (int)data[1];

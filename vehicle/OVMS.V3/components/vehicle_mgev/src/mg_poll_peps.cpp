@@ -31,7 +31,7 @@
 
 #include "vehicle_mgev.h"
 
-void OvmsVehicleMgEv::IncomingPepsPoll(uint16_t pid, uint8_t* data, uint8_t length)
+void OvmsVehicleMgEv::IncomingPepsPoll(uint16_t pid, const uint8_t* data, uint8_t length)
 {
     switch (pid)
     {

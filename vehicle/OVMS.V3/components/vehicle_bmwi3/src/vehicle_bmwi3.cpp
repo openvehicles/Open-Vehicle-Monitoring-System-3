@@ -94,7 +94,7 @@ static const char *TAG = "v-bmwi3";
 
 
 
-static const OvmsVehicle::poll_pid_t obdii_polls[] = {
+static const OvmsPoller::poll_pid_t obdii_polls[] = {
   // TXMODULEID, RXMODULEID, TYPE, PID, { POLLTIMES }, BUS, ADDRESSING
   // SME: Battery management electronics
     { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_OBDIIEXTENDED, I3_PID_SME_ALTERUNG_KAPAZITAET_TS,                     {  0, 60, 60, 60 }, 0, ISOTP_EXTADR },   // 0x6335 v_bat_soh, v_bat_health
@@ -386,14 +386,16 @@ void OvmsVehicleBMWi3::Ticker10(uint32_t ticker)
     }
 }
 
-void OvmsVehicleBMWi3::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
+void OvmsVehicleBMWi3::IncomingPollReply(canbus* bus, uint32_t moduleidsent, uint32_t moduleid, uint16_t type, uint16_t pid,
+  const uint8_t* data, uint16_t mloffset, uint8_t length, uint16_t mlremain, uint16_t mlframe,
+  const OvmsPoller::poll_pid_t &pollentry)
 {
     string& rxbuf = bmwi3_obd_rxbuf;
   
     // Assemble first and following frames to get complete reply
     
     // init rx buffer on first (it tells us whole length)
-    if (m_poll_ml_frame == 0) {
+    if (mlframe == 0) {
       rxbuf.clear();
       rxbuf.reserve(length + mlremain);
     }

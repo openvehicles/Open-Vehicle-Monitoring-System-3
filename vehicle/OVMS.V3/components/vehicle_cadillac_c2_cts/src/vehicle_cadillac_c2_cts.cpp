@@ -38,7 +38,7 @@ static const char *TAG = "v-cadillacc2cts";
 
 OvmsVehicleCadillaccC2CTS* MyCadillaccC2CTS = NULL;
 
-static const OvmsVehicle::poll_pid_t obdii_polls[] =
+static const OvmsPoller::poll_pid_t obdii_polls[] =
   {
     // Engine coolant temp
     { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x05, {  0, 30 }, 0, ISOTP_STD },
@@ -76,9 +76,9 @@ OvmsVehicleCadillaccC2CTS::~OvmsVehicleCadillaccC2CTS()
   MyCadillaccC2CTS = NULL;
   }
 
-void OvmsVehicleCadillaccC2CTS::IncomingFrameCan1(CAN_frame_t* p_frame)
+void OvmsVehicleCadillaccC2CTS::IncomingFrameCan1(const CAN_frame_t* p_frame)
   {
-  uint8_t *d;
+  const uint8_t *d;
   bool isRunning;
 
   processing = 1;
@@ -208,10 +208,10 @@ void OvmsVehicleCadillaccC2CTS::IncomingFrameCan1(CAN_frame_t* p_frame)
   processing = 0;
   }
 
-void OvmsVehicleCadillaccC2CTS::IncomingFrameCan2(CAN_frame_t* p_frame)
+void OvmsVehicleCadillaccC2CTS::IncomingFrameCan2(const CAN_frame_t* p_frame)
   {
   int i, len;
-  uint8_t *d;
+  const uint8_t *d;
 
   processing = 1;
   d = p_frame->data.u8;
@@ -256,8 +256,9 @@ void OvmsVehicleCadillaccC2CTS::IncomingFrameCan2(CAN_frame_t* p_frame)
   }
 
 void
-OvmsVehicleCadillaccC2CTS::IncomingPollReply(canbus* bus, uint16_t type,
-  uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
+OvmsVehicleCadillaccC2CTS::IncomingPollReply(canbus* bus, uint32_t moduleidsent, uint32_t moduleid, uint16_t type, uint16_t pid,
+  const uint8_t* data, uint16_t mloffset, uint8_t length, uint16_t mlremain, uint16_t mlframe,
+  const OvmsPoller::poll_pid_t &pollentry)
   {
   int value1 = (int)data[0];
   // int value2 = ((int)data[0] << 8) + (int)data[1];

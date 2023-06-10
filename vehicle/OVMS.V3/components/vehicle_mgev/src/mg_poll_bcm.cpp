@@ -46,7 +46,7 @@ enum DoorMasks : unsigned char {
 
 }  // anon namespace
 
-void OvmsVehicleMgEv::IncomingBcmPoll(uint16_t pid, uint8_t* data, uint8_t length)
+void OvmsVehicleMgEv::IncomingBcmPoll(uint16_t pid, const uint8_t* data, uint8_t length)
 {
     switch (pid)
     {

@@ -80,7 +80,7 @@ static const char *TAG = "v-minise";
 // Might be useful to have more states or maybe to treat as bitmap so that we can distinguish
 // "connected to power and could charge" and "actually charging right now"
 
-static OvmsVehicle::poll_pid_t obdii_polls[] = {
+static OvmsPoller::poll_pid_t obdii_polls[] = {
   // TXMODULEID, RXMODULEID, TYPE, PID, { POLLTIMES }, BUS, ADDRESSING
   // SME: Battery management electronics
   // Reserve space for polling 96 battery cells voltages ("select cell" + "probe cell")
@@ -215,11 +215,11 @@ OvmsVehicleMiniSE::OvmsVehicleMiniSE()
   ESP_LOGI(TAG, "Mini Cooper SE vehicle module");
 
   // Build polls for probing 96 battery cell voltages
-  poll_pid_t selectCellVoltage =
+  OvmsPoller::poll_pid_t selectCellVoltage =
     { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_ROUTINECONTROL,
       { .args = { 0x01, 3, { 0xAD, 0x6E, 0x00 }}},
       { 0, 30, 10, 10 }, 0, ISOTP_EXTADR };
-  poll_pid_t probeCellVoltage =
+  OvmsPoller::poll_pid_t probeCellVoltage =
     { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_ROUTINECONTROL,
       { .args = { 0x03, 3, { 0xAD, 0x6E, 0x00 }}},
       { 0, 30, 10, 10 }, 0, ISOTP_EXTADR };
@@ -231,11 +231,11 @@ OvmsVehicleMiniSE::OvmsVehicleMiniSE()
   }
 
   // Build polls for probing 12 battery modules temperatures
-  poll_pid_t selectModuleTemperature =
+  OvmsPoller::poll_pid_t selectModuleTemperature =
     { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_ROUTINECONTROL,
       { .args = { 0x01, 3, { 0xAD, 0x6D, 0x00 }}},
       { 0, 30, 10, 10 }, 0, ISOTP_EXTADR };
-  poll_pid_t probeModuleTemperature =
+  OvmsPoller::poll_pid_t probeModuleTemperature =
     { I3_ECU_SME_TX, I3_ECU_SME_RX, VEHICLE_POLL_TYPE_ROUTINECONTROL,
       { .args = { 0x03, 3, { 0xAD, 0x6D, 0x00 }}},
       { 0, 30, 10, 10 }, 0, ISOTP_EXTADR };
@@ -485,13 +485,15 @@ void OvmsVehicleMiniSE::Ticker10(uint32_t ticker)
   }
 }
 
-void OvmsVehicleMiniSE::IncomingPollReply(canbus *bus, uint16_t type, uint16_t pid, uint8_t *data, uint8_t length,
-  uint16_t mlremain)
+void OvmsVehicleMiniSE::IncomingPollReply(
+  canbus* bus, uint32_t moduleidsent, uint32_t moduleid, uint16_t type, uint16_t pid,
+  const uint8_t* data, uint16_t mloffset, uint8_t length, uint16_t mlremain, uint16_t mlframe,
+  const OvmsPoller::poll_pid_t &pollentry)
 {
   string &rxbuf = obd_rxbuf;
 
   // Init RX buffer on first (it tells us whole length)
-  if (m_poll_ml_frame == 0) {
+  if (mlframe == 0) {
     rxbuf.clear();
     rxbuf.reserve(length + mlremain);
   }
@@ -522,11 +524,11 @@ void OvmsVehicleMiniSE::IncomingPollReply(canbus *bus, uint16_t type, uint16_t p
         ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "0x01AD6E", 2);
         break;
       }
-      if (m_poll_entry.args.data[1] == 0x6E) {
-        uint8_t cell = m_poll_entry.args.data[2];
+      if (pollentry.args.data[1] == 0x6E) {
+        uint8_t cell = pollentry.args.data[2];
         ESP_LOGD(TAG, "From ECU %s, pid %s: got %s (cell %d)\n", "SME", "0x01AD6E", "cell voltage selected", cell);
-      } else if (m_poll_entry.args.data[1] == 0x6D) {
-        uint8_t module = m_poll_entry.args.data[2];
+      } else if (pollentry.args.data[1] == 0x6D) {
+        uint8_t module = pollentry.args.data[2];
         ESP_LOGD(TAG, "From ECU %s, pid %s: got %s (cell %d)\n", "SME", "0x01AD6E", "module temp. selected", module);
       }
       break;
@@ -537,15 +539,15 @@ void OvmsVehicleMiniSE::IncomingPollReply(canbus *bus, uint16_t type, uint16_t p
         ESP_LOGV(TAG, "Received %d bytes for %s, expected %d", datalen, "0x03AD6E", 2);
         break;
       }
-      if (m_poll_entry.args.data[1] == 0x6E) {
-        uint8_t cell = m_poll_entry.args.data[2];
+      if (pollentry.args.data[1] == 0x6E) {
+        uint8_t cell = pollentry.args.data[2];
         uint16_t voltage = (RXBUF_UINT(2));
         ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s  (cell %d)\n", "SME", "0x03AD6E",
           "cell voltage", voltage / 1000.0f, "\"V\"", cell);
         ESP_LOGD(TAG, "Cell %d voltage = %f", cell, voltage / 1000.0f);
         BmsSetCellVoltage(cell - 1, voltage / 1000.0f);
-      } else if (m_poll_entry.args.data[1] == 0x6D) {
-        uint8_t module = m_poll_entry.args.data[2];
+      } else if (pollentry.args.data[1] == 0x6D) {
+        uint8_t module = pollentry.args.data[2];
         uint16_t temperature = (RXBUF_UINT(2));
         ESP_LOGD(TAG, "From ECU %s, pid %s: got %s=%.4f%s  (module %d)\n", "SME", "0x03AD6E",
           "module temperature", temperature / 100.0f, "\"°C\"", module);

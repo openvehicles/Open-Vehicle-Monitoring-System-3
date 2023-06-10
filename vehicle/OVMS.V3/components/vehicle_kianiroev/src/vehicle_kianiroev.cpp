@@ -78,7 +78,7 @@ static const char *TAG = "v-kianiroev";
 // Pollstate 0 - car is off
 // Pollstate 1 - car is on
 // Pollstate 2 - car is charging
-static const OvmsVehicle::poll_pid_t vehicle_kianiroev_polls[] =
+static const OvmsPoller::poll_pid_t vehicle_kianiroev_polls[] =
   {
   		{ 0x7e2, 0x7ea, VEHICLE_POLL_TYPE_OBDII_1A, 				0x80, 			{       0,  120,	 120 }, 0, ISOTP_STD },  // VMCU - VIN
 

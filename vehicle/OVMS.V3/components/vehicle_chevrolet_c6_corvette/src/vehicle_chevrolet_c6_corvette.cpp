@@ -35,7 +35,7 @@ static const char *TAG = "v-chevroletc6corvette";
 #include <stdio.h>
 #include "vehicle_chevrolet_c6_corvette.h"
 
-static const OvmsVehicle::poll_pid_t obdii_polls[] =
+static const OvmsPoller::poll_pid_t obdii_polls[] =
   {
     // Engine coolant temp
     { 0x7df, 0, VEHICLE_POLL_TYPE_OBDIICURRENT, 0x05, {  0, 30 }, 0, ISOTP_STD },
@@ -68,10 +68,10 @@ OvmsVehicleChevroletC6Corvette::~OvmsVehicleChevroletC6Corvette()
   ESP_LOGI(TAG, "Shutdown Chevrolet C6 Corvette vehicle module");
   }
 
-void OvmsVehicleChevroletC6Corvette::IncomingFrameCan1(CAN_frame_t* p_frame)
+void OvmsVehicleChevroletC6Corvette::IncomingFrameCan1(const CAN_frame_t* p_frame)
   {
   int i, len;
-  uint8_t *d;
+  const uint8_t *d;
   bool isRunning;
 
   d = p_frame->data.u8;
@@ -133,9 +133,9 @@ void OvmsVehicleChevroletC6Corvette::IncomingFrameCan1(CAN_frame_t* p_frame)
     }
   }
 
-void OvmsVehicleChevroletC6Corvette::IncomingPollReply(canbus* bus,
-    uint16_t type, uint16_t pid, uint8_t* data, uint8_t length,
-    uint16_t mlremain)
+void OvmsVehicleChevroletC6Corvette::IncomingPollReply(canbus* bus, uint32_t moduleidsent, uint32_t moduleid, uint16_t type, uint16_t pid,
+  const uint8_t* data, uint16_t mloffset, uint8_t length, uint16_t mlremain, uint16_t mlframe,
+  const OvmsPoller::poll_pid_t &pollentry)
   {
   int value1 = (int)data[0];
   // int value2 = ((int)data[0] << 8) + (int)data[1];

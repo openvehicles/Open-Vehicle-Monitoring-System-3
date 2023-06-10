@@ -49,7 +49,7 @@ static const char *TAG = "v-smarteq";
 
 #include "vehicle_smarteq.h"
 
-static const OvmsVehicle::poll_pid_t obdii_polls[] =
+static const OvmsPoller::poll_pid_t obdii_polls[] =
 {
   { 0x792, 0x793, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x80, {  0,120,999 }, 0, ISOTP_STD }, // rqIDpart OBL_7KW_Installed
   { 0x79B, 0x7BB, VEHICLE_POLL_TYPE_OBDIIGROUP, 0x04, {  0,120,999 }, 0, ISOTP_STD }, // rqBattTemperatures
@@ -116,8 +116,8 @@ uint64_t OvmsVehicleSmartEQ::swap_uint64(uint64_t val) {
   return (val << 32) | (val >> 32);
 }
 
-void OvmsVehicleSmartEQ::IncomingFrameCan1(CAN_frame_t* p_frame) {
-  uint8_t *d = p_frame->data.u8;
+void OvmsVehicleSmartEQ::IncomingFrameCan1(const CAN_frame_t* p_frame) {
+  const uint8_t *d = p_frame->data.u8;
   uint64_t c = swap_uint64(p_frame->data.u64);
   
   static bool isCharging = false;

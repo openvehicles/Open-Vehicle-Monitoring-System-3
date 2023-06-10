@@ -77,21 +77,24 @@ static const char *TAG = "v-smarteq";
 /**
  * Incoming poll reply messages
  */
-void OvmsVehicleSmartEQ::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t remain) {
+void OvmsVehicleSmartEQ::IncomingPollReply(
+  canbus* bus, uint32_t moduleidsent, uint32_t moduleid, uint16_t type, uint16_t pid,
+  const uint8_t* data, uint16_t mloffset, uint8_t length, uint16_t mlremain, uint16_t mlframe,
+  const OvmsPoller::poll_pid_t &pollentry){
   
   // init / fill rx buffer:
-  if (m_poll_ml_frame == 0) {
+  if (mlframe == 0) {
     m_rxbuf.clear();
-    m_rxbuf.reserve(length + remain);
+    m_rxbuf.reserve(length + mlremain);
   }
-  m_rxbuf.append((char*)data, length);
-  if (remain)
+  m_rxbuf.append((const char*)data, length);
+  if (mlremain)
     return;
 
   // response complete:
   ESP_LOGV(TAG, "IncomingPollReply: PID %02X: len=%d %s", pid, m_rxbuf.size(), hexencode(m_rxbuf).c_str());
   
-  switch (m_poll_moduleid_low) {
+  switch (moduleid) {
     case 0x7BB:
       switch (pid) {
         case 0x41: // rqBattVoltages_P1
