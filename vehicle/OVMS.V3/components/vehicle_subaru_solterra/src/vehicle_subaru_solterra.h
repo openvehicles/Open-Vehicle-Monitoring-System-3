@@ -30,20 +30,15 @@
 #ifndef __VEHICLE_SUBARU_SOLTERRA_H__
 #define __VEHICLE_SUBARU_SOLTERRA_H__
 
-#include "../../vehicle_toyota_etnga/src/vehicle_toyota_etnga.h"
+#include "../../vehicle_toyota_etnga/src/vehicle_toyota_etnga.h"  // Include the Toyota ETNGA vehicle module header
+
+using namespace std;
 
 class OvmsVehicleSubaruSolterra : public OvmsVehicleToyotaETNGA
 {
 public:
-  OvmsVehicleSubaruSolterra();
-  ~OvmsVehicleSubaruSolterra();
-
-protected:
-  void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
-
-private:
-  // Add private member variables and methods specific to the Subaru Solterra
-
+  OvmsVehicleSubaruSolterra();  // Constructor for the Subaru Solterra vehicle module
+  ~OvmsVehicleSubaruSolterra(); // Destructor for the Subaru Solterra vehicle module
 };
 
 #endif // __VEHICLE_SUBARU_SOLTERRA_H__

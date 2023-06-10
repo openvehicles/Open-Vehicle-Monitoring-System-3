@@ -28,27 +28,34 @@
 */
 
 #include "ovms_log.h"
-static const char *TAG = "v-subaru-solterra";
+static const char *TAG = "v-subaru-solterra";  // Logging tag for this module
 
-#include "subaru_solterra.h"
+#include <stdio.h>
+#include "vehicle_subaru_solterra.h"
 
-/**
- * Subaru Solterra constructor
- */
+// Constructor for the OvmsVehicleSubaruSolterra class
 OvmsVehicleSubaruSolterra::OvmsVehicleSubaruSolterra()
-  : OvmsVehicleToyotaETNGA() // Call the base class constructor
 {
-  ESP_LOGI(TAG, "Subaru Solterra vehicle module");
-
-  // Initialize any private member variables and perform necessary setup for the Subaru Solterra
+  ESP_LOGI(TAG, "Subaru Solterra vehicle module");  // Log an informational message
 }
 
-/**
- * Subaru Solterra destructor
- */
+// Destructor for the OvmsVehicleSubaruSolterra class
 OvmsVehicleSubaruSolterra::~OvmsVehicleSubaruSolterra()
 {
-  ESP_LOGI(TAG, "Shutdown Subaru Solterra vehicle module");
-
-  // Perform any necessary cleanup and shutdown procedures for the Subaru Solterra
+  ESP_LOGI(TAG, "Shutdown Subaru Solterra vehicle module");  // Log an informational message
 }
+
+// Initialization class for the Subaru Solterra vehicle module
+class OvmsVehicleSubaruSolterraInit
+{
+  public: 
+    OvmsVehicleSubaruSolterraInit();
+} MyOvmsVehicleSubaruSolterraInit  __attribute__ ((init_priority (9000)));
+
+// Constructor for the OvmsVehicleSubaruSolterraInit class
+OvmsVehicleSubaruSolterraInit::OvmsVehicleSubaruSolterraInit()
+  {
+  ESP_LOGI(TAG, "Registering Vehicle: Subaru Solterra (9000)");  // Log an informational message
+
+  MyVehicleFactory.RegisterVehicle<OvmsVehicleSubaruSolterra>("SUBSOL","Subaru Solterra");  // Register the OvmsVehicleSubaruSolterra class with a vehicle factory
+  }
