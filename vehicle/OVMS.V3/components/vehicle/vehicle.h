@@ -283,6 +283,7 @@ class OvmsVehicle : public InternalRamAllocated
 
     void PollSetResponseSeparationTime(uint8_t septime);
     void PollSetChannelKeepalive(uint16_t keepalive_seconds);
+    void PollSetTimeBetweenSuccess(uint16_t tick_between_ms);
 
     uint8_t GetBusNo(canbus* bus);
     canbus *GetBus(uint8_t busno);
@@ -623,6 +624,10 @@ class OvmsVehicle : public InternalRamAllocated
     virtual bool FormatBmsAlerts(int verbosity, OvmsWriter* writer, bool show_warnings);
     bool BmsCheckChangeCellArrangementVoltage(int readings, int readingspermodule = 0);
     bool BmsCheckChangeCellArrangementTemperature(int readings, int readingspermodule = 0);
+    void QueueSuccessPoll(uint8_t can_number, uint32_t ticker)
+      {
+      m_pollers.QueuePollerSend(OvmsPoller::poller_source_t::Successful, can_number, ticker);
+      }
   protected:
     bool m_is_shutdown;
   public:

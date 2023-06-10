@@ -553,7 +553,7 @@ bool OvmsPoller::PollerISOTPReceive(CAN_frame_t* frame, uint32_t msgid)
       m_poll.moduleid_sent != 0x7df &&
       CanPoll() )
     {
-    Queue_PollerSend(poller_source_t::Successful);
+    Queue_PollerSendSuccess();
     }
 
   return true;
