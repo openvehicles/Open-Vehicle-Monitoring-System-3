@@ -78,6 +78,7 @@ OvmsPoller::OvmsPoller(canbus* can, uint8_t can_number, ParentSignal *parent_sig
   m_poll_fc_septime = 25;       // response default timing: 25 milliseconds
   m_poll_ch_keepalive = 60;     // channel keepalive default: 60 seconds
   m_poll_repeat_count = 0;
+  m_poll_between_success = 0;
 
   }
 
@@ -274,6 +275,11 @@ void OvmsPoller::PollSetChannelKeepalive(uint16_t keepalive_seconds)
   m_poll_ch_keepalive = keepalive_seconds;
   }
 
+void OvmsPoller::PollSetTimeBetweenSuccess(uint16_t time_between_ms)
+  {
+  m_poll_between_success = time_between_ms / portTICK_PERIOD_MS;
+  }
+
 void OvmsPoller::ResetThrottle()
   {
   // Main Timer reset throttling counter,
@@ -312,7 +318,7 @@ bool OvmsPoller::CanPoll()
 
 void OvmsPoller::PollerNextTick(poller_source_t source)
   {
-  // Completed checking all poll entries for the current m_poll_ticker
+  // Completed checking all poll entries for the current m_poll.ticker
 
   ESP_LOGD(TAG, "[%" PRIu8 "]PollerNextTick(%s): cycle complete for ticker=%u", m_poll.bus_no, PollerSource(source), m_poll.ticker);
   m_poll_ticked = false;
@@ -637,6 +643,30 @@ void OvmsPoller::Queue_PollerSend(OvmsPoller::poller_source_t source)
   {
   m_parent_signal->PollerSend(m_poll.bus_no, source);
   }
+
+void OvmsPoller::DoPollerSendSuccess( void * pvParamCan, uint32_t ticker )
+  {
+  // Reduce the chance of this callback on an invalid vehicle pointer.
+  if (MyVehicleFactory.m_currentvehicle != NULL)
+    {
+    uint8_t can_number = uint32_t(pvParamCan);
+    if (MyVehicleFactory.m_currentvehicle != NULL)
+      {
+      MyVehicleFactory.m_currentvehicle->QueueSuccessPoll(can_number, ticker);
+      }
+    }
+  }
+
+void OvmsPoller::Queue_PollerSendSuccess()
+  {
+  if (m_poll_between_success == 0)
+    m_parent_signal->PollerSend(m_poll.bus_no, OvmsPoller::poller_source_t::Successful);
+  else
+    {
+    xTimerPendFunctionCall(OvmsPoller::DoPollerSendSuccess,(void *)(uint32_t)m_poll.bus_no, m_poll.ticker, m_poll_between_success);
+    }
+  }
+
 /** Add a polling requester to list. Replaces any existing entry with that name.
   @param name Unique name/identifier of poll series.
   @param series Shared pointer to poller instance.
@@ -710,6 +740,7 @@ const char *OvmsPoller::PollerCommand(OvmsPollCommand src)
     case OvmsPollCommand::Throttle: return "Throttle";
     case OvmsPollCommand::ResponseSep: return "ResponseSep";
     case OvmsPollCommand::Keepalive: return "Keepalive";
+    case OvmsPollCommand::SuccessSep: return "SuccessSep";
     }
   return "??";
   }
@@ -722,6 +753,7 @@ OvmsPollers::OvmsPollers( OvmsPoller::ParentSignal *parent)
     m_poll_sequence_max(0),
     m_poll_fc_septime(25),
     m_poll_ch_keepalive(60),
+    m_poll_between_success(0),
     m_pollqueue(nullptr), m_polltask(nullptr),
     m_shut_down(false)
   {
@@ -872,7 +904,10 @@ void OvmsPollers::PollerTask()
               auto bus = m_parent_callback->GetBus(entry.entry_Poll.busno);
               auto poller = GetPoller(bus);
               if (poller)
-                poller->PollerSend(entry.entry_Poll.source);
+                {
+                if ((entry.entry_Poll.poll_ticker == 0) || (poller->m_poll.ticker == entry.entry_Poll.poll_ticker))
+                  poller->PollerSend(entry.entry_Poll.source);
+                }
               }
             else
               {
@@ -941,6 +976,18 @@ void OvmsPollers::PollerTask()
                   }
                 }
               break;
+            case OvmsPoller::OvmsPollCommand::SuccessSep:
+              if (entry.entry_Command.parameter != m_poll_between_success)
+                {
+                m_poll_between_success = entry.entry_Command.parameter;
+                OvmsRecMutexLock lock(&m_poller_mutex);
+                for (int i = 0 ; i < VEHICLE_MAXBUSSES; ++i)
+                  {
+                  if (m_pollers[i])
+                    m_pollers[i]->PollSetTimeBetweenSuccess(m_poll_between_success);
+                  }
+                }
+              break;
             }
           break;
 
@@ -1003,7 +1050,7 @@ OvmsPoller *OvmsPollers::GetPoller(canbus *can, bool force)
   return (gap<0) ? nullptr : m_pollers[gap];
   }
 
-void OvmsPollers::QueuePollerSend(OvmsPoller::poller_source_t src, uint8_t busno)
+void OvmsPollers::QueuePollerSend(OvmsPoller::poller_source_t src, uint8_t busno, uint32_t pollticker)
   {
   if (m_shut_down)
     return;
@@ -1017,6 +1064,7 @@ void OvmsPollers::QueuePollerSend(OvmsPoller::poller_source_t src, uint8_t busno
   entry.entry_type = OvmsPoller::OvmsPollEntryType::Poll;
   entry.entry_Poll.busno = busno;
   entry.entry_Poll.source = src;
+  entry.entry_Poll.poll_ticker = pollticker;
 
   ESP_LOGV(TAG, "Pollers: Queue PollerSend(%s, %" PRIu8 ")", OvmsPoller::PollerSource(src), busno);
   if (xQueueSend(m_pollqueue, &entry, 0) != pdPASS)

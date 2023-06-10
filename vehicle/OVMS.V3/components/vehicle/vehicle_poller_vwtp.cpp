@@ -774,7 +774,7 @@ bool OvmsPoller::PollerVWTPReceive(CAN_frame_t* frame, uint32_t msgid)
   // - poll throttling is unlimited or limit isn't reached yet
   if (m_poll_wait == 0 && CanPoll())
     {
-    Queue_PollerSend(poller_source_t::Successful);
+    Queue_PollerSendSuccess();
     }
 
   return true;
