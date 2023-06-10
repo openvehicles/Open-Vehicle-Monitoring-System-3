@@ -2,9 +2,9 @@
 MG EV
 =====
 
-Vehicle Types: **MG EV (UK/EU)** & **MG EV (TH)**
+Vehicle Types: **MG ZS EV (UK/EU)** & **MG ZS EV (TH/AU)** & **MG5 EV** & **MG ZS EV MK2**
 
-These vehicle types support the MG ZS EV (2019-). MG5 is not yet supported in this build. 
+These vehicle types supports the MG ZS EV (2019-2021), MG5 EV (-2023), MG ZS EV Facelift (2022-). 
 
 --------
 Variants
@@ -17,11 +17,11 @@ Known Countries
 ^^^^^^^^^^^^^^^
 
 =========   =========== ===========================   =====================   =
-Country     Zombie mode Requires GWM authentication   Poll BCM causes alarm   Suggested vehicle type to use
+Country     Zombie mode Requires GWM authentication   Poll BCM causes alarm   Suggested vehicle
 =========   =========== ===========================   =====================   =
 UK/EU       Y           N                             Y                       UK/EU                                                     
-Thailand    N           Y                             N                       TH
-Australia   N           N                             N                       TH
+Thailand    N           Y                             N                       TH/AU
+Australia   N           N                             N                       TH/AU
 =========   =========== ===========================   =====================   =
 
 Zombie mode is when the gateway module (GWM) enters the locked state and no PIDs can be accessed. This happens for UK/EU cars when:
@@ -75,12 +75,29 @@ Others                              Daytime Running Light Control
 Shell Commands
 --------------
 
+Precede all commands with ``xmg`` e.g. ``xmg softver``
+
+MG ZS EV (UK/EU) & MG ZS EV MK2
+
+============================  =
+``softver``                   Get software version of ECUs
+============================  =
+
+MG ZS EV (TH/AU)
+
 ==========================  =
 ``softver``                 Get software version of ECUs
 ``drl [on | off]``          Turn on/off daytime running lights
-``drln [on | off]``         Turn on/off daytime running lights without doing BCM authentication first (for debugging purposes)
-``auth [all | gwm | bcm]``  Authenticate with specified ECU. 'auth all' will authenticate GWM then BCM.
+``drln [on | off]``         Turn on/off daytime running lights without BCM authentication first (debug)
+``auth [all | gwm | bcm]``  Authenticate with specified ECU 'auth all' will authenticate GWM then BCM
 ==========================  =
+
+MG5 EV
+
+============================  =
+``softver``                   Get software version of ECUs
+``polls [on | off]``          Start/ Stop all CAN Bus polling
+============================  =
 
 ------------
 Module notes

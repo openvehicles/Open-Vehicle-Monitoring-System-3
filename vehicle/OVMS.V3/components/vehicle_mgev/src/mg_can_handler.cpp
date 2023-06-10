@@ -202,6 +202,7 @@ void OvmsVehicleMgEv::IncomingPollReply(
     switch (m_poll_moduleid_low)
     {
         case (bmsId | rxFlag):
+        case (bmsMk2Id | rxFlag):
             IncomingBmsPoll(pid, data, length, remain);
             break;
         case (dcdcId | rxFlag):
