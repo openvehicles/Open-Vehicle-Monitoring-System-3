@@ -1,30 +1,11 @@
 /*
-;    Project:       Open Vehicle Monitor System
-;    Module:        Vehicle Toyota e-TNGA platform
-;    Date:          4th June 2023
-;
-;    Changes:
-;    1.0  Initial release
-;
-;    (C) 2023       Jerry Kezar <solterra@kezarnet.com>
-;
-; Permission is hereby granted, free of charge, to any person obtaining a copy
-; of this software and associated documentation files (the "Software"), to deal
-; in the Software without restriction, including without limitation the rights
-; to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-; copies of the Software, and to permit persons to whom the Software is
-; furnished to do so, subject to the following conditions:
-;
-; The above copyright notice and this permission notice shall be included in
-; all copies or substantial portions of the Software.
-;
-; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-; IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-; FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-; AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-; OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-; THE SOFTWARE.
+   Project:       Open Vehicle Monitor System
+   Module:        Vehicle Toyota e-TNGA platform
+   Date:          4th June 2023
+
+   (C) 2023       Jerry Kezar <solterra@kezarnet.com>
+
+   Licensed under the MIT License. See the LICENSE file for details.
 */
 
 #include "ovms_log.h"
@@ -32,12 +13,48 @@ static const char *TAG = "v-toyota-etnga";
 
 #include "vehicle_toyota_etnga.h"
 
+// Poll state descriptions:
+//    POLLSTATE_SLEEP (0)     : Vehicle is sleeping; no activity on the can bus. We are listening only.
+//    POLLSTATE_ACTIVE (1)    : Vehicle is alive; activity on CAN bus
+//    POLLSTATE_READY (2)     : Vehicle is "Ready" to drive or being driven
+//    POLLSTATE_CHARGING (3)  : Vehicle is charging
+
+static const OvmsVehicle::poll_pid_t obdii_polls[] = {
+  { HYBRID_CONTROL_SYSTEM_TX, HYBRID_CONTROL_SYSTEM_RX, VEHICLE_POLL_TYPE_READDATA, PID_BATTERY_VOLTAGE_AND_CURRENT, { 0, 0, 0, 0}, 0, ISOTP_STD },
+    POLL_LIST_END
+  };
+
 OvmsVehicleToyotaETNGA::OvmsVehicleToyotaETNGA()
   {
   ESP_LOGI(TAG, "Toyota eTNGA platform module");
 
   // Init CAN:
    RegisterCanBus(2, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
+
+  // Set polling PID list
+  PollSetPidList(m_can2,obdii_polls);
+
+  // Set polling state
+  PollSetState(POLLSTATE_SLEEP);
+
+  }
+
+void OvmsVehicleToyotaETNGA::Ticker1(uint32_t ticker)
+  {
+
+  }
+
+void OvmsVehicleToyotaETNGA::Ticker10(uint32_t ticker)
+  {
+
+    if (StandardMetrics.ms_v_vin->AsString().empty()) {
+      RequestVIN();
+    }
+
+  }
+
+void OvmsVehicleToyotaETNGA::Ticker3600(uint32_t ticker)
+  {
   }
 
 OvmsVehicleToyotaETNGA::~OvmsVehicleToyotaETNGA()
@@ -51,6 +68,16 @@ void OvmsVehicleToyotaETNGA::IncomingFrameCan2(CAN_frame_t* p_frame)
 
     // Process the incoming message
     switch (p_frame->MsgID) {
+    
+    case 0x45a: {
+      // I'm not sure what this message is...
+      break;
+    }
+
+    case 0x4e0: {
+      // I'm not sure what this message is...
+      break;
+    }
 
     default:
       // Unknown frame. Log for evaluation
