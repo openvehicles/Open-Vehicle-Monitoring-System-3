@@ -32,28 +32,30 @@ static const char *TAG = "v-toyota-etnga";
 
 #include "vehicle_toyota_etnga.h"
 
-/**
- * Toyota e-TNGA constructor
- */
 OvmsVehicleToyotaETNGA::OvmsVehicleToyotaETNGA()
   {
-  ESP_LOGI(TAG, "Toyota e-TNGA vehicle module");
+  ESP_LOGI(TAG, "Toyota eTNGA platform module");
 
   // Init CAN:
    RegisterCanBus(2, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
- 
   }
 
-/**
- * Toyota e-TNGA destructor
- */
 OvmsVehicleToyotaETNGA::~OvmsVehicleToyotaETNGA()
   {
-  ESP_LOGI(TAG, "Shutdown Toyota e-TNGA platform vehicle module");
+  ESP_LOGI(TAG, "Shutdown Toyota eTNGA platform module");
   }
 
-void OvmsVehicleToyotaETNGA::IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain)
-{
-  // Implement how to handle incoming poll replies specific to the Toyota e-TNGA platform
-  // Extract relevant data from the reply, update metrics, and perform any required actions
-}
+void OvmsVehicleToyotaETNGA::IncomingFrameCan2(CAN_frame_t* p_frame)
+  {
+    uint8_t *d = p_frame->data.u8;
+
+    // Process the incoming message
+    switch (p_frame->MsgID) {
+
+    default:
+      // Unknown frame. Log for evaluation
+      ESP_LOGV(TAG,"CAN2 message received: %08" PRIx32 ": [%02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 "]",
+        p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7] );
+        break;
+    }
+  }

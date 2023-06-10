@@ -37,14 +37,12 @@ using namespace std;
 class OvmsVehicleToyotaETNGA : public OvmsVehicle
 {
 public:
-  OvmsVehicleToyotaETNGA();
-  ~OvmsVehicleToyotaETNGA();
-
+    OvmsVehicleToyotaETNGA();
+    ~OvmsVehicleToyotaETNGA();
+    void IncomingFrameCan2(CAN_frame_t* p_frame);
 protected:
-  void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
 
 private:
-  // Add private member variables and methods specific to the Toyota e-TNGA platform
 
 };
 
