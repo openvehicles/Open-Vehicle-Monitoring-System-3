@@ -34,11 +34,15 @@ void OvmsVehicleToyotaETNGA::IncomingPollReply(canbus* bus, uint16_t type, uint1
   // Process based on m_poll_moduleid_low
   switch (m_poll_moduleid_low) {
     case HYBRID_BATTERY_SYSTEM_RX:
-      // TODO: Add handling for Hybrid Battery System
+      IncomingHybridBatterySystem(pid);
       break;
 
     case HYBRID_CONTROL_SYSTEM_RX:
       IncomingHybridControlSystem(pid);
+      break;
+
+    case PLUG_IN_CONTROL_SYSTEM_RX:
+      IncomingPlugInControlSystem(pid);
       break;
 
     default:
@@ -51,17 +55,51 @@ void OvmsVehicleToyotaETNGA::IncomingHybridControlSystem(uint16_t pid)
 {
   switch (pid) {
     case PID_BATTERY_VOLTAGE_AND_CURRENT: {
-      float bat_voltage = GetBatteryVoltage(m_rxbuf);
-      float bat_current = GetBatteryCurrent(m_rxbuf);
-      float bat_power = CalculateBatteryPower(bat_voltage, bat_current);
+      float batVoltage = GetBatteryVoltage(m_rxbuf);
+      float batCurrent = GetBatteryCurrent(m_rxbuf);
+      float batPower = CalculateBatteryPower(batVoltage, batCurrent);
 
-      // Set values for battery voltage, current, and power
-      SetBatteryVoltage(bat_voltage);
-      SetBatteryCurrent(bat_current);
-      SetBatteryPower(bat_power);
+      SetBatteryVoltage(batVoltage);
+      SetBatteryCurrent(batCurrent);
+      SetBatteryPower(batPower);
 
       break;
     }
+
+    case PID_READY_SIGNAL: {
+      bool readyStatus = GetReadyStatus(m_rxbuf);
+      SetReadyStatus(readyStatus);
+      break;
+    }
+    // Add more cases for other PIDs if needed
+    
+    default:
+      // Handle unsupported PID
+      ESP_LOGD(TAG, "Unsupported PID: %04X", pid);
+      break;
+  }
+}
+
+void OvmsVehicleToyotaETNGA::IncomingPlugInControlSystem(uint16_t pid)
+{
+  switch (pid) {
+    case PID_CHARGING_LIDS_SWITCH: {
+      bool chargingDoorStatus = GetChargingDoorStatus(m_rxbuf);
+      SetChargingDoorStatus(chargingDoorStatus);
+      break;
+    }
+    // Add more cases for other PIDs if needed
+    
+    default:
+      // Handle unsupported PID
+      ESP_LOGD(TAG, "Unsupported PID: %04X", pid);
+      break;
+  }
+}
+
+void OvmsVehicleToyotaETNGA::IncomingHybridBatterySystem(uint16_t pid)
+{
+  switch (pid) {
     // Add more cases for other PIDs if needed
     
     default:

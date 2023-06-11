@@ -20,8 +20,7 @@ public:
     ~OvmsVehicleToyotaETNGA();
 
     void Ticker1(uint32_t ticker);
-    void Ticker10(uint32_t ticker);
-    void Ticker30(uint32_t ticker);
+    void Ticker60(uint32_t ticker);
     void Ticker3600(uint32_t ticker);
 
     void IncomingPollReply(canbus* bus, uint16_t type, uint16_t pid, uint8_t* data, uint8_t length, uint16_t mlremain);
@@ -34,6 +33,8 @@ protected:
 private:
     static constexpr const char* TAG = "v-toyota-etnga";
     void IncomingHybridControlSystem(uint16_t pid);
+    void IncomingPlugInControlSystem(uint16_t pid);
+    void IncomingHybridBatterySystem(uint16_t pid);
     int RequestVIN();
 
     int frameCount = 0, tickerCount = 0, replyCount = 0;  // Keep track of when the car is talking or silent.
@@ -41,9 +42,13 @@ private:
     float GetBatteryVoltage(const std::string& data);
     float GetBatteryCurrent(const std::string& data);
     float CalculateBatteryPower(float voltage, float current);
+    bool GetChargingDoorStatus(const std::string& data);
+    bool GetReadyStatus(const std::string& data);
     void SetBatteryVoltage(float voltage);
     void SetBatteryCurrent(float current);
     void SetBatteryPower(float power);
+    void SetChargingDoorStatus(bool chargingDoorStatus);
+    void SetReadyStatus(bool readyStatus);
 
     void handleSleepState();
     void handleActiveState();
@@ -73,8 +78,11 @@ private:
 
 // PIDs
 #define PID_BATTERY_VOLTAGE_AND_CURRENT     0x1F9A
+#define PID_READY_SIGNAL                    0x1076
+#define PID_CHARGING_LIDS_SWITCH            0x1625
 
 // RX buffer access inline functions: b=byte#
+
 inline uint8_t GetRxBByte(const std::string& rxbuf, size_t index)
 {
     return rxbuf[index];
@@ -113,6 +121,12 @@ inline int16_t GetRxBInt16(const std::string& rxbuf, size_t index)
 inline int32_t GetRxBInt32(const std::string& rxbuf, size_t index)
 {
     return static_cast<int32_t>(GetRxBUint32(rxbuf, index));
+}
+
+inline bool GetRxBBit(const std::string& rxbuf, size_t byteIndex, size_t bitIndex)
+{
+    uint8_t byte = GetRxBByte(rxbuf, byteIndex);
+    return (byte & (1 << bitIndex)) != 0;
 }
 
 #endif //#ifndef __VEHICLE_TOYOTA_ETNGA_H__

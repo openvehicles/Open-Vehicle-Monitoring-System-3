@@ -25,6 +25,16 @@ float OvmsVehicleToyotaETNGA::CalculateBatteryPower(float voltage, float current
   return voltage * current / 1000;
 }
 
+bool OvmsVehicleToyotaETNGA::GetChargingDoorStatus(const std::string& data)
+{
+  return GetRxBBit(data, 1, 1);
+}
+
+bool OvmsVehicleToyotaETNGA::GetReadyStatus(const std::string& data)
+{
+  return GetRxBBit(data, 1, 0);
+}
+
 void OvmsVehicleToyotaETNGA::SetBatteryVoltage(float voltage)
 {
   ESP_LOGV(TAG, "Voltage: %f", voltage);
@@ -41,4 +51,16 @@ void OvmsVehicleToyotaETNGA::SetBatteryPower(float power)
 {
   ESP_LOGV(TAG, "Power: %f", power);
   StdMetrics.ms_v_bat_power->SetValue(power);
+}
+
+void OvmsVehicleToyotaETNGA::SetChargingDoorStatus(bool chargingDoorStatus)
+{
+  ESP_LOGV(TAG, "Charging Door Status: %s", chargingDoorStatus ? "Open" : "Closed");
+  StdMetrics.ms_v_door_chargeport->SetValue(chargingDoorStatus);
+}
+
+void OvmsVehicleToyotaETNGA::SetReadyStatus(bool readyStatus)
+{
+  ESP_LOGV(TAG, "Ready Status: %s", readyStatus ? "Ready" : "Not Ready");
+  StdMetrics.ms_v_env_on->SetValue(readyStatus);
 }
