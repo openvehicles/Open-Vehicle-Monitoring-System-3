@@ -100,6 +100,13 @@ void OvmsVehicleToyotaETNGA::IncomingPlugInControlSystem(uint16_t pid)
 void OvmsVehicleToyotaETNGA::IncomingHybridBatterySystem(uint16_t pid)
 {
   switch (pid) {
+    case PID_BATTERY_TEMPERATURES: {
+      std::vector<float> temperatures = GetBatteryTemperatures(m_rxbuf);
+      SetBatteryTemperatures(temperatures);
+      SetBatteryTemperatureStatistics(temperatures);
+      break;
+    }
+    
     // Add more cases for other PIDs if needed
     
     default:

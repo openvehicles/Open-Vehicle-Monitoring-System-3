@@ -41,6 +41,7 @@ private:
 
     float GetBatteryVoltage(const std::string& data);
     float GetBatteryCurrent(const std::string& data);
+    std::vector<float> GetBatteryTemperatures(const std::string& data);
     float CalculateBatteryPower(float voltage, float current);
     bool GetChargingDoorStatus(const std::string& data);
     bool GetReadyStatus(const std::string& data);
@@ -49,6 +50,8 @@ private:
     void SetBatteryPower(float power);
     void SetChargingDoorStatus(bool chargingDoorStatus);
     void SetReadyStatus(bool readyStatus);
+    void SetBatteryTemperatures(const std::vector<float>& temperatures);
+    void SetBatteryTemperatureStatistics(const std::vector<float>& temperatures);
 
     void handleSleepState();
     void handleActiveState();
@@ -80,6 +83,10 @@ private:
 #define PID_BATTERY_VOLTAGE_AND_CURRENT     0x1F9A
 #define PID_READY_SIGNAL                    0x1076
 #define PID_CHARGING_LIDS_SWITCH            0x1625
+#define PID_VEHICLE_SPEED                   0x0D
+#define PID_AMBIENT_TEMPERATURE             0x46
+#define PID_ODOMETER                        0xA6
+#define PID_BATTERY_TEMPERATURES            0x1814
 
 // RX buffer access inline functions: b=byte#
 
