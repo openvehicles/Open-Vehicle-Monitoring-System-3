@@ -37,7 +37,7 @@ std::vector<float> OvmsVehicleToyotaETNGA::GetBatteryTemperatures(const std::str
 
 float OvmsVehicleToyotaETNGA::CalculateBatteryPower(float voltage, float current)
 {
-  return voltage * current / 1000;
+  return voltage * current / 1000.0f;
 }
 
 bool OvmsVehicleToyotaETNGA::GetChargingDoorStatus(const std::string& data)
@@ -48,6 +48,11 @@ bool OvmsVehicleToyotaETNGA::GetChargingDoorStatus(const std::string& data)
 bool OvmsVehicleToyotaETNGA::GetReadyStatus(const std::string& data)
 {
   return GetRxBBit(data, 1, 0);
+}
+
+float OvmsVehicleToyotaETNGA::GetOdometer(const std::string& data)
+{
+    return static_cast<float>(GetRxBUint32(data, 0)) / 10.0f;
 }
 
 void OvmsVehicleToyotaETNGA::SetBatteryVoltage(float voltage)
@@ -109,4 +114,8 @@ void OvmsVehicleToyotaETNGA::SetBatteryTemperatureStatistics(const std::vector<f
     StdMetrics.ms_v_bat_pack_tmax->SetValue(maxTemperature);
     StdMetrics.ms_v_bat_pack_tavg->SetValue(averageTemperature);
     StdMetrics.ms_v_bat_pack_tstddev->SetValue(standardDeviation);
+}
+void OvmsVehicleToyotaETNGA::SetOdometer(float odometer)
+{
+  StdMetrics.ms_v_pos_odometer->SetValue(odometer);
 }

@@ -37,6 +37,10 @@ void OvmsVehicleToyotaETNGA::IncomingFrameCan2(CAN_frame_t* p_frame)
       break;
     }
 
+    case HPCM_HYBRIDPTCTR_RX: {
+      break;
+    }
+
     case HYBRID_BATTERY_SYSTEM_RX: {
       break;
     }

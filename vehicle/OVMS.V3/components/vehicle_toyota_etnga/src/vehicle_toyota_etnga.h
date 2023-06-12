@@ -35,6 +35,8 @@ private:
     void IncomingHybridControlSystem(uint16_t pid);
     void IncomingPlugInControlSystem(uint16_t pid);
     void IncomingHybridBatterySystem(uint16_t pid);
+    void IncomingOdometer(uint16_t pid);
+
     int RequestVIN();
 
     int frameCount = 0, tickerCount = 0, replyCount = 0;  // Keep track of when the car is talking or silent.
@@ -44,6 +46,8 @@ private:
     std::vector<float> GetBatteryTemperatures(const std::string& data);
     float CalculateBatteryPower(float voltage, float current);
     bool GetChargingDoorStatus(const std::string& data);
+    float GetOdometer(const std::string& data);
+
     bool GetReadyStatus(const std::string& data);
     void SetBatteryVoltage(float voltage);
     void SetBatteryCurrent(float current);
@@ -52,6 +56,7 @@ private:
     void SetReadyStatus(bool readyStatus);
     void SetBatteryTemperatures(const std::vector<float>& temperatures);
     void SetBatteryTemperatureStatistics(const std::vector<float>& temperatures);
+    void SetOdometer(float odometer);
 
     void handleSleepState();
     void handleActiveState();
@@ -78,14 +83,17 @@ private:
 #define HYBRID_CONTROL_SYSTEM_RX    0x7DA
 #define PLUG_IN_CONTROL_SYSTEM_TX   0x745
 #define PLUG_IN_CONTROL_SYSTEM_RX   0x74D
+#define HPCM_HYBRIDPTCTR_RX         0x7EA
+//#define                           0x7E8 <- What is this one? It's where the odometer comes from
 
 // PIDs
+#define PID_ODOMETER                        0xA6
+#define PID_VEHICLE_SPEED                   0x0D
+#define PID_AMBIENT_TEMPERATURE             0x46
+
 #define PID_BATTERY_VOLTAGE_AND_CURRENT     0x1F9A
 #define PID_READY_SIGNAL                    0x1076
 #define PID_CHARGING_LIDS_SWITCH            0x1625
-#define PID_VEHICLE_SPEED                   0x0D
-#define PID_AMBIENT_TEMPERATURE             0x46
-#define PID_ODOMETER                        0xA6
 #define PID_BATTERY_TEMPERATURES            0x1814
 
 // RX buffer access inline functions: b=byte#

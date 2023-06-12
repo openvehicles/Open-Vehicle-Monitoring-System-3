@@ -45,6 +45,10 @@ void OvmsVehicleToyotaETNGA::IncomingPollReply(canbus* bus, uint16_t type, uint1
       IncomingPlugInControlSystem(pid);
       break;
 
+    case 0x7E8:
+      IncomingOdometer(pid);
+      break;
+
     default:
       ESP_LOGD(TAG, "Unknown module: %03" PRIx32, m_poll_moduleid_low);
       return;
@@ -104,6 +108,24 @@ void OvmsVehicleToyotaETNGA::IncomingHybridBatterySystem(uint16_t pid)
       std::vector<float> temperatures = GetBatteryTemperatures(m_rxbuf);
       SetBatteryTemperatures(temperatures);
       SetBatteryTemperatureStatistics(temperatures);
+      break;
+    }
+    
+    // Add more cases for other PIDs if needed
+    
+    default:
+      // Handle unsupported PID
+      ESP_LOGD(TAG, "Unsupported PID: %04X", pid);
+      break;
+  }
+}
+
+void OvmsVehicleToyotaETNGA::IncomingOdometer(uint16_t pid)
+{
+  switch (pid) {
+    case PID_ODOMETER: {
+      float odometer = GetOdometer(m_rxbuf);
+      SetOdometer(odometer);
       break;
     }
     
