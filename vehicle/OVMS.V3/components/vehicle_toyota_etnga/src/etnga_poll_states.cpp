@@ -41,6 +41,12 @@ void OvmsVehicleToyotaETNGA::handleActiveState()
 
 void OvmsVehicleToyotaETNGA::handleReadyState()
 {
+    // Check to make sure the 'on' signal has been updated recently
+    if (StdMetrics.ms_v_env_on->IsStale()) {
+        ESP_LOGD(TAG, "Ready is stale. Manually setting to off");
+        SetReadyStatus(false);
+    }
+
     if (!StdMetrics.ms_v_env_on->AsBool()) {
         transitionToActiveState();
     }
@@ -49,6 +55,12 @@ void OvmsVehicleToyotaETNGA::handleReadyState()
 
 void OvmsVehicleToyotaETNGA::handleChargingState()
 {
+    // Check to make sure the 'charging door' signal has been updated recently
+    if (StdMetrics.ms_v_door_chargeport->IsStale()) {
+        ESP_LOGD(TAG, "Charging Door is stale. Manually setting to off");
+        SetChargingDoorStatus(false);
+    }
+
     if (!StdMetrics.ms_v_door_chargeport->AsBool()) {
         transitionToActiveState();
     }
