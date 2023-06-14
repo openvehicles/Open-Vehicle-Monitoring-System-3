@@ -313,7 +313,7 @@ class OvmsVehicleMgEvBInit
 
 OvmsVehicleMgEvBInit::OvmsVehicleMgEvBInit()
 {
-    ESP_LOGI(TAG, "Registering Vehicle: MG EV (AU/TH) (9000)");
+    ESP_LOGI(TAG, "Registering Vehicle: MG ZS EV (AU/TH) (9000)");
 
-    MyVehicleFactory.RegisterVehicle<OvmsVehicleMgEvB>("MGB", "MG EV (AU/TH)");
+    MyVehicleFactory.RegisterVehicle<OvmsVehicleMgEvB>("MGB", "MG ZS EV (AU/TH)");
 }

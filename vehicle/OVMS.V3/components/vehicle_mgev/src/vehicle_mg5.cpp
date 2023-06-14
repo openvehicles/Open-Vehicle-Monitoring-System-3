@@ -379,6 +379,6 @@ OvmsVehicleMg5Init::OvmsVehicleMg5Init()
 {
     ESP_LOGI(TAG, "Registering Vehicle: MG5 (9000)");
     
-    MyVehicleFactory.RegisterVehicle<OvmsVehicleMg5>("MG5", "MG 5");
+    MyVehicleFactory.RegisterVehicle<OvmsVehicleMg5>("MG5", "MG 5 (2020-2023)");
 }
 

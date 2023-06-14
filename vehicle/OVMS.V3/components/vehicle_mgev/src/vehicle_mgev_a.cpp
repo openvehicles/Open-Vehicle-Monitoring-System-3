@@ -459,7 +459,7 @@ class OvmsVehicleMgEvAInit
 
 OvmsVehicleMgEvAInit::OvmsVehicleMgEvAInit()
 {
-    ESP_LOGI(TAG, "Registering Vehicle: MG EV (UK/EU) (9000)");
+    ESP_LOGI(TAG, "Registering Vehicle: MG JS EV (UK/EU) (9000)");
 
-    MyVehicleFactory.RegisterVehicle<OvmsVehicleMgEvA>("MGA", "MG EV (UK/EU)");
+    MyVehicleFactory.RegisterVehicle<OvmsVehicleMgEvA>("MGA", "MG ZS EV (UK/EU)");
 }

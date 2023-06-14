@@ -325,7 +325,7 @@ class OvmsVehicleMgEvDInit
 
 OvmsVehicleMgEvDInit::OvmsVehicleMgEvDInit()
 {
-    ESP_LOGI(TAG, "Registering Vehicle: MG ZS EV MK2");
+    ESP_LOGI(TAG, "Registering Vehicle: MG ZS EV (2023-)");
 
-    MyVehicleFactory.RegisterVehicle<OvmsVehicleMgEvD>("MGD", "MG ZS EV MK2");
+    MyVehicleFactory.RegisterVehicle<OvmsVehicleMgEvD>("MGD", "MG ZS EV (2023-)");
 }
