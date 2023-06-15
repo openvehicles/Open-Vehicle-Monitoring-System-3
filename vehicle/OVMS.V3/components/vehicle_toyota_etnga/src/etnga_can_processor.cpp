@@ -16,7 +16,7 @@
 
 void OvmsVehicleToyotaETNGA::IncomingFrameCan2(CAN_frame_t* p_frame)
   {
-    // Count the arriving frames.  The ticker uses this to see if anything is arriving ie in the OBD actually alive
+    // Count the arriving frames.  The ticker uses this to see if CAN traffic is arriving
     ++frameCount;
 
     uint8_t *d = p_frame->data.u8;

@@ -18,11 +18,14 @@
 //    POLLSTATE_CHARGING (3)  : Vehicle is charging
 
 static const OvmsVehicle::poll_pid_t obdii_polls[] = {
-  { HYBRID_CONTROL_SYSTEM_TX, HYBRID_CONTROL_SYSTEM_RX, VEHICLE_POLL_TYPE_READDATA, PID_BATTERY_VOLTAGE_AND_CURRENT, { 0, 0, 1, 1}, 0, ISOTP_STD },
-  { HYBRID_CONTROL_SYSTEM_TX, HYBRID_CONTROL_SYSTEM_RX, VEHICLE_POLL_TYPE_READDATA, PID_READY_SIGNAL, { 0, 5, 5, 0}, 0, ISOTP_STD },
-  { PLUG_IN_CONTROL_SYSTEM_TX, PLUG_IN_CONTROL_SYSTEM_RX, VEHICLE_POLL_TYPE_READDATA, PID_CHARGING_LIDS_SWITCH, { 0, 5, 0, 1}, 0, ISOTP_STD },
-  { HYBRID_BATTERY_SYSTEM_TX, HYBRID_BATTERY_SYSTEM_RX, VEHICLE_POLL_TYPE_READDATA, PID_BATTERY_TEMPERATURES, { 0, 0, 5, 5}, 0, ISOTP_STD },
   { VEHICLE_OBD_BROADCAST_MODULE_TX, VEHICLE_OBD_BROADCAST_MODULE_RX, VEHICLE_POLL_TYPE_OBDIICURRENT, PID_ODOMETER, { 0, 0, 1, 0}, 0, ISOTP_STD },
+  { VEHICLE_OBD_BROADCAST_MODULE_TX, VEHICLE_OBD_BROADCAST_MODULE_RX, VEHICLE_POLL_TYPE_OBDIICURRENT, PID_VEHICLE_SPEED, { 0, 0, 1, 0}, 0, ISOTP_STD },
+  { VEHICLE_OBD_BROADCAST_MODULE_TX, VEHICLE_OBD_BROADCAST_MODULE_RX, VEHICLE_POLL_TYPE_OBDIICURRENT, PID_AMBIENT_TEMPERATURE, { 0, 0, 10, 0}, 0, ISOTP_STD },
+
+  { HYBRID_CONTROL_SYSTEM_TX, HYBRID_CONTROL_SYSTEM_RX, VEHICLE_POLL_TYPE_READDATA, PID_BATTERY_VOLTAGE_AND_CURRENT, { 0, 0, 1, 1}, 0, ISOTP_STD },
+  { HYBRID_CONTROL_SYSTEM_TX, HYBRID_CONTROL_SYSTEM_RX, VEHICLE_POLL_TYPE_READDATA, PID_READY_SIGNAL, { 0, 10, 1, 0}, 0, ISOTP_STD },
+  { PLUG_IN_CONTROL_SYSTEM_TX, PLUG_IN_CONTROL_SYSTEM_RX, VEHICLE_POLL_TYPE_READDATA, PID_CHARGING_LIDS_SWITCH, { 0, 10, 0, 1}, 0, ISOTP_STD },
+  { HYBRID_BATTERY_SYSTEM_TX, HYBRID_BATTERY_SYSTEM_RX, VEHICLE_POLL_TYPE_READDATA, PID_BATTERY_TEMPERATURES, { 0, 0, 5, 5}, 0, ISOTP_STD },
 
     POLL_LIST_END
   };
@@ -41,6 +44,9 @@ OvmsVehicleToyotaETNGA::OvmsVehicleToyotaETNGA()
   PollSetState(POLLSTATE_SLEEP);
   SetReadyStatus(false);
 
+  // Set poll state transition variables to shorter autostale
+  StdMetrics.ms_v_env_on->SetAutoStale(SM_STALE_MIN);
+  StdMetrics.ms_v_door_chargeport->SetAutoStale(SM_STALE_MIN);
   }
 
 OvmsVehicleToyotaETNGA::~OvmsVehicleToyotaETNGA()
@@ -51,8 +57,7 @@ OvmsVehicleToyotaETNGA::~OvmsVehicleToyotaETNGA()
 void OvmsVehicleToyotaETNGA::Ticker1(uint32_t ticker)
 {
   ++tickerCount;
-  ESP_LOGV(TAG, "Tick! tickerCount=%d frameCount=%d replyCount=%d pollerstate=%d", tickerCount, frameCount, replyCount, m_poll_state);
-//  ESP_LOGV(TAG, "Environment On: %d, Charge Port Door: %d", StdMetrics.ms_v_env_on->AsBool(), StdMetrics.ms_v_door_chargeport->AsBool());
+  // ESP_LOGV(TAG, "Tick! tickerCount=%d frameCount=%d replyCount=%d pollerstate=%d", tickerCount, frameCount, replyCount, m_poll_state);
 
   switch (m_poll_state) {
     case POLLSTATE_SLEEP:
@@ -87,7 +92,7 @@ void OvmsVehicleToyotaETNGA::Ticker1(uint32_t ticker)
 void OvmsVehicleToyotaETNGA::Ticker60(uint32_t ticker)
   {
     // Request VIN if not already set
-    if (StandardMetrics.ms_v_vin->AsString().empty()) {
+    if (StandardMetrics.ms_v_vin->AsString().empty() && m_poll_state == POLLSTATE_READY) {
       RequestVIN();
     }
   }

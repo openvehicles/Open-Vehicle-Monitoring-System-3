@@ -23,6 +23,9 @@ void OvmsVehicleToyotaETNGA::handleSleepState()
         // There is life.
         transitionToActiveState();
     }
+
+    // TODO: Need to add a battery voltage check as well
+
 }
 
 void OvmsVehicleToyotaETNGA::handleActiveState()
