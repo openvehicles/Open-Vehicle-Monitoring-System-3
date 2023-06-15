@@ -45,8 +45,8 @@ void OvmsVehicleToyotaETNGA::IncomingPollReply(canbus* bus, uint16_t type, uint1
       IncomingPlugInControlSystem(pid);
       break;
 
-    case 0x7E8:
-      IncomingOdometer(pid);
+    case HPCM_HYBRIDPTCTR_RX:
+      IncomingHPCMHybridPtCtr(pid);
       break;
 
     default:
@@ -120,7 +120,7 @@ void OvmsVehicleToyotaETNGA::IncomingHybridBatterySystem(uint16_t pid)
   }
 }
 
-void OvmsVehicleToyotaETNGA::IncomingOdometer(uint16_t pid)
+void OvmsVehicleToyotaETNGA::IncomingHPCMHybridPtCtr(uint16_t pid)
 {
   switch (pid) {
     case PID_ODOMETER: {
@@ -129,6 +129,18 @@ void OvmsVehicleToyotaETNGA::IncomingOdometer(uint16_t pid)
       break;
     }
     
+    case PID_VEHICLE_SPEED: {
+      float speed = GetVehicleSpeed(m_rxbuf);
+      SetVehicleSpeed(speed);
+      break;
+    }
+
+    case PID_AMBIENT_TEMPERATURE: {
+      float temperature = GetAmbientTemperature(m_rxbuf);
+      SetAmbientTemperature(temperature);
+      break;
+    }
+
     // Add more cases for other PIDs if needed
     
     default:

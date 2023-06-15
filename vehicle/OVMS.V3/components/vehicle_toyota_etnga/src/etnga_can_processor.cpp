@@ -21,8 +21,8 @@ void OvmsVehicleToyotaETNGA::IncomingFrameCan2(CAN_frame_t* p_frame)
 
     uint8_t *d = p_frame->data.u8;
 
-    ESP_LOGV(TAG,"CAN2 message received: %08" PRIx32 ": [%02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 "]",
-      p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7] );
+//    ESP_LOGV(TAG,"CAN2 message received: %08" PRIx32 ": [%02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 "]",
+//      p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7] );
 
     // Process the incoming message
     switch (p_frame->MsgID) {
@@ -37,26 +37,10 @@ void OvmsVehicleToyotaETNGA::IncomingFrameCan2(CAN_frame_t* p_frame)
       break;
     }
 
-    case HPCM_HYBRIDPTCTR_RX: {
-      break;
-    }
-
-    case HYBRID_BATTERY_SYSTEM_RX: {
-      break;
-    }
-
-    case HYBRID_CONTROL_SYSTEM_RX: {
-      break;
-    }
-
-    case PLUG_IN_CONTROL_SYSTEM_RX: {
-      break;
-    }
-
     default:
       // Unknown frame. Log for evaluation
-      ESP_LOGD(TAG,"Unknown CAN2 message received: %08" PRIx32 ": [%02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 "]",
-        p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7] );
+//      ESP_LOGD(TAG,"Unknown CAN2 message received: %08" PRIx32 ": [%02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 "]",
+//        p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7] );
         break;
     }
   }

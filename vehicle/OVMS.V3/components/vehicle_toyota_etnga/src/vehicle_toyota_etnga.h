@@ -35,20 +35,24 @@ private:
     void IncomingHybridControlSystem(uint16_t pid);
     void IncomingPlugInControlSystem(uint16_t pid);
     void IncomingHybridBatterySystem(uint16_t pid);
-    void IncomingOdometer(uint16_t pid);
+    void IncomingHPCMHybridPtCtr(uint16_t pid);
 
     int RequestVIN();
 
     int frameCount = 0, tickerCount = 0, replyCount = 0;  // Keep track of when the car is talking or silent.
 
-    float GetBatteryVoltage(const std::string& data);
     float GetBatteryCurrent(const std::string& data);
-    std::vector<float> GetBatteryTemperatures(const std::string& data);
     float CalculateBatteryPower(float voltage, float current);
+    std::vector<float> GetBatteryTemperatures(const std::string& data);
+    float GetBatteryVoltage(const std::string& data);
     bool GetChargingDoorStatus(const std::string& data);
     float GetOdometer(const std::string& data);
-
+    float GetVehicleSpeed(const std::string& data);
     bool GetReadyStatus(const std::string& data);
+
+    float GetAmbientTemperature(const std::string& data);
+
+
     void SetBatteryVoltage(float voltage);
     void SetBatteryCurrent(float current);
     void SetBatteryPower(float power);
@@ -57,6 +61,8 @@ private:
     void SetBatteryTemperatures(const std::vector<float>& temperatures);
     void SetBatteryTemperatureStatistics(const std::vector<float>& temperatures);
     void SetOdometer(float odometer);
+    void SetVehicleSpeed(float speed);
+    void SetAmbientTemperature(float speed);
 
     void handleSleepState();
     void handleActiveState();
