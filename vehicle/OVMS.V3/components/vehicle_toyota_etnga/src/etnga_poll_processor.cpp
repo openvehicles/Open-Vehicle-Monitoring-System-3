@@ -59,8 +59,8 @@ void OvmsVehicleToyotaETNGA::IncomingHybridControlSystem(uint16_t pid)
 {
   switch (pid) {
     case PID_BATTERY_VOLTAGE_AND_CURRENT: {
-      float batVoltage = GetBatteryVoltage(m_rxbuf);
-      float batCurrent = GetBatteryCurrent(m_rxbuf);
+      float batVoltage = CalculateBatteryVoltage(m_rxbuf);
+      float batCurrent = CalculateBatteryCurrent(m_rxbuf);
       float batPower = CalculateBatteryPower(batVoltage, batCurrent);
 
       SetBatteryVoltage(batVoltage);
@@ -71,7 +71,7 @@ void OvmsVehicleToyotaETNGA::IncomingHybridControlSystem(uint16_t pid)
     }
 
     case PID_READY_SIGNAL: {
-      bool readyStatus = GetReadyStatus(m_rxbuf);
+      bool readyStatus = CalculateReadyStatus(m_rxbuf);
       SetReadyStatus(readyStatus);
       break;
     }
@@ -87,8 +87,8 @@ void OvmsVehicleToyotaETNGA::IncomingHybridControlSystem(uint16_t pid)
 void OvmsVehicleToyotaETNGA::IncomingPlugInControlSystem(uint16_t pid)
 {
   switch (pid) {
-    case PID_CHARGING_LIDS_SWITCH: {
-      bool chargingDoorStatus = GetChargingDoorStatus(m_rxbuf);
+    case PID_CHARGING_LID: {
+      bool chargingDoorStatus = CalculateChargingDoorStatus(m_rxbuf);
       SetChargingDoorStatus(chargingDoorStatus);
       break;
     }
@@ -105,7 +105,7 @@ void OvmsVehicleToyotaETNGA::IncomingHybridBatterySystem(uint16_t pid)
 {
   switch (pid) {
     case PID_BATTERY_TEMPERATURES: {
-      std::vector<float> temperatures = GetBatteryTemperatures(m_rxbuf);
+      std::vector<float> temperatures = CalculateBatteryTemperatures(m_rxbuf);
       SetBatteryTemperatures(temperatures);
       SetBatteryTemperatureStatistics(temperatures);
       break;
@@ -124,19 +124,19 @@ void OvmsVehicleToyotaETNGA::IncomingHPCMHybridPtCtr(uint16_t pid)
 {
   switch (pid) {
     case PID_ODOMETER: {
-      float odometer = GetOdometer(m_rxbuf);
+      float odometer = CalculateOdometer(m_rxbuf);
       SetOdometer(odometer);
       break;
     }
     
     case PID_VEHICLE_SPEED: {
-      float speed = GetVehicleSpeed(m_rxbuf);
+      float speed = CalculateVehicleSpeed(m_rxbuf);
       SetVehicleSpeed(speed);
       break;
     }
 
     case PID_AMBIENT_TEMPERATURE: {
-      float temperature = GetAmbientTemperature(m_rxbuf);
+      float temperature = CalculateAmbientTemperature(m_rxbuf);
       SetAmbientTemperature(temperature);
       break;
     }

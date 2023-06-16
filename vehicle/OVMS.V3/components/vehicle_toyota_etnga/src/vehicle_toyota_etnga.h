@@ -29,9 +29,13 @@ public:
 
 protected:
     std::string m_rxbuf;
+    OvmsMetricFloat *m_v_pos_trip_start;
 
 private:
     static constexpr const char* TAG = "v-toyota-etnga";
+
+    void InitalizeMetrics();  // Initializes the metrics specific to this vehicle module
+
     void IncomingHybridControlSystem(uint16_t pid);
     void IncomingPlugInControlSystem(uint16_t pid);
     void IncomingHybridBatterySystem(uint16_t pid);
@@ -41,28 +45,26 @@ private:
 
     int frameCount = 0, tickerCount = 0, replyCount = 0;  // Keep track of when the car is talking or silent.
 
-    float GetBatteryCurrent(const std::string& data);
+    float CalculateAmbientTemperature(const std::string& data);
+    float CalculateBatteryCurrent(const std::string& data);
     float CalculateBatteryPower(float voltage, float current);
-    std::vector<float> GetBatteryTemperatures(const std::string& data);
-    float GetBatteryVoltage(const std::string& data);
-    bool GetChargingDoorStatus(const std::string& data);
-    float GetOdometer(const std::string& data);
-    float GetVehicleSpeed(const std::string& data);
-    bool GetReadyStatus(const std::string& data);
+    std::vector<float> CalculateBatteryTemperatures(const std::string& data);
+    float CalculateBatteryVoltage(const std::string& data);
+    bool CalculateChargingDoorStatus(const std::string& data);
+    float CalculateOdometer(const std::string& data);
+    bool CalculateReadyStatus(const std::string& data);
+    float CalculateVehicleSpeed(const std::string& data);
 
-    float GetAmbientTemperature(const std::string& data);
-
-
-    void SetBatteryVoltage(float voltage);
+    void SetAmbientTemperature(float speed);
     void SetBatteryCurrent(float current);
     void SetBatteryPower(float power);
-    void SetChargingDoorStatus(bool chargingDoorStatus);
-    void SetReadyStatus(bool readyStatus);
     void SetBatteryTemperatures(const std::vector<float>& temperatures);
     void SetBatteryTemperatureStatistics(const std::vector<float>& temperatures);
+    void SetBatteryVoltage(float voltage);
+    void SetChargingDoorStatus(bool chargingDoorStatus);
     void SetOdometer(float odometer);
+    void SetReadyStatus(bool readyStatus);
     void SetVehicleSpeed(float speed);
-    void SetAmbientTemperature(float speed);
 
     void handleSleepState();
     void handleActiveState();
@@ -90,7 +92,7 @@ private:
 #define PLUG_IN_CONTROL_SYSTEM_TX   0x745
 #define PLUG_IN_CONTROL_SYSTEM_RX   0x74D
 #define HPCM_HYBRIDPTCTR_RX         0x7EA
-//#define                           0x7E8 <- What is this one? It's where the odometer comes from
+//#define                           0x7E8 <- What is this one? It's where the odometer comes from sometimes
 
 // PIDs
 #define PID_ODOMETER                        0xA6
@@ -99,8 +101,18 @@ private:
 
 #define PID_BATTERY_VOLTAGE_AND_CURRENT     0x1F9A
 #define PID_READY_SIGNAL                    0x1076
-#define PID_CHARGING_LIDS_SWITCH            0x1625
+#define PID_CHARGING_LID                    0x1625
 #define PID_BATTERY_TEMPERATURES            0x1814
+//#define PID_BATTERY_SOC
+
+//#define PID_BATTERY_CAPACITY
+//#define PID_AUX_BATTERY_CURRENT
+//#define PID_BATTERY_CELL_VOLTAGES
+//#define PID_GEAR
+//#define PID_THROTTLE
+//#define PID_FOOTBRAKE
+//#define PID_HANDBRAKE
+
 
 // RX buffer access inline functions: b=byte#
 

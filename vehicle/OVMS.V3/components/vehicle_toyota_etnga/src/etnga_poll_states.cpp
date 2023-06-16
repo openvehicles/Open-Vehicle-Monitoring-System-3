@@ -91,7 +91,9 @@ void OvmsVehicleToyotaETNGA::transitionToReadyState()
 {
     // Perform actions needed for transitioning to the READY state
     ESP_LOGI(TAG, "Transitioning to the READY state");
-    PollSetState(POLLSTATE_READY);
+    PollSetState(POLLSTATE_READY); // Update the state
+    m_v_pos_trip_start->SetStale(true);  // Set the start trip metric as stale so it resets next odometer reading
+
 }
 
 void OvmsVehicleToyotaETNGA::transitionToChargingState()
