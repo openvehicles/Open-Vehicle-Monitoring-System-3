@@ -56,7 +56,7 @@ OvmsVehicleToyotaETNGA::OvmsVehicleToyotaETNGA()
   PollSetState(POLLSTATE_SLEEP);
 
   // Init metrics
-  InitalizeMetrics();
+  InitializeMetrics();
 
   }
 
@@ -72,19 +72,19 @@ void OvmsVehicleToyotaETNGA::Ticker1(uint32_t ticker)
 
   switch (m_poll_state) {
     case POLLSTATE_SLEEP:
-      handleSleepState();
+      HandleSleepState();
       break;
 
     case POLLSTATE_ACTIVE:
-      handleActiveState();
+      HandleActiveState();
       break;
 
     case POLLSTATE_READY:
-      handleReadyState();
+      HandleReadyState();
       break;
 
     case POLLSTATE_CHARGING:
-      handleChargingState();
+      HandleChargingState();
       break;
 
     default:
@@ -106,8 +106,4 @@ void OvmsVehicleToyotaETNGA::Ticker60(uint32_t ticker)
     if (StandardMetrics.ms_v_vin->AsString().empty() && m_poll_state == POLLSTATE_READY) {
       RequestVIN();
     }
-  }
-
-void OvmsVehicleToyotaETNGA::Ticker3600(uint32_t ticker)
-  {
   }

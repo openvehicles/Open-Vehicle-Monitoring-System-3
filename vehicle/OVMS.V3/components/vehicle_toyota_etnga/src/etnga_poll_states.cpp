@@ -17,32 +17,32 @@
 //    POLLSTATE_READY (2)     : Vehicle is "Ready" to drive or being driven
 //    POLLSTATE_CHARGING (3)  : Vehicle is charging
 
-void OvmsVehicleToyotaETNGA::handleSleepState()
+void OvmsVehicleToyotaETNGA::HandleSleepState()
 {
     if (frameCount > 0) {
         // There is life.
-        transitionToActiveState();
+        TransitionToActiveState();
     }
 
     // TODO: Need to add a battery voltage check as well
 
 }
 
-void OvmsVehicleToyotaETNGA::handleActiveState()
+void OvmsVehicleToyotaETNGA::HandleActiveState()
 {
     if (frameCount == 0 && tickerCount > 3) {
         // No CAN communication for three ticks - stop polling
-        transitionToSleepState();
+        TransitionToSleepState();
     }
     else if (StdMetrics.ms_v_env_on->AsBool()) {
-        transitionToReadyState();
+        TransitionToReadyState();
     }
     else if (StdMetrics.ms_v_door_chargeport->AsBool()) {
-        transitionToChargingState();
+        TransitionToChargingState();
     }
 }
 
-void OvmsVehicleToyotaETNGA::handleReadyState()
+void OvmsVehicleToyotaETNGA::HandleReadyState()
 {
     // Check to make sure the 'on' signal has been updated recently
     if (StdMetrics.ms_v_env_on->IsStale()) {
@@ -51,12 +51,12 @@ void OvmsVehicleToyotaETNGA::handleReadyState()
     }
 
     if (!StdMetrics.ms_v_env_on->AsBool()) {
-        transitionToActiveState();
+        TransitionToActiveState();
     }
 
 }
 
-void OvmsVehicleToyotaETNGA::handleChargingState()
+void OvmsVehicleToyotaETNGA::HandleChargingState()
 {
     // Check to make sure the 'charging door' signal has been updated recently
     if (StdMetrics.ms_v_door_chargeport->IsStale()) {
@@ -65,12 +65,12 @@ void OvmsVehicleToyotaETNGA::handleChargingState()
     }
 
     if (!StdMetrics.ms_v_door_chargeport->AsBool()) {
-        transitionToActiveState();
+        TransitionToActiveState();
     }
 
 }
 
-void OvmsVehicleToyotaETNGA::transitionToSleepState()
+void OvmsVehicleToyotaETNGA::TransitionToSleepState()
 {
     // Perform actions needed for transitioning to the SLEEP state
     ESP_LOGI(TAG, "Transitioning to the SLEEP state");
@@ -79,7 +79,7 @@ void OvmsVehicleToyotaETNGA::transitionToSleepState()
 
 }
 
-void OvmsVehicleToyotaETNGA::transitionToActiveState()
+void OvmsVehicleToyotaETNGA::TransitionToActiveState()
 {
     // Perform actions needed for transitioning to the ACTIVE state
     ESP_LOGI(TAG, "Transitioning to the ACTIVE state");
@@ -87,7 +87,7 @@ void OvmsVehicleToyotaETNGA::transitionToActiveState()
     StdMetrics.ms_v_env_awake->SetValue(true);
 }
 
-void OvmsVehicleToyotaETNGA::transitionToReadyState()
+void OvmsVehicleToyotaETNGA::TransitionToReadyState()
 {
     // Perform actions needed for transitioning to the READY state
     ESP_LOGI(TAG, "Transitioning to the READY state");
@@ -96,7 +96,7 @@ void OvmsVehicleToyotaETNGA::transitionToReadyState()
 
 }
 
-void OvmsVehicleToyotaETNGA::transitionToChargingState()
+void OvmsVehicleToyotaETNGA::TransitionToChargingState()
 {
     // Perform actions needed for transitioning to the CHARGING state
     ESP_LOGI(TAG, "Transitioning to the CHARGING state");
