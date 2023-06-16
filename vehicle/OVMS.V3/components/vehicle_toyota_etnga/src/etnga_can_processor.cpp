@@ -15,32 +15,12 @@
 #include "vehicle_toyota_etnga.h"
 
 void OvmsVehicleToyotaETNGA::IncomingFrameCan2(CAN_frame_t* p_frame)
-  {
-    // Count the arriving frames.  The ticker uses this to see if CAN traffic is arriving
+{
+    // Count the arriving frames. The ticker uses this to see if CAN traffic is arriving
     ++frameCount;
 
-    uint8_t *d = p_frame->data.u8;
+    uint8_t* data = p_frame->data.u8;
 
-//    ESP_LOGV(TAG,"CAN2 message received: %08" PRIx32 ": [%02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 "]",
-//      p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7] );
-
-    // Process the incoming message
-    switch (p_frame->MsgID) {
-    
-    case 0x45a: {
-      // I'm not sure what this message is...
-      break;
-    }
-
-    case 0x4e0: {
-      // I'm not sure what this message is...
-      break;
-    }
-
-    default:
-      // Unknown frame. Log for evaluation
-//      ESP_LOGD(TAG,"Unknown CAN2 message received: %08" PRIx32 ": [%02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 "]",
-//        p_frame->MsgID, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7] );
-        break;
-    }
-  }
+    ESP_LOGV(TAG, "CAN2 message received: %08" PRIx32 ": [%02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 "]",
+             p_frame->MsgID, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
+}
