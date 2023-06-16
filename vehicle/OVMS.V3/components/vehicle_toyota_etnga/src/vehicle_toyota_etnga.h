@@ -54,6 +54,8 @@ private:
     float CalculateOdometer(const std::string& data);
     bool CalculateReadyStatus(const std::string& data);
     float CalculateVehicleSpeed(const std::string& data);
+    
+    float CalculateBatterySOC(const std::string& data);
 
     void SetAmbientTemperature(float speed);
     void SetBatteryCurrent(float current);
@@ -65,6 +67,8 @@ private:
     void SetOdometer(float odometer);
     void SetReadyStatus(bool readyStatus);
     void SetVehicleSpeed(float speed);
+
+    void SetBatterySOC(float SOC);
 
     void handleSleepState();
     void handleActiveState();
@@ -103,7 +107,7 @@ private:
 #define PID_READY_SIGNAL                    0x1076
 #define PID_CHARGING_LID                    0x1625
 #define PID_BATTERY_TEMPERATURES            0x1814
-//#define PID_BATTERY_SOC
+#define PID_BATTERY_SOC                     0x1738
 
 //#define PID_BATTERY_CAPACITY
 //#define PID_AUX_BATTERY_CURRENT

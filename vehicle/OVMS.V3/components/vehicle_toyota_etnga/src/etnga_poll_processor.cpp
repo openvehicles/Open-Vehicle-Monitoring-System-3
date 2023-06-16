@@ -92,6 +92,13 @@ void OvmsVehicleToyotaETNGA::IncomingPlugInControlSystem(uint16_t pid)
       SetChargingDoorStatus(chargingDoorStatus);
       break;
     }
+    
+    case PID_BATTERY_SOC: {
+      float SOC = CalculateBatterySOC(m_rxbuf);
+      SetBatterySOC(SOC);
+      break;
+    }
+    
     // Add more cases for other PIDs if needed
     
     default:

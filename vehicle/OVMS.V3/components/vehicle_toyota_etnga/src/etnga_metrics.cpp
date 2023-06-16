@@ -58,7 +58,7 @@ std::vector<float> OvmsVehicleToyotaETNGA::CalculateBatteryTemperatures(const st
     return temperatures;
 }
 
-float OvmsVehicleToyotaETNGA::CalculateBatteryPower(float voltage, float current)
+float OvmsVehicleToyotaETNGA::CalculateBatteryPower(const float voltage, const float current)
 {
   return voltage * current / 1000.0f;
 }
@@ -78,37 +78,42 @@ float OvmsVehicleToyotaETNGA::CalculateOdometer(const std::string& data)
     return static_cast<float>(GetRxBUint32(data, 0)) / 10.0f;
 }
 
-void OvmsVehicleToyotaETNGA::SetBatteryVoltage(float voltage)
+float OvmsVehicleToyotaETNGA::CalculateBatterySOC(const std::string& data)
+{
+    return static_cast<float>(GetRxBInt8(data, 0));
+}
+
+void OvmsVehicleToyotaETNGA::SetBatteryVoltage(const float voltage)
 {
   ESP_LOGV(TAG, "Voltage: %f", voltage);
   StdMetrics.ms_v_bat_voltage->SetValue(voltage);
 }
 
-void OvmsVehicleToyotaETNGA::SetBatteryCurrent(float current)
+void OvmsVehicleToyotaETNGA::SetBatteryCurrent(const float current)
 {
   ESP_LOGV(TAG, "Current: %f", current);
   StdMetrics.ms_v_bat_current->SetValue(current);
 }
 
-void OvmsVehicleToyotaETNGA::SetBatteryPower(float power)
+void OvmsVehicleToyotaETNGA::SetBatteryPower(const float power)
 {
   ESP_LOGV(TAG, "Power: %f", power);
   StdMetrics.ms_v_bat_power->SetValue(power);
 }
 
-void OvmsVehicleToyotaETNGA::SetVehicleSpeed(float speed)
+void OvmsVehicleToyotaETNGA::SetVehicleSpeed(const float speed)
 {
   ESP_LOGV(TAG, "Speed: %f", speed);
   StdMetrics.ms_v_pos_speed->SetValue(speed);
 }
 
-void OvmsVehicleToyotaETNGA::SetChargingDoorStatus(bool chargingDoorStatus)
+void OvmsVehicleToyotaETNGA::SetChargingDoorStatus(const bool chargingDoorStatus)
 {
 //  ESP_LOGV(TAG, "Charging Door Status: %s", chargingDoorStatus ? "Open" : "Closed");
   StdMetrics.ms_v_door_chargeport->SetValue(chargingDoorStatus);
 }
 
-void OvmsVehicleToyotaETNGA::SetReadyStatus(bool readyStatus)
+void OvmsVehicleToyotaETNGA::SetReadyStatus(const bool readyStatus)
 {
 //  ESP_LOGV(TAG, "Ready Status: %s", readyStatus ? "Ready" : "Not Ready");
   StdMetrics.ms_v_env_on->SetValue(readyStatus);
@@ -148,7 +153,7 @@ void OvmsVehicleToyotaETNGA::SetBatteryTemperatureStatistics(const std::vector<f
     StandardMetrics.ms_v_bat_temp->SetValue(minTemperature);
 }
 
-void OvmsVehicleToyotaETNGA::SetOdometer(float odometer)
+void OvmsVehicleToyotaETNGA::SetOdometer(const float odometer)
 {
   ESP_LOGV(TAG, "Odometer: %f", odometer);
   StdMetrics.ms_v_pos_odometer->SetValue(odometer);  // Set the odometer metric
@@ -166,8 +171,15 @@ void OvmsVehicleToyotaETNGA::SetOdometer(float odometer)
 
 }
 
-void OvmsVehicleToyotaETNGA::SetAmbientTemperature(float temperature)
+void OvmsVehicleToyotaETNGA::SetAmbientTemperature(const float temperature)
 {
   ESP_LOGV(TAG, "Ambient Temperature: %f", temperature);
   StdMetrics.ms_v_env_temp->SetValue(temperature);
+}
+
+void OvmsVehicleToyotaETNGA::SetBatterySOC(const float SOC)
+{
+  ESP_LOGV(TAG, "SOC: %f", SOC);
+  StdMetrics.ms_v_bat_soc->SetValue(SOC);
+  
 }
