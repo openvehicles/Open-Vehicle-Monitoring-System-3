@@ -75,6 +75,13 @@ void OvmsVehicleToyotaETNGA::IncomingHybridControlSystem(uint16_t pid)
       SetReadyStatus(readyStatus);
       break;
     }
+
+    case PID_SHIFT_POSITION: {
+      int shiftPosition = CalculateShiftPosition(m_rxbuf);
+      SetShiftPosition(shiftPosition);
+      break;
+    }
+
     // Add more cases for other PIDs if needed
     
     default:
@@ -99,6 +106,18 @@ void OvmsVehicleToyotaETNGA::IncomingPlugInControlSystem(uint16_t pid)
       break;
     }
     
+    case PID_PISW_STATUS: {
+      bool PISWStatus = CalculatePISWStatus(m_rxbuf);
+      SetPISWStatus(PISWStatus);
+      break;
+    }
+
+    case PID_CHARGING: {
+      bool chargingStatus = CalculateChargingStatus(m_rxbuf);
+      SetChargingStatus(chargingStatus);
+      break;
+    }
+
     // Add more cases for other PIDs if needed
     
     default:

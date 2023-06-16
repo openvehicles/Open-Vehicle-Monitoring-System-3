@@ -83,6 +83,25 @@ float OvmsVehicleToyotaETNGA::CalculateBatterySOC(const std::string& data)
     return static_cast<float>(GetRxBInt8(data, 0));
 }
 
+int OvmsVehicleToyotaETNGA::CalculateShiftPosition(const std::string& data)
+{
+  return static_cast<int>(GetRxBInt8(data, 0));
+}
+
+bool OvmsVehicleToyotaETNGA::CalculatePISWStatus(const std::string& data)
+{
+  // 0x00 = None
+  // 0x03 = Charging connector connected
+  return GetRxBInt8(data, 0);
+}
+
+bool OvmsVehicleToyotaETNGA::CalculateChargingStatus(const std::string& data)
+{
+  // 0x00 = None
+  // 0x03 = Charging / Discharging Mode
+  return GetRxBInt8(data, 0);
+}
+
 void OvmsVehicleToyotaETNGA::SetBatteryVoltage(const float voltage)
 {
   ESP_LOGV(TAG, "Voltage: %f", voltage);
@@ -181,5 +200,52 @@ void OvmsVehicleToyotaETNGA::SetBatterySOC(const float SOC)
 {
   ESP_LOGV(TAG, "SOC: %f", SOC);
   StdMetrics.ms_v_bat_soc->SetValue(SOC);
+  
+}
+
+void OvmsVehicleToyotaETNGA::SetShiftPosition(const int shiftPosition)
+{
+  const char* shiftPositionText;
+  int gear;
+
+  switch (shiftPosition) {
+      case 2:
+          shiftPositionText = "Reverse";
+          gear = -1;
+          break;
+      case 4:
+          shiftPositionText = "Neutral";
+          gear = 0;
+          break;
+      case 0:
+          shiftPositionText = "Park";
+          gear = 0;
+          break;
+      case 6:
+          shiftPositionText = "Drive";
+          gear = 1;
+          break;
+      default:
+          shiftPositionText = "Unknown";
+          gear = -999;
+          break;
+  }
+
+  ESP_LOGV(TAG, "Gear: %s", shiftPositionText);
+  StdMetrics.ms_v_env_gear->SetValue(gear);
+  
+}
+
+void OvmsVehicleToyotaETNGA::SetPISWStatus(const bool PISWStatus)
+{
+  ESP_LOGV(TAG, "Pilot Status: %s", PISWStatus ? "Connected" : "Not Connected");
+  StdMetrics.ms_v_charge_pilot->SetValue(PISWStatus);
+  
+}
+
+void OvmsVehicleToyotaETNGA::SetChargingStatus(const bool chargingStatus)
+{
+  ESP_LOGV(TAG, "Charging Status: %s", chargingStatus ? "Charging" : "Not Charging");
+  StdMetrics.ms_v_charge_inprogress->SetValue(chargingStatus);
   
 }

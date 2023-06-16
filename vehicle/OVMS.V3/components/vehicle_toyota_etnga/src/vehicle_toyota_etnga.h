@@ -47,28 +47,34 @@ private:
 
     float CalculateAmbientTemperature(const std::string& data);
     float CalculateBatteryCurrent(const std::string& data);
-    float CalculateBatteryPower(float voltage, float current);
+    float CalculateBatteryPower(const float voltage, const float current);
+    float CalculateBatterySOC(const std::string& data);
     std::vector<float> CalculateBatteryTemperatures(const std::string& data);
     float CalculateBatteryVoltage(const std::string& data);
     bool CalculateChargingDoorStatus(const std::string& data);
     float CalculateOdometer(const std::string& data);
     bool CalculateReadyStatus(const std::string& data);
     float CalculateVehicleSpeed(const std::string& data);
-    
-    float CalculateBatterySOC(const std::string& data);
 
-    void SetAmbientTemperature(float speed);
-    void SetBatteryCurrent(float current);
-    void SetBatteryPower(float power);
+    int CalculateShiftPosition(const std::string& data);
+    bool CalculatePISWStatus(const std::string& data);
+    bool CalculateChargingStatus(const std::string& data);
+
+    void SetAmbientTemperature(const float speed);
+    void SetBatteryCurrent(const float current);
+    void SetBatteryPower(const float power);
+    void SetBatterySOC(const float SOC);
     void SetBatteryTemperatures(const std::vector<float>& temperatures);
     void SetBatteryTemperatureStatistics(const std::vector<float>& temperatures);
-    void SetBatteryVoltage(float voltage);
-    void SetChargingDoorStatus(bool chargingDoorStatus);
-    void SetOdometer(float odometer);
-    void SetReadyStatus(bool readyStatus);
-    void SetVehicleSpeed(float speed);
+    void SetBatteryVoltage(const float voltage);
+    void SetChargingDoorStatus(const bool chargingDoorStatus);
+    void SetOdometer(const float odometer);
+    void SetReadyStatus(const bool readyStatus);
+    void SetVehicleSpeed(const float speed);
 
-    void SetBatterySOC(float SOC);
+    void SetShiftPosition(const int shiftPosition);
+    void SetPISWStatus(const bool PISWStatus);
+    void SetChargingStatus(const bool chargingStatus);
 
     void handleSleepState();
     void handleActiveState();
@@ -99,20 +105,24 @@ private:
 //#define                           0x7E8 <- What is this one? It's where the odometer comes from sometimes
 
 // PIDs
+#define PID_READY_SIGNAL                    0x1076
+#define PID_CHARGING_LID                    0x1625
+
+#define PID_BATTERY_VOLTAGE_AND_CURRENT     0x1F9A
 #define PID_ODOMETER                        0xA6
 #define PID_VEHICLE_SPEED                   0x0D
 #define PID_AMBIENT_TEMPERATURE             0x46
-
-#define PID_BATTERY_VOLTAGE_AND_CURRENT     0x1F9A
-#define PID_READY_SIGNAL                    0x1076
-#define PID_CHARGING_LID                    0x1625
 #define PID_BATTERY_TEMPERATURES            0x1814
+#define PID_SHIFT_POSITION                  0x1061
+
 #define PID_BATTERY_SOC                     0x1738
+
+#define PID_PISW_STATUS                     0x1669
+#define PID_CHARGING                        0x10D1
 
 //#define PID_BATTERY_CAPACITY
 //#define PID_AUX_BATTERY_CURRENT
 //#define PID_BATTERY_CELL_VOLTAGES
-//#define PID_GEAR
 //#define PID_THROTTLE
 //#define PID_FOOTBRAKE
 //#define PID_HANDBRAKE
