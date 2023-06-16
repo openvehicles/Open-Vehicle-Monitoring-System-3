@@ -24,16 +24,16 @@ GSM Antenna                 1000500 Open Vehicles OVMS GSM Antenna (or any compa
 GPS Antenna                 1020200 Universal GPS Antenna (SMA Connector) (or any compatible antenna)
 SOC Display                 Yes
 Range Display               No
-GPS Location                No
-Speed Display               No
-Temperature Display         No
+GPS Location                Yes
+Speed Display               Yes
+Temperature Display         Yes
 BMS v+t Display             No
 TPMS Display                No
-Charge Status Display       No
+Charge Status Display       Yes
 Charge Interruption Alerts  No
 Charge Control              No
 Cabin Pre-heat/cool Control No
 Lock/Unlock Vehicle         No
 Valet Mode Control          No
-Others                      N/A
+Others                      VIN
 =========================== ==============
