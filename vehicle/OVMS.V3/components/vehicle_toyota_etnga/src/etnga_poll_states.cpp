@@ -25,7 +25,6 @@ void OvmsVehicleToyotaETNGA::HandleSleepState()
     }
 
     // TODO: Need to add a battery voltage check as well
-
 }
 
 void OvmsVehicleToyotaETNGA::HandleActiveState()
@@ -33,11 +32,9 @@ void OvmsVehicleToyotaETNGA::HandleActiveState()
     if (frameCount == 0 && tickerCount > 3) {
         // No CAN communication for three ticks - stop polling
         TransitionToSleepState();
-    }
-    else if (StdMetrics.ms_v_env_on->AsBool()) {
+    } else if (StdMetrics.ms_v_env_on->AsBool()) {
         TransitionToReadyState();
-    }
-    else if (StdMetrics.ms_v_door_chargeport->AsBool()) {
+    } else if (StdMetrics.ms_v_door_chargeport->AsBool()) {
         TransitionToChargingState();
     }
 }
@@ -53,7 +50,6 @@ void OvmsVehicleToyotaETNGA::HandleReadyState()
     if (!StdMetrics.ms_v_env_on->AsBool()) {
         TransitionToActiveState();
     }
-
 }
 
 void OvmsVehicleToyotaETNGA::HandleChargingState()
@@ -67,23 +63,21 @@ void OvmsVehicleToyotaETNGA::HandleChargingState()
     if (!StdMetrics.ms_v_door_chargeport->AsBool()) {
         TransitionToActiveState();
     }
-
 }
 
 void OvmsVehicleToyotaETNGA::TransitionToSleepState()
 {
     // Perform actions needed for transitioning to the SLEEP state
     ESP_LOGI(TAG, "Transitioning to the SLEEP state");
-    PollSetState(POLLSTATE_SLEEP);
+    PollSetState(PollState::POLLSTATE_SLEEP);
     StdMetrics.ms_v_env_awake->SetValue(false);
-
 }
 
 void OvmsVehicleToyotaETNGA::TransitionToActiveState()
 {
     // Perform actions needed for transitioning to the ACTIVE state
     ESP_LOGI(TAG, "Transitioning to the ACTIVE state");
-    PollSetState(POLLSTATE_ACTIVE);
+    PollSetState(PollState::POLLSTATE_ACTIVE);
     StdMetrics.ms_v_env_awake->SetValue(true);
 }
 
@@ -91,15 +85,13 @@ void OvmsVehicleToyotaETNGA::TransitionToReadyState()
 {
     // Perform actions needed for transitioning to the READY state
     ESP_LOGI(TAG, "Transitioning to the READY state");
-    PollSetState(POLLSTATE_READY); // Update the state
+    PollSetState(PollState::POLLSTATE_READY); // Update the state
     m_v_pos_trip_start->SetStale(true);  // Set the start trip metric as stale so it resets next odometer reading
-
 }
 
 void OvmsVehicleToyotaETNGA::TransitionToChargingState()
 {
     // Perform actions needed for transitioning to the CHARGING state
     ESP_LOGI(TAG, "Transitioning to the CHARGING state");
-    PollSetState(POLLSTATE_CHARGING);
-
+    PollSetState(PollState::POLLSTATE_CHARGING);
 }
