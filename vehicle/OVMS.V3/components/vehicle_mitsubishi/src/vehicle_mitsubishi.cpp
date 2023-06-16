@@ -74,6 +74,8 @@
 ;       - Add DC-DC current as 12v battery current (only on newer cars)
 ;     1.0.17
 ;       - swap xmi.b.power.min/max
+;     1.0.18
+;       - Add RX buffer for polling
 ;
 ;    (C) 2011         Michael Stegen / Stegen Electronics
 ;    (C) 2011-2018    Mark Webb-Johnson
