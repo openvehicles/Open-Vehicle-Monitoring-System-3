@@ -46,17 +46,18 @@ OvmsVehicleToyotaETNGA::OvmsVehicleToyotaETNGA()
 {
     ESP_LOGI(TAG, "Toyota eTNGA platform module");
 
+    // Init metrics
+    InitializeMetrics();
+
     // Init CAN
     RegisterCanBus(2, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
-
-    // Set polling PID list
-    PollSetPidList(m_can2, obdii_polls);
 
     // Set polling state
     PollSetState(static_cast<uint8_t>(PollState::POLLSTATE_SLEEP));
 
-    // Init metrics
-    InitializeMetrics();
+    // Set polling PID list
+    PollSetPidList(m_can2, obdii_polls);
+    PollSetThrottling(0);
 }
 
 OvmsVehicleToyotaETNGA::~OvmsVehicleToyotaETNGA()
