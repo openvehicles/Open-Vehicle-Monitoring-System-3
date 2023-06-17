@@ -143,7 +143,6 @@ OvmsVehicleMitsubishi::OvmsVehicleMitsubishi()
   StandardMetrics.ms_v_charge_inprogress->SetAutoStale(30);    //Set autostale to 30 second
 
   set_odo = false;
-  has_trip = false;
   mi_SC = false;
 
   m_odo_trip = 0;
@@ -931,7 +930,7 @@ void OvmsVehicleMitsubishi::vehicle_mitsubishi_car_on(bool isOn)
        ms_v_trip_park_heating_kwh->SetValue(0);
        ms_v_trip_park_ac_kwh->SetValue(0);
        ms_v_trip_park_time_start->SetValue(StdMetrics.ms_m_timeutc->AsInt());
-       if(has_trip == true && StandardMetrics.ms_v_bat_soc->AsFloat() > 0.0)
+       if(StandardMetrics.ms_v_bat_soc->AsFloat() > 0.0)
          {
           ResetTripOdo();
            //mi_park_trip_counter.Reset(ms_v_trip_B->AsFloat());
