@@ -7,6 +7,6 @@ endif ()
 # requirements can't depend on config
 idf_component_register(SRCS ${srcs}
                        INCLUDE_DIRS src
-                       PRIV_REQUIRES "main"
+                       PRIV_REQUIRES "main" "mongoose"
                        WHOLE_ARCHIVE)
 
