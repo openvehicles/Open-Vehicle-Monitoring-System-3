@@ -75,7 +75,103 @@ void OvmsVehicleMitsubishi::IncomingPollReply(canbus* bus, uint16_t type, uint16
           //max output kW
           ms_v_bat_max_output->SetValue(RXB_BYTE(32) * 0.25);
         }
+
+        /*
+        Battery cell voltage
+        Miev: 88cell voltage, 24 bit blocks 16 bit voltage date, 
+        */ 
         
+        if(pid == 0x02 && !has_broadcast)
+        {
+          BmsRestartCellVoltages();
+          
+          for (int i = 0; i < 16; i+=2) {
+            BmsSetCellVoltage(i/2, (RXB_UINT16(0+i) * 0.001f));
+          }
+
+          int j = 0;
+          for (int i = 24; i < 40; i+=2) {
+              BmsSetCellVoltage(j+8, (RXB_UINT16(0+i) * 0.001f));
+            j++;
+          }
+
+          j = 0;
+          for (int i = 48; i < 64; i+=2) {
+              BmsSetCellVoltage(j+16, (RXB_UINT16(0+i) * 0.001f));
+            j++;
+          }
+
+          j = 0;
+          for (int i = 72; i < 88; i+=2) {
+              BmsSetCellVoltage(j+24, (RXB_UINT16(0+i) * 0.001f));
+            j++;
+          }
+
+          j = 0;
+          for (int i = 96; i < 112; i+=2) {
+              BmsSetCellVoltage(j+32, (RXB_UINT16(0+i) * 0.001f));
+            j++;
+          }
+
+          j = 0;
+          for (int i = 120; i < 128; i+=2) {
+              BmsSetCellVoltage(j+40, (RXB_UINT16(0+i) * 0.001f));
+            j++;
+          }
+
+          j = 0;
+          for (int i = 144; i < 160; i+=2) {
+              BmsSetCellVoltage(j+44, (RXB_UINT16(0+i) * 0.001f));
+          j++;
+          }
+
+          j = 0;
+          for (int i = 168; i < 184; i+=2) {
+              BmsSetCellVoltage(j+52, (RXB_UINT16(0+i) * 0.001f));
+            j++;
+          }
+
+          j = 0;
+          for (int i = 192; i < 208; i+=2) {
+              BmsSetCellVoltage(j+60, (RXB_UINT16(0+i) * 0.001f));
+            j++;
+          }
+
+          j = 0;
+          for (int i = 216; i < 232; i+=2) {
+              BmsSetCellVoltage(j+68, (RXB_UINT16(0+i) * 0.001f));
+            j++;
+          }
+
+          j = 0;
+          for (int i = 240; i < 256; i+=2) {
+              BmsSetCellVoltage(j+76, (RXB_UINT16(0+i) * 0.001f));
+            j++;
+          }
+          j = 0;
+          for (int i = 264; i < 272; i+=2) {
+              BmsSetCellVoltage(j+84, (RXB_UINT16(0+i) * 0.001f));
+            j++;
+          }
+        }
+         
+        /* 
+        Battery cell temperature 
+        72 bit 66 cell temp after first 33 bit (cell temp) 3 fe bit 
+        */
+
+        if(pid == 0x03 && !has_broadcast)
+        {
+          BmsRestartCellTemperatures();
+          for (int i = 0; i < 33; i++) {
+            BmsSetCellTemperature(i, (RXB_BYTE(i) - 50.0));
+            ESP_LOGV(TAGPOLL, " %i cell temp: %0f",i, RXB_BYTE(i) - 50.0f);
+          }
+          for (int i = 36; i < 69; i++) {
+            BmsSetCellTemperature(33+i-36, (RXB_BYTE(i) - 50.0));
+            ESP_LOGV(TAGPOLL, " %i cell temp: %0f",33+i-36, RXB_BYTE(i) - 50.0f);
+          }
+        }
         break;
       }
 
