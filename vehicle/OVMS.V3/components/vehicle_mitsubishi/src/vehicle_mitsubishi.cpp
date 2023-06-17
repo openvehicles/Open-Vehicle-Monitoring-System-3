@@ -78,6 +78,8 @@
 ;       - Add RX buffer for polling
 ;     1.0.19
 ;       - Add Voltage/temp reading to newer cars that not broadcast it
+;     1.0.20
+;       - Add environment temperature, and modify poll timers
 ;
 ;    (C) 2011         Michael Stegen / Stegen Electronics
 ;    (C) 2011-2018    Mark Webb-Johnson
@@ -114,7 +116,7 @@
 #include "ovms_notify.h"
 #include <sys/param.h>
 
-#define VERSION "1.0.15"
+#define VERSION "1.0.20"
 
 static const char *TAG = "v-mitsubishi";
 
@@ -124,10 +126,10 @@ static const char *TAG = "v-mitsubishi";
 static const OvmsVehicle::poll_pid_t vehicle_mitsubishi_polls[] =
   {
     { 0x761, 0x762, VEHICLE_POLL_TYPE_OBDIIGROUP,  0x01, 		{       0,  10,   10 }, 0, ISOTP_STD }, 	// cac
-    { 0x761, 0x762, VEHICLE_POLL_TYPE_OBDIIGROUP,  0x02, 		{       0,  10,   10 }, 0, ISOTP_STD }, 	// cell voltage
-    { 0x761, 0x762, VEHICLE_POLL_TYPE_OBDIIGROUP,  0x03, 		{       0,  10,   10 }, 0, ISOTP_STD }, 	// cell temp
-    { 0x765, 0x766, VEHICLE_POLL_TYPE_OBDIIGROUP,  0x01, 		{       0,  10,    0 }, 0, ISOTP_STD },   // OBC
-    { 0x771, 0x772, VEHICLE_POLL_TYPE_OBDIIGROUP,  0x13, 		{       0,  10,   10 }, 0, ISOTP_STD },   //external/internal temp
+    { 0x761, 0x762, VEHICLE_POLL_TYPE_OBDIIGROUP,  0x02, 		{       0,   1,    1 }, 0, ISOTP_STD }, 	// cell voltage
+    { 0x761, 0x762, VEHICLE_POLL_TYPE_OBDIIGROUP,  0x03, 		{       0,   1,    1 }, 0, ISOTP_STD }, 	// cell temp
+    { 0x765, 0x766, VEHICLE_POLL_TYPE_OBDIIGROUP,  0x01, 		{       0,   1,    0 }, 0, ISOTP_STD },   // OBC
+    { 0x771, 0x772, VEHICLE_POLL_TYPE_OBDIIGROUP,  0x13, 		{       0,   1,    1 }, 0, ISOTP_STD },   //external/internal temp
     { 0x782, 0x783, VEHICLE_POLL_TYPE_OBDIIGROUP,  0xCE, 		{       0,   5,    0 }, 0, ISOTP_STD },   //Trip A/B
     POLL_LIST_END
   };

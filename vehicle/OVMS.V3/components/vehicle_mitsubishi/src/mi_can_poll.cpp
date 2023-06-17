@@ -188,6 +188,8 @@ void OvmsVehicleMitsubishi::IncomingPollReply(canbus* bus, uint16_t type, uint16
         if(pid == 0x13)
         {
           StandardMetrics.ms_v_env_cabintemp->SetValue((RXB_BYTE(2) * 0.25) - 16.0);
+          StandardMetrics.ms_v_env_temp->SetValue((RXB_BYTE(4) * 0.3) - 29.0);
+          ESP_LOGI(TAGPOLL, "IntTempSen: %0f, AmbTempContr: %0f, AmbTempCan: %0f, AirTempSen: %0f, WaterTemp_HVAC: %0f", (RXB_BYTE(2) * 0.25) - 16.0, (RXB_BYTE(3) * 0.5) - 40.0, (RXB_BYTE(4) * 0.3) - 29.0, (RXB_BYTE(5) * 0.25) - 16.0,(RXB_BYTE(6) * 0.6) - 40.0);
         }
 
         break;
