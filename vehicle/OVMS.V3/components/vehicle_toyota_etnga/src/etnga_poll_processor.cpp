@@ -176,59 +176,26 @@ void OvmsVehicleToyotaETNGA::IncomingHPCMHybridPtCtr(uint16_t pid)
     }
 }
 
-int OvmsVehicleToyotaETNGA::RequestVIN()
+void OvmsVehicleToyotaETNGA::RequestVIN()
 {
-    ESP_LOGD(TAG, "RequestVIN: Sending Request");
-
-    if (!StdMetrics.ms_v_env_awake->AsBool()) {
-        ESP_LOGD(TAG, "RequestVIN: Not Awake Request not sent");
-        return -3;
-    }
-
-    std::string response;
+    std::string vin;
     int res = PollSingleRequest(
         m_can2,
-        VEHICLE_OBD_BROADCAST_MODULE_TX,
-        VEHICLE_OBD_BROADCAST_MODULE_RX,
-        VEHICLE_POLL_TYPE_OBDIIVEHICLE,
-        0x02,
-        response,
-        1000
+        HYBRID_CONTROL_SYSTEM_TX,
+        HYBRID_CONTROL_SYSTEM_RX,
+        VEHICLE_POLL_TYPE_READDATA,
+        PID_VIN,
+        vin,
+        1000,
+        ISOTP_STD
     );
 
-    if (res != POLLSINGLE_OK) {
-        switch (res) {
-            case POLLSINGLE_TIMEOUT:
-                ESP_LOGE(TAG, "RequestVIN: Request Timeout");
-                break;
-
-            case POLLSINGLE_TXFAILURE:
-                ESP_LOGE(TAG, "RequestVIN: Request TX Failure");
-                break;
-
-            default:
-                ESP_LOGE(TAG, "RequestVIN: UDC Error %d", res);
-        }
-
-        return res;
-    } else {
-        uint32_t byte;
-        if (!get_uint_buff_be<1>(response, 0, byte)) {
-            ESP_LOGE(TAG, "RequestVIN: Bad Buffer");
-            return POLLSINGLE_TIMEOUT;
-        } else if (byte != 1) {
-            ESP_LOGI(TAG, "RequestVIN: Ignore Response (byte = %u)", byte);
-            return POLLSINGLE_TIMEOUT;
-        } else {
-            std::string vin;
-            if (get_buff_string(response, 1, 17, vin)) {
-                ESP_LOGD(TAG, "RequestVIN: Success: '%s'", vin.c_str());
-                StandardMetrics.ms_v_vin->SetValue(std::move(vin));
-                return POLLSINGLE_OK;
-            } else {
-                ESP_LOGE(TAG, "RequestVIN.String: Bad Buffer");
-                return POLLSINGLE_TIMEOUT;
-            }
-        }
+    if (res == POLLSINGLE_OK)
+    {
+        SetVehicleVIN(vin);
+    }
+    else
+    {
+        ESP_LOGE(TAG, "RequestVIN: Failed with error code %d", res);
     }
 }

@@ -71,6 +71,7 @@ private:
     void SetReadyStatus(bool status);
     void SetShiftPosition(int position);
     void SetVehicleSpeed(float speed);
+    void SetVehicleVIN(std::string vin);
 
     // State transition functions
     void HandleSleepState();
@@ -82,7 +83,7 @@ private:
     void TransitionToReadyState();
     void TransitionToChargingState();
 
-    int RequestVIN();
+    void RequestVIN();
 
     int frameCount = 0, tickerCount = 0, replyCount = 0;  // Keep track of when the car is talking or silent.
 
@@ -112,17 +113,18 @@ enum CANAddress
 // CAN PIDs
 enum CANPID
 {
-    PID_READY_SIGNAL = 0x1076,
-    PID_CHARGING_LID = 0x1625,
-    PID_BATTERY_VOLTAGE_AND_CURRENT = 0x1F9A,
-    PID_ODOMETER = 0xA6,
-    PID_VEHICLE_SPEED = 0x0D,
     PID_AMBIENT_TEMPERATURE = 0x46,
     PID_BATTERY_TEMPERATURES = 0x1814,
-    PID_SHIFT_POSITION = 0x1061,
     PID_BATTERY_SOC = 0x1738,
+    PID_BATTERY_VOLTAGE_AND_CURRENT = 0x1F9A,
+    PID_READY_SIGNAL = 0x1076,
+    PID_CHARGING_LID = 0x1625,
+    PID_ODOMETER = 0xA6,
+    PID_VEHICLE_SPEED = 0x0D,
+    PID_SHIFT_POSITION = 0x1061,
     PID_PISW_STATUS = 0x1669,
-    PID_CHARGING = 0x10D1
+    PID_CHARGING = 0x10D1,
+    PID_VIN = 0xF190
 };
 
 // RX buffer access functions

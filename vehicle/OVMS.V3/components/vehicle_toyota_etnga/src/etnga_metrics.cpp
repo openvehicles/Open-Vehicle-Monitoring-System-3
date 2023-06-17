@@ -245,3 +245,9 @@ void OvmsVehicleToyotaETNGA::SetVehicleSpeed(float speed)
     ESP_LOGV(TAG, "Speed: %f", speed);
     StdMetrics.ms_v_pos_speed->SetValue(speed);
 }
+
+void OvmsVehicleToyotaETNGA::SetVehicleVIN(std::string vin)
+{
+    ESP_LOGV(TAG, "VIN: %s", vin.c_str());
+    StandardMetrics.ms_v_vin->SetValue(std::move(vin));
+}
