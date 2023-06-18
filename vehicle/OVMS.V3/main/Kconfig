@@ -602,6 +602,13 @@ config OVMS_VEHICLE_SUBARU_SOLTERRA
     help
         Enable to include support for Subaru Solterra vehicles.
 
+config OVMS_VEHICLE_TOYOTA_RE
+    bool "Include support for Toyota RE module"
+    default y
+    depends on OVMS
+    help
+        Enable to include support for Toyota RE module.
+
 endmenu # Vehicle Support
 
 menu "Component Options"
