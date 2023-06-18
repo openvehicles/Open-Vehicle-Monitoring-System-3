@@ -452,7 +452,12 @@ void OvmsVehicleMitsubishi::IncomingFrameCan1(CAN_frame_t* p_frame)
 
       case 0x377://freq10 // DC-DC Converter
       {
-        StandardMetrics.ms_v_bat_12v_current->SetValue(((d[2] << 8) + d[3]) * 0.1);
+        if(d[2] != 255 && d[3] != 255 )
+        {
+          StandardMetrics.ms_v_bat_12v_current->SetValue(((d[2] << 8) + d[3]) * 0.1);
+        }else{
+          StandardMetrics.ms_v_bat_12v_current->SetValue(0);
+        }
       break;
       }
 
