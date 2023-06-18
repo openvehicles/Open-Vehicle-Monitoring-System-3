@@ -12,10 +12,10 @@
 #include "vehicle_toyota_etnga.h"
 
 // Poll state descriptions:
-//    POLLSTATE_SLEEP (0)     : Vehicle is sleeping; no activity on the CAN bus. We are listening only.
-//    POLLSTATE_ACTIVE (1)    : Vehicle is alive; activity on CAN bus
-//    POLLSTATE_READY (2)     : Vehicle is "Ready" to drive or being driven
-//    POLLSTATE_CHARGING (3)  : Vehicle is charging
+//    SLEEP (0)     : Vehicle is sleeping; no activity on the CAN bus. We are listening only.
+//    ACTIVE (1)    : Vehicle is alive; activity on CAN bus
+//    READY (2)     : Vehicle is "Ready" to drive or being driven
+//    CHARGING (3)  : Vehicle is charging
 
 // TODO: Do we need a state for remote climate?
 
@@ -53,7 +53,7 @@ OvmsVehicleToyotaETNGA::OvmsVehicleToyotaETNGA()
     RegisterCanBus(2, CAN_MODE_ACTIVE, CAN_SPEED_500KBPS);
 
     // Set polling state
-    PollSetState(static_cast<uint8_t>(PollState::POLLSTATE_SLEEP));
+    PollSetState(static_cast<uint8_t>(PollState::SLEEP));
 
     // Set polling PID list
     PollSetPidList(m_can2, obdii_polls);
@@ -70,19 +70,19 @@ void OvmsVehicleToyotaETNGA::Ticker1(uint32_t ticker)
     ++tickerCount;
 
     switch (static_cast<PollState>(m_poll_state)) {
-        case PollState::POLLSTATE_SLEEP:
+        case PollState::SLEEP:
             HandleSleepState();
             break;
 
-        case PollState::POLLSTATE_ACTIVE:
+        case PollState::ACTIVE:
             HandleActiveState();
             break;
 
-        case PollState::POLLSTATE_READY:
+        case PollState::READY:
             HandleReadyState();
             break;
 
-        case PollState::POLLSTATE_CHARGING:
+        case PollState::CHARGING:
             HandleChargingState();
             break;
 
@@ -101,7 +101,7 @@ void OvmsVehicleToyotaETNGA::Ticker1(uint32_t ticker)
 void OvmsVehicleToyotaETNGA::Ticker60(uint32_t ticker)
 {
     // Request VIN if not already set
-    if (StandardMetrics.ms_v_vin->AsString().empty() && m_poll_state == static_cast<uint8_t>(PollState::POLLSTATE_READY)) {
+    if (StandardMetrics.ms_v_vin->AsString().empty() && m_poll_state == static_cast<uint8_t>(PollState::READY)) {
         RequestVIN();
     }
 }

@@ -14,14 +14,20 @@
 
 void OvmsVehicleToyotaETNGA::InitializeMetrics()
 {
-    m_v_pos_trip_start = MyMetrics.InitFloat("xte.v.p.trip.start", SM_STALE_NONE, 0.0f, Kilometers, false); // This variable will store the odometer reading at the beginning of a trip.
+    m_s_pollstate = MyMetrics.InitInt("xte.s.pollstate", SM_STALE_NONE);  // This variable stores the pollstate
+    m_v_bat_heater_status = MyMetrics.InitBool("xte.v.b.heat", SM_STALE_MID);  // This variable stores the status of the battery coolant heater relay
+    m_v_bat_soc_bms = MyMetrics.InitFloat("xte.v.b.soc.bms", SM_STALE_MID, 0.0f, Percentage, true);  // This variable stores the SOC as reported by the BMS
+    m_v_bat_speed_water_pump = MyMetrics.InitFloat("xte.v.b.speed.waterpump", SM_STALE_MID, 0.0f, Other);  // This variable stores the RPM of the battery water pump
+    m_v_bat_temp_coolant = MyMetrics.InitFloat("xte.v.b.temp.coolant", SM_STALE_MID, 0.0f, Celcius);  // This variable stores the temperature of the battery coolant
+    m_v_bat_temp_heater = MyMetrics.InitFloat("xte.v.b.temp.heater", SM_STALE_MID, 0.0f, Celcius);  // This variable stores the temperature of the battery coolant
+    m_v_pos_trip_start = MyMetrics.InitFloat("xte.v.p.trip.start", SM_STALE_NONE, 0.0f, Kilometers, false);  // This variable stores the odometer reading at the beginning of a trip
 
     // Set initial values for metrics
     SetReadyStatus(false);
 
     // Set poll state transition variables to shorter autostale than default
-    StdMetrics.ms_v_env_on->SetAutoStale(SM_STALE_MIN);
-    StdMetrics.ms_v_door_chargeport->SetAutoStale(SM_STALE_MIN);
+    StandardMetrics.ms_v_env_on->SetAutoStale(SM_STALE_MIN);
+    StandardMetrics.ms_v_door_chargeport->SetAutoStale(SM_STALE_MIN);
 }
 
 // Data calculation functions
@@ -106,30 +112,38 @@ float OvmsVehicleToyotaETNGA::CalculateVehicleSpeed(const std::string& data)
 void OvmsVehicleToyotaETNGA::SetAmbientTemperature(float temperature)
 {
     ESP_LOGV(TAG, "Ambient Temperature: %f", temperature);
-    StdMetrics.ms_v_env_temp->SetValue(temperature);
+    StandardMetrics.ms_v_env_temp->SetValue(temperature);
 }
 
 void OvmsVehicleToyotaETNGA::SetBatteryCurrent(float current)
 {
     ESP_LOGV(TAG, "Current: %f", current);
-    StdMetrics.ms_v_bat_current->SetValue(current);
+    StandardMetrics.ms_v_bat_current->SetValue(current);
 }
 
 void OvmsVehicleToyotaETNGA::SetBatteryPower(float power)
 {
     ESP_LOGV(TAG, "Power: %f", power);
-    StdMetrics.ms_v_bat_power->SetValue(power);
+    StandardMetrics.ms_v_bat_power->SetValue(power);
 }
 
 void OvmsVehicleToyotaETNGA::SetBatterySOC(float soc)
 {
-    ESP_LOGV(TAG, "SOC: %f", soc);
-    StdMetrics.ms_v_bat_soc->SetValue(soc);
+    if (soc == 0.0 && StandardMetrics.ms_v_bat_soc->AsFloat() > 1.0)
+    {
+        // Ignore zero SOC if previousSOC was greater than 1
+        ESP_LOGD(TAG, "Ignoring invalid SOC value: %f", soc);
+    }
+    else
+    {
+        ESP_LOGV(TAG, "SOC: %f", soc);
+        StandardMetrics.ms_v_bat_soc->SetValue(soc);
+    }
 }
 
 void OvmsVehicleToyotaETNGA::SetBatteryTemperatures(const std::vector<float>& temperatures)
 {
-    StdMetrics.ms_v_bat_cell_temp->SetValue(temperatures);
+    StandardMetrics.ms_v_bat_cell_temp->SetValue(temperatures);
 }
 
 void OvmsVehicleToyotaETNGA::SetBatteryTemperatureStatistics(const std::vector<float>& temperatures)
@@ -152,10 +166,10 @@ void OvmsVehicleToyotaETNGA::SetBatteryTemperatureStatistics(const std::vector<f
     float standardDeviation = sqrt(variance / temperatures.size());
 
     // Store the results
-    StdMetrics.ms_v_bat_pack_tmin->SetValue(minTemperature);
-    StdMetrics.ms_v_bat_pack_tmax->SetValue(maxTemperature);
-    StdMetrics.ms_v_bat_pack_tavg->SetValue(averageTemperature);
-    StdMetrics.ms_v_bat_pack_tstddev->SetValue(standardDeviation);
+    StandardMetrics.ms_v_bat_pack_tmin->SetValue(minTemperature);
+    StandardMetrics.ms_v_bat_pack_tmax->SetValue(maxTemperature);
+    StandardMetrics.ms_v_bat_pack_tavg->SetValue(averageTemperature);
+    StandardMetrics.ms_v_bat_pack_tstddev->SetValue(standardDeviation);
 
     // There is no single battery temperature value, so I'm using the min Temperature
     StandardMetrics.ms_v_bat_temp->SetValue(minTemperature);
@@ -164,25 +178,25 @@ void OvmsVehicleToyotaETNGA::SetBatteryTemperatureStatistics(const std::vector<f
 void OvmsVehicleToyotaETNGA::SetBatteryVoltage(float voltage)
 {
     ESP_LOGV(TAG, "Voltage: %f", voltage);
-    StdMetrics.ms_v_bat_voltage->SetValue(voltage);
+    StandardMetrics.ms_v_bat_voltage->SetValue(voltage);
 }
 
 void OvmsVehicleToyotaETNGA::SetChargingDoorStatus(bool status)
 {
     ESP_LOGV(TAG, "Charging Door Status: %s", status ? "Open" : "Closed");
-    StdMetrics.ms_v_door_chargeport->SetValue(status);
+    StandardMetrics.ms_v_door_chargeport->SetValue(status);
 }
 
 void OvmsVehicleToyotaETNGA::SetChargingStatus(bool status)
 {
     ESP_LOGV(TAG, "Charging Status: %s", status ? "Charging" : "Not Charging");
-    StdMetrics.ms_v_charge_inprogress->SetValue(status);
+    StandardMetrics.ms_v_charge_inprogress->SetValue(status);
 }
 
 void OvmsVehicleToyotaETNGA::SetOdometer(float odometer)
 {
     ESP_LOGV(TAG, "Odometer: %f", odometer);
-    StdMetrics.ms_v_pos_odometer->SetValue(odometer);  // Set the odometer metric
+    StandardMetrics.ms_v_pos_odometer->SetValue(odometer);  // Set the odometer metric
 
     if (m_v_pos_trip_start->IsStale())
     {
@@ -193,19 +207,48 @@ void OvmsVehicleToyotaETNGA::SetOdometer(float odometer)
 
     // Update the trip odometer
     float tripOdometer = odometer - m_v_pos_trip_start->AsFloat();
-    StdMetrics.ms_v_pos_trip->SetValue(tripOdometer);
+    StandardMetrics.ms_v_pos_trip->SetValue(tripOdometer);
 }
 
 void OvmsVehicleToyotaETNGA::SetPISWStatus(bool status)
 {
     ESP_LOGV(TAG, "Pilot Status: %s", status ? "Connected" : "Not Connected");
-    StdMetrics.ms_v_charge_pilot->SetValue(status);
+    StandardMetrics.ms_v_charge_pilot->SetValue(status);
+}
+
+void OvmsVehicleToyotaETNGA::SetPollState(int state)
+{
+    const char* pollStateText;
+
+    switch (state) {
+        case PollState::SLEEP:
+            pollStateText = "SLEEP";
+            break;
+        case PollState::ACTIVE:
+            pollStateText = "ACTIVE";
+            break;
+        case PollState::READY:
+            pollStateText = "READY";
+            break;
+        case PollState::CHARGING:
+            pollStateText = "CHARGING";
+            break;
+        default:
+            pollStateText = "UNKNOWN";
+            ESP_LOGW(TAG, "Unknown poll state: %d", state);
+            break;
+    }
+    
+    ESP_LOGI(TAG, "Transitioning to the %s state", pollStateText);
+
+    PollSetState(state);
+    m_s_pollstate->SetValue(state);
 }
 
 void OvmsVehicleToyotaETNGA::SetReadyStatus(bool status)
 {
     ESP_LOGV(TAG, "Ready Status: %s", status ? "Ready" : "Not Ready");
-    StdMetrics.ms_v_env_on->SetValue(status);
+    StandardMetrics.ms_v_env_on->SetValue(status);
 }
 
 void OvmsVehicleToyotaETNGA::SetShiftPosition(int position)
@@ -237,13 +280,13 @@ void OvmsVehicleToyotaETNGA::SetShiftPosition(int position)
     }
 
     ESP_LOGV(TAG, "Gear: %s", shiftPositionText);
-    StdMetrics.ms_v_env_gear->SetValue(gear);
+    StandardMetrics.ms_v_env_gear->SetValue(gear);
 }
 
 void OvmsVehicleToyotaETNGA::SetVehicleSpeed(float speed)
 {
     ESP_LOGV(TAG, "Speed: %f", speed);
-    StdMetrics.ms_v_pos_speed->SetValue(speed);
+    StandardMetrics.ms_v_pos_speed->SetValue(speed);
 }
 
 void OvmsVehicleToyotaETNGA::SetVehicleVIN(std::string vin)

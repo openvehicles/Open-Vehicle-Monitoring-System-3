@@ -12,10 +12,10 @@
 #include "vehicle_toyota_etnga.h"
 
 // Poll state descriptions:
-//    POLLSTATE_SLEEP (0)     : Vehicle is sleeping; no activity on the can bus. We are listening only.
-//    POLLSTATE_ACTIVE (1)    : Vehicle is alive; activity on CAN bus
-//    POLLSTATE_READY (2)     : Vehicle is "Ready" to drive or being driven
-//    POLLSTATE_CHARGING (3)  : Vehicle is charging
+//    SLEEP (0)     : Vehicle is sleeping; no activity on the can bus. We are listening only.
+//    ACTIVE (1)    : Vehicle is alive; activity on CAN bus
+//    READY (2)     : Vehicle is "Ready" to drive or being driven
+//    CHARGING (3)  : Vehicle is charging
 
 void OvmsVehicleToyotaETNGA::HandleSleepState()
 {
@@ -68,30 +68,26 @@ void OvmsVehicleToyotaETNGA::HandleChargingState()
 void OvmsVehicleToyotaETNGA::TransitionToSleepState()
 {
     // Perform actions needed for transitioning to the SLEEP state
-    ESP_LOGI(TAG, "Transitioning to the SLEEP state");
-    PollSetState(PollState::POLLSTATE_SLEEP);
+    SetPollState(PollState::SLEEP);
     StdMetrics.ms_v_env_awake->SetValue(false);
 }
 
 void OvmsVehicleToyotaETNGA::TransitionToActiveState()
 {
     // Perform actions needed for transitioning to the ACTIVE state
-    ESP_LOGI(TAG, "Transitioning to the ACTIVE state");
-    PollSetState(PollState::POLLSTATE_ACTIVE);
+    SetPollState(PollState::ACTIVE);
     StdMetrics.ms_v_env_awake->SetValue(true);
 }
 
 void OvmsVehicleToyotaETNGA::TransitionToReadyState()
 {
     // Perform actions needed for transitioning to the READY state
-    ESP_LOGI(TAG, "Transitioning to the READY state");
-    PollSetState(PollState::POLLSTATE_READY); // Update the state
+    SetPollState(PollState::READY); // Update the state
     m_v_pos_trip_start->SetStale(true);  // Set the start trip metric as stale so it resets next odometer reading
 }
 
 void OvmsVehicleToyotaETNGA::TransitionToChargingState()
 {
     // Perform actions needed for transitioning to the CHARGING state
-    ESP_LOGI(TAG, "Transitioning to the CHARGING state");
-    PollSetState(PollState::POLLSTATE_CHARGING);
+    SetPollState(PollState::CHARGING);
 }

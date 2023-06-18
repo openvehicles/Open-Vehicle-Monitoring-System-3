@@ -28,8 +28,15 @@ public:
 
 protected:
     std::string m_rxbuf;
-    OvmsMetricFloat* m_v_pos_trip_start;
 
+    OvmsMetricInt* m_s_pollstate;
+    OvmsMetricBool* m_v_bat_heater_status;
+    OvmsMetricFloat* m_v_bat_soc_bms;
+    OvmsMetricFloat* m_v_bat_speed_water_pump;
+    OvmsMetricFloat* m_v_bat_temp_coolant;
+    OvmsMetricFloat* m_v_bat_temp_heater;
+    OvmsMetricFloat* m_v_pos_trip_start;
+    
 private:
     static constexpr const char* TAG = "v-toyota-etnga";
 
@@ -68,6 +75,7 @@ private:
     void SetChargingStatus(bool status);
     void SetOdometer(float odometer);
     void SetPISWStatus(bool status);
+    void SetPollState(int state);
     void SetReadyStatus(bool status);
     void SetShiftPosition(int position);
     void SetVehicleSpeed(float speed);
@@ -92,10 +100,10 @@ private:
 // Poll states
 enum PollState
 {
-    POLLSTATE_SLEEP,
-    POLLSTATE_ACTIVE,
-    POLLSTATE_READY,
-    POLLSTATE_CHARGING
+    SLEEP,
+    ACTIVE,
+    READY,
+    CHARGING
 };
 
 // CAN bus addresses
@@ -114,16 +122,21 @@ enum CANAddress
 enum CANPID
 {
     PID_AMBIENT_TEMPERATURE = 0x46,
+    PID_BATTERY_COOLANT_TEMPERATURE = 0x1848,
+    PID_BATTERY_HEATER_STATUS = 0x2806,
+    PID_BATTERY_HEATER_TEMPERATURE = 0x1824,
     PID_BATTERY_TEMPERATURES = 0x1814,
     PID_BATTERY_SOC = 0x1738,
+    PID_BATTERY_SOC_BMS = 0x1F5B,
+    PID_BATTERY_WATER_PUMP_SPEED = 0x110E,
     PID_BATTERY_VOLTAGE_AND_CURRENT = 0x1F9A,
-    PID_READY_SIGNAL = 0x1076,
+    PID_CHARGING = 0x10D1,
     PID_CHARGING_LID = 0x1625,
     PID_ODOMETER = 0xA6,
-    PID_VEHICLE_SPEED = 0x0D,
-    PID_SHIFT_POSITION = 0x1061,
     PID_PISW_STATUS = 0x1669,
-    PID_CHARGING = 0x10D1,
+    PID_READY_SIGNAL = 0x1076,
+    PID_SHIFT_POSITION = 0x1061,
+    PID_VEHICLE_SPEED = 0x0D,
     PID_VIN = 0xF190
 };
 
