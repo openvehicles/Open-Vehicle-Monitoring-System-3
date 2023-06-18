@@ -80,6 +80,7 @@
 ;       - Add Voltage/temp reading to newer cars that not broadcast it
 ;     1.0.20
 ;       - Add environment temperature, and modify poll timers
+;       - 12V current fix
 ;
 ;    (C) 2011         Michael Stegen / Stegen Electronics
 ;    (C) 2011-2018    Mark Webb-Johnson
