@@ -36,25 +36,25 @@ void OvmsVehicleToyotaETNGA::InitializeMetrics()
 void OvmsVehicleToyotaETNGA::ResetStaleMetrics() // Reset stale state transition variables
 {
     // Check to make sure the 'ready' signal has been updated recently
-    if (StandardMetrics.ms_v_env_awake->AsBool() && StandardMetrics.ms_v_env_awake->IsStale()) {
+    if (StandardMetrics.ms_v_env_awake->IsStale() && StandardMetrics.ms_v_env_awake->AsBool()) {
         ESP_LOGD(TAG, "Awake is stale. Manually setting to off");
         SetAwake(false);
     }
 
     // Check to make sure the 'ready' signal has been updated recently
-    if (StandardMetrics.ms_v_env_on->AsBool() && StandardMetrics.ms_v_env_on->IsStale()) {
+    if (StandardMetrics.ms_v_env_on->IsStale() && StandardMetrics.ms_v_env_on->AsBool()) {
         ESP_LOGD(TAG, "Ready is stale. Manually setting to off");
         SetReadyStatus(false);
     }
 
     // Check to make sure the 'charging door' signal has been updated recently
-    if (StandardMetrics.ms_v_door_chargeport->AsBool() && StandardMetrics.ms_v_door_chargeport->IsStale()) {
+    if (StandardMetrics.ms_v_door_chargeport->IsStale() && StandardMetrics.ms_v_door_chargeport->AsBool()) {
         ESP_LOGD(TAG, "Charging Door is stale. Manually setting to off");
         SetChargingDoorStatus(false);
     }
 
     // Check to make sure the 'power' has been updated recently
-    if (StandardMetrics.ms_v_bat_power->IsStale()) {
+    if (StandardMetrics.ms_v_bat_power->IsStale() && StandardMetrics.ms_v_bat_power->AsFloat() == 0) {
         ESP_LOGD(TAG, "Power is stale. Manually setting to zero");
         SetBatteryCurrent(0);
         SetBatteryPower(0);
