@@ -30,14 +30,14 @@ void OvmsVehicleToyotaETNGA::InitializeMetrics()
     // Set poll state transition variables to shorter autostale than default
     // in case their ECUs go to sleep before the 'false' poll
     StandardMetrics.ms_v_env_on->SetAutoStale(SM_STALE_MIN);
-    StandardMetrics.ms_v_door_chargeport->SetAutoStale(SM_STALE_MIN);
+    // StandardMetrics.ms_v_door_chargeport->SetAutoStale(SM_STALE_MIN); // Maybe 120 seconds is OK... The plug-in controller doesn't seem to respond very quickly.
 }
 
 void OvmsVehicleToyotaETNGA::ResetStaleMetrics() // Reset stale state transition variables
 {
     // Check to make sure the 'ready' signal has been updated recently
     if (StandardMetrics.ms_v_env_awake->IsStale() && StandardMetrics.ms_v_env_awake->AsBool()) {
-        ESP_LOGD(TAG, "Awake is stale. Manually setting to off");
+        ESP_LOGD(TAG, "Ready is stale. Manually setting to off");
         SetAwake(false);
     }
 
@@ -223,6 +223,45 @@ void OvmsVehicleToyotaETNGA::SetBatteryVoltage(float voltage)
 {
     ESP_LOGD(TAG, "Voltage: %f", voltage);
     StandardMetrics.ms_v_bat_voltage->SetValue(voltage);
+}
+
+void OvmsVehicleToyotaETNGA::SetChargeMode(int chargeMode)
+{
+
+    std::string chargeModeValue = (chargeMode == 0x00) ? "Standard" : "Performance";
+
+    ESP_LOGD(TAG, "Charge Mode: %s", chargeModeValue.c_str());
+    StandardMetrics.ms_v_charge_mode->SetValue(chargeModeValue);
+}
+
+void OvmsVehicleToyotaETNGA::SetChargeType(int chargeType)
+{
+    std::string chargeTypeValue;
+
+    switch (chargeType)
+    {
+        case 0x00:
+            chargeTypeValue = "ccs";
+            break;
+        case 0x01:
+            chargeTypeValue = "type1";
+            break;
+        case 0x02:
+            chargeTypeValue = "type2";
+            break;
+        default:
+            chargeTypeValue = "unknown";
+            break;
+    }
+    
+    ESP_LOGD(TAG, "Charge Type: %s", chargeTypeValue.c_str());
+    StandardMetrics.ms_v_charge_type->SetValue(chargeTypeValue);
+}
+
+void OvmsVehicleToyotaETNGA::SetChargeState(std::string chargeState)
+{
+    ESP_LOGI(TAG, "Charge State: %s", chargeState.c_str());
+    StandardMetrics.ms_v_charge_state->SetValue(chargeState.c_str());
 }
 
 void OvmsVehicleToyotaETNGA::SetChargingDoorStatus(bool status)

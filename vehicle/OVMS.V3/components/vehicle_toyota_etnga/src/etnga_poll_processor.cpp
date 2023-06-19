@@ -178,24 +178,106 @@ void OvmsVehicleToyotaETNGA::IncomingHPCMHybridPtCtr(uint16_t pid)
 
 void OvmsVehicleToyotaETNGA::RequestVIN()
 {
-    std::string vin;
+    std::string response;
     int res = PollSingleRequest(
         m_can2,
         HYBRID_CONTROL_SYSTEM_TX,
         HYBRID_CONTROL_SYSTEM_RX,
         VEHICLE_POLL_TYPE_READDATA,
         PID_VIN,
-        vin,
+        response,
         1000,
         ISOTP_STD
     );
 
     if (res == POLLSINGLE_OK)
     {
-        SetVehicleVIN(vin);
+        SetVehicleVIN(response);
     }
     else
     {
         ESP_LOGE(TAG, "RequestVIN: Failed with error code %d", res);
+    }
+}
+
+void OvmsVehicleToyotaETNGA::RequestChargeMode()
+{
+    std::string response;
+    int chargeMode;
+    int maxRetries = 5;
+    int retryCount = 0;
+    int res;
+
+    while (retryCount < maxRetries && res != POLLSINGLE_OK)
+    {
+        res = PollSingleRequest(
+            m_can2,
+            PLUG_IN_CONTROL_SYSTEM_TX,
+            PLUG_IN_CONTROL_SYSTEM_RX,
+            VEHICLE_POLL_TYPE_READDATA,
+            PID_CHARGING_CONTROL_STATUS,
+            response,
+            1000,
+            ISOTP_STD
+        );
+
+        if (res == POLLSINGLE_OK)
+        {
+            // Request successful
+            chargeMode = response[0] & 0xFF;
+            SetChargeMode(chargeMode);
+            break;
+        }
+        else
+        {
+            retryCount++;
+            ESP_LOGE(TAG, "RequestChargeMode: Request failed with error code %d. Retrying (%d/%d)", res, retryCount, maxRetries);
+        }
+    }
+
+    if (res != POLLSINGLE_OK)
+    {
+        ESP_LOGE(TAG, "RequestChargeMode: Maximum retries reached. Request failed with error code %d", res);
+    }
+}
+
+void OvmsVehicleToyotaETNGA::RequestChargeType()
+{
+    std::string response;
+    int chargeType;
+    int maxRetries = 5;
+    int retryCount = 0;
+    int res;
+
+    while (retryCount < maxRetries && res != POLLSINGLE_OK)
+    {
+        res = PollSingleRequest(
+            m_can2,
+            PLUG_IN_CONTROL_SYSTEM_TX,
+            PLUG_IN_CONTROL_SYSTEM_RX,
+            VEHICLE_POLL_TYPE_READDATA,
+            PID_CHARGING_VOLTAGE_TYPE,
+            response,
+            1000,
+            ISOTP_STD
+        );
+
+        if (res == POLLSINGLE_OK)
+        {
+            // Request successful
+            chargeType = response[0] & 0xFF;
+            SetChargeType(chargeType);
+            break;
+        }
+        else
+        {
+            retryCount++;
+            ESP_LOGE(TAG, "RequestChargeType: Request failed with error code %d. Retrying (%d/%d)", res, retryCount, maxRetries);
+        }
+    }
+
+    if (res != POLLSINGLE_OK)
+    {
+        ESP_LOGE(TAG, "RequestChargeType: Maximum retries reached. Request failed with error code %d", res);
     }
 }

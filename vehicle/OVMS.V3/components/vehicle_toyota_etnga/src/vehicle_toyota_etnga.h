@@ -40,6 +40,7 @@ protected:
     
 private:
     static constexpr const char* TAG = "v-toyota-etnga";
+    bool isNewChargeSession = false;
 
     void InitializeMetrics();  // Initializes the metrics specific to this vehicle module
     void ResetStaleMetrics();  // Checks if state transition metrics are stale (and resets them)
@@ -74,6 +75,9 @@ private:
     void SetBatteryTemperatures(const std::vector<float>& temperatures);
     void SetBatteryTemperatureStatistics(const std::vector<float>& temperatures);
     void SetBatteryVoltage(float voltage);
+    void SetChargeMode(int chargeMode);
+    void SetChargeType(int chargeType);
+    void SetChargeState(std::string chargeState);
     void SetChargingDoorStatus(bool status);
     void SetChargingStatus(bool status);
     void SetOdometer(float odometer);
@@ -95,6 +99,8 @@ private:
     void TransitionToChargingState();
 
     void RequestVIN();
+    void RequestChargeMode();
+    void RequestChargeType();
     
 };
 
@@ -132,7 +138,9 @@ enum CANPID
     PID_BATTERY_WATER_PUMP_SPEED = 0x110E,
     PID_BATTERY_VOLTAGE_AND_CURRENT = 0x1F9A,
     PID_CHARGING = 0x10D1,
+    PID_CHARGING_CONTROL_STATUS = 0x1668,
     PID_CHARGING_LID = 0x1625,
+    PID_CHARGING_VOLTAGE_TYPE = 0x161C,
     PID_ODOMETER = 0xA6,
     PID_PISW_STATUS = 0x1669,
     PID_READY_SIGNAL = 0x1076,

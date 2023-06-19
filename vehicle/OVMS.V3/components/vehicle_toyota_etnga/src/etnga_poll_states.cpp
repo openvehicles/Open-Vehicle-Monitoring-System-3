@@ -49,9 +49,44 @@ void OvmsVehicleToyotaETNGA::HandleReadyState()
 
 void OvmsVehicleToyotaETNGA::HandleChargingState()
 {
-    if (!StandardMetrics.ms_v_door_chargeport->AsBool()) {
+    std::string chargeState = StandardMetrics.ms_v_charge_state->AsString();
+
+    if (chargeState == "undefined") {
+        if (StandardMetrics.ms_v_charge_pilot->AsBool()) {
+            // A charging cable was connected, update charge state to 'prepare'
+            SetChargeState("prepare");
+        } else if (!StandardMetrics.ms_v_door_chargeport->AsBool()) {
+            // Charge port door was closed or timeout, go back to 'Awake' state
+            TransitionToAwakeState();
+        }
+    } else if (chargeState == "prepare") {
+        if (StandardMetrics.ms_v_charge_inprogress->AsBool()) {
+            // Charging session in progress, update charge state to 'charging'
+            SetChargeState("charging");
+
+            // Get the one-time metrics for charging
+            RequestChargeMode();
+            RequestChargeType();
+        } else if (!StandardMetrics.ms_v_charge_pilot->AsBool()) {
+            // A charging cable was disconnected, update charge state to 'undefined'
+            SetChargeState("undefined");
+        }
+    } else if (chargeState == "charging") {
+        if (!StandardMetrics.ms_v_charge_inprogress->AsBool()) {
+            // Charging session no longer in progress, update charge state to 'done'
+            SetChargeState("done");
+        }
+    } else if (chargeState == "done") {
+        // Charging session was finished.
+        SetChargeState("undefined");
         TransitionToAwakeState();
+    } else {
+        // Not sure how we got here, but go back to the start
+        ESP_LOGW(TAG, "Unexpected charge state: %s", chargeState.c_str());
+        SetChargeState("undefined");
     }
+
+    // TODO: Need to find a 'Charging Done' PID
 }
 
 void OvmsVehicleToyotaETNGA::TransitionToSleepState()
@@ -76,5 +111,7 @@ void OvmsVehicleToyotaETNGA::TransitionToReadyState()
 void OvmsVehicleToyotaETNGA::TransitionToChargingState()
 {
     // Perform actions needed for transitioning to the CHARGING state
+    isNewChargeSession = false; // Reset charge session information
+    SetChargeState("undefined");
     SetPollState(PollState::CHARGING); // Update the state
 }
