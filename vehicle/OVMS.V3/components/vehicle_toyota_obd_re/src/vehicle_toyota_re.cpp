@@ -51,8 +51,8 @@ void OvmsVehicleToyotaRE::IncomingFrameCan2(CAN_frame_t* p_frame)
         return; // Exit the function without processing further
     }
 
-//    ESP_LOGV(TAG, "CAN2 message received: %08" PRIx32 ": [%02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 "]",
-//             p_frame->MsgID, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
+    ESP_LOGD(TAG, "CAN2 message received: %08" PRIx32 ": [%02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 "]",
+             p_frame->MsgID, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
 
     // Handle the specified message to capture 0x1F0D PID
     if (!watchMessage_ && data[0] == 0x10 && data[2] == 0x2c && data[3] == 0x01)
