@@ -79,7 +79,6 @@ void OvmsVehicleToyotaETNGA::HandleChargingState()
     } else if (chargeState == "done") {
         // Charging session was finished.
         SetChargeState("undefined");
-        TransitionToAwakeState();
     } else {
         // Not sure how we got here, but go back to the start
         ESP_LOGW(TAG, "Unexpected charge state: %s", chargeState.c_str());
