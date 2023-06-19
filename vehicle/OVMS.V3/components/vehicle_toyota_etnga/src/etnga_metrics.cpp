@@ -15,7 +15,7 @@
 void OvmsVehicleToyotaETNGA::InitializeMetrics()
 {
     m_s_pollstate = MyMetrics.InitInt("xte.s.pollstate", SM_STALE_NONE);  // This variable stores the pollstate
-    m_v_bat_heater_status = MyMetrics.InitBool("xte.v.b.heat", SM_STALE_MID);  // This variable stores the status of the battery coolant heater relay
+    m_v_bat_heater_status = MyMetrics.InitBool("xte.v.b.heater", SM_STALE_MID);  // This variable stores the status of the battery coolant heater relay
     m_v_bat_soc_bms = MyMetrics.InitFloat("xte.v.b.soc.bms", SM_STALE_MID, 0.0f, Percentage, true);  // This variable stores the SOC as reported by the BMS
     m_v_bat_speed_water_pump = MyMetrics.InitFloat("xte.v.b.speed.waterpump", SM_STALE_MID, 0.0f, Other);  // This variable stores the RPM of the battery water pump
     m_v_bat_temp_coolant = MyMetrics.InitFloat("xte.v.b.temp.coolant", SM_STALE_MID, 0.0f, Celcius);  // This variable stores the temperature of the battery coolant
@@ -23,11 +23,35 @@ void OvmsVehicleToyotaETNGA::InitializeMetrics()
     m_v_pos_trip_start = MyMetrics.InitFloat("xte.v.p.trip.start", SM_STALE_NONE, 0.0f, Kilometers, false);  // This variable stores the odometer reading at the beginning of a trip
 
     // Set initial values for metrics
+    SetAwake(false);
     SetReadyStatus(false);
+    SetChargingDoorStatus(false);
 
     // Set poll state transition variables to shorter autostale than default
+    // in case their ECUs go to sleep before the 'false' poll
     StandardMetrics.ms_v_env_on->SetAutoStale(SM_STALE_MIN);
     StandardMetrics.ms_v_door_chargeport->SetAutoStale(SM_STALE_MIN);
+}
+
+void OvmsVehicleToyotaETNGA::ResetStaleMetrics() // Reset stale state transition variables
+{
+    // Check to make sure the 'ready' signal has been updated recently
+    if (StandardMetrics.ms_v_env_awake->AsBool() && StandardMetrics.ms_v_env_awake->IsStale()) {
+        ESP_LOGD(TAG, "Awake is stale. Manually setting to off");
+        SetAwake(false);
+    }
+
+    // Check to make sure the 'ready' signal has been updated recently
+    if (StandardMetrics.ms_v_env_on->AsBool() && StandardMetrics.ms_v_env_on->IsStale()) {
+        ESP_LOGD(TAG, "Ready is stale. Manually setting to off");
+        SetReadyStatus(false);
+    }
+
+    // Check to make sure the 'charging door' signal has been updated recently
+    if (StandardMetrics.ms_v_door_chargeport->AsBool() && StandardMetrics.ms_v_door_chargeport->IsStale()) {
+        ESP_LOGD(TAG, "Charging Door is stale. Manually setting to off");
+        SetChargingDoorStatus(false);
+    }
 }
 
 // Data calculation functions
@@ -115,6 +139,11 @@ void OvmsVehicleToyotaETNGA::SetAmbientTemperature(float temperature)
     StandardMetrics.ms_v_env_temp->SetValue(temperature);
 }
 
+void OvmsVehicleToyotaETNGA::SetAwake(bool awake)
+{
+    StandardMetrics.ms_v_env_awake->SetValue(awake);
+}
+
 void OvmsVehicleToyotaETNGA::SetBatteryCurrent(float current)
 {
     ESP_LOGV(TAG, "Current: %f", current);
@@ -177,25 +206,25 @@ void OvmsVehicleToyotaETNGA::SetBatteryTemperatureStatistics(const std::vector<f
 
 void OvmsVehicleToyotaETNGA::SetBatteryVoltage(float voltage)
 {
-    ESP_LOGV(TAG, "Voltage: %f", voltage);
+    ESP_LOGD(TAG, "Voltage: %f", voltage);
     StandardMetrics.ms_v_bat_voltage->SetValue(voltage);
 }
 
 void OvmsVehicleToyotaETNGA::SetChargingDoorStatus(bool status)
 {
-    ESP_LOGV(TAG, "Charging Door Status: %s", status ? "Open" : "Closed");
+    ESP_LOGD(TAG, "Charging Door Status: %s", status ? "Open" : "Closed");
     StandardMetrics.ms_v_door_chargeport->SetValue(status);
 }
 
 void OvmsVehicleToyotaETNGA::SetChargingStatus(bool status)
 {
-    ESP_LOGV(TAG, "Charging Status: %s", status ? "Charging" : "Not Charging");
+    ESP_LOGD(TAG, "Charging Status: %s", status ? "Charging" : "Not Charging");
     StandardMetrics.ms_v_charge_inprogress->SetValue(status);
 }
 
 void OvmsVehicleToyotaETNGA::SetOdometer(float odometer)
 {
-    ESP_LOGV(TAG, "Odometer: %f", odometer);
+    ESP_LOGD(TAG, "Odometer: %f", odometer);
     StandardMetrics.ms_v_pos_odometer->SetValue(odometer);  // Set the odometer metric
 
     if (m_v_pos_trip_start->IsStale())
@@ -212,34 +241,16 @@ void OvmsVehicleToyotaETNGA::SetOdometer(float odometer)
 
 void OvmsVehicleToyotaETNGA::SetPISWStatus(bool status)
 {
-    ESP_LOGV(TAG, "Pilot Status: %s", status ? "Connected" : "Not Connected");
+    ESP_LOGD(TAG, "Pilot Status: %s", status ? "Connected" : "Not Connected");
     StandardMetrics.ms_v_charge_pilot->SetValue(status);
 }
 
 void OvmsVehicleToyotaETNGA::SetPollState(int state)
 {
-    const char* pollStateText;
-
-    switch (state) {
-        case PollState::SLEEP:
-            pollStateText = "SLEEP";
-            break;
-        case PollState::ACTIVE:
-            pollStateText = "ACTIVE";
-            break;
-        case PollState::READY:
-            pollStateText = "READY";
-            break;
-        case PollState::CHARGING:
-            pollStateText = "CHARGING";
-            break;
-        default:
-            pollStateText = "UNKNOWN";
-            ESP_LOGW(TAG, "Unknown poll state: %d", state);
-            break;
-    }
+    const char* CurrentPollStateText = ConvertPollStateToString(m_s_pollstate->AsInt());
+    const char* NextPollStateText = ConvertPollStateToString(state);
     
-    ESP_LOGI(TAG, "Transitioning to the %s state", pollStateText);
+    ESP_LOGI(TAG, "Transitioning from the %s to the %s state", CurrentPollStateText, NextPollStateText);
 
     PollSetState(state);
     m_s_pollstate->SetValue(state);
@@ -247,7 +258,7 @@ void OvmsVehicleToyotaETNGA::SetPollState(int state)
 
 void OvmsVehicleToyotaETNGA::SetReadyStatus(bool status)
 {
-    ESP_LOGV(TAG, "Ready Status: %s", status ? "Ready" : "Not Ready");
+    ESP_LOGD(TAG, "Ready Status: %s", status ? "Ready" : "Not Ready");
     StandardMetrics.ms_v_env_on->SetValue(status);
 }
 
@@ -279,18 +290,18 @@ void OvmsVehicleToyotaETNGA::SetShiftPosition(int position)
             break;
     }
 
-    ESP_LOGV(TAG, "Gear: %s", shiftPositionText);
+    ESP_LOGD(TAG, "Gear: %s", shiftPositionText);
     StandardMetrics.ms_v_env_gear->SetValue(gear);
 }
 
 void OvmsVehicleToyotaETNGA::SetVehicleSpeed(float speed)
 {
-    ESP_LOGV(TAG, "Speed: %f", speed);
+    ESP_LOGD(TAG, "Speed: %f", speed);
     StandardMetrics.ms_v_pos_speed->SetValue(speed);
 }
 
 void OvmsVehicleToyotaETNGA::SetVehicleVIN(std::string vin)
 {
-    ESP_LOGV(TAG, "VIN: %s", vin.c_str());
+    ESP_LOGD(TAG, "VIN: %s", vin.c_str());
     StandardMetrics.ms_v_vin->SetValue(std::move(vin));
 }

@@ -16,11 +16,14 @@
 
 void OvmsVehicleToyotaETNGA::IncomingFrameCan2(CAN_frame_t* p_frame)
 {
-    // Count the arriving frames. The ticker uses this to see if CAN traffic is arriving
-    ++frameCount;
-
     uint8_t* data = p_frame->data.u8;
 
     ESP_LOGV(TAG, "CAN2 message received: %08" PRIx32 ": [%02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 " %02" PRIx8 "]",
              p_frame->MsgID, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
+
+    // Check if the message is the awake message
+    if (p_frame->MsgID == 0x000004e0)
+    {
+        SetAwake(true);
+    }
 }

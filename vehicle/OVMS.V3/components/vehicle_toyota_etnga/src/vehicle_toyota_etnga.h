@@ -11,6 +11,7 @@
 #ifndef __VEHICLE_TOYOTA_ETNGA_H__
 #define __VEHICLE_TOYOTA_ETNGA_H__
 
+#include <string>
 #include "vehicle.h"
 
 class OvmsVehicleToyotaETNGA : public OvmsVehicle
@@ -41,6 +42,7 @@ private:
     static constexpr const char* TAG = "v-toyota-etnga";
 
     void InitializeMetrics();  // Initializes the metrics specific to this vehicle module
+    void ResetStaleMetrics();  // Checks if state transition metrics are stale (and resets them)
 
     // Incoming message handling functions
     void IncomingHPCMHybridPtCtr(uint16_t pid);
@@ -65,6 +67,7 @@ private:
 
     // Metric setter functions
     void SetAmbientTemperature(float temperature);
+    void SetAwake(bool awake);
     void SetBatteryCurrent(float current);
     void SetBatteryPower(float power);
     void SetBatterySOC(float soc);
@@ -83,25 +86,23 @@ private:
 
     // State transition functions
     void HandleSleepState();
-    void HandleActiveState();
+    void HandleAwakeState();
     void HandleReadyState();
     void HandleChargingState();
     void TransitionToSleepState();
-    void TransitionToActiveState();
+    void TransitionToAwakeState();
     void TransitionToReadyState();
     void TransitionToChargingState();
 
     void RequestVIN();
-
-    int frameCount = 0, tickerCount = 0, replyCount = 0;  // Keep track of when the car is talking or silent.
-
+    
 };
 
 // Poll states
 enum PollState
 {
     SLEEP,
-    ACTIVE,
+    AWAKE,
     READY,
     CHARGING
 };
@@ -186,6 +187,30 @@ inline bool GetRxBBit(const std::string& rxbuf, size_t byteIndex, size_t bitInde
 {
     uint8_t byte = GetRxBByte(rxbuf, byteIndex);
     return (byte & (1 << bitIndex)) != 0;
+}
+
+inline const char* ConvertPollStateToString(int state) {
+    const char* pollStateText;
+
+    switch (state) {
+        case (PollState::SLEEP):
+            pollStateText = "SLEEP";
+            break;
+        case (PollState::AWAKE):
+            pollStateText = "AWAKE";
+            break;
+        case (PollState::READY):
+            pollStateText = "READY";
+            break;
+        case (PollState::CHARGING):
+            pollStateText = "CHARGING";
+            break;
+        default:
+            pollStateText = "UNKNOWN";
+            break;
+    }
+
+    return pollStateText;
 }
 
 #endif // __VEHICLE_TOYOTA_ETNGA_H__

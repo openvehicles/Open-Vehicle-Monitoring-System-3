@@ -12,71 +12,58 @@
 #include "vehicle_toyota_etnga.h"
 
 // Poll state descriptions:
-//    SLEEP (0)     : Vehicle is sleeping; no activity on the can bus. We are listening only.
-//    ACTIVE (1)    : Vehicle is alive; activity on CAN bus
-//    READY (2)     : Vehicle is "Ready" to drive or being driven
-//    CHARGING (3)  : Vehicle is charging
+//    SLEEP (0)             : Vehicle is sleeping; no activity on the CAN bus. We are listening only.
+//    AWAKE (1)             : Vehicle is alive; vehicle has been switched on by driver
+//    READY (2)             : Vehicle is "Ready" to drive or being driven
+//    CHARGING (3)          : Vehicle is charging
 
 void OvmsVehicleToyotaETNGA::HandleSleepState()
 {
-    if (frameCount > 0) {
+    if (StandardMetrics.ms_v_env_awake->AsBool()) {
         // There is life.
-        TransitionToActiveState();
+        TransitionToAwakeState();
     }
 
-    // TODO: Need to add a battery voltage check as well
+    // TODO:    Need to add a battery voltage check as well
+    //          If the vehicle is awake but the CAN bus is 'stuck'
 }
 
-void OvmsVehicleToyotaETNGA::HandleActiveState()
+void OvmsVehicleToyotaETNGA::HandleAwakeState()
 {
-    if (frameCount == 0 && tickerCount > 3) {
-        // No CAN communication for three ticks - stop polling
+    if (!StandardMetrics.ms_v_env_awake->AsBool()) {
+        // No CAN communication for 120s - stop polling
         TransitionToSleepState();
-    } else if (StdMetrics.ms_v_env_on->AsBool()) {
+    } else if (StandardMetrics.ms_v_env_on->AsBool()) {
         TransitionToReadyState();
-    } else if (StdMetrics.ms_v_door_chargeport->AsBool()) {
+    } else if (StandardMetrics.ms_v_door_chargeport->AsBool()) {
         TransitionToChargingState();
     }
 }
 
 void OvmsVehicleToyotaETNGA::HandleReadyState()
 {
-    // Check to make sure the 'on' signal has been updated recently
-    if (StdMetrics.ms_v_env_on->IsStale()) {
-        ESP_LOGD(TAG, "Ready is stale. Manually setting to off");
-        SetReadyStatus(false);
-    }
-
-    if (!StdMetrics.ms_v_env_on->AsBool()) {
-        TransitionToActiveState();
+    if (!StandardMetrics.ms_v_env_on->AsBool()) {
+        TransitionToAwakeState();
     }
 }
 
 void OvmsVehicleToyotaETNGA::HandleChargingState()
 {
-    // Check to make sure the 'charging door' signal has been updated recently
-    if (StdMetrics.ms_v_door_chargeport->IsStale()) {
-        ESP_LOGD(TAG, "Charging Door is stale. Manually setting to off");
-        SetChargingDoorStatus(false);
-    }
-
-    if (!StdMetrics.ms_v_door_chargeport->AsBool()) {
-        TransitionToActiveState();
+    if (!StandardMetrics.ms_v_door_chargeport->AsBool()) {
+        TransitionToAwakeState();
     }
 }
 
 void OvmsVehicleToyotaETNGA::TransitionToSleepState()
 {
     // Perform actions needed for transitioning to the SLEEP state
-    SetPollState(PollState::SLEEP);
-    StdMetrics.ms_v_env_awake->SetValue(false);
+    SetPollState(PollState::SLEEP); // Update the state
 }
 
-void OvmsVehicleToyotaETNGA::TransitionToActiveState()
+void OvmsVehicleToyotaETNGA::TransitionToAwakeState()
 {
     // Perform actions needed for transitioning to the ACTIVE state
-    SetPollState(PollState::ACTIVE);
-    StdMetrics.ms_v_env_awake->SetValue(true);
+    SetPollState(PollState::AWAKE);
 }
 
 void OvmsVehicleToyotaETNGA::TransitionToReadyState()
@@ -89,5 +76,5 @@ void OvmsVehicleToyotaETNGA::TransitionToReadyState()
 void OvmsVehicleToyotaETNGA::TransitionToChargingState()
 {
     // Perform actions needed for transitioning to the CHARGING state
-    SetPollState(PollState::CHARGING);
+    SetPollState(PollState::CHARGING); // Update the state
 }
