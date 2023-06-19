@@ -23,7 +23,7 @@ static const OvmsVehicle::poll_pid_t obdii_polls[] = {
   { PLUG_IN_CONTROL_SYSTEM_TX, PLUG_IN_CONTROL_SYSTEM_RX, VEHICLE_POLL_TYPE_READDATA, PID_CHARGING_LID, { 0, 1, 10, 1}, 0, ISOTP_STD }, // { 0, 5, 60, 1}
 
     // Driving polls
-  { HYBRID_CONTROL_SYSTEM_TX, HYBRID_CONTROL_SYSTEM_RX, VEHICLE_POLL_TYPE_READDATA, PID_BATTERY_VOLTAGE_AND_CURRENT, { 0, 60, 1, 1}, 0, ISOTP_STD }, // { 0, 0, 1, 1}
+  { HYBRID_CONTROL_SYSTEM_TX, HYBRID_CONTROL_SYSTEM_RX, VEHICLE_POLL_TYPE_READDATA, PID_BATTERY_VOLTAGE_AND_CURRENT, { 0, 1, 1, 1}, 0, ISOTP_STD }, // { 0, 0, 1, 1}
   { VEHICLE_OBD_BROADCAST_MODULE_TX, HPCM_HYBRIDPTCTR_RX, VEHICLE_POLL_TYPE_OBDIICURRENT, PID_ODOMETER, { 0, 60, 1, 60}, 0, ISOTP_STD }, // {0, 120, 1, 0}
   { VEHICLE_OBD_BROADCAST_MODULE_TX, HPCM_HYBRIDPTCTR_RX, VEHICLE_POLL_TYPE_OBDIICURRENT, PID_VEHICLE_SPEED, { 0, 60, 1, 60}, 0, ISOTP_STD }, // { 0, 10, 1, 0}
   { VEHICLE_OBD_BROADCAST_MODULE_TX, HPCM_HYBRIDPTCTR_RX, VEHICLE_POLL_TYPE_OBDIICURRENT, PID_AMBIENT_TEMPERATURE, { 0, 60, 15, 15}, 0, ISOTP_STD }, // { 0, 120, 15, 15}
@@ -93,7 +93,7 @@ void OvmsVehicleToyotaETNGA::Ticker1(uint32_t ticker)
 void OvmsVehicleToyotaETNGA::Ticker60(uint32_t ticker)
 {
     // Request VIN if not already set
-    if (StandardMetrics.ms_v_vin->AsString().empty() && m_poll_state == static_cast<uint8_t>(PollState::READY)) {
+if (StandardMetrics.ms_v_vin->AsString().empty() && (m_poll_state == PollState::AWAKE || m_poll_state == PollState::READY)) {
         RequestVIN();
     }
 }
