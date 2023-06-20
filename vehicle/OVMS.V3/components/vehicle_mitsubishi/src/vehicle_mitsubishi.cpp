@@ -876,14 +876,19 @@ void OvmsVehicleMitsubishi::Ticker1(uint32_t ticker)
       }
 
       //Charge efficiency calculation AC/DC
-      if ((v_c_power_dc->AsInt() <= 0) || (StdMetrics.ms_v_charge_power->AsInt() <= 0))
+      /*if ((v_c_power_dc->AsInt() <= 0) || (StdMetrics.ms_v_charge_power->AsInt() <= 0))
       {
         StdMetrics.ms_v_charge_efficiency->SetValue(0,Percentage);
       }
       else
       {
         StdMetrics.ms_v_charge_efficiency->SetValue((v_c_power_dc->AsFloat() / StdMetrics.ms_v_charge_power->AsFloat()) * 100, Percentage);
+      }*/
+      if(ms_v_charge_ac_kwh->AsInt() > 0)
+      {
+        StdMetrics.ms_v_charge_efficiency->SetValue((ms_v_charge_dc_kwh->AsFloat() / ms_v_charge_ac_kwh->AsFloat()) * 100,Percentage);
       }
+      
   } //Car in P "if" close
 
   // Update trip data
