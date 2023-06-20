@@ -81,6 +81,8 @@
 ;     1.0.20
 ;       - Add environment temperature, and modify poll timers
 ;       - 12V current fix
+;     1.0.21
+;       - fix efficiency calculation
 ;
 ;    (C) 2011         Michael Stegen / Stegen Electronics
 ;    (C) 2011-2018    Mark Webb-Johnson
@@ -117,7 +119,7 @@
 #include "ovms_notify.h"
 #include <sys/param.h>
 
-#define VERSION "1.0.20"
+#define VERSION "1.0.21"
 
 static const char *TAG = "v-mitsubishi";
 
