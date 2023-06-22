@@ -200,6 +200,7 @@ void OvmsVehicleMgEv::IncomingPollReply(canbus* bus, const OvmsPoller::poll_stat
     switch (m_poll_moduleid_low)
     {
         case (bmsId | rxFlag):
+        case (bmsMk2Id | rxFlag):
             IncomingBmsPoll(state.pid, data, length, state.mlremain);
             break;
         case (dcdcId | rxFlag):

@@ -51,6 +51,32 @@ constexpr uint16_t DIAG_ATTEMPTS = 3u;
 //Variant a specific polls
 const OvmsPoller::poll_pid_t obdii_polls_a[] =
 {
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmsStatusPid, {  0, 5, 5, 0  }, 0, ISOTP_STD },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, batteryBusVoltagePid, {  0, 5, 30, 0  }, 0, ISOTP_STD },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, batteryCurrentPid, {  0, 5, 30, 0  }, 0, ISOTP_STD },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, batteryVoltagePid, {  0, 5, 30, 0  }, 0, ISOTP_STD },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, batteryResistancePid, {  0, 30, 30, 0  }, 0, ISOTP_STD },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, batterySoCPid, {  0, 30, 30, 60  }, 0, ISOTP_STD },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, batteryCoolantTempPid, {  0, 30, 30, 0  }, 0, ISOTP_STD },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, batterySoHPid, {  0, 120, 120, 0  }, 0, ISOTP_STD },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, batteryTempPid, {  0, 30, 30, 0  }, 0, ISOTP_STD },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, batteryErrorPid, {  0, 30, 30, 0  }, 0, ISOTP_STD },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmsRangePid, {  0, 30, 30, 0  }, 0, ISOTP_STD },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, cell1StatPid, {  0, 30, 30, 0  }, 0, ISOTP_STD },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, cell2StatPid, {  0, 30, 30, 0  }, 0, ISOTP_STD },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, cell3StatPid, {  0, 30, 30, 0  }, 0, ISOTP_STD },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, cell4StatPid, {  0, 30, 30, 0  }, 0, ISOTP_STD },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, cell5StatPid, {  0, 30, 30, 0  }, 0, ISOTP_STD },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, cell6StatPid, {  0, 30, 30, 0  }, 0, ISOTP_STD },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, cell7StatPid, {  0, 30, 30, 0  }, 0, ISOTP_STD },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, cell8StatPid, {  0, 30, 30, 0  }, 0, ISOTP_STD },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, cell9StatPid, {  0, 30, 30, 0  }, 0, ISOTP_STD },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmsMaxCellVoltagePid, {  0, 30, 30, 0  }, 0, ISOTP_STD },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmsMinCellVoltagePid, {  0, 30, 30, 0  }, 0, ISOTP_STD },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmsTimePid, {  0, 60, 60, 0  }, 0, ISOTP_STD },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmsSystemMainRelayBPid, {  0, 30, 30, 0  }, 0, ISOTP_STD },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmsSystemMainRelayGPid, {  0, 30, 30, 0  }, 0, ISOTP_STD },
+    { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmsSystemMainRelayPPid, {  0, 30, 30, 0  }, 0, ISOTP_STD },
     { pepsId, pepsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, pepsLockPid, {  0, 5, 5, 0  }, 0, ISOTP_STD },
     { vcuId, vcuId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, vcuBonnetPid, {  0, 0, 5, 0  }, 0, ISOTP_STD }
 };
@@ -76,6 +102,14 @@ OvmsVehicleMgEvA::OvmsVehicleMgEvA()
     m_preZombieOverrideTicker = 0u;
     carIsResponsiveToQueries = true;
 
+    // Set Max Range to WLTP Range
+    StandardMetrics.ms_v_bat_range_full->SetValue(WLTP_RANGE);
+    
+    MyConfig.SetParamValueFloat("xmg","bms.dod.lower", BMSDoDLowerLimit);
+    MyConfig.SetParamValueFloat("xmg","bms.dod.upper", BMSDoDUpperLimit);
+    m_batt_capacity->SetValue(BATT_CAPACITY);
+    m_max_dc_charge_rate->SetValue(MAX_CHARGE_RATE);
+
     //Add variant specific poll data
     ConfigurePollData(obdii_polls_a, sizeof(obdii_polls_a));
     
@@ -87,12 +121,18 @@ OvmsVehicleMgEvA::OvmsVehicleMgEvA()
     BmsSetCellDefaultThresholdsVoltage(0.020, 0.030);
     BmsSetCellDefaultThresholdsTemperature(2.0, 3.0);
 
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
+    FeaturesWebInit();
+#endif
 }
 
 //Called by OVMS when vehicle type is changed from current
 OvmsVehicleMgEvA::~OvmsVehicleMgEvA()
 {
     ESP_LOGI(TAG, "Shutdown MG EV variant A");
+#ifdef CONFIG_OVMS_COMP_WEBSERVER
+    FeaturesWebDeInit();
+#endif
 }
 
 // This is the only place we evaluate the vehicle state to change the action of OVMS
@@ -419,7 +459,7 @@ class OvmsVehicleMgEvAInit
 
 OvmsVehicleMgEvAInit::OvmsVehicleMgEvAInit()
 {
-    ESP_LOGI(TAG, "Registering Vehicle: MG EV (UK/EU) (9000)");
+    ESP_LOGI(TAG, "Registering Vehicle: MG JS EV (UK/EU) (9000)");
 
-    MyVehicleFactory.RegisterVehicle<OvmsVehicleMgEvA>("MGA", "MG EV (UK/EU)");
+    MyVehicleFactory.RegisterVehicle<OvmsVehicleMgEvA>("MGA", "MG ZS EV (UK/EU)");
 }

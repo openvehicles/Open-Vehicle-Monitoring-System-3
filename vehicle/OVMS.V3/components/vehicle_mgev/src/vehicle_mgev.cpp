@@ -39,6 +39,7 @@ namespace {
 
 const OvmsPoller::poll_pid_t common_obdii_polls[] =
 {
+    /*
     { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmsStatusPid, {  0, 5, 5, 0  }, 0, ISOTP_STD },
     { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, batteryBusVoltagePid, {  0, 5, 30, 0  }, 0, ISOTP_STD },
     { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, batteryCurrentPid, {  0, 5, 30, 0  }, 0, ISOTP_STD },
@@ -65,6 +66,7 @@ const OvmsPoller::poll_pid_t common_obdii_polls[] =
     { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmsSystemMainRelayBPid, {  0, 30, 30, 0  }, 0, ISOTP_STD },
     { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmsSystemMainRelayGPid, {  0, 30, 30, 0  }, 0, ISOTP_STD },
     { bmsId, bmsId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, bmsSystemMainRelayPPid, {  0, 30, 30, 0  }, 0, ISOTP_STD },
+     */
     // { dcdcId, dcdcId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, dcdcLvCurrentPid, {  0, 30, 30, 0  }, 0, ISOTP_STD }, //Unknown mapping for now
     { dcdcId, dcdcId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, dcdcPowerLoadPid, {  0, 30, 30, 0  }, 0, ISOTP_STD },
     { dcdcId, dcdcId | rxFlag, VEHICLE_POLL_TYPE_OBDIIEXTENDED, dcdcTemperaturePid, {  0, 30, 30, 0  }, 0, ISOTP_STD },
@@ -141,7 +143,7 @@ OvmsVehicleMgEv::OvmsVehicleMgEv()
     mg_cum_energy_charge_wh = 0;
     
     // Set Max Range to WLTP Range
-    StandardMetrics.ms_v_bat_range_full->SetValue(WLTP_RANGE);
+    //StandardMetrics.ms_v_bat_range_full->SetValue(WLTP_RANGE);
     
     memset(m_vin, 0, sizeof(m_vin));
     
@@ -178,11 +180,12 @@ OvmsVehicleMgEv::OvmsVehicleMgEv()
     m_bcm_auth = MyMetrics.InitBool("xmg.auth.bcm", SM_STALE_MAX, false);
     m_gwm_task = MyMetrics.InitInt("xmg.task.gwm", SM_STALE_MAX, static_cast<int>(GWMTasks::None));
     m_bcm_task = MyMetrics.InitInt("xmg.task.bcm", SM_STALE_MAX, static_cast<int>(BCMTasks::None));
-    
-    //m_trip_start = MyMetrics.InitFloat("xmg.p.trip.start", SM_STALE_MAX, SM_STALE_MAX);
+    m_enable_polling = MyMetrics.InitBool("xmg.enable.polling", SM_STALE_MAX, false);
     m_trip_consumption = MyMetrics.InitFloat("xmg.p.trip.consumption", SM_STALE_MID, 165.0, WattHoursPK);
     m_avg_consumption = MyMetrics.InitFloat("xmg.p.avg.consumption", SM_STALE_MID, 165.0, WattHoursPK);
-    
+    m_batt_capacity = MyMetrics.InitFloat("xmg.b.capacity", SM_STALE_MID, 42.5, kWh);
+    m_max_dc_charge_rate = MyMetrics.InitFloat("xmg.c.max.dc.charge", SM_STALE_MID, 82.0, kW);
+
     DRLFirstFrameSentCallback = std::bind(&OvmsVehicleMgEv::DRLFirstFrameSent, this, std::placeholders::_1, std::placeholders::_2);
     
     // Register config params
@@ -191,10 +194,8 @@ OvmsVehicleMgEv::OvmsVehicleMgEv()
     // ConfigChanged(nullptr); //Now called in ConfigurePollData(). Call ConfigurePollData() in variant specific code.
     
     // Register shell commands
-    m_cmdSoftver = MyCommandApp.RegisterCommand("softver", "MG EV Software", PickOvmsCommandExecuteCallback(OvmsVehicleMgEv::SoftwareVersions));
-    m_cmdAuth = MyCommandApp.RegisterCommand("auth", "Authenticate with ECUs", AuthenticateECUShell, "<ECU>\nall\tAll ECUs\ngwm\tGWM only\nbcm\tBCM only", 1, 1);
-    m_cmdDRL = MyCommandApp.RegisterCommand("drl", "Daytime running light control", DRLCommandWithAuthShell, "<command>\non\tTurn on\noff\tTurn off", 1, 1);
-    m_cmdDRLNoAuth = MyCommandApp.RegisterCommand("drln", "Daytime running light control (no BCM authentication)", DRLCommandShell, "<command>\non\tTurn on\noff\tTurn off", 1, 1);
+    cmd_xmg = MyCommandApp.RegisterCommand("xmg", "MG EV");
+    cmd_xmg->RegisterCommand("softver", "MG EV Software", PickOvmsCommandExecuteCallback(OvmsVehicleMgEv::SoftwareVersions));
 #ifdef CONFIG_OVMS_COMP_WEBSERVER
     WebInit();
 #endif
@@ -216,6 +217,11 @@ OvmsVehicleMgEv::~OvmsVehicleMgEv()
         free(m_pollData);
     }
     
+    if (cmd_xmg)
+    {
+        MyCommandApp.UnregisterCommand(cmd_xmg->GetName());
+    }
+/*
     if (m_cmdSoftver)
     {
         MyCommandApp.UnregisterCommand(m_cmdSoftver->GetName());
@@ -232,6 +238,7 @@ OvmsVehicleMgEv::~OvmsVehicleMgEv()
     {
         MyCommandApp.UnregisterCommand(m_cmdDRLNoAuth->GetName());
     }
+ */
     // MyConfig.DeregisterParam("xmg"); //Seem to sometimes cause OVMS to factory reset
 }
 
@@ -280,6 +287,33 @@ void OvmsVehicleMgEv::ConfigurePollData(const OvmsPoller::poll_pid_t *SpecificPo
     // Re-start CAN bus, setting up the PID list
     ConfigurePollInterface(CanInterface());
     
+}
+
+//Call this function in variant specific code to setup poll data
+void OvmsVehicleMgEv::ConfigureMG5PollData(const OvmsPoller::poll_pid_t *SpecificPollData, size_t DataSize)
+{
+    if (m_pollData)
+    {
+        PollSetPidList(nullptr, nullptr);
+        free(m_pollData);
+        m_pollData = nullptr;
+    }
+    
+    //Allocate memory for m_pollData which should be enough for both the common_obdii_polls and SpecificPollData
+    size_t size = DataSize;
+    ESP_LOGI(TAG, "Number of Number of variant specific polls: %u, total size: %u", DataSize/sizeof(SpecificPollData[0]), DataSize);
+    m_pollData = reinterpret_cast<OvmsPoller::poll_pid_t*>(ExternalRamMalloc(size));
+    if (m_pollData == nullptr)
+    {
+        ESP_LOGE(TAG, "Unable to allocate memory for polling");
+        return;
+    }
+    
+    auto ptr = m_pollData;
+    ptr = std::copy(SpecificPollData, &SpecificPollData[DataSize / sizeof(SpecificPollData[0])], ptr);
+    
+    // Re-start CAN bus, setting up the PID list
+    ConfigurePollInterface(CanInterface());
 }
 
 void OvmsVehicleMgEv::ConfigurePollData()
@@ -361,7 +395,7 @@ void OvmsVehicleMgEv::processEnergy()
                  + StandardMetrics.ms_v_bat_coulomb_recd->AsFloat());
                 
                 // Set average consumption over 5 trips
-                m_avg_consumption->SetValue((m_avg_consumption->AsFloat() * 4.0 + m_trip_consumption->AsFloat()) / 5.0);
+                m_avg_consumption->SetValue((m_avg_consumption->AsFloat() * 4.0f + m_trip_consumption->AsFloat()) / 5.0f);
             }
         }
     }
@@ -369,8 +403,8 @@ void OvmsVehicleMgEv::processEnergy()
     // Add cumulative charge energy each second to ms_v_charge_power
     if (StandardMetrics.ms_v_charge_inprogress->AsBool())
     {
-        mg_cum_energy_charge_wh += StandardMetrics.ms_v_charge_power->AsFloat()*1000/3600;
-        StandardMetrics.ms_v_charge_kwh->SetValue(mg_cum_energy_charge_wh/1000);
+        mg_cum_energy_charge_wh += StandardMetrics.ms_v_charge_power->AsFloat() * 1000.0f / 3600.0f;
+        StandardMetrics.ms_v_charge_kwh->SetValue(mg_cum_energy_charge_wh / 1000.0f);
         
         int limit_soc      = StandardMetrics.ms_v_charge_limit_soc->AsInt(0);
         float limit_range    = StandardMetrics.ms_v_charge_limit_range->AsFloat(0, Kilometers);
@@ -628,8 +662,7 @@ bool OvmsVehicleMgEv::SendDiagSessionTo(canbus* currentBus, uint16_t id, uint8_t
     return currentBus->Write(&diagnosticControl) != ESP_FAIL;
 }
 
-bool OvmsVehicleMgEv::SendPollMessage(
-                                      canbus* bus, uint16_t id, uint8_t type, uint16_t pid)
+bool OvmsVehicleMgEv::SendPollMessage(canbus* bus, uint16_t id, uint8_t type, uint16_t pid)
 {
     CAN_frame_t sendFrame = {
         bus,
@@ -703,7 +736,7 @@ OvmsVehicleMgEv* OvmsVehicleMgEv::GetActiveVehicle(OvmsWriter* writer)
     }
     
     //Trim active vehicle name to same length as ExpectedVehicleName and checks whether they are equal
-    constexpr const char ExpectedVehicleName[] = "MG EV";
+    constexpr const char ExpectedVehicleName[] = "MG";
     size_t ExpectedVehicleNameLength = strlen(ExpectedVehicleName);
     char ActiveVehicleName[ExpectedVehicleNameLength + 1];
     strncpy(ActiveVehicleName, MyVehicleFactory.ActiveVehicleName(), ExpectedVehicleNameLength);
@@ -792,6 +825,24 @@ void OvmsVehicleMgEv::DRLCommandWithAuthShell(int verbosity, OvmsWriter* writer,
     }
 }
 
+void OvmsVehicleMgEv::PollsCommandShell(int verbosity, OvmsWriter* writer, OvmsCommand* cmd, int argc, const char* const* argv)
+{
+    if (strcmp(argv[0], "on") == 0)
+    {
+        ESP_LOGI(TAG, "Polls on requested");
+        MyMetrics.SetBool("xmg.enable.polling", true);
+    }
+    else if (strcmp(argv[0], "off") == 0)
+    {
+        ESP_LOGI(TAG, "Polls off requested");
+        MyMetrics.SetBool("xmg.enable.polling", false);
+    }
+    else
+    {
+        writer->puts("Unknown authentication command");
+    }
+}
+
 bool OvmsVehicleMgEv::AuthenticateECU(vector<ECUAuth> ECUsToAuth)
 {
     // Pause the poller so we're not being interrupted
@@ -823,4 +874,69 @@ bool OvmsVehicleMgEv::AuthenticateECU(vector<ECUAuth> ECUsToAuth)
     // Re-start polling
     m_poll_plist = m_pollData;
     return AuthSucceeded;
+}
+
+void OvmsVehicleMgEv::GWMAwake(canbus* currentBus)
+{
+    ESP_LOGI(TAG, "GWM responded to tester present. GWM is awake. Checking if GWM is unlocked.");
+    m_gwm_state->SetValue(static_cast<int>(GWMStates::Awake));
+    std::string Response;
+    int PollStatus = PollSingleRequest(currentBus, bcmId, bcmId | rxFlag, hexdecode("3e00"), Response, SYNC_REQUEST_TIMEOUT, ISOTP_STD);
+    ESP_LOGI(TAG, "Response (%d): %s", PollStatus, hexencode(Response).c_str());
+    if (PollStatus == 0)
+    {
+        ESP_LOGI(TAG, "BCM responded to tester present. GWM is unlocked.");
+        GWMUnlocked();
+    }
+    else
+    {
+        ESP_LOGI(TAG, "BCM did not respond to tester present, will start GWM authentication");
+        if (AuthenticateECU({ECUAuth::GWM}))
+        {
+            ESP_LOGI(TAG, "Authentication successful. Try send tester present to BCM again.");
+            PollStatus = PollSingleRequest(currentBus, bcmId, bcmId | rxFlag, hexdecode("3e00"), Response, SYNC_REQUEST_TIMEOUT, ISOTP_STD);
+            ESP_LOGI(TAG, "Response (%d): %s", PollStatus, hexencode(Response).c_str());
+            if (PollStatus == 0)
+            {
+                ESP_LOGI(TAG, "BCM responded to tester present. GWM is unlocked.");
+                GWMUnlocked();
+            }
+            else
+            {
+                ESP_LOGI(TAG, "BCM did not respond to tester present, will retry in %ds", GWM_RETRY_CHECK_STATE_TIMEOUT);
+                RetryCheckState();
+            }
+        }
+        else
+        {
+            ESP_LOGI(TAG, "Authentication failed. Retrying in %ds", GWM_RETRY_CHECK_STATE_TIMEOUT);
+            RetryCheckState();
+        }
+    }
+}
+
+void OvmsVehicleMgEv::GWMUnlocked()
+{
+    ESP_LOGI(TAG, "Setting GWM state to Unlocked");
+    m_gwm_state->SetValue(static_cast<int>(GWMStates::Unlocked));
+    m_GWMUnresponsiveCount = 0;
+    StandardMetrics.ms_v_env_awake->SetValue(true);
+    StandardMetrics.ms_v_env_ctrl_login->SetValue(true);
+}
+
+void OvmsVehicleMgEv::RetryCheckState()
+{
+    ESP_LOGI(TAG, "Setting GWM state to WaitToRetryCheckState");
+    m_gwm_state->SetValue(static_cast<int>(GWMStates::WaitToRetryCheckState));
+    m_RetryCheckStateWaitCount = 0;
+}
+
+void OvmsVehicleMgEv::GWMUnknown()
+{
+    ESP_LOGI(TAG, "Setting GWM state to Unknown");
+    m_gwm_state->SetValue(static_cast<int>(GWMStates::Unknown));
+    m_bcm_auth->SetValue(false);
+    PollSetState(PollStateListenOnly);
+    StandardMetrics.ms_v_env_awake->SetValue(false);
+    StandardMetrics.ms_v_env_ctrl_login->SetValue(false);
 }

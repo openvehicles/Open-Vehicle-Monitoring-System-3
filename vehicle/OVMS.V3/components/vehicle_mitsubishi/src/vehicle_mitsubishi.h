@@ -78,6 +78,7 @@ class OvmsVehicleMitsubishi : public OvmsVehicle
   protected:
 
     OvmsCommand *cmd_xmi;
+    std::string m_rxbuf;
 
   public:
     virtual vehicle_command_t CommandStat(int verbosity, OvmsWriter* writer);
@@ -161,7 +162,7 @@ class OvmsVehicleMitsubishi : public OvmsVehicle
 
     bool has_odo;
     bool set_odo;
-    bool has_trip;
+    bool has_broadcast = false;
 
     // Trip length & SOC/energy consumption:
     void ResetTripOdo();
