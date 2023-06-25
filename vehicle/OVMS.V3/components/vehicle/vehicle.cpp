@@ -1331,10 +1331,18 @@ OvmsVehicle::vehicle_command_t OvmsVehicle::CommandStatTrip(int verbosity, OvmsW
     ;
   if (wh_per_km != 0)
     {
-    buf
-      << "\nEnergy "
+    buf << "\nEnergy ";
+    if (consumUnit == WattHoursPK || consumUnit == WattHoursPM) {
+      buf << std::setprecision(0);
+    } else if (consumUnit == kWhP100K) {
+      buf << std::setprecision(1);
+    } else if (consumUnit == KPkWh || consumUnit == MPkWh) {
+      buf << std::setprecision(2);
+    }
+    buf 
       << UnitConvert(WattHoursPK, consumUnit, wh_per_km) << consumUnitLabel
       << ", "
+      << std::setprecision(0)
       << energy_recd_perc << "% recd"
       ;
     }
